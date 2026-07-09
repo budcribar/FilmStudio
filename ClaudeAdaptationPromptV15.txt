@@ -1,0 +1,190 @@
+Act as an expert screenwriter, cinematic narrative architect, and AI production‑pipeline engineer. Your task is to adapt a specific book into a 90‑minute feature film, expressed as a strictly valid JSON production blueprint optimized for Google GenAI (Veo 3.1) and a provider‑agnostic music‑generation API.
+
+You must follow all constraints, engineering rules, and JSON structure exactly.
+If any constraints conflict, prioritize in this order:
+1. JSON validity
+2. Runtime math accuracy
+3. Veo clip mechanics
+4. Narrative fidelity
+
+Only characters defined in `character_seed_tokens` may appear.
+Do not add fields not explicitly defined in the JSON schema.
+
+GLOBAL RULES & ENGINEERING CONSTRAINTS
+
+1. Runtime & Scene Duration
+- Let the story dictate the number of scenes.
+- No scene may exceed 134 seconds (2 minutes 14 seconds) — this is the highest value that satisfies the 8+7n pattern below at or under the nominal 2:15 cap; 135 seconds itself is not a valid scene duration.
+- No scene may be shorter than 8 seconds (minimum length of first clip).
+- Every scene's `total_estimated_duration_seconds` must land exactly on the Veo clip-chain pattern: 8, 15, 22, 29, 36, 43... (i.e., 8 + 7n seconds for some whole number of extensions n). Never choose a scene duration that falls between these values.
+- Before returning final JSON, sum all `total_estimated_duration_seconds`.
+- Total must equal 5400 seconds (90 min) ± 10% (between 4860 and 5940 seconds).
+- If runtime falls outside tolerance, adjust scene count and/or individual scene durations (each still snapped to the 8+7n pattern above) without altering narrative order or meaning.
+- NOTE ON SCALE: If generating the entire 90-minute film in a single turn exceeds output token limits, this is an explicit exception to priority #2 (Runtime math accuracy) — a partial delivery is expected not to meet the 5400s±10% total on its own. In that case, focus on delivering as many complete scenes as fit within the output limit, starting from scene 1, with each scene still matching all other mathematical properties exactly. Include two additional top-level fields so generation can resume accurately in a follow-up turn:
+  - `next_scene_number`: the scene number to continue from in the next turn. Use `null` to indicate the full film was delivered in this response and no continuation is needed; use an integer to indicate a truncated delivery that should resume from that scene number.
+  - `cumulative_duration_seconds`: the running total of all delivered scenes' durations so far, to let a follow-up turn track progress toward the 5400s±10% target.
+
+2. Veo 3.1 Clip Chaining Mechanics
+Each scene contains a `veo_clips` array following these rules:
+
+Clip Durations:
+- Clip 1:
+  - `veo_continuation_source: "none"`
+  - Duration: 8 seconds (fixed — Veo does not support other base-clip lengths)
+- Clip 2+ (extensions):
+  - `veo_continuation_source: "extend_previous"`
+  - Duration: 7 seconds each (fixed — Veo does not support partial or custom extension lengths)
+
+Timestamp Pattern:
+- Must follow exact cumulative math:
+  - 0:00–0:08
+  - 0:08–0:15
+  - 0:15–0:22
+  - etc.
+
+Clip Count Formula:
+clip_count = 1 + ceil((total_estimated_duration_seconds - 8) / 7)
+
+Scene Duration Validation:
+- After building each scene's `veo_clips` array, sum clip durations.
+- Confirm the sum equals the scene's `total_estimated_duration_seconds` exactly. Because durations are constrained to the 8+7n pattern in Rule 1, this should always match by construction — if it doesn't, the scene's stated duration was set incorrectly and must be corrected to the nearest valid 8+7n value.
+- Do not resolve a mismatch by requesting a non-standard clip length from Veo; only whole 8-second base clips and whole 7-second extensions are valid generation requests.
+
+Maximum chain length per scene: 20 hops (~148 seconds) — well above the 134-second scene cap in Rule 1, so this ceiling should never be the binding constraint in practice.
+
+3. Character Identity & Wardrobe Continuity
+- Use `character_seed_tokens` exclusively (Character_A, Character_B, etc.).
+- Each character must include a `reference_image_placeholder` for Veo identity‑locking.
+- Track story day and location changes to justify wardrobe evolution.
+- Wardrobe changes must be incremental unless a new day/location is explicitly reached.
+- In every `extend_previous` clip, restate ≥80% of the character's identity + wardrobe description from the first clip of that scene.
+
+4. Dialogue Continuity & Speaker Separation
+- Veo only continues dialogue across extensions if speech bridges the transition.
+- Never end a spoken line exactly at a clip boundary, unless that clip is the final clip in its scene, or the next clip is intentionally silent — in either case, ending on a spoken line is fine.
+- Where dialogue does need to span two clips within the same scene, ensure a single sentence or phrase begins 1–2 seconds BEFORE the clip boundary and naturally concludes 1–2 seconds AFTER the next clip begins, to ensure fluid cross-clip audio stitching and avoid truncation.
+- SPEAKER BOUNDARY & EXPOSITION SEPARATION (CRITICAL):
+  - Each clip must have a single designated speaker in `audio_payload.speaker` (e.g. `Character_A`, `Character_B`, etc.). The `dialogue` field for that clip must contain ONLY the spoken words of that specific character. Do not group multiple characters' lines or a multi-turn conversation inside a single clip's dialogue field.
+  - Non-narrator characters must NEVER vocalize third-person narrative exposition, actions, thoughts, or speech tags (such as "he said", "she smiled", "Nick roared"). Strip these descriptions out completely, leaving only clean spoken words.
+  - If a clip contains purely narrator description, thoughts, or retrospective storytelling with zero spoken dialogue, the speaker must be changed to the narrator character (e.g. `Character_P`) to represent first-person or third-person voice-over (VO).
+  - If a clip has no dialogue (is purely silent or ambient), the `speaker` must be set to `"none"` and the `dialogue` to `""` (empty string).
+
+5. Visual Prompt Length
+- Every `visual_prompt` must be highly descriptive but under 400 characters.
+
+6. Resolution & Frame Rate Lock
+- Lock globally: 720p, 24fps.
+- Include these values in every visual prompt.
+- Never mix resolutions within a scene.
+
+7. Negative Prompting
+- Every single clip must include the EXACT, identical `negative_prompt` string verbatim:
+  `"no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens"`
+- This suppressive prompt is fixed globally and checked by automated validators. Do not modify or truncate this string.
+
+8. File Pipeline Organization
+- Each scene must be structured assuming one file per scene (e.g., `Scene_01_Day1_Kitchen_Intro`).
+- Scene filenames must follow consistent zero‑padded formatting.
+
+9. String Escape Rules
+- Always use a forward slash ( / ) to represent line breaks in dialogue and lyrics.
+- Never use the `\n` escape sequence or a literal (raw) line break inside a JSON string — both are disallowed here for consistency, even though `\n` is technically valid JSON.
+- Escape all internal double quotes with a backslash (\").
+
+10. Provider‑Agnostic Music Bed Structure
+Each scene contains a `music_bed` object with:
+- `style_description`
+- `vocal_style`
+- `song_structure`: ordered array of sections
+  - Each section includes:
+    - `section_label`
+    - `section_type` (instrumental or vocal)
+    - `is_repeat_of` (null or reference to earlier section)
+    - `duration_seconds`
+    - `production_notes` (array)
+    - `lyrics` (string or null)
+
+Rules:
+- Do not flatten music into a single prompt.
+- Do not reference any specific vendor API.
+- Repeated sections must reference earlier ones rather than duplicating text: when `is_repeat_of` is set, `lyrics` and `production_notes` must be null/empty since that content is inherited from the referenced section — but `duration_seconds` must still be explicitly populated on every section, including repeats, since the exact-sum validation below depends on it.
+- Music section durations must sum EXACTLY to the scene's `total_estimated_duration_seconds` to prevent video/audio timeline drift during final timeline assembly.
+
+11. Timestamp Validation
+- All timestamps must be mathematically correct, cumulative, and gap‑free.
+
+12. JSON Safety
+- No trailing commas.
+- No comments.
+- No text outside the JSON object.
+- Escape all quotes inside dialogue/lyrics.
+
+FINAL OUTPUT FORMAT (STRICT JSON)
+
+Return a single JSON object with this exact structure:
+
+{
+  "movie_title": "string",
+  "source_book_title": "string",
+  "next_scene_number": null,
+  "cumulative_duration_seconds": 0,
+  "global_production_variables": {
+    "target_aspect_ratio": "16:9 cinematic widescreen",
+    "resolution": "720p",
+    "frame_rate": "24fps",
+    "directorial_treatment": "Shot on 35mm anamorphic lenses, high-contrast cinematic lighting, rich shadow detail, film grain, steady tracking camera movements",
+    "total_runtime_target_seconds": 5400,
+    "character_seed_tokens": {
+      "Character_A": {
+        "description": "A distinguished 68-year-old silver-haired male software engineer with sharp blue eyes and athletic frame",
+        "reference_image_placeholder": "character_a_ref.png"
+      },
+      "Character_B": {
+        "description": "Description of traits...",
+        "reference_image_placeholder": "character_b_ref.png"
+      }
+    }
+  },
+  "scenes": [
+    {
+      "scene_number": 1,
+      "setting": "Day 1 - Kitchen Location",
+      "total_estimated_duration_seconds": 15,
+      "scene_filename": "Scene_01_Day1_Kitchen_Intro",
+      "transition_type": "cut",
+      "lighting_continuity_token": "Warm morning sun through east-facing window, soft practicals",
+      "music_bed": {
+        "style_description": "string",
+        "vocal_style": "string",
+        "song_structure": [
+          {
+            "section_label": "Intro",
+            "section_type": "instrumental",
+            "is_repeat_of": null,
+            "duration_seconds": 15,
+            "production_notes": ["string", "string"],
+            "lyrics": null
+          }
+        ]
+      },
+      "veo_clips": [
+        {
+          "clip_number": 1,
+          "timestamp": "0:00-0:08",
+          "veo_continuation_source": "none",
+          "visual_prompt": "string <400 chars",
+          "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens",
+          "audio_payload": { "speaker": "Character_A", "dialogue": "string" }
+        },
+        {
+          "clip_number": 2,
+          "timestamp": "0:08-0:15",
+          "veo_continuation_source": "extend_previous",
+          "visual_prompt": "string <400 chars",
+          "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens",
+          "audio_payload": { "speaker": "none", "dialogue": "" }
+        }
+      ]
+    }
+  ]
+}
