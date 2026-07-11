@@ -845,15 +845,23 @@ class AgenticGenerationEngine:
         return f"data:{mime};base64,{encoded}"
 
     def _find_character_anchor_path(self, prompt: str) -> Optional[str]:
-        """Return the first locked character reference image mentioned in the prompt."""
+        """
+        Return the locked character reference image for the PRIMARY on-screen subject.
+        Uses earliest Character_* mention in the visual text (not dict order, not VO speaker).
+        """
         char_seeds = self.blueprint.get("global_production_variables", {}).get("character_seed_tokens", {})
+        best_path: Optional[str] = None
+        best_pos = len(prompt) + 1
         for char_key, seed_info in char_seeds.items():
-            if char_key in prompt:
-                local_image_name = seed_info.get("reference_image_placeholder", f"{char_key.lower()}_ref.png")
-                local_image_path = f"assets/characters/{local_image_name}"
-                if os.path.exists(local_image_path):
-                    return local_image_path
-        return None
+            pos = prompt.find(char_key)
+            if pos < 0:
+                continue
+            local_image_name = seed_info.get("reference_image_placeholder", f"{char_key.lower()}_ref.png")
+            local_image_path = f"assets/characters/{local_image_name}"
+            if os.path.exists(local_image_path) and pos < best_pos:
+                best_path = local_image_path
+                best_pos = pos
+        return best_path
 
     def _simplify_visual_for_single_clip(self, visual: str) -> str:
         """
@@ -953,23 +961,46 @@ class AgenticGenerationEngine:
         if mode == "continue":
             framing_bits.append(
                 "Continue seamlessly from the provided starting frame with the same character identity, "
-                "wardrobe, and location. Natural camera motion only — do not invent a new establishing shot."
+                "wardrobe, and location. Natural camera motion only — do not invent a new establishing shot. "
+                "Show clear progressive motion for the primary action (not a frozen pose)."
             )
         else:
             framing_bits.append(
                 "Follow the camera framing and location in this prompt exactly. "
                 "If a wide/exterior/establishing shot is specified, show that environment clearly "
-                "(do not stay locked on an unrelated close-up face)."
+                "(do not stay locked on an unrelated close-up face). "
+                "Prioritize the PRIMARY subject and ONE clear action with visible motion; "
+                "background characters may stay mostly still."
             )
 
         speaker_ok = bool(speaker) and speaker.lower() not in ("none", "n/a", "null", "-")
+        delivery = str(audio.get("delivery") or "").strip().lower()
+        is_internal_vo = delivery in (
+            "voiceover_internal",
+            "internal",
+            "vo_internal",
+            "thought",
+            "thinking",
+            "narration",
+            "vo",
+        )
 
         # Leading AUDIO block (format used successfully with Grok Imagine)
-        if dialogue and speaker_ok:
+        if dialogue and speaker_ok and is_internal_vo:
+            audio_block = (
+                f'AUDIO: Required audible stereo soundtrack. Off-camera internal monologue / narration '
+                f'by {speaker} at normal volume (NOT lip-synced conversation with another character): '
+                f'"{dialogue}". Character on screen should keep lips mostly closed / not mouth this text '
+                f'to someone else. Soft ambient under the voice.'
+            )
+            framing_bits.append(
+                "Performance: contemplative thinking face; do not stage this as spoken dialogue to another person."
+            )
+        elif dialogue and speaker_ok:
             audio_block = (
                 f'AUDIO: Required audible stereo soundtrack. '
-                f'Clear male/female conversational voiceover for {speaker} at normal listening volume, '
-                f'not whispered, not muted, fully intelligible English: "{dialogue}". '
+                f'Clear on-camera spoken dialogue by {speaker} at normal listening volume, '
+                f'lip-synced when the speaker is visible: "{dialogue}". '
                 f'Also include matching ambient room tone and environmental Foley under the voice.'
             )
         elif dialogue:
@@ -1637,22 +1668,15 @@ class AgenticGenerationEngine:
             self._extract_last_frame(prev_path, frame_path)
             payload["image"] = {"url": self._file_to_data_uri(frame_path)}
         else:
-            # Fresh shot: character reference images for look consistency (does not lock first frame)
-            # Use original visual + dialogue text for character name matching
-            anchor_probe = f"{clip.get('visual_prompt', '')} {(audio_payload.get('speaker') or '')}"
+            # Fresh shot: lock PRIMARY visual subject (first Character_* in visual_prompt).
+            # Do NOT prefer VO speaker — narration is often off-screen / different person.
+            anchor_probe = clip.get("visual_prompt") or ""
             anchor_path = self._find_character_anchor_path(anchor_probe)
-            if not anchor_path:
-                # Fall back: any locked character still helps identity
-                char_seeds = self.blueprint.get("global_production_variables", {}).get("character_seed_tokens", {})
-                for char_key, seed_info in char_seeds.items():
-                    local_image_name = seed_info.get("reference_image_placeholder", f"{char_key.lower()}_ref.png")
-                    candidate = f"assets/characters/{local_image_name}"
-                    if os.path.exists(candidate) and char_key in anchor_probe:
-                        anchor_path = candidate
-                        break
             if anchor_path:
-                print(f"  [Character Anchor] Injecting Grok reference image: {anchor_path}")
+                print(f"  [Character Anchor] Primary subject ref: {anchor_path}")
                 payload["reference_images"] = [{"url": self._file_to_data_uri(anchor_path)}]
+            else:
+                print("  [Character Anchor] No on-screen Character_* ref found in visual_prompt.")
 
         try:
             request_id = self._grok_submit_generation(payload)
@@ -1868,14 +1892,17 @@ class AgenticGenerationEngine:
     def _qa_evaluation_prompt(self, visual_prompt: str) -> str:
         return (
             f"You are a film continuity QA reviewer. These still frames were sampled in order "
-            f"from a generated video clip. Verify the clip matches this visual description:\n"
+            f"from a generated ~8s AI video clip. Intended description:\n"
             f"'{visual_prompt}'\n\n"
-            f"Judge lighting, camera motion, character/actor consistency, wardrobe, and whether "
-            f"the sequence matches the intended action.\n\n"
+            f"Approve if the PRIMARY subject and PRIMARY action are roughly correct "
+            f"(right person, place, wardrobe, and some visible motion matching the main beat). "
+            f"Do NOT reject for missing secondary micro-actions (e.g. head shakes, eye scanning, "
+            f"exact plate weights, perfect smirk consistency) if the main beat is clear. "
+            f"Still reject if wrong location/character, frozen with no intended motion, or severe identity/wardrobe breaks.\n\n"
             f"Respond with ONLY a single JSON object (no markdown fences):\n"
             f"{{\n"
             f"  \"approved\": true or false,\n"
-            f"  \"critique\": \"detailed observations about lighting, camera drift, and actor consistency\"\n"
+            f"  \"critique\": \"brief notes on primary action match, lighting, identity\"\n"
             f"}}"
         )
 
@@ -2341,9 +2368,28 @@ class AgenticGenerationEngine:
         self.save_state()
         sys.exit(1)
 
-    def process_scene(self, scene: Dict[str, Any]) -> bool:
+    def process_scene(self, scene: Dict[str, Any], clip_plan: Optional[Dict[str, Any]] = None) -> bool:
+        """
+        Generate clips for a scene and mux the composite.
+
+        clip_plan (optional):
+          {
+            "targets": set[int] | None,   # clip numbers to generate; None = all
+            "wipe": set[int],             # wipe these before generating
+          }
+        Non-target clips are reused from disk when present and included in the composite.
+        """
         s_num = scene["scene_number"]
-        print(f"\n==================== PROCESSING SCENE {s_num} ====================")
+        all_clips = scene.get("veo_clips") or []
+        targets = None if not clip_plan else clip_plan.get("targets")
+        wipe_set = set((clip_plan or {}).get("wipe") or [])
+
+        if targets is not None:
+            target_label = ",".join(str(n) for n in sorted(targets))
+            print(f"\n==================== PROCESSING SCENE {s_num} (clips: {target_label}) ====================")
+        else:
+            print(f"\n==================== PROCESSING SCENE {s_num} ====================")
+
         self.ensure_asset_directories()
         self._active_scene_num = s_num
         self._active_clip_num = None
@@ -2365,13 +2411,15 @@ class AgenticGenerationEngine:
             max_qa_retries = int(self.config.get("qa_max_retries", 2))
             qa_retry_on_fail = bool(self.config.get("qa_retry_on_fail", True))
 
-            for clip in scene.get("veo_clips", []):
+            for clip in all_clips:
                 self._check_shutdown(f"Scene {s_num} before next clip")
                 c_num = clip["clip_number"]
                 self._active_clip_num = c_num
                 clip_state_key = f"{s_num}_{c_num}"
                 out_path = clip_output_path(s_num, c_num)
                 generated_files.append(out_path)
+
+                should_generate = targets is None or c_num in targets
 
                 # Prefer previous clip's local file for continuity when resuming mid-scene
                 seed_ctx = previous_context_id
@@ -2385,14 +2433,33 @@ class AgenticGenerationEngine:
                 ):
                     seed_ctx = None
 
+                if not should_generate:
+                    if file_is_usable(out_path, min_bytes=1024):
+                        print(f"  [Skip] Clip {c_num}: reusing existing {out_path}")
+                        clip_paths.append(out_path)
+                        self.state["clip_context_ids"][clip_state_key] = out_path
+                        previous_context_id = out_path
+                        continue
+                    print(
+                        f"  [Skip] Clip {c_num}: not selected and missing on disk "
+                        f"(not included in composite until generated)."
+                    )
+                    previous_context_id = None
+                    continue
+
+                if c_num in wipe_set or (clip_plan and clip_plan.get("force_all_wipe")):
+                    self._clear_clip_assets(s_num, c_num)
+
+                # If regenerating a selected clip that already exists and wipe wasn't requested,
+                # still allow force via wipe_set; otherwise generate_video_clip may reuse.
                 attempts = max_qa_retries + 1 if qa_retry_on_fail else 1
                 clip_path = None
                 context_id = None
                 qa_passed = False
 
                 for attempt in range(1, attempts + 1):
-                    force = attempt > 1
-                    if force:
+                    force = attempt > 1 or (c_num in wipe_set)
+                    if attempt > 1:
                         print(
                             f"  [QA Retry] Clip {c_num}: attempt {attempt}/{attempts} "
                             f"(regenerating after QA rejection)..."
@@ -2425,46 +2492,52 @@ class AgenticGenerationEngine:
                 clip_paths.append(clip_path)
                 self.state["clip_context_ids"][clip_state_key] = context_id
 
-                # Progressive scene merge after each accepted (or final) clip
+                # Progressive scene merge: all existing clips in order so far
                 if self.config.get("merge_scene_after_each_clip", True):
                     try:
+                        ordered = self._ordered_existing_clip_paths(s_num, all_clips)
                         composite_scene_path = self.mix_scene_assets(
-                            s_num, list(clip_paths), music_path, force=True
+                            s_num, ordered, music_path, force=True
                         )
                         print(
                             f"  [Scene] Progressive merge after clip {c_num}: "
-                            f"{composite_scene_path} ({len(clip_paths)} clip(s))"
+                            f"{composite_scene_path} ({len(ordered)} clip(s) on disk)"
                         )
                     except GenerationFailure as mix_err:
-                        # Don't lose a paid clip if only mux failed — save and re-raise
                         print(f"  [Scene] Progressive merge failed: {mix_err}")
                         raise
 
+                ordered_now = self._ordered_existing_clip_paths(s_num, all_clips)
                 self.state["scene_assets"][str(s_num)] = {
-                    "video_clips": list(clip_paths),
+                    "video_clips": ordered_now,
                     "music_bed": music_path,
                     "composite": composite_scene_path,
                     "partial": True,
-                    "clips_merged": len(clip_paths),
+                    "clips_merged": len(ordered_now),
                 }
                 self.save_state()
                 previous_context_id = context_id
 
-            # Final mux
+            # Final mux of every clip that exists for this scene (ordered)
+            ordered_final = self._ordered_existing_clip_paths(s_num, all_clips)
+            if not ordered_final:
+                raise GenerationFailure(f"Scene {s_num}: no clips available to composite.")
             generated_files.append(composite_output_path(s_num))
             composite_scene_path = self.mix_scene_assets(
-                s_num, clip_paths, music_path, force=True
+                s_num, ordered_final, music_path, force=True
             )
+            clip_paths = ordered_final
 
         except PipelineInterrupted:
             # Preserve partial scene progress, then re-raise for outer graceful_stop
+            ordered = self._ordered_existing_clip_paths(s_num, all_clips)
             self.state.setdefault("scenes_completed", {})[str(s_num)] = False
             self.state.setdefault("scene_assets", {})[str(s_num)] = {
-                "video_clips": [p for p in clip_paths if file_is_usable(p, min_bytes=1024)],
+                "video_clips": ordered,
                 "music_bed": music_path if file_is_usable(music_path, min_bytes=1) else None,
                 "composite": composite_scene_path if file_is_usable(composite_scene_path, min_bytes=1024) else None,
                 "partial": True,
-                "clips_merged": len(clip_paths),
+                "clips_merged": len(ordered),
                 "last_error": "interrupted_by_user",
             }
             self.save_state()
@@ -2485,6 +2558,37 @@ class AgenticGenerationEngine:
         self.save_state()
         self._active_clip_num = None
         return True
+
+    def _ordered_existing_clip_paths(self, scene_num: int, clips: List[Dict[str, Any]]) -> List[str]:
+        """Return on-disk clip paths in blueprint order (skip missing)."""
+        paths: List[str] = []
+        for clip in clips:
+            p = clip_output_path(scene_num, clip.get("clip_number", 0))
+            if file_is_usable(p, min_bytes=1024):
+                paths.append(p)
+        return paths
+
+    def _clear_clip_assets(self, scene_num: int, clip_num: int) -> None:
+        """Delete one clip's files and job state so it can be regenerated."""
+        paths = [
+            clip_output_path(scene_num, clip_num),
+            f"assets/video/scene_{scene_num:02d}_clip_{clip_num:02d}.native.mp4",
+            f"assets/video/scene_{scene_num:02d}_clip_{clip_num:02d}_seed_frame.png",
+            composite_output_path(scene_num),  # force remux after regen
+        ]
+        for p in paths:
+            try:
+                if p and os.path.isfile(p):
+                    os.remove(p)
+            except OSError as e:
+                print(f"  [Cleanup Warning] Could not remove '{p}': {e}")
+
+        key = f"{scene_num}_{clip_num}"
+        self.state.get("clip_context_ids", {}).pop(key, None)
+        self.state.get("clip_jobs", {}).pop(key, None)
+        self.state.setdefault("scenes_completed", {})[str(scene_num)] = False
+        self.save_state()
+        print(f"  [Reset] Cleared Scene {scene_num} Clip {clip_num} assets.")
 
     def backpropagate_retroactive_feedback(self, current_scene_num: int, target_scene_num: int, feedback: str):
         print(f"\n[Retroactive Propagation] Propagating feedback from Scene {current_scene_num} to Scene {target_scene_num}...")
@@ -2560,6 +2664,355 @@ class AgenticGenerationEngine:
         except Exception as e:
             print(f"[Error] Mastering compilation failed: {e}")
 
+    def _find_scene_index(self, scenes: List[Dict[str, Any]], scene_number: int) -> int:
+        for idx, s in enumerate(scenes):
+            if s.get("scene_number") == scene_number:
+                return idx
+        return -1
+
+    def _first_incomplete_scene_index(self, scenes: List[Dict[str, Any]]) -> int:
+        for idx, s in enumerate(scenes):
+            if not self.state.get("scenes_completed", {}).get(str(s["scene_number"])):
+                return idx
+        return len(scenes)
+
+    def _scene_status_line(self, scene: Dict[str, Any]) -> str:
+        s_num = scene["scene_number"]
+        s_key = str(s_num)
+        approved = bool(self.state.get("scenes_completed", {}).get(s_key))
+        composite = composite_output_path(s_num)
+        has_composite = file_is_usable(composite, min_bytes=1024)
+        clip_count = len(scene.get("veo_clips") or [])
+        on_disk = 0
+        for c in scene.get("veo_clips") or []:
+            if file_is_usable(clip_output_path(s_num, c.get("clip_number", 0)), min_bytes=1024):
+                on_disk += 1
+        if approved:
+            status = "APPROVED"
+        elif has_composite or on_disk:
+            status = f"PARTIAL {on_disk}/{clip_count} clips"
+        else:
+            status = "NOT STARTED"
+        setting = (scene.get("setting") or "")[:48]
+        return f"  Scene {s_num:>3}: {status:<18} | {setting}"
+
+    def _clear_scene_generation_assets(self, scene_num: int, wipe_files: bool = True) -> None:
+        """Reset state (and optionally files) so a scene can be regenerated from scratch."""
+        s_key = str(scene_num)
+        self.state.setdefault("scenes_completed", {})[s_key] = False
+        self.state.get("scene_assets", {}).pop(s_key, None)
+
+        # clip_context_ids keys like "1_3"
+        prefix = f"{scene_num}_"
+        for k in list(self.state.get("clip_context_ids", {}).keys()):
+            if k.startswith(prefix):
+                del self.state["clip_context_ids"][k]
+        for k in list(self.state.get("clip_jobs", {}).keys()):
+            if k.startswith(prefix):
+                del self.state["clip_jobs"][k]
+        self.state.get("music_jobs", {}).pop(s_key, None)
+
+        if wipe_files:
+            paths = [composite_output_path(scene_num), music_output_path(scene_num)]
+            # Wipe known clip slots 1..40 (covers long scenes)
+            for c_num in range(1, 41):
+                paths.append(clip_output_path(scene_num, c_num))
+                paths.append(f"assets/video/scene_{scene_num:02d}_clip_{c_num:02d}.native.mp4")
+                paths.append(f"assets/video/scene_{scene_num:02d}_clip_{c_num:02d}_seed_frame.png")
+            work_dir = f"assets/scenes/_work_scene_{scene_num:02d}"
+            concat_list = f"assets/scenes/concat_list_scene_{scene_num}.txt"
+            paths.append(concat_list)
+            for p in paths:
+                try:
+                    if p and os.path.isfile(p):
+                        os.remove(p)
+                except OSError as e:
+                    print(f"  [Cleanup Warning] Could not remove '{p}': {e}")
+            if os.path.isdir(work_dir):
+                try:
+                    import shutil
+                    shutil.rmtree(work_dir, ignore_errors=True)
+                except Exception as e:
+                    print(f"  [Cleanup Warning] Could not remove work dir '{work_dir}': {e}")
+            print(f"  [Reset] Cleared generated assets for Scene {scene_num}.")
+
+        self.save_state()
+
+    def _print_clip_status(self, scene: Dict[str, Any]) -> None:
+        s_num = scene["scene_number"]
+        clips = scene.get("veo_clips") or []
+        print(f"\n  Clips in Scene {s_num} ({len(clips)} total):")
+        for c in clips:
+            c_num = c.get("clip_number")
+            path = clip_output_path(s_num, c_num)
+            on_disk = file_is_usable(path, min_bytes=1024)
+            job = self.state.get("clip_jobs", {}).get(f"{s_num}_{c_num}", {})
+            qa = job.get("qa_approved")
+            if on_disk and qa is True:
+                flag = "OK "
+            elif on_disk and qa is False:
+                flag = "QA!"
+            elif on_disk:
+                flag = "DISK"
+            else:
+                flag = " -- "
+            dlg = str(((c.get("audio_payload") or {}).get("dialogue") or "")).strip()
+            src = c.get("veo_continuation_source", "none")
+            preview = (c.get("visual_prompt") or "")[:55].replace("\n", " ")
+            dlg_mark = "VO" if dlg else "  "
+            print(f"    [{flag}] clip {c_num:>2} {dlg_mark} src={src:<16} | {preview}")
+
+    def _parse_clip_spec(self, raw: str, max_clip: int) -> Optional[Dict[str, Any]]:
+        """
+        Parse clip selection text into a clip_plan.
+        Examples: '', 'all', '3', '3 regen', '2-4', '2-4 regen', '2,4,5'
+        """
+        text = (raw or "").strip().lower()
+        if not text or text in ("all", "a", "*"):
+            return {"targets": None, "wipe": set()}
+
+        wipe = False
+        tokens = text.replace(",", " ").split()
+        # trailing regen/force/wipe
+        while tokens and tokens[-1] in ("regen", "r", "force", "f", "wipe", "w"):
+            wipe = True
+            tokens.pop()
+        if not tokens:
+            return None
+
+        numbers: set = set()
+        for tok in tokens:
+            if "-" in tok:
+                try:
+                    a_str, b_str = tok.split("-", 1)
+                    a, b = int(a_str), int(b_str)
+                except ValueError:
+                    return None
+                if a > b:
+                    a, b = b, a
+                for n in range(a, b + 1):
+                    numbers.add(n)
+            else:
+                try:
+                    numbers.add(int(tok))
+                except ValueError:
+                    return None
+
+        if not numbers:
+            return None
+        invalid = [n for n in numbers if n < 1 or n > max_clip]
+        if invalid:
+            print(f"  Clip number(s) out of range 1..{max_clip}: {invalid}")
+            return None
+
+        wipe_set = set(numbers) if wipe else set()
+        return {"targets": numbers, "wipe": wipe_set}
+
+    def _prompt_clip_selection(self, scene: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        """Ask which clip(s) within a scene to generate. None targets = all clips."""
+        clips = scene.get("veo_clips") or []
+        if not clips:
+            return {"targets": None, "wipe": set()}
+        max_clip = max(c.get("clip_number", 0) for c in clips)
+        self._print_clip_status(scene)
+        print(
+            "\n  Clip options:\n"
+            "    [Enter] / all     All clips in this scene\n"
+            "    3                 Only clip 3 (reuse others on disk)\n"
+            "    3 regen           Wipe + regenerate only clip 3\n"
+            "    2-4               Clips 2 through 4\n"
+            "    2-4 regen         Wipe + regenerate clips 2-4\n"
+            "    2,5               Clips 2 and 5\n"
+        )
+        while True:
+            self._check_shutdown("clip selector")
+            try:
+                raw = input(f"  Clip(s) for Scene {scene['scene_number']} [all]: ").strip()
+            except EOFError as e:
+                raise PipelineInterrupted("EOF on clip selector") from e
+            plan = self._parse_clip_spec(raw, max_clip)
+            if plan is None:
+                print("  Could not parse clip selection. Try 'all', '3', '3 regen', or '2-4'.")
+                continue
+            if plan["wipe"]:
+                confirm = input(
+                    f"  Wipe clip(s) {sorted(plan['wipe'])} and regenerate? [y/N]: "
+                ).strip().lower()
+                if confirm not in ("y", "yes"):
+                    print("  Cancelled wipe.")
+                    plan["wipe"] = set()
+            if plan["targets"] is None:
+                print("  [Select] All clips in scene.")
+            else:
+                print(f"  [Select] Clips {sorted(plan['targets'])}"
+                      + (" (wipe+regen)" if plan["wipe"] else " (reuse others)"))
+            return plan
+
+    def _prompt_scene_selection(
+        self, scenes: List[Dict[str, Any]]
+    ) -> Tuple[int, bool, Optional[Dict[str, Any]]]:
+        """
+        Ask which scene (and optionally which clips) to work on.
+
+        Returns (scene_index, single_scene_mode, clip_plan).
+        clip_plan is None for pipeline-forward mode (all clips each scene).
+        """
+        total = len(scenes)
+        first_incomplete_idx = self._first_incomplete_scene_index(scenes)
+        default_num = (
+            scenes[first_incomplete_idx]["scene_number"]
+            if first_incomplete_idx < total
+            else scenes[-1]["scene_number"]
+        )
+
+        print("\n==================== SCENE / CLIP SELECTOR ====================")
+        print(f"Blueprint has {total} scenes. Resume default: Scene {default_num}")
+        print("Recent / nearby status:")
+        default_idx = self._find_scene_index(scenes, default_num)
+        start = max(0, default_idx - 3)
+        end = min(total, default_idx + 5)
+        for s in scenes[start:end]:
+            print(self._scene_status_line(s))
+        if start > 0 or end < total:
+            print("  ... (enter a number to jump to any scene)")
+
+        print(
+            "\nOptions:\n"
+            "  [Enter]               Continue from default incomplete scene (all clips)\n"
+            "  <N>                   Jump to scene N, then continue forward (all clips)\n"
+            "  <N> only              Work only on scene N (stop after review)\n"
+            "  <N> regen             Wipe whole scene N and regenerate (stop after)\n"
+            "  <N> clip <C>          Regen/reuse clip C in scene N (stop after scene)\n"
+            "  <N> clip <C> regen    Wipe + regen clip C only (stop after scene)\n"
+            "  <N> clip <C> regen go Wipe + regen clip C, finish scene, then continue to next scenes\n"
+            "  status                Show scene statuses\n"
+            "  master                Final film mastering\n"
+            "  Q                     Quit\n"
+            "\nTip: add 'go' or 'continue' to keep moving forward after the scene "
+            "(e.g. '1 clip 5 regen go')."
+        )
+
+        while True:
+            self._check_shutdown("scene selector")
+            try:
+                raw = input(f"\nScene to generate [{default_num}]: ").strip()
+            except EOFError as e:
+                raise PipelineInterrupted("EOF on scene selector") from e
+
+            if not raw:
+                if first_incomplete_idx < total:
+                    return first_incomplete_idx, False, None
+                print("  All scenes look approved. Enter a scene number to rework, 'master', or Q.")
+                continue
+
+            low = raw.lower()
+            if low in ("q", "quit", "exit"):
+                self.graceful_stop("Quit from scene selector")
+
+            if low in ("master", "mastering", "m"):
+                return total, False, None
+
+            if low in ("status", "s", "list", "ls"):
+                for i, s in enumerate(scenes):
+                    print(self._scene_status_line(s))
+                    if (i + 1) % 20 == 0:
+                        try:
+                            more = input("  -- more -- [Enter] continue, Q stop listing: ").strip().upper()
+                        except EOFError:
+                            break
+                        if more == "Q":
+                            break
+                continue
+
+            parts = raw.split()
+            try:
+                scene_num = int(parts[0])
+            except ValueError:
+                print("  Enter a scene number, 'status', 'master', or Q.")
+                continue
+
+            idx = self._find_scene_index(scenes, scene_num)
+            if idx < 0:
+                print(f"  Scene {scene_num} not found in blueprint.")
+                continue
+
+            scene = scenes[idx]
+            max_clip = max((c.get("clip_number", 0) for c in (scene.get("veo_clips") or [])), default=0)
+
+            # Inline: "1 clip 3", "1 clip 3 regen", "1 clip 3 regen go", "1 c 3 r continue"
+            clip_plan: Optional[Dict[str, Any]] = None
+            single = False
+            wipe_scene = False
+            # "go" / "continue" = after this scene, keep walking the pipeline forward
+            continue_forward = False
+            rest_parts = parts[1:]
+            if rest_parts and rest_parts[-1].lower() in ("go", "continue", "fwd", "forward", "+"):
+                continue_forward = True
+                rest_parts = rest_parts[:-1]
+
+            if len(rest_parts) >= 2 and rest_parts[0].lower() in ("clip", "c", "clips"):
+                clip_raw = " ".join(rest_parts[1:])
+                clip_plan = self._parse_clip_spec(clip_raw, max_clip)
+                if clip_plan is None:
+                    print(
+                        "  Bad clip spec. Examples: '1 clip 3', '1 clip 5 regen', "
+                        "'1 clip 5 regen go'"
+                    )
+                    continue
+                # Default for clip-targeted work is single-scene; 'go' continues after approve
+                single = not continue_forward
+                self.state.setdefault("scenes_completed", {})[str(scene_num)] = False
+                self.save_state()
+                tgt = sorted(clip_plan["targets"] or [])
+                wipe_note = " wipe+regen" if clip_plan["wipe"] else ""
+                if continue_forward:
+                    print(
+                        f"  [Select] Scene {scene_num} clip(s) {tgt}{wipe_note}, "
+                        f"then continue forward to later scenes after approve."
+                    )
+                else:
+                    print(
+                        f"  [Select] Scene {scene_num} clip(s) {tgt}{wipe_note} "
+                        f"(scene only; stop after review unless you press S)."
+                    )
+                return idx, single, clip_plan
+
+            mode_token = rest_parts[0].lower() if rest_parts else ""
+            single = mode_token in ("only", "o", "one", "regen", "r", "force", "f")
+            wipe_scene = mode_token in ("regen", "r", "force", "f", "wipe", "w")
+            if continue_forward and single:
+                # e.g. "1 only go" or "1 regen go"
+                single = False
+
+            if wipe_scene:
+                confirm = input(
+                    f"  Wipe ALL generated clips/composite for Scene {scene_num}? [y/N]: "
+                ).strip().lower()
+                if confirm in ("y", "yes"):
+                    self._clear_scene_generation_assets(scene_num, wipe_files=True)
+                    if not continue_forward:
+                        single = True
+                    clip_plan = self._prompt_clip_selection(scene)
+                else:
+                    print("  Cancelled full wipe.")
+                    if not continue_forward:
+                        single = True
+                    clip_plan = self._prompt_clip_selection(scene)
+            elif single or (rest_parts and mode_token in ("only", "o", "one")):
+                self.state.setdefault("scenes_completed", {})[str(scene_num)] = False
+                self.save_state()
+                print(f"  [Select] Scene {scene_num} only.")
+                clip_plan = self._prompt_clip_selection(scene)
+                if continue_forward:
+                    single = False
+                    print("  [Select] Will continue to later scenes after this one.")
+            else:
+                print(f"  [Select] Starting at Scene {scene_num}, then continue forward (all clips each).")
+                clip_plan = None
+                single = False
+
+            return idx, single, clip_plan
+
     def run_pipeline(self):
         self.ensure_asset_directories()
 
@@ -2570,15 +3023,14 @@ class AgenticGenerationEngine:
 
             scenes = self.blueprint.get("scenes", [])
             total_scenes = len(scenes)
+            if not scenes:
+                print("[Error] Blueprint has no scenes.")
+                return
 
-            current_idx = 0
-            for idx, s in enumerate(scenes):
-                s_num = str(s["scene_number"])
-                if not self.state["scenes_completed"].get(s_num):
-                    current_idx = idx
-                    break
-            else:
-                current_idx = total_scenes
+            current_idx, single_scene_mode, clip_plan = self._prompt_scene_selection(scenes)
+            if current_idx >= total_scenes:
+                self.run_mastering()
+                return
 
             self.state["current_scene_index"] = current_idx
             self.save_state()
@@ -2588,16 +3040,21 @@ class AgenticGenerationEngine:
                 scene = scenes[current_idx]
                 s_num = scene["scene_number"]
 
-                self.process_scene(scene)
+                # clip_plan applies to this first selected scene only (may regen one clip,
+                # then remux full scene). Later scenes always run all clips.
+                plan_for_scene = clip_plan
+                self.process_scene(scene, clip_plan=plan_for_scene)
+                clip_plan = None  # don't reuse a one-shot clip plan after first process
 
                 print(f"\n*** INTERACTIVE GATE: REVIEW SCENE {s_num}/{total_scenes} ***")
+                print(f"    Composite: {composite_output_path(s_num)}")
                 user_action = ""
-                while user_action not in ["A", "F", "R", "Q"]:
+                while user_action not in ["A", "F", "R", "S", "C", "Q"]:
                     self._check_shutdown("interactive review gate")
                     try:
                         user_action = input(
-                            "Review Scene [X]. [A] Approve, [F] Forward Feedback, "
-                            "[R] Retroactive Rollback, [Q] Quit: "
+                            "Review. [A] Approve, [C] Clip again, [F] Feedback, "
+                            "[R] Rollback, [S] Scene select, [Q] Quit: "
                         ).strip().upper()
                     except EOFError as e:
                         raise PipelineInterrupted("EOF on interactive input") from e
@@ -2605,9 +3062,29 @@ class AgenticGenerationEngine:
                 if user_action == "A":
                     print(f"[Success] Approved Scene {s_num}.")
                     self.state["scenes_completed"][str(s_num)] = True
+                    self.save_state()
+                    if single_scene_mode:
+                        print("[Select] Single-scene mode complete.")
+                        again = input("Select another scene/clip? [y/N]: ").strip().lower()
+                        if again in ("y", "yes"):
+                            current_idx, single_scene_mode, clip_plan = self._prompt_scene_selection(scenes)
+                            if current_idx >= total_scenes:
+                                self.run_mastering()
+                                return
+                            self.state["current_scene_index"] = current_idx
+                            self.save_state()
+                            continue
+                        break
                     current_idx += 1
                     self.state["current_scene_index"] = current_idx
                     self.save_state()
+                elif user_action == "C":
+                    # Re-pick clips in the same scene and regenerate
+                    self.state.setdefault("scenes_completed", {})[str(s_num)] = False
+                    self.save_state()
+                    clip_plan = self._prompt_clip_selection(scene)
+                    single_scene_mode = True
+                    # loop continues same current_idx
                 elif user_action == "F":
                     feedback = input("\nEnter your forward feedback modifier: ").strip()
                     scope = input(
@@ -2630,10 +3107,24 @@ class AgenticGenerationEngine:
                             pass
                     self.backpropagate_retroactive_feedback(s_num, target_scene, feedback)
                     current_idx = self.state["current_scene_index"]
+                    single_scene_mode = False
+                    clip_plan = None
+                elif user_action == "S":
+                    current_idx, single_scene_mode, clip_plan = self._prompt_scene_selection(scenes)
+                    if current_idx >= total_scenes:
+                        self.run_mastering()
+                        return
+                    self.state["current_scene_index"] = current_idx
+                    self.save_state()
                 elif user_action == "Q":
                     self.graceful_stop("Quit requested from interactive gate")
 
-            self.run_mastering()
+            if not single_scene_mode:
+                do_master = input(
+                    "\nAll selected work finished. Run final film mastering? [y/N]: "
+                ).strip().lower()
+                if do_master in ("y", "yes"):
+                    self.run_mastering()
         except PipelineInterrupted as e:
             self.graceful_stop(str(e) or "Interrupted by user")
         except KeyboardInterrupt:
@@ -2642,8 +3133,8 @@ class AgenticGenerationEngine:
 
 if __name__ == "__main__":
     print("=========================================================================")
-    print("         AGENTIC GENERATION SCRIPT ENGINE (V9.2) - RUNNING               ")
-    print("         Smart cuts + QA retry  |  Ctrl+C saves state & resumes          ")
+    print("         AGENTIC GENERATION SCRIPT ENGINE (V9.4) - RUNNING               ")
+    print("         Scene + clip selector  |  Ctrl+C saves  |  Smart cuts + QA      ")
     print("=========================================================================")
     engine = None
     try:

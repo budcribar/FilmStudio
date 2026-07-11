@@ -90,7 +90,13 @@ Each scene contains a `veo_clips` array. Every clip must include:
 - `veo_continuation_source` ("none" | "extend_previous")
 - `visual_prompt`
 - `negative_prompt` (exact global string below)
-- `audio_payload` object with `speaker` and `dialogue`
+- `audio_payload` object with:
+  - `speaker` (character key, or `"none"`)
+  - `dialogue` (string; empty if silent)
+  - `delivery` (REQUIRED) — one of:
+    - `"spoken_on_camera"` — character is talking to someone on screen; lip-sync OK
+    - `"voiceover_internal"` — narrator / internal monologue / thoughts / “telling the reader”; NOT conversational lip-sync
+    - `"none"` — silent/ambient only (use with `speaker: "none"`, `dialogue: ""`)
 
 Shot-writing quality bar:
 - One clear camera setup and action per clip.
@@ -98,6 +104,7 @@ Shot-writing quality bar:
 - Restate character identity tokens (Character_P, etc.) whenever they appear on screen.
 - End every visual prompt with: ` / 720p, 24fps`
 - Prefer continuous action language over edit language. If you need a cut, start a new clip with `veo_continuation_source: "none"`.
+- Name the PRIMARY on-screen subject first in `visual_prompt` (the pipeline uses the first `Character_*` mention for identity locking — not the VO speaker).
 
 3. Character Identity & Wardrobe Continuity
 - Use `character_seed_tokens` exclusively for anyone who speaks or appears.
@@ -109,17 +116,38 @@ Shot-writing quality bar:
 - Wardrobe changes must be incremental unless a new day/location is explicit.
 - In every `extend_previous` clip, restate ≥80% of the on-screen character's identity + wardrobe from the first clip of that continuous beat.
 
-4. Dialogue Continuity & Speaker Separation
-- Each clip has a single `audio_payload.speaker`.
-- `dialogue` contains ONLY clean spoken words for that speaker (no "he said", action tags, or multi-speaker turns).
-- If a clip is pure narration/VO with no on-screen second speaker, use the narrator character (often Character_P).
-- If silent/ambient only: `speaker: "none"`, `dialogue: ""`.
+4. Dialogue, Thought, and Voiceover (CRITICAL for first-person books)
+First-person / memoir narration is NOT the same as on-camera talking.
+
+Classify every clip’s audio:
+A) **Internal thought / narrator VO** (`delivery: "voiceover_internal"`)
+   - Reader-facing lines (“I’m telling you this because…”, memories, private feelings, “I can’t tell Nick…”).
+   - Character is thinking or narrating to the audience, not conversing with another person.
+   - `visual_prompt` MUST show lips closed / contemplative face / not staged as speech to another character.
+   - `speaker` = narrator character (e.g. Character_P).
+   - `dialogue` = clean first-person narration text only.
+
+B) **Spoken on camera** (`delivery: "spoken_on_camera"`)
+   - Real diegetic dialogue between characters (“Are you okay?”, “What’s your name?”).
+   - `visual_prompt` may show speaking / listening faces and lip-sync.
+   - `speaker` = the character whose mouth says the line (never put Character B’s words on Character A).
+   - `dialogue` = only that speaker’s clean spoken words.
+
+C) **Silent / ambient** (`delivery: "none"`, `speaker: "none"`, `dialogue: ""`)
+   - Pure action, atmosphere, montage with no speech or VO.
+
+Hard rules:
+- Never paste book prose that mixes action tags, multi-speaker turns, or “she said” into `dialogue`.
+- Never assign another character’s spoken lines to the narrator just because the book recounts them in first person. If Sionna explains her name, `speaker` is Character_S with `spoken_on_camera`; the narrator’s private reaction belongs in a separate clip as `voiceover_internal` or visual-only thinking.
+- If a book paragraph contains BOTH narration and a spoken quote, SPLIT into two clips or keep only the spoken quote in `spoken_on_camera` and put narration in `voiceover_internal` on a different clip.
+- Each clip has exactly one `audio_payload.speaker`.
 - Never end a spoken line exactly at a clip boundary unless it is the final clip of the scene or the next clip is intentionally silent.
-- Where dialogue spans two clips, begin the bridging phrase 1–2 seconds before the boundary and finish 1–2 seconds after.
+- Where spoken dialogue spans two clips, begin the bridging phrase 1–2 seconds before the boundary and finish 1–2 seconds after.
 
 Provider note:
 - On `veo`, bridging dialogue helps extension audio continuity.
 - On `grok`, each clip regenerates native audio; still write clean per-clip dialogue, and avoid mid-word splits.
+- Generation pipeline uses `delivery` to choose lip-sync vs off-camera monologue prompting.
 
 5. Visual Prompt Length
 - `veo` profile: under 400 characters.
@@ -170,13 +198,14 @@ Rules:
 - No text outside the JSON object.
 - Escape all quotes inside dialogue/lyrics.
 
-13. Pipeline Compatibility Hints (do not add as JSON fields unless already in schema)
+13. Pipeline Compatibility Hints
 - The generation engine may:
   - regenerate clips that fail QA
   - ignore `extend_previous` when the visual is a hard cut (safety net)
-  - use character reference images on `none` clips
+  - use character reference images on `none` clips (primary subject = first Character_* in visual_prompt)
   - use native video audio and/or a separate music bed
-Write the blueprint as if those safety nets did not exist: get continuation and shot design right in the JSON.
+  - interpret `audio_payload.delivery` for VO-vs-spoken prompting
+Write the blueprint as if those safety nets did not exist: get continuation, delivery, and shot design right in the JSON.
 
 ================================================================
 FINAL OUTPUT FORMAT (STRICT JSON)
@@ -234,17 +263,49 @@ Return a single JSON object with this exact structure:
           "clip_number": 1,
           "timestamp": "0:00-0:08",
           "veo_continuation_source": "none",
-          "visual_prompt": "string (length per active profile) ending with / 720p, 24fps",
+          "visual_prompt": "Character_A rides a bike, lips closed, contemplative internal monologue (not speaking to anyone). / 720p, 24fps",
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens",
-          "audio_payload": { "speaker": "Character_A", "dialogue": "string" }
+          "audio_payload": {
+            "speaker": "Character_A",
+            "dialogue": "Something weird is happening to me. I cannot tell my brother.",
+            "delivery": "voiceover_internal"
+          }
         },
         {
           "clip_number": 2,
           "timestamp": "0:08-0:15",
           "veo_continuation_source": "extend_previous",
-          "visual_prompt": "Continuous same-setup action only; otherwise use none. / 720p, 24fps",
+          "visual_prompt": "Character_A faces Character_B on the sidewalk and speaks to her. / 720p, 24fps",
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens",
-          "audio_payload": { "speaker": "none", "dialogue": "" }
+          "audio_payload": {
+            "speaker": "Character_A",
+            "dialogue": "Are you okay?",
+            "delivery": "spoken_on_camera"
+          }
+        },
+        {
+          "clip_number": 3,
+          "timestamp": "0:15-0:22",
+          "veo_continuation_source": "extend_previous",
+          "visual_prompt": "Character_B answers; Character_A listens, lips closed. / 720p, 24fps",
+          "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens",
+          "audio_payload": {
+            "speaker": "Character_B",
+            "dialogue": "Yes.",
+            "delivery": "spoken_on_camera"
+          }
+        },
+        {
+          "clip_number": 4,
+          "timestamp": "0:22-0:29",
+          "veo_continuation_source": "extend_previous",
+          "visual_prompt": "Silent continuous action beat; no speech. / 720p, 24fps",
+          "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens",
+          "audio_payload": {
+            "speaker": "none",
+            "dialogue": "",
+            "delivery": "none"
+          }
         }
       ]
     }
