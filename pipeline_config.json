@@ -1,6 +1,21 @@
 {
-  "model_name": "veo-3.1-generate-preview",
+  "video_provider": "grok",
+  "character_design_provider": "grok",
+  "qa_provider": "grok",
+  "image_model_name": "grok-imagine-image-quality",
+  "qa_model_name": "grok-4.5",
+  "model_name": "grok-imagine-video",
   "use_video_audio_for_music": true,
+  "regenerate_silent_clips": true,
+  "merge_scene_after_each_clip": true,
+  "smart_continuation": true,
+  "qa_retry_on_fail": true,
+  "qa_max_retries": 2,
+  "ensure_dialogue_audio": true,
+  "dialogue_tts_volume": 1.0,
+  "native_audio_mix_volume": 0.35,
   "aspect_ratio": "16:9",
-  "duration_seconds": 8
+  "duration_seconds": 8,
+  "resolution": "720p",
+  "qa_frame_count": 4
 }

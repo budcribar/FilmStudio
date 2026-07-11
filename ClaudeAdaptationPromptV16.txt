@@ -1,0 +1,262 @@
+Act as an expert screenwriter, cinematic narrative architect, and AI production-pipeline engineer. Your task is to adapt a specific book into a 90-minute feature film, expressed as a strictly valid JSON production blueprint for a configurable video backend and a provider-agnostic music-generation API.
+
+================================================================
+ACTIVE VIDEO PROVIDER PROFILE (REQUIRED)
+================================================================
+Before writing any scene, read the profile name provided by the operator:
+
+  VIDEO_PROVIDER = {{VIDEO_PROVIDER}}
+  # Allowed values: "grok" | "veo"
+  # If the operator omits it, default to "grok".
+
+Apply ONLY the matching profile rules below for clip durations, continuation, and prompt length.
+Keep the JSON field names stable across providers (`veo_clips`, `veo_continuation_source`) so the same generation pipeline can load either profile without schema migration. Treat those names as clip-plan fields, not as a hard requirement to use Google Veo.
+
+You must follow all constraints, engineering rules, and JSON structure exactly.
+If any constraints conflict, prioritize in this order:
+1. JSON validity
+2. Runtime math accuracy
+3. Active video-provider clip mechanics
+4. Narrative fidelity
+
+Only characters defined in `character_seed_tokens` may appear on screen or as `audio_payload.speaker` (except speaker `"none"` for silent/ambient clips).
+Do not add fields not explicitly defined in the JSON schema (except the top-level resume fields already listed).
+
+================================================================
+VIDEO PROVIDER PROFILES
+================================================================
+
+----- PROFILE: veo -----
+Use when VIDEO_PROVIDER = "veo" (Google Veo 3.1 / Gemini video path).
+
+Clip durations (fixed):
+- Clip 1: 8 seconds, `veo_continuation_source: "none"`
+- Clip 2+: 7 seconds each, `veo_continuation_source: "extend_previous"` ONLY when the shot is a true continuous extension of the prior clip (same location, same primary framing intent, continuous action).
+- Scene `total_estimated_duration_seconds` must land on the 8+7n grid: 8, 15, 22, 29, 36, 43, ... (max 134 seconds per scene).
+- Timestamp pattern: 0:00-0:08, 0:08-0:15, 0:15-0:22, ...
+- clip_count = 1 + ceil((scene_duration - 8) / 7)
+- `visual_prompt` max length: 400 characters (including the trailing " / 720p, 24fps")
+- Prefer short identity restatements in every extend clip (≥80% of wardrobe/identity from the scene's first clip)
+
+Even on Veo: do NOT mark a clip `extend_previous` if it is a hard cut, wide/establishing shot, flashback, exterior/interior location change, or multi-setup "CUT TO" beat. Those must be `none` (fresh generation with character refs).
+
+----- PROFILE: grok -----
+Use when VIDEO_PROVIDER = "grok" (xAI Grok Imagine video).
+
+Clip durations (flexible, but keep timestamps exact):
+- Prefer 6–10 seconds per clip (default 8) for readability and cost.
+- You MAY still use the 8+7n grid for compatibility with existing tooling, but it is not required by Grok.
+- Per-clip duration must be an integer in [1, 15].
+- Scene duration = exact sum of clip durations; max 134 seconds per scene; min 8 seconds.
+- Timestamp ranges must be cumulative, contiguous, and match those durations exactly.
+- `visual_prompt` max length: 800 characters (including the trailing " / 720p, 24fps") — still prefer concise shots under ~500 when possible.
+- Native audio is generated with the video: always fill `audio_payload` intentionally (dialogue and/or ambient intent via speaker/dialogue fields).
+
+Continuation rules for Grok (CRITICAL):
+- `veo_continuation_source: "none"` for:
+  - first clip of every scene
+  - any hard cut / new camera setup
+  - WIDE SHOT, ESTABLISHING, AERIAL, EXT./EXTERIOR, INT. location change
+  - FLASHBACK / BACK TO PRESENT / MEANWHILE / ELSEWHERE
+  - any prompt that would require leaving the previous last frame's composition
+- `veo_continuation_source: "extend_previous"` ONLY when the next clip is a true continuous action in the same setup (same place, same primary subject framing intent, no new establishing shot).
+- ONE primary visual setup per clip. Do not pack "WIDE SHOT of X. CUT to Y walking..." into a single clip. Split into two clips, or rewrite as one smooth continuous camera transition if they must share one clip.
+
+Character locking for Grok:
+- Put locked identity cues in the visual prompt (age, build, hair, wardrobe).
+- `reference_image_placeholder` files are used by the pipeline as reference images on fresh (`none`) clips.
+
+================================================================
+GLOBAL RULES & ENGINEERING CONSTRAINTS (ALL PROVIDERS)
+================================================================
+
+1. Runtime & Scene Duration
+- Let the story dictate the number of scenes.
+- No scene may exceed 134 seconds.
+- No scene may be shorter than 8 seconds.
+- Before returning final JSON, sum all `total_estimated_duration_seconds`.
+- Total must equal 5400 seconds (90 min) ± 10% (between 4860 and 5940 seconds).
+- If runtime falls outside tolerance, adjust scene count and/or individual scene durations without altering narrative order or meaning.
+- If the active profile is `veo`, every scene duration must also satisfy the 8+7n grid.
+- If the active profile is `grok`, every scene duration must equal the sum of its clip durations (grid optional).
+- NOTE ON SCALE: If generating the entire 90-minute film in a single turn exceeds output token limits, this is an explicit exception to priority #2 — a partial delivery is expected not to meet the 5400s±10% total on its own. Deliver as many complete scenes as fit, starting from scene 1, and include:
+  - `next_scene_number`: integer to resume from, or `null` if complete
+  - `cumulative_duration_seconds`: sum of delivered scene durations so far
+
+2. Clip Array (`veo_clips`) — shared schema
+Each scene contains a `veo_clips` array. Every clip must include:
+- `clip_number` (1-based integer)
+- `timestamp` (e.g. "00:00-00:08")
+- `veo_continuation_source` ("none" | "extend_previous")
+- `visual_prompt`
+- `negative_prompt` (exact global string below)
+- `audio_payload` object with `speaker` and `dialogue`
+
+Shot-writing quality bar:
+- One clear camera setup and action per clip.
+- State location, time-of-day feel, subject, action, and wardrobe.
+- Restate character identity tokens (Character_P, etc.) whenever they appear on screen.
+- End every visual prompt with: ` / 720p, 24fps`
+- Prefer continuous action language over edit language. If you need a cut, start a new clip with `veo_continuation_source: "none"`.
+
+3. Character Identity & Wardrobe Continuity
+- Use `character_seed_tokens` exclusively for anyone who speaks or appears.
+- Each character must include:
+  - `description`: rich identity (age, build, hair, face, default wardrobe, flashback age variants if needed)
+  - `reference_image_placeholder`: e.g. `character_p_ref.png`
+- Do not invent named on-screen speakers that are missing from `character_seed_tokens`.
+- Track story day and location changes to justify wardrobe evolution.
+- Wardrobe changes must be incremental unless a new day/location is explicit.
+- In every `extend_previous` clip, restate ≥80% of the on-screen character's identity + wardrobe from the first clip of that continuous beat.
+
+4. Dialogue Continuity & Speaker Separation
+- Each clip has a single `audio_payload.speaker`.
+- `dialogue` contains ONLY clean spoken words for that speaker (no "he said", action tags, or multi-speaker turns).
+- If a clip is pure narration/VO with no on-screen second speaker, use the narrator character (often Character_P).
+- If silent/ambient only: `speaker: "none"`, `dialogue: ""`.
+- Never end a spoken line exactly at a clip boundary unless it is the final clip of the scene or the next clip is intentionally silent.
+- Where dialogue spans two clips, begin the bridging phrase 1–2 seconds before the boundary and finish 1–2 seconds after.
+
+Provider note:
+- On `veo`, bridging dialogue helps extension audio continuity.
+- On `grok`, each clip regenerates native audio; still write clean per-clip dialogue, and avoid mid-word splits.
+
+5. Visual Prompt Length
+- `veo` profile: under 400 characters.
+- `grok` profile: under 800 characters (prefer tighter).
+- Always include ` / 720p, 24fps` at the end.
+
+6. Resolution & Frame Rate Lock
+- Global lock: 720p, 24fps.
+- Never mix resolutions within a scene.
+
+7. Negative Prompting
+Every clip must include this EXACT `negative_prompt` string verbatim:
+"no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens"
+
+8. File Pipeline Organization
+- One planned output per scene (e.g., `Scene_01_Day1_Kitchen_Intro`).
+- Zero-padded scene filenames.
+
+9. String Escape Rules
+- Use a forward slash ( / ) to represent line breaks in dialogue and lyrics.
+- Never use `\n` or raw line breaks inside JSON strings.
+- Escape internal double quotes with \".
+
+10. Provider-Agnostic Music Bed Structure
+Each scene contains a `music_bed` object with:
+- `style_description`
+- `vocal_style`
+- `song_structure`: ordered array of sections, each with:
+  - `section_label`
+  - `section_type` (instrumental or vocal)
+  - `is_repeat_of` (null or reference to earlier section)
+  - `duration_seconds`
+  - `production_notes` (array)
+  - `lyrics` (string or null)
+
+Rules:
+- Do not flatten music into a single prompt.
+- Do not reference any specific music vendor API.
+- When `is_repeat_of` is set, `lyrics` and `production_notes` must be null/empty, but `duration_seconds` must still be set.
+- Music section durations must sum EXACTLY to the scene's `total_estimated_duration_seconds`.
+
+11. Timestamp Validation
+- All timestamps must be mathematically correct, cumulative, and gap-free.
+
+12. JSON Safety
+- No trailing commas.
+- No comments.
+- No text outside the JSON object.
+- Escape all quotes inside dialogue/lyrics.
+
+13. Pipeline Compatibility Hints (do not add as JSON fields unless already in schema)
+- The generation engine may:
+  - regenerate clips that fail QA
+  - ignore `extend_previous` when the visual is a hard cut (safety net)
+  - use character reference images on `none` clips
+  - use native video audio and/or a separate music bed
+Write the blueprint as if those safety nets did not exist: get continuation and shot design right in the JSON.
+
+================================================================
+FINAL OUTPUT FORMAT (STRICT JSON)
+================================================================
+
+Return a single JSON object with this exact structure:
+
+{
+  "movie_title": "string",
+  "source_book_title": "string",
+  "next_scene_number": null,
+  "cumulative_duration_seconds": 0,
+  "global_production_variables": {
+    "target_aspect_ratio": "16:9 cinematic widescreen",
+    "resolution": "720p",
+    "frame_rate": "24fps",
+    "directorial_treatment": "Shot on 35mm anamorphic lenses, high-contrast cinematic lighting, rich shadow detail, film grain, steady tracking camera movements",
+    "total_runtime_target_seconds": 5400,
+    "video_provider_profile": "grok",
+    "character_seed_tokens": {
+      "Character_A": {
+        "description": "Rich identity: age, build, hair, face, default wardrobe, flashback age if needed",
+        "reference_image_placeholder": "character_a_ref.png"
+      },
+      "Character_B": {
+        "description": "Description of traits...",
+        "reference_image_placeholder": "character_b_ref.png"
+      }
+    }
+  },
+  "scenes": [
+    {
+      "scene_number": 1,
+      "setting": "Day 1 - Kitchen Location",
+      "total_estimated_duration_seconds": 15,
+      "scene_filename": "Scene_01_Day1_Kitchen_Intro",
+      "transition_type": "cut",
+      "lighting_continuity_token": "Warm morning sun through east-facing window, soft practicals",
+      "music_bed": {
+        "style_description": "string",
+        "vocal_style": "string",
+        "song_structure": [
+          {
+            "section_label": "Intro",
+            "section_type": "instrumental",
+            "is_repeat_of": null,
+            "duration_seconds": 15,
+            "production_notes": ["string", "string"],
+            "lyrics": null
+          }
+        ]
+      },
+      "veo_clips": [
+        {
+          "clip_number": 1,
+          "timestamp": "0:00-0:08",
+          "veo_continuation_source": "none",
+          "visual_prompt": "string (length per active profile) ending with / 720p, 24fps",
+          "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens",
+          "audio_payload": { "speaker": "Character_A", "dialogue": "string" }
+        },
+        {
+          "clip_number": 2,
+          "timestamp": "0:08-0:15",
+          "veo_continuation_source": "extend_previous",
+          "visual_prompt": "Continuous same-setup action only; otherwise use none. / 720p, 24fps",
+          "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens",
+          "audio_payload": { "speaker": "none", "dialogue": "" }
+        }
+      ]
+    }
+  ]
+}
+
+================================================================
+OPERATOR QUICK START
+================================================================
+1. Set VIDEO_PROVIDER to grok or veo (replace {{VIDEO_PROVIDER}}).
+2. Provide the source book text / pages to adapt.
+3. Require the model to restate which profile it applied in a single pre-JSON line ONLY if the host allows non-JSON preamble; otherwise put `"video_provider_profile": "grok|veo"` inside `global_production_variables` and output pure JSON.
+4. Validate: runtime band, timestamp math, music sum, continuation rules, character roster closed-world, negative_prompt exact match.
+
+END OF PROMPT V16

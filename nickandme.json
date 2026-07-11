@@ -11,20 +11,28 @@
     "total_runtime_target_seconds": 5400,
     "character_seed_tokens": {
       "Character_P": {
-        "description": "Adult man, 28 years old, introspective, thin frame, works at a pizza joint, gradually gains confidence.",
+        "description": "Adult man, 28, thin wiry frame, medium height, short dark brown hair, thoughtful brown eyes, slightly tired face, usually a red pizza-delivery polo or light blue t-shirt and jeans; in childhood flashbacks about 8 years old, smaller, curious, same family features.",
         "reference_image_placeholder": "character_p_ref.png"
       },
       "Character_N": {
-        "description": "Older brother, 31 years old, physically imposing, muscular, intimidating presence, reddish-brown hair, complex mix of dominance, protectiveness, reckless generosity, and volatile impulsiveness.",
+        "description": "Older brother, 31, tall muscular build, reddish-brown hair, strong jaw, intense eyes, intimidating but protective presence; often gym clothes, factory workwear, or casual street clothes; in childhood flashbacks about 12, sturdy kid, same reddish-brown hair, defiant stance.",
         "reference_image_placeholder": "character_n_ref.png"
       },
       "Character_M": {
-        "description": "Elderly woman, narrator's mother, brown hair, increasingly confused and forgetful, frail appearance.",
+        "description": "Elderly mother, mid-60s to 70s, thin frail frame, brown hair going gray, soft lined face, often house clothes or a simple cardigan; increasingly confused distant eyes; moves carefully, sometimes reaches for walls for balance.",
         "reference_image_placeholder": "character_m_ref.png"
       },
       "Character_S": {
-        "description": "Young woman, similar age to narrator, calm demeanor, light blue 'ocean' eyes, pale skin, short brown hair, intelligent and empathetic.",
+        "description": "Young woman near 28, calm intelligent presence, light blue ocean eyes, pale skin, short brown hair, soft features, often casual tops (greens/neutrals) or simple dresses; empathetic expression, steady posture.",
         "reference_image_placeholder": "character_s_ref.png"
+      },
+      "Kevin McCleary": {
+        "description": "Adult man, mid-40s, solid build, short neat brown hair, practical work clothes, calm supervisory presence, weathered but kind face.",
+        "reference_image_placeholder": "character_kevin_mccleary_ref.png"
+      },
+      "Bob": {
+        "description": "Adult man, late 40s to early 50s, average build, thinning hair, friendly service-worker look, simple polo or work shirt, approachable everyday face.",
+        "reference_image_placeholder": "character_bob_ref.png"
       }
     }
   },
@@ -111,8 +119,8 @@
         {
           "clip_number": 2,
           "timestamp": "00:08-00:15",
-          "veo_continuation_source": "extend_previous",
-          "visual_prompt": "WIDE SHOT of a rundown apartment building on Kirk Street under a gray winter sky, dry leaves and snow flurries swirling in a bitter cold wind. CUT to Character_P, still wearing a pizza uniform, walking through a dimly lit hallway. / 720p, 24fps",
+          "veo_continuation_source": "none",
+          "visual_prompt": "Single continuous cinematic sequence (smooth transition, not a random jump): Begin with WIDE SHOT of a rundown apartment building on Kirk Street under a gray winter sky, dry leaves and snow flurries swirling in a bitter cold wind. Then the camera transitions into Character_P, still wearing a pizza uniform, walking through a dimly lit hallway. / 720p, 24fps",
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens",
           "audio_payload": {
             "speaker": "Character_P",
@@ -122,8 +130,8 @@
         {
           "clip_number": 3,
           "timestamp": "00:15-00:22",
-          "veo_continuation_source": "extend_previous",
-          "visual_prompt": "FLASHBACK to a busy, fluorescent-lit gym (Moxie's). Character_N (older brother, muscular, reddish-brown hair), shirtless, performs preacher curls with a 40-pound bar, sweat dripping. / 720p, 24fps",
+          "veo_continuation_source": "none",
+          "visual_prompt": "Distinct FLASHBACK in a different time/place: FLASHBACK to a busy, fluorescent-lit gym (Moxie's). Character_N (older brother, muscular, reddish-brown hair), shirtless, performs preacher curls with a 40-pound bar, sweat dripping. / 720p, 24fps",
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens",
           "audio_payload": {
             "speaker": "none",
@@ -144,7 +152,7 @@
         {
           "clip_number": 5,
           "timestamp": "00:29-00:36",
-          "veo_continuation_source": "extend_previous",
+          "veo_continuation_source": "none",
           "visual_prompt": "Character_N effortlessly lifts the 50-pound bar, a slight smirk on his face, eyes scanning the room. Character_P, still observing, shakes his head slightly. / 720p, 24fps",
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens",
           "audio_payload": {
@@ -238,11 +246,11 @@
           "clip_number": 1,
           "timestamp": "00:36-00:44",
           "veo_continuation_source": "none",
-          "visual_prompt": "FLASHBACK: Young Character_P (about 8 years old), small and curious, watching Young Character_N (about 12 years old, already sturdy), playing kickball in a dusty alley with other kids. Dented garbage cans serve as bases. / 720p, 24fps",
+          "visual_prompt": "Distinct FLASHBACK in a different time/place: FLASHBACK: Young Character_P (about 8 years old), small and curious, watching Young Character_N (about 12 years old, already sturdy), playing kickball in a dusty alley with other kids. Dented garbage cans serve as bases. / 720p, 24fps",
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens",
           "audio_payload": {
             "speaker": "Character_P",
-            "dialogue": "The thing about Nick was, he was a real-life Viking \u2013 you know? What I mean is we had these ancestors that came from Norway or Sweden."
+            "dialogue": "The thing about Nick was, he was a real-life Viking – you know? What I mean is we had these ancestors that came from Norway or Sweden."
           }
         },
         {
@@ -270,7 +278,7 @@
         {
           "clip_number": 4,
           "timestamp": "00:58-01:05",
-          "veo_continuation_source": "extend_previous",
+          "veo_continuation_source": "none",
           "visual_prompt": "BACK to present: Character_P (thin frame, pizza uniform) stands in the apartment kitchen, wiping down the counter, a faint, melancholic smile on his face. / 720p, 24fps",
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens",
           "audio_payload": {
@@ -384,7 +392,7 @@
         {
           "clip_number": 2,
           "timestamp": "01:27-01:34",
-          "veo_continuation_source": "extend_previous",
+          "veo_continuation_source": "none",
           "visual_prompt": "WIDE SHOT of a bustling, noisy metal factory floor. Character_N (muscular, reddish-brown hair) operates a large crane, moving heavy metal beams with practiced precision. / 720p, 24fps",
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens",
           "audio_payload": {
@@ -395,7 +403,7 @@
         {
           "clip_number": 3,
           "timestamp": "01:34-01:41",
-          "veo_continuation_source": "extend_previous",
+          "veo_continuation_source": "none",
           "visual_prompt": "Character_P sits at the kitchen table, head in hands, clearly exhausted. Character_M (elderly, frail, brown hair) stares blankly ahead. / 720p, 24fps",
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens",
           "audio_payload": {
@@ -684,7 +692,7 @@
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens",
           "audio_payload": {
             "speaker": "Character_P",
-            "dialogue": "My mom and dad named her after an Irish goddess, and then something about the River Shannon. I wasn't really listening though, because she had the coolest eyes I ever saw. But it was weird \u2013 I felt like I had known her from before. Like we were old friends."
+            "dialogue": "My mom and dad named her after an Irish goddess, and then something about the River Shannon. I wasn't really listening though, because she had the coolest eyes I ever saw. But it was weird – I felt like I had known her from before. Like we were old friends."
           }
         }
       ]
@@ -810,7 +818,7 @@
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens",
           "audio_payload": {
             "speaker": "Character_P",
-            "dialogue": "Wow, she was losing it. I would have to tell Nick about this. I'm sure he'll get mad or something \u2013 like it was my fault. Later on I went down to Joe's to get a beer. I had to get out of the apartment."
+            "dialogue": "Wow, she was losing it. I would have to tell Nick about this. I'm sure he'll get mad or something – like it was my fault. Later on I went down to Joe's to get a beer. I had to get out of the apartment."
           }
         }
       ]
@@ -936,7 +944,7 @@
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens",
           "audio_payload": {
             "speaker": "Character_P",
-            "dialogue": "Of course not. I tell you what, I'll go check on him. I'll make sure everything is okay. Okay? Ma \u2013 you okay? / I had to get away from her for a while, that's all."
+            "dialogue": "Of course not. I tell you what, I'll go check on him. I'll make sure everything is okay. Okay? Ma – you okay? / I had to get away from her for a while, that's all."
           }
         },
         {
@@ -1161,7 +1169,7 @@
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens",
           "audio_payload": {
             "speaker": "Character_P",
-            "dialogue": "I walked real fast over there and saw they were open till 9 o\u2019clock, so I had a little time. The place was warm and quiet, like a church but without the guilt."
+            "dialogue": "I walked real fast over there and saw they were open till 9 o’clock, so I had a little time. The place was warm and quiet, like a church but without the guilt."
           }
         },
         {
@@ -1293,7 +1301,7 @@
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens",
           "audio_payload": {
             "speaker": "Character_P",
-            "dialogue": "I asked her what she did last night. Why didn\u2019t she stay up till I got home? I tried to talk her into going for a walk. You would have thought I asked her to run a marathon or something."
+            "dialogue": "I asked her what she did last night. Why didn’t she stay up till I got home? I tried to talk her into going for a walk. You would have thought I asked her to run a marathon or something."
           }
         },
         {
@@ -1304,7 +1312,7 @@
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens",
           "audio_payload": {
             "speaker": "Character_M",
-            "dialogue": "It\u2019s so cold outside. I don\u2019t have a nice coat to wear. Where are we going anyway? It just went on and on and on."
+            "dialogue": "It’s so cold outside. I don’t have a nice coat to wear. Where are we going anyway? It just went on and on and on."
           }
         },
         {
@@ -1326,7 +1334,7 @@
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens",
           "audio_payload": {
             "speaker": "Character_P",
-            "dialogue": "I swear sometimes, there\u2019s no reason for me being born anyway, except to have somebody for Nick to boss around. I told Ma I was leaving for a little while, and walked out."
+            "dialogue": "I swear sometimes, there’s no reason for me being born anyway, except to have somebody for Nick to boss around. I told Ma I was leaving for a little while, and walked out."
           }
         }
       ]
@@ -1421,7 +1429,7 @@
         {
           "clip_number": 4,
           "timestamp": "06:43-06:50",
-          "veo_continuation_source": "extend_previous",
+          "veo_continuation_source": "none",
           "visual_prompt": "Character_P (young man, thin frame, green jacket) walks inside 'The Java Hut'. The interior is warm and packed with college students studying at small tables, textbooks open. / 720p, 24fps",
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens",
           "audio_payload": {
@@ -1513,7 +1521,7 @@
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens",
           "audio_payload": {
             "speaker": "Character_P",
-            "dialogue": "I saw her near the wall in the back at a small table. What are we doing? Homework? I didn\u2019t care. All I saw were those eyes."
+            "dialogue": "I saw her near the wall in the back at a small table. What are we doing? Homework? I didn’t care. All I saw were those eyes."
           }
         },
         {
@@ -2194,7 +2202,7 @@
           "clip_number": 1,
           "timestamp": "10:19-10:27",
           "veo_continuation_source": "none",
-          "visual_prompt": "FLASHBACK: Young Character_N (about 16 years old, muscular build, reddish-brown hair, black leather jacket) walks stealthily down a dark suburban street at night. / 720p, 24fps",
+          "visual_prompt": "Distinct FLASHBACK in a different time/place: FLASHBACK: Young Character_N (about 16 years old, muscular build, reddish-brown hair, black leather jacket) walks stealthily down a dark suburban street at night. / 720p, 24fps",
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens",
           "audio_payload": {
             "speaker": "Character_P",
@@ -2204,8 +2212,8 @@
         {
           "clip_number": 2,
           "timestamp": "10:27-10:34",
-          "veo_continuation_source": "extend_previous",
-          "visual_prompt": "FLASHBACK: Young Character_N (about 16, black leather jacket) squeezes a plastic can of lighter fluid, spraying a stream in a zig-zag pattern across Steve's dark front lawn. / 720p, 24fps",
+          "veo_continuation_source": "none",
+          "visual_prompt": "Distinct FLASHBACK in a different time/place: FLASHBACK: Young Character_N (about 16, black leather jacket) squeezes a plastic can of lighter fluid, spraying a stream in a zig-zag pattern across Steve's dark front lawn. / 720p, 24fps",
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens",
           "audio_payload": {
             "speaker": "Character_P",
@@ -2215,8 +2223,8 @@
         {
           "clip_number": 3,
           "timestamp": "10:34-10:41",
-          "veo_continuation_source": "extend_previous",
-          "visual_prompt": "FLASHBACK: Young Character_N (black leather jacket) strikes a match and tosses it onto the grass. The lawn immediately bursts into bright orange, crackling lines of fire. / 720p, 24fps",
+          "veo_continuation_source": "none",
+          "visual_prompt": "Distinct FLASHBACK in a different time/place: FLASHBACK: Young Character_N (black leather jacket) strikes a match and tosses it onto the grass. The lawn immediately bursts into bright orange, crackling lines of fire. / 720p, 24fps",
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens",
           "audio_payload": {
             "speaker": "Character_P",
@@ -2226,7 +2234,7 @@
         {
           "clip_number": 4,
           "timestamp": "10:41-10:48",
-          "veo_continuation_source": "extend_previous",
+          "veo_continuation_source": "none",
           "visual_prompt": "BACK TO PRESENT: Character_P (28 years old, thin frame, grey t-shirt) sits on his bed, looking deeply reflective, staring out his dark bedroom window as the memory fades. / 720p, 24fps",
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens",
           "audio_payload": {
@@ -2294,7 +2302,7 @@
           "clip_number": 1,
           "timestamp": "10:48-10:56",
           "veo_continuation_source": "none",
-          "visual_prompt": "FLASHBACK/MONTAGE: Character_P (28 years old, thin frame, green canvas jacket) and Character_S (short brown hair, black V-neck) walk slowly along a park path. The leaves on the ground dissolve from brilliant gold and red autumn foliage to white snow. / 720p, 24fps",
+          "visual_prompt": "Distinct FLASHBACK in a different time/place: FLASHBACK/MONTAGE: Character_P (28 years old, thin frame, green canvas jacket) and Character_S (short brown hair, black V-neck) walk slowly along a park path. The leaves on the ground dissolve from brilliant gold and red autumn foliage to white snow. / 720p, 24fps",
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens",
           "audio_payload": {
             "speaker": "Character_P",
@@ -2304,8 +2312,8 @@
         {
           "clip_number": 2,
           "timestamp": "10:56-11:03",
-          "veo_continuation_source": "extend_previous",
-          "visual_prompt": "FLASHBACK/MONTAGE: In a split-screen dissolve, Character_S (short brown hair, black V-neck) picks up a dry orange leaf in autumn, which then transitions in her hand to a fresh, budding green leaf under late spring sunlight. / 720p, 24fps",
+          "veo_continuation_source": "none",
+          "visual_prompt": "Distinct FLASHBACK in a different time/place: FLASHBACK/MONTAGE: In a split-screen dissolve, Character_S (short brown hair, black V-neck) picks up a dry orange leaf in autumn, which then transitions in her hand to a fresh, budding green leaf under late spring sunlight. / 720p, 24fps",
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens",
           "audio_payload": {
             "speaker": "Character_S",
@@ -2320,7 +2328,7 @@
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens",
           "audio_payload": {
             "speaker": "Character_P",
-            "dialogue": "Sometimes when people get caught in bad situations, they change into something better \u2013 just like leaves. / She said that was beautiful."
+            "dialogue": "Sometimes when people get caught in bad situations, they change into something better – just like leaves. / She said that was beautiful."
           }
         },
         {
@@ -2519,13 +2527,13 @@
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens",
           "audio_payload": {
             "speaker": "Character_P",
-            "dialogue": "I called her up and told her I wished she would finally come over to my place, and even meet my Ma. I wanted to feel how I felt when I was with her \u2013 fresh, new, and looking forward to the future."
+            "dialogue": "I called her up and told her I wished she would finally come over to my place, and even meet my Ma. I wanted to feel how I felt when I was with her – fresh, new, and looking forward to the future."
           }
         },
         {
           "clip_number": 3,
           "timestamp": "12:01-12:08",
-          "veo_continuation_source": "extend_previous",
+          "veo_continuation_source": "none",
           "visual_prompt": "Character_P (thin frame, grey t-shirt) lies flat on his back on his bedroom floor with his eyes closed, practicing Savasana, a peaceful expression on his face. / 720p, 24fps",
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens",
           "audio_payload": {
@@ -2783,7 +2791,7 @@
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens",
           "audio_payload": {
             "speaker": "Character_P",
-            "dialogue": "He suddenly stabbed the longest knife I have ever imagined into my chest. I couldn't believe it. Nick had killed me \u2013 Nick had killed me. I felt betrayed and so confused."
+            "dialogue": "He suddenly stabbed the longest knife I have ever imagined into my chest. I couldn't believe it. Nick had killed me – Nick had killed me. I felt betrayed and so confused."
           }
         },
         {
@@ -3009,7 +3017,7 @@
           "clip_number": 1,
           "timestamp": "14:17-14:25",
           "veo_continuation_source": "none",
-          "visual_prompt": "FLASHBACK: Young Character_P (about 9 years old, thin frame, red t-shirt, blue jeans) and Young Bobby (about 9, striped blue t-shirt) laugh hysterically in a grassy schoolyard. / 720p, 24fps",
+          "visual_prompt": "Distinct FLASHBACK in a different time/place: FLASHBACK: Young Character_P (about 9 years old, thin frame, red t-shirt, blue jeans) and Young Bobby (about 9, striped blue t-shirt) laugh hysterically in a grassy schoolyard. / 720p, 24fps",
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens",
           "audio_payload": {
             "speaker": "Character_P",
@@ -3019,8 +3027,8 @@
         {
           "clip_number": 2,
           "timestamp": "14:25-14:32",
-          "veo_continuation_source": "extend_previous",
-          "visual_prompt": "FLASHBACK: Young Jennifer Bales (about 9, brown hair in long braids with red bows, denim overall dress) stands with arms crossed, shaking her head sternly at Young Character_P (thin frame, red t-shirt). / 720p, 24fps",
+          "veo_continuation_source": "none",
+          "visual_prompt": "Distinct FLASHBACK in a different time/place: FLASHBACK: Young Jennifer Bales (about 9, brown hair in long braids with red bows, denim overall dress) stands with arms crossed, shaking her head sternly at Young Character_P (thin frame, red t-shirt). / 720p, 24fps",
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens",
           "audio_payload": {
             "speaker": "Character_P",
@@ -3030,8 +3038,8 @@
         {
           "clip_number": 3,
           "timestamp": "14:32-14:39",
-          "veo_continuation_source": "extend_previous",
-          "visual_prompt": "FLASHBACK: Mrs. Stark (middle-aged female teacher, glasses on a chain, patterned blouse, dark skirt) stands menacingly over Young Character_P (thin frame, red t-shirt) and Young Bobby (striped t-shirt). / 720p, 24fps",
+          "veo_continuation_source": "none",
+          "visual_prompt": "Distinct FLASHBACK in a different time/place: FLASHBACK: Mrs. Stark (middle-aged female teacher, glasses on a chain, patterned blouse, dark skirt) stands menacingly over Young Character_P (thin frame, red t-shirt) and Young Bobby (striped t-shirt). / 720p, 24fps",
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens",
           "audio_payload": {
             "speaker": "Character_P",
@@ -3041,8 +3049,8 @@
         {
           "clip_number": 4,
           "timestamp": "14:39-14:46",
-          "veo_continuation_source": "extend_previous",
-          "visual_prompt": "FLASHBACK: Mrs. Stark (glasses, patterned blouse) points toward the school building, speaking angrily. Young Character_P (thin frame, red t-shirt) and Young Bobby (striped t-shirt) look down, terrified. / 720p, 24fps",
+          "veo_continuation_source": "none",
+          "visual_prompt": "Distinct FLASHBACK in a different time/place: FLASHBACK: Mrs. Stark (glasses, patterned blouse) points toward the school building, speaking angrily. Young Character_P (thin frame, red t-shirt) and Young Bobby (striped t-shirt) look down, terrified. / 720p, 24fps",
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens",
           "audio_payload": {
             "speaker": "Character_P",
@@ -3052,8 +3060,8 @@
         {
           "clip_number": 5,
           "timestamp": "14:46-14:53",
-          "veo_continuation_source": "extend_previous",
-          "visual_prompt": "FLASHBACK: Young Character_N (about 12 years old, sturdy build, reddish-brown hair, white t-shirt, blue jeans) walks over with a relaxed, confident posture, looking between Mrs. Stark and Young Character_P (thin frame, red t-shirt). / 720p, 24fps",
+          "veo_continuation_source": "none",
+          "visual_prompt": "Distinct FLASHBACK in a different time/place: FLASHBACK: Young Character_N (about 12 years old, sturdy build, reddish-brown hair, white t-shirt, blue jeans) walks over with a relaxed, confident posture, looking between Mrs. Stark and Young Character_P (thin frame, red t-shirt). / 720p, 24fps",
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens",
           "audio_payload": {
             "speaker": "Character_P",
@@ -3130,7 +3138,7 @@
           "clip_number": 1,
           "timestamp": "14:53-15:01",
           "veo_continuation_source": "none",
-          "visual_prompt": "FLASHBACK: Young Character_N (about 12, white t-shirt) steps in front of Young Character_P (about 9, thin frame, red t-shirt), smiling charmingly at Mrs. Stark (glasses, patterned blouse). / 720p, 24fps",
+          "visual_prompt": "Distinct FLASHBACK in a different time/place: FLASHBACK: Young Character_N (about 12, white t-shirt) steps in front of Young Character_P (about 9, thin frame, red t-shirt), smiling charmingly at Mrs. Stark (glasses, patterned blouse). / 720p, 24fps",
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens",
           "audio_payload": {
             "speaker": "Character_P",
@@ -3140,8 +3148,8 @@
         {
           "clip_number": 2,
           "timestamp": "15:01-15:08",
-          "veo_continuation_source": "extend_previous",
-          "visual_prompt": "FLASHBACK: Mrs. Stark (glasses, patterned blouse) smiles warmly at Young Character_N (about 12, white t-shirt), nodding in agreement. Young Character_P (thin frame, red t-shirt) watches in disbelief. / 720p, 24fps",
+          "veo_continuation_source": "none",
+          "visual_prompt": "Distinct FLASHBACK in a different time/place: FLASHBACK: Mrs. Stark (glasses, patterned blouse) smiles warmly at Young Character_N (about 12, white t-shirt), nodding in agreement. Young Character_P (thin frame, red t-shirt) watches in disbelief. / 720p, 24fps",
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens",
           "audio_payload": {
             "speaker": "Character_P",
@@ -3151,8 +3159,8 @@
         {
           "clip_number": 3,
           "timestamp": "15:08-15:15",
-          "veo_continuation_source": "extend_previous",
-          "visual_prompt": "FLASHBACK: Young Character_P (thin frame, red t-shirt) and Young Bobby (striped t-shirt) look up at Young Character_N (about 12, white t-shirt) with absolute gratitude. Young Character_N smirks, warning them. / 720p, 24fps",
+          "veo_continuation_source": "none",
+          "visual_prompt": "Distinct FLASHBACK in a different time/place: FLASHBACK: Young Character_P (thin frame, red t-shirt) and Young Bobby (striped t-shirt) look up at Young Character_N (about 12, white t-shirt) with absolute gratitude. Young Character_N smirks, warning them. / 720p, 24fps",
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens",
           "audio_payload": {
             "speaker": "Character_P",
@@ -3162,8 +3170,8 @@
         {
           "clip_number": 4,
           "timestamp": "15:15-15:22",
-          "veo_continuation_source": "extend_previous",
-          "visual_prompt": "FLASHBACK: Young Character_N (about 12, white t-shirt) sits on the edge of Young Character_P's (about 9, thin frame, red t-shirt) bed at night, ruffling Young Character_P's hair. Young Character_P smiles. / 720p, 24fps",
+          "veo_continuation_source": "none",
+          "visual_prompt": "Distinct FLASHBACK in a different time/place: FLASHBACK: Young Character_N (about 12, white t-shirt) sits on the edge of Young Character_P's (about 9, thin frame, red t-shirt) bed at night, ruffling Young Character_P's hair. Young Character_P smiles. / 720p, 24fps",
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens",
           "audio_payload": {
             "speaker": "Character_P",
@@ -3173,8 +3181,8 @@
         {
           "clip_number": 5,
           "timestamp": "15:22-15:29",
-          "veo_continuation_source": "extend_previous",
-          "visual_prompt": "FLASHBACK: Young Character_P (about 9, thin frame, red t-shirt) lies in his bed, looking up at the ceiling with a feeling of safety and happiness. Young Character_N (about 12, white t-shirt) walks out. / 720p, 24fps",
+          "veo_continuation_source": "none",
+          "visual_prompt": "Distinct FLASHBACK in a different time/place: FLASHBACK: Young Character_P (about 9, thin frame, red t-shirt) lies in his bed, looking up at the ceiling with a feeling of safety and happiness. Young Character_N (about 12, white t-shirt) walks out. / 720p, 24fps",
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens",
           "audio_payload": {
             "speaker": "none",
@@ -3351,7 +3359,7 @@
         {
           "clip_number": 2,
           "timestamp": "16:06-16:13",
-          "veo_continuation_source": "extend_previous",
+          "veo_continuation_source": "none",
           "visual_prompt": "Character_P (thin frame, grey t-shirt) stands in the kitchen, filling the blue weekly pill organizer with tablets. The kitchen is clean and organized. / 720p, 24fps",
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens",
           "audio_payload": {
@@ -3378,7 +3386,7 @@
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens",
           "audio_payload": {
             "speaker": "Character_P",
-            "dialogue": "To actually feel like I was being valued for a decision that I had made \u2013 not that Nick made, but that I had made \u2013 felt awesome."
+            "dialogue": "To actually feel like I was being valued for a decision that I had made – not that Nick made, but that I had made – felt awesome."
           }
         }
       ]
@@ -3593,7 +3601,7 @@
           "clip_number": 1,
           "timestamp": "17:10-17:18",
           "veo_continuation_source": "none",
-          "visual_prompt": "FLASHBACK: Young Character_P (about 15 years old, thin frame, blue gym shorts, white t-shirt) is pushed against locker doors by a heavy high school bully (Donny Amstel). / 720p, 24fps",
+          "visual_prompt": "Distinct FLASHBACK in a different time/place: FLASHBACK: Young Character_P (about 15 years old, thin frame, blue gym shorts, white t-shirt) is pushed against locker doors by a heavy high school bully (Donny Amstel). / 720p, 24fps",
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens",
           "audio_payload": {
             "speaker": "Character_P",
@@ -3603,8 +3611,8 @@
         {
           "clip_number": 2,
           "timestamp": "17:18-17:25",
-          "veo_continuation_source": "extend_previous",
-          "visual_prompt": "FLASHBACK: Young Character_N (about 18, muscular build, reddish-brown hair, black leather jacket) blocks a high school bully (Donny Amstel) in his open front doorway, standing intimidatingly. / 720p, 24fps",
+          "veo_continuation_source": "none",
+          "visual_prompt": "Distinct FLASHBACK in a different time/place: FLASHBACK: Young Character_N (about 18, muscular build, reddish-brown hair, black leather jacket) blocks a high school bully (Donny Amstel) in his open front doorway, standing intimidatingly. / 720p, 24fps",
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens",
           "audio_payload": {
             "speaker": "Character_P",
@@ -3614,8 +3622,8 @@
         {
           "clip_number": 3,
           "timestamp": "17:25-17:32",
-          "veo_continuation_source": "extend_previous",
-          "visual_prompt": "FLASHBACK: Young Character_N (leather jacket) gestures aggressively at a terrified Donny Amstel inside the house. Young Character_N giggles as he speaks. / 720p, 24fps",
+          "veo_continuation_source": "none",
+          "visual_prompt": "Distinct FLASHBACK in a different time/place: FLASHBACK: Young Character_N (leather jacket) gestures aggressively at a terrified Donny Amstel inside the house. Young Character_N giggles as he speaks. / 720p, 24fps",
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens",
           "audio_payload": {
             "speaker": "Character_P",
@@ -3625,7 +3633,7 @@
         {
           "clip_number": 4,
           "timestamp": "17:32-17:39",
-          "veo_continuation_source": "extend_previous",
+          "veo_continuation_source": "none",
           "visual_prompt": "BACK TO PRESENT: Character_N (muscular build, suede jacket) slaps Character_P (thin frame, pizza uniform) lightly on the arm, smiling warmly at him in the living room. / 720p, 24fps",
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens",
           "audio_payload": {
@@ -3725,12 +3733,12 @@
         {
           "clip_number": 3,
           "timestamp": "18:01-18:08",
-          "veo_continuation_source": "extend_previous",
+          "veo_continuation_source": "none",
           "visual_prompt": "Character_P (thin frame, blue plaid shirt) sits in the campus library browsing reference catalogs, looking determined, though he glances briefly at some younger girls chatting. / 720p, 24fps",
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens",
           "audio_payload": {
             "speaker": "Character_P",
-            "dialogue": "We went to the library on campus, listened to the librarian talk. There were a few cute girls in there, younger than me. But when they opened their mouths \u2013 oh God! The stupid shit that came out was amazing."
+            "dialogue": "We went to the library on campus, listened to the librarian talk. There were a few cute girls in there, younger than me. But when they opened their mouths – oh God! The stupid shit that came out was amazing."
           }
         },
         {
@@ -4324,7 +4332,7 @@
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens",
           "audio_payload": {
             "speaker": "Character_P",
-            "dialogue": "It seemed strange, as if I were an alien visiting the planet, amused by the antics of the population. Everyone appeared familiar, but the lifestyle was starting to confuse me. It felt so \u2013 dumb. Just dumb."
+            "dialogue": "It seemed strange, as if I were an alien visiting the planet, amused by the antics of the population. Everyone appeared familiar, but the lifestyle was starting to confuse me. It felt so – dumb. Just dumb."
           }
         },
         {
@@ -4597,7 +4605,7 @@
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens",
           "audio_payload": {
             "speaker": "Character_P",
-            "dialogue": "I stepped up closer than I ever dared. Nick, listen \u2013 you don't have a problem with this guy. Lindsey can see whoever she wants. Leave it. Keep out of it! Nick screamed. You're next if you don't get out of my face!"
+            "dialogue": "I stepped up closer than I ever dared. Nick, listen – you don't have a problem with this guy. Lindsey can see whoever she wants. Leave it. Keep out of it! Nick screamed. You're next if you don't get out of my face!"
           }
         },
         {
@@ -4625,7 +4633,7 @@
         {
           "clip_number": 7,
           "timestamp": "22:34-22:41",
-          "veo_continuation_source": "extend_previous",
+          "veo_continuation_source": "none",
           "visual_prompt": "Character_P (thin frame, dark grey hoodie) sprints at high speed down a dark, cold city sidewalk, leaping over trash cans and dodging other pedestrians. / 720p, 24fps",
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens",
           "audio_payload": {
@@ -5003,7 +5011,7 @@
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens",
           "audio_payload": {
             "speaker": "Character_P",
-            "dialogue": "She spread her arms, her white sleeves blowing like wings. An invisible force pushed Nick back. Good against evil \u2013 water against fire. Nick's face was wild because his weapon failed him. He shrank to normal size."
+            "dialogue": "She spread her arms, her white sleeves blowing like wings. An invisible force pushed Nick back. Good against evil – water against fire. Nick's face was wild because his weapon failed him. He shrank to normal size."
           }
         },
         {
@@ -5088,7 +5096,7 @@
         {
           "clip_number": 3,
           "timestamp": "24:51-24:58",
-          "veo_continuation_source": "extend_previous",
+          "veo_continuation_source": "none",
           "visual_prompt": "Bright, golden 9:00 AM morning sunlight floods the bedroom. Character_P (thin frame) and Character_S (short brown hair) lie in bed, waking up slowly and smiling at each other. / 720p, 24fps",
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens",
           "audio_payload": {
@@ -5330,7 +5338,7 @@
         {
           "clip_number": 4,
           "timestamp": "26:03-26:10",
-          "veo_continuation_source": "extend_previous",
+          "veo_continuation_source": "none",
           "visual_prompt": "Character_P (thin frame, grey t-shirt) walks down a leafy college campus sidewalk, a textbook tucked under his arm, looking thoughtful and slightly exhausted. / 720p, 24fps",
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens",
           "audio_payload": {
@@ -5422,7 +5430,7 @@
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens",
           "audio_payload": {
             "speaker": "Character_P",
-            "dialogue": "I was writing a little paper on Rene Descartes, the founder of modern philosophy. He was known to say, 'I think, therefore I am.' We were talking in class about dualism \u2013 the mind versus the body. I was floundering."
+            "dialogue": "I was writing a little paper on Rene Descartes, the founder of modern philosophy. He was known to say, 'I think, therefore I am.' We were talking in class about dualism – the mind versus the body. I was floundering."
           }
         },
         {
@@ -5608,7 +5616,7 @@
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens",
           "audio_payload": {
             "speaker": "Character_P",
-            "dialogue": "Trust me, take your time. It'll just make you feel inferior. Where are your parents now? / Where all old hippies go \u2013 the farm. They're in Door County on ten acres in a dilapidated farmhouse, growing their own food."
+            "dialogue": "Trust me, take your time. It'll just make you feel inferior. Where are your parents now? / Where all old hippies go – the farm. They're in Door County on ten acres in a dilapidated farmhouse, growing their own food."
           }
         },
         {
@@ -5808,7 +5816,7 @@
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens",
           "audio_payload": {
             "speaker": "Character_P",
-            "dialogue": "I had to face the truth \u2013 I wasn't the same shadow of the boy I once was. I had to grow some balls. Why did I shy away from the spotlight? Why should Nick have all the glory, and me have none?"
+            "dialogue": "I had to face the truth – I wasn't the same shadow of the boy I once was. I had to grow some balls. Why did I shy away from the spotlight? Why should Nick have all the glory, and me have none?"
           }
         },
         {
@@ -5939,7 +5947,7 @@
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens",
           "audio_payload": {
             "speaker": "Character_S",
-            "dialogue": "Oh my gosh, I've had this for ten or twelve years! / I really don't sit around and smoke pot \u2013 I've been a little busy. / Well, that's what we're doing today!"
+            "dialogue": "Oh my gosh, I've had this for ten or twelve years! / I really don't sit around and smoke pot – I've been a little busy. / Well, that's what we're doing today!"
           }
         },
         {
@@ -6071,7 +6079,7 @@
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens",
           "audio_payload": {
             "speaker": "Character_S",
-            "dialogue": "I can't see it right now, but once or twice I saw it \u2013 you are a beautiful color of light blue. To me, blue is peaceful, soothing, calm, and friendly. It's loyalty. You are a loyal person."
+            "dialogue": "I can't see it right now, but once or twice I saw it – you are a beautiful color of light blue. To me, blue is peaceful, soothing, calm, and friendly. It's loyalty. You are a loyal person."
           }
         },
         {
@@ -6175,7 +6183,7 @@
         {
           "clip_number": 2,
           "timestamp": "30:01-30:08",
-          "veo_continuation_source": "extend_previous",
+          "veo_continuation_source": "none",
           "visual_prompt": "Character_P (thin frame, green jacket) and Character_S (purple sweater) sit on a concrete bench at a white table, licking chocolate soft-serve ice cream from waffle cones, grinning. / 720p, 24fps",
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens",
           "audio_payload": {
@@ -7375,7 +7383,7 @@
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens",
           "audio_payload": {
             "speaker": "Character_P",
-            "dialogue": "I was researching the Peloponnesian Wars and Greek mythology. As I read about Athena, my mind drifted to Sionna. They were both Goddesses of intelligence and skill \u2013 peaceful warriors ready for battle."
+            "dialogue": "I was researching the Peloponnesian Wars and Greek mythology. As I read about Athena, my mind drifted to Sionna. They were both Goddesses of intelligence and skill – peaceful warriors ready for battle."
           }
         },
         {
@@ -8111,7 +8119,7 @@
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens",
           "audio_payload": {
             "speaker": "Character_P",
-            "dialogue": "But this is Murphy's Law: whatever you think is going to happen is not what happens. Basically, it's pure irony. Like that song by Morissette \u2013 fly in your Chardonnay, rain on your wedding day..."
+            "dialogue": "But this is Murphy's Law: whatever you think is going to happen is not what happens. Basically, it's pure irony. Like that song by Morissette – fly in your Chardonnay, rain on your wedding day..."
           }
         },
         {
@@ -8484,7 +8492,7 @@
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens",
           "audio_payload": {
             "speaker": "Character_P",
-            "dialogue": "The rain started about twenty miles outside of Sturgeon Bay. It didn't just rain \u2013 it poured. The water came down in heavy, blinding sheets on the glass."
+            "dialogue": "The rain started about twenty miles outside of Sturgeon Bay. It didn't just rain – it poured. The water came down in heavy, blinding sheets on the glass."
           }
         },
         {
@@ -8835,7 +8843,7 @@
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens",
           "audio_payload": {
             "speaker": "Character_P",
-            "dialogue": "I looked at his hands \u2013 the hands that had won dozens of bar fights, the hands that had protected me. Right now, they were just shaking, empty and weak."
+            "dialogue": "I looked at his hands – the hands that had won dozens of bar fights, the hands that had protected me. Right now, they were just shaking, empty and weak."
           }
         },
         {
@@ -10869,7 +10877,7 @@
         {
           "clip_number": 3,
           "timestamp": "60:33-60:40",
-          "veo_continuation_source": "extend_previous",
+          "veo_continuation_source": "none",
           "visual_prompt": "Character_S (short brown hair, black blouse, jeans, light blue eyes) in the messy, shadow-filled apartment living room. stands near the hallway, her face tight with anxiety as she watches the brothers / 720p, 24fps",
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens",
           "audio_payload": {
@@ -11422,7 +11430,7 @@
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens",
           "audio_payload": {
             "speaker": "Character_P",
-            "dialogue": "We didn't talk about last night. We didn't need to. The air in the house was different now \u2013 the thick, suffocating fog of grief had cleared."
+            "dialogue": "We didn't talk about last night. We didn't need to. The air in the house was different now – the thick, suffocating fog of grief had cleared."
           }
         },
         {
@@ -11674,7 +11682,7 @@
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens",
           "audio_payload": {
             "speaker": "Character_P",
-            "dialogue": "He was packing light \u2013 just a few work shirts, jeans, and his heavy boots. Everything else he was leaving behind. He didn't want the clutter."
+            "dialogue": "He was packing light – just a few work shirts, jeans, and his heavy boots. Everything else he was leaving behind. He didn't want the clutter."
           }
         },
         {
@@ -12617,7 +12625,7 @@
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens",
           "audio_payload": {
             "speaker": "Character_P",
-            "dialogue": "I wrote about the energy that bound us together \u2013 the strongest force in my world. I wrote until my wrist ached and the ink stained my fingers black."
+            "dialogue": "I wrote about the energy that bound us together – the strongest force in my world. I wrote until my wrist ached and the ink stained my fingers black."
           }
         },
         {
@@ -13132,7 +13140,7 @@
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens",
           "audio_payload": {
             "speaker": "Character_S",
-            "dialogue": "Ma would have loved it so much. And Nick... you've made him a king, P. You've written him exactly as he is \u2013 a warrior who loved us."
+            "dialogue": "Ma would have loved it so much. And Nick... you've made him a king, P. You've written him exactly as he is – a warrior who loved us."
           }
         },
         {
@@ -13822,7 +13830,7 @@
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens",
           "audio_payload": {
             "speaker": "Character_P",
-            "dialogue": "I didn't write it in a leather notebook this time. I wrote it on a screen, but the energy of the words was exactly the same \u2013 raw, honest, and alive."
+            "dialogue": "I didn't write it in a leather notebook this time. I wrote it on a screen, but the energy of the words was exactly the same – raw, honest, and alive."
           }
         },
         {
@@ -14529,5 +14537,21 @@
         }
       ]
     }
-  ]
+  ],
+  "_surgical_fix": {
+    "version": "v1-grok-compat",
+    "applied_at": "2026-07-10T21:02:08",
+    "backup": "nickandme.backup_20260710_210208.json",
+    "stats": {
+      "continuation_to_none": 30,
+      "visual_rewrites": 21,
+      "speakers_normalized": 0,
+      "clips_touched": 36
+    },
+    "notes": [
+      "Hard cuts / flashbacks / wides forced to continuation none",
+      "Multi-setup CUT TO prompts rewritten to continuous sequences",
+      "Character seeds enriched; Kevin McCleary and Bob added"
+    ]
+  }
 }
