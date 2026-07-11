@@ -1,75 +1,59 @@
 {
   "characters_designed": true,
   "current_scene_index": 0,
-  "scenes_completed": {
-    "1": false
-  },
+  "scenes_completed": {},
   "scene_assets": {
     "1": {
       "video_clips": [
         "assets/video/scene_01_clip_01.mp4",
-        "assets/video/scene_01_clip_02.mp4",
-        "assets/video/scene_01_clip_03.mp4"
+        "assets/video/scene_01_clip_02.mp4"
       ],
       "music_bed": null,
       "composite": "assets/scenes/scene_01_complete.mp4",
       "partial": true,
-      "clips_merged": 3
+      "clips_merged": 2
     }
   },
   "clip_context_ids": {
     "1_1": "assets/video/scene_01_clip_01.mp4",
-    "1_2": "assets/video/scene_01_clip_02.mp4",
-    "1_3": "assets/video/scene_01_clip_03.mp4"
+    "1_2": "assets/video/scene_01_clip_02.mp4"
   },
   "clip_jobs": {
     "1_1": {
       "status": "complete",
+      "request_id": "a29e9954-2fa2-92b7-8788-2e21a9c3a2c7",
       "path": "assets/video/scene_01_clip_01.mp4",
       "scene_number": 1,
       "clip_number": 1,
-      "qa_approved": true,
+      "updated_at": "2026-07-10T21:33:54",
+      "video_url": "https://vidgen.x.ai/xai-vidgen-bucket/xai-video-a29e9954-2fa2-92b7-8788-2e21a9c3a2c7.mp4",
       "has_audio": true,
-      "updated_at": "2026-07-10T21:03:53",
+      "dialogue_audio_ensured": true,
+      "audio_bytes": 129547,
+      "qa_approved": true,
       "qa_attempt": 1
     },
     "1_2": {
       "status": "complete",
+      "request_id": "d5b06955-4b7c-9255-83dd-995d43e860d4",
       "path": "assets/video/scene_01_clip_02.mp4",
       "scene_number": 1,
       "clip_number": 2,
-      "qa_approved": true,
-      "last_error": "QA rejected: locked to previous close-up via last-frame continuation; needs fresh wide/hallway generation",
-      "request_id": "664a6fbe-fa54-957e-bbaa-6e66bd2d6875",
-      "updated_at": "2026-07-10T21:05:41",
-      "video_url": "https://vidgen.x.ai/xai-vidgen-bucket/xai-video-664a6fbe-fa54-957e-bbaa-6e66bd2d6875.mp4",
+      "updated_at": "2026-07-10T21:35:25",
+      "video_url": "https://vidgen.x.ai/xai-vidgen-bucket/xai-video-d5b06955-4b7c-9255-83dd-995d43e860d4.mp4",
       "has_audio": true,
+      "dialogue_audio_ensured": true,
+      "audio_bytes": 130159,
+      "qa_approved": true,
       "qa_attempt": 1
     },
     "1_3": {
-      "status": "complete",
-      "request_id": "4729dc0d-db06-919b-a16d-8eef0ec3ceeb",
+      "status": "submitted",
+      "request_id": "3f9181a8-9dfe-9abf-8786-1026ca4e4a01",
       "path": "assets/video/scene_01_clip_03.mp4",
       "scene_number": 1,
       "clip_number": 3,
-      "updated_at": "2026-07-10T21:07:48",
-      "video_url": "https://vidgen.x.ai/xai-vidgen-bucket/xai-video-4729dc0d-db06-919b-a16d-8eef0ec3ceeb.mp4",
-      "has_audio": true,
-      "qa_approved": true,
-      "qa_attempt": 1
-    },
-    "1_4": {
-      "status": "invalidated",
-      "request_id": null,
-      "path": "assets/video/scene_01_clip_04.mp4",
-      "scene_number": 1,
-      "clip_number": 4,
-      "updated_at": "2026-07-10T21:09:39",
-      "video_url": null,
-      "has_audio": true,
-      "qa_approved": false,
-      "qa_attempt": 1,
-      "last_error": "qa_rejected_attempt_1"
+      "updated_at": "2026-07-10T21:35:44"
     }
   },
   "music_jobs": {}

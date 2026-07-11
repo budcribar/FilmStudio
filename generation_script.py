@@ -40,10 +40,12 @@ DEFAULT_CONFIG = {
     # Re-generate when Grok QA rejects a clip
     "qa_retry_on_fail": True,
     "qa_max_retries": 2,
-    # Guarantee audible dialogue: mix Windows/edge TTS over native bed when dialogue exists
-    "ensure_dialogue_audio": True,
+    # Prefer Grok native audio. TTS is optional fallback only (often robotic).
+    # Set ensure_dialogue_audio true only if native speech is missing/weak.
+    "ensure_dialogue_audio": False,
+    "dialogue_audio_mode": "replace",
     "dialogue_tts_volume": 1.0,
-    "native_audio_mix_volume": 0.35,
+    "native_audio_mix_volume": 0.12,
     "aspect_ratio": "16:9",
     "duration_seconds": 8,
     "resolution": "720p",
@@ -720,6 +722,7 @@ class AgenticGenerationEngine:
         deadline = time.time() + timeout_seconds
 
         while time.time() < deadline:
+            self._check_shutdown(f"Suno poll Scene {s_num}")
             try:
                 req = urllib.request.Request(f"{base_url}/api/get?ids={ids_param}", method="GET")
                 with urllib.request.urlopen(req, timeout=30) as response:
@@ -736,7 +739,7 @@ class AgenticGenerationEngine:
                     print(f"  [Suno] Clip {clip.get('id')} complete.")
                     return clip["audio_url"]
 
-            time.sleep(poll_interval)
+            self._interruptible_sleep(poll_interval, f"Suno poll Scene {s_num}")
 
         raise GenerationFailure(f"Scene {s_num} music: suno-api job timed out.")
 
@@ -1139,21 +1142,35 @@ class AgenticGenerationEngine:
         abs_wav = os.path.abspath(wav_path)
         errors: List[str] = []
 
-        # --- 1) espeak / espeak-ng (WSL / Linux) ---
-        for espeak in ("espeak-ng", "espeak"):
-            exe = shutil.which(espeak)
-            if not exe:
-                continue
-            cmd = [exe, "-w", abs_wav, "-s", "140", "-a", "150", raw]
+        # --- 1) edge-tts (most natural; optional: pip install edge-tts) ---
+        edge = shutil.which("edge-tts")
+        if edge:
+            mp3_path = abs_wav + ".mp3"
+            cmd = [
+                edge,
+                "--voice", os.environ.get("EDGE_TTS_VOICE", "en-US-GuyNeural"),
+                "--text", raw,
+                "--write-media", mp3_path,
+            ]
             result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            if result.returncode == 0 and file_is_usable(wav_path, min_bytes=100):
-                print(f"  [Audio] TTS backend: {espeak}")
-                return wav_path
-            errors.append(f"{espeak}: {(result.stderr or b'').decode(errors='ignore')[-120:]}")
+            if result.returncode == 0 and file_is_usable(mp3_path, min_bytes=100):
+                ffmpeg = resolve_ffmpeg()
+                conv = subprocess.run(
+                    [ffmpeg, "-y", "-i", mp3_path, abs_wav],
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                )
+                try:
+                    os.remove(mp3_path)
+                except OSError:
+                    pass
+                if conv.returncode == 0 and file_is_usable(wav_path, min_bytes=100):
+                    print("  [Audio] TTS backend: edge-tts")
+                    return wav_path
+            errors.append(f"edge-tts: {(result.stderr or b'').decode(errors='ignore')[-120:]}")
 
-        # --- 2) Windows SAPI (native Windows, or call into Windows from WSL) ---
+        # --- 2) Windows SAPI (native Windows, or powershell.exe from WSL) ---
         ps_safe = raw.replace("'", "''")
-        # WSL can usually invoke Windows PowerShell as powershell.exe
         ps_candidates = []
         if os.name == "nt":
             ps_candidates = ["powershell"]
@@ -1161,7 +1178,6 @@ class AgenticGenerationEngine:
             for name in ("powershell.exe", "pwsh.exe"):
                 if shutil.which(name):
                     ps_candidates.append(name)
-            # Common WSL interop path
             for p in (
                 "/mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe",
                 "/mnt/c/Program Files/PowerShell/7/pwsh.exe",
@@ -1169,12 +1185,9 @@ class AgenticGenerationEngine:
                 if os.path.isfile(p):
                     ps_candidates.append(p)
 
-        # When writing a WAV from WSL via Windows PowerShell, use a Windows path
         win_wav = abs_wav
         if _running_on_wsl() and abs_wav.startswith("/mnt/"):
-            # /mnt/c/Users/... -> C:\Users\...
             parts = abs_wav.split("/")
-            # ['', 'mnt', 'c', 'Users', ...]
             if len(parts) > 3 and parts[1] == "mnt" and len(parts[2]) == 1:
                 win_wav = parts[2].upper() + ":\\" + "\\".join(parts[3:])
 
@@ -1199,81 +1212,79 @@ class AgenticGenerationEngine:
                 f"{ps}: {(result.stderr or b'').decode(errors='ignore')[-120:]}"
             )
 
-        # --- 3) edge-tts (optional pip package / CLI) ---
-        edge = shutil.which("edge-tts")
-        if edge:
-            # edge-tts writes mp3 by default; convert with ffmpeg if needed
-            mp3_path = abs_wav + ".mp3"
-            cmd = [
-                edge,
-                "--text", raw,
-                "--write-media", mp3_path,
-            ]
+        # --- 3) espeak / espeak-ng (WSL / Linux fallback) ---
+        for espeak in ("espeak-ng", "espeak"):
+            exe = shutil.which(espeak)
+            if not exe:
+                continue
+            cmd = [exe, "-w", abs_wav, "-s", "140", "-a", "150", raw]
             result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            if result.returncode == 0 and file_is_usable(mp3_path, min_bytes=100):
-                ffmpeg = resolve_ffmpeg()
-                conv = subprocess.run(
-                    [ffmpeg, "-y", "-i", mp3_path, abs_wav],
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.PIPE,
-                )
-                try:
-                    os.remove(mp3_path)
-                except OSError:
-                    pass
-                if conv.returncode == 0 and file_is_usable(wav_path, min_bytes=100):
-                    print("  [Audio] TTS backend: edge-tts")
-                    return wav_path
-            errors.append(f"edge-tts: {(result.stderr or b'').decode(errors='ignore')[-120:]}")
+            if result.returncode == 0 and file_is_usable(wav_path, min_bytes=100):
+                print(f"  [Audio] TTS backend: {espeak}")
+                return wav_path
+            errors.append(f"{espeak}: {(result.stderr or b'').decode(errors='ignore')[-120:]}")
 
         raise GenerationFailure(
-            "TTS dialogue synthesis failed. On WSL/Linux install espeak-ng "
-            "(`sudo apt install espeak-ng`). On Windows, PowerShell SAPI is used. "
+            "TTS dialogue synthesis failed. Prefer: pip install edge-tts. "
+            "Or on WSL: sudo apt install espeak-ng. On Windows: PowerShell SAPI. "
             f"Details: {' | '.join(errors)[:400]}"
         )
 
     def _ensure_dialogue_audio(self, video_path: str, clip: Dict[str, Any]) -> str:
         """
         Guarantee audible spoken dialogue on the clip.
-        Mixes Windows TTS narration with any native ambient bed from Grok.
+
+        Modes (pipeline_config.dialogue_audio_mode):
+          - "replace" (default): video picture + TTS only — no double voice
+          - "mix": TTS over quiet native bed (can double if Grok also spoke)
         """
         if not self.config.get("ensure_dialogue_audio", True):
             return video_path
 
         audio = clip.get("audio_payload") or {}
-        dialogue = (audio.get("dialogue") or "").strip()
-        speaker = (audio.get("speaker") or "").strip()
+        dialogue = str(audio.get("dialogue") or "").strip()
+        speaker = str(audio.get("speaker") or "").strip()
         if not dialogue or speaker.lower() in ("none", "n/a", ""):
             return video_path
 
         ffmpeg = resolve_ffmpeg()
         tts_wav = f"{video_path}.dialogue.wav"
         tmp_out = f"{video_path}.voiced.tmp.mp4"
+        native_backup = f"{video_path}.native.mp4"
+        mode = str(self.config.get("dialogue_audio_mode", "replace")).lower().strip()
         tts_vol = float(self.config.get("dialogue_tts_volume", 1.0))
-        bed_vol = float(self.config.get("native_audio_mix_volume", 0.35))
+        bed_vol = float(self.config.get("native_audio_mix_volume", 0.12))
 
         try:
-            if not os.path.isfile(ffmpeg):
-                # resolve_ffmpeg may return bare "ffmpeg" when nothing is installed
-                raise GenerationFailure(
-                    "ffmpeg not found. Install ffmpeg or `pip install imageio-ffmpeg` "
-                    "so dialogue can be mixed into clips."
-                )
+            import shutil as _shutil
 
-            print(f"  [Audio] Mixing TTS dialogue voiceover for speaker={speaker!r}...")
+            # Prefer original Grok picture as source if we saved a native backup earlier
+            source_video = native_backup if file_is_usable(native_backup, min_bytes=1000) else video_path
+            if source_video == video_path and not file_is_usable(native_backup, min_bytes=1000):
+                # First time: keep a native backup before we replace audio
+                try:
+                    _shutil.copy2(video_path, native_backup)
+                    source_video = native_backup
+                except OSError:
+                    pass
+
+            print(
+                f"  [Audio] Applying TTS dialogue ({mode}) for speaker={speaker!r}..."
+            )
             self._synthesize_dialogue_wav(dialogue, tts_wav)
 
-            has_native = self._video_has_audio(video_path)
-            # Re-encode video+audio for maximum mux reliability (copy mode can produce broken files)
-            if has_native:
+            has_native = self._video_has_audio(source_video)
+            if mode == "mix" and has_native:
+                # Quiet ambient under TTS — can still double if native has speech
                 filter_complex = (
-                    f"[0:a]volume={bed_vol},aformat=sample_rates=48000:channel_layouts=stereo[bed];"
+                    f"[0:a]volume={bed_vol},highpass=f=120,"
+                    f"aformat=sample_rates=48000:channel_layouts=stereo[bed];"
                     f"[1:a]volume={tts_vol},aformat=sample_rates=48000:channel_layouts=stereo[voice];"
                     f"[bed][voice]amix=inputs=2:duration=first:dropout_transition=0:normalize=0[aout]"
                 )
                 cmd = [
                     ffmpeg, "-y",
-                    "-i", video_path,
+                    "-i", source_video,
                     "-i", tts_wav,
                     "-filter_complex", filter_complex,
                     "-map", "0:v:0",
@@ -1285,9 +1296,12 @@ class AgenticGenerationEngine:
                     tmp_out,
                 ]
             else:
+                # REPLACE (default): picture from Grok + TTS only — one clear voice, no delay double
+                if mode != "replace":
+                    print(f"  [Audio] Mode '{mode}' unavailable without native audio; using replace.")
                 cmd = [
                     ffmpeg, "-y",
-                    "-i", video_path,
+                    "-i", source_video,
                     "-i", tts_wav,
                     "-map", "0:v:0",
                     "-map", "1:a:0",
@@ -1307,7 +1321,6 @@ class AgenticGenerationEngine:
                 err = (result.stderr or b"").decode(errors="ignore")[-500:]
                 raise GenerationFailure(f"Failed to mux dialogue TTS onto clip: {err}")
 
-            # Validate remux actually has audio + real video payload
             stats = self._mp4_audio_stats(tmp_out)
             if not stats.get("has_audio_track") and not self._video_has_audio(tmp_out):
                 raise GenerationFailure("Dialogue mux produced a file with no audio track.")
@@ -1317,7 +1330,7 @@ class AgenticGenerationEngine:
                 )
 
             os.replace(tmp_out, video_path)
-            print(f"  [Audio] Dialogue voiceover mixed into {video_path}")
+            print(f"  [Audio] Dialogue applied ({mode}) -> {video_path}")
             return video_path
         except GenerationFailure as e:
             print(f"  [Audio Warning] {e}. Leaving original clip audio as-is.")
@@ -1395,6 +1408,7 @@ class AgenticGenerationEngine:
         deadline = time.time() + timeout_seconds
 
         while time.time() < deadline:
+            self._check_shutdown(f"Grok poll Scene {scene_num} Clip {clip_num}")
             data = self._grok_request("GET", f"{XAI_API_BASE}/videos/{request_id}", timeout=60)
             status = data.get("status")
 
@@ -1421,7 +1435,7 @@ class AgenticGenerationEngine:
             progress = data.get("progress")
             progress_note = f" ({progress}%)" if progress is not None else ""
             print(f"  [Grok] Still generating clip {clip_num}{progress_note}...")
-            time.sleep(poll_interval)
+            self._interruptible_sleep(poll_interval, f"Grok poll Scene {scene_num} Clip {clip_num}")
 
         raise GenerationFailure(
             f"Scene {scene_num} Clip {clip_num}: Grok video job timed out after {timeout_seconds}s."
@@ -1531,7 +1545,10 @@ class AgenticGenerationEngine:
             has_audio = self._video_has_audio(output_clip_path)
             qa_ok = job.get("qa_approved") is not False
             dialogue_ready = job.get("dialogue_audio_ensured") is True
-            needs_dialogue = bool((clip.get("audio_payload") or {}).get("dialogue") or "").strip()
+            dialogue_text = str(
+                ((clip.get("audio_payload") or {}).get("dialogue") or "")
+            ).strip()
+            needs_dialogue = bool(dialogue_text)
             if (has_audio or not self.config.get("regenerate_silent_clips", True)) and qa_ok:
                 # Still ensure TTS dialogue overlay if missing from older renders
                 if needs_dialogue and self.config.get("ensure_dialogue_audio", True) and not dialogue_ready:
@@ -1597,7 +1614,7 @@ class AgenticGenerationEngine:
         throttle_delay = int(os.environ.get("GROK_THROTTLE_DELAY", os.environ.get("VEO_THROTTLE_DELAY", "10")))
         if throttle_delay > 0:
             print(f"  [Grok] Throttling: Cooling down for {throttle_delay}s...")
-            time.sleep(throttle_delay)
+            self._interruptible_sleep(throttle_delay, f"Grok throttle Scene {scene_num} Clip {clip_num}")
 
         model_name = self.config.get("model_name", "grok-imagine-video")
         duration = int(self.config.get("duration_seconds", 8))
@@ -1612,6 +1629,7 @@ class AgenticGenerationEngine:
             "resolution": self.config.get("resolution", "720p"),
         }
 
+        self._check_shutdown(f"Grok generate Scene {scene_num} Clip {clip_num}")
         if use_continuation:
             frame_path = f"assets/video/scene_{scene_num:02d}_clip_{clip_num:02d}_seed_frame.png"
             ensure_parent_dir(frame_path)
@@ -1684,6 +1702,15 @@ class AgenticGenerationEngine:
                 dialogue_audio_ensured=True,
                 audio_bytes=audio_stats.get("audio_bytes"),
             )
+        except (PipelineInterrupted, KeyboardInterrupt):
+            # Keep submitted request_id in clip_jobs so resume can re-poll/download
+            self._update_clip_job(
+                scene_num, clip_num,
+                status="interrupted",
+                path=output_clip_path,
+                last_error="interrupted_by_user",
+            )
+            raise
         except GenerationFailure as e:
             self._update_clip_job(
                 scene_num, clip_num,
@@ -2076,15 +2103,20 @@ class AgenticGenerationEngine:
     def _normalize_clip_for_concat(self, clip_path: str, normalized_path: str) -> str:
         """
         Re-encode a clip to H.264 + AAC so concat is reliable and silent clips get a silent track.
+        Always boosts audio so soft Grok beds are still audible in the composite.
         """
         ensure_parent_dir(normalized_path)
         ffmpeg = resolve_ffmpeg()
         has_audio = self._video_has_audio(clip_path)
+        # Loudness boost for soft ambient / quiet native beds
+        gain_db = float(self.config.get("composite_audio_gain_db", 9.0))
 
         if has_audio:
             cmd = [
                 ffmpeg, "-y",
                 "-i", clip_path,
+                "-vf", "scale=1280:720:force_original_aspect_ratio=decrease,pad=1280:720:(ow-iw)/2:(oh-ih)/2,fps=24,format=yuv420p",
+                "-af", f"aresample=48000,aformat=channel_layouts=stereo,volume={gain_db}dB",
                 "-c:v", "libx264", "-preset", "veryfast", "-crf", "18",
                 "-c:a", "aac", "-b:a", "192k",
                 "-ar", "48000", "-ac", "2",
@@ -2098,6 +2130,9 @@ class AgenticGenerationEngine:
                 ffmpeg, "-y",
                 "-i", clip_path,
                 "-f", "lavfi", "-i", "anullsrc=channel_layout=stereo:sample_rate=48000",
+                "-vf", "scale=1280:720:force_original_aspect_ratio=decrease,pad=1280:720:(ow-iw)/2:(oh-ih)/2,fps=24,format=yuv420p",
+                "-map", "0:v:0",
+                "-map", "1:a:0",
                 "-c:v", "libx264", "-preset", "veryfast", "-crf", "18",
                 "-c:a", "aac", "-b:a", "192k",
                 "-shortest",
@@ -2111,6 +2146,10 @@ class AgenticGenerationEngine:
             stderr_tail = result.stderr.decode(errors="ignore")[-500:]
             raise GenerationFailure(
                 f"Failed to normalize clip '{clip_path}' for scene concat. FFmpeg: {stderr_tail}"
+            )
+        if not self._video_has_audio(normalized_path):
+            raise GenerationFailure(
+                f"Normalized clip lost audio track: '{normalized_path}' from '{clip_path}'"
             )
         return normalized_path
 
@@ -2137,14 +2176,52 @@ class AgenticGenerationEngine:
                     f"Re-run the script to resume generation."
                 )
 
+        # Ensure dialogue TTS is on source clips before stitching (Grok audio is often ambient-only)
+        scene_obj = None
+        for s in self.blueprint.get("scenes", []):
+            if s.get("scene_number") == scene_num:
+                scene_obj = s
+                break
+        if scene_obj and self.config.get("ensure_dialogue_audio", True):
+            clips_by_num = {
+                c.get("clip_number"): c for c in (scene_obj.get("veo_clips") or [])
+            }
+            for p in clip_paths:
+                # path like assets/video/scene_01_clip_03.mp4
+                m = re.search(r"clip_(\d+)\.mp4$", p.replace("\\", "/"))
+                if not m:
+                    continue
+                c_num = int(m.group(1))
+                clip_meta = clips_by_num.get(c_num)
+                if not clip_meta:
+                    continue
+                dlg = str(((clip_meta.get("audio_payload") or {}).get("dialogue") or "")).strip()
+                if dlg:
+                    job = self.state.get("clip_jobs", {}).get(self._clip_job_key(scene_num, c_num), {})
+                    if not job.get("dialogue_audio_ensured"):
+                        print(f"  [Audio] Ensuring dialogue on source clip before composite: {p}")
+                        self._ensure_dialogue_audio(p, clip_meta)
+                        self._update_clip_job(
+                            scene_num, c_num,
+                            path=p,
+                            dialogue_audio_ensured=True,
+                            has_audio=True,
+                        )
+
         ffmpeg = resolve_ffmpeg()
         work_dir = f"assets/scenes/_work_scene_{scene_num:02d}"
         os.makedirs(work_dir, exist_ok=True)
 
-        # Normalize each clip so concat keeps a continuous audio track
+        # Normalize each clip so concat keeps a continuous, loud enough audio track
         normalized_paths: List[str] = []
         for idx, p in enumerate(clip_paths, start=1):
             norm = os.path.join(work_dir, f"norm_clip_{idx:02d}.mp4")
+            # Always rebuild norms on force so audio fixes apply
+            if force and os.path.exists(norm):
+                try:
+                    os.remove(norm)
+                except OSError:
+                    pass
             self._normalize_clip_for_concat(p, norm)
             normalized_paths.append(norm)
 
@@ -2157,18 +2234,22 @@ class AgenticGenerationEngine:
                 f.write(f"file '{rel}'\n")
 
         tmp_out = f"{output_scene_path}.tmp.mp4"
+        # Full re-encode (not stream-copy) so audio is never dropped by player/demux quirks
         if music_path and file_is_usable(music_path, min_bytes=1):
-            # Underlay optional music bed under clip dialogue/ambient
             ffmpeg_cmd = [
                 ffmpeg, "-y",
                 "-f", "concat", "-safe", "0", "-i", concat_list,
                 "-i", music_path,
                 "-filter_complex",
-                "[0:a][1:a]amix=inputs=2:duration=first:dropout_transition=2[aout]",
-                "-map", "0:v",
+                "[0:a]aformat=sample_rates=48000:channel_layouts=stereo[va];"
+                "[1:a]aformat=sample_rates=48000:channel_layouts=stereo,volume=0.25[m];"
+                "[va][m]amix=inputs=2:duration=first:dropout_transition=2:normalize=0,"
+                "loudnorm=I=-14:TP=-1.5:LRA=11[aout]",
+                "-map", "0:v:0",
                 "-map", "[aout]",
                 "-c:v", "libx264", "-preset", "veryfast", "-crf", "18",
                 "-c:a", "aac", "-b:a", "192k",
+                "-ar", "48000", "-ac", "2",
                 "-shortest",
                 "-movflags", "+faststart",
                 tmp_out,
@@ -2177,8 +2258,12 @@ class AgenticGenerationEngine:
             ffmpeg_cmd = [
                 ffmpeg, "-y",
                 "-f", "concat", "-safe", "0", "-i", concat_list,
-                "-c:v", "copy",
+                "-map", "0:v:0",
+                "-map", "0:a:0?",
+                "-c:v", "libx264", "-preset", "veryfast", "-crf", "18",
                 "-c:a", "aac", "-b:a", "192k",
+                "-af", "loudnorm=I=-14:TP=-1.5:LRA=11",
+                "-ar", "48000", "-ac", "2",
                 "-movflags", "+faststart",
                 tmp_out,
             ]
@@ -2196,11 +2281,24 @@ class AgenticGenerationEngine:
             stderr_tail = result.stderr.decode(errors="ignore")[-500:]
             raise GenerationFailure(f"Scene {scene_num}: FFmpeg muxing failed. Last FFmpeg output: {stderr_tail}")
 
+        if not self._video_has_audio(tmp_out):
+            # Fail loudly — silent composites are almost always a mux bug
+            try:
+                os.remove(tmp_out)
+            except OSError:
+                pass
+            raise GenerationFailure(
+                f"Scene {scene_num}: composite was written without an audio track. "
+                f"Check source clips have audio and ffmpeg is working."
+            )
+
         os.replace(tmp_out, output_scene_path)
         has_audio = self._video_has_audio(output_scene_path)
+        audio_stats = self._mp4_audio_stats(output_scene_path)
         print(
             f"  [FFmpeg] Scene composite ready: {output_scene_path} "
-            f"(clips={len(clip_paths)}, audio={has_audio})"
+            f"(clips={len(clip_paths)}, audio={has_audio}, "
+            f"audio_bytes={audio_stats.get('audio_bytes', 0)})"
         )
         return output_scene_path
 
@@ -2247,6 +2345,9 @@ class AgenticGenerationEngine:
         s_num = scene["scene_number"]
         print(f"\n==================== PROCESSING SCENE {s_num} ====================")
         self.ensure_asset_directories()
+        self._active_scene_num = s_num
+        self._active_clip_num = None
+        self._check_shutdown(f"start Scene {s_num}")
 
         generated_files: List[str] = []
         clip_paths: List[str] = []
@@ -2265,7 +2366,9 @@ class AgenticGenerationEngine:
             qa_retry_on_fail = bool(self.config.get("qa_retry_on_fail", True))
 
             for clip in scene.get("veo_clips", []):
+                self._check_shutdown(f"Scene {s_num} before next clip")
                 c_num = clip["clip_number"]
+                self._active_clip_num = c_num
                 clip_state_key = f"{s_num}_{c_num}"
                 out_path = clip_output_path(s_num, c_num)
                 generated_files.append(out_path)
@@ -2353,6 +2456,19 @@ class AgenticGenerationEngine:
                 s_num, clip_paths, music_path, force=True
             )
 
+        except PipelineInterrupted:
+            # Preserve partial scene progress, then re-raise for outer graceful_stop
+            self.state.setdefault("scenes_completed", {})[str(s_num)] = False
+            self.state.setdefault("scene_assets", {})[str(s_num)] = {
+                "video_clips": [p for p in clip_paths if file_is_usable(p, min_bytes=1024)],
+                "music_bed": music_path if file_is_usable(music_path, min_bytes=1) else None,
+                "composite": composite_scene_path if file_is_usable(composite_scene_path, min_bytes=1024) else None,
+                "partial": True,
+                "clips_merged": len(clip_paths),
+                "last_error": "interrupted_by_user",
+            }
+            self.save_state()
+            raise
         except GenerationFailure as e:
             self._handle_generation_failure(
                 s_num, generated_files, e,
@@ -2367,6 +2483,7 @@ class AgenticGenerationEngine:
             "clips_merged": len(clip_paths),
         }
         self.save_state()
+        self._active_clip_num = None
         return True
 
     def backpropagate_retroactive_feedback(self, current_scene_num: int, target_scene_num: int, feedback: str):
@@ -2446,67 +2563,100 @@ class AgenticGenerationEngine:
     def run_pipeline(self):
         self.ensure_asset_directories()
 
-        # Fire Stage 0 Design Sequence prior to running film operational scene timelines
-        if not self.state.get("characters_designed", False):
-            self.pre_production_character_design()
+        try:
+            # Fire Stage 0 Design Sequence prior to running film operational scene timelines
+            if not self.state.get("characters_designed", False):
+                self.pre_production_character_design()
 
-        scenes = self.blueprint.get("scenes", [])
-        total_scenes = len(scenes)
+            scenes = self.blueprint.get("scenes", [])
+            total_scenes = len(scenes)
 
-        current_idx = 0
-        for idx, s in enumerate(scenes):
-            s_num = str(s["scene_number"])
-            if not self.state["scenes_completed"].get(s_num):
-                current_idx = idx
-                break
-        else:
-            current_idx = total_scenes
+            current_idx = 0
+            for idx, s in enumerate(scenes):
+                s_num = str(s["scene_number"])
+                if not self.state["scenes_completed"].get(s_num):
+                    current_idx = idx
+                    break
+            else:
+                current_idx = total_scenes
 
-        self.state["current_scene_index"] = current_idx
-        self.save_state()
+            self.state["current_scene_index"] = current_idx
+            self.save_state()
 
-        while current_idx < total_scenes:
-            scene = scenes[current_idx]
-            s_num = scene["scene_number"]
+            while current_idx < total_scenes:
+                self._check_shutdown("pipeline scene loop")
+                scene = scenes[current_idx]
+                s_num = scene["scene_number"]
 
-            self.process_scene(scene)
+                self.process_scene(scene)
 
-            print(f"\n*** INTERACTIVE GATE: REVIEW SCENE {s_num}/{total_scenes} ***")
-            user_action = ""
-            while user_action not in ["A", "F", "R", "Q"]:
-                user_action = input("Review Scene [X]. [A] Approve, [F] Forward Feedback, [R] Retroactive Rollback, [Q] Quit: ").strip().upper()
-
-            if user_action == "A":
-                print(f"[Success] Approved Scene {s_num}.")
-                self.state["scenes_completed"][str(s_num)] = True
-                current_idx += 1
-                self.state["current_scene_index"] = current_idx
-                self.save_state()
-            elif user_action == "F":
-                feedback = input("\nEnter your forward feedback modifier: ").strip()
-                scope = input("Select scoping - [L] Local Clip, [C] Cascading Scene, [G] Global Forward: ").strip().upper()
-                self.state["scenes_completed"][str(s_num)] = False 
-                self.save_state()
-            elif user_action == "R":
-                feedback = input("\nEnter retroactive feedback: ").strip()
-                target_scene = 0
-                while target_scene < 1 or target_scene > s_num:
+                print(f"\n*** INTERACTIVE GATE: REVIEW SCENE {s_num}/{total_scenes} ***")
+                user_action = ""
+                while user_action not in ["A", "F", "R", "Q"]:
+                    self._check_shutdown("interactive review gate")
                     try:
-                        target_scene = int(input(f"Enter the past scene number where this modification should begin (1 to {s_num}): "))
-                    except ValueError:
-                        pass
-                self.backpropagate_retroactive_feedback(s_num, target_scene, feedback)
-                current_idx = self.state["current_scene_index"]
-            elif user_action == "Q":
-                sys.exit(0)
+                        user_action = input(
+                            "Review Scene [X]. [A] Approve, [F] Forward Feedback, "
+                            "[R] Retroactive Rollback, [Q] Quit: "
+                        ).strip().upper()
+                    except EOFError as e:
+                        raise PipelineInterrupted("EOF on interactive input") from e
 
-        self.run_mastering()
+                if user_action == "A":
+                    print(f"[Success] Approved Scene {s_num}.")
+                    self.state["scenes_completed"][str(s_num)] = True
+                    current_idx += 1
+                    self.state["current_scene_index"] = current_idx
+                    self.save_state()
+                elif user_action == "F":
+                    feedback = input("\nEnter your forward feedback modifier: ").strip()
+                    scope = input(
+                        "Select scoping - [L] Local Clip, [C] Cascading Scene, [G] Global Forward: "
+                    ).strip().upper()
+                    self.state["scenes_completed"][str(s_num)] = False
+                    self.save_state()
+                elif user_action == "R":
+                    feedback = input("\nEnter retroactive feedback: ").strip()
+                    target_scene = 0
+                    while target_scene < 1 or target_scene > s_num:
+                        try:
+                            target_scene = int(
+                                input(
+                                    f"Enter the past scene number where this modification "
+                                    f"should begin (1 to {s_num}): "
+                                )
+                            )
+                        except ValueError:
+                            pass
+                    self.backpropagate_retroactive_feedback(s_num, target_scene, feedback)
+                    current_idx = self.state["current_scene_index"]
+                elif user_action == "Q":
+                    self.graceful_stop("Quit requested from interactive gate")
+
+            self.run_mastering()
+        except PipelineInterrupted as e:
+            self.graceful_stop(str(e) or "Interrupted by user")
+        except KeyboardInterrupt:
+            self.graceful_stop("Interrupted by user (KeyboardInterrupt)")
 
 
 if __name__ == "__main__":
     print("=========================================================================")
-    print("         AGENTIC GENERATION SCRIPT ENGINE (V9.1) - RUNNING               ")
-    print("         Smart cuts + QA retry  |  Progressive scene merge               ")
+    print("         AGENTIC GENERATION SCRIPT ENGINE (V9.2) - RUNNING               ")
+    print("         Smart cuts + QA retry  |  Ctrl+C saves state & resumes          ")
     print("=========================================================================")
-    engine = AgenticGenerationEngine()
-    engine.run_pipeline()
+    engine = None
+    try:
+        engine = AgenticGenerationEngine()
+        engine.run_pipeline()
+    except SystemExit:
+        raise
+    except KeyboardInterrupt:
+        if engine is not None:
+            engine.graceful_stop("Interrupted by user (KeyboardInterrupt)")
+        print("\n[Shutdown] Interrupted before engine init. Nothing to save.")
+        raise SystemExit(130)
+    except PipelineInterrupted as e:
+        if engine is not None:
+            engine.graceful_stop(str(e))
+        raise SystemExit(130)
