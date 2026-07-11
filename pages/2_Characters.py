@@ -127,6 +127,47 @@ with col_main:
     else:
         st.warning("No locked reference yet — generate variants and pick one.")
 
+    # ---- Voice lock (Stage 0 identity for native Grok audio) ----
+    st.subheader("Voice lock")
+    st.caption(
+        "Locked vocal identity for **native** video audio. Injected into Grok AUDIO prompts "
+        "every time this speaker talks — not a separate TTS engine."
+    )
+    try:
+        vinfo = api.get_character_voice(key)
+    except Exception:
+        vinfo = {}
+    with st.expander("Edit voice profile", expanded=bool(vinfo.get("voice_profile"))):
+        v_label = st.text_input(
+            "Voice label",
+            value=vinfo.get("voice_label") or key,
+            key=f"vlabel_{key}",
+        )
+        v_profile = st.text_area(
+            "Voice profile (prompt lock — be specific: age, pitch, pace, accent, energy)",
+            value=vinfo.get("voice_profile") or "",
+            height=110,
+            key=f"vprof_{key}",
+            placeholder=(
+                "e.g. American male late 20s, soft mid baritone, tired Midwestern, "
+                "measured ~140 wpm, warm but weary; identical every scene"
+            ),
+        )
+        if st.button("💾 Save voice lock", key=f"vsave_{key}"):
+            try:
+                api.save_character_voice(
+                    key,
+                    voice_profile=v_profile,
+                    voice_label=v_label,
+                )
+                _cached_list_characters.clear()
+                st.success("Voice lock saved to nickandme.json — new clips will use it.")
+                st.rerun()
+            except Exception as e:
+                st.error(str(e))
+        if vinfo.get("voice_profile"):
+            st.info(f"**Active lock:** {vinfo.get('voice_profile')[:280]}…")
+
     b1, b2, b3 = st.columns(3)
     with b1:
         if st.button("🎲 Generate 3 variants", type="primary", key="gen_var"):

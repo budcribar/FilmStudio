@@ -148,23 +148,54 @@ Shot-writing quality bar:
 - Each character seed must include:
   - `description`: rich identity (age, build, hair, face, default wardrobe)
   - `reference_image_placeholder`: e.g. `character_p_ref.png`
+  - **`voice_profile` (REQUIRED)** — locked vocal identity for native video audio (same role as the portrait; see Voice lock below)
+  - **`voice_label` (REQUIRED)** — short speaker label for AUDIO prompts (e.g. `Nick (older brother)`)
   - optional `age_band`: e.g. `adult`, `child_8_9`, `child_12`, `teen_15`, `teen_16_18`
+  - do **not** add engine-specific TTS ids (e.g. `en-US-BrianNeural`) unless an operator explicitly uses a separate TTS post path; default film audio is **native** from the video model guided by `voice_profile` only
   - optional `variant_of`: parent token for age variants (e.g. `"Character_N"`)
   - optional `display_name_policy`: `"ok_anytime"` | `"withheld_until_reveal"` | `"never_on_screen"`
   - optional `canonical_given_name`: real name for adapter notes only — **never** copy into early
     `visual_prompt` / wardrobe / prop text if policy is withhold or never_on_screen
   - optional `name_reveal_scene` or story beat note when the book first allows the given name
 
+**Voice lock (REQUIRED — Stage 0 audio identity, parallel to portrait lock):**
+Video models invent a new voice every clip unless locked. Treat voice like wardrobe and face.
+
+1. **When writing the blueprint:** every seed that may speak (`audio_payload.speaker` or on-screen talk)
+   MUST have a non-empty `voice_profile` and `voice_label` before Stage 1 video.
+2. **`voice_profile` content (1–3 sentences, concrete):**
+   - sex / apparent age band
+   - pitch/register (e.g. soft mid baritone, thin elderly female, preteen boy — not adult)
+   - pace (approx wpm or “slow measured / punchy fast”)
+   - accent/region (e.g. Midwestern American)
+   - energy/character (tired, aggressive, calm, confused)
+   - hard continuity line: “use this EXACT same vocal identity every time this character speaks;
+     do not reinvent pitch, age, or accent between clips”
+3. **Age variants get their own voice locks** (child ≠ adult). `Character_N_Young` must not reuse
+   adult Nick’s baritone profile; state child/preteen/teen register explicitly.
+4. **Do not restate a different voice in clip prompts.** Clip-level AUDIO may add emotion for the beat
+   (“angry, shouting”) but must not redefine age/sex/accent. The engine injects `voice_profile`
+   from the seed when `audio_payload.speaker` matches.
+5. **QA fail:** if a character’s voice clearly changes age/sex/accent across consecutive scenes
+   with the same seed, treat as continuity defect and regen with the locked profile enforced.
+6. **Silent-only extras** (no dialogue ever): still prefer a short `voice_profile` if they might
+   grunts/exclaim; if truly mute forever, `voice_profile` may be `"n/a — non-speaking"`.
+7. **No TTS ids in the blueprint by default.** Film dialogue is native model audio driven by
+   `voice_profile`. Do not invent or require `tts_voice` / Edge / SAPI ids in seeds.
+
 **Age variants are first-class seeds (REQUIRED when the story has flashbacks):**
 - Do NOT write `Young Character_N` as prose-only. Create separate tokens and use them in prompts:
   - `Character_P` / `Character_N` — present-day adults
   - `Character_P_Young` / `Character_N_Young` — childhood (~8–12)
   - `Character_P_Teen` / `Character_N_Teen` — mid/late teens when needed (~15–18)
-- Stage 0 character design generates a locked portrait for **every** seed, including `_Young` / `_Teen`.
+- Stage 0 character design generates a locked portrait **and** voice lock for **every** seed,
+  including `_Young` / `_Teen`.
 - Adult portraits must never be used as identity locks for child/teen flashbacks (causes adult bodybuilders as kids).
+- Adult `voice_profile` must never be reused unchanged on child/teen seeds.
 - In `visual_prompt`, write the age-variant token first when they are the hero:
   e.g. `Character_N_Young (about 12, sturdy preteen) steps forward...`
-- Minor one-off kids (e.g. “Mark”, “Bobby”) may stay descriptive text if they are not recurring; recurring ages get seeds.
+- Minor one-off kids (e.g. “Mark”, “Bobby”) may stay descriptive text if they are not recurring; recurring ages get seeds
+  (and if they speak more than once, they need a seed + voice lock).
 
 - Do not invent named on-screen speakers that are missing from `character_seed_tokens`
   (age-variant tokens count as valid speakers only if they truly speak; usually kids speak as themselves with the variant token).
@@ -431,7 +462,9 @@ OPERATOR QUICK START
 1. Set VIDEO_PROVIDER to grok or veo (replace {{VIDEO_PROVIDER}}).
 2. Provide the source book text / pages to adapt.
 3. Require the model to restate which profile it applied in a single pre-JSON line ONLY if the host allows non-JSON preamble; otherwise put `"video_provider_profile": "grok|veo"` inside `global_production_variables` and output pure JSON.
-4. Validate: runtime band, timestamp math, music sum, continuation rules, character roster closed-world, negative_prompt exact match.
+4. Validate: runtime band, timestamp math, music sum, continuation rules, character roster closed-world,
+   negative_prompt exact match, **every seed has voice_profile + voice_label** (age-variant voices
+   distinct from adult; no TTS ids required), display_name_policy honored for withhold characters.
 
 ================================================================
 GUI REVIEW LEARNINGS (appended from Streamlit edit log)

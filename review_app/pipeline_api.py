@@ -493,6 +493,49 @@ def list_characters(*, light: bool = False) -> List[Dict[str, Any]]:
     return sorted(rows, key=sort_key)
 
 
+def get_character_voice(char_key: str) -> Dict[str, str]:
+    return get_engine().get_character_voice_profile(char_key)
+
+
+def save_character_voice(
+    char_key: str,
+    *,
+    voice_profile: Optional[str] = None,
+    voice_label: Optional[str] = None,
+) -> Dict[str, Any]:
+    """Save native-audio voice lock only (no TTS engine ids)."""
+    info = get_engine().set_character_voice_profile(
+        char_key,
+        voice_profile=voice_profile,
+        voice_label=voice_label,
+    )
+    # Drop legacy TTS ids if still present on the seed
+    seeds = (
+        get_engine()
+        .blueprint.get("global_production_variables", {})
+        .get("character_seed_tokens", {})
+    )
+    seed = seeds.get(char_key)
+    if isinstance(seed, dict):
+        changed = False
+        for k in ("tts_voice", "edge_tts_voice"):
+            if k in seed:
+                del seed[k]
+                changed = True
+        if changed:
+            get_engine().save_blueprint_to_disk()
+            info = dict(seed)
+    edit_log.add_entry(
+        "character_voice",
+        user_note=f"Updated voice for {char_key}",
+        character=char_key,
+        action_taken="Saved voice_profile / voice_label on character seed",
+        targets=["nickandme.json"],
+        extra={"voice_profile": (voice_profile or "")[:200]},
+    )
+    return info
+
+
 def generate_character_variants(char_key: str) -> List[str]:
     eng = get_engine()
     paths = eng.generate_character_variants(char_key)

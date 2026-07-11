@@ -2,6 +2,29 @@
   "version": 1,
   "entries": [
     {
+      "id": "8d50b892",
+      "ts": "2026-07-11T12:04:55",
+      "type": "character_variants",
+      "scene": null,
+      "clip": null,
+      "character": "Bob",
+      "user_note": "Generated 3 variants",
+      "action_taken": "assets/characters/bob_variant_01.png, assets/characters/bob_variant_02.png, assets/characters/bob_variant_03.png",
+      "before": "",
+      "after": "",
+      "suggested_rule": "Character design: Generated 3 variants (character Bob)",
+      "targets": [
+        "assets/characters"
+      ],
+      "applied": {
+        "blueprint": false,
+        "adaptation_prompt": false,
+        "script_notes": false,
+        "learnings_md": false
+      },
+      "extra": {}
+    },
+    {
       "id": "9cabd954",
       "ts": "2026-07-11T10:27:33",
       "type": "character_cascade_regen",

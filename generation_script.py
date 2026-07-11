@@ -1711,12 +1711,85 @@ class AgenticGenerationEngine:
             "continuation",
         }
 
+    def get_character_voice_profile(self, speaker: str) -> Dict[str, str]:
+        """
+        Return locked voice fields for a speaker token from character_seed_tokens.
+        Keys: voice_profile (prompt text), tts_voice (edge-tts id), voice_label.
+        """
+        speaker = (speaker or "").strip()
+        empty = {"voice_profile": "", "tts_voice": "", "voice_label": ""}
+        if not speaker or speaker.lower() in ("none", "n/a", "null", "-"):
+            return empty
+        seeds = self.blueprint.get("global_production_variables", {}).get(
+            "character_seed_tokens", {}
+        )
+        info = seeds.get(speaker)
+        if not isinstance(info, dict):
+            # try case-insensitive / alias
+            for k, v in seeds.items():
+                if k.lower() == speaker.lower():
+                    info = v
+                    speaker = k
+                    break
+        if not isinstance(info, dict):
+            return empty
+        profile = (
+            (info.get("voice_profile") or info.get("voice_description") or "")
+            .strip()
+        )
+        tts = (info.get("tts_voice") or info.get("edge_tts_voice") or "").strip()
+        label = (info.get("voice_label") or speaker).strip()
+        return {
+            "voice_profile": profile,
+            "tts_voice": tts,
+            "voice_label": label,
+            "character_key": speaker,
+        }
+
+    def set_character_voice_profile(
+        self,
+        char_key: str,
+        *,
+        voice_profile: Optional[str] = None,
+        tts_voice: Optional[str] = None,
+        voice_label: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """Persist voice lock on a character seed in the blueprint."""
+        seeds = self.blueprint.setdefault("global_production_variables", {}).setdefault(
+            "character_seed_tokens", {}
+        )
+        if char_key not in seeds or not isinstance(seeds[char_key], dict):
+            raise GenerationFailure(f"Unknown character seed: {char_key}")
+        info = seeds[char_key]
+        if voice_profile is not None:
+            info["voice_profile"] = voice_profile.strip()
+        if tts_voice is not None:
+            info["tts_voice"] = tts_voice.strip()
+        if voice_label is not None:
+            info["voice_label"] = voice_label.strip()
+        self.save_blueprint_to_disk()
+        return dict(info)
+
+    def _voice_lock_clause(self, speaker: str) -> str:
+        """Short clause for Grok AUDIO block — same every scene for this speaker."""
+        vp = self.get_character_voice_profile(speaker)
+        profile = vp.get("voice_profile") or ""
+        if not profile:
+            return ""
+        label = vp.get("voice_label") or speaker
+        # Keep compact — full profiles can be long
+        return (
+            f" VOICE LOCK for {label} (use this EXACT same vocal identity every time this "
+            f"character speaks; do not reinvent pitch/age/accent between clips): {profile}"
+        )
+
     def _build_video_generation_prompt(self, clip: Dict[str, Any], mode: str = "fresh") -> str:
         """
         Merge visual_prompt + audio_payload so Grok generates native audio
         (dialogue / narration / ambient / Foley) with the picture.
 
         AUDIO is placed first — Grok responds better when speech is explicit and early.
+        Injects locked character voice_profile when speaker is a known seed.
         """
         visual = self._simplify_visual_for_single_clip((clip.get("visual_prompt") or "").strip())
         audio = clip.get("audio_payload") or {}
@@ -1752,6 +1825,7 @@ class AgenticGenerationEngine:
             "narration",
             "vo",
         )
+        voice_lock = self._voice_lock_clause(speaker) if speaker_ok else ""
 
         # Leading AUDIO block (format used successfully with Grok Imagine)
         if dialogue and speaker_ok and is_internal_vo:
@@ -1760,6 +1834,7 @@ class AgenticGenerationEngine:
                 f'by {speaker} at normal volume (NOT lip-synced conversation with another character): '
                 f'"{dialogue}". Character on screen should keep lips mostly closed / not mouth this text '
                 f'to someone else. Soft ambient under the voice.'
+                f'{voice_lock}'
             )
             framing_bits.append(
                 "Performance: contemplative thinking face; do not stage this as spoken dialogue to another person."
@@ -1770,6 +1845,7 @@ class AgenticGenerationEngine:
                 f'Clear on-camera spoken dialogue by {speaker} at normal listening volume, '
                 f'lip-synced when the speaker is visible: "{dialogue}". '
                 f'Also include matching ambient room tone and environmental Foley under the voice.'
+                f'{voice_lock}'
             )
         elif dialogue:
             audio_block = (
@@ -1922,14 +1998,20 @@ class AgenticGenerationEngine:
         min_bytes = max(12_000, int(duration_hint * 4_000))
         return int(stats.get("audio_bytes") or 0) < min_bytes
 
-    def _synthesize_dialogue_wav(self, text: str, wav_path: str) -> str:
+    def _synthesize_dialogue_wav(
+        self,
+        text: str,
+        wav_path: str,
+        *,
+        speaker: str = "",
+    ) -> str:
         """
         Create a WAV of the dialogue.
 
         Backends (first success wins):
-          1. espeak-ng / espeak  (typical on WSL/Linux)
-          2. Windows SAPI via powershell  (native Windows, or powershell.exe from WSL)
-          3. edge-tts CLI if installed
+          1. edge-tts (prefer character seed tts_voice, then EDGE_TTS_VOICE env)
+          2. espeak-ng / espeak  (typical on WSL/Linux)
+          3. Windows SAPI via powershell
         """
         import shutil
 
@@ -1940,6 +2022,11 @@ class AgenticGenerationEngine:
 
         abs_wav = os.path.abspath(wav_path)
         errors: List[str] = []
+        voice_id = ""
+        if speaker:
+            voice_id = self.get_character_voice_profile(speaker).get("tts_voice") or ""
+        if not voice_id:
+            voice_id = os.environ.get("EDGE_TTS_VOICE", "en-US-GuyNeural")
 
         # --- 1) edge-tts (most natural; optional: pip install edge-tts) ---
         edge = shutil.which("edge-tts")
@@ -1947,7 +2034,7 @@ class AgenticGenerationEngine:
             mp3_path = abs_wav + ".mp3"
             cmd = [
                 edge,
-                "--voice", os.environ.get("EDGE_TTS_VOICE", "en-US-GuyNeural"),
+                "--voice", voice_id,
                 "--text", raw,
                 "--write-media", mp3_path,
             ]
@@ -1964,7 +2051,7 @@ class AgenticGenerationEngine:
                 except OSError:
                     pass
                 if conv.returncode == 0 and file_is_usable(wav_path, min_bytes=100):
-                    print("  [Audio] TTS backend: edge-tts")
+                    print(f"  [Audio] TTS backend: edge-tts voice={voice_id!r} speaker={speaker!r}")
                     return wav_path
             errors.append(f"edge-tts: {(result.stderr or b'').decode(errors='ignore')[-120:]}")
 
@@ -2070,7 +2157,7 @@ class AgenticGenerationEngine:
             print(
                 f"  [Audio] Applying TTS dialogue ({mode}) for speaker={speaker!r}..."
             )
-            self._synthesize_dialogue_wav(dialogue, tts_wav)
+            self._synthesize_dialogue_wav(dialogue, tts_wav, speaker=speaker)
 
             has_native = self._video_has_audio(source_video)
             if mode == "mix" and has_native:

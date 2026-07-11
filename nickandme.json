@@ -15,27 +15,39 @@
         "reference_image_placeholder": "character_p_ref.png",
         "display_name_policy": "withheld_until_reveal",
         "canonical_given_name": "",
-        "name_reveal_note": "Given name withheld until late in the book; never show on-screen name tags/badges before the reveal beat. Use Character_P token only in early visual prompts."
+        "name_reveal_note": "Given name withheld until late in the book; never show on-screen name tags/badges before the reveal beat. Use Character_P token only in early visual prompts.",
+        "voice_label": "P (narrator / younger brother)",
+        "voice_profile": "American male, late 20s, Midwestern working-class, thin wiry speaker; soft mid baritone, slightly breathy and tired, thoughtful measured pace about 130-145 words per minute, gentle not booming, warm but weary, slight dry irony; consistent every scene."
       },
       "Character_N": {
         "description": "Older brother, 31, tall muscular build, reddish-brown hair, strong jaw, intense eyes, intimidating but protective presence; often gym clothes, factory workwear, or casual street clothes.",
-        "reference_image_placeholder": "character_n_ref.png"
+        "reference_image_placeholder": "character_n_ref.png",
+        "voice_label": "Nick (older brother)",
+        "voice_profile": "American male, early 30s, tall muscular presence; deeper lower baritone, denser chest voice, confident sometimes aggressive edge, faster punchy cadence about 140-160 wpm when angry, slower when protective; rougher Midwestern working-class timbre than his younger brother; same voice every scene — never switch to a thin or boyish voice."
       },
       "Character_M": {
         "description": "Elderly mother, mid-60s to 70s, thin frail frame, brown hair going gray, soft lined face, often house clothes or a simple cardigan; increasingly confused distant eyes; moves carefully, sometimes reaches for walls for balance.",
-        "reference_image_placeholder": "character_m_ref.png"
+        "reference_image_placeholder": "character_m_ref.png",
+        "voice_label": "Ma",
+        "voice_profile": "American female, mid-60s to 70s, frail elderly mother; thin soft higher voice with age, slower slightly unsteady cadence, Midwestern, gentle or confused not theatrical; consistent elderly female voice every scene."
       },
       "Character_S": {
         "description": "Young woman near 28, calm intelligent presence, light blue ocean eyes, pale skin, short brown hair, soft features, often casual tops (greens/neutrals) or simple dresses; empathetic expression, steady posture.",
-        "reference_image_placeholder": "character_s_ref.png"
+        "reference_image_placeholder": "character_s_ref.png",
+        "voice_label": "Sionna",
+        "voice_profile": "American female, late 20s, calm intelligent; warm clear mezzo, soft confident diction, unhurried thoughtful pace about 130-150 wpm, light Midwestern, kind not breathy-childish; same voice every scene."
       },
       "Kevin McCleary": {
         "description": "Adult man, mid-40s, solid build, short neat brown hair, practical work clothes, calm supervisory presence, weathered but kind face.",
-        "reference_image_placeholder": "character_kevin_mccleary_ref.png"
+        "reference_image_placeholder": "character_kevin_mccleary_ref.png",
+        "voice_label": "Kevin McCleary",
+        "voice_profile": "American male, mid-40s supervisor; steady practical mid baritone, calm professional, moderate pace, Midwestern workaday; consistent adult male supervisory voice."
       },
       "Bob": {
         "description": "Adult man, late 40s to early 50s, average build, thinning hair, friendly service-worker look, simple polo or work shirt, approachable everyday face.",
-        "reference_image_placeholder": "character_bob_ref.png"
+        "reference_image_placeholder": "character_bob_ref.png",
+        "voice_label": "Bob",
+        "voice_profile": "American male, late 40s to early 50s; friendly average mid baritone, casual approachable, easy pace, everyday Midwestern; consistent every scene."
       },
       "Character_P_Young": {
         "description": "Boy about 8-9 years old, child proportions (NOT adult), small thin frame, short dark brown hair, curious open face, often a simple red or blue t-shirt and jeans; same family features as adult Character_P but clearly a child. No name tag or embroidered name on clothing.",
@@ -43,13 +55,17 @@
         "age_band": "child_8_9",
         "variant_of": "Character_P",
         "display_name_policy": "withheld_until_reveal",
-        "name_reveal_note": "Given name withheld until late in the book; never show on-screen name tags/badges before the reveal beat. Use Character_P token only in early visual prompts."
+        "name_reveal_note": "Given name withheld until late in the book; never show on-screen name tags/badges before the reveal beat. Use Character_P token only in early visual prompts.",
+        "voice_label": "P as child",
+        "voice_profile": "American boy about 8-9, thin small child; higher light boy voice not adult, curious soft, faster light cadence; NEVER adult male voice; consistent child voice in flashbacks."
       },
       "Character_N_Young": {
         "description": "Boy about 12 years old, sturdy preteen build (NOT adult bodybuilder), short reddish-brown hair, confident posture, often dirty white/gray t-shirt and jeans; same family features as adult Character_N but clearly a child/preteen.",
         "reference_image_placeholder": "character_n_young_ref.png",
         "age_band": "child_12",
-        "variant_of": "Character_N"
+        "variant_of": "Character_N",
+        "voice_label": "Nick as child (~12)",
+        "voice_profile": "American boy about 12, sturdy preteen; higher than adult Nick but lower than little brother, confident kid energy, not adult baritone, not tiny toddler; consistent preteen male voice."
       },
       "Character_P_Teen": {
         "description": "Teen boy about 15 years old, still thin wiry frame, short dark brown hair, youthful face (NOT full adult), often gym shorts or casual t-shirt; recognizable as younger Character_P. No name tag or embroidered name on clothing.",
@@ -57,13 +73,17 @@
         "age_band": "teen_15",
         "variant_of": "Character_P",
         "display_name_policy": "withheld_until_reveal",
-        "name_reveal_note": "Given name withheld until late in the book; never show on-screen name tags/badges before the reveal beat. Use Character_P token only in early visual prompts."
+        "name_reveal_note": "Given name withheld until late in the book; never show on-screen name tags/badges before the reveal beat. Use Character_P token only in early visual prompts.",
+        "voice_label": "P as teen",
+        "voice_profile": "American male mid-late teens, thin; young voice cracking toward adult, softer than Nick, not full adult baritone yet; consistent teen male voice."
       },
       "Character_N_Teen": {
         "description": "Teen / young man about 16-18 years old, already muscular but not 31-year-old adult bulk, reddish-brown hair, often black leather jacket or casual tough clothes; recognizable as younger Character_N, not a middle-aged man.",
         "reference_image_placeholder": "character_n_teen_ref.png",
         "age_band": "teen_16_18",
-        "variant_of": "Character_N"
+        "variant_of": "Character_N",
+        "voice_label": "Nick as teen",
+        "voice_profile": "American male mid-late teens, athletic; deeper teen baritone building toward adult Nick, confident; not little-kid voice; consistent teen male voice."
       }
     }
   },
@@ -15375,5 +15395,20 @@
     "negative_prompt_updated": 751,
     "negative_prompt_already_current": 0,
     "character_p_policy": "withheld_until_reveal"
+  },
+  "_voice_profile_pass": {
+    "date": "2026-07-11",
+    "characters": [
+      "Character_P",
+      "Character_N",
+      "Character_M",
+      "Character_S",
+      "Kevin McCleary",
+      "Bob",
+      "Character_P_Young",
+      "Character_N_Young",
+      "Character_P_Teen",
+      "Character_N_Teen"
+    ]
   }
 }
