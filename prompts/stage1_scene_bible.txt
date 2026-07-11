@@ -51,8 +51,48 @@ Also set when relevant:
 - age_band, variant_of for Young/Teen
 - display_name_policy: ok_anytime | withheld_until_reveal | never_on_screen
 - name_reveal_note / canonical_given_name (adapter notes only; never force early on-screen names)
+- name_reveal_scene (integer scene_number where on-screen/spoken given name first becomes allowed;
+  required when display_name_policy is withheld_until_reveal)
 
 Age variants need their **own** voice_profile (child ≠ adult baritone).
+
+================================================================
+SPOILERS & REVEAL TIMING (REQUIRED — Stage 1 owns this)
+================================================================
+Stage 1 MUST identify spoilers. Stage 2 and the verifier only enforce what you declare here.
+
+1. **Per character (seeds)**
+   - If the book withholds a legal/first name, secret identity, death, relationship, or plot twist
+     that must not appear early: set display_name_policy / notes and **when** reveal is allowed
+     (name_reveal_scene and/or name_reveal_note with beat language).
+   - Prefer Character_* tokens in all early dialogue and visual descriptions.
+   - **Never** ban a spoiler by writing the secret string into prompts (that teaches the model
+     the secret). Describe the constraint without the payload
+     (e.g. “no personal name on clothing or badges” — not “do not show the name X”).
+
+2. **Global register (recommended)**
+   In global_production_variables, when useful, set `spoiler_register` as an array of:
+   - id (stable: sp1, sp2, …)
+   - kind: name | identity | plot | relationship | death | other
+   - summary (spoiler-safe wording — what is withheld, not the secret text if avoidable)
+   - allowed_from_scene (first scene_number where reveal is OK; null = never on screen)
+   - allowed_from_beat_id (optional finer grain once that scene exists)
+   - characters (tokens involved)
+
+3. **Per scene — spoiler_constraints[] (REQUIRED when any withhold applies)**
+   Every scene that occurs **before** a reveal must list active constraints, e.g.:
+   - "No name tags / personal names on clothing for Character_P (withheld_until_reveal)"
+   - "Do not depict twist Y; still unknown at this story day"
+   Scenes **at/after** reveal may drop the constraint or replace with
+   "Reveal allowed: given name may appear in dialogue/props if the beat requires it."
+
+4. **Per beat (when the beat is the reveal or must stay clean)**
+   - On the reveal beat: intent/visual_event may allow the name; mark clearly (e.g. intent
+     includes "name reveal").
+   - On pre-reveal beats: must-not / visual_event must not depend on the secret.
+
+If you cannot place a reveal scene from the book, set name_reveal_note to "unknown — keep
+withheld" and treat all scenes as pre-reveal until the operator fills it.
 
 ================================================================
 SCENE RULES
@@ -66,7 +106,7 @@ For each scene:
 - characters_on_screen (tokens only)
 - transition_type, lighting_continuity_token
 - wardrobe_notes (incremental)
-- spoiler_constraints[] (name tags, reveals, etc.)
+- spoiler_constraints[] (name tags, plot reveals, etc. — see SPOILERS section)
 - music_intent (style + mood_arc; not a full timed song_structure unless easy)
 - story_beats[] ordered
 - source_book_refs[] and, when the operator supplies book text/PDF extracts,
@@ -101,7 +141,8 @@ Blocking:
   blocking_notes (who faces whom, camera side). Do not leave “steps toward her” alone.
 
 Must-not:
-- List forbidden visuals that would break VO or spoilers (name badge, wrong prop outcome).
+- List forbidden visuals that would break VO or spoilers (name badge, wrong prop outcome,
+  early depiction of a registered spoiler). Prefer spoiler-safe phrasing (no secret payload).
 
 primary_subject:
 - Character token Stage 2 must put first in visual_prompt for identity lock.
@@ -124,3 +165,12 @@ No markdown fences unless the host requires them.
 
 Operator supplies: book text, TOTAL_RUNTIME_MINUTES, any spoiler/name policies,
 and optionally existing character seeds to extend rather than reinvent.
+
+Also respect prompts/shared_rules.txt when present.
+
+================================================================
+GUI LEARNINGS (appended from Streamlit edit log)
+================================================================
+<!-- STAGE1_LEARNINGS_START -->
+<!-- STAGE1_LEARNINGS_END -->
+

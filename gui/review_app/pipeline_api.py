@@ -41,6 +41,7 @@ from renderer import (  # noqa: E402
     music_output_path,
 )
 from review_app import edit_log  # noqa: E402
+from review_app import learning  # noqa: E402
 from review_app.cost_estimate import (  # noqa: E402
     estimate_scene_cost,
     film_budget_report,
@@ -213,6 +214,7 @@ def list_scenes(*, light: bool = False, include_costs: bool = True) -> List[Dict
                         break
 
         hero = (eng.state.get("scene_hero") or {}).get(str(sn))
+        dirty_row = learning.get_scene_dirty(eng.state, int(sn)) if sn is not None else None
         row: Dict[str, Any] = {
             "scene_number": sn,
             "setting": s.get("setting", ""),
@@ -229,6 +231,17 @@ def list_scenes(*, light: bool = False, include_costs: bool = True) -> List[Dict
             "play_path": play_path,
             "thumb_path": thumb_path,
             "duration": s.get("total_estimated_duration_seconds"),
+            "dirty": bool(
+                dirty_row and (dirty_row.get("stage1") or dirty_row.get("stage2"))
+            ),
+            "dirty_stage1": bool(dirty_row and dirty_row.get("stage1")),
+            "dirty_stage2": bool(dirty_row and dirty_row.get("stage2")),
+            "dirty_reason": (dirty_row or {}).get("reason") or "",
+            "dirty_cascade": (
+                "stage1→stage2"
+                if dirty_row and dirty_row.get("stage1")
+                else ("stage2" if dirty_row and dirty_row.get("stage2") else None)
+            ),
         }
 
         if not light and include_costs:
@@ -294,6 +307,16 @@ def home_dashboard() -> Dict[str, Any]:
     wip = wip_path()
     wip_meta = (eng.state.get("wip_movie") or {}) if isinstance(eng.state, dict) else {}
     proj = active_project_info()
+    dirty = learning.dirty_summary(eng.state)
+    # Attach dirty flags onto light scene rows for list badges
+    dirty_by_sn = {int(r["scene"]): r for r in dirty.get("scenes") or [] if r.get("scene") is not None}
+    for s in scenes:
+        sn = s.get("scene_number")
+        d = dirty_by_sn.get(int(sn)) if sn is not None else None
+        s["dirty"] = bool(d)
+        s["dirty_stage1"] = bool(d and d.get("stage1"))
+        s["dirty_stage2"] = bool(d and d.get("stage2"))
+        s["dirty_cascade"] = (d or {}).get("cascade")
     return {
         "title": eng.blueprint.get("movie_title", "Untitled"),
         "project": proj,
@@ -307,6 +330,10 @@ def home_dashboard() -> Dict[str, Any]:
         "chars_locked": sum(1 for c in chars if c.get("locked")),
         "stale_count": len(stale),
         "stale_labels": [r.get("label") for r in stale[:15]],
+        "dirty_count": dirty.get("dirty_count", 0),
+        "dirty_need_stage1": dirty.get("need_stage1", 0),
+        "dirty_need_stage2": dirty.get("need_stage2", 0),
+        "dirty_scenes": dirty.get("scenes") or [],
         "wip_path": wip,
         "wip_updated_at": wip_meta.get("updated_at"),
         "wip_scene_count": wip_meta.get("scene_count"),
@@ -392,7 +419,13 @@ def update_clip_prompts(
     raise GenerationFailure(f"S{scene_num}C{clip_num} not found")
 
 
-def pass_clip(scene_num: int, clip_num: int, note: str = "") -> None:
+def pass_clip(
+    scene_num: int,
+    clip_num: int,
+    note: str = "",
+    *,
+    learning_layer: str = "clip",
+) -> None:
     eng = get_engine()
     eng.set_clip_review_status(scene_num, clip_num, "pass", note)
     edit_log.add_entry(
@@ -401,21 +434,50 @@ def pass_clip(scene_num: int, clip_num: int, note: str = "") -> None:
         scene=scene_num,
         clip=clip_num,
         action_taken="review_status=pass",
+        learning_layer=learning_layer or "clip",
         targets=["pipeline_state.json"],
     )
 
 
-def fail_clip(scene_num: int, clip_num: int, note: str = "") -> None:
+def fail_clip(
+    scene_num: int,
+    clip_num: int,
+    note: str = "",
+    *,
+    learning_layer: Optional[str] = None,
+    mark_dirty: bool = True,
+) -> Dict[str, Any]:
+    """
+    Mark clip failed. If learning_layer is stage1/stage2, mark scene dirty for replan.
+    Returns {entry, dirty_row|None}.
+    """
     eng = get_engine()
     eng.set_clip_review_status(scene_num, clip_num, "fail", note)
-    edit_log.add_entry(
+    layer = learning.normalize_layer(
+        learning_layer or learning.suggest_layer_from_note(note)
+    )
+    entry = edit_log.add_entry(
         "clip_fail",
         user_note=note or "Failed",
         scene=scene_num,
         clip=clip_num,
         action_taken="review_status=fail",
-        targets=["pipeline_state.json"],
+        learning_layer=layer,
     )
+    dirty_row = None
+    keys = learning.dirty_keys_for_layer(layer)
+    if mark_dirty and keys:
+        dirty_row = learning.mark_scene_dirty(
+            eng.state,
+            scene_num,
+            keys=keys,
+            reason=note or f"fail S{scene_num}C{clip_num}",
+            entry_id=entry.get("id"),
+            learning_layer=layer,
+        )
+        eng.save_state()
+        edit_log.mark_applied(entry["id"], "dirty_marked")
+    return {"entry": entry, "dirty_row": dirty_row, "learning_layer": layer}
 
 
 def regen_clip(
@@ -425,6 +487,9 @@ def regen_clip(
     apply_to_prompt: bool = True,
     run_qa: bool = True,
     rebuild_wip: bool = True,
+    *,
+    learning_layer: Optional[str] = None,
+    mark_dirty: bool = True,
 ) -> str:
     eng = get_engine()
     old_vp = ""
@@ -446,7 +511,11 @@ def regen_clip(
         wip_path = eng.remux_scenes_and_rebuild_wip(
             [scene_num], reason=f"after regen S{scene_num}C{clip_num}"
         )
-    edit_log.add_entry(
+    layer = learning.normalize_layer(
+        learning_layer
+        or (learning.suggest_layer_from_note(feedback) if feedback else "clip")
+    )
+    entry = edit_log.add_entry(
         "clip_regen",
         user_note=feedback or "Regenerate without prompt change",
         scene=scene_num,
@@ -454,9 +523,135 @@ def regen_clip(
         action_taken=f"Wiped and regenerated → {path}; WIP={wip_path or 'skipped'}",
         before=old_vp,
         after=new_vp,
-        targets=["blueprint", "assets/video", "assets/movie_wip.mp4"],
+        learning_layer=layer,
+        targets=learning.targets_for_layer(layer)
+        + ["assets/video", "assets/movie_wip.mp4"],
     )
+    keys = learning.dirty_keys_for_layer(layer)
+    if mark_dirty and keys:
+        learning.mark_scene_dirty(
+            eng.state,
+            scene_num,
+            keys=keys,
+            reason=feedback or f"regen S{scene_num}C{clip_num}",
+            entry_id=entry.get("id"),
+            learning_layer=layer,
+        )
+        eng.save_state()
+        edit_log.mark_applied(entry["id"], "dirty_marked")
     return path
+
+
+def log_clip_feedback(
+    scene_num: int,
+    clip_num: int,
+    note: str,
+    *,
+    learning_layer: Optional[str] = None,
+    mark_dirty: bool = True,
+    before: str = "",
+) -> Dict[str, Any]:
+    """Log feedback without pass/fail/regen; optionally dirty the scene."""
+    eng = get_engine()
+    layer = learning.normalize_layer(
+        learning_layer or learning.suggest_layer_from_note(note)
+    )
+    entry = edit_log.add_entry(
+        "clip_note",
+        user_note=note or "Note",
+        scene=scene_num,
+        clip=clip_num,
+        action_taken="Logged without regen",
+        before=before,
+        after=before,
+        learning_layer=layer,
+    )
+    dirty_row = None
+    keys = learning.dirty_keys_for_layer(layer)
+    if mark_dirty and keys:
+        dirty_row = learning.mark_scene_dirty(
+            eng.state,
+            scene_num,
+            keys=keys,
+            reason=note,
+            entry_id=entry.get("id"),
+            learning_layer=layer,
+        )
+        eng.save_state()
+        edit_log.mark_applied(entry["id"], "dirty_marked")
+    return {"entry": entry, "dirty_row": dirty_row, "learning_layer": layer}
+
+
+def mark_scene_needs_replan(
+    scene_num: int,
+    *,
+    cascade: str = "stage2",
+    reason: str = "",
+    note: str = "",
+) -> Dict[str, Any]:
+    """
+    cascade: 'stage2' | 'stage1' (stage1 implies stage1+stage2 dirty).
+    """
+    eng = get_engine()
+    cascade = (cascade or "stage2").lower()
+    if cascade in ("stage1", "s1", "bible", "stage1→stage2", "stage1->stage2"):
+        keys = ("stage1", "stage2")
+        layer = "stage1"
+        action = "Marked needs Stage 1 re-bible then Stage 2 replan"
+    else:
+        keys = ("stage2",)
+        layer = "stage2"
+        action = "Marked needs Stage 2 replan"
+    entry = edit_log.add_entry(
+        "scene_dirty",
+        user_note=note or reason or action,
+        scene=scene_num,
+        action_taken=action,
+        learning_layer=layer,
+        suggested_rule=reason or note,
+    )
+    row = learning.mark_scene_dirty(
+        eng.state,
+        scene_num,
+        keys=keys,
+        reason=reason or note or action,
+        entry_id=entry.get("id"),
+        learning_layer=layer,
+    )
+    eng.save_state()
+    edit_log.mark_applied(entry["id"], "dirty_marked")
+    return {"entry": entry, "dirty_row": row}
+
+
+def clear_scene_replan_flag(
+    scene_num: int,
+    *,
+    keys: Optional[List[str]] = None,
+) -> None:
+    eng = get_engine()
+    learning.clear_scene_dirty(eng.state, scene_num, keys=keys)
+    eng.save_state()
+    edit_log.add_entry(
+        "scene_dirty_clear",
+        user_note=f"Cleared dirty flags for scene {scene_num}"
+        + (f" ({','.join(keys)})" if keys else " (all)"),
+        scene=scene_num,
+        action_taken="scene_dirty cleared",
+        learning_layer="clip",
+        targets=["pipeline_state.json"],
+    )
+
+
+def list_dirty_scenes() -> List[Dict[str, Any]]:
+    return learning.list_dirty_scenes(get_engine().state)
+
+
+def dirty_summary() -> Dict[str, Any]:
+    return learning.dirty_summary(get_engine().state)
+
+
+def get_scene_dirty(scene_num: int) -> Optional[Dict[str, Any]]:
+    return learning.get_scene_dirty(get_engine().state, scene_num)
 
 
 def approve_scene(scene_num: int) -> None:

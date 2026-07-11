@@ -68,7 +68,9 @@ if st.session_state.clip_num is None:
     for s in rows:
         sn = s["scene_number"]
         stale_n = int(s.get("stale_clips") or 0)
-        if stale_n:
+        if s.get("dirty"):
+            status = "🔁"
+        elif stale_n:
             status = "⚠️"
         elif s.get("is_hero"):
             status = "⭐"
@@ -79,10 +81,11 @@ if st.session_state.clip_num is None:
         else:
             status = "·"
         stale_txt = f" · {stale_n} stale" if stale_n else ""
+        dirty_txt = f" · dirty {s.get('dirty_cascade')}" if s.get("dirty") else ""
         hero_txt = f" · hero {s.get('hero_resolution')}" if s.get("is_hero") else ""
         label = (
             f"{status} Scene {sn:02d} — {s.get('setting', '')[:56]} "
-            f"({s['clips_on_disk']}/{s['clip_count']} clips{stale_txt}{hero_txt})"
+            f"({s['clips_on_disk']}/{s['clip_count']} clips{stale_txt}{dirty_txt}{hero_txt})"
         )
         # open | play | badges (thumbs/costs deferred for speed)
         cols = st.columns([3.6, 0.5, 0.9])
@@ -101,6 +104,8 @@ if st.session_state.clip_num is None:
                 st.caption("")
         with cols[2]:
             help_bits = []
+            if s.get("dirty"):
+                help_bits.append("dirty")
             if s.get("composite_path") or s.get("composite_exists"):
                 help_bits.append("mux")
             if s.get("approved"):
@@ -128,6 +133,34 @@ st.caption(
     f"{scene.get('total_estimated_duration_seconds')}s · "
     f"transition={scene.get('transition_type')}"
 )
+
+dirty = api.get_scene_dirty(sn)
+if dirty and (dirty.get("stage1") or dirty.get("stage2")):
+    cascade = "stage1→stage2" if dirty.get("stage1") else "stage2"
+    st.warning(
+        f"**Needs replan ({cascade})** — {dirty.get('reason') or 'marked dirty'}. "
+        f"Updated {dirty.get('updated_at') or '—'}. "
+        "Phase A: re-run Stage scripts / edit JSON, then clear the flag."
+    )
+    with st.expander("Cascade checklist", expanded=True):
+        from review_app import learning as learning_mod
+
+        steps = (
+            learning_mod.CASCADE_CHECKLIST["stage1"]
+            if dirty.get("stage1")
+            else learning_mod.CASCADE_CHECKLIST["stage2"]
+        )
+        for step in steps:
+            st.markdown(f"- {step}")
+    c_clear1, c_clear2 = st.columns(2)
+    with c_clear1:
+        if st.button("Clear Stage 2 dirty only", key=f"clr_s2_{sn}"):
+            api.clear_scene_replan_flag(sn, keys=["stage2"])
+            st.rerun()
+    with c_clear2:
+        if st.button("Clear all dirty flags", key=f"clr_all_{sn}"):
+            api.clear_scene_replan_flag(sn)
+            st.rerun()
 
 clips = api.list_clips(sn)
 
@@ -191,6 +224,40 @@ with a3:
                 st.error(str(e))
     if scene_meta.get("composite_path"):
         st.caption(scene_meta["composite_path"])
+
+# ---- Learning cascade (Phase A: mark dirty + checklist) ----
+st.divider()
+st.subheader("Learning cascade")
+st.caption(
+    "Mark this scene for replan when the failure is not clip-only. "
+    "Phase A does not auto-run Stage 1/2 LLMs — use the checklist, then clear dirty."
+)
+d1, d2 = st.columns(2)
+with d1:
+    if st.button("🔁 Needs Stage 2 replan", key=f"dirty_s2_{sn}", use_container_width=True):
+        try:
+            api.mark_scene_needs_replan(
+                sn, cascade="stage2", reason=f"Manual Stage 2 replan for scene {sn}"
+            )
+            st.success("Scene marked dirty (stage2).")
+            st.rerun()
+        except Exception as e:
+            st.error(str(e))
+with d2:
+    if st.button(
+        "📖 Needs Stage 1→2 re-bible",
+        key=f"dirty_s1_{sn}",
+        use_container_width=True,
+        help="Story/bible wrong — re-extract Stage 1 for this scene, then Stage 2",
+    ):
+        try:
+            api.mark_scene_needs_replan(
+                sn, cascade="stage1", reason=f"Manual Stage 1→2 cascade for scene {sn}"
+            )
+            st.success("Scene marked dirty (stage1→stage2).")
+            st.rerun()
+        except Exception as e:
+            st.error(str(e))
 
 # ---- Hero / delivery pass ----
 st.divider()
@@ -535,24 +602,65 @@ if st.button("Save prompts to blueprint"):
 
 st.divider()
 st.subheader("Review actions")
+from review_app import learning as learning_mod
+
 feedback = st.text_area(
     "What's wrong? (optional — appended to prompt on regen)",
     placeholder="e.g. Nick faces Mrs. Engel window, camera behind him, not facing camera",
     key=f"fb_{sn}_{cn}",
 )
+# Heuristic suggestion only (do not force selectbox — typing would reset user choice)
+_suggested = learning_mod.suggest_layer_from_note(feedback)
+_layer_opts = list(learning_mod.FEEDBACK_LAYERS)
+st.caption(
+    f"Suggested layer from note: **`{_suggested}`** "
+    f"({learning_mod.LAYER_LABELS.get(_suggested, '')})"
+)
+learning_layer = st.selectbox(
+    "Feedback route (learning layer)",
+    options=_layer_opts,
+    format_func=lambda k: learning_mod.LAYER_LABELS.get(k, k),
+    key=f"layer_{sn}_{cn}",
+    help=(
+        "clip = this take only · stage2 = replan shots · stage1 = re-bible then stage2 · "
+        "verifier = detection rubric · engine = renderer code notes"
+    ),
+)
+if st.button("Use suggested layer", key=f"use_sug_{sn}_{cn}"):
+    st.session_state[f"layer_{sn}_{cn}"] = _suggested
+    st.rerun()
+if learning_layer in ("stage1", "stage2"):
+    st.caption(
+        f"Selecting **{learning_layer}** will mark this scene dirty for cascade replan "
+        f"({'+'.join(learning_mod.dirty_keys_for_layer(learning_layer))})."
+    )
 apply_fb = st.checkbox("Append feedback to visual_prompt when regenerating", value=True)
 run_qa = st.checkbox("Run QA after regen", value=True)
+mark_dirty = st.checkbox(
+    "Mark scene dirty when layer needs replan",
+    value=True,
+    help="Only stage1/stage2 layers create dirty flags",
+)
 
 b1, b2, b3, b4 = st.columns(4)
 with b1:
     if st.button("✅ Pass", use_container_width=True):
-        api.pass_clip(sn, int(cn), feedback)
+        api.pass_clip(sn, int(cn), feedback, learning_layer="clip")
         st.success("Passed")
         st.rerun()
 with b2:
     if st.button("❌ Fail", use_container_width=True):
-        api.fail_clip(sn, int(cn), feedback)
-        st.warning("Failed")
+        result = api.fail_clip(
+            sn,
+            int(cn),
+            feedback,
+            learning_layer=learning_layer,
+            mark_dirty=mark_dirty,
+        )
+        msg = f"Failed · layer={result.get('learning_layer')}"
+        if result.get("dirty_row"):
+            msg += " · scene marked dirty"
+        st.warning(msg)
         st.rerun()
 with b3:
     if st.button("♻️ Regen", type="primary", use_container_width=True):
@@ -564,6 +672,8 @@ with b3:
                     feedback=feedback,
                     apply_to_prompt=apply_fb and bool(feedback.strip()),
                     run_qa=run_qa,
+                    learning_layer=learning_layer,
+                    mark_dirty=mark_dirty,
                 )
                 st.success(f"Done: {path}")
                 st.rerun()
@@ -571,18 +681,19 @@ with b3:
                 st.error(str(e))
 with b4:
     if st.button("Log note only", use_container_width=True):
-        from review_app import edit_log
-
-        edit_log.add_entry(
-            "clip_note",
-            user_note=feedback or "Note",
-            scene=sn,
-            clip=int(cn),
-            action_taken="Logged without regen",
+        result = api.log_clip_feedback(
+            sn,
+            int(cn),
+            feedback or "Note",
+            learning_layer=learning_layer,
+            mark_dirty=mark_dirty,
             before=row.get("visual_prompt") or "",
-            after=row.get("visual_prompt") or "",
         )
-        st.success("Logged to edit_feedback_log.json")
+        st.success(
+            f"Logged `{result['entry']['id']}` · layer={result.get('learning_layer')}"
+            + (" · dirty" if result.get("dirty_row") else "")
+        )
+        st.rerun()
 
 # Neighbor navigation
 nav_l, nav_r = st.columns(2)

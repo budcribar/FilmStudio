@@ -1,0 +1,31 @@
+# Shared rules (prompt pack)
+
+Rules that Stage 1, Stage 2, and the clip verifier must all respect.
+Prefer short, testable bullets. Do not dump one-off clip notes here — promote
+only durable patterns (eyeline, continuous action, VO↔visual fidelity, age tokens).
+
+When a rule is scene-specific, keep it out of this file and fix Stage 1/2 for that scene.
+
+================================================================
+BASELINE (always on)
+================================================================
+- **Spoilers:** Stage 1 owns reveal timing (`display_name_policy`, `name_reveal_scene`,
+  per-scene `spoiler_constraints`, optional `spoiler_register`). Stage 2 must not put
+  withheld given names or secret plot facts on screen/in dialogue before allowed.
+  Verifier fails early name tags, spoken withheld names, or registered plot leaks.
+  Never “ban” a secret by writing the secret string into prompts.
+- **Tokens:** Use Character_* in plans; age variants for flashbacks.
+- **VO↔visual:** If the beat/VO says through the window, the picture must not do over the wall.
+
+================================================================
+OPERATOR NOTES
+================================================================
+- Source of truth for product-wide learnings (alongside stage prompts).
+- Streamlit Edit Log can append under GUI LEARNINGS markers below.
+- Prefer routing: clip-only → Stage 2 policy → Stage 1 story → engine code.
+
+================================================================
+GUI LEARNINGS (appended from Streamlit edit log)
+================================================================
+<!-- SHARED_LEARNINGS_START -->
+<!-- SHARED_LEARNINGS_END -->

@@ -74,7 +74,41 @@
                 "enum": ["ok_anytime", "withheld_until_reveal", "never_on_screen"]
               },
               "canonical_given_name": { "type": "string" },
-              "name_reveal_note": { "type": "string" }
+              "name_reveal_note": { "type": "string" },
+              "name_reveal_scene": {
+                "type": "integer",
+                "minimum": 1,
+                "description": "First scene_number where given name may appear on screen/dialogue when policy is withheld_until_reveal"
+              }
+            }
+          }
+        },
+        "spoiler_register": {
+          "type": "array",
+          "description": "Global list of withhold/reveal items Stage 2 and verifier enforce",
+          "items": {
+            "type": "object",
+            "required": ["id", "kind", "summary"],
+            "properties": {
+              "id": { "type": "string" },
+              "kind": {
+                "type": "string",
+                "enum": ["name", "identity", "plot", "relationship", "death", "other"]
+              },
+              "summary": {
+                "type": "string",
+                "description": "Spoiler-safe description of what is withheld"
+              },
+              "allowed_from_scene": {
+                "type": ["integer", "null"],
+                "minimum": 1,
+                "description": "First scene_number where reveal is OK; null = never on screen"
+              },
+              "allowed_from_beat_id": { "type": "string" },
+              "characters": {
+                "type": "array",
+                "items": { "type": "string" }
+              }
             }
           }
         }

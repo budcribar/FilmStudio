@@ -24,7 +24,8 @@ Needs `XAI_API_KEY`, `ffmpeg` on PATH, and `pip install -r requirements-review.t
 | `cli/` | Command-line frontend |
 | `projects/<id>/` | Per-film blueprint, config, state, assets |
 | `projects/workspace.json` | Active project |
-| `prompts/` | Adaptation + Stage 1/2 prompts |
+| `prompts/` | Stage 1/2 + verifier + shared rules |
+| `docs/learning_loop.md` | Phase A feedback routing / dirty flags |
 | `scripts/` | Maintenance / two-stage tools |
 | `docs/two_stage_adaptation/` | Stage 1/2 workflow |
 

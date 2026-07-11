@@ -95,12 +95,31 @@ st.caption(
     f"Project `{proj.get('id')}` · `{proj.get('path')}` · blueprint `{dash.get('blueprint_path')}`"
 )
 
-c1, c2, c3, c4, c5 = st.columns(5)
+c1, c2, c3, c4, c5, c6 = st.columns(6)
 c1.metric("Scenes", f"{dash.get('approved', 0)}/{dash.get('scene_count', 0)} approved")
 c2.metric("Clips on disk", f"{dash.get('clips_on_disk', 0)}/{dash.get('clips_total', 0)}")
 c3.metric("Characters", f"{dash.get('chars_locked', 0)}/{dash.get('char_count', 0)} locked")
 c4.metric("Hero scenes", dash.get("hero_count", 0))
 c5.metric("Stale clips", dash.get("stale_count", 0))
+c6.metric("Dirty (replan)", dash.get("dirty_count", 0))
+
+dirty_n = int(dash.get("dirty_count") or 0)
+if dirty_n:
+    dirty_rows = dash.get("dirty_scenes") or []
+    labels = [
+        f"S{r.get('scene')}({r.get('cascade')})"
+        for r in dirty_rows[:12]
+    ]
+    st.warning(
+        f"**{dirty_n} scene(s) need replan** "
+        f"(stage1: {dash.get('dirty_need_stage1', 0)}, "
+        f"stage2: {dash.get('dirty_need_stage2', 0)}) — "
+        f"{', '.join(labels)}"
+        + ("…" if dirty_n > len(labels) else "")
+        + ". Open **Scenes**, follow cascade checklist, then clear dirty."
+    )
+else:
+    st.caption("No dirty scenes (no Stage 1/2 replan backlog).")
 
 stale_n = int(dash.get("stale_count") or 0)
 if stale_n:

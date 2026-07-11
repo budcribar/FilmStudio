@@ -96,12 +96,17 @@ def add_entry(
     suggested_rule: str = "",
     targets: Optional[List[str]] = None,
     extra: Optional[Dict[str, Any]] = None,
+    learning_layer: Optional[str] = None,
 ) -> Dict[str, Any]:
+    from review_app import learning as learning_mod
+
+    layer = learning_mod.normalize_layer(learning_layer)
     data = load_log()
     entry: Dict[str, Any] = {
         "id": str(uuid.uuid4())[:8],
         "ts": _now(),
         "type": entry_type,
+        "learning_layer": layer,
         "scene": scene,
         "clip": clip,
         "character": character,
@@ -111,13 +116,15 @@ def add_entry(
         "after": after,
         "suggested_rule": suggested_rule
         or _suggest_rule(entry_type, user_note, scene, clip, character),
-        "targets": targets
-        or ["nickandme.clips.grok.json", "prompts/adaptation_v16.txt", "renderer"],
+        "targets": targets or learning_mod.targets_for_layer(layer),
         "applied": {
             "blueprint": False,
             "adaptation_prompt": False,
             "script_notes": False,
             "learnings_md": False,
+            "layer_prompts": False,
+            "shared_rules": False,
+            "dirty_marked": False,
         },
         "extra": extra or {},
     }
@@ -275,6 +282,7 @@ def filter_entries(
     entry_type: Optional[str] = None,
     scene: Optional[int] = None,
     unapplied_only: bool = False,
+    learning_layer: Optional[str] = None,
 ) -> List[Dict[str, Any]]:
     out = []
     for e in entries:
@@ -282,9 +290,18 @@ def filter_entries(
             continue
         if scene is not None and e.get("scene") != scene:
             continue
+        if learning_layer and (e.get("learning_layer") or "clip") != learning_layer:
+            continue
         if unapplied_only:
             applied = e.get("applied") or {}
-            if all(applied.get(k) for k in ("blueprint", "adaptation_prompt", "script_notes", "learnings_md")):
+            keys = (
+                "blueprint",
+                "adaptation_prompt",
+                "script_notes",
+                "learnings_md",
+                "layer_prompts",
+            )
+            if all(applied.get(k) for k in keys):
                 continue
         out.append(e)
     return out

@@ -116,7 +116,10 @@ visual_prompt must:
 - Be filmable progressive motion for action_class big_action
 - Include lips closed language for voiceover_internal
 - Include faces/OTS language when blocking_notes demand it
-- Never put withheld given names on screen (Stage 1 spoiler_constraints)
+- **Spoilers:** Honor Stage 1 per-scene `spoiler_constraints` and seed
+  `display_name_policy` / `name_reveal_scene`. Before reveal: no personal names on
+  clothing, props, UI, or dialogue; use Character_* only. Do not write secret names into
+  negatives. At/after reveal: only if the beat needs it.
 
 Do NOT invent voice_profile text per clip — pipeline injects seed voice locks.
 You may add momentary emotion (“angry, short”) without changing age/sex/accent.
@@ -151,3 +154,12 @@ Validate before return:
 - Timestamps contiguous; totals match provider rules
 - negative_prompt exact base string (plus optional surgical extras)
 - delivery is one of spoken_on_camera | voiceover_internal | none
+
+Also respect prompts/shared_rules.txt when present.
+
+================================================================
+GUI LEARNINGS (appended from Streamlit edit log)
+================================================================
+<!-- STAGE2_LEARNINGS_START -->
+
+<!-- STAGE2_LEARNINGS_END -->
