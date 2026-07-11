@@ -69,111 +69,172 @@ def save_config(updates: Dict[str, Any]) -> Dict[str, Any]:
 
 # ---------- Blueprint / scenes ----------
 
-def list_scenes() -> List[Dict[str, Any]]:
+def list_scenes(*, light: bool = False, include_costs: bool = True) -> List[Dict[str, Any]]:
+    """
+    light=True: skip thumbs, play_path probing beyond composite, and all cost math
+      (fast for home dashboard / scene list shell).
+    include_costs=False: same cost skip even when not fully light (still may set play/thumb).
+    """
     eng = get_engine()
     out = []
     completed = eng.state.get("scenes_completed") or {}
     stale_by_scene: Dict[int, int] = {}
+    stale_clips_by_scene: Dict[int, List[int]] = {}
+    # One stale pass for the whole film
     for row in eng.list_stale_clips(only_existing=True):
-        stale_by_scene[row["scene"]] = stale_by_scene.get(row["scene"], 0) + 1
+        sn = row["scene"]
+        stale_by_scene[sn] = stale_by_scene.get(sn, 0) + 1
+        stale_clips_by_scene.setdefault(sn, []).append(row["clip"])
+
+    # Optional: one filesystem listing of video dir for faster existence checks
+    video_files: Optional[set] = None
+    if light:
+        try:
+            video_files = set(os.listdir("assets/video"))
+        except OSError:
+            video_files = None
+
+    def _clip_exists(sn: int, cn: int) -> bool:
+        name = f"scene_{int(sn):02d}_clip_{int(cn):02d}.mp4"
+        if video_files is not None:
+            return name in video_files
+        return file_is_usable(clip_output_path(sn, cn), min_bytes=1024)
+
     for s in eng.blueprint.get("scenes", []):
         sn = s.get("scene_number")
         clips = s.get("veo_clips") or []
-        on_disk = sum(
-            1
-            for c in clips
-            if file_is_usable(clip_output_path(sn, c.get("clip_number", 0)), min_bytes=1024)
-        )
-        composite = composite_output_path(sn)
-        composite_ok = file_is_usable(composite, min_bytes=1024)
-        # Prefer scene composite for playback; else first on-disk clip
-        play_path = composite if composite_ok else None
-        thumb_path = None
+        n_clips = len(clips)
+        on_disk = 0
+        on_disk_map: Dict[int, bool] = {}
         for c in clips:
             cn = int(c.get("clip_number", 0))
-            cpath = clip_output_path(sn, cn)
-            if not play_path and file_is_usable(cpath, min_bytes=1024):
-                play_path = cpath
-            # Thumbnail candidates: seed frame, then any QA frame
-            seed = f"assets/video/scene_{sn:02d}_clip_{cn:02d}_seed_frame.png"
-            if not thumb_path and file_is_usable(seed, min_bytes=64):
-                thumb_path = seed
-        if not thumb_path:
-            # Fall back to any small jpg frame dumped for QA
-            import glob as _glob
+            ok = _clip_exists(sn, cn)
+            on_disk_map[cn] = ok
+            if ok:
+                on_disk += 1
 
-            for pattern in (
-                f"assets/video/scene_{sn:02d}_clip_*_qa_frame_01.jpg",
-                f"assets/video/s{sn}c*_frame*.jpg",
-            ):
-                matches = sorted(_glob.glob(pattern))
-                if matches:
-                    thumb_path = matches[0]
-                    break
-        # Cost estimates: full scene vs only clips already on disk vs only stale
-        on_disk_map = {
-            int(c.get("clip_number", 0)): file_is_usable(
-                clip_output_path(sn, int(c.get("clip_number", 0))), min_bytes=1024
-            )
-            for c in clips
-        }
-        stale_nums = [
-            r["clip"]
-            for r in eng.list_stale_clips(only_existing=True)
-            if r["scene"] == sn
-        ]
-        cost_all = estimate_scene_cost(s, eng.config)
-        cost_existing = estimate_scene_cost(
-            s, eng.config, only_existing_paths=on_disk_map
-        )
-        cost_stale = (
-            estimate_scene_cost(
-                s,
-                eng.config,
-                only_stale=True,
-                stale_clip_numbers=stale_nums,
-                only_existing_paths=on_disk_map,
-            )
-            if stale_nums
-            else {
-                "total_usd": 0.0,
-                "clip_count": 0,
-                "total_duration_sec": 0,
-                "currency": "USD",
-            }
-        )
+        composite = composite_output_path(sn)
+        composite_ok = file_is_usable(composite, min_bytes=1024)
+        play_path = composite if composite_ok else None
+        thumb_path = None
+
+        if not light:
+            for c in clips:
+                cn = int(c.get("clip_number", 0))
+                if not play_path and on_disk_map.get(cn):
+                    play_path = clip_output_path(sn, cn)
+                seed = f"assets/video/scene_{int(sn):02d}_clip_{cn:02d}_seed_frame.png"
+                if not thumb_path and file_is_usable(seed, min_bytes=64):
+                    thumb_path = seed
+            if not thumb_path:
+                import glob as _glob
+
+                for pattern in (
+                    f"assets/video/scene_{int(sn):02d}_clip_*_qa_frame_01.jpg",
+                    f"assets/video/s{sn}c*_frame*.jpg",
+                ):
+                    matches = sorted(_glob.glob(pattern))
+                    if matches:
+                        thumb_path = matches[0]
+                        break
+
         hero = (eng.state.get("scene_hero") or {}).get(str(sn))
-        out.append(
-            {
-                "scene_number": sn,
-                "setting": s.get("setting", ""),
-                "scene_filename": s.get("scene_filename", ""),
-                "clip_count": len(clips),
-                "clips_on_disk": on_disk,
-                "stale_clips": stale_by_scene.get(sn, 0),
-                "approved": bool(completed.get(str(sn))),
-                "hero": hero,
-                "is_hero": bool(hero),
-                "hero_resolution": (hero or {}).get("resolution"),
-                "composite_exists": composite_ok,
-                "composite_path": composite if composite_ok else None,
-                "play_path": play_path,
-                "thumb_path": thumb_path,
-                "duration": s.get("total_estimated_duration_seconds"),
-                "cost_regen_all_usd": cost_all.get("total_usd"),
-                "cost_regen_existing_usd": cost_existing.get("total_usd"),
-                "cost_regen_stale_usd": cost_stale.get("total_usd"),
-                "cost_regen_all": cost_all,
-                "cost_regen_existing": cost_existing,
-                "cost_regen_stale": cost_stale,
-                "cost_label_all": format_usd(float(cost_all.get("total_usd") or 0)),
-                "cost_label_existing": format_usd(
-                    float(cost_existing.get("total_usd") or 0)
-                ),
-                "cost_label_stale": format_usd(float(cost_stale.get("total_usd") or 0)),
-            }
-        )
+        row: Dict[str, Any] = {
+            "scene_number": sn,
+            "setting": s.get("setting", ""),
+            "scene_filename": s.get("scene_filename", ""),
+            "clip_count": n_clips,
+            "clips_on_disk": on_disk,
+            "stale_clips": stale_by_scene.get(sn, 0),
+            "approved": bool(completed.get(str(sn))),
+            "hero": hero,
+            "is_hero": bool(hero),
+            "hero_resolution": (hero or {}).get("resolution"),
+            "composite_exists": composite_ok,
+            "composite_path": composite if composite_ok else None,
+            "play_path": play_path,
+            "thumb_path": thumb_path,
+            "duration": s.get("total_estimated_duration_seconds"),
+        }
+
+        if not light and include_costs:
+            stale_nums = stale_clips_by_scene.get(sn) or []
+            cost_all = estimate_scene_cost(s, eng.config)
+            cost_existing = estimate_scene_cost(
+                s, eng.config, only_existing_paths=on_disk_map
+            )
+            cost_stale = (
+                estimate_scene_cost(
+                    s,
+                    eng.config,
+                    only_stale=True,
+                    stale_clip_numbers=stale_nums,
+                    only_existing_paths=on_disk_map,
+                )
+                if stale_nums
+                else {
+                    "total_usd": 0.0,
+                    "clip_count": 0,
+                    "total_duration_sec": 0,
+                    "currency": "USD",
+                }
+            )
+            row.update(
+                {
+                    "cost_regen_all_usd": cost_all.get("total_usd"),
+                    "cost_regen_existing_usd": cost_existing.get("total_usd"),
+                    "cost_regen_stale_usd": cost_stale.get("total_usd"),
+                    "cost_regen_all": cost_all,
+                    "cost_regen_existing": cost_existing,
+                    "cost_regen_stale": cost_stale,
+                    "cost_label_all": format_usd(float(cost_all.get("total_usd") or 0)),
+                    "cost_label_existing": format_usd(
+                        float(cost_existing.get("total_usd") or 0)
+                    ),
+                    "cost_label_stale": format_usd(
+                        float(cost_stale.get("total_usd") or 0)
+                    ),
+                }
+            )
+        else:
+            row.update(
+                {
+                    "cost_regen_all_usd": None,
+                    "cost_regen_existing_usd": None,
+                    "cost_regen_stale_usd": None,
+                    "cost_label_all": "—",
+                    "cost_label_existing": "—",
+                    "cost_label_stale": "—",
+                }
+            )
+        out.append(row)
     return out
+
+
+def home_dashboard() -> Dict[str, Any]:
+    """Minimal stats for the home page (no per-scene cost math, no video decode)."""
+    eng = get_engine()
+    scenes = list_scenes(light=True)
+    chars = list_characters(light=True)
+    stale = eng.list_stale_clips(only_existing=True)
+    wip = wip_path()
+    wip_meta = (eng.state.get("wip_movie") or {}) if isinstance(eng.state, dict) else {}
+    return {
+        "title": eng.blueprint.get("movie_title", "Nick and Me"),
+        "scenes": scenes,
+        "scene_count": len(scenes),
+        "approved": sum(1 for s in scenes if s.get("approved")),
+        "hero_count": sum(1 for s in scenes if s.get("is_hero")),
+        "clips_on_disk": sum(int(s.get("clips_on_disk") or 0) for s in scenes),
+        "clips_total": sum(int(s.get("clip_count") or 0) for s in scenes),
+        "char_count": len(chars),
+        "chars_locked": sum(1 for c in chars if c.get("locked")),
+        "stale_count": len(stale),
+        "stale_labels": [r.get("label") for r in stale[:15]],
+        "wip_path": wip,
+        "wip_updated_at": wip_meta.get("updated_at"),
+        "wip_scene_count": wip_meta.get("scene_count"),
+    }
 
 
 def get_scene(scene_num: int) -> Optional[Dict[str, Any]]:
@@ -355,19 +416,53 @@ def remux_scenes_and_rebuild_wip(
 
 # ---------- Characters ----------
 
-def list_characters() -> List[Dict[str, Any]]:
+def _index_clips_by_character() -> Dict[str, List[Tuple[int, int]]]:
+    """Single pass over blueprint: character token -> [(scene, clip), ...]."""
     eng = get_engine()
-    seeds = eng.blueprint.get("global_production_variables", {}).get("character_seed_tokens", {})
-    stale_all = eng.list_stale_clips(only_existing=True)
+    seeds = eng.blueprint.get("global_production_variables", {}).get(
+        "character_seed_tokens", {}
+    )
+    keys = list(seeds.keys())
+    # Longest first so we can still count each token independently (simple: scan all keys)
+    index: Dict[str, List[Tuple[int, int]]] = {k: [] for k in keys}
+    for scene in eng.blueprint.get("scenes", []):
+        sn = int(scene.get("scene_number") or 0)
+        for clip in scene.get("veo_clips") or []:
+            cn = int(clip.get("clip_number") or 0)
+            vp = clip.get("visual_prompt") or ""
+            if not vp:
+                continue
+            for key in keys:
+                if key in vp:
+                    index[key].append((sn, cn))
+    return index
+
+
+def list_characters(*, light: bool = False) -> List[Dict[str, Any]]:
+    """
+    light=True: skip stale-clip join and clip index (nav-only, fastest).
+    """
+    eng = get_engine()
+    seeds = eng.blueprint.get("global_production_variables", {}).get(
+        "character_seed_tokens", {}
+    )
+    index = {} if light else _index_clips_by_character()
+    stale_by_char: Dict[str, List[Tuple[int, int]]] = {k: [] for k in seeds}
+    if not light:
+        for r in eng.list_stale_clips(only_existing=True):
+            for ck in r.get("characters") or []:
+                if ck in stale_by_char:
+                    stale_by_char[ck].append((r["scene"], r["clip"]))
+
     rows = []
     for key, info in seeds.items():
         ref = eng.character_ref_path(key)
-        variants = [p for p in eng.character_variant_paths(key) if os.path.isfile(p)]
-        hits = eng.clips_using_character(key)
-        rev_entry = (eng.state.get("character_revisions") or {}).get(key) or {}
-        stale_for_char = [
-            r for r in stale_all if key in (r.get("characters") or [])
+        variants = [
+            p for p in eng.character_variant_paths(key) if os.path.isfile(p)
         ]
+        hits = index.get(key) or []
+        rev_entry = (eng.state.get("character_revisions") or {}).get(key) or {}
+        stale_for_char = stale_by_char.get(key) or []
         rows.append(
             {
                 "key": key,
@@ -383,10 +478,10 @@ def list_characters() -> List[Dict[str, Any]]:
                 "revision_updated_at": rev_entry.get("updated_at"),
                 "revision_reason": rev_entry.get("reason"),
                 "stale_clip_count": len(stale_for_char),
-                "stale_clips": [(r["scene"], r["clip"]) for r in stale_for_char[:40]],
+                "stale_clips": stale_for_char[:40],
             }
         )
-    # adults first, then young/teen
+
     def sort_key(r):
         k = r["key"]
         if k.endswith("_Young"):
@@ -450,8 +545,12 @@ def clips_using_character_detail(
     (never generates brand-new scenes that were never rendered).
     """
     eng = get_engine()
+    # Prefer precomputed index (one full blueprint scan) when available via list path
+    hits = _index_clips_by_character().get(char_key) or eng.clips_using_character(
+        char_key
+    )
     rows: List[Dict[str, Any]] = []
-    for sn, cn in eng.clips_using_character(char_key):
+    for sn, cn in hits:
         if only_scene is not None and sn != only_scene:
             continue
         path = clip_output_path(sn, cn)

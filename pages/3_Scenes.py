@@ -9,7 +9,8 @@ st.set_page_config(page_title="Scenes", page_icon="🎞️", layout="wide")
 st.title("🎞️ Scenes & Clips")
 
 try:
-    scenes = api.list_scenes()
+    # Light list for navigation (no per-scene cost math × 90)
+    scenes = api.list_scenes(light=True)
 except Exception as e:
     st.error(str(e))
     st.stop()
@@ -27,57 +28,34 @@ if st.session_state.clip_num is None:
         st.session_state.playing_scene = None
 
     q = st.text_input("Filter setting text", "")
-    cost_mode = st.radio(
-        "Cost estimate mode",
-        options=["existing", "all", "stale"],
-        format_func=lambda m: {
-            "existing": "Regen clips already on disk",
-            "all": "Regen entire scene (all clips)",
-            "stale": "Regen only stale clips",
-        }[m],
-        horizontal=True,
-        index=0,
-        help="Planning estimate from pipeline_config.cost_estimates (not an invoice).",
-    )
+    st.caption("Open a scene for cost estimates, or use the **Cost** page for film-wide $.")
     rows = []
     for s in scenes:
         if q and q.lower() not in (s.get("setting") or "").lower():
             continue
         rows.append(s)
 
-    # Sum visible estimates
-    def _scene_cost_label(s):
-        if cost_mode == "all":
-            return s.get("cost_label_all") or "—"
-        if cost_mode == "stale":
-            return s.get("cost_label_stale") or "$0.00"
-        return s.get("cost_label_existing") or "$0.00"
-
-    def _scene_cost_usd(s):
-        if cost_mode == "all":
-            return float(s.get("cost_regen_all_usd") or 0)
-        if cost_mode == "stale":
-            return float(s.get("cost_regen_stale_usd") or 0)
-        return float(s.get("cost_regen_existing_usd") or 0)
-
-    total_est = sum(_scene_cost_usd(s) for s in rows)
-    st.caption(
-        f"Visible scenes estimate (**{cost_mode}**): **${total_est:.2f}** · "
-        f"Rates from config (`resolution` + `cost_estimates`)."
-    )
-
     # Inline player for the scene chosen via ▶
     play_sn = st.session_state.playing_scene
     if play_sn is not None:
         play_row = next((r for r in scenes if r["scene_number"] == play_sn), None)
-        play_path = (play_row or {}).get("play_path")
+        play_path = (play_row or {}).get("play_path") or (play_row or {}).get("composite_path")
+        if not play_path:
+            # light list may omit per-clip paths — resolve first on-disk clip
+            from generation_script import clip_output_path, file_is_usable
+
+            for cn in range(1, int((play_row or {}).get("clip_count") or 0) + 1):
+                p = clip_output_path(play_sn, cn)
+                if file_is_usable(p, min_bytes=1024):
+                    play_path = p
+                    break
         with st.container(border=True):
             pc1, pc2 = st.columns([5, 1])
             with pc1:
                 st.markdown(f"**Playing Scene {play_sn:02d}**")
                 if play_path:
                     st.video(play_path)
-                    src = "composite" if (play_row or {}).get("composite_path") else "first clip"
+                    src = "composite" if str(play_path).endswith("complete.mp4") else "clip"
                     st.caption(f"`{play_path}` ({src})")
                 else:
                     st.info("No video on disk for this scene yet.")
@@ -101,43 +79,32 @@ if st.session_state.clip_num is None:
             status = "·"
         stale_txt = f" · {stale_n} stale" if stale_n else ""
         hero_txt = f" · hero {s.get('hero_resolution')}" if s.get("is_hero") else ""
-        cost_lbl = _scene_cost_label(s)
         label = (
             f"{status} Scene {sn:02d} — {s.get('setting', '')[:56]} "
             f"({s['clips_on_disk']}/{s['clip_count']} clips{stale_txt}{hero_txt})"
         )
-        # thumb | open scene | play | cost
-        cols = st.columns([0.7, 3.2, 0.5, 0.9])
+        # open | play | badges (thumbs/costs deferred for speed)
+        cols = st.columns([3.6, 0.5, 0.9])
         with cols[0]:
-            thumb = s.get("thumb_path")
-            can_play = bool(s.get("play_path"))
-            if thumb:
-                st.image(thumb, use_container_width=True)
-            elif can_play:
-                st.markdown("🎬")
-            else:
-                st.caption("—")
-        with cols[1]:
             if st.button(label, key=f"open_s{sn}", use_container_width=True):
                 st.session_state.scene_num = sn
                 st.session_state.clip_num = 0  # 0 = scene overview
                 st.session_state.playing_scene = None
                 st.rerun()
-        with cols[2]:
-            if s.get("play_path"):
+        with cols[1]:
+            if s.get("play_path") or s.get("composite_path"):
                 if st.button("▶", key=f"play_s{sn}", help=f"Play scene {sn}", use_container_width=True):
                     st.session_state.playing_scene = sn
                     st.rerun()
             else:
                 st.caption("")
-        with cols[3]:
+        with cols[2]:
             help_bits = []
-            if s.get("composite_path"):
+            if s.get("composite_path") or s.get("composite_exists"):
                 help_bits.append("mux")
             if s.get("approved"):
                 help_bits.append("ok")
-            st.markdown(f"**{cost_lbl}**")
-            st.caption(" · ".join(help_bits) if help_bits else "est.")
+            st.caption(" · ".join(help_bits) if help_bits else "")
 
     st.stop()
 
@@ -163,12 +130,12 @@ st.caption(
 
 clips = api.list_clips(sn)
 
-# Cost breakdown for this scene
-scene_meta = next((x for x in api.list_scenes() if x["scene_number"] == sn), {})
-with st.expander("Estimated regen cost", expanded=True):
-    c_all = scene_meta.get("cost_regen_all") or api.scene_cost_estimate(sn, mode="all") or {}
-    c_ex = scene_meta.get("cost_regen_existing") or api.scene_cost_estimate(sn, mode="existing") or {}
-    c_st = scene_meta.get("cost_regen_stale") or api.scene_cost_estimate(sn, mode="stale") or {}
+# Cost breakdown for this scene only (not full-film list_scenes)
+scene_meta = next((x for x in scenes if x["scene_number"] == sn), {})
+with st.expander("Estimated regen cost", expanded=False):
+    c_all = api.scene_cost_estimate(sn, mode="all") or {}
+    c_ex = api.scene_cost_estimate(sn, mode="existing") or {}
+    c_st = api.scene_cost_estimate(sn, mode="stale") or {}
     k1, k2, k3 = st.columns(3)
     k1.metric("All clips", f"${float(c_all.get('total_usd') or 0):.2f}", f"{c_all.get('clip_count', 0)} clips")
     k2.metric("On disk only", f"${float(c_ex.get('total_usd') or 0):.2f}", f"{c_ex.get('clip_count', 0)} clips")
@@ -221,14 +188,13 @@ with a3:
                 st.success(path or "Remux done")
             except Exception as e:
                 st.error(str(e))
-    composite = next((s for s in api.list_scenes() if s["scene_number"] == sn), None)
-    if composite and composite.get("composite_path"):
-        st.caption(composite["composite_path"])
+    if scene_meta.get("composite_path"):
+        st.caption(scene_meta["composite_path"])
 
 # ---- Hero / delivery pass ----
 st.divider()
 st.subheader("Hero / delivery pass")
-hero_info = scene_meta.get("hero")
+hero_info = scene_meta.get("hero") or api.get_engine().get_scene_hero(sn)
 draft_res = str(api.get_config().get("resolution", "720p"))
 if hero_info:
     st.success(

@@ -7,6 +7,8 @@ Run from repo root:
 """
 from __future__ import annotations
 
+import os
+
 import streamlit as st
 
 from review_app import pipeline_api as api
@@ -24,63 +26,98 @@ st.caption(
     "and log learnings for the blueprint, adaptation prompt, and pipeline."
 )
 
+
+def _home_cache_key() -> str:
+    parts = []
+    for p in (
+        "nickandme.json",
+        "pipeline_state.json",
+        "pipeline_config.json",
+        "assets/movie_wip.mp4",
+    ):
+        try:
+            parts.append(f"{p}:{os.path.getmtime(p):.0f}")
+        except OSError:
+            parts.append(f"{p}:0")
+    try:
+        parts.append(f"video:{os.path.getmtime('assets/video'):.0f}")
+    except OSError:
+        parts.append("video:0")
+    return "|".join(parts)
+
+
+@st.cache_data(show_spinner=False, ttl=60)
+def _cached_home(cache_key: str) -> dict:
+    _ = cache_key
+    return api.home_dashboard()
+
+
 try:
-    eng = api.get_engine()
-    title = api.movie_title()
-    scenes = api.list_scenes()
-    chars = api.list_characters()
+    with st.spinner("Loading dashboard…"):
+        dash = _cached_home(_home_cache_key())
 except Exception as e:
     st.error(f"Failed to load pipeline: {e}")
-    st.info("Run from the repo root with `nickandme.json` and `pipeline_config.json` present.")
+    st.info(
+        "Run from the repo root with `nickandme.json` and `pipeline_config.json` present."
+    )
     st.stop()
 
+title = dash.get("title") or "Nick and Me"
 c1, c2, c3, c4 = st.columns(4)
 c1.metric("Movie", title[:28] + ("…" if len(title) > 28 else ""))
-c2.metric("Scenes", len(scenes))
-c3.metric("Characters", len(chars))
-approved = sum(1 for s in scenes if s["approved"])
-c4.metric("Scenes approved", f"{approved}/{len(scenes)}")
+c2.metric("Scenes", dash.get("scene_count", 0))
+c3.metric("Characters", f"{dash.get('chars_locked', 0)}/{dash.get('char_count', 0)} locked")
+c4.metric(
+    "Scenes approved",
+    f"{dash.get('approved', 0)}/{dash.get('scene_count', 0)}",
+)
 
 st.divider()
 st.subheader("Quick status")
 
-done_clips = sum(s["clips_on_disk"] for s in scenes)
-total_clips = sum(s["clip_count"] for s in scenes)
+done_clips = int(dash.get("clips_on_disk") or 0)
+total_clips = int(dash.get("clips_total") or 0)
 st.progress(
     done_clips / total_clips if total_clips else 0,
     text=f"Clips on disk: {done_clips} / {total_clips}",
 )
+st.caption(
+    f"Hero scenes: **{dash.get('hero_count', 0)}** · "
+    f"WIP scenes in last build: **{dash.get('wip_scene_count') or '—'}** · "
+    f"WIP updated: `{dash.get('wip_updated_at') or '—'}`"
+)
 
-locked = sum(1 for c in chars if c["locked"])
-st.write(f"**Characters locked:** {locked} / {len(chars)}")
-
-try:
-    stale = api.list_stale_clips(only_existing=True)
-except Exception:
-    stale = []
-if stale:
+stale_n = int(dash.get("stale_count") or 0)
+if stale_n:
+    labels = dash.get("stale_labels") or []
     st.warning(
-        f"**{len(stale)} clip(s) out of date** after character redesigns — "
-        f"{', '.join(r['label'] for r in stale[:15])}"
-        + ("…" if len(stale) > 15 else "")
-        + ". Regenerate them (Scenes or character cascade). Pipeline will not reuse them as done."
+        f"**{stale_n} clip(s) out of date** after character redesigns — "
+        f"{', '.join(labels)}"
+        + ("…" if stale_n > 15 else "")
+        + ". Regenerate them (Scenes or character cascade)."
     )
 else:
-    st.caption("No stale clips (all on-disk renders match current character revisions).")
+    st.caption("No stale clips (on-disk renders match current character revisions).")
 
-wip = api.wip_path()
+wip = dash.get("wip_path")
 if wip:
     st.success(f"WIP movie: `{wip}`")
-    st.video(wip)
+    # Do NOT auto-embed ~30–40MB video on every home load — that dominates latency
+    with st.expander("▶ Play WIP movie", expanded=False):
+        st.video(wip)
 else:
     st.info("No WIP movie yet — remux scenes or run **Rebuild WIP** after clips exist.")
 
 rw1, rw2 = st.columns(2)
 with rw1:
-    if st.button("🔄 Rebuild WIP from scene composites", help="Remux is not re-run; stitches existing scene_XX_complete.mp4 files"):
+    if st.button(
+        "🔄 Rebuild WIP from scene composites",
+        help="Stitches existing scene_XX_complete.mp4 files (no remux of clips)",
+    ):
         with st.spinner("Building movie_wip.mp4…"):
             try:
                 path = api.rebuild_wip_movie(reason="home manual rebuild")
+                _cached_home.clear()
                 if path:
                     st.success(f"Updated `{path}`")
                     st.rerun()
@@ -95,11 +132,13 @@ with rw2:
     ):
         with st.spinner("Remux + WIP… can take a minute"):
             try:
-                scenes = api.list_scenes()
+                # light list is enough to find which scenes have clips
+                scenes = api.list_scenes(light=True)
                 nums = [s["scene_number"] for s in scenes if s.get("clips_on_disk")]
                 path = api.remux_scenes_and_rebuild_wip(
                     nums, reason="home remux all + WIP"
                 )
+                _cached_home.clear()
                 st.success(path or "Done (check console if path empty)")
                 st.rerun()
             except Exception as e:
@@ -121,10 +160,12 @@ st.markdown(
 - After fixing a prompt, use **Regen** (not just Pass).
 - Draft at 480 → **Approve (draft)** → **Hero regen at 720** when locked.
 - Use **Cost** to plan the rest of the film before big regens.
+- Home stays light: open **Play WIP** only when you want the video.
 """
 )
 
 if st.button("Reload pipeline from disk"):
     api.reload_engine()
+    _cached_home.clear()
     st.success("Reloaded config, blueprint, and state.")
     st.rerun()
