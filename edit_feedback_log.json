@@ -1,0 +1,51 @@
+{
+  "version": 1,
+  "entries": [
+    {
+      "id": "ef5451a5",
+      "ts": "2026-07-11T09:15:55",
+      "type": "character_lock",
+      "scene": null,
+      "clip": null,
+      "character": "Character_P",
+      "user_note": "Locked variant 2",
+      "action_taken": "Promoted to assets/characters/character_p_ref.png",
+      "before": "",
+      "after": "",
+      "suggested_rule": "Character design: Locked variant 2 (character Character_P)",
+      "targets": [
+        "assets/characters"
+      ],
+      "applied": {
+        "blueprint": false,
+        "adaptation_prompt": false,
+        "script_notes": false,
+        "learnings_md": false
+      },
+      "extra": {}
+    },
+    {
+      "id": "2d97ee4c",
+      "ts": "2026-07-11T09:15:05",
+      "type": "character_variants",
+      "scene": null,
+      "clip": null,
+      "character": "Character_P",
+      "user_note": "Generated 3 variants",
+      "action_taken": "assets/characters/character_p_variant_01.png, assets/characters/character_p_variant_02.png, assets/characters/character_p_variant_03.png",
+      "before": "",
+      "after": "",
+      "suggested_rule": "Character design: Generated 3 variants (character Character_P)",
+      "targets": [
+        "assets/characters"
+      ],
+      "applied": {
+        "blueprint": false,
+        "adaptation_prompt": false,
+        "script_notes": false,
+        "learnings_md": false
+      },
+      "extra": {}
+    }
+  ]
+}

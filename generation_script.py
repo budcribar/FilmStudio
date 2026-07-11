@@ -46,10 +46,42 @@ DEFAULT_CONFIG = {
     "dialogue_audio_mode": "replace",
     "dialogue_tts_volume": 1.0,
     "native_audio_mix_volume": 0.12,
+    "composite_audio_gain_db": 6.0,
+    # After each scene is Approved, rebuild a running work-in-progress film
+    "rebuild_wip_movie_after_scene": True,
+    "wip_movie_path": "assets/movie_wip.mp4",
     "aspect_ratio": "16:9",
     "duration_seconds": 8,
     "resolution": "720p",
     "qa_frame_count": 4,
+    # USD planning rates for Streamlit cost estimates (edit if xAI list prices change)
+    "cost_estimates": {
+        "currency": "USD",
+        "video_output_per_sec": {"480p": 0.05, "720p": 0.07, "1080p": 0.25},
+        "video_input_image": 0.002,
+        "video_input_per_sec": 0.01,
+        "assume_ref_image_per_clip": True,
+        "assume_avg_retries": 0.0,
+        "notes": "Estimates only — not invoices. Update rates in pipeline_config.cost_estimates.",
+    },
+    # Models offered in the review UI for side-by-side scene comparison
+    "available_video_models": [
+        {
+            "provider": "grok",
+            "model_name": "grok-imagine-video",
+            "label": "Grok Imagine Video",
+        },
+        {
+            "provider": "grok",
+            "model_name": "grok-imagine-video-1.5",
+            "label": "Grok Imagine Video 1.5",
+        },
+        {
+            "provider": "veo",
+            "model_name": "veo-3.1",
+            "label": "Google Veo 3.1",
+        },
+    ],
 }
 
 # Prompt cues that mean a real cut / new setup — do NOT seed from previous last frame
@@ -59,7 +91,18 @@ _HARD_CUT_RE = re.compile(
     r"FLASHBACK|FLASH\s*FORWARD|"
     r"WIDE\s+SHOT|ESTABLISHING|AERIAL|DRONE\s+SHOT|"
     r"EXT\.|EXTERIOR|INT\.|INTERIOR|"
-    r"MEANWHILE|LATER|ELSEWHERE|NEW\s+LOCATION"
+    r"MEANWHILE|LATER|ELSEWHERE|NEW\s+LOCATION|"
+    r"BACK\s+TO\s+PRESENT|RETURN\s+TO\s+PRESENT"
+    r")\b",
+    re.IGNORECASE,
+)
+
+# Big action beats rarely work as last-frame image-to-video — force fresh generation
+_ACTION_BEAT_RE = re.compile(
+    r"\b("
+    r"kicks?|hits?|soars?|rockets?|flies|flight|crash(?:es|ed|ing)?|"
+    r"explodes?|smashes?|throws?|punches?|jumps?|leaps?|sprints?|runs?\s+(?:at|toward|into)|"
+    r"car\s+chase|gunshot|fires?\s+a\s+gun|tackles?"
     r")\b",
     re.IGNORECASE,
 )
@@ -90,12 +133,36 @@ def composite_output_path(scene_number: int) -> str:
     return f"assets/scenes/scene_{scene_number:02d}_complete.mp4"
 
 
+def slugify_model_id(provider: str, model_name: str) -> str:
+    """Filesystem-safe variant id, e.g. grok__grok-imagine-video."""
+    raw = f"{provider}__{model_name or 'default'}"
+    cleaned = re.sub(r"[^a-zA-Z0-9._-]+", "-", raw.strip().lower())
+    return cleaned.strip("-._")[:80] or "default"
+
+
+def variant_dir(scene_number: int, variant_id: str) -> str:
+    return f"assets/variants/scene_{int(scene_number):02d}/{variant_id}"
+
+
+def variant_clip_path(scene_number: int, clip_number: int, variant_id: str) -> str:
+    return f"{variant_dir(scene_number, variant_id)}/clip_{int(clip_number):02d}.mp4"
+
+
+def variant_composite_path(scene_number: int, variant_id: str) -> str:
+    return f"{variant_dir(scene_number, variant_id)}/composite.mp4"
+
+
+def variant_meta_path(scene_number: int, variant_id: str) -> str:
+    return f"{variant_dir(scene_number, variant_id)}/meta.json"
+
+
 ASSET_DIRS = (
     "assets",
     "assets/characters",
     "assets/music",
     "assets/video",
     "assets/scenes",
+    "assets/variants",
 )
 
 
@@ -199,7 +266,13 @@ def resolve_ffmpeg() -> str:
 
 
 class AgenticGenerationEngine:
-    def __init__(self, blueprint_path: str = BLUEPRINT_FILE, state_path: str = STATE_FILE, config_path: str = CONFIG_FILE):
+    def __init__(
+        self,
+        blueprint_path: str = BLUEPRINT_FILE,
+        state_path: str = STATE_FILE,
+        config_path: str = CONFIG_FILE,
+        install_signals: bool = True,
+    ):
         self.blueprint_path = blueprint_path
         self.state_path = state_path
         self.config_path = config_path
@@ -232,7 +305,9 @@ class AgenticGenerationEngine:
 
         self.load_blueprint()
         self.load_state()
-        self._install_signal_handlers()
+        # Streamlit / embedded hosts own their process lifecycle — skip signal hooks
+        if install_signals:
+            self._install_signal_handlers()
 
     def _install_signal_handlers(self) -> None:
         """Ctrl+C / SIGTERM request a graceful stop (second signal forces exit)."""
@@ -360,6 +435,14 @@ class AgenticGenerationEngine:
             # Per-clip job metadata for resume after download/API failures
             "clip_jobs": {},
             "music_jobs": {},
+            # Bumped when a character ref is re-locked; clips using old revs are "stale"
+            "character_revisions": {},
+            # "scene_clip" -> { characters, reason, marked_at, revision }
+            "stale_clips": {},
+            # scene_number -> { active, variants: { id: meta } }
+            "scene_variants": {},
+            # scene_number -> { resolution, at, clip_count, ... } after hero pass
+            "scene_hero": {},
         }
         self.save_state()
         print("[Info] Initialized clean pipeline state cache.")
@@ -378,6 +461,10 @@ class AgenticGenerationEngine:
                 self.state.setdefault("clip_context_ids", {})
                 self.state.setdefault("clip_jobs", {})
                 self.state.setdefault("music_jobs", {})
+                self.state.setdefault("character_revisions", {})
+                self.state.setdefault("stale_clips", {})
+                self.state.setdefault("scene_variants", {})
+                self.state.setdefault("scene_hero", {})
                 print(f"[Success] Resumed execution state from '{self.state_path}'")
             except Exception as e:
                 print(f"[Warning] Failed to parse state file, starting fresh: {e}")
@@ -411,12 +498,24 @@ class AgenticGenerationEngine:
     def _clip_job_key(self, scene_num: int, clip_num: int) -> str:
         return f"{scene_num}_{clip_num}"
 
-    def _update_clip_job(self, scene_num: int, clip_num: int, **fields: Any) -> None:
-        key = self._clip_job_key(scene_num, clip_num)
+    def _update_clip_job(
+        self,
+        scene_num: int,
+        clip_num: int,
+        job_key: Optional[str] = None,
+        **fields: Any,
+    ) -> None:
+        key = (
+            job_key
+            or getattr(self, "_active_job_key", None)
+            or self._clip_job_key(scene_num, clip_num)
+        )
         job = self.state.setdefault("clip_jobs", {}).setdefault(key, {})
         job.update(fields)
         job["scene_number"] = scene_num
         job["clip_number"] = clip_num
+        if key != self._clip_job_key(scene_num, clip_num):
+            job["variant_job_key"] = key
         job["updated_at"] = time.strftime("%Y-%m-%dT%H:%M:%S")
         self.save_state()
 
@@ -543,7 +642,12 @@ class AgenticGenerationEngine:
         return images[:n]
 
     def pre_production_character_design(self):
-        """STAGE 0: Interactively generate 3 portrait options per character (Grok Imagine by default)."""
+        """
+        STAGE 0: Interactively generate 3 portrait options per character seed
+        (adults AND age variants like Character_N_Young / Character_P_Teen).
+
+        Already-locked reference files are skipped so re-runs only design missing seeds.
+        """
         print("\n==================== STAGE 0: PRE-PRODUCTION CHARACTER DESIGN GATE ====================")
         self.ensure_asset_directories()
         os.makedirs("assets/characters", exist_ok=True)
@@ -568,7 +672,29 @@ class AgenticGenerationEngine:
             print(f"[Warning] Unknown character_design_provider '{char_provider}'. Bypassing Stage 0.")
             return
 
-        for char_key, seed_info in char_seeds.items():
+        # Adults first, then age variants (Young/Teen), so family resemblance notes can reference adults
+        def _seed_sort_key(item):
+            key = item[0]
+            if key.endswith("_Young"):
+                return (1, key)
+            if key.endswith("_Teen"):
+                return (2, key)
+            if key in ("Kevin McCleary", "Bob"):
+                return (3, key)
+            return (0, key)
+
+        missing = []
+        for char_key, seed_info in sorted(char_seeds.items(), key=_seed_sort_key):
+            local_image_name = seed_info.get("reference_image_placeholder", f"{char_key.lower()}_ref.png")
+            final_path = f"assets/characters/{local_image_name}"
+            if not os.path.exists(final_path):
+                missing.append(char_key)
+        if missing:
+            print(f"[Stage 0] Need portraits for: {', '.join(missing)}")
+        else:
+            print("[Stage 0] All character reference files already locked (including age variants).")
+
+        for char_key, seed_info in sorted(char_seeds.items(), key=_seed_sort_key):
             local_image_name = seed_info.get("reference_image_placeholder", f"{char_key.lower()}_ref.png")
             final_path = f"assets/characters/{local_image_name}"
 
@@ -581,13 +707,33 @@ class AgenticGenerationEngine:
             while not satisfied:
                 print(f"\n[Designing] Launching {design_label} variants for {char_key}...")
                 description = seed_info.get("description", "")
+                age_band = seed_info.get("age_band") or ""
+                variant_of = seed_info.get("variant_of") or ""
 
                 # Formulate structural design template prompt matching film parameters
                 treatment = self.blueprint.get("global_production_variables", {}).get(
                     "directorial_treatment", "cinematic lighting"
                 )
+                age_clause = ""
+                if age_band.startswith("child") or char_key.endswith("_Young"):
+                    age_clause = (
+                        "CRITICAL: this is a CHILD portrait with child proportions, smaller head-to-body ratio, "
+                        "youthful face — NOT an adult, NOT a bodybuilder, NOT aged-up. "
+                    )
+                elif age_band.startswith("teen") or char_key.endswith("_Teen"):
+                    age_clause = (
+                        "CRITICAL: this is a TEEN / late-teen portrait — younger than the adult version, "
+                        "not a middle-aged adult. "
+                    )
+                family_clause = ""
+                if variant_of:
+                    family_clause = (
+                        f"Should clearly read as a younger version of {variant_of} "
+                        f"(same ethnicity, hair color family, recognizable family features). "
+                    )
                 design_prompt = (
                     f"A detailed portrait model-sheet photograph of {char_key}: {description}. "
+                    f"{age_clause}{family_clause}"
                     f"Character centered in frame, look straight at camera, neutral expression, {treatment}. "
                     f"High texture realism, isolated plain dark concrete studio background."
                 )
@@ -656,6 +802,577 @@ class AgenticGenerationEngine:
 
         self.state["characters_designed"] = True
         self.save_state()
+
+    # ------------------------------------------------------------------
+    # Non-interactive character helpers (Streamlit / GUI)
+    # ------------------------------------------------------------------
+
+    def _character_seed(self, char_key: str) -> Optional[Dict[str, Any]]:
+        seeds = self.blueprint.get("global_production_variables", {}).get("character_seed_tokens", {})
+        return seeds.get(char_key)
+
+    def character_ref_path(self, char_key: str) -> str:
+        seed = self._character_seed(char_key) or {}
+        name = seed.get("reference_image_placeholder", f"{char_key.lower()}_ref.png")
+        return f"assets/characters/{name}"
+
+    def character_variant_paths(self, char_key: str) -> List[str]:
+        return [
+            f"assets/characters/{char_key.lower()}_variant_0{idx}.png"
+            for idx in (1, 2, 3)
+        ]
+
+    def _character_design_prompt(self, char_key: str, seed_info: Dict[str, Any]) -> str:
+        description = seed_info.get("description", "")
+        age_band = seed_info.get("age_band") or ""
+        variant_of = seed_info.get("variant_of") or ""
+        treatment = self.blueprint.get("global_production_variables", {}).get(
+            "directorial_treatment", "cinematic lighting"
+        )
+        age_clause = ""
+        if age_band.startswith("child") or char_key.endswith("_Young"):
+            age_clause = (
+                "CRITICAL: this is a CHILD portrait with child proportions, smaller head-to-body ratio, "
+                "youthful face — NOT an adult, NOT a bodybuilder, NOT aged-up. "
+            )
+        elif age_band.startswith("teen") or char_key.endswith("_Teen"):
+            age_clause = (
+                "CRITICAL: this is a TEEN / late-teen portrait — younger than the adult version, "
+                "not a middle-aged adult. "
+            )
+        family_clause = ""
+        if variant_of:
+            family_clause = (
+                f"Should clearly read as a younger version of {variant_of} "
+                f"(same ethnicity, hair color family, recognizable family features). "
+            )
+        return (
+            f"A detailed portrait model-sheet photograph of {char_key}: {description}. "
+            f"{age_clause}{family_clause}"
+            f"Character centered in frame, look straight at camera, neutral expression, {treatment}. "
+            f"High texture realism, isolated plain dark concrete studio background."
+        )
+
+    def generate_character_variants(self, char_key: str) -> List[str]:
+        """
+        Generate 3 portrait variants for a character (no interactive prompt).
+        Returns list of saved variant paths. Raises GenerationFailure on failure.
+        """
+        seed_info = self._character_seed(char_key)
+        if not seed_info:
+            raise GenerationFailure(f"Unknown character seed: {char_key}")
+
+        self.ensure_asset_directories()
+        os.makedirs("assets/characters", exist_ok=True)
+        design_prompt = self._character_design_prompt(char_key, seed_info)
+        char_provider = str(self.config.get("character_design_provider", "grok")).lower().strip()
+
+        if char_provider in ("grok", "xai", "imagine"):
+            if not os.environ.get("XAI_API_KEY"):
+                raise GenerationFailure("XAI_API_KEY not set — cannot generate character portraits.")
+            image_blobs = self._grok_generate_image_variants(design_prompt, n=3, aspect_ratio="1:1")
+        elif char_provider in ("imagen", "gemini", "google"):
+            if not self.client:
+                raise GenerationFailure("Gemini/Imagen client not configured.")
+            image_blobs = self._imagen_generate_image_variants(design_prompt, n=3)
+        else:
+            raise GenerationFailure(f"Unknown character_design_provider '{char_provider}'")
+
+        option_paths: List[str] = []
+        for idx, blob in enumerate(image_blobs, start=1):
+            opt_path = f"assets/characters/{char_key.lower()}_variant_0{idx}.png"
+            ensure_parent_dir(opt_path)
+            with open(opt_path, "wb") as f:
+                f.write(blob)
+            option_paths.append(opt_path)
+        if len(option_paths) < 1:
+            raise GenerationFailure(f"No variants generated for {char_key}")
+        return option_paths
+
+    def unlock_character_ref(self, char_key: str) -> bool:
+        """Remove locked reference so a new design can be chosen. Returns True if a file was removed."""
+        path = self.character_ref_path(char_key)
+        removed = False
+        if os.path.isfile(path):
+            os.remove(path)
+            removed = True
+        for vp in self.character_variant_paths(char_key):
+            if os.path.isfile(vp):
+                try:
+                    os.remove(vp)
+                except OSError:
+                    pass
+        # Unlock alone does not bump revision (no new look yet); lock will mark stale.
+        return removed
+
+    def lock_character_variant(self, char_key: str, variant_index: int) -> str:
+        """
+        Promote variant 1..3 to the locked reference path. Returns final ref path.
+        Bumps character revision and marks on-disk clips that use this character as stale.
+        """
+        if variant_index not in (1, 2, 3):
+            raise ValueError("variant_index must be 1, 2, or 3")
+        seed_info = self._character_seed(char_key)
+        if not seed_info:
+            raise GenerationFailure(f"Unknown character seed: {char_key}")
+        variant_path = f"assets/characters/{char_key.lower()}_variant_0{variant_index}.png"
+        if not os.path.isfile(variant_path):
+            raise GenerationFailure(f"Variant not found: {variant_path}")
+        final_path = self.character_ref_path(char_key)
+        ensure_parent_dir(final_path)
+        os.replace(variant_path, final_path)
+        for p in self.character_variant_paths(char_key):
+            if os.path.isfile(p):
+                try:
+                    os.remove(p)
+                except OSError:
+                    pass
+        self.state["characters_designed"] = True
+        self.mark_character_changed(
+            char_key,
+            reason=f"Locked new reference (variant {variant_index})",
+            only_existing=True,
+        )
+        self.save_state()
+        return final_path
+
+    def clips_using_character(self, char_key: str) -> List[Tuple[int, int]]:
+        """Return (scene_number, clip_number) for every visual_prompt that mentions char_key."""
+        hits: List[Tuple[int, int]] = []
+        for scene in self.blueprint.get("scenes", []):
+            sn = scene.get("scene_number")
+            for clip in scene.get("veo_clips") or []:
+                vp = clip.get("visual_prompt") or ""
+                if char_key in vp:
+                    hits.append((int(sn), int(clip.get("clip_number", 0))))
+        return hits
+
+    # ------------------------------------------------------------------
+    # Character revision / stale clip tracking
+    # ------------------------------------------------------------------
+
+    def get_character_revision(self, char_key: str) -> int:
+        revs = self.state.setdefault("character_revisions", {})
+        entry = revs.get(char_key) or {}
+        return int(entry.get("revision", 0))
+
+    def mark_character_changed(
+        self,
+        char_key: str,
+        reason: str = "",
+        only_existing: bool = True,
+    ) -> List[Tuple[int, int]]:
+        """
+        Bump character design revision and mark generated clips that use this
+        character as out-of-date until they are regenerated.
+        Returns list of (scene, clip) marked stale.
+        """
+        revs = self.state.setdefault("character_revisions", {})
+        prev = int((revs.get(char_key) or {}).get("revision", 0))
+        new_rev = prev + 1
+        revs[char_key] = {
+            "revision": new_rev,
+            "updated_at": time.strftime("%Y-%m-%dT%H:%M:%S"),
+            "reason": reason or "character design changed",
+        }
+
+        stale = self.state.setdefault("stale_clips", {})
+        marked: List[Tuple[int, int]] = []
+        for sn, cn in self.clips_using_character(char_key):
+            path = clip_output_path(sn, cn)
+            if only_existing and not file_is_usable(path, min_bytes=1024):
+                continue
+            key = self._clip_job_key(sn, cn)
+            entry = stale.get(key) or {
+                "scene_number": sn,
+                "clip_number": cn,
+                "characters": [],
+                "reasons": [],
+            }
+            chars = list(entry.get("characters") or [])
+            if char_key not in chars:
+                chars.append(char_key)
+            reasons = list(entry.get("reasons") or [])
+            note = reason or f"{char_key} revision {new_rev}"
+            if note not in reasons:
+                reasons.append(note)
+            entry.update(
+                {
+                    "scene_number": sn,
+                    "clip_number": cn,
+                    "characters": chars,
+                    "reasons": reasons,
+                    "character_revision": {**(entry.get("character_revision") or {}), char_key: new_rev},
+                    "marked_at": time.strftime("%Y-%m-%dT%H:%M:%S"),
+                    "stale": True,
+                }
+            )
+            stale[key] = entry
+            # Also flag clip job so CLI reuse / UI see it
+            self._update_clip_job(
+                sn,
+                cn,
+                stale=True,
+                stale_reason=note,
+                stale_characters=chars,
+                qa_approved=False,
+                review_status="stale",
+            )
+            # Scene no longer fully approved
+            self.state.setdefault("scenes_completed", {})[str(sn)] = False
+            marked.append((sn, cn))
+
+        self.save_state()
+        print(
+            f"  [Stale] {char_key} → rev {new_rev}; marked {len(marked)} clip(s) out of date."
+        )
+        return marked
+
+    def clear_clip_stale(self, scene_num: int, clip_num: int) -> None:
+        """Clear stale flag after a successful regen of this clip."""
+        key = self._clip_job_key(scene_num, clip_num)
+        stale = self.state.setdefault("stale_clips", {})
+        stale.pop(key, None)
+        # Record which character revisions this render used
+        char_revs = {}
+        for scene in self.blueprint.get("scenes", []):
+            if scene.get("scene_number") != scene_num:
+                continue
+            for clip in scene.get("veo_clips") or []:
+                if clip.get("clip_number") != clip_num:
+                    continue
+                vp = clip.get("visual_prompt") or ""
+                for ck in (
+                    self.blueprint.get("global_production_variables", {}).get(
+                        "character_seed_tokens", {}
+                    )
+                    or {}
+                ).keys():
+                    if ck in vp:
+                        char_revs[ck] = self.get_character_revision(ck)
+        self._update_clip_job(
+            scene_num,
+            clip_num,
+            stale=False,
+            stale_reason="",
+            stale_characters=[],
+            character_revisions_used=char_revs,
+            review_status="pending",
+        )
+        self.save_state()
+
+    def is_clip_stale(self, scene_num: int, clip_num: int) -> bool:
+        key = self._clip_job_key(scene_num, clip_num)
+        entry = (self.state.get("stale_clips") or {}).get(key)
+        if entry and entry.get("stale", True):
+            return True
+        job = (self.state.get("clip_jobs") or {}).get(key) or {}
+        return bool(job.get("stale"))
+
+    def get_stale_clip_info(self, scene_num: int, clip_num: int) -> Optional[Dict[str, Any]]:
+        key = self._clip_job_key(scene_num, clip_num)
+        return (self.state.get("stale_clips") or {}).get(key)
+
+    def list_stale_clips(
+        self, only_existing: bool = True
+    ) -> List[Dict[str, Any]]:
+        out: List[Dict[str, Any]] = []
+        for key, entry in (self.state.get("stale_clips") or {}).items():
+            sn = int(entry.get("scene_number") or key.split("_")[0])
+            cn = int(entry.get("clip_number") or key.split("_")[-1])
+            path = clip_output_path(sn, cn)
+            on_disk = file_is_usable(path, min_bytes=1024)
+            if only_existing and not on_disk:
+                continue
+            out.append(
+                {
+                    "scene": sn,
+                    "clip": cn,
+                    "label": f"S{sn}C{cn}",
+                    "characters": entry.get("characters") or [],
+                    "reasons": entry.get("reasons") or [],
+                    "marked_at": entry.get("marked_at"),
+                    "on_disk": on_disk,
+                    "path": path,
+                }
+            )
+        out.sort(key=lambda r: (r["scene"], r["clip"]))
+        return out
+
+    def append_visual_prompt_feedback(
+        self,
+        scene_num: int,
+        clip_num: int,
+        feedback: str,
+        max_len: Optional[int] = None,
+    ) -> Tuple[str, str]:
+        """
+        Append reviewer feedback into a clip's visual_prompt (before the tech suffix).
+        Returns (old_prompt, new_prompt).
+        """
+        feedback = (feedback or "").strip()
+        if not feedback:
+            raise ValueError("feedback is empty")
+        if max_len is None:
+            provider = str(self.config.get("video_provider", "grok")).lower()
+            max_len = 400 if provider == "veo" else 800
+
+        for scene in self.blueprint.get("scenes", []):
+            if scene.get("scene_number") != scene_num:
+                continue
+            for clip in scene.get("veo_clips") or []:
+                if clip.get("clip_number") != clip_num:
+                    continue
+                old = clip.get("visual_prompt") or ""
+                suffix = " / 720p, 24fps"
+                base = old
+                if base.endswith(suffix):
+                    base = base[: -len(suffix)].rstrip()
+                elif " / 720p" in base:
+                    base = re.sub(r"\s*/\s*720p.*$", "", base).rstrip()
+                # Avoid double-appending the same note
+                if feedback.lower() in base.lower():
+                    return old, old
+                candidate = f"{base}, {feedback}{suffix}"
+                if len(candidate) > max_len:
+                    # Keep end of base short enough for feedback
+                    budget = max_len - len(suffix) - len(feedback) - 2
+                    if budget < 40:
+                        raise GenerationFailure(
+                            f"Cannot fit feedback into visual_prompt (max {max_len} chars)."
+                        )
+                    base = base[:budget].rstrip(" ,;")
+                    candidate = f"{base}, {feedback}{suffix}"
+                clip["visual_prompt"] = candidate
+                self.save_blueprint_to_disk()
+                return old, candidate
+        raise GenerationFailure(f"Scene {scene_num} clip {clip_num} not found in blueprint.")
+
+    def regenerate_clip(
+        self,
+        scene_num: int,
+        clip_num: int,
+        feedback: Optional[str] = None,
+        run_qa: bool = True,
+    ) -> str:
+        """
+        Wipe one clip and force-generate it. Optionally append feedback to visual_prompt first.
+        Returns path to new video.
+        """
+        if feedback:
+            self.append_visual_prompt_feedback(scene_num, clip_num, feedback)
+
+        scene = None
+        clip = None
+        for s in self.blueprint.get("scenes", []):
+            if s.get("scene_number") == scene_num:
+                scene = s
+                for c in s.get("veo_clips") or []:
+                    if c.get("clip_number") == clip_num:
+                        clip = c
+                        break
+                break
+        if not scene or not clip:
+            raise GenerationFailure(f"Scene {scene_num} clip {clip_num} not found.")
+
+        self._active_scene_num = scene_num
+        self._active_clip_num = clip_num
+        self._clear_clip_assets(scene_num, clip_num)
+
+        seed_ctx = None
+        if clip_num > 1:
+            prev = clip_output_path(scene_num, clip_num - 1)
+            if file_is_usable(prev, min_bytes=1024):
+                seed_ctx = prev
+
+        path, _ctx = self.generate_video_clip(
+            scene_num, clip, seed_ctx, force_regenerate=True
+        )
+        if run_qa and path:
+            qa_ok = self.run_clip_qa(path, clip.get("visual_prompt") or "")
+            self._update_clip_job(
+                scene_num,
+                clip_num,
+                path=path,
+                qa_approved=bool(qa_ok),
+                status="complete" if qa_ok else "qa_rejected",
+            )
+        # Fresh render matches current character refs
+        if path:
+            self.clear_clip_stale(scene_num, clip_num)
+        self.state.setdefault("scenes_completed", {})[str(scene_num)] = False
+        # Single-clip regen outside a hero batch returns scene to draft
+        if not getattr(self, "_hero_regen_active", False):
+            self.clear_scene_hero(scene_num)
+        self.save_state()
+        return path
+
+    def remux_scene_from_disk(self, scene_num: int) -> Optional[str]:
+        """Rebuild scene composite from all existing clip files on disk."""
+        scene = None
+        for s in self.blueprint.get("scenes", []):
+            if s.get("scene_number") == scene_num:
+                scene = s
+                break
+        if not scene:
+            return None
+        paths: List[str] = []
+        for clip in scene.get("veo_clips") or []:
+            p = clip_output_path(scene_num, int(clip.get("clip_number", 0)))
+            if file_is_usable(p, min_bytes=1024):
+                paths.append(p)
+        if not paths:
+            return None
+        music = music_output_path(scene_num)
+        music_path = music if file_is_usable(music, min_bytes=64) else None
+        if self.config.get("use_video_audio_for_music", False):
+            music_path = None
+        return self.mix_scene_assets(scene_num, paths, music_path, force=True)
+
+    def set_clip_review_status(
+        self, scene_num: int, clip_num: int, status: str, note: str = ""
+    ) -> None:
+        """status: pass | fail | pending"""
+        fields: Dict[str, Any] = {
+            "review_status": status,
+            "review_note": note or "",
+            "reviewed_at": time.strftime("%Y-%m-%dT%H:%M:%S"),
+        }
+        if status == "pass":
+            fields["qa_approved"] = True
+        elif status == "fail":
+            fields["qa_approved"] = False
+        self._update_clip_job(scene_num, clip_num, **fields)
+
+    def approve_scene(self, scene_num: int) -> None:
+        self.state.setdefault("scenes_completed", {})[str(scene_num)] = True
+        self.save_state()
+        try:
+            self.remux_scene_from_disk(scene_num)
+        except Exception as e:
+            print(f"  [Approve Warning] Remux failed: {e}")
+        self.rebuild_wip_movie(reason=f"after approving Scene {scene_num}")
+
+    def clear_scene_hero(self, scene_num: int) -> None:
+        """Drop hero/final flag so the scene is draft again (e.g. after re-edit)."""
+        self.state.setdefault("scene_hero", {}).pop(str(scene_num), None)
+        self.save_state()
+
+    def get_scene_hero(self, scene_num: int) -> Optional[Dict[str, Any]]:
+        return (self.state.get("scene_hero") or {}).get(str(scene_num))
+
+    def hero_regen_scene(
+        self,
+        scene_num: int,
+        *,
+        resolution: str = "720p",
+        only_existing: bool = True,
+        run_qa: bool = True,
+        approve_after: bool = True,
+        snapshot_first: bool = True,
+    ) -> Dict[str, Any]:
+        """
+        Delivery-quality pass: regenerate scene clips at a higher resolution
+        without permanently changing the global draft config resolution.
+
+        - Snapshots current main into assets/variants (draft preserve)
+        - Temporarily sets config resolution for API calls
+        - Regenerates clips (on-disk only by default)
+        - Remuxes composite, optional approve + WIP rebuild
+        - Records scene_hero in pipeline_state
+        """
+        scene = None
+        for s in self.blueprint.get("scenes", []):
+            if s.get("scene_number") == scene_num:
+                scene = s
+                break
+        if not scene:
+            raise GenerationFailure(f"Scene {scene_num} not found")
+
+        resolution = str(resolution or "720p").strip().lower()
+        if not resolution.endswith("p"):
+            resolution = f"{resolution}p"
+
+        if snapshot_first:
+            try:
+                self.snapshot_main_as_variant(scene_num)
+            except Exception as e:
+                print(f"  [Hero] Snapshot warning: {e}")
+
+        prev_res = self.config.get("resolution", "720p")
+        self.config["resolution"] = resolution
+        regenerated: List[int] = []
+        failed: List[Tuple[int, str]] = []
+        self._hero_regen_active = True
+        try:
+            clips = scene.get("veo_clips") or []
+            for clip in clips:
+                cn = int(clip.get("clip_number", 0))
+                main_path = clip_output_path(scene_num, cn)
+                if only_existing and not file_is_usable(main_path, min_bytes=1024):
+                    print(f"  [Hero] Skip clip {cn} (not on disk)")
+                    continue
+                if not only_existing and not file_is_usable(main_path, min_bytes=1024):
+                    # still allow first-time if only_existing False
+                    pass
+                print(f"  [Hero] Regenerating Scene {scene_num} Clip {cn} @ {resolution}...")
+                try:
+                    self.regenerate_clip(scene_num, cn, feedback=None, run_qa=run_qa)
+                    regenerated.append(cn)
+                except Exception as e:
+                    print(f"  [Hero] Clip {cn} failed: {e}")
+                    failed.append((cn, str(e)))
+        finally:
+            self._hero_regen_active = False
+            # Restore draft resolution so day-to-day stays cheap
+            self.config["resolution"] = prev_res
+
+        composite = None
+        try:
+            composite = self.remux_scene_from_disk(scene_num)
+        except Exception as e:
+            print(f"  [Hero] Remux warning: {e}")
+
+        hero_meta = {
+            "resolution": resolution,
+            "at": time.strftime("%Y-%m-%dT%H:%M:%S"),
+            "clip_numbers": regenerated,
+            "clip_count": len(regenerated),
+            "failed": [{"clip": c, "error": err} for c, err in failed],
+            "composite_path": composite,
+            "draft_resolution_restored": prev_res,
+        }
+        self.state.setdefault("scene_hero", {})[str(scene_num)] = hero_meta
+        self.save_state()
+
+        if approve_after and regenerated and not failed:
+            self.approve_scene(scene_num)
+        elif approve_after and regenerated:
+            # partial success — still remux/WIP but don't hard-approve
+            print("  [Hero] Partial success; not auto-approving (some clips failed).")
+            try:
+                self.rebuild_wip_movie(reason=f"hero partial Scene {scene_num}")
+            except Exception:
+                pass
+
+        print(
+            f"  [Hero] Scene {scene_num}: {len(regenerated)} clip(s) @ {resolution}; "
+            f"config resolution restored to {prev_res}"
+        )
+        return hero_meta
+
+    def save_config_to_disk(self) -> None:
+        ensure_parent_dir(self.config_path)
+        temp_file = f"{self.config_path}.tmp"
+        with open(temp_file, "w", encoding="utf-8") as f:
+            json.dump(self.config, f, indent=2)
+        os.replace(temp_file, self.config_path)
+
+    def reload_all(self) -> None:
+        """Reload config, blueprint, and state from disk (after external edits)."""
+        self.load_config()
+        self.load_blueprint()
+        self.load_state()
 
     def _build_suno_brief(self, music_bed: Dict[str, Any]) -> Dict[str, Any]:
         style = (music_bed.get("style_description") or "").strip()
@@ -846,22 +1563,70 @@ class AgenticGenerationEngine:
 
     def _find_character_anchor_path(self, prompt: str) -> Optional[str]:
         """
-        Return the locked character reference image for the PRIMARY on-screen subject.
-        Uses earliest Character_* mention in the visual text (not dict order, not VO speaker).
+        Return the locked character reference for the PRIMARY on-screen subject.
+
+        Matches the longest Character_* token first (so Character_N_Young wins over Character_N).
+        Adult base tokens are not used when a Young/Teen token is present for that person,
+        or when residual "Young Character_X" text remains without a variant token.
         """
         char_seeds = self.blueprint.get("global_production_variables", {}).get("character_seed_tokens", {})
-        best_path: Optional[str] = None
-        best_pos = len(prompt) + 1
-        for char_key, seed_info in char_seeds.items():
+        if not prompt or not char_seeds:
+            return None
+
+        # All seed keys sorted longest-first so _Young / _Teen beat base names
+        keys_by_len = sorted(char_seeds.keys(), key=len, reverse=True)
+        matches: List[tuple] = []  # (pos, key, path)
+        for char_key in keys_by_len:
             pos = prompt.find(char_key)
             if pos < 0:
                 continue
+            seed_info = char_seeds[char_key]
             local_image_name = seed_info.get("reference_image_placeholder", f"{char_key.lower()}_ref.png")
             local_image_path = f"assets/characters/{local_image_name}"
-            if os.path.exists(local_image_path) and pos < best_pos:
-                best_path = local_image_path
-                best_pos = pos
-        return best_path
+            if os.path.exists(local_image_path):
+                matches.append((pos, char_key, local_image_path))
+
+        if not matches:
+            if re.search(r"\b(Young\s+Character_|FLASHBACK|child|about\s+\d+\s+years)", prompt, re.I):
+                print(
+                    "  [Character Anchor] No matching ref file yet for young/flashback cast "
+                    "(run Stage 0 to generate age-variant portraits)."
+                )
+            return None
+
+        # Earliest mention wins; among same start, longer key already preferred via scan order
+        matches.sort(key=lambda t: (t[0], -len(t[1])))
+        pos, key, path = matches[0]
+
+        # If earliest token is an adult base but a Young/Teen version of same person also appears, prefer that
+        if not key.endswith(("_Young", "_Teen")):
+            for alt_suffix in ("_Young", "_Teen"):
+                alt = f"{key}{alt_suffix}"
+                if alt in char_seeds:
+                    alt_pos = prompt.find(alt)
+                    if alt_pos >= 0:
+                        alt_info = char_seeds[alt]
+                        alt_name = alt_info.get("reference_image_placeholder", f"{alt.lower()}_ref.png")
+                        alt_path = f"assets/characters/{alt_name}"
+                        if os.path.exists(alt_path):
+                            print(f"  [Character Anchor] Preferring age variant {alt} over adult {key}")
+                            return alt_path
+            # Residual "Young Character_N" without tokenized variant — do not use adult ref
+            if re.search(rf"Young\s+{re.escape(key)}\b", prompt, re.I) or (
+                re.search(r"\bFLASHBACK\b", prompt, re.I)
+                and re.search(
+                    rf"{re.escape(key)}\s*\([^)]{{0,40}}(about\s+)?([5-9]|1[0-7])\s+years?",
+                    prompt,
+                    re.I,
+                )
+            ):
+                print(
+                    f"  [Character Anchor] Skipping adult {key} ref in young/flashback context "
+                    f"(use {key}_Young / {key}_Teen seeds)."
+                )
+                return None
+
+        return path
 
     def _simplify_visual_for_single_clip(self, visual: str) -> str:
         """
@@ -932,6 +1697,9 @@ class AgenticGenerationEngine:
             return False
         # Explicit multi-setup language
         if re.search(r"\bCUT\s+TO\b", visual, re.IGNORECASE):
+            return False
+        # Kickball hits, crashes, sprints, etc. need a fresh shot — last-frame I2V freezes action
+        if _ACTION_BEAT_RE.search(visual):
             return False
 
         return continuation_source.lower() in {
@@ -1552,23 +2320,39 @@ class AgenticGenerationEngine:
         clip: Dict[str, Any],
         previous_context_id: Any = None,
         force_regenerate: bool = False,
+        model_name: Optional[str] = None,
+        output_path: Optional[str] = None,
+        job_key: Optional[str] = None,
+        skip_stale_check: bool = False,
     ) -> tuple:
         """Generate a video clip via xAI Grok Imagine video API (text / image / reference modes)."""
         clip_num = clip["clip_number"]
         continuation_source = clip.get("veo_continuation_source", "none")
-        output_clip_path = clip_output_path(scene_num, clip_num)
+        output_clip_path = output_path or clip_output_path(scene_num, clip_num)
         ensure_parent_dir(output_clip_path)
         os.makedirs("assets/video", exist_ok=True)
 
-        job = self.state.get("clip_jobs", {}).get(self._clip_job_key(scene_num, clip_num), {})
+        self._active_job_key = job_key  # isolates variant jobs from main clip_jobs
+        job_lookup = job_key or self._clip_job_key(scene_num, clip_num)
+        job = self.state.get("clip_jobs", {}).get(job_lookup, {})
         prior_qa_failed = job.get("qa_approved") is False
+        character_stale = (not skip_stale_check) and self.is_clip_stale(scene_num, clip_num)
+        if character_stale and not force_regenerate:
+            print(
+                f"  [Stale] Clip {clip_num} is out of date (character redesign) — will not reuse on-disk file."
+            )
+            force_regenerate = True
 
         # Forced regen (QA retry) or previous QA failure on disk
         if force_regenerate or prior_qa_failed:
             if file_is_usable(output_clip_path, min_bytes=1):
                 self._invalidate_clip_file(
                     scene_num, clip_num, output_clip_path,
-                    reason="force_regenerate" if force_regenerate else "prior_qa_failed",
+                    reason=(
+                        "force_regenerate"
+                        if force_regenerate and not character_stale
+                        else ("character_stale" if character_stale else "prior_qa_failed")
+                    ),
                 )
 
         # Resume: skip generation when the clip is already on disk WITH audio and prior QA ok
@@ -1632,8 +2416,8 @@ class AgenticGenerationEngine:
         )
         if not use_continuation and continuation_source not in (None, "", "none"):
             print(
-                "  [Grok] Smart continuation: blueprint says extend, but prompt is a cut/new setup — "
-                "using fresh generation with character refs instead of last-frame lock."
+                "  [Grok] Smart continuation: blueprint says extend, but prompt is a cut/new setup "
+                "or big action beat — using fresh generation instead of last-frame lock."
             )
 
         audio_payload = clip.get("audio_payload") or {}
@@ -1647,13 +2431,21 @@ class AgenticGenerationEngine:
             print(f"  [Grok] Throttling: Cooling down for {throttle_delay}s...")
             self._interruptible_sleep(throttle_delay, f"Grok throttle Scene {scene_num} Clip {clip_num}")
 
-        model_name = self.config.get("model_name", "grok-imagine-video")
+        resolved_model = model_name or self.config.get("model_name", "grok-imagine-video")
         duration = int(self.config.get("duration_seconds", 8))
+        # Prefer per-clip duration from timestamp when available ("00:00-00:08")
+        ts = str(clip.get("timestamp") or "")
+        m_ts = re.match(r"^\s*(\d+):(\d{2})\s*-\s*(\d+):(\d{2})\s*$", ts)
+        if m_ts:
+            a = int(m_ts.group(1)) * 60 + int(m_ts.group(2))
+            b = int(m_ts.group(3)) * 60 + int(m_ts.group(4))
+            if b > a:
+                duration = b - a
         # Grok text/image generation accepts 1–15s
         duration = max(1, min(15, duration))
 
         payload: Dict[str, Any] = {
-            "model": model_name,
+            "model": resolved_model,
             "prompt": prompt,
             "duration": duration,
             "aspect_ratio": self.config.get("aspect_ratio", "16:9"),
@@ -1662,21 +2454,29 @@ class AgenticGenerationEngine:
 
         self._check_shutdown(f"Grok generate Scene {scene_num} Clip {clip_num}")
         if use_continuation:
-            frame_path = f"assets/video/scene_{scene_num:02d}_clip_{clip_num:02d}_seed_frame.png"
+            frame_path = (
+                f"{os.path.splitext(output_clip_path)[0]}_seed_frame.png"
+                if output_path
+                else f"assets/video/scene_{scene_num:02d}_clip_{clip_num:02d}_seed_frame.png"
+            )
             ensure_parent_dir(frame_path)
             print(f"  [Grok] True continuation: image-to-video from last frame of {prev_path}...")
             self._extract_last_frame(prev_path, frame_path)
             payload["image"] = {"url": self._file_to_data_uri(frame_path)}
         else:
-            # Fresh shot: lock PRIMARY visual subject (first Character_* in visual_prompt).
+            # Fresh shot: lock PRIMARY visual subject (first adult Character_* in visual_prompt).
             # Do NOT prefer VO speaker — narration is often off-screen / different person.
+            # Do NOT use adult Stage-0 portraits for young/flashback versions of characters.
             anchor_probe = clip.get("visual_prompt") or ""
             anchor_path = self._find_character_anchor_path(anchor_probe)
             if anchor_path:
                 print(f"  [Character Anchor] Primary subject ref: {anchor_path}")
                 payload["reference_images"] = [{"url": self._file_to_data_uri(anchor_path)}]
             else:
-                print("  [Character Anchor] No on-screen Character_* ref found in visual_prompt.")
+                print(
+                    "  [Character Anchor] No adult ref applied "
+                    "(missing character file, or young/flashback cast uses text-only age)."
+                )
 
         try:
             request_id = self._grok_submit_generation(payload)
@@ -1726,6 +2526,7 @@ class AgenticGenerationEngine:
                 dialogue_audio_ensured=True,
                 audio_bytes=audio_stats.get("audio_bytes"),
             )
+            self.clear_clip_stale(scene_num, clip_num)
         except (PipelineInterrupted, KeyboardInterrupt):
             # Keep submitted request_id in clip_jobs so resume can re-poll/download
             self._update_clip_job(
@@ -1870,24 +2671,427 @@ class AgenticGenerationEngine:
 
         return output_clip_path, context_id
 
+    def resolve_video_settings(
+        self,
+        scene: Optional[Dict[str, Any]] = None,
+        provider: Optional[str] = None,
+        model_name: Optional[str] = None,
+    ) -> Dict[str, str]:
+        """
+        Resolve provider/model: explicit args > scene fields > pipeline_config.
+        Scene may set video_provider / model_name for preferred generator.
+        """
+        cfg_provider = str(self.config.get("video_provider", "grok")).lower().strip()
+        cfg_model = str(self.config.get("model_name", "grok-imagine-video")).strip()
+        scene_provider = ""
+        scene_model = ""
+        if scene:
+            scene_provider = str(scene.get("video_provider") or "").lower().strip()
+            scene_model = str(scene.get("model_name") or "").strip()
+        resolved_provider = (provider or scene_provider or cfg_provider).lower().strip()
+        resolved_model = model_name or scene_model or cfg_model
+        return {
+            "provider": resolved_provider,
+            "model_name": resolved_model,
+            "variant_id": slugify_model_id(resolved_provider, resolved_model),
+        }
+
     def generate_video_clip(
         self,
         scene_num: int,
         clip: Dict[str, Any],
         previous_context_id: Any = None,
         force_regenerate: bool = False,
+        video_provider: Optional[str] = None,
+        model_name: Optional[str] = None,
+        output_path: Optional[str] = None,
+        job_key: Optional[str] = None,
+        skip_stale_check: bool = False,
     ) -> tuple:
-        """Dispatch video generation to Grok (default) or Veo based on pipeline_config.video_provider."""
-        provider = str(self.config.get("video_provider", "grok")).lower().strip()
+        """Dispatch video generation to Grok (default) or Veo."""
+        scene = None
+        for s in self.blueprint.get("scenes", []):
+            if s.get("scene_number") == scene_num:
+                scene = s
+                break
+        settings = self.resolve_video_settings(scene, video_provider, model_name)
+        provider = settings["provider"]
+        resolved_model = settings["model_name"]
         if provider in ("grok", "xai", "grok-imagine", "imagine"):
             return self.generate_grok_clip(
-                scene_num, clip, previous_context_id, force_regenerate=force_regenerate
+                scene_num,
+                clip,
+                previous_context_id,
+                force_regenerate=force_regenerate,
+                model_name=resolved_model,
+                output_path=output_path,
+                job_key=job_key,
+                skip_stale_check=skip_stale_check,
             )
         if provider in ("veo", "google", "gemini"):
-            return self.generate_veo_clip(scene_num, clip, previous_context_id)
+            # Veo path currently always writes main clip path; copy if variant requested
+            path, ctx = self.generate_veo_clip(scene_num, clip, previous_context_id)
+            if output_path and path and os.path.abspath(path) != os.path.abspath(output_path):
+                ensure_parent_dir(output_path)
+                import shutil
+
+                shutil.copy2(path, output_path)
+                return output_path, ctx
+            return path, ctx
         raise GenerationFailure(
             f"Unknown video_provider '{provider}'. Use 'grok' (default) or 'veo'."
         )
+
+    # ------------------------------------------------------------------
+    # Multi-model scene variants (side-by-side comparison)
+    # ------------------------------------------------------------------
+
+    def available_video_models(self) -> List[Dict[str, str]]:
+        models = self.config.get("available_video_models")
+        if isinstance(models, list) and models:
+            return models
+        return list(DEFAULT_CONFIG.get("available_video_models") or [])
+
+    def set_scene_video_settings(
+        self,
+        scene_num: int,
+        provider: Optional[str] = None,
+        model_name: Optional[str] = None,
+        clear: bool = False,
+    ) -> Dict[str, Any]:
+        """Persist preferred generator on the scene in nickandme.json."""
+        for scene in self.blueprint.get("scenes", []):
+            if scene.get("scene_number") != scene_num:
+                continue
+            if clear:
+                scene.pop("video_provider", None)
+                scene.pop("model_name", None)
+            else:
+                if provider is not None:
+                    scene["video_provider"] = provider
+                if model_name is not None:
+                    scene["model_name"] = model_name
+            self.save_blueprint_to_disk()
+            return self.resolve_video_settings(scene)
+        raise GenerationFailure(f"Scene {scene_num} not found")
+
+    def _register_scene_variant(
+        self,
+        scene_num: int,
+        variant_id: str,
+        meta: Dict[str, Any],
+        set_active: bool = False,
+    ) -> None:
+        store = self.state.setdefault("scene_variants", {})
+        entry = store.setdefault(str(scene_num), {"active": "main", "variants": {}})
+        variants = entry.setdefault("variants", {})
+        variants[variant_id] = {
+            **(variants.get(variant_id) or {}),
+            **meta,
+            "variant_id": variant_id,
+            "updated_at": time.strftime("%Y-%m-%dT%H:%M:%S"),
+        }
+        if set_active:
+            entry["active"] = variant_id
+        self.save_state()
+
+    def snapshot_main_as_variant(self, scene_num: int) -> Optional[str]:
+        """
+        Copy current main scene clips + composite into a variant folder tagged
+        with the scene's current resolved provider/model (if not already present).
+        Returns variant_id or None if nothing to snapshot.
+        """
+        import shutil
+
+        scene = None
+        for s in self.blueprint.get("scenes", []):
+            if s.get("scene_number") == scene_num:
+                scene = s
+                break
+        if not scene:
+            return None
+        settings = self.resolve_video_settings(scene)
+        variant_id = f"main__{settings['variant_id']}"
+        composite = composite_output_path(scene_num)
+        if not file_is_usable(composite, min_bytes=1024):
+            # still snapshot individual clips if any
+            has_any = False
+            for c in scene.get("veo_clips") or []:
+                if file_is_usable(clip_output_path(scene_num, int(c.get("clip_number", 0))), min_bytes=1024):
+                    has_any = True
+                    break
+            if not has_any:
+                return None
+
+        vdir = variant_dir(scene_num, variant_id)
+        os.makedirs(vdir, exist_ok=True)
+        clip_paths: List[str] = []
+        for c in scene.get("veo_clips") or []:
+            cn = int(c.get("clip_number", 0))
+            src = clip_output_path(scene_num, cn)
+            if file_is_usable(src, min_bytes=1024):
+                dst = variant_clip_path(scene_num, cn, variant_id)
+                ensure_parent_dir(dst)
+                shutil.copy2(src, dst)
+                clip_paths.append(dst)
+        comp_dst = variant_composite_path(scene_num, variant_id)
+        if file_is_usable(composite, min_bytes=1024):
+            shutil.copy2(composite, comp_dst)
+        elif clip_paths:
+            try:
+                self.mix_scene_assets(scene_num, clip_paths, None, force=True)
+                # mix writes to main composite path — copy then leave main as-is
+                if file_is_usable(composite, min_bytes=1024):
+                    shutil.copy2(composite, comp_dst)
+            except Exception as e:
+                print(f"  [Variant] Could not mux snapshot: {e}")
+
+        meta = {
+            "provider": settings["provider"],
+            "model_name": settings["model_name"],
+            "label": f"Main snapshot ({settings['provider']}/{settings['model_name']})",
+            "source": "main_snapshot",
+            "composite_path": comp_dst if file_is_usable(comp_dst, min_bytes=1024) else None,
+            "clip_count": len(clip_paths),
+        }
+        try:
+            with open(variant_meta_path(scene_num, variant_id), "w", encoding="utf-8") as f:
+                json.dump(meta, f, indent=2)
+        except OSError:
+            pass
+        self._register_scene_variant(scene_num, variant_id, meta, set_active=False)
+        print(f"  [Variant] Snapshotted main → {variant_id} ({len(clip_paths)} clips)")
+        return variant_id
+
+    def generate_scene_variant(
+        self,
+        scene_num: int,
+        provider: str,
+        model_name: str,
+        *,
+        only_existing: bool = True,
+        run_qa: bool = False,
+        label: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """
+        Generate (or re-generate) all relevant clips for a scene into a variant
+        folder so it can be compared without overwriting the main timeline.
+        """
+        import shutil
+
+        scene = None
+        for s in self.blueprint.get("scenes", []):
+            if s.get("scene_number") == scene_num:
+                scene = s
+                break
+        if not scene:
+            raise GenerationFailure(f"Scene {scene_num} not found")
+
+        # Preserve current main before expensive alternate render
+        self.snapshot_main_as_variant(scene_num)
+
+        settings = self.resolve_video_settings(scene, provider, model_name)
+        variant_id = settings["variant_id"]
+        provider = settings["provider"]
+        model_name = settings["model_name"]
+        vdir = variant_dir(scene_num, variant_id)
+        os.makedirs(vdir, exist_ok=True)
+
+        clips = scene.get("veo_clips") or []
+        generated: List[str] = []
+        previous_path = None
+        for clip in clips:
+            cn = int(clip.get("clip_number", 0))
+            main_path = clip_output_path(scene_num, cn)
+            if only_existing and not file_is_usable(main_path, min_bytes=1024):
+                print(f"  [Variant] Skip clip {cn} (not on main disk)")
+                previous_path = None
+                continue
+            out = variant_clip_path(scene_num, cn, variant_id)
+            job_key = f"{scene_num}_{cn}__{variant_id}"
+            print(
+                f"  [Variant] Scene {scene_num} Clip {cn} → {variant_id} "
+                f"({provider}/{model_name})"
+            )
+            path, _ctx = self.generate_video_clip(
+                scene_num,
+                clip,
+                previous_context_id=previous_path,
+                force_regenerate=True,
+                video_provider=provider,
+                model_name=model_name,
+                output_path=out,
+                job_key=job_key,
+                skip_stale_check=True,
+            )
+            if run_qa and path:
+                try:
+                    self.run_clip_qa(path, clip.get("visual_prompt") or "")
+                except Exception as e:
+                    print(f"  [Variant QA Warning] {e}")
+            if file_is_usable(path, min_bytes=1024):
+                generated.append(path)
+                previous_path = path
+            else:
+                previous_path = None
+
+        comp = variant_composite_path(scene_num, variant_id)
+        if generated:
+            try:
+                # mix_scene_assets always writes main composite — mux into variant path
+                tmp_main = composite_output_path(scene_num)
+                main_backup = None
+                if file_is_usable(tmp_main, min_bytes=1024):
+                    main_backup = f"{tmp_main}.bak_variant"
+                    shutil.copy2(tmp_main, main_backup)
+                self.mix_scene_assets(scene_num, generated, None, force=True)
+                if file_is_usable(tmp_main, min_bytes=1024):
+                    ensure_parent_dir(comp)
+                    shutil.copy2(tmp_main, comp)
+                if main_backup and file_is_usable(main_backup, min_bytes=1024):
+                    shutil.copy2(main_backup, tmp_main)
+                    try:
+                        os.remove(main_backup)
+                    except OSError:
+                        pass
+            except Exception as e:
+                print(f"  [Variant] Composite mux failed: {e}")
+
+        meta = {
+            "provider": provider,
+            "model_name": model_name,
+            "label": label or f"{provider} / {model_name}",
+            "source": "generated",
+            "composite_path": comp if file_is_usable(comp, min_bytes=1024) else None,
+            "clip_count": len(generated),
+            "clip_paths": generated,
+            "only_existing": only_existing,
+        }
+        try:
+            with open(variant_meta_path(scene_num, variant_id), "w", encoding="utf-8") as f:
+                json.dump(meta, f, indent=2)
+        except OSError:
+            pass
+        self._register_scene_variant(scene_num, variant_id, meta, set_active=False)
+        return meta
+
+    def list_scene_variants(self, scene_num: int) -> Dict[str, Any]:
+        """Return active id + known variants (state + filesystem scan)."""
+        store = self.state.setdefault("scene_variants", {})
+        entry = store.setdefault(str(scene_num), {"active": "main", "variants": {}})
+        variants = dict(entry.get("variants") or {})
+
+        # Always include main timeline as virtual variant
+        main_comp = composite_output_path(scene_num)
+        scene = None
+        for s in self.blueprint.get("scenes", []):
+            if s.get("scene_number") == scene_num:
+                scene = s
+                break
+        settings = self.resolve_video_settings(scene)
+        variants["main"] = {
+            "variant_id": "main",
+            "provider": settings["provider"],
+            "model_name": settings["model_name"],
+            "label": f"Main ({settings['provider']}/{settings['model_name']})",
+            "source": "main",
+            "composite_path": main_comp if file_is_usable(main_comp, min_bytes=1024) else None,
+            "is_main": True,
+        }
+
+        # Discover on-disk variant folders
+        root = f"assets/variants/scene_{scene_num:02d}"
+        if os.path.isdir(root):
+            for name in os.listdir(root):
+                if name in variants:
+                    # refresh composite path
+                    comp = variant_composite_path(scene_num, name)
+                    if file_is_usable(comp, min_bytes=1024):
+                        variants[name]["composite_path"] = comp
+                    continue
+                comp = variant_composite_path(scene_num, name)
+                meta_file = variant_meta_path(scene_num, name)
+                meta: Dict[str, Any] = {"variant_id": name, "label": name, "source": "disk"}
+                if os.path.isfile(meta_file):
+                    try:
+                        with open(meta_file, "r", encoding="utf-8") as f:
+                            meta.update(json.load(f))
+                    except (json.JSONDecodeError, OSError):
+                        pass
+                if file_is_usable(comp, min_bytes=1024):
+                    meta["composite_path"] = comp
+                variants[name] = meta
+
+        return {
+            "scene_number": scene_num,
+            "active": entry.get("active") or "main",
+            "preferred": settings,
+            "variants": variants,
+        }
+
+    def promote_scene_variant(self, scene_num: int, variant_id: str) -> str:
+        """
+        Copy a comparison variant into the main timeline paths and set scene
+        preferred provider/model to match. Returns main composite path.
+        """
+        import shutil
+
+        if variant_id == "main":
+            return composite_output_path(scene_num)
+
+        info = self.list_scene_variants(scene_num)
+        meta = (info.get("variants") or {}).get(variant_id)
+        if not meta:
+            raise GenerationFailure(f"Unknown variant '{variant_id}' for scene {scene_num}")
+
+        # Snapshot current main first
+        self.snapshot_main_as_variant(scene_num)
+
+        scene = None
+        for s in self.blueprint.get("scenes", []):
+            if s.get("scene_number") == scene_num:
+                scene = s
+                break
+        if not scene:
+            raise GenerationFailure(f"Scene {scene_num} not found")
+
+        for c in scene.get("veo_clips") or []:
+            cn = int(c.get("clip_number", 0))
+            src = variant_clip_path(scene_num, cn, variant_id)
+            if file_is_usable(src, min_bytes=1024):
+                dst = clip_output_path(scene_num, cn)
+                ensure_parent_dir(dst)
+                shutil.copy2(src, dst)
+                self.clear_clip_stale(scene_num, cn)
+
+        src_comp = variant_composite_path(scene_num, variant_id)
+        dst_comp = composite_output_path(scene_num)
+        if file_is_usable(src_comp, min_bytes=1024):
+            ensure_parent_dir(dst_comp)
+            shutil.copy2(src_comp, dst_comp)
+        else:
+            self.remux_scene_from_disk(scene_num)
+
+        provider = meta.get("provider")
+        model_name = meta.get("model_name")
+        if provider or model_name:
+            self.set_scene_video_settings(
+                scene_num,
+                provider=provider,
+                model_name=model_name,
+            )
+
+        self._register_scene_variant(
+            scene_num,
+            variant_id,
+            {**meta, "promoted_at": time.strftime("%Y-%m-%dT%H:%M:%S")},
+            set_active=True,
+        )
+        store = self.state.setdefault("scene_variants", {})
+        store.setdefault(str(scene_num), {})["active"] = "main"
+        self.save_state()
+        print(f"  [Variant] Promoted {variant_id} → main for Scene {scene_num}")
+        return dst_comp
 
     def _qa_evaluation_prompt(self, visual_prompt: str) -> str:
         return (
@@ -2477,6 +3681,7 @@ class AgenticGenerationEngine:
                         status="complete" if qa_passed else "qa_rejected",
                     )
                     if qa_passed:
+                        self.clear_clip_stale(s_num, c_num)
                         break
                     if attempt < attempts:
                         self._invalidate_clip_file(
@@ -2628,40 +3833,148 @@ class AgenticGenerationEngine:
         self.state["current_scene_index"] = target_scene_num - 1
         self.save_state()
 
+    def _resolve_scene_composite_path(self, scene_num: int) -> Optional[str]:
+        """Return a usable on-disk composite path for a scene, or None."""
+        asset_info = self.state.get("scene_assets", {}).get(str(scene_num)) or {}
+        composite = asset_info.get("composite")
+        if file_is_usable(composite, min_bytes=1024):
+            return composite
+        candidate = composite_output_path(scene_num)
+        if file_is_usable(candidate, min_bytes=1024):
+            return candidate
+        return None
+
+    def _collect_scene_composites(self, approved_only: bool = True) -> List[str]:
+        """
+        Ordered list of scene composite paths from the blueprint.
+        If approved_only, only scenes marked completed in state are included
+        (still requires the composite file to exist on disk).
+        """
+        paths: List[str] = []
+        for s in self.blueprint.get("scenes", []):
+            s_num = s["scene_number"]
+            if approved_only and not self.state.get("scenes_completed", {}).get(str(s_num)):
+                continue
+            comp = self._resolve_scene_composite_path(s_num)
+            if comp:
+                paths.append(comp)
+        return paths
+
+    def _concat_videos(self, input_paths: List[str], output_path: str, label: str = "movie") -> str:
+        """Concatenate MP4s with ffmpeg (stream copy when possible)."""
+        if not input_paths:
+            raise GenerationFailure(f"No input videos to build {label}.")
+        ensure_parent_dir(output_path)
+        ffmpeg = resolve_ffmpeg()
+        concat_list = f"assets/scenes/concat_list_{label.replace(' ', '_')}.txt"
+        ensure_parent_dir(concat_list)
+        with open(concat_list, "w", encoding="utf-8") as f:
+            for path in input_paths:
+                # Absolute paths are safest across CWD / WSL
+                abs_path = os.path.abspath(path).replace("\\", "/")
+                # ffmpeg concat demuxer on Windows/WSL: escape single quotes
+                safe = abs_path.replace("'", "'\\''")
+                f.write(f"file '{safe}'\n")
+
+        tmp_out = f"{output_path}.tmp.mp4"
+        cmd = [
+            ffmpeg, "-y",
+            "-f", "concat", "-safe", "0",
+            "-i", concat_list,
+            "-c", "copy",
+            "-movflags", "+faststart",
+            tmp_out,
+        ]
+        print(f"  [FFmpeg] Building {label} from {len(input_paths)} scene(s) -> {output_path}")
+        try:
+            result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        except Exception as e:
+            raise GenerationFailure(f"Failed to run ffmpeg for {label}: {e}")
+
+        if result.returncode != 0 or not file_is_usable(tmp_out, min_bytes=1024):
+            # Fallback: re-encode if stream copy fails (codec/timebase mismatches)
+            print(f"  [FFmpeg] Stream-copy failed for {label}; retrying with re-encode...")
+            cmd_re = [
+                ffmpeg, "-y",
+                "-f", "concat", "-safe", "0",
+                "-i", concat_list,
+                "-c:v", "libx264", "-preset", "veryfast", "-crf", "18",
+                "-c:a", "aac", "-b:a", "192k",
+                "-movflags", "+faststart",
+                tmp_out,
+            ]
+            result = subprocess.run(cmd_re, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            if result.returncode != 0 or not file_is_usable(tmp_out, min_bytes=1024):
+                err = (result.stderr or b"").decode(errors="ignore")[-500:]
+                raise GenerationFailure(f"Failed to build {label}. FFmpeg: {err}")
+
+        os.replace(tmp_out, output_path)
+        return output_path
+
+    def rebuild_wip_movie(self, reason: str = "") -> Optional[str]:
+        """
+        Rebuild the work-in-progress film from all currently approved scene composites.
+        Controlled by pipeline_config:
+          rebuild_wip_movie_after_scene (bool)
+          wip_movie_path (str)
+        """
+        if not self.config.get("rebuild_wip_movie_after_scene", True):
+            return None
+
+        output_path = self.config.get("wip_movie_path", "assets/movie_wip.mp4")
+        scene_files = self._collect_scene_composites(approved_only=True)
+        if not scene_files:
+            print("  [WIP Movie] No approved scene composites yet — skip.")
+            return None
+
+        note = f" ({reason})" if reason else ""
+        print(f"\n==================== WIP MOVIE UPDATE{note} ====================")
+        try:
+            path = self._concat_videos(scene_files, output_path, label="wip_movie")
+            print(
+                f"  [WIP Movie] Updated {path} with {len(scene_files)} approved scene(s). "
+                f"Open this anytime to review the film so far."
+            )
+            self.state["wip_movie"] = {
+                "path": path,
+                "scene_count": len(scene_files),
+                "updated_at": time.strftime("%Y-%m-%dT%H:%M:%S"),
+            }
+            self.save_state()
+            return path
+        except GenerationFailure as e:
+            print(f"  [WIP Movie Warning] {e}")
+            return None
+
     def run_mastering(self):
         print("\n==================== PIPELINE STAGE 5: GLOBAL FILM MASTERING ====================")
-        scenes = self.blueprint.get("scenes", [])
-        output_movie_path = "assets/movie_final_master.mp4"
-        ensure_parent_dir(output_movie_path)
         self.ensure_asset_directories()
+        output_movie_path = "assets/movie_final_master.mp4"
 
-        scene_files = []
-        for s in scenes:
-            s_num = s["scene_number"]
-            asset_info = self.state["scene_assets"].get(str(s_num))
-            composite = None
-            if asset_info and asset_info.get("composite"):
-                composite = asset_info["composite"]
-            else:
-                # Fall back to on-disk composite if state is incomplete
-                candidate = composite_output_path(s_num)
-                if file_is_usable(candidate, min_bytes=1024):
-                    composite = candidate
-            if composite and file_is_usable(composite, min_bytes=1024):
-                scene_files.append(composite)
+        # Prefer approved scenes; if none marked approved, fall back to any composites on disk
+        scene_files = self._collect_scene_composites(approved_only=True)
+        if not scene_files:
+            print("[Info] No approved scenes; using any available scene composites on disk.")
+            scene_files = self._collect_scene_composites(approved_only=False)
 
         if not scene_files:
-            print("[Error] No approved scene files available for mastering.")
+            print("[Error] No scene composite files available for mastering.")
             return
 
         try:
-            with open("concat_list.txt", "w") as f:
-                for path in scene_files:
-                    f.write(f"file '{path}'\n")
-            concat_cmd = ["ffmpeg", "-y", "-f", "concat", "-safe", "0", "-i", "concat_list.txt", "-c", "copy", output_movie_path]
-            result = subprocess.run(concat_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            print(f"SUCCESS: Completed cinematic mastering! Saved final video to: {output_movie_path}")
-        except Exception as e:
+            path = self._concat_videos(scene_files, output_movie_path, label="final_master")
+            print(f"SUCCESS: Completed cinematic mastering! Saved final video to: {path}")
+            # Keep WIP in sync with final when mastering runs
+            if self.config.get("rebuild_wip_movie_after_scene", True):
+                wip = self.config.get("wip_movie_path", "assets/movie_wip.mp4")
+                try:
+                    import shutil
+                    ensure_parent_dir(wip)
+                    shutil.copy2(path, wip)
+                    print(f"  [WIP Movie] Synced {wip} to final master.")
+                except OSError as e:
+                    print(f"  [WIP Movie Warning] Could not sync WIP copy: {e}")
+        except GenerationFailure as e:
             print(f"[Error] Mastering compilation failed: {e}")
 
     def _find_scene_index(self, scenes: List[Dict[str, Any]], scene_number: int) -> int:
@@ -3017,9 +4330,9 @@ class AgenticGenerationEngine:
         self.ensure_asset_directories()
 
         try:
-            # Fire Stage 0 Design Sequence prior to running film operational scene timelines
-            if not self.state.get("characters_designed", False):
-                self.pre_production_character_design()
+            # Stage 0: always check for missing character refs (adults + Young/Teen variants).
+            # Already-locked files are skipped inside pre_production_character_design().
+            self.pre_production_character_design()
 
             scenes = self.blueprint.get("scenes", [])
             total_scenes = len(scenes)
@@ -3063,6 +4376,8 @@ class AgenticGenerationEngine:
                     print(f"[Success] Approved Scene {s_num}.")
                     self.state["scenes_completed"][str(s_num)] = True
                     self.save_state()
+                    # Rebuild running film from all approved scenes so far
+                    self.rebuild_wip_movie(reason=f"after approving Scene {s_num}")
                     if single_scene_mode:
                         print("[Select] Single-scene mode complete.")
                         again = input("Select another scene/clip? [y/N]: ").strip().lower()
@@ -3133,8 +4448,8 @@ class AgenticGenerationEngine:
 
 if __name__ == "__main__":
     print("=========================================================================")
-    print("         AGENTIC GENERATION SCRIPT ENGINE (V9.4) - RUNNING               ")
-    print("         Scene + clip selector  |  Ctrl+C saves  |  Smart cuts + QA      ")
+    print("         AGENTIC GENERATION SCRIPT ENGINE (V9.5) - RUNNING               ")
+    print("         Scene/clip select  |  WIP movie after approve  |  Ctrl+C save   ")
     print("=========================================================================")
     engine = None
     try:

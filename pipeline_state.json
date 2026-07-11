@@ -1,8 +1,8 @@
 {
   "characters_designed": true,
-  "current_scene_index": 0,
+  "current_scene_index": 1,
   "scenes_completed": {
-    "1": false,
+    "1": true,
     "2": false
   },
   "scene_assets": {
@@ -21,13 +21,18 @@
     },
     "2": {
       "video_clips": [
-        "assets/video/scene_02_clip_01.mp4"
+        "assets/video/scene_02_clip_01.mp4",
+        "assets/video/scene_02_clip_02.mp4",
+        "assets/video/scene_02_clip_03.mp4",
+        "assets/video/scene_02_clip_04.mp4",
+        "assets/video/scene_02_clip_05.mp4",
+        "assets/video/scene_02_clip_06.mp4"
       ],
       "music_bed": null,
       "composite": "assets/scenes/scene_02_complete.mp4",
       "partial": true,
-      "clips_merged": 1,
-      "last_error": "Interrupted by user during Grok poll Scene 2 Clip 2"
+      "clips_merged": 6,
+      "last_error": "Quit requested from interactive gate"
     }
   },
   "clip_context_ids": {
@@ -36,7 +41,12 @@
     "1_3": "assets/video/scene_01_clip_03.mp4",
     "1_4": "assets/video/scene_01_clip_04.mp4",
     "2_1": "assets/video/scene_02_clip_01.mp4",
-    "1_5": "assets/video/scene_01_clip_05.mp4"
+    "1_5": "assets/video/scene_01_clip_05.mp4",
+    "2_2": "assets/video/scene_02_clip_02.mp4",
+    "2_4": "assets/video/scene_02_clip_04.mp4",
+    "2_5": "assets/video/scene_02_clip_05.mp4",
+    "2_6": "assets/video/scene_02_clip_06.mp4",
+    "2_3": "assets/video/scene_02_clip_03.mp4"
   },
   "clip_jobs": {
     "1_1": {
@@ -101,28 +111,13 @@
       "path": "assets/video/scene_02_clip_01.mp4",
       "scene_number": 2,
       "clip_number": 1,
-      "updated_at": "2026-07-10T22:04:56",
+      "updated_at": "2026-07-10T23:02:04",
       "video_url": "https://vidgen.x.ai/xai-vidgen-bucket/xai-video-0982a4be-06ca-94ba-8d03-7d653f0a74d7.mp4",
       "has_audio": true,
       "dialogue_audio_ensured": true,
       "audio_bytes": 129393,
       "qa_approved": true,
       "qa_attempt": 1
-    },
-    "2_2": {
-      "status": "interrupted",
-      "request_id": "ef7af78d-b232-9c61-b57a-b24edd304b0c",
-      "path": "assets/video/scene_02_clip_02.mp4",
-      "scene_number": 2,
-      "clip_number": 2,
-      "updated_at": "2026-07-10T22:09:26",
-      "video_url": null,
-      "has_audio": true,
-      "dialogue_audio_ensured": true,
-      "audio_bytes": 129585,
-      "qa_approved": false,
-      "qa_attempt": 2,
-      "last_error": "interrupted_by_user"
     },
     "1_5": {
       "status": "complete",
@@ -137,7 +132,101 @@
       "audio_bytes": 129905,
       "qa_approved": true,
       "qa_attempt": 1
+    },
+    "2_2": {
+      "status": "complete",
+      "request_id": "017e9238-d07e-9623-a74c-b9f9bc0cd140",
+      "path": "assets/video/scene_02_clip_02.mp4",
+      "scene_number": 2,
+      "clip_number": 2,
+      "updated_at": "2026-07-10T23:02:16",
+      "video_url": "https://vidgen.x.ai/xai-vidgen-bucket/xai-video-017e9238-d07e-9623-a74c-b9f9bc0cd140.mp4",
+      "has_audio": true,
+      "dialogue_audio_ensured": true,
+      "audio_bytes": 129471,
+      "qa_approved": true,
+      "qa_attempt": 1
+    },
+    "2_4": {
+      "status": "complete",
+      "request_id": "9f278c3e-2903-996f-abb3-6e8e39938b75",
+      "path": "assets/video/scene_02_clip_04.mp4",
+      "scene_number": 2,
+      "clip_number": 4,
+      "updated_at": "2026-07-10T23:04:12",
+      "video_url": "https://vidgen.x.ai/xai-vidgen-bucket/xai-video-9f278c3e-2903-996f-abb3-6e8e39938b75.mp4",
+      "has_audio": true,
+      "dialogue_audio_ensured": true,
+      "audio_bytes": 129426,
+      "qa_approved": true,
+      "qa_attempt": 1
+    },
+    "2_5": {
+      "status": "complete",
+      "request_id": "e3a8ed56-2b61-93ce-8ac1-b55a913af37e",
+      "path": "assets/video/scene_02_clip_05.mp4",
+      "scene_number": 2,
+      "clip_number": 5,
+      "updated_at": "2026-07-10T23:06:00",
+      "video_url": "https://vidgen.x.ai/xai-vidgen-bucket/xai-video-e3a8ed56-2b61-93ce-8ac1-b55a913af37e.mp4",
+      "has_audio": true,
+      "dialogue_audio_ensured": true,
+      "audio_bytes": 129199,
+      "qa_approved": true,
+      "qa_attempt": 1
+    },
+    "2_6": {
+      "status": "complete",
+      "request_id": "5d779b7d-7919-9b3e-9414-d2fa26ca99e1",
+      "path": "assets/video/scene_02_clip_06.mp4",
+      "scene_number": 2,
+      "clip_number": 6,
+      "updated_at": "2026-07-10T23:07:54",
+      "video_url": "https://vidgen.x.ai/xai-vidgen-bucket/xai-video-5d779b7d-7919-9b3e-9414-d2fa26ca99e1.mp4",
+      "has_audio": true,
+      "dialogue_audio_ensured": true,
+      "audio_bytes": 129349,
+      "qa_approved": true,
+      "qa_attempt": 1
+    },
+    "2_3": {
+      "status": "complete",
+      "request_id": "4e4216ce-496a-998c-b2b5-b553de86740b",
+      "path": "assets/video/scene_02_clip_03.mp4",
+      "scene_number": 2,
+      "clip_number": 3,
+      "updated_at": "2026-07-10T23:16:15",
+      "video_url": "https://vidgen.x.ai/xai-vidgen-bucket/xai-video-4e4216ce-496a-998c-b2b5-b553de86740b.mp4",
+      "has_audio": true,
+      "dialogue_audio_ensured": true,
+      "audio_bytes": 129473,
+      "qa_approved": true,
+      "qa_attempt": 1
     }
   },
-  "music_jobs": {}
+  "music_jobs": {},
+  "wip_movie": {
+    "path": "assets/movie_wip.mp4",
+    "scene_count": 2,
+    "updated_at": "2026-07-10T22:58:22"
+  },
+  "character_revisions": {},
+  "stale_clips": {},
+  "scene_variants": {
+    "1": {
+      "active": "main",
+      "variants": {
+        "main__grok__grok-imagine-video": {
+          "provider": "grok",
+          "model_name": "grok-imagine-video",
+          "label": "Main snapshot (grok/grok-imagine-video)",
+          "source": "main_snapshot",
+          "composite_path": "assets/variants/scene_01/main__grok__grok-imagine-video/composite.mp4",
+          "clip_count": 5,
+          "variant_id": "main__grok__grok-imagine-video",
+          "updated_at": "2026-07-11T09:34:37"
+        }
+      }
+    }
+  }
 }

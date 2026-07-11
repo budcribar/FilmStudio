@@ -38,7 +38,9 @@ Clip durations (fixed):
 - `visual_prompt` max length: 400 characters (including the trailing " / 720p, 24fps")
 - Prefer short identity restatements in every extend clip (≥80% of wardrobe/identity from the scene's first clip)
 
-Even on Veo: do NOT mark a clip `extend_previous` if it is a hard cut, wide/establishing shot, flashback, exterior/interior location change, or multi-setup "CUT TO" beat. Those must be `none` (fresh generation with character refs).
+Even on Veo: do NOT mark a clip `extend_previous` if it is a hard cut, wide/establishing shot, flashback,
+exterior/interior location change, multi-setup "CUT TO" beat, or big action beat (kick/hit/crash/sprint/etc.).
+Those must be `none` (fresh generation with character refs).
 
 ----- PROFILE: grok -----
 Use when VIDEO_PROVIDER = "grok" (xAI Grok Imagine video).
@@ -58,13 +60,29 @@ Continuation rules for Grok (CRITICAL):
   - any hard cut / new camera setup
   - WIDE SHOT, ESTABLISHING, AERIAL, EXT./EXTERIOR, INT. location change
   - FLASHBACK / BACK TO PRESENT / MEANWHILE / ELSEWHERE
+  - location jump vs previous clip (alley→kitchen, street→bus, gym→apartment, etc.)
+  - **BIG ACTION BEATS** that last-frame image-to-video cannot invent:
+    kicks, hits, soaring balls, crashes, sprints, punches, tackles, slams, throws,
+    jumps, explosions, clear lift/curl motion from bottom to top, etc.
   - any prompt that would require leaving the previous last frame's composition
-- `veo_continuation_source: "extend_previous"` ONLY when the next clip is a true continuous action in the same setup (same place, same primary subject framing intent, no new establishing shot).
-- ONE primary visual setup per clip. Do not pack "WIDE SHOT of X. CUT to Y walking..." into a single clip. Split into two clips, or rewrite as one smooth continuous camera transition if they must share one clip.
+- `veo_continuation_source: "extend_previous"` ONLY when the next clip is a true continuous
+  action in the same setup (same place, same primary subject framing intent, small motion only —
+  e.g. hold expression, small turn, continue walking). Do NOT use extend for “the big hit/kick/crash.”
+- ONE primary visual setup per clip. Do not pack "WIDE SHOT of X. CUT to Y walking..." into a single clip.
+  Split into two clips, or rewrite as one smooth continuous camera transition if they must share one clip.
+- For action clips, write **filmable progressive motion** explicitly
+  (e.g. “sprints and kicks a red kickball; ball SMASHES through Mrs. Engel’s kitchen window, glass shatters”
+  not “hits a ball hard” and not a vague “ball goes over a wall” if the book/VO says through a window).
 
 Character locking for Grok:
 - Put locked identity cues in the visual prompt (age, build, hair, wardrobe).
-- `reference_image_placeholder` files are used by the pipeline as reference images on fresh (`none`) clips.
+- Name the **PRIMARY on-screen subject first** in `visual_prompt` (pipeline locks the first/longest Character_*).
+- Use age-variant tokens (`Character_N_Young`, `Character_N_Teen`, …) in flashbacks — not “Young Character_N” prose.
+- Do NOT use the VO narrator as the identity lock when another character is the visual hero.
+- Stage 0 generates separate locked portraits per seed (adult + Young + Teen). The pipeline injects the matching ref file.
+- Always state child/teen proportions in the seed description and prompt (“child proportions, NOT an adult bodybuilder”).
+
+Even on Veo: prefer `none` for big action beats and new subjects; only chain extensions for true continuous takes.
 
 ================================================================
 GLOBAL RULES & ENGINEERING CONSTRAINTS (ALL PROVIDERS)
@@ -99,19 +117,50 @@ Each scene contains a `veo_clips` array. Every clip must include:
     - `"none"` — silent/ambient only (use with `speaker: "none"`, `dialogue: ""`)
 
 Shot-writing quality bar:
-- One clear camera setup and action per clip.
+- One clear camera setup and **one primary action** per clip.
 - State location, time-of-day feel, subject, action, and wardrobe.
 - Restate character identity tokens (Character_P, etc.) whenever they appear on screen.
 - End every visual prompt with: ` / 720p, 24fps`
 - Prefer continuous action language over edit language. If you need a cut, start a new clip with `veo_continuation_source: "none"`.
 - Name the PRIMARY on-screen subject first in `visual_prompt` (the pipeline uses the first `Character_*` mention for identity locking — not the VO speaker).
+- Action beats must show **visible progression** (start pose → impact → follow-through), not a frozen hold.
+- Secondary micro-actions (eye-scans, tiny head shakes) are optional; never make them the only pass/fail criteria for the clip.
+- For `voiceover_internal`, visual must say lips closed / not speaking to another person.
+- **Blocking / eyeline / camera orientation (CRITICAL):** Video models default to “hero faces the camera.”
+  When a character confronts, approaches, or answers someone (window, doorway, another person),
+  lock orientation explicitly — do not rely on “steps toward her” alone:
+  - Who they **face** (house, window, other character)
+  - Where the **camera** sits (OTS / behind them / profile) relative to that eyeline
+  - What they must **not** do (never faces camera; back to camera, face to house)
+  Example: “camera behind Character_N_Young; he faces Mrs. Engel’s window and steps toward her looking up — back to camera, face to house.”
+  Put the forbidden orientation in `negative_prompt` when the beat is easy to reverse (facing viewer, back to house).
+- **VO ↔ visual fidelity (CRITICAL):** If `dialogue` / book beat states a concrete event
+  (ball through kitchen window, Nick steps up, she says her name, etc.), the `visual_prompt`
+  for that clip (or the next action clip) MUST depict that same event. Do not “simplify” the
+  visual into a different outcome (e.g. over a wall instead of through the window) while leaving
+  the VO accurate — that is adaptation drift and will fail story QA even if the model matches the visual.
 
-3. Character Identity & Wardrobe Continuity
+3. Character Identity & Wardrobe Continuity (including age variants)
 - Use `character_seed_tokens` exclusively for anyone who speaks or appears.
-- Each character must include:
-  - `description`: rich identity (age, build, hair, face, default wardrobe, flashback age variants if needed)
+- Each character seed must include:
+  - `description`: rich identity (age, build, hair, face, default wardrobe)
   - `reference_image_placeholder`: e.g. `character_p_ref.png`
-- Do not invent named on-screen speakers that are missing from `character_seed_tokens`.
+  - optional `age_band`: e.g. `adult`, `child_8_9`, `child_12`, `teen_15`, `teen_16_18`
+  - optional `variant_of`: parent token for age variants (e.g. `"Character_N"`)
+
+**Age variants are first-class seeds (REQUIRED when the story has flashbacks):**
+- Do NOT write `Young Character_N` as prose-only. Create separate tokens and use them in prompts:
+  - `Character_P` / `Character_N` — present-day adults
+  - `Character_P_Young` / `Character_N_Young` — childhood (~8–12)
+  - `Character_P_Teen` / `Character_N_Teen` — mid/late teens when needed (~15–18)
+- Stage 0 character design generates a locked portrait for **every** seed, including `_Young` / `_Teen`.
+- Adult portraits must never be used as identity locks for child/teen flashbacks (causes adult bodybuilders as kids).
+- In `visual_prompt`, write the age-variant token first when they are the hero:
+  e.g. `Character_N_Young (about 12, sturdy preteen) steps forward...`
+- Minor one-off kids (e.g. “Mark”, “Bobby”) may stay descriptive text if they are not recurring; recurring ages get seeds.
+
+- Do not invent named on-screen speakers that are missing from `character_seed_tokens`
+  (age-variant tokens count as valid speakers only if they truly speak; usually kids speak as themselves with the variant token).
 - Track story day and location changes to justify wardrobe evolution.
 - Wardrobe changes must be incremental unless a new day/location is explicit.
 - In every `extend_previous` clip, restate ≥80% of the on-screen character's identity + wardrobe from the first clip of that continuous beat.
@@ -200,12 +249,13 @@ Rules:
 
 13. Pipeline Compatibility Hints
 - The generation engine may:
-  - regenerate clips that fail QA
-  - ignore `extend_previous` when the visual is a hard cut (safety net)
+  - regenerate clips that fail QA (with slightly lenient primary-action criteria)
+  - ignore `extend_previous` when the visual is a hard cut, location jump, or big action beat (safety net)
   - use character reference images on `none` clips (primary subject = first Character_* in visual_prompt)
   - use native video audio and/or a separate music bed
   - interpret `audio_payload.delivery` for VO-vs-spoken prompting
-Write the blueprint as if those safety nets did not exist: get continuation, delivery, and shot design right in the JSON.
+  - rebuild per-scene composites and optional WIP movie after approve
+Write the blueprint as if those safety nets did not exist: get continuation, delivery, action clarity, and shot design right in the JSON.
 
 ================================================================
 FINAL OUTPUT FORMAT (STRICT JSON)
@@ -227,12 +277,26 @@ Return a single JSON object with this exact structure:
     "video_provider_profile": "grok",
     "character_seed_tokens": {
       "Character_A": {
-        "description": "Rich identity: age, build, hair, face, default wardrobe, flashback age if needed",
-        "reference_image_placeholder": "character_a_ref.png"
+        "description": "Adult identity: age, build, hair, face, default wardrobe",
+        "reference_image_placeholder": "character_a_ref.png",
+        "age_band": "adult"
+      },
+      "Character_A_Young": {
+        "description": "Child version (~8-9), child proportions, same family features as Character_A",
+        "reference_image_placeholder": "character_a_young_ref.png",
+        "age_band": "child_8_9",
+        "variant_of": "Character_A"
+      },
+      "Character_A_Teen": {
+        "description": "Teen version (~15-17), not full adult, same family features as Character_A",
+        "reference_image_placeholder": "character_a_teen_ref.png",
+        "age_band": "teen_15_17",
+        "variant_of": "Character_A"
       },
       "Character_B": {
         "description": "Description of traits...",
-        "reference_image_placeholder": "character_b_ref.png"
+        "reference_image_placeholder": "character_b_ref.png",
+        "age_band": "adult"
       }
     }
   },
@@ -319,5 +383,13 @@ OPERATOR QUICK START
 2. Provide the source book text / pages to adapt.
 3. Require the model to restate which profile it applied in a single pre-JSON line ONLY if the host allows non-JSON preamble; otherwise put `"video_provider_profile": "grok|veo"` inside `global_production_variables` and output pure JSON.
 4. Validate: runtime band, timestamp math, music sum, continuation rules, character roster closed-world, negative_prompt exact match.
+
+================================================================
+GUI REVIEW LEARNINGS (appended from Streamlit edit log)
+================================================================
+Rules below are added by the review app when a human applies an Edit Log entry.
+Treat them as hard constraints on future adaptations and prompt rewrites.
+<!-- GUI_LEARNINGS_START -->
+<!-- GUI_LEARNINGS_END -->
 
 END OF PROMPT V16
