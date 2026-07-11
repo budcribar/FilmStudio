@@ -139,6 +139,9 @@ Shot-writing quality bar:
   for that clip (or the next action clip) MUST depict that same event. Do not “simplify” the
   visual into a different outcome (e.g. over a wall instead of through the window) while leaving
   the VO accurate — that is adaptation drift and will fail story QA even if the model matches the visual.
+- **No accidental on-screen names / name tags (CRITICAL):** Video models invent name badges on
+  uniforms, ID stickers, lower-thirds, and forms. Default every workplace/uniform shot to
+  **plain unmarked clothing** and **no readable personal name** on props (see also § Delayed identity).
 
 3. Character Identity & Wardrobe Continuity (including age variants)
 - Use `character_seed_tokens` exclusively for anyone who speaks or appears.
@@ -147,6 +150,10 @@ Shot-writing quality bar:
   - `reference_image_placeholder`: e.g. `character_p_ref.png`
   - optional `age_band`: e.g. `adult`, `child_8_9`, `child_12`, `teen_15`, `teen_16_18`
   - optional `variant_of`: parent token for age variants (e.g. `"Character_N"`)
+  - optional `display_name_policy`: `"ok_anytime"` | `"withheld_until_reveal"` | `"never_on_screen"`
+  - optional `canonical_given_name`: real name for adapter notes only — **never** copy into early
+    `visual_prompt` / wardrobe / prop text if policy is withhold or never_on_screen
+  - optional `name_reveal_scene` or story beat note when the book first allows the given name
 
 **Age variants are first-class seeds (REQUIRED when the story has flashbacks):**
 - Do NOT write `Young Character_N` as prose-only. Create separate tokens and use them in prompts:
@@ -164,6 +171,45 @@ Shot-writing quality bar:
 - Track story day and location changes to justify wardrobe evolution.
 - Wardrobe changes must be incremental unless a new day/location is explicit.
 - In every `extend_previous` clip, restate ≥80% of the on-screen character's identity + wardrobe from the first clip of that continuous beat.
+
+**Delayed identity / spoiler-safe names (CRITICAL for many memoirs & thrillers):**
+Some books withhold a character’s real given name until late (or never put it on screen).
+Example pattern: the narrator is only “Nick’s little brother” for most of the story; the legal
+first name is a late reveal.
+
+1. **Tokens vs display names**
+   - Use opaque tokens (`Character_P`, `Character_N`) in `visual_prompt` and `audio_payload.speaker`.
+   - Do **not** put a withheld legal/first name in `visual_prompt`, wardrobe text, prop text, or
+     early spoken dialogue unless the book has already revealed it at that story moment.
+   - Do **not** “ban” a specific spoiler name by writing the name into the prompt (that teaches
+     the model the string). Ban by **role**: younger brother, narrator, pizza worker, etc.
+
+2. **No accidental on-screen names (models invent badges)**
+   - Default: no name tags, embroidered names, ID badges, “Hello my name is” stickers, lower-thirds,
+     chyrons, mailbox names, forms, screens, or hospital wristbands showing a personal name.
+   - Prefer: “plain unmarked pizza polo / blank badge area / illegible paperwork / no name embroidery.”
+   - When uniforms or IDs are likely (pizza, hospital, factory, school, gym staff), state the ban
+     in the `visual_prompt` **and** rely on the global `negative_prompt` name-tag clause.
+
+3. **When the book finally reveals the name**
+   - Only then may `spoken_on_camera` / VO use the given name if the book does.
+   - Still avoid inventing earlier name tags “for realism.”
+   - If `display_name_policy` is `withheld_until_reveal`, every clip before the reveal beat must
+     stay name-safe on screen.
+
+4. **Seed metadata (recommended)**
+   ```json
+   "Character_P": {
+     "description": "... thin frame, pizza polo without name tag ...",
+     "display_name_policy": "withheld_until_reveal",
+     "canonical_given_name": "(adapter-only; do not print in early prompts)",
+     "reference_image_placeholder": "character_p_ref.png"
+   }
+   ```
+
+5. **QA fail condition**
+   - Visible personal name for a withhold character before reveal = adaptation defect; rewrite
+     prompt (unmarked uniform) and regenerate — do not leave the badge in the final cut.
 
 4. Dialogue, Thought, and Voiceover (CRITICAL for first-person books)
 First-person / memoir narration is NOT the same as on-camera talking.
@@ -209,7 +255,10 @@ Provider note:
 
 7. Negative Prompting
 Every clip must include this EXACT `negative_prompt` string verbatim:
-"no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens"
+"no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens, no name tags, no name badges, no embroidered names, no lower thirds, no personal names on clothing or props"
+
+(If a clip still invents a badge, append a short role-based ban in `visual_prompt` —
+e.g. “plain unmarked pizza shirt, no name tag” — without writing the withheld given name.)
 
 8. File Pipeline Organization
 - One planned output per scene (e.g., `Scene_01_Day1_Kitchen_Intro`).
@@ -328,7 +377,7 @@ Return a single JSON object with this exact structure:
           "timestamp": "0:00-0:08",
           "veo_continuation_source": "none",
           "visual_prompt": "Character_A rides a bike, lips closed, contemplative internal monologue (not speaking to anyone). / 720p, 24fps",
-          "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens",
+          "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens, no name tags, no name badges, no embroidered names, no lower thirds, no personal names on clothing or props",
           "audio_payload": {
             "speaker": "Character_A",
             "dialogue": "Something weird is happening to me. I cannot tell my brother.",
@@ -340,7 +389,7 @@ Return a single JSON object with this exact structure:
           "timestamp": "0:08-0:15",
           "veo_continuation_source": "extend_previous",
           "visual_prompt": "Character_A faces Character_B on the sidewalk and speaks to her. / 720p, 24fps",
-          "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens",
+          "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens, no name tags, no name badges, no embroidered names, no lower thirds, no personal names on clothing or props",
           "audio_payload": {
             "speaker": "Character_A",
             "dialogue": "Are you okay?",
@@ -352,7 +401,7 @@ Return a single JSON object with this exact structure:
           "timestamp": "0:15-0:22",
           "veo_continuation_source": "extend_previous",
           "visual_prompt": "Character_B answers; Character_A listens, lips closed. / 720p, 24fps",
-          "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens",
+          "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens, no name tags, no name badges, no embroidered names, no lower thirds, no personal names on clothing or props",
           "audio_payload": {
             "speaker": "Character_B",
             "dialogue": "Yes.",
@@ -364,7 +413,7 @@ Return a single JSON object with this exact structure:
           "timestamp": "0:22-0:29",
           "veo_continuation_source": "extend_previous",
           "visual_prompt": "Silent continuous action beat; no speech. / 720p, 24fps",
-          "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens",
+          "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens, no name tags, no name badges, no embroidered names, no lower thirds, no personal names on clothing or props",
           "audio_payload": {
             "speaker": "none",
             "dialogue": "",

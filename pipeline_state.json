@@ -2,7 +2,7 @@
   "characters_designed": true,
   "current_scene_index": 1,
   "scenes_completed": {
-    "1": true,
+    "1": false,
     "2": false
   },
   "scene_assets": {
@@ -36,7 +36,6 @@
     }
   },
   "clip_context_ids": {
-    "1_1": "assets/video/scene_01_clip_01.mp4",
     "1_2": "assets/video/scene_01_clip_02.mp4",
     "1_3": "assets/video/scene_01_clip_03.mp4",
     "1_4": "assets/video/scene_01_clip_04.mp4",
@@ -49,20 +48,6 @@
     "2_3": "assets/video/scene_02_clip_03.mp4"
   },
   "clip_jobs": {
-    "1_1": {
-      "status": "complete",
-      "request_id": "a29e9954-2fa2-92b7-8788-2e21a9c3a2c7",
-      "path": "assets/video/scene_01_clip_01.mp4",
-      "scene_number": 1,
-      "clip_number": 1,
-      "updated_at": "2026-07-10T21:33:54",
-      "video_url": "https://vidgen.x.ai/xai-vidgen-bucket/xai-video-a29e9954-2fa2-92b7-8788-2e21a9c3a2c7.mp4",
-      "has_audio": true,
-      "dialogue_audio_ensured": true,
-      "audio_bytes": 129547,
-      "qa_approved": true,
-      "qa_attempt": 1
-    },
     "1_2": {
       "status": "complete",
       "request_id": "d5b06955-4b7c-9255-83dd-995d43e860d4",
@@ -202,6 +187,14 @@
       "audio_bytes": 129473,
       "qa_approved": true,
       "qa_attempt": 1
+    },
+    "1_1": {
+      "status": "submitted",
+      "request_id": "2c7d2789-21d4-9567-9f76-e06cb32da49a",
+      "path": "assets/video/scene_01_clip_01.mp4",
+      "scene_number": 1,
+      "clip_number": 1,
+      "updated_at": "2026-07-11T10:12:49"
     }
   },
   "music_jobs": {},
@@ -228,5 +221,6 @@
         }
       }
     }
-  }
+  },
+  "scene_hero": {}
 }
