@@ -4,9 +4,11 @@ Project-aware: all I/O is relative to the active project directory.
 """
 from __future__ import annotations
 
+import json
 import os
 import re
 import sys
+import time
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -143,7 +145,48 @@ def save_config(updates: Dict[str, Any]) -> Dict[str, Any]:
         extra={"keys": list(updates.keys())},
         targets=["pipeline_config.json"],
     )
+    try:
+        from review_app.pipeline_progress import invalidate_progress_cache
+
+        invalidate_progress_cache()
+    except Exception:
+        pass
     return dict(eng.config)
+
+
+def get_pipeline_ui_progress() -> Dict[str, Any]:
+    """User/UI step markers stored on pipeline_state (sidebar progress)."""
+    try:
+        eng = get_engine()
+        ui = eng.state.get("ui_progress")
+        return dict(ui) if isinstance(ui, dict) else {}
+    except Exception:
+        return {}
+
+
+def mark_pipeline_step(step: str, *, detail: str = "") -> Dict[str, Any]:
+    """
+    Record that a UI pipeline step was completed (e.g. configuration saved).
+    Stored in pipeline_state.json under ui_progress.
+    """
+    eng = get_engine()
+    ui = eng.state.setdefault("ui_progress", {})
+    if not isinstance(ui, dict):
+        ui = {}
+        eng.state["ui_progress"] = ui
+    ui[str(step)] = {
+        "done": True,
+        "at": time.strftime("%Y-%m-%dT%H:%M:%S"),
+        "detail": detail or "",
+    }
+    eng.save_state()
+    try:
+        from review_app.pipeline_progress import invalidate_progress_cache
+
+        invalidate_progress_cache()
+    except Exception:
+        pass
+    return dict(ui)
 
 
 # ---------- Blueprint / scenes ----------
@@ -776,11 +819,299 @@ def character_display_name(key: str, info: Optional[Dict[str, Any]] = None) -> s
     return key
 
 
+def load_stage1_document() -> Optional[Dict[str, Any]]:
+    """Load Stage 1 scenes bible for the active project (if present)."""
+    paths = stage1_paths()
+    p = Path(paths.get("scenes_json") or "")
+    if not p.is_file():
+        return None
+    try:
+        data = json.loads(p.read_text(encoding="utf-8"))
+        return data if isinstance(data, dict) else None
+    except (json.JSONDecodeError, OSError):
+        return None
+
+
+def stage1_character_seeds() -> Dict[str, Any]:
+    """character_seed_tokens from Stage 1 bible (empty dict if missing)."""
+    doc = load_stage1_document()
+    if not doc:
+        return {}
+    gpv = doc.get("global_production_variables") or {}
+    seeds = gpv.get("character_seed_tokens") or {}
+    return dict(seeds) if isinstance(seeds, dict) else {}
+
+
+def _book_image_inventory() -> List[Dict[str, Any]]:
+    """Flatten source/book_images (manifest + disk) into candidate rows."""
+    proj = get_active_project_dir()
+    if proj is None:
+        return []
+    source = proj / "source"
+    img_dir = source / "book_images"
+    rows: List[Dict[str, Any]] = []
+    man_path = img_dir / "manifest.json"
+    if man_path.is_file():
+        try:
+            man = json.loads(man_path.read_text(encoding="utf-8"))
+            for im in man.get("images") or []:
+                if not isinstance(im, dict):
+                    continue
+                rel = str(im.get("path") or "")
+                # manifest paths are relative to source/
+                fp = source / rel if rel else None
+                if fp is None or not fp.is_file():
+                    name = Path(rel).name if rel else ""
+                    fp = img_dir / name if name else None
+                if fp is None or not fp.is_file():
+                    continue
+                rows.append(
+                    {
+                        "path": str(fp.relative_to(proj)).replace("\\", "/"),
+                        "abs": str(fp),
+                        "page": int(im.get("page") or 0),
+                        "kind": str(im.get("kind") or ""),
+                        "name": fp.name.lower(),
+                    }
+                )
+        except (json.JSONDecodeError, OSError, ValueError):
+            pass
+    if not rows and img_dir.is_dir():
+        try:
+            for f in sorted(img_dir.iterdir()):
+                if f.suffix.lower() not in (".png", ".jpg", ".jpeg", ".webp"):
+                    continue
+                rows.append(
+                    {
+                        "path": str(f.relative_to(proj)).replace("\\", "/"),
+                        "abs": str(f),
+                        "page": 0,
+                        "kind": "file",
+                        "name": f.name.lower(),
+                    }
+                )
+        except OSError:
+            pass
+    return rows
+
+
+def attach_book_images_to_character_seeds(
+    *,
+    force: bool = False,
+    copy_into_assets: bool = True,
+) -> Dict[str, Any]:
+    """
+    After Stage 1 / PDF extract: attach book page images to each character seed.
+
+    Sets design_reference_images on Stage 1 + Stage 2 seeds so Characters →
+    Generate variants can match the book art (not text-only inventing).
+
+    Optionally copies picks into assets/characters/*_bookref_* for a stable path.
+    """
+    import shutil
+
+    proj = get_active_project_dir()
+    if proj is None:
+        return {"ok": False, "reason": "no_project"}
+
+    inventory = _book_image_inventory()
+    if not inventory:
+        return {"ok": False, "reason": "no_book_images", "attached": {}}
+
+    # Prefer cover / early embedded pages as hero likeness pool
+    by_page = sorted(
+        inventory,
+        key=lambda r: (
+            0 if "cover" in r["name"] else 1,
+            0 if r.get("kind") == "embedded" else 1,
+            r.get("page") or 99,
+            r["name"],
+        ),
+    )
+    pool = [r for r in by_page if r.get("page", 0) <= 6 or "cover" in r["name"]]
+    if not pool:
+        pool = by_page[:6]
+
+    s1 = load_stage1_document()
+    if not s1:
+        return {"ok": False, "reason": "no_stage1"}
+    gpv = s1.setdefault("global_production_variables", {})
+    seeds = gpv.get("character_seed_tokens") or {}
+    if not isinstance(seeds, dict) or not seeds:
+        return {"ok": False, "reason": "no_seeds"}
+
+    chars_dir = proj / "assets" / "characters"
+    if copy_into_assets:
+        chars_dir.mkdir(parents=True, exist_ok=True)
+
+    attached: Dict[str, List[str]] = {}
+    for i, (key, seed) in enumerate(seeds.items()):
+        if not isinstance(seed, dict):
+            continue
+        pol = str(seed.get("display_name_policy") or "").lower()
+        is_narr = (
+            "never" in pol
+            or key.endswith("_Narrator")
+            or key == "Character_Narrator"
+        )
+        if is_narr and not force:
+            # Off-screen narrator: skip portrait refs
+            continue
+        existing = seed.get("design_reference_images") or seed.get(
+            "book_reference_images"
+        )
+        if existing and not force:
+            attached[key] = list(existing) if isinstance(existing, list) else [existing]
+            continue
+
+        token = key.replace("Character_", "").lower()
+        name_hits = [
+            r
+            for r in inventory
+            if token in r["name"]
+            or str(seed.get("canonical_given_name") or "").lower() in r["name"]
+        ]
+        # Hero (first seed or dog): first 3 from pool; others: cover + 1 mid page
+        desc = str(seed.get("description") or "").lower()
+        is_hero = i == 0 or "dog" in desc or "buster" in token
+        if name_hits:
+            picks = name_hits[:3]
+        elif is_hero:
+            picks = pool[:3]
+        else:
+            picks = pool[:1] + pool[2:3]
+            picks = picks[:2] or pool[:1]
+
+        rel_paths: List[str] = []
+        for j, row in enumerate(picks):
+            src = Path(row["abs"])
+            if copy_into_assets and src.is_file():
+                dest_name = f"{key.lower()}_bookref_{j + 1}{src.suffix.lower()}"
+                dest = chars_dir / dest_name
+                try:
+                    shutil.copy2(src, dest)
+                    rel_paths.append(
+                        str(dest.relative_to(proj)).replace("\\", "/")
+                    )
+                except OSError:
+                    rel_paths.append(row["path"])
+            else:
+                rel_paths.append(row["path"])
+        seed["design_reference_images"] = rel_paths
+        seed["book_reference_images"] = rel_paths
+        attached[key] = rel_paths
+
+    gpv["character_seed_tokens"] = seeds
+    # Persist Stage 1
+    paths = stage1_paths()
+    scenes_path = Path(paths["scenes_json"])
+    if scenes_path.is_file():
+        scenes_path.write_text(
+            json.dumps(s1, indent=2, ensure_ascii=False) + "\n", encoding="utf-8"
+        )
+
+    # Mirror onto Stage 2 blueprint seeds
+    eng = get_engine()
+    bgpv = eng.blueprint.setdefault("global_production_variables", {})
+    bseeds = bgpv.get("character_seed_tokens") or {}
+    if not isinstance(bseeds, dict) or not bseeds:
+        bseeds = {k: dict(v) if isinstance(v, dict) else v for k, v in seeds.items()}
+    else:
+        for k, v in seeds.items():
+            if isinstance(v, dict) and isinstance(bseeds.get(k), dict):
+                bseeds[k]["design_reference_images"] = v.get(
+                    "design_reference_images"
+                )
+                bseeds[k]["book_reference_images"] = v.get("book_reference_images")
+            elif isinstance(v, dict) and k not in bseeds:
+                bseeds[k] = dict(v)
+    bgpv["character_seed_tokens"] = bseeds
+    eng.save_blueprint_to_disk()
+
+    return {
+        "ok": True,
+        "attached": attached,
+        "count": len(attached),
+        "inventory": len(inventory),
+    }
+
+
+def ensure_blueprint_character_seeds_from_stage1(
+    *, force: bool = False
+) -> Dict[str, Any]:
+    """
+    If the Stage 2 blueprint has no character_seed_tokens, copy them from Stage 1.
+
+    Common after Stage 1 before Stage 2 planning — Characters UI / Stage 0 need seeds
+    on the generate blueprint the engine loads.
+    Also attaches book_images as design_reference_images when present.
+    """
+    eng = get_engine()
+    gpv = eng.blueprint.setdefault("global_production_variables", {})
+    existing = gpv.get("character_seed_tokens") or {}
+    if existing and not force:
+        # Still try to attach book refs if missing
+        try:
+            attach_book_images_to_character_seeds(force=False)
+        except Exception:
+            pass
+        return {
+            "synced": False,
+            "reason": "blueprint_already_has_seeds",
+            "count": len(existing),
+        }
+    stage1_seeds = stage1_character_seeds()
+    if not stage1_seeds:
+        return {"synced": False, "reason": "no_stage1_seeds", "count": 0}
+    gpv["character_seed_tokens"] = stage1_seeds
+    # Align title/runtime from Stage 1 when blueprint is still a stub
+    s1 = load_stage1_document() or {}
+    if s1.get("movie_title") and not (
+        eng.blueprint.get("scenes") or []
+    ):
+        # Only overwrite title on empty Stage 2 stub
+        if s1.get("movie_title") not in (None, "", "Nick and Me"):
+            eng.blueprint["movie_title"] = s1.get("movie_title")
+        if s1.get("source_book_title"):
+            eng.blueprint["source_book_title"] = s1.get("source_book_title")
+    s1_rt = (s1.get("global_production_variables") or {}).get(
+        "total_runtime_target_seconds"
+    ) or s1.get("cumulative_duration_target_seconds")
+    if s1_rt and not (eng.blueprint.get("scenes") or []):
+        gpv["total_runtime_target_seconds"] = int(s1_rt)
+    eng.save_blueprint_to_disk()
+    img_attach: Dict[str, Any] = {}
+    try:
+        img_attach = attach_book_images_to_character_seeds(force=True)
+    except Exception as e:
+        img_attach = {"ok": False, "error": str(e)}
+    return {
+        "synced": True,
+        "reason": "copied_from_stage1",
+        "count": len(stage1_seeds),
+        "keys": list(stage1_seeds.keys()),
+        "book_images": img_attach,
+    }
+
+
 def list_characters(*, light: bool = False) -> List[Dict[str, Any]]:
     eng = get_engine()
+    # After Stage 1, blueprint may still be an empty Stage 2 stub — pull seeds.
+    # Skip disk write on light=True (nav/progress-adjacent); full page load may sync.
     seeds = eng.blueprint.get("global_production_variables", {}).get(
         "character_seed_tokens", {}
     )
+    if not seeds:
+        if not light:
+            try:
+                ensure_blueprint_character_seeds_from_stage1(force=False)
+                seeds = eng.blueprint.get("global_production_variables", {}).get(
+                    "character_seed_tokens", {}
+                )
+            except Exception:
+                pass
+        if not seeds:
+            seeds = stage1_character_seeds()
     index = {} if light else _index_clips_by_character()
     stale_by_char: Dict[str, List[Tuple[int, int]]] = {k: [] for k in seeds}
     if not light:
@@ -879,17 +1210,36 @@ def save_character_voice(
     return info
 
 
-def generate_character_variants(char_key: str) -> List[str]:
+def generate_character_variants(char_key: str) -> Dict[str, Any]:
+    """
+    Generate 3 variants. Returns {paths, mode, book_refs} so the UI can show
+    whether book-art references were used (required for picture-book likeness).
+    """
     eng = get_engine()
-    paths = eng.generate_character_variants(char_key)
+    # Prefer book-art edits; do not silently invent a different look
+    paths = eng.generate_character_variants(char_key, allow_text_fallback=False)
+    meta = getattr(eng, "_last_character_gen_meta", None) or {}
+    result = {
+        "paths": paths,
+        "mode": meta.get("mode") or "unknown",
+        "book_refs": list(meta.get("book_refs") or []),
+        "edit_error": meta.get("edit_error"),
+    }
     edit_log.add_entry(
         "character_variants",
-        user_note=f"Generated {len(paths)} variants",
+        user_note=(
+            f"Generated {len(paths)} variants for {char_key} "
+            f"(mode={result['mode']})"
+        ),
         character=char_key,
         action_taken=", ".join(paths),
         targets=["assets/characters"],
+        extra={
+            "mode": result["mode"],
+            "book_refs": [os.path.basename(p) for p in result["book_refs"]],
+        },
     )
-    return paths
+    return result
 
 
 def unlock_character(char_key: str) -> bool:
@@ -915,6 +1265,14 @@ def lock_character_variant(char_key: str, variant_index: int) -> str:
         action_taken=f"Promoted to {path}",
         targets=["assets/characters"],
     )
+    try:
+        chars = list_characters(light=True)
+        if chars and all(c.get("locked") for c in chars):
+            mark_pipeline_step(
+                "characters", detail=f"{len(chars)}/{len(chars)} locked"
+            )
+    except Exception:
+        pass
     return path
 
 
@@ -1265,3 +1623,503 @@ def backfill_actual_costs() -> Dict[str, Any]:
 def recent_cost_events(limit: int = 50) -> List[Dict[str, Any]]:
     ledger = get_engine().get_cost_ledger()
     return list(reversed(ledger[-max(1, int(limit)) :]))
+
+
+# ---------- Stage 1 adaptation (book → scenes.json) ----------
+
+def stage1_paths() -> Dict[str, str]:
+    """Paths for Stage 1 I/O under the active project / workspace."""
+    proj = get_active_project_dir() or workspace_root()
+    meta = load_project_meta(proj) if proj else {}
+    scenes_name = meta.get("scenes_file") or "nickandme.scenes.json"
+    # Prefer nickandme.scenes.json when present (legacy name)
+    scenes = proj / scenes_name
+    if not scenes.is_file():
+        alt = proj / "nickandme.scenes.json"
+        if alt.is_file() or scenes_name == "scenes.json":
+            scenes = alt if (alt.is_file() or not scenes.is_file()) else scenes
+    book = proj / "source" / "book_full.txt"
+    source = proj / "source"
+    pdfs = list(source.glob("*.pdf")) + list(source.glob("*.PDF"))
+    pdf = None
+    if pdfs:
+        pdfs.sort(key=lambda p: (0 if "nick" in p.name.lower() else 1, -p.stat().st_size))
+        pdf = pdfs[0]
+    img_manifest = source / "book_images" / "manifest.json"
+    extract_meta = source / "extract_meta.json"
+    return {
+        "project": str(proj),
+        "scenes_json": str(scenes),
+        "book_full": str(book),
+        "book_exists": str(book.is_file()),
+        "pdf": str(pdf) if pdf else "",
+        "pdf_exists": str(pdf is not None and pdf.is_file()),
+        "book_images_manifest": str(img_manifest) if img_manifest.is_file() else "",
+        "extract_meta": str(extract_meta) if extract_meta.is_file() else "",
+        "scenes_exists": str(scenes.is_file()),
+        "prompt": str(workspace_root() / "prompts" / "stage1_scene_bible.txt"),
+    }
+
+
+def book_source_meta() -> Dict[str, Any]:
+    """
+    Stage 1 defaults + text quality after PDF import.
+
+    Fast path: use source/extract_meta.json when it is as new as book_full.txt
+    (avoids re-analyzing the full book on every page load).
+    Re-score only when the book is newer than extract_meta.
+    """
+    paths = stage1_paths()
+    out: Dict[str, Any] = {"present": False}
+    meta_path = Path(paths.get("extract_meta") or "")
+    book = Path(paths.get("book_full") or "")
+
+    stored: Dict[str, Any] = {}
+    if meta_path.is_file():
+        try:
+            stored = json.loads(meta_path.read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, OSError):
+            stored = {}
+
+    if not book.is_file() and not stored:
+        return out
+
+    # Prefer cached extract_meta when book has not changed
+    try:
+        book_newer = (
+            book.is_file()
+            and meta_path.is_file()
+            and book.stat().st_mtime > meta_path.stat().st_mtime + 0.5
+        )
+    except OSError:
+        book_newer = bool(book.is_file())
+
+    if stored and not book_newer:
+        out.update(stored)
+        out["present"] = True
+        out["source"] = "extract_meta.json"
+        if "ready_for_stage1" not in out and out.get("text_quality") == "good":
+            out["ready_for_stage1"] = True
+        return out
+
+    try:
+        import importlib.util
+
+        script = workspace_root() / "scripts" / "two_stage_adaptation" / "extract_book_source.py"
+        if book.is_file() and script.is_file():
+            spec = importlib.util.spec_from_file_location("extract_book_source", script)
+            if spec is not None and spec.loader is not None:
+                mod = importlib.util.module_from_spec(spec)
+                spec.loader.exec_module(mod)
+                raw = book.read_text(encoding="utf-8", errors="ignore")
+                pages = len(re.findall(r"--- PAGE \d+ ---", raw))
+                analysis = mod.analyze_book_text(raw, pages_hint=pages or None)
+                out.update(stored)
+                out.update(analysis)
+                out["present"] = True
+                out["source"] = "book_full.txt+extract_meta" if stored else "book_full.txt"
+                out["analysis"] = analysis
+                if "ready_for_stage1" in analysis:
+                    out["ready_for_stage1"] = analysis["ready_for_stage1"]
+                return out
+    except Exception as e:
+        if stored:
+            out.update(stored)
+            out["present"] = True
+            out["source"] = "extract_meta.json"
+            out["live_analysis_error"] = str(e)
+            return out
+        out["error"] = str(e)
+        return out
+
+    if stored:
+        out.update(stored)
+        out["present"] = True
+        out["source"] = "extract_meta.json"
+    return out
+
+
+def stage1_status() -> Dict[str, Any]:
+    """Lightweight stats for Stage 1 bible on disk."""
+    paths = stage1_paths()
+    out: Dict[str, Any] = {"paths": paths}
+    p = Path(paths["scenes_json"])
+    if not p.is_file():
+        out["present"] = False
+        return out
+    try:
+        data = json.loads(p.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError) as e:
+        out["present"] = True
+        out["error"] = str(e)
+        return out
+    scenes = data.get("scenes") or []
+    gpv = data.get("global_production_variables") or {}
+    out.update(
+        {
+            "present": True,
+            "schema_version": data.get("schema_version"),
+            "movie_title": data.get("movie_title"),
+            "scene_count": len(scenes),
+            "beat_count": sum(len(s.get("story_beats") or []) for s in scenes),
+            "characters": len(gpv.get("character_seed_tokens") or {}),
+            "locations": len(gpv.get("location_seed_tokens") or {}),
+            "runtime_sec": data.get("cumulative_duration_target_seconds"),
+            "generation": data.get("generation"),
+            "mtime": time.strftime(
+                "%Y-%m-%d %H:%M:%S", time.localtime(p.stat().st_mtime)
+            ),
+        }
+    )
+    return out
+
+
+def import_book_upload(
+    *,
+    filename: str,
+    data: bytes,
+    extract_pdf: bool = True,
+    render_pages: str = "cover,sparse",
+    force: bool = True,
+    auto_prepare: bool = True,
+    progress_cb=None,
+) -> Dict[str, Any]:
+    """
+    Save an uploaded PDF or TXT into project source/ and prepare for Stage 1.
+
+    - .pdf → written to source/<name>.pdf, then auto-prepare (extract + vision if needed)
+    - .txt → written to source/book_full.txt (and copy as source/<name> if not book_full)
+    """
+    proj = get_active_project_dir()
+    if proj is None:
+        raise FileNotFoundError("No active project")
+    if not data:
+        raise ValueError("Empty file")
+    name = Path(filename or "upload.bin").name
+    ext = name.rsplit(".", 1)[-1].lower() if "." in name else ""
+    source = proj / "source"
+    source.mkdir(parents=True, exist_ok=True)
+
+    result: Dict[str, Any] = {
+        "project": proj.name,
+        "original_name": name,
+        "bytes": len(data),
+    }
+
+    if ext == "pdf":
+        # Keep a stable primary name if it's the main book, else keep filename
+        dest = source / name
+        dest.write_bytes(data)
+        result["saved_path"] = str(dest)
+        result["kind"] = "pdf"
+        if extract_pdf or auto_prepare:
+            if auto_prepare:
+                prep = prepare_book_source(
+                    force_extract=force,
+                    render_pages=render_pages,
+                    auto_vision=True,
+                    progress_cb=progress_cb,
+                )
+                result["prepare"] = prep
+                result["extract"] = prep.get("extract") or {}
+            else:
+                summary = extract_book_from_pdf(
+                    force=force,
+                    render_pages=render_pages,
+                    pdf_path=dest,
+                    progress_cb=progress_cb,
+                )
+                result["extract"] = summary
+        edit_log.add_entry(
+            "book_upload",
+            user_note=f"Uploaded PDF {name} ({len(data)} bytes)",
+            action_taken=f"Saved {dest}; prepare={bool(result.get('prepare'))}",
+            learning_layer="stage1",
+            targets=["source/", "source/book_full.txt"],
+            extra=result,
+        )
+        return result
+
+    if ext in ("txt", "text", "md"):
+        # Always install as book_full.txt for Stage 1; keep original copy too
+        raw = data.decode("utf-8", errors="ignore")
+        # Ensure page markers if plain dump without them
+        if "--- PAGE " not in raw:
+            # single blob — Stage 1 chunker will fall back to char chunks
+            pass
+        book_full = source / "book_full.txt"
+        book_full.write_text(raw, encoding="utf-8")
+        if name.lower() != "book_full.txt":
+            (source / name).write_text(raw, encoding="utf-8")
+        result["saved_path"] = str(book_full)
+        result["kind"] = "txt"
+        result["text_chars"] = len(raw)
+        if auto_prepare:
+            prep = prepare_book_source(
+                force_extract=False,
+                auto_vision=False,  # clean TXT — no vision
+                progress_cb=progress_cb,
+            )
+            result["prepare"] = prep
+        edit_log.add_entry(
+            "book_upload",
+            user_note=f"Uploaded text {name} ({len(data)} bytes)",
+            action_taken=f"Saved {book_full}",
+            learning_layer="stage1",
+            targets=["source/book_full.txt"],
+            extra=result,
+        )
+        return result
+
+    raise ValueError(f"Unsupported file type .{ext or '?'} — use .pdf or .txt")
+
+
+def extract_book_from_pdf(
+    *,
+    force: bool = True,
+    render_pages: str = "cover,sparse",
+    progress_cb=None,
+    pdf_path: Optional[Path] = None,
+) -> Dict[str, Any]:
+    """Extract book_full.txt + book_images/ from project PDF."""
+    import importlib.util
+
+    ws = workspace_root()
+    script = ws / "scripts" / "two_stage_adaptation" / "extract_book_source.py"
+    if not script.is_file():
+        raise FileNotFoundError(str(script))
+    spec = importlib.util.spec_from_file_location("extract_book_source", script)
+    if spec is None or spec.loader is None:
+        raise ImportError(f"Cannot load {script}")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+
+    proj = get_active_project_dir()
+    if proj is None:
+        raise FileNotFoundError("No active project")
+    modes = [m.strip() for m in render_pages.split(",") if m.strip() and m.strip() != "none"]
+    if progress_cb:
+        progress_cb({"event": "start", "message": "Extracting PDF…", "chunk": 0, "total": 1})
+    summary = mod.extract_book_source(
+        project_id=proj.name,
+        pdf_path=Path(pdf_path) if pdf_path else None,
+        write_text=True,
+        extract_images=True,
+        render_modes=modes,
+        force=force,
+    )
+    if progress_cb:
+        progress_cb(
+            {
+                "event": "done",
+                "message": (
+                    f"pages={summary.get('pages')} chars={summary.get('text_chars')} "
+                    f"images={summary.get('images')}"
+                ),
+                "chunk": 1,
+                "total": 1,
+            }
+        )
+    edit_log.add_entry(
+        "book_extract",
+        user_note=f"Extracted PDF {summary.get('pdf_name')}",
+        action_taken=str(summary),
+        learning_layer="stage1",
+        targets=["source/book_full.txt", "source/book_images/"],
+        extra=summary,
+    )
+    return summary
+
+
+def prepare_book_source(
+    *,
+    force_extract: bool = True,
+    force_vision: bool = False,
+    render_pages: str = "cover,sparse",
+    vision_model: str = "grok-4.5",
+    auto_vision: bool = True,
+    progress_cb=None,
+) -> Dict[str, Any]:
+    """
+    Auto path: extract PDF → score text → Grok vision if garbled → Stage 1 defaults.
+
+    Prefer this over raw extract when the user wants a one-click "make book ready".
+    """
+    import importlib.util
+
+    ws = workspace_root()
+    script = ws / "scripts" / "two_stage_adaptation" / "prepare_book_source.py"
+    if not script.is_file():
+        raise FileNotFoundError(str(script))
+    # Load as package-adjacent module so sibling imports work
+    prep_dir = str(script.parent)
+    if prep_dir not in sys.path:
+        sys.path.insert(0, prep_dir)
+    spec = importlib.util.spec_from_file_location("prepare_book_source", script)
+    if spec is None or spec.loader is None:
+        raise ImportError(f"Cannot load {script}")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+
+    proj = get_active_project_dir()
+    if proj is None:
+        raise FileNotFoundError("No active project")
+
+    summary = mod.prepare_book_source(
+        project_id=proj.name,
+        force_extract=force_extract,
+        force_vision=force_vision,
+        render_pages=render_pages,
+        vision_model=vision_model,
+        auto_vision=auto_vision,
+        progress_cb=progress_cb,
+    )
+    edit_log.add_entry(
+        "book_prepare",
+        user_note=summary.get("message") or summary.get("action") or "prepare_book_source",
+        action_taken=(
+            f"action={summary.get('action')} ready={summary.get('ready_for_stage1')} "
+            f"runtime≈{summary.get('suggested_total_minutes')}min"
+        ),
+        learning_layer="stage1",
+        targets=["source/book_full.txt", "source/extract_meta.json", "source/book_images/"],
+        extra={
+            k: summary.get(k)
+            for k in (
+                "action",
+                "ready_for_stage1",
+                "text_quality",
+                "book_kind",
+                "suggested_total_minutes",
+                "suggested_chunk_pages",
+                "needs_user",
+            )
+        },
+    )
+    return summary
+
+
+def book_images_status() -> Dict[str, Any]:
+    paths = stage1_paths()
+    man = paths.get("book_images_manifest") or ""
+    if not man or not Path(man).is_file():
+        return {"present": False, "count": 0, "images": []}
+    try:
+        data = json.loads(Path(man).read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError) as e:
+        return {"present": True, "error": str(e), "count": 0, "images": []}
+    return {
+        "present": True,
+        "count": data.get("count", 0),
+        "embedded_count": data.get("embedded_count", 0),
+        "rendered_count": data.get("rendered_count", 0),
+        "images": data.get("images") or [],
+        "manifest": man,
+        "notes": data.get("notes"),
+    }
+
+
+def run_stage1_from_book(
+    *,
+    chunk_pages: int = 10,
+    total_minutes: int = 90,
+    model: str = "grok-4.5",
+    resume: bool = False,
+    max_chunks: int = 0,
+    extract_pdf_if_needed: bool = True,
+    progress_cb=None,
+) -> Dict[str, Any]:
+    """
+    Run prompts/stage1_scene_bible.txt on the project book (requires XAI_API_KEY).
+    Auto-extracts PDF → book_full.txt + book_images when PDF is present/newer.
+    progress_cb receives dict events: start, chunk_start, chunk_done, normalize, verify, done.
+    """
+    import importlib.util
+
+    ws = workspace_root()
+    script = ws / "scripts" / "two_stage_adaptation" / "run_stage1_from_book.py"
+    if not script.is_file():
+        raise FileNotFoundError(str(script))
+    spec = importlib.util.spec_from_file_location("run_stage1_from_book", script)
+    if spec is None or spec.loader is None:
+        raise ImportError(f"Cannot load {script}")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+
+    proj = get_active_project_dir()
+    if proj is None:
+        raise FileNotFoundError("No active project")
+    paths = stage1_paths()
+    book = Path(paths["book_full"])
+    pdf_ok = paths.get("pdf_exists") == "True"
+    if extract_pdf_if_needed and pdf_ok:
+        # run_stage1_job also extracts; ensure up front for clearer UI errors
+        try:
+            extract_book_from_pdf(force=False, progress_cb=progress_cb)
+        except Exception as e:
+            if not book.is_file():
+                raise FileNotFoundError(
+                    f"PDF extract failed and no book_full.txt: {e}"
+                ) from e
+    if not book.is_file() and not pdf_ok:
+        raise FileNotFoundError(
+            f"Book text missing: {book}. Place a PDF under source/ "
+            "or write source/book_full.txt."
+        )
+
+    summary = mod.run_stage1_job(
+        project_id=proj.name,
+        book_path=book if book.is_file() else None,
+        out_path=Path(paths["scenes_json"]),
+        model=model,
+        chunk_pages=chunk_pages,
+        total_minutes=total_minutes,
+        resume=resume,
+        max_chunks=max_chunks,
+        normalize=True,
+        progress_cb=progress_cb,
+    )
+    # Hand-off for Characters / Stage 0 / Stage 2:
+    # 1) copy character seeds into generate blueprint
+    # 2) attach book page images as design_reference_images (likeness for variants)
+    try:
+        eng = get_engine()
+        force_sync = not (eng.blueprint.get("scenes") or [])
+        sync = ensure_blueprint_character_seeds_from_stage1(force=force_sync)
+        summary["blueprint_seed_sync"] = sync
+        if sync.get("synced"):
+            print(
+                f"[Stage1] Synced {sync.get('count')} character seeds into Stage 2 blueprint",
+                flush=True,
+            )
+        # Always try image attach after Stage 1 (even if seeds already present)
+        imgs = attach_book_images_to_character_seeds(force=True)
+        summary["character_book_images"] = imgs
+        if imgs.get("ok"):
+            print(
+                f"[Stage1] Attached book images to {imgs.get('count')} character seed(s)",
+                flush=True,
+            )
+        else:
+            print(
+                f"[Stage1] Book image attach: {imgs.get('reason') or imgs}",
+                flush=True,
+            )
+    except Exception as e:
+        summary["blueprint_seed_sync"] = {"synced": False, "error": str(e)}
+        print(f"[Stage1] Blueprint seed / image hand-off skipped: {e}", flush=True)
+    try:
+        from review_app.pipeline_progress import invalidate_progress_cache
+
+        invalidate_progress_cache()
+    except Exception:
+        pass
+    edit_log.add_entry(
+        "stage1_run",
+        user_note=f"Stage 1 run complete: {summary.get('scenes')} scenes",
+        action_taken=f"Wrote {summary.get('out_path')}",
+        learning_layer="stage1",
+        targets=["nickandme.scenes.json", "prompts/stage1_scene_bible.txt"],
+        extra=summary,
+    )
+    return summary

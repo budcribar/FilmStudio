@@ -21,7 +21,11 @@ def _ensure_workspace_on_path() -> Path:
 
 def main() -> int:
     _ensure_workspace_on_path()
-    from renderer.engine import AgenticGenerationEngine, PipelineInterrupted
+    from renderer.engine import (
+        AgenticGenerationEngine,
+        GenerationFailure,
+        PipelineInterrupted,
+    )
 
     print("=========================================================================")
     print("         FILM RENDERER (CLI)  —  V9.5                                      ")
@@ -32,6 +36,9 @@ def main() -> int:
         engine = AgenticGenerationEngine()
         engine.run_pipeline()
         return 0
+    except GenerationFailure as e:
+        print(f"\n[Error] {e}", file=sys.stderr)
+        return 1
     except SystemExit as e:
         code = e.code
         return int(code) if isinstance(code, int) else (0 if code is None else 1)

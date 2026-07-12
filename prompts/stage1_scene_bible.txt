@@ -204,10 +204,48 @@ If output would exceed token limits, deliver complete scenes from scene 1 and se
 - cumulative_duration_target_seconds
 
 ================================================================
+SCHEMA HARD RULES (FAIL IF VIOLATED — post-processor may fix, but do it right)
+================================================================
+These match stage1_scene_bible.schema.json. Wrong types cause pipeline failure.
+
+global_production_variables MUST always include:
+- target_aspect_ratio (string, e.g. "16:9")
+- resolution (string, e.g. "720p")
+- frame_rate (integer 24 — NOT the string "24fps")
+- directorial_treatment (string)
+- total_runtime_target_seconds (integer, usually 5400)
+- character_seed_tokens (object)
+- location_seed_tokens (object)
+
+Per scene:
+- story_day: STRING only (e.g. "Day 1", "Night 3", "Flashback summer ~age 12").
+  NEVER a bare number like 1 or 0.
+- location_type: ONLY one of: int | ext | mixed | flashback | dream | montage
+  NEVER "exterior", "interior", "interior_exterior_mix", "montage_mix", etc.
+- music_intent: object with REQUIRED style_description (string). Optional mood_arc, vocal_style.
+- location_ids: non-empty array of Loc_* strings when places are known.
+- source_excerpts (if present): array of objects ONLY:
+  { "source": "book page N or file name", "excerpt": "quote text" }
+  NEVER bare strings. Prefer omit source_excerpts if unsure.
+
+Character seeds:
+- Required strings: description, reference_image_placeholder, voice_profile, voice_label
+- Optional fields: omit the key if unknown — do NOT emit null
+  (no "canonical_given_name": null, no "name_reveal_scene": null)
+
+Location seeds:
+- Required: display_name, description
+- visual_lock: string recommended (filmable constants)
+
+Do NOT invent Stage 2 fields anywhere: no veo_clips, visual_prompt, timestamp,
+negative_prompt, veo_continuation_source on scenes or beats.
+
+================================================================
 OUTPUT
 ================================================================
 Return ONLY valid JSON for schema_version "stage1.v1".
 No markdown fences unless the host requires them.
+No trailing commentary after the closing brace.
 
 Operator supplies: book text, TOTAL_RUNTIME_MINUTES, any spoiler/name policies,
 and optionally existing character seeds to extend rather than reinvent.

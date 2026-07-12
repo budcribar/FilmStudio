@@ -38,8 +38,16 @@ projects/
 
 Create or switch projects on the home page sidebar.
 
+## Stage 1 from UI
+
+1. Export `XAI_API_KEY` in the shell **before** `streamlit run gui/streamlit_app.py`.
+2. Open **Adaptation** in the sidebar.
+3. Confirm `source/book_full.txt` exists for the active project.
+4. Click **Run Stage 1 now** — progress bar advances per book chunk.
+
 ## Related
 
 - CLI: `python -m cli`
+- Stage 1 CLI: `python scripts/two_stage_adaptation/run_stage1_from_book.py`
 - Renderer: `renderer/`
 - Tools: `scripts/`

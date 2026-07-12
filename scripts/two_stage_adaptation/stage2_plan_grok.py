@@ -27,7 +27,7 @@ GLOBAL_NEGATIVE = (
     "no embroidered names, no lower thirds, no personal names on clothing or props"
 )
 
-# Grok constraints
+# Fallback Grok constraints (overridden by pipeline_config.duration_defaults when available)
 GROK_MIN_CLIP = 6
 GROK_MAX_CLIP = 10
 GROK_ABS_MAX = 15
@@ -36,6 +36,47 @@ GROK_SCENE_MIN = 8
 GROK_SCENE_MAX = 134
 GROK_PROMPT_SOFT = 500
 GROK_PROMPT_HARD = 800
+
+
+def _duration_policy_from_config(
+    config: Optional[Dict[str, Any]] = None,
+) -> Dict[str, int]:
+    """Load prefer/default/max clip seconds from renderer duration_defaults."""
+    try:
+        sys.path.insert(0, str(ROOT))
+        from renderer.engine import resolve_duration_profile  # type: ignore
+
+        if config is None:
+            # try active project pipeline_config
+            cfg_path = None
+            ws = ROOT / "projects" / "workspace.json"
+            pid = "NickAndMe"
+            if ws.is_file():
+                try:
+                    pid = json.loads(ws.read_text(encoding="utf-8")).get("active_project") or pid
+                except Exception:
+                    pass
+            cfg_path = ROOT / "projects" / str(pid) / "pipeline_config.json"
+            if cfg_path.is_file():
+                config = json.loads(cfg_path.read_text(encoding="utf-8"))
+            else:
+                config = {}
+        prof = resolve_duration_profile(config or {})
+        return {
+            "default": int(prof.get("default", GROK_DEFAULT)),
+            "prefer_min": int(prof.get("prefer_min", GROK_MIN_CLIP)),
+            "prefer_max": int(prof.get("prefer_max", GROK_MAX_CLIP)),
+            "min": int(prof.get("min", 1)),
+            "max": int(prof.get("max", GROK_ABS_MAX)),
+        }
+    except Exception:
+        return {
+            "default": GROK_DEFAULT,
+            "prefer_min": GROK_MIN_CLIP,
+            "prefer_max": GROK_MAX_CLIP,
+            "min": 1,
+            "max": GROK_ABS_MAX,
+        }
 
 
 def _ts(start: int, end: int) -> str:
@@ -83,36 +124,45 @@ def _force_none(beat: Dict[str, Any], clip_index: int) -> bool:
 
 
 def _allocate_durations(
-    beats: Sequence[Dict[str, Any]], target: int
+    beats: Sequence[Dict[str, Any]],
+    target: int,
+    *,
+    policy: Optional[Dict[str, int]] = None,
 ) -> List[int]:
     """
-    Allocate integer seconds per beat under Grok 6–10s preference.
+    Allocate integer seconds per beat under provider duration_defaults preference.
     Total exactly equals clamped target.
     """
+    pol = policy or _duration_policy_from_config()
+    d_def = int(pol.get("default", GROK_DEFAULT))
+    d_min = int(pol.get("prefer_min", GROK_MIN_CLIP))
+    d_max = int(pol.get("prefer_max", GROK_MAX_CLIP))
+    d_abs = int(pol.get("max", GROK_ABS_MAX))
+
     n = len(beats)
     if n == 0:
         return []
-    target = max(GROK_SCENE_MIN, min(GROK_SCENE_MAX, int(target or n * GROK_DEFAULT)))
-    # Prefer ~8s each; adjust target toward n*8 when close
-    preferred = n * GROK_DEFAULT
-    if abs(target - preferred) <= n:  # small drift — snap toward 8s grid
+    target = max(GROK_SCENE_MIN, min(GROK_SCENE_MAX, int(target or n * d_def)))
+    # Prefer default seconds each; adjust target toward n*default when close
+    preferred = n * d_def
+    if abs(target - preferred) <= n:  # small drift — snap toward default grid
         target = max(GROK_SCENE_MIN, min(GROK_SCENE_MAX, preferred))
-    # Minimum total if each clip at least GROK_MIN_CLIP
-    min_total = n * GROK_MIN_CLIP
-    max_total = n * GROK_MAX_CLIP
+    # Minimum total if each clip at least prefer_min
+    min_total = n * d_min
+    max_total = n * d_max
     if target < min_total:
         target = min_total
     if target > max_total:
-        # allow a few longer clips up to ABS_MAX if scene budget is large
-        max_total = n * min(GROK_ABS_MAX, GROK_MAX_CLIP + 2)
+        # allow a few longer clips up to abs max if scene budget is large
+        max_total = n * min(d_abs, d_max + 2)
         target = min(target, max_total)
 
     weights = [float(b.get("time_weight") or 1.0) for b in beats]
     wsum = sum(weights) or float(n)
     raw = [target * (w / wsum) for w in weights]
     durs = [int(round(x)) for x in raw]
-    # Clamp each to [MIN, MAX] then fix sum
-    durs = [max(GROK_MIN_CLIP, min(GROK_MAX_CLIP, d)) for d in durs]
+    # Clamp each to prefer band then fix sum
+    durs = [max(d_min, min(d_max, d)) for d in durs]
     # Fix sum
     diff = target - sum(durs)
     i = 0
@@ -120,17 +170,17 @@ def _allocate_durations(
     while diff != 0 and guard < 10000:
         guard += 1
         idx = i % n
-        if diff > 0 and durs[idx] < GROK_MAX_CLIP:
+        if diff > 0 and durs[idx] < d_max:
             durs[idx] += 1
             diff -= 1
-        elif diff < 0 and durs[idx] > GROK_MIN_CLIP:
+        elif diff < 0 and durs[idx] > d_min:
             durs[idx] -= 1
             diff += 1
         else:
             i += 1
             if i > n * 3 and diff != 0:
                 # relax max
-                if diff > 0 and durs[idx] < GROK_ABS_MAX:
+                if diff > 0 and durs[idx] < d_abs:
                     durs[idx] += 1
                     diff -= 1
                 elif diff < 0 and durs[idx] > 1:
@@ -350,8 +400,10 @@ def plan_scene(
             "video_provider_profile": "grok",
         }
 
-    target = int(scene.get("duration_target_seconds") or len(beats) * GROK_DEFAULT)
-    durs = _allocate_durations(beats, target)
+    pol = _duration_policy_from_config()
+    d_def = int(pol.get("default", GROK_DEFAULT))
+    target = int(scene.get("duration_target_seconds") or len(beats) * d_def)
+    durs = _allocate_durations(beats, target, policy=pol)
     total = sum(durs)
 
     clips: List[Dict[str, Any]] = []
@@ -627,12 +679,7 @@ def main() -> int:
             "source_stage1": stage1_path.name,
             "resolution": args.resolution,
             "scene_filter": args.scenes,
-            "clip_duration_policy": {
-                "prefer_min": GROK_MIN_CLIP,
-                "prefer_max": GROK_MAX_CLIP,
-                "absolute_max": GROK_ABS_MAX,
-                "default": GROK_DEFAULT,
-            },
+            "clip_duration_policy": _duration_policy_from_config(),
             "prompt_soft_max": GROK_PROMPT_SOFT,
             "prompt_hard_max": GROK_PROMPT_HARD,
         },

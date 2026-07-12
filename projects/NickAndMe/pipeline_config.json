@@ -52,5 +52,53 @@
       "label": "Google Veo 3.1"
     }
   ],
-  "blueprint_file": "nickandme.clips.grok.json"
+  "blueprint_file": "nickandme.clips.grok.json",
+  "use_duration_defaults": true,
+  "duration_defaults": {
+    "fallback": 8,
+    "providers": {
+      "grok": {
+        "default": 8,
+        "min": 1,
+        "max": 15,
+        "prefer_min": 6,
+        "prefer_max": 10,
+        "models": {
+          "grok-imagine-video": {
+            "default": 8,
+            "prefer_min": 6,
+            "prefer_max": 10
+          },
+          "grok-imagine-video-1.5": {
+            "default": 8,
+            "prefer_min": 6,
+            "prefer_max": 12
+          }
+        },
+        "resolutions": {
+          "480p": {
+            "default": 6
+          },
+          "720p": {
+            "default": 8
+          },
+          "1080p": {
+            "default": 8
+          }
+        }
+      },
+      "veo": {
+        "default": 8,
+        "min": 4,
+        "max": 8,
+        "prefer_min": 7,
+        "prefer_max": 8,
+        "models": {
+          "veo-3.1": {
+            "default": 8
+          }
+        }
+      }
+    }
+  }
 }

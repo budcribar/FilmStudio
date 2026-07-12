@@ -86,7 +86,12 @@ def clip_duration_seconds(clip: Dict[str, Any], config: Dict[str, Any]) -> float
     d = _parse_timestamp_duration(clip.get("timestamp") or "")
     if d is not None and d > 0:
         return d
-    default = float(config.get("duration_seconds") or 8)
+    try:
+        from renderer.engine import resolve_default_duration
+
+        default = float(resolve_default_duration(config))
+    except Exception:
+        default = float(config.get("duration_seconds") or 8)
     return max(1.0, default)
 
 

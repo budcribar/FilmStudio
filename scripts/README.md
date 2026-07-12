@@ -45,9 +45,13 @@ python scripts/two_stage_adaptation/apply_location_pins.py
 # 3) Verify Stage 1 schema/prompt still accept current + legacy bibles
 python scripts/two_stage_adaptation/verify_stage1.py
 
-# 4) Run Stage 1 LLM on the book (requires XAI_API_KEY) → nickandme.scenes.json
-#    First extract PDF text if needed (book_full.txt)
-python scripts/two_stage_adaptation/run_stage1_from_book.py
+# 4) Prepare book (auto: extract + vision if text is garbled + runtime defaults)
+#    Prefer this over bare extract for picture books / weak OCR.
+python scripts/two_stage_adaptation/prepare_book_source.py --force
+
+# 5) Run Stage 1 LLM (requires XAI_API_KEY) — auto-extracts PDF if text missing/stale
+#    Or use Adaptation page: Import + prepare → Run Stage 1
+python scripts/two_stage_adaptation/run_stage1_from_book.py --chunk-pages 10
 python scripts/two_stage_adaptation/run_stage1_from_book.py --chunk-pages 12 --resume
 ```
 

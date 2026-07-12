@@ -54,11 +54,55 @@ DEFAULT_CONFIG = {
     "rebuild_wip_movie_after_scene": True,
     "wip_movie_path": "assets/movie_wip.mp4",
     "aspect_ratio": "16:9",
+    # Legacy flat default; prefer resolve_default_duration() from duration_defaults
     "duration_seconds": 8,
+    # When true, generate/plan use duration_defaults map (model/provider/resolution).
+    # When false, always use duration_seconds as the flat override.
+    "use_duration_defaults": True,
     "resolution": "720p",
     "qa_frame_count": 4,
     # Active production blueprint (Stage 2 Grok clip plan by default)
     "blueprint_file": "nickandme.clips.grok.json",
+    # Model/provider-aware clip duration policy (seconds)
+    "duration_defaults": {
+        "fallback": 8,
+        "providers": {
+            "grok": {
+                "default": 8,
+                "min": 1,
+                "max": 15,
+                "prefer_min": 6,
+                "prefer_max": 10,
+                "models": {
+                    "grok-imagine-video": {
+                        "default": 8,
+                        "prefer_min": 6,
+                        "prefer_max": 10,
+                    },
+                    "grok-imagine-video-1.5": {
+                        "default": 8,
+                        "prefer_min": 6,
+                        "prefer_max": 12,
+                    },
+                },
+                "resolutions": {
+                    "480p": {"default": 6},
+                    "720p": {"default": 8},
+                    "1080p": {"default": 8},
+                },
+            },
+            "veo": {
+                "default": 8,
+                "min": 4,
+                "max": 8,
+                "prefer_min": 7,
+                "prefer_max": 8,
+                "models": {
+                    "veo-3.1": {"default": 8},
+                },
+            },
+        },
+    },
     # USD planning rates for Streamlit cost estimates (edit if xAI list prices change)
     "cost_estimates": {
         "currency": "USD",
@@ -88,6 +132,103 @@ DEFAULT_CONFIG = {
         },
     ],
 }
+
+
+def _deep_setdefault(dst: Dict[str, Any], src: Dict[str, Any]) -> None:
+    for key, value in src.items():
+        if key not in dst:
+            dst[key] = json.loads(json.dumps(value)) if isinstance(value, (dict, list)) else value
+        elif isinstance(value, dict) and isinstance(dst.get(key), dict):
+            _deep_setdefault(dst[key], value)
+
+
+def resolve_duration_profile(
+    config: Optional[Dict[str, Any]] = None,
+    *,
+    provider: Optional[str] = None,
+    model_name: Optional[str] = None,
+    resolution: Optional[str] = None,
+) -> Dict[str, Any]:
+    """
+    Resolve clip duration policy from config.duration_defaults.
+
+    Returns dict with: default, min, max, prefer_min, prefer_max, source (label).
+    """
+    cfg = config or DEFAULT_CONFIG
+    dd = cfg.get("duration_defaults") or DEFAULT_CONFIG.get("duration_defaults") or {}
+    prov = str(provider or cfg.get("video_provider") or "grok").lower().strip()
+    model = str(model_name or cfg.get("model_name") or "").lower().strip()
+    res = str(resolution or cfg.get("resolution") or "720p").lower().strip()
+
+    out: Dict[str, Any] = {
+        "default": int(dd.get("fallback", 8)),
+        "min": 1,
+        "max": 15,
+        "prefer_min": 6,
+        "prefer_max": 10,
+        "source": "fallback",
+    }
+    providers = dd.get("providers") or {}
+    pblock = providers.get(prov) or providers.get(prov.split("-")[0]) or {}
+    if pblock:
+        for k in ("default", "min", "max", "prefer_min", "prefer_max"):
+            if k in pblock and pblock[k] is not None:
+                out[k] = int(pblock[k])
+        out["source"] = f"provider:{prov}"
+
+    models = (pblock.get("models") or {}) if isinstance(pblock, dict) else {}
+    mblock = models.get(model) if model else None
+    if not mblock and model:
+        # prefix match e.g. grok-imagine-video-1.5-foo
+        for mk, mv in models.items():
+            if model.startswith(str(mk).lower()) or str(mk).lower() in model:
+                mblock = mv
+                break
+    if isinstance(mblock, dict):
+        for k in ("default", "min", "max", "prefer_min", "prefer_max"):
+            if k in mblock and mblock[k] is not None:
+                out[k] = int(mblock[k])
+        out["source"] = f"model:{model or '?'}"
+
+    resolutions = (pblock.get("resolutions") or {}) if isinstance(pblock, dict) else {}
+    rblock = resolutions.get(res) if res else None
+    if isinstance(rblock, dict):
+        for k in ("default", "min", "max", "prefer_min", "prefer_max"):
+            if k in rblock and rblock[k] is not None:
+                out[k] = int(rblock[k])
+        out["source"] = f"{out['source']}+res:{res}"
+
+    # Clamp consistency
+    out["min"] = int(out.get("min", 1))
+    out["max"] = max(out["min"], int(out.get("max", 15)))
+    out["prefer_min"] = max(out["min"], int(out.get("prefer_min", out["min"])))
+    out["prefer_max"] = min(out["max"], max(out["prefer_min"], int(out.get("prefer_max", out["max"]))))
+    out["default"] = max(out["min"], min(out["max"], int(out.get("default", 8))))
+    return out
+
+
+def resolve_default_duration(
+    config: Optional[Dict[str, Any]] = None,
+    *,
+    provider: Optional[str] = None,
+    model_name: Optional[str] = None,
+    resolution: Optional[str] = None,
+) -> int:
+    """
+    Default clip length in seconds for generate/plan when no per-clip timestamp.
+
+    Honors use_duration_defaults (default True). If False, uses flat duration_seconds.
+    """
+    cfg = config or DEFAULT_CONFIG
+    if not cfg.get("use_duration_defaults", True):
+        try:
+            return max(1, int(cfg.get("duration_seconds") or 8))
+        except (TypeError, ValueError):
+            return 8
+    profile = resolve_duration_profile(
+        cfg, provider=provider, model_name=model_name, resolution=resolution
+    )
+    return int(profile["default"])
 
 # Prompt cues that mean a real cut / new setup — do NOT seed from previous last frame
 _HARD_CUT_RE = re.compile(
@@ -270,6 +411,115 @@ def resolve_ffmpeg() -> str:
     return "ffmpeg"
 
 
+def ffmpeg_is_available() -> Tuple[bool, str]:
+    """
+    True when resolve_ffmpeg() points at a real executable.
+    The bare fallback name \"ffmpeg\" (nothing found) counts as missing.
+    """
+    path = resolve_ffmpeg()
+    if not path:
+        return False, ""
+    if path != "ffmpeg" and os.path.isfile(path):
+        return True, path
+    import shutil
+
+    found = shutil.which(path)
+    if found and os.path.isfile(found):
+        return True, found
+    return False, path
+
+
+def environment_needs(config: Optional[Dict[str, Any]] = None) -> Dict[str, bool]:
+    """
+    Which external deps the pipeline needs for this config.
+
+    - XAI_API_KEY: Grok video, Grok character design, or Grok QA
+    - GEMINI_API_KEY: Veo video, Gemini/Imagen characters, or Gemini QA
+    - ffmpeg: always required for mux/composite/WIP (and most generate paths)
+    """
+    cfg = config or {}
+    video = str(cfg.get("video_provider", "grok")).lower().strip()
+    char = str(cfg.get("character_design_provider", "grok")).lower().strip()
+    qa = str(cfg.get("qa_provider", "grok")).lower().strip()
+
+    need_xai = (
+        video in ("grok", "xai", "grok-imagine", "imagine")
+        or char in ("grok", "xai", "imagine")
+        or qa in ("grok", "xai")
+    )
+    need_gemini = (
+        video in ("veo", "google", "gemini")
+        or char in ("gemini", "imagen", "google")
+        or qa in ("gemini", "google")
+    )
+    return {
+        "xai": need_xai,
+        "gemini": need_gemini,
+        "ffmpeg": True,
+    }
+
+
+def check_environment(
+    config: Optional[Dict[str, Any]] = None,
+    *,
+    require_xai: Optional[bool] = None,
+    require_gemini: Optional[bool] = None,
+    require_ffmpeg: Optional[bool] = None,
+) -> List[str]:
+    """
+    Preflight env check. Returns a list of error messages (empty = OK).
+
+    When require_* is None, infer from config providers (Grok → XAI, Veo/Gemini → GEMINI).
+    """
+    needs = environment_needs(config)
+    want_xai = needs["xai"] if require_xai is None else require_xai
+    want_gemini = needs["gemini"] if require_gemini is None else require_gemini
+    want_ffmpeg = needs["ffmpeg"] if require_ffmpeg is None else require_ffmpeg
+
+    errors: List[str] = []
+    if want_xai and not (os.environ.get("XAI_API_KEY") or "").strip():
+        errors.append(
+            "XAI_API_KEY is not set. Required for Grok video, character design, and QA. "
+            "Set it in the shell before starting Streamlit/CLI "
+            '(e.g. $env:XAI_API_KEY = "…" on PowerShell).'
+        )
+    if want_gemini and not (os.environ.get("GEMINI_API_KEY") or "").strip():
+        errors.append(
+            "GEMINI_API_KEY is not set. Required when video_provider is Veo, "
+            "or character_design_provider / qa_provider is Gemini."
+        )
+    if want_ffmpeg:
+        ok, path = ffmpeg_is_available()
+        if not ok:
+            errors.append(
+                "ffmpeg not found. Install ffmpeg and put it on PATH, "
+                "or set FFMPEG_PATH to the full path of the executable "
+                "(current resolve fallback was "
+                f"'{path or 'missing'}')."
+            )
+    return errors
+
+
+def require_environment(
+    config: Optional[Dict[str, Any]] = None,
+    *,
+    require_xai: Optional[bool] = None,
+    require_gemini: Optional[bool] = None,
+    require_ffmpeg: Optional[bool] = None,
+) -> None:
+    """Raise GenerationFailure if any required env tool/key is missing."""
+    errors = check_environment(
+        config,
+        require_xai=require_xai,
+        require_gemini=require_gemini,
+        require_ffmpeg=require_ffmpeg,
+    )
+    if errors:
+        raise GenerationFailure(
+            "Environment check failed:\n- " + "\n- ".join(errors)
+        )
+
+
 class AgenticGenerationEngine:
     def __init__(
         self,
@@ -316,12 +566,19 @@ class AgenticGenerationEngine:
             )
 
         # Log runtime tooling so WSL vs Windows path issues are obvious
-        ffmpeg_path = resolve_ffmpeg()
+        ffmpeg_ok, ffmpeg_path = ffmpeg_is_available()
         env_label = "WSL" if _running_on_wsl() else ("Windows" if os.name == "nt" else "Linux")
-        print(f"[Runtime] host={env_label}, ffmpeg={ffmpeg_path}")
+        print(
+            f"[Runtime] host={env_label}, ffmpeg="
+            f"{ffmpeg_path if ffmpeg_ok else f'MISSING (resolved={ffmpeg_path!r})'}"
+        )
         print(f"[Runtime] project_dir={self.project_dir}")
         print(f"[Runtime] blueprint={self.blueprint_path}")
-        
+        # Soft status only here so GUI can still open for config/review.
+        # Paid generate / Stage 0 / remux call require_environment() and raise.
+        for msg in check_environment(self.config):
+            print(f"[Environment] {msg}")
+
         # Optional Gemini client (QA/Imagen fallbacks when qa_provider/character_design_provider is gemini)
         if genai and os.environ.get("GEMINI_API_KEY"):
             try:
@@ -458,18 +715,30 @@ class AgenticGenerationEngine:
 
         # Fill any missing keys from defaults so older config files still work
         for key, value in DEFAULT_CONFIG.items():
-            self.config.setdefault(key, value)
+            if key in ("duration_defaults", "cost_estimates") and isinstance(value, dict):
+                self.config.setdefault(key, {})
+                if isinstance(self.config.get(key), dict):
+                    _deep_setdefault(self.config[key], value)
+                else:
+                    self.config[key] = json.loads(json.dumps(value))
+            else:
+                self.config.setdefault(key, value)
 
         video_provider = str(self.config.get("video_provider", "grok")).lower()
         char_provider = str(self.config.get("character_design_provider", "grok")).lower()
         qa_provider = str(self.config.get("qa_provider", "grok")).lower()
+        dur_profile = resolve_duration_profile(self.config)
         print(
             f"[Config] video_provider={video_provider}, "
             f"character_design_provider={char_provider}, "
             f"qa_provider={qa_provider}, "
             f"model_name={self.config.get('model_name')}, "
             f"image_model_name={self.config.get('image_model_name')}, "
-            f"qa_model_name={self.config.get('qa_model_name')}"
+            f"qa_model_name={self.config.get('qa_model_name')}, "
+            f"duration_default={dur_profile.get('default')}s "
+            f"[{dur_profile.get('source')}] "
+            f"(prefer {dur_profile.get('prefer_min')}-{dur_profile.get('prefer_max')}, "
+            f"max {dur_profile.get('max')})"
         )
 
     def load_blueprint(self):
@@ -785,7 +1054,7 @@ class AgenticGenerationEngine:
                     skipped += 1
                     continue
                 # duration
-                duration = float(self.config.get("duration_seconds") or 8)
+                duration = float(resolve_default_duration(self.config))
                 ts = str(clip.get("timestamp") or "")
                 m_ts = re.match(r"^\s*(\d+):(\d{2})\s*-\s*(\d+):(\d{2})\s*$", ts)
                 if m_ts:
@@ -894,6 +1163,31 @@ class AgenticGenerationEngine:
             f"Failed to download {label} to '{output_path}' after {retries} attempts: {last_error}"
         )
 
+    def _parse_grok_image_response(self, result: Dict[str, Any], *, n: int, label: str) -> List[bytes]:
+        data = result.get("data")
+        if not isinstance(data, list) or not data:
+            raise GenerationFailure(f"Grok image API returned no image data ({label}): {result}")
+        images: List[bytes] = []
+        for item in data:
+            if not isinstance(item, dict):
+                continue
+            if item.get("b64_json"):
+                images.append(base64.b64decode(item["b64_json"]))
+            elif item.get("url"):
+                tmp_path = f"assets/characters/_grok_tmp_{len(images)}.img"
+                self._download_to_path(item["url"], tmp_path, label=label)
+                with open(tmp_path, "rb") as f:
+                    images.append(f.read())
+                try:
+                    os.remove(tmp_path)
+                except OSError:
+                    pass
+        if len(images) < 1:
+            raise GenerationFailure(
+                f"Grok image API returned 0 usable images ({label}): {result}"
+            )
+        return images[:n]
+
     def _grok_generate_image_variants(self, prompt: str, n: int = 3, aspect_ratio: str = "1:1") -> List[bytes]:
         """Generate n portrait variants via Grok Imagine image API; returns raw image bytes list."""
         model_name = self.config.get("image_model_name", "grok-imagine-image-quality")
@@ -905,27 +1199,7 @@ class AgenticGenerationEngine:
             "response_format": "b64_json",
         }
         result = self._grok_request("POST", f"{XAI_API_BASE}/images/generations", payload, timeout=180)
-        data = result.get("data")
-        if not isinstance(data, list) or not data:
-            # Some responses return a top-level url list; try URL download path
-            raise GenerationFailure(f"Grok image API returned no image data: {result}")
-
-        images: List[bytes] = []
-        for item in data:
-            if not isinstance(item, dict):
-                continue
-            if item.get("b64_json"):
-                images.append(base64.b64decode(item["b64_json"]))
-            elif item.get("url"):
-                # Temporary URL fallback when base64 is unavailable
-                tmp_path = f"assets/characters/_grok_tmp_{len(images)}.img"
-                self._download_to_path(item["url"], tmp_path)
-                with open(tmp_path, "rb") as f:
-                    images.append(f.read())
-                try:
-                    os.remove(tmp_path)
-                except OSError:
-                    pass
+        images = self._parse_grok_image_response(result, n=n, label="generations")
         if len(images) < n:
             raise GenerationFailure(
                 f"Grok image API returned {len(images)}/{n} usable images: {result}"
@@ -940,6 +1214,179 @@ class AgenticGenerationEngine:
         except Exception as cost_err:
             print(f"  [Cost Warning] Could not record image cost: {cost_err}")
         return images[:n]
+
+    def _grok_edit_image_variants(
+        self,
+        prompt: str,
+        reference_paths: List[str],
+        n: int = 3,
+        aspect_ratio: str = "1:1",
+    ) -> List[bytes]:
+        """
+        Generate variants guided by 1–3 book/reference images via /v1/images/edits.
+        Uses data URIs so local book_images work without a public URL.
+        """
+        model_name = self.config.get("image_model_name", "grok-imagine-image-quality")
+        refs = [p for p in reference_paths if p and os.path.isfile(p)][:3]
+        if not refs:
+            raise GenerationFailure("No usable reference images for character edit.")
+
+        # Downscale huge book pages so the request stays reasonable
+        image_payloads: List[Dict[str, str]] = []
+        for path in refs:
+            try:
+                uri = self._file_to_data_uri_resized(path, max_edge=1280)
+            except Exception:
+                uri = self._file_to_data_uri(path)
+            image_payloads.append({"url": uri, "type": "image_url"})
+
+        images: List[bytes] = []
+        # Edit API: request one image per call for reliable multi-variant output
+        for i in range(n):
+            variant_prompt = (
+                f"{prompt} Variation {i + 1} of {n}: slight pose/expression change only; "
+                f"keep the same identity, colors, markings, and illustration style as the reference."
+            )
+            payload: Dict[str, Any] = {
+                "model": model_name,
+                "prompt": variant_prompt,
+                "response_format": "b64_json",
+                "aspect_ratio": aspect_ratio,
+            }
+            if len(image_payloads) == 1:
+                payload["image"] = image_payloads[0]
+            else:
+                payload["image"] = image_payloads
+            result = self._grok_request(
+                "POST", f"{XAI_API_BASE}/images/edits", payload, timeout=180
+            )
+            batch = self._parse_grok_image_response(
+                result, n=1, label=f"edits variant {i + 1}"
+            )
+            images.extend(batch)
+            try:
+                quality = "quality" in str(model_name).lower()
+                # edits bill input + output; record n_images for output count
+                self.record_image_generation_cost(
+                    n_images=len(batch),
+                    model=str(model_name),
+                    quality=quality,
+                )
+            except Exception as cost_err:
+                print(f"  [Cost Warning] Could not record image edit cost: {cost_err}")
+
+        if len(images) < 1:
+            raise GenerationFailure("Grok image edit returned no variants.")
+        return images[:n]
+
+    def _file_to_data_uri_resized(self, path: str, max_edge: int = 1280) -> str:
+        """Data URI for a local image, optionally downscaled for API size limits."""
+        try:
+            from PIL import Image
+            import io
+
+            im = Image.open(path)
+            im = im.convert("RGB")
+            w, h = im.size
+            edge = max(w, h)
+            if edge > max_edge:
+                scale = max_edge / float(edge)
+                im = im.resize(
+                    (max(1, int(w * scale)), max(1, int(h * scale))),
+                    Image.Resampling.LANCZOS,
+                )
+            buf = io.BytesIO()
+            im.save(buf, format="JPEG", quality=88, optimize=True)
+            b64 = base64.b64encode(buf.getvalue()).decode("ascii")
+            return f"data:image/jpeg;base64,{b64}"
+        except Exception:
+            return self._file_to_data_uri(path)
+
+    def find_character_book_references(
+        self, char_key: str, seed_info: Optional[Dict[str, Any]] = None, *, max_refs: int = 3
+    ) -> List[str]:
+        """
+        Locate book/page images to use as likeness references for character design.
+
+        Order:
+          1) seed design_reference_images / book_reference_images (relative paths)
+          2) source/book_images/ named for this character
+          3) cover + early embedded pages (picture books — dog/hero usually on cover)
+        """
+        seed_info = seed_info or self._character_seed(char_key) or {}
+        out: List[str] = []
+        seen = set()
+
+        def _add(p: str) -> None:
+            if not p:
+                return
+            path = p if os.path.isabs(p) else p.replace("\\", "/")
+            if not os.path.isfile(path):
+                # try under project cwd
+                alt = os.path.join("source", path) if not path.startswith("source/") else path
+                if os.path.isfile(alt):
+                    path = alt
+                else:
+                    return
+            ap = os.path.normpath(path)
+            if ap in seen:
+                return
+            seen.add(ap)
+            out.append(ap)
+
+        for key in ("design_reference_images", "book_reference_images", "reference_images"):
+            raw = seed_info.get(key)
+            if isinstance(raw, str):
+                _add(raw)
+            elif isinstance(raw, list):
+                for item in raw:
+                    if isinstance(item, str):
+                        _add(item)
+                    elif isinstance(item, dict) and item.get("path"):
+                        _add(str(item["path"]))
+
+        book_dir = Path("source/book_images")
+        if book_dir.is_dir():
+            token = char_key.replace("Character_", "").lower()
+            names = [token, token.replace("_", "")]
+            if seed_info.get("canonical_given_name"):
+                names.append(str(seed_info["canonical_given_name"]).lower())
+            # Prefer files whose names mention the character
+            try:
+                for f in sorted(book_dir.iterdir()):
+                    if not f.is_file():
+                        continue
+                    low = f.name.lower()
+                    if any(n and n in low for n in names):
+                        _add(str(f))
+            except OSError:
+                pass
+
+            # Picture-book fallback: cover + pages that often show the hero (1–3, 5)
+            if len(out) < max_refs:
+                for name in (
+                    "page_001_cover.png",
+                    "embedded_p001_x12.jpg",
+                    "embedded_p002_x20.jpg",
+                    "embedded_p003_x25.jpg",
+                    "embedded_p005_x37.jpg",
+                    "page_002_sampled_page.png",
+                ):
+                    _add(str(book_dir / name))
+                    if len(out) >= max_refs:
+                        break
+
+            # Any remaining embedded pages if still short
+            if len(out) < 1:
+                try:
+                    for f in sorted(book_dir.glob("embedded_p*.jpg"))[:max_refs]:
+                        _add(str(f))
+                    for f in sorted(book_dir.glob("page_*.png"))[:max_refs]:
+                        _add(str(f))
+                except OSError:
+                    pass
+
+        return out[:max_refs]
 
     def _imagen_generate_image_variants(self, prompt: str, n: int = 3) -> List[bytes]:
         """Optional Imagen fallback for character portraits (requires Gemini client)."""
@@ -981,18 +1428,20 @@ class AgenticGenerationEngine:
 
         char_provider = str(self.config.get("character_design_provider", "grok")).lower().strip()
         if char_provider in ("grok", "xai", "imagine"):
-            if not os.environ.get("XAI_API_KEY"):
-                print("[Warning] XAI_API_KEY not set. Bypassing automatic character generation.")
-                return
+            require_environment(self.config, require_xai=True, require_gemini=False, require_ffmpeg=False)
             design_label = "Grok Imagine"
         elif char_provider in ("imagen", "gemini", "google"):
+            require_environment(self.config, require_xai=False, require_gemini=True, require_ffmpeg=False)
             if not self.client:
-                print("[Warning] Gemini/Imagen client not configured. Bypassing automatic character generation.")
-                return
+                raise GenerationFailure(
+                    "Gemini/Imagen client not configured (GEMINI_API_KEY missing or GenAI SDK failed to init)."
+                )
             design_label = "Imagen 3"
         else:
-            print(f"[Warning] Unknown character_design_provider '{char_provider}'. Bypassing Stage 0.")
-            return
+            raise GenerationFailure(
+                f"Unknown character_design_provider '{char_provider}'. "
+                "Use 'grok' or 'gemini'."
+            )
 
         # Adults first, then age variants (Young/Teen), so family resemblance notes can reference adults
         def _seed_sort_key(item):
@@ -1144,10 +1593,21 @@ class AgenticGenerationEngine:
             for idx in (1, 2, 3)
         ]
 
-    def _character_design_prompt(self, char_key: str, seed_info: Dict[str, Any]) -> str:
+    def _character_design_prompt(
+        self,
+        char_key: str,
+        seed_info: Dict[str, Any],
+        *,
+        has_book_refs: bool = False,
+    ) -> str:
         description = seed_info.get("description", "")
         age_band = seed_info.get("age_band") or ""
         variant_of = seed_info.get("variant_of") or ""
+        display = (
+            seed_info.get("canonical_given_name")
+            or seed_info.get("voice_label")
+            or char_key.replace("Character_", "").replace("_", " ")
+        )
         treatment = self.blueprint.get("global_production_variables", {}).get(
             "directorial_treatment", "cinematic lighting"
         )
@@ -1162,23 +1622,46 @@ class AgenticGenerationEngine:
                 "CRITICAL: this is a TEEN / late-teen portrait — younger than the adult version, "
                 "not a middle-aged adult. "
             )
+        elif "dog" in age_band.lower() or "dog" in description.lower():
+            age_clause = (
+                "CRITICAL: this is a DOG portrait (animal), not a human. "
+                "Match breed look, ear shape, coat color/markings from the description. "
+            )
         family_clause = ""
         if variant_of:
             family_clause = (
                 f"Should clearly read as a younger version of {variant_of} "
                 f"(same ethnicity, hair color family, recognizable family features). "
             )
+        if has_book_refs:
+            return (
+                f"Create a clean character model-sheet portrait of {display} for film continuity. "
+                f"MATCH the character identity, colors, markings, and children's-book illustration style "
+                f"from the reference image(s) as closely as possible — same dog/person as in the book art. "
+                f"Do NOT invent a different breed, palette, or realistic photo style unless the reference is photo. "
+                f"Description: {description}. {age_clause}{family_clause}"
+                f"Character centered, facing camera, plain soft studio or simple background, "
+                f"full head and upper body clear for video reference. "
+                f"Keep the whimsical picture-book look of the source art; {treatment}."
+            )
         return (
-            f"A detailed portrait model-sheet photograph of {char_key}: {description}. "
+            f"A detailed portrait model-sheet of {display}: {description}. "
             f"{age_clause}{family_clause}"
             f"Character centered in frame, look straight at camera, neutral expression, {treatment}. "
-            f"High texture realism, isolated plain dark concrete studio background."
+            f"If this is a children's picture-book character, use illustrated storybook style "
+            f"(not a photorealistic stock photo). Isolated plain soft background."
         )
 
-    def generate_character_variants(self, char_key: str) -> List[str]:
+    def generate_character_variants(
+        self, char_key: str, *, allow_text_fallback: bool = False
+    ) -> List[str]:
         """
         Generate 3 portrait variants for a character (no interactive prompt).
+        Uses book page images as Grok edit references when available so likeness
+        matches the source art (critical for picture books like Buster).
+
         Returns list of saved variant paths. Raises GenerationFailure on failure.
+        Sets self._last_character_gen_meta with mode/refs for the GUI.
         """
         seed_info = self._character_seed(char_key)
         if not seed_info:
@@ -1186,17 +1669,71 @@ class AgenticGenerationEngine:
 
         self.ensure_asset_directories()
         os.makedirs("assets/characters", exist_ok=True)
-        design_prompt = self._character_design_prompt(char_key, seed_info)
+        book_refs = self.find_character_book_references(char_key, seed_info, max_refs=3)
+        design_prompt = self._character_design_prompt(
+            char_key, seed_info, has_book_refs=bool(book_refs)
+        )
         char_provider = str(self.config.get("character_design_provider", "grok")).lower().strip()
+        mode = "text_only"
+        edit_error: Optional[str] = None
 
         if char_provider in ("grok", "xai", "imagine"):
             if not os.environ.get("XAI_API_KEY"):
                 raise GenerationFailure("XAI_API_KEY not set — cannot generate character portraits.")
-            image_blobs = self._grok_generate_image_variants(design_prompt, n=3, aspect_ratio="1:1")
+            if book_refs:
+                print(
+                    f"  [Character design] Using {len(book_refs)} book reference(s) for {char_key}: "
+                    + ", ".join(os.path.basename(p) for p in book_refs)
+                )
+                try:
+                    # Prefer single best ref first (edits are more faithful than multi full-page noise)
+                    primary = book_refs[:1]
+                    image_blobs = self._grok_edit_image_variants(
+                        design_prompt, primary, n=3, aspect_ratio="1:1"
+                    )
+                    mode = "book_edit"
+                except Exception as e:
+                    edit_error = str(e)
+                    print(f"  [Character design] Book-ref edit failed ({e}).")
+                    # Retry with up to 3 refs once
+                    try:
+                        image_blobs = self._grok_edit_image_variants(
+                            design_prompt, book_refs, n=3, aspect_ratio="1:1"
+                        )
+                        mode = "book_edit_multi"
+                        edit_error = None
+                    except Exception as e2:
+                        edit_error = f"{edit_error}; multi={e2}"
+                        if not allow_text_fallback:
+                            raise GenerationFailure(
+                                f"Book-reference character design failed for {char_key}. "
+                                f"References: {[os.path.basename(p) for p in book_refs]}. "
+                                f"API error: {edit_error}. "
+                                "Fix API/key or re-extract book images; do NOT re-run Stage 1. "
+                                "Text-only fallback is disabled so we do not invent a different look."
+                            ) from e2
+                        print(
+                            "  [Character design] Falling back to text-only "
+                            "(likeness will NOT match the book)."
+                        )
+                        image_blobs = self._grok_generate_image_variants(
+                            design_prompt, n=3, aspect_ratio="1:1"
+                        )
+                        mode = "text_fallback"
+            else:
+                print(
+                    f"  [Character design] No book images found for {char_key} — text-only prompt "
+                    f"(variants may not match source art). Put pages in source/book_images/."
+                )
+                image_blobs = self._grok_generate_image_variants(
+                    design_prompt, n=3, aspect_ratio="1:1"
+                )
+                mode = "text_only"
         elif char_provider in ("imagen", "gemini", "google"):
             if not self.client:
                 raise GenerationFailure("Gemini/Imagen client not configured.")
             image_blobs = self._imagen_generate_image_variants(design_prompt, n=3)
+            mode = "imagen"
         else:
             raise GenerationFailure(f"Unknown character_design_provider '{char_provider}'")
 
@@ -1209,6 +1746,14 @@ class AgenticGenerationEngine:
             option_paths.append(opt_path)
         if len(option_paths) < 1:
             raise GenerationFailure(f"No variants generated for {char_key}")
+
+        self._last_character_gen_meta = {
+            "char_key": char_key,
+            "mode": mode,
+            "book_refs": book_refs,
+            "paths": option_paths,
+            "edit_error": edit_error,
+        }
         return option_paths
 
     def unlock_character_ref(self, char_key: str) -> bool:
@@ -1531,6 +2076,9 @@ class AgenticGenerationEngine:
 
     def remux_scene_from_disk(self, scene_num: int) -> Optional[str]:
         """Rebuild scene composite from all existing clip files on disk."""
+        require_environment(
+            self.config, require_xai=False, require_gemini=False, require_ffmpeg=True
+        )
         scene = None
         for s in self.blueprint.get("scenes", []):
             if s.get("scene_number") == scene_num:
@@ -2841,7 +3389,19 @@ class AgenticGenerationEngine:
             self._interruptible_sleep(throttle_delay, f"Grok throttle Scene {scene_num} Clip {clip_num}")
 
         resolved_model = model_name or self.config.get("model_name", "grok-imagine-video")
-        duration = int(self.config.get("duration_seconds", 8))
+        resolved_res = str(self.config.get("resolution", "720p"))
+        dur_profile = resolve_duration_profile(
+            self.config,
+            provider=self.config.get("video_provider"),
+            model_name=resolved_model,
+            resolution=resolved_res,
+        )
+        duration = resolve_default_duration(
+            self.config,
+            provider=self.config.get("video_provider"),
+            model_name=resolved_model,
+            resolution=resolved_res,
+        )
         # Prefer per-clip duration from timestamp when available ("00:00-00:08")
         ts = str(clip.get("timestamp") or "")
         m_ts = re.match(r"^\s*(\d+):(\d{2})\s*-\s*(\d+):(\d{2})\s*$", ts)
@@ -2850,15 +3410,15 @@ class AgenticGenerationEngine:
             b = int(m_ts.group(3)) * 60 + int(m_ts.group(4))
             if b > a:
                 duration = b - a
-        # Grok text/image generation accepts 1–15s
-        duration = max(1, min(15, duration))
+        # Clamp to provider profile (Grok 1–15, Veo tighter)
+        duration = max(int(dur_profile["min"]), min(int(dur_profile["max"]), int(duration)))
 
         payload: Dict[str, Any] = {
             "model": resolved_model,
             "prompt": prompt,
             "duration": duration,
             "aspect_ratio": self.config.get("aspect_ratio", "16:9"),
-            "resolution": self.config.get("resolution", "720p"),
+            "resolution": resolved_res,
         }
 
         self._check_shutdown(f"Grok generate Scene {scene_num} Clip {clip_num}")
@@ -3025,7 +3585,12 @@ class AgenticGenerationEngine:
 
         generation_config = types.GenerateVideosConfig(
             aspect_ratio=self.config.get("aspect_ratio", "16:9"),
-            duration_seconds=self.config.get("duration_seconds", 8)
+            duration_seconds=resolve_default_duration(
+                self.config,
+                provider=self.config.get("video_provider"),
+                model_name=model_name,
+                resolution=self.config.get("resolution"),
+            ),
         )
 
         if self.config.get("use_video_audio_for_music", False):
@@ -3145,6 +3710,11 @@ class AgenticGenerationEngine:
         settings = self.resolve_video_settings(scene, video_provider, model_name)
         provider = settings["provider"]
         resolved_model = settings["model_name"]
+        # Fail fast before paid API / long polls
+        if provider in ("grok", "xai", "grok-imagine", "imagine"):
+            require_environment(self.config, require_xai=True, require_ffmpeg=True)
+        elif provider in ("veo", "google", "gemini"):
+            require_environment(self.config, require_gemini=True, require_ffmpeg=True)
         if provider in ("grok", "xai", "grok-imagine", "imagine"):
             return self.generate_grok_clip(
                 scene_num,
@@ -3552,7 +4122,7 @@ class AgenticGenerationEngine:
         except Exception:
             pass
         # Fallback when ffprobe is unavailable
-        return float(self.config.get("duration_seconds", 8))
+        return float(resolve_default_duration(self.config))
 
     def _extract_qa_frames(self, video_path: str, frame_count: int = 4) -> List[str]:
         """Sample evenly spaced JPEG frames from a clip for vision QA."""
@@ -3659,9 +4229,7 @@ class AgenticGenerationEngine:
 
     def run_grok_qa(self, video_path: str, visual_prompt: str) -> bool:
         """Critique a generated clip with Grok vision using sampled frames."""
-        if not os.environ.get("XAI_API_KEY"):
-            print("  [Grok QA Warning] XAI_API_KEY not set. Bypassing QA safely.")
-            return True
+        require_environment(self.config, require_xai=True, require_gemini=False, require_ffmpeg=True)
 
         print(f"  [Grok QA] Critiquing generated clip: {video_path}...")
         frame_paths: List[str] = []
@@ -4358,6 +4926,10 @@ class AgenticGenerationEngine:
         if not force and not self.config.get("rebuild_wip_movie_after_scene", True):
             return None
 
+        require_environment(
+            self.config, require_xai=False, require_gemini=False, require_ffmpeg=True
+        )
+
         if approved_only is None:
             approved_only = not bool(
                 self.config.get("wip_include_unapproved_composites", False)
@@ -4807,6 +5379,8 @@ class AgenticGenerationEngine:
 
     def run_pipeline(self):
         self.ensure_asset_directories()
+        # Fail before any paid work or long Stage 0 / scene loop
+        require_environment(self.config)
 
         try:
             # Stage 0: always check for missing character refs (adults + Young/Teen variants).

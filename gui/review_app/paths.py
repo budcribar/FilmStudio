@@ -66,6 +66,39 @@ def _slugify(name: str) -> str:
     return s[:80]
 
 
+def project_label(meta_or_id: Any, *, projects: Optional[List[Dict[str, Any]]] = None) -> str:
+    """
+    Human label for sidebar / selectboxes.
+
+    - Prefer title when it differs from folder id
+    - Avoid "Foo (Foo)" when title == id
+    - CamelCase folder ids get light spacing for display when title missing
+    """
+    if isinstance(meta_or_id, dict):
+        meta = meta_or_id
+        pid = str(meta.get("id") or "")
+        title = (meta.get("title") or "").strip()
+    else:
+        pid = str(meta_or_id or "")
+        title = ""
+        if projects:
+            for p in projects:
+                if p.get("id") == pid:
+                    title = (p.get("title") or "").strip()
+                    break
+    if not pid:
+        return title or "(no project)"
+    if title and title.lower() != pid.lower() and title.replace(" ", "").lower() != pid.lower():
+        return title
+    if title and title != pid:
+        return title
+    # Title is same as id (or empty) — prettify CamelCase / snake_case for display only
+    pretty = re.sub(r"([a-z])([A-Z])", r"\1 \2", pid)
+    pretty = pretty.replace("_", " ").replace("-", " ")
+    pretty = re.sub(r"\s+", " ", pretty).strip()
+    return pretty or pid
+
+
 def list_projects() -> List[Dict[str, Any]]:
     """Return project metadata dicts sorted by title/id."""
     root = projects_root()
@@ -78,6 +111,7 @@ def list_projects() -> List[Dict[str, Any]]:
         meta = load_project_meta(child)
         meta["path"] = str(child.resolve())
         meta["id"] = meta.get("id") or child.name
+        meta["label"] = project_label(meta)
         out.append(meta)
     out.sort(key=lambda m: (m.get("title") or m.get("id") or "").lower())
     return out
@@ -193,6 +227,43 @@ def create_project(
         "wip_movie_path": "assets/movie_wip.mp4",
         "aspect_ratio": "16:9",
         "duration_seconds": 8,
+        "use_duration_defaults": True,
+        "duration_defaults": {
+            "fallback": 8,
+            "providers": {
+                "grok": {
+                    "default": 8,
+                    "min": 1,
+                    "max": 15,
+                    "prefer_min": 6,
+                    "prefer_max": 10,
+                    "models": {
+                        "grok-imagine-video": {
+                            "default": 8,
+                            "prefer_min": 6,
+                            "prefer_max": 10,
+                        },
+                        "grok-imagine-video-1.5": {
+                            "default": 8,
+                            "prefer_min": 6,
+                            "prefer_max": 12,
+                        },
+                    },
+                    "resolutions": {
+                        "480p": {"default": 6},
+                        "720p": {"default": 8},
+                        "1080p": {"default": 8},
+                    },
+                },
+                "veo": {
+                    "default": 8,
+                    "min": 4,
+                    "max": 8,
+                    "prefer_min": 7,
+                    "prefer_max": 8,
+                },
+            },
+        },
         "resolution": "720p",
         "qa_frame_count": 4,
         "blueprint_file": meta["blueprint_file"],

@@ -48,7 +48,7 @@ def _project_dir(project_id: Optional[str]) -> Path:
 def _xai_request(payload: Dict[str, Any], timeout: int = 600) -> Dict[str, Any]:
     api_key = os.environ.get("XAI_API_KEY")
     if not api_key:
-        raise SystemExit(
+        raise RuntimeError(
             "XAI_API_KEY is not set. Export it then re-run:\n"
             "  set XAI_API_KEY=your_key   (Windows)\n"
             "  export XAI_API_KEY=your_key  (bash)"
@@ -68,9 +68,9 @@ def _xai_request(payload: Dict[str, Any], timeout: int = 600) -> Dict[str, Any]:
             raw = resp.read().decode("utf-8")
     except urllib.error.HTTPError as e:
         body = e.read().decode(errors="ignore") if hasattr(e, "read") else ""
-        raise SystemExit(f"xAI HTTP {e.code}: {body[:800]}")
+        raise RuntimeError(f"xAI HTTP {e.code}: {body[:800]}") from e
     except Exception as e:
-        raise SystemExit(f"xAI request failed: {e}")
+        raise RuntimeError(f"xAI request failed: {e}") from e
     return json.loads(raw)
 
 
@@ -145,6 +145,15 @@ def build_user_message(
         "Phase 1: multi-place scenes may list multiple location_ids; do not invent plot to force splits.",
         "Character_P = Nick's younger brother (director label); given name withheld until late book.",
         "Do NOT emit veo_clips, visual_prompt, timestamps, or continuation flags.",
+        "",
+        "HARD TYPE REMINDERS:",
+        '- story_day must be a STRING (e.g. "Day 1"), never a number',
+        '- location_type ONLY: int | ext | mixed | flashback | dream | montage',
+        "- frame_rate integer 24 (not \"24fps\")",
+        "- music_intent.style_description required string on every scene",
+        "- source_excerpts objects {source, excerpt} only — or omit",
+        "- omit optional keys instead of null",
+        "- always include full global_production_variables required fields",
         "",
     ]
     if prior and resume_scene:
@@ -267,63 +276,130 @@ def validate_stage1(data: Dict[str, Any]) -> List[str]:
     return errs
 
 
-def main() -> int:
-    ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("--project", default=None)
-    ap.add_argument("--book", default=None, help="Path to book_full.txt")
-    ap.add_argument("--out", default=None)
-    ap.add_argument("--model", default=os.environ.get("STAGE1_MODEL", "grok-4.5"))
-    ap.add_argument("--chunk-pages", type=int, default=15)
-    ap.add_argument("--total-minutes", type=int, default=90)
-    ap.add_argument("--resume", action="store_true", help="Load existing --out and continue")
-    ap.add_argument("--max-chunks", type=int, default=0, help="0 = all chunks")
-    ap.add_argument("--temperature", type=float, default=0.2)
-    args = ap.parse_args()
+def run_stage1_job(
+    *,
+    project_id: Optional[str] = None,
+    book_path: Optional[Path] = None,
+    out_path: Optional[Path] = None,
+    model: str = "grok-4.5",
+    chunk_pages: int = 10,
+    total_minutes: int = 90,
+    resume: bool = False,
+    max_chunks: int = 0,
+    temperature: float = 0.2,
+    normalize: bool = True,
+    progress_cb: Optional[Any] = None,
+) -> Dict[str, Any]:
+    """
+    Library entry for CLI and Streamlit.
+    progress_cb(event: dict) optional — events:
+      start, chunk_start, chunk_done, normalize, verify, done, error
+    Returns summary dict with paths and counts.
+    """
+    def progress(event: str, **kwargs: Any) -> None:
+        if progress_cb:
+            progress_cb({"event": event, **kwargs})
+        else:
+            msg = kwargs.get("message") or event
+            print(f"[{event}] {msg}", flush=True)
 
-    project = _project_dir(args.project)
-    book_path = Path(args.book) if args.book else project / "source" / "book_full.txt"
-    if not book_path.is_file():
-        # fallback: concatenate page files
-        src = project / "source"
+    project = _project_dir(project_id)
+    book_p = Path(book_path) if book_path else project / "source" / "book_full.txt"
+    src = project / "source"
+
+    # Prefer PDF when present and newer than book_full.txt (or text missing)
+    try:
+        sys.path.insert(0, str(Path(__file__).resolve().parent))
+        import extract_book_source as book_src  # type: ignore
+
+        pdf = book_src.find_pdf(src)
+        need_extract = False
+        if pdf is not None:
+            if not book_p.is_file():
+                need_extract = True
+            elif pdf.stat().st_mtime > book_p.stat().st_mtime:
+                need_extract = True
+        if need_extract and pdf is not None:
+            progress(
+                "start",
+                message=f"Extracting text/images from PDF {pdf.name}…",
+                chunk=0,
+                total=0,
+            )
+            ex = book_src.extract_book_source(
+                project_id=project.name,
+                pdf_path=pdf,
+                write_text=True,
+                extract_images=True,
+                render_modes=("cover", "sparse"),
+                force=True,
+            )
+            progress(
+                "start",
+                message=(
+                    f"PDF extract OK: pages={ex.get('pages')} chars={ex.get('text_chars')} "
+                    f"images={ex.get('images')}"
+                ),
+                chunk=0,
+                total=0,
+            )
+    except Exception as e:
+        progress("start", message=f"PDF extract skipped/failed: {e}", chunk=0, total=0)
+
+    if not book_p.is_file():
         files = sorted(src.glob("book_text_pages*.txt"))
         if not files:
-            raise SystemExit(f"No book text at {book_path}")
+            raise FileNotFoundError(
+                f"No book text at {book_p} and no usable PDF under {src}"
+            )
         book = "\n\n".join(f.read_text(encoding="utf-8", errors="ignore") for f in files)
-        print(f"[Info] Using concatenated page files ({len(files)})")
+        progress("start", message=f"Using concatenated page files ({len(files)})", chunk=0, total=0)
     else:
-        book = load_book(book_path)
-        print(f"[Info] Book: {book_path} ({len(book)} chars)")
+        book = load_book(book_p)
+        progress("start", message=f"Book {book_p} ({len(book)} chars)", chunk=0, total=0)
 
-    out_path = Path(args.out) if args.out else project / "nickandme.scenes.json"
+    out_p = Path(out_path) if out_path else project / "nickandme.scenes.json"
     system_prompt = PROMPT_PATH.read_text(encoding="utf-8")
-    system_prompt = system_prompt.replace("{{TOTAL_RUNTIME_MINUTES}}", str(args.total_minutes))
+    system_prompt = system_prompt.replace("{{TOTAL_RUNTIME_MINUTES}}", str(total_minutes))
 
-    chunks = chunk_book_by_pages(book, max(5, args.chunk_pages))
-    if args.max_chunks and args.max_chunks > 0:
-        chunks = chunks[: args.max_chunks]
-    print(f"[Info] Chunks: {len(chunks)} (pages/chunk≈{args.chunk_pages})")
+    chunks = chunk_book_by_pages(book, max(5, chunk_pages))
+    if max_chunks and max_chunks > 0:
+        chunks = chunks[:max_chunks]
+    n_chunks = len(chunks)
+    progress("start", message=f"Chunks: {n_chunks} (pages/chunk≈{chunk_pages})", chunk=0, total=n_chunks)
 
     partial: Optional[Dict[str, Any]] = None
-    if args.resume and out_path.is_file():
-        partial = json.loads(out_path.read_text(encoding="utf-8"))
-        print(f"[Info] Resume from {out_path} ({len(partial.get('scenes') or [])} scenes)")
+    if resume and out_p.is_file():
+        partial = json.loads(out_p.read_text(encoding="utf-8"))
+        progress(
+            "start",
+            message=f"Resume from {out_p.name} ({len(partial.get('scenes') or [])} scenes)",
+            chunk=0,
+            total=n_chunks,
+        )
 
     for i, chunk in enumerate(chunks):
+        progress(
+            "chunk_start",
+            message=f"Stage1 chunk {i+1}/{n_chunks} model={model}",
+            chunk=i + 1,
+            total=n_chunks,
+            scenes=len((partial or {}).get("scenes") or []),
+        )
         resume_scene = None
         if partial and partial.get("scenes"):
             resume_scene = max(int(s.get("scene_number") or 0) for s in partial["scenes"]) + 1
         user = build_user_message(
             book_chunk=chunk,
             chunk_index=i,
-            chunk_total=len(chunks),
-            total_minutes=args.total_minutes,
+            chunk_total=n_chunks,
+            total_minutes=total_minutes,
             prior=partial,
             resume_scene=resume_scene,
         )
-        print(f"[Grok] Stage1 chunk {i+1}/{len(chunks)} model={args.model} …", flush=True)
         payload = {
-            "model": args.model,
-            "temperature": args.temperature,
+            "model": model,
+            "temperature": temperature,
             "messages": [
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user},
@@ -332,58 +408,130 @@ def main() -> int:
         t0 = time.time()
         result = _xai_request(payload, timeout=900)
         text = _extract_message_text(result)
-        print(
-            f"[Grok] chunk {i+1} done in {time.time()-t0:.1f}s, output {len(text)} chars",
-            flush=True,
-        )
+        elapsed = time.time() - t0
         try:
             parsed = _parse_json_object(text)
         except Exception as e:
             dump = project / f"stage1_raw_chunk_{i+1}.txt"
             dump.write_text(text, encoding="utf-8")
-            raise SystemExit(f"Failed to parse JSON for chunk {i+1}: {e}\nRaw: {dump}")
+            raise ValueError(f"Failed to parse JSON for chunk {i+1}: {e}\nRaw: {dump}") from e
         partial = merge_stage1(partial, parsed)
-        # checkpoint
         ck = project / f"nickandme.scenes.partial_chunk{i+1}.json"
         ck.write_text(json.dumps(partial, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
-        print(f"[Info] Checkpoint {ck.name}: {len(partial.get('scenes') or [])} scenes")
+        progress(
+            "chunk_done",
+            message=f"chunk {i+1} done in {elapsed:.1f}s, {len(text)} chars, "
+            f"{len(partial.get('scenes') or [])} scenes",
+            chunk=i + 1,
+            total=n_chunks,
+            scenes=len(partial.get("scenes") or []),
+            elapsed_sec=elapsed,
+            output_chars=len(text),
+            checkpoint=str(ck),
+        )
 
     if not partial:
-        raise SystemExit("No Stage 1 output produced")
+        raise RuntimeError("No Stage 1 output produced")
 
     partial["schema_version"] = "stage1.v1"
     partial.setdefault("movie_title", "Nick and Me")
     partial.setdefault("source_book_title", "Nick and Me")
     partial["generation"] = {
         "method": "run_stage1_from_book.py",
-        "model": args.model,
-        "book": str(book_path),
-        "chunk_pages": args.chunk_pages,
-        "chunks": len(chunks),
+        "model": model,
+        "book": str(book_p),
+        "chunk_pages": chunk_pages,
+        "chunks": n_chunks,
         "ts": time.strftime("%Y-%m-%dT%H:%M:%S"),
     }
 
+    if out_p.is_file():
+        bak = out_p.with_suffix(out_p.suffix + f".bak_stage1_{time.strftime('%Y%m%d_%H%M%S')}")
+        shutil.copy2(out_p, bak)
+        progress("normalize", message=f"Backup {bak.name}", chunk=n_chunks, total=n_chunks)
+    else:
+        bak = None
+
+    out_p.write_text(json.dumps(partial, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+
+    if normalize:
+        progress("normalize", message="Running normalize_stage1…", chunk=n_chunks, total=n_chunks)
+        # Import sibling module
+        sys.path.insert(0, str(Path(__file__).resolve().parent))
+        import normalize_stage1 as norm  # type: ignore
+
+        data = json.loads(out_p.read_text(encoding="utf-8"))
+        fixed = norm.normalize(data)
+        out_p.write_text(json.dumps(fixed, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+        partial = fixed
+
     errs = validate_stage1(partial)
     hard = [e for e in errs if not e.startswith("(jsonschema") and "skipped" not in e]
-    print(f"[Verify] {len(errs)} issue(s); hard={len(hard)}")
-    for e in errs[:40]:
-        print(" ", e)
-
-    if out_path.is_file():
-        bak = out_path.with_suffix(out_path.suffix + f".bak_stage1_{time.strftime('%Y%m%d_%H%M%S')}")
-        shutil.copy2(out_path, bak)
-        print(f"[Info] Backup {bak.name}")
-
-    out_path.write_text(json.dumps(partial, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
-    print(f"[Success] Wrote {out_path}")
-    print(
-        f"  scenes={len(partial.get('scenes') or [])} "
-        f"chars={len((partial.get('global_production_variables') or {}).get('character_seed_tokens') or {})} "
-        f"locs={len((partial.get('global_production_variables') or {}).get('location_seed_tokens') or {})} "
-        f"runtime={partial.get('cumulative_duration_target_seconds')}s"
+    progress(
+        "verify",
+        message=f"{len(errs)} issue(s); hard={len(hard)}",
+        chunk=n_chunks,
+        total=n_chunks,
+        errors=errs[:40],
     )
 
-    if hard:
+    summary = {
+        "out_path": str(out_p),
+        "backup": str(bak) if bak else None,
+        "scenes": len(partial.get("scenes") or []),
+        "characters": len(
+            (partial.get("global_production_variables") or {}).get("character_seed_tokens") or {}
+        ),
+        "locations": len(
+            (partial.get("global_production_variables") or {}).get("location_seed_tokens") or {}
+        ),
+        "runtime_sec": partial.get("cumulative_duration_target_seconds"),
+        "chunks": n_chunks,
+        "verify_errors": errs,
+        "hard_errors": hard,
+        "ok": len(hard) == 0,
+    }
+    progress("done", message=f"Wrote {out_p}", chunk=n_chunks, total=n_chunks, **summary)
+    return summary
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser(description=__doc__)
+    ap.add_argument("--project", default=None)
+    ap.add_argument("--book", default=None, help="Path to book_full.txt (auto-built from PDF if missing)")
+    ap.add_argument("--out", default=None)
+    ap.add_argument("--model", default=os.environ.get("STAGE1_MODEL", "grok-4.5"))
+    ap.add_argument("--chunk-pages", type=int, default=10)
+    ap.add_argument("--total-minutes", type=int, default=90)
+    ap.add_argument("--resume", action="store_true", help="Load existing --out and continue")
+    ap.add_argument("--max-chunks", type=int, default=0, help="0 = all chunks")
+    ap.add_argument("--temperature", type=float, default=0.2)
+    ap.add_argument("--no-normalize", action="store_true")
+    args = ap.parse_args()
+
+    try:
+        summary = run_stage1_job(
+            project_id=args.project,
+            book_path=Path(args.book) if args.book else None,
+            out_path=Path(args.out) if args.out else None,
+            model=args.model,
+            chunk_pages=args.chunk_pages,
+            total_minutes=args.total_minutes,
+            resume=args.resume,
+            max_chunks=args.max_chunks,
+            temperature=args.temperature,
+            normalize=not args.no_normalize,
+        )
+    except Exception as e:
+        print(f"[Error] {e}", flush=True)
+        return 1
+
+    print(
+        f"[Success] scenes={summary['scenes']} chars={summary['characters']} "
+        f"locs={summary['locations']} runtime={summary['runtime_sec']}s",
+        flush=True,
+    )
+    if summary.get("hard_errors"):
         print("[Warn] Output written but verification found issues — review before Stage 2.")
         return 2
     print("[Success] Verification clean enough to proceed.")
