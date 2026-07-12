@@ -346,11 +346,22 @@ def convert_scene(
 
     beats = [beat_from_clip(c, i + 1) for i, c in enumerate(clips)]
 
+    lids = list(scene.get("location_ids") or [])
+    primary = scene.get("primary_location_id") or (lids[0] if lids else None)
+    # Propagate location_id onto beats when present on source clips
+    for beat, clip in zip(beats, clips):
+        if isinstance(beat, dict) and isinstance(clip, dict) and clip.get("location_id"):
+            beat["location_id"] = clip.get("location_id")
+        elif isinstance(beat, dict) and primary and not beat.get("location_id"):
+            beat["location_id"] = primary
+
     out: Dict[str, Any] = {
         "scene_number": scene.get("scene_number"),
         "scene_filename": scene.get("scene_filename")
         or f"Scene_{int(scene.get('scene_number') or 0):02d}",
         "setting": scene.get("setting") or "",
+        "location_ids": lids,
+        "primary_location_id": primary,
         "story_day": infer_story_day(scene.get("setting") or ""),
         "location_type": infer_location_type(scene.get("setting") or "", clips),
         "duration_target_seconds": int(
@@ -441,6 +452,7 @@ def main() -> int:
                 "total_runtime_target_seconds", 5400
             ),
             "character_seed_tokens": seeds,
+            "location_seed_tokens": gpv.get("location_seed_tokens") or {},
         },
         "scenes": [],
     }

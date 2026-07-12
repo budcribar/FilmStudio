@@ -22,19 +22,23 @@ A single JSON document the generation pipeline can load, shaped like:
   "movie_title": "...",              // copy from Stage 1
   "source_book_title": "...",
   "video_provider_profile": "grok|veo",
-  "global_production_variables": { ...copy from Stage 1, do not drop seeds... },
+  "global_production_variables": {
+    // copy from Stage 1 — keep character_seed_tokens AND location_seed_tokens
+  },
   "scenes": [
     {
       "scene_number": 1,
       "setting": "...",                 // copy / lightly tighten from Stage 1
+      "location_ids": ["Loc_Kirk_Apt"], // copy from Stage 1 (list OK in Phase 1)
+      "primary_location_id": "Loc_Kirk_Apt",
       "scene_filename": "...",
       "transition_type": "...",
       "lighting_continuity_token": "...",
       "total_estimated_duration_seconds": <exact sum of clip durations>,
-      "music_bed": { ... },             // expand music_intent into timed sections if needed
-      "veo_clips": [ ... ],             // REQUIRED clip array (name stable for pipeline)
-      "stage1_scene_number": 1,         // traceability
-      "stage1_beat_map": ["b1", "b1", "b2"]  // optional: which beats fed each clip
+      "music_bed": { ... },
+      "veo_clips": [ ... ],
+      "stage1_scene_number": 1,
+      "stage1_beat_map": ["b1", "b1", "b2"]
     }
   ]
 }
@@ -72,14 +76,14 @@ VIDEO PROVIDER PROFILES
 - First clip of scene
 - hard_cut, establishing, wide that resets space
 - flashback_enter / flashback_exit / return_to_present
-- location change
+- **location_id changes** between consecutive clips (different Loc_*)
 - big_action (kick, smash, punch, sprint, crash, throw, …)
 - new primary subject that last-frame i2v cannot invent
 - Stage 1 continuity is new_setup or return_to_present
 
 extend_previous ONLY if Stage 1 continuity is continuous_from_previous_beat
 AND action_class is hold | dialogue | small_motion
-AND same location / framing intent.
+AND same location_id / framing intent.
 
 ================================================================
 MAPPING BEATS → CLIPS
@@ -97,6 +101,11 @@ MAPPING BEATS → CLIPS
 7. Honor blocking_notes and must_not in visual_prompt and/or negative_prompt extras.
 8. delivery / speaker / dialogue from Stage 1 audio must be preserved (split dialogue across
    clips with ellipsis or clean phrase boundaries — do not rewrite meaning).
+9. **Location pin every clip:** set `location_id` to a Loc_* from the scene’s location_ids
+   (from beat.location_id when present; else primary_location_id / location_ids[0];
+   for multi-place scenes, advance location when the beat moves place).
+10. Inject `location_seed_tokens[location_id].visual_lock` (and short description) into
+    visual_prompt so the place stays consistent — same apartment/bar/gym across returns.
 
 ================================================================
 CLIP OBJECT (every veo_clips item)
@@ -105,6 +114,7 @@ Required:
 - clip_number (1-based)
 - timestamp (e.g. "00:00-00:08") matching duration
 - veo_continuation_source: "none" | "extend_previous"
+- **location_id** (Loc_* — pin for this take)
 - visual_prompt (ends with " / {resolution}, 24fps")
 - negative_prompt: EXACT global string:
   "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens, no name tags, no name badges, no embroidered names, no lower thirds, no personal names on clothing or props"
@@ -112,7 +122,8 @@ Required:
 - audio_payload: { speaker, dialogue, delivery }
 
 visual_prompt must:
-- State location feel, subject, action, wardrobe cues from seeds
+- **Open with place lock** from location_seed_tokens[location_id] (visual_lock / description)
+  then subject, action, wardrobe from character seeds
 - Be filmable progressive motion for action_class big_action
 - Include lips closed language for voiceover_internal
 - Include faces/OTS language when blocking_notes demand it
@@ -131,10 +142,17 @@ Expand Stage 1 music_intent into music_bed.song_structure whose durations sum to
 scene total_estimated_duration_seconds (±0). Keep style consistent with Stage 1.
 
 ================================================================
-CHARACTERS
+CHARACTERS & LOCATIONS
 ================================================================
 Copy global_production_variables.character_seed_tokens from Stage 1 unchanged
 (unless fixing a clear schema defect). Do not invent new speaking characters.
+
+Copy global_production_variables.location_seed_tokens from Stage 1 unchanged.
+Copy each scene’s location_ids / primary_location_id. Every veo_clip needs location_id.
+
+If Stage 1 multi-place scene has location_ids [A, B] without beat.location_id,
+use A for early beats and B when visual_event clearly moves (or keep A if unsure —
+never invent a third Loc_*).
 
 ================================================================
 PARTIAL DELIVERY
@@ -154,6 +172,8 @@ Validate before return:
 - Timestamps contiguous; totals match provider rules
 - negative_prompt exact base string (plus optional surgical extras)
 - delivery is one of spoken_on_camera | voiceover_internal | none
+- Every scene has location_ids[]; every clip has location_id in that set
+- location_seed_tokens present for every location_id used
 
 Also respect prompts/shared_rules.txt when present.
 

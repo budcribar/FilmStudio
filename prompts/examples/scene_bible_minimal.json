@@ -25,6 +25,14 @@
         "age_band": "child_12",
         "variant_of": "Character_N"
       }
+    },
+    "location_seed_tokens": {
+      "Loc_Kirk_Alley": {
+        "display_name": "Kirk Street alley",
+        "description": "Narrow brick alley behind walk-up; garbage cans; Mrs. Engel kitchen window",
+        "visual_lock": "Dusty summer alley, brick walls, dented garbage can lid bases, kitchen window at mid height",
+        "reference_image_placeholder": "assets/locations/loc_kirk_alley_ref.png"
+      }
     }
   },
   "scenes": [
@@ -32,6 +40,8 @@
       "scene_number": 2,
       "scene_filename": "Scene_02_Day1_Alley_Flashback",
       "setting": "Day 1 — Kirk Street alley flashback, summer daylight",
+      "location_ids": ["Loc_Kirk_Alley"],
+      "primary_location_id": "Loc_Kirk_Alley",
       "story_day": "Flashback summer, Nick ~12 / P ~8",
       "location_type": "flashback",
       "duration_target_seconds": 43,

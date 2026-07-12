@@ -194,6 +194,118 @@ def format_usd(amount: float, currency: str = "USD") -> str:
     return f"${amount:.2f}"
 
 
+def compute_video_job_usd(
+    config: Dict[str, Any],
+    *,
+    duration_sec: float,
+    resolution: Optional[str] = None,
+    has_ref_image: bool = False,
+    is_extend: bool = False,
+    attempts: float = 1.0,
+) -> Dict[str, Any]:
+    """
+    Price one completed video generation at configured list rates.
+    This is tracked actual spend (ledger), not a future estimate and not an xAI invoice.
+    """
+    cfg = dict(config)
+    if resolution:
+        cfg["resolution"] = resolution
+    rates = _rates_from_config(cfg)
+    duration = max(0.0, float(duration_sec))
+    attempts = max(1.0, float(attempts))
+    out_rate = _output_rate(cfg, rates)
+    video_out = duration * out_rate * attempts
+    ref_img = 0.0
+    if has_ref_image:
+        ref_img = float(rates.get("video_input_image") or 0) * attempts
+    extend_in = 0.0
+    if is_extend:
+        extend_in = duration * float(rates.get("video_input_per_sec") or 0) * attempts
+    total = video_out + ref_img + extend_in
+    return {
+        "duration_sec": duration,
+        "attempts": attempts,
+        "resolution": cfg.get("resolution"),
+        "output_rate_per_sec": out_rate,
+        "video_output_usd": round(video_out, 4),
+        "ref_image_usd": round(ref_img, 4),
+        "extend_input_usd": round(extend_in, 4),
+        "usd": round(total, 4),
+        "currency": rates.get("currency", "USD"),
+        "source": "list_rate",
+    }
+
+
+def compute_image_job_usd(
+    config: Dict[str, Any],
+    *,
+    n_images: int = 1,
+    quality: bool = True,
+) -> Dict[str, Any]:
+    rates = _rates_from_config(config)
+    n = max(0, int(n_images))
+    unit = float(
+        rates.get("image_output_quality" if quality else "image_output_standard") or 0.05
+    )
+    total = unit * n
+    return {
+        "n_images": n,
+        "unit_usd": unit,
+        "usd": round(total, 4),
+        "currency": rates.get("currency", "USD"),
+        "source": "list_rate",
+    }
+
+
+def summarize_cost_ledger(ledger: Optional[List[Dict[str, Any]]]) -> Dict[str, Any]:
+    """Aggregate tracked actual costs from pipeline_state.cost_ledger."""
+    events = ledger if isinstance(ledger, list) else []
+    total = 0.0
+    by_kind: Dict[str, float] = {}
+    by_scene: Dict[int, float] = {}
+    by_model: Dict[str, float] = {}
+    video_sec = 0.0
+    video_jobs = 0
+    image_jobs = 0
+    for e in events:
+        if not isinstance(e, dict):
+            continue
+        usd = float(e.get("usd") or 0)
+        total += usd
+        kind = str(e.get("kind") or "other")
+        by_kind[kind] = by_kind.get(kind, 0.0) + usd
+        sn = e.get("scene")
+        if sn is not None:
+            try:
+                si = int(sn)
+                by_scene[si] = by_scene.get(si, 0.0) + usd
+            except (TypeError, ValueError):
+                pass
+        model = str(e.get("model") or "")
+        if model:
+            by_model[model] = by_model.get(model, 0.0) + usd
+        if kind == "video":
+            video_jobs += 1
+            video_sec += float(e.get("duration_sec") or 0)
+        elif kind == "image":
+            image_jobs += 1
+    return {
+        "actual_usd": round(total, 2),
+        "event_count": len(events),
+        "video_jobs": video_jobs,
+        "image_jobs": image_jobs,
+        "video_sec": round(video_sec, 1),
+        "by_kind": {k: round(v, 2) for k, v in sorted(by_kind.items())},
+        "by_scene": {str(k): round(v, 2) for k, v in sorted(by_scene.items())},
+        "by_model": {k: round(v, 2) for k, v in sorted(by_model.items())},
+        "currency": "USD",
+        "notes": (
+            "Tracked actuals = list-rate pricing at generation time (cost_ledger). "
+            "Not xAI console invoices. Jobs before tracking need backfill."
+        ),
+    }
+
+
 def _config_with(
     base: Dict[str, Any],
     *,
@@ -225,6 +337,7 @@ def film_budget_report(
     draft_resolution: Optional[str] = None,
     hero_resolution: str = "720p",
     include_hero_upgrade: bool = True,
+    cost_ledger: Optional[List[Dict[str, Any]]] = None,
 ) -> Dict[str, Any]:
     """
     Full-film planning report.
@@ -235,11 +348,18 @@ def film_budget_report(
     remaining_hero: cost to hero-regen all non-hero scenes (on-disk clips) at hero_resolution
     total_if_finish_draft: spent + remaining_first_pass
     total_if_finish_hero: spent + remaining_first_pass + remaining_hero (approx)
+    actual_*: tracked list-rate ledger totals (when cost_ledger provided)
     """
     draft_resolution = draft_resolution or str(config.get("resolution") or "480p")
     hero_by_scene = hero_by_scene or {}
     draft_cfg = _config_with(config, resolution=draft_resolution)
     hero_cfg = _config_with(config, resolution=hero_resolution)
+    ledger_summary = summarize_cost_ledger(cost_ledger)
+    actual_by_scene = {
+        int(k): float(v)
+        for k, v in (ledger_summary.get("by_scene") or {}).items()
+        if str(k).isdigit()
+    }
 
     rows: List[Dict[str, Any]] = []
     spent = 0.0
@@ -303,6 +423,7 @@ def film_budget_report(
         sec_on_disk += float(est_spent.get("total_duration_sec") or 0)
         sec_missing += float(est_missing.get("total_duration_sec") or 0)
 
+        actual_scene = float(actual_by_scene.get(sn) or 0)
         rows.append(
             {
                 "scene": sn,
@@ -313,6 +434,7 @@ def film_budget_report(
                 "is_hero": is_hero,
                 "hero_resolution": (hero or {}).get("resolution"),
                 "spent_usd": float(est_spent.get("total_usd") or 0),
+                "actual_usd": round(actual_scene, 2),
                 "remaining_draft_usd": float(est_missing.get("total_usd") or 0),
                 "hero_upgrade_usd": float(est_hero.get("total_usd") or 0),
                 "all_draft_usd": float(est_all_draft.get("total_usd") or 0),
@@ -323,6 +445,7 @@ def film_budget_report(
         )
 
     rows.sort(key=lambda r: r["scene"])
+    actual_total = float(ledger_summary.get("actual_usd") or 0)
     return {
         "draft_resolution": draft_resolution,
         "hero_resolution": hero_resolution,
@@ -338,10 +461,16 @@ def film_budget_report(
             "sec_on_disk": round(sec_on_disk, 1),
             "sec_missing": round(sec_missing, 1),
             "spent_usd": round(spent, 2),
+            "actual_usd": round(actual_total, 2),
+            "actual_events": ledger_summary.get("event_count", 0),
+            "actual_video_jobs": ledger_summary.get("video_jobs", 0),
+            "actual_video_sec": ledger_summary.get("video_sec", 0),
             "remaining_first_pass_usd": round(remaining_draft, 2),
             "remaining_hero_upgrade_usd": round(remaining_hero, 2),
             "finish_draft_usd": round(spent + remaining_draft, 2),
             "finish_draft_plus_hero_usd": round(spent + remaining_draft + remaining_hero, 2),
+            # Forward look using tracked actual as base when ledger present
+            "finish_from_actual_usd": round(actual_total + remaining_draft, 2),
             "full_film_all_draft_usd": round(total_all_draft, 2),
             "full_film_all_hero_usd": round(total_all_hero, 2),
             "scenes_with_media": sum(1 for r in rows if r["clips_on_disk"] > 0),
@@ -349,9 +478,11 @@ def film_budget_report(
             "scenes_total": len(rows),
         },
         "scenes": rows,
+        "actual": ledger_summary,
         "notes": (
-            "Estimates only (list rates). Spent assumes on-disk clips cost what the "
-            "selected draft/hero rates would charge — not actual invoice history."
+            "Estimates = planning (current rates × scope). "
+            "Actual = cost_ledger at list rates when each job completed (not xAI invoice PDF). "
+            "Backfill historical jobs from the Cost page if actual is low."
         ),
     }
 

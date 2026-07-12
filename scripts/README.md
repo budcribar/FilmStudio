@@ -32,3 +32,17 @@ python scripts/two_stage_adaptation/stage2_plan_grok.py
 ```
 
 See `prompts/` for schema and operator prompts; `docs/two_stage_adaptation/README.md` for workflow.
+
+## Location inventory + pins
+
+```bash
+# 1) Cluster settings → Loc_* inventory
+python scripts/inventory_locations.py
+
+# 2) Apply pins into Stage 1 + Stage 2 JSON (location_seed_tokens, location_ids, clip.location_id)
+python scripts/two_stage_adaptation/apply_location_pins.py
+```
+
+Writes / updates under `projects/<active>/`:
+- `location_inventory.json` / `.md`
+- `nickandme.scenes.json`, `nickandme.clips.grok.json` (with timestamped `.bak_loc_*`)

@@ -83,6 +83,24 @@
             }
           }
         },
+        "location_seed_tokens": {
+          "type": "object",
+          "description": "Stable Loc_* place seeds (architecture/props locks for Stage 2)",
+          "additionalProperties": {
+            "type": "object",
+            "required": ["display_name", "description"],
+            "properties": {
+              "display_name": { "type": "string" },
+              "description": { "type": "string" },
+              "visual_lock": {
+                "type": "string",
+                "description": "Filmable constants Stage 2 injects into visual_prompt"
+              },
+              "reference_image_placeholder": { "type": "string" },
+              "era_notes": { "type": "string" }
+            }
+          }
+        },
         "spoiler_register": {
           "type": "array",
           "description": "Global list of withhold/reveal items Stage 2 and verifier enforce",
@@ -145,6 +163,16 @@
         "setting": {
           "type": "string",
           "description": "Human-readable place + time (not a shot list)."
+        },
+        "location_ids": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string" },
+          "description": "Ordered Loc_* pins for this scene (Phase 1 may list multiple places)."
+        },
+        "primary_location_id": {
+          "type": "string",
+          "description": "Dominant Loc_*; defaults to location_ids[0] if omitted."
         },
         "story_day": {
           "type": "string",
@@ -263,6 +291,10 @@
         "primary_subject": {
           "type": "string",
           "description": "Character_* token that should identity-lock first in visual prompts."
+        },
+        "location_id": {
+          "type": "string",
+          "description": "Loc_* for this beat when the scene has multiple location_ids."
         },
         "blocking_notes": {
           "type": "string",

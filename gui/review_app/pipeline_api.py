@@ -5,6 +5,7 @@ Project-aware: all I/O is relative to the active project directory.
 from __future__ import annotations
 
 import os
+import re
 import sys
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
@@ -47,6 +48,7 @@ from review_app.cost_estimate import (  # noqa: E402
     film_budget_report,
     format_usd,
     scenario_compare,
+    summarize_cost_ledger,
 )
 
 _engine: Optional[AgenticGenerationEngine] = None
@@ -707,6 +709,73 @@ def _index_clips_by_character() -> Dict[str, List[Tuple[int, int]]]:
     return index
 
 
+def character_display_name(key: str, info: Optional[Dict[str, Any]] = None) -> str:
+    """
+    Human-facing cast name for the GUI (director view).
+    Technical seed key stays for refs / pipeline; video prompts still use tokens.
+
+    For Character_P (Nick's brother): prefer canonical_given_name (book reveal),
+    then a non-technical voice_label — never show bare "P" / "Narrator" if we can
+    avoid it.
+    """
+    info = info if isinstance(info, dict) else {}
+    label = (info.get("voice_label") or "").strip()
+    canonical = (info.get("canonical_given_name") or "").strip()
+    low_label = label.lower()
+    is_p_token = key == "Character_P" or key.startswith("Character_P_")
+
+    def _with_age(base: str) -> str:
+        b = (base or "").strip()
+        if not b:
+            return b
+        if key.endswith("_Young") or "child" in low_label:
+            if re.search(r"\b(young|child)\b", b, re.I):
+                return b
+            return f"{b} (young)"
+        if key.endswith("_Teen") or "teen" in low_label:
+            if re.search(r"\bteen\b", b, re.I):
+                return b
+            return f"{b} (teen)"
+        return b
+
+    def _is_technical_label(s: str) -> bool:
+        s = (s or "").strip()
+        if not s or s == key or s.startswith("Character_"):
+            return True
+        if re.fullmatch(r"[A-Za-z]", s):
+            return True
+        # "P (narrator…)", "P as child", bare "Narrator" as generic role
+        if re.match(r"^p\b", s, re.I) and (
+            "narrator" in s.lower() or s.lower() in ("p", "p as child", "p as teen")
+        ):
+            return True
+        if s.lower() in ("narrator", "the narrator"):
+            return True
+        return False
+
+    # 1) Book given name (director may know it; video still withholds until reveal)
+    if canonical:
+        return _with_age(canonical)
+
+    # 2) Friendly voice_label
+    if label and not _is_technical_label(label):
+        return label
+
+    # 3) Character_P family — Nick's brother (not "Narrator")
+    if is_p_token:
+        return _with_age("Nick's brother")
+
+    # 4) Strip Character_ prefix
+    if key.startswith("Character_"):
+        rest = key[len("Character_") :]
+        if rest.endswith("_Young"):
+            return f"{rest[: -len('_Young')]} (young)"
+        if rest.endswith("_Teen"):
+            return f"{rest[: -len('_Teen')]} (teen)"
+        return rest
+    return key
+
+
 def list_characters(*, light: bool = False) -> List[Dict[str, Any]]:
     eng = get_engine()
     seeds = eng.blueprint.get("global_production_variables", {}).get(
@@ -722,6 +791,8 @@ def list_characters(*, light: bool = False) -> List[Dict[str, Any]]:
 
     rows = []
     for key, info in seeds.items():
+        if not isinstance(info, dict):
+            info = {}
         ref = eng.character_ref_path(key)
         variants = [
             p for p in eng.character_variant_paths(key) if os.path.isfile(p)
@@ -729,12 +800,17 @@ def list_characters(*, light: bool = False) -> List[Dict[str, Any]]:
         hits = index.get(key) or []
         rev_entry = (eng.state.get("character_revisions") or {}).get(key) or {}
         stale_for_char = stale_by_char.get(key) or []
+        display = character_display_name(key, info)
         rows.append(
             {
                 "key": key,
+                "display_name": display,
+                "name": display,  # alias for UI
                 "description": info.get("description", ""),
                 "age_band": info.get("age_band"),
                 "variant_of": info.get("variant_of"),
+                "display_name_policy": info.get("display_name_policy") or "",
+                "canonical_given_name": info.get("canonical_given_name") or "",
                 "ref_path": ref,
                 "locked": os.path.isfile(ref),
                 "variants": variants,
@@ -752,11 +828,12 @@ def list_characters(*, light: bool = False) -> List[Dict[str, Any]]:
 
     def sort_key(r):
         k = r["key"]
+        name = (r.get("display_name") or k).lower()
         if k.endswith("_Young"):
-            return (1, k)
+            return (1, name, k)
         if k.endswith("_Teen"):
-            return (2, k)
-        return (0, k)
+            return (2, name, k)
+        return (0, name, k)
 
     return sorted(rows, key=sort_key)
 
@@ -1147,6 +1224,7 @@ def film_cost_report(
         hero_by_scene=hero_by,
         draft_resolution=draft_resolution or str(eng.config.get("resolution") or "720p"),
         hero_resolution=hero_resolution,
+        cost_ledger=eng.get_cost_ledger(),
     )
 
 
@@ -1160,3 +1238,30 @@ def cost_scenario_compare(
         scenarios,
         on_disk_by_scene=_on_disk_maps(),
     )
+
+
+def actual_cost_summary() -> Dict[str, Any]:
+    eng = get_engine()
+    summary = summarize_cost_ledger(eng.get_cost_ledger())
+    totals = eng.state.get("cost_totals") if isinstance(eng.state, dict) else {}
+    summary["state_totals"] = totals if isinstance(totals, dict) else {}
+    return summary
+
+
+def backfill_actual_costs() -> Dict[str, Any]:
+    """Infer ledger entries for on-disk clips that predate tracking."""
+    eng = get_engine()
+    result = eng.backfill_cost_ledger_from_completed_jobs(only_missing=True)
+    edit_log.add_entry(
+        "cost_backfill",
+        user_note=f"Backfilled {result.get('added')} cost ledger events",
+        action_taken=str(result),
+        learning_layer="engine",
+        targets=["pipeline_state.json"],
+    )
+    return result
+
+
+def recent_cost_events(limit: int = 50) -> List[Dict[str, Any]]:
+    ledger = get_engine().get_cost_ledger()
+    return list(reversed(ledger[-max(1, int(limit)) :]))

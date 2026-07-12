@@ -601,6 +601,237 @@ class AgenticGenerationEngine:
         job["updated_at"] = time.strftime("%Y-%m-%dT%H:%M:%S")
         self.save_state()
 
+    def _record_cost_event(self, event: Dict[str, Any], *, save: bool = True) -> Dict[str, Any]:
+        """
+        Append a billable generation to pipeline_state.cost_ledger.
+        USD is list-rate pricing at event time (not an xAI console invoice line).
+        """
+        ledger = self.state.setdefault("cost_ledger", [])
+        if not isinstance(ledger, list):
+            ledger = []
+            self.state["cost_ledger"] = ledger
+        row = dict(event)
+        row.setdefault("id", f"{int(time.time())}_{len(ledger):04d}")
+        row.setdefault("ts", time.strftime("%Y-%m-%dT%H:%M:%S"))
+        row.setdefault("currency", "USD")
+        row.setdefault("source", "list_rate")
+        ledger.append(row)
+        # Cap growth (keep last 20k events)
+        if len(ledger) > 20000:
+            self.state["cost_ledger"] = ledger[-20000:]
+        totals = self.state.setdefault("cost_totals", {})
+        if not isinstance(totals, dict):
+            totals = {}
+            self.state["cost_totals"] = totals
+        totals["usd"] = round(float(totals.get("usd") or 0) + float(row.get("usd") or 0), 4)
+        totals["events"] = int(totals.get("events") or 0) + 1
+        totals["updated_at"] = row["ts"]
+        if save:
+            self.save_state()
+        return row
+
+    def _import_cost_helpers(self):
+        """Load list-rate pricing helpers (gui/review_app) with fallback path bootstrap."""
+        try:
+            from review_app.cost_estimate import (  # type: ignore
+                compute_image_job_usd,
+                compute_video_job_usd,
+            )
+
+            return compute_video_job_usd, compute_image_job_usd
+        except ImportError:
+            gui = Path(__file__).resolve().parent.parent / "gui"
+            g = str(gui)
+            if g not in sys.path:
+                sys.path.insert(0, g)
+            from review_app.cost_estimate import (  # type: ignore
+                compute_image_job_usd,
+                compute_video_job_usd,
+            )
+
+            return compute_video_job_usd, compute_image_job_usd
+
+    def record_video_generation_cost(
+        self,
+        *,
+        scene_num: int,
+        clip_num: int,
+        duration_sec: float,
+        resolution: str,
+        model: str,
+        has_ref_image: bool,
+        is_extend: bool,
+        request_id: str = "",
+        extra: Optional[Dict[str, Any]] = None,
+    ) -> Dict[str, Any]:
+        """Price and store one completed video job using cost_estimates list rates."""
+        try:
+            compute_video_job_usd, _ = self._import_cost_helpers()
+            priced = compute_video_job_usd(
+                self.config,
+                duration_sec=duration_sec,
+                resolution=resolution,
+                has_ref_image=has_ref_image,
+                is_extend=is_extend,
+            )
+        except Exception:
+            res = str(resolution or self.config.get("resolution") or "720p").lower()
+            table = (self.config.get("cost_estimates") or {}).get("video_output_per_sec") or {
+                "480p": 0.05,
+                "720p": 0.07,
+                "1080p": 0.25,
+            }
+            out_rate = float(table.get(res, table.get("720p", 0.07)))
+            duration = max(0.0, float(duration_sec))
+            video_out = duration * out_rate
+            ref = 0.002 if has_ref_image else 0.0
+            ext = duration * 0.01 if is_extend else 0.0
+            priced = {
+                "duration_sec": duration,
+                "resolution": res,
+                "output_rate_per_sec": out_rate,
+                "video_output_usd": round(video_out, 4),
+                "ref_image_usd": round(ref, 4),
+                "extend_input_usd": round(ext, 4),
+                "usd": round(video_out + ref + ext, 4),
+                "currency": "USD",
+                "source": "list_rate",
+            }
+        event = {
+            "kind": "video",
+            "scene": int(scene_num),
+            "clip": int(clip_num),
+            "model": model,
+            "request_id": request_id or "",
+            "has_ref_image": bool(has_ref_image),
+            "is_extend": bool(is_extend),
+            **priced,
+        }
+        if extra:
+            event["extra"] = extra
+        row = self._record_cost_event(event)
+        print(
+            f"  [Cost] Tracked actual S{scene_num}C{clip_num}: "
+            f"${float(row.get('usd') or 0):.4f} "
+            f"({row.get('duration_sec')}s @ {row.get('resolution')}, list rate)"
+        )
+        return row
+
+    def record_image_generation_cost(
+        self,
+        *,
+        n_images: int,
+        model: str,
+        character: str = "",
+        quality: bool = True,
+    ) -> Dict[str, Any]:
+        try:
+            _, compute_image_job_usd = self._import_cost_helpers()
+            priced = compute_image_job_usd(self.config, n_images=n_images, quality=quality)
+        except Exception:
+            unit = 0.05 if quality else 0.02
+            priced = {
+                "n_images": int(n_images),
+                "unit_usd": unit,
+                "usd": round(unit * max(0, int(n_images)), 4),
+                "currency": "USD",
+                "source": "list_rate",
+            }
+        event = {
+            "kind": "image",
+            "model": model,
+            "character": character,
+            **priced,
+        }
+        row = self._record_cost_event(event)
+        print(
+            f"  [Cost] Tracked actual image gen: ${float(row.get('usd') or 0):.4f} "
+            f"({n_images} img, {character or model})"
+        )
+        return row
+
+    def get_cost_ledger(self) -> List[Dict[str, Any]]:
+        ledger = self.state.get("cost_ledger")
+        return list(ledger) if isinstance(ledger, list) else []
+
+    def backfill_cost_ledger_from_completed_jobs(self, *, only_missing: bool = True) -> Dict[str, Any]:
+        """
+        Infer ledger rows for completed video jobs that predate tracking.
+        Uses current list rates × job/blueprint duration (source=backfill).
+        """
+        ledger = self.get_cost_ledger()
+        seen = set()
+        for e in ledger:
+            if e.get("kind") != "video":
+                continue
+            try:
+                seen.add((int(e.get("scene")), int(e.get("clip")), str(e.get("request_id") or "")))
+                seen.add((int(e.get("scene")), int(e.get("clip")), ""))  # clip-level
+            except (TypeError, ValueError):
+                pass
+
+        added = 0
+        skipped = 0
+        for scene in self.blueprint.get("scenes") or []:
+            sn = int(scene.get("scene_number") or 0)
+            for clip in scene.get("veo_clips") or []:
+                cn = int(clip.get("clip_number") or 0)
+                path = clip_output_path(sn, cn)
+                if not file_is_usable(path, min_bytes=1024):
+                    skipped += 1
+                    continue
+                job = (self.state.get("clip_jobs") or {}).get(self._clip_job_key(sn, cn)) or {}
+                if only_missing and ((sn, cn, "") in seen or (sn, cn, str(job.get("request_id") or "")) in seen):
+                    skipped += 1
+                    continue
+                # duration
+                duration = float(self.config.get("duration_seconds") or 8)
+                ts = str(clip.get("timestamp") or "")
+                m_ts = re.match(r"^\s*(\d+):(\d{2})\s*-\s*(\d+):(\d{2})\s*$", ts)
+                if m_ts:
+                    a = int(m_ts.group(1)) * 60 + int(m_ts.group(2))
+                    b = int(m_ts.group(3)) * 60 + int(m_ts.group(4))
+                    if b > a:
+                        duration = float(b - a)
+                cont = str(clip.get("veo_continuation_source") or "none").lower()
+                is_extend = cont == "extend_previous"
+                has_ref = True  # typical locked-cast pipeline
+                res = str(
+                    job.get("resolution")
+                    or (self.state.get("scene_hero") or {}).get(str(sn), {}).get("resolution")
+                    or self.config.get("resolution")
+                    or "720p"
+                )
+                model = str(job.get("model") or self.config.get("model_name") or "grok-imagine-video")
+                try:
+                    compute_video_job_usd, _ = self._import_cost_helpers()
+                    priced = compute_video_job_usd(
+                        self.config,
+                        duration_sec=duration,
+                        resolution=res,
+                        has_ref_image=has_ref,
+                        is_extend=is_extend,
+                    )
+                except Exception:
+                    priced = {"usd": 0.0, "duration_sec": duration, "resolution": res}
+                event = {
+                    "kind": "video",
+                    "scene": sn,
+                    "clip": cn,
+                    "model": model,
+                    "request_id": job.get("request_id") or "",
+                    "has_ref_image": has_ref,
+                    "is_extend": is_extend,
+                    "source": "backfill",
+                    **{k: v for k, v in priced.items() if k != "source"},
+                    "extra": {"backfill": True},
+                }
+                self._record_cost_event(event, save=False)
+                seen.add((sn, cn, ""))
+                added += 1
+        self.save_state()
+        return {"added": added, "skipped": skipped, "ledger_events": len(self.get_cost_ledger())}
+
     def _download_to_path(self, url: str, output_path: str, retries: int = 5,
                           timeout: int = 300, label: str = "asset") -> None:
         """
@@ -699,6 +930,15 @@ class AgenticGenerationEngine:
             raise GenerationFailure(
                 f"Grok image API returned {len(images)}/{n} usable images: {result}"
             )
+        try:
+            quality = "quality" in str(model_name).lower()
+            self.record_image_generation_cost(
+                n_images=len(images[:n]),
+                model=str(model_name),
+                quality=quality,
+            )
+        except Exception as cost_err:
+            print(f"  [Cost Warning] Could not record image cost: {cost_err}")
         return images[:n]
 
     def _imagen_generate_image_variants(self, prompt: str, n: int = 3) -> List[bytes]:
@@ -2685,6 +2925,8 @@ class AgenticGenerationEngine:
             # Guarantee audible spoken lines (Grok often returns ambient-only beds)
             self._ensure_dialogue_audio(output_clip_path, clip)
             has_audio = self._video_has_audio(output_clip_path)
+            has_ref_image = bool(payload.get("image") or payload.get("reference_images"))
+            is_extend = bool(use_continuation)
             self._update_clip_job(
                 scene_num, clip_num,
                 status="complete",
@@ -2694,8 +2936,25 @@ class AgenticGenerationEngine:
                 has_audio=has_audio,
                 dialogue_audio_ensured=True,
                 audio_bytes=audio_stats.get("audio_bytes"),
+                model=resolved_model,
+                resolution=str(payload.get("resolution") or self.config.get("resolution")),
+                duration_sec=duration,
             )
             self.clear_clip_stale(scene_num, clip_num)
+            # Billable generation completed (new submit + download) — track list-rate actual
+            try:
+                self.record_video_generation_cost(
+                    scene_num=scene_num,
+                    clip_num=clip_num,
+                    duration_sec=float(duration),
+                    resolution=str(payload.get("resolution") or self.config.get("resolution") or "720p"),
+                    model=str(resolved_model),
+                    has_ref_image=has_ref_image,
+                    is_extend=is_extend,
+                    request_id=str(request_id or ""),
+                )
+            except Exception as cost_err:
+                print(f"  [Cost Warning] Could not record actual cost: {cost_err}")
         except (PipelineInterrupted, KeyboardInterrupt):
             # Keep submitted request_id in clip_jobs so resume can re-poll/download
             self._update_clip_job(

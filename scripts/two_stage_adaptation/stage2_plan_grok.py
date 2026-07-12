@@ -181,16 +181,47 @@ def _neg_extras(beat: Dict[str, Any]) -> str:
     return ", ".join(out)
 
 
+def _location_lock_phrase(
+    scene: Dict[str, Any],
+    beat: Dict[str, Any],
+    location_seeds: Optional[Dict[str, Any]] = None,
+) -> str:
+    """Short place pin from location_seed_tokens for visual_prompt prefix."""
+    location_seeds = location_seeds or {}
+    lids = scene.get("location_ids") or []
+    lid = (
+        beat.get("location_id")
+        or scene.get("primary_location_id")
+        or (lids[0] if lids else "")
+    )
+    if not lid:
+        return ""
+    seed = location_seeds.get(lid) or {}
+    lock = (seed.get("visual_lock") or seed.get("description") or seed.get("display_name") or lid).strip()
+    if not lock:
+        return lid
+    # Keep short for prompt budget
+    if len(lock) > 120:
+        lock = lock[:117].rsplit(" ", 1)[0] + "…"
+    return lock
+
+
 def _build_visual_prompt(
     beat: Dict[str, Any],
     scene: Dict[str, Any],
     resolution: str,
+    location_seeds: Optional[Dict[str, Any]] = None,
 ) -> str:
     ve = (beat.get("visual_event") or "").strip()
     # strip old tech suffix
     ve = re.sub(r"\s*/\s*\d+p.*$", "", ve, flags=re.I).strip()
 
     bits: List[str] = []
+    # Place pin first (location consistency)
+    place = _location_lock_phrase(scene, beat, location_seeds)
+    if place and place.lower() not in ve.lower()[:100]:
+        bits.append(place)
+
     primary = beat.get("primary_subject")
     # Ensure primary Character_* early for identity lock
     if primary and primary not in ve[:80]:
@@ -294,14 +325,20 @@ def _music_bed(scene: Dict[str, Any], total: int) -> Dict[str, Any]:
 
 
 def plan_scene(
-    scene: Dict[str, Any], resolution: str = "720p"
+    scene: Dict[str, Any],
+    resolution: str = "720p",
+    location_seeds: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
     beats = scene.get("story_beats") or []
+    lids = list(scene.get("location_ids") or [])
+    primary = scene.get("primary_location_id") or (lids[0] if lids else None)
     if not beats:
         # empty scene placeholder
         return {
             "scene_number": scene.get("scene_number"),
             "setting": scene.get("setting"),
+            "location_ids": lids,
+            "primary_location_id": primary,
             "scene_filename": scene.get("scene_filename"),
             "transition_type": scene.get("transition_type") or "cut",
             "lighting_continuity_token": scene.get("lighting_continuity_token") or "",
@@ -320,10 +357,19 @@ def plan_scene(
     clips: List[Dict[str, Any]] = []
     beat_map: List[str] = []
     t = 0
+    prev_lid: Optional[str] = None
     for i, (beat, dur) in enumerate(zip(beats, durs)):
+        lid = (
+            beat.get("location_id")
+            or primary
+            or (lids[0] if lids else None)
+        )
         cont = "none" if _force_none(beat, i) else "extend_previous"
         # never extend after big_action even if continuity says continuous
         if (beat.get("action_class") or "").lower() == "big_action":
+            cont = "none"
+        # location change forces hard cut
+        if prev_lid and lid and lid != prev_lid:
             cont = "none"
 
         neg = GLOBAL_NEGATIVE
@@ -331,7 +377,7 @@ def plan_scene(
         if extra:
             neg = f"{neg}, {extra}"
 
-        vp = _build_visual_prompt(beat, scene, resolution)
+        vp = _build_visual_prompt(beat, scene, resolution, location_seeds=location_seeds)
         # Special polish for known failure modes: continuous window smash
         if (beat.get("action_class") or "") == "big_action" and re.search(
             r"window|smash|kickball|kick", vp, re.I
@@ -349,6 +395,7 @@ def plan_scene(
             "clip_number": i + 1,
             "timestamp": _ts(t, t + dur),
             "veo_continuation_source": cont,
+            "location_id": lid,
             "visual_prompt": vp,
             "negative_prompt": neg,
             "audio_payload": _build_audio_payload(beat),
@@ -358,10 +405,13 @@ def plan_scene(
         clips.append(clip)
         beat_map.append(str(beat.get("beat_id") or f"b{i+1}"))
         t += dur
+        prev_lid = lid
 
     return {
         "scene_number": scene.get("scene_number"),
         "setting": scene.get("setting"),
+        "location_ids": lids,
+        "primary_location_id": primary,
         "scene_filename": scene.get("scene_filename"),
         "transition_type": scene.get("transition_type") or "cut",
         "lighting_continuity_token": scene.get("lighting_continuity_token") or "",
@@ -378,12 +428,29 @@ def plan_scene(
 
 def validate_plan(plan: Dict[str, Any]) -> List[str]:
     errs: List[str] = []
+    seeds = (plan.get("global_production_variables") or {}).get("location_seed_tokens") or {}
     for sc in plan.get("scenes") or []:
         clips = sc.get("veo_clips") or []
+        lids = sc.get("location_ids") or []
         total = int(sc.get("total_estimated_duration_seconds") or 0)
         ssum = 0
         prev_end = 0
         for c in clips:
+            lid = c.get("location_id")
+            if not lid:
+                errs.append(
+                    f"S{sc.get('scene_number')}C{c.get('clip_number')}: missing location_id"
+                )
+            elif lids and lid not in lids:
+                errs.append(
+                    f"S{sc.get('scene_number')}C{c.get('clip_number')}: "
+                    f"location_id {lid} not in scene location_ids"
+                )
+            elif seeds and lid not in seeds and lid != "Loc_Unknown":
+                errs.append(
+                    f"S{sc.get('scene_number')}C{c.get('clip_number')}: "
+                    f"location_id {lid} missing from location_seed_tokens"
+                )
             ts = c.get("timestamp") or ""
             m = re.match(r"(\d+):(\d+)-(\d+):(\d+)", ts)
             if not m:
@@ -538,8 +605,15 @@ def main() -> int:
     if want is not None:
         scenes_in = [s for s in scenes_in if int(s.get("scene_number") or 0) in set(want)]
 
+    gpv = stage1.get("global_production_variables") or {}
+    loc_seeds = gpv.get("location_seed_tokens") or {}
     planned_scenes = [
-        plan_scene(s, resolution=args.resolution.strip() or "720p") for s in scenes_in
+        plan_scene(
+            s,
+            resolution=args.resolution.strip() or "720p",
+            location_seeds=loc_seeds,
+        )
+        for s in scenes_in
     ]
 
     plan: Dict[str, Any] = {
@@ -547,7 +621,7 @@ def main() -> int:
         "movie_title": stage1.get("movie_title"),
         "source_book_title": stage1.get("source_book_title"),
         "video_provider_profile": "grok",
-        "global_production_variables": stage1.get("global_production_variables") or {},
+        "global_production_variables": gpv,
         "scenes": planned_scenes,
         "stage2_meta": {
             "source_stage1": stage1_path.name,

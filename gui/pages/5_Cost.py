@@ -6,10 +6,10 @@ import streamlit as st
 from review_app import pipeline_api as api
 
 st.set_page_config(page_title="Cost", page_icon="💰", layout="wide")
-st.title("💰 Cost estimator")
+st.title("💰 Cost")
 st.caption(
-    "Planning estimates from list rates in `pipeline_config.cost_estimates` — "
-    "not xAI invoices. Spent assumes on-disk clips cost what current rates would charge."
+    "**Actual** = tracked list-rate spend when each job finished (`pipeline_state.cost_ledger`). "
+    "**Estimates** = planning with current rates × scope. Neither is the xAI billing console PDF."
 )
 
 try:
@@ -103,8 +103,69 @@ finally:
     eng.config["cost_estimates"] = _prev["cost_estimates"]
 
 summary = report.get("summary") or {}
+actual = report.get("actual") or {}
 st.divider()
-st.subheader("Film summary")
+st.subheader("Actual (tracked)")
+st.caption(actual.get("notes") or report.get("notes") or "")
+a1, a2, a3, a4 = st.columns(4)
+a1.metric("Actual total", f"${summary.get('actual_usd', 0):.2f}")
+a2.metric("Ledger events", summary.get("actual_events", 0))
+a3.metric("Video jobs", summary.get("actual_video_jobs", 0))
+a4.metric("Video seconds billed", summary.get("actual_video_sec", 0))
+if actual.get("by_kind"):
+    st.caption(
+        "By kind: "
+        + ", ".join(f"{k}=${v:.2f}" for k, v in (actual.get("by_kind") or {}).items())
+    )
+if actual.get("by_model"):
+    st.caption(
+        "By model: "
+        + ", ".join(f"`{k}` ${v:.2f}" for k, v in (actual.get("by_model") or {}).items())
+    )
+
+bc1, bc2 = st.columns(2)
+with bc1:
+    if st.button(
+        "Backfill actuals from on-disk clips",
+        help="Infer one ledger row per existing clip that has no tracked event yet (list rates).",
+    ):
+        try:
+            result = api.backfill_actual_costs()
+            st.success(
+                f"Added {result.get('added')} events "
+                f"(skipped {result.get('skipped')}); "
+                f"ledger size {result.get('ledger_events')}"
+            )
+            st.rerun()
+        except Exception as e:
+            st.error(str(e))
+with bc2:
+    with st.expander("Recent ledger events", expanded=False):
+        events = api.recent_cost_events(40)
+        if not events:
+            st.info("No ledger events yet — generate a clip or run backfill.")
+        else:
+            st.dataframe(
+                [
+                    {
+                        "ts": e.get("ts"),
+                        "kind": e.get("kind"),
+                        "S": e.get("scene"),
+                        "C": e.get("clip"),
+                        "sec": e.get("duration_sec"),
+                        "res": e.get("resolution"),
+                        "usd": e.get("usd"),
+                        "src": e.get("source"),
+                        "model": (e.get("model") or "")[:28],
+                    }
+                    for e in events
+                ],
+                hide_index=True,
+                use_container_width=True,
+            )
+
+st.divider()
+st.subheader("Estimates (planning)")
 st.caption(
     f"Provider/model for rates: **{report.get('video_provider')}** / `{report.get('model_name')}` · "
     f"Draft ${report.get('output_rate_draft')}/sec · Hero ${report.get('output_rate_hero')}/sec · "
@@ -113,18 +174,23 @@ st.caption(
 
 m1, m2, m3, m4 = st.columns(4)
 m1.metric("Clips on disk", f"{summary.get('clips_on_disk')}/{summary.get('clips_total')}")
-m2.metric("Est. spent (on disk)", f"${summary.get('spent_usd', 0):.2f}")
+m2.metric(
+    "Est. spent (on disk)",
+    f"${summary.get('spent_usd', 0):.2f}",
+    help="If every on-disk clip cost current rates once (ignores retries/history).",
+)
 m3.metric("Remaining first pass", f"${summary.get('remaining_first_pass_usd', 0):.2f}")
 m4.metric("Hero upgrades left", f"${summary.get('remaining_hero_upgrade_usd', 0):.2f}")
 
 m5, m6, m7, m8 = st.columns(4)
 m5.metric(
-    "Finish draft (spent + missing)",
+    "Finish draft (est spent + missing)",
     f"${summary.get('finish_draft_usd', 0):.2f}",
 )
 m6.metric(
-    "Finish draft + hero rest",
-    f"${summary.get('finish_draft_plus_hero_usd', 0):.2f}",
+    "Finish from actual + missing",
+    f"${summary.get('finish_from_actual_usd', 0):.2f}",
+    help="Tracked actual so far + estimate for clips not yet on disk",
 )
 m7.metric(
     f"Full film @ {draft_res} (all clips)",
@@ -246,7 +312,8 @@ st.dataframe(
             "clips": f"{r['clips_on_disk']}/{r['clips_total']}",
             "missing": r["clips_missing"],
             "hero": r.get("hero_resolution") or ("⭐" if r["is_hero"] else ""),
-            "spent $": r["spent_usd"],
+            "actual $": r.get("actual_usd", 0),
+            "est spent $": r["spent_usd"],
             "remaining draft $": r["remaining_draft_usd"],
             "hero upgrade $": r["hero_upgrade_usd"],
             f"all @ {draft_res} $": r["all_draft_usd"],
@@ -287,14 +354,14 @@ st.divider()
 st.markdown(
     """
 ### How to read this
-| Column | Meaning |
-|--------|---------|
-| **Spent** | Est. cost of clips already on disk (draft rates, or hero rate if ⭐) |
+| Term | Meaning |
+|------|---------|
+| **Actual** | Sum of `cost_ledger` events (list rates when each job completed + backfill). Includes regens. |
+| **Est. spent** | If every **current** on-disk clip cost today's rates **once** (ignores past retries). |
 | **Remaining first pass** | Est. to generate clips **not** on disk yet at draft resolution |
-| **Hero upgrades left** | Est. to re-render on-disk non-hero scenes at hero resolution |
-| **Finish draft + hero** | Spent + missing @ draft + hero upgrades |
+| **Finish from actual** | Actual so far + remaining missing estimate |
 | **Full film @ res** | If you generated **every** blueprint clip once at that resolution |
 
-Edit rates under **Configuration → Cost estimates**. This page never bills xAI — it only multiplies seconds × rates.
+Edit rates under **Configuration → cost_estimates**. xAI does not return invoice lines on each video job; the ledger is the app's tracked actual at list rates.
 """
 )

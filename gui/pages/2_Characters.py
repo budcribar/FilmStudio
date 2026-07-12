@@ -10,8 +10,8 @@ from review_app.thumbnails import ui_image_path
 st.set_page_config(page_title="Characters", page_icon="👤", layout="wide")
 st.title("👤 Characters")
 st.caption(
-    "View locked references, generate 3 variants, click the best to lock, "
-    "or cascade-regenerate clips that use a character."
+    "Director view uses **character names**. Technical seed ids (e.g. `Character_P`) stay under the hood "
+    "for video prompts and refs so spoilers stay off-screen until reveal."
 )
 
 
@@ -77,7 +77,8 @@ with col_nav:
         badge = "✅" if c["locked"] else "⬜"
         stale_n = int(c.get("stale_clip_count") or 0)
         stale_mark = f" ⚠️{stale_n}" if stale_n else ""
-        label = f"{badge} {c['key']} ({c['clip_count']} clips){stale_mark}"
+        name = c.get("display_name") or c.get("name") or c["key"]
+        label = f"{badge} {name} ({c['clip_count']} clips){stale_mark}"
         if st.button(label, key=f"nav_{c['key']}", use_container_width=True):
             st.session_state.selected_char = c["key"]
             st.rerun()
@@ -93,12 +94,18 @@ with col_main:
         st.warning("Character not found.")
         st.stop()
 
-    st.header(char["key"])
+    display = char.get("display_name") or char.get("name") or char["key"]
+    st.header(display)
+    st.caption(f"Seed id: `{char['key']}` (used in prompts / refs — not shown as a name on screen)")
     meta = []
     if char.get("age_band"):
         meta.append(f"age_band=`{char['age_band']}`")
     if char.get("variant_of"):
-        meta.append(f"variant_of=`{char['variant_of']}`")
+        parent = next((c for c in chars if c["key"] == char["variant_of"]), None)
+        parent_name = (parent or {}).get("display_name") or char["variant_of"]
+        meta.append(f"variant of **{parent_name}**")
+    if char.get("display_name_policy"):
+        meta.append(f"on-screen names: `{char['display_name_policy']}`")
     rev = int(char.get("revision") or 0)
     meta.append(f"design rev **{rev}**")
     if char.get("revision_updated_at"):

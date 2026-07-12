@@ -25,6 +25,14 @@
         "age_band": "child_12",
         "variant_of": "Character_N"
       }
+    },
+    "location_seed_tokens": {
+      "Loc_Kirk_Alley": {
+        "display_name": "Kirk Street alley",
+        "description": "Narrow brick alley behind walk-up; garbage cans; Mrs. Engel kitchen window",
+        "visual_lock": "Dusty summer alley, brick walls, dented garbage can lid bases, kitchen window at mid height",
+        "reference_image_placeholder": "assets/locations/loc_kirk_alley_ref.png"
+      }
     }
   },
   "scenes": [
@@ -32,6 +40,8 @@
       "scene_number": 2,
       "stage1_scene_number": 2,
       "setting": "Day 1 — Kirk Street alley flashback, summer daylight",
+      "location_ids": ["Loc_Kirk_Alley"],
+      "primary_location_id": "Loc_Kirk_Alley",
       "scene_filename": "Scene_02_Day1_Alley_Flashback",
       "transition_type": "dissolve",
       "lighting_continuity_token": "Bright dusty summer alley daylight",
@@ -66,6 +76,7 @@
           "clip_number": 1,
           "timestamp": "00:00-00:08",
           "veo_continuation_source": "none",
+          "location_id": "Loc_Kirk_Alley",
           "visual_prompt": "FLASHBACK summer alley daylight. Wide shot: kids kickball; Character_N_Young (about 12, reddish-brown hair, dirty t-shirt, child NOT adult) ready near home; Character_P_Young watches side, lips closed, internal monologue not spoken to another person / 720p, 24fps",
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens, no name tags, no name badges, no embroidered names, no lower thirds, no personal names on clothing or props, adult bodybuilder child",
           "audio_payload": {
@@ -78,6 +89,7 @@
           "clip_number": 2,
           "timestamp": "00:08-00:16",
           "veo_continuation_source": "none",
+          "location_id": "Loc_Kirk_Alley",
           "visual_prompt": "FLASHBACK alley: Mark (~10) sprints and kicks red kickball; ball SMASHES Mrs. Engel kitchen window on brick house — glass shatters. Character_N_Young and Character_P_Young flinch. Clear kick, flight, window impact / 720p, 24fps",
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens, no name tags, no name badges, no embroidered names, no lower thirds, no personal names on clothing or props, ball over wall",
           "audio_payload": {
@@ -90,6 +102,7 @@
           "clip_number": 3,
           "timestamp": "00:16-00:24",
           "veo_continuation_source": "none",
+          "location_id": "Loc_Kirk_Alley",
           "visual_prompt": "FLASHBACK alley OTS: camera behind Character_N_Young (12, reddish-brown hair, dirty t-shirt, child NOT adult). He faces brick house; Mrs. Engel yells from shattered kitchen window above. Nick steps toward her looking up. Back to camera, face to house / 720p, 24fps",
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens, no name tags, no name badges, no embroidered names, no lower thirds, no personal names on clothing or props, Nick facing camera, boy looking at viewer, back to house, adult bodybuilder",
           "audio_payload": {

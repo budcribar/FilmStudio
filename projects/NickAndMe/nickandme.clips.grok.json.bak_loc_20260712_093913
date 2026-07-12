@@ -366,10 +366,10 @@
         "book_text_pages_41_55.txt"
       ],
       "location_ids": [
-        "Loc_Kirk_Apt",
-        "Loc_Moxie_Gym"
+        "Loc_Moxie_Gym",
+        "Loc_Kirk_Apt"
       ],
-      "primary_location_id": "Loc_Kirk_Apt"
+      "primary_location_id": "Loc_Moxie_Gym"
     },
     {
       "scene_number": 2,
@@ -667,10 +667,10 @@
         "book_text_pages_41_55.txt"
       ],
       "location_ids": [
-        "Loc_Kirk_Apt",
-        "Loc_Metal_Factory"
+        "Loc_Metal_Factory",
+        "Loc_Kirk_Apt"
       ],
-      "primary_location_id": "Loc_Kirk_Apt"
+      "primary_location_id": "Loc_Metal_Factory"
     },
     {
       "scene_number": 4,
@@ -1267,10 +1267,10 @@
         "book_text_pages_31_45.txt"
       ],
       "location_ids": [
-        "Loc_Kirk_Apt",
-        "Loc_Joes_Bar"
+        "Loc_Joes_Bar",
+        "Loc_Kirk_Apt"
       ],
-      "primary_location_id": "Loc_Kirk_Apt"
+      "primary_location_id": "Loc_Joes_Bar"
     },
     {
       "scene_number": 8,
@@ -1820,10 +1820,10 @@
         "book_text_pages_46_60.txt"
       ],
       "location_ids": [
-        "Loc_Milwaukee_Street",
-        "Loc_Java_Hut"
+        "Loc_Java_Hut",
+        "Loc_Milwaukee_Street"
       ],
-      "primary_location_id": "Loc_Milwaukee_Street"
+      "primary_location_id": "Loc_Java_Hut"
     },
     {
       "scene_number": 12,
@@ -4721,10 +4721,10 @@
         "book_text_pages_46_60.txt"
       ],
       "location_ids": [
-        "Loc_Kirk_Apt",
-        "Loc_Public_Library"
+        "Loc_Public_Library",
+        "Loc_Kirk_Apt"
       ],
-      "primary_location_id": "Loc_Kirk_Apt"
+      "primary_location_id": "Loc_Public_Library"
     },
     {
       "scene_number": 33,
@@ -4990,10 +4990,10 @@
         "book_text_pages_46_60.txt"
       ],
       "location_ids": [
-        "Loc_Milwaukee_Street",
-        "Loc_Park"
+        "Loc_Park",
+        "Loc_Milwaukee_Street"
       ],
-      "primary_location_id": "Loc_Milwaukee_Street"
+      "primary_location_id": "Loc_Park"
     },
     {
       "scene_number": 35,
@@ -6891,10 +6891,10 @@
         "book_text_pages_31_45.txt"
       ],
       "location_ids": [
-        "Loc_Milwaukee_Street",
-        "Loc_Pizza_Place"
+        "Loc_Pizza_Place",
+        "Loc_Milwaukee_Street"
       ],
-      "primary_location_id": "Loc_Milwaukee_Street"
+      "primary_location_id": "Loc_Pizza_Place"
     },
     {
       "scene_number": 48,
@@ -8794,10 +8794,10 @@
         "book_text_pages_21_30.txt"
       ],
       "location_ids": [
-        "Loc_Kirk_Apt",
-        "Loc_Public_Library"
+        "Loc_Public_Library",
+        "Loc_Kirk_Apt"
       ],
-      "primary_location_id": "Loc_Kirk_Apt"
+      "primary_location_id": "Loc_Public_Library"
     },
     {
       "scene_number": 61,
@@ -9379,10 +9379,10 @@
         "book_text_pages_31_45.txt"
       ],
       "location_ids": [
-        "Loc_Road_Travel",
-        "Loc_Door_County_Farm"
+        "Loc_Door_County_Farm",
+        "Loc_Road_Travel"
       ],
-      "primary_location_id": "Loc_Road_Travel"
+      "primary_location_id": "Loc_Door_County_Farm"
     },
     {
       "scene_number": 65,
