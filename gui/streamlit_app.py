@@ -142,13 +142,29 @@ def page_home() -> None:
     )
     st.subheader(display_title)
 
+    actual_usd = float(dash.get("actual_usd") or 0)
+    m1, m2, m3, m4 = st.columns(4)
+    m1.metric("Actual spend", f"${actual_usd:,.2f}")
+    m2.metric(
+        "Clips",
+        f"{dash.get('clips_on_disk', 0)}/{dash.get('clips_total', 0)}",
+    )
+    m3.metric(
+        "Scenes approved",
+        f"{dash.get('approved', 0)}/{dash.get('scene_count', 0)}",
+    )
+    m4.metric(
+        "Chars locked",
+        f"{dash.get('chars_locked', 0)}/{dash.get('char_count', 0)}",
+    )
     st.caption(
-        f"Scenes {dash.get('approved', 0)}/{dash.get('scene_count', 0)} approved · "
-        f"Clips {dash.get('clips_on_disk', 0)}/{dash.get('clips_total', 0)} · "
-        f"Characters {dash.get('chars_locked', 0)}/{dash.get('char_count', 0)} locked · "
+        f"Ledger events {dash.get('actual_events', 0)} · "
+        f"Video jobs {dash.get('actual_video_jobs', 0)} · "
+        f"{dash.get('actual_video_sec', 0):g}s video billed · "
         f"Hero {dash.get('hero_count', 0)} · "
         f"Stale {dash.get('stale_count', 0)} · "
-        f"Dirty {dash.get('dirty_count', 0)}"
+        f"Dirty {dash.get('dirty_count', 0)} · "
+        "Open **Cost** for breakdown / estimates."
     )
 
     # Next-step callout

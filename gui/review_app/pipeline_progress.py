@@ -187,7 +187,34 @@ def _pipeline_progress_uncached() -> Dict[str, Any]:
     approved_map = state.get("scenes_completed") or state.get("scene_approval") or {}
     if not isinstance(approved_map, dict):
         approved_map = {}
-    # engine uses scenes_completed str keys -> bool sometimes; also heroes
+    # Count approved only when flag is set AND all planned clips exist on disk
+    video_names: set = set()
+    vdir = proj / "assets" / "video"
+    if vdir.is_dir():
+        try:
+            video_names = {
+                f.name
+                for f in vdir.iterdir()
+                if f.is_file()
+                and f.suffix.lower() == ".mp4"
+                and "clip_" in f.name
+                and f.stat().st_size > 1024
+            }
+        except OSError:
+            video_names = set()
+
+    def _scene_clips_complete(sc: dict) -> bool:
+        clips = sc.get("veo_clips") or []
+        if not clips:
+            return False
+        sn = int(sc.get("scene_number") or 0)
+        for c in clips:
+            cn = int(c.get("clip_number") or 0)
+            name = f"scene_{sn:02d}_clip_{cn:02d}.mp4"
+            if name not in video_names:
+                return False
+        return True
+
     approved = 0
     for sc in bp_scenes:
         sn = sc.get("scene_number")
@@ -195,11 +222,12 @@ def _pipeline_progress_uncached() -> Dict[str, Any]:
             continue
         key = str(sn)
         if approved_map.get(key) is True or approved_map.get(sn) is True:
-            approved += 1
-        # alternate: state["approved_scenes"] list
+            if _scene_clips_complete(sc):
+                approved += 1
     appr_list = state.get("approved_scenes")
     if isinstance(appr_list, list) and appr_list:
-        approved = max(approved, len(appr_list))
+        # Prefer clip-complete count over raw list length
+        approved = max(approved, 0)
 
     video_dir = proj / "assets" / "video"
     clips_on = 0
@@ -208,18 +236,23 @@ def _pipeline_progress_uncached() -> Dict[str, Any]:
             clips_on = sum(
                 1
                 for f in video_dir.iterdir()
-                if f.is_file() and f.suffix.lower() == ".mp4" and f.stat().st_size > 1024
+                if f.is_file()
+                and f.suffix.lower() == ".mp4"
+                and "clip_" in f.name
+                and f.stat().st_size > 1024
             )
         except OSError:
             clips_on = 0
 
-    scenes_done = bool(
-        (approved > 0 and clips_on > 0) or (ui.get("scenes") or {}).get("done")
-    )
-    if scenes_done:
-        scene_detail = f"{approved} approved · {clips_on} clips"
-    elif scene_count > 0:
-        scene_detail = f"{clips_on}/{clips_total or '?'} clips"
+    # Scenes menu ✓ only when *all* blueprint scenes are approved (or UI step marked).
+    # Approving a single scene must not complete the whole step.
+    ui_scenes_done = bool((ui.get("scenes") or {}).get("done"))
+    all_scenes_approved = bool(scene_count > 0 and approved >= scene_count)
+    scenes_done = bool(all_scenes_approved or ui_scenes_done)
+    if scene_count > 0:
+        scene_detail = (
+            f"{approved}/{scene_count} approved · {clips_on}/{clips_total or '?'} clips"
+        )
     elif adapt_done:
         scene_detail = "needs Stage 2 plan"
     else:

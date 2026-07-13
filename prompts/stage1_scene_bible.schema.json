@@ -53,7 +53,7 @@
         "directorial_treatment": { "type": "string" },
         "total_runtime_target_seconds": {
           "type": "integer",
-          "description": "Usually 5400 for 90 minutes."
+          "description": "Target film length in seconds (operator/book estimate × 60; not always 5400)."
         },
         "character_seed_tokens": {
           "type": "object",
@@ -236,7 +236,7 @@
         "characters_on_screen": {
           "type": "array",
           "items": { "type": "string" },
-          "description": "Character_* tokens that may appear."
+          "description": "REQUIRED when anyone is visible: full Character_* cast for the scene (hero + supporting). Stage 2/engine multi-lock reference images from this list."
         },
         "transition_type": {
           "type": "string",
@@ -309,7 +309,7 @@
         },
         "primary_subject": {
           "type": "string",
-          "description": "Character_* token that should identity-lock first in visual prompts."
+          "description": "On-screen visual hero Character_* (first in Stage 2 visual_prompt). Not the off-screen narrator."
         },
         "location_id": {
           "type": "string",

@@ -43,12 +43,14 @@ DEFAULT_CONFIG = {
     # Re-generate when Grok QA rejects a clip
     "qa_retry_on_fail": True,
     "qa_max_retries": 2,
-    # Prefer Grok native audio. TTS is optional fallback only (often robotic).
-    # Set ensure_dialogue_audio true only if native speech is missing/weak.
+    # Prefer Grok native speech in the video. TTS post-mux is OFF by default —
+    # it overrides Mom/narrator and often mis-reads quoted lines. Opt-in only.
     "ensure_dialogue_audio": False,
     "dialogue_audio_mode": "replace",
     "dialogue_tts_volume": 1.0,
+    "narrator_tts_volume": 1.2,
     "native_audio_mix_volume": 0.12,
+    "narrator_bed_volume": 0.18,
     "composite_audio_gain_db": 6.0,
     # After each scene is Approved, rebuild a running work-in-progress film
     "rebuild_wip_movie_after_scene": True,
@@ -1456,9 +1458,8 @@ class AgenticGenerationEngine:
 
         missing = []
         for char_key, seed_info in sorted(char_seeds.items(), key=_seed_sort_key):
-            local_image_name = seed_info.get("reference_image_placeholder", f"{char_key.lower()}_ref.png")
-            final_path = f"assets/characters/{local_image_name}"
-            if not os.path.exists(final_path):
+            final_path = self.character_ref_path(char_key)
+            if not self.resolve_character_ref_file(char_key):
                 missing.append(char_key)
         if missing:
             print(f"[Stage 0] Need portraits for: {', '.join(missing)}")
@@ -1466,8 +1467,7 @@ class AgenticGenerationEngine:
             print("[Stage 0] All character reference files already locked (including age variants).")
 
         for char_key, seed_info in sorted(char_seeds.items(), key=_seed_sort_key):
-            local_image_name = seed_info.get("reference_image_placeholder", f"{char_key.lower()}_ref.png")
-            final_path = f"assets/characters/{local_image_name}"
+            final_path = self.character_ref_path(char_key)
 
             # Check if this character has already been locked in from a previous execution
             if os.path.exists(final_path):
@@ -1582,10 +1582,63 @@ class AgenticGenerationEngine:
         seeds = self.blueprint.get("global_production_variables", {}).get("character_seed_tokens", {})
         return seeds.get(char_key)
 
+    def _normalize_character_ref_relpath(self, placeholder: str, char_key: str = "") -> str:
+        """
+        Canonical project-relative locked ref path.
+
+        Seeds sometimes store bare filenames (buster_ref.png) and sometimes full
+        paths (assets/characters/buster_ref.png). Never double-prefix.
+        """
+        raw = (placeholder or "").strip().replace("\\", "/")
+        if not raw:
+            slug = (char_key or "character").lower().replace("character_", "")
+            raw = f"{slug}_ref.png" if slug else "character_ref.png"
+        # Collapse accidental assets/characters/assets/characters/...
+        while "assets/characters/assets/characters/" in raw:
+            raw = raw.replace(
+                "assets/characters/assets/characters/", "assets/characters/", 1
+            )
+        if raw.startswith("assets/characters/"):
+            return raw
+        if raw.startswith("assets/"):
+            return raw
+        return f"assets/characters/{os.path.basename(raw)}"
+
     def character_ref_path(self, char_key: str) -> str:
         seed = self._character_seed(char_key) or {}
-        name = seed.get("reference_image_placeholder", f"{char_key.lower()}_ref.png")
-        return f"assets/characters/{name}"
+        name = seed.get("reference_image_placeholder") or f"{char_key.lower()}_ref.png"
+        # Prefer short filename in seed so paths stay stable
+        return self._normalize_character_ref_relpath(str(name), char_key)
+
+    def resolve_character_ref_file(self, char_key: str) -> Optional[str]:
+        """
+        Find an on-disk locked reference for char_key, including legacy doubled paths.
+        """
+        seed = self._character_seed(char_key) or {}
+        canonical = self.character_ref_path(char_key)
+        base = os.path.basename(canonical)
+        candidates = [
+            canonical,
+            f"assets/characters/{base}",
+            f"assets/characters/{char_key.lower()}_ref.png",
+            # legacy bug: assets/characters/ + full placeholder
+            f"assets/characters/assets/characters/{base}",
+            f"assets/characters/assets/characters/{char_key.lower().replace('character_', '')}_ref.png",
+        ]
+        # Also try design/book plates as last-resort likeness if no lock yet
+        for key in ("design_reference_images", "book_reference_images"):
+            for p in seed.get(key) or []:
+                if p:
+                    candidates.append(str(p).replace("\\", "/"))
+        seen = set()
+        for c in candidates:
+            c = c.replace("\\", "/")
+            if c in seen:
+                continue
+            seen.add(c)
+            if os.path.isfile(c):
+                return c
+        return None
 
     def character_variant_paths(self, char_key: str) -> List[str]:
         return [
@@ -1790,6 +1843,8 @@ class AgenticGenerationEngine:
             else:
                 raise GenerationFailure(f"Image not found: {source_path}")
         final_path = self.character_ref_path(char_key)
+        # Store short placeholder going forward (avoid assets/characters/assets/...)
+        seed_info["reference_image_placeholder"] = os.path.basename(final_path)
         # Normalize locked ref to .png name from seed, but allow any source format
         ensure_parent_dir(final_path)
         # If source is not png and final is .png, convert via PIL when needed
@@ -1820,6 +1875,17 @@ class AgenticGenerationEngine:
             reason=f"Locked reference from {os.path.basename(src)}",
             only_existing=True,
         )
+        # Persist corrected placeholder into blueprint seeds
+        try:
+            gpv = self.blueprint.setdefault("global_production_variables", {})
+            seeds = gpv.setdefault("character_seed_tokens", {})
+            if char_key in seeds and isinstance(seeds[char_key], dict):
+                seeds[char_key]["reference_image_placeholder"] = os.path.basename(
+                    final_path
+                )
+            self.save_blueprint_to_disk()
+        except Exception:
+            pass
         self.save_state()
         return final_path
 
@@ -2149,14 +2215,55 @@ class AgenticGenerationEngine:
             fields["qa_approved"] = False
         self._update_clip_job(scene_num, clip_num, **fields)
 
-    def approve_scene(self, scene_num: int) -> None:
+    def approve_scene(
+        self,
+        scene_num: int,
+        *,
+        remux: bool = True,
+        rebuild_wip: Optional[bool] = None,
+    ) -> Dict[str, Any]:
+        """
+        Mark scene approved in pipeline_state.
+
+        remux: rebuild scene composite from clips (FFmpeg — can take a while).
+        rebuild_wip: rebuild assets/movie_wip.mp4 from approved scenes (often the
+        slowest step, especially on WSL /mnt/c). Default: config
+        rebuild_wip_movie_after_scene (True for CLI pipeline). UI should pass
+        rebuild_wip=False for a snappy approve, and offer WIP as a separate action.
+        """
         self.state.setdefault("scenes_completed", {})[str(scene_num)] = True
         self.save_state()
-        try:
-            self.remux_scene_from_disk(scene_num)
-        except Exception as e:
-            print(f"  [Approve Warning] Remux failed: {e}")
-        self.rebuild_wip_movie(reason=f"after approving Scene {scene_num}")
+        out: Dict[str, Any] = {
+            "scene": scene_num,
+            "approved": True,
+            "composite_path": None,
+            "wip_path": None,
+            "remuxed": False,
+            "wip_rebuilt": False,
+        }
+        if remux:
+            try:
+                path = self.remux_scene_from_disk(scene_num)
+                out["composite_path"] = path
+                out["remuxed"] = bool(path)
+            except Exception as e:
+                print(f"  [Approve Warning] Remux failed: {e}")
+                out["remux_error"] = str(e)
+        if rebuild_wip is None:
+            rebuild_wip = bool(self.config.get("rebuild_wip_movie_after_scene", True))
+        if rebuild_wip:
+            try:
+                wip = self.rebuild_wip_movie(
+                    reason=f"after approving Scene {scene_num}",
+                    approved_only=True,
+                    force=True,
+                )
+                out["wip_path"] = wip
+                out["wip_rebuilt"] = bool(wip)
+            except Exception as e:
+                print(f"  [Approve Warning] WIP rebuild failed: {e}")
+                out["wip_error"] = str(e)
+        return out
 
     def clear_scene_hero(self, scene_num: int) -> None:
         """Drop hero/final flag so the scene is draft again (e.g. after re-edit)."""
@@ -2466,72 +2573,250 @@ class AgenticGenerationEngine:
             encoded = base64.b64encode(f.read()).decode("ascii")
         return f"data:{mime};base64,{encoded}"
 
-    def _find_character_anchor_path(self, prompt: str) -> Optional[str]:
+    def _find_character_anchor_paths(
+        self,
+        prompt: str,
+        *,
+        max_refs: int = 3,
+        extra_char_keys: Optional[List[str]] = None,
+    ) -> List[str]:
         """
-        Return the locked character reference for the PRIMARY on-screen subject.
+        Return locked reference image paths for characters in the shot.
 
-        Matches the longest Character_* token first (so Character_N_Young wins over Character_N).
-        Adult base tokens are not used when a Young/Teen token is present for that person,
-        or when residual "Young Character_X" text remains without a variant token.
+        Sources (merged):
+          1) Character_* tokens in the visual prompt
+          2) Bare names (e.g. \"Buster\") matched to seed keys
+          3) extra_char_keys (e.g. scene characters_on_screen)
+
+        Order: earliest prompt mention first, then extras. Skips narrator.
+        Caps at max_refs for the API.
         """
-        char_seeds = self.blueprint.get("global_production_variables", {}).get("character_seed_tokens", {})
-        if not prompt or not char_seeds:
-            return None
+        char_seeds = self.blueprint.get("global_production_variables", {}).get(
+            "character_seed_tokens", {}
+        )
+        if not char_seeds:
+            return []
+        prompt = prompt or ""
 
-        # All seed keys sorted longest-first so _Young / _Teen beat base names
+        def _skip_key(char_key: str) -> bool:
+            if "narrator" in char_key.lower():
+                return True
+            seed_info = char_seeds.get(char_key) or {}
+            pol = str(seed_info.get("display_name_policy") or "").lower()
+            return pol in ("never_on_screen", "voice_only")
+
+        def _aliases(char_key: str) -> List[str]:
+            rest = char_key.replace("Character_", "").replace("_", " ").strip()
+            aliases = [rest]
+            if rest:
+                aliases.append(rest.split()[0])
+            # common short forms
+            low = rest.lower()
+            if low in ("mom", "mommy", "mother"):
+                aliases.extend(["Mom", "Mommy", "Mother"])
+            if low in ("dad", "daddy", "father"):
+                aliases.extend(["Dad", "Daddy", "Father"])
+            return aliases
+
+        matches: List[Tuple[int, str, str]] = []  # (pos, key, path)
         keys_by_len = sorted(char_seeds.keys(), key=len, reverse=True)
-        matches: List[tuple] = []  # (pos, key, path)
+
         for char_key in keys_by_len:
+            if _skip_key(char_key):
+                continue
             pos = prompt.find(char_key)
             if pos < 0:
+                # Bare name match (word boundary)
+                for alias in _aliases(char_key):
+                    m = re.search(rf"\b{re.escape(alias)}\b", prompt, re.I)
+                    if m:
+                        pos = m.start()
+                        break
+            if pos < 0:
                 continue
-            seed_info = char_seeds[char_key]
-            local_image_name = seed_info.get("reference_image_placeholder", f"{char_key.lower()}_ref.png")
-            local_image_path = f"assets/characters/{local_image_name}"
-            if os.path.exists(local_image_path):
-                matches.append((pos, char_key, local_image_path))
+            path = self.resolve_character_ref_file(char_key)
+            if not path:
+                continue
+            if not char_key.endswith(("_Young", "_Teen")):
+                skip_adult = False
+                for alt_suffix in ("_Young", "_Teen"):
+                    alt = f"{char_key}{alt_suffix}"
+                    if alt in char_seeds and prompt.find(alt) >= 0:
+                        alt_path = self.resolve_character_ref_file(alt)
+                        if alt_path:
+                            matches.append((prompt.find(alt), alt, alt_path))
+                            skip_adult = True
+                            break
+                if skip_adult:
+                    continue
+                if re.search(rf"Young\s+{re.escape(char_key)}\b", prompt, re.I):
+                    continue
+            matches.append((pos, char_key, path))
+
+        # Scene cast list / explicit extras (append after prompt matches)
+        for char_key in extra_char_keys or []:
+            if not char_key or _skip_key(char_key):
+                continue
+            if any(k == char_key for _p, k, _path in matches):
+                continue
+            path = self.resolve_character_ref_file(char_key)
+            if path:
+                # Large pos so they sort after in-prompt mentions
+                matches.append((10_000 + len(matches), char_key, path))
 
         if not matches:
-            if re.search(r"\b(Young\s+Character_|FLASHBACK|child|about\s+\d+\s+years)", prompt, re.I):
-                print(
-                    "  [Character Anchor] No matching ref file yet for young/flashback cast "
-                    "(run Stage 0 to generate age-variant portraits)."
-                )
-            return None
+            return []
 
-        # Earliest mention wins; among same start, longer key already preferred via scan order
         matches.sort(key=lambda t: (t[0], -len(t[1])))
-        pos, key, path = matches[0]
+        out: List[str] = []
+        seen_paths = set()
+        seen_keys = set()
+        for _pos, key, path in matches:
+            if path in seen_paths or key in seen_keys:
+                continue
+            seen_paths.add(path)
+            seen_keys.add(key)
+            out.append(path)
+            if len(out) >= max_refs:
+                break
+        return out
 
-        # If earliest token is an adult base but a Young/Teen version of same person also appears, prefer that
-        if not key.endswith(("_Young", "_Teen")):
-            for alt_suffix in ("_Young", "_Teen"):
-                alt = f"{key}{alt_suffix}"
-                if alt in char_seeds:
-                    alt_pos = prompt.find(alt)
-                    if alt_pos >= 0:
-                        alt_info = char_seeds[alt]
-                        alt_name = alt_info.get("reference_image_placeholder", f"{alt.lower()}_ref.png")
-                        alt_path = f"assets/characters/{alt_name}"
-                        if os.path.exists(alt_path):
-                            print(f"  [Character Anchor] Preferring age variant {alt} over adult {key}")
-                            return alt_path
-            # Residual "Young Character_N" without tokenized variant — do not use adult ref
-            if re.search(rf"Young\s+{re.escape(key)}\b", prompt, re.I) or (
-                re.search(r"\bFLASHBACK\b", prompt, re.I)
-                and re.search(
-                    rf"{re.escape(key)}\s*\([^)]{{0,40}}(about\s+)?([5-9]|1[0-7])\s+years?",
-                    prompt,
-                    re.I,
-                )
+    def _find_character_anchor_path(self, prompt: str) -> Optional[str]:
+        """Primary (earliest) locked character reference, or None."""
+        paths = self._find_character_anchor_paths(prompt, max_refs=1)
+        return paths[0] if paths else None
+
+    def _identity_lock_clause(
+        self, prompt: str, *, extra_keys: Optional[List[str]] = None
+    ) -> str:
+        """Text reinforcing locked-character appearance (prefer FRONT of prompt)."""
+        char_seeds = self.blueprint.get("global_production_variables", {}).get(
+            "character_seed_tokens", {}
+        ) or {}
+        keys: List[str] = []
+        for char_key in sorted(char_seeds.keys(), key=len, reverse=True):
+            if char_key in (prompt or "") or (
+                extra_keys and char_key in extra_keys
             ):
-                print(
-                    f"  [Character Anchor] Skipping adult {key} ref in young/flashback context "
-                    f"(use {key}_Young / {key}_Teen seeds)."
-                )
-                return None
+                if "narrator" not in char_key.lower():
+                    keys.append(char_key)
+        # Also match bare names via extra_keys
+        for k in extra_keys or []:
+            if k and k not in keys and k in char_seeds and "narrator" not in k.lower():
+                keys.append(k)
+        bits: List[str] = []
+        for char_key in keys:
+            seed = char_seeds.get(char_key) or {}
+            desc = str(seed.get("description") or "").strip()
+            if not desc:
+                continue
+            short = re.sub(r"\s+", " ", desc)[:140]
+            # Explicit recolor bans help when multi-ref confuses the model
+            recolor = ""
+            low = short.lower()
+            if "black" in low and "white" in low:
+                recolor = " NEVER solid brown, golden, tan, or solid-color redesign."
+            bits.append(
+                f"IDENTITY LOCK {char_key}: exact same individual as the character "
+                f"reference image(s) for this token — {short}.{recolor}"
+            )
+            if len(bits) >= 3:
+                break
+        if not bits:
+            return ""
+        return (
+            "CRITICAL CONTINUITY: "
+            + " ".join(bits)
+            + " Do not invent a different animal or person. "
+            "Reference image order lists the most identity-critical subject first."
+        )
 
-        return path
+    def _character_ref_priority_key(self, path: str) -> Tuple[int, str]:
+        """
+        Sort key for multi-reference images.
+
+        Animals/pets drift hardest under multi-ref (humans dominate composition).
+        Put animal/hero plates BEFORE adult humans so Grok weights them first.
+        """
+        base = os.path.basename(path).lower()
+        # Map path back to char key when possible
+        seeds = (
+            self.blueprint.get("global_production_variables", {}) or {}
+        ).get("character_seed_tokens") or {}
+        char_key = ""
+        for k in seeds:
+            if k.lower().replace("character_", "") in base or base.startswith(
+                k.lower()
+            ):
+                char_key = k
+                break
+            ref = self.resolve_character_ref_file(k)
+            if ref and os.path.normpath(ref) == os.path.normpath(path):
+                char_key = k
+                break
+        desc = ""
+        if char_key:
+            desc = str((seeds.get(char_key) or {}).get("description") or "").lower()
+        blob = f"{base} {char_key} {desc}".lower()
+        is_animal = any(
+            w in blob
+            for w in (
+                "dog",
+                "cat",
+                "pet",
+                "puppy",
+                "animal",
+                "buster",
+                "canine",
+                "feline",
+            )
+        )
+        is_human = any(
+            w in blob
+            for w in ("mom", "dad", "daddy", "mother", "father", "adult", "woman", "man")
+        )
+        # Lower score = earlier in list
+        if is_animal:
+            tier = 0
+        elif "bookref" in base:
+            tier = 1
+        elif is_human:
+            tier = 3
+        else:
+            tier = 2
+        return (tier, base)
+
+    def _expand_character_refs_with_bookplates(
+        self, paths: List[str], *, max_refs: int = 3
+    ) -> List[str]:
+        """
+        For animal/hero locks, add one book plate after the locked ref when room allows.
+        Helps likeness when the Stage-0 variant drifted from the book.
+        """
+        if not paths or len(paths) >= max_refs:
+            return paths[:max_refs]
+        seeds = (
+            self.blueprint.get("global_production_variables", {}) or {}
+        ).get("character_seed_tokens") or {}
+        out = list(paths)
+        for path in list(paths):
+            if len(out) >= max_refs:
+                break
+            for k, seed in seeds.items():
+                ref = self.resolve_character_ref_file(k)
+                if not ref or os.path.normpath(ref) != os.path.normpath(path):
+                    continue
+                desc = str(seed.get("description") or "").lower()
+                if not any(w in desc for w in ("dog", "cat", "pet", "animal", "puppy")):
+                    continue
+                for bp in seed.get("design_reference_images") or seed.get(
+                    "book_reference_images"
+                ) or []:
+                    bp = str(bp).replace("\\", "/")
+                    if os.path.isfile(bp) and bp not in out:
+                        out.append(bp)
+                        break
+        return out[:max_refs]
 
     def _simplify_visual_for_single_clip(self, visual: str) -> str:
         """
@@ -2597,6 +2882,23 @@ class AgenticGenerationEngine:
         if str(prev_path).startswith("ctx_mock_"):
             return False
 
+        # Book narrator / internal VO: always start fresh with character refs.
+        # Continuing from a Mom-speaking frame freezes her mid-speech so she appears
+        # to keep talking while the audio plan is narrator-only.
+        ap = clip.get("audio_payload") if isinstance(clip.get("audio_payload"), dict) else {}
+        delivery = str(ap.get("delivery") or "").lower()
+        speaker = str(ap.get("speaker") or "").lower()
+        if delivery in (
+            "voiceover_internal",
+            "internal",
+            "vo_internal",
+            "thought",
+            "thinking",
+            "narration",
+            "vo",
+        ) or "narrator" in speaker:
+            return False
+
         visual = clip.get("visual_prompt") or ""
         if _HARD_CUT_RE.search(visual):
             return False
@@ -2644,10 +2946,12 @@ class AgenticGenerationEngine:
         )
         tts = (info.get("tts_voice") or info.get("edge_tts_voice") or "").strip()
         label = (info.get("voice_label") or speaker).strip()
+        gender = str(info.get("voice_gender") or "").strip().lower()
         return {
             "voice_profile": profile,
             "tts_voice": tts,
             "voice_label": label,
+            "voice_gender": gender,
             "character_key": speaker,
         }
 
@@ -2658,6 +2962,7 @@ class AgenticGenerationEngine:
         voice_profile: Optional[str] = None,
         tts_voice: Optional[str] = None,
         voice_label: Optional[str] = None,
+        voice_gender: Optional[str] = None,
     ) -> Dict[str, Any]:
         """Persist voice lock on a character seed in the blueprint."""
         seeds = self.blueprint.setdefault("global_production_variables", {}).setdefault(
@@ -2669,9 +2974,20 @@ class AgenticGenerationEngine:
         if voice_profile is not None:
             info["voice_profile"] = voice_profile.strip()
         if tts_voice is not None:
-            info["tts_voice"] = tts_voice.strip()
+            tv = tts_voice.strip()
+            if tv:
+                info["tts_voice"] = tv
+            else:
+                info.pop("tts_voice", None)
+                info.pop("edge_tts_voice", None)
         if voice_label is not None:
             info["voice_label"] = voice_label.strip()
+        if voice_gender is not None:
+            g = voice_gender.strip().lower()
+            if g in ("male", "female", "neutral"):
+                info["voice_gender"] = g
+            elif g in ("", "auto", "unset"):
+                info.pop("voice_gender", None)
         self.save_blueprint_to_disk()
         return dict(info)
 
@@ -2682,11 +2998,125 @@ class AgenticGenerationEngine:
         if not profile:
             return ""
         label = vp.get("voice_label") or speaker
+        gender = str(vp.get("voice_gender") or "").strip().lower()
+        # Infer gender hint for Grok if not set but profile mentions it
+        if not gender:
+            pl = profile.lower()
+            if re.search(r"\b(female|woman|mother|mom|she|her)\b", pl):
+                gender = "female"
+            elif re.search(r"\b(male|man|father|dad|he|him)\b", pl):
+                gender = "male"
+        gender_bit = f" gender={gender}" if gender in ("male", "female", "neutral") else ""
         # Keep compact — full profiles can be long
         return (
-            f" VOICE LOCK for {label} (use this EXACT same vocal identity every time this "
-            f"character speaks; do not reinvent pitch/age/accent between clips): {profile}"
+            f" VOICE LOCK for {label}{gender_bit} (use this EXACT same vocal identity every time "
+            f"this character speaks; do not reinvent pitch/age/accent between clips): {profile}"
         )
+
+    def _stage1_beat_index(self) -> Dict[str, Dict[str, Any]]:
+        """beat_id → Stage 1 beat dict (cached per engine)."""
+        cached = getattr(self, "_stage1_beat_cache", None)
+        if isinstance(cached, dict):
+            return cached
+        index: Dict[str, Dict[str, Any]] = {}
+        # Prefer project scenes.json / nickandme.scenes.json
+        candidates = [
+            "scenes.json",
+            "nickandme.scenes.json",
+            str(Path(self.project_dir) / "scenes.json"),
+            str(Path(self.project_dir) / "nickandme.scenes.json"),
+        ]
+        for p in candidates:
+            path = Path(p)
+            if not path.is_file():
+                continue
+            try:
+                data = json.loads(path.read_text(encoding="utf-8"))
+            except (OSError, json.JSONDecodeError):
+                continue
+            for sc in data.get("scenes") or []:
+                for beat in sc.get("story_beats") or []:
+                    if not isinstance(beat, dict):
+                        continue
+                    bid = str(beat.get("beat_id") or "").strip()
+                    if bid:
+                        index[bid] = beat
+            if index:
+                break
+        self._stage1_beat_cache = index
+        return index
+
+    def _resolve_clip_audio_payload(self, clip: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Normalize clip audio for generation.
+
+        Stage 1 stores delivery/speaker/dialogue on the beat root; Stage 2 should
+        copy them into audio_payload. If the plan was built with the old bug
+        (empty payload), recover from Stage 1 via stage1_beat_id.
+        """
+        raw = clip.get("audio_payload") if isinstance(clip.get("audio_payload"), dict) else {}
+        ap: Dict[str, Any] = dict(raw)
+        dialogue = str(ap.get("dialogue") or "").strip()
+        speaker = str(ap.get("speaker") or "").strip()
+        delivery = str(ap.get("delivery") or "").strip().lower()
+
+        if not dialogue:
+            bid = str(clip.get("stage1_beat_id") or "").strip()
+            beat = self._stage1_beat_index().get(bid) if bid else None
+            if beat:
+                nested = beat.get("audio") if isinstance(beat.get("audio"), dict) else {}
+                dialogue = str(
+                    nested.get("dialogue") or beat.get("dialogue") or ""
+                ).strip()
+                speaker = str(
+                    nested.get("speaker") or beat.get("speaker") or speaker or "none"
+                ).strip()
+                delivery = str(
+                    nested.get("delivery") or beat.get("delivery") or delivery or "none"
+                ).strip().lower()
+                ambient = str(
+                    nested.get("ambient")
+                    or beat.get("ambient_or_sfx")
+                    or beat.get("ambient")
+                    or ""
+                ).strip()
+                if ambient and not ap.get("ambient"):
+                    ap["ambient"] = ambient
+
+        # Clean rhyme-line separators for speech synthesis / prompts
+        if dialogue:
+            dialogue = re.sub(r"\s*/\s*", ". ", dialogue)
+            dialogue = re.sub(r"\s+", " ", dialogue).strip()
+
+        if delivery not in ("spoken_on_camera", "voiceover_internal", "none", ""):
+            if dialogue and "narrator" in (speaker or "").lower():
+                delivery = "voiceover_internal"
+            elif dialogue:
+                delivery = "spoken_on_camera"
+            else:
+                delivery = "none"
+        if not delivery:
+            delivery = (
+                "voiceover_internal"
+                if dialogue and "narrator" in (speaker or "").lower()
+                else ("spoken_on_camera" if dialogue else "none")
+            )
+        if "narrator" in (speaker or "").lower() and dialogue:
+            delivery = "voiceover_internal"
+        if not dialogue:
+            speaker = "none"
+            delivery = "none"
+
+        ap["dialogue"] = dialogue
+        ap["speaker"] = speaker or "none"
+        ap["delivery"] = delivery
+        return ap
+
+    def _prepare_clip_for_generation(self, clip: Dict[str, Any]) -> Dict[str, Any]:
+        """Shallow copy clip with resolved audio_payload (generation source of truth)."""
+        out = dict(clip)
+        out["audio_payload"] = self._resolve_clip_audio_payload(clip)
+        return out
 
     def _build_video_generation_prompt(self, clip: Dict[str, Any], mode: str = "fresh") -> str:
         """
@@ -2696,6 +3126,7 @@ class AgenticGenerationEngine:
         AUDIO is placed first — Grok responds better when speech is explicit and early.
         Injects locked character voice_profile when speaker is a known seed.
         """
+        clip = self._prepare_clip_for_generation(clip)
         visual = self._simplify_visual_for_single_clip((clip.get("visual_prompt") or "").strip())
         audio = clip.get("audio_payload") or {}
         speaker = (audio.get("speaker") or "").strip()
@@ -2721,6 +3152,7 @@ class AgenticGenerationEngine:
 
         speaker_ok = bool(speaker) and speaker.lower() not in ("none", "n/a", "null", "-")
         delivery = str(audio.get("delivery") or "").strip().lower()
+        is_narrator = "narrator" in speaker.lower()
         is_internal_vo = delivery in (
             "voiceover_internal",
             "internal",
@@ -2729,33 +3161,93 @@ class AgenticGenerationEngine:
             "thinking",
             "narration",
             "vo",
-        )
+        ) or is_narrator
         voice_lock = self._voice_lock_clause(speaker) if speaker_ok else ""
 
-        # Leading AUDIO block (format used successfully with Grok Imagine)
-        if dialogue and speaker_ok and is_internal_vo:
+        # Leading AUDIO block — Grok native speech only (TTS is optional post-process).
+        if dialogue and speaker_ok and is_narrator:
+            # Book narrator: one off-camera storyteller. Quoted Mom/Dad lines are READ BY
+            # THE NARRATOR as story text — not a second on-camera character voice.
+            quote_note = ""
+            if re.search(r'[“"][^”"]+[”"]', dialogue) or " says" in dialogue.lower():
+                quote_note = (
+                    " If the line includes quotes or 'Momma/Mom says…', the NARRATOR still "
+                    "speaks the entire line in the same storyteller voice (storytelling "
+                    "quotation) — do NOT switch to Mom's on-camera voice on this clip."
+                )
+            # List non-speakers for explicit closed-mouth instruction
+            others = []
+            for m in re.finditer(
+                r"Character_[A-Za-z0-9_]+",
+                visual + " " + (clip.get("visual_prompt") or ""),
+            ):
+                tok = m.group(0)
+                if "narrator" not in tok.lower() and tok not in others:
+                    others.append(tok)
+            others_bit = ""
+            if others:
+                others_bit = (
+                    f" On-screen ({', '.join(others[:4])}) must keep mouths/snouts CLOSED "
+                    f"and still — no lip-sync, no Mom speaking, no dog mouthing."
+                )
             audio_block = (
-                f'AUDIO: Required audible stereo soundtrack. Off-camera internal monologue / narration '
-                f'by {speaker} at normal volume (NOT lip-synced conversation with another character): '
-                f'"{dialogue}". Character on screen should keep lips mostly closed / not mouth this text '
-                f'to someone else. Soft ambient under the voice.'
+                f'AUDIO: REQUIRED native Grok speech on the video track. '
+                f'ONE clear adult BOOK NARRATOR voice-over only (off-camera storyteller, warm, '
+                f'readable, full sentences spoken aloud) saying EXACTLY: "{dialogue}". '
+                f'Speaker for this clip is the narrator seed only ({speaker}) — not Mom, not Dad, '
+                f'not the dog. The narrator is NOT visible on screen. '
+                f'Do not lip-sync on-screen characters to this VO.'
+                f'{others_bit} '
+                f'Secondary layer = soft room tone / Foley under the voice. '
+                f'Speech must be intelligible; never ambient-only, never silent.'
+                f'{quote_note}'
                 f'{voice_lock}'
             )
             framing_bits.append(
-                "Performance: contemplative thinking face; do not stage this as spoken dialogue to another person."
+                "NARRATION SHOT: Mom/dog/others do not speak this line — mouths closed; "
+                "only off-camera narrator is heard."
+            )
+        elif dialogue and speaker_ok and is_internal_vo:
+            audio_block = (
+                f'AUDIO: REQUIRED native Grok speech. Off-camera voice-over only by {speaker} '
+                f'at normal volume (NOT on-camera conversation): "{dialogue}". '
+                f'On-screen lips mostly closed. Soft ambient under the voice. Never silent.'
+                f'{voice_lock}'
+            )
+            framing_bits.append(
+                "Performance: natural face; do not stage this as spoken dialogue to another person."
             )
         elif dialogue and speaker_ok:
+            # Single on-camera speaker — others (esp. animals) must NOT mouth along
+            other_cast = []
+            for m in re.finditer(r"Character_[A-Za-z0-9_]+", visual + " " + (clip.get("visual_prompt") or "")):
+                tok = m.group(0)
+                if tok != speaker and "narrator" not in tok.lower() and tok not in other_cast:
+                    other_cast.append(tok)
+            others_note = ""
+            if other_cast:
+                others_note = (
+                    f" Non-speakers on screen ({', '.join(other_cast[:4])}) keep mouths CLOSED / still — "
+                    f"no lip-sync, no dog mouthing, no karaoke to {speaker}'s line; they only listen/react."
+                )
             audio_block = (
-                f'AUDIO: Required audible stereo soundtrack. '
-                f'Clear on-camera spoken dialogue by {speaker} at normal listening volume, '
-                f'lip-synced when the speaker is visible: "{dialogue}". '
-                f'Also include matching ambient room tone and environmental Foley under the voice.'
+                f'AUDIO: REQUIRED native Grok speech. '
+                f'ONLY {speaker} speaks on camera at normal listening volume, lip-synced when '
+                f'visible, saying EXACTLY: "{dialogue}". '
+                f'No second voice, no narrator, no animal speech, no dual lip-sync. '
+                f'Matching ambient room tone and Foley under the voice.'
+                f'{others_note}'
                 f'{voice_lock}'
+            )
+            framing_bits.append(
+                f"LIP-SYNC RULE: only {speaker}'s mouth moves with the words. "
+                f"Any dog/pet or other character freezes jaw/snout closed (listening face), "
+                f"no speaking motion, no dual dialogue performance."
             )
         elif dialogue:
             audio_block = (
-                f'AUDIO: Required audible stereo soundtrack. Clear voiceover at normal volume: "{dialogue}". '
-                f'Include ambient atmosphere under the voice.'
+                f'AUDIO: REQUIRED native Grok speech. Clear voiceover at normal volume: "{dialogue}". '
+                f'Include ambient under the voice. Never silent.'
             )
         else:
             audio_block = (
@@ -2934,15 +3426,29 @@ class AgenticGenerationEngine:
             voice_id = os.environ.get("EDGE_TTS_VOICE", "en-US-GuyNeural")
 
         # --- 1) edge-tts (most natural; optional: pip install edge-tts) ---
+        mp3_path = abs_wav + ".mp3"
+        edge_cmds: List[List[str]] = []
         edge = shutil.which("edge-tts")
         if edge:
-            mp3_path = abs_wav + ".mp3"
-            cmd = [
-                edge,
-                "--voice", voice_id,
-                "--text", raw,
-                "--write-media", mp3_path,
+            edge_cmds.append(
+                [edge, "--voice", voice_id, "--text", raw, "--write-media", mp3_path]
+            )
+        # Scripts often install outside PATH (Windows user site-packages)
+        edge_cmds.append(
+            [
+                sys.executable,
+                "-m",
+                "edge_tts",
+                "--voice",
+                voice_id,
+                "--text",
+                raw,
+                "--write-media",
+                mp3_path,
             ]
+        )
+        edge_ok = False
+        for cmd in edge_cmds:
             result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             if result.returncode == 0 and file_is_usable(mp3_path, min_bytes=100):
                 ffmpeg = resolve_ffmpeg()
@@ -2956,9 +3462,50 @@ class AgenticGenerationEngine:
                 except OSError:
                     pass
                 if conv.returncode == 0 and file_is_usable(wav_path, min_bytes=100):
-                    print(f"  [Audio] TTS backend: edge-tts voice={voice_id!r} speaker={speaker!r}")
+                    print(
+                        f"  [Audio] TTS backend: edge-tts voice={voice_id!r} "
+                        f"speaker={speaker!r}"
+                    )
                     return wav_path
-            errors.append(f"edge-tts: {(result.stderr or b'').decode(errors='ignore')[-120:]}")
+                edge_ok = True
+                errors.append(
+                    f"edge-tts convert: {(conv.stderr or b'').decode(errors='ignore')[-120:]}"
+                )
+                break
+            errors.append(
+                f"edge-tts: {(result.stderr or b'').decode(errors='ignore')[-120:]}"
+            )
+        if not edge_ok:
+            # Python API fallback (works even when CLI module flags differ)
+            try:
+                import asyncio
+
+                import edge_tts  # type: ignore
+
+                async def _edge_save() -> None:
+                    communicate = edge_tts.Communicate(raw, voice_id)
+                    await communicate.save(mp3_path)
+
+                asyncio.run(_edge_save())
+                if file_is_usable(mp3_path, min_bytes=100):
+                    ffmpeg = resolve_ffmpeg()
+                    conv = subprocess.run(
+                        [ffmpeg, "-y", "-i", mp3_path, abs_wav],
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.PIPE,
+                    )
+                    try:
+                        os.remove(mp3_path)
+                    except OSError:
+                        pass
+                    if conv.returncode == 0 and file_is_usable(wav_path, min_bytes=100):
+                        print(
+                            f"  [Audio] TTS backend: edge-tts API voice={voice_id!r} "
+                            f"speaker={speaker!r}"
+                        )
+                        return wav_path
+            except Exception as e:
+                errors.append(f"edge-tts API: {e}")
 
         # --- 2) Windows SAPI (native Windows, or powershell.exe from WSL) ---
         ps_safe = raw.replace("'", "''")
@@ -3021,37 +3568,186 @@ class AgenticGenerationEngine:
             f"Details: {' | '.join(errors)[:400]}"
         )
 
+    def apply_dialogue_audio_to_existing_clips(
+        self,
+        *,
+        only_scene: Optional[int] = None,
+        force: bool = False,
+        progress_cb=None,
+    ) -> Dict[str, Any]:
+        """
+        Mux TTS narration/dialogue onto clips already on disk (no video regen).
+
+        Uses clip audio_payload from the blueprint. Requires ensure_dialogue_audio
+        path (temporarily forced on for this call).
+        """
+        prev = self.config.get("ensure_dialogue_audio")
+        self.config["ensure_dialogue_audio"] = True
+        summary: Dict[str, Any] = {
+            "done": [],
+            "skipped": [],
+            "failed": [],
+        }
+        try:
+            for scene in self.blueprint.get("scenes", []):
+                sn = int(scene.get("scene_number") or 0)
+                if only_scene is not None and sn != int(only_scene):
+                    continue
+                for clip in scene.get("veo_clips") or []:
+                    cn = int(clip.get("clip_number") or 0)
+                    path = clip_output_path(sn, cn)
+                    ap = clip.get("audio_payload") or {}
+                    dialogue = str(ap.get("dialogue") or "").strip()
+                    if not dialogue:
+                        summary["skipped"].append(
+                            {"scene": sn, "clip": cn, "reason": "no dialogue"}
+                        )
+                        continue
+                    if not file_is_usable(path, min_bytes=1024):
+                        summary["skipped"].append(
+                            {"scene": sn, "clip": cn, "reason": "no video"}
+                        )
+                        continue
+                    job = (self.state.get("clip_jobs") or {}).get(
+                        self._clip_job_key(sn, cn), {}
+                    )
+                    if (
+                        not force
+                        and job.get("dialogue_audio_ensured")
+                        and file_is_usable(path, min_bytes=1024)
+                    ):
+                        # Still re-apply if forced only
+                        pass
+                    if progress_cb:
+                        progress_cb(
+                            {
+                                "event": "clip_start",
+                                "scene": sn,
+                                "clip": cn,
+                                "message": f"TTS S{sn:02d}C{cn}…",
+                            }
+                        )
+                    try:
+                        self._ensure_dialogue_audio(path, clip)
+                        self._update_clip_job(
+                            sn, cn, dialogue_audio_ensured=True, has_audio=True
+                        )
+                        summary["done"].append({"scene": sn, "clip": cn, "path": path})
+                        if progress_cb:
+                            progress_cb(
+                                {
+                                    "event": "clip_done",
+                                    "scene": sn,
+                                    "clip": cn,
+                                    "message": f"Done S{sn:02d}C{cn}",
+                                }
+                            )
+                    except Exception as e:
+                        summary["failed"].append(
+                            {"scene": sn, "clip": cn, "error": str(e)}
+                        )
+                        if progress_cb:
+                            progress_cb(
+                                {
+                                    "event": "clip_error",
+                                    "scene": sn,
+                                    "clip": cn,
+                                    "error": str(e),
+                                    "message": f"Failed S{sn:02d}C{cn}: {e}",
+                                }
+                            )
+            self.save_state()
+        finally:
+            if prev is None:
+                self.config.pop("ensure_dialogue_audio", None)
+            else:
+                self.config["ensure_dialogue_audio"] = prev
+        return summary
+
+    def _probe_media_duration_sec(self, path: str) -> float:
+        """Best-effort duration in seconds (ffprobe via ffmpeg -i parse)."""
+        try:
+            ffmpeg = resolve_ffmpeg()
+            result = subprocess.run(
+                [ffmpeg, "-i", path, "-hide_banner"],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+            )
+            err = (result.stderr or b"").decode(errors="ignore")
+            m = re.search(
+                r"Duration:\s*(\d+):(\d+):(\d+(?:\.\d+)?)",
+                err,
+            )
+            if m:
+                return (
+                    int(m.group(1)) * 3600
+                    + int(m.group(2)) * 60
+                    + float(m.group(3))
+                )
+        except Exception:
+            pass
+        return 0.0
+
     def _ensure_dialogue_audio(self, video_path: str, clip: Dict[str, Any]) -> str:
         """
         Guarantee audible spoken dialogue on the clip.
 
         Modes (pipeline_config.dialogue_audio_mode):
-          - "replace" (default): video picture + TTS only — no double voice
-          - "mix": TTS over quiet native bed (can double if Grok also spoke)
+          - "replace" (default): video picture + TTS; pads TTS with silence to full
+            video length (never truncates the picture with ffmpeg -shortest alone)
+          - "mix": TTS over quiet native bed (good for narration VO + ambient)
+
+        Always restores from ``*.native.mp4`` when present so re-applying TTS after
+        a bad short mux still has full-length picture.
         """
-        if not self.config.get("ensure_dialogue_audio", True):
+        if not self.config.get("ensure_dialogue_audio", False):
             return video_path
 
         audio = clip.get("audio_payload") or {}
         dialogue = str(audio.get("dialogue") or "").strip()
         speaker = str(audio.get("speaker") or "").strip()
+        delivery = str(audio.get("delivery") or "").strip().lower()
         if not dialogue or speaker.lower() in ("none", "n/a", ""):
             return video_path
+
+        # Clean book line breaks / slash-separated rhyme lines for TTS
+        dialogue = re.sub(r"\s*/\s*", ". ", dialogue)
+        dialogue = re.sub(r"\s+", " ", dialogue).strip()
 
         ffmpeg = resolve_ffmpeg()
         tts_wav = f"{video_path}.dialogue.wav"
         tmp_out = f"{video_path}.voiced.tmp.mp4"
         native_backup = f"{video_path}.native.mp4"
         mode = str(self.config.get("dialogue_audio_mode", "replace")).lower().strip()
+        # Narration / off-camera VO: keep a quiet ambient bed under the storyteller
+        is_vo = delivery in (
+            "voiceover_internal",
+            "internal",
+            "vo_internal",
+            "thought",
+            "thinking",
+            "narration",
+            "vo",
+        ) or "narrator" in speaker.lower()
+        if is_vo and mode == "replace":
+            # Prefer mix for narration so we don't strip the whole soundtrack feel
+            mode = "mix"
         tts_vol = float(self.config.get("dialogue_tts_volume", 1.0))
+        if is_vo:
+            tts_vol = float(self.config.get("narrator_tts_volume", max(tts_vol, 1.15)))
         bed_vol = float(self.config.get("native_audio_mix_volume", 0.12))
+        if is_vo:
+            bed_vol = float(self.config.get("narrator_bed_volume", max(bed_vol, 0.18)))
 
         try:
             import shutil as _shutil
 
-            # Prefer original Grok picture as source if we saved a native backup earlier
-            source_video = native_backup if file_is_usable(native_backup, min_bytes=1000) else video_path
-            if source_video == video_path and not file_is_usable(native_backup, min_bytes=1000):
+            # Prefer full-length Grok picture from native backup (critical after a
+            # previous -shortest mux that truncated the clip to TTS length).
+            if file_is_usable(native_backup, min_bytes=1000):
+                source_video = native_backup
+            else:
+                source_video = video_path
                 # First time: keep a native backup before we replace audio
                 try:
                     _shutil.copy2(video_path, native_backup)
@@ -3059,58 +3755,95 @@ class AgenticGenerationEngine:
                 except OSError:
                     pass
 
+            vdur = self._probe_media_duration_sec(source_video)
             print(
-                f"  [Audio] Applying TTS dialogue ({mode}) for speaker={speaker!r}..."
+                f"  [Audio] Applying TTS dialogue ({mode}) for speaker={speaker!r} "
+                f"delivery={delivery or '—'} video={vdur:.2f}s..."
             )
             self._synthesize_dialogue_wav(dialogue, tts_wav, speaker=speaker)
 
             has_native = self._video_has_audio(source_video)
+            # Pad TTS to full video length (finite whole_dur — infinite apad can hang).
+            pad_dur = max(1.0, float(vdur) if vdur > 0 else 8.0)
+            pad_s = f"{pad_dur:.3f}"
             if mode == "mix" and has_native:
-                # Quiet ambient under TTS — can still double if native has speech
                 filter_complex = (
-                    f"[0:a]volume={bed_vol},highpass=f=120,"
-                    f"aformat=sample_rates=48000:channel_layouts=stereo[bed];"
-                    f"[1:a]volume={tts_vol},aformat=sample_rates=48000:channel_layouts=stereo[voice];"
-                    f"[bed][voice]amix=inputs=2:duration=first:dropout_transition=0:normalize=0[aout]"
+                    f"[0:a]volume={bed_vol},highpass=f=80,"
+                    f"aformat=sample_rates=48000:channel_layouts=stereo,"
+                    f"apad=whole_dur={pad_s}[bed];"
+                    f"[1:a]volume={tts_vol},"
+                    f"aformat=sample_rates=48000:channel_layouts=stereo,"
+                    f"apad=whole_dur={pad_s}[voice];"
+                    f"[bed][voice]amix=inputs=2:duration=longest:dropout_transition=0:normalize=0[aout]"
                 )
-                cmd = [
+            else:
+                if mode != "replace":
+                    print(
+                        f"  [Audio] Mode '{mode}' unavailable without native audio; "
+                        "using replace+pad."
+                    )
+                filter_complex = (
+                    f"[1:a]volume={tts_vol},"
+                    f"aformat=sample_rates=48000:channel_layouts=stereo,"
+                    f"apad=whole_dur={pad_s}[aout]"
+                )
+
+            def _mux_cmd(*, reencode: bool) -> List[str]:
+                vcodec = (
+                    ["-c:v", "libx264", "-preset", "veryfast", "-crf", "18"]
+                    if reencode
+                    else ["-c:v", "copy"]
+                )
+                return [
                     ffmpeg, "-y",
                     "-i", source_video,
                     "-i", tts_wav,
                     "-filter_complex", filter_complex,
                     "-map", "0:v:0",
                     "-map", "[aout]",
-                    "-c:v", "libx264", "-preset", "veryfast", "-crf", "18",
+                    *vcodec,
                     "-c:a", "aac", "-b:a", "192k",
-                    "-shortest",
-                    "-movflags", "+faststart",
-                    tmp_out,
-                ]
-            else:
-                # REPLACE (default): picture from Grok + TTS only — one clear voice, no delay double
-                if mode != "replace":
-                    print(f"  [Audio] Mode '{mode}' unavailable without native audio; using replace.")
-                cmd = [
-                    ffmpeg, "-y",
-                    "-i", source_video,
-                    "-i", tts_wav,
-                    "-map", "0:v:0",
-                    "-map", "1:a:0",
-                    "-c:v", "libx264", "-preset", "veryfast", "-crf", "18",
-                    "-c:a", "aac", "-b:a", "192k",
-                    "-shortest",
+                    "-t", pad_s,
                     "-movflags", "+faststart",
                     tmp_out,
                 ]
 
             try:
-                result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                result = subprocess.run(
+                    _mux_cmd(reencode=False),
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    timeout=180,
+                )
             except FileNotFoundError as e:
                 raise GenerationFailure(f"ffmpeg executable not runnable ({ffmpeg}): {e}")
+            except subprocess.TimeoutExpired:
+                raise GenerationFailure("ffmpeg dialogue mux timed out (180s)")
+
+            # If stream-copy video fails (odd timebase), retry with re-encode
+            if result.returncode != 0 or not file_is_usable(tmp_out, min_bytes=50_000):
+                err1 = (result.stderr or b"").decode(errors="ignore")[-300:]
+                print(f"  [Audio] copy-mux failed, re-encoding video… ({err1[:120]})")
+                try:
+                    result = subprocess.run(
+                        _mux_cmd(reencode=True),
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.PIPE,
+                        timeout=300,
+                    )
+                except subprocess.TimeoutExpired:
+                    raise GenerationFailure("ffmpeg dialogue re-encode timed out (300s)")
 
             if result.returncode != 0 or not file_is_usable(tmp_out, min_bytes=50_000):
                 err = (result.stderr or b"").decode(errors="ignore")[-500:]
                 raise GenerationFailure(f"Failed to mux dialogue TTS onto clip: {err}")
+
+            # Guard: never keep a mux that chopped the picture to a short TTS line
+            out_dur = self._probe_media_duration_sec(tmp_out)
+            if vdur > 1.0 and out_dur > 0 and out_dur < (vdur * 0.85):
+                raise GenerationFailure(
+                    f"Dialogue mux truncated video ({out_dur:.2f}s < source {vdur:.2f}s)."
+                )
 
             stats = self._mp4_audio_stats(tmp_out)
             if not stats.get("has_audio_track") and not self._video_has_audio(tmp_out):
@@ -3120,8 +3853,46 @@ class AgenticGenerationEngine:
                     f"Dialogue mux output suspiciously small ({os.path.getsize(tmp_out)} bytes)."
                 )
 
-            os.replace(tmp_out, video_path)
-            print(f"  [Audio] Dialogue applied ({mode}) -> {video_path}")
+            # Windows file locks (previewers / leftover ffmpeg) — copy then replace
+            import shutil as _shutil2
+
+            replaced = False
+            last_err: Optional[BaseException] = None
+            for attempt in range(8):
+                try:
+                    # Prefer atomic replace; fall back to copy into place
+                    try:
+                        os.replace(tmp_out, video_path)
+                    except OSError:
+                        _shutil2.copyfile(tmp_out, video_path)
+                        try:
+                            os.remove(tmp_out)
+                        except OSError:
+                            pass
+                    replaced = True
+                    break
+                except OSError as e:
+                    last_err = e
+                    time.sleep(0.35 * (attempt + 1))
+            if not replaced:
+                # Last resort: write alongside and leave a note
+                alt = f"{video_path}.voiced.mp4"
+                try:
+                    _shutil2.copyfile(tmp_out, alt)
+                    raise GenerationFailure(
+                        f"Could not overwrite {video_path} ({last_err}); "
+                        f"wrote voiced file to {alt} instead — close players and rename."
+                    )
+                except GenerationFailure:
+                    raise
+                except OSError as e:
+                    raise GenerationFailure(
+                        f"Could not replace clip with voiced file: {last_err or e}"
+                    )
+            print(
+                f"  [Audio] Dialogue applied ({mode}) -> {video_path} "
+                f"({out_dur:.2f}s, speaker={speaker})"
+            )
             return video_path
         except GenerationFailure as e:
             print(f"  [Audio Warning] {e}. Leaving original clip audio as-is.")
@@ -3358,8 +4129,8 @@ class AgenticGenerationEngine:
             needs_dialogue = bool(dialogue_text)
             if (has_audio or not self.config.get("regenerate_silent_clips", True)) and qa_ok:
                 # Still ensure TTS dialogue overlay if missing from older renders
-                if needs_dialogue and self.config.get("ensure_dialogue_audio", True) and not dialogue_ready:
-                    print(f"  [Grok] Existing Clip {clip_num} lacks ensured dialogue audio — mixing TTS voiceover...")
+                if needs_dialogue and self.config.get("ensure_dialogue_audio", False) and not dialogue_ready:
+                    print(f"  [Grok] Existing Clip {clip_num}: optional TTS (ensure_dialogue_audio=ON)...")
                     self._ensure_dialogue_audio(output_clip_path, clip)
                     self._update_clip_job(
                         scene_num, clip_num,
@@ -3396,6 +4167,9 @@ class AgenticGenerationEngine:
             print(f"  [Grok] Resumed file for Clip {clip_num} is silent — submitting a new audio-aware job...")
             self._invalidate_clip_file(scene_num, clip_num, output_clip_path, reason="resumed_silent")
 
+        # Normalize audio_payload (Stage 1 root fields / recovery) BEFORE prompt + TTS
+        clip = self._prepare_clip_for_generation(clip)
+
         # Decide continuation vs fresh shot BEFORE building the prompt
         prev_path = previous_context_id if isinstance(previous_context_id, str) else None
         use_continuation = self._should_use_last_frame_continuation(clip, continuation_source, prev_path)
@@ -3414,7 +4188,19 @@ class AgenticGenerationEngine:
 
         audio_payload = clip.get("audio_payload") or {}
         if (audio_payload.get("dialogue") or "").strip():
-            print(f"  [Grok] Audio: speaker={audio_payload.get('speaker')!r}, dialogue included in prompt")
+            print(
+                f"  [Grok] Audio plan: delivery={audio_payload.get('delivery')!r} "
+                f"speaker={audio_payload.get('speaker')!r} "
+                f"line={(audio_payload.get('dialogue') or '')[:80]!r}"
+            )
+            if self.config.get("ensure_dialogue_audio", False):
+                print(
+                    "  [Grok] ensure_dialogue_audio=ON — optional TTS may replace native audio after download."
+                )
+            else:
+                print(
+                    "  [Grok] Native speech only (TTS off) — narrator/dialogue must come from Grok audio."
+                )
         else:
             print("  [Grok] Audio: ambient/Foley only (no dialogue on this clip)")
 
@@ -3482,14 +4268,52 @@ class AgenticGenerationEngine:
                 )
                 payload["duration"] = GROK_IMAGE_OR_REF_MAX_SEC
         else:
-            # Fresh shot: lock PRIMARY visual subject (first adult Character_* in visual_prompt).
-            # Do NOT prefer VO speaker — narration is often off-screen / different person.
-            # Do NOT use adult Stage-0 portraits for young/flashback versions of characters.
+            # Fresh shot: lock ALL on-screen cast refs (prompt tokens + scene cast list).
+            # Mom-led dialogue shots must still carry Buster's locked plate if he is present.
+            # Order animal/hero refs FIRST — multi-ref with human first often invents a new dog.
             anchor_probe = clip.get("visual_prompt") or ""
-            anchor_path = self._find_character_anchor_path(anchor_probe)
-            if anchor_path:
-                print(f"  [Character Anchor] Primary subject ref: {anchor_path}")
-                payload["reference_images"] = [{"url": self._file_to_data_uri(anchor_path)}]
+            scene_cast: List[str] = []
+            for sc in self.blueprint.get("scenes", []):
+                if int(sc.get("scene_number") or 0) != int(scene_num):
+                    continue
+                for k in sc.get("characters_on_screen") or []:
+                    if k:
+                        scene_cast.append(str(k))
+                ps = clip.get("primary_subject") or sc.get("primary_subject")
+                if ps:
+                    scene_cast.append(str(ps))
+                break
+            id_lock = self._identity_lock_clause(
+                anchor_probe + " " + " ".join(scene_cast),
+                extra_keys=scene_cast,
+            )
+            # Put identity locks at the FRONT of the prompt (Grok weights early text more)
+            base_prompt = (payload.get("prompt") or prompt or "").strip()
+            if id_lock and "IDENTITY LOCK" not in base_prompt:
+                payload["prompt"] = f"{id_lock} {base_prompt}".strip()
+            elif id_lock and id_lock not in base_prompt:
+                payload["prompt"] = f"{id_lock} {base_prompt}".strip()
+            anchor_paths = self._find_character_anchor_paths(
+                anchor_probe, max_refs=3, extra_char_keys=scene_cast
+            )
+            if anchor_paths:
+                anchor_paths = sorted(
+                    anchor_paths, key=self._character_ref_priority_key
+                )
+                anchor_paths = self._expand_character_refs_with_bookplates(
+                    anchor_paths, max_refs=3
+                )
+                # Re-sort after expansion so animals stay first
+                anchor_paths = sorted(
+                    anchor_paths, key=self._character_ref_priority_key
+                )
+                print(
+                    "  [Character Anchor] Reference image(s) [priority order]: "
+                    + ", ".join(os.path.basename(p) for p in anchor_paths)
+                )
+                payload["reference_images"] = [
+                    {"url": self._file_to_data_uri(p)} for p in anchor_paths
+                ]
                 if int(payload["duration"]) > GROK_IMAGE_OR_REF_MAX_SEC:
                     print(
                         f"  [Grok] Clamping duration {payload['duration']}s → "
@@ -3498,7 +4322,7 @@ class AgenticGenerationEngine:
                     payload["duration"] = GROK_IMAGE_OR_REF_MAX_SEC
             else:
                 print(
-                    "  [Character Anchor] No adult ref applied "
+                    "  [Character Anchor] No locked ref applied "
                     "(missing character file, or young/flashback cast uses text-only age)."
                 )
 
@@ -3532,13 +4356,32 @@ class AgenticGenerationEngine:
                 f"  [Grok] Clip {clip_num} audio probe: track={has_audio}, "
                 f"payload_bytes={audio_stats.get('audio_bytes', 0)}"
             )
+            needs_dialogue = bool(
+                ((clip.get("audio_payload") or {}).get("dialogue") or "").strip()
+            )
+            weak = False
             if not has_audio:
                 print(f"  [Grok Warning] Clip {clip_num} has NO audio track after download.")
             elif self._audio_is_weak(output_clip_path, duration_hint=float(duration)):
+                weak = True
                 print(f"  [Grok Warning] Clip {clip_num} audio payload looks weak/near-silent.")
+            if needs_dialogue and (not has_audio or weak):
+                print(
+                    f"  [Grok Warning] Clip {clip_num} expected spoken line "
+                    f"({(clip.get('audio_payload') or {}).get('speaker')!r}) but native audio "
+                    f"is missing/weak — re-generate rather than TTS (TTS is off by default)."
+                )
 
-            # Guarantee audible spoken lines (Grok often returns ambient-only beds)
-            self._ensure_dialogue_audio(output_clip_path, clip)
+            # Optional TTS only when explicitly enabled (default: keep pure Grok audio)
+            dialogue_ensured = False
+            if self.config.get("ensure_dialogue_audio", False):
+                self._ensure_dialogue_audio(output_clip_path, clip)
+                dialogue_ensured = True
+            else:
+                print(
+                    f"  [Grok] Keeping native Grok audio for Clip {clip_num} "
+                    f"(ensure_dialogue_audio=false)."
+                )
             has_audio = self._video_has_audio(output_clip_path)
             has_ref_image = bool(payload.get("image") or payload.get("reference_images"))
             is_extend = bool(use_continuation)
@@ -3549,7 +4392,7 @@ class AgenticGenerationEngine:
                 video_url=video_url,
                 path=output_clip_path,
                 has_audio=has_audio,
-                dialogue_audio_ensured=True,
+                dialogue_audio_ensured=dialogue_ensured,
                 audio_bytes=audio_stats.get("audio_bytes"),
                 model=resolved_model,
                 resolution=str(payload.get("resolution") or self.config.get("resolution")),
@@ -4464,7 +5307,7 @@ class AgenticGenerationEngine:
             if s.get("scene_number") == scene_num:
                 scene_obj = s
                 break
-        if scene_obj and self.config.get("ensure_dialogue_audio", True):
+        if scene_obj and self.config.get("ensure_dialogue_audio", False):
             clips_by_num = {
                 c.get("clip_number"): c for c in (scene_obj.get("veo_clips") or [])
             }
@@ -4911,10 +5754,52 @@ class AgenticGenerationEngine:
                 paths.append(comp)
         return paths
 
-    def _concat_videos(self, input_paths: List[str], output_path: str, label: str = "movie") -> str:
+    def _run_ffmpeg_cancellable(
+        self,
+        cmd: List[str],
+        *,
+        cancel_event: Optional[Any] = None,
+        label: str = "ffmpeg",
+    ) -> subprocess.CompletedProcess:
+        """
+        Run ffmpeg; if cancel_event is set, kill the process (for background WIP jobs).
+        """
+        if cancel_event is None:
+            return subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        try:
+            proc = subprocess.Popen(
+                cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+            )
+        except Exception as e:
+            raise GenerationFailure(f"Failed to start ffmpeg for {label}: {e}")
+        while proc.poll() is None:
+            if cancel_event is not None and getattr(cancel_event, "is_set", lambda: False)():
+                try:
+                    proc.kill()
+                except Exception:
+                    pass
+                try:
+                    proc.wait(timeout=5)
+                except Exception:
+                    pass
+                raise GenerationFailure(f"Cancelled {label}")
+            time.sleep(0.15)
+        out, err = proc.communicate()
+        return subprocess.CompletedProcess(cmd, proc.returncode, out, err)
+
+    def _concat_videos(
+        self,
+        input_paths: List[str],
+        output_path: str,
+        label: str = "movie",
+        *,
+        cancel_event: Optional[Any] = None,
+    ) -> str:
         """Concatenate MP4s with ffmpeg (stream copy when possible)."""
         if not input_paths:
             raise GenerationFailure(f"No input videos to build {label}.")
+        if cancel_event is not None and getattr(cancel_event, "is_set", lambda: False)():
+            raise GenerationFailure(f"Cancelled {label}")
         ensure_parent_dir(output_path)
         ffmpeg = resolve_ffmpeg()
         concat_list = f"assets/scenes/concat_list_{label.replace(' ', '_')}.txt"
@@ -4938,11 +5823,17 @@ class AgenticGenerationEngine:
         ]
         print(f"  [FFmpeg] Building {label} from {len(input_paths)} scene(s) -> {output_path}")
         try:
-            result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            result = self._run_ffmpeg_cancellable(
+                cmd, cancel_event=cancel_event, label=label
+            )
+        except GenerationFailure:
+            raise
         except Exception as e:
             raise GenerationFailure(f"Failed to run ffmpeg for {label}: {e}")
 
         if result.returncode != 0 or not file_is_usable(tmp_out, min_bytes=1024):
+            if cancel_event is not None and getattr(cancel_event, "is_set", lambda: False)():
+                raise GenerationFailure(f"Cancelled {label}")
             # Fallback: re-encode if stream copy fails (codec/timebase mismatches)
             print(f"  [FFmpeg] Stream-copy failed for {label}; retrying with re-encode...")
             cmd_re = [
@@ -4954,7 +5845,9 @@ class AgenticGenerationEngine:
                 "-movflags", "+faststart",
                 tmp_out,
             ]
-            result = subprocess.run(cmd_re, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            result = self._run_ffmpeg_cancellable(
+                cmd_re, cancel_event=cancel_event, label=f"{label}_reencode"
+            )
             if result.returncode != 0 or not file_is_usable(tmp_out, min_bytes=1024):
                 err = (result.stderr or b"").decode(errors="ignore")[-500:]
                 raise GenerationFailure(f"Failed to build {label}. FFmpeg: {err}")
@@ -5008,6 +5901,22 @@ class AgenticGenerationEngine:
         note = f" ({reason})" if reason else ""
         mode = "approved" if approved_only else "all composites"
         print(f"\n==================== WIP MOVIE UPDATE{note} [{mode}] ====================")
+        # Track which scene numbers are in this stitch (for smart append later)
+        scene_numbers: List[int] = []
+        for s in self.blueprint.get("scenes", []):
+            sn = int(s.get("scene_number") or 0)
+            if approved_only and not self.state.get("scenes_completed", {}).get(str(sn)):
+                continue
+            comp = self._resolve_scene_composite_path(sn)
+            if comp and comp in scene_files:
+                scene_numbers.append(sn)
+        if not scene_numbers and scene_files:
+            # Fallback order matches scene_files collection order
+            for s in self.blueprint.get("scenes", []):
+                sn = int(s.get("scene_number") or 0)
+                comp = self._resolve_scene_composite_path(sn)
+                if comp in scene_files:
+                    scene_numbers.append(sn)
         try:
             path = self._concat_videos(scene_files, output_path, label="wip_movie")
             print(
@@ -5017,9 +5926,11 @@ class AgenticGenerationEngine:
             self.state["wip_movie"] = {
                 "path": path,
                 "scene_count": len(scene_files),
+                "scene_numbers": scene_numbers,
                 "approved_only": approved_only,
                 "updated_at": time.strftime("%Y-%m-%dT%H:%M:%S"),
                 "reason": reason or "",
+                "mode": "full",
             }
             self.save_state()
             return path

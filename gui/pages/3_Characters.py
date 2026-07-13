@@ -190,8 +190,8 @@ with col_main:
     )
     if is_voice_only:
         st.info(
-            "**Voice only** — no on-screen image. Set the voice profile below; "
-            "skip book plates and Generate variants."
+            "**Voice only (narrator)** — no on-screen image. Choose a **narrator voice** "
+            "below (drives Grok native VO). Skip book plates and Generate variants."
         )
         book_refs = []
     else:
@@ -237,11 +237,86 @@ with col_main:
             "or generate Grok variants below and lock one of those."
         )
 
-    # Voice (collapsed)
-    with st.expander("Voice profile", expanded=False):
+    # Voice — expanded for narrator (primary setup); collapsed for on-screen cast
+    with st.expander(
+        "Voice setup (Grok native speech)",
+        expanded=is_voice_only,
+    ):
         vinfo = api.get_character_voice(key)
+        st.caption(
+            "This **voice_profile** is injected into Grok video prompts so the model "
+            "speaks as this character (narrator VO or on-camera). TTS is optional and off by default."
+        )
+
+        if is_voice_only:
+            presets = getattr(api, "NARRATOR_VOICE_PRESETS", {}) or {}
+            preset_labels = {
+                "male_warm": "Male · warm storyteller",
+                "female_warm": "Female · warm storyteller",
+                "male_deep": "Male · deep",
+                "female_bright": "Female · bright",
+                "custom": "Custom (edit text below)",
+            }
+            # Detect current preset
+            cur_g = (vinfo.get("voice_gender") or "").lower()
+            cur_p = (vinfo.get("voice_profile") or "").strip()
+            default_preset = "custom"
+            for pk, pv in presets.items():
+                if (pv.get("voice_profile") or "").strip() == cur_p:
+                    default_preset = pk
+                    break
+            if default_preset == "custom" and cur_g in ("male", "female"):
+                # partial match by gender
+                for pk, pv in presets.items():
+                    if pv.get("voice_gender") == cur_g and "warm" in pk:
+                        default_preset = pk
+                        break
+            opts = list(presets.keys()) + ["custom"]
+            try:
+                pidx = opts.index(default_preset)
+            except ValueError:
+                pidx = len(opts) - 1
+            pick = st.selectbox(
+                "Narrator voice preset",
+                options=opts,
+                index=pidx,
+                format_func=lambda k: preset_labels.get(k, k),
+                key=f"narr_preset_{key}",
+                help="Sets gender + Grok voice_profile text used on every narrator clip",
+            )
+            if pick != "custom" and pick in presets:
+                if st.button("Apply preset", key=f"apply_preset_{key}", type="primary"):
+                    try:
+                        pr = presets[pick]
+                        api.save_character_voice(
+                            key,
+                            voice_profile=pr.get("voice_profile"),
+                            voice_label=pr.get("voice_label"),
+                            voice_gender=pr.get("voice_gender"),
+                            tts_voice=pr.get("tts_voice") or "",
+                        )
+                        _cached_list_characters.clear()
+                        st.success(
+                            f"Narrator set to **{preset_labels.get(pick, pick)}** "
+                            f"({pr.get('voice_gender')})"
+                        )
+                        st.rerun()
+                    except Exception as e:
+                        st.error(str(e))
+
+        gender_opts = ["auto", "male", "female", "neutral"]
+        cur_gender = (vinfo.get("voice_gender") or "auto").lower()
+        if cur_gender not in gender_opts:
+            cur_gender = "auto"
+        vg = st.selectbox(
+            "Voice gender (for Grok)",
+            options=gender_opts,
+            index=gender_opts.index(cur_gender),
+            key=f"vg_{key}",
+            help="Explicit male/female helps Grok pick the right narrator timbre",
+        )
         vp = st.text_area(
-            "voice_profile",
+            "voice_profile (used in Grok AUDIO prompt)",
             value=vinfo.get("voice_profile") or "",
             height=100,
             key=f"vp_{key}",
@@ -251,11 +326,24 @@ with col_main:
             value=vinfo.get("voice_label") or "",
             key=f"vl_{key}",
         )
-        if st.button("Save voice", key="save_voice"):
+        with st.expander("Optional TTS voice id (only if TTS enabled in Configuration)", expanded=False):
+            st.text_input(
+                "tts_voice / edge neural id",
+                value=vinfo.get("tts_voice") or "",
+                key=f"tv_{key}",
+                help="e.g. en-US-JennyNeural — ignored when ensure_dialogue_audio is off",
+            )
+        if st.button("Save voice", key=f"save_voice_{key}", type="primary"):
             try:
-                api.save_character_voice(key, voice_profile=vp, voice_label=vl)
+                api.save_character_voice(
+                    key,
+                    voice_profile=vp,
+                    voice_label=vl,
+                    voice_gender=None if vg == "auto" else vg,
+                    tts_voice=str(st.session_state.get(f"tv_{key}") or ""),
+                )
                 _cached_list_characters.clear()
-                st.success("Saved")
+                st.success("Voice saved for Grok generation")
                 st.rerun()
             except Exception as e:
                 st.error(str(e))

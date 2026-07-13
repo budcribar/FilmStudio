@@ -246,7 +246,7 @@ def create_project(
                         "grok-imagine-video-1.5": {
                             "default": 8,
                             "prefer_min": 6,
-                            "prefer_max": 12,
+                            "prefer_max": 10,
                         },
                     },
                     "resolutions": {
@@ -298,7 +298,7 @@ def create_project(
             "resolution": "720p",
             "frame_rate": 24,
             "directorial_treatment": "cinematic",
-            "total_runtime_target_seconds": 5400,
+            "total_runtime_target_seconds": 0,
             "character_seed_tokens": {},
         },
         "scenes": [],

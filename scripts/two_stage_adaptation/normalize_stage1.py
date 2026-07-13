@@ -142,7 +142,16 @@ def normalize(data: Dict[str, Any]) -> Dict[str, Any]:
         "directorial_treatment",
         "cinematic lighting, film grain, steady camera, high-contrast",
     )
-    gpv.setdefault("total_runtime_target_seconds", 5400)
+    # Prefer sum of scene budgets when LLM omitted global target (avoid hardcoding 90 min)
+    if gpv.get("total_runtime_target_seconds") is None:
+        scene_sum = 0
+        for s in data.get("scenes") or []:
+            if isinstance(s, dict):
+                try:
+                    scene_sum += int(s.get("duration_target_seconds") or 0)
+                except (TypeError, ValueError):
+                    pass
+        gpv["total_runtime_target_seconds"] = scene_sum if scene_sum > 0 else 900
     gpv.setdefault("character_seed_tokens", {})
     gpv.setdefault("location_seed_tokens", {})
 

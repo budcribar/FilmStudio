@@ -364,14 +364,24 @@ if do_book:
 st.divider()
 st.subheader("2) Stage 1 — scene bible")
 
+# Prefer book analysis estimate (extract_meta / live score), not a fixed 90 min.
+_suggested_mins = book_meta.get("suggested_total_minutes")
+try:
+    _default_mins = max(3, min(180, int(_suggested_mins))) if _suggested_mins else 15
+except (TypeError, ValueError):
+    _default_mins = 15
+_suggested_chunks = book_meta.get("suggested_chunk_pages")
+try:
+    _default_chunks = (
+        max(5, min(30, int(_suggested_chunks))) if _suggested_chunks else 10
+    )
+except (TypeError, ValueError):
+    _default_chunks = 10
+
 if "stage1_chunk_pages" not in st.session_state:
-    st.session_state.stage1_chunk_pages = max(
-        5, min(30, int(book_meta.get("suggested_chunk_pages") or 10))
-    )
+    st.session_state.stage1_chunk_pages = _default_chunks
 if "stage1_total_minutes" not in st.session_state:
-    st.session_state.stage1_total_minutes = max(
-        3, min(180, int(book_meta.get("suggested_total_minutes") or 90))
-    )
+    st.session_state.stage1_total_minutes = _default_mins
 if "stage1_model" not in st.session_state:
     st.session_state.stage1_model = os.environ.get("STAGE1_MODEL", "grok-4.5")
 if "stage1_resume" not in st.session_state:
@@ -379,8 +389,8 @@ if "stage1_resume" not in st.session_state:
 if "stage1_max_chunks" not in st.session_state:
     st.session_state.stage1_max_chunks = 0
 
-chunk_pages = int(st.session_state.get("stage1_chunk_pages") or 10)
-total_minutes = int(st.session_state.get("stage1_total_minutes") or 90)
+chunk_pages = int(st.session_state.get("stage1_chunk_pages") or _default_chunks)
+total_minutes = int(st.session_state.get("stage1_total_minutes") or _default_mins)
 model = str(st.session_state.get("stage1_model") or "grok-4.5")
 resume = bool(st.session_state.get("stage1_resume", False))
 max_chunks = int(st.session_state.get("stage1_max_chunks") or 0)
@@ -422,6 +432,10 @@ else:
             min_value=3,
             max_value=180,
             key="stage1_total_minutes",
+            help=(
+                "Defaults to the calculated book estimate (picture book / short / novel). "
+                "Override only if you want a different length."
+            ),
         )
         st.text_input("Model", key="stage1_model")
         st.checkbox("Resume / merge into existing scenes", key="stage1_resume")
@@ -432,14 +446,23 @@ else:
             key="stage1_max_chunks",
         )
 
-    chunk_pages = int(st.session_state.get("stage1_chunk_pages") or 10)
-    total_minutes = int(st.session_state.get("stage1_total_minutes") or 90)
+    chunk_pages = int(st.session_state.get("stage1_chunk_pages") or _default_chunks)
+    total_minutes = int(st.session_state.get("stage1_total_minutes") or _default_mins)
     model = str(st.session_state.get("stage1_model") or "grok-4.5")
     resume = bool(st.session_state.get("stage1_resume", False))
     max_chunks = int(st.session_state.get("stage1_max_chunks") or 0)
 
+    est_note = ""
+    if _suggested_mins is not None:
+        try:
+            if int(total_minutes) == int(_suggested_mins):
+                est_note = " (book estimate)"
+            else:
+                est_note = f" (book estimate was {_suggested_mins})"
+        except (TypeError, ValueError):
+            pass
     st.caption(
-        f"Will run ~**{total_minutes} min** target · "
+        f"Will run ~**{total_minutes} min** target{est_note} · "
         f"**{chunk_pages}** pages/chunk"
         + (" · resume" if resume else "")
         + (" · **running…**" if stage1_running else "")
@@ -561,14 +584,45 @@ except Exception as e:
     s2 = {}
     st.error(f"Stage 2 status: {e}")
 
+# Flash banner after a successful run (survives one rerun)
+_flash = st.session_state.pop("adapt_stage2_flash", None)
+if isinstance(_flash, dict):
+    if _flash.get("ok"):
+        st.success(
+            f"**Stage 2 ran successfully.** {_flash.get('message') or ''}  \n"
+            f"Wrote `{_flash.get('out_path') or 'blueprint'}`"
+            + (
+                f" · {_flash.get('validation_issue_count', 0)} validation note(s)"
+                if _flash.get("validation_issue_count")
+                else " · validation OK"
+            )
+        )
+    else:
+        st.error(_flash.get("message") or "Stage 2 failed.")
+    if _flash.get("validation_issues"):
+        with st.expander("Validation notes from last run", expanded=bool(_flash.get("validation_issue_count"))):
+            st.code("\n".join(_flash["validation_issues"][:30]))
+
 if not s2.get("stage1_exists"):
     st.info("Finish **Stage 1** above before generating Stage 2.")
 elif s2.get("stage2_ready"):
+    when = s2.get("last_completed_at") or ""
     st.success(
-        f"Stage 2 ready: **{s2.get('stage2_scenes')}** scenes · "
+        f"**Stage 2 plan is ready** — **{s2.get('stage2_scenes')}** scenes · "
         f"**{s2.get('stage2_clips')}** clips"
+        + (f" · last run **{when}**" if when else "")
     )
-    st.caption("Open **Scenes & Clips** to review and generate video.")
+    if s2.get("last_run_message"):
+        st.caption(s2["last_run_message"])
+    st.caption(
+        f"Blueprint: `{Path(s2.get('blueprint_path') or '').name}` · "
+        "Open **Scenes & Clips** to generate video."
+    )
+    if int(s2.get("validation_issue_count") or 0) > 0:
+        st.caption(
+            f"Last plan had {s2.get('validation_issue_count')} advisory validation note(s) "
+            "(plan was still written)."
+        )
 else:
     st.warning(
         f"Stage 1 has **{s2.get('stage1_scenes', 0)}** scenes, but the generate "
@@ -585,12 +639,25 @@ if st.button(
     try:
         with st.spinner("Building Stage 2 clip plan…"):
             summary = api.run_stage2_from_stage1()
-        st.session_state["adapt_last_stage2"] = (
+        st.session_state["adapt_last_stage2"] = summary.get("message") or (
             f"{summary.get('scenes')} scenes · {summary.get('clips')} clips · "
             f"~{int(summary.get('duration_sec') or 0)}s"
         )
+        st.session_state["adapt_stage2_flash"] = {
+            "ok": bool(summary.get("ok")),
+            "message": summary.get("message")
+            or st.session_state["adapt_last_stage2"],
+            "out_path": summary.get("out_path") or "",
+            "validation_issue_count": int(summary.get("validation_issue_count") or 0),
+            "validation_issues": list(summary.get("validation_issues") or [])[:30],
+            "completed_at": summary.get("completed_at") or "",
+        }
         if summary.get("validation_issues"):
-            st.session_state["adapt_last_stage2_notes"] = summary["validation_issues"][:20]
+            st.session_state["adapt_last_stage2_notes"] = summary[
+                "validation_issues"
+            ][:20]
+        else:
+            st.session_state.pop("adapt_last_stage2_notes", None)
         try:
             from review_app.pipeline_progress import invalidate_progress_cache
 
@@ -599,11 +666,15 @@ if st.button(
             pass
         st.rerun()
     except Exception as e:
+        st.session_state["adapt_stage2_flash"] = {
+            "ok": False,
+            "message": f"Stage 2 failed: {e}",
+            "out_path": "",
+            "validation_issue_count": 0,
+            "validation_issues": [],
+        }
         st.error(str(e))
 
 _last_s2 = st.session_state.get("adapt_last_stage2")
-if _last_s2:
-    st.caption(f"Last Stage 2 run: {_last_s2}")
-    if st.session_state.get("adapt_last_stage2_notes"):
-        with st.expander("Validation notes"):
-            st.code("\n".join(st.session_state["adapt_last_stage2_notes"]))
+if _last_s2 and not _flash:
+    st.caption(f"Session last Stage 2: {_last_s2}")

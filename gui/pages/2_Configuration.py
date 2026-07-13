@@ -95,8 +95,15 @@ with c4:
     )
 with c5:
     ensure_dialogue_audio = st.checkbox(
-        "ensure_dialogue_audio (TTS)", bool(cfg.get("ensure_dialogue_audio", False))
+        "ensure_dialogue_audio (optional TTS override)",
+        bool(cfg.get("ensure_dialogue_audio", False)),
+        help=(
+            "OFF (recommended): keep Grok native speech for Mom dialogue and narrator VO. "
+            "ON: after download, replace/mix with edge-tts/SAPI — can speak the wrong voice "
+            "or read Mom's quoted words as robotic TTS. Prefer re-generate if Grok is silent."
+        ),
     )
+
     dialogue_audio_mode = st.selectbox(
         "dialogue_audio_mode",
         ["replace", "mix"],

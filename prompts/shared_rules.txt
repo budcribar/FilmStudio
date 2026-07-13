@@ -16,6 +16,17 @@ BASELINE (always on)
   Never “ban” a secret by writing the secret string into prompts.
 - **Tokens:** Use Character_* in plans; age variants for flashbacks.
 - **VO↔visual:** If the beat/VO says through the window, the picture must not do over the wall.
+- **Cast automation:** Stage 1 scenes list full `characters_on_screen`; Stage 2 copies it and
+  names every still-visible Character_* in visual_prompt so the engine can multi-lock refs.
+- **Audio automation:** Stage 1 beat root (or nested audio) carries delivery/speaker/dialogue;
+  Stage 2 must map that into clip audio_payload — never drop book lines.
+- **Identity stability:** character seed descriptions include stable colors/markings;
+  Stage 2 restates them; engine locks reference plates — no free redesign between scenes.
+- **Ref placeholders:** bare filenames only (`buster_ref.png`), not full assets/ paths.
+- **Single speaker lip-sync:** on `spoken_on_camera`, only `audio_payload.speaker` mouths
+  the line; dogs/pets and non-speakers stay mouth/snout closed (listening). No dual lip-sync.
+- **Native Grok audio:** film dialogue/narration comes from the video model; do not rely on
+  post-TTS as the default path (optional config only).
 
 ================================================================
 OPERATOR NOTES

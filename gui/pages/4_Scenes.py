@@ -33,14 +33,20 @@ if not s2.get("stage2_ready"):
             try:
                 with st.spinner("Building Stage 2 clip plan…"):
                     summary = api.run_stage2_from_stage1()
-                st.success(
-                    f"Stage 2 written: **{summary.get('scenes')}** scenes · "
-                    f"**{summary.get('clips')}** clips · "
-                    f"~{int(summary.get('duration_sec') or 0)}s"
-                )
-                if summary.get("validation_issues"):
-                    with st.expander("Validation notes (non-blocking)"):
-                        st.code("\n".join(summary["validation_issues"][:30]))
+                if summary.get("ok"):
+                    st.session_state["scenes_stage2_flash"] = {
+                        "ok": True,
+                        "message": summary.get("message")
+                        or (
+                            f"Stage 2 complete: {summary.get('scenes')} scenes · "
+                            f"{summary.get('clips')} clips"
+                        ),
+                    }
+                else:
+                    st.session_state["scenes_stage2_flash"] = {
+                        "ok": False,
+                        "message": summary.get("message") or "Stage 2 produced no clips",
+                    }
                 st.rerun()
             except Exception as e:
                 st.error(str(e))
@@ -88,11 +94,21 @@ if "clip_num" not in st.session_state:
 # ---- Scene picker ----
 if st.session_state.clip_num is None:
     st.subheader("All scenes")
+    _s2_flash = st.session_state.pop("scenes_stage2_flash", None)
+    if isinstance(_s2_flash, dict):
+        if _s2_flash.get("ok"):
+            st.success(f"**Stage 2 ran successfully.** {_s2_flash.get('message') or ''}")
+        else:
+            st.error(_s2_flash.get("message") or "Stage 2 failed")
     with st.expander("Stage 2 plan", expanded=False):
+        when = s2.get("last_completed_at") or ""
         st.caption(
-            f"{s2.get('stage2_scenes', 0)} scenes · {s2.get('stage2_clips', 0)} clips "
-            f"from Stage 1 ({s2.get('stage1_scenes', 0)} bible scenes)."
+            f"{s2.get('stage2_scenes', 0)} scenes · {s2.get('stage2_clips', 0)} clips"
+            + (f" · last plan **{when}**" if when else "")
+            + f" · Stage 1 bible ~{s2.get('stage1_scenes', 0)} scenes."
         )
+        if s2.get("last_run_message"):
+            st.caption(s2["last_run_message"])
         if st.button(
             "🔁 Re-generate Stage 2 plan",
             key="scenes_regen_stage2",
@@ -101,10 +117,13 @@ if st.session_state.clip_num is None:
             try:
                 with st.spinner("Rebuilding Stage 2 clip plan…"):
                     summary = api.run_stage2_from_stage1()
-                st.success(
-                    f"Updated: **{summary.get('scenes')}** scenes · "
-                    f"**{summary.get('clips')}** clips"
-                )
+                st.session_state["scenes_stage2_flash"] = {
+                    "ok": bool(summary.get("ok")),
+                    "message": summary.get("message")
+                    or (
+                        f"{summary.get('scenes')} scenes · {summary.get('clips')} clips"
+                    ),
+                }
                 st.rerun()
             except Exception as e:
                 st.error(str(e))
@@ -112,12 +131,195 @@ if st.session_state.clip_num is None:
         st.session_state.playing_scene = None
 
     q = st.text_input("Filter setting text", "")
-    st.caption("Open a scene for cost estimates, or use the **Cost** page for film-wide $.")
     rows = []
     for s in scenes:
         if q and q.lower() not in (s.get("setting") or "").lower():
             continue
         rows.append(s)
+
+    # ---- Multi-select batch generate ----
+    # Options are stable scene numbers (not labels with "0/4" counts — those change
+    # after generate and break st.multiselect defaults).
+    incomplete = [
+        int(s["scene_number"])
+        for s in rows
+        if int(s.get("clips_on_disk") or 0) < int(s.get("clip_count") or 0)
+    ]
+    all_sns = [int(s["scene_number"]) for s in rows]
+    label_by_sn = {
+        int(s["scene_number"]): (
+            f"S{int(s['scene_number']):02d} — {(s.get('setting') or '')[:40]} "
+            f"({s.get('clips_on_disk', 0)}/{s.get('clip_count', 0)})"
+        )
+        for s in rows
+    }
+
+    # Sanitize session selection: drop unknown ids / migrate old string labels
+    raw_pick = st.session_state.get("batch_scene_pick")
+    if raw_pick is None:
+        st.session_state["batch_scene_pick"] = []
+    else:
+        cleaned: list[int] = []
+        for item in raw_pick:
+            if isinstance(item, int) and item in label_by_sn:
+                cleaned.append(item)
+            elif isinstance(item, str):
+                # old format was full label string — extract SNN if possible
+                sn_try = None
+                if item.startswith("S") and len(item) >= 3:
+                    try:
+                        sn_try = int(item[1:3])
+                    except ValueError:
+                        sn_try = None
+                if sn_try is not None and sn_try in label_by_sn:
+                    cleaned.append(sn_try)
+        # de-dupe preserve order
+        seen: set[int] = set()
+        uniq: list[int] = []
+        for n in cleaned:
+            if n not in seen:
+                seen.add(n)
+                uniq.append(n)
+        st.session_state["batch_scene_pick"] = uniq
+
+    with st.container(border=True):
+        st.markdown("**Batch generate**")
+        st.caption(
+            "Select one or more scenes, then generate. "
+            "Uses Grok API (needs `XAI_API_KEY`). Can take a long time."
+        )
+        b1, b2, b3 = st.columns(3)
+        with b1:
+            if st.button("Select incomplete", key="sel_incomplete", width="stretch"):
+                st.session_state["batch_scene_pick"] = list(incomplete)
+                st.rerun()
+        with b2:
+            if st.button("Select all", key="sel_all", width="stretch"):
+                st.session_state["batch_scene_pick"] = list(all_sns)
+                st.rerun()
+        with b3:
+            if st.button("Clear selection", key="sel_clear", width="stretch"):
+                st.session_state["batch_scene_pick"] = []
+                st.rerun()
+
+        selected_sns = st.multiselect(
+            "Scenes to generate",
+            options=all_sns,
+            format_func=lambda n: label_by_sn.get(int(n), f"Scene {n}"),
+            key="batch_scene_pick",
+            help="Select scenes by number; labels show current clip progress",
+        )
+        selected_sns = sorted({int(n) for n in (selected_sns or [])})
+
+        only_missing_batch = st.checkbox(
+            "Only missing clips (skip clips already on disk)",
+            value=True,
+            key="batch_only_missing",
+        )
+        run_qa_batch = st.checkbox(
+            "Run QA after each clip",
+            value=True,
+            key="batch_run_qa",
+        )
+        stop_on_fail = st.checkbox(
+            "Stop batch on first failure",
+            value=True,
+            key="batch_stop_fail",
+        )
+
+        missing_clips_est = 0
+        for s in rows:
+            sn = int(s["scene_number"])
+            if sn not in selected_sns:
+                continue
+            total_c = int(s.get("clip_count") or 0)
+            on_c = int(s.get("clips_on_disk") or 0)
+            if only_missing_batch:
+                missing_clips_est += max(0, total_c - on_c)
+            else:
+                missing_clips_est += total_c
+
+        gen_disabled = not selected_sns or (only_missing_batch and missing_clips_est == 0)
+        gen_label = (
+            f"▶ Generate {len(selected_sns)} scene(s)"
+            + (f" · ~{missing_clips_est} clip(s)" if selected_sns else "")
+        )
+        if st.button(
+            gen_label,
+            type="primary",
+            key="batch_gen_go",
+            disabled=gen_disabled,
+            width="stretch",
+        ):
+            prog = st.progress(0.0, text="Starting batch…")
+            log_box = st.empty()
+            lines: list[str] = []
+
+            def _on_prog(ev: dict) -> None:
+                scene_total = max(1, int(ev.get("scene_total") or 1))
+                scene_index = int(ev.get("scene_index") or 0)
+                clip_total = max(1, int(ev.get("total") or 1))
+                clip_index = int(ev.get("index") or 0)
+                event = ev.get("event") or ""
+                # Outer progress by scene, fine grain by clip within scene
+                if event in ("batch_done",):
+                    frac = 1.0
+                elif scene_index > 0:
+                    base = (scene_index - 1) / scene_total
+                    within = 0.0
+                    if event in ("clip_done", "clip_error"):
+                        within = clip_index / clip_total
+                    elif event == "clip_start":
+                        within = max(0.0, (clip_index - 1) / clip_total)
+                    elif event == "done":
+                        within = 1.0
+                    frac = min(0.99, base + within / scene_total)
+                else:
+                    frac = 0.02
+                msg = ev.get("message") or event
+                prog.progress(frac, text=msg)
+                lines.append(msg)
+                log_box.code("\n".join(lines[-30:]), language="text")
+
+            try:
+                with st.spinner(
+                    f"Generating {len(selected_sns)} scene(s) — keep this tab open…"
+                ):
+                    batch = api.generate_scenes_clips(
+                        selected_sns,
+                        only_missing=bool(only_missing_batch),
+                        run_qa=bool(run_qa_batch),
+                        remux=True,
+                        rebuild_wip=False,
+                        stop_on_fail=bool(stop_on_fail),
+                        progress_cb=_on_prog,
+                    )
+                ok = batch.get("scenes_ok") or []
+                failed = batch.get("scenes_failed") or []
+                if ok and not failed:
+                    st.success(
+                        f"Done: scenes {ok} · {batch.get('clips_done', 0)} clip(s) generated"
+                    )
+                elif ok and failed:
+                    st.warning(
+                        f"Partial: ok {ok} · failed {failed} · "
+                        f"{batch.get('clips_done', 0)} clip(s) generated"
+                    )
+                elif failed:
+                    # surface first error
+                    err = ""
+                    for ps in batch.get("per_scene") or []:
+                        if ps.get("failed"):
+                            err = (ps["failed"][0] or {}).get("error") or ""
+                            break
+                    st.error(f"Failed on scenes {failed}" + (f": {err}" if err else ""))
+                else:
+                    st.info("Nothing to generate for the selection (clips already on disk).")
+                st.rerun()
+            except Exception as e:
+                st.error(str(e))
+
+    st.caption("Click a scene row to open it. Use the batch box above to generate several at once.")
 
     # Inline player for the scene chosen via ▶
     play_sn = st.session_state.playing_scene
@@ -151,29 +353,45 @@ if st.session_state.clip_num is None:
     for s in rows:
         sn = s["scene_number"]
         stale_n = int(s.get("stale_clips") or 0)
+        on_disk = int(s.get("clips_on_disk") or 0)
+        n_clips = int(s.get("clip_count") or 0)
+        incomplete = n_clips > 0 and on_disk < n_clips
         if s.get("dirty"):
             status = "🔁"
+        elif s.get("approved_incomplete") or (
+            s.get("approved_flag") and incomplete
+        ):
+            # Was marked approved but clips missing — never show ✅
+            status = "⚠️"
         elif stale_n:
             status = "⚠️"
         elif s.get("is_hero"):
             status = "⭐"
-        elif s["approved"]:
+        elif s.get("approved") and not incomplete:
             status = "✅"
-        elif s["clips_on_disk"]:
+        elif on_disk:
             status = "📦"
         else:
             status = "·"
         stale_txt = f" · {stale_n} stale" if stale_n else ""
         dirty_txt = f" · dirty {s.get('dirty_cascade')}" if s.get("dirty") else ""
         hero_txt = f" · hero {s.get('hero_resolution')}" if s.get("is_hero") else ""
+        miss_txt = f" · incomplete" if incomplete else ""
+        if s.get("approved_incomplete") or (s.get("approved_flag") and incomplete):
+            miss_txt = " · approved but missing clips"
         label = (
             f"{status} Scene {sn:02d} — {s.get('setting', '')[:56]} "
-            f"({s['clips_on_disk']}/{s['clip_count']} clips{stale_txt}{dirty_txt}{hero_txt})"
+            f"({on_disk}/{n_clips} clips{stale_txt}{dirty_txt}{hero_txt}{miss_txt})"
         )
-        # open | play | badges (thumbs/costs deferred for speed)
+        # open | play | badges
+        selected_mark = "☑ " if int(sn) in selected_sns else ""
         cols = st.columns([3.6, 0.5, 0.9])
         with cols[0]:
-            if st.button(label, key=f"open_s{sn}", width="stretch"):
+            if st.button(
+                f"{selected_mark}{label}",
+                key=f"open_s{sn}",
+                width="stretch",
+            ):
                 st.session_state.scene_num = sn
                 st.session_state.clip_num = 0  # 0 = scene overview
                 st.session_state.playing_scene = None
@@ -187,12 +405,18 @@ if st.session_state.clip_num is None:
                 st.caption("")
         with cols[2]:
             help_bits = []
+            if int(sn) in selected_sns:
+                help_bits.append("sel")
             if s.get("dirty"):
                 help_bits.append("dirty")
+            if incomplete:
+                help_bits.append("missing")
             if s.get("composite_path") or s.get("composite_exists"):
                 help_bits.append("mux")
-            if s.get("approved"):
+            if s.get("approved") and not incomplete:
                 help_bits.append("ok")
+            elif s.get("approved_flag") and incomplete:
+                help_bits.append("need clips")
             st.caption(" · ".join(help_bits) if help_bits else "")
 
     st.stop()
@@ -206,12 +430,17 @@ if not scene:
     st.error(f"Scene {sn} not found")
     st.stop()
 
-clips = api.list_clips(sn)
+# Prefer clip counts from light scene list when possible (avoids second full scan)
 scene_meta = next((x for x in scenes if x["scene_number"] == sn), {})
+# list_clips only when drilling into a scene (overview + clip detail both need it)
+clips = api.list_clips(sn)
 on_disk_n = sum(1 for r in clips if r.get("on_disk"))
 total_n = len(clips)
 missing_n = total_n - on_disk_n
-draft_res = str(api.get_config().get("resolution", "480p"))
+try:
+    draft_res = str((api.get_engine().config or {}).get("resolution", "480p"))
+except Exception:
+    draft_res = "480p"
 
 # =====================================================================
 # SCENE OVERVIEW — simple path first; advanced tools collapsed
@@ -244,34 +473,29 @@ if cn is None or cn == 0:
     else:
         st.success(f"All **{total_n}** clips are on disk. Open a clip to review or re-generate one.")
 
-    gcol1, gcol2 = st.columns([2, 1])
-    with gcol1:
-        gen_missing = st.checkbox(
-            "Only missing clips (skip ones already on disk)",
-            value=True,
-            key=f"gen_missing_{sn}",
-        )
-        run_qa_scene = st.checkbox(
-            "Run QA after each clip",
-            value=True,
-            key=f"gen_qa_{sn}",
-        )
-    with gcol2:
+    gen_missing = st.checkbox(
+        "Only missing clips (skip ones already on disk)",
+        value=True,
+        key=f"gen_missing_{sn}",
+    )
+    run_qa_scene = st.checkbox(
+        "Run QA after each clip",
+        value=True,
+        key=f"gen_qa_{sn}",
+    )
+    # Cost estimate is deferred — computing it every rerun felt sluggish on WSL
+    if st.checkbox("Show cost estimate", value=False, key=f"show_cost_{sn}"):
         try:
             est = api.scene_cost_estimate(
                 sn, mode="all" if not gen_missing else "missing"
             ) or {}
+            if est:
+                st.caption(
+                    f"Est. ~**${float(est.get('total_usd') or 0):.2f}** · "
+                    f"{est.get('clip_count', '?')} clips @ {est.get('resolution') or draft_res}"
+                )
         except Exception:
-            # older cost helper may not have mode=missing
-            try:
-                est = api.scene_cost_estimate(sn, mode="all") or {}
-            except Exception:
-                est = {}
-        if est:
-            st.caption(
-                f"Est. ~**${float(est.get('total_usd') or 0):.2f}** · "
-                f"{est.get('clip_count', '?')} clips @ {est.get('resolution') or draft_res}"
-            )
+            st.caption("Cost estimate unavailable.")
 
     gen_label = (
         f"▶ Generate missing clips ({missing_n})"
@@ -391,49 +615,184 @@ if cn is None or cn == 0:
     # ---- Secondary: finish scene ----
     st.divider()
     st.subheader("When clips look good")
+    st.caption(
+        "**Approve** marks the scene done and remuxes this scene (if checked). "
+        "The full **WIP movie** rebuilds in the **background** (append when possible; "
+        "cancels & restarts a full rebuild if you approve another scene mid-job)."
+    )
+    remux_on_approve = st.checkbox(
+        "Remux scene when approving",
+        value=True,
+        key=f"approve_remux_{sn}",
+        help="FFmpeg concat of this scene's clips into one file (needed before WIP can include it)",
+    )
+
+    # Background WIP status banner
+    try:
+        wip_job = api.wip_job_status()
+    except Exception:
+        wip_job = {}
+    wip_st = (wip_job or {}).get("status") or "idle"
+    if wip_st == "running":
+        q = wip_job.get("queued") or []
+        st.info(
+            f"🎬 WIP job running (**{wip_job.get('mode') or '…'}**): "
+            f"{wip_job.get('message') or ''}"
+            + (f" · queue {q}" if q else "")
+        )
+        if st.button("Refresh WIP status", key=f"wip_refresh_{sn}"):
+            st.rerun()
+    elif wip_st == "done":
+        st.caption(f"WIP up to date · {wip_job.get('path') or wip_job.get('message') or ''}")
+    elif wip_st == "error":
+        st.warning(f"WIP job error: {wip_job.get('error') or wip_job.get('message')}")
+    elif wip_st == "cancelled":
+        st.caption("WIP job was cancelled (usually superseded by a newer approval).")
+
+    if missing_n > 0:
+        st.warning(
+            f"**{missing_n} clip(s) missing** ({on_disk_n}/{total_n} on disk). "
+            "Generate them before approving — ✅ only applies when all clips exist."
+        )
+        if scene_meta.get("approved_flag") or scene_meta.get("approved_incomplete"):
+            st.caption(
+                "This scene was previously marked approved, but clips are incomplete — "
+                "the list no longer shows a full checkmark."
+            )
+            if st.button("Clear incomplete approval flag", key=f"clr_appr_{sn}"):
+                try:
+                    eng = api.get_engine()
+                    eng.state.setdefault("scenes_completed", {}).pop(str(sn), None)
+                    eng.save_state()
+                    st.success("Approval flag cleared.")
+                    st.rerun()
+                except Exception as e:
+                    st.error(str(e))
+
     a1, a2, a3 = st.columns(3)
     with a1:
         if st.button(
             "Approve scene",
             type="primary" if on_disk_n == total_n and total_n else "secondary",
             key=f"approve_{sn}",
-            help="Mark draft scene OK for the WIP timeline",
+            help="Requires all clips on disk. Approve + optional remux; WIP in background.",
+            disabled=missing_n > 0 or total_n == 0,
         ):
-            try:
-                api.approve_scene(sn)
-                st.success("Scene approved.")
-            except Exception as e:
-                st.error(str(e))
+            steps = ["saving approval"]
+            if remux_on_approve:
+                steps.append("remux")
+            steps.append("queue WIP")
+            with st.spinner(" · ".join(steps) + "…"):
+                try:
+                    result = api.approve_scene(
+                        sn,
+                        remux=bool(remux_on_approve),
+                        rebuild_wip=False,
+                        background_wip=True,
+                        require_all_clips=True,
+                    )
+                    msg = "Scene approved."
+                    if result.get("remuxed"):
+                        msg += " Remuxed."
+                    job = result.get("wip_job") or {}
+                    if job:
+                        msg += (
+                            f" WIP **{job.get('mode') or 'job'}** started in background"
+                            f" ({job.get('status')})."
+                        )
+                    if result.get("remux_error"):
+                        msg += f" Remux warning: {result['remux_error']}"
+                    if result.get("wip_job_error"):
+                        msg += f" WIP schedule warning: {result['wip_job_error']}"
+                    st.success(msg)
+                    st.rerun()
+                except Exception as e:
+                    st.error(str(e))
     with a2:
         if st.button("Remux scene", key=f"remux_{sn}"):
-            with st.spinner("FFmpeg remux…"):
+            with st.spinner("FFmpeg remux (this scene only)…"):
                 try:
                     path = api.remux_scene(sn)
                     st.success(path or "No clips to remux")
                 except Exception as e:
                     st.error(str(e))
     with a3:
-        if st.button("Remux + WIP movie", key=f"wip_{sn}"):
-            with st.spinner("Remux + movie_wip.mp4…"):
-                try:
-                    path = api.remux_scenes_and_rebuild_wip(
-                        [sn], reason=f"scene {sn} remux + WIP"
+        if st.button("Rebuild WIP now", key=f"wip_{sn}", help="Queue a full background WIP rebuild"):
+            try:
+                from review_app.wip_jobs import schedule_wip_update
+
+                job = schedule_wip_update(
+                    api.get_engine(),
+                    scene_num=None,
+                    reason=f"manual full rebuild S{sn}",
+                    force_full=True,
+                )
+                st.success(
+                    f"WIP job: {job.get('status')} / {job.get('mode')} — {job.get('message')}"
+                )
+                st.rerun()
+            except Exception as e:
+                st.error(str(e))
+
+    # Optional TTS only — default film path is Grok native speech
+    with st.expander("Optional TTS backfill (not default)", expanded=False):
+        st.caption(
+            "Default: **Grok native audio** (narrator VO + Mom on-camera). "
+            "This panel only if you explicitly want edge-tts/SAPI over existing clips — "
+            "it does not re-call Grok video and can mis-read quoted lines."
+        )
+        tts_scope = st.radio(
+            "Scope",
+            options=["This scene only", "All scenes"],
+            horizontal=True,
+            key=f"tts_scope_{sn}",
+        )
+        if st.button("▶ Apply TTS narration", key=f"tts_apply_{sn}"):
+            only = sn if tts_scope.startswith("This") else None
+            prog = st.progress(0.0, text="Starting TTS…")
+            log = st.empty()
+            lines: list[str] = []
+
+            def _cb(ev: dict) -> None:
+                msg = ev.get("message") or ev.get("event") or ""
+                lines.append(msg)
+                log.code("\n".join(lines[-20:]), language="text")
+                prog.progress(min(0.95, 0.05 + 0.05 * len(lines)), text=msg)
+
+            try:
+                with st.spinner("Muxing narration onto clips…"):
+                    summary = api.apply_dialogue_audio(
+                        only_scene=only,
+                        force=True,
+                        remux_scenes=True,
+                        progress_cb=_cb,
                     )
-                    st.success(path or "Done")
-                except Exception as e:
-                    st.error(str(e))
+                prog.progress(1.0, text="Done")
+                st.success(
+                    f"TTS on {len(summary.get('done') or [])} clip(s) · "
+                    f"failed {len(summary.get('failed') or [])} · "
+                    f"remuxed scenes {summary.get('remuxed_scenes')}"
+                )
+                if summary.get("failed"):
+                    st.warning(str(summary["failed"][:5]))
+                st.rerun()
+            except Exception as e:
+                st.error(str(e))
 
     # ---- Advanced (collapsed) ----
     with st.expander("Cost estimate", expanded=False):
-        c_all = api.scene_cost_estimate(sn, mode="all") or {}
-        c_ex = api.scene_cost_estimate(sn, mode="existing") or {}
-        k1, k2 = st.columns(2)
-        k1.metric("All clips", f"${float(c_all.get('total_usd') or 0):.2f}")
-        k2.metric("On disk only", f"${float(c_ex.get('total_usd') or 0):.2f}")
-        st.caption(
-            f"`{c_all.get('model_name')}` @ {c_all.get('resolution')} · "
-            f"{c_all.get('total_duration_sec')}s"
-        )
+        if st.button("Compute cost", key=f"compute_cost_{sn}"):
+            c_all = api.scene_cost_estimate(sn, mode="all") or {}
+            c_ex = api.scene_cost_estimate(sn, mode="existing") or {}
+            k1, k2 = st.columns(2)
+            k1.metric("All clips", f"${float(c_all.get('total_usd') or 0):.2f}")
+            k2.metric("On disk only", f"${float(c_ex.get('total_usd') or 0):.2f}")
+            st.caption(
+                f"`{c_all.get('model_name')}` @ {c_all.get('resolution')} · "
+                f"{c_all.get('total_duration_sec')}s"
+            )
+        else:
+            st.caption("Click **Compute cost** when you want an estimate (skipped by default for speed).")
 
     with st.expander("Learning cascade (replan flags)", expanded=False):
         st.caption(
@@ -473,7 +832,12 @@ if cn is None or cn == 0:
                     st.rerun()
 
     with st.expander("Hero / delivery pass (later)", expanded=False):
-        hero_info = scene_meta.get("hero") or api.get_engine().get_scene_hero(sn)
+        hero_info = scene_meta.get("hero")
+        if hero_info is None:
+            try:
+                hero_info = api.get_engine().get_scene_hero(sn)
+            except Exception:
+                hero_info = None
         if hero_info:
             st.success(
                 f"Hero locked @ **{hero_info.get('resolution')}** "

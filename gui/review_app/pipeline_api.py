@@ -59,8 +59,13 @@ _engine: Optional[AgenticGenerationEngine] = None
 def get_engine(force_reload: bool = False) -> AgenticGenerationEngine:
     global _engine, ROOT
     ROOT = repo_root()
-    os.chdir(ROOT)
     proj = str(ROOT)
+    # chdir is relatively expensive on WSL /mnt/c — only when project changes
+    try:
+        if os.path.normpath(os.getcwd()) != os.path.normpath(proj):
+            os.chdir(ROOT)
+    except OSError:
+        os.chdir(ROOT)
     if _engine is None or force_reload:
         _engine = AgenticGenerationEngine(install_signals=False, project_dir=proj)
         return _engine
@@ -77,6 +82,33 @@ def get_engine(force_reload: bool = False) -> AgenticGenerationEngine:
         _engine.blueprint_path = desired
         _engine.load_blueprint()
     return _engine
+
+
+def _video_dir_index() -> Dict[str, int]:
+    """
+    One scandir of assets/video → {filename: size}. Faster than per-clip stat on WSL.
+    """
+    out: Dict[str, int] = {}
+    try:
+        with os.scandir("assets/video") as it:
+            for ent in it:
+                if not ent.is_file():
+                    continue
+                try:
+                    out[ent.name] = int(ent.stat().st_size)
+                except OSError:
+                    continue
+    except OSError:
+        pass
+    return out
+
+
+def _clip_on_disk_from_index(
+    video_index: Dict[str, int], scene_num: int, clip_num: int, min_bytes: int = 1024
+) -> Tuple[bool, int]:
+    name = f"scene_{int(scene_num):02d}_clip_{int(clip_num):02d}.mp4"
+    size = int(video_index.get(name) or 0)
+    return size >= min_bytes, size
 
 
 def reload_engine() -> AgenticGenerationEngine:
@@ -202,23 +234,42 @@ def list_scenes(*, light: bool = False, include_costs: bool = True) -> List[Dict
     completed = eng.state.get("scenes_completed") or {}
     stale_by_scene: Dict[int, int] = {}
     stale_clips_by_scene: Dict[int, List[int]] = {}
-    for row in eng.list_stale_clips(only_existing=True):
-        sn = row["scene"]
-        stale_by_scene[sn] = stale_by_scene.get(sn, 0) + 1
-        stale_clips_by_scene.setdefault(sn, []).append(row["clip"])
-
-    video_files: Optional[set] = None
+    # light: count stale from state only (no per-file usable checks)
     if light:
-        try:
-            video_files = set(os.listdir("assets/video"))
-        except OSError:
-            video_files = None
+        for key, entry in (eng.state.get("stale_clips") or {}).items():
+            if not isinstance(entry, dict):
+                continue
+            if entry.get("stale") is False:
+                continue
+            try:
+                sn = int(entry.get("scene_number") or str(key).split("_")[0])
+            except (TypeError, ValueError):
+                continue
+            stale_by_scene[sn] = stale_by_scene.get(sn, 0) + 1
+            try:
+                cn = int(entry.get("clip_number") or str(key).split("_")[-1])
+                stale_clips_by_scene.setdefault(sn, []).append(cn)
+            except (TypeError, ValueError):
+                pass
+    else:
+        for row in eng.list_stale_clips(only_existing=True):
+            sn = row["scene"]
+            stale_by_scene[sn] = stale_by_scene.get(sn, 0) + 1
+            stale_clips_by_scene.setdefault(sn, []).append(row["clip"])
 
-    def _clip_exists(sn: int, cn: int) -> bool:
-        name = f"scene_{int(sn):02d}_clip_{int(cn):02d}.mp4"
-        if video_files is not None:
-            return name in video_files
-        return file_is_usable(clip_output_path(sn, cn), min_bytes=1024)
+    video_index = _video_dir_index()
+    # scene composites often live under assets/scenes
+    scenes_index: Dict[str, int] = {}
+    try:
+        with os.scandir("assets/scenes") as it:
+            for ent in it:
+                if ent.is_file():
+                    try:
+                        scenes_index[ent.name] = int(ent.stat().st_size)
+                    except OSError:
+                        pass
+    except OSError:
+        pass
 
     for s in eng.blueprint.get("scenes", []):
         sn = s.get("scene_number")
@@ -228,13 +279,16 @@ def list_scenes(*, light: bool = False, include_costs: bool = True) -> List[Dict
         on_disk_map: Dict[int, bool] = {}
         for c in clips:
             cn = int(c.get("clip_number", 0))
-            ok = _clip_exists(sn, cn)
+            ok, _sz = _clip_on_disk_from_index(video_index, int(sn or 0), cn)
             on_disk_map[cn] = ok
             if ok:
                 on_disk += 1
 
         composite = composite_output_path(sn)
-        composite_ok = file_is_usable(composite, min_bytes=1024)
+        comp_name = os.path.basename(composite)
+        composite_ok = int(scenes_index.get(comp_name) or video_index.get(comp_name) or 0) >= 1024
+        if not composite_ok and not light:
+            composite_ok = file_is_usable(composite, min_bytes=1024)
         play_path = composite if composite_ok else None
         thumb_path = None
 
@@ -244,7 +298,8 @@ def list_scenes(*, light: bool = False, include_costs: bool = True) -> List[Dict
                 if not play_path and on_disk_map.get(cn):
                     play_path = clip_output_path(sn, cn)
                 seed = f"assets/video/scene_{int(sn):02d}_clip_{cn:02d}_seed_frame.png"
-                if not thumb_path and file_is_usable(seed, min_bytes=64):
+                seed_name = os.path.basename(seed)
+                if not thumb_path and int(video_index.get(seed_name) or 0) >= 64:
                     thumb_path = seed
             if not thumb_path:
                 import glob as _glob
@@ -260,14 +315,24 @@ def list_scenes(*, light: bool = False, include_costs: bool = True) -> List[Dict
 
         hero = (eng.state.get("scene_hero") or {}).get(str(sn))
         dirty_row = learning.get_scene_dirty(eng.state, int(sn)) if sn is not None else None
+        flagged_approved = bool(
+            completed.get(str(sn)) is True or completed.get(sn) is True
+        )
+        clips_complete = n_clips > 0 and on_disk >= n_clips
+        # ✅ only when approved AND every planned clip is on disk
+        approved_ok = flagged_approved and clips_complete
+        approved_incomplete = flagged_approved and not clips_complete
         row: Dict[str, Any] = {
             "scene_number": sn,
             "setting": s.get("setting", ""),
             "scene_filename": s.get("scene_filename", ""),
             "clip_count": n_clips,
             "clips_on_disk": on_disk,
+            "clips_complete": clips_complete,
             "stale_clips": stale_by_scene.get(sn, 0),
-            "approved": bool(completed.get(str(sn))),
+            "approved": approved_ok,
+            "approved_flag": flagged_approved,
+            "approved_incomplete": approved_incomplete,
             "hero": hero,
             "is_hero": bool(hero),
             "hero_resolution": (hero or {}).get("resolution"),
@@ -353,6 +418,7 @@ def home_dashboard() -> Dict[str, Any]:
     wip_meta = (eng.state.get("wip_movie") or {}) if isinstance(eng.state, dict) else {}
     proj = active_project_info()
     dirty = learning.dirty_summary(eng.state)
+    cost = summarize_cost_ledger(eng.get_cost_ledger())
     # Attach dirty flags onto light scene rows for list badges
     dirty_by_sn = {int(r["scene"]): r for r in dirty.get("scenes") or [] if r.get("scene") is not None}
     for s in scenes:
@@ -383,6 +449,11 @@ def home_dashboard() -> Dict[str, Any]:
         "wip_updated_at": wip_meta.get("updated_at"),
         "wip_scene_count": wip_meta.get("scene_count"),
         "blueprint_path": active_blueprint_path(),
+        # Running actual spend (list-rate ledger; same source as Cost page)
+        "actual_usd": float(cost.get("actual_usd") or 0),
+        "actual_events": int(cost.get("event_count") or 0),
+        "actual_video_jobs": int(cost.get("video_jobs") or 0),
+        "actual_video_sec": float(cost.get("video_sec") or 0),
     }
 
 
@@ -398,14 +469,22 @@ def list_clips(scene_num: int) -> List[Dict[str, Any]]:
     scene = get_scene(scene_num)
     if not scene:
         return []
+    video_index = _video_dir_index()
+    stale_map = eng.state.get("stale_clips") or {}
+    job_map = eng.state.get("clip_jobs") or {}
     rows = []
     for c in scene.get("veo_clips") or []:
         cn = int(c.get("clip_number", 0))
         path = clip_output_path(scene_num, cn)
-        job = eng.state.get("clip_jobs", {}).get(f"{scene_num}_{cn}", {})
+        job = job_map.get(f"{scene_num}_{cn}", {}) or {}
         ap = c.get("audio_payload") or {}
-        stale_info = eng.get_stale_clip_info(scene_num, cn)
-        is_stale = eng.is_clip_stale(scene_num, cn)
+        key = f"{scene_num}_{cn}"
+        stale_info = stale_map.get(key) if isinstance(stale_map.get(key), dict) else None
+        is_stale = bool(
+            (stale_info and stale_info.get("stale", True))
+            or job.get("stale")
+        )
+        on_disk, size_bytes = _clip_on_disk_from_index(video_index, scene_num, cn)
         rows.append(
             {
                 "clip_number": cn,
@@ -417,8 +496,8 @@ def list_clips(scene_num: int) -> List[Dict[str, Any]]:
                 "delivery": ap.get("delivery"),
                 "speaker": ap.get("speaker"),
                 "path": path,
-                "on_disk": file_is_usable(path, min_bytes=1024),
-                "size_bytes": os.path.getsize(path) if file_is_usable(path, min_bytes=1) else 0,
+                "on_disk": on_disk,
+                "size_bytes": size_bytes if on_disk else 0,
                 "qa_approved": job.get("qa_approved"),
                 "review_status": "stale" if is_stale else job.get("review_status", "pending"),
                 "review_note": job.get("review_note", ""),
@@ -739,6 +818,145 @@ def generate_scene_clips(
     return summary
 
 
+def generate_scenes_clips(
+    scene_nums: List[int],
+    *,
+    only_missing: bool = True,
+    run_qa: bool = True,
+    remux: bool = True,
+    rebuild_wip: bool = False,
+    stop_on_fail: bool = True,
+    progress_cb=None,
+) -> Dict[str, Any]:
+    """
+    Generate video for multiple scenes in order (batch from scene list UI).
+
+    progress_cb events include scene_index / scene_total for outer progress.
+    """
+    nums = sorted({int(n) for n in scene_nums if n is not None})
+    if not nums:
+        raise ValueError("No scenes selected.")
+
+    batch: Dict[str, Any] = {
+        "scenes_requested": list(nums),
+        "only_missing": only_missing,
+        "per_scene": [],
+        "scenes_ok": [],
+        "scenes_failed": [],
+        "scenes_skipped": [],
+        "clips_done": 0,
+        "clips_failed": 0,
+    }
+    scene_total = len(nums)
+
+    for si, sn in enumerate(nums, start=1):
+        if progress_cb:
+            progress_cb(
+                {
+                    "event": "scene_start",
+                    "scene": sn,
+                    "scene_index": si,
+                    "scene_total": scene_total,
+                    "message": f"Scene {sn} ({si}/{scene_total})…",
+                }
+            )
+
+        def _wrap(ev: dict, _sn: int = sn, _si: int = si) -> None:
+            if not progress_cb:
+                return
+            payload = dict(ev)
+            payload.setdefault("scene", _sn)
+            payload["scene_index"] = _si
+            payload["scene_total"] = scene_total
+            progress_cb(payload)
+
+        try:
+            summary = generate_scene_clips(
+                sn,
+                only_missing=only_missing,
+                run_qa=run_qa,
+                remux=remux,
+                rebuild_wip=False,  # remux WIP once at end if requested
+                progress_cb=_wrap,
+            )
+        except Exception as e:
+            summary = {
+                "scene": sn,
+                "done": [],
+                "failed": [{"clip": None, "error": str(e)}],
+                "skipped_existing": [],
+                "todo": [],
+            }
+
+        batch["per_scene"].append(summary)
+        batch["clips_done"] += len(summary.get("done") or [])
+        batch["clips_failed"] += len(summary.get("failed") or [])
+
+        if summary.get("failed"):
+            batch["scenes_failed"].append(sn)
+            if stop_on_fail:
+                if progress_cb:
+                    progress_cb(
+                        {
+                            "event": "batch_stopped",
+                            "scene": sn,
+                            "scene_index": si,
+                            "scene_total": scene_total,
+                            "message": f"Stopped after failure on scene {sn}",
+                        }
+                    )
+                break
+        elif not (summary.get("todo") or summary.get("done")):
+            # nothing to do / all skipped
+            batch["scenes_skipped"].append(sn)
+            batch["scenes_ok"].append(sn)
+        else:
+            batch["scenes_ok"].append(sn)
+
+    if rebuild_wip and batch["scenes_ok"]:
+        try:
+            eng = get_engine()
+            batch["wip_path"] = eng.remux_scenes_and_rebuild_wip(
+                batch["scenes_ok"],
+                reason=f"after batch generate scenes {batch['scenes_ok']}",
+            )
+        except Exception as e:
+            batch["wip_error"] = str(e)
+
+    edit_log.add_entry(
+        "scenes_batch_generate",
+        user_note=(
+            f"Batch generate {len(nums)} scene(s): "
+            f"{len(batch['scenes_ok'])} ok, {len(batch['scenes_failed'])} failed"
+        ),
+        action_taken=(
+            f"ok={batch['scenes_ok']} failed={batch['scenes_failed']} "
+            f"clips_done={batch['clips_done']}"
+        ),
+        learning_layer="clip",
+        targets=["assets/video", "assets/scenes"],
+        extra={
+            "scenes_requested": nums,
+            "scenes_ok": batch["scenes_ok"],
+            "scenes_failed": batch["scenes_failed"],
+            "only_missing": only_missing,
+        },
+    )
+    if progress_cb:
+        progress_cb(
+            {
+                "event": "batch_done",
+                "scene_total": scene_total,
+                "message": (
+                    f"Batch done: {len(batch['scenes_ok'])} scene(s) ok, "
+                    f"{len(batch['scenes_failed'])} failed, "
+                    f"{batch['clips_done']} clip(s) generated"
+                ),
+            }
+        )
+    return batch
+
+
 def log_clip_feedback(
     scene_num: int,
     clip_num: int,
@@ -851,19 +1069,156 @@ def get_scene_dirty(scene_num: int) -> Optional[Dict[str, Any]]:
     return learning.get_scene_dirty(get_engine().state, scene_num)
 
 
-def approve_scene(scene_num: int) -> None:
-    get_engine().approve_scene(scene_num)
+def approve_scene(
+    scene_num: int,
+    *,
+    remux: bool = True,
+    rebuild_wip: bool = False,
+    background_wip: bool = True,
+    require_all_clips: bool = True,
+) -> Dict[str, Any]:
+    """
+    Mark scene approved (+ optional remux).
+
+    background_wip=True (default): schedule smart WIP rebuild/append in a daemon
+    thread so the UI returns immediately. Concurrent full rebuilds cancel & restart;
+    safe appends are queued.
+    rebuild_wip=True: also rebuild WIP synchronously (slow; rarely needed).
+    require_all_clips=True: refuse approval if any planned clip is missing on disk.
+    """
+    eng = get_engine()
+    if require_all_clips:
+        scene = get_scene(scene_num)
+        if not scene:
+            raise ValueError(f"Scene {scene_num} not found")
+        missing: List[int] = []
+        for c in scene.get("veo_clips") or []:
+            cn = int(c.get("clip_number") or 0)
+            if not file_is_usable(clip_output_path(scene_num, cn), min_bytes=1024):
+                missing.append(cn)
+        if missing:
+            raise ValueError(
+                f"Cannot approve scene {scene_num}: missing clip(s) "
+                f"{missing} ({len(missing)} not on disk). Generate them first."
+            )
+    result = eng.approve_scene(
+        scene_num, remux=remux, rebuild_wip=rebuild_wip
+    )
+    if not isinstance(result, dict):
+        result = {"approved": True, "scene": scene_num}
+
+    bits = ["scenes_completed"]
+    if remux:
+        bits.append("remux")
+    if rebuild_wip:
+        bits.append("WIP sync")
+
+    if background_wip and not rebuild_wip:
+        try:
+            from review_app.wip_jobs import schedule_wip_update
+
+            eng = get_engine()
+            job = schedule_wip_update(
+                eng, scene_num=int(scene_num), reason=f"after approve S{scene_num}"
+            )
+            result["wip_job"] = job
+            bits.append(f"WIP bg ({job.get('mode') or 'job'})")
+        except Exception as e:
+            result["wip_job_error"] = str(e)
+
+    extra = {k: v for k, v in result.items() if k != "wip_job"}
+    job = result.get("wip_job") if isinstance(result.get("wip_job"), dict) else {}
+    extra["wip_job_status"] = job.get("status")
+    extra["wip_job_mode"] = job.get("mode")
     edit_log.add_entry(
         "scene_approve",
         user_note=f"Approved scene {scene_num}",
         scene=scene_num,
-        action_taken="scenes_completed + remux + WIP",
+        action_taken=" + ".join(bits),
         targets=["pipeline_state.json", "assets"],
+        extra=extra,
     )
+    try:
+        from review_app.pipeline_progress import invalidate_progress_cache
+
+        invalidate_progress_cache()
+    except Exception:
+        pass
+    return result
+
+
+def wip_job_status() -> Dict[str, Any]:
+    """Background WIP rebuild/append status (memory + pipeline_state)."""
+    try:
+        from review_app.wip_jobs import get_wip_job_status
+
+        live = get_wip_job_status()
+        if live.get("status") and live.get("status") != "idle":
+            return live
+    except Exception:
+        pass
+    try:
+        eng = get_engine()
+        job = eng.state.get("wip_job")
+        if isinstance(job, dict):
+            return job
+    except Exception:
+        pass
+    return {"status": "idle", "message": ""}
 
 
 def remux_scene(scene_num: int) -> Optional[str]:
     return get_engine().remux_scene_from_disk(scene_num)
+
+
+def apply_dialogue_audio(
+    *,
+    only_scene: Optional[int] = None,
+    force: bool = True,
+    remux_scenes: bool = True,
+    progress_cb=None,
+) -> Dict[str, Any]:
+    """
+    Add TTS narration/dialogue onto existing on-disk clips (no Grok video regen).
+    Uses blueprint audio_payload. Optionally remux each affected scene after.
+    """
+    eng = get_engine()
+    # Reload blueprint so patched audio_payload is current
+    try:
+        eng.load_blueprint()
+    except Exception:
+        pass
+    summary = eng.apply_dialogue_audio_to_existing_clips(
+        only_scene=only_scene, force=force, progress_cb=progress_cb
+    )
+    remuxed: List[int] = []
+    if remux_scenes and summary.get("done"):
+        scenes = sorted({int(r["scene"]) for r in summary["done"]})
+        for sn in scenes:
+            try:
+                eng.remux_scene_from_disk(sn)
+                remuxed.append(sn)
+            except Exception as e:
+                summary.setdefault("remux_errors", []).append(
+                    {"scene": sn, "error": str(e)}
+                )
+    summary["remuxed_scenes"] = remuxed
+    edit_log.add_entry(
+        "dialogue_tts_apply",
+        user_note=(
+            f"Applied TTS to {len(summary.get('done') or [])} clip(s)"
+            + (f" scene={only_scene}" if only_scene else "")
+        ),
+        scene=only_scene,
+        action_taken=f"done={len(summary.get('done') or [])} failed={len(summary.get('failed') or [])}",
+        targets=["assets/video", "assets/scenes"],
+        extra={
+            "done_count": len(summary.get("done") or []),
+            "failed_count": len(summary.get("failed") or []),
+            "remuxed": remuxed,
+        },
+    )
+    return summary
 
 
 def rebuild_wip_movie(
@@ -1229,39 +1584,74 @@ def get_character_voice(char_key: str) -> Dict[str, str]:
     return get_engine().get_character_voice_profile(char_key)
 
 
+# Presets for Grok native narrator / character voice_profile (not TTS engine IDs)
+NARRATOR_VOICE_PRESETS: Dict[str, Dict[str, str]] = {
+    "male_warm": {
+        "voice_gender": "male",
+        "voice_label": "Narrator_WarmMale",
+        "voice_profile": (
+            "Warm adult male storyteller, medium-low pitch, unhurried friendly pace, "
+            "clear diction for rhymes, gentle smile in the voice; same voice every scene."
+        ),
+        "tts_voice": "en-US-ChristopherNeural",
+    },
+    "female_warm": {
+        "voice_gender": "female",
+        "voice_label": "Narrator_WarmFemale",
+        "voice_profile": (
+            "Warm adult female storyteller, medium pitch, unhurried friendly pace, "
+            "clear diction for rhymes, gentle smile in the voice; same voice every scene."
+        ),
+        "tts_voice": "en-US-JennyNeural",
+    },
+    "male_deep": {
+        "voice_gender": "male",
+        "voice_label": "Narrator_DeepMale",
+        "voice_profile": (
+            "Deep adult male storyteller, rich low pitch, calm deliberate pace, "
+            "clear storytelling diction; same voice every scene."
+        ),
+        "tts_voice": "en-US-GuyNeural",
+    },
+    "female_bright": {
+        "voice_gender": "female",
+        "voice_label": "Narrator_BrightFemale",
+        "voice_profile": (
+            "Bright adult female storyteller, medium-high pitch, lively but clear pace, "
+            "expressive for children's books; same voice every scene."
+        ),
+        "tts_voice": "en-US-AriaNeural",
+    },
+}
+
+
 def save_character_voice(
     char_key: str,
     *,
     voice_profile: Optional[str] = None,
     voice_label: Optional[str] = None,
+    tts_voice: Optional[str] = None,
+    voice_gender: Optional[str] = None,
 ) -> Dict[str, Any]:
+    """Save Grok voice_profile (+ optional gender / TTS id for optional fallback)."""
     info = get_engine().set_character_voice_profile(
         char_key,
         voice_profile=voice_profile,
         voice_label=voice_label,
+        tts_voice=tts_voice,
+        voice_gender=voice_gender,
     )
-    seeds = (
-        get_engine()
-        .blueprint.get("global_production_variables", {})
-        .get("character_seed_tokens", {})
-    )
-    seed = seeds.get(char_key)
-    if isinstance(seed, dict):
-        changed = False
-        for k in ("tts_voice", "edge_tts_voice"):
-            if k in seed:
-                del seed[k]
-                changed = True
-        if changed:
-            get_engine().save_blueprint_to_disk()
-            info = dict(seed)
     edit_log.add_entry(
         "character_voice",
         user_note=f"Updated voice for {char_key}",
         character=char_key,
-        action_taken="Saved voice_profile / voice_label on character seed",
+        action_taken="Saved voice_profile / voice_label / gender on character seed",
         targets=["blueprint"],
-        extra={"voice_profile": (voice_profile or "")[:200]},
+        extra={
+            "voice_profile": (voice_profile or "")[:200],
+            "voice_gender": voice_gender or "",
+            "tts_voice": tts_voice or "",
+        },
     )
     return info
 
@@ -2121,7 +2511,7 @@ def book_images_status() -> Dict[str, Any]:
 def run_stage1_from_book(
     *,
     chunk_pages: int = 10,
-    total_minutes: int = 90,
+    total_minutes: Optional[int] = None,
     model: str = "grok-4.5",
     resume: bool = False,
     max_chunks: int = 0,
@@ -2130,6 +2520,9 @@ def run_stage1_from_book(
 ) -> Dict[str, Any]:
     """
     Run prompts/stage1_scene_bible.txt on the project book (requires XAI_API_KEY).
+
+    total_minutes: target film length in minutes. None = use book analysis estimate
+    (picture book / short / novel heuristic), not a fixed 90.
 
     Uses existing clean book_full.txt when present. Does not re-extract PDF OCR
     over a good vision transcript — prepare only runs if text is missing/garbled.
@@ -2222,16 +2615,46 @@ def run_stage1_from_book(
 # ---------- Stage 2 (scene bible → Grok clip plan) ----------
 
 def stage2_status() -> Dict[str, Any]:
-    """Whether Stage 1 exists and Stage 2 blueprint has clip scenes."""
+    """
+    Whether Stage 1 exists and Stage 2 blueprint has clip scenes.
+
+    Cached briefly in session_state (by file mtimes) so Scenes page clicks stay snappy.
+    """
     paths = stage1_paths()
-    s1 = load_stage1_document()
-    s1_n = len((s1 or {}).get("scenes") or []) if s1 else 0
     proj = get_active_project_dir()
     meta = load_project_meta(proj) if proj else {}
     bp_name = meta.get("blueprint_file") or "blueprint.clips.grok.json"
     bp_path = (proj / bp_name) if proj else Path(bp_name)
+    s1_path = Path(paths.get("scenes_json") or "")
+    try:
+        bp_mtime = bp_path.stat().st_mtime if bp_path.is_file() else 0.0
+    except OSError:
+        bp_mtime = 0.0
+    try:
+        s1_mtime = s1_path.stat().st_mtime if s1_path.is_file() else 0.0
+    except OSError:
+        s1_mtime = 0.0
+    cache_key = f"stage2_status::{proj.name if proj else 'none'}::{bp_mtime:.0f}::{s1_mtime:.0f}"
+    try:
+        import streamlit as st
+
+        cached = st.session_state.get("_stage2_status_cache")
+        if (
+            isinstance(cached, dict)
+            and cached.get("_key") == cache_key
+            and (time.time() - float(cached.get("_ts") or 0)) < 20.0
+        ):
+            return {k: v for k, v in cached.items() if not str(k).startswith("_")}
+    except Exception:
+        cached = None
+
+    # Prefer blueprint first (common path once Stage 2 exists) — avoid loading Stage 1 JSON
     bp_scenes = 0
     bp_clips = 0
+    last_completed_at = ""
+    last_run_message = ""
+    last_run_ok: Optional[bool] = None
+    validation_issue_count = 0
     if bp_path.is_file():
         try:
             bp = json.loads(bp_path.read_text(encoding="utf-8"))
@@ -2240,18 +2663,68 @@ def stage2_status() -> Dict[str, Any]:
                 bp_scenes = len(scenes)
                 for sc in scenes:
                     bp_clips += len((sc or {}).get("veo_clips") or [])
-        except (json.JSONDecodeError, OSError, TypeError):
+            meta_s2 = bp.get("stage2_meta") if isinstance(bp.get("stage2_meta"), dict) else {}
+            last_completed_at = str(
+                meta_s2.get("completed_at") or meta_s2.get("last_partial_at") or ""
+            )
+            last_run_message = str(meta_s2.get("last_run_message") or "")
+            if "last_run_ok" in meta_s2:
+                last_run_ok = bool(meta_s2.get("last_run_ok"))
+            validation_issue_count = int(meta_s2.get("validation_issue_count") or 0)
+            if not last_completed_at and bp_mtime:
+                # Fallback: file mtime when older plans lack completed_at
+                last_completed_at = time.strftime(
+                    "%Y-%m-%dT%H:%M:%S", time.localtime(bp_mtime)
+                )
+        except (json.JSONDecodeError, OSError, TypeError, ValueError):
             pass
-    return {
-        "stage1_exists": bool(s1 and s1_n > 0),
+
+    s1_n = 0
+    s1_exists = s1_path.is_file()
+    # Parse Stage 1 only when Stage 2 empty (plan gate) or file is small enough to be cheap.
+    # When Stage 2 is ready, skip the full Stage 1 JSON read — Scenes page does not need it.
+    if s1_exists and bp_scenes == 0:
+        try:
+            s1 = json.loads(s1_path.read_text(encoding="utf-8"))
+            s1_n = len((s1 or {}).get("scenes") or []) if isinstance(s1, dict) else 0
+            s1_exists = s1_n > 0
+        except (json.JSONDecodeError, OSError, TypeError):
+            s1_exists = s1_path.is_file()
+    elif s1_exists and bp_scenes > 0:
+        # Approximate: Stage 1 existed if file present; avoid re-parsing large bible every click
+        s1_n = bp_scenes
+
+    result = {
+        "stage1_exists": s1_exists,
         "stage1_scenes": s1_n,
         "blueprint_path": str(bp_path),
         "blueprint_exists": bp_path.is_file(),
         "stage2_scenes": bp_scenes,
         "stage2_clips": bp_clips,
-        "stage2_ready": bp_scenes > 0,
+        "stage2_ready": bp_scenes > 0 and bp_clips > 0,
         "scenes_json": paths.get("scenes_json") or "",
+        "last_completed_at": last_completed_at,
+        "last_run_message": last_run_message
+        or (
+            f"{bp_scenes} scenes · {bp_clips} clips"
+            if bp_scenes
+            else ""
+        ),
+        "last_run_ok": last_run_ok if last_run_ok is not None else (bp_scenes > 0 and bp_clips > 0),
+        "validation_issue_count": validation_issue_count,
+        "blueprint_mtime": bp_mtime,
     }
+    try:
+        import streamlit as st
+
+        st.session_state["_stage2_status_cache"] = {
+            **result,
+            "_key": cache_key,
+            "_ts": time.time(),
+        }
+    except Exception:
+        pass
+    return result
 
 
 def run_stage2_from_stage1(
@@ -2310,9 +2783,24 @@ def run_stage2_from_stage1(
 
     gpv = dict(stage1.get("global_production_variables") or {})
     loc_seeds = gpv.get("location_seed_tokens") or {}
+    char_seeds = gpv.get("character_seed_tokens") or {}
+    if isinstance(char_seeds, dict):
+        for _ck, _sv in char_seeds.items():
+            if not isinstance(_sv, dict):
+                continue
+            ph = str(_sv.get("reference_image_placeholder") or "").replace("\\", "/")
+            if ph and ("/" in ph or ph.startswith("assets")):
+                _sv["reference_image_placeholder"] = Path(ph).name
+        gpv["character_seed_tokens"] = char_seeds
     res = (resolution or "720p").strip() or "720p"
     planned_scenes = [
-        mod.plan_scene(s, resolution=res, location_seeds=loc_seeds) for s in scenes_in
+        mod.plan_scene(
+            s,
+            resolution=res,
+            location_seeds=loc_seeds,
+            character_seeds=char_seeds if isinstance(char_seeds, dict) else {},
+        )
+        for s in scenes_in
     ]
 
     meta = load_project_meta(proj)
@@ -2421,11 +2909,26 @@ def run_stage2_from_stage1(
         for s in (plan.get("scenes") or [])
     )
     total_clips = sum(len(s.get("veo_clips") or []) for s in (plan.get("scenes") or []))
+    n_scenes = len(plan.get("scenes") or [])
     plan.setdefault("stage2_meta", {})
     plan["stage2_meta"]["total_duration_seconds"] = total_dur
     plan["stage2_meta"]["total_clips"] = total_clips
 
     errs = mod.validate_plan(plan)
+    # Plan is "successful" if it wrote scenes/clips; validation issues are advisory
+    wrote_ok = n_scenes > 0 and total_clips > 0
+    completed_at = datetime.now().isoformat(timespec="seconds")
+    run_msg = (
+        f"Stage 2 complete: {n_scenes} scenes · {total_clips} clips · ~{total_dur}s"
+        if wrote_ok
+        else "Stage 2 finished but produced no clips"
+    )
+    plan["stage2_meta"]["completed_at"] = completed_at
+    plan["stage2_meta"]["last_run_ok"] = wrote_ok
+    plan["stage2_meta"]["last_run_message"] = run_msg
+    plan["stage2_meta"]["validation_issue_count"] = len(errs)
+    plan["stage2_meta"]["source_stage1"] = stage1_path.name
+    plan["stage2_meta"]["resolution"] = res
 
     # Backup previous blueprint
     if out_path.is_file():
@@ -2453,23 +2956,42 @@ def run_stage2_from_stage1(
         invalidate_progress_cache()
     except Exception:
         pass
+    try:
+        import streamlit as st
+
+        st.session_state.pop("_stage2_status_cache", None)
+    except Exception:
+        pass
+
+    if wrote_ok:
+        try:
+            mark_pipeline_step(
+                "stage2",
+                detail=f"{n_scenes} scenes · {total_clips} clips",
+            )
+        except Exception:
+            pass
 
     summary: Dict[str, Any] = {
-        "ok": not errs,
-        "scenes": len(plan.get("scenes") or []),
+        "ok": wrote_ok,
+        "scenes": n_scenes,
         "clips": total_clips,
         "duration_sec": total_dur,
         "out_path": str(out_path),
         "source_stage1": str(stage1_path),
         "backup": str(bak) if bak else "",
         "validation_issues": errs[:40],
+        "validation_issue_count": len(errs),
         "scene_filter": scenes,
         "resolution": res,
+        "completed_at": completed_at,
+        "message": run_msg,
     }
     edit_log.add_entry(
         "stage2_run",
-        user_note=f"Stage 2 plan: {summary['scenes']} scenes · {total_clips} clips",
-        action_taken=f"Wrote {out_path.name}",
+        user_note=run_msg,
+        action_taken=f"Wrote {out_path.name}"
+        + (f" ({len(errs)} validation notes)" if errs else " (validate OK)"),
         learning_layer="stage2",
         targets=[out_path.name, "scripts/two_stage_adaptation/stage2_plan_grok.py"],
         extra={k: v for k, v in summary.items() if k != "validation_issues"},

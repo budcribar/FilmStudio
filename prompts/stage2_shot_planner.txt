@@ -97,15 +97,30 @@ MAPPING BEATS → CLIPS
    - provider max length requires a split
 4. Multiple light beats may merge into one clip ONLY if they share setup and no hard cut.
 5. Never drop a beat with a concrete visual_event or required dialogue.
-6. primary_subject of the dominant beat must appear first as Character_* in visual_prompt.
-7. Honor blocking_notes and must_not in visual_prompt and/or negative_prompt extras.
-8. delivery / speaker / dialogue from Stage 1 audio must be preserved (split dialogue across
-   clips with ellipsis or clean phrase boundaries — do not rewrite meaning).
-9. **Location pin every clip:** set `location_id` to a Loc_* from the scene’s location_ids
-   (from beat.location_id when present; else primary_location_id / location_ids[0];
-   for multi-place scenes, advance location when the beat moves place).
-10. Inject `location_seed_tokens[location_id].visual_lock` (and short description) into
+6. **primary_subject first:** dominant beat’s on-screen `primary_subject` must appear **first**
+   as a Character_* token in visual_prompt (not the off-screen narrator).
+7. **Full cast tokens:** every Character_* in scene `characters_on_screen` that appears or
+   reacts in the beat must also appear as a Character_* token somewhere in visual_prompt
+   (not prose-only “the dog” / “mom”). Pipeline multi-locks reference images from these tokens.
+8. **Copy scene cast:** each Stage 2 scene MUST include `characters_on_screen` copied from
+   Stage 1 (union with beat primary_subjects if Stage 1 omitted one). Do not drop the hero
+   when a supporting character speaks.
+9. Honor blocking_notes and must_not in visual_prompt and/or negative_prompt extras.
+10. **Audio mapping (critical for automation):** build clip `audio_payload` from Stage 1 beat
+    fields. Accept **either**:
+    - beat root: `delivery`, `speaker`, `dialogue`, `ambient_or_sfx`, **or**
+    - nested: `beat.audio.{delivery,speaker,dialogue,...}`
+    Never emit empty audio_payload when Stage 1 has dialogue. delivery must be one of
+    spoken_on_camera | voiceover_internal | none. Narrator → voiceover_internal.
+    Split long dialogue across clips with ellipsis/phrase boundaries — do not rewrite meaning.
+11. **Location pin every clip:** set `location_id` to a Loc_* from the scene’s location_ids
+    (from beat.location_id when present; else primary_location_id / location_ids[0];
+    for multi-place scenes, advance location when the beat moves place).
+12. Inject `location_seed_tokens[location_id].visual_lock` (and short description) into
     visual_prompt so the place stays consistent — same apartment/bar/gym across returns.
+13. **Identity automation:** for each on-screen Character_* with a seed description, inject a
+    short stable-identity cue (colors/markings/wardrobe) so video models do not recolor
+    characters between scenes. Do not invent new design facts not in the seed.
 
 ================================================================
 CLIP OBJECT (every veo_clips item)
@@ -123,14 +138,26 @@ Required:
 
 visual_prompt must:
 - **Open with place lock** from location_seed_tokens[location_id] (visual_lock / description)
-  then subject, action, wardrobe from character seeds
+- Then **primary_subject Character_*** first (on-screen hero), then action/wardrobe
+- Then name **other on-screen** Character_* from `characters_on_screen` / the beat
+- Short **identity cues** from character_seed_tokens (stable colors/markings — no redesign)
 - Be filmable progressive motion for action_class big_action
-- Include lips closed language for voiceover_internal
+- Include lips-closed / non-lip-sync language for voiceover_internal (book narrator VO)
+- For spoken_on_camera with 2+ on-screen beings: only the speaker lip-syncs; dogs/pets and
+  non-speakers keep mouth/snout closed (listening) — no dual mouthing to the same line.
+  Encode that in visual_prompt AND append to negative_prompt extras
+  (e.g. dog talking, dual lip-sync, non-speaker speaking)
 - Include faces/OTS language when blocking_notes demand it
 - **Spoilers:** Honor Stage 1 per-scene `spoiler_constraints` and seed
   `display_name_policy` / `name_reveal_scene`. Before reveal: no personal names on
   clothing, props, UI, or dialogue; use Character_* only. Do not write secret names into
   negatives. At/after reveal: only if the beat needs it.
+- End with ` / {resolution}, 24fps` (Grok: prefer clip ≤10s when using reference images)
+
+audio_payload must:
+- speaker / dialogue / delivery always present (use speaker "none", dialogue "", delivery "none"
+  only for true silent/ambient takes)
+- Copy ambient into audio_payload.ambient when Stage 1 set ambient_or_sfx
 
 Do NOT invent voice_profile text per clip — pipeline injects seed voice locks.
 You may add momentary emotion (“angry, short”) without changing age/sex/accent.
@@ -145,14 +172,20 @@ scene total_estimated_duration_seconds (±0). Keep style consistent with Stage 1
 CHARACTERS & LOCATIONS
 ================================================================
 Copy global_production_variables.character_seed_tokens from Stage 1 unchanged
-(unless fixing a clear schema defect). Do not invent new speaking characters.
+(unless fixing a clear schema defect: bare-filename reference_image_placeholder only).
+Do not invent new speaking characters.
 
 Copy global_production_variables.location_seed_tokens from Stage 1 unchanged.
-Copy each scene’s location_ids / primary_location_id. Every veo_clip needs location_id.
+Copy each scene’s location_ids / primary_location_id / **characters_on_screen**.
+Every veo_clip needs location_id.
 
 If Stage 1 multi-place scene has location_ids [A, B] without beat.location_id,
 use A for early beats and B when visual_event clearly moves (or keep A if unsure —
 never invent a third Loc_*).
+
+**Multi-character shots:** when characters_on_screen has 2+ on-screen beings, every clip
+for that scene should mention all still-visible tokens in visual_prompt so the generator
+can attach multiple reference plates (hero must not drop when a parent speaks).
 
 ================================================================
 PARTIAL DELIVERY
@@ -172,8 +205,11 @@ Validate before return:
 - Timestamps contiguous; totals match provider rules
 - negative_prompt exact base string (plus optional surgical extras)
 - delivery is one of spoken_on_camera | voiceover_internal | none
+- If Stage 1 beat had dialogue, matching clip audio_payload.dialogue is non-empty
 - Every scene has location_ids[]; every clip has location_id in that set
 - location_seed_tokens present for every location_id used
+- characters_on_screen present on each scene (copied/unioned from Stage 1)
+- visual_prompt contains Character_* for primary_subject and other on-screen cast tokens
 
 Also respect prompts/shared_rules.txt when present.
 

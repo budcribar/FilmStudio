@@ -324,6 +324,41 @@ def suggest_stage1_defaults_from_text(
     return analyze_book_text(text, pages_hint=pages_hint)
 
 
+def clamp_stage1_minutes(minutes: Any, *, fallback: int = 15) -> int:
+    """Clamp Stage 1 target runtime to the UI/engine band (3–180)."""
+    try:
+        m = int(minutes) if minutes is not None else int(fallback)
+    except (TypeError, ValueError):
+        m = int(fallback)
+    return max(3, min(180, m))
+
+
+def resolve_stage1_total_minutes(
+    *,
+    explicit: Optional[int] = None,
+    text: Optional[str] = None,
+    pages_hint: Optional[int] = None,
+    meta: Optional[Dict[str, Any]] = None,
+    fallback: int = 15,
+) -> int:
+    """
+    Prefer operator override, else book analysis estimate (not a fixed 90 min).
+
+    fallback is only used when no explicit minutes and no book text/meta to score
+    (short default — analysis of real books sets picture-book / short / novel ranges).
+    """
+    if explicit is not None:
+        return clamp_stage1_minutes(explicit, fallback=fallback)
+    if isinstance(meta, dict) and meta.get("suggested_total_minutes") is not None:
+        return clamp_stage1_minutes(meta.get("suggested_total_minutes"), fallback=fallback)
+    if text and str(text).strip():
+        analysis = analyze_book_text(str(text), pages_hint=pages_hint)
+        return clamp_stage1_minutes(
+            analysis.get("suggested_total_minutes"), fallback=fallback
+        )
+    return clamp_stage1_minutes(fallback, fallback=fallback)
+
+
 def extract_text(
     pdf_path: Path,
     *,

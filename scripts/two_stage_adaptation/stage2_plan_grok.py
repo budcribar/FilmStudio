@@ -113,6 +113,25 @@ def _force_none(beat: Dict[str, Any], clip_index: int) -> bool:
         return True
     if cont in ("new_setup", "return_to_present", "parallel"):
         return True
+    # Narrator VO / internal VO: never extend from previous (avoids frozen Mom mid-speech
+    # carrying into a VO clip so she appears to keep talking).
+    audio = beat.get("audio") if isinstance(beat.get("audio"), dict) else {}
+    delivery = str(
+        (audio.get("delivery") if audio else None) or beat.get("delivery") or ""
+    ).lower()
+    speaker = str(
+        (audio.get("speaker") if audio else None) or beat.get("speaker") or ""
+    ).lower()
+    if delivery in (
+        "voiceover_internal",
+        "internal",
+        "vo_internal",
+        "thought",
+        "thinking",
+        "narration",
+        "vo",
+    ) or "narrator" in speaker:
+        return True
     ve = (beat.get("visual_event") or "").lower()
     if re.search(
         r"\b(kick|smash|punch|sprint|crash|explod|slam|throw|rocket|wide shot|establishing|"
@@ -213,6 +232,16 @@ def _neg_extras(beat: Dict[str, Any]) -> str:
         )
     if "ots" in ve or "camera behind" in ve or "back to camera" in ve:
         extras.append("facing camera only, boy looking at viewer, back to house")
+    # Single-speaker rule for multi-cast dialogue (permanent negative)
+    audio = beat.get("audio") if isinstance(beat.get("audio"), dict) else {}
+    delivery = str(
+        (audio.get("delivery") if audio else None) or beat.get("delivery") or ""
+    ).lower()
+    if delivery == "spoken_on_camera":
+        extras.append(
+            "dog talking, animal mouthing words, dual lip-sync, non-speaker speaking, "
+            "two characters lip-syncing same line, karaoke dog"
+        )
     # unique keep order
     seen = set()
     out = []
@@ -250,11 +279,69 @@ def _location_lock_phrase(
     return lock
 
 
+def _scene_cast_tokens(scene: Dict[str, Any], beat: Dict[str, Any]) -> List[str]:
+    """
+    Ordered Character_* tokens for this shot: primary first, then scene cast, then beat.
+    Skips narrator / never-on-screen-style keys for visual locking.
+    """
+    out: List[str] = []
+    seen: set = set()
+
+    def _add(tok: Any) -> None:
+        if not tok:
+            return
+        t = str(tok).strip()
+        if not t.startswith("Character_"):
+            return
+        if "narrator" in t.lower():
+            return
+        if t in seen:
+            return
+        seen.add(t)
+        out.append(t)
+
+    _add(beat.get("primary_subject"))
+    for t in scene.get("characters_on_screen") or []:
+        _add(t)
+    # Also pick up any Character_* already in visual_event
+    ve = str(beat.get("visual_event") or "")
+    for m in re.finditer(r"Character_[A-Za-z0-9_]+", ve):
+        _add(m.group(0))
+    return out
+
+
+def _identity_cues(
+    tokens: Sequence[str],
+    character_seeds: Optional[Dict[str, Any]] = None,
+    *,
+    max_chars: int = 100,
+) -> str:
+    """Short stable-identity phrase from seeds (colors/markings) for visual_prompt."""
+    character_seeds = character_seeds or {}
+    bits: List[str] = []
+    for tok in tokens[:3]:
+        seed = character_seeds.get(tok) if isinstance(character_seeds, dict) else None
+        if not isinstance(seed, dict):
+            continue
+        desc = str(seed.get("description") or "").strip()
+        if not desc:
+            continue
+        # Prefer first clause with color/marking words if present
+        short = re.sub(r"\s+", " ", desc)
+        if len(short) > max_chars:
+            short = short[: max_chars - 1].rsplit(" ", 1)[0] + "…"
+        bits.append(f"{tok} ({short})")
+    if not bits:
+        return ""
+    return "Same identity as locked refs: " + "; ".join(bits)
+
+
 def _build_visual_prompt(
     beat: Dict[str, Any],
     scene: Dict[str, Any],
     resolution: str,
     location_seeds: Optional[Dict[str, Any]] = None,
+    character_seeds: Optional[Dict[str, Any]] = None,
 ) -> str:
     ve = (beat.get("visual_event") or "").strip()
     # strip old tech suffix
@@ -266,10 +353,16 @@ def _build_visual_prompt(
     if place and place.lower() not in ve.lower()[:100]:
         bits.append(place)
 
-    primary = beat.get("primary_subject")
+    cast = _scene_cast_tokens(scene, beat)
+    primary = beat.get("primary_subject") or (cast[0] if cast else None)
     # Ensure primary Character_* early for identity lock
-    if primary and primary not in ve[:80]:
-        bits.append(f"{primary}")
+    if primary and str(primary) not in ve[:100]:
+        bits.append(str(primary))
+
+    # Name other on-screen cast tokens (multi-ref automation)
+    others = [t for t in cast if t != primary and t not in ve]
+    if others:
+        bits.append("also on screen: " + ", ".join(others[:4]))
 
     # Scene one-liner context (short)
     setting = (scene.get("setting") or "")[:60]
@@ -284,12 +377,29 @@ def _build_visual_prompt(
     if block and block.lower() not in ve.lower():
         bits.append(block)
 
-    audio = beat.get("audio") or {}
-    delivery = (audio.get("delivery") or "none").lower()
+    audio = beat.get("audio") if isinstance(beat.get("audio"), dict) else {}
+    # Stage 1 often stores delivery/speaker/dialogue on the beat root (not nested)
+    delivery = (
+        (audio.get("delivery") if audio else None)
+        or beat.get("delivery")
+        or "none"
+    )
+    delivery = str(delivery).lower()
+    # Lip-sync rules BEFORE identity cues so they survive prompt soft-clamp
     if delivery == "voiceover_internal":
         if "lips closed" not in ve.lower() and "not spoken" not in ve.lower():
             bits.append(
-                "lips closed, internal monologue not spoken to another person"
+                "lips closed, narration is voiceover (not lip-synced conversation)"
+            )
+    elif delivery == "spoken_on_camera":
+        # Only the speaker mouths; animals/others listen (prevents dog lip-sync with Mom)
+        speaker = str(
+            (audio.get("speaker") if audio else None) or beat.get("speaker") or ""
+        ).strip()
+        if speaker and "narrator" not in speaker.lower():
+            bits.append(
+                f"only {speaker} lip-syncs and speaks; other characters and any dog keep "
+                f"mouth/snout closed and still (listening), no dual mouth movement"
             )
 
     # Continuous action language for big_action
@@ -302,9 +412,14 @@ def _build_visual_prompt(
 
     must_not = beat.get("must_not") or []
     if must_not:
-        short = "; ".join(str(m) for m in must_not[:2])
+        short = "; ".join(str(m) for m in must_not[:3])
         if short and short.lower() not in ve.lower():
             bits.append(f"must not: {short}")
+
+    # Identity last (can truncate under soft limit; engine still injects locks at generate)
+    id_cue = _identity_cues(cast, character_seeds, max_chars=72)
+    if id_cue and id_cue.lower() not in ve.lower():
+        bits.append(id_cue)
 
     body = ". ".join(b.strip().rstrip(".") for b in bits if b and str(b).strip())
     body = re.sub(r"\s+", " ", body).strip()
@@ -320,21 +435,76 @@ def _build_visual_prompt(
     return prompt
 
 
-def _build_audio_payload(beat: Dict[str, Any]) -> Dict[str, str]:
-    audio = beat.get("audio") or {}
-    delivery = (audio.get("delivery") or "none").strip().lower()
+def _beat_audio_fields(beat: Dict[str, Any]) -> Dict[str, str]:
+    """
+    Normalize audio from Stage 1 beats.
+
+    Stage 1 schema stores delivery/speaker/dialogue on the beat root (and optional
+    ambient_or_sfx). Nested beat['audio'] is also accepted when present.
+    """
+    nested = beat.get("audio") if isinstance(beat.get("audio"), dict) else {}
+    delivery = (
+        nested.get("delivery")
+        or beat.get("delivery")
+        or "none"
+    )
+    delivery = str(delivery).strip().lower()
+    speaker = (
+        nested.get("speaker")
+        or beat.get("speaker")
+        or "none"
+    )
+    speaker = str(speaker).strip() or "none"
+    dialogue = (
+        nested.get("dialogue")
+        or beat.get("dialogue")
+        or ""
+    )
+    dialogue = str(dialogue).strip()
+    ambient = (
+        nested.get("ambient")
+        or nested.get("atmosphere")
+        or beat.get("ambient_or_sfx")
+        or beat.get("ambient")
+        or ""
+    )
+    ambient = str(ambient).strip()
+    sfx = str(nested.get("sfx") or nested.get("sound_effects") or "").strip()
+
     if delivery not in ("spoken_on_camera", "voiceover_internal", "none"):
-        delivery = "voiceover_internal" if (audio.get("dialogue") or "").strip() else "none"
-    speaker = (audio.get("speaker") or "none").strip() or "none"
-    dialogue = (audio.get("dialogue") or "").strip()
+        # Heuristic: book-style narration with Character_Narrator
+        if dialogue and (
+            "narrator" in speaker.lower()
+            or delivery in ("vo", "voiceover", "narration", "voice_over")
+        ):
+            delivery = "voiceover_internal"
+        elif dialogue:
+            delivery = "voiceover_internal" if "narrator" in speaker.lower() else "spoken_on_camera"
+        else:
+            delivery = "none"
+
     if delivery == "none":
         speaker = "none"
         dialogue = ""
-    return {
+
+    # Narrator is never on-camera lip-sync
+    if "narrator" in speaker.lower() and delivery == "spoken_on_camera":
+        delivery = "voiceover_internal"
+
+    out: Dict[str, str] = {
         "speaker": speaker,
         "dialogue": dialogue,
         "delivery": delivery,
     }
+    if ambient:
+        out["ambient"] = ambient
+    if sfx:
+        out["sfx"] = sfx
+    return out
+
+
+def _build_audio_payload(beat: Dict[str, Any]) -> Dict[str, str]:
+    return _beat_audio_fields(beat)
 
 
 def _music_bed(scene: Dict[str, Any], total: int) -> Dict[str, Any]:
@@ -368,14 +538,35 @@ def _music_bed(scene: Dict[str, Any], total: int) -> Dict[str, Any]:
     }
 
 
+def _union_characters_on_screen(scene: Dict[str, Any]) -> List[str]:
+    """Stage 1 cast list ∪ primary_subjects (so engine multi-ref never loses the hero)."""
+    out: List[str] = []
+    seen: set = set()
+    for t in list(scene.get("characters_on_screen") or []):
+        s = str(t).strip()
+        if s.startswith("Character_") and s not in seen:
+            seen.add(s)
+            out.append(s)
+    for beat in scene.get("story_beats") or []:
+        if not isinstance(beat, dict):
+            continue
+        ps = str(beat.get("primary_subject") or "").strip()
+        if ps.startswith("Character_") and ps not in seen and "narrator" not in ps.lower():
+            seen.add(ps)
+            out.append(ps)
+    return out
+
+
 def plan_scene(
     scene: Dict[str, Any],
     resolution: str = "720p",
     location_seeds: Optional[Dict[str, Any]] = None,
+    character_seeds: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
     beats = scene.get("story_beats") or []
     lids = list(scene.get("location_ids") or [])
     primary = scene.get("primary_location_id") or (lids[0] if lids else None)
+    cast = _union_characters_on_screen(scene)
     if not beats:
         # empty scene placeholder
         return {
@@ -383,6 +574,7 @@ def plan_scene(
             "setting": scene.get("setting"),
             "location_ids": lids,
             "primary_location_id": primary,
+            "characters_on_screen": cast,
             "scene_filename": scene.get("scene_filename"),
             "transition_type": scene.get("transition_type") or "cut",
             "lighting_continuity_token": scene.get("lighting_continuity_token") or "",
@@ -399,6 +591,10 @@ def plan_scene(
     target = int(scene.get("duration_target_seconds") or len(beats) * d_def)
     durs = _allocate_durations(beats, target, policy=pol)
     total = sum(durs)
+
+    # Work on a shallow copy so cast is visible inside _build_visual_prompt
+    scene_work = dict(scene)
+    scene_work["characters_on_screen"] = cast
 
     clips: List[Dict[str, Any]] = []
     beat_map: List[str] = []
@@ -423,7 +619,13 @@ def plan_scene(
         if extra:
             neg = f"{neg}, {extra}"
 
-        vp = _build_visual_prompt(beat, scene, resolution, location_seeds=location_seeds)
+        vp = _build_visual_prompt(
+            beat,
+            scene_work,
+            resolution,
+            location_seeds=location_seeds,
+            character_seeds=character_seeds,
+        )
         # Special polish for known failure modes: continuous window smash
         if (beat.get("action_class") or "") == "big_action" and re.search(
             r"window|smash|kickball|kick", vp, re.I
@@ -437,6 +639,7 @@ def plan_scene(
                 )
                 vp = _clamp_prompt(f"{core} / {resolution}, 24fps", GROK_PROMPT_SOFT)
 
+        ap = _build_audio_payload(beat)
         clip = {
             "clip_number": i + 1,
             "timestamp": _ts(t, t + dur),
@@ -444,8 +647,9 @@ def plan_scene(
             "location_id": lid,
             "visual_prompt": vp,
             "negative_prompt": neg,
-            "audio_payload": _build_audio_payload(beat),
+            "audio_payload": ap,
             "stage1_beat_id": beat.get("beat_id"),
+            "primary_subject": beat.get("primary_subject"),
             "duration_seconds": dur,
         }
         clips.append(clip)
@@ -458,6 +662,7 @@ def plan_scene(
         "setting": scene.get("setting"),
         "location_ids": lids,
         "primary_location_id": primary,
+        "characters_on_screen": cast,
         "scene_filename": scene.get("scene_filename"),
         "transition_type": scene.get("transition_type") or "cut",
         "lighting_continuity_token": scene.get("lighting_continuity_token") or "",
@@ -474,13 +679,21 @@ def plan_scene(
 
 def validate_plan(plan: Dict[str, Any]) -> List[str]:
     errs: List[str] = []
-    seeds = (plan.get("global_production_variables") or {}).get("location_seed_tokens") or {}
+    gpv = plan.get("global_production_variables") or {}
+    seeds = gpv.get("location_seed_tokens") or {}
+    char_seeds = gpv.get("character_seed_tokens") or {}
     for sc in plan.get("scenes") or []:
         clips = sc.get("veo_clips") or []
         lids = sc.get("location_ids") or []
+        cast = sc.get("characters_on_screen") or []
         total = int(sc.get("total_estimated_duration_seconds") or 0)
         ssum = 0
         prev_end = 0
+        if clips and not cast:
+            errs.append(
+                f"S{sc.get('scene_number')}: missing characters_on_screen "
+                "(copy from Stage 1 for multi-ref automation)"
+            )
         for c in clips:
             lid = c.get("location_id")
             if not lid:
@@ -520,6 +733,12 @@ def validate_plan(plan: Dict[str, Any]) -> List[str]:
                 errs.append(
                     f"S{sc.get('scene_number')}C{c.get('clip_number')}: missing fps suffix"
                 )
+            ps = c.get("primary_subject")
+            if ps and str(ps).startswith("Character_") and str(ps) not in vp:
+                errs.append(
+                    f"S{sc.get('scene_number')}C{c.get('clip_number')}: "
+                    f"primary_subject {ps} missing from visual_prompt"
+                )
             ap = c.get("audio_payload") or {}
             if ap.get("delivery") not in (
                 "spoken_on_camera",
@@ -533,6 +752,24 @@ def validate_plan(plan: Dict[str, Any]) -> List[str]:
                 errs.append(
                     f"S{sc.get('scene_number')}C{c.get('clip_number')}: duration {dur}"
                 )
+            # Soft identity: if cast has 2+ on-screen and prompt only has one Character_*, warn
+            if len(cast) >= 2:
+                mentioned = sum(1 for t in cast if t in vp)
+                if mentioned < min(2, len(cast)) and "also on screen" not in vp.lower():
+                    errs.append(
+                        f"S{sc.get('scene_number')}C{c.get('clip_number')}: "
+                        f"visual_prompt should name multiple on-screen cast tokens {cast}"
+                    )
+        if isinstance(char_seeds, dict):
+            for ck, sv in char_seeds.items():
+                if not isinstance(sv, dict):
+                    continue
+                ph = str(sv.get("reference_image_placeholder") or "")
+                if ph and ("/" in ph or "\\" in ph):
+                    errs.append(
+                        f"character_seed {ck}: reference_image_placeholder should be "
+                        f"bare filename, got {ph!r}"
+                    )
         if ssum != total:
             errs.append(
                 f"S{sc.get('scene_number')}: total {total} != sum clips {ssum}"
@@ -653,11 +890,21 @@ def main() -> int:
 
     gpv = stage1.get("global_production_variables") or {}
     loc_seeds = gpv.get("location_seed_tokens") or {}
+    char_seeds = gpv.get("character_seed_tokens") or {}
+    # Normalize seed placeholders to bare filenames (automation: avoid double paths)
+    if isinstance(char_seeds, dict):
+        for _ck, _sv in char_seeds.items():
+            if not isinstance(_sv, dict):
+                continue
+            ph = str(_sv.get("reference_image_placeholder") or "").replace("\\", "/")
+            if ph and ("/" in ph or ph.startswith("assets")):
+                _sv["reference_image_placeholder"] = Path(ph).name
     planned_scenes = [
         plan_scene(
             s,
             resolution=args.resolution.strip() or "720p",
             location_seeds=loc_seeds,
+            character_seeds=char_seeds if isinstance(char_seeds, dict) else {},
         )
         for s in scenes_in
     ]

@@ -11,9 +11,9 @@ Paths are relative to the **workspace root** (repo root with `renderer/`, `gui/`
 |------|------|
 | `adaptation_v16.txt` | Legacy full-film adaptation rules (optional GUI append) |
 | `shared_rules.txt` | Rules Stage 1 + Stage 2 + verifier must all respect |
-| `stage1_scene_bible.txt` | Stage 1: book → scene bible (+ `location_seed_tokens`, scene `location_ids[]`) |
+| `stage1_scene_bible.txt` | Stage 1: book → scene bible (+ cast `characters_on_screen`, beat audio root fields, bare ref filenames) |
 | `stage1_scene_bible.schema.json` | Stage 1 JSON Schema |
-| `stage2_shot_planner.txt` | Stage 2: scene bible → clip plan (+ clip `location_id`, place locks) |
+| `stage2_shot_planner.txt` | Stage 2: scene bible → clip plan (+ multi-cast tokens, audio_payload mapping, identity cues) |
 | `verifier_clip.txt` | Clip QA verifier (routing hints for learning layers) |
 | `compare_json_to_book.txt` | Fidelity audit against book text |
 | `examples/scene_bible_minimal.json` | Minimal Stage 1 sample |

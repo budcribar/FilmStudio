@@ -287,7 +287,7 @@ def run_stage1_job(
     out_path: Optional[Path] = None,
     model: str = "grok-4.5",
     chunk_pages: int = 10,
-    total_minutes: int = 90,
+    total_minutes: Optional[int] = None,
     resume: bool = False,
     max_chunks: int = 0,
     temperature: float = 0.2,
@@ -296,6 +296,7 @@ def run_stage1_job(
 ) -> Dict[str, Any]:
     """
     Library entry for CLI and Streamlit.
+    total_minutes: target film length; None = estimate from book analysis.
     progress_cb(event: dict) optional — events:
       start, chunk_start, chunk_done, normalize, verify, done, error
     Returns summary dict with paths and counts.
@@ -310,6 +311,7 @@ def run_stage1_job(
     project = _project_dir(project_id)
     book_p = Path(book_path) if book_path else project / "source" / "book_full.txt"
     src = project / "source"
+    book_analysis: Dict[str, Any] = {}
 
     # Book text policy:
     # - If book_full.txt already looks clean (e.g. after Adaptation re-import + vision),
@@ -325,6 +327,7 @@ def run_stage1_job(
             analysis0 = book_src.analyze_book_text(
                 book_p.read_text(encoding="utf-8", errors="ignore")
             )
+            book_analysis = analysis0
             if analysis0.get("text_quality") == "good" and float(
                 analysis0.get("garbage_score") or 0
             ) < 0.45:
@@ -377,6 +380,7 @@ def run_stage1_job(
             analysis = book_src.analyze_book_text(
                 book_p.read_text(encoding="utf-8", errors="ignore")
             )
+            book_analysis = analysis
             if analysis.get("text_quality") in ("poor", "empty") or float(
                 analysis.get("garbage_score") or 0
             ) >= 0.45:
@@ -401,6 +405,34 @@ def run_stage1_job(
     else:
         book = load_book(book_p)
         progress("start", message=f"Book {book_p} ({len(book)} chars)", chunk=0, total=0)
+
+    # Runtime: operator override, else calculated estimate from book (not fixed 90)
+    try:
+        sys.path.insert(0, str(Path(__file__).resolve().parent))
+        import extract_book_source as book_src  # type: ignore
+
+        if not book_analysis and book:
+            book_analysis = book_src.analyze_book_text(book)
+        resolved_minutes = book_src.resolve_stage1_total_minutes(
+            explicit=total_minutes,
+            text=book,
+            meta=book_analysis,
+        )
+    except Exception:
+        resolved_minutes = (
+            max(3, min(180, int(total_minutes))) if total_minutes is not None else 15
+        )
+    if total_minutes is None:
+        progress(
+            "start",
+            message=(
+                f"Target runtime auto={resolved_minutes} min "
+                f"(book_kind={book_analysis.get('book_kind') or '?'})"
+            ),
+            chunk=0,
+            total=0,
+        )
+    total_minutes = resolved_minutes
 
     out_p = Path(out_path) if out_path else project / "nickandme.scenes.json"
     system_prompt = PROMPT_PATH.read_text(encoding="utf-8")
@@ -608,6 +640,8 @@ def run_stage1_job(
             (partial.get("global_production_variables") or {}).get("location_seed_tokens") or {}
         ),
         "runtime_sec": partial.get("cumulative_duration_target_seconds"),
+        "total_minutes": total_minutes,
+        "book_kind": book_analysis.get("book_kind"),
         "chunks": n_chunks,
         "verify_errors": errs,
         "hard_errors": hard,
@@ -625,7 +659,12 @@ def main() -> int:
     ap.add_argument("--out", default=None)
     ap.add_argument("--model", default=os.environ.get("STAGE1_MODEL", "grok-4.5"))
     ap.add_argument("--chunk-pages", type=int, default=10)
-    ap.add_argument("--total-minutes", type=int, default=90)
+    ap.add_argument(
+        "--total-minutes",
+        type=int,
+        default=None,
+        help="Target runtime minutes (default: auto from book analysis, not 90)",
+    )
     ap.add_argument("--resume", action="store_true", help="Load existing --out and continue")
     ap.add_argument("--max-chunks", type=int, default=0, help="0 = all chunks")
     ap.add_argument("--temperature", type=float, default=0.2)
