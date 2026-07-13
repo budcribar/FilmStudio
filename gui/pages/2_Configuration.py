@@ -15,6 +15,13 @@ from renderer import (
     resolve_duration_profile,
 )
 
+try:
+    from review_app.gen_nav_lock import block_if_gen_running
+
+    block_if_gen_running(page_label="Configuration")
+except Exception:
+    pass
+
 st.title("⚙️ Configuration")
 st.caption("Edits write to `pipeline_config.json`. Defaults fill any missing keys.")
 

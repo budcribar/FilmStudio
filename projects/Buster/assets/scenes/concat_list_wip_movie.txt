@@ -4,4 +4,3 @@ file '/mnt/c/Users/budcr/source/repos/NickAndMe/projects/Buster/assets/scenes/sc
 file '/mnt/c/Users/budcr/source/repos/NickAndMe/projects/Buster/assets/scenes/scene_04_complete.mp4'
 file '/mnt/c/Users/budcr/source/repos/NickAndMe/projects/Buster/assets/scenes/scene_05_complete.mp4'
 file '/mnt/c/Users/budcr/source/repos/NickAndMe/projects/Buster/assets/scenes/scene_06_complete.mp4'
-file '/mnt/c/Users/budcr/source/repos/NickAndMe/projects/Buster/assets/scenes/scene_07_complete.mp4'

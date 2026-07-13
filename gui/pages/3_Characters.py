@@ -7,18 +7,21 @@ import streamlit as st
 from review_app import pipeline_api as api
 from review_app.thumbnails import ui_image_path
 
+try:
+    from review_app.gen_nav_lock import block_if_gen_running
+    from review_app.gen_jobs import render_gen_job_banner
+
+    block_if_gen_running(page_label="Characters")
+    render_gen_job_banner(compact=True, auto_refresh=False, key_prefix="chars_gen")
+except Exception:
+    pass
+
 st.title("👤 Characters")
 st.caption(
     "Cast comes from **Stage 1** seeds. For picture books, lock a **book plate** "
     "directly, or generate Grok variants and lock one of those. "
     "**Narrator** is voice-only — no reference image."
 )
-try:
-    from review_app.gen_jobs import render_gen_job_banner
-
-    render_gen_job_banner(compact=True, auto_refresh=False, key_prefix="chars_gen")
-except Exception:
-    pass
 
 
 def _char_cache_key() -> str:

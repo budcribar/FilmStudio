@@ -5,6 +5,13 @@ import streamlit as st
 
 from review_app import pipeline_api as api
 
+try:
+    from review_app.gen_nav_lock import block_if_gen_running
+
+    block_if_gen_running(page_label="Cost")
+except Exception:
+    pass
+
 st.title("💰 Cost")
 st.caption(
     "**Actual** = tracked list-rate spend when each job finished (`pipeline_state.cost_ledger`). "

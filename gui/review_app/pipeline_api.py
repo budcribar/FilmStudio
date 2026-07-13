@@ -1298,14 +1298,20 @@ def gen_job_status() -> Dict[str, Any]:
 
 
 def gen_job_running() -> bool:
+    """True while a background gen worker is active (in-process)."""
     try:
-        from review_app.gen_jobs import is_gen_running
+        from review_app.gen_jobs import get_gen_job_status, is_gen_running
 
-        return bool(is_gen_running())
+        if is_gen_running():
+            return True
+        # Status can lag one tick behind the thread flag
+        live = get_gen_job_status()
+        if str(live.get("status") or "") == "running":
+            return True
     except Exception:
         pass
-    st = gen_job_status()
-    return str(st.get("status") or "") == "running"
+    # Do not treat disk-only "running" as live after process restart (would lock menu forever)
+    return False
 
 
 def cancel_gen_job() -> Dict[str, Any]:

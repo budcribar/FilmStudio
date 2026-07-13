@@ -29,6 +29,9 @@
           "assets/characters/character_buster_bookref_1.png",
           "assets/characters/character_buster_bookref_2.png",
           "assets/characters/character_buster_bookref_3.png"
+        ],
+        "wardrobe_always": [
+          "signature silly noodle-head hat"
         ]
       },
       "Character_Mom": {
@@ -513,6 +516,7 @@
       "lighting_continuity_token": "night_lamps_house_C",
       "wardrobe_by_character": {
         "Character_Buster": [
+          "signature silly noodle-head hat",
           "black-and-white dog pajamas"
         ],
         "Character_Mom": [

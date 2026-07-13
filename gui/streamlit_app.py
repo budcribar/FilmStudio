@@ -124,12 +124,23 @@ def _render_project_sidebar(prog: dict | None = None) -> dict:
     with st.sidebar:
         st.header("Project")
         if gen_running:
-            st.error("🔒 Gen running — project switch locked")
+            st.error("🔒 Gen running — menu & project switch locked")
             try:
                 job = api.gen_job_status()
                 st.caption(job.get("message") or "Generating clips…")
+                scenes = job.get("scenes") or []
+                if scenes:
+                    st.caption(
+                        f"Batch: {len(scenes)} scene(s) "
+                        f"({', '.join(str(s) for s in scenes[:8])}"
+                        f"{'…' if len(scenes) > 8 else ''})"
+                    )
             except Exception:
                 pass
+            st.caption(
+                "Other pages are hidden until generation finishes. "
+                "Use **Cancel** to stop after the current clip."
+            )
             if st.button("Cancel generation", key="sidebar_gen_cancel", type="primary"):
                 try:
                     api.cancel_gen_job()
@@ -196,6 +207,12 @@ def _render_project_sidebar(prog: dict | None = None) -> dict:
 
 
 def page_home() -> None:
+    try:
+        from review_app.gen_nav_lock import block_if_gen_running
+
+        block_if_gen_running(page_label="Home")
+    except Exception:
+        pass
     st.title("🎬 Film Review Console")
     st.caption(
         "Multi-project review UI. Each project lives under `projects/<id>/` with its own "
@@ -334,39 +351,57 @@ def main() -> None:
     def L(step_id: str, fallback: str) -> str:
         return labels.get(step_id) or fallback
 
-    pages = [
-        st.Page(page_home, title="Home", icon="🎬", default=True),
-        st.Page(
-            str(_PAGES / "1_Adaptation.py"),
-            title=L("adaptation", "Adaptation"),
-            icon="📖",
-        ),
-        st.Page(
-            str(_PAGES / "2_Configuration.py"),
-            title=L("configuration", "Configuration"),
-            icon="⚙️",
-        ),
-        st.Page(
-            str(_PAGES / "3_Characters.py"),
-            title=L("characters", "Characters"),
-            icon="👤",
-        ),
-        st.Page(
-            str(_PAGES / "4_Scenes.py"),
-            title=L("scenes", "Scenes"),
-            icon="🎞️",
-        ),
-        st.Page(
-            str(_PAGES / "5_Edit_Log.py"),
-            title=L("edit_log", "Edit Log"),
-            icon="📝",
-        ),
-        st.Page(
-            str(_PAGES / "6_Cost.py"),
-            title=L("cost", "Cost"),
-            icon="💰",
-        ),
-    ]
+    gen_running = False
+    try:
+        gen_running = bool(api.gen_job_running())
+    except Exception:
+        gen_running = False
+
+    # Streamlit cannot disable individual st.navigation links — while gen runs,
+    # only expose Scenes so Home/Adaptation/etc. are not clickable.
+    if gen_running:
+        pages = [
+            st.Page(
+                str(_PAGES / "4_Scenes.py"),
+                title="Scenes · generating…",
+                icon="🔒",
+                default=True,
+            ),
+        ]
+    else:
+        pages = [
+            st.Page(page_home, title="Home", icon="🎬", default=True),
+            st.Page(
+                str(_PAGES / "1_Adaptation.py"),
+                title=L("adaptation", "Adaptation"),
+                icon="📖",
+            ),
+            st.Page(
+                str(_PAGES / "2_Configuration.py"),
+                title=L("configuration", "Configuration"),
+                icon="⚙️",
+            ),
+            st.Page(
+                str(_PAGES / "3_Characters.py"),
+                title=L("characters", "Characters"),
+                icon="👤",
+            ),
+            st.Page(
+                str(_PAGES / "4_Scenes.py"),
+                title=L("scenes", "Scenes"),
+                icon="🎞️",
+            ),
+            st.Page(
+                str(_PAGES / "5_Edit_Log.py"),
+                title=L("edit_log", "Edit Log"),
+                icon="📝",
+            ),
+            st.Page(
+                str(_PAGES / "6_Cost.py"),
+                title=L("cost", "Cost"),
+                icon="💰",
+            ),
+        ]
 
     pg = st.navigation(pages, position="sidebar")
     pg.run()

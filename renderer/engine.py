@@ -109,15 +109,18 @@ DEFAULT_CONFIG = {
             "grok": {
                 "soft": 700,
                 "hard": 1000,
-                "full_max": 0,
+                # xAI video API rejects prompts over ~4096 chars (HTTP 400)
+                "full_max": 4000,
                 "models": {
                     "grok-imagine-video": {
                         "soft": 700,
                         "hard": 1000,
+                        "full_max": 4000,
                     },
                     "grok-imagine-video-1.5": {
                         "soft": 800,
                         "hard": 1200,
+                        "full_max": 4000,
                     },
                 },
             },
@@ -2816,48 +2819,39 @@ class AgenticGenerationEngine:
             vlock = str(seed.get("visual_lock") or "").strip()
             if not desc and not vlock:
                 continue
-            short = re.sub(r"\s+", " ", desc or vlock)[:140]
-            # Prefer explicit wardrobe/props lock (hat, pajamas, etc.)
+            short = re.sub(r"\s+", " ", desc or vlock)[:90]
+            # Prefer explicit wardrobe/props lock (hat, pajamas, etc.) — keep short for API budget
             wardrobe = ""
             if vlock:
-                wardrobe = f" Wardrobe/props lock: {re.sub(r'\\s+', ' ', vlock)[:100]}."
+                wardrobe = f" Wardrobe: {re.sub(r'\\s+', ' ', vlock)[:70]}."
             elif re.search(r"\bhat\b", short, re.I):
-                wardrobe = " Always wear the signature hat from the reference (never bare-headed)."
-            # If this clip already establishes wardrobe (sticky items / continuity), reinforce
+                wardrobe = " Keep signature hat on."
             prompt_l = (prompt or "").lower()
             if "wardrobe continuity" in prompt_l or "still wearing" in prompt_l:
-                wardrobe += (
-                    " Keep every wardrobe/prop item already established in this prompt "
-                    "for the entire clip (do not remove, swap, or drop after a cut or "
-                    "location change)."
-                )
+                wardrobe += " Keep wardrobe items named in this prompt."
             elif re.search(
                 r"\b(?:pajama|pjs|pyjama|collar|scarf|cardigan|sweater|"
                 r"jacket|hat|cap|glasses|bandana|leash)\b",
                 prompt_l,
             ):
-                wardrobe += (
-                    " Keep the same wardrobe/props already named in this prompt for the "
-                    "entire clip (do not undress or swap mid-shot)."
-                )
-            # Explicit recolor bans help when multi-ref confuses the model
+                wardrobe += " Keep named wardrobe/props."
             recolor = ""
             low = short.lower()
             if "black" in low and "white" in low:
-                recolor = " NEVER solid brown, golden, tan, or solid-color redesign."
+                recolor = " Never brown/tan redesign."
             bits.append(
-                f"IDENTITY LOCK {char_key}: exact same individual as the character "
-                f"reference image(s) for this token — {short}.{wardrobe}{recolor}"
+                f"IDENTITY LOCK {char_key}: same individual as reference image(s) — "
+                f"{short}.{wardrobe}{recolor}"
             )
-            if len(bits) >= 3:
+            # Cap at 2 locks — third cast member blows past xAI 4096 prompt limit
+            if len(bits) >= 2:
                 break
         if not bits:
             return ""
         return (
             "CRITICAL CONTINUITY: "
             + " ".join(bits)
-            + " Do not invent a different animal or person. "
-            "Reference image order lists the most identity-critical subject first."
+            + " Do not invent a different animal or person."
         )
 
     def _character_ref_priority_key(self, path: str) -> Tuple[int, str]:
@@ -3137,10 +3131,12 @@ class AgenticGenerationEngine:
             elif re.search(r"\b(male|man|father|dad|he|him)\b", pl):
                 gender = "male"
         gender_bit = f" gender={gender}" if gender in ("male", "female", "neutral") else ""
-        # Keep compact — full profiles can be long
+        # Keep compact — long profiles + identity locks exceed xAI ~4096 prompt cap
+        profile_short = re.sub(r"\s+", " ", profile).strip()
+        if len(profile_short) > 160:
+            profile_short = profile_short[:159].rsplit(" ", 1)[0] + "…"
         return (
-            f" VOICE LOCK for {label}{gender_bit} (use this EXACT same vocal identity every time "
-            f"this character speaks; do not reinvent pitch/age/accent between clips): {profile}"
+            f" VOICE LOCK for {label}{gender_bit} (same voice every clip): {profile_short}"
         )
 
     def _stage1_beat_index(self) -> Dict[str, Dict[str, Any]]:
@@ -3556,11 +3552,132 @@ class AgenticGenerationEngine:
             f"VISUAL: {visual} {' '.join(framing_bits)} "
             f"Must include synchronized native audio track with the video."
         ).strip()
-        # Optional model-level cap on full AUDIO+VISUAL string (0 = uncapped)
-        full_max = int(resolve_prompt_limits(self.config).get("full_max") or 0)
-        if full_max > 0 and len(full) > full_max:
-            full = full[: max(80, full_max - 1)].rsplit(" ", 1)[0] + "…"
-        return full
+        return self._clamp_api_video_prompt(full)
+
+    def _api_prompt_max_chars(self) -> int:
+        """Hard cap for provider video prompt (Grok API ≈ 4096). 0 = uncapped."""
+        lim = resolve_prompt_limits(self.config)
+        full_max = int(lim.get("full_max") or 0)
+        if full_max > 0:
+            return full_max
+        # Safe default for Grok when config omits full_max
+        if str(lim.get("provider") or self.config.get("video_provider") or "").lower().startswith(
+            "grok"
+        ):
+            return 4000
+        return 0
+
+    def _clamp_api_video_prompt(self, text: str, max_len: Optional[int] = None) -> str:
+        """
+        Enforce provider prompt char limit so generate does not 400.
+
+        Drops low-value framing tails first; preserves AUDIO / VISUAL / WARDROBE when possible.
+        """
+        t = re.sub(r"\s+", " ", (text or "").strip())
+        limit = int(max_len if max_len is not None else self._api_prompt_max_chars())
+        if limit <= 0 or len(t) <= limit:
+            return t
+        # Drop optional framing tails (least critical for API accept)
+        drop_res = (
+            r"\s*Must include synchronized native audio track with the video\.?",
+            r"\s*NARRATION SHOT:[^.]*\.",
+            r"\s*CONVERSATION SHOT:[^.]*\.",
+            r"\s*LIP-SYNC RULE:[^.]*\.",
+            r"\s*Follow the camera framing and location in this prompt exactly\.[^.]*\.",
+            r"\s*Prioritize the PRIMARY subject and ONE clear action[^.]*\.",
+            r"\s*background characters may stay mostly still\.",
+            r"\s*Show clear progressive motion for the primary action[^.]*\.",
+            r"\s*Continue seamlessly from the provided starting frame[^.]*\.",
+            r"\s*Natural camera motion only[^.]*\.",
+        )
+        for rx in drop_res:
+            if len(t) <= limit:
+                break
+            t2 = re.sub(rx, "", t, flags=re.I)
+            if t2 != t:
+                t = re.sub(r"\s+", " ", t2).strip()
+        # Compress long VOICE LOCK profiles further
+        if len(t) > limit:
+            def _short_voice(m: re.Match) -> str:
+                body = m.group(1)
+                if len(body) > 80:
+                    body = body[:79].rsplit(" ", 1)[0] + "…"
+                return f" VOICE LOCK{body}"
+
+            t = re.sub(
+                r"\sVOICE LOCK(.{20,400}?)(?=\s(?:AUDIO:|VISUAL:|CRITICAL|IDENTITY|WARDROBE)|$)",
+                _short_voice,
+                t,
+                flags=re.I,
+            )
+            t = re.sub(r"\s+", " ", t).strip()
+        # Compress IDENTITY LOCK bodies
+        if len(t) > limit:
+            t = re.sub(
+                r"(IDENTITY LOCK Character_[A-Za-z0-9_]+:)[^.!?]{60,}?[.!?]",
+                r"\1 same as reference image.",
+                t,
+            )
+            t = re.sub(r"\s+", " ", t).strip()
+        if len(t) > limit:
+            # Prefer keeping head (AUDIO/identity) + wardrobe tail if present
+            ward = ""
+            wm = re.search(r"(.{0,280}WARDROBE CONTINUITY.{0,200})$", t, flags=re.I)
+            if wm:
+                ward = wm.group(1)
+            room = limit - (len(ward) + 5 if ward else 1)
+            head = t[: max(80, room)].rsplit(" ", 1)[0]
+            t = f"{head} … {ward}".strip() if ward else (head + "…")
+            t = re.sub(r"\s+", " ", t).strip()
+        if len(t) > limit:
+            t = t[: max(40, limit - 1)].rsplit(" ", 1)[0] + "…"
+        if len(t) > limit:
+            t = t[:limit]
+        return t
+
+    def _clip_on_screen_character_keys(
+        self, clip: Dict[str, Any], scene_num: int
+    ) -> List[str]:
+        """
+        Characters for THIS clip's refs/identity — not the whole scene cast.
+
+        Full scene cast (e.g. Daddy only in bedroom beat) used to force extra ref
+        images + identity locks on every clip and blow the prompt length cap.
+        """
+        keys: List[str] = []
+        blob = " ".join(
+            str(x or "")
+            for x in (
+                clip.get("visual_prompt"),
+                clip.get("primary_subject"),
+                (clip.get("audio_payload") or {}).get("speaker"),
+            )
+        )
+        for m in re.finditer(r"Character_[A-Za-z0-9_]+", blob):
+            k = m.group(0)
+            if "narrator" in k.lower():
+                continue
+            if k not in keys:
+                keys.append(k)
+        ps = str(clip.get("primary_subject") or "").strip()
+        if (
+            ps.startswith("Character_")
+            and "narrator" not in ps.lower()
+            and ps not in keys
+        ):
+            keys.insert(0, ps)
+        # Legacy fallback: prompts without Character_* tokens
+        if not keys:
+            for sc in self.blueprint.get("scenes", []) or []:
+                if int(sc.get("scene_number") or 0) != int(scene_num):
+                    continue
+                for k in sc.get("characters_on_screen") or []:
+                    ks = str(k)
+                    if ks.startswith("Character_") and "narrator" not in ks.lower():
+                        if ks not in keys:
+                            keys.append(ks)
+                break
+        return keys
 
     def _mp4_audio_stats(self, video_path: str) -> Dict[str, Any]:
         """
@@ -4054,25 +4171,17 @@ class AgenticGenerationEngine:
                     f"{GROK_IMAGE_OR_REF_MAX_SEC}s (image-to-video max)"
                 )
                 payload["duration"] = GROK_IMAGE_OR_REF_MAX_SEC
+            ptxt = (payload.get("prompt") or prompt or "").strip()
+            payload["prompt"] = self._clamp_api_video_prompt(ptxt)
+            print(f"  [Grok] Prompt length {len(payload.get('prompt') or '')} chars")
         else:
-            # Fresh shot: lock ALL on-screen cast refs (prompt tokens + scene cast list).
-            # Mom-led dialogue shots must still carry Buster's locked plate if he is present.
+            # Fresh shot: lock refs for characters named on THIS clip (not whole-scene cast).
             # Order animal/hero refs FIRST — multi-ref with human first often invents a new dog.
             anchor_probe = clip.get("visual_prompt") or ""
-            scene_cast: List[str] = []
-            for sc in self.blueprint.get("scenes", []):
-                if int(sc.get("scene_number") or 0) != int(scene_num):
-                    continue
-                for k in sc.get("characters_on_screen") or []:
-                    if k:
-                        scene_cast.append(str(k))
-                ps = clip.get("primary_subject") or sc.get("primary_subject")
-                if ps:
-                    scene_cast.append(str(ps))
-                break
+            clip_cast = self._clip_on_screen_character_keys(clip, scene_num)
             id_lock = self._identity_lock_clause(
-                anchor_probe + " " + " ".join(scene_cast),
-                extra_keys=scene_cast,
+                anchor_probe + " " + " ".join(clip_cast),
+                extra_keys=clip_cast,
             )
             # Put identity locks at the FRONT of the prompt (Grok weights early text more)
             base_prompt = (payload.get("prompt") or prompt or "").strip()
@@ -4080,20 +4189,32 @@ class AgenticGenerationEngine:
                 payload["prompt"] = f"{id_lock} {base_prompt}".strip()
             elif id_lock and id_lock not in base_prompt:
                 payload["prompt"] = f"{id_lock} {base_prompt}".strip()
+            # Enforce xAI prompt char limit after identity prepending
+            before_len = len(payload.get("prompt") or "")
+            payload["prompt"] = self._clamp_api_video_prompt(payload.get("prompt") or "")
+            after_len = len(payload.get("prompt") or "")
+            if after_len < before_len:
+                print(
+                    f"  [Grok] Prompt clamped {before_len} → {after_len} chars "
+                    f"(API max {self._api_prompt_max_chars()})"
+                )
+            else:
+                print(f"  [Grok] Prompt length {after_len} chars")
             anchor_paths = self._find_character_anchor_paths(
-                anchor_probe, max_refs=3, extra_char_keys=scene_cast
+                anchor_probe, max_refs=3, extra_char_keys=clip_cast
             )
             if anchor_paths:
                 anchor_paths = sorted(
                     anchor_paths, key=self._character_ref_priority_key
                 )
+                # Cap expanded plates: 2 characters × plates quickly bloats multi-ref
                 anchor_paths = self._expand_character_refs_with_bookplates(
                     anchor_paths, max_refs=3
                 )
                 # Re-sort after expansion so animals stay first
                 anchor_paths = sorted(
                     anchor_paths, key=self._character_ref_priority_key
-                )
+                )[:3]
                 print(
                     "  [Character Anchor] Reference image(s) [priority order]: "
                     + ", ".join(os.path.basename(p) for p in anchor_paths)

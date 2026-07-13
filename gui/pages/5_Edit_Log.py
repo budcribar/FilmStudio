@@ -6,6 +6,13 @@ import streamlit as st
 from review_app import edit_log
 from review_app import learning as learning_mod
 
+try:
+    from review_app.gen_nav_lock import block_if_gen_running
+
+    block_if_gen_running(page_label="Edit Log")
+except Exception:
+    pass
+
 st.title("📝 Edit Log")
 st.caption(
     "Route feedback by **learning layer**: clip · stage2 · stage1 · verifier · engine. "

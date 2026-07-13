@@ -244,18 +244,51 @@ def _worker(kind: str, kwargs: Dict[str, Any], gen: int) -> None:
             _append_log("Cancelled")
         else:
             done_n = 0
+            fail_n = 0
+            first_err = None
             if isinstance(summary, dict):
                 done_n = len(summary.get("done") or []) or int(
                     summary.get("clips_done") or 0
                 )
-            _set_status(
-                status="done",
-                message=f"Generation finished ({done_n} clip(s))",
-                finished_at=time.strftime("%Y-%m-%dT%H:%M:%S"),
-                summary=summary if isinstance(summary, dict) else None,
-                error=None,
-            )
-            _append_log("Finished")
+                failed = summary.get("failed") or []
+                fail_n = len(failed) if isinstance(failed, list) else 0
+                if failed and isinstance(failed[0], dict):
+                    first_err = str(failed[0].get("error") or failed[0])[:400]
+                elif failed:
+                    first_err = str(failed[0])[:400]
+            if fail_n and not done_n:
+                msg = f"Generation failed ({fail_n} clip(s))"
+                if first_err:
+                    msg = f"{msg}: {first_err}"
+                _set_status(
+                    status="error",
+                    message=msg,
+                    finished_at=time.strftime("%Y-%m-%dT%H:%M:%S"),
+                    summary=summary if isinstance(summary, dict) else None,
+                    error=first_err or msg,
+                )
+                _append_log(msg)
+            elif fail_n:
+                msg = f"Generation finished with errors ({done_n} ok, {fail_n} failed)"
+                if first_err:
+                    msg = f"{msg}. First error: {first_err}"
+                _set_status(
+                    status="done",
+                    message=msg,
+                    finished_at=time.strftime("%Y-%m-%dT%H:%M:%S"),
+                    summary=summary if isinstance(summary, dict) else None,
+                    error=first_err,
+                )
+                _append_log(msg)
+            else:
+                _set_status(
+                    status="done",
+                    message=f"Generation finished ({done_n} clip(s))",
+                    finished_at=time.strftime("%Y-%m-%dT%H:%M:%S"),
+                    summary=summary if isinstance(summary, dict) else None,
+                    error=None,
+                )
+                _append_log("Finished")
     except Exception as e:
         if _cancel.is_set() or "cancel" in str(e).lower():
             _set_status(
@@ -452,7 +485,8 @@ def render_gen_job_banner(
                 pass
             st.warning(
                 f"**Generation running** ({kind}{where}{prog}). {msg}  \n"
-                "Project switch is locked. **Cancel** stops after the current clip when possible."
+                "Sidebar **menu pages** and project switch are locked. "
+                "**Cancel** stops after the current clip when possible."
             )
             b1, b2 = st.columns([1, 3])
             with b1:

@@ -2,6 +2,239 @@
   "version": 1,
   "entries": [
     {
+      "id": "09f3b351",
+      "ts": "2026-07-13T15:17:28",
+      "type": "scene_approve",
+      "learning_layer": "clip",
+      "scene": 6,
+      "clip": null,
+      "character": null,
+      "user_note": "Approved scene 6",
+      "action_taken": "scenes_completed + remux + WIP bg (full)",
+      "before": "",
+      "after": "",
+      "suggested_rule": "Review learning: Approved scene 6",
+      "targets": [
+        "pipeline_state.json",
+        "assets"
+      ],
+      "applied": {
+        "blueprint": false,
+        "adaptation_prompt": false,
+        "script_notes": false,
+        "learnings_md": false,
+        "layer_prompts": false,
+        "shared_rules": false,
+        "dirty_marked": false
+      },
+      "extra": {
+        "scene": 6,
+        "approved": true,
+        "composite_path": "assets/scenes/scene_06_complete.mp4",
+        "wip_path": null,
+        "remuxed": true,
+        "wip_rebuilt": false,
+        "wip_job_status": "running",
+        "wip_job_mode": "full"
+      }
+    },
+    {
+      "id": "ef8d9b76",
+      "ts": "2026-07-13T15:15:08",
+      "type": "scene_generate",
+      "learning_layer": "clip",
+      "scene": 6,
+      "clip": null,
+      "character": null,
+      "user_note": "Generate scene 6: 2 ok, 0 failed, 3 skipped",
+      "action_taken": "done=[4, 5] failed=[]",
+      "before": "",
+      "after": "",
+      "suggested_rule": "Review learning: Generate scene 6: 2 ok, 0 failed, 3 skipped",
+      "targets": [
+        "assets/video",
+        "assets/scenes"
+      ],
+      "applied": {
+        "blueprint": false,
+        "adaptation_prompt": false,
+        "script_notes": false,
+        "learnings_md": false,
+        "layer_prompts": false,
+        "shared_rules": false,
+        "dirty_marked": false
+      },
+      "extra": {
+        "done": [
+          4,
+          5
+        ],
+        "failed": [],
+        "skipped": [
+          1,
+          2,
+          3
+        ],
+        "only_missing": true,
+        "cancelled": false
+      }
+    },
+    {
+      "id": "47a10381",
+      "ts": "2026-07-13T15:12:33",
+      "type": "scene_approve",
+      "learning_layer": "clip",
+      "scene": 5,
+      "clip": null,
+      "character": null,
+      "user_note": "Approved scene 5",
+      "action_taken": "scenes_completed + remux + WIP bg (full)",
+      "before": "",
+      "after": "",
+      "suggested_rule": "Review learning: Approved scene 5",
+      "targets": [
+        "pipeline_state.json",
+        "assets"
+      ],
+      "applied": {
+        "blueprint": false,
+        "adaptation_prompt": false,
+        "script_notes": false,
+        "learnings_md": false,
+        "layer_prompts": false,
+        "shared_rules": false,
+        "dirty_marked": false
+      },
+      "extra": {
+        "scene": 5,
+        "approved": true,
+        "composite_path": "assets/scenes/scene_05_complete.mp4",
+        "wip_path": null,
+        "remuxed": true,
+        "wip_rebuilt": false,
+        "wip_job_status": "running",
+        "wip_job_mode": "full"
+      }
+    },
+    {
+      "id": "0bcd2ed7",
+      "ts": "2026-07-13T15:10:55",
+      "type": "scene_generate",
+      "learning_layer": "clip",
+      "scene": 5,
+      "clip": null,
+      "character": null,
+      "user_note": "Generate scene 5: 2 ok, 0 failed, 0 skipped",
+      "action_taken": "done=[2, 3] failed=[]",
+      "before": "",
+      "after": "",
+      "suggested_rule": "Review learning: Generate scene 5: 2 ok, 0 failed, 0 skipped",
+      "targets": [
+        "assets/video",
+        "assets/scenes"
+      ],
+      "applied": {
+        "blueprint": false,
+        "adaptation_prompt": false,
+        "script_notes": false,
+        "learnings_md": false,
+        "layer_prompts": false,
+        "shared_rules": false,
+        "dirty_marked": false
+      },
+      "extra": {
+        "done": [
+          2,
+          3
+        ],
+        "failed": [],
+        "skipped": [],
+        "only_missing": false,
+        "cancelled": false
+      }
+    },
+    {
+      "id": "72349c54",
+      "ts": "2026-07-13T14:31:55",
+      "type": "scene_generate",
+      "learning_layer": "clip",
+      "scene": 5,
+      "clip": null,
+      "character": null,
+      "user_note": "Generate scene 5: 1 ok, 0 failed, 2 skipped",
+      "action_taken": "done=[1] failed=[]",
+      "before": "",
+      "after": "",
+      "suggested_rule": "Review learning: Generate scene 5: 1 ok, 0 failed, 2 skipped",
+      "targets": [
+        "assets/video",
+        "assets/scenes"
+      ],
+      "applied": {
+        "blueprint": false,
+        "adaptation_prompt": false,
+        "script_notes": false,
+        "learnings_md": false,
+        "layer_prompts": false,
+        "shared_rules": false,
+        "dirty_marked": false
+      },
+      "extra": {
+        "done": [
+          1
+        ],
+        "failed": [],
+        "skipped": [
+          2,
+          3
+        ],
+        "only_missing": true,
+        "cancelled": false
+      }
+    },
+    {
+      "id": "14b24a4c",
+      "ts": "2026-07-13T14:25:39",
+      "type": "scene_generate",
+      "learning_layer": "clip",
+      "scene": 5,
+      "clip": null,
+      "character": null,
+      "user_note": "Generate scene 5: 0 ok, 1 failed, 2 skipped",
+      "action_taken": "done=[] failed=[{'clip': 1, 'error': 'xAI API returned HTTP 400 from https://api.x.ai/v1/videos/generations: {\"code\":\"invalid-argument\",\"error\":\"Prompt length exceeds the maximum allowed length of 4096\"}'}]",
+      "before": "",
+      "after": "",
+      "suggested_rule": "Review learning: Generate scene 5: 0 ok, 1 failed, 2 skipped",
+      "targets": [
+        "assets/video",
+        "assets/scenes"
+      ],
+      "applied": {
+        "blueprint": false,
+        "adaptation_prompt": false,
+        "script_notes": false,
+        "learnings_md": false,
+        "layer_prompts": false,
+        "shared_rules": false,
+        "dirty_marked": false
+      },
+      "extra": {
+        "done": [],
+        "failed": [
+          {
+            "clip": 1,
+            "error": "xAI API returned HTTP 400 from https://api.x.ai/v1/videos/generations: {\"code\":\"invalid-argument\",\"error\":\"Prompt length exceeds the maximum allowed length of 4096\"}"
+          }
+        ],
+        "skipped": [
+          2,
+          3
+        ],
+        "only_missing": true,
+        "cancelled": false
+      }
+    },
+    {
       "id": "1d2ff836",
       "ts": "2026-07-13T14:23:20",
       "type": "scene_generate",
