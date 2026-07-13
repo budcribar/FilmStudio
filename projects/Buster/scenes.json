@@ -75,7 +75,7 @@
       },
       "Character_Narrator": {
         "description": "Off-screen storybook narrator only; never appears on camera as a person.",
-        "reference_image_placeholder": "narrator_ref.png",
+        "reference_image_placeholder": "character_narrator_voice_only.txt",
         "voice_profile": "Warm adult storyteller, friendly mid pitch, playful bounce on rhymes, clear diction for kids, unhurried bedtime pace with a smile. Same voice every scene.",
         "voice_label": "NarratorStory",
         "display_name_policy": "never_on_screen"
@@ -916,5 +916,5 @@
     "ts": "2026-07-12T20:19:28"
   },
   "cumulative_duration_target_seconds": 420,
-  "character_images_attached_at": "2026-07-12T20:19:34"
+  "character_images_attached_at": "2026-07-12T21:18:12"
 }

@@ -79,13 +79,10 @@
       },
       "Character_Narrator": {
         "description": "Off-screen storyteller who delivers the book's rhyming narration; never appears on camera.",
-        "reference_image_placeholder": "narrator_ref.png",
-        "voice_profile": "Warm adult male storyteller, medium-low pitch, unhurried friendly pace, clear diction for rhymes, gentle smile in the voice; same voice every scene.",
+        "reference_image_placeholder": "character_narrator_voice_only.txt",
+        "voice_profile": "Warm adult male storyteller, medium-low pitch, same voice every scene.",
         "voice_label": "Narrator_WarmMale",
         "display_name_policy": "never_on_screen",
-        "design_reference_images": null,
-        "book_reference_images": null,
-        "source_image_pages": null,
         "tts_voice": "en-US-ChristopherNeural",
         "voice_gender": "male"
       }
@@ -111,7 +108,7 @@
       },
       "Loc_Parents_Bedroom": {
         "display_name": "Mom and Daddy's bedroom",
-        "description": "Parents' bedroom with a large bed, nightstands, soft bedding \u2014 Buster's preferred sleep spot.",
+        "description": "Parents' bedroom with a large bed, nightstands, soft bedding — Buster's preferred sleep spot.",
         "visual_lock": "Large bed with soft white/cream bedding and pillows, two nightstands, warm bedside lamps, calm wall color. Room labeled only as home bedroom; no name plaques. Window optional with night exterior.",
         "reference_image_placeholder": "loc_parents_bedroom_ref.png"
       },
@@ -127,7 +124,7 @@
   "scenes": [
     {
       "scene_number": 1,
-      "setting": "Evening \u2014 living room, Buster introduced",
+      "setting": "Evening — living room, Buster introduced",
       "location_ids": [
         "Loc_Living_Room"
       ],
@@ -181,7 +178,7 @@
           "timestamp": "00:00-00:10",
           "veo_continuation_source": "none",
           "location_id": "Loc_Living_Room",
-          "visual_prompt": "Warm lamp light, soft sofa or armchair, visible water bowl area nearby, front door to yard, cream/beige walls,\u2026. Evening \u2014 living room, Buster introduced. Character_Buster bounds into the living room frame, small black-and-white dog, ears flopping, happy face toward camera height. lips closed, narration is voiceover (not lip-synced conversation). must not: brown or tan dog redesign; adult large breed swap. Same identity as locked refs: Character_Buster (Small black-and-white\u2026 / 720p, 24fps",
+          "visual_prompt": "Warm lamp light, soft sofa or armchair, visible water bowl area nearby, front door to yard, cream/beige walls,…. Evening — living room, Buster introduced. Character_Buster bounds into the living room frame, small black-and-white dog, ears flopping, happy face toward camera height. lips closed, narration is voiceover (not lip-synced conversation). must not: brown or tan dog redesign; adult large breed swap. Same identity as locked refs: Character_Buster (Small black-and-white… / 720p, 24fps",
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens, no name tags, no name badges, no embroidered names, no lower thirds, no personal names on clothing or props, adult bodybuilder child",
           "audio_payload": {
             "speaker": "Character_Narrator",
@@ -198,7 +195,7 @@
           "timestamp": "00:10-00:20",
           "veo_continuation_source": "none",
           "location_id": "Loc_Living_Room",
-          "visual_prompt": "Warm lamp light, soft sofa or armchair, visible water bowl area nearby, front door to yard, cream/beige walls,\u2026. Character_Buster jumps around the living room like a frog \u2014 springy hops over a rug, landing clumsily but happily. lips closed, narration is voiceover (not lip-synced conversation). ONE continuous take no cut; unbroken cause-to-effect motion. must not: aggressive barking attack; breaking furniture violently. Same identity as locked refs: Character_Buster (Small\u2026 / 720p, 24fps",
+          "visual_prompt": "Warm lamp light, soft sofa or armchair, visible water bowl area nearby, front door to yard, cream/beige walls,…. Character_Buster jumps around the living room like a frog — springy hops over a rug, landing clumsily but happily. lips closed, narration is voiceover (not lip-synced conversation). ONE continuous take no cut; unbroken cause-to-effect motion. must not: aggressive barking attack; breaking furniture violently. Same identity as locked refs: Character_Buster (Small… / 720p, 24fps",
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens, no name tags, no name badges, no embroidered names, no lower thirds, no personal names on clothing or props",
           "audio_payload": {
             "speaker": "Character_Narrator",
@@ -215,7 +212,7 @@
           "timestamp": "00:20-00:30",
           "veo_continuation_source": "extend_previous",
           "location_id": "Loc_Living_Room",
-          "visual_prompt": "Warm lamp light, soft sofa or armchair, visible water bowl area nearby, front door to yard, cream/beige walls,\u2026. Closer look: Character_Buster sits, tilts head; clearly small, black-and-white markings stable. lips closed, narration is voiceover (not lip-synced conversation). must not: recolor coat; add spots that change identity. Same identity as locked refs: Character_Buster (Small black-and-white mixed dog (never brown, tan, or solid black\u2026) / 720p, 24fps",
+          "visual_prompt": "Warm lamp light, soft sofa or armchair, visible water bowl area nearby, front door to yard, cream/beige walls,…. Closer look: Character_Buster sits, tilts head; clearly small, black-and-white markings stable. lips closed, narration is voiceover (not lip-synced conversation). must not: recolor coat; add spots that change identity. Same identity as locked refs: Character_Buster (Small black-and-white mixed dog (never brown, tan, or solid black…) / 720p, 24fps",
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens, no name tags, no name badges, no embroidered names, no lower thirds, no personal names on clothing or props",
           "audio_payload": {
             "speaker": "Character_Narrator",
@@ -231,7 +228,7 @@
           "timestamp": "00:30-00:40",
           "veo_continuation_source": "extend_previous",
           "location_id": "Loc_Living_Room",
-          "visual_prompt": "Warm lamp light, soft sofa or armchair, visible water bowl area nearby, front door to yard, cream/beige walls,\u2026. Character_Buster stares blankly at a simple toy or his own tail, then grins goofily \u2014 lovable noodle-head moment. lips closed, narration is voiceover (not lip-synced conversation). must not: mean-spirited mockery visuals. Same identity as locked refs: Character_Buster (Small black-and-white mixed dog (never brown, tan, or solid black\u2026) / 720p, 24fps",
+          "visual_prompt": "Warm lamp light, soft sofa or armchair, visible water bowl area nearby, front door to yard, cream/beige walls,…. Character_Buster stares blankly at a simple toy or his own tail, then grins goofily — lovable noodle-head moment. lips closed, narration is voiceover (not lip-synced conversation). must not: mean-spirited mockery visuals. Same identity as locked refs: Character_Buster (Small black-and-white mixed dog (never brown, tan, or solid black…) / 720p, 24fps",
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens, no name tags, no name badges, no embroidered names, no lower thirds, no personal names on clothing or props",
           "audio_payload": {
             "speaker": "Character_Narrator",
@@ -259,7 +256,7 @@
     },
     {
       "scene_number": 2,
-      "setting": "Evening \u2014 living room, bedtime announced",
+      "setting": "Evening — living room, bedtime announced",
       "location_ids": [
         "Loc_Living_Room"
       ],
@@ -282,7 +279,7 @@
             "is_repeat_of": null,
             "duration_seconds": 17,
             "production_notes": [
-              "Cozy call to bed \u2192 comic puzzlement"
+              "Cozy call to bed → comic puzzlement"
             ],
             "lyrics": null
           },
@@ -292,7 +289,7 @@
             "is_repeat_of": null,
             "duration_seconds": 17,
             "production_notes": [
-              "Cozy call to bed \u2192 comic puzzlement"
+              "Cozy call to bed → comic puzzlement"
             ],
             "lyrics": null
           },
@@ -302,7 +299,7 @@
             "is_repeat_of": null,
             "duration_seconds": 16,
             "production_notes": [
-              "Cozy call to bed \u2192 comic puzzlement"
+              "Cozy call to bed → comic puzzlement"
             ],
             "lyrics": null
           }
@@ -314,7 +311,7 @@
           "timestamp": "00:00-00:10",
           "veo_continuation_source": "none",
           "location_id": "Loc_Living_Room",
-          "visual_prompt": "Warm lamp light, soft sofa or armchair, visible water bowl area nearby, front door to yard, cream/beige walls,\u2026. Character_Mom stands in the living room doorway/area, looking at Character_Buster with a gentle smile, speaking on camera. Mom faces Buster; Buster looks up at her; camera favors Mom then includes dog. only Character_Mom lip-syncs and speaks; other characters and any dog keep mouth/snout closed and still (listening), no dual mouth movement. must not: harsh scolding\u2026 / 720p, 24fps",
+          "visual_prompt": "Warm lamp light, soft sofa or armchair, visible water bowl area nearby, front door to yard, cream/beige walls,…. Character_Mom stands in the living room doorway/area, looking at Character_Buster with a gentle smile, speaking on camera. Mom faces Buster; Buster looks up at her; camera favors Mom then includes dog. only Character_Mom lip-syncs and speaks; other characters and any dog keep mouth/snout closed and still (listening), no dual mouth movement. must not: harsh scolding… / 720p, 24fps",
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens, no name tags, no name badges, no embroidered names, no lower thirds, no personal names on clothing or props, dog talking, animal mouthing words, dual lip-sync, non-speaker speaking, two characters lip-syncing same line, karaoke dog",
           "audio_payload": {
             "speaker": "Character_Mom",
@@ -331,7 +328,7 @@
           "timestamp": "00:10-00:20",
           "veo_continuation_source": "extend_previous",
           "location_id": "Loc_Living_Room",
-          "visual_prompt": "Warm lamp light, soft sofa or armchair, visible water bowl area nearby, front door to yard, cream/beige walls,\u2026. also on screen: Character_Mom. Character_Buster yawns and lowers his furry head toward a cushion, ready to sleep immediately. lips closed, narration is voiceover (not lip-synced conversation). Same identity as locked refs: Character_Buster (Small black-and-white mixed dog (never brown, tan, or solid black\u2026); Character_Mom (Warm adult woman, mother figure, medium build,\u2026 / 720p, 24fps",
+          "visual_prompt": "Warm lamp light, soft sofa or armchair, visible water bowl area nearby, front door to yard, cream/beige walls,…. also on screen: Character_Mom. Character_Buster yawns and lowers his furry head toward a cushion, ready to sleep immediately. lips closed, narration is voiceover (not lip-synced conversation). Same identity as locked refs: Character_Buster (Small black-and-white mixed dog (never brown, tan, or solid black…); Character_Mom (Warm adult woman, mother figure, medium build,… / 720p, 24fps",
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens, no name tags, no name badges, no embroidered names, no lower thirds, no personal names on clothing or props",
           "audio_payload": {
             "speaker": "Character_Narrator",
@@ -347,7 +344,7 @@
           "timestamp": "00:20-00:30",
           "veo_continuation_source": "extend_previous",
           "location_id": "Loc_Living_Room",
-          "visual_prompt": "Warm lamp light, soft sofa or armchair, visible water bowl area nearby, front door to yard, cream/beige walls,\u2026. also on screen: Character_Mom. Character_Buster pauses mid-curl, does a little potty dance / shifts paws; glances at the floor then guiltily away \u2014 he knows going on the floor is naughty. lips closed, narration is voiceover (not lip-synced conversation). must not: graphic potty accident on floor; explicit mess. Same identity as locked refs: Character_Buster (Small\u2026 / 720p, 24fps",
+          "visual_prompt": "Warm lamp light, soft sofa or armchair, visible water bowl area nearby, front door to yard, cream/beige walls,…. also on screen: Character_Mom. Character_Buster pauses mid-curl, does a little potty dance / shifts paws; glances at the floor then guiltily away — he knows going on the floor is naughty. lips closed, narration is voiceover (not lip-synced conversation). must not: graphic potty accident on floor; explicit mess. Same identity as locked refs: Character_Buster (Small… / 720p, 24fps",
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens, no name tags, no name badges, no embroidered names, no lower thirds, no personal names on clothing or props",
           "audio_payload": {
             "speaker": "Character_Narrator",
@@ -364,7 +361,7 @@
           "timestamp": "00:30-00:40",
           "veo_continuation_source": "extend_previous",
           "location_id": "Loc_Living_Room",
-          "visual_prompt": "Warm lamp light, soft sofa or armchair, visible water bowl area nearby, front door to yard, cream/beige walls,\u2026. Character_Mom points toward the door and speaks; Character_Buster cocks his head in total confusion, noodle-head blank stare. Mom faces Buster and the door; Buster's eyeline to Mom then door. only Character_Mom lip-syncs and speaks; other characters and any dog keep mouth/snout closed and still (listening), no dual mouth movement. Same identity as locked refs:\u2026 / 720p, 24fps",
+          "visual_prompt": "Warm lamp light, soft sofa or armchair, visible water bowl area nearby, front door to yard, cream/beige walls,…. Character_Mom points toward the door and speaks; Character_Buster cocks his head in total confusion, noodle-head blank stare. Mom faces Buster and the door; Buster's eyeline to Mom then door. only Character_Mom lip-syncs and speaks; other characters and any dog keep mouth/snout closed and still (listening), no dual mouth movement. Same identity as locked refs:… / 720p, 24fps",
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens, no name tags, no name badges, no embroidered names, no lower thirds, no personal names on clothing or props, dog talking, animal mouthing words, dual lip-sync, non-speaker speaking, two characters lip-syncing same line, karaoke dog",
           "audio_payload": {
             "speaker": "Character_Mom",
@@ -380,7 +377,7 @@
           "timestamp": "00:40-00:50",
           "veo_continuation_source": "extend_previous",
           "location_id": "Loc_Living_Room",
-          "visual_prompt": "Warm lamp light, soft sofa or armchair, visible water bowl area nearby, front door to yard, cream/beige walls,\u2026. also on screen: Character_Mom. Hold on Character_Buster's puzzled face as the idea 'makes no sense' \u2014 freeze-frame-ish comic beat then he accepts and turns toward the door. lips closed, narration is voiceover (not lip-synced conversation). Same identity as locked refs: Character_Buster (Small black-and-white mixed dog (never brown, tan, or solid black\u2026); Character_Mom\u2026 / 720p, 24fps",
+          "visual_prompt": "Warm lamp light, soft sofa or armchair, visible water bowl area nearby, front door to yard, cream/beige walls,…. also on screen: Character_Mom. Hold on Character_Buster's puzzled face as the idea 'makes no sense' — freeze-frame-ish comic beat then he accepts and turns toward the door. lips closed, narration is voiceover (not lip-synced conversation). Same identity as locked refs: Character_Buster (Small black-and-white mixed dog (never brown, tan, or solid black…); Character_Mom… / 720p, 24fps",
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens, no name tags, no name badges, no embroidered names, no lower thirds, no personal names on clothing or props",
           "audio_payload": {
             "speaker": "Character_Narrator",
@@ -408,7 +405,7 @@
     },
     {
       "scene_number": 3,
-      "setting": "Evening \u2014 backyard bushes, then return inside",
+      "setting": "Evening — backyard bushes, then return inside",
       "location_ids": [
         "Loc_Backyard",
         "Loc_Living_Room"
@@ -432,7 +429,7 @@
             "is_repeat_of": null,
             "duration_seconds": 10,
             "production_notes": [
-              "Duty walk \u2192 proud little triumph"
+              "Duty walk → proud little triumph"
             ],
             "lyrics": null
           },
@@ -442,7 +439,7 @@
             "is_repeat_of": null,
             "duration_seconds": 10,
             "production_notes": [
-              "Duty walk \u2192 proud little triumph"
+              "Duty walk → proud little triumph"
             ],
             "lyrics": null
           },
@@ -452,7 +449,7 @@
             "is_repeat_of": null,
             "duration_seconds": 10,
             "production_notes": [
-              "Duty walk \u2192 proud little triumph"
+              "Duty walk → proud little triumph"
             ],
             "lyrics": null
           }
@@ -464,7 +461,7 @@
           "timestamp": "00:00-00:10",
           "veo_continuation_source": "none",
           "location_id": "Loc_Backyard",
-          "visual_prompt": "Dusk/evening outdoor light, green bushes along a fence line, grass patch, house exterior wall and door visible for\u2026. also on screen: Character_Mom. Evening \u2014 backyard bushes, then return inside. Character_Buster trots out the door into the backyard; evening light, bushes visible. lips closed, narration is voiceover (not lip-synced conversation). must not: daytime bright noon sun if continuity is evening. Same identity as locked refs: Character_Buster (Small black-and-white mixed\u2026 / 720p, 24fps",
+          "visual_prompt": "Dusk/evening outdoor light, green bushes along a fence line, grass patch, house exterior wall and door visible for…. also on screen: Character_Mom. Evening — backyard bushes, then return inside. Character_Buster trots out the door into the backyard; evening light, bushes visible. lips closed, narration is voiceover (not lip-synced conversation). must not: daytime bright noon sun if continuity is evening. Same identity as locked refs: Character_Buster (Small black-and-white mixed… / 720p, 24fps",
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens, no name tags, no name badges, no embroidered names, no lower thirds, no personal names on clothing or props, facing camera only, boy looking at viewer, back to house",
           "audio_payload": {
             "speaker": "Character_Narrator",
@@ -481,7 +478,7 @@
           "timestamp": "00:10-00:20",
           "veo_continuation_source": "extend_previous",
           "location_id": "Loc_Backyard",
-          "visual_prompt": "Dusk/evening outdoor light, green bushes along a fence line, grass patch, house exterior wall and door visible for\u2026. also on screen: Character_Mom. Character_Buster sniffs bushes, lifts a leg or squats tastefully behind foliage silhouette \u2014 job done, then shakes and turns back toward the house. lips closed, narration is voiceover (not lip-synced conversation). must not: graphic urine stream close-up; toilet humor excess. Same identity as locked refs: Character_Buster (Small\u2026 / 720p, 24fps",
+          "visual_prompt": "Dusk/evening outdoor light, green bushes along a fence line, grass patch, house exterior wall and door visible for…. also on screen: Character_Mom. Character_Buster sniffs bushes, lifts a leg or squats tastefully behind foliage silhouette — job done, then shakes and turns back toward the house. lips closed, narration is voiceover (not lip-synced conversation). must not: graphic urine stream close-up; toilet humor excess. Same identity as locked refs: Character_Buster (Small… / 720p, 24fps",
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens, no name tags, no name badges, no embroidered names, no lower thirds, no personal names on clothing or props",
           "audio_payload": {
             "speaker": "Character_Narrator",
@@ -498,7 +495,7 @@
           "timestamp": "00:20-00:30",
           "veo_continuation_source": "none",
           "location_id": "Loc_Living_Room",
-          "visual_prompt": "Warm lamp light, soft sofa or armchair, visible water bowl area nearby, front door to yard, cream/beige walls,\u2026. Character_Buster re-enters Loc_Living_Room where Character_Mom waits; he does a little proud spin in front of her. Buster spins facing Mom; Mom smiles down at him. lips closed, narration is voiceover (not lip-synced conversation). ONE continuous take no cut; unbroken cause-to-effect motion. Same identity as locked refs: Character_Buster (Small black-and-white mixed dog\u2026 / 720p, 24fps",
+          "visual_prompt": "Warm lamp light, soft sofa or armchair, visible water bowl area nearby, front door to yard, cream/beige walls,…. Character_Buster re-enters Loc_Living_Room where Character_Mom waits; he does a little proud spin in front of her. Buster spins facing Mom; Mom smiles down at him. lips closed, narration is voiceover (not lip-synced conversation). ONE continuous take no cut; unbroken cause-to-effect motion. Same identity as locked refs: Character_Buster (Small black-and-white mixed dog… / 720p, 24fps",
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens, no name tags, no name badges, no embroidered names, no lower thirds, no personal names on clothing or props",
           "audio_payload": {
             "speaker": "Character_Narrator",
@@ -525,7 +522,7 @@
     },
     {
       "scene_number": 4,
-      "setting": "Evening \u2014 living room treat and water",
+      "setting": "Evening — living room treat and water",
       "location_ids": [
         "Loc_Living_Room"
       ],
@@ -548,7 +545,7 @@
             "is_repeat_of": null,
             "duration_seconds": 10,
             "production_notes": [
-              "Anticipation \u2192 contentment"
+              "Anticipation → contentment"
             ],
             "lyrics": null
           },
@@ -558,7 +555,7 @@
             "is_repeat_of": null,
             "duration_seconds": 10,
             "production_notes": [
-              "Anticipation \u2192 contentment"
+              "Anticipation → contentment"
             ],
             "lyrics": null
           },
@@ -568,7 +565,7 @@
             "is_repeat_of": null,
             "duration_seconds": 10,
             "production_notes": [
-              "Anticipation \u2192 contentment"
+              "Anticipation → contentment"
             ],
             "lyrics": null
           }
@@ -580,7 +577,7 @@
           "timestamp": "00:00-00:10",
           "veo_continuation_source": "none",
           "location_id": "Loc_Living_Room",
-          "visual_prompt": "Warm lamp light, soft sofa or armchair, visible water bowl area nearby, front door to yard, cream/beige walls,\u2026. Character_Buster spins again eagerly; Character_Mom holds a small dog treat. lips closed, narration is voiceover (not lip-synced conversation). must not: human junk food as treat prop if avoidable. Same identity as locked refs: Character_Buster (Small black-and-white mixed dog (never brown, tan, or solid black\u2026); Character_Mom (Warm adult woman, mother figure, medium\u2026 / 720p, 24fps",
+          "visual_prompt": "Warm lamp light, soft sofa or armchair, visible water bowl area nearby, front door to yard, cream/beige walls,…. Character_Buster spins again eagerly; Character_Mom holds a small dog treat. lips closed, narration is voiceover (not lip-synced conversation). must not: human junk food as treat prop if avoidable. Same identity as locked refs: Character_Buster (Small black-and-white mixed dog (never brown, tan, or solid black…); Character_Mom (Warm adult woman, mother figure, medium… / 720p, 24fps",
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens, no name tags, no name badges, no embroidered names, no lower thirds, no personal names on clothing or props",
           "audio_payload": {
             "speaker": "Character_Narrator",
@@ -596,7 +593,7 @@
           "timestamp": "00:10-00:20",
           "veo_continuation_source": "extend_previous",
           "location_id": "Loc_Living_Room",
-          "visual_prompt": "Warm lamp light, soft sofa or armchair, visible water bowl area nearby, front door to yard, cream/beige walls,\u2026. Character_Mom gently lays the treat by Character_Buster's front feet; he sniffs and eats politely. Mom's hand enters frame low; Buster's eyeline to treat then Mom. lips closed, narration is voiceover (not lip-synced conversation). must not: throwing treat roughly. Same identity as locked refs: Character_Buster (Small black-and-white mixed dog (never brown, tan, or\u2026 / 720p, 24fps",
+          "visual_prompt": "Warm lamp light, soft sofa or armchair, visible water bowl area nearby, front door to yard, cream/beige walls,…. Character_Mom gently lays the treat by Character_Buster's front feet; he sniffs and eats politely. Mom's hand enters frame low; Buster's eyeline to treat then Mom. lips closed, narration is voiceover (not lip-synced conversation). must not: throwing treat roughly. Same identity as locked refs: Character_Buster (Small black-and-white mixed dog (never brown, tan, or… / 720p, 24fps",
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens, no name tags, no name badges, no embroidered names, no lower thirds, no personal names on clothing or props",
           "audio_payload": {
             "speaker": "Character_Narrator",
@@ -612,7 +609,7 @@
           "timestamp": "00:20-00:30",
           "veo_continuation_source": "extend_previous",
           "location_id": "Loc_Living_Room",
-          "visual_prompt": "Warm lamp light, soft sofa or armchair, visible water bowl area nearby, front door to yard, cream/beige walls,\u2026. Character_Buster laps water from his bowl; Character_Mom watches kindly nearby. lips closed, narration is voiceover (not lip-synced conversation). Same identity as locked refs: Character_Buster (Small black-and-white mixed dog (never brown, tan, or solid black\u2026); Character_Mom (Warm adult woman, mother figure, medium build, kind face, soft\u2026) / 720p, 24fps",
+          "visual_prompt": "Warm lamp light, soft sofa or armchair, visible water bowl area nearby, front door to yard, cream/beige walls,…. Character_Buster laps water from his bowl; Character_Mom watches kindly nearby. lips closed, narration is voiceover (not lip-synced conversation). Same identity as locked refs: Character_Buster (Small black-and-white mixed dog (never brown, tan, or solid black…); Character_Mom (Warm adult woman, mother figure, medium build, kind face, soft…) / 720p, 24fps",
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens, no name tags, no name badges, no embroidered names, no lower thirds, no personal names on clothing or props",
           "audio_payload": {
             "speaker": "Character_Narrator",
@@ -639,7 +636,7 @@
     },
     {
       "scene_number": 5,
-      "setting": "Night \u2014 living room to stairs in pajamas",
+      "setting": "Night — living room to stairs in pajamas",
       "location_ids": [
         "Loc_Living_Room",
         "Loc_Stairs_Hall"
@@ -663,7 +660,7 @@
             "is_repeat_of": null,
             "duration_seconds": 10,
             "production_notes": [
-              "Playful dressing \u2192 sleepy climb"
+              "Playful dressing → sleepy climb"
             ],
             "lyrics": null
           },
@@ -673,7 +670,7 @@
             "is_repeat_of": null,
             "duration_seconds": 10,
             "production_notes": [
-              "Playful dressing \u2192 sleepy climb"
+              "Playful dressing → sleepy climb"
             ],
             "lyrics": null
           },
@@ -683,7 +680,7 @@
             "is_repeat_of": null,
             "duration_seconds": 10,
             "production_notes": [
-              "Playful dressing \u2192 sleepy climb"
+              "Playful dressing → sleepy climb"
             ],
             "lyrics": null
           }
@@ -695,7 +692,7 @@
           "timestamp": "00:00-00:10",
           "veo_continuation_source": "none",
           "location_id": "Loc_Living_Room",
-          "visual_prompt": "Warm lamp light, soft sofa or armchair, visible water bowl area nearby, front door to yard, cream/beige walls,\u2026. Character_Buster now wears black-and-white dog pajamas matching his fur; he stands proudly in the living room as Character_Mom adjusts a sleeve or smiles. lips closed, narration is voiceover (not lip-synced conversation). must not: pajama colors that break black-and-white lock; human toddler body swap. Same identity as locked refs: Character_Buster (Small\u2026 / 720p, 24fps",
+          "visual_prompt": "Warm lamp light, soft sofa or armchair, visible water bowl area nearby, front door to yard, cream/beige walls,…. Character_Buster now wears black-and-white dog pajamas matching his fur; he stands proudly in the living room as Character_Mom adjusts a sleeve or smiles. lips closed, narration is voiceover (not lip-synced conversation). must not: pajama colors that break black-and-white lock; human toddler body swap. Same identity as locked refs: Character_Buster (Small… / 720p, 24fps",
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens, no name tags, no name badges, no embroidered names, no lower thirds, no personal names on clothing or props",
           "audio_payload": {
             "speaker": "Character_Narrator",
@@ -711,7 +708,7 @@
           "timestamp": "00:10-00:20",
           "veo_continuation_source": "none",
           "location_id": "Loc_Stairs_Hall",
-          "visual_prompt": "Carpeted or wood stairs with simple banister, soft night lighting from upstairs hall, family-home photos optional\u2026. also on screen: Character_Mom. Character_Buster climbs the staircase step by step in pajamas; camera follows upward through Loc_Stairs_Hall. lips closed, narration is voiceover (not lip-synced conversation). ONE continuous take no cut; unbroken cause-to-effect motion. must not: falling down stairs injury comedy. Same identity as locked refs: Character_Buster (Small\u2026 / 720p, 24fps",
+          "visual_prompt": "Carpeted or wood stairs with simple banister, soft night lighting from upstairs hall, family-home photos optional…. also on screen: Character_Mom. Character_Buster climbs the staircase step by step in pajamas; camera follows upward through Loc_Stairs_Hall. lips closed, narration is voiceover (not lip-synced conversation). ONE continuous take no cut; unbroken cause-to-effect motion. must not: falling down stairs injury comedy. Same identity as locked refs: Character_Buster (Small… / 720p, 24fps",
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens, no name tags, no name badges, no embroidered names, no lower thirds, no personal names on clothing or props",
           "audio_payload": {
             "speaker": "Character_Narrator",
@@ -728,7 +725,7 @@
           "timestamp": "00:20-00:30",
           "veo_continuation_source": "none",
           "location_id": "Loc_Stairs_Hall",
-          "visual_prompt": "Carpeted or wood stairs with simple banister, soft night lighting from upstairs hall, family-home photos optional\u2026. also on screen: Character_Mom. Night \u2014 living room to stairs in pajamas. At the top of the stairs, Character_Buster aims down the hall toward the open parents' bedroom door; warm light spills out. lips closed, narration is voiceover (not lip-synced conversation). Same identity as locked refs: Character_Buster (Small black-and-white mixed dog (never brown, tan, or\u2026 / 720p, 24fps",
+          "visual_prompt": "Carpeted or wood stairs with simple banister, soft night lighting from upstairs hall, family-home photos optional…. also on screen: Character_Mom. Night — living room to stairs in pajamas. At the top of the stairs, Character_Buster aims down the hall toward the open parents' bedroom door; warm light spills out. lips closed, narration is voiceover (not lip-synced conversation). Same identity as locked refs: Character_Buster (Small black-and-white mixed dog (never brown, tan, or… / 720p, 24fps",
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens, no name tags, no name badges, no embroidered names, no lower thirds, no personal names on clothing or props",
           "audio_payload": {
             "speaker": "Character_Narrator",
@@ -754,7 +751,7 @@
     },
     {
       "scene_number": 6,
-      "setting": "Night \u2014 parents' bedroom",
+      "setting": "Night — parents' bedroom",
       "location_ids": [
         "Loc_Parents_Bedroom"
       ],
@@ -778,7 +775,7 @@
             "is_repeat_of": null,
             "duration_seconds": 10,
             "production_notes": [
-              "Eager jump \u2192 cozy settle"
+              "Eager jump → cozy settle"
             ],
             "lyrics": null
           },
@@ -788,7 +785,7 @@
             "is_repeat_of": null,
             "duration_seconds": 10,
             "production_notes": [
-              "Eager jump \u2192 cozy settle"
+              "Eager jump → cozy settle"
             ],
             "lyrics": null
           }
@@ -800,7 +797,7 @@
           "timestamp": "00:00-00:10",
           "veo_continuation_source": "none",
           "location_id": "Loc_Parents_Bedroom",
-          "visual_prompt": "Large bed with soft white/cream bedding and pillows, two nightstands, warm bedside lamps, calm wall color. Room\u2026. Character_Buster leaps onto the big bed where Character_Mom and Character_Daddy are settling; soft landing among pillows. Buster jumps from foot of bed toward middle; parents react with fond amusement not anger. lips closed, narration is voiceover (not lip-synced conversation). ONE continuous take no cut; unbroken cause-to-effect motion. must not: parents angry at\u2026 / 720p, 24fps",
+          "visual_prompt": "Large bed with soft white/cream bedding and pillows, two nightstands, warm bedside lamps, calm wall color. Room…. Character_Buster leaps onto the big bed where Character_Mom and Character_Daddy are settling; soft landing among pillows. Buster jumps from foot of bed toward middle; parents react with fond amusement not anger. lips closed, narration is voiceover (not lip-synced conversation). ONE continuous take no cut; unbroken cause-to-effect motion. must not: parents angry at… / 720p, 24fps",
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens, no name tags, no name badges, no embroidered names, no lower thirds, no personal names on clothing or props",
           "audio_payload": {
             "speaker": "Character_Narrator",
@@ -817,7 +814,7 @@
           "timestamp": "00:10-00:20",
           "veo_continuation_source": "extend_previous",
           "location_id": "Loc_Parents_Bedroom",
-          "visual_prompt": "Large bed with soft white/cream bedding and pillows, two nightstands, warm bedside lamps, calm wall color. Room\u2026. Character_Buster nestles between or beside Character_Mom and Character_Daddy; cozy wide of the bedroom labeled only by warmth \u2014 home sweet home feeling. lips closed, narration is voiceover (not lip-synced conversation). must not: readable personal name plaques. Same identity as locked refs: Character_Buster (Small black-and-white mixed dog (never brown, tan, or solid\u2026 / 720p, 24fps",
+          "visual_prompt": "Large bed with soft white/cream bedding and pillows, two nightstands, warm bedside lamps, calm wall color. Room…. Character_Buster nestles between or beside Character_Mom and Character_Daddy; cozy wide of the bedroom labeled only by warmth — home sweet home feeling. lips closed, narration is voiceover (not lip-synced conversation). must not: readable personal name plaques. Same identity as locked refs: Character_Buster (Small black-and-white mixed dog (never brown, tan, or solid… / 720p, 24fps",
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens, no name tags, no name badges, no embroidered names, no lower thirds, no personal names on clothing or props, name tag, name badge",
           "audio_payload": {
             "speaker": "Character_Narrator",
@@ -843,7 +840,7 @@
     },
     {
       "scene_number": 7,
-      "setting": "Night \u2014 dreamscape from parents' bed",
+      "setting": "Night — dreamscape from parents' bed",
       "location_ids": [
         "Loc_Parents_Bedroom",
         "Loc_Dreamscape"
@@ -866,7 +863,7 @@
             "is_repeat_of": null,
             "duration_seconds": 14,
             "production_notes": [
-              "Drift \u2192 playful chase \u2192 settle toward sleep"
+              "Drift → playful chase → settle toward sleep"
             ],
             "lyrics": null
           },
@@ -876,7 +873,7 @@
             "is_repeat_of": null,
             "duration_seconds": 13,
             "production_notes": [
-              "Drift \u2192 playful chase \u2192 settle toward sleep"
+              "Drift → playful chase → settle toward sleep"
             ],
             "lyrics": null
           },
@@ -886,7 +883,7 @@
             "is_repeat_of": null,
             "duration_seconds": 13,
             "production_notes": [
-              "Drift \u2192 playful chase \u2192 settle toward sleep"
+              "Drift → playful chase → settle toward sleep"
             ],
             "lyrics": null
           }
@@ -898,7 +895,7 @@
           "timestamp": "00:00-00:10",
           "veo_continuation_source": "none",
           "location_id": "Loc_Parents_Bedroom",
-          "visual_prompt": "Large bed with soft white/cream bedding and pillows, two nightstands, warm bedside lamps, calm wall color. Room\u2026. Night \u2014 dreamscape from parents' bed. Character_Buster's eyes grow heavy on the pillow in Loc_Parents_Bedroom; soft dissolve begins. lips closed, narration is voiceover (not lip-synced conversation). Same identity as locked refs: Character_Buster (Small black-and-white mixed dog (never brown, tan, or solid black\u2026) / 720p, 24fps",
+          "visual_prompt": "Large bed with soft white/cream bedding and pillows, two nightstands, warm bedside lamps, calm wall color. Room…. Night — dreamscape from parents' bed. Character_Buster's eyes grow heavy on the pillow in Loc_Parents_Bedroom; soft dissolve begins. lips closed, narration is voiceover (not lip-synced conversation). Same identity as locked refs: Character_Buster (Small black-and-white mixed dog (never brown, tan, or solid black…) / 720p, 24fps",
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens, no name tags, no name badges, no embroidered names, no lower thirds, no personal names on clothing or props",
           "audio_payload": {
             "speaker": "Character_Narrator",
@@ -914,7 +911,7 @@
           "timestamp": "00:10-00:20",
           "veo_continuation_source": "none",
           "location_id": "Loc_Dreamscape",
-          "visual_prompt": "Slightly soft-focus dream look, fluffy white snow drifts, then open yard grass with cartoon-friendly bunnies; Buster\u2026. In Loc_Dreamscape, Character_Buster bounds through fluffy white snow drifts, joyful and free. must not: nightmare tone; lost dog terror. Same identity as locked refs: Character_Buster (Small black-and-white mixed dog (never brown, tan, or solid black\u2026) / 720p, 24fps",
+          "visual_prompt": "Slightly soft-focus dream look, fluffy white snow drifts, then open yard grass with cartoon-friendly bunnies; Buster…. In Loc_Dreamscape, Character_Buster bounds through fluffy white snow drifts, joyful and free. must not: nightmare tone; lost dog terror. Same identity as locked refs: Character_Buster (Small black-and-white mixed dog (never brown, tan, or solid black…) / 720p, 24fps",
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens, no name tags, no name badges, no embroidered names, no lower thirds, no personal names on clothing or props",
           "audio_payload": {
             "speaker": "none",
@@ -931,7 +928,7 @@
           "timestamp": "00:20-00:30",
           "veo_continuation_source": "none",
           "location_id": "Loc_Dreamscape",
-          "visual_prompt": "Slightly soft-focus dream look, fluffy white snow drifts, then open yard grass with cartoon-friendly bunnies; Buster\u2026. Dream yard: bunnies run across grass; Character_Buster chases them hard, leaping and sprinting, never catching meanly \u2014 pure play. lips closed, narration is voiceover (not lip-synced conversation). ONE continuous take no cut; unbroken cause-to-effect motion. must not: bunny injury or predation gore. Same identity as locked refs: Character_Buster (Small\u2026 / 720p, 24fps",
+          "visual_prompt": "Slightly soft-focus dream look, fluffy white snow drifts, then open yard grass with cartoon-friendly bunnies; Buster…. Dream yard: bunnies run across grass; Character_Buster chases them hard, leaping and sprinting, never catching meanly — pure play. lips closed, narration is voiceover (not lip-synced conversation). ONE continuous take no cut; unbroken cause-to-effect motion. must not: bunny injury or predation gore. Same identity as locked refs: Character_Buster (Small… / 720p, 24fps",
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens, no name tags, no name badges, no embroidered names, no lower thirds, no personal names on clothing or props",
           "audio_payload": {
             "speaker": "Character_Narrator",
@@ -947,7 +944,7 @@
           "timestamp": "00:30-00:40",
           "veo_continuation_source": "none",
           "location_id": "Loc_Parents_Bedroom",
-          "visual_prompt": "Large bed with soft white/cream bedding and pillows, two nightstands, warm bedside lamps, calm wall color. Room\u2026. Dream softens; return dissolve to Character_Buster closing eyes fully in the real bed. lips closed, narration is voiceover (not lip-synced conversation). Same identity as locked refs: Character_Buster (Small black-and-white mixed dog (never brown, tan, or solid black\u2026) / 720p, 24fps",
+          "visual_prompt": "Large bed with soft white/cream bedding and pillows, two nightstands, warm bedside lamps, calm wall color. Room…. Dream softens; return dissolve to Character_Buster closing eyes fully in the real bed. lips closed, narration is voiceover (not lip-synced conversation). Same identity as locked refs: Character_Buster (Small black-and-white mixed dog (never brown, tan, or solid black…) / 720p, 24fps",
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens, no name tags, no name badges, no embroidered names, no lower thirds, no personal names on clothing or props",
           "audio_payload": {
             "speaker": "Character_Narrator",
@@ -974,7 +971,7 @@
     },
     {
       "scene_number": 8,
-      "setting": "Night \u2014 parents' bedroom, final sleep",
+      "setting": "Night — parents' bedroom, final sleep",
       "location_ids": [
         "Loc_Parents_Bedroom"
       ],
@@ -998,7 +995,7 @@
             "is_repeat_of": null,
             "duration_seconds": 17,
             "production_notes": [
-              "Contentment \u2192 deep love \u2192 silence/sleep"
+              "Contentment → deep love → silence/sleep"
             ],
             "lyrics": null
           },
@@ -1008,7 +1005,7 @@
             "is_repeat_of": null,
             "duration_seconds": 17,
             "production_notes": [
-              "Contentment \u2192 deep love \u2192 silence/sleep"
+              "Contentment → deep love → silence/sleep"
             ],
             "lyrics": null
           },
@@ -1018,7 +1015,7 @@
             "is_repeat_of": null,
             "duration_seconds": 16,
             "production_notes": [
-              "Contentment \u2192 deep love \u2192 silence/sleep"
+              "Contentment → deep love → silence/sleep"
             ],
             "lyrics": null
           }
@@ -1030,7 +1027,7 @@
           "timestamp": "00:00-00:10",
           "veo_continuation_source": "none",
           "location_id": "Loc_Parents_Bedroom",
-          "visual_prompt": "Large bed with soft white/cream bedding and pillows, two nightstands, warm bedside lamps, calm wall color. Room\u2026. also on screen: Character_Mom, Character_Daddy. Gentle hold on sleeping Character_Buster; faint smile of dream still on his face. lips closed, narration is voiceover (not lip-synced conversation). Same identity as locked refs: Character_Buster (Small black-and-white mixed dog (never brown, tan, or solid black\u2026); Character_Mom (Warm adult woman, mother figure, medium\u2026 / 720p, 24fps",
+          "visual_prompt": "Large bed with soft white/cream bedding and pillows, two nightstands, warm bedside lamps, calm wall color. Room…. also on screen: Character_Mom, Character_Daddy. Gentle hold on sleeping Character_Buster; faint smile of dream still on his face. lips closed, narration is voiceover (not lip-synced conversation). Same identity as locked refs: Character_Buster (Small black-and-white mixed dog (never brown, tan, or solid black…); Character_Mom (Warm adult woman, mother figure, medium… / 720p, 24fps",
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens, no name tags, no name badges, no embroidered names, no lower thirds, no personal names on clothing or props",
           "audio_payload": {
             "speaker": "Character_Narrator",
@@ -1046,7 +1043,7 @@
           "timestamp": "00:10-00:20",
           "veo_continuation_source": "extend_previous",
           "location_id": "Loc_Parents_Bedroom",
-          "visual_prompt": "Large bed with soft white/cream bedding and pillows, two nightstands, warm bedside lamps, calm wall color. Room\u2026. also on screen: Character_Mom, Character_Daddy. Character_Buster lays down his head fully, body relaxed and warm under a corner of the blanket; soft breathing. lips closed, narration is voiceover (not lip-synced conversation). Same identity as locked refs: Character_Buster (Small black-and-white mixed dog (never brown, tan, or solid black\u2026); Character_Mom (Warm adult\u2026 / 720p, 24fps",
+          "visual_prompt": "Large bed with soft white/cream bedding and pillows, two nightstands, warm bedside lamps, calm wall color. Room…. also on screen: Character_Mom, Character_Daddy. Character_Buster lays down his head fully, body relaxed and warm under a corner of the blanket; soft breathing. lips closed, narration is voiceover (not lip-synced conversation). Same identity as locked refs: Character_Buster (Small black-and-white mixed dog (never brown, tan, or solid black…); Character_Mom (Warm adult… / 720p, 24fps",
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens, no name tags, no name badges, no embroidered names, no lower thirds, no personal names on clothing or props",
           "audio_payload": {
             "speaker": "Character_Narrator",
@@ -1063,7 +1060,7 @@
           "timestamp": "00:20-00:30",
           "veo_continuation_source": "extend_previous",
           "location_id": "Loc_Parents_Bedroom",
-          "visual_prompt": "Large bed with soft white/cream bedding and pillows, two nightstands, warm bedside lamps, calm wall color. Room\u2026. Character_Mom gently pets Character_Buster's head and back while he sleeps; Character_Daddy rests nearby peacefully. Mom's hand strokes Buster; eyeline loving down at dog; Daddy optional soft smile eyes closed. lips closed, narration is voiceover (not lip-synced conversation). must not: waking the dog roughly. Same identity as locked refs: Character_Buster (Small\u2026 / 720p, 24fps",
+          "visual_prompt": "Large bed with soft white/cream bedding and pillows, two nightstands, warm bedside lamps, calm wall color. Room…. Character_Mom gently pets Character_Buster's head and back while he sleeps; Character_Daddy rests nearby peacefully. Mom's hand strokes Buster; eyeline loving down at dog; Daddy optional soft smile eyes closed. lips closed, narration is voiceover (not lip-synced conversation). must not: waking the dog roughly. Same identity as locked refs: Character_Buster (Small… / 720p, 24fps",
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens, no name tags, no name badges, no embroidered names, no lower thirds, no personal names on clothing or props",
           "audio_payload": {
             "speaker": "Character_Narrator",
@@ -1079,7 +1076,7 @@
           "timestamp": "00:30-00:40",
           "veo_continuation_source": "extend_previous",
           "location_id": "Loc_Parents_Bedroom",
-          "visual_prompt": "Large bed with soft white/cream bedding and pillows, two nightstands, warm bedside lamps, calm wall color. Room\u2026. Wider cozy family bed tableau: Character_Buster asleep between love of Character_Mom and Character_Daddy; lights very soft. lips closed, narration is voiceover (not lip-synced conversation). Same identity as locked refs: Character_Buster (Small black-and-white mixed dog (never brown, tan, or solid black\u2026); Character_Mom (Warm adult woman, mother figure, medium build,\u2026 / 720p, 24fps",
+          "visual_prompt": "Large bed with soft white/cream bedding and pillows, two nightstands, warm bedside lamps, calm wall color. Room…. Wider cozy family bed tableau: Character_Buster asleep between love of Character_Mom and Character_Daddy; lights very soft. lips closed, narration is voiceover (not lip-synced conversation). Same identity as locked refs: Character_Buster (Small black-and-white mixed dog (never brown, tan, or solid black…); Character_Mom (Warm adult woman, mother figure, medium build,… / 720p, 24fps",
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens, no name tags, no name badges, no embroidered names, no lower thirds, no personal names on clothing or props",
           "audio_payload": {
             "speaker": "Character_Narrator",
@@ -1095,7 +1092,7 @@
           "timestamp": "00:40-00:50",
           "veo_continuation_source": "extend_previous",
           "location_id": "Loc_Parents_Bedroom",
-          "visual_prompt": "Large bed with soft white/cream bedding and pillows, two nightstands, warm bedside lamps, calm wall color. Room\u2026. also on screen: Character_Mom, Character_Daddy. Extreme close on Character_Buster's peaceful sleeping face; subtle Zzz graphic optional as soft on-screen text only if tasteful; fade toward black. lips closed, narration is voiceover (not lip-synced conversation). must not: loud alarm or jump scare end. Same identity as locked refs: Character_Buster (Small\u2026 / 720p, 24fps",
+          "visual_prompt": "Large bed with soft white/cream bedding and pillows, two nightstands, warm bedside lamps, calm wall color. Room…. also on screen: Character_Mom, Character_Daddy. Extreme close on Character_Buster's peaceful sleeping face; subtle Zzz graphic optional as soft on-screen text only if tasteful; fade toward black. lips closed, narration is voiceover (not lip-synced conversation). must not: loud alarm or jump scare end. Same identity as locked refs: Character_Buster (Small… / 720p, 24fps",
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens, no name tags, no name badges, no embroidered names, no lower thirds, no personal names on clothing or props",
           "audio_payload": {
             "speaker": "Character_Narrator",
@@ -1140,7 +1137,7 @@
     "total_clips": 29,
     "completed_at": "2026-07-12T20:56:28",
     "last_run_ok": true,
-    "last_run_message": "Stage 2 complete: 8 scenes \u00b7 29 clips \u00b7 ~290s",
+    "last_run_message": "Stage 2 complete: 8 scenes · 29 clips · ~290s",
     "validation_issue_count": 0
   }
 }

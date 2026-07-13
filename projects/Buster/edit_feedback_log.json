@@ -2,6 +2,37 @@
   "version": 1,
   "entries": [
     {
+      "id": "761379d2",
+      "ts": "2026-07-12T21:18:29",
+      "type": "character_voice",
+      "learning_layer": "clip",
+      "scene": null,
+      "clip": null,
+      "character": "Character_Narrator",
+      "user_note": "Updated voice for Character_Narrator",
+      "action_taken": "Saved voice_profile / voice_label / gender on character seed",
+      "before": "",
+      "after": "",
+      "suggested_rule": "VO↔visual fidelity: the visual must match the book/dialogue event (character Character_Narrator). Reviewer note: Updated voice for Character_Narrator",
+      "targets": [
+        "blueprint"
+      ],
+      "applied": {
+        "blueprint": false,
+        "adaptation_prompt": false,
+        "script_notes": false,
+        "learnings_md": false,
+        "layer_prompts": false,
+        "shared_rules": false,
+        "dirty_marked": false
+      },
+      "extra": {
+        "voice_profile": "Warm adult male storyteller, medium-low pitch, same voice every scene.",
+        "voice_gender": "male",
+        "tts_voice": ""
+      }
+    },
+    {
       "id": "d1bae784",
       "ts": "2026-07-12T21:07:10",
       "type": "character_voice",

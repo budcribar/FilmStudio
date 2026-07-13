@@ -10,7 +10,8 @@ from review_app.thumbnails import ui_image_path
 st.title("👤 Characters")
 st.caption(
     "Cast comes from **Stage 1** seeds. For picture books, lock a **book plate** "
-    "directly, or generate Grok variants and lock one of those."
+    "directly, or generate Grok variants and lock one of those. "
+    "**Narrator** is voice-only — no reference image."
 )
 
 
@@ -146,9 +147,8 @@ with col_nav:
         stale_n = int(c.get("stale_clip_count") or 0)
         stale_mark = f" ⚠️{stale_n}" if stale_n else ""
         name = c.get("display_name") or c.get("name") or c["key"]
-        refs = c.get("design_reference_images") or []
-        # bookrefs on disk via seed paths in engine list — show bookref hint
-        label = f"{badge} {name}{stale_mark}"
+        voice_mark = " 🎙" if c.get("voice_only") else ""
+        label = f"{badge} {name}{voice_mark}{stale_mark}"
         if st.button(label, key=f"nav_{c['key']}", width="stretch"):
             st.session_state.selected_char = c["key"]
             st.rerun()
@@ -181,61 +181,69 @@ with col_main:
         )
     except Exception:
         seed = {}
-    pol = str(seed.get("display_name_policy") or char.get("display_name_policy") or "").lower()
-    is_voice_only = (
-        "never" in pol
-        or key.endswith("_Narrator")
-        or key == "Character_Narrator"
-        or "narrator" in key.lower()
+    is_voice_only = bool(
+        char.get("voice_only")
+        or api.is_voice_only_character(key, seed if isinstance(seed, dict) else None)
     )
     if is_voice_only:
         st.info(
-            "**Voice only (narrator)** — no on-screen image. Choose a **narrator voice** "
-            "below (drives Grok native VO). Skip book plates and Generate variants."
+            "**Voice only (narrator)** — **no reference image**. "
+            "Set voice below for Grok native VO. Book plates and locks do not apply."
         )
-        book_refs = []
+        try:
+            scrub = api.scrub_voice_only_character_images(key)
+            if scrub.get("removed_files"):
+                _cached_list_characters.clear()
+                st.caption(
+                    "Removed mistaken narrator image file(s): "
+                    + ", ".join(
+                        os.path.basename(p) for p in (scrub.get("removed_files") or [])[:6]
+                    )
+                )
+        except Exception:
+            pass
     else:
         book_refs = seed.get("design_reference_images") or seed.get(
             "book_reference_images"
         ) or []
 
-    if book_refs:
-        st.subheader("Book plates — click to lock")
-        st.caption(
-            "These are from the PDF. **Use as locked ref** sets this plate as the "
-            "character look for video (no Grok variants required)."
-        )
-        cols = st.columns(min(3, len(book_refs)))
-        for i, rp in enumerate(book_refs[:3]):
-            with cols[i % len(cols)]:
-                _show_image(rp, caption=os.path.basename(str(rp)), width=200)
-                if st.button(
-                    f"Use as locked ref",
-                    key=f"lock_bookref_{key}_{i}",
-                    type="primary" if i == 0 else "secondary",
-                    width="stretch",
-                ):
-                    try:
-                        path = api.lock_character_from_image(key, str(rp))
-                        _cached_list_characters.clear()
-                        st.success(f"Locked book plate → `{path}`")
-                        st.rerun()
-                    except Exception as e:
-                        st.error(str(e))
-    else:
-        st.warning(
-            "No book plates on this seed yet. "
-            "Re-run Stage 1 (after clean import) or re-import to attach book plates."
-        )
+        if book_refs:
+            st.subheader("Book plates — click to lock")
+            st.caption(
+                "These are from the PDF. **Use as locked ref** sets this plate as the "
+                "character look for video (no Grok variants required)."
+            )
+            cols = st.columns(min(3, len(book_refs)))
+            for i, rp in enumerate(book_refs[:3]):
+                with cols[i % len(cols)]:
+                    _show_image(rp, caption=os.path.basename(str(rp)), width=200)
+                    if st.button(
+                        f"Use as locked ref",
+                        key=f"lock_bookref_{key}_{i}",
+                        type="primary" if i == 0 else "secondary",
+                        width="stretch",
+                    ):
+                        try:
+                            path = api.lock_character_from_image(key, str(rp))
+                            _cached_list_characters.clear()
+                            st.success(f"Locked book plate → `{path}`")
+                            st.rerun()
+                        except Exception as e:
+                            st.error(str(e))
+        else:
+            st.warning(
+                "No book plates on this seed yet. "
+                "Re-run Stage 1 (after clean import) or re-import to attach book plates."
+            )
 
-    if char.get("locked") and char.get("ref_path"):
-        st.subheader("Locked reference (active)")
-        _show_image(char["ref_path"], caption="Active lock — used in video", width=320)
-    else:
-        st.info(
-            "No locked reference yet. **Use as locked ref** on a book plate above, "
-            "or generate Grok variants below and lock one of those."
-        )
+        if char.get("locked") and char.get("ref_path"):
+            st.subheader("Locked reference (active)")
+            _show_image(char["ref_path"], caption="Active lock — used in video", width=320)
+        else:
+            st.info(
+                "No locked reference yet. **Use as locked ref** on a book plate above, "
+                "or generate Grok variants below and lock one of those."
+            )
 
     # Voice — expanded for narrator (primary setup); collapsed for on-screen cast
     with st.expander(

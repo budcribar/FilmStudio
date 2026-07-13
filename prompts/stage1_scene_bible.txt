@@ -67,10 +67,11 @@ Also set when relevant:
   pages for picture books). Example: `"source_image_pages": [1, 2, 5]`
 - Prefer pages that show the face/body clearly over text-only pages.
 - Off-screen only (display_name_policy never_on_screen / pure narrator): omit source_image_pages
-  or use [].
+  or use []. **Narrator does not need a reference image** — voice_profile + voice_label only;
+  do not invent book plates or likeness for a voice-only narrator.
 - Do NOT invent page numbers that are not listed in AVAILABLE_BOOK_IMAGES.
 - The pipeline will copy those pages into assets/characters/*_bookref_* and set
-  design_reference_images after Stage 1 — you only need correct page numbers.
+  design_reference_images after Stage 1 — you only need correct page numbers (on-screen cast).
 
 Age variants need their **own** voice_profile (child ≠ adult baritone).
 

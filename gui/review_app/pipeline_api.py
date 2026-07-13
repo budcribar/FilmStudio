@@ -112,9 +112,27 @@ def _clip_on_disk_from_index(
 
 
 def reload_engine() -> AgenticGenerationEngine:
-    global _engine, ROOT
+    """Rebuild engine; re-import renderer so method signatures match disk (Streamlit stale modules)."""
+    global _engine, ROOT, AgenticGenerationEngine, GenerationFailure
+    global clip_output_path, composite_output_path, file_is_usable, music_output_path
     ROOT = repo_root()
     os.chdir(ROOT)
+    try:
+        import importlib
+
+        import renderer as renderer_pkg
+        import renderer.engine as engine_mod
+
+        importlib.reload(engine_mod)
+        importlib.reload(renderer_pkg)
+        AgenticGenerationEngine = renderer_pkg.AgenticGenerationEngine
+        GenerationFailure = renderer_pkg.GenerationFailure
+        clip_output_path = renderer_pkg.clip_output_path
+        composite_output_path = renderer_pkg.composite_output_path
+        file_is_usable = renderer_pkg.file_is_usable
+        music_output_path = renderer_pkg.music_output_path
+    except Exception:
+        pass
     _engine = AgenticGenerationEngine(
         install_signals=False, project_dir=str(ROOT)
     )
@@ -1505,6 +1523,99 @@ def ensure_blueprint_character_seeds_from_stage1(
     }
 
 
+def is_voice_only_character(char_key: str, info: Optional[Dict[str, Any]] = None) -> bool:
+    """Narrator / never_on_screen — no likeness plate or locked ref image."""
+    key = str(char_key or "")
+    pol = ""
+    if isinstance(info, dict):
+        pol = str(info.get("display_name_policy") or "").lower()
+    if not pol:
+        try:
+            seeds = (
+                get_engine()
+                .blueprint.get("global_production_variables", {})
+                .get("character_seed_tokens", {})
+                or {}
+            )
+            seed = seeds.get(key) if isinstance(seeds, dict) else None
+            if isinstance(seed, dict):
+                pol = str(seed.get("display_name_policy") or "").lower()
+        except Exception:
+            pass
+    return (
+        "never" in pol
+        or key.endswith("_Narrator")
+        or key == "Character_Narrator"
+        or "narrator" in key.lower()
+    )
+
+
+def scrub_voice_only_character_images(char_key: Optional[str] = None) -> Dict[str, Any]:
+    """
+    Drop book plates / locked ref files for narrator-style seeds.
+    If char_key is None, scrub all voice-only seeds in the active project.
+    """
+    eng = get_engine()
+    seeds = eng.blueprint.setdefault("global_production_variables", {}).setdefault(
+        "character_seed_tokens", {}
+    )
+    if not isinstance(seeds, dict):
+        return {"ok": False, "reason": "no_seeds", "cleared": []}
+    keys = [char_key] if char_key else list(seeds.keys())
+    cleared: List[str] = []
+    removed_files: List[str] = []
+    for key in keys:
+        if not key or key not in seeds:
+            continue
+        info = seeds.get(key) if isinstance(seeds.get(key), dict) else {}
+        if not is_voice_only_character(key, info if isinstance(info, dict) else {}):
+            continue
+        seed = seeds[key]
+        if not isinstance(seed, dict):
+            continue
+        for fld in (
+            "design_reference_images",
+            "book_reference_images",
+            "source_image_pages",
+        ):
+            seed.pop(fld, None)
+        # Keep a bare placeholder name for schema if present, but never require a file
+        if not seed.get("reference_image_placeholder"):
+            seed["reference_image_placeholder"] = f"{key.lower()}_voice_only.txt"
+        # Remove any mistaken locked ref / variants on disk
+        try:
+            ref = eng.character_ref_path(key)
+            if ref and os.path.isfile(ref):
+                os.remove(ref)
+                removed_files.append(ref)
+            for vp in eng.character_variant_paths(key):
+                if os.path.isfile(vp):
+                    os.remove(vp)
+                    removed_files.append(vp)
+        except OSError:
+            pass
+        # Stray bookref copies named for narrator
+        try:
+            chars_dir = Path(eng.project_dir) / "assets" / "characters"
+            if chars_dir.is_dir():
+                slug = key.lower().replace("character_", "")
+                for p in chars_dir.glob(f"*{slug}*"):
+                    if p.is_file() and p.suffix.lower() in (
+                        ".png",
+                        ".jpg",
+                        ".jpeg",
+                        ".webp",
+                    ):
+                        p.unlink(missing_ok=True)
+                        removed_files.append(str(p))
+        except OSError:
+            pass
+        cleared.append(key)
+    if cleared:
+        eng.save_blueprint_to_disk()
+    return {"ok": True, "cleared": cleared, "removed_files": removed_files}
+
+
 def list_characters(*, light: bool = False) -> List[Dict[str, Any]]:
     eng = get_engine()
     # After Stage 1, blueprint may still be an empty Stage 2 stub — pull seeds.
@@ -1523,6 +1634,26 @@ def list_characters(*, light: bool = False) -> List[Dict[str, Any]]:
                 pass
         if not seeds:
             seeds = stage1_character_seeds()
+    # One-time hygiene: strip mistaken narrator plates (cheap; skips if none)
+    if not light and seeds:
+        try:
+            for _k, _info in list(seeds.items()):
+                if is_voice_only_character(_k, _info if isinstance(_info, dict) else {}):
+                    if (
+                        (isinstance(_info, dict) and (
+                            _info.get("design_reference_images")
+                            or _info.get("book_reference_images")
+                            or _info.get("source_image_pages")
+                        ))
+                        or os.path.isfile(eng.character_ref_path(_k))
+                    ):
+                        scrub_voice_only_character_images(_k)
+                        seeds = eng.blueprint.get("global_production_variables", {}).get(
+                            "character_seed_tokens", {}
+                        )
+                        break
+        except Exception:
+            pass
     index = {} if light else _index_clips_by_character()
     stale_by_char: Dict[str, List[Tuple[int, int]]] = {k: [] for k in seeds}
     if not light:
@@ -1535,14 +1666,20 @@ def list_characters(*, light: bool = False) -> List[Dict[str, Any]]:
     for key, info in seeds.items():
         if not isinstance(info, dict):
             info = {}
+        voice_only = is_voice_only_character(key, info)
         ref = eng.character_ref_path(key)
-        variants = [
-            p for p in eng.character_variant_paths(key) if os.path.isfile(p)
-        ]
+        has_ref = (not voice_only) and os.path.isfile(ref)
+        variants = (
+            []
+            if voice_only
+            else [p for p in eng.character_variant_paths(key) if os.path.isfile(p)]
+        )
         hits = index.get(key) or []
         rev_entry = (eng.state.get("character_revisions") or {}).get(key) or {}
         stale_for_char = stale_by_char.get(key) or []
         display = character_display_name(key, info)
+        # Narrator is "ready" when voice_profile is set — no image lock required
+        voice_ready = bool((info.get("voice_profile") or "").strip())
         rows.append(
             {
                 "key": key,
@@ -1553,8 +1690,9 @@ def list_characters(*, light: bool = False) -> List[Dict[str, Any]]:
                 "variant_of": info.get("variant_of"),
                 "display_name_policy": info.get("display_name_policy") or "",
                 "canonical_given_name": info.get("canonical_given_name") or "",
-                "ref_path": ref,
-                "locked": os.path.isfile(ref),
+                "voice_only": voice_only,
+                "ref_path": ref if has_ref else None,
+                "locked": voice_ready if voice_only else has_ref,
                 "variants": variants,
                 "clip_count": len(hits),
                 "clips": hits[:50],
@@ -1634,13 +1772,38 @@ def save_character_voice(
     voice_gender: Optional[str] = None,
 ) -> Dict[str, Any]:
     """Save Grok voice_profile (+ optional gender / TTS id for optional fallback)."""
-    info = get_engine().set_character_voice_profile(
-        char_key,
-        voice_profile=voice_profile,
-        voice_label=voice_label,
-        tts_voice=tts_voice,
-        voice_gender=voice_gender,
-    )
+    eng = get_engine()
+    try:
+        info = eng.set_character_voice_profile(
+            char_key,
+            voice_profile=voice_profile,
+            voice_label=voice_label,
+            tts_voice=tts_voice,
+            voice_gender=voice_gender,
+        )
+    except TypeError as e:
+        # Stale Streamlit process loaded engine before voice_gender existed
+        if "voice_gender" not in str(e):
+            raise
+        info = eng.set_character_voice_profile(
+            char_key,
+            voice_profile=voice_profile,
+            voice_label=voice_label,
+            tts_voice=tts_voice,
+        )
+        if voice_gender is not None:
+            seeds = eng.blueprint.setdefault(
+                "global_production_variables", {}
+            ).setdefault("character_seed_tokens", {})
+            seed = seeds.get(char_key)
+            if isinstance(seed, dict):
+                g = str(voice_gender).strip().lower()
+                if g in ("male", "female", "neutral"):
+                    seed["voice_gender"] = g
+                elif g in ("", "auto", "unset"):
+                    seed.pop("voice_gender", None)
+                eng.save_blueprint_to_disk()
+                info = dict(seed)
     edit_log.add_entry(
         "character_voice",
         user_note=f"Updated voice for {char_key}",
@@ -1661,6 +1824,10 @@ def generate_character_variants(char_key: str) -> Dict[str, Any]:
     Generate 3 variants. Returns {paths, mode, book_refs} so the UI can show
     whether book-art references were used (required for picture-book likeness).
     """
+    if is_voice_only_character(char_key):
+        raise GenerationFailure(
+            f"{char_key} is voice-only (narrator) — no reference image or variants."
+        )
     eng = get_engine()
     # Prefer book-art edits; do not silently invent a different look
     paths = eng.generate_character_variants(char_key, allow_text_fallback=False)
@@ -1737,6 +1904,10 @@ def _after_character_lock(char_key: str, path: str, note: str) -> str:
 
 
 def lock_character_variant(char_key: str, variant_index: int) -> str:
+    if is_voice_only_character(char_key):
+        raise GenerationFailure(
+            f"{char_key} is voice-only (narrator) — no reference image to lock."
+        )
     eng = get_engine()
     path = eng.lock_character_variant(char_key, variant_index)
     return _after_character_lock(
@@ -1746,6 +1917,10 @@ def lock_character_variant(char_key: str, variant_index: int) -> str:
 
 def lock_character_from_image(char_key: str, image_path: str) -> str:
     """Lock a book plate (or any image path) as the character reference."""
+    if is_voice_only_character(char_key):
+        raise GenerationFailure(
+            f"{char_key} is voice-only (narrator) — no reference image to lock."
+        )
     eng = get_engine()
     path = eng.lock_character_from_path(char_key, image_path)
     return _after_character_lock(
