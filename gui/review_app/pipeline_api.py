@@ -692,28 +692,52 @@ def generate_scene_clips(
     remux: bool = True,
     rebuild_wip: bool = False,
     progress_cb=None,
+    cancel_check=None,
+    clip_numbers: Optional[List[int]] = None,
 ) -> Dict[str, Any]:
     """
     Generate video for all (or missing) clips in a scene — primary first-pass UI path.
 
-    only_missing=True: skip clips already on disk.
+    only_missing=True: skip clips already on disk (ignored when clip_numbers is set —
+    explicit selection always regenerates those clips).
+    clip_numbers: optional subset of clip numbers to generate/regen (any order; sorted).
     progress_cb(dict): optional {event, scene, clip, index, total, message, path?, error?}
+    cancel_check(): if returns True, stop between clips (cooperative cancel).
     """
     eng = get_engine()
     rows = list_clips(scene_num)
     if not rows:
         raise ValueError(f"Scene {scene_num} has no clips in the Stage 2 plan.")
 
+    selected: Optional[set] = None
+    if clip_numbers is not None:
+        selected = {int(c) for c in clip_numbers}
+        if not selected:
+            raise ValueError("No clips selected.")
+        known = {int(r["clip_number"]) for r in rows}
+        unknown = sorted(selected - known)
+        if unknown:
+            raise ValueError(
+                f"Scene {scene_num} has no clip(s) {unknown} in the Stage 2 plan."
+            )
+
     todo: List[int] = []
     for row in rows:
         cn = int(row["clip_number"])
+        if selected is not None:
+            if cn not in selected:
+                continue
+            # Explicit multi-select always regenerates (even if on disk)
+            todo.append(cn)
+            continue
         if only_missing and row.get("on_disk"):
             continue
         todo.append(cn)
 
     summary: Dict[str, Any] = {
         "scene": scene_num,
-        "only_missing": only_missing,
+        "only_missing": only_missing if selected is None else False,
+        "clip_numbers": sorted(selected) if selected is not None else None,
         "planned": [int(r["clip_number"]) for r in rows],
         "todo": list(todo),
         "done": [],
@@ -721,11 +745,16 @@ def generate_scene_clips(
         "paths": {},
         "composite_path": None,
         "wip_path": None,
-        "skipped_existing": [
-            int(r["clip_number"])
-            for r in rows
-            if only_missing and r.get("on_disk")
-        ],
+        "cancelled": False,
+        "skipped_existing": (
+            []
+            if selected is not None
+            else [
+                int(r["clip_number"])
+                for r in rows
+                if only_missing and r.get("on_disk")
+            ]
+        ),
     }
 
     total = len(todo)
@@ -744,6 +773,20 @@ def generate_scene_clips(
         )
 
     for i, cn in enumerate(todo, start=1):
+        if cancel_check and cancel_check():
+            summary["cancelled"] = True
+            if progress_cb:
+                progress_cb(
+                    {
+                        "event": "cancelled",
+                        "scene": scene_num,
+                        "clip": cn,
+                        "index": i,
+                        "total": total,
+                        "message": f"Cancelled before S{scene_num:02d} C{cn}",
+                    }
+                )
+            break
         if progress_cb:
             progress_cb(
                 {
@@ -774,7 +817,27 @@ def generate_scene_clips(
                     }
                 )
         except Exception as e:
-            summary["failed"].append({"clip": cn, "error": str(e)})
+            err_s = str(e)
+            # Treat shutdown/cancel as cooperative stop, not a hard failure
+            if (
+                (cancel_check and cancel_check())
+                or "shutdown" in err_s.lower()
+                or "cancel" in err_s.lower()
+            ):
+                summary["cancelled"] = True
+                if progress_cb:
+                    progress_cb(
+                        {
+                            "event": "cancelled",
+                            "scene": scene_num,
+                            "clip": cn,
+                            "index": i,
+                            "total": total,
+                            "message": f"Cancelled during S{scene_num:02d} C{cn}",
+                        }
+                    )
+                break
+            summary["failed"].append({"clip": cn, "error": err_s})
             if progress_cb:
                 progress_cb(
                     {
@@ -783,14 +846,14 @@ def generate_scene_clips(
                         "clip": cn,
                         "index": i,
                         "total": total,
-                        "error": str(e),
+                        "error": err_s,
                         "message": f"Failed S{scene_num:02d} C{cn}: {e}",
                     }
                 )
             # stop on first failure so user can fix API key / prompt before burning more
             break
 
-    if remux and summary["done"]:
+    if remux and summary["done"] and not summary.get("cancelled"):
         try:
             if rebuild_wip:
                 summary["wip_path"] = eng.remux_scenes_and_rebuild_wip(
@@ -808,6 +871,7 @@ def generate_scene_clips(
             f"Generate scene {scene_num}: "
             f"{len(summary['done'])} ok, {len(summary['failed'])} failed, "
             f"{len(summary['skipped_existing'])} skipped"
+            + ("; cancelled" if summary.get("cancelled") else "")
         ),
         scene=scene_num,
         action_taken=f"done={summary['done']} failed={summary['failed']}",
@@ -818,6 +882,7 @@ def generate_scene_clips(
             "failed": summary["failed"],
             "skipped": summary["skipped_existing"],
             "only_missing": only_missing,
+            "cancelled": bool(summary.get("cancelled")),
         },
     )
     if progress_cb:
@@ -829,6 +894,7 @@ def generate_scene_clips(
                 "message": (
                     f"Finished: {len(summary['done'])} generated, "
                     f"{len(summary['failed'])} failed"
+                    + ("; cancelled" if summary.get("cancelled") else "")
                 ),
                 **{k: summary[k] for k in ("done", "failed", "composite_path")},
             }
@@ -845,11 +911,13 @@ def generate_scenes_clips(
     rebuild_wip: bool = False,
     stop_on_fail: bool = True,
     progress_cb=None,
+    cancel_check=None,
 ) -> Dict[str, Any]:
     """
     Generate video for multiple scenes in order (batch from scene list UI).
 
     progress_cb events include scene_index / scene_total for outer progress.
+    cancel_check(): cooperative cancel between scenes/clips.
     """
     nums = sorted({int(n) for n in scene_nums if n is not None})
     if not nums:
@@ -864,10 +932,24 @@ def generate_scenes_clips(
         "scenes_skipped": [],
         "clips_done": 0,
         "clips_failed": 0,
+        "cancelled": False,
     }
     scene_total = len(nums)
 
     for si, sn in enumerate(nums, start=1):
+        if cancel_check and cancel_check():
+            batch["cancelled"] = True
+            if progress_cb:
+                progress_cb(
+                    {
+                        "event": "cancelled",
+                        "scene": sn,
+                        "scene_index": si,
+                        "scene_total": scene_total,
+                        "message": f"Cancelled before scene {sn}",
+                    }
+                )
+            break
         if progress_cb:
             progress_cb(
                 {
@@ -896,6 +978,7 @@ def generate_scenes_clips(
                 remux=remux,
                 rebuild_wip=False,  # remux WIP once at end if requested
                 progress_cb=_wrap,
+                cancel_check=cancel_check,
             )
         except Exception as e:
             summary = {
@@ -910,6 +993,9 @@ def generate_scenes_clips(
         batch["clips_done"] += len(summary.get("done") or [])
         batch["clips_failed"] += len(summary.get("failed") or [])
 
+        if summary.get("cancelled"):
+            batch["cancelled"] = True
+            break
         if summary.get("failed"):
             batch["scenes_failed"].append(sn)
             if stop_on_fail:
@@ -1183,6 +1269,120 @@ def wip_job_status() -> Dict[str, Any]:
     except Exception:
         pass
     return {"status": "idle", "message": ""}
+
+
+def gen_job_status() -> Dict[str, Any]:
+    """Background clip generation status (memory first, then pipeline_state)."""
+    try:
+        from review_app.gen_jobs import get_gen_job_status, is_gen_running
+
+        live = get_gen_job_status()
+        # Prefer in-process state whenever a worker is active
+        if is_gen_running() or (
+            live.get("status") and live.get("status") not in ("idle", None, "")
+        ):
+            if is_gen_running():
+                live = dict(live)
+                live["status"] = "running"
+            return live
+    except Exception:
+        pass
+    try:
+        eng = get_engine()
+        job = eng.state.get("gen_job")
+        if isinstance(job, dict) and job.get("status") not in (None, "", "idle"):
+            return job
+    except Exception:
+        pass
+    return {"status": "idle", "message": ""}
+
+
+def gen_job_running() -> bool:
+    try:
+        from review_app.gen_jobs import is_gen_running
+
+        return bool(is_gen_running())
+    except Exception:
+        pass
+    st = gen_job_status()
+    return str(st.get("status") or "") == "running"
+
+
+def cancel_gen_job() -> Dict[str, Any]:
+    """Cooperative cancel of the active generation job."""
+    from review_app.gen_jobs import cancel_gen_job as _cancel
+
+    return _cancel()
+
+
+def start_scene_gen_job(
+    scene_num: int,
+    *,
+    only_missing: bool = True,
+    run_qa: bool = True,
+    remux: bool = True,
+) -> Dict[str, Any]:
+    from review_app.gen_jobs import start_scene_gen
+
+    return start_scene_gen(
+        scene_num, only_missing=only_missing, run_qa=run_qa, remux=remux
+    )
+
+
+def start_batch_gen_job(
+    scene_nums: List[int],
+    *,
+    only_missing: bool = True,
+    run_qa: bool = True,
+    remux: bool = True,
+    stop_on_fail: bool = True,
+) -> Dict[str, Any]:
+    from review_app.gen_jobs import start_batch_gen
+
+    return start_batch_gen(
+        scene_nums,
+        only_missing=only_missing,
+        run_qa=run_qa,
+        remux=remux,
+        stop_on_fail=stop_on_fail,
+    )
+
+
+def start_clip_gen_job(
+    scene_num: int,
+    clip_num: int,
+    *,
+    feedback: str = "",
+    apply_to_prompt: bool = True,
+    run_qa: bool = True,
+) -> Dict[str, Any]:
+    from review_app.gen_jobs import start_clip_gen
+
+    return start_clip_gen(
+        scene_num,
+        clip_num,
+        feedback=feedback,
+        apply_to_prompt=apply_to_prompt,
+        run_qa=run_qa,
+    )
+
+
+def start_clips_gen_job(
+    scene_num: int,
+    clip_numbers: List[int],
+    *,
+    run_qa: bool = True,
+    remux: bool = True,
+) -> Dict[str, Any]:
+    """Background regen for an explicit multi-select of clips in one scene."""
+    from review_app.gen_jobs import start_clips_gen
+
+    return start_clips_gen(
+        scene_num,
+        clip_numbers,
+        run_qa=run_qa,
+        remux=remux,
+    )
 
 
 def remux_scene(scene_num: int) -> Optional[str]:

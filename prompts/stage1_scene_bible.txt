@@ -54,6 +54,44 @@ Each seed REQUIRED fields:
 - voice_profile (1–3 sentences: age/sex/pitch/pace/accent/energy + “same voice every scene”)
 - voice_label
 
+**visual_lock (REQUIRED for every on-screen character; omit only for pure off-screen narrator):**
+- 1–3 sentences of **filmable constants** Stage 2 injects into every shot of this character
+  (same role as location `visual_lock`, but for people/animals).
+- Include signature wardrobe/props/markings that must never drop between scenes, e.g.:
+  - “Always wears signature silly noodle-head hat; never bare-headed; black-and-white coat only.”
+  - “Always soft blue cardigan + cream pants; shoulder-length brown hair; never teen redesign.”
+  - “Always red collar with tag shape; never bare neck.”
+- Prefer props visible in AVAILABLE_BOOK_IMAGES / the book illustrations (hat, glasses, scarf,
+  distinctive collar, pajamas only at bedtime if the book shows them, etc.).
+- Do **not** invent a hat/prop the book never shows; if the book always shows it, you **must** lock it.
+- Pure narrator (`never_on_screen` / voice-only): omit `visual_lock` (or use empty omit-key).
+
+**wardrobe_always (REQUIRED for every on-screen character with clothes/props; omit for pure narrator):**
+- **Structured list** of always-on wardrobe/prop phrases Stage 2 copies onto every scene.
+- Free-text phrases — **not** a fixed enum. Any item is allowed (hat, collar, glasses,
+  cardigan, necklace, cast, alien badge, …). One short phrase per array entry.
+- Examples:
+  - `["signature silly noodle-head hat"]`
+  - `["soft blue cardigan", "cream pants"]`
+  - `["red leather collar"]`
+- Do **not** put temporary/bedtime-only items here (those belong on the scene /
+  beat wardrobe lists when the book shows them).
+- Keep in sync with visual_lock prose; the **list** is the machine-readable source of truth
+  so Stage 2 does not have to guess new item types forever.
+
+**Scene + beat wardrobe (structured — preferred over prose alone):**
+- Per scene **`wardrobe_by_character`**: object map `Character_*` → string[] of items
+  that character wears **for this whole scene** (always-on + anything already on for the
+  night/day). Stage 2 restates these on every clip.
+  Example: `"Character_Buster": ["signature silly noodle-head hat", "black-and-white dog pajamas"]`
+- Per scene **`wardrobe_notes`**: short human prose (who changed vs prior scene) — optional
+  companion, not a substitute for the structured map when cast wears distinctive items.
+- Per beat when someone **puts on** or **removes** something mid-scene:
+  - `wardrobe_put_on`: string[] (applied to `primary_subject`; sticks for later clips)
+  - `wardrobe_remove`: string[] (rare)
+  - Still describe the action in `visual_event` for filmability.
+- Daytime scenes: omit pajamas from `wardrobe_by_character` until the book dress beat.
+
 Also set when relevant:
 - age_band, variant_of for Young/Teen
 - display_name_policy: ok_anytime | withheld_until_reveal | never_on_screen
@@ -66,6 +104,8 @@ Also set when relevant:
   from AVAILABLE_BOOK_IMAGES where that character is clearly visible (cover + illustration
   pages for picture books). Example: `"source_image_pages": [1, 2, 5]`
 - Prefer pages that show the face/body clearly over text-only pages.
+- When book art shows a signature prop (hat, scarf, etc.), reflect it in **both** description
+  and `visual_lock`, and choose pages that show that prop when possible.
 - Off-screen only (display_name_policy never_on_screen / pure narrator): omit source_image_pages
   or use []. **Narrator does not need a reference image** — voice_profile + voice_label only;
   do not invent book plates or likeness for a voice-only narrator.
@@ -73,7 +113,8 @@ Also set when relevant:
 - The pipeline will copy those pages into assets/characters/*_bookref_* and set
   design_reference_images after Stage 1 — you only need correct page numbers (on-screen cast).
 
-Age variants need their **own** voice_profile (child ≠ adult baritone).
+Age variants need their **own** voice_profile (child ≠ adult baritone) and, if on-screen,
+their **own** `visual_lock` (child clothes ≠ adult).
 
 ================================================================
 LOCATION SEEDS & PINS (REQUIRED — Phase 1 uses lists)
@@ -167,7 +208,10 @@ For each scene:
   “Mom talks” if the hero is still on screen or reacts. Stage 2 + engine use this list
   to multi-lock reference images (not only the primary speaker).
 - transition_type, lighting_continuity_token
-- wardrobe_notes (incremental)
+- wardrobe_by_character (PREFERRED structured map Character_* → string[] of sticky items
+  for this scene — any free-text phrases; Stage 2 restates them every clip)
+- wardrobe_notes (optional human prose: incremental vs prior scene)
+- On beats that change dress: wardrobe_put_on / wardrobe_remove string[] + visual_event
 - spoiler_constraints[] (name tags, plot reveals, etc. — see SPOILERS section)
 - music_intent (style + mood_arc; not a full timed song_structure unless easy)
 - story_beats[] ordered
@@ -278,12 +322,18 @@ Per scene:
 Character seeds:
 - Required strings: description, reference_image_placeholder, voice_profile, voice_label
 - reference_image_placeholder = bare filename only (see CHARACTER SEEDS)
+- **visual_lock**: required for on-screen cast (signature hat/wardrobe/markings Stage 2 injects);
+  omit key for pure off-screen narrator only
+- **wardrobe_always**: string[] of always-on items for on-screen cast (structured; free-text
+  phrases). Omit for pure narrator. Empty array only if truly no clothes/props.
 - Optional fields: omit the key if unknown — do NOT emit null
   (no "canonical_given_name": null, no "name_reveal_scene": null)
 
 Per scene cast:
 - characters_on_screen: non-empty array of Character_* when the scene has on-screen beings
+- wardrobe_by_character: map each on-screen Character_* with distinctive dress to string[] items
 - Every beat with picture: primary_subject set; every beat with book speech: delivery/speaker/dialogue set
+- Beats that change dress: wardrobe_put_on / wardrobe_remove string[]
 
 Location seeds:
 - Required: display_name, description

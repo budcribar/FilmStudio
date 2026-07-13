@@ -44,6 +44,73 @@ def _project_scenes(project: Optional[str]) -> Path:
     return ROOT / "projects" / str(pid) / "nickandme.scenes.json"
 
 
+def _coerce_string_list(val: Any, *, max_items: int = 12) -> List[str]:
+    """Normalize Stage 1 wardrobe lists (free-text phrases)."""
+    if val is None:
+        return []
+    if isinstance(val, str):
+        parts = re.split(r"\s+and\s+|[,;|/]", val)
+        raw = [p.strip() for p in parts if p and str(p).strip()]
+    elif isinstance(val, list):
+        raw = []
+        for x in val:
+            if x is None:
+                continue
+            if isinstance(x, str):
+                s = x.strip()
+                if s:
+                    raw.append(s)
+            else:
+                s = str(x).strip()
+                if s:
+                    raw.append(s)
+    else:
+        return []
+    out: List[str] = []
+    seen: set = set()
+    for s in raw:
+        s = re.sub(r"\s+", " ", s).strip(" .,;:")
+        if len(s) < 2:
+            continue
+        key = s.lower()
+        if key in seen:
+            continue
+        seen.add(key)
+        out.append(s[:80])
+        if len(out) >= max_items:
+            break
+    return out
+
+
+def _bootstrap_wardrobe_always(seed: Dict[str, Any]) -> List[str]:
+    """
+    Best-effort seed list from visual_lock / description when the model omitted
+    wardrobe_always. Free-text phrases only — not a closed item enum.
+    """
+    blob = f"{seed.get('visual_lock') or ''}. {seed.get('description') or ''}"
+    found: List[str] = []
+    for m in re.finditer(
+        r"always\s+(?:wearing|wears)\s+([^.!;]{3,80})",
+        blob,
+        flags=re.I,
+    ):
+        chunk = re.sub(r"\s+", " ", m.group(1)).strip(" .,;")
+        # Split "hat and red collar" lightly
+        for part in re.split(r"\s+and\s+|,\s*", chunk):
+            p = part.strip()
+            if len(p) >= 3:
+                found.append(p[:80])
+    for m in re.finditer(
+        r"signature\s+([^.!;]{3,60})",
+        blob,
+        flags=re.I,
+    ):
+        p = re.sub(r"\s+", " ", m.group(1)).strip(" .,;")
+        if p:
+            found.append(p[:80])
+    return _coerce_string_list(found)
+
+
 def _norm_location_type(v: Any) -> str:
     s = str(v or "mixed").strip().lower().replace(" ", "_")
     if s in LOC_TYPE_MAP:
@@ -169,11 +236,41 @@ def normalize(data: Dict[str, Any]) -> Dict[str, Any]:
             "name_reveal_note",
             "age_band",
             "variant_of",
+            "visual_lock",
         ):
             if opt in seed and seed[opt] is None:
                 del seed[opt]
         if seed.get("name_reveal_scene") is None and "name_reveal_scene" in seed:
             del seed["name_reveal_scene"]
+        # On-screen cast: ensure visual_lock (wardrobe/props) for Stage 2 identity
+        pol = str(seed.get("display_name_policy") or "").lower()
+        is_voice_only = (
+            "never" in pol
+            or str(key).endswith("_Narrator")
+            or str(key) == "Character_Narrator"
+            or "narrator" in str(key).lower()
+        )
+        if is_voice_only:
+            seed.pop("visual_lock", None)
+            seed.pop("wardrobe_always", None)
+        else:
+            vl = seed.get("visual_lock")
+            if not (isinstance(vl, str) and vl.strip()):
+                # Derive a short lock from description when model omitted the field
+                desc = str(seed.get("description") or key).strip()
+                seed["visual_lock"] = (
+                    desc[:220] + ("…" if len(desc) > 220 else "")
+                )
+            # Structured always-on wardrobe list (Stage 2 source of truth)
+            always = _coerce_string_list(seed.get("wardrobe_always"))
+            if not always:
+                always = _bootstrap_wardrobe_always(seed)
+            if always:
+                seed["wardrobe_always"] = always
+            elif "wardrobe_always" in seed:
+                # Keep empty list only if explicitly provided empty; else omit noise
+                if seed.get("wardrobe_always") in (None, [], ""):
+                    seed.pop("wardrobe_always", None)
         # Keep book likeness fields when present
         pages = seed.get("source_image_pages")
         if pages is not None and not isinstance(pages, list):
@@ -222,12 +319,41 @@ def normalize(data: Dict[str, Any]) -> Dict[str, Any]:
         s["location_ids"] = [str(x) for x in lids if x]
         if s["location_ids"] and not s.get("primary_location_id"):
             s["primary_location_id"] = s["location_ids"][0]
+        # Structured scene wardrobe map Character_* -> string[]
+        wbc = s.get("wardrobe_by_character")
+        if wbc is None:
+            pass
+        elif not isinstance(wbc, dict):
+            s.pop("wardrobe_by_character", None)
+        else:
+            cleaned: Dict[str, List[str]] = {}
+            for ck, items in wbc.items():
+                token = str(ck).strip()
+                if not token.startswith("Character_"):
+                    continue
+                lst = _coerce_string_list(items)
+                if lst:
+                    cleaned[token] = lst
+            if cleaned:
+                s["wardrobe_by_character"] = cleaned
+            else:
+                s.pop("wardrobe_by_character", None)
+        if s.get("wardrobe_notes") is None:
+            s.pop("wardrobe_notes", None)
         # beats
         for b in s.get("story_beats") or []:
             if not isinstance(b, dict):
                 continue
             b.setdefault("beat_id", "b1")
             b.setdefault("intent", "")
+            for wkey in ("wardrobe_put_on", "wardrobe_remove"):
+                if wkey not in b:
+                    continue
+                lst = _coerce_string_list(b.get(wkey), max_items=8)
+                if lst:
+                    b[wkey] = lst
+                else:
+                    b.pop(wkey, None)
             b.setdefault("visual_event", b.get("intent") or "")
             b.setdefault("shot_scale_hint", "ms")
             b.setdefault("continuity", "new_setup")

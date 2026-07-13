@@ -70,6 +70,16 @@
               "reference_image_placeholder": { "type": "string" },
               "voice_profile": { "type": "string" },
               "voice_label": { "type": "string" },
+              "visual_lock": {
+                "type": "string",
+                "description": "Filmable wardrobe/props/markings constants Stage 2 injects every shot (e.g. always wears signature hat; never bare-headed). Required for on-screen cast when the book shows a stable look."
+              },
+              "wardrobe_always": {
+                "type": "array",
+                "description": "Structured always-on wardrobe/prop phrases for this character (any item — hat, collar, glasses, cardigan, etc.). Stage 2 restates these every scene without keyword guessing. Free-text phrases, not a fixed enum.",
+                "items": { "type": "string", "minLength": 1 },
+                "maxItems": 12
+              },
               "age_band": { "type": "string" },
               "variant_of": { "type": "string" },
               "display_name_policy": {
@@ -245,7 +255,16 @@
         "lighting_continuity_token": { "type": "string" },
         "wardrobe_notes": {
           "type": "string",
-          "description": "Incremental wardrobe vs prior scene."
+          "description": "Human prose: incremental wardrobe vs prior scene (who changed and why)."
+        },
+        "wardrobe_by_character": {
+          "type": "object",
+          "description": "Structured sticky wardrobe for this scene: Character_* token → list of free-text item phrases they wear for the scene (Stage 2 restates on every clip). Include always-on items plus anything put on this scene. Prefer this over free-text-only notes.",
+          "additionalProperties": {
+            "type": "array",
+            "items": { "type": "string", "minLength": 1 },
+            "maxItems": 12
+          }
         },
         "spoiler_constraints": {
           "type": "array",
@@ -344,6 +363,18 @@
           "type": "array",
           "items": { "type": "string" },
           "description": "Forbidden outcomes (name on badge, ball over wall if VO says window)."
+        },
+        "wardrobe_put_on": {
+          "type": "array",
+          "description": "Items the primary_subject (or named cast) puts on this beat; stick for remaining clips in the scene. Free-text phrases (e.g. black-and-white dog pajamas).",
+          "items": { "type": "string", "minLength": 1 },
+          "maxItems": 8
+        },
+        "wardrobe_remove": {
+          "type": "array",
+          "description": "Items removed this beat (rare). Free-text phrases matching prior wardrobe lists.",
+          "items": { "type": "string", "minLength": 1 },
+          "maxItems": 8
         },
         "audio": {
           "type": "object",

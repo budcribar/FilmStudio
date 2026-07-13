@@ -15,6 +15,8 @@
         "reference_image_placeholder": "character_p_ref.png",
         "voice_label": "P (narrator / younger brother)",
         "voice_profile": "American male late 20s, soft mid baritone, tired Midwestern, measured pace; same voice every scene.",
+        "visual_lock": "Short dark hair; thin wiry adult frame; plain pizza-delivery polo without name tag or personal name embroidery.",
+        "wardrobe_always": ["plain pizza-delivery polo without name tag"],
         "display_name_policy": "withheld_until_reveal"
       },
       "Character_N_Young": {
@@ -22,6 +24,8 @@
         "reference_image_placeholder": "character_n_young_ref.png",
         "voice_label": "Nick as child (~12)",
         "voice_profile": "American preteen boy, not adult baritone; confident kid energy; same voice in flashbacks.",
+        "visual_lock": "Child proportions only (never adult bodybuilder); reddish-brown hair; dirty kid t-shirt; no name tags.",
+        "wardrobe_always": ["dirty kid t-shirt"],
         "age_band": "child_12",
         "variant_of": "Character_N"
       }
@@ -52,6 +56,10 @@
       "transition_type": "dissolve",
       "lighting_continuity_token": "Bright dusty summer alley daylight",
       "wardrobe_notes": "Dirty kid clothes; not adult gym bodies",
+      "wardrobe_by_character": {
+        "Character_N_Young": ["dirty kid t-shirt"],
+        "Character_P_Young": ["kid play clothes"]
+      },
       "spoiler_constraints": [
         "No adult bodybuilder Nick",
         "No name tags"

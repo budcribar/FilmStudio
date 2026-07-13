@@ -13,6 +13,12 @@ st.caption(
     "directly, or generate Grok variants and lock one of those. "
     "**Narrator** is voice-only — no reference image."
 )
+try:
+    from review_app.gen_jobs import render_gen_job_banner
+
+    render_gen_job_banner(compact=True, auto_refresh=False, key_prefix="chars_gen")
+except Exception:
+    pass
 
 
 def _char_cache_key() -> str:

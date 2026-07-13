@@ -26,10 +26,19 @@ BASELINE (always on)
   only the active speaker lip-syncs each turn. Split clips only for hard cuts /
   new setups / length — not merely alternating speakers.
 - **Identity stability:** character seed descriptions include stable colors/markings;
-  Stage 2 restates them; engine locks reference plates — no free redesign between scenes.
+  on-screen seeds also set `visual_lock` (signature hat/wardrobe/props); Stage 2 restates
+  both; engine locks reference plates — no free redesign / bare-headed drop between scenes.
+- **Sticky wardrobe (Stage 1 owns the list):** Stage 1 emits structured free-text item
+  lists — seed `wardrobe_always`, scene `wardrobe_by_character`, beat `wardrobe_put_on` /
+  `wardrobe_remove`. Stage 2 **restates those phrases** on later clips (no fixed enum of
+  item types). Prose visual_lock / wardrobe_notes remain human-readable backups; structured
+  lists are the source of truth so new props (collar, cast, badge, …) need no Stage 2 code.
 - **Ref placeholders:** bare filenames only (`buster_ref.png`), not full assets/ paths.
 - **Single speaker lip-sync:** on `spoken_on_camera`, only `audio_payload.speaker` mouths
   the line; dogs/pets and non-speakers stay mouth/snout closed (listening). No dual lip-sync.
+- **Narrator VO:** `delivery=voiceover_internal` + speaker Narrator → **zero** on-screen
+  lip-sync. Name Mom/dog/etc. as mouths closed. Book phrases like "Mom said" or "in the
+  dog's head" must not trigger Mom/dog speaking.
 - **Native Grok audio:** film dialogue/narration comes only from the video model.
   No post-process TTS / edge-tts / SAPI path.
 

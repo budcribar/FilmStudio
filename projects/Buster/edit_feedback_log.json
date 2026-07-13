@@ -2,6 +2,1101 @@
   "version": 1,
   "entries": [
     {
+      "id": "1d2ff836",
+      "ts": "2026-07-13T14:23:20",
+      "type": "scene_generate",
+      "learning_layer": "clip",
+      "scene": 5,
+      "clip": null,
+      "character": null,
+      "user_note": "Generate scene 5: 0 ok, 1 failed, 2 skipped",
+      "action_taken": "done=[] failed=[{'clip': 1, 'error': 'xAI API returned HTTP 400 from https://api.x.ai/v1/videos/generations: {\"code\":\"invalid-argument\",\"error\":\"Prompt length exceeds the maximum allowed length of 4096\"}'}]",
+      "before": "",
+      "after": "",
+      "suggested_rule": "Review learning: Generate scene 5: 0 ok, 1 failed, 2 skipped",
+      "targets": [
+        "assets/video",
+        "assets/scenes"
+      ],
+      "applied": {
+        "blueprint": false,
+        "adaptation_prompt": false,
+        "script_notes": false,
+        "learnings_md": false,
+        "layer_prompts": false,
+        "shared_rules": false,
+        "dirty_marked": false
+      },
+      "extra": {
+        "done": [],
+        "failed": [
+          {
+            "clip": 1,
+            "error": "xAI API returned HTTP 400 from https://api.x.ai/v1/videos/generations: {\"code\":\"invalid-argument\",\"error\":\"Prompt length exceeds the maximum allowed length of 4096\"}"
+          }
+        ],
+        "skipped": [
+          2,
+          3
+        ],
+        "only_missing": true,
+        "cancelled": false
+      }
+    },
+    {
+      "id": "d5779375",
+      "ts": "2026-07-13T13:43:39",
+      "type": "scene_generate",
+      "learning_layer": "clip",
+      "scene": 5,
+      "clip": null,
+      "character": null,
+      "user_note": "Generate scene 5: 0 ok, 1 failed, 0 skipped",
+      "action_taken": "done=[] failed=[{'clip': 1, 'error': 'xAI API returned HTTP 400 from https://api.x.ai/v1/videos/generations: {\"code\":\"invalid-argument\",\"error\":\"Prompt length exceeds the maximum allowed length of 4096\"}'}]",
+      "before": "",
+      "after": "",
+      "suggested_rule": "Review learning: Generate scene 5: 0 ok, 1 failed, 0 skipped",
+      "targets": [
+        "assets/video",
+        "assets/scenes"
+      ],
+      "applied": {
+        "blueprint": false,
+        "adaptation_prompt": false,
+        "script_notes": false,
+        "learnings_md": false,
+        "layer_prompts": false,
+        "shared_rules": false,
+        "dirty_marked": false
+      },
+      "extra": {
+        "done": [],
+        "failed": [
+          {
+            "clip": 1,
+            "error": "xAI API returned HTTP 400 from https://api.x.ai/v1/videos/generations: {\"code\":\"invalid-argument\",\"error\":\"Prompt length exceeds the maximum allowed length of 4096\"}"
+          }
+        ],
+        "skipped": [],
+        "only_missing": false,
+        "cancelled": false
+      }
+    },
+    {
+      "id": "0cbbb724",
+      "ts": "2026-07-13T13:39:01",
+      "type": "stage2_run",
+      "learning_layer": "stage2",
+      "scene": null,
+      "clip": null,
+      "character": null,
+      "user_note": "Stage 2 complete: 6 scenes · 19 clips · ~160s",
+      "action_taken": "Wrote blueprint.clips.grok.json (8 validation notes)",
+      "before": "",
+      "after": "",
+      "suggested_rule": "Age variants: use Character_*_Young/_Teen tokens and child proportions; do not lock adult refs on flashback kids. Reviewer note: Stage 2 complete: 6 scenes · 19 clips · ~160s",
+      "targets": [
+        "blueprint.clips.grok.json",
+        "scripts/two_stage_adaptation/stage2_plan_grok.py"
+      ],
+      "applied": {
+        "blueprint": false,
+        "adaptation_prompt": false,
+        "script_notes": false,
+        "learnings_md": false,
+        "layer_prompts": false,
+        "shared_rules": false,
+        "dirty_marked": false
+      },
+      "extra": {
+        "ok": true,
+        "scenes": 6,
+        "clips": 19,
+        "duration_sec": 160,
+        "out_path": "/mnt/c/Users/budcr/source/repos/NickAndMe/projects/Buster/blueprint.clips.grok.json",
+        "source_stage1": "/mnt/c/Users/budcr/source/repos/NickAndMe/projects/Buster/scenes.json",
+        "backup": "/mnt/c/Users/budcr/source/repos/NickAndMe/projects/Buster/blueprint.clips.grok.json.bak_pre_stage2_20260713_133900",
+        "validation_issue_count": 8,
+        "scene_filter": "all",
+        "resolution": "720p",
+        "completed_at": "2026-07-13T13:39:00",
+        "message": "Stage 2 complete: 6 scenes · 19 clips · ~160s"
+      }
+    },
+    {
+      "id": "c29c9930",
+      "ts": "2026-07-13T13:27:50",
+      "type": "stage1_run",
+      "learning_layer": "stage1",
+      "scene": null,
+      "clip": null,
+      "character": null,
+      "user_note": "Stage 1 run complete: 6 scenes",
+      "action_taken": "Wrote /mnt/c/Users/budcr/source/repos/NickAndMe/projects/Buster/scenes.json",
+      "before": "",
+      "after": "",
+      "suggested_rule": "Age variants: use Character_*_Young/_Teen tokens and child proportions; do not lock adult refs on flashback kids. Reviewer note: Stage 1 run complete: 6 scenes",
+      "targets": [
+        "nickandme.scenes.json",
+        "prompts/stage1_scene_bible.txt"
+      ],
+      "applied": {
+        "blueprint": false,
+        "adaptation_prompt": false,
+        "script_notes": false,
+        "learnings_md": false,
+        "layer_prompts": false,
+        "shared_rules": false,
+        "dirty_marked": false
+      },
+      "extra": {
+        "out_path": "/mnt/c/Users/budcr/source/repos/NickAndMe/projects/Buster/scenes.json",
+        "backup": "/mnt/c/Users/budcr/source/repos/NickAndMe/projects/Buster/scenes.json.bak_stage1_20260713_132747",
+        "scenes": 6,
+        "characters": 4,
+        "locations": 3,
+        "runtime_sec": 420,
+        "total_minutes": 7,
+        "book_kind": "picture_book",
+        "chunks": 1,
+        "verify_errors": [
+          "schema scenes/5/story_beats/1/continuity: 'flashback_enter' is not one of ['new_setup', 'continuous_from_previous_beat', 'return_to_present', 'parallel']"
+        ],
+        "hard_errors": [
+          "schema scenes/5/story_beats/1/continuity: 'flashback_enter' is not one of ['new_setup', 'continuous_from_previous_beat', 'return_to_present', 'parallel']"
+        ],
+        "character_images": {
+          "ok": true,
+          "project": "Buster",
+          "scenes_json": "/mnt/c/Users/budcr/source/repos/NickAndMe/projects/Buster/scenes.json",
+          "attached": {
+            "Character_Buster": {
+              "method": "source_image_pages",
+              "pages": [
+                1,
+                2,
+                5
+              ],
+              "refs": [
+                "assets/characters/character_buster_bookref_1.png",
+                "assets/characters/character_buster_bookref_2.png",
+                "assets/characters/character_buster_bookref_3.png"
+              ]
+            },
+            "Character_Mom": {
+              "method": "source_image_pages",
+              "pages": [
+                4,
+                8,
+                14
+              ],
+              "refs": [
+                "assets/characters/character_mom_bookref_1.png",
+                "assets/characters/character_mom_bookref_2.png",
+                "assets/characters/character_mom_bookref_3.png"
+              ]
+            },
+            "Character_Daddy": {
+              "method": "source_image_pages",
+              "pages": [
+                10,
+                11
+              ],
+              "refs": [
+                "assets/characters/character_daddy_bookref_1.png",
+                "assets/characters/character_daddy_bookref_2.png"
+              ]
+            },
+            "Character_Narrator": {
+              "skipped": true,
+              "reason": "voice_only_narrator"
+            }
+          },
+          "count": 3,
+          "inventory": 30,
+          "blueprint_updated": true
+        },
+        "ok": false,
+        "blueprint_seed_sync": {
+          "synced": false,
+          "reason": "blueprint_already_has_seeds",
+          "count": 4
+        },
+        "character_book_images": {
+          "ok": true,
+          "project": "Buster",
+          "scenes_json": "/mnt/c/Users/budcr/source/repos/NickAndMe/projects/Buster/scenes.json",
+          "attached": {
+            "Character_Buster": {
+              "method": "source_image_pages",
+              "pages": [
+                1,
+                2,
+                5
+              ],
+              "refs": [
+                "assets/characters/character_buster_bookref_1.png",
+                "assets/characters/character_buster_bookref_2.png",
+                "assets/characters/character_buster_bookref_3.png"
+              ]
+            },
+            "Character_Mom": {
+              "method": "source_image_pages",
+              "pages": [
+                4,
+                8,
+                14
+              ],
+              "refs": [
+                "assets/characters/character_mom_bookref_1.png",
+                "assets/characters/character_mom_bookref_2.png",
+                "assets/characters/character_mom_bookref_3.png"
+              ]
+            },
+            "Character_Daddy": {
+              "method": "source_image_pages",
+              "pages": [
+                10,
+                11
+              ],
+              "refs": [
+                "assets/characters/character_daddy_bookref_1.png",
+                "assets/characters/character_daddy_bookref_2.png"
+              ]
+            },
+            "Character_Narrator": {
+              "skipped": true,
+              "reason": "voice_only_narrator"
+            }
+          },
+          "count": 3,
+          "inventory": 30,
+          "blueprint_updated": true
+        }
+      }
+    },
+    {
+      "id": "1fde284e",
+      "ts": "2026-07-13T13:22:42",
+      "type": "scene_generate",
+      "learning_layer": "clip",
+      "scene": 5,
+      "clip": null,
+      "character": null,
+      "user_note": "Generate scene 5: 2 ok, 0 failed, 0 skipped",
+      "action_taken": "done=[2, 3] failed=[]",
+      "before": "",
+      "after": "",
+      "suggested_rule": "Review learning: Generate scene 5: 2 ok, 0 failed, 0 skipped",
+      "targets": [
+        "assets/video",
+        "assets/scenes"
+      ],
+      "applied": {
+        "blueprint": false,
+        "adaptation_prompt": false,
+        "script_notes": false,
+        "learnings_md": false,
+        "layer_prompts": false,
+        "shared_rules": false,
+        "dirty_marked": false
+      },
+      "extra": {
+        "done": [
+          2,
+          3
+        ],
+        "failed": [],
+        "skipped": [],
+        "only_missing": false,
+        "cancelled": false
+      }
+    },
+    {
+      "id": "a4404d93",
+      "ts": "2026-07-13T13:20:10",
+      "type": "clip_pass",
+      "learning_layer": "clip",
+      "scene": 5,
+      "clip": 1,
+      "character": null,
+      "user_note": "Passed",
+      "action_taken": "review_status=pass",
+      "before": "",
+      "after": "",
+      "suggested_rule": "Review learning (seen on S5C1): Passed",
+      "targets": [
+        "pipeline_state.json"
+      ],
+      "applied": {
+        "blueprint": false,
+        "adaptation_prompt": false,
+        "script_notes": false,
+        "learnings_md": false,
+        "layer_prompts": false,
+        "shared_rules": false,
+        "dirty_marked": false
+      },
+      "extra": {}
+    },
+    {
+      "id": "2e59674b",
+      "ts": "2026-07-13T13:19:07",
+      "type": "clip_regen",
+      "learning_layer": "clip",
+      "scene": 5,
+      "clip": 1,
+      "character": null,
+      "user_note": "Regenerate without prompt change",
+      "action_taken": "Wiped and regenerated → assets/video/scene_05_clip_01.mp4; WIP=skipped",
+      "before": "Warm lamp light, soft sofa or armchair, visible water bowl area nearby, front door to yard, cream/beige walls,…. Character_Buster now wears black-and-white dog pajamas matching his fur; he stands proudly in the living room as Character_Mom adjusts a sleeve or smiles. OFF-CAMERA VOICEOVER by Character_Narrator only saying: \"Pajamas, black and white he wears\" (not visible; not lip-synced). on-screen mouths/snouts CLOSED and still — VO is not lip-synced conversation. must not: pajama colors that break black-and-white lock; human toddler body swap. Same identity as locked refs: Character_Buster (Small black-and-white mixed dog (never brown, tan, or solid black…); Character_Mom… / 720p, 24fps",
+      "after": "Warm lamp light, soft sofa or armchair, visible water bowl area nearby, front door to yard, cream/beige walls,…. Character_Buster now wears black-and-white dog pajamas matching his fur; he stands proudly in the living room as Character_Mom adjusts a sleeve or smiles. OFF-CAMERA VOICEOVER by Character_Narrator only saying: \"Pajamas, black and white he wears\" (not visible; not lip-synced). on-screen mouths/snouts CLOSED and still — VO is not lip-synced conversation. must not: pajama colors that break black-and-white lock; human toddler body swap. Same identity as locked refs: Character_Buster (Small black-and-white mixed dog (never brown, tan, or solid black…); Character_Mom… / 720p, 24fps",
+      "suggested_rule": "Review learning (seen on S5C1): Regenerate without prompt change",
+      "targets": [
+        "nickandme.clips.grok.json",
+        "assets/video",
+        "assets/video",
+        "assets/movie_wip.mp4"
+      ],
+      "applied": {
+        "blueprint": false,
+        "adaptation_prompt": false,
+        "script_notes": false,
+        "learnings_md": false,
+        "layer_prompts": false,
+        "shared_rules": false,
+        "dirty_marked": false
+      },
+      "extra": {}
+    },
+    {
+      "id": "d644909e",
+      "ts": "2026-07-13T13:00:24",
+      "type": "scene_approve",
+      "learning_layer": "clip",
+      "scene": 4,
+      "clip": null,
+      "character": null,
+      "user_note": "Approved scene 4",
+      "action_taken": "scenes_completed + remux + WIP bg (full)",
+      "before": "",
+      "after": "",
+      "suggested_rule": "Review learning: Approved scene 4",
+      "targets": [
+        "pipeline_state.json",
+        "assets"
+      ],
+      "applied": {
+        "blueprint": false,
+        "adaptation_prompt": false,
+        "script_notes": false,
+        "learnings_md": false,
+        "layer_prompts": false,
+        "shared_rules": false,
+        "dirty_marked": false
+      },
+      "extra": {
+        "scene": 4,
+        "approved": true,
+        "composite_path": "assets/scenes/scene_04_complete.mp4",
+        "wip_path": null,
+        "remuxed": true,
+        "wip_rebuilt": false,
+        "wip_job_status": "running",
+        "wip_job_mode": "full"
+      }
+    },
+    {
+      "id": "e6fb39da",
+      "ts": "2026-07-13T13:00:10",
+      "type": "scene_approve",
+      "learning_layer": "clip",
+      "scene": 4,
+      "clip": null,
+      "character": null,
+      "user_note": "Approved scene 4",
+      "action_taken": "scenes_completed + remux + WIP bg (full)",
+      "before": "",
+      "after": "",
+      "suggested_rule": "Review learning: Approved scene 4",
+      "targets": [
+        "pipeline_state.json",
+        "assets"
+      ],
+      "applied": {
+        "blueprint": false,
+        "adaptation_prompt": false,
+        "script_notes": false,
+        "learnings_md": false,
+        "layer_prompts": false,
+        "shared_rules": false,
+        "dirty_marked": false
+      },
+      "extra": {
+        "scene": 4,
+        "approved": true,
+        "composite_path": "assets/scenes/scene_04_complete.mp4",
+        "wip_path": null,
+        "remuxed": true,
+        "wip_rebuilt": false,
+        "wip_job_status": "running",
+        "wip_job_mode": "full"
+      }
+    },
+    {
+      "id": "70d4f5bc",
+      "ts": "2026-07-13T12:59:06",
+      "type": "scene_generate",
+      "learning_layer": "clip",
+      "scene": 4,
+      "clip": null,
+      "character": null,
+      "user_note": "Generate scene 4: 1 ok, 0 failed, 2 skipped",
+      "action_taken": "done=[3] failed=[]",
+      "before": "",
+      "after": "",
+      "suggested_rule": "Review learning: Generate scene 4: 1 ok, 0 failed, 2 skipped",
+      "targets": [
+        "assets/video",
+        "assets/scenes"
+      ],
+      "applied": {
+        "blueprint": false,
+        "adaptation_prompt": false,
+        "script_notes": false,
+        "learnings_md": false,
+        "layer_prompts": false,
+        "shared_rules": false,
+        "dirty_marked": false
+      },
+      "extra": {
+        "done": [
+          3
+        ],
+        "failed": [],
+        "skipped": [
+          1,
+          2
+        ],
+        "only_missing": true,
+        "cancelled": false
+      }
+    },
+    {
+      "id": "de0abf71",
+      "ts": "2026-07-13T12:57:34",
+      "type": "scene_approve",
+      "learning_layer": "clip",
+      "scene": 3,
+      "clip": null,
+      "character": null,
+      "user_note": "Approved scene 3",
+      "action_taken": "scenes_completed + remux + WIP bg (full)",
+      "before": "",
+      "after": "",
+      "suggested_rule": "Review learning: Approved scene 3",
+      "targets": [
+        "pipeline_state.json",
+        "assets"
+      ],
+      "applied": {
+        "blueprint": false,
+        "adaptation_prompt": false,
+        "script_notes": false,
+        "learnings_md": false,
+        "layer_prompts": false,
+        "shared_rules": false,
+        "dirty_marked": false
+      },
+      "extra": {
+        "scene": 3,
+        "approved": true,
+        "composite_path": "assets/scenes/scene_03_complete.mp4",
+        "wip_path": null,
+        "remuxed": true,
+        "wip_rebuilt": false,
+        "wip_job_status": "running",
+        "wip_job_mode": "full"
+      }
+    },
+    {
+      "id": "00df64cc",
+      "ts": "2026-07-13T12:55:45",
+      "type": "scene_generate",
+      "learning_layer": "clip",
+      "scene": 3,
+      "clip": null,
+      "character": null,
+      "user_note": "Generate scene 3: 2 ok, 0 failed, 0 skipped",
+      "action_taken": "done=[1, 2] failed=[]",
+      "before": "",
+      "after": "",
+      "suggested_rule": "Review learning: Generate scene 3: 2 ok, 0 failed, 0 skipped",
+      "targets": [
+        "assets/video",
+        "assets/scenes"
+      ],
+      "applied": {
+        "blueprint": false,
+        "adaptation_prompt": false,
+        "script_notes": false,
+        "learnings_md": false,
+        "layer_prompts": false,
+        "shared_rules": false,
+        "dirty_marked": false
+      },
+      "extra": {
+        "done": [
+          1,
+          2
+        ],
+        "failed": [],
+        "skipped": [],
+        "only_missing": false,
+        "cancelled": false
+      }
+    },
+    {
+      "id": "14bb68f5",
+      "ts": "2026-07-13T12:37:49",
+      "type": "clip_regen",
+      "learning_layer": "clip",
+      "scene": 3,
+      "clip": 1,
+      "character": null,
+      "user_note": "Regenerate without prompt change",
+      "action_taken": "Wiped and regenerated → assets/video/scene_03_clip_01.mp4; WIP=skipped",
+      "before": "Dusk/evening outdoor light, green bushes along a fence line, grass patch, house exterior wall and door visible for…. also on screen: Character_Mom. Evening — backyard bushes, then return inside. Character_Buster trots out the door into the backyard; evening light, bushes visible. OFF-CAMERA VOICEOVER by Character_Narrator only saying: \"Yet, off he goes to walk around Outside where bushes can be found\" (not visible; not lip-synced). on-screen mouths/snouts CLOSED and still — VO is not lip-synced conversation. must not: daytime bright noon sun if continuity is evening. Same identity as locked refs: Character_Buster (Small black-and-white mixed dog (never brown, tan, or solid… / 720p, 24fps",
+      "after": "Dusk/evening outdoor light, green bushes along a fence line, grass patch, house exterior wall and door visible for…. also on screen: Character_Mom. Evening — backyard bushes, then return inside. Character_Buster trots out the door into the backyard; evening light, bushes visible. OFF-CAMERA VOICEOVER by Character_Narrator only saying: \"Yet, off he goes to walk around Outside where bushes can be found\" (not visible; not lip-synced). on-screen mouths/snouts CLOSED and still — VO is not lip-synced conversation. must not: daytime bright noon sun if continuity is evening. Same identity as locked refs: Character_Buster (Small black-and-white mixed dog (never brown, tan, or solid… / 720p, 24fps",
+      "suggested_rule": "Review learning (seen on S3C1): Regenerate without prompt change",
+      "targets": [
+        "nickandme.clips.grok.json",
+        "assets/video",
+        "assets/video",
+        "assets/movie_wip.mp4"
+      ],
+      "applied": {
+        "blueprint": false,
+        "adaptation_prompt": false,
+        "script_notes": false,
+        "learnings_md": false,
+        "layer_prompts": false,
+        "shared_rules": false,
+        "dirty_marked": false
+      },
+      "extra": {}
+    },
+    {
+      "id": "f0c9a518",
+      "ts": "2026-07-13T12:33:23",
+      "type": "clip_regen",
+      "learning_layer": "clip",
+      "scene": 3,
+      "clip": 2,
+      "character": null,
+      "user_note": "Regenerate without prompt change",
+      "action_taken": "Wiped and regenerated → assets/video/scene_03_clip_02.mp4; WIP=skipped",
+      "before": "Dusk/evening outdoor light, green bushes along a fence line, grass patch, house exterior wall and door visible for…. also on screen: Character_Mom. Character_Buster sniffs bushes, lifts a leg or squats tastefully behind foliage silhouette — job done, then shakes and turns back toward the house. OFF-CAMERA VOICEOVER by Character_Narrator only saying: \"He does his job, and then comes in\" (not visible; not lip-synced). on-screen mouths/snouts CLOSED and still — VO is not lip-synced conversation. must not: graphic urine stream close-up; toilet humor excess. Same identity as locked refs: Character_Buster (Small black-and-white mixed dog (never brown, tan, or solid black…);… / 720p, 24fps",
+      "after": "Dusk/evening outdoor light, green bushes along a fence line, grass patch, house exterior wall and door visible for…. also on screen: Character_Mom. Character_Buster sniffs bushes, lifts a leg or squats tastefully behind foliage silhouette — job done, then shakes and turns back toward the house. OFF-CAMERA VOICEOVER by Character_Narrator only saying: \"He does his job, and then comes in\" (not visible; not lip-synced). on-screen mouths/snouts CLOSED and still — VO is not lip-synced conversation. must not: graphic urine stream close-up; toilet humor excess. Same identity as locked refs: Character_Buster (Small black-and-white mixed dog (never brown, tan, or solid black…);… / 720p, 24fps",
+      "suggested_rule": "Review learning (seen on S3C2): Regenerate without prompt change",
+      "targets": [
+        "nickandme.clips.grok.json",
+        "assets/video",
+        "assets/video",
+        "assets/movie_wip.mp4"
+      ],
+      "applied": {
+        "blueprint": false,
+        "adaptation_prompt": false,
+        "script_notes": false,
+        "learnings_md": false,
+        "layer_prompts": false,
+        "shared_rules": false,
+        "dirty_marked": false
+      },
+      "extra": {}
+    },
+    {
+      "id": "275946fb",
+      "ts": "2026-07-13T12:21:51",
+      "type": "scene_generate",
+      "learning_layer": "clip",
+      "scene": 3,
+      "clip": null,
+      "character": null,
+      "user_note": "Generate scene 3: 3 ok, 0 failed, 0 skipped",
+      "action_taken": "done=[1, 2, 3] failed=[]",
+      "before": "",
+      "after": "",
+      "suggested_rule": "Review learning: Generate scene 3: 3 ok, 0 failed, 0 skipped",
+      "targets": [
+        "assets/video",
+        "assets/scenes"
+      ],
+      "applied": {
+        "blueprint": false,
+        "adaptation_prompt": false,
+        "script_notes": false,
+        "learnings_md": false,
+        "layer_prompts": false,
+        "shared_rules": false,
+        "dirty_marked": false
+      },
+      "extra": {
+        "done": [
+          1,
+          2,
+          3
+        ],
+        "failed": [],
+        "skipped": [],
+        "only_missing": false,
+        "cancelled": false
+      }
+    },
+    {
+      "id": "7a6d1e38",
+      "ts": "2026-07-13T12:16:24",
+      "type": "scene_approve",
+      "learning_layer": "clip",
+      "scene": 2,
+      "clip": null,
+      "character": null,
+      "user_note": "Approved scene 2",
+      "action_taken": "scenes_completed + remux + WIP bg (full)",
+      "before": "",
+      "after": "",
+      "suggested_rule": "Review learning: Approved scene 2",
+      "targets": [
+        "pipeline_state.json",
+        "assets"
+      ],
+      "applied": {
+        "blueprint": false,
+        "adaptation_prompt": false,
+        "script_notes": false,
+        "learnings_md": false,
+        "layer_prompts": false,
+        "shared_rules": false,
+        "dirty_marked": false
+      },
+      "extra": {
+        "scene": 2,
+        "approved": true,
+        "composite_path": "assets/scenes/scene_02_complete.mp4",
+        "wip_path": null,
+        "remuxed": true,
+        "wip_rebuilt": false,
+        "wip_job_status": "running",
+        "wip_job_mode": "full"
+      }
+    },
+    {
+      "id": "162e7e18",
+      "ts": "2026-07-13T12:15:46",
+      "type": "scene_approve",
+      "learning_layer": "clip",
+      "scene": 1,
+      "clip": null,
+      "character": null,
+      "user_note": "Approved scene 1",
+      "action_taken": "scenes_completed + remux + WIP bg (full)",
+      "before": "",
+      "after": "",
+      "suggested_rule": "Review learning: Approved scene 1",
+      "targets": [
+        "pipeline_state.json",
+        "assets"
+      ],
+      "applied": {
+        "blueprint": false,
+        "adaptation_prompt": false,
+        "script_notes": false,
+        "learnings_md": false,
+        "layer_prompts": false,
+        "shared_rules": false,
+        "dirty_marked": false
+      },
+      "extra": {
+        "scene": 1,
+        "approved": true,
+        "composite_path": "assets/scenes/scene_01_complete.mp4",
+        "wip_path": null,
+        "remuxed": true,
+        "wip_rebuilt": false,
+        "wip_job_status": "running",
+        "wip_job_mode": "full"
+      }
+    },
+    {
+      "id": "8532f699",
+      "ts": "2026-07-13T12:10:44",
+      "type": "clip_regen",
+      "learning_layer": "clip",
+      "scene": 2,
+      "clip": 3,
+      "character": null,
+      "user_note": "Regenerate without prompt change",
+      "action_taken": "Wiped and regenerated → assets/video/scene_02_clip_03.mp4; WIP=assets/movie_wip.mp4",
+      "before": "Warm lamp light, soft sofa or armchair, visible water bowl area nearby, front door to yard, cream/beige walls,…. also on screen: Character_Mom. Character_Buster pauses mid-curl, does a little potty dance / shifts paws; glances at the floor then guiltily away — he knows going on the floor is naughty. OFF-CAMERA VOICEOVER by Character_Narrator only saying: \"Before he goes, he has to potty. Going on the floor is naughty!\" (not visible; not lip-synced). on-screen mouths/snouts CLOSED and still — VO is not lip-synced conversation. must not: graphic potty accident on floor; explicit mess. Character_Buster ALWAYS wears his signature silly noodle-head hat (same hat as locked ref; never bare-headed).. Same identity as locked refs: Character_Buster (Small black-and-white mixed dog (never brown,… / 720p, 24fps",
+      "after": "Warm lamp light, soft sofa or armchair, visible water bowl area nearby, front door to yard, cream/beige walls,…. also on screen: Character_Mom. Character_Buster pauses mid-curl, does a little potty dance / shifts paws; glances at the floor then guiltily away — he knows going on the floor is naughty. OFF-CAMERA VOICEOVER by Character_Narrator only saying: \"Before he goes, he has to potty. Going on the floor is naughty!\" (not visible; not lip-synced). on-screen mouths/snouts CLOSED and still — VO is not lip-synced conversation. must not: graphic potty accident on floor; explicit mess. Character_Buster ALWAYS wears his signature silly noodle-head hat (same hat as locked ref; never bare-headed).. Same identity as locked refs: Character_Buster (Small black-and-white mixed dog (never brown,… / 720p, 24fps",
+      "suggested_rule": "Review learning (seen on S2C3): Regenerate without prompt change",
+      "targets": [
+        "nickandme.clips.grok.json",
+        "assets/video",
+        "assets/video",
+        "assets/movie_wip.mp4"
+      ],
+      "applied": {
+        "blueprint": false,
+        "adaptation_prompt": false,
+        "script_notes": false,
+        "learnings_md": false,
+        "layer_prompts": false,
+        "shared_rules": false,
+        "dirty_marked": false
+      },
+      "extra": {}
+    },
+    {
+      "id": "6f567ddd",
+      "ts": "2026-07-13T12:10:33",
+      "type": "clip_regen",
+      "learning_layer": "clip",
+      "scene": 2,
+      "clip": 3,
+      "character": null,
+      "user_note": "Regenerate without prompt change",
+      "action_taken": "Wiped and regenerated → assets/video/scene_02_clip_03.mp4; WIP=assets/movie_wip.mp4",
+      "before": "Warm lamp light, soft sofa or armchair, visible water bowl area nearby, front door to yard, cream/beige walls,…. also on screen: Character_Mom. Character_Buster pauses mid-curl, does a little potty dance / shifts paws; glances at the floor then guiltily away — he knows going on the floor is naughty. OFF-CAMERA VOICEOVER by Character_Narrator only saying: \"Before he goes, he has to potty. Going on the floor is naughty!\" (not visible; not lip-synced). on-screen mouths/snouts CLOSED and still — VO is not lip-synced conversation. must not: graphic potty accident on floor; explicit mess. Character_Buster ALWAYS wears his signature silly noodle-head hat (same hat as locked ref; never bare-headed).. Same identity as locked refs: Character_Buster (Small black-and-white mixed dog (never brown,… / 720p, 24fps",
+      "after": "Warm lamp light, soft sofa or armchair, visible water bowl area nearby, front door to yard, cream/beige walls,…. also on screen: Character_Mom. Character_Buster pauses mid-curl, does a little potty dance / shifts paws; glances at the floor then guiltily away — he knows going on the floor is naughty. OFF-CAMERA VOICEOVER by Character_Narrator only saying: \"Before he goes, he has to potty. Going on the floor is naughty!\" (not visible; not lip-synced). on-screen mouths/snouts CLOSED and still — VO is not lip-synced conversation. must not: graphic potty accident on floor; explicit mess. Character_Buster ALWAYS wears his signature silly noodle-head hat (same hat as locked ref; never bare-headed).. Same identity as locked refs: Character_Buster (Small black-and-white mixed dog (never brown,… / 720p, 24fps",
+      "suggested_rule": "Review learning (seen on S2C3): Regenerate without prompt change",
+      "targets": [
+        "nickandme.clips.grok.json",
+        "assets/video",
+        "assets/video",
+        "assets/movie_wip.mp4"
+      ],
+      "applied": {
+        "blueprint": false,
+        "adaptation_prompt": false,
+        "script_notes": false,
+        "learnings_md": false,
+        "layer_prompts": false,
+        "shared_rules": false,
+        "dirty_marked": false
+      },
+      "extra": {}
+    },
+    {
+      "id": "aca9fecd",
+      "ts": "2026-07-13T11:55:35",
+      "type": "clip_regen",
+      "learning_layer": "clip",
+      "scene": 2,
+      "clip": 5,
+      "character": null,
+      "user_note": "Character_Mom and Character_Buster do NOT lip sync. Voice is from Character_Narrator which is not onscreen",
+      "action_taken": "Wiped and regenerated → assets/video/scene_02_clip_05.mp4; WIP=assets/movie_wip.mp4",
+      "before": "Warm lamp light, soft sofa or armchair, visible water bowl area nearby, front door to yard, cream/beige walls. also on screen: Character_Mom. Hold on Character_Buster puzzled reaction face as the idea makes no sense — comic freeze-frame beat then he accepts and turns toward the door. OFF-CAMERA VOICEOVER by Character_Narrator only saying the words between << and >>: <<'A doggy goes outside' Mom said. That makes no sense in Buster's head!>> (not visible; not lip-synced; on-screen cast do not speak these words). on-screen mouths/snouts CLOSED and still; dog must not talk or mouth the VO. Same identity as locked refs: Character_Buster (small black-and-white mixed dog, never brown); Character_Mom (warm adult woman). / 720p, 24fps",
+      "after": "Warm lamp light, soft sofa or armchair, visible water bowl area nearby, front door to yard, cream/beige walls. also on screen: Character_Mom. Hold on Character_Buster puzzled reaction face as the idea makes no sense — comic freeze-frame beat then he accepts and turns toward the door. OFF-CAMERA VOICEOVER by Character_Narrator only saying the words between << and >>: <<'A doggy goes outside' Mom said. That makes no sense in Buster's head!>> (not visible; not lip-synced; on-screen cast do not speak these words). on-screen mouths/snouts CLOSED and still; dog must not talk or mouth the VO. Same identity as locked refs: Character_Buster (small black-and-white mixed dog, never brown); Character_Mom (warm adult woman)., Character_Mom and Character_Buster do NOT lip sync. Voice is from Character_Narrator which is not onscreen / 720p, 24fps",
+      "suggested_rule": "VO↔visual fidelity: the visual must match the book/dialogue event (seen on S2C5). Reviewer note: Character_Mom and Character_Buster do NOT lip sync. Voice is from Character_Narrator which is not onscreen",
+      "targets": [
+        "nickandme.clips.grok.json",
+        "assets/video",
+        "assets/video",
+        "assets/movie_wip.mp4"
+      ],
+      "applied": {
+        "blueprint": false,
+        "adaptation_prompt": false,
+        "script_notes": false,
+        "learnings_md": false,
+        "layer_prompts": false,
+        "shared_rules": false,
+        "dirty_marked": false
+      },
+      "extra": {}
+    },
+    {
+      "id": "39117f58",
+      "ts": "2026-07-13T07:35:58",
+      "type": "clip_regen",
+      "learning_layer": "clip",
+      "scene": 2,
+      "clip": 5,
+      "character": null,
+      "user_note": "Regenerate without prompt change",
+      "action_taken": "Wiped and regenerated → assets/video/scene_02_clip_05.mp4; WIP=assets/movie_wip.mp4",
+      "before": "Warm lamp light, soft sofa or armchair, visible water bowl area nearby, front door to yard, cream/beige walls. also on screen: Character_Mom. Hold on Character_Buster puzzled reaction face as the idea makes no sense — comic freeze-frame beat then he accepts and turns toward the door. OFF-CAMERA VOICEOVER by Character_Narrator only saying the words between << and >>: <<'A doggy goes outside' Mom said. That makes no sense in Buster's head!>> (not visible; not lip-synced; on-screen cast do not speak these words). on-screen mouths/snouts CLOSED and still; dog must not talk or mouth the VO. Same identity as locked refs: Character_Buster (small black-and-white mixed dog, never brown); Character_Mom (warm adult woman). / 720p, 24fps",
+      "after": "Warm lamp light, soft sofa or armchair, visible water bowl area nearby, front door to yard, cream/beige walls. also on screen: Character_Mom. Hold on Character_Buster puzzled reaction face as the idea makes no sense — comic freeze-frame beat then he accepts and turns toward the door. OFF-CAMERA VOICEOVER by Character_Narrator only saying the words between << and >>: <<'A doggy goes outside' Mom said. That makes no sense in Buster's head!>> (not visible; not lip-synced; on-screen cast do not speak these words). on-screen mouths/snouts CLOSED and still; dog must not talk or mouth the VO. Same identity as locked refs: Character_Buster (small black-and-white mixed dog, never brown); Character_Mom (warm adult woman). / 720p, 24fps",
+      "suggested_rule": "Review learning (seen on S2C5): Regenerate without prompt change",
+      "targets": [
+        "nickandme.clips.grok.json",
+        "assets/video",
+        "assets/video",
+        "assets/movie_wip.mp4"
+      ],
+      "applied": {
+        "blueprint": false,
+        "adaptation_prompt": false,
+        "script_notes": false,
+        "learnings_md": false,
+        "layer_prompts": false,
+        "shared_rules": false,
+        "dirty_marked": false
+      },
+      "extra": {}
+    },
+    {
+      "id": "ec1c697d",
+      "ts": "2026-07-13T07:22:11",
+      "type": "clip_regen",
+      "learning_layer": "clip",
+      "scene": 2,
+      "clip": 5,
+      "character": null,
+      "user_note": "Regenerate without prompt change",
+      "action_taken": "Wiped and regenerated → assets/video/scene_02_clip_05.mp4; WIP=assets/movie_wip.mp4",
+      "before": "Warm lamp light, soft sofa or armchair, visible water bowl area nearby, front door to yard, cream/beige walls,…. also on screen: Character_Mom. Hold on Character_Buster's puzzled face as the idea 'makes no sense' — freeze-frame-ish comic beat then he accepts and turns toward the door. OFF-CAMERA VOICEOVER by Character_Narrator only saying: \"'A doggy goes outside' Mom said. That makes no sense in Buster's head!\" (not visible; not lip-synced). on-screen mouths/snouts CLOSED and still — VO is not lip-synced conversation. Same identity as locked refs: Character_Buster (Small black-and-white mixed dog (never brown, tan, or solid black…); Character_Mom (Warm adult woman, mother… / 720p, 24fps",
+      "after": "Warm lamp light, soft sofa or armchair, visible water bowl area nearby, front door to yard, cream/beige walls,…. also on screen: Character_Mom. Hold on Character_Buster's puzzled face as the idea 'makes no sense' — freeze-frame-ish comic beat then he accepts and turns toward the door. OFF-CAMERA VOICEOVER by Character_Narrator only saying: \"'A doggy goes outside' Mom said. That makes no sense in Buster's head!\" (not visible; not lip-synced). on-screen mouths/snouts CLOSED and still — VO is not lip-synced conversation. Same identity as locked refs: Character_Buster (Small black-and-white mixed dog (never brown, tan, or solid black…); Character_Mom (Warm adult woman, mother… / 720p, 24fps",
+      "suggested_rule": "Review learning (seen on S2C5): Regenerate without prompt change",
+      "targets": [
+        "nickandme.clips.grok.json",
+        "assets/video",
+        "assets/video",
+        "assets/movie_wip.mp4"
+      ],
+      "applied": {
+        "blueprint": false,
+        "adaptation_prompt": false,
+        "script_notes": false,
+        "learnings_md": false,
+        "layer_prompts": false,
+        "shared_rules": false,
+        "dirty_marked": false
+      },
+      "extra": {}
+    },
+    {
+      "id": "aaf5f51b",
+      "ts": "2026-07-13T06:46:16",
+      "type": "clip_regen",
+      "learning_layer": "clip",
+      "scene": 1,
+      "clip": 4,
+      "character": null,
+      "user_note": "Regenerate without prompt change",
+      "action_taken": "Wiped and regenerated → assets/video/scene_01_clip_04.mp4; WIP=assets/movie_wip.mp4",
+      "before": "Warm lamp light, soft sofa or armchair, visible water bowl area nearby, front door to yard, cream/beige walls,…. Character_Buster stares blankly at a simple toy or his own tail, then grins goofily — lovable noodle-head moment. OFF-CAMERA VOICEOVER by Character_Narrator only saying: \"But not very bright! He's Buster The Noodle Head Dog\" (not visible; not lip-synced). on-screen mouths/snouts CLOSED and still — VO is not lip-synced conversation. must not: mean-spirited mockery visuals. Same identity as locked refs: Character_Buster (Small black-and-white mixed dog (never brown, tan, or solid black…) / 720p, 24fps",
+      "after": "Warm lamp light, soft sofa or armchair, visible water bowl area nearby, front door to yard, cream/beige walls,…. Character_Buster stares blankly at a simple toy or his own tail, then grins goofily — lovable noodle-head moment. OFF-CAMERA VOICEOVER by Character_Narrator only saying: \"But not very bright! He's Buster The Noodle Head Dog\" (not visible; not lip-synced). on-screen mouths/snouts CLOSED and still — VO is not lip-synced conversation. must not: mean-spirited mockery visuals. Same identity as locked refs: Character_Buster (Small black-and-white mixed dog (never brown, tan, or solid black…) / 720p, 24fps",
+      "suggested_rule": "Review learning (seen on S1C4): Regenerate without prompt change",
+      "targets": [
+        "nickandme.clips.grok.json",
+        "assets/video",
+        "assets/video",
+        "assets/movie_wip.mp4"
+      ],
+      "applied": {
+        "blueprint": false,
+        "adaptation_prompt": false,
+        "script_notes": false,
+        "learnings_md": false,
+        "layer_prompts": false,
+        "shared_rules": false,
+        "dirty_marked": false
+      },
+      "extra": {}
+    },
+    {
+      "id": "285f2d87",
+      "ts": "2026-07-13T06:43:48",
+      "type": "clip_pass",
+      "learning_layer": "clip",
+      "scene": 1,
+      "clip": 1,
+      "character": null,
+      "user_note": "Character_Buster's hat should be worn throughout the clip",
+      "action_taken": "review_status=pass",
+      "before": "",
+      "after": "",
+      "suggested_rule": "Review learning (seen on S1C1): Character_Buster's hat should be worn throughout the clip",
+      "targets": [
+        "pipeline_state.json"
+      ],
+      "applied": {
+        "blueprint": false,
+        "adaptation_prompt": false,
+        "script_notes": false,
+        "learnings_md": false,
+        "layer_prompts": false,
+        "shared_rules": false,
+        "dirty_marked": false
+      },
+      "extra": {}
+    },
+    {
+      "id": "60a724e0",
+      "ts": "2026-07-13T06:43:18",
+      "type": "clip_regen",
+      "learning_layer": "clip",
+      "scene": 1,
+      "clip": 1,
+      "character": null,
+      "user_note": "Character_Buster's hat should be worn throughout the clip",
+      "action_taken": "Wiped and regenerated → assets/video/scene_01_clip_01.mp4; WIP=assets/movie_wip.mp4",
+      "before": "Warm lamp light, soft sofa or armchair, visible water bowl area nearby, front door to yard, cream/beige walls,…. Evening — living room, Buster introduced. Character_Buster bounds into the living room frame, small black-and-white dog, ears flopping, happy face toward camera height. OFF-CAMERA VOICEOVER by Character_Narrator only saying: \"He's Buster The Noodle Head Dog\" (not visible; not lip-synced). on-screen mouths/snouts CLOSED and still — VO is not lip-synced conversation. must not: brown or tan dog redesign; adult large breed swap. Same identity as locked refs: Character_Buster (Small black-and-white mixed dog (never brown, tan, or solid black…) / 720p, 24fps",
+      "after": "Warm lamp light, soft sofa or armchair, visible water bowl area nearby, front door to yard, cream/beige walls,…. Evening — living room, Buster introduced. Character_Buster bounds into the living room frame, small black-and-white dog, ears flopping, happy face toward camera height. OFF-CAMERA VOICEOVER by Character_Narrator only saying: \"He's Buster The Noodle Head Dog\" (not visible; not lip-synced). on-screen mouths/snouts CLOSED and still — VO is not lip-synced conversation. must not: brown or tan dog redesign; adult large breed swap. Same identity as locked refs: Character_Buster (Small black-and-white mixed dog (never brown, tan, or solid black…), Character_Buster's hat should be worn throughout the clip / 720p, 24fps",
+      "suggested_rule": "Review learning (seen on S1C1): Character_Buster's hat should be worn throughout the clip",
+      "targets": [
+        "nickandme.clips.grok.json",
+        "assets/video",
+        "assets/video",
+        "assets/movie_wip.mp4"
+      ],
+      "applied": {
+        "blueprint": false,
+        "adaptation_prompt": false,
+        "script_notes": false,
+        "learnings_md": false,
+        "layer_prompts": false,
+        "shared_rules": false,
+        "dirty_marked": false
+      },
+      "extra": {}
+    },
+    {
+      "id": "2e9e768c",
+      "ts": "2026-07-13T06:39:08",
+      "type": "clip_regen",
+      "learning_layer": "clip",
+      "scene": 1,
+      "clip": 3,
+      "character": null,
+      "user_note": "Regenerate without prompt change",
+      "action_taken": "Wiped and regenerated → assets/video/scene_01_clip_03.mp4; WIP=assets/movie_wip.mp4",
+      "before": "Warm lamp light, soft sofa or armchair, visible water bowl area nearby, front door to yard, cream/beige walls,…. Closer look: Character_Buster sits, tilts head; clearly small, black-and-white markings stable. OFF-CAMERA VOICEOVER by Character_Narrator only saying: \"He's small, black, and white\" (not visible; not lip-synced). on-screen mouths/snouts CLOSED and still — VO is not lip-synced conversation. must not: recolor coat; add spots that change identity. Same identity as locked refs: Character_Buster (Small black-and-white mixed dog (never brown, tan, or solid black…) / 720p, 24fps",
+      "after": "Warm lamp light, soft sofa or armchair, visible water bowl area nearby, front door to yard, cream/beige walls,…. Closer look: Character_Buster sits, tilts head; clearly small, black-and-white markings stable. OFF-CAMERA VOICEOVER by Character_Narrator only saying: \"He's small, black, and white\" (not visible; not lip-synced). on-screen mouths/snouts CLOSED and still — VO is not lip-synced conversation. must not: recolor coat; add spots that change identity. Same identity as locked refs: Character_Buster (Small black-and-white mixed dog (never brown, tan, or solid black…) / 720p, 24fps",
+      "suggested_rule": "Review learning (seen on S1C3): Regenerate without prompt change",
+      "targets": [
+        "nickandme.clips.grok.json",
+        "assets/video",
+        "assets/video",
+        "assets/movie_wip.mp4"
+      ],
+      "applied": {
+        "blueprint": false,
+        "adaptation_prompt": false,
+        "script_notes": false,
+        "learnings_md": false,
+        "layer_prompts": false,
+        "shared_rules": false,
+        "dirty_marked": false
+      },
+      "extra": {}
+    },
+    {
+      "id": "0233ca68",
+      "ts": "2026-07-13T06:33:15",
+      "type": "clip_regen",
+      "learning_layer": "clip",
+      "scene": 1,
+      "clip": 1,
+      "character": null,
+      "user_note": "Regenerate without prompt change",
+      "action_taken": "Wiped and regenerated → assets/video/scene_01_clip_01.mp4; WIP=assets/movie_wip.mp4",
+      "before": "Warm lamp light, soft sofa or armchair, visible water bowl area nearby, front door to yard, cream/beige walls,…. Evening — living room, Buster introduced. Character_Buster bounds into the living room frame, small black-and-white dog, ears flopping, happy face toward camera height. OFF-CAMERA VOICEOVER by Character_Narrator only saying: \"He's Buster The Noodle Head Dog\" (not visible; not lip-synced). on-screen mouths/snouts CLOSED and still — VO is not lip-synced conversation. must not: brown or tan dog redesign; adult large breed swap. Same identity as locked refs: Character_Buster (Small black-and-white mixed dog (never brown, tan, or solid black…) / 720p, 24fps",
+      "after": "Warm lamp light, soft sofa or armchair, visible water bowl area nearby, front door to yard, cream/beige walls,…. Evening — living room, Buster introduced. Character_Buster bounds into the living room frame, small black-and-white dog, ears flopping, happy face toward camera height. OFF-CAMERA VOICEOVER by Character_Narrator only saying: \"He's Buster The Noodle Head Dog\" (not visible; not lip-synced). on-screen mouths/snouts CLOSED and still — VO is not lip-synced conversation. must not: brown or tan dog redesign; adult large breed swap. Same identity as locked refs: Character_Buster (Small black-and-white mixed dog (never brown, tan, or solid black…) / 720p, 24fps",
+      "suggested_rule": "Review learning (seen on S1C1): Regenerate without prompt change",
+      "targets": [
+        "nickandme.clips.grok.json",
+        "assets/video",
+        "assets/video",
+        "assets/movie_wip.mp4"
+      ],
+      "applied": {
+        "blueprint": false,
+        "adaptation_prompt": false,
+        "script_notes": false,
+        "learnings_md": false,
+        "layer_prompts": false,
+        "shared_rules": false,
+        "dirty_marked": false
+      },
+      "extra": {}
+    },
+    {
+      "id": "d5ab3b44",
+      "ts": "2026-07-13T06:29:32",
+      "type": "clip_regen",
+      "learning_layer": "clip",
+      "scene": 1,
+      "clip": 4,
+      "character": null,
+      "user_note": "Regenerate without prompt change",
+      "action_taken": "Wiped and regenerated → assets/video/scene_01_clip_04.mp4; WIP=skipped",
+      "before": "Warm lamp light, soft sofa or armchair, visible water bowl area nearby, front door to yard, cream/beige walls,…. Character_Buster stares blankly at a simple toy or his own tail, then grins goofily — lovable noodle-head moment. on-screen mouths/snouts CLOSED and still must not: mean-spirited mockery visuals. OFF-CAMERA VOICEOVER by Character_Narrator only saying: \"But not very bright! He's Buster The Noodle Head Dog\" (not visible; not lip-synced). on-screen mouths/snouts CLOSED and still — VO is not lip-synced conversation. Same identity as locked refs: Character_Buster (Small black-and-white mixed dog (never brown, tan, or solid black…) / 720p, 24fps",
+      "after": "Warm lamp light, soft sofa or armchair, visible water bowl area nearby, front door to yard, cream/beige walls,…. Character_Buster stares blankly at a simple toy or his own tail, then grins goofily — lovable noodle-head moment. OFF-CAMERA VOICEOVER by Character_Narrator only saying: \"But not very bright! He's Buster The Noodle Head Dog\" (not visible; not lip-synced). on-screen mouths/snouts CLOSED and still — VO is not lip-synced conversation. must not: mean-spirited mockery visuals. Same identity as locked refs: Character_Buster (Small black-and-white mixed dog (never brown, tan, or solid black…) / 720p, 24fps",
+      "suggested_rule": "Review learning (seen on S1C4): Regenerate without prompt change",
+      "targets": [
+        "nickandme.clips.grok.json",
+        "assets/video",
+        "assets/video",
+        "assets/movie_wip.mp4"
+      ],
+      "applied": {
+        "blueprint": false,
+        "adaptation_prompt": false,
+        "script_notes": false,
+        "learnings_md": false,
+        "layer_prompts": false,
+        "shared_rules": false,
+        "dirty_marked": false
+      },
+      "extra": {}
+    },
+    {
+      "id": "38c15c64",
+      "ts": "2026-07-13T06:29:13",
+      "type": "stage2_run",
+      "learning_layer": "stage2",
+      "scene": null,
+      "clip": null,
+      "character": null,
+      "user_note": "Stage 2 complete: 8 scenes · 29 clips · ~290s",
+      "action_taken": "Wrote blueprint.clips.grok.json (validate OK)",
+      "before": "",
+      "after": "",
+      "suggested_rule": "Age variants: use Character_*_Young/_Teen tokens and child proportions; do not lock adult refs on flashback kids. Reviewer note: Stage 2 complete: 8 scenes · 29 clips · ~290s",
+      "targets": [
+        "blueprint.clips.grok.json",
+        "scripts/two_stage_adaptation/stage2_plan_grok.py"
+      ],
+      "applied": {
+        "blueprint": false,
+        "adaptation_prompt": false,
+        "script_notes": false,
+        "learnings_md": false,
+        "layer_prompts": false,
+        "shared_rules": false,
+        "dirty_marked": false
+      },
+      "extra": {
+        "ok": true,
+        "scenes": 8,
+        "clips": 29,
+        "duration_sec": 290,
+        "out_path": "/mnt/c/Users/budcr/source/repos/NickAndMe/projects/Buster/blueprint.clips.grok.json",
+        "source_stage1": "/mnt/c/Users/budcr/source/repos/NickAndMe/projects/Buster/scenes.json",
+        "backup": "/mnt/c/Users/budcr/source/repos/NickAndMe/projects/Buster/blueprint.clips.grok.json.bak_pre_stage2_20260713_062913",
+        "validation_issue_count": 0,
+        "scene_filter": "all",
+        "resolution": "720p",
+        "completed_at": "2026-07-13T06:29:13",
+        "message": "Stage 2 complete: 8 scenes · 29 clips · ~290s"
+      }
+    },
+    {
       "id": "30d56632",
       "ts": "2026-07-12T21:58:36",
       "type": "clip_regen",

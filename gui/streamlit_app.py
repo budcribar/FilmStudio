@@ -45,6 +45,59 @@ st.set_page_config(
 _PAGES = _GUI_DIR / "pages"
 
 
+def _gen_job_banner(*, compact: bool = False, auto_refresh: bool = False) -> dict:
+    """
+    Show generation lock UI. Returns status dict.
+    When running: warn + Cancel; project switch locked in sidebar.
+    """
+    try:
+        job = api.gen_job_status()
+    except Exception:
+        job = {"status": "idle"}
+    st_status = str(job.get("status") or "idle")
+    if st_status == "running":
+        kind = job.get("kind") or "gen"
+        msg = job.get("message") or "Generating…"
+        sn = job.get("scene")
+        cn = job.get("clip")
+        where = ""
+        if sn is not None and cn is not None:
+            where = f" S{int(sn):02d}C{int(cn)}"
+        elif sn is not None:
+            where = f" scene {sn}"
+        st.warning(
+            f"**Generation running** ({kind}{where}). "
+            f"{msg}  \n"
+            "Project switch is locked. Use **Cancel** to stop after the current clip when possible."
+        )
+        c1, c2 = st.columns([1, 3])
+        with c1:
+            if st.button("Cancel", type="primary", key="gen_job_cancel_banner"):
+                try:
+                    api.cancel_gen_job()
+                    st.info("Cancel requested…")
+                    st.rerun()
+                except Exception as e:
+                    st.error(str(e))
+        with c2:
+            if st.button("Refresh status", key="gen_job_refresh_banner"):
+                st.rerun()
+        if not compact:
+            log = job.get("log") or []
+            if log:
+                with st.expander("Generation log", expanded=True):
+                    st.code("\n".join(str(x) for x in log[-40:]), language="text")
+        # Do not full-page sleep+rerun here (causes control flash). Scenes uses
+        # fragment auto_refresh via gen_jobs.render_gen_job_banner instead.
+    elif st_status == "done":
+        st.success(job.get("message") or "Generation finished.")
+    elif st_status == "cancelled":
+        st.info(job.get("message") or "Generation cancelled.")
+    elif st_status == "error":
+        st.error(job.get("error") or job.get("message") or "Generation error")
+    return job
+
+
 def _render_project_sidebar(prog: dict | None = None) -> dict:
     """Project switcher + pipeline checklist. Returns progress dict (computed once)."""
     projects = api.list_all_projects()
@@ -62,8 +115,30 @@ def _render_project_sidebar(prog: dict | None = None) -> dict:
         except Exception:
             prog = {"labels": {}, "steps": [], "next_id": None}
 
+    gen_running = False
+    try:
+        gen_running = bool(api.gen_job_running())
+    except Exception:
+        gen_running = False
+
     with st.sidebar:
         st.header("Project")
+        if gen_running:
+            st.error("🔒 Gen running — project switch locked")
+            try:
+                job = api.gen_job_status()
+                st.caption(job.get("message") or "Generating clips…")
+            except Exception:
+                pass
+            if st.button("Cancel generation", key="sidebar_gen_cancel", type="primary"):
+                try:
+                    api.cancel_gen_job()
+                    st.rerun()
+                except Exception as e:
+                    st.error(str(e))
+            if st.button("Refresh", key="sidebar_gen_refresh"):
+                st.rerun()
+
         if proj_ids:
             try:
                 idx = proj_ids.index(active_id) if active_id in proj_ids else 0
@@ -74,8 +149,10 @@ def _render_project_sidebar(prog: dict | None = None) -> dict:
                 options=proj_ids,
                 index=idx,
                 format_func=fmt,
+                disabled=gen_running,
+                help="Locked while clip generation is running" if gen_running else None,
             )
-            if choice != active_id:
+            if not gen_running and choice != active_id:
                 api.switch_project(choice)
                 # Drop progress cache on project switch
                 from review_app.pipeline_progress import invalidate_progress_cache
@@ -94,9 +171,15 @@ def _render_project_sidebar(prog: dict | None = None) -> dict:
                 pass
 
         with st.expander("➕ Create project", expanded=not proj_ids):
-            new_name = st.text_input("Project id / folder name", placeholder="MyFilm")
-            new_title = st.text_input("Title (optional)", placeholder="My Film")
-            if st.button("Create", type="primary"):
+            new_name = st.text_input(
+                "Project id / folder name",
+                placeholder="MyFilm",
+                disabled=gen_running,
+            )
+            new_title = st.text_input(
+                "Title (optional)", placeholder="My Film", disabled=gen_running
+            )
+            if st.button("Create", type="primary", disabled=gen_running):
                 if not (new_name or "").strip():
                     st.error("Name required")
                 else:
@@ -118,6 +201,7 @@ def page_home() -> None:
         "Multi-project review UI. Each project lives under `projects/<id>/` with its own "
         "blueprint, config, state, and assets."
     )
+    _gen_job_banner(compact=True)
 
     projects = api.list_all_projects()
     active = api.active_project_info()

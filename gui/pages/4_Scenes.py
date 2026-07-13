@@ -8,6 +8,18 @@ from review_app import pipeline_api as api
 
 st.title("🎞️ Scenes & Clips")
 
+# Background gen: banner + Cancel + auto-refresh while running
+try:
+    from review_app.gen_jobs import render_gen_job_banner, is_gen_running
+
+    _gen_job = render_gen_job_banner(
+        compact=False, auto_refresh=True, key_prefix="scenes_gen"
+    )
+    _gen_running = is_gen_running()
+except Exception:
+    _gen_job = {"status": "idle"}
+    _gen_running = False
+
 # ---- Stage 2 gate: empty blueprint needs clip plan from Stage 1 ----
 try:
     s2 = api.stage2_status()
@@ -248,73 +260,21 @@ if st.session_state.clip_num is None:
             gen_label,
             type="primary",
             key="batch_gen_go",
-            disabled=gen_disabled,
+            disabled=gen_disabled or _gen_running,
             width="stretch",
         ):
-            prog = st.progress(0.0, text="Starting batch…")
-            log_box = st.empty()
-            lines: list[str] = []
-
-            def _on_prog(ev: dict) -> None:
-                scene_total = max(1, int(ev.get("scene_total") or 1))
-                scene_index = int(ev.get("scene_index") or 0)
-                clip_total = max(1, int(ev.get("total") or 1))
-                clip_index = int(ev.get("index") or 0)
-                event = ev.get("event") or ""
-                # Outer progress by scene, fine grain by clip within scene
-                if event in ("batch_done",):
-                    frac = 1.0
-                elif scene_index > 0:
-                    base = (scene_index - 1) / scene_total
-                    within = 0.0
-                    if event in ("clip_done", "clip_error"):
-                        within = clip_index / clip_total
-                    elif event == "clip_start":
-                        within = max(0.0, (clip_index - 1) / clip_total)
-                    elif event == "done":
-                        within = 1.0
-                    frac = min(0.99, base + within / scene_total)
-                else:
-                    frac = 0.02
-                msg = ev.get("message") or event
-                prog.progress(frac, text=msg)
-                lines.append(msg)
-                log_box.code("\n".join(lines[-30:]), language="text")
-
             try:
-                with st.spinner(
-                    f"Generating {len(selected_sns)} scene(s) — keep this tab open…"
-                ):
-                    batch = api.generate_scenes_clips(
-                        selected_sns,
-                        only_missing=bool(only_missing_batch),
-                        run_qa=bool(run_qa_batch),
-                        remux=True,
-                        rebuild_wip=False,
-                        stop_on_fail=bool(stop_on_fail),
-                        progress_cb=_on_prog,
-                    )
-                ok = batch.get("scenes_ok") or []
-                failed = batch.get("scenes_failed") or []
-                if ok and not failed:
-                    st.success(
-                        f"Done: scenes {ok} · {batch.get('clips_done', 0)} clip(s) generated"
-                    )
-                elif ok and failed:
-                    st.warning(
-                        f"Partial: ok {ok} · failed {failed} · "
-                        f"{batch.get('clips_done', 0)} clip(s) generated"
-                    )
-                elif failed:
-                    # surface first error
-                    err = ""
-                    for ps in batch.get("per_scene") or []:
-                        if ps.get("failed"):
-                            err = (ps["failed"][0] or {}).get("error") or ""
-                            break
-                    st.error(f"Failed on scenes {failed}" + (f": {err}" if err else ""))
-                else:
-                    st.info("Nothing to generate for the selection (clips already on disk).")
+                job = api.start_batch_gen_job(
+                    selected_sns,
+                    only_missing=bool(only_missing_batch),
+                    run_qa=bool(run_qa_batch),
+                    remux=True,
+                    stop_on_fail=bool(stop_on_fail),
+                )
+                st.success(
+                    f"Started background generation for {len(selected_sns)} scene(s) "
+                    f"({job.get('status')}). Use **Cancel** above to stop after the current clip."
+                )
                 st.rerun()
             except Exception as e:
                 st.error(str(e))
@@ -506,68 +466,27 @@ if cn is None or cn == 0:
             else "▶ Generate scene clips"
         )
     )
-    gen_disabled = total_n == 0 or (gen_missing and missing_n == 0)
+    gen_disabled = total_n == 0 or (gen_missing and missing_n == 0) or _gen_running
+    if _gen_running:
+        st.caption("Generation job is running — use **Cancel** at the top of this page.")
     if st.button(
         gen_label,
         type="primary",
         key=f"gen_scene_{sn}",
         disabled=gen_disabled,
-        help="Creates Grok video for each clip in order, then stitches the scene.",
+        help="Starts background Grok generation (cancelable). Remuxes the scene when done.",
     ):
-        prog = st.progress(0.0, text="Starting…")
-        log_box = st.empty()
-        lines: list[str] = []
-
-        def _on_prog(ev: dict) -> None:
-            total = max(1, int(ev.get("total") or 1))
-            idx = int(ev.get("index") or 0)
-            event = ev.get("event") or ""
-            if event == "done":
-                frac = 1.0
-            elif event in ("clip_done", "clip_error"):
-                frac = min(1.0, idx / total)
-            elif event == "clip_start":
-                frac = min(0.99, max(0.0, (idx - 1) / total))
-            else:
-                frac = 0.02
-            msg = ev.get("message") or event
-            prog.progress(frac, text=msg)
-            lines.append(msg)
-            log_box.code("\n".join(lines[-20:]), language="text")
-
         try:
-            with st.spinner(
-                "Generating — each clip can take several minutes. Keep this tab open."
-            ):
-                summary = api.generate_scene_clips(
-                    sn,
-                    only_missing=bool(gen_missing),
-                    run_qa=bool(run_qa_scene),
-                    remux=True,
-                    progress_cb=_on_prog,
-                )
-            done = summary.get("done") or []
-            failed = summary.get("failed") or []
-            if done and not failed:
-                st.success(
-                    f"Generated {len(done)} clip(s)"
-                    + (
-                        f" · remuxed `{summary.get('composite_path')}`"
-                        if summary.get("composite_path")
-                        else ""
-                    )
-                )
-            elif done and failed:
-                st.warning(
-                    f"Partial: {len(done)} ok, {len(failed)} failed — "
-                    f"{failed[0].get('error') if failed else ''}"
-                )
-            elif failed:
-                st.error(failed[0].get("error") if failed else "Generation failed")
-            else:
-                st.info("Nothing to generate (all clips already on disk).")
-            if summary.get("remux_error"):
-                st.warning(f"Remux: {summary['remux_error']}")
+            job = api.start_scene_gen_job(
+                sn,
+                only_missing=bool(gen_missing),
+                run_qa=bool(run_qa_scene),
+                remux=True,
+            )
+            st.success(
+                f"Started background generation for scene {sn} ({job.get('status')}). "
+                "Use **Cancel** to stop after the current clip."
+            )
             st.rerun()
         except Exception as e:
             st.error(str(e))
@@ -580,7 +499,95 @@ if cn is None or cn == 0:
 
     # ---- Clip list (main navigation) ----
     st.subheader("Clips")
-    st.caption("Open a clip to review, edit prompts, or re-generate just that one.")
+    st.caption(
+        "Open a clip to review, or multi-select clips below to regen several at once."
+    )
+
+    # Multi-select batch regen for this scene
+    clip_opts = [int(r["clip_number"]) for r in clips]
+    if clip_opts:
+        pick_key = f"clip_pick_{sn}"
+        if pick_key not in st.session_state:
+            st.session_state[pick_key] = []
+        # Sanitize selection if clip list changed
+        raw_pick = st.session_state.get(pick_key) or []
+        try:
+            cleaned = [int(x) for x in raw_pick if int(x) in clip_opts]
+        except (TypeError, ValueError):
+            cleaned = []
+        if cleaned != list(raw_pick):
+            st.session_state[pick_key] = cleaned
+
+        with st.container(border=True):
+            st.markdown("**Multi-select regen**")
+            cqa, c_all, c_miss, c_clr = st.columns(4)
+            with cqa:
+                multi_qa = st.checkbox(
+                    "QA after each",
+                    value=True,
+                    key=f"multi_clip_qa_{sn}",
+                    disabled=_gen_running,
+                )
+            with c_all:
+                if st.button("Select all", key=f"clip_sel_all_{sn}", disabled=_gen_running):
+                    st.session_state[pick_key] = list(clip_opts)
+                    st.rerun()
+            with c_miss:
+                missing_ids = [
+                    int(r["clip_number"]) for r in clips if not r.get("on_disk")
+                ]
+                if st.button(
+                    "Select missing",
+                    key=f"clip_sel_miss_{sn}",
+                    disabled=_gen_running or not missing_ids,
+                ):
+                    st.session_state[pick_key] = missing_ids
+                    st.rerun()
+            with c_clr:
+                if st.button("Clear", key=f"clip_sel_clr_{sn}", disabled=_gen_running):
+                    st.session_state[pick_key] = []
+                    st.rerun()
+
+            def _fmt_clip(cn: int) -> str:
+                row = next((r for r in clips if int(r["clip_number"]) == int(cn)), None)
+                if not row:
+                    return f"C{cn}"
+                disk = "ready" if row.get("on_disk") else "missing"
+                stale = " · stale" if row.get("stale") else ""
+                return f"C{cn} ({disk}{stale})"
+
+            selected_clips = st.multiselect(
+                "Clips to regenerate",
+                options=clip_opts,
+                format_func=_fmt_clip,
+                key=pick_key,
+                disabled=_gen_running,
+                help="Selected clips are force-regenerated (even if already on disk).",
+            )
+            n_sel = len(selected_clips or [])
+            go = st.button(
+                f"▶ Regen selected ({n_sel})" if n_sel else "▶ Regen selected",
+                type="primary",
+                key=f"clip_multi_go_{sn}",
+                disabled=_gen_running or n_sel == 0,
+                width="stretch",
+            )
+            if go and selected_clips:
+                try:
+                    job = api.start_clips_gen_job(
+                        sn,
+                        [int(c) for c in selected_clips],
+                        run_qa=bool(multi_qa),
+                        remux=True,
+                    )
+                    st.success(
+                        f"Started regen for C{', C'.join(str(c) for c in sorted(selected_clips))} "
+                        f"({job.get('status')}). Use **Cancel** to stop after the current clip."
+                    )
+                    st.rerun()
+                except Exception as e:
+                    st.error(str(e))
+
     for row in clips:
         cnum = row["clip_number"]
         disk = "🟢 ready" if row["on_disk"] else "⚪ not generated"
@@ -601,16 +608,17 @@ if cn is None or cn == 0:
                 st.rerun()
         with c2:
             if not row["on_disk"]:
-                if st.button("▶ Gen", key=f"quick_gen_{sn}_{cnum}", help=f"Generate clip {cnum} only"):
-                    with st.spinner(f"Generating S{sn:02d} C{cnum}…"):
-                        try:
-                            path = api.regen_clip(
-                                sn, int(cnum), run_qa=True, rebuild_wip=False
-                            )
-                            st.success(path)
-                            st.rerun()
-                        except Exception as e:
-                            st.error(str(e))
+                if st.button(
+                    "▶ Gen",
+                    key=f"quick_gen_{sn}_{cnum}",
+                    help=f"Generate clip {cnum} only (background)",
+                    disabled=_gen_running,
+                ):
+                    try:
+                        api.start_clip_gen_job(sn, int(cnum), run_qa=True)
+                        st.rerun()
+                    except Exception as e:
+                        st.error(str(e))
 
     # ---- Secondary: finish scene ----
     st.divider()
@@ -980,15 +988,15 @@ if not row["on_disk"]:
         f"▶ Generate clip {cn}",
         type="primary",
         key=f"gen_one_{sn}_{cn}",
-        help="Calls Grok Imagine video (needs XAI_API_KEY). Can take several minutes.",
+        help="Background Grok generate (needs XAI_API_KEY). Use Cancel at top while running.",
+        disabled=_gen_running,
     ):
-        with st.spinner(f"Generating S{sn:02d} C{cn}…"):
-            try:
-                path = api.regen_clip(sn, int(cn), run_qa=True, rebuild_wip=False)
-                st.success(f"Done: {path}")
-                st.rerun()
-            except Exception as e:
-                st.error(str(e))
+        try:
+            api.start_clip_gen_job(sn, int(cn), run_qa=True)
+            st.success("Started background generation.")
+            st.rerun()
+        except Exception as e:
+            st.error(str(e))
 
 left, right = st.columns([1, 1])
 with left:
@@ -1098,22 +1106,39 @@ with b2:
         st.warning(msg)
         st.rerun()
 with b3:
-    if st.button("♻️ Regen", type="primary", width="stretch"):
-        with st.spinner("Generating clip — this can take several minutes…"):
+    if _gen_running:
+        if st.button("Cancel", type="primary", width="stretch", key=f"cancel_regen_{sn}_{cn}"):
             try:
-                path = api.regen_clip(
-                    sn,
-                    int(cn),
-                    feedback=feedback,
-                    apply_to_prompt=apply_fb and bool(feedback.strip()),
-                    run_qa=run_qa,
-                    learning_layer=learning_layer,
-                    mark_dirty=mark_dirty,
-                )
-                st.success(f"Done: {path}")
+                api.cancel_gen_job()
                 st.rerun()
             except Exception as e:
                 st.error(str(e))
+    elif st.button("♻️ Regen", type="primary", width="stretch"):
+        try:
+            fb = feedback if (apply_fb and feedback.strip()) else ""
+            # Optional: mark dirty for stage1/stage2 layers (same as before)
+            if mark_dirty and learning_layer in ("stage1", "stage2") and fb:
+                try:
+                    api.log_clip_feedback(
+                        sn,
+                        int(cn),
+                        fb,
+                        learning_layer=learning_layer,
+                        mark_dirty=True,
+                    )
+                except Exception:
+                    pass
+            api.start_clip_gen_job(
+                sn,
+                int(cn),
+                feedback=fb,
+                apply_to_prompt=bool(fb),
+                run_qa=run_qa,
+            )
+            st.success("Started background regen. Use **Cancel** while running.")
+            st.rerun()
+        except Exception as e:
+            st.error(str(e))
 with b4:
     if st.button("Log note only", width="stretch"):
         result = api.log_clip_feedback(

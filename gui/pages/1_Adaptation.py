@@ -10,6 +10,12 @@ from review_app import pipeline_api as api
 
 st.title("📖 Adaptation")
 st.caption("Import book → prepare → Stage 1 scene bible.")
+try:
+    from review_app.gen_jobs import render_gen_job_banner
+
+    render_gen_job_banner(compact=True, auto_refresh=False, key_prefix="adapt_gen")
+except Exception:
+    pass
 
 
 def _apply_prepare_defaults(prep: dict) -> None:

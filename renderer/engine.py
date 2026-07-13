@@ -2813,9 +2813,33 @@ class AgenticGenerationEngine:
         for char_key in keys:
             seed = char_seeds.get(char_key) or {}
             desc = str(seed.get("description") or "").strip()
-            if not desc:
+            vlock = str(seed.get("visual_lock") or "").strip()
+            if not desc and not vlock:
                 continue
-            short = re.sub(r"\s+", " ", desc)[:140]
+            short = re.sub(r"\s+", " ", desc or vlock)[:140]
+            # Prefer explicit wardrobe/props lock (hat, pajamas, etc.)
+            wardrobe = ""
+            if vlock:
+                wardrobe = f" Wardrobe/props lock: {re.sub(r'\\s+', ' ', vlock)[:100]}."
+            elif re.search(r"\bhat\b", short, re.I):
+                wardrobe = " Always wear the signature hat from the reference (never bare-headed)."
+            # If this clip already establishes wardrobe (sticky items / continuity), reinforce
+            prompt_l = (prompt or "").lower()
+            if "wardrobe continuity" in prompt_l or "still wearing" in prompt_l:
+                wardrobe += (
+                    " Keep every wardrobe/prop item already established in this prompt "
+                    "for the entire clip (do not remove, swap, or drop after a cut or "
+                    "location change)."
+                )
+            elif re.search(
+                r"\b(?:pajama|pjs|pyjama|collar|scarf|cardigan|sweater|"
+                r"jacket|hat|cap|glasses|bandana|leash)\b",
+                prompt_l,
+            ):
+                wardrobe += (
+                    " Keep the same wardrobe/props already named in this prompt for the "
+                    "entire clip (do not undress or swap mid-shot)."
+                )
             # Explicit recolor bans help when multi-ref confuses the model
             recolor = ""
             low = short.lower()
@@ -2823,7 +2847,7 @@ class AgenticGenerationEngine:
                 recolor = " NEVER solid brown, golden, tan, or solid-color redesign."
             bits.append(
                 f"IDENTITY LOCK {char_key}: exact same individual as the character "
-                f"reference image(s) for this token — {short}.{recolor}"
+                f"reference image(s) for this token — {short}.{wardrobe}{recolor}"
             )
             if len(bits) >= 3:
                 break
@@ -2987,13 +3011,14 @@ class AgenticGenerationEngine:
         if str(prev_path).startswith("ctx_mock_"):
             return False
 
-        # Book narrator / internal VO: always start fresh with character refs.
-        # Continuing from a Mom-speaking frame freezes her mid-speech so she appears
-        # to keep talking while the audio plan is narrator-only.
+        visual = clip.get("visual_prompt") or ""
+        # Book narrator / internal VO: default to fresh (avoid freezing Mom mid-speech).
+        # Exception: plan says extend_previous AND prompt asks to CONTINUE from previous
+        # (e.g. dog already at bushes — VO→VO continuous outdoor action).
         ap = clip.get("audio_payload") if isinstance(clip.get("audio_payload"), dict) else {}
         delivery = str(ap.get("delivery") or "").lower()
         speaker = str(ap.get("speaker") or "").lower()
-        if delivery in (
+        is_vo = delivery in (
             "voiceover_internal",
             "internal",
             "vo_internal",
@@ -3001,17 +3026,25 @@ class AgenticGenerationEngine:
             "thinking",
             "narration",
             "vo",
-        ) or "narrator" in speaker:
-            return False
+        ) or "narrator" in speaker
+        if is_vo:
+            wants_spatial_continue = bool(
+                re.search(r"continue from previous", visual, re.I)
+            )
+            if not wants_spatial_continue:
+                return False
+            # Fall through: allow last-frame if extend_previous and no hard-cut language
 
-        visual = clip.get("visual_prompt") or ""
         if _HARD_CUT_RE.search(visual):
             return False
         # Explicit multi-setup language
         if re.search(r"\bCUT\s+TO\b", visual, re.IGNORECASE):
             return False
         # Kickball hits, crashes, sprints, etc. need a fresh shot — last-frame I2V freezes action
-        if _ACTION_BEAT_RE.search(visual):
+        # (skip this gate for explicit spatial CONTINUE VO so bush walk can extend)
+        if _ACTION_BEAT_RE.search(visual) and not re.search(
+            r"continue from previous", visual, re.I
+        ):
             return False
 
         return continuation_source.lower() in {
@@ -3142,6 +3175,35 @@ class AgenticGenerationEngine:
                 break
         self._stage1_beat_cache = index
         return index
+
+    @staticmethod
+    def _safe_exact_speech_line(text: str) -> str:
+        """
+        Normalize spoken lines so nested quotes don't break wrappers like
+        saying EXACTLY: "..." (e.g. book lines with \"Mom said\" / 'quoted speech').
+        """
+        t = re.sub(r"\s+", " ", (text or "").strip())
+        # Strip one layer of wrapping quotes
+        if len(t) >= 2 and t[0] in "\"'“”‘’" and t[-1] in "\"'“”‘’":
+            t = t[1:-1].strip()
+        for a, b in (
+            ("“", "'"),
+            ("”", "'"),
+            ("„", "'"),
+            ("«", "'"),
+            ("»", "'"),
+            ("‘", "'"),
+            ("’", "'"),
+            ('"', "'"),
+        ):
+            t = t.replace(a, b)
+        return t
+
+    @staticmethod
+    def _exact_speech_clause(text: str) -> str:
+        """Delimiter form that survives apostrophes and book quotes inside the line."""
+        safe = AgenticGenerationEngine._safe_exact_speech_line(text)
+        return f"saying EXACTLY the words between << and >>: <<{safe}>>"
 
     def _normalize_dialogue_turns(
         self, raw_turns: Any, *, default_delivery: str = "spoken_on_camera"
@@ -3335,12 +3397,14 @@ class AgenticGenerationEngine:
                 deliv = t.get("delivery") or "spoken_on_camera"
                 if deliv == "voiceover_internal" or "narrator" in sp.lower():
                     lines.append(
-                        f'{i}) OFF-CAMERA VOICEOVER {sp} says EXACTLY: "{line}" '
+                        f"{i}) OFF-CAMERA VOICEOVER {sp} "
+                        f"{self._exact_speech_clause(line)} "
                         f"(not visible; do not lip-sync on-screen cast to this VO)"
                     )
                 else:
                     lines.append(
-                        f'{i}) {sp} ON CAMERA lip-syncs EXACTLY: "{line}"'
+                        f"{i}) {sp} ON CAMERA lip-syncs "
+                        f"{self._exact_speech_clause(line)}"
                     )
                     if sp not in on_cam:
                         on_cam.append(sp)
@@ -3378,12 +3442,18 @@ class AgenticGenerationEngine:
         elif dialogue and speaker_ok and is_narrator:
             # Book narrator: one off-camera storyteller. Quoted Mom/Dad lines are READ BY
             # THE NARRATOR as story text — not a second on-camera character voice.
+            dlg_l = dialogue.lower()
             quote_note = ""
-            if re.search(r'[“"][^”"]+[”"]', dialogue) or " says" in dialogue.lower():
+            if re.search(
+                r"[\"'“”].+[\"'“”]| says| said| mom| dad| dog| buster| in .+ head",
+                dlg_l,
+            ):
                 quote_note = (
-                    " If the line includes quotes or 'Momma/Mom says…', the NARRATOR still "
-                    "speaks the entire line in the same storyteller voice (storytelling "
-                    "quotation) — do NOT switch to Mom's on-camera voice on this clip."
+                    " IMPORTANT: Any quoted speech, 'Mom/Dad said…', or thoughts "
+                    "'in Buster/the dog's head' are STILL read entirely by the off-camera "
+                    "NARRATOR as story text — one storyteller voice only. "
+                    "Do NOT switch to Mom's voice, do NOT make the dog/animal speak or "
+                    "lip-sync, do NOT stage on-camera dialogue."
                 )
             # List non-speakers for explicit closed-mouth instruction
             others = []
@@ -3396,34 +3466,41 @@ class AgenticGenerationEngine:
                     others.append(tok)
             others_bit = ""
             if others:
+                # Name each token — models ignore generic "on-screen cast"
+                frozen = "; ".join(
+                    f"{tok} lips/snout FROZEN CLOSED (no lip-sync, not speaking)"
+                    for tok in others[:5]
+                )
                 others_bit = (
-                    f" On-screen ({', '.join(others[:4])}) must keep mouths/snouts CLOSED "
-                    f"and still — no lip-sync, no Mom speaking, no dog mouthing."
+                    f" On-screen cast must NOT lip-sync this VO: {frozen}. "
+                    f"No Mom speaking, no dog/animal mouthing words, no dual dialogue."
                 )
             audio_block = (
-                f'AUDIO: REQUIRED native Grok speech on the video track. '
-                f'ONE clear adult BOOK NARRATOR voice-over only (off-camera storyteller, warm, '
-                f'readable, full sentences spoken aloud) saying EXACTLY: "{dialogue}". '
-                f'Speaker for this clip is the narrator seed only ({speaker}) — not Mom, not Dad, '
-                f'not the dog. The narrator is NOT visible on screen. '
-                f'Do not lip-sync on-screen characters to this VO.'
-                f'{others_bit} '
-                f'Secondary layer = soft room tone / Foley under the voice. '
-                f'Speech must be intelligible; never ambient-only, never silent.'
-                f'{quote_note}'
-                f'{voice_lock}'
+                f"AUDIO: REQUIRED native Grok speech on the video track. "
+                f"ONE clear adult BOOK NARRATOR voice-over only (off-camera storyteller, warm, "
+                f"readable, full sentences spoken aloud) "
+                f"{self._exact_speech_clause(dialogue)}. "
+                f"Speaker for this clip is the narrator seed only ({speaker}) — not Mom, not Dad, "
+                f"not the dog. The narrator is NOT visible on screen. "
+                f"Do not lip-sync ANY on-screen character to this VO."
+                f"{others_bit} "
+                f"Secondary layer = soft room tone / Foley under the voice. "
+                f"Speech must be intelligible; never ambient-only, never silent."
+                f"{quote_note}"
+                f"{voice_lock}"
             )
             framing_bits.append(
                 f"NARRATION SHOT: OFF-CAMERA VOICEOVER by {speaker} only — "
-                f"Mom/dog/others do not speak this line; mouths/snouts closed; "
-                f"{speaker} is not visible on screen."
+                f"Character_Mom and Character_Buster (and any other on-screen cast) do NOT lip-sync; "
+                f"reaction faces only, mouths closed; voice is from {speaker} who is not on screen."
             )
         elif dialogue and speaker_ok and is_internal_vo:
             audio_block = (
-                f'AUDIO: REQUIRED native Grok speech. Off-camera voice-over only by {speaker} '
-                f'at normal volume (NOT on-camera conversation): "{dialogue}". '
-                f'On-screen lips mostly closed. Soft ambient under the voice. Never silent.'
-                f'{voice_lock}'
+                f"AUDIO: REQUIRED native Grok speech. Off-camera voice-over only by {speaker} "
+                f"at normal volume (NOT on-camera conversation) "
+                f"{self._exact_speech_clause(dialogue)}. "
+                f"On-screen lips mostly closed. Soft ambient under the voice. Never silent."
+                f"{voice_lock}"
             )
             framing_bits.append(
                 "Performance: natural face; do not stage this as spoken dialogue to another person."
@@ -3442,13 +3519,13 @@ class AgenticGenerationEngine:
                     f"no lip-sync, no dog mouthing, no karaoke to {speaker}'s line; they only listen/react."
                 )
             audio_block = (
-                f'AUDIO: REQUIRED native Grok speech. '
-                f'ONLY {speaker} speaks on camera at normal listening volume, lip-synced when '
-                f'visible, saying EXACTLY: "{dialogue}". '
-                f'No second voice, no narrator, no animal speech, no dual lip-sync. '
-                f'Matching ambient room tone and Foley under the voice.'
-                f'{others_note}'
-                f'{voice_lock}'
+                f"AUDIO: REQUIRED native Grok speech. "
+                f"ONLY {speaker} speaks on camera at normal listening volume, lip-synced when "
+                f"visible, {self._exact_speech_clause(dialogue)}. "
+                f"No second voice, no narrator, no animal speech, no dual lip-sync. "
+                f"Matching ambient room tone and Foley under the voice."
+                f"{others_note}"
+                f"{voice_lock}"
             )
             framing_bits.append(
                 f"LIP-SYNC RULE: only {speaker}'s mouth moves with the words. "
@@ -3457,8 +3534,9 @@ class AgenticGenerationEngine:
             )
         elif dialogue:
             audio_block = (
-                f'AUDIO: REQUIRED native Grok speech. Clear voiceover at normal volume: "{dialogue}". '
-                f'Include ambient under the voice. Never silent.'
+                f"AUDIO: REQUIRED native Grok speech. Clear voiceover at normal volume "
+                f"{self._exact_speech_clause(dialogue)}. "
+                f"Include ambient under the voice. Never silent."
             )
         else:
             audio_block = (

@@ -66,9 +66,13 @@ VIDEO PROVIDER PROFILES
   (defaults soft≈350 / hard≈400 including trailing " / {resolution}, 24fps")
 
 ----- PROFILE: grok -----
-- Prefer 6–10s per clip (default 8); integer duration in [1, 15]
-- Scene total = exact sum of clip durations; min 8, max 134
+- Prefer **mixed** clip lengths in 6–10s (default from config, often 6–8); integer duration in [1, 15]
+- Do **not** pad every clip to 10s just to fill a large Stage 1 scene budget —
+  use time_weight / action_class / dialogue length so some shots are shorter, some longer
+- Scene total = sum of clip durations (may be less than Stage 1 target if that target
+  would force uniform max-length clips); min 8, max 134
 - Timestamps contiguous and exact
+- Image/reference-to-video hard max **10s** per clip
 - visual_prompt length: use **pipeline_config.prompt_limits** for active Grok model
   (defaults soft≈700 / hard≈1000 for grok-imagine-video; model may override)
 - Native audio: every clip needs intentional audio_payload
@@ -81,10 +85,15 @@ VIDEO PROVIDER PROFILES
 - big_action (kick, smash, punch, sprint, crash, throw, …)
 - new primary subject that last-frame i2v cannot invent
 - Stage 1 continuity is new_setup or return_to_present
+- **VO after on-camera speech** (e.g. Mom just spoke → next is Narrator VO): none
+  so you do not freeze a talking face into the VO shot
 
-extend_previous ONLY if Stage 1 continuity is continuous_from_previous_beat
+extend_previous when Stage 1 continuity is continuous_from_previous_beat
 AND action_class is hold | dialogue | small_motion
-AND same location_id / framing intent.
+AND same location_id / framing intent
+AND **including VO→VO** continuous action (dog walks to bushes, then potties at bushes —
+  do not reset to the door). On extend clips, state in visual_prompt:
+  "CONTINUE from previous last frame — pick up where last clip ended; do not restart walk."
 
 ================================================================
 MAPPING BEATS → CLIPS
@@ -158,9 +167,16 @@ visual_prompt must:
 - Then **primary_subject Character_*** first (on-screen hero), then action/wardrobe
 - Then name **other on-screen** Character_* from `characters_on_screen` / the beat
 - Short **identity cues** from character_seed_tokens (stable colors/markings — no redesign)
+- **Wardrobe continuity:** copy Stage 1 structured lists — seed `wardrobe_always`,
+  scene `wardrobe_by_character`, beat `wardrobe_put_on` / `wardrobe_remove` — and restate
+  those free-text phrases on later clips (WARDROBE CONTINUITY). Do not invent items not
+  in Stage 1; do not drop sticky items mid-scene or after location changes.
 - Be filmable progressive motion for action_class big_action
 - For voiceover_internal: **name the VO speaker** (usually Character_Narrator) as off-camera
-  voiceover; on-screen cast keep mouths/snouts closed (not lip-synced conversation)
+  voiceover; **name each on-screen Character_*** (e.g. Character_Mom, Character_Buster) with
+  lips/snouts FROZEN CLOSED — NO lip-sync. Quoted book lines like 'Mom said…' or thoughts
+  'in Buster's head' are still Narrator VO only — never Mom/dog on-camera speech.
+  Prefer reaction faces / listening, not speaking performance.
 - For spoken_on_camera with 2+ on-screen beings: only the **named** speaker lip-syncs; dogs/pets and
   non-speakers keep mouth/snout closed (listening) — no dual mouthing to the same line.
   Encode that in visual_prompt AND append to negative_prompt extras
