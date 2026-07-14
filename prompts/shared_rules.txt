@@ -28,6 +28,10 @@ BASELINE (always on)
 - **Identity stability:** character seed descriptions include stable colors/markings;
   on-screen seeds also set `visual_lock` (signature hat/wardrobe/props); Stage 2 restates
   both; engine locks reference plates — no free redesign / bare-headed drop between scenes.
+- **Render style unity:** Stage 1 sets `render_style_lock` + medium in `directorial_treatment`
+  (e.g. stylized 3D picture-book CG vs live-action). Stage 2 opens every visual_prompt with
+  that lock. Humans and animals share one medium — never photoreal people beside cartoon animals
+  unless the whole film is live-action.
 - **Sticky wardrobe (Stage 1 owns the list):** Stage 1 emits structured free-text item
   lists — seed `wardrobe_always`, scene `wardrobe_by_character`, beat `wardrobe_put_on` /
   `wardrobe_remove`. Stage 2 **restates those phrases** on later clips (no fixed enum of

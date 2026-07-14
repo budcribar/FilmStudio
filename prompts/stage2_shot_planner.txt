@@ -147,6 +147,13 @@ MAPPING BEATS → CLIPS
 13. **Identity automation:** for each on-screen Character_* with a seed description, inject a
     short stable-identity cue (colors/markings/wardrobe) so video models do not recolor
     characters between scenes. Do not invent new design facts not in the seed.
+13b. **RENDER STYLE LOCK (critical for mixed casts):** Copy
+    `global_production_variables.render_style_lock` (or a one-line medium from
+    `directorial_treatment`) to the **start** of every visual_prompt. All on-screen humans
+    and animals must share that medium. If Stage 1 says stylized/animated/picture-book CG,
+    never let adults become photoreal/live-action while the hero stays cartoon. When any
+    human Character_* is on screen, restate: same stylized shading as the hero animal;
+    append negative extras: photoreal human, live-action person (unless style is live-action).
 14. **HIGH-ACTION WARDROBE LOCK:** For action_class `big_action` (or rapid motion: bounding,
     jumping, racing, chasing), prepend each on-screen character's sticky items from
     `wardrobe_always` / scene `wardrobe_by_character` **before the action verb** in the
@@ -175,9 +182,11 @@ Required:
 - audio_payload: { speaker, dialogue, delivery }
 
 visual_prompt must:
-- **Open with place lock** from location_seed_tokens[location_id] (visual_lock / description)
+- **Open with render_style_lock** (film-wide medium) when Stage 1 set it — especially any
+  clip with humans + animals (prevents photoreal Mom / cartoon dog splits)
+- **Then place lock** from location_seed_tokens[location_id] (visual_lock / description)
 - Then **primary_subject Character_*** first (on-screen hero), then action/wardrobe
-- Then name **other on-screen** Character_* from `characters_on_screen` / the beat
+- Then name **other on-screen** Character_* from beat cast / visual_event (clip-local)
 - Short **identity cues** from character_seed_tokens (stable colors/markings — no redesign)
 - **Wardrobe continuity:** copy Stage 1 structured lists — seed `wardrobe_always`,
   scene `wardrobe_by_character`, beat `wardrobe_put_on` / `wardrobe_remove` — and restate

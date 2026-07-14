@@ -3019,6 +3019,53 @@ def stage2_status() -> Dict[str, Any]:
         # Approximate: Stage 1 existed if file present; avoid re-parsing large bible every click
         s1_n = bp_scenes
 
+    # P0.2: Stage 1 content vs fingerprint stored at last Stage 2 run
+    stage2_stale = False
+    stage1_fp = ""
+    stage2_fp = ""
+    if s1_exists and bp_path.is_file():
+        try:
+            # Load Stage 1 when we need a real fingerprint (stale check)
+            s1_data = json.loads(s1_path.read_text(encoding="utf-8"))
+            if isinstance(s1_data, dict):
+                s1_n = max(s1_n, len(s1_data.get("scenes") or []))
+                try:
+                    from scripts.two_stage_adaptation import stage2_plan_grok as _s2mod
+
+                    stage1_fp = _s2mod.stage1_content_fingerprint(s1_data)
+                except Exception:
+                    # Fallback: load planner by path
+                    try:
+                        import importlib.util
+
+                        ws = workspace_root()
+                        script = ws / "scripts" / "two_stage_adaptation" / "stage2_plan_grok.py"
+                        spec = importlib.util.spec_from_file_location("s2fp", script)
+                        if spec and spec.loader:
+                            mod = importlib.util.module_from_spec(spec)
+                            spec.loader.exec_module(mod)
+                            stage1_fp = mod.stage1_content_fingerprint(s1_data)
+                    except Exception:
+                        stage1_fp = ""
+            if bp_path.is_file():
+                try:
+                    bp_tmp = json.loads(bp_path.read_text(encoding="utf-8"))
+                    meta_s2 = (
+                        bp_tmp.get("stage2_meta")
+                        if isinstance(bp_tmp.get("stage2_meta"), dict)
+                        else {}
+                    )
+                    stage2_fp = str(meta_s2.get("stage1_fingerprint") or "")
+                except (json.JSONDecodeError, OSError, TypeError):
+                    stage2_fp = ""
+            if stage1_fp and stage2_fp and stage1_fp != stage2_fp:
+                stage2_stale = True
+            elif stage1_fp and not stage2_fp and bp_scenes > 0:
+                # Old blueprints without fingerprint: treat as stale if S1 newer than BP
+                stage2_stale = bool(s1_mtime and bp_mtime and s1_mtime > bp_mtime + 1.0)
+        except (json.JSONDecodeError, OSError, TypeError):
+            pass
+
     result = {
         "stage1_exists": s1_exists,
         "stage1_scenes": s1_n,
@@ -3027,6 +3074,9 @@ def stage2_status() -> Dict[str, Any]:
         "stage2_scenes": bp_scenes,
         "stage2_clips": bp_clips,
         "stage2_ready": bp_scenes > 0 and bp_clips > 0,
+        "stage2_stale": stage2_stale,
+        "stage1_fingerprint": stage1_fp,
+        "stage2_stage1_fingerprint": stage2_fp,
         "scenes_json": paths.get("scenes_json") or "",
         "last_completed_at": last_completed_at,
         "last_run_message": last_run_message
@@ -3038,6 +3088,7 @@ def stage2_status() -> Dict[str, Any]:
         "last_run_ok": last_run_ok if last_run_ok is not None else (bp_scenes > 0 and bp_clips > 0),
         "validation_issue_count": validation_issue_count,
         "blueprint_mtime": bp_mtime,
+        "stage1_mtime": s1_mtime,
     }
     try:
         import streamlit as st
@@ -3118,12 +3169,25 @@ def run_stage2_from_stage1(
                 _sv["reference_image_placeholder"] = Path(ph).name
         gpv["character_seed_tokens"] = char_seeds
     res = (resolution or "720p").strip() or "720p"
+    style_lock = ""
+    if isinstance(gpv, dict):
+        style_lock = str(
+            gpv.get("render_style_lock") or gpv.get("style_lock") or ""
+        ).strip()
+        if not style_lock:
+            treat = str(gpv.get("directorial_treatment") or "")
+            if re.search(r"styliz|animated|picture-book|cartoon|pixar", treat, re.I):
+                style_lock = (
+                    "STYLE LOCK: stylized 3D animated children's picture-book CG "
+                    "(same render family for animals and humans) -- not photoreal, not live-action"
+                )
     planned_scenes = [
         mod.plan_scene(
             s,
             resolution=res,
             location_seeds=loc_seeds,
             character_seeds=char_seeds if isinstance(char_seeds, dict) else {},
+            style_lock=style_lock or None,
         )
         for s in scenes_in
     ]
@@ -3269,6 +3333,11 @@ def run_stage2_from_stage1(
     plan["stage2_meta"]["validation_issue_count"] = len(errs)
     plan["stage2_meta"]["source_stage1"] = stage1_path.name
     plan["stage2_meta"]["resolution"] = res
+    # P0.2: fingerprint Stage 1 content so UI can detect stale blueprints
+    try:
+        plan["stage2_meta"]["stage1_fingerprint"] = mod.stage1_content_fingerprint(stage1)
+    except Exception:
+        plan["stage2_meta"]["stage1_fingerprint"] = ""
 
     # Backup previous blueprint
     if out_path.is_file():

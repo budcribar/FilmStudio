@@ -50,7 +50,14 @@
           "type": ["integer", "string"],
           "description": "Prefer integer 24; string forms like \"24fps\" accepted for legacy extracts."
         },
-        "directorial_treatment": { "type": "string" },
+        "directorial_treatment": {
+          "type": "string",
+          "description": "Look and camera language for the film. Must name render medium (e.g. stylized 3D animated picture-book CG vs live-action) so humans and animals share one style."
+        },
+        "render_style_lock": {
+          "type": "string",
+          "description": "Short film-wide STYLE LOCK Stage 2 prepends on clips (e.g. stylized 3D animated CG for all cast — not photoreal). Required for mixed human+animal or illustrated films."
+        },
         "total_runtime_target_seconds": {
           "type": "integer",
           "description": "Target film length in seconds (operator/book estimate × 60; not always 5400)."
@@ -329,6 +336,15 @@
         "primary_subject": {
           "type": "string",
           "description": "On-screen visual hero Character_* (first in Stage 2 visual_prompt). Not the off-screen narrator."
+        },
+        "characters_on_screen": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Optional beat-level cast (Character_*). Prefer this over scene cast for multi-person scenes so dream inserts / single-hero beats do not force supporting cast into every clip."
+        },
+        "environment_mode": {
+          "type": "string",
+          "description": "Optional: present | dream | flashback | fantasy — Stage 2 uses this to avoid leaking real-world cast/place into inserts."
         },
         "location_id": {
           "type": "string",

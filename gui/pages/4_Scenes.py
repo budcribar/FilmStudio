@@ -26,6 +26,34 @@ try:
 except Exception:
     s2 = {}
 
+if s2.get("stage2_ready") and s2.get("stage2_stale"):
+    st.warning(
+        "**Stage 2 is stale** — Stage 1 changed after the last clip plan. "
+        "Regenerating video will use **old** prompts until you re-plan."
+    )
+    if st.button(
+        "▶ Re-plan Stage 2 from Stage 1",
+        type="primary",
+        key="scenes_replan_stage2_stale",
+        disabled=_gen_running,
+    ):
+        try:
+            with st.spinner("Re-planning Stage 2…"):
+                summary = api.run_stage2_from_stage1()
+            if summary.get("ok"):
+                st.success(summary.get("message") or "Stage 2 updated.")
+                try:
+                    from review_app.pipeline_progress import invalidate_progress_cache
+
+                    invalidate_progress_cache()
+                except Exception:
+                    pass
+                st.rerun()
+            else:
+                st.error(summary.get("message") or "Stage 2 replan failed.")
+        except Exception as e:
+            st.error(str(e))
+
 if not s2.get("stage2_ready"):
     st.warning(
         "No Stage 2 clip plan yet — this page lists **blueprint** scenes/clips, "

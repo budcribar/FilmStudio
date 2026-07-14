@@ -616,11 +616,17 @@ if not s2.get("stage1_exists"):
     st.info("Finish **Stage 1** above before generating Stage 2.")
 elif s2.get("stage2_ready"):
     when = s2.get("last_completed_at") or ""
-    st.success(
-        f"**Stage 2 plan is ready** — **{s2.get('stage2_scenes')}** scenes · "
-        f"**{s2.get('stage2_clips')}** clips"
-        + (f" · last run **{when}**" if when else "")
-    )
+    if s2.get("stage2_stale"):
+        st.warning(
+            "**Stage 2 is stale** — Stage 1 scene bible changed since the last clip plan.  \n"
+            "Generate video will use **old** prompts until you re-run Stage 2."
+        )
+    else:
+        st.success(
+            f"**Stage 2 plan is ready** — **{s2.get('stage2_scenes')}** scenes · "
+            f"**{s2.get('stage2_clips')}** clips"
+            + (f" · last run **{when}**" if when else "")
+        )
     if s2.get("last_run_message"):
         st.caption(s2["last_run_message"])
     st.caption(
@@ -639,9 +645,14 @@ else:
     )
 
 stage2_disabled = not s2.get("stage1_exists")
+_s2_btn = "▶ Generate Stage 2 plan"
+if s2.get("stage2_stale"):
+    _s2_btn = "▶ Re-plan Stage 2 (Stage 1 changed)"
+elif s2.get("stage2_ready"):
+    _s2_btn = "Re-generate Stage 2 plan"
 if st.button(
-    "Re-generate Stage 2 plan" if s2.get("stage2_ready") else "▶ Generate Stage 2 plan",
-    type="primary" if not s2.get("stage2_ready") else "secondary",
+    _s2_btn,
+    type="primary" if (not s2.get("stage2_ready") or s2.get("stage2_stale")) else "secondary",
     disabled=stage2_disabled,
     key="adapt_stage2_btn",
 ):

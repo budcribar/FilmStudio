@@ -36,52 +36,6 @@
       "review_status": "pending",
       "qa_approved": true
     },
-    "4_1": {
-      "status": "complete",
-      "request_id": "78758521-670f-9c01-9a0a-04f39daa0717",
-      "path": "assets/video/scene_04_clip_01.mp4",
-      "scene_number": 4,
-      "clip_number": 1,
-      "updated_at": "2026-07-12T19:11:11",
-      "video_url": "https://vidgen.x.ai/xai-vidgen-bucket/xai-video-78758521-670f-9c01-9a0a-04f39daa0717.mp4",
-      "has_audio": true,
-      "dialogue_audio_ensured": true,
-      "audio_bytes": 160749,
-      "model": "grok-imagine-video",
-      "resolution": "480p",
-      "duration_sec": 10,
-      "stale": false,
-      "stale_reason": "",
-      "stale_characters": [],
-      "character_revisions_used": {
-        "Character_Buster": 2
-      },
-      "review_status": "pending",
-      "qa_approved": true
-    },
-    "4_2": {
-      "status": "complete",
-      "request_id": "621ba7ee-145b-905d-8686-e7b3e2953803",
-      "path": "assets/video/scene_04_clip_02.mp4",
-      "scene_number": 4,
-      "clip_number": 2,
-      "updated_at": "2026-07-12T19:11:14",
-      "video_url": "https://vidgen.x.ai/xai-vidgen-bucket/xai-video-621ba7ee-145b-905d-8686-e7b3e2953803.mp4",
-      "has_audio": true,
-      "dialogue_audio_ensured": true,
-      "audio_bytes": 160643,
-      "model": "grok-imagine-video",
-      "resolution": "480p",
-      "duration_sec": 10,
-      "stale": false,
-      "stale_reason": "",
-      "stale_characters": [],
-      "character_revisions_used": {
-        "Character_Buster": 2
-      },
-      "review_status": "pending",
-      "qa_approved": true
-    },
     "6_1": {
       "status": "complete",
       "request_id": "598c1e70-d9d0-931d-a573-eef5fd50d60e",
@@ -648,6 +602,52 @@
       },
       "review_status": "pending",
       "qa_approved": true
+    },
+    "4_1": {
+      "status": "complete",
+      "request_id": "a9ee95d9-5d19-9ce4-973f-756f8fa59f22",
+      "path": "assets/video/scene_04_clip_01.mp4",
+      "scene_number": 4,
+      "clip_number": 1,
+      "updated_at": "2026-07-13T16:11:20",
+      "video_url": "https://vidgen.x.ai/xai-vidgen-bucket/xai-video-a9ee95d9-5d19-9ce4-973f-756f8fa59f22.mp4",
+      "has_audio": true,
+      "audio_bytes": 128947,
+      "model": "grok-imagine-video",
+      "resolution": "480p",
+      "duration_sec": 8,
+      "stale": false,
+      "stale_reason": "",
+      "stale_characters": [],
+      "character_revisions_used": {
+        "Character_Buster": 2,
+        "Character_Mom": 1
+      },
+      "review_status": "pending",
+      "qa_approved": true
+    },
+    "4_2": {
+      "status": "complete",
+      "request_id": "46516746-eeed-9f7d-bbd5-ba2aacf0d41b",
+      "path": "assets/video/scene_04_clip_02.mp4",
+      "scene_number": 4,
+      "clip_number": 2,
+      "updated_at": "2026-07-13T16:12:08",
+      "video_url": "https://vidgen.x.ai/xai-vidgen-bucket/xai-video-46516746-eeed-9f7d-bbd5-ba2aacf0d41b.mp4",
+      "has_audio": true,
+      "audio_bytes": 129189,
+      "model": "grok-imagine-video",
+      "resolution": "480p",
+      "duration_sec": 8,
+      "stale": false,
+      "stale_reason": "",
+      "stale_characters": [],
+      "character_revisions_used": {
+        "Character_Buster": 2,
+        "Character_Mom": 1
+      },
+      "review_status": "pending",
+      "qa_approved": true
     }
   },
   "music_jobs": {},
@@ -718,7 +718,7 @@
     },
     "stage2": {
       "done": true,
-      "at": "2026-07-13T13:39:01",
+      "at": "2026-07-13T16:07:46",
       "detail": "6 scenes \u00b7 19 clips"
     }
   },
@@ -2153,12 +2153,54 @@
       "source": "list_rate",
       "id": "1783977287_0071",
       "ts": "2026-07-13T15:14:47"
+    },
+    {
+      "kind": "video",
+      "scene": 4,
+      "clip": 1,
+      "model": "grok-imagine-video",
+      "request_id": "a9ee95d9-5d19-9ce4-973f-756f8fa59f22",
+      "has_ref_image": true,
+      "is_extend": false,
+      "duration_sec": 8.0,
+      "attempts": 1.0,
+      "resolution": "480p",
+      "output_rate_per_sec": 0.05,
+      "video_output_usd": 0.4,
+      "ref_image_usd": 0.002,
+      "extend_input_usd": 0.0,
+      "usd": 0.402,
+      "currency": "USD",
+      "source": "list_rate",
+      "id": "1783980676_0072",
+      "ts": "2026-07-13T16:11:16"
+    },
+    {
+      "kind": "video",
+      "scene": 4,
+      "clip": 2,
+      "model": "grok-imagine-video",
+      "request_id": "46516746-eeed-9f7d-bbd5-ba2aacf0d41b",
+      "has_ref_image": true,
+      "is_extend": false,
+      "duration_sec": 8.0,
+      "attempts": 1.0,
+      "resolution": "480p",
+      "output_rate_per_sec": 0.05,
+      "video_output_usd": 0.4,
+      "ref_image_usd": 0.002,
+      "extend_input_usd": 0.0,
+      "usd": 0.402,
+      "currency": "USD",
+      "source": "list_rate",
+      "id": "1783980724_0073",
+      "ts": "2026-07-13T16:12:04"
     }
   ],
   "cost_totals": {
-    "usd": 32.576,
-    "events": 72,
-    "updated_at": "2026-07-13T15:14:47"
+    "usd": 33.38,
+    "events": 74,
+    "updated_at": "2026-07-13T16:12:04"
   },
   "wip_movie": {
     "path": "assets/movie_wip.mp4",
@@ -2172,29 +2214,29 @@
       6
     ],
     "approved_only": true,
-    "updated_at": "2026-07-13T15:17:32",
-    "reason": "after approve S6",
+    "updated_at": "2026-07-13T16:12:55",
+    "reason": "after approve S4",
     "mode": "full"
   },
   "wip_job": {
     "status": "done",
     "mode": null,
     "message": "WIP up to date",
-    "generation": 2,
+    "generation": 1,
     "queued": [],
     "current_scene": null,
-    "started_at": "2026-07-13T15:17:28",
-    "finished_at": "2026-07-13T15:17:32",
+    "started_at": "2026-07-13T16:12:51",
+    "finished_at": "2026-07-13T16:12:55",
     "error": null,
     "path": "assets/movie_wip.mp4"
   },
   "gen_job": {
     "status": "done",
-    "kind": "scene",
+    "kind": "clips",
     "message": "Finished",
     "generation": 1,
-    "scene": 6,
-    "clip": 5,
+    "scene": 4,
+    "clip": 2,
     "scenes": [],
     "index": 2,
     "total": 2,
@@ -2202,49 +2244,45 @@
     "failed": [],
     "log": [
       "Starting\u2026",
-      "Scene 6: 2 clip(s) to generate",
-      "Generating S06 C4 (1/2)\u2026",
-      "Done S06 C4",
-      "Generating S06 C5 (2/2)\u2026",
-      "Done S06 C5",
+      "Scene 4: 2 clip(s) to generate",
+      "Generating S04 C1 (1/2)\u2026",
+      "Done S04 C1",
+      "Generating S04 C2 (2/2)\u2026",
+      "Done S04 C2",
       "Finished: 2 generated, 0 failed",
       "Finished"
     ],
-    "started_at": "2026-07-13T15:13:03",
-    "finished_at": "2026-07-13T15:15:08",
+    "started_at": "2026-07-13T16:09:43",
+    "finished_at": "2026-07-13T16:12:13",
     "error": null,
     "summary": {
-      "scene": 6,
-      "only_missing": true,
-      "clip_numbers": null,
+      "scene": 4,
+      "only_missing": false,
+      "clip_numbers": [
+        1,
+        2
+      ],
       "planned": [
         1,
-        2,
-        3,
-        4,
-        5
+        2
       ],
       "todo": [
-        4,
-        5
+        1,
+        2
       ],
       "done": [
-        4,
-        5
+        1,
+        2
       ],
       "failed": [],
       "paths": {
-        "4": "assets/video/scene_06_clip_04.mp4",
-        "5": "assets/video/scene_06_clip_05.mp4"
+        "1": "assets/video/scene_04_clip_01.mp4",
+        "2": "assets/video/scene_04_clip_02.mp4"
       },
-      "composite_path": "assets/scenes/scene_06_complete.mp4",
+      "composite_path": "assets/scenes/scene_04_complete.mp4",
       "wip_path": null,
       "cancelled": false,
-      "skipped_existing": [
-        1,
-        2,
-        3
-      ]
+      "skipped_existing": []
     }
   }
 }

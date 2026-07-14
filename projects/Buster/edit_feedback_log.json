@@ -2,6 +2,121 @@
   "version": 1,
   "entries": [
     {
+      "id": "3e804b92",
+      "ts": "2026-07-13T16:12:50",
+      "type": "scene_approve",
+      "learning_layer": "clip",
+      "scene": 4,
+      "clip": null,
+      "character": null,
+      "user_note": "Approved scene 4",
+      "action_taken": "scenes_completed + remux + WIP bg (full)",
+      "before": "",
+      "after": "",
+      "suggested_rule": "Review learning: Approved scene 4",
+      "targets": [
+        "pipeline_state.json",
+        "assets"
+      ],
+      "applied": {
+        "blueprint": false,
+        "adaptation_prompt": false,
+        "script_notes": false,
+        "learnings_md": false,
+        "layer_prompts": false,
+        "shared_rules": false,
+        "dirty_marked": false
+      },
+      "extra": {
+        "scene": 4,
+        "approved": true,
+        "composite_path": "assets/scenes/scene_04_complete.mp4",
+        "wip_path": null,
+        "remuxed": true,
+        "wip_rebuilt": false,
+        "wip_job_status": "running",
+        "wip_job_mode": "full"
+      }
+    },
+    {
+      "id": "91a4f7df",
+      "ts": "2026-07-13T16:12:13",
+      "type": "scene_generate",
+      "learning_layer": "clip",
+      "scene": 4,
+      "clip": null,
+      "character": null,
+      "user_note": "Generate scene 4: 2 ok, 0 failed, 0 skipped",
+      "action_taken": "done=[1, 2] failed=[]",
+      "before": "",
+      "after": "",
+      "suggested_rule": "Review learning: Generate scene 4: 2 ok, 0 failed, 0 skipped",
+      "targets": [
+        "assets/video",
+        "assets/scenes"
+      ],
+      "applied": {
+        "blueprint": false,
+        "adaptation_prompt": false,
+        "script_notes": false,
+        "learnings_md": false,
+        "layer_prompts": false,
+        "shared_rules": false,
+        "dirty_marked": false
+      },
+      "extra": {
+        "done": [
+          1,
+          2
+        ],
+        "failed": [],
+        "skipped": [],
+        "only_missing": false,
+        "cancelled": false
+      }
+    },
+    {
+      "id": "91ac1333",
+      "ts": "2026-07-13T16:07:46",
+      "type": "stage2_run",
+      "learning_layer": "stage2",
+      "scene": null,
+      "clip": null,
+      "character": null,
+      "user_note": "Stage 2 complete: 6 scenes · 19 clips · ~160s",
+      "action_taken": "Wrote blueprint.clips.grok.json (36 validation notes)",
+      "before": "",
+      "after": "",
+      "suggested_rule": "Age variants: use Character_*_Young/_Teen tokens and child proportions; do not lock adult refs on flashback kids. Reviewer note: Stage 2 complete: 6 scenes · 19 clips · ~160s",
+      "targets": [
+        "blueprint.clips.grok.json",
+        "scripts/two_stage_adaptation/stage2_plan_grok.py"
+      ],
+      "applied": {
+        "blueprint": false,
+        "adaptation_prompt": false,
+        "script_notes": false,
+        "learnings_md": false,
+        "layer_prompts": false,
+        "shared_rules": false,
+        "dirty_marked": false
+      },
+      "extra": {
+        "ok": true,
+        "scenes": 6,
+        "clips": 19,
+        "duration_sec": 160,
+        "out_path": "/mnt/c/Users/budcr/source/repos/NickAndMe/projects/Buster/blueprint.clips.grok.json",
+        "source_stage1": "/mnt/c/Users/budcr/source/repos/NickAndMe/projects/Buster/scenes.json",
+        "backup": "/mnt/c/Users/budcr/source/repos/NickAndMe/projects/Buster/blueprint.clips.grok.json.bak_pre_stage2_20260713_160746",
+        "validation_issue_count": 36,
+        "scene_filter": "all",
+        "resolution": "720p",
+        "completed_at": "2026-07-13T16:07:46",
+        "message": "Stage 2 complete: 6 scenes · 19 clips · ~160s"
+      }
+    },
+    {
       "id": "09f3b351",
       "ts": "2026-07-13T15:17:28",
       "type": "scene_approve",

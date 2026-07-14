@@ -7,15 +7,15 @@
     "target_aspect_ratio": "16:9",
     "resolution": "720p",
     "frame_rate": 24,
-    "directorial_treatment": "Warm picture-book bedtime short: soft practical lighting, gentle camera, playful dog energy that settles into cozy sleep. Faithful to rhyming VO; clear cause-and-effect bedtime routine; no slapstick cruelty. Keep Buster’s black-and-white coat locked every frame.",
+    "directorial_treatment": "Warm stylized 3D animated children's picture-book short (Pixar/DreamWorks family CG, not live-action): soft practical lighting, gentle camera, playful dog energy that settles into cozy sleep. All humans match the same animated style as the dog -- never photoreal people. Faithful to rhyming VO; clear cause-and-effect bedtime routine; no slapstick cruelty. Keep Buster black-and-white coat locked every frame.",
     "total_runtime_target_seconds": 420,
     "character_seed_tokens": {
       "Character_Buster": {
-        "description": "Buster the Noodle Head Dog: small black-and-white dog (never brown/tan redesign), playful bouncy build, expressive face; ALWAYS wears his signature silly noodle-head hat (same hat every scene — do not remove); daytime natural black-and-white fur; at bedtime wears black-and-white dog pajamas matching his fur and KEEPS them on for stairs/hall/bedroom after the dress beat; beloved family pet.",
+        "description": "Small black-and-white dog (never brown/tan redesign), compact playful build, bright curious eyes, floppy ears, short fur with clear black patches on white. Slightly goofy noodle-head expression—sweet, not mean. Coat IS the black-and-white look (book text pajamas is coat metaphor unless art shows real sleepwear). ALWAYS signature silly noodle-head hat. Day and night: natural bare coat; tucks under quilts bare-furred.",
         "reference_image_placeholder": "buster_ref.png",
-        "voice_profile": "Small dog energy: light playful yips, soft whines, and happy pants rather than human speech; bright, quick, slightly goofy cadence; same voice every scene.",
-        "voice_label": "Buster_DogYips",
-        "visual_lock": "Always wearing signature silly noodle-head hat on head; small black-and-white coat markings stable; never bare-headed. Once bedtime black-and-white dog pajamas are on, keep them for remaining night scenes (stairs, hall, bed); bare fur only before pajamas scene.",
+        "voice_profile": "Young playful dog energy if any non-verbal vocalizations; soft yips and happy pants only—no human speech. Same light, eager dog sound every scene.",
+        "voice_label": "Buster Dog SFX",
+        "visual_lock": "Always small black-and-white dog only—never brown, tan, gray, or solid-color redesign. Always signature silly noodle-head hat (never bare-headed). Natural bare coat markings only—no physical pajama garment that blends into fur (text pajamas = coat pattern metaphor per book art). Never bipedal humanoid redesign.",
         "age_band": "adult_dog",
         "display_name_policy": "ok_anytime",
         "source_image_pages": [
@@ -38,11 +38,11 @@
         ]
       },
       "Character_Mom": {
-        "description": "Momma/Mom: kind adult caregiver in a cozy home, patient bedtime parent who guides Buster outside, gives treats and water, and pets him while he sleeps.",
-        "reference_image_placeholder": "mom_ref.png",
-        "voice_profile": "Adult woman, warm medium pitch, calm gentle pace, soft maternal accent-neutral English, reassuring energy; same voice every scene.",
-        "voice_label": "Mom_WarmGentle",
-        "visual_lock": "Always soft blue cardigan and cream/beige pants; shoulder-length brown hair; kind adult face—never teen redesign. No name tags or printed personal names on clothing.",
+        "description": "Warm adult woman, mother figure, medium build, kind face, shoulder-length brown hair, soft blue cardigan over cream top, cream or soft beige pants, indoor house shoes. Calm bedtime energy; gentle hands. Stylized 3D animated picture-book design matching Buster's CG style, not photoreal.",
+        "reference_image_placeholder": "character_mom_ref.png",
+        "voice_profile": "Adult female, warm mid pitch, unhurried gentle pace, clear American storybook accent, patient loving energy. Same voice every scene.",
+        "voice_label": "Mom Warm",
+        "visual_lock": "Stylized 3D animated character matching the dog's picture-book CG look (not photoreal, not live-action). Always soft blue cardigan and cream/beige pants; shoulder-length brown hair; kind adult face—never teen redesign. No name tags or printed personal names on clothing.",
         "wardrobe_always": [
           "soft blue cardigan",
           "cream pants"
@@ -66,11 +66,11 @@
         ]
       },
       "Character_Daddy": {
-        "description": "Daddy: adult partner in Mom and Daddy's bedroom; mostly present as a sleeping/settled figure in the shared bed during Buster's bedtime climb-in.",
-        "reference_image_placeholder": "daddy_ref.png",
-        "voice_profile": "Adult man, low-medium pitch, quiet sleepy energy if any sound; minimal dialogue; same voice every scene.",
-        "voice_label": "Daddy_QuietLow",
-        "visual_lock": "Always adult man with short brown hair in simple sleep shirt in parents’ bed; never teen redesign; no name badges.",
+        "description": "Adult man, father figure, medium build, short brown hair, soft plaid or solid sleep shirt, calm quiet presence in parents’ bed; mostly resting/background once Buster arrives. Stylized 3D animated picture-book design matching Buster's CG style, not photoreal.",
+        "reference_image_placeholder": "character_daddy_ref.png",
+        "voice_profile": "Adult male, low-mid warm pitch, soft quiet energy if any line; mostly silent presence. Same voice every scene if he speaks.",
+        "voice_label": "Daddy Soft",
+        "visual_lock": "Stylized 3D animated character matching the dog's picture-book CG look (not photoreal, not live-action). Always adult man with short brown hair in simple sleep shirt in parents’ bed; never teen redesign; no name badges.",
         "wardrobe_always": [
           "simple sleep shirt"
         ],
@@ -90,15 +90,11 @@
         ]
       },
       "Character_Narrator": {
-        "description": "Off-screen storyteller who delivers the book's rhyming narration; never appears on camera.",
-        "reference_image_placeholder": "character_narrator_voice_only.txt",
-        "voice_profile": "Warm adult male storyteller, medium-low pitch, same voice every scene.",
-        "voice_label": "Narrator_WarmMale",
-        "display_name_policy": "never_on_screen",
-        "voice_gender": "male",
-        "design_reference_images": null,
-        "book_reference_images": null,
-        "source_image_pages": null
+        "description": "Off-screen storybook narrator only; never appears on camera.",
+        "reference_image_placeholder": "narrator_ref.png",
+        "voice_profile": "Warm adult storyteller, medium pitch, playful rhyme-friendly cadence, gentle smile in the voice, clear diction for children. Same voice every scene.",
+        "voice_label": "Narrator Storybook",
+        "display_name_policy": "never_on_screen"
       }
     },
     "location_seed_tokens": {
@@ -121,7 +117,8 @@
         "reference_image_placeholder": "loc_parents_bedroom_ref.png"
       }
     },
-    "spoiler_register": []
+    "spoiler_register": [],
+    "render_style_lock": "STYLE LOCK: stylized 3D animated children's picture-book CG (same render family as the cartoon dog) -- smooth animated materials, expressive non-photoreal faces; NOT live-action, NOT photoreal human photography"
   },
   "scenes": [
     {
@@ -180,8 +177,8 @@
           "timestamp": "00:00-00:08",
           "veo_continuation_source": "none",
           "location_id": "Loc_Buster_House",
-          "visual_prompt": "Warm cream walls, soft evening lamps, front door visible for in/out beats, low treat dish area, carpeted staircase.…. Day 1 evening — house interior, Buster introduced. Character_Buster, small black-and-white dog, bounds into the cozy living area and freezes in a proud silly pose facing camera. OFF-CAMERA VOICEOVER by Character_Narrator only saying the words between << and >>: <<He's Buster The Noodle Head Dog>> (Character_Narrator is NOT on screen and is the ONLY voice). Character_Buster:…. WARDROBE CONTINUITY: Character_Buster is STILL wearing (small black-and-white dog only—never brown, tan, gray, or solid-color re) — do not remove, swap, or drop these items mid-scene / 720p, 24fps",
-          "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens, no name tags, no name badges, no embroidered names, no lower thirds, no personal names on clothing or props, lip-sync, talking mouth, speaking lips, dog talking, animal mouthing words, mom speaking, character talking on camera, dual dialogue, without solid-color re, removing solid-color re",
+          "visual_prompt": "STYLE LOCK: stylized 3D animated children's picture-book CG (same render family as the cartoon dog) -- smooth animated materials, expressive non-photoreal faces. Warm cream walls, soft evening lamps, front door visible for in/out beats, low treat dish area, carpeted staircase.…. Character_Buster, small black-and-white dog, bounds into the cozy living area and freezes in a proud silly pose facing camera. must not: brown or tan dog; physical pajama garment that blends into black-and-white fur; human clothes on dog. WARDROBE CONTINUITY: Character_Buster is STILL wearing (signature silly noodle-head hat) — do not remove, swap, or drop these items mid-scene / 720p, 24fps",
+          "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens, no name tags, no name badges, no embroidered names, no lower thirds, no personal names on clothing or props, lip-sync, talking mouth, speaking lips, dog talking, animal mouthing words, mom speaking, character talking on camera, dual dialogue, without hat, removing hat, bare-headed",
           "audio_payload": {
             "speaker": "Character_Narrator",
             "dialogue": "He's Buster The Noodle Head Dog",
@@ -197,8 +194,8 @@
           "timestamp": "00:08-00:18",
           "veo_continuation_source": "none",
           "location_id": "Loc_Buster_House",
-          "visual_prompt": "Warm cream walls, soft evening lamps, front door visible for in/out beats, low treat dish area, carpeted staircase.…. Character_Buster hops and bounces around the living room like a frog—springy jumps, happy tail, goofy grin. OFF-CAMERA VOICEOVER by Character_Narrator only saying the words between << and >>: <<He jumps around like a frog>> (Character_Narrator is NOT on screen and is the ONLY voice). Character_Buster: lips and snouts FROZEN CLOSED (react/listen only) — NO lip-sync, NO…. WARDROBE CONTINUITY: Character_Buster is STILL wearing (small black-and-white dog only—never brown, tan, gray, or solid-color re) — do not remove, swap, or drop these items mid-scene / 720p, 24fps",
-          "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens, no name tags, no name badges, no embroidered names, no lower thirds, no personal names on clothing or props, lip-sync, talking mouth, speaking lips, dog talking, animal mouthing words, mom speaking, character talking on camera, dual dialogue, without solid-color re, removing solid-color re",
+          "visual_prompt": "STYLE LOCK: stylized 3D animated children's picture-book CG (same render family as the cartoon dog) -- smooth animated materials, expressive non-photoreal faces. Warm cream walls, soft evening lamps, front door visible for in/out beats, low treat dish area, carpeted staircase.…. Character_Buster wearing (signature silly noodle-head hat) securely hops and bounces around the living room like a frog—springy jumps, happy tail, goofy grin.. ONE continuous take no cut; unbroken cause-to-effect motion. must not: brown dog; destructive chaos; losing signature hat mid-motion / bare-headed / 720p, 24fps",
+          "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens, no name tags, no name badges, no embroidered names, no lower thirds, no personal names on clothing or props, lip-sync, talking mouth, speaking lips, dog talking, animal mouthing words, mom speaking, character talking on camera, dual dialogue, without hat, removing hat, bare-headed",
           "audio_payload": {
             "speaker": "Character_Narrator",
             "dialogue": "He jumps around like a frog",
@@ -214,8 +211,8 @@
           "timestamp": "00:18-00:26",
           "veo_continuation_source": "extend_previous",
           "location_id": "Loc_Buster_House",
-          "visual_prompt": "Warm cream walls, soft evening lamps, front door visible for in/out beats, low treat dish area, carpeted staircase.…. Close on Character_Buster’s black-and-white coat and sweet vacant-bright eyes as he tilts his head, clearly lovable and not very bright. OFF-CAMERA VOICEOVER by Character_Narrator only saying the words between << and >>: <<He's small, black, and white / But not very bright! / He's Buster The Noodle Head Dog>> (Character_Narrator is NOT on screen and is the ONLY voice).…. WARDROBE CONTINUITY: Character_Buster is STILL wearing (small black-and-white dog only—never brown, tan, gray, or solid-color re) — do not remove, swap, or drop these items mid-scene. CONTINUE… / 720p, 24fps",
-          "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens, no name tags, no name badges, no embroidered names, no lower thirds, no personal names on clothing or props, lip-sync, talking mouth, speaking lips, dog talking, animal mouthing words, mom speaking, character talking on camera, dual dialogue, without solid-color re, removing solid-color re",
+          "visual_prompt": "STYLE LOCK: stylized 3D animated children's picture-book CG (same render family as the cartoon dog) -- smooth animated materials, expressive non-photoreal faces. Warm cream walls, soft evening lamps, front door visible for in/out beats, low treat dish area, carpeted staircase.…. Close on Character_Buster’s black-and-white coat and sweet vacant-bright eyes as he tilts his head, clearly lovable and not very bright. must not: recolor dog; mean expression. WARDROBE CONTINUITY: Character_Buster is STILL wearing (signature silly noodle-head hat) — do not remove, swap, or drop these items mid-scene / 720p, 24fps",
+          "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens, no name tags, no name badges, no embroidered names, no lower thirds, no personal names on clothing or props, lip-sync, talking mouth, speaking lips, dog talking, animal mouthing words, mom speaking, character talking on camera, dual dialogue, without hat, removing hat, bare-headed",
           "audio_payload": {
             "speaker": "Character_Narrator",
             "dialogue": "He's small, black, and white / But not very bright! / He's Buster The Noodle Head Dog",
@@ -285,8 +282,8 @@
           "timestamp": "00:00-00:08",
           "veo_continuation_source": "none",
           "location_id": "Loc_Buster_House",
-          "visual_prompt": "Warm cream walls, soft evening lamps, front door visible for in/out beats, low treat dish area, carpeted staircase.…. Character_Mom stands in the living area facing Character_Buster, gentle firm bedtime posture; Buster looks up at her. Mom faces Buster; Buster eyeline up to Mom; camera favors Mom then includes dog. ONLY Character_Mom speaks on camera and…. WARDROBE CONTINUITY: Character_Mom is STILL wearing (blue cardigan; cream pants) — do not remove, swap, or drop these items mid-scene. WARDROBE CONTINUITY: Character_Buster is STILL wearing (small black-and-white dog only—never brown, tan, gray, or solid-color re) — do not remove, swap, or drop these items mid-scene / 720p, 24fps",
-          "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens, no name tags, no name badges, no embroidered names, no lower thirds, no personal names on clothing or props, dog talking, animal mouthing words, dual lip-sync, non-speaker speaking, two characters lip-syncing same line, karaoke dog, without solid-color re, removing solid-color re, without cardigan, removing cardigan, without pants, removing pants",
+          "visual_prompt": "STYLE LOCK: stylized 3D animated children's picture-book CG (same render family as the cartoon dog) -- smooth animated materials, expressive non-photoreal faces. Character_Mom stands in the living area facing Character_Buster, gentle firm bedtime posture; Buster looks up at her.. Mom faces Buster; Buster eyeline up to Mom; camera favors Mom then includes dog. WARDROBE CONTINUITY: Character_Mom is STILL wearing (blue cardigan; cream pants) — do not remove, swap, or drop these items mid-scene. WARDROBE CONTINUITY: Character_Buster is STILL wearing (signature silly noodle-head hat) — do not remove, swap, or drop these items mid-scene / 720p, 24fps",
+          "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens, no name tags, no name badges, no embroidered names, no lower thirds, no personal names on clothing or props, dog talking, animal mouthing words, dual lip-sync, non-speaker speaking, two characters lip-syncing same line, karaoke dog, without cardigan, removing cardigan, without pants, removing pants, without hat, removing hat, bare-headed",
           "audio_payload": {
             "speaker": "Character_Mom",
             "dialogue": "It's time for bed",
@@ -302,8 +299,8 @@
           "timestamp": "00:08-00:16",
           "veo_continuation_source": "none",
           "location_id": "Loc_Buster_House",
-          "visual_prompt": "Warm cream walls, soft evening lamps, front door visible for in/out beats, low treat dish area, carpeted staircase.…. also on screen: Character_Mom. Character_Buster lowers his furry head toward the floor as if ready to sleep, then perks up with potty urgency; Mom gestures no to the floor. OFF-CAMERA VOICEOVER by Character_Narrator only saying the words between…. WARDROBE CONTINUITY: Character_Buster is STILL wearing (small black-and-white dog only—never brown, tan, gray, or solid-color re) — do not remove, swap, or drop these items mid-scene. WARDROBE CONTINUITY: Character_Mom is STILL wearing (blue cardigan; cream pants) — do not remove, swap, or drop these items mid-scene / 720p, 24fps",
-          "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens, no name tags, no name badges, no embroidered names, no lower thirds, no personal names on clothing or props, lip-sync, talking mouth, speaking lips, dog talking, animal mouthing words, mom speaking, character talking on camera, dual dialogue, without solid-color re, removing solid-color re, without cardigan, removing cardigan, without pants, removing pants",
+          "visual_prompt": "STYLE LOCK: stylized 3D animated children's picture-book CG (same render family as the cartoon dog) -- smooth animated materials, expressive non-photoreal faces. Warm cream walls, soft evening lamps, front door visible for in/out beats, low treat dish area, carpeted staircase.…. Character_Buster lowers his furry head toward the floor as if ready to sleep, then perks up with potty urgency; Mom gestures no to the floor. must not: Buster actually pees on the floor. WARDROBE CONTINUITY: Character_Buster is STILL wearing (signature silly noodle-head hat) — do not remove, swap, or drop these items mid-scene / 720p, 24fps",
+          "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens, no name tags, no name badges, no embroidered names, no lower thirds, no personal names on clothing or props, lip-sync, talking mouth, speaking lips, dog talking, animal mouthing words, mom speaking, character talking on camera, dual dialogue, without hat, removing hat, bare-headed",
           "audio_payload": {
             "speaker": "Character_Narrator",
             "dialogue": "He wants to rest his furry head / Before he goes, he has to potty / Going on the floor is naughty!",
@@ -318,8 +315,8 @@
           "timestamp": "00:16-00:24",
           "veo_continuation_source": "extend_previous",
           "location_id": "Loc_Buster_House",
-          "visual_prompt": "Warm cream walls, soft evening lamps, front door visible for in/out beats, low treat dish area, carpeted staircase.…. Character_Mom points toward the front door; Character_Buster freezes with a classic confused head tilt—rule makes no sense to him. Mom gestures to door; Buster holds confused stare to camera/Mom. MULTI-SPEAKER DIALOGUE in order on this continuous…. WARDROBE CONTINUITY: Character_Mom is STILL wearing (blue cardigan; cream pants) — do not remove, swap, or drop these items mid-scene. WARDROBE CONTINUITY: Character_Buster is STILL wearing (small black-and-white dog only—never brown, tan, gray, or solid-color re) — do not remove, swap, or drop these items… / 720p, 24fps",
-          "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens, no name tags, no name badges, no embroidered names, no lower thirds, no personal names on clothing or props, dog talking, animal mouthing words, dual lip-sync, non-speaker speaking, two characters lip-syncing same line, karaoke dog, without solid-color re, removing solid-color re, without cardigan, removing cardigan, without pants, removing pants",
+          "visual_prompt": "STYLE LOCK: stylized 3D animated children's picture-book CG (same render family as the cartoon dog) -- smooth animated materials, expressive non-photoreal faces. Character_Mom points toward the front door; Character_Buster freezes with a classic confused head tilt—rule makes no sense to him.. Mom gestures to door; Buster holds confused stare to camera/Mom. WARDROBE CONTINUITY: Character_Mom is STILL wearing (blue cardigan; cream pants) — do not remove, swap, or drop these items mid-scene. WARDROBE CONTINUITY: Character_Buster is STILL wearing (signature silly noodle-head hat) — do not remove, swap, or drop these items mid-scene / 720p, 24fps",
+          "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens, no name tags, no name badges, no embroidered names, no lower thirds, no personal names on clothing or props, dog talking, animal mouthing words, dual lip-sync, non-speaker speaking, two characters lip-syncing same line, karaoke dog, without cardigan, removing cardigan, without pants, removing pants, without hat, removing hat, bare-headed",
           "audio_payload": {
             "speaker": "Character_Mom",
             "dialogue": "Character_Mom: A doggy goes outside Character_Narrator: That makes no sense in Buster's head!",
@@ -412,8 +409,8 @@
           "timestamp": "00:00-00:08",
           "veo_continuation_source": "none",
           "location_id": "Loc_Yard",
-          "visual_prompt": "Green bushes, grass patch, wooden fence or soft yard edge, evening blue-hour light. No busy street traffic; quiet…. also on screen: Character_Mom. Day 1 evening — yard then house return. Character_Buster trots outside into the evening yard toward green bushes, sniffing and circling. OFF-CAMERA VOICEOVER by Character_Narrator only saying the words between << and…. WARDROBE CONTINUITY: Character_Buster is STILL wearing (small black-and-white dog only—never brown, tan, gray, or solid-color re) — do not remove, swap, or drop these items mid-scene. WARDROBE CONTINUITY: Character_Mom is STILL wearing (blue cardigan; cream pants) — do not remove, swap, or drop these items mid-scene / 720p, 24fps",
-          "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens, no name tags, no name badges, no embroidered names, no lower thirds, no personal names on clothing or props, lip-sync, talking mouth, speaking lips, dog talking, animal mouthing words, mom speaking, character talking on camera, dual dialogue, facing camera only, boy looking at viewer, back to house, without solid-color re, removing solid-color re, without cardigan, removing cardigan, without pants, removing pants",
+          "visual_prompt": "STYLE LOCK: stylized 3D animated children's picture-book CG (same render family as the cartoon dog) -- smooth animated materials, expressive non-photoreal faces. Green bushes, grass patch, wooden fence or soft yard edge, evening blue-hour light. No busy street traffic; quiet…. Character_Buster trots outside into the evening yard toward green bushes, sniffing and circling. must not: graphic potty detail; daytime harsh sun if story is evening. WARDROBE CONTINUITY: Character_Buster is STILL wearing (signature silly noodle-head hat) — do not remove, swap, or drop these items mid-scene / 720p, 24fps",
+          "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens, no name tags, no name badges, no embroidered names, no lower thirds, no personal names on clothing or props, lip-sync, talking mouth, speaking lips, dog talking, animal mouthing words, mom speaking, character talking on camera, dual dialogue, facing camera only, boy looking at viewer, back to house, without hat, removing hat, bare-headed",
           "audio_payload": {
             "speaker": "Character_Narrator",
             "dialogue": "Yet, off he goes to walk around / Outside where bushes can be found",
@@ -429,8 +426,8 @@
           "timestamp": "00:08-00:16",
           "veo_continuation_source": "extend_previous",
           "location_id": "Loc_Yard",
-          "visual_prompt": "Green bushes, grass patch, wooden fence or soft yard edge, evening blue-hour light. No busy street traffic; quiet…. also on screen: Character_Mom. Character_Buster discreetly does his job near the bushes (tasteful, non-graphic: rear toward bush, quick cutaway-friendly posture), then looks satisfied. OFF-CAMERA VOICEOVER by Character_Narrator only saying the words…. WARDROBE CONTINUITY: Character_Buster is STILL wearing (small black-and-white dog only—never brown, tan, gray, or solid-color re) — do not remove, swap, or drop these items mid-scene. WARDROBE CONTINUITY: Character_Mom is STILL wearing (blue cardigan; cream pants) — do not remove, swap, or drop these items… / 720p, 24fps",
-          "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens, no name tags, no name badges, no embroidered names, no lower thirds, no personal names on clothing or props, lip-sync, talking mouth, speaking lips, dog talking, animal mouthing words, mom speaking, character talking on camera, dual dialogue, without solid-color re, removing solid-color re, without cardigan, removing cardigan, without pants, removing pants",
+          "visual_prompt": "STYLE LOCK: stylized 3D animated children's picture-book CG (same render family as the cartoon dog) -- smooth animated materials, expressive non-photoreal faces. Green bushes, grass patch, wooden fence or soft yard edge, evening blue-hour light. No busy street traffic; quiet…. Character_Buster discreetly does his job near the bushes (tasteful, non-graphic: rear toward bush, quick cutaway-friendly posture), then looks satisfied. must not: explicit urine stream close-up; floor accident inside. WARDROBE CONTINUITY: Character_Buster is STILL wearing (signature silly noodle-head hat) — do not remove, swap, or drop these items mid-scene / 720p, 24fps",
+          "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens, no name tags, no name badges, no embroidered names, no lower thirds, no personal names on clothing or props, lip-sync, talking mouth, speaking lips, dog talking, animal mouthing words, mom speaking, character talking on camera, dual dialogue, without hat, removing hat, bare-headed",
           "audio_payload": {
             "speaker": "Character_Narrator",
             "dialogue": "He does his job, and then comes in",
@@ -445,8 +442,8 @@
           "timestamp": "00:16-00:26",
           "veo_continuation_source": "none",
           "location_id": "Loc_Buster_House",
-          "visual_prompt": "Warm cream walls, soft evening lamps, front door visible for in/out beats, low treat dish area, carpeted staircase.…. Character_Buster comes back through the door into Loc_Buster_House and does a happy little spin for Character_Mom, who watches approvingly. Mom near door/living area; Buster spins center; Mom smiles down at him. OFF-CAMERA VOICEOVER by…. WARDROBE CONTINUITY: Character_Buster is STILL wearing (small black-and-white dog only—never brown, tan, gray, or solid-color re) — do not remove, swap, or drop these items mid-scene. WARDROBE CONTINUITY: Character_Mom is STILL wearing (blue cardigan; cream pants) — do not remove, swap, or drop these items mid-scene / 720p, 24fps",
-          "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens, no name tags, no name badges, no embroidered names, no lower thirds, no personal names on clothing or props, lip-sync, talking mouth, speaking lips, dog talking, animal mouthing words, mom speaking, character talking on camera, dual dialogue, without solid-color re, removing solid-color re, without cardigan, removing cardigan, without pants, removing pants",
+          "visual_prompt": "STYLE LOCK: stylized 3D animated children's picture-book CG (same render family as the cartoon dog) -- smooth animated materials, expressive non-photoreal faces. Character_Buster wearing (signature silly noodle-head hat) securely comes back through the door into Loc_Buster_House and does a happy little spin for Character_Mom, who watches approvingly.. Mom near door/living area; Buster spins center; Mom smiles down at him.. ONE continuous take no cut; unbroken cause-to-effect motion. WARDROBE CONTINUITY: Character_Mom is STILL wearing (blue cardigan; cream pants) — do not remove, swap, or drop these items mid-scene / 720p, 24fps",
+          "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens, no name tags, no name badges, no embroidered names, no lower thirds, no personal names on clothing or props, lip-sync, talking mouth, speaking lips, dog talking, animal mouthing words, mom speaking, character talking on camera, dual dialogue, without hat, removing hat, bare-headed, without cardigan, removing cardigan, without pants, removing pants",
           "audio_payload": {
             "speaker": "Character_Narrator",
             "dialogue": "For Mom he does a little spin",
@@ -517,8 +514,8 @@
           "timestamp": "00:00-00:08",
           "veo_continuation_source": "none",
           "location_id": "Loc_Buster_House",
-          "visual_prompt": "Warm cream walls, soft evening lamps, front door visible for in/out beats, low treat dish area, carpeted staircase.…. Character_Buster spins again; Character_Mom gently lays a small dog treat on the floor by his front feet. Mom kneels or bends; treat by Buster’s feet; gentle hands. OFF-CAMERA VOICEOVER by Character_Narrator only saying the words between << and…. WARDROBE CONTINUITY: Character_Buster is STILL wearing (small black-and-white dog only—never brown, tan, gray, or solid-color re) — do not remove, swap, or drop these items mid-scene. WARDROBE CONTINUITY: Character_Mom is STILL wearing (blue cardigan; cream pants) — do not remove, swap, or drop these items mid-scene / 720p, 24fps",
-          "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens, no name tags, no name badges, no embroidered names, no lower thirds, no personal names on clothing or props, lip-sync, talking mouth, speaking lips, dog talking, animal mouthing words, mom speaking, character talking on camera, dual dialogue, without solid-color re, removing solid-color re, without cardigan, removing cardigan, without pants, removing pants",
+          "visual_prompt": "STYLE LOCK: stylized 3D animated children's picture-book CG (same render family as the cartoon dog) -- smooth animated materials, expressive non-photoreal faces. Warm cream walls, soft evening lamps, front door visible for in/out beats, low treat dish area, carpeted staircase.…. Character_Buster wearing (signature silly noodle-head hat) securely spins again; Character_Mom gently lays a small dog treat on the floor by his front feet.. Mom kneels or bends; treat by Buster’s feet; gentle hands. must not: human junk food as treat prop if avoidable. WARDROBE CONTINUITY: Character_Mom is STILL wearing (blue cardigan; cream pants) — do not remove, swap, or drop these items mid-scene / 720p, 24fps",
+          "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens, no name tags, no name badges, no embroidered names, no lower thirds, no personal names on clothing or props, lip-sync, talking mouth, speaking lips, dog talking, animal mouthing words, mom speaking, character talking on camera, dual dialogue, without hat, removing hat, bare-headed, without cardigan, removing cardigan, without pants, removing pants",
           "audio_payload": {
             "speaker": "Character_Narrator",
             "dialogue": "He spins around to get a treat / She gently lays it by his feet",
@@ -534,8 +531,8 @@
           "timestamp": "00:08-00:16",
           "veo_continuation_source": "extend_previous",
           "location_id": "Loc_Buster_House",
-          "visual_prompt": "Warm cream walls, soft evening lamps, front door visible for in/out beats, low treat dish area, carpeted staircase.…. Character_Buster eats the treat then laps water from his bowl; Character_Mom watches kindly nearby. OFF-CAMERA VOICEOVER by Character_Narrator only saying the words between << and >>: <<He has his drink of water too / This also would be good for…. WARDROBE CONTINUITY: Character_Buster is STILL wearing (small black-and-white dog only—never brown, tan, gray, or solid-color re) — do not remove, swap, or drop these items mid-scene. WARDROBE CONTINUITY: Character_Mom is STILL wearing (blue cardigan; cream pants) — do not remove, swap, or drop these items mid-scene.… / 720p, 24fps",
-          "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens, no name tags, no name badges, no embroidered names, no lower thirds, no personal names on clothing or props, lip-sync, talking mouth, speaking lips, dog talking, animal mouthing words, mom speaking, character talking on camera, dual dialogue, without solid-color re, removing solid-color re, without cardigan, removing cardigan, without pants, removing pants",
+          "visual_prompt": "STYLE LOCK: stylized 3D animated children's picture-book CG (same render family as the cartoon dog) -- smooth animated materials, expressive non-photoreal faces. Warm cream walls, soft evening lamps, front door visible for in/out beats, low treat dish area, carpeted staircase.…. Character_Buster eats the treat then laps water from his bowl; Character_Mom watches kindly nearby. WARDROBE CONTINUITY: Character_Buster is STILL wearing (signature silly noodle-head hat) — do not remove, swap, or drop these items mid-scene. WARDROBE CONTINUITY: Character_Mom is STILL wearing (blue cardigan; cream pants) — do not remove, swap, or drop these items mid-scene / 720p, 24fps",
+          "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens, no name tags, no name badges, no embroidered names, no lower thirds, no personal names on clothing or props, lip-sync, talking mouth, speaking lips, dog talking, animal mouthing words, mom speaking, character talking on camera, dual dialogue, without hat, removing hat, bare-headed, without cardigan, removing cardigan, without pants, removing pants",
           "audio_payload": {
             "speaker": "Character_Narrator",
             "dialogue": "He has his drink of water too / This also would be good for you!",
@@ -617,8 +614,8 @@
           "timestamp": "00:00-00:08",
           "veo_continuation_source": "none",
           "location_id": "Loc_Buster_House",
-          "visual_prompt": "Warm cream walls, soft evening lamps, front door visible for in/out beats, low treat dish area, carpeted staircase.…. also on screen: Character_Mom. Character_Buster is helped into black-and-white dog pajamas matching his coat; he stands proudly pajama-clad in the house hall. OFF-CAMERA VOICEOVER by Character_Narrator only saying the words…. WARDROBE CONTINUITY: Character_Buster is STILL wearing (signature silly noodle-head hat; black-and-white dog pajamas) — do not remove, swap, or drop these items mid-scene. WARDROBE CONTINUITY: Character_Mom is STILL wearing (blue cardigan; cream pants) — do not remove, swap, or drop these items mid-scene / 720p, 24fps",
-          "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens, no name tags, no name badges, no embroidered names, no lower thirds, no personal names on clothing or props, lip-sync, talking mouth, speaking lips, dog talking, animal mouthing words, mom speaking, character talking on camera, dual dialogue, without solid-color re, removing solid-color re, without pajama, removing pajama, bare fur only, without cardigan, removing cardigan, without pants, removing pants, without shirt, removing shirt",
+          "visual_prompt": "STYLE LOCK: stylized 3D animated children's picture-book CG (same render family as the cartoon dog) -- smooth animated materials, expressive non-photoreal faces. Warm cream walls, soft evening lamps, front door visible for in/out beats, low treat dish area, carpeted staircase.…. Character_Buster shows off his natural black-and-white coat markings (no separate pajama garment—coat is the black-and-white look). must not: daytime bare coat after this beat; recolored coat or solid-color redesign. WARDROBE CONTINUITY: Character_Buster is STILL wearing (signature silly noodle-head hat) — do not remove, swap, or drop these items mid-scene / 720p, 24fps",
+          "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens, no name tags, no name badges, no embroidered names, no lower thirds, no personal names on clothing or props, lip-sync, talking mouth, speaking lips, dog talking, animal mouthing words, mom speaking, character talking on camera, dual dialogue, without hat, removing hat, bare-headed",
           "audio_payload": {
             "speaker": "Character_Narrator",
             "dialogue": "Pajamas, black and white he wears",
@@ -634,8 +631,8 @@
           "timestamp": "00:08-00:16",
           "veo_continuation_source": "none",
           "location_id": "Loc_Buster_House",
-          "visual_prompt": "Warm cream walls, soft evening lamps, front door visible for in/out beats, low treat dish area, carpeted staircase.…. also on screen: Character_Mom. Character_Buster in black-and-white pajamas climbs the carpeted staircase step by step toward the upper floor. OFF-CAMERA VOICEOVER by Character_Narrator only saying the words between << and >>:…. WARDROBE CONTINUITY: Character_Buster is STILL wearing (signature silly noodle-head hat; black-and-white dog pajamas) — do not remove, swap, or drop these items mid-scene. WARDROBE CONTINUITY: Character_Mom is STILL wearing (blue cardigan; cream pants) — do not remove, swap, or drop these items mid-scene / 720p, 24fps",
-          "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens, no name tags, no name badges, no embroidered names, no lower thirds, no personal names on clothing or props, lip-sync, talking mouth, speaking lips, dog talking, animal mouthing words, mom speaking, character talking on camera, dual dialogue, without solid-color re, removing solid-color re, without pajama, removing pajama, bare fur only, without cardigan, removing cardigan, without pants, removing pants, without shirt, removing shirt",
+          "visual_prompt": "STYLE LOCK: stylized 3D animated children's picture-book CG (same render family as the cartoon dog) -- smooth animated materials, expressive non-photoreal faces. Warm cream walls, soft evening lamps, front door visible for in/out beats, low treat dish area, carpeted staircase.…. Character_Buster wearing (signature silly noodle-head hat) securely in black-and-white pajamas climbs the carpeted staircase step by step toward the upper floor.. ONE continuous take no cut; unbroken cause-to-effect motion. must not: falling injury comedy; losing signature hat mid-motion / bare-headed / 720p, 24fps",
+          "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens, no name tags, no name badges, no embroidered names, no lower thirds, no personal names on clothing or props, lip-sync, talking mouth, speaking lips, dog talking, animal mouthing words, mom speaking, character talking on camera, dual dialogue, without hat, removing hat, bare-headed",
           "audio_payload": {
             "speaker": "Character_Narrator",
             "dialogue": "And then he climbs the many stairs",
@@ -651,8 +648,8 @@
           "timestamp": "00:16-00:26",
           "veo_continuation_source": "none",
           "location_id": "Loc_Parents_Bedroom",
-          "visual_prompt": "Queen/king bed with soft duvet, warm bedside lamps, calm wall color, nightstand; never hospital or hotel redesign.…. Character_Buster enters Loc_Parents_Bedroom where Character_Mom and Character_Daddy are in bed; Buster jumps onto the bed, none too soon, settling between or at their feet. Parents already in bed; Buster leaps up; soft…. WARDROBE CONTINUITY: Character_Buster is STILL wearing (signature silly noodle-head hat; black-and-white dog pajamas) — do not remove, swap, or drop these items mid-scene. WARDROBE CONTINUITY: Character_Mom is STILL wearing (blue cardigan; cream pants) — do not remove, swap, or drop these items mid-scene / 720p, 24fps",
-          "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens, no name tags, no name badges, no embroidered names, no lower thirds, no personal names on clothing or props, lip-sync, talking mouth, speaking lips, dog talking, animal mouthing words, mom speaking, character talking on camera, dual dialogue, without solid-color re, removing solid-color re, without pajama, removing pajama, bare fur only, without cardigan, removing cardigan, without pants, removing pants, without shirt, removing shirt",
+          "visual_prompt": "Character_Buster wearing (signature silly noodle-head hat) securely enters Loc_Parents_Bedroom where Character_Mom and Character_Daddy are in bed; Buster jumps onto the bed, none too soon, settling between or at their feet.. Parents already in bed; Buster leaps up; soft landing; HOME SWEET HOME warmth.. ONE continuous take no cut; unbroken cause-to-effect motion. WARDROBE CONTINUITY: Character_Mom is STILL wearing (blue cardigan; cream pants) — do not remove, swap, or drop these items mid-scene. WARDROBE CONTINUITY: Character_Daddy is STILL wearing (simple sleep shirt) — do not remove, swap, or drop these items mid-scene / 720p, 24fps",
+          "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens, no name tags, no name badges, no embroidered names, no lower thirds, no personal names on clothing or props, lip-sync, talking mouth, speaking lips, dog talking, animal mouthing words, mom speaking, character talking on camera, dual dialogue, without hat, removing hat, bare-headed, without cardigan, removing cardigan, without pants, removing pants, without shirt, removing shirt",
           "audio_payload": {
             "speaker": "Character_Narrator",
             "dialogue": "To get to Mom and Daddy's room / And jump in bed, and none too soon",
@@ -735,8 +732,8 @@
           "timestamp": "00:00-00:08",
           "veo_continuation_source": "none",
           "location_id": "Loc_Parents_Bedroom",
-          "visual_prompt": "Queen/king bed with soft duvet, warm bedside lamps, calm wall color, nightstand; never hospital or hotel redesign.…. also on screen: Character_Mom, Character_Daddy. Character_Buster in pajamas curls on the bed, eyes heavy; soft dreamy light on his face as he begins to drift. OFF-CAMERA VOICEOVER by Character_Narrator only saying the words between << and >>:…. WARDROBE CONTINUITY: Character_Buster is STILL wearing (small black-and-white dog only—never brown, tan, gray, or solid-color re) — do not remove, swap, or drop these items mid-scene. WARDROBE CONTINUITY: Character_Mom is STILL wearing (blue cardigan; cream pants) — do not remove, swap, or drop these items mid-scene / 720p, 24fps",
-          "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens, no name tags, no name badges, no embroidered names, no lower thirds, no personal names on clothing or props, lip-sync, talking mouth, speaking lips, dog talking, animal mouthing words, mom speaking, character talking on camera, dual dialogue, without solid-color re, removing solid-color re, without pajama, removing pajama, bare fur only, without cardigan, removing cardigan, without pants, removing pants, without shirt, removing shirt",
+          "visual_prompt": "STYLE LOCK: stylized 3D animated children's picture-book CG (same render family as the cartoon dog) -- smooth animated materials, expressive non-photoreal faces. Queen/king bed with soft duvet, warm bedside lamps, calm wall color, nightstand; never hospital or hotel redesign.…. Character_Buster with clear black-and-white coat patches curls on the bed, eyes heavy; soft dreamy light on his face as he begins to drift. must not: scary nightmare imagery. WARDROBE CONTINUITY: Character_Buster is STILL wearing (signature silly noodle-head hat) — do not remove, swap, or drop these items mid-scene / 720p, 24fps",
+          "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens, no name tags, no name badges, no embroidered names, no lower thirds, no personal names on clothing or props, lip-sync, talking mouth, speaking lips, dog talking, animal mouthing words, mom speaking, character talking on camera, dual dialogue, without hat, removing hat, bare-headed",
           "audio_payload": {
             "speaker": "Character_Narrator",
             "dialogue": "He's not that smart, but still he knows / He'll have a dream of fluffy snows,",
@@ -751,13 +748,13 @@
           "timestamp": "00:08-00:16",
           "veo_continuation_source": "none",
           "location_id": "Loc_Yard",
-          "visual_prompt": "Green bushes, grass patch, wooden fence or soft yard edge, evening blue-hour light. No busy street traffic; quiet…. also on screen: Character_Mom, Character_Daddy. Soft dream insert: pajama-clad Character_Buster in a gentle snowy yard fantasy, then chasing bunnies running across a soft dream-yard—playful, not scary. OFF-CAMERA VOICEOVER by Character_Narrator only…. WARDROBE CONTINUITY: Character_Buster is STILL wearing (small black-and-white dog only—never brown, tan, gray, or solid-color re) — do not remove, swap, or drop these items mid-scene. WARDROBE CONTINUITY: Character_Mom is STILL wearing (blue cardigan; cream pants) — do not remove, swap, or drop these items mid-scene / 720p, 24fps",
-          "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens, no name tags, no name badges, no embroidered names, no lower thirds, no personal names on clothing or props, lip-sync, talking mouth, speaking lips, dog talking, animal mouthing words, mom speaking, character talking on camera, dual dialogue, without solid-color re, removing solid-color re, without pajama, removing pajama, bare fur only, without cardigan, removing cardigan, without pants, removing pants, without shirt, removing shirt",
+          "visual_prompt": "STYLE LOCK: stylized 3D animated children's picture-book CG (same render family as the cartoon dog) -- smooth animated materials, expressive non-photoreal faces. Character_Buster Soft dream insert DREAMSCAPE: daytime vibrant green lawn under clear sky; a brown bunny runs across the yard; Character_Buster wearing (signature silly noodle-head hat) securely chases playfully across the grass — natural black-and-white bare coat only (no pajama garment); NO snow, NO winter landscape, NO white snow-bunnies mashup / 720p, 24fps",
+          "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens, no name tags, no name badges, no embroidered names, no lower thirds, no personal names on clothing or props, lip-sync, talking mouth, speaking lips, dog talking, animal mouthing words, mom speaking, character talking on camera, dual dialogue, without hat, removing hat, bare-headed",
           "audio_payload": {
             "speaker": "Character_Narrator",
             "dialogue": "Or bunnies running 'cross the yard / And how he'll chase them very hard",
             "delivery": "voiceover_internal",
-            "ambient": "soft dream whoosh, light snow hush"
+            "ambient": "soft dream whoosh, light yard breeze"
           },
           "stage1_beat_id": "b16",
           "primary_subject": "Character_Buster",
@@ -768,8 +765,8 @@
           "timestamp": "00:16-00:24",
           "veo_continuation_source": "none",
           "location_id": "Loc_Parents_Bedroom",
-          "visual_prompt": "Queen/king bed with soft duvet, warm bedside lamps, calm wall color, nightstand; never hospital or hotel redesign.…. also on screen: Character_Mom, Character_Daddy. Return to Loc_Parents_Bedroom: Character_Buster settles deeper into the covers between sleeping parents; eyes close. OFF-CAMERA VOICEOVER by Character_Narrator only saying…. WARDROBE CONTINUITY: Character_Buster is STILL wearing (small black-and-white dog only—never brown, tan, gray, or solid-color re; black-and-white dog pajamas) — do not remove, swap, or drop these items mid-scene. WARDROBE CONTINUITY: Character_Mom is STILL wearing (blue cardigan; cream pants) — do not remove, swap, or drop these items mid-scene / 720p, 24fps",
-          "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens, no name tags, no name badges, no embroidered names, no lower thirds, no personal names on clothing or props, lip-sync, talking mouth, speaking lips, dog talking, animal mouthing words, mom speaking, character talking on camera, dual dialogue, without solid-color re, removing solid-color re, without pajama, removing pajama, bare fur only, without cardigan, removing cardigan, without pants, removing pants, without shirt, removing shirt",
+          "visual_prompt": "STYLE LOCK: stylized 3D animated children's picture-book CG (same render family as the cartoon dog) -- smooth animated materials, expressive non-photoreal faces. Queen/king bed with soft duvet, warm bedside lamps, calm wall color, nightstand; never hospital or hotel redesign.…. Return to Loc_Parents_Bedroom: Character_Buster settles deeper into the covers between sleeping parents; eyes close. must not: Buster leaving bed again. WARDROBE CONTINUITY: Character_Buster is STILL wearing (signature silly noodle-head hat) — do not remove, swap, or drop these items mid-scene / 720p, 24fps",
+          "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens, no name tags, no name badges, no embroidered names, no lower thirds, no personal names on clothing or props, lip-sync, talking mouth, speaking lips, dog talking, animal mouthing words, mom speaking, character talking on camera, dual dialogue, without hat, removing hat, bare-headed",
           "audio_payload": {
             "speaker": "Character_Narrator",
             "dialogue": "He goes to sleep because they say / Tomorrow is another day / Another day for silly dogs / To run and play and jump like frogs",
@@ -784,8 +781,8 @@
           "timestamp": "00:24-00:34",
           "veo_continuation_source": "extend_previous",
           "location_id": "Loc_Parents_Bedroom",
-          "visual_prompt": "Queen/king bed with soft duvet, warm bedside lamps, calm wall color, nightstand; never hospital or hotel redesign.…. also on screen: Character_Daddy. Character_Buster lays down his head fully asleep, warm and soft; Character_Mom gently pets him while he sleeps; Daddy rests nearby; tender family tableau. Mom’s hand gently strokes…. WARDROBE CONTINUITY: Character_Buster is STILL wearing (small black-and-white dog only—never brown, tan, gray, or solid-color re; black-and-white dog pajamas) — do not remove, swap, or drop these items mid-scene. WARDROBE CONTINUITY: Character_Mom is STILL wearing (blue cardigan; cream pants) — do not remove, swap, or drop these items mid-scene.… / 720p, 24fps",
-          "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens, no name tags, no name badges, no embroidered names, no lower thirds, no personal names on clothing or props, lip-sync, talking mouth, speaking lips, dog talking, animal mouthing words, mom speaking, character talking on camera, dual dialogue, without solid-color re, removing solid-color re, without pajama, removing pajama, bare fur only, without cardigan, removing cardigan, without pants, removing pants, without shirt, removing shirt",
+          "visual_prompt": "STYLE LOCK: stylized 3D animated children's picture-book CG (same render family as the cartoon dog) -- smooth animated materials, expressive non-photoreal faces. Character_Buster lays down his head fully asleep, warm and soft; Character_Mom gently pets him while he sleeps; Daddy rests nearby; tender family tableau.. Mom’s hand gently strokes Buster’s head/back; Buster snout closed in sleep; peaceful faces. WARDROBE CONTINUITY: Character_Buster is STILL wearing (signature silly noodle-head hat) — do not remove, swap, or drop these items mid-scene. WARDROBE CONTINUITY: Character_Mom is STILL wearing (blue cardigan; cream pants) — do not remove, swap, or drop these items mid-scene / 720p, 24fps",
+          "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens, no name tags, no name badges, no embroidered names, no lower thirds, no personal names on clothing or props, lip-sync, talking mouth, speaking lips, dog talking, animal mouthing words, mom speaking, character talking on camera, dual dialogue, without hat, removing hat, bare-headed, without cardigan, removing cardigan, without pants, removing pants",
           "audio_payload": {
             "speaker": "Character_Narrator",
             "dialogue": "He falls asleep, lays down his head / He's warm and soft and quite well-fed / His Mommy pets him while he sleeps / This noodle head is loved for keeps.....",
@@ -801,8 +798,8 @@
           "timestamp": "00:34-00:42",
           "veo_continuation_source": "extend_previous",
           "location_id": "Loc_Parents_Bedroom",
-          "visual_prompt": "Queen/king bed with soft duvet, warm bedside lamps, calm wall color, nightstand; never hospital or hotel redesign.…. also on screen: Character_Mom, Character_Daddy. Hold on sleeping Character_Buster in black-and-white pajamas, tiny zzz energy, dim bedside lamp, fade toward black. OFF-CAMERA VOICEOVER by Character_Narrator only saying the words between << and >>:…. WARDROBE CONTINUITY: Character_Buster is STILL wearing (small black-and-white dog only—never brown, tan, gray, or solid-color re) — do not remove, swap, or drop these items mid-scene. WARDROBE CONTINUITY: Character_Mom is STILL wearing (blue cardigan; cream pants) — do not remove, swap, or drop these items… / 720p, 24fps",
-          "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens, no name tags, no name badges, no embroidered names, no lower thirds, no personal names on clothing or props, lip-sync, talking mouth, speaking lips, dog talking, animal mouthing words, mom speaking, character talking on camera, dual dialogue, without solid-color re, removing solid-color re, without pajama, removing pajama, bare fur only, without cardigan, removing cardigan, without pants, removing pants, without shirt, removing shirt",
+          "visual_prompt": "STYLE LOCK: stylized 3D animated children's picture-book CG (same render family as the cartoon dog) -- smooth animated materials, expressive non-photoreal faces. Queen/king bed with soft duvet, warm bedside lamps, calm wall color, nightstand; never hospital or hotel redesign.…. Hold on sleeping Character_Buster in black-and-white pajamas, tiny zzz energy, dim bedside lamp, fade toward black. must not: jump scare end. WARDROBE CONTINUITY: Character_Buster is STILL wearing (signature silly noodle-head hat) — do not remove, swap, or drop these items mid-scene / 720p, 24fps",
+          "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens, no name tags, no name badges, no embroidered names, no lower thirds, no personal names on clothing or props, lip-sync, talking mouth, speaking lips, dog talking, animal mouthing words, mom speaking, character talking on camera, dual dialogue, without hat, removing hat, bare-headed",
           "audio_payload": {
             "speaker": "Character_Narrator",
             "dialogue": "Zzzzzzzz",
@@ -847,9 +844,10 @@
     "prompt_limits_model": "grok-imagine-video",
     "total_duration_seconds": 160,
     "total_clips": 19,
-    "completed_at": "2026-07-13T13:39:00",
+    "completed_at": "2026-07-13T16:07:46",
     "last_run_ok": true,
     "last_run_message": "Stage 2 complete: 6 scenes · 19 clips · ~160s",
-    "validation_issue_count": 8
+    "validation_issue_count": 36,
+    "stage1_fingerprint": "2b0123f2af629bf65277b4d9"
   }
 }

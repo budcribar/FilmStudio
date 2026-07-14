@@ -1611,12 +1611,27 @@ class AgenticGenerationEngine:
                         f"Should clearly read as a younger version of {variant_of} "
                         f"(same ethnicity, hair color family, recognizable family features). "
                     )
-                design_prompt = (
-                    f"A detailed portrait model-sheet photograph of {char_key}: {description}. "
-                    f"{age_clause}{family_clause}"
-                    f"Character centered in frame, look straight at camera, neutral expression, {treatment}. "
-                    f"High texture realism, isolated plain dark concrete studio background."
+                stylized = bool(
+                    re.search(
+                        r"styliz|animated|picture-book|cartoon|pixar|dreamworks",
+                        str(treatment),
+                        re.I,
+                    )
                 )
+                if stylized:
+                    design_prompt = (
+                        f"A stylized 3D animated children's picture-book character portrait of {char_key}: "
+                        f"{description}. {age_clause}{family_clause}"
+                        f"Character centered, look straight at camera, soft expressive animated face, {treatment}. "
+                        f"NOT photoreal, NOT live-action photography. Plain soft studio background."
+                    )
+                else:
+                    design_prompt = (
+                        f"A detailed portrait model-sheet photograph of {char_key}: {description}. "
+                        f"{age_clause}{family_clause}"
+                        f"Character centered in frame, look straight at camera, neutral expression, {treatment}. "
+                        f"High texture realism, isolated plain dark concrete studio background."
+                    )
 
                 option_paths: List[str] = []
                 try:
@@ -3547,9 +3562,35 @@ class AgenticGenerationEngine:
         if self.config.get("use_video_audio_for_music", True) and dialogue:
             audio_block += " Keep speech dominant over any background music or wind."
 
+        # Film-wide style (stylized CG vs photoreal) — humans must match animal hero look
+        style_bit = ""
+        gpv = self.blueprint.get("global_production_variables") or {}
+        style_lock = str(
+            gpv.get("render_style_lock") or gpv.get("style_lock") or ""
+        ).strip()
+        if style_lock:
+            style_bit = f" {style_lock[:180]}."
+        elif re.search(
+            r"styliz|animated|picture-book|cartoon|pixar",
+            str(gpv.get("directorial_treatment") or ""),
+            re.I,
+        ):
+            style_bit = (
+                " STYLE LOCK: stylized 3D animated children's picture-book CG "
+                "for ALL characters (humans match the cartoon animal) -- "
+                "not photoreal live-action people."
+            )
+        # Extra when a human is in the visual (Mom/Dad often drift photoreal)
+        if re.search(r"Character_(Mom|Daddy|Dad|Mother|Father)|Character_[A-Z][a-z]+", visual):
+            if "not photoreal" not in (style_bit + visual).lower():
+                style_bit += (
+                    " Human characters: same stylized animated shading as the dog, "
+                    "not photoreal skin."
+                )
+
         full = (
             f"{audio_block} "
-            f"VISUAL: {visual} {' '.join(framing_bits)} "
+            f"VISUAL:{style_bit} {visual} {' '.join(framing_bits)} "
             f"Must include synchronized native audio track with the video."
         ).strip()
         return self._clamp_api_video_prompt(full)

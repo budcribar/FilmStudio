@@ -4,7 +4,7 @@
     "target_aspect_ratio": "16:9",
     "resolution": "720p",
     "frame_rate": 24,
-    "directorial_treatment": "Warm picture-book bedtime short: soft practical lighting, gentle camera, playful dog energy that settles into cozy sleep. Faithful to rhyming VO; clear cause-and-effect bedtime routine; no slapstick cruelty. Keep Buster’s black-and-white coat locked every frame.",
+    "directorial_treatment": "Warm stylized 3D animated children's picture-book short (Pixar/DreamWorks family CG, not live-action): soft practical lighting, gentle camera, playful dog energy that settles into cozy sleep. All humans match the same animated style as the dog -- never photoreal people. Faithful to rhyming VO; clear cause-and-effect bedtime routine; no slapstick cruelty. Keep Buster black-and-white coat locked every frame.",
     "total_runtime_target_seconds": 420,
     "character_seed_tokens": {
       "Character_Buster": {
@@ -35,11 +35,11 @@
         ]
       },
       "Character_Mom": {
-        "description": "Warm adult woman, mother figure, medium build, kind face, shoulder-length brown hair, soft blue cardigan over cream top, cream or soft beige pants, indoor house shoes. Calm bedtime energy; gentle hands.",
+        "description": "Warm adult woman, mother figure, medium build, kind face, shoulder-length brown hair, soft blue cardigan over cream top, cream or soft beige pants, indoor house shoes. Calm bedtime energy; gentle hands. Stylized 3D animated picture-book design matching Buster's CG style, not photoreal.",
         "reference_image_placeholder": "character_mom_ref.png",
         "voice_profile": "Adult female, warm mid pitch, unhurried gentle pace, clear American storybook accent, patient loving energy. Same voice every scene.",
         "voice_label": "Mom Warm",
-        "visual_lock": "Always soft blue cardigan and cream/beige pants; shoulder-length brown hair; kind adult face—never teen redesign. No name tags or printed personal names on clothing.",
+        "visual_lock": "Stylized 3D animated character matching the dog's picture-book CG look (not photoreal, not live-action). Always soft blue cardigan and cream/beige pants; shoulder-length brown hair; kind adult face—never teen redesign. No name tags or printed personal names on clothing.",
         "wardrobe_always": [
           "soft blue cardigan",
           "cream pants"
@@ -63,11 +63,11 @@
         ]
       },
       "Character_Daddy": {
-        "description": "Adult man, father figure, medium build, short brown hair, soft plaid or solid sleep shirt, calm quiet presence in parents’ bed; mostly resting/background once Buster arrives.",
+        "description": "Adult man, father figure, medium build, short brown hair, soft plaid or solid sleep shirt, calm quiet presence in parents’ bed; mostly resting/background once Buster arrives. Stylized 3D animated picture-book design matching Buster's CG style, not photoreal.",
         "reference_image_placeholder": "character_daddy_ref.png",
         "voice_profile": "Adult male, low-mid warm pitch, soft quiet energy if any line; mostly silent presence. Same voice every scene if he speaks.",
         "voice_label": "Daddy Soft",
-        "visual_lock": "Always adult man with short brown hair in simple sleep shirt in parents’ bed; never teen redesign; no name badges.",
+        "visual_lock": "Stylized 3D animated character matching the dog's picture-book CG look (not photoreal, not live-action). Always adult man with short brown hair in simple sleep shirt in parents’ bed; never teen redesign; no name badges.",
         "wardrobe_always": [
           "simple sleep shirt"
         ],
@@ -114,7 +114,8 @@
         "reference_image_placeholder": "loc_parents_bedroom_ref.png"
       }
     },
-    "spoiler_register": []
+    "spoiler_register": [],
+    "render_style_lock": "STYLE LOCK: stylized 3D animated children's picture-book CG (same render family as the cartoon dog) -- smooth animated materials, expressive non-photoreal faces; NOT live-action, NOT photoreal human photography"
   },
   "scenes": [
     {

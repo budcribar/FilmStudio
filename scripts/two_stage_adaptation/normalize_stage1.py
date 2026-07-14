@@ -82,33 +82,51 @@ def _coerce_string_list(val: Any, *, max_items: int = 12) -> List[str]:
     return out
 
 
+def _looks_like_wardrobe_phrase(p: str) -> bool:
+    """Reject identity sentences (never brown/redesign/…) as wardrobe items."""
+    pl = (p or "").lower()
+    if re.search(
+        r"\b(?:never\s+brown|never\s+tan|redesign|markings|compact|expressive|"
+        r"dog\s+only|mixed\s+dog|humanoid)\b",
+        pl,
+    ):
+        return False
+    if re.search(
+        r"\b(?:hat|cap|collar|scarf|jacket|coat|shirt|dress|glasses|badge|"
+        r"bandana|leash|sweater|cardigan|pajama|boots?|nightcap)\b",
+        pl,
+    ):
+        return True
+    words = [w for w in re.split(r"\s+", (p or "").strip()) if w]
+    return 1 <= len(words) <= 5 and "never" not in pl
+
+
 def _bootstrap_wardrobe_always(seed: Dict[str, Any]) -> List[str]:
     """
-    Best-effort seed list from visual_lock / description when the model omitted
-    wardrobe_always. Free-text phrases only — not a closed item enum.
+    Best-effort seed list from visual_lock when the model omitted wardrobe_always.
+    Only short 'always wears X' / 'signature X' prop phrases — never full identity prose.
     """
-    blob = f"{seed.get('visual_lock') or ''}. {seed.get('description') or ''}"
+    blob = f"{seed.get('visual_lock') or ''}"
     found: List[str] = []
     for m in re.finditer(
-        r"always\s+(?:wearing|wears)\s+([^.!;]{3,80})",
+        r"always\s+(?:wearing|wears)\s+([^.!;]{3,60})",
         blob,
         flags=re.I,
     ):
         chunk = re.sub(r"\s+", " ", m.group(1)).strip(" .,;")
-        # Split "hat and red collar" lightly
         for part in re.split(r"\s+and\s+|,\s*", chunk):
             p = part.strip()
-            if len(p) >= 3:
+            if len(p) >= 3 and _looks_like_wardrobe_phrase(p):
                 found.append(p[:80])
     for m in re.finditer(
-        r"signature\s+([^.!;]{3,60})",
+        r"signature\s+([^.!;]{3,48})",
         blob,
         flags=re.I,
     ):
         p = re.sub(r"\s+", " ", m.group(1)).strip(" .,;")
-        if p:
+        if p and _looks_like_wardrobe_phrase(p):
             found.append(p[:80])
-    return _coerce_string_list(found)
+    return [x for x in _coerce_string_list(found) if _looks_like_wardrobe_phrase(x)]
 
 
 def _norm_location_type(v: Any) -> str:
@@ -221,6 +239,20 @@ def normalize(data: Dict[str, Any]) -> Dict[str, Any]:
         gpv["total_runtime_target_seconds"] = scene_sum if scene_sum > 0 else 900
     gpv.setdefault("character_seed_tokens", {})
     gpv.setdefault("location_seed_tokens", {})
+    # Render style: ensure a short film-wide lock when treatment implies non-live-action
+    treat = str(gpv.get("directorial_treatment") or "")
+    rsl = str(gpv.get("render_style_lock") or gpv.get("style_lock") or "").strip()
+    if not rsl and re.search(
+        r"styliz|animated|picture-book|cartoon|pixar|dreamworks|illustration|2d\b|3d\b",
+        treat,
+        re.I,
+    ):
+        gpv["render_style_lock"] = (
+            "STYLE LOCK: stylized animated children's picture-book look for ALL on-screen "
+            "cast (animals and humans share the same medium) -- not photoreal, not live-action"
+        )
+    elif rsl:
+        gpv["render_style_lock"] = rsl
 
     # Clean character seeds: drop null optional fields already cleaned; ensure required
     for key, seed in list((gpv.get("character_seed_tokens") or {}).items()):

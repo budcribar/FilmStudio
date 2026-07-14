@@ -54,6 +54,21 @@ Each seed REQUIRED fields:
 - voice_profile (1–3 sentences: age/sex/pitch/pace/accent/energy + “same voice every scene”)
 - voice_label
 
+**RENDER STYLE (REQUIRED — film-wide, prevents mixed photoreal/cartoon casts):**
+- Set `global_production_variables.directorial_treatment` **and** a short
+  **`render_style_lock`** string that names the **render medium for ALL on-screen cast**.
+- Examples of good `render_style_lock` (pick one medium; stay consistent):
+  - “STYLE LOCK: stylized 3D animated children’s picture-book CG — same look for animals and
+    humans; NOT photoreal, NOT live-action photography.”
+  - “STYLE LOCK: 2D watercolor children’s illustration look — flat paint, soft edges; not 3D, not photo.”
+  - “STYLE LOCK: live-action cinematic photography — real humans and real animals; not cartoon.”
+- **Cross-species rule:** if the hero is a stylized animal/illustration and humans appear,
+  humans **must** use the **same medium** (stylized CG / illustration / etc.). Never default
+  people to photoreal while animals stay cartoon (common failure when adults enter frame).
+- Put the same medium language in each on-screen human’s `description` + `visual_lock`
+  (e.g. “stylized 3D animated adult, matching the dog’s CG look — not photoreal”).
+- Book plates that are **text-only pages** are not likeness refs; do not treat them as style.
+
 **visual_lock (REQUIRED for every on-screen character; omit only for pure off-screen narrator):**
 - 1–3 sentences of **filmable constants** Stage 2 injects into every shot of this character
   (same role as location `visual_lock`, but for people/animals).
@@ -61,6 +76,7 @@ Each seed REQUIRED fields:
   - “Always wears signature silly noodle-head hat; never bare-headed; black-and-white coat only.”
   - “Always soft blue cardigan + cream pants; shoulder-length brown hair; never teen redesign.”
   - “Always red collar with tag shape; never bare neck.”
+- **Include render medium** when the film is not plain live-action (e.g. “stylized 3D animated…”).
 - Prefer props visible in AVAILABLE_BOOK_IMAGES / the book illustrations (hat, glasses, scarf,
   distinctive collar, pajamas only when the book **draws** a real garment, etc.).
 - Do **not** invent a hat/prop the book never shows; if the book always shows it, you **must** lock it.
@@ -224,6 +240,9 @@ For each scene:
   for this scene — any free-text phrases; Stage 2 restates them every clip)
 - wardrobe_notes (optional human prose: incremental vs prior scene)
 - On beats that change dress: wardrobe_put_on / wardrobe_remove string[] + visual_event
+- Optional beat `characters_on_screen[]` when only some of the scene cast appear
+  (dream inserts, single-hero climbs — do not force full scene cast onto every beat)
+- Optional beat `environment_mode`: present | dream | flashback | fantasy
 - spoiler_constraints[] (name tags, plot reveals, etc. — see SPOILERS section)
 - music_intent (style + mood_arc; not a full timed song_structure unless easy)
 - story_beats[] ordered
@@ -315,10 +334,11 @@ global_production_variables MUST always include:
 - target_aspect_ratio (string, e.g. "16:9")
 - resolution (string, e.g. "720p")
 - frame_rate (integer 24 — NOT the string "24fps")
-- directorial_treatment (string)
+- directorial_treatment (string) — **include render medium** (see RENDER STYLE)
 - total_runtime_target_seconds (integer = TOTAL_RUNTIME_MINUTES × 60)
 - character_seed_tokens (object)
 - location_seed_tokens (object)
+- **render_style_lock** (string, strongly recommended) — short STYLE LOCK for Stage 2
 
 Per scene:
 - story_day: STRING only (e.g. "Day 1", "Night 3", "Flashback summer ~age 12").

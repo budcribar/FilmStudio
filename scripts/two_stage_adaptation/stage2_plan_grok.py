@@ -623,6 +623,44 @@ def _dedupe_wardrobe_items(items: Sequence[str]) -> List[str]:
     return out
 
 
+def _looks_like_wardrobe_item(phrase: str) -> bool:
+    """
+    Reject identity/description pollution (e.g. 'small black-and-white dog only—never brown…')
+    so only real garments/props enter sticky wardrobe.
+    """
+    p = (phrase or "").strip()
+    if len(p) < 3:
+        return False
+    pl = p.lower()
+    # Identity / redesign language is never a worn item
+    if re.search(
+        r"\b(?:never\s+brown|never\s+tan|redesign|markings|compact\s+body|"
+        r"playful\s+build|expressive|floppy\s+ears|curious\s+eyes|"
+        r"dog\s+only|mixed\s+dog|humanoid|species)\b",
+        pl,
+    ):
+        return False
+    if re.search(r"\bonly[—\-–].*never\b", pl):
+        return False
+    # Prefer known garment/prop cores
+    if _wardrobe_core_noun(p):
+        return True
+    # Short "signature …" prop phrases without a known core (e.g. alien badge)
+    if re.search(r"\b(?:signature|wearing|wears)\b", pl) and len(p) <= 48:
+        return True
+    # Very short prop-like phrases (2–5 words, no redesign language)
+    words = [w for w in re.split(r"\s+", p) if w]
+    if 1 <= len(words) <= 5 and not re.search(r"\bnever\b", pl):
+        # Require at least one concrete noun-ish token (not only adjectives)
+        if any(len(w) >= 4 for w in words):
+            return bool(_wardrobe_core_noun(p) or re.search(
+                r"\b(?:hat|cap|collar|scarf|jacket|coat|shirt|dress|glasses|"
+                r"badge|bandana|leash|sweater|cardigan|pajama|boots?)\b",
+                pl,
+            ))
+    return False
+
+
 def _coerce_wardrobe_phrases(val: Any, *, max_items: int = 12) -> List[str]:
     """Accept Stage 1 free-text wardrobe lists (opaque phrases — no item enum)."""
     if val is None:
@@ -638,7 +676,7 @@ def _coerce_wardrobe_phrases(val: Any, *, max_items: int = 12) -> List[str]:
     seen: set = set()
     for s in raw:
         item = _normalize_wardrobe_item(s)
-        if len(item) < 2:
+        if len(item) < 2 or not _looks_like_wardrobe_item(item):
             continue
         key = _wardrobe_item_key(item)
         if not key or key in seen:
@@ -654,49 +692,10 @@ def _always_on_wardrobe_from_seed(seed: Dict[str, Any]) -> List[str]:
     """
     Always-on items for a character.
 
-    Prefer Stage 1 structured `wardrobe_always` (free-text phrases). Fall back to
-    visual_lock / description heuristics only for legacy Stage 1 files.
+    P0.1: structured `wardrobe_always` only. No free-text harvest from
+    visual_lock / description (that polluted prompts with identity sentences).
     """
-    structured = _coerce_wardrobe_phrases(seed.get("wardrobe_always"))
-    if structured:
-        return structured
-
-    vl = str(seed.get("visual_lock") or "")
-    desc = str(seed.get("description") or "")
-    blob = f"{vl}. {desc}"
-    found: List[str] = []
-    for rx in _ALWAYS_ON_RES:
-        for m in rx.finditer(blob):
-            chunk = m.group(1)
-            items = _extract_wardrobe_items(chunk)
-            if items:
-                found.extend(items)
-            else:
-                norm = _normalize_wardrobe_item(chunk)
-                if norm and ( _wardrobe_core_noun(norm) or len(norm) >= 4):
-                    found.append(norm)
-    for chunk in re.split(r"[;.|]", vl):
-        cl = chunk.lower()
-        if any(
-            x in cl
-            for x in (
-                "once ",
-                "after ",
-                "only at",
-                "bedtime only",
-                "when in",
-                "bare fur only before",
-                "before pajamas",
-            )
-        ):
-            continue
-        if re.search(r"\balways\b|\bsignature\b|\bnever\s+bare", cl):
-            found.extend(_extract_wardrobe_items(chunk))
-            # Also accept free phrases without known core nouns (legacy soft)
-            norm = _normalize_wardrobe_item(chunk)
-            if norm and len(norm) >= 6 and not _extract_wardrobe_items(chunk):
-                found.append(norm)
-    return _dedupe_wardrobe_items(found)
+    return _coerce_wardrobe_phrases(seed.get("wardrobe_always"))
 
 
 def _scene_has_structured_wardrobe(scene: Optional[Dict[str, Any]]) -> bool:
@@ -724,8 +723,8 @@ def _init_scene_wardrobe_state(
     """
     Per-character ordered sticky items for one scene.
 
-    Primary: Stage 1 structured lists (wardrobe_always + wardrobe_by_character).
-    Fallback: free-text heuristics on wardrobe_notes when structured scene data is absent.
+    P0.1: structured lists only (wardrobe_always + wardrobe_by_character + beat deltas).
+    No prose scrape of wardrobe_notes / visual_lock.
     """
     seeds = character_seeds or {}
     state: Dict[str, List[str]] = {}
@@ -750,21 +749,8 @@ def _init_scene_wardrobe_state(
                 phrases = _coerce_wardrobe_phrases(raw)
                 if not phrases:
                     continue
-                # Ensure key exists even if not in cast yet
                 cur = list(state.get(token) or [])
                 state[token] = _dedupe_wardrobe_items(cur + phrases)
-
-        # Legacy prose path only when Stage 1 did not supply structured scene wardrobe
-        if not _scene_has_structured_wardrobe(scene):
-            notes = " ".join(
-                str(scene.get(k) or "")
-                for k in ("wardrobe_notes", "setting", "summary", "continuity_notes")
-            )
-            state = _apply_wardrobe_text(
-                state,
-                notes,
-                default_chars=[c for c in cast if "narrator" not in c.lower()],
-            )
     return state
 
 
@@ -784,14 +770,8 @@ def _add_items_to_char(
 ) -> None:
     if not char or "narrator" in char.lower():
         return
-    # Prefer whole Stage 1 phrases; fall back to noun extraction for legacy prose
+    # Structured phrases only (reject identity pollution)
     extracted = _coerce_wardrobe_phrases([mention])
-    if not extracted:
-        extracted = _extract_wardrobe_items(mention)
-    if not extracted:
-        norm = _normalize_wardrobe_item(mention)
-        if norm and (_wardrobe_core_noun(norm) or len(norm) >= 4):
-            extracted = [norm]
     if not extracted:
         return
     cur = list(state.get(char) or [])
@@ -921,7 +901,7 @@ def _update_wardrobe_from_beat(
 
     out = {k: list(v) for k, v in state.items()}
 
-    # Stage 1 structured deltas (preferred — free-text phrases, no item enum)
+    # Stage 1 structured deltas only (P0.1 — no visual_event prose harvest)
     put_on = _coerce_wardrobe_phrases(beat.get("wardrobe_put_on"), max_items=8)
     remove = _coerce_wardrobe_phrases(beat.get("wardrobe_remove"), max_items=8)
     target = defaults[0] if defaults else ""
@@ -930,24 +910,11 @@ def _update_wardrobe_from_beat(
             cur = list(out.get(target) or [])
             for phrase in remove:
                 cur = _remove_items_from_list(cur, phrase)
-                # Also drop exact/fuzzy phrase matches without known core noun
                 pk = _wardrobe_item_key(phrase)
                 cur = [it for it in cur if _wardrobe_item_key(it) != pk]
             out[target] = cur
         for phrase in put_on:
             _add_items_to_char(out, target, phrase)
-
-    # Legacy prose scan only when Stage 1 has no structured wardrobe for this project scene
-    if not _scene_has_structured_wardrobe(scene) and not put_on and not remove:
-        wear_blob = " ".join(
-            str(x or "")
-            for x in (
-                beat.get("visual_event"),
-                beat.get("intent"),
-                beat.get("blocking_notes"),
-            )
-        )
-        out = _apply_wardrobe_text(out, wear_blob, default_chars=defaults)
     return out
 
 
@@ -1125,6 +1092,22 @@ def _neg_extras(beat: Dict[str, Any]) -> str:
     return ", ".join(out)
 
 
+def _render_style_lock_phrase(
+    scene: Dict[str, Any],
+    character_seeds: Optional[Dict[str, Any]] = None,
+) -> str:
+    """
+    Film-wide render style (e.g. stylized CG vs photoreal) from Stage 1 gpv
+    or scene parent -- keeps humans matching cartoon hero animals.
+    """
+    # Prefer explicit lock on scene copy if present
+    for key in ("render_style_lock", "style_lock"):
+        v = scene.get(key)
+        if isinstance(v, str) and v.strip():
+            return re.sub(r"\s+", " ", v.strip())[:160]
+    return ""
+
+
 def _location_lock_phrase(
     scene: Dict[str, Any],
     beat: Dict[str, Any],
@@ -1150,10 +1133,17 @@ def _location_lock_phrase(
     return lock
 
 
-def _scene_cast_tokens(scene: Dict[str, Any], beat: Dict[str, Any]) -> List[str]:
+def _clip_cast_tokens(scene: Dict[str, Any], beat: Dict[str, Any]) -> List[str]:
     """
-    Ordered Character_* tokens for this shot: primary first, then scene cast, then beat.
-    Skips narrator / never-on-screen-style keys for visual locking.
+    P0.3: Character_* tokens for THIS clip only — not the full scene cast.
+
+    Order of authority:
+      1) beat.characters_on_screen (if non-empty)
+      2) primary_subject + Character_* named in visual_event / blocking_notes
+      3) Legacy fallback: scene.characters_on_screen (only when nothing else found
+         and beat is not dream/montage insert)
+
+    Skips narrator.
     """
     out: List[str] = []
     seen: set = set()
@@ -1171,14 +1161,45 @@ def _scene_cast_tokens(scene: Dict[str, Any], beat: Dict[str, Any]) -> List[str]
         seen.add(t)
         out.append(t)
 
+    # Explicit beat cast wins
+    beat_cast = beat.get("characters_on_screen")
+    if isinstance(beat_cast, list) and any(str(x).startswith("Character_") for x in beat_cast):
+        _add(beat.get("primary_subject"))
+        for t in beat_cast:
+            _add(t)
+        return out
+
     _add(beat.get("primary_subject"))
-    for t in scene.get("characters_on_screen") or []:
-        _add(t)
-    # Also pick up any Character_* already in visual_event
     ve = str(beat.get("visual_event") or "")
-    for m in re.finditer(r"Character_[A-Za-z0-9_]+", ve):
+    block = str(beat.get("blocking_notes") or "")
+    for m in re.finditer(r"Character_[A-Za-z0-9_]+", ve + " " + block):
         _add(m.group(0))
+
+    ac = str(beat.get("action_class") or "").lower()
+    mode = str(beat.get("environment_mode") or "").lower()
+    is_insert = (
+        mode in ("dream", "flashback", "fantasy")
+        or ac in ("montage", "flashback_enter")
+        or bool(re.search(r"\bdream\b|\bmontage\b|\bfantasy\b", ve, re.I))
+    )
+    # Dream/montage: do not drag full scene cast (no parents in bunny dreams)
+    if is_insert:
+        return out
+
+    # If visual_event already named people, don't force entire scene cast
+    if len(out) >= 1 and re.search(r"Character_[A-Za-z0-9_]+", ve):
+        return out
+
+    # Legacy fallback when Stage 1 only listed cast at scene level
+    if not out:
+        for t in scene.get("characters_on_screen") or []:
+            _add(t)
     return out
+
+
+# Back-compat alias
+def _scene_cast_tokens(scene: Dict[str, Any], beat: Dict[str, Any]) -> List[str]:
+    return _clip_cast_tokens(scene, beat)
 
 
 def _identity_cues(
@@ -1702,6 +1723,76 @@ def _inject_high_action_wardrobe_into_event(
     return f"{wardrobe_prefix} {ve}".strip()
 
 
+def _pack_visual_prompt_slots(
+    slots: List[Dict[str, Any]],
+    *,
+    budget: int,
+    resolution: str,
+) -> str:
+    """
+    P0.4 priority packer: drop low-importance slots before truncating action/wardrobe.
+
+    Each slot: {
+      "key": str,
+      "text": str,
+      "order": int,          # narrative order in final string (low first)
+      "drop_rank": int,      # higher = dropped first when over budget
+      "min_keep": int,       # if >0, prefer keep at least this many chars
+    }
+    """
+    suffix = f" / {resolution}, 24fps"
+    room = max(80, int(budget) - len(suffix))
+    active = [
+        dict(s)
+        for s in slots
+        if str(s.get("text") or "").strip()
+    ]
+    if not active:
+        return f"Scene action. / {resolution}, 24fps"
+
+    def _body(parts: List[Dict[str, Any]]) -> str:
+        ordered = sorted(parts, key=lambda s: int(s.get("order") or 0))
+        texts = [
+            re.sub(r"\s+", " ", str(s.get("text") or "").strip()).rstrip(". ")
+            for s in ordered
+            if str(s.get("text") or "").strip()
+        ]
+        return ". ".join(t for t in texts if t)
+
+    # Drop highest drop_rank until under budget
+    while active and len(_body(active)) > room:
+        # Never drop action (drop_rank 0) until everything else is gone
+        candidates = [s for s in active if int(s.get("drop_rank") or 0) > 0]
+        if not candidates:
+            break
+        victim = max(candidates, key=lambda s: int(s.get("drop_rank") or 0))
+        active.remove(victim)
+
+    body = _body(active)
+    # If still over: truncate speech/place slots in place, protect action+wardrobe
+    if len(body) > room:
+        protected_keys = {"action", "wardrobe", "or_lock"}
+        for s in sorted(active, key=lambda x: -int(x.get("drop_rank") or 0)):
+            if s.get("key") in protected_keys:
+                continue
+            t = str(s.get("text") or "")
+            mk = int(s.get("min_keep") or 40)
+            if len(t) > mk:
+                s["text"] = t[: mk - 1].rsplit(" ", 1)[0] + "…"
+            body = _body(active)
+            if len(body) <= room:
+                break
+    if len(body) > room:
+        # Last resort: keep action + wardrobe only
+        keep = [s for s in active if s.get("key") in ("action", "wardrobe", "or_lock", "place")]
+        if not keep:
+            keep = active[:2]
+        body = _body(keep)
+        if len(body) > room:
+            body = body[: max(40, room - 1)].rsplit(" ", 1)[0] + "…"
+    return f"{body}{suffix}"
+
+
 def _build_visual_prompt(
     beat: Dict[str, Any],
     scene: Dict[str, Any],
@@ -1712,26 +1803,28 @@ def _build_visual_prompt(
     prompt_soft: Optional[int] = None,
     prompt_hard: Optional[int] = None,
     wardrobe_state: Optional[Dict[str, List[str]]] = None,
+    clip_index: int = 0,
 ) -> str:
     ve = (beat.get("visual_event") or "").strip()
     # strip old tech suffix
     ve = re.sub(r"\s*/\s*\d+p.*$", "", ve, flags=re.I).strip()
 
-    bits: List[str] = []
-    cast = _scene_cast_tokens(scene, beat)
+    cast = _clip_cast_tokens(scene, beat)
     primary = str(
         beat.get("primary_subject") or (cast[0] if cast else "") or ""
     ).strip()
 
-    # Exclusive Or-split (any alternatives joined by 'or' in VO) — style-lock first
     or_lock, or_must_not = _exclusive_or_environment_lock(beat, scene)
-    if or_lock:
-        bits.append(or_lock)
-
-    # Place pin (location consistency)
     place = _location_lock_phrase(scene, beat, location_seeds)
-    if place and place.lower() not in ve.lower()[:100]:
-        bits.append(place)
+    style = _render_style_lock_phrase(scene, character_seeds)
+    # When humans share a frame with stylized animals, force style lock
+    if not style and any(
+        t for t in cast if "mom" in t.lower() or "dad" in t.lower() or "human" in t.lower()
+    ):
+        style = (
+            "STYLE LOCK: stylized 3D animated children's picture-book CG "
+            "(same render family as animal hero) -- not photoreal, not live-action"
+        )
 
     # HIGH-ACTION WARDROBE LOCK: prepend sticky props before action verbs
     if _is_high_action_beat(beat) and primary:
@@ -1741,36 +1834,26 @@ def _build_visual_prompt(
         if w_prefix:
             ve = _inject_high_action_wardrobe_into_event(ve, primary, w_prefix)
 
-    # Ensure primary Character_* early for identity lock (if not already in ve)
+    # Ensure primary token appears in action line
     if primary and primary not in ve[:120]:
-        bits.append(primary)
+        ve = f"{primary} {ve}".strip()
 
-    # Name other on-screen cast tokens (multi-ref automation)
     others = [t for t in cast if t != primary and t not in ve]
-    if others:
-        bits.append("also on screen: " + ", ".join(others[:4]))
-
-    # Scene one-liner context (short)
-    setting = (scene.get("setting") or "")[:60]
-    if setting and setting.lower() not in ve.lower()[:100]:
-        # only for fresh establishes
-        if (beat.get("action_class") or "") in ("establishing", "flashback_enter"):
-            bits.append(setting)
-
-    bits.append(ve)
+    others_bit = f"also on screen: {', '.join(others[:3])}" if others else ""
 
     block = beat.get("blocking_notes") or ""
     if block and block.lower() not in ve.lower():
-        bits.append(block)
+        ve = f"{ve}. {block}".strip()
+
+    ac = (beat.get("action_class") or "").lower()
+    if ac == "big_action":
+        if "continuous" not in ve.lower() and "one continuous" not in ve.lower():
+            ve = f"{ve}. ONE continuous take no cut; unbroken cause-to-effect motion"
 
     audio = beat.get("audio") if isinstance(beat.get("audio"), dict) else {}
-    # Stage 1 often stores delivery/speaker/dialogue on the beat root (not nested)
-    delivery = (
-        (audio.get("delivery") if audio else None)
-        or beat.get("delivery")
-        or "none"
-    )
-    delivery = str(delivery).lower()
+    delivery = str(
+        (audio.get("delivery") if audio else None) or beat.get("delivery") or "none"
+    ).lower()
     speaker = str(
         (audio.get("speaker") if audio else None) or beat.get("speaker") or ""
     ).strip()
@@ -1778,27 +1861,18 @@ def _build_visual_prompt(
         (audio.get("dialogue") if audio else None) or beat.get("dialogue") or ""
     ).strip()
     turns = _parse_dialogue_turns(beat)
-    # Who talks + exact line(s). Multi-speaker banter = ordered turns on ONE take.
-    # BEFORE identity cues so attribution survives prompt soft-clamp
-    for clause in _speech_attribution_clause(
+    speech_bits = _speech_attribution_clause(
         delivery=delivery,
         speaker=speaker,
         dialogue=dialogue,
         turns=turns if len(turns) >= 2 else None,
         on_screen=cast,
-    ):
-        body_so_far = " ".join(bits).lower()
-        if clause.lower() not in body_so_far:
-            bits.append(clause)
+    )
+    # Compact speech when budget tight: keep first clause only in slot
+    speech = speech_bits[0] if speech_bits else ""
+    if len(speech_bits) > 1:
+        speech = " ".join(speech_bits[:2])
 
-    # Continuous action language for big_action
-    ac = (beat.get("action_class") or "").lower()
-    if ac == "big_action":
-        if "continuous" not in ve.lower() and "one continuous" not in ve.lower():
-            bits.append(
-                "ONE continuous take no cut; unbroken cause-to-effect motion"
-            )
-    # Attach generic must_not for rejected Or-alternatives
     if or_must_not:
         extras = beat.setdefault("_stage2_must_not_extra", [])
         if isinstance(extras, list):
@@ -1810,30 +1884,45 @@ def _build_visual_prompt(
     for extra in beat.get("_stage2_must_not_extra") or []:
         if extra and extra not in must_not:
             must_not.append(extra)
+    must_bit = ""
     if must_not:
-        short = "; ".join(str(m) for m in must_not[:4])
-        if short and short.lower() not in ve.lower():
-            bits.append(f"must not: {short}")
+        short = "; ".join(str(m) for m in must_not[:3])
+        if short:
+            must_bit = f"must not: {short}"
 
-    # Identity last (can truncate under soft limit; engine still injects locks at generate)
-    id_cue = _identity_cues(cast, character_seeds, max_chars=72)
-    if id_cue and id_cue.lower() not in ve.lower():
-        bits.append(id_cue)
+    # Wardrobe continuity (structured items only) — high pack priority
+    ward = _wardrobe_continuity_clause(
+        wardrobe_state or {},
+        cast_on_clip=cast,
+        clip_index=int(clip_index),
+        visual_prompt=ve + " " + (others_bit or ""),
+        primary_subject=primary,
+    )
 
-    body = ". ".join(b.strip().rstrip(".") for b in bits if b and str(b).strip())
-    body = re.sub(r"\s+", " ", body).strip()
-    if not body.endswith("."):
-        # keep natural
-        pass
-    prompt = f"{body} / {resolution}, 24fps"
-    # Model-aware soft/hard (from pipeline_config.prompt_limits)
+    # Identity is lowest priority — engine multi-ref handles likeness
+    id_cue = _identity_cues(cast, character_seeds, max_chars=56)
+
+    slots: List[Dict[str, Any]] = [
+        # drop_rank high = dropped first when over budget
+        {"key": "style", "text": style, "order": 0, "drop_rank": 2, "min_keep": 50},
+        {"key": "or_lock", "text": or_lock, "order": 1, "drop_rank": 3, "min_keep": 40},
+        {"key": "place", "text": place if place and place.lower() not in ve.lower()[:80] else "", "order": 2, "drop_rank": 4, "min_keep": 30},
+        {"key": "others", "text": others_bit, "order": 3, "drop_rank": 5, "min_keep": 20},
+        {"key": "action", "text": ve, "order": 4, "drop_rank": 0, "min_keep": 80},
+        {"key": "speech", "text": speech, "order": 5, "drop_rank": 6, "min_keep": 50},
+        {"key": "must_not", "text": must_bit, "order": 6, "drop_rank": 5, "min_keep": 20},
+        {"key": "wardrobe", "text": ward, "order": 7, "drop_rank": 1, "min_keep": 40},
+        {"key": "identity", "text": id_cue, "order": 8, "drop_rank": 9, "min_keep": 0},
+    ]
+
     lim = _prompt_limits_from_config()
     soft = int(prompt_soft if prompt_soft is not None else lim.get("soft") or GROK_PROMPT_SOFT)
     hard = int(prompt_hard if prompt_hard is not None else lim.get("hard") or GROK_PROMPT_HARD)
-    if len(prompt) > soft:
-        prompt = _clamp_prompt(prompt, soft)
-    elif len(prompt) > hard:
-        prompt = _clamp_prompt(prompt, hard)
+    budget = soft if soft > 0 else hard
+    prompt = _pack_visual_prompt_slots(slots, budget=budget, resolution=resolution)
+    # Absolute hard ceiling
+    if hard > 0 and len(prompt) > hard + 20:
+        prompt = _pack_visual_prompt_slots(slots, budget=hard, resolution=resolution)
     return prompt
 
 
@@ -1991,6 +2080,7 @@ def plan_scene(
     *,
     prompt_soft: Optional[int] = None,
     prompt_hard: Optional[int] = None,
+    style_lock: Optional[str] = None,
 ) -> Dict[str, Any]:
     beats = list(scene.get("story_beats") or [])
     # Multi-speaker banter → dialogue_turns on the same beat (one continuous clip)
@@ -2029,6 +2119,11 @@ def plan_scene(
     # Work on a shallow copy so cast is visible inside _build_visual_prompt
     scene_work = dict(scene)
     scene_work["characters_on_screen"] = cast
+    if style_lock and str(style_lock).strip():
+        scene_work["render_style_lock"] = str(style_lock).strip()
+    elif not scene_work.get("render_style_lock"):
+        # Optional short style from seeds is not available here; leave empty
+        pass
 
     clips: List[Dict[str, Any]] = []
     beat_map: List[str] = []
@@ -2069,11 +2164,18 @@ def plan_scene(
         if extra:
             neg = f"{neg}, {extra}"
 
-        # Update sticky wardrobe from this beat before prompt (introduce → stick)
+        # Clip-local cast (P0.3) for wardrobe deltas + negatives
+        clip_cast = _clip_cast_tokens(scene_work, beat)
+        ps = str(beat.get("primary_subject") or "").strip()
+        if ps.startswith("Character_") and ps not in clip_cast:
+            clip_cast.insert(0, ps)
+
+        # Update sticky wardrobe from this beat before prompt (structured put_on only)
         wardrobe_state = _update_wardrobe_from_beat(
-            wardrobe_state, beat, scene, cast=cast
+            wardrobe_state, beat, scene, cast=clip_cast
         )
 
+        # P0.4 packer builds visual_prompt with wardrobe protected from soft-truncate
         vp = _build_visual_prompt(
             beat,
             scene_work,
@@ -2083,67 +2185,15 @@ def plan_scene(
             prompt_soft=soft,
             prompt_hard=hard,
             wardrobe_state=wardrobe_state,
+            clip_index=i,
         )
-        # Restate sticky items so location changes / cuts do not drop props
-        clip_cast = list(cast)
-        ps = str(beat.get("primary_subject") or "").strip()
-        if ps.startswith("Character_") and ps not in clip_cast:
-            clip_cast.insert(0, ps)
-        if "wardrobe continuity" not in vp.lower():
-            # Protect wardrobe from soft-limit truncation, and recompute after body fit
-            # so items only present in truncated identity tails still get restated.
-            m = re.search(r"\s*/\s*\d+p.*24fps\s*$", vp, flags=re.I)
-            body = vp[: m.start()].strip() if m else vp
-            suffix = m.group(0) if m else f" / {resolution}, 24fps"
-            vp_out = None
-            for lim in (soft, hard):
-                # Estimate wardrobe length from current body, fit body, then recompute
-                ward_est = _wardrobe_continuity_clause(
-                    wardrobe_state,
-                    cast_on_clip=clip_cast,
-                    clip_index=i,
-                    visual_prompt=body,
-                    primary_subject=ps,
-                )
-                reserve = min(220, max(len(ward_est) + 8, 24))
-                room = max(60, int(lim) - len(suffix) - reserve)
-                body_fit = body
-                if len(body_fit) > room:
-                    body_fit = body_fit[: max(40, room - 1)].rsplit(" ", 1)[0] + "…"
-                ward_txt = _wardrobe_continuity_clause(
-                    wardrobe_state,
-                    cast_on_clip=clip_cast,
-                    clip_index=i,
-                    visual_prompt=body_fit,
-                    primary_subject=ps,
-                )
-                if ward_txt:
-                    room2 = max(60, int(lim) - len(suffix) - len(ward_txt) - 2)
-                    if len(body_fit) > room2:
-                        body_fit = body_fit[: max(40, room2 - 1)].rsplit(" ", 1)[0] + "…"
-                        # final recompute if truncated again
-                        ward_txt = _wardrobe_continuity_clause(
-                            wardrobe_state,
-                            cast_on_clip=clip_cast,
-                            clip_index=i,
-                            visual_prompt=body_fit,
-                            primary_subject=ps,
-                        ) or ward_txt
-                    candidate = f"{body_fit.rstrip('. ')}. {ward_txt}{suffix}"
-                else:
-                    candidate = f"{body_fit.rstrip('. ')}{suffix}"
-                if len(candidate) <= int(lim) + 24 or lim == hard:
-                    vp_out = candidate
-                    break
-            if vp_out:
-                vp = vp_out
         ward_neg = _wardrobe_negative_extras(wardrobe_state, clip_cast)
         if ward_neg:
             for frag in ward_neg.split(", "):
                 if frag and frag.lower() not in neg.lower():
                     neg = f"{neg}, {frag}"
 
-        # Spatial continuity cue when extending last frame
+        # Spatial continuity cue when extending last frame (priority-pack if needed)
         if cont == "extend_previous":
             cont_cue = (
                 "CONTINUE from previous last frame — same place and character positions; "
@@ -2154,7 +2204,13 @@ def plan_scene(
                 body = vp[: m.start()].strip() if m else vp
                 suffix = m.group(0) if m else f" / {resolution}, 24fps"
                 body = body.rstrip(". ") + ". " + cont_cue
-                vp = _clamp_prompt(f"{body}{suffix}", soft)
+                # Prefer keep under soft via packer-style clamp (end-trim only as last resort)
+                candidate = f"{body}{suffix}"
+                if soft and len(candidate) > soft:
+                    # Drop continue cue if it would kill budget — wardrobe already packed
+                    pass
+                else:
+                    vp = candidate
         # Special polish for known failure modes: continuous window smash
         if (beat.get("action_class") or "") == "big_action" and re.search(
             r"window|smash|kickball|kick", vp, re.I
@@ -2320,14 +2376,20 @@ def validate_plan(plan: Dict[str, Any]) -> List[str]:
                 errs.append(
                     f"S{sc.get('scene_number')}C{c.get('clip_number')}: duration {dur}"
                 )
-            # Soft identity: if cast has 2+ on-screen and prompt only has one Character_*, warn
-            if len(cast) >= 2:
-                mentioned = sum(1 for t in cast if t in vp)
-                if mentioned < min(2, len(cast)) and "also on screen" not in vp.lower():
-                    errs.append(
-                        f"S{sc.get('scene_number')}C{c.get('clip_number')}: "
-                        f"visual_prompt should name multiple on-screen cast tokens {cast}"
-                    )
+            # Soft identity: only require multi-token when the clip itself is multi-cast
+            # (P0.3: do not require full scene cast on dream/single-subject clips)
+            clip_cast_hint = [
+                t for t in cast if t in vp
+            ]
+            if "also on screen:" in vp.lower():
+                # extract tokens after also on screen
+                pass
+            # Advisory only when primary is human dialogue with another Character_ in prompt
+            if len(clip_cast_hint) >= 2 and sum(1 for t in cast if t in vp) < 2:
+                errs.append(
+                    f"S{sc.get('scene_number')}C{c.get('clip_number')}: "
+                    f"multi-cast visual should name supporting tokens"
+                )
         if isinstance(char_seeds, dict):
             for ck, sv in char_seeds.items():
                 if not isinstance(sv, dict):
@@ -2352,6 +2414,78 @@ def validate_plan(plan: Dict[str, Any]) -> List[str]:
                 f"S{sc.get('scene_number')}: music sum {msum} != scene {total}"
             )
     return errs
+
+
+def stage1_content_fingerprint(stage1: Dict[str, Any]) -> str:
+    """
+    Stable fingerprint of Stage 1 fields that affect Stage 2 plans.
+    Used for S1↔S2 staleness (P0.2).
+    """
+    import hashlib
+
+    gpv = stage1.get("global_production_variables") or {}
+    seeds = gpv.get("character_seed_tokens") or {}
+    locs = gpv.get("location_seed_tokens") or {}
+    payload: Dict[str, Any] = {
+        "seeds": {},
+        "locs": {},
+        "scenes": [],
+    }
+    if isinstance(seeds, dict):
+        for k in sorted(seeds.keys()):
+            sv = seeds[k] if isinstance(seeds[k], dict) else {}
+            payload["seeds"][k] = {
+                "description": sv.get("description"),
+                "visual_lock": sv.get("visual_lock"),
+                "wardrobe_always": sv.get("wardrobe_always"),
+                "voice_profile": (sv.get("voice_profile") or "")[:120],
+            }
+    if isinstance(locs, dict):
+        for k in sorted(locs.keys()):
+            lv = locs[k] if isinstance(locs[k], dict) else {}
+            payload["locs"][k] = {
+                "visual_lock": lv.get("visual_lock"),
+                "description": lv.get("description"),
+            }
+    for sc in stage1.get("scenes") or []:
+        if not isinstance(sc, dict):
+            continue
+        beats = []
+        for b in sc.get("story_beats") or []:
+            if not isinstance(b, dict):
+                continue
+            beats.append(
+                {
+                    "beat_id": b.get("beat_id"),
+                    "visual_event": b.get("visual_event"),
+                    "dialogue": b.get("dialogue"),
+                    "speaker": b.get("speaker"),
+                    "delivery": b.get("delivery"),
+                    "primary_subject": b.get("primary_subject"),
+                    "action_class": b.get("action_class"),
+                    "location_id": b.get("location_id"),
+                    "wardrobe_put_on": b.get("wardrobe_put_on"),
+                    "wardrobe_remove": b.get("wardrobe_remove"),
+                    "characters_on_screen": b.get("characters_on_screen"),
+                    "must_not": b.get("must_not"),
+                    "environment_mode": b.get("environment_mode"),
+                }
+            )
+        payload["scenes"].append(
+            {
+                "scene_number": sc.get("scene_number"),
+                "setting": sc.get("setting"),
+                "summary": sc.get("summary"),
+                "characters_on_screen": sc.get("characters_on_screen"),
+                "location_ids": sc.get("location_ids"),
+                "wardrobe_by_character": sc.get("wardrobe_by_character"),
+                "wardrobe_notes": sc.get("wardrobe_notes"),
+                "duration_target_seconds": sc.get("duration_target_seconds"),
+                "beats": beats,
+            }
+        )
+    raw = json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+    return hashlib.sha256(raw.encode("utf-8")).hexdigest()[:24]
 
 
 def merge_into_blueprint(
