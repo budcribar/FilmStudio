@@ -252,3 +252,16 @@ host/**/.vs/
 # Generated review frames
 /projects/Buster/assets/video/_review_1fps
 /projects/Buster/assets/video/_review_5fps
+/host/FilmStudio.Web/bin/**
+
+/host/FilmStudio.Web/obj/Debug/net10.0/apphost.exe
+/host/FilmStudio.Web/bin/Debug/net10.0/FilmStudio.Web.pdb
+/host/FilmStudio.Web/obj/Debug/net10.0/FilmStudio.Web.AssemblyInfo.cs
+/host/FilmStudio.Web/obj/Debug/net10.0/FilmStudio.Web.AssemblyInfoInputs.cache
+/host/FilmStudio.Web/obj/Debug/net10.0/FilmStudio.Web.csproj.FileListAbsolute.txt
+/host/FilmStudio.Web/obj/Debug/net10.0/FilmStudio.Web.dll
+/host/FilmStudio.Web/obj/Debug/net10.0/FilmStudio.Web.pdb
+/host/FilmStudio.Web/obj/Debug/net10.0/FilmStudio.Web.sourcelink.json
+/host/FilmStudio.Web/obj/Debug/net10.0/rjsmcshtml.dswa.cache.json
+/host/FilmStudio.Web/obj/Debug/net10.0/rjsmrazor.dswa.cache.json
+/host/FilmStudio.Web/obj/Debug/net10.0/rpswa.dswa.cache.json
