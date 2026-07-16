@@ -1,14 +1,17 @@
 @page "/"
 @rendermode InteractiveServer
-@inject FilmStudio.Web.Services.EngineApiClient Engine
+@implements IAsyncDisposable
+@inject EngineApiClient Engine
+@inject JobHubClient Hub
 @inject IConfiguration Config
+@using FilmStudio.Core.Models
 
 <PageTitle>Film Studio</PageTitle>
 
 <h1>Film Studio</h1>
 <p class="text-muted">
-    Blazor UI over the Python film engine. Generation runs in
-    <code>renderer/</code> via <code>host/python_engine_api.py</code> — this app does not reimplement Grok/ffmpeg.
+    Blazor UI → <strong>FilmStudio.Api</strong> (C# engine + SignalR).
+    Python <code>renderer/</code> remains available for full Stage 1/2 / Streamlit review.
 </p>
 
 @if (!string.IsNullOrEmpty(_error))
@@ -18,30 +21,29 @@
 
 @if (_healthOk == true)
 {
-    <div class="alert alert-success py-2">Engine API reachable at <code>@_baseUrl</code></div>
+    <div class="alert alert-success py-2">
+        API <code>@_baseUrl</code>
+        · SignalR @(_hubConnected ? "connected" : "disconnected")
+    </div>
 }
 else if (_healthOk == false)
 {
     <div class="alert alert-warning">
-        Engine API not reachable at <code>@_baseUrl</code>.
-        Start it first:
-        <pre class="mb-0 mt-2">cd repo root
-python host/python_engine_api.py</pre>
+        API not reachable at <code>@_baseUrl</code>. Start backend:
+        <pre class="mb-0 mt-2">cd host/FilmStudio.Api
+dotnet run</pre>
+        Set <code>XAI_API_KEY</code> in that shell for generation.
     </div>
 }
 
 <div class="row g-3">
-    <div class="col-md-6">
+    <div class="col-md-5">
         <div class="card">
             <div class="card-header">Projects</div>
             <div class="card-body">
                 @if (_projects is null)
                 {
                     <p class="text-muted">Loading…</p>
-                }
-                else if (_projects.Projects.Count == 0)
-                {
-                    <p>No projects found under <code>projects/</code>.</p>
                 }
                 else
                 {
@@ -53,17 +55,10 @@ python host/python_engine_api.py</pre>
                             <li class="list-group-item d-flex justify-content-between align-items-center">
                                 <span>
                                     <strong>@(p.Label ?? p.Title ?? id)</strong>
-                                    <small class="text-muted">(@id)</small>
-                                    @if (active)
-                                    {
-                                        <span class="badge bg-primary ms-1">active</span>
-                                    }
+                                    @if (active) { <span class="badge bg-primary ms-1">active</span> }
                                 </span>
-                                <button class="btn btn-sm btn-outline-secondary"
-                                        disabled="@active || _busy"
-                                        @onclick="() => ActivateAsync(id)">
-                                    Activate
-                                </button>
+                                <button class="btn btn-sm btn-outline-secondary" disabled="@(active || _busy)"
+                                        @onclick="() => ActivateAsync(id)">Activate</button>
                             </li>
                         }
                     </ul>
@@ -73,9 +68,9 @@ python host/python_engine_api.py</pre>
         </div>
     </div>
 
-    <div class="col-md-6">
+    <div class="col-md-7">
         <div class="card">
-            <div class="card-header">Start generation</div>
+            <div class="card-header">Start generation (C# engine)</div>
             <div class="card-body">
                 <div class="mb-2">
                     <label class="form-label">Project id</label>
@@ -89,12 +84,8 @@ python host/python_engine_api.py</pre>
                     <input class="form-check-input" type="checkbox" id="onlyMissing" @bind="_onlyMissing" disabled="@_busy" />
                     <label class="form-check-label" for="onlyMissing">Only missing clips</label>
                 </div>
-                <button class="btn btn-primary me-2" disabled="@_busy" @onclick="StartGenAsync">
-                    Start scene gen
-                </button>
-                <button class="btn btn-outline-danger" disabled="@_busy" @onclick="CancelAsync">
-                    Cancel
-                </button>
+                <button class="btn btn-primary me-2" disabled="@_busy" @onclick="StartGenAsync">Start scene gen</button>
+                <button class="btn btn-outline-danger" disabled="@_busy" @onclick="CancelAsync">Cancel</button>
                 @if (!string.IsNullOrEmpty(_message))
                 {
                     <div class="alert alert-info mt-3 mb-0">@_message</div>
@@ -103,18 +94,31 @@ python host/python_engine_api.py</pre>
         </div>
 
         <div class="card mt-3">
-            <div class="card-header d-flex justify-content-between">
-                <span>Job status</span>
-                <button class="btn btn-sm btn-link" disabled="@_busy" @onclick="RefreshJobAsync">Refresh</button>
-            </div>
+            <div class="card-header">Live job (SignalR)</div>
             <div class="card-body">
-                @if (_jobJson is null)
+                @if (_job is null)
                 {
-                    <p class="text-muted mb-0">No status yet.</p>
+                    <p class="text-muted mb-0">No job yet.</p>
                 }
                 else
                 {
-                    <pre class="small mb-0" style="max-height: 240px; overflow: auto;">@_jobJson</pre>
+                    <p class="mb-1">
+                        <span class="badge bg-secondary">@_job.Status</span>
+                        @if (_job.Scene is int sn && _job.Clip is int cn)
+                        {
+                            <span class="ms-1">S@sn.ToString("D2") C@cn</span>
+                        }
+                        @if (_job.Total > 0)
+                        {
+                            <span class="ms-1">@_job.Index / @_job.Total</span>
+                        }
+                    </p>
+                    <p class="small">@_job.Message</p>
+                    @if (!string.IsNullOrEmpty(_job.Error))
+                    {
+                        <div class="alert alert-danger py-1 small">@_job.Error</div>
+                    }
+                    <pre class="small mb-0" style="max-height: 220px; overflow: auto;">@string.Join("\n", _job.Log.TakeLast(40))</pre>
                 }
             </div>
         </div>
@@ -124,19 +128,46 @@ python host/python_engine_api.py</pre>
 @code {
     private string _baseUrl = "";
     private bool? _healthOk;
+    private bool _hubConnected;
     private bool _busy;
     private string? _error;
     private string? _message;
-    private string? _jobJson;
-    private FilmStudio.Web.Services.ProjectsResponse? _projects;
+    private ProjectsDto? _projects;
+    private JobSnapshot? _job;
     private string _projectId = "Buster";
     private int _scene = 2;
     private bool _onlyMissing = true;
 
     protected override async Task OnInitializedAsync()
     {
-        _baseUrl = Config["EngineApi:BaseUrl"] ?? "http://127.0.0.1:8765";
+        _baseUrl = Config["EngineApi:BaseUrl"] ?? "http://127.0.0.1:5088";
+        Hub.JobUpdated += OnJobUpdated;
+        Hub.JobLog += OnJobLog;
         await RefreshAsync();
+        try
+        {
+            await Hub.StartAsync();
+            _hubConnected = Hub.IsConnected;
+        }
+        catch (Exception ex)
+        {
+            _hubConnected = false;
+            _error = $"SignalR: {ex.Message}";
+        }
+    }
+
+    private void OnJobUpdated(JobSnapshot snap)
+    {
+        _job = snap;
+        _ = InvokeAsync(StateHasChanged);
+    }
+
+    private void OnJobLog(string line)
+    {
+        // Snapshot usually already includes log; keep message fresh
+        if (_job is not null)
+            _job.Message = line;
+        _ = InvokeAsync(StateHasChanged);
     }
 
     private async Task RefreshAsync()
@@ -147,7 +178,7 @@ python host/python_engine_api.py</pre>
         {
             try
             {
-                await Engine.GetHealthAsync();
+                await Engine.EnsureHealthyAsync();
                 _healthOk = true;
             }
             catch
@@ -160,7 +191,9 @@ python host/python_engine_api.py</pre>
             _projects = await Engine.GetProjectsAsync();
             if (_projects?.Active?.Id is { Length: > 0 } aid)
                 _projectId = aid;
-            await RefreshJobAsync();
+
+            var jobs = await Engine.GetJobAsync();
+            _job = jobs?.Job;
         }
         catch (Exception ex)
         {
@@ -175,7 +208,6 @@ python host/python_engine_api.py</pre>
     private async Task ActivateAsync(string id)
     {
         _busy = true;
-        _error = null;
         try
         {
             await Engine.ActivateProjectAsync(id);
@@ -183,35 +215,25 @@ python host/python_engine_api.py</pre>
             await RefreshAsync();
             _message = $"Activated {id}";
         }
-        catch (Exception ex)
-        {
-            _error = ex.Message;
-        }
-        finally
-        {
-            _busy = false;
-        }
+        catch (Exception ex) { _error = ex.Message; }
+        finally { _busy = false; }
     }
 
     private async Task StartGenAsync()
     {
         _busy = true;
         _error = null;
-        _message = null;
         try
         {
-            var result = await Engine.StartSceneGenAsync(_projectId, _scene, _onlyMissing);
-            _message = result?.ToString() ?? "Started";
-            await RefreshJobAsync();
+            await Engine.StartSceneGenAsync(_projectId, _scene, _onlyMissing);
+            _message = $"Started scene {_scene} — watch live log via SignalR";
+            if (!_hubConnected)
+            {
+                try { await Hub.StartAsync(); _hubConnected = Hub.IsConnected; } catch { /* ignore */ }
+            }
         }
-        catch (Exception ex)
-        {
-            _error = ex.Message;
-        }
-        finally
-        {
-            _busy = false;
-        }
+        catch (Exception ex) { _error = ex.Message; }
+        finally { _busy = false; }
     }
 
     private async Task CancelAsync()
@@ -221,30 +243,15 @@ python host/python_engine_api.py</pre>
         {
             await Engine.CancelJobAsync();
             _message = "Cancel requested";
-            await RefreshJobAsync();
         }
-        catch (Exception ex)
-        {
-            _error = ex.Message;
-        }
-        finally
-        {
-            _busy = false;
-        }
+        catch (Exception ex) { _error = ex.Message; }
+        finally { _busy = false; }
     }
 
-    private async Task RefreshJobAsync()
+    public async ValueTask DisposeAsync()
     {
-        try
-        {
-            var job = await Engine.GetJobAsync();
-            _jobJson = job is null
-                ? null
-                : System.Text.Json.JsonSerializer.Serialize(job, new System.Text.Json.JsonSerializerOptions { WriteIndented = true });
-        }
-        catch (Exception ex)
-        {
-            _jobJson = ex.Message;
-        }
+        Hub.JobUpdated -= OnJobUpdated;
+        Hub.JobLog -= OnJobLog;
+        await Hub.DisposeAsync();
     }
 }

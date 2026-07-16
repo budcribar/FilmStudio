@@ -216,7 +216,39 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
-/.vs
+
+# --- Visual Studio / .NET ---
+.vs/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+[Ww][Ii][Nn]32/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+bld/
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+*.userprefs
+*.DotSettings.user
+project.lock.json
+project.fragment.lock.json
+artifacts/
+TestResults/
+*.nupkg
+*.snupkg
+**/Properties/launchSettings.json.user
+host/**/bin/
+host/**/obj/
+host/**/.vs/
+*.slnx.user
+
+# Generated review frames
 /projects/Buster/assets/video/_review_1fps
 /projects/Buster/assets/video/_review_5fps
-/host/FilmStudio.Web/.vs/FilmStudio.Web.slnx

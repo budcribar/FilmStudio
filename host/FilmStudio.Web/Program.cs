@@ -13,11 +13,13 @@ builder.Services.AddHttpClient<EngineApiClient>((sp, client) =>
 {
     var opts = sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<EngineApiOptions>>().Value;
     var baseUrl = string.IsNullOrWhiteSpace(opts.BaseUrl)
-        ? "http://127.0.0.1:8765"
+        ? "http://127.0.0.1:5088"
         : opts.BaseUrl.TrimEnd('/') + "/";
     client.BaseAddress = new Uri(baseUrl);
     client.Timeout = TimeSpan.FromMinutes(2);
 });
+
+builder.Services.AddScoped<JobHubClient>();
 
 var app = builder.Build();
 
