@@ -2,7 +2,7 @@
   "version": 4,
   "targets": {
     "net10.0": {
-      "Microsoft.AspNetCore.App.Internal.Assets/10.0.9": {
+      "Microsoft.AspNetCore.App.Internal.Assets/10.0.10": {
         "type": "package",
         "build": {
           "build/Microsoft.AspNetCore.App.Internal.Assets.props": {},
@@ -68,10 +68,10 @@
     }
   },
   "libraries": {
-    "Microsoft.AspNetCore.App.Internal.Assets/10.0.9": {
-      "sha512": "E9Wp/LPKAYkGOVBv4lt5U5TnUA/7pov7QZAwF3eI64kK8AAXqkPDwuadEOwpL1WXEfgecYm0fccluvABp32D8g==",
+    "Microsoft.AspNetCore.App.Internal.Assets/10.0.10": {
+      "sha512": "8k0KoYKvNrSqP8E3oDJMBVKavlTEE6BacdLGtEDcxv9Hz0XxWFkD6JdLJsxXUlGeAfZ6YfvWmxKenl73qeCTSA==",
       "type": "package",
-      "path": "microsoft.aspnetcore.app.internal.assets/10.0.9",
+      "path": "microsoft.aspnetcore.app.internal.assets/10.0.10",
       "files": [
         ".nupkg.metadata",
         ".signature.p7s",
@@ -87,7 +87,7 @@
         "build/Microsoft.AspNetCore.App.Internal.Assets.targets",
         "buildMultiTargeting/Microsoft.AspNetCore.App.Internal.Assets.targets",
         "buildTransitive/Microsoft.AspNetCore.App.Internal.Assets.targets",
-        "microsoft.aspnetcore.app.internal.assets.10.0.9.nupkg.sha512",
+        "microsoft.aspnetcore.app.internal.assets.10.0.10.nupkg.sha512",
         "microsoft.aspnetcore.app.internal.assets.nuspec"
       ]
     },
@@ -163,13 +163,12 @@
   "projectFileDependencyGroups": {
     "net10.0": [
       "FilmStudio.Core >= 1.0.0",
-      "Microsoft.AspNetCore.App.Internal.Assets >= 10.0.9",
+      "Microsoft.AspNetCore.App.Internal.Assets >= 10.0.10",
       "Microsoft.AspNetCore.SignalR.Client >= 10.0.10"
     ]
   },
   "packageFolders": {
-    "C:\\Users\\budcr\\.nuget\\packages\\": {},
-    "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages": {}
+    "C:\\Users\\budcr\\.nuget\\packages": {}
   },
   "project": {
     "version": "1.0.0",
@@ -177,13 +176,11 @@
       "projectUniqueName": "C:\\Users\\budcr\\source\\repos\\NickAndMe\\host\\FilmStudio.Web\\FilmStudio.Web.csproj",
       "projectName": "FilmStudio.Web",
       "projectPath": "C:\\Users\\budcr\\source\\repos\\NickAndMe\\host\\FilmStudio.Web\\FilmStudio.Web.csproj",
-      "packagesPath": "C:\\Users\\budcr\\.nuget\\packages\\",
+      "packagesPath": "C:\\Users\\budcr\\.nuget\\packages",
       "outputPath": "C:\\Users\\budcr\\source\\repos\\NickAndMe\\host\\FilmStudio.Web\\obj\\",
       "projectStyle": "PackageReference",
-      "fallbackFolders": [
-        "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
-      ],
       "configFilePaths": [
+        "C:\\Users\\budcr\\source\\repos\\NickAndMe\\host\\NuGet.Config",
         "C:\\Users\\budcr\\AppData\\Roaming\\NuGet\\NuGet.Config",
         "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
         "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
@@ -226,7 +223,7 @@
           "Microsoft.AspNetCore.App.Internal.Assets": {
             "suppressParent": "All",
             "target": "Package",
-            "version": "[10.0.9, )",
+            "version": "[10.0.10, )",
             "autoReferenced": true
           },
           "Microsoft.AspNetCore.SignalR.Client": {
@@ -253,7 +250,7 @@
             "privateAssets": "all"
           }
         },
-        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.301/PortableRuntimeIdentifierGraph.json",
+        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.302/PortableRuntimeIdentifierGraph.json",
         "packagesToPrune": {
           "Microsoft.AspNetCore": "(,10.0.32767]",
           "Microsoft.AspNetCore.Antiforgery": "(,10.0.32767]",

@@ -16,15 +16,17 @@ public interface IJobProgressSink
 }
 
 /// <summary>
-/// C# film job orchestrator: loads blueprint clips and generates missing ones via Grok.
-/// Full Python feature parity (multi-ref, identity packer, WIP remux) remains available via Python;
-/// this is the native backend path for multi-user / Blazor / SignalR.
+/// C# film job orchestrator: Stage 1/2, book prepare, character design, multi-ref video, remux/WIP.
 /// </summary>
 public sealed class FilmJobService
 {
     private readonly ProjectStore _projects;
     private readonly GrokVideoClient _grok;
     private readonly CharacterDesignService _characters;
+    private readonly BookPrepareService _books;
+    private readonly Stage1Service _stage1;
+    private readonly Stage2PlannerService _stage2;
+    private readonly FfmpegRemuxService _remux;
     private readonly CostReportService _costs;
     private readonly FilmStudioOptions _opts;
     private readonly ILogger<FilmJobService> _log;
@@ -38,6 +40,10 @@ public sealed class FilmJobService
         ProjectStore projects,
         GrokVideoClient grok,
         CharacterDesignService characters,
+        BookPrepareService books,
+        Stage1Service stage1,
+        Stage2PlannerService stage2,
+        FfmpegRemuxService remux,
         CostReportService costs,
         IOptions<FilmStudioOptions> opts,
         ILogger<FilmJobService> log)
@@ -45,6 +51,10 @@ public sealed class FilmJobService
         _projects = projects;
         _grok = grok;
         _characters = characters;
+        _books = books;
+        _stage1 = stage1;
+        _stage2 = stage2;
+        _remux = remux;
         _costs = costs;
         _opts = opts.Value;
         _log = log;
@@ -145,7 +155,83 @@ public sealed class FilmJobService
         await Task.CompletedTask;
     }
 
-    /// <summary>Generate 3 portrait variants via Python character design (needs XAI_API_KEY).</summary>
+    /// <summary>C# PDF extract + optional Grok vision OCR → book_full.txt.</summary>
+    public async Task StartBookPrepareAsync(StartBookPrepareRequest req)
+    {
+        if (string.IsNullOrWhiteSpace(req.ProjectId))
+            throw new InvalidOperationException("projectId required");
+
+        if (!await _gate.WaitAsync(0))
+            throw new InvalidOperationException("A generation job is already running.");
+
+        _cts = new CancellationTokenSource();
+        var ct = _cts.Token;
+        _ = Task.Run(async () =>
+        {
+            try { await RunBookPrepareAsync(req, ct); }
+            finally { _gate.Release(); }
+        }, CancellationToken.None);
+
+        await Task.CompletedTask;
+    }
+
+    private async Task RunBookPrepareAsync(StartBookPrepareRequest req, CancellationToken ct)
+    {
+        var projectId = req.ProjectId;
+        _projects.Activate(projectId);
+        _snapshot = new JobSnapshot
+        {
+            Status = "running",
+            Kind = "book_prepare",
+            ProjectId = projectId,
+            Message = "Preparing book (PDF extract / vision OCR)…",
+            Index = 0,
+            Total = 3,
+            StartedAt = DateTimeOffset.UtcNow,
+            Log = new List<string>(),
+        };
+        await PublishAsync();
+
+        try
+        {
+            await AppendLogAsync("Book prepare (C# PdfPig + optional Grok vision)");
+            var result = await _books.PrepareAsync(
+                projectId,
+                forceExtract: req.ForceExtract,
+                forceVision: req.ForceVision,
+                autoVision: req.AutoVision,
+                visionModel: string.IsNullOrWhiteSpace(req.VisionModel) ? "grok-4.5" : req.VisionModel,
+                onProgress: line =>
+                {
+                    _ = AppendLogAsync(line);
+                    if (line.Contains("Extract", StringComparison.OrdinalIgnoreCase))
+                        _ = UpdateAsync(s => { s.Index = 1; s.Message = line; });
+                    else if (line.Contains("Vision", StringComparison.OrdinalIgnoreCase) ||
+                             line.Contains("page", StringComparison.OrdinalIgnoreCase))
+                        _ = UpdateAsync(s => { s.Index = Math.Max(s.Index, 2); s.Message = line; });
+                    else
+                        _ = UpdateAsync(s => s.Message = line);
+                },
+                ct: ct);
+
+            await UpdateAsync(s => s.Index = 3);
+            var msg = result.ReadyForStage1
+                ? $"Book ready · {result.TextWords} words · quality={result.TextQuality} · {result.TextEngine}"
+                : $"Book prepared but Stage 1 not ready · {result.Strategy}: {result.StrategyReason}";
+            await FinishAsync(result.Ok ? "done" : "error", msg, result.Ok ? null : msg);
+        }
+        catch (OperationCanceledException)
+        {
+            await FinishAsync("cancelled", "Cancelled by user");
+        }
+        catch (Exception ex)
+        {
+            _log.LogError(ex, "Book prepare failed");
+            await FinishAsync("error", ex.Message, ex.Message);
+        }
+    }
+
+    /// <summary>Generate portrait variants via C# Grok image API.</summary>
     public async Task StartCharacterVariantsAsync(StartCharacterVariantsRequest req)
     {
         if (string.IsNullOrWhiteSpace(req.CharKey))
@@ -322,7 +408,7 @@ public sealed class FilmJobService
             Status = "running",
             Kind = "stage1",
             ProjectId = projectId,
-            Message = "Starting Stage 1…",
+            Message = "Starting Stage 1 (C# Grok chat)…",
             StartedAt = DateTimeOffset.UtcNow,
             Log = new List<string>(),
         };
@@ -330,35 +416,28 @@ public sealed class FilmJobService
 
         try
         {
-            if (string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("XAI_API_KEY")))
-                throw new InvalidOperationException("XAI_API_KEY is not set (required for Stage 1 LLM).");
+            await AppendLogAsync("Stage 1: C# Stage1Service (no Python)");
+            var result = await _stage1.RunAsync(
+                projectId,
+                chunkPages: Math.Clamp(req.ChunkPages, 5, 30),
+                totalMinutes: req.TotalMinutes,
+                model: string.IsNullOrWhiteSpace(req.Model) ? "grok-4.5" : req.Model,
+                resume: req.Resume,
+                maxChunks: req.MaxChunks,
+                onProgress: line =>
+                {
+                    _ = AppendLogAsync(line);
+                    _ = UpdateAsync(s => s.Message = line);
+                },
+                ct: ct);
 
-            var root = _projects.WorkspaceRoot;
-            var script = Path.Combine(root, "scripts", "two_stage_adaptation", "run_stage1_from_book.py");
-            if (!File.Exists(script))
-                throw new InvalidOperationException($"Stage 1 script not found: {script}");
-
-            var outPath = _projects.ResolveScenesJsonPath(projectId);
-            var args = new StringBuilder();
-            args.Append($"\"{script}\" --project \"{projectId}\"");
-            args.Append($" --out \"{outPath}\"");
-            args.Append($" --model \"{(string.IsNullOrWhiteSpace(req.Model) ? "grok-4.5" : req.Model)}\"");
-            args.Append($" --chunk-pages {Math.Clamp(req.ChunkPages, 5, 30)}");
-            if (req.TotalMinutes is int mins && mins > 0)
-                args.Append($" --total-minutes {Math.Clamp(mins, 3, 180)}");
-            if (req.Resume)
-                args.Append(" --resume");
-            if (req.MaxChunks > 0)
-                args.Append($" --max-chunks {req.MaxChunks}");
-
-            await AppendLogAsync($"Stage 1: python {args}");
-            var exit = await RunPythonAsync(args.ToString(), root, ct);
-            if (exit == 0)
-                await FinishAsync("done", "Stage 1 complete");
-            else if (exit == 2)
-                await FinishAsync("done", "Stage 1 finished with verification warnings (exit 2)");
-            else
-                await FinishAsync("error", $"Stage 1 failed (exit {exit})", $"exit {exit}");
+            var msg =
+                $"Stage 1 complete: {result.SceneCount} scenes · {result.CharacterCount} chars · " +
+                $"{result.LocationCount} locs · ~{result.RuntimeSeconds}s";
+            if (result.HardErrors.Count > 0)
+                msg += $" · {result.HardErrors.Count} verify warning(s)";
+            await FinishAsync(result.Ok || result.SceneCount > 0 ? "done" : "error", msg,
+                result.Ok ? null : string.Join("; ", result.HardErrors.Take(3)));
         }
         catch (OperationCanceledException)
         {
@@ -383,7 +462,7 @@ public sealed class FilmJobService
             Status = "running",
             Kind = "stage2",
             ProjectId = projectId,
-            Message = "Starting Stage 2 planner…",
+            Message = "Starting Stage 2 planner (C#)…",
             StartedAt = DateTimeOffset.UtcNow,
             Log = new List<string>(),
         };
@@ -391,46 +470,21 @@ public sealed class FilmJobService
 
         try
         {
-            var root = _projects.WorkspaceRoot;
-            var script = Path.Combine(root, "scripts", "two_stage_adaptation", "stage2_plan_grok.py");
-            if (!File.Exists(script))
-                throw new InvalidOperationException($"Stage 2 script not found: {script}");
+            await AppendLogAsync("Stage 2: C# Stage2PlannerService (deterministic, no API)");
+            ct.ThrowIfCancellationRequested();
+            var result = await Task.Run(() => _stage2.PlanAsync(
+                projectId,
+                resolution: string.IsNullOrWhiteSpace(req.Resolution) ? "720p" : req.Resolution,
+                scenes: string.IsNullOrWhiteSpace(req.Scenes) ? "all" : req.Scenes,
+                onProgress: line =>
+                {
+                    _ = AppendLogAsync(line);
+                    _ = UpdateAsync(s => s.Message = line);
+                }), ct);
 
-            var stage1 = _projects.ResolveScenesJsonPath(projectId);
-            if (!File.Exists(stage1))
-                throw new InvalidOperationException($"Stage 1 bible not found: {stage1}");
-
-            var outPath = _projects.FindBlueprintPath(projectId)
-                ?? Path.Combine(_projects.GetProjectDir(projectId), "blueprint.clips.grok.json");
-
-            // Backup existing blueprint
-            if (File.Exists(outPath))
-            {
-                var bak = outPath + $".bak_pre_stage2_{DateTime.Now:yyyyMMdd_HHmmss}";
-                File.Copy(outPath, bak, overwrite: true);
-                await AppendLogAsync($"Backed up blueprint → {Path.GetFileName(bak)}");
-            }
-
-            var resolution = string.IsNullOrWhiteSpace(req.Resolution) ? "720p" : req.Resolution;
-            var scenes = string.IsNullOrWhiteSpace(req.Scenes) ? "all" : req.Scenes;
-            var args =
-                $"\"{script}\" --stage1 \"{stage1}\" --out \"{outPath}\" " +
-                $"--resolution \"{resolution}\" --scenes \"{scenes}\"";
-
-            await AppendLogAsync($"Stage 2: python {args}");
-            var exit = await RunPythonAsync(args.ToString(), root, ct);
-            if (exit == 0)
-            {
-                // Refresh counts for message
-                var s2 = _projects.GetAdaptationStatus(projectId).Stage2;
-                await FinishAsync(
-                    "done",
-                    $"Stage 2 complete: {s2.Stage2Scenes} scenes · {s2.Stage2Clips} clips");
-            }
-            else
-            {
-                await FinishAsync("error", $"Stage 2 failed (exit {exit})", $"exit {exit}");
-            }
+            await FinishAsync(
+                "done",
+                $"Stage 2 complete: {result.SceneCount} scenes · {result.ClipCount} clips · ~{result.DurationSeconds}s");
         }
         catch (OperationCanceledException)
         {
@@ -439,6 +493,67 @@ public sealed class FilmJobService
         catch (Exception ex)
         {
             _log.LogError(ex, "Stage 2 failed");
+            await FinishAsync("error", ex.Message, ex.Message);
+        }
+    }
+
+    public async Task StartRemuxAsync(StartRemuxRequest req)
+    {
+        if (string.IsNullOrWhiteSpace(req.ProjectId))
+            throw new InvalidOperationException("projectId required");
+        if (!await _gate.WaitAsync(0))
+            throw new InvalidOperationException("A generation job is already running.");
+
+        _cts = new CancellationTokenSource();
+        var ct = _cts.Token;
+        _ = Task.Run(async () =>
+        {
+            try { await RunRemuxAsync(req, ct); }
+            finally { _gate.Release(); }
+        }, CancellationToken.None);
+        await Task.CompletedTask;
+    }
+
+    private async Task RunRemuxAsync(StartRemuxRequest req, CancellationToken ct)
+    {
+        var projectId = req.ProjectId;
+        _projects.Activate(projectId);
+        _snapshot = new JobSnapshot
+        {
+            Status = "running",
+            Kind = "remux",
+            ProjectId = projectId,
+            Scene = req.Scene,
+            Message = "Remux / WIP…",
+            StartedAt = DateTimeOffset.UtcNow,
+            Log = new List<string>(),
+        };
+        await PublishAsync();
+        try
+        {
+            if (!_remux.IsAvailable())
+                throw new InvalidOperationException(
+                    "ffmpeg not found. Install ffmpeg and ensure it is on PATH (or set FilmStudio:FfmpegPath).");
+
+            if (req.Scene is int sn && sn > 0)
+            {
+                await _remux.RemuxSceneAsync(projectId, sn,
+                    line => { _ = AppendLogAsync(line); }, ct);
+            }
+            if (req.RebuildWip)
+            {
+                await _remux.RebuildWipAsync(projectId,
+                    line => { _ = AppendLogAsync(line); }, ct);
+            }
+            await FinishAsync("done", "Remux / WIP complete");
+        }
+        catch (OperationCanceledException)
+        {
+            await FinishAsync("cancelled", "Cancelled by user");
+        }
+        catch (Exception ex)
+        {
+            _log.LogError(ex, "Remux failed");
             await FinishAsync("error", ex.Message, ex.Message);
         }
     }
@@ -792,40 +907,29 @@ public sealed class FilmJobService
         JsonElement clipEl,
         CancellationToken ct)
     {
-        var prompt = clipEl.TryGetProperty("visual_prompt", out var vp)
-            ? vp.GetString() ?? ""
-            : "";
+        var prompt = ClipVideoPromptBuilder.BuildPrompt(clipEl, projectDir);
         if (string.IsNullOrWhiteSpace(prompt))
             throw new InvalidOperationException("clip missing visual_prompt");
 
-        // Style lock reinforce for humans (port of product rule)
-        if (prompt.Contains("Character_Mom", StringComparison.Ordinal) ||
-            prompt.Contains("Character_Daddy", StringComparison.Ordinal) ||
-            prompt.Contains("Character_Mom", StringComparison.OrdinalIgnoreCase))
-        {
-            if (!prompt.Contains("STYLE LOCK", StringComparison.OrdinalIgnoreCase))
-            {
-                prompt =
-                    "STYLE LOCK: stylized 3D animated children's picture-book CG " +
-                    "(same render family as the cartoon dog) -- not photoreal, not live-action. " +
-                    prompt;
-            }
-        }
-
-        if (prompt.Length > 4000)
-            prompt = prompt[..3990] + "…";
+        var refPaths = ClipVideoPromptBuilder.FindCharacterRefPaths(clipEl, projectDir, maxRefs: 3);
+        if (refPaths.Count > 0)
+            await AppendLogAsync(
+                $"  [Refs] {refPaths.Count}: {string.Join(", ", refPaths.Select(Path.GetFileName))}");
 
         var duration = _opts.DefaultDurationSeconds;
         if (clipEl.TryGetProperty("duration_seconds", out var d) && d.TryGetInt32(out var ds))
             duration = Math.Clamp(ds, 1, 15);
-        // ref-to-video max often 10; text-only keep config default
-        duration = Math.Min(duration, 10);
+        if (refPaths.Count > 0)
+            duration = Math.Min(duration, 10);
 
         var model = _opts.DefaultModel;
         var resolution = _opts.DefaultResolution;
 
-        await AppendLogAsync($"  [Grok] Submit S{scene:D2}C{clip} duration={duration}s res={resolution}");
-        var requestId = await _grok.SubmitGenerationAsync(prompt, duration, resolution, model, ct);
+        await AppendLogAsync(
+            $"  [Grok] Submit S{scene:D2}C{clip} duration={duration}s res={resolution} " +
+            $"refs={refPaths.Count} promptLen={prompt.Length}");
+        var requestId = await _grok.SubmitGenerationAsync(
+            prompt, duration, resolution, model, ct, referenceImagePaths: refPaths);
         await AppendLogAsync($"  [Grok] request_id={requestId}");
 
         var url = await _grok.PollForVideoUrlAsync(
@@ -851,7 +955,7 @@ public sealed class FilmJobService
                 duration,
                 resolution,
                 model,
-                hasRefImage: false,
+                hasRefImage: refPaths.Count > 0,
                 isExtend: string.Equals(cont, "extend_previous", StringComparison.OrdinalIgnoreCase),
                 requestId: requestId);
             await AppendLogAsync($"  [Cost] tracked list-rate for S{scene:D2}C{clip}");

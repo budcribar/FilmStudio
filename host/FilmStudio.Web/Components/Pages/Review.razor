@@ -1,0 +1,355 @@
+@page "/review"
+@rendermode InteractiveServer
+@implements IAsyncDisposable
+@inject EngineApiClient Engine
+@inject JobHubClient Hub
+@using FilmStudio.Core.Models
+
+<PageTitle>Review</PageTitle>
+
+<h1>Review</h1>
+<p class="text-muted">
+    Pass / fail clips, approve scenes, remux composites, rebuild WIP movie, and browse the edit log.
+    All native C# (pipeline_state + edit_feedback_log.json + FFmpeg).
+</p>
+
+@if (!string.IsNullOrEmpty(_error))
+{
+    <div class="alert alert-danger">@_error</div>
+}
+@if (!string.IsNullOrEmpty(_message))
+{
+    <div class="alert alert-info">@_message</div>
+}
+
+<div class="row mb-3 g-2 align-items-end">
+    <div class="col-md-4">
+        <label class="form-label">Project</label>
+        <select class="form-select" @bind="_projectId" @bind:after="LoadAsync" disabled="@_busy">
+            @foreach (var p in _projectIds)
+            {
+                <option value="@p">@p</option>
+            }
+        </select>
+    </div>
+    <div class="col-md-6 d-flex flex-wrap gap-2">
+        <button class="btn btn-outline-secondary" disabled="@_busy" @onclick="LoadAsync">Reload</button>
+        <button class="btn btn-outline-primary" disabled="@(_busy || JobRunning)" @onclick="() => RemuxAsync(null)">
+            Rebuild WIP movie
+        </button>
+        @if (JobRunning)
+        {
+            <button class="btn btn-outline-danger" disabled="@_busy" @onclick="CancelAsync">Cancel job</button>
+        }
+    </div>
+</div>
+
+@if (_job is not null &&
+     (_job.Status is "running" or "done" or "error" or "cancelled") &&
+     (_job.Kind is "remux" or "scene" or "batch" or "book_prepare" or "stage1" or "stage2"))
+{
+    <div class="card mb-3 border-@(_job.Status == "running" ? "primary" : _job.Status == "error" ? "danger" : "secondary")">
+        <div class="card-body py-2">
+            <span class="badge bg-secondary">@_job.Status</span>
+            @if (_job.Kind is { Length: > 0 } k)
+            {
+                <span class="badge bg-info text-dark ms-1">@k</span>
+            }
+            <span class="ms-2 small">@_job.Message</span>
+            @if (_job.Log.Count > 0)
+            {
+                <pre class="small mb-0 mt-2" style="max-height:120px;overflow:auto;">@string.Join("\n", _job.Log.TakeLast(20))</pre>
+            }
+        </div>
+    </div>
+}
+
+<div class="row g-3">
+    <div class="col-lg-7">
+        <div class="card">
+            <div class="card-header">Scenes &amp; clips</div>
+            <div class="card-body p-0">
+                @if (_scenes.Count == 0)
+                {
+                    <p class="text-muted p-3 mb-0">No scenes — run Adaptation Stage 1 / 2 first.</p>
+                }
+                else
+                {
+                    <div class="table-responsive">
+                        <table class="table table-sm mb-0 align-middle">
+                            <thead>
+                                <tr>
+                                    <th>Scene</th>
+                                    <th>Clips</th>
+                                    <th>On disk</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var s in _scenes)
+                                {
+                                    <tr>
+                                        <td>
+                                            <code>S@s.SceneNumber.ToString("D2")</code>
+                                            <div class="small text-muted">@(string.IsNullOrEmpty(s.Setting) ? "—" : s.Setting)</div>
+                                        </td>
+                                        <td>@s.ClipCount</td>
+                                        <td>@s.ClipsOnDisk</td>
+                                        <td class="text-end">
+                                            <button class="btn btn-sm btn-outline-success"
+                                                    disabled="@(_busy || JobRunning)"
+                                                    @onclick="() => ApproveAsync(s.SceneNumber)">
+                                                Approve
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-secondary"
+                                                    disabled="@(_busy || JobRunning || s.ClipsOnDisk == 0)"
+                                                    @onclick="() => RemuxAsync(s.SceneNumber)">
+                                                Remux
+                                            </button>
+                                            <button class="btn btn-sm btn-link"
+                                                    @onclick="() => SelectScene(s.SceneNumber)">
+                                                Clips
+                                            </button>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            </div>
+        </div>
+
+        @if (_selectedScene is int sel)
+        {
+            <div class="card mt-3">
+                <div class="card-header">S@(sel.ToString("D2")) clip review</div>
+                <div class="card-body">
+                    <div class="mb-2">
+                        <label class="form-label small">Note (optional)</label>
+                        <input class="form-control form-control-sm" @bind="_note" disabled="@_busy" />
+                    </div>
+                    <div class="d-flex flex-wrap gap-2">
+                        @for (var c = 1; c <= ClipCountFor(sel); c++)
+                        {
+                            var cn = c;
+                            var key = $"S{sel:D2}C{cn:D2}";
+                            var st = _reviews.TryGetValue(key, out var r) ? r : "—";
+                            <div class="border rounded p-2 small">
+                                <div><code>C@cn.ToString("D2")</code> · <span class="badge bg-light text-dark">@st</span></div>
+                                <div class="btn-group btn-group-sm mt-1">
+                                    <button class="btn btn-outline-success" disabled="@_busy"
+                                            @onclick="() => ReviewAsync(sel, cn, passStatus)">Pass</button>
+                                    <button class="btn btn-outline-danger" disabled="@_busy"
+                                            @onclick="() => ReviewAsync(sel, cn, failStatus)">Fail</button>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+
+    <div class="col-lg-5">
+        <div class="card">
+            <div class="card-header">Edit log</div>
+            <div class="card-body p-0">
+                @if (_entries.Count == 0)
+                {
+                    <p class="text-muted p-3 mb-0">No entries yet.</p>
+                }
+                else
+                {
+                    <ul class="list-group list-group-flush">
+                        @foreach (var e in _entries.Take(40))
+                        {
+                            <li class="list-group-item small">
+                                <div class="d-flex justify-content-between">
+                                    <span class="badge bg-secondary">@e.Type</span>
+                                    <span class="text-muted">@e.Ts</span>
+                                </div>
+                                <div>
+                                    @if (e.Scene is int sn)
+                                    {
+                                        <code>S@sn.ToString("D2")</code>
+                                        @if (e.Clip is int cn)
+                                        {
+                                            <code class="ms-1">C@cn.ToString("D2")</code>
+                                        }
+                                    }
+                                    <span class="ms-1">@e.UserNote</span>
+                                </div>
+                                @if (!string.IsNullOrEmpty(e.SuggestedRule))
+                                {
+                                    <div class="text-muted">@e.SuggestedRule</div>
+                                }
+                            </li>
+                        }
+                    </ul>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private bool _busy;
+    private string? _error;
+    private string? _message;
+    private string _projectId = "Buster";
+    private List<string> _projectIds = new();
+    private List<SceneSummary> _scenes = new();
+    private List<EditLogEntry> _entries = new();
+    private Dictionary<string, string> _reviews = new();
+    private int? _selectedScene;
+    private string _note = "";
+    private JobSnapshot? _job;
+    private const string passStatus = "pass";
+    private const string failStatus = "fail";
+
+    private bool JobRunning =>
+        string.Equals(_job?.Status, "running", StringComparison.OrdinalIgnoreCase);
+
+    protected override async Task OnInitializedAsync()
+    {
+        Hub.JobUpdated += OnJobUpdated;
+        try
+        {
+            var projs = await Engine.GetProjectsAsync();
+            _projectIds = projs?.Projects.Select(p => p.Id ?? "").Where(s => s.Length > 0).ToList()
+                          ?? new List<string> { "Buster" };
+            if (projs?.Active?.Id is { Length: > 0 } aid)
+                _projectId = aid;
+            else if (_projectIds.Count > 0)
+                _projectId = _projectIds[0];
+            try { await Hub.StartAsync(); } catch { /* optional */ }
+            await LoadAsync();
+        }
+        catch (Exception ex) { _error = ex.Message; }
+    }
+
+    private void OnJobUpdated(JobSnapshot snap)
+    {
+        _job = snap;
+        if (snap.Status is "done" or "error" or "cancelled")
+        {
+            _ = InvokeAsync(async () =>
+            {
+                await SoftLoadAsync();
+                StateHasChanged();
+            });
+        }
+        else _ = InvokeAsync(StateHasChanged);
+    }
+
+    private async Task LoadAsync()
+    {
+        _busy = true;
+        _error = null;
+        try
+        {
+            var scenes = await Engine.GetScenesAsync(_projectId);
+            _scenes = scenes?.Scenes ?? new();
+            var log = await Engine.GetEditLogAsync(_projectId);
+            _entries = log?.EditLog?.Entries ?? new();
+            var revs = await Engine.GetClipReviewsAsync(_projectId);
+            _reviews = revs?.Reviews ?? new();
+            var jobs = await Engine.GetJobAsync();
+            _job = jobs?.Job;
+        }
+        catch (Exception ex) { _error = ex.Message; }
+        finally { _busy = false; }
+    }
+
+    private async Task SoftLoadAsync()
+    {
+        try
+        {
+            var log = await Engine.GetEditLogAsync(_projectId);
+            _entries = log?.EditLog?.Entries ?? new();
+            var revs = await Engine.GetClipReviewsAsync(_projectId);
+            _reviews = revs?.Reviews ?? new();
+            var scenes = await Engine.GetScenesAsync(_projectId);
+            _scenes = scenes?.Scenes ?? new();
+        }
+        catch { /* ignore */ }
+    }
+
+    private void SelectScene(int scene) => _selectedScene = scene;
+
+    private int ClipCountFor(int scene) =>
+        _scenes.FirstOrDefault(s => s.SceneNumber == scene)?.ClipCount ?? 0;
+
+    private async Task ReviewAsync(int scene, int clip, string status)
+    {
+        _busy = true;
+        _error = null;
+        try
+        {
+            await Engine.ReviewClipAsync(_projectId, scene, clip, status, _note);
+            _message = $"Marked S{scene:D2}C{clip:D2} {status}";
+            _note = "";
+            await SoftLoadAsync();
+        }
+        catch (Exception ex) { _error = ex.Message; }
+        finally { _busy = false; }
+    }
+
+    private async Task ApproveAsync(int scene)
+    {
+        _busy = true;
+        _error = null;
+        try
+        {
+            await EnsureHubAsync();
+            await Engine.ApproveSceneAsync(_projectId, scene, _note, remux: true, rebuildWip: false);
+            _message = $"Approved S{scene:D2} (remux queued if clips exist)";
+            await SoftLoadAsync();
+            var jobs = await Engine.GetJobAsync();
+            _job = jobs?.Job;
+        }
+        catch (Exception ex) { _error = ex.Message; }
+        finally { _busy = false; }
+    }
+
+    private async Task RemuxAsync(int? scene)
+    {
+        _busy = true;
+        _error = null;
+        try
+        {
+            await EnsureHubAsync();
+            await Engine.StartRemuxAsync(_projectId, scene, rebuildWip: scene is null);
+            _message = scene is int sn ? $"Remux S{sn:D2} started" : "WIP rebuild started";
+            var jobs = await Engine.GetJobAsync();
+            _job = jobs?.Job;
+        }
+        catch (Exception ex) { _error = ex.Message; }
+        finally { _busy = false; }
+    }
+
+    private async Task CancelAsync()
+    {
+        try
+        {
+            await Engine.CancelJobAsync();
+            _message = "Cancel requested";
+            var jobs = await Engine.GetJobAsync();
+            _job = jobs?.Job;
+        }
+        catch (Exception ex) { _error = ex.Message; }
+    }
+
+    private async Task EnsureHubAsync()
+    {
+        if (Hub.IsConnected) return;
+        try { await Hub.StartAsync(); } catch { /* ignore */ }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        Hub.JobUpdated -= OnJobUpdated;
+        await Task.CompletedTask;
+    }
+}

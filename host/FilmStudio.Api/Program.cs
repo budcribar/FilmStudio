@@ -21,6 +21,11 @@ builder.Services.PostConfigure<FilmStudioOptions>(o =>
 builder.Services.AddSingleton<ProjectStore>();
 builder.Services.AddSingleton<CostReportService>();
 builder.Services.AddSingleton<CharacterDesignService>();
+builder.Services.AddSingleton<BookPrepareService>();
+builder.Services.AddSingleton<Stage1Service>();
+builder.Services.AddSingleton<Stage2PlannerService>();
+builder.Services.AddSingleton<FfmpegRemuxService>();
+builder.Services.AddSingleton<EditLogService>();
 builder.Services.AddSingleton<FilmJobService>();
 builder.Services.AddSingleton<IJobProgressSink, SignalRJobProgressSink>();
 builder.Services.AddHttpClient<GrokVideoClient>(c =>
@@ -32,6 +37,16 @@ builder.Services.AddHttpClient<GrokImageClient>(c =>
 {
     c.BaseAddress = new Uri(GrokImageClient.ApiBase + "/");
     c.Timeout = TimeSpan.FromMinutes(5);
+});
+builder.Services.AddHttpClient<GrokVisionClient>(c =>
+{
+    c.BaseAddress = new Uri(GrokVisionClient.ApiBase + "/");
+    c.Timeout = TimeSpan.FromMinutes(5);
+});
+builder.Services.AddHttpClient<GrokChatClient>(c =>
+{
+    c.BaseAddress = new Uri(GrokChatClient.ApiBase + "/");
+    c.Timeout = TimeSpan.FromMinutes(20);
 });
 
 builder.Services.AddSignalR();
@@ -373,6 +388,26 @@ app.MapGet("/api/projects/{id}/adaptation", (string id, ProjectStore store) =>
     }
 });
 
+app.MapPost("/api/jobs/book-prepare", async (StartBookPrepareRequest body, FilmJobService jobService) =>
+{
+    try
+    {
+        if (string.IsNullOrWhiteSpace(body.ProjectId))
+            return Results.BadRequest(new { ok = false, error = "projectId required" });
+        await jobService.StartBookPrepareAsync(body);
+        return Results.Accepted("/api/jobs", new
+        {
+            ok = true,
+            message = "Started book prepare (C# PDF extract / vision OCR)",
+            job = jobService.GetSnapshot(),
+        });
+    }
+    catch (Exception ex)
+    {
+        return Results.Conflict(new { ok = false, error = ex.Message, job = jobService.GetSnapshot() });
+    }
+});
+
 app.MapPost("/api/projects/{id}/adaptation/upload", async (string id, HttpRequest req, ProjectStore store) =>
 {
     try
@@ -411,7 +446,7 @@ app.MapPost("/api/jobs/stage1", async (StartStage1Request body, FilmJobService j
         return Results.Accepted("/api/jobs", new
         {
             ok = true,
-            message = "Started Stage 1",
+            message = "Started Stage 1 (C# Grok chat)",
             job = jobService.GetSnapshot(),
         });
     }
@@ -431,13 +466,98 @@ app.MapPost("/api/jobs/stage2", async (StartStage2Request body, FilmJobService j
         return Results.Accepted("/api/jobs", new
         {
             ok = true,
-            message = "Started Stage 2",
+            message = "Started Stage 2 (C# planner)",
             job = jobService.GetSnapshot(),
         });
     }
     catch (Exception ex)
     {
         return Results.Conflict(new { ok = false, error = ex.Message, job = jobService.GetSnapshot() });
+    }
+});
+
+app.MapPost("/api/jobs/remux", async (StartRemuxRequest body, FilmJobService jobService) =>
+{
+    try
+    {
+        if (string.IsNullOrWhiteSpace(body.ProjectId))
+            return Results.BadRequest(new { ok = false, error = "projectId required" });
+        await jobService.StartRemuxAsync(body);
+        return Results.Accepted("/api/jobs", new
+        {
+            ok = true,
+            message = "Started remux / WIP",
+            job = jobService.GetSnapshot(),
+        });
+    }
+    catch (Exception ex)
+    {
+        return Results.Conflict(new { ok = false, error = ex.Message, job = jobService.GetSnapshot() });
+    }
+});
+
+// ---- Review / edit log ----
+app.MapGet("/api/projects/{id}/edit-log", (string id, EditLogService logs) =>
+{
+    try
+    {
+        var doc = logs.Load(id);
+        return Results.Ok(new { ok = true, projectId = id, editLog = doc });
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { ok = false, error = ex.Message });
+    }
+});
+
+app.MapPost("/api/projects/{id}/clips/review", (string id, ClipReviewRequest body, EditLogService logs) =>
+{
+    try
+    {
+        body.ProjectId = id;
+        logs.SetClipReview(id, body.Scene, body.Clip, body.Status, body.Note);
+        return Results.Ok(new { ok = true, projectId = id, scene = body.Scene, clip = body.Clip, status = body.Status });
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { ok = false, error = ex.Message });
+    }
+});
+
+app.MapPost("/api/projects/{id}/scenes/{scene:int}/approve", async (
+    string id, int scene, SceneApproveRequest? body, EditLogService logs, FilmJobService jobs) =>
+{
+    try
+    {
+        body ??= new SceneApproveRequest();
+        logs.MarkSceneApproved(id, scene, body.Note ?? "");
+        if (body.Remux || body.RebuildWip)
+        {
+            await jobs.StartRemuxAsync(new StartRemuxRequest
+            {
+                ProjectId = id,
+                Scene = body.Remux ? scene : null,
+                RebuildWip = body.RebuildWip,
+            });
+        }
+        return Results.Ok(new { ok = true, projectId = id, scene, message = "Scene approved" });
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { ok = false, error = ex.Message });
+    }
+});
+
+app.MapGet("/api/projects/{id}/clip-reviews", (string id, EditLogService logs) =>
+{
+    try
+    {
+        var map = logs.GetClipReviewMap(id);
+        return Results.Ok(new { ok = true, projectId = id, reviews = map });
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { ok = false, error = ex.Message });
     }
 });
 

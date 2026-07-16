@@ -15,4 +15,34 @@
     <ProjectReference Include="..\FilmStudio.Core\FilmStudio.Core.csproj" />
   </ItemGroup>
 
+  <!--
+    Soenneker ships ffmpeg.exe but content files are not transitive via ProjectReference.
+    Copy into Api output after build (host process BaseDirectory).
+  -->
+  <Target Name="CopyBundledFfmpeg" AfterTargets="Build">
+    <PropertyGroup>
+      <_FfmpegSrc Condition="Exists('$(USERPROFILE)\.nuget\packages\soenneker.libraries.ffmpeg\3.0.658\content\Resources\ffmpeg.exe')">$(USERPROFILE)\.nuget\packages\soenneker.libraries.ffmpeg\3.0.658\content\Resources\ffmpeg.exe</_FfmpegSrc>
+      <_FfmpegSrc Condition="'$(_FfmpegSrc)' == '' and Exists('..\FilmStudio.Engine\bin\$(Configuration)\$(TargetFramework)\Resources\ffmpeg.exe')">..\FilmStudio.Engine\bin\$(Configuration)\$(TargetFramework)\Resources\ffmpeg.exe</_FfmpegSrc>
+    </PropertyGroup>
+    <MakeDir Directories="$(OutDir)Resources" Condition="'$(_FfmpegSrc)' != ''" />
+    <Copy SourceFiles="$(_FfmpegSrc)"
+          DestinationFiles="$(OutDir)Resources\ffmpeg.exe"
+          SkipUnchangedFiles="true"
+          Condition="'$(_FfmpegSrc)' != '' and Exists('$(_FfmpegSrc)')" />
+    <Message Importance="high"
+             Text="Bundled ffmpeg → $(OutDir)Resources\ffmpeg.exe"
+             Condition="Exists('$(OutDir)Resources\ffmpeg.exe')" />
+  </Target>
+
+  <Target Name="CopyBundledFfmpegOnPublish" AfterTargets="Publish">
+    <PropertyGroup>
+      <_FfmpegSrc Condition="Exists('$(USERPROFILE)\.nuget\packages\soenneker.libraries.ffmpeg\3.0.658\content\Resources\ffmpeg.exe')">$(USERPROFILE)\.nuget\packages\soenneker.libraries.ffmpeg\3.0.658\content\Resources\ffmpeg.exe</_FfmpegSrc>
+    </PropertyGroup>
+    <MakeDir Directories="$(PublishDir)Resources" Condition="'$(_FfmpegSrc)' != ''" />
+    <Copy SourceFiles="$(_FfmpegSrc)"
+          DestinationFiles="$(PublishDir)Resources\ffmpeg.exe"
+          SkipUnchangedFiles="true"
+          Condition="'$(_FfmpegSrc)' != '' and Exists('$(_FfmpegSrc)')" />
+  </Target>
+
 </Project>

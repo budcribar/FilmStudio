@@ -17,6 +17,13 @@ public sealed class FilmStudioOptions
     public int GrokPollSeconds { get; set; } = 5;
     public int GrokTimeoutSeconds { get; set; } = 900;
 
-    /// <summary>Python executable for Stage 1 / other bridge scripts.</summary>
+    /// <summary>Python executable for legacy bridge scripts (optional).</summary>
     public string PythonExecutable { get; set; } = "python";
+
+    /// <summary>
+    /// ffmpeg executable for scene remux / WIP.
+    /// Empty/"ffmpeg" → auto: NuGet Soenneker Resources/ffmpeg.exe, then PATH.
+    /// Can be an absolute path or path relative to the API output directory.
+    /// </summary>
+    public string FfmpegPath { get; set; } = "";
 }

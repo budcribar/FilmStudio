@@ -82,6 +82,15 @@ public sealed class StartCharacterVariantsRequest
     public string CharKey { get; set; } = "";
 }
 
+public sealed class StartBookPrepareRequest
+{
+    public string ProjectId { get; set; } = "";
+    public bool ForceExtract { get; set; } = true;
+    public bool ForceVision { get; set; }
+    public bool AutoVision { get; set; } = true;
+    public string VisionModel { get; set; } = "grok-4.5";
+}
+
 public sealed class LockCharacterRequest
 {
     public string ProjectId { get; set; } = "";
@@ -225,6 +234,54 @@ public sealed class StartStage2Request
     public string ProjectId { get; set; } = "";
     public string Resolution { get; set; } = "720p";
     public string Scenes { get; set; } = "all";
+}
+
+public sealed class StartRemuxRequest
+{
+    public string ProjectId { get; set; } = "";
+    public int? Scene { get; set; }
+    public bool RebuildWip { get; set; } = true;
+}
+
+public sealed class ClipReviewRequest
+{
+    public string ProjectId { get; set; } = "";
+    public int Scene { get; set; }
+    public int Clip { get; set; }
+    /// <summary>pass | fail | pending</summary>
+    public string Status { get; set; } = "pass";
+    public string Note { get; set; } = "";
+}
+
+public sealed class SceneApproveRequest
+{
+    public string ProjectId { get; set; } = "";
+    public int Scene { get; set; }
+    public string Note { get; set; } = "";
+    public bool Remux { get; set; }
+    public bool RebuildWip { get; set; }
+}
+
+public sealed class EditLogEntry
+{
+    public string Id { get; set; } = "";
+    public string Ts { get; set; } = "";
+    public string Type { get; set; } = "";
+    public string LearningLayer { get; set; } = "clip";
+    public int? Scene { get; set; }
+    public int? Clip { get; set; }
+    public string? Character { get; set; }
+    public string UserNote { get; set; } = "";
+    public string ActionTaken { get; set; } = "";
+    public string Before { get; set; } = "";
+    public string After { get; set; } = "";
+    public string SuggestedRule { get; set; } = "";
+}
+
+public sealed class EditLogDocument
+{
+    public int Version { get; set; } = 1;
+    public List<EditLogEntry> Entries { get; set; } = new();
 }
 
 /// <summary>SignalR event payloads.</summary>

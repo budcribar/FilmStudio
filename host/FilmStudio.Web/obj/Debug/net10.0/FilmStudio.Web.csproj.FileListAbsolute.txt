@@ -70,8 +70,6 @@ C:\Users\budcr\source\repos\NickAndMe\host\FilmStudio.Web\obj\Debug\net10.0\comp
 C:\Users\budcr\source\repos\NickAndMe\host\FilmStudio.Web\obj\Debug\net10.0\compressed\iig0426t5k-{0}-63fj8s7r0e-63fj8s7r0e.gz
 C:\Users\budcr\source\repos\NickAndMe\host\FilmStudio.Web\obj\Debug\net10.0\compressed\89cl7azf3f-{0}-0j3bgjxly4-0j3bgjxly4.gz
 C:\Users\budcr\source\repos\NickAndMe\host\FilmStudio.Web\obj\Debug\net10.0\compressed\ifmkw8u0bh-{0}-abdmv1u4y3-abdmv1u4y3.gz
-C:\Users\budcr\source\repos\NickAndMe\host\FilmStudio.Web\obj\Debug\net10.0\compressed\evqbbyfe1r-{0}-ne14ti1q68-ne14ti1q68.gz
-C:\Users\budcr\source\repos\NickAndMe\host\FilmStudio.Web\obj\Debug\net10.0\compressed\eldwuk30w3-{0}-ig5xotzpx5-ig5xotzpx5.gz
 C:\Users\budcr\source\repos\NickAndMe\host\FilmStudio.Web\obj\Debug\net10.0\staticwebassets.build.json
 C:\Users\budcr\source\repos\NickAndMe\host\FilmStudio.Web\obj\Debug\net10.0\staticwebassets.build.json.cache
 C:\Users\budcr\source\repos\NickAndMe\host\FilmStudio.Web\obj\Debug\net10.0\staticwebassets.development.json
@@ -93,3 +91,5 @@ C:\Users\budcr\source\repos\NickAndMe\host\FilmStudio.Web\obj\Debug\net10.0\scop
 C:\Users\budcr\source\repos\NickAndMe\host\FilmStudio.Web\obj\Debug\net10.0\scopedcss\Components\Pages\Characters.razor.rz.scp.css
 C:\Users\budcr\source\repos\NickAndMe\host\FilmStudio.Web\obj\Debug\net10.0\compressed\145h6brwhl-{0}-hbwfqsbqmv-hbwfqsbqmv.gz
 C:\Users\budcr\source\repos\NickAndMe\host\FilmStudio.Web\obj\Debug\net10.0\compressed\eh2s2p8qch-{0}-hbwfqsbqmv-hbwfqsbqmv.gz
+C:\Users\budcr\source\repos\NickAndMe\host\FilmStudio.Web\obj\Debug\net10.0\compressed\evqbbyfe1r-{0}-b9228eflpl-b9228eflpl.gz
+C:\Users\budcr\source\repos\NickAndMe\host\FilmStudio.Web\obj\Debug\net10.0\compressed\eldwuk30w3-{0}-2tj1sjhksk-2tj1sjhksk.gz

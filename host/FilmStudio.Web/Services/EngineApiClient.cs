@@ -149,6 +149,95 @@ public sealed class EngineApiClient
         }
     }
 
+    public async Task StartRemuxAsync(
+        string projectId,
+        int? scene = null,
+        bool rebuildWip = true,
+        CancellationToken ct = default)
+    {
+        using var resp = await _http.PostAsJsonAsync(
+            "/api/jobs/remux",
+            new StartRemuxRequest
+            {
+                ProjectId = projectId,
+                Scene = scene,
+                RebuildWip = rebuildWip,
+            },
+            JsonOpts,
+            ct);
+        if (!resp.IsSuccessStatusCode)
+        {
+            var err = await resp.Content.ReadAsStringAsync(ct);
+            throw new InvalidOperationException(TryError(err) ?? resp.ReasonPhrase);
+        }
+    }
+
+    public async Task ReviewClipAsync(
+        string projectId,
+        int scene,
+        int clip,
+        string status,
+        string note = "",
+        CancellationToken ct = default)
+    {
+        using var resp = await _http.PostAsJsonAsync(
+            $"/api/projects/{Uri.EscapeDataString(projectId)}/clips/review",
+            new ClipReviewRequest
+            {
+                ProjectId = projectId,
+                Scene = scene,
+                Clip = clip,
+                Status = status,
+                Note = note,
+            },
+            JsonOpts,
+            ct);
+        if (!resp.IsSuccessStatusCode)
+        {
+            var err = await resp.Content.ReadAsStringAsync(ct);
+            throw new InvalidOperationException(TryError(err) ?? resp.ReasonPhrase);
+        }
+    }
+
+    public async Task ApproveSceneAsync(
+        string projectId,
+        int scene,
+        string note = "",
+        bool remux = false,
+        bool rebuildWip = false,
+        CancellationToken ct = default)
+    {
+        using var resp = await _http.PostAsJsonAsync(
+            $"/api/projects/{Uri.EscapeDataString(projectId)}/scenes/{scene}/approve",
+            new SceneApproveRequest
+            {
+                ProjectId = projectId,
+                Scene = scene,
+                Note = note,
+                Remux = remux,
+                RebuildWip = rebuildWip,
+            },
+            JsonOpts,
+            ct);
+        if (!resp.IsSuccessStatusCode)
+        {
+            var err = await resp.Content.ReadAsStringAsync(ct);
+            throw new InvalidOperationException(TryError(err) ?? resp.ReasonPhrase);
+        }
+    }
+
+    public async Task<EditLogDto?> GetEditLogAsync(string projectId, CancellationToken ct = default) =>
+        await _http.GetFromJsonAsync<EditLogDto>(
+            $"/api/projects/{Uri.EscapeDataString(projectId)}/edit-log",
+            JsonOpts,
+            ct);
+
+    public async Task<ClipReviewsDto?> GetClipReviewsAsync(string projectId, CancellationToken ct = default) =>
+        await _http.GetFromJsonAsync<ClipReviewsDto>(
+            $"/api/projects/{Uri.EscapeDataString(projectId)}/clip-reviews",
+            JsonOpts,
+            ct);
+
     public async Task UploadBookAsync(
         string projectId,
         string fileName,
@@ -271,6 +360,31 @@ public sealed class EngineApiClient
         }
     }
 
+    public async Task StartBookPrepareAsync(
+        string projectId,
+        bool forceExtract = true,
+        bool forceVision = false,
+        bool autoVision = true,
+        CancellationToken ct = default)
+    {
+        using var resp = await _http.PostAsJsonAsync(
+            "/api/jobs/book-prepare",
+            new StartBookPrepareRequest
+            {
+                ProjectId = projectId,
+                ForceExtract = forceExtract,
+                ForceVision = forceVision,
+                AutoVision = autoVision,
+            },
+            JsonOpts,
+            ct);
+        if (!resp.IsSuccessStatusCode)
+        {
+            var err = await resp.Content.ReadAsStringAsync(ct);
+            throw new InvalidOperationException(TryError(err) ?? resp.ReasonPhrase);
+        }
+    }
+
     public async Task LockCharacterVariantAsync(
         string projectId,
         string charKey,
@@ -360,6 +474,20 @@ public sealed class CharactersDto
     public bool Ok { get; set; }
     public string? ProjectId { get; set; }
     public List<CharacterSummary> Characters { get; set; } = new();
+}
+
+public sealed class EditLogDto
+{
+    public bool Ok { get; set; }
+    public string? ProjectId { get; set; }
+    public EditLogDocument? EditLog { get; set; }
+}
+
+public sealed class ClipReviewsDto
+{
+    public bool Ok { get; set; }
+    public string? ProjectId { get; set; }
+    public Dictionary<string, string>? Reviews { get; set; }
 }
 
 public sealed class ScenesListDto

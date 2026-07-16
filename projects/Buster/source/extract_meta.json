@@ -1,39 +1,37 @@
 {
   "schema_version": "extract_meta.v1",
-  "prepared_at": "2026-07-12T16:56:56",
+  "prepared_at": "2026-07-16T13:41:36",
   "pdf": "Buster_Noodle_Head_Dog_Goes_to_Bed_merged.pdf",
-  "text_engine": "grok_vision",
+  "text_engine": "pdfpig",
   "pages": 15,
-  "text_chars": 1280,
-  "text_words": 252,
+  "text_chars": 1263,
+  "text_words": 244,
   "text_quality": "good",
   "book_kind": "picture_book",
   "suggested_total_minutes": 7,
   "suggested_chunk_pages": 15,
   "strategy": {
-    "action": "grok_vision_done",
-    "reason": "Rebuilt book_full.txt via Grok vision (318 words, 0 page error(s)).",
-    "ready_for_stage1": true,
-    "needs_user": false
+    "action": "need_xai_for_vision",
+    "reason": "Picture book images ready, but embedded PDF text is unreliable. Set XAI_API_KEY and re-run prepare.",
+    "ready_for_stage1": false,
+    "needs_user": true
   },
-  "ready_for_stage1": true,
+  "ready_for_stage1": false,
   "has_page_images": true,
   "page_image_count": 15,
   "auto_prepared": true,
   "notes": [
-    "Layout is illustration-heavy (normal for picture books) but the wording looks clean enough for Stage 1.",
-    "Treated as picture book (~15 pages). Suggested Stage 1 runtime 7 min — not a feature-length 90.",
-    "Rebuilt book_full.txt via Grok vision (318 words, 0 page error(s))."
+    "Layout is illustration-heavy (normal for picture books) but wording may still be usable.",
+    "Treated as picture book (~15 pages). Suggested Stage 1 runtime 7 min."
   ],
   "analysis": {
     "pages": 15,
-    "text_chars": 1280,
-    "text_words": 252,
-    "avg_chars_per_page": 85.3,
-    "letter_ratio": 0.775,
-    "empty_page_ratio": 0.4,
+    "text_chars": 1263,
+    "text_words": 244,
+    "letter_ratio": 0.735,
+    "empty_page_ratio": 0.467,
     "sparse_page_ratio": 0.533,
-    "garbage_score": 0.01,
+    "garbage_score": 0.216,
     "text_quality": "good",
     "text_density": "sparse",
     "book_kind": "picture_book",
@@ -41,14 +39,10 @@
     "suggested_total_minutes": 7,
     "suggested_chunk_pages": 15,
     "notes": [
-      "Layout is illustration-heavy (normal for picture books) but the wording looks clean enough for Stage 1.",
-      "Treated as picture book (~15 pages). Suggested Stage 1 runtime 7 min — not a feature-length 90."
+      "Layout is illustration-heavy (normal for picture books) but wording may still be usable.",
+      "Treated as picture book (~15 pages). Suggested Stage 1 runtime 7 min."
     ],
-    "text_source": "grok_vision"
+    "text_source": "pdfpig"
   },
-  "vision": {
-    "ran": true,
-    "model": "grok-4.5",
-    "failed_pages": 0
-  }
+  "vision": null
 }

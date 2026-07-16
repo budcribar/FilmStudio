@@ -10,13 +10,11 @@
         "projectUniqueName": "C:\\Users\\budcr\\source\\repos\\NickAndMe\\host\\FilmStudio.Core\\FilmStudio.Core.csproj",
         "projectName": "FilmStudio.Core",
         "projectPath": "C:\\Users\\budcr\\source\\repos\\NickAndMe\\host\\FilmStudio.Core\\FilmStudio.Core.csproj",
-        "packagesPath": "C:\\Users\\budcr\\.nuget\\packages\\",
+        "packagesPath": "C:\\Users\\budcr\\.nuget\\packages",
         "outputPath": "C:\\Users\\budcr\\source\\repos\\NickAndMe\\host\\FilmStudio.Core\\obj\\",
         "projectStyle": "PackageReference",
-        "fallbackFolders": [
-          "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
-        ],
         "configFilePaths": [
+          "C:\\Users\\budcr\\source\\repos\\NickAndMe\\host\\NuGet.Config",
           "C:\\Users\\budcr\\AppData\\Roaming\\NuGet\\NuGet.Config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
@@ -67,7 +65,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.301/PortableRuntimeIdentifierGraph.json",
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.302/PortableRuntimeIdentifierGraph.json",
           "packagesToPrune": {
             "Microsoft.CSharp": "(,4.7.32767]",
             "Microsoft.VisualBasic": "(,10.4.32767]",
@@ -351,13 +349,11 @@
         "projectUniqueName": "C:\\Users\\budcr\\source\\repos\\NickAndMe\\host\\FilmStudio.Web\\FilmStudio.Web.csproj",
         "projectName": "FilmStudio.Web",
         "projectPath": "C:\\Users\\budcr\\source\\repos\\NickAndMe\\host\\FilmStudio.Web\\FilmStudio.Web.csproj",
-        "packagesPath": "C:\\Users\\budcr\\.nuget\\packages\\",
+        "packagesPath": "C:\\Users\\budcr\\.nuget\\packages",
         "outputPath": "C:\\Users\\budcr\\source\\repos\\NickAndMe\\host\\FilmStudio.Web\\obj\\",
         "projectStyle": "PackageReference",
-        "fallbackFolders": [
-          "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
-        ],
         "configFilePaths": [
+          "C:\\Users\\budcr\\source\\repos\\NickAndMe\\host\\NuGet.Config",
           "C:\\Users\\budcr\\AppData\\Roaming\\NuGet\\NuGet.Config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
@@ -400,7 +396,7 @@
             "Microsoft.AspNetCore.App.Internal.Assets": {
               "suppressParent": "All",
               "target": "Package",
-              "version": "[10.0.9, )",
+              "version": "[10.0.10, )",
               "autoReferenced": true
             },
             "Microsoft.AspNetCore.SignalR.Client": {
@@ -427,7 +423,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.301/PortableRuntimeIdentifierGraph.json",
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.302/PortableRuntimeIdentifierGraph.json",
           "packagesToPrune": {
             "Microsoft.AspNetCore": "(,10.0.32767]",
             "Microsoft.AspNetCore.Antiforgery": "(,10.0.32767]",

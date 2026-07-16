@@ -39,14 +39,25 @@ public sealed class GrokVideoClient
         }
     }
 
+    /// <param name="referenceImagePaths">Optional local image paths for reference-to-video (max 7; API often caps duration at 10s).</param>
     public async Task<string> SubmitGenerationAsync(
         string prompt,
         int durationSeconds,
         string resolution,
         string model,
-        CancellationToken ct)
+        CancellationToken ct,
+        IReadOnlyList<string>? referenceImagePaths = null)
     {
         EnsureAuthHeader();
+        var refs = (referenceImagePaths ?? Array.Empty<string>())
+            .Where(p => !string.IsNullOrWhiteSpace(p) && File.Exists(p))
+            .Take(7)
+            .ToList();
+
+        // Image / reference-to-video max duration is typically 10s
+        if (refs.Count > 0)
+            durationSeconds = Math.Min(durationSeconds, 10);
+
         var payload = new Dictionary<string, object?>
         {
             ["model"] = model,
@@ -55,6 +66,26 @@ public sealed class GrokVideoClient
             ["aspect_ratio"] = "16:9",
             ["resolution"] = resolution,
         };
+
+        if (refs.Count == 1)
+        {
+            payload["image"] = new Dictionary<string, object?>
+            {
+                ["url"] = await FileToDataUriAsync(refs[0], ct),
+            };
+        }
+        else if (refs.Count > 1)
+        {
+            // Multi-ref: send as image_urls array when supported; also set primary image
+            payload["image"] = new Dictionary<string, object?>
+            {
+                ["url"] = await FileToDataUriAsync(refs[0], ct),
+            };
+            var urls = new List<object?>();
+            foreach (var path in refs)
+                urls.Add(await FileToDataUriAsync(path, ct));
+            payload["image_urls"] = urls;
+        }
 
         using var resp = await _http.PostAsJsonAsync("videos/generations", payload, ct);
         var body = await resp.Content.ReadAsStringAsync(ct);
@@ -68,6 +99,20 @@ public sealed class GrokVideoClient
             throw new InvalidOperationException($"Grok response missing request_id: {Trim(body, 300)}");
         }
         return id;
+    }
+
+    private static async Task<string> FileToDataUriAsync(string path, CancellationToken ct)
+    {
+        var bytes = await File.ReadAllBytesAsync(path, ct);
+        var ext = Path.GetExtension(path).ToLowerInvariant();
+        var mime = ext switch
+        {
+            ".png" => "image/png",
+            ".webp" => "image/webp",
+            ".gif" => "image/gif",
+            _ => "image/jpeg",
+        };
+        return $"data:{mime};base64,{Convert.ToBase64String(bytes)}";
     }
 
     public async Task<string> PollForVideoUrlAsync(

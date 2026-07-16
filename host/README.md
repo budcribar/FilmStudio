@@ -21,8 +21,9 @@ host/
 | **FilmStudio.Engine** | Native C# job runner + Grok client |
 | **FilmStudio.Core** | DTOs / options |
 
-The C# engine **reads** Stage 2 blueprints under `projects/<id>/` and **writes** clip mp4s.  
-It does **not** yet reimplement every Python feature (multi-ref plates, full WIP remux, Stage 1 LLM). Use **Streamlit + Python** for those until ported.
+The C# engine owns the product path: book prepare, Stage 1/2, multi-ref video gen,
+FFmpeg remux/WIP, character design, cost, and review/edit log. Python/Streamlit remain
+optional for legacy experiments.
 
 ## Run (two terminals)
 
@@ -76,14 +77,13 @@ Events: `JobUpdated` (JobSnapshot), `JobLog` (string)
 
 ## Parity notes
 
-| Feature | C# engine | Python engine |
-|---------|-----------|---------------|
-| List projects / activate | Yes | Yes |
-| Generate clips from blueprint prompts | Yes (text Grok) | Yes (full prompt build + multi-ref) |
-| Character portrait gen / lock | Yes (C# Grok image + lock) | Yes |
-| Multi-ref video plates | Not yet | Yes |
-| Stage 1 / Stage 2 planning | Still Python / Streamlit | Yes |
-| WIP remux / QA | Not yet | Yes |
+| Feature | C# engine | Python (legacy) |
+|---------|-----------|-----------------|
+| PDF extract + vision OCR + page render | Yes | Yes |
+| Stage 1 scene bible (Grok chat) | Yes | Yes |
+| Stage 2 clip planner | Yes | Yes |
+| Multi-ref video + audio prompt build | Yes | Yes |
+| Character portrait gen / lock | Yes | Yes |
+| FFmpeg scene remux + WIP | Yes (bundled via Soenneker.Libraries.FFmpeg) | Yes |
+| Review / edit log / approve | Yes | Yes |
 | SignalR live UI | Yes | N/A (Streamlit poll) |
-
-Python remains the **full pipeline** until those pieces are ported; C# is the **product backend** path for multi-user UI.

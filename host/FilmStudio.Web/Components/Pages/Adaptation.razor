@@ -11,8 +11,8 @@
 <h1>Adaptation</h1>
 <p class="text-muted">
     Book → Stage 1 scene bible → Stage 2 clip plan.
-    Stage 1/2 jobs shell out to the Python scripts under <code>scripts/two_stage_adaptation/</code>
-    (same as Streamlit). Grok vision re-import of PDF pages is still Streamlit-first.
+    <strong>All steps run in C#</strong>: PdfPig + page render + Grok vision,
+    Stage 1 Grok chat, Stage 2 deterministic planner (no Python required).
 </p>
 
 @if (!string.IsNullOrEmpty(_error))
@@ -46,7 +46,8 @@
 @* ---- Live job ---- *@
 @if (_job is not null &&
      (_job.Status is "running" or "done" or "error" or "cancelled") &&
-     (_job.Kind is "stage1" or "stage2" or "scene" or "batch" || string.Equals(_job.Status, "running", StringComparison.OrdinalIgnoreCase)))
+     (_job.Kind is "book_prepare" or "stage1" or "stage2" or "scene" or "batch" or "character"
+      || string.Equals(_job.Status, "running", StringComparison.OrdinalIgnoreCase)))
 {
     <div class="card mb-3 border-@(_job.Status == "running" ? "primary" : _job.Status == "error" ? "danger" : "secondary")">
         <div class="card-body py-2">
@@ -106,13 +107,30 @@ else
                     else if (_status.Book.PdfExists || _status.Book.BookTextExists)
                     {
                         <div class="alert alert-warning py-2 small">
-                            Source on disk but text may need re-import / vision cleanup (Streamlit).
+                            Source on disk but text may need re-import / vision cleanup.
                         </div>
                     }
                     else
                     {
                         <div class="alert alert-secondary py-2 small">No book source yet — upload a PDF or TXT.</div>
                     }
+
+                    <div class="d-flex flex-wrap gap-2 mb-3">
+                        <button class="btn btn-primary btn-sm"
+                                disabled="@(_busy || JobRunning || (!_status.Book.PdfExists && !_status.Book.BookTextExists))"
+                                @onclick="() => PrepareBookAsync(forceVision: false)">
+                            Prepare book (extract + auto vision)
+                        </button>
+                        <button class="btn btn-outline-primary btn-sm"
+                                disabled="@(_busy || JobRunning || !_status.XaiConfigured || (!_status.Book.PdfExists && _status.Book.PageImageCount == 0))"
+                                @onclick="() => PrepareBookAsync(forceVision: true)">
+                            Force Grok vision OCR
+                        </button>
+                    </div>
+                    <p class="small text-muted mb-3">
+                        C# path: PdfPig text extract → score quality → if picture book / garbled text,
+                        rebuild <code>book_full.txt</code> page-by-page with Grok vision (needs key).
+                    </p>
 
                     <ul class="list-unstyled small mb-3">
                         <li>
@@ -154,12 +172,11 @@ else
                         <label class="form-label small">Upload PDF or TXT</label>
                         <InputFile OnChange="OnFileSelected" class="form-control form-control-sm" accept=".pdf,.txt" disabled="@_busy" />
                     </div>
-                    <button class="btn btn-sm btn-primary" disabled="@(_busy || _pendingFile is null)" @onclick="UploadAsync">
+                    <button class="btn btn-sm btn-outline-secondary" disabled="@(_busy || _pendingFile is null)" @onclick="UploadAsync">
                         Save upload to project
                     </button>
                     <p class="small text-muted mt-2 mb-0">
-                        PDF vision re-import (OCR fix) still uses Streamlit <strong>Adaptation → Re-import</strong>.
-                        Plain TXT unlocks Stage 1 immediately.
+                        After upload, click <strong>Prepare book</strong>. Plain TXT unlocks Stage 1 immediately when quality is good.
                     </p>
 
                     @if (!string.IsNullOrEmpty(_status.Book.Preview))
@@ -244,7 +261,7 @@ else
                         <span class="small text-muted ms-2">Needs XAI_API_KEY on API</span>
                     }
                     <p class="small text-muted mt-2 mb-0">
-                        Invokes <code>run_stage1_from_book.py</code> · writes <code>@(_status.Stage1.ScenesFile ?? "scenes.json")</code>
+                        C# Stage1Service (Grok chat) · writes <code>@(_status.Stage1.ScenesFile ?? "scenes.json")</code>
                     </p>
                 </div>
             </div>
@@ -323,7 +340,7 @@ else
                         <a class="btn btn-outline-primary" href="scenes">Open Scenes →</a>
                     </div>
                     <p class="small text-muted mt-2 mb-0">
-                        Deterministic planner — no API key. Invokes <code>stage2_plan_grok.py</code> (backs up existing blueprint).
+                        Deterministic C# planner — no API key. Backs up existing blueprint before write.
                     </p>
                 </div>
             </div>
@@ -499,6 +516,29 @@ else
         finally { _busy = false; }
     }
 
+    private async Task PrepareBookAsync(bool forceVision)
+    {
+        _busy = true;
+        _error = null;
+        _message = null;
+        try
+        {
+            await EnsureHubAsync();
+            await Engine.StartBookPrepareAsync(
+                _projectId,
+                forceExtract: true,
+                forceVision: forceVision,
+                autoVision: true);
+            _message = forceVision
+                ? "Book prepare started (force Grok vision OCR) — watch the job log"
+                : "Book prepare started (PdfPig extract + auto vision) — watch the job log";
+            var jobs = await Engine.GetJobAsync();
+            _job = jobs?.Job;
+        }
+        catch (Exception ex) { _error = ex.Message; }
+        finally { _busy = false; }
+    }
+
     private async Task RunStage1Async()
     {
         _busy = true;
@@ -568,7 +608,7 @@ else
     private static string NextStepLabel(string step) => step switch
     {
         "import_book" => "Import a PDF or TXT into the project source folder",
-        "fix_book_text" => "Fix book text (Streamlit Re-import with Grok vision if OCR is bad)",
+        "fix_book_text" => "Prepare book (extract + Grok vision OCR) or paste a clean book_full.txt",
         "run_stage1" => "Run Stage 1 to build the scene bible",
         "run_stage2" => "Generate Stage 2 clip plan",
         "replan_stage2" => "Re-plan Stage 2 (Stage 1 changed)",

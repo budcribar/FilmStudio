@@ -1021,23 +1021,28 @@ public sealed class ProjectStore
             catch { /* ignore */ }
         }
 
-        // Gate: good quality + low garbage + book text present
-        if (status.BookTextExists &&
-            string.Equals(status.TextQuality, "good", StringComparison.OrdinalIgnoreCase) &&
-            status.GarbageScore < 0.45)
-        {
-            status.ReadyForStage1 = true;
-        }
-        else if (status.BookTextExists && status.TextQuality is null && status.BookTextBytes > 200)
-        {
-            // No meta yet — allow Stage 1 if plain text looks present (user may have uploaded .txt)
-            status.TextQuality ??= "unknown";
-            status.ReadyForStage1 = true;
-        }
-        else if (!status.BookTextExists)
+        // Prefer extract_meta.ready_for_stage1 when present (set by BookPrepareService strategy).
+        // Only fall back to heuristics when meta is missing or incomplete.
+        var metaReadySet = File.Exists(metaPath) && status.TextQuality is not null;
+        if (!status.BookTextExists)
         {
             status.ReadyForStage1 = false;
         }
+        else if (!metaReadySet)
+        {
+            if (status.TextQuality is null && status.BookTextBytes > 200)
+            {
+                // No meta yet — allow Stage 1 if plain text looks present (user may have uploaded .txt)
+                status.TextQuality = "unknown";
+                status.ReadyForStage1 = true;
+            }
+            else if (string.Equals(status.TextQuality, "good", StringComparison.OrdinalIgnoreCase) &&
+                     status.GarbageScore < 0.45)
+            {
+                status.ReadyForStage1 = true;
+            }
+        }
+        // else: keep ReadyForStage1 from extract_meta.json
 
         if (status.BookTextExists)
         {
