@@ -21,6 +21,7 @@ builder.Services.PostConfigure<FilmStudioOptions>(o =>
 builder.Services.AddSingleton<ProjectStore>();
 builder.Services.AddSingleton<CostReportService>();
 builder.Services.AddSingleton<CharacterDesignService>();
+builder.Services.AddSingleton<CharacterBookPlateService>();
 builder.Services.AddSingleton<BookPrepareService>();
 builder.Services.AddSingleton<Stage1Service>();
 builder.Services.AddSingleton<Stage2PlannerService>();
@@ -304,6 +305,30 @@ app.MapPost("/api/jobs/character-variants", async (StartCharacterVariantsRequest
     catch (Exception ex)
     {
         return Results.Conflict(new { ok = false, error = ex.Message, job = jobService.GetSnapshot() });
+    }
+});
+
+/// <summary>Attach book plate candidates to character seeds (flexible seed pipeline; does not lock).</summary>
+app.MapPost("/api/projects/{id}/characters/attach-book-plates", (
+    string id,
+    AttachCharacterPlatesRequest? body,
+    CharacterBookPlateService plates) =>
+{
+    try
+    {
+        body ??= new AttachCharacterPlatesRequest();
+        var result = plates.Attach(
+            id,
+            force: body.Force,
+            copyIntoAssets: body.CopyIntoAssets,
+            onlyCharKey: body.CharKey);
+        return result.Ok
+            ? Results.Ok(new { ok = true, projectId = id, attach = result })
+            : Results.BadRequest(new { ok = false, projectId = id, attach = result, error = result.Reason });
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { ok = false, error = ex.Message });
     }
 });
 

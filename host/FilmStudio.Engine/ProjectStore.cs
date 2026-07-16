@@ -282,6 +282,24 @@ public sealed class ProjectStore
                 }
             }
 
+            var hasPreferred = hasRef;
+            string? preferredLabel = hasRef ? "locked" : null;
+            string? preferredUrl = hasRef
+                ? $"/api/projects/{Uri.EscapeDataString(projectId)}/characters/{Uri.EscapeDataString(key)}/ref"
+                : null;
+            if (!hasPreferred && !voiceOnly)
+            {
+                var v1 = Path.Combine(projectDir, "assets", "characters",
+                    $"{key.ToLowerInvariant()}_variant_01.png");
+                if (File.Exists(v1) && new FileInfo(v1).Length >= 64)
+                {
+                    hasPreferred = true;
+                    preferredLabel = "best so far (variant 1)";
+                    preferredUrl =
+                        $"/api/projects/{Uri.EscapeDataString(projectId)}/characters/{Uri.EscapeDataString(key)}/variants/1";
+                }
+            }
+
             rows.Add(new CharacterSummary
             {
                 Key = key,
@@ -299,6 +317,9 @@ public sealed class ProjectStore
                 RefUrl = hasRef
                     ? $"/api/projects/{Uri.EscapeDataString(projectId)}/characters/{Uri.EscapeDataString(key)}/ref"
                     : null,
+                HasPreferred = hasPreferred,
+                PreferredLabel = preferredLabel,
+                PreferredUrl = preferredUrl,
                 WardrobeAlways = wardrobe,
                 DesignReferenceImages = bookRefs,
                 BookRefs = bookRefImages,

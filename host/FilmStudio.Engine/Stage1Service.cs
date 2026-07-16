@@ -20,6 +20,7 @@ public sealed class Stage1Service
     private readonly ProjectStore _projects;
     private readonly GrokChatClient _chat;
     private readonly BookPrepareService _books;
+    private readonly CharacterBookPlateService _plates;
     private readonly FilmStudioOptions _opts;
     private readonly ILogger<Stage1Service> _log;
 
@@ -27,12 +28,14 @@ public sealed class Stage1Service
         ProjectStore projects,
         GrokChatClient chat,
         BookPrepareService books,
+        CharacterBookPlateService plates,
         IOptions<FilmStudioOptions> opts,
         ILogger<Stage1Service> log)
     {
         _projects = projects;
         _chat = chat;
         _books = books;
+        _plates = plates;
         _opts = opts.Value;
         _log = log;
     }
@@ -171,7 +174,25 @@ public sealed class Stage1Service
         var hard = errs.Where(e => !e.StartsWith("(schema", StringComparison.Ordinal)).ToList();
         onProgress?.Invoke($"{errs.Count} verify issue(s); hard={hard.Count}");
 
+        // Flexible seed pipeline: attach book plate candidates (not locks) for Characters UI / Grok
+        try
+        {
+            onProgress?.Invoke("Attaching book plate candidates to character seeds…");
+            var plates = _plates.Attach(projectId, force: true, copyIntoAssets: true);
+            if (plates.Ok)
+                onProgress?.Invoke(
+                    $"Book plates: updated={plates.CharactersUpdated} skipped={plates.CharactersSkipped}");
+            else
+                onProgress?.Invoke($"Book plate attach skipped: {plates.Reason}");
+        }
+        catch (Exception ex)
+        {
+            _log.LogWarning(ex, "Book plate attach after Stage 1 failed");
+            onProgress?.Invoke($"Book plate attach failed (non-fatal): {ex.Message}");
+        }
+
         var gpv = GetDict(partial, "global_production_variables");
+        // Reload scene counts from disk if attach rewrote seeds (same file)
         var result = new Stage1Result
         {
             Ok = hard.Count == 0,

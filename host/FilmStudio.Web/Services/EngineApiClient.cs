@@ -346,11 +346,21 @@ public sealed class EngineApiClient
     public async Task StartCharacterVariantsAsync(
         string projectId,
         string charKey,
+        CancellationToken ct = default) =>
+        await StartCharacterVariantsAsync(new StartCharacterVariantsRequest
+        {
+            ProjectId = projectId,
+            CharKey = charKey,
+            SeedMode = "auto",
+        }, ct);
+
+    public async Task StartCharacterVariantsAsync(
+        StartCharacterVariantsRequest req,
         CancellationToken ct = default)
     {
         using var resp = await _http.PostAsJsonAsync(
             "/api/jobs/character-variants",
-            new StartCharacterVariantsRequest { ProjectId = projectId, CharKey = charKey },
+            req,
             JsonOpts,
             ct);
         if (!resp.IsSuccessStatusCode)
@@ -358,6 +368,36 @@ public sealed class EngineApiClient
             var err = await resp.Content.ReadAsStringAsync(ct);
             throw new InvalidOperationException(TryError(err) ?? resp.ReasonPhrase);
         }
+    }
+
+    public async Task<AttachCharacterPlatesResult?> AttachBookPlatesAsync(
+        string projectId,
+        bool force = true,
+        string? charKey = null,
+        CancellationToken ct = default)
+    {
+        using var resp = await _http.PostAsJsonAsync(
+            $"/api/projects/{Uri.EscapeDataString(projectId)}/characters/attach-book-plates",
+            new AttachCharacterPlatesRequest
+            {
+                ProjectId = projectId,
+                Force = force,
+                CopyIntoAssets = true,
+                CharKey = charKey,
+            },
+            JsonOpts,
+            ct);
+        var body = await resp.Content.ReadAsStringAsync(ct);
+        if (!resp.IsSuccessStatusCode)
+            throw new InvalidOperationException(TryError(body) ?? resp.ReasonPhrase);
+        try
+        {
+            using var doc = JsonDocument.Parse(body);
+            if (doc.RootElement.TryGetProperty("attach", out var att))
+                return JsonSerializer.Deserialize<AttachCharacterPlatesResult>(att.GetRawText(), JsonOpts);
+        }
+        catch { /* ignore */ }
+        return null;
     }
 
     public async Task StartBookPrepareAsync(

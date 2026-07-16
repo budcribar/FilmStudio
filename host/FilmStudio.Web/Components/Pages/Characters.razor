@@ -9,8 +9,9 @@
 
 <h1>Characters</h1>
 <p class="text-muted">
-    Pick a cast member, choose a <strong>source</strong> (book art or Grok), then use
-    <strong>left vs right</strong> comparison until the best look is locked for video.
+    Click a cast member → choose how to create portraits. The <strong>current preferred image</strong>
+    (lock or best-so-far) plus the written description are always sent to Grok.
+    Book search only adds character book plates as extra hints; if none exist (e.g. Dad), Grok still generates.
 </p>
 
 @if (!string.IsNullOrEmpty(_error))
@@ -116,7 +117,7 @@ else
         <div class="col-md-9">
             @if (_selected is null)
             {
-                <p class="text-muted">Select a character.</p>
+                <p class="text-muted">Click a character on the left to set a preferred look and choose how to generate.</p>
             }
             else if (_selected.VoiceOnly)
             {
@@ -146,30 +147,42 @@ else
                     </div>
                     <div class="card-body row g-3 align-items-start">
                         <div class="col-auto">
-                            @if (_selected.Locked && !string.IsNullOrEmpty(_selected.RefUrl))
+                            @if (PreferredImageUrl is { Length: > 0 } prefUrl)
                             {
-                                <img src="@CacheBust(Engine.CharacterRefUrl(_projectId, _selected.Key))"
-                                     alt="Locked"
+                                <img src="@prefUrl"
+                                     alt="Preferred"
                                      class="rounded border"
                                      style="width: 120px; height: 120px; object-fit: contain; background: #f8f9fa;" />
-                                <div class="small text-muted mt-1">Current lock</div>
+                                <div class="small text-muted mt-1">@PreferredImageLabel</div>
                             }
                             else
                             {
                                 <div class="rounded border d-flex align-items-center justify-content-center text-muted small"
-                                     style="width: 120px; height: 120px; background: #f8f9fa;">No lock</div>
+                                     style="width: 120px; height: 120px; background: #f8f9fa;">No preferred image</div>
                             }
                         </div>
                         <div class="col char-meta">
                             <div class="small"><strong>Description</strong> — @Trunc(_selected.Description, 160)</div>
                             <div class="small mt-1"><strong>Visual</strong> — @Trunc(_selected.VisualLock, 120)</div>
+                            <div class="small mt-1 text-muted">
+                                Book plates for this cast member:
+                                <strong>@_selected.BookRefs.Count(b => b.Exists)</strong>
+                                @if (_selected.BookRefs.Count(b => b.Exists) == 0)
+                                {
+                                    <span>· none attached (Grok will use description + preferred only)</span>
+                                }
+                            </div>
                             @if (_mode != Mode.PickSource)
                             {
-                                <button type="button" class="btn btn-sm btn-link px-0 mt-1" @onclick="BackToSource">← Change source</button>
+                                <button type="button" class="btn btn-sm btn-link px-0 mt-1" @onclick="BackToSource">← Change approach</button>
                             }
                             @if (_selected.Locked)
                             {
-                                <button type="button" class="btn btn-sm btn-outline-danger ms-2 mt-1" disabled="@_busy" @onclick="UnlockAsync">Unlock</button>
+                                <button type="button" class="btn btn-sm btn-outline-warning ms-2 mt-1" disabled="@_busy"
+                                        title="Clear official lock for video gen; keep the image as preferred (variant 1)"
+                                        @onclick="UnlockAsync">
+                                    Unlock (keep as best)
+                                </button>
                             }
                         </div>
                     </div>
@@ -177,48 +190,96 @@ else
 
                 @if (_mode == Mode.PickSource)
                 {
-                    <div class="mb-2"><strong>1) Choose image source</strong></div>
+                    <div class="mb-2"><strong>Choose how to create / refine</strong></div>
                     <div class="char-source-grid mb-3">
-                        <button type="button" class="char-source-btn" disabled="@_busy" @onclick="StartBookSearch">
-                            <span class="char-source-btn__title">📚 Search book</span>
+                        <button type="button" class="char-source-btn" disabled="@(_busy || JobRunning)" @onclick="StartBookHintGenerate">
+                            <span class="char-source-btn__title">📚 Book hints → generate</span>
                             <span class="char-source-btn__sub">
-                                Find plates already attached for this character
-                                (@(_selected.BookRefs.Count(b => b.Exists)) on disk).
-                                Pick the best via left/right comparison.
+                                Auto: preferred + up to 2 book plates for this character
+                                (@(_selected.BookRefs.Count(b => b.Exists)) attached).
+                                If none, still generates from description + preferred.
                             </span>
                         </button>
-                        <button type="button" class="char-source-btn" disabled="@(_busy || JobRunning)" @onclick="StartGenerate">
-                            <span class="char-source-btn__title">✨ Generate with Grok</span>
+                        <button type="button" class="char-source-btn" disabled="@(_busy || JobRunning)" @onclick="StartGeneratePreferred">
+                            <span class="char-source-btn__title">✨ Preferred + description</span>
                             <span class="char-source-btn__sub">
-                                @if (_selected.Locked)
-                                {
-                                    <text>Create 1 refined portrait from the locked ref (+ book plates).</text>
-                                }
-                                else
-                                {
-                                    <text>Create 3 portraits to compare (uses book plates when available).</text>
-                                }
-                                Needs <code>XAI_API_KEY</code> on the API.
+                                Seed mode = preferred only (or text-only if none).
+                                @(_selected.Locked ? "1 refine" : "3 options") then compare &amp; lock.
                             </span>
                         </button>
                     </div>
+
+                    <details class="mb-3 border rounded p-2 bg-light">
+                        <summary class="small fw-semibold" style="cursor:pointer">Advanced: custom seed mix (up to 3 images)</summary>
+                        <p class="small text-muted mt-2 mb-2">
+                            Pick any combination of preferred, variants, and book plates.
+                            Flexible for hard cases; leave unchecked to use the buttons above.
+                        </p>
+                        <div class="form-check mb-1">
+                            <input class="form-check-input" type="checkbox" id="seedPref" @bind="_seedIncludePreferred" disabled="@(!_selected.HasPreferred)" />
+                            <label class="form-check-label small" for="seedPref">
+                                Preferred (@(_selected.PreferredLabel ?? "none"))
+                            </label>
+                        </div>
+                        @if (_selected.Variants.Any(v => v.Exists))
+                        {
+                            <div class="small text-muted mt-1">Variants</div>
+                            @foreach (var v in _selected.Variants.Where(x => x.Exists))
+                            {
+                                var idx = v.Index ?? 0;
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="checkbox"
+                                           checked="@_seedVariantIndices.Contains(idx)"
+                                           @onchange="e => ToggleSeedVariant(idx, (bool)(e.Value ?? false))" />
+                                    <label class="form-check-label small">V@(idx)</label>
+                                </div>
+                            }
+                        }
+                        @if (_selected.BookRefs.Any(b => b.Exists))
+                        {
+                            <div class="small text-muted mt-1">Book plates</div>
+                            @foreach (var b in _selected.BookRefs.Where(x => x.Exists))
+                            {
+                                var idx = b.Index ?? 0;
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="checkbox"
+                                           checked="@_seedBookIndices.Contains(idx)"
+                                           @onchange="e => ToggleSeedBook(idx, (bool)(e.Value ?? false))" />
+                                    <label class="form-check-label small" title="@b.FileName">B@(idx)</label>
+                                </div>
+                            }
+                        }
+                        else
+                        {
+                            <div class="small text-muted mt-1">No book plates — run Stage 1 or “Attach book plates”.</div>
+                        }
+                        <div class="d-flex flex-wrap gap-2 mt-2">
+                            <button type="button" class="btn btn-sm btn-primary"
+                                    disabled="@(_busy || JobRunning)" @onclick="StartExplicitGenerate">
+                                Generate with custom seeds
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary"
+                                    disabled="@_busy" @onclick="AttachBookPlatesAsync">
+                                Re-attach book plates
+                            </button>
+                        </div>
+                        <div class="small text-muted mt-1">Selected image seeds: @SelectedSeedCount / 3 max to Grok</div>
+                    </details>
+
                     <p class="small text-muted mb-0">
-                        Tip: for picture books, start with <strong>Search book</strong> and lock a plate — no API cost.
-                        Use generate when you need a cleaner model-sheet style.
+                        After Grok finishes, left/right compare and lock the winner for video.
+                        Needs <code>XAI_API_KEY</code> on the API.
                     </p>
-                }
-                else if (_mode == Mode.BookEmpty)
-                {
-                    <div class="alert alert-warning">
-                        No book plates found for <strong>@_selected.DisplayName</strong>.
-                        Book plates attach after Stage 1 / prepare, or use <strong>Generate with Grok</strong>.
-                    </div>
-                    <button class="btn btn-outline-secondary" @onclick="BackToSource">← Back</button>
                 }
                 else if (_mode == Mode.WaitingGenerate)
                 {
                     <div class="alert alert-info mb-0">
-                        Generating portraits… when finished, left/right comparison starts automatically.
+                        Generating portraits with preferred image + description
+                        @if (_selected.BookRefs.Any(b => b.Exists))
+                        {
+                            <text> + book hints</text>
+                        }
+                        … left/right comparison starts when ready.
                     </div>
                 }
                 else if (_mode == Mode.Compare && _champion is not null)
@@ -308,16 +369,25 @@ else
 }
 
 @code {
-    private enum Mode { PickSource, BookEmpty, WaitingGenerate, Compare }
+    private enum Mode { PickSource, WaitingGenerate, Compare }
     private enum Side { None, Left, Right }
 
     private sealed class Candidate
     {
-        public string Kind { get; init; } = ""; // book | variant | locked
+        public string Kind { get; init; } = ""; // book | variant | locked | preferred
         public int Index { get; init; }
         public string Label { get; init; } = "";
         public string Url { get; init; } = "";
     }
+
+    private string? PreferredImageUrl =>
+        _selected?.PreferredUrl is { Length: > 0 } u ? CacheBust(u) : null;
+
+    private string PreferredImageLabel =>
+        _selected is null ? ""
+        : _selected.HasPreferred
+            ? $"Preferred · {_selected.PreferredLabel}"
+            : "No preferred image";
 
     private bool _busy;
     private string? _error;
@@ -338,6 +408,23 @@ else
     private int _round;
     private int _totalRounds;
     private Side _highlight = Side.None;
+
+    // Flexible multi-seed (advanced)
+    private bool _seedIncludePreferred = true;
+    private HashSet<int> _seedBookIndices = new();
+    private HashSet<int> _seedVariantIndices = new();
+
+    private int SelectedSeedCount
+    {
+        get
+        {
+            var n = 0;
+            if (_seedIncludePreferred && (_selected?.HasPreferred ?? false)) n++;
+            n += _seedBookIndices.Count;
+            n += _seedVariantIndices.Count;
+            return n;
+        }
+    }
 
     private bool JobRunning =>
         string.Equals(_job?.Status, "running", StringComparison.OrdinalIgnoreCase);
@@ -442,16 +529,15 @@ else
             var dto = await Engine.GetCharactersAsync(_projectId);
             _chars = dto?.Characters ?? new List<CharacterSummary>();
             _imgBust = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-            if (_chars.Count > 0)
-            {
-                if (_selectedKey is null || _chars.All(c => c.Key != _selectedKey))
-                    _selectedKey = _chars[0].Key;
-                Select(_selectedKey!, resetMode: false);
-            }
+            // Do not auto-open a character — user clicks the list to choose source.
+            if (_selectedKey is not null && _chars.Any(c => c.Key == _selectedKey))
+                Select(_selectedKey, resetMode: false);
             else
             {
                 _selectedKey = null;
                 _selected = null;
+                ResetCompare();
+                _mode = Mode.PickSource;
             }
 
             var jobs = await Engine.GetJobAsync();
@@ -488,7 +574,33 @@ else
             _mode = Mode.PickSource;
             _error = null;
             _message = null;
+            ResetSeedSelection();
         }
+    }
+
+    private void ResetSeedSelection()
+    {
+        _seedIncludePreferred = true;
+        _seedBookIndices = new HashSet<int>();
+        _seedVariantIndices = new HashSet<int>();
+        // Default book hints: first two attached plates (auto policy preview)
+        if (_selected is not null)
+        {
+            foreach (var b in _selected.BookRefs.Where(x => x.Exists).Take(2))
+                if (b.Index is int i) _seedBookIndices.Add(i);
+        }
+    }
+
+    private void ToggleSeedBook(int index, bool on)
+    {
+        if (on) _seedBookIndices.Add(index);
+        else _seedBookIndices.Remove(index);
+    }
+
+    private void ToggleSeedVariant(int index, bool on)
+    {
+        if (on) _seedVariantIndices.Add(index);
+        else _seedVariantIndices.Remove(index);
     }
 
     private void BackToSource()
@@ -508,39 +620,92 @@ else
         _highlight = Side.None;
     }
 
-    private void StartBookSearch()
+    private async Task StartBookHintGenerate()
     {
         if (_selected is null) return;
-        var books = _selected.BookRefs.Where(b => b.Exists).ToList();
-        if (books.Count == 0)
+        var bookCount = _selected.BookRefs.Count(b => b.Exists);
+        _message = bookCount == 0
+            ? $"No book plates for {_selected.DisplayName} — auto seed = preferred + description."
+            : $"Auto seed for {_selected.DisplayName}: preferred + up to 2 of {bookCount} book plate(s).";
+        await StartGenerateCoreAsync(new StartCharacterVariantsRequest
         {
-            _mode = Mode.BookEmpty;
-            return;
-        }
-
-        var candidates = books.Select(b => new Candidate
-        {
-            Kind = "book",
-            Index = b.Index ?? 0,
-            Label = $"Book · {b.FileName}",
-            Url = CacheBust(Engine.CharacterBookRefUrl(_projectId, _selected.Key, b.Index ?? 0)),
-        }).ToList();
-
-        BeginCompare(candidates);
+            ProjectId = _projectId,
+            CharKey = _selected.Key,
+            SeedMode = "auto",
+            IncludePreferred = true,
+            MaxBookHints = 2,
+            MaxRefs = 3,
+        });
     }
 
-    private async Task StartGenerate()
+    private async Task StartGeneratePreferred()
+    {
+        if (_selected is null) return;
+        _message = _selected.HasPreferred
+            ? $"Preferred-only seed for {_selected.DisplayName}."
+            : $"No preferred image — text-only generate for {_selected.DisplayName}.";
+        await StartGenerateCoreAsync(new StartCharacterVariantsRequest
+        {
+            ProjectId = _projectId,
+            CharKey = _selected.Key,
+            SeedMode = _selected.HasPreferred ? "preferred_only" : "none",
+            IncludePreferred = true,
+            MaxRefs = 1,
+        });
+    }
+
+    private async Task StartExplicitGenerate()
+    {
+        if (_selected is null) return;
+        if (SelectedSeedCount == 0)
+        {
+            _error = "Select at least one seed image, or use Preferred-only / Book hints.";
+            return;
+        }
+        if (SelectedSeedCount > 3)
+            _message = "Note: only the first 3 selected seeds are sent to Grok.";
+        await StartGenerateCoreAsync(new StartCharacterVariantsRequest
+        {
+            ProjectId = _projectId,
+            CharKey = _selected.Key,
+            SeedMode = "explicit",
+            IncludePreferred = _seedIncludePreferred,
+            IncludeLockedRef = _seedIncludePreferred,
+            BookRefIndices = _seedBookIndices.OrderBy(i => i).ToList(),
+            VariantIndices = _seedVariantIndices.OrderBy(i => i).ToList(),
+            MaxRefs = 3,
+        });
+    }
+
+    private async Task AttachBookPlatesAsync()
     {
         if (_selected is null) return;
         _busy = true;
         _error = null;
-        _message = null;
+        try
+        {
+            var r = await Engine.AttachBookPlatesAsync(_projectId, force: true, charKey: null);
+            _message = r is null
+                ? "Attach book plates finished."
+                : $"Book plates: updated={r.CharactersUpdated} skipped={r.CharactersSkipped}";
+            await LoadAsync();
+            if (_selectedKey is not null)
+                Select(_selectedKey, resetMode: true);
+        }
+        catch (Exception ex) { _error = ex.Message; }
+        finally { _busy = false; }
+    }
+
+    private async Task StartGenerateCoreAsync(StartCharacterVariantsRequest req)
+    {
+        if (_selected is null) return;
+        _busy = true;
+        _error = null;
         try
         {
             try { await Hub.StartAsync(); } catch (Exception hex) { _error = $"SignalR: {hex.Message}"; }
-            await Engine.StartCharacterVariantsAsync(_projectId, _selected.Key);
+            await Engine.StartCharacterVariantsAsync(req);
             _mode = Mode.WaitingGenerate;
-            _message = $"Generating for {_selected.DisplayName}…";
             var jobs = await Engine.GetJobAsync();
             _job = jobs?.Job;
         }
@@ -692,7 +857,9 @@ else
         try
         {
             await Engine.UnlockCharacterAsync(_projectId, _selected.Key);
-            _message = $"Unlocked {_selected.DisplayName}";
+            _message =
+                $"Unlocked {_selected.DisplayName} — previous lock is now the preferred image (variant 1). " +
+                "Choose Search book → generate or Generate with Grok to refine, then re-lock.";
             await LoadAsync();
             ResetCompare();
             _mode = Mode.PickSource;

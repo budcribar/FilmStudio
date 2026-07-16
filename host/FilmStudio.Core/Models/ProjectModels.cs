@@ -69,6 +69,10 @@ public sealed class CharacterSummary
     public bool Locked { get; set; }
     public string? RefFileName { get; set; }
     public string? RefUrl { get; set; }
+    /// <summary>Locked ref or variant 1 when present — default primary Grok seed.</summary>
+    public bool HasPreferred { get; set; }
+    public string? PreferredLabel { get; set; }
+    public string? PreferredUrl { get; set; }
     public List<string> WardrobeAlways { get; set; } = new();
     public List<string> DesignReferenceImages { get; set; } = new();
     public List<CharacterImageRef> BookRefs { get; set; } = new();
@@ -76,10 +80,56 @@ public sealed class CharacterSummary
     public string? AgeBand { get; set; }
 }
 
+/// <summary>
+/// Flexible seed policy for portrait generation.
+/// <list type="bullet">
+/// <item><c>auto</c> — preferred (if any) + up to MaxBookHints book plates (default).</item>
+/// <item><c>preferred_only</c> — only preferred lock/best variant.</item>
+/// <item><c>book_hints</c> — preferred + all attached book plates (capped by MaxRefs).</item>
+/// <item><c>explicit</c> — only paths/indices supplied by the client.</item>
+/// <item><c>none</c> — text-only (description / visual_lock).</item>
+/// </list>
+/// </summary>
 public sealed class StartCharacterVariantsRequest
 {
     public string ProjectId { get; set; } = "";
     public string CharKey { get; set; } = "";
+    /// <summary>0 = auto (1 if locked, else 3).</summary>
+    public int Count { get; set; }
+    /// <summary>auto | preferred_only | book_hints | explicit | none</summary>
+    public string SeedMode { get; set; } = "auto";
+    /// <summary>Hard cap on image refs sent to Grok (API typically ≤ 3).</summary>
+    public int MaxRefs { get; set; } = 3;
+    /// <summary>In auto/book_hints, how many book plates after preferred (default 2).</summary>
+    public int MaxBookHints { get; set; } = 2;
+    /// <summary>Include preferred lock/best as first seed (default true for non-explicit modes).</summary>
+    public bool IncludePreferred { get; set; } = true;
+    /// <summary>When SeedMode is explicit (or to force-include): book ref indices from CharacterSummary.BookRefs.</summary>
+    public List<int> BookRefIndices { get; set; } = new();
+    /// <summary>When SeedMode is explicit: existing variant indices 1..3 to use as seeds.</summary>
+    public List<int> VariantIndices { get; set; } = new();
+    /// <summary>When SeedMode is explicit: also include locked ref if present.</summary>
+    public bool IncludeLockedRef { get; set; } = true;
+}
+
+public sealed class AttachCharacterPlatesRequest
+{
+    public string ProjectId { get; set; } = "";
+    /// <summary>Overwrite existing design_reference_images.</summary>
+    public bool Force { get; set; } = true;
+    /// <summary>Copy into assets/characters/*_bookref_*.</summary>
+    public bool CopyIntoAssets { get; set; } = true;
+    /// <summary>Optional single character; empty = all on-screen cast.</summary>
+    public string? CharKey { get; set; }
+}
+
+public sealed class AttachCharacterPlatesResult
+{
+    public bool Ok { get; set; }
+    public string? Reason { get; set; }
+    public int CharactersUpdated { get; set; }
+    public int CharactersSkipped { get; set; }
+    public Dictionary<string, List<string>> AttachedByCharacter { get; set; } = new();
 }
 
 public sealed class StartBookPrepareRequest

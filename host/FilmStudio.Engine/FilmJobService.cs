@@ -22,6 +22,7 @@ public sealed class FilmJobService
     private readonly ProjectStore _projects;
     private readonly GrokVideoClient _grok;
     private readonly CharacterDesignService _characters;
+    private readonly CharacterBookPlateService _plates;
     private readonly BookPrepareService _books;
     private readonly Stage1Service _stage1;
     private readonly Stage2PlannerService _stage2;
@@ -39,6 +40,7 @@ public sealed class FilmJobService
         ProjectStore projects,
         GrokVideoClient grok,
         CharacterDesignService characters,
+        CharacterBookPlateService plates,
         BookPrepareService books,
         Stage1Service stage1,
         Stage2PlannerService stage2,
@@ -50,6 +52,7 @@ public sealed class FilmJobService
         _projects = projects;
         _grok = grok;
         _characters = characters;
+        _plates = plates;
         _books = books;
         _stage1 = stage1;
         _stage2 = stage2;
@@ -278,7 +281,7 @@ public sealed class FilmJobService
                     _characters.LockBookRef(projectId, charKey, Math.Max(0, variantIndex)),
                 "unlock" =>
                     _characters.Unlock(projectId, charKey)
-                        ? $"Unlocked {charKey}"
+                        ? $"Unlocked {charKey} — previous lock kept as variant 1 (best so far)"
                         : $"No locked ref for {charKey}",
                 _ => throw new InvalidOperationException($"Unknown character action: {action}"),
             };
@@ -322,11 +325,11 @@ public sealed class FilmJobService
             await AppendLogAsync($"Character design (C# / Grok image API) for {req.CharKey}");
             await UpdateAsync(s => s.Message = "Resolving refs + design prompt…");
 
-            // n<=0 → service chooses 1 if locked, 3 if not
             var result = await _characters.GenerateVariantsAsync(
                 projectId,
                 req.CharKey,
-                n: 0,
+                n: req.Count,
+                seedOptions: req,
                 onProgress: line =>
                 {
                     _ = AppendLogAsync(line);

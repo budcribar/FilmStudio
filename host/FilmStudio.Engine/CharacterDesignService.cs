@@ -33,10 +33,12 @@ public sealed class CharacterDesignService
     }
 
     /// <param name="n">Variant count. Pass 0 (default) for auto: 1 if locked, else 3.</param>
+    /// <param name="seedOptions">Flexible seed policy (auto / preferred / book / explicit multi-select).</param>
     public async Task<CharacterDesignResult> GenerateVariantsAsync(
         string projectId,
         string charKey,
         int n = 0,
+        FilmStudio.Core.Models.StartCharacterVariantsRequest? seedOptions = null,
         Action<string>? onProgress = null,
         CancellationToken ct = default)
     {
@@ -52,28 +54,33 @@ public sealed class CharacterDesignService
         var charDir = Path.Combine(projectDir, "assets", "characters");
         Directory.CreateDirectory(charDir);
 
-        // 1 if already locked (refresh/refine), 3 if first lock set
-        var alreadyLocked = _projects.ResolveCharacterRefPath(projectId, charKey) is not null;
-        if (n <= 0)
-            n = alreadyLocked ? 1 : 3;
-        onProgress?.Invoke(
-            alreadyLocked
-                ? $"Locked ref present → generating {n} variant(s)"
-                : $"No locked ref → generating {n} variants to pick from");
-
-        var bookRefs = ResolveBookRefPaths(projectDir, seeds, maxRefs: 3);
-        // Prefer locked ref as edit guide when refining
-        var editRefs = new List<string>();
-        var lockedPath = _projects.ResolveCharacterRefPath(projectId, charKey);
-        if (lockedPath is not null)
-            editRefs.Add(lockedPath);
-        foreach (var br in bookRefs)
+        var opts = seedOptions ?? new FilmStudio.Core.Models.StartCharacterVariantsRequest
         {
-            if (!editRefs.Contains(br, StringComparer.OrdinalIgnoreCase))
-                editRefs.Add(br);
-        }
+            ProjectId = projectId,
+            CharKey = charKey,
+        };
+        var maxRefs = Math.Clamp(opts.MaxRefs <= 0 ? 3 : opts.MaxRefs, 1, 7);
+        var maxBook = Math.Clamp(opts.MaxBookHints < 0 ? 2 : opts.MaxBookHints, 0, maxRefs);
 
-        var prompt = BuildDesignPrompt(charKey, seeds, hasBookRefs: editRefs.Count > 0);
+        var preferredPath = ResolvePreferredImagePath(projectId, charKey, charDir);
+        var alreadyLocked = preferredPath is not null &&
+            string.Equals(
+                Path.GetFileName(preferredPath),
+                ProjectStore.CharacterRefFileName(charKey),
+                StringComparison.OrdinalIgnoreCase);
+        if (n <= 0)
+            n = opts.Count > 0 ? opts.Count : (alreadyLocked ? 1 : 3);
+        n = Math.Clamp(n, 1, 6);
+
+        var allBookRefs = ResolveBookRefPaths(projectDir, seeds, maxRefs: 12);
+        var editRefs = ResolveEditRefs(
+            projectId, charKey, charDir, preferredPath, allBookRefs, opts, maxRefs, maxBook, onProgress);
+
+        onProgress?.Invoke(
+            $"Seed mode={NormalizeSeedMode(opts.SeedMode)} · refs={editRefs.Count}/{maxRefs} · variants={n}");
+
+        var hasImageHints = editRefs.Count > 0;
+        var prompt = BuildDesignPrompt(charKey, seeds, hasImageHints);
         var imageModel = GetConfigString(projectId, "image_model_name", _opts.DefaultImageModel);
 
         onProgress?.Invoke($"design prompt ready ({prompt.Length} chars)");
@@ -81,91 +88,195 @@ public sealed class CharacterDesignService
         var mode = "text_only";
         string? editError = null;
 
-        if (editRefs.Count > 0)
+        // If preferred lives in variant_01, snapshot it so we can overwrite variant slots safely
+        string? preferredSnapshot = null;
+        try
         {
-            onProgress?.Invoke(
-                $"Using {editRefs.Count} ref image(s): " +
-                string.Join(", ", editRefs.Select(Path.GetFileName)));
-            try
+            if (preferredPath is not null &&
+                Path.GetFileName(preferredPath).Contains("_variant_", StringComparison.OrdinalIgnoreCase))
             {
-                // Prefer single best ref first (locked or first book plate)
-                blobs = await _images.EditVariantsAsync(
-                    prompt,
-                    editRefs.Take(1).ToList(),
-                    n,
-                    aspectRatio: "1:1",
-                    model: imageModel,
-                    onProgress: onProgress,
-                    ct: ct);
-                mode = alreadyLocked ? "locked_ref_edit" : "book_edit";
+                preferredSnapshot = Path.Combine(
+                    charDir, $"{charKey.ToLowerInvariant()}_preferred_snap.png");
+                File.Copy(preferredPath, preferredSnapshot, overwrite: true);
+                var i = editRefs.FindIndex(p =>
+                    string.Equals(p, preferredPath, StringComparison.OrdinalIgnoreCase));
+                if (i >= 0) editRefs[i] = preferredSnapshot;
             }
-            catch (Exception ex)
+
+            if (hasImageHints)
             {
-                editError = ex.Message;
-                onProgress?.Invoke($"Primary-ref edit failed ({ex.Message}); retrying multi-ref…");
+                onProgress?.Invoke(
+                    $"Grok image edit with {editRefs.Count} hint(s): " +
+                    string.Join(", ", editRefs.Select(Path.GetFileName)));
                 try
                 {
+                    var primary = editRefs.Take(Math.Min(3, editRefs.Count)).ToList();
                     blobs = await _images.EditVariantsAsync(
                         prompt,
-                        editRefs.Take(3).ToList(),
+                        primary,
                         n,
                         aspectRatio: "1:1",
                         model: imageModel,
                         onProgress: onProgress,
                         ct: ct);
-                    mode = alreadyLocked ? "locked_ref_edit_multi" : "book_edit_multi";
-                    editError = null;
+                    mode = alreadyLocked
+                        ? (primary.Count > 1 ? "preferred_multi" : "preferred_locked")
+                        : (primary.Count > 1 ? "preferred_or_book_multi" : "preferred_or_book");
                 }
-                catch (Exception ex2)
+                catch (Exception ex)
                 {
-                    // Match product rule: do NOT invent a different look via text-only
-                    throw new InvalidOperationException(
-                        $"Reference character design failed for {charKey}. " +
-                        $"References: {string.Join(", ", editRefs.Select(Path.GetFileName))}. " +
-                        $"API error: {editError}; multi={ex2.Message}. " +
-                        "Fix API/key or re-extract book images; text-only fallback is disabled.",
-                        ex2);
+                    editError = ex.Message;
+                    onProgress?.Invoke($"Image-hint edit failed ({ex.Message}); falling back to text-only…");
+                    blobs = await _images.GenerateVariantsAsync(
+                        prompt, n, aspectRatio: "1:1", model: imageModel, ct: ct);
+                    mode = "text_only_fallback";
                 }
             }
-        }
-        else
-        {
-            onProgress?.Invoke("No book/locked images — text-only prompt (likeness may not match source art)");
-            blobs = await _images.GenerateVariantsAsync(
-                prompt, n, aspectRatio: "1:1", model: imageModel, ct: ct);
-            mode = "text_only";
-        }
-
-        var paths = new List<string>();
-        for (var i = 0; i < blobs.Count && i < n; i++)
-        {
-            var idx = i + 1;
-            var fileName = $"{charKey.ToLowerInvariant()}_variant_0{idx}.png";
-            var full = Path.Combine(charDir, fileName);
-            await File.WriteAllBytesAsync(full, blobs[i], ct);
-            paths.Add(full);
-            onProgress?.Invoke($"saved variant {idx}/{n} → {fileName}");
-
-            try
+            else
             {
-                _costs.RecordImageGeneration(projectId, 1, imageModel, quality: true);
+                onProgress?.Invoke("Text-only generation (no preferred image and no book plates)");
+                blobs = await _images.GenerateVariantsAsync(
+                    prompt, n, aspectRatio: "1:1", model: imageModel, ct: ct);
+                mode = "text_only";
             }
-            catch (Exception costEx)
+
+            var paths = new List<string>();
+            for (var i = 0; i < blobs.Count && i < n; i++)
             {
-                _log.LogWarning(costEx, "Could not record image cost");
+                var idx = i + 1;
+                var fileName = $"{charKey.ToLowerInvariant()}_variant_0{idx}.png";
+                var full = Path.Combine(charDir, fileName);
+                await File.WriteAllBytesAsync(full, blobs[i], ct);
+                paths.Add(full);
+                onProgress?.Invoke($"saved variant {idx}/{n} → {fileName}");
+
+                try
+                {
+                    _costs.RecordImageGeneration(projectId, 1, imageModel, quality: true);
+                }
+                catch (Exception costEx)
+                {
+                    _log.LogWarning(costEx, "Could not record image cost");
+                }
+            }
+
+            if (paths.Count < 1)
+                throw new InvalidOperationException($"No variants generated for {charKey}");
+
+            return new CharacterDesignResult
+            {
+                CharKey = charKey,
+                Mode = mode,
+                Paths = paths,
+                BookRefs = editRefs.Select(Path.GetFileName).Where(s => s is not null).Cast<string>().ToList(),
+                EditError = editError,
+            };
+        }
+        finally
+        {
+            if (preferredSnapshot is not null)
+            {
+                try { File.Delete(preferredSnapshot); } catch { /* ignore */ }
             }
         }
+    }
 
-        if (paths.Count < 1)
-            throw new InvalidOperationException($"No variants generated for {charKey}");
+    /// <summary>
+    /// Build ordered image seeds for Grok from flexible policy.
+    /// Preferred first (when included), then book / explicit selections, capped at maxRefs.
+    /// </summary>
+    private List<string> ResolveEditRefs(
+        string projectId,
+        string charKey,
+        string charDir,
+        string? preferredPath,
+        List<string> allBookRefs,
+        FilmStudio.Core.Models.StartCharacterVariantsRequest opts,
+        int maxRefs,
+        int maxBook,
+        Action<string>? onProgress)
+    {
+        var mode = NormalizeSeedMode(opts.SeedMode);
+        var editRefs = new List<string>();
 
-        return new CharacterDesignResult
+        void Add(string? path)
         {
-            CharKey = charKey,
-            Mode = mode,
-            Paths = paths,
-            BookRefs = bookRefs.Select(Path.GetFileName).Where(s => s is not null).Cast<string>().ToList(),
-            EditError = editError,
+            if (string.IsNullOrWhiteSpace(path) || !File.Exists(path)) return;
+            if (new FileInfo(path).Length < 64) return;
+            if (editRefs.Any(p => string.Equals(p, path, StringComparison.OrdinalIgnoreCase))) return;
+            if (editRefs.Count >= maxRefs) return;
+            editRefs.Add(path);
+        }
+
+        switch (mode)
+        {
+            case "none":
+                onProgress?.Invoke("Seed mode=none → text-only (no image refs)");
+                return editRefs;
+
+            case "preferred_only":
+                if (opts.IncludePreferred)
+                    Add(preferredPath);
+                onProgress?.Invoke(
+                    preferredPath is null
+                        ? "Preferred-only mode but no preferred image"
+                        : $"Preferred-only: {Path.GetFileName(preferredPath)}");
+                return editRefs;
+
+            case "explicit":
+                if (opts.IncludeLockedRef || opts.IncludePreferred)
+                    Add(preferredPath);
+                foreach (var vi in opts.VariantIndices.Distinct().OrderBy(x => x))
+                {
+                    if (vi is < 1 or > 3) continue;
+                    Add(Path.Combine(charDir, $"{charKey.ToLowerInvariant()}_variant_0{vi}.png"));
+                }
+                // Book indices match design_reference_images order / BookRefs Index
+                foreach (var bi in opts.BookRefIndices.Distinct().OrderBy(x => x))
+                {
+                    if (bi < 0 || bi >= allBookRefs.Count) continue;
+                    Add(allBookRefs[bi]);
+                }
+                onProgress?.Invoke(
+                    editRefs.Count == 0
+                        ? "Explicit mode: no valid selections — will text-only"
+                        : $"Explicit seeds ({editRefs.Count}): {string.Join(", ", editRefs.Select(Path.GetFileName))}");
+                return editRefs;
+
+            case "book_hints":
+                if (opts.IncludePreferred)
+                    Add(preferredPath);
+                foreach (var br in allBookRefs.Take(maxRefs))
+                    Add(br);
+                onProgress?.Invoke(
+                    allBookRefs.Count == 0
+                        ? "Book-hints mode: no plates attached for character"
+                        : $"Book-hints + preferred ({editRefs.Count}): {string.Join(", ", editRefs.Select(Path.GetFileName))}");
+                return editRefs;
+
+            default: // auto
+                if (opts.IncludePreferred)
+                    Add(preferredPath);
+                foreach (var br in allBookRefs.Take(maxBook))
+                    Add(br);
+                onProgress?.Invoke(
+                    editRefs.Count == 0
+                        ? "Auto seeds: none — description only"
+                        : $"Auto seeds ({editRefs.Count}): {string.Join(", ", editRefs.Select(Path.GetFileName))}");
+                return editRefs;
+        }
+    }
+
+    private static string NormalizeSeedMode(string? mode)
+    {
+        mode = (mode ?? "auto").Trim().ToLowerInvariant().Replace('-', '_');
+        return mode switch
+        {
+            "preferred" or "preferred_only" or "pref" => "preferred_only",
+            "book" or "book_hints" or "search_book" => "book_hints",
+            "explicit" or "custom" or "manual" => "explicit",
+            "none" or "text" or "text_only" => "none",
+            _ => "auto",
         };
     }
 
@@ -224,6 +335,11 @@ public sealed class CharacterDesignService
         return dest;
     }
 
+    /// <summary>
+    /// Clear the official lock so video gen requires re-lock, but keep the image
+    /// as variant_01 — the "best so far" seed for comparison / regenerate.
+    /// Does not delete other variants.
+    /// </summary>
     public bool Unlock(string projectId, string charKey)
     {
         var seeds = _projects.GetCharacterSeed(projectId, charKey);
@@ -232,34 +348,62 @@ public sealed class CharacterDesignService
             throw new InvalidOperationException($"{charKey} is voice-only — nothing to unlock.");
 
         var projectDir = _projects.GetProjectDir(projectId);
-        var removed = false;
-        // Delete any candidate locked ref names (placeholder vs short alias)
         var existing = _projects.ResolveCharacterRefPath(projectId, charKey);
-        if (existing is not null)
+        if (existing is null)
+            return false;
+
+        var charDir = Path.Combine(projectDir, "assets", "characters");
+        Directory.CreateDirectory(charDir);
+        var bestVariant = Path.Combine(charDir, $"{charKey.ToLowerInvariant()}_variant_01.png");
+
+        // Demote lock → variant 1 (best option) instead of discarding the image
+        try
         {
-            try { File.Delete(existing); removed = true; } catch { /* ignore */ }
+            File.Copy(existing, bestVariant, overwrite: true);
+        }
+        catch (Exception ex)
+        {
+            throw new InvalidOperationException(
+                $"Could not preserve locked image as variant 1: {ex.Message}", ex);
         }
 
-        for (var i = 1; i <= 3; i++)
+        try
         {
-            var vp = Path.Combine(
-                projectDir, "assets", "characters",
-                $"{charKey.ToLowerInvariant()}_variant_0{i}.png");
-            try
-            {
-                if (File.Exists(vp)) File.Delete(vp);
-            }
-            catch { /* ignore */ }
+            File.Delete(existing);
+        }
+        catch (Exception ex)
+        {
+            _log.LogWarning(ex, "Demoted lock to variant_01 but could not delete {Path}", existing);
+            // Still treat as unlock if variant was written and lock is gone, or if lock remains
+            // try again once — if still present, report failure so UI doesn't lie
+            if (File.Exists(existing))
+                throw new InvalidOperationException(
+                    $"Saved best-so-far as variant 1, but could not remove locked file: {ex.Message}", ex);
         }
 
-        return removed;
+        _log.LogInformation(
+            "Unlocked {CharKey}: preserved {Ref} as {Variant}",
+            charKey, Path.GetFileName(existing), Path.GetFileName(bestVariant));
+        return true;
     }
 
     // ---- helpers ----
 
-    private static string BuildDesignPrompt(string charKey, JsonElement seedInfo, bool hasBookRefs)
+    /// <summary>Locked ref if present, else variant_01 (best-so-far after unlock).</summary>
+    private string? ResolvePreferredImagePath(string projectId, string charKey, string charDir)
+    {
+        var locked = _projects.ResolveCharacterRefPath(projectId, charKey);
+        if (locked is not null) return locked;
+        var best = Path.Combine(charDir, $"{charKey.ToLowerInvariant()}_variant_01.png");
+        if (File.Exists(best) && new FileInfo(best).Length >= 64)
+            return best;
+        return null;
+    }
+
+    private static string BuildDesignPrompt(string charKey, JsonElement seedInfo, bool hasImageHints)
     {
         var description = seedInfo.TryGetProperty("description", out var d) ? d.GetString() ?? "" : "";
+        var visualLock = seedInfo.TryGetProperty("visual_lock", out var vlck) ? vlck.GetString() ?? "" : "";
         var ageBand = seedInfo.TryGetProperty("age_band", out var ab) ? ab.GetString() ?? "" : "";
         var variantOf = seedInfo.TryGetProperty("variant_of", out var vo) ? vo.GetString() ?? "" : "";
         var display =
@@ -300,22 +444,24 @@ public sealed class CharacterDesignService
                 "(same ethnicity, hair color family, recognizable family features). ";
         }
 
+        var visualClause = string.IsNullOrWhiteSpace(visualLock) ? "" : $"Visual lock: {visualLock}. ";
         const string treatment = "cinematic lighting";
-        if (hasBookRefs)
+
+        if (hasImageHints)
         {
             return
                 $"Create a clean character model-sheet portrait of {display} for film continuity. " +
-                "MATCH the character identity, colors, markings, and children's-book illustration style " +
-                "from the reference image(s) as closely as possible — same dog/person as in the book art. " +
-                "Do NOT invent a different breed, palette, or realistic photo style unless the reference is photo. " +
-                $"Description: {description}. {ageClause}{familyClause}" +
+                "Use the attached reference image(s) as the identity HINT — match colors, markings, " +
+                "and illustration style as closely as possible (same character as the reference). " +
+                "Do NOT invent a different breed, palette, or photoreal live-action look unless the reference is photo. " +
+                $"Written description (also authoritative): {description}. {visualClause}{ageClause}{familyClause}" +
                 "Character centered, facing camera, plain soft studio or simple background, " +
                 "full head and upper body clear for video reference. " +
                 $"Keep the whimsical picture-book look of the source art; {treatment}.";
         }
 
         return
-            $"A detailed portrait model-sheet of {display}: {description}. " +
+            $"A detailed portrait model-sheet of {display}: {description}. {visualClause}" +
             $"{ageClause}{familyClause}" +
             $"Character centered in frame, look straight at camera, neutral expression, {treatment}. " +
             "If this is a children's picture-book character, use illustrated storybook style " +
