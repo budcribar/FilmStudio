@@ -43,6 +43,15 @@ public sealed class StartBatchGenRequest
     public bool OnlyMissing { get; set; } = true;
 }
 
+public sealed class CharacterImageRef
+{
+    public string FileName { get; set; } = "";
+    public string RelativePath { get; set; } = "";
+    public string? Url { get; set; }
+    public int? Index { get; set; }
+    public bool Exists { get; set; }
+}
+
 public sealed class CharacterSummary
 {
     public string Key { get; set; } = "";
@@ -57,7 +66,24 @@ public sealed class CharacterSummary
     public string? RefUrl { get; set; }
     public List<string> WardrobeAlways { get; set; } = new();
     public List<string> DesignReferenceImages { get; set; } = new();
+    public List<CharacterImageRef> BookRefs { get; set; } = new();
+    public List<CharacterImageRef> Variants { get; set; } = new();
     public string? AgeBand { get; set; }
+}
+
+public sealed class StartCharacterVariantsRequest
+{
+    public string ProjectId { get; set; } = "";
+    public string CharKey { get; set; } = "";
+}
+
+public sealed class LockCharacterRequest
+{
+    public string ProjectId { get; set; } = "";
+    public string CharKey { get; set; } = "";
+    /// <summary>bookref | variant</summary>
+    public string Source { get; set; } = "variant";
+    public int Index { get; set; } = 1;
 }
 
 public sealed class SceneSummary
@@ -70,6 +96,8 @@ public sealed class SceneSummary
     public double? DurationSeconds { get; set; }
     public bool CompositeExists { get; set; }
     public List<string> CharactersOnScreen { get; set; } = new();
+    public List<string> LocationIds { get; set; } = new();
+    public string? PrimaryLocationId { get; set; }
     public string Status { get; set; } = "empty"; // empty | partial | complete
 }
 
@@ -246,6 +274,9 @@ public sealed class CostSceneRow
     public int ClipsMissing { get; set; }
     public bool IsHero { get; set; }
     public string? HeroResolution { get; set; }
+    public List<string> CharactersOnScreen { get; set; } = new();
+    public List<string> LocationIds { get; set; } = new();
+    public string? PrimaryLocationId { get; set; }
     public double SpentUsd { get; set; }
     public double ActualUsd { get; set; }
     public double RemainingDraftUsd { get; set; }

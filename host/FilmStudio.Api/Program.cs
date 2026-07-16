@@ -226,19 +226,135 @@ app.MapGet("/api/projects/{projectId}/characters/{charKey}/ref", (string project
         var path = store.ResolveCharacterRefPath(projectId, charKey);
         if (path is null || !File.Exists(path))
             return Results.NotFound(new { ok = false, error = "ref image not found" });
-        var contentType = path.EndsWith(".png", StringComparison.OrdinalIgnoreCase)
-            ? "image/png"
-            : path.EndsWith(".jpg", StringComparison.OrdinalIgnoreCase) ||
-              path.EndsWith(".jpeg", StringComparison.OrdinalIgnoreCase)
-                ? "image/jpeg"
-                : "application/octet-stream";
-        return Results.File(path, contentType);
+        return Results.File(path, GuessImageContentType(path));
     }
     catch (Exception ex)
     {
         return Results.BadRequest(new { ok = false, error = ex.Message });
     }
 });
+
+app.MapGet("/api/projects/{projectId}/characters/{charKey}/variants/{index:int}",
+    (string projectId, string charKey, int index, ProjectStore store) =>
+{
+    try
+    {
+        var path = store.ResolveCharacterVariantPath(projectId, charKey, index);
+        if (path is null)
+            return Results.NotFound(new { ok = false, error = "variant not found" });
+        return Results.File(path, GuessImageContentType(path));
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { ok = false, error = ex.Message });
+    }
+});
+
+app.MapGet("/api/projects/{projectId}/characters/{charKey}/bookrefs/{index:int}",
+    (string projectId, string charKey, int index, ProjectStore store) =>
+{
+    try
+    {
+        var path = store.ResolveCharacterBookRefPath(projectId, charKey, index);
+        if (path is null)
+            return Results.NotFound(new { ok = false, error = "book ref not found" });
+        return Results.File(path, GuessImageContentType(path));
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { ok = false, error = ex.Message });
+    }
+});
+
+app.MapPost("/api/jobs/character-variants", async (StartCharacterVariantsRequest body, FilmJobService jobService) =>
+{
+    try
+    {
+        if (string.IsNullOrWhiteSpace(body.ProjectId) || string.IsNullOrWhiteSpace(body.CharKey))
+            return Results.BadRequest(new { ok = false, error = "projectId and charKey required" });
+        await jobService.StartCharacterVariantsAsync(body);
+        return Results.Accepted("/api/jobs", new
+        {
+            ok = true,
+            message = $"Started portrait generation for {body.CharKey}",
+            job = jobService.GetSnapshot(),
+        });
+    }
+    catch (Exception ex)
+    {
+        return Results.Conflict(new { ok = false, error = ex.Message, job = jobService.GetSnapshot() });
+    }
+});
+
+app.MapPost("/api/projects/{id}/characters/{charKey}/lock-variant",
+    async (string id, string charKey, HttpRequest req, FilmJobService jobService) =>
+{
+    try
+    {
+        var index = 1;
+        if (req.HasJsonContentType())
+        {
+            using var doc = await JsonDocument.ParseAsync(req.Body);
+            if (doc.RootElement.TryGetProperty("index", out var ix) && ix.TryGetInt32(out var n))
+                index = n;
+            else if (doc.RootElement.TryGetProperty("variantIndex", out var vx) && vx.TryGetInt32(out var n2))
+                index = n2;
+        }
+        var result = await jobService.RunCharacterDesignActionAsync(id, "lock-variant", charKey, index);
+        return Results.Ok(new { ok = true, message = result, projectId = id, charKey, index });
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { ok = false, error = ex.Message });
+    }
+});
+
+app.MapPost("/api/projects/{id}/characters/{charKey}/lock-bookref",
+    async (string id, string charKey, HttpRequest req, FilmJobService jobService, ProjectStore store) =>
+{
+    try
+    {
+        var index = 0;
+        if (req.HasJsonContentType())
+        {
+            using var doc = await JsonDocument.ParseAsync(req.Body);
+            if (doc.RootElement.TryGetProperty("index", out var ix) && ix.TryGetInt32(out var n))
+                index = n;
+        }
+        var path = store.ResolveCharacterBookRefPath(id, charKey, index)
+            ?? throw new InvalidOperationException($"Book ref {index} not found for {charKey}");
+        // Prefer project-relative path for CLI
+        var rel = Path.GetRelativePath(store.GetProjectDir(id), path).Replace('\\', '/');
+        var result = await jobService.RunCharacterDesignActionAsync(
+            id, "lock-image", charKey, imagePath: rel);
+        return Results.Ok(new { ok = true, message = result, projectId = id, charKey, index, path = rel });
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { ok = false, error = ex.Message });
+    }
+});
+
+app.MapPost("/api/projects/{id}/characters/{charKey}/unlock",
+    async (string id, string charKey, FilmJobService jobService) =>
+{
+    try
+    {
+        var result = await jobService.RunCharacterDesignActionAsync(id, "unlock", charKey);
+        return Results.Ok(new { ok = true, message = result, projectId = id, charKey });
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { ok = false, error = ex.Message });
+    }
+});
+
+static string GuessImageContentType(string path) =>
+    path.EndsWith(".png", StringComparison.OrdinalIgnoreCase) ? "image/png"
+    : path.EndsWith(".jpg", StringComparison.OrdinalIgnoreCase) ||
+      path.EndsWith(".jpeg", StringComparison.OrdinalIgnoreCase) ? "image/jpeg"
+    : path.EndsWith(".webp", StringComparison.OrdinalIgnoreCase) ? "image/webp"
+    : "application/octet-stream";
 
 // ---- Adaptation (book / Stage 1 / Stage 2 status + Python jobs) ----
 app.MapGet("/api/projects/{id}/adaptation", (string id, ProjectStore store) =>

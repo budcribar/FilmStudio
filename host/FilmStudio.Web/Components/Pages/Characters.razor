@@ -1,22 +1,28 @@
 @page "/characters"
 @rendermode InteractiveServer
+@implements IAsyncDisposable
 @inject EngineApiClient Engine
+@inject JobHubClient Hub
 @using FilmStudio.Core.Models
 
 <PageTitle>Characters</PageTitle>
 
 <h1>Characters</h1>
 <p class="text-muted">
-    Cast from Stage 1 / blueprint seeds. Lock refs and variant generation remain in
-    <strong>Streamlit</strong> for now; this page is for review and style/wardrobe inspection.
+    Cast from Stage 1 / blueprint seeds. Lock a <strong>book plate</strong> or
+    <strong>Grok variant</strong> as the video reference. Narrator is voice-only.
 </p>
 
 @if (!string.IsNullOrEmpty(_error))
 {
     <div class="alert alert-danger">@_error</div>
 }
+@if (!string.IsNullOrEmpty(_message))
+{
+    <div class="alert alert-success">@_message</div>
+}
 
-<div class="row mb-3">
+<div class="row mb-3 g-2 align-items-end">
     <div class="col-md-4">
         <label class="form-label">Project</label>
         <select class="form-select" @bind="_projectId" @bind:after="LoadAsync" disabled="@_busy">
@@ -26,10 +32,34 @@
             }
         </select>
     </div>
-    <div class="col-md-4 d-flex align-items-end">
+    <div class="col-md-4 d-flex gap-2">
         <button class="btn btn-outline-primary" disabled="@_busy" @onclick="LoadAsync">Reload</button>
+        @if (JobRunning)
+        {
+            <button class="btn btn-outline-danger" disabled="@_busy" @onclick="CancelAsync">Cancel job</button>
+        }
     </div>
 </div>
+
+@if (_job is not null &&
+     (_job.Kind is "character" || string.Equals(_job.Status, "running", StringComparison.OrdinalIgnoreCase)) &&
+     _job.Status is "running" or "done" or "error" or "cancelled")
+{
+    <div class="card mb-3 border-@(_job.Status == "running" ? "primary" : _job.Status == "error" ? "danger" : "secondary")">
+        <div class="card-body py-2">
+            <span class="badge bg-secondary">@_job.Status</span>
+            @if (_job.Kind is { Length: > 0 } k)
+            {
+                <span class="badge bg-info text-dark ms-1">@k</span>
+            }
+            <span class="ms-2 small">@_job.Message</span>
+            @if (_job.Log.Count > 0)
+            {
+                <pre class="small mb-0 mt-2" style="max-height: 120px; overflow: auto;">@string.Join("\n", _job.Log.TakeLast(16))</pre>
+            }
+        </div>
+    </div>
+}
 
 @if (_chars is null)
 {
@@ -38,7 +68,7 @@
 else if (_chars.Count == 0)
 {
     <div class="alert alert-warning">
-        No character seeds. Run <strong>Streamlit → Adaptation → Stage 1</strong> first.
+        No character seeds. Run <strong>Adaptation → Stage 1</strong> first.
     </div>
 }
 else
@@ -76,8 +106,8 @@ else
             }
             else
             {
-                <div class="card">
-                    <div class="card-header d-flex justify-content-between">
+                <div class="card mb-3">
+                    <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
                         <span><code>@_selected.Key</code> — @_selected.DisplayName</span>
                         @if (_selected.VoiceOnly)
                         {
@@ -86,13 +116,13 @@ else
                     </div>
                     <div class="card-body row">
                         <div class="col-md-4">
-                            @if (!string.IsNullOrEmpty(_selected.RefUrl) && !_selected.VoiceOnly)
+                            @if (!_selected.VoiceOnly && !string.IsNullOrEmpty(_selected.RefUrl))
                             {
-                                <img src="@Engine.CharacterRefUrl(_projectId, _selected.Key)"
+                                <img src="@CacheBust(Engine.CharacterRefUrl(_projectId, _selected.Key))"
                                      alt="@_selected.DisplayName"
                                      class="img-fluid rounded border"
-                                     style="max-height: 280px; object-fit: contain;" />
-                                <div class="small text-muted mt-1">@_selected.RefFileName</div>
+                                     style="max-height: 280px; object-fit: contain; width: 100%; background: #f8f9fa;" />
+                                <div class="small text-muted mt-1">Locked: @_selected.RefFileName</div>
                             }
                             else if (!_selected.VoiceOnly)
                             {
@@ -117,26 +147,114 @@ else
                                     }
                                 </ul>
                             }
-                            @if (_selected.DesignReferenceImages.Count > 0)
-                            {
-                                <h5>Design / book refs</h5>
-                                <ul class="small">
-                                    @foreach (var r in _selected.DesignReferenceImages)
-                                    {
-                                        <li><code>@r</code></li>
-                                    }
-                                </ul>
-                            }
                             @if (!string.IsNullOrEmpty(_selected.AgeBand))
                             {
-                                <p class="small text-muted">age_band: @_selected.AgeBand</p>
+                                <p class="small text-muted mb-0">age_band: @_selected.AgeBand</p>
                             }
                         </div>
                     </div>
-                    <div class="card-footer small text-muted">
-                        Lock variant / regenerate portraits: use Streamlit <strong>Characters</strong> page for now.
-                    </div>
                 </div>
+
+                @if (!_selected.VoiceOnly)
+                {
+                    @* ---- Book plates ---- *@
+                    <div class="card mb-3">
+                        <div class="card-header">Book plates — lock as reference</div>
+                        <div class="card-body">
+                            @{
+                                var bookExisting = _selected.BookRefs.Where(b => b.Exists).ToList();
+                            }
+                            @if (bookExisting.Count == 0)
+                            {
+                                <p class="small text-muted mb-0">
+                                    No book reference images on disk for this character.
+                                    Re-run Stage 1 attach / extract book images in Streamlit if needed.
+                                </p>
+                            }
+                            else
+                            {
+                                <p class="small text-muted">
+                                    From the PDF/source art. <strong>Use as locked ref</strong> sets this plate for video (no Grok variants required).
+                                </p>
+                                <div class="row g-3">
+                                    @foreach (var br in bookExisting)
+                                    {
+                                        <div class="col-md-4">
+                                            <div class="border rounded p-2 h-100 d-flex flex-column">
+                                                <img src="@CacheBust(Engine.CharacterBookRefUrl(_projectId, _selected.Key, br.Index ?? 0))"
+                                                     alt="@br.FileName"
+                                                     class="img-fluid rounded mb-2"
+                                                     style="max-height: 180px; object-fit: contain; width: 100%; background: #f8f9fa;" />
+                                                <div class="small text-muted mb-2 text-truncate" title="@br.FileName">@br.FileName</div>
+                                                <button class="btn btn-sm btn-primary mt-auto"
+                                                        disabled="@_busy"
+                                                        @onclick="() => LockBookRefAsync(br.Index ?? 0)">
+                                                    Use as locked ref
+                                                </button>
+                                            </div>
+                                        </div>
+                                    }
+                                </div>
+                            }
+                        </div>
+                    </div>
+
+                    @* ---- Variants ---- *@
+                    <div class="card mb-3">
+                        <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+                            <span>Grok portrait variants</span>
+                            <div class="d-flex gap-2">
+                                <button class="btn btn-sm btn-primary"
+                                        disabled="@(_busy || JobRunning)"
+                                        @onclick="GenerateVariantsAsync">
+                                    🎲 Generate 3 variants
+                                </button>
+                                @if (_selected.Locked)
+                                {
+                                    <button class="btn btn-sm btn-outline-danger"
+                                            disabled="@_busy"
+                                            @onclick="UnlockAsync">
+                                        Unlock ref
+                                    </button>
+                                }
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <p class="small text-muted">
+                                Needs <code>XAI_API_KEY</code> on the API process. Uses book plates as edit refs when available.
+                            </p>
+                            @{
+                                var varsExisting = _selected.Variants.Where(v => v.Exists).ToList();
+                            }
+                            @if (varsExisting.Count == 0)
+                            {
+                                <p class="small text-muted mb-0">No open variants on disk. Click <strong>Generate 3 variants</strong>.</p>
+                            }
+                            else
+                            {
+                                <div class="row g-3">
+                                    @foreach (var vr in varsExisting)
+                                    {
+                                        <div class="col-md-4">
+                                            <div class="border rounded p-2 h-100 d-flex flex-column">
+                                                <img src="@CacheBust(Engine.CharacterVariantUrl(_projectId, _selected.Key, vr.Index ?? 1))"
+                                                     alt="@vr.FileName"
+                                                     class="img-fluid rounded mb-2"
+                                                     style="max-height: 200px; object-fit: contain; width: 100%; background: #f8f9fa;" />
+                                                <div class="small text-muted mb-2">Variant @(vr.Index)</div>
+                                                <button class="btn btn-sm btn-success mt-auto"
+                                                        disabled="@_busy"
+                                                        @onclick="() => LockVariantAsync(vr.Index ?? 1)">
+                                                    Lock @(vr.Index)
+                                                </button>
+                                            </div>
+                                        </div>
+                                    }
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
             }
         </div>
     </div>
@@ -145,14 +263,22 @@ else
 @code {
     private bool _busy;
     private string? _error;
+    private string? _message;
     private string _projectId = "Buster";
     private List<string> _projectIds = new();
     private List<CharacterSummary>? _chars;
     private string? _selectedKey;
     private CharacterSummary? _selected;
+    private JobSnapshot? _job;
+    private long _imgBust = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+
+    private bool JobRunning =>
+        string.Equals(_job?.Status, "running", StringComparison.OrdinalIgnoreCase);
 
     protected override async Task OnInitializedAsync()
     {
+        Hub.JobUpdated += OnJobUpdated;
+        Hub.JobLog += OnJobLog;
         try
         {
             var projs = await Engine.GetProjectsAsync();
@@ -162,12 +288,43 @@ else
                 _projectId = aid;
             else if (_projectIds.Count > 0)
                 _projectId = _projectIds[0];
+
+            try { await Hub.StartAsync(); } catch { /* optional */ }
+
+            var jobs = await Engine.GetJobAsync();
+            _job = jobs?.Job;
+
             await LoadAsync();
         }
         catch (Exception ex)
         {
             _error = ex.Message;
         }
+    }
+
+    private void OnJobUpdated(JobSnapshot snap)
+    {
+        _job = snap;
+        if ((snap.Status is "done" or "error" or "cancelled") &&
+            string.Equals(snap.Kind, "character", StringComparison.OrdinalIgnoreCase))
+        {
+            _ = InvokeAsync(async () =>
+            {
+                await SoftReloadAsync();
+                StateHasChanged();
+            });
+        }
+        else
+        {
+            _ = InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private void OnJobLog(string line)
+    {
+        if (_job is not null)
+            _job.Message = line;
+        _ = InvokeAsync(StateHasChanged);
     }
 
     private async Task LoadAsync()
@@ -178,6 +335,7 @@ else
         {
             var dto = await Engine.GetCharactersAsync(_projectId);
             _chars = dto?.Characters ?? new List<CharacterSummary>();
+            _imgBust = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
             if (_chars.Count > 0)
             {
                 if (_selectedKey is null || _chars.All(c => c.Key != _selectedKey))
@@ -189,6 +347,9 @@ else
                 _selectedKey = null;
                 _selected = null;
             }
+
+            var jobs = await Engine.GetJobAsync();
+            _job = jobs?.Job;
         }
         catch (Exception ex)
         {
@@ -198,9 +359,111 @@ else
         finally { _busy = false; }
     }
 
+    private async Task SoftReloadAsync()
+    {
+        try
+        {
+            var dto = await Engine.GetCharactersAsync(_projectId);
+            _chars = dto?.Characters ?? new List<CharacterSummary>();
+            _imgBust = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+            if (_selectedKey is not null)
+                Select(_selectedKey);
+            if (!string.IsNullOrEmpty(_message) || (_job?.Status is "done"))
+                _message = _job?.Message ?? _message;
+        }
+        catch { /* ignore */ }
+    }
+
     private void Select(string key)
     {
         _selectedKey = key;
         _selected = _chars?.FirstOrDefault(c => c.Key == key);
+    }
+
+    private async Task GenerateVariantsAsync()
+    {
+        if (_selected is null) return;
+        _busy = true;
+        _error = null;
+        _message = null;
+        try
+        {
+            await Engine.StartCharacterVariantsAsync(_projectId, _selected.Key);
+            _message = $"Generating variants for {_selected.DisplayName}…";
+            try { await Hub.StartAsync(); } catch { /* ignore */ }
+            var jobs = await Engine.GetJobAsync();
+            _job = jobs?.Job;
+        }
+        catch (Exception ex) { _error = ex.Message; }
+        finally { _busy = false; }
+    }
+
+    private async Task LockVariantAsync(int index)
+    {
+        if (_selected is null) return;
+        _busy = true;
+        _error = null;
+        try
+        {
+            await Engine.LockCharacterVariantAsync(_projectId, _selected.Key, index);
+            _message = $"Locked variant {index} for {_selected.DisplayName}";
+            await LoadAsync();
+        }
+        catch (Exception ex) { _error = ex.Message; }
+        finally { _busy = false; }
+    }
+
+    private async Task LockBookRefAsync(int index)
+    {
+        if (_selected is null) return;
+        _busy = true;
+        _error = null;
+        try
+        {
+            await Engine.LockCharacterBookRefAsync(_projectId, _selected.Key, index);
+            _message = $"Locked book plate for {_selected.DisplayName}";
+            await LoadAsync();
+        }
+        catch (Exception ex) { _error = ex.Message; }
+        finally { _busy = false; }
+    }
+
+    private async Task UnlockAsync()
+    {
+        if (_selected is null) return;
+        _busy = true;
+        _error = null;
+        try
+        {
+            await Engine.UnlockCharacterAsync(_projectId, _selected.Key);
+            _message = $"Unlocked {_selected.DisplayName}";
+            await LoadAsync();
+        }
+        catch (Exception ex) { _error = ex.Message; }
+        finally { _busy = false; }
+    }
+
+    private async Task CancelAsync()
+    {
+        _busy = true;
+        try
+        {
+            await Engine.CancelJobAsync();
+            _message = "Cancel requested";
+            var jobs = await Engine.GetJobAsync();
+            _job = jobs?.Job;
+        }
+        catch (Exception ex) { _error = ex.Message; }
+        finally { _busy = false; }
+    }
+
+    private string CacheBust(string url) =>
+        url + (url.Contains('?') ? "&" : "?") + "v=" + _imgBust;
+
+    public async ValueTask DisposeAsync()
+    {
+        Hub.JobUpdated -= OnJobUpdated;
+        Hub.JobLog -= OnJobLog;
+        await Task.CompletedTask;
     }
 }

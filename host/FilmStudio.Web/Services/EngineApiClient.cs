@@ -242,6 +242,85 @@ public sealed class EngineApiClient
         return $"{baseUrl}/api/projects/{Uri.EscapeDataString(projectId)}/characters/{Uri.EscapeDataString(charKey)}/ref";
     }
 
+    public string CharacterVariantUrl(string projectId, string charKey, int index)
+    {
+        var baseUrl = _http.BaseAddress?.ToString().TrimEnd('/') ?? "";
+        return $"{baseUrl}/api/projects/{Uri.EscapeDataString(projectId)}/characters/{Uri.EscapeDataString(charKey)}/variants/{index}";
+    }
+
+    public string CharacterBookRefUrl(string projectId, string charKey, int index)
+    {
+        var baseUrl = _http.BaseAddress?.ToString().TrimEnd('/') ?? "";
+        return $"{baseUrl}/api/projects/{Uri.EscapeDataString(projectId)}/characters/{Uri.EscapeDataString(charKey)}/bookrefs/{index}";
+    }
+
+    public async Task StartCharacterVariantsAsync(
+        string projectId,
+        string charKey,
+        CancellationToken ct = default)
+    {
+        using var resp = await _http.PostAsJsonAsync(
+            "/api/jobs/character-variants",
+            new StartCharacterVariantsRequest { ProjectId = projectId, CharKey = charKey },
+            JsonOpts,
+            ct);
+        if (!resp.IsSuccessStatusCode)
+        {
+            var err = await resp.Content.ReadAsStringAsync(ct);
+            throw new InvalidOperationException(TryError(err) ?? resp.ReasonPhrase);
+        }
+    }
+
+    public async Task LockCharacterVariantAsync(
+        string projectId,
+        string charKey,
+        int index,
+        CancellationToken ct = default)
+    {
+        using var resp = await _http.PostAsJsonAsync(
+            $"/api/projects/{Uri.EscapeDataString(projectId)}/characters/{Uri.EscapeDataString(charKey)}/lock-variant",
+            new { index },
+            ct);
+        if (!resp.IsSuccessStatusCode)
+        {
+            var err = await resp.Content.ReadAsStringAsync(ct);
+            throw new InvalidOperationException(TryError(err) ?? resp.ReasonPhrase);
+        }
+    }
+
+    public async Task LockCharacterBookRefAsync(
+        string projectId,
+        string charKey,
+        int index,
+        CancellationToken ct = default)
+    {
+        using var resp = await _http.PostAsJsonAsync(
+            $"/api/projects/{Uri.EscapeDataString(projectId)}/characters/{Uri.EscapeDataString(charKey)}/lock-bookref",
+            new { index },
+            ct);
+        if (!resp.IsSuccessStatusCode)
+        {
+            var err = await resp.Content.ReadAsStringAsync(ct);
+            throw new InvalidOperationException(TryError(err) ?? resp.ReasonPhrase);
+        }
+    }
+
+    public async Task UnlockCharacterAsync(
+        string projectId,
+        string charKey,
+        CancellationToken ct = default)
+    {
+        using var resp = await _http.PostAsJsonAsync(
+            $"/api/projects/{Uri.EscapeDataString(projectId)}/characters/{Uri.EscapeDataString(charKey)}/unlock",
+            new { },
+            ct);
+        if (!resp.IsSuccessStatusCode)
+        {
+            var err = await resp.Content.ReadAsStringAsync(ct);
+            throw new InvalidOperationException(TryError(err) ?? resp.ReasonPhrase);
+        }
+    }
+
     private static string? TryError(string json)
     {
         try

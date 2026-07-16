@@ -23,7 +23,7 @@
 }
 
 <div class="row mb-3 g-2 align-items-end">
-    <div class="col-md-3">
+    <div class="col-md-2">
         <label class="form-label">Project</label>
         <select class="form-select" @bind="_projectId" @bind:after="OnProjectChangedAsync" disabled="@_busy">
             @foreach (var p in _projectIds)
@@ -32,12 +32,36 @@
             }
         </select>
     </div>
+    <div class="col-md-2">
+        <label class="form-label">Character</label>
+        <select class="form-select" @bind="_filterCharacter" disabled="@_busy">
+            <option value="">All characters</option>
+            @foreach (var c in CharacterOptions)
+            {
+                <option value="@c">@ShortChar(c)</option>
+            }
+        </select>
+    </div>
+    <div class="col-md-2">
+        <label class="form-label">Location</label>
+        <select class="form-select" @bind="_filterLocation" disabled="@_busy">
+            <option value="">All locations</option>
+            @foreach (var loc in LocationOptions)
+            {
+                <option value="@loc">@ShortLoc(loc)</option>
+            }
+        </select>
+    </div>
     <div class="col-md-3">
-        <label class="form-label">Filter setting</label>
+        <label class="form-label">Setting text</label>
         <input class="form-control" @bind="_filter" @bind:event="oninput" disabled="@_busy" placeholder="e.g. pajamas" />
     </div>
-    <div class="col-md-6 d-flex gap-2 flex-wrap">
+    <div class="col-md-3 d-flex gap-2 flex-wrap">
         <button class="btn btn-outline-secondary" disabled="@_busy" @onclick="ReloadListAsync">Reload</button>
+        @if (HasActiveFilters)
+        {
+            <button class="btn btn-outline-secondary" disabled="@_busy" @onclick="ClearFilters">Clear filters</button>
+        }
         @if (_selectedScene is int)
         {
             <button class="btn btn-outline-primary" disabled="@_busy" @onclick="BackToListAsync">← All scenes</button>
@@ -102,37 +126,109 @@
     }
     else
     {
-        <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
-            <div class="small text-muted">
-                @FilteredScenes.Count shown ·
-                @(_scenes.Sum(s => s.ClipsOnDisk))/@(_scenes.Sum(s => s.ClipCount)) clips on disk
-            </div>
-            <div class="form-check mb-0">
-                <input class="form-check-input" type="checkbox" id="onlyMissing" @bind="_onlyMissing" disabled="@_busy" />
-                <label class="form-check-label" for="onlyMissing">Only missing clips</label>
-            </div>
-        </div>
-
-        <div class="card mb-3">
-            <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
-                <span>Batch generate</span>
-                <div class="btn-group btn-group-sm">
-                    <button class="btn btn-outline-secondary" disabled="@_busy" @onclick="SelectIncomplete">Select incomplete</button>
-                    <button class="btn btn-outline-secondary" disabled="@_busy" @onclick="SelectAll">Select all</button>
-                    <button class="btn btn-outline-secondary" disabled="@_busy" @onclick="ClearSelection">Clear</button>
+        <div class="batch-panel mb-3">
+            <div class="batch-panel__head">
+                <div class="batch-panel__title">
+                    <span class="batch-panel__icon" aria-hidden="true">▶</span>
+                    <div>
+                        <div class="batch-panel__heading">Batch generate</div>
+                        <div class="batch-panel__sub">
+                            @FilteredScenes.Count scene@(FilteredScenes.Count == 1 ? "" : "s") shown
+                            @if (HasActiveFilters)
+                            {
+                                <span> of @_scenes.Count</span>
+                            }
+                            · @_scenes.Sum(s => s.ClipsOnDisk)/@_scenes.Sum(s => s.ClipCount) clips on disk
+                            @if (IncompleteCount > 0)
+                            {
+                                <span class="batch-panel__warn"> · @IncompleteCount incomplete</span>
+                            }
+                        </div>
+                    </div>
+                </div>
+                <div class="batch-panel__stats">
+                    <div class="batch-stat @(_selected.Count > 0 ? "batch-stat--active" : "")">
+                        <span class="batch-stat__value">@_selected.Count</span>
+                        <span class="batch-stat__label">selected</span>
+                    </div>
+                    <div class="batch-stat @(_selected.Count > 0 ? "batch-stat--clips" : "")">
+                        <span class="batch-stat__value">~@EstimateSelectedClips()</span>
+                        <span class="batch-stat__label">clips</span>
+                    </div>
                 </div>
             </div>
-            <div class="card-body py-2">
-                <button class="btn btn-primary"
-                        disabled="@(_busy || _selected.Count == 0 || JobRunning)"
-                        @onclick="StartBatchAsync">
-                    ▶ Generate @_selected.Count scene(s)
-                    @if (_selected.Count > 0)
-                    {
-                        <span class="ms-1">· ~@EstimateSelectedClips() clip(s)</span>
-                    }
-                </button>
-                <span class="small text-muted ms-2">Uses <code>XAI_API_KEY</code> on the API process.</span>
+
+            <div class="batch-panel__body">
+                <div class="batch-panel__select">
+                    <span class="batch-panel__select-label">Select</span>
+                    <div class="batch-chip-group" role="group" aria-label="Selection shortcuts">
+                        <button type="button"
+                                class="batch-chip @(SelectionMode == "incomplete" ? "batch-chip--on" : "")"
+                                disabled="@(_busy || IncompleteCount == 0)"
+                                @onclick="SelectIncomplete"
+                                title="Scenes with missing clips in the current filter">
+                            Incomplete
+                            @if (IncompleteCount > 0)
+                            {
+                                <span class="batch-chip__count">@IncompleteCount</span>
+                            }
+                        </button>
+                        <button type="button"
+                                class="batch-chip @(SelectionMode == "all" ? "batch-chip--on" : "")"
+                                disabled="@(_busy || FilteredScenes.Count == 0)"
+                                @onclick="SelectAll"
+                                title="All scenes in the current filter">
+                            All shown
+                            <span class="batch-chip__count">@FilteredScenes.Count</span>
+                        </button>
+                        <button type="button"
+                                class="batch-chip batch-chip--muted @(_selected.Count == 0 ? "batch-chip--disabled" : "")"
+                                disabled="@(_busy || _selected.Count == 0)"
+                                @onclick="ClearSelection"
+                                title="Clear selection">
+                            Clear
+                        </button>
+                    </div>
+                </div>
+
+                <div class="batch-panel__actions">
+                    <label class="batch-toggle" title="Skip clips already on disk">
+                        <input type="checkbox" class="form-check-input" @bind="_onlyMissing" disabled="@_busy" />
+                        <span>Only missing clips</span>
+                    </label>
+
+                    <button type="button"
+                            class="btn batch-go @(_selected.Count > 0 && !JobRunning ? "batch-go--ready" : "")"
+                            disabled="@(_busy || _selected.Count == 0 || JobRunning || (_onlyMissing && EstimateSelectedClips() == 0))"
+                            @onclick="StartBatchAsync">
+                        @if (JobRunning)
+                        {
+                            <span class="batch-go__spin" aria-hidden="true"></span>
+                            <span>Generating…</span>
+                        }
+                        else if (_selected.Count == 0)
+                        {
+                            <span class="batch-go__play" aria-hidden="true">▶</span>
+                            <span>Select scenes to generate</span>
+                        }
+                        else if (_onlyMissing && EstimateSelectedClips() == 0)
+                        {
+                            <span>Nothing missing in selection</span>
+                        }
+                        else
+                        {
+                            <span class="batch-go__play" aria-hidden="true">▶</span>
+                            <span>
+                                Generate @_selected.Count scene@(_selected.Count == 1 ? "" : "s")
+                                <span class="batch-go__meta">· ~@EstimateSelectedClips() clip@((EstimateSelectedClips() == 1) ? "" : "s")</span>
+                            </span>
+                        }
+                    </button>
+                </div>
+            </div>
+
+            <div class="batch-panel__foot">
+                Uses <code>XAI_API_KEY</code> on the API process · selection respects character/location/setting filters
             </div>
         </div>
 
@@ -143,6 +239,7 @@
                         <th style="width:2.5rem;"></th>
                         <th style="width:4rem;">#</th>
                         <th>Setting</th>
+                        <th>Cast / location</th>
                         <th style="width:6rem;">Clips</th>
                         <th style="width:5rem;">Dur</th>
                         <th style="width:5rem;"></th>
@@ -164,10 +261,26 @@
                                 <span class="badge @StatusBadge(s.Status)">S@sn.ToString("D2")</span>
                             </td>
                             <td @onclick="() => OpenSceneAsync(sn)">
-                                @(s.Setting is { Length: > 0 } set ? Trunc(set, 72) : "—")
+                                @(s.Setting is { Length: > 0 } set ? Trunc(set, 56) : "—")
                                 @if (s.CompositeExists)
                                 {
                                     <span class="badge bg-light text-dark border ms-1">mux</span>
+                                }
+                            </td>
+                            <td @onclick="() => OpenSceneAsync(sn)" class="small">
+                                @if (s.CharactersOnScreen.Count > 0)
+                                {
+                                    <span class="text-muted">@string.Join(", ", s.CharactersOnScreen.Select(ShortChar).Take(4))</span>
+                                }
+                                else
+                                {
+                                    <span class="text-muted">—</span>
+                                }
+                                @if (!string.IsNullOrEmpty(s.PrimaryLocationId) || s.LocationIds.Count > 0)
+                                {
+                                    <div class="text-muted">
+                                        <code>@ShortLoc(s.PrimaryLocationId ?? s.LocationIds.FirstOrDefault() ?? "")</code>
+                                    </div>
                                 }
                             </td>
                             <td @onclick="() => OpenSceneAsync(sn)">
@@ -179,8 +292,9 @@
                                 @(s.DurationSeconds is double d ? $"{d:0}s" : "—")
                             </td>
                             <td @onclick:stopPropagation="true">
-                                <button class="btn btn-sm btn-outline-primary"
+                                <button class="btn btn-sm batch-row-gen"
                                         disabled="@(_busy || JobRunning)"
+                                        title="Generate this scene"
                                         @onclick="() => GenOneSceneAsync(sn)">
                                     Gen
                                 </button>
@@ -346,9 +460,12 @@ else
     private string _projectId = "Buster";
     private List<string> _projectIds = new();
     private string _filter = "";
+    private string _filterCharacter = "";
+    private string _filterLocation = "";
     private bool _onlyMissing = true;
     private List<SceneSummary>? _scenes;
     private HashSet<int> _selected = new();
+    private string _selectionMode = ""; // "" | incomplete | all
     private int? _selectedScene;
     private SceneDetail? _detail;
     private int? _selectedClip;
@@ -358,13 +475,81 @@ else
     private bool JobRunning =>
         string.Equals(_job?.Status, "running", StringComparison.OrdinalIgnoreCase);
 
-    private List<SceneSummary> FilteredScenes =>
+    private string SelectionMode => _selectionMode;
+
+    private int IncompleteCount =>
+        FilteredScenes.Count(s => s.ClipsOnDisk < s.ClipCount);
+
+    private bool HasActiveFilters =>
+        !string.IsNullOrWhiteSpace(_filter) ||
+        !string.IsNullOrWhiteSpace(_filterCharacter) ||
+        !string.IsNullOrWhiteSpace(_filterLocation);
+
+    private List<string> CharacterOptions =>
         _scenes is null
-            ? new List<SceneSummary>()
-            : string.IsNullOrWhiteSpace(_filter)
-                ? _scenes
-                : _scenes.Where(s =>
-                    (s.Setting ?? "").Contains(_filter, StringComparison.OrdinalIgnoreCase)).ToList();
+            ? new List<string>()
+            : _scenes
+                .SelectMany(s => s.CharactersOnScreen)
+                .Where(c => !string.IsNullOrWhiteSpace(c))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .OrderBy(c => ShortChar(c), StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+    private List<string> LocationOptions =>
+        _scenes is null
+            ? new List<string>()
+            : _scenes
+                .SelectMany(s =>
+                {
+                    var list = new List<string>(s.LocationIds);
+                    if (!string.IsNullOrWhiteSpace(s.PrimaryLocationId))
+                        list.Add(s.PrimaryLocationId!);
+                    return list;
+                })
+                .Where(l => !string.IsNullOrWhiteSpace(l))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .OrderBy(ShortLoc, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+    private List<SceneSummary> FilteredScenes
+    {
+        get
+        {
+            if (_scenes is null)
+                return new List<SceneSummary>();
+
+            IEnumerable<SceneSummary> q = _scenes;
+            if (!string.IsNullOrWhiteSpace(_filter))
+            {
+                q = q.Where(s =>
+                    (s.Setting ?? "").Contains(_filter, StringComparison.OrdinalIgnoreCase));
+            }
+
+            if (!string.IsNullOrWhiteSpace(_filterCharacter))
+            {
+                q = q.Where(s =>
+                    s.CharactersOnScreen.Any(c =>
+                        string.Equals(c, _filterCharacter, StringComparison.OrdinalIgnoreCase)));
+            }
+
+            if (!string.IsNullOrWhiteSpace(_filterLocation))
+            {
+                q = q.Where(s =>
+                    string.Equals(s.PrimaryLocationId, _filterLocation, StringComparison.OrdinalIgnoreCase) ||
+                    s.LocationIds.Any(l =>
+                        string.Equals(l, _filterLocation, StringComparison.OrdinalIgnoreCase)));
+            }
+
+            return q.ToList();
+        }
+    }
+
+    private void ClearFilters()
+    {
+        _filter = "";
+        _filterCharacter = "";
+        _filterLocation = "";
+    }
 
     protected override async Task OnInitializedAsync()
     {
@@ -424,6 +609,7 @@ else
         _selectedClip = null;
         _clip = null;
         _selected.Clear();
+        ClearFilters();
         await ReloadListAsync();
     }
 
@@ -510,6 +696,7 @@ else
     {
         if (on) _selected.Add(sn);
         else _selected.Remove(sn);
+        _selectionMode = "";
     }
 
     private void SelectIncomplete()
@@ -518,12 +705,20 @@ else
             .Where(s => s.ClipsOnDisk < s.ClipCount)
             .Select(s => s.SceneNumber)
             .ToHashSet();
+        _selectionMode = "incomplete";
     }
 
-    private void SelectAll() =>
+    private void SelectAll()
+    {
         _selected = FilteredScenes.Select(s => s.SceneNumber).ToHashSet();
+        _selectionMode = "all";
+    }
 
-    private void ClearSelection() => _selected.Clear();
+    private void ClearSelection()
+    {
+        _selected.Clear();
+        _selectionMode = "";
+    }
 
     private int EstimateSelectedClips()
     {
@@ -610,6 +805,15 @@ else
 
     private static string ShortChar(string key) =>
         key.Replace("Character_", "", StringComparison.OrdinalIgnoreCase).Replace('_', ' ');
+
+    private static string ShortLoc(string key)
+    {
+        if (string.IsNullOrEmpty(key)) return "—";
+        return key
+            .Replace("Location_", "", StringComparison.OrdinalIgnoreCase)
+            .Replace("Loc_", "", StringComparison.OrdinalIgnoreCase)
+            .Replace('_', ' ');
+    }
 
     private static string FormatSize(long bytes)
     {

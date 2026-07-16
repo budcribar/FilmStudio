@@ -219,13 +219,48 @@ else
                 }
             </div>
         </div>
-        <div class="card-body p-0">
-            <div class="table-responsive" style="max-height: 420px; overflow: auto;">
+        <div class="card-body">
+            <div class="row g-2 mb-3 align-items-end">
+                <div class="col-md-3">
+                    <label class="form-label small mb-0">Character</label>
+                    <select class="form-select form-select-sm" @bind="_filterCharacter">
+                        <option value="">All characters</option>
+                        @foreach (var c in CharacterOptions)
+                        {
+                            <option value="@c">@ShortChar(c)</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label small mb-0">Location</label>
+                    <select class="form-select form-select-sm" @bind="_filterLocation">
+                        <option value="">All locations</option>
+                        @foreach (var loc in LocationOptions)
+                        {
+                            <option value="@loc">@ShortLoc(loc)</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label small mb-0">Setting text</label>
+                    <input class="form-control form-control-sm" @bind="_filterText" @bind:event="oninput"
+                           placeholder="e.g. yard" />
+                </div>
+                <div class="col-md-2">
+                    @if (HasSceneFilters)
+                    {
+                        <button type="button" class="btn btn-sm btn-outline-secondary" @onclick="ClearSceneFilters">Clear</button>
+                    }
+                    <span class="small text-muted ms-1">@FilteredScenes.Count() shown</span>
+                </div>
+            </div>
+            <div class="table-responsive p-0" style="max-height: 420px; overflow: auto;">
                 <table class="table table-sm table-hover mb-0">
                     <thead class="sticky-top bg-white">
                         <tr>
                             <th>#</th>
                             <th>Setting</th>
+                            <th>Cast / loc</th>
                             <th>Clips</th>
                             <th>Actual $</th>
                             <th>Est spent</th>
@@ -241,6 +276,13 @@ else
                             <tr>
                                 <td><code>S@r.Scene.ToString("D2")</code></td>
                                 <td class="small">@(string.IsNullOrEmpty(r.Setting) ? "—" : r.Setting)</td>
+                                <td class="small text-muted">
+                                    @string.Join(", ", r.CharactersOnScreen.Select(ShortChar).Take(3))
+                                    @if (!string.IsNullOrEmpty(r.PrimaryLocationId) || r.LocationIds.Count > 0)
+                                    {
+                                        <div><code>@ShortLoc(r.PrimaryLocationId ?? r.LocationIds.FirstOrDefault() ?? "")</code></div>
+                                    }
+                                </td>
                                 <td class="small">@r.ClipsOnDisk/@r.ClipsTotal</td>
                                 <td>@Usd(r.ActualUsd)</td>
                                 <td>@Usd(r.SpentUsd)</td>
@@ -354,22 +396,84 @@ else
     private string _heroRes = "720p";
     private double _retries;
     private string _filter = "all";
+    private string _filterCharacter = "";
+    private string _filterLocation = "";
+    private string _filterText = "";
     private CostReport? _report;
     private string? _cheapestLabel;
     private List<CostSceneRow> _topRemaining = new();
+
+    private bool HasSceneFilters =>
+        !string.IsNullOrWhiteSpace(_filterCharacter) ||
+        !string.IsNullOrWhiteSpace(_filterLocation) ||
+        !string.IsNullOrWhiteSpace(_filterText);
+
+    private List<string> CharacterOptions =>
+        _report?.Scenes
+            .SelectMany(s => s.CharactersOnScreen)
+            .Where(c => !string.IsNullOrWhiteSpace(c))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(ShortChar, StringComparer.OrdinalIgnoreCase)
+            .ToList()
+        ?? new List<string>();
+
+    private List<string> LocationOptions =>
+        _report?.Scenes
+            .SelectMany(s =>
+            {
+                var list = new List<string>(s.LocationIds);
+                if (!string.IsNullOrWhiteSpace(s.PrimaryLocationId))
+                    list.Add(s.PrimaryLocationId!);
+                return list;
+            })
+            .Where(l => !string.IsNullOrWhiteSpace(l))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(ShortLoc, StringComparer.OrdinalIgnoreCase)
+            .ToList()
+        ?? new List<string>();
 
     private IEnumerable<CostSceneRow> FilteredScenes
     {
         get
         {
             if (_report is null) return Enumerable.Empty<CostSceneRow>();
-            return _filter switch
+            IEnumerable<CostSceneRow> q = _filter switch
             {
                 "with media" => _report.Scenes.Where(r => r.ClipsOnDisk > 0),
                 "incomplete" => _report.Scenes.Where(r => r.ClipsMissing > 0),
                 _ => _report.Scenes,
             };
+
+            if (!string.IsNullOrWhiteSpace(_filterCharacter))
+            {
+                q = q.Where(r =>
+                    r.CharactersOnScreen.Any(c =>
+                        string.Equals(c, _filterCharacter, StringComparison.OrdinalIgnoreCase)));
+            }
+
+            if (!string.IsNullOrWhiteSpace(_filterLocation))
+            {
+                q = q.Where(r =>
+                    string.Equals(r.PrimaryLocationId, _filterLocation, StringComparison.OrdinalIgnoreCase) ||
+                    r.LocationIds.Any(l =>
+                        string.Equals(l, _filterLocation, StringComparison.OrdinalIgnoreCase)));
+            }
+
+            if (!string.IsNullOrWhiteSpace(_filterText))
+            {
+                q = q.Where(r =>
+                    (r.Setting ?? "").Contains(_filterText, StringComparison.OrdinalIgnoreCase));
+            }
+
+            return q;
         }
+    }
+
+    private void ClearSceneFilters()
+    {
+        _filterCharacter = "";
+        _filterLocation = "";
+        _filterText = "";
     }
 
     protected override async Task OnInitializedAsync()
@@ -461,5 +565,17 @@ else
     {
         if (string.IsNullOrEmpty(s)) return "—";
         return s.Length <= n ? s : s[..(n - 1)] + "…";
+    }
+
+    private static string ShortChar(string key) =>
+        key.Replace("Character_", "", StringComparison.OrdinalIgnoreCase).Replace('_', ' ');
+
+    private static string ShortLoc(string key)
+    {
+        if (string.IsNullOrEmpty(key)) return "—";
+        return key
+            .Replace("Location_", "", StringComparison.OrdinalIgnoreCase)
+            .Replace("Loc_", "", StringComparison.OrdinalIgnoreCase)
+            .Replace('_', ' ');
     }
 }

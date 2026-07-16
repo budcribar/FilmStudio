@@ -114,6 +114,9 @@ public sealed class CostReportService
                 ClipsMissing = nMiss,
                 IsHero = isHero,
                 HeroResolution = heroResForScene,
+                CharactersOnScreen = scene.CharactersOnScreen,
+                LocationIds = scene.LocationIds,
+                PrimaryLocationId = scene.PrimaryLocationId,
                 SpentUsd = Math.Round(sSpent, 2),
                 ActualUsd = Math.Round(actualScene, 2),
                 RemainingDraftUsd = Math.Round(sMiss, 2),
@@ -690,11 +693,45 @@ public sealed class CostReportService
                 }
             }
 
+            var chars = new List<string>();
+            if (s.TryGetProperty("characters_on_screen", out var cos) && cos.ValueKind == JsonValueKind.Array)
+            {
+                foreach (var x in cos.EnumerateArray())
+                {
+                    var name = x.GetString();
+                    if (!string.IsNullOrWhiteSpace(name))
+                        chars.Add(name!);
+                }
+            }
+
+            var locs = new List<string>();
+            if (s.TryGetProperty("location_ids", out var lids) && lids.ValueKind == JsonValueKind.Array)
+            {
+                foreach (var x in lids.EnumerateArray())
+                {
+                    var name = x.GetString();
+                    if (!string.IsNullOrWhiteSpace(name))
+                        locs.Add(name!);
+                }
+            }
+
+            string? primaryLoc = null;
+            if (s.TryGetProperty("primary_location_id", out var pl) &&
+                pl.GetString() is { Length: > 0 } plId)
+            {
+                primaryLoc = plId;
+                if (!locs.Contains(plId, StringComparer.OrdinalIgnoreCase))
+                    locs.Insert(0, plId);
+            }
+
             list.Add(new BlueprintSceneClips
             {
                 SceneNumber = sn,
                 Setting = setting,
                 Clips = clips,
+                CharactersOnScreen = chars,
+                LocationIds = locs,
+                PrimaryLocationId = primaryLoc,
             });
         }
 
@@ -892,6 +929,9 @@ public sealed class CostReportService
         public int SceneNumber { get; set; }
         public string Setting { get; set; } = "";
         public List<BlueprintClip> Clips { get; set; } = new();
+        public List<string> CharactersOnScreen { get; set; } = new();
+        public List<string> LocationIds { get; set; } = new();
+        public string? PrimaryLocationId { get; set; }
     }
 
     private sealed class BlueprintClip

@@ -227,6 +227,61 @@ public sealed class ProjectStore
                 }
             }
 
+            // book_reference_images alias
+            if (bookRefs.Count == 0 &&
+                info.TryGetProperty("book_reference_images", out var bri) &&
+                bri.ValueKind == JsonValueKind.Array)
+            {
+                foreach (var x in bri.EnumerateArray())
+                {
+                    var s = x.GetString();
+                    if (!string.IsNullOrWhiteSpace(s))
+                        bookRefs.Add(s!);
+                }
+            }
+
+            var bookRefImages = new List<CharacterImageRef>();
+            if (!voiceOnly)
+            {
+                for (var i = 0; i < bookRefs.Count; i++)
+                {
+                    var rel = bookRefs[i].Replace('\\', '/');
+                    var full = ResolveProjectRelativePath(projectDir, rel);
+                    var exists = full is not null && File.Exists(full);
+                    bookRefImages.Add(new CharacterImageRef
+                    {
+                        Index = i,
+                        RelativePath = rel,
+                        FileName = Path.GetFileName(rel),
+                        Exists = exists,
+                        Url = exists
+                            ? $"/api/projects/{Uri.EscapeDataString(projectId)}/characters/{Uri.EscapeDataString(key)}/bookrefs/{i}"
+                            : null,
+                    });
+                }
+            }
+
+            var variants = new List<CharacterImageRef>();
+            if (!voiceOnly)
+            {
+                for (var idx = 1; idx <= 3; idx++)
+                {
+                    var fileName = $"{key.ToLowerInvariant()}_variant_0{idx}.png";
+                    var full = Path.Combine(projectDir, "assets", "characters", fileName);
+                    var exists = File.Exists(full) && new FileInfo(full).Length > 64;
+                    variants.Add(new CharacterImageRef
+                    {
+                        Index = idx,
+                        RelativePath = $"assets/characters/{fileName}",
+                        FileName = fileName,
+                        Exists = exists,
+                        Url = exists
+                            ? $"/api/projects/{Uri.EscapeDataString(projectId)}/characters/{Uri.EscapeDataString(key)}/variants/{idx}"
+                            : null,
+                    });
+                }
+            }
+
             rows.Add(new CharacterSummary
             {
                 Key = key,
@@ -246,6 +301,8 @@ public sealed class ProjectStore
                     : null,
                 WardrobeAlways = wardrobe,
                 DesignReferenceImages = bookRefs,
+                BookRefs = bookRefImages,
+                Variants = variants,
                 AgeBand = info.TryGetProperty("age_band", out var ab) ? ab.GetString() : null,
             });
         }
@@ -265,6 +322,57 @@ public sealed class ProjectStore
             return null;
         var refName = GuessRefFileName(charKey, info);
         var full = Path.Combine(GetProjectDir(projectId), "assets", "characters", refName);
+        return File.Exists(full) ? full : null;
+    }
+
+    public string? ResolveCharacterVariantPath(string projectId, string charKey, int variantIndex)
+    {
+        if (variantIndex is < 1 or > 3)
+            return null;
+        var seeds = LoadCharacterSeeds(projectId);
+        if (!seeds.TryGetValue(charKey, out var info) || IsVoiceOnly(charKey, info))
+            return null;
+        var fileName = $"{charKey.ToLowerInvariant()}_variant_0{variantIndex}.png";
+        var full = Path.Combine(GetProjectDir(projectId), "assets", "characters", fileName);
+        return File.Exists(full) ? full : null;
+    }
+
+    public string? ResolveCharacterBookRefPath(string projectId, string charKey, int bookIndex)
+    {
+        var seeds = LoadCharacterSeeds(projectId);
+        if (!seeds.TryGetValue(charKey, out var info) || IsVoiceOnly(charKey, info))
+            return null;
+
+        var bookRefs = new List<string>();
+        foreach (var prop in new[] { "design_reference_images", "book_reference_images" })
+        {
+            if (!info.TryGetProperty(prop, out var arr) || arr.ValueKind != JsonValueKind.Array)
+                continue;
+            foreach (var x in arr.EnumerateArray())
+            {
+                var s = x.GetString();
+                if (!string.IsNullOrWhiteSpace(s) && !bookRefs.Contains(s!))
+                    bookRefs.Add(s!);
+            }
+        }
+
+        if (bookIndex < 0 || bookIndex >= bookRefs.Count)
+            return null;
+        return ResolveProjectRelativePath(GetProjectDir(projectId), bookRefs[bookIndex]);
+    }
+
+    private static string? ResolveProjectRelativePath(string projectDir, string relative)
+    {
+        if (string.IsNullOrWhiteSpace(relative))
+            return null;
+        var norm = relative.Replace('\\', '/').TrimStart('/');
+        // Reject path traversal
+        if (norm.Contains("..", StringComparison.Ordinal))
+            return null;
+        var full = Path.GetFullPath(Path.Combine(projectDir, norm.Replace('/', Path.DirectorySeparatorChar)));
+        var root = Path.GetFullPath(projectDir);
+        if (!full.StartsWith(root, StringComparison.OrdinalIgnoreCase))
+            return null;
         return File.Exists(full) ? full : null;
     }
 
@@ -327,6 +435,26 @@ public sealed class ProjectStore
                 }
             }
 
+            var locs = new List<string>();
+            if (s.TryGetProperty("location_ids", out var lids) && lids.ValueKind == JsonValueKind.Array)
+            {
+                foreach (var x in lids.EnumerateArray())
+                {
+                    var name = x.GetString();
+                    if (!string.IsNullOrWhiteSpace(name))
+                        locs.Add(name!);
+                }
+            }
+
+            string? primaryLoc = null;
+            if (s.TryGetProperty("primary_location_id", out var pl) &&
+                pl.GetString() is { Length: > 0 } plId)
+            {
+                primaryLoc = plId;
+                if (!locs.Contains(plId, StringComparer.OrdinalIgnoreCase))
+                    locs.Insert(0, plId);
+            }
+
             var complete = nClips > 0 && onDisk >= nClips;
             var status = nClips == 0 || onDisk == 0
                 ? "empty"
@@ -342,6 +470,8 @@ public sealed class ProjectStore
                 DurationSeconds = dur,
                 CompositeExists = compositeOk,
                 CharactersOnScreen = chars,
+                LocationIds = locs,
+                PrimaryLocationId = primaryLoc,
                 Status = status,
             });
         }

@@ -142,6 +142,124 @@ public sealed class FilmJobService
         await Task.CompletedTask;
     }
 
+    /// <summary>Generate 3 portrait variants via Python character design (needs XAI_API_KEY).</summary>
+    public async Task StartCharacterVariantsAsync(StartCharacterVariantsRequest req)
+    {
+        if (string.IsNullOrWhiteSpace(req.CharKey))
+            throw new InvalidOperationException("charKey required");
+
+        if (!await _gate.WaitAsync(0))
+            throw new InvalidOperationException("A generation job is already running.");
+
+        _cts = new CancellationTokenSource();
+        var ct = _cts.Token;
+        _ = Task.Run(async () =>
+        {
+            try { await RunCharacterVariantsAsync(req, ct); }
+            finally { _gate.Release(); }
+        }, CancellationToken.None);
+
+        await Task.CompletedTask;
+    }
+
+    /// <summary>Synchronous character lock/unlock via Python CLI (updates engine state).</summary>
+    public async Task<string> RunCharacterDesignActionAsync(
+        string projectId,
+        string action,
+        string charKey,
+        int variantIndex = 1,
+        string? imagePath = null,
+        CancellationToken ct = default)
+    {
+        if (IsRunning)
+            throw new InvalidOperationException("A generation job is already running.");
+
+        var root = _projects.WorkspaceRoot;
+        var script = Path.Combine(root, "scripts", "character_design_cli.py");
+        if (!File.Exists(script))
+            throw new InvalidOperationException($"character_design_cli.py not found: {script}");
+
+        var args = new StringBuilder();
+        args.Append($"\"{script}\" --project \"{projectId}\" {action} --char \"{charKey}\"");
+        if (action == "lock-variant")
+            args.Append($" --variant-index {Math.Clamp(variantIndex, 1, 3)}");
+        if (action == "lock-image" && !string.IsNullOrWhiteSpace(imagePath))
+            args.Append($" --image \"{imagePath}\"");
+
+        var (exit, stdout) = await RunPythonCaptureAsync(args.ToString(), root, ct);
+        var last = stdout.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .LastOrDefault(l => l.Contains("\"ok\""))
+            ?? stdout.Trim();
+        if (exit != 0)
+            throw new InvalidOperationException(TryParseCliError(last) ?? $"character design failed (exit {exit}): {last}");
+        if (last.Contains("\"ok\": false", StringComparison.OrdinalIgnoreCase) ||
+            last.Contains("\"ok\":false", StringComparison.OrdinalIgnoreCase))
+            throw new InvalidOperationException(TryParseCliError(last) ?? last);
+        return last;
+    }
+
+    private async Task RunCharacterVariantsAsync(StartCharacterVariantsRequest req, CancellationToken ct)
+    {
+        var projectId = string.IsNullOrWhiteSpace(req.ProjectId)
+            ? _projects.ActiveProjectId
+            : req.ProjectId;
+        _projects.Activate(projectId);
+
+        _snapshot = new JobSnapshot
+        {
+            Status = "running",
+            Kind = "character",
+            ProjectId = projectId,
+            Message = $"Generating portraits for {req.CharKey}…",
+            StartedAt = DateTimeOffset.UtcNow,
+            Log = new List<string>(),
+        };
+        await PublishAsync();
+
+        try
+        {
+            if (string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("XAI_API_KEY")))
+                throw new InvalidOperationException("XAI_API_KEY is not set (required for portrait generation).");
+
+            var root = _projects.WorkspaceRoot;
+            var script = Path.Combine(root, "scripts", "character_design_cli.py");
+            if (!File.Exists(script))
+                throw new InvalidOperationException($"character_design_cli.py not found: {script}");
+
+            var args =
+                $"\"{script}\" --project \"{projectId}\" generate --char \"{req.CharKey}\"";
+            await AppendLogAsync($"Character design: python {args}");
+            var exit = await RunPythonAsync(args, root, ct);
+            if (exit == 0)
+                await FinishAsync("done", $"Variants ready for {req.CharKey}");
+            else
+                await FinishAsync("error", $"Portrait generation failed (exit {exit})", $"exit {exit}");
+        }
+        catch (OperationCanceledException)
+        {
+            await FinishAsync("cancelled", "Cancelled by user");
+        }
+        catch (Exception ex)
+        {
+            _log.LogError(ex, "Character variants failed");
+            await FinishAsync("error", ex.Message, ex.Message);
+        }
+    }
+
+    private static string? TryParseCliError(string line)
+    {
+        try
+        {
+            var start = line.IndexOf('{');
+            if (start < 0) return line;
+            using var doc = JsonDocument.Parse(line[start..]);
+            if (doc.RootElement.TryGetProperty("error", out var e))
+                return e.GetString();
+        }
+        catch { /* ignore */ }
+        return line.Length > 300 ? line[..300] : line;
+    }
+
     private async Task RunStage1Async(StartStage1Request req, CancellationToken ct)
     {
         var projectId = string.IsNullOrWhiteSpace(req.ProjectId)
@@ -277,6 +395,16 @@ public sealed class FilmJobService
 
     private async Task<int> RunPythonAsync(string arguments, string workingDir, CancellationToken ct)
     {
+        var (exit, _) = await RunPythonCaptureAsync(arguments, workingDir, ct, logToJob: true);
+        return exit;
+    }
+
+    private async Task<(int Exit, string Stdout)> RunPythonCaptureAsync(
+        string arguments,
+        string workingDir,
+        CancellationToken ct,
+        bool logToJob = false)
+    {
         var python = string.IsNullOrWhiteSpace(_opts.PythonExecutable)
             ? "python"
             : _opts.PythonExecutable;
@@ -291,22 +419,26 @@ public sealed class FilmJobService
             UseShellExecute = false,
             CreateNoWindow = true,
         };
-        // Ensure child sees XAI_API_KEY if set on API process
         var key = Environment.GetEnvironmentVariable("XAI_API_KEY");
         if (!string.IsNullOrWhiteSpace(key) && !psi.Environment.ContainsKey("XAI_API_KEY"))
             psi.Environment["XAI_API_KEY"] = key;
 
         using var proc = new Process { StartInfo = psi, EnableRaisingEvents = true };
         var tcs = new TaskCompletionSource<int>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var stdout = new StringBuilder();
 
         proc.OutputDataReceived += async (_, e) =>
         {
-            if (!string.IsNullOrEmpty(e.Data))
+            if (string.IsNullOrEmpty(e.Data)) return;
+            stdout.AppendLine(e.Data);
+            if (logToJob)
                 await AppendLogAsync(e.Data);
         };
         proc.ErrorDataReceived += async (_, e) =>
         {
-            if (!string.IsNullOrEmpty(e.Data))
+            if (string.IsNullOrEmpty(e.Data)) return;
+            stdout.AppendLine(e.Data);
+            if (logToJob)
                 await AppendLogAsync(e.Data);
         };
         proc.Exited += (_, _) => tcs.TrySetResult(proc.ExitCode);
@@ -328,9 +460,8 @@ public sealed class FilmJobService
         });
 
         var exit = await tcs.Task.WaitAsync(ct);
-        // Drain a moment for last lines
         await Task.Delay(100, CancellationToken.None);
-        return exit;
+        return (exit, stdout.ToString());
     }
 
     private async Task RunBatchGenAsync(StartBatchGenRequest req, CancellationToken ct)
