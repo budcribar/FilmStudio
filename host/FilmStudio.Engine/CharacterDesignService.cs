@@ -519,8 +519,10 @@ public sealed class CharacterDesignService
                     ? lab
                     : charKey.Replace("Character_", "").Replace("_", " ");
 
-        var isAnimalDog = IsAnimalDogCharacter(charKey, ageBand, description, visualLock);
-        var isHumanAdult = IsHumanAdultCharacter(charKey, ageBand, description, visualLock);
+        var isAnimalDog = CharacterVisualTextScrubber.IsPrimarilyAnimalCharacter(
+            charKey, ageBand, description, visualLock, "dog");
+        var isHumanAdult = CharacterVisualTextScrubber.IsHumanAdultCharacter(
+            charKey, ageBand, description, visualLock);
 
         var ageClause = "";
         if (ageBand.StartsWith("child", StringComparison.OrdinalIgnoreCase) ||
@@ -559,11 +561,9 @@ public sealed class CharacterDesignService
                 "(same ethnicity, hair color family, recognizable family features). ";
         }
 
+        // Scrub is general (any book): nicknames + cross-species medium language
         var descSafe = CharacterVisualTextScrubber.ScrubVisualProse(description);
         var visualSafe = CharacterVisualTextScrubber.ScrubVisualProse(visualLock);
-        // Soften "matching the dog's look" style phrases so models don't morph humans into dogs
-        descSafe = SoftenCrossSpeciesStyleLanguage(descSafe);
-        visualSafe = SoftenCrossSpeciesStyleLanguage(visualSafe);
         var visualClauseSafe = string.IsNullOrWhiteSpace(visualSafe) ? "" : $"Visual lock: {visualSafe}. ";
         const string treatment = "soft even studio lighting";
 
@@ -597,82 +597,6 @@ public sealed class CharacterDesignService
             "No model-sheet labels or annotations. " +
             "Children's picture-book character style unless text says otherwise. " +
             treatment + ".";
-    }
-
-    /// <summary>
-    /// True only when the seed is primarily an animal dog — not a human whose text mentions
-    /// matching the dog film's CG medium ("matching the dog's picture-book look").
-    /// </summary>
-    private static bool IsAnimalDogCharacter(
-        string charKey,
-        string ageBand,
-        string description,
-        string visualLock)
-    {
-        if (ageBand.Contains("dog", StringComparison.OrdinalIgnoreCase) ||
-            ageBand.Contains("animal", StringComparison.OrdinalIgnoreCase))
-            return true;
-        if (charKey.Contains("Buster", StringComparison.OrdinalIgnoreCase) ||
-            charKey.Contains("Dog", StringComparison.OrdinalIgnoreCase))
-            return true;
-
-        var blob = $"{description} {visualLock}";
-        // Style-lock phrases about matching the dog cast medium → not a dog identity
-        if (System.Text.RegularExpressions.Regex.IsMatch(
-                blob,
-                @"matching\s+(the\s+)?dog|dog'?s\s+(children'?s\s+)?(picture-book|cg|look|style)|same\s+.*medium",
-                System.Text.RegularExpressions.RegexOptions.IgnoreCase))
-            return false;
-        if (System.Text.RegularExpressions.Regex.IsMatch(
-                blob,
-                @"\b(adult\s+)?(man|woman|human|mother|father|mom|dad|parent)\b",
-                System.Text.RegularExpressions.RegexOptions.IgnoreCase))
-            return false;
-
-        return System.Text.RegularExpressions.Regex.IsMatch(
-            description,
-            @"\b(small|medium|large)?\s*(black-and-white\s+|brown\s+)?dog\b",
-            System.Text.RegularExpressions.RegexOptions.IgnoreCase);
-    }
-
-    private static bool IsHumanAdultCharacter(
-        string charKey,
-        string ageBand,
-        string description,
-        string visualLock)
-    {
-        if (IsAnimalDogCharacter(charKey, ageBand, description, visualLock))
-            return false;
-        var blob = $"{charKey} {ageBand} {description} {visualLock}";
-        if (System.Text.RegularExpressions.Regex.IsMatch(
-                blob,
-                @"\b(man|woman|human|mother|father|mom|dad|daddy|parent|adult)\b",
-                System.Text.RegularExpressions.RegexOptions.IgnoreCase))
-            return true;
-        return charKey.Contains("Mom", StringComparison.OrdinalIgnoreCase) ||
-               charKey.Contains("Dad", StringComparison.OrdinalIgnoreCase) ||
-               charKey.Contains("Daddy", StringComparison.OrdinalIgnoreCase) ||
-               charKey.Contains("Mother", StringComparison.OrdinalIgnoreCase) ||
-               charKey.Contains("Father", StringComparison.OrdinalIgnoreCase);
-    }
-
-    /// <summary>
-    /// "Matching the dog's CG look" means shared render medium, not shared species.
-    /// </summary>
-    private static string SoftenCrossSpeciesStyleLanguage(string text)
-    {
-        if (string.IsNullOrWhiteSpace(text)) return text;
-        var t = System.Text.RegularExpressions.Regex.Replace(
-            text,
-            @"matching\s+(the\s+)?dog'?s?\s+((children'?s\s+)?(picture-book\s+)?CG\s+look|CG look|look|style)",
-            "in the same stylized picture-book soft-3D medium as the film (human adult — not an animal)",
-            System.Text.RegularExpressions.RegexOptions.IgnoreCase);
-        t = System.Text.RegularExpressions.Regex.Replace(
-            t,
-            @"matching\s+Buster'?s?\s+CG\s+look",
-            "in the same stylized soft-3D medium as Buster (human adult — not a dog)",
-            System.Text.RegularExpressions.RegexOptions.IgnoreCase);
-        return t;
     }
 
     private static List<string> ResolveBookRefPaths(string projectDir, JsonElement seedInfo, int maxRefs)

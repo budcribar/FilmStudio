@@ -653,6 +653,9 @@ public sealed class Stage2PlannerService
             var vl = CoerceString(seed.TryGetValue("visual_lock", out var v) ? v : null)
                      ?? CoerceString(seed.TryGetValue("description", out var d) ? d : null);
             if (string.IsNullOrWhiteSpace(vl)) continue;
+            // Same hygiene as Stage 1 / portraits — any book, not story-specific
+            vl = CharacterVisualTextScrubber.ScrubVisualProse(vl);
+            if (string.IsNullOrWhiteSpace(vl)) continue;
             var shortVl = vl.Length > 40 ? vl[..37] + "…" : vl;
             bits.Add($"{key}: {shortVl}");
         }

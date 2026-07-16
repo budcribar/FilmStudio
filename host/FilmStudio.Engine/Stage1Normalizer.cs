@@ -85,7 +85,7 @@ public static class Stage1Normalizer
         {
             if (val is not Dictionary<string, object?> seed) continue;
 
-            // Filmable identity only — strip book nicknames ("noodle-head") from visual prose
+            // Filmable identity only — strip nicknames + cross-species style bleed (any book)
             var rawDesc = CoerceString(seed.TryGetValue("description", out var d) ? d : null) ?? key;
             seed["description"] = CharacterVisualTextScrubber.ScrubVisualProse(rawDesc);
             if (string.IsNullOrWhiteSpace(CoerceString(seed["description"])))

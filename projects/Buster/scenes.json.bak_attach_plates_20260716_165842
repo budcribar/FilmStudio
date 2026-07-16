@@ -22,8 +22,7 @@
         "voice_label": "Buster_SmallDog",
         "display_name_policy": "ok_anytime",
         "canonical_given_name": "Buster",
-        "visual_lock": "Always stylized 3D animated small black-and-white dog with stable black-and-white coat markings only; never brown/tan/gold recolor; never human; never bare redesign as a different breed silhouette. No nickname props on head.",
-        "wardrobe_always": []
+        "visual_lock": "Always stylized 3D animated small black-and-white dog with stable black-and-white coat markings only; never brown/tan/gold recolor; never human; never bare redesign as a different breed silhouette. No nickname props on head."
       },
       "Character_Mom": {
         "description": "Stylized 3D animated human adult woman (not an animal), medium build, shoulder-length brown hair, kind open face, soft evening home clothes (muted blue cardigan over cream top, simple pants). Same picture-book soft-3D medium as the film — not photoreal.",
@@ -97,9 +96,7 @@
       ],
       "transition_type": "fade_in",
       "lighting_continuity_token": "night1_living_warm_lamps",
-      "wardrobe_by_character": {
-        "Character_Buster": []
-      },
+      "wardrobe_by_character": {},
       "wardrobe_notes": "Daytime/evening coat only; no sleepwear yet.",
       "spoiler_constraints": [],
       "music_intent": {
@@ -204,7 +201,6 @@
       "transition_type": "cut",
       "lighting_continuity_token": "night1_living_warm_lamps",
       "wardrobe_by_character": {
-        "Character_Buster": [],
         "Character_Mom": [
           "soft blue cardigan",
           "cream top",
@@ -340,7 +336,6 @@
       "transition_type": "cut",
       "lighting_continuity_token": "night1_yard_to_living",
       "wardrobe_by_character": {
-        "Character_Buster": [],
         "Character_Mom": [
           "soft blue cardigan",
           "cream top",
@@ -453,7 +448,6 @@
       "transition_type": "cut",
       "lighting_continuity_token": "night1_living_warm_lamps",
       "wardrobe_by_character": {
-        "Character_Buster": [],
         "Character_Mom": [
           "soft blue cardigan",
           "cream top",
@@ -564,7 +558,7 @@
       "lighting_continuity_token": "night1_bedtime_dim",
       "wardrobe_by_character": {
         "Character_Buster": [
-          "black-and-white soft dog pajamas with visible fabric collar seam and weave distinct from fur"
+          "black-and-white soft dog pajamas with visible fabric collar seam and weave disti"
         ],
         "Character_Mom": [
           "soft blue cardigan",
@@ -599,7 +593,7 @@
           ],
           "location_id": "Loc_Living_Room",
           "wardrobe_put_on": [
-            "black-and-white soft dog pajamas with visible fabric collar seam and weave distinct from fur"
+            "black-and-white soft dog pajamas with visible fabric collar seam and weave disti"
           ],
           "must_not": [
             "pajamas blended into fur with no cloth read",
@@ -685,7 +679,7 @@
       "lighting_continuity_token": "night1_dream_soft_glow",
       "wardrobe_by_character": {
         "Character_Buster": [
-          "black-and-white soft dog pajamas with visible fabric collar seam and weave distinct from fur"
+          "black-and-white soft dog pajamas with visible fabric collar seam and weave disti"
         ]
       },
       "wardrobe_notes": "Pajamas remain in dream silhouette for continuity.",
@@ -794,7 +788,7 @@
       "lighting_continuity_token": "night1_bedtime_dim",
       "wardrobe_by_character": {
         "Character_Buster": [
-          "black-and-white soft dog pajamas with visible fabric collar seam and weave distinct from fur"
+          "black-and-white soft dog pajamas with visible fabric collar seam and weave disti"
         ],
         "Character_Mom": [
           "soft blue cardigan",
@@ -890,5 +884,16 @@
         }
       ]
     }
-  ]
+  ],
+  "movie_title": "Buster the Noodlehead dog",
+  "source_book_title": "Buster the Noodlehead dog",
+  "generation": {
+    "method": "Stage1Service (C#)",
+    "model": "grok-4.5",
+    "book": "C:\\Users\\budcr\\source\\repos\\NickAndMe\\projects\\Buster\\source\\book_full.txt",
+    "chunk_pages": 15,
+    "chunks": 1,
+    "ts": "2026-07-16T16:58:07"
+  },
+  "cumulative_duration_target_seconds": 420
 }

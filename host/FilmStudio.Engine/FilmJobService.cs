@@ -1100,6 +1100,8 @@ public sealed class FilmJobService
                 return;
             }
 
+            // Chunk progress: Index = completed chunks (not current number while waiting).
+            // "chunk 1/1 — waiting" → 0/1; "chunk 1/1 done" → 1/1.
             var m = System.Text.RegularExpressions.Regex.Match(
                 line, @"chunk\s+(\d+)\s*/\s*(\d+)", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
             if (m.Success &&
@@ -1107,11 +1109,15 @@ public sealed class FilmJobService
                 int.TryParse(m.Groups[2].Value, out var tot) &&
                 tot > 0)
             {
-                s.Index = Math.Max(s.Index, idx);
                 s.Total = Math.Max(s.Total, tot);
+                var chunkDone = line.Contains("done", StringComparison.OrdinalIgnoreCase);
+                s.Index = chunkDone
+                    ? Math.Max(s.Index, idx)
+                    : Math.Max(s.Index, Math.Max(0, idx - 1));
                 return;
             }
 
+            // Vision: page i/N while processing → completed = i-1 until last page finishes
             var mVis = System.Text.RegularExpressions.Regex.Match(
                 line, @"Grok vision\s+(\d+)/(\d+)", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
             if (mVis.Success &&
@@ -1119,8 +1125,8 @@ public sealed class FilmJobService
                 int.TryParse(mVis.Groups[2].Value, out var vt) &&
                 vt > 0)
             {
-                s.Index = Math.Max(s.Index, vi);
                 s.Total = Math.Max(s.Total, vt);
+                s.Index = Math.Max(s.Index, Math.Max(0, vi - 1));
             }
         });
         if (_sink is not null)

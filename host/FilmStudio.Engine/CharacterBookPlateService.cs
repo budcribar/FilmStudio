@@ -388,10 +388,12 @@ public sealed class CharacterBookPlateService
             var token = key.Replace("Character_", "", StringComparison.OrdinalIgnoreCase).ToLowerInvariant();
             var given = (seed["canonical_given_name"]?.GetValue<string>() ?? "").ToLowerInvariant();
             var desc = (seed["description"]?.GetValue<string>() ?? "").ToLowerInvariant();
-            var isHero = index == 0
-                         || desc.Contains("dog")
-                         || token.Contains("buster")
-                         || given.Contains("buster");
+            // Hero = first cast or primary animal species — not humans whose text mentions the animal medium
+            var isHero = index == 0 ||
+                         CharacterVisualTextScrubber.IsPrimarilyAnimalCharacter(
+                             key, ageBand: "", description: desc, visualLock: "", animalWord: "dog") ||
+                         CharacterVisualTextScrubber.IsPrimarilyAnimalCharacter(
+                             key, ageBand: "", description: desc, visualLock: "", animalWord: "cat");
 
             // heroOnly: never invent Mom/Dad plates from shared early covers
             if (heroOnly && !isHero)
@@ -731,11 +733,15 @@ public sealed class CharacterBookPlateService
             return false;
         }).ToList());
 
-        var desc = (seed["description"]?.GetValue<string>() ?? "").ToLowerInvariant();
-        var isHero = index == 0 || desc.Contains("dog") || token.Contains("buster");
+        var desc = seed["description"]?.GetValue<string>() ?? "";
+        var isHero = index == 0 ||
+                     CharacterVisualTextScrubber.IsPrimarilyAnimalCharacter(
+                         key, "", desc, "", "dog") ||
+                     CharacterVisualTextScrubber.IsPrimarilyAnimalCharacter(
+                         key, "", desc, "", "cat");
 
         if (nameHits.Count > 0) return nameHits.Take(3).ToList();
-        if (nameHitsOnly) return new List<BookImageRow>(); // Mom/Dad: no plate is correct
+        if (nameHitsOnly) return new List<BookImageRow>(); // supporting cast: no plate is correct
         if (isHero) return early.Take(3).ToList();
         return new List<BookImageRow>(); // never invent plates for supporting cast
     }

@@ -60,10 +60,21 @@
                     @{
                 var jobIdx = Math.Max(_job.Index, _progressIndex);
                 var jobTot = Math.Max(_job.Total, _progressTotal);
+                // While a chunk is still waiting/calling, don't show as fully complete
+                var waiting = JobRunning && IsJobInFlightMessage(_job.Message);
+                var displayIdx = waiting && jobIdx >= jobTot && jobTot > 0
+                    ? Math.Max(0, jobTot - 1)
+                    : jobIdx;
             }
                     @if (jobTot > 0)
                     {
-                        <span class="small text-muted ms-1">@jobIdx / @jobTot</span>
+                        <span class="small text-muted ms-1">
+                            @displayIdx / @jobTot completed
+                            @if (waiting)
+                            {
+                                <text> · in progress</text>
+                            }
+                        </span>
                     }
                     <span class="ms-2 small">@_job.Message</span>
                 </div>
@@ -74,17 +85,20 @@
             </div>
             @if (JobRunning)
             {
-                var pct = jobTot > 0
-                    ? (int)Math.Round(100.0 * Math.Clamp(jobIdx, 0, jobTot) / Math.Max(1, jobTot))
-                    : 40;
+                // Never show 100% while still running — cap in-flight work below complete
+                int pct;
+                if (jobTot <= 0)
+                    pct = 35;
+                else if (waiting)
+                    pct = (int)Math.Round(100.0 * (displayIdx + 0.35) / jobTot); // mid-chunk pulse
+                else
+                    pct = (int)Math.Round(100.0 * Math.Clamp(displayIdx, 0, jobTot) / jobTot);
+                pct = Math.Clamp(pct, jobTot > 0 ? 5 : 8, JobRunning ? 92 : 100);
                 <div class="progress mt-2" style="height: 0.85rem;" role="progressbar"
                      aria-valuenow="@pct" aria-valuemin="0" aria-valuemax="100">
                     <div class="progress-bar progress-bar-striped progress-bar-animated bg-primary"
-                         style="width: @(Math.Clamp(pct, 8, 100))%">
-                        @if (jobTot > 0)
-                        {
-                            <span class="small">@pct%</span>
-                        }
+                         style="width: @pct%">
+                        <span class="small">@pct%</span>
                     </div>
                 </div>
             }
@@ -532,6 +546,7 @@ else
 
     /// <summary>
     /// Parse "chunk 2/5", "Stage 1: 3 book chunk(s)", "Grok vision 4/16" from live lines.
+    /// Index = completed units (in-flight chunk/page counts as previous completed).
     /// </summary>
     private void AbsorbProgressFromLine(string? line)
     {
@@ -545,19 +560,39 @@ else
             return;
         }
 
-        var m = System.Text.RegularExpressions.Regex.Match(
-            line, @"(?:chunk|vision)\s+(\d+)\s*/\s*(\d+)", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
-        if (!m.Success)
-            m = System.Text.RegularExpressions.Regex.Match(
-                line, @"(\d+)\s*/\s*(\d+)", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
-        if (m.Success &&
-            int.TryParse(m.Groups[1].Value, out var idx) &&
-            int.TryParse(m.Groups[2].Value, out var tot) &&
-            tot > 0 && idx <= tot + 2)
+        var mChunk = System.Text.RegularExpressions.Regex.Match(
+            line, @"chunk\s+(\d+)\s*/\s*(\d+)", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+        if (mChunk.Success &&
+            int.TryParse(mChunk.Groups[1].Value, out var cIdx) &&
+            int.TryParse(mChunk.Groups[2].Value, out var cTot) &&
+            cTot > 0)
         {
-            _progressIndex = Math.Max(_progressIndex, idx);
-            _progressTotal = Math.Max(_progressTotal, tot);
+            _progressTotal = Math.Max(_progressTotal, cTot);
+            var done = line.Contains("done", StringComparison.OrdinalIgnoreCase);
+            var completed = done ? cIdx : Math.Max(0, cIdx - 1);
+            _progressIndex = Math.Max(_progressIndex, completed);
+            return;
         }
+
+        var mVis = System.Text.RegularExpressions.Regex.Match(
+            line, @"Grok vision\s+(\d+)/(\d+)", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+        if (mVis.Success &&
+            int.TryParse(mVis.Groups[1].Value, out var vIdx) &&
+            int.TryParse(mVis.Groups[2].Value, out var vTot) &&
+            vTot > 0)
+        {
+            _progressTotal = Math.Max(_progressTotal, vTot);
+            _progressIndex = Math.Max(_progressIndex, Math.Max(0, vIdx - 1));
+        }
+    }
+
+    private static bool IsJobInFlightMessage(string? message)
+    {
+        if (string.IsNullOrWhiteSpace(message)) return false;
+        return message.Contains("waiting", StringComparison.OrdinalIgnoreCase)
+               || message.Contains("calling", StringComparison.OrdinalIgnoreCase)
+               || message.Contains("parsing", StringComparison.OrdinalIgnoreCase)
+               || message.Contains("Grok vision", StringComparison.OrdinalIgnoreCase);
     }
 
     private async Task LoadAsync()

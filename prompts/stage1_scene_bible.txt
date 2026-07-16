@@ -50,8 +50,8 @@ Each seed REQUIRED fields:
   that must not drift: e.g. “small black-and-white dog — never brown/tan redesign”).
   **No book nicknames** as look words (see NICKNAMES vs VISUAL below).
 - reference_image_placeholder — **bare filename only** under assets/characters/
-  (e.g. `buster_ref.png`, `character_mom_ref.png`). NEVER a full path like
-  `assets/characters/buster_ref.png` (the pipeline prefixes that folder).
+  (e.g. `character_hero_ref.png`, `character_mom_ref.png`). NEVER a full path like
+  `assets/characters/hero_ref.png` (the pipeline prefixes that folder).
 - voice_profile (1–3 sentences: age/sex/pitch/pace/accent/energy + “same voice every scene”)
 - voice_label
 
@@ -68,7 +68,8 @@ Each seed REQUIRED fields:
   people to photoreal while animals stay cartoon (common failure when adults enter frame).
 - Put medium language in each on-screen human’s `description` + `visual_lock` carefully:
   - Good: “stylized 3D animated **human adult** (man/woman), same picture-book soft-3D medium as the film — not photoreal, **not an animal**.”
-  - Bad: “matching the dog’s look” / “matching Buster’s CG look” (models may animalize the face).
+  - Bad: “matching the [animal hero]’s look” / “same face as the fox” (models may change species).
+  - Put shared medium in `render_style_lock` once; per-character text should state **species + wardrobe**, not “match the animal.”
 - Book plates that are **text-only pages** are not likeness refs; do not treat them as style.
 
 **visual_lock (REQUIRED for every on-screen character; omit only for pure off-screen narrator):**
@@ -85,16 +86,17 @@ Each seed REQUIRED fields:
 - Pure narrator (`never_on_screen` / voice-only): omit `visual_lock` (or use empty omit-key).
 
 **NICKNAMES vs VISUAL (HARD — general, all books):**
-- Book nicknames, epithets, and title words (“Noodle Head”, “The Brave Little…”, “Speedy”) belong in
-  **dialogue / titles / summaries**, **not** in `description`, `visual_lock`, or `wardrobe_*`.
+- Book nicknames, epithets, and title words belong in **dialogue / titles / summaries**,
+  **not** in `description`, `visual_lock`, or `wardrobe_*`.
 - Those visual fields may only use **what a camera can see**: species, size, colors, markings,
   face shape, real garments/props with color/shape (as drawn in the art).
 - Never use food/object words as appearance metaphors unless the illustration **literally** draws them.
-  Prefer real art-visible props (color + shape), not book nicknames for the character.
-- Bad: nickname compounds used as wardrobe (`…-head hat`, epithet-as-prop).
+- Bad: nickname compounds as wardrobe (`{epithet}-head hat`, title-as-prop).
 - Good: concrete art-visible props (`blue nightcap with yellow stars`, `red leather collar`).
 - Personality nicknames do **not** change silhouette; do not restate them in visual seeds.
 - Do **not** write story-specific anti-patterns into seeds (no “never draw X as a hat” boilerplate).
+- Pipeline post-pass strips epithet-as-prop patterns and rewrites “matching the animal’s look”
+  to shared-medium language — still write clean seeds so Stage 2 prompts stay short and clear.
 
 - **METAPHORICAL WARDROBE CAUTION (general):** If source text names a garment/prop that
   matches the character's natural surface (coat, skin, feathers, armor plating, etc.),
