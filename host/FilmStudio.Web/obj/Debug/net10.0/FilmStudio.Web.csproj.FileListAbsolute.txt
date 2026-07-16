@@ -89,5 +89,6 @@ C:\Users\budcr\source\repos\NickAndMe\host\FilmStudio.Web\bin\Debug\net10.0\Film
 C:\Users\budcr\source\repos\NickAndMe\host\FilmStudio.Web\bin\Debug\net10.0\FilmStudio.Core.pdb
 C:\Users\budcr\source\repos\NickAndMe\host\FilmStudio.Web\obj\Debug\net10.0\FilmStudio.Web.csproj.AssemblyReference.cache
 C:\Users\budcr\source\repos\NickAndMe\host\FilmStudio.Web\obj\Debug\net10.0\FilmStud.DCDFC462.Up2Date
-C:\Users\budcr\source\repos\NickAndMe\host\FilmStudio.Web\obj\Debug\net10.0\compressed\145h6brwhl-{0}-w7yhdf5xi2-w7yhdf5xi2.gz
-C:\Users\budcr\source\repos\NickAndMe\host\FilmStudio.Web\obj\Debug\net10.0\compressed\eh2s2p8qch-{0}-w7yhdf5xi2-w7yhdf5xi2.gz
+C:\Users\budcr\source\repos\NickAndMe\host\FilmStudio.Web\obj\Debug\net10.0\compressed\145h6brwhl-{0}-1alx1d76no-1alx1d76no.gz
+C:\Users\budcr\source\repos\NickAndMe\host\FilmStudio.Web\obj\Debug\net10.0\compressed\eh2s2p8qch-{0}-1alx1d76no-1alx1d76no.gz
+C:\Users\budcr\source\repos\NickAndMe\host\FilmStudio.Web\obj\Debug\net10.0\staticwebassets.upToDateCheck.txt

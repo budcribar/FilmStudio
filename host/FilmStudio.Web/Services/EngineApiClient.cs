@@ -171,6 +171,41 @@ public sealed class EngineApiClient
         }
     }
 
+    public async Task<CostDto?> GetCostAsync(
+        string projectId,
+        string? draftResolution = null,
+        string? heroResolution = null,
+        double? assumeAvgRetries = null,
+        CancellationToken ct = default)
+    {
+        var q = new List<string>();
+        if (!string.IsNullOrWhiteSpace(draftResolution))
+            q.Add($"draftResolution={Uri.EscapeDataString(draftResolution)}");
+        if (!string.IsNullOrWhiteSpace(heroResolution))
+            q.Add($"heroResolution={Uri.EscapeDataString(heroResolution)}");
+        if (assumeAvgRetries is double r)
+            q.Add($"assumeAvgRetries={r.ToString(System.Globalization.CultureInfo.InvariantCulture)}");
+        var qs = q.Count > 0 ? "?" + string.Join("&", q) : "";
+        return await _http.GetFromJsonAsync<CostDto>(
+            $"/api/projects/{Uri.EscapeDataString(projectId)}/cost{qs}",
+            JsonOpts,
+            ct);
+    }
+
+    public async Task<CostBackfillDto?> BackfillCostAsync(string projectId, CancellationToken ct = default)
+    {
+        using var resp = await _http.PostAsJsonAsync(
+            $"/api/projects/{Uri.EscapeDataString(projectId)}/cost/backfill",
+            new { },
+            ct);
+        if (!resp.IsSuccessStatusCode)
+        {
+            var err = await resp.Content.ReadAsStringAsync(ct);
+            throw new InvalidOperationException(TryError(err) ?? resp.ReasonPhrase);
+        }
+        return await resp.Content.ReadFromJsonAsync<CostBackfillDto>(JsonOpts, ct);
+    }
+
     public async Task<ConfigDto?> GetConfigAsync(string projectId, CancellationToken ct = default) =>
         await _http.GetFromJsonAsync<ConfigDto>(
             $"/api/projects/{Uri.EscapeDataString(projectId)}/config",
@@ -270,4 +305,18 @@ public sealed class AdaptationDto
     public bool Ok { get; set; }
     public string? ProjectId { get; set; }
     public AdaptationStatus? Adaptation { get; set; }
+}
+
+public sealed class CostDto
+{
+    public bool Ok { get; set; }
+    public string? ProjectId { get; set; }
+    public CostReport? Cost { get; set; }
+}
+
+public sealed class CostBackfillDto
+{
+    public bool Ok { get; set; }
+    public string? ProjectId { get; set; }
+    public CostBackfillResult? Backfill { get; set; }
 }

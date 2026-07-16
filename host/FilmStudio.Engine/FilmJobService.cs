@@ -24,6 +24,7 @@ public sealed class FilmJobService
 {
     private readonly ProjectStore _projects;
     private readonly GrokVideoClient _grok;
+    private readonly CostReportService _costs;
     private readonly FilmStudioOptions _opts;
     private readonly ILogger<FilmJobService> _log;
     private readonly SemaphoreSlim _gate = new(1, 1);
@@ -35,11 +36,13 @@ public sealed class FilmJobService
     public FilmJobService(
         ProjectStore projects,
         GrokVideoClient grok,
+        CostReportService costs,
         IOptions<FilmStudioOptions> opts,
         ILogger<FilmJobService> log)
     {
         _projects = projects;
         _grok = grok;
+        _costs = costs;
         _opts = opts.Value;
         _log = log;
     }
@@ -626,6 +629,29 @@ public sealed class FilmJobService
             projectDir, "assets", "video", $"scene_{scene:D2}_clip_{clip:D2}.mp4");
         await _grok.DownloadToFileAsync(url, outPath, ct);
         await AppendLogAsync($"  [Grok] saved {outPath}");
+
+        try
+        {
+            var cont = clipEl.TryGetProperty("veo_continuation_source", out var ce)
+                ? ce.GetString() ?? "none"
+                : "none";
+            var projectId = _snapshot.ProjectId ?? _projects.ActiveProjectId;
+            _costs.RecordVideoGeneration(
+                projectId,
+                scene,
+                clip,
+                duration,
+                resolution,
+                model,
+                hasRefImage: false,
+                isExtend: string.Equals(cont, "extend_previous", StringComparison.OrdinalIgnoreCase),
+                requestId: requestId);
+            await AppendLogAsync($"  [Cost] tracked list-rate for S{scene:D2}C{clip}");
+        }
+        catch (Exception ex)
+        {
+            await AppendLogAsync($"  [Cost] ledger write skipped: {ex.Message}");
+        }
     }
 
     private static JsonElement? FindScene(JsonElement root, int sceneNum)

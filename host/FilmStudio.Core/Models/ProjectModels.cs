@@ -200,3 +200,122 @@ public static class JobHubEvents
     public const string JobUpdated = "JobUpdated";
     public const string JobLog = "JobLog";
 }
+
+// ---- Cost / ledger ----
+
+public sealed class CostEvent
+{
+    public string? Id { get; set; }
+    public string? Ts { get; set; }
+    public string Kind { get; set; } = "video"; // video | image | other
+    public int? Scene { get; set; }
+    public int? Clip { get; set; }
+    public string? Model { get; set; }
+    public string? Resolution { get; set; }
+    public double? DurationSec { get; set; }
+    public double Usd { get; set; }
+    public string Currency { get; set; } = "USD";
+    public string? Source { get; set; } // list_rate | backfill
+    public string? Character { get; set; }
+    public double? OutputRatePerSec { get; set; }
+    public bool? HasRefImage { get; set; }
+    public bool? IsExtend { get; set; }
+}
+
+public sealed class CostLedgerSummary
+{
+    public double ActualUsd { get; set; }
+    public int EventCount { get; set; }
+    public int VideoJobs { get; set; }
+    public int ImageJobs { get; set; }
+    public double VideoSec { get; set; }
+    public Dictionary<string, double> ByKind { get; set; } = new();
+    public Dictionary<string, double> ByScene { get; set; } = new();
+    public Dictionary<string, double> ByModel { get; set; } = new();
+    public string Currency { get; set; } = "USD";
+    public string Notes { get; set; } =
+        "Tracked actuals = list-rate pricing at generation time (cost_ledger). Not xAI invoices.";
+}
+
+public sealed class CostSceneRow
+{
+    public int Scene { get; set; }
+    public string Setting { get; set; } = "";
+    public int ClipsTotal { get; set; }
+    public int ClipsOnDisk { get; set; }
+    public int ClipsMissing { get; set; }
+    public bool IsHero { get; set; }
+    public string? HeroResolution { get; set; }
+    public double SpentUsd { get; set; }
+    public double ActualUsd { get; set; }
+    public double RemainingDraftUsd { get; set; }
+    public double HeroUpgradeUsd { get; set; }
+    public double AllDraftUsd { get; set; }
+    public double AllHeroUsd { get; set; }
+    public double DurationOnDiskSec { get; set; }
+    public double DurationMissingSec { get; set; }
+}
+
+public sealed class CostReportSummary
+{
+    public int ClipsTotal { get; set; }
+    public int ClipsOnDisk { get; set; }
+    public int ClipsMissing { get; set; }
+    public double SecOnDisk { get; set; }
+    public double SecMissing { get; set; }
+    public double SpentUsd { get; set; }
+    public double ActualUsd { get; set; }
+    public int ActualEvents { get; set; }
+    public int ActualVideoJobs { get; set; }
+    public double ActualVideoSec { get; set; }
+    public double RemainingFirstPassUsd { get; set; }
+    public double RemainingHeroUpgradeUsd { get; set; }
+    public double FinishDraftUsd { get; set; }
+    public double FinishDraftPlusHeroUsd { get; set; }
+    public double FinishFromActualUsd { get; set; }
+    public double FullFilmAllDraftUsd { get; set; }
+    public double FullFilmAllHeroUsd { get; set; }
+    public int ScenesWithMedia { get; set; }
+    public int ScenesHero { get; set; }
+    public int ScenesTotal { get; set; }
+}
+
+public sealed class CostScenarioRow
+{
+    public string Label { get; set; } = "";
+    public string Resolution { get; set; } = "480p";
+    public string? ModelName { get; set; }
+    public double RatePerSec { get; set; }
+    public double FullFilmUsd { get; set; }
+    public double RemainingMissingUsd { get; set; }
+    public double RegenOnDiskUsd { get; set; }
+    public double AssumeAvgRetries { get; set; }
+}
+
+public sealed class CostReport
+{
+    public string ProjectId { get; set; } = "";
+    public string DraftResolution { get; set; } = "480p";
+    public string HeroResolution { get; set; } = "720p";
+    public string? ModelName { get; set; }
+    public string? VideoProvider { get; set; }
+    public double OutputRateDraft { get; set; }
+    public double OutputRateHero { get; set; }
+    public double AssumeAvgRetries { get; set; }
+    public CostReportSummary Summary { get; set; } = new();
+    public CostLedgerSummary Actual { get; set; } = new();
+    public List<CostSceneRow> Scenes { get; set; } = new();
+    public List<CostScenarioRow> Scenarios { get; set; } = new();
+    public List<CostEvent> RecentEvents { get; set; } = new();
+    public string Notes { get; set; } =
+        "Estimates = planning (current rates × scope). Actual = cost_ledger list rates (not xAI invoice).";
+    public string Currency { get; set; } = "USD";
+}
+
+public sealed class CostBackfillResult
+{
+    public int Added { get; set; }
+    public int Skipped { get; set; }
+    public int LedgerEvents { get; set; }
+    public double ActualUsd { get; set; }
+}

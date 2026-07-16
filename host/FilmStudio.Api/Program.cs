@@ -19,6 +19,7 @@ builder.Services.PostConfigure<FilmStudioOptions>(o =>
 });
 
 builder.Services.AddSingleton<ProjectStore>();
+builder.Services.AddSingleton<CostReportService>();
 builder.Services.AddSingleton<FilmJobService>();
 builder.Services.AddSingleton<IJobProgressSink, SignalRJobProgressSink>();
 builder.Services.AddHttpClient<GrokVideoClient>(c =>
@@ -318,6 +319,41 @@ app.MapPost("/api/jobs/stage2", async (StartStage2Request body, FilmJobService j
     catch (Exception ex)
     {
         return Results.Conflict(new { ok = false, error = ex.Message, job = jobService.GetSnapshot() });
+    }
+});
+
+// ---- Cost (ledger + estimates) ----
+app.MapGet("/api/projects/{id}/cost", (
+    string id,
+    ProjectStore store,
+    CostReportService costs,
+    string? draftResolution,
+    string? heroResolution,
+    double? assumeAvgRetries) =>
+{
+    try
+    {
+        _ = store.GetProject(id) ?? throw new InvalidOperationException($"Unknown project: {id}");
+        var report = costs.GetReport(id, draftResolution, heroResolution, assumeAvgRetries);
+        return Results.Ok(new { ok = true, projectId = id, cost = report });
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { ok = false, error = ex.Message });
+    }
+});
+
+app.MapPost("/api/projects/{id}/cost/backfill", (string id, ProjectStore store, CostReportService costs) =>
+{
+    try
+    {
+        _ = store.GetProject(id) ?? throw new InvalidOperationException($"Unknown project: {id}");
+        var result = costs.BackfillFromDisk(id, onlyMissing: true);
+        return Results.Ok(new { ok = true, projectId = id, backfill = result });
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { ok = false, error = ex.Message });
     }
 });
 
