@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("FilmStudio.Web")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+371d0900fa63bfa96096fb11d247dd174feacb80")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+6b6a3ce3e23fe11bd461a293e71037181bac64bc")]
 [assembly: System.Reflection.AssemblyProductAttribute("FilmStudio.Web")]
 [assembly: System.Reflection.AssemblyTitleAttribute("FilmStudio.Web")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

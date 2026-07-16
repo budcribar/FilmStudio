@@ -1,0 +1,206 @@
+@page "/characters"
+@rendermode InteractiveServer
+@inject EngineApiClient Engine
+@using FilmStudio.Core.Models
+
+<PageTitle>Characters</PageTitle>
+
+<h1>Characters</h1>
+<p class="text-muted">
+    Cast from Stage 1 / blueprint seeds. Lock refs and variant generation remain in
+    <strong>Streamlit</strong> for now; this page is for review and style/wardrobe inspection.
+</p>
+
+@if (!string.IsNullOrEmpty(_error))
+{
+    <div class="alert alert-danger">@_error</div>
+}
+
+<div class="row mb-3">
+    <div class="col-md-4">
+        <label class="form-label">Project</label>
+        <select class="form-select" @bind="_projectId" @bind:after="LoadAsync" disabled="@_busy">
+            @foreach (var p in _projectIds)
+            {
+                <option value="@p">@p</option>
+            }
+        </select>
+    </div>
+    <div class="col-md-4 d-flex align-items-end">
+        <button class="btn btn-outline-primary" disabled="@_busy" @onclick="LoadAsync">Reload</button>
+    </div>
+</div>
+
+@if (_chars is null)
+{
+    <p class="text-muted">Loading…</p>
+}
+else if (_chars.Count == 0)
+{
+    <div class="alert alert-warning">
+        No character seeds. Run <strong>Streamlit → Adaptation → Stage 1</strong> first.
+    </div>
+}
+else
+{
+    <div class="row">
+        <div class="col-md-3">
+            <div class="list-group">
+                @foreach (var c in _chars)
+                {
+                    var active = c.Key == _selectedKey;
+                    <button type="button"
+                            class="list-group-item list-group-item-action @(active ? "active" : "")"
+                            @onclick="() => Select(c.Key)">
+                        @(c.DisplayName)
+                        @if (c.VoiceOnly)
+                        {
+                            <span class="badge bg-secondary ms-1">voice</span>
+                        }
+                        else if (c.Locked)
+                        {
+                            <span class="badge bg-success ms-1">locked</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-warning text-dark ms-1">no ref</span>
+                        }
+                    </button>
+                }
+            </div>
+        </div>
+        <div class="col-md-9">
+            @if (_selected is null)
+            {
+                <p class="text-muted">Select a character.</p>
+            }
+            else
+            {
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between">
+                        <span><code>@_selected.Key</code> — @_selected.DisplayName</span>
+                        @if (_selected.VoiceOnly)
+                        {
+                            <span class="badge bg-secondary">voice-only (no image)</span>
+                        }
+                    </div>
+                    <div class="card-body row">
+                        <div class="col-md-4">
+                            @if (!string.IsNullOrEmpty(_selected.RefUrl) && !_selected.VoiceOnly)
+                            {
+                                <img src="@Engine.CharacterRefUrl(_projectId, _selected.Key)"
+                                     alt="@_selected.DisplayName"
+                                     class="img-fluid rounded border"
+                                     style="max-height: 280px; object-fit: contain;" />
+                                <div class="small text-muted mt-1">@_selected.RefFileName</div>
+                            }
+                            else if (!_selected.VoiceOnly)
+                            {
+                                <div class="border rounded p-4 text-center text-muted">No locked ref image</div>
+                            }
+                        </div>
+                        <div class="col-md-8">
+                            <h5>Description</h5>
+                            <p class="small">@(_selected.Description is { Length: > 0 } d ? d : "—")</p>
+                            <h5>Visual lock</h5>
+                            <p class="small">@(_selected.VisualLock is { Length: > 0 } v ? v : "—")</p>
+                            <h5>Voice</h5>
+                            <p class="small mb-1"><strong>@(_selected.VoiceLabel is { Length: > 0 } l ? l : "—")</strong></p>
+                            <p class="small">@(_selected.VoiceProfile is { Length: > 0 } vp ? vp : "—")</p>
+                            @if (_selected.WardrobeAlways.Count > 0)
+                            {
+                                <h5>Wardrobe always</h5>
+                                <ul class="small">
+                                    @foreach (var w in _selected.WardrobeAlways)
+                                    {
+                                        <li>@w</li>
+                                    }
+                                </ul>
+                            }
+                            @if (_selected.DesignReferenceImages.Count > 0)
+                            {
+                                <h5>Design / book refs</h5>
+                                <ul class="small">
+                                    @foreach (var r in _selected.DesignReferenceImages)
+                                    {
+                                        <li><code>@r</code></li>
+                                    }
+                                </ul>
+                            }
+                            @if (!string.IsNullOrEmpty(_selected.AgeBand))
+                            {
+                                <p class="small text-muted">age_band: @_selected.AgeBand</p>
+                            }
+                        </div>
+                    </div>
+                    <div class="card-footer small text-muted">
+                        Lock variant / regenerate portraits: use Streamlit <strong>Characters</strong> page for now.
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+}
+
+@code {
+    private bool _busy;
+    private string? _error;
+    private string _projectId = "Buster";
+    private List<string> _projectIds = new();
+    private List<CharacterSummary>? _chars;
+    private string? _selectedKey;
+    private CharacterSummary? _selected;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var projs = await Engine.GetProjectsAsync();
+            _projectIds = projs?.Projects.Select(p => p.Id ?? "").Where(s => s.Length > 0).ToList()
+                          ?? new List<string> { "Buster" };
+            if (projs?.Active?.Id is { Length: > 0 } aid)
+                _projectId = aid;
+            else if (_projectIds.Count > 0)
+                _projectId = _projectIds[0];
+            await LoadAsync();
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+    }
+
+    private async Task LoadAsync()
+    {
+        _busy = true;
+        _error = null;
+        try
+        {
+            var dto = await Engine.GetCharactersAsync(_projectId);
+            _chars = dto?.Characters ?? new List<CharacterSummary>();
+            if (_chars.Count > 0)
+            {
+                if (_selectedKey is null || _chars.All(c => c.Key != _selectedKey))
+                    _selectedKey = _chars[0].Key;
+                Select(_selectedKey!);
+            }
+            else
+            {
+                _selectedKey = null;
+                _selected = null;
+            }
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+            _chars = null;
+        }
+        finally { _busy = false; }
+    }
+
+    private void Select(string key)
+    {
+        _selectedKey = key;
+        _selected = _chars?.FirstOrDefault(c => c.Key == key);
+    }
+}

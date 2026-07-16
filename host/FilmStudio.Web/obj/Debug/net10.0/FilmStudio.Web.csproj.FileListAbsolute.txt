@@ -72,8 +72,6 @@ C:\Users\budcr\source\repos\NickAndMe\host\FilmStudio.Web\obj\Debug\net10.0\comp
 C:\Users\budcr\source\repos\NickAndMe\host\FilmStudio.Web\obj\Debug\net10.0\compressed\ifmkw8u0bh-{0}-abdmv1u4y3-abdmv1u4y3.gz
 C:\Users\budcr\source\repos\NickAndMe\host\FilmStudio.Web\obj\Debug\net10.0\compressed\evqbbyfe1r-{0}-ne14ti1q68-ne14ti1q68.gz
 C:\Users\budcr\source\repos\NickAndMe\host\FilmStudio.Web\obj\Debug\net10.0\compressed\eldwuk30w3-{0}-ig5xotzpx5-ig5xotzpx5.gz
-C:\Users\budcr\source\repos\NickAndMe\host\FilmStudio.Web\obj\Debug\net10.0\compressed\145h6brwhl-{0}-de3rq6nrgh-de3rq6nrgh.gz
-C:\Users\budcr\source\repos\NickAndMe\host\FilmStudio.Web\obj\Debug\net10.0\compressed\eh2s2p8qch-{0}-de3rq6nrgh-de3rq6nrgh.gz
 C:\Users\budcr\source\repos\NickAndMe\host\FilmStudio.Web\obj\Debug\net10.0\staticwebassets.build.json
 C:\Users\budcr\source\repos\NickAndMe\host\FilmStudio.Web\obj\Debug\net10.0\staticwebassets.build.json.cache
 C:\Users\budcr\source\repos\NickAndMe\host\FilmStudio.Web\obj\Debug\net10.0\staticwebassets.development.json
@@ -91,4 +89,5 @@ C:\Users\budcr\source\repos\NickAndMe\host\FilmStudio.Web\bin\Debug\net10.0\Film
 C:\Users\budcr\source\repos\NickAndMe\host\FilmStudio.Web\bin\Debug\net10.0\FilmStudio.Core.pdb
 C:\Users\budcr\source\repos\NickAndMe\host\FilmStudio.Web\obj\Debug\net10.0\FilmStudio.Web.csproj.AssemblyReference.cache
 C:\Users\budcr\source\repos\NickAndMe\host\FilmStudio.Web\obj\Debug\net10.0\FilmStud.DCDFC462.Up2Date
-C:\Users\budcr\source\repos\NickAndMe\host\FilmStudio.Web\obj\Debug\net10.0\staticwebassets.upToDateCheck.txt
+C:\Users\budcr\source\repos\NickAndMe\host\FilmStudio.Web\obj\Debug\net10.0\compressed\145h6brwhl-{0}-oxgc3cvq5z-oxgc3cvq5z.gz
+C:\Users\budcr\source\repos\NickAndMe\host\FilmStudio.Web\obj\Debug\net10.0\compressed\eh2s2p8qch-{0}-oxgc3cvq5z-oxgc3cvq5z.gz

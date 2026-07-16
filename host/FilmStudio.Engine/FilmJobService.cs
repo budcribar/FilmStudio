@@ -78,6 +78,156 @@ public sealed class FilmJobService
         await Task.CompletedTask;
     }
 
+    public async Task StartBatchGenAsync(StartBatchGenRequest req)
+    {
+        if (req.Scenes is null || req.Scenes.Count == 0)
+            throw new InvalidOperationException("At least one scene is required.");
+
+        if (!await _gate.WaitAsync(0))
+            throw new InvalidOperationException("A generation job is already running.");
+
+        _cts = new CancellationTokenSource();
+        var ct = _cts.Token;
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await RunBatchGenAsync(req, ct);
+            }
+            finally
+            {
+                _gate.Release();
+            }
+        }, CancellationToken.None);
+
+        await Task.CompletedTask;
+    }
+
+    private async Task RunBatchGenAsync(StartBatchGenRequest req, CancellationToken ct)
+    {
+        var projectId = string.IsNullOrWhiteSpace(req.ProjectId)
+            ? _projects.ActiveProjectId
+            : req.ProjectId;
+        _projects.Activate(projectId);
+
+        var scenes = req.Scenes.Distinct().OrderBy(s => s).ToList();
+        _snapshot = new JobSnapshot
+        {
+            Status = "running",
+            Kind = "batch",
+            ProjectId = projectId,
+            Message = $"Batch: {scenes.Count} scene(s)…",
+            StartedAt = DateTimeOffset.UtcNow,
+            Log = new List<string>(),
+        };
+        await PublishAsync();
+
+        try
+        {
+            if (!_grok.IsConfigured)
+                throw new InvalidOperationException("XAI_API_KEY is not set.");
+
+            using var bp = _projects.LoadBlueprint(projectId)
+                ?? throw new InvalidOperationException(
+                    $"No Stage 2 blueprint for project {projectId}. Run Stage 2 first.");
+
+            var projectDir = _projects.GetProjectDir(projectId);
+            Directory.CreateDirectory(Path.Combine(projectDir, "assets", "video"));
+
+            // Pre-count work units
+            var work = new List<(int Scene, int Clip, JsonElement ClipEl)>();
+            foreach (var sn in scenes)
+            {
+                var sceneEl = FindScene(bp.RootElement, sn);
+                if (sceneEl is null)
+                {
+                    await AppendLogAsync($"Scene {sn}: not in blueprint — skip");
+                    continue;
+                }
+                if (!sceneEl.Value.TryGetProperty("veo_clips", out var clipsEl) ||
+                    clipsEl.ValueKind != JsonValueKind.Array)
+                {
+                    await AppendLogAsync($"Scene {sn}: no veo_clips — skip");
+                    continue;
+                }
+
+                foreach (var c in clipsEl.EnumerateArray())
+                {
+                    var cn = c.TryGetProperty("clip_number", out var n) && n.TryGetInt32(out var v) ? v : 0;
+                    if (cn <= 0) continue;
+                    var path = Path.Combine(projectDir, "assets", "video", $"scene_{sn:D2}_clip_{cn:D2}.mp4");
+                    var missing = !File.Exists(path) || new FileInfo(path).Length < 1024;
+                    if (!req.OnlyMissing || missing)
+                        work.Add((sn, cn, c.Clone()));
+                }
+            }
+
+            if (work.Count == 0)
+            {
+                await AppendLogAsync("Batch: nothing to generate (only_missing).");
+                await FinishAsync("done", "No clips to generate");
+                return;
+            }
+
+            await UpdateAsync(s =>
+            {
+                s.Total = work.Count;
+                s.Index = 0;
+                s.Message = $"Batch: {work.Count} clip(s) across {scenes.Count} scene(s)";
+            });
+            await AppendLogAsync(_snapshot.Message!);
+
+            var done = 0;
+            var failed = 0;
+            for (var i = 0; i < work.Count; i++)
+            {
+                ct.ThrowIfCancellationRequested();
+                var (sn, cn, clip) = work[i];
+                await UpdateAsync(s =>
+                {
+                    s.Index = i + 1;
+                    s.Scene = sn;
+                    s.Clip = cn;
+                    s.Message = $"Generating S{sn:D2} C{cn} ({i + 1}/{work.Count})…";
+                });
+                await AppendLogAsync(_snapshot.Message!);
+
+                try
+                {
+                    await GenerateOneClipAsync(projectDir, sn, cn, clip, ct);
+                    done++;
+                    await AppendLogAsync($"Done S{sn:D2} C{cn}");
+                }
+                catch (OperationCanceledException)
+                {
+                    await FinishAsync("cancelled", "Cancelled by user");
+                    return;
+                }
+                catch (Exception ex)
+                {
+                    failed++;
+                    _log.LogError(ex, "Clip S{Scene}C{Clip} failed", sn, cn);
+                    await AppendLogAsync($"Failed S{sn:D2} C{cn}: {ex.Message}");
+                }
+            }
+
+            var status = failed > 0 && done == 0 ? "error" : "done";
+            var msg = failed > 0
+                ? $"Batch finished with errors ({done} ok, {failed} failed)"
+                : $"Batch finished ({done} clip(s))";
+            await FinishAsync(status, msg, failed > 0 ? msg : null);
+        }
+        catch (OperationCanceledException)
+        {
+            await FinishAsync("cancelled", "Cancelled by user");
+        }
+        catch (Exception ex)
+        {
+            _log.LogError(ex, "Batch gen failed");
+            await FinishAsync("error", ex.Message, ex.Message);
+        }
+    }
+
     private async Task RunSceneGenAsync(StartSceneGenRequest req, CancellationToken ct)
     {
         var projectId = string.IsNullOrWhiteSpace(req.ProjectId)
@@ -123,12 +273,12 @@ public sealed class FilmJobService
             var todo = new List<(int ClipNum, JsonElement Clip)>();
             foreach (var c in clips)
             {
-                var cn = c.TryGetProperty("clip_number", out var n) ? n.GetInt32() : 0;
+                var cn = c.TryGetProperty("clip_number", out var n) && n.TryGetInt32(out var v) ? v : 0;
                 if (cn <= 0) continue;
                 var path = Path.Combine(videoDir, $"scene_{req.Scene:D2}_clip_{cn:D2}.mp4");
                 var missing = !File.Exists(path) || new FileInfo(path).Length < 1024;
                 if (!req.OnlyMissing || missing)
-                    todo.Add((cn, c));
+                    todo.Add((cn, c.Clone()));
             }
 
             if (todo.Count == 0)

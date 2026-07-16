@@ -67,10 +67,96 @@ public sealed class EngineApiClient
         }
     }
 
+    public async Task StartBatchGenAsync(
+        string projectId,
+        IReadOnlyList<int> scenes,
+        bool onlyMissing = true,
+        CancellationToken ct = default)
+    {
+        using var resp = await _http.PostAsJsonAsync(
+            "/api/jobs/gen-batch",
+            new StartBatchGenRequest
+            {
+                ProjectId = projectId,
+                Scenes = scenes.ToList(),
+                OnlyMissing = onlyMissing,
+            },
+            JsonOpts,
+            ct);
+        if (!resp.IsSuccessStatusCode)
+        {
+            var err = await resp.Content.ReadAsStringAsync(ct);
+            throw new InvalidOperationException(TryError(err) ?? $"{(int)resp.StatusCode}");
+        }
+    }
+
     public async Task CancelJobAsync(CancellationToken ct = default)
     {
         using var resp = await _http.PostAsJsonAsync("/api/jobs/cancel", new { }, ct);
         resp.EnsureSuccessStatusCode();
+    }
+
+    public async Task<ScenesListDto?> GetScenesAsync(string projectId, CancellationToken ct = default) =>
+        await _http.GetFromJsonAsync<ScenesListDto>(
+            $"/api/projects/{Uri.EscapeDataString(projectId)}/scenes",
+            JsonOpts,
+            ct);
+
+    public async Task<SceneDetailDto?> GetSceneDetailAsync(
+        string projectId,
+        int sceneNumber,
+        CancellationToken ct = default) =>
+        await _http.GetFromJsonAsync<SceneDetailDto>(
+            $"/api/projects/{Uri.EscapeDataString(projectId)}/scenes/{sceneNumber}",
+            JsonOpts,
+            ct);
+
+    public string ClipVideoUrl(string projectId, int sceneNumber, int clipNumber)
+    {
+        var baseUrl = _http.BaseAddress?.ToString().TrimEnd('/') ?? "";
+        return $"{baseUrl}/api/projects/{Uri.EscapeDataString(projectId)}/scenes/{sceneNumber}/clips/{clipNumber}/video";
+    }
+
+    public string CompositeVideoUrl(string projectId, int sceneNumber)
+    {
+        var baseUrl = _http.BaseAddress?.ToString().TrimEnd('/') ?? "";
+        return $"{baseUrl}/api/projects/{Uri.EscapeDataString(projectId)}/scenes/{sceneNumber}/composite";
+    }
+
+    public async Task<ConfigDto?> GetConfigAsync(string projectId, CancellationToken ct = default) =>
+        await _http.GetFromJsonAsync<ConfigDto>(
+            $"/api/projects/{Uri.EscapeDataString(projectId)}/config",
+            JsonOpts,
+            ct);
+
+    public async Task<ConfigDto?> SaveConfigAsync(
+        string projectId,
+        Dictionary<string, object?> updates,
+        CancellationToken ct = default)
+    {
+        using var resp = await _http.PutAsJsonAsync(
+            $"/api/projects/{Uri.EscapeDataString(projectId)}/config",
+            updates,
+            JsonOpts,
+            ct);
+        if (!resp.IsSuccessStatusCode)
+        {
+            var err = await resp.Content.ReadAsStringAsync(ct);
+            throw new InvalidOperationException(TryError(err) ?? resp.ReasonPhrase);
+        }
+        return await resp.Content.ReadFromJsonAsync<ConfigDto>(JsonOpts, ct);
+    }
+
+    public async Task<CharactersDto?> GetCharactersAsync(string projectId, CancellationToken ct = default) =>
+        await _http.GetFromJsonAsync<CharactersDto>(
+            $"/api/projects/{Uri.EscapeDataString(projectId)}/characters",
+            JsonOpts,
+            ct);
+
+    public string CharacterRefUrl(string projectId, string charKey)
+    {
+        var baseUrl = _http.BaseAddress?.ToString().TrimEnd('/') ?? "";
+        return $"{baseUrl}/api/projects/{Uri.EscapeDataString(projectId)}/characters/{Uri.EscapeDataString(charKey)}/ref";
     }
 
     private static string? TryError(string json)
@@ -98,4 +184,35 @@ public sealed class JobsDto
     public bool Ok { get; set; }
     public bool Running { get; set; }
     public JobSnapshot? Job { get; set; }
+}
+
+public sealed class ConfigDto
+{
+    public bool Ok { get; set; }
+    public string? ProjectId { get; set; }
+    public Dictionary<string, JsonElement>? Config { get; set; }
+}
+
+public sealed class CharactersDto
+{
+    public bool Ok { get; set; }
+    public string? ProjectId { get; set; }
+    public List<CharacterSummary> Characters { get; set; } = new();
+}
+
+public sealed class ScenesListDto
+{
+    public bool Ok { get; set; }
+    public string? ProjectId { get; set; }
+    public int SceneCount { get; set; }
+    public int ClipCount { get; set; }
+    public int ClipsOnDisk { get; set; }
+    public List<SceneSummary> Scenes { get; set; } = new();
+}
+
+public sealed class SceneDetailDto
+{
+    public bool Ok { get; set; }
+    public string? ProjectId { get; set; }
+    public SceneDetail? Scene { get; set; }
 }

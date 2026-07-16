@@ -1,0 +1,629 @@
+@page "/scenes"
+@rendermode InteractiveServer
+@implements IAsyncDisposable
+@inject EngineApiClient Engine
+@inject JobHubClient Hub
+@using FilmStudio.Core.Models
+
+<PageTitle>Scenes &amp; Clips</PageTitle>
+
+<h1>Scenes &amp; Clips</h1>
+<p class="text-muted">
+    Stage 2 blueprint browse + generate via the C# engine.
+    Pass/Fail/Regen QA and Stage 2 replan remain in <strong>Streamlit</strong> for now.
+</p>
+
+@if (!string.IsNullOrEmpty(_error))
+{
+    <div class="alert alert-danger">@_error</div>
+}
+@if (!string.IsNullOrEmpty(_message))
+{
+    <div class="alert alert-info">@_message</div>
+}
+
+<div class="row mb-3 g-2 align-items-end">
+    <div class="col-md-3">
+        <label class="form-label">Project</label>
+        <select class="form-select" @bind="_projectId" @bind:after="OnProjectChangedAsync" disabled="@_busy">
+            @foreach (var p in _projectIds)
+            {
+                <option value="@p">@p</option>
+            }
+        </select>
+    </div>
+    <div class="col-md-3">
+        <label class="form-label">Filter setting</label>
+        <input class="form-control" @bind="_filter" @bind:event="oninput" disabled="@_busy" placeholder="e.g. pajamas" />
+    </div>
+    <div class="col-md-6 d-flex gap-2 flex-wrap">
+        <button class="btn btn-outline-secondary" disabled="@_busy" @onclick="ReloadListAsync">Reload</button>
+        @if (_selectedScene is int)
+        {
+            <button class="btn btn-outline-primary" disabled="@_busy" @onclick="BackToListAsync">← All scenes</button>
+        }
+    </div>
+</div>
+
+@* ---- Live job banner ---- *@
+@if (_job is not null && (_job.Status is "running" or "done" or "error" or "cancelled"))
+{
+    <div class="card mb-3 border-@(_job.Status == "running" ? "primary" : _job.Status == "error" ? "danger" : "secondary")">
+        <div class="card-body py-2">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <div>
+                    <span class="badge bg-secondary">@_job.Status</span>
+                    @if (_job.Kind is { Length: > 0 } k)
+                    {
+                        <span class="badge bg-info text-dark ms-1">@k</span>
+                    }
+                    @if (_job.Scene is int sn)
+                    {
+                        <span class="ms-1">S@sn.ToString("D2")</span>
+                    }
+                    @if (_job.Clip is int cn)
+                    {
+                        <span>C@cn</span>
+                    }
+                    @if (_job.Total > 0)
+                    {
+                        <span class="ms-1 text-muted">@_job.Index / @_job.Total</span>
+                    }
+                    <span class="ms-2 small">@_job.Message</span>
+                </div>
+                <div class="d-flex gap-2">
+                    @if (_job.Status == "running")
+                    {
+                        <button class="btn btn-sm btn-outline-danger" disabled="@_busy" @onclick="CancelAsync">Cancel</button>
+                    }
+                    <button class="btn btn-sm btn-outline-secondary" disabled="@_busy" @onclick="ReloadListAsync">Refresh list</button>
+                </div>
+            </div>
+            @if (_job.Log.Count > 0)
+            {
+                <pre class="small mb-0 mt-2" style="max-height: 120px; overflow: auto;">@string.Join("\n", _job.Log.TakeLast(20))</pre>
+            }
+        </div>
+    </div>
+}
+
+@if (_selectedScene is null)
+{
+    @* ---- Scene list ---- *@
+    @if (_scenes is null)
+    {
+        <p class="text-muted">Loading scenes…</p>
+    }
+    else if (_scenes.Count == 0)
+    {
+        <div class="alert alert-warning">
+            No Stage 2 scenes. Run <strong>Streamlit → Adaptation → Stage 2</strong> (or the stage2 planner CLI) first.
+        </div>
+    }
+    else
+    {
+        <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
+            <div class="small text-muted">
+                @FilteredScenes.Count shown ·
+                @(_scenes.Sum(s => s.ClipsOnDisk))/@(_scenes.Sum(s => s.ClipCount)) clips on disk
+            </div>
+            <div class="form-check mb-0">
+                <input class="form-check-input" type="checkbox" id="onlyMissing" @bind="_onlyMissing" disabled="@_busy" />
+                <label class="form-check-label" for="onlyMissing">Only missing clips</label>
+            </div>
+        </div>
+
+        <div class="card mb-3">
+            <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <span>Batch generate</span>
+                <div class="btn-group btn-group-sm">
+                    <button class="btn btn-outline-secondary" disabled="@_busy" @onclick="SelectIncomplete">Select incomplete</button>
+                    <button class="btn btn-outline-secondary" disabled="@_busy" @onclick="SelectAll">Select all</button>
+                    <button class="btn btn-outline-secondary" disabled="@_busy" @onclick="ClearSelection">Clear</button>
+                </div>
+            </div>
+            <div class="card-body py-2">
+                <button class="btn btn-primary"
+                        disabled="@(_busy || _selected.Count == 0 || JobRunning)"
+                        @onclick="StartBatchAsync">
+                    ▶ Generate @_selected.Count scene(s)
+                    @if (_selected.Count > 0)
+                    {
+                        <span class="ms-1">· ~@EstimateSelectedClips() clip(s)</span>
+                    }
+                </button>
+                <span class="small text-muted ms-2">Uses <code>XAI_API_KEY</code> on the API process.</span>
+            </div>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-hover table-sm align-middle">
+                <thead>
+                    <tr>
+                        <th style="width:2.5rem;"></th>
+                        <th style="width:4rem;">#</th>
+                        <th>Setting</th>
+                        <th style="width:6rem;">Clips</th>
+                        <th style="width:5rem;">Dur</th>
+                        <th style="width:5rem;"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var s in FilteredScenes)
+                    {
+                        var sn = s.SceneNumber;
+                        var isSel = _selected.Contains(sn);
+                        <tr class="@(isSel ? "table-active" : "")" style="cursor:pointer;">
+                            <td @onclick:stopPropagation="true">
+                                <input class="form-check-input" type="checkbox"
+                                       checked="@isSel"
+                                       disabled="@_busy"
+                                       @onchange="e => ToggleSelect(sn, (bool)(e.Value ?? false))" />
+                            </td>
+                            <td @onclick="() => OpenSceneAsync(sn)">
+                                <span class="badge @StatusBadge(s.Status)">S@sn.ToString("D2")</span>
+                            </td>
+                            <td @onclick="() => OpenSceneAsync(sn)">
+                                @(s.Setting is { Length: > 0 } set ? Trunc(set, 72) : "—")
+                                @if (s.CompositeExists)
+                                {
+                                    <span class="badge bg-light text-dark border ms-1">mux</span>
+                                }
+                            </td>
+                            <td @onclick="() => OpenSceneAsync(sn)">
+                                <span class="@(s.ClipsComplete ? "text-success" : s.ClipsOnDisk > 0 ? "text-warning" : "text-muted")">
+                                    @s.ClipsOnDisk/@s.ClipCount
+                                </span>
+                            </td>
+                            <td @onclick="() => OpenSceneAsync(sn)" class="text-muted small">
+                                @(s.DurationSeconds is double d ? $"{d:0}s" : "—")
+                            </td>
+                            <td @onclick:stopPropagation="true">
+                                <button class="btn btn-sm btn-outline-primary"
+                                        disabled="@(_busy || JobRunning)"
+                                        @onclick="() => GenOneSceneAsync(sn)">
+                                    Gen
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+}
+else if (_detail is null)
+{
+    <p class="text-muted">Loading scene…</p>
+}
+else
+{
+    @* ---- Scene detail ---- *@
+    <div class="card mb-3">
+        <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <span>
+                <strong>Scene @_detail.SceneNumber.ToString("D2")</strong>
+                — @(_detail.Setting is { Length: > 0 } st ? st : "—")
+            </span>
+            <div class="d-flex gap-2 align-items-center">
+                <div class="form-check mb-0">
+                    <input class="form-check-input" type="checkbox" id="onlyMissingDetail" @bind="_onlyMissing" disabled="@_busy" />
+                    <label class="form-check-label" for="onlyMissingDetail">Only missing</label>
+                </div>
+                <button class="btn btn-sm btn-primary"
+                        disabled="@(_busy || JobRunning)"
+                        @onclick="() => GenOneSceneAsync(_detail.SceneNumber)">
+                    ▶ Generate scene
+                </button>
+            </div>
+        </div>
+        <div class="card-body">
+            <p class="small text-muted mb-2">
+                @_detail.ClipsOnDisk/@_detail.ClipCount clips on disk
+                · ~@(_detail.DurationSeconds is double dd ? $"{dd:0}" : "?")s
+                @if (_detail.CharactersOnScreen.Count > 0)
+                {
+                    <span>· cast: @string.Join(", ", _detail.CharactersOnScreen.Select(ShortChar))</span>
+                }
+                @if (!string.IsNullOrEmpty(_detail.PrimaryLocationId))
+                {
+                    <span>· loc: <code>@_detail.PrimaryLocationId</code></span>
+                }
+            </p>
+
+            @if (_detail.CompositeExists && _detail.CompositeUrl is not null)
+            {
+                <div class="mb-3">
+                    <h6 class="text-muted">Composite</h6>
+                    <video controls style="max-width:100%; max-height:280px;"
+                           src="@Engine.CompositeVideoUrl(_projectId, _detail.SceneNumber)"></video>
+                </div>
+            }
+
+            <div class="table-responsive">
+                <table class="table table-sm table-hover align-middle">
+                    <thead>
+                        <tr>
+                            <th>Clip</th>
+                            <th>Dur</th>
+                            <th>Subject</th>
+                            <th>Dialogue</th>
+                            <th>Disk</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var c in _detail.Clips)
+                        {
+                            var active = _selectedClip == c.ClipNumber;
+                            <tr class="@(active ? "table-primary" : "")" style="cursor:pointer;"
+                                @onclick="() => SelectClip(c.ClipNumber)">
+                                <td><code>C@c.ClipNumber.ToString("D2")</code></td>
+                                <td class="small">@(c.DurationSeconds > 0 ? $"{c.DurationSeconds}s" : "—")</td>
+                                <td class="small">@Trunc(c.PrimarySubject, 28)</td>
+                                <td class="small">@Trunc(c.Dialogue, 40)</td>
+                                <td>
+                                    @if (c.OnDisk)
+                                    {
+                                        <span class="badge bg-success">on disk</span>
+                                        <span class="small text-muted">@FormatSize(c.SizeBytes)</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-secondary">missing</span>
+                                    }
+                                </td>
+                                <td class="small text-muted">@c.Continuation</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    @if (_clip is not null)
+    {
+        <div class="card mb-3">
+            <div class="card-header d-flex justify-content-between">
+                <span>
+                    Clip <code>S@_detail.SceneNumber.ToString("D2")C@_clip.ClipNumber.ToString("D2")</code>
+                    @if (!string.IsNullOrEmpty(_clip.Timestamp))
+                    {
+                        <span class="text-muted ms-2">@_clip.Timestamp</span>
+                    }
+                </span>
+                <button class="btn btn-sm btn-outline-secondary" @onclick="() => SelectClip(null)">Close</button>
+            </div>
+            <div class="card-body row">
+                <div class="col-md-5 mb-3">
+                    @if (_clip.OnDisk)
+                    {
+                        <video controls style="width:100%; max-height:320px; background:#111;"
+                               src="@Engine.ClipVideoUrl(_projectId, _detail.SceneNumber, _clip.ClipNumber)"></video>
+                        <div class="small text-muted mt-1">@_clip.FileName · @FormatSize(_clip.SizeBytes)</div>
+                    }
+                    else
+                    {
+                        <div class="border rounded p-4 text-center text-muted">No video on disk</div>
+                    }
+                </div>
+                <div class="col-md-7">
+                    <h6>Visual prompt</h6>
+                    <pre class="small bg-light border rounded p-2" style="max-height:200px; overflow:auto; white-space:pre-wrap;">@(_clip.VisualPrompt is { Length: > 0 } vp ? vp : "—")</pre>
+                    @if (!string.IsNullOrWhiteSpace(_clip.NegativePrompt))
+                    {
+                        <h6>Negative</h6>
+                        <pre class="small bg-light border rounded p-2" style="max-height:80px; overflow:auto; white-space:pre-wrap;">@_clip.NegativePrompt</pre>
+                    }
+                    <h6>Audio</h6>
+                    <p class="small mb-1">
+                        <strong>@(_clip.Speaker ?? "—")</strong>
+                        @if (!string.IsNullOrEmpty(_clip.Delivery))
+                        {
+                            <span class="text-muted">· @_clip.Delivery</span>
+                        }
+                    </p>
+                    <p class="small">@(_clip.Dialogue is { Length: > 0 } dlg ? dlg : "—")</p>
+                    <p class="small text-muted mb-0">
+                        subject: @(_clip.PrimarySubject is { Length: > 0 } ps ? ps : "—")
+                        · continuation: @_clip.Continuation
+                        · @_clip.DurationSeconds s
+                    </p>
+                </div>
+            </div>
+            <div class="card-footer small text-muted">
+                Edit prompts / Pass-Fail / QA retry: use Streamlit <strong>Scenes</strong> for now.
+            </div>
+        </div>
+    }
+}
+
+@code {
+    private bool _busy;
+    private string? _error;
+    private string? _message;
+    private string _projectId = "Buster";
+    private List<string> _projectIds = new();
+    private string _filter = "";
+    private bool _onlyMissing = true;
+    private List<SceneSummary>? _scenes;
+    private HashSet<int> _selected = new();
+    private int? _selectedScene;
+    private SceneDetail? _detail;
+    private int? _selectedClip;
+    private ClipSummary? _clip;
+    private JobSnapshot? _job;
+
+    private bool JobRunning =>
+        string.Equals(_job?.Status, "running", StringComparison.OrdinalIgnoreCase);
+
+    private List<SceneSummary> FilteredScenes =>
+        _scenes is null
+            ? new List<SceneSummary>()
+            : string.IsNullOrWhiteSpace(_filter)
+                ? _scenes
+                : _scenes.Where(s =>
+                    (s.Setting ?? "").Contains(_filter, StringComparison.OrdinalIgnoreCase)).ToList();
+
+    protected override async Task OnInitializedAsync()
+    {
+        Hub.JobUpdated += OnJobUpdated;
+        Hub.JobLog += OnJobLog;
+        try
+        {
+            var projs = await Engine.GetProjectsAsync();
+            _projectIds = projs?.Projects.Select(p => p.Id ?? "").Where(s => s.Length > 0).ToList()
+                          ?? new List<string> { "Buster" };
+            if (projs?.Active?.Id is { Length: > 0 } aid)
+                _projectId = aid;
+            else if (_projectIds.Count > 0)
+                _projectId = _projectIds[0];
+
+            try
+            {
+                await Hub.StartAsync();
+            }
+            catch { /* SignalR optional for browse */ }
+
+            var jobs = await Engine.GetJobAsync();
+            _job = jobs?.Job;
+
+            await ReloadListAsync();
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+    }
+
+    private void OnJobUpdated(JobSnapshot snap)
+    {
+        _job = snap;
+        if (snap.Status is "done" or "error" or "cancelled")
+            _ = InvokeAsync(async () =>
+            {
+                await SoftReloadAsync();
+                StateHasChanged();
+            });
+        else
+            _ = InvokeAsync(StateHasChanged);
+    }
+
+    private void OnJobLog(string line)
+    {
+        if (_job is not null)
+            _job.Message = line;
+        _ = InvokeAsync(StateHasChanged);
+    }
+
+    private async Task OnProjectChangedAsync()
+    {
+        _selectedScene = null;
+        _detail = null;
+        _selectedClip = null;
+        _clip = null;
+        _selected.Clear();
+        await ReloadListAsync();
+    }
+
+    private async Task ReloadListAsync()
+    {
+        _busy = true;
+        _error = null;
+        try
+        {
+            var dto = await Engine.GetScenesAsync(_projectId);
+            _scenes = dto?.Scenes ?? new List<SceneSummary>();
+            // Drop selections that no longer exist
+            _selected.RemoveWhere(sn => _scenes.All(s => s.SceneNumber != sn));
+            if (_selectedScene is int sn)
+                await LoadDetailAsync(sn);
+            var jobs = await Engine.GetJobAsync();
+            _job = jobs?.Job;
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+            _scenes = null;
+        }
+        finally { _busy = false; }
+    }
+
+    private async Task SoftReloadAsync()
+    {
+        try
+        {
+            var dto = await Engine.GetScenesAsync(_projectId);
+            _scenes = dto?.Scenes ?? new List<SceneSummary>();
+            if (_selectedScene is int sn)
+            {
+                var detail = await Engine.GetSceneDetailAsync(_projectId, sn);
+                _detail = detail?.Scene;
+                if (_selectedClip is int cn && _detail is not null)
+                    _clip = _detail.Clips.FirstOrDefault(c => c.ClipNumber == cn);
+            }
+        }
+        catch { /* ignore soft reload errors */ }
+    }
+
+    private async Task OpenSceneAsync(int sn)
+    {
+        _busy = true;
+        _error = null;
+        try
+        {
+            await LoadDetailAsync(sn);
+            _selectedScene = sn;
+            _selectedClip = null;
+            _clip = null;
+        }
+        catch (Exception ex) { _error = ex.Message; }
+        finally { _busy = false; }
+    }
+
+    private async Task LoadDetailAsync(int sn)
+    {
+        var dto = await Engine.GetSceneDetailAsync(_projectId, sn);
+        _detail = dto?.Scene
+            ?? throw new InvalidOperationException($"Scene {sn} not found");
+    }
+
+    private async Task BackToListAsync()
+    {
+        _selectedScene = null;
+        _detail = null;
+        _selectedClip = null;
+        _clip = null;
+        await ReloadListAsync();
+    }
+
+    private void SelectClip(int? cn)
+    {
+        _selectedClip = cn;
+        _clip = cn is int n
+            ? _detail?.Clips.FirstOrDefault(c => c.ClipNumber == n)
+            : null;
+    }
+
+    private void ToggleSelect(int sn, bool on)
+    {
+        if (on) _selected.Add(sn);
+        else _selected.Remove(sn);
+    }
+
+    private void SelectIncomplete()
+    {
+        _selected = FilteredScenes
+            .Where(s => s.ClipsOnDisk < s.ClipCount)
+            .Select(s => s.SceneNumber)
+            .ToHashSet();
+    }
+
+    private void SelectAll() =>
+        _selected = FilteredScenes.Select(s => s.SceneNumber).ToHashSet();
+
+    private void ClearSelection() => _selected.Clear();
+
+    private int EstimateSelectedClips()
+    {
+        if (_scenes is null) return 0;
+        var sum = 0;
+        foreach (var s in _scenes.Where(x => _selected.Contains(x.SceneNumber)))
+        {
+            if (_onlyMissing)
+                sum += Math.Max(0, s.ClipCount - s.ClipsOnDisk);
+            else
+                sum += s.ClipCount;
+        }
+        return sum;
+    }
+
+    private async Task GenOneSceneAsync(int sn)
+    {
+        _busy = true;
+        _error = null;
+        _message = null;
+        try
+        {
+            await Engine.StartSceneGenAsync(_projectId, sn, _onlyMissing);
+            _message = $"Started scene {sn}";
+            await EnsureHubAsync();
+            var jobs = await Engine.GetJobAsync();
+            _job = jobs?.Job;
+        }
+        catch (Exception ex) { _error = ex.Message; }
+        finally { _busy = false; }
+    }
+
+    private async Task StartBatchAsync()
+    {
+        if (_selected.Count == 0) return;
+        _busy = true;
+        _error = null;
+        _message = null;
+        try
+        {
+            var list = _selected.OrderBy(x => x).ToList();
+            await Engine.StartBatchGenAsync(_projectId, list, _onlyMissing);
+            _message = $"Started batch for {list.Count} scene(s)";
+            await EnsureHubAsync();
+            var jobs = await Engine.GetJobAsync();
+            _job = jobs?.Job;
+        }
+        catch (Exception ex) { _error = ex.Message; }
+        finally { _busy = false; }
+    }
+
+    private async Task CancelAsync()
+    {
+        _busy = true;
+        try
+        {
+            await Engine.CancelJobAsync();
+            _message = "Cancel requested";
+            var jobs = await Engine.GetJobAsync();
+            _job = jobs?.Job;
+        }
+        catch (Exception ex) { _error = ex.Message; }
+        finally { _busy = false; }
+    }
+
+    private async Task EnsureHubAsync()
+    {
+        if (Hub.IsConnected) return;
+        try { await Hub.StartAsync(); } catch { /* ignore */ }
+    }
+
+    private static string StatusBadge(string status) => status switch
+    {
+        "complete" => "bg-success",
+        "partial" => "bg-warning text-dark",
+        _ => "bg-secondary",
+    };
+
+    private static string Trunc(string? s, int n)
+    {
+        if (string.IsNullOrEmpty(s)) return "—";
+        return s.Length <= n ? s : s[..(n - 1)] + "…";
+    }
+
+    private static string ShortChar(string key) =>
+        key.Replace("Character_", "", StringComparison.OrdinalIgnoreCase).Replace('_', ' ');
+
+    private static string FormatSize(long bytes)
+    {
+        if (bytes < 1024) return $"{bytes} B";
+        if (bytes < 1024 * 1024) return $"{bytes / 1024.0:0.#} KB";
+        return $"{bytes / (1024.0 * 1024):0.#} MB";
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        Hub.JobUpdated -= OnJobUpdated;
+        Hub.JobLog -= OnJobLog;
+        // Don't dispose shared hub if Studio also uses it — JobHubClient is scoped per circuit usually.
+        // Safe to leave connection; Studio page owns its own instance if scoped.
+        await Task.CompletedTask;
+    }
+}

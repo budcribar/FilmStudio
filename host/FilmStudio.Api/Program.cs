@@ -110,6 +110,26 @@ app.MapPost("/api/jobs/gen-scene", async (StartSceneGenRequest body, FilmJobServ
     }
 });
 
+app.MapPost("/api/jobs/gen-batch", async (StartBatchGenRequest body, FilmJobService jobService) =>
+{
+    try
+    {
+        if (body.Scenes is null || body.Scenes.Count == 0)
+            return Results.BadRequest(new { ok = false, error = "scenes required" });
+        await jobService.StartBatchGenAsync(body);
+        return Results.Accepted("/api/jobs", new
+        {
+            ok = true,
+            message = $"Started batch for {body.Scenes.Count} scene(s)",
+            job = jobService.GetSnapshot(),
+        });
+    }
+    catch (Exception ex)
+    {
+        return Results.Conflict(new { ok = false, error = ex.Message, job = jobService.GetSnapshot() });
+    }
+});
+
 app.MapPost("/api/jobs/cancel", async (FilmJobService jobService) =>
 {
     await jobService.CancelAsync();
@@ -154,6 +174,138 @@ app.MapGet("/api/stage2-status", (ProjectStore store) =>
         blueprint_path = bp,
         project_id = id,
     });
+});
+
+// ---- Configuration (pipeline_config.json) ----
+app.MapGet("/api/projects/{id}/config", (string id, ProjectStore store) =>
+{
+    try
+    {
+        var cfg = store.GetConfig(id);
+        return Results.Ok(new { ok = true, projectId = id, config = cfg });
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { ok = false, error = ex.Message });
+    }
+});
+
+app.MapPut("/api/projects/{id}/config", async (string id, HttpRequest req, ProjectStore store) =>
+{
+    try
+    {
+        using var doc = await JsonDocument.ParseAsync(req.Body);
+        var saved = store.SaveConfig(id, doc.RootElement);
+        return Results.Ok(new { ok = true, projectId = id, config = saved });
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { ok = false, error = ex.Message });
+    }
+});
+
+// ---- Characters ----
+app.MapGet("/api/projects/{id}/characters", (string id, ProjectStore store) =>
+{
+    try
+    {
+        var chars = store.ListCharacters(id);
+        return Results.Ok(new { ok = true, projectId = id, characters = chars });
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { ok = false, error = ex.Message });
+    }
+});
+
+app.MapGet("/api/projects/{projectId}/characters/{charKey}/ref", (string projectId, string charKey, ProjectStore store) =>
+{
+    try
+    {
+        var path = store.ResolveCharacterRefPath(projectId, charKey);
+        if (path is null || !File.Exists(path))
+            return Results.NotFound(new { ok = false, error = "ref image not found" });
+        var contentType = path.EndsWith(".png", StringComparison.OrdinalIgnoreCase)
+            ? "image/png"
+            : path.EndsWith(".jpg", StringComparison.OrdinalIgnoreCase) ||
+              path.EndsWith(".jpeg", StringComparison.OrdinalIgnoreCase)
+                ? "image/jpeg"
+                : "application/octet-stream";
+        return Results.File(path, contentType);
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { ok = false, error = ex.Message });
+    }
+});
+
+// ---- Scenes & Clips ----
+app.MapGet("/api/projects/{id}/scenes", (string id, ProjectStore store) =>
+{
+    try
+    {
+        var scenes = store.ListScenes(id);
+        return Results.Ok(new
+        {
+            ok = true,
+            projectId = id,
+            sceneCount = scenes.Count,
+            clipCount = scenes.Sum(s => s.ClipCount),
+            clipsOnDisk = scenes.Sum(s => s.ClipsOnDisk),
+            scenes,
+        });
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { ok = false, error = ex.Message });
+    }
+});
+
+app.MapGet("/api/projects/{id}/scenes/{sceneNumber:int}", (string id, int sceneNumber, ProjectStore store) =>
+{
+    try
+    {
+        var detail = store.GetSceneDetail(id, sceneNumber);
+        if (detail is null)
+            return Results.NotFound(new { ok = false, error = $"Scene {sceneNumber} not found" });
+        return Results.Ok(new { ok = true, projectId = id, scene = detail });
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { ok = false, error = ex.Message });
+    }
+});
+
+app.MapGet("/api/projects/{id}/scenes/{sceneNumber:int}/clips/{clipNumber:int}/video",
+    (string id, int sceneNumber, int clipNumber, ProjectStore store) =>
+{
+    try
+    {
+        var path = store.ResolveClipVideoPath(id, sceneNumber, clipNumber);
+        if (path is null)
+            return Results.NotFound(new { ok = false, error = "clip video not found" });
+        return Results.File(path, "video/mp4", enableRangeProcessing: true);
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { ok = false, error = ex.Message });
+    }
+});
+
+app.MapGet("/api/projects/{id}/scenes/{sceneNumber:int}/composite",
+    (string id, int sceneNumber, ProjectStore store) =>
+{
+    try
+    {
+        var path = store.ResolveCompositePath(id, sceneNumber);
+        if (path is null)
+            return Results.NotFound(new { ok = false, error = "composite not found" });
+        return Results.File(path, "video/mp4", enableRangeProcessing: true);
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { ok = false, error = ex.Message });
+    }
 });
 
 app.Run();

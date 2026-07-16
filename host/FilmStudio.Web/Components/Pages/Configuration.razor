@@ -1,0 +1,369 @@
+@page "/configuration"
+@rendermode InteractiveServer
+@inject EngineApiClient Engine
+@inject IConfiguration AppConfig
+
+<PageTitle>Configuration</PageTitle>
+
+<h1>Configuration</h1>
+<p class="text-muted">
+    Edits write to the active project's <code>pipeline_config.json</code>
+    (same file Streamlit uses).
+</p>
+
+@if (!string.IsNullOrEmpty(_error))
+{
+    <div class="alert alert-danger">@_error</div>
+}
+@if (!string.IsNullOrEmpty(_message))
+{
+    <div class="alert alert-success">@_message</div>
+}
+
+<div class="row mb-3">
+    <div class="col-md-4">
+        <label class="form-label">Project</label>
+        <select class="form-select" @bind="_projectId" @bind:after="LoadAsync" disabled="@_busy">
+            @foreach (var p in _projectIds)
+            {
+                <option value="@p">@p</option>
+            }
+        </select>
+    </div>
+    <div class="col-md-4 d-flex align-items-end gap-2">
+        <button class="btn btn-outline-secondary" disabled="@_busy" @onclick="LoadAsync">Reload</button>
+        <button class="btn btn-primary" disabled="@_busy || _cfg is null" @onclick="SaveAsync">Save</button>
+    </div>
+</div>
+
+@if (_cfg is null)
+{
+    <p class="text-muted">Load a project to edit config…</p>
+}
+else
+{
+    <div class="card mb-3">
+        <div class="card-header">Blueprint</div>
+        <div class="card-body">
+            <label class="form-label">blueprint_file</label>
+            <input class="form-control" @bind="_blueprintFile" disabled="@_busy" />
+        </div>
+    </div>
+
+    <div class="card mb-3">
+        <div class="card-header">Providers &amp; models</div>
+        <div class="card-body row g-2">
+            <div class="col-md-4">
+                <label class="form-label">video_provider</label>
+                <select class="form-select" @bind="_videoProvider" disabled="@_busy">
+                    <option value="grok">grok</option>
+                    <option value="veo">veo</option>
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">character_design_provider</label>
+                <select class="form-select" @bind="_charDesignProvider" disabled="@_busy">
+                    <option value="grok">grok</option>
+                    <option value="gemini">gemini</option>
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">qa_provider</label>
+                <select class="form-select" @bind="_qaProvider" disabled="@_busy">
+                    <option value="grok">grok</option>
+                    <option value="gemini">gemini</option>
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">model_name (video)</label>
+                <input class="form-control" @bind="_modelName" disabled="@_busy" />
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">image_model_name</label>
+                <input class="form-control" @bind="_imageModel" disabled="@_busy" />
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">qa_model_name</label>
+                <input class="form-control" @bind="_qaModel" disabled="@_busy" />
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">aspect_ratio</label>
+                <select class="form-select" @bind="_aspect" disabled="@_busy">
+                    <option value="16:9">16:9</option>
+                    <option value="9:16">9:16</option>
+                    <option value="1:1">1:1</option>
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">resolution</label>
+                <select class="form-select" @bind="_resolution" disabled="@_busy">
+                    <option value="480p">480p</option>
+                    <option value="720p">720p</option>
+                    <option value="1080p">1080p</option>
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">duration_seconds (flat)</label>
+                <input type="number" class="form-control" min="1" max="15" @bind="_durationSeconds" disabled="@_busy" />
+            </div>
+        </div>
+    </div>
+
+    <div class="card mb-3">
+        <div class="card-header">Pipeline behaviour</div>
+        <div class="card-body row g-2">
+            <div class="col-md-4 form-check">
+                <input class="form-check-input" type="checkbox" id="useDur" @bind="_useDurationDefaults" disabled="@_busy" />
+                <label class="form-check-label" for="useDur">use_duration_defaults</label>
+            </div>
+            <div class="col-md-4 form-check">
+                <input class="form-check-input" type="checkbox" id="smart" @bind="_smartContinuation" disabled="@_busy" />
+                <label class="form-check-label" for="smart">smart_continuation</label>
+            </div>
+            <div class="col-md-4 form-check">
+                <input class="form-check-input" type="checkbox" id="merge" @bind="_mergeAfterClip" disabled="@_busy" />
+                <label class="form-check-label" for="merge">merge_scene_after_each_clip</label>
+            </div>
+            <div class="col-md-4 form-check">
+                <input class="form-check-input" type="checkbox" id="qaRetry" @bind="_qaRetry" disabled="@_busy" />
+                <label class="form-check-label" for="qaRetry">qa_retry_on_fail</label>
+            </div>
+            <div class="col-md-4 form-check">
+                <input class="form-check-input" type="checkbox" id="regenSilent" @bind="_regenSilent" disabled="@_busy" />
+                <label class="form-check-label" for="regenSilent">regenerate_silent_clips</label>
+            </div>
+            <div class="col-md-4 form-check">
+                <input class="form-check-input" type="checkbox" id="rebuildWip" @bind="_rebuildWip" disabled="@_busy" />
+                <label class="form-check-label" for="rebuildWip">rebuild_wip_movie_after_scene</label>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">qa_max_retries</label>
+                <input type="number" class="form-control" min="0" max="5" @bind="_qaMaxRetries" disabled="@_busy" />
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">qa_frame_count</label>
+                <input type="number" class="form-control" min="1" max="8" @bind="_qaFrameCount" disabled="@_busy" />
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">composite_audio_gain_db</label>
+                <input type="number" step="0.5" class="form-control" @bind="_audioGain" disabled="@_busy" />
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">wip_movie_path</label>
+                <input class="form-control" @bind="_wipPath" disabled="@_busy" />
+            </div>
+        </div>
+    </div>
+
+    <div class="card mb-3">
+        <div class="card-header">Cost estimates (USD planning)</div>
+        <div class="card-body row g-2">
+            <div class="col-md-3">
+                <label class="form-label">$/sec 480p</label>
+                <input type="number" step="0.01" class="form-control" @bind="_rate480" disabled="@_busy" />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">$/sec 720p</label>
+                <input type="number" step="0.01" class="form-control" @bind="_rate720" disabled="@_busy" />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">$/sec 1080p</label>
+                <input type="number" step="0.01" class="form-control" @bind="_rate1080" disabled="@_busy" />
+            </div>
+        </div>
+        <div class="card-footer small text-muted">Estimates only — not invoices.</div>
+    </div>
+}
+
+@code {
+    private bool _busy;
+    private string? _error;
+    private string? _message;
+    private string _projectId = "Buster";
+    private List<string> _projectIds = new();
+    private Dictionary<string, JsonElement>? _cfg;
+
+    private string _blueprintFile = "blueprint.clips.grok.json";
+    private string _videoProvider = "grok";
+    private string _charDesignProvider = "grok";
+    private string _qaProvider = "grok";
+    private string _modelName = "grok-imagine-video";
+    private string _imageModel = "grok-imagine-image-quality";
+    private string _qaModel = "grok-4.5";
+    private string _aspect = "16:9";
+    private string _resolution = "480p";
+    private int _durationSeconds = 8;
+    private bool _useDurationDefaults = true;
+    private bool _smartContinuation = true;
+    private bool _mergeAfterClip = true;
+    private bool _qaRetry = true;
+    private bool _regenSilent = true;
+    private bool _rebuildWip = true;
+    private int _qaMaxRetries = 2;
+    private int _qaFrameCount = 4;
+    private double _audioGain = 6;
+    private string _wipPath = "assets/movie_wip.mp4";
+    private double _rate480 = 0.05;
+    private double _rate720 = 0.07;
+    private double _rate1080 = 0.25;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var projs = await Engine.GetProjectsAsync();
+            _projectIds = projs?.Projects.Select(p => p.Id ?? "").Where(s => s.Length > 0).ToList()
+                          ?? new List<string> { "Buster" };
+            if (projs?.Active?.Id is { Length: > 0 } aid)
+                _projectId = aid;
+            else if (_projectIds.Count > 0)
+                _projectId = _projectIds[0];
+            await LoadAsync();
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+    }
+
+    private async Task LoadAsync()
+    {
+        _busy = true;
+        _error = null;
+        _message = null;
+        try
+        {
+            var dto = await Engine.GetConfigAsync(_projectId);
+            _cfg = dto?.Config;
+            if (_cfg is null) return;
+            _blueprintFile = GetStr("blueprint_file", _blueprintFile);
+            _videoProvider = GetStr("video_provider", _videoProvider);
+            _charDesignProvider = GetStr("character_design_provider", _charDesignProvider);
+            _qaProvider = GetStr("qa_provider", _qaProvider);
+            _modelName = GetStr("model_name", _modelName);
+            _imageModel = GetStr("image_model_name", _imageModel);
+            _qaModel = GetStr("qa_model_name", _qaModel);
+            _aspect = GetStr("aspect_ratio", _aspect);
+            _resolution = GetStr("resolution", _resolution);
+            _durationSeconds = GetInt("duration_seconds", _durationSeconds);
+            _useDurationDefaults = GetBool("use_duration_defaults", _useDurationDefaults);
+            _smartContinuation = GetBool("smart_continuation", _smartContinuation);
+            _mergeAfterClip = GetBool("merge_scene_after_each_clip", _mergeAfterClip);
+            _qaRetry = GetBool("qa_retry_on_fail", _qaRetry);
+            _regenSilent = GetBool("regenerate_silent_clips", _regenSilent);
+            _rebuildWip = GetBool("rebuild_wip_movie_after_scene", _rebuildWip);
+            _qaMaxRetries = GetInt("qa_max_retries", _qaMaxRetries);
+            _qaFrameCount = GetInt("qa_frame_count", _qaFrameCount);
+            _audioGain = GetDouble("composite_audio_gain_db", _audioGain);
+            _wipPath = GetStr("wip_movie_path", _wipPath);
+            if (_cfg.TryGetValue("cost_estimates", out var ce) &&
+                ce.ValueKind == JsonValueKind.Object &&
+                ce.TryGetProperty("video_output_per_sec", out var vop) &&
+                vop.ValueKind == JsonValueKind.Object)
+            {
+                if (vop.TryGetProperty("480p", out var a) && a.TryGetDouble(out var d1)) _rate480 = d1;
+                if (vop.TryGetProperty("720p", out var b) && b.TryGetDouble(out var d2)) _rate720 = d2;
+                if (vop.TryGetProperty("1080p", out var c) && c.TryGetDouble(out var d3)) _rate1080 = d3;
+            }
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+            _cfg = null;
+        }
+        finally { _busy = false; }
+    }
+
+    private async Task SaveAsync()
+    {
+        _busy = true;
+        _error = null;
+        _message = null;
+        try
+        {
+            var updates = new Dictionary<string, object?>
+            {
+                ["blueprint_file"] = _blueprintFile,
+                ["video_provider"] = _videoProvider,
+                ["character_design_provider"] = _charDesignProvider,
+                ["qa_provider"] = _qaProvider,
+                ["model_name"] = _modelName,
+                ["image_model_name"] = _imageModel,
+                ["qa_model_name"] = _qaModel,
+                ["aspect_ratio"] = _aspect,
+                ["resolution"] = _resolution,
+                ["duration_seconds"] = _durationSeconds,
+                ["use_duration_defaults"] = _useDurationDefaults,
+                ["smart_continuation"] = _smartContinuation,
+                ["merge_scene_after_each_clip"] = _mergeAfterClip,
+                ["qa_retry_on_fail"] = _qaRetry,
+                ["regenerate_silent_clips"] = _regenSilent,
+                ["rebuild_wip_movie_after_scene"] = _rebuildWip,
+                ["qa_max_retries"] = _qaMaxRetries,
+                ["qa_frame_count"] = _qaFrameCount,
+                ["composite_audio_gain_db"] = _audioGain,
+                ["wip_movie_path"] = _wipPath,
+                ["cost_estimates"] = new Dictionary<string, object?>
+                {
+                    ["currency"] = "USD",
+                    ["video_output_per_sec"] = new Dictionary<string, object?>
+                    {
+                        ["480p"] = _rate480,
+                        ["720p"] = _rate720,
+                        ["1080p"] = _rate1080,
+                    },
+                    ["notes"] = "Estimates only — not invoices.",
+                },
+            };
+            // Preserve nested cost fields if present
+            if (_cfg is not null &&
+                _cfg.TryGetValue("cost_estimates", out var oldCe) &&
+                oldCe.ValueKind == JsonValueKind.Object)
+            {
+                var ce = new Dictionary<string, object?>();
+                foreach (var p in oldCe.EnumerateObject())
+                {
+                    if (p.Name == "video_output_per_sec") continue;
+                    ce[p.Name] = JsonSerializer.Deserialize<object>(p.Value.GetRawText());
+                }
+                ce["video_output_per_sec"] = new Dictionary<string, object?>
+                {
+                    ["480p"] = _rate480,
+                    ["720p"] = _rate720,
+                    ["1080p"] = _rate1080,
+                };
+                updates["cost_estimates"] = ce;
+            }
+
+            await Engine.SaveConfigAsync(_projectId, updates);
+            _message = $"Saved pipeline_config.json for {_projectId}";
+            await LoadAsync();
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+        finally { _busy = false; }
+    }
+
+    private string GetStr(string key, string fallback) =>
+        _cfg is not null && _cfg.TryGetValue(key, out var el) && el.ValueKind == JsonValueKind.String
+            ? el.GetString() ?? fallback
+            : fallback;
+
+    private int GetInt(string key, int fallback) =>
+        _cfg is not null && _cfg.TryGetValue(key, out var el) && el.TryGetInt32(out var v)
+            ? v
+            : fallback;
+
+    private double GetDouble(string key, double fallback) =>
+        _cfg is not null && _cfg.TryGetValue(key, out var el) && el.TryGetDouble(out var v)
+            ? v
+            : fallback;
+
+    private bool GetBool(string key, bool fallback) =>
+        _cfg is not null && _cfg.TryGetValue(key, out var el) &&
+        (el.ValueKind is JsonValueKind.True or JsonValueKind.False)
+            ? el.GetBoolean()
+            : fallback;
+}
