@@ -35,10 +35,6 @@ build_metadata.AdditionalFiles.CssScope =
 build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xQYWdlc1xBZGFwdGF0aW9uLnJhem9y
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/budcr/source/repos/NickAndMe/host/FilmStudio.Web/Components/Pages/Characters.razor]
-build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xQYWdlc1xDaGFyYWN0ZXJzLnJhem9y
-build_metadata.AdditionalFiles.CssScope = 
-
 [C:/Users/budcr/source/repos/NickAndMe/host/FilmStudio.Web/Components/Pages/Configuration.razor]
 build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xQYWdlc1xDb25maWd1cmF0aW9uLnJhem9y
 build_metadata.AdditionalFiles.CssScope = 
@@ -86,6 +82,10 @@ build_metadata.AdditionalFiles.CssScope = b-85rt5vhob6
 [C:/Users/budcr/source/repos/NickAndMe/host/FilmStudio.Web/Components/Layout/ReconnectModal.razor]
 build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xMYXlvdXRcUmVjb25uZWN0TW9kYWwucmF6b3I=
 build_metadata.AdditionalFiles.CssScope = b-lbj0ty81ea
+
+[C:/Users/budcr/source/repos/NickAndMe/host/FilmStudio.Web/Components/Pages/Characters.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xQYWdlc1xDaGFyYWN0ZXJzLnJhem9y
+build_metadata.AdditionalFiles.CssScope = b-ndlvtfi1bo
 
 [C:/Users/budcr/source/repos/NickAndMe/host/FilmStudio.Web/Components/Pages/Scenes.razor]
 build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xQYWdlc1xTY2VuZXMucmF6b3I=

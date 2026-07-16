@@ -315,7 +315,7 @@
         "Character_Narrator": 1
       },
       "review_status": "pass",
-      "review_note": "Character_Buster's hat should be worn throughout the clip",
+      "review_note": "Character_Buster\u0027s hat should be worn throughout the clip",
       "reviewed_at": "2026-07-13T06:43:48",
       "qa_approved": true
     },
@@ -719,7 +719,90 @@
     "stage2": {
       "done": true,
       "at": "2026-07-13T16:07:46",
-      "detail": "6 scenes \u00b7 19 clips"
+      "detail": "6 scenes \u00B7 19 clips"
+    }
+  },
+  "wip_movie": {
+    "path": "assets/movie_wip.mp4",
+    "scene_count": 6,
+    "scene_numbers": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6
+    ],
+    "approved_only": true,
+    "updated_at": "2026-07-13T16:12:55",
+    "reason": "after approve S4",
+    "mode": "full"
+  },
+  "wip_job": {
+    "status": "done",
+    "mode": null,
+    "message": "WIP up to date",
+    "generation": 1,
+    "queued": [],
+    "current_scene": null,
+    "started_at": "2026-07-13T16:12:51",
+    "finished_at": "2026-07-13T16:12:55",
+    "error": null,
+    "path": "assets/movie_wip.mp4"
+  },
+  "gen_job": {
+    "status": "done",
+    "kind": "clips",
+    "message": "Finished",
+    "generation": 1,
+    "scene": 4,
+    "clip": 2,
+    "scenes": [],
+    "index": 2,
+    "total": 2,
+    "done": [],
+    "failed": [],
+    "log": [
+      "Starting\u2026",
+      "Scene 4: 2 clip(s) to generate",
+      "Generating S04 C1 (1/2)\u2026",
+      "Done S04 C1",
+      "Generating S04 C2 (2/2)\u2026",
+      "Done S04 C2",
+      "Finished: 2 generated, 0 failed",
+      "Finished"
+    ],
+    "started_at": "2026-07-13T16:09:43",
+    "finished_at": "2026-07-13T16:12:13",
+    "error": null,
+    "summary": {
+      "scene": 4,
+      "only_missing": false,
+      "clip_numbers": [
+        1,
+        2
+      ],
+      "planned": [
+        1,
+        2
+      ],
+      "todo": [
+        1,
+        2
+      ],
+      "done": [
+        1,
+        2
+      ],
+      "failed": [],
+      "paths": {
+        "1": "assets/video/scene_04_clip_01.mp4",
+        "2": "assets/video/scene_04_clip_02.mp4"
+      },
+      "composite_path": "assets/scenes/scene_04_complete.mp4",
+      "wip_path": null,
+      "cancelled": false,
+      "skipped_existing": []
     }
   },
   "cost_ledger": [
@@ -2195,94 +2278,35 @@
       "source": "list_rate",
       "id": "1783980724_0073",
       "ts": "2026-07-13T16:12:04"
+    },
+    {
+      "kind": "image",
+      "model": "grok-imagine-image-quality",
+      "character": "",
+      "n_images": 1,
+      "unit_usd": 0.05,
+      "usd": 0.05,
+      "currency": "USD",
+      "source": "list_rate",
+      "id": "1784229932_0074",
+      "ts": "2026-07-16T13:25:32"
+    },
+    {
+      "kind": "image",
+      "model": "grok-imagine-image-quality",
+      "character": "",
+      "n_images": 1,
+      "unit_usd": 0.05,
+      "usd": 0.05,
+      "currency": "USD",
+      "source": "list_rate",
+      "id": "1784229984_0075",
+      "ts": "2026-07-16T13:26:24"
     }
   ],
   "cost_totals": {
-    "usd": 33.38,
-    "events": 74,
-    "updated_at": "2026-07-13T16:12:04"
-  },
-  "wip_movie": {
-    "path": "assets/movie_wip.mp4",
-    "scene_count": 6,
-    "scene_numbers": [
-      1,
-      2,
-      3,
-      4,
-      5,
-      6
-    ],
-    "approved_only": true,
-    "updated_at": "2026-07-13T16:12:55",
-    "reason": "after approve S4",
-    "mode": "full"
-  },
-  "wip_job": {
-    "status": "done",
-    "mode": null,
-    "message": "WIP up to date",
-    "generation": 1,
-    "queued": [],
-    "current_scene": null,
-    "started_at": "2026-07-13T16:12:51",
-    "finished_at": "2026-07-13T16:12:55",
-    "error": null,
-    "path": "assets/movie_wip.mp4"
-  },
-  "gen_job": {
-    "status": "done",
-    "kind": "clips",
-    "message": "Finished",
-    "generation": 1,
-    "scene": 4,
-    "clip": 2,
-    "scenes": [],
-    "index": 2,
-    "total": 2,
-    "done": [],
-    "failed": [],
-    "log": [
-      "Starting\u2026",
-      "Scene 4: 2 clip(s) to generate",
-      "Generating S04 C1 (1/2)\u2026",
-      "Done S04 C1",
-      "Generating S04 C2 (2/2)\u2026",
-      "Done S04 C2",
-      "Finished: 2 generated, 0 failed",
-      "Finished"
-    ],
-    "started_at": "2026-07-13T16:09:43",
-    "finished_at": "2026-07-13T16:12:13",
-    "error": null,
-    "summary": {
-      "scene": 4,
-      "only_missing": false,
-      "clip_numbers": [
-        1,
-        2
-      ],
-      "planned": [
-        1,
-        2
-      ],
-      "todo": [
-        1,
-        2
-      ],
-      "done": [
-        1,
-        2
-      ],
-      "failed": [],
-      "paths": {
-        "1": "assets/video/scene_04_clip_01.mp4",
-        "2": "assets/video/scene_04_clip_02.mp4"
-      },
-      "composite_path": "assets/scenes/scene_04_complete.mp4",
-      "wip_path": null,
-      "cancelled": false,
-      "skipped_existing": []
-    }
+    "usd": 33.48,
+    "events": 76,
+    "updated_at": "2026-07-16T13:26:24"
   }
 }

@@ -4,9 +4,6 @@ using System.Text.Json;
 using FilmStudio.Core.Options;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.Formats.Jpeg;
-using SixLabors.ImageSharp.Processing;
 
 namespace FilmStudio.Engine;
 
@@ -104,7 +101,7 @@ public sealed class GrokImageClient
         var imagePayloads = new List<object>();
         foreach (var path in refs)
         {
-            var uri = await FileToDataUriResizedAsync(path, maxEdge: 1280, ct);
+            var uri = await FileToDataUriAsync(path, ct);
             imagePayloads.Add(new Dictionary<string, string>
             {
                 ["url"] = uri,
@@ -176,41 +173,34 @@ public sealed class GrokImageClient
         return images.Take(n).ToList();
     }
 
-    private static async Task<string> FileToDataUriResizedAsync(
-        string path,
-        int maxEdge,
-        CancellationToken ct)
+    /// <summary>
+    /// Encode a local image as a data URI without third-party image libraries
+    /// (ImageSharp is dual-licensed; we stay dependency-free here).
+    /// Oversized book plates may need pre-downscaling offline if the API rejects them.
+    /// </summary>
+    private async Task<string> FileToDataUriAsync(string path, CancellationToken ct)
     {
-        try
+        const long warnBytes = 2_500_000; // ~2.5 MB raw
+        var info = new FileInfo(path);
+        if (info.Length > warnBytes)
         {
-            await using var fs = File.OpenRead(path);
-            using var image = await Image.LoadAsync(fs, ct);
-            var w = image.Width;
-            var h = image.Height;
-            var edge = Math.Max(w, h);
-            if (edge > maxEdge)
-            {
-                var scale = maxEdge / (double)edge;
-                var nw = Math.Max(1, (int)(w * scale));
-                var nh = Math.Max(1, (int)(h * scale));
-                image.Mutate(x => x.Resize(nw, nh));
-            }
+            _log.LogWarning(
+                "Reference image {Path} is {Kb:0} KB — sending without resize. " +
+                "If the API rejects it, downscale the book plate offline first.",
+                path, info.Length / 1024.0);
+        }
 
-            await using var ms = new MemoryStream();
-            await image.SaveAsJpegAsync(ms, new JpegEncoder { Quality = 88 }, ct);
-            var b64 = Convert.ToBase64String(ms.ToArray());
-            return $"data:image/jpeg;base64,{b64}";
-        }
-        catch
+        var bytes = await File.ReadAllBytesAsync(path, ct);
+        var ext = Path.GetExtension(path).ToLowerInvariant();
+        var mime = ext switch
         {
-            // Fallback: raw file bytes
-            var bytes = await File.ReadAllBytesAsync(path, ct);
-            var ext = Path.GetExtension(path).ToLowerInvariant();
-            var mime = ext is ".png" ? "image/png"
-                : ext is ".webp" ? "image/webp"
-                : "image/jpeg";
-            return $"data:{mime};base64,{Convert.ToBase64String(bytes)}";
-        }
+            ".png" => "image/png",
+            ".webp" => "image/webp",
+            ".gif" => "image/gif",
+            ".jpg" or ".jpeg" => "image/jpeg",
+            _ => "image/jpeg",
+        };
+        return $"data:{mime};base64,{Convert.ToBase64String(bytes)}";
     }
 
     private void EnsureAuthHeader()
