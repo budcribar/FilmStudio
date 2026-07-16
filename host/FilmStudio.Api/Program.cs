@@ -239,6 +239,88 @@ app.MapGet("/api/projects/{projectId}/characters/{charKey}/ref", (string project
     }
 });
 
+// ---- Adaptation (book / Stage 1 / Stage 2 status + Python jobs) ----
+app.MapGet("/api/projects/{id}/adaptation", (string id, ProjectStore store) =>
+{
+    try
+    {
+        var status = store.GetAdaptationStatus(id);
+        return Results.Ok(new { ok = true, projectId = id, adaptation = status });
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { ok = false, error = ex.Message });
+    }
+});
+
+app.MapPost("/api/projects/{id}/adaptation/upload", async (string id, HttpRequest req, ProjectStore store) =>
+{
+    try
+    {
+        if (!req.HasFormContentType)
+            return Results.BadRequest(new { ok = false, error = "multipart form required" });
+        var form = await req.ReadFormAsync();
+        var file = form.Files.GetFile("file") ?? form.Files.FirstOrDefault();
+        if (file is null || file.Length == 0)
+            return Results.BadRequest(new { ok = false, error = "file required" });
+        await using var stream = file.OpenReadStream();
+        var path = await store.SaveBookUploadAsync(id, file.FileName, stream);
+        var status = store.GetAdaptationStatus(id);
+        return Results.Ok(new
+        {
+            ok = true,
+            projectId = id,
+            savedPath = path,
+            message = $"Saved {file.FileName} ({file.Length} bytes)",
+            adaptation = status,
+        });
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { ok = false, error = ex.Message });
+    }
+});
+
+app.MapPost("/api/jobs/stage1", async (StartStage1Request body, FilmJobService jobService) =>
+{
+    try
+    {
+        if (string.IsNullOrWhiteSpace(body.ProjectId))
+            return Results.BadRequest(new { ok = false, error = "projectId required" });
+        await jobService.StartStage1Async(body);
+        return Results.Accepted("/api/jobs", new
+        {
+            ok = true,
+            message = "Started Stage 1",
+            job = jobService.GetSnapshot(),
+        });
+    }
+    catch (Exception ex)
+    {
+        return Results.Conflict(new { ok = false, error = ex.Message, job = jobService.GetSnapshot() });
+    }
+});
+
+app.MapPost("/api/jobs/stage2", async (StartStage2Request body, FilmJobService jobService) =>
+{
+    try
+    {
+        if (string.IsNullOrWhiteSpace(body.ProjectId))
+            return Results.BadRequest(new { ok = false, error = "projectId required" });
+        await jobService.StartStage2Async(body);
+        return Results.Accepted("/api/jobs", new
+        {
+            ok = true,
+            message = "Started Stage 2",
+            job = jobService.GetSnapshot(),
+        });
+    }
+    catch (Exception ex)
+    {
+        return Results.Conflict(new { ok = false, error = ex.Message, job = jobService.GetSnapshot() });
+    }
+});
+
 // ---- Scenes & Clips ----
 app.MapGet("/api/projects/{id}/scenes", (string id, ProjectStore store) =>
 {

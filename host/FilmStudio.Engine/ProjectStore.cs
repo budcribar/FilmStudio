@@ -505,6 +505,389 @@ public sealed class ProjectStore
         return File.Exists(path) && new FileInfo(path).Length >= 1024 ? path : null;
     }
 
+    public string ResolveScenesJsonPath(string projectId)
+    {
+        var dir = GetProjectDir(projectId);
+        var preferred = "scenes.json";
+        var metaPath = Path.Combine(dir, "project.json");
+        if (File.Exists(metaPath))
+        {
+            try
+            {
+                using var doc = JsonDocument.Parse(File.ReadAllText(metaPath));
+                if (doc.RootElement.TryGetProperty("scenes_file", out var sf))
+                {
+                    var n = sf.GetString();
+                    if (!string.IsNullOrWhiteSpace(n))
+                        preferred = n!;
+                }
+            }
+            catch { /* ignore */ }
+        }
+
+        foreach (var candidate in new[] { preferred, "scenes.json", "nickandme.scenes.json" })
+        {
+            var full = Path.Combine(dir, candidate);
+            if (File.Exists(full))
+                return full;
+        }
+
+        return Path.Combine(dir, preferred);
+    }
+
+    public AdaptationStatus GetAdaptationStatus(string projectId)
+    {
+        var dir = GetProjectDir(projectId);
+        var book = ReadBookSourceStatus(dir);
+        var stage1 = ReadStage1Status(projectId, dir);
+        var stage2 = ReadStage2PlanStatus(projectId, dir, stage1);
+        var xai = !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("XAI_API_KEY"));
+
+        var next = "done";
+        if (!book.PdfExists && !book.BookTextExists)
+            next = "import_book";
+        else if (!book.ReadyForStage1)
+            next = "fix_book_text";
+        else if (!stage1.Present || stage1.SceneCount == 0)
+            next = "run_stage1";
+        else if (!stage2.Stage2Ready)
+            next = "run_stage2";
+        else if (stage2.Stage2Stale)
+            next = "replan_stage2";
+        else
+            next = "generate_clips";
+
+        return new AdaptationStatus
+        {
+            ProjectId = projectId,
+            Book = book,
+            Stage1 = stage1,
+            Stage2 = stage2,
+            XaiConfigured = xai,
+            NextStep = next,
+        };
+    }
+
+    public async Task<string> SaveBookUploadAsync(
+        string projectId,
+        string fileName,
+        Stream content,
+        CancellationToken ct = default)
+    {
+        var dir = GetProjectDir(projectId);
+        var source = Path.Combine(dir, "source");
+        Directory.CreateDirectory(source);
+
+        var safe = Path.GetFileName(fileName);
+        if (string.IsNullOrWhiteSpace(safe))
+            throw new InvalidOperationException("file name required");
+
+        var ext = Path.GetExtension(safe).ToLowerInvariant();
+        if (ext is not (".pdf" or ".txt"))
+            throw new InvalidOperationException("Only .pdf or .txt uploads are supported");
+
+        // Buffer once so we can write book_full.txt + original name for .txt uploads
+        using var ms = new MemoryStream();
+        await content.CopyToAsync(ms, ct);
+        var bytes = ms.ToArray();
+
+        if (ext == ".txt")
+        {
+            var bookFull = Path.Combine(source, "book_full.txt");
+            await File.WriteAllBytesAsync(bookFull, bytes, ct);
+            if (!safe.Equals("book_full.txt", StringComparison.OrdinalIgnoreCase))
+                await File.WriteAllBytesAsync(Path.Combine(source, safe), bytes, ct);
+            return bookFull;
+        }
+
+        var dest = Path.Combine(source, safe);
+        await File.WriteAllBytesAsync(dest, bytes, ct);
+        return dest;
+    }
+
+    private BookSourceStatus ReadBookSourceStatus(string projectDir)
+    {
+        var source = Path.Combine(projectDir, "source");
+        var bookPath = Path.Combine(source, "book_full.txt");
+        var metaPath = Path.Combine(source, "extract_meta.json");
+        var imgDir = Path.Combine(source, "book_images");
+
+        string? pdfName = null;
+        if (Directory.Exists(source))
+        {
+            try
+            {
+                pdfName = Directory.EnumerateFiles(source, "*.pdf")
+                    .Concat(Directory.EnumerateFiles(source, "*.PDF"))
+                    .Select(Path.GetFileName)
+                    .OrderBy(n => n?.Contains("nick", StringComparison.OrdinalIgnoreCase) == true ? 0 : 1)
+                    .ThenByDescending(n =>
+                    {
+                        try { return new FileInfo(Path.Combine(source, n!)).Length; }
+                        catch { return 0L; }
+                    })
+                    .FirstOrDefault();
+            }
+            catch { /* ignore */ }
+        }
+
+        var status = new BookSourceStatus
+        {
+            PdfExists = !string.IsNullOrEmpty(pdfName),
+            PdfName = pdfName,
+            BookTextExists = File.Exists(bookPath),
+            BookTextPath = File.Exists(bookPath) ? bookPath : null,
+            BookTextBytes = File.Exists(bookPath) ? new FileInfo(bookPath).Length : 0,
+        };
+
+        if (Directory.Exists(imgDir))
+        {
+            try
+            {
+                status.PageImageCount = Directory.EnumerateFiles(imgDir)
+                    .Count(f =>
+                    {
+                        var e = Path.GetExtension(f).ToLowerInvariant();
+                        return e is ".jpg" or ".jpeg" or ".png" or ".webp";
+                    });
+            }
+            catch { /* ignore */ }
+        }
+
+        if (File.Exists(metaPath))
+        {
+            try
+            {
+                using var doc = JsonDocument.Parse(File.ReadAllText(metaPath));
+                var root = doc.RootElement;
+                status.TextQuality = root.TryGetProperty("text_quality", out var tq) ? tq.GetString() : null;
+                status.BookKind = root.TryGetProperty("book_kind", out var bk) ? bk.GetString() : null;
+                status.TextEngine = root.TryGetProperty("text_engine", out var te) ? te.GetString() : null;
+                if (root.TryGetProperty("text_words", out var tw) && tw.TryGetInt32(out var words))
+                    status.TextWords = words;
+                if (root.TryGetProperty("suggested_total_minutes", out var sm) && sm.TryGetInt32(out var mins))
+                    status.SuggestedTotalMinutes = mins;
+                if (root.TryGetProperty("suggested_chunk_pages", out var sc) && sc.TryGetInt32(out var chunks))
+                    status.SuggestedChunkPages = chunks;
+                if (root.TryGetProperty("ready_for_stage1", out var r) &&
+                    (r.ValueKind is JsonValueKind.True or JsonValueKind.False))
+                    status.ReadyForStage1 = r.GetBoolean();
+
+                if (root.TryGetProperty("analysis", out var an) && an.ValueKind == JsonValueKind.Object)
+                {
+                    if (an.TryGetProperty("garbage_score", out var gs) && gs.TryGetDouble(out var gsv))
+                        status.GarbageScore = gsv;
+                    if (string.IsNullOrEmpty(status.TextQuality) &&
+                        an.TryGetProperty("text_quality", out var atq))
+                        status.TextQuality = atq.GetString();
+                }
+
+                if (root.TryGetProperty("notes", out var notes) && notes.ValueKind == JsonValueKind.Array)
+                {
+                    foreach (var n in notes.EnumerateArray())
+                    {
+                        var s = n.GetString();
+                        if (!string.IsNullOrWhiteSpace(s))
+                            status.Notes.Add(s!);
+                    }
+                }
+            }
+            catch { /* ignore */ }
+        }
+
+        // Gate: good quality + low garbage + book text present
+        if (status.BookTextExists &&
+            string.Equals(status.TextQuality, "good", StringComparison.OrdinalIgnoreCase) &&
+            status.GarbageScore < 0.45)
+        {
+            status.ReadyForStage1 = true;
+        }
+        else if (status.BookTextExists && status.TextQuality is null && status.BookTextBytes > 200)
+        {
+            // No meta yet — allow Stage 1 if plain text looks present (user may have uploaded .txt)
+            status.TextQuality ??= "unknown";
+            status.ReadyForStage1 = true;
+        }
+        else if (!status.BookTextExists)
+        {
+            status.ReadyForStage1 = false;
+        }
+
+        if (status.BookTextExists)
+        {
+            try
+            {
+                var text = File.ReadAllText(bookPath);
+                status.Preview = text.Length <= 600 ? text : text[..600] + "…";
+                if (status.TextWords is null or 0)
+                {
+                    status.TextWords = text.Split(
+                        new[] { ' ', '\n', '\r', '\t' },
+                        StringSplitOptions.RemoveEmptyEntries).Length;
+                }
+            }
+            catch { /* ignore */ }
+        }
+
+        return status;
+    }
+
+    private Stage1Status ReadStage1Status(string projectId, string projectDir)
+    {
+        var path = ResolveScenesJsonPath(projectId);
+        var status = new Stage1Status { ScenesFile = Path.GetFileName(path) };
+        if (!File.Exists(path))
+            return status;
+
+        try
+        {
+            using var doc = JsonDocument.Parse(File.ReadAllText(path));
+            var root = doc.RootElement;
+            status.Present = true;
+            status.MovieTitle = root.TryGetProperty("movie_title", out var mt) ? mt.GetString() : null;
+            status.SourceBookTitle = root.TryGetProperty("source_book_title", out var sbt) ? sbt.GetString() : null;
+            if (root.TryGetProperty("cumulative_duration_target_seconds", out var rt))
+            {
+                if (rt.TryGetDouble(out var rd)) status.RuntimeSeconds = rd;
+                else if (rt.TryGetInt32(out var ri)) status.RuntimeSeconds = ri;
+            }
+
+            try
+            {
+                status.Mtime = File.GetLastWriteTime(path).ToString("yyyy-MM-dd HH:mm:ss");
+            }
+            catch { /* ignore */ }
+
+            var gpv = root.TryGetProperty("global_production_variables", out var g) ? g : default;
+            if (gpv.ValueKind == JsonValueKind.Object)
+            {
+                if (gpv.TryGetProperty("character_seed_tokens", out var seeds) &&
+                    seeds.ValueKind == JsonValueKind.Object)
+                {
+                    status.CharacterCount = seeds.EnumerateObject().Count();
+                    foreach (var p in seeds.EnumerateObject())
+                    {
+                        var display = p.Name.Replace("Character_", "").Replace("_", " ");
+                        if (p.Value.ValueKind == JsonValueKind.Object &&
+                            p.Value.TryGetProperty("canonical_given_name", out var cn) &&
+                            cn.GetString() is { Length: > 0 } cname)
+                            display = cname;
+                        status.CastNames.Add(display);
+                    }
+                }
+
+                if (gpv.TryGetProperty("location_seed_tokens", out var locs) &&
+                    locs.ValueKind == JsonValueKind.Object)
+                    status.LocationCount = locs.EnumerateObject().Count();
+            }
+
+            if (root.TryGetProperty("scenes", out var scenes) && scenes.ValueKind == JsonValueKind.Array)
+            {
+                foreach (var s in scenes.EnumerateArray())
+                {
+                    var sn = s.TryGetProperty("scene_number", out var sne) && sne.TryGetInt32(out var n) ? n : 0;
+                    var beats = 0;
+                    if (s.TryGetProperty("story_beats", out var sb) && sb.ValueKind == JsonValueKind.Array)
+                        beats = sb.GetArrayLength();
+                    status.BeatCount += beats;
+                    double? dur = null;
+                    if (s.TryGetProperty("estimated_duration_seconds", out var d))
+                    {
+                        if (d.TryGetDouble(out var dd)) dur = dd;
+                        else if (d.TryGetInt32(out var di)) dur = di;
+                    }
+
+                    status.Scenes.Add(new Stage1SceneRow
+                    {
+                        SceneNumber = sn,
+                        Setting = s.TryGetProperty("setting", out var set) ? set.GetString() ?? "" : "",
+                        BeatCount = beats,
+                        DurationSeconds = dur,
+                    });
+                }
+
+                status.SceneCount = status.Scenes.Count;
+                status.Scenes = status.Scenes.OrderBy(x => x.SceneNumber).ToList();
+            }
+        }
+        catch (Exception)
+        {
+            status.Present = File.Exists(path);
+        }
+
+        return status;
+    }
+
+    private Stage2PlanStatus ReadStage2PlanStatus(string projectId, string projectDir, Stage1Status stage1)
+    {
+        var bpPath = FindBlueprintPath(projectId);
+        var status = new Stage2PlanStatus
+        {
+            Stage1Exists = stage1.Present && stage1.SceneCount > 0,
+            Stage1Scenes = stage1.SceneCount,
+            BlueprintExists = bpPath is not null && File.Exists(bpPath),
+            BlueprintPath = bpPath,
+            BlueprintFileName = bpPath is not null ? Path.GetFileName(bpPath) : null,
+        };
+
+        if (bpPath is null || !File.Exists(bpPath))
+            return status;
+
+        try
+        {
+            using var doc = JsonDocument.Parse(File.ReadAllText(bpPath));
+            var root = doc.RootElement;
+            if (root.TryGetProperty("scenes", out var scenes) && scenes.ValueKind == JsonValueKind.Array)
+            {
+                status.Stage2Scenes = scenes.GetArrayLength();
+                foreach (var s in scenes.EnumerateArray())
+                {
+                    if (s.TryGetProperty("veo_clips", out var vc) && vc.ValueKind == JsonValueKind.Array)
+                        status.Stage2Clips += vc.GetArrayLength();
+                }
+            }
+
+            status.Stage2Ready = status.Stage2Scenes > 0 && status.Stage2Clips > 0;
+
+            if (root.TryGetProperty("stage2_meta", out var meta) && meta.ValueKind == JsonValueKind.Object)
+            {
+                status.LastCompletedAt = meta.TryGetProperty("completed_at", out var ca)
+                    ? ca.GetString()
+                    : meta.TryGetProperty("last_partial_at", out var lp) ? lp.GetString() : null;
+                status.LastRunMessage = meta.TryGetProperty("last_run_message", out var lm)
+                    ? lm.GetString()
+                    : null;
+                if (meta.TryGetProperty("validation_issue_count", out var vic) && vic.TryGetInt32(out var n))
+                    status.ValidationIssueCount = n;
+            }
+
+            if (string.IsNullOrEmpty(status.LastCompletedAt))
+            {
+                try
+                {
+                    status.LastCompletedAt = File.GetLastWriteTime(bpPath).ToString("yyyy-MM-ddTHH:mm:ss");
+                }
+                catch { /* ignore */ }
+            }
+
+            // Stale when Stage 1 bible is newer than blueprint (content fingerprint port is Python-side)
+            var s1Path = ResolveScenesJsonPath(projectId);
+            if (File.Exists(s1Path) && status.Stage2Ready)
+            {
+                try
+                {
+                    var s1m = File.GetLastWriteTimeUtc(s1Path);
+                    var bpm = File.GetLastWriteTimeUtc(bpPath);
+                    status.Stage2Stale = s1m > bpm.AddSeconds(1);
+                }
+                catch { /* ignore */ }
+            }
+        }
+        catch { /* ignore */ }
+
+        return status;
+    }
+
     public string? ResolveCompositePath(string projectId, int sceneNumber)
     {
         var dir = GetProjectDir(projectId);

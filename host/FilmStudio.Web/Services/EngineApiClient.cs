@@ -123,6 +123,54 @@ public sealed class EngineApiClient
         return $"{baseUrl}/api/projects/{Uri.EscapeDataString(projectId)}/scenes/{sceneNumber}/composite";
     }
 
+    public async Task<AdaptationDto?> GetAdaptationAsync(string projectId, CancellationToken ct = default) =>
+        await _http.GetFromJsonAsync<AdaptationDto>(
+            $"/api/projects/{Uri.EscapeDataString(projectId)}/adaptation",
+            JsonOpts,
+            ct);
+
+    public async Task StartStage1Async(StartStage1Request req, CancellationToken ct = default)
+    {
+        using var resp = await _http.PostAsJsonAsync("/api/jobs/stage1", req, JsonOpts, ct);
+        if (!resp.IsSuccessStatusCode)
+        {
+            var err = await resp.Content.ReadAsStringAsync(ct);
+            throw new InvalidOperationException(TryError(err) ?? resp.ReasonPhrase);
+        }
+    }
+
+    public async Task StartStage2Async(StartStage2Request req, CancellationToken ct = default)
+    {
+        using var resp = await _http.PostAsJsonAsync("/api/jobs/stage2", req, JsonOpts, ct);
+        if (!resp.IsSuccessStatusCode)
+        {
+            var err = await resp.Content.ReadAsStringAsync(ct);
+            throw new InvalidOperationException(TryError(err) ?? resp.ReasonPhrase);
+        }
+    }
+
+    public async Task UploadBookAsync(
+        string projectId,
+        string fileName,
+        Stream content,
+        CancellationToken ct = default)
+    {
+        using var form = new MultipartFormDataContent();
+        var streamContent = new StreamContent(content);
+        streamContent.Headers.ContentType =
+            new System.Net.Http.Headers.MediaTypeHeaderValue("application/octet-stream");
+        form.Add(streamContent, "file", fileName);
+        using var resp = await _http.PostAsync(
+            $"/api/projects/{Uri.EscapeDataString(projectId)}/adaptation/upload",
+            form,
+            ct);
+        if (!resp.IsSuccessStatusCode)
+        {
+            var err = await resp.Content.ReadAsStringAsync(ct);
+            throw new InvalidOperationException(TryError(err) ?? resp.ReasonPhrase);
+        }
+    }
+
     public async Task<ConfigDto?> GetConfigAsync(string projectId, CancellationToken ct = default) =>
         await _http.GetFromJsonAsync<ConfigDto>(
             $"/api/projects/{Uri.EscapeDataString(projectId)}/config",
@@ -215,4 +263,11 @@ public sealed class SceneDetailDto
     public bool Ok { get; set; }
     public string? ProjectId { get; set; }
     public SceneDetail? Scene { get; set; }
+}
+
+public sealed class AdaptationDto
+{
+    public bool Ok { get; set; }
+    public string? ProjectId { get; set; }
+    public AdaptationStatus? Adaptation { get; set; }
 }

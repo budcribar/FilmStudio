@@ -1,4 +1,6 @@
 using System.Collections.Concurrent;
+using System.Diagnostics;
+using System.Text;
 using System.Text.Json;
 using FilmStudio.Core.Models;
 using FilmStudio.Core.Options;
@@ -101,6 +103,231 @@ public sealed class FilmJobService
         }, CancellationToken.None);
 
         await Task.CompletedTask;
+    }
+
+    /// <summary>Run Python Stage 1 (book → scenes.json). Requires XAI_API_KEY and python on PATH.</summary>
+    public async Task StartStage1Async(StartStage1Request req)
+    {
+        if (!await _gate.WaitAsync(0))
+            throw new InvalidOperationException("A generation job is already running.");
+
+        _cts = new CancellationTokenSource();
+        var ct = _cts.Token;
+        _ = Task.Run(async () =>
+        {
+            try { await RunStage1Async(req, ct); }
+            finally { _gate.Release(); }
+        }, CancellationToken.None);
+
+        await Task.CompletedTask;
+    }
+
+    /// <summary>Run Python Stage 2 planner (scenes.json → blueprint). No API key required.</summary>
+    public async Task StartStage2Async(StartStage2Request req)
+    {
+        if (!await _gate.WaitAsync(0))
+            throw new InvalidOperationException("A generation job is already running.");
+
+        _cts = new CancellationTokenSource();
+        var ct = _cts.Token;
+        _ = Task.Run(async () =>
+        {
+            try { await RunStage2Async(req, ct); }
+            finally { _gate.Release(); }
+        }, CancellationToken.None);
+
+        await Task.CompletedTask;
+    }
+
+    private async Task RunStage1Async(StartStage1Request req, CancellationToken ct)
+    {
+        var projectId = string.IsNullOrWhiteSpace(req.ProjectId)
+            ? _projects.ActiveProjectId
+            : req.ProjectId;
+        _projects.Activate(projectId);
+
+        _snapshot = new JobSnapshot
+        {
+            Status = "running",
+            Kind = "stage1",
+            ProjectId = projectId,
+            Message = "Starting Stage 1…",
+            StartedAt = DateTimeOffset.UtcNow,
+            Log = new List<string>(),
+        };
+        await PublishAsync();
+
+        try
+        {
+            if (string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("XAI_API_KEY")))
+                throw new InvalidOperationException("XAI_API_KEY is not set (required for Stage 1 LLM).");
+
+            var root = _projects.WorkspaceRoot;
+            var script = Path.Combine(root, "scripts", "two_stage_adaptation", "run_stage1_from_book.py");
+            if (!File.Exists(script))
+                throw new InvalidOperationException($"Stage 1 script not found: {script}");
+
+            var outPath = _projects.ResolveScenesJsonPath(projectId);
+            var args = new StringBuilder();
+            args.Append($"\"{script}\" --project \"{projectId}\"");
+            args.Append($" --out \"{outPath}\"");
+            args.Append($" --model \"{(string.IsNullOrWhiteSpace(req.Model) ? "grok-4.5" : req.Model)}\"");
+            args.Append($" --chunk-pages {Math.Clamp(req.ChunkPages, 5, 30)}");
+            if (req.TotalMinutes is int mins && mins > 0)
+                args.Append($" --total-minutes {Math.Clamp(mins, 3, 180)}");
+            if (req.Resume)
+                args.Append(" --resume");
+            if (req.MaxChunks > 0)
+                args.Append($" --max-chunks {req.MaxChunks}");
+
+            await AppendLogAsync($"Stage 1: python {args}");
+            var exit = await RunPythonAsync(args.ToString(), root, ct);
+            if (exit == 0)
+                await FinishAsync("done", "Stage 1 complete");
+            else if (exit == 2)
+                await FinishAsync("done", "Stage 1 finished with verification warnings (exit 2)");
+            else
+                await FinishAsync("error", $"Stage 1 failed (exit {exit})", $"exit {exit}");
+        }
+        catch (OperationCanceledException)
+        {
+            await FinishAsync("cancelled", "Cancelled by user");
+        }
+        catch (Exception ex)
+        {
+            _log.LogError(ex, "Stage 1 failed");
+            await FinishAsync("error", ex.Message, ex.Message);
+        }
+    }
+
+    private async Task RunStage2Async(StartStage2Request req, CancellationToken ct)
+    {
+        var projectId = string.IsNullOrWhiteSpace(req.ProjectId)
+            ? _projects.ActiveProjectId
+            : req.ProjectId;
+        _projects.Activate(projectId);
+
+        _snapshot = new JobSnapshot
+        {
+            Status = "running",
+            Kind = "stage2",
+            ProjectId = projectId,
+            Message = "Starting Stage 2 planner…",
+            StartedAt = DateTimeOffset.UtcNow,
+            Log = new List<string>(),
+        };
+        await PublishAsync();
+
+        try
+        {
+            var root = _projects.WorkspaceRoot;
+            var script = Path.Combine(root, "scripts", "two_stage_adaptation", "stage2_plan_grok.py");
+            if (!File.Exists(script))
+                throw new InvalidOperationException($"Stage 2 script not found: {script}");
+
+            var stage1 = _projects.ResolveScenesJsonPath(projectId);
+            if (!File.Exists(stage1))
+                throw new InvalidOperationException($"Stage 1 bible not found: {stage1}");
+
+            var outPath = _projects.FindBlueprintPath(projectId)
+                ?? Path.Combine(_projects.GetProjectDir(projectId), "blueprint.clips.grok.json");
+
+            // Backup existing blueprint
+            if (File.Exists(outPath))
+            {
+                var bak = outPath + $".bak_pre_stage2_{DateTime.Now:yyyyMMdd_HHmmss}";
+                File.Copy(outPath, bak, overwrite: true);
+                await AppendLogAsync($"Backed up blueprint → {Path.GetFileName(bak)}");
+            }
+
+            var resolution = string.IsNullOrWhiteSpace(req.Resolution) ? "720p" : req.Resolution;
+            var scenes = string.IsNullOrWhiteSpace(req.Scenes) ? "all" : req.Scenes;
+            var args =
+                $"\"{script}\" --stage1 \"{stage1}\" --out \"{outPath}\" " +
+                $"--resolution \"{resolution}\" --scenes \"{scenes}\"";
+
+            await AppendLogAsync($"Stage 2: python {args}");
+            var exit = await RunPythonAsync(args.ToString(), root, ct);
+            if (exit == 0)
+            {
+                // Refresh counts for message
+                var s2 = _projects.GetAdaptationStatus(projectId).Stage2;
+                await FinishAsync(
+                    "done",
+                    $"Stage 2 complete: {s2.Stage2Scenes} scenes · {s2.Stage2Clips} clips");
+            }
+            else
+            {
+                await FinishAsync("error", $"Stage 2 failed (exit {exit})", $"exit {exit}");
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            await FinishAsync("cancelled", "Cancelled by user");
+        }
+        catch (Exception ex)
+        {
+            _log.LogError(ex, "Stage 2 failed");
+            await FinishAsync("error", ex.Message, ex.Message);
+        }
+    }
+
+    private async Task<int> RunPythonAsync(string arguments, string workingDir, CancellationToken ct)
+    {
+        var python = string.IsNullOrWhiteSpace(_opts.PythonExecutable)
+            ? "python"
+            : _opts.PythonExecutable;
+
+        var psi = new ProcessStartInfo
+        {
+            FileName = python,
+            Arguments = arguments,
+            WorkingDirectory = workingDir,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            UseShellExecute = false,
+            CreateNoWindow = true,
+        };
+        // Ensure child sees XAI_API_KEY if set on API process
+        var key = Environment.GetEnvironmentVariable("XAI_API_KEY");
+        if (!string.IsNullOrWhiteSpace(key) && !psi.Environment.ContainsKey("XAI_API_KEY"))
+            psi.Environment["XAI_API_KEY"] = key;
+
+        using var proc = new Process { StartInfo = psi, EnableRaisingEvents = true };
+        var tcs = new TaskCompletionSource<int>(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        proc.OutputDataReceived += async (_, e) =>
+        {
+            if (!string.IsNullOrEmpty(e.Data))
+                await AppendLogAsync(e.Data);
+        };
+        proc.ErrorDataReceived += async (_, e) =>
+        {
+            if (!string.IsNullOrEmpty(e.Data))
+                await AppendLogAsync(e.Data);
+        };
+        proc.Exited += (_, _) => tcs.TrySetResult(proc.ExitCode);
+
+        if (!proc.Start())
+            throw new InvalidOperationException($"Failed to start {python}");
+
+        proc.BeginOutputReadLine();
+        proc.BeginErrorReadLine();
+
+        await using var reg = ct.Register(() =>
+        {
+            try
+            {
+                if (!proc.HasExited)
+                    proc.Kill(entireProcessTree: true);
+            }
+            catch { /* ignore */ }
+        });
+
+        var exit = await tcs.Task.WaitAsync(ct);
+        // Drain a moment for last lines
+        await Task.Delay(100, CancellationToken.None);
+        return exit;
     }
 
     private async Task RunBatchGenAsync(StartBatchGenRequest req, CancellationToken ct)

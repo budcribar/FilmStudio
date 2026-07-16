@@ -1,0 +1,592 @@
+@page "/adaptation"
+@rendermode InteractiveServer
+@implements IAsyncDisposable
+@inject EngineApiClient Engine
+@inject JobHubClient Hub
+@using FilmStudio.Core.Models
+@using Microsoft.AspNetCore.Components.Forms
+
+<PageTitle>Adaptation</PageTitle>
+
+<h1>Adaptation</h1>
+<p class="text-muted">
+    Book → Stage 1 scene bible → Stage 2 clip plan.
+    Stage 1/2 jobs shell out to the Python scripts under <code>scripts/two_stage_adaptation/</code>
+    (same as Streamlit). Grok vision re-import of PDF pages is still Streamlit-first.
+</p>
+
+@if (!string.IsNullOrEmpty(_error))
+{
+    <div class="alert alert-danger">@_error</div>
+}
+@if (!string.IsNullOrEmpty(_message))
+{
+    <div class="alert alert-info">@_message</div>
+}
+
+<div class="row mb-3 g-2 align-items-end">
+    <div class="col-md-4">
+        <label class="form-label">Project</label>
+        <select class="form-select" @bind="_projectId" @bind:after="LoadAsync" disabled="@_busy">
+            @foreach (var p in _projectIds)
+            {
+                <option value="@p">@p</option>
+            }
+        </select>
+    </div>
+    <div class="col-md-4 d-flex gap-2">
+        <button class="btn btn-outline-secondary" disabled="@_busy" @onclick="LoadAsync">Reload</button>
+        @if (JobRunning)
+        {
+            <button class="btn btn-outline-danger" disabled="@_busy" @onclick="CancelAsync">Cancel job</button>
+        }
+    </div>
+</div>
+
+@* ---- Live job ---- *@
+@if (_job is not null &&
+     (_job.Status is "running" or "done" or "error" or "cancelled") &&
+     (_job.Kind is "stage1" or "stage2" or "scene" or "batch" || string.Equals(_job.Status, "running", StringComparison.OrdinalIgnoreCase)))
+{
+    <div class="card mb-3 border-@(_job.Status == "running" ? "primary" : _job.Status == "error" ? "danger" : "secondary")">
+        <div class="card-body py-2">
+            <div class="d-flex justify-content-between flex-wrap gap-2">
+                <div>
+                    <span class="badge bg-secondary">@_job.Status</span>
+                    @if (_job.Kind is { Length: > 0 } k)
+                    {
+                        <span class="badge bg-info text-dark ms-1">@k</span>
+                    }
+                    <span class="ms-2 small">@_job.Message</span>
+                </div>
+            </div>
+            @if (_job.Log.Count > 0)
+            {
+                <pre class="small mb-0 mt-2" style="max-height: 160px; overflow: auto;">@string.Join("\n", _job.Log.TakeLast(30))</pre>
+            }
+        </div>
+    </div>
+}
+
+@if (_status is null)
+{
+    <p class="text-muted">Loading adaptation status…</p>
+}
+else
+{
+    @* ---- Pipeline progress ---- *@
+    <div class="alert @NextStepAlertClass(_status.NextStep) py-2">
+        <strong>Next:</strong> @NextStepLabel(_status.NextStep)
+        @if (!_status.XaiConfigured)
+        {
+            <span class="ms-2">· <code>XAI_API_KEY</code> not set on API process (Stage 1 / vision need it)</span>
+        }
+    </div>
+
+    <div class="row g-3">
+        @* ---- 1 Book ---- *@
+        <div class="col-lg-6">
+            <div class="card h-100">
+                <div class="card-header">1) Book</div>
+                <div class="card-body">
+                    @if (_status.Book.ReadyForStage1)
+                    {
+                        <div class="alert alert-success py-2 small">
+                            Book text ready for Stage 1
+                            @if (!string.IsNullOrEmpty(_status.Book.BookKind))
+                            {
+                                <span>· @_status.Book.BookKind</span>
+                            }
+                            @if (_status.Book.SuggestedTotalMinutes is int m)
+                            {
+                                <span>· ~@m min</span>
+                            }
+                        </div>
+                    }
+                    else if (_status.Book.PdfExists || _status.Book.BookTextExists)
+                    {
+                        <div class="alert alert-warning py-2 small">
+                            Source on disk but text may need re-import / vision cleanup (Streamlit).
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="alert alert-secondary py-2 small">No book source yet — upload a PDF or TXT.</div>
+                    }
+
+                    <ul class="list-unstyled small mb-3">
+                        <li>
+                            PDF:
+                            @if (_status.Book.PdfExists)
+                            {
+                                <code>@_status.Book.PdfName</code>
+                            }
+                            else
+                            {
+                                <span class="text-muted">none</span>
+                            }
+                        </li>
+                        <li>
+                            book_full.txt:
+                            @(_status.Book.BookTextExists
+                                ? $"{_status.Book.BookTextBytes:N0} bytes · {_status.Book.TextWords ?? 0} words"
+                                : "missing")
+                        </li>
+                        <li>
+                            quality: <code>@(_status.Book.TextQuality ?? "—")</code>
+                            · garbage @(_status.Book.GarbageScore.ToString("0.00"))
+                            · engine <code>@(_status.Book.TextEngine ?? "—")</code>
+                        </li>
+                        <li>page images: @_status.Book.PageImageCount</li>
+                    </ul>
+
+                    @if (_status.Book.Notes.Count > 0)
+                    {
+                        <ul class="small text-muted">
+                            @foreach (var n in _status.Book.Notes.Take(4))
+                            {
+                                <li>@n</li>
+                            }
+                        </ul>
+                    }
+
+                    <div class="mb-2">
+                        <label class="form-label small">Upload PDF or TXT</label>
+                        <InputFile OnChange="OnFileSelected" class="form-control form-control-sm" accept=".pdf,.txt" disabled="@_busy" />
+                    </div>
+                    <button class="btn btn-sm btn-primary" disabled="@(_busy || _pendingFile is null)" @onclick="UploadAsync">
+                        Save upload to project
+                    </button>
+                    <p class="small text-muted mt-2 mb-0">
+                        PDF vision re-import (OCR fix) still uses Streamlit <strong>Adaptation → Re-import</strong>.
+                        Plain TXT unlocks Stage 1 immediately.
+                    </p>
+
+                    @if (!string.IsNullOrEmpty(_status.Book.Preview))
+                    {
+                        <details class="mt-3">
+                            <summary class="small text-muted">Text preview</summary>
+                            <pre class="small bg-light border rounded p-2 mt-1" style="max-height:140px; overflow:auto; white-space:pre-wrap;">@_status.Book.Preview</pre>
+                        </details>
+                    }
+                </div>
+            </div>
+        </div>
+
+        @* ---- 2 Stage 1 ---- *@
+        <div class="col-lg-6">
+            <div class="card h-100">
+                <div class="card-header d-flex justify-content-between">
+                    <span>2) Stage 1 — scene bible</span>
+                    @if (_status.Stage1.Present && _status.Stage1.SceneCount > 0)
+                    {
+                        <span class="badge bg-success">ready</span>
+                    }
+                </div>
+                <div class="card-body">
+                    @if (_status.Stage1.Present && _status.Stage1.SceneCount > 0)
+                    {
+                        <p class="small mb-2">
+                            <strong>@(_status.Stage1.MovieTitle ?? "Untitled")</strong><br />
+                            @_status.Stage1.SceneCount scenes ·
+                            @_status.Stage1.BeatCount beats ·
+                            @_status.Stage1.CharacterCount chars ·
+                            @_status.Stage1.LocationCount locs
+                            @if (_status.Stage1.RuntimeSeconds is double rs)
+                            {
+                                <span>· ~@((int)(rs / 60)) min</span>
+                            }
+                            @if (!string.IsNullOrEmpty(_status.Stage1.Mtime))
+                            {
+                                <span class="text-muted">· updated @_status.Stage1.Mtime</span>
+                            }
+                        </p>
+                        @if (_status.Stage1.CastNames.Count > 0)
+                        {
+                            <p class="small text-muted">Cast: @string.Join(", ", _status.Stage1.CastNames)</p>
+                        }
+                    }
+                    else
+                    {
+                        <p class="small text-muted">No Stage 1 bible yet (<code>@(_status.Stage1.ScenesFile ?? "scenes.json")</code>).</p>
+                    }
+
+                    <div class="row g-2 mb-2">
+                        <div class="col-6">
+                            <label class="form-label small">Target minutes</label>
+                            <input type="number" class="form-control form-control-sm" min="3" max="180" @bind="_totalMinutes" disabled="@_busy" />
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small">Pages / chunk</label>
+                            <input type="number" class="form-control form-control-sm" min="5" max="30" @bind="_chunkPages" disabled="@_busy" />
+                        </div>
+                        <div class="col-8">
+                            <label class="form-label small">Model</label>
+                            <input class="form-control form-control-sm" @bind="_model" disabled="@_busy" />
+                        </div>
+                        <div class="col-4 form-check align-self-end mb-2">
+                            <input class="form-check-input" type="checkbox" id="s1resume" @bind="_resume" disabled="@_busy" />
+                            <label class="form-check-label small" for="s1resume">Resume</label>
+                        </div>
+                    </div>
+
+                    <button class="btn btn-primary"
+                            disabled="@(_busy || JobRunning || !_status.Book.ReadyForStage1 || !_status.XaiConfigured)"
+                            @onclick="RunStage1Async">
+                        @(_status.Stage1.SceneCount > 0 ? "Re-run Stage 1" : "Run Stage 1")
+                    </button>
+                    @if (!_status.Book.ReadyForStage1)
+                    {
+                        <span class="small text-muted ms-2">Locked until book text is ready</span>
+                    }
+                    else if (!_status.XaiConfigured)
+                    {
+                        <span class="small text-muted ms-2">Needs XAI_API_KEY on API</span>
+                    }
+                    <p class="small text-muted mt-2 mb-0">
+                        Invokes <code>run_stage1_from_book.py</code> · writes <code>@(_status.Stage1.ScenesFile ?? "scenes.json")</code>
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        @* ---- 3 Stage 2 ---- *@
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+                    <span>3) Stage 2 — clip plan</span>
+                    @if (_status.Stage2.Stage2Ready && !_status.Stage2.Stage2Stale)
+                    {
+                        <span class="badge bg-success">ready</span>
+                    }
+                    else if (_status.Stage2.Stage2Stale)
+                    {
+                        <span class="badge bg-warning text-dark">stale</span>
+                    }
+                </div>
+                <div class="card-body">
+                    @if (_status.Stage2.Stage2Stale)
+                    {
+                        <div class="alert alert-warning py-2 small">
+                            Stage 1 is newer than the blueprint — re-plan before generating video so prompts match the bible.
+                        </div>
+                    }
+                    else if (_status.Stage2.Stage2Ready)
+                    {
+                        <div class="alert alert-success py-2 small">
+                            Stage 2 ready — <strong>@_status.Stage2.Stage2Scenes</strong> scenes ·
+                            <strong>@_status.Stage2.Stage2Clips</strong> clips
+                            @if (!string.IsNullOrEmpty(_status.Stage2.LastCompletedAt))
+                            {
+                                <span>· last @_status.Stage2.LastCompletedAt</span>
+                            }
+                        </div>
+                    }
+                    else if (_status.Stage2.Stage1Exists)
+                    {
+                        <div class="alert alert-warning py-2 small">
+                            Stage 1 has @_status.Stage2.Stage1Scenes scene(s) but no clip plan yet.
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="alert alert-secondary py-2 small">Finish Stage 1 first.</div>
+                    }
+
+                    <p class="small text-muted">
+                        Blueprint: <code>@(_status.Stage2.BlueprintFileName ?? "—")</code>
+                        @if (!string.IsNullOrEmpty(_status.Stage2.LastRunMessage))
+                        {
+                            <span>· @_status.Stage2.LastRunMessage</span>
+                        }
+                        @if (_status.Stage2.ValidationIssueCount > 0)
+                        {
+                            <span>· @_status.Stage2.ValidationIssueCount validation note(s)</span>
+                        }
+                    </p>
+
+                    <div class="d-flex flex-wrap gap-2 align-items-end">
+                        <div>
+                            <label class="form-label small mb-0">Resolution tag</label>
+                            <select class="form-select form-select-sm" style="width:auto" @bind="_s2Resolution" disabled="@_busy">
+                                <option value="480p">480p</option>
+                                <option value="720p">720p</option>
+                            </select>
+                        </div>
+                        <button class="btn btn-primary"
+                                disabled="@(_busy || JobRunning || !_status.Stage2.Stage1Exists)"
+                                @onclick="RunStage2Async">
+                            @(_status.Stage2.Stage2Ready
+                                ? (_status.Stage2.Stage2Stale ? "▶ Re-plan Stage 2" : "🔁 Re-generate Stage 2")
+                                : "▶ Generate Stage 2 plan")
+                        </button>
+                        <a class="btn btn-outline-primary" href="scenes">Open Scenes →</a>
+                    </div>
+                    <p class="small text-muted mt-2 mb-0">
+                        Deterministic planner — no API key. Invokes <code>stage2_plan_grok.py</code> (backs up existing blueprint).
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        @* ---- Stage 1 scene list ---- *@
+        @if (_status.Stage1.Scenes.Count > 0)
+        {
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">Stage 1 scenes preview</div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-sm mb-0">
+                                <thead>
+                                    <tr>
+                                        <th style="width:4rem">#</th>
+                                        <th>Setting</th>
+                                        <th style="width:5rem">Beats</th>
+                                        <th style="width:5rem">Dur</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var s in _status.Stage1.Scenes)
+                                    {
+                                        <tr>
+                                            <td><code>S@s.SceneNumber.ToString("D2")</code></td>
+                                            <td class="small">@(string.IsNullOrEmpty(s.Setting) ? "—" : s.Setting)</td>
+                                            <td class="small">@s.BeatCount</td>
+                                            <td class="small text-muted">@(s.DurationSeconds is double d ? $"{d:0}s" : "—")</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+@code {
+    private bool _busy;
+    private string? _error;
+    private string? _message;
+    private string _projectId = "Buster";
+    private List<string> _projectIds = new();
+    private AdaptationStatus? _status;
+    private JobSnapshot? _job;
+    private IBrowserFile? _pendingFile;
+
+    private int _totalMinutes = 15;
+    private int _chunkPages = 10;
+    private string _model = "grok-4.5";
+    private bool _resume;
+    private string _s2Resolution = "720p";
+
+    private bool JobRunning =>
+        string.Equals(_job?.Status, "running", StringComparison.OrdinalIgnoreCase);
+
+    protected override async Task OnInitializedAsync()
+    {
+        Hub.JobUpdated += OnJobUpdated;
+        Hub.JobLog += OnJobLog;
+        try
+        {
+            var projs = await Engine.GetProjectsAsync();
+            _projectIds = projs?.Projects.Select(p => p.Id ?? "").Where(s => s.Length > 0).ToList()
+                          ?? new List<string> { "Buster" };
+            if (projs?.Active?.Id is { Length: > 0 } aid)
+                _projectId = aid;
+            else if (_projectIds.Count > 0)
+                _projectId = _projectIds[0];
+
+            try { await Hub.StartAsync(); } catch { /* optional */ }
+
+            var jobs = await Engine.GetJobAsync();
+            _job = jobs?.Job;
+
+            await LoadAsync();
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+    }
+
+    private void OnJobUpdated(JobSnapshot snap)
+    {
+        _job = snap;
+        if (snap.Status is "done" or "error" or "cancelled")
+        {
+            _ = InvokeAsync(async () =>
+            {
+                await SoftLoadAsync();
+                StateHasChanged();
+            });
+        }
+        else
+        {
+            _ = InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private void OnJobLog(string line)
+    {
+        if (_job is not null)
+            _job.Message = line;
+        _ = InvokeAsync(StateHasChanged);
+    }
+
+    private async Task LoadAsync()
+    {
+        _busy = true;
+        _error = null;
+        try
+        {
+            var dto = await Engine.GetAdaptationAsync(_projectId);
+            _status = dto?.Adaptation;
+            ApplyDefaultsFromStatus();
+            var jobs = await Engine.GetJobAsync();
+            _job = jobs?.Job;
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+            _status = null;
+        }
+        finally { _busy = false; }
+    }
+
+    private async Task SoftLoadAsync()
+    {
+        try
+        {
+            var dto = await Engine.GetAdaptationAsync(_projectId);
+            _status = dto?.Adaptation;
+            ApplyDefaultsFromStatus();
+        }
+        catch { /* ignore */ }
+    }
+
+    private void ApplyDefaultsFromStatus()
+    {
+        if (_status?.Book.SuggestedTotalMinutes is int m && m > 0)
+            _totalMinutes = Math.Clamp(m, 3, 180);
+        if (_status?.Book.SuggestedChunkPages is int c && c > 0)
+            _chunkPages = Math.Clamp(c, 5, 30);
+    }
+
+    private void OnFileSelected(InputFileChangeEventArgs e)
+    {
+        _pendingFile = e.File;
+        _message = $"Selected {e.File.Name} ({e.File.Size:N0} bytes)";
+    }
+
+    private async Task UploadAsync()
+    {
+        if (_pendingFile is null) return;
+        _busy = true;
+        _error = null;
+        try
+        {
+            const long max = 80 * 1024 * 1024;
+            await using var stream = _pendingFile.OpenReadStream(max);
+            await Engine.UploadBookAsync(_projectId, _pendingFile.Name, stream);
+            _message = $"Saved {_pendingFile.Name}";
+            _pendingFile = null;
+            await LoadAsync();
+        }
+        catch (Exception ex) { _error = ex.Message; }
+        finally { _busy = false; }
+    }
+
+    private async Task RunStage1Async()
+    {
+        _busy = true;
+        _error = null;
+        _message = null;
+        try
+        {
+            await Engine.StartStage1Async(new StartStage1Request
+            {
+                ProjectId = _projectId,
+                ChunkPages = _chunkPages,
+                TotalMinutes = _totalMinutes,
+                Model = _model,
+                Resume = _resume,
+            });
+            _message = "Stage 1 started — watch the job log";
+            await EnsureHubAsync();
+            var jobs = await Engine.GetJobAsync();
+            _job = jobs?.Job;
+        }
+        catch (Exception ex) { _error = ex.Message; }
+        finally { _busy = false; }
+    }
+
+    private async Task RunStage2Async()
+    {
+        _busy = true;
+        _error = null;
+        _message = null;
+        try
+        {
+            await Engine.StartStage2Async(new StartStage2Request
+            {
+                ProjectId = _projectId,
+                Resolution = _s2Resolution,
+                Scenes = "all",
+            });
+            _message = "Stage 2 planner started — watch the job log";
+            await EnsureHubAsync();
+            var jobs = await Engine.GetJobAsync();
+            _job = jobs?.Job;
+        }
+        catch (Exception ex) { _error = ex.Message; }
+        finally { _busy = false; }
+    }
+
+    private async Task CancelAsync()
+    {
+        _busy = true;
+        try
+        {
+            await Engine.CancelJobAsync();
+            _message = "Cancel requested";
+            var jobs = await Engine.GetJobAsync();
+            _job = jobs?.Job;
+        }
+        catch (Exception ex) { _error = ex.Message; }
+        finally { _busy = false; }
+    }
+
+    private async Task EnsureHubAsync()
+    {
+        if (Hub.IsConnected) return;
+        try { await Hub.StartAsync(); } catch { /* ignore */ }
+    }
+
+    private static string NextStepLabel(string step) => step switch
+    {
+        "import_book" => "Import a PDF or TXT into the project source folder",
+        "fix_book_text" => "Fix book text (Streamlit Re-import with Grok vision if OCR is bad)",
+        "run_stage1" => "Run Stage 1 to build the scene bible",
+        "run_stage2" => "Generate Stage 2 clip plan",
+        "replan_stage2" => "Re-plan Stage 2 (Stage 1 changed)",
+        "generate_clips" => "Open Scenes and generate video clips",
+        _ => "Pipeline looks complete — refine on Scenes / Characters",
+    };
+
+    private static string NextStepAlertClass(string step) => step switch
+    {
+        "generate_clips" or "done" => "alert-success",
+        "replan_stage2" or "fix_book_text" => "alert-warning",
+        _ => "alert-info",
+    };
+
+    public async ValueTask DisposeAsync()
+    {
+        Hub.JobUpdated -= OnJobUpdated;
+        Hub.JobLog -= OnJobLog;
+        await Task.CompletedTask;
+    }
+}
