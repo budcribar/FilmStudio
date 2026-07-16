@@ -59,8 +59,19 @@ public sealed class CharacterDesignService
             ProjectId = projectId,
             CharKey = charKey,
         };
-        var maxRefs = Math.Clamp(opts.MaxRefs <= 0 ? 3 : opts.MaxRefs, 1, 7);
-        var maxBook = Math.Clamp(opts.MaxBookHints < 0 ? 2 : opts.MaxBookHints, 0, maxRefs);
+        var imageModel = GetConfigString(projectId, "image_model_name", _opts.DefaultImageModel);
+        var imageProvider = GetConfigString(projectId, "image_provider", _opts.ImageProvider);
+        var providerId = ImageApiLimits.ResolveProvider(imageProvider, imageModel);
+        var maxRefs = ImageApiLimits.ClampMaxRefs(opts.MaxRefs, imageProvider, imageModel);
+        // Wired client today is GrokImageClient (≤3). When GeminiImageClient lands, raise this.
+        var clientCap = ImageApiLimits.GrokMaxReferenceImages;
+        if (maxRefs > clientCap)
+        {
+            onProgress?.Invoke(
+                $"Provider {providerId} allows {maxRefs} refs; active image client cap is {clientCap} — sending {clientCap}");
+            maxRefs = clientCap;
+        }
+        var maxBook = Math.Clamp(opts.MaxBookHints < 0 ? Math.Max(0, maxRefs - 1) : opts.MaxBookHints, 0, maxRefs);
 
         var preferredPath = ResolvePreferredImagePath(projectId, charKey, charDir);
         var preferredName = preferredPath is null ? "" : Path.GetFileName(preferredPath);
@@ -110,9 +121,9 @@ public sealed class CharacterDesignService
             hasImageHints,
             descriptionOverride: opts.DescriptionOverride,
             visualLockOverride: opts.VisualLockOverride);
-        var imageModel = GetConfigString(projectId, "image_model_name", _opts.DefaultImageModel);
 
-        onProgress?.Invoke($"design prompt ready ({prompt.Length} chars)");
+        onProgress?.Invoke(
+            $"design prompt ready ({prompt.Length} chars) · image_provider={ImageApiLimits.ResolveProvider(imageProvider, imageModel)} max_refs={maxRefs}");
         IReadOnlyList<byte[]> blobs;
         var mode = "text_only";
         string? editError = null;
@@ -139,13 +150,14 @@ public sealed class CharacterDesignService
                     string.Join(", ", editRefs.Select(Path.GetFileName)));
                 try
                 {
-                    var primary = editRefs.Take(Math.Min(3, editRefs.Count)).ToList();
+                    var primary = editRefs.Take(maxRefs).ToList();
                     blobs = await _images.EditVariantsAsync(
                         prompt,
                         primary,
                         n,
                         aspectRatio: "1:1",
                         model: imageModel,
+                        maxRefs: maxRefs,
                         onProgress: onProgress,
                         ct: ct);
                     mode = alreadyLocked
@@ -169,6 +181,7 @@ public sealed class CharacterDesignService
                                 n,
                                 aspectRatio: "1:1",
                                 model: imageModel,
+                                maxRefs: 1,
                                 onProgress: onProgress,
                                 ct: ct);
                             mode = "preferred_only_retry";
@@ -281,23 +294,50 @@ public sealed class CharacterDesignService
                 return editRefs;
 
             case "explicit":
-                if (opts.IncludeLockedRef || opts.IncludePreferred)
-                    Add(preferredPath);
-                foreach (var vi in opts.VariantIndices.Distinct().OrderBy(x => x))
+                // Prefer ordered keys from UI (rank 1..N). Fall back to separate lists.
+                if (opts.SeedOrderKeys is { Count: > 0 })
                 {
-                    if (vi is < 1 or > 3) continue;
-                    Add(Path.Combine(charDir, $"{charKey.ToLowerInvariant()}_variant_0{vi}.png"));
+                    foreach (var raw in opts.SeedOrderKeys)
+                    {
+                        if (editRefs.Count >= maxRefs) break;
+                        var key = (raw ?? "").Trim().ToLowerInvariant();
+                        if (key is "p" or "pref" or "preferred")
+                        {
+                            Add(preferredPath);
+                            continue;
+                        }
+                        if (key.Length >= 2 && key[0] == 'v' && int.TryParse(key[1..], out var vi) &&
+                            vi is >= 1 and <= 3)
+                        {
+                            Add(Path.Combine(charDir, $"{charKey.ToLowerInvariant()}_variant_0{vi}.png"));
+                            continue;
+                        }
+                        if (key.Length >= 2 && key[0] == 'b' && int.TryParse(key[1..], out var bi) &&
+                            bi >= 0 && bi < allBookRefs.Count)
+                        {
+                            Add(allBookRefs[bi]);
+                        }
+                    }
                 }
-                // Book indices match design_reference_images order / BookRefs Index
-                foreach (var bi in opts.BookRefIndices.Distinct().OrderBy(x => x))
+                else
                 {
-                    if (bi < 0 || bi >= allBookRefs.Count) continue;
-                    Add(allBookRefs[bi]);
+                    if (opts.IncludeLockedRef || opts.IncludePreferred)
+                        Add(preferredPath);
+                    foreach (var vi in opts.VariantIndices.Distinct())
+                    {
+                        if (vi is < 1 or > 3) continue;
+                        Add(Path.Combine(charDir, $"{charKey.ToLowerInvariant()}_variant_0{vi}.png"));
+                    }
+                    foreach (var bi in opts.BookRefIndices.Distinct())
+                    {
+                        if (bi < 0 || bi >= allBookRefs.Count) continue;
+                        Add(allBookRefs[bi]);
+                    }
                 }
                 onProgress?.Invoke(
                     editRefs.Count == 0
                         ? "Explicit mode: no valid selections — will text-only"
-                        : $"Explicit seeds ({editRefs.Count}): {string.Join(", ", editRefs.Select(Path.GetFileName))}");
+                        : $"Explicit seeds ({editRefs.Count}/{maxRefs}): {string.Join(", ", editRefs.Select(Path.GetFileName))}");
                 return editRefs;
 
             case "book_hints":
@@ -479,6 +519,9 @@ public sealed class CharacterDesignService
                     ? lab
                     : charKey.Replace("Character_", "").Replace("_", " ");
 
+        var isAnimalDog = IsAnimalDogCharacter(charKey, ageBand, description, visualLock);
+        var isHumanAdult = IsHumanAdultCharacter(charKey, ageBand, description, visualLock);
+
         var ageClause = "";
         if (ageBand.StartsWith("child", StringComparison.OrdinalIgnoreCase) ||
             charKey.EndsWith("_Young", StringComparison.OrdinalIgnoreCase))
@@ -494,12 +537,18 @@ public sealed class CharacterDesignService
                 "CRITICAL: this is a TEEN / late-teen portrait — younger than the adult version, " +
                 "not a middle-aged adult. ";
         }
-        else if (ageBand.Contains("dog", StringComparison.OrdinalIgnoreCase) ||
-                 description.Contains("dog", StringComparison.OrdinalIgnoreCase))
+        else if (isAnimalDog)
         {
             ageClause =
                 "CRITICAL: this is a DOG portrait (animal), not a human. " +
                 "Match breed look, ear shape, coat color/markings from the description. ";
+        }
+        else if (isHumanAdult)
+        {
+            // "matching the dog's CG look" means same *render medium*, not species
+            ageClause =
+                "CRITICAL: this is a HUMAN adult portrait — a person, NOT a dog, NOT an anthropomorphic animal. " +
+                "Same stylized picture-book / soft-3D medium as the film is fine; species stays human. ";
         }
 
         var familyClause = "";
@@ -512,19 +561,26 @@ public sealed class CharacterDesignService
 
         var descSafe = CharacterVisualTextScrubber.ScrubVisualProse(description);
         var visualSafe = CharacterVisualTextScrubber.ScrubVisualProse(visualLock);
+        // Soften "matching the dog's look" style phrases so models don't morph humans into dogs
+        descSafe = SoftenCrossSpeciesStyleLanguage(descSafe);
+        visualSafe = SoftenCrossSpeciesStyleLanguage(visualSafe);
         var visualClauseSafe = string.IsNullOrWhiteSpace(visualSafe) ? "" : $"Visual lock: {visualSafe}. ";
         const string treatment = "soft even studio lighting";
 
         if (hasImageHints)
         {
             // Image refs are primary — description only clarifies, never invents a new design
+            var speciesHint = isAnimalDog
+                ? "Match fur, breed, ears, markings from the refs. "
+                : isHumanAdult
+                    ? "Match the human face, hair, and clothing from the preferred ref — do NOT animalize the face. "
+                    : "Match identity from the refs closely. ";
             return
                 $"IDENTITY-LOCKED character continuity portrait of {display}. " +
                 "The FIRST attached reference image is the authoritative face/body identity. " +
-                "Any additional attached images are the SAME character from the picture book " +
-                "(coat markings, hat, illustration style) — copy that identity closely. " +
-                "CRITICAL: Match the preferred/reference face shape, fur color pattern, ear set, " +
-                "eye shape, and hat design from the images. Do NOT redesign the character. " +
+                "Any additional attached images are the SAME character (style/markings only). " +
+                "CRITICAL: Match the preferred/reference identity; Do NOT redesign the character. " +
+                speciesHint +
                 "Do NOT turn book nicknames or metaphors into literal objects or props. " +
                 "Do NOT output a labeled model-sheet, callouts, color swatches, arrows, or UI chrome — " +
                 "one clean portrait only, plain soft background, head and upper body, facing camera. " +
@@ -541,6 +597,82 @@ public sealed class CharacterDesignService
             "No model-sheet labels or annotations. " +
             "Children's picture-book character style unless text says otherwise. " +
             treatment + ".";
+    }
+
+    /// <summary>
+    /// True only when the seed is primarily an animal dog — not a human whose text mentions
+    /// matching the dog film's CG medium ("matching the dog's picture-book look").
+    /// </summary>
+    private static bool IsAnimalDogCharacter(
+        string charKey,
+        string ageBand,
+        string description,
+        string visualLock)
+    {
+        if (ageBand.Contains("dog", StringComparison.OrdinalIgnoreCase) ||
+            ageBand.Contains("animal", StringComparison.OrdinalIgnoreCase))
+            return true;
+        if (charKey.Contains("Buster", StringComparison.OrdinalIgnoreCase) ||
+            charKey.Contains("Dog", StringComparison.OrdinalIgnoreCase))
+            return true;
+
+        var blob = $"{description} {visualLock}";
+        // Style-lock phrases about matching the dog cast medium → not a dog identity
+        if (System.Text.RegularExpressions.Regex.IsMatch(
+                blob,
+                @"matching\s+(the\s+)?dog|dog'?s\s+(children'?s\s+)?(picture-book|cg|look|style)|same\s+.*medium",
+                System.Text.RegularExpressions.RegexOptions.IgnoreCase))
+            return false;
+        if (System.Text.RegularExpressions.Regex.IsMatch(
+                blob,
+                @"\b(adult\s+)?(man|woman|human|mother|father|mom|dad|parent)\b",
+                System.Text.RegularExpressions.RegexOptions.IgnoreCase))
+            return false;
+
+        return System.Text.RegularExpressions.Regex.IsMatch(
+            description,
+            @"\b(small|medium|large)?\s*(black-and-white\s+|brown\s+)?dog\b",
+            System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+    }
+
+    private static bool IsHumanAdultCharacter(
+        string charKey,
+        string ageBand,
+        string description,
+        string visualLock)
+    {
+        if (IsAnimalDogCharacter(charKey, ageBand, description, visualLock))
+            return false;
+        var blob = $"{charKey} {ageBand} {description} {visualLock}";
+        if (System.Text.RegularExpressions.Regex.IsMatch(
+                blob,
+                @"\b(man|woman|human|mother|father|mom|dad|daddy|parent|adult)\b",
+                System.Text.RegularExpressions.RegexOptions.IgnoreCase))
+            return true;
+        return charKey.Contains("Mom", StringComparison.OrdinalIgnoreCase) ||
+               charKey.Contains("Dad", StringComparison.OrdinalIgnoreCase) ||
+               charKey.Contains("Daddy", StringComparison.OrdinalIgnoreCase) ||
+               charKey.Contains("Mother", StringComparison.OrdinalIgnoreCase) ||
+               charKey.Contains("Father", StringComparison.OrdinalIgnoreCase);
+    }
+
+    /// <summary>
+    /// "Matching the dog's CG look" means shared render medium, not shared species.
+    /// </summary>
+    private static string SoftenCrossSpeciesStyleLanguage(string text)
+    {
+        if (string.IsNullOrWhiteSpace(text)) return text;
+        var t = System.Text.RegularExpressions.Regex.Replace(
+            text,
+            @"matching\s+(the\s+)?dog'?s?\s+((children'?s\s+)?(picture-book\s+)?CG\s+look|CG look|look|style)",
+            "in the same stylized picture-book soft-3D medium as the film (human adult — not an animal)",
+            System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+        t = System.Text.RegularExpressions.Regex.Replace(
+            t,
+            @"matching\s+Buster'?s?\s+CG\s+look",
+            "in the same stylized soft-3D medium as Buster (human adult — not a dog)",
+            System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+        return t;
     }
 
     private static List<string> ResolveBookRefPaths(string projectDir, JsonElement seedInfo, int maxRefs)

@@ -234,6 +234,7 @@ app.MapGet("/api/projects/{id}/characters", (string id, ProjectStore store) =>
     {
         var chars = store.ListCharacters(id);
         var plates = store.GetCharacterPlatesState(id);
+        var seedLimits = store.GetImageSeedLimits(id);
         return Results.Ok(new
         {
             ok = true,
@@ -241,6 +242,8 @@ app.MapGet("/api/projects/{id}/characters", (string id, ProjectStore store) =>
             characters = chars,
             // Plates live on scenes.json seeds; this flag tracks whether import sorted them
             characterPlates = plates,
+            // Grok ≤ 3 refs, Gemini ≤ 14 — UI ranks more, sends only maxReferenceImages
+            imageSeedLimits = seedLimits,
         });
     }
     catch (Exception ex)

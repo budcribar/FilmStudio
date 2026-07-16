@@ -253,62 +253,123 @@ else
                 @if (_mode == Mode.PickSource)
                 {
                     <div class="card mb-3 border-primary">
-                        <div class="card-header py-2">
-                            <strong>1) Pick seeds → edit text → regenerate → compare</strong>
-                            <span class="small text-muted ms-2">up to 3 images to Grok</span>
+                        <div class="card-header py-2 d-flex flex-wrap justify-content-between align-items-center gap-2">
+                            <div>
+                                <strong>1) Pick seeds → edit text → regenerate → compare</strong>
+                                <span class="small text-muted ms-2">
+                                    select any · send top @ApiMaxSeedRefs
+                                    @if (_imageSeedLimits is not null)
+                                    {
+                                        <text>(@_imageSeedLimits.Provider)</text>
+                                    }
+                                </span>
+                            </div>
+                            <div class="d-flex flex-wrap gap-2">
+                                <div class="form-check form-check-inline mb-0">
+                                    <input class="form-check-input" type="checkbox" id="hideUnsel"
+                                           @bind="_hideUnselectedSeeds" disabled="@(_busy || JobRunning)" />
+                                    <label class="form-check-label small" for="hideUnsel">Hide unselected</label>
+                                </div>
+                                @if (_hiddenSeedKeys.Count > 0)
+                                {
+                                    <button type="button" class="btn btn-sm btn-link py-0"
+                                            disabled="@(_busy || JobRunning)"
+                                            @onclick="() => { _hiddenSeedKeys.Clear(); }">
+                                        Show @_hiddenSeedKeys.Count hidden
+                                    </button>
+                                }
+                            </div>
                         </div>
                         <div class="card-body">
-                            <div class="mb-2 small fw-semibold">Image seeds (click to multi-select)</div>
-                            <div class="d-flex flex-wrap gap-2 mb-3">
-                                @* Preferred / old character *@
-                                @if (_selected.HasPreferred)
+                            <div class="mb-2 small fw-semibold">
+                                Image seeds — click to select (order = priority · badge = send rank)
+                            </div>
+                            <div class="d-flex flex-wrap gap-2 mb-2">
+                                @* Preferred *@
+                                @if (_selected.HasPreferred && SeedTileVisible("p", isOn: SeedRank("p") > 0))
                                 {
-                                    var prefOn = _seedIncludePreferred;
-                                    <button type="button"
-                                            class="char-seed-tile @(prefOn ? "char-seed-tile--on" : "")"
-                                            disabled="@(_busy || JobRunning)"
-                                            @onclick="() => _seedIncludePreferred = !_seedIncludePreferred"
-                                            title="@(_selected.PreferredLabel ?? "Preferred")">
-                                        @if (PreferredImageUrl is { Length: > 0 } pu)
-                                        {
-                                            <img src="@pu" alt="Preferred" />
-                                        }
-                                        <span class="char-seed-tile__label">
-                                            @(prefOn ? "✓ " : "")Preferred
-                                        </span>
-                                    </button>
+                                    var prefKey = "p";
+                                    var prefOn = SeedRank(prefKey) > 0;
+                                    var prefRank = SeedRank(prefKey);
+                                    var prefSend = prefRank > 0 && prefRank <= ApiMaxSeedRefs;
+                                    <div class="char-seed-tile-wrap">
+                                        <button type="button"
+                                                class="char-seed-tile @(prefOn ? "char-seed-tile--on" : "") @(prefSend ? "char-seed-tile--send" : "")"
+                                                disabled="@(_busy || JobRunning)"
+                                                @onclick="@(() => ToggleSeedKey(prefKey))"
+                                                title="@(_selected.PreferredLabel ?? "Preferred")">
+                                            @if (prefRank > 0)
+                                            {
+                                                <span class="char-seed-tile__rank @(prefSend ? "char-seed-tile__rank--send" : "")">@prefRank</span>
+                                            }
+                                            @if (PreferredImageUrl is { Length: > 0 } pu)
+                                            {
+                                                <img src="@pu" alt="Preferred" />
+                                            }
+                                            <span class="char-seed-tile__label">Preferred</span>
+                                        </button>
+                                        <button type="button" class="char-seed-hide" title="Hide this seed"
+                                                disabled="@(_busy || JobRunning)"
+                                                @onclick="@(() => HideSeedKey(prefKey))">×</button>
+                                    </div>
                                 }
                                 @foreach (var v in _selected.Variants.Where(x => x.Exists))
                                 {
                                     var idx = v.Index ?? 0;
-                                    var on = _seedVariantIndices.Contains(idx);
+                                    var key = $"v{idx}";
+                                    if (!SeedTileVisible(key, isOn: SeedRank(key) > 0)) continue;
+                                    var on = SeedRank(key) > 0;
+                                    var rank = SeedRank(key);
+                                    var send = rank > 0 && rank <= ApiMaxSeedRefs;
                                     var vsrc = !string.IsNullOrEmpty(v.Url)
                                         ? CacheBust(v.Url!)
                                         : CacheBust(Engine.CharacterVariantUrl(_projectId, _selected.Key, idx));
-                                    <button type="button"
-                                            class="char-seed-tile @(on ? "char-seed-tile--on" : "")"
-                                            disabled="@(_busy || JobRunning)"
-                                            @onclick="() => ToggleSeedVariant(idx, !on)"
-                                            title="Variant @idx">
-                                        <img src="@vsrc" alt="V@(idx)" />
-                                        <span class="char-seed-tile__label">@(on ? "✓ " : "")V@(idx)</span>
-                                    </button>
+                                    <div class="char-seed-tile-wrap">
+                                        <button type="button"
+                                                class="char-seed-tile @(on ? "char-seed-tile--on" : "") @(send ? "char-seed-tile--send" : "")"
+                                                disabled="@(_busy || JobRunning)"
+                                                @onclick="@(() => ToggleSeedKey(key))"
+                                                title="Variant @idx">
+                                            @if (rank > 0)
+                                            {
+                                                <span class="char-seed-tile__rank @(send ? "char-seed-tile__rank--send" : "")">@rank</span>
+                                            }
+                                            <img src="@vsrc" alt="V@(idx)" />
+                                            <span class="char-seed-tile__label">V@(idx)</span>
+                                        </button>
+                                        <button type="button" class="char-seed-hide" title="Hide this seed"
+                                                disabled="@(_busy || JobRunning)"
+                                                @onclick="@(() => HideSeedKey(key))">×</button>
+                                    </div>
                                 }
                                 @foreach (var b in _selected.BookRefs.Where(x => x.Exists))
                                 {
                                     var bi = b.Index ?? 0;
-                                    var on = _seedBookIndices.Contains(bi);
+                                    var key = $"b{bi}";
+                                    if (!SeedTileVisible(key, isOn: SeedRank(key) > 0)) continue;
+                                    var on = SeedRank(key) > 0;
+                                    var rank = SeedRank(key);
+                                    var send = rank > 0 && rank <= ApiMaxSeedRefs;
                                     var src = !string.IsNullOrEmpty(b.Url)
                                         ? CacheBust(b.Url!)
                                         : CacheBust(Engine.CharacterBookRefUrl(_projectId, _selected.Key, bi));
-                                    <button type="button"
-                                            class="char-seed-tile @(on ? "char-seed-tile--on" : "")"
-                                            disabled="@(_busy || JobRunning)"
-                                            @onclick="() => ToggleSeedBook(bi, !on)"
-                                            title="@b.FileName">
-                                        <img src="@src" alt="B@(bi)" />
-                                        <span class="char-seed-tile__label">@(on ? "✓ " : "")B@(bi)</span>
-                                    </button>
+                                    <div class="char-seed-tile-wrap">
+                                        <button type="button"
+                                                class="char-seed-tile @(on ? "char-seed-tile--on" : "") @(send ? "char-seed-tile--send" : "")"
+                                                disabled="@(_busy || JobRunning)"
+                                                @onclick="@(() => ToggleSeedKey(key))"
+                                                title="@b.FileName">
+                                            @if (rank > 0)
+                                            {
+                                                <span class="char-seed-tile__rank @(send ? "char-seed-tile__rank--send" : "")">@rank</span>
+                                            }
+                                            <img src="@src" alt="B@(bi)" />
+                                            <span class="char-seed-tile__label">B@(bi)</span>
+                                        </button>
+                                        <button type="button" class="char-seed-hide" title="Hide this seed"
+                                                disabled="@(_busy || JobRunning)"
+                                                @onclick="@(() => HideSeedKey(key))">×</button>
+                                    </div>
                                 }
                                 @if (!_selected.HasPreferred &&
                                      !_selected.Variants.Any(v => v.Exists) &&
@@ -318,10 +379,18 @@ else
                                 }
                             </div>
                             <div class="small text-muted mb-3">
-                                Selected: <strong>@SelectedSeedCount</strong> / 3
-                                @if (SelectedSeedCount > 3)
+                                Selected: <strong>@SelectedSeedCount</strong>
+                                @if (SelectedSeedCount > 0)
                                 {
-                                    <span class="text-warning"> — first 3 will be sent</span>
+                                    <text>
+                                        · sending <strong>@Math.Min(SelectedSeedCount, ApiMaxSeedRefs)</strong>
+                                        to @(_imageSeedLimits?.Provider ?? "image API")
+                                        (max @ApiMaxSeedRefs)
+                                    </text>
+                                }
+                                @if (SelectedSeedCount > ApiMaxSeedRefs)
+                                {
+                                    <span class="text-muted"> — ranks @(ApiMaxSeedRefs + 1)+ ranked only, not sent</span>
                                 }
                             </div>
 
@@ -337,7 +406,7 @@ else
                                 <textarea class="form-control form-control-sm" rows="2"
                                           @bind="_editVisualLock" @bind:event="oninput"
                                           disabled="@(_busy || JobRunning)"
-                                          placeholder="Hard constraints: coat color, markings, never redesign as…"></textarea>
+                                          placeholder="Hard constraints: coat color, markings…"></textarea>
                             </div>
 
                             <div class="d-flex flex-wrap gap-2 align-items-center">
@@ -420,22 +489,49 @@ else
                             @if (_challenger is not null)
                             {
                                 <button type="button" class="btn btn-outline-primary btn-lg"
-                                        disabled="@_busy" @onclick="PreferLeft">
+                                        disabled="@(_busy || JobRunning)" @onclick="PreferLeft">
                                     ◀ Left better
                                 </button>
                                 <button type="button" class="btn btn-outline-primary btn-lg"
-                                        disabled="@_busy" @onclick="PreferRight">
+                                        disabled="@(_busy || JobRunning)" @onclick="PreferRight">
                                     Right better ▶
                                 </button>
                             }
+                            else
+                            {
+                                <button type="button" class="btn btn-primary btn-lg"
+                                        disabled="@(_busy || JobRunning)"
+                                        @onclick="TryRegenFromCompareAsync"
+                                        title="Generate new options using the same seeds / description">
+                                    ↻ Try regen again
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary btn-lg"
+                                        disabled="@(_busy || JobRunning)"
+                                        @onclick="BackToSource"
+                                        title="Change seeds or description first">
+                                    Adjust seeds
+                                </button>
+                            }
                             <button type="button" class="btn btn-success btn-lg"
-                                    disabled="@_busy" @onclick="LockChampionAsync">
+                                    disabled="@(_busy || JobRunning)" @onclick="LockChampionAsync">
                                 ✓ Lock left as final
                             </button>
                         </div>
                         <div class="char-compare__hint">
-                            Like an eye exam: keep the better image on the left until you’re happy, then lock.
-                            Keyboard: <kbd>L</kbd> left · <kbd>R</kbd> right · <kbd>Enter</kbd> lock
+                            @if (_challenger is null)
+                            {
+                                <text>
+                                    Happy with the left? Lock it. Want another round? <strong>Try regen again</strong>
+                                    uses the same seeds, or <strong>Adjust seeds</strong> to change them.
+                                </text>
+                            }
+                            else
+                            {
+                                <text>
+                                    Like an eye exam: keep the better image on the left until you’re happy, then lock.
+                                    Keyboard: <kbd>L</kbd> left · <kbd>R</kbd> right · <kbd>Enter</kbd> lock
+                                </text>
+                            }
                         </div>
 
                         @if (_allCandidates.Count > 0)
@@ -515,24 +611,17 @@ else
     private int _totalRounds;
     private Side _highlight = Side.None;
 
-    // Multi-seed + editable description (regenerate → compare)
-    private bool _seedIncludePreferred = true;
-    private HashSet<int> _seedBookIndices = new();
-    private HashSet<int> _seedVariantIndices = new();
+    // Multi-seed (ordered) + hide + editable description
+    /// <summary>Active image API max refs (Grok 3 / Gemini 14). From API imageSeedLimits.</summary>
+    private int ApiMaxSeedRefs => Math.Max(1, _imageSeedLimits?.MaxReferenceImages ?? 3);
+    private ImageSeedLimits? _imageSeedLimits;
+    private readonly List<string> _seedOrder = new(); // "p", "v1", "b0"… click order = priority
+    private readonly HashSet<string> _hiddenSeedKeys = new(StringComparer.OrdinalIgnoreCase);
+    private bool _hideUnselectedSeeds;
     private string _editDescription = "";
     private string _editVisualLock = "";
 
-    private int SelectedSeedCount
-    {
-        get
-        {
-            var n = 0;
-            if (_seedIncludePreferred && (_selected?.HasPreferred ?? false)) n++;
-            n += _seedBookIndices.Count;
-            n += _seedVariantIndices.Count;
-            return n;
-        }
-    }
+    private int SelectedSeedCount => _seedOrder.Count;
 
     private bool JobRunning =>
         string.Equals(_job?.Status, "running", StringComparison.OrdinalIgnoreCase);
@@ -656,6 +745,7 @@ else
             var dto = await Engine.GetCharactersAsync(_projectId);
             _chars = dto?.Characters ?? new List<CharacterSummary>();
             _plates = dto?.CharacterPlates;
+            _imageSeedLimits = dto?.ImageSeedLimits;
             _imgBust = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
             // Do not auto-open a character — user clicks the list to choose source.
             if (_selectedKey is not null && _chars.Any(c => c.Key == _selectedKey))
@@ -676,6 +766,7 @@ else
             _error = ex.Message;
             _chars = null;
             _plates = null;
+            _imageSeedLimits = null;
         }
         finally { _busy = false; }
     }
@@ -687,6 +778,7 @@ else
             var dto = await Engine.GetCharactersAsync(_projectId);
             _chars = dto?.Characters ?? new List<CharacterSummary>();
             _plates = dto?.CharacterPlates;
+            _imageSeedLimits = dto?.ImageSeedLimits;
             _imgBust = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
             if (_selectedKey is not null)
                 Select(_selectedKey, resetMode: false);
@@ -696,6 +788,7 @@ else
 
     private void Select(string key, bool resetMode = true)
     {
+        var switched = !string.Equals(_selectedKey, key, StringComparison.OrdinalIgnoreCase);
         _selectedKey = key;
         _selected = _chars?.FirstOrDefault(c => c.Key == key);
         if (_selected is not null)
@@ -703,6 +796,8 @@ else
             _editDescription = _selected.Description ?? "";
             _editVisualLock = _selected.VisualLock ?? "";
         }
+        if (switched)
+            _hiddenSeedKeys.Clear();
         if (resetMode)
         {
             ResetCompare();
@@ -715,25 +810,57 @@ else
 
     private void ResetSeedSelection()
     {
-        _seedIncludePreferred = _selected?.HasPreferred ?? false;
-        _seedBookIndices = new HashSet<int>();
-        _seedVariantIndices = new HashSet<int>();
-        // Default: preferred + up to 2 book plates (leave room under 3-image cap)
-        if (_selected is not null)
+        _seedOrder.Clear();
+        // Keep hidden keys across reselect of same char; clear when switching char in Select()
+        // Default: preferred + up to 2 book plates (priority for API top-3)
+        if (_selected is null) return;
+        if (_selected.HasPreferred)
+            _seedOrder.Add("p");
+        var bookBudget = _selected.HasPreferred ? 2 : 3;
+        foreach (var b in _selected.BookRefs
+                     .Where(x => x.Exists && !IsWeakBookPlate(x.FileName))
+                     .Take(bookBudget))
         {
-            var bookBudget = _seedIncludePreferred ? 2 : 3;
-            foreach (var b in _selected.BookRefs
-                         .Where(x => x.Exists && !IsWeakBookPlate(x.FileName))
-                         .Take(bookBudget))
-            {
-                if (b.Index is int i) _seedBookIndices.Add(i);
-            }
-            if (_seedBookIndices.Count == 0)
-            {
-                foreach (var b in _selected.BookRefs.Where(x => x.Exists).Take(bookBudget))
-                    if (b.Index is int i) _seedBookIndices.Add(i);
-            }
+            if (b.Index is int i)
+                _seedOrder.Add($"b{i}");
         }
+        if (_seedOrder.Count(k => k.StartsWith('b')) == 0)
+        {
+            foreach (var b in _selected.BookRefs.Where(x => x.Exists).Take(bookBudget))
+                if (b.Index is int i)
+                    _seedOrder.Add($"b{i}");
+        }
+    }
+
+    private int SeedRank(string key)
+    {
+        var i = _seedOrder.FindIndex(k => string.Equals(k, key, StringComparison.OrdinalIgnoreCase));
+        return i < 0 ? 0 : i + 1;
+    }
+
+    private bool SeedTileVisible(string key, bool isOn)
+    {
+        if (_hiddenSeedKeys.Contains(key)) return false;
+        if (_hideUnselectedSeeds && !isOn) return false;
+        return true;
+    }
+
+    private void ToggleSeedKey(string key)
+    {
+        var i = _seedOrder.FindIndex(k => string.Equals(k, key, StringComparison.OrdinalIgnoreCase));
+        if (i >= 0)
+            _seedOrder.RemoveAt(i);
+        else
+            _seedOrder.Add(key);
+    }
+
+    private void HideSeedKey(string key)
+    {
+        // Deselect if selected, then hide from grid
+        var i = _seedOrder.FindIndex(k => string.Equals(k, key, StringComparison.OrdinalIgnoreCase));
+        if (i >= 0)
+            _seedOrder.RemoveAt(i);
+        _hiddenSeedKeys.Add(key);
     }
 
     private static bool IsWeakBookPlate(string? fileName)
@@ -751,18 +878,6 @@ else
         if (n.Contains("embedded")) return "embed";
         if (n.Contains("bookref")) return "page";
         return "page";
-    }
-
-    private void ToggleSeedBook(int index, bool on)
-    {
-        if (on) _seedBookIndices.Add(index);
-        else _seedBookIndices.Remove(index);
-    }
-
-    private void ToggleSeedVariant(int index, bool on)
-    {
-        if (on) _seedVariantIndices.Add(index);
-        else _seedVariantIndices.Remove(index);
     }
 
     private void BackToSource()
@@ -830,8 +945,25 @@ else
             _error = "Select at least one seed image, or enter a description.";
             return;
         }
-        if (SelectedSeedCount > 3)
-            _message = "Note: only the first 3 selected seeds are sent to Grok.";
+
+        // Send ranked order (top N for active image provider); keep full order for ranking UI
+        var maxSend = ApiMaxSeedRefs;
+        var sendOrder = _seedOrder.Take(maxSend).ToList();
+        var includePref = sendOrder.Any(k => k is "p");
+        var variants = new List<int>();
+        var books = new List<int>();
+        foreach (var k in sendOrder)
+        {
+            if (k.Length >= 2 && k[0] == 'v' && int.TryParse(k[1..], out var vi))
+                variants.Add(vi);
+            if (k.Length >= 2 && k[0] == 'b' && int.TryParse(k[1..], out var bi))
+                books.Add(bi);
+        }
+
+        var providerLabel = _imageSeedLimits?.Provider ?? "image API";
+        if (SelectedSeedCount > maxSend)
+            _message =
+                $"Sending ranks 1–{maxSend} of {SelectedSeedCount} selected seeds ({providerLabel} max {maxSend}).";
 
         var seedMode = SelectedSeedCount == 0 ? "none" : "explicit";
         await StartGenerateCoreAsync(new StartCharacterVariantsRequest
@@ -839,15 +971,32 @@ else
             ProjectId = _projectId,
             CharKey = _selected.Key,
             SeedMode = seedMode,
-            IncludePreferred = _seedIncludePreferred,
-            IncludeLockedRef = _seedIncludePreferred,
-            BookRefIndices = _seedBookIndices.OrderBy(i => i).ToList(),
-            VariantIndices = _seedVariantIndices.OrderBy(i => i).ToList(),
-            MaxRefs = 3,
+            IncludePreferred = includePref,
+            IncludeLockedRef = includePref,
+            BookRefIndices = books,
+            VariantIndices = variants,
+            SeedOrderKeys = sendOrder,
+            MaxRefs = maxSend,
             DescriptionOverride = _editDescription,
             VisualLockOverride = _editVisualLock,
             PersistDescription = true,
         });
+    }
+
+    /// <summary>
+    /// From compare (no more candidates): run another generate with the same seeds/description.
+    /// </summary>
+    private async Task TryRegenFromCompareAsync()
+    {
+        if (_selected is null) return;
+        // Ensure preferred/locked is first so the next round refines the current best
+        if (_selected.HasPreferred)
+        {
+            _seedOrder.RemoveAll(k => string.Equals(k, "p", StringComparison.OrdinalIgnoreCase));
+            _seedOrder.Insert(0, "p");
+        }
+        _message = "Generating another round with the same seeds…";
+        await StartRegenerateAsync();
     }
 
     private async Task StartExplicitGenerate() => await StartRegenerateAsync();

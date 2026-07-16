@@ -98,8 +98,11 @@ public sealed class StartCharacterVariantsRequest
     public int Count { get; set; }
     /// <summary>auto | preferred_only | book_hints | explicit | none</summary>
     public string SeedMode { get; set; } = "auto";
-    /// <summary>Hard cap on image refs sent to Grok (API typically ≤ 3).</summary>
-    public int MaxRefs { get; set; } = 3;
+    /// <summary>
+    /// Cap on image refs sent to the image API (Grok ≤ 3, Gemini ≤ 14).
+    /// 0 = use provider default for the active image backend.
+    /// </summary>
+    public int MaxRefs { get; set; }
     /// <summary>In auto/book_hints, how many book plates after preferred (default 2).</summary>
     public int MaxBookHints { get; set; } = 2;
     /// <summary>Include preferred lock/best as first seed (default true for non-explicit modes).</summary>
@@ -110,6 +113,11 @@ public sealed class StartCharacterVariantsRequest
     public List<int> VariantIndices { get; set; } = new();
     /// <summary>When SeedMode is explicit: also include locked ref if present.</summary>
     public bool IncludeLockedRef { get; set; } = true;
+    /// <summary>
+    /// Optional full selection order: "pref", "v1".."v3", "b0".."bN".
+    /// When non-empty in explicit mode, overrides separate indices and preserves rank.
+    /// </summary>
+    public List<string> SeedOrderKeys { get; set; } = new();
     /// <summary>Optional description override for this generate (also used when PersistDescription).</summary>
     public string? DescriptionOverride { get; set; }
     /// <summary>Optional visual_lock override for this generate.</summary>
@@ -167,6 +175,16 @@ public sealed class CharacterPlatesState
     public int CharactersUpdated { get; set; }
     /// <summary>grok_vision | heuristic | …</summary>
     public string? Method { get; set; }
+}
+
+/// <summary>Active image backend seed limits for Characters UI.</summary>
+public sealed class ImageSeedLimits
+{
+    /// <summary>grok | gemini</summary>
+    public string Provider { get; set; } = "grok";
+    public string? ImageModel { get; set; }
+    /// <summary>Max reference images the active image API accepts per edit.</summary>
+    public int MaxReferenceImages { get; set; } = 3;
 }
 
 public sealed class StartBookPrepareRequest

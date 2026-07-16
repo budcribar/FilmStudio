@@ -479,6 +479,30 @@ public sealed class ProjectStore
     }
 
     /// <summary>
+    /// Max multi-ref image seeds for Characters UI, based on image_provider / image_model_name.
+    /// </summary>
+    public ImageSeedLimits GetImageSeedLimits(string projectId)
+    {
+        var cfg = GetConfig(projectId);
+        string? model = null;
+        string? provider = null;
+        if (cfg.TryGetValue("image_model_name", out var m) && m.ValueKind == JsonValueKind.String)
+            model = m.GetString();
+        if (cfg.TryGetValue("image_provider", out var p) && p.ValueKind == JsonValueKind.String)
+            provider = p.GetString();
+
+        model ??= _opts.DefaultImageModel;
+        provider ??= _opts.ImageProvider;
+        var resolved = ImageApiLimits.ResolveProvider(provider, model);
+        return new ImageSeedLimits
+        {
+            Provider = resolved,
+            ImageModel = model,
+            MaxReferenceImages = ImageApiLimits.MaxReferenceImages(resolved, model),
+        };
+    }
+
+    /// <summary>
     /// Update description / visual_lock on character seeds in scenes.json (and blueprint when present).
     /// Null args leave that field unchanged; empty string clears.
     /// </summary>

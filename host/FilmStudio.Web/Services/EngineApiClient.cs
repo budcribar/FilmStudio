@@ -595,6 +595,8 @@ public sealed class CharactersDto
     public List<CharacterSummary> Characters { get; set; } = new();
     /// <summary>pipeline_state.character_plates — whether import sorted plates into scenes.json.</summary>
     public CharacterPlatesState? CharacterPlates { get; set; }
+    /// <summary>Grok ≤ 3, Gemini ≤ 14 — from image_provider / image_model_name.</summary>
+    public ImageSeedLimits? ImageSeedLimits { get; set; }
 }
 
 public sealed class EditLogDto

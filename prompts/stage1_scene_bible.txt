@@ -64,10 +64,11 @@ Each seed REQUIRED fields:
   - “STYLE LOCK: 2D watercolor children’s illustration look — flat paint, soft edges; not 3D, not photo.”
   - “STYLE LOCK: live-action cinematic photography — real humans and real animals; not cartoon.”
 - **Cross-species rule:** if the hero is a stylized animal/illustration and humans appear,
-  humans **must** use the **same medium** (stylized CG / illustration / etc.). Never default
+  humans **must** use the **same render medium** (stylized CG / illustration / etc.). Never default
   people to photoreal while animals stay cartoon (common failure when adults enter frame).
-- Put the same medium language in each on-screen human’s `description` + `visual_lock`
-  (e.g. “stylized 3D animated adult, matching the dog’s CG look — not photoreal”).
+- Put medium language in each on-screen human’s `description` + `visual_lock` carefully:
+  - Good: “stylized 3D animated **human adult** (man/woman), same picture-book soft-3D medium as the film — not photoreal, **not an animal**.”
+  - Bad: “matching the dog’s look” / “matching Buster’s CG look” (models may animalize the face).
 - Book plates that are **text-only pages** are not likeness refs; do not treat them as style.
 
 **visual_lock (REQUIRED for every on-screen character; omit only for pure off-screen narrator):**

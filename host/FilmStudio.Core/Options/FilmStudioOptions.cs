@@ -9,6 +9,11 @@ public sealed class FilmStudioOptions
 
     public string DefaultModel { get; set; } = "grok-imagine-video";
     public string DefaultImageModel { get; set; } = "grok-imagine-image-quality";
+    /// <summary>
+    /// Image backend for character portraits: grok | gemini.
+    /// Also inferred from DefaultImageModel / project image_model_name when empty.
+    /// </summary>
+    public string ImageProvider { get; set; } = "grok";
     public string DefaultResolution { get; set; } = "480p";
     public int DefaultDurationSeconds { get; set; } = 6;
     public int GrokPollSeconds { get; set; } = 5;

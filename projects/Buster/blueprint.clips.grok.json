@@ -72,11 +72,11 @@
         "display_name_policy": "never_on_screen"
       },
       "Character_Dad": {
-        "description": "Stylized 3D animated adult man matching the dog's children's picture-book CG look — not photoreal. Medium build, short brown hair, calm kind face, relaxed bedtime presence. Soft gray sleep shirt or henley, dark lounge pants; mostly seen in or near the big bed.",
+        "description": "Stylized 3D animated adult man — same picture-book soft-3D medium as the film (human, not photoreal, not an animal). Medium build, short brown hair, calm kind face, relaxed bedtime presence. Soft gray sleep shirt or henley, dark lounge pants; mostly seen in or near the big bed.",
         "reference_image_placeholder": "character_dad_ref.png",
         "voice_profile": "Adult man, warm medium-low pitch, quiet calm pace, soft American accent, low energy at bedtime; same voice every scene. Mostly silent presence unless a soft murmur is needed.",
         "voice_label": "Dad Soft",
-        "visual_lock": "Always soft gray sleep shirt and dark lounge pants; short brown hair; calm kind face. Stylized 3D animated adult matching Buster's CG look — never photoreal.",
+        "visual_lock": "Always soft gray sleep shirt and dark lounge pants; short brown hair; calm kind face. Stylized 3D animated human adult, same soft-3D medium as the film — never photoreal, never animal redesign.",
         "wardrobe_always": [
           "soft gray sleep shirt",
           "dark lounge pants"

@@ -80,6 +80,7 @@ public sealed class GrokImageClient
         int n = 3,
         string aspectRatio = "1:1",
         string? model = null,
+        int maxRefs = 0,
         Action<string>? onProgress = null,
         CancellationToken ct = default)
     {
@@ -87,10 +88,16 @@ public sealed class GrokImageClient
         var modelName = string.IsNullOrWhiteSpace(model)
             ? _opts.DefaultImageModel
             : model;
+        // Grok Imagine multi-image edit hard cap is 3; never send more than provider allows
+        var cap = maxRefs > 0
+            ? Math.Clamp(maxRefs, 1, ImageApiLimits.GrokMaxReferenceImages)
+            : ImageApiLimits.MaxReferenceImages(_opts.ImageProvider, modelName);
+        // This client is Grok-only — always enforce Grok cap even if project says gemini
+        cap = Math.Min(cap, ImageApiLimits.GrokMaxReferenceImages);
 
         var refs = referenceImagePaths
             .Where(p => !string.IsNullOrWhiteSpace(p) && File.Exists(p))
-            .Take(3)
+            .Take(cap)
             .ToList();
         if (refs.Count == 0)
             throw new InvalidOperationException("No usable reference images for character edit.");
