@@ -92,3 +92,4 @@ C:\Users\budcr\source\repos\NickAndMe\host\FilmStudio.Web\obj\Debug\net10.0\Film
 C:\Users\budcr\source\repos\NickAndMe\host\FilmStudio.Web\obj\Debug\net10.0\scopedcss\Components\Pages\Scenes.razor.rz.scp.css
 C:\Users\budcr\source\repos\NickAndMe\host\FilmStudio.Web\obj\Debug\net10.0\compressed\145h6brwhl-{0}-z2bccvdsog-z2bccvdsog.gz
 C:\Users\budcr\source\repos\NickAndMe\host\FilmStudio.Web\obj\Debug\net10.0\compressed\eh2s2p8qch-{0}-z2bccvdsog-z2bccvdsog.gz
+C:\Users\budcr\source\repos\NickAndMe\host\FilmStudio.Web\obj\Debug\net10.0\staticwebassets.upToDateCheck.txt

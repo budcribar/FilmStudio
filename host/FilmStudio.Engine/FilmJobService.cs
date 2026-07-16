@@ -24,6 +24,7 @@ public sealed class FilmJobService
 {
     private readonly ProjectStore _projects;
     private readonly GrokVideoClient _grok;
+    private readonly CharacterDesignService _characters;
     private readonly CostReportService _costs;
     private readonly FilmStudioOptions _opts;
     private readonly ILogger<FilmJobService> _log;
@@ -36,12 +37,14 @@ public sealed class FilmJobService
     public FilmJobService(
         ProjectStore projects,
         GrokVideoClient grok,
+        CharacterDesignService characters,
         CostReportService costs,
         IOptions<FilmStudioOptions> opts,
         ILogger<FilmJobService> log)
     {
         _projects = projects;
         _grok = grok;
+        _characters = characters;
         _costs = costs;
         _opts = opts.Value;
         _log = log;
@@ -162,8 +165,8 @@ public sealed class FilmJobService
         await Task.CompletedTask;
     }
 
-    /// <summary>Synchronous character lock/unlock via Python CLI (updates engine state).</summary>
-    public async Task<string> RunCharacterDesignActionAsync(
+    /// <summary>Native C# lock/unlock (no Python).</summary>
+    public Task<string> RunCharacterDesignActionAsync(
         string projectId,
         string action,
         string charKey,
@@ -174,28 +177,38 @@ public sealed class FilmJobService
         if (IsRunning)
             throw new InvalidOperationException("A generation job is already running.");
 
-        var root = _projects.WorkspaceRoot;
-        var script = Path.Combine(root, "scripts", "character_design_cli.py");
-        if (!File.Exists(script))
-            throw new InvalidOperationException($"character_design_cli.py not found: {script}");
+        return Task.Run(() =>
+        {
+            ct.ThrowIfCancellationRequested();
+            return action switch
+            {
+                "lock-variant" =>
+                    _characters.LockVariant(projectId, charKey, Math.Clamp(variantIndex, 1, 3)),
+                "lock-image" when !string.IsNullOrWhiteSpace(imagePath) =>
+                    _characters.LockFromPath(
+                        projectId,
+                        charKey,
+                        ResolveLockImagePath(projectId, imagePath!)),
+                "lock-bookref" =>
+                    _characters.LockBookRef(projectId, charKey, Math.Max(0, variantIndex)),
+                "unlock" =>
+                    _characters.Unlock(projectId, charKey)
+                        ? $"Unlocked {charKey}"
+                        : $"No locked ref for {charKey}",
+                _ => throw new InvalidOperationException($"Unknown character action: {action}"),
+            };
+        }, ct);
+    }
 
-        var args = new StringBuilder();
-        args.Append($"\"{script}\" --project \"{projectId}\" {action} --char \"{charKey}\"");
-        if (action == "lock-variant")
-            args.Append($" --variant-index {Math.Clamp(variantIndex, 1, 3)}");
-        if (action == "lock-image" && !string.IsNullOrWhiteSpace(imagePath))
-            args.Append($" --image \"{imagePath}\"");
-
-        var (exit, stdout) = await RunPythonCaptureAsync(args.ToString(), root, ct);
-        var last = stdout.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-            .LastOrDefault(l => l.Contains("\"ok\""))
-            ?? stdout.Trim();
-        if (exit != 0)
-            throw new InvalidOperationException(TryParseCliError(last) ?? $"character design failed (exit {exit}): {last}");
-        if (last.Contains("\"ok\": false", StringComparison.OrdinalIgnoreCase) ||
-            last.Contains("\"ok\":false", StringComparison.OrdinalIgnoreCase))
-            throw new InvalidOperationException(TryParseCliError(last) ?? last);
-        return last;
+    private string ResolveLockImagePath(string projectId, string imagePath)
+    {
+        if (File.Exists(imagePath))
+            return Path.GetFullPath(imagePath);
+        var projectDir = _projects.GetProjectDir(projectId);
+        var cand = Path.Combine(projectDir, imagePath.Replace('/', Path.DirectorySeparatorChar));
+        if (File.Exists(cand))
+            return Path.GetFullPath(cand);
+        throw new InvalidOperationException($"Image not found: {imagePath}");
     }
 
     private async Task RunCharacterVariantsAsync(StartCharacterVariantsRequest req, CancellationToken ct)
@@ -221,69 +234,54 @@ public sealed class FilmJobService
 
         try
         {
-            if (string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("XAI_API_KEY")))
-                throw new InvalidOperationException("XAI_API_KEY is not set (required for portrait generation).");
+            await AppendLogAsync($"Character design (C# / Grok image API) for {req.CharKey}");
+            await UpdateAsync(s => s.Message = "Resolving refs + design prompt…");
 
-            var root = _projects.WorkspaceRoot;
-            var script = Path.Combine(root, "scripts", "character_design_cli.py");
-            if (!File.Exists(script))
-                throw new InvalidOperationException($"character_design_cli.py not found: {script}");
-
-            // -u = unbuffered so SignalR gets live Python print lines
-            var args =
-                $"-u \"{script}\" --project \"{projectId}\" generate --char \"{req.CharKey}\"";
-            await AppendLogAsync($"Character design: python {args}");
-            await UpdateAsync(s => s.Message = "Calling Grok image model (book refs when available)…");
-
-            var exit = await RunPythonAsync(args, root, ct, onLine: line =>
-            {
-                // Map CLI/engine lines → coarse progress for the UI
-                if (line.Contains("[progress]", StringComparison.OrdinalIgnoreCase))
+            // n<=0 → service chooses 1 if locked, 3 if not
+            var result = await _characters.GenerateVariantsAsync(
+                projectId,
+                req.CharKey,
+                n: 0,
+                onProgress: line =>
                 {
-                    if (line.Contains("book_refs", StringComparison.OrdinalIgnoreCase))
-                        _ = UpdateAsync(s => { s.Index = Math.Max(s.Index, 0); s.Message = line; });
-                    else if (line.Contains("api", StringComparison.OrdinalIgnoreCase) ||
-                             line.Contains("edit", StringComparison.OrdinalIgnoreCase) ||
-                             line.Contains("generate", StringComparison.OrdinalIgnoreCase))
-                        _ = UpdateAsync(s => { s.Index = Math.Max(s.Index, 1); s.Message = "Grok image request in flight…"; });
-                    else if (line.Contains("saved", StringComparison.OrdinalIgnoreCase) ||
-                             line.Contains("variant", StringComparison.OrdinalIgnoreCase))
-                    {
-                        // try "variant 2" / "variant_02" / "2/3"
-                        var idx = TryParseVariantProgress(line);
-                        _ = UpdateAsync(s =>
-                        {
-                            if (idx > 0) s.Index = Math.Clamp(idx, 0, 3);
-                            s.Message = line;
-                        });
-                    }
-                }
-                else if (line.Contains("Character design", StringComparison.OrdinalIgnoreCase) ||
-                         line.Contains("[Character design]", StringComparison.OrdinalIgnoreCase))
-                {
-                    _ = UpdateAsync(s =>
-                    {
-                        s.Index = Math.Max(s.Index, 1);
-                        s.Message = line.Trim();
-                    });
-                }
-                else if (line.Contains("_variant_0", StringComparison.OrdinalIgnoreCase))
-                {
+                    _ = AppendLogAsync(line);
                     var idx = TryParseVariantProgress(line);
                     if (idx > 0)
-                        _ = UpdateAsync(s => { s.Index = idx; s.Message = $"Saved variant {idx}/3"; });
-                }
-            });
+                        _ = UpdateAsync(s => { s.Index = idx; s.Message = line; });
+                    else if (line.Contains("generating", StringComparison.OrdinalIgnoreCase))
+                    {
+                        // "generating 1 variant(s)" / "generating 3 variants"
+                        var m = System.Text.RegularExpressions.Regex.Match(line, @"generating\s+(\d+)");
+                        if (m.Success && int.TryParse(m.Groups[1].Value, out var total) && total > 0)
+                            _ = UpdateAsync(s => { s.Total = total; s.Message = line; });
+                        else
+                            _ = UpdateAsync(s => s.Message = line);
+                    }
+                    else if (line.Contains("edit variant", StringComparison.OrdinalIgnoreCase) ||
+                             line.Contains("Grok", StringComparison.OrdinalIgnoreCase) ||
+                             line.Contains("book ref", StringComparison.OrdinalIgnoreCase) ||
+                             line.Contains("ref image", StringComparison.OrdinalIgnoreCase))
+                        _ = UpdateAsync(s =>
+                        {
+                            s.Index = Math.Max(s.Index, 1);
+                            s.Message = line;
+                        });
+                },
+                ct: ct);
 
-            if (exit == 0)
+            await UpdateAsync(s =>
             {
-                await UpdateAsync(s => s.Index = 3);
-                await FinishAsync("done", $"Variants ready for {req.CharKey}");
-            }
-            else
-            {
-                await FinishAsync("error", $"Portrait generation failed (exit {exit})", $"exit {exit}");
-            }
+                s.Index = result.Paths.Count;
+                s.Total = Math.Max(s.Total, result.Paths.Count);
+            });
+            await AppendLogAsync(
+                $"mode={result.Mode} · {result.Paths.Count} file(s)" +
+                (result.BookRefs.Count > 0
+                    ? $" · book refs: {string.Join(", ", result.BookRefs)}"
+                    : ""));
+            await FinishAsync(
+                "done",
+                $"Variants ready for {req.CharKey} ({result.Mode}, {result.Paths.Count} image(s))");
         }
         catch (OperationCanceledException)
         {
@@ -298,7 +296,6 @@ public sealed class FilmJobService
 
     private static int TryParseVariantProgress(string line)
     {
-        // character_buster_variant_02.png / variant 2 / 2/3
         var m = System.Text.RegularExpressions.Regex.Match(
             line, @"variant[_\s-]*0*([1-3])", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
         if (m.Success && int.TryParse(m.Groups[1].Value, out var n))
@@ -306,21 +303,11 @@ public sealed class FilmJobService
         m = System.Text.RegularExpressions.Regex.Match(line, @"\b([1-3])\s*/\s*3\b");
         if (m.Success && int.TryParse(m.Groups[1].Value, out n))
             return n;
+        m = System.Text.RegularExpressions.Regex.Match(
+            line, @"saved variant\s+([1-3])", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+        if (m.Success && int.TryParse(m.Groups[1].Value, out n))
+            return n;
         return 0;
-    }
-
-    private static string? TryParseCliError(string line)
-    {
-        try
-        {
-            var start = line.IndexOf('{');
-            if (start < 0) return line;
-            using var doc = JsonDocument.Parse(line[start..]);
-            if (doc.RootElement.TryGetProperty("error", out var e))
-                return e.GetString();
-        }
-        catch { /* ignore */ }
-        return line.Length > 300 ? line[..300] : line;
     }
 
     private async Task RunStage1Async(StartStage1Request req, CancellationToken ct)
@@ -573,6 +560,12 @@ public sealed class FilmJobService
                 ?? throw new InvalidOperationException(
                     $"No Stage 2 blueprint for project {projectId}. Run Stage 2 first.");
 
+            if (req.RequireLockedCharacters)
+            {
+                foreach (var sn in scenes)
+                    EnsureCharactersLocked(projectId, sn);
+            }
+
             var projectDir = _projects.GetProjectDir(projectId);
             Directory.CreateDirectory(Path.Combine(projectDir, "assets", "video"));
 
@@ -700,6 +693,9 @@ public sealed class FilmJobService
 
             var sceneEl = FindScene(bp.RootElement, req.Scene)
                 ?? throw new InvalidOperationException($"Scene {req.Scene} not in blueprint.");
+
+            if (req.RequireLockedCharacters)
+                EnsureCharactersLocked(projectId, req.Scene);
 
             if (!sceneEl.TryGetProperty("veo_clips", out var clipsEl) ||
                 clipsEl.ValueKind != JsonValueKind.Array)
@@ -877,6 +873,20 @@ public sealed class FilmJobService
                 return s;
         }
         return null;
+    }
+
+    private void EnsureCharactersLocked(string projectId, int sceneNumber)
+    {
+        var unlocked = _projects.GetUnlockedOnScreenCharacters(projectId, sceneNumber);
+        if (unlocked.Count == 0)
+            return;
+
+        var names = string.Join(", ", unlocked);
+        throw new InvalidOperationException(
+            $"Scene {sceneNumber}: locked character refs required before video gen. " +
+            $"Missing lock(s): {names}. " +
+            "Open Characters → lock a book plate or generate + lock a portrait. " +
+            "(Narrator is voice-only and does not need an image.)");
     }
 
     private async Task AppendLogAsync(string message)

@@ -1,0 +1,229 @@
+using System.Net.Http.Headers;
+using System.Net.Http.Json;
+using System.Text.Json;
+using FilmStudio.Core.Options;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.Formats.Jpeg;
+using SixLabors.ImageSharp.Processing;
+
+namespace FilmStudio.Engine;
+
+/// <summary>
+/// Native C# client for xAI Grok Imagine image generate + edit APIs
+/// (port of renderer/engine.py _grok_generate_image_variants / _grok_edit_image_variants).
+/// </summary>
+public sealed class GrokImageClient
+{
+    public const string ApiBase = "https://api.x.ai/v1";
+
+    private readonly HttpClient _http;
+    private readonly FilmStudioOptions _opts;
+    private readonly ILogger<GrokImageClient> _log;
+
+    public GrokImageClient(
+        HttpClient http,
+        IOptions<FilmStudioOptions> opts,
+        ILogger<GrokImageClient> log)
+    {
+        _http = http;
+        _opts = opts.Value;
+        _log = log;
+        if (_http.BaseAddress is null)
+            _http.BaseAddress = new Uri(ApiBase + "/");
+    }
+
+    public bool IsConfigured
+    {
+        get
+        {
+            EnsureAuthHeader();
+            return _http.DefaultRequestHeaders.Authorization is not null;
+        }
+    }
+
+    /// <summary>Text-only portrait generation → n image blobs.</summary>
+    public async Task<IReadOnlyList<byte[]>> GenerateVariantsAsync(
+        string prompt,
+        int n = 3,
+        string aspectRatio = "1:1",
+        string? model = null,
+        CancellationToken ct = default)
+    {
+        EnsureAuthHeader();
+        var modelName = string.IsNullOrWhiteSpace(model)
+            ? _opts.DefaultImageModel
+            : model;
+        var payload = new Dictionary<string, object?>
+        {
+            ["model"] = modelName,
+            ["prompt"] = prompt,
+            ["n"] = n,
+            ["aspect_ratio"] = aspectRatio,
+            ["response_format"] = "b64_json",
+        };
+
+        using var resp = await _http.PostAsJsonAsync("images/generations", payload, ct);
+        var body = await resp.Content.ReadAsStringAsync(ct);
+        if (!resp.IsSuccessStatusCode)
+            throw new InvalidOperationException(
+                $"Grok image generations HTTP {(int)resp.StatusCode}: {Trim(body, 400)}");
+
+        var images = ParseImageResponse(body, n, "generations");
+        if (images.Count < n)
+            throw new InvalidOperationException(
+                $"Grok image API returned {images.Count}/{n} usable images");
+        return images;
+    }
+
+    /// <summary>
+    /// Reference-guided edits (book plates). One API call per variant for reliability.
+    /// </summary>
+    public async Task<IReadOnlyList<byte[]>> EditVariantsAsync(
+        string prompt,
+        IReadOnlyList<string> referenceImagePaths,
+        int n = 3,
+        string aspectRatio = "1:1",
+        string? model = null,
+        Action<string>? onProgress = null,
+        CancellationToken ct = default)
+    {
+        EnsureAuthHeader();
+        var modelName = string.IsNullOrWhiteSpace(model)
+            ? _opts.DefaultImageModel
+            : model;
+
+        var refs = referenceImagePaths
+            .Where(p => !string.IsNullOrWhiteSpace(p) && File.Exists(p))
+            .Take(3)
+            .ToList();
+        if (refs.Count == 0)
+            throw new InvalidOperationException("No usable reference images for character edit.");
+
+        var imagePayloads = new List<object>();
+        foreach (var path in refs)
+        {
+            var uri = await FileToDataUriResizedAsync(path, maxEdge: 1280, ct);
+            imagePayloads.Add(new Dictionary<string, string>
+            {
+                ["url"] = uri,
+                ["type"] = "image_url",
+            });
+        }
+
+        var images = new List<byte[]>();
+        for (var i = 0; i < n; i++)
+        {
+            ct.ThrowIfCancellationRequested();
+            onProgress?.Invoke($"edit variant {i + 1}/{n}");
+
+            var variantPrompt =
+                $"{prompt} Variation {i + 1} of {n}: slight pose/expression change only; " +
+                "keep the same identity, colors, markings, and illustration style as the reference.";
+
+            var payload = new Dictionary<string, object?>
+            {
+                ["model"] = modelName,
+                ["prompt"] = variantPrompt,
+                ["response_format"] = "b64_json",
+                ["aspect_ratio"] = aspectRatio,
+                ["image"] = imagePayloads.Count == 1 ? imagePayloads[0] : imagePayloads,
+            };
+
+            using var resp = await _http.PostAsJsonAsync("images/edits", payload, ct);
+            var body = await resp.Content.ReadAsStringAsync(ct);
+            if (!resp.IsSuccessStatusCode)
+                throw new InvalidOperationException(
+                    $"Grok image edits HTTP {(int)resp.StatusCode} (variant {i + 1}): {Trim(body, 400)}");
+
+            var batch = ParseImageResponse(body, 1, $"edits variant {i + 1}");
+            images.AddRange(batch);
+        }
+
+        if (images.Count < 1)
+            throw new InvalidOperationException("Grok image edit returned no variants.");
+        return images.Take(n).ToList();
+    }
+
+    private static List<byte[]> ParseImageResponse(string json, int n, string label)
+    {
+        using var doc = JsonDocument.Parse(json);
+        if (!doc.RootElement.TryGetProperty("data", out var data) ||
+            data.ValueKind != JsonValueKind.Array ||
+            data.GetArrayLength() == 0)
+        {
+            throw new InvalidOperationException(
+                $"Grok image API returned no image data ({label}): {Trim(json, 300)}");
+        }
+
+        var images = new List<byte[]>();
+        foreach (var item in data.EnumerateArray())
+        {
+            if (item.ValueKind != JsonValueKind.Object)
+                continue;
+            if (item.TryGetProperty("b64_json", out var b64) &&
+                b64.GetString() is { Length: > 0 } s)
+            {
+                images.Add(Convert.FromBase64String(s));
+            }
+            // URL form is rare with response_format=b64_json; skip for now
+        }
+
+        if (images.Count < 1)
+            throw new InvalidOperationException(
+                $"Grok image API returned 0 usable images ({label})");
+        return images.Take(n).ToList();
+    }
+
+    private static async Task<string> FileToDataUriResizedAsync(
+        string path,
+        int maxEdge,
+        CancellationToken ct)
+    {
+        try
+        {
+            await using var fs = File.OpenRead(path);
+            using var image = await Image.LoadAsync(fs, ct);
+            var w = image.Width;
+            var h = image.Height;
+            var edge = Math.Max(w, h);
+            if (edge > maxEdge)
+            {
+                var scale = maxEdge / (double)edge;
+                var nw = Math.Max(1, (int)(w * scale));
+                var nh = Math.Max(1, (int)(h * scale));
+                image.Mutate(x => x.Resize(nw, nh));
+            }
+
+            await using var ms = new MemoryStream();
+            await image.SaveAsJpegAsync(ms, new JpegEncoder { Quality = 88 }, ct);
+            var b64 = Convert.ToBase64String(ms.ToArray());
+            return $"data:image/jpeg;base64,{b64}";
+        }
+        catch
+        {
+            // Fallback: raw file bytes
+            var bytes = await File.ReadAllBytesAsync(path, ct);
+            var ext = Path.GetExtension(path).ToLowerInvariant();
+            var mime = ext is ".png" ? "image/png"
+                : ext is ".webp" ? "image/webp"
+                : "image/jpeg";
+            return $"data:{mime};base64,{Convert.ToBase64String(bytes)}";
+        }
+    }
+
+    private void EnsureAuthHeader()
+    {
+        if (_http.DefaultRequestHeaders.Authorization is not null)
+            return;
+        var key = Environment.GetEnvironmentVariable("XAI_API_KEY");
+        if (string.IsNullOrWhiteSpace(key))
+            return;
+        _http.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", key.Trim());
+    }
+
+    private static string Trim(string s, int n) =>
+        s.Length <= n ? s : s[..n];
+}

@@ -80,7 +80,8 @@ Events: `JobUpdated` (JobSnapshot), `JobLog` (string)
 |---------|-----------|---------------|
 | List projects / activate | Yes | Yes |
 | Generate clips from blueprint prompts | Yes (text Grok) | Yes (full prompt build + multi-ref) |
-| Multi-ref character images | Not yet | Yes |
+| Character portrait gen / lock | Yes (C# Grok image + lock) | Yes |
+| Multi-ref video plates | Not yet | Yes |
 | Stage 1 / Stage 2 planning | Still Python / Streamlit | Yes |
 | WIP remux / QA | Not yet | Yes |
 | SignalR live UI | Yes | N/A (Streamlit poll) |

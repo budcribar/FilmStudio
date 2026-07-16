@@ -20,12 +20,18 @@ builder.Services.PostConfigure<FilmStudioOptions>(o =>
 
 builder.Services.AddSingleton<ProjectStore>();
 builder.Services.AddSingleton<CostReportService>();
+builder.Services.AddSingleton<CharacterDesignService>();
 builder.Services.AddSingleton<FilmJobService>();
 builder.Services.AddSingleton<IJobProgressSink, SignalRJobProgressSink>();
 builder.Services.AddHttpClient<GrokVideoClient>(c =>
 {
     c.BaseAddress = new Uri(GrokVideoClient.ApiBase + "/");
     c.Timeout = TimeSpan.FromMinutes(15);
+});
+builder.Services.AddHttpClient<GrokImageClient>(c =>
+{
+    c.BaseAddress = new Uri(GrokImageClient.ApiBase + "/");
+    c.Timeout = TimeSpan.FromMinutes(5);
 });
 
 builder.Services.AddSignalR();
@@ -310,7 +316,7 @@ app.MapPost("/api/projects/{id}/characters/{charKey}/lock-variant",
 });
 
 app.MapPost("/api/projects/{id}/characters/{charKey}/lock-bookref",
-    async (string id, string charKey, HttpRequest req, FilmJobService jobService, ProjectStore store) =>
+    async (string id, string charKey, HttpRequest req, FilmJobService jobService) =>
 {
     try
     {
@@ -321,13 +327,10 @@ app.MapPost("/api/projects/{id}/characters/{charKey}/lock-bookref",
             if (doc.RootElement.TryGetProperty("index", out var ix) && ix.TryGetInt32(out var n))
                 index = n;
         }
-        var path = store.ResolveCharacterBookRefPath(id, charKey, index)
-            ?? throw new InvalidOperationException($"Book ref {index} not found for {charKey}");
-        // Prefer project-relative path for CLI
-        var rel = Path.GetRelativePath(store.GetProjectDir(id), path).Replace('\\', '/');
+        // variantIndex slot reused as book-ref index for lock-bookref
         var result = await jobService.RunCharacterDesignActionAsync(
-            id, "lock-image", charKey, imagePath: rel);
-        return Results.Ok(new { ok = true, message = result, projectId = id, charKey, index, path = rel });
+            id, "lock-bookref", charKey, variantIndex: index);
+        return Results.Ok(new { ok = true, message = result, projectId = id, charKey, index });
     }
     catch (Exception ex)
     {

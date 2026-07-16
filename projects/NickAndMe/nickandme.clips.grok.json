@@ -23,7 +23,7 @@
         "description": "Older brother, 31, tall muscular build, reddish-brown hair, strong jaw, intense eyes, intimidating but protective presence; often gym clothes, factory workwear, or casual street clothes.",
         "reference_image_placeholder": "character_n_ref.png",
         "voice_label": "Nick (older brother)",
-        "voice_profile": "American male, early 30s, tall muscular presence; deeper lower baritone, denser chest voice, confident sometimes aggressive edge, faster punchy cadence about 140-160 wpm when angry, slower when protective; rougher Midwestern working-class timbre than his younger brother; same voice every scene — never switch to a thin or boyish voice."
+        "voice_profile": "American male, early 30s, tall muscular presence; deeper lower baritone, denser chest voice, confident sometimes aggressive edge, faster punchy cadence about 140-160 wpm when angry, slower when protective; rougher Midwestern working-class timbre than his younger brother; same voice every scene \u2014 never switch to a thin or boyish voice."
       },
       "Character_M": {
         "description": "Elderly mother, mid-60s to 70s, thin frail frame, brown hair going gray, soft lined face, often house clothes or a simple cardigan; increasingly confused distant eyes; moves carefully, sometimes reaches for walls for balance.",
@@ -39,13 +39,13 @@
       },
       "Kevin McCleary": {
         "description": "Adult man, mid-40s, solid build, short neat brown hair, practical work clothes, calm supervisory presence, weathered but kind face.",
-        "reference_image_placeholder": "character_kevin_mccleary_ref.png",
+        "reference_image_placeholder": "kevin_mccleary_ref.png",
         "voice_label": "Kevin McCleary",
         "voice_profile": "American male, mid-40s supervisor; steady practical mid baritone, calm professional, moderate pace, Midwestern workaday; consistent adult male supervisory voice."
       },
       "Bob": {
         "description": "Adult man, late 40s to early 50s, average build, thinning hair, friendly service-worker look, simple polo or work shirt, approachable everyday face.",
-        "reference_image_placeholder": "character_bob_ref.png",
+        "reference_image_placeholder": "bob_ref.png",
         "voice_label": "Bob",
         "voice_profile": "American male, late 40s to early 50s; friendly average mid baritone, casual approachable, easy pace, everyday Midwestern; consistent every scene."
       },
@@ -245,7 +245,7 @@
             "is_repeat_of": null,
             "duration_seconds": 14,
             "production_notes": [
-              "Intro / Narrator's World → Nick's Presence → Moxie's Gym → Moxie's Gym - Nick's Dominance"
+              "Intro / Narrator's World \u2192 Nick's Presence \u2192 Moxie's Gym \u2192 Moxie's Gym - Nick's Dominance"
             ],
             "lyrics": null
           },
@@ -255,7 +255,7 @@
             "is_repeat_of": null,
             "duration_seconds": 13,
             "production_notes": [
-              "Intro / Narrator's World → Nick's Presence → Moxie's Gym → Moxie's Gym - Nick's Dominance"
+              "Intro / Narrator's World \u2192 Nick's Presence \u2192 Moxie's Gym \u2192 Moxie's Gym - Nick's Dominance"
             ],
             "lyrics": null
           },
@@ -265,7 +265,7 @@
             "is_repeat_of": null,
             "duration_seconds": 13,
             "production_notes": [
-              "Intro / Narrator's World → Nick's Presence → Moxie's Gym → Moxie's Gym - Nick's Dominance"
+              "Intro / Narrator's World \u2192 Nick's Presence \u2192 Moxie's Gym \u2192 Moxie's Gym - Nick's Dominance"
             ],
             "lyrics": null
           }
@@ -291,7 +291,7 @@
           "clip_number": 2,
           "timestamp": "00:08-00:16",
           "veo_continuation_source": "none",
-          "visual_prompt": "Kirk Street apartment: 5th-floor walk-up; Ma & narrator home. Keep architecture, layout, and signature props consistent on every return. Character_P. Day 1 - Narrator's Apartment / Moxie's Gym. Single continuous cinematic sequence (smooth transition, not a random jump): Begin with WIDE SHOT of a rundown apartment building on Kirk Street under a gray winter sky, dry leaves and snow flurries swirling in a bitter cold wind. Then the camera transitions into Character_P, still wearing a pizza uniform, walking through a dimly lit hallway, lips closed, internal monologue not spok… / 720p, 24fps",
+          "visual_prompt": "Kirk Street apartment: 5th-floor walk-up; Ma & narrator home. Keep architecture, layout, and signature props consistent on every return. Character_P. Day 1 - Narrator's Apartment / Moxie's Gym. Single continuous cinematic sequence (smooth transition, not a random jump): Begin with WIDE SHOT of a rundown apartment building on Kirk Street under a gray winter sky, dry leaves and snow flurries swirling in a bitter cold wind. Then the camera transitions into Character_P, still wearing a pizza uniform, walking through a dimly lit hallway, lips closed, internal monologue not spok\u2026 / 720p, 24fps",
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens, no name tags, no name badges, no embroidered names, no lower thirds, no personal names on clothing or props",
           "audio_payload": {
             "speaker": "Character_P",
@@ -388,7 +388,7 @@
             "is_repeat_of": null,
             "duration_seconds": 16,
             "production_notes": [
-              "Viking Roots → Childhood Play → The Incident → Nick's Intervention"
+              "Viking Roots \u2192 Childhood Play \u2192 The Incident \u2192 Nick's Intervention"
             ],
             "lyrics": null
           },
@@ -398,7 +398,7 @@
             "is_repeat_of": null,
             "duration_seconds": 16,
             "production_notes": [
-              "Viking Roots → Childhood Play → The Incident → Nick's Intervention"
+              "Viking Roots \u2192 Childhood Play \u2192 The Incident \u2192 Nick's Intervention"
             ],
             "lyrics": null
           },
@@ -408,7 +408,7 @@
             "is_repeat_of": null,
             "duration_seconds": 16,
             "production_notes": [
-              "Viking Roots → Childhood Play → The Incident → Nick's Intervention"
+              "Viking Roots \u2192 Childhood Play \u2192 The Incident \u2192 Nick's Intervention"
             ],
             "lyrics": null
           }
@@ -423,7 +423,7 @@
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens, no name tags, no name badges, no embroidered names, no lower thirds, no personal names on clothing or props, ball misses window, ball over wall, jump cut mid-flight, teleporting ball, two separate shots glued together",
           "audio_payload": {
             "speaker": "Character_P",
-            "dialogue": "The thing about Nick was, he was a real-life Viking – you know? What I mean is we had these ancestors that came from Norway or Sweden.",
+            "dialogue": "The thing about Nick was, he was a real-life Viking \u2013 you know? What I mean is we had these ancestors that came from Norway or Sweden.",
             "delivery": "voiceover_internal"
           },
           "stage1_beat_id": "b1",
@@ -434,7 +434,7 @@
           "clip_number": 2,
           "timestamp": "00:08-00:16",
           "veo_continuation_source": "none",
-          "visual_prompt": "Kirk Street alley: Childhood kickball / window smash flashback. Keep architecture, layout, and signature props consistent on every return. Character_N_Young. FLASHBACK alley kickball: Mark (~10, dirty clothes) sprints and powerfully kicks a red rubber kickball; ball rockets and SMASHES through Mrs. Engel kitchen window on the brick house — glass shatters, ball inside. Character_N_Young and Character_P_Young flinch, worried. Clear kick, flight, window impact. lips closed, internal monologue not spoken to another person. ONE continuous take no cut; unbroken cause-to-effect motion / 720p, 24fps",
+          "visual_prompt": "Kirk Street alley: Childhood kickball / window smash flashback. Keep architecture, layout, and signature props consistent on every return. Character_N_Young. FLASHBACK alley kickball: Mark (~10, dirty clothes) sprints and powerfully kicks a red rubber kickball; ball rockets and SMASHES through Mrs. Engel kitchen window on the brick house \u2014 glass shatters, ball inside. Character_N_Young and Character_P_Young flinch, worried. Clear kick, flight, window impact. lips closed, internal monologue not spoken to another person. ONE continuous take no cut; unbroken cause-to-effect motion / 720p, 24fps",
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens, no name tags, no name badges, no embroidered names, no lower thirds, no personal names on clothing or props, ball misses window, ball over wall, jump cut mid-flight, teleporting ball, two separate shots glued together",
           "audio_payload": {
             "speaker": "Character_P",
@@ -546,7 +546,7 @@
             "is_repeat_of": null,
             "duration_seconds": 14,
             "production_notes": [
-              "Routine → Nick's Job → Narrator's Burden → Ma's Decline"
+              "Routine \u2192 Nick's Job \u2192 Narrator's Burden \u2192 Ma's Decline"
             ],
             "lyrics": null
           },
@@ -556,7 +556,7 @@
             "is_repeat_of": null,
             "duration_seconds": 13,
             "production_notes": [
-              "Routine → Nick's Job → Narrator's Burden → Ma's Decline"
+              "Routine \u2192 Nick's Job \u2192 Narrator's Burden \u2192 Ma's Decline"
             ],
             "lyrics": null
           },
@@ -566,7 +566,7 @@
             "is_repeat_of": null,
             "duration_seconds": 13,
             "production_notes": [
-              "Routine → Nick's Job → Narrator's Burden → Ma's Decline"
+              "Routine \u2192 Nick's Job \u2192 Narrator's Burden \u2192 Ma's Decline"
             ],
             "lyrics": null
           }
@@ -689,7 +689,7 @@
             "is_repeat_of": null,
             "duration_seconds": 11,
             "production_notes": [
-              "The Problem → Nick's View → Narrator's Secret → Outro"
+              "The Problem \u2192 Nick's View \u2192 Narrator's Secret \u2192 Outro"
             ],
             "lyrics": null
           },
@@ -699,7 +699,7 @@
             "is_repeat_of": null,
             "duration_seconds": 11,
             "production_notes": [
-              "The Problem → Nick's View → Narrator's Secret → Outro"
+              "The Problem \u2192 Nick's View \u2192 Narrator's Secret \u2192 Outro"
             ],
             "lyrics": null
           },
@@ -709,7 +709,7 @@
             "is_repeat_of": null,
             "duration_seconds": 10,
             "production_notes": [
-              "The Problem → Nick's View → Narrator's Secret → Outro"
+              "The Problem \u2192 Nick's View \u2192 Narrator's Secret \u2192 Outro"
             ],
             "lyrics": null
           }
@@ -815,7 +815,7 @@
             "is_repeat_of": null,
             "duration_seconds": 19,
             "production_notes": [
-              "New Beginnings → Sionna's Introduction → The Encounter → Her Eyes"
+              "New Beginnings \u2192 Sionna's Introduction \u2192 The Encounter \u2192 Her Eyes"
             ],
             "lyrics": null
           },
@@ -825,7 +825,7 @@
             "is_repeat_of": null,
             "duration_seconds": 19,
             "production_notes": [
-              "New Beginnings → Sionna's Introduction → The Encounter → Her Eyes"
+              "New Beginnings \u2192 Sionna's Introduction \u2192 The Encounter \u2192 Her Eyes"
             ],
             "lyrics": null
           },
@@ -835,7 +835,7 @@
             "is_repeat_of": null,
             "duration_seconds": 18,
             "production_notes": [
-              "New Beginnings → Sionna's Introduction → The Encounter → Her Eyes"
+              "New Beginnings \u2192 Sionna's Introduction \u2192 The Encounter \u2192 Her Eyes"
             ],
             "lyrics": null
           }
@@ -846,7 +846,7 @@
           "clip_number": 1,
           "timestamp": "00:00-00:08",
           "veo_continuation_source": "none",
-          "visual_prompt": "Pizza place: Narrator workplace / sidewalk outside. Keep architecture, layout, and signature props consistent on every return. Lighting Character_P (28, thin frame, pizza uniform under heavy zipped canvas coat) rides his bike slowly down a frosted sidewalk under a gray morning sky, contemplative, lips closed — internal monologue, not speaking out loud. Bitter winter daylight / 720p, 24fps",
+          "visual_prompt": "Pizza place: Narrator workplace / sidewalk outside. Keep architecture, layout, and signature props consistent on every return. Lighting Character_P (28, thin frame, pizza uniform under heavy zipped canvas coat) rides his bike slowly down a frosted sidewalk under a gray morning sky, contemplative, lips closed \u2014 internal monologue, not speaking out loud. Bitter winter daylight / 720p, 24fps",
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens, no name tags, no name badges, no embroidered names, no lower thirds, no personal names on clothing or props",
           "audio_payload": {
             "speaker": "Character_P",
@@ -936,7 +936,7 @@
           "clip_number": 7,
           "timestamp": "00:48-00:56",
           "veo_continuation_source": "extend_previous",
-          "visual_prompt": "Pizza place: Narrator workplace / sidewalk outside. Keep architecture, layout, and signature props consistent on every return. Lighting Character_S (short brown hair, light blue eyes, pale skin, grey coat) explains her name gently; Character_P (thin frame, heavy canvas coat) stares captivated at her eyes, lips closed — lost in thought, not speaking. Crisp freezing daylight on the sidewalk / 720p, 24fps",
+          "visual_prompt": "Pizza place: Narrator workplace / sidewalk outside. Keep architecture, layout, and signature props consistent on every return. Lighting Character_S (short brown hair, light blue eyes, pale skin, grey coat) explains her name gently; Character_P (thin frame, heavy canvas coat) stares captivated at her eyes, lips closed \u2014 lost in thought, not speaking. Crisp freezing daylight on the sidewalk / 720p, 24fps",
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens, no name tags, no name badges, no embroidered names, no lower thirds, no personal names on clothing or props",
           "audio_payload": {
             "speaker": "Character_S",
@@ -989,7 +989,7 @@
             "is_repeat_of": null,
             "duration_seconds": 14,
             "production_notes": [
-              "Sionna's Effect → Ma's Confusion → Arranging the Meds → Empty Eyes"
+              "Sionna's Effect \u2192 Ma's Confusion \u2192 Arranging the Meds \u2192 Empty Eyes"
             ],
             "lyrics": null
           },
@@ -999,7 +999,7 @@
             "is_repeat_of": null,
             "duration_seconds": 13,
             "production_notes": [
-              "Sionna's Effect → Ma's Confusion → Arranging the Meds → Empty Eyes"
+              "Sionna's Effect \u2192 Ma's Confusion \u2192 Arranging the Meds \u2192 Empty Eyes"
             ],
             "lyrics": null
           },
@@ -1009,7 +1009,7 @@
             "is_repeat_of": null,
             "duration_seconds": 13,
             "production_notes": [
-              "Sionna's Effect → Ma's Confusion → Arranging the Meds → Empty Eyes"
+              "Sionna's Effect \u2192 Ma's Confusion \u2192 Arranging the Meds \u2192 Empty Eyes"
             ],
             "lyrics": null
           }
@@ -1084,7 +1084,7 @@
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens, no name tags, no name badges, no embroidered names, no lower thirds, no personal names on clothing or props",
           "audio_payload": {
             "speaker": "Character_P",
-            "dialogue": "Wow, she was losing it. I would have to tell Nick about this. I'm sure he'll get mad or something – like it was my fault. Later on I went down to Joe's to get a beer. I had to get out of the apartment.",
+            "dialogue": "Wow, she was losing it. I would have to tell Nick about this. I'm sure he'll get mad or something \u2013 like it was my fault. Later on I went down to Joe's to get a beer. I had to get out of the apartment.",
             "delivery": "voiceover_internal"
           },
           "stage1_beat_id": "b5",
@@ -1130,7 +1130,7 @@
             "is_repeat_of": null,
             "duration_seconds": 16,
             "production_notes": [
-              "Ma's Breakdown → Nick's Rage → Escape to Bar → Bar Scene"
+              "Ma's Breakdown \u2192 Nick's Rage \u2192 Escape to Bar \u2192 Bar Scene"
             ],
             "lyrics": null
           },
@@ -1140,7 +1140,7 @@
             "is_repeat_of": null,
             "duration_seconds": 16,
             "production_notes": [
-              "Ma's Breakdown → Nick's Rage → Escape to Bar → Bar Scene"
+              "Ma's Breakdown \u2192 Nick's Rage \u2192 Escape to Bar \u2192 Bar Scene"
             ],
             "lyrics": null
           },
@@ -1150,7 +1150,7 @@
             "is_repeat_of": null,
             "duration_seconds": 16,
             "production_notes": [
-              "Ma's Breakdown → Nick's Rage → Escape to Bar → Bar Scene"
+              "Ma's Breakdown \u2192 Nick's Rage \u2192 Escape to Bar \u2192 Bar Scene"
             ],
             "lyrics": null
           }
@@ -1210,7 +1210,7 @@
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens, no name tags, no name badges, no embroidered names, no lower thirds, no personal names on clothing or props",
           "audio_payload": {
             "speaker": "Character_P",
-            "dialogue": "Of course not. I tell you what, I'll go check on him. I'll make sure everything is okay. Okay? Ma – you okay? / I had to get away from her for a while, that's all.",
+            "dialogue": "Of course not. I tell you what, I'll go check on him. I'll make sure everything is okay. Okay? Ma \u2013 you okay? / I had to get away from her for a while, that's all.",
             "delivery": "voiceover_internal"
           },
           "stage1_beat_id": "b4",
@@ -1289,7 +1289,7 @@
             "is_repeat_of": null,
             "duration_seconds": 14,
             "production_notes": [
-              "Intro / Confrontation Build → Nick's Accusation → Narrator's Defense → Nick's Dismissal"
+              "Intro / Confrontation Build \u2192 Nick's Accusation \u2192 Narrator's Defense \u2192 Nick's Dismissal"
             ],
             "lyrics": null
           },
@@ -1299,7 +1299,7 @@
             "is_repeat_of": null,
             "duration_seconds": 13,
             "production_notes": [
-              "Intro / Confrontation Build → Nick's Accusation → Narrator's Defense → Nick's Dismissal"
+              "Intro / Confrontation Build \u2192 Nick's Accusation \u2192 Narrator's Defense \u2192 Nick's Dismissal"
             ],
             "lyrics": null
           },
@@ -1309,7 +1309,7 @@
             "is_repeat_of": null,
             "duration_seconds": 13,
             "production_notes": [
-              "Intro / Confrontation Build → Nick's Accusation → Narrator's Defense → Nick's Dismissal"
+              "Intro / Confrontation Build \u2192 Nick's Accusation \u2192 Narrator's Defense \u2192 Nick's Dismissal"
             ],
             "lyrics": null
           }
@@ -1431,7 +1431,7 @@
             "is_repeat_of": null,
             "duration_seconds": 14,
             "production_notes": [
-              "Library Entry → The Card → Wandering Rows → Discovery"
+              "Library Entry \u2192 The Card \u2192 Wandering Rows \u2192 Discovery"
             ],
             "lyrics": null
           },
@@ -1441,7 +1441,7 @@
             "is_repeat_of": null,
             "duration_seconds": 13,
             "production_notes": [
-              "Library Entry → The Card → Wandering Rows → Discovery"
+              "Library Entry \u2192 The Card \u2192 Wandering Rows \u2192 Discovery"
             ],
             "lyrics": null
           },
@@ -1451,7 +1451,7 @@
             "is_repeat_of": null,
             "duration_seconds": 13,
             "production_notes": [
-              "Library Entry → The Card → Wandering Rows → Discovery"
+              "Library Entry \u2192 The Card \u2192 Wandering Rows \u2192 Discovery"
             ],
             "lyrics": null
           }
@@ -1466,7 +1466,7 @@
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens, no name tags, no name badges, no embroidered names, no lower thirds, no personal names on clothing or props",
           "audio_payload": {
             "speaker": "Character_P",
-            "dialogue": "I walked real fast over there and saw they were open till 9 o’clock, so I had a little time. The place was warm and quiet, like a church but without the guilt.",
+            "dialogue": "I walked real fast over there and saw they were open till 9 o\u2019clock, so I had a little time. The place was warm and quiet, like a church but without the guilt.",
             "delivery": "voiceover_internal"
           },
           "stage1_beat_id": "b1",
@@ -1573,7 +1573,7 @@
             "is_repeat_of": null,
             "duration_seconds": 14,
             "production_notes": [
-              "Stagnant Morning → Pleading → Excuses → Resignation"
+              "Stagnant Morning \u2192 Pleading \u2192 Excuses \u2192 Resignation"
             ],
             "lyrics": null
           },
@@ -1583,7 +1583,7 @@
             "is_repeat_of": null,
             "duration_seconds": 13,
             "production_notes": [
-              "Stagnant Morning → Pleading → Excuses → Resignation"
+              "Stagnant Morning \u2192 Pleading \u2192 Excuses \u2192 Resignation"
             ],
             "lyrics": null
           },
@@ -1593,7 +1593,7 @@
             "is_repeat_of": null,
             "duration_seconds": 13,
             "production_notes": [
-              "Stagnant Morning → Pleading → Excuses → Resignation"
+              "Stagnant Morning \u2192 Pleading \u2192 Excuses \u2192 Resignation"
             ],
             "lyrics": null
           }
@@ -1623,7 +1623,7 @@
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens, no name tags, no name badges, no embroidered names, no lower thirds, no personal names on clothing or props",
           "audio_payload": {
             "speaker": "Character_P",
-            "dialogue": "I asked her what she did last night. Why didn’t she stay up till I got home? I tried to talk her into going for a walk. You would have thought I asked her to run a marathon or something.",
+            "dialogue": "I asked her what she did last night. Why didn\u2019t she stay up till I got home? I tried to talk her into going for a walk. You would have thought I asked her to run a marathon or something.",
             "delivery": "spoken_on_camera"
           },
           "stage1_beat_id": "b2",
@@ -1638,7 +1638,7 @@
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens, no name tags, no name badges, no embroidered names, no lower thirds, no personal names on clothing or props, ball misses window, ball over wall, jump cut mid-flight, teleporting ball, two separate shots glued together",
           "audio_payload": {
             "speaker": "Character_M",
-            "dialogue": "It’s so cold outside. I don’t have a nice coat to wear. Where are we going anyway? It just went on and on and on.",
+            "dialogue": "It\u2019s so cold outside. I don\u2019t have a nice coat to wear. Where are we going anyway? It just went on and on and on.",
             "delivery": "spoken_on_camera"
           },
           "stage1_beat_id": "b3",
@@ -1668,7 +1668,7 @@
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens, no name tags, no name badges, no embroidered names, no lower thirds, no personal names on clothing or props",
           "audio_payload": {
             "speaker": "Character_P",
-            "dialogue": "I swear sometimes, there’s no reason for me being born anyway, except to have somebody for Nick to boss around. I told Ma I was leaving for a little while, and walked out.",
+            "dialogue": "I swear sometimes, there\u2019s no reason for me being born anyway, except to have somebody for Nick to boss around. I told Ma I was leaving for a little while, and walked out.",
             "delivery": "voiceover_internal"
           },
           "stage1_beat_id": "b5",
@@ -1715,7 +1715,7 @@
             "is_repeat_of": null,
             "duration_seconds": 11,
             "production_notes": [
-              "The Number → The Call → Walking to Meet → Entering Java Hut"
+              "The Number \u2192 The Call \u2192 Walking to Meet \u2192 Entering Java Hut"
             ],
             "lyrics": null
           },
@@ -1725,7 +1725,7 @@
             "is_repeat_of": null,
             "duration_seconds": 11,
             "production_notes": [
-              "The Number → The Call → Walking to Meet → Entering Java Hut"
+              "The Number \u2192 The Call \u2192 Walking to Meet \u2192 Entering Java Hut"
             ],
             "lyrics": null
           },
@@ -1735,7 +1735,7 @@
             "is_repeat_of": null,
             "duration_seconds": 10,
             "production_notes": [
-              "The Number → The Call → Walking to Meet → Entering Java Hut"
+              "The Number \u2192 The Call \u2192 Walking to Meet \u2192 Entering Java Hut"
             ],
             "lyrics": null
           }
@@ -1842,7 +1842,7 @@
             "is_repeat_of": null,
             "duration_seconds": 16,
             "production_notes": [
-              "Reunion → Her Eyes → Intellect → Literary Debate"
+              "Reunion \u2192 Her Eyes \u2192 Intellect \u2192 Literary Debate"
             ],
             "lyrics": null
           },
@@ -1852,7 +1852,7 @@
             "is_repeat_of": null,
             "duration_seconds": 16,
             "production_notes": [
-              "Reunion → Her Eyes → Intellect → Literary Debate"
+              "Reunion \u2192 Her Eyes \u2192 Intellect \u2192 Literary Debate"
             ],
             "lyrics": null
           },
@@ -1862,7 +1862,7 @@
             "is_repeat_of": null,
             "duration_seconds": 16,
             "production_notes": [
-              "Reunion → Her Eyes → Intellect → Literary Debate"
+              "Reunion \u2192 Her Eyes \u2192 Intellect \u2192 Literary Debate"
             ],
             "lyrics": null
           }
@@ -1877,7 +1877,7 @@
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens, no name tags, no name badges, no embroidered names, no lower thirds, no personal names on clothing or props, facing camera only, boy looking at viewer, back to house",
           "audio_payload": {
             "speaker": "Character_P",
-            "dialogue": "I saw her near the wall in the back at a small table. What are we doing? Homework? I didn’t care. All I saw were those eyes.",
+            "dialogue": "I saw her near the wall in the back at a small table. What are we doing? Homework? I didn\u2019t care. All I saw were those eyes.",
             "delivery": "voiceover_internal"
           },
           "stage1_beat_id": "b1",
@@ -2000,7 +2000,7 @@
             "is_repeat_of": null,
             "duration_seconds": 14,
             "production_notes": [
-              "Deciduous Forest → The Ride → The Field → Surrender"
+              "Deciduous Forest \u2192 The Ride \u2192 The Field \u2192 Surrender"
             ],
             "lyrics": null
           },
@@ -2010,7 +2010,7 @@
             "is_repeat_of": null,
             "duration_seconds": 13,
             "production_notes": [
-              "Deciduous Forest → The Ride → The Field → Surrender"
+              "Deciduous Forest \u2192 The Ride \u2192 The Field \u2192 Surrender"
             ],
             "lyrics": null
           },
@@ -2020,7 +2020,7 @@
             "is_repeat_of": null,
             "duration_seconds": 13,
             "production_notes": [
-              "Deciduous Forest → The Ride → The Field → Surrender"
+              "Deciduous Forest \u2192 The Ride \u2192 The Field \u2192 Surrender"
             ],
             "lyrics": null
           }
@@ -2142,7 +2142,7 @@
             "is_repeat_of": null,
             "duration_seconds": 14,
             "production_notes": [
-              "Inner Beauty → The Explanation → Buddhism Theme → Impermanence"
+              "Inner Beauty \u2192 The Explanation \u2192 Buddhism Theme \u2192 Impermanence"
             ],
             "lyrics": null
           },
@@ -2152,7 +2152,7 @@
             "is_repeat_of": null,
             "duration_seconds": 13,
             "production_notes": [
-              "Inner Beauty → The Explanation → Buddhism Theme → Impermanence"
+              "Inner Beauty \u2192 The Explanation \u2192 Buddhism Theme \u2192 Impermanence"
             ],
             "lyrics": null
           },
@@ -2162,7 +2162,7 @@
             "is_repeat_of": null,
             "duration_seconds": 13,
             "production_notes": [
-              "Inner Beauty → The Explanation → Buddhism Theme → Impermanence"
+              "Inner Beauty \u2192 The Explanation \u2192 Buddhism Theme \u2192 Impermanence"
             ],
             "lyrics": null
           }
@@ -2284,7 +2284,7 @@
             "is_repeat_of": null,
             "duration_seconds": 11,
             "production_notes": [
-              "The Class Struggle → Awkward Poses → Transformation → Outro / Zen State"
+              "The Class Struggle \u2192 Awkward Poses \u2192 Transformation \u2192 Outro / Zen State"
             ],
             "lyrics": null
           },
@@ -2294,7 +2294,7 @@
             "is_repeat_of": null,
             "duration_seconds": 11,
             "production_notes": [
-              "The Class Struggle → Awkward Poses → Transformation → Outro / Zen State"
+              "The Class Struggle \u2192 Awkward Poses \u2192 Transformation \u2192 Outro / Zen State"
             ],
             "lyrics": null
           },
@@ -2304,7 +2304,7 @@
             "is_repeat_of": null,
             "duration_seconds": 10,
             "production_notes": [
-              "The Class Struggle → Awkward Poses → Transformation → Outro / Zen State"
+              "The Class Struggle \u2192 Awkward Poses \u2192 Transformation \u2192 Outro / Zen State"
             ],
             "lyrics": null
           }
@@ -2409,7 +2409,7 @@
             "is_repeat_of": null,
             "duration_seconds": 11,
             "production_notes": [
-              "The Chilled Baker → Dough Slapping → Angry Customers → Outro / Zen State"
+              "The Chilled Baker \u2192 Dough Slapping \u2192 Angry Customers \u2192 Outro / Zen State"
             ],
             "lyrics": null
           },
@@ -2419,7 +2419,7 @@
             "is_repeat_of": null,
             "duration_seconds": 11,
             "production_notes": [
-              "The Chilled Baker → Dough Slapping → Angry Customers → Outro / Zen State"
+              "The Chilled Baker \u2192 Dough Slapping \u2192 Angry Customers \u2192 Outro / Zen State"
             ],
             "lyrics": null
           },
@@ -2429,7 +2429,7 @@
             "is_repeat_of": null,
             "duration_seconds": 10,
             "production_notes": [
-              "The Chilled Baker → Dough Slapping → Angry Customers → Outro / Zen State"
+              "The Chilled Baker \u2192 Dough Slapping \u2192 Angry Customers \u2192 Outro / Zen State"
             ],
             "lyrics": null
           }
@@ -2535,7 +2535,7 @@
             "is_repeat_of": null,
             "duration_seconds": 14,
             "production_notes": [
-              "The Stomping → The Accusation → The Confrontation → The Storm Out"
+              "The Stomping \u2192 The Accusation \u2192 The Confrontation \u2192 The Storm Out"
             ],
             "lyrics": null
           },
@@ -2545,7 +2545,7 @@
             "is_repeat_of": null,
             "duration_seconds": 13,
             "production_notes": [
-              "The Stomping → The Accusation → The Confrontation → The Storm Out"
+              "The Stomping \u2192 The Accusation \u2192 The Confrontation \u2192 The Storm Out"
             ],
             "lyrics": null
           },
@@ -2555,7 +2555,7 @@
             "is_repeat_of": null,
             "duration_seconds": 13,
             "production_notes": [
-              "The Stomping → The Accusation → The Confrontation → The Storm Out"
+              "The Stomping \u2192 The Accusation \u2192 The Confrontation \u2192 The Storm Out"
             ],
             "lyrics": null
           }
@@ -2677,7 +2677,7 @@
             "is_repeat_of": null,
             "duration_seconds": 11,
             "production_notes": [
-              "The Grudge → The Fluid → The Match → Outro / Burning Memory"
+              "The Grudge \u2192 The Fluid \u2192 The Match \u2192 Outro / Burning Memory"
             ],
             "lyrics": null
           },
@@ -2687,7 +2687,7 @@
             "is_repeat_of": null,
             "duration_seconds": 11,
             "production_notes": [
-              "The Grudge → The Fluid → The Match → Outro / Burning Memory"
+              "The Grudge \u2192 The Fluid \u2192 The Match \u2192 Outro / Burning Memory"
             ],
             "lyrics": null
           },
@@ -2697,7 +2697,7 @@
             "is_repeat_of": null,
             "duration_seconds": 10,
             "production_notes": [
-              "The Grudge → The Fluid → The Match → Outro / Burning Memory"
+              "The Grudge \u2192 The Fluid \u2192 The Match \u2192 Outro / Burning Memory"
             ],
             "lyrics": null
           }
@@ -2803,7 +2803,7 @@
             "is_repeat_of": null,
             "duration_seconds": 11,
             "production_notes": [
-              "Autumn Memories → Winter Passage → Spring Renewal → Lush Spring / Outro"
+              "Autumn Memories \u2192 Winter Passage \u2192 Spring Renewal \u2192 Lush Spring / Outro"
             ],
             "lyrics": null
           },
@@ -2813,7 +2813,7 @@
             "is_repeat_of": null,
             "duration_seconds": 11,
             "production_notes": [
-              "Autumn Memories → Winter Passage → Spring Renewal → Lush Spring / Outro"
+              "Autumn Memories \u2192 Winter Passage \u2192 Spring Renewal \u2192 Lush Spring / Outro"
             ],
             "lyrics": null
           },
@@ -2823,7 +2823,7 @@
             "is_repeat_of": null,
             "duration_seconds": 10,
             "production_notes": [
-              "Autumn Memories → Winter Passage → Spring Renewal → Lush Spring / Outro"
+              "Autumn Memories \u2192 Winter Passage \u2192 Spring Renewal \u2192 Lush Spring / Outro"
             ],
             "lyrics": null
           }
@@ -2868,7 +2868,7 @@
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens, no name tags, no name badges, no embroidered names, no lower thirds, no personal names on clothing or props",
           "audio_payload": {
             "speaker": "Character_P",
-            "dialogue": "Sometimes when people get caught in bad situations, they change into something better – just like leaves. / She said that was beautiful.",
+            "dialogue": "Sometimes when people get caught in bad situations, they change into something better \u2013 just like leaves. / She said that was beautiful.",
             "delivery": "voiceover_internal"
           },
           "stage1_beat_id": "b3",
@@ -2929,7 +2929,7 @@
             "is_repeat_of": null,
             "duration_seconds": 11,
             "production_notes": [
-              "The Decision → Browsing Shelves → Checking Out Books → Outro / Growth"
+              "The Decision \u2192 Browsing Shelves \u2192 Checking Out Books \u2192 Outro / Growth"
             ],
             "lyrics": null
           },
@@ -2939,7 +2939,7 @@
             "is_repeat_of": null,
             "duration_seconds": 11,
             "production_notes": [
-              "The Decision → Browsing Shelves → Checking Out Books → Outro / Growth"
+              "The Decision \u2192 Browsing Shelves \u2192 Checking Out Books \u2192 Outro / Growth"
             ],
             "lyrics": null
           },
@@ -2949,7 +2949,7 @@
             "is_repeat_of": null,
             "duration_seconds": 10,
             "production_notes": [
-              "The Decision → Browsing Shelves → Checking Out Books → Outro / Growth"
+              "The Decision \u2192 Browsing Shelves \u2192 Checking Out Books \u2192 Outro / Growth"
             ],
             "lyrics": null
           }
@@ -3054,7 +3054,7 @@
             "is_repeat_of": null,
             "duration_seconds": 14,
             "production_notes": [
-              "Mindfulness → The Call → Zoning Out → The Heart Scare"
+              "Mindfulness \u2192 The Call \u2192 Zoning Out \u2192 The Heart Scare"
             ],
             "lyrics": null
           },
@@ -3064,7 +3064,7 @@
             "is_repeat_of": null,
             "duration_seconds": 13,
             "production_notes": [
-              "Mindfulness → The Call → Zoning Out → The Heart Scare"
+              "Mindfulness \u2192 The Call \u2192 Zoning Out \u2192 The Heart Scare"
             ],
             "lyrics": null
           },
@@ -3074,7 +3074,7 @@
             "is_repeat_of": null,
             "duration_seconds": 13,
             "production_notes": [
-              "Mindfulness → The Call → Zoning Out → The Heart Scare"
+              "Mindfulness \u2192 The Call \u2192 Zoning Out \u2192 The Heart Scare"
             ],
             "lyrics": null
           }
@@ -3104,7 +3104,7 @@
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens, no name tags, no name badges, no embroidered names, no lower thirds, no personal names on clothing or props",
           "audio_payload": {
             "speaker": "Character_P",
-            "dialogue": "I called her up and told her I wished she would finally come over to my place, and even meet my Ma. I wanted to feel how I felt when I was with her – fresh, new, and looking forward to the future.",
+            "dialogue": "I called her up and told her I wished she would finally come over to my place, and even meet my Ma. I wanted to feel how I felt when I was with her \u2013 fresh, new, and looking forward to the future.",
             "delivery": "spoken_on_camera"
           },
           "stage1_beat_id": "b2",
@@ -3196,7 +3196,7 @@
             "is_repeat_of": null,
             "duration_seconds": 11,
             "production_notes": [
-              "The Diagnosis → Calling Nick → Emergency Admittance → ER Waiting Room / Outro"
+              "The Diagnosis \u2192 Calling Nick \u2192 Emergency Admittance \u2192 ER Waiting Room / Outro"
             ],
             "lyrics": null
           },
@@ -3206,7 +3206,7 @@
             "is_repeat_of": null,
             "duration_seconds": 11,
             "production_notes": [
-              "The Diagnosis → Calling Nick → Emergency Admittance → ER Waiting Room / Outro"
+              "The Diagnosis \u2192 Calling Nick \u2192 Emergency Admittance \u2192 ER Waiting Room / Outro"
             ],
             "lyrics": null
           },
@@ -3216,7 +3216,7 @@
             "is_repeat_of": null,
             "duration_seconds": 10,
             "production_notes": [
-              "The Diagnosis → Calling Nick → Emergency Admittance → ER Waiting Room / Outro"
+              "The Diagnosis \u2192 Calling Nick \u2192 Emergency Admittance \u2192 ER Waiting Room / Outro"
             ],
             "lyrics": null
           }
@@ -3322,7 +3322,7 @@
             "is_repeat_of": null,
             "duration_seconds": 16,
             "production_notes": [
-              "Love in a Sad Place → Dream Entry / Chaos → The Battle → Betrayal"
+              "Love in a Sad Place \u2192 Dream Entry / Chaos \u2192 The Battle \u2192 Betrayal"
             ],
             "lyrics": null
           },
@@ -3332,7 +3332,7 @@
             "is_repeat_of": null,
             "duration_seconds": 16,
             "production_notes": [
-              "Love in a Sad Place → Dream Entry / Chaos → The Battle → Betrayal"
+              "Love in a Sad Place \u2192 Dream Entry / Chaos \u2192 The Battle \u2192 Betrayal"
             ],
             "lyrics": null
           },
@@ -3342,7 +3342,7 @@
             "is_repeat_of": null,
             "duration_seconds": 16,
             "production_notes": [
-              "Love in a Sad Place → Dream Entry / Chaos → The Battle → Betrayal"
+              "Love in a Sad Place \u2192 Dream Entry / Chaos \u2192 The Battle \u2192 Betrayal"
             ],
             "lyrics": null
           }
@@ -3417,7 +3417,7 @@
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens, no name tags, no name badges, no embroidered names, no lower thirds, no personal names on clothing or props",
           "audio_payload": {
             "speaker": "Character_P",
-            "dialogue": "He suddenly stabbed the longest knife I have ever imagined into my chest. I couldn't believe it. Nick had killed me – Nick had killed me. I felt betrayed and so confused.",
+            "dialogue": "He suddenly stabbed the longest knife I have ever imagined into my chest. I couldn't believe it. Nick had killed me \u2013 Nick had killed me. I felt betrayed and so confused.",
             "delivery": "voiceover_internal"
           },
           "stage1_beat_id": "b5",
@@ -3480,7 +3480,7 @@
             "is_repeat_of": null,
             "duration_seconds": 16,
             "production_notes": [
-              "Home Again → The Pill Routine → The Critic's Arrival → Screaming Fight"
+              "Home Again \u2192 The Pill Routine \u2192 The Critic's Arrival \u2192 Screaming Fight"
             ],
             "lyrics": null
           },
@@ -3490,7 +3490,7 @@
             "is_repeat_of": null,
             "duration_seconds": 16,
             "production_notes": [
-              "Home Again → The Pill Routine → The Critic's Arrival → Screaming Fight"
+              "Home Again \u2192 The Pill Routine \u2192 The Critic's Arrival \u2192 Screaming Fight"
             ],
             "lyrics": null
           },
@@ -3500,7 +3500,7 @@
             "is_repeat_of": null,
             "duration_seconds": 16,
             "production_notes": [
-              "Home Again → The Pill Routine → The Critic's Arrival → Screaming Fight"
+              "Home Again \u2192 The Pill Routine \u2192 The Critic's Arrival \u2192 Screaming Fight"
             ],
             "lyrics": null
           }
@@ -3638,7 +3638,7 @@
             "is_repeat_of": null,
             "duration_seconds": 14,
             "production_notes": [
-              "Schoolyard Joy → The Giggle Fit → Stern Warning → Mrs. Stark's Wrath"
+              "Schoolyard Joy \u2192 The Giggle Fit \u2192 Stern Warning \u2192 Mrs. Stark's Wrath"
             ],
             "lyrics": null
           },
@@ -3648,7 +3648,7 @@
             "is_repeat_of": null,
             "duration_seconds": 13,
             "production_notes": [
-              "Schoolyard Joy → The Giggle Fit → Stern Warning → Mrs. Stark's Wrath"
+              "Schoolyard Joy \u2192 The Giggle Fit \u2192 Stern Warning \u2192 Mrs. Stark's Wrath"
             ],
             "lyrics": null
           },
@@ -3658,7 +3658,7 @@
             "is_repeat_of": null,
             "duration_seconds": 13,
             "production_notes": [
-              "Schoolyard Joy → The Giggle Fit → Stern Warning → Mrs. Stark's Wrath"
+              "Schoolyard Joy \u2192 The Giggle Fit \u2192 Stern Warning \u2192 Mrs. Stark's Wrath"
             ],
             "lyrics": null
           }
@@ -3780,7 +3780,7 @@
             "is_repeat_of": null,
             "duration_seconds": 14,
             "production_notes": [
-              "The Intervention → Nick's Charm → Schoolyard Relief → Brotherly Promise"
+              "The Intervention \u2192 Nick's Charm \u2192 Schoolyard Relief \u2192 Brotherly Promise"
             ],
             "lyrics": null
           },
@@ -3790,7 +3790,7 @@
             "is_repeat_of": null,
             "duration_seconds": 13,
             "production_notes": [
-              "The Intervention → Nick's Charm → Schoolyard Relief → Brotherly Promise"
+              "The Intervention \u2192 Nick's Charm \u2192 Schoolyard Relief \u2192 Brotherly Promise"
             ],
             "lyrics": null
           },
@@ -3800,7 +3800,7 @@
             "is_repeat_of": null,
             "duration_seconds": 13,
             "production_notes": [
-              "The Intervention → Nick's Charm → Schoolyard Relief → Brotherly Promise"
+              "The Intervention \u2192 Nick's Charm \u2192 Schoolyard Relief \u2192 Brotherly Promise"
             ],
             "lyrics": null
           }
@@ -3922,7 +3922,7 @@
             "is_repeat_of": null,
             "duration_seconds": 11,
             "production_notes": [
-              "Staring Out → Two Worlds → The Contrast → Complete / Outro"
+              "Staring Out \u2192 Two Worlds \u2192 The Contrast \u2192 Complete / Outro"
             ],
             "lyrics": null
           },
@@ -3932,7 +3932,7 @@
             "is_repeat_of": null,
             "duration_seconds": 11,
             "production_notes": [
-              "Staring Out → Two Worlds → The Contrast → Complete / Outro"
+              "Staring Out \u2192 Two Worlds \u2192 The Contrast \u2192 Complete / Outro"
             ],
             "lyrics": null
           },
@@ -3942,7 +3942,7 @@
             "is_repeat_of": null,
             "duration_seconds": 10,
             "production_notes": [
-              "Staring Out → Two Worlds → The Contrast → Complete / Outro"
+              "Staring Out \u2192 Two Worlds \u2192 The Contrast \u2192 Complete / Outro"
             ],
             "lyrics": null
           }
@@ -4048,7 +4048,7 @@
             "is_repeat_of": null,
             "duration_seconds": 11,
             "production_notes": [
-              "Quiet Strength → Meditative Space → Ma's Praise → Value / Outro"
+              "Quiet Strength \u2192 Meditative Space \u2192 Ma's Praise \u2192 Value / Outro"
             ],
             "lyrics": null
           },
@@ -4058,7 +4058,7 @@
             "is_repeat_of": null,
             "duration_seconds": 11,
             "production_notes": [
-              "Quiet Strength → Meditative Space → Ma's Praise → Value / Outro"
+              "Quiet Strength \u2192 Meditative Space \u2192 Ma's Praise \u2192 Value / Outro"
             ],
             "lyrics": null
           },
@@ -4068,7 +4068,7 @@
             "is_repeat_of": null,
             "duration_seconds": 10,
             "production_notes": [
-              "Quiet Strength → Meditative Space → Ma's Praise → Value / Outro"
+              "Quiet Strength \u2192 Meditative Space \u2192 Ma's Praise \u2192 Value / Outro"
             ],
             "lyrics": null
           }
@@ -4128,7 +4128,7 @@
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens, no name tags, no name badges, no embroidered names, no lower thirds, no personal names on clothing or props",
           "audio_payload": {
             "speaker": "Character_P",
-            "dialogue": "To actually feel like I was being valued for a decision that I had made – not that Nick made, but that I had made – felt awesome.",
+            "dialogue": "To actually feel like I was being valued for a decision that I had made \u2013 not that Nick made, but that I had made \u2013 felt awesome.",
             "delivery": "voiceover_internal"
           },
           "stage1_beat_id": "b4",
@@ -4174,7 +4174,7 @@
             "is_repeat_of": null,
             "duration_seconds": 16,
             "production_notes": [
-              "Suede Jacket → Hostility → Stand Your Ground → Ma's Silent Plea"
+              "Suede Jacket \u2192 Hostility \u2192 Stand Your Ground \u2192 Ma's Silent Plea"
             ],
             "lyrics": null
           },
@@ -4184,7 +4184,7 @@
             "is_repeat_of": null,
             "duration_seconds": 16,
             "production_notes": [
-              "Suede Jacket → Hostility → Stand Your Ground → Ma's Silent Plea"
+              "Suede Jacket \u2192 Hostility \u2192 Stand Your Ground \u2192 Ma's Silent Plea"
             ],
             "lyrics": null
           },
@@ -4194,7 +4194,7 @@
             "is_repeat_of": null,
             "duration_seconds": 16,
             "production_notes": [
-              "Suede Jacket → Hostility → Stand Your Ground → Ma's Silent Plea"
+              "Suede Jacket \u2192 Hostility \u2192 Stand Your Ground \u2192 Ma's Silent Plea"
             ],
             "lyrics": null
           }
@@ -4332,7 +4332,7 @@
             "is_repeat_of": null,
             "duration_seconds": 14,
             "production_notes": [
-              "The Harassment → The Bluff → The Giggling → My Best Friend"
+              "The Harassment \u2192 The Bluff \u2192 The Giggling \u2192 My Best Friend"
             ],
             "lyrics": null
           },
@@ -4342,7 +4342,7 @@
             "is_repeat_of": null,
             "duration_seconds": 13,
             "production_notes": [
-              "The Harassment → The Bluff → The Giggling → My Best Friend"
+              "The Harassment \u2192 The Bluff \u2192 The Giggling \u2192 My Best Friend"
             ],
             "lyrics": null
           },
@@ -4352,7 +4352,7 @@
             "is_repeat_of": null,
             "duration_seconds": 13,
             "production_notes": [
-              "The Harassment → The Bluff → The Giggling → My Best Friend"
+              "The Harassment \u2192 The Bluff \u2192 The Giggling \u2192 My Best Friend"
             ],
             "lyrics": null
           }
@@ -4474,7 +4474,7 @@
             "is_repeat_of": null,
             "duration_seconds": 11,
             "production_notes": [
-              "New Purpose → The Classroom → Sionna's Brilliance → Determination / Outro"
+              "New Purpose \u2192 The Classroom \u2192 Sionna's Brilliance \u2192 Determination / Outro"
             ],
             "lyrics": null
           },
@@ -4484,7 +4484,7 @@
             "is_repeat_of": null,
             "duration_seconds": 11,
             "production_notes": [
-              "New Purpose → The Classroom → Sionna's Brilliance → Determination / Outro"
+              "New Purpose \u2192 The Classroom \u2192 Sionna's Brilliance \u2192 Determination / Outro"
             ],
             "lyrics": null
           },
@@ -4494,7 +4494,7 @@
             "is_repeat_of": null,
             "duration_seconds": 10,
             "production_notes": [
-              "New Purpose → The Classroom → Sionna's Brilliance → Determination / Outro"
+              "New Purpose \u2192 The Classroom \u2192 Sionna's Brilliance \u2192 Determination / Outro"
             ],
             "lyrics": null
           }
@@ -4539,7 +4539,7 @@
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens, no name tags, no name badges, no embroidered names, no lower thirds, no personal names on clothing or props",
           "audio_payload": {
             "speaker": "Character_P",
-            "dialogue": "We went to the library on campus, listened to the librarian talk. There were a few cute girls in there, younger than me. But when they opened their mouths – oh God! The stupid shit that came out was amazing.",
+            "dialogue": "We went to the library on campus, listened to the librarian talk. There were a few cute girls in there, younger than me. But when they opened their mouths \u2013 oh God! The stupid shit that came out was amazing.",
             "delivery": "voiceover_internal"
           },
           "stage1_beat_id": "b3",
@@ -4600,7 +4600,7 @@
             "is_repeat_of": null,
             "duration_seconds": 14,
             "production_notes": [
-              "The Computer → Hard Work → Mental Library → Storing Facts"
+              "The Computer \u2192 Hard Work \u2192 Mental Library \u2192 Storing Facts"
             ],
             "lyrics": null
           },
@@ -4610,7 +4610,7 @@
             "is_repeat_of": null,
             "duration_seconds": 13,
             "production_notes": [
-              "The Computer → Hard Work → Mental Library → Storing Facts"
+              "The Computer \u2192 Hard Work \u2192 Mental Library \u2192 Storing Facts"
             ],
             "lyrics": null
           },
@@ -4620,7 +4620,7 @@
             "is_repeat_of": null,
             "duration_seconds": 13,
             "production_notes": [
-              "The Computer → Hard Work → Mental Library → Storing Facts"
+              "The Computer \u2192 Hard Work \u2192 Mental Library \u2192 Storing Facts"
             ],
             "lyrics": null
           }
@@ -4743,7 +4743,7 @@
             "is_repeat_of": null,
             "duration_seconds": 14,
             "production_notes": [
-              "Sunny Street → The Mocking Kids → Self-Mastery → Slow-Motion Kiss"
+              "Sunny Street \u2192 The Mocking Kids \u2192 Self-Mastery \u2192 Slow-Motion Kiss"
             ],
             "lyrics": null
           },
@@ -4753,7 +4753,7 @@
             "is_repeat_of": null,
             "duration_seconds": 13,
             "production_notes": [
-              "Sunny Street → The Mocking Kids → Self-Mastery → Slow-Motion Kiss"
+              "Sunny Street \u2192 The Mocking Kids \u2192 Self-Mastery \u2192 Slow-Motion Kiss"
             ],
             "lyrics": null
           },
@@ -4763,7 +4763,7 @@
             "is_repeat_of": null,
             "duration_seconds": 13,
             "production_notes": [
-              "Sunny Street → The Mocking Kids → Self-Mastery → Slow-Motion Kiss"
+              "Sunny Street \u2192 The Mocking Kids \u2192 Self-Mastery \u2192 Slow-Motion Kiss"
             ],
             "lyrics": null
           }
@@ -4885,7 +4885,7 @@
             "is_repeat_of": null,
             "duration_seconds": 11,
             "production_notes": [
-              "Loving Kindness → Deep Eyes → I Love You → First Confession / Outro"
+              "Loving Kindness \u2192 Deep Eyes \u2192 I Love You \u2192 First Confession / Outro"
             ],
             "lyrics": null
           },
@@ -4895,7 +4895,7 @@
             "is_repeat_of": null,
             "duration_seconds": 11,
             "production_notes": [
-              "Loving Kindness → Deep Eyes → I Love You → First Confession / Outro"
+              "Loving Kindness \u2192 Deep Eyes \u2192 I Love You \u2192 First Confession / Outro"
             ],
             "lyrics": null
           },
@@ -4905,7 +4905,7 @@
             "is_repeat_of": null,
             "duration_seconds": 10,
             "production_notes": [
-              "Loving Kindness → Deep Eyes → I Love You → First Confession / Outro"
+              "Loving Kindness \u2192 Deep Eyes \u2192 I Love You \u2192 First Confession / Outro"
             ],
             "lyrics": null
           }
@@ -5012,7 +5012,7 @@
             "is_repeat_of": null,
             "duration_seconds": 16,
             "production_notes": [
-              "The Gathering → Smoke and Bud → Crude Mockery → The Rocking Chair"
+              "The Gathering \u2192 Smoke and Bud \u2192 Crude Mockery \u2192 The Rocking Chair"
             ],
             "lyrics": null
           },
@@ -5022,7 +5022,7 @@
             "is_repeat_of": null,
             "duration_seconds": 16,
             "production_notes": [
-              "The Gathering → Smoke and Bud → Crude Mockery → The Rocking Chair"
+              "The Gathering \u2192 Smoke and Bud \u2192 Crude Mockery \u2192 The Rocking Chair"
             ],
             "lyrics": null
           },
@@ -5032,7 +5032,7 @@
             "is_repeat_of": null,
             "duration_seconds": 16,
             "production_notes": [
-              "The Gathering → Smoke and Bud → Crude Mockery → The Rocking Chair"
+              "The Gathering \u2192 Smoke and Bud \u2192 Crude Mockery \u2192 The Rocking Chair"
             ],
             "lyrics": null
           }
@@ -5170,7 +5170,7 @@
             "is_repeat_of": null,
             "duration_seconds": 14,
             "production_notes": [
-              "The Clatter → Alien Sensation → Numb World → The Bar Counter"
+              "The Clatter \u2192 Alien Sensation \u2192 Numb World \u2192 The Bar Counter"
             ],
             "lyrics": null
           },
@@ -5180,7 +5180,7 @@
             "is_repeat_of": null,
             "duration_seconds": 13,
             "production_notes": [
-              "The Clatter → Alien Sensation → Numb World → The Bar Counter"
+              "The Clatter \u2192 Alien Sensation \u2192 Numb World \u2192 The Bar Counter"
             ],
             "lyrics": null
           },
@@ -5190,7 +5190,7 @@
             "is_repeat_of": null,
             "duration_seconds": 13,
             "production_notes": [
-              "The Clatter → Alien Sensation → Numb World → The Bar Counter"
+              "The Clatter \u2192 Alien Sensation \u2192 Numb World \u2192 The Bar Counter"
             ],
             "lyrics": null
           }
@@ -5235,7 +5235,7 @@
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens, no name tags, no name badges, no embroidered names, no lower thirds, no personal names on clothing or props",
           "audio_payload": {
             "speaker": "Character_P",
-            "dialogue": "It seemed strange, as if I were an alien visiting the planet, amused by the antics of the population. Everyone appeared familiar, but the lifestyle was starting to confuse me. It felt so – dumb. Just dumb.",
+            "dialogue": "It seemed strange, as if I were an alien visiting the planet, amused by the antics of the population. Everyone appeared familiar, but the lifestyle was starting to confuse me. It felt so \u2013 dumb. Just dumb.",
             "delivery": "voiceover_internal"
           },
           "stage1_beat_id": "b3",
@@ -5312,7 +5312,7 @@
             "is_repeat_of": null,
             "duration_seconds": 14,
             "production_notes": [
-              "The Pool Room → Lindsey → Jealous Fury → Confrontation"
+              "The Pool Room \u2192 Lindsey \u2192 Jealous Fury \u2192 Confrontation"
             ],
             "lyrics": null
           },
@@ -5322,7 +5322,7 @@
             "is_repeat_of": null,
             "duration_seconds": 13,
             "production_notes": [
-              "The Pool Room → Lindsey → Jealous Fury → Confrontation"
+              "The Pool Room \u2192 Lindsey \u2192 Jealous Fury \u2192 Confrontation"
             ],
             "lyrics": null
           },
@@ -5332,7 +5332,7 @@
             "is_repeat_of": null,
             "duration_seconds": 13,
             "production_notes": [
-              "The Pool Room → Lindsey → Jealous Fury → Confrontation"
+              "The Pool Room \u2192 Lindsey \u2192 Jealous Fury \u2192 Confrontation"
             ],
             "lyrics": null
           }
@@ -5454,7 +5454,7 @@
             "is_repeat_of": null,
             "duration_seconds": 19,
             "production_notes": [
-              "AC-DC Vibe → Rage and Defiance → The Warning → Slow-Motion Punch"
+              "AC-DC Vibe \u2192 Rage and Defiance \u2192 The Warning \u2192 Slow-Motion Punch"
             ],
             "lyrics": null
           },
@@ -5464,7 +5464,7 @@
             "is_repeat_of": null,
             "duration_seconds": 19,
             "production_notes": [
-              "AC-DC Vibe → Rage and Defiance → The Warning → Slow-Motion Punch"
+              "AC-DC Vibe \u2192 Rage and Defiance \u2192 The Warning \u2192 Slow-Motion Punch"
             ],
             "lyrics": null
           },
@@ -5474,7 +5474,7 @@
             "is_repeat_of": null,
             "duration_seconds": 18,
             "production_notes": [
-              "AC-DC Vibe → Rage and Defiance → The Warning → Slow-Motion Punch"
+              "AC-DC Vibe \u2192 Rage and Defiance \u2192 The Warning \u2192 Slow-Motion Punch"
             ],
             "lyrics": null
           }
@@ -5534,7 +5534,7 @@
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens, no name tags, no name badges, no embroidered names, no lower thirds, no personal names on clothing or props",
           "audio_payload": {
             "speaker": "Character_P",
-            "dialogue": "I stepped up closer than I ever dared. Nick, listen – you don't have a problem with this guy. Lindsey can see whoever she wants. Leave it. Keep out of it! Nick screamed. You're next if you don't get out of my face!",
+            "dialogue": "I stepped up closer than I ever dared. Nick, listen \u2013 you don't have a problem with this guy. Lindsey can see whoever she wants. Leave it. Keep out of it! Nick screamed. You're next if you don't get out of my face!",
             "delivery": "voiceover_internal"
           },
           "stage1_beat_id": "b4",
@@ -5628,7 +5628,7 @@
             "is_repeat_of": null,
             "duration_seconds": 16,
             "production_notes": [
-              "Safe Haven → The Outcast Brother → Analyzing Nick → Spiritual Path"
+              "Safe Haven \u2192 The Outcast Brother \u2192 Analyzing Nick \u2192 Spiritual Path"
             ],
             "lyrics": null
           },
@@ -5638,7 +5638,7 @@
             "is_repeat_of": null,
             "duration_seconds": 16,
             "production_notes": [
-              "Safe Haven → The Outcast Brother → Analyzing Nick → Spiritual Path"
+              "Safe Haven \u2192 The Outcast Brother \u2192 Analyzing Nick \u2192 Spiritual Path"
             ],
             "lyrics": null
           },
@@ -5648,7 +5648,7 @@
             "is_repeat_of": null,
             "duration_seconds": 16,
             "production_notes": [
-              "Safe Haven → The Outcast Brother → Analyzing Nick → Spiritual Path"
+              "Safe Haven \u2192 The Outcast Brother \u2192 Analyzing Nick \u2192 Spiritual Path"
             ],
             "lyrics": null
           }
@@ -5787,7 +5787,7 @@
             "is_repeat_of": null,
             "duration_seconds": 11,
             "production_notes": [
-              "Relief → Like Coming Home → Finding True Self → Drifting Off / Outro"
+              "Relief \u2192 Like Coming Home \u2192 Finding True Self \u2192 Drifting Off / Outro"
             ],
             "lyrics": null
           },
@@ -5797,7 +5797,7 @@
             "is_repeat_of": null,
             "duration_seconds": 11,
             "production_notes": [
-              "Relief → Like Coming Home → Finding True Self → Drifting Off / Outro"
+              "Relief \u2192 Like Coming Home \u2192 Finding True Self \u2192 Drifting Off / Outro"
             ],
             "lyrics": null
           },
@@ -5807,7 +5807,7 @@
             "is_repeat_of": null,
             "duration_seconds": 10,
             "production_notes": [
-              "Relief → Like Coming Home → Finding True Self → Drifting Off / Outro"
+              "Relief \u2192 Like Coming Home \u2192 Finding True Self \u2192 Drifting Off / Outro"
             ],
             "lyrics": null
           }
@@ -5913,7 +5913,7 @@
             "is_repeat_of": null,
             "duration_seconds": 16,
             "production_notes": [
-              "Desolation (B&W) → The Lady of the Lake → Serene Embrace → Giant of Fire"
+              "Desolation (B&W) \u2192 The Lady of the Lake \u2192 Serene Embrace \u2192 Giant of Fire"
             ],
             "lyrics": null
           },
@@ -5923,7 +5923,7 @@
             "is_repeat_of": null,
             "duration_seconds": 16,
             "production_notes": [
-              "Desolation (B&W) → The Lady of the Lake → Serene Embrace → Giant of Fire"
+              "Desolation (B&W) \u2192 The Lady of the Lake \u2192 Serene Embrace \u2192 Giant of Fire"
             ],
             "lyrics": null
           },
@@ -5933,7 +5933,7 @@
             "is_repeat_of": null,
             "duration_seconds": 16,
             "production_notes": [
-              "Desolation (B&W) → The Lady of the Lake → Serene Embrace → Giant of Fire"
+              "Desolation (B&W) \u2192 The Lady of the Lake \u2192 Serene Embrace \u2192 Giant of Fire"
             ],
             "lyrics": null
           }
@@ -6008,7 +6008,7 @@
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens, no name tags, no name badges, no embroidered names, no lower thirds, no personal names on clothing or props",
           "audio_payload": {
             "speaker": "Character_P",
-            "dialogue": "She spread her arms, her white sleeves blowing like wings. An invisible force pushed Nick back. Good against evil – water against fire. Nick's face was wild because his weapon failed him. He shrank to normal size.",
+            "dialogue": "She spread her arms, her white sleeves blowing like wings. An invisible force pushed Nick back. Good against evil \u2013 water against fire. Nick's face was wild because his weapon failed him. He shrank to normal size.",
             "delivery": "voiceover_internal"
           },
           "stage1_beat_id": "b5",
@@ -6071,7 +6071,7 @@
             "is_repeat_of": null,
             "duration_seconds": 12,
             "production_notes": [
-              "Disoriented Awakening → Crisp Sheets → Morning Sun / Outro"
+              "Disoriented Awakening \u2192 Crisp Sheets \u2192 Morning Sun / Outro"
             ],
             "lyrics": null
           },
@@ -6081,7 +6081,7 @@
             "is_repeat_of": null,
             "duration_seconds": 12,
             "production_notes": [
-              "Disoriented Awakening → Crisp Sheets → Morning Sun / Outro"
+              "Disoriented Awakening \u2192 Crisp Sheets \u2192 Morning Sun / Outro"
             ],
             "lyrics": null
           }
@@ -6171,7 +6171,7 @@
             "is_repeat_of": null,
             "duration_seconds": 16,
             "production_notes": [
-              "The Passing Months → Intellectual Growth → Brother's Absence → Sionna's Care"
+              "The Passing Months \u2192 Intellectual Growth \u2192 Brother's Absence \u2192 Sionna's Care"
             ],
             "lyrics": null
           },
@@ -6181,7 +6181,7 @@
             "is_repeat_of": null,
             "duration_seconds": 16,
             "production_notes": [
-              "The Passing Months → Intellectual Growth → Brother's Absence → Sionna's Care"
+              "The Passing Months \u2192 Intellectual Growth \u2192 Brother's Absence \u2192 Sionna's Care"
             ],
             "lyrics": null
           },
@@ -6191,7 +6191,7 @@
             "is_repeat_of": null,
             "duration_seconds": 16,
             "production_notes": [
-              "The Passing Months → Intellectual Growth → Brother's Absence → Sionna's Care"
+              "The Passing Months \u2192 Intellectual Growth \u2192 Brother's Absence \u2192 Sionna's Care"
             ],
             "lyrics": null
           }
@@ -6328,7 +6328,7 @@
             "is_repeat_of": null,
             "duration_seconds": 11,
             "production_notes": [
-              "The Classroom → Unexamined Life → A Baby's Growth → Paradox / Outro"
+              "The Classroom \u2192 Unexamined Life \u2192 A Baby's Growth \u2192 Paradox / Outro"
             ],
             "lyrics": null
           },
@@ -6338,7 +6338,7 @@
             "is_repeat_of": null,
             "duration_seconds": 11,
             "production_notes": [
-              "The Classroom → Unexamined Life → A Baby's Growth → Paradox / Outro"
+              "The Classroom \u2192 Unexamined Life \u2192 A Baby's Growth \u2192 Paradox / Outro"
             ],
             "lyrics": null
           },
@@ -6348,7 +6348,7 @@
             "is_repeat_of": null,
             "duration_seconds": 10,
             "production_notes": [
-              "The Classroom → Unexamined Life → A Baby's Growth → Paradox / Outro"
+              "The Classroom \u2192 Unexamined Life \u2192 A Baby's Growth \u2192 Paradox / Outro"
             ],
             "lyrics": null
           }
@@ -6454,7 +6454,7 @@
             "is_repeat_of": null,
             "duration_seconds": 16,
             "production_notes": [
-              "Dualism Paper → Doorbell / Sionna Arrives → Regal Beauty → Playful Kisses"
+              "Dualism Paper \u2192 Doorbell / Sionna Arrives \u2192 Regal Beauty \u2192 Playful Kisses"
             ],
             "lyrics": null
           },
@@ -6464,7 +6464,7 @@
             "is_repeat_of": null,
             "duration_seconds": 16,
             "production_notes": [
-              "Dualism Paper → Doorbell / Sionna Arrives → Regal Beauty → Playful Kisses"
+              "Dualism Paper \u2192 Doorbell / Sionna Arrives \u2192 Regal Beauty \u2192 Playful Kisses"
             ],
             "lyrics": null
           },
@@ -6474,7 +6474,7 @@
             "is_repeat_of": null,
             "duration_seconds": 16,
             "production_notes": [
-              "Dualism Paper → Doorbell / Sionna Arrives → Regal Beauty → Playful Kisses"
+              "Dualism Paper \u2192 Doorbell / Sionna Arrives \u2192 Regal Beauty \u2192 Playful Kisses"
             ],
             "lyrics": null
           }
@@ -6489,7 +6489,7 @@
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens, no name tags, no name badges, no embroidered names, no lower thirds, no personal names on clothing or props",
           "audio_payload": {
             "speaker": "Character_P",
-            "dialogue": "I was writing a little paper on Rene Descartes, the founder of modern philosophy. He was known to say, 'I think, therefore I am.' We were talking in class about dualism – the mind versus the body. I was floundering.",
+            "dialogue": "I was writing a little paper on Rene Descartes, the founder of modern philosophy. He was known to say, 'I think, therefore I am.' We were talking in class about dualism \u2013 the mind versus the body. I was floundering.",
             "delivery": "voiceover_internal"
           },
           "stage1_beat_id": "b1",
@@ -6612,7 +6612,7 @@
             "is_repeat_of": null,
             "duration_seconds": 16,
             "production_notes": [
-              "Hippie Roots → Mushroom and Jasmine → River of Knowledge → The Door County Farm"
+              "Hippie Roots \u2192 Mushroom and Jasmine \u2192 River of Knowledge \u2192 The Door County Farm"
             ],
             "lyrics": null
           },
@@ -6622,7 +6622,7 @@
             "is_repeat_of": null,
             "duration_seconds": 16,
             "production_notes": [
-              "Hippie Roots → Mushroom and Jasmine → River of Knowledge → The Door County Farm"
+              "Hippie Roots \u2192 Mushroom and Jasmine \u2192 River of Knowledge \u2192 The Door County Farm"
             ],
             "lyrics": null
           },
@@ -6632,7 +6632,7 @@
             "is_repeat_of": null,
             "duration_seconds": 16,
             "production_notes": [
-              "Hippie Roots → Mushroom and Jasmine → River of Knowledge → The Door County Farm"
+              "Hippie Roots \u2192 Mushroom and Jasmine \u2192 River of Knowledge \u2192 The Door County Farm"
             ],
             "lyrics": null
           }
@@ -6707,7 +6707,7 @@
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens, no name tags, no name badges, no embroidered names, no lower thirds, no personal names on clothing or props",
           "audio_payload": {
             "speaker": "Character_P",
-            "dialogue": "Trust me, take your time. It'll just make you feel inferior. Where are your parents now? / Where all old hippies go – the farm. They're in Door County on ten acres in a dilapidated farmhouse, growing their own food.",
+            "dialogue": "Trust me, take your time. It'll just make you feel inferior. Where are your parents now? / Where all old hippies go \u2013 the farm. They're in Door County on ten acres in a dilapidated farmhouse, growing their own food.",
             "delivery": "voiceover_internal"
           },
           "stage1_beat_id": "b5",
@@ -6770,7 +6770,7 @@
             "is_repeat_of": null,
             "duration_seconds": 14,
             "production_notes": [
-              "The Break → Gym Gossip → Rumor Mill → Fugitive Stomach"
+              "The Break \u2192 Gym Gossip \u2192 Rumor Mill \u2192 Fugitive Stomach"
             ],
             "lyrics": null
           },
@@ -6780,7 +6780,7 @@
             "is_repeat_of": null,
             "duration_seconds": 13,
             "production_notes": [
-              "The Break → Gym Gossip → Rumor Mill → Fugitive Stomach"
+              "The Break \u2192 Gym Gossip \u2192 Rumor Mill \u2192 Fugitive Stomach"
             ],
             "lyrics": null
           },
@@ -6790,7 +6790,7 @@
             "is_repeat_of": null,
             "duration_seconds": 13,
             "production_notes": [
-              "The Break → Gym Gossip → Rumor Mill → Fugitive Stomach"
+              "The Break \u2192 Gym Gossip \u2192 Rumor Mill \u2192 Fugitive Stomach"
             ],
             "lyrics": null
           }
@@ -6913,7 +6913,7 @@
             "is_repeat_of": null,
             "duration_seconds": 12,
             "production_notes": [
-              "Staring Back → Sionna's Wisdom → Out of the Shadow / Outro"
+              "Staring Back \u2192 Sionna's Wisdom \u2192 Out of the Shadow / Outro"
             ],
             "lyrics": null
           },
@@ -6923,7 +6923,7 @@
             "is_repeat_of": null,
             "duration_seconds": 12,
             "production_notes": [
-              "Staring Back → Sionna's Wisdom → Out of the Shadow / Outro"
+              "Staring Back \u2192 Sionna's Wisdom \u2192 Out of the Shadow / Outro"
             ],
             "lyrics": null
           }
@@ -6953,7 +6953,7 @@
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens, no name tags, no name badges, no embroidered names, no lower thirds, no personal names on clothing or props",
           "audio_payload": {
             "speaker": "Character_P",
-            "dialogue": "I had to face the truth – I wasn't the same shadow of the boy I once was. I had to grow some balls. Why did I shy away from the spotlight? Why should Nick have all the glory, and me have none?",
+            "dialogue": "I had to face the truth \u2013 I wasn't the same shadow of the boy I once was. I had to grow some balls. Why did I shy away from the spotlight? Why should Nick have all the glory, and me have none?",
             "delivery": "voiceover_internal"
           },
           "stage1_beat_id": "b2",
@@ -7013,7 +7013,7 @@
             "is_repeat_of": null,
             "duration_seconds": 16,
             "production_notes": [
-              "Spring weeds → Wasting Time → The Swirly Blue Pipe → First Hit"
+              "Spring weeds \u2192 Wasting Time \u2192 The Swirly Blue Pipe \u2192 First Hit"
             ],
             "lyrics": null
           },
@@ -7023,7 +7023,7 @@
             "is_repeat_of": null,
             "duration_seconds": 16,
             "production_notes": [
-              "Spring weeds → Wasting Time → The Swirly Blue Pipe → First Hit"
+              "Spring weeds \u2192 Wasting Time \u2192 The Swirly Blue Pipe \u2192 First Hit"
             ],
             "lyrics": null
           },
@@ -7033,7 +7033,7 @@
             "is_repeat_of": null,
             "duration_seconds": 16,
             "production_notes": [
-              "Spring weeds → Wasting Time → The Swirly Blue Pipe → First Hit"
+              "Spring weeds \u2192 Wasting Time \u2192 The Swirly Blue Pipe \u2192 First Hit"
             ],
             "lyrics": null
           }
@@ -7093,7 +7093,7 @@
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens, no name tags, no name badges, no embroidered names, no lower thirds, no personal names on clothing or props",
           "audio_payload": {
             "speaker": "Character_S",
-            "dialogue": "Oh my gosh, I've had this for ten or twelve years! / I really don't sit around and smoke pot – I've been a little busy. / Well, that's what we're doing today!",
+            "dialogue": "Oh my gosh, I've had this for ten or twelve years! / I really don't sit around and smoke pot \u2013 I've been a little busy. / Well, that's what we're doing today!",
             "delivery": "spoken_on_camera"
           },
           "stage1_beat_id": "b4",
@@ -7171,7 +7171,7 @@
             "is_repeat_of": null,
             "duration_seconds": 14,
             "production_notes": [
-              "Green Day Vibe → Fork in the Road → Auras and Colors → Light Blue"
+              "Green Day Vibe \u2192 Fork in the Road \u2192 Auras and Colors \u2192 Light Blue"
             ],
             "lyrics": null
           },
@@ -7181,7 +7181,7 @@
             "is_repeat_of": null,
             "duration_seconds": 13,
             "production_notes": [
-              "Green Day Vibe → Fork in the Road → Auras and Colors → Light Blue"
+              "Green Day Vibe \u2192 Fork in the Road \u2192 Auras and Colors \u2192 Light Blue"
             ],
             "lyrics": null
           },
@@ -7191,7 +7191,7 @@
             "is_repeat_of": null,
             "duration_seconds": 13,
             "production_notes": [
-              "Green Day Vibe → Fork in the Road → Auras and Colors → Light Blue"
+              "Green Day Vibe \u2192 Fork in the Road \u2192 Auras and Colors \u2192 Light Blue"
             ],
             "lyrics": null
           }
@@ -7251,7 +7251,7 @@
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens, no name tags, no name badges, no embroidered names, no lower thirds, no personal names on clothing or props",
           "audio_payload": {
             "speaker": "Character_S",
-            "dialogue": "I can't see it right now, but once or twice I saw it – you are a beautiful color of light blue. To me, blue is peaceful, soothing, calm, and friendly. It's loyalty. You are a loyal person.",
+            "dialogue": "I can't see it right now, but once or twice I saw it \u2013 you are a beautiful color of light blue. To me, blue is peaceful, soothing, calm, and friendly. It's loyalty. You are a loyal person.",
             "delivery": "spoken_on_camera"
           },
           "stage1_beat_id": "b4",
@@ -7313,7 +7313,7 @@
             "is_repeat_of": null,
             "duration_seconds": 16,
             "production_notes": [
-              "The Walk → Conspicuous → Bob's Entrance → Bruce Lee Rumors"
+              "The Walk \u2192 Conspicuous \u2192 Bob's Entrance \u2192 Bruce Lee Rumors"
             ],
             "lyrics": null
           },
@@ -7323,7 +7323,7 @@
             "is_repeat_of": null,
             "duration_seconds": 16,
             "production_notes": [
-              "The Walk → Conspicuous → Bob's Entrance → Bruce Lee Rumors"
+              "The Walk \u2192 Conspicuous \u2192 Bob's Entrance \u2192 Bruce Lee Rumors"
             ],
             "lyrics": null
           },
@@ -7333,7 +7333,7 @@
             "is_repeat_of": null,
             "duration_seconds": 16,
             "production_notes": [
-              "The Walk → Conspicuous → Bob's Entrance → Bruce Lee Rumors"
+              "The Walk \u2192 Conspicuous \u2192 Bob's Entrance \u2192 Bruce Lee Rumors"
             ],
             "lyrics": null
           }
@@ -7471,7 +7471,7 @@
             "is_repeat_of": null,
             "duration_seconds": 14,
             "production_notes": [
-              "Missing Brother → Bob's Farewell → A Nagging Brain → Loving Haven"
+              "Missing Brother \u2192 Bob's Farewell \u2192 A Nagging Brain \u2192 Loving Haven"
             ],
             "lyrics": null
           },
@@ -7481,7 +7481,7 @@
             "is_repeat_of": null,
             "duration_seconds": 13,
             "production_notes": [
-              "Missing Brother → Bob's Farewell → A Nagging Brain → Loving Haven"
+              "Missing Brother \u2192 Bob's Farewell \u2192 A Nagging Brain \u2192 Loving Haven"
             ],
             "lyrics": null
           },
@@ -7491,7 +7491,7 @@
             "is_repeat_of": null,
             "duration_seconds": 13,
             "production_notes": [
-              "Missing Brother → Bob's Farewell → A Nagging Brain → Loving Haven"
+              "Missing Brother \u2192 Bob's Farewell \u2192 A Nagging Brain \u2192 Loving Haven"
             ],
             "lyrics": null
           }
@@ -7614,7 +7614,7 @@
             "is_repeat_of": null,
             "duration_seconds": 14,
             "production_notes": [
-              "Morning Alarm → The Sink Splash → Dementia Tears → Pledge to Ma"
+              "Morning Alarm \u2192 The Sink Splash \u2192 Dementia Tears \u2192 Pledge to Ma"
             ],
             "lyrics": null
           },
@@ -7624,7 +7624,7 @@
             "is_repeat_of": null,
             "duration_seconds": 13,
             "production_notes": [
-              "Morning Alarm → The Sink Splash → Dementia Tears → Pledge to Ma"
+              "Morning Alarm \u2192 The Sink Splash \u2192 Dementia Tears \u2192 Pledge to Ma"
             ],
             "lyrics": null
           },
@@ -7634,7 +7634,7 @@
             "is_repeat_of": null,
             "duration_seconds": 13,
             "production_notes": [
-              "Morning Alarm → The Sink Splash → Dementia Tears → Pledge to Ma"
+              "Morning Alarm \u2192 The Sink Splash \u2192 Dementia Tears \u2192 Pledge to Ma"
             ],
             "lyrics": null
           }
@@ -7756,7 +7756,7 @@
             "is_repeat_of": null,
             "duration_seconds": 11,
             "production_notes": [
-              "Lolita Cackle → Dreaming of Lavender → The City Bus Ride → Two Paths / Outro"
+              "Lolita Cackle \u2192 Dreaming of Lavender \u2192 The City Bus Ride \u2192 Two Paths / Outro"
             ],
             "lyrics": null
           },
@@ -7766,7 +7766,7 @@
             "is_repeat_of": null,
             "duration_seconds": 11,
             "production_notes": [
-              "Lolita Cackle → Dreaming of Lavender → The City Bus Ride → Two Paths / Outro"
+              "Lolita Cackle \u2192 Dreaming of Lavender \u2192 The City Bus Ride \u2192 Two Paths / Outro"
             ],
             "lyrics": null
           },
@@ -7776,7 +7776,7 @@
             "is_repeat_of": null,
             "duration_seconds": 10,
             "production_notes": [
-              "Lolita Cackle → Dreaming of Lavender → The City Bus Ride → Two Paths / Outro"
+              "Lolita Cackle \u2192 Dreaming of Lavender \u2192 The City Bus Ride \u2192 Two Paths / Outro"
             ],
             "lyrics": null
           }
@@ -7883,7 +7883,7 @@
             "is_repeat_of": null,
             "duration_seconds": 19,
             "production_notes": [
-              "The 1920s Corridor → The Chain Lock → Nick's Chaos → Obsessed Fury"
+              "The 1920s Corridor \u2192 The Chain Lock \u2192 Nick's Chaos \u2192 Obsessed Fury"
             ],
             "lyrics": null
           },
@@ -7893,7 +7893,7 @@
             "is_repeat_of": null,
             "duration_seconds": 19,
             "production_notes": [
-              "The 1920s Corridor → The Chain Lock → Nick's Chaos → Obsessed Fury"
+              "The 1920s Corridor \u2192 The Chain Lock \u2192 Nick's Chaos \u2192 Obsessed Fury"
             ],
             "lyrics": null
           },
@@ -7903,7 +7903,7 @@
             "is_repeat_of": null,
             "duration_seconds": 18,
             "production_notes": [
-              "The 1920s Corridor → The Chain Lock → Nick's Chaos → Obsessed Fury"
+              "The 1920s Corridor \u2192 The Chain Lock \u2192 Nick's Chaos \u2192 Obsessed Fury"
             ],
             "lyrics": null
           }
@@ -8057,7 +8057,7 @@
             "is_repeat_of": null,
             "duration_seconds": 14,
             "production_notes": [
-              "Deafening Silence → The Verdict → Feeding the Beast → Ma's Future"
+              "Deafening Silence \u2192 The Verdict \u2192 Feeding the Beast \u2192 Ma's Future"
             ],
             "lyrics": null
           },
@@ -8067,7 +8067,7 @@
             "is_repeat_of": null,
             "duration_seconds": 13,
             "production_notes": [
-              "Deafening Silence → The Verdict → Feeding the Beast → Ma's Future"
+              "Deafening Silence \u2192 The Verdict \u2192 Feeding the Beast \u2192 Ma's Future"
             ],
             "lyrics": null
           },
@@ -8077,7 +8077,7 @@
             "is_repeat_of": null,
             "duration_seconds": 13,
             "production_notes": [
-              "Deafening Silence → The Verdict → Feeding the Beast → Ma's Future"
+              "Deafening Silence \u2192 The Verdict \u2192 Feeding the Beast \u2192 Ma's Future"
             ],
             "lyrics": null
           }
@@ -8199,7 +8199,7 @@
             "is_repeat_of": null,
             "duration_seconds": 11,
             "production_notes": [
-              "Ma's Laugh → Old Farm Childhood → Sunday Service → Peach Pie / Outro"
+              "Ma's Laugh \u2192 Old Farm Childhood \u2192 Sunday Service \u2192 Peach Pie / Outro"
             ],
             "lyrics": null
           },
@@ -8209,7 +8209,7 @@
             "is_repeat_of": null,
             "duration_seconds": 11,
             "production_notes": [
-              "Ma's Laugh → Old Farm Childhood → Sunday Service → Peach Pie / Outro"
+              "Ma's Laugh \u2192 Old Farm Childhood \u2192 Sunday Service \u2192 Peach Pie / Outro"
             ],
             "lyrics": null
           },
@@ -8219,7 +8219,7 @@
             "is_repeat_of": null,
             "duration_seconds": 10,
             "production_notes": [
-              "Ma's Laugh → Old Farm Childhood → Sunday Service → Peach Pie / Outro"
+              "Ma's Laugh \u2192 Old Farm Childhood \u2192 Sunday Service \u2192 Peach Pie / Outro"
             ],
             "lyrics": null
           }
@@ -8325,7 +8325,7 @@
             "is_repeat_of": null,
             "duration_seconds": 19,
             "production_notes": [
-              "Prodigal Return → Slick Greetings → Alien Handshake → Bloated Sugar"
+              "Prodigal Return \u2192 Slick Greetings \u2192 Alien Handshake \u2192 Bloated Sugar"
             ],
             "lyrics": null
           },
@@ -8335,7 +8335,7 @@
             "is_repeat_of": null,
             "duration_seconds": 19,
             "production_notes": [
-              "Prodigal Return → Slick Greetings → Alien Handshake → Bloated Sugar"
+              "Prodigal Return \u2192 Slick Greetings \u2192 Alien Handshake \u2192 Bloated Sugar"
             ],
             "lyrics": null
           },
@@ -8345,7 +8345,7 @@
             "is_repeat_of": null,
             "duration_seconds": 18,
             "production_notes": [
-              "Prodigal Return → Slick Greetings → Alien Handshake → Bloated Sugar"
+              "Prodigal Return \u2192 Slick Greetings \u2192 Alien Handshake \u2192 Bloated Sugar"
             ],
             "lyrics": null
           }
@@ -8499,7 +8499,7 @@
             "is_repeat_of": null,
             "duration_seconds": 19,
             "production_notes": [
-              "Sionna's Fact-check → Stunned Silence → Cheering Inside → Pill Containers"
+              "Sionna's Fact-check \u2192 Stunned Silence \u2192 Cheering Inside \u2192 Pill Containers"
             ],
             "lyrics": null
           },
@@ -8509,7 +8509,7 @@
             "is_repeat_of": null,
             "duration_seconds": 19,
             "production_notes": [
-              "Sionna's Fact-check → Stunned Silence → Cheering Inside → Pill Containers"
+              "Sionna's Fact-check \u2192 Stunned Silence \u2192 Cheering Inside \u2192 Pill Containers"
             ],
             "lyrics": null
           },
@@ -8519,7 +8519,7 @@
             "is_repeat_of": null,
             "duration_seconds": 18,
             "production_notes": [
-              "Sionna's Fact-check → Stunned Silence → Cheering Inside → Pill Containers"
+              "Sionna's Fact-check \u2192 Stunned Silence \u2192 Cheering Inside \u2192 Pill Containers"
             ],
             "lyrics": null
           }
@@ -8673,7 +8673,7 @@
             "is_repeat_of": null,
             "duration_seconds": 14,
             "production_notes": [
-              "The Two Cities → Competitive Doting → Athena the Warrior → Hubristic Menoetius"
+              "The Two Cities \u2192 Competitive Doting \u2192 Athena the Warrior \u2192 Hubristic Menoetius"
             ],
             "lyrics": null
           },
@@ -8683,7 +8683,7 @@
             "is_repeat_of": null,
             "duration_seconds": 13,
             "production_notes": [
-              "The Two Cities → Competitive Doting → Athena the Warrior → Hubristic Menoetius"
+              "The Two Cities \u2192 Competitive Doting \u2192 Athena the Warrior \u2192 Hubristic Menoetius"
             ],
             "lyrics": null
           },
@@ -8693,7 +8693,7 @@
             "is_repeat_of": null,
             "duration_seconds": 13,
             "production_notes": [
-              "The Two Cities → Competitive Doting → Athena the Warrior → Hubristic Menoetius"
+              "The Two Cities \u2192 Competitive Doting \u2192 Athena the Warrior \u2192 Hubristic Menoetius"
             ],
             "lyrics": null
           }
@@ -8738,7 +8738,7 @@
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens, no name tags, no name badges, no embroidered names, no lower thirds, no personal names on clothing or props",
           "audio_payload": {
             "speaker": "Character_P",
-            "dialogue": "I was researching the Peloponnesian Wars and Greek mythology. As I read about Athena, my mind drifted to Sionna. They were both Goddesses of intelligence and skill – peaceful warriors ready for battle.",
+            "dialogue": "I was researching the Peloponnesian Wars and Greek mythology. As I read about Athena, my mind drifted to Sionna. They were both Goddesses of intelligence and skill \u2013 peaceful warriors ready for battle.",
             "delivery": "voiceover_internal"
           },
           "stage1_beat_id": "b3",
@@ -8816,7 +8816,7 @@
             "is_repeat_of": null,
             "duration_seconds": 16,
             "production_notes": [
-              "Creation Myths → Ludicrous Dogma → Vast Universe → God is Energy"
+              "Creation Myths \u2192 Ludicrous Dogma \u2192 Vast Universe \u2192 God is Energy"
             ],
             "lyrics": null
           },
@@ -8826,7 +8826,7 @@
             "is_repeat_of": null,
             "duration_seconds": 16,
             "production_notes": [
-              "Creation Myths → Ludicrous Dogma → Vast Universe → God is Energy"
+              "Creation Myths \u2192 Ludicrous Dogma \u2192 Vast Universe \u2192 God is Energy"
             ],
             "lyrics": null
           },
@@ -8836,7 +8836,7 @@
             "is_repeat_of": null,
             "duration_seconds": 16,
             "production_notes": [
-              "Creation Myths → Ludicrous Dogma → Vast Universe → God is Energy"
+              "Creation Myths \u2192 Ludicrous Dogma \u2192 Vast Universe \u2192 God is Energy"
             ],
             "lyrics": null
           }
@@ -8974,7 +8974,7 @@
             "is_repeat_of": null,
             "duration_seconds": 14,
             "production_notes": [
-              "Jaw on Chest → Flustered Ma → The Pontiac Drive → Lightning in the Aisle"
+              "Jaw on Chest \u2192 Flustered Ma \u2192 The Pontiac Drive \u2192 Lightning in the Aisle"
             ],
             "lyrics": null
           },
@@ -8984,7 +8984,7 @@
             "is_repeat_of": null,
             "duration_seconds": 13,
             "production_notes": [
-              "Jaw on Chest → Flustered Ma → The Pontiac Drive → Lightning in the Aisle"
+              "Jaw on Chest \u2192 Flustered Ma \u2192 The Pontiac Drive \u2192 Lightning in the Aisle"
             ],
             "lyrics": null
           },
@@ -8994,7 +8994,7 @@
             "is_repeat_of": null,
             "duration_seconds": 13,
             "production_notes": [
-              "Jaw on Chest → Flustered Ma → The Pontiac Drive → Lightning in the Aisle"
+              "Jaw on Chest \u2192 Flustered Ma \u2192 The Pontiac Drive \u2192 Lightning in the Aisle"
             ],
             "lyrics": null
           }
@@ -9116,7 +9116,7 @@
             "is_repeat_of": null,
             "duration_seconds": 11,
             "production_notes": [
-              "Summer Break → Wisconsin Hills → The Hatchback → Summer Sun / Outro"
+              "Summer Break \u2192 Wisconsin Hills \u2192 The Hatchback \u2192 Summer Sun / Outro"
             ],
             "lyrics": null
           },
@@ -9126,7 +9126,7 @@
             "is_repeat_of": null,
             "duration_seconds": 11,
             "production_notes": [
-              "Summer Break → Wisconsin Hills → The Hatchback → Summer Sun / Outro"
+              "Summer Break \u2192 Wisconsin Hills \u2192 The Hatchback \u2192 Summer Sun / Outro"
             ],
             "lyrics": null
           },
@@ -9136,7 +9136,7 @@
             "is_repeat_of": null,
             "duration_seconds": 10,
             "production_notes": [
-              "Summer Break → Wisconsin Hills → The Hatchback → Summer Sun / Outro"
+              "Summer Break \u2192 Wisconsin Hills \u2192 The Hatchback \u2192 Summer Sun / Outro"
             ],
             "lyrics": null
           }
@@ -9242,7 +9242,7 @@
             "is_repeat_of": null,
             "duration_seconds": 16,
             "production_notes": [
-              "Robert and Margery → Grandmother's Tears → Beehive Hair → Wood Nymphs"
+              "Robert and Margery \u2192 Grandmother's Tears \u2192 Beehive Hair \u2192 Wood Nymphs"
             ],
             "lyrics": null
           },
@@ -9252,7 +9252,7 @@
             "is_repeat_of": null,
             "duration_seconds": 16,
             "production_notes": [
-              "Robert and Margery → Grandmother's Tears → Beehive Hair → Wood Nymphs"
+              "Robert and Margery \u2192 Grandmother's Tears \u2192 Beehive Hair \u2192 Wood Nymphs"
             ],
             "lyrics": null
           },
@@ -9262,7 +9262,7 @@
             "is_repeat_of": null,
             "duration_seconds": 16,
             "production_notes": [
-              "Robert and Margery → Grandmother's Tears → Beehive Hair → Wood Nymphs"
+              "Robert and Margery \u2192 Grandmother's Tears \u2192 Beehive Hair \u2192 Wood Nymphs"
             ],
             "lyrics": null
           }
@@ -9401,7 +9401,7 @@
             "is_repeat_of": null,
             "duration_seconds": 14,
             "production_notes": [
-              "The Dilapidated House → The Barnyard → Meeting Mushroom → Pure Unpasteurized"
+              "The Dilapidated House \u2192 The Barnyard \u2192 Meeting Mushroom \u2192 Pure Unpasteurized"
             ],
             "lyrics": null
           },
@@ -9411,7 +9411,7 @@
             "is_repeat_of": null,
             "duration_seconds": 13,
             "production_notes": [
-              "The Dilapidated House → The Barnyard → Meeting Mushroom → Pure Unpasteurized"
+              "The Dilapidated House \u2192 The Barnyard \u2192 Meeting Mushroom \u2192 Pure Unpasteurized"
             ],
             "lyrics": null
           },
@@ -9421,7 +9421,7 @@
             "is_repeat_of": null,
             "duration_seconds": 13,
             "production_notes": [
-              "The Dilapidated House → The Barnyard → Meeting Mushroom → Pure Unpasteurized"
+              "The Dilapidated House \u2192 The Barnyard \u2192 Meeting Mushroom \u2192 Pure Unpasteurized"
             ],
             "lyrics": null
           }
@@ -9543,7 +9543,7 @@
             "is_repeat_of": null,
             "duration_seconds": 14,
             "production_notes": [
-              "Tranquil Evening → The Storm Pre-echo → Alanis Vibe → Reliving the Nightmare"
+              "Tranquil Evening \u2192 The Storm Pre-echo \u2192 Alanis Vibe \u2192 Reliving the Nightmare"
             ],
             "lyrics": null
           },
@@ -9553,7 +9553,7 @@
             "is_repeat_of": null,
             "duration_seconds": 13,
             "production_notes": [
-              "Tranquil Evening → The Storm Pre-echo → Alanis Vibe → Reliving the Nightmare"
+              "Tranquil Evening \u2192 The Storm Pre-echo \u2192 Alanis Vibe \u2192 Reliving the Nightmare"
             ],
             "lyrics": null
           },
@@ -9563,7 +9563,7 @@
             "is_repeat_of": null,
             "duration_seconds": 13,
             "production_notes": [
-              "Tranquil Evening → The Storm Pre-echo → Alanis Vibe → Reliving the Nightmare"
+              "Tranquil Evening \u2192 The Storm Pre-echo \u2192 Alanis Vibe \u2192 Reliving the Nightmare"
             ],
             "lyrics": null
           }
@@ -9593,7 +9593,7 @@
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens, no name tags, no name badges, no embroidered names, no lower thirds, no personal names on clothing or props, ball misses window, ball over wall, jump cut mid-flight, teleporting ball, two separate shots glued together",
           "audio_payload": {
             "speaker": "Character_P",
-            "dialogue": "But this is Murphy's Law: whatever you think is going to happen is not what happens. Basically, it's pure irony. Like that song by Morissette – fly in your Chardonnay, rain on your wedding day...",
+            "dialogue": "But this is Murphy's Law: whatever you think is going to happen is not what happens. Basically, it's pure irony. Like that song by Morissette \u2013 fly in your Chardonnay, rain on your wedding day...",
             "delivery": "voiceover_internal"
           },
           "stage1_beat_id": "b2",
@@ -9685,7 +9685,7 @@
             "is_repeat_of": null,
             "duration_seconds": 45,
             "production_notes": [
-              "Silence Shattered → The Phone Rings → Tense Tremolos → Nick's Voice"
+              "Silence Shattered \u2192 The Phone Rings \u2192 Tense Tremolos \u2192 Nick's Voice"
             ],
             "lyrics": null
           },
@@ -9695,7 +9695,7 @@
             "is_repeat_of": null,
             "duration_seconds": 45,
             "production_notes": [
-              "Silence Shattered → The Phone Rings → Tense Tremolos → Nick's Voice"
+              "Silence Shattered \u2192 The Phone Rings \u2192 Tense Tremolos \u2192 Nick's Voice"
             ],
             "lyrics": null
           },
@@ -9705,7 +9705,7 @@
             "is_repeat_of": null,
             "duration_seconds": 44,
             "production_notes": [
-              "Silence Shattered → The Phone Rings → Tense Tremolos → Nick's Voice"
+              "Silence Shattered \u2192 The Phone Rings \u2192 Tense Tremolos \u2192 Nick's Voice"
             ],
             "lyrics": null
           }
@@ -10019,7 +10019,7 @@
             "is_repeat_of": null,
             "duration_seconds": 43,
             "production_notes": [
-              "The Storm Outside → Wiper Rhythm → Viola Weeps → Engine Rumble"
+              "The Storm Outside \u2192 Wiper Rhythm \u2192 Viola Weeps \u2192 Engine Rumble"
             ],
             "lyrics": null
           },
@@ -10029,7 +10029,7 @@
             "is_repeat_of": null,
             "duration_seconds": 43,
             "production_notes": [
-              "The Storm Outside → Wiper Rhythm → Viola Weeps → Engine Rumble"
+              "The Storm Outside \u2192 Wiper Rhythm \u2192 Viola Weeps \u2192 Engine Rumble"
             ],
             "lyrics": null
           },
@@ -10039,7 +10039,7 @@
             "is_repeat_of": null,
             "duration_seconds": 42,
             "production_notes": [
-              "The Storm Outside → Wiper Rhythm → Viola Weeps → Engine Rumble"
+              "The Storm Outside \u2192 Wiper Rhythm \u2192 Viola Weeps \u2192 Engine Rumble"
             ],
             "lyrics": null
           }
@@ -10054,7 +10054,7 @@
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens, no name tags, no name badges, no embroidered names, no lower thirds, no personal names on clothing or props",
           "audio_payload": {
             "speaker": "Character_P",
-            "dialogue": "The rain started about twenty miles outside of Sturgeon Bay. It didn't just rain – it poured. The water came down in heavy, blinding sheets on the glass.",
+            "dialogue": "The rain started about twenty miles outside of Sturgeon Bay. It didn't just rain \u2013 it poured. The water came down in heavy, blinding sheets on the glass.",
             "delivery": "voiceover_internal"
           },
           "stage1_beat_id": "b1",
@@ -10337,7 +10337,7 @@
             "is_repeat_of": null,
             "duration_seconds": 45,
             "production_notes": [
-              "Fluorescent Buzz → Slumped Figure → Hollow Oboe → Heavy Steps"
+              "Fluorescent Buzz \u2192 Slumped Figure \u2192 Hollow Oboe \u2192 Heavy Steps"
             ],
             "lyrics": null
           },
@@ -10347,7 +10347,7 @@
             "is_repeat_of": null,
             "duration_seconds": 45,
             "production_notes": [
-              "Fluorescent Buzz → Slumped Figure → Hollow Oboe → Heavy Steps"
+              "Fluorescent Buzz \u2192 Slumped Figure \u2192 Hollow Oboe \u2192 Heavy Steps"
             ],
             "lyrics": null
           },
@@ -10357,7 +10357,7 @@
             "is_repeat_of": null,
             "duration_seconds": 44,
             "production_notes": [
-              "Fluorescent Buzz → Slumped Figure → Hollow Oboe → Heavy Steps"
+              "Fluorescent Buzz \u2192 Slumped Figure \u2192 Hollow Oboe \u2192 Heavy Steps"
             ],
             "lyrics": null
           }
@@ -10507,7 +10507,7 @@
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens, no name tags, no name badges, no embroidered names, no lower thirds, no personal names on clothing or props",
           "audio_payload": {
             "speaker": "Character_P",
-            "dialogue": "I looked at his hands – the hands that had won dozens of bar fights, the hands that had protected me. Right now, they were just shaking, empty and weak.",
+            "dialogue": "I looked at his hands \u2013 the hands that had won dozens of bar fights, the hands that had protected me. Right now, they were just shaking, empty and weak.",
             "delivery": "voiceover_internal"
           },
           "stage1_beat_id": "b10",
@@ -10671,7 +10671,7 @@
             "is_repeat_of": null,
             "duration_seconds": 45,
             "production_notes": [
-              "The ICU Pulse → Tragic Entrance → Delicate Piano → The Machine's Breath"
+              "The ICU Pulse \u2192 Tragic Entrance \u2192 Delicate Piano \u2192 The Machine's Breath"
             ],
             "lyrics": null
           },
@@ -10681,7 +10681,7 @@
             "is_repeat_of": null,
             "duration_seconds": 45,
             "production_notes": [
-              "The ICU Pulse → Tragic Entrance → Delicate Piano → The Machine's Breath"
+              "The ICU Pulse \u2192 Tragic Entrance \u2192 Delicate Piano \u2192 The Machine's Breath"
             ],
             "lyrics": null
           },
@@ -10691,7 +10691,7 @@
             "is_repeat_of": null,
             "duration_seconds": 44,
             "production_notes": [
-              "The ICU Pulse → Tragic Entrance → Delicate Piano → The Machine's Breath"
+              "The ICU Pulse \u2192 Tragic Entrance \u2192 Delicate Piano \u2192 The Machine's Breath"
             ],
             "lyrics": null
           }
@@ -11021,7 +11021,7 @@
             "is_repeat_of": null,
             "duration_seconds": 45,
             "production_notes": [
-              "Night Falls → Vinyl Chairs → Main Street Memories → Stealing Wood"
+              "Night Falls \u2192 Vinyl Chairs \u2192 Main Street Memories \u2192 Stealing Wood"
             ],
             "lyrics": null
           },
@@ -11031,7 +11031,7 @@
             "is_repeat_of": null,
             "duration_seconds": 45,
             "production_notes": [
-              "Night Falls → Vinyl Chairs → Main Street Memories → Stealing Wood"
+              "Night Falls \u2192 Vinyl Chairs \u2192 Main Street Memories \u2192 Stealing Wood"
             ],
             "lyrics": null
           },
@@ -11041,7 +11041,7 @@
             "is_repeat_of": null,
             "duration_seconds": 44,
             "production_notes": [
-              "Night Falls → Vinyl Chairs → Main Street Memories → Stealing Wood"
+              "Night Falls \u2192 Vinyl Chairs \u2192 Main Street Memories \u2192 Stealing Wood"
             ],
             "lyrics": null
           }
@@ -11371,7 +11371,7 @@
             "is_repeat_of": null,
             "duration_seconds": 45,
             "production_notes": [
-              "Medical Office → The Doctor's Voice → Irreversible Damage → Brainstem Stroke"
+              "Medical Office \u2192 The Doctor's Voice \u2192 Irreversible Damage \u2192 Brainstem Stroke"
             ],
             "lyrics": null
           },
@@ -11381,7 +11381,7 @@
             "is_repeat_of": null,
             "duration_seconds": 45,
             "production_notes": [
-              "Medical Office → The Doctor's Voice → Irreversible Damage → Brainstem Stroke"
+              "Medical Office \u2192 The Doctor's Voice \u2192 Irreversible Damage \u2192 Brainstem Stroke"
             ],
             "lyrics": null
           },
@@ -11391,7 +11391,7 @@
             "is_repeat_of": null,
             "duration_seconds": 44,
             "production_notes": [
-              "Medical Office → The Doctor's Voice → Irreversible Damage → Brainstem Stroke"
+              "Medical Office \u2192 The Doctor's Voice \u2192 Irreversible Damage \u2192 Brainstem Stroke"
             ],
             "lyrics": null
           }
@@ -11705,7 +11705,7 @@
             "is_repeat_of": null,
             "duration_seconds": 45,
             "production_notes": [
-              "Hallway Pacing → Nick's Panic → The Glass Window → Sibling Embrace"
+              "Hallway Pacing \u2192 Nick's Panic \u2192 The Glass Window \u2192 Sibling Embrace"
             ],
             "lyrics": null
           },
@@ -11715,7 +11715,7 @@
             "is_repeat_of": null,
             "duration_seconds": 45,
             "production_notes": [
-              "Hallway Pacing → Nick's Panic → The Glass Window → Sibling Embrace"
+              "Hallway Pacing \u2192 Nick's Panic \u2192 The Glass Window \u2192 Sibling Embrace"
             ],
             "lyrics": null
           },
@@ -11725,7 +11725,7 @@
             "is_repeat_of": null,
             "duration_seconds": 44,
             "production_notes": [
-              "Hallway Pacing → Nick's Panic → The Glass Window → Sibling Embrace"
+              "Hallway Pacing \u2192 Nick's Panic \u2192 The Glass Window \u2192 Sibling Embrace"
             ],
             "lyrics": null
           }
@@ -12055,7 +12055,7 @@
             "is_repeat_of": null,
             "duration_seconds": 45,
             "production_notes": [
-              "Gathered Bedside → The Ventilator Stops → Natural Breath → The Final Sigh"
+              "Gathered Bedside \u2192 The Ventilator Stops \u2192 Natural Breath \u2192 The Final Sigh"
             ],
             "lyrics": null
           },
@@ -12065,7 +12065,7 @@
             "is_repeat_of": null,
             "duration_seconds": 45,
             "production_notes": [
-              "Gathered Bedside → The Ventilator Stops → Natural Breath → The Final Sigh"
+              "Gathered Bedside \u2192 The Ventilator Stops \u2192 Natural Breath \u2192 The Final Sigh"
             ],
             "lyrics": null
           },
@@ -12075,7 +12075,7 @@
             "is_repeat_of": null,
             "duration_seconds": 44,
             "production_notes": [
-              "Gathered Bedside → The Ventilator Stops → Natural Breath → The Final Sigh"
+              "Gathered Bedside \u2192 The Ventilator Stops \u2192 Natural Breath \u2192 The Final Sigh"
             ],
             "lyrics": null
           }
@@ -12389,7 +12389,7 @@
             "is_repeat_of": null,
             "duration_seconds": 43,
             "production_notes": [
-              "Empty Apartment → Armchair in Shadow → Closed Bedroom Door → Washing the Mug"
+              "Empty Apartment \u2192 Armchair in Shadow \u2192 Closed Bedroom Door \u2192 Washing the Mug"
             ],
             "lyrics": null
           },
@@ -12399,7 +12399,7 @@
             "is_repeat_of": null,
             "duration_seconds": 43,
             "production_notes": [
-              "Empty Apartment → Armchair in Shadow → Closed Bedroom Door → Washing the Mug"
+              "Empty Apartment \u2192 Armchair in Shadow \u2192 Closed Bedroom Door \u2192 Washing the Mug"
             ],
             "lyrics": null
           },
@@ -12409,7 +12409,7 @@
             "is_repeat_of": null,
             "duration_seconds": 42,
             "production_notes": [
-              "Empty Apartment → Armchair in Shadow → Closed Bedroom Door → Washing the Mug"
+              "Empty Apartment \u2192 Armchair in Shadow \u2192 Closed Bedroom Door \u2192 Washing the Mug"
             ],
             "lyrics": null
           }
@@ -12707,7 +12707,7 @@
             "is_repeat_of": null,
             "duration_seconds": 45,
             "production_notes": [
-              "Cemetery Rain → Ashes to Ashes → The Rose Drop → Coffin Descends"
+              "Cemetery Rain \u2192 Ashes to Ashes \u2192 The Rose Drop \u2192 Coffin Descends"
             ],
             "lyrics": null
           },
@@ -12717,7 +12717,7 @@
             "is_repeat_of": null,
             "duration_seconds": 45,
             "production_notes": [
-              "Cemetery Rain → Ashes to Ashes → The Rose Drop → Coffin Descends"
+              "Cemetery Rain \u2192 Ashes to Ashes \u2192 The Rose Drop \u2192 Coffin Descends"
             ],
             "lyrics": null
           },
@@ -12727,7 +12727,7 @@
             "is_repeat_of": null,
             "duration_seconds": 44,
             "production_notes": [
-              "Cemetery Rain → Ashes to Ashes → The Rose Drop → Coffin Descends"
+              "Cemetery Rain \u2192 Ashes to Ashes \u2192 The Rose Drop \u2192 Coffin Descends"
             ],
             "lyrics": null
           }
@@ -13041,7 +13041,7 @@
             "is_repeat_of": null,
             "duration_seconds": 45,
             "production_notes": [
-              "Tension Builds → Whiskey Rage → Ceramic Shatters → Grief and Fury"
+              "Tension Builds \u2192 Whiskey Rage \u2192 Ceramic Shatters \u2192 Grief and Fury"
             ],
             "lyrics": null
           },
@@ -13051,7 +13051,7 @@
             "is_repeat_of": null,
             "duration_seconds": 45,
             "production_notes": [
-              "Tension Builds → Whiskey Rage → Ceramic Shatters → Grief and Fury"
+              "Tension Builds \u2192 Whiskey Rage \u2192 Ceramic Shatters \u2192 Grief and Fury"
             ],
             "lyrics": null
           },
@@ -13061,7 +13061,7 @@
             "is_repeat_of": null,
             "duration_seconds": 44,
             "production_notes": [
-              "Tension Builds → Whiskey Rage → Ceramic Shatters → Grief and Fury"
+              "Tension Builds \u2192 Whiskey Rage \u2192 Ceramic Shatters \u2192 Grief and Fury"
             ],
             "lyrics": null
           }
@@ -13252,7 +13252,7 @@
           "clip_number": 13,
           "timestamp": "01:32-01:39",
           "veo_continuation_source": "extend_previous",
-          "visual_prompt": "Kirk Street apartment: 5th-floor walk-up; Ma & narrator home. Keep architecture, layout, and signature props consistent on every return. Messy dark apartment living room. Face-to-face: Character_N (muscular, reddish-brown hair slicked, black leather jacket) steps toward Character_P (thin frame), yanks P collar close — eye to eye, whiskey-breath distance. Profile/side two-shot, progressive yank. Lips closed / 720p, 24fps",
+          "visual_prompt": "Kirk Street apartment: 5th-floor walk-up; Ma & narrator home. Keep architecture, layout, and signature props consistent on every return. Messy dark apartment living room. Face-to-face: Character_N (muscular, reddish-brown hair slicked, black leather jacket) steps toward Character_P (thin frame), yanks P collar close \u2014 eye to eye, whiskey-breath distance. Profile/side two-shot, progressive yank. Lips closed / 720p, 24fps",
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens, no name tags, no name badges, no embroidered names, no lower thirds, no personal names on clothing or props",
           "audio_payload": {
             "speaker": "Character_P",
@@ -13391,7 +13391,7 @@
             "is_repeat_of": null,
             "duration_seconds": 45,
             "production_notes": [
-              "The First Blow → Table Splinters → Floorboard Grapple → Fist Raised"
+              "The First Blow \u2192 Table Splinters \u2192 Floorboard Grapple \u2192 Fist Raised"
             ],
             "lyrics": null
           },
@@ -13401,7 +13401,7 @@
             "is_repeat_of": null,
             "duration_seconds": 45,
             "production_notes": [
-              "The First Blow → Table Splinters → Floorboard Grapple → Fist Raised"
+              "The First Blow \u2192 Table Splinters \u2192 Floorboard Grapple \u2192 Fist Raised"
             ],
             "lyrics": null
           },
@@ -13411,7 +13411,7 @@
             "is_repeat_of": null,
             "duration_seconds": 44,
             "production_notes": [
-              "The First Blow → Table Splinters → Floorboard Grapple → Fist Raised"
+              "The First Blow \u2192 Table Splinters \u2192 Floorboard Grapple \u2192 Fist Raised"
             ],
             "lyrics": null
           }
@@ -13741,7 +13741,7 @@
             "is_repeat_of": null,
             "duration_seconds": 45,
             "production_notes": [
-              "Morning Sweep → Clean Slate → Coffee Pour → Porch Steps"
+              "Morning Sweep \u2192 Clean Slate \u2192 Coffee Pour \u2192 Porch Steps"
             ],
             "lyrics": null
           },
@@ -13751,7 +13751,7 @@
             "is_repeat_of": null,
             "duration_seconds": 45,
             "production_notes": [
-              "Morning Sweep → Clean Slate → Coffee Pour → Porch Steps"
+              "Morning Sweep \u2192 Clean Slate \u2192 Coffee Pour \u2192 Porch Steps"
             ],
             "lyrics": null
           },
@@ -13761,7 +13761,7 @@
             "is_repeat_of": null,
             "duration_seconds": 44,
             "production_notes": [
-              "Morning Sweep → Clean Slate → Coffee Pour → Porch Steps"
+              "Morning Sweep \u2192 Clean Slate \u2192 Coffee Pour \u2192 Porch Steps"
             ],
             "lyrics": null
           }
@@ -13806,7 +13806,7 @@
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens, no name tags, no name badges, no embroidered names, no lower thirds, no personal names on clothing or props",
           "audio_payload": {
             "speaker": "Character_P",
-            "dialogue": "We didn't talk about last night. We didn't need to. The air in the house was different now – the thick, suffocating fog of grief had cleared.",
+            "dialogue": "We didn't talk about last night. We didn't need to. The air in the house was different now \u2013 the thick, suffocating fog of grief had cleared.",
             "delivery": "voiceover_internal"
           },
           "stage1_beat_id": "b3",
@@ -14075,7 +14075,7 @@
             "is_repeat_of": null,
             "duration_seconds": 45,
             "production_notes": [
-              "Packing Bag → Soldier's Duffel → Hallway Speech → The Smart One"
+              "Packing Bag \u2192 Soldier's Duffel \u2192 Hallway Speech \u2192 The Smart One"
             ],
             "lyrics": null
           },
@@ -14085,7 +14085,7 @@
             "is_repeat_of": null,
             "duration_seconds": 45,
             "production_notes": [
-              "Packing Bag → Soldier's Duffel → Hallway Speech → The Smart One"
+              "Packing Bag \u2192 Soldier's Duffel \u2192 Hallway Speech \u2192 The Smart One"
             ],
             "lyrics": null
           },
@@ -14095,7 +14095,7 @@
             "is_repeat_of": null,
             "duration_seconds": 44,
             "production_notes": [
-              "Packing Bag → Soldier's Duffel → Hallway Speech → The Smart One"
+              "Packing Bag \u2192 Soldier's Duffel \u2192 Hallway Speech \u2192 The Smart One"
             ],
             "lyrics": null
           }
@@ -14125,7 +14125,7 @@
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens, no name tags, no name badges, no embroidered names, no lower thirds, no personal names on clothing or props",
           "audio_payload": {
             "speaker": "Character_P",
-            "dialogue": "He was packing light – just a few work shirts, jeans, and his heavy boots. Everything else he was leaving behind. He didn't want the clutter.",
+            "dialogue": "He was packing light \u2013 just a few work shirts, jeans, and his heavy boots. Everything else he was leaving behind. He didn't want the clutter.",
             "delivery": "voiceover_internal"
           },
           "stage1_beat_id": "b2",
@@ -14425,7 +14425,7 @@
             "is_repeat_of": null,
             "duration_seconds": 45,
             "production_notes": [
-              "Porch Farewell → Sionna's Hug → Brotherly Embrace → The Pontiac Engine"
+              "Porch Farewell \u2192 Sionna's Hug \u2192 Brotherly Embrace \u2192 The Pontiac Engine"
             ],
             "lyrics": null
           },
@@ -14435,7 +14435,7 @@
             "is_repeat_of": null,
             "duration_seconds": 45,
             "production_notes": [
-              "Porch Farewell → Sionna's Hug → Brotherly Embrace → The Pontiac Engine"
+              "Porch Farewell \u2192 Sionna's Hug \u2192 Brotherly Embrace \u2192 The Pontiac Engine"
             ],
             "lyrics": null
           },
@@ -14445,7 +14445,7 @@
             "is_repeat_of": null,
             "duration_seconds": 44,
             "production_notes": [
-              "Porch Farewell → Sionna's Hug → Brotherly Embrace → The Pontiac Engine"
+              "Porch Farewell \u2192 Sionna's Hug \u2192 Brotherly Embrace \u2192 The Pontiac Engine"
             ],
             "lyrics": null
           }
@@ -14759,7 +14759,7 @@
             "is_repeat_of": null,
             "duration_seconds": 45,
             "production_notes": [
-              "Dark Duplex → Yanking Blinds → Warm Broth → Fierce Belief"
+              "Dark Duplex \u2192 Yanking Blinds \u2192 Warm Broth \u2192 Fierce Belief"
             ],
             "lyrics": null
           },
@@ -14769,7 +14769,7 @@
             "is_repeat_of": null,
             "duration_seconds": 45,
             "production_notes": [
-              "Dark Duplex → Yanking Blinds → Warm Broth → Fierce Belief"
+              "Dark Duplex \u2192 Yanking Blinds \u2192 Warm Broth \u2192 Fierce Belief"
             ],
             "lyrics": null
           },
@@ -14779,7 +14779,7 @@
             "is_repeat_of": null,
             "duration_seconds": 44,
             "production_notes": [
-              "Dark Duplex → Yanking Blinds → Warm Broth → Fierce Belief"
+              "Dark Duplex \u2192 Yanking Blinds \u2192 Warm Broth \u2192 Fierce Belief"
             ],
             "lyrics": null
           }
@@ -15093,7 +15093,7 @@
             "is_repeat_of": null,
             "duration_seconds": 45,
             "production_notes": [
-              "Sacred Room → Jewelry Box → The Photo → Report Cards"
+              "Sacred Room \u2192 Jewelry Box \u2192 The Photo \u2192 Report Cards"
             ],
             "lyrics": null
           },
@@ -15103,7 +15103,7 @@
             "is_repeat_of": null,
             "duration_seconds": 45,
             "production_notes": [
-              "Sacred Room → Jewelry Box → The Photo → Report Cards"
+              "Sacred Room \u2192 Jewelry Box \u2192 The Photo \u2192 Report Cards"
             ],
             "lyrics": null
           },
@@ -15113,7 +15113,7 @@
             "is_repeat_of": null,
             "duration_seconds": 44,
             "production_notes": [
-              "Sacred Room → Jewelry Box → The Photo → Report Cards"
+              "Sacred Room \u2192 Jewelry Box \u2192 The Photo \u2192 Report Cards"
             ],
             "lyrics": null
           }
@@ -15338,7 +15338,7 @@
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens, no name tags, no name badges, no embroidered names, no lower thirds, no personal names on clothing or props",
           "audio_payload": {
             "speaker": "Character_P",
-            "dialogue": "I wrote about the energy that bound us together – the strongest force in my world. I wrote until my wrist ached and the ink stained my fingers black.",
+            "dialogue": "I wrote about the energy that bound us together \u2013 the strongest force in my world. I wrote until my wrist ached and the ink stained my fingers black.",
             "delivery": "voiceover_internal"
           },
           "stage1_beat_id": "b15",
@@ -15443,7 +15443,7 @@
             "is_repeat_of": null,
             "duration_seconds": 45,
             "production_notes": [
-              "Library Aisles → Study Desks → Sionna's Study → The Office Entrance"
+              "Library Aisles \u2192 Study Desks \u2192 Sionna's Study \u2192 The Office Entrance"
             ],
             "lyrics": null
           },
@@ -15453,7 +15453,7 @@
             "is_repeat_of": null,
             "duration_seconds": 45,
             "production_notes": [
-              "Library Aisles → Study Desks → Sionna's Study → The Office Entrance"
+              "Library Aisles \u2192 Study Desks \u2192 Sionna's Study \u2192 The Office Entrance"
             ],
             "lyrics": null
           },
@@ -15463,7 +15463,7 @@
             "is_repeat_of": null,
             "duration_seconds": 44,
             "production_notes": [
-              "Library Aisles → Study Desks → Sionna's Study → The Office Entrance"
+              "Library Aisles \u2192 Study Desks \u2192 Sionna's Study \u2192 The Office Entrance"
             ],
             "lyrics": null
           }
@@ -15777,7 +15777,7 @@
             "is_repeat_of": null,
             "duration_seconds": 45,
             "production_notes": [
-              "Floral Sofa → Reading Aloud → Firelight Tears → Sionna's Sob"
+              "Floral Sofa \u2192 Reading Aloud \u2192 Firelight Tears \u2192 Sionna's Sob"
             ],
             "lyrics": null
           },
@@ -15787,7 +15787,7 @@
             "is_repeat_of": null,
             "duration_seconds": 45,
             "production_notes": [
-              "Floral Sofa → Reading Aloud → Firelight Tears → Sionna's Sob"
+              "Floral Sofa \u2192 Reading Aloud \u2192 Firelight Tears \u2192 Sionna's Sob"
             ],
             "lyrics": null
           },
@@ -15797,7 +15797,7 @@
             "is_repeat_of": null,
             "duration_seconds": 44,
             "production_notes": [
-              "Floral Sofa → Reading Aloud → Firelight Tears → Sionna's Sob"
+              "Floral Sofa \u2192 Reading Aloud \u2192 Firelight Tears \u2192 Sionna's Sob"
             ],
             "lyrics": null
           }
@@ -15992,7 +15992,7 @@
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens, no name tags, no name badges, no embroidered names, no lower thirds, no personal names on clothing or props",
           "audio_payload": {
             "speaker": "Character_S",
-            "dialogue": "Ma would have loved it so much. And Nick... you've made him a king, P. You've written him exactly as he is – a warrior who loved us.",
+            "dialogue": "Ma would have loved it so much. And Nick... you've made him a king, P. You've written him exactly as he is \u2013 a warrior who loved us.",
             "delivery": "spoken_on_camera"
           },
           "stage1_beat_id": "b13",
@@ -16111,7 +16111,7 @@
             "is_repeat_of": null,
             "duration_seconds": 45,
             "production_notes": [
-              "Packing Boxes → Taping Room → Phone Ringing → Nick's Voice"
+              "Packing Boxes \u2192 Taping Room \u2192 Phone Ringing \u2192 Nick's Voice"
             ],
             "lyrics": null
           },
@@ -16121,7 +16121,7 @@
             "is_repeat_of": null,
             "duration_seconds": 45,
             "production_notes": [
-              "Packing Boxes → Taping Room → Phone Ringing → Nick's Voice"
+              "Packing Boxes \u2192 Taping Room \u2192 Phone Ringing \u2192 Nick's Voice"
             ],
             "lyrics": null
           },
@@ -16131,7 +16131,7 @@
             "is_repeat_of": null,
             "duration_seconds": 44,
             "production_notes": [
-              "Packing Boxes → Taping Room → Phone Ringing → Nick's Voice"
+              "Packing Boxes \u2192 Taping Room \u2192 Phone Ringing \u2192 Nick's Voice"
             ],
             "lyrics": null
           }
@@ -16461,7 +16461,7 @@
             "is_repeat_of": null,
             "duration_seconds": 45,
             "production_notes": [
-              "Gravel Path → Golden Water → Lavender Sunset → Spiritual Energy"
+              "Gravel Path \u2192 Golden Water \u2192 Lavender Sunset \u2192 Spiritual Energy"
             ],
             "lyrics": null
           },
@@ -16471,7 +16471,7 @@
             "is_repeat_of": null,
             "duration_seconds": 45,
             "production_notes": [
-              "Gravel Path → Golden Water → Lavender Sunset → Spiritual Energy"
+              "Gravel Path \u2192 Golden Water \u2192 Lavender Sunset \u2192 Spiritual Energy"
             ],
             "lyrics": null
           },
@@ -16481,7 +16481,7 @@
             "is_repeat_of": null,
             "duration_seconds": 44,
             "production_notes": [
-              "Gravel Path → Golden Water → Lavender Sunset → Spiritual Energy"
+              "Gravel Path \u2192 Golden Water \u2192 Lavender Sunset \u2192 Spiritual Energy"
             ],
             "lyrics": null
           }
@@ -16795,7 +16795,7 @@
             "is_repeat_of": null,
             "duration_seconds": 45,
             "production_notes": [
-              "Modern Studio → Keyboard Clicks → Final Paragraph → Saving File"
+              "Modern Studio \u2192 Keyboard Clicks \u2192 Final Paragraph \u2192 Saving File"
             ],
             "lyrics": null
           },
@@ -16805,7 +16805,7 @@
             "is_repeat_of": null,
             "duration_seconds": 45,
             "production_notes": [
-              "Modern Studio → Keyboard Clicks → Final Paragraph → Saving File"
+              "Modern Studio \u2192 Keyboard Clicks \u2192 Final Paragraph \u2192 Saving File"
             ],
             "lyrics": null
           },
@@ -16815,7 +16815,7 @@
             "is_repeat_of": null,
             "duration_seconds": 44,
             "production_notes": [
-              "Modern Studio → Keyboard Clicks → Final Paragraph → Saving File"
+              "Modern Studio \u2192 Keyboard Clicks \u2192 Final Paragraph \u2192 Saving File"
             ],
             "lyrics": null
           }
@@ -16860,7 +16860,7 @@
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens, no name tags, no name badges, no embroidered names, no lower thirds, no personal names on clothing or props",
           "audio_payload": {
             "speaker": "Character_P",
-            "dialogue": "I didn't write it in a leather notebook this time. I wrote it on a screen, but the energy of the words was exactly the same – raw, honest, and alive.",
+            "dialogue": "I didn't write it in a leather notebook this time. I wrote it on a screen, but the energy of the words was exactly the same \u2013 raw, honest, and alive.",
             "delivery": "voiceover_internal"
           },
           "stage1_beat_id": "b3",
@@ -17145,7 +17145,7 @@
             "is_repeat_of": null,
             "duration_seconds": 45,
             "production_notes": [
-              "Direct Camera → The Viking Shield → Stolen Cheese → Alaska Wind"
+              "Direct Camera \u2192 The Viking Shield \u2192 Stolen Cheese \u2192 Alaska Wind"
             ],
             "lyrics": null
           },
@@ -17155,7 +17155,7 @@
             "is_repeat_of": null,
             "duration_seconds": 45,
             "production_notes": [
-              "Direct Camera → The Viking Shield → Stolen Cheese → Alaska Wind"
+              "Direct Camera \u2192 The Viking Shield \u2192 Stolen Cheese \u2192 Alaska Wind"
             ],
             "lyrics": null
           },
@@ -17165,7 +17165,7 @@
             "is_repeat_of": null,
             "duration_seconds": 44,
             "production_notes": [
-              "Direct Camera → The Viking Shield → Stolen Cheese → Alaska Wind"
+              "Direct Camera \u2192 The Viking Shield \u2192 Stolen Cheese \u2192 Alaska Wind"
             ],
             "lyrics": null
           }
@@ -17479,7 +17479,7 @@
             "is_repeat_of": null,
             "duration_seconds": 45,
             "production_notes": [
-              "Lakeside Sunrise → Mirror of Dawn → England Photograph → Sailboat Horizon"
+              "Lakeside Sunrise \u2192 Mirror of Dawn \u2192 England Photograph \u2192 Sailboat Horizon"
             ],
             "lyrics": null
           },
@@ -17489,7 +17489,7 @@
             "is_repeat_of": null,
             "duration_seconds": 45,
             "production_notes": [
-              "Lakeside Sunrise → Mirror of Dawn → England Photograph → Sailboat Horizon"
+              "Lakeside Sunrise \u2192 Mirror of Dawn \u2192 England Photograph \u2192 Sailboat Horizon"
             ],
             "lyrics": null
           },
@@ -17499,7 +17499,7 @@
             "is_repeat_of": null,
             "duration_seconds": 44,
             "production_notes": [
-              "Lakeside Sunrise → Mirror of Dawn → England Photograph → Sailboat Horizon"
+              "Lakeside Sunrise \u2192 Mirror of Dawn \u2192 England Photograph \u2192 Sailboat Horizon"
             ],
             "lyrics": null
           }

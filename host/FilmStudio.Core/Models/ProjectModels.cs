@@ -35,6 +35,8 @@ public sealed class StartSceneGenRequest
     public string ProjectId { get; set; } = "";
     public int Scene { get; set; }
     public bool OnlyMissing { get; set; } = true;
+    /// <summary>Block gen when on-screen (non-narrator) cast lacks locked ref images. Default true.</summary>
+    public bool RequireLockedCharacters { get; set; } = true;
 }
 
 public sealed class StartBatchGenRequest
@@ -42,6 +44,8 @@ public sealed class StartBatchGenRequest
     public string ProjectId { get; set; } = "";
     public List<int> Scenes { get; set; } = new();
     public bool OnlyMissing { get; set; } = true;
+    /// <summary>Block gen when on-screen (non-narrator) cast lacks locked ref images. Default true.</summary>
+    public bool RequireLockedCharacters { get; set; } = true;
 }
 
 public sealed class CharacterImageRef

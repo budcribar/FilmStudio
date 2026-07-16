@@ -331,6 +331,35 @@ public sealed class CostReportService
         return list;
     }
 
+    /// <summary>Record a completed image generation at list rates (character design).</summary>
+    public void RecordImageGeneration(
+        string projectId,
+        int nImages,
+        string model,
+        bool quality = true,
+        string? character = null)
+    {
+        var cfg = LoadConfigMap(projectId);
+        var rates = RatesFromConfig(cfg);
+        var n = Math.Max(0, nImages);
+        var unit = GetDouble(
+            rates,
+            quality ? "image_output_quality" : "image_output_standard",
+            quality ? 0.05 : 0.02);
+        var usd = Math.Round(unit * n, 4);
+        AppendCostEvent(projectId, new Dictionary<string, object?>
+        {
+            ["kind"] = "image",
+            ["model"] = model,
+            ["character"] = character ?? "",
+            ["n_images"] = n,
+            ["unit_usd"] = unit,
+            ["usd"] = usd,
+            ["currency"] = "USD",
+            ["source"] = "list_rate",
+        }, save: true);
+    }
+
     // ---- internals ----
 
     private List<CostScenarioRow> BuildScenarios(

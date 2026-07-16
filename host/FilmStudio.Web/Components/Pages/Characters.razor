@@ -221,7 +221,14 @@ else
                                 <button class="btn btn-sm btn-primary"
                                         disabled="@(_busy || JobRunning)"
                                         @onclick="GenerateVariantsAsync">
-                                    🎲 Generate 3 variants
+                                    @if (_selected.Locked)
+                                    {
+                                        <text>🎲 Generate 1 variant</text>
+                                    }
+                                    else
+                                    {
+                                        <text>🎲 Generate 3 variants</text>
+                                    }
                                 </button>
                                 @if (_selected.Locked)
                                 {
@@ -235,14 +242,26 @@ else
                         </div>
                         <div class="card-body">
                             <p class="small text-muted">
-                                Needs <code>XAI_API_KEY</code> on the API process. Uses book plates as edit refs when available.
+                                Native C# → xAI image API. Needs <code>XAI_API_KEY</code> on the API process.
+                                <strong>Unlocked</strong> cast: generate <strong>3</strong> to pick a look.
+                                <strong>Already locked</strong>: generate <strong>1</strong> refine (uses locked ref + book plates).
                             </p>
                             @{
                                 var varsExisting = _selected.Variants.Where(v => v.Exists).ToList();
                             }
                             @if (varsExisting.Count == 0)
                             {
-                                <p class="small text-muted mb-0">No open variants on disk. Click <strong>Generate 3 variants</strong>.</p>
+                                <p class="small text-muted mb-0">
+                                    No open variants on disk.
+                                    @if (_selected.Locked)
+                                    {
+                                        <text> Click <strong>Generate 1 variant</strong> to refine.</text>
+                                    }
+                                    else
+                                    {
+                                        <text> Lock a book plate above, or <strong>Generate 3 variants</strong>.</text>
+                                    }
+                                </p>
                             }
                             else
                             {
