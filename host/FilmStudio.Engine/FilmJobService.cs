@@ -538,12 +538,12 @@ public sealed class FilmJobService
             if (req.Scene is int sn && sn > 0)
             {
                 await _remux.RemuxSceneAsync(projectId, sn,
-                    line => { _ = AppendLogAsync(line); }, ct);
+                    line => { _ = OnRemuxProgressAsync(line); }, ct);
             }
             if (req.RebuildWip)
             {
                 await _remux.RebuildWipAsync(projectId,
-                    line => { _ = AppendLogAsync(line); }, ct);
+                    line => { _ = OnRemuxProgressAsync(line); }, ct);
             }
             await FinishAsync("done", "Remux / WIP complete");
         }
@@ -991,6 +991,58 @@ public sealed class FilmJobService
             $"Missing lock(s): {names}. " +
             "Open Characters → lock a book plate or generate + lock a portrait. " +
             "(Narrator is voice-only and does not need an image.)");
+    }
+
+    /// <summary>
+    /// Remux progress → job Message + log + SignalR JobLog.
+    /// Parses <c>(12.3%)</c> from ffmpeg progress lines into Index/Total (0–1000).
+    /// </summary>
+    private async Task OnRemuxProgressAsync(string line)
+    {
+        if (string.IsNullOrWhiteSpace(line)) return;
+
+        // Prefer compact progress lines for the badge; still log everything.
+        var isProgress = line.Contains('[') && (
+            line.Contains("time ", StringComparison.OrdinalIgnoreCase) ||
+            line.Contains('%') ||
+            line.Contains("frame ", StringComparison.OrdinalIgnoreCase) ||
+            line.Contains("speed ", StringComparison.OrdinalIgnoreCase) ||
+            line.Contains("complete", StringComparison.OrdinalIgnoreCase));
+
+        int? pctTenths = null;
+        var m = System.Text.RegularExpressions.Regex.Match(line, @"\((\d+(?:\.\d+)?)%\)");
+        if (m.Success &&
+            double.TryParse(m.Groups[1].Value, System.Globalization.NumberStyles.Float,
+                System.Globalization.CultureInfo.InvariantCulture, out var pct))
+        {
+            pctTenths = (int)Math.Clamp(Math.Round(pct * 10), 0, 1000);
+        }
+
+        await UpdateAsync(s =>
+        {
+            s.Log.Add(line);
+            if (s.Log.Count > 120)
+                s.Log = s.Log.TakeLast(120).ToList();
+            // Keep live badge on progress; still update message for probe/errors
+            if (isProgress || s.Message is null || s.Message.Length == 0 ||
+                line.StartsWith("ffmpeg:", StringComparison.OrdinalIgnoreCase) ||
+                line.Contains("failed", StringComparison.OrdinalIgnoreCase) ||
+                line.Contains("Remux", StringComparison.OrdinalIgnoreCase) ||
+                line.Contains("WIP", StringComparison.OrdinalIgnoreCase) ||
+                line.Contains("Probing", StringComparison.OrdinalIgnoreCase) ||
+                line.Contains("complete", StringComparison.OrdinalIgnoreCase))
+            {
+                s.Message = line;
+            }
+            if (pctTenths is int p)
+            {
+                s.Total = 1000;
+                s.Index = p;
+            }
+        });
+
+        if (_sink is not null)
+            await _sink.OnJobLogAsync(line);
     }
 
     private async Task AppendLogAsync(string message)

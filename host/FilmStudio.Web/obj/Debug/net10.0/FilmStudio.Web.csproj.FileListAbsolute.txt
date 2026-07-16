@@ -91,5 +91,5 @@ C:\Users\budcr\source\repos\NickAndMe\host\FilmStudio.Web\obj\Debug\net10.0\scop
 C:\Users\budcr\source\repos\NickAndMe\host\FilmStudio.Web\obj\Debug\net10.0\scopedcss\Components\Pages\Characters.razor.rz.scp.css
 C:\Users\budcr\source\repos\NickAndMe\host\FilmStudio.Web\obj\Debug\net10.0\compressed\145h6brwhl-{0}-hbwfqsbqmv-hbwfqsbqmv.gz
 C:\Users\budcr\source\repos\NickAndMe\host\FilmStudio.Web\obj\Debug\net10.0\compressed\eh2s2p8qch-{0}-hbwfqsbqmv-hbwfqsbqmv.gz
-C:\Users\budcr\source\repos\NickAndMe\host\FilmStudio.Web\obj\Debug\net10.0\compressed\evqbbyfe1r-{0}-b9228eflpl-b9228eflpl.gz
-C:\Users\budcr\source\repos\NickAndMe\host\FilmStudio.Web\obj\Debug\net10.0\compressed\eldwuk30w3-{0}-2tj1sjhksk-2tj1sjhksk.gz
+C:\Users\budcr\source\repos\NickAndMe\host\FilmStudio.Web\obj\Debug\net10.0\compressed\evqbbyfe1r-{0}-f7fxoh55ae-f7fxoh55ae.gz
+C:\Users\budcr\source\repos\NickAndMe\host\FilmStudio.Web\obj\Debug\net10.0\compressed\eldwuk30w3-{0}-68qhiysw0j-68qhiysw0j.gz

@@ -56,9 +56,16 @@
                 <span class="badge bg-info text-dark ms-1">@k</span>
             }
             <span class="ms-2 small">@_job.Message</span>
+            @if (_job.Total > 0 && string.Equals(_job.Status, "running", StringComparison.OrdinalIgnoreCase))
+            {
+                <div class="progress mt-2" style="height:6px">
+                    <div class="progress-bar" role="progressbar"
+                         style="width:@((_job.Index * 100.0 / Math.Max(1, _job.Total)).ToString("0.#"))%"></div>
+                </div>
+            }
             @if (_job.Log.Count > 0)
             {
-                <pre class="small mb-0 mt-2" style="max-height:120px;overflow:auto;">@string.Join("\n", _job.Log.TakeLast(20))</pre>
+                <pre class="small mb-0 mt-2" style="max-height:160px;overflow:auto;">@string.Join("\n", _job.Log.TakeLast(30))</pre>
             }
         </div>
     </div>
@@ -214,6 +221,7 @@
     protected override async Task OnInitializedAsync()
     {
         Hub.JobUpdated += OnJobUpdated;
+        Hub.JobLog += OnJobLog;
         try
         {
             var projs = await Engine.GetProjectsAsync();
@@ -241,6 +249,13 @@
             });
         }
         else _ = InvokeAsync(StateHasChanged);
+    }
+
+    private void OnJobLog(string line)
+    {
+        if (_job is not null)
+            _job.Message = line;
+        _ = InvokeAsync(StateHasChanged);
     }
 
     private async Task LoadAsync()
@@ -350,6 +365,7 @@
     public async ValueTask DisposeAsync()
     {
         Hub.JobUpdated -= OnJobUpdated;
+        Hub.JobLog -= OnJobLog;
         await Task.CompletedTask;
     }
 }
