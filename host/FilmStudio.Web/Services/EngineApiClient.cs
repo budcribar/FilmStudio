@@ -2,6 +2,7 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using FilmStudio.Core.Models;
+using FilmStudio.Core.Options;
 
 namespace FilmStudio.Web.Services;
 
@@ -43,6 +44,32 @@ public sealed class EngineApiClient
 
     public async Task<JobsDto?> GetJobAsync(CancellationToken ct = default) =>
         await _http.GetFromJsonAsync<JobsDto>("/api/jobs", JsonOpts, ct);
+
+    /// <summary>Multi-job list (Phase A+). Pass mine=true or projectId.</summary>
+    public async Task<JobsListDto?> GetJobsAsync(
+        bool mine = false,
+        string? projectId = null,
+        string? userId = null,
+        CancellationToken ct = default)
+    {
+        var q = new List<string>();
+        if (mine) q.Add("mine=1");
+        if (!string.IsNullOrWhiteSpace(projectId))
+            q.Add("projectId=" + Uri.EscapeDataString(projectId));
+        if (!string.IsNullOrWhiteSpace(userId))
+            q.Add("userId=" + Uri.EscapeDataString(userId));
+        var url = "/api/jobs" + (q.Count > 0 ? "?" + string.Join("&", q) : "");
+        return await _http.GetFromJsonAsync<JobsListDto>(url, JsonOpts, ct);
+    }
+
+    public async Task<JobDetailDto?> GetJobByIdAsync(string jobId, CancellationToken ct = default) =>
+        await _http.GetFromJsonAsync<JobDetailDto>(
+            $"/api/jobs/{Uri.EscapeDataString(jobId)}",
+            JsonOpts,
+            ct);
+
+    public async Task<CapacityDto?> GetCapacityAsync(CancellationToken ct = default) =>
+        await _http.GetFromJsonAsync<CapacityDto>("/api/capacity", JsonOpts, ct);
 
     public async Task StartSceneGenAsync(
         string projectId,
@@ -614,6 +641,29 @@ public sealed class ProjectsDto
     public bool Ok { get; set; }
     public ProjectInfo? Active { get; set; }
     public List<ProjectInfo> Projects { get; set; } = new();
+}
+
+public sealed class JobsListDto
+{
+    public bool Ok { get; set; }
+    public bool Running { get; set; }
+    public List<JobSnapshot> Jobs { get; set; } = new();
+    public int Count { get; set; }
+}
+
+public sealed class JobDetailDto
+{
+    public bool Ok { get; set; }
+    public JobSnapshot? Job { get; set; }
+}
+
+public sealed class CapacityDto
+{
+    public bool Ok { get; set; }
+    public CapacityOptions? Capacity { get; set; }
+    public bool Running { get; set; }
+    public int RunningCount { get; set; }
+    public bool UseFakes { get; set; }
 }
 
 public sealed class JobsDto

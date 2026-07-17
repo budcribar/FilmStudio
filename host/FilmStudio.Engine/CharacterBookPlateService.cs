@@ -1,6 +1,7 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
+using FilmStudio.Engine.Abstractions;
 using Microsoft.Extensions.Logging;
 
 namespace FilmStudio.Engine;
@@ -14,12 +15,12 @@ namespace FilmStudio.Engine;
 public sealed class CharacterBookPlateService
 {
     private readonly ProjectStore _projects;
-    private readonly GrokVisionClient _vision;
+    private readonly IGrokVisionClient _vision;
     private readonly ILogger<CharacterBookPlateService> _log;
 
     public CharacterBookPlateService(
         ProjectStore projects,
-        GrokVisionClient vision,
+        IGrokVisionClient vision,
         ILogger<CharacterBookPlateService> log)
     {
         _projects = projects;

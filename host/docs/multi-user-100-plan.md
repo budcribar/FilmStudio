@@ -437,32 +437,34 @@ Optional: write .duration.json sidecar with fixture duration for fast UI probe
 
 ## 5. Implementation phases (PR-sized)
 
-### Phase A — Foundations (no multi-user UX yet)
+### Phase A — Foundations (no multi-user UX yet) — **IMPLEMENTED (2026-07-17)**
 
-**A1. Abstractions + DI**
+**A1. Abstractions + DI** ✅
 
-- Extract `IGrokVideoClient`, `IGrokImageClient`, `IGrokChatClient`, `IGrokVisionClient` from concrete classes (or wrap them).
-- `IFfmpegRemux` over remux methods used by jobs.
-- Register real implementations as today when `UseFakes=false`.
+- `IGrokVideoClient`, `IGrokImageClient`, `IGrokChatClient`, `IGrokVisionClient`, `IFfmpegRemux`, `IJobStore`
+- Real clients implement interfaces; DI switches on `FilmStudio:UseFakes` / `FILMSTUDIO_USE_FAKES`
 
-**A2. FilmStudio.Fakes**
+**A2. FilmStudio.Fakes** ✅
 
-- Implement fakes + fixtures.
-- Unit smoke: fake video produces file on disk.
+- `FakeGrokVideoClient` (fixture copy), image/chat/vision fakes
+- Fixtures: `clip_merge_10s.mp4` (NickAndMe-scale ~8 MB), `clip_tiny_1s.mp4`
+- Script: `host/scripts/generate-fake-fixtures.ps1` (or copy real clips into Fixtures/)
 
-**A3. Job model multi-instance**
+**A3. Job model multi-instance** ✅
 
-- `JobRecord` + `IJobStore` (in-memory concurrent dictionary first).
-- Replace global single `_snapshot` with:
-  - `TryEnqueue`, `GetJob`, `ListJobs(userId|projectId)`, `Cancel(jobId)`.
-- **Temporary shim:** keep **backward-compatible** `GET /api/jobs` → “primary” or “latest for caller” so existing Blazor keeps working during migration.
-- Add `GET /api/jobs/{id}`, `GET /api/jobs?mine=1` (and optional `?projectId=`).
+- `JobRecord` + `JobStore` + registration on each job start
+- **Shim:** `GET /api/jobs` → primary/latest
+- `GET /api/jobs?mine=1` / `?projectId=` / `?userId=` → list
+- `GET /api/jobs/{jobId}` → detail
+- Still **one concurrent runner** (semaphore gate); multi-worker is Phase C
 
-**A4. Capacity options**
+**A4. Capacity options** ✅
 
-- `CapacityOptions` as above; enforce in enqueue.
+- `CapacityOptions` + `FakesOptions` on `FilmStudioOptions`
+- Enforced at start (`MaxVideoInFlight`, `MaxQueuePerUser`)
+- `GET /api/capacity`
 
-**Exit A:** app runs with fakes; single-user behavior preserved; tests use fakes.
+**Exit A:** app runs with fakes; single-user UI preserved; JobStore unit tests pass.
 *(Do **not** remove the `/api/jobs` shim in Phase A.)*
 
 ---

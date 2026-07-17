@@ -5,10 +5,12 @@ using FilmStudio.Core.Options;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
+using FilmStudio.Engine.Abstractions;
+
 namespace FilmStudio.Engine;
 
 /// <summary>xAI Grok Imagine image generate + edit client for character portraits.</summary>
-public sealed class GrokImageClient
+public sealed class GrokImageClient : IGrokImageClient
 {
     public const string ApiBase = "https://api.x.ai/v1";
 

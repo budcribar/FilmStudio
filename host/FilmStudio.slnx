@@ -2,5 +2,7 @@
   <Project Path="FilmStudio.Api/FilmStudio.Api.csproj" />
   <Project Path="FilmStudio.Core/FilmStudio.Core.csproj" />
   <Project Path="FilmStudio.Engine/FilmStudio.Engine.csproj" />
+  <Project Path="FilmStudio.Fakes/FilmStudio.Fakes.csproj" />
+  <Project Path="FilmStudio.Tests/FilmStudio.Tests.csproj" />
   <Project Path="FilmStudio.Web/FilmStudio.Web.csproj" />
 </Solution>

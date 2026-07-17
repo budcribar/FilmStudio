@@ -15,10 +15,13 @@ public sealed class WorkspaceState
 
 public sealed class JobSnapshot
 {
+    /// <summary>Multi-job id (Phase A+). Empty for legacy idle snapshot.</summary>
+    public string? JobId { get; set; }
     public string Status { get; set; } = "idle"; // idle|running|done|error|cancelled
     public string? Kind { get; set; }
     public string? Message { get; set; }
     public string? ProjectId { get; set; }
+    public string? UserId { get; set; }
     public string? CharKey { get; set; }
     public int? Scene { get; set; }
     public int? Clip { get; set; }
@@ -26,8 +29,50 @@ public sealed class JobSnapshot
     public int Total { get; set; }
     public List<string> Log { get; set; } = new();
     public string? Error { get; set; }
+    public DateTimeOffset? QueuedAt { get; set; }
     public DateTimeOffset? StartedAt { get; set; }
     public DateTimeOffset? FinishedAt { get; set; }
+}
+
+/// <summary>Persisted multi-job record (same fields as snapshot + queue metadata).</summary>
+public sealed class JobRecord
+{
+    public string JobId { get; set; } = "";
+    public string Status { get; set; } = "queued"; // queued|running|done|error|cancelled
+    public string? Kind { get; set; }
+    public string? Message { get; set; }
+    public string? ProjectId { get; set; }
+    public string? UserId { get; set; }
+    public string? CharKey { get; set; }
+    public int? Scene { get; set; }
+    public int? Clip { get; set; }
+    public int Index { get; set; }
+    public int Total { get; set; }
+    public List<string> Log { get; set; } = new();
+    public string? Error { get; set; }
+    public DateTimeOffset QueuedAt { get; set; } = DateTimeOffset.UtcNow;
+    public DateTimeOffset? StartedAt { get; set; }
+    public DateTimeOffset? FinishedAt { get; set; }
+
+    public JobSnapshot ToSnapshot() => new()
+    {
+        JobId = JobId,
+        Status = Status,
+        Kind = Kind,
+        Message = Message,
+        ProjectId = ProjectId,
+        UserId = UserId,
+        CharKey = CharKey,
+        Scene = Scene,
+        Clip = Clip,
+        Index = Index,
+        Total = Total,
+        Log = Log.ToList(),
+        Error = Error,
+        QueuedAt = QueuedAt,
+        StartedAt = StartedAt,
+        FinishedAt = FinishedAt,
+    };
 }
 
 public sealed class StartSceneGenRequest

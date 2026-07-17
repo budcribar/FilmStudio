@@ -5,12 +5,14 @@ using FilmStudio.Core.Options;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
+using FilmStudio.Engine.Abstractions;
+
 namespace FilmStudio.Engine;
 
 /// <summary>
 /// xAI Grok video generate / poll / download client.
 /// </summary>
-public sealed class GrokVideoClient
+public sealed class GrokVideoClient : IGrokVideoClient
 {
     public const string ApiBase = "https://api.x.ai/v1";
 

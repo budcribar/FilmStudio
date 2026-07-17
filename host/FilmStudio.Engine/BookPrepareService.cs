@@ -2,6 +2,7 @@ using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using FilmStudio.Core.Options;
+using FilmStudio.Engine.Abstractions;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using UglyToad.PdfPig;
@@ -16,13 +17,13 @@ namespace FilmStudio.Engine;
 public sealed class BookPrepareService
 {
     private readonly ProjectStore _projects;
-    private readonly GrokVisionClient _vision;
+    private readonly IGrokVisionClient _vision;
     private readonly FilmStudioOptions _opts;
     private readonly ILogger<BookPrepareService> _log;
 
     public BookPrepareService(
         ProjectStore projects,
-        GrokVisionClient vision,
+        IGrokVisionClient vision,
         IOptions<FilmStudioOptions> opts,
         ILogger<BookPrepareService> log)
     {

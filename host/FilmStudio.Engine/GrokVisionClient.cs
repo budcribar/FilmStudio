@@ -6,10 +6,12 @@ using FilmStudio.Core.Options;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
+using FilmStudio.Engine.Abstractions;
+
 namespace FilmStudio.Engine;
 
 /// <summary>xAI /responses vision transcription for book page images.</summary>
-public sealed class GrokVisionClient
+public sealed class GrokVisionClient : IGrokVisionClient
 {
     public const string ApiBase = "https://api.x.ai/v1";
 

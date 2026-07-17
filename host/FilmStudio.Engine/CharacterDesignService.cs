@@ -1,6 +1,7 @@
 using System.Text.Json;
 using FilmStudio.Core.Models;
 using FilmStudio.Core.Options;
+using FilmStudio.Engine.Abstractions;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
@@ -13,14 +14,14 @@ namespace FilmStudio.Engine;
 public sealed class CharacterDesignService
 {
     private readonly ProjectStore _projects;
-    private readonly GrokImageClient _images;
+    private readonly IGrokImageClient _images;
     private readonly CostReportService _costs;
     private readonly FilmStudioOptions _opts;
     private readonly ILogger<CharacterDesignService> _log;
 
     public CharacterDesignService(
         ProjectStore projects,
-        GrokImageClient images,
+        IGrokImageClient images,
         CostReportService costs,
         IOptions<FilmStudioOptions> opts,
         ILogger<CharacterDesignService> log)

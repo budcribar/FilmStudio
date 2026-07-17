@@ -1,6 +1,7 @@
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using FilmStudio.Core.Options;
+using FilmStudio.Engine.Abstractions;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
@@ -18,7 +19,7 @@ public sealed class Stage1Service
     };
 
     private readonly ProjectStore _projects;
-    private readonly GrokChatClient _chat;
+    private readonly IGrokChatClient _chat;
     private readonly BookPrepareService _books;
     private readonly CharacterBookPlateService _plates;
     private readonly FilmStudioOptions _opts;
@@ -26,7 +27,7 @@ public sealed class Stage1Service
 
     public Stage1Service(
         ProjectStore projects,
-        GrokChatClient chat,
+        IGrokChatClient chat,
         BookPrepareService books,
         CharacterBookPlateService plates,
         IOptions<FilmStudioOptions> opts,

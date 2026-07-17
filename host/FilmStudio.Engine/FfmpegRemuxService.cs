@@ -4,6 +4,7 @@ using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using FilmStudio.Core.Options;
+using FilmStudio.Engine.Abstractions;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
@@ -15,7 +16,7 @@ namespace FilmStudio.Engine;
 /// (Soenneker.Libraries.FFmpeg) → PATH.
 /// Streams stderr/stdout progress to <paramref name="onProgress"/> (SignalR job log).
 /// </summary>
-public sealed class FfmpegRemuxService
+public sealed class FfmpegRemuxService : IFfmpegRemux
 {
     private static readonly Regex DurationRe = new(
         @"Duration:\s*(\d{1,2}):(\d{2}):(\d{2}(?:\.\d+)?)",

@@ -1,0 +1,116 @@
+using System.Collections.Concurrent;
+using FilmStudio.Core.Models;
+using FilmStudio.Engine.Abstractions;
+
+namespace FilmStudio.Engine;
+
+/// <summary>In-memory multi-job registry (Phase A).</summary>
+public sealed class JobStore : IJobStore
+{
+    private readonly ConcurrentDictionary<string, JobRecord> _jobs = new(StringComparer.OrdinalIgnoreCase);
+    private readonly object _gate = new();
+
+    public JobRecord Create(JobRecord seed)
+    {
+        if (string.IsNullOrWhiteSpace(seed.JobId))
+            seed.JobId = Guid.NewGuid().ToString("N")[..12];
+        seed.QueuedAt = seed.QueuedAt == default ? DateTimeOffset.UtcNow : seed.QueuedAt;
+        _jobs[seed.JobId] = Clone(seed);
+        return Clone(seed);
+    }
+
+    public JobRecord? Get(string jobId)
+    {
+        if (string.IsNullOrWhiteSpace(jobId)) return null;
+        return _jobs.TryGetValue(jobId, out var j) ? Clone(j) : null;
+    }
+
+    public IReadOnlyList<JobRecord> List(string? userId = null, string? projectId = null, int take = 50)
+    {
+        take = Math.Clamp(take, 1, 200);
+        IEnumerable<JobRecord> q = _jobs.Values;
+        if (!string.IsNullOrWhiteSpace(userId))
+            q = q.Where(j => string.Equals(j.UserId, userId, StringComparison.OrdinalIgnoreCase));
+        if (!string.IsNullOrWhiteSpace(projectId))
+            q = q.Where(j => string.Equals(j.ProjectId, projectId, StringComparison.OrdinalIgnoreCase));
+        return q
+            .OrderByDescending(j => j.QueuedAt)
+            .Take(take)
+            .Select(Clone)
+            .ToList();
+    }
+
+    public JobRecord? GetPrimary(string? userId = null)
+    {
+        IEnumerable<JobRecord> q = _jobs.Values;
+        if (!string.IsNullOrWhiteSpace(userId))
+            q = q.Where(j => string.Equals(j.UserId, userId, StringComparison.OrdinalIgnoreCase));
+
+        var list = q.ToList();
+        var running = list
+            .Where(j => string.Equals(j.Status, "running", StringComparison.OrdinalIgnoreCase))
+            .OrderByDescending(j => j.StartedAt ?? j.QueuedAt)
+            .FirstOrDefault();
+        if (running is not null)
+            return Clone(running);
+
+        return list
+            .OrderByDescending(j => j.FinishedAt ?? j.StartedAt ?? j.QueuedAt)
+            .Select(Clone)
+            .FirstOrDefault();
+    }
+
+    public void Update(string jobId, Action<JobRecord> mutate)
+    {
+        lock (_gate)
+        {
+            if (!_jobs.TryGetValue(jobId, out var j))
+                return;
+            mutate(j);
+        }
+    }
+
+    public bool TryCancel(string jobId)
+    {
+        lock (_gate)
+        {
+            if (!_jobs.TryGetValue(jobId, out var j))
+                return false;
+            if (j.Status is "done" or "error" or "cancelled")
+                return false;
+            j.Status = "cancelled";
+            j.Message = "Cancel requested";
+            j.FinishedAt = DateTimeOffset.UtcNow;
+            return true;
+        }
+    }
+
+    public int CountRunning() =>
+        _jobs.Values.Count(j => string.Equals(j.Status, "running", StringComparison.OrdinalIgnoreCase));
+
+    public int CountQueuedForUser(string userId) =>
+        _jobs.Values.Count(j =>
+            string.Equals(j.UserId, userId, StringComparison.OrdinalIgnoreCase) &&
+            (string.Equals(j.Status, "queued", StringComparison.OrdinalIgnoreCase) ||
+             string.Equals(j.Status, "running", StringComparison.OrdinalIgnoreCase)));
+
+    private static JobRecord Clone(JobRecord s) => new()
+    {
+        JobId = s.JobId,
+        Status = s.Status,
+        Kind = s.Kind,
+        Message = s.Message,
+        ProjectId = s.ProjectId,
+        UserId = s.UserId,
+        CharKey = s.CharKey,
+        Scene = s.Scene,
+        Clip = s.Clip,
+        Index = s.Index,
+        Total = s.Total,
+        Log = s.Log.ToList(),
+        Error = s.Error,
+        QueuedAt = s.QueuedAt,
+        StartedAt = s.StartedAt,
+        FinishedAt = s.FinishedAt,
+    };
+}

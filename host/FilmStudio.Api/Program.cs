@@ -4,6 +4,9 @@ using FilmStudio.Api.Services;
 using FilmStudio.Core.Models;
 using FilmStudio.Core.Options;
 using FilmStudio.Engine;
+using FilmStudio.Engine.Abstractions;
+using FilmStudio.Fakes;
+using Microsoft.Extensions.Options;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -20,6 +23,7 @@ builder.Services.PostConfigure<FilmStudioOptions>(o =>
 
 builder.Services.AddSingleton<MediaDurationProbe>();
 builder.Services.AddSingleton<ProjectStore>();
+builder.Services.AddSingleton<IJobStore, JobStore>();
 builder.Services.AddSingleton<CostReportService>();
 builder.Services.AddSingleton<CharacterDesignService>();
 builder.Services.AddSingleton<CharacterBookPlateService>();
@@ -27,29 +31,43 @@ builder.Services.AddSingleton<BookPrepareService>();
 builder.Services.AddSingleton<Stage1Service>();
 builder.Services.AddSingleton<Stage2PlannerService>();
 builder.Services.AddSingleton<FfmpegRemuxService>();
+builder.Services.AddSingleton<IFfmpegRemux>(sp => sp.GetRequiredService<FfmpegRemuxService>());
 builder.Services.AddSingleton<EditLogService>();
 builder.Services.AddSingleton<FilmJobService>();
 builder.Services.AddSingleton<IJobProgressSink, SignalRJobProgressSink>();
-builder.Services.AddHttpClient<GrokVideoClient>(c =>
+
+// Grok clients: real HttpClient or fakes (FilmStudio:UseFakes)
+var useFakes = builder.Configuration.GetValue("FilmStudio:UseFakes", false)
+    || string.Equals(Environment.GetEnvironmentVariable("FILMSTUDIO_USE_FAKES"), "1", StringComparison.OrdinalIgnoreCase)
+    || string.Equals(Environment.GetEnvironmentVariable("FILMSTUDIO_USE_FAKES"), "true", StringComparison.OrdinalIgnoreCase);
+
+if (useFakes)
 {
-    c.BaseAddress = new Uri(GrokVideoClient.ApiBase + "/");
-    c.Timeout = TimeSpan.FromMinutes(15);
-});
-builder.Services.AddHttpClient<GrokImageClient>(c =>
+    builder.Services.AddFilmStudioFakes();
+}
+else
 {
-    c.BaseAddress = new Uri(GrokImageClient.ApiBase + "/");
-    c.Timeout = TimeSpan.FromMinutes(5);
-});
-builder.Services.AddHttpClient<GrokVisionClient>(c =>
-{
-    c.BaseAddress = new Uri(GrokVisionClient.ApiBase + "/");
-    c.Timeout = TimeSpan.FromMinutes(5);
-});
-builder.Services.AddHttpClient<GrokChatClient>(c =>
-{
-    c.BaseAddress = new Uri(GrokChatClient.ApiBase + "/");
-    c.Timeout = TimeSpan.FromMinutes(20);
-});
+    builder.Services.AddHttpClient<IGrokVideoClient, GrokVideoClient>(c =>
+    {
+        c.BaseAddress = new Uri(GrokVideoClient.ApiBase + "/");
+        c.Timeout = TimeSpan.FromMinutes(15);
+    });
+    builder.Services.AddHttpClient<IGrokImageClient, GrokImageClient>(c =>
+    {
+        c.BaseAddress = new Uri(GrokImageClient.ApiBase + "/");
+        c.Timeout = TimeSpan.FromMinutes(5);
+    });
+    builder.Services.AddHttpClient<IGrokVisionClient, GrokVisionClient>(c =>
+    {
+        c.BaseAddress = new Uri(GrokVisionClient.ApiBase + "/");
+        c.Timeout = TimeSpan.FromMinutes(5);
+    });
+    builder.Services.AddHttpClient<IGrokChatClient, GrokChatClient>(c =>
+    {
+        c.BaseAddress = new Uri(GrokChatClient.ApiBase + "/");
+        c.Timeout = TimeSpan.FromMinutes(20);
+    });
+}
 
 builder.Services.AddSignalR();
 builder.Services.AddCors(o =>
@@ -70,16 +88,32 @@ jobs.SetProgressSink(app.Services.GetRequiredService<IJobProgressSink>());
 app.UseCors();
 app.MapHub<JobHub>("/hubs/jobs");
 
-app.MapGet("/health", (ProjectStore store) =>
+app.MapGet("/health", (ProjectStore store, IOptions<FilmStudioOptions> opts, IGrokVideoClient video) =>
     Results.Ok(new
     {
         ok = true,
         service = "FilmStudio.Api",
         workspace = store.WorkspaceRoot,
         activeProject = store.ActiveProjectId,
-        xaiConfigured = !string.IsNullOrWhiteSpace(
-            Environment.GetEnvironmentVariable("XAI_API_KEY")),
+        useFakes = opts.Value.UseFakes || useFakes,
+        capacity = opts.Value.Capacity,
+        xaiConfigured = video.IsConfigured || useFakes,
+        xaiKeyPresent = !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("XAI_API_KEY")),
     }));
+
+app.MapGet("/api/capacity", (FilmJobService jobService, IOptions<FilmStudioOptions> opts) =>
+{
+    var cap = opts.Value.Capacity ?? new CapacityOptions();
+    return Results.Ok(new
+    {
+        ok = true,
+        capacity = cap,
+        running = jobService.IsRunning,
+        runningCount = jobService.ListJobs(take: 200).Count(j =>
+            string.Equals(j.Status, "running", StringComparison.OrdinalIgnoreCase)),
+        useFakes = opts.Value.UseFakes || useFakes,
+    });
+});
 
 app.MapGet("/api/projects", (ProjectStore store) =>
 {
@@ -103,8 +137,26 @@ app.MapPost("/api/projects/{id}/activate", (string id, ProjectStore store) =>
     }
 });
 
-app.MapGet("/api/jobs", (FilmJobService jobService) =>
+// Phase A: multi-job list + backward-compat primary job on GET /api/jobs
+app.MapGet("/api/jobs", (FilmJobService jobService, string? mine, string? projectId, string? userId) =>
 {
+    // Explicit list: ?mine=1 or ?projectId=
+    if (string.Equals(mine, "1", StringComparison.OrdinalIgnoreCase) ||
+        string.Equals(mine, "true", StringComparison.OrdinalIgnoreCase) ||
+        !string.IsNullOrWhiteSpace(projectId) ||
+        !string.IsNullOrWhiteSpace(userId))
+    {
+        var list = jobService.ListJobs(userId, projectId, take: 50);
+        return Results.Ok(new
+        {
+            ok = true,
+            running = jobService.IsRunning,
+            jobs = list,
+            count = list.Count,
+        });
+    }
+
+    // Shim: single primary job for existing Blazor clients
     var snap = jobService.GetSnapshot();
     return Results.Ok(new
     {
@@ -112,6 +164,14 @@ app.MapGet("/api/jobs", (FilmJobService jobService) =>
         running = jobService.IsRunning,
         job = snap,
     });
+});
+
+app.MapGet("/api/jobs/{jobId}", (string jobId, FilmJobService jobService) =>
+{
+    var job = jobService.GetJob(jobId);
+    if (job is null)
+        return Results.NotFound(new { ok = false, error = "job not found" });
+    return Results.Ok(new { ok = true, job });
 });
 
 app.MapPost("/api/jobs/gen-scene", async (StartSceneGenRequest body, FilmJobService jobService) =>

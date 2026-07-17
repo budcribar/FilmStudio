@@ -13,7 +13,19 @@
   <ItemGroup>
     <ProjectReference Include="..\FilmStudio.Engine\FilmStudio.Engine.csproj" />
     <ProjectReference Include="..\FilmStudio.Core\FilmStudio.Core.csproj" />
+    <ProjectReference Include="..\FilmStudio.Fakes\FilmStudio.Fakes.csproj" />
   </ItemGroup>
+
+  <!-- Copy fake video fixtures next to API output for FakeGrokVideoClient -->
+  <Target Name="CopyFakeFixtures" AfterTargets="Build">
+    <ItemGroup>
+      <_FakeFixtures Include="..\FilmStudio.Fakes\Fixtures\**\*.*" Condition="Exists('..\FilmStudio.Fakes\Fixtures')" />
+    </ItemGroup>
+    <Copy SourceFiles="@(_FakeFixtures)"
+          DestinationFolder="$(OutDir)Fixtures\%(RecursiveDir)"
+          SkipUnchangedFiles="true"
+          Condition="'@(_FakeFixtures)' != ''" />
+  </Target>
 
   <!--
     Soenneker ships ffmpeg.exe but content files are not transitive via ProjectReference.

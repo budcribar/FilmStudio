@@ -2,6 +2,7 @@ using System.Collections.Concurrent;
 using System.Text.Json;
 using FilmStudio.Core.Models;
 using FilmStudio.Core.Options;
+using FilmStudio.Engine.Abstractions;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
@@ -16,18 +17,20 @@ public interface IJobProgressSink
 /// <summary>
 /// Native C# film job orchestrator (no Python): Stage 1/2, book prepare,
 /// character design, multi-ref video, remux/WIP with SignalR progress.
+/// Phase A: multi-job store + capacity checks; still one concurrent runner (gate).
 /// </summary>
 public sealed class FilmJobService
 {
     private readonly ProjectStore _projects;
-    private readonly GrokVideoClient _grok;
+    private readonly IGrokVideoClient _grok;
     private readonly CharacterDesignService _characters;
     private readonly CharacterBookPlateService _plates;
     private readonly BookPrepareService _books;
     private readonly Stage1Service _stage1;
     private readonly Stage2PlannerService _stage2;
-    private readonly FfmpegRemuxService _remux;
+    private readonly IFfmpegRemux _remux;
     private readonly CostReportService _costs;
+    private readonly IJobStore _jobs;
     private readonly FilmStudioOptions _opts;
     private readonly ILogger<FilmJobService> _log;
     private readonly SemaphoreSlim _gate = new(1, 1);
@@ -35,18 +38,20 @@ public sealed class FilmJobService
     private readonly ConcurrentQueue<string> _logLines = new();
     private CancellationTokenSource? _cts;
     private JobSnapshot _snapshot = new() { Status = "idle" };
+    private string? _activeJobId;
     private IJobProgressSink? _sink;
 
     public FilmJobService(
         ProjectStore projects,
-        GrokVideoClient grok,
+        IGrokVideoClient grok,
         CharacterDesignService characters,
         CharacterBookPlateService plates,
         BookPrepareService books,
         Stage1Service stage1,
         Stage2PlannerService stage2,
-        FfmpegRemuxService remux,
+        IFfmpegRemux remux,
         CostReportService costs,
+        IJobStore jobs,
         IOptions<FilmStudioOptions> opts,
         ILogger<FilmJobService> log)
     {
@@ -59,28 +64,90 @@ public sealed class FilmJobService
         _stage2 = stage2;
         _remux = remux;
         _costs = costs;
+        _jobs = jobs;
         _opts = opts.Value;
         _log = log;
     }
 
     public void SetProgressSink(IJobProgressSink sink) => _sink = sink;
 
-    public JobSnapshot GetSnapshot() => Clone(_snapshot);
+    public JobSnapshot GetSnapshot()
+    {
+        var primary = _jobs.GetPrimary();
+        if (primary is not null)
+            return primary.ToSnapshot();
+        return Clone(_snapshot);
+    }
+
+    public JobSnapshot? GetJob(string jobId) => _jobs.Get(jobId)?.ToSnapshot();
+
+    public IReadOnlyList<JobSnapshot> ListJobs(string? userId = null, string? projectId = null, int take = 50) =>
+        _jobs.List(userId, projectId, take).Select(j => j.ToSnapshot()).ToList();
 
     public bool IsRunning =>
+        _jobs.CountRunning() > 0 ||
         string.Equals(_snapshot.Status, "running", StringComparison.OrdinalIgnoreCase);
 
-    public async Task CancelAsync()
+    public CapacityOptions Capacity => _opts.Capacity ?? new CapacityOptions();
+
+    public async Task CancelAsync(string? jobId = null)
     {
+        if (!string.IsNullOrWhiteSpace(jobId))
+            _jobs.TryCancel(jobId);
         _cts?.Cancel();
         await AppendLogAsync("Cancel requested…");
         await UpdateAsync(s => s.Message = "Cancel requested — finishing current step if possible…");
+    }
+
+    private void EnsureCanStart(string? userId)
+    {
+        var cap = Capacity;
+        if (_jobs.CountRunning() >= Math.Max(1, cap.MaxVideoInFlight))
+            throw new InvalidOperationException(
+                $"At capacity: MaxVideoInFlight={cap.MaxVideoInFlight} (running={_jobs.CountRunning()}).");
+        if (!string.IsNullOrWhiteSpace(userId) &&
+            _jobs.CountQueuedForUser(userId!) >= Math.Max(1, cap.MaxQueuePerUser))
+            throw new InvalidOperationException(
+                $"User queue full: MaxQueuePerUser={cap.MaxQueuePerUser}.");
+    }
+
+    /// <summary>Register current <see cref="_snapshot"/> in the multi-job store (call after assigning a new running snapshot).</summary>
+    private void RegisterActiveJob()
+    {
+        var rec = _jobs.Create(new JobRecord
+        {
+            Status = _snapshot.Status,
+            Kind = _snapshot.Kind,
+            ProjectId = _snapshot.ProjectId,
+            UserId = _snapshot.UserId,
+            CharKey = _snapshot.CharKey,
+            Scene = _snapshot.Scene,
+            Clip = _snapshot.Clip,
+            Message = _snapshot.Message,
+            Index = _snapshot.Index,
+            Total = _snapshot.Total,
+            StartedAt = _snapshot.StartedAt ?? DateTimeOffset.UtcNow,
+            Log = _snapshot.Log.ToList(),
+        });
+        _activeJobId = rec.JobId;
+        _snapshot.JobId = rec.JobId;
+        _snapshot.QueuedAt = rec.QueuedAt;
     }
 
     public async Task StartSceneGenAsync(StartSceneGenRequest req)
     {
         if (!await _gate.WaitAsync(0))
             throw new InvalidOperationException("A generation job is already running.");
+
+        try
+        {
+            EnsureCanStart(null);
+        }
+        catch
+        {
+            _gate.Release();
+            throw;
+        }
 
         _cts = new CancellationTokenSource();
         var ct = _cts.Token;
@@ -193,6 +260,7 @@ public sealed class FilmJobService
             StartedAt = DateTimeOffset.UtcNow,
             Log = new List<string>(),
         };
+                RegisterActiveJob();
         await PublishAsync();
 
         try
@@ -294,6 +362,7 @@ public sealed class FilmJobService
             StartedAt = DateTimeOffset.UtcNow,
             Log = new List<string>(),
         };
+                RegisterActiveJob();
         await PublishAsync();
 
         try
@@ -436,6 +505,7 @@ public sealed class FilmJobService
             StartedAt = DateTimeOffset.UtcNow,
             Log = new List<string>(),
         };
+                RegisterActiveJob();
         await PublishAsync();
 
         try
@@ -534,6 +604,7 @@ public sealed class FilmJobService
             StartedAt = DateTimeOffset.UtcNow,
             Log = new List<string>(),
         };
+                RegisterActiveJob();
         await PublishAsync();
 
         try
@@ -588,6 +659,7 @@ public sealed class FilmJobService
             StartedAt = DateTimeOffset.UtcNow,
             Log = new List<string>(),
         };
+                RegisterActiveJob();
         await PublishAsync();
 
         try
@@ -650,6 +722,7 @@ public sealed class FilmJobService
             StartedAt = DateTimeOffset.UtcNow,
             Log = new List<string>(),
         };
+                RegisterActiveJob();
         await PublishAsync();
         try
         {
@@ -750,6 +823,7 @@ public sealed class FilmJobService
             StartedAt = DateTimeOffset.UtcNow,
             Log = new List<string>(),
         };
+                RegisterActiveJob();
         await PublishAsync();
 
         try
@@ -881,6 +955,7 @@ public sealed class FilmJobService
             StartedAt = DateTimeOffset.UtcNow,
             Log = new List<string>(),
         };
+                RegisterActiveJob();
         await PublishAsync();
 
         try
@@ -1217,6 +1292,28 @@ public sealed class FilmJobService
         try
         {
             mutate(_snapshot);
+            if (!string.IsNullOrEmpty(_activeJobId))
+            {
+                _jobs.Update(_activeJobId, rec =>
+                {
+                    rec.Status = _snapshot.Status;
+                    rec.Kind = _snapshot.Kind;
+                    rec.Message = _snapshot.Message;
+                    rec.ProjectId = _snapshot.ProjectId;
+                    rec.UserId = _snapshot.UserId;
+                    rec.CharKey = _snapshot.CharKey;
+                    rec.Scene = _snapshot.Scene;
+                    rec.Clip = _snapshot.Clip;
+                    rec.Index = _snapshot.Index;
+                    rec.Total = _snapshot.Total;
+                    rec.Log = _snapshot.Log.ToList();
+                    rec.Error = _snapshot.Error;
+                    rec.StartedAt = _snapshot.StartedAt;
+                    rec.FinishedAt = _snapshot.FinishedAt;
+                    if (_snapshot.JobId is null)
+                        _snapshot.JobId = rec.JobId;
+                });
+            }
             await PublishAsync();
         }
         finally
@@ -1247,10 +1344,12 @@ public sealed class FilmJobService
 
     private static JobSnapshot Clone(JobSnapshot s) => new()
     {
+        JobId = s.JobId,
         Status = s.Status,
         Kind = s.Kind,
         Message = s.Message,
         ProjectId = s.ProjectId,
+        UserId = s.UserId,
         CharKey = s.CharKey,
         Scene = s.Scene,
         Clip = s.Clip,
@@ -1258,6 +1357,7 @@ public sealed class FilmJobService
         Total = s.Total,
         Log = s.Log.ToList(),
         Error = s.Error,
+        QueuedAt = s.QueuedAt,
         StartedAt = s.StartedAt,
         FinishedAt = s.FinishedAt,
     };
