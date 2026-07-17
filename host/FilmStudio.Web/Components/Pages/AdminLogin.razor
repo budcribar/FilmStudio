@@ -1,0 +1,95 @@
+@page "/admin/login"
+@rendermode InteractiveServer
+@inject EngineApiClient Api
+@inject AdminSessionService Session
+@inject NavigationManager Nav
+
+<PageTitle>Admin login — Film Studio</PageTitle>
+
+<div class="container py-4" style="max-width: 28rem;">
+    <h1 class="h3 mb-3">Admin login</h1>
+    <p class="text-muted small">
+        Signs in against the API (<code>POST /api/auth/login</code>). Dev default: username <code>admin</code>,
+        password <code>admin</code> (or empty with AllowDevBypass).
+    </p>
+
+    @if (Session.IsAdmin)
+    {
+        <div class="alert alert-success">
+            Signed in as <strong>@Session.UserId</strong> (admin).
+            <a href="admin">Open dashboard</a>
+        </div>
+        <button class="btn btn-outline-secondary btn-sm" @onclick="LogoutAsync">Log out</button>
+    }
+    else
+    {
+        <EditForm Model="_model" OnValidSubmit="LoginAsync">
+            <div class="mb-3">
+                <label class="form-label">Username</label>
+                <InputText class="form-control" @bind-Value="_model.Username" autocomplete="username" />
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Password</label>
+                <InputText type="password" class="form-control" @bind-Value="_model.Password" autocomplete="current-password" />
+            </div>
+            @if (!string.IsNullOrEmpty(_error))
+            {
+                <div class="alert alert-danger py-2">@_error</div>
+            }
+            <button class="btn btn-primary" type="submit" disabled="@_busy">
+                @(_busy ? "Signing in…" : "Sign in")
+            </button>
+        </EditForm>
+    }
+</div>
+
+@code {
+    private readonly LoginForm _model = new() { Username = "admin", Password = "admin" };
+    private string? _error;
+    private bool _busy;
+
+    private async Task LoginAsync()
+    {
+        _busy = true;
+        _error = null;
+        try
+        {
+            var resp = await Api.LoginAsync(_model.Username ?? "", _model.Password ?? "");
+            if (resp is null || !resp.Ok || string.IsNullOrWhiteSpace(resp.Token))
+            {
+                _error = resp?.Error ?? "Login failed";
+                return;
+            }
+
+            Session.SetSession(resp.Token, resp.UserId, resp.Roles, resp.ExpiresAt);
+            if (!Session.IsAdmin)
+            {
+                Session.Clear();
+                _error = "Account is not admin";
+                return;
+            }
+
+            Nav.NavigateTo("admin");
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task LogoutAsync()
+    {
+        await Api.LogoutAsync();
+        Nav.NavigateTo("admin/login");
+    }
+
+    private sealed class LoginForm
+    {
+        public string Username { get; set; } = "admin";
+        public string Password { get; set; } = "admin";
+    }
+}

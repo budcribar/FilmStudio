@@ -9,7 +9,8 @@ builder.Services.AddRazorComponents()
 builder.Services.Configure<EngineApiOptions>(
     builder.Configuration.GetSection(EngineApiOptions.SectionName));
 
-builder.Services.AddHttpClient<EngineApiClient>((sp, client) =>
+builder.Services.AddScoped<AdminSessionService>();
+builder.Services.AddHttpClient("FilmStudio.Api", (sp, client) =>
 {
     var opts = sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<EngineApiOptions>>().Value;
     var baseUrl = string.IsNullOrWhiteSpace(opts.BaseUrl)
@@ -17,6 +18,11 @@ builder.Services.AddHttpClient<EngineApiClient>((sp, client) =>
         : opts.BaseUrl.TrimEnd('/') + "/";
     client.BaseAddress = new Uri(baseUrl);
     client.Timeout = TimeSpan.FromMinutes(2);
+});
+builder.Services.AddScoped(sp =>
+{
+    var http = sp.GetRequiredService<IHttpClientFactory>().CreateClient("FilmStudio.Api");
+    return new EngineApiClient(http, sp.GetRequiredService<AdminSessionService>());
 });
 
 builder.Services.AddScoped<JobHubClient>();

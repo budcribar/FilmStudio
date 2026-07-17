@@ -469,32 +469,33 @@ Optional: write .duration.json sidecar with fixture duration for fast UI probe
 
 ---
 
-### Phase B — Identity + keys + admin login
+### Phase B — Identity + keys + admin login — **IMPLEMENTED (2026-07-17)**
 
-**B1. User context**
+**B1. User context** ✅
 
-- Middleware: `X-User-Id` header (dev/sim) and/or JWT later.
-- `IUserContext.UserId` required for gen endpoints.
-- Roles: `user` | `admin` (claim or config list `Admin:UserIds`).
+- Middleware: `JwtHeaderMiddleware` (Bearer JWT) + `X-User-Id` header (dev/sim).
+- `IUserContext` / `HttpUserContext`: `UserId`, roles, `RequestApiKey` (`X-Api-Key`).
+- Roles: `user` | `admin` (JWT claims + config `Auth:AdminUserIds`).
 
-**B2. API key provider**
+**B2. API key provider** ✅
 
-- `ConfigUserApiKeyProvider`: map `userId → key` from config / env `USERKEY_{id}`.
+- `ConfigUserApiKeyProvider`: map `userId → key` from `Auth:UserApiKeys` / env `USERKEY_{id}`.
 - Default fallback: process `XAI_API_KEY` for local single-user.
 
-**B3. Pass key into Grok clients**
+**B3. Pass key into Grok clients** ✅
 
-- Prefer `Submit...(apiKey:)` or factory per request so fakes can ignore and reals use user key.
+- Jobs capture key at start → `ApiKeyScope.Push` for background work.
+- Real `Grok*` clients prefer `ApiKeyScope.Current` then process env.
 
-**B4. Admin authentication**
+**B4. Admin authentication** ✅
 
-- `POST /api/auth/login` { username, password } → cookie/JWT with `role=admin` or `role=user`.
-- Password stored hashed (`ASP.NET Core Identity` password hasher is enough; no full Identity DB required for v1).
-- `GET /api/auth/me` → `{ userId, roles[] }`.
-- Blazor: `/admin/login` + `AuthorizeView Roles="admin"` / cascading auth state.
-- Policy `AdminOnly` on all `/api/admin/*`.
+- `POST /api/auth/login` → JWT with `role=admin` (+ user).
+- Password: plain `Auth:AdminPassword` / hash / env `FILMSTUDIO_ADMIN_PASSWORD`; dev `AllowDevBypass`.
+- `GET /api/auth/me` → `{ userId, roles[], isAdmin, hasApiKey }`.
+- `GET /api/admin/state` → process + capacity + live jobs skeleton (403 if not admin).
+- Blazor: `/admin/login`, `/admin` (poll 5s), nav Admin link.
 
-**Exit B:** two users with headers; admin can log in and hit `/api/admin/state` (even if state is partial).
+**Exit B:** two users with headers; admin can log in and hit `/api/admin/state` (even if state is partial). ✅
 
 ---
 

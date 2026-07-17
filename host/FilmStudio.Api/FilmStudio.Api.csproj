@@ -16,6 +16,12 @@
     <ProjectReference Include="..\FilmStudio.Fakes\FilmStudio.Fakes.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- Admin JWT login (Phase B) -->
+    <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.14.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.0" />
+  </ItemGroup>
+
   <!-- Copy fake video fixtures next to API output for FakeGrokVideoClient -->
   <Target Name="CopyFakeFixtures" AfterTargets="Build">
     <ItemGroup>

@@ -1,6 +1,8 @@
+using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using FilmStudio.Core.Auth;
 using FilmStudio.Core.Models;
 using FilmStudio.Core.Options;
 
@@ -17,8 +19,81 @@ public sealed class EngineApiClient
     };
 
     private readonly HttpClient _http;
+    private readonly AdminSessionService? _session;
 
-    public EngineApiClient(HttpClient http) => _http = http;
+    public EngineApiClient(HttpClient http, AdminSessionService? session = null)
+    {
+        _http = http;
+        _session = session;
+    }
+
+    private void ApplyAuth(HttpRequestMessage req)
+    {
+        if (_session is null) return;
+        if (!string.IsNullOrWhiteSpace(_session.Token))
+            req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _session.Token.Trim());
+        if (!string.IsNullOrWhiteSpace(_session.UserId))
+            req.Headers.TryAddWithoutValidation(AuthHeaders.UserId, _session.UserId.Trim());
+    }
+
+    private async Task<T?> SendJsonAsync<T>(HttpRequestMessage req, CancellationToken ct)
+    {
+        ApplyAuth(req);
+        using var resp = await _http.SendAsync(req, ct);
+        if (!resp.IsSuccessStatusCode)
+        {
+            var err = await resp.Content.ReadAsStringAsync(ct);
+            throw new InvalidOperationException(TryError(err) ?? $"{(int)resp.StatusCode} {resp.ReasonPhrase}");
+        }
+        if (resp.StatusCode == System.Net.HttpStatusCode.NoContent)
+            return default;
+        return await resp.Content.ReadFromJsonAsync<T>(JsonOpts, ct);
+    }
+
+    public async Task<LoginResponse?> LoginAsync(string username, string password, CancellationToken ct = default)
+    {
+        using var req = new HttpRequestMessage(HttpMethod.Post, "/api/auth/login")
+        {
+            Content = JsonContent.Create(new LoginRequest { Username = username, Password = password }, options: JsonOpts),
+        };
+        using var resp = await _http.SendAsync(req, ct);
+        var body = await resp.Content.ReadFromJsonAsync<LoginResponse>(JsonOpts, ct);
+        if (body is null)
+            return new LoginResponse { Ok = false, Error = "Empty response" };
+        if (!resp.IsSuccessStatusCode && body.Ok)
+            body.Ok = false;
+        return body;
+    }
+
+    public async Task LogoutAsync(CancellationToken ct = default)
+    {
+        try
+        {
+            using var req = new HttpRequestMessage(HttpMethod.Post, "/api/auth/logout");
+            ApplyAuth(req);
+            await _http.SendAsync(req, ct);
+        }
+        catch
+        {
+            // ignore — client clears token either way
+        }
+        finally
+        {
+            _session?.Clear();
+        }
+    }
+
+    public async Task<MeResponse?> GetMeAsync(CancellationToken ct = default)
+    {
+        using var req = new HttpRequestMessage(HttpMethod.Get, "/api/auth/me");
+        return await SendJsonAsync<MeResponse>(req, ct);
+    }
+
+    public async Task<AdminStateDto?> GetAdminStateAsync(CancellationToken ct = default)
+    {
+        using var req = new HttpRequestMessage(HttpMethod.Get, "/api/admin/state");
+        return await SendJsonAsync<AdminStateDto>(req, ct);
+    }
 
     public async Task EnsureHealthyAsync(CancellationToken ct = default)
     {
@@ -664,6 +739,63 @@ public sealed class CapacityDto
     public bool Running { get; set; }
     public int RunningCount { get; set; }
     public bool UseFakes { get; set; }
+}
+
+/// <summary>Partial admin snapshot (Phase B skeleton; expanded in C/D).</summary>
+public sealed class AdminStateDto
+{
+    public bool Ok { get; set; }
+    public DateTimeOffset? GeneratedAt { get; set; }
+    public AdminProcessDto? Process { get; set; }
+    public CapacityOptions? Capacity { get; set; }
+    public AdminJobsDto? Jobs { get; set; }
+    public AdminProjectsDto? Projects { get; set; }
+    public AdminCallerDto? Caller { get; set; }
+}
+
+public sealed class AdminProcessDto
+{
+    public long UptimeSec { get; set; }
+    public double WorkingSetMb { get; set; }
+    public double GcHeapMb { get; set; }
+    public int ThreadCount { get; set; }
+    public string? Environment { get; set; }
+    public bool UseFakes { get; set; }
+}
+
+public sealed class AdminJobsDto
+{
+    public bool Running { get; set; }
+    public int Count { get; set; }
+    public List<AdminJobItemDto> Items { get; set; } = new();
+}
+
+public sealed class AdminJobItemDto
+{
+    public string? JobId { get; set; }
+    public string? UserId { get; set; }
+    public string? ProjectId { get; set; }
+    public string? Kind { get; set; }
+    public int? Scene { get; set; }
+    public int? Clip { get; set; }
+    public string? Status { get; set; }
+    public string? Message { get; set; }
+    public int Index { get; set; }
+    public int Total { get; set; }
+    public DateTimeOffset? StartedAt { get; set; }
+    public long? AgeMs { get; set; }
+}
+
+public sealed class AdminProjectsDto
+{
+    public string? Active { get; set; }
+    public string? Workspace { get; set; }
+}
+
+public sealed class AdminCallerDto
+{
+    public string? UserId { get; set; }
+    public List<string> Roles { get; set; } = new();
 }
 
 public sealed class JobsDto

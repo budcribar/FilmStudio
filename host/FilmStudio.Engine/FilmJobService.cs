@@ -39,7 +39,10 @@ public sealed class FilmJobService
     private CancellationTokenSource? _cts;
     private JobSnapshot _snapshot = new() { Status = "idle" };
     private string? _activeJobId;
+    private string? _capturedUserId;
     private IJobProgressSink? _sink;
+    private readonly IUserContext _user;
+    private readonly IUserApiKeyProvider _keys;
 
     public FilmJobService(
         ProjectStore projects,
@@ -53,7 +56,9 @@ public sealed class FilmJobService
         CostReportService costs,
         IJobStore jobs,
         IOptions<FilmStudioOptions> opts,
-        ILogger<FilmJobService> log)
+        ILogger<FilmJobService> log,
+        IUserContext user,
+        IUserApiKeyProvider keys)
     {
         _projects = projects;
         _grok = grok;
@@ -67,6 +72,8 @@ public sealed class FilmJobService
         _jobs = jobs;
         _opts = opts.Value;
         _log = log;
+        _user = user;
+        _keys = keys;
     }
 
     public void SetProgressSink(IJobProgressSink sink) => _sink = sink;
@@ -114,6 +121,8 @@ public sealed class FilmJobService
     /// <summary>Register current <see cref="_snapshot"/> in the multi-job store (call after assigning a new running snapshot).</summary>
     private void RegisterActiveJob()
     {
+        if (string.IsNullOrWhiteSpace(_snapshot.UserId))
+            _snapshot.UserId = _capturedUserId;
         var rec = _jobs.Create(new JobRecord
         {
             Status = _snapshot.Status,
@@ -134,14 +143,16 @@ public sealed class FilmJobService
         _snapshot.QueuedAt = rec.QueuedAt;
     }
 
-    public async Task StartSceneGenAsync(StartSceneGenRequest req)
+    /// <summary>Acquire gate, capture user/API key, run work under <see cref="ApiKeyScope"/>.</summary>
+    private async Task StartBackgroundJobAsync(Func<CancellationToken, Task> work)
     {
         if (!await _gate.WaitAsync(0))
             throw new InvalidOperationException("A generation job is already running.");
 
+        var userId = string.IsNullOrWhiteSpace(_user.UserId) ? "local" : _user.UserId;
         try
         {
-            EnsureCanStart(null);
+            EnsureCanStart(userId);
         }
         catch
         {
@@ -149,100 +160,48 @@ public sealed class FilmJobService
             throw;
         }
 
+        _capturedUserId = userId;
+        var apiKey = !string.IsNullOrWhiteSpace(_user.RequestApiKey)
+            ? _user.RequestApiKey
+            : _keys.GetKey(userId);
         _cts = new CancellationTokenSource();
         var ct = _cts.Token;
         _ = Task.Run(async () =>
         {
-            try
+            using (ApiKeyScope.Push(apiKey))
             {
-                await RunSceneGenAsync(req, ct);
-            }
-            finally
-            {
-                _gate.Release();
+                try { await work(ct); }
+                finally { _gate.Release(); }
             }
         }, CancellationToken.None);
 
         await Task.CompletedTask;
     }
 
-    public async Task StartBatchGenAsync(StartBatchGenRequest req)
+    public Task StartSceneGenAsync(StartSceneGenRequest req) =>
+        StartBackgroundJobAsync(ct => RunSceneGenAsync(req, ct));
+
+    public Task StartBatchGenAsync(StartBatchGenRequest req)
     {
         if (req.Scenes is null || req.Scenes.Count == 0)
             throw new InvalidOperationException("At least one scene is required.");
-
-        if (!await _gate.WaitAsync(0))
-            throw new InvalidOperationException("A generation job is already running.");
-
-        _cts = new CancellationTokenSource();
-        var ct = _cts.Token;
-        _ = Task.Run(async () =>
-        {
-            try
-            {
-                await RunBatchGenAsync(req, ct);
-            }
-            finally
-            {
-                _gate.Release();
-            }
-        }, CancellationToken.None);
-
-        await Task.CompletedTask;
+        return StartBackgroundJobAsync(ct => RunBatchGenAsync(req, ct));
     }
 
     /// <summary>Stage 1 (book → scenes.json) via C# Grok chat. Requires XAI_API_KEY.</summary>
-    public async Task StartStage1Async(StartStage1Request req)
-    {
-        if (!await _gate.WaitAsync(0))
-            throw new InvalidOperationException("A generation job is already running.");
-
-        _cts = new CancellationTokenSource();
-        var ct = _cts.Token;
-        _ = Task.Run(async () =>
-        {
-            try { await RunStage1Async(req, ct); }
-            finally { _gate.Release(); }
-        }, CancellationToken.None);
-
-        await Task.CompletedTask;
-    }
+    public Task StartStage1Async(StartStage1Request req) =>
+        StartBackgroundJobAsync(ct => RunStage1Async(req, ct));
 
     /// <summary>Stage 2 planner (scenes.json → blueprint). Deterministic C#; no API key.</summary>
-    public async Task StartStage2Async(StartStage2Request req)
-    {
-        if (!await _gate.WaitAsync(0))
-            throw new InvalidOperationException("A generation job is already running.");
-
-        _cts = new CancellationTokenSource();
-        var ct = _cts.Token;
-        _ = Task.Run(async () =>
-        {
-            try { await RunStage2Async(req, ct); }
-            finally { _gate.Release(); }
-        }, CancellationToken.None);
-
-        await Task.CompletedTask;
-    }
+    public Task StartStage2Async(StartStage2Request req) =>
+        StartBackgroundJobAsync(ct => RunStage2Async(req, ct));
 
     /// <summary>C# PDF extract + optional Grok vision OCR → book_full.txt.</summary>
-    public async Task StartBookPrepareAsync(StartBookPrepareRequest req)
+    public Task StartBookPrepareAsync(StartBookPrepareRequest req)
     {
         if (string.IsNullOrWhiteSpace(req.ProjectId))
             throw new InvalidOperationException("projectId required");
-
-        if (!await _gate.WaitAsync(0))
-            throw new InvalidOperationException("A generation job is already running.");
-
-        _cts = new CancellationTokenSource();
-        var ct = _cts.Token;
-        _ = Task.Run(async () =>
-        {
-            try { await RunBookPrepareAsync(req, ct); }
-            finally { _gate.Release(); }
-        }, CancellationToken.None);
-
-        await Task.CompletedTask;
+        return StartBackgroundJobAsync(ct => RunBookPrepareAsync(req, ct));
     }
 
     private async Task RunBookPrepareAsync(StartBookPrepareRequest req, CancellationToken ct)
@@ -303,44 +262,19 @@ public sealed class FilmJobService
     }
 
     /// <summary>Generate portrait variants via C# Grok image API.</summary>
-    public async Task StartCharacterVariantsAsync(StartCharacterVariantsRequest req)
+    public Task StartCharacterVariantsAsync(StartCharacterVariantsRequest req)
     {
         if (string.IsNullOrWhiteSpace(req.CharKey))
             throw new InvalidOperationException("charKey required");
-
-        if (!await _gate.WaitAsync(0))
-            throw new InvalidOperationException("A generation job is already running.");
-
-        _cts = new CancellationTokenSource();
-        var ct = _cts.Token;
-        _ = Task.Run(async () =>
-        {
-            try { await RunCharacterVariantsAsync(req, ct); }
-            finally { _gate.Release(); }
-        }, CancellationToken.None);
-
-        await Task.CompletedTask;
+        return StartBackgroundJobAsync(ct => RunCharacterVariantsAsync(req, ct));
     }
 
     /// <summary>
     /// Grok vision: classify book images → which characters appear, write plates to scenes.json.
     /// Cancellable. Falls back to heuristics if no API key.
     /// </summary>
-    public async Task StartSortCharacterPlatesAsync(AttachCharacterPlatesRequest req)
-    {
-        if (!await _gate.WaitAsync(0))
-            throw new InvalidOperationException("A generation job is already running.");
-
-        _cts = new CancellationTokenSource();
-        var ct = _cts.Token;
-        _ = Task.Run(async () =>
-        {
-            try { await RunSortCharacterPlatesAsync(req, ct); }
-            finally { _gate.Release(); }
-        }, CancellationToken.None);
-
-        await Task.CompletedTask;
-    }
+    public Task StartSortCharacterPlatesAsync(AttachCharacterPlatesRequest req) =>
+        StartBackgroundJobAsync(ct => RunSortCharacterPlatesAsync(req, ct));
 
     private async Task RunSortCharacterPlatesAsync(AttachCharacterPlatesRequest req, CancellationToken ct)
     {
@@ -691,21 +625,11 @@ public sealed class FilmJobService
         }
     }
 
-    public async Task StartRemuxAsync(StartRemuxRequest req)
+    public Task StartRemuxAsync(StartRemuxRequest req)
     {
         if (string.IsNullOrWhiteSpace(req.ProjectId))
             throw new InvalidOperationException("projectId required");
-        if (!await _gate.WaitAsync(0))
-            throw new InvalidOperationException("A generation job is already running.");
-
-        _cts = new CancellationTokenSource();
-        var ct = _cts.Token;
-        _ = Task.Run(async () =>
-        {
-            try { await RunRemuxAsync(req, ct); }
-            finally { _gate.Release(); }
-        }, CancellationToken.None);
-        await Task.CompletedTask;
+        return StartBackgroundJobAsync(ct => RunRemuxAsync(req, ct));
     }
 
     private async Task RunRemuxAsync(StartRemuxRequest req, CancellationToken ct)

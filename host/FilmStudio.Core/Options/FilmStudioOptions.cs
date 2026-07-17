@@ -31,6 +31,39 @@ public sealed class FilmStudioOptions
 
     public CapacityOptions Capacity { get; set; } = new();
     public FakesOptions Fakes { get; set; } = new();
+    public AuthOptions Auth { get; set; } = new();
+}
+
+/// <summary>User identity, per-user API keys, admin login (Phase B).</summary>
+public sealed class AuthOptions
+{
+    /// <summary>Default user id when no X-User-Id / JWT (single-operator mode).</summary>
+    public string DefaultUserId { get; set; } = "local";
+
+    /// <summary>User ids that receive admin role (in addition to admin login).</summary>
+    public List<string> AdminUserIds { get; set; } = new();
+
+    /// <summary>Map userId → xAI API key (optional; env USERKEY_{id} also works).</summary>
+    public Dictionary<string, string> UserApiKeys { get; set; } = new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>Admin login username (POST /api/auth/login).</summary>
+    public string AdminUsername { get; set; } = "admin";
+
+    /// <summary>
+    /// Admin password for dev. Prefer <see cref="AdminPasswordHash"/> or env FILMSTUDIO_ADMIN_PASSWORD.
+    /// </summary>
+    public string AdminPassword { get; set; } = "";
+
+    /// <summary>ASP.NET Core Identity v3 password hash (optional).</summary>
+    public string AdminPasswordHash { get; set; } = "";
+
+    /// <summary>JWT signing key (min 32 chars). Env FILMSTUDIO_JWT_KEY overrides.</summary>
+    public string JwtSigningKey { get; set; } = "FilmStudio-Dev-Only-Change-Me-32chars!!";
+
+    public int JwtHours { get; set; } = 8;
+
+    /// <summary>Development only: accept any password for admin username.</summary>
+    public bool AllowDevBypass { get; set; }
 }
 
 /// <summary>Server-side concurrency caps (Phase A+; multi-worker in later phases).</summary>

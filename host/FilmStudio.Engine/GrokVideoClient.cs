@@ -176,12 +176,16 @@ public sealed class GrokVideoClient : IGrokVideoClient
 
     private void EnsureAuthHeader()
     {
-        if (_http.DefaultRequestHeaders.Authorization is not null)
-            return;
-        var key = Environment.GetEnvironmentVariable("XAI_API_KEY");
+        // Prefer ambient job/request key (multi-user), else process env.
+        var key = Abstractions.ApiKeyScope.Current
+                  ?? Environment.GetEnvironmentVariable("XAI_API_KEY");
         if (string.IsNullOrWhiteSpace(key))
+        {
+            _http.DefaultRequestHeaders.Authorization = null;
             return;
-        _http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", key.Trim());
+        }
+        _http.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", key.Trim());
     }
 
     private static string Trim(string s, int n) =>

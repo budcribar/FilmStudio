@@ -1,6 +1,9 @@
+using System.Diagnostics;
 using System.Text.Json;
+using FilmStudio.Api.Auth;
 using FilmStudio.Api.Hubs;
 using FilmStudio.Api.Services;
+using FilmStudio.Core.Auth;
 using FilmStudio.Core.Models;
 using FilmStudio.Core.Options;
 using FilmStudio.Engine;
@@ -9,6 +12,7 @@ using FilmStudio.Fakes;
 using Microsoft.Extensions.Options;
 
 var builder = WebApplication.CreateBuilder(args);
+var processStartedUtc = DateTimeOffset.UtcNow;
 
 builder.Services.Configure<FilmStudioOptions>(
     builder.Configuration.GetSection(FilmStudioOptions.SectionName));
@@ -33,6 +37,10 @@ builder.Services.AddSingleton<Stage2PlannerService>();
 builder.Services.AddSingleton<FfmpegRemuxService>();
 builder.Services.AddSingleton<IFfmpegRemux>(sp => sp.GetRequiredService<FfmpegRemuxService>());
 builder.Services.AddSingleton<EditLogService>();
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddSingleton<IUserContext, HttpUserContext>();
+builder.Services.AddSingleton<IUserApiKeyProvider, ConfigUserApiKeyProvider>();
+builder.Services.AddSingleton<IAdminAuthService, AdminAuthService>();
 builder.Services.AddSingleton<FilmJobService>();
 builder.Services.AddSingleton<IJobProgressSink, SignalRJobProgressSink>();
 
@@ -86,9 +94,103 @@ var jobs = app.Services.GetRequiredService<FilmJobService>();
 jobs.SetProgressSink(app.Services.GetRequiredService<IJobProgressSink>());
 
 app.UseCors();
+app.UseMiddleware<JwtHeaderMiddleware>();
 app.MapHub<JobHub>("/hubs/jobs");
 
-app.MapGet("/health", (ProjectStore store, IOptions<FilmStudioOptions> opts, IGrokVideoClient video) =>
+// ── Auth (Phase B) ──────────────────────────────────────────────────────────
+app.MapPost("/api/auth/login", (LoginRequest body, IAdminAuthService auth) =>
+{
+    var result = auth.Login(body.Username ?? "", body.Password ?? "");
+    if (!result.Ok)
+        return Results.Json(result, statusCode: StatusCodes.Status401Unauthorized);
+    return Results.Ok(result);
+});
+
+app.MapPost("/api/auth/logout", () =>
+    Results.Ok(new { ok = true, message = "Client should discard JWT" }));
+
+app.MapGet("/api/auth/me", (IUserContext user, IUserApiKeyProvider keys) =>
+{
+    var roles = user.Roles.ToList();
+    return Results.Ok(new MeResponse
+    {
+        Ok = true,
+        UserId = user.UserId,
+        Roles = roles,
+        IsAdmin = user.IsAdmin,
+        HasApiKey = keys.HasKey(user.UserId) || !string.IsNullOrWhiteSpace(user.RequestApiKey),
+    });
+});
+
+// Skeleton admin state (full metrics in Phase C/D)
+app.MapGet("/api/admin/state", (
+    IUserContext user,
+    FilmJobService jobService,
+    ProjectStore store,
+    IOptions<FilmStudioOptions> opts,
+    IHostEnvironment env) =>
+{
+    if (!user.IsAdmin)
+        return Results.Json(new { ok = false, error = "admin role required" },
+            statusCode: StatusCodes.Status403Forbidden);
+
+    var o = opts.Value;
+    var cap = o.Capacity ?? new CapacityOptions();
+    var process = Process.GetCurrentProcess();
+    var runningJobs = jobService.ListJobs(take: 100)
+        .Where(j => string.Equals(j.Status, "running", StringComparison.OrdinalIgnoreCase)
+                    || string.Equals(j.Status, "queued", StringComparison.OrdinalIgnoreCase))
+        .Select(j => new
+        {
+            j.JobId,
+            j.UserId,
+            j.ProjectId,
+            j.Kind,
+            j.Scene,
+            j.Clip,
+            j.Status,
+            j.Message,
+            j.Index,
+            j.Total,
+            j.StartedAt,
+            ageMs = j.StartedAt is DateTimeOffset s
+                ? (long)(DateTimeOffset.UtcNow - s).TotalMilliseconds
+                : (long?)null,
+        })
+        .ToList();
+
+    return Results.Ok(new
+    {
+        ok = true,
+        generatedAt = DateTimeOffset.UtcNow,
+        process = new
+        {
+            uptimeSec = (long)(DateTimeOffset.UtcNow - processStartedUtc).TotalSeconds,
+            workingSetMb = Math.Round(process.WorkingSet64 / (1024.0 * 1024.0), 1),
+            gcHeapMb = Math.Round(GC.GetTotalMemory(false) / (1024.0 * 1024.0), 1),
+            threadCount = process.Threads.Count,
+            environment = env.EnvironmentName,
+            useFakes = o.UseFakes || useFakes,
+        },
+        capacity = cap,
+        jobs = new
+        {
+            running = jobService.IsRunning,
+            count = runningJobs.Count,
+            items = runningJobs,
+        },
+        locks = Array.Empty<object>(), // Phase C
+        projects = new
+        {
+            active = store.ActiveProjectId,
+            workspace = store.WorkspaceRoot,
+        },
+        timings = new { note = "Generation latency aggregates land in Phase C/D" },
+        caller = new { userId = user.UserId, roles = user.Roles },
+    });
+});
+
+app.MapGet("/health", (ProjectStore store, IOptions<FilmStudioOptions> opts, IGrokVideoClient video, IUserContext user) =>
     Results.Ok(new
     {
         ok = true,
@@ -99,6 +201,8 @@ app.MapGet("/health", (ProjectStore store, IOptions<FilmStudioOptions> opts, IGr
         capacity = opts.Value.Capacity,
         xaiConfigured = video.IsConfigured || useFakes,
         xaiKeyPresent = !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("XAI_API_KEY")),
+        userId = user.UserId,
+        isAdmin = user.IsAdmin,
     }));
 
 app.MapGet("/api/capacity", (FilmJobService jobService, IOptions<FilmStudioOptions> opts) =>
@@ -138,7 +242,7 @@ app.MapPost("/api/projects/{id}/activate", (string id, ProjectStore store) =>
 });
 
 // Phase A: multi-job list + backward-compat primary job on GET /api/jobs
-app.MapGet("/api/jobs", (FilmJobService jobService, string? mine, string? projectId, string? userId) =>
+app.MapGet("/api/jobs", (FilmJobService jobService, IUserContext user, string? mine, string? projectId, string? userId) =>
 {
     // Explicit list: ?mine=1 or ?projectId=
     if (string.Equals(mine, "1", StringComparison.OrdinalIgnoreCase) ||
@@ -146,13 +250,18 @@ app.MapGet("/api/jobs", (FilmJobService jobService, string? mine, string? projec
         !string.IsNullOrWhiteSpace(projectId) ||
         !string.IsNullOrWhiteSpace(userId))
     {
-        var list = jobService.ListJobs(userId, projectId, take: 50);
+        var filterUser = string.Equals(mine, "1", StringComparison.OrdinalIgnoreCase) ||
+                         string.Equals(mine, "true", StringComparison.OrdinalIgnoreCase)
+            ? user.UserId
+            : userId;
+        var list = jobService.ListJobs(filterUser, projectId, take: 50);
         return Results.Ok(new
         {
             ok = true,
             running = jobService.IsRunning,
             jobs = list,
             count = list.Count,
+            userId = user.UserId,
         });
     }
 

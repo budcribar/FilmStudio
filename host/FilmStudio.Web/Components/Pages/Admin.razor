@@ -1,0 +1,247 @@
+@page "/admin"
+@rendermode InteractiveServer
+@implements IDisposable
+@inject EngineApiClient Api
+@inject AdminSessionService Session
+@inject NavigationManager Nav
+
+<PageTitle>Admin — Film Studio</PageTitle>
+
+<div class="container-fluid py-3">
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+        <div>
+            <h1 class="h3 mb-0">Admin dashboard</h1>
+            <div class="text-muted small">
+                Live server state (poll). Full metrics / SignalR in Phase C–D.
+            </div>
+        </div>
+        <div class="d-flex gap-2 align-items-center">
+            @if (Session.IsAuthenticated)
+            {
+                <span class="badge text-bg-secondary">@Session.UserId</span>
+                <button class="btn btn-sm btn-outline-secondary" @onclick="RefreshAsync" disabled="@_busy">Refresh</button>
+                <button class="btn btn-sm btn-outline-danger" @onclick="LogoutAsync">Log out</button>
+            }
+        </div>
+    </div>
+
+    @if (!Session.IsAdmin)
+    {
+        <div class="alert alert-warning">
+            Admin session required. <a href="admin/login">Sign in</a>
+        </div>
+    }
+    else if (!string.IsNullOrEmpty(_error))
+    {
+        <div class="alert alert-danger">@_error</div>
+    }
+    else if (_state is null)
+    {
+        <p class="text-muted">Loading…</p>
+    }
+    else
+    {
+        <div class="row g-3">
+            <div class="col-md-6 col-lg-4">
+                <div class="card h-100">
+                    <div class="card-header">Process</div>
+                    <div class="card-body small">
+                        <div>Uptime: <strong>@FormatUptime(_state.Process?.UptimeSec ?? 0)</strong></div>
+                        <div>Working set: <strong>@(_state.Process?.WorkingSetMb ?? 0) MB</strong></div>
+                        <div>GC heap: <strong>@(_state.Process?.GcHeapMb ?? 0) MB</strong></div>
+                        <div>Threads: <strong>@(_state.Process?.ThreadCount ?? 0)</strong></div>
+                        <div>Env: <strong>@(_state.Process?.Environment ?? "?")</strong></div>
+                        <div>Fakes: <strong>@((_state.Process?.UseFakes ?? false) ? "ON" : "off")</strong></div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6 col-lg-4">
+                <div class="card h-100">
+                    <div class="card-header">Capacity</div>
+                    <div class="card-body small">
+                        @if (_state.Capacity is { } c)
+                        {
+                            <div>MaxVideoInFlight: <strong>@c.MaxVideoInFlight</strong></div>
+                            <div>MaxVideoInFlightPerUser: <strong>@c.MaxVideoInFlightPerUser</strong></div>
+                            <div>MaxFfmpegInFlight: <strong>@c.MaxFfmpegInFlight</strong></div>
+                            <div>MaxQueuePerUser: <strong>@c.MaxQueuePerUser</strong></div>
+                        }
+                        else
+                        {
+                            <span class="text-muted">n/a</span>
+                        }
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6 col-lg-4">
+                <div class="card h-100">
+                    <div class="card-header">Projects</div>
+                    <div class="card-body small">
+                        <div>Active: <strong>@(_state.Projects?.Active ?? "—")</strong></div>
+                        <div class="text-truncate" title="@_state.Projects?.Workspace">
+                            Workspace: <code class="small">@(_state.Projects?.Workspace ?? "—")</code>
+                        </div>
+                        <div class="mt-2 text-muted">
+                            Snapshot @(_state.GeneratedAt?.ToLocalTime().ToString("HH:mm:ss") ?? "—")
+                            · auto-refresh 5s
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card mt-3">
+            <div class="card-header d-flex justify-content-between">
+                <span>Jobs (running / queued)</span>
+                <span class="badge text-bg-primary">@(_state.Jobs?.Count ?? 0)</span>
+            </div>
+            <div class="card-body p-0">
+                @if (_state.Jobs?.Items is { Count: > 0 } items)
+                {
+                    <div class="table-responsive">
+                        <table class="table table-sm table-striped mb-0">
+                            <thead>
+                            <tr>
+                                <th>Job</th>
+                                <th>User</th>
+                                <th>Project</th>
+                                <th>Kind</th>
+                                <th>Scene</th>
+                                <th>Status</th>
+                                <th>Progress</th>
+                                <th>Age</th>
+                                <th>Message</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            @foreach (var j in items)
+                            {
+                                <tr>
+                                    <td class="font-monospace small">@(ShortId(j.JobId))</td>
+                                    <td>@(j.UserId ?? "—")</td>
+                                    <td>@(j.ProjectId ?? "—")</td>
+                                    <td>@(j.Kind ?? "—")</td>
+                                    <td>@(j.Scene?.ToString() ?? "—")@(j.Clip is int clipN ? $" C{clipN}" : "")</td>
+                                    <td>@(j.Status ?? "—")</td>
+                                    <td>@(j.Total > 0 ? $"{j.Index}/{j.Total}" : "—")</td>
+                                    <td>@FormatAge(j.AgeMs)</td>
+                                    <td class="small text-truncate" style="max-width: 16rem;">@(j.Message ?? "")</td>
+                                </tr>
+                            }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+                else
+                {
+                    <p class="text-muted p-3 mb-0">No active jobs.</p>
+                }
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private AdminStateDto? _state;
+    private string? _error;
+    private bool _busy;
+    private PeriodicTimer? _timer;
+    private CancellationTokenSource? _pollCts;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!Session.IsAdmin)
+        {
+            Nav.NavigateTo("admin/login");
+            return;
+        }
+
+        await RefreshAsync();
+        _pollCts = new CancellationTokenSource();
+        _timer = new PeriodicTimer(TimeSpan.FromSeconds(5));
+        _ = PollLoopAsync(_pollCts.Token);
+    }
+
+    private async Task PollLoopAsync(CancellationToken ct)
+    {
+        try
+        {
+            while (_timer is not null && await _timer.WaitForNextTickAsync(ct))
+            {
+                try
+                {
+                    await RefreshAsync();
+                    await InvokeAsync(StateHasChanged);
+                }
+                catch
+                {
+                    // keep polling
+                }
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            // disposed
+        }
+    }
+
+    private async Task RefreshAsync()
+    {
+        if (!Session.IsAdmin) return;
+        _busy = true;
+        try
+        {
+            _state = await Api.GetAdminStateAsync();
+            _error = null;
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+            if (ex.Message.Contains("403") || ex.Message.Contains("401") ||
+                ex.Message.Contains("admin", StringComparison.OrdinalIgnoreCase))
+            {
+                Session.Clear();
+                Nav.NavigateTo("admin/login");
+            }
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task LogoutAsync()
+    {
+        await Api.LogoutAsync();
+        Nav.NavigateTo("admin/login");
+    }
+
+    private static string FormatUptime(long sec)
+    {
+        if (sec < 60) return $"{sec}s";
+        if (sec < 3600) return $"{sec / 60}m {sec % 60}s";
+        return $"{sec / 3600}h {(sec % 3600) / 60}m";
+    }
+
+    private static string FormatAge(long? ms)
+    {
+        if (ms is null or < 0) return "—";
+        var s = ms.Value / 1000.0;
+        if (s < 60) return $"{s:0}s";
+        if (s < 3600) return $"{s / 60:0.0}m";
+        return $"{s / 3600:0.0}h";
+    }
+
+    private static string ShortId(string? id)
+    {
+        if (string.IsNullOrEmpty(id)) return "—";
+        return id.Length <= 10 ? id : id[..8] + "…";
+    }
+
+    public void Dispose()
+    {
+        _pollCts?.Cancel();
+        _timer?.Dispose();
+        _pollCts?.Dispose();
+    }
+}
