@@ -305,21 +305,64 @@ else
 }
 ```
 
-### 4.3 Fake video client contract
+### 4.3 Fake video client contract (realism for ffmpeg merges)
+
+**Requirement:** Fakes must produce **real, demuxable MP4s** so scene remux and WIP concat exercise the **same ffmpeg paths** as production (stream-copy success/fail, re-encode fallback, duration probe, disk I/O). Empty/random byte files are not acceptable.
+
+**Measured baseline (NickAndMe project, exact clips only):**
+
+| Stat | Value |
+|------|--------|
+| Clip count | 11 |
+| **Average size** | **~4.6 MB** (≈4.5–4.6 MB) |
+| Median | ~3.4 MB |
+| Range | ~1.9–8.2 MB |
+
+**Buster** averages ~1.9 MB (shorter/lighter gens). Prefer **NickAndMe-scale** fixtures when testing merge realism.
+
+#### How fake file size / duration is determined
+
+1. **Primary: prebuilt fixture library** (checked into `FilmStudio.Fakes/Fixtures/` or generated once via script into that folder).
+2. **FakeGrokVideoClient** selects a fixture and **`File.Copy`** to `scene_XX_clip_YY.mp4` (same path layout as real gens).
+3. Size = **fixture file length on disk** (deterministic).
+
+| Fixture (suggested) | Duration | Target size | Role |
+|---------------------|----------|-------------|------|
+| `clip_merge_10s.mp4` | ~10s | **~4–5 MB** | **Default** — matches NickAndMe avg size + typical Grok clip length |
+| `clip_merge_8s.mp4` | ~8s | ~3–4 MB | Optional variety |
+| `clip_merge_15s.mp4` | ~15s | ~6–8 MB | Stress heavier concat |
+| `clip_tiny_1s.mp4` | ~1s | ~100–200 KB | Optional **load-only** mode (path stress, not merge realism) |
+
+**Encoding for merge realism (important):**
+
+- H.264 + AAC (or same family as production) in **`.mp4`**.
+- Prefer **compatible timebase / similar resolution** across fixtures so **ffmpeg `-c copy` concat succeeds** often (production remux tries copy first, then re-encode).
+- Generate fixtures with one script so all clips share params, e.g.:
 
 ```text
-SubmitGenerationAsync(prompt, duration, ...) 
-  → requestId = guid
-  record call for assertions
-
-PollForVideoUrlAsync(requestId)
-  → after delay, "file://fixtures/clip_10s.mp4" or http://localhost/fixtures/...
-
-DownloadToFileAsync(url, path)
-  → File.Copy(fixture, path)  // real mp4 header so UI play works
+ffmpeg -f lavfi -i color=c=black:s=1280x720:r=24 -f lavfi -i anullsrc=r=44100:cl=stereo \
+  -t 10 -c:v libx264 -pix_fmt yuv420p -c:a aac -b:a 128k -shortest \
+  Fixtures/clip_merge_10s.mp4
 ```
 
-**Fixture pack:** `FilmStudio.Fakes/Fixtures/clip_short.mp4` (~1–2s), `clip_10s.mp4` (optional).
+Tune bitrate so output lands near **~4.5 MB / 10s** (NickAndMe average), e.g. video bitrate ~3–3.5 Mbps as a starting point.
+
+**Selection policy:**
+
+```text
+FilmStudio:Fakes:VideoMode =
+  MergeRealistic  → always clip_merge_10s (or map by requested duration)  // DEFAULT for remux/WIP tests
+  LoadLight       → clip_tiny_1s  // 100 VU path stress only
+```
+
+```text
+SubmitGenerationAsync → requestId
+PollForVideoUrlAsync   → synthetic url after delay
+DownloadToFileAsync    → File.Copy(selectedFixture, outPath)
+Optional: write .duration.json sidecar with fixture duration for fast UI probe
+```
+
+**Remux fake policy:** Prefer **real `FfmpegRemuxService`** even when Grok is faked, so merges are production-faithful. Only fake ffmpeg if CI has no binary (then document reduced coverage).
 
 ### 4.4 Chaos knobs (for simulator + tests)
 
@@ -610,7 +653,8 @@ dotnet run --project host/FilmStudio.LoadSim -- --users 100 --duration 300 --sce
 |------|------------|
 | Blazor Server memory at 100 circuits | Prefer LoadSim → **API only**; measure Web separately; later WASM |
 | File corruption | Scene locks + atomic file writes |
-| Fake mp4 won’t play | Ship real tiny fixture files |
+| Fake mp4 won’t play / remux fails | Ship **real H.264 MP4 fixtures** (~10s, ~4–5 MB NickAndMe-scale); use real ffmpeg for remux under fakes |
+| Load test disk blowup | `LoadLight` tiny fixture only for pure concurrency; default `MergeRealistic` for merge tests |
 | Global job rewrite breaks UI | Compatibility shim on `/api/jobs` |
 | Real key leak in sim | Forbid gen scenario without `UseFakes` unless `--i-know-what-im-doing` |
 | Admin password in repo | Env/secret only; hashed at rest; no default prod password |
@@ -656,8 +700,9 @@ Then iterate multi-job + locks + live metrics + config page + gen actions in sim
 | Admin live updates | SignalR group `admin:ops` + 1–2s snapshot ticks |
 | Server config | Runtime file + hot-apply caps; audit log |
 | Test money | Fakes always for CI/load |
+| Fake video size | NickAndMe-scale real MP4 fixtures (~4–5 MB / ~10s) for ffmpeg merge realism; tiny fixture only for light load mode |
 | Work-stealing deque for WIP | Rejected; use single-flight + optional parallel stale remux |
 
 ---
 
-*Document version: 2026-07-17b — adds admin login, live ops dashboard, server configuration page.*
+*Document version: 2026-07-17c — fake video fixtures sized for realistic ffmpeg merges (NickAndMe ~4.6 MB avg).*
