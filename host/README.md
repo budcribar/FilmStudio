@@ -10,6 +10,10 @@ host/
   FilmStudio.Engine/       # project store + Grok jobs + remux
   FilmStudio.Api/          # REST + SignalR hub (:5088)
   FilmStudio.Web/          # Blazor Server UI
+  FilmStudio.Fakes/        # fake Grok clients + fixtures
+  FilmStudio.LoadSim/      # concurrent virtual-user load client
+  FilmStudio.Tests/        # unit tests
+  docs/                    # multi-user plan, loadsim soak guide
 ```
 
 ## Architecture
@@ -76,6 +80,19 @@ Events: `JobUpdated` (JobSnapshot), `JobLog` (string)
 ## Config
 
 `FilmStudio.Api/appsettings.json` → `FilmStudio:WorkspaceRoot` (empty = auto-detect repo root).
+
+## LoadSim (Phase E)
+
+```powershell
+# Terminal 1 — API with fakes
+$env:FILMSTUDIO_USE_FAKES = "true"
+dotnet run --project FilmStudio.Api
+
+# Terminal 2 — virtual users
+dotnet run --project FilmStudio.LoadSim -- --users 25 --duration 90 --scenario mixed --out loadsim-results.json
+```
+
+Gates exit **0** on pass. See `docs/loadsim-soak.md` for CI profile and 100×10 min soak.
 
 ## Capability matrix (native C#)
 

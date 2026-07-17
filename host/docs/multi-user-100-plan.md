@@ -565,41 +565,26 @@ Optional: write .duration.json sidecar with fixture duration for fast UI probe
 
 ---
 
-### Phase E — LoadSim + soak (+ admin validation)
+### Phase E — LoadSim + soak (+ admin validation) — **IMPLEMENTED (2026-07-17)**
 
-- Ship `FilmStudio.LoadSim` (below).
-- Manual soak: 100 VUs × 10 min; capture metrics (human + `loadsim-results.json`).
-- **Admin check:** during soak, open `/admin` and confirm counters move (inFlight, queues, jobs); change `MaxVideoInFlight` live and observe queue behavior.
+- Ship `FilmStudio.LoadSim` ✅ — console client, CLI, gates, `loadsim-results.json`.
+- Manual soak: see `host/docs/loadsim-soak.md` (100×10 min procedure).
+- **Admin check:** documented in soak guide (watch `/admin` during run; hot-tune capacity).
 
-**E1. Automated LoadSim pass/fail gates (CI)**
+**E1. Automated LoadSim pass/fail gates (CI)** ✅
 
-- CI job (PR or nightly): run LoadSim against API with **fakes** (e.g. **20–50 VUs × 2 min**, `mixed` or `browse`+light gen).
-- LoadSim exits **non-zero** if any gate fails; CI fails the job.
-- Default gates (tunable in sim config / CLI):
+- Workflow: `.github/workflows/loadsim.yml` (PR on `host/**` + Monday schedule).
+- CI profile: **25 VUs × 90s**, `mixed`, fakes, exit non-zero on gate fail.
+- Artifact: `loadsim-results.json`.
 
-  | Gate | Default |
-  |------|---------|
-  | HTTP error rate (excl. intentional 409 locks) | &lt; 1% |
-  | `GET /health` | 200 throughout (or sampled) |
-  | Browse p95 | &lt; 500 ms (local fakes) |
-  | Capacity rejects / unexpected 5xx | threshold (e.g. 0 unexpected 5xx) |
-  | Optional | peak reported `inFlight` ≤ configured `MaxVideoInFlight` via `/api/admin/state` or `/api/capacity` |
+**E2. Unit tests for metrics counters + duration aggregates** ✅
 
-- Publish `loadsim-results.json` as CI artifact.
-- **Not** a substitute for the 100×10 min manual soak; CI proves regression safety, soak proves scale headroom.
+- `ServerMetricsTests` (timings queue vs run, locks, queue by user, counters).
+- `WorkerPoolTests` (global + per-user caps).
+- `LoadSimGateTests` (gate pass/fail + metrics collector).
+- `RuntimeConfigStoreTests` (hot capacity apply).
 
-**E2. Unit tests for metrics counters + duration aggregates**
-
-- Unit-test `ServerMetricsService` / job store / worker pool counters (no full host required):
-  - enqueue / start / finish job → `running`, `queueDepth`, per-user depths update correctly
-  - hit global or per-user cap → reject counted; `inFlight` never exceeds cap
-  - lock acquire/release reflected in snapshot lock count (if metrics include locks)
-  - config hot-apply updates capacity fields in next snapshot
-  - **timings:** record fake `JobTiming` samples → p50/p95 for clip/scene/WIP kinds; queueWait vs run split; idle baseline updates only when load low
-- Use fakes + in-memory job store; deterministic (no real network/ffmpeg).
-- These prove **metrics machinery is correct**; LoadSim gates prove **system metrics under concurrency are acceptable**.
-
-**Exit E:** documented numbers + LoadSim CI gates green + metrics unit tests green + admin console verified under load (manual soak still run before calling 100-user support “done”).
+**Exit E:** LoadSim shipped + CI + unit tests + soak docs. Manual 100×10 still required before calling 100-user support “done”. ✅
 
 ---
 

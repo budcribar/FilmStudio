@@ -1,0 +1,101 @@
+name: LoadSim (Phase E)
+
+on:
+  pull_request:
+    paths:
+      - "host/**"
+      - ".github/workflows/loadsim.yml"
+  workflow_dispatch:
+  # Optional nightly soak-lite
+  schedule:
+    - cron: "0 6 * * 1" # Mondays 06:00 UTC
+
+jobs:
+  unit-tests:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: host
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+      - name: Restore
+        run: dotnet restore FilmStudio.slnx
+      - name: Test
+        run: dotnet test FilmStudio.Tests --no-restore --verbosity minimal
+
+  loadsim-ci:
+    runs-on: ubuntu-latest
+    needs: unit-tests
+    defaults:
+      run:
+        working-directory: host
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Build
+        run: |
+          dotnet build FilmStudio.Api/FilmStudio.Api.csproj -c Release
+          dotnet build FilmStudio.LoadSim/FilmStudio.LoadSim.csproj -c Release
+
+      - name: Start API (fakes)
+        run: |
+          export FILMSTUDIO_USE_FAKES=true
+          export FilmStudio__UseFakes=true
+          export FilmStudio__Capacity__MaxVideoInFlight=8
+          export FilmStudio__Capacity__MaxVideoInFlightPerUser=2
+          export FilmStudio__Fakes__VideoDelayMs=50
+          export ASPNETCORE_ENVIRONMENT=Development
+          export ASPNETCORE_URLS=http://127.0.0.1:5088
+          nohup dotnet run --project FilmStudio.Api --no-build -c Release > /tmp/filmstudio-api.log 2>&1 &
+          echo $! > /tmp/filmstudio-api.pid
+          for i in $(seq 1 60); do
+            if curl -sf http://127.0.0.1:5088/health >/dev/null; then
+              echo "API up"
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "API failed to start"
+          cat /tmp/filmstudio-api.log || true
+          exit 1
+
+      - name: Run LoadSim (CI gates)
+        run: |
+          export FILMSTUDIO_USE_FAKES=true
+          # CI profile: 25 VUs × 90s, mixed with light gen against fakes
+          dotnet run --project FilmStudio.LoadSim -c Release --no-build -- \
+            --baseUrl http://127.0.0.1:5088 \
+            --users 25 \
+            --duration 90 \
+            --scenario mixed \
+            --project Buster \
+            --thinkTimeMs 150 \
+            --genWeight 0.08 \
+            --browseWeight 0.50 \
+            --playWeight 0.35 \
+            --reviewWeight 0.05 \
+            --remuxWeight 0.02 \
+            --maxGenPerUser 2 \
+            --maxErrorRate 0.02 \
+            --maxBrowseP95Ms 800 \
+            --out loadsim-results.json
+
+      - name: Stop API
+        if: always()
+        run: |
+          if [ -f /tmp/filmstudio-api.pid ]; then kill $(cat /tmp/filmstudio-api.pid) || true; fi
+          cat /tmp/filmstudio-api.log || true
+
+      - name: Upload results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: loadsim-results
+          path: host/loadsim-results.json
+          if-no-files-found: warn

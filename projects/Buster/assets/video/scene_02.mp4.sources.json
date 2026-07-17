@@ -1,5 +1,5 @@
 {
-  "builtAtUtc": "2026-07-17T01:34:03.3471342Z",
+  "builtAtUtc": "2026-07-17T19:32:33.4753616Z",
   "count": 4,
   "clips": [
     {
@@ -23,5 +23,6 @@
       "mtimeUtc": "2026-07-13T03:33:24.8770327Z"
     }
   ],
-  "strict": true
+  "strict": true,
+  "totalDurationSeconds": 40.16
 }

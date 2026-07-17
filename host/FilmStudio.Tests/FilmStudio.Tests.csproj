@@ -20,6 +20,7 @@
     <ProjectReference Include="..\FilmStudio.Core\FilmStudio.Core.csproj" />
     <ProjectReference Include="..\FilmStudio.Engine\FilmStudio.Engine.csproj" />
     <ProjectReference Include="..\FilmStudio.Fakes\FilmStudio.Fakes.csproj" />
+    <ProjectReference Include="..\FilmStudio.LoadSim\FilmStudio.LoadSim.csproj" />
   </ItemGroup>
 
 </Project>
