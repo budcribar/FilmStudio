@@ -108,37 +108,97 @@ Admin is a **first-class role**, not “whoever knows the API port.”
 
 **Snapshot model** `ServerStateDto` (also pushed over SignalR):
 
+##### A. Server / ops (infrastructure)
+
 | Section | Fields |
 |---------|--------|
 | **Process** | uptime, GC heap, working set, thread count, env (Dev/Prod), `UseFakes` |
 | **Capacity** | MaxVideoInFlight, MaxVideoInFlightPerUser, MaxFfmpegInFlight, MaxQueuePerUser (effective values) |
 | **API pool** | inFlight video/image/chat, queue depth **global**, queue depth **per user** (top N), RR cursor |
 | **Local pool** | ffmpeg inFlight, WIP jobs running |
-| **Jobs** | running list (jobId, userId, projectId, kind, scene, clip, age, progress %) |
-| **Queues** | waiting jobs count by kind |
+| **Jobs (live)** | running list (jobId, userId, projectId, kind, scene, clip, **age / elapsed**, progress %) |
+| **Queues** | waiting jobs count by kind; **wait age** of oldest queued job per kind |
 | **Locks** | active locks (resource, userId, expiresAt, reason) |
 | **Projects** | open project ids with recent activity (optional) |
 | **SignalR** | approximate connection count (if available) |
-| **Health** | last error rate window, 429 count (real or fake), disk free on workspace |
+| **Health** | error rate window, 429 count (real or fake), capacity rejects, disk free on workspace |
+
+##### B. User-facing duration metrics (generation under load)
+
+These answer: *“How long is movie / scene / clip work taking right now and recently?”*  
+Record timings on every **completed** job (success and fail separately where useful). Keep a **rolling window** (e.g. last 15 min and last 100 completions per kind).
+
+| Metric kind | What we measure | Admin display |
+|-------------|-----------------|---------------|
+| **Clip gen** | Queue wait + API/work time + total wall time per clip job | count, p50/p95/p99 **total**, p50/p95 **queue wait**, p50/p95 **run** (submit→saved) |
+| **Scene gen** | Same for a full scene job (all clips in that job), or sum of clip totals if scene is multi-clip | p50/p95 total scene wall time; in-flight scene age |
+| **Scene remux** | ffmpeg scene composite only | p50/p95 duration |
+| **WIP / movie rebuild** | stale remux phase + final concat (break out if possible) | p50/p95 **total WIP**; optional p50 remux-all-stale vs concat |
+| **Image / Stage1 / Stage2** (optional v1.1) | same pattern by `JobKind` | compact row |
+
+**Per completed job record (for histograms):**
+
+```text
+JobTiming {
+  Kind,           // video_clip | video_scene | remux_scene | remux_wip | ...
+  UserId, ProjectId, Scene?, Clip?,
+  QueuedAt, StartedAt, FinishedAt,
+  QueueWaitMs,    // StartedAt - QueuedAt
+  RunMs,          // FinishedAt - StartedAt  (Grok or ffmpeg work)
+  TotalMs,        // FinishedAt - QueuedAt   (user-perceived)
+  Success, ErrorCode?
+}
+```
+
+**Aggregates in `ServerStateDto.Timings` (live admin):**
+
+| Field | Meaning |
+|-------|---------|
+| `byKind[kind].completedInWindow` | N finishes in rolling window |
+| `byKind[kind].queueWaitMs` | p50, p95, p99, max |
+| `byKind[kind].runMs` | p50, p95, p99, max |
+| `byKind[kind].totalMs` | p50, p95, p99, max — **primary “how long under load”** |
+| `byKind[kind].failRate` | failures / completed in window |
+| `byKind[kind].inFlight` | currently running |
+| `byKind[kind].oldestInFlightAgeMs` | longest current gen (stuck detector) |
+| `compareIdleHint` | optional: baseline p50 from low-load window or config “expected fake delay” so admin sees **slowdown vs baseline** |
+
+**Under load narrative (what admin should see):**
+
+- Queue wait **rises** when `inFlight` is at cap (many users) → “generation taking longer” is often **wait**, not slower Grok.  
+- Run time **rises** if API throttles (429/backoff) or machine is CPU-bound (ffmpeg).  
+- Split **queue vs run** so you can tell which.
+
+**Baselines for “slower under load”:**
+
+1. Store rolling p50 when `globalQueueDepth == 0` and `inFlight` low → **idle baseline**.  
+2. Admin panel shows e.g. `scene total p95 = 12.4 min (idle p50 8.1 min, +53%)`.  
+3. LoadSim results JSON should export the same percentiles for offline compare.
+
+**Not in live admin v1 (unless cheap):** per-user multi-day history charts (that’s log/analytics). Live = windowed stats + current jobs.
 
 **Real-time updates:**
 
 1. Admin SignalR group **`admin:ops`**.  
 2. On connect, admin joins `admin:ops` (only if role admin).  
 3. `ServerMetricsService` emits:
-   - **Periodic tick** (e.g. every 1–2s) full or delta snapshot  
-   - **Event-driven** pushes on job start/finish, lock acquire/release, config change, capacity reject  
-4. Blazor admin page: `@implements` hub client; bind tables to latest snapshot; no full page poll required (optional fallback `GET /api/admin/state` every 5s if hub drops).
+   - **Periodic tick** (e.g. every 1–2s) full or delta snapshot (includes timing percentiles recomputed from ring buffer)  
+   - **Event-driven** pushes on job start/finish (update timings), lock acquire/release, config change, capacity reject  
+4. Blazor admin page: hub client; bind tables to latest snapshot; fallback poll `GET /api/admin/state` every 5s if hub drops.
 
 **UI layout (suggested):**
 
 ```text
 ┌─ Server ──────────────────┬─ Capacity ─────────────────┐
 │ Up 2h · 1.2 GB · Fakes ON │ Video 3/12 · FFmpeg 1/2    │
-├─ Running jobs ────────────┴────────────────────────────┤
-│ job… u003 Buster scene gen S04 C2  45%                  │
+├─ Generation latency (15m window) ──────────────────────┤
+│ Clip  total p50 2.1m  p95 4.0m │ queue p95 45s │ run p95 3.5m │
+│ Scene total p50 8.2m  p95 14m  │ queue p95 2.1m│ vs idle +40% │
+│ WIP   total p50 12s   p95 40s  │                           │
+├─ Running jobs ─────────────────────────────────────────┤
+│ job… u003 Buster scene gen S04 C2  elapsed 3m12s  45%  │
 ├─ Queues by user ───────────────────────────────────────┤
-│ u001: 2  u007: 1  …                                    │
+│ u001: 2 (oldest wait 1m)  u007: 1                      │
 ├─ Locks ────────────────────────────────────────────────┤
 │ project:Buster:scene:04  alice  gen  exp 12:04         │
 └─ Recent rejects / 429s ────────────────────────────────┘
@@ -506,11 +566,38 @@ Optional: write .duration.json sidecar with fixture duration for fast UI probe
 ### Phase E — LoadSim + soak (+ admin validation)
 
 - Ship `FilmStudio.LoadSim` (below).
-- CI job (optional, nightly): 50 VUs × 2 min with fakes.
-- Manual soak: 100 VUs × 10 min; capture metrics.
+- Manual soak: 100 VUs × 10 min; capture metrics (human + `loadsim-results.json`).
 - **Admin check:** during soak, open `/admin` and confirm counters move (inFlight, queues, jobs); change `MaxVideoInFlight` live and observe queue behavior.
 
-**Exit E:** documented numbers + pass/fail thresholds + admin console verified under load.
+**E1. Automated LoadSim pass/fail gates (CI)**
+
+- CI job (PR or nightly): run LoadSim against API with **fakes** (e.g. **20–50 VUs × 2 min**, `mixed` or `browse`+light gen).
+- LoadSim exits **non-zero** if any gate fails; CI fails the job.
+- Default gates (tunable in sim config / CLI):
+
+  | Gate | Default |
+  |------|---------|
+  | HTTP error rate (excl. intentional 409 locks) | &lt; 1% |
+  | `GET /health` | 200 throughout (or sampled) |
+  | Browse p95 | &lt; 500 ms (local fakes) |
+  | Capacity rejects / unexpected 5xx | threshold (e.g. 0 unexpected 5xx) |
+  | Optional | peak reported `inFlight` ≤ configured `MaxVideoInFlight` via `/api/admin/state` or `/api/capacity` |
+
+- Publish `loadsim-results.json` as CI artifact.
+- **Not** a substitute for the 100×10 min manual soak; CI proves regression safety, soak proves scale headroom.
+
+**E2. Unit tests for metrics counters + duration aggregates**
+
+- Unit-test `ServerMetricsService` / job store / worker pool counters (no full host required):
+  - enqueue / start / finish job → `running`, `queueDepth`, per-user depths update correctly
+  - hit global or per-user cap → reject counted; `inFlight` never exceeds cap
+  - lock acquire/release reflected in snapshot lock count (if metrics include locks)
+  - config hot-apply updates capacity fields in next snapshot
+  - **timings:** record fake `JobTiming` samples → p50/p95 for clip/scene/WIP kinds; queueWait vs run split; idle baseline updates only when load low
+- Use fakes + in-memory job store; deterministic (no real network/ffmpeg).
+- These prove **metrics machinery is correct**; LoadSim gates prove **system metrics under concurrency are acceptable**.
+
+**Exit E:** documented numbers + LoadSim CI gates green + metrics unit tests green + admin console verified under load (manual soak still run before calling 100-user support “done”).
 
 ---
 
@@ -676,9 +763,10 @@ dotnet run --project host/FilmStudio.LoadSim -- --users 100 --duration 300 --sce
 
 | Layer | What |
 |-------|------|
-| Unit | RR scheduler, lock TTL, coalesce WIP flag, queue caps, config validation |
+| Unit | RR scheduler, lock TTL, coalesce WIP flag, queue caps, config validation; **metrics counters** (E2: inFlight, queues, rejects, caps) |
 | Integration | `WebApplicationFactory` + fakes; 2 users concurrent gen different scenes; admin login → state/config |
-| Load | LoadSim 100 VUs fakes; admin dashboard open during soak |
+| Load (CI) | **LoadSim automated gates** (E1: 20–50 VUs × ~2 min, fakes, non-zero exit on fail) |
+| Load (manual) | 100 VUs × 10 min soak; admin dashboard open; capture artifacts |
 | Manual | 2 browsers + admin browser; real or fake keys |
 | Security | Non-admin 401/403 on `/api/admin/*`; login brute-force limited |
 
@@ -744,4 +832,4 @@ Then iterate multi-job + locks + live metrics + config page + gen actions in sim
 
 ---
 
-*Document version: 2026-07-17d — Phase F: remove backward-compat single-job `GET /api/jobs` when gates pass.*
+*Document version: 2026-07-17f — Admin metrics: generation latency (clip/scene/WIP queue vs run p50/p95 under load).*
