@@ -1,8 +1,8 @@
 # Multi-user architecture plan (≈100 concurrent users)
 
-**Goal:** Evolve FilmStudio from single-operator / single-job to support ~**100 concurrent UI sessions**, with **per-user API keys**, **scene-level isolation**, **fair local workers**, and a **load simulator** that does not burn real xAI credits.
+**Goal:** Evolve FilmStudio from single-operator / single-job to support ~**100 concurrent UI sessions**, with **per-user API keys**, **scene-level isolation**, **fair local workers**, a **load simulator** that does not burn real xAI credits, and an **admin console** (login, live server state, server configuration).
 
-**Non-goals (v1 of this plan):** CRDT co-editing, multi-region, full SaaS billing portal.
+**Non-goals (v1 of this plan):** CRDT co-editing, multi-region, full SaaS billing portal, multi-admin RBAC beyond `admin` vs `user`.
 
 ---
 
@@ -25,33 +25,34 @@
 2. Under gen mix (e.g. 20% genning), p95 queue wait and error rates stay within configured SLOs.
 3. No cross-user file clobber (scene locks + atomic writes).
 4. Fakes inject without code changes beyond DI / config.
+5. Admin can log in, view **live** server state, and change capacity/fake settings without redeploy (persisted config).
 
 ---
 
 ## 2. Architecture (end state)
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│ Clients (Blazor Web)  │  FilmStudio.LoadSim (100 VUs)           │
-└───────────┬───────────────────────────┬─────────────────────────┘
-            │ HTTP + SignalR            │
-            ▼                           ▼
-┌─────────────────────────────────────────────────────────────────┐
-│ FilmStudio.Api                                                      │
-│  Auth / UserContext (userId, apiKey ref)                            │
-│  JobRouter → JobQueue (multi-job)                                   │
-│  ApiWorkerPool (global maxInFlight)                                 │
-│  LocalWorkerPool (ffmpeg)                                           │
-│  LockService (scene / project / character)                          │
-│  ProjectStore (files)                                               │
-│  SignalR groups: user:{id}, project:{id}, job:{id}                  │
-└───────────┬───────────────────┬─────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────────┐
+│ Blazor Web (users)  │  Blazor Admin (/admin)  │  LoadSim (100 VUs)    │
+└──────────┬──────────────────┬─────────────────────────┬──────────────┘
+           │                  │                         │
+           │  user JWT /      │  admin JWT +            │  X-User-Id
+           │  X-User-Id       │  role=admin             │
+           ▼                  ▼                         ▼
+┌──────────────────────────────────────────────────────────────────────┐
+│ FilmStudio.Api                                                         │
+│  Auth (user + admin roles)                                             │
+│  JobRouter → JobQueue (multi-job)                                      │
+│  ApiWorkerPool / LocalWorkerPool                                       │
+│  LockService · ProjectStore                                            │
+│  ServerMetricsService (snapshots for admin)                            │
+│  RuntimeConfigStore (capacity + fakes; hot-reloadable)                 │
+│  SignalR: user:{id} · project:{id} · job:{id} · admin:ops              │
+└───────────┬───────────────────┬────────────────────────────────────────┘
             │                   │
             ▼                   ▼
-   IGrokVideoClient      IFfmpegRemux
-   IGrokImageClient      (real or fake)
-   IGrokChatClient
-   (real or fake per user key)
+   IGrok* clients          IFfmpegRemux
+   (real or fake)          (real or fake)
 ```
 
 ### 2.1 Resource split
@@ -71,9 +72,123 @@
 | `project:{id}:stage` | Exclusive Stage1/2 |
 | `project:{id}:char:{key}` | Exclusive lock/regen portrait |
 
-Soft locks: owner, reason, expiresAt, heartbeat; steal with force flag (admin).
+Soft locks: owner, reason, expiresAt, heartbeat; steal with force flag (**admin only**).
 
-### 2.3 Jobs
+### 2.3 Admin console (login, live ops, configuration)
+
+Admin is a **first-class role**, not “whoever knows the API port.”
+
+#### 2.3.1 Admin login
+
+| Item | v1 choice |
+|------|-----------|
+| Role | `admin` vs `user` (claim / config) |
+| Auth | Cookie or JWT after `POST /api/auth/login` |
+| Credentials | Config: `FilmStudio:Admin:Username` + `PasswordHash` (or env `FILMSTUDIO_ADMIN_PASSWORD` for dev) |
+| Session | Sliding expiry (e.g. 8h); logout clears cookie |
+| Dev shortcut | Optional `Admin:AllowDevBypass` only in Development |
+| LoadSim | **Never** uses admin credentials; stays on user headers |
+
+**Blazor routes:**
+
+- `/admin/login` — public login form  
+- `/admin` — dashboard (authorized `admin`)  
+- `/admin/config` — server configuration (authorized `admin`)  
+- Nav: “Admin” only when role is admin  
+
+**API authorization:**
+
+- User endpoints: require authenticated user (or existing `X-User-Id` in early phases).  
+- Admin endpoints: require `role=admin` (policy `AdminOnly`).  
+- Mutating admin config: admin only + optional CSRF on cookie auth.
+
+#### 2.3.2 Live server state dashboard (`/admin`)
+
+**Purpose:** Single pane of glass while LoadSim or real users run.
+
+**Snapshot model** `ServerStateDto` (also pushed over SignalR):
+
+| Section | Fields |
+|---------|--------|
+| **Process** | uptime, GC heap, working set, thread count, env (Dev/Prod), `UseFakes` |
+| **Capacity** | MaxVideoInFlight, MaxVideoInFlightPerUser, MaxFfmpegInFlight, MaxQueuePerUser (effective values) |
+| **API pool** | inFlight video/image/chat, queue depth **global**, queue depth **per user** (top N), RR cursor |
+| **Local pool** | ffmpeg inFlight, WIP jobs running |
+| **Jobs** | running list (jobId, userId, projectId, kind, scene, clip, age, progress %) |
+| **Queues** | waiting jobs count by kind |
+| **Locks** | active locks (resource, userId, expiresAt, reason) |
+| **Projects** | open project ids with recent activity (optional) |
+| **SignalR** | approximate connection count (if available) |
+| **Health** | last error rate window, 429 count (real or fake), disk free on workspace |
+
+**Real-time updates:**
+
+1. Admin SignalR group **`admin:ops`**.  
+2. On connect, admin joins `admin:ops` (only if role admin).  
+3. `ServerMetricsService` emits:
+   - **Periodic tick** (e.g. every 1–2s) full or delta snapshot  
+   - **Event-driven** pushes on job start/finish, lock acquire/release, config change, capacity reject  
+4. Blazor admin page: `@implements` hub client; bind tables to latest snapshot; no full page poll required (optional fallback `GET /api/admin/state` every 5s if hub drops).
+
+**UI layout (suggested):**
+
+```text
+┌─ Server ──────────────────┬─ Capacity ─────────────────┐
+│ Up 2h · 1.2 GB · Fakes ON │ Video 3/12 · FFmpeg 1/2    │
+├─ Running jobs ────────────┴────────────────────────────┤
+│ job… u003 Buster scene gen S04 C2  45%                  │
+├─ Queues by user ───────────────────────────────────────┤
+│ u001: 2  u007: 1  …                                    │
+├─ Locks ────────────────────────────────────────────────┤
+│ project:Buster:scene:04  alice  gen  exp 12:04         │
+└─ Recent rejects / 429s ────────────────────────────────┘
+```
+
+**Admin actions (dashboard, optional v1.1):**
+
+- Cancel any job by id  
+- Force-release lock (with confirm)  
+- Pause API pool (drain) for maintenance  
+
+#### 2.3.3 Server configuration page (`/admin/config`)
+
+**Purpose:** Tune capacity and fake/chaos settings **at runtime** without rebuild; persist for restart.
+
+**Editable groups:**
+
+| Group | Settings |
+|-------|----------|
+| **Capacity** | MaxVideoInFlight, MaxVideoInFlightPerUser, MaxFfmpegInFlight, MaxQueuePerUser, MaxUiSessions (soft warn) |
+| **Fakes** | UseFakes (may require note: “new clients only” or restart), VideoDelayMs, FailRate, RateLimitEveryN |
+| **Jobs** | Default clip quantum, job TTL / cancel policy |
+| **WIP** | Auto-coalesce on/off |
+| **Admin** | Change admin password (separate form) |
+| **Read-only** | Workspace root, version, git commit, xAI configured (bool, not key) |
+
+**Persistence:**
+
+- Write to `FilmStudio:RuntimeConfigPath` (e.g. `host/FilmStudio.Api/runtime-config.json`) or under workspace `.filmstudio/runtime-config.json`.  
+- `IRuntimeConfigStore`: load on startup → merge over appsettings → **hot apply** to worker pools (update semaphores / caps).  
+- Audit: append `admin_config_audit.jsonl` (who, when, old→new).
+
+**API:**
+
+| Method | Path | Auth |
+|--------|------|------|
+| POST | `/api/auth/login` | public |
+| POST | `/api/auth/logout` | auth |
+| GET | `/api/auth/me` | auth (returns roles) |
+| GET | `/api/admin/state` | admin |
+| GET | `/api/admin/config` | admin |
+| PUT | `/api/admin/config` | admin |
+| POST | `/api/admin/jobs/{id}/cancel` | admin |
+| POST | `/api/admin/locks/release` | admin (optional) |
+
+**Validation:** caps must be ≥ 1 where required; FailRate in [0,1]; reject dangerous values (e.g. MaxVideoInFlight > 100 without confirm).
+
+**SignalR:** after config PUT, broadcast `AdminConfigChanged` on `admin:ops` and optionally bump capacity gauges for all admins.
+
+### 2.4 Jobs
 
 Replace singleton “one snapshot” with:
 
@@ -89,7 +204,7 @@ JobRecord {
 - List: mine / project / all (admin).
 - SignalR: progress only to `job:{id}` + `user:{userId}` (+ project group optional).
 
-### 2.4 Per-user API keys
+### 2.5 Per-user API keys
 
 ```text
 IUserApiKeyProvider.GetKeyAsync(userId) → string?
@@ -101,7 +216,7 @@ IUserApiKeyProvider.GetKeyAsync(userId) → string?
 
 Video client construction: factory `IGrokVideoClientFactory.Create(apiKey)` or pass key per call.
 
-### 2.5 Fairness (local workers, multi-key world)
+### 2.6 Fairness (local workers, multi-key world)
 
 With **per-user keys**, Grok fairness is mostly per-key. Still apply:
 
@@ -111,7 +226,7 @@ With **per-user keys**, Grok fairness is mostly per-key. Still apply:
 
 If later you run a **shared** key mode, same RR is mandatory for Grok fairness.
 
-### 2.6 WIP
+### 2.7 WIP
 
 - Per-project single-flight + coalesce (`needsAnotherWip`).
 - Remux only **stale** scenes, then concat.
@@ -154,6 +269,9 @@ Introduce interfaces **at the edges** that cost money or CPU. Keep domain servic
 | `ILockService` | file/`pipeline_state` | `InMemoryLockService` |
 | `IClock` | `SystemClock` | `FakeClock` (optional) |
 | `IRandom` | system | seeded (flaky test control) |
+| `IRuntimeConfigStore` | file-backed JSON | in-memory for tests |
+| `IServerMetricsService` | live counters | fixed snapshot for unit tests |
+| `IAdminAuthService` | password hash + JWT/cookie | `TestAdminAuth` (always admin in test) |
 
 ### 4.2 Registration
 
@@ -245,12 +363,13 @@ DownloadToFileAsync(url, path)
 
 ---
 
-### Phase B — Identity + keys (stub auth OK)
+### Phase B — Identity + keys + admin login
 
 **B1. User context**
 
 - Middleware: `X-User-Id` header (dev/sim) and/or JWT later.
 - `IUserContext.UserId` required for gen endpoints.
+- Roles: `user` | `admin` (claim or config list `Admin:UserIds`).
 
 **B2. API key provider**
 
@@ -261,7 +380,15 @@ DownloadToFileAsync(url, path)
 
 - Prefer `Submit...(apiKey:)` or factory per request so fakes can ignore and reals use user key.
 
-**Exit B:** two headers `X-User-Id: alice|bob` use different keys (or fakes).
+**B4. Admin authentication**
+
+- `POST /api/auth/login` { username, password } → cookie/JWT with `role=admin` or `role=user`.
+- Password stored hashed (`ASP.NET Core Identity` password hasher is enough; no full Identity DB required for v1).
+- `GET /api/auth/me` → `{ userId, roles[] }`.
+- Blazor: `/admin/login` + `AuthorizeView Roles="admin"` / cascading auth state.
+- Policy `AdminOnly` on all `/api/admin/*`.
+
+**Exit B:** two users with headers; admin can log in and hit `/api/admin/state` (even if state is partial).
 
 ---
 
@@ -288,29 +415,58 @@ DownloadToFileAsync(url, path)
 - On connect: join `user:{userId}` (from claim/header).
 - Job progress → `job:{id}` and `user:{userId}`.
 - Optional project broadcast for “someone remuxed”.
+- If admin: join **`admin:ops`**.
 
-**Exit C:** two users gen different scenes concurrently (fakes); same scene → 409.
+**C5. ServerMetricsService (feed for admin)**
+
+- Maintain atomic counters: inFlight, queue depths, 429s, rejects.
+- Hook job store + lock service + worker pools.
+- `GetSnapshot()` + event `SnapshotUpdated`.
+- SignalR hub method or hosted service push to `admin:ops` every 1–2s while any admin connected (or always at low rate).
+
+**Exit C:** two users gen different scenes concurrently (fakes); same scene → 409; admin dashboard shows live jobs (read-only).
 
 ---
 
-### Phase D — Web UX (minimum)
+### Phase D — Web UX (users) + admin console
+
+**D1. User UX (minimum)**
 
 - Show **my jobs** + queue position.
 - Scene lock badge on Scenes list.
 - Disable Gen when locked by other user.
-- Config page or About: capacity stats (`/api/capacity`).
 
-**Exit D:** human-usable multi-user on one machine with fakes or real keys.
+**D2. Admin live dashboard (`/admin`)**
+
+- Login gate → real-time panels (process, capacity, running jobs, queues, locks).
+- SignalR client subscribed to `admin:ops` / `AdminState` messages.
+- Fallback poll `GET /api/admin/state`.
+- Actions: cancel job; force-release lock (confirm modal).
+
+**D3. Admin server configuration (`/admin/config`)**
+
+- Forms bound to `RuntimeConfigDto`.
+- Save → `PUT /api/admin/config` → persist + hot-apply + audit line + SignalR notify.
+- Show effective vs file values; “restart required” badge if a setting cannot hot-reload (e.g. switching UseFakes mid-flight may be restart-only).
+
+**D4. Nav + security**
+
+- Hide admin links from non-admins.
+- `[Authorize(Roles = "admin")]` on admin pages and APIs.
+- Rate-limit login attempts (simple in-memory).
+
+**Exit D:** human multi-user + admin can watch LoadSim live and tune caps without rebuild.
 
 ---
 
-### Phase E — LoadSim + soak
+### Phase E — LoadSim + soak (+ admin validation)
 
 - Ship `FilmStudio.LoadSim` (below).
 - CI job (optional, nightly): 50 VUs × 2 min with fakes.
 - Manual soak: 100 VUs × 10 min; capture metrics.
+- **Admin check:** during soak, open `/admin` and confirm counters move (inFlight, queues, jobs); change `MaxVideoInFlight` live and observe queue behavior.
 
-**Exit E:** documented numbers + pass/fail thresholds.
+**Exit E:** documented numbers + pass/fail thresholds + admin console verified under load.
 
 ---
 
@@ -416,15 +572,23 @@ dotnet run --project host/FilmStudio.LoadSim -- --users 100 --duration 300 --sce
 
 ## 7. API additions (summary)
 
-| Endpoint | Purpose |
-|----------|---------|
-| `GET /api/capacity` | inFlight, queue depths, caps |
-| `GET /api/jobs` | filter mine/project |
-| `GET /api/jobs/{id}` | detail |
-| `POST /api/jobs/gen-scene` | + require user; acquire scene lock |
-| `POST /api/jobs/remux` | locks |
-| `POST /api/locks/...` | optional debug |
-| Headers | `X-User-Id`, optional `X-Api-Key` (dev) |
+| Endpoint | Purpose | Auth |
+|----------|---------|------|
+| `GET /api/capacity` | public/limited caps (optional) | user or anon |
+| `GET /api/jobs` | filter mine/project | user |
+| `GET /api/jobs/{id}` | detail | user (own) or admin |
+| `POST /api/jobs/gen-scene` | + require user; acquire scene lock | user |
+| `POST /api/jobs/remux` | locks | user |
+| `POST /api/auth/login` | admin/user login | public |
+| `POST /api/auth/logout` | clear session | auth |
+| `GET /api/auth/me` | userId + roles | auth |
+| `GET /api/admin/state` | full live server snapshot | **admin** |
+| `GET /api/admin/config` | runtime config | **admin** |
+| `PUT /api/admin/config` | update capacity/fakes | **admin** |
+| `POST /api/admin/jobs/{id}/cancel` | force cancel | **admin** |
+| `POST /api/admin/locks/release` | force unlock | **admin** |
+| Headers (sim/dev) | `X-User-Id`, optional `X-Api-Key` | — |
+| SignalR group | `admin:ops` | **admin** only |
 
 ---
 
@@ -432,10 +596,11 @@ dotnet run --project host/FilmStudio.LoadSim -- --users 100 --duration 300 --sce
 
 | Layer | What |
 |-------|------|
-| Unit | RR scheduler, lock TTL, coalesce WIP flag, queue caps |
-| Integration | `WebApplicationFactory` + fakes; 2 users concurrent gen different scenes |
-| Load | LoadSim 100 VUs fakes |
-| Manual | 2 browsers, real or fake keys |
+| Unit | RR scheduler, lock TTL, coalesce WIP flag, queue caps, config validation |
+| Integration | `WebApplicationFactory` + fakes; 2 users concurrent gen different scenes; admin login → state/config |
+| Load | LoadSim 100 VUs fakes; admin dashboard open during soak |
+| Manual | 2 browsers + admin browser; real or fake keys |
+| Security | Non-admin 401/403 on `/api/admin/*`; login brute-force limited |
 
 ---
 
@@ -448,6 +613,9 @@ dotnet run --project host/FilmStudio.LoadSim -- --users 100 --duration 300 --sce
 | Fake mp4 won’t play | Ship real tiny fixture files |
 | Global job rewrite breaks UI | Compatibility shim on `/api/jobs` |
 | Real key leak in sim | Forbid gen scenario without `UseFakes` unless `--i-know-what-im-doing` |
+| Admin password in repo | Env/secret only; hashed at rest; no default prod password |
+| Admin SignalR spam at 1Hz × heavy snapshot | Delta payloads; only push when admins connected; cap 1–2 Hz |
+| Hot config breaks running jobs | Document restart-required flags; apply caps on *next* dequeue |
 
 ---
 
@@ -456,12 +624,12 @@ dotnet run --project host/FilmStudio.LoadSim -- --users 100 --duration 300 --sce
 | Phase | Effort (order of magnitude) |
 |-------|-----------------------------|
 | A Foundations + fakes | 3–5 days |
-| B Identity + keys | 1–2 days |
-| C Locks + workers | 4–6 days |
-| D Web UX | 2–3 days |
-| E LoadSim + soak | 2–3 days |
+| B Identity + keys + **admin login** | 2–3 days |
+| C Locks + workers + **metrics feed** | 4–6 days |
+| D User UX + **admin dashboard + config** | 4–5 days |
+| E LoadSim + soak + admin under load | 2–3 days |
 
-**First vertical slice (1 week goal):** A1–A3 + B1 stub + C3 minimal multi-job with fakes + LoadSim **browse+fake gen** at 50 VUs.
+**First vertical slice (1 week goal):** A1–A3 + B1/B4 stub admin login + `GET /api/admin/state` skeleton + LoadSim browse 50 VUs.
 
 ---
 
@@ -470,8 +638,9 @@ dotnet run --project host/FilmStudio.LoadSim -- --users 100 --duration 300 --sce
 1. Create `FilmStudio.Fakes` + `IGrokVideoClient` extraction + `UseFakes` switch.  
 2. Create `FilmStudio.LoadSim` with **browse-only** 100 VUs (no gen).  
 3. Add `GET /api/capacity` stub (static caps + process uptime).  
+4. Stub **admin login** + `GET /api/admin/state` (process uptime only) + empty `/admin` page.
 
-Then iterate multi-job + locks + gen actions in sim.
+Then iterate multi-job + locks + live metrics + config page + gen actions in sim.
 
 ---
 
@@ -482,10 +651,13 @@ Then iterate multi-job + locks + gen actions in sim.
 | Primary bottleneck with per-user keys | Server workers + Blazor, not shared Grok |
 | Fairness | Global max in-flight + per-user cap + optional RR among users |
 | WIP | Single-flight coalesce, local pool |
-| Auth v1 | `X-User-Id` header (sim + dev); JWT later |
+| Auth v1 users | `X-User-Id` header (sim + dev); JWT/cookie later |
+| Auth admin | Dedicated login; `role=admin`; cookie or JWT |
+| Admin live updates | SignalR group `admin:ops` + 1–2s snapshot ticks |
+| Server config | Runtime file + hot-apply caps; audit log |
 | Test money | Fakes always for CI/load |
 | Work-stealing deque for WIP | Rejected; use single-flight + optional parallel stale remux |
 
 ---
 
-*Document version: 2026-07-17 — aligns with multi-user discussion (project lanes, scene locks, per-user keys, ~100 concurrent UI sessions).*
+*Document version: 2026-07-17b — adds admin login, live ops dashboard, server configuration page.*
