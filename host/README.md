@@ -95,7 +95,7 @@ dotnet run --project FilmStudio.Api
 dotnet run --project FilmStudio.LoadSim -- --users 25 --duration 90 --scenario mixed --out loadsim-results.json
 ```
 
-Gates exit **0** on pass. See `docs/loadsim-soak.md` for CI profile and 100×10 min soak.
+Uses checked-in **`projects/LoadSimBuster`** (isolated from real Buster). See `docs/loadsim-soak.md`.
 
 ## Capability matrix (native C#)
 

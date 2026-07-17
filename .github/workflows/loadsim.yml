@@ -74,7 +74,7 @@ jobs:
             --users 25 \
             --duration 90 \
             --scenario mixed \
-            --project Buster \
+            --project LoadSimBuster \
             --thinkTimeMs 150 \
             --genWeight 0.08 \
             --browseWeight 0.50 \

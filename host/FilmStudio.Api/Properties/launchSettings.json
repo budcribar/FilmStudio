@@ -10,6 +10,20 @@
         "ASPNETCORE_ENVIRONMENT": "Development"
       }
     },
+    "http (fakes)": {
+      "commandName": "Project",
+      "dotnetRunMessages": true,
+      "launchBrowser": false,
+      "applicationUrl": "http://127.0.0.1:5088",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "FILMSTUDIO_USE_FAKES": "true",
+        "FilmStudio__UseFakes": "true",
+        "FilmStudio__Capacity__MaxVideoInFlight": "8",
+        "FilmStudio__Capacity__MaxVideoInFlightPerUser": "2",
+        "FilmStudio__Fakes__VideoDelayMs": "50"
+      }
+    },
     "https": {
       "commandName": "Project",
       "dotnetRunMessages": true,
@@ -21,4 +35,5 @@
     }
   }
 }
+
 

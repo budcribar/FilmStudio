@@ -9,6 +9,49 @@ var opts = SimOptions.Parse(args);
 Console.WriteLine($"FilmStudio.LoadSim → {opts.BaseUrl}");
 Console.WriteLine($"  users={opts.Users} duration={opts.DurationSec}s scenario={opts.Scenario} project={opts.ProjectId}");
 
+// Default project is checked-in projects/LoadSimBuster (never touch real Buster).
+if (!opts.AllowRealProject &&
+    (string.Equals(opts.ProjectId, "Buster", StringComparison.OrdinalIgnoreCase) ||
+     string.Equals(opts.ProjectId, "NickAndMe", StringComparison.OrdinalIgnoreCase)))
+{
+    Console.Error.WriteLine(
+        $"Setup: refusing real project '{opts.ProjectId}'. " +
+        $"Use '{ProjectSandbox.DefaultSandboxId}' (default) or pass --allowRealProject.");
+    return 2;
+}
+
+// Optional maintenance: recopy sandbox from Buster (normally skip — LoadSimBuster is in git)
+if (opts.PrepareSandbox)
+{
+    try
+    {
+        var workspace = ProjectSandbox.FindWorkspaceRoot(opts.WorkspaceRoot);
+        if (workspace is null)
+        {
+            Console.Error.WriteLine(
+                "Setup: could not find workspace root (folder with projects/). Pass --workspace PATH.");
+            return 2;
+        }
+
+        opts.WorkspaceRoot = workspace;
+        Console.WriteLine($"  workspace={workspace}");
+        ProjectSandbox.Ensure(
+            workspace,
+            opts.SourceProjectId,
+            opts.ProjectId,
+            refresh: opts.RefreshSandbox);
+    }
+    catch (Exception ex)
+    {
+        Console.Error.WriteLine($"Setup: sandbox prepare failed: {ex.Message}");
+        return 2;
+    }
+}
+else
+{
+    Console.WriteLine($"  project={opts.ProjectId} (checked-in sandbox; no recopy)");
+}
+
 using var http = new HttpClient
 {
     BaseAddress = new Uri(opts.BaseUrl.TrimEnd('/') + "/"),

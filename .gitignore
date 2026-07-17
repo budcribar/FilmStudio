@@ -279,7 +279,7 @@ host/**/.vs/
 /host/FilmStudio.Web/bin/Debug/net10.0/FilmStudio.Web.staticwebassets.endpoints.json
 /host/FilmStudio.Web/obj/Debug/net10.0/FilmStudio.Web.GeneratedMSBuildEditorConfig.editorconfig
 
-# LoadSim local results
+# LoadSim local results (not the projects/LoadSimBuster sandbox)
 loadsim*.json
 host/loadsim*.json
 

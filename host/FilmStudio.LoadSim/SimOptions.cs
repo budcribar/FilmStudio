@@ -6,7 +6,21 @@ public sealed class SimOptions
     public int Users { get; set; } = 20;
     public int DurationSec { get; set; } = 120;
     public string Scenario { get; set; } = "mixed"; // browse | play | gen | remux | mixed
-    public string ProjectId { get; set; } = "Buster";
+    /// <summary>Project id used by VUs (default isolated sandbox, not real Buster).</summary>
+    public string ProjectId { get; set; } = ProjectSandbox.DefaultSandboxId;
+    /// <summary>Source project to copy when preparing sandbox (default Buster).</summary>
+    public string SourceProjectId { get; set; } = ProjectSandbox.DefaultSourceId;
+    /// <summary>Repo root containing projects/. Auto-detected if empty.</summary>
+    public string? WorkspaceRoot { get; set; }
+    /// <summary>
+    /// Optional: copy source → sandbox before run.
+    /// Default false — <c>projects/LoadSimBuster</c> is checked into git.
+    /// </summary>
+    public bool PrepareSandbox { get; set; }
+    /// <summary>With prepare: delete and recopy sandbox from source.</summary>
+    public bool RefreshSandbox { get; set; }
+    /// <summary>Allow targeting a real project id (e.g. Buster) without sandbox.</summary>
+    public bool AllowRealProject { get; set; }
     public bool SharedProject { get; set; } = true;
     public int ThinkTimeMs { get; set; } = 200;
     public double GenWeight { get; set; } = 0.10;
@@ -37,6 +51,19 @@ public sealed class SimOptions
                 case "--scenario": o.Scenario = Next(); break;
                 case "--project":
                 case "--projectId": o.ProjectId = Next(); break;
+                case "--sourceProject": o.SourceProjectId = Next(); break;
+                case "--workspace":
+                case "--workspaceRoot": o.WorkspaceRoot = Next(); break;
+                case "--prepareSandbox":
+                    // flag form or true/false
+                    if (i + 1 < args.Length && (args[i + 1] is "true" or "false"))
+                        o.PrepareSandbox = bool.Parse(Next());
+                    else
+                        o.PrepareSandbox = true;
+                    break;
+                case "--refreshSandbox": o.RefreshSandbox = true; o.PrepareSandbox = true; break;
+                case "--no-prepareSandbox": o.PrepareSandbox = false; break;
+                case "--allowRealProject": o.AllowRealProject = true; break;
                 case "--projectPrefix": o.ProjectId = Next(); o.SharedProject = false; break;
                 case "--sharedProject": o.SharedProject = bool.Parse(Next()); break;
                 case "--thinkTimeMs": o.ThinkTimeMs = int.Parse(Next()); break;
@@ -77,7 +104,12 @@ public sealed class SimOptions
               --users N                  virtual users (default 20)
               --duration SEC             run length (default 120)
               --scenario NAME            browse|play|gen|remux|mixed (default mixed)
-              --project ID               project id (default Buster)
+              --project ID               project id (default LoadSimBuster, checked into git)
+              --sourceProject ID         only with --prepareSandbox (default Buster)
+              --workspace PATH           only with --prepareSandbox (auto-detect if omitted)
+              --prepareSandbox           optional: (re)copy sandbox from source project
+              --refreshSandbox           with prepare: force full recopy
+              --allowRealProject         allow targeting real Buster/NickAndMe
               --sharedProject true|false share one project (default true)
               --thinkTimeMs N            pause between actions (default 200)
               --genWeight W              mixed-scenario weight (default 0.10)

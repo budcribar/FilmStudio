@@ -4,6 +4,9 @@
 
 - API with **fakes** for any gen-heavy run (avoids xAI spend).
 - Built solution: `dotnet build host/FilmStudio.slnx`
+- **Sandbox project:** uses checked-in `projects/LoadSimBuster` (isolated copy of Buster).
+  Gen/remux/review only touch that folder. Real `Buster` / `NickAndMe` refused unless `--allowRealProject`.
+  Optional rebuild from Buster: `--prepareSandbox --refreshSandbox`.
 
 ## Quick CI-style run (local)
 
@@ -26,9 +29,13 @@ dotnet run --project FilmStudio.LoadSim -- `
   --users 25 `
   --duration 90 `
   --scenario mixed `
-  --project Buster `
+  --project LoadSimBuster `
+  --sourceProject Buster `
   --out loadsim-results.json
 ```
+
+`projects/LoadSimBuster` is checked into git — no copy step on normal runs.
+
 
 Exit code **0** = gates pass. Results JSON is written to `--out`.
 
