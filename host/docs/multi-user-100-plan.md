@@ -499,39 +499,40 @@ Optional: write .duration.json sidecar with fixture duration for fast UI probe
 
 ---
 
-### Phase C — Locks + multi-job concurrency
+### Phase C — Locks + multi-job concurrency — **IMPLEMENTED (2026-07-17)**
 
-**C1. `ILockService`**
+**C1. `ILockService`** ✅
 
-- Persist under `pipeline_state.json` → `locks` **or** in-memory for fakes/tests.
-- `TryAcquire(resource, userId, ttl)`, `Renew`, `Release`, `Get`.
+- `InMemoryLockService`: `TryAcquire` / `Renew` / `Release` / `Get` / `ListActive` / `ReleaseAllForJob`.
+- Keys: `project:{id}:scene:{nn}`, `:wip`, `:stage`, `:char:{key}`.
 
-**C2. Enforce locks**
+**C2. Enforce locks** ✅
 
-- Scene gen / scene remux: require `scene` lock.
-- WIP: require `wip` lock; single-flight coalesce.
-- Stage1/2: `stage` lock.
+- Scene gen / batch / scene remux: scene lock(s).
+- WIP / refresh-stale: wip lock (single-flight).
+- Stage1/2 / book prepare / plate sort: stage lock.
+- Character variants: char lock.
+- Conflicts → `LockConflictException` → HTTP **409** (`code: lock_conflict`).
 
-**C3. Worker pools**
+**C3. Worker pools** ✅
 
-- **ApiWorkerPool:** up to `MaxVideoInFlight` concurrent tasks; dequeue with per-user RR among non-empty user queues; quantum = **one clip** (preferred).
-- **LocalWorkerPool:** ffmpeg semaphore.
+- **ApiWorkerPool:** `MaxVideoInFlight` global + `MaxVideoInFlightPerUser` semaphores (wait/queue).
+- **LocalWorkerPool:** `MaxFfmpegInFlight` for remux/WIP.
+- Job state isolated via `AsyncLocal` (multi-job safe).
 
-**C4. SignalR groups**
+**C4. SignalR groups** ✅
 
-- On connect: join `user:{userId}` (from claim/header).
-- Job progress → `job:{id}` and `user:{userId}`.
-- Optional project broadcast for “someone remuxed”.
-- If admin: join **`admin:ops`**.
+- On connect: `user:{userId}`; admin → `admin:ops`.
+- Job progress → All (compat) + `job:{id}` + `user:{userId}`.
+- `JoinJob` / `LeaveJob` hub methods.
 
-**C5. ServerMetricsService (feed for admin)**
+**C5. ServerMetricsService (feed for admin)** ✅
 
-- Maintain atomic counters: inFlight, queue depths, 429s, rejects.
-- Hook job store + lock service + worker pools.
-- `GetSnapshot()` + event `SnapshotUpdated`.
-- SignalR hub method or hosted service push to `admin:ops` every 1–2s while any admin connected (or always at low rate).
+- Counters: api/ffmpeg inFlight, capacity rejects, lock conflicts, timings ring (p50/p95).
+- `GET /api/admin/state` full snapshot; `AdminMetricsPushService` → `AdminState` every 2s on `admin:ops`.
+- Admin Blazor shows locks + in-flight counters.
 
-**Exit C:** two users gen different scenes concurrently (fakes); same scene → 409; admin dashboard shows live jobs (read-only).
+**Exit C:** two users gen different scenes concurrently (fakes); same scene → 409; admin dashboard shows live jobs (read-only). ✅
 
 ---
 

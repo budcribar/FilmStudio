@@ -741,7 +741,7 @@ public sealed class CapacityDto
     public bool UseFakes { get; set; }
 }
 
-/// <summary>Partial admin snapshot (Phase B skeleton; expanded in C/D).</summary>
+/// <summary>Admin snapshot (Phase C: jobs + locks + counters).</summary>
 public sealed class AdminStateDto
 {
     public bool Ok { get; set; }
@@ -751,6 +751,20 @@ public sealed class AdminStateDto
     public AdminJobsDto? Jobs { get; set; }
     public AdminProjectsDto? Projects { get; set; }
     public AdminCallerDto? Caller { get; set; }
+    public List<AdminLockDto> Locks { get; set; } = new();
+    public int ApiInFlight { get; set; }
+    public int FfmpegInFlight { get; set; }
+    public int CapacityRejects { get; set; }
+    public int LockConflicts { get; set; }
+}
+
+public sealed class AdminLockDto
+{
+    public string? Resource { get; set; }
+    public string? UserId { get; set; }
+    public string? Reason { get; set; }
+    public string? JobId { get; set; }
+    public DateTimeOffset? ExpiresAt { get; set; }
 }
 
 public sealed class AdminProcessDto

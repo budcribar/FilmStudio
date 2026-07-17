@@ -90,6 +90,50 @@
             </div>
         </div>
 
+        <div class="row g-3 mt-1">
+            <div class="col-md-6">
+                <div class="card h-100">
+                    <div class="card-header">In-flight / rejects</div>
+                    <div class="card-body small">
+                        <div>API slots: <strong>@_apiInFlight</strong></div>
+                        <div>FFmpeg slots: <strong>@_ffmpegInFlight</strong></div>
+                        <div>Capacity rejects: <strong>@_capacityRejects</strong></div>
+                        <div>Lock conflicts: <strong>@_lockConflicts</strong></div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card h-100">
+                    <div class="card-header d-flex justify-content-between">
+                        <span>Locks</span>
+                        <span class="badge text-bg-secondary">@_locks.Count</span>
+                    </div>
+                    <div class="card-body p-0">
+                        @if (_locks.Count == 0)
+                        {
+                            <p class="text-muted p-3 mb-0 small">No active locks.</p>
+                        }
+                        else
+                        {
+                            <ul class="list-group list-group-flush small">
+                                @foreach (var l in _locks.Take(12))
+                                {
+                                    <li class="list-group-item py-1">
+                                        <code>@l.Resource</code>
+                                        · @l.UserId
+                                        @if (!string.IsNullOrEmpty(l.Reason))
+                                        {
+                                            <span class="text-muted"> (@l.Reason)</span>
+                                        }
+                                    </li>
+                                }
+                            </ul>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div class="card mt-3">
             <div class="card-header d-flex justify-content-between">
                 <span>Jobs (running / queued)</span>
@@ -147,6 +191,11 @@
     private bool _busy;
     private PeriodicTimer? _timer;
     private CancellationTokenSource? _pollCts;
+    private int _apiInFlight;
+    private int _ffmpegInFlight;
+    private int _capacityRejects;
+    private int _lockConflicts;
+    private List<AdminLockDto> _locks = new();
 
     protected override async Task OnInitializedAsync()
     {
@@ -192,6 +241,14 @@
         try
         {
             _state = await Api.GetAdminStateAsync();
+            if (_state is not null)
+            {
+                _apiInFlight = _state.ApiInFlight;
+                _ffmpegInFlight = _state.FfmpegInFlight;
+                _capacityRejects = _state.CapacityRejects;
+                _lockConflicts = _state.LockConflicts;
+                _locks = _state.Locks ?? new();
+            }
             _error = null;
         }
         catch (Exception ex)

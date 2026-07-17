@@ -28,6 +28,10 @@ builder.Services.PostConfigure<FilmStudioOptions>(o =>
 builder.Services.AddSingleton<MediaDurationProbe>();
 builder.Services.AddSingleton<ProjectStore>();
 builder.Services.AddSingleton<IJobStore, JobStore>();
+builder.Services.AddSingleton<ILockService, InMemoryLockService>();
+builder.Services.AddSingleton<IServerMetricsService, ServerMetricsService>();
+builder.Services.AddSingleton<ApiWorkerPool>();
+builder.Services.AddSingleton<LocalWorkerPool>();
 builder.Services.AddSingleton<CostReportService>();
 builder.Services.AddSingleton<CharacterDesignService>();
 builder.Services.AddSingleton<CharacterBookPlateService>();
@@ -43,6 +47,8 @@ builder.Services.AddSingleton<IUserApiKeyProvider, ConfigUserApiKeyProvider>();
 builder.Services.AddSingleton<IAdminAuthService, AdminAuthService>();
 builder.Services.AddSingleton<FilmJobService>();
 builder.Services.AddSingleton<IJobProgressSink, SignalRJobProgressSink>();
+builder.Services.AddSingleton<AdminMetricsPushService>();
+builder.Services.AddHostedService(sp => sp.GetRequiredService<AdminMetricsPushService>());
 
 // Grok clients: real HttpClient or fakes (FilmStudio:UseFakes)
 var useFakes = builder.Configuration.GetValue("FilmStudio:UseFakes", false)
@@ -122,72 +128,68 @@ app.MapGet("/api/auth/me", (IUserContext user, IUserApiKeyProvider keys) =>
     });
 });
 
-// Skeleton admin state (full metrics in Phase C/D)
+// Live admin state (Phase C metrics + locks + jobs)
 app.MapGet("/api/admin/state", (
     IUserContext user,
-    FilmJobService jobService,
     ProjectStore store,
-    IOptions<FilmStudioOptions> opts,
-    IHostEnvironment env) =>
+    AdminMetricsPushService metricsPush) =>
 {
     if (!user.IsAdmin)
         return Results.Json(new { ok = false, error = "admin role required" },
             statusCode: StatusCodes.Status403Forbidden);
 
-    var o = opts.Value;
-    var cap = o.Capacity ?? new CapacityOptions();
-    var process = Process.GetCurrentProcess();
-    var runningJobs = jobService.ListJobs(take: 100)
-        .Where(j => string.Equals(j.Status, "running", StringComparison.OrdinalIgnoreCase)
-                    || string.Equals(j.Status, "queued", StringComparison.OrdinalIgnoreCase))
-        .Select(j => new
-        {
-            j.JobId,
-            j.UserId,
-            j.ProjectId,
-            j.Kind,
-            j.Scene,
-            j.Clip,
-            j.Status,
-            j.Message,
-            j.Index,
-            j.Total,
-            j.StartedAt,
-            ageMs = j.StartedAt is DateTimeOffset s
-                ? (long)(DateTimeOffset.UtcNow - s).TotalMilliseconds
-                : (long?)null,
-        })
-        .ToList();
-
+    var snap = metricsPush.BuildSnapshot();
     return Results.Ok(new
     {
         ok = true,
-        generatedAt = DateTimeOffset.UtcNow,
-        process = new
-        {
-            uptimeSec = (long)(DateTimeOffset.UtcNow - processStartedUtc).TotalSeconds,
-            workingSetMb = Math.Round(process.WorkingSet64 / (1024.0 * 1024.0), 1),
-            gcHeapMb = Math.Round(GC.GetTotalMemory(false) / (1024.0 * 1024.0), 1),
-            threadCount = process.Threads.Count,
-            environment = env.EnvironmentName,
-            useFakes = o.UseFakes || useFakes,
-        },
-        capacity = cap,
-        jobs = new
-        {
-            running = jobService.IsRunning,
-            count = runningJobs.Count,
-            items = runningJobs,
-        },
-        locks = Array.Empty<object>(), // Phase C
+        state = snap,
         projects = new
         {
             active = store.ActiveProjectId,
             workspace = store.WorkspaceRoot,
         },
-        timings = new { note = "Generation latency aggregates land in Phase C/D" },
         caller = new { userId = user.UserId, roles = user.Roles },
+        // Flatten common fields for Phase B Blazor DTO compatibility
+        generatedAt = DateTimeOffset.UtcNow,
+        process = snap.Process,
+        capacity = snap.Capacity,
+        jobs = new
+        {
+            running = snap.Jobs.Any(j =>
+                string.Equals(j.Status, "running", StringComparison.OrdinalIgnoreCase)),
+            count = snap.Jobs.Count,
+            items = snap.Jobs.Select(j => new
+            {
+                j.JobId,
+                j.UserId,
+                j.ProjectId,
+                j.Kind,
+                j.Scene,
+                j.Clip,
+                j.Status,
+                j.Message,
+                j.Index,
+                j.Total,
+                j.StartedAt,
+                ageMs = j.StartedAt is DateTimeOffset s
+                    ? (long)(DateTimeOffset.UtcNow - s).TotalMilliseconds
+                    : (long?)null,
+            }),
+        },
+        locks = snap.Locks,
+        queueByUser = snap.QueueByUser,
+        timings = snap.TimingsByKind,
+        apiInFlight = snap.ApiInFlight,
+        ffmpegInFlight = snap.FfmpegInFlight,
+        capacityRejects = snap.CapacityRejects,
+        lockConflicts = snap.LockConflicts,
     });
+});
+
+app.MapGet("/api/locks", (ILockService locks, IUserContext user) =>
+{
+    var list = locks.ListActive();
+    return Results.Ok(new { ok = true, locks = list, userId = user.UserId });
 });
 
 app.MapGet("/health", (ProjectStore store, IOptions<FilmStudioOptions> opts, IGrokVideoClient video, IUserContext user) =>
@@ -283,6 +285,28 @@ app.MapGet("/api/jobs/{jobId}", (string jobId, FilmJobService jobService) =>
     return Results.Ok(new { ok = true, job });
 });
 
+static IResult JobStartError(Exception ex, FilmJobService jobService) => ex switch
+{
+    LockConflictException lx => Results.Conflict(new
+    {
+        ok = false,
+        error = lx.Message,
+        code = "lock_conflict",
+        resource = lx.Resource,
+        ownerUserId = lx.OwnerUserId,
+        expiresAt = lx.ExpiresAt,
+        job = jobService.GetSnapshot(),
+    }),
+    CapacityRejectedException cx => Results.Conflict(new
+    {
+        ok = false,
+        error = cx.Message,
+        code = "capacity",
+        job = jobService.GetSnapshot(),
+    }),
+    _ => Results.Conflict(new { ok = false, error = ex.Message, job = jobService.GetSnapshot() }),
+};
+
 app.MapPost("/api/jobs/gen-scene", async (StartSceneGenRequest body, FilmJobService jobService) =>
 {
     try
@@ -299,7 +323,7 @@ app.MapPost("/api/jobs/gen-scene", async (StartSceneGenRequest body, FilmJobServ
     }
     catch (Exception ex)
     {
-        return Results.Conflict(new { ok = false, error = ex.Message, job = jobService.GetSnapshot() });
+        return JobStartError(ex, jobService);
     }
 });
 
@@ -319,7 +343,7 @@ app.MapPost("/api/jobs/gen-batch", async (StartBatchGenRequest body, FilmJobServ
     }
     catch (Exception ex)
     {
-        return Results.Conflict(new { ok = false, error = ex.Message, job = jobService.GetSnapshot() });
+        return JobStartError(ex, jobService);
     }
 });
 

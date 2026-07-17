@@ -17,10 +17,13 @@ public interface IJobProgressSink
 /// <summary>
 /// Native C# film job orchestrator (no Python): Stage 1/2, book prepare,
 /// character design, multi-ref video, remux/WIP with SignalR progress.
-/// Phase A: multi-job store + capacity checks; still one concurrent runner (gate).
+/// Phase C: multi-job concurrency via ApiWorkerPool/LocalWorkerPool, scene locks, metrics.
 /// </summary>
 public sealed class FilmJobService
 {
+    private static readonly AsyncLocal<JobRunState?> CurrentRun = new();
+    private static readonly TimeSpan DefaultLockTtl = TimeSpan.FromHours(2);
+
     private readonly ProjectStore _projects;
     private readonly IGrokVideoClient _grok;
     private readonly CharacterDesignService _characters;
@@ -31,15 +34,15 @@ public sealed class FilmJobService
     private readonly IFfmpegRemux _remux;
     private readonly CostReportService _costs;
     private readonly IJobStore _jobs;
+    private readonly ILockService _locks;
+    private readonly ApiWorkerPool _apiPool;
+    private readonly LocalWorkerPool _localPool;
+    private readonly IServerMetricsService _metrics;
     private readonly FilmStudioOptions _opts;
     private readonly ILogger<FilmJobService> _log;
-    private readonly SemaphoreSlim _gate = new(1, 1);
-    private readonly SemaphoreSlim _snapLock = new(1, 1);
     private readonly ConcurrentQueue<string> _logLines = new();
-    private CancellationTokenSource? _cts;
-    private JobSnapshot _snapshot = new() { Status = "idle" };
-    private string? _activeJobId;
-    private string? _capturedUserId;
+    private readonly ConcurrentDictionary<string, CancellationTokenSource> _jobCts =
+        new(StringComparer.OrdinalIgnoreCase);
     private IJobProgressSink? _sink;
     private readonly IUserContext _user;
     private readonly IUserApiKeyProvider _keys;
@@ -55,6 +58,10 @@ public sealed class FilmJobService
         IFfmpegRemux remux,
         CostReportService costs,
         IJobStore jobs,
+        ILockService locks,
+        ApiWorkerPool apiPool,
+        LocalWorkerPool localPool,
+        IServerMetricsService metrics,
         IOptions<FilmStudioOptions> opts,
         ILogger<FilmJobService> log,
         IUserContext user,
@@ -70,6 +77,10 @@ public sealed class FilmJobService
         _remux = remux;
         _costs = costs;
         _jobs = jobs;
+        _locks = locks;
+        _apiPool = apiPool;
+        _localPool = localPool;
+        _metrics = metrics;
         _opts = opts.Value;
         _log = log;
         _user = user;
@@ -83,7 +94,7 @@ public sealed class FilmJobService
         var primary = _jobs.GetPrimary();
         if (primary is not null)
             return primary.ToSnapshot();
-        return Clone(_snapshot);
+        return Clone(CurrentRun.Value?.Snapshot ?? new JobSnapshot { Status = "idle" });
     }
 
     public JobSnapshot? GetJob(string jobId) => _jobs.Get(jobId)?.ToSnapshot();
@@ -91,124 +102,360 @@ public sealed class FilmJobService
     public IReadOnlyList<JobSnapshot> ListJobs(string? userId = null, string? projectId = null, int take = 50) =>
         _jobs.List(userId, projectId, take).Select(j => j.ToSnapshot()).ToList();
 
-    public bool IsRunning =>
-        _jobs.CountRunning() > 0 ||
-        string.Equals(_snapshot.Status, "running", StringComparison.OrdinalIgnoreCase);
+    public bool IsRunning => _jobs.CountRunning() > 0;
 
     public CapacityOptions Capacity => _opts.Capacity ?? new CapacityOptions();
 
-    public async Task CancelAsync(string? jobId = null)
+    public ILockService Locks => _locks;
+
+    public IServerMetricsService Metrics => _metrics;
+
+    public Task CancelAsync(string? jobId = null)
     {
         if (!string.IsNullOrWhiteSpace(jobId))
+        {
             _jobs.TryCancel(jobId);
-        _cts?.Cancel();
-        await AppendLogAsync("Cancel requested…");
-        await UpdateAsync(s => s.Message = "Cancel requested — finishing current step if possible…");
+            if (_jobCts.TryGetValue(jobId, out var cts))
+            {
+                try { cts.Cancel(); } catch { /* ignore */ }
+            }
+            return Task.CompletedTask;
+        }
+
+        // Cancel all active job CTSes
+        foreach (var kv in _jobCts.ToArray())
+        {
+            _jobs.TryCancel(kv.Key);
+            try { kv.Value.Cancel(); } catch { /* ignore */ }
+        }
+        return Task.CompletedTask;
     }
 
     private void EnsureCanStart(string? userId)
     {
         var cap = Capacity;
-        if (_jobs.CountRunning() >= Math.Max(1, cap.MaxVideoInFlight))
-            throw new InvalidOperationException(
-                $"At capacity: MaxVideoInFlight={cap.MaxVideoInFlight} (running={_jobs.CountRunning()}).");
+        // Soft gate: running at global max still allows queue until per-user max;
+        // worker pool will wait for a slot. Reject only when user queue is full.
         if (!string.IsNullOrWhiteSpace(userId) &&
             _jobs.CountQueuedForUser(userId!) >= Math.Max(1, cap.MaxQueuePerUser))
-            throw new InvalidOperationException(
+        {
+            _metrics.NoteCapacityReject();
+            throw new CapacityRejectedException(
                 $"User queue full: MaxQueuePerUser={cap.MaxQueuePerUser}.");
+        }
+
+        // Hard reject if global running already >> 2x cap (runaway protection)
+        var running = _jobs.CountRunning();
+        var max = Math.Max(1, cap.MaxVideoInFlight);
+        if (running >= max + Math.Max(1, cap.MaxQueuePerUser))
+        {
+            _metrics.NoteCapacityReject();
+            throw new CapacityRejectedException(
+                $"At capacity: running={running}, MaxVideoInFlight={max}.");
+        }
     }
 
-    /// <summary>Register current <see cref="_snapshot"/> in the multi-job store (call after assigning a new running snapshot).</summary>
+    private JobSnapshot Snapshot
+    {
+        get => CurrentRun.Value?.Snapshot
+               ?? throw new InvalidOperationException("No active job run context.");
+        set
+        {
+            var run = CurrentRun.Value
+                      ?? throw new InvalidOperationException("No active job run context.");
+            run.Snapshot = value;
+        }
+    }
+
+    private string? ActiveJobId
+    {
+        get => CurrentRun.Value?.ActiveJobId;
+        set
+        {
+            if (CurrentRun.Value is not null)
+                CurrentRun.Value.ActiveJobId = value;
+        }
+    }
+
+    /// <summary>Register current snapshot in the multi-job store (call after assigning a new running snapshot).</summary>
     private void RegisterActiveJob()
     {
-        if (string.IsNullOrWhiteSpace(_snapshot.UserId))
-            _snapshot.UserId = _capturedUserId;
+        var run = CurrentRun.Value
+                  ?? throw new InvalidOperationException("No active job run context.");
+        if (string.IsNullOrWhiteSpace(Snapshot.UserId))
+            Snapshot.UserId = run.UserId;
+        Snapshot.QueuedAt ??= run.QueuedAt;
         var rec = _jobs.Create(new JobRecord
         {
-            Status = _snapshot.Status,
-            Kind = _snapshot.Kind,
-            ProjectId = _snapshot.ProjectId,
-            UserId = _snapshot.UserId,
-            CharKey = _snapshot.CharKey,
-            Scene = _snapshot.Scene,
-            Clip = _snapshot.Clip,
-            Message = _snapshot.Message,
-            Index = _snapshot.Index,
-            Total = _snapshot.Total,
-            StartedAt = _snapshot.StartedAt ?? DateTimeOffset.UtcNow,
-            Log = _snapshot.Log.ToList(),
+            Status = Snapshot.Status,
+            Kind = Snapshot.Kind,
+            ProjectId = Snapshot.ProjectId,
+            UserId = Snapshot.UserId,
+            CharKey = Snapshot.CharKey,
+            Scene = Snapshot.Scene,
+            Clip = Snapshot.Clip,
+            Message = Snapshot.Message,
+            Index = Snapshot.Index,
+            Total = Snapshot.Total,
+            QueuedAt = run.QueuedAt,
+            StartedAt = Snapshot.StartedAt ?? DateTimeOffset.UtcNow,
+            Log = Snapshot.Log.ToList(),
         });
-        _activeJobId = rec.JobId;
-        _snapshot.JobId = rec.JobId;
-        _snapshot.QueuedAt = rec.QueuedAt;
+        ActiveJobId = rec.JobId;
+        Snapshot.JobId = rec.JobId;
+        Snapshot.QueuedAt = rec.QueuedAt;
+        run.StartedAt = Snapshot.StartedAt ?? DateTimeOffset.UtcNow;
+        _jobCts[rec.JobId] = run.Cts;
+
+        // Attach job id to held locks for cleanup
+        foreach (var res in run.HeldLocks)
+        {
+            var existing = _locks.Get(res);
+            if (existing is not null &&
+                string.Equals(existing.UserId, run.UserId, StringComparison.OrdinalIgnoreCase))
+            {
+                _locks.TryAcquire(res, run.UserId, DefaultLockTtl, existing.Reason, rec.JobId);
+            }
+        }
+
+        _metrics.NoteJobStarted(Snapshot.Kind ?? "job", run.UserId, run.QueuedAt);
     }
 
-    /// <summary>Acquire gate, capture user/API key, run work under <see cref="ApiKeyScope"/>.</summary>
-    private async Task StartBackgroundJobAsync(Func<CancellationToken, Task> work)
+    /// <summary>
+    /// Capture user/API key, acquire resource locks, run under worker pool + <see cref="ApiKeyScope"/>.
+    /// </summary>
+    private Task StartBackgroundJobAsync(
+        Func<CancellationToken, Task> work,
+        IReadOnlyList<string>? lockResources = null,
+        string? lockReason = null,
+        bool useLocalPool = false)
     {
-        if (!await _gate.WaitAsync(0))
-            throw new InvalidOperationException("A generation job is already running.");
+        var userId = string.IsNullOrWhiteSpace(_user.UserId) ? "local" : _user.UserId.Trim();
+        EnsureCanStart(userId);
 
-        var userId = string.IsNullOrWhiteSpace(_user.UserId) ? "local" : _user.UserId;
+        var resources = (lockResources ?? Array.Empty<string>())
+            .Where(r => !string.IsNullOrWhiteSpace(r))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        var acquired = new List<string>();
         try
         {
-            EnsureCanStart(userId);
+            foreach (var res in resources)
+            {
+                if (_locks.TryAcquire(res, userId, DefaultLockTtl, lockReason))
+                {
+                    acquired.Add(res);
+                    continue;
+                }
+
+                var holder = _locks.Get(res);
+                _metrics.NoteLockConflict();
+                // Release what we got
+                foreach (var a in acquired)
+                    _locks.Release(a, userId);
+                throw new LockConflictException(res, holder?.UserId, holder?.ExpiresAt);
+            }
         }
         catch
         {
-            _gate.Release();
             throw;
         }
 
-        _capturedUserId = userId;
         var apiKey = !string.IsNullOrWhiteSpace(_user.RequestApiKey)
             ? _user.RequestApiKey
             : _keys.GetKey(userId);
-        _cts = new CancellationTokenSource();
-        var ct = _cts.Token;
+
+        var run = new JobRunState
+        {
+            UserId = userId,
+            ApiKey = apiKey,
+            QueuedAt = DateTimeOffset.UtcNow,
+            UseLocalPool = useLocalPool,
+            Cts = new CancellationTokenSource(),
+            HeldLocks = acquired,
+        };
+        _metrics.NoteJobQueued("pending", userId);
+
         _ = Task.Run(async () =>
         {
-            using (ApiKeyScope.Push(apiKey))
+            CurrentRun.Value = run;
+            using (ApiKeyScope.Push(run.ApiKey))
             {
-                try { await work(ct); }
-                finally { _gate.Release(); }
+                var startedAt = DateTimeOffset.UtcNow;
+                run.StartedAt = startedAt;
+                var success = false;
+                try
+                {
+                    if (useLocalPool)
+                    {
+                        await _localPool.RunAsync(
+                            async ct =>
+                            {
+                                using var linked = CancellationTokenSource.CreateLinkedTokenSource(run.Cts.Token, ct);
+                                await work(linked.Token);
+                            },
+                            run.Cts.Token);
+                    }
+                    else
+                    {
+                        await _apiPool.RunAsync(
+                            userId,
+                            async ct =>
+                            {
+                                using var linked = CancellationTokenSource.CreateLinkedTokenSource(run.Cts.Token, ct);
+                                await work(linked.Token);
+                            },
+                            run.Cts.Token);
+                    }
+
+                    var status = CurrentRun.Value?.Snapshot.Status;
+                    success = string.Equals(status, "done", StringComparison.OrdinalIgnoreCase);
+                }
+                catch (OperationCanceledException)
+                {
+                    try
+                    {
+                        if (CurrentRun.Value?.Snapshot is { } s &&
+                            !string.Equals(s.Status, "cancelled", StringComparison.OrdinalIgnoreCase) &&
+                            !string.Equals(s.Status, "done", StringComparison.OrdinalIgnoreCase))
+                        {
+                            await FinishAsync("cancelled", "Cancelled by user");
+                        }
+                    }
+                    catch { /* ignore */ }
+                }
+                catch (Exception ex)
+                {
+                    _log.LogError(ex, "Background job failed");
+                    try
+                    {
+                        if (CurrentRun.Value?.Snapshot is { } s &&
+                            string.Equals(s.Status, "running", StringComparison.OrdinalIgnoreCase))
+                        {
+                            await FinishAsync("error", ex.Message, ex.Message);
+                        }
+                    }
+                    catch { /* ignore */ }
+                }
+                finally
+                {
+                    var kind = CurrentRun.Value?.Snapshot.Kind ?? "job";
+                    var q = run.QueuedAt;
+                    var st = run.StartedAt ?? startedAt;
+                    // Prefer finished status from snapshot
+                    var snapStatus = CurrentRun.Value?.Snapshot.Status;
+                    if (string.Equals(snapStatus, "done", StringComparison.OrdinalIgnoreCase))
+                        success = true;
+                    else if (string.Equals(snapStatus, "error", StringComparison.OrdinalIgnoreCase) ||
+                             string.Equals(snapStatus, "cancelled", StringComparison.OrdinalIgnoreCase))
+                        success = false;
+
+                    _metrics.NoteJobFinished(kind, userId, success, q, st);
+
+                    foreach (var res in run.HeldLocks)
+                        _locks.Release(res, userId);
+
+                    if (!string.IsNullOrWhiteSpace(run.ActiveJobId))
+                    {
+                        _jobCts.TryRemove(run.ActiveJobId, out _);
+                        _locks.ReleaseAllForJob(run.ActiveJobId);
+                    }
+
+                    CurrentRun.Value = null;
+                }
             }
         }, CancellationToken.None);
 
-        await Task.CompletedTask;
+        return Task.CompletedTask;
     }
 
-    public Task StartSceneGenAsync(StartSceneGenRequest req) =>
-        StartBackgroundJobAsync(ct => RunSceneGenAsync(req, ct));
+    public Task StartSceneGenAsync(StartSceneGenRequest req)
+    {
+        if (req.Scene <= 0)
+            throw new InvalidOperationException("scene required");
+        var projectId = string.IsNullOrWhiteSpace(req.ProjectId)
+            ? _projects.ActiveProjectId
+            : req.ProjectId;
+        return StartBackgroundJobAsync(
+            ct => RunSceneGenAsync(req, ct),
+            lockResources: new[] { LockKeys.Scene(projectId, req.Scene) },
+            lockReason: $"scene gen S{req.Scene:D2}");
+    }
 
     public Task StartBatchGenAsync(StartBatchGenRequest req)
     {
         if (req.Scenes is null || req.Scenes.Count == 0)
             throw new InvalidOperationException("At least one scene is required.");
-        return StartBackgroundJobAsync(ct => RunBatchGenAsync(req, ct));
+        var projectId = string.IsNullOrWhiteSpace(req.ProjectId)
+            ? _projects.ActiveProjectId
+            : req.ProjectId;
+        // Exclusive stage-style lock for multi-scene batch (avoids partial scene locks)
+        var locks = req.Scenes
+            .Where(s => s > 0)
+            .Select(s => LockKeys.Scene(projectId, s))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+        return StartBackgroundJobAsync(
+            ct => RunBatchGenAsync(req, ct),
+            lockResources: locks,
+            lockReason: "batch scene gen");
     }
 
     /// <summary>Stage 1 (book → scenes.json) via C# Grok chat. Requires XAI_API_KEY.</summary>
-    public Task StartStage1Async(StartStage1Request req) =>
-        StartBackgroundJobAsync(ct => RunStage1Async(req, ct));
+    public Task StartStage1Async(StartStage1Request req)
+    {
+        var projectId = string.IsNullOrWhiteSpace(req.ProjectId)
+            ? _projects.ActiveProjectId
+            : req.ProjectId;
+        return StartBackgroundJobAsync(
+            ct => RunStage1Async(req, ct),
+            lockResources: new[] { LockKeys.Stage(projectId) },
+            lockReason: "stage1");
+    }
 
     /// <summary>Stage 2 planner (scenes.json → blueprint). Deterministic C#; no API key.</summary>
-    public Task StartStage2Async(StartStage2Request req) =>
-        StartBackgroundJobAsync(ct => RunStage2Async(req, ct));
+    public Task StartStage2Async(StartStage2Request req)
+    {
+        var projectId = string.IsNullOrWhiteSpace(req.ProjectId)
+            ? _projects.ActiveProjectId
+            : req.ProjectId;
+        return StartBackgroundJobAsync(
+            ct => RunStage2Async(req, ct),
+            lockResources: new[] { LockKeys.Stage(projectId) },
+            lockReason: "stage2");
+    }
 
     /// <summary>C# PDF extract + optional Grok vision OCR → book_full.txt.</summary>
     public Task StartBookPrepareAsync(StartBookPrepareRequest req)
     {
         if (string.IsNullOrWhiteSpace(req.ProjectId))
             throw new InvalidOperationException("projectId required");
-        return StartBackgroundJobAsync(ct => RunBookPrepareAsync(req, ct));
+        return StartBackgroundJobAsync(
+            ct => RunBookPrepareAsync(req, ct),
+            lockResources: new[] { LockKeys.Stage(req.ProjectId) },
+            lockReason: "book prepare");
+    }
+
+    private sealed class JobRunState
+    {
+        public JobSnapshot Snapshot { get; set; } = new() { Status = "idle" };
+        public string? ActiveJobId { get; set; }
+        public CancellationTokenSource Cts { get; set; } = new();
+        public string UserId { get; set; } = "local";
+        public string? ApiKey { get; set; }
+        public DateTimeOffset QueuedAt { get; set; } = DateTimeOffset.UtcNow;
+        public DateTimeOffset? StartedAt { get; set; }
+        public bool UseLocalPool { get; set; }
+        public List<string> HeldLocks { get; set; } = new();
+        public SemaphoreSlim SnapLock { get; } = new(1, 1);
     }
 
     private async Task RunBookPrepareAsync(StartBookPrepareRequest req, CancellationToken ct)
     {
         var projectId = req.ProjectId;
         _projects.Activate(projectId);
-        _snapshot = new JobSnapshot
+        Snapshot = new JobSnapshot
         {
             Status = "running",
             Kind = "book_prepare",
@@ -266,15 +513,29 @@ public sealed class FilmJobService
     {
         if (string.IsNullOrWhiteSpace(req.CharKey))
             throw new InvalidOperationException("charKey required");
-        return StartBackgroundJobAsync(ct => RunCharacterVariantsAsync(req, ct));
+        var projectId = string.IsNullOrWhiteSpace(req.ProjectId)
+            ? _projects.ActiveProjectId
+            : req.ProjectId;
+        return StartBackgroundJobAsync(
+            ct => RunCharacterVariantsAsync(req, ct),
+            lockResources: new[] { LockKeys.Character(projectId, req.CharKey) },
+            lockReason: $"char variants {req.CharKey}");
     }
 
     /// <summary>
     /// Grok vision: classify book images → which characters appear, write plates to scenes.json.
     /// Cancellable. Falls back to heuristics if no API key.
     /// </summary>
-    public Task StartSortCharacterPlatesAsync(AttachCharacterPlatesRequest req) =>
-        StartBackgroundJobAsync(ct => RunSortCharacterPlatesAsync(req, ct));
+    public Task StartSortCharacterPlatesAsync(AttachCharacterPlatesRequest req)
+    {
+        var projectId = string.IsNullOrWhiteSpace(req.ProjectId)
+            ? _projects.ActiveProjectId
+            : req.ProjectId;
+        return StartBackgroundJobAsync(
+            ct => RunSortCharacterPlatesAsync(req, ct),
+            lockResources: new[] { LockKeys.Stage(projectId) },
+            lockReason: "character plates");
+    }
 
     private async Task RunSortCharacterPlatesAsync(AttachCharacterPlatesRequest req, CancellationToken ct)
     {
@@ -283,7 +544,7 @@ public sealed class FilmJobService
             : req.ProjectId;
         _projects.Activate(projectId);
 
-        _snapshot = new JobSnapshot
+        Snapshot = new JobSnapshot
         {
             Status = "running",
             Kind = "character-plates",
@@ -427,7 +688,7 @@ public sealed class FilmJobService
             : req.ProjectId;
         _projects.Activate(projectId);
 
-        _snapshot = new JobSnapshot
+        Snapshot = new JobSnapshot
         {
             Status = "running",
             Kind = "character",
@@ -527,7 +788,7 @@ public sealed class FilmJobService
             : req.ProjectId;
         _projects.Activate(projectId);
 
-        _snapshot = new JobSnapshot
+        Snapshot = new JobSnapshot
         {
             Status = "running",
             Kind = "stage1",
@@ -584,7 +845,7 @@ public sealed class FilmJobService
             : req.ProjectId;
         _projects.Activate(projectId);
 
-        _snapshot = new JobSnapshot
+        Snapshot = new JobSnapshot
         {
             Status = "running",
             Kind = "stage2",
@@ -629,14 +890,28 @@ public sealed class FilmJobService
     {
         if (string.IsNullOrWhiteSpace(req.ProjectId))
             throw new InvalidOperationException("projectId required");
-        return StartBackgroundJobAsync(ct => RunRemuxAsync(req, ct));
+        var locks = new List<string>();
+        if (req.Scene is int sn && sn > 0)
+            locks.Add(LockKeys.Scene(req.ProjectId, sn));
+        if (req.RebuildWip || req.RefreshStaleScenes)
+            locks.Add(LockKeys.Wip(req.ProjectId));
+        // Scene-only remux without WIP still needs a lock
+        if (locks.Count == 0 && req.Scene is int sn2 && sn2 > 0)
+            locks.Add(LockKeys.Scene(req.ProjectId, sn2));
+        if (locks.Count == 0)
+            locks.Add(LockKeys.Wip(req.ProjectId));
+        return StartBackgroundJobAsync(
+            ct => RunRemuxAsync(req, ct),
+            lockResources: locks,
+            lockReason: "remux/wip",
+            useLocalPool: true);
     }
 
     private async Task RunRemuxAsync(StartRemuxRequest req, CancellationToken ct)
     {
         var projectId = req.ProjectId;
         _projects.Activate(projectId);
-        _snapshot = new JobSnapshot
+        Snapshot = new JobSnapshot
         {
             Status = "running",
             Kind = "remux",
@@ -738,7 +1013,7 @@ public sealed class FilmJobService
         _projects.Activate(projectId);
 
         var scenes = req.Scenes.Distinct().OrderBy(s => s).ToList();
-        _snapshot = new JobSnapshot
+        Snapshot = new JobSnapshot
         {
             Status = "running",
             Kind = "batch",
@@ -809,7 +1084,7 @@ public sealed class FilmJobService
                 s.Index = 0;
                 s.Message = $"Batch: {work.Count} clip(s) across {scenes.Count} scene(s)";
             });
-            await AppendLogAsync(_snapshot.Message!);
+            await AppendLogAsync(Snapshot.Message!);
 
             var done = 0;
             var failed = 0;
@@ -824,7 +1099,7 @@ public sealed class FilmJobService
                     s.Clip = cn;
                     s.Message = $"Generating S{sn:D2} C{cn} ({i + 1}/{work.Count})…";
                 });
-                await AppendLogAsync(_snapshot.Message!);
+                await AppendLogAsync(Snapshot.Message!);
 
                 try
                 {
@@ -869,7 +1144,7 @@ public sealed class FilmJobService
             : req.ProjectId;
         _projects.Activate(projectId);
 
-        _snapshot = new JobSnapshot
+        Snapshot = new JobSnapshot
         {
             Status = "running",
             Kind = "scene",
@@ -949,7 +1224,7 @@ public sealed class FilmJobService
                     s.Clip = cn;
                     s.Message = $"Generating S{req.Scene:D2} C{cn} ({i + 1}/{todo.Count})…";
                 });
-                await AppendLogAsync(_snapshot.Message!);
+                await AppendLogAsync(Snapshot.Message!);
 
                 try
                 {
@@ -1039,7 +1314,7 @@ public sealed class FilmJobService
             var cont = clipEl.TryGetProperty("veo_continuation_source", out var ce)
                 ? ce.GetString() ?? "none"
                 : "none";
-            var costProjectId = _snapshot.ProjectId ?? projectId ?? _projects.ActiveProjectId;
+            var costProjectId = Snapshot.ProjectId ?? projectId ?? _projects.ActiveProjectId;
             _costs.RecordVideoGeneration(
                 costProjectId,
                 scene,
@@ -1212,37 +1487,39 @@ public sealed class FilmJobService
 
     private async Task UpdateAsync(Action<JobSnapshot> mutate)
     {
-        await _snapLock.WaitAsync();
+        var run = CurrentRun.Value;
+        if (run is null) return;
+        await run.SnapLock.WaitAsync();
         try
         {
-            mutate(_snapshot);
-            if (!string.IsNullOrEmpty(_activeJobId))
+            mutate(run.Snapshot);
+            if (!string.IsNullOrEmpty(run.ActiveJobId))
             {
-                _jobs.Update(_activeJobId, rec =>
+                _jobs.Update(run.ActiveJobId, rec =>
                 {
-                    rec.Status = _snapshot.Status;
-                    rec.Kind = _snapshot.Kind;
-                    rec.Message = _snapshot.Message;
-                    rec.ProjectId = _snapshot.ProjectId;
-                    rec.UserId = _snapshot.UserId;
-                    rec.CharKey = _snapshot.CharKey;
-                    rec.Scene = _snapshot.Scene;
-                    rec.Clip = _snapshot.Clip;
-                    rec.Index = _snapshot.Index;
-                    rec.Total = _snapshot.Total;
-                    rec.Log = _snapshot.Log.ToList();
-                    rec.Error = _snapshot.Error;
-                    rec.StartedAt = _snapshot.StartedAt;
-                    rec.FinishedAt = _snapshot.FinishedAt;
-                    if (_snapshot.JobId is null)
-                        _snapshot.JobId = rec.JobId;
+                    rec.Status = run.Snapshot.Status;
+                    rec.Kind = run.Snapshot.Kind;
+                    rec.Message = run.Snapshot.Message;
+                    rec.ProjectId = run.Snapshot.ProjectId;
+                    rec.UserId = run.Snapshot.UserId;
+                    rec.CharKey = run.Snapshot.CharKey;
+                    rec.Scene = run.Snapshot.Scene;
+                    rec.Clip = run.Snapshot.Clip;
+                    rec.Index = run.Snapshot.Index;
+                    rec.Total = run.Snapshot.Total;
+                    rec.Log = run.Snapshot.Log.ToList();
+                    rec.Error = run.Snapshot.Error;
+                    rec.StartedAt = run.Snapshot.StartedAt;
+                    rec.FinishedAt = run.Snapshot.FinishedAt;
+                    if (run.Snapshot.JobId is null)
+                        run.Snapshot.JobId = rec.JobId;
                 });
             }
             await PublishAsync();
         }
         finally
         {
-            _snapLock.Release();
+            run.SnapLock.Release();
         }
     }
 
@@ -1262,8 +1539,10 @@ public sealed class FilmJobService
 
     private async Task PublishAsync()
     {
-        if (_sink is not null)
-            await _sink.OnJobUpdatedAsync(Clone(_snapshot));
+        if (_sink is null) return;
+        var run = CurrentRun.Value;
+        if (run is null) return;
+        await _sink.OnJobUpdatedAsync(Clone(run.Snapshot));
     }
 
     private static JobSnapshot Clone(JobSnapshot s) => new()

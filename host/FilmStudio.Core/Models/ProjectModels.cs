@@ -484,6 +484,8 @@ public static class JobHubEvents
 {
     public const string JobUpdated = "JobUpdated";
     public const string JobLog = "JobLog";
+    /// <summary>Admin ops group snapshot push (Phase C).</summary>
+    public const string AdminState = "AdminState";
 }
 
 // ---- Cost / ledger ----
