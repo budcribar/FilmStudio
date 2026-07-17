@@ -42,3 +42,95 @@
     "updatedBy": "admin"
   }
 }
+{
+  "ts": "2026-07-17T22:48:02.1341611+00:00",
+  "user": "admin",
+  "before": {
+    "capacity": {
+      "maxVideoInFlight": 6,
+      "maxVideoInFlightPerUser": 2,
+      "maxFfmpegInFlight": 2,
+      "maxQueuePerUser": 5
+    },
+    "fakes": {
+      "videoMode": "MergeRealistic",
+      "videoDelayMs": 200,
+      "failRate": 0,
+      "rateLimitEveryN": 0
+    },
+    "useFakes": false,
+    "restartRequired": [
+      "UseFakes"
+    ],
+    "configPath": "C:\\Users\\budcr\\source\\repos\\NickAndMe\\.filmstudio\\runtime-config.json",
+    "updatedAt": "2026-07-17T19:20:36.2963287+00:00",
+    "updatedBy": "admin"
+  },
+  "after": {
+    "capacity": {
+      "maxVideoInFlight": 2,
+      "maxVideoInFlightPerUser": 1,
+      "maxFfmpegInFlight": 1,
+      "maxQueuePerUser": 5
+    },
+    "fakes": {
+      "videoMode": "MergeRealistic",
+      "videoDelayMs": 200,
+      "failRate": 0,
+      "rateLimitEveryN": 0
+    },
+    "useFakes": false,
+    "restartRequired": [
+      "UseFakes"
+    ],
+    "configPath": "C:\\Users\\budcr\\source\\repos\\NickAndMe\\.filmstudio\\runtime-config.json",
+    "updatedAt": "2026-07-17T22:48:02.126457+00:00",
+    "updatedBy": "admin"
+  }
+}
+{
+  "ts": "2026-07-17T22:57:17.2208753+00:00",
+  "user": "admin",
+  "before": {
+    "capacity": {
+      "maxVideoInFlight": 2,
+      "maxVideoInFlightPerUser": 1,
+      "maxFfmpegInFlight": 1,
+      "maxQueuePerUser": 5
+    },
+    "fakes": {
+      "videoMode": "MergeRealistic",
+      "videoDelayMs": 200,
+      "failRate": 0,
+      "rateLimitEveryN": 0
+    },
+    "useFakes": false,
+    "restartRequired": [
+      "UseFakes"
+    ],
+    "configPath": "C:\\Users\\budcr\\source\\repos\\NickAndMe\\.filmstudio\\runtime-config.json",
+    "updatedAt": "2026-07-17T22:48:02.126457+00:00",
+    "updatedBy": "admin"
+  },
+  "after": {
+    "capacity": {
+      "maxVideoInFlight": 4,
+      "maxVideoInFlightPerUser": 1,
+      "maxFfmpegInFlight": 2,
+      "maxQueuePerUser": 5
+    },
+    "fakes": {
+      "videoMode": "MergeRealistic",
+      "videoDelayMs": 200,
+      "failRate": 0,
+      "rateLimitEveryN": 0
+    },
+    "useFakes": false,
+    "restartRequired": [
+      "UseFakes"
+    ],
+    "configPath": "C:\\Users\\budcr\\source\\repos\\NickAndMe\\.filmstudio\\runtime-config.json",
+    "updatedAt": "2026-07-17T22:57:17.218706+00:00",
+    "updatedBy": "admin"
+  }
+}

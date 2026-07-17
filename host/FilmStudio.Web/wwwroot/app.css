@@ -52,6 +52,26 @@ html, body {
     flex: 1 1 auto;
     min-height: 0;
 }
+.loadsim-action-table {
+    font-size: 0.8rem;
+    --bs-table-bg: transparent;
+    --bs-table-color: #cbd5e1;
+    --bs-table-border-color: rgba(148,163,184,0.15);
+    --bs-table-striped-bg: rgba(255,255,255,0.03);
+}
+.loadsim-action-table thead th {
+    color: #94a3b8;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    font-size: 0.68rem;
+    border-bottom-color: rgba(148,163,184,0.25);
+}
+.loadsim-action-table tbody tr.table-warning {
+    --bs-table-bg: rgba(245, 158, 11, 0.12);
+    --bs-table-color: #fde68a;
+    color: #fde68a;
+}
 
 a, .btn-link {
     color: #006bb7;

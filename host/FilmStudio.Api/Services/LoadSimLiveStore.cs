@@ -74,6 +74,17 @@ public sealed class LoadSimLiveStore
         ActionsByType = s.ActionsByType is null
             ? new Dictionary<string, int>()
             : new Dictionary<string, int>(s.ActionsByType),
+        ActionLatency = s.ActionLatency is null
+            ? new List<ActionLatencyStat>()
+            : s.ActionLatency.Select(a => new ActionLatencyStat
+            {
+                Action = a.Action,
+                Count = a.Count,
+                P50Ms = a.P50Ms,
+                P95Ms = a.P95Ms,
+                P99Ms = a.P99Ms,
+                Errors = a.Errors,
+            }).ToList(),
         Passed = s.Passed,
         At = s.At,
     };

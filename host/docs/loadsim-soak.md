@@ -43,7 +43,9 @@ Terminal 1:
 ```powershell
 cd host
 $env:FILMSTUDIO_USE_FAKES = "true"
-$env:FilmStudio__Capacity__MaxVideoInFlight = "8"
+$env:FilmStudio__Capacity__MaxVideoInFlight = "4"
+$env:FilmStudio__Capacity__MaxVideoInFlightPerUser = "1"
+$env:FilmStudio__Capacity__MaxFfmpegInFlight = "2"
 $env:FilmStudio__Fakes__VideoDelayMs = "50"
 dotnet run --project FilmStudio.Api
 ```
@@ -94,9 +96,11 @@ Exit code **0** = gates pass. Results JSON is written to `--out`.
 
 ```powershell
 # Terminal 1
+# Default multi-user caps: 4 video / 1 per user / 2 ffmpeg (raise only if browse p95 stays healthy)
 $env:FILMSTUDIO_USE_FAKES = "true"
-$env:FilmStudio__Capacity__MaxVideoInFlight = "12"
+$env:FilmStudio__Capacity__MaxVideoInFlight = "4"
 $env:FilmStudio__Capacity__MaxVideoInFlightPerUser = "1"
+$env:FilmStudio__Capacity__MaxFfmpegInFlight = "2"
 dotnet run --project FilmStudio.Api
 
 # Terminal 2

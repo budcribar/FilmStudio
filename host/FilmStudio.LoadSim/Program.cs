@@ -250,6 +250,17 @@ static async Task<int> RunAsync(SimOptions opts)
     Console.WriteLine($"  jobs submitted={results.Jobs.Submitted} rejected={results.Jobs.Rejected} 5xx={results.Jobs.Server5xx}");
     Console.WriteLine($"  health ok={results.Health.Ok} fail={results.Health.Fail}");
     Console.WriteLine($"  peakApiInFlight={results.Server.PeakApiInFlight} cap={results.Server.ConfiguredMaxVideoInFlight}");
+    if (results.ActionLatency.Count > 0)
+    {
+        Console.WriteLine();
+        Console.WriteLine("Per-action latency (sorted by p95):");
+        Console.WriteLine($"  {"action",-14} {"count",8} {"p50",8} {"p95",8} {"p99",8} {"errs",6}");
+        foreach (var a in results.ActionLatency)
+        {
+            Console.WriteLine(
+                $"  {a.Action,-14} {a.Count,8} {a.P50Ms,7}ms {a.P95Ms,7}ms {a.P99Ms,7}ms {a.Errors,6}");
+        }
+    }
     Console.WriteLine();
     Console.WriteLine("Gates:");
     foreach (var g in results.Gates)
@@ -322,6 +333,7 @@ static async Task PostProgressAsync(
             PeakApiInFlight = snap.PeakApiInFlight,
             ConfiguredMaxVideoInFlight = snap.ConfiguredMaxVideoInFlight,
             ActionsByType = snap.ActionsByType,
+            ActionLatency = snap.ActionLatency,
             Passed = passed,
             At = DateTimeOffset.UtcNow,
         };

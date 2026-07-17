@@ -19,8 +19,9 @@
         "ASPNETCORE_ENVIRONMENT": "Development",
         "FILMSTUDIO_USE_FAKES": "true",
         "FilmStudio__UseFakes": "true",
-        "FilmStudio__Capacity__MaxVideoInFlight": "8",
-        "FilmStudio__Capacity__MaxVideoInFlightPerUser": "2",
+        "FilmStudio__Capacity__MaxVideoInFlight": "4",
+        "FilmStudio__Capacity__MaxVideoInFlightPerUser": "1",
+        "FilmStudio__Capacity__MaxFfmpegInFlight": "2",
         "FilmStudio__Fakes__VideoDelayMs": "50"
       }
     },

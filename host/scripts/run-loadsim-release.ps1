@@ -23,7 +23,10 @@ try {
 
     $env:FILMSTUDIO_USE_FAKES = "true"
     $env:FilmStudio__UseFakes = "true"
-    $env:FilmStudio__Capacity__MaxVideoInFlight = "8"
+    # Single-host compromise: 4 video / 1 per user / 2 ffmpeg (8+ starves browse under mixed load)
+    $env:FilmStudio__Capacity__MaxVideoInFlight = "4"
+    $env:FilmStudio__Capacity__MaxVideoInFlightPerUser = "1"
+    $env:FilmStudio__Capacity__MaxFfmpegInFlight = "2"
     $env:FilmStudio__Fakes__VideoDelayMs = "50"
     $env:ASPNETCORE_ENVIRONMENT = "Development"
     $env:ASPNETCORE_URLS = $BaseUrl

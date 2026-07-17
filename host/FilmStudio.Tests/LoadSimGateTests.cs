@@ -75,4 +75,41 @@ public class LoadSimGateTests
         Assert.Equal(4, r.Server.PeakApiInFlight);
         Assert.True(r.Http.BrowseP95Ms >= r.Http.BrowseP50Ms);
     }
+
+    [Fact]
+    public void MetricsCollector_per_action_latency_sorted_by_p95()
+    {
+        var m = new MetricsCollector();
+        // Fast path
+        for (var i = 0; i < 40; i++)
+            m.Record("health", 200, 2);
+        // Medium
+        for (var i = 0; i < 40; i++)
+            m.Record("projects", 200, 20 + (i % 5));
+        // Slow tail
+        for (var i = 0; i < 40; i++)
+            m.Record("scenes", 200, 200 + i * 10);
+        // One intentional 409 must not count as error on gen
+        m.Record("gen", 409, 50, intentionalConflict: true);
+        m.Record("gen", 500, 80); // real error
+
+        var r = m.Build(new SimOptions { Users = 2, DurationSec = 10 }, TimeSpan.FromSeconds(10));
+        Assert.NotEmpty(r.ActionLatency);
+
+        // Hottest first
+        Assert.Equal("scenes", r.ActionLatency[0].Action);
+        Assert.True(r.ActionLatency[0].P95Ms > r.ActionLatency.First(a => a.Action == "health").P95Ms);
+
+        var gen = r.ActionLatency.Single(a => a.Action == "gen");
+        Assert.Equal(2, gen.Count);
+        Assert.Equal(1, gen.Errors); // only the 500, not intentional 409
+
+        var scenes = r.ActionLatency.Single(a => a.Action == "scenes");
+        Assert.Equal(40, scenes.Count);
+        Assert.True(scenes.P95Ms >= scenes.P50Ms);
+        Assert.True(scenes.P99Ms >= scenes.P95Ms);
+
+        // Counts dict still present for backward compat
+        Assert.Equal(40, r.Actions["scenes"]);
+    }
 }

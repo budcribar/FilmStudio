@@ -1,7 +1,7 @@
 {
   "capacity": {
-    "maxVideoInFlight": 6,
-    "maxVideoInFlightPerUser": 2,
+    "maxVideoInFlight": 4,
+    "maxVideoInFlightPerUser": 1,
     "maxFfmpegInFlight": 2,
     "maxQueuePerUser": 5
   },
@@ -12,6 +12,6 @@
     "rateLimitEveryN": 0
   },
   "useFakes": false,
-  "updatedAt": "2026-07-17T19:20:36.2963287+00:00",
+  "updatedAt": "2026-07-17T22:57:17.218706+00:00",
   "updatedBy": "admin"
 }

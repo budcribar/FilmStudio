@@ -1,5 +1,5 @@
 using System.Collections.Concurrent;
-using System.Text.Json.Serialization;
+using FilmStudio.Core.Models;
 
 namespace FilmStudio.LoadSim;
 
@@ -70,6 +70,7 @@ public sealed class MetricsCollector
             ProjectId = opts.ProjectId,
             BaseUrl = opts.BaseUrl,
             Actions = snap.ActionsByType,
+            ActionLatency = snap.ActionLatency.ToList(),
             Http = new HttpStats
             {
                 Total = snap.ActionsTotal,
@@ -106,9 +107,11 @@ public sealed class MetricsCollector
     public LiveSnapshot Snapshot(SimOptions opts, TimeSpan elapsed)
     {
         var all = _samples.ToArray();
-        var byAction = all
-            .GroupBy(s => s.Action, StringComparer.OrdinalIgnoreCase)
-            .ToDictionary(g => g.Key, g => g.Count(), StringComparer.OrdinalIgnoreCase);
+        var actionLatency = BuildActionLatency(all);
+        var byAction = actionLatency.ToDictionary(
+            a => a.Action,
+            a => a.Count,
+            StringComparer.OrdinalIgnoreCase);
 
         var counted = all.Where(s => !s.IntentionalConflict).ToArray();
         var errors = counted.Count(s => s.StatusCode >= 400 || s.StatusCode < 0);
@@ -124,6 +127,7 @@ public sealed class MetricsCollector
         return new LiveSnapshot
         {
             ActionsByType = byAction,
+            ActionLatency = actionLatency,
             ActionsTotal = all.Length,
             ActionsPerSec = all.Length / sec,
             Errors = errors,
@@ -144,9 +148,50 @@ public sealed class MetricsCollector
         };
     }
 
+    /// <summary>
+    /// Per-action p50/p95/p99 sorted by p95 descending so the slowest action is first.
+    /// </summary>
+    private static List<ActionLatencyStat> BuildActionLatency(IEnumerable<Sample> samples)
+    {
+        return samples
+            .GroupBy(s => s.Action, StringComparer.OrdinalIgnoreCase)
+            .Select(g =>
+            {
+                var lats = g.Where(s => s.LatencyMs >= 0)
+                    .Select(s => s.LatencyMs)
+                    .OrderBy(x => x)
+                    .ToArray();
+                var errs = g.Count(s =>
+                    !s.IntentionalConflict && (s.StatusCode >= 400 || s.StatusCode < 0));
+                return new ActionLatencyStat
+                {
+                    Action = g.Key,
+                    Count = g.Count(),
+                    P50Ms = Percentile(lats, 0.50),
+                    P95Ms = Percentile(lats, 0.95),
+                    P99Ms = Percentile(lats, 0.99),
+                    Errors = errs,
+                };
+            })
+            .OrderByDescending(a => a.P95Ms)
+            .ThenByDescending(a => a.Count)
+            .ThenBy(a => a.Action, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+    }
+
+    private sealed class Sample
+    {
+        public string Action { get; set; } = "";
+        public int StatusCode { get; set; }
+        public long LatencyMs { get; set; }
+        public bool IntentionalConflict { get; set; }
+        public DateTimeOffset At { get; set; }
+    }
+
     public sealed class LiveSnapshot
     {
         public Dictionary<string, int> ActionsByType { get; set; } = new();
+        public List<ActionLatencyStat> ActionLatency { get; set; } = new();
         public int ActionsTotal { get; set; }
         public double ActionsPerSec { get; set; }
         public int Errors { get; set; }
@@ -173,15 +218,6 @@ public sealed class MetricsCollector
         idx = Math.Clamp(idx, 0, sorted.Length - 1);
         return sorted[idx];
     }
-
-    private sealed class Sample
-    {
-        public string Action { get; set; } = "";
-        public int StatusCode { get; set; }
-        public long LatencyMs { get; set; }
-        public bool IntentionalConflict { get; set; }
-        public DateTimeOffset At { get; set; }
-    }
 }
 
 public sealed class LoadSimResults
@@ -193,6 +229,8 @@ public sealed class LoadSimResults
     public string ProjectId { get; set; } = "";
     public string BaseUrl { get; set; } = "";
     public Dictionary<string, int> Actions { get; set; } = new();
+    /// <summary>Per-action latency (sorted by p95 desc). Use this to find the real bottleneck.</summary>
+    public List<ActionLatencyStat> ActionLatency { get; set; } = new();
     public HttpStats Http { get; set; } = new();
     public JobStats Jobs { get; set; } = new();
     public HealthStats Health { get; set; } = new();

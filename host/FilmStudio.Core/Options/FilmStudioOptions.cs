@@ -69,8 +69,12 @@ public sealed class AuthOptions
 /// <summary>Server-side concurrency caps (Phase A+; multi-worker in later phases).</summary>
 public sealed class CapacityOptions
 {
-    /// <summary>Max concurrent API video jobs (Phase A still runs 1 at a time if gate is 1).</summary>
-    public int MaxVideoInFlight { get; set; } = 1;
+    /// <summary>
+    /// Max concurrent video/API jobs on this host.
+    /// Default 4: compromise for multi-user browse+gen (8+ starves browse on a single box).
+    /// </summary>
+    public int MaxVideoInFlight { get; set; } = 4;
+    /// <summary>Max concurrent video jobs per user (fairness; default 1).</summary>
     public int MaxVideoInFlightPerUser { get; set; } = 1;
     public int MaxFfmpegInFlight { get; set; } = 2;
     public int MaxQueuePerUser { get; set; } = 5;
