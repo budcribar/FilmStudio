@@ -187,12 +187,16 @@ else
             }
             else if (_selected.VoiceOnly)
             {
-                <div class="card">
-                    <div class="card-header"><code>@_selected.Key</code> — @_selected.DisplayName</div>
+                <div class="card mb-3">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <span><code>@_selected.Key</code> — @_selected.DisplayName</span>
+                        <span class="badge bg-secondary">voice-only (no image)</span>
+                    </div>
                     <div class="card-body">
-                        <span class="badge bg-secondary mb-2">voice-only (no image)</span>
-                        <p class="small mb-1"><strong>@(_selected.VoiceLabel is { Length: > 0 } l ? l : "—")</strong></p>
-                        <p class="small mb-0">@(_selected.VoiceProfile is { Length: > 0 } vp ? vp : "—")</p>
+                        <p class="small text-muted mb-3">
+                            Used as <strong>VOICE LOCK</strong> in Grok video prompts when this character speaks (e.g. narrator VO).
+                        </p>
+                        @RenderVoiceEditor()
                     </div>
                 </div>
             }
@@ -247,6 +251,17 @@ else
                                 </button>
                             }
                         </div>
+                    </div>
+                </div>
+
+                <div class="card mb-3">
+                    <div class="card-header py-2">Voice (video gen)</div>
+                    <div class="card-body">
+                        <p class="small text-muted mb-3">
+                            Injected as <strong>VOICE LOCK</strong> when this character is the clip speaker.
+                            Save writes <code>scenes.json</code> (and blueprint if present).
+                        </p>
+                        @RenderVoiceEditor()
                     </div>
                 </div>
 
@@ -620,8 +635,27 @@ else
     private bool _hideUnselectedSeeds;
     private string _editDescription = "";
     private string _editVisualLock = "";
+    private string _editVoiceLabel = "";
+    private string _editVoiceProfile = "";
 
     private int SelectedSeedCount => _seedOrder.Count;
+
+    private RenderFragment RenderVoiceEditor() => __builder =>
+    {
+        <div class="mb-2">
+            <label class="form-label small mb-0">Voice label</label>
+            <input class="form-control form-control-sm" @bind="_editVoiceLabel" disabled="@_busy"
+                   placeholder="e.g. Narrator_WarmStoryteller" />
+        </div>
+        <div class="mb-2">
+            <label class="form-label small mb-0">Voice profile</label>
+            <textarea class="form-control form-control-sm" rows="4" @bind="_editVoiceProfile" disabled="@_busy"
+                      placeholder="Pitch, pace, accent, energy — used as VOICE LOCK in video prompts"></textarea>
+        </div>
+        <button type="button" class="btn btn-sm btn-primary" disabled="@_busy" @onclick="SaveVoiceAsync">
+            Save voice
+        </button>
+    };
 
     private bool JobRunning =>
         string.Equals(_job?.Status, "running", StringComparison.OrdinalIgnoreCase);
@@ -795,6 +829,8 @@ else
         {
             _editDescription = _selected.Description ?? "";
             _editVisualLock = _selected.VisualLock ?? "";
+            _editVoiceLabel = _selected.VoiceLabel ?? "";
+            _editVoiceProfile = _selected.VoiceProfile ?? "";
         }
         if (switched)
             _hiddenSeedKeys.Clear();
@@ -1145,6 +1181,31 @@ else
             _highlight = Side.None;
             StateHasChanged();
         });
+    }
+
+    private async Task SaveVoiceAsync()
+    {
+        if (_selected is null) return;
+        _busy = true;
+        _error = null;
+        try
+        {
+            await Engine.UpdateCharacterVoiceAsync(
+                _projectId,
+                _selected.Key,
+                voiceProfile: _editVoiceProfile,
+                voiceLabel: _editVoiceLabel);
+            _message = $"Saved voice for {_selected.DisplayName} → scenes.json";
+            await LoadAsync();
+            // re-bind edit fields after reload
+            if (_selected is not null)
+            {
+                _editVoiceLabel = _selected.VoiceLabel ?? "";
+                _editVoiceProfile = _selected.VoiceProfile ?? "";
+            }
+        }
+        catch (Exception ex) { _error = ex.Message; }
+        finally { _busy = false; }
     }
 
     private async Task LockChampionAsync()

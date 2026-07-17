@@ -830,7 +830,7 @@ public sealed class FilmJobService
 
                 try
                 {
-                    await GenerateOneClipAsync(projectDir, sn, cn, clip, ct);
+                    await GenerateOneClipAsync(projectId, projectDir, sn, cn, clip, ct);
                     done++;
                     await AppendLogAsync($"Done S{sn:D2} C{cn}");
                 }
@@ -954,7 +954,7 @@ public sealed class FilmJobService
 
                 try
                 {
-                    await GenerateOneClipAsync(projectDir, req.Scene, cn, clip, ct);
+                    await GenerateOneClipAsync(projectId, projectDir, req.Scene, cn, clip, ct);
                     done++;
                     await AppendLogAsync($"Done S{req.Scene:D2} C{cn}");
                 }
@@ -989,15 +989,20 @@ public sealed class FilmJobService
     }
 
     private async Task GenerateOneClipAsync(
+        string projectId,
         string projectDir,
         int scene,
         int clip,
         JsonElement clipEl,
         CancellationToken ct)
     {
-        var prompt = ClipVideoPromptBuilder.BuildPrompt(clipEl, projectDir);
+        var voices = _projects.LoadCharacterVoiceMap(projectId);
+        var prompt = ClipVideoPromptBuilder.BuildPrompt(clipEl, projectDir, characterVoiceByKey: voices);
         if (string.IsNullOrWhiteSpace(prompt))
             throw new InvalidOperationException("clip missing visual_prompt");
+
+        if (prompt.Contains("VOICE LOCK", StringComparison.OrdinalIgnoreCase))
+            await AppendLogAsync("  [Voice] VOICE LOCK applied from character seed voice_profile");
 
         var refPaths = ClipVideoPromptBuilder.FindCharacterRefPaths(clipEl, projectDir, maxRefs: 3);
         if (refPaths.Count > 0)
@@ -1035,9 +1040,9 @@ public sealed class FilmJobService
             var cont = clipEl.TryGetProperty("veo_continuation_source", out var ce)
                 ? ce.GetString() ?? "none"
                 : "none";
-            var projectId = _snapshot.ProjectId ?? _projects.ActiveProjectId;
+            var costProjectId = _snapshot.ProjectId ?? projectId ?? _projects.ActiveProjectId;
             _costs.RecordVideoGeneration(
-                projectId,
+                costProjectId,
                 scene,
                 clip,
                 duration,

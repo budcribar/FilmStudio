@@ -505,14 +505,16 @@ public sealed class ProjectStore
     }
 
     /// <summary>
-    /// Update description / visual_lock on character seeds in scenes.json (and blueprint when present).
-    /// Null args leave that field unchanged; empty string clears.
+    /// Update description / visual_lock / voice fields on character seeds in scenes.json
+    /// (and blueprint when present). Null args leave that field unchanged; empty string clears.
     /// </summary>
     public void UpdateCharacterSeedText(
         string projectId,
         string charKey,
         string? description = null,
-        string? visualLock = null)
+        string? visualLock = null,
+        string? voiceProfile = null,
+        string? voiceLabel = null)
     {
         void PatchFile(string path)
         {
@@ -545,6 +547,10 @@ public sealed class ProjectStore
                     seed["description"] = CharacterVisualTextScrubber.ScrubVisualProse(description);
                 if (visualLock is not null)
                     seed["visual_lock"] = CharacterVisualTextScrubber.ScrubVisualProse(visualLock);
+                if (voiceProfile is not null)
+                    seed["voice_profile"] = voiceProfile.Trim();
+                if (voiceLabel is not null)
+                    seed["voice_label"] = voiceLabel.Trim();
                 seeds[foundKey] = seed;
                 File.WriteAllText(
                     path,
@@ -560,6 +566,81 @@ public sealed class ProjectStore
         var bp = FindBlueprintPath(projectId);
         if (bp is not null)
             PatchFile(bp);
+    }
+
+    /// <summary>
+    /// Map Character_* → { voice_profile, voice_label } for video prompt VOICE LOCK.
+    /// Prefer scenes.json seeds (source of truth for voice edits), fall back to blueprint.
+    /// </summary>
+    public Dictionary<string, Dictionary<string, string>> LoadCharacterVoiceMap(string projectId)
+    {
+        var map = new Dictionary<string, Dictionary<string, string>>(StringComparer.OrdinalIgnoreCase);
+
+        void Ingest(Dictionary<string, JsonElement> seeds)
+        {
+            foreach (var (key, info) in seeds)
+            {
+                var profile = info.TryGetProperty("voice_profile", out var vp)
+                    ? (vp.GetString() ?? "").Trim()
+                    : "";
+                var label = info.TryGetProperty("voice_label", out var vl)
+                    ? (vl.GetString() ?? "").Trim()
+                    : "";
+                if (profile.Length == 0 && label.Length == 0)
+                    continue;
+                map[key] = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+                {
+                    ["voice_profile"] = profile,
+                    ["voice_label"] = label,
+                };
+            }
+        }
+
+        // scenes.json first so Characters page edits win
+        try
+        {
+            var scenesPath = ResolveScenesJsonPath(projectId);
+            if (File.Exists(scenesPath))
+            {
+                using var doc = JsonDocument.Parse(File.ReadAllText(scenesPath));
+                if (doc.RootElement.TryGetProperty("global_production_variables", out var gpv) &&
+                    gpv.TryGetProperty("character_seed_tokens", out var seeds) &&
+                    seeds.ValueKind == JsonValueKind.Object)
+                {
+                    var dict = new Dictionary<string, JsonElement>(StringComparer.OrdinalIgnoreCase);
+                    foreach (var p in seeds.EnumerateObject())
+                        dict[p.Name] = p.Value.Clone();
+                    Ingest(dict);
+                }
+            }
+        }
+        catch { /* ignore */ }
+
+        // Fill any missing keys from blueprint / full seed load
+        try
+        {
+            var all = LoadCharacterSeeds(projectId);
+            foreach (var (key, info) in all)
+            {
+                if (map.ContainsKey(key)) continue;
+                var profile = info.TryGetProperty("voice_profile", out var vp)
+                    ? (vp.GetString() ?? "").Trim()
+                    : "";
+                var label = info.TryGetProperty("voice_label", out var vl)
+                    ? (vl.GetString() ?? "").Trim()
+                    : "";
+                if (profile.Length == 0 && label.Length == 0)
+                    continue;
+                map[key] = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+                {
+                    ["voice_profile"] = profile,
+                    ["voice_label"] = label,
+                };
+            }
+        }
+        catch { /* ignore */ }
+
+        return map;
     }
 
     public void UpdateCharacterSeedPlaceholder(string projectId, string charKey, string refFileName)

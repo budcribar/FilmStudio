@@ -408,6 +408,31 @@ public sealed class EngineApiClient
         return $"{ApiBaseUrl}/api/projects/{Uri.EscapeDataString(projectId)}/characters/{Uri.EscapeDataString(charKey)}/bookrefs/{index}";
     }
 
+    public async Task UpdateCharacterVoiceAsync(
+        string projectId,
+        string charKey,
+        string? voiceProfile,
+        string? voiceLabel = null,
+        CancellationToken ct = default)
+    {
+        using var resp = await _http.PostAsJsonAsync(
+            $"/api/projects/{Uri.EscapeDataString(projectId)}/characters/{Uri.EscapeDataString(charKey)}/voice",
+            new UpdateCharacterVoiceRequest
+            {
+                ProjectId = projectId,
+                CharKey = charKey,
+                VoiceProfile = voiceProfile,
+                VoiceLabel = voiceLabel,
+            },
+            JsonOpts,
+            ct);
+        if (!resp.IsSuccessStatusCode)
+        {
+            var err = await resp.Content.ReadAsStringAsync(ct);
+            throw new InvalidOperationException(TryError(err) ?? resp.ReasonPhrase);
+        }
+    }
+
     public async Task StartCharacterVariantsAsync(
         string projectId,
         string charKey,

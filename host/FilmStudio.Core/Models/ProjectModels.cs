@@ -207,6 +207,15 @@ public sealed class LockCharacterRequest
     public int Index { get; set; } = 1;
 }
 
+/// <summary>Update voice_label / voice_profile on character seeds (scenes.json + blueprint).</summary>
+public sealed class UpdateCharacterVoiceRequest
+{
+    public string ProjectId { get; set; } = "";
+    public string CharKey { get; set; } = "";
+    public string? VoiceLabel { get; set; }
+    public string? VoiceProfile { get; set; }
+}
+
 public sealed class SceneSummary
 {
     public int SceneNumber { get; set; }

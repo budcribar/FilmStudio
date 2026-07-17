@@ -320,6 +320,34 @@ app.MapPost("/api/jobs/character-variants", async (StartCharacterVariantsRequest
     }
 });
 
+/// <summary>Save voice_label / voice_profile into scenes.json (+ blueprint) character seeds.</summary>
+app.MapPost("/api/projects/{id}/characters/{charKey}/voice",
+    (string id, string charKey, UpdateCharacterVoiceRequest? body, ProjectStore store) =>
+{
+    try
+    {
+        body ??= new UpdateCharacterVoiceRequest();
+        if (string.IsNullOrWhiteSpace(charKey))
+            return Results.BadRequest(new { ok = false, error = "charKey required" });
+        store.UpdateCharacterSeedText(
+            id,
+            charKey,
+            voiceProfile: body.VoiceProfile,
+            voiceLabel: body.VoiceLabel);
+        return Results.Ok(new
+        {
+            ok = true,
+            projectId = id,
+            charKey,
+            message = "Voice seed updated",
+        });
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { ok = false, error = ex.Message });
+    }
+});
+
 /// <summary>
 /// Sync heuristic attach (no Grok). Prefer POST /api/jobs/sort-character-plates for vision sort.
 /// </summary>
