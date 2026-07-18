@@ -479,7 +479,7 @@ public sealed class EngineApiClient
     }
 
     /// <summary>
-    /// Import a Fountain screenplay as the project screenplay (writes Stage 1 JSON).
+    /// Import a Fountain file as the editable screenplay draft (approve on Screenplay).
     /// </summary>
     public async Task<FountainImportDto?> ImportFountainAsync(
         string projectId,
@@ -500,6 +500,61 @@ public sealed class EngineApiClient
         if (!resp.IsSuccessStatusCode)
             throw new InvalidOperationException(TryError(body) ?? resp.ReasonPhrase);
         return JsonSerializer.Deserialize<FountainImportDto>(body, JsonOpts);
+    }
+
+    public async Task<ScreenplayDto?> GetScreenplayAsync(
+        string projectId,
+        CancellationToken ct = default) =>
+        await _http.GetFromJsonAsync<ScreenplayDto>(
+            $"/api/projects/{Uri.EscapeDataString(projectId)}/screenplay",
+            JsonOpts,
+            ct);
+
+    public async Task<ScreenplaySaveDto?> SaveScreenplayAsync(
+        string projectId,
+        string text,
+        CancellationToken ct = default)
+    {
+        using var resp = await _http.PutAsJsonAsync(
+            $"/api/projects/{Uri.EscapeDataString(projectId)}/screenplay",
+            new { text },
+            JsonOpts,
+            ct);
+        var body = await resp.Content.ReadAsStringAsync(ct);
+        if (!resp.IsSuccessStatusCode)
+            throw new InvalidOperationException(TryError(body) ?? resp.ReasonPhrase);
+        return JsonSerializer.Deserialize<ScreenplaySaveDto>(body, JsonOpts);
+    }
+
+    public async Task<ScreenplaySignOffDto?> SignOffScreenplayAsync(
+        string projectId,
+        string? text = null,
+        CancellationToken ct = default)
+    {
+        object payload = text is null ? new { } : new { text };
+        using var resp = await _http.PostAsJsonAsync(
+            $"/api/projects/{Uri.EscapeDataString(projectId)}/screenplay/sign-off",
+            payload,
+            JsonOpts,
+            ct);
+        var body = await resp.Content.ReadAsStringAsync(ct);
+        if (!resp.IsSuccessStatusCode)
+            throw new InvalidOperationException(TryError(body) ?? resp.ReasonPhrase);
+        return JsonSerializer.Deserialize<ScreenplaySignOffDto>(body, JsonOpts);
+    }
+
+    public async Task<ScreenplaySaveDto?> CreateScreenplayFromBookAsync(
+        string projectId,
+        CancellationToken ct = default)
+    {
+        using var resp = await _http.PostAsync(
+            $"/api/projects/{Uri.EscapeDataString(projectId)}/screenplay/from-book",
+            null,
+            ct);
+        var body = await resp.Content.ReadAsStringAsync(ct);
+        if (!resp.IsSuccessStatusCode)
+            throw new InvalidOperationException(TryError(body) ?? resp.ReasonPhrase);
+        return JsonSerializer.Deserialize<ScreenplaySaveDto>(body, JsonOpts);
     }
 
     public async Task<CostDto?> GetCostAsync(
@@ -1049,9 +1104,42 @@ public sealed class FountainImportDto
     public string? ProjectId { get; set; }
     public string? Title { get; set; }
     public int SceneCount { get; set; }
+    public int SceneHeadingCount { get; set; }
     public int CharacterCount { get; set; }
     public int LocationCount { get; set; }
     public string? Message { get; set; }
+    public AdaptationStatus? Adaptation { get; set; }
+}
+
+public sealed class ScreenplayDto
+{
+    public bool Ok { get; set; }
+    public string? ProjectId { get; set; }
+    public string Text { get; set; } = "";
+    public ScreenplayStatus? Screenplay { get; set; }
+    public AdaptationStatus? Adaptation { get; set; }
+}
+
+public sealed class ScreenplaySaveDto
+{
+    public bool Ok { get; set; }
+    public string? ProjectId { get; set; }
+    public string? Message { get; set; }
+    public ScreenplayStatus? Screenplay { get; set; }
+    public AdaptationStatus? Adaptation { get; set; }
+}
+
+public sealed class ScreenplaySignOffDto
+{
+    public bool Ok { get; set; }
+    public string? ProjectId { get; set; }
+    public string? Title { get; set; }
+    public int SceneCount { get; set; }
+    public int CharacterCount { get; set; }
+    public int LocationCount { get; set; }
+    public bool HashChanged { get; set; }
+    public string? Message { get; set; }
+    public ScreenplayStatus? Screenplay { get; set; }
     public AdaptationStatus? Adaptation { get; set; }
 }
 

@@ -140,15 +140,15 @@ else
 
     private bool OutlineEnabled =>
         Host.Status is not null &&
-        (Host.Status.Book.ReadyForStage1 ||
+        (Host.Status.Screenplay.DraftExists ||
+         Host.Status.Book.ReadyForStage1 ||
          Host.Status.Book.BookTextExists ||
          Host.Status.Book.PdfExists ||
          (Host.Status.Stage1.Present && Host.Status.Stage1.SceneCount > 0));
 
     private bool ShotsEnabled =>
         Host.Status is not null &&
-        Host.Status.Stage1.Present &&
-        Host.Status.Stage1.SceneCount > 0;
+        Host.Status.Screenplay.ReadyForShots;
 
     private async Task OnProjectChanged(ChangeEventArgs e)
     {

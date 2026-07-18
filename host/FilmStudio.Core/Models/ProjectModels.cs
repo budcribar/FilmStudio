@@ -353,15 +353,39 @@ public sealed class SceneDetail
     public List<ClipSummary> Clips { get; set; } = new();
 }
 
-/// <summary>Book + Stage 1 + Stage 2 readiness for the Adaptation page.</summary>
+/// <summary>Book + Fountain screenplay + Stage 1 + Stage 2 readiness for the Adaptation page.</summary>
 public sealed class AdaptationStatus
 {
     public string ProjectId { get; set; } = "";
     public BookSourceStatus Book { get; set; } = new();
+    /// <summary>Editable Fountain draft + sign-off state (source of truth for the screenplay).</summary>
+    public ScreenplayStatus Screenplay { get; set; } = new();
     public Stage1Status Stage1 { get; set; } = new();
     public Stage2PlanStatus Stage2 { get; set; } = new();
     public bool XaiConfigured { get; set; }
     public string NextStep { get; set; } = "";
+}
+
+/// <summary>
+/// Fountain draft under source/screenplay.fountain.
+/// Signed = user approved; Stage 1 JSON is materialised only on sign-off (or legacy paths).
+/// </summary>
+public sealed class ScreenplayStatus
+{
+    public bool DraftExists { get; set; }
+    public long DraftBytes { get; set; }
+    public string? DraftHash { get; set; }
+    public string? DraftMtime { get; set; }
+    public int SceneHeadingCount { get; set; }
+    public string? Title { get; set; }
+    /// <summary>True when draft hash matches last sign-off hash.</summary>
+    public bool Signed { get; set; }
+    public string? SignedHash { get; set; }
+    public string? SignedAt { get; set; }
+    /// <summary>Draft exists and differs from signed hash (or never signed).</summary>
+    public bool Dirty { get; set; }
+    /// <summary>Stage 1 may be used for Characters/Shots (signed, or legacy stage1 without draft).</summary>
+    public bool ReadyForShots { get; set; }
 }
 
 public sealed class BookSourceStatus

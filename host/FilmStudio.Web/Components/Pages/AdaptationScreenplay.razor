@@ -1,134 +1,330 @@
 @page "/adaptation/screenplay"
 @inherits AdaptationPageBase
+@using System.Timers
+@implements IDisposable
 
 <PageTitle>Adaptation · Screenplay</PageTitle>
 
 <AdaptationShell Host="this" Step="screenplay">
-    @if (Status is not null)
-    {
-        <div class="card mb-3">
-            <div class="card-header d-flex justify-content-between">
-                <span>Screenplay</span>
-                @if (Status.Stage1.Present && Status.Stage1.SceneCount > 0)
+    <div class="card mb-3">
+        <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
+            <span>Screenplay</span>
+            <div class="d-flex flex-wrap gap-1 align-items-center">
+                @if (_screenplayStatus?.Signed == true && _screenplayStatus.Dirty != true)
                 {
-                    <span class="badge bg-success">ready</span>
+                    <span class="badge bg-success">approved</span>
                 }
-            </div>
-            <div class="card-body">
-                @if (Status.Stage1.Present && Status.Stage1.SceneCount > 0)
+                else if (_screenplayStatus?.DraftExists == true)
                 {
-                    <p class="small mb-2">
-                        <strong>@(Status.Stage1.MovieTitle ?? "Untitled")</strong><br />
-                        @Status.Stage1.SceneCount scenes ·
-                        @Status.Stage1.BeatCount beats ·
-                        @Status.Stage1.CharacterCount chars ·
-                        @Status.Stage1.LocationCount locs
-                        @if (Status.Stage1.RuntimeSeconds is double rs)
-                        {
-                            <span>· ~@((int)(rs / 60)) min</span>
-                        }
-                        @if (!string.IsNullOrEmpty(Status.Stage1.Mtime))
-                        {
-                            <span class="text-muted">· updated @Status.Stage1.Mtime</span>
-                        }
-                    </p>
-                    @if (Status.Stage1.CastNames.Count > 0)
-                    {
-                        <p class="small text-muted">Cast: @string.Join(", ", Status.Stage1.CastNames)</p>
-                    }
+                    <span class="badge bg-warning text-dark">draft</span>
                 }
-                else
+                @if (_dirtyLocal)
                 {
-                    <p class="small text-muted">
-                        No screenplay yet.
-                        <a href="adaptation/import">Import</a> a Fountain file, or build from prepared book text below.
-                    </p>
+                    <span class="badge bg-secondary">unsaved</span>
                 }
-
-                <div class="row g-2 mb-2">
-                    <div class="col-6 col-md-3">
-                        <label class="form-label small">Target minutes</label>
-                        <input type="number" class="form-control form-control-sm" min="3" max="180" @bind="TotalMinutes" disabled="@Busy" />
-                    </div>
-                    <div class="col-6 col-md-3">
-                        <label class="form-label small">Pages / chunk</label>
-                        <input type="number" class="form-control form-control-sm" min="5" max="30" @bind="ChunkPages" disabled="@Busy" />
-                    </div>
-                    <div class="col-8 col-md-4">
-                        <label class="form-label small text-muted">Advanced</label>
-                        <input class="form-control form-control-sm" @bind="Model" disabled="@Busy" title="Optional override" />
-                    </div>
-                    <div class="col-4 col-md-2 form-check align-self-end mb-2">
-                        <input class="form-check-input" type="checkbox" id="s1resume" @bind="Resume" disabled="@Busy" />
-                        <label class="form-check-label small" for="s1resume">Resume</label>
-                    </div>
-                </div>
-
-                <div class="d-flex flex-wrap gap-2 align-items-center">
-                    <button class="btn btn-primary"
-                            disabled="@(Busy || JobRunning || !CanRunOutline || !Status.XaiConfigured)"
-                            @onclick="RunOutlineAsync">
-                        @(Status.Stage1.SceneCount > 0 ? "Rebuild from book" : "Build from book")
-                    </button>
-                    @if (!Status.XaiConfigured)
-                    {
-                        <span class="small text-muted"><a href="configuration">Connect service</a></span>
-                    }
-                    else if (!CanRunOutline)
-                    {
-                        <span class="small text-muted">Import a book or Fountain first</span>
-                    }
-                    else if (!Status.Book.ReadyForStage1 && Status.Stage1.SceneCount > 0)
-                    {
-                        <span class="small text-success">Screenplay exists — rebuild from book if needed</span>
-                    }
-                    @if (Status.Stage1.SceneCount > 0)
-                    {
-                        <a class="btn btn-outline-success" href="adaptation/shots">Continue to shot plan →</a>
-                    }
-                    <a class="btn btn-outline-secondary" href="adaptation/import">← Import</a>
-                </div>
-                <p class="small text-muted mt-2 mb-0">
-                    Build from book creates cast and scenes from prepared book text.
-                    If you imported Fountain, you can go straight to the shot plan.
-                </p>
+                else if (_lastSavedUtc is not null)
+                {
+                    <span class="small text-muted">saved</span>
+                }
             </div>
         </div>
+        <div class="card-body">
+            <p class="small text-muted mb-3">
+                Edit the screenplay below. When it looks right, approve it to unlock the shot plan.
+            </p>
 
-        @if (Status.Stage1.Scenes.Count > 0)
-        {
-            <div class="card">
-                <div class="card-header">Screenplay preview</div>
-                <div class="card-body p-0">
-                    <div class="table-responsive">
-                        <table class="table table-sm mb-0">
-                            <thead>
+            @if (_screenplayStatus is not null)
+            {
+                <ul class="list-unstyled small mb-3">
+                    <li>
+                        @if (_screenplayStatus.DraftExists)
+                        {
+                            <span>
+                                @(_screenplayStatus.Title is { Length: > 0 } t ? t : "Untitled")
+                                · @_screenplayStatus.SceneHeadingCount scenes
+                                · @_screenplayStatus.DraftBytes.ToString("N0") characters
+                            </span>
+                        }
+                        else
+                        {
+                            <span class="text-muted">No draft yet</span>
+                        }
+                    </li>
+                    @if (Status?.Stage1.Present == true && Status.Stage1.SceneCount > 0)
+                    {
+                        <li class="text-muted">
+                            Approved build: @Status.Stage1.SceneCount scenes · @Status.Stage1.CharacterCount cast
+                            @if (_screenplayStatus.Dirty)
+                            {
+                                <span class="text-warning"> · draft changed since last approval</span>
+                            }
+                        </li>
+                    }
+                </ul>
+            }
+
+            @if (!_editorLoaded && string.IsNullOrEmpty(_text) && Status?.Book.BookTextExists == true)
+            {
+                <div class="alert alert-light border small mb-3">
+                    You have book text ready.
+                    <button class="btn btn-sm btn-outline-primary ms-1"
+                            disabled="@(Busy || JobRunning)"
+                            @onclick="CreateFromBookAsync">
+                        Create draft from book
+                    </button>
+                </div>
+            }
+
+            <div class="mb-2">
+                <textarea class="form-control font-monospace"
+                          style="min-height: 28rem; font-size: 0.85rem; line-height: 1.4; white-space: pre; tab-size: 4;"
+                          @bind="_text"
+                          @bind:event="oninput"
+                          @bind:after="OnTextChanged"
+                          disabled="@(Busy || JobRunning)"
+                          spellcheck="false"
+                          placeholder="Write or paste your screenplay here…&#10;&#10;INT. ROOM - DAY&#10;&#10;Action description.&#10;&#10;CHARACTER&#10;Dialogue goes here."></textarea>
+            </div>
+
+            <div class="d-flex flex-wrap gap-2 align-items-center">
+                <button class="btn btn-outline-primary btn-sm"
+                        disabled="@(Busy || JobRunning || !_dirtyLocal)"
+                        @onclick="() => SaveDraftAsync(manual: true)">
+                    Save draft
+                </button>
+                <button class="btn btn-success btn-sm"
+                        disabled="@(Busy || JobRunning || string.IsNullOrWhiteSpace(_text))"
+                        @onclick="SignOffAsync">
+                    Looks good — continue
+                </button>
+                @if (Status?.Book.BookTextExists == true)
+                {
+                    <button class="btn btn-outline-secondary btn-sm"
+                            disabled="@(Busy || JobRunning)"
+                            @onclick="CreateFromBookAsync"
+                            title="Replace draft with a first pass from book text">
+                        Draft from book
+                    </button>
+                }
+                @if (CanRunOutline && Status?.XaiConfigured == true)
+                {
+                    <details class="ms-1">
+                        <summary class="small text-muted" style="cursor:pointer">Other options</summary>
+                        <div class="d-flex flex-wrap gap-2 mt-2">
+                            <button class="btn btn-outline-secondary btn-sm"
+                                    disabled="@(Busy || JobRunning)"
+                                    @onclick="RunOutlineAsync">
+                                Build from book (advanced)
+                            </button>
+                        </div>
+                    </details>
+                }
+                <a class="btn btn-outline-secondary btn-sm" href="adaptation/import">← Import</a>
+                @if (Status?.Screenplay.ReadyForShots == true ||
+                     (Status?.Stage1.Present == true && Status.Stage1.SceneCount > 0 && Status?.Screenplay.Dirty != true))
+                {
+                    <a class="btn btn-outline-success btn-sm" href="adaptation/shots">Shot plan →</a>
+                }
+            </div>
+            <p class="small text-muted mt-2 mb-0">
+                Changes save automatically while you type. Approve when ready for the shot plan.
+            </p>
+        </div>
+    </div>
+
+    @if (Status?.Stage1.Present == true && Status.Stage1.Scenes.Count > 0 && Status.Screenplay.Signed)
+    {
+        <div class="card">
+            <div class="card-header">Approved scenes</div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-sm mb-0">
+                        <thead>
+                            <tr>
+                                <th style="width:4rem">#</th>
+                                <th>Setting</th>
+                                <th style="width:5rem">Beats</th>
+                                <th style="width:5rem">Dur</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var s in Status.Stage1.Scenes)
+                            {
                                 <tr>
-                                    <th style="width:4rem">#</th>
-                                    <th>Setting</th>
-                                    <th style="width:5rem">Beats</th>
-                                    <th style="width:5rem">Dur</th>
+                                    <td><code>S@(s.SceneNumber.ToString("D2"))</code></td>
+                                    <td class="small">@(string.IsNullOrEmpty(s.Setting) ? "—" : s.Setting)</td>
+                                    <td class="small">@s.BeatCount</td>
+                                    <td class="small text-muted">@(s.DurationSeconds is double d ? $"{d:0}s" : "—")</td>
                                 </tr>
-                            </thead>
-                            <tbody>
-                                @foreach (var s in Status.Stage1.Scenes)
-                                {
-                                    <tr>
-                                        <td><code>S@(s.SceneNumber.ToString("D2"))</code></td>
-                                        <td class="small">@(string.IsNullOrEmpty(s.Setting) ? "—" : s.Setting)</td>
-                                        <td class="small">@s.BeatCount</td>
-                                        <td class="small text-muted">@(s.DurationSeconds is double d ? $"{d:0}s" : "—")</td>
-                                    </tr>
-                                }
-                            </tbody>
-                        </table>
-                    </div>
+                            }
+                        </tbody>
+                    </table>
                 </div>
             </div>
-        }
+        </div>
     }
 </AdaptationShell>
 
 @code {
     public override string StepKey => "screenplay";
+
+    private string _text = "";
+    private string _loadedText = "";
+    private bool _dirtyLocal;
+    private bool _editorLoaded;
+    private DateTime? _lastSavedUtc;
+    private ScreenplayStatus? _screenplayStatus;
+    private Timer? _debounce;
+    private int _saveGeneration;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        await LoadEditorAsync();
+    }
+
+    private async Task LoadEditorAsync()
+    {
+        try
+        {
+            var doc = await Engine.GetScreenplayAsync(ProjectId);
+            _text = doc?.Text ?? "";
+            _loadedText = _text;
+            _dirtyLocal = false;
+            _screenplayStatus = doc?.Screenplay ?? Status?.Screenplay;
+            if (doc?.Adaptation is not null)
+                Status = doc.Adaptation;
+            _editorLoaded = true;
+        }
+        catch (Exception ex)
+        {
+            Error = ex.Message;
+        }
+    }
+
+    public override async Task LoadAsync()
+    {
+        await base.LoadAsync();
+        await LoadEditorAsync();
+    }
+
+    private void OnTextChanged()
+    {
+        _dirtyLocal = !string.Equals(_text, _loadedText, StringComparison.Ordinal);
+        _debounce?.Stop();
+        _debounce?.Dispose();
+        _debounce = new Timer(900);
+        _debounce.Elapsed += async (_, _) =>
+        {
+            _debounce?.Stop();
+            await InvokeAsync(async () =>
+            {
+                if (_dirtyLocal && !Busy)
+                    await SaveDraftAsync(manual: false);
+            });
+        };
+        _debounce.AutoReset = false;
+        _debounce.Start();
+    }
+
+    private async Task SaveDraftAsync(bool manual)
+    {
+        if (string.IsNullOrEmpty(_text) && !_dirtyLocal && !manual)
+            return;
+
+        var gen = ++_saveGeneration;
+        try
+        {
+            if (manual) Busy = true;
+            var result = await Engine.SaveScreenplayAsync(ProjectId, _text);
+            if (gen != _saveGeneration) return; // superseded
+            _loadedText = _text;
+            _dirtyLocal = false;
+            _lastSavedUtc = DateTime.UtcNow;
+            _screenplayStatus = result?.Screenplay ?? _screenplayStatus;
+            if (result?.Adaptation is not null)
+                Status = result.Adaptation;
+            if (manual)
+                Message = result?.Message ?? "Draft saved";
+        }
+        catch (Exception ex)
+        {
+            if (manual || gen == _saveGeneration)
+                Error = ex.Message;
+        }
+        finally
+        {
+            if (manual) Busy = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task SignOffAsync()
+    {
+        Busy = true;
+        Error = null;
+        Message = null;
+        try
+        {
+            _debounce?.Stop();
+            var result = await Engine.SignOffScreenplayAsync(ProjectId, _text);
+            _loadedText = _text;
+            _dirtyLocal = false;
+            _lastSavedUtc = DateTime.UtcNow;
+            _screenplayStatus = result?.Screenplay;
+            if (result?.Adaptation is not null)
+                Status = result.Adaptation;
+            else
+                await SoftLoadAsync();
+            Message = result?.Message ?? "Screenplay approved";
+            if (result?.Ok == true)
+            {
+                // Navigate to shot plan after successful approval
+                Nav.NavigateTo("adaptation/shots");
+            }
+        }
+        catch (Exception ex)
+        {
+            Error = ex.Message;
+        }
+        finally
+        {
+            Busy = false;
+        }
+    }
+
+    private async Task CreateFromBookAsync()
+    {
+        if (_dirtyLocal && !string.IsNullOrWhiteSpace(_text))
+        {
+            // Soft confirm via message if they have edits — still allow overwrite on second click path
+            // For MVP: always create after saving current draft first when dirty
+            try { await SaveDraftAsync(manual: false); } catch { /* ignore */ }
+        }
+
+        Busy = true;
+        Error = null;
+        try
+        {
+            var result = await Engine.CreateScreenplayFromBookAsync(ProjectId);
+            Message = result?.Message ?? "Draft created from book";
+            if (result?.Adaptation is not null)
+                Status = result.Adaptation;
+            await LoadEditorAsync();
+        }
+        catch (Exception ex)
+        {
+            Error = ex.Message;
+        }
+        finally
+        {
+            Busy = false;
+        }
+    }
+
+    public void Dispose()
+    {
+        _debounce?.Stop();
+        _debounce?.Dispose();
+    }
 }

@@ -872,8 +872,8 @@ app.MapPost("/api/projects/{id}/adaptation/upload", async (string id, HttpReques
 });
 
 /// <summary>
-/// Import a Fountain (.fountain) plain-text screenplay as the project screenplay (Stage 1).
-/// Skips LLM Stage 1 — writes scenes.json and saves the .fountain under source/.
+/// Import a Fountain file as the editable screenplay draft (does not approve / Stage 1 yet).
+/// User reviews on Screenplay, then sign-off materialises Stage 1.
 /// </summary>
 app.MapPost("/api/projects/{id}/adaptation/import-fountain", async (string id, HttpRequest req, ProjectStore store) =>
 {
@@ -895,13 +895,13 @@ app.MapPost("/api/projects/{id}/adaptation/import-fountain", async (string id, H
         {
             using var reader = new StreamReader(req.Body);
             text = await reader.ReadToEndAsync();
-            fileName = "screenplay.fountain";
+            fileName = ScreenplayService.CanonicalFileName;
         }
 
         if (string.IsNullOrWhiteSpace(text))
             return Results.BadRequest(new { ok = false, error = "empty fountain text" });
 
-        var result = FountainStage1Importer.ImportToProject(store, id, text, fileName);
+        var result = ScreenplayService.ImportAsDraft(store, id, text, fileName);
         if (!result.Ok)
             return Results.BadRequest(new { ok = false, error = result.Error });
 
@@ -910,16 +910,169 @@ app.MapPost("/api/projects/{id}/adaptation/import-fountain", async (string id, H
         {
             ok = true,
             projectId = id,
+            title = result.Status.Title,
+            sceneHeadingCount = result.Status.SceneHeadingCount,
+            draftBytes = result.Status.DraftBytes,
+            dirty = result.Status.Dirty,
+            signed = result.Status.Signed,
+            message = result.Message ?? "Screenplay draft ready — review and approve",
+            adaptation = status,
+        });
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { ok = false, error = ex.Message });
+    }
+});
+
+/// <summary>Get the editable Fountain draft + status.</summary>
+app.MapGet("/api/projects/{id}/screenplay", (string id, ProjectStore store) =>
+{
+    try
+    {
+        var doc = ScreenplayService.Get(store, id);
+        return Results.Ok(new
+        {
+            ok = true,
+            projectId = id,
+            text = doc.Text,
+            screenplay = doc.Status,
+            adaptation = store.GetAdaptationStatus(id),
+        });
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { ok = false, error = ex.Message });
+    }
+});
+
+/// <summary>Save Fountain draft (no Stage 1 write).</summary>
+app.MapPut("/api/projects/{id}/screenplay", async (string id, HttpRequest req, ProjectStore store) =>
+{
+    try
+    {
+        string text;
+        if (req.HasFormContentType)
+        {
+            var form = await req.ReadFormAsync();
+            text = form["text"].ToString() ?? form["content"].ToString() ?? "";
+            if (string.IsNullOrEmpty(text) && form.Files.Count > 0)
+            {
+                using var reader = new StreamReader(form.Files[0].OpenReadStream());
+                text = await reader.ReadToEndAsync();
+            }
+        }
+        else
+        {
+            using var reader = new StreamReader(req.Body);
+            var body = await reader.ReadToEndAsync();
+            // Accept raw text or JSON { "text": "..." }
+            text = body;
+            if (body.TrimStart().StartsWith('{'))
+            {
+                try
+                {
+                    using var doc = System.Text.Json.JsonDocument.Parse(body);
+                    if (doc.RootElement.TryGetProperty("text", out var t))
+                        text = t.GetString() ?? "";
+                    else if (doc.RootElement.TryGetProperty("content", out var c))
+                        text = c.GetString() ?? "";
+                }
+                catch { /* treat as raw */ }
+            }
+        }
+
+        var result = ScreenplayService.SaveDraft(store, id, text);
+        if (!result.Ok)
+            return Results.BadRequest(new { ok = false, error = result.Error });
+
+        return Results.Ok(new
+        {
+            ok = true,
+            projectId = id,
+            message = result.Message,
+            screenplay = result.Status,
+            adaptation = store.GetAdaptationStatus(id),
+        });
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { ok = false, error = ex.Message });
+    }
+});
+
+/// <summary>
+/// Approve the Fountain draft: materialise Stage 1 (scenes.json).
+/// Optional body text saves first. Marks shot plan stale when hash changes.
+/// </summary>
+app.MapPost("/api/projects/{id}/screenplay/sign-off", async (string id, HttpRequest req, ProjectStore store) =>
+{
+    try
+    {
+        string? text = null;
+        if (req.ContentLength is > 0 || req.ContentType is not null)
+        {
+            using var reader = new StreamReader(req.Body);
+            var body = await reader.ReadToEndAsync();
+            if (!string.IsNullOrWhiteSpace(body))
+            {
+                if (body.TrimStart().StartsWith('{'))
+                {
+                    try
+                    {
+                        using var doc = System.Text.Json.JsonDocument.Parse(body);
+                        if (doc.RootElement.TryGetProperty("text", out var t))
+                            text = t.GetString();
+                    }
+                    catch { text = body; }
+                }
+                else
+                {
+                    text = body;
+                }
+            }
+        }
+
+        var result = ScreenplayService.SignOff(store, id, text);
+        if (!result.Ok)
+            return Results.BadRequest(new { ok = false, error = result.Error });
+
+        return Results.Ok(new
+        {
+            ok = true,
+            projectId = id,
             title = result.Title,
             sceneCount = result.SceneCount,
             characterCount = result.CharacterCount,
             locationCount = result.LocationCount,
-            outPath = result.OutPath,
-            fountainPath = result.FountainSavedPath,
-            message =
-                $"Imported screenplay “{result.Title}”: {result.SceneCount} scenes, " +
-                $"{result.CharacterCount} characters, {result.LocationCount} locations",
-            adaptation = status,
+            hashChanged = result.HashChanged,
+            message = result.Message,
+            screenplay = result.Status,
+            adaptation = store.GetAdaptationStatus(id),
+        });
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { ok = false, error = ex.Message });
+    }
+});
+
+/// <summary>Create an editable Fountain draft from prepared book text.</summary>
+app.MapPost("/api/projects/{id}/screenplay/from-book", (string id, ProjectStore store) =>
+{
+    try
+    {
+        var result = ScreenplayService.CreateDraftFromBook(store, id);
+        if (!result.Ok)
+            return Results.BadRequest(new { ok = false, error = result.Error });
+
+        return Results.Ok(new
+        {
+            ok = true,
+            projectId = id,
+            message = result.Message,
+            screenplay = result.Status,
+            adaptation = store.GetAdaptationStatus(id),
         });
     }
     catch (Exception ex)

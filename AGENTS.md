@@ -13,7 +13,8 @@ Apply to **workflow pages** users operate day to day: Adaptation, Characters, Sc
 ### 1. Outcome only — not mechanism
 
 - Describe **what the user gets** (imported source, screenplay, cast, portraits, clips, movie draft).
-- Adaptation flow: **Import** (Fountain / PDF / TXT) → **Screenplay** → **Shot plan**.
+- Adaptation flow: **Import** (screenplay file / PDF / TXT) → **Screenplay** (edit + **approve**) → **Shot plan**.
+- The editable screenplay draft is the source of truth; Stage 1 / cast / shots unlock after **Looks good — continue** (sign-off).
 - **Do not** explain *how* it is done: no “AI”, “vision”, “OCR”, “LLM”, “model”, “chat”, “API”, or “the system uses …”.
 - Users do not care whether a step is AI, deterministic, or ffmpeg under the hood.
 

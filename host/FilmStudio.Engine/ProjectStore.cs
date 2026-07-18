@@ -1552,16 +1552,27 @@ public sealed class ProjectStore
         var dir = GetProjectDir(projectId);
         var book = ReadBookSourceStatus(dir);
         var stage1 = ReadStage1Status(projectId, dir);
+        var screenplay = ScreenplayService.ReadStatus(this, projectId, stage1);
         var stage2 = ReadStage2PlanStatus(projectId, dir, stage1);
+        // Fountain re-sign that changed Stage 1 makes an existing shot plan stale
+        if (screenplay.DraftExists && screenplay.Dirty && stage2.Stage2Ready)
+            stage2.Stage2Stale = true;
         var xai = !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("XAI_API_KEY"));
 
+        // Phase 0: Fountain draft is the screenplay source of truth when present.
         var next = "done";
-        if (!book.PdfExists && !book.BookTextExists)
+        var hasSource = book.PdfExists || book.BookTextExists || screenplay.DraftExists ||
+                        (stage1.Present && stage1.SceneCount > 0);
+        if (!hasSource)
             next = "import_book";
-        else if (!book.ReadyForStage1)
+        else if (screenplay.DraftExists && (!screenplay.Signed || screenplay.Dirty))
+            next = "sign_screenplay";
+        else if ((!stage1.Present || stage1.SceneCount == 0) && book.ReadyForStage1)
+            next = "run_stage1"; // legacy: build Stage 1 from book without Fountain
+        else if ((!stage1.Present || stage1.SceneCount == 0) && book.BookTextExists && !book.ReadyForStage1)
             next = "fix_book_text";
         else if (!stage1.Present || stage1.SceneCount == 0)
-            next = "run_stage1";
+            next = screenplay.DraftExists ? "sign_screenplay" : "import_book";
         else if (!stage2.Stage2Ready)
             next = "run_stage2";
         else if (stage2.Stage2Stale)
@@ -1573,6 +1584,7 @@ public sealed class ProjectStore
         {
             ProjectId = projectId,
             Book = book,
+            Screenplay = screenplay,
             Stage1 = stage1,
             Stage2 = stage2,
             XaiConfigured = xai,

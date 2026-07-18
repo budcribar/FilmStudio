@@ -184,7 +184,7 @@ public abstract class AdaptationPageBase : ComponentBase, IAsyncDisposable
                || message.Contains("Reading page", StringComparison.OrdinalIgnoreCase);
     }
 
-    public async Task LoadAsync()
+    public virtual async Task LoadAsync()
     {
         Busy = true;
         Error = null;
@@ -384,8 +384,9 @@ public abstract class AdaptationPageBase : ComponentBase, IAsyncDisposable
 
     public static string NextStepLabel(string step) => step switch
     {
-        "import_book" => "Import a Fountain screenplay, PDF, or text file",
-        "fix_book_text" => "Prepare imported text, or import Fountain",
+        "import_book" => "Import a screenplay, PDF, or text file",
+        "fix_book_text" => "Prepare imported text, or import a screenplay",
+        "sign_screenplay" => "Edit the screenplay and approve when ready",
         "run_stage1" => "Build the screenplay from the book",
         "run_stage2" => "Build the shot plan",
         "replan_stage2" => "Update the shot plan (screenplay changed)",
@@ -396,7 +397,7 @@ public abstract class AdaptationPageBase : ComponentBase, IAsyncDisposable
     public static string NextStepAlertClass(string step) => step switch
     {
         "generate_clips" or "done" => "alert-success",
-        "replan_stage2" or "fix_book_text" => "alert-warning",
+        "replan_stage2" or "fix_book_text" or "sign_screenplay" => "alert-warning",
         _ => "alert-info",
     };
 
@@ -412,17 +413,10 @@ public abstract class AdaptationPageBase : ComponentBase, IAsyncDisposable
     public static string SuggestedStepPath(AdaptationStatus? status)
     {
         if (status is null) return "/adaptation/import";
-        // Fountain import sets Stage1 without book text — jump to shots if plan still needed
-        if (status.Stage1.Present && status.Stage1.SceneCount > 0 &&
-            status.NextStep is "run_stage2" or "replan_stage2")
-            return "/adaptation/shots";
-        if (status.Stage1.Present && status.Stage1.SceneCount > 0 &&
-            status.NextStep is "generate_clips" or "done")
-            return "/adaptation/shots";
         return status.NextStep switch
         {
             "import_book" or "fix_book_text" => "/adaptation/import",
-            "run_stage1" => "/adaptation/screenplay",
+            "sign_screenplay" or "run_stage1" => "/adaptation/screenplay",
             "run_stage2" or "replan_stage2" => "/adaptation/shots",
             "generate_clips" or "done" => "/adaptation/shots",
             _ => "/adaptation/import",
