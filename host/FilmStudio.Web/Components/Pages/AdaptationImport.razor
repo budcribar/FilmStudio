@@ -111,7 +111,7 @@
         _importing = true;
         Busy = true;
         Error = null;
-        Message = null;
+        Message = null; // clear stale “Book ready” / Next guidance during pipeline
         _importPct = 8;
         _importStatus = $"Reading {file.Name}…";
         StateHasChanged();
@@ -168,6 +168,8 @@
                 if (!ok)
                     return;
 
+                // Book text is ready — keep progress UI only (no “Book ready” / Next banners)
+                Message = null;
                 _importStatus = "Writing screenplay draft…";
                 _importPct = 85;
                 StateHasChanged();
@@ -176,6 +178,7 @@
             }
             else if (IsTxtName(name))
             {
+                Message = null;
                 _importStatus = "Writing screenplay draft…";
                 _importPct = 55;
                 StateHasChanged();

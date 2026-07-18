@@ -1737,7 +1737,8 @@ public sealed class ProjectStore
             stage2.Stage2Stale = true;
         var xai = !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("XAI_API_KEY"));
 
-        // Fountain is the screenplay source of truth (book → .fountain → approve → shots).
+        // Fountain is the screenplay source of truth.
+        // Flow: import → draft/approve → pin characters → shot plan → generate clips (Scenes).
         var next = "done";
         var hasSource = book.PdfExists || book.BookTextExists || screenplay.DraftExists ||
                         (stage1.Present && stage1.SceneCount > 0);
@@ -1753,7 +1754,7 @@ public sealed class ProjectStore
         else if (!stage1.Present || stage1.SceneCount == 0)
             next = screenplay.DraftExists ? "sign_screenplay" : "import_book";
         else if (!stage2.Stage2Ready)
-            next = "run_stage2";
+            next = "pin_characters"; // pin cast before building / generating from the shot plan
         else if (stage2.Stage2Stale)
             next = "replan_stage2";
         else

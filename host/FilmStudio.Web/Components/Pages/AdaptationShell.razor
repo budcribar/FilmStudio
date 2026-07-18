@@ -1,4 +1,5 @@
 @* Shared header + step strip + job log for Adaptation step pages *@
+@inject AdminSessionService Session
 
 @if (Host is null)
 {
@@ -12,7 +13,7 @@
         <span class="text-muted small">@Host.ProjectLabel</span>
     }
 </div>
-<p class="text-muted mb-3">Import → screenplay → shot plan.</p>
+<p class="text-muted mb-3">Import → screenplay → characters → shot plan → scenes.</p>
 
 @* ---- Step strip ---- *@
 <nav class="nav nav-pills flex-wrap gap-1 mb-3" aria-label="Adaptation steps">
@@ -22,17 +23,22 @@
        href="@(OutlineEnabled ? "adaptation/screenplay" : "adaptation/import")"
        @onclick:preventDefault="@(!OutlineEnabled)"
        title="@(OutlineEnabled ? null : "Import a source first")">2 · Screenplay</a>
+    <a class="nav-link @(Step == "characters" ? "active" : "") @(!ShotsEnabled ? "disabled" : "")"
+       href="@(ShotsEnabled ? "characters" : "adaptation/screenplay")"
+       @onclick:preventDefault="@(!ShotsEnabled)"
+       title="@(ShotsEnabled ? "Pin cast likeness before clips" : "Approve a screenplay first")">3 · Characters</a>
     <a class="nav-link @(Step == "shots" ? "active" : "") @(!ShotsEnabled ? "disabled" : "")"
        href="@(ShotsEnabled ? "adaptation/shots" : "adaptation/screenplay")"
        @onclick:preventDefault="@(!ShotsEnabled)"
-       title="@(ShotsEnabled ? null : "Build or import a screenplay first")">3 · Shot plan</a>
+       title="@(ShotsEnabled ? null : "Approve a screenplay first")">4 · Shot plan</a>
 </nav>
 
 @if (!string.IsNullOrEmpty(Host.Error))
 {
     <div class="alert alert-danger">@Host.Error</div>
 }
-@if (!string.IsNullOrEmpty(Host.Message))
+@* Hide completion/status noise while Import or a job is still running *@
+@if (!string.IsNullOrEmpty(Host.Message) && !Host.SuppressGuidanceBanners)
 {
     <div class="alert alert-info">@Host.Message</div>
 }
@@ -138,12 +144,21 @@ else
         Host.Status is not null &&
         Host.Status.Screenplay.ReadyForShots;
 
-    /// <summary>Import owns its own progress UI; hide the global job card there.</summary>
+    /// <summary>
+    /// Technical job log is admin-only. Operators use Import progress / simple status.
+    /// Import page never shows this card (progress lives in the Import card).
+    /// </summary>
     private bool ShowJobPanel =>
+        Session.IsAdmin &&
         Host.Job is not null &&
         Step is not ("import" or "book") &&
         (Host.Job.Status is "running" or "error" or "cancelled" ||
          (Host.Job.Status == "done" && Host.Job.Kind is "stage1" or "stage2" or "book_prepare"));
+
+    protected override async Task OnInitializedAsync()
+    {
+        try { await Session.EnsureHydratedAsync(); } catch { /* optional */ }
+    }
 
     /// <summary>
     /// Hide the banner when the current step already is the next action
@@ -154,13 +169,19 @@ else
         get
         {
             if (Host.Status is null) return false;
+            // Never show “Next: approve…” while a draft is still being written
+            if (Host.SuppressGuidanceBanners) return false;
+
             var next = Host.Status.NextStep ?? "";
             var step = Step ?? "";
             if (step is "import" or "book")
             {
-                // On import: only when they should move on (not “import a file” again)
-                return next is "sign_screenplay" or "draft_screenplay" or "run_stage1" or "run_stage2"
-                    or "replan_stage2" or "generate_clips";
+                // On import: only after the pipeline is idle and they should leave Import
+                // (draft exists → continue to screenplay). Don't say “approve” mid-import.
+                if (next is "sign_screenplay" or "generate_clips" or "run_stage2" or "replan_stage2"
+                    or "pin_characters")
+                    return Host.Status.Screenplay.DraftExists;
+                return next is "draft_screenplay" or "run_stage1";
             }
             if (step == "screenplay")
             {
@@ -170,7 +191,7 @@ else
             if (step == "shots")
             {
                 // Hide plain “build shot plan”; keep replan / go elsewhere / generate
-                return next is not "run_stage2";
+                return next is not ("run_stage2" or "pin_characters");
             }
             return true;
         }

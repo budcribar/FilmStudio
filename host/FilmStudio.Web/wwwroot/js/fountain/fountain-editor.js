@@ -135,44 +135,89 @@
           var s = scenes[i];
           var label = s.index + ". " + (s.heading || "Scene");
           var active = s.line === activeLine ? " is-active" : "";
+          var hEnc = encodeURIComponent(s.heading || "");
           parts.push(
-            '<li><button type="button" class="fe-scene-btn' +
+            '<li class="fe-scene-row' +
+              active +
+              '">' +
+              '<button type="button" class="fe-scene-btn' +
               active +
               '" data-line="' +
               s.line +
               '" data-index="' +
               s.index +
               '" data-heading="' +
-              encodeURIComponent(s.heading || "") +
+              hEnc +
               '" title="' +
               label.replace(/"/g, "&quot;") +
               '">' +
               label.replace(/</g, "&lt;") +
-              "</button></li>"
+              "</button>" +
+              '<button type="button" class="fe-scene-book" data-line="' +
+              s.line +
+              '" data-index="' +
+              s.index +
+              '" data-heading="' +
+              hEnc +
+              '" title="Show book text for this scene">Book</button>' +
+              "</li>"
           );
         }
         parts.push("</ul>");
         inst.scenesEl.innerHTML = parts.join("");
+
+        function decodeHeading(btn) {
+          try {
+            return decodeURIComponent(btn.getAttribute("data-heading") || "");
+          } catch (e) {
+            return btn.getAttribute("data-heading") || "";
+          }
+        }
+
+        function markActive(line) {
+          inst.scenesEl.querySelectorAll(".fe-scene-row").forEach(function (row) {
+            var btn = row.querySelector(".fe-scene-btn");
+            var on = btn && parseInt(btn.getAttribute("data-line"), 10) === line;
+            row.classList.toggle("is-active", !!on);
+            if (btn) btn.classList.toggle("is-active", !!on);
+          });
+        }
+
         inst.scenesEl.querySelectorAll(".fe-scene-btn").forEach(function (btn) {
           btn.addEventListener("click", function () {
             var line = parseInt(btn.getAttribute("data-line"), 10);
             var index = parseInt(btn.getAttribute("data-index"), 10);
-            var heading = "";
-            try {
-              heading = decodeURIComponent(btn.getAttribute("data-heading") || "");
-            } catch (e) {
-              heading = btn.getAttribute("data-heading") || "";
-            }
+            var heading = decodeHeading(btn);
             if (line > 0) {
               inst._activeSceneLine = line;
               gotoLine(id, line);
-              // re-paint active class
-              inst.scenesEl.querySelectorAll(".fe-scene-btn").forEach(function (b) {
-                b.classList.toggle("is-active", parseInt(b.getAttribute("data-line"), 10) === line);
-              });
+              markActive(line);
+              // Jump only — book text is via the Book link (popup)
               if (inst.dotNet && inst.dotNet.invokeMethodAsync) {
                 try {
-                  inst.dotNet.invokeMethodAsync("OnSceneSelected", line, index, heading);
+                  inst.dotNet.invokeMethodAsync("OnSceneSelected", line, index, heading, false);
+                } catch (e) {
+                  /* ignore */
+                }
+              }
+            }
+          });
+        });
+
+        inst.scenesEl.querySelectorAll(".fe-scene-book").forEach(function (btn) {
+          btn.addEventListener("click", function (ev) {
+            ev.preventDefault();
+            ev.stopPropagation();
+            var line = parseInt(btn.getAttribute("data-line"), 10);
+            var index = parseInt(btn.getAttribute("data-index"), 10);
+            var heading = decodeHeading(btn);
+            if (line > 0) {
+              inst._activeSceneLine = line;
+              gotoLine(id, line);
+              markActive(line);
+              if (inst.dotNet && inst.dotNet.invokeMethodAsync) {
+                try {
+                  inst.dotNet.invokeMethodAsync("OnSceneSelected", line, index, heading, true);
                 } catch (e) {
                   /* ignore */
                 }
@@ -320,7 +365,7 @@
     inst.cm.setCursor({ line: line, ch: 0 });
     inst.cm.focus();
     inst.cm.scrollIntoView({ line: line, ch: 0 }, 80);
-    // Highlight preview
+    // Scroll page layout to matching line (read-only; no edit focus on preview)
     if (inst.previewEl) {
       var el = inst.previewEl.querySelector('[data-line="' + line1Based + '"]');
       if (el) {
@@ -328,7 +373,7 @@
         el.classList.add("fp-flash");
         setTimeout(function () {
           el.classList.remove("fp-flash");
-        }, 1200);
+        }, 900);
       }
     }
   }
@@ -363,6 +408,76 @@
     delete instances[id];
   }
 
+  /**
+   * Make the book fidelity floating window draggable by its header.
+   * Does not block the editor — no modal backdrop.
+   */
+  function bindBookWindowDrag(winEl) {
+    if (!winEl || winEl._feDragBound) return;
+    var header = winEl.querySelector("[data-drag-handle]") || winEl.querySelector(".fe-book-window-header");
+    if (!header) return;
+    winEl._feDragBound = true;
+
+    var dragging = false;
+    var startX = 0;
+    var startY = 0;
+    var origLeft = 0;
+    var origTop = 0;
+
+    function onPointerDown(e) {
+      // Don't start drag from the close button
+      if (e.target && e.target.closest && e.target.closest(".fe-book-window-close")) return;
+      if (e.button != null && e.button !== 0) return;
+      dragging = true;
+      header.classList.add("is-dragging");
+      startX = e.clientX;
+      startY = e.clientY;
+      var rect = winEl.getBoundingClientRect();
+      origLeft = rect.left;
+      origTop = rect.top;
+      // Switch from right/top CSS defaults to explicit left/top for free move
+      winEl.style.right = "auto";
+      winEl.style.left = origLeft + "px";
+      winEl.style.top = origTop + "px";
+      try {
+        header.setPointerCapture(e.pointerId);
+      } catch (err) {
+        /* ignore */
+      }
+      e.preventDefault();
+    }
+
+    function onPointerMove(e) {
+      if (!dragging) return;
+      var dx = e.clientX - startX;
+      var dy = e.clientY - startY;
+      var left = origLeft + dx;
+      var top = origTop + dy;
+      var maxL = Math.max(0, window.innerWidth - 80);
+      var maxT = Math.max(0, window.innerHeight - 48);
+      left = Math.min(Math.max(-winEl.offsetWidth + 80, left), maxL);
+      top = Math.min(Math.max(0, top), maxT);
+      winEl.style.left = left + "px";
+      winEl.style.top = top + "px";
+    }
+
+    function onPointerUp(e) {
+      if (!dragging) return;
+      dragging = false;
+      header.classList.remove("is-dragging");
+      try {
+        header.releasePointerCapture(e.pointerId);
+      } catch (err) {
+        /* ignore */
+      }
+    }
+
+    header.addEventListener("pointerdown", onPointerDown);
+    header.addEventListener("pointermove", onPointerMove);
+    header.addEventListener("pointerup", onPointerUp);
+    header.addEventListener("pointercancel", onPointerUp);
+  }
+
   global.fountainEditor = {
     init: init,
     getValue: getValue,
@@ -373,5 +488,6 @@
     refresh: refresh,
     getWarnings: getWarnings,
     dispose: dispose,
+    bindBookWindowDrag: bindBookWindowDrag,
   };
 })(typeof window !== "undefined" ? window : globalThis);

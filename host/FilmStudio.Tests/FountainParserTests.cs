@@ -114,6 +114,33 @@ public class FountainParserTests
     }
 
     [Fact]
+    public void Scene_heading_recognized_with_page_tag_on_next_line()
+    {
+        // Book→Fountain pipeline puts = page N / [[page N]] under the heading (no blank).
+        var text = """
+            Title: Page Tags
+
+            EXT. YARD - DAY
+            = page 2
+            [[page 2]]
+
+            A dog hops.
+
+            INT. ROOM - NIGHT
+            = page 4
+            [[page 4]]
+
+            MOMMA
+            Bedtime.
+            """;
+        var r = FountainParser.Parse(text);
+        var headings = r.Elements.Where(e => e.Type == FountainParser.ElementType.SceneHeading).ToList();
+        Assert.Equal(2, headings.Count);
+        Assert.Contains(headings, h => h.Text.Contains("YARD", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(headings, h => h.Text.Contains("ROOM", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
     public void Character_dialogue_parenthetical_dual()
     {
         var r = FountainParser.Parse(BrickSteel);

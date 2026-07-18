@@ -1,6 +1,6 @@
 {
   "schema_version": "extract_meta.v1",
-  "prepared_at": "2026-07-18T13:12:57",
+  "prepared_at": "2026-07-18T15:14:05",
   "pdf": "Buster_Noodle_Head_Dog_Goes_to_Bed_merged.pdf",
   "text_engine": "grok_vision",
   "pages": 15,

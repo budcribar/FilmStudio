@@ -2,15 +2,24 @@
 @implements IAsyncDisposable
 @inject EngineApiClient Engine
 @inject JobHubClient Hub
+@inject AdminSessionService Session
 @using FilmStudio.Core.Models
 
 <PageTitle>Characters</PageTitle>
 
 <h1>Characters</h1>
-<p class="text-muted">
+<p class="text-muted mb-1">
+    Pin cast likeness <strong>before</strong> generating clips on Scenes.
     Click a character → set their look. Your <strong>preferred picture</strong> and
     <strong>description</strong> are used when creating new portraits.
     <strong>Book pictures</strong> from the story can help if you’ve matched them.
+</p>
+<p class="small text-muted mb-3">
+    <a href="adaptation/screenplay">← Screenplay</a>
+    ·
+    <a href="adaptation/shots">Shot plan</a>
+    ·
+    <a href="scenes">Scenes →</a>
 </p>
 @if (_plates is not null && !_plates.SortedByCharacter)
 {
@@ -92,7 +101,7 @@ else if (_plates is not null && _plates.SortedByCharacter)
     </div>
 </div>
 
-@* Show progress / failure only — hide the card after a successful done *@
+@* Character / plate job progress — operators get simple status; admin gets debug log *@
 @if (_job is not null &&
      (_job.Kind is "character" or "character-plates") &&
      _job.Status is "running" or "error" or "cancelled")
@@ -100,17 +109,28 @@ else if (_plates is not null && _plates.SortedByCharacter)
     <div class="card mb-3 border-@(_job.Status == "running" ? "primary" : _job.Status == "error" ? "danger" : "secondary")">
         <div class="card-body py-2">
             <div class="d-flex flex-wrap align-items-center gap-2">
-                <span class="badge bg-secondary">@_job.Status</span>
-                <span class="badge bg-info text-dark">@_job.Kind</span>
-                @if (!string.IsNullOrEmpty(_job.CharKey))
+                @if (Session.IsAdmin)
                 {
-                    <code class="small">@_job.CharKey</code>
+                    <span class="badge bg-secondary">@_job.Status</span>
+                    <span class="badge bg-info text-dark">@_job.Kind</span>
+                    @if (!string.IsNullOrEmpty(_job.CharKey))
+                    {
+                        <code class="small">@_job.CharKey</code>
+                    }
+                    @if (_job.Total > 0)
+                    {
+                        <span class="small text-muted">@_job.Index / @_job.Total</span>
+                    }
+                    <span class="small">@_job.Message</span>
                 }
-                @if (_job.Total > 0)
+                else
                 {
-                    <span class="small text-muted">@_job.Index / @_job.Total</span>
+                    <span class="small">@FriendlyCharacterJobStatus(_job)</span>
+                    @if (_job.Status == "running" && _job.Total > 0)
+                    {
+                        <span class="small text-muted">@_job.Index / @_job.Total</span>
+                    }
                 }
-                <span class="small">@_job.Message</span>
                 @if (_job.Status == "running")
                 {
                     <button type="button" class="btn btn-sm btn-outline-danger ms-auto" disabled="@_busy" @onclick="CancelAsync">
@@ -125,9 +145,12 @@ else if (_plates is not null && _plates.SortedByCharacter)
                     <div class="progress-bar progress-bar-striped progress-bar-animated" style="width: @(Math.Max(8, pct))%"></div>
                 </div>
             }
-            @if (_job.Log.Count > 0)
+            @if (Session.IsAdmin && _job.Log.Count > 0)
             {
-                <pre class="small mb-0 mt-2" style="max-height: 120px; overflow: auto;">@string.Join("\n", _job.Log.TakeLast(16))</pre>
+                <details class="mt-2">
+                    <summary class="small text-muted" style="cursor:pointer">Details (admin)</summary>
+                    <pre class="small mb-0 mt-1" style="max-height: 160px; overflow: auto;">@string.Join("\n", _job.Log.TakeLast(24))</pre>
+                </details>
             }
         </div>
     </div>
@@ -658,6 +681,8 @@ else
         Hub.JobLog += OnJobLog;
         try
         {
+            try { await Session.EnsureHydratedAsync(); } catch { /* optional */ }
+
             var projs = await Engine.GetProjectsAsync();
             _projectIds = projs?.Projects.Select(p => p.Id ?? "").Where(s => s.Length > 0).ToList()
                           ?? new List<string> { "Buster" };
@@ -685,6 +710,32 @@ else
         await Task.CompletedTask;
     }
 
+    /// <summary>Operator-facing job line — no file names, vision model, or kind badges.</summary>
+    private static string FriendlyCharacterJobStatus(JobSnapshot job)
+    {
+        if (job.Status == "error")
+            return "Something went wrong matching book pictures. Try again.";
+        if (job.Status == "cancelled")
+            return "Matching cancelled.";
+
+        var kind = job.Kind ?? "";
+        if (string.Equals(kind, "character-plates", StringComparison.OrdinalIgnoreCase))
+        {
+            if (job.Total > 0)
+                return $"Matching book pictures… ({job.Index} of {job.Total})";
+            return "Matching book pictures…";
+        }
+
+        if (string.Equals(kind, "character", StringComparison.OrdinalIgnoreCase))
+        {
+            if (!string.IsNullOrWhiteSpace(job.CharKey))
+                return "Creating portrait…";
+            return "Working on character look…";
+        }
+
+        return "Working…";
+    }
+
     private void OnJobUpdated(JobSnapshot snap)
     {
         _job = snap;
@@ -695,11 +746,15 @@ else
             {
                 await SoftReloadAsync();
                 if (snap.Status == "done")
-                    _message = snap.Message ?? "Matching complete.";
+                    _message = Session.IsAdmin
+                        ? (snap.Message ?? "Matching complete.")
+                        : "Book pictures matched to the cast.";
                 else if (snap.Status == "error")
-                    _error = snap.Error ?? snap.Message ?? "Plate sort failed";
+                    _error = Session.IsAdmin
+                        ? (snap.Error ?? snap.Message ?? "Plate sort failed")
+                        : "Could not match book pictures. Try again.";
                 else if (snap.Status == "cancelled")
-                    _message = "Plate sort cancelled.";
+                    _message = "Matching cancelled.";
                 StateHasChanged();
             });
         }

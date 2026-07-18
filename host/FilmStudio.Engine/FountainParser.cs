@@ -231,8 +231,11 @@ public static class FountainParser
             var nextBlank = NextBlank(lines, i);
             var classify = trimmed; // already trimmed; indent ignored for non-action
 
-            // Automatic scene heading: blank before + blank after + INT/EXT/...
-            if (prevBlank && nextBlank && SceneHeadingStart.IsMatch(classify))
+            // Automatic scene heading: blank before + INT/EXT/...
+            // Fountain prefers a blank after; we also accept page-tag / synopsis lines
+            // immediately under the heading (= page N, = synopsis) for book tooling.
+            if (prevBlank && SceneHeadingStart.IsMatch(classify) &&
+                (nextBlank || NextIsPageTagOrSynopsis(lines, i)))
             {
                 var (heading, sceneNo) = SplitSceneNumber(classify);
                 result.Elements.Add(new Element
@@ -480,7 +483,9 @@ public static class FountainParser
         if (trimmed.StartsWith('~')) return true;
         if (IsCentered(trimmed)) return true;
         if (trimmed.StartsWith('>') && !IsCentered(trimmed)) return true;
-        if (prevBlank && nextBlank && SceneHeadingStart.IsMatch(trimmed)) return true;
+        if (prevBlank && SceneHeadingStart.IsMatch(trimmed) &&
+            (nextBlank || NextIsPageTagOrSynopsis(lines, i)))
+            return true;
         if (prevBlank && nextBlank)
         {
             var transCandidate = lines[i].TrimStart();
@@ -525,6 +530,24 @@ public static class FountainParser
     {
         if (i + 1 >= lines.Length) return true;
         return string.IsNullOrWhiteSpace(lines[i + 1]);
+    }
+
+    /// <summary>
+    /// True when the line after a potential scene heading is a Fountain synopsis
+    /// or our book page tag (so headings stay recognized without a blank line).
+    /// </summary>
+    private static bool NextIsPageTagOrSynopsis(string[] lines, int i)
+    {
+        if (i + 1 >= lines.Length) return false;
+        var next = lines[i + 1].Trim();
+        if (next.Length == 0) return false;
+        // Synopsis: = text (not === section)
+        if (next.StartsWith('=') && !next.StartsWith("===", StringComparison.Ordinal))
+            return true;
+        // Page notes if not yet stripped: [[page N]]
+        if (Regex.IsMatch(next, @"^\[\[\s*pages?\s+\d+", RegexOptions.IgnoreCase))
+            return true;
+        return false;
     }
 
     private static bool IsTwoSpaceContinue(string raw) =>

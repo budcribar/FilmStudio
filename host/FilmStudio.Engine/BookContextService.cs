@@ -194,7 +194,7 @@ public static class BookContextService
             PageNumber = page.PageNumber,
             Heading = sceneHeading,
             SceneIndex = sceneIndex,
-            Excerpt = Truncate(page.Text, 2500),
+            Excerpt = Truncate(page.Text, 6000),
             MatchReason = reason,
             TotalPages = totalPages,
         };

@@ -109,7 +109,7 @@ public class ScreenplayServiceTests : IDisposable
     }
 
     [Fact]
-    public void Offline_stub_draft_from_book_has_page_tags()
+    public void Offline_stub_draft_from_book_has_no_page_tags()
     {
         // CreateDraftFromBook (sync) is the offline stub — production uses chat.
         const string projectId = "Demo";
@@ -123,9 +123,28 @@ public class ScreenplayServiceTests : IDisposable
         Assert.True(r.Ok, r.Error);
         var text = ScreenplayService.Get(_store, projectId).Text;
         Assert.Contains("Title:", text);
-        Assert.Contains("= page ", text, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("[[page ", text, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("= page ", text, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("[[page ", text, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("naps", text, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void StripBookPageTags_removes_synopsis_and_note_forms()
+    {
+        var raw = """
+            Title: X
+
+            INT. ROOM - DAY
+            = page 2
+            [[page 2]]
+
+            Action here.
+            """;
+        var cleaned = BookToFountainConverter.StripBookPageTags(raw);
+        Assert.DoesNotContain("= page", cleaned, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("[[page", cleaned, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("INT. ROOM", cleaned, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Action here", cleaned, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
@@ -197,7 +216,7 @@ public class ScreenplayServiceTests : IDisposable
 
         // Fountain product path — not the JSON schema dump
         Assert.Contains("Fountain", system, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("[[page N]]", system, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("page numbers", system, StringComparison.OrdinalIgnoreCase); // forbid page tags
         Assert.Contains("12", system); // TOTAL_RUNTIME substituted
         Assert.DoesNotContain("{{TOTAL_RUNTIME_MINUTES}}", system);
         Assert.DoesNotContain("stage1_scene_bible.schema.json", system);
@@ -265,7 +284,8 @@ public class ScreenplayServiceTests : IDisposable
         var f = ScreenplayService.BookTextToFountainDraft("My Book",
             "--- PAGE 1 ---\nA little dog naps by the warm fire tonight.\n");
         Assert.Contains("Title:", f);
-        Assert.Contains("[[page ", f, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("naps", f, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("[[page ", f, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
@@ -337,8 +357,29 @@ public class ScreenplayServiceTests : IDisposable
             HERO
             We begin.
             """;
-        Assert.True(BookToFountainConverter.LooksLikeGoodFountain(novel, requirePageTags: false));
-        Assert.False(BookToFountainConverter.LooksLikeGoodFountain(novel, requirePageTags: true));
+        Assert.True(BookToFountainConverter.LooksLikeGoodFountain(novel));
+        // requirePageTags is ignored (page tags stripped / not required)
+        Assert.True(BookToFountainConverter.LooksLikeGoodFountain(novel, requirePageTags: true));
+    }
+
+    [Fact]
+    public void LooksLikeGoodFountain_accepts_picture_book_shape_after_page_tag_strip()
+    {
+        var raw = """
+            Title: Buster
+            Author: Debra
+
+            EXT. YARD - DAY
+            = page 2
+            [[page 2]]
+
+            NARRATOR
+            He's Buster the Noodle Head Dog.
+            """;
+        Assert.True(BookToFountainConverter.LooksLikeGoodFountain(raw));
+        var stripped = BookToFountainConverter.StripBookPageTags(raw);
+        Assert.DoesNotContain("= page", stripped, StringComparison.OrdinalIgnoreCase);
+        Assert.True(BookToFountainConverter.LooksLikeGoodFountain(stripped));
     }
 
     [Fact]

@@ -34,7 +34,14 @@ public abstract class AdaptationPageBase : ComponentBase, IAsyncDisposable
     public int ProgressTotal;
 
     public bool JobRunning =>
-        string.Equals(Job?.Status, "running", StringComparison.OrdinalIgnoreCase);
+        string.Equals(Job?.Status, "running", StringComparison.OrdinalIgnoreCase) ||
+        string.Equals(Job?.Status, "queued", StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// Hide “Next” / stale status alerts while a pipeline step is still running
+    /// (e.g. Import writing the draft after book prepare finished).
+    /// </summary>
+    public bool SuppressGuidanceBanners => Busy || JobRunning;
 
     /// <summary>import | screenplay | shots</summary>
     public abstract string StepKey { get; }
@@ -88,7 +95,12 @@ public abstract class AdaptationPageBase : ComponentBase, IAsyncDisposable
             {
                 await SoftLoadAsync();
                 if (snap.Status == "done")
-                    Message = snap.Message ?? "Job finished";
+                {
+                    // Avoid flashing technical “Book ready · quality=good…” while Import
+                    // continues into draft generation (Busy stays true).
+                    if (!Busy)
+                        Message = OperatorJobDoneMessage(snap);
+                }
                 else if (snap.Status == "error")
                     Error = snap.Error ?? snap.Message ?? "Job failed";
                 StateHasChanged();
@@ -390,13 +402,27 @@ public abstract class AdaptationPageBase : ComponentBase, IAsyncDisposable
     {
         "import_book" => "Import a screenplay, PDF, or text file",
         "fix_book_text" => "Prepare imported text, or import a screenplay",
-        "sign_screenplay" => "Edit the screenplay and approve when ready",
-        "draft_screenplay" => "Draft the screenplay from the book",
+        "sign_screenplay" => "Open Screenplay, edit if needed, then approve",
+        "draft_screenplay" => "Create a screenplay draft from the book",
         "run_stage1" => "Build the screenplay from the book",
+        "pin_characters" => "Pin cast likeness on Characters, then build the shot plan",
         "run_stage2" => "Build the shot plan",
         "replan_stage2" => "Update the shot plan (screenplay changed)",
         "generate_clips" => "Open Scenes and create video clips",
-        _ => "Looks complete — refine on Scenes or Characters",
+        _ => "Looks complete — refine on Characters or Scenes",
+    };
+
+    /// <summary>Short operator copy when a background job finishes (no OCR/engine jargon).</summary>
+    public static string OperatorJobDoneMessage(JobSnapshot snap) => snap.Kind switch
+    {
+        "book_prepare" => "Book text is ready",
+        "stage1" => snap.Message is { Length: > 0 } m && !m.Contains("quality=", StringComparison.Ordinal)
+            ? m
+            : "Screenplay draft ready",
+        "stage2" => "Shot plan ready",
+        _ => string.IsNullOrWhiteSpace(snap.Message) || snap.Message.Contains("quality=", StringComparison.Ordinal)
+            ? "Step finished"
+            : snap.Message!,
     };
 
     public static string NextStepAlertClass(string step) => step switch
@@ -422,8 +448,9 @@ public abstract class AdaptationPageBase : ComponentBase, IAsyncDisposable
         {
             "import_book" or "fix_book_text" => "/adaptation/import",
             "sign_screenplay" or "draft_screenplay" or "run_stage1" => "/adaptation/screenplay",
+            "pin_characters" => "/characters",
             "run_stage2" or "replan_stage2" => "/adaptation/shots",
-            "generate_clips" or "done" => "/adaptation/shots",
+            "generate_clips" or "done" => "/scenes",
             _ => "/adaptation/import",
         };
     }

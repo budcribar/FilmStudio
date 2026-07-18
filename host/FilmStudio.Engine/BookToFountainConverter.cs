@@ -26,8 +26,8 @@ public static class BookToFountainConverter
     public const string FountainOutputOverride = """
         Act as an expert screenwriter. Adapt the book into Fountain 1.1 only (no JSON).
         Target runtime about {{TOTAL_RUNTIME_MINUTES}} minutes. Real INT./EXT. locations.
-        Page tags only when the book has --- PAGE N --- markers. NARRATOR for narration;
-        CHARACTER cues for speech. Closed cast. VO↔visual fidelity. No major invented plot.
+        No page numbers in the script. NARRATOR for narration; CHARACTER cues for speech.
+        Closed cast. VO↔visual fidelity. No major invented plot.
         """;
 
     /// <summary>
@@ -55,26 +55,72 @@ public static class BookToFountainConverter
         var system = await BuildSystemPromptAsync(workspaceRoot, totalRuntimeMinutes, ct)
             .ConfigureAwait(false);
         var pageCount = CountPageMarkers(bookText);
-        var hasPageMarkers = pageCount > 0;
 
         string text;
-        if (bookText.Length <= SingleShotMaxChars)
+        try
         {
-            onProgress?.Invoke("Adapting book → Fountain (single pass)…");
-            text = await ConvertSingleShotAsync(
-                system, title, author, pageCount, totalRuntimeMinutes, bookText,
-                hasPageMarkers, chat, model, ct).ConfigureAwait(false);
+            if (bookText.Length <= SingleShotMaxChars)
+            {
+                onProgress?.Invoke("Adapting book → Fountain (single pass)…");
+                text = await ConvertSingleShotAsync(
+                    system, title, author, pageCount, totalRuntimeMinutes, bookText,
+                    chat, model, ct).ConfigureAwait(false);
+            }
+            else
+            {
+                onProgress?.Invoke("Long book — multi-chunk adapt → merge…");
+                text = await ConvertMultiChunkAsync(
+                    system, title, author, pageCount, totalRuntimeMinutes, bookText,
+                    chat, model, onProgress, ct).ConfigureAwait(false);
+            }
         }
-        else
+        catch (InvalidOperationException) when (LooksLikeGoodFountain(ConvertHeuristic(title, bookText, author)))
         {
-            onProgress?.Invoke("Long book — multi-chunk adapt → merge…");
-            text = await ConvertMultiChunkAsync(
-                system, title, author, pageCount, totalRuntimeMinutes, bookText,
-                hasPageMarkers, chat, model, onProgress, ct).ConfigureAwait(false);
+            // Chat output failed structural gates — still give a usable draft from book text
+            onProgress?.Invoke("Model draft unusable — building structured draft from book text…");
+            text = ConvertHeuristic(title, bookText, author);
         }
 
         text = EnsureDraftDate(text);
+        // Hard strip — models still emit tags even when the prompt forbids them
+        text = StripBookPageTags(text);
+        if (!LooksLikeGoodFountain(text))
+            throw new InvalidOperationException(
+                "Could not build a usable screenplay from the book. Try again or import a .fountain file.");
+
         return ScreenplayService.NormalizeText(text);
+    }
+
+    /// <summary>
+    /// Remove operator-facing book page tags from Fountain
+    /// (<c>= page N</c>, <c>[[page N]]</c>). Book linkage uses text/order match in the UI.
+    /// </summary>
+    public static string StripBookPageTags(string fountain)
+    {
+        if (string.IsNullOrEmpty(fountain)) return fountain ?? "";
+
+        // Whole-line synopsis tags: = page 2  /  = pages 2-4
+        fountain = Regex.Replace(
+            fountain,
+            @"(?im)^[ \t]*=\s*pages?\s+\d+(?:\s*[-–]\s*\d+)?\s*\r?\n?",
+            "");
+
+        // Standalone note lines: [[page 2]] or [[pages 2-3]]
+        fountain = Regex.Replace(
+            fountain,
+            @"(?im)^[ \t]*\[\[\s*pages?\s+\d+(?:\s*[-–]\s*\d+)?\s*\]\]\s*\r?\n?",
+            "");
+
+        // Inline notes left in a line of other text
+        fountain = Regex.Replace(
+            fountain,
+            @"\[\[\s*pages?\s+\d+(?:\s*[-–]\s*\d+)?\s*\]\]",
+            "",
+            RegexOptions.IgnoreCase);
+
+        // Collapse excess blank lines left behind
+        fountain = Regex.Replace(fountain, @"\n{3,}", "\n\n");
+        return fountain.TrimEnd() + (fountain.EndsWith('\n') || fountain.Length == 0 ? "" : "\n");
     }
 
     /// <summary>Load <c>prompts/book_to_fountain.txt</c>.</summary>
@@ -233,42 +279,38 @@ public static class BookToFountainConverter
             if (body.Length < 12) continue;
             if (Regex.IsMatch(body, @"^\(illustration", RegexOptions.IgnoreCase)) continue;
 
-            sb.Append("INT. SCENE - DAY\n\n");
-            sb.Append("= page ").Append(page.PageNumber).Append("\n\n");
-            sb.Append("[[page ").Append(page.PageNumber).Append("]]\n\n");
+            sb.Append("INT. ROOM - DAY\n\n");
             sb.Append("NARRATOR\n");
             var line = Regex.Replace(body, @"\s+", " ").Trim();
             if (line.Length > 400) line = line[..400] + "…";
             sb.Append(line).Append("\n\n");
         }
 
-        return ScreenplayService.NormalizeText(sb.ToString());
+        return ScreenplayService.NormalizeText(StripBookPageTags(sb.ToString()));
     }
 
     /// <summary>
-    /// Structural check for usable Fountain. Page tags required only when present in output
-    /// expectations — novels without page markers are OK if real locations + body exist.
+    /// Structural check for usable Fountain. Page tags are never required (stripped for operators).
     /// </summary>
     public static bool LooksLikeGoodFountain(string text, bool requirePageTags = false)
     {
-        if (string.IsNullOrWhiteSpace(text) || text.Length < 120) return false;
+        _ = requirePageTags; // legacy param — page tags are no longer part of the product gate
+        text = StripBookPageTags(text ?? "");
+        if (string.IsNullOrWhiteSpace(text) || text.Length < 80) return false;
 
         var hasScene = Regex.IsMatch(text, @"(?im)^(INT|EXT|EST|I/E)[\./ ]");
-        var hasPageTag =
-            Regex.IsMatch(text, @"(?im)^=\s*pages?\s+\d+") ||
-            Regex.IsMatch(text, @"\[\[\s*page\s+\d+\s*\]\]", RegexOptions.IgnoreCase);
-
         var dumpCount = Regex.Matches(text, @"(?im)^INT\.\s+STORY\s+-\s+PAGE\s+\d+").Count;
         if (dumpCount >= 2) return false;
 
-        var realLoc = Regex.IsMatch(text, @"(?im)^(INT|EXT)\.\s+(?!SCENE\b)[A-Z]");
+        // Prefer real locations; INT. SCENE is ok if there is dialogue/narration body
+        var realLoc = Regex.IsMatch(text, @"(?im)^(INT|EXT)\.\s+(?!SCENE\b)[A-Z0-9]");
         var hasNarratorOrDialogue =
             Regex.IsMatch(text, @"(?im)^NARRATOR\s*$") ||
             Regex.IsMatch(text, @"(?m)^[A-Z][A-Z0-9 &'.\-]{1,40}\s*$");
+        var hasActionBody = Regex.IsMatch(text, @"(?m)^[a-zA-Z].{20,}");
 
         if (!hasScene) return false;
-        if (requirePageTags && !hasPageTag) return false;
-        return realLoc || hasNarratorOrDialogue || hasPageTag;
+        return realLoc || hasNarratorOrDialogue || hasActionBody;
     }
 
     // ── single / multi paths ─────────────────────────────────────────────
@@ -280,7 +322,6 @@ public static class BookToFountainConverter
         int pageCount,
         int totalMinutes,
         string bookText,
-        bool hasPageMarkers,
         IGrokChatClient chat,
         string model,
         CancellationToken ct)
@@ -292,17 +333,17 @@ public static class BookToFountainConverter
 
         var text = await chat.CompleteAsync(system, user, model, temperature: 0.2, ct)
             .ConfigureAwait(false);
-        text = StripFences(text);
+        text = StripBookPageTags(StripFences(text));
 
-        if (!LooksLikeGoodFountain(text, requirePageTags: hasPageMarkers))
+        if (!LooksLikeGoodFountain(text))
         {
-            var retryUser = user + RetrySuffix(hasPageMarkers);
+            var retryUser = user + RetrySuffix(hasPageMarkers: false);
             text = await chat.CompleteAsync(system, retryUser, model, temperature: 0.15, ct)
                 .ConfigureAwait(false);
-            text = StripFences(text);
+            text = StripBookPageTags(StripFences(text));
         }
 
-        if (!LooksLikeGoodFountain(text, requirePageTags: hasPageMarkers))
+        if (!LooksLikeGoodFountain(text))
             throw new InvalidOperationException(
                 "Could not build a usable screenplay from the book. Try again or import a .fountain file.");
 
@@ -316,7 +357,6 @@ public static class BookToFountainConverter
         int pageCount,
         int totalMinutes,
         string bookText,
-        bool hasPageMarkers,
         IGrokChatClient chat,
         string model,
         Action<string>? onProgress,
@@ -339,13 +379,13 @@ public static class BookToFountainConverter
 
             var part = await chat.CompleteAsync(system, user, model, temperature: 0.2, ct)
                 .ConfigureAwait(false);
-            part = StripFences(part);
+            part = StripBookPageTags(StripFences(part));
 
-            if (!LooksLikeGoodFountain(part, requirePageTags: false) && part.Length < 80)
+            if (!LooksLikeGoodFountain(part) && part.Length < 80)
             {
-                part = await chat.CompleteAsync(system, user + RetrySuffix(hasPageMarkers), model, 0.15, ct)
+                part = await chat.CompleteAsync(system, user + RetrySuffix(false), model, 0.15, ct)
                     .ConfigureAwait(false);
-                part = StripFences(part);
+                part = StripBookPageTags(StripFences(part));
             }
 
             parts.Add(part);
@@ -353,7 +393,7 @@ public static class BookToFountainConverter
         }
 
         onProgress?.Invoke("Stitching chunk screenplays…");
-        var stitched = StitchFountainParts(parts);
+        var stitched = StripBookPageTags(StitchFountainParts(parts));
 
         // Merge pass: unify cast tokens, cut duplicate setups, one ending
         if (parts.Count >= 2)
@@ -361,10 +401,10 @@ public static class BookToFountainConverter
             onProgress?.Invoke("Merge pass — unifying full-novel screenplay…");
             try
             {
-                var merged = await MergeFountainPartsAsync(
+                var merged = StripBookPageTags(await MergeFountainPartsAsync(
                     system, title, author, totalMinutes, parts, chat, model, ct)
-                    .ConfigureAwait(false);
-                if (LooksLikeGoodFountain(merged, requirePageTags: hasPageMarkers) &&
+                    .ConfigureAwait(false));
+                if (LooksLikeGoodFountain(merged) &&
                     CountSceneHeadings(merged) >= Math.Max(2, CountSceneHeadings(stitched) / 3))
                 {
                     return merged;
@@ -378,7 +418,7 @@ public static class BookToFountainConverter
             }
         }
 
-        if (!LooksLikeGoodFountain(stitched, requirePageTags: hasPageMarkers))
+        if (!LooksLikeGoodFountain(stitched))
             throw new InvalidOperationException(
                 "Could not build a usable multi-chunk screenplay from the book.");
 
@@ -410,7 +450,7 @@ public static class BookToFountainConverter
         sb.AppendLine("- Remove duplicate cold opens / repeated setups when chunks overlap.");
         sb.AppendLine("- One FADE OUT / THE END at the finish.");
         sb.AppendLine("- No markdown fences, no JSON, no commentary.");
-        sb.AppendLine("- If page tags appear in parts, keep them; do not invent pages.");
+        sb.AppendLine("- Do not include = page N or [[page N]] tags — strip them if present in parts.");
         sb.AppendLine();
 
         // Budget merge input (~60k total for parts)
@@ -470,7 +510,7 @@ public static class BookToFountainConverter
         if (chunkTotal <= 1)
         {
             lines.Add("Write the complete Fountain screenplay only (see system prompt).");
-            lines.Add("If there are no --- PAGE N --- markers, omit page tags.");
+            lines.Add("Do not emit page numbers or page tags.");
         }
         else if (chunkIndex == 0)
         {
@@ -478,7 +518,7 @@ public static class BookToFountainConverter
             lines.Add("Write Fountain with a full title page + scenes for THIS chunk only.");
             lines.Add("Establish cast tokens and locations you will reuse later.");
             lines.Add("Do NOT write FADE OUT / THE END yet — more story follows.");
-            lines.Add("If there are no --- PAGE N --- markers, omit page tags.");
+            lines.Add("Do not emit page numbers or page tags.");
         }
         else
         {
@@ -490,7 +530,7 @@ public static class BookToFountainConverter
                 lines.Add("Do NOT write FADE OUT / THE END yet — more story follows.");
             else
                 lines.Add("This is the FINAL chunk — include resolution and FADE OUT / THE END.");
-            lines.Add("If there are no --- PAGE N --- markers, omit page tags.");
+            lines.Add("Do not emit page numbers or page tags.");
             if (!string.IsNullOrWhiteSpace(continuity))
             {
                 lines.Add("");
@@ -536,25 +576,15 @@ public static class BookToFountainConverter
         return sb.ToString();
     }
 
-    private static string RetrySuffix(bool hasPageMarkers) => hasPageMarkers
-        ? """
+    private static string RetrySuffix(bool hasPageMarkers) => """
 
 
-            IMPORTANT: Previous output was not valid Fountain for our pipeline.
-            Re-output Fountain only.
-            - Every scene: INT./EXT. real location (not STORY, not PAGE in the heading).
-            - After every scene heading: = page N and [[page N]]
-            - Use NARRATOR and CHARACTER dialogue where the book has narration or speech.
-            """
-        : """
-
-
-            IMPORTANT: Previous output was not valid Fountain for our pipeline.
-            Re-output Fountain only.
-            - Every scene: INT./EXT. real location (not STORY, not PAGE in the heading).
-            - Do not invent page tags unless the book has --- PAGE N --- markers.
-            - Use NARRATOR and CHARACTER dialogue where the book has narration or speech.
-            """;
+        IMPORTANT: Previous output was not valid Fountain for our pipeline.
+        Re-output Fountain only.
+        - Every scene: INT./EXT. real location (not STORY, not PAGE in the heading).
+        - Do not emit = page N or [[page N]] tags.
+        - Use NARRATOR and CHARACTER dialogue where the book has narration or speech.
+        """;
 
     // ── chunking helpers ─────────────────────────────────────────────────
 

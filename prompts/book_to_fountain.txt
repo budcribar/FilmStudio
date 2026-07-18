@@ -60,18 +60,8 @@ SCENE HEADINGS:
 - Do NOT put PAGE or CHAPTER in the scene heading line itself.
 - Prefer concrete places from the book (COUNTING HOUSE, SHIP DECK, NURSERY, …).
 
-PAGE TAGS (only when the book has page markers):
-If the book text contains `--- PAGE N ---` markers, then after each scene heading
-include BOTH:
-  = page N
-  [[page N]]
-N is the marker the content mainly comes from. Spanning: = pages N-M is OK;
-still include [[page N]] for the start page.
-
-If there are NO `--- PAGE N ---` markers (typical novels / Gutenberg plain text):
-- Do NOT invent page numbers.
-- Do NOT emit = page / [[page …]] tags.
-- Scene headings alone are enough.
+Do NOT put page numbers in the screenplay (no `= page N`, no `[[page N]]`, no PAGE in headings).
+Book fidelity is checked in the UI by matching scene text to the prepared book — not via page tags.
 
 BODY:
 - Action lines = what we SEE (story beats / visual events)

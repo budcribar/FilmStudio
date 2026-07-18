@@ -206,6 +206,8 @@ public static class ScreenplayService
     {
         text ??= "";
         text = text.Replace("\r\n", "\n").Replace('\r', '\n');
+        // Drop book page tags — fidelity uses UI match, not script annotations
+        text = BookToFountainConverter.StripBookPageTags(text);
         if (text.Length > 0 && !text.EndsWith('\n'))
             text += "\n";
         return text;
