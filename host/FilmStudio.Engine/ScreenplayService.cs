@@ -430,6 +430,7 @@ public static class ScreenplayService
         string projectId,
         FilmStudio.Engine.Abstractions.IGrokChatClient? chat = null,
         string model = "grok-4.5",
+        Action<string>? onProgress = null,
         CancellationToken ct = default)
     {
         var projectDir = store.GetProjectDir(projectId);
@@ -455,6 +456,7 @@ public static class ScreenplayService
                 totalRuntimeMinutes: minutes,
                 chat: chat,
                 model: model,
+                onProgress: onProgress,
                 ct: ct).ConfigureAwait(false);
 
             var save = SaveDraft(store, projectId, fountain);

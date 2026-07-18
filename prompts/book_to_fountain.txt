@@ -132,10 +132,19 @@ RUNTIME SHAPE
 ================================================================
 Target about {{TOTAL_RUNTIME_MINUTES}} minutes of finished film.
 - Short stories / picture books: few scenes, dense beats, little padding.
-- Novellas / novels: more scenes, still ONE coherent short film — compress episodes,
-  cut pure digression, keep the emotional/plot spine.
+- Novellas / novels: more scenes, still ONE coherent film — compress digression,
+  keep the emotional/plot spine. Multi-chunk mode may send the book in ordered parts;
+  when you see BOOK_CHUNK n/m, adapt only that part and honor continuity notes.
 Do not write one scene per chapter or paragraph unless location/purpose truly changes.
 When the source is long and truncated in the prompt, cover only what is provided.
+
+================================================================
+MULTI-CHUNK ADAPT (when BOOK_CHUNK n/m is in the user message)
+================================================================
+- Chunk 1/m: full title page + scenes for this part; establish cast tokens; no THE END.
+- Chunk 2..m-1: NO title page; only new scenes; reuse CHARACTER tokens; no THE END.
+- Chunk m/m: NO title page; finish the arc; include FADE OUT / THE END.
+- Merge mode (if asked): one title page, consistent cast, full arc, no duplicate opens.
 
 ================================================================
 OUTPUT

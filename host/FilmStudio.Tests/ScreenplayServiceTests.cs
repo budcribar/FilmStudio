@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using FilmStudio.Core.Options;
 using FilmStudio.Engine;
 using Microsoft.Extensions.Options;
@@ -265,6 +266,79 @@ public class ScreenplayServiceTests : IDisposable
             "--- PAGE 1 ---\nA little dog naps by the warm fire tonight.\n");
         Assert.Contains("Title:", f);
         Assert.Contains("[[page ", f, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void ChunkBookForAdaptation_splits_long_chaptered_text()
+    {
+        var sb = new System.Text.StringBuilder();
+        for (var c = 1; c <= 12; c++)
+        {
+            sb.Append("CHAPTER ").Append(c).Append('\n');
+            sb.Append(new string('a', 3_000)).Append(" chapter body ").Append(c).Append("\n\n");
+        }
+        var book = sb.ToString();
+        Assert.True(book.Length > BookToFountainConverter.SingleShotMaxChars);
+
+        var chunks = BookToFountainConverter.ChunkBookForAdaptation(book);
+        Assert.InRange(chunks.Count, 2, BookToFountainConverter.MaxAdaptChunks);
+        Assert.True(chunks.Sum(c => c.Length) >= book.Length * 0.9);
+        // First chunk should open near chapter 1
+        Assert.Contains("CHAPTER 1", chunks[0], StringComparison.OrdinalIgnoreCase);
+        // Last chunk should include late material
+        Assert.Contains("CHAPTER", chunks[^1], StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void StitchFountainParts_keeps_one_title_page_and_all_scenes()
+    {
+        var p1 = """
+            Title: Epic
+            Author: Test
+            Draft date: 1/1/2026
+
+            INT. CASTLE - DAY
+
+            HERO
+            Hello.
+            """;
+        var p2 = """
+            Title: Epic
+            Author: Test
+
+            EXT. FOREST - NIGHT
+
+            HERO
+            Again.
+
+            FADE OUT.
+
+            THE END
+            """;
+        var stitched = BookToFountainConverter.StitchFountainParts(new[] { p1, p2 });
+        Assert.Single(Regex.Matches(stitched, @"(?im)^Title:"));
+        Assert.Contains("INT. CASTLE", stitched, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("EXT. FOREST", stitched, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("THE END", stitched, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void LooksLikeGoodFountain_allows_novels_without_page_tags()
+    {
+        var novel = """
+            Title: Novel
+            Author: A
+
+            INT. DRAWING ROOM - NIGHT
+
+            NARRATOR
+            It was a dark and stormy night, longer than one hundred and twenty characters of padding for the quality gate to pass structural validation of the fountain body text.
+
+            HERO
+            We begin.
+            """;
+        Assert.True(BookToFountainConverter.LooksLikeGoodFountain(novel, requirePageTags: false));
+        Assert.False(BookToFountainConverter.LooksLikeGoodFountain(novel, requirePageTags: true));
     }
 
     [Fact]

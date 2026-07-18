@@ -99,7 +99,8 @@ public sealed class Stage1Service
             projectId,
             _chat,
             model,
-            ct).ConfigureAwait(false);
+            onProgress: onProgress,
+            ct: ct).ConfigureAwait(false);
         if (!draft.Ok)
             throw new InvalidOperationException(draft.Error ?? "Could not create Fountain draft from book.");
 

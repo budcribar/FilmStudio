@@ -48,6 +48,15 @@ BOOKS = [
         "kind_hint": "short_story",
     },
     {
+        "id": "tell_tale_heart",
+        "title": "The Tell-Tale Heart",
+        "path": Path(r"C:\Users\budcr\Downloads\tell-tale-heart.txt"),
+        "must_include": ["heart", "eye"],
+        "iconic": ["old man", "vulture", "police", "floor", "mad"],
+        "must_not_as_heading": ["STORY", "PAGE "],
+        "kind_hint": "short_story",
+    },
+    {
         "id": "brick_steel",
         "title": "Brick & Steel",
         "path": Path(r"C:\Users\budcr\Downloads\Brick-&-Steel.txt"),
