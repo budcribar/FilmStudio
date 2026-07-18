@@ -57,6 +57,24 @@ public class LoadSimGateTests
     }
 
     [Fact]
+    public void SimOptions_parses_ready_barrier_flags()
+    {
+        var o = SimOptions.Parse(new[]
+        {
+            "--readyTimeoutSec", "45",
+            "--skipReadyBarrier",
+            "--users", "10",
+        });
+        Assert.Equal(45, o.ReadyTimeoutSec);
+        Assert.True(o.SkipReadyBarrier);
+        Assert.Equal(10, o.Users);
+
+        var def = SimOptions.Parse(Array.Empty<string>());
+        Assert.Equal(60, def.ReadyTimeoutSec);
+        Assert.False(def.SkipReadyBarrier);
+    }
+
+    [Fact]
     public void MetricsCollector_records_and_builds()
     {
         var m = new MetricsCollector();

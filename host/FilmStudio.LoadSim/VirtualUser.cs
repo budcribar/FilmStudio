@@ -22,6 +22,8 @@ public sealed class VirtualUser
     private int _sceneCount = 1;
     private int _gensDone;
 
+    public string UserId => _userId;
+
     public VirtualUser(int index, SimOptions opts, MetricsCollector metrics, HttpClient http)
     {
         _index = index;
@@ -32,10 +34,26 @@ public sealed class VirtualUser
         _rng = new Random(HashCode.Combine(index, Environment.TickCount));
     }
 
-    public async Task RunAsync(CancellationToken ct)
+    /// <summary>
+    /// HTTP ready: open connection, prove /health, light-warm project paths, discover scenes.
+    /// Does <b>not</b> record metrics (outside the stress clock).
+    /// </summary>
+    public async Task ReadyAsync(CancellationToken ct)
     {
-        await DiscoverScenesAsync(ct);
+        var health = await GetAsync("/health", ct);
+        if (health is < 200 or >= 300)
+            throw new InvalidOperationException($"ready /health → HTTP {health}");
 
+        // Warm server caches / connections (not timed)
+        _ = await GetAsync("/api/projects", ct);
+        _ = await GetAsync($"/api/projects/{Esc(_opts.ProjectId)}/scenes?light=1", ct);
+        await DiscoverScenesAsync(ct);
+        _ = await GetAsync("/api/capacity", ct);
+    }
+
+    /// <summary>Measured stress loop. Call only after the global ready barrier releases.</summary>
+    public async Task RunStressAsync(CancellationToken ct)
+    {
         while (!ct.IsCancellationRequested)
         {
             var think = _opts.ThinkTimeMs <= 0
@@ -264,8 +282,10 @@ public sealed class VirtualUser
     {
         try
         {
-            using var req = CreateRequest(HttpMethod.Get, $"/api/projects/{Esc(_opts.ProjectId)}/scenes");
-            using var resp = await _http.SendAsync(req, ct);
+            using var req = CreateRequest(
+                HttpMethod.Get,
+                $"/api/projects/{Esc(_opts.ProjectId)}/scenes?light=1");
+            using var resp = await _http.SendAsync(req, HttpCompletionOption.ResponseHeadersRead, ct);
             if (!resp.IsSuccessStatusCode) return;
             await using var stream = await resp.Content.ReadAsStreamAsync(ct);
             using var doc = await JsonDocument.ParseAsync(stream, cancellationToken: ct);

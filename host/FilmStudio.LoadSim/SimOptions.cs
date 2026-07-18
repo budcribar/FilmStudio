@@ -38,6 +38,12 @@ public sealed class SimOptions
     public int WarmupSec { get; set; } = 0;
     /// <summary>Seconds to wait for API /health before giving up (multi-start race).</summary>
     public int WaitForApiSec { get; set; } = 90;
+    /// <summary>
+    /// Max seconds for all VUs to complete HTTP ready (health + light warm) before stress clock starts.
+    /// </summary>
+    public int ReadyTimeoutSec { get; set; } = 60;
+    /// <summary>When true, skip ready barrier (legacy: stress starts immediately).</summary>
+    public bool SkipReadyBarrier { get; set; }
 
     public static SimOptions Parse(string[] args)
     {
@@ -83,6 +89,8 @@ public sealed class SimOptions
                 case "--i-know-what-im-doing": o.IKnowWhatImDoing = true; break;
                 case "--warmupSec": o.WarmupSec = int.Parse(Next()); break;
                 case "--waitForApiSec": o.WaitForApiSec = int.Parse(Next()); break;
+                case "--readyTimeoutSec": o.ReadyTimeoutSec = int.Parse(Next()); break;
+                case "--skipReadyBarrier": o.SkipReadyBarrier = true; break;
                 case "--help":
                 case "-h":
                     PrintHelp();
@@ -95,6 +103,7 @@ public sealed class SimOptions
         o.DurationSec = Math.Clamp(o.DurationSec, 5, 86_400);
         o.ThinkTimeMs = Math.Clamp(o.ThinkTimeMs, 0, 60_000);
         o.WaitForApiSec = Math.Clamp(o.WaitForApiSec, 0, 600);
+        o.ReadyTimeoutSec = Math.Clamp(o.ReadyTimeoutSec, 5, 600);
         return o;
     }
 
@@ -129,7 +138,12 @@ public sealed class SimOptions
               --requireFakes true|false  refuse gen without UseFakes unless --i-know-what-im-doing
               --i-know-what-im-doing     allow gen against real keys
               --waitForApiSec N          wait for /health (default 90; multi-start with Api)
-              --warmupSec N              extra delay after health ok (default 0)
+              --warmupSec N              idle delay after API up, before VUs (default 0)
+              --readyTimeoutSec N        all VUs must finish HTTP ready before stress clock (default 60)
+              --skipReadyBarrier         legacy: start stress without waiting for all VUs ready
+
+            Ready barrier: each VU hits /health + light projects/scenes (not timed). Metrics
+            and --duration start only after every VU is ready (or timeout → exit 2).
 
             Exit codes: 0 = gates pass, 1 = gates fail, 2 = setup error
             """);

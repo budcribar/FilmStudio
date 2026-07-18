@@ -187,11 +187,20 @@ static async Task<int> RunAsync(SimOptions opts)
     }
 
     var metrics = new MetricsCollector();
-    using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(opts.DurationSec));
-    var started = DateTimeOffset.UtcNow;
     var runId = Guid.NewGuid().ToString("N")[..12];
+    var go = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+    var readyOk = 0;
+    var readyFail = 0;
+    var readyErrors = new System.Collections.Concurrent.ConcurrentBag<string>();
 
-    Console.WriteLine($"  starting {opts.Users} virtual users for {opts.DurationSec}s… runId={runId}");
+    // Stress duration CTS is created only after the ready barrier (metrics clock).
+    CancellationTokenSource? stressCts = null;
+
+    Console.WriteLine(
+        opts.SkipReadyBarrier
+            ? $"  starting {opts.Users} VUs (ready barrier skipped)… runId={runId}"
+            : $"  starting {opts.Users} VUs — HTTP ready barrier (timeout {opts.ReadyTimeoutSec}s)… runId={runId}");
+
     var tasks = Enumerable.Range(0, opts.Users)
         .Select(i =>
         {
@@ -203,14 +212,88 @@ static async Task<int> RunAsync(SimOptions opts)
             var vu = new VirtualUser(i, opts, metrics, client);
             return Task.Run(async () =>
             {
-                try { await vu.RunAsync(cts.Token); }
-                finally { client.Dispose(); }
+                try
+                {
+                    if (!opts.SkipReadyBarrier)
+                    {
+                        try
+                        {
+                            using var readyCts = new CancellationTokenSource(
+                                TimeSpan.FromSeconds(opts.ReadyTimeoutSec));
+                            await vu.ReadyAsync(readyCts.Token);
+                            Interlocked.Increment(ref readyOk);
+                        }
+                        catch (Exception ex)
+                        {
+                            Interlocked.Increment(ref readyFail);
+                            readyErrors.Add($"{vu.UserId}: {ex.Message}");
+                            // Still wait for go so we don't leave the host hanging; skip stress if failed
+                            try { await go.Task; } catch { /* ignore */ }
+                            return;
+                        }
+
+                        // Wait until host releases stress clock
+                        await go.Task;
+                    }
+
+                    var ct = stressCts?.Token ?? CancellationToken.None;
+                    if (ct.IsCancellationRequested) return;
+                    await vu.RunStressAsync(ct);
+                }
+                finally
+                {
+                    client.Dispose();
+                }
             }, CancellationToken.None);
         })
         .ToArray();
 
-    // Live telemetry → admin dashboard
-    using var reportCts = CancellationTokenSource.CreateLinkedTokenSource(cts.Token);
+    DateTimeOffset started;
+    if (opts.SkipReadyBarrier)
+    {
+        stressCts = new CancellationTokenSource(TimeSpan.FromSeconds(opts.DurationSec));
+        started = DateTimeOffset.UtcNow;
+        go.TrySetResult();
+    }
+    else
+    {
+        // Wait until every VU finished ready (ok or fail) or overall timeout
+        var barrierDeadline = DateTimeOffset.UtcNow.AddSeconds(opts.ReadyTimeoutSec);
+        while (Volatile.Read(ref readyOk) + Volatile.Read(ref readyFail) < opts.Users)
+        {
+            if (DateTimeOffset.UtcNow >= barrierDeadline)
+                break;
+            await Task.Delay(50);
+        }
+
+        var ok = Volatile.Read(ref readyOk);
+        var fail = Volatile.Read(ref readyFail);
+        var pending = opts.Users - ok - fail;
+        if (fail > 0 || pending > 0 || ok < opts.Users)
+        {
+            go.TrySetResult(); // unblock any waiters
+            Console.Error.WriteLine(
+                $"Setup: ready barrier failed — ready={ok}/{opts.Users} fail={fail} pending={pending} " +
+                $"(timeout {opts.ReadyTimeoutSec}s).");
+            foreach (var e in readyErrors.Take(10))
+                Console.Error.WriteLine($"  {e}");
+            if (readyErrors.Count > 10)
+                Console.Error.WriteLine($"  … +{readyErrors.Count - 10} more");
+            // Cancel stress for anyone who might still run
+            stressCts = new CancellationTokenSource();
+            stressCts.Cancel();
+            try { await Task.WhenAll(tasks); } catch { /* ignore */ }
+            return 2;
+        }
+
+        Console.WriteLine($"  ready: {ok}/{opts.Users} VUs HTTP-ready — starting stress clock ({opts.DurationSec}s)");
+        stressCts = new CancellationTokenSource(TimeSpan.FromSeconds(opts.DurationSec));
+        started = DateTimeOffset.UtcNow; // metrics clock
+        go.TrySetResult();
+    }
+
+    // Live telemetry → admin dashboard (only after stress clock)
+    using var reportCts = CancellationTokenSource.CreateLinkedTokenSource(stressCts!.Token);
     var reportTask = ReportProgressLoopAsync(opts, metrics, runId, started, reportCts.Token);
 
     Console.WriteLine("  running… (admin /admin shows live LoadSim charts)");
@@ -225,6 +308,7 @@ static async Task<int> RunAsync(SimOptions opts)
 
     reportCts.Cancel();
     try { await reportTask; } catch { /* ignore */ }
+    stressCts.Dispose();
 
     var elapsed = DateTimeOffset.UtcNow - started;
     var results = metrics.Build(opts, elapsed);
