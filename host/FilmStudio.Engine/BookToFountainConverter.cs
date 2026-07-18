@@ -181,12 +181,55 @@ public static class BookToFountainConverter
         return string.Join("\n", lines);
     }
 
+    /// <summary>
+    /// Fit long novels into the prompt window while keeping beginning, middle, and end
+    /// so short-film adaptations still see climax/resolution (not only the opening).
+    /// </summary>
     private static string TrimBookForPrompt(string bookText)
     {
         bookText = bookText.Replace("\r\n", "\n").Replace('\r', '\n').Trim();
         const int max = 32_000;
         if (bookText.Length <= max) return bookText;
-        return bookText[..max] + "\n\n[[Book text truncated for length — adapt what is above.]]\n";
+
+        // Prefer whole --- PAGE N --- chunks when present
+        var pages = Regex.Split(bookText, @"(?=---\s*PAGE\s+\d+\s*---)", RegexOptions.IgnoreCase)
+            .Where(p => !string.IsNullOrWhiteSpace(p)).ToList();
+        if (pages.Count >= 6)
+        {
+            var take = Math.Max(2, pages.Count / 3);
+            var head = string.Concat(pages.Take(take));
+            var midStart = Math.Max(0, (pages.Count - take) / 2);
+            var mid = string.Concat(pages.Skip(midStart).Take(take));
+            var tail = string.Concat(pages.Skip(Math.Max(0, pages.Count - take)));
+            var assembled = string.Join(
+                "\n\n[[… middle of book omitted for length …]]\n\n",
+                new[] { head.Trim(), mid.Trim(), tail.Trim() }.Where(s => s.Length > 0));
+            if (assembled.Length <= max)
+                return assembled + "\n\n[[Book excerpted (start/middle/end) — adapt a complete short film from these parts.]]\n";
+            bookText = assembled;
+        }
+
+        // Character budget: ~40% start, ~30% middle, ~30% end
+        var headBudget = (int)(max * 0.40);
+        var midBudget = (int)(max * 0.28);
+        var tailBudget = max - headBudget - midBudget - 200;
+        if (tailBudget < 2000)
+        {
+            return bookText[..max] +
+                   "\n\n[[Book text truncated for length — adapt what is above.]]\n";
+        }
+
+        var headPart = bookText[..headBudget];
+        var midCenter = bookText.Length / 2;
+        var midStartIdx = Math.Clamp(midCenter - midBudget / 2, 0, bookText.Length - midBudget);
+        var midPart = bookText.Substring(midStartIdx, midBudget);
+        var tailPart = bookText[^tailBudget..];
+        return headPart.TrimEnd() +
+               "\n\n[[… middle of book omitted for length …]]\n\n" +
+               midPart.Trim() +
+               "\n\n[[… later chapters omitted for length …]]\n\n" +
+               tailPart.TrimStart() +
+               "\n\n[[Book excerpted (start/middle/end) — adapt a complete short film covering the full arc present across these parts. Do not invent missing chapters.]]\n";
     }
 
     private static string StripFences(string text)
