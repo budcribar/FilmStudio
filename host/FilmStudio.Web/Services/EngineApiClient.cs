@@ -674,6 +674,33 @@ public sealed class EngineApiClient
         return await resp.Content.ReadFromJsonAsync<ConfigDto>(JsonOpts, ct);
     }
 
+    public async Task<ExtractCastResultDto?> ExtractCastFromScreenplayAsync(
+        string projectId,
+        bool force = true,
+        string model = "grok-4.5",
+        CancellationToken ct = default)
+    {
+        using var resp = await _http.PostAsJsonAsync(
+            $"/api/projects/{Uri.EscapeDataString(projectId)}/characters/extract-cast",
+            new { projectId, force, model },
+            JsonOpts,
+            ct);
+        var raw = await resp.Content.ReadAsStringAsync(ct);
+        try
+        {
+            return JsonSerializer.Deserialize<ExtractCastResultDto>(raw, JsonOpts)
+                   ?? new ExtractCastResultDto { Ok = false, Error = raw };
+        }
+        catch
+        {
+            return new ExtractCastResultDto
+            {
+                Ok = false,
+                Error = string.IsNullOrWhiteSpace(raw) ? resp.ReasonPhrase : raw,
+            };
+        }
+    }
+
     public async Task<CharactersDto?> GetCharactersAsync(string projectId, CancellationToken ct = default)
     {
         var dto = await _http.GetFromJsonAsync<CharactersDto>(
@@ -934,6 +961,39 @@ public sealed class EngineApiClient
         }
     }
 
+    /// <summary>Upload and lock an operator-provided character reference image.</summary>
+    public async Task UploadCharacterRefAsync(
+        string projectId,
+        string charKey,
+        Stream content,
+        string fileName,
+        CancellationToken ct = default)
+    {
+        using var form = new MultipartFormDataContent();
+        var streamContent = new StreamContent(content);
+        var ext = Path.GetExtension(fileName).ToLowerInvariant();
+        streamContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(
+            ext switch
+            {
+                ".jpg" or ".jpeg" => "image/jpeg",
+                ".webp" => "image/webp",
+                ".gif" => "image/gif",
+                ".bmp" => "image/bmp",
+                _ => "image/png",
+            });
+        form.Add(streamContent, "file", fileName);
+
+        using var resp = await _http.PostAsync(
+            $"/api/projects/{Uri.EscapeDataString(projectId)}/characters/{Uri.EscapeDataString(charKey)}/upload-ref",
+            form,
+            ct);
+        if (!resp.IsSuccessStatusCode)
+        {
+            var err = await resp.Content.ReadAsStringAsync(ct);
+            throw new InvalidOperationException(TryError(err) ?? resp.ReasonPhrase);
+        }
+    }
+
     private static string? TryError(string json)
     {
         try
@@ -1089,6 +1149,19 @@ public sealed class ConfigDto
     public bool Ok { get; set; }
     public string? ProjectId { get; set; }
     public Dictionary<string, JsonElement>? Config { get; set; }
+}
+
+public sealed class ExtractCastResultDto
+{
+    public bool Ok { get; set; }
+    public string? ProjectId { get; set; }
+    public string? Path { get; set; }
+    public int CharacterCount { get; set; }
+    public List<string>? Characters { get; set; }
+    public string? MovieTitle { get; set; }
+    public string? Message { get; set; }
+    public string? Error { get; set; }
+    public string? RawPath { get; set; }
 }
 
 public sealed class CharactersDto

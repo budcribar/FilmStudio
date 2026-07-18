@@ -1,12 +1,11 @@
 {
+  "character_plates_sorted_at": "2026-07-18T22:16:36.3128858Z",
+  "character_plates_method": "source_image_pages",
   "character_plates": {
     "sorted_by_character": true,
-    "sorted_at": "2026-07-18T15:16:08",
-    "source": "scenes.json#character_seed_tokens.design_reference_images",
-    "characters_updated": 0,
-    "method": "heuristic_after_grok_empty"
+    "method": "source_image_pages",
+    "sorted_at": "2026-07-18T22:16:36.3082886Z",
+    "characters_updated": 4
   },
-  "character_plates_sorted": true,
-  "character_plates_sorted_at": "2026-07-18T15:16:08",
-  "character_plates_method": "heuristic_after_grok_empty"
+  "character_plates_sorted": true
 }

@@ -17,11 +17,19 @@ public static class CharacterVisualTextScrubber
         @"[A-Za-z][A-Za-z0-9']{1,20}[-\s]heads?\s+(hat|cap|expression|look|grin)\b",
         RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
-    // Bare epithet "X-head" / "X head" (personality label, not anatomy)
+    // Bare epithet "X-head" / "X head" / "'noodle head' look" (personality label, not anatomy)
     // Avoid pure anatomy words: arrowhead, bulkhead, spearhead, etc. when alone.
     private static readonly Regex EpithetHeadBare = new(
-        @"\b(?:silly|goofy|lovable|signature|classic)\s+[A-Za-z][A-Za-z0-9']{1,20}[-\s]heads?\b" +
+        @"\b(?:silly|goofy|lovable|signature|classic|soft|rounded|cute|sweet)?\s*" +
+        @"['""]?(?!arrow|bulk|spear|war|bridge|dead|hot|cool)[A-Za-z]{3,16}['""]?\s*[-\s]\s*heads?['""]?" +
+        @"(?:\s+(?:look|silhouette|expression|grin|face))?" +
         @"|\b(?!arrow|bulk|spear|war|bridge|dead|hot|cool)[A-Za-z]{3,16}[-\s]headed?\b",
+        RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
+    // Title-style "the Noodle Head Dog" already covered by EpithetAnimalTitle; also
+    // "soft noodle-head silhouette" without animal word.
+    private static readonly Regex QuotedEpithetLook = new(
+        @"['""][^'""]{0,24}head[^'""]{0,12}['""]\s*(?:look|silhouette|expression)?",
         RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
     // "the X-head dog/cat/bear" title-style animal nicknames inside visual prose
@@ -65,7 +73,12 @@ public static class CharacterVisualTextScrubber
         });
 
         t = EpithetAnimalTitle.Replace(t, m => m.Groups[1].Value.ToLowerInvariant()); // keep species word only
+        t = QuotedEpithetLook.Replace(t, "");
         t = EpithetHeadBare.Replace(t, "");
+        // Personality-as-face (not filmable anatomy)
+        t = Regex.Replace(t, @"\bnot\s+very\s+bright\s+(?:expression|look|face)\b",
+            "sweet slightly goofy expression", RegexOptions.IgnoreCase);
+        t = Regex.Replace(t, @"\bnot\s+very\s+bright\b", "", RegexOptions.IgnoreCase);
 
         // Shared medium, not shared species
         t = SoftenCrossSpeciesStyleLanguage(t);

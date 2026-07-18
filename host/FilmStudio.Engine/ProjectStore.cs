@@ -2722,29 +2722,14 @@ public sealed class ProjectStore
 
     private Dictionary<string, JsonElement> LoadCharacterSeeds(string projectId)
     {
-        // Prefer blueprint, then cast_seeds.json, then Fountain, then legacy scenes.json
+        // Prefer AI cast sidecar (cast_seeds.json / cast.json), then blueprint, then
+        // Fountain dialogue-parse fallback, then legacy scenes.json.
         try
         {
-            using var bp = LoadBlueprintSync(projectId);
-            if (bp is not null &&
-                bp.RootElement.TryGetProperty("global_production_variables", out var gpv) &&
-                gpv.TryGetProperty("character_seed_tokens", out var seeds) &&
-                seeds.ValueKind == JsonValueKind.Object)
+            foreach (var name in new[] { ScreenplayService.CastSeedsFileName, "cast.json" })
             {
-                var dict = new Dictionary<string, JsonElement>(StringComparer.OrdinalIgnoreCase);
-                foreach (var p in seeds.EnumerateObject())
-                    dict[p.Name] = p.Value.Clone();
-                if (dict.Count > 0)
-                    return dict;
-            }
-        }
-        catch { /* fall through */ }
-
-        try
-        {
-            var castPath = ScreenplayService.GetCastSeedsPath(this, projectId);
-            if (File.Exists(castPath))
-            {
+                var castPath = Path.Combine(GetProjectDir(projectId), "source", name);
+                if (!File.Exists(castPath)) continue;
                 using var doc = JsonDocument.Parse(File.ReadAllText(castPath));
                 var root = doc.RootElement;
                 JsonElement seedEl = default;
@@ -2762,6 +2747,23 @@ public sealed class ProjectStore
                     if (dict.Count > 0)
                         return dict;
                 }
+            }
+        }
+        catch { /* fall through */ }
+
+        try
+        {
+            using var bp = LoadBlueprintSync(projectId);
+            if (bp is not null &&
+                bp.RootElement.TryGetProperty("global_production_variables", out var gpv) &&
+                gpv.TryGetProperty("character_seed_tokens", out var seeds) &&
+                seeds.ValueKind == JsonValueKind.Object)
+            {
+                var dict = new Dictionary<string, JsonElement>(StringComparer.OrdinalIgnoreCase);
+                foreach (var p in seeds.EnumerateObject())
+                    dict[p.Name] = p.Value.Clone();
+                if (dict.Count > 0)
+                    return dict;
             }
         }
         catch { /* fall through */ }

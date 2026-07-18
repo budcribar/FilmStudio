@@ -59,7 +59,7 @@ public sealed class CharacterBookPlateService
             return result;
         }
 
-        // Cast from Fountain (preferred), else cast_seeds, else legacy scenes.json
+        // Prefer AI cast_seeds.json (full cast incl. silent leads); then Fountain; then legacy
         JsonObject seeds;
         try
         {
@@ -74,6 +74,7 @@ public sealed class CharacterBookPlateService
         if (seeds.Count == 0)
         {
             result.Reason = "no_character_seeds";
+            onProgress?.Invoke("No cast seeds — build cast from screenplay first.");
             return result;
         }
 
@@ -84,9 +85,8 @@ public sealed class CharacterBookPlateService
             result.Reason = "no_illustrated_book_images";
             if (string.IsNullOrWhiteSpace(onlyCharKey))
             {
-                _projects.MarkCharacterPlatesSorted(projectId, 0, method: "none");
-                result.SortedByCharacter = true;
-                result.SortedAt = _projects.GetCharacterPlatesState(projectId).SortedAt;
+                // Don't claim "sorted" when we had cast but zero plates — operator can re-run after book images exist
+                result.SortedByCharacter = false;
                 result.Method = "none";
             }
             return result;
@@ -109,14 +109,19 @@ public sealed class CharacterBookPlateService
             _ => new List<(BookImageRow Row, double Score)>(),
             StringComparer.OrdinalIgnoreCase);
 
-        var method = "heuristic";
+        // Seed from AI cast source_image_pages first (high confidence)
+        var fromPages = SeedScoresFromSourceImagePages(scores, inventory, seeds, onlyCharKey);
+        if (fromPages > 0)
+            onProgress?.Invoke($"Seeded {fromPages} plate hit(s) from cast source_image_pages…");
+
+        var method = fromPages > 0 ? "source_image_pages" : "heuristic";
         var wantGrok = useGrok && _vision.IsConfigured && string.IsNullOrWhiteSpace(onlyCharKey);
         if (useGrok && !_vision.IsConfigured)
-            onProgress?.Invoke("XAI_API_KEY missing — using heuristic plate sort");
+            onProgress?.Invoke("XAI_API_KEY missing — using page seeds / heuristic plate sort");
 
         if (wantGrok)
         {
-            method = "grok_vision";
+            method = fromPages > 0 ? "source_pages+grok_vision" : "grok_vision";
             var toScan = RankIllustrationFirst(inventory).Take(Math.Clamp(maxImages, 4, 64)).ToList();
             onProgress?.Invoke(
                 $"Grok vision: classifying {toScan.Count} book image(s) for {cast.Count} character(s)…");
@@ -155,30 +160,22 @@ public sealed class CharacterBookPlateService
                 }
             }
 
-            // If Grok found figures for some cast members, trust the empty results for the rest
-            // (do NOT heuristic-fill Mom/Dad with dog covers — empty is correct when they don't appear).
-            var anyGrok = scores.Values.Any(v => v.Count > 0);
-            if (!anyGrok)
+            // Fill any still-empty on-screen cast from pages / hero heuristic
+            var emptyCast = cast.Count(c =>
+                !scores.TryGetValue(c.Key, out var list) || list.Count == 0);
+            if (emptyCast > 0)
             {
                 onProgress?.Invoke(
-                    "Grok found no character figures — heuristic for hero/name hits only (no blanket fill)");
-                method = "heuristic_after_grok_empty";
-                ApplyHeuristicScores(scores, inventory, seeds, onlyCharKey, onlyEmpty: false, heroOnly: true);
-            }
-            else
-            {
-                var emptyCast = cast.Count(c =>
-                    !scores.TryGetValue(c.Key, out var list) || list.Count == 0);
-                if (emptyCast > 0)
-                    onProgress?.Invoke(
-                        $"{emptyCast} cast member(s) with no plate (Grok saw no clear figure — leaving empty)");
+                    $"{emptyCast} cast member(s) still empty — filling from pages / hero heuristic…");
+                method += "+heuristic_fill";
+                ApplyHeuristicScores(scores, inventory, seeds, onlyCharKey, onlyEmpty: true, heroOnly: false);
             }
         }
         else
         {
-            method = "heuristic";
-            onProgress?.Invoke("Heuristic plate sort (Stage 1 pages + illustration ranking)…");
-            ApplyHeuristicScores(scores, inventory, seeds, onlyCharKey);
+            method = fromPages > 0 ? "source_image_pages+heuristic" : "heuristic";
+            onProgress?.Invoke("Heuristic plate sort (cast pages + illustration ranking)…");
+            ApplyHeuristicScores(scores, inventory, seeds, onlyCharKey, onlyEmpty: fromPages > 0);
         }
 
         result.Method = method;
@@ -239,8 +236,13 @@ public sealed class CharacterBookPlateService
             assigned.TryGetValue(key, out var picks);
             picks ??= new List<BookImageRow>();
 
-            seed["source_image_pages"] = new JsonArray(
-                picks.Where(p => p.Page > 0).Select(p => (JsonNode)p.Page).Distinct().ToArray());
+            // Keep AI source_image_pages when present; else record pages we actually attached
+            var priorPages = PagesForSeed(seed);
+            var usedPages = picks.Where(p => p.Page > 0).Select(p => p.Page).Distinct().ToList();
+            if (usedPages.Count > 0)
+                seed["source_image_pages"] = new JsonArray(usedPages.Select(p => (JsonNode)p).ToArray());
+            else if (priorPages.Count > 0)
+                seed["source_image_pages"] = new JsonArray(priorPages.Select(p => (JsonNode)p).ToArray());
 
             var relPaths = CopyPlates(projectDir, charsDir, key, picks, copyIntoAssets);
             CleanupStaleBookrefs(charsDir, key, keepCount: relPaths.Count);
@@ -294,12 +296,25 @@ public sealed class CharacterBookPlateService
 
         await TryMirrorBlueprintAsync(projectDir, seeds);
 
+        var onScreenNeedPlates = cast.Count; // BuildCastHints already skips voice-only
+        var anyPlates = result.CharactersUpdated > 0;
         if (string.IsNullOrWhiteSpace(onlyCharKey))
         {
-            _projects.MarkCharacterPlatesSorted(projectId, result.CharactersUpdated, method: method);
-            var after = _projects.GetCharacterPlatesState(projectId);
-            result.SortedByCharacter = after.SortedByCharacter;
-            result.SortedAt = after.SortedAt;
+            // Only mark sorted when we actually attached plates (or cast is empty)
+            if (anyPlates || onScreenNeedPlates == 0)
+            {
+                _projects.MarkCharacterPlatesSorted(projectId, result.CharactersUpdated, method: method);
+                var after = _projects.GetCharacterPlatesState(projectId);
+                result.SortedByCharacter = after.SortedByCharacter;
+                result.SortedAt = after.SortedAt;
+            }
+            else
+            {
+                result.SortedByCharacter = false;
+                result.Reason = "no_plates_attached";
+                onProgress?.Invoke(
+                    "No book pictures attached — try again after Build cast, or upload pictures manually.");
+            }
         }
         else
         {
@@ -307,12 +322,43 @@ public sealed class CharacterBookPlateService
             result.SortedAt = platesState.SortedAt;
         }
 
-        result.Ok = result.CharactersUpdated > 0 || result.CharactersSkipped > 0 || result.SortedByCharacter;
+        result.Ok = result.CharactersUpdated > 0 || result.CharactersSkipped > 0;
         if (!result.Ok)
             result.Reason ??= "nothing_attached";
         onProgress?.Invoke(
             $"Done ({method}): updated={result.CharactersUpdated} skipped={result.CharactersSkipped}");
         return result;
+    }
+
+    /// <summary>
+    /// High-confidence plate hits from cast AI <c>source_image_pages</c> (page → book_images).
+    /// </summary>
+    private static int SeedScoresFromSourceImagePages(
+        Dictionary<string, List<(BookImageRow Row, double Score)>> scores,
+        List<BookImageRow> inventory,
+        JsonObject seeds,
+        string? onlyCharKey)
+    {
+        var hits = 0;
+        foreach (var (key, seedNode) in seeds)
+        {
+            if (onlyCharKey is { Length: > 0 } &&
+                !string.Equals(key, onlyCharKey, StringComparison.OrdinalIgnoreCase))
+                continue;
+            if (seedNode is not JsonObject seed || IsVoiceOnly(key, seed)) continue;
+            if (!scores.ContainsKey(key))
+                scores[key] = new List<(BookImageRow, double)>();
+
+            var pages = PagesForSeed(seed);
+            if (pages.Count == 0) continue;
+            var picks = RowsForPages(inventory, pages);
+            foreach (var p in picks)
+            {
+                scores[key].Add((p, 0.92));
+                hits++;
+            }
+        }
+        return hits;
     }
 
     private static List<CharacterClassifyHint> BuildCastHints(JsonObject seeds, string? onlyCharKey)
@@ -441,11 +487,18 @@ public sealed class CharacterBookPlateService
     /// Greedy exclusive plate assignment ranked by score.
     /// Dedupes by content hash, absolute path, and page number so B0/B2 cannot be the same cover.
     /// Each image goes to at most one character so Mom/Dad never share identical plates.
+    /// Characters with fewer candidate pages are preferred so supporting cast is not wiped by the hero.
     /// </summary>
     private static Dictionary<string, List<BookImageRow>> AssignPlatesExclusively(
         Dictionary<string, List<(BookImageRow Row, double Score)>> scores,
         int maxPerCharacter)
     {
+        // Fewer unique pages ⇒ higher priority (Daddy with only p11 beats Buster who also lists p2,5,11)
+        var uniquePageCount = scores.ToDictionary(
+            kv => kv.Key,
+            kv => kv.Value.Select(x => x.Row.Page).Where(p => p > 0).Distinct().Count(),
+            StringComparer.OrdinalIgnoreCase);
+
         var flat = new List<(string Key, BookImageRow Row, double Score, string Fingerprint)>();
         foreach (var (key, list) in scores)
         {
@@ -458,6 +511,7 @@ public sealed class CharacterBookPlateService
 
         flat = flat
             .OrderByDescending(x => x.Score)
+            .ThenBy(x => uniquePageCount.GetValueOrDefault(x.Key, 99)) // scarce pages first
             .ThenBy(x => IllustrationScore(x.Row))
             .ToList();
 
@@ -492,6 +546,26 @@ public sealed class CharacterBookPlateService
                 claimedPages.Add(row.Page);
                 perCharPages[key].Add(row.Page);
             }
+        }
+
+        // Last resort: cast members still empty after exclusivity may share a high-score page
+        // (e.g. Buster + Daddy on the same bedroom plate) so we never leave everyone blank.
+        foreach (var (key, list) in scores)
+        {
+            if (!assigned.TryGetValue(key, out var picks))
+            {
+                picks = new List<BookImageRow>();
+                assigned[key] = picks;
+            }
+            if (picks.Count > 0) continue;
+            var best = list
+                .Where(x => !IsLikelyTextLayout(x.Row))
+                .OrderByDescending(x => x.Score)
+                .ThenBy(x => IllustrationScore(x.Row))
+                .Select(x => x.Row)
+                .FirstOrDefault();
+            if (best is not null)
+                picks.Add(best);
         }
 
         return assigned;
@@ -594,8 +668,8 @@ public sealed class CharacterBookPlateService
     }
 
     /// <summary>
-    /// Build cast seeds from Fountain (preferred), merge existing cast_seeds.json plates,
-    /// or fall back to legacy scenes.json.
+    /// Prefer AI <c>cast_seeds.json</c> (full cast + source_image_pages), then Fountain parse,
+    /// then legacy scenes.json.
     /// </summary>
     private async Task<JsonObject> LoadOrBuildCastSeedsAsync(
         string projectId,
@@ -604,7 +678,32 @@ public sealed class CharacterBookPlateService
     {
         JsonObject? seeds = null;
 
-        // 1) Fountain-derived cast
+        // 1) AI cast sidecar first (silent leads + page hints)
+        foreach (var name in new[] { ScreenplayService.CastSeedsFileName, "cast.json" })
+        {
+            var path = Path.Combine(_projects.GetProjectDir(projectId), "source", name);
+            if (!File.Exists(path) && name != Path.GetFileName(castSeedsPath))
+                continue;
+            var usePath = File.Exists(castSeedsPath) && name == ScreenplayService.CastSeedsFileName
+                ? castSeedsPath
+                : path;
+            if (!File.Exists(usePath)) continue;
+            try
+            {
+                var existing = JsonNode.Parse(await File.ReadAllTextAsync(usePath, ct).ConfigureAwait(false))
+                               as JsonObject;
+                var existingSeeds = existing?["character_seed_tokens"] as JsonObject
+                    ?? existing?["global_production_variables"]?["character_seed_tokens"] as JsonObject;
+                if (existingSeeds is not null && existingSeeds.Count > 0)
+                {
+                    seeds = existingSeeds.DeepClone().AsObject();
+                    break;
+                }
+            }
+            catch { /* try next */ }
+        }
+
+        // 2) Fountain-derived cast (dialogue cues) — merge only missing keys
         var model = ScreenplayService.TryBuildModelFromProject(_projects, projectId);
         if (model is not null &&
             model.TryGetValue("global_production_variables", out var gpvObj) &&
@@ -614,40 +713,17 @@ public sealed class CharacterBookPlateService
             charDict.Count > 0)
         {
             var json = JsonSerializer.Serialize(charDict, JsonDefaults.Indented);
-            seeds = JsonNode.Parse(json) as JsonObject;
-        }
-
-        // 2) Overlay existing cast_seeds plates/edits
-        if (File.Exists(castSeedsPath))
-        {
-            try
+            var fromFountain = JsonNode.Parse(json) as JsonObject;
+            if (fromFountain is not null)
             {
-                var existing = JsonNode.Parse(await File.ReadAllTextAsync(castSeedsPath, ct).ConfigureAwait(false))
-                               as JsonObject;
-                var existingSeeds = existing?["character_seed_tokens"] as JsonObject
-                    ?? existing?["global_production_variables"]?["character_seed_tokens"] as JsonObject;
-                if (existingSeeds is not null)
+                seeds ??= new JsonObject();
+                foreach (var (key, node) in fromFountain)
                 {
-                    seeds ??= new JsonObject();
-                    foreach (var (key, node) in existingSeeds)
-                    {
-                        if (node is null) continue;
-                        if (seeds[key] is JsonObject dest && node is JsonObject src)
-                        {
-                            foreach (var (fk, fv) in src)
-                            {
-                                if (fv is not null)
-                                    dest[fk] = fv.DeepClone();
-                            }
-                        }
-                        else
-                        {
-                            seeds[key] = node.DeepClone();
-                        }
-                    }
+                    if (node is null) continue;
+                    if (seeds.ContainsKey(key)) continue; // AI cast wins
+                    seeds[key] = node.DeepClone();
                 }
             }
-            catch { /* ignore corrupt cast seeds */ }
         }
 
         // 3) Legacy scenes.json
@@ -840,13 +916,31 @@ public sealed class CharacterBookPlateService
     {
         if (ProjectStore.IsTextOnlyPlatePath(r.Name) || ProjectStore.IsTextOnlyPlatePath(r.PathRel))
             return true;
+
+        // Full-page PDF renders / embeds are illustrations even when compressed under 400KB.
+        // Size-only filtering used to wipe entire book_images inventories (no character pics).
+        if (r.Kind is "rendered_page" or "embedded" or "file")
+        {
+            if (r.Name.Contains("cover", StringComparison.OrdinalIgnoreCase) ||
+                r.Name.Contains("sparse", StringComparison.OrdinalIgnoreCase) ||
+                r.Name.Contains("bookref", StringComparison.OrdinalIgnoreCase) ||
+                r.Name.Contains("embedded", StringComparison.OrdinalIgnoreCase) ||
+                r.Name.StartsWith("page_", StringComparison.OrdinalIgnoreCase) ||
+                Regex.IsMatch(r.Name, @"^(page|p|embedded_p)\d", RegexOptions.IgnoreCase))
+                return false;
+        }
+
         try
         {
             var len = new FileInfo(r.AbsPath).Length;
+            // Only treat tiny anonymous files as likely text/OCR samples — not named page plates
             if (len is > 0 and < 400_000 &&
                 !r.Name.Contains("cover", StringComparison.OrdinalIgnoreCase) &&
                 !r.Name.Contains("sparse", StringComparison.OrdinalIgnoreCase) &&
-                !r.Name.Contains("bookref", StringComparison.OrdinalIgnoreCase))
+                !r.Name.Contains("bookref", StringComparison.OrdinalIgnoreCase) &&
+                !r.Name.StartsWith("page_", StringComparison.OrdinalIgnoreCase) &&
+                !r.Name.Contains("embedded", StringComparison.OrdinalIgnoreCase) &&
+                !Regex.IsMatch(r.Name, @"^(page|p|embedded_p)\d", RegexOptions.IgnoreCase))
                 return true;
         }
         catch { /* ignore */ }

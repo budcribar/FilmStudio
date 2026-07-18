@@ -104,16 +104,14 @@ public sealed class GrokImageClient : IGrokImageClient
         if (refs.Count == 0)
             throw new InvalidOperationException("No usable reference images for character edit.");
 
-        var imagePayloads = new List<object>();
+        // xAI /v1/images/edits expects image as:
+        //   - string data URI / URL (single), or
+        //   - array of strings (multi-ref, up to 3)
+        // Objects like { "url": "...", "type": "image_url" } work in some curl samples for
+        // single-image only; multi-ref rejects maps with 422 "image[0]: expected a string".
+        var imageUris = new List<string>(refs.Count);
         foreach (var path in refs)
-        {
-            var uri = await FileToDataUriAsync(path, ct);
-            imagePayloads.Add(new Dictionary<string, string>
-            {
-                ["url"] = uri,
-                ["type"] = "image_url",
-            });
-        }
+            imageUris.Add(await FileToDataUriAsync(path, ct).ConfigureAwait(false));
 
         var images = new List<byte[]>();
         for (var i = 0; i < n; i++)
@@ -122,7 +120,7 @@ public sealed class GrokImageClient : IGrokImageClient
             onProgress?.Invoke($"edit variant {i + 1}/{n}");
 
             // Multi-ref: first image = identity (preferred), later = book style plates
-            var orderHint = imagePayloads.Count > 1
+            var orderHint = imageUris.Count > 1
                 ? "Image 1 is the identity/preferred portrait — match it closely. " +
                   "Images 2+ are book plates of the SAME character for markings and style only. "
                 : "Match the attached reference image identity closely. ";
@@ -134,6 +132,11 @@ public sealed class GrokImageClient : IGrokImageClient
                     : " Single refined portrait;") +
                 " same face, coat, hat, and style as the references. No labels, no redesign.";
 
+            // Always send string(s) — single as string, multi as string[]
+            object imageField = imageUris.Count == 1
+                ? imageUris[0]
+                : imageUris.ToArray();
+
             var payload = new Dictionary<string, object?>
             {
                 ["model"] = modelName,
@@ -141,7 +144,7 @@ public sealed class GrokImageClient : IGrokImageClient
                 ["response_format"] = "b64_json",
                 ["aspect_ratio"] = aspectRatio,
                 // Keep order: preferred first (caller must sort)
-                ["image"] = imagePayloads.Count == 1 ? imagePayloads[0] : imagePayloads,
+                ["image"] = imageField,
             };
 
             using var resp = await _http.PostAsJsonAsync("images/edits", payload, ct);

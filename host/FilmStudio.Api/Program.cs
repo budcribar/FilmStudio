@@ -64,6 +64,8 @@ builder.Services.AddSingleton<LoginRateLimiter>();
 builder.Services.AddSingleton<CostReportService>();
 builder.Services.AddSingleton<CharacterDesignService>();
 builder.Services.AddSingleton<CharacterBookPlateService>();
+builder.Services.AddSingleton<CastVisualLiteralizeService>();
+builder.Services.AddSingleton<CastFromScreenplayService>();
 builder.Services.AddSingleton<BookPrepareService>();
 builder.Services.AddSingleton<Stage1Service>();
 builder.Services.AddSingleton<Stage2PlannerService>();
@@ -734,6 +736,49 @@ app.MapPost("/api/projects/{id}/characters/{charKey}/voice",
 });
 
 /// <summary>
+/// AI: Fountain (+ book) → source/cast_seeds.json (+ cast.json alias).
+/// Closed cast for Characters UI — not dialogue-cue parse only.
+/// </summary>
+app.MapPost("/api/projects/{id}/characters/extract-cast", async (
+    string id,
+    ExtractCastRequest? body,
+    CastFromScreenplayService castService,
+    CancellationToken ct) =>
+{
+    try
+    {
+        body ??= new ExtractCastRequest();
+        var result = await castService.ExtractAsync(
+            id,
+            model: string.IsNullOrWhiteSpace(body.Model) ? "grok-4.5" : body.Model!,
+            force: body.Force,
+            ct: ct);
+        return result.Ok
+            ? Results.Ok(new
+            {
+                ok = true,
+                projectId = id,
+                path = result.OutPath,
+                characterCount = result.CharacterCount,
+                characters = result.CharacterKeys,
+                movieTitle = result.MovieTitle,
+                message = $"Cast ready · {result.CharacterCount} character(s)",
+            })
+            : Results.BadRequest(new
+            {
+                ok = false,
+                projectId = id,
+                error = result.Error,
+                rawPath = result.RawPath,
+            });
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { ok = false, error = ex.Message });
+    }
+});
+
+/// <summary>
 /// Heuristic attach (no Grok). Prefer POST /api/jobs/sort-character-plates for vision sort.
 /// </summary>
 app.MapPost("/api/projects/{id}/characters/attach-book-plates", async (
@@ -829,6 +874,51 @@ app.MapPost("/api/projects/{id}/characters/{charKey}/lock-bookref",
         var result = await jobService.RunCharacterDesignActionAsync(
             id, "lock-bookref", charKey, variantIndex: index);
         return Results.Ok(new { ok = true, message = result, projectId = id, charKey, index });
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { ok = false, error = ex.Message });
+    }
+});
+
+/// <summary>
+/// Upload an operator-provided image and lock it as the character reference (preferred look).
+/// Multipart form field name: <c>file</c> (png/jpg/webp/gif).
+/// </summary>
+app.MapPost("/api/projects/{id}/characters/{charKey}/upload-ref", async (
+    string id,
+    string charKey,
+    HttpRequest req,
+    CharacterDesignService characters,
+    CancellationToken ct) =>
+{
+    try
+    {
+        if (!req.HasFormContentType)
+            return Results.BadRequest(new { ok = false, error = "multipart form required (field: file)" });
+
+        var form = await req.ReadFormAsync(ct);
+        var file = form.Files.GetFile("file") ?? form.Files.FirstOrDefault();
+        if (file is null || file.Length == 0)
+            return Results.BadRequest(new { ok = false, error = "No image file in form (field name: file)" });
+
+        var ext = Path.GetExtension(file.FileName).ToLowerInvariant();
+        if (ext is not (".png" or ".jpg" or ".jpeg" or ".webp" or ".gif" or ".bmp"))
+            return Results.BadRequest(new { ok = false, error = "Use a PNG, JPG, WEBP, or GIF image." });
+
+        if (file.Length > 25 * 1024 * 1024)
+            return Results.BadRequest(new { ok = false, error = "Image too large (max 25 MB)." });
+
+        await using var stream = file.OpenReadStream();
+        var path = await characters.LockFromUploadAsync(id, charKey, stream, file.FileName, ct);
+        return Results.Ok(new
+        {
+            ok = true,
+            projectId = id,
+            charKey,
+            path = Path.GetFileName(path),
+            message = "Locked preferred look from your upload",
+        });
     }
     catch (Exception ex)
     {
@@ -1053,7 +1143,13 @@ app.MapPut("/api/projects/{id}/screenplay", async (string id, HttpRequest req, P
 /// Approve the Fountain draft: materialise Stage 1 (scenes.json).
 /// Optional body text saves first. Marks shot plan stale when hash changes.
 /// </summary>
-app.MapPost("/api/projects/{id}/screenplay/sign-off", async (string id, HttpRequest req, ProjectStore store) =>
+app.MapPost("/api/projects/{id}/screenplay/sign-off", async (
+    string id,
+    HttpRequest req,
+    ProjectStore store,
+    CastFromScreenplayService castService,
+    FilmStudio.Engine.Abstractions.IGrokChatClient chat,
+    CancellationToken ct) =>
 {
     try
     {
@@ -1085,6 +1181,28 @@ app.MapPost("/api/projects/{id}/screenplay/sign-off", async (string id, HttpRequ
         if (!result.Ok)
             return Results.BadRequest(new { ok = false, error = result.Error });
 
+        // AI cast sidecar after approve (closed cast for Characters / plates)
+        object? cast = null;
+        if (chat.IsConfigured)
+        {
+            try
+            {
+                var castResult = await castService.ExtractAsync(id, force: true, ct: ct);
+                cast = new
+                {
+                    ok = castResult.Ok,
+                    characterCount = castResult.CharacterCount,
+                    characters = castResult.CharacterKeys,
+                    error = castResult.Error,
+                    path = castResult.OutPath,
+                };
+            }
+            catch (Exception ex)
+            {
+                cast = new { ok = false, error = ex.Message };
+            }
+        }
+
         return Results.Ok(new
         {
             ok = true,
@@ -1097,6 +1215,7 @@ app.MapPost("/api/projects/{id}/screenplay/sign-off", async (string id, HttpRequ
             message = result.Message,
             screenplay = result.Status,
             adaptation = store.GetAdaptationStatus(id),
+            cast,
         });
     }
     catch (Exception ex)

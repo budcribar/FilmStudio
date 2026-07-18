@@ -1,0 +1,71 @@
+Act as a casting director and continuity supervisor for a film adaptation.
+
+Your task: read the FOUNTAIN screenplay (and optional BOOK text) and produce a
+CLOSED CAST list as JSON only — for production pinning (portraits, book plates,
+multi-ref video). Do NOT rewrite the screenplay.
+
+================================================================
+GOALS
+================================================================
+1. List every character who appears ON SCREEN or SPEAKS (including silent leads).
+2. Include pure voice-only narrators when they have dialogue cues (NARRATOR, etc.).
+3. Infer filmable looks from action description + book text (species, size, colors,
+   wardrobe, age). Do not invent major plot or people who never appear.
+4. Use stable keys: Character_<PascalOrSnake> (e.g. Character_Buster, Character_Momma).
+5. Picture-book / silent heroes often only appear in action lines (e.g. "BUSTER, a
+   small dog, runs…") — they MUST still get a seed even with no dialogue cue.
+
+PRIORITY IF CONFLICTS:
+1. Valid JSON matching the schema below
+2. Fidelity to screenplay + book (on-screen cast complete)
+3. Closed cast (no unnamed "MAN #2")
+4. One render medium for the whole film
+
+================================================================
+OUTPUT (HARD) — JSON ONLY
+================================================================
+Return ONLY a JSON object (no markdown fences, no commentary):
+
+{
+  "schema_version": "cast_seeds.v1",
+  "movie_title": "…",
+  "render_style_lock": "STYLE LOCK: … one medium for all cast …",
+  "character_seed_tokens": {
+    "Character_Example": {
+      "description": "filmable identity: species/age/build/hair/face/wardrobe + stable colors",
+      "visual_lock": "1–3 sentences of constants that must not drift between scenes",
+      "wardrobe_always": ["optional free-text sticky items"],
+      "canonical_given_name": "Display name",
+      "display_name_policy": "ok_anytime | never_on_screen | withheld_until_reveal",
+      "voice_label": "short label",
+      "voice_profile": "1–3 sentences age/sex/pitch/pace/energy; same voice every scene",
+      "reference_image_placeholder": "character_example_ref.png",
+      "source_image_pages": [2, 4]
+    }
+  }
+}
+
+FIELD RULES:
+- description / visual_lock / wardrobe_always: **filmable only** — species, size, age,
+  coat/hair colors, markings, face shape, real garments/props with color/shape.
+- **NICKNAMES vs VISUAL (HARD):** Book titles, epithets, and personality labels belong in
+  dialogue or the movie title — **never** in description, visual_lock, or wardrobe.
+  Bad: “noodle head look”, “noodle-head silhouette”, “biscuit-head hat”, “not very bright”
+  as a facial design instruction (vague personality is not anatomy).
+  Good: “small black-and-white dog, floppy ears, bright eyes, soft rounded head shape,
+  short coat; snug black-and-white pajama top and bottoms when dressed.”
+- Do **not** quote title words as if they were physical features.
+- Metaphorical wardrobe: only real garments shown in art/story (e.g. actual pajamas), not
+  coat-as-metaphor sleepwear inventing extra clothes the art never draws.
+- display_name_policy never_on_screen: pure VO narrator — omit visual_lock or leave short.
+- reference_image_placeholder: bare filename only under assets/characters/ (no folder path).
+- source_image_pages: optional 1–3 page numbers from book --- PAGE N --- if book has plates
+  and the character is clearly visible; else [].
+- Include humans AND animals that appear on screen.
+- Do NOT invent characters not supported by screenplay or book.
+- Prefer names used in the Fountain (BUSTER, MOMMA, DADDY, NARRATOR).
+
+================================================================
+OUTPUT
+================================================================
+JSON only. No trailing commentary.

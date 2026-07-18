@@ -198,6 +198,14 @@ public sealed class StartCharacterVariantsRequest
     public bool PersistDescription { get; set; } = true;
 }
 
+public sealed class ExtractCastRequest
+{
+    public string ProjectId { get; set; } = "";
+    /// <summary>Rebuild cast even if cast_seeds.json already exists.</summary>
+    public bool Force { get; set; } = true;
+    public string Model { get; set; } = "grok-4.5";
+}
+
 public sealed class AttachCharacterPlatesRequest
 {
     public string ProjectId { get; set; } = "";

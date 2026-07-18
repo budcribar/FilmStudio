@@ -10,6 +10,8 @@ Paths are relative to the **workspace root** (repo root with `renderer/`, `gui/`
 | File | Role |
 |------|------|
 | `book_to_fountain.txt` | **Product path:** book → editable Fountain screenplay |
+| `fountain_to_cast.txt` | **Product path:** Fountain (+ book) → `source/cast_seeds.json` closed cast |
+| `cast_visual_literalize.txt` | Cast post-pass: figurative/idiomatic looks → literal filmable prose |
 | `adaptation_v16.txt` | Legacy full-film adaptation rules (optional GUI append) |
 | `shared_rules.txt` | Rules Stage 2 + verifier must all respect |
 | `stage1_scene_bible.schema.json` | Optional schema for internal materialised scene lists (not an operator prompt) |

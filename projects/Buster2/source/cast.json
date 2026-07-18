@@ -8,7 +8,7 @@
   "render_style_lock": "STYLE LOCK: Warm stylized children\u0027s-picture-book live action; soft practical lamp and daylight; cozy home palette; one consistent medium for all cast and creatures throughout\u2014no style drift between backyard, interiors, and dream.",
   "character_seed_tokens": {
     "Character_Buster": {
-      "description": "Small black-and-white dog, short coat, floppy ears, bright eyes, shape, compact bouncy build; later wears snug black-and-white pajama top and bottoms.",
+      "description": "Small black-and-white dog, short coat, floppy ears, bright eyes, soft rounded head shape, compact bouncy build; later wears snug black-and-white pajama top and bottoms.",
       "canonical_given_name": "Buster",
       "display_name_policy": "ok_anytime",
       "voice_label": "Buster (nonverbal)",

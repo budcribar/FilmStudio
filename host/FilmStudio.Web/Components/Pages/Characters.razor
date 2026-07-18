@@ -4,6 +4,7 @@
 @inject JobHubClient Hub
 @inject AdminSessionService Session
 @using FilmStudio.Core.Models
+@using Microsoft.AspNetCore.Components.Forms
 
 <PageTitle>Characters</PageTitle>
 
@@ -21,6 +22,16 @@
     ·
     <a href="scenes">Scenes →</a>
 </p>
+
+<div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+    <button type="button"
+            class="btn btn-primary btn-sm"
+            disabled="@(_busy || JobRunning || _extractingCast)"
+            @onclick="ExtractCastAsync">
+        @(_extractingCast ? "Building cast…" : "Build cast from screenplay")
+    </button>
+</div>
+
 @if (_plates is not null && !_plates.SortedByCharacter)
 {
     <div class="alert alert-warning d-flex flex-wrap align-items-center justify-content-between gap-2 py-2 mb-3">
@@ -163,7 +174,8 @@ else if (_plates is not null && _plates.SortedByCharacter)
 else if (_chars.Count == 0)
 {
     <div class="alert alert-warning">
-        No cast yet. Approve the <strong>screenplay</strong> in Adaptation first.
+        No cast yet. Approve the <strong>screenplay</strong> in Adaptation, then click
+        <strong>Build cast from screenplay</strong> (AI reads the Fountain + book).
     </div>
 }
 else
@@ -444,15 +456,23 @@ else
                                         title="Preferred image only + description">
                                     Preferred only
                                 </button>
+                                <label class="btn btn-outline-primary btn-sm mb-0 @(_busy || JobRunning ? "disabled" : "")">
+                                    Upload picture…
+                                    <InputFile OnChange="OnUploadRefAsync"
+                                               accept=".png,.jpg,.jpeg,.webp,.gif"
+                                               class="d-none"
+                                               disabled="@(_busy || JobRunning)" />
+                                </label>
                                 <span class="small text-muted">
                                     @(_selected.Locked || _selected.HasPreferred ? "1 refine" : "3 variants") then left/right compare
+                                    · or upload your own look
                                 </span>
                             </div>
                         </div>
                     </div>
 
                     <p class="small text-muted mb-0">
-                        After generate finishes, pick a champion and lock for video.
+                        After generate finishes, pick a champion and lock for video — or upload your own picture as the lock.
                     </p>
                 }
                 else if (_mode == Mode.WaitingGenerate)
@@ -665,12 +685,50 @@ else
         </button>
     };
 
+    private bool _extractingCast;
+
     private bool JobRunning =>
         string.Equals(_job?.Status, "running", StringComparison.OrdinalIgnoreCase);
 
     private bool PlateSortRunning =>
         JobRunning &&
         string.Equals(_job?.Kind, "character-plates", StringComparison.OrdinalIgnoreCase);
+
+    private async Task ExtractCastAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_projectId) || _extractingCast) return;
+        _extractingCast = true;
+        _busy = true;
+        _error = null;
+        _message = "Building cast from screenplay…";
+        StateHasChanged();
+        try
+        {
+            var result = await Engine.ExtractCastFromScreenplayAsync(_projectId, force: true);
+            if (result is null || result.Ok != true)
+            {
+                _error = result?.Error ?? "Could not build cast from screenplay.";
+                _message = null;
+            }
+            else
+            {
+                _message = result.Message
+                    ?? $"Cast ready · {result.CharacterCount} character(s)";
+                await LoadAsync();
+            }
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+            _message = null;
+        }
+        finally
+        {
+            _extractingCast = false;
+            _busy = false;
+            StateHasChanged();
+        }
+    }
 
     private int _remainingAfter =>
         Math.Max(0, _allCandidates.Count - _queueIndex - 1);
@@ -1293,6 +1351,35 @@ else
         }
         catch (Exception ex) { _error = ex.Message; }
         finally { _busy = false; }
+    }
+
+    private async Task OnUploadRefAsync(InputFileChangeEventArgs e)
+    {
+        if (_selected is null || _selected.VoiceOnly) return;
+        var file = e.File;
+        if (file is null) return;
+
+        _busy = true;
+        _error = null;
+        _message = null;
+        try
+        {
+            const long max = 25 * 1024 * 1024;
+            await using var stream = file.OpenReadStream(max);
+            await Engine.UploadCharacterRefAsync(_projectId, _selected.Key, stream, file.Name);
+            _message = $"Locked preferred look for {_selected.DisplayName} from your upload.";
+            await LoadAsync();
+            ResetCompare();
+            _mode = Mode.PickSource;
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            _busy = false;
+        }
     }
 
     private async Task CancelAsync()

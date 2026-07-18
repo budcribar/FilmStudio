@@ -418,6 +418,55 @@ public sealed class CharacterDesignService
         // Copy (convert jpg→png name still just copies bytes if formats differ — OK for video ref)
         File.Copy(sourcePath, dest, overwrite: true);
 
+        FinalizeLock(projectId, charKey, dest, $"Locked reference from {Path.GetFileName(sourcePath)}");
+        return dest;
+    }
+
+    /// <summary>
+    /// Operator upload: save image bytes as the locked character ref (preferred look for video).
+    /// Accepts png/jpg/webp/gif; stored as the canonical <c>*_ref.png</c> name (bytes as-is).
+    /// </summary>
+    public async Task<string> LockFromUploadAsync(
+        string projectId,
+        string charKey,
+        Stream content,
+        string? originalFileName = null,
+        CancellationToken ct = default)
+    {
+        var seeds = _projects.GetCharacterSeed(projectId, charKey)
+            ?? throw new InvalidOperationException($"Unknown character seed: {charKey}");
+        if (IsVoiceOnly(charKey, seeds))
+            throw new InvalidOperationException($"{charKey} is voice-only — no reference image to lock.");
+
+        if (content is null || !content.CanRead)
+            throw new InvalidOperationException("Empty upload stream");
+
+        var projectDir = _projects.GetProjectDir(projectId);
+        var refName = ProjectStore.CharacterRefFileName(charKey);
+        var dest = Path.Combine(projectDir, "assets", "characters", refName);
+        Directory.CreateDirectory(Path.GetDirectoryName(dest)!);
+
+        await using (var fs = File.Create(dest))
+        {
+            await content.CopyToAsync(fs, ct).ConfigureAwait(false);
+        }
+
+        if (new FileInfo(dest).Length < 64)
+        {
+            try { File.Delete(dest); } catch { /* ignore */ }
+            throw new InvalidOperationException("Uploaded image is empty or too small.");
+        }
+
+        var label = string.IsNullOrWhiteSpace(originalFileName)
+            ? "operator upload"
+            : Path.GetFileName(originalFileName);
+        FinalizeLock(projectId, charKey, dest, $"Locked reference from upload ({label})");
+        return dest;
+    }
+
+    private void FinalizeLock(string projectId, string charKey, string destPath, string changeNote)
+    {
+        var projectDir = _projects.GetProjectDir(projectId);
         // Clear open variants so UI focuses on lock
         for (var i = 1; i <= 3; i++)
         {
@@ -432,8 +481,8 @@ public sealed class CharacterDesignService
         }
 
         _projects.UpdateCharacterSeedPlaceholder(projectId, charKey, ProjectStore.CharacterRefFileName(charKey));
-        _projects.MarkCharacterChanged(projectId, charKey, $"Locked reference from {Path.GetFileName(sourcePath)}");
-        return dest;
+        _projects.MarkCharacterChanged(projectId, charKey, changeNote);
+        _ = destPath;
     }
 
     /// <summary>
