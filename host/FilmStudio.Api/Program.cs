@@ -250,20 +250,21 @@ app.MapGet("/api/admin/config", (IUserContext user, IRuntimeConfigStore config) 
     return Results.Ok(config.Get());
 });
 
-app.MapPut("/api/admin/config", (
+app.MapPut("/api/admin/config", async (
     RuntimeConfigUpdateRequest body,
     IUserContext user,
     IRuntimeConfigStore config,
-    IHubContext<JobHub> hub) =>
+    IHubContext<JobHub> hub,
+    CancellationToken ct) =>
 {
     if (!user.IsAdmin)
         return Results.Json(new { ok = false, error = "admin role required" },
             statusCode: StatusCodes.Status403Forbidden);
     try
     {
-        var updated = config.Update(body, user.UserId);
+        var updated = await config.UpdateAsync(body, user.UserId, ct);
         _ = hub.Clients.Group(JobHub.AdminOpsGroup)
-            .SendAsync(JobHubEvents.AdminState, new { configChanged = true, config = updated });
+            .SendAsync(JobHubEvents.AdminState, new { configChanged = true, config = updated }, ct);
         return Results.Ok(updated);
     }
     catch (Exception ex)
@@ -514,11 +515,11 @@ app.MapGet("/api/stage2-status", (ProjectStore store) =>
 });
 
 // ---- Configuration (pipeline_config.json) ----
-app.MapGet("/api/projects/{id}/config", (string id, ProjectStore store) =>
+app.MapGet("/api/projects/{id}/config", async (string id, ProjectStore store, CancellationToken ct) =>
 {
     try
     {
-        var cfg = store.GetConfig(id);
+        var cfg = await store.GetConfigAsync(id, ct);
         return Results.Ok(new { ok = true, projectId = id, config = cfg });
     }
     catch (Exception ex)
@@ -527,12 +528,12 @@ app.MapGet("/api/projects/{id}/config", (string id, ProjectStore store) =>
     }
 });
 
-app.MapPut("/api/projects/{id}/config", async (string id, HttpRequest req, ProjectStore store) =>
+app.MapPut("/api/projects/{id}/config", async (string id, HttpRequest req, ProjectStore store, CancellationToken ct) =>
 {
     try
     {
-        using var doc = await JsonDocument.ParseAsync(req.Body);
-        var saved = store.SaveConfig(id, doc.RootElement);
+        using var doc = await JsonDocument.ParseAsync(req.Body, cancellationToken: ct);
+        var saved = await store.SaveConfigAsync(id, doc.RootElement, ct);
         return Results.Ok(new { ok = true, projectId = id, config = saved });
     }
     catch (Exception ex)
@@ -905,11 +906,11 @@ app.MapPost("/api/jobs/remux", async (StartRemuxRequest body, FilmJobService job
 });
 
 // ---- Review / edit log ----
-app.MapGet("/api/projects/{id}/edit-log", (string id, EditLogService logs) =>
+app.MapGet("/api/projects/{id}/edit-log", async (string id, EditLogService logs, CancellationToken ct) =>
 {
     try
     {
-        var doc = logs.Load(id);
+        var doc = await logs.LoadAsync(id, ct);
         return Results.Ok(new { ok = true, projectId = id, editLog = doc });
     }
     catch (Exception ex)
@@ -918,12 +919,13 @@ app.MapGet("/api/projects/{id}/edit-log", (string id, EditLogService logs) =>
     }
 });
 
-app.MapPost("/api/projects/{id}/clips/review", (string id, ClipReviewRequest body, EditLogService logs) =>
+app.MapPost("/api/projects/{id}/clips/review", async (
+    string id, ClipReviewRequest body, EditLogService logs, CancellationToken ct) =>
 {
     try
     {
         body.ProjectId = id;
-        logs.SetClipReview(id, body.Scene, body.Clip, body.Status, body.Note);
+        await logs.SetClipReviewAsync(id, body.Scene, body.Clip, body.Status, body.Note, ct);
         return Results.Ok(new { ok = true, projectId = id, scene = body.Scene, clip = body.Clip, status = body.Status });
     }
     catch (Exception ex)
@@ -933,12 +935,12 @@ app.MapPost("/api/projects/{id}/clips/review", (string id, ClipReviewRequest bod
 });
 
 app.MapPost("/api/projects/{id}/scenes/{scene:int}/approve", async (
-    string id, int scene, SceneApproveRequest? body, EditLogService logs, FilmJobService jobs) =>
+    string id, int scene, SceneApproveRequest? body, EditLogService logs, FilmJobService jobs, CancellationToken ct) =>
 {
     try
     {
         body ??= new SceneApproveRequest();
-        logs.MarkSceneApproved(id, scene, body.Note ?? "");
+        await logs.MarkSceneApprovedAsync(id, scene, body.Note ?? "", ct);
         if (body.Remux || body.RebuildWip)
         {
             await jobs.StartRemuxAsync(new StartRemuxRequest
@@ -956,11 +958,11 @@ app.MapPost("/api/projects/{id}/scenes/{scene:int}/approve", async (
     }
 });
 
-app.MapGet("/api/projects/{id}/clip-reviews", (string id, EditLogService logs) =>
+app.MapGet("/api/projects/{id}/clip-reviews", async (string id, EditLogService logs, CancellationToken ct) =>
 {
     try
     {
-        var map = logs.GetClipReviewMap(id);
+        var map = await logs.GetClipReviewMapAsync(id, ct);
         return Results.Ok(new { ok = true, projectId = id, reviews = map });
     }
     catch (Exception ex)

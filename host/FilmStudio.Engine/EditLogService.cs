@@ -23,14 +23,19 @@ public sealed class EditLogService
         _log = log;
     }
 
-    public EditLogDocument Load(string projectId)
+    public EditLogDocument Load(string projectId) =>
+        LoadAsync(projectId).GetAwaiter().GetResult();
+
+    public async Task<EditLogDocument> LoadAsync(string projectId, CancellationToken ct = default)
     {
-        var path = LogPath(projectId);
+        var path = await LogPathAsync(projectId, ct).ConfigureAwait(false);
         if (!File.Exists(path))
             return new EditLogDocument();
         try
         {
-            var doc = JsonSerializer.Deserialize<EditLogDocument>(File.ReadAllText(path), JsonOpts);
+            await using var stream = File.OpenRead(path);
+            var doc = await JsonSerializer.DeserializeAsync<EditLogDocument>(stream, JsonOpts, ct)
+                .ConfigureAwait(false);
             return doc ?? new EditLogDocument();
         }
         catch (Exception ex)
@@ -40,12 +45,16 @@ public sealed class EditLogService
         }
     }
 
-    public void Save(string projectId, EditLogDocument doc)
+    public void Save(string projectId, EditLogDocument doc) =>
+        SaveAsync(projectId, doc).GetAwaiter().GetResult();
+
+    public async Task SaveAsync(string projectId, EditLogDocument doc, CancellationToken ct = default)
     {
-        var path = LogPath(projectId);
+        var path = await LogPathAsync(projectId, ct).ConfigureAwait(false);
         Directory.CreateDirectory(Path.GetDirectoryName(path)!);
         var tmp = path + ".tmp";
-        File.WriteAllText(tmp, JsonSerializer.Serialize(doc, JsonOpts) + "\n");
+        var json = JsonSerializer.Serialize(doc, JsonOpts) + "\n";
+        await File.WriteAllTextAsync(tmp, json, ct).ConfigureAwait(false);
         File.Move(tmp, path, overwrite: true);
     }
 
@@ -59,9 +68,24 @@ public sealed class EditLogService
         string actionTaken = "",
         string before = "",
         string after = "",
-        string learningLayer = "clip")
+        string learningLayer = "clip") =>
+        AddAsync(projectId, entryType, userNote, scene, clip, character, actionTaken, before, after, learningLayer)
+            .GetAwaiter().GetResult();
+
+    public async Task<EditLogEntry> AddAsync(
+        string projectId,
+        string entryType,
+        string userNote,
+        int? scene = null,
+        int? clip = null,
+        string? character = null,
+        string actionTaken = "",
+        string before = "",
+        string after = "",
+        string learningLayer = "clip",
+        CancellationToken ct = default)
     {
-        var doc = Load(projectId);
+        var doc = await LoadAsync(projectId, ct).ConfigureAwait(false);
         var entry = new EditLogEntry
         {
             Id = Guid.NewGuid().ToString("N")[..8],
@@ -78,13 +102,22 @@ public sealed class EditLogService
             SuggestedRule = SuggestRule(entryType, userNote, scene, clip, character),
         };
         doc.Entries.Insert(0, entry);
-        Save(projectId, doc);
+        await SaveAsync(projectId, doc, ct).ConfigureAwait(false);
         return entry;
     }
 
     public EditLogEntry? Get(string projectId, string entryId) =>
-        Load(projectId).Entries.FirstOrDefault(e =>
+        GetAsync(projectId, entryId).GetAwaiter().GetResult();
+
+    public async Task<EditLogEntry?> GetAsync(
+        string projectId,
+        string entryId,
+        CancellationToken ct = default)
+    {
+        var doc = await LoadAsync(projectId, ct).ConfigureAwait(false);
+        return doc.Entries.FirstOrDefault(e =>
             string.Equals(e.Id, entryId, StringComparison.OrdinalIgnoreCase));
+    }
 
     /// <summary>Pass/fail clip review status in pipeline_state.json + edit log.</summary>
     public void SetClipReview(
@@ -92,14 +125,24 @@ public sealed class EditLogService
         int scene,
         int clip,
         string status,
-        string note = "")
+        string note = "") =>
+        SetClipReviewAsync(projectId, scene, clip, status, note).GetAwaiter().GetResult();
+
+    public async Task SetClipReviewAsync(
+        string projectId,
+        int scene,
+        int clip,
+        string status,
+        string note = "",
+        CancellationToken ct = default)
     {
         status = status.Trim().ToLowerInvariant();
         if (status is not ("pass" or "fail" or "pending"))
             throw new InvalidOperationException("status must be pass|fail|pending");
 
-        var statePath = Path.Combine(_projects.GetProjectDir(projectId), "pipeline_state.json");
-        var state = LoadState(statePath);
+        var dir = await _projects.GetProjectDirAsync(projectId, ct).ConfigureAwait(false);
+        var statePath = Path.Combine(dir, "pipeline_state.json");
+        var state = await LoadStateAsync(statePath, ct).ConfigureAwait(false);
         var key = $"S{scene:D2}C{clip:D2}";
         if (!state.TryGetValue("clip_review", out var cr) || cr is not Dictionary<string, object?> reviews)
         {
@@ -112,20 +155,30 @@ public sealed class EditLogService
             ["note"] = note ?? "",
             ["ts"] = DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ss"),
         };
-        SaveState(statePath, state);
+        await SaveStateAsync(statePath, state, ct).ConfigureAwait(false);
 
-        Add(projectId,
+        await AddAsync(
+            projectId,
             status == "pass" ? "clip_pass" : status == "fail" ? "clip_fail" : "clip_review",
             note is { Length: > 0 } ? note : status,
             scene: scene,
             clip: clip,
-            actionTaken: $"review_status={status}");
+            actionTaken: $"review_status={status}",
+            ct: ct).ConfigureAwait(false);
     }
 
-    public void MarkSceneApproved(string projectId, int scene, string note = "")
+    public void MarkSceneApproved(string projectId, int scene, string note = "") =>
+        MarkSceneApprovedAsync(projectId, scene, note).GetAwaiter().GetResult();
+
+    public async Task MarkSceneApprovedAsync(
+        string projectId,
+        int scene,
+        string note = "",
+        CancellationToken ct = default)
     {
-        var statePath = Path.Combine(_projects.GetProjectDir(projectId), "pipeline_state.json");
-        var state = LoadState(statePath);
+        var dir = await _projects.GetProjectDirAsync(projectId, ct).ConfigureAwait(false);
+        var statePath = Path.Combine(dir, "pipeline_state.json");
+        var state = await LoadStateAsync(statePath, ct).ConfigureAwait(false);
         if (!state.TryGetValue("scene_review", out var sr) || sr is not Dictionary<string, object?> scenes)
         {
             scenes = new Dictionary<string, object?>();
@@ -137,15 +190,29 @@ public sealed class EditLogService
             ["note"] = note ?? "",
             ["ts"] = DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ss"),
         };
-        SaveState(statePath, state);
-        Add(projectId, "scene_approve", note is { Length: > 0 } ? note : "Approved",
-            scene: scene, actionTaken: "scene_review=approved");
+        await SaveStateAsync(statePath, state, ct).ConfigureAwait(false);
+        await AddAsync(
+            projectId,
+            "scene_approve",
+            note is { Length: > 0 } ? note : "Approved",
+            scene: scene,
+            actionTaken: "scene_review=approved",
+            ct: ct).ConfigureAwait(false);
     }
 
-    public void MarkSceneDirty(string projectId, int scene, string reason, string layer = "stage2")
+    public void MarkSceneDirty(string projectId, int scene, string reason, string layer = "stage2") =>
+        MarkSceneDirtyAsync(projectId, scene, reason, layer).GetAwaiter().GetResult();
+
+    public async Task MarkSceneDirtyAsync(
+        string projectId,
+        int scene,
+        string reason,
+        string layer = "stage2",
+        CancellationToken ct = default)
     {
-        var statePath = Path.Combine(_projects.GetProjectDir(projectId), "pipeline_state.json");
-        var state = LoadState(statePath);
+        var dir = await _projects.GetProjectDirAsync(projectId, ct).ConfigureAwait(false);
+        var statePath = Path.Combine(dir, "pipeline_state.json");
+        var state = await LoadStateAsync(statePath, ct).ConfigureAwait(false);
         if (!state.TryGetValue("dirty_scenes", out var ds) || ds is not Dictionary<string, object?> dirty)
         {
             dirty = new Dictionary<string, object?>();
@@ -157,15 +224,27 @@ public sealed class EditLogService
             ["layer"] = layer,
             ["ts"] = DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ss"),
         };
-        SaveState(statePath, state);
-        Add(projectId, "scene_dirty", reason, scene: scene, actionTaken: $"dirty layer={layer}",
-            learningLayer: layer);
+        await SaveStateAsync(statePath, state, ct).ConfigureAwait(false);
+        await AddAsync(
+            projectId,
+            "scene_dirty",
+            reason,
+            scene: scene,
+            actionTaken: $"dirty layer={layer}",
+            learningLayer: layer,
+            ct: ct).ConfigureAwait(false);
     }
 
-    public Dictionary<string, string> GetClipReviewMap(string projectId)
+    public Dictionary<string, string> GetClipReviewMap(string projectId) =>
+        GetClipReviewMapAsync(projectId).GetAwaiter().GetResult();
+
+    public async Task<Dictionary<string, string>> GetClipReviewMapAsync(
+        string projectId,
+        CancellationToken ct = default)
     {
-        var statePath = Path.Combine(_projects.GetProjectDir(projectId), "pipeline_state.json");
-        var state = LoadState(statePath);
+        var dir = await _projects.GetProjectDirAsync(projectId, ct).ConfigureAwait(false);
+        var statePath = Path.Combine(dir, "pipeline_state.json");
+        var state = await LoadStateAsync(statePath, ct).ConfigureAwait(false);
         var map = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         if (state.TryGetValue("clip_review", out var cr) && cr is Dictionary<string, object?> reviews)
         {
@@ -179,20 +258,33 @@ public sealed class EditLogService
         return map;
     }
 
-    private string LogPath(string projectId) =>
-        Path.Combine(_projects.GetProjectDir(projectId), "edit_feedback_log.json");
+    private async Task<string> LogPathAsync(string projectId, CancellationToken ct)
+    {
+        var dir = await _projects.GetProjectDirAsync(projectId, ct).ConfigureAwait(false);
+        return Path.Combine(dir, "edit_feedback_log.json");
+    }
 
-    private static Dictionary<string, object?> LoadState(string path)
+    private static async Task<Dictionary<string, object?>> LoadStateAsync(
+        string path,
+        CancellationToken ct)
     {
         if (!File.Exists(path)) return new();
-        try { return GrokChatClient.ParseJsonObject(File.ReadAllText(path)); }
+        try
+        {
+            var text = await File.ReadAllTextAsync(path, ct).ConfigureAwait(false);
+            return GrokChatClient.ParseJsonObject(text);
+        }
         catch { return new(); }
     }
 
-    private static void SaveState(string path, Dictionary<string, object?> state)
+    private static async Task SaveStateAsync(
+        string path,
+        Dictionary<string, object?> state,
+        CancellationToken ct)
     {
         Directory.CreateDirectory(Path.GetDirectoryName(path)!);
-        File.WriteAllText(path, JsonSerializer.Serialize(state, JsonOpts) + "\n");
+        var json = JsonSerializer.Serialize(state, JsonOpts) + "\n";
+        await File.WriteAllTextAsync(path, json, ct).ConfigureAwait(false);
     }
 
     private static string SuggestRule(

@@ -11,20 +11,25 @@ Goal: keep Kestrel request threads free during disk/JSON work. Multi-pass by des
 | `ProjectStore` | `ListProjectsAsync`, `ListScenesAsync`, `GetSceneDetailAsync`, `LoadBlueprint*Async`, `ActivateAsync`, … |
 | API | `/api/projects`, activate, `/scenes`, scene detail → async handlers |
 
-Sync methods remain for job workers (Pass 2). Prefer not adding new sync I/O on request paths.
+## Pass 2 (done) — job workers & writes
 
-## Pass 2 — job workers & writes
+| Layer | Change |
+|-------|--------|
+| `EditLogService` | `LoadAsync` / `SaveAsync` / review APIs; pipeline_state async |
+| `RuntimeConfigStore` | `UpdateAsync` + async persist/audit; `SemaphoreSlim` gate |
+| `FfmpegRemuxService` | scene/WIP sources manifests `Write*Async`; `LoadConfigAsync` |
+| `ProjectStore` | `GetConfigAsync` / `SaveConfigAsync` |
+| `MediaDurationProbe` | `WriteDurationSidecarAsync` |
+| API | admin config PUT, project config, edit-log, clip review, approve |
 
-- `EditLogService`, `RuntimeConfigStore` persist
-- `FfmpegRemuxService` remaining sync reads/writes of manifests
-- `FilmJobService` / stage services: prefer async file IO where they already use `Task`
-- `SaveConfig` / blueprint writes in `ProjectStore`
+Sync wrappers remain for older job callers (`GetAwaiter().GetResult()`). Prefer `*Async` on new code.
 
 ## Pass 3 — residual
 
 - `CostReportService`, character/book prepare paths
-- `MediaDurationProbe` sidecar read (manifest) async when on request path
+- Blueprint seed writes / character plate sync paths still using `File.ReadAllText`
 - Directory enumeration stays sync (no good BCL async API; metadata-only)
+- Optional: convert remux staleness checks to fully async when callers allow
 
 ## Rules of thumb
 

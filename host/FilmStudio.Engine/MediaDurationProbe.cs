@@ -100,7 +100,13 @@ public sealed class MediaDurationProbe
         return any ? sum : null;
     }
 
-    public static void WriteDurationSidecar(string mediaPath, double durationSeconds)
+    public static void WriteDurationSidecar(string mediaPath, double durationSeconds) =>
+        WriteDurationSidecarAsync(mediaPath, durationSeconds).GetAwaiter().GetResult();
+
+    public static async Task WriteDurationSidecarAsync(
+        string mediaPath,
+        double durationSeconds,
+        CancellationToken ct = default)
     {
         try
         {
@@ -111,7 +117,8 @@ public sealed class MediaDurationProbe
                 ["seconds"] = Math.Round(durationSeconds, 3),
                 ["updatedAtUtc"] = DateTime.UtcNow.ToString("o"),
             };
-            File.WriteAllText(path, JsonSerializer.Serialize(doc) + "\n");
+            await File.WriteAllTextAsync(path, JsonSerializer.Serialize(doc) + "\n", ct)
+                .ConfigureAwait(false);
         }
         catch { /* ignore */ }
     }
@@ -128,7 +135,8 @@ public sealed class MediaDurationProbe
             if (!File.Exists(candidate)) continue;
             try
             {
-                using var doc = JsonDocument.Parse(File.ReadAllText(candidate));
+                // Sidecars are tiny; ReadAllBytes avoids encoding work
+                using var doc = JsonDocument.Parse(File.ReadAllBytes(candidate));
                 var root = doc.RootElement;
                 if (root.TryGetProperty("totalDurationSeconds", out var t) && t.TryGetDouble(out var td) && td > 0)
                     return td;

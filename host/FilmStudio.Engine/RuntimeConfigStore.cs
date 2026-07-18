@@ -11,6 +11,10 @@ public interface IRuntimeConfigStore
 {
     RuntimeConfigDto Get();
     RuntimeConfigDto Update(RuntimeConfigUpdateRequest req, string adminUserId);
+    Task<RuntimeConfigDto> UpdateAsync(
+        RuntimeConfigUpdateRequest req,
+        string adminUserId,
+        CancellationToken ct = default);
     string ConfigPath { get; }
 }
 
@@ -29,7 +33,7 @@ public sealed class RuntimeConfigStore : IRuntimeConfigStore
 
     private readonly IOptions<FilmStudioOptions> _opts;
     private readonly ILogger<RuntimeConfigStore> _log;
-    private readonly object _gate = new();
+    private readonly SemaphoreSlim _gate = new(1, 1);
     private readonly string _path;
     private readonly string _auditPath;
     private DateTimeOffset? _updatedAt;
@@ -46,6 +50,7 @@ public sealed class RuntimeConfigStore : IRuntimeConfigStore
         Directory.CreateDirectory(dir);
         _path = Path.Combine(dir, "runtime-config.json");
         _auditPath = Path.Combine(dir, "admin_config_audit.jsonl");
+        // Startup: sync load is fine (once, before requests)
         TryLoadAndApply();
     }
 
@@ -73,7 +78,6 @@ public sealed class RuntimeConfigStore : IRuntimeConfigStore
                 RateLimitEveryN = f.RateLimitEveryN,
             },
             UseFakes = o.UseFakes,
-            // UseFakes toggles DI client graph — restart required for full effect
             RestartRequired = new List<string> { "UseFakes" },
             ConfigPath = _path,
             UpdatedAt = _updatedAt,
@@ -81,10 +85,17 @@ public sealed class RuntimeConfigStore : IRuntimeConfigStore
         };
     }
 
-    public RuntimeConfigDto Update(RuntimeConfigUpdateRequest req, string adminUserId)
+    public RuntimeConfigDto Update(RuntimeConfigUpdateRequest req, string adminUserId) =>
+        UpdateAsync(req, adminUserId).GetAwaiter().GetResult();
+
+    public async Task<RuntimeConfigDto> UpdateAsync(
+        RuntimeConfigUpdateRequest req,
+        string adminUserId,
+        CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(req);
-        lock (_gate)
+        await _gate.WaitAsync(ct).ConfigureAwait(false);
+        try
         {
             var o = _opts.Value;
             o.Capacity ??= new CapacityOptions();
@@ -114,10 +125,14 @@ public sealed class RuntimeConfigStore : IRuntimeConfigStore
 
             _updatedAt = DateTimeOffset.UtcNow;
             _updatedBy = adminUserId;
-            PersistLocked();
-            AppendAuditLocked(adminUserId, before, Get());
+            await PersistAsync(ct).ConfigureAwait(false);
+            await AppendAuditAsync(adminUserId, before, Get(), ct).ConfigureAwait(false);
             _log.LogInformation("Runtime config updated by {User}", adminUserId);
             return Get();
+        }
+        finally
+        {
+            _gate.Release();
         }
     }
 
@@ -147,7 +162,6 @@ public sealed class RuntimeConfigStore : IRuntimeConfigStore
                 o.Fakes.FailRate = f.FailRate;
                 o.Fakes.RateLimitEveryN = f.RateLimitEveryN;
             }
-            // Note: UseFakes from file does not re-wire DI clients already registered.
             if (dto.UseFakes is bool uf)
                 o.UseFakes = uf;
             _updatedAt = dto.UpdatedAt;
@@ -160,7 +174,7 @@ public sealed class RuntimeConfigStore : IRuntimeConfigStore
         }
     }
 
-    private void PersistLocked()
+    private async Task PersistAsync(CancellationToken ct)
     {
         var o = _opts.Value;
         var file = new RuntimeConfigFile
@@ -184,11 +198,16 @@ public sealed class RuntimeConfigStore : IRuntimeConfigStore
             UpdatedBy = _updatedBy,
         };
         var tmp = _path + ".tmp";
-        File.WriteAllText(tmp, JsonSerializer.Serialize(file, JsonOpts));
+        await File.WriteAllTextAsync(tmp, JsonSerializer.Serialize(file, JsonOpts), ct)
+            .ConfigureAwait(false);
         File.Move(tmp, _path, overwrite: true);
     }
 
-    private void AppendAuditLocked(string user, RuntimeConfigDto before, RuntimeConfigDto after)
+    private async Task AppendAuditAsync(
+        string user,
+        RuntimeConfigDto before,
+        RuntimeConfigDto after,
+        CancellationToken ct)
     {
         try
         {
@@ -199,7 +218,8 @@ public sealed class RuntimeConfigStore : IRuntimeConfigStore
                 before,
                 after,
             }, JsonOpts);
-            File.AppendAllText(_auditPath, line + Environment.NewLine);
+            await File.AppendAllTextAsync(_auditPath, line + Environment.NewLine, ct)
+                .ConfigureAwait(false);
         }
         catch (Exception ex)
         {

@@ -137,9 +137,10 @@ public sealed class FfmpegRemuxService : IFfmpegRemux
         if (exit != 0 || !File.Exists(outPath) || new FileInfo(outPath).Length < 1024)
             throw new InvalidOperationException($"FFmpeg remux failed for scene {sceneNum}: {TrimLog(log)}");
 
-        WriteSceneSourcesManifest(outPath, clips, totalSec);
+        await WriteSceneSourcesManifestAsync(outPath, clips, totalSec).ConfigureAwait(false);
         if (totalSec is > 0)
-            MediaDurationProbe.WriteDurationSidecar(outPath, totalSec.Value);
+            await MediaDurationProbe.WriteDurationSidecarAsync(outPath, totalSec.Value, ct)
+                .ConfigureAwait(false);
         onProgress?.Invoke($"Remuxed → {Path.GetFileName(outPath)} ({clips.Count} clip(s))");
         return outPath;
     }
@@ -147,10 +148,11 @@ public sealed class FfmpegRemuxService : IFfmpegRemux
     public static string SceneSourcesManifestPath(string compositePath) =>
         compositePath + ".sources.json";
 
-    private static void WriteSceneSourcesManifest(
+    private static async Task WriteSceneSourcesManifestAsync(
         string compositePath,
         IReadOnlyList<string> clipFiles,
-        double? totalDurationSeconds = null)
+        double? totalDurationSeconds = null,
+        CancellationToken ct = default)
     {
         try
         {
@@ -174,9 +176,10 @@ public sealed class FfmpegRemuxService : IFfmpegRemux
                     ? Math.Round(totalDurationSeconds.Value, 3)
                     : null,
             };
-            File.WriteAllText(
+            await File.WriteAllTextAsync(
                 SceneSourcesManifestPath(compositePath),
-                JsonSerializer.Serialize(doc, JsonDefaults.Indented) + "\n");
+                JsonSerializer.Serialize(doc, JsonDefaults.Indented) + "\n",
+                ct).ConfigureAwait(false);
         }
         catch
         {
@@ -216,7 +219,8 @@ public sealed class FfmpegRemuxService : IFfmpegRemux
 
         try
         {
-            using var doc = JsonDocument.Parse(File.ReadAllText(manifestPath));
+            // Small manifest; sync OK for staleness checks (not on Kestrel request path)
+            using var doc = JsonDocument.Parse(File.ReadAllBytes(manifestPath));
             if (!doc.RootElement.TryGetProperty("clips", out var clipsEl) ||
                 clipsEl.ValueKind != JsonValueKind.Array)
                 return true;
@@ -273,8 +277,8 @@ public sealed class FfmpegRemuxService : IFfmpegRemux
     {
         EnsureAvailable(onProgress);
 
-        var projectDir = _projects.GetProjectDir(projectId);
-        var cfg = LoadConfig(projectDir);
+        var projectDir = await _projects.GetProjectDirAsync(projectId, ct).ConfigureAwait(false);
+        var cfg = await LoadConfigAsync(projectDir, ct).ConfigureAwait(false);
         var wipRel = cfg.TryGetValue("wip_movie_path", out var w)
             ? w?.ToString() ?? "assets/movie_wip.mp4"
             : "assets/movie_wip.mp4";
@@ -324,7 +328,7 @@ public sealed class FfmpegRemuxService : IFfmpegRemux
         if (exit != 0 || !File.Exists(wipPath))
             throw new InvalidOperationException($"FFmpeg WIP rebuild failed: {TrimLog(log)}");
 
-        WriteWipSourcesManifest(projectId, wipPath, sceneFiles);
+        await WriteWipSourcesManifestAsync(projectId, wipPath, sceneFiles).ConfigureAwait(false);
         onProgress?.Invoke($"WIP → {wipPath} ({sceneFiles.Count} source(s))");
         return wipPath;
     }
@@ -366,10 +370,11 @@ public sealed class FfmpegRemuxService : IFfmpegRemux
     public static string WipSourcesManifestPath(string wipPath) =>
         wipPath + ".sources.json";
 
-    private void WriteWipSourcesManifest(
+    private async Task WriteWipSourcesManifestAsync(
         string projectId,
         string wipPath,
-        IReadOnlyList<string> sourceFiles)
+        IReadOnlyList<string> sourceFiles,
+        CancellationToken ct = default)
     {
         try
         {
@@ -395,7 +400,7 @@ public sealed class FfmpegRemuxService : IFfmpegRemux
                                    .ToList();
 
             string? bpMtime = null;
-            var bpPath = _projects.FindBlueprintPath(projectId);
+            var bpPath = await _projects.FindBlueprintPathAsync(projectId, ct).ConfigureAwait(false);
             if (bpPath is not null && File.Exists(bpPath))
                 bpMtime = new FileInfo(bpPath).LastWriteTimeUtc.ToString("o");
 
@@ -408,8 +413,10 @@ public sealed class FfmpegRemuxService : IFfmpegRemux
                 ["blueprintMtimeUtc"] = bpMtime,
             };
             var path = WipSourcesManifestPath(wipPath);
-            File.WriteAllText(path,
-                JsonSerializer.Serialize(doc, JsonDefaults.Indented) + "\n");
+            await File.WriteAllTextAsync(
+                path,
+                JsonSerializer.Serialize(doc, JsonDefaults.Indented) + "\n",
+                ct).ConfigureAwait(false);
         }
         catch
         {
@@ -600,13 +607,19 @@ public sealed class FfmpegRemuxService : IFfmpegRemux
         return null;
     }
 
-    private static Dictionary<string, object?> LoadConfig(string projectDir)
+    private static Dictionary<string, object?> LoadConfig(string projectDir) =>
+        LoadConfigAsync(projectDir).GetAwaiter().GetResult();
+
+    private static async Task<Dictionary<string, object?>> LoadConfigAsync(
+        string projectDir,
+        CancellationToken ct = default)
     {
         var path = Path.Combine(projectDir, "pipeline_config.json");
         if (!File.Exists(path)) return new();
         try
         {
-            return GrokChatClient.ParseJsonObject(File.ReadAllText(path));
+            var text = await File.ReadAllTextAsync(path, ct).ConfigureAwait(false);
+            return GrokChatClient.ParseJsonObject(text);
         }
         catch { return new(); }
     }

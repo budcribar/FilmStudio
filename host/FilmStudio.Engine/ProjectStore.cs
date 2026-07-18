@@ -290,25 +290,39 @@ public sealed class ProjectStore
     public string ConfigPath(string projectId) =>
         Path.Combine(GetProjectDir(projectId), "pipeline_config.json");
 
-    public Dictionary<string, JsonElement> GetConfig(string projectId)
+    public Dictionary<string, JsonElement> GetConfig(string projectId) =>
+        GetConfigAsync(projectId).GetAwaiter().GetResult();
+
+    public async Task<Dictionary<string, JsonElement>> GetConfigAsync(
+        string projectId,
+        CancellationToken ct = default)
     {
         var path = ConfigPath(projectId);
         if (!File.Exists(path))
             return new Dictionary<string, JsonElement>(StringComparer.OrdinalIgnoreCase);
-        using var doc = JsonDocument.Parse(File.ReadAllText(path));
+        await using var stream = File.OpenRead(path);
+        using var doc = await JsonDocument.ParseAsync(stream, cancellationToken: ct).ConfigureAwait(false);
         var dict = new Dictionary<string, JsonElement>(StringComparer.OrdinalIgnoreCase);
         foreach (var p in doc.RootElement.EnumerateObject())
             dict[p.Name] = p.Value.Clone();
         return dict;
     }
 
-    public Dictionary<string, JsonElement> SaveConfig(string projectId, JsonElement updates)
+    public Dictionary<string, JsonElement> SaveConfig(string projectId, JsonElement updates) =>
+        SaveConfigAsync(projectId, updates).GetAwaiter().GetResult();
+
+    public async Task<Dictionary<string, JsonElement>> SaveConfigAsync(
+        string projectId,
+        JsonElement updates,
+        CancellationToken ct = default)
     {
         var path = ConfigPath(projectId);
         Dictionary<string, object?> merged = new(StringComparer.OrdinalIgnoreCase);
         if (File.Exists(path))
         {
-            using var existing = JsonDocument.Parse(File.ReadAllText(path));
+            await using var stream = File.OpenRead(path);
+            using var existing = await JsonDocument.ParseAsync(stream, cancellationToken: ct)
+                .ConfigureAwait(false);
             foreach (var p in existing.RootElement.EnumerateObject())
                 merged[p.Name] = JsonSerializer.Deserialize<object>(p.Value.GetRawText());
         }
@@ -320,10 +334,10 @@ public sealed class ProjectStore
         }
 
         var json = JsonSerializer.Serialize(merged, JsonDefaults.Indented);
-        File.WriteAllText(path, json + "\n");
+        await File.WriteAllTextAsync(path, json + "\n", ct).ConfigureAwait(false);
         // Blueprint path may have changed via blueprint_file
         InvalidateSceneListCache(projectId);
-        return GetConfig(projectId);
+        return await GetConfigAsync(projectId, ct).ConfigureAwait(false);
     }
 
     /// <summary>
