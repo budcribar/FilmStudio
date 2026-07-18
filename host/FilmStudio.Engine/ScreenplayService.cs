@@ -1,6 +1,7 @@
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using FilmStudio.Core.Models;
 
 namespace FilmStudio.Engine;
@@ -354,50 +355,59 @@ public static class ScreenplayService
         };
     }
 
-    /// <summary>Turn plain book prose into a minimal editable Fountain draft.</summary>
+    /// <summary>
+    /// Turn plain book prose into an editable Fountain draft.
+    /// When book_full has --- PAGE N --- markers, one scene per page (heading includes PAGE n)
+    /// so the editor can show book text when a scene is selected.
+    /// </summary>
     public static string BookTextToFountainDraft(string title, string bookText)
     {
         var sb = new StringBuilder();
         sb.Append("Title: ").Append(title.Trim()).Append('\n');
         sb.Append("Draft date: ").Append(DateTime.Now.ToString("M/d/yyyy")).Append('\n');
         sb.Append('\n');
-        sb.Append("INT. STORY - DAY\n\n");
 
-        // Collapse runs of blank lines; keep paragraphs as Action
-        var lines = bookText.Replace("\r\n", "\n").Replace('\r', '\n').Split('\n');
-        var para = new StringBuilder();
-        void FlushPara()
+        var pages = BookContextService.ParseBookPages(bookText);
+        if (pages.Count == 0)
         {
-            var p = para.ToString().Trim();
-            para.Clear();
-            if (p.Length == 0) return;
-            // Soft wrap long lines at ~100 chars for readability
-            foreach (var chunk in WrapWords(p, 100))
-                sb.Append(chunk).Append('\n');
-            sb.Append('\n');
+            sb.Append("INT. STORY - DAY\n\n");
+            sb.Append("[[No book text.]]\n");
+            return NormalizeText(sb.ToString());
         }
 
-        foreach (var raw in lines)
-        {
-            var line = raw.TrimEnd();
-            if (string.IsNullOrWhiteSpace(line))
-            {
-                FlushPara();
-                continue;
-            }
-            if (para.Length > 0) para.Append(' ');
-            para.Append(line.Trim());
-        }
-        FlushPara();
-
-        // Cap extremely large books in the draft (user can still expand)
         const int maxChars = 400_000;
-        var result = sb.ToString();
-        if (result.Length > maxChars)
+        var used = sb.Length;
+        foreach (var page in pages)
         {
-            result = result[..maxChars] + "\n\n[[Draft truncated — paste remaining book text as needed.]]\n";
+            if (string.IsNullOrWhiteSpace(page.Text))
+                continue;
+
+            var heading = $"INT. STORY - PAGE {page.PageNumber} - DAY";
+            var block = new StringBuilder();
+            block.Append(heading).Append("\n\n");
+            // Skip raw page markers if any slipped into body
+            var body = page.Text;
+            foreach (var para in Regex.Split(body.Trim(), @"\n\s*\n+"))
+            {
+                var p = para.Replace('\n', ' ').Trim();
+                if (p.Length == 0) continue;
+                if (Regex.IsMatch(p, @"^---\s*PAGE\s+\d+\s*---$", RegexOptions.IgnoreCase))
+                    continue;
+                foreach (var chunk in WrapWords(p, 100))
+                    block.Append(chunk).Append('\n');
+                block.Append('\n');
+            }
+
+            if (used + block.Length > maxChars)
+            {
+                sb.Append("\n[[Draft truncated — remaining pages omitted.]]\n");
+                break;
+            }
+            sb.Append(block);
+            used += block.Length;
         }
-        return NormalizeText(result);
+
+        return NormalizeText(sb.ToString());
     }
 
     private static IEnumerable<string> WrapWords(string text, int width)

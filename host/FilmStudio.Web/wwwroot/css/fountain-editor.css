@@ -105,6 +105,50 @@
   background: #e9ecef;
 }
 
+.fe-scene-btn.is-active {
+  background: #e7f1ff;
+  color: #0b5ed7;
+  font-weight: 600;
+}
+
+.fe-book-panel {
+  border: 1px solid #dee2e6;
+  border-radius: 0.375rem;
+  background: #fffaf3;
+  max-height: 14rem;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.fe-book-panel .fe-panel-header {
+  background: #fff3cd;
+  color: #664d03;
+}
+
+.fe-book-body {
+  overflow: auto;
+  padding: 0.65rem 0.85rem;
+  font-size: 0.85rem;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  font-family: Georgia, "Times New Roman", serif;
+  color: #333;
+}
+
+.fe-book-meta {
+  font-size: 0.75rem;
+  color: #6c757d;
+  margin-bottom: 0.35rem;
+  font-family: system-ui, sans-serif;
+}
+
+.fe-book-empty {
+  color: #868e96;
+  font-family: system-ui, sans-serif;
+  font-size: 0.85rem;
+}
+
 .fe-scenes-empty {
   font-size: 0.8rem;
   color: #adb5bd;
@@ -273,6 +317,17 @@
   color: #6c757d;
   font-family: system-ui, sans-serif;
   font-size: 0.8rem;
+  font-style: italic;
+}
+
+.fp-note {
+  margin: 0.5rem 0;
+  padding: 0.35rem 0.5rem;
+  background: #fff8e1;
+  border-left: 3px solid #ffc107;
+  font-family: system-ui, sans-serif;
+  font-size: 0.78rem;
+  color: #664d03;
   font-style: italic;
 }
 

@@ -1081,6 +1081,88 @@ app.MapPost("/api/projects/{id}/screenplay/from-book", (string id, ProjectStore 
     }
 });
 
+/// <summary>
+/// Book excerpt for a screenplay scene (click scene in editor).
+/// Query: sceneIndex (1-based), line (optional), heading (optional).
+/// Body optional: { "body": "scene action text for fuzzy match" }.
+/// </summary>
+app.MapMethods("/api/projects/{id}/screenplay/book-context", new[] { "GET", "POST" },
+    async (string id, HttpRequest req, ProjectStore store) =>
+{
+    try
+    {
+        var q = req.Query;
+        _ = int.TryParse(q["sceneIndex"], out var sceneIndex);
+        if (sceneIndex < 1) sceneIndex = 1;
+        _ = int.TryParse(q["line"], out var line);
+        var heading = q["heading"].ToString();
+        string? body = null;
+        string? fountainText = null;
+
+        if (HttpMethods.IsPost(req.Method) && req.ContentLength is > 0)
+        {
+            using var reader = new StreamReader(req.Body);
+            var raw = await reader.ReadToEndAsync();
+            if (!string.IsNullOrWhiteSpace(raw) && raw.TrimStart().StartsWith('{'))
+            {
+                try
+                {
+                    using var doc = System.Text.Json.JsonDocument.Parse(raw);
+                    if (doc.RootElement.TryGetProperty("body", out var b))
+                        body = b.GetString();
+                    if (doc.RootElement.TryGetProperty("text", out var tx))
+                        fountainText = tx.GetString();
+                    if (doc.RootElement.TryGetProperty("heading", out var h) && string.IsNullOrEmpty(heading))
+                        heading = h.GetString() ?? "";
+                    if (doc.RootElement.TryGetProperty("sceneIndex", out var si) && si.TryGetInt32(out var sii) && sii > 0)
+                        sceneIndex = sii;
+                    if (doc.RootElement.TryGetProperty("line", out var ln) && ln.TryGetInt32(out var lni))
+                        line = lni;
+                }
+                catch { /* ignore */ }
+            }
+        }
+
+        // Prefer live editor text for extract; fall back to saved draft
+        if (string.IsNullOrWhiteSpace(fountainText))
+            fountainText = ScreenplayService.Get(store, id).Text;
+
+        if (string.IsNullOrWhiteSpace(body) && line > 0 && !string.IsNullOrEmpty(fountainText))
+        {
+            body = BookContextService.ExtractSceneBody(fountainText, line);
+            if (string.IsNullOrWhiteSpace(heading))
+            {
+                var lines = fountainText.Replace("\r\n", "\n").Split('\n');
+                if (line - 1 >= 0 && line - 1 < lines.Length)
+                    heading = lines[line - 1].Trim().TrimStart('.');
+            }
+        }
+
+        var ctx = BookContextService.GetContext(store, id, sceneIndex, heading, body);
+        return Results.Ok(new
+        {
+            ok = true,
+            projectId = id,
+            hasBook = ctx.HasBook,
+            pageNumber = ctx.PageNumber,
+            sceneIndex = ctx.SceneIndex,
+            heading = ctx.Heading,
+            excerpt = ctx.Excerpt,
+            matchReason = ctx.MatchReason,
+            totalPages = ctx.TotalPages,
+            message = ctx.HasBook
+                ? (ctx.PageNumber is int p
+                    ? $"Book · page {p}"
+                    : "Book")
+                : "No prepared book text for this project",
+        });
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { ok = false, error = ex.Message });
+    }
+});
+
 app.MapPost("/api/jobs/stage1", async (StartStage1Request body, FilmJobService jobService) =>
 {
     try

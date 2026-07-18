@@ -123,6 +123,28 @@ public class ScreenplayServiceTests : IDisposable
     }
 
     [Fact]
+    public void Create_draft_from_book_one_scene_per_page()
+    {
+        const string projectId = "Demo";
+        var source = Path.Combine(_store.GetProjectDir(projectId), "source");
+        Directory.CreateDirectory(source);
+        File.WriteAllText(Path.Combine(source, "book_full.txt"),
+            "--- PAGE 1 ---\nBuster runs.\n\n--- PAGE 2 ---\nMom says bedtime.\n");
+
+        var r = ScreenplayService.CreateDraftFromBook(_store, projectId);
+        Assert.True(r.Ok, r.Error);
+        var text = ScreenplayService.Get(_store, projectId).Text;
+        Assert.Contains("PAGE 1", text, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("PAGE 2", text, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Buster runs", text, StringComparison.OrdinalIgnoreCase);
+
+        var ctx = BookContextService.GetContext(_store, projectId, sceneIndex: 2, sceneHeading: "INT. STORY - PAGE 2 - DAY");
+        Assert.True(ctx.HasBook);
+        Assert.Equal(2, ctx.PageNumber);
+        Assert.Contains("bedtime", ctx.Excerpt, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
     public void Adaptation_status_next_step_sign_screenplay_when_draft_dirty()
     {
         const string projectId = "Demo";

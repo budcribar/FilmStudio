@@ -144,6 +144,45 @@
                         <div class="fe-preview-body" @ref="_previewEl"></div>
                     </div>
                 </div>
+
+                @if (Status?.Book.BookTextExists == true || _bookContext is not null)
+                {
+                    <div class="fe-book-panel mt-1">
+                        <div class="fe-panel-header d-flex justify-content-between align-items-center">
+                            <span>From the book</span>
+                            @if (_bookContext?.PageNumber is int pn)
+                            {
+                                <span class="small fw-normal">Page @pn@(_bookContext.TotalPages > 0 ? $" of {_bookContext.TotalPages}" : "")</span>
+                            }
+                        </div>
+                        <div class="fe-book-body">
+                            @if (_bookLoading)
+                            {
+                                <div class="fe-book-empty">Looking up book text…</div>
+                            }
+                            else if (_bookContext is null)
+                            {
+                                <div class="fe-book-empty">Click a scene to see what the book says there.</div>
+                            }
+                            else if (!_bookContext.HasBook)
+                            {
+                                <div class="fe-book-empty">No prepared book text for this project.</div>
+                            }
+                            else if (string.IsNullOrWhiteSpace(_bookContext.Excerpt))
+                            {
+                                <div class="fe-book-empty">No matching book passage for this scene.</div>
+                            }
+                            else
+                            {
+                                @if (!string.IsNullOrWhiteSpace(_bookContext.Heading))
+                                {
+                                    <div class="fe-book-meta">@_bookContext.Heading</div>
+                                }
+                                @_bookContext.Excerpt
+                            }
+                        </div>
+                    </div>
+                }
             </div>
 
             <div class="d-flex flex-wrap gap-2 align-items-center mt-3">
@@ -177,7 +216,7 @@
                 }
             </div>
             <p class="small text-muted mt-2 mb-0">
-                Changes save automatically. Scene list and preview update as you type.
+                Changes save automatically. Click a scene to jump there and, after a book import, read the matching book page.
             </p>
         </div>
     </div>
@@ -232,6 +271,9 @@
     private List<string> _signOffWarnings = new();
     private CancellationTokenSource? _saveCts;
     private DotNetObjectReference<AdaptationScreenplay>? _dotNetRef;
+    private BookContextDto? _bookContext;
+    private bool _bookLoading;
+    private int _bookRequestGen;
 
     private ElementReference _editorHost;
     private ElementReference _previewEl;
@@ -328,6 +370,59 @@
         MapWarnings(warnings);
         ScheduleAutosave();
         return InvokeAsync(StateHasChanged);
+    }
+
+    [JSInvokable]
+    public async Task OnSceneSelected(int line, int sceneIndex, string heading)
+    {
+        _bookLoading = true;
+        await InvokeAsync(StateHasChanged);
+
+        var gen = ++_bookRequestGen;
+        try
+        {
+            // Prefer live editor text for body extract
+            if (_editorReady)
+            {
+                try
+                {
+                    _text = await Js.InvokeAsync<string>("fountainEditor.getValue", EditorId) ?? _text;
+                }
+                catch { /* keep */ }
+            }
+
+            var ctx = await Engine.GetBookContextAsync(
+                ProjectId,
+                sceneIndex: Math.Max(1, sceneIndex),
+                line: line,
+                heading: heading,
+                fountainText: _text);
+            if (gen != _bookRequestGen) return;
+            _bookContext = ctx;
+        }
+        catch (Exception ex)
+        {
+            if (gen == _bookRequestGen)
+            {
+                _bookContext = new BookContextDto
+                {
+                    Ok = false,
+                    HasBook = Status?.Book.BookTextExists == true,
+                    Heading = heading,
+                    SceneIndex = sceneIndex,
+                    Excerpt = "",
+                    Message = ex.Message,
+                };
+            }
+        }
+        finally
+        {
+            if (gen == _bookRequestGen)
+            {
+                _bookLoading = false;
+                await InvokeAsync(StateHasChanged);
+            }
+        }
     }
 
     private void MapWarnings(string[]? codes)

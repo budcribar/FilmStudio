@@ -557,6 +557,35 @@ public sealed class EngineApiClient
         return JsonSerializer.Deserialize<ScreenplaySaveDto>(body, JsonOpts);
     }
 
+    public async Task<BookContextDto?> GetBookContextAsync(
+        string projectId,
+        int sceneIndex,
+        int line = 0,
+        string? heading = null,
+        string? fountainText = null,
+        CancellationToken ct = default)
+    {
+        var qs = new List<string>
+        {
+            $"sceneIndex={sceneIndex}",
+        };
+        if (line > 0) qs.Add($"line={line}");
+        if (!string.IsNullOrWhiteSpace(heading))
+            qs.Add($"heading={Uri.EscapeDataString(heading)}");
+        var url =
+            $"/api/projects/{Uri.EscapeDataString(projectId)}/screenplay/book-context?{string.Join("&", qs)}";
+
+        using var resp = await _http.PostAsJsonAsync(
+            url,
+            new { text = fountainText, heading, sceneIndex, line },
+            JsonOpts,
+            ct);
+        var raw = await resp.Content.ReadAsStringAsync(ct);
+        if (!resp.IsSuccessStatusCode)
+            throw new InvalidOperationException(TryError(raw) ?? resp.ReasonPhrase);
+        return JsonSerializer.Deserialize<BookContextDto>(raw, JsonOpts);
+    }
+
     public async Task<CostDto?> GetCostAsync(
         string projectId,
         string? draftResolution = null,
@@ -1141,6 +1170,20 @@ public sealed class ScreenplaySignOffDto
     public string? Message { get; set; }
     public ScreenplayStatus? Screenplay { get; set; }
     public AdaptationStatus? Adaptation { get; set; }
+}
+
+public sealed class BookContextDto
+{
+    public bool Ok { get; set; }
+    public string? ProjectId { get; set; }
+    public bool HasBook { get; set; }
+    public int? PageNumber { get; set; }
+    public int SceneIndex { get; set; }
+    public string? Heading { get; set; }
+    public string Excerpt { get; set; } = "";
+    public string? MatchReason { get; set; }
+    public int TotalPages { get; set; }
+    public string? Message { get; set; }
 }
 
 public sealed class CostDto

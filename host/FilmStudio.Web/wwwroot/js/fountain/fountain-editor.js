@@ -112,7 +112,8 @@
     global.CodeMirror.defineMIME("text/x-fountain", "fountain");
   }
 
-  function refreshSidePanels(id) {
+  function refreshSidePanels(id, opts) {
+    opts = opts || {};
     var inst = instances[id];
     if (!inst) return;
     var text = inst.cm.getValue();
@@ -125,6 +126,7 @@
 
     if (inst.scenesEl && FS) {
       var scenes = FS.extractScenes(FS.classifyLines(text));
+      var activeLine = inst._activeSceneLine || 0;
       if (!scenes.length) {
         inst.scenesEl.innerHTML = '<div class="fe-scenes-empty">No scenes yet</div>';
       } else {
@@ -132,9 +134,16 @@
         for (var i = 0; i < scenes.length; i++) {
           var s = scenes[i];
           var label = s.index + ". " + (s.heading || "Scene");
+          var active = s.line === activeLine ? " is-active" : "";
           parts.push(
-            '<li><button type="button" class="fe-scene-btn" data-line="' +
+            '<li><button type="button" class="fe-scene-btn' +
+              active +
+              '" data-line="' +
               s.line +
+              '" data-index="' +
+              s.index +
+              '" data-heading="' +
+              encodeURIComponent(s.heading || "") +
               '" title="' +
               label.replace(/"/g, "&quot;") +
               '">' +
@@ -147,7 +156,28 @@
         inst.scenesEl.querySelectorAll(".fe-scene-btn").forEach(function (btn) {
           btn.addEventListener("click", function () {
             var line = parseInt(btn.getAttribute("data-line"), 10);
-            if (line > 0) gotoLine(id, line);
+            var index = parseInt(btn.getAttribute("data-index"), 10);
+            var heading = "";
+            try {
+              heading = decodeURIComponent(btn.getAttribute("data-heading") || "");
+            } catch (e) {
+              heading = btn.getAttribute("data-heading") || "";
+            }
+            if (line > 0) {
+              inst._activeSceneLine = line;
+              gotoLine(id, line);
+              // re-paint active class
+              inst.scenesEl.querySelectorAll(".fe-scene-btn").forEach(function (b) {
+                b.classList.toggle("is-active", parseInt(b.getAttribute("data-line"), 10) === line);
+              });
+              if (inst.dotNet && inst.dotNet.invokeMethodAsync) {
+                try {
+                  inst.dotNet.invokeMethodAsync("OnSceneSelected", line, index, heading);
+                } catch (e) {
+                  /* ignore */
+                }
+              }
+            }
           });
         });
       }
@@ -164,17 +194,21 @@
     }
     inst._warnings = warnings;
 
-    if (inst.dotNet && inst.dotNet.invokeMethodAsync) {
-      try {
-        inst.dotNet.invokeMethodAsync(
-          "OnEditorChanged",
-          text,
-          warnings,
-          (inst._scenes && inst._scenes.length) || 0
-        );
-      } catch (e) {
-        /* circuit may be down */
-      }
+    // Throttle Blazor notifications more than local preview (perf)
+    if (!opts.skipDotNet && inst.dotNet && inst.dotNet.invokeMethodAsync) {
+      if (inst._dotNetTimer) clearTimeout(inst._dotNetTimer);
+      inst._dotNetTimer = setTimeout(function () {
+        try {
+          inst.dotNet.invokeMethodAsync(
+            "OnEditorChanged",
+            text,
+            warnings,
+            (inst._scenes && inst._scenes.length) || 0
+          );
+        } catch (e) {
+          /* circuit may be down */
+        }
+      }, 450);
     }
   }
 
@@ -184,7 +218,7 @@
     if (inst._timer) clearTimeout(inst._timer);
     inst._timer = setTimeout(function () {
       refreshSidePanels(id);
-    }, 200);
+    }, 180);
   }
 
   /**

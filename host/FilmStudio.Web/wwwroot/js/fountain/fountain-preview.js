@@ -64,6 +64,15 @@
         case "lyric":
           html.push('<div class="fp-lyric"' + lineAttr + ">" + escapeHtml(disp) + "</div>");
           break;
+        case "note":
+          html.push(
+            '<div class="fp-note"' +
+              lineAttr +
+              ">" +
+              escapeHtml(disp.replace(/^\[\[NOTE\]\]\s*/i, "Note: ")) +
+              "</div>"
+          );
+          break;
         case "section":
           html.push('<div class="fp-section"' + lineAttr + ">" + escapeHtml(disp) + "</div>");
           break;

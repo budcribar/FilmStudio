@@ -10,7 +10,12 @@
   var SCENE_NUM = /\s+#([^#]+)#\s*$/;
 
   function classifyLines(text) {
+    // Keep original line numbers for editor jump; mask boneyard lines as blank.
     var raw = (text || "").replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+    // Remove boneyard content but preserve newlines so line indexes stay aligned
+    raw = raw.replace(/\/\*[\s\S]*?\*\//g, function (m) {
+      return m.replace(/[^\n]/g, " ");
+    });
     var lines = raw.split("\n");
     var result = [];
     var i = 0;
@@ -92,6 +97,12 @@
       }
       if (trimmed.charAt(0) === "=" && !trimmed.startsWith("===")) {
         result.push({ type: "synopsis", text: line, line: lineNo });
+        i++;
+        continue;
+      }
+      // Whole-line or inline notes [[...]]
+      if (/\[\[/.test(trimmed) && /\]\]/.test(trimmed) && trimmed.replace(/\[\[[\s\S]*?\]\]/g, "").trim().length === 0) {
+        result.push({ type: "note", text: line, line: lineNo });
         i++;
         continue;
       }
