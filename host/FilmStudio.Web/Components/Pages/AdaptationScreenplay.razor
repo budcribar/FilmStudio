@@ -76,14 +76,14 @@
             }
 
             <div class="mb-2">
-                <textarea class="form-control font-monospace"
-                          style="min-height: 28rem; font-size: 0.85rem; line-height: 1.4; white-space: pre; tab-size: 4;"
+                <textarea class="form-control font-monospace screenplay-editor"
+                          style="min-height: calc(100vh - 16rem); font-size: 0.9rem; line-height: 1.45; white-space: pre; tab-size: 4;"
                           @bind="_text"
                           @bind:event="oninput"
                           @bind:after="OnTextChanged"
                           disabled="@(Busy || JobRunning)"
                           spellcheck="false"
-                          placeholder="Write or paste your screenplay here…&#10;&#10;INT. ROOM - DAY&#10;&#10;Action description.&#10;&#10;CHARACTER&#10;Dialogue goes here."></textarea>
+                          placeholder="Write or paste your screenplay here (INT. ROOM - DAY, action, CHARACTER, dialogue)…"></textarea>
             </div>
 
             <div class="d-flex flex-wrap gap-2 align-items-center">

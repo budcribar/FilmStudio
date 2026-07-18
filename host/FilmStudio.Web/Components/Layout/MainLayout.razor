@@ -1,15 +1,31 @@
-﻿@inherits LayoutComponentBase
+@inherits LayoutComponentBase
+@inject IJSRuntime Js
 
-<div class="page">
+<div class="page @(_sidebarCollapsed ? "sidebar-collapsed" : null)">
     <div class="sidebar">
-        <NavMenu />
+        <div class="sidebar-header">
+            <a class="navbar-brand sidebar-brand" href="/" title="Film Studio">
+                @if (_sidebarCollapsed)
+                {
+                    <span>FS</span>
+                }
+                else
+                {
+                    <span>Film Studio</span>
+                }
+            </a>
+            <button type="button"
+                    class="sidebar-toggle"
+                    title="@(_sidebarCollapsed ? "Expand menu" : "Collapse menu")"
+                    aria-label="@(_sidebarCollapsed ? "Expand menu" : "Collapse menu")"
+                    @onclick="ToggleSidebarAsync">
+                @(_sidebarCollapsed ? "»" : "«")
+            </button>
+        </div>
+        <NavMenu Collapsed="_sidebarCollapsed" />
     </div>
 
     <main>
-        <div class="top-row px-4">
-            <a href="/about">About</a>
-        </div>
-
         <article class="content px-4">
             @Body
         </article>
@@ -21,3 +37,37 @@
     <a href="." class="reload">Reload</a>
     <span class="dismiss">🗙</span>
 </div>
+
+@code {
+    private bool _sidebarCollapsed;
+    private bool _hydrated;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender || _hydrated) return;
+        _hydrated = true;
+        try
+        {
+            var v = await Js.InvokeAsync<string?>("localStorage.getItem", "fs.sidebarCollapsed");
+            if (string.Equals(v, "1", StringComparison.Ordinal))
+            {
+                _sidebarCollapsed = true;
+                StateHasChanged();
+            }
+        }
+        catch { /* ignore */ }
+    }
+
+    private async Task ToggleSidebarAsync()
+    {
+        _sidebarCollapsed = !_sidebarCollapsed;
+        try
+        {
+            await Js.InvokeVoidAsync(
+                "localStorage.setItem",
+                "fs.sidebarCollapsed",
+                _sidebarCollapsed ? "1" : "0");
+        }
+        catch { /* ignore */ }
+    }
+}

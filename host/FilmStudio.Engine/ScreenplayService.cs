@@ -76,6 +76,9 @@ public static class ScreenplayService
     /// <summary>Read Fountain draft + sign-off status. Pass Stage1 from GetAdaptationStatus to avoid re-reading.</summary>
     public static ScreenplayStatus ReadStatus(ProjectStore store, string projectId, Stage1Status stage1)
     {
+        // Surface imported .fountain files that never got the canonical name
+        try { EnsureCanonicalDraft(store, projectId); } catch { /* status still useful */ }
+
         var draftPath = GetDraftPath(store, projectId);
         var meta = ReadMeta(store, projectId);
         var status = new ScreenplayStatus();
@@ -121,6 +124,8 @@ public static class ScreenplayService
 
     public static ScreenplayDoc Get(ProjectStore store, string projectId)
     {
+        // Prefer canonical draft; if missing, adopt any source/*.fountain from import
+        EnsureCanonicalDraft(store, projectId);
         var draftPath = GetDraftPath(store, projectId);
         var stage1 = ReadStage1Lite(store, projectId);
         var status = ReadStatus(store, projectId, stage1);
@@ -131,6 +136,69 @@ public static class ScreenplayService
             Text = text,
             Status = status,
         };
+    }
+
+    /// <summary>
+    /// If screenplay.fountain is missing, copy the newest source/*.fountain (or project root *.fountain)
+    /// into the canonical path so the editor has something to load after import.
+    /// </summary>
+    public static bool EnsureCanonicalDraft(ProjectStore store, string projectId)
+    {
+        var draftPath = GetDraftPath(store, projectId);
+        if (File.Exists(draftPath) && new FileInfo(draftPath).Length > 0)
+            return false;
+
+        var projectDir = store.GetProjectDir(projectId);
+        var sourceDir = Path.Combine(projectDir, "source");
+        Directory.CreateDirectory(sourceDir);
+
+        string? best = null;
+        DateTime bestTime = DateTime.MinValue;
+        void Consider(string path)
+        {
+            if (!File.Exists(path)) return;
+            if (Path.GetFileName(path).Equals(CanonicalFileName, StringComparison.OrdinalIgnoreCase))
+                return;
+            try
+            {
+                var fi = new FileInfo(path);
+                if (fi.Length == 0) return;
+                if (fi.LastWriteTimeUtc >= bestTime)
+                {
+                    bestTime = fi.LastWriteTimeUtc;
+                    best = path;
+                }
+            }
+            catch { /* ignore */ }
+        }
+
+        if (Directory.Exists(sourceDir))
+        {
+            foreach (var f in Directory.EnumerateFiles(sourceDir, "*.fountain"))
+                Consider(f);
+            foreach (var f in Directory.EnumerateFiles(sourceDir, "*.spmd"))
+                Consider(f);
+        }
+        foreach (var f in Directory.EnumerateFiles(projectDir, "*.fountain"))
+            Consider(f);
+
+        if (best is null)
+            return false;
+
+        var text = File.ReadAllText(best);
+        File.WriteAllText(draftPath, NormalizeText(text));
+        var meta = ReadMeta(store, projectId);
+        meta.LastSavedHash = ComputeHash(text);
+        meta.LastSavedAt = DateTime.UtcNow.ToString("o");
+        // If Stage 1 already exists from a prior import, treat as signed so shot plan stays available
+        var stage1 = ReadStage1Lite(store, projectId);
+        if (stage1.Present && stage1.SceneCount > 0 && string.IsNullOrEmpty(meta.SignedHash))
+        {
+            meta.SignedHash = meta.LastSavedHash;
+            meta.SignedAt = meta.LastSavedAt;
+        }
+        WriteMeta(store, projectId, meta);
+        return true;
     }
 
     public static SaveResult SaveDraft(ProjectStore store, string projectId, string text)

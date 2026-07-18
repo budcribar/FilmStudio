@@ -39,15 +39,24 @@ public static class FountainStage1Importer
         var sourceDir = Path.Combine(projectDir, "source");
         Directory.CreateDirectory(sourceDir);
 
-        // Keep original Fountain for reference
-        var safeName = string.IsNullOrWhiteSpace(originalFileName)
-            ? "screenplay.fountain"
-            : Path.GetFileName(originalFileName);
-        if (!safeName.EndsWith(".fountain", StringComparison.OrdinalIgnoreCase) &&
-            !safeName.EndsWith(".spmd", StringComparison.OrdinalIgnoreCase))
-            safeName = Path.GetFileNameWithoutExtension(safeName) + ".fountain";
-        var fountainPath = Path.Combine(sourceDir, safeName);
-        File.WriteAllText(fountainPath, fountainText.Replace("\r\n", "\n") + (fountainText.EndsWith('\n') ? "" : "\n"));
+        // Always write canonical screenplay.fountain for the editor; keep original name as a copy.
+        var normalized = fountainText.Replace("\r\n", "\n").Replace('\r', '\n');
+        if (!normalized.EndsWith('\n')) normalized += "\n";
+        var fountainPath = Path.Combine(sourceDir, ScreenplayService.CanonicalFileName);
+        File.WriteAllText(fountainPath, normalized);
+
+        if (!string.IsNullOrWhiteSpace(originalFileName))
+        {
+            var safeName = Path.GetFileName(originalFileName);
+            if (!string.IsNullOrWhiteSpace(safeName) &&
+                !safeName.Equals(ScreenplayService.CanonicalFileName, StringComparison.OrdinalIgnoreCase))
+            {
+                if (!safeName.EndsWith(".fountain", StringComparison.OrdinalIgnoreCase) &&
+                    !safeName.EndsWith(".spmd", StringComparison.OrdinalIgnoreCase))
+                    safeName = Path.GetFileNameWithoutExtension(safeName) + ".fountain";
+                try { File.WriteAllText(Path.Combine(sourceDir, safeName), normalized); } catch { /* ignore */ }
+            }
+        }
 
         var scenesPath = projects.ResolveScenesJsonPath(projectId);
         if (File.Exists(scenesPath))

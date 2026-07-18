@@ -1,74 +1,75 @@
 @inject AdminSessionService Session
 @implements IDisposable
 
-<div class="top-row ps-3 navbar navbar-dark">
-    <div class="container-fluid">
-        <a class="navbar-brand" href="/">Film Studio</a>
-    </div>
-</div>
+@* Mobile hamburger (desktop collapse is on MainLayout) *@
+<input type="checkbox" title="Navigation menu" class="navbar-toggler" id="nav-toggler" />
 
-<input type="checkbox" title="Navigation menu" class="navbar-toggler" />
-
-<div class="nav-scrollable" onclick="document.querySelector('.navbar-toggler').click()">
-    <nav class="nav flex-column">
+<div class="nav-scrollable @(Collapsed ? "nav-collapsed" : null)"
+     onclick="document.querySelector('.navbar-toggler')?.click()">
+    <nav class="nav flex-column" aria-label="Main">
         <div class="nav-item px-3">
-            <NavLink class="nav-link" href="/" Match="NavLinkMatch.All">
-                <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> Studio
+            <NavLink class="nav-link" href="/" Match="NavLinkMatch.All" title="Studio">
+                <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span>
+                @if (!Collapsed) { <span class="nav-label">Studio</span> }
             </NavLink>
         </div>
         <div class="nav-item px-3">
-            <NavLink class="nav-link" href="/adaptation" Match="NavLinkMatch.Prefix">
-                <span class="bi bi-book-nav-menu" aria-hidden="true"></span> Adaptation
+            <NavLink class="nav-link" href="/adaptation" Match="NavLinkMatch.Prefix" title="Adaptation">
+                <span class="bi bi-book-nav-menu" aria-hidden="true"></span>
+                @if (!Collapsed) { <span class="nav-label">Adaptation</span> }
             </NavLink>
         </div>
         <div class="nav-item px-3">
-            <NavLink class="nav-link" href="/scenes">
-                <span class="bi bi-film-nav-menu" aria-hidden="true"></span> Scenes
+            <NavLink class="nav-link" href="/scenes" title="Scenes">
+                <span class="bi bi-film-nav-menu" aria-hidden="true"></span>
+                @if (!Collapsed) { <span class="nav-label">Scenes</span> }
             </NavLink>
         </div>
         <div class="nav-item px-3">
-            <NavLink class="nav-link" href="/characters">
-                <span class="bi bi-people-fill-nav-menu" aria-hidden="true"></span> Characters
+            <NavLink class="nav-link" href="/characters" title="Characters">
+                <span class="bi bi-people-fill-nav-menu" aria-hidden="true"></span>
+                @if (!Collapsed) { <span class="nav-label">Characters</span> }
             </NavLink>
         </div>
         <div class="nav-item px-3">
-            <NavLink class="nav-link" href="/configuration">
-                <span class="bi bi-gear-fill-nav-menu" aria-hidden="true"></span> Configuration
+            <NavLink class="nav-link" href="/configuration" title="Configuration">
+                <span class="bi bi-gear-fill-nav-menu" aria-hidden="true"></span>
+                @if (!Collapsed) { <span class="nav-label">Configuration</span> }
             </NavLink>
         </div>
         <div class="nav-item px-3">
-            <NavLink class="nav-link" href="/review">
-                <span class="bi bi-check2-square-nav-menu" aria-hidden="true"></span> Review
+            <NavLink class="nav-link" href="/review" title="Review">
+                <span class="bi bi-check2-square-nav-menu" aria-hidden="true"></span>
+                @if (!Collapsed) { <span class="nav-label">Review</span> }
             </NavLink>
         </div>
         <div class="nav-item px-3">
-            <NavLink class="nav-link" href="/cost">
-                <span class="bi bi-cash-nav-menu" aria-hidden="true"></span> Cost
-            </NavLink>
-        </div>
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="/about">
-                <span class="bi bi-info-circle-fill-nav-menu" aria-hidden="true"></span> About
+            <NavLink class="nav-link" href="/cost" title="Cost">
+                <span class="bi bi-cash-nav-menu" aria-hidden="true"></span>
+                @if (!Collapsed) { <span class="nav-label">Cost</span> }
             </NavLink>
         </div>
         @if (Session.IsAdmin)
         {
             <div class="nav-item px-3">
-                <NavLink class="nav-link" href="/admin">
-                    <span class="bi bi-shield-lock-nav-menu" aria-hidden="true"></span> Admin
+                <NavLink class="nav-link" href="/admin" title="Admin">
+                    <span class="bi bi-shield-lock-nav-menu" aria-hidden="true"></span>
+                    @if (!Collapsed) { <span class="nav-label">Admin</span> }
                 </NavLink>
             </div>
             <div class="nav-item px-3">
-                <NavLink class="nav-link" href="/admin/config">
-                    <span class="bi bi-gear-fill-nav-menu" aria-hidden="true"></span> Admin config
+                <NavLink class="nav-link" href="/admin/config" title="Admin config">
+                    <span class="bi bi-gear-fill-nav-menu" aria-hidden="true"></span>
+                    @if (!Collapsed) { <span class="nav-label">Admin config</span> }
                 </NavLink>
             </div>
         }
         else
         {
             <div class="nav-item px-3">
-                <NavLink class="nav-link" href="/admin/login">
-                    <span class="bi bi-shield-lock-nav-menu" aria-hidden="true"></span> Admin login
+                <NavLink class="nav-link" href="/admin/login" title="Admin login">
+                    <span class="bi bi-shield-lock-nav-menu" aria-hidden="true"></span>
+                    @if (!Collapsed) { <span class="nav-label">Admin login</span> }
                 </NavLink>
             </div>
         }
@@ -76,6 +77,8 @@
 </div>
 
 @code {
+    [Parameter] public bool Collapsed { get; set; }
+
     private bool _started;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)

@@ -142,4 +142,24 @@ public class ScreenplayServiceTests : IDisposable
         Assert.Contains(parsed.Elements, e => e.Type == FountainParser.ElementType.SceneHeading);
         Assert.Contains(parsed.Elements, e => e.Type == FountainParser.ElementType.Action);
     }
+
+    [Fact]
+    public void EnsureCanonicalDraft_adopts_imported_named_fountain()
+    {
+        const string projectId = "Demo";
+        var source = Path.Combine(_store.GetProjectDir(projectId), "source");
+        Directory.CreateDirectory(source);
+        var named = Path.Combine(source, "Brick-And-Steel.fountain");
+        File.WriteAllText(named, "Title: Brick\n\nINT. PATIO - DAY\n\nSun.\n");
+
+        var adopted = ScreenplayService.EnsureCanonicalDraft(_store, projectId);
+        Assert.True(adopted);
+        var canonical = ScreenplayService.GetDraftPath(_store, projectId);
+        Assert.True(File.Exists(canonical));
+        Assert.Contains("PATIO", File.ReadAllText(canonical), StringComparison.OrdinalIgnoreCase);
+
+        var doc = ScreenplayService.Get(_store, projectId);
+        Assert.True(doc.Status.DraftExists);
+        Assert.Contains("PATIO", doc.Text, StringComparison.OrdinalIgnoreCase);
+    }
 }
