@@ -64,7 +64,9 @@ public sealed class MediaDurationProbe
         }
         catch (Exception ex)
         {
-            _log.LogDebug(ex, "Duration probe failed for {Path}", mediaPath);
+            // CA1873: skip formatting when debug logging is off
+            if (_log.IsEnabled(LogLevel.Debug))
+                _log.LogDebug(ex, "Duration probe failed for {Path}", mediaPath);
         }
 
         return null;

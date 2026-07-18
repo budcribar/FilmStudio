@@ -500,7 +500,7 @@ public sealed class BookPrepareService
             ["updated_at"] = DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ss"),
         };
         var path = Path.Combine(imgDir, "manifest.json");
-        File.WriteAllText(path, JsonSerializer.Serialize(man, new JsonSerializerOptions { WriteIndented = true }) + "\n");
+        File.WriteAllText(path, JsonSerializer.Serialize(man, JsonDefaults.Indented) + "\n");
     }
 
     /// <summary>
@@ -685,7 +685,7 @@ public sealed class BookPrepareService
         var path = Path.Combine(sourceDir, "extract_meta.json");
         File.WriteAllText(
             path,
-            JsonSerializer.Serialize(meta, new JsonSerializerOptions { WriteIndented = true }) + "\n");
+            JsonSerializer.Serialize(meta, JsonDefaults.Indented) + "\n");
     }
 
     private sealed class BookStrategy

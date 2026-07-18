@@ -302,7 +302,7 @@ public sealed class CharacterBookPlateService
 
         File.WriteAllText(
             scenesPath,
-            root.ToJsonString(new JsonSerializerOptions { WriteIndented = true }) + "\n");
+            root.ToJsonString(JsonDefaults.Indented) + "\n");
 
         TryMirrorBlueprint(projectDir, seeds);
 
@@ -514,12 +514,12 @@ public sealed class CharacterBookPlateService
         try
         {
             if (!File.Exists(row.AbsPath)) return "";
-            using var sha = System.Security.Cryptography.SHA256.Create();
             using var fs = File.OpenRead(row.AbsPath);
             // Hash first 256KB + length — enough to catch identical embeds cheaply
             var buf = new byte[256 * 1024];
             var n = fs.Read(buf, 0, buf.Length);
-            var hash = sha.ComputeHash(buf, 0, n);
+            // CA1850: static HashData avoids SHA256 instance allocation
+            var hash = System.Security.Cryptography.SHA256.HashData(buf.AsSpan(0, n));
             var len = new FileInfo(row.AbsPath).Length;
             return Convert.ToHexString(hash)[..16] + ":" + len;
         }
@@ -643,7 +643,7 @@ public sealed class CharacterBookPlateService
                     dest["source_image_pages"] = pages.DeepClone();
             }
 
-            File.WriteAllText(bp, root.ToJsonString(new JsonSerializerOptions { WriteIndented = true }) + "\n");
+            File.WriteAllText(bp, root.ToJsonString(JsonDefaults.Indented) + "\n");
         }
         catch (Exception ex)
         {

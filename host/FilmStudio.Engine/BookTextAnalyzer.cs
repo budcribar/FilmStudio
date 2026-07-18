@@ -9,6 +9,18 @@ public static class BookTextAnalyzer
         @"---\s*PAGE\s+(\d+)\s*---",
         RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
+    private static readonly Regex WeirdChars = new(
+        @"[^\w\s'.,!?;:\-""()…°]",
+        RegexOptions.Compiled);
+
+    private static readonly Regex BadTokens = new(
+        @"\b\w*[0-9]\w*\b",
+        RegexOptions.Compiled);
+
+    private static readonly Regex GarbleHits = new(
+        @"\b(?:[A-Za-z]*[0-9][A-Za-z0-9]*|[A-Za-z]{1,2}[;:][A-Za-z]{2,})\b",
+        RegexOptions.Compiled);
+
     public static BookTextAnalysis Analyze(string text, int? pagesHint = null)
     {
         var bodies = PageBodies(text);
@@ -37,22 +49,30 @@ public static class BookTextAnalyzer
             : plain.Split(' ', StringSplitOptions.RemoveEmptyEntries);
         if (chars > 40)
         {
-            var weird = Regex.Matches(plain, @"[^\w\s'.,!?;:\-""()…°]").Count;
+            // CA1875: Regex.Count avoids allocating MatchCollection
+            var weird = WeirdChars.Count(plain);
             garbage += Math.Min(1.0, weird / (double)Math.Max(chars, 1) * 10);
             if (letterRatio < 0.55) garbage += 0.35;
             if (letterRatio < 0.4) garbage += 0.35;
-            var badTokens = Regex.Matches(plain, @"\b\w*[0-9]\w*\b").Count;
+            var badTokens = BadTokens.Count(plain);
             garbage += Math.Min(0.35, badTokens / (double)Math.Max(words, 1));
-            var garbleHits = Regex.Matches(
-                plain,
-                @"\b(?:[A-Za-z]*[0-9][A-Za-z0-9]*|[A-Za-z]{1,2}[;:][A-Za-z]{2,})\b").Count;
+            var garbleHits = GarbleHits.Count(plain);
             garbage += Math.Min(0.3, garbleHits / (double)Math.Max(words, 1) * 2);
             // OCR soup: low vowels in longer tokens
             if (wordList.Length > 8)
             {
-                var shortJunk = wordList.Count(w =>
-                    w.Length is >= 4 and <= 12 &&
-                    w.Count(c => "aeiouAEIOU".Contains(c)) == 0);
+                // CA1827: Any() would early-out for existence checks; here we need a count ratio
+                var shortJunk = 0;
+                foreach (var w in wordList)
+                {
+                    if (w.Length is < 4 or > 12) continue;
+                    var hasVowel = false;
+                    foreach (var c in w)
+                    {
+                        if ("aeiouAEIOU".Contains(c)) { hasVowel = true; break; }
+                    }
+                    if (!hasVowel) shortJunk++;
+                }
                 garbage += Math.Min(0.35, shortJunk / (double)wordList.Length);
             }
         }

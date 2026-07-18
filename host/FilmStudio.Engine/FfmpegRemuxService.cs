@@ -176,7 +176,7 @@ public sealed class FfmpegRemuxService : IFfmpegRemux
             };
             File.WriteAllText(
                 SceneSourcesManifestPath(compositePath),
-                JsonSerializer.Serialize(doc, new JsonSerializerOptions { WriteIndented = true }) + "\n");
+                JsonSerializer.Serialize(doc, JsonDefaults.Indented) + "\n");
         }
         catch
         {
@@ -409,7 +409,7 @@ public sealed class FfmpegRemuxService : IFfmpegRemux
             };
             var path = WipSourcesManifestPath(wipPath);
             File.WriteAllText(path,
-                JsonSerializer.Serialize(doc, new JsonSerializerOptions { WriteIndented = true }) + "\n");
+                JsonSerializer.Serialize(doc, JsonDefaults.Indented) + "\n");
         }
         catch
         {
@@ -615,33 +615,33 @@ public sealed class FfmpegRemuxService : IFfmpegRemux
     /// Sum per-file durations via <c>ffmpeg -i</c> Duration lines (no ffprobe required).
     /// </summary>
     private async Task<double?> EstimateTotalDurationAsync(
-        IReadOnlyList<string> files,
+        List<string> files,
         Action<string>? onProgress,
         CancellationToken ct)
     {
         if (files.Count == 0) return null;
         double total = 0;
         var got = 0;
-        // Cap probe cost for huge films
-        var toProbe = files.Count <= 40 ? files : files.Take(40).ToList();
-        for (var i = 0; i < toProbe.Count; i++)
+        // Cap probe cost for huge films (CA1859: List avoids interface dispatch)
+        var toProbeCount = Math.Min(files.Count, 40);
+        for (var i = 0; i < toProbeCount; i++)
         {
             ct.ThrowIfCancellationRequested();
-            var d = await ProbeDurationSecondsAsync(toProbe[i], ct);
+            var d = await ProbeDurationSecondsAsync(files[i], ct);
             if (d is > 0)
             {
                 total += d.Value;
                 got++;
             }
-            if (i == 0 || (i + 1) % 5 == 0 || i + 1 == toProbe.Count)
-                onProgress?.Invoke($"  probe {i + 1}/{toProbe.Count}…");
+            if (i == 0 || (i + 1) % 5 == 0 || i + 1 == toProbeCount)
+                onProgress?.Invoke($"  probe {i + 1}/{toProbeCount}…");
         }
         if (got == 0) return null;
-        if (toProbe.Count < files.Count && got > 0)
+        if (toProbeCount < files.Count && got > 0)
         {
             // Scale average for unprobed tail
             var avg = total / got;
-            total += avg * (files.Count - toProbe.Count);
+            total += avg * (files.Count - toProbeCount);
         }
         return total;
     }

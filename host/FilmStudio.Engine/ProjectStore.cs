@@ -8,11 +8,10 @@ namespace FilmStudio.Engine;
 
 public sealed class ProjectStore
 {
-    private static readonly JsonSerializerOptions JsonOpts = new()
-    {
-        PropertyNameCaseInsensitive = true,
-        WriteIndented = true,
-    };
+    private static readonly JsonSerializerOptions JsonOpts = JsonDefaults.IndentedCaseInsensitive;
+
+    /// <summary>CA1861: avoid allocating split separator arrays on every book-text sample.</summary>
+    private static readonly char[] WordSplitChars = { ' ', '\n', '\r', '\t' };
 
     private readonly FilmStudioOptions _opts;
     private readonly MediaDurationProbe? _duration;
@@ -72,10 +71,17 @@ public sealed class ProjectStore
 
     public string WorkspaceRoot => _workspaceRoot;
 
-    public string ActiveProjectId =>
-        string.IsNullOrWhiteSpace(_activeProjectId)
-            ? ListProjects().FirstOrDefault()?.Id ?? ""
-            : _activeProjectId;
+    public string ActiveProjectId
+    {
+        get
+        {
+            if (!string.IsNullOrWhiteSpace(_activeProjectId))
+                return _activeProjectId;
+            // CA1826: prefer indexer over Enumerable.FirstOrDefault on IReadOnlyList
+            var list = ListProjects();
+            return list.Count > 0 ? list[0].Id : "";
+        }
+    }
 
     public IReadOnlyList<ProjectInfo> ListProjects() =>
         _readCache.GetOrBuildProjects(ListProjectsCore);
@@ -249,7 +255,7 @@ public sealed class ProjectStore
                 merged[p.Name] = JsonSerializer.Deserialize<object>(p.Value.GetRawText());
         }
 
-        var json = JsonSerializer.Serialize(merged, new JsonSerializerOptions { WriteIndented = true });
+        var json = JsonSerializer.Serialize(merged, JsonDefaults.Indented);
         File.WriteAllText(path, json + "\n");
         // Blueprint path may have changed via blueprint_file
         InvalidateSceneListCache(projectId);
@@ -626,7 +632,7 @@ public sealed class ProjectStore
                 seeds[foundKey] = seed;
                 File.WriteAllText(
                     path,
-                    root.ToJsonString(new JsonSerializerOptions { WriteIndented = true }) + "\n");
+                    root.ToJsonString(JsonDefaults.Indented) + "\n");
             }
             catch
             {
@@ -751,7 +757,7 @@ public sealed class ProjectStore
             gpv["character_seed_tokens"] = seeds;
             tree["global_production_variables"] = gpv;
 
-            var outJson = JsonSerializer.Serialize(tree, new JsonSerializerOptions { WriteIndented = true });
+            var outJson = JsonSerializer.Serialize(tree, JsonDefaults.Indented);
             File.WriteAllText(bpPath, outJson + "\n");
             InvalidateSceneListCache(projectId);
         }
@@ -856,7 +862,7 @@ public sealed class ProjectStore
         merged["character_plates_sorted"] = true;
         merged["character_plates_sorted_at"] = now;
         merged["character_plates_method"] = method;
-        var json = JsonSerializer.Serialize(merged, new JsonSerializerOptions { WriteIndented = true });
+        var json = JsonSerializer.Serialize(merged, JsonDefaults.Indented);
         File.WriteAllText(path, json + "\n");
     }
 
@@ -877,7 +883,7 @@ public sealed class ProjectStore
         merged["character_plates_sorted"] = false;
         merged.Remove("character_plates_sorted_at");
         merged.Remove("character_plates_method");
-        var json = JsonSerializer.Serialize(merged, new JsonSerializerOptions { WriteIndented = true });
+        var json = JsonSerializer.Serialize(merged, JsonDefaults.Indented);
         File.WriteAllText(path, json + "\n");
     }
 
@@ -934,7 +940,7 @@ public sealed class ProjectStore
         merged["character_revisions"] = revs;
         merged["characters_designed"] = true;
 
-        var json = JsonSerializer.Serialize(merged, new JsonSerializerOptions { WriteIndented = true });
+        var json = JsonSerializer.Serialize(merged, JsonDefaults.Indented);
         File.WriteAllText(path, json + "\n");
     }
 
@@ -1592,7 +1598,7 @@ public sealed class ProjectStore
                 if (status.TextWords is null or 0)
                 {
                     status.TextWords = text.Split(
-                        new[] { ' ', '\n', '\r', '\t' },
+                        WordSplitChars,
                         StringSplitOptions.RemoveEmptyEntries).Length;
                 }
             }

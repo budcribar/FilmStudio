@@ -552,7 +552,7 @@ public sealed class CostReportService
             {
                 state = JsonSerializer.Deserialize<Dictionary<string, object?>>(
                     File.ReadAllText(path),
-                    new JsonSerializerOptions { PropertyNameCaseInsensitive = true })
+                    JsonDefaults.CaseInsensitive)
                     ?? new Dictionary<string, object?>();
             }
             catch
@@ -621,7 +621,7 @@ public sealed class CostReportService
 
         if (save || true)
         {
-            var json = JsonSerializer.Serialize(merged, new JsonSerializerOptions { WriteIndented = true });
+            var json = JsonSerializer.Serialize(merged, JsonDefaults.Indented);
             File.WriteAllText(path, json + "\n");
         }
     }

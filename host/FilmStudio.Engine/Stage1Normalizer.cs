@@ -30,11 +30,11 @@ public static class Stage1Normalizer
             ? ar : "16:9";
         gpv["resolution"] = gpv.TryGetValue("resolution", out var res) && res is not null ? res : "720p";
         gpv["frame_rate"] = ParseFrameRate(gpv.TryGetValue("frame_rate", out var fr) ? fr : 24);
-        if (!gpv.ContainsKey("directorial_treatment") || gpv["directorial_treatment"] is null)
+        if (!gpv.TryGetValue("directorial_treatment", out var dirTreat) || dirTreat is null)
             gpv["directorial_treatment"] = "cinematic lighting, film grain, steady camera, high-contrast";
 
         var scenes = GetList(data, "scenes");
-        if (!gpv.ContainsKey("total_runtime_target_seconds") || gpv["total_runtime_target_seconds"] is null)
+        if (!gpv.TryGetValue("total_runtime_target_seconds", out var runtimeTarget) || runtimeTarget is null)
         {
             var sceneSum = 0;
             foreach (var s in scenes.OfType<Dictionary<string, object?>>())
@@ -42,9 +42,9 @@ public static class Stage1Normalizer
             gpv["total_runtime_target_seconds"] = sceneSum > 0 ? sceneSum : 900;
         }
 
-        if (!gpv.ContainsKey("character_seed_tokens") || gpv["character_seed_tokens"] is null)
+        if (!gpv.TryGetValue("character_seed_tokens", out var charSeeds) || charSeeds is null)
             gpv["character_seed_tokens"] = new Dictionary<string, object?>();
-        if (!gpv.ContainsKey("location_seed_tokens") || gpv["location_seed_tokens"] is null)
+        if (!gpv.TryGetValue("location_seed_tokens", out var locSeeds) || locSeeds is null)
             gpv["location_seed_tokens"] = new Dictionary<string, object?>();
 
         var treat = CoerceString(gpv.TryGetValue("directorial_treatment", out var dt) ? dt : "") ?? "";
@@ -176,7 +176,7 @@ public static class Stage1Normalizer
         s["lighting_continuity_token"] =
             CoerceString(s.TryGetValue("lighting_continuity_token", out var lc) ? lc : null)
             ?? "consistent scene lighting";
-        if (!s.ContainsKey("story_beats") || s["story_beats"] is null)
+        if (!s.TryGetValue("story_beats", out var beats) || beats is null)
             s["story_beats"] = new List<object?>();
         s["music_intent"] = NormMusic(s.TryGetValue("music_intent", out var mi) ? mi : null);
 
