@@ -1,0 +1,130 @@
+@page "/adaptation/outline"
+@inherits AdaptationPageBase
+
+<PageTitle>Adaptation · Story outline</PageTitle>
+
+<AdaptationShell Host="this" Step="outline">
+    @if (Status is not null)
+    {
+        <div class="card mb-3">
+            <div class="card-header d-flex justify-content-between">
+                <span>Story outline</span>
+                @if (Status.Stage1.Present && Status.Stage1.SceneCount > 0)
+                {
+                    <span class="badge bg-success">ready</span>
+                }
+            </div>
+            <div class="card-body">
+                @if (Status.Stage1.Present && Status.Stage1.SceneCount > 0)
+                {
+                    <p class="small mb-2">
+                        <strong>@(Status.Stage1.MovieTitle ?? "Untitled")</strong><br />
+                        @Status.Stage1.SceneCount scenes ·
+                        @Status.Stage1.BeatCount beats ·
+                        @Status.Stage1.CharacterCount chars ·
+                        @Status.Stage1.LocationCount locs
+                        @if (Status.Stage1.RuntimeSeconds is double rs)
+                        {
+                            <span>· ~@((int)(rs / 60)) min</span>
+                        }
+                        @if (!string.IsNullOrEmpty(Status.Stage1.Mtime))
+                        {
+                            <span class="text-muted">· updated @Status.Stage1.Mtime</span>
+                        }
+                    </p>
+                    @if (Status.Stage1.CastNames.Count > 0)
+                    {
+                        <p class="small text-muted">Cast: @string.Join(", ", Status.Stage1.CastNames)</p>
+                    }
+                }
+                else
+                {
+                    <p class="small text-muted">No story outline yet.</p>
+                }
+
+                <div class="row g-2 mb-2">
+                    <div class="col-6 col-md-3">
+                        <label class="form-label small">Target minutes</label>
+                        <input type="number" class="form-control form-control-sm" min="3" max="180" @bind="TotalMinutes" disabled="@Busy" />
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <label class="form-label small">Pages / chunk</label>
+                        <input type="number" class="form-control form-control-sm" min="5" max="30" @bind="ChunkPages" disabled="@Busy" />
+                    </div>
+                    <div class="col-8 col-md-4">
+                        <label class="form-label small text-muted">Advanced</label>
+                        <input class="form-control form-control-sm" @bind="Model" disabled="@Busy" title="Optional override" />
+                    </div>
+                    <div class="col-4 col-md-2 form-check align-self-end mb-2">
+                        <input class="form-check-input" type="checkbox" id="s1resume" @bind="Resume" disabled="@Busy" />
+                        <label class="form-check-label small" for="s1resume">Resume</label>
+                    </div>
+                </div>
+
+                <div class="d-flex flex-wrap gap-2 align-items-center">
+                    <button class="btn btn-primary"
+                            disabled="@(Busy || JobRunning || !CanRunOutline || !Status.XaiConfigured)"
+                            @onclick="RunOutlineAsync">
+                        @(Status.Stage1.SceneCount > 0 ? "Rebuild story outline" : "Build story outline")
+                    </button>
+                    @if (!Status.XaiConfigured)
+                    {
+                        <span class="small text-muted"><a href="configuration">Connect service</a></span>
+                    }
+                    else if (!CanRunOutline)
+                    {
+                        <span class="small text-muted">Prepare the book first</span>
+                    }
+                    else if (!Status.Book.ReadyForStage1 && Status.Stage1.SceneCount > 0)
+                    {
+                        <span class="small text-success">Re-run allowed (outline exists)</span>
+                    }
+                    @if (Status.Stage1.SceneCount > 0)
+                    {
+                        <a class="btn btn-outline-success" href="adaptation/shots">Continue to shot plan →</a>
+                    }
+                    <a class="btn btn-outline-secondary" href="adaptation/book">← Book</a>
+                </div>
+                <p class="small text-muted mt-2 mb-0">
+                    Creates the cast and scene list for this project.
+                </p>
+            </div>
+        </div>
+
+        @if (Status.Stage1.Scenes.Count > 0)
+        {
+            <div class="card">
+                <div class="card-header">Story outline preview</div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-sm mb-0">
+                            <thead>
+                                <tr>
+                                    <th style="width:4rem">#</th>
+                                    <th>Setting</th>
+                                    <th style="width:5rem">Beats</th>
+                                    <th style="width:5rem">Dur</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var s in Status.Stage1.Scenes)
+                                {
+                                    <tr>
+                                        <td><code>S@(s.SceneNumber.ToString("D2"))</code></td>
+                                        <td class="small">@(string.IsNullOrEmpty(s.Setting) ? "—" : s.Setting)</td>
+                                        <td class="small">@s.BeatCount</td>
+                                        <td class="small text-muted">@(s.DurationSeconds is double d ? $"{d:0}s" : "—")</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        }
+    }
+</AdaptationShell>
+
+@code {
+    public override string StepKey => "outline";
+}

@@ -1,0 +1,91 @@
+@page "/adaptation/shots"
+@inherits AdaptationPageBase
+
+<PageTitle>Adaptation · Shot plan</PageTitle>
+
+<AdaptationShell Host="this" Step="shots">
+    @if (Status is not null)
+    {
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <span>Shot plan</span>
+                @if (Status.Stage2.Stage2Ready && !Status.Stage2.Stage2Stale)
+                {
+                    <span class="badge bg-success">ready</span>
+                }
+                else if (Status.Stage2.Stage2Stale)
+                {
+                    <span class="badge bg-warning text-dark">needs update</span>
+                }
+            </div>
+            <div class="card-body">
+                @if (!Status.Stage1.Present || Status.Stage1.SceneCount <= 0)
+                {
+                    <div class="alert alert-secondary py-2 small">
+                        Finish the <a href="adaptation/outline">story outline</a> first.
+                    </div>
+                }
+                else if (Status.Stage2.Stage2Stale)
+                {
+                    <div class="alert alert-warning py-2 small">
+                        Story outline changed — update the shot plan before making video.
+                    </div>
+                }
+                else if (Status.Stage2.Stage2Ready)
+                {
+                    <div class="alert alert-success py-2 small">
+                        Shot plan ready — <strong>@Status.Stage2.Stage2Scenes</strong> scenes ·
+                        <strong>@Status.Stage2.Stage2Clips</strong> clips
+                        @if (!string.IsNullOrEmpty(Status.Stage2.LastCompletedAt))
+                        {
+                            <span>· last @Status.Stage2.LastCompletedAt</span>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <div class="alert alert-warning py-2 small">
+                        Story outline has @Status.Stage2.Stage1Scenes scene(s) but no shot plan yet.
+                    </div>
+                }
+
+                <p class="small text-muted">
+                    @if (!string.IsNullOrEmpty(Status.Stage2.LastRunMessage))
+                    {
+                        <span>@Status.Stage2.LastRunMessage</span>
+                    }
+                    @if (Status.Stage2.ValidationIssueCount > 0)
+                    {
+                        <span>· @Status.Stage2.ValidationIssueCount note(s)</span>
+                    }
+                </p>
+
+                <div class="d-flex flex-wrap gap-2 align-items-end">
+                    <div>
+                        <label class="form-label small mb-0">Resolution</label>
+                        <select class="form-select form-select-sm" style="width:auto" @bind="S2Resolution" disabled="@Busy">
+                            <option value="480p">480p</option>
+                            <option value="720p">720p</option>
+                        </select>
+                    </div>
+                    <button class="btn btn-primary"
+                            disabled="@(Busy || JobRunning || !Status.Stage2.Stage1Exists)"
+                            @onclick="RunShotsAsync">
+                        @(Status.Stage2.Stage2Ready
+                            ? (Status.Stage2.Stage2Stale ? "▶ Update shot plan" : "🔁 Rebuild shot plan")
+                            : "▶ Build shot plan")
+                    </button>
+                    <a class="btn btn-outline-primary" href="scenes">Open Scenes →</a>
+                    <a class="btn btn-outline-secondary" href="adaptation/outline">← Story outline</a>
+                </div>
+                <p class="small text-muted mt-2 mb-0">
+                    Builds the shot plan (clips per scene).
+                </p>
+            </div>
+        </div>
+    }
+</AdaptationShell>
+
+@code {
+    public override string StepKey => "shots";
+}

@@ -1,0 +1,157 @@
+@* Shared header + step strip + job log for Adaptation step pages *@
+
+@if (Host is null)
+{
+    return;
+}
+
+<h1>Adaptation</h1>
+<p class="text-muted mb-2">Book → story outline → shot plan.</p>
+
+@* ---- Step strip ---- *@
+<nav class="nav nav-pills flex-wrap gap-1 mb-3" aria-label="Adaptation steps">
+    <a class="nav-link @(Step == "book" ? "active" : "")"
+       href="adaptation/book">1 · Book</a>
+    <a class="nav-link @(Step == "outline" ? "active" : "") @(!OutlineEnabled ? "disabled" : "")"
+       href="@(OutlineEnabled ? "adaptation/outline" : "adaptation/book")"
+       @onclick:preventDefault="@(!OutlineEnabled)"
+       title="@(OutlineEnabled ? null : "Prepare the book first")">2 · Story outline</a>
+    <a class="nav-link @(Step == "shots" ? "active" : "") @(!ShotsEnabled ? "disabled" : "")"
+       href="@(ShotsEnabled ? "adaptation/shots" : "adaptation/outline")"
+       @onclick:preventDefault="@(!ShotsEnabled)"
+       title="@(ShotsEnabled ? null : "Build the story outline first")">3 · Shot plan</a>
+</nav>
+
+@if (!string.IsNullOrEmpty(Host.Error))
+{
+    <div class="alert alert-danger">@Host.Error</div>
+}
+@if (!string.IsNullOrEmpty(Host.Message))
+{
+    <div class="alert alert-info">@Host.Message</div>
+}
+
+<div class="row mb-3 g-2 align-items-end">
+    <div class="col-md-4">
+        <label class="form-label">Project</label>
+        <select class="form-select" value="@Host.ProjectId"
+                @onchange="OnProjectChanged"
+                disabled="@Host.Busy">
+            @foreach (var p in Host.ProjectIds)
+            {
+                <option value="@p">@p</option>
+            }
+        </select>
+    </div>
+    <div class="col-md-4 d-flex gap-2">
+        <button class="btn btn-outline-secondary" disabled="@Host.Busy" @onclick="Host.LoadAsync">Reload</button>
+        @if (Host.JobRunning)
+        {
+            <button class="btn btn-outline-danger" disabled="@Host.Busy" @onclick="Host.CancelAsync">Cancel job</button>
+        }
+    </div>
+</div>
+
+@if (Host.Job is not null &&
+     (Host.Job.Status is "running" or "error" or "cancelled" ||
+      (Host.Job.Status == "done" && Host.Job.Kind is "stage1" or "stage2" or "book_prepare")))
+{
+    <div class="card mb-3 border-@(Host.Job.Status == "running" ? "primary" : Host.Job.Status == "error" ? "danger" : "secondary")">
+        <div class="card-body py-2">
+            <div class="d-flex justify-content-between flex-wrap gap-2 align-items-center">
+                <div>
+                    <span class="badge bg-secondary">@Host.Job.Status</span>
+                    @if (Host.Job.Kind is { Length: > 0 } k)
+                    {
+                        <span class="badge bg-info text-dark ms-1">@AdaptationPageBase.JobKindLabel(k)</span>
+                    }
+                    @{
+                        var jobIdx = Math.Max(Host.Job.Index, Host.ProgressIndex);
+                        var jobTot = Math.Max(Host.Job.Total, Host.ProgressTotal);
+                        var waiting = Host.JobRunning && AdaptationPageBase.IsJobInFlightMessage(Host.Job.Message);
+                        var displayIdx = waiting && jobIdx >= jobTot && jobTot > 0
+                            ? Math.Max(0, jobTot - 1)
+                            : jobIdx;
+                    }
+                    @if (jobTot > 0)
+                    {
+                        <span class="small text-muted ms-1">
+                            @displayIdx / @jobTot completed
+                            @if (waiting)
+                            {
+                                <text> · in progress</text>
+                            }
+                        </span>
+                    }
+                    <span class="ms-2 small">@Host.Job.Message</span>
+                </div>
+                @if (Host.JobRunning)
+                {
+                    <button class="btn btn-sm btn-outline-danger" disabled="@Host.Busy" @onclick="Host.CancelAsync">Cancel</button>
+                }
+            </div>
+            @if (Host.JobRunning)
+            {
+                int pct;
+                if (jobTot <= 0)
+                    pct = 35;
+                else if (waiting)
+                    pct = (int)Math.Round(100.0 * (displayIdx + 0.35) / jobTot);
+                else
+                    pct = (int)Math.Round(100.0 * Math.Clamp(displayIdx, 0, jobTot) / jobTot);
+                pct = Math.Clamp(pct, jobTot > 0 ? 5 : 8, Host.JobRunning ? 92 : 100);
+                <div class="progress mt-2" style="height: 0.85rem;" role="progressbar"
+                     aria-valuenow="@pct" aria-valuemin="0" aria-valuemax="100">
+                    <div class="progress-bar progress-bar-striped progress-bar-animated bg-primary"
+                         style="width: @pct%">
+                        <span class="small">@pct%</span>
+                    </div>
+                </div>
+            }
+            @if (Host.Job.Log.Count > 0)
+            {
+                <pre class="small mb-0 mt-2" style="max-height: 200px; overflow: auto;">@string.Join("\n", Host.Job.Log.TakeLast(40))</pre>
+            }
+        </div>
+    </div>
+}
+
+@if (Host.Status is null)
+{
+    <p class="text-muted">Loading…</p>
+}
+else
+{
+    <div class="alert @AdaptationPageBase.NextStepAlertClass(Host.Status.NextStep) py-2">
+        <strong>Next:</strong> @AdaptationPageBase.NextStepLabel(Host.Status.NextStep)
+        @if (!Host.Status.XaiConfigured)
+        {
+            <span class="ms-2">· <a href="configuration">Connect service</a> required for prepare and story outline</span>
+        }
+    </div>
+
+    @ChildContent
+}
+
+@code {
+    [Parameter, EditorRequired] public AdaptationPageBase Host { get; set; } = null!;
+    [Parameter, EditorRequired] public string Step { get; set; } = "book";
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+
+    private bool OutlineEnabled =>
+        Host.Status is not null &&
+        (Host.Status.Book.ReadyForStage1 ||
+         Host.Status.Book.BookTextExists ||
+         (Host.Status.Stage1.Present && Host.Status.Stage1.SceneCount > 0));
+
+    private bool ShotsEnabled =>
+        Host.Status is not null &&
+        Host.Status.Stage1.Present &&
+        Host.Status.Stage1.SceneCount > 0;
+
+    private async Task OnProjectChanged(ChangeEventArgs e)
+    {
+        Host.ProjectId = e.Value?.ToString() ?? Host.ProjectId;
+        await Host.LoadAsync();
+    }
+}
