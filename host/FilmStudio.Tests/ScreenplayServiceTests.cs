@@ -32,7 +32,7 @@ public class ScreenplayServiceTests : IDisposable
     }
 
     [Fact]
-    public void Save_draft_then_sign_off_materialises_stage1()
+    public void Save_draft_then_sign_off_approves_fountain_without_scenes_json()
     {
         const string projectId = "Demo";
         var fountain = """
@@ -66,9 +66,14 @@ public class ScreenplayServiceTests : IDisposable
         Assert.True(sign.Status.ReadyForShots);
         Assert.True(sign.HashChanged);
 
+        // No intermediate scenes.json — Stage 2 reads Fountain
         var scenesPath = _store.ResolveScenesJsonPath(projectId);
-        Assert.True(File.Exists(scenesPath));
-        Assert.Contains("Test Script", File.ReadAllText(scenesPath), StringComparison.OrdinalIgnoreCase);
+        Assert.False(File.Exists(scenesPath));
+        Assert.True(File.Exists(ScreenplayService.GetDraftPath(_store, projectId)));
+
+        var model = ScreenplayService.TryBuildModelFromProject(_store, projectId);
+        Assert.NotNull(model);
+        Assert.Equal(2, (model!["scenes"] as System.Collections.ICollection)?.Count ?? 0);
 
         var sign2 = ScreenplayService.SignOff(_store, projectId);
         Assert.True(sign2.Ok);
@@ -260,5 +265,41 @@ public class ScreenplayServiceTests : IDisposable
             "--- PAGE 1 ---\nA little dog naps by the warm fire tonight.\n");
         Assert.Contains("Title:", f);
         Assert.Contains("[[page ", f, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task Stage2_plans_from_approved_fountain_without_scenes_json()
+    {
+        const string projectId = "Demo";
+        var fountain = """
+            Title: Clip Test
+
+            INT. KITCHEN - DAY
+
+            A dog watches toast.
+
+            MOM
+            Breakfast is ready.
+
+            EXT. YARD - DAY
+
+            The dog runs.
+            """;
+        ScreenplayService.SaveDraft(_store, projectId, fountain);
+        var sign = ScreenplayService.SignOff(_store, projectId);
+        Assert.True(sign.Ok, sign.Error);
+        Assert.False(File.Exists(_store.ResolveScenesJsonPath(projectId)));
+
+        var planner = new Stage2PlannerService(
+            _store,
+            Microsoft.Extensions.Logging.Abstractions.NullLogger<Stage2PlannerService>.Instance);
+        var result = await planner.PlanAsync(projectId, resolution: "720p", scenes: "all");
+        Assert.True(result.Ok);
+        Assert.True(result.SceneCount >= 2);
+        Assert.True(result.ClipCount >= 1);
+        Assert.True(File.Exists(result.OutPath));
+        var bp = File.ReadAllText(result.OutPath!);
+        Assert.Contains("screenplay.fountain", bp, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("veo_clips", bp, StringComparison.OrdinalIgnoreCase);
     }
 }

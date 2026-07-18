@@ -597,7 +597,7 @@ public sealed class FilmJobService
             failIfLocked: req.FailIfLocked);
     }
 
-    /// <summary>Stage 1 (book → scenes.json) via C# Grok chat. Requires XAI_API_KEY.</summary>
+    /// <summary>Book → Fountain draft + approve. Requires XAI_API_KEY.</summary>
     public Task<JobSnapshot> StartStage1Async(StartStage1Request req)
     {
         var projectId = string.IsNullOrWhiteSpace(req.ProjectId)
@@ -615,7 +615,7 @@ public sealed class FilmJobService
             lockReason: "stage1");
     }
 
-    /// <summary>Stage 2 planner (scenes.json → blueprint). Deterministic C#; no API key.</summary>
+    /// <summary>Stage 2 planner (Fountain → blueprint). Deterministic C#; no API key.</summary>
     public Task<JobSnapshot> StartStage2Async(StartStage2Request req)
     {
         var projectId = string.IsNullOrWhiteSpace(req.ProjectId)

@@ -19,8 +19,9 @@ Paths are relative to the **workspace root** (repo root with `renderer/`, `gui/`
 | `examples/scene_bible_minimal.json` | Minimal scene-list sample |
 | `examples/clip_plan_minimal.json` | Minimal Stage 2 sample |
 
-**Operator flow:** book PDF → prepare text → **Fountain draft** (`book_to_fountain.txt`) → edit → approve → shots.
-There is no `stage1_scene_bible.txt` prompt; Fountain is the screenplay source of truth.
+**Operator flow:** book PDF → prepare text → **Fountain draft** (`book_to_fountain.txt`) → edit → approve → **shot plan (reads Fountain)** → clips.
+There is no `stage1_scene_bible.txt` prompt and no intermediate scenes.json for planning.
+Optional `source/cast_seeds.json` holds plate/voice overlays only.
 
 
 ## Learning loop (Phase A)

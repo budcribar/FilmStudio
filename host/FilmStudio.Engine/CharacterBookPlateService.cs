@@ -593,6 +593,78 @@ public sealed class CharacterBookPlateService
         }
     }
 
+    /// <summary>
+    /// Build cast seeds from Fountain (preferred), merge existing cast_seeds.json plates,
+    /// or fall back to legacy scenes.json.
+    /// </summary>
+    private async Task<JsonObject> LoadOrBuildCastSeedsAsync(
+        string projectId,
+        string castSeedsPath,
+        CancellationToken ct)
+    {
+        JsonObject? seeds = null;
+
+        // 1) Fountain-derived cast
+        var model = ScreenplayService.TryBuildModelFromProject(_projects, projectId);
+        if (model is not null &&
+            model.TryGetValue("global_production_variables", out var gpvObj) &&
+            gpvObj is Dictionary<string, object?> gpv &&
+            gpv.TryGetValue("character_seed_tokens", out var charObj) &&
+            charObj is Dictionary<string, object?> charDict &&
+            charDict.Count > 0)
+        {
+            var json = JsonSerializer.Serialize(charDict, JsonDefaults.Indented);
+            seeds = JsonNode.Parse(json) as JsonObject;
+        }
+
+        // 2) Overlay existing cast_seeds plates/edits
+        if (File.Exists(castSeedsPath))
+        {
+            try
+            {
+                var existing = JsonNode.Parse(await File.ReadAllTextAsync(castSeedsPath, ct).ConfigureAwait(false))
+                               as JsonObject;
+                var existingSeeds = existing?["character_seed_tokens"] as JsonObject
+                    ?? existing?["global_production_variables"]?["character_seed_tokens"] as JsonObject;
+                if (existingSeeds is not null)
+                {
+                    seeds ??= new JsonObject();
+                    foreach (var (key, node) in existingSeeds)
+                    {
+                        if (node is null) continue;
+                        if (seeds[key] is JsonObject dest && node is JsonObject src)
+                        {
+                            foreach (var (fk, fv) in src)
+                            {
+                                if (fv is not null)
+                                    dest[fk] = fv.DeepClone();
+                            }
+                        }
+                        else
+                        {
+                            seeds[key] = node.DeepClone();
+                        }
+                    }
+                }
+            }
+            catch { /* ignore corrupt cast seeds */ }
+        }
+
+        // 3) Legacy scenes.json
+        if (seeds is null || seeds.Count == 0)
+        {
+            var scenesPath = _projects.ResolveScenesJsonPath(projectId);
+            if (File.Exists(scenesPath))
+            {
+                var root = JsonNode.Parse(await File.ReadAllTextAsync(scenesPath, ct).ConfigureAwait(false))
+                           as JsonObject;
+                seeds = root?["global_production_variables"]?["character_seed_tokens"] as JsonObject;
+            }
+        }
+
+        return seeds ?? new JsonObject();
+    }
+
     private async Task TryMirrorBlueprintAsync(string projectDir, JsonObject stage1Seeds)
     {
         try

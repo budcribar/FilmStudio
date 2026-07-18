@@ -840,8 +840,8 @@ public sealed class ProjectStore
     }
 
     /// <summary>
-    /// Update description / visual_lock / voice fields on character seeds in scenes.json
-    /// (and blueprint when present). Null args leave that field unchanged; empty string clears.
+    /// Update description / visual_lock / voice fields on character seeds in cast_seeds.json
+    /// (and blueprint / legacy scenes.json when present). Null args leave that field unchanged.
     /// </summary>
     public void UpdateCharacterSeedText(
         string projectId,
@@ -851,45 +851,74 @@ public sealed class ProjectStore
         string? voiceProfile = null,
         string? voiceLabel = null)
     {
-        void PatchFile(string path)
+        void PatchSeedsObject(System.Text.Json.Nodes.JsonObject seeds)
         {
-            if (!File.Exists(path)) return;
+            System.Text.Json.Nodes.JsonObject? seed = null;
+            string? foundKey = null;
+            foreach (var (k, v) in seeds)
+            {
+                if (string.Equals(k, charKey, StringComparison.OrdinalIgnoreCase) &&
+                    v is System.Text.Json.Nodes.JsonObject jo)
+                {
+                    seed = jo;
+                    foundKey = k;
+                    break;
+                }
+            }
+            if (seed is null || foundKey is null)
+            {
+                seed = new System.Text.Json.Nodes.JsonObject();
+                foundKey = charKey;
+                seeds[foundKey] = seed;
+            }
+            if (description is not null)
+                seed["description"] = CharacterVisualTextScrubber.ScrubVisualProse(description);
+            if (visualLock is not null)
+                seed["visual_lock"] = CharacterVisualTextScrubber.ScrubVisualProse(visualLock);
+            if (voiceProfile is not null)
+                seed["voice_profile"] = voiceProfile.Trim();
+            if (voiceLabel is not null)
+                seed["voice_label"] = voiceLabel.Trim();
+            seeds[foundKey] = seed;
+        }
+
+        void PatchFile(string path, bool createCastShape)
+        {
             try
             {
-                var root = System.Text.Json.Nodes.JsonNode.Parse(File.ReadAllText(path))
-                           as System.Text.Json.Nodes.JsonObject;
-                if (root is null) return;
-                var gpv = root["global_production_variables"] as System.Text.Json.Nodes.JsonObject
-                          ?? new System.Text.Json.Nodes.JsonObject();
-                root["global_production_variables"] = gpv;
-                var seeds = gpv["character_seed_tokens"] as System.Text.Json.Nodes.JsonObject;
-                if (seeds is null) return;
-                // case-insensitive key find
-                System.Text.Json.Nodes.JsonObject? seed = null;
-                string? foundKey = null;
-                foreach (var (k, v) in seeds)
+                System.Text.Json.Nodes.JsonObject root;
+                if (File.Exists(path))
                 {
-                    if (string.Equals(k, charKey, StringComparison.OrdinalIgnoreCase) &&
-                        v is System.Text.Json.Nodes.JsonObject jo)
-                    {
-                        seed = jo;
-                        foundKey = k;
-                        break;
-                    }
+                    root = System.Text.Json.Nodes.JsonNode.Parse(File.ReadAllText(path))
+                           as System.Text.Json.Nodes.JsonObject
+                           ?? new System.Text.Json.Nodes.JsonObject();
                 }
-                if (seed is null || foundKey is null) return;
-                if (description is not null)
-                    seed["description"] = CharacterVisualTextScrubber.ScrubVisualProse(description);
-                if (visualLock is not null)
-                    seed["visual_lock"] = CharacterVisualTextScrubber.ScrubVisualProse(visualLock);
-                if (voiceProfile is not null)
-                    seed["voice_profile"] = voiceProfile.Trim();
-                if (voiceLabel is not null)
-                    seed["voice_label"] = voiceLabel.Trim();
-                seeds[foundKey] = seed;
-                File.WriteAllText(
-                    path,
-                    root.ToJsonString(JsonDefaults.Indented) + "\n");
+                else if (createCastShape)
+                {
+                    root = new System.Text.Json.Nodes.JsonObject { ["schema_version"] = "cast_seeds.v1" };
+                }
+                else return;
+
+                System.Text.Json.Nodes.JsonObject? seeds;
+                if (root["character_seed_tokens"] is System.Text.Json.Nodes.JsonObject direct)
+                {
+                    seeds = direct;
+                }
+                else
+                {
+                    var gpv = root["global_production_variables"] as System.Text.Json.Nodes.JsonObject
+                              ?? new System.Text.Json.Nodes.JsonObject();
+                    root["global_production_variables"] = gpv;
+                    seeds = gpv["character_seed_tokens"] as System.Text.Json.Nodes.JsonObject
+                            ?? new System.Text.Json.Nodes.JsonObject();
+                    gpv["character_seed_tokens"] = seeds;
+                    if (createCastShape)
+                        root["character_seed_tokens"] = seeds;
+                }
+
+                PatchSeedsObject(seeds);
+                Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+                File.WriteAllText(path, root.ToJsonString(JsonDefaults.Indented) + "\n");
             }
             catch
             {
@@ -897,10 +926,13 @@ public sealed class ProjectStore
             }
         }
 
-        PatchFile(ResolveScenesJsonPath(projectId));
+        PatchFile(ScreenplayService.GetCastSeedsPath(this, projectId), createCastShape: true);
         var bp = FindBlueprintPathSync(projectId);
         if (bp is not null)
-            PatchFile(bp);
+            PatchFile(bp, createCastShape: false);
+        var legacy = ResolveScenesJsonPath(projectId);
+        if (File.Exists(legacy))
+            PatchFile(legacy, createCastShape: false);
     }
 
     /// <summary>
@@ -2689,7 +2721,7 @@ public sealed class ProjectStore
 
     private Dictionary<string, JsonElement> LoadCharacterSeeds(string projectId)
     {
-        // Prefer blueprint, then scenes.json — case-insensitive keys
+        // Prefer blueprint, then cast_seeds.json, then Fountain, then legacy scenes.json
         try
         {
             using var bp = LoadBlueprintSync(projectId);
@@ -2707,19 +2739,66 @@ public sealed class ProjectStore
         }
         catch { /* fall through */ }
 
+        try
+        {
+            var castPath = ScreenplayService.GetCastSeedsPath(this, projectId);
+            if (File.Exists(castPath))
+            {
+                using var doc = JsonDocument.Parse(File.ReadAllText(castPath));
+                var root = doc.RootElement;
+                JsonElement seedEl = default;
+                if (root.TryGetProperty("character_seed_tokens", out var s) && s.ValueKind == JsonValueKind.Object)
+                    seedEl = s;
+                else if (root.TryGetProperty("global_production_variables", out var g) &&
+                         g.TryGetProperty("character_seed_tokens", out var s2) &&
+                         s2.ValueKind == JsonValueKind.Object)
+                    seedEl = s2;
+                if (seedEl.ValueKind == JsonValueKind.Object)
+                {
+                    var dict = new Dictionary<string, JsonElement>(StringComparer.OrdinalIgnoreCase);
+                    foreach (var p in seedEl.EnumerateObject())
+                        dict[p.Name] = p.Value.Clone();
+                    if (dict.Count > 0)
+                        return dict;
+                }
+            }
+        }
+        catch { /* fall through */ }
+
+        try
+        {
+            var model = ScreenplayService.TryBuildModelFromProject(this, projectId);
+            if (model is not null &&
+                model.TryGetValue("global_production_variables", out var gpvObj) &&
+                gpvObj is Dictionary<string, object?> gpv &&
+                gpv.TryGetValue("character_seed_tokens", out var charObj) &&
+                charObj is Dictionary<string, object?> charDict &&
+                charDict.Count > 0)
+            {
+                var json = JsonSerializer.Serialize(charDict);
+                using var doc = JsonDocument.Parse(json);
+                var dict = new Dictionary<string, JsonElement>(StringComparer.OrdinalIgnoreCase);
+                foreach (var p in doc.RootElement.EnumerateObject())
+                    dict[p.Name] = p.Value.Clone();
+                if (dict.Count > 0)
+                    return dict;
+            }
+        }
+        catch { /* fall through */ }
+
         var scenesPath = Path.Combine(GetProjectDir(projectId), "scenes.json");
         var alt = Path.Combine(GetProjectDir(projectId), "nickandme.scenes.json");
         var path = File.Exists(scenesPath) ? scenesPath : (File.Exists(alt) ? alt : null);
         if (path is null)
             return new Dictionary<string, JsonElement>(StringComparer.OrdinalIgnoreCase);
 
-        using var doc = JsonDocument.Parse(File.ReadAllText(path));
-        if (doc.RootElement.TryGetProperty("global_production_variables", out var g2) &&
-            g2.TryGetProperty("character_seed_tokens", out var s2) &&
-            s2.ValueKind == JsonValueKind.Object)
+        using var scenesDoc = JsonDocument.Parse(File.ReadAllText(path));
+        if (scenesDoc.RootElement.TryGetProperty("global_production_variables", out var g2) &&
+            g2.TryGetProperty("character_seed_tokens", out var s3) &&
+            s3.ValueKind == JsonValueKind.Object)
         {
             var dict = new Dictionary<string, JsonElement>(StringComparer.OrdinalIgnoreCase);
-            foreach (var p in s2.EnumerateObject())
+            foreach (var p in s3.EnumerateObject())
                 dict[p.Name] = p.Value.Clone();
             return dict;
         }

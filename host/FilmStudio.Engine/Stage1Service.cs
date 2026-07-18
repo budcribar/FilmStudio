@@ -103,12 +103,12 @@ public sealed class Stage1Service
         if (!draft.Ok)
             throw new InvalidOperationException(draft.Error ?? "Could not create Fountain draft from book.");
 
-        onProgress?.Invoke("Fountain draft saved — approving to build scene list for shot plan…");
+        onProgress?.Invoke("Fountain draft saved — approving screenplay…");
         var sign = ScreenplayService.SignOff(_projects, projectId);
         if (!sign.Ok)
             throw new InvalidOperationException(sign.Error ?? "Could not approve screenplay from Fountain.");
 
-        // Book plate attach (same as old Stage 1 post-step)
+        // Book plate attach → cast_seeds.json (Stage 2 reads Fountain + overlay)
         try
         {
             onProgress?.Invoke("Attaching book plate candidates to cast…");
@@ -128,16 +128,15 @@ public sealed class Stage1Service
         }
         catch (Exception ex)
         {
-            _log.LogWarning(ex, "Book plate attach after Fountain materialize failed");
+            _log.LogWarning(ex, "Book plate attach after Fountain approve failed");
             onProgress?.Invoke($"Book plate attach failed (non-fatal): {ex.Message}");
         }
 
         var stage1 = ScreenplayService.ReadStage1Lite(_projects, projectId);
-        var outPath = _projects.ResolveScenesJsonPath(projectId);
         var result = new Stage1Result
         {
             Ok = stage1.Present && stage1.SceneCount > 0,
-            OutPath = outPath,
+            OutPath = draftPath,
             SceneCount = stage1.SceneCount,
             CharacterCount = stage1.CharacterCount,
             LocationCount = stage1.LocationCount,
@@ -148,11 +147,11 @@ public sealed class Stage1Service
         };
 
         if (!result.Ok)
-            result.HardErrors.Add("Fountain approved but no scenes were materialised.");
+            result.HardErrors.Add("Fountain approved but no scenes were found.");
 
         onProgress?.Invoke(
-            $"Screenplay ready from Fountain · {result.SceneCount} scenes · " +
-            $"{result.CharacterCount} cast · draft {Path.GetFileName(draftPath)}");
+            $"Screenplay ready · {result.SceneCount} scenes · " +
+            $"{result.CharacterCount} cast · {Path.GetFileName(draftPath)}");
         return result;
     }
 }
