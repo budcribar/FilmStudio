@@ -478,6 +478,30 @@ public sealed class EngineApiClient
         }
     }
 
+    /// <summary>
+    /// Import a Fountain screenplay as the project screenplay (writes Stage 1 JSON).
+    /// </summary>
+    public async Task<FountainImportDto?> ImportFountainAsync(
+        string projectId,
+        string fileName,
+        Stream content,
+        CancellationToken ct = default)
+    {
+        using var form = new MultipartFormDataContent();
+        var streamContent = new StreamContent(content);
+        streamContent.Headers.ContentType =
+            new System.Net.Http.Headers.MediaTypeHeaderValue("text/plain");
+        form.Add(streamContent, "file", fileName);
+        using var resp = await _http.PostAsync(
+            $"/api/projects/{Uri.EscapeDataString(projectId)}/adaptation/import-fountain",
+            form,
+            ct);
+        var body = await resp.Content.ReadAsStringAsync(ct);
+        if (!resp.IsSuccessStatusCode)
+            throw new InvalidOperationException(TryError(body) ?? resp.ReasonPhrase);
+        return JsonSerializer.Deserialize<FountainImportDto>(body, JsonOpts);
+    }
+
     public async Task<CostDto?> GetCostAsync(
         string projectId,
         string? draftResolution = null,
@@ -1016,6 +1040,18 @@ public sealed class AdaptationDto
 {
     public bool Ok { get; set; }
     public string? ProjectId { get; set; }
+    public AdaptationStatus? Adaptation { get; set; }
+}
+
+public sealed class FountainImportDto
+{
+    public bool Ok { get; set; }
+    public string? ProjectId { get; set; }
+    public string? Title { get; set; }
+    public int SceneCount { get; set; }
+    public int CharacterCount { get; set; }
+    public int LocationCount { get; set; }
+    public string? Message { get; set; }
     public AdaptationStatus? Adaptation { get; set; }
 }
 

@@ -34,7 +34,7 @@ public abstract class AdaptationPageBase : ComponentBase, IAsyncDisposable
     public bool JobRunning =>
         string.Equals(Job?.Status, "running", StringComparison.OrdinalIgnoreCase);
 
-    /// <summary>book | outline | shots</summary>
+    /// <summary>import | screenplay | shots</summary>
     public abstract string StepKey { get; }
 
     public bool CanRunOutline =>
@@ -289,7 +289,7 @@ public abstract class AdaptationPageBase : ComponentBase, IAsyncDisposable
                 Model = Model,
                 Resume = Resume,
             });
-            Message = "Building story outline… (may take a few minutes) — live log below";
+            Message = "Building screenplay… (may take a few minutes) — live log below";
             var jobs = await Engine.GetJobAsync();
             Job = jobs?.Job;
             AbsorbProgressFromSnapshot(Job ?? new JobSnapshot());
@@ -384,11 +384,11 @@ public abstract class AdaptationPageBase : ComponentBase, IAsyncDisposable
 
     public static string NextStepLabel(string step) => step switch
     {
-        "import_book" => "Upload a PDF or text file for this project",
-        "fix_book_text" => "Prepare book, or upload a clean text file",
-        "run_stage1" => "Build the story outline",
+        "import_book" => "Import a Fountain screenplay, PDF, or text file",
+        "fix_book_text" => "Prepare imported text, or import Fountain",
+        "run_stage1" => "Build the screenplay from the book",
         "run_stage2" => "Build the shot plan",
-        "replan_stage2" => "Update the shot plan (story outline changed)",
+        "replan_stage2" => "Update the shot plan (screenplay changed)",
         "generate_clips" => "Open Scenes and create video clips",
         _ => "Looks complete — refine on Scenes or Characters",
     };
@@ -403,7 +403,7 @@ public abstract class AdaptationPageBase : ComponentBase, IAsyncDisposable
     public static string JobKindLabel(string? kind) => kind switch
     {
         "book_prepare" => "book",
-        "stage1" => "outline",
+        "stage1" => "screenplay",
         "stage2" => "shot plan",
         _ => kind ?? "",
     };
@@ -411,14 +411,21 @@ public abstract class AdaptationPageBase : ComponentBase, IAsyncDisposable
     /// <summary>Suggested path for /adaptation redirect.</summary>
     public static string SuggestedStepPath(AdaptationStatus? status)
     {
-        if (status is null) return "/adaptation/book";
+        if (status is null) return "/adaptation/import";
+        // Fountain import sets Stage1 without book text — jump to shots if plan still needed
+        if (status.Stage1.Present && status.Stage1.SceneCount > 0 &&
+            status.NextStep is "run_stage2" or "replan_stage2")
+            return "/adaptation/shots";
+        if (status.Stage1.Present && status.Stage1.SceneCount > 0 &&
+            status.NextStep is "generate_clips" or "done")
+            return "/adaptation/shots";
         return status.NextStep switch
         {
-            "import_book" or "fix_book_text" => "/adaptation/book",
-            "run_stage1" => "/adaptation/outline",
+            "import_book" or "fix_book_text" => "/adaptation/import",
+            "run_stage1" => "/adaptation/screenplay",
             "run_stage2" or "replan_stage2" => "/adaptation/shots",
             "generate_clips" or "done" => "/adaptation/shots",
-            _ => "/adaptation/book",
+            _ => "/adaptation/import",
         };
     }
 

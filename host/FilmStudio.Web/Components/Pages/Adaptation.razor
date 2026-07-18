@@ -18,7 +18,7 @@
 
             if (string.IsNullOrEmpty(projectId))
             {
-                Nav.NavigateTo("/adaptation/book", replace: true);
+                Nav.NavigateTo("/adaptation/import", replace: true);
                 return;
             }
 
@@ -28,7 +28,7 @@
         }
         catch
         {
-            Nav.NavigateTo("/adaptation/book", replace: true);
+            Nav.NavigateTo("/adaptation/import", replace: true);
         }
     }
 }

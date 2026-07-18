@@ -6,20 +6,20 @@
 }
 
 <h1>Adaptation</h1>
-<p class="text-muted mb-2">Book → story outline → shot plan.</p>
+<p class="text-muted mb-2">Import → screenplay → shot plan.</p>
 
 @* ---- Step strip ---- *@
 <nav class="nav nav-pills flex-wrap gap-1 mb-3" aria-label="Adaptation steps">
-    <a class="nav-link @(Step == "book" ? "active" : "")"
-       href="adaptation/book">1 · Book</a>
-    <a class="nav-link @(Step == "outline" ? "active" : "") @(!OutlineEnabled ? "disabled" : "")"
-       href="@(OutlineEnabled ? "adaptation/outline" : "adaptation/book")"
+    <a class="nav-link @(Step == "import" || Step == "book" ? "active" : "")"
+       href="adaptation/import">1 · Import</a>
+    <a class="nav-link @(Step == "screenplay" ? "active" : "") @(!OutlineEnabled ? "disabled" : "")"
+       href="@(OutlineEnabled ? "adaptation/screenplay" : "adaptation/import")"
        @onclick:preventDefault="@(!OutlineEnabled)"
-       title="@(OutlineEnabled ? null : "Prepare the book first")">2 · Story outline</a>
+       title="@(OutlineEnabled ? null : "Import a source first")">2 · Screenplay</a>
     <a class="nav-link @(Step == "shots" ? "active" : "") @(!ShotsEnabled ? "disabled" : "")"
-       href="@(ShotsEnabled ? "adaptation/shots" : "adaptation/outline")"
+       href="@(ShotsEnabled ? "adaptation/shots" : "adaptation/screenplay")"
        @onclick:preventDefault="@(!ShotsEnabled)"
-       title="@(ShotsEnabled ? null : "Build the story outline first")">3 · Shot plan</a>
+       title="@(ShotsEnabled ? null : "Build or import a screenplay first")">3 · Shot plan</a>
 </nav>
 
 @if (!string.IsNullOrEmpty(Host.Error))
@@ -126,7 +126,7 @@ else
         <strong>Next:</strong> @AdaptationPageBase.NextStepLabel(Host.Status.NextStep)
         @if (!Host.Status.XaiConfigured)
         {
-            <span class="ms-2">· <a href="configuration">Connect service</a> required for prepare and story outline</span>
+            <span class="ms-2">· <a href="configuration">Connect service</a> required for some steps</span>
         }
     </div>
 
@@ -142,6 +142,7 @@ else
         Host.Status is not null &&
         (Host.Status.Book.ReadyForStage1 ||
          Host.Status.Book.BookTextExists ||
+         Host.Status.Book.PdfExists ||
          (Host.Status.Stage1.Present && Host.Status.Stage1.SceneCount > 0));
 
     private bool ShotsEnabled =>

@@ -12,7 +12,8 @@ Apply to **workflow pages** users operate day to day: Adaptation, Characters, Sc
 
 ### 1. Outcome only — not mechanism
 
-- Describe **what the user gets** (story outline, cast, portraits, clips, movie draft).
+- Describe **what the user gets** (imported source, screenplay, cast, portraits, clips, movie draft).
+- Adaptation flow: **Import** (Fountain / PDF / TXT) → **Screenplay** → **Shot plan**.
 - **Do not** explain *how* it is done: no “AI”, “vision”, “OCR”, “LLM”, “model”, “chat”, “API”, or “the system uses …”.
 - Users do not care whether a step is AI, deterministic, or ffmpeg under the hood.
 
@@ -25,7 +26,7 @@ Apply to **workflow pages** users operate day to day: Adaptation, Characters, Sc
 ### 3. No project filenames or paths
 
 - Do **not** show `scenes.json`, `blueprint*.json`, `book_full.txt`, `pipeline_config.json`, asset paths, etc. in operator copy.
-- Say “this project”, “story outline”, “shot plan”, “saved” instead.
+- Say “this project”, “screenplay”, “shot plan”, “saved” instead.
 
 ### 4. No pipeline jargon
 
@@ -33,7 +34,7 @@ Apply to **workflow pages** users operate day to day: Adaptation, Characters, Sc
 |-------|--------|
 | plates / book plates | book pictures |
 | seeds | reference images / pictures |
-| scene bible / Stage 1 | story outline (or Step 2 — Story outline) |
+| scene bible / Stage 1 | screenplay (or Step 2 — Screenplay) |
 | clip plan / blueprint / Stage 2 | shot plan (or Step 3 — Shot plan) |
 | VOICE LOCK | voice style |
 | Sort plates with Grok | **Find characters** |

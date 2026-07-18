@@ -1,0 +1,39 @@
+INT./EXT. CAR - MOVING - DAY
+
+A hybrid scene heading combining interior and exterior.
+
+I/E. SAFEHOUSE - NIGHT
+
+Another valid variant of the combined heading.
+
+EST. CITY SKYLINE - DAY
+
+An establishing shot heading.
+
+int. lowercase kitchen - day
+
+This scene heading is written in lowercase to test case-insensitive detection.
+
+INT. ROOM WITH A NUMBER 42 - DAY
+
+This should still parse as a scene heading despite the embedded number.
+
+CONT'D
+
+This standalone line is not a real transition, just a stray label.
+
+R2D2
+Beep boop.
+
+C-3PO
+I do believe that translates to "hello."
+
+NOT A CHARACTER CUE, JUST A REGULAR SENTENCE IN ALL CAPS THAT HAPPENS TO END WITHOUT DIALOGUE FOLLOWING IT.
+
+McSCHNEIDER-O'BRIEN
+(a hyphenated apostrophe'd surname)
+Testing unusual character name punctuation.
+
+12:00 PM - INT. CLOCK TOWER - DAY
+
+An unconventional heading prefix mixing a timestamp with a scene location.

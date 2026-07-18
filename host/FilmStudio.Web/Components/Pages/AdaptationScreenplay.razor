@@ -1,14 +1,14 @@
-@page "/adaptation/outline"
+@page "/adaptation/screenplay"
 @inherits AdaptationPageBase
 
-<PageTitle>Adaptation · Story outline</PageTitle>
+<PageTitle>Adaptation · Screenplay</PageTitle>
 
-<AdaptationShell Host="this" Step="outline">
+<AdaptationShell Host="this" Step="screenplay">
     @if (Status is not null)
     {
         <div class="card mb-3">
             <div class="card-header d-flex justify-content-between">
-                <span>Story outline</span>
+                <span>Screenplay</span>
                 @if (Status.Stage1.Present && Status.Stage1.SceneCount > 0)
                 {
                     <span class="badge bg-success">ready</span>
@@ -39,7 +39,10 @@
                 }
                 else
                 {
-                    <p class="small text-muted">No story outline yet.</p>
+                    <p class="small text-muted">
+                        No screenplay yet.
+                        <a href="adaptation/import">Import</a> a Fountain file, or build from prepared book text below.
+                    </p>
                 }
 
                 <div class="row g-2 mb-2">
@@ -65,7 +68,7 @@
                     <button class="btn btn-primary"
                             disabled="@(Busy || JobRunning || !CanRunOutline || !Status.XaiConfigured)"
                             @onclick="RunOutlineAsync">
-                        @(Status.Stage1.SceneCount > 0 ? "Rebuild story outline" : "Build story outline")
+                        @(Status.Stage1.SceneCount > 0 ? "Rebuild from book" : "Build from book")
                     </button>
                     @if (!Status.XaiConfigured)
                     {
@@ -73,20 +76,21 @@
                     }
                     else if (!CanRunOutline)
                     {
-                        <span class="small text-muted">Prepare the book first</span>
+                        <span class="small text-muted">Import a book or Fountain first</span>
                     }
                     else if (!Status.Book.ReadyForStage1 && Status.Stage1.SceneCount > 0)
                     {
-                        <span class="small text-success">Re-run allowed (outline exists)</span>
+                        <span class="small text-success">Screenplay exists — rebuild from book if needed</span>
                     }
                     @if (Status.Stage1.SceneCount > 0)
                     {
                         <a class="btn btn-outline-success" href="adaptation/shots">Continue to shot plan →</a>
                     }
-                    <a class="btn btn-outline-secondary" href="adaptation/book">← Book</a>
+                    <a class="btn btn-outline-secondary" href="adaptation/import">← Import</a>
                 </div>
                 <p class="small text-muted mt-2 mb-0">
-                    Creates the cast and scene list for this project.
+                    Build from book creates cast and scenes from prepared book text.
+                    If you imported Fountain, you can go straight to the shot plan.
                 </p>
             </div>
         </div>
@@ -94,7 +98,7 @@
         @if (Status.Stage1.Scenes.Count > 0)
         {
             <div class="card">
-                <div class="card-header">Story outline preview</div>
+                <div class="card-header">Screenplay preview</div>
                 <div class="card-body p-0">
                     <div class="table-responsive">
                         <table class="table table-sm mb-0">
@@ -126,5 +130,5 @@
 </AdaptationShell>
 
 @code {
-    public override string StepKey => "outline";
+    public override string StepKey => "screenplay";
 }

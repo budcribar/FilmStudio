@@ -23,4 +23,8 @@
     <ProjectReference Include="..\FilmStudio.LoadSim\FilmStudio.LoadSim.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Include="Fixtures\Fountain\**\*.fountain" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
 </Project>

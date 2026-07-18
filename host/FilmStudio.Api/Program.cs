@@ -871,6 +871,63 @@ app.MapPost("/api/projects/{id}/adaptation/upload", async (string id, HttpReques
     }
 });
 
+/// <summary>
+/// Import a Fountain (.fountain) plain-text screenplay as the project screenplay (Stage 1).
+/// Skips LLM Stage 1 — writes scenes.json and saves the .fountain under source/.
+/// </summary>
+app.MapPost("/api/projects/{id}/adaptation/import-fountain", async (string id, HttpRequest req, ProjectStore store) =>
+{
+    try
+    {
+        string text;
+        string? fileName = null;
+        if (req.HasFormContentType)
+        {
+            var form = await req.ReadFormAsync();
+            var file = form.Files.GetFile("file") ?? form.Files.FirstOrDefault();
+            if (file is null || file.Length == 0)
+                return Results.BadRequest(new { ok = false, error = "file required" });
+            fileName = file.FileName;
+            using var reader = new StreamReader(file.OpenReadStream());
+            text = await reader.ReadToEndAsync();
+        }
+        else
+        {
+            using var reader = new StreamReader(req.Body);
+            text = await reader.ReadToEndAsync();
+            fileName = "screenplay.fountain";
+        }
+
+        if (string.IsNullOrWhiteSpace(text))
+            return Results.BadRequest(new { ok = false, error = "empty fountain text" });
+
+        var result = FountainStage1Importer.ImportToProject(store, id, text, fileName);
+        if (!result.Ok)
+            return Results.BadRequest(new { ok = false, error = result.Error });
+
+        var status = store.GetAdaptationStatus(id);
+        return Results.Ok(new
+        {
+            ok = true,
+            projectId = id,
+            title = result.Title,
+            sceneCount = result.SceneCount,
+            characterCount = result.CharacterCount,
+            locationCount = result.LocationCount,
+            outPath = result.OutPath,
+            fountainPath = result.FountainSavedPath,
+            message =
+                $"Imported screenplay “{result.Title}”: {result.SceneCount} scenes, " +
+                $"{result.CharacterCount} characters, {result.LocationCount} locations",
+            adaptation = status,
+        });
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { ok = false, error = ex.Message });
+    }
+});
+
 app.MapPost("/api/jobs/stage1", async (StartStage1Request body, FilmJobService jobService) =>
 {
     try
