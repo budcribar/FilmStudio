@@ -18,6 +18,30 @@ var processStartedUtc = DateTimeOffset.UtcNow;
 builder.Services.Configure<FilmStudioOptions>(
     builder.Configuration.GetSection(FilmStudioOptions.SectionName));
 
+// Optional ThreadPool pre-warm (FilmStudio:ThreadPool:MinWorkerThreads) for 100-VU ramps.
+// 0 / unset = CLR defaults. Apply before host starts accepting requests.
+{
+    var tp = builder.Configuration.GetSection(FilmStudioOptions.SectionName)
+        .GetSection("ThreadPool");
+    var minWorkers = tp.GetValue("MinWorkerThreads", 0);
+    var minIo = tp.GetValue("MinIoThreads", 0);
+    if (minWorkers > 0 || minIo > 0)
+    {
+        ThreadPool.GetMinThreads(out var curW, out var curIo);
+        ThreadPool.GetMaxThreads(out var maxW, out var maxIo);
+        var w = minWorkers > 0 ? Math.Clamp(minWorkers, 1, maxW) : curW;
+        var io = minIo > 0
+            ? Math.Clamp(minIo, 1, maxIo)
+            : (minWorkers > 0 ? Math.Clamp(minWorkers, 1, maxIo) : curIo);
+        if (w < curW) w = curW;
+        if (io < curIo) io = curIo;
+        if (ThreadPool.SetMinThreads(w, io))
+            Console.WriteLine($"ThreadPool min threads set: workers={w} io={io} (was {curW}/{curIo})");
+        else
+            Console.WriteLine($"ThreadPool SetMinThreads failed (requested workers={w} io={io})");
+    }
+}
+
 // Default workspace = repo root (two levels up from host/FilmStudio.Api)
 var repoGuess = Path.GetFullPath(Path.Combine(builder.Environment.ContentRootPath, "..", ".."));
 builder.Services.PostConfigure<FilmStudioOptions>(o =>

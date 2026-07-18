@@ -35,9 +35,32 @@ public sealed class FilmStudioOptions
     /// </summary>
     public bool EnableReadCaches { get; set; } = true;
 
+    /// <summary>
+    /// Optional ThreadPool min-thread ramp for multi-user / LoadSim ready-barrier.
+    /// Leave defaults (0) unless soaks show global latency floors under concurrent clients.
+    /// Env: <c>FilmStudio__ThreadPool__MinWorkerThreads=64</c>.
+    /// </summary>
+    public ThreadPoolOptions ThreadPool { get; set; } = new();
+
     public CapacityOptions Capacity { get; set; } = new();
     public FakesOptions Fakes { get; set; } = new();
     public AuthOptions Auth { get; set; } = new();
+}
+
+/// <summary>ThreadPool pre-warm for sudden multi-user load (optional).</summary>
+public sealed class ThreadPoolOptions
+{
+    /// <summary>
+    /// Minimum worker threads. 0 = leave CLR default (no change).
+    /// Typical experiment: 32–64 on a 16-core host (≈2–4× ProcessorCount).
+    /// </summary>
+    public int MinWorkerThreads { get; set; }
+
+    /// <summary>
+    /// Minimum I/O completion port threads. 0 = same as <see cref="MinWorkerThreads"/> when that is set,
+    /// otherwise leave CLR default.
+    /// </summary>
+    public int MinIoThreads { get; set; }
 }
 
 /// <summary>User identity, per-user API keys, admin login (Phase B).</summary>
