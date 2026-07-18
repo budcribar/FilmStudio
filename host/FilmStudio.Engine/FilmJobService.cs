@@ -669,7 +669,7 @@ public sealed class FilmJobService
     private async Task RunBookPrepareAsync(StartBookPrepareRequest req, CancellationToken ct)
     {
         var projectId = req.ProjectId;
-        _projects.Activate(projectId);
+        await _projects.ActivateAsync(projectId, ct);
         Snapshot = new JobSnapshot
         {
             Status = "running",
@@ -770,7 +770,7 @@ public sealed class FilmJobService
         var projectId = string.IsNullOrWhiteSpace(req.ProjectId)
             ? _projects.ActiveProjectId
             : req.ProjectId;
-        _projects.Activate(projectId);
+        await _projects.ActivateAsync(projectId, ct);
 
         Snapshot = new JobSnapshot
         {
@@ -914,7 +914,7 @@ public sealed class FilmJobService
         var projectId = string.IsNullOrWhiteSpace(req.ProjectId)
             ? _projects.ActiveProjectId
             : req.ProjectId;
-        _projects.Activate(projectId);
+        await _projects.ActivateAsync(projectId, ct);
 
         Snapshot = new JobSnapshot
         {
@@ -1014,7 +1014,7 @@ public sealed class FilmJobService
         var projectId = string.IsNullOrWhiteSpace(req.ProjectId)
             ? _projects.ActiveProjectId
             : req.ProjectId;
-        _projects.Activate(projectId);
+        await _projects.ActivateAsync(projectId, ct);
 
         Snapshot = new JobSnapshot
         {
@@ -1033,19 +1033,38 @@ public sealed class FilmJobService
         try
         {
             await AppendLogAsync("Stage 1: Stage1Service (Grok chat)");
-            var result = await _stage1.RunAsync(
-                projectId,
-                chunkPages: Math.Clamp(req.ChunkPages, 5, 30),
-                totalMinutes: req.TotalMinutes,
-                model: string.IsNullOrWhiteSpace(req.Model) ? "grok-4.5" : req.Model,
-                resume: req.Resume,
-                maxChunks: req.MaxChunks,
-                onProgress: line =>
+            // Sequential progress pump — no GetAwaiter; preserves line order for SignalR
+            var progress = System.Threading.Channels.Channel.CreateUnbounded<string>(
+                new System.Threading.Channels.UnboundedChannelOptions
                 {
-                    // Awaited via GetAwaiter so Grok chunk lines aren't dropped by fire-and-forget races
-                    ReportStage1ProgressAsync(line).GetAwaiter().GetResult();
-                },
-                ct: ct);
+                    SingleReader = true,
+                    SingleWriter = false,
+                });
+            var progressPump = Task.Run(async () =>
+            {
+                await foreach (var line in progress.Reader.ReadAllAsync(ct).ConfigureAwait(false))
+                    await ReportStage1ProgressAsync(line).ConfigureAwait(false);
+            }, CancellationToken.None);
+
+            Stage1Result result;
+            try
+            {
+                result = await _stage1.RunAsync(
+                    projectId,
+                    chunkPages: Math.Clamp(req.ChunkPages, 5, 30),
+                    totalMinutes: req.TotalMinutes,
+                    model: string.IsNullOrWhiteSpace(req.Model) ? "grok-4.5" : req.Model,
+                    resume: req.Resume,
+                    maxChunks: req.MaxChunks,
+                    onProgress: line => progress.Writer.TryWrite(line),
+                    ct: ct);
+            }
+            finally
+            {
+                progress.Writer.TryComplete();
+                try { await progressPump.ConfigureAwait(false); }
+                catch (OperationCanceledException) { /* job cancelled */ }
+            }
 
             var msg =
                 $"Stage 1 complete: {result.SceneCount} scenes · {result.CharacterCount} chars · " +
@@ -1071,7 +1090,7 @@ public sealed class FilmJobService
         var projectId = string.IsNullOrWhiteSpace(req.ProjectId)
             ? _projects.ActiveProjectId
             : req.ProjectId;
-        _projects.Activate(projectId);
+        await _projects.ActivateAsync(projectId, ct);
 
         Snapshot = new JobSnapshot
         {
@@ -1146,7 +1165,7 @@ public sealed class FilmJobService
     private async Task RunRemuxAsync(StartRemuxRequest req, CancellationToken ct)
     {
         var projectId = req.ProjectId;
-        _projects.Activate(projectId);
+        await _projects.ActivateAsync(projectId, ct);
         Snapshot = new JobSnapshot
         {
             Status = "running",
@@ -1246,7 +1265,7 @@ public sealed class FilmJobService
         var projectId = string.IsNullOrWhiteSpace(req.ProjectId)
             ? _projects.ActiveProjectId
             : req.ProjectId;
-        _projects.Activate(projectId);
+        await _projects.ActivateAsync(projectId, ct);
 
         var scenes = req.Scenes.Distinct().OrderBy(s => s).ToList();
         Snapshot = new JobSnapshot
@@ -1266,7 +1285,7 @@ public sealed class FilmJobService
             if (!_grok.IsConfigured)
                 throw new InvalidOperationException("XAI_API_KEY is not set.");
 
-            using var bp = _projects.LoadBlueprint(projectId)
+            using var bp = await _projects.LoadBlueprintAsync(projectId, ct)
                 ?? throw new InvalidOperationException(
                     $"No Stage 2 blueprint for project {projectId}. Run Stage 2 first.");
 
@@ -1378,7 +1397,7 @@ public sealed class FilmJobService
         var projectId = string.IsNullOrWhiteSpace(req.ProjectId)
             ? _projects.ActiveProjectId
             : req.ProjectId;
-        _projects.Activate(projectId);
+        await _projects.ActivateAsync(projectId, ct);
 
         Snapshot = new JobSnapshot
         {
@@ -1398,7 +1417,7 @@ public sealed class FilmJobService
             if (!_grok.IsConfigured)
                 throw new InvalidOperationException("XAI_API_KEY is not set.");
 
-            using var bp = _projects.LoadBlueprint(projectId)
+            using var bp = await _projects.LoadBlueprintAsync(projectId, ct)
                 ?? throw new InvalidOperationException(
                     $"No Stage 2 blueprint for project {projectId}. Run Stage 2 first.");
 

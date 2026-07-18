@@ -7,55 +7,57 @@ namespace FilmStudio.Tests;
 public class ProjectReadCacheTests
 {
     [Fact]
-    public void Projects_list_cached_until_invalidate()
+    public async Task Projects_list_cached_until_invalidate()
     {
         var cache = new ProjectReadCache();
         var builds = 0;
-        IReadOnlyList<ProjectInfo> Build()
+        Task<IReadOnlyList<ProjectInfo>> Build(CancellationToken _)
         {
             builds++;
-            return new[]
+            return Task.FromResult<IReadOnlyList<ProjectInfo>>(new[]
             {
                 new ProjectInfo { Id = "A", Label = "A", Path = "/tmp/A" },
-            };
+            });
         }
 
-        var a = cache.GetOrBuildProjects(Build);
-        var b = cache.GetOrBuildProjects(Build);
+        var a = await cache.GetOrBuildProjectsAsync(Build);
+        var b = await cache.GetOrBuildProjectsAsync(Build);
         Assert.Equal(1, builds);
         Assert.Equal("A", a[0].Id);
         Assert.Equal("A", b[0].Id);
 
         // Caller mutation must not poison cache
         ((List<ProjectInfo>)a)[0].Id = "mutated";
-        var c = cache.GetOrBuildProjects(Build);
+        var c = await cache.GetOrBuildProjectsAsync(Build);
         Assert.Equal("A", c[0].Id);
         Assert.Equal(1, builds);
 
         cache.InvalidateProjectsList();
-        _ = cache.GetOrBuildProjects(Build);
+        _ = await cache.GetOrBuildProjectsAsync(Build);
         Assert.Equal(2, builds);
     }
 
     [Fact]
-    public void Blueprint_document_cached_by_mtime_shared()
+    public async Task Blueprint_document_cached_by_mtime_shared()
     {
         var dir = Path.Combine(Path.GetTempPath(), "fs-read-cache-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(dir);
         try
         {
             var path = Path.Combine(dir, "blueprint.json");
-            File.WriteAllText(path, """{"scenes":[]}""");
+            await File.WriteAllTextAsync(path, """{"scenes":[]}""");
             var cache = new ProjectReadCache();
-            var a = cache.GetOrLoadBlueprintDocument(path);
-            var b = cache.GetOrLoadBlueprintDocument(path);
+            var a = await cache.GetOrLoadBlueprintDocumentAsync(path);
+            var b = await cache.GetOrLoadBlueprintDocumentAsync(path);
             Assert.NotNull(a);
             Assert.Same(a, b); // shared instance — do not dispose
-            Assert.Same(cache.GetOrLoadBlueprintUtf8(path), cache.GetOrLoadBlueprintUtf8(path));
+            Assert.Same(
+                await cache.GetOrLoadBlueprintUtf8Async(path),
+                await cache.GetOrLoadBlueprintUtf8Async(path));
 
-            Thread.Sleep(20);
-            File.WriteAllText(path, """{"scenes":[{"scene_number":1}]}""");
-            var c = cache.GetOrLoadBlueprintDocument(path);
+            await Task.Delay(20);
+            await File.WriteAllTextAsync(path, """{"scenes":[{"scene_number":1}]}""");
+            var c = await cache.GetOrLoadBlueprintDocumentAsync(path);
             Assert.NotNull(c);
             Assert.NotSame(a, c);
             Assert.True(c!.RootElement.GetProperty("scenes").GetArrayLength() == 1);
@@ -67,32 +69,32 @@ public class ProjectReadCacheTests
     }
 
     [Fact]
-    public void Dir_index_cached_until_dir_mtime_or_invalidate()
+    public async Task Dir_index_cached_until_dir_mtime_or_invalidate()
     {
         var dir = Path.Combine(Path.GetTempPath(), "fs-dir-cache-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(dir);
         try
         {
-            File.WriteAllText(Path.Combine(dir, "a.mp4"), new string('x', 2048));
+            await File.WriteAllTextAsync(Path.Combine(dir, "a.mp4"), new string('x', 2048));
             var cache = new ProjectReadCache();
             var builds = 0;
-            Dictionary<string, long> Index(string d)
+            Task<Dictionary<string, long>> Index(string d, CancellationToken _)
             {
                 builds++;
                 var map = new Dictionary<string, long>(StringComparer.OrdinalIgnoreCase);
                 foreach (var f in Directory.EnumerateFiles(d))
                     map[Path.GetFileName(f)] = new FileInfo(f).Length;
-                return map;
+                return Task.FromResult(map);
             }
 
-            var a = cache.GetOrIndexDir(dir, Index);
-            var b = cache.GetOrIndexDir(dir, Index);
+            var a = await cache.GetOrIndexDirAsync(dir, Index);
+            var b = await cache.GetOrIndexDirAsync(dir, Index);
             Assert.Equal(1, builds);
             Assert.True(a.ContainsKey("a.mp4"));
             Assert.True(b.ContainsKey("a.mp4"));
 
             cache.InvalidateProject("P", dir);
-            _ = cache.GetOrIndexDir(dir, Index);
+            _ = await cache.GetOrIndexDirAsync(dir, Index);
             Assert.Equal(2, builds);
         }
         finally
@@ -102,38 +104,39 @@ public class ProjectReadCacheTests
     }
 
     [Fact]
-    public void Blueprint_path_cached_per_project()
+    public async Task Blueprint_path_cached_per_project()
     {
         var cache = new ProjectReadCache();
         var finds = 0;
-        string? Find()
+        Task<string?> Find(CancellationToken _)
         {
             finds++;
-            return "/proj/blueprint.json";
+            return Task.FromResult<string?>("/proj/blueprint.json");
         }
 
-        Assert.Equal("/proj/blueprint.json", cache.GetOrFindBlueprintPath("Buster", Find));
-        Assert.Equal("/proj/blueprint.json", cache.GetOrFindBlueprintPath("Buster", Find));
+        Assert.Equal("/proj/blueprint.json", await cache.GetOrFindBlueprintPathAsync("Buster", Find));
+        Assert.Equal("/proj/blueprint.json", await cache.GetOrFindBlueprintPathAsync("Buster", Find));
         Assert.Equal(1, finds);
 
         cache.InvalidateProject("Buster", "/proj");
-        Assert.Equal("/proj/blueprint.json", cache.GetOrFindBlueprintPath("Buster", Find));
+        Assert.Equal("/proj/blueprint.json", await cache.GetOrFindBlueprintPathAsync("Buster", Find));
         Assert.Equal(2, finds);
     }
 
     [Fact]
-    public void Disabled_always_rebuilds_projects()
+    public async Task Disabled_always_rebuilds_projects()
     {
         var cache = new ProjectReadCache { Enabled = false };
         var builds = 0;
-        IReadOnlyList<ProjectInfo> Build()
+        Task<IReadOnlyList<ProjectInfo>> Build(CancellationToken _)
         {
             builds++;
-            return new[] { new ProjectInfo { Id = "A", Path = "/a" } };
+            return Task.FromResult<IReadOnlyList<ProjectInfo>>(
+                new[] { new ProjectInfo { Id = "A", Path = "/a" } });
         }
 
-        _ = cache.GetOrBuildProjects(Build);
-        _ = cache.GetOrBuildProjects(Build);
+        _ = await cache.GetOrBuildProjectsAsync(Build);
+        _ = await cache.GetOrBuildProjectsAsync(Build);
         Assert.Equal(2, builds);
     }
 }

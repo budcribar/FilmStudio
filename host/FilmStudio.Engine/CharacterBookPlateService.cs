@@ -594,7 +594,8 @@ public sealed class CharacterBookPlateService
         {
             var projectId = Path.GetFileName(
                 projectDir.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar));
-            var bp = _projects.FindBlueprintPath(projectId);
+            var bp = await _projects.FindBlueprintPathAsync(projectId, CancellationToken.None)
+                .ConfigureAwait(false);
             if (bp is null || !File.Exists(bp)) return;
 
             var root = JsonNode.Parse(await File.ReadAllTextAsync(bp, CancellationToken.None)) as JsonObject;

@@ -22,7 +22,8 @@ Goal: keep Kestrel request threads free during disk/JSON work. Multi-pass by des
 | `MediaDurationProbe` | `WriteDurationSidecarAsync` |
 | API | admin config PUT, project config, edit-log, clip review, approve |
 
-Sync wrappers remain for older job callers (`GetAwaiter().GetResult()`). Prefer `*Async` on new code.
+Sync-over-async `GetAwaiter().GetResult()` wrappers removed from caches and `ProjectStore`
+hot paths. Residual character/WIP helpers use true-sync `File.*` private helpers (no GetAwaiter).
 
 ## Pass 3 (done) — residual cost / book / stage2 / plates
 

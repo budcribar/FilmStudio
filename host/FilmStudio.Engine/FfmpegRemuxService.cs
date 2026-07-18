@@ -575,8 +575,40 @@ public sealed class FfmpegRemuxService : IFfmpegRemux
     {
         try
         {
-            using var bp = _projects.LoadBlueprint(projectId);
-            if (bp is null) return null;
+            // True-sync path (no GetAwaiter): resolve blueprint under project dir.
+            var dir = _projects.GetProjectDir(projectId);
+            string? bpPath = null;
+            var configPath = Path.Combine(dir, "pipeline_config.json");
+            var preferred = "blueprint.clips.grok.json";
+            if (File.Exists(configPath))
+            {
+                try
+                {
+                    using var cfg = JsonDocument.Parse(File.ReadAllText(configPath));
+                    if (cfg.RootElement.TryGetProperty("blueprint_file", out var bf) &&
+                        bf.GetString() is { Length: > 0 } n)
+                        preferred = n;
+                }
+                catch { /* ignore */ }
+            }
+
+            foreach (var candidate in new[]
+                     {
+                         preferred,
+                         "blueprint.clips.grok.json",
+                         "nickandme.clips.grok.json",
+                     })
+            {
+                var full = Path.Combine(dir, candidate);
+                if (File.Exists(full))
+                {
+                    bpPath = full;
+                    break;
+                }
+            }
+
+            if (bpPath is null) return null;
+            using var bp = JsonDocument.Parse(File.ReadAllBytes(bpPath));
             if (!bp.RootElement.TryGetProperty("scenes", out var scenes) ||
                 scenes.ValueKind != JsonValueKind.Array)
                 return null;

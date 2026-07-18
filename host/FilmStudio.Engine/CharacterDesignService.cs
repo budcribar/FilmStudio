@@ -60,8 +60,10 @@ public sealed class CharacterDesignService
             ProjectId = projectId,
             CharKey = charKey,
         };
-        var imageModel = GetConfigString(projectId, "image_model_name", _opts.DefaultImageModel);
-        var imageProvider = GetConfigString(projectId, "image_provider", _opts.ImageProvider);
+        var imageModel = await GetConfigStringAsync(projectId, "image_model_name", _opts.DefaultImageModel, ct)
+            .ConfigureAwait(false);
+        var imageProvider = await GetConfigStringAsync(projectId, "image_provider", _opts.ImageProvider, ct)
+            .ConfigureAwait(false);
         var providerId = ImageApiLimits.ResolveProvider(imageProvider, imageModel);
         var maxRefs = ImageApiLimits.ClampMaxRefs(opts.MaxRefs, imageProvider, imageModel);
         // Wired client today is GrokImageClient (≤3). When GeminiImageClient lands, raise this.
@@ -637,9 +639,13 @@ public sealed class CharacterDesignService
         return full;
     }
 
-    private string GetConfigString(string projectId, string key, string fallback)
+    private async Task<string> GetConfigStringAsync(
+        string projectId,
+        string key,
+        string fallback,
+        CancellationToken ct)
     {
-        var cfg = _projects.GetConfig(projectId);
+        var cfg = await _projects.GetConfigAsync(projectId, ct).ConfigureAwait(false);
         if (cfg.TryGetValue(key, out var el) && el.ValueKind == JsonValueKind.String)
             return el.GetString() ?? fallback;
         return fallback;

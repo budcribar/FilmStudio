@@ -17,13 +17,6 @@ public sealed class SceneListCache
         // 10s is safe with explicit invalidation after gen/remux/blueprint writes
         _ttl = ttl ?? TimeSpan.FromSeconds(10);
 
-    public IReadOnlyList<SceneSummary> GetOrBuild(
-        string projectId,
-        bool probeDurations,
-        Func<IReadOnlyList<SceneSummary>> build) =>
-        GetOrBuildAsync(projectId, probeDurations, _ => Task.FromResult(build() ?? Array.Empty<SceneSummary>()))
-            .GetAwaiter().GetResult();
-
     public async Task<IReadOnlyList<SceneSummary>> GetOrBuildAsync(
         string projectId,
         bool probeDurations,

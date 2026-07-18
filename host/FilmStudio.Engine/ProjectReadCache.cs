@@ -7,7 +7,7 @@ namespace FilmStudio.Engine;
 /// <summary>
 /// Hot-path read caches for multi-user browse: project list, blueprint file bytes, asset dir indexes.
 /// Entries are mtime/size validated (or short TTL for the project list) and explicitly invalidated on writes.
-/// Prefer async APIs on request threads; sync APIs remain for job workers until Pass 2.
+/// Async-only hot-path caches (no sync-over-async wrappers).
 /// </summary>
 public sealed class ProjectReadCache
 {
@@ -29,10 +29,6 @@ public sealed class ProjectReadCache
 
     /// <summary>When false, every call is a full rebuild (A/B soaks).</summary>
     public bool Enabled { get; set; } = true;
-
-    public IReadOnlyList<ProjectInfo> GetOrBuildProjects(Func<IReadOnlyList<ProjectInfo>> build) =>
-        GetOrBuildProjectsAsync(_ => Task.FromResult(build() ?? Array.Empty<ProjectInfo>()))
-            .GetAwaiter().GetResult();
 
     /// <summary>Cached project list with short TTL (new folders appear within ~10s).</summary>
     public async Task<IReadOnlyList<ProjectInfo>> GetOrBuildProjectsAsync(
@@ -81,10 +77,6 @@ public sealed class ProjectReadCache
         }
     }
 
-    public string? GetOrFindBlueprintPath(string projectId, Func<string?> find) =>
-        GetOrFindBlueprintPathAsync(projectId, _ => Task.FromResult(find()))
-            .GetAwaiter().GetResult();
-
     public async Task<string?> GetOrFindBlueprintPathAsync(
         string projectId,
         Func<CancellationToken, Task<string?>> find,
@@ -102,9 +94,6 @@ public sealed class ProjectReadCache
         return path;
     }
 
-    public JsonDocument? GetOrLoadBlueprintDocument(string? absolutePath) =>
-        GetOrLoadBlueprintDocumentAsync(absolutePath).GetAwaiter().GetResult();
-
     /// <summary>
     /// Shared parsed blueprint — <b>do not dispose</b>. Reloaded when file mtime/size changes.
     /// </summary>
@@ -115,9 +104,6 @@ public sealed class ProjectReadCache
         var entry = await GetOrLoadBlueprintEntryAsync(absolutePath, ct).ConfigureAwait(false);
         return entry?.Doc;
     }
-
-    public byte[]? GetOrLoadBlueprintUtf8(string? absolutePath) =>
-        GetOrLoadBlueprintUtf8Async(absolutePath).GetAwaiter().GetResult();
 
     public async Task<byte[]?> GetOrLoadBlueprintUtf8Async(
         string? absolutePath,
@@ -188,9 +174,6 @@ public sealed class ProjectReadCache
             gate.Release();
         }
     }
-
-    public Dictionary<string, long> GetOrIndexDir(string dir, Func<string, Dictionary<string, long>> index) =>
-        GetOrIndexDirAsync(dir, (d, _) => Task.FromResult(index(d))).GetAwaiter().GetResult();
 
     /// <summary>
     /// File name → length map. Directory enumeration stays sync (cheap metadata);

@@ -474,12 +474,12 @@ app.MapPost("/api/jobs/cancel", async (FilmJobService jobService) =>
     return Results.Ok(new { ok = true, job = jobService.GetSnapshot() });
 });
 
-app.MapGet("/api/stage2-status", (ProjectStore store) =>
+app.MapGet("/api/stage2-status", async (ProjectStore store, CancellationToken ct) =>
 {
     var id = store.ActiveProjectId;
     if (string.IsNullOrEmpty(id))
         return Results.Ok(new { ok = true, stage2_ready = false });
-    var bp = store.FindBlueprintPath(id);
+    var bp = await store.FindBlueprintPathAsync(id, ct);
     var ready = bp is not null && File.Exists(bp);
     var scenes = 0;
     var clips = 0;
@@ -487,7 +487,7 @@ app.MapGet("/api/stage2-status", (ProjectStore store) =>
     {
         try
         {
-            using var doc = store.LoadBlueprint(id);
+            using var doc = await store.LoadBlueprintAsync(id, ct);
             if (doc is not null &&
                 doc.RootElement.TryGetProperty("scenes", out var sc) &&
                 sc.ValueKind == JsonValueKind.Array)
