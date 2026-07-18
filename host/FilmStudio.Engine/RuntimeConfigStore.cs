@@ -10,7 +10,6 @@ namespace FilmStudio.Engine;
 public interface IRuntimeConfigStore
 {
     RuntimeConfigDto Get();
-    RuntimeConfigDto Update(RuntimeConfigUpdateRequest req, string adminUserId);
     Task<RuntimeConfigDto> UpdateAsync(
         RuntimeConfigUpdateRequest req,
         string adminUserId,
@@ -84,9 +83,6 @@ public sealed class RuntimeConfigStore : IRuntimeConfigStore
             UpdatedBy = _updatedBy,
         };
     }
-
-    public RuntimeConfigDto Update(RuntimeConfigUpdateRequest req, string adminUserId) =>
-        UpdateAsync(req, adminUserId).GetAwaiter().GetResult();
 
     public async Task<RuntimeConfigDto> UpdateAsync(
         RuntimeConfigUpdateRequest req,

@@ -10,7 +10,7 @@ namespace FilmStudio.Tests;
 public class RuntimeConfigStoreTests
 {
     [Fact]
-    public void Update_persists_and_hot_applies_capacity()
+    public async Task UpdateAsync_persists_and_hot_applies_capacity()
     {
         var root = Path.Combine(Path.GetTempPath(), "filmstudio-cfg-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(root);
@@ -22,7 +22,7 @@ public class RuntimeConfigStoreTests
                 Capacity = new CapacityOptions { MaxVideoInFlight = 1 },
             });
             var store = new RuntimeConfigStore(opts, NullLogger<RuntimeConfigStore>.Instance);
-            var updated = store.Update(new RuntimeConfigUpdateRequest
+            var updated = await store.UpdateAsync(new RuntimeConfigUpdateRequest
             {
                 Capacity = new CapacityRuntimeDto
                 {

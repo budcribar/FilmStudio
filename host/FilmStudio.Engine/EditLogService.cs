@@ -23,9 +23,6 @@ public sealed class EditLogService
         _log = log;
     }
 
-    public EditLogDocument Load(string projectId) =>
-        LoadAsync(projectId).GetAwaiter().GetResult();
-
     public async Task<EditLogDocument> LoadAsync(string projectId, CancellationToken ct = default)
     {
         var path = await LogPathAsync(projectId, ct).ConfigureAwait(false);
@@ -45,9 +42,6 @@ public sealed class EditLogService
         }
     }
 
-    public void Save(string projectId, EditLogDocument doc) =>
-        SaveAsync(projectId, doc).GetAwaiter().GetResult();
-
     public async Task SaveAsync(string projectId, EditLogDocument doc, CancellationToken ct = default)
     {
         var path = await LogPathAsync(projectId, ct).ConfigureAwait(false);
@@ -57,20 +51,6 @@ public sealed class EditLogService
         await File.WriteAllTextAsync(tmp, json, ct).ConfigureAwait(false);
         File.Move(tmp, path, overwrite: true);
     }
-
-    public EditLogEntry Add(
-        string projectId,
-        string entryType,
-        string userNote,
-        int? scene = null,
-        int? clip = null,
-        string? character = null,
-        string actionTaken = "",
-        string before = "",
-        string after = "",
-        string learningLayer = "clip") =>
-        AddAsync(projectId, entryType, userNote, scene, clip, character, actionTaken, before, after, learningLayer)
-            .GetAwaiter().GetResult();
 
     public async Task<EditLogEntry> AddAsync(
         string projectId,
@@ -106,9 +86,6 @@ public sealed class EditLogService
         return entry;
     }
 
-    public EditLogEntry? Get(string projectId, string entryId) =>
-        GetAsync(projectId, entryId).GetAwaiter().GetResult();
-
     public async Task<EditLogEntry?> GetAsync(
         string projectId,
         string entryId,
@@ -120,14 +97,6 @@ public sealed class EditLogService
     }
 
     /// <summary>Pass/fail clip review status in pipeline_state.json + edit log.</summary>
-    public void SetClipReview(
-        string projectId,
-        int scene,
-        int clip,
-        string status,
-        string note = "") =>
-        SetClipReviewAsync(projectId, scene, clip, status, note).GetAwaiter().GetResult();
-
     public async Task SetClipReviewAsync(
         string projectId,
         int scene,
@@ -167,9 +136,6 @@ public sealed class EditLogService
             ct: ct).ConfigureAwait(false);
     }
 
-    public void MarkSceneApproved(string projectId, int scene, string note = "") =>
-        MarkSceneApprovedAsync(projectId, scene, note).GetAwaiter().GetResult();
-
     public async Task MarkSceneApprovedAsync(
         string projectId,
         int scene,
@@ -199,9 +165,6 @@ public sealed class EditLogService
             actionTaken: "scene_review=approved",
             ct: ct).ConfigureAwait(false);
     }
-
-    public void MarkSceneDirty(string projectId, int scene, string reason, string layer = "stage2") =>
-        MarkSceneDirtyAsync(projectId, scene, reason, layer).GetAwaiter().GetResult();
 
     public async Task MarkSceneDirtyAsync(
         string projectId,
@@ -234,9 +197,6 @@ public sealed class EditLogService
             learningLayer: layer,
             ct: ct).ConfigureAwait(false);
     }
-
-    public Dictionary<string, string> GetClipReviewMap(string projectId) =>
-        GetClipReviewMapAsync(projectId).GetAwaiter().GetResult();
 
     public async Task<Dictionary<string, string>> GetClipReviewMapAsync(
         string projectId,

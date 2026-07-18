@@ -662,21 +662,24 @@ app.MapPost("/api/projects/{id}/characters/{charKey}/voice",
 });
 
 /// <summary>
-/// Sync heuristic attach (no Grok). Prefer POST /api/jobs/sort-character-plates for vision sort.
+/// Heuristic attach (no Grok). Prefer POST /api/jobs/sort-character-plates for vision sort.
 /// </summary>
-app.MapPost("/api/projects/{id}/characters/attach-book-plates", (
+app.MapPost("/api/projects/{id}/characters/attach-book-plates", async (
     string id,
     AttachCharacterPlatesRequest? body,
-    CharacterBookPlateService plates) =>
+    CharacterBookPlateService plates,
+    CancellationToken ct) =>
 {
     try
     {
         body ??= new AttachCharacterPlatesRequest();
-        var result = plates.Attach(
+        var result = await plates.AttachAsync(
             id,
             force: body.Force,
             copyIntoAssets: body.CopyIntoAssets,
-            onlyCharKey: body.CharKey);
+            onlyCharKey: body.CharKey,
+            useGrok: false,
+            ct: ct);
         return result.Ok
             ? Results.Ok(new { ok = true, projectId = id, attach = result })
             : Results.BadRequest(new { ok = false, projectId = id, attach = result, error = result.Reason });

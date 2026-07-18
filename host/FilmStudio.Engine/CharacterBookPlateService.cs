@@ -28,21 +28,6 @@ public sealed class CharacterBookPlateService
         _log = log;
     }
 
-    /// <summary>Sync wrapper (heuristic-only). Prefer <see cref="AttachAsync"/> for Grok sort.</summary>
-    public FilmStudio.Core.Models.AttachCharacterPlatesResult Attach(
-        string projectId,
-        bool force = false,
-        bool copyIntoAssets = true,
-        string? onlyCharKey = null) =>
-        AttachAsync(
-            projectId,
-            force: force,
-            copyIntoAssets: copyIntoAssets,
-            onlyCharKey: onlyCharKey,
-            useGrok: false,
-            onProgress: null,
-            ct: CancellationToken.None).GetAwaiter().GetResult();
-
     public async Task<FilmStudio.Core.Models.AttachCharacterPlatesResult> AttachAsync(
         string projectId,
         bool force = false,

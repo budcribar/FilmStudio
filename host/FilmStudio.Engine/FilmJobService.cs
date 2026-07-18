@@ -1089,7 +1089,7 @@ public sealed class FilmJobService
         {
             await AppendLogAsync("Stage 2: C# Stage2PlannerService (deterministic, no API)");
             ct.ThrowIfCancellationRequested();
-            var result = await Task.Run(() => _stage2.PlanAsync(
+            var result = await _stage2.PlanAsync(
                 projectId,
                 resolution: string.IsNullOrWhiteSpace(req.Resolution) ? "720p" : req.Resolution,
                 scenes: string.IsNullOrWhiteSpace(req.Scenes) ? "all" : req.Scenes,
@@ -1097,7 +1097,8 @@ public sealed class FilmJobService
                 {
                     _ = AppendLogAsync(line);
                     _ = UpdateAsync(s => s.Message = line);
-                }), ct);
+                },
+                ct: ct);
 
             await FinishAsync(
                 "done",
@@ -1550,7 +1551,7 @@ public sealed class FilmJobService
                 ? ce.GetString() ?? "none"
                 : "none";
             var costProjectId = Snapshot.ProjectId ?? projectId ?? _projects.ActiveProjectId;
-            _costs.RecordVideoGeneration(
+            await _costs.RecordVideoGenerationAsync(
                 costProjectId,
                 scene,
                 clip,
@@ -1559,7 +1560,8 @@ public sealed class FilmJobService
                 model,
                 hasRefImage: refPaths.Count > 0,
                 isExtend: string.Equals(cont, "extend_previous", StringComparison.OrdinalIgnoreCase),
-                requestId: requestId);
+                requestId: requestId,
+                ct: ct);
             await AppendLogAsync($"  [Cost] tracked list-rate for S{scene:D2}C{clip}");
         }
         catch (Exception ex)

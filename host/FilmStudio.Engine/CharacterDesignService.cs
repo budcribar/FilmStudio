@@ -223,7 +223,8 @@ public sealed class CharacterDesignService
 
                 try
                 {
-                    _costs.RecordImageGeneration(projectId, 1, imageModel, quality: true);
+                    await _costs.RecordImageGenerationAsync(
+                        projectId, 1, imageModel, quality: true, ct: ct);
                 }
                 catch (Exception costEx)
                 {

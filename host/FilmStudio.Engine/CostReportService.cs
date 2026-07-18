@@ -19,15 +19,6 @@ public sealed class CostReportService
 
     public CostReportService(ProjectStore projects) => _projects = projects;
 
-    public CostReport GetReport(
-        string projectId,
-        string? draftResolution = null,
-        string? heroResolution = null,
-        double? assumeAvgRetries = null,
-        int recentLimit = 40) =>
-        GetReportAsync(projectId, draftResolution, heroResolution, assumeAvgRetries, recentLimit)
-            .GetAwaiter().GetResult();
-
     public async Task<CostReport> GetReportAsync(
         string projectId,
         string? draftResolution = null,
@@ -189,9 +180,6 @@ public sealed class CostReportService
         };
     }
 
-    public CostBackfillResult BackfillFromDisk(string projectId, bool onlyMissing = true) =>
-        BackfillFromDiskAsync(projectId, onlyMissing).GetAwaiter().GetResult();
-
     public async Task<CostBackfillResult> BackfillFromDiskAsync(
         string projectId,
         bool onlyMissing = true,
@@ -295,23 +283,6 @@ public sealed class CostReportService
         };
     }
 
-    /// <summary>Record a completed native C# video gen at list rates.</summary>
-    public void RecordVideoGeneration(
-        string projectId,
-        int scene,
-        int clip,
-        double durationSec,
-        string resolution,
-        string model,
-        bool hasRefImage = false,
-        bool isExtend = false,
-        string? requestId = null)
-    {
-        RecordVideoGenerationAsync(
-            projectId, scene, clip, durationSec, resolution, model, hasRefImage, isExtend, requestId)
-            .GetAwaiter().GetResult();
-    }
-
     public async Task RecordVideoGenerationAsync(
         string projectId,
         int scene,
@@ -349,9 +320,6 @@ public sealed class CostReportService
         }, save: true, ct).ConfigureAwait(false);
     }
 
-    public IReadOnlyList<CostEvent> GetCostLedger(string projectId) =>
-        GetCostLedgerAsync(projectId).GetAwaiter().GetResult();
-
     public async Task<IReadOnlyList<CostEvent>> GetCostLedgerAsync(
         string projectId,
         CancellationToken ct = default)
@@ -362,16 +330,6 @@ public sealed class CostReportService
             list.Add(ParseEvent(e));
         return list;
     }
-
-    /// <summary>Record a completed image generation at list rates (character design).</summary>
-    public void RecordImageGeneration(
-        string projectId,
-        int nImages,
-        string model,
-        bool quality = true,
-        string? character = null) =>
-        RecordImageGenerationAsync(projectId, nImages, model, quality, character)
-            .GetAwaiter().GetResult();
 
     public async Task RecordImageGenerationAsync(
         string projectId,

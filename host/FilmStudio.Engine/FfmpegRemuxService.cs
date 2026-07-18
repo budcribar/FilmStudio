@@ -607,9 +607,6 @@ public sealed class FfmpegRemuxService : IFfmpegRemux
         return null;
     }
 
-    private static Dictionary<string, object?> LoadConfig(string projectDir) =>
-        LoadConfigAsync(projectDir).GetAwaiter().GetResult();
-
     private static async Task<Dictionary<string, object?>> LoadConfigAsync(
         string projectDir,
         CancellationToken ct = default)

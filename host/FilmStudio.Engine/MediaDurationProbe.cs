@@ -100,9 +100,6 @@ public sealed class MediaDurationProbe
         return any ? sum : null;
     }
 
-    public static void WriteDurationSidecar(string mediaPath, double durationSeconds) =>
-        WriteDurationSidecarAsync(mediaPath, durationSeconds).GetAwaiter().GetResult();
-
     public static async Task WriteDurationSidecarAsync(
         string mediaPath,
         double durationSeconds,

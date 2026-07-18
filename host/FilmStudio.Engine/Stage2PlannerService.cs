@@ -42,20 +42,12 @@ public sealed class Stage2PlannerService
         _log = log;
     }
 
-    public Stage2PlanResult PlanAsync(
+    public async Task<Stage2PlanResult> PlanAsync(
         string projectId,
         string resolution = "720p",
         string scenes = "all",
-        Action<string>? onProgress = null) =>
-        PlanAsync(projectId, resolution, scenes, onProgress, CancellationToken.None)
-            .GetAwaiter().GetResult();
-
-    public async Task<Stage2PlanResult> PlanAsync(
-        string projectId,
-        string resolution,
-        string scenes,
-        Action<string>? onProgress,
-        CancellationToken ct)
+        Action<string>? onProgress = null,
+        CancellationToken ct = default)
     {
         var projectDir = await _projects.GetProjectDirAsync(projectId, ct).ConfigureAwait(false);
         var stage1Path = _projects.ResolveScenesJsonPath(projectId);

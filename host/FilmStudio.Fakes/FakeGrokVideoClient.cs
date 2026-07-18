@@ -90,7 +90,7 @@ public sealed class FakeGrokVideoClient : IGrokVideoClient
         {
             var mode = _opts.Fakes?.VideoMode ?? "MergeRealistic";
             var seconds = mode.Equals("LoadLight", StringComparison.OrdinalIgnoreCase) ? 1.0 : 10.0;
-            MediaDurationProbe.WriteDurationSidecar(destPath, seconds);
+            await MediaDurationProbe.WriteDurationSidecarAsync(destPath, seconds, ct);
         }
         catch { /* ignore */ }
 
