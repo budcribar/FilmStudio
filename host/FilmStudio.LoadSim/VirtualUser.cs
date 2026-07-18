@@ -316,7 +316,10 @@ public sealed class VirtualUser
     private async Task<int> GetAsync(string path, CancellationToken ct)
     {
         using var req = CreateRequest(HttpMethod.Get, path);
-        using var resp = await _http.SendAsync(req, ct);
+        // Headers-only then drain body so connections return to the pool promptly
+        using var resp = await _http.SendAsync(req, HttpCompletionOption.ResponseHeadersRead, ct);
+        if (resp.Content is not null)
+            await resp.Content.CopyToAsync(Stream.Null, ct);
         return (int)resp.StatusCode;
     }
 

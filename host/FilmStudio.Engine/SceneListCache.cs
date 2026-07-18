@@ -14,7 +14,8 @@ public sealed class SceneListCache
     private readonly TimeSpan _ttl;
 
     public SceneListCache(TimeSpan? ttl = null) =>
-        _ttl = ttl ?? TimeSpan.FromSeconds(2);
+        // 10s is safe with explicit invalidation after gen/remux/blueprint writes
+        _ttl = ttl ?? TimeSpan.FromSeconds(10);
 
     public IReadOnlyList<SceneSummary> GetOrBuild(
         string projectId,

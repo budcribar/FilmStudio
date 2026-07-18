@@ -17,18 +17,24 @@ public sealed class ProjectStore
     private readonly FilmStudioOptions _opts;
     private readonly MediaDurationProbe? _duration;
     private readonly SceneListCache? _sceneListCache;
+    private readonly ProjectReadCache _readCache;
+    private readonly string _workspaceRoot;
     private string _activeProjectId = "";
 
     public ProjectStore(
         IOptions<FilmStudioOptions> opts,
         MediaDurationProbe? duration = null,
-        SceneListCache? sceneListCache = null)
+        SceneListCache? sceneListCache = null,
+        ProjectReadCache? readCache = null)
     {
         _opts = opts.Value;
         _duration = duration;
-        _sceneListCache = sceneListCache;
-        var root = ResolveWorkspaceRoot();
-        var ws = Path.Combine(root, "projects", "workspace.json");
+        // A/B: FilmStudio__EnableReadCaches=false disables scene-list + project/blueprint/dir caches
+        _sceneListCache = _opts.EnableReadCaches ? sceneListCache : null;
+        _readCache = readCache ?? new ProjectReadCache();
+        _readCache.Enabled = _opts.EnableReadCaches;
+        _workspaceRoot = ResolveWorkspaceRoot();
+        var ws = Path.Combine(_workspaceRoot, "projects", "workspace.json");
         if (File.Exists(ws))
         {
             try
@@ -40,18 +46,41 @@ public sealed class ProjectStore
         }
     }
 
-    /// <summary>Drop cached scene lists for a project (call after gen/remux/stage2).</summary>
-    public void InvalidateSceneListCache(string? projectId) =>
+    /// <summary>
+    /// Drop scene-list + blueprint/dir read caches for a project (call after gen/remux/stage2).
+    /// </summary>
+    public void InvalidateSceneListCache(string? projectId)
+    {
         _sceneListCache?.Invalidate(projectId);
+        InvalidateReadCaches(projectId);
+    }
 
-    public string WorkspaceRoot => ResolveWorkspaceRoot();
+    /// <summary>Invalidate blueprint path/bytes and asset dir indexes (and projects list if projectId null).</summary>
+    public void InvalidateReadCaches(string? projectId = null)
+    {
+        if (string.IsNullOrWhiteSpace(projectId))
+        {
+            _readCache.InvalidateAll();
+            return;
+        }
+
+        string? dir = null;
+        try { dir = GetProjectDir(projectId); }
+        catch { /* unknown project — still drop path entry */ }
+        _readCache.InvalidateProject(projectId, dir);
+    }
+
+    public string WorkspaceRoot => _workspaceRoot;
 
     public string ActiveProjectId =>
         string.IsNullOrWhiteSpace(_activeProjectId)
             ? ListProjects().FirstOrDefault()?.Id ?? ""
             : _activeProjectId;
 
-    public IReadOnlyList<ProjectInfo> ListProjects()
+    public IReadOnlyList<ProjectInfo> ListProjects() =>
+        _readCache.GetOrBuildProjects(ListProjectsCore);
+
+    private IReadOnlyList<ProjectInfo> ListProjectsCore()
     {
         var projectsDir = Path.Combine(WorkspaceRoot, "projects");
         if (!Directory.Exists(projectsDir))
@@ -115,7 +144,10 @@ public sealed class ProjectStore
         return p.Path;
     }
 
-    public string? FindBlueprintPath(string projectId)
+    public string? FindBlueprintPath(string projectId) =>
+        _readCache.GetOrFindBlueprintPath(projectId, () => FindBlueprintPathCore(projectId));
+
+    private string? FindBlueprintPathCore(string projectId)
     {
         var dir = GetProjectDir(projectId);
         var configPath = Path.Combine(dir, "pipeline_config.json");
@@ -148,13 +180,42 @@ public sealed class ProjectStore
         return null;
     }
 
+    /// <summary>
+    /// Owned blueprint document (caller should dispose). Prefer <see cref="LoadBlueprintShared"/>
+    /// on hot paths when read caches are enabled.
+    /// </summary>
     public JsonDocument? LoadBlueprint(string projectId)
     {
-        var path = FindBlueprintPath(projectId);
-        if (path is null)
-            return null;
-        return JsonDocument.Parse(File.ReadAllText(path));
+        if (!_opts.EnableReadCaches)
+            return LoadBlueprintUncached(projectId);
+        var shared = LoadBlueprintShared(projectId);
+        return ProjectReadCache.CloneBlueprintDocument(shared);
     }
+
+    /// <summary>
+    /// Shared cached blueprint — <b>do not dispose</b>. Invalidated on gen/remux/config/blueprint write.
+    /// When <see cref="FilmStudioOptions.EnableReadCaches"/> is false, returns null (use owned load).
+    /// </summary>
+    public JsonDocument? LoadBlueprintShared(string projectId)
+    {
+        if (!_opts.EnableReadCaches)
+            return null;
+        var path = FindBlueprintPath(projectId);
+        return _readCache.GetOrLoadBlueprintDocument(path);
+    }
+
+    /// <summary>Always disk+parse; caller owns and must dispose.</summary>
+    private JsonDocument? LoadBlueprintUncached(string projectId)
+    {
+        var path = FindBlueprintPathCore(projectId);
+        if (path is null || !File.Exists(path))
+            return null;
+        try { return JsonDocument.Parse(File.ReadAllBytes(path)); }
+        catch { return null; }
+    }
+
+    /// <summary>Whether scene-list + project/blueprint/dir caches are active.</summary>
+    public bool ReadCachesEnabled => _opts.EnableReadCaches;
 
     public string ConfigPath(string projectId) =>
         Path.Combine(GetProjectDir(projectId), "pipeline_config.json");
@@ -190,6 +251,8 @@ public sealed class ProjectStore
 
         var json = JsonSerializer.Serialize(merged, new JsonSerializerOptions { WriteIndented = true });
         File.WriteAllText(path, json + "\n");
+        // Blueprint path may have changed via blueprint_file
+        InvalidateSceneListCache(projectId);
         return GetConfig(projectId);
     }
 
@@ -690,6 +753,7 @@ public sealed class ProjectStore
 
             var outJson = JsonSerializer.Serialize(tree, new JsonSerializerOptions { WriteIndented = true });
             File.WriteAllText(bpPath, outJson + "\n");
+            InvalidateSceneListCache(projectId);
         }
         catch
         {
@@ -975,7 +1039,8 @@ public sealed class ProjectStore
 
     private IReadOnlyList<SceneSummary> ListScenesCore(string projectId, bool probeDurations)
     {
-        using var bp = LoadBlueprint(projectId);
+        using var owned = _opts.EnableReadCaches ? null : LoadBlueprintUncached(projectId);
+        var bp = owned ?? LoadBlueprintShared(projectId);
         if (bp is null ||
             !bp.RootElement.TryGetProperty("scenes", out var scenesEl) ||
             scenesEl.ValueKind != JsonValueKind.Array)
@@ -986,8 +1051,8 @@ public sealed class ProjectStore
         var projectDir = GetProjectDir(projectId);
         var videoDir = Path.Combine(projectDir, "assets", "video");
         var scenesDir = Path.Combine(projectDir, "assets", "scenes");
-        var videoIndex = IndexDirFiles(videoDir);
-        var scenesIndex = IndexDirFiles(scenesDir);
+        var videoIndex = GetDirIndex(videoDir);
+        var scenesIndex = GetDirIndex(scenesDir);
 
         var rows = new List<SceneSummary>();
         foreach (var s in scenesEl.EnumerateArray())
@@ -1092,7 +1157,8 @@ public sealed class ProjectStore
 
     public SceneDetail? GetSceneDetail(string projectId, int sceneNumber, bool probeDurations = true)
     {
-        using var bp = LoadBlueprint(projectId);
+        using var owned = _opts.EnableReadCaches ? null : LoadBlueprintUncached(projectId);
+        var bp = owned ?? LoadBlueprintShared(projectId);
         if (bp is null)
             return null;
 
@@ -1119,8 +1185,8 @@ public sealed class ProjectStore
         var projectDir = GetProjectDir(projectId);
         var videoDir = Path.Combine(projectDir, "assets", "video");
         var scenesDir = Path.Combine(projectDir, "assets", "scenes");
-        var videoIndex = IndexDirFiles(videoDir);
-        var scenesIndex = IndexDirFiles(scenesDir);
+        var videoIndex = GetDirIndex(videoDir);
+        var scenesIndex = GetDirIndex(scenesDir);
 
         var clips = new List<ClipSummary>();
         if (sEl.TryGetProperty("veo_clips", out var vc) && vc.ValueKind == JsonValueKind.Array)
@@ -2260,6 +2326,9 @@ public sealed class ProjectStore
         }
         return false;
     }
+
+    private Dictionary<string, long> GetDirIndex(string dir) =>
+        _readCache.GetOrIndexDir(dir, IndexDirFiles);
 
     private static Dictionary<string, long> IndexDirFiles(string dir)
     {

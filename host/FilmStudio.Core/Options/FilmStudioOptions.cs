@@ -29,6 +29,12 @@ public sealed class FilmStudioOptions
     /// <summary>When true, DI registers fake Grok clients (no xAI spend).</summary>
     public bool UseFakes { get; set; }
 
+    /// <summary>
+    /// When true (default), enable scene-list + project/blueprint/dir read caches.
+    /// Set false for A/B soaks: <c>FilmStudio__EnableReadCaches=false</c>.
+    /// </summary>
+    public bool EnableReadCaches { get; set; } = true;
+
     public CapacityOptions Capacity { get; set; } = new();
     public FakesOptions Fakes { get; set; } = new();
     public AuthOptions Auth { get; set; } = new();

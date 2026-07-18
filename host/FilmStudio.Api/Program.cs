@@ -28,6 +28,7 @@ builder.Services.PostConfigure<FilmStudioOptions>(o =>
 
 builder.Services.AddSingleton<MediaDurationProbe>();
 builder.Services.AddSingleton<SceneListCache>();
+builder.Services.AddSingleton<ProjectReadCache>();
 builder.Services.AddSingleton<ProjectStore>();
 builder.Services.AddSingleton<IJobStore, JobStore>();
 builder.Services.AddSingleton<ILockService, InMemoryLockService>();
@@ -312,6 +313,7 @@ app.MapGet("/health", (ProjectStore store, IOptions<FilmStudioOptions> opts, IGr
         workspace = store.WorkspaceRoot,
         activeProject = store.ActiveProjectId,
         useFakes = opts.Value.UseFakes || useFakes,
+        enableReadCaches = store.ReadCachesEnabled,
         capacity = opts.Value.Capacity,
         xaiConfigured = video.IsConfigured || useFakes,
         xaiKeyPresent = !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("XAI_API_KEY")),
@@ -322,13 +324,14 @@ app.MapGet("/health", (ProjectStore store, IOptions<FilmStudioOptions> opts, IGr
 app.MapGet("/api/capacity", (FilmJobService jobService, IOptions<FilmStudioOptions> opts) =>
 {
     var cap = opts.Value.Capacity ?? new CapacityOptions();
+    // Use O(1) counters — do not scan job list on this hot browse path
+    var runningCount = jobService.RunningCount;
     return Results.Ok(new
     {
         ok = true,
         capacity = cap,
-        running = jobService.IsRunning,
-        runningCount = jobService.ListJobs(take: 200).Count(j =>
-            string.Equals(j.Status, "running", StringComparison.OrdinalIgnoreCase)),
+        running = runningCount > 0,
+        runningCount,
         useFakes = opts.Value.UseFakes || useFakes,
     });
 });

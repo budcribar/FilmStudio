@@ -113,6 +113,9 @@ public sealed class FilmJobService
 
     public bool IsRunning => _jobs.CountRunning() > 0;
 
+    /// <summary>O(1) count of jobs currently running (hot path for /api/capacity).</summary>
+    public int RunningCount => _jobs.CountRunning();
+
     public CapacityOptions Capacity => _opts.Capacity ?? new CapacityOptions();
 
     public ILockService Locks => _locks;
