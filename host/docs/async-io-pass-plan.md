@@ -47,3 +47,10 @@ Still sync (acceptable / later polish):
 2. Background jobs: async preferred; sync OK until converted.
 3. Never `GetAwaiter().GetResult()` on the request path.
 4. Keep `EnableReadCaches` A/B working for both sync and async.
+
+## Findings & pause (2026-07)
+
+Optimization paused after mixed 100 VU × 10m **PASS**. Profiler notes, soak artifacts,
+deferred work (config/state cache), and notes for a future files→DB move:
+
+→ **`perf-findings-2026-07.md`**
