@@ -25,6 +25,8 @@
 
   <ItemGroup>
     <None Include="Fixtures\Fountain\**\*.fountain" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="Fixtures\FountainOpenSource\**\*.fountain" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="Fixtures\FountainOpenSource\**\*.md" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>

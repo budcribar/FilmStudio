@@ -42,9 +42,10 @@ public static class FountainParser
         public List<Element> Elements { get; } = new();
     }
 
-    // INT / EXT / EST / INT./EXT / INT/EXT / I/E followed by . or space
+    // INT / EXT / EST / INT./EXT / INT/EXT / I/E / I./E followed by . or space
+    // (I./E is used in the nyousefi Fountain reference fixtures)
     private static readonly Regex SceneHeadingStart = new(
-        @"^(INT\./EXT|INT/EXT|I/E|INT\.?|EXT\.?|EST\.?)(\s|\.|$)",
+        @"^(INT\./EXT|INT/EXT|I\./E|I/E|INT\.?|EXT\.?|EST\.?)(\s|\.|$)",
         RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
     private static readonly Regex TransitionEnd = new(
@@ -315,14 +316,33 @@ public static class FountainParser
 
     public static string UnescapeFountain(string text) => StripEmphasis(text);
 
+    private static bool LooksLikeTitlePageKeyLine(string line)
+    {
+        var trimmed = line.Trim();
+        if (!TitleKeyLine.IsMatch(trimmed)) return false;
+        // Do not treat transitions (CUT TO:, FADE TO BLACK. is not Key:) or forced >
+        // as title-page metadata. "CUT TO:" matches Key:value with empty value.
+        if (trimmed.StartsWith('>')) return false;
+        if (IsAllCapsLine(trimmed) && TransitionEnd.IsMatch(trimmed.TrimEnd()))
+            return false;
+        // Title keys are typically Title Case / mixed case (Title, Draft date, Author).
+        // All-caps keys with empty values are almost always body elements.
+        var m = TitleKeyLine.Match(trimmed);
+        var key = m.Groups[1].Value;
+        var rest = m.Groups[2].Value.Trim();
+        if (rest.Length == 0 && key.Any(char.IsLetter) && key.Where(char.IsLetter).All(char.IsUpper))
+            return false;
+        return true;
+    }
+
     private static int ParseTitlePage(string[] lines, int start, ParseResult result)
     {
         var i = start;
         while (i < lines.Length && string.IsNullOrWhiteSpace(lines[i])) i++;
         if (i >= lines.Length) return i;
 
-        // Title page only if first non-blank is Key:
-        if (!TitleKeyLine.IsMatch(lines[i].Trim()))
+        // Title page only if first non-blank is a real title Key: (not CUT TO: etc.)
+        if (!LooksLikeTitlePageKeyLine(lines[i]))
             return i;
 
         string? currentKey = null;
@@ -360,10 +380,10 @@ public static class FountainParser
                 continue;
             }
 
-            var m = TitleKeyLine.Match(trimmed.Trim());
-            if (m.Success)
+            if (LooksLikeTitlePageKeyLine(trimmed))
             {
                 Flush();
+                var m = TitleKeyLine.Match(trimmed.Trim());
                 currentKey = m.Groups[1].Value.Trim();
                 var rest = m.Groups[2].Value.Trim();
                 if (rest.Length > 0)
@@ -481,6 +501,9 @@ public static class FountainParser
     {
         trimmed = trimmed.Trim();
         if (trimmed.StartsWith('@')) return true;
+        // Spec: when in doubt, Action. Never treat INT/EXT scene-heading-shaped lines as Character
+        // (e.g. two headings stacked without a blank line between them).
+        if (SceneHeadingStart.IsMatch(trimmed)) return false;
         var core = trimmed.TrimEnd('^', ' ', '\t');
         var namePart = core.Split('(')[0].Trim();
         if (namePart.Length < 1) return false;
