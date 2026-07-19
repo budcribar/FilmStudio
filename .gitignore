@@ -287,3 +287,5 @@ host/loadsim*.json
 /host/FilmStudio.Web/obj/Debug/net10.0/rjimswa.dswa.cache.json
 /host/FilmStudio.Web/obj/Debug/net10.0/compressed/zvwq7fvd6a-{0}-khy4lop6wu-khy4lop6wu.gz
 /host/FilmStudio.Web/obj/Release/net10.0/FilmStudio.Web.assets.cache
+/host/playwright/node_modules
+/host/playwright/package-lock.json
