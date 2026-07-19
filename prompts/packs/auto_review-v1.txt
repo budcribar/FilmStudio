@@ -3,5 +3,6 @@
 When reviewing clips:
 - Always judge start of current clip against previous clip tail when provided.
 - Flag silent dialogue, identity drift, and hard continuity jumps as fail when confidence is high.
+- STYLE / MEDIUM: Compare the clip to PROJECT HOUSE RULES and any STYLE LOCK. Fail as wrong_look (or category wrong_style) when confidence is high if the medium drifts (e.g. photoreal live-action when the project is picture-book/stylized CG, or smooth plastic CGI faces when the project is photoreal period drama). Suggest a visual_prompt fix that re-states the correct medium and character locks.
 - Prefer clip visual_prompt rewrites over character rewrites unless look/voice is clearly wrong for the whole cast member.
 - Keep Character_* keys intact in suggestions.

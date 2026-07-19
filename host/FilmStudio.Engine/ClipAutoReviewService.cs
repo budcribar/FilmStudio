@@ -402,12 +402,15 @@ public sealed class ClipAutoReviewService
             }
         }
         sb.AppendLine();
-        sb.AppendLine("Check: continuity from prev tail, character look, lip/speech vs dialogue, empty/dead frames, wrong action.");
+        sb.AppendLine("Check: continuity from prev tail, character look/identity, RENDER MEDIUM vs project style,");
+        sb.AppendLine("lip/speech vs dialogue, empty/dead frames, wrong action, mismatched performance vs audio.");
+        sb.AppendLine("If PROJECT HOUSE RULES specify picture-book / stylized CG, fail photoreal live-action drift.");
+        sb.AppendLine("If they specify photoreal live-action, fail plastic CGI / beauty-filter / cartoon medium drift.");
         sb.AppendLine("Respond with JSON ONLY (no markdown):");
         sb.AppendLine("""
             {
               "suggestion": "pass"|"fail"|"unclear",
-              "category": "continuity"|"wrong_look"|"wrong_voice"|"silent"|"framing"|"other",
+              "category": "continuity"|"wrong_look"|"wrong_style"|"wrong_voice"|"silent"|"framing"|"other",
               "confidence": "high"|"medium"|"low",
               "continuity": "ok"|"jump"|"unclear"|"n/a",
               "note": "one short human-readable review note",
@@ -424,7 +427,7 @@ public sealed class ClipAutoReviewService
               ]
             }
             """);
-        sb.AppendLine("Rules: only suggest changes that would improve a re-gen. Prefer clip visual_prompt. Character changes only if look/voice is clearly wrong. Keep Character_* keys. Empty suggestions[] if pass/no edit needed.");
+        sb.AppendLine("Rules: only suggest changes that would improve a re-gen. Prefer clip visual_prompt. Character changes only if look/voice is clearly wrong. Keep Character_* keys. Empty suggestions[] if pass/no edit needed. Use wrong_style when medium drifts from project style.");
         return sb.ToString();
     }
 

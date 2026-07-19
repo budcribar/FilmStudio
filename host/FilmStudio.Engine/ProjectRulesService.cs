@@ -60,16 +60,123 @@ public sealed class ProjectRulesService
         File.WriteAllText(path, JsonSerializer.Serialize(doc, JsonOpts) + "\n");
     }
 
+    /// <summary>Stable id for auto style rule written from cast extract / render_style_lock.</summary>
+    public const string StyleRuleId = "style_from_cast";
+
     /// <summary>Active rules as text block for prompt injection.</summary>
     public string GetActiveRulesBlock(string projectId)
     {
         var doc = Load(projectId);
-        if (doc.Active.Count == 0) return "";
         var lines = doc.Active
             .Where(r => !string.IsNullOrWhiteSpace(r.Text))
-            .Select(r => $"- [{(string.IsNullOrWhiteSpace(r.Category) ? "other" : r.Category!.Trim())}] {r.Text!.Trim()}");
-        var body = string.Join("\n", lines);
-        return body.Length == 0 ? "" : "PROJECT HOUSE RULES (approved):\n" + body;
+            .Select(r => $"- [{(string.IsNullOrWhiteSpace(r.Category) ? "other" : r.Category!.Trim())}] {r.Text!.Trim()}")
+            .ToList();
+
+        // Fallback: cast_seeds render_style_lock if no style rule yet (gen/auto-review still see medium)
+        if (!doc.Active.Any(r =>
+                string.Equals(r.Category, "style", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(r.Id, StyleRuleId, StringComparison.OrdinalIgnoreCase)))
+        {
+            var fromCast = TryReadRenderStyleLock(projectId);
+            if (!string.IsNullOrWhiteSpace(fromCast))
+                lines.Add($"- [style] {fromCast.Trim()}");
+        }
+
+        if (lines.Count == 0) return "";
+        return "PROJECT HOUSE RULES (approved):\n" + string.Join("\n", lines);
+    }
+
+    /// <summary>
+    /// Upsert an active style rule from cast extract <c>render_style_lock</c> (book/screenplay medium).
+    /// Does not overwrite a user-approved style rule (different id / non-system approver).
+    /// </summary>
+    public bool EnsureStyleRuleFromRenderLock(
+        string projectId,
+        string? renderStyleLock,
+        string approvedBy = "cast_extract")
+    {
+        var text = NormalizeStyleRuleText(renderStyleLock);
+        if (string.IsNullOrWhiteSpace(text))
+            return false;
+
+        var doc = Load(projectId);
+        var systemOwned = doc.Active.FirstOrDefault(r =>
+            string.Equals(r.Id, StyleRuleId, StringComparison.OrdinalIgnoreCase));
+        if (systemOwned is not null)
+        {
+            if (string.Equals(systemOwned.Text?.Trim(), text, StringComparison.OrdinalIgnoreCase))
+                return false;
+            systemOwned.Text = text;
+            systemOwned.Category = "style";
+            systemOwned.ApprovedAt = DateTimeOffset.UtcNow;
+            systemOwned.ApprovedBy = approvedBy;
+            Save(projectId, doc);
+            return true;
+        }
+
+        // User already has an active style rule they approved — leave it
+        var userStyle = doc.Active.FirstOrDefault(r =>
+            string.Equals(r.Category, "style", StringComparison.OrdinalIgnoreCase) &&
+            !string.Equals(r.Id, StyleRuleId, StringComparison.OrdinalIgnoreCase) &&
+            !string.Equals(r.ApprovedBy, "cast_extract", StringComparison.OrdinalIgnoreCase) &&
+            !string.Equals(r.ApprovedBy, "system", StringComparison.OrdinalIgnoreCase));
+        if (userStyle is not null)
+            return false;
+
+        // Remove any other auto style duplicates, then add
+        doc.Active.RemoveAll(r =>
+            string.Equals(r.Category, "style", StringComparison.OrdinalIgnoreCase) &&
+            (string.Equals(r.ApprovedBy, "cast_extract", StringComparison.OrdinalIgnoreCase) ||
+             string.Equals(r.ApprovedBy, "system", StringComparison.OrdinalIgnoreCase)));
+
+        doc.Active.Add(new ProjectRule
+        {
+            Id = StyleRuleId,
+            Text = text,
+            Category = "style",
+            ApprovedAt = DateTimeOffset.UtcNow,
+            ApprovedBy = approvedBy,
+            SourceFailCount = 0,
+        });
+        Save(projectId, doc);
+        return true;
+    }
+
+    public static string NormalizeStyleRuleText(string? renderStyleLock)
+    {
+        var t = (renderStyleLock ?? "").Trim();
+        if (t.Length == 0) return "";
+        // Ensure readable house-rule form
+        if (!t.Contains("STYLE", StringComparison.OrdinalIgnoreCase) &&
+            !t.Contains("picture", StringComparison.OrdinalIgnoreCase) &&
+            !t.Contains("photoreal", StringComparison.OrdinalIgnoreCase) &&
+            !t.Contains("live-action", StringComparison.OrdinalIgnoreCase) &&
+            !t.Contains("CGI", StringComparison.OrdinalIgnoreCase) &&
+            !t.Contains("animated", StringComparison.OrdinalIgnoreCase))
+        {
+            t = "Hold this film’s render medium consistently: " + t;
+        }
+        if (t.Length > 600)
+            t = t[..597].TrimEnd() + "…";
+        return t;
+    }
+
+    private string? TryReadRenderStyleLock(string projectId)
+    {
+        try
+        {
+            var path = ScreenplayService.GetCastSeedsPath(_projects, projectId);
+            if (!File.Exists(path)) return null;
+            using var doc = JsonDocument.Parse(File.ReadAllText(path));
+            if (doc.RootElement.TryGetProperty("render_style_lock", out var rsl) &&
+                rsl.ValueKind == JsonValueKind.String)
+                return NormalizeStyleRuleText(rsl.GetString());
+        }
+        catch
+        {
+            /* ignore */
+        }
+        return null;
     }
 
     /// <summary>
@@ -188,6 +295,8 @@ public sealed class ProjectRulesService
         {
             "wrong_voice" => "Keep each character's voice consistent with their voice_profile (gender, pitch, age).",
             "wrong_look" => "Match locked character appearance and visual_lock on every clip; no identity drift.",
+            "wrong_style" or "style" =>
+                "Hold the project render medium on every clip (picture-book CG vs photoreal, etc.); no medium drift mid-film.",
             "continuity" => "When continuing from previous clip, match wardrobe, place, and pose from the last frames.",
             "silent" => "Dialogue clips must have clear audible speech and lip sync for the speaker.",
             "framing" => "Follow planned framing/action in visual_prompt; avoid empty holds and wrong shots.",

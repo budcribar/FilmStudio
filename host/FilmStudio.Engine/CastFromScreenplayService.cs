@@ -24,17 +24,20 @@ public sealed class CastFromScreenplayService
     private readonly ProjectStore _projects;
     private readonly IGrokChatClient _chat;
     private readonly CastVisualLiteralizeService _literalize;
+    private readonly ProjectRulesService _projectRules;
     private readonly ILogger<CastFromScreenplayService> _log;
 
     public CastFromScreenplayService(
         ProjectStore projects,
         IGrokChatClient chat,
         CastVisualLiteralizeService literalize,
+        ProjectRulesService projectRules,
         ILogger<CastFromScreenplayService> log)
     {
         _projects = projects;
         _chat = chat;
         _literalize = literalize;
+        _projectRules = projectRules;
         _log = log;
     }
 
@@ -164,6 +167,21 @@ public sealed class CastFromScreenplayService
 
         var json = JsonSerializer.Serialize(normalized, JsonDefaults.Indented);
         await File.WriteAllTextAsync(outPath, json + "\n", ct).ConfigureAwait(false);
+
+        // Project style rule from book/screenplay medium (picture-book CG vs photoreal, etc.)
+        if (normalized.TryGetValue("render_style_lock", out var rslObj) &&
+            rslObj?.ToString() is { Length: > 0 } rsl)
+        {
+            try
+            {
+                if (_projectRules.EnsureStyleRuleFromRenderLock(projectId, rsl, approvedBy: "cast_extract"))
+                    onProgress?.Invoke("Project style rule updated from book/screenplay medium.");
+            }
+            catch (Exception ex)
+            {
+                _log.LogWarning(ex, "Could not write style project rule for {Project}", projectId);
+            }
+        }
 
         var keys = seedsObj.Keys.OrderBy(k => k, StringComparer.OrdinalIgnoreCase).ToList();
         onProgress?.Invoke($"Cast ready · {keys.Count} character(s)");

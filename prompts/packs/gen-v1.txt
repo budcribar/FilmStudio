@@ -6,3 +6,4 @@ Apply these house rules when building clip video prompts:
 - Respect VOICE LOCK and character visual locks exactly.
 - Prefer tight action after speech; avoid long empty holds.
 - Align performance energy with audio state. On silent or ambient-only clips: no roaring open mouth, no lip-sync shout, no screaming-at-camera performance. Restrained physical tension (clenched fist, tight jaw, white knuckles, held stare) is allowed and often preferred. On dialogue clips: mouth and gesture match the line and delivery; do not invent rage if the line is calm or measured.
+- STYLE MATCH (global): Match locked character refs and the project render style (picture-book CG, photoreal period, etc.). Do not swap or merge Character_* faces. Do not drift into a different medium mid-film (e.g. photoreal live-action when the project is stylized 3D, or plastic CGI faces when the project is photoreal). Project house rules name the exact medium.
