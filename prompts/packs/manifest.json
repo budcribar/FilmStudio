@@ -9,8 +9,8 @@
       "version": "1",
       "relativePath": "prompts/packs/gen-v1.txt",
       "active": true,
-      "updatedAt": "2026-07-19T22:53:22.6518697Z",
-      "notes": "Default video gen addendum (house rules + continuity + performance/audio energy)."
+      "updatedAt": "2026-07-19T22:53:22.6518697+00:00",
+      "notes": "Default video gen addendum (house rules \u002B continuity \u002B performance/audio energy)."
     },
     {
       "id": "auto_review-v1",

@@ -115,4 +115,35 @@ public class ClipVideoPromptBuilderTests
     {
         Assert.True(ClipVideoPromptBuilder.MaxPromptChars >= 50_000);
     }
+
+    [Theory]
+    [InlineData("Grok submit HTTP 400: prompt too long", true)]
+    [InlineData("context_length_exceeded", true)]
+    [InlineData("maximum context length exceeded", true)]
+    [InlineData("HTTP 413 payload too large", true)]
+    [InlineData("Grok job failed: bad face", false)]
+    [InlineData("rate limit", false)]
+    public void IsPromptTooLongError_detects_length_failures(string msg, bool expected)
+    {
+        Assert.Equal(expected, ClipVideoPromptBuilder.IsPromptTooLongError(msg));
+    }
+
+    [Fact]
+    public void ShortenPromptForRetry_strips_gen_pack_then_caps()
+    {
+        var core = "CHARACTER VARIABLES\n- Character_Hero: pale man in wool coat\n\nTHIS CLIP:\nAction beats go here.\n";
+        var pack = "\n# Film Studio gen pack (active addendum)\n\nApply these house rules when building clip video prompts:\n- rule one\n";
+        var full = core + pack + "\nPROJECT HOUSE RULES (approved):\n- period drama\n";
+
+        var s1 = ClipVideoPromptBuilder.ShortenPromptForRetry(full, 1);
+        Assert.DoesNotContain("Film Studio gen pack", s1, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("PROJECT HOUSE RULES", s1, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Character_Hero", s1);
+        Assert.True(s1.Length < full.Length);
+
+        var huge = new string('x', 700_000) + "\n" + full;
+        var s2 = ClipVideoPromptBuilder.ShortenPromptForRetry(huge, 2);
+        Assert.True(s2.Length <= 600_000 + 80); // head cap + marker
+        Assert.Contains("shortened after API length limit", s2, StringComparison.OrdinalIgnoreCase);
+    }
 }

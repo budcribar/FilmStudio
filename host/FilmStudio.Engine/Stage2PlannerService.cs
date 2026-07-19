@@ -26,8 +26,8 @@ public sealed class Stage2PlannerService
     private const int GrokAbsMax = ClipDurationEstimator.AbsMaxSeconds;
     private const int GrokDefault = 6;
     private const int GrokSceneMin = 6;
-    private const int PromptSoft = 500;
-    private const int PromptHard = 800;
+    // No design-time length budget — send full visual prompts.
+    // If the video API rejects for length, GrokVideoClient shortens and retries.
 
     private static readonly JsonSerializerOptions JsonWrite = new()
     {
@@ -238,8 +238,8 @@ public sealed class Stage2PlannerService
         ["resolution"] = resolution,
         ["scene_filter"] = scenesFilter,
         ["planner"] = "Stage2PlannerService (C# Fountain)",
-        ["prompt_soft_max"] = PromptSoft,
-        ["prompt_hard_max"] = PromptHard,
+        ["prompt_truncates"] = false,
+        ["prompt_length_policy"] = "full_then_api_retry_shorten",
         ["screenplay_fingerprint"] = Stage1Fingerprint(stage1),
         ["stage1_fingerprint"] = Stage1Fingerprint(stage1),
         ["planned_at"] = DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ss"),
@@ -375,9 +375,8 @@ public sealed class Stage2PlannerService
                 var m = Regex.Match(vp, @"\s*/\s*\d+p.*24fps\s*$", RegexOptions.IgnoreCase);
                 var body = m.Success ? vp[..m.Index].Trim() : vp;
                 var suffix = m.Success ? m.Value : $" / {resolution}, 24fps";
-                var candidate = $"{body.TrimEnd('.', ' ')}. {contCue}{suffix}";
-                if (candidate.Length <= PromptSoft + 40)
-                    vp = candidate;
+                // Always append — never drop continuity for length
+                vp = $"{body.TrimEnd('.', ' ')}. {contCue}{suffix}";
             }
 
             var neg = GlobalNegative;
@@ -485,70 +484,35 @@ public sealed class Stage2PlannerService
         var mustNot = GetList(beat, "must_not").Select(x => x?.ToString() ?? "").Where(x => x.Length > 0).Take(3).ToList();
         var mustBit = mustNot.Count > 0 ? $"must not: {string.Join("; ", mustNot)}" : "";
         var ward = WardrobeContinuityClause(wardrobe, cast, clipIndex, primary);
+        // Real identity only (skip import stubs). Full locks still come from gen-time CHARACTER VARIABLES + refs.
         var idCue = IdentityCues(cast, charSeeds);
 
-        var slots = new List<PromptSlot>
+        // Join full slots — no length budget, no dropping fields, no ellipsis packing.
+        // Gen models have ~1M+ context; incomplete prompts waste API spend.
+        var parts = new List<(int Order, string Text)>
         {
-            new("style", style, 0, 2, 50),
-            new("place", !string.IsNullOrEmpty(place) && !ve.Contains(place, StringComparison.OrdinalIgnoreCase) ? place : "", 2, 4, 30),
-            new("others", othersBit, 3, 5, 20),
-            new("action", ve, 4, 0, 80),
-            new("speech", speech, 5, 6, 50),
-            new("must_not", mustBit, 6, 5, 20),
-            new("wardrobe", ward, 7, 1, 40),
-            new("identity", idCue, 8, 9, 0),
+            (0, style),
+            (2, !string.IsNullOrEmpty(place) && !ve.Contains(place, StringComparison.OrdinalIgnoreCase) ? place : ""),
+            (3, othersBit),
+            (4, ve),
+            (5, speech),
+            (6, mustBit),
+            (7, ward),
+            (8, idCue),
         };
-        return PackVisualPromptSlots(slots, PromptSoft, resolution);
+        return JoinVisualPromptParts(parts, resolution);
     }
 
-    private sealed record PromptSlot(string Key, string Text, int Order, int DropRank, int MinKeep);
-
-    private static string PackVisualPromptSlots(List<PromptSlot> slots, int budget, string resolution)
+    private static string JoinVisualPromptParts(IEnumerable<(int Order, string Text)> parts, string resolution)
     {
         var suffix = $" / {resolution}, 24fps";
-        var room = Math.Max(80, budget - suffix.Length);
-        var active = slots.Where(s => !string.IsNullOrWhiteSpace(s.Text)).Select(s =>
-            new PromptSlot(s.Key, Regex.Replace(s.Text.Trim(), @"\s+", " ").TrimEnd('.', ' '), s.Order, s.DropRank, s.MinKeep)
-        ).ToList();
-
-        if (active.Count == 0)
-            return $"Scene action.{suffix}";
-
-        string Body(List<PromptSlot> parts) =>
-            string.Join(". ", parts.OrderBy(p => p.Order).Select(p => p.Text).Where(t => t.Length > 0));
-
-        while (active.Count > 0 && Body(active).Length > room)
-        {
-            var candidates = active.Where(s => s.DropRank > 0).ToList();
-            if (candidates.Count == 0) break;
-            var victim = candidates.OrderByDescending(s => s.DropRank).First();
-            active.Remove(victim);
-        }
-
-        var body = Body(active);
-        if (body.Length > room)
-        {
-            for (var i = 0; i < active.Count; i++)
-            {
-                var s = active[i];
-                if (s.Key is "action" or "wardrobe") continue;
-                if (s.Text.Length > s.MinKeep && s.MinKeep > 0)
-                {
-                    var cut = s.Text[..Math.Max(1, s.MinKeep - 1)];
-                    var sp = cut.LastIndexOf(' ');
-                    active[i] = s with { Text = (sp > 20 ? cut[..sp] : cut) + "…" };
-                    body = Body(active);
-                    if (body.Length <= room) break;
-                }
-            }
-        }
-        if (body.Length > room)
-        {
-            body = body[..Math.Max(40, room - 1)];
-            var sp = body.LastIndexOf(' ');
-            if (sp > 20) body = body[..sp];
-            body += "…";
-        }
+        var body = string.Join(". ",
+            parts
+                .OrderBy(p => p.Order)
+                .Select(p => Regex.Replace((p.Text ?? "").Trim(), @"\s+", " ").TrimEnd('.', ' '))
+                .Where(t => t.Length > 0));
+        if (string.IsNullOrWhiteSpace(body))
+            body = "Scene action";
         return body + suffix;
     }
 
@@ -646,7 +610,9 @@ public sealed class Stage2PlannerService
         var dialogue = ap["dialogue"] as string ?? "";
         if (string.IsNullOrWhiteSpace(dialogue) || delivery is "none" or "")
             return "";
-        var quote = dialogue.Length > 90 ? dialogue[..87] + "…" : dialogue;
+        // Keep full dialogue in the visual speech cue — audio_payload already has the full line;
+        // truncating here produced mid-quote "…" and incomplete lip-sync guidance.
+        var quote = dialogue.Trim();
         if (delivery is "spoken_on_camera")
             return $"{speaker} ON CAMERA lip-syncs \"{quote}\"";
         return $"OFF-CAMERA VOICEOVER {speaker} says \"{quote}\"";
@@ -708,7 +674,9 @@ public sealed class Stage2PlannerService
             var lockTxt = CoerceString(seed.TryGetValue("visual_lock", out var vl) ? vl : null)
                           ?? CoerceString(seed.TryGetValue("description", out var d) ? d : null)
                           ?? lid;
-            return lockTxt.Length > 80 ? lockTxt[..77] + "…" : lockTxt;
+            if (IsPlaceholderIdentityText(lockTxt))
+                return lid;
+            return lockTxt;
         }
         return lid;
     }
@@ -716,25 +684,57 @@ public sealed class Stage2PlannerService
     private static string RenderStyleLock(Dictionary<string, object?> scene) =>
         CoerceString(scene.TryGetValue("render_style_lock", out var r) ? r : null) ?? "";
 
+    /// <summary>
+    /// Optional identity hints for Stage 2 visual_prompt when cast seeds already have real locks.
+    /// Skips import placeholders so we never emit "Name, as described in the scr…".
+    /// Full character sheets are applied at gen time (ClipVideoPromptBuilder + locked refs).
+    /// </summary>
     private static string IdentityCues(List<string> cast, Dictionary<string, object?> charSeeds)
     {
         var bits = new List<string>();
-        foreach (var key in cast.Take(3))
+        foreach (var key in cast.Take(4))
         {
             if (!charSeeds.TryGetValue(key, out var s) || s is not Dictionary<string, object?> seed)
                 continue;
-            var vl = CoerceString(seed.TryGetValue("visual_lock", out var v) ? v : null)
-                     ?? CoerceString(seed.TryGetValue("description", out var d) ? d : null);
-            if (string.IsNullOrWhiteSpace(vl)) continue;
+            // Prefer visual_lock; fall back to description only if it is real (not a stub)
+            var vl = CoerceString(seed.TryGetValue("visual_lock", out var v) ? v : null) ?? "";
+            if (string.IsNullOrWhiteSpace(vl) || IsPlaceholderIdentityText(vl))
+            {
+                vl = CoerceString(seed.TryGetValue("description", out var d) ? d : null) ?? "";
+                if (string.IsNullOrWhiteSpace(vl) || IsPlaceholderIdentityText(vl))
+                    continue;
+            }
+
             // Same hygiene as Stage 1 / portraits — any book, not story-specific
             vl = CharacterVisualTextScrubber.ScrubVisualProse(vl);
-            if (string.IsNullOrWhiteSpace(vl)) continue;
-            var shortVl = vl.Length > 40 ? vl[..37] + "…" : vl;
-            bits.Add($"{key}: {shortVl}");
+            if (string.IsNullOrWhiteSpace(vl) || IsPlaceholderIdentityText(vl))
+                continue;
+
+            bits.Add($"{key}: {vl}");
         }
         if (bits.Count == 0) return "";
-        var joined = string.Join("; ", bits);
-        return joined.Length > 56 ? joined[..53] + "…" : joined;
+        return string.Join("; ", bits);
+    }
+
+    /// <summary>
+    /// True for empty / generic import stubs that must not appear in visual prompts.
+    /// </summary>
+    public static bool IsPlaceholderIdentityText(string? text)
+    {
+        if (string.IsNullOrWhiteSpace(text)) return true;
+        var t = text.Trim();
+        if (t.Contains("as described in the screenplay", StringComparison.OrdinalIgnoreCase))
+            return true;
+        if (t.Contains("as described in the scr", StringComparison.OrdinalIgnoreCase))
+            return true;
+        // "Match Name as cast for this production." — old EnsureCharacter visual_lock
+        if (Regex.IsMatch(t, @"^Match\s+.+\s+as cast for this production\.?$", RegexOptions.IgnoreCase))
+            return true;
+        // Bare name-only or "Name (voice only…)" without real appearance detail is OK to skip for visual
+        if (t.Contains("voice only", StringComparison.OrdinalIgnoreCase) &&
+            t.Length < 80)
+            return true;
+        return false;
     }
 
     private static Dictionary<string, List<string>> InitWardrobeState(
@@ -800,8 +800,7 @@ public sealed class Stage2PlannerService
             bits.Add($"{key} still wears {string.Join(", ", shown)}");
         }
         if (bits.Count == 0) return "";
-        var s = string.Join("; ", bits);
-        return s.Length > 120 ? s[..117] + "…" : s;
+        return string.Join("; ", bits);
     }
 
     private static string WardrobeNegativeExtras(

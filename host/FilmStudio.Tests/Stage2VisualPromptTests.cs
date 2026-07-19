@@ -1,0 +1,156 @@
+using FilmStudio.Core.Options;
+using FilmStudio.Engine;
+using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Options;
+using Xunit;
+
+namespace FilmStudio.Tests;
+
+/// <summary>
+/// Upstream visual_prompt quality: no "as described in the screenplay" stubs,
+/// no mid-quote ellipsis from aggressive Stage 2 packing.
+/// </summary>
+public class Stage2VisualPromptTests : IDisposable
+{
+    private readonly string _root;
+    private readonly ProjectStore _store;
+
+    public Stage2VisualPromptTests()
+    {
+        _root = Path.Combine(Path.GetTempPath(), "fs-s2-vp-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(Path.Combine(_root, "projects", "Demo"));
+        _store = new ProjectStore(Options.Create(new FilmStudioOptions { WorkspaceRoot = _root }));
+    }
+
+    public void Dispose()
+    {
+        try
+        {
+            if (Directory.Exists(_root))
+                Directory.Delete(_root, recursive: true);
+        }
+        catch { /* ignore */ }
+    }
+
+    [Fact]
+    public void Fountain_import_does_not_use_as_described_in_screenplay_stubs()
+    {
+        var fountain = """
+            Title: Stub Check
+
+            INT. ROOM - DAY
+
+            STEEL
+            Hello.
+
+            BRICK
+            Hi.
+            """;
+        var parsed = FountainParser.Parse(fountain);
+        var doc = FountainStage1Importer.BuildStage1(parsed);
+        var gpv = Assert.IsType<Dictionary<string, object?>>(doc["global_production_variables"]);
+        var chars = Assert.IsType<Dictionary<string, object?>>(gpv["character_seed_tokens"]);
+        Assert.True(chars.Count >= 2);
+
+        foreach (var (_, val) in chars)
+        {
+            var seed = Assert.IsType<Dictionary<string, object?>>(val);
+            var desc = seed.TryGetValue("description", out var d) ? d?.ToString() ?? "" : "";
+            var vlock = seed.TryGetValue("visual_lock", out var v) ? v?.ToString() ?? "" : "";
+            Assert.DoesNotContain("as described in the screenplay", desc, StringComparison.OrdinalIgnoreCase);
+            Assert.DoesNotContain("as described in the screenplay", vlock, StringComparison.OrdinalIgnoreCase);
+            Assert.DoesNotContain("as cast for this production", vlock, StringComparison.OrdinalIgnoreCase);
+        }
+    }
+
+    [Theory]
+    [InlineData("Narrator, as described in the screenplay.", true)]
+    [InlineData("Narrator, as described in the scr…", true)]
+    [InlineData("Match Steel as cast for this production.", true)]
+    [InlineData("", true)]
+    [InlineData("   ", true)]
+    [InlineData("Steel (voice only; not on screen).", true)]
+    [InlineData("Adult pale nervous man, dark wool coat, 1840s photoreal.", false)]
+    public void IsPlaceholderIdentityText_detects_stubs(string text, bool expected)
+    {
+        Assert.Equal(expected, Stage2PlannerService.IsPlaceholderIdentityText(text));
+    }
+
+    [Fact]
+    public async Task Stage2_visual_prompts_omit_as_described_stubs_and_keep_full_dialogue()
+    {
+        const string projectId = "Demo";
+        var longLine =
+            "True! Nervous - very, very dreadfully nervous I had been and am. " +
+            "But why will you say that I am mad? The disease had sharpened my senses.";
+        var fountain = $"""
+            Title: Prompt Quality
+
+            INT. CHAMBER - NIGHT
+
+            NARRATOR
+            {longLine}
+
+            The narrator leans closer. A floorboard creaks.
+            """;
+        ScreenplayService.SaveDraft(_store, projectId, fountain);
+        var sign = ScreenplayService.SignOff(_store, projectId);
+        Assert.True(sign.Ok, sign.Error);
+
+        var planner = new Stage2PlannerService(_store, NullLogger<Stage2PlannerService>.Instance);
+        var result = await planner.PlanAsync(projectId, resolution: "480p", scenes: "all");
+        Assert.True(result.Ok);
+        Assert.True(File.Exists(result.OutPath));
+
+        var bp = await File.ReadAllTextAsync(result.OutPath!);
+        Assert.DoesNotContain("as described in the screenplay", bp, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("as described in the scr", bp, StringComparison.OrdinalIgnoreCase);
+
+        // Full dialogue should appear in audio_payload and not be mid-cut in visual speech with "say t…"
+        Assert.Contains("dreadfully nervous", bp, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("say t…", bp, StringComparison.Ordinal);
+        Assert.DoesNotContain("say t\u2026", bp, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Stage2_with_real_visual_lock_embeds_usable_identity_not_stub()
+    {
+        const string projectId = "Demo";
+        var fountain = """
+            Title: Real Lock
+
+            INT. LAB - DAY
+
+            SCIENTIST
+            Almost there.
+            """;
+        ScreenplayService.SaveDraft(_store, projectId, fountain);
+        Assert.True(ScreenplayService.SignOff(_store, projectId).Ok);
+
+        // After sign-off, inject a real cast seed with a proper visual lock
+        var source = Path.Combine(_store.GetProjectDir(projectId), "source");
+        Directory.CreateDirectory(source);
+        await File.WriteAllTextAsync(Path.Combine(source, "cast_seeds.json"), """
+            {
+              "schema_version": "cast_seeds.v1",
+              "character_seed_tokens": {
+                "Character_Scientist": {
+                  "description": "Middle-aged woman with wire glasses and a white lab coat",
+                  "visual_lock": "Always the same middle-aged woman with wire glasses and white lab coat; identity fixed.",
+                  "voice_profile": "Calm precise alto",
+                  "canonical_given_name": "Scientist",
+                  "display_name_policy": "ok_anytime"
+                }
+              }
+            }
+            """);
+
+        var planner = new Stage2PlannerService(_store, NullLogger<Stage2PlannerService>.Instance);
+        var result = await planner.PlanAsync(projectId, resolution: "720p", scenes: "all");
+        Assert.True(result.Ok);
+        var bp = await File.ReadAllTextAsync(result.OutPath!);
+        Assert.DoesNotContain("as described", bp, StringComparison.OrdinalIgnoreCase);
+        // Real lock prose may appear in visual_prompt identity cues
+        Assert.Contains("wire glasses", bp, StringComparison.OrdinalIgnoreCase);
+    }
+}

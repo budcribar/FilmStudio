@@ -11,10 +11,10 @@ namespace FilmStudio.Engine;
 public static class ClipVideoPromptBuilder
 {
     /// <summary>
-    /// Soft cap for video prompt length. Video Imagine does not document a 1M-token window
-    /// (that is chat); we remove the old 4k hard truncate and allow large structured prompts.
+    /// Hint only — we do not pre-truncate to this. On API "prompt too long" errors the client
+    /// shortens and retries (see <see cref="ShortenPromptForRetry"/>).
     /// </summary>
-    public const int MaxPromptChars = 100_000;
+    public const int MaxPromptChars = 1_000_000;
 
     public sealed class CharacterProfile
     {
@@ -166,9 +166,8 @@ public static class ClipVideoPromptBuilder
             "do not hold a frozen pose or empty silence after dialogue.");
         sb.Append(visualTagged);
 
+        // Full prompt always — never pre-clamp. Length failures are handled by API retry+shorten.
         var prompt = sb.ToString().Trim();
-        if (prompt.Length > MaxPromptChars)
-            prompt = prompt[..(MaxPromptChars - 1)] + "…";
 
         var summary =
             $"mode={mode} chars={keys.Count} refs={refPaths.Count} " +
@@ -391,5 +390,93 @@ public static class ClipVideoPromptBuilder
             characters.TryGetValue(key, out var p))
             return p.VoiceOnly;
         return false;
+    }
+
+    /// <summary>
+    /// True when an API/error message indicates the prompt exceeded context or length limits.
+    /// Used to decide shorten-and-retry (not permanent fail).
+    /// </summary>
+    public static bool IsPromptTooLongError(string? message)
+    {
+        if (string.IsNullOrWhiteSpace(message)) return false;
+        var m = message;
+        // Common xAI / OpenAI-style and HTTP body phrases
+        if (m.Contains("prompt too long", StringComparison.OrdinalIgnoreCase)) return true;
+        if (m.Contains("context length", StringComparison.OrdinalIgnoreCase)) return true;
+        if (m.Contains("maximum context", StringComparison.OrdinalIgnoreCase)) return true;
+        if (m.Contains("max context", StringComparison.OrdinalIgnoreCase)) return true;
+        if (m.Contains("token limit", StringComparison.OrdinalIgnoreCase)) return true;
+        if (m.Contains("too many tokens", StringComparison.OrdinalIgnoreCase)) return true;
+        if (m.Contains("context_length_exceeded", StringComparison.OrdinalIgnoreCase)) return true;
+        if (m.Contains("maximum length", StringComparison.OrdinalIgnoreCase) &&
+            m.Contains("prompt", StringComparison.OrdinalIgnoreCase)) return true;
+        if (m.Contains("payload too large", StringComparison.OrdinalIgnoreCase)) return true;
+        if (m.Contains("request entity too large", StringComparison.OrdinalIgnoreCase)) return true;
+        if (Regex.IsMatch(m, @"\b413\b") &&
+            (m.Contains("large", StringComparison.OrdinalIgnoreCase) ||
+             m.Contains("size", StringComparison.OrdinalIgnoreCase)))
+            return true;
+        return false;
+    }
+
+    /// <summary>
+    /// Progressive shorten for API length retries. Prefer dropping house-rule addenda first,
+    /// then cap total length while keeping the head (character locks + framing).
+    /// <paramref name="attempt"/> is 1-based (first retry = 1).
+    /// </summary>
+    public static string ShortenPromptForRetry(string prompt, int attempt)
+    {
+        if (string.IsNullOrEmpty(prompt)) return prompt;
+        attempt = Math.Max(1, attempt);
+        var p = prompt;
+
+        // Step 1+: drop gen pack / project house rules (appended at gen time)
+        p = StripLearningAddenda(p);
+
+        if (attempt == 1)
+            return p.Length < prompt.Length ? p : HeadCap(p, (int)(prompt.Length * 0.85));
+
+        // Later attempts: hard caps (chars), keep head where identity/action live
+        var caps = new[] { 0, 0, 600_000, 300_000, 150_000, 80_000, 40_000 };
+        var cap = attempt < caps.Length ? caps[attempt] : 24_000;
+        if (p.Length <= cap)
+            return p;
+        return HeadCap(p, cap);
+    }
+
+    private static string StripLearningAddenda(string prompt)
+    {
+        var markers = new[]
+        {
+            "\n# Film Studio gen pack",
+            "\n# Film Studio gen pack (active addendum)",
+            "\nPROJECT HOUSE RULES",
+            "\nApply these house rules when building clip video prompts:",
+        };
+        var cut = -1;
+        foreach (var m in markers)
+        {
+            var i = prompt.IndexOf(m, StringComparison.OrdinalIgnoreCase);
+            if (i >= 0 && (cut < 0 || i < cut))
+                cut = i;
+        }
+        if (cut < 0) return prompt.TrimEnd();
+        return prompt[..cut].TrimEnd();
+    }
+
+    private static string HeadCap(string prompt, int maxChars)
+    {
+        if (prompt.Length <= maxChars) return prompt;
+        if (maxChars < 64) maxChars = 64;
+        var head = prompt[..maxChars];
+        // Prefer break at paragraph / sentence
+        var nl = head.LastIndexOf("\n\n", StringComparison.Ordinal);
+        if (nl > maxChars * 2 / 3) head = head[..nl];
+        else
+        {
+            var sp = head.LastIndexOf(' ');
+            if (sp > maxChars * 2 / 3) head = head[..sp];
+        }
+        return head.TrimEnd() + "\n[prompt shortened after API length limit — retry]";
     }
 }

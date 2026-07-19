@@ -15,6 +15,8 @@ namespace FilmStudio.Engine;
 public sealed class GrokVideoClient : IGrokVideoClient
 {
     public const string ApiBase = "https://api.x.ai/v1";
+    /// <summary>Full prompt first; on length errors, shorten and retry up to this many times.</summary>
+    public const int MaxPromptLengthRetries = 5;
 
     private readonly HttpClient _http;
     private readonly FilmStudioOptions _opts;
@@ -81,43 +83,114 @@ public sealed class GrokVideoClient : IGrokVideoClient
         if (hasStart || refs.Count > 0 || hasContinue)
             durationSeconds = Math.Min(Math.Max(1, durationSeconds), 10);
 
-        // ── Official continue: POST /v1/videos/extensions ─────────────────
+        // Encode media once — retries only change prompt text
+        string? videoUri = null;
+        string? startUri = null;
+        List<object?>? refObjs = null;
         if (hasContinue)
+            videoUri = await FileToDataUriAsync(continueFromVideoPath!, ct);
+        else if (hasStart)
+            startUri = await FileToDataUriAsync(startFrameImagePath!, ct);
+        else if (refs.Count > 0)
         {
-            var videoUri = await FileToDataUriAsync(continueFromVideoPath!, ct);
-            var extPayload = new Dictionary<string, object?>
-            {
-                ["model"] = model,
-                ["prompt"] = prompt,
-                // duration = length of NEW extension only (not total)
-                ["duration"] = durationSeconds,
-                ["video"] = new Dictionary<string, object?> { ["url"] = videoUri },
-            };
-            // resolution/aspect may be ignored on extensions; still send when API allows
-            if (!string.IsNullOrWhiteSpace(resolution))
-                extPayload["resolution"] = resolution;
-
-            _log.LogInformation(
-                "Grok video EXTEND from={Prev} extensionDur={Dur}s promptLen={Len}",
-                Path.GetFileName(continueFromVideoPath), durationSeconds, prompt.Length);
-
-            using var extResp = await _http.PostAsJsonAsync("videos/extensions", extPayload, ct);
-            var extBody = await extResp.Content.ReadAsStringAsync(ct);
-            if (!extResp.IsSuccessStatusCode)
-                throw new InvalidOperationException(
-                    $"Grok video extend HTTP {(int)extResp.StatusCode}: {Trim(extBody, 500)}");
-
-            using var extDoc = JsonDocument.Parse(extBody);
-            if (!extDoc.RootElement.TryGetProperty("request_id", out var extRid) ||
-                extRid.GetString() is not { Length: > 0 } extId)
-            {
-                throw new InvalidOperationException(
-                    $"Grok extend response missing request_id: {Trim(extBody, 300)}");
-            }
-            return extId;
+            refObjs = new List<object?>();
+            foreach (var path in refs)
+                refObjs.Add(new Dictionary<string, object?> { ["url"] = await FileToDataUriAsync(path, ct) });
         }
 
-        // ── Fresh generation: POST /v1/videos/generations ────────────────
+        var original = prompt ?? "";
+        Exception? lastLengthError = null;
+
+        for (var attempt = 0; attempt <= MaxPromptLengthRetries; attempt++)
+        {
+            var current = attempt == 0
+                ? original
+                : ClipVideoPromptBuilder.ShortenPromptForRetry(original, attempt);
+
+            if (attempt > 0)
+            {
+                _log.LogWarning(
+                    "Grok video: prompt length reject — retry {Attempt}/{Max} promptLen {From}→{To}",
+                    attempt, MaxPromptLengthRetries, original.Length, current.Length);
+            }
+
+            try
+            {
+                if (hasContinue)
+                {
+                    return await SubmitExtendOnceAsync(
+                        current, durationSeconds, resolution, model, videoUri!, continueFromVideoPath!, ct);
+                }
+
+                return await SubmitFreshOnceAsync(
+                    current, durationSeconds, resolution, model,
+                    startUri, refObjs, startFrameImagePath, refs.Count, ct);
+            }
+            catch (Exception ex) when (
+                attempt < MaxPromptLengthRetries &&
+                ClipVideoPromptBuilder.IsPromptTooLongError(ex.Message))
+            {
+                lastLengthError = ex;
+                _log.LogWarning(ex, "Grok video: prompt too long (attempt {Attempt})", attempt);
+            }
+        }
+
+        throw lastLengthError
+              ?? new InvalidOperationException("Grok video submit failed after prompt length retries.");
+    }
+
+    private async Task<string> SubmitExtendOnceAsync(
+        string prompt,
+        int durationSeconds,
+        string resolution,
+        string model,
+        string videoUri,
+        string continueFromVideoPath,
+        CancellationToken ct)
+    {
+        var extPayload = new Dictionary<string, object?>
+        {
+            ["model"] = model,
+            ["prompt"] = prompt,
+            // duration = length of NEW extension only (not total)
+            ["duration"] = durationSeconds,
+            ["video"] = new Dictionary<string, object?> { ["url"] = videoUri },
+        };
+        // resolution/aspect may be ignored on extensions; still send when API allows
+        if (!string.IsNullOrWhiteSpace(resolution))
+            extPayload["resolution"] = resolution;
+
+        _log.LogInformation(
+            "Grok video EXTEND from={Prev} extensionDur={Dur}s promptLen={Len}",
+            Path.GetFileName(continueFromVideoPath), durationSeconds, prompt.Length);
+
+        using var extResp = await _http.PostAsJsonAsync("videos/extensions", extPayload, ct);
+        var extBody = await extResp.Content.ReadAsStringAsync(ct);
+        if (!extResp.IsSuccessStatusCode)
+            throw new InvalidOperationException(
+                $"Grok video extend HTTP {(int)extResp.StatusCode}: {Trim(extBody, 500)}");
+
+        using var extDoc = JsonDocument.Parse(extBody);
+        if (!extDoc.RootElement.TryGetProperty("request_id", out var extRid) ||
+            extRid.GetString() is not { Length: > 0 } extId)
+        {
+            throw new InvalidOperationException(
+                $"Grok extend response missing request_id: {Trim(extBody, 300)}");
+        }
+        return extId;
+    }
+
+    private async Task<string> SubmitFreshOnceAsync(
+        string prompt,
+        int durationSeconds,
+        string resolution,
+        string model,
+        string? startUri,
+        List<object?>? refObjs,
+        string? startFrameImagePath,
+        int refCount,
+        CancellationToken ct)
+    {
         var payload = new Dictionary<string, object?>
         {
             ["model"] = model,
@@ -127,25 +200,19 @@ public sealed class GrokVideoClient : IGrokVideoClient
             ["resolution"] = resolution,
         };
 
-        if (hasStart)
+        if (startUri is not null)
         {
-            payload["image"] = new Dictionary<string, object?>
-            {
-                ["url"] = await FileToDataUriAsync(startFrameImagePath!, ct),
-            };
+            payload["image"] = new Dictionary<string, object?> { ["url"] = startUri };
             _log.LogInformation(
                 "Grok video image-to-video startFrame={Frame} promptLen={Len} duration={Dur}s",
                 Path.GetFileName(startFrameImagePath), prompt.Length, durationSeconds);
         }
-        else if (refs.Count > 0)
+        else if (refObjs is { Count: > 0 })
         {
-            var refObjs = new List<object?>();
-            foreach (var path in refs)
-                refObjs.Add(new Dictionary<string, object?> { ["url"] = await FileToDataUriAsync(path, ct) });
             payload["reference_images"] = refObjs;
             _log.LogInformation(
                 "Grok video reference-to-video refs={N} promptLen={Len} duration={Dur}s",
-                refs.Count, prompt.Length, durationSeconds);
+                refCount, prompt.Length, durationSeconds);
         }
         else
         {

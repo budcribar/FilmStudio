@@ -430,20 +430,23 @@ public static class FountainStage1Importer
         if (!seeds.ContainsKey(key))
         {
             var off = IsOffScreen(displayName);
+            var name = CleanCharacterName(displayName);
+            // Do not invent looks from Fountain. Leave description/visual_lock empty for on-screen
+            // cast so Stage 2 cannot embed "as described in the screenplay" stubs into visual prompts.
+            // Characters UI / cast extract / locked refs supply real identity later (gen-time CHARACTER VARIABLES).
             seeds[key] = new Dictionary<string, object?>
             {
                 ["description"] = off
-                    ? $"{CleanCharacterName(displayName)} (voice only; not on screen)."
-                    : $"{CleanCharacterName(displayName)}, as described in the screenplay.",
-                ["canonical_given_name"] = CleanCharacterName(displayName),
+                    ? $"{name} (voice only; not on screen)."
+                    : "",
+                ["canonical_given_name"] = name,
                 ["display_name_policy"] = off ? "never_on_screen" : "ok_anytime",
                 ["voice_profile"] = "Consistent character voice every scene.",
-                ["voice_label"] = CleanCharacterName(displayName).Replace(' ', '_'),
+                ["voice_label"] = name.Replace(' ', '_'),
                 ["reference_image_placeholder"] = ProjectStore.CharacterRefFileName(key),
             };
             if (!off)
-                ((Dictionary<string, object?>)seeds[key]!)["visual_lock"] =
-                    $"Match {CleanCharacterName(displayName)} as cast for this production.";
+                ((Dictionary<string, object?>)seeds[key]!)["visual_lock"] = "";
         }
         return key;
     }
