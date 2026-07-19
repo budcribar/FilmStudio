@@ -58,8 +58,17 @@ public static class ClipDurationEstimator
             ? vp.GetString() ?? ""
             : "";
         var planned = 0;
-        if (clipEl.TryGetProperty("duration_seconds", out var ds) && ds.TryGetInt32(out var p))
-            planned = p;
+        if (clipEl.TryGetProperty("duration_seconds", out var ds))
+        {
+            if (ds.TryGetInt32(out var p))
+                planned = p;
+            else if (ds.TryGetDouble(out var d) && d > 0)
+                planned = (int)Math.Round(d, MidpointRounding.AwayFromZero);
+            else if (ds.ValueKind == JsonValueKind.String &&
+                     double.TryParse(ds.GetString(), System.Globalization.NumberStyles.Float,
+                         System.Globalization.CultureInfo.InvariantCulture, out var s) && s > 0)
+                planned = (int)Math.Round(s, MidpointRounding.AwayFromZero);
+        }
 
         var est = Estimate(dialogue, visual, actionClass: "", delivery);
         // Prefer estimator; never use a planned value that is much longer without dialogue

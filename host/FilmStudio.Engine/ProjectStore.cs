@@ -1067,6 +1067,19 @@ public sealed class ProjectStore
         InvalidateReadCaches(projectId);
     }
 
+    private static int ReadJsonNodeInt(System.Text.Json.Nodes.JsonNode? node)
+    {
+        if (node is null) return -1;
+        try
+        {
+            return node.GetValue<int>();
+        }
+        catch
+        {
+            return int.TryParse(node.ToString(), out var n) ? n : -1;
+        }
+    }
+
     /// <summary>
     /// Patch <c>visual_prompt</c> on a Stage 2 blueprint clip (for auto-review apply + regen).
     /// </summary>
@@ -1086,16 +1099,16 @@ public sealed class ProjectStore
         foreach (var sNode in scenes)
         {
             if (sNode is not System.Text.Json.Nodes.JsonObject s) continue;
-            var sn = s["scene_number"]?.GetValue<int>()
-                     ?? (int.TryParse(s["scene_number"]?.ToString(), out var n) ? n : -1);
+            var sn = ReadJsonNodeInt(s["scene_number"]);
             if (sn != scene) continue;
-            var clips = s["clips"] as System.Text.Json.Nodes.JsonArray;
+            // Stage 2 blueprint uses veo_clips (canonical)
+            var clips = s["veo_clips"] as System.Text.Json.Nodes.JsonArray
+                        ?? s["clips"] as System.Text.Json.Nodes.JsonArray;
             if (clips is null) break;
             foreach (var cNode in clips)
             {
                 if (cNode is not System.Text.Json.Nodes.JsonObject c) continue;
-                var cn = c["clip_number"]?.GetValue<int>()
-                         ?? (int.TryParse(c["clip_number"]?.ToString(), out var m) ? m : -1);
+                var cn = ReadJsonNodeInt(c["clip_number"]);
                 if (cn != clip) continue;
                 clipObj = c;
                 break;

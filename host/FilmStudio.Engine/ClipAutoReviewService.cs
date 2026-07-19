@@ -289,12 +289,31 @@ public sealed class ClipAutoReviewService
         }
     }
 
-    private ClipPlan LoadClipPlan(string projectId, int scene, int clip)
+    /// <summary>Test/helper: load planned clip fields from Stage 2 blueprint (<c>veo_clips</c>).</summary>
+    public static ClipPlanSnapshot LoadClipPlanForTests(
+        ProjectStore projects, string projectId, int scene, int clip)
+    {
+        var plan = LoadClipPlanCore(projects, projectId, scene, clip, log: null);
+        return new ClipPlanSnapshot(plan.VisualPrompt, plan.Dialogue, plan.Speaker, plan.Delivery);
+    }
+
+    public readonly record struct ClipPlanSnapshot(
+        string VisualPrompt, string Dialogue, string Speaker, string Delivery);
+
+    private ClipPlan LoadClipPlan(string projectId, int scene, int clip) =>
+        LoadClipPlanCore(_projects, projectId, scene, clip, _log);
+
+    private static ClipPlan LoadClipPlanCore(
+        ProjectStore projects,
+        string projectId,
+        int scene,
+        int clip,
+        ILogger? log)
     {
         var plan = new ClipPlan();
         try
         {
-            using var doc = _projects.LoadBlueprintAsync(projectId).GetAwaiter().GetResult();
+            using var doc = projects.LoadBlueprintAsync(projectId).GetAwaiter().GetResult();
             if (doc is null) return plan;
             var root = doc.RootElement;
             if (!root.TryGetProperty("scenes", out var scenes) || scenes.ValueKind != JsonValueKind.Array)
@@ -303,8 +322,12 @@ public sealed class ClipAutoReviewService
             {
                 if (!s.TryGetProperty("scene_number", out var sn) || !sn.TryGetInt32(out var n) || n != scene)
                     continue;
-                if (!s.TryGetProperty("clips", out var clips) || clips.ValueKind != JsonValueKind.Array)
-                    break;
+                // Canonical Stage 2 key is veo_clips
+                if (!s.TryGetProperty("veo_clips", out var clips) || clips.ValueKind != JsonValueKind.Array)
+                {
+                    if (!s.TryGetProperty("clips", out clips) || clips.ValueKind != JsonValueKind.Array)
+                        break;
+                }
                 foreach (var c in clips.EnumerateArray())
                 {
                     if (!c.TryGetProperty("clip_number", out var cn) || !cn.TryGetInt32(out var cnum) || cnum != clip)
@@ -330,7 +353,7 @@ public sealed class ClipAutoReviewService
         }
         catch (Exception ex)
         {
-            _log.LogDebug(ex, "LoadClipPlan failed");
+            log?.LogDebug(ex, "LoadClipPlan failed");
         }
         return plan;
     }

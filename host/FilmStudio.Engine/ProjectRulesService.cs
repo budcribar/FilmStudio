@@ -98,14 +98,18 @@ public sealed class ProjectRulesService
         var pendingTexts = new HashSet<string>(
             doc.Pending.Select(p => p.Text.Trim()),
             StringComparer.OrdinalIgnoreCase);
+        var activeCategories = new HashSet<string>(
+            doc.Active.Select(a => a.Category.Trim().ToLowerInvariant()),
+            StringComparer.OrdinalIgnoreCase);
 
         foreach (var g in byCat)
         {
             var text = BuildRuleText(g.Category, g.Notes);
             if (activeTexts.Contains(text) || pendingTexts.Contains(text))
                 continue;
-            // Also skip if same category already has pending
-            if (doc.Pending.Any(p => string.Equals(p.Category, g.Category, StringComparison.OrdinalIgnoreCase)))
+            // Skip if this category already has an active or pending rule
+            if (activeCategories.Contains(g.Category) ||
+                doc.Pending.Any(p => string.Equals(p.Category, g.Category, StringComparison.OrdinalIgnoreCase)))
                 continue;
 
             doc.Pending.Add(new ProjectRuleSuggestion

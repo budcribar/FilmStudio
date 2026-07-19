@@ -163,12 +163,24 @@ public static class SupportedModelCatalog
     {
         if (string.IsNullOrWhiteSpace(modelId)) return null;
         var id = modelId.Trim();
-        var q = All.Where(e => e.Id.Equals(id, StringComparison.OrdinalIgnoreCase));
-        if (capability is { } cap)
-            q = q.Where(e => e.Capability == cap);
-        return q.FirstOrDefault()
-               // Fall back: same id any capability (grok-4.5 chat vs vision)
-               ?? All.FirstOrDefault(e => e.Id.Equals(id, StringComparison.OrdinalIgnoreCase));
+        var exact = All.Where(e => e.Id.Equals(id, StringComparison.OrdinalIgnoreCase)).ToList();
+        if (exact.Count == 0) return null;
+
+        if (capability is not { } cap)
+            return exact[0];
+
+        var match = exact.FirstOrDefault(e => e.Capability == cap);
+        if (match is not null) return match;
+
+        // Only share Chat ↔ Vision for the same model id (e.g. grok-4.5).
+        // Do not return a video model when the caller asked for chat/image/etc.
+        if (cap is ModelCapability.Chat or ModelCapability.Vision)
+        {
+            return exact.FirstOrDefault(e =>
+                e.Capability is ModelCapability.Chat or ModelCapability.Vision);
+        }
+
+        return null;
     }
 
     /// <summary>

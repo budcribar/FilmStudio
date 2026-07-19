@@ -72,16 +72,30 @@ public sealed class GrokChatClient : IGrokChatClient
         text = text.Trim();
         if (text.StartsWith("```", StringComparison.Ordinal))
         {
-            text = Regex.Replace(text, @"^```(?:json)?\s*", "");
-            text = Regex.Replace(text, @"\s*```$", "");
+            text = Regex.Replace(text, @"^```(?:json)?\s*", "", RegexOptions.IgnoreCase);
+            text = Regex.Replace(text, @"\s*```\s*$", "");
         }
-        var start = text.IndexOf('{');
-        var end = text.LastIndexOf('}');
-        if (start < 0 || end <= start)
-            throw new InvalidOperationException("No JSON object in model output");
-        var blob = text[start..(end + 1)];
-        using var doc = JsonDocument.Parse(blob);
-        return JsonElementToDict(doc.RootElement);
+        // Prefer first balanced/parseable object — avoid matching braces in preamble like "{high}".
+        for (var i = 0; i < text.Length; i++)
+        {
+            if (text[i] != '{') continue;
+            for (var j = text.Length - 1; j > i; j--)
+            {
+                if (text[j] != '}') continue;
+                var blob = text[i..(j + 1)];
+                try
+                {
+                    using var doc = JsonDocument.Parse(blob);
+                    if (doc.RootElement.ValueKind == JsonValueKind.Object)
+                        return JsonElementToDict(doc.RootElement);
+                }
+                catch
+                {
+                    /* try next span */
+                }
+            }
+        }
+        throw new InvalidOperationException("No JSON object in model output");
     }
 
     private static Dictionary<string, object?> JsonElementToDict(JsonElement el)

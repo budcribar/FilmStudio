@@ -22,42 +22,59 @@ public sealed class JobStore : IJobStore
     public JobRecord? Get(string jobId)
     {
         if (string.IsNullOrWhiteSpace(jobId)) return null;
-        return _jobs.TryGetValue(jobId, out var j) ? Clone(j) : null;
+        lock (_gate)
+        {
+            return _jobs.TryGetValue(jobId, out var j) ? Clone(j) : null;
+        }
     }
 
     public IReadOnlyList<JobRecord> List(string? userId = null, string? projectId = null, int take = 50)
     {
         take = Math.Clamp(take, 1, 200);
-        IEnumerable<JobRecord> q = _jobs.Values;
-        if (!string.IsNullOrWhiteSpace(userId))
-            q = q.Where(j => string.Equals(j.UserId, userId, StringComparison.OrdinalIgnoreCase));
-        if (!string.IsNullOrWhiteSpace(projectId))
-            q = q.Where(j => string.Equals(j.ProjectId, projectId, StringComparison.OrdinalIgnoreCase));
-        return q
-            .OrderByDescending(j => j.QueuedAt)
-            .Take(take)
-            .Select(Clone)
-            .ToList();
+        lock (_gate)
+        {
+            IEnumerable<JobRecord> q = _jobs.Values;
+            if (!string.IsNullOrWhiteSpace(userId))
+                q = q.Where(j => string.Equals(j.UserId, userId, StringComparison.OrdinalIgnoreCase));
+            if (!string.IsNullOrWhiteSpace(projectId))
+                q = q.Where(j => string.Equals(j.ProjectId, projectId, StringComparison.OrdinalIgnoreCase));
+            return q
+                .OrderByDescending(j => j.QueuedAt)
+                .Take(take)
+                .Select(Clone)
+                .ToList();
+        }
     }
 
     public JobRecord? GetPrimary(string? userId = null)
     {
-        IEnumerable<JobRecord> q = _jobs.Values;
-        if (!string.IsNullOrWhiteSpace(userId))
-            q = q.Where(j => string.Equals(j.UserId, userId, StringComparison.OrdinalIgnoreCase));
+        lock (_gate)
+        {
+            IEnumerable<JobRecord> q = _jobs.Values;
+            if (!string.IsNullOrWhiteSpace(userId))
+                q = q.Where(j => string.Equals(j.UserId, userId, StringComparison.OrdinalIgnoreCase));
 
-        var list = q.ToList();
-        var running = list
-            .Where(j => string.Equals(j.Status, "running", StringComparison.OrdinalIgnoreCase))
-            .OrderByDescending(j => j.StartedAt ?? j.QueuedAt)
-            .FirstOrDefault();
-        if (running is not null)
-            return Clone(running);
+            var list = q.ToList();
+            // Match JobListHelpers.PickPrimary: running → queued → newest finished
+            var running = list
+                .Where(j => string.Equals(j.Status, "running", StringComparison.OrdinalIgnoreCase))
+                .OrderByDescending(j => j.StartedAt ?? j.QueuedAt)
+                .FirstOrDefault();
+            if (running is not null)
+                return Clone(running);
 
-        return list
-            .OrderByDescending(j => j.FinishedAt ?? j.StartedAt ?? j.QueuedAt)
-            .Select(Clone)
-            .FirstOrDefault();
+            var queued = list
+                .Where(j => string.Equals(j.Status, "queued", StringComparison.OrdinalIgnoreCase))
+                .OrderByDescending(j => j.QueuedAt)
+                .FirstOrDefault();
+            if (queued is not null)
+                return Clone(queued);
+
+            return list
+                .OrderByDescending(j => j.FinishedAt ?? j.StartedAt ?? j.QueuedAt)
+                .Select(Clone)
+                .FirstOrDefault();
+        }
     }
 
     public void Update(string jobId, Action<JobRecord> mutate)

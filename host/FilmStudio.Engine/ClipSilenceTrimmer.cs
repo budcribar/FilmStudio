@@ -158,7 +158,8 @@ public static class ClipSilenceTrimmer
         cut = Math.Min(cut, totalDuration - 0.05);
         if (cut >= totalDuration - 0.2)
             return null;
-        if (cut < 1.0)
+        // Align with TrimTrailingSilenceAsync / product floor
+        if (cut < ClipDurationEstimator.MinSeconds - 0.25)
             return null;
         return cut;
     }

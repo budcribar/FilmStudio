@@ -62,6 +62,26 @@ public sealed class VoicePreviewService
         return Convert.ToHexString(hash)[..16].ToLowerInvariant();
     }
 
+    /// <summary>
+    /// Fingerprint for cache status checks. When <paramref name="sampleText"/> is omitted,
+    /// uses the same default sample line as <see cref="GenerateAsync"/> so Play/status match.
+    /// </summary>
+    public static string ComputeFingerprintForCache(
+        string charKey,
+        string? voiceProfile,
+        string? voiceLabel,
+        string? displayName,
+        string? sampleText)
+    {
+        var sample = !string.IsNullOrWhiteSpace(sampleText)
+            ? sampleText.Trim()
+            : BuildSampleDialogue(
+                !string.IsNullOrWhiteSpace(displayName)
+                    ? displayName
+                    : charKey.Replace("Character_", "", StringComparison.OrdinalIgnoreCase).Replace('_', ' '));
+        return ComputeFingerprint(charKey, voiceProfile, voiceLabel, sample);
+    }
+
     public string GetPreviewDir(string projectId) =>
         Path.Combine(_projects.GetProjectDir(projectId), "assets", "characters", "voice_previews");
 
@@ -76,17 +96,19 @@ public sealed class VoicePreviewService
         string charKey,
         string? voiceProfile = null,
         string? voiceLabel = null,
-        string? sampleText = null)
+        string? sampleText = null,
+        string? displayName = null)
     {
         var mp3 = GetMp3Path(projectId, charKey);
         var metaPath = GetMetaPath(projectId, charKey);
+        var expected = ComputeFingerprintForCache(charKey, voiceProfile, voiceLabel, displayName, sampleText);
         if (!File.Exists(mp3) || new FileInfo(mp3).Length < 64)
         {
             return new VoicePreviewCacheInfo
             {
                 Exists = false,
                 Matches = false,
-                ExpectedFingerprint = ComputeFingerprint(charKey, voiceProfile, voiceLabel, sampleText),
+                ExpectedFingerprint = expected,
             };
         }
 
@@ -110,7 +132,6 @@ public sealed class VoicePreviewService
             /* treat as stale */
         }
 
-        var expected = ComputeFingerprint(charKey, voiceProfile, voiceLabel, sampleText);
         return new VoicePreviewCacheInfo
         {
             Exists = true,

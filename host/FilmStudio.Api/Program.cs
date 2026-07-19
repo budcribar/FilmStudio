@@ -977,7 +977,7 @@ app.MapGet("/api/projects/{id}/characters/{charKey}/voice/audio/status", (
     {
         if (string.IsNullOrWhiteSpace(charKey))
             return Results.BadRequest(new { ok = false, error = "charKey required" });
-        var info = voices.GetCacheInfo(id, charKey, voiceProfile, voiceLabel, sampleText);
+        var info = voices.GetCacheInfo(id, charKey, voiceProfile, voiceLabel, sampleText, displayName: null);
         return Results.Ok(new VoicePreviewStatusDto
         {
             Ok = true,
