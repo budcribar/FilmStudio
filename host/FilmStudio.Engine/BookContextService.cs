@@ -63,7 +63,7 @@ public static class BookContextService
             for (var i = 0; i < matches.Count; i++)
             {
                 var m = matches[i];
-                var num = int.Parse(m.Groups[1].Value);
+                var num = int.Parse(m.Groups[1].Value, System.Globalization.CultureInfo.InvariantCulture);
                 var start = m.Index + m.Length;
                 var end = i + 1 < matches.Count ? matches[i + 1].Index : bookText.Length;
                 var body = bookText[start..end].Trim();

@@ -711,8 +711,9 @@ public sealed class CostReportService
                         var m = TimestampDur.Match(tss);
                         if (m.Success)
                         {
-                            var a = int.Parse(m.Groups[1].Value) * 60 + int.Parse(m.Groups[2].Value);
-                            var b = int.Parse(m.Groups[3].Value) * 60 + int.Parse(m.Groups[4].Value);
+                            var inv = System.Globalization.CultureInfo.InvariantCulture;
+                            var a = int.Parse(m.Groups[1].Value, inv) * 60 + int.Parse(m.Groups[2].Value, inv);
+                            var b = int.Parse(m.Groups[3].Value, inv) * 60 + int.Parse(m.Groups[4].Value, inv);
                             if (b > a) dur = b - a;
                         }
                     }

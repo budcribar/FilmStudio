@@ -46,6 +46,8 @@ public static class ClipDurationEstimator
     /// </summary>
     public static int EstimateForClip(JsonElement clipEl)
     {
+        if (clipEl.ValueKind is JsonValueKind.Undefined or JsonValueKind.Null)
+            return MinSeconds;
         var dialogue = "";
         var delivery = "none";
         if (clipEl.TryGetProperty("audio_payload", out var ap) && ap.ValueKind == JsonValueKind.Object)
@@ -90,6 +92,10 @@ public static class ClipDurationEstimator
     {
         var dlg = (dialogue ?? "").Trim();
         var visual = (visualOrAction ?? "").Trim();
+        // Callers may pass mixed-case labels from JSON / blueprints
+        actionClass = (actionClass ?? "").Trim().ToLowerInvariant();
+        delivery = (delivery ?? "none").Trim().ToLowerInvariant();
+        if (delivery.Length == 0) delivery = "none";
 
         double speech = 0;
         if (dlg.Length > 0)
@@ -139,7 +145,8 @@ public static class ClipDurationEstimator
     {
         if (beats is null || beats.Count == 0)
             return new List<int>();
-        var durs = beats.Select(EstimateForBeat).ToList();
+        // Null list entries are treated as empty action beats (not skipped — preserve index alignment)
+        var durs = beats.Select(b => EstimateForBeat(b!)).ToList();
         if (durs.Count == 0) return durs;
 
         if (sceneTargetSeconds is int target && target > durs.Sum() + 2)
@@ -149,7 +156,7 @@ public static class ClipDurationEstimator
             var actionIdx = new List<int>();
             for (var i = 0; i < beats.Count; i++)
             {
-                var dlg = Coerce(beats[i], "dialogue");
+                var dlg = beats[i] is null ? "" : Coerce(beats[i]!, "dialogue");
                 if (string.IsNullOrWhiteSpace(dlg) && durs[i] < MaxSeconds)
                     actionIdx.Add(i);
             }

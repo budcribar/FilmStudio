@@ -195,6 +195,15 @@ public static class SupportedModelCatalog
         var hit = Find(modelId, capability);
         if (hit is not null) return hit;
 
+        // Known id under a different capability (e.g. video id for chat) → do not keep that id.
+        // Truly unknown id → keep the string (forward-compatible) with Xai defaults.
+        var knownUnderAnyCap = !string.IsNullOrWhiteSpace(modelId) && Find(modelId) is not null;
+        if (!string.IsNullOrWhiteSpace(modelId) && !knownUnderAnyCap)
+        {
+            var id = modelId.Trim();
+            return MakeSynthetic(id, capability);
+        }
+
         if (!string.IsNullOrWhiteSpace(fallbackId))
         {
             hit = Find(fallbackId, capability);
@@ -204,25 +213,28 @@ public static class SupportedModelCatalog
         hit = ForCapability(capability).FirstOrDefault();
         if (hit is not null) return hit;
 
-        // Last resort synthetic
-        return new SupportedModelEntry
-        {
-            Id = string.IsNullOrWhiteSpace(modelId) ? "unknown" : modelId.Trim(),
-            DisplayName = modelId ?? "unknown",
-            Capability = capability,
-            Provider = ModelProviderFamily.Xai,
-            ApiBase = XaiApiBase,
-            EndpointPath = capability switch
-            {
-                ModelCapability.Video => "videos/generations",
-                ModelCapability.Image => "images/generations",
-                _ => "chat/completions",
-            },
-            RequiredEnvKeys = [XaiApiKeyEnv],
-            Enabled = false,
-            Notes = "Not in master catalog — add via PR or track as GitHub feature request.",
-        };
+        return MakeSynthetic(
+            string.IsNullOrWhiteSpace(modelId) ? "unknown" : modelId.Trim(),
+            capability);
     }
+
+    private static SupportedModelEntry MakeSynthetic(string id, ModelCapability capability) => new()
+    {
+        Id = id,
+        DisplayName = id,
+        Capability = capability,
+        Provider = ModelProviderFamily.Xai,
+        ApiBase = XaiApiBase,
+        EndpointPath = capability switch
+        {
+            ModelCapability.Video => "videos/generations",
+            ModelCapability.Image => "images/generations",
+            _ => "chat/completions",
+        },
+        RequiredEnvKeys = [XaiApiKeyEnv],
+        Enabled = false,
+        Notes = "Not in master catalog — add via PR or track as GitHub feature request.",
+    };
 
     /// <summary>Provider string for project config / cost UI.</summary>
     public static string ProviderIdFor(string? modelId, ModelCapability capability) =>

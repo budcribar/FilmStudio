@@ -35,10 +35,14 @@ public sealed class ReviewEventStore
 
     public ReviewLearningEvent Append(ReviewLearningEvent ev)
     {
+        ArgumentNullException.ThrowIfNull(ev);
         if (string.IsNullOrWhiteSpace(ev.Id))
             ev.Id = Guid.NewGuid().ToString("N")[..12];
         if (ev.Ts == default)
             ev.Ts = DateTimeOffset.UtcNow;
+        ev.Note ??= "";
+        ev.Type ??= "";
+        ev.ProjectId ??= "";
 
         try
         {

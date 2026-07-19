@@ -36,7 +36,20 @@ public sealed class ApiWorkerPool
         }
     }
 
-    public int InFlight => _configuredGlobal - _global.CurrentCount;
+    public int InFlight
+    {
+        get
+        {
+            try
+            {
+                return Math.Max(0, _configuredGlobal - _global.CurrentCount);
+            }
+            catch (ObjectDisposedException)
+            {
+                return 0;
+            }
+        }
+    }
 
     /// <summary>
     /// Wait for a global + per-user slot, run <paramref name="work"/>, release.

@@ -664,6 +664,862 @@ public class BugHuntTests
         Assert.DoesNotContain(Path.DirectorySeparatorChar + ".." + Path.DirectorySeparatorChar, full);
     }
 
+    // ═══════════════════════════════════════════════════════════════════════
+    // Pass 4 — bugs 31–40
+    // ═══════════════════════════════════════════════════════════════════════
+
+    [Fact]
+    public void Bug31_AllocateForBeats_null_list_entries_do_not_throw()
+    {
+        var beats = new List<Dictionary<string, object?>?>
+        {
+            new() { ["dialogue"] = "hi there friend" },
+            null,
+            new() { ["visual_event"] = "wide establishing shot of kitchen" },
+        };
+        // Cast through IReadOnlyList of non-nullable maps that may still hold null refs
+        IReadOnlyList<Dictionary<string, object?>> asList =
+            beats.Select(b => b!).ToList();
+        var durs = ClipDurationEstimator.AllocateForBeats(asList, sceneTargetSeconds: 30);
+        Assert.Equal(3, durs.Count);
+        Assert.All(durs, d => Assert.InRange(d, ClipDurationEstimator.MinSeconds, ClipDurationEstimator.MaxSeconds));
+    }
+
+    [Fact]
+    public void Bug32_MediaDurationProbe_parses_duration_invariant()
+    {
+        var sec = MediaDurationProbe.TryParseFfmpegDurationLine(
+            "  Duration: 00:01:05.50, start: 0.000000, bitrate: 1234 kb/s");
+        Assert.NotNull(sec);
+        Assert.InRange(sec!.Value, 65.4, 65.6);
+
+        Assert.Null(MediaDurationProbe.TryParseFfmpegDurationLine(null));
+        Assert.Null(MediaDurationProbe.TryParseFfmpegDurationLine("no duration here"));
+    }
+
+    [Fact]
+    public void Bug33_LockKeys_Scene_rejects_empty_project()
+    {
+        Assert.ThrowsAny<ArgumentException>(() => LockKeys.Scene("  ", 1));
+        Assert.ThrowsAny<ArgumentException>(() => LockKeys.Scene(null!, 1));
+        Assert.Contains("Demo", LockKeys.Scene("Demo", 3), StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void Bug34_LockKeys_Wip_rejects_empty_project()
+    {
+        Assert.ThrowsAny<ArgumentException>(() => LockKeys.Wip(""));
+        Assert.Equal("project:P:wip", LockKeys.Wip("P"));
+    }
+
+    [Fact]
+    public void Bug35_LockKeys_Stage_rejects_empty_project()
+    {
+        Assert.ThrowsAny<ArgumentException>(() => LockKeys.Stage(null!));
+        Assert.StartsWith("project:X:stage", LockKeys.Stage("X"));
+    }
+
+    [Fact]
+    public void Bug36_ProjectRules_null_Note_on_fails_does_not_throw()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "fs_bug36_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(Path.Combine(root, "projects", "Demo"));
+        File.WriteAllText(Path.Combine(root, "projects", "Demo", "project.json"), """{"id":"Demo"}""");
+        try
+        {
+            var opts = Options.Create(new FilmStudioOptions { WorkspaceRoot = root, EnableReadCaches = false });
+            var projects = new ProjectStore(opts);
+            var events = new ReviewEventStore(projects, NullLogger<ReviewEventStore>.Instance);
+            var rules = new ProjectRulesService(projects, events, NullLogger<ProjectRulesService>.Instance);
+
+            for (var i = 0; i < 4; i++)
+            {
+                events.Append(new ReviewLearningEvent
+                {
+                    ProjectId = "Demo",
+                    Type = "clip_fail",
+                    Category = "silent",
+                    Note = null!, // deserializers may leave null
+                });
+            }
+
+            var doc = rules.SuggestFromFails("Demo", minFails: 3);
+            Assert.Contains(doc.Pending, p => p.Category == "silent");
+        }
+        finally
+        {
+            try { Directory.Delete(root, recursive: true); } catch { /* */ }
+        }
+    }
+
+    [Fact]
+    public void Bug37_GetActiveRulesBlock_skips_empty_text()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "fs_bug37_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(Path.Combine(root, "projects", "Demo"));
+        File.WriteAllText(Path.Combine(root, "projects", "Demo", "project.json"), """{"id":"Demo"}""");
+        try
+        {
+            var opts = Options.Create(new FilmStudioOptions { WorkspaceRoot = root, EnableReadCaches = false });
+            var projects = new ProjectStore(opts);
+            var events = new ReviewEventStore(projects, NullLogger<ReviewEventStore>.Instance);
+            var rules = new ProjectRulesService(projects, events, NullLogger<ProjectRulesService>.Instance);
+
+            var doc = new ProjectRulesDocument
+            {
+                Active =
+                {
+                    new ProjectRule { Id = "a", Text = null!, Category = null! },
+                    new ProjectRule { Id = "b", Text = "Keep wardrobe consistent.", Category = "continuity" },
+                },
+            };
+            rules.Save("Demo", doc);
+            var block = rules.GetActiveRulesBlock("Demo");
+            Assert.Contains("Keep wardrobe consistent", block);
+            Assert.DoesNotContain("[other] \n", block);
+            Assert.Contains("continuity", block);
+        }
+        finally
+        {
+            try { Directory.Delete(root, recursive: true); } catch { /* */ }
+        }
+    }
+
+    [Fact]
+    public void Bug38_ApiWorkerPool_InFlight_non_negative()
+    {
+        var opts = Options.Create(new FilmStudioOptions
+        {
+            Capacity = new CapacityOptions { MaxVideoInFlight = 2, MaxVideoInFlightPerUser = 1 },
+        });
+        var pool = new ApiWorkerPool(opts);
+        Assert.True(pool.InFlight >= 0);
+        opts.Value.Capacity!.MaxVideoInFlight = 1;
+        // Resize path + read must not throw / go negative
+        Assert.True(pool.MaxGlobal >= 1);
+        Assert.True(pool.InFlight >= 0);
+    }
+
+    [Fact]
+    public void Bug39_Estimate_actionClass_is_case_insensitive()
+    {
+        var lower = ClipDurationEstimator.Estimate(null, "chase sequence across rooftops", "big_action");
+        var upper = ClipDurationEstimator.Estimate(null, "chase sequence across rooftops", "BIG_ACTION");
+        Assert.Equal(lower, upper);
+        Assert.True(upper >= 5, "big_action floor should apply regardless of case");
+    }
+
+    [Fact]
+    public void Bug40_Estimate_delivery_is_case_insensitive()
+    {
+        var a = ClipDurationEstimator.Estimate("I am thinking quietly about home.", null, delivery: "VO");
+        var b = ClipDurationEstimator.Estimate("I am thinking quietly about home.", null, delivery: "vo");
+        Assert.Equal(a, b);
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // Pass 5 — bugs 41–50
+    // ═══════════════════════════════════════════════════════════════════════
+
+    [Fact]
+    public void Bug41_ReviewEventStore_Append_null_throws()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "fs_bug41_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(Path.Combine(root, "projects"));
+        try
+        {
+            var opts = Options.Create(new FilmStudioOptions { WorkspaceRoot = root, EnableReadCaches = false });
+            var store = new ReviewEventStore(new ProjectStore(opts), NullLogger<ReviewEventStore>.Instance);
+            Assert.Throws<ArgumentNullException>(() => store.Append(null!));
+        }
+        finally
+        {
+            try { Directory.Delete(root, recursive: true); } catch { /* */ }
+        }
+    }
+
+    [Fact]
+    public void Bug42_JobStore_Update_null_mutate_throws()
+    {
+        var store = new JobStore();
+        var j = store.Create(new JobRecord { Status = "queued" });
+        Assert.Throws<ArgumentNullException>(() => store.Update(j.JobId, null!));
+    }
+
+    [Fact]
+    public void Bug43_JobStore_CountRunning_is_consistent_with_list()
+    {
+        var store = new JobStore();
+        store.Create(new JobRecord { Status = "running", UserId = "u" });
+        store.Create(new JobRecord { Status = "RUNNING", UserId = "u" });
+        store.Create(new JobRecord { Status = "queued", UserId = "u" });
+        Assert.Equal(2, store.CountRunning());
+        Assert.Equal(3, store.CountQueuedForUser("u"));
+    }
+
+    [Fact]
+    public void Bug44_JobStore_List_take_zero_returns_empty()
+    {
+        var store = new JobStore();
+        store.Create(new JobRecord { Status = "done" });
+        Assert.Empty(store.List(take: 0));
+        Assert.Empty(store.List(take: -5));
+        Assert.Single(store.List(take: 1));
+    }
+
+    [Fact]
+    public void Bug45_ComputeCutPoint_null_or_nan_is_safe()
+    {
+        Assert.Null(ClipSilenceTrimmer.ComputeCutPoint(null!, 10, 0.3));
+        Assert.Null(ClipSilenceTrimmer.ComputeCutPoint("", 10, 0.3));
+        Assert.Null(ClipSilenceTrimmer.ComputeCutPoint("silence_start: 8.0", double.NaN, 0.3));
+        Assert.Null(ClipSilenceTrimmer.ComputeCutPoint("silence_start: 8.0", 0.5, 0.3));
+    }
+
+    [Fact]
+    public void Bug46_HttpRequestMetrics_classifies_path_without_leading_slash()
+    {
+        Assert.Equal("admin", FilmStudio.Api.Services.HttpRequestMetrics.ClassifyPathForTests("api/admin/metrics"));
+        Assert.Equal("jobs", FilmStudio.Api.Services.HttpRequestMetrics.ClassifyPathForTests("/api/jobs/abc"));
+        Assert.Equal("health", FilmStudio.Api.Services.HttpRequestMetrics.ClassifyPathForTests("health"));
+        Assert.Equal("projects", FilmStudio.Api.Services.HttpRequestMetrics.ClassifyPathForTests("/api/projects/x?x=1"));
+    }
+
+    [Fact]
+    public void Bug47_PromptPack_LoadPackText_blocks_path_traversal()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "fs_bug47_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(Path.Combine(root, "projects"));
+        try
+        {
+            var opts = Options.Create(new FilmStudioOptions { WorkspaceRoot = root, EnableReadCaches = false });
+            var packs = new PromptPackService(new ProjectStore(opts), NullLogger<PromptPackService>.Instance);
+            packs.EnsureDefaults();
+            // Inject a malicious relative path into the manifest on disk
+            var manifestPath = Path.Combine(root, "prompts", "packs", "manifest.json");
+            var evilOutside = Path.Combine(root, "..", "evil.txt");
+            File.WriteAllText(Path.GetFullPath(Path.Combine(root, "evil_payload.txt")), "secret");
+            // Point pack at ../../ outside
+            var json = File.ReadAllText(manifestPath);
+            // Use CreateVersion then rewrite relative path
+            var info = packs.CreateVersion("gen", "evil", "body");
+            var man = JsonSerializer.Deserialize<PromptPackManifest>(File.ReadAllText(manifestPath),
+                new JsonSerializerOptions { PropertyNameCaseInsensitive = true })!;
+            var p = man.Packs.First(x => x.Id == info.Id);
+            p.RelativePath = "../evil_payload.txt";
+            File.WriteAllText(manifestPath, JsonSerializer.Serialize(man, new JsonSerializerOptions
+            {
+                WriteIndented = true,
+                PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+            }));
+            // Reload service reads manifest; traversal must yield null, not file contents
+            var packs2 = new PromptPackService(new ProjectStore(opts), NullLogger<PromptPackService>.Instance);
+            var text = packs2.LoadPackText(info.Id);
+            Assert.Null(text);
+        }
+        finally
+        {
+            try { Directory.Delete(root, recursive: true); } catch { /* */ }
+        }
+    }
+
+    [Fact]
+    public void Bug48_BookContext_ParseBookPages_invariant_numbers()
+    {
+        var pages = BookContextService.ParseBookPages("--- PAGE 12 ---\nHello world\n--- PAGE 13 ---\nMore");
+        Assert.Equal(2, pages.Count);
+        Assert.Equal(12, pages[0].PageNumber);
+        Assert.Equal(13, pages[1].PageNumber);
+        Assert.Contains("Hello", pages[0].Text);
+    }
+
+    [Fact]
+    public void Bug49_IsPrimarilyAnimalCharacter_null_fields_safe()
+    {
+        var animal = CharacterVisualTextScrubber.IsPrimarilyAnimalCharacter(null!, null!, null!, null!);
+        Assert.False(animal);
+        var human = CharacterVisualTextScrubber.IsHumanAdultCharacter("Character_Mom", null!, null!, null!);
+        Assert.True(human);
+    }
+
+    [Fact]
+    public async Task Bug50_RuntimeConfig_NaN_FailRate_does_not_throw()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "fs_bug50_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try
+        {
+            var opts = Options.Create(new FilmStudioOptions
+            {
+                WorkspaceRoot = root,
+                Capacity = new CapacityOptions(),
+                Fakes = new FakesOptions(),
+            });
+            var store = new RuntimeConfigStore(opts, NullLogger<RuntimeConfigStore>.Instance);
+            var dto = await store.UpdateAsync(new RuntimeConfigUpdateRequest
+            {
+                Fakes = new FakesRuntimeDto { FailRate = double.NaN, VideoMode = "MergeRealistic" },
+            }, "admin");
+            Assert.InRange(dto.Fakes.FailRate, 0, 1);
+            Assert.False(double.IsNaN(dto.Fakes.FailRate));
+        }
+        finally
+        {
+            try { Directory.Delete(root, recursive: true); } catch { /* */ }
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // Pass 6 — bugs 51–60
+    // ═══════════════════════════════════════════════════════════════════════
+
+    [Fact]
+    public void Bug51_LockService_Renew_empty_resource_returns_false()
+    {
+        var locks = new InMemoryLockService();
+        Assert.False(locks.Renew("", "u", TimeSpan.FromMinutes(5)));
+        Assert.False(locks.Renew("res", "", TimeSpan.FromMinutes(5)));
+    }
+
+    [Fact]
+    public void Bug52_LockService_Release_empty_resource_returns_false()
+    {
+        var locks = new InMemoryLockService();
+        Assert.False(locks.Release("  ", "u"));
+        Assert.True(locks.TryAcquire("r1", "u", TimeSpan.FromMinutes(5)));
+        Assert.True(locks.Release("r1", "u"));
+    }
+
+    [Fact]
+    public void Bug53_ParseJsonObject_empty_throws_clearly()
+    {
+        Assert.ThrowsAny<InvalidOperationException>(() => GrokChatClient.ParseJsonObject(""));
+        Assert.ThrowsAny<InvalidOperationException>(() => GrokChatClient.ParseJsonObject("   "));
+        Assert.ThrowsAny<InvalidOperationException>(() => GrokChatClient.ParseJsonObject(null!));
+    }
+
+    [Fact]
+    public void Bug54_ParseJsonObject_array_only_throws()
+    {
+        Assert.ThrowsAny<InvalidOperationException>(() => GrokChatClient.ParseJsonObject("[1,2,3]"));
+    }
+
+    [Fact]
+    public void Bug55_ProjectRules_Approve_empty_id_throws()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "fs_bug55_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(Path.Combine(root, "projects", "Demo"));
+        File.WriteAllText(Path.Combine(root, "projects", "Demo", "project.json"), """{"id":"Demo"}""");
+        try
+        {
+            var opts = Options.Create(new FilmStudioOptions { WorkspaceRoot = root, EnableReadCaches = false });
+            var rules = new ProjectRulesService(
+                new ProjectStore(opts),
+                new ReviewEventStore(new ProjectStore(opts), NullLogger<ReviewEventStore>.Instance),
+                NullLogger<ProjectRulesService>.Instance);
+            Assert.ThrowsAny<ArgumentException>(() => rules.Approve("Demo", "  ", null, "a"));
+            Assert.ThrowsAny<ArgumentException>(() => rules.Reject("Demo", null!));
+        }
+        finally
+        {
+            try { Directory.Delete(root, recursive: true); } catch { /* */ }
+        }
+    }
+
+    [Fact]
+    public void Bug56_SafeFileName_strips_slashes()
+    {
+        var name = VoicePreviewService.SafeFileNameForTests("foo/../bar\\baz");
+        Assert.DoesNotContain("/", name);
+        Assert.DoesNotContain("\\", name);
+        Assert.DoesNotContain("..", name);
+    }
+
+    [Fact]
+    public void Bug57_CharacterRefFileName_path_segments()
+    {
+        var name = ProjectStore.CharacterRefFileName(@"..\..\etc\passwd");
+        Assert.DoesNotContain("..", name);
+        Assert.EndsWith("_ref.png", name, StringComparison.OrdinalIgnoreCase);
+        Assert.False(name.Contains('/') || name.Contains('\\'));
+    }
+
+    [Fact]
+    public void Bug58_EstimateForClip_undefined_element_is_floor()
+    {
+        var d = ClipDurationEstimator.EstimateForClip(default);
+        Assert.Equal(ClipDurationEstimator.MinSeconds, d);
+    }
+
+    [Fact]
+    public void Bug59_FountainParser_null_text_safe()
+    {
+        var r = FountainParser.Parse(null!);
+        Assert.NotNull(r);
+        Assert.Empty(r.Elements);
+    }
+
+    [Fact]
+    public void Bug60_BuildSampleDialogue_empty_name_uses_fallback()
+    {
+        var s = VoicePreviewService.BuildSampleDialogue("  ");
+        Assert.Contains("this character", s, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("  ", s);
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // Pass 7 — bugs 61–70
+    // ═══════════════════════════════════════════════════════════════════════
+
+    [Fact]
+    public void Bug61_FindCharacterRefPaths_empty_projectDir_safe()
+    {
+        using var doc = JsonDocument.Parse("""{"visual_prompt":"Character_Dog runs"}""");
+        var paths = ClipVideoPromptBuilder.FindCharacterRefPaths(doc.RootElement, "", maxRefs: 3);
+        Assert.Empty(paths);
+        paths = ClipVideoPromptBuilder.FindCharacterRefPaths(doc.RootElement, null!, maxRefs: 3);
+        Assert.Empty(paths);
+    }
+
+    [Fact]
+    public void Bug62_Stage1Normalizer_null_dict_safe()
+    {
+        var n = Stage1Normalizer.Normalize(null!);
+        Assert.Equal("stage1.v1", n["schema_version"]?.ToString());
+        Assert.True(n.ContainsKey("movie_title"));
+    }
+
+    [Fact]
+    public void Bug63_Screenplay_BuildModel_null_text_safe()
+    {
+        var model = ScreenplayService.BuildModelFromFountainText(null!);
+        Assert.NotNull(model);
+        Assert.Equal("stage1.v1", model["schema_version"]?.ToString());
+    }
+
+    [Fact]
+    public void Bug64_BookTextAnalyzer_null_text_safe()
+    {
+        var a = BookTextAnalyzer.Analyze(null!);
+        Assert.NotNull(a);
+        Assert.True(a.Pages >= 0);
+    }
+
+    [Fact]
+    public void Bug65_StitchFountainParts_null_safe()
+    {
+        Assert.Equal("", BookToFountainConverter.StitchFountainParts(null));
+        Assert.Equal("", BookToFountainConverter.StitchFountainParts(Array.Empty<string>()));
+    }
+
+    [Fact]
+    public void Bug66_StripBookPageTags_null_safe()
+    {
+        Assert.Equal("", BookToFountainConverter.StripBookPageTags(null));
+    }
+
+    [Fact]
+    public void Bug67_SupportedModel_Find_unknown_returns_null()
+    {
+        Assert.Null(SupportedModelCatalog.Find("not-a-real-model"));
+        Assert.Null(SupportedModelCatalog.Find(""));
+        Assert.Null(SupportedModelCatalog.Find(null));
+    }
+
+    [Fact]
+    public void Bug68_SupportedModel_ResolveOrDefault_unknown_keeps_id()
+    {
+        var e = SupportedModelCatalog.ResolveOrDefault("custom-future-model", ModelCapability.Chat);
+        Assert.Equal("custom-future-model", e.Id);
+        Assert.False(e.Enabled);
+    }
+
+    [Fact]
+    public void Bug69_JobStore_Create_null_throws()
+    {
+        var store = new JobStore();
+        Assert.Throws<ArgumentNullException>(() => store.Create(null!));
+    }
+
+    [Fact]
+    public void Bug70_JobStore_Get_empty_id_returns_null()
+    {
+        var store = new JobStore();
+        Assert.Null(store.Get(""));
+        Assert.Null(store.Get("   "));
+        Assert.Null(store.Get(null!));
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // Pass 8 — bugs 71–80
+    // ═══════════════════════════════════════════════════════════════════════
+
+    [Fact]
+    public void Bug71_HttpMetrics_Record_and_snapshot()
+    {
+        var m = new FilmStudio.Api.Services.HttpRequestMetrics();
+        m.Record("/api/jobs/1");
+        m.Record("api/admin/x");
+        m.Record("/health");
+        var snap = m.Snapshot();
+        Assert.True(snap.TotalLifetime >= 3);
+        Assert.True(snap.RequestsLast30Sec >= 3);
+    }
+
+    [Fact]
+    public void Bug72_LoginRateLimiter_caps_and_blocks()
+    {
+        var lim = new FilmStudio.Api.Auth.LoginRateLimiter(maxAttempts: 3, windowSeconds: 60);
+        Assert.False(lim.IsBlocked("user@x", out _));
+        lim.RecordFailure("user@x");
+        lim.RecordFailure("user@x");
+        lim.RecordFailure("user@x");
+        // Cap: further failures must not throw
+        lim.RecordFailure("user@x");
+        lim.RecordFailure("user@x");
+        Assert.True(lim.IsBlocked("user@x", out var retry));
+        Assert.True(retry > 0);
+        lim.RecordSuccess("user@x");
+        Assert.False(lim.IsBlocked("user@x", out _));
+    }
+
+    [Fact]
+    public void Bug73_LoginRateLimiter_null_key_normalizes()
+    {
+        var lim = new FilmStudio.Api.Auth.LoginRateLimiter(maxAttempts: 3, windowSeconds: 60);
+        lim.RecordFailure(null!);
+        lim.RecordFailure("");
+        // Should not throw
+        Assert.False(lim.IsBlocked("other", out _));
+    }
+
+    [Fact]
+    public void Bug74_PromptPack_CreateVersion_null_body_ok()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "fs_bug74_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(Path.Combine(root, "projects"));
+        try
+        {
+            var opts = Options.Create(new FilmStudioOptions { WorkspaceRoot = root, EnableReadCaches = false });
+            var packs = new PromptPackService(new ProjectStore(opts), NullLogger<PromptPackService>.Instance);
+            var info = packs.CreateVersion("gen", "emptybody", null!);
+            Assert.Equal("gen-emptybody", info.Id);
+            var text = packs.LoadPackText(info.Id);
+            Assert.NotNull(text);
+            Assert.Equal("", text);
+        }
+        finally
+        {
+            try { Directory.Delete(root, recursive: true); } catch { /* */ }
+        }
+    }
+
+    [Fact]
+    public void Bug75_PromptPack_Activate_unknown_throws()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "fs_bug75_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(Path.Combine(root, "projects"));
+        try
+        {
+            var opts = Options.Create(new FilmStudioOptions { WorkspaceRoot = root, EnableReadCaches = false });
+            var packs = new PromptPackService(new ProjectStore(opts), NullLogger<PromptPackService>.Instance);
+            Assert.ThrowsAny<InvalidOperationException>(() => packs.Activate("no-such-pack"));
+        }
+        finally
+        {
+            try { Directory.Delete(root, recursive: true); } catch { /* */ }
+        }
+    }
+
+    [Fact]
+    public void Bug76_LockConflictException_message_includes_owner()
+    {
+        var ex = new LockConflictException("project:P:scene:01", "alice", DateTimeOffset.UtcNow.AddMinutes(5));
+        Assert.Contains("alice", ex.Message);
+        Assert.Equal("project:P:scene:01", ex.Resource);
+    }
+
+    [Fact]
+    public void Bug77_CapacityRejectedException_keeps_message()
+    {
+        var ex = new CapacityRejectedException("queue full for user");
+        Assert.Equal("queue full for user", ex.Message);
+    }
+
+    [Fact]
+    public void Bug78_IsStandaloneTransition_fade_in()
+    {
+        Assert.True(FountainParser.IsStandaloneTransitionLine("FADE IN:"));
+        Assert.True(FountainParser.IsStandaloneTransitionLine("**FADE IN:**"));
+        Assert.False(FountainParser.IsStandaloneTransitionLine("He fades into the room."));
+    }
+
+    [Fact]
+    public void Bug79_ScrubVisualProse_null_safe()
+    {
+        Assert.Equal("", CharacterVisualTextScrubber.ScrubVisualProse(null));
+        Assert.Equal("", CharacterVisualTextScrubber.SoftenCrossSpeciesStyleLanguage(null));
+        Assert.Empty(CharacterVisualTextScrubber.ScrubWardrobeList(null));
+    }
+
+    [Fact]
+    public async Task Bug80_ApiWorkerPool_empty_user_maps_to_local()
+    {
+        var opts = Options.Create(new FilmStudioOptions
+        {
+            Capacity = new CapacityOptions { MaxVideoInFlight = 2, MaxVideoInFlightPerUser = 2 },
+        });
+        var pool = new ApiWorkerPool(opts);
+        var ran = false;
+        await pool.RunAsync("  ", _ => { ran = true; return Task.CompletedTask; }, CancellationToken.None);
+        Assert.True(ran);
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // Pass 9 — bugs 81–90
+    // ═══════════════════════════════════════════════════════════════════════
+
+    [Fact]
+    public async Task Bug81_LearningPropose_null_request_throws()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "fs_bug81_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(Path.Combine(root, "projects"));
+        try
+        {
+            var opts = Options.Create(new FilmStudioOptions { WorkspaceRoot = root, EnableReadCaches = false });
+            var svc = new LearningProposalService(
+                new ReviewEventStore(new ProjectStore(opts), NullLogger<ReviewEventStore>.Instance),
+                new OfflineChatClient(),
+                NullLogger<LearningProposalService>.Instance);
+            await Assert.ThrowsAsync<ArgumentNullException>(() => svc.ProposeAsync(null!));
+        }
+        finally
+        {
+            try { Directory.Delete(root, recursive: true); } catch { /* */ }
+        }
+    }
+
+    [Fact]
+    public void Bug82_ReviewEventStore_Query_take_clamped()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "fs_bug82_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(Path.Combine(root, "projects"));
+        try
+        {
+            var opts = Options.Create(new FilmStudioOptions { WorkspaceRoot = root, EnableReadCaches = false });
+            var events = new ReviewEventStore(new ProjectStore(opts), NullLogger<ReviewEventStore>.Instance);
+            for (var i = 0; i < 5; i++)
+                events.Append(new ReviewLearningEvent { ProjectId = "P", Type = "clip_pass" });
+            // take=0 must not throw; clamp to at least 1
+            var q = events.Query(take: 0);
+            Assert.NotNull(q);
+            Assert.True(q.Count <= 5);
+        }
+        finally
+        {
+            try { Directory.Delete(root, recursive: true); } catch { /* */ }
+        }
+    }
+
+    [Fact]
+    public void Bug83_BuildInsights_null_type_events()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "fs_bug83_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(Path.Combine(root, "projects"));
+        try
+        {
+            var opts = Options.Create(new FilmStudioOptions { WorkspaceRoot = root, EnableReadCaches = false });
+            var events = new ReviewEventStore(new ProjectStore(opts), NullLogger<ReviewEventStore>.Instance);
+            events.Append(new ReviewLearningEvent { ProjectId = "P", Type = null! });
+            var insights = events.BuildInsights("P");
+            Assert.True(insights.EventCount >= 1);
+        }
+        finally
+        {
+            try { Directory.Delete(root, recursive: true); } catch { /* */ }
+        }
+    }
+
+    [Fact]
+    public void Bug84_GetPrimary_empty_user_lists_all()
+    {
+        var store = new JobStore();
+        store.Create(new JobRecord { Status = "queued", UserId = "a" });
+        var p = store.GetPrimary(null);
+        Assert.NotNull(p);
+        Assert.Equal("queued", p!.Status);
+    }
+
+    [Fact]
+    public void Bug85_TryCancel_missing_job_false()
+    {
+        var store = new JobStore();
+        Assert.False(store.TryCancel("nope"));
+        Assert.False(store.TryCancel(""));
+    }
+
+    [Fact]
+    public void Bug86_GetCacheInfo_missing_file()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "fs_bug86_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(Path.Combine(root, "projects", "Demo"));
+        File.WriteAllText(Path.Combine(root, "projects", "Demo", "project.json"), """{"id":"Demo"}""");
+        try
+        {
+            var opts = Options.Create(new FilmStudioOptions { WorkspaceRoot = root, EnableReadCaches = false });
+            // VoicePreviewService needs video+ffmpeg — only test static fingerprint / SafeFileName path
+            var fp = VoicePreviewService.ComputeFingerprintForCache(
+                "Character_X", "adult male", null, "X", null);
+            Assert.False(string.IsNullOrWhiteSpace(fp));
+            Assert.Equal(16, fp.Length);
+        }
+        finally
+        {
+            try { Directory.Delete(root, recursive: true); } catch { /* */ }
+        }
+    }
+
+    [Fact]
+    public void Bug87_Catalog_ForCapability_enabled_only()
+    {
+        var video = SupportedModelCatalog.ForCapability(ModelCapability.Video);
+        Assert.NotEmpty(video);
+        Assert.All(video, e => Assert.True(e.Enabled));
+        Assert.All(video, e => Assert.Equal(ModelCapability.Video, e.Capability));
+    }
+
+    [Fact]
+    public void Bug88_ProviderIdFor_video()
+    {
+        Assert.Equal("grok", SupportedModelCatalog.ProviderIdFor("grok-imagine-video", ModelCapability.Video));
+    }
+
+    [Fact]
+    public async Task Bug89_LocalWorkerPool_InFlight_after_resize_path()
+    {
+        var opts = Options.Create(new FilmStudioOptions
+        {
+            Capacity = new CapacityOptions { MaxFfmpegInFlight = 3 },
+        });
+        var pool = new LocalWorkerPool(opts);
+        opts.Value.Capacity!.MaxFfmpegInFlight = 1;
+        await pool.RunAsync(_ => Task.CompletedTask, CancellationToken.None);
+        Assert.True(pool.InFlight >= 0);
+    }
+
+    [Fact]
+    public void Bug90_ServerMetrics_unmatched_ffmpeg_release()
+    {
+        var m = new ServerMetricsService();
+        m.NoteFfmpegSlotReleased();
+        m.NoteFfmpegSlotReleased();
+        m.NoteFfmpegSlotAcquired();
+        var snap = m.GetSnapshot(
+            new JobStore(),
+            new InMemoryLockService(),
+            new CapacityOptionsSnapshot { MaxVideoInFlight = 4 },
+            new ProcessMetricsSnapshot());
+        Assert.Equal(1, snap.FfmpegInFlight);
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // Pass 10 — bugs 91–100
+    // ═══════════════════════════════════════════════════════════════════════
+
+    [Fact]
+    public void Bug91_Estimate_null_dialogue_and_visual_is_floor()
+    {
+        var d = ClipDurationEstimator.Estimate(null, null);
+        Assert.Equal(ClipDurationEstimator.MinSeconds, d);
+    }
+
+    [Fact]
+    public void Bug92_AllocateForBeats_empty_list()
+    {
+        Assert.Empty(ClipDurationEstimator.AllocateForBeats(new List<Dictionary<string, object?>>()));
+    }
+
+    [Fact]
+    public void Bug93_MediaDuration_probe_missing_file()
+    {
+        var opts = Options.Create(new FilmStudioOptions { WorkspaceRoot = Path.GetTempPath() });
+        var probe = new MediaDurationProbe(opts, NullLogger<MediaDurationProbe>.Instance);
+        Assert.Null(probe.GetDurationSeconds(null));
+        Assert.Null(probe.GetDurationSeconds(""));
+        Assert.Null(probe.GetDurationSeconds(Path.Combine(Path.GetTempPath(), "nope_" + Guid.NewGuid() + ".mp4")));
+    }
+
+    [Fact]
+    public void Bug94_SceneActualDuration_empty_paths()
+    {
+        var opts = Options.Create(new FilmStudioOptions { WorkspaceRoot = Path.GetTempPath() });
+        var probe = new MediaDurationProbe(opts, NullLogger<MediaDurationProbe>.Instance);
+        Assert.Null(probe.GetSceneActualDurationSeconds(null, Array.Empty<string>()));
+        Assert.Null(probe.GetSceneActualDurationSeconds("", new[] { Path.Combine(Path.GetTempPath(), "missing.mp4") }));
+    }
+
+    [Fact]
+    public async Task Bug95_ProjectReadCache_disabled_skips_cache()
+    {
+        var cache = new ProjectReadCache { Enabled = false };
+        var calls = 0;
+        Task<string?> Find(CancellationToken _)
+        {
+            calls++;
+            return Task.FromResult<string?>("bp.json");
+        }
+        var a = await cache.GetOrFindBlueprintPathAsync("P", Find);
+        var b = await cache.GetOrFindBlueprintPathAsync("P", Find);
+        Assert.Equal("bp.json", a);
+        Assert.Equal("bp.json", b);
+        Assert.Equal(2, calls);
+    }
+
+    [Fact]
+    public void Bug96_SceneListCache_invalidate_empty_noop()
+    {
+        var cache = new SceneListCache();
+        cache.Invalidate(null);
+        cache.Invalidate("  ");
+        cache.InvalidateAll(); // must not throw
+    }
+
+    [Fact]
+    public void Bug97_ReleaseAllForJob_empty_noop()
+    {
+        var locks = new InMemoryLockService();
+        locks.TryAcquire("r", "u", TimeSpan.FromMinutes(5), jobId: "j1");
+        locks.ReleaseAllForJob("");
+        Assert.NotNull(locks.Get("r"));
+        locks.ReleaseAllForJob("j1");
+        Assert.Null(locks.Get("r"));
+    }
+
+    [Fact]
+    public void Bug98_LooksLikeNicknameVisualJunk_null_false()
+    {
+        Assert.False(CharacterVisualTextScrubber.LooksLikeNicknameVisualJunk(null));
+        Assert.False(CharacterVisualTextScrubber.LooksLikeNicknameVisualJunk(""));
+    }
+
+    [Fact]
+    public void Bug99_NormalizeTypographic_null_safe()
+    {
+        Assert.Equal("", FountainParser.NormalizeTypographicPunctuation(null!));
+        var n = FountainParser.NormalizeTypographicPunctuation("MARLEY\u2019S");
+        Assert.Contains("MARLEY'S", n);
+    }
+
+    [Fact]
+    public void Bug100_ExtractMessageText_content_array()
+    {
+        using var doc = JsonDocument.Parse(
+            """{"choices":[{"message":{"content":[{"text":"hello"},{"text":"world"}]}}]}""");
+        var text = GrokChatClient.ExtractMessageTextForTests(doc.RootElement);
+        Assert.Contains("hello", text);
+        Assert.Contains("world", text);
+    }
+
     private sealed class OfflineChatClient : IGrokChatClient
     {
         public bool IsConfigured => false;

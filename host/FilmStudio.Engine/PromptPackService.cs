@@ -80,11 +80,20 @@ public sealed class PromptPackService
 
     public string? LoadPackText(string packId)
     {
+        if (string.IsNullOrWhiteSpace(packId)) return null;
         var m = EnsureDefaults();
         var pack = m.Packs.FirstOrDefault(p =>
             string.Equals(p.Id, packId, StringComparison.OrdinalIgnoreCase));
         if (pack is null) return null;
-        var path = Path.Combine(_projects.WorkspaceRoot, pack.RelativePath.Replace('/', Path.DirectorySeparatorChar));
+        var rel = (pack.RelativePath ?? "").Replace('/', Path.DirectorySeparatorChar).TrimStart(Path.DirectorySeparatorChar);
+        if (rel.Length == 0 || rel.Contains("..", StringComparison.Ordinal))
+            return null;
+        var root = Path.GetFullPath(_projects.WorkspaceRoot);
+        var path = Path.GetFullPath(Path.Combine(root, rel));
+        // Never read outside the workspace (path traversal via RelativePath)
+        if (!path.StartsWith(root.TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase) &&
+            !string.Equals(path, root, StringComparison.OrdinalIgnoreCase))
+            return null;
         if (!File.Exists(path)) return null;
         return File.ReadAllText(path);
     }

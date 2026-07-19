@@ -65,8 +65,11 @@ public sealed class ProjectRulesService
     {
         var doc = Load(projectId);
         if (doc.Active.Count == 0) return "";
-        var lines = doc.Active.Select(r => $"- [{r.Category}] {r.Text}");
-        return "PROJECT HOUSE RULES (approved):\n" + string.Join("\n", lines);
+        var lines = doc.Active
+            .Where(r => !string.IsNullOrWhiteSpace(r.Text))
+            .Select(r => $"- [{(string.IsNullOrWhiteSpace(r.Category) ? "other" : r.Category!.Trim())}] {r.Text!.Trim()}");
+        var body = string.Join("\n", lines);
+        return body.Length == 0 ? "" : "PROJECT HOUSE RULES (approved):\n" + body;
     }
 
     /// <summary>
@@ -88,18 +91,26 @@ public sealed class ProjectRulesService
 
         var byCat = fails
             .GroupBy(e => string.IsNullOrWhiteSpace(e.Category) ? "other" : e.Category!.Trim().ToLowerInvariant())
-            .Select(g => new { Category = g.Key, Count = g.Count(), Notes = g.Select(x => x.Note).Where(n => n.Length > 0).Take(5).ToList() })
+            .Select(g => new
+            {
+                Category = g.Key,
+                Count = g.Count(),
+                Notes = g.Select(x => x.Note)
+                    .Where(n => !string.IsNullOrEmpty(n))
+                    .Take(5)
+                    .ToList(),
+            })
             .Where(x => x.Count >= minFails)
             .ToList();
 
         var activeTexts = new HashSet<string>(
-            doc.Active.Select(a => a.Text.Trim()),
+            doc.Active.Select(a => (a.Text ?? "").Trim()).Where(t => t.Length > 0),
             StringComparer.OrdinalIgnoreCase);
         var pendingTexts = new HashSet<string>(
-            doc.Pending.Select(p => p.Text.Trim()),
+            doc.Pending.Select(p => (p.Text ?? "").Trim()).Where(t => t.Length > 0),
             StringComparer.OrdinalIgnoreCase);
         var activeCategories = new HashSet<string>(
-            doc.Active.Select(a => a.Category.Trim().ToLowerInvariant()),
+            doc.Active.Select(a => (a.Category ?? "other").Trim().ToLowerInvariant()),
             StringComparer.OrdinalIgnoreCase);
 
         foreach (var g in byCat)
@@ -134,18 +145,24 @@ public sealed class ProjectRulesService
         string? textOverride,
         string? approvedBy)
     {
+        if (string.IsNullOrWhiteSpace(suggestionId))
+            throw new ArgumentException("suggestionId required", nameof(suggestionId));
         var doc = Load(projectId);
         var sug = doc.Pending.FirstOrDefault(p =>
             string.Equals(p.Id, suggestionId, StringComparison.OrdinalIgnoreCase))
             ?? throw new InvalidOperationException($"Unknown suggestion: {suggestionId}");
 
-        var text = !string.IsNullOrWhiteSpace(textOverride) ? textOverride.Trim() : sug.Text.Trim();
+        var text = !string.IsNullOrWhiteSpace(textOverride)
+            ? textOverride.Trim()
+            : (sug.Text ?? "").Trim();
+        if (text.Length == 0)
+            throw new InvalidOperationException("Rule text cannot be empty.");
         doc.Pending.RemoveAll(p => string.Equals(p.Id, suggestionId, StringComparison.OrdinalIgnoreCase));
         doc.Active.Add(new ProjectRule
         {
             Id = Guid.NewGuid().ToString("N")[..10],
             Text = text,
-            Category = sug.Category,
+            Category = string.IsNullOrWhiteSpace(sug.Category) ? "other" : sug.Category.Trim(),
             ApprovedAt = DateTimeOffset.UtcNow,
             ApprovedBy = approvedBy,
             SourceFailCount = sug.FailCount,
@@ -156,6 +173,8 @@ public sealed class ProjectRulesService
 
     public ProjectRulesDocument Reject(string projectId, string suggestionId)
     {
+        if (string.IsNullOrWhiteSpace(suggestionId))
+            throw new ArgumentException("suggestionId required", nameof(suggestionId));
         var doc = Load(projectId);
         doc.Pending.RemoveAll(p => string.Equals(p.Id, suggestionId, StringComparison.OrdinalIgnoreCase));
         Save(projectId, doc);
@@ -164,7 +183,7 @@ public sealed class ProjectRulesService
 
     private static string BuildRuleText(string category, List<string> notes)
     {
-        var sample = notes.FirstOrDefault(n => n.Length > 8);
+        var sample = notes.FirstOrDefault(n => n is { Length: > 8 });
         return category switch
         {
             "wrong_voice" => "Keep each character's voice consistent with their voice_profile (gender, pitch, age).",

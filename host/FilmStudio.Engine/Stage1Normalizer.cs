@@ -18,6 +18,8 @@ public static class Stage1Normalizer
 
     public static Dictionary<string, object?> Normalize(Dictionary<string, object?> data)
     {
+        if (data is null)
+            data = new Dictionary<string, object?>();
         data = CleanNulls(data) as Dictionary<string, object?> ?? new();
         data["schema_version"] = "stage1.v1";
         data.TryGetValue("source_book_title", out var sbt);

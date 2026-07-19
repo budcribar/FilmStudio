@@ -14,22 +14,36 @@ public sealed class LockRecord
 /// <summary>Standard lock resource key helpers.</summary>
 public static class LockKeys
 {
-    public static string Scene(string projectId, int scene) =>
-        $"project:{projectId}:scene:{scene:D2}";
+    public static string Scene(string projectId, int scene)
+    {
+        RequireProjectId(projectId);
+        return $"project:{projectId.Trim()}:scene:{scene:D2}";
+    }
 
-    public static string Wip(string projectId) =>
-        $"project:{projectId}:wip";
+    public static string Wip(string projectId)
+    {
+        RequireProjectId(projectId);
+        return $"project:{projectId.Trim()}:wip";
+    }
 
-    public static string Stage(string projectId) =>
-        $"project:{projectId}:stage";
+    public static string Stage(string projectId)
+    {
+        RequireProjectId(projectId);
+        return $"project:{projectId.Trim()}:stage";
+    }
 
     public static string Character(string projectId, string charKey)
     {
-        if (string.IsNullOrWhiteSpace(projectId))
-            throw new ArgumentException("projectId required", nameof(projectId));
+        RequireProjectId(projectId);
         if (string.IsNullOrWhiteSpace(charKey))
             throw new ArgumentException("charKey required", nameof(charKey));
         return $"project:{projectId.Trim()}:char:{charKey.Trim()}";
+    }
+
+    private static void RequireProjectId(string projectId)
+    {
+        if (string.IsNullOrWhiteSpace(projectId))
+            throw new ArgumentException("projectId required", nameof(projectId));
     }
 }
 

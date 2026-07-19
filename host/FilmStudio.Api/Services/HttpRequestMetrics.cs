@@ -159,13 +159,18 @@ public sealed class HttpRequestMetrics
         if (q >= 0)
             path = path[..q];
 
+        // Some hosts / reverse proxies report path without a leading slash.
+        if (path.Length > 0 && path[0] != '/')
+            path = "/" + path;
+
         if (path.StartsWith("/api/admin", StringComparison.OrdinalIgnoreCase))
             return PrefixKind.Admin;
         if (path.StartsWith("/api/jobs", StringComparison.OrdinalIgnoreCase))
             return PrefixKind.Jobs;
         if (path.StartsWith("/api/projects", StringComparison.OrdinalIgnoreCase))
             return PrefixKind.Projects;
-        if (path.StartsWith("/api/", StringComparison.OrdinalIgnoreCase))
+        if (path.StartsWith("/api/", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(path, "/api", StringComparison.OrdinalIgnoreCase))
             return PrefixKind.Api;
         if (path.StartsWith("/health", StringComparison.OrdinalIgnoreCase))
             return PrefixKind.Health;
@@ -173,6 +178,18 @@ public sealed class HttpRequestMetrics
             return PrefixKind.Hubs;
         return PrefixKind.Other;
     }
+
+    /// <summary>Test hook: classify a request path the same way as <see cref="Record"/>.</summary>
+    public static string ClassifyPathForTests(string path) => Classify(path) switch
+    {
+        PrefixKind.Admin => "admin",
+        PrefixKind.Jobs => "jobs",
+        PrefixKind.Projects => "projects",
+        PrefixKind.Api => "api",
+        PrefixKind.Health => "health",
+        PrefixKind.Hubs => "hubs",
+        _ => "other",
+    };
 
     private enum PrefixKind : byte
     {

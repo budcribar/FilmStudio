@@ -97,7 +97,7 @@ public static class BookToFountainConverter
     /// Remove operator-facing book page tags from Fountain
     /// (<c>= page N</c>, <c>[[page N]]</c>). Book linkage uses text/order match in the UI.
     /// </summary>
-    public static string StripBookPageTags(string fountain)
+    public static string StripBookPageTags(string? fountain)
     {
         if (string.IsNullOrEmpty(fountain)) return fountain ?? "";
 
@@ -220,8 +220,11 @@ public static class BookToFountainConverter
     }
 
     /// <summary>Stitch partial Fountain scripts (title page from first only). Public for tests.</summary>
-    public static string StitchFountainParts(IReadOnlyList<string> parts)
+    public static string StitchFountainParts(IReadOnlyList<string>? parts)
     {
+        if (parts is null || parts.Count == 0)
+            return "";
+
         if (parts.Count == 0) return "";
         if (parts.Count == 1) return ScreenplayService.NormalizeText(parts[0]);
 

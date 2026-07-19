@@ -223,6 +223,8 @@ public static class ClipVideoPromptBuilder
     {
         if (maxRefs <= 0)
             return new List<string>();
+        if (string.IsNullOrWhiteSpace(projectDir))
+            return new List<string>();
         maxRefs = Math.Min(maxRefs, 32);
 
         var keys = ClipCharacterKeys(clipEl);

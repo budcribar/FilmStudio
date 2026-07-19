@@ -71,6 +71,7 @@ public static class ScreenplayService
     /// </summary>
     public static Dictionary<string, object?> BuildModelFromFountainText(string fountainText)
     {
+        fountainText ??= "";
         var parsed = FountainParser.Parse(fountainText);
         var doc = FountainStage1Importer.BuildStage1(parsed);
         return Stage1Normalizer.Normalize(doc);

@@ -44,6 +44,9 @@ public sealed class JobStore : IJobStore
 
     public IReadOnlyList<JobRecord> List(string? userId = null, string? projectId = null, int take = 50)
     {
+        // take <= 0 means "none" (do not silently coerce 0 → 1)
+        if (take <= 0)
+            return Array.Empty<JobRecord>();
         take = Math.Clamp(take, 1, 200);
         lock (_gate)
         {
@@ -93,6 +96,8 @@ public sealed class JobStore : IJobStore
 
     public void Update(string jobId, Action<JobRecord> mutate)
     {
+        ArgumentNullException.ThrowIfNull(mutate);
+        if (string.IsNullOrWhiteSpace(jobId)) return;
         lock (_gate)
         {
             if (!_jobs.TryGetValue(jobId, out var j))
@@ -118,14 +123,25 @@ public sealed class JobStore : IJobStore
         }
     }
 
-    public int CountRunning() =>
-        _jobs.Values.Count(j => string.Equals(j.Status, "running", StringComparison.OrdinalIgnoreCase));
+    public int CountRunning()
+    {
+        lock (_gate)
+        {
+            return _jobs.Values.Count(j =>
+                string.Equals(j.Status, "running", StringComparison.OrdinalIgnoreCase));
+        }
+    }
 
-    public int CountQueuedForUser(string userId) =>
-        _jobs.Values.Count(j =>
-            string.Equals(j.UserId, userId, StringComparison.OrdinalIgnoreCase) &&
-            (string.Equals(j.Status, "queued", StringComparison.OrdinalIgnoreCase) ||
-             string.Equals(j.Status, "running", StringComparison.OrdinalIgnoreCase)));
+    public int CountQueuedForUser(string userId)
+    {
+        lock (_gate)
+        {
+            return _jobs.Values.Count(j =>
+                string.Equals(j.UserId, userId, StringComparison.OrdinalIgnoreCase) &&
+                (string.Equals(j.Status, "queued", StringComparison.OrdinalIgnoreCase) ||
+                 string.Equals(j.Status, "running", StringComparison.OrdinalIgnoreCase)));
+        }
+    }
 
     private static JobRecord Clone(JobRecord s) => new()
     {

@@ -69,6 +69,8 @@ public sealed class InMemoryLockService : ILockService
 
     public bool Renew(string resource, string userId, TimeSpan ttl)
     {
+        if (string.IsNullOrWhiteSpace(resource) || string.IsNullOrWhiteSpace(userId))
+            return false;
         if (ttl <= TimeSpan.Zero)
             ttl = TimeSpan.FromMinutes(30);
         lock (_gate)
@@ -89,6 +91,8 @@ public sealed class InMemoryLockService : ILockService
 
     public bool Release(string resource, string userId, bool force = false)
     {
+        if (string.IsNullOrWhiteSpace(resource))
+            return false;
         lock (_gate)
         {
             if (!_locks.TryGetValue(resource, out var existing))

@@ -378,6 +378,8 @@ public sealed class VoicePreviewService
     private static string SafeFileName(string charKey)
     {
         var s = (charKey ?? "char").Trim();
+        // Strip directory separators even when not in GetInvalidFileNameChars (Unix '/')
+        s = s.Replace('/', '_').Replace('\\', '_');
         foreach (var c in Path.GetInvalidFileNameChars())
             s = s.Replace(c, '_');
         // Neutralize path segments that are not always in GetInvalidFileNameChars

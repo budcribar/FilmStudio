@@ -172,17 +172,34 @@ public sealed class MediaDurationProbe
                 return null;
             }
 
-            var m = DurationRe.Match(err);
-            if (!m.Success) return null;
-            var h = int.Parse(m.Groups[1].Value);
-            var min = int.Parse(m.Groups[2].Value);
-            var sec = double.Parse(m.Groups[3].Value, System.Globalization.CultureInfo.InvariantCulture);
-            var total = h * 3600 + min * 60 + sec;
-            return total > 0.05 ? total : null;
+            return TryParseFfmpegDurationLine(err);
         }
         catch (Exception ex)
         {
             _log.LogDebug(ex, "ffmpeg duration probe failed");
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Parse ffmpeg banner "Duration: HH:MM:SS.xx" using invariant culture (testable).
+    /// </summary>
+    public static double? TryParseFfmpegDurationLine(string? ffmpegStderrOrLine)
+    {
+        if (string.IsNullOrWhiteSpace(ffmpegStderrOrLine)) return null;
+        var m = DurationRe.Match(ffmpegStderrOrLine);
+        if (!m.Success) return null;
+        try
+        {
+            var inv = System.Globalization.CultureInfo.InvariantCulture;
+            var h = int.Parse(m.Groups[1].Value, inv);
+            var min = int.Parse(m.Groups[2].Value, inv);
+            var sec = double.Parse(m.Groups[3].Value, inv);
+            var total = h * 3600 + min * 60 + sec;
+            return total > 0.05 ? total : null;
+        }
+        catch
+        {
             return null;
         }
     }

@@ -112,7 +112,9 @@ public sealed class RuntimeConfigStore : IRuntimeConfigStore
                     ? "MergeRealistic"
                     : f.VideoMode.Trim();
                 o.Fakes.VideoDelayMs = Math.Clamp(f.VideoDelayMs, 0, 600_000);
-                o.Fakes.FailRate = Math.Clamp(f.FailRate, 0, 1);
+                // NaN/Infinity must not poison options (Math.Clamp throws on NaN)
+                var failRate = double.IsFinite(f.FailRate) ? f.FailRate : 0;
+                o.Fakes.FailRate = Math.Clamp(failRate, 0, 1);
                 o.Fakes.RateLimitEveryN = Math.Max(0, f.RateLimitEveryN);
             }
 
@@ -154,9 +156,10 @@ public sealed class RuntimeConfigStore : IRuntimeConfigStore
             {
                 if (!string.IsNullOrWhiteSpace(f.VideoMode))
                     o.Fakes.VideoMode = f.VideoMode;
-                o.Fakes.VideoDelayMs = f.VideoDelayMs;
-                o.Fakes.FailRate = f.FailRate;
-                o.Fakes.RateLimitEveryN = f.RateLimitEveryN;
+                o.Fakes.VideoDelayMs = Math.Clamp(f.VideoDelayMs, 0, 600_000);
+                var failRate = double.IsFinite(f.FailRate) ? f.FailRate : 0;
+                o.Fakes.FailRate = Math.Clamp(failRate, 0, 1);
+                o.Fakes.RateLimitEveryN = Math.Max(0, f.RateLimitEveryN);
             }
             if (dto.UseFakes is bool uf)
                 o.UseFakes = uf;

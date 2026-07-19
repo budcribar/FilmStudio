@@ -26,6 +26,7 @@ public sealed class LearningProposalService
         ProposeLearningRulesRequest req,
         CancellationToken ct = default)
     {
+        ArgumentNullException.ThrowIfNull(req);
         var n = Math.Clamp(req.LastNFails <= 0 ? 50 : req.LastNFails, 5, 200);
         // Scan full log then filter fails — Query(take:N) of mixed events can bury fails under passes
         var fails = _learning.ReadAll()

@@ -107,6 +107,11 @@ public static class ClipSilenceTrimmer
         double totalDuration,
         double keepTailSeconds)
     {
+        if (string.IsNullOrWhiteSpace(silenceDetectLog) || totalDuration < 1.0)
+            return null;
+        if (double.IsNaN(totalDuration) || double.IsInfinity(totalDuration))
+            return null;
+
         var starts = SilenceStartRe.Matches(silenceDetectLog)
             .Select(m => double.Parse(m.Groups[1].Value, CultureInfo.InvariantCulture))
             .OrderBy(x => x)

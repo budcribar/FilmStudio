@@ -163,6 +163,11 @@ public static class CharacterVisualTextScrubber
         string visualLock,
         string animalWord = "dog")
     {
+        charKey ??= "";
+        ageBand ??= "";
+        description ??= "";
+        visualLock ??= "";
+        animalWord = string.IsNullOrWhiteSpace(animalWord) ? "dog" : animalWord.Trim();
         var animal = Regex.Escape(animalWord);
         if (ageBand.Contains(animalWord, StringComparison.OrdinalIgnoreCase) ||
             ageBand.Contains("animal", StringComparison.OrdinalIgnoreCase))
@@ -194,6 +199,10 @@ public static class CharacterVisualTextScrubber
         string description,
         string visualLock)
     {
+        charKey ??= "";
+        ageBand ??= "";
+        description ??= "";
+        visualLock ??= "";
         if (IsPrimarilyAnimalCharacter(charKey, ageBand, description, visualLock, "dog") ||
             IsPrimarilyAnimalCharacter(charKey, ageBand, description, visualLock, "cat") ||
             IsPrimarilyAnimalCharacter(charKey, ageBand, description, visualLock, "bear") ||

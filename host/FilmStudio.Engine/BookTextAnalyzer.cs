@@ -23,6 +23,7 @@ public static class BookTextAnalyzer
 
     public static BookTextAnalysis Analyze(string text, int? pagesHint = null)
     {
+        text ??= "";
         var bodies = PageBodies(text);
         var pages = pagesHint is > 0 ? pagesHint.Value : (bodies.Count > 0 ? bodies.Count : 1);
         if (bodies.Count == 0 && !string.IsNullOrWhiteSpace(text))

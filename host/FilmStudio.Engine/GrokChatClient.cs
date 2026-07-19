@@ -69,6 +69,8 @@ public sealed class GrokChatClient : IGrokChatClient
 
     public static Dictionary<string, object?> ParseJsonObject(string text)
     {
+        if (string.IsNullOrWhiteSpace(text))
+            throw new InvalidOperationException("No JSON object in model output");
         text = text.Trim();
         if (text.StartsWith("```", StringComparison.Ordinal))
         {
