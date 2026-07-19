@@ -9,8 +9,8 @@
       "version": "1",
       "relativePath": "prompts/packs/gen-v1.txt",
       "active": true,
-      "updatedAt": "2026-07-19T20:27:09.3871079+00:00",
-      "notes": "Default video gen addendum (house rules \u002B continuity)."
+      "updatedAt": "2026-07-19T22:53:22.6518697Z",
+      "notes": "Default video gen addendum (house rules + continuity + performance/audio energy)."
     },
     {
       "id": "auto_review-v1",
@@ -18,7 +18,7 @@
       "version": "1",
       "relativePath": "prompts/packs/auto_review-v1.txt",
       "active": true,
-      "updatedAt": "2026-07-19T20:27:09.389286+00:00",
+      "updatedAt": "2026-07-19T14:27:09.389286-06:00",
       "notes": "Default auto-review QC instructions addendum."
     }
   ]

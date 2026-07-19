@@ -122,15 +122,18 @@ public sealed class ActiveProjectState
                               (a.Stage1.Present && a.Stage1.SceneCount > 0);
         var charactersReason = screenplayReady ? "" : "Approve the screenplay first";
 
-        // Scenes / Review: shot plan with clips (cast alone is not enough)
+        // Scenes / Review: shot plan with clips. Cast readiness is enforced on video gen
+        // (API + Scenes UI) so operators can still browse plans; incomplete cast blocks spend.
         var shotsReady = a.Stage2.Stage2Ready && a.Stage2.Stage2Clips > 0;
         string scenesReason;
         if (shotsReady)
-            scenesReason = "";
+            scenesReason = a.Cast.ReadyForShots
+                ? ""
+                : "Approve every character voice + locked image before generating video";
         else if (a.Stage2.Stage2Stale)
             scenesReason = "Update the shot plan first";
         else if (!a.Cast.ReadyForShots)
-            scenesReason = "Finish characters, then the shot plan";
+            scenesReason = "Finish characters (voice + locked image), then the shot plan";
         else
             scenesReason = "Finish the shot plan first";
 

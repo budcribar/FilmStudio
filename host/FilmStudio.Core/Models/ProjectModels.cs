@@ -110,7 +110,10 @@ public sealed class StartSceneGenRequest
     public bool OnlyMissing { get; set; } = true;
     /// <summary>Video resolution for this gen (e.g. 480p / 720p). Empty → project Configuration.</summary>
     public string? Resolution { get; set; }
-    /// <summary>Block gen when on-screen (non-narrator) cast lacks locked ref images. Default true.</summary>
+    /// <summary>
+    /// Block video gen until every cast member has an approved voice profile and
+    /// (for on-screen roles) a locked ref image. Default true — prevents wasted API spend.
+    /// </summary>
     public bool RequireLockedCharacters { get; set; } = true;
     /// <summary>
     /// When true, return 409 immediately if the scene lock is held by another user.
@@ -126,7 +129,10 @@ public sealed class StartBatchGenRequest
     public bool OnlyMissing { get; set; } = true;
     /// <summary>Video resolution for this gen (e.g. 480p / 720p). Empty → project Configuration.</summary>
     public string? Resolution { get; set; }
-    /// <summary>Block gen when on-screen (non-narrator) cast lacks locked ref images. Default true.</summary>
+    /// <summary>
+    /// Block video gen until every cast member has an approved voice profile and
+    /// (for on-screen roles) a locked ref image. Default true — prevents wasted API spend.
+    /// </summary>
     public bool RequireLockedCharacters { get; set; } = true;
     /// <summary>When true, 409 if any scene lock is held by another user (default wait).</summary>
     public bool FailIfLocked { get; set; }
@@ -521,13 +527,18 @@ public sealed class AdaptationStatus
     public string NextStep { get; set; } = "";
 }
 
-/// <summary>Whether on-screen cast has preferred looks and voice profiles.</summary>
+/// <summary>
+/// Whether every cast member is approved for video: voice profile for all,
+/// locked ref image for on-screen roles (variant drafts alone are not enough).
+/// </summary>
 public sealed class CastStatus
 {
     public int Total { get; set; }
     public int Ready { get; set; }
-    /// <summary>True when every cast member has look (if needed) + voice.</summary>
+    /// <summary>True when every cast member has approved voice + locked look (if needed).</summary>
     public bool ReadyForShots { get; set; }
+    /// <summary>Character keys still missing voice and/or locked image (for UI messaging).</summary>
+    public List<string> Missing { get; set; } = new();
 }
 
 /// <summary>

@@ -5,3 +5,4 @@ Apply these house rules when building clip video prompts:
 - Continuity: when extending from previous clip, match wardrobe, place, and facing from the last frames.
 - Respect VOICE LOCK and character visual locks exactly.
 - Prefer tight action after speech; avoid long empty holds.
+- Align performance energy with audio state. On silent or ambient-only clips: no roaring open mouth, no lip-sync shout, no screaming-at-camera performance. Restrained physical tension (clenched fist, tight jaw, white knuckles, held stare) is allowed and often preferred. On dialogue clips: mouth and gesture match the line and delivery; do not invent rage if the line is calm or measured.

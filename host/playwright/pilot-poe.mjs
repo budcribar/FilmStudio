@@ -148,9 +148,26 @@ async function waitJobIdle(page, timeoutMs = 600_000, projectId = PROJECT_NAME) 
           lastMsgAt = Date.now();
           log("job", active.status, active.kind, (active.message || "").slice(0, 140));
         }
-        // Hang: same message > 90s (silence-trim / ffmpeg sample stalls are common in fakes)
-        if (Date.now() - lastMsgAt > 90_000) {
-          log("WARN job hung (no progress 90s) — cancelling", active.jobId, (active.message || "").slice(0, 80));
+        // Hang detection: real Grok can sit on "pending" for many minutes — only treat
+        // local ffmpeg/post steps as hung. Pending/polling video is allowed longer.
+        const msgLower = (active.message || "").toLowerCase();
+        const isRemoteWait =
+          msgLower.includes("pending") ||
+          msgLower.includes("poll") ||
+          msgLower.includes("submit") ||
+          msgLower.includes("waiting") ||
+          msgLower.includes("%") ||
+          msgLower.includes("generating s");
+        const hangMs = isRemoteWait
+          ? Number(process.env.REMOTE_HANG_MS || 15 * 60_000) // 15 min for real video
+          : Number(process.env.LOCAL_HANG_MS || 3 * 60_000);  // 3 min for ffmpeg local
+        if (Date.now() - lastMsgAt > hangMs) {
+          log(
+            "WARN job hung — cancelling",
+            active.jobId,
+            `idle=${Math.round((Date.now() - lastMsgAt) / 1000)}s`,
+            (active.message || "").slice(0, 100)
+          );
           if (active.jobId) {
             await fetch(`${API_URL}/api/jobs/${active.jobId}/cancel`, { method: "POST" }).catch(() => {});
           }
@@ -417,130 +434,199 @@ async function main() {
       else await page.goto(`${WEB_URL}/scenes?admin=1`);
     });
 
-    await step("06_gen_scene1_480p", async () => {
+    await step("06_gen_scenes_480p", async () => {
+      const fullMovie =
+        process.env.FULL_MOVIE === "1" || process.env.FULL_MOVIE === "true";
+      const maxScene = fullMovie
+        ? Number(process.env.MAX_SCENE || 99)
+        : Number(process.env.MAX_SCENE || 1);
       await page.goto(`${WEB_URL}/scenes?admin=1`, { waitUntil: "networkidle" });
       await page.waitForTimeout(2000);
-      await waitJobIdle(page, 120_000).catch(() => {}); // clear any leftover job
+      await waitJobIdle(page, 120_000).catch(() => {});
       const res = page.getByTestId("scenes-resolution");
       if (await res.count()) await res.selectOption("480p");
 
-      const gen1 = page.getByTestId("scenes-gen-1");
-      if (await gen1.count()) {
-        await gen1.click();
-      } else {
-        // Select first incomplete row checkbox
-        const rowCb = page.locator("table tbody tr").first().locator('input[type="checkbox"]');
-        if (await rowCb.count()) await rowCb.check().catch(() => {});
-        await page.getByTestId("scenes-generate-batch").click();
+      // Discover scene gen buttons
+      const genBtns = page.locator('[data-testid^="scenes-gen-"]');
+      const btnCount = await genBtns.count();
+      const sceneNums = [];
+      for (let i = 0; i < btnCount; i++) {
+        const sn = Number(await genBtns.nth(i).getAttribute("data-scene"));
+        if (sn >= 1 && sn <= maxScene) sceneNums.push(sn);
       }
-      log("waiting for scene 1 gen to finish…");
-      await waitJobIdle(page, 900_000);
-      // Extra settle + reload list
-      await page.waitForTimeout(2000);
-      const reload = page.getByTestId("scenes-reload");
-      if (await reload.count()) await reload.click();
-      await page.waitForTimeout(1000);
-      await dumpJob(page, "gen-s1");
-      await screenshot(page, "06-gen-s1");
+      if (sceneNums.length === 0) sceneNums.push(1);
+      log("will generate scenes", sceneNums.join(", "), fullMovie ? "(FULL_MOVIE)" : "(pilot)");
 
-      const vids = findProjectVideos(PROJECT_NAME).filter((v) => !path.basename(v).startsWith("_"));
-      fs.writeFileSync(path.join(ARTIFACTS, "videos-after-gen.json"), JSON.stringify(vids, null, 2));
-      log("videos on disk", String(vids.length));
-      for (const v of vids.slice(0, 8)) {
-        await extractKeyframes(v, path.join(ARTIFACTS, "frames"), path.basename(v, ".mp4"));
+      for (const sn of sceneNums) {
+        await page.goto(`${WEB_URL}/scenes?admin=1`, { waitUntil: "networkidle" });
+        await page.waitForTimeout(1500);
+        await waitJobIdle(page, 60_000).catch(() => {});
+        if (await res.count()) await res.selectOption("480p");
+        const gen = page.getByTestId(`scenes-gen-${sn}`);
+        if (!(await gen.count())) {
+          log("no gen button for scene", String(sn));
+          continue;
+        }
+        // Skip if already complete on disk
+        const existing = findProjectVideos(PROJECT_NAME).filter((v) =>
+          path.basename(v).match(new RegExp(`scene_0*${sn}_clip_`, "i"))
+        );
+        log(`scene ${sn}: ${existing.length} clip(s) already on disk`);
+        await gen.click();
+        log(`waiting for scene ${sn} gen…`);
+        await waitJobIdle(page, Number(process.env.GEN_TIMEOUT_MS || 45 * 60_000));
+        await page.waitForTimeout(1500);
+        const reload = page.getByTestId("scenes-reload");
+        if (await reload.count()) await reload.click();
+        await page.waitForTimeout(800);
+        await dumpJob(page, `gen-s${sn}`);
+        await screenshot(page, `06-gen-s${sn}`);
+
+        const vids = findProjectVideos(PROJECT_NAME).filter(
+          (v) =>
+            !path.basename(v).startsWith("_") &&
+            path.basename(v).match(new RegExp(`scene_0*${sn}_clip_`, "i"))
+        );
+        log(`scene ${sn} videos`, String(vids.length));
+        for (const v of vids) {
+          await extractKeyframes(v, path.join(ARTIFACTS, "frames"), path.basename(v, ".mp4"));
+          // Human review note: dump prompt if present
+          const base = path.basename(v, ".mp4");
+          const m = base.match(/scene_(\d+)_clip_(\d+)/i);
+          if (m) {
+            const promptPath = path.join(
+              WORKSPACE,
+              "projects",
+              PROJECT_NAME,
+              "assets",
+              "video",
+              "prompts",
+              `S${m[1]}C${m[2]}.txt`
+            );
+            // also try S01C01 style
+            const p2 = path.join(
+              WORKSPACE,
+              "projects",
+              PROJECT_NAME,
+              "assets",
+              "video",
+              "prompts",
+              `S${m[1].padStart(2, "0")}C${m[2].padStart(2, "0")}.txt`
+            );
+            for (const pp of [promptPath, p2]) {
+              if (fs.existsSync(pp)) {
+                fs.copyFileSync(pp, path.join(ARTIFACTS, path.basename(pp)));
+                const text = fs.readFileSync(pp, "utf8");
+                log("prompt", path.basename(pp), `len=${text.length}`, text.slice(0, 160).replace(/\s+/g, " "));
+              }
+            }
+          }
+        }
+        fs.writeFileSync(
+          path.join(ARTIFACTS, `videos-after-s${sn}.json`),
+          JSON.stringify(findProjectVideos(PROJECT_NAME), null, 2)
+        );
       }
     });
 
     await step("07_review_auto_and_human", async () => {
+      const fullMovie =
+        process.env.FULL_MOVIE === "1" || process.env.FULL_MOVIE === "true";
       await page.goto(`${WEB_URL}/review?admin=1`, { waitUntil: "networkidle" });
       await page.waitForTimeout(2000);
       await waitJobIdle(page, 120_000).catch(() => {});
       await screenshot(page, "07-review-start");
 
-      // Open S01 clip detail (Clips button)
-      const clipsBtn = page.locator("tr", { hasText: "S01" }).getByRole("button", { name: "Clips" });
-      if (await clipsBtn.count()) {
-        await clipsBtn.click();
-        await page.waitForTimeout(1000);
-      } else {
-        // Fallback: click first Clips
-        const any = page.getByRole("button", { name: "Clips" }).first();
-        if (await any.count()) await any.click();
-        await page.waitForTimeout(1000);
-      }
-      await screenshot(page, "07-review-s1-open");
-
-      const autoBtns = page.locator('[data-testid^="review-auto-1-"]');
-      const n = await autoBtns.count();
-      log("scene1 auto-review buttons", String(n));
+      // Discover scene rows S01, S02, …
+      const sceneLabels = fullMovie
+        ? ["S01", "S02", "S03", "S04", "S05", "S06", "S07", "S08"]
+        : ["S01"];
       const failEvery = Math.max(1, Math.round(1 / Math.max(0.01, FAIL_RATE)));
+      let reviewIndex = 0;
 
-      // Only review clips that exist on disk (gen may hang mid-scene)
-      for (let i = 0; i < n; i++) {
-        const btn = autoBtns.nth(i);
-        const testId = await btn.getAttribute("data-testid");
-        const clip = await btn.getAttribute("data-clip");
-        const onDisk = findProjectVideos(PROJECT_NAME).some((v) =>
-          path.basename(v).match(new RegExp(`scene_0*1_clip_0*${clip}\\.mp4$`, "i"))
+      for (const label of sceneLabels) {
+        const sceneNum = Number(label.slice(1));
+        const hasClips = findProjectVideos(PROJECT_NAME).some((v) =>
+          path.basename(v).match(new RegExp(`scene_0*${sceneNum}_clip_`, "i"))
         );
-        log("auto-review", testId, onDisk ? "on-disk" : "missing");
-        if (!onDisk || (await btn.isDisabled())) {
-          log("skip", testId);
-          // Still human-mark missing as fail for learning signal
-          const failMissing = page.getByTestId(`review-fail-1-${clip}`);
-          if (await failMissing.isVisible().catch(() => false) && !(await failMissing.isDisabled().catch(() => true))) {
-            await failMissing.click().catch(() => {});
-          }
+        if (!hasClips) {
+          log("review skip scene — no clips", label);
           continue;
         }
-        await btn.click();
-        await waitJobIdle(page, 180_000);
-        await dumpJob(page, `auto-${clip}`);
-        await screenshot(page, `07-auto-s1c${clip}`);
-
-        const applyOpen = page.getByTestId(`review-apply-open-1-${clip}`);
-        if (await applyOpen.isVisible().catch(() => false) && i % failEvery === 0) {
-          await applyOpen.click();
-          await page.waitForTimeout(500);
-          const regen = page.getByTestId(`review-apply-regen-1-${clip}`);
-          if (await regen.isVisible().catch(() => false) && !(await regen.isDisabled())) {
-            // Skip apply+regen in fakes if silence-trim hangs; pass note instead
-            log("apply panel open — human edits without regen (fakes hang risk)");
-            const cancel = page.locator('button:has-text("Cancel")').first();
-            if (await cancel.isVisible().catch(() => false)) await cancel.click().catch(() => {});
-          }
-        }
-
-        if (i % failEvery === 0) {
-          const fail = page.getByTestId(`review-fail-1-${clip}`);
-          if (await fail.isVisible().catch(() => false)) {
-            await fail.click();
-            log("human FAIL", `S01C${clip}`);
-          }
+        await page.goto(`${WEB_URL}/review?admin=1`, { waitUntil: "networkidle" });
+        await page.waitForTimeout(1200);
+        const clipsBtn = page.locator("tr", { hasText: label }).getByRole("button", { name: "Clips" });
+        if (await clipsBtn.count()) {
+          await clipsBtn.click();
+          await page.waitForTimeout(1000);
         } else {
-          const pass = page.getByTestId(`review-pass-1-${clip}`);
-          if (await pass.isVisible().catch(() => false)) {
-            await pass.click();
-            log("human PASS", `S01C${clip}`);
-          }
+          log("no Clips button for", label);
+          continue;
         }
-        await page.waitForTimeout(400);
+        await screenshot(page, `07-review-${label}-open`);
+
+        const autoBtns = page.locator(`[data-testid^="review-auto-${sceneNum}-"]`);
+        const n = await autoBtns.count();
+        log(`${label} auto-review buttons`, String(n));
+
+        for (let i = 0; i < n; i++) {
+          const btn = autoBtns.nth(i);
+          const testId = await btn.getAttribute("data-testid");
+          const clip = await btn.getAttribute("data-clip");
+          const scene = await btn.getAttribute("data-scene");
+          const onDisk = findProjectVideos(PROJECT_NAME).some((v) =>
+            path
+              .basename(v)
+              .match(new RegExp(`scene_0*${scene}_clip_0*${clip}\\.mp4$`, "i"))
+          );
+          log("auto-review", testId, onDisk ? "on-disk" : "missing");
+          if (!onDisk) continue;
+          // Re-query in case DOM refreshed
+          const live = page.getByTestId(testId);
+          if (!(await live.count()) || (await live.isDisabled().catch(() => true))) {
+            log("skip disabled", testId);
+            continue;
+          }
+          await live.click();
+          await waitJobIdle(page, 300_000);
+          await dumpJob(page, `auto-s${scene}c${clip}`);
+          await screenshot(page, `07-auto-s${scene}c${clip}`);
+
+          // Human: fail ~FAIL_RATE for learning; otherwise pass if looks ok
+          const failThis = reviewIndex % failEvery === 0;
+          reviewIndex++;
+          if (failThis) {
+            const fail = page.getByTestId(`review-fail-${scene}-${clip}`);
+            if (await fail.isVisible().catch(() => false) && !(await fail.isDisabled().catch(() => true))) {
+              await fail.click();
+              log("human FAIL", `S${scene}C${clip}`);
+            }
+          } else {
+            const pass = page.getByTestId(`review-pass-${scene}-${clip}`);
+            if (await pass.isVisible().catch(() => false) && !(await pass.isDisabled().catch(() => true))) {
+              await pass.click();
+              log("human PASS", `S${scene}C${clip}`);
+            }
+          }
+          await page.waitForTimeout(500);
+        }
       }
 
       const rebuild = page.getByTestId("review-rebuild-wip");
       if (await rebuild.isVisible().catch(() => false) && !(await rebuild.isDisabled())) {
         await rebuild.click();
-        await waitJobIdle(page, 300_000);
+        await waitJobIdle(page, 600_000);
       }
       await screenshot(page, "07-review-done");
 
-      const vids = findProjectVideos(PROJECT_NAME).filter((v) => !path.basename(v).startsWith("_"));
-      for (const v of vids.slice(0, 6)) {
-        await extractKeyframes(v, path.join(ARTIFACTS, "frames"), "post_" + path.basename(v, ".mp4"));
-      }
       const wip = path.join(WORKSPACE, "projects", PROJECT_NAME, "assets", "movie_wip.mp4");
       if (fs.existsSync(wip)) {
         await extractKeyframes(wip, path.join(ARTIFACTS, "frames"), "wip");
+        try {
+          log("WIP movie", wip, String(fs.statSync(wip).size));
+        } catch {
+          log("WIP movie", wip);
+        }
       }
     });
 

@@ -1895,8 +1895,9 @@ public sealed class ProjectStore
     }
 
     /// <summary>
-    /// Cast is ready when every member has a voice profile and (if on-screen) a preferred/locked look.
-    /// Empty cast (no seeds yet) is not ready.
+    /// Cast is ready when every member has a voice profile and (if on-screen) a
+    /// <em>locked</em> ref image — not merely a variant draft (<see cref="CharacterSummary.HasPreferred"/>).
+    /// Empty cast (no seeds yet) is not ready. Used for next-step gating and video-gen spend protection.
     /// </summary>
     public CastStatus ReadCastStatus(string projectId)
     {
@@ -1909,21 +1910,29 @@ public sealed class ProjectStore
                 return status;
 
             var ready = 0;
+            var missing = new List<string>();
             foreach (var c in rows)
             {
                 var hasVoice = !string.IsNullOrWhiteSpace(c.VoiceProfile);
                 if (c.VoiceOnly)
                 {
-                    if (hasVoice) ready++;
+                    if (hasVoice)
+                        ready++;
+                    else
+                        missing.Add(c.Key);
                     continue;
                 }
 
-                if ((c.HasPreferred || c.Locked) && hasVoice)
+                // Locked only — HasPreferred can be unlocked variant_01 and is not enough to spend on video.
+                if (c.Locked && hasVoice)
                     ready++;
+                else
+                    missing.Add(c.Key);
             }
 
             status.Ready = ready;
-            status.ReadyForShots = ready == rows.Count;
+            status.ReadyForShots = ready == rows.Count && rows.Count > 0;
+            status.Missing = missing;
         }
         catch
         {
@@ -1931,6 +1940,51 @@ public sealed class ProjectStore
         }
 
         return status;
+    }
+
+    /// <summary>
+    /// Project-wide cast gate before any video spend: every seed needs a voice profile;
+    /// every non-voice-only seed needs a locked ref image (not just a variant draft).
+    /// Empty cast is not ready. Returns human-readable missing items (empty when ready).
+    /// </summary>
+    public IReadOnlyList<string> GetCastNotReadyForVideo(string projectId)
+    {
+        var missing = new List<string>();
+        IReadOnlyList<CharacterSummary> rows;
+        try
+        {
+            rows = ListCharacters(projectId);
+        }
+        catch
+        {
+            return new[] { "could not load cast" };
+        }
+
+        if (rows.Count == 0)
+        {
+            missing.Add("no cast seeds yet — extract or define characters first");
+            return missing;
+        }
+
+        foreach (var c in rows)
+        {
+            var hasVoice = !string.IsNullOrWhiteSpace(c.VoiceProfile);
+            if (c.VoiceOnly)
+            {
+                if (!hasVoice)
+                    missing.Add($"{c.Key}: voice profile");
+                continue;
+            }
+
+            if (!hasVoice && !c.Locked)
+                missing.Add($"{c.Key}: voice + locked image");
+            else if (!hasVoice)
+                missing.Add($"{c.Key}: voice profile");
+            else if (!c.Locked)
+                missing.Add($"{c.Key}: locked image");
+        }
+
+        return missing;
     }
 
     public async Task<string> SaveBookUploadAsync(
@@ -2976,9 +3030,9 @@ public sealed class ProjectStore
 
     private static bool IsVoiceOnly(string key, JsonElement info)
     {
-        if (key.Contains("Narrator", StringComparison.OrdinalIgnoreCase))
-            return true;
-        if (info.TryGetProperty("display_name_policy", out var pol))
+        // Prefer cast seed policy only — do not force voice-only for keys named Narrator
+        if (info.ValueKind == JsonValueKind.Object &&
+            info.TryGetProperty("display_name_policy", out var pol))
         {
             var p = pol.GetString() ?? "";
             if (p.Contains("never", StringComparison.OrdinalIgnoreCase))

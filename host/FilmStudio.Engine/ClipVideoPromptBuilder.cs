@@ -207,7 +207,7 @@ public static class ClipVideoPromptBuilder
                     Key = k,
                     VoiceProfile = v.TryGetValue("voice_profile", out var p) ? p : "",
                     VoiceLabel = v.TryGetValue("voice_label", out var l) ? l : "",
-                    VoiceOnly = k.Contains("narrator", StringComparison.OrdinalIgnoreCase),
+                    VoiceOnly = false,
                 };
             }
         }
@@ -385,12 +385,11 @@ public static class ClipVideoPromptBuilder
 
     private static bool IsVoiceOnlyKey(string key, IReadOnlyDictionary<string, CharacterProfile>? characters)
     {
-        if (key.Contains("narrator", StringComparison.OrdinalIgnoreCase))
-            return true;
+        // Prefer explicit profile / cast seed flag. Do NOT force VOICE ONLY merely because
+        // the key contains "Narrator" — confessor roles are often on camera (e.g. Tell-Tale Heart).
         if (characters is not null &&
-            characters.TryGetValue(key, out var p) &&
-            p.VoiceOnly)
-            return true;
+            characters.TryGetValue(key, out var p))
+            return p.VoiceOnly;
         return false;
     }
 }

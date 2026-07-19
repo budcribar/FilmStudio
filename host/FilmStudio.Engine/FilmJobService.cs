@@ -1477,8 +1477,10 @@ public sealed class FilmJobService
 
             if (req.RequireLockedCharacters)
             {
+                // Project-wide first (all cast voice + locked images), then per-scene mentions.
+                EnsureCastReadyForVideo(projectId);
                 foreach (var sn in scenes)
-                    EnsureCharactersLocked(projectId, sn);
+                    EnsureSceneCharactersLocked(projectId, sn);
             }
 
             var projectDir = _projects.GetProjectDir(projectId);
@@ -1624,7 +1626,10 @@ public sealed class FilmJobService
                 ?? throw new InvalidOperationException($"Scene {req.Scene} not in blueprint.");
 
             if (req.RequireLockedCharacters)
-                EnsureCharactersLocked(projectId, req.Scene);
+            {
+                EnsureCastReadyForVideo(projectId);
+                EnsureSceneCharactersLocked(projectId, req.Scene);
+            }
 
             if (!sceneEl.TryGetProperty("veo_clips", out var clipsEl) ||
                 clipsEl.ValueKind != JsonValueKind.Array)
@@ -2160,7 +2165,29 @@ public sealed class FilmJobService
         };
     }
 
-    private void EnsureCharactersLocked(string projectId, int sceneNumber)
+    /// <summary>
+    /// Project-wide spend gate: every cast seed must have an approved voice profile and
+    /// (for on-screen roles) a locked ref image before any video generation.
+    /// </summary>
+    private void EnsureCastReadyForVideo(string projectId)
+    {
+        var missing = _projects.GetCastNotReadyForVideo(projectId);
+        if (missing.Count == 0)
+            return;
+
+        var detail = string.Join("; ", missing);
+        throw new InvalidOperationException(
+            "Cast not ready for video gen — approve voice and locked image for every character first " +
+            $"(avoids wasting API spend). Missing: {detail}. " +
+            "Open Characters → set voice, then generate + lock a portrait. " +
+            "Voice-only roles (e.g. Narrator) need a voice profile only.");
+    }
+
+    /// <summary>
+    /// Scene-level safety net for on-screen keys mentioned in the blueprint that may not
+    /// appear in cast seeds (still require a locked ref if they are not voice-only).
+    /// </summary>
+    private void EnsureSceneCharactersLocked(string projectId, int sceneNumber)
     {
         var unlocked = _projects.GetUnlockedOnScreenCharacters(projectId, sceneNumber);
         if (unlocked.Count == 0)

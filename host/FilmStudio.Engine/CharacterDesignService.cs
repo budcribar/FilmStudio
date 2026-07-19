@@ -830,9 +830,10 @@ public sealed class CharacterDesignService
 
     private static bool IsVoiceOnly(string key, JsonElement info)
     {
-        if (key.Contains("Narrator", StringComparison.OrdinalIgnoreCase))
-            return true;
-        if (info.TryGetProperty("display_name_policy", out var pol))
+        // Prefer cast seed policy. Do not force voice-only just because key is "Narrator"
+        // (on-camera confessor / POV roles are common).
+        if (info.ValueKind == JsonValueKind.Object &&
+            info.TryGetProperty("display_name_policy", out var pol))
         {
             var p = pol.GetString() ?? "";
             if (p.Contains("never", StringComparison.OrdinalIgnoreCase))

@@ -33,6 +33,22 @@ else
 {
     <div class="alert alert-info">@_message</div>
 }
+@if (_castChecked && !CastReady)
+{
+    <div class="alert alert-warning" data-testid="scenes-cast-gate">
+        <strong>Cast not approved yet</strong> — video generation is blocked so you do not waste API spend.
+        Every character needs an approved <em>voice</em> and (for on-screen roles) a <em>locked image</em>.
+        @if (_castReadyCount is int cr && _castTotal is int ct)
+        {
+            <span> Progress: @cr/@ct ready.</span>
+        }
+        @if (_castMissing.Count > 0)
+        {
+            <span> Still missing: @string.Join(", ", _castMissing.Take(8))@(_castMissing.Count > 8 ? "…" : "").</span>
+        }
+        <a class="alert-link ms-1" href="characters">Open Characters →</a>
+    </div>
+}
 
 <div class="row mb-3 g-2 align-items-end">
     <div class="col-md-2">
@@ -353,9 +369,9 @@ else if (Session.IsAdmin && _job is not null &&
 
                     <button type="button"
                             data-testid="scenes-generate-batch"
-                            class="btn batch-go @(_selected.Count > 0 && !JobRunning ? "batch-go--ready" : "")"
-                            disabled="@(_busy || _selected.Count == 0 || JobRunning || (_onlyMissing && EstimateSelectedClips() == 0) || SelectedLockedByOther)"
-                            title="@(SelectedLockedByOther ? "Selection includes scenes locked by another user" : null)"
+                            class="btn batch-go @(_selected.Count > 0 && !JobRunning && CastReady ? "batch-go--ready" : "")"
+                            disabled="@(_busy || _selected.Count == 0 || JobRunning || !CastReady || (_onlyMissing && EstimateSelectedClips() == 0) || SelectedLockedByOther)"
+                            title="@(!CastReady ? CastBlockedTitle : SelectedLockedByOther ? "Selection includes scenes locked by another user" : null)"
                             @onclick="StartBatchAsync">
                         @if (JobRunning)
                         {
@@ -385,7 +401,7 @@ else if (Session.IsAdmin && _job is not null &&
 
             <div class="batch-panel__foot">
                 Selection respects character, location, and setting filters.
-                Video gen is blocked until on-screen cast (non-narrator) has locked character refs — lock them under Characters.
+                Video gen is blocked until <strong>every</strong> character has an approved voice and (for on-screen roles) a locked image — approve them under Characters first so you do not waste API spend.
             </div>
         </div>
 
@@ -482,8 +498,8 @@ else if (Session.IsAdmin && _job is not null &&
                                     <button class="btn btn-sm batch-row-gen"
                                             data-testid="@($"scenes-gen-{sn}")"
                                             data-scene="@sn"
-                                            disabled="@(_busy || JobRunning || s.LockedByOther)"
-                                            title="@(s.LockedByOther ? $"Locked by {s.LockOwnerUserId}" : "Generate this scene")"
+                                            disabled="@(_busy || JobRunning || !CastReady || s.LockedByOther)"
+                                            title="@(!CastReady ? CastBlockedTitle : s.LockedByOther ? $"Locked by {s.LockOwnerUserId}" : "Generate this scene")"
                                             @onclick="() => GenOneSceneAsync(sn)">
                                         Gen
                                     </button>
@@ -539,8 +555,10 @@ else
                     Rebuild scene
                 </button>
                 <button class="btn btn-sm btn-primary"
-                        disabled="@(_busy || JobRunning || DetailLockedByOther)"
-                        title="@(DetailLockedByOther
+                        disabled="@(_busy || JobRunning || !CastReady || DetailLockedByOther)"
+                        title="@(!CastReady
+                            ? CastBlockedTitle
+                            : DetailLockedByOther
                             ? $"Locked by {_detailLockOwner}"
                             : "Generate missing clips in order (C01 → C02 → …)")"
                         @onclick="() => GenOneSceneAsync(_detail.SceneNumber)">
@@ -678,8 +696,10 @@ else
                                             ▶
                                         </button>
                                         <button class="btn btn-outline-warning"
-                                                disabled="@(_busy || JobRunning || needPrev)"
-                                                title="@(needPrev
+                                                disabled="@(_busy || JobRunning || !CastReady || needPrev)"
+                                                title="@(!CastReady
+                                                    ? CastBlockedTitle
+                                                    : needPrev
                                                     ? $"Generate C{(cn - 1):D2} first — clips continue from the previous video"
                                                     : "Force re-generate this clip")"
                                                 @onclick="() => RegenClipAsync(_detail.SceneNumber, cn)">
@@ -711,8 +731,10 @@ else
                         var clipNeedsPrev = PreviousClipMissing(_clip.ClipNumber);
                     }
                     <button class="btn btn-sm btn-outline-warning"
-                            disabled="@(_busy || JobRunning || clipNeedsPrev)"
-                            title="@(clipNeedsPrev
+                            disabled="@(_busy || JobRunning || !CastReady || clipNeedsPrev)"
+                            title="@(!CastReady
+                                ? CastBlockedTitle
+                                : clipNeedsPrev
                                 ? $"Generate C{(_clip.ClipNumber - 1):D2} first — continues from previous video"
                                 : "Force re-generate this clip (overwrites if present)")"
                             @onclick="() => RegenClipAsync(_detail.SceneNumber, _clip.ClipNumber)">
@@ -755,8 +777,10 @@ else
                             }
                             <div class="mt-2">
                                 <button class="btn btn-sm btn-warning"
-                                        disabled="@(_busy || JobRunning || PreviousClipMissing(_clip.ClipNumber))"
-                                        title="@(PreviousClipMissing(_clip.ClipNumber)
+                                        disabled="@(_busy || JobRunning || !CastReady || PreviousClipMissing(_clip.ClipNumber))"
+                                        title="@(!CastReady
+                                            ? CastBlockedTitle
+                                            : PreviousClipMissing(_clip.ClipNumber)
                                             ? $"Need C{(_clip.ClipNumber - 1):D2} on disk"
                                             : null)"
                                         @onclick="() => RegenClipAsync(_detail.SceneNumber, _clip.ClipNumber)">
@@ -812,6 +836,12 @@ else
     private bool _onlyMissing = true;
     /// <summary>Video gen resolution (defaults from Configuration).</summary>
     private string _genResolution = "720p";
+    /// <summary>Project-wide cast gate: every character voice + locked image before video spend.</summary>
+    private bool _castChecked;
+    private bool _castReady;
+    private int? _castReadyCount;
+    private int? _castTotal;
+    private List<string> _castMissing = new();
     private List<SceneSummary>? _scenes;
     private HashSet<int> _selected = new();
     private string _selectionMode = ""; // "" | incomplete | all
@@ -844,6 +874,14 @@ else
         _myJobs.Any(j =>
             string.Equals(j.Status, "running", StringComparison.OrdinalIgnoreCase) ||
             string.Equals(j.Status, "queued", StringComparison.OrdinalIgnoreCase));
+
+    /// <summary>True when every cast member has approved voice + locked look (or voice-only + voice).</summary>
+    private bool CastReady => _castReady;
+
+    private string CastBlockedTitle =>
+        _castMissing.Count > 0
+            ? $"Approve voice + locked image first: {string.Join(", ", _castMissing.Take(4))}{(_castMissing.Count > 4 ? "…" : "")}"
+            : "Approve voice + locked image for every character before generating video";
 
     /// <summary>
     /// Clip N (N&gt;1) needs clip N-1 on disk — Imagine continues from the previous video.
@@ -1135,6 +1173,7 @@ else
             _job = jobs?.Job;
             await RefreshMyJobsAsync();
             await RefreshWipMetaAsync();
+            await RefreshCastGateAsync();
         }
         catch (Exception ex)
         {
@@ -1142,6 +1181,41 @@ else
             _scenes = null;
         }
         finally { _busy = false; }
+    }
+
+    /// <summary>
+    /// Refresh project-wide cast readiness (voice + locked image for every character).
+    /// Soft-fails: if adaptation cannot load, keep previous gate state.
+    /// </summary>
+    private async Task RefreshCastGateAsync()
+    {
+        try
+        {
+            var adapt = await Engine.GetAdaptationAsync(_projectId);
+            var cast = adapt?.Adaptation?.Cast;
+            if (cast is null)
+            {
+                _castChecked = true;
+                _castReady = false;
+                _castReadyCount = null;
+                _castTotal = null;
+                _castMissing = new List<string>();
+                return;
+            }
+
+            _castChecked = true;
+            _castReady = cast.ReadyForShots;
+            _castReadyCount = cast.Ready;
+            _castTotal = cast.Total;
+            _castMissing = cast.Missing?.Count > 0
+                ? cast.Missing.ToList()
+                : new List<string>();
+        }
+        catch
+        {
+            // Keep last known; mark checked so UI does not hang open forever
+            _castChecked = true;
+        }
     }
 
     private async Task SoftReloadAsync()
@@ -1152,6 +1226,7 @@ else
             _scenes = dto?.Scenes ?? new List<SceneSummary>();
             await RefreshMyJobsAsync();
             await RefreshWipMetaAsync();
+            await RefreshCastGateAsync();
             if (_selectedScene is int sn)
             {
                 var detail = await Engine.GetSceneDetailAsync(_projectId, sn);
@@ -1316,6 +1391,12 @@ else
     /// <summary>Force re-generate a single clip (onlyMissing: false).</summary>
     private async Task RegenClipAsync(int sn, int cn)
     {
+        if (!CastReady)
+        {
+            _error = CastBlockedTitle;
+            return;
+        }
+
         _busy = true;
         _error = null;
         _message = null;
@@ -1375,6 +1456,12 @@ else
 
     private async Task GenOneSceneAsync(int sn)
     {
+        if (!CastReady)
+        {
+            _error = CastBlockedTitle;
+            return;
+        }
+
         _busy = true;
         _error = null;
         _message = null;
@@ -1393,6 +1480,12 @@ else
     private async Task StartBatchAsync()
     {
         if (_selected.Count == 0) return;
+        if (!CastReady)
+        {
+            _error = CastBlockedTitle;
+            return;
+        }
+
         _busy = true;
         _error = null;
         _message = null;
