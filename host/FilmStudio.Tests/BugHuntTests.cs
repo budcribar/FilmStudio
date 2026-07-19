@@ -3,6 +3,7 @@ using System.Text.Json.Nodes;
 using FilmStudio.Core.Models;
 using FilmStudio.Core.Options;
 using FilmStudio.Engine;
+using FilmStudio.Engine.Abstractions;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Xunit;
@@ -303,5 +304,168 @@ public class BugHuntTests
         Assert.True(d.ContainsKey("ok"));
         Assert.Equal(true, d["ok"]);
         Assert.Equal(2L, Convert.ToInt64(d["count"]));
+    }
+
+    // ── 11. Dialogue without speaker must still produce AUDIO block ─────
+
+    [Fact]
+    public void Bug11_BuildPrompt_includes_dialogue_even_without_speaker()
+    {
+        using var doc = JsonDocument.Parse(
+            """
+            {
+              "visual_prompt": "Wide shot of the yard",
+              "audio_payload": {
+                "dialogue": "Hello there!",
+                "delivery": "on_camera",
+                "speaker": ""
+              }
+            }
+            """);
+        var built = ClipVideoPromptBuilder.Build(doc.RootElement, projectDir: Path.GetTempPath());
+        Assert.Contains("Hello there!", built.Prompt, StringComparison.Ordinal);
+        Assert.Contains("AUDIO:", built.Prompt, StringComparison.Ordinal);
+    }
+
+    // ── 12. PromptPack CreateVersion must reject null kind ──────────────
+
+    [Fact]
+    public void Bug12_PromptPack_CreateVersion_null_kind_throws_argument()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "fs_bug12_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(Path.Combine(root, "projects"));
+        try
+        {
+            var opts = Options.Create(new FilmStudioOptions { WorkspaceRoot = root, EnableReadCaches = false });
+            var packs = new PromptPackService(new ProjectStore(opts), NullLogger<PromptPackService>.Instance);
+            var ex = Assert.ThrowsAny<Exception>(() => packs.CreateVersion(null!, "v1", "body"));
+            Assert.False(ex is NullReferenceException, "should be ArgumentException, not NRE");
+        }
+        finally
+        {
+            try { Directory.Delete(root, recursive: true); } catch { /* */ }
+        }
+    }
+
+    // ── 13. JobStore.Create must not silently overwrite an existing id ──
+
+    [Fact]
+    public void Bug13_JobStore_Create_does_not_overwrite_existing_job_id()
+    {
+        var store = new JobStore();
+        var a = store.Create(new JobRecord { JobId = "fixedid123456", Status = "running", Kind = "scene" });
+        var b = store.Create(new JobRecord { JobId = "fixedid123456", Status = "queued", Kind = "remux" });
+        Assert.NotEqual(a.JobId, b.JobId);
+        Assert.Equal("scene", store.Get(a.JobId)!.Kind);
+        Assert.Equal("remux", store.Get(b.JobId)!.Kind);
+    }
+
+    // ── 14. JobStore.Clone must tolerate null Log ───────────────────────
+
+    [Fact]
+    public void Bug14_JobStore_Create_with_null_Log_does_not_throw()
+    {
+        var store = new JobStore();
+        var rec = store.Create(new JobRecord { Status = "queued", Log = null! });
+        var got = store.Get(rec.JobId);
+        Assert.NotNull(got);
+        Assert.NotNull(got!.Log);
+        Assert.Empty(got.Log);
+    }
+
+    // ── 15. LoginRateLimiter must not grow failure list without bound ───
+
+    [Fact]
+    public void Bug15_LoginRateLimiter_caps_failure_history()
+    {
+        var lim = new FilmStudio.Api.Auth.LoginRateLimiter(maxAttempts: 5, windowSeconds: 300);
+        for (var i = 0; i < 500; i++)
+            lim.RecordFailure("attacker");
+        // Reflect into private window to assert bound (public API still blocks)
+        Assert.True(lim.IsBlocked("attacker", out _));
+        var field = typeof(FilmStudio.Api.Auth.LoginRateLimiter)
+            .GetField("_windows", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+        Assert.NotNull(field);
+        var dict = field!.GetValue(lim) as System.Collections.IDictionary;
+        Assert.NotNull(dict);
+        object? window = null;
+        foreach (System.Collections.DictionaryEntry e in dict!)
+        {
+            window = e.Value;
+            break;
+        }
+        Assert.NotNull(window);
+        var failuresProp = window!.GetType().GetProperty("Failures");
+        var failures = failuresProp!.GetValue(window) as System.Collections.ICollection;
+        Assert.NotNull(failures);
+        Assert.True(failures!.Count <= 5,
+            $"failure list unbounded: count={failures.Count}");
+    }
+
+    // ── 16. ExtractMessageText must not throw when message is missing ───
+
+    [Fact]
+    public void Bug16_ExtractMessageText_missing_message_returns_raw_or_empty()
+    {
+        using var doc = JsonDocument.Parse(
+            """{"choices":[{"finish_reason":"stop"}],"id":"x"}""");
+        // Via CompleteAsync path we only have ExtractMessageText private — exercise Parse-less public surface:
+        // Use reflection or public Complete with fake — call through public helper if exposed.
+        var text = GrokChatClient.ExtractMessageTextForTests(doc.RootElement);
+        Assert.NotNull(text); // must not throw
+        Assert.True(text.Length >= 0);
+    }
+
+    // ── 17. AllocateForBeats null must not NRE ──────────────────────────
+
+    [Fact]
+    public void Bug17_AllocateForBeats_null_returns_empty()
+    {
+        var durs = ClipDurationEstimator.AllocateForBeats(null!);
+        Assert.NotNull(durs);
+        Assert.Empty(durs);
+    }
+
+    // ── 18. FindCharacterRefPaths clamps non-positive maxRefs ───────────
+
+    [Fact]
+    public void Bug18_FindCharacterRefPaths_non_positive_maxRefs_is_safe()
+    {
+        using var doc = JsonDocument.Parse(
+            """{"visual_prompt": "Character_Dog runs", "primary_subject": "Character_Dog"}""");
+        var paths = ClipVideoPromptBuilder.FindCharacterRefPaths(doc.RootElement, Path.GetTempPath(), maxRefs: 0);
+        Assert.Empty(paths);
+        // negative must not throw / infinite-loop
+        paths = ClipVideoPromptBuilder.FindCharacterRefPaths(doc.RootElement, Path.GetTempPath(), maxRefs: -3);
+        Assert.Empty(paths);
+    }
+
+    // ── 19. CharacterRefFileName empty must not be bare _ref.png ────────
+
+    [Fact]
+    public void Bug19_CharacterRefFileName_rejects_empty_key()
+    {
+        var name = ProjectStore.CharacterRefFileName("  ");
+        Assert.False(string.Equals(name, "_ref.png", StringComparison.OrdinalIgnoreCase));
+        Assert.True(name.Length > "_ref.png".Length || name.StartsWith("character", StringComparison.OrdinalIgnoreCase) || name.Contains("unknown", StringComparison.OrdinalIgnoreCase),
+            $"unexpected empty-key name: {name}");
+    }
+
+    // ── 20. Server metrics must not go negative after unmatched releases ─
+
+    [Fact]
+    public void Bug20_ServerMetrics_release_without_acquire_does_not_skew_count()
+    {
+        var m = new ServerMetricsService();
+        m.NoteApiSlotReleased("ghost");
+        m.NoteApiSlotReleased("ghost");
+        m.NoteApiSlotAcquired("real");
+        // Without floor: -2 + 1 = -1 → display Max(0,-1)=0. With floor: 0+1=1.
+        var snap = m.GetSnapshot(
+            new JobStore(),
+            new InMemoryLockService(),
+            new CapacityOptionsSnapshot { MaxVideoInFlight = 4 },
+            new ProcessMetricsSnapshot());
+        Assert.Equal(1, snap.ApiInFlight);
     }
 }

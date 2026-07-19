@@ -221,6 +221,10 @@ public static class ClipVideoPromptBuilder
         string projectDir,
         int maxRefs = 5)
     {
+        if (maxRefs <= 0)
+            return new List<string>();
+        maxRefs = Math.Min(maxRefs, 32);
+
         var keys = ClipCharacterKeys(clipEl);
         var paths = new List<string>();
         keys = keys
@@ -337,21 +341,22 @@ public static class ClipVideoPromptBuilder
             voiceLock = $" VOICE LOCK {speaker}: {prof.VoiceProfile}";
         }
 
-        if (!string.IsNullOrWhiteSpace(dialogue) && !string.IsNullOrWhiteSpace(speaker))
+        if (!string.IsNullOrWhiteSpace(dialogue))
         {
-            var isNarrator = speaker.Contains("narrator", StringComparison.OrdinalIgnoreCase) ||
+            var who = string.IsNullOrWhiteSpace(speaker) ? "SPEAKER" : speaker.Trim();
+            var isNarrator = who.Contains("narrator", StringComparison.OrdinalIgnoreCase) ||
                              delivery is "voiceover_internal" or "internal" or "narration" or "vo" or "thought";
             // Keep full dialogue — long context is fine for evaluation
             var quote = dialogue.Trim();
             if (isNarrator)
             {
                 return
-                    $"AUDIO: REQUIRED native Grok off-camera voiceover. {speaker} narrates " +
+                    $"AUDIO: REQUIRED native Grok off-camera voiceover. {who} narrates " +
                     $"exactly: \"{quote}\". Do not lip-sync on-screen cast to this VO. " +
                     $"Secondary layer = soft room tone / Foley.{voiceLock}";
             }
             return
-                $"AUDIO: REQUIRED native Grok dialogue. {speaker} ON CAMERA lip-syncs " +
+                $"AUDIO: REQUIRED native Grok dialogue. {who} ON CAMERA lip-syncs " +
                 $"exactly: \"{quote}\". Other mouths closed. Speech intelligible; never silent.{voiceLock}";
         }
 

@@ -760,6 +760,8 @@ public sealed class ProjectStore
     {
         var k = (charKey ?? "").Trim().Replace(' ', '_').Replace('\\', '/');
         k = Path.GetFileName(k).ToLowerInvariant();
+        if (string.IsNullOrWhiteSpace(k) || k is "." or "..")
+            k = "unknown_character";
         if (k.EndsWith("_ref.png", StringComparison.OrdinalIgnoreCase))
             return k;
         return $"{k}_ref.png";

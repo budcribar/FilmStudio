@@ -12,11 +12,25 @@ public sealed class JobStore : IJobStore
 
     public JobRecord Create(JobRecord seed)
     {
-        if (string.IsNullOrWhiteSpace(seed.JobId))
-            seed.JobId = Guid.NewGuid().ToString("N")[..12];
-        seed.QueuedAt = seed.QueuedAt == default ? DateTimeOffset.UtcNow : seed.QueuedAt;
-        _jobs[seed.JobId] = Clone(seed);
-        return Clone(seed);
+        ArgumentNullException.ThrowIfNull(seed);
+        lock (_gate)
+        {
+            if (string.IsNullOrWhiteSpace(seed.JobId) || _jobs.ContainsKey(seed.JobId))
+            {
+                // Never overwrite an existing id — generate a fresh one when missing or taken
+                string id;
+                do
+                {
+                    id = Guid.NewGuid().ToString("N")[..12];
+                } while (_jobs.ContainsKey(id));
+                seed.JobId = id;
+            }
+            seed.QueuedAt = seed.QueuedAt == default ? DateTimeOffset.UtcNow : seed.QueuedAt;
+            if (seed.Log is null)
+                seed.Log = new List<string>();
+            _jobs[seed.JobId] = Clone(seed);
+            return Clone(seed);
+        }
     }
 
     public JobRecord? Get(string jobId)
@@ -124,7 +138,7 @@ public sealed class JobStore : IJobStore
         Clip = s.Clip,
         Index = s.Index,
         Total = s.Total,
-        Log = s.Log.ToList(),
+        Log = s.Log is null ? new List<string>() : s.Log.ToList(),
         Error = s.Error,
         QueuedAt = s.QueuedAt,
         StartedAt = s.StartedAt,

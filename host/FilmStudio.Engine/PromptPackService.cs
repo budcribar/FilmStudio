@@ -118,6 +118,8 @@ public sealed class PromptPackService
     /// <summary>Create a new pack version from body text (admin).</summary>
     public PromptPackInfo CreateVersion(string kind, string versionLabel, string body, string? notes = null)
     {
+        if (string.IsNullOrWhiteSpace(kind))
+            throw new ArgumentException("kind required (gen or auto_review)", nameof(kind));
         kind = kind.Trim().ToLowerInvariant();
         if (kind is not (KindGen or KindAutoReview))
             throw new InvalidOperationException("kind must be gen or auto_review");

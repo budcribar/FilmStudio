@@ -135,6 +135,8 @@ public static class ClipDurationEstimator
         IReadOnlyList<Dictionary<string, object?>> beats,
         int? sceneTargetSeconds = null)
     {
+        if (beats is null || beats.Count == 0)
+            return new List<int>();
         var durs = beats.Select(EstimateForBeat).ToList();
         if (durs.Count == 0) return durs;
 

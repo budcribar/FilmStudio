@@ -43,12 +43,24 @@ public sealed class ServerMetricsService : IServerMetricsService
 
     public void NoteApiSlotReleased(string userId)
     {
-        Interlocked.Decrement(ref _apiInFlight);
+        // Never drive the counter negative (unmatched releases from cancel races)
+        DecrementFloor(ref _apiInFlight);
         _apiInFlightByUser.AddOrUpdate(userId, 0, (_, n) => Math.Max(0, n - 1));
     }
 
     public void NoteFfmpegSlotAcquired() => Interlocked.Increment(ref _ffmpegInFlight);
-    public void NoteFfmpegSlotReleased() => Interlocked.Decrement(ref _ffmpegInFlight);
+    public void NoteFfmpegSlotReleased() => DecrementFloor(ref _ffmpegInFlight);
+
+    private static void DecrementFloor(ref int location)
+    {
+        while (true)
+        {
+            var cur = Volatile.Read(ref location);
+            if (cur <= 0) return;
+            if (Interlocked.CompareExchange(ref location, cur - 1, cur) == cur)
+                return;
+        }
+    }
 
     public void NoteJobQueued(string kind, string? userId) => SnapshotUpdated?.Invoke();
 

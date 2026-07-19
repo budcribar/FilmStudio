@@ -45,6 +45,9 @@ public sealed class LoginRateLimiter
         lock (w)
         {
             Prune(w);
+            // Cap history — once blocked, further failures must not grow memory unbounded
+            if (w.Failures.Count >= _maxAttempts)
+                return;
             w.Failures.Add(DateTimeOffset.UtcNow);
         }
     }

@@ -118,14 +118,20 @@ public sealed class GrokChatClient : IGrokChatClient
         _ => el.GetRawText(),
     };
 
+    /// <summary>Test/helper for extracting assistant text from chat completion JSON.</summary>
+    public static string ExtractMessageTextForTests(JsonElement result) => ExtractMessageText(result);
+
     private static string ExtractMessageText(JsonElement result)
     {
         if (result.TryGetProperty("choices", out var choices) &&
             choices.ValueKind == JsonValueKind.Array &&
             choices.GetArrayLength() > 0)
         {
-            var msg = choices[0].GetProperty("message");
-            if (msg.TryGetProperty("content", out var content))
+            var c0 = choices[0];
+            if (c0.ValueKind == JsonValueKind.Object &&
+                c0.TryGetProperty("message", out var msg) &&
+                msg.ValueKind == JsonValueKind.Object &&
+                msg.TryGetProperty("content", out var content))
             {
                 if (content.ValueKind == JsonValueKind.String)
                     return content.GetString() ?? "";
@@ -145,7 +151,8 @@ public sealed class GrokChatClient : IGrokChatClient
         }
         if (result.TryGetProperty("output_text", out var ot) && ot.GetString() is { Length: > 0 } s)
             return s;
-        return result.GetRawText()[..Math.Min(2000, result.GetRawText().Length)];
+        var raw = result.GetRawText();
+        return raw.Length <= 2000 ? raw : raw[..2000];
     }
 
     private void EnsureAuth()
