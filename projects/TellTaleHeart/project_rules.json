@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "active": [
+    {
+      "id": "look01",
+      "text": "Photoreal live-action period drama (circa 1840s). 35mm film grain, shallow depth of field, anamorphic-friendly framing. Motivated practical light only: candle, oil lamp, moonlight through shutters. No cartoon, no soft-3D CG, no children's picture-book look.",
+      "category": "framing",
+      "approvedAt": "2026-07-19T00:00:00Z",
+      "approvedBy": "setup",
+      "sourceFailCount": 0
+    },
+    {
+      "id": "look02",
+      "text": "Single chamber primarily; claustrophobic. Camera close on the Narrator's eyes and hands; slow push-ins; hold on the floorboards and the old man's veiled eye. Horror through restraint, not gore spectacle.",
+      "category": "framing",
+      "approvedAt": "2026-07-19T00:00:00Z",
+      "approvedBy": "setup",
+      "sourceFailCount": 0
+    },
+    {
+      "id": "voice01",
+      "text": "Narrator is the on-camera (and VO) speaker: tense, intimate, increasingly unhinged but articulate 19th-century English. Old Man mostly silent / breath / one cry. Officers calm, official, few lines.",
+      "category": "wrong_voice",
+      "approvedAt": "2026-07-19T00:00:00Z",
+      "approvedBy": "setup",
+      "sourceFailCount": 0
+    }
+  ],
+  "pending": []
+}
