@@ -1,0 +1,61 @@
+{
+  "Version": 1,
+  "Entries": [
+    {
+      "Id": "7f12f83a",
+      "Ts": "2026-07-19T15:16:37",
+      "Type": "clip_fail",
+      "LearningLayer": "clip",
+      "Scene": 1,
+      "Clip": 4,
+      "Character": null,
+      "UserNote": "fail",
+      "ActionTaken": "review_status=fail",
+      "Before": "",
+      "After": "",
+      "SuggestedRule": "Review fail at S01C4: fail"
+    },
+    {
+      "Id": "c56eb3a6",
+      "Ts": "2026-07-19T15:16:37",
+      "Type": "clip_fail",
+      "LearningLayer": "clip",
+      "Scene": 1,
+      "Clip": 2,
+      "Character": null,
+      "UserNote": "fail",
+      "ActionTaken": "review_status=fail",
+      "Before": "",
+      "After": "",
+      "SuggestedRule": "Review fail at S01C2: fail"
+    },
+    {
+      "Id": "7d49f7bd",
+      "Ts": "2026-07-19T15:16:37",
+      "Type": "clip_fail",
+      "LearningLayer": "clip",
+      "Scene": 1,
+      "Clip": 1,
+      "Character": null,
+      "UserNote": "fail",
+      "ActionTaken": "review_status=fail",
+      "Before": "",
+      "After": "",
+      "SuggestedRule": "Review fail at S01C1: fail"
+    },
+    {
+      "Id": "327af32b",
+      "Ts": "2026-07-19T15:16:36",
+      "Type": "auto_review",
+      "LearningLayer": "clip",
+      "Scene": 1,
+      "Clip": 1,
+      "Character": null,
+      "UserNote": "Fake review — connect API for real analysis.",
+      "ActionTaken": "suggestion=unclear;category=other;confidence=low",
+      "Before": "",
+      "After": "",
+      "SuggestedRule": "Note at S01C1: Fake review — connect API for real analysis."
+    }
+  ]
+}
