@@ -42,7 +42,7 @@
         "reference_image_placeholder": "character_buster_ref.png",
         "visual_lock": "Always a small black-and-white short-coated dog with floppy ears and bright dark eyes. No breed drift, no solid-color coat, no loss of black-and-white pattern.",
         "wardrobe_always": [
-          "snug black-and-white pajama top and bottoms after hallway dressing beat — not base portrait"
+          "snug black-and-white pajama top and bottoms after hallway dressing beat \u2014 not base portrait"
         ],
         "source_image_pages": [
           1,
@@ -65,11 +65,11 @@
         "canonical_given_name": "Daddy",
         "display_name_policy": "ok_anytime",
         "voice_label": "Daddy (mostly silent)",
-        "voice_profile": "Adult male; low soft presence; little or no dialogue; if any sound, quiet sleepy breath; calm still energy.",
+        "voice_profile": "Adult male; low soft presence; little or no dialogue; if any sound, quiet sleepy breath; calm still energy. Barritone",
         "reference_image_placeholder": "character_daddy_ref.png",
         "visual_lock": "Same adult father figure throughout: relaxed face, soft sleepwear or cozy home clothes. No wardrobe or age drift.",
         "wardrobe_always": [
-          "soft sleepwear or cozy bed clothes — under-covers beat not base portrait"
+          "soft sleepwear or cozy bed clothes \u2014 under-covers beat not base portrait"
         ],
         "source_image_pages": []
       },
@@ -111,9 +111,9 @@
         "reference_image_placeholder": "loc_hallway_bottom_of_stairs_ref.png"
       },
       "Loc_Mom_And_Daddy_S_Room": {
-        "display_name": "MOM AND DADDY'S ROOM",
-        "description": "INT. MOM AND DADDY'S ROOM - NIGHT",
-        "visual_lock": "INT. MOM AND DADDY'S ROOM - NIGHT",
+        "display_name": "MOM AND DADDY\u0027S ROOM",
+        "description": "INT. MOM AND DADDY\u0027S ROOM - NIGHT",
+        "visual_lock": "INT. MOM AND DADDY\u0027S ROOM - NIGHT",
         "reference_image_placeholder": "loc_mom_and_daddy_s_room_ref.png"
       }
     }
@@ -183,7 +183,7 @@
           "timestamp": "00:00-00:07",
           "veo_continuation_source": "none",
           "location_id": "Loc_Backyard",
-          "visual_prompt": "EXT. BACKYARD - DAY. Character_Narrator A sunny little yard. BUSTER, a small black-and-white dog, rockets across the grass, jumping around like a frog—springy, silly, full of joy. Character_Narrator: Pure voice-over narrator; no on-s… / 480p, 24fps",
+          "visual_prompt": "EXT. BACKYARD - DAY. Character_Narrator A sunny little yard. BUSTER, a small black-and-white dog, rockets across the grass, jumping around like a frog\u2014springy, silly, full of joy. Character_Narrator: Pure voice-over narrator; no on-s\u2026 / 480p, 24fps",
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens, no name tags, no name badges, no embroidered names, no lower thirds, no personal names on clothing or props",
           "audio_payload": {
             "delivery": "none",
@@ -201,12 +201,12 @@
           "timestamp": "00:07-00:17",
           "veo_continuation_source": "extend_previous",
           "location_id": "Loc_Backyard",
-          "visual_prompt": "EXT. BACKYARD - DAY. Character_Narrator NARRATOR speaks. OFF-CAMERA VOICEOVER Character_Narrator says \"He's Buster the Noodle Head Dog. He jumps around like a frog. He's small, black, and wh…\". Character_Narrator: Pure voice-over narrator; no on-s…. CONTINUE from previous last frame — same place and character positions; do not reset to the door or restart the walk; pick up exactly where the last clip ended / 480p, 24fps",
+          "visual_prompt": "EXT. BACKYARD - DAY. Character_Narrator NARRATOR speaks. OFF-CAMERA VOICEOVER Character_Narrator says \u0022He\u0027s Buster the Noodle Head Dog. He jumps around like a frog. He\u0027s small, black, and wh\u2026\u0022. Character_Narrator: Pure voice-over narrator; no on-s\u2026. CONTINUE from previous last frame \u2014 same place and character positions; do not reset to the door or restart the walk; pick up exactly where the last clip ended / 480p, 24fps",
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens, no name tags, no name badges, no embroidered names, no lower thirds, no personal names on clothing or props",
           "audio_payload": {
             "delivery": "on_camera",
             "speaker": "Character_Narrator",
-            "dialogue": "He's Buster the Noodle Head Dog. He jumps around like a frog. He's small, black, and white— but not very bright! He's Buster the Noodle Head Dog.",
+            "dialogue": "He\u0027s Buster the Noodle Head Dog. He jumps around like a frog. He\u0027s small, black, and white\u2014 but not very bright! He\u0027s Buster the Noodle Head Dog.",
             "sfx": "",
             "ambient": ""
           },
@@ -219,7 +219,7 @@
           "timestamp": "00:17-00:24",
           "veo_continuation_source": "extend_previous",
           "location_id": "Loc_Backyard",
-          "visual_prompt": "EXT. BACKYARD - DAY. Character_Narrator Buster skids, tumbles, pops up grinning, tail a blur. Character_Narrator: Pure voice-over narrator; no on-s…. CONTINUE from previous last frame — same place and character positions; do not reset to the door or restart the walk; pick up exactly where the last clip ended / 480p, 24fps",
+          "visual_prompt": "EXT. BACKYARD - DAY. Character_Narrator Buster skids, tumbles, pops up grinning, tail a blur. Character_Narrator: Pure voice-over narrator; no on-s\u2026. CONTINUE from previous last frame \u2014 same place and character positions; do not reset to the door or restart the walk; pick up exactly where the last clip ended / 480p, 24fps",
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens, no name tags, no name badges, no embroidered names, no lower thirds, no personal names on clothing or props",
           "audio_payload": {
             "delivery": "none",
@@ -266,7 +266,7 @@
           "timestamp": "00:00-00:06",
           "veo_continuation_source": "none",
           "location_id": "Loc_Living_Room",
-          "visual_prompt": "STYLE LOCK: stylized 3D animated children's picture-book CG (same render family as animal hero) -- not photoreal, not live-action. INT. LIVING ROOM - EVENING. also on screen: Character_Narrator. Character_Momma Cozy home. Lamps glow. MOMMA stands near the hallway, kind but firm. Buster trots in, still buzzing with energy. Character_Momma still wears cozy home lounge clothes in soft warm colors. Character_Momma: Same adult mother figure throughout:… / 480p, 24fps",
+          "visual_prompt": "STYLE LOCK: stylized 3D animated children\u0027s picture-book CG (same render family as animal hero) -- not photoreal, not live-action. INT. LIVING ROOM - EVENING. also on screen: Character_Narrator. Character_Momma Cozy home. Lamps glow. MOMMA stands near the hallway, kind but firm. Buster trots in, still buzzing with energy. Character_Momma still wears cozy home lounge clothes in soft warm colors. Character_Momma: Same adult mother figure throughout:\u2026 / 480p, 24fps",
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens, no name tags, no name badges, no embroidered names, no lower thirds, no personal names on clothing or props, no extra unmentioned hats or jackets",
           "audio_payload": {
             "delivery": "none",
@@ -284,12 +284,12 @@
           "timestamp": "00:06-00:12",
           "veo_continuation_source": "extend_previous",
           "location_id": "Loc_Living_Room",
-          "visual_prompt": "STYLE LOCK: stylized 3D animated children's picture-book CG (same render family as animal hero) -- not photoreal, not live-action. INT. LIVING ROOM - EVENING. Character_Momma MOMMA speaks. OFF-CAMERA VOICEOVER Character_Momma says \"It's time for bed.\". Character_Momma still wears cozy home lounge clothes in soft warm colors. Character_Momma: Same adult mother figure throughout: … / 480p, 24fps",
+          "visual_prompt": "STYLE LOCK: stylized 3D animated children\u0027s picture-book CG (same render family as animal hero) -- not photoreal, not live-action. INT. LIVING ROOM - EVENING. Character_Momma MOMMA speaks. OFF-CAMERA VOICEOVER Character_Momma says \u0022It\u0027s time for bed.\u0022. Character_Momma still wears cozy home lounge clothes in soft warm colors. Character_Momma: Same adult mother figure throughout: \u2026 / 480p, 24fps",
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens, no name tags, no name badges, no embroidered names, no lower thirds, no personal names on clothing or props, no extra unmentioned hats or jackets",
           "audio_payload": {
             "delivery": "on_camera",
             "speaker": "Character_Momma",
-            "dialogue": "It's time for bed.",
+            "dialogue": "It\u0027s time for bed.",
             "sfx": "",
             "ambient": ""
           },
@@ -302,7 +302,7 @@
           "timestamp": "00:12-00:18",
           "veo_continuation_source": "extend_previous",
           "location_id": "Loc_Living_Room",
-          "visual_prompt": "STYLE LOCK: stylized 3D animated children's picture-book CG (same render family as animal hero) -- not photoreal, not live-action. INT. LIVING ROOM - EVENING. also on screen: Character_Narrator. Character_Momma Buster's ears perk. He wants to rest his—but first he circles the rug, sniffs the floor, considers a very bad idea. Character_Momma still wears cozy home lounge clothes in soft warm colors. Character_Momma: Same adult mother figure throughout:… / 480p, 24fps",
+          "visual_prompt": "STYLE LOCK: stylized 3D animated children\u0027s picture-book CG (same render family as animal hero) -- not photoreal, not live-action. INT. LIVING ROOM - EVENING. also on screen: Character_Narrator. Character_Momma Buster\u0027s ears perk. He wants to rest his\u2014but first he circles the rug, sniffs the floor, considers a very bad idea. Character_Momma still wears cozy home lounge clothes in soft warm colors. Character_Momma: Same adult mother figure throughout:\u2026 / 480p, 24fps",
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens, no name tags, no name badges, no embroidered names, no lower thirds, no personal names on clothing or props, no extra unmentioned hats or jackets",
           "audio_payload": {
             "delivery": "none",
@@ -320,7 +320,7 @@
           "timestamp": "00:18-00:24",
           "veo_continuation_source": "extend_previous",
           "location_id": "Loc_Living_Room",
-          "visual_prompt": "INT. LIVING ROOM - EVENING. Character_Narrator NARRATOR speaks. OFF-CAMERA VOICEOVER Character_Narrator says \"Before he goes, he has to potty. Going on the floor is naughty!\". Character_Narrator: Pure voice-over narrator; no on-s…. CONTINUE from previous last frame — same place and character positions; do not reset to the door or restart the walk; pick up exactly where the last clip ended / 480p, 24fps",
+          "visual_prompt": "INT. LIVING ROOM - EVENING. Character_Narrator NARRATOR speaks. OFF-CAMERA VOICEOVER Character_Narrator says \u0022Before he goes, he has to potty. Going on the floor is naughty!\u0022. Character_Narrator: Pure voice-over narrator; no on-s\u2026. CONTINUE from previous last frame \u2014 same place and character positions; do not reset to the door or restart the walk; pick up exactly where the last clip ended / 480p, 24fps",
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens, no name tags, no name badges, no embroidered names, no lower thirds, no personal names on clothing or props",
           "audio_payload": {
             "delivery": "on_camera",
@@ -338,7 +338,7 @@
           "timestamp": "00:24-00:30",
           "veo_continuation_source": "extend_previous",
           "location_id": "Loc_Living_Room",
-          "visual_prompt": "STYLE LOCK: stylized 3D animated children's picture-book CG (same render family as animal hero) -- not photoreal, not live-action. INT. LIVING ROOM - EVENING. also on screen: Character_Narrator. Character_Momma Momma points toward the door. Character_Momma still wears cozy home lounge clothes in soft warm colors. Character_Momma: Same adult mother figure throughout:… / 480p, 24fps",
+          "visual_prompt": "STYLE LOCK: stylized 3D animated children\u0027s picture-book CG (same render family as animal hero) -- not photoreal, not live-action. INT. LIVING ROOM - EVENING. also on screen: Character_Narrator. Character_Momma Momma points toward the door. Character_Momma still wears cozy home lounge clothes in soft warm colors. Character_Momma: Same adult mother figure throughout:\u2026 / 480p, 24fps",
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens, no name tags, no name badges, no embroidered names, no lower thirds, no personal names on clothing or props, no extra unmentioned hats or jackets",
           "audio_payload": {
             "delivery": "none",
@@ -356,7 +356,7 @@
           "timestamp": "00:30-00:36",
           "veo_continuation_source": "extend_previous",
           "location_id": "Loc_Living_Room",
-          "visual_prompt": "STYLE LOCK: stylized 3D animated children's picture-book CG (same render family as animal hero) -- not photoreal, not live-action. INT. LIVING ROOM - EVENING. Character_Momma MOMMA speaks. OFF-CAMERA VOICEOVER Character_Momma says \"A doggy goes outside.\". Character_Momma still wears cozy home lounge clothes in soft warm colors. Character_Momma: Same adult mother figure throughout: … / 480p, 24fps",
+          "visual_prompt": "STYLE LOCK: stylized 3D animated children\u0027s picture-book CG (same render family as animal hero) -- not photoreal, not live-action. INT. LIVING ROOM - EVENING. Character_Momma MOMMA speaks. OFF-CAMERA VOICEOVER Character_Momma says \u0022A doggy goes outside.\u0022. Character_Momma still wears cozy home lounge clothes in soft warm colors. Character_Momma: Same adult mother figure throughout: \u2026 / 480p, 24fps",
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens, no name tags, no name badges, no embroidered names, no lower thirds, no personal names on clothing or props, no extra unmentioned hats or jackets",
           "audio_payload": {
             "delivery": "on_camera",
@@ -374,7 +374,7 @@
           "timestamp": "00:36-00:42",
           "veo_continuation_source": "extend_previous",
           "location_id": "Loc_Living_Room",
-          "visual_prompt": "STYLE LOCK: stylized 3D animated children's picture-book CG (same render family as animal hero) -- not photoreal, not live-action. INT. LIVING ROOM - EVENING. also on screen: Character_Narrator. Character_Momma Buster cocks. The idea does not compute. Character_Momma still wears cozy home lounge clothes in soft warm colors. Character_Momma: Same adult mother figure throughout:… / 480p, 24fps",
+          "visual_prompt": "STYLE LOCK: stylized 3D animated children\u0027s picture-book CG (same render family as animal hero) -- not photoreal, not live-action. INT. LIVING ROOM - EVENING. also on screen: Character_Narrator. Character_Momma Buster cocks. The idea does not compute. Character_Momma still wears cozy home lounge clothes in soft warm colors. Character_Momma: Same adult mother figure throughout:\u2026 / 480p, 24fps",
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens, no name tags, no name badges, no embroidered names, no lower thirds, no personal names on clothing or props, no extra unmentioned hats or jackets",
           "audio_payload": {
             "delivery": "none",
@@ -392,12 +392,12 @@
           "timestamp": "00:42-00:48",
           "veo_continuation_source": "extend_previous",
           "location_id": "Loc_Living_Room",
-          "visual_prompt": "INT. LIVING ROOM - EVENING. Character_Narrator NARRATOR speaks. OFF-CAMERA VOICEOVER Character_Narrator says \"That makes no sense in Buster's head!\". Character_Narrator: Pure voice-over narrator; no on-s…. CONTINUE from previous last frame — same place and character positions; do not reset to the door or restart the walk; pick up exactly where the last clip ended / 480p, 24fps",
+          "visual_prompt": "INT. LIVING ROOM - EVENING. Character_Narrator NARRATOR speaks. OFF-CAMERA VOICEOVER Character_Narrator says \u0022That makes no sense in Buster\u0027s head!\u0022. Character_Narrator: Pure voice-over narrator; no on-s\u2026. CONTINUE from previous last frame \u2014 same place and character positions; do not reset to the door or restart the walk; pick up exactly where the last clip ended / 480p, 24fps",
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens, no name tags, no name badges, no embroidered names, no lower thirds, no personal names on clothing or props",
           "audio_payload": {
             "delivery": "on_camera",
             "speaker": "Character_Narrator",
-            "dialogue": "That makes no sense in Buster's head!",
+            "dialogue": "That makes no sense in Buster\u0027s head!",
             "sfx": "",
             "ambient": ""
           },
@@ -410,7 +410,7 @@
           "timestamp": "00:48-00:54",
           "veo_continuation_source": "extend_previous",
           "location_id": "Loc_Living_Room",
-          "visual_prompt": "STYLE LOCK: stylized 3D animated children's picture-book CG (same render family as animal hero) -- not photoreal, not live-action. INT. LIVING ROOM - EVENING. also on screen: Character_Narrator. Character_Momma He stares at the floor. Stares at Momma. Stares at the door. Then—off he goes. Character_Momma still wears cozy home lounge clothes in soft warm colors. Character_Momma: Same adult mother figure throughout:… / 480p, 24fps",
+          "visual_prompt": "STYLE LOCK: stylized 3D animated children\u0027s picture-book CG (same render family as animal hero) -- not photoreal, not live-action. INT. LIVING ROOM - EVENING. also on screen: Character_Narrator. Character_Momma He stares at the floor. Stares at Momma. Stares at the door. Then\u2014off he goes. Character_Momma still wears cozy home lounge clothes in soft warm colors. Character_Momma: Same adult mother figure throughout:\u2026 / 480p, 24fps",
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens, no name tags, no name badges, no embroidered names, no lower thirds, no personal names on clothing or props, no extra unmentioned hats or jackets",
           "audio_payload": {
             "delivery": "none",
@@ -504,7 +504,7 @@
           "timestamp": "00:00-00:06",
           "veo_continuation_source": "none",
           "location_id": "Loc_Living_Room",
-          "visual_prompt": "INT. LIVING ROOM - EVENING. Character_Narrator Buster bursts in and does a little spin for Momma—show-off twirl, paws tapping. Character_Narrator: Pure voice-over narrator; no on-s… / 480p, 24fps",
+          "visual_prompt": "INT. LIVING ROOM - EVENING. Character_Narrator Buster bursts in and does a little spin for Momma\u2014show-off twirl, paws tapping. Character_Narrator: Pure voice-over narrator; no on-s\u2026 / 480p, 24fps",
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens, no name tags, no name badges, no embroidered names, no lower thirds, no personal names on clothing or props",
           "audio_payload": {
             "delivery": "none",
@@ -522,7 +522,7 @@
           "timestamp": "00:06-00:12",
           "veo_continuation_source": "extend_previous",
           "location_id": "Loc_Living_Room",
-          "visual_prompt": "INT. LIVING ROOM - EVENING. Character_Narrator NARRATOR speaks. OFF-CAMERA VOICEOVER Character_Narrator says \"For Mom he does a little spin.\". Character_Narrator: Pure voice-over narrator; no on-s…. CONTINUE from previous last frame — same place and character positions; do not reset to the door or restart the walk; pick up exactly where the last clip ended / 480p, 24fps",
+          "visual_prompt": "INT. LIVING ROOM - EVENING. Character_Narrator NARRATOR speaks. OFF-CAMERA VOICEOVER Character_Narrator says \u0022For Mom he does a little spin.\u0022. Character_Narrator: Pure voice-over narrator; no on-s\u2026. CONTINUE from previous last frame \u2014 same place and character positions; do not reset to the door or restart the walk; pick up exactly where the last clip ended / 480p, 24fps",
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens, no name tags, no name badges, no embroidered names, no lower thirds, no personal names on clothing or props",
           "audio_payload": {
             "delivery": "on_camera",
@@ -540,7 +540,7 @@
           "timestamp": "00:12-00:18",
           "veo_continuation_source": "extend_previous",
           "location_id": "Loc_Living_Room",
-          "visual_prompt": "INT. LIVING ROOM - EVENING. Character_Narrator He spins again, eyes on the treat jar. Character_Narrator: Pure voice-over narrator; no on-s…. CONTINUE from previous last frame — same place and character positions; do not reset to the door or restart the walk; pick up exactly where the last clip ended / 480p, 24fps",
+          "visual_prompt": "INT. LIVING ROOM - EVENING. Character_Narrator He spins again, eyes on the treat jar. Character_Narrator: Pure voice-over narrator; no on-s\u2026. CONTINUE from previous last frame \u2014 same place and character positions; do not reset to the door or restart the walk; pick up exactly where the last clip ended / 480p, 24fps",
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens, no name tags, no name badges, no embroidered names, no lower thirds, no personal names on clothing or props",
           "audio_payload": {
             "delivery": "none",
@@ -558,7 +558,7 @@
           "timestamp": "00:18-00:24",
           "veo_continuation_source": "extend_previous",
           "location_id": "Loc_Living_Room",
-          "visual_prompt": "INT. LIVING ROOM - EVENING. Character_Narrator NARRATOR speaks. OFF-CAMERA VOICEOVER Character_Narrator says \"He spins around to get a treat.\". Character_Narrator: Pure voice-over narrator; no on-s…. CONTINUE from previous last frame — same place and character positions; do not reset to the door or restart the walk; pick up exactly where the last clip ended / 480p, 24fps",
+          "visual_prompt": "INT. LIVING ROOM - EVENING. Character_Narrator NARRATOR speaks. OFF-CAMERA VOICEOVER Character_Narrator says \u0022He spins around to get a treat.\u0022. Character_Narrator: Pure voice-over narrator; no on-s\u2026. CONTINUE from previous last frame \u2014 same place and character positions; do not reset to the door or restart the walk; pick up exactly where the last clip ended / 480p, 24fps",
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens, no name tags, no name badges, no embroidered names, no lower thirds, no personal names on clothing or props",
           "audio_payload": {
             "delivery": "on_camera",
@@ -576,7 +576,7 @@
           "timestamp": "00:24-00:30",
           "veo_continuation_source": "extend_previous",
           "location_id": "Loc_Living_Room",
-          "visual_prompt": "INT. LIVING ROOM - EVENING. Character_Narrator Momma smiles, gently lays a treat by his feet. Buster gobbles it up. He pads to his water bowl and has his drink of water too—loud, happy laps. Character_Narrator: Pure voice-over narrator; no on-s…. CONTINUE from previous last frame — same place and character positions; do not reset to the door or restart the walk; pick up exactly where the last clip ended / 480p, 24fps",
+          "visual_prompt": "INT. LIVING ROOM - EVENING. Character_Narrator Momma smiles, gently lays a treat by his feet. Buster gobbles it up. He pads to his water bowl and has his drink of water too\u2014loud, happy laps. Character_Narrator: Pure voice-over narrator; no on-s\u2026. CONTINUE from previous last frame \u2014 same place and character positions; do not reset to the door or restart the walk; pick up exactly where the last clip ended / 480p, 24fps",
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens, no name tags, no name badges, no embroidered names, no lower thirds, no personal names on clothing or props",
           "audio_payload": {
             "delivery": "none",
@@ -594,7 +594,7 @@
           "timestamp": "00:30-00:36",
           "veo_continuation_source": "extend_previous",
           "location_id": "Loc_Living_Room",
-          "visual_prompt": "INT. LIVING ROOM - EVENING. Character_Narrator NARRATOR speaks. OFF-CAMERA VOICEOVER Character_Narrator says \"This also would be good for you!\". Character_Narrator: Pure voice-over narrator; no on-s…. CONTINUE from previous last frame — same place and character positions; do not reset to the door or restart the walk; pick up exactly where the last clip ended / 480p, 24fps",
+          "visual_prompt": "INT. LIVING ROOM - EVENING. Character_Narrator NARRATOR speaks. OFF-CAMERA VOICEOVER Character_Narrator says \u0022This also would be good for you!\u0022. Character_Narrator: Pure voice-over narrator; no on-s\u2026. CONTINUE from previous last frame \u2014 same place and character positions; do not reset to the door or restart the walk; pick up exactly where the last clip ended / 480p, 24fps",
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens, no name tags, no name badges, no embroidered names, no lower thirds, no personal names on clothing or props",
           "audio_payload": {
             "delivery": "on_camera",
@@ -643,7 +643,7 @@
           "timestamp": "00:00-00:06",
           "veo_continuation_source": "none",
           "location_id": "Loc_Hallway_Bottom_Of_Stairs",
-          "visual_prompt": "INT. HALLWAY / BOTTOM OF STAIRS - NIGHT. Character_Narrator Momma holds up small black-and-white pajamas. Buster wriggles into them—same black-and-white pattern as his fur, now snug pajama top and bottoms. Character_Narrator: Pure voice-over narrator; no on-s… / 480p, 24fps",
+          "visual_prompt": "INT. HALLWAY / BOTTOM OF STAIRS - NIGHT. Character_Narrator Momma holds up small black-and-white pajamas. Buster wriggles into them\u2014same black-and-white pattern as his fur, now snug pajama top and bottoms. Character_Narrator: Pure voice-over narrator; no on-s\u2026 / 480p, 24fps",
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens, no name tags, no name badges, no embroidered names, no lower thirds, no personal names on clothing or props",
           "audio_payload": {
             "delivery": "none",
@@ -661,7 +661,7 @@
           "timestamp": "00:06-00:12",
           "veo_continuation_source": "extend_previous",
           "location_id": "Loc_Hallway_Bottom_Of_Stairs",
-          "visual_prompt": "INT. HALLWAY / BOTTOM OF STAIRS - NIGHT. Character_Narrator NARRATOR speaks. OFF-CAMERA VOICEOVER Character_Narrator says \"Pajamas, black and white he wears.\". Character_Narrator: Pure voice-over narrator; no on-s…. CONTINUE from previous last frame — same place and character positions; do not reset to the door or restart the walk; pick up exactly where the last clip ended / 480p, 24fps",
+          "visual_prompt": "INT. HALLWAY / BOTTOM OF STAIRS - NIGHT. Character_Narrator NARRATOR speaks. OFF-CAMERA VOICEOVER Character_Narrator says \u0022Pajamas, black and white he wears.\u0022. Character_Narrator: Pure voice-over narrator; no on-s\u2026. CONTINUE from previous last frame \u2014 same place and character positions; do not reset to the door or restart the walk; pick up exactly where the last clip ended / 480p, 24fps",
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens, no name tags, no name badges, no embroidered names, no lower thirds, no personal names on clothing or props",
           "audio_payload": {
             "delivery": "on_camera",
@@ -679,7 +679,7 @@
           "timestamp": "00:12-00:18",
           "veo_continuation_source": "extend_previous",
           "location_id": "Loc_Hallway_Bottom_Of_Stairs",
-          "visual_prompt": "INT. HALLWAY / BOTTOM OF STAIRS - NIGHT. Character_Narrator Pajama-clad Buster faces the staircase. Many stairs. He climbs—hop, scramble, hop—up toward Mom and Daddy's room. Character_Narrator: Pure voice-over narrator; no on-s…. CONTINUE from previous last frame — same place and character positions; do not reset to the door or restart the walk; pick up exactly where the last clip ended / 480p, 24fps",
+          "visual_prompt": "INT. HALLWAY / BOTTOM OF STAIRS - NIGHT. Character_Narrator Pajama-clad Buster faces the staircase. Many stairs. He climbs\u2014hop, scramble, hop\u2014up toward Mom and Daddy\u0027s room. Character_Narrator: Pure voice-over narrator; no on-s\u2026. CONTINUE from previous last frame \u2014 same place and character positions; do not reset to the door or restart the walk; pick up exactly where the last clip ended / 480p, 24fps",
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens, no name tags, no name badges, no embroidered names, no lower thirds, no personal names on clothing or props",
           "audio_payload": {
             "delivery": "none",
@@ -697,12 +697,12 @@
           "timestamp": "00:18-00:24",
           "veo_continuation_source": "extend_previous",
           "location_id": "Loc_Hallway_Bottom_Of_Stairs",
-          "visual_prompt": "INT. HALLWAY / BOTTOM OF STAIRS - NIGHT. Character_Narrator NARRATOR speaks. OFF-CAMERA VOICEOVER Character_Narrator says \"And then he climbs the many stairs to get to Mom and Daddy's room.\". Character_Narrator: Pure voice-over narrator; no on-s…. CONTINUE from previous last frame — same place and character positions; do not reset to the door or restart the walk; pick up exactly where the last clip ended / 480p, 24fps",
+          "visual_prompt": "INT. HALLWAY / BOTTOM OF STAIRS - NIGHT. Character_Narrator NARRATOR speaks. OFF-CAMERA VOICEOVER Character_Narrator says \u0022And then he climbs the many stairs to get to Mom and Daddy\u0027s room.\u0022. Character_Narrator: Pure voice-over narrator; no on-s\u2026. CONTINUE from previous last frame \u2014 same place and character positions; do not reset to the door or restart the walk; pick up exactly where the last clip ended / 480p, 24fps",
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens, no name tags, no name badges, no embroidered names, no lower thirds, no personal names on clothing or props",
           "audio_payload": {
             "delivery": "on_camera",
             "speaker": "Character_Narrator",
-            "dialogue": "And then he climbs the many stairs to get to Mom and Daddy's room.",
+            "dialogue": "And then he climbs the many stairs to get to Mom and Daddy\u0027s room.",
             "sfx": "",
             "ambient": ""
           },
@@ -724,7 +724,7 @@
     },
     {
       "scene_number": 7,
-      "setting": "INT. MOM AND DADDY'S ROOM - NIGHT",
+      "setting": "INT. MOM AND DADDY\u0027S ROOM - NIGHT",
       "location_ids": [],
       "primary_location_id": "Loc_Mom_And_Daddy_S_Room",
       "characters_on_screen": [
@@ -744,7 +744,7 @@
           "timestamp": "00:00-00:10",
           "veo_continuation_source": "none",
           "location_id": "Loc_Mom_And_Daddy_S_Room",
-          "visual_prompt": "INT. MOM AND DADDY'S ROOM - NIGHT. Character_Narrator Soft lamp light. HOME SWEET HOME warmth: big bed, pillows, DADDY already settled under the covers. Momma turns down the blanket. Buster reaches the top, gathers himself—and JUMPS into bed, none too soon, landing in a happy heap between them. Character_Narrator: Pure voice-over narrator; no on-s… / 480p, 24fps",
+          "visual_prompt": "INT. MOM AND DADDY\u0027S ROOM - NIGHT. Character_Narrator Soft lamp light. HOME SWEET HOME warmth: big bed, pillows, DADDY already settled under the covers. Momma turns down the blanket. Buster reaches the top, gathers himself\u2014and JUMPS into bed, none too soon, landing in a happy heap between them. Character_Narrator: Pure voice-over narrator; no on-s\u2026 / 480p, 24fps",
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens, no name tags, no name badges, no embroidered names, no lower thirds, no personal names on clothing or props",
           "audio_payload": {
             "delivery": "none",
@@ -762,7 +762,7 @@
           "timestamp": "00:10-00:18",
           "veo_continuation_source": "extend_previous",
           "location_id": "Loc_Mom_And_Daddy_S_Room",
-          "visual_prompt": "INT. MOM AND DADDY'S ROOM - NIGHT. Character_Narrator NARRATOR speaks. OFF-CAMERA VOICEOVER Character_Narrator says \"And jump in bed, and none too soon.\". Character_Narrator: Pure voice-over narrator; no on-s…. CONTINUE from previous last frame — same place and character positions; do not reset to the door or restart the walk; pick up exactly where the last clip ended / 480p, 24fps",
+          "visual_prompt": "INT. MOM AND DADDY\u0027S ROOM - NIGHT. Character_Narrator NARRATOR speaks. OFF-CAMERA VOICEOVER Character_Narrator says \u0022And jump in bed, and none too soon.\u0022. Character_Narrator: Pure voice-over narrator; no on-s\u2026. CONTINUE from previous last frame \u2014 same place and character positions; do not reset to the door or restart the walk; pick up exactly where the last clip ended / 480p, 24fps",
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens, no name tags, no name badges, no embroidered names, no lower thirds, no personal names on clothing or props",
           "audio_payload": {
             "delivery": "on_camera",
@@ -780,7 +780,7 @@
           "timestamp": "00:18-00:25",
           "veo_continuation_source": "extend_previous",
           "location_id": "Loc_Mom_And_Daddy_S_Room",
-          "visual_prompt": "INT. MOM AND DADDY'S ROOM - NIGHT. Character_Narrator Buster burrows, sighs, eyes growing heavy. Soft dreamy light plays over his face. Character_Narrator: Pure voice-over narrator; no on-s…. CONTINUE from previous last frame — same place and character positions; do not reset to the door or restart the walk; pick up exactly where the last clip ended / 480p, 24fps",
+          "visual_prompt": "INT. MOM AND DADDY\u0027S ROOM - NIGHT. Character_Narrator Buster burrows, sighs, eyes growing heavy. Soft dreamy light plays over his face. Character_Narrator: Pure voice-over narrator; no on-s\u2026. CONTINUE from previous last frame \u2014 same place and character positions; do not reset to the door or restart the walk; pick up exactly where the last clip ended / 480p, 24fps",
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens, no name tags, no name badges, no embroidered names, no lower thirds, no personal names on clothing or props",
           "audio_payload": {
             "delivery": "none",
@@ -798,12 +798,12 @@
           "timestamp": "00:25-00:35",
           "veo_continuation_source": "extend_previous",
           "location_id": "Loc_Mom_And_Daddy_S_Room",
-          "visual_prompt": "INT. MOM AND DADDY'S ROOM - NIGHT. Character_Narrator NARRATOR speaks. OFF-CAMERA VOICEOVER Character_Narrator says \"He's not that smart, but still he knows he'll have a dream of fluffy snows, or bunnies …\". Character_Narrator: Pure voice-over narrator; no on-s…. CONTINUE from previous last frame — same place and character positions; do not reset to the door or restart the walk; pick up exactly where the last clip ended / 480p, 24fps",
+          "visual_prompt": "INT. MOM AND DADDY\u0027S ROOM - NIGHT. Character_Narrator NARRATOR speaks. OFF-CAMERA VOICEOVER Character_Narrator says \u0022He\u0027s not that smart, but still he knows he\u0027ll have a dream of fluffy snows, or bunnies \u2026\u0022. Character_Narrator: Pure voice-over narrator; no on-s\u2026. CONTINUE from previous last frame \u2014 same place and character positions; do not reset to the door or restart the walk; pick up exactly where the last clip ended / 480p, 24fps",
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens, no name tags, no name badges, no embroidered names, no lower thirds, no personal names on clothing or props",
           "audio_payload": {
             "delivery": "on_camera",
             "speaker": "Character_Narrator",
-            "dialogue": "He's not that smart, but still he knows he'll have a dream of fluffy snows, or bunnies running 'cross the yard— and how he'll chase them very hard.",
+            "dialogue": "He\u0027s not that smart, but still he knows he\u0027ll have a dream of fluffy snows, or bunnies running \u0027cross the yard\u2014 and how he\u0027ll chase them very hard.",
             "sfx": "",
             "ambient": ""
           },
@@ -816,7 +816,7 @@
           "timestamp": "00:35-00:45",
           "veo_continuation_source": "extend_previous",
           "location_id": "Loc_Mom_And_Daddy_S_Room",
-          "visual_prompt": "INT. MOM AND DADDY'S ROOM - NIGHT. Character_Narrator DREAM - EXT. SNOWY YARD - DAY (DREAM) Fluffy snow. Buster bounds through white powder, then chases bunnies racing across a green yard—full speed, pure joy—until the dream softens back to dark. Character_Narrator: Pure voice-over narrator; no on-s…. CONTINUE from previous last frame — same place and character positions; do not reset to the door or restart the walk; pick up exactly where the last clip ended / 480p, 24fps",
+          "visual_prompt": "INT. MOM AND DADDY\u0027S ROOM - NIGHT. Character_Narrator DREAM - EXT. SNOWY YARD - DAY (DREAM) Fluffy snow. Buster bounds through white powder, then chases bunnies racing across a green yard\u2014full speed, pure joy\u2014until the dream softens back to dark. Character_Narrator: Pure voice-over narrator; no on-s\u2026. CONTINUE from previous last frame \u2014 same place and character positions; do not reset to the door or restart the walk; pick up exactly where the last clip ended / 480p, 24fps",
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens, no name tags, no name badges, no embroidered names, no lower thirds, no personal names on clothing or props",
           "audio_payload": {
             "delivery": "none",
@@ -844,7 +844,7 @@
     },
     {
       "scene_number": 8,
-      "setting": "INT. MOM AND DADDY'S ROOM - NIGHT",
+      "setting": "INT. MOM AND DADDY\u0027S ROOM - NIGHT",
       "location_ids": [],
       "primary_location_id": "Loc_Mom_And_Daddy_S_Room",
       "characters_on_screen": [
@@ -864,7 +864,7 @@
           "timestamp": "00:00-00:06",
           "veo_continuation_source": "none",
           "location_id": "Loc_Mom_And_Daddy_S_Room",
-          "visual_prompt": "INT. MOM AND DADDY'S ROOM - NIGHT. Character_Narrator Buster settles deeper into the covers, warm and soft and quite well-fed. Character_Narrator: Pure voice-over narrator; no on-s… / 480p, 24fps",
+          "visual_prompt": "INT. MOM AND DADDY\u0027S ROOM - NIGHT. Character_Narrator Buster settles deeper into the covers, warm and soft and quite well-fed. Character_Narrator: Pure voice-over narrator; no on-s\u2026 / 480p, 24fps",
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens, no name tags, no name badges, no embroidered names, no lower thirds, no personal names on clothing or props",
           "audio_payload": {
             "delivery": "none",
@@ -882,7 +882,7 @@
           "timestamp": "00:06-00:12",
           "veo_continuation_source": "extend_previous",
           "location_id": "Loc_Mom_And_Daddy_S_Room",
-          "visual_prompt": "INT. MOM AND DADDY'S ROOM - NIGHT. Character_Narrator NARRATOR speaks. OFF-CAMERA VOICEOVER Character_Narrator says \"He goes to sleep because they say tomorrow is another day. Another day for silly dogs t…\". Character_Narrator: Pure voice-over narrator; no on-s…. CONTINUE from previous last frame — same place and character positions; do not reset to the door or restart the walk; pick up exactly where the last clip ended / 480p, 24fps",
+          "visual_prompt": "INT. MOM AND DADDY\u0027S ROOM - NIGHT. Character_Narrator NARRATOR speaks. OFF-CAMERA VOICEOVER Character_Narrator says \u0022He goes to sleep because they say tomorrow is another day. Another day for silly dogs t\u2026\u0022. Character_Narrator: Pure voice-over narrator; no on-s\u2026. CONTINUE from previous last frame \u2014 same place and character positions; do not reset to the door or restart the walk; pick up exactly where the last clip ended / 480p, 24fps",
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens, no name tags, no name badges, no embroidered names, no lower thirds, no personal names on clothing or props",
           "audio_payload": {
             "delivery": "on_camera",
@@ -900,7 +900,7 @@
           "timestamp": "00:12-00:18",
           "veo_continuation_source": "extend_previous",
           "location_id": "Loc_Mom_And_Daddy_S_Room",
-          "visual_prompt": "INT. MOM AND DADDY'S ROOM - NIGHT. Character_Narrator He falls asleep, lays down. Momma gently pets him while he sleeps. Character_Narrator: Pure voice-over narrator; no on-s…. CONTINUE from previous last frame — same place and character positions; do not reset to the door or restart the walk; pick up exactly where the last clip ended / 480p, 24fps",
+          "visual_prompt": "INT. MOM AND DADDY\u0027S ROOM - NIGHT. Character_Narrator He falls asleep, lays down. Momma gently pets him while he sleeps. Character_Narrator: Pure voice-over narrator; no on-s\u2026. CONTINUE from previous last frame \u2014 same place and character positions; do not reset to the door or restart the walk; pick up exactly where the last clip ended / 480p, 24fps",
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens, no name tags, no name badges, no embroidered names, no lower thirds, no personal names on clothing or props",
           "audio_payload": {
             "delivery": "none",
@@ -918,7 +918,7 @@
           "timestamp": "00:18-00:24",
           "veo_continuation_source": "extend_previous",
           "location_id": "Loc_Mom_And_Daddy_S_Room",
-          "visual_prompt": "INT. MOM AND DADDY'S ROOM - NIGHT. Character_Narrator NARRATOR speaks. OFF-CAMERA VOICEOVER Character_Narrator says \"His Mommy pets him while he sleeps. This noodle head is loved for keeps.\". Character_Narrator: Pure voice-over narrator; no on-s…. CONTINUE from previous last frame — same place and character positions; do not reset to the door or restart the walk; pick up exactly where the last clip ended / 480p, 24fps",
+          "visual_prompt": "INT. MOM AND DADDY\u0027S ROOM - NIGHT. Character_Narrator NARRATOR speaks. OFF-CAMERA VOICEOVER Character_Narrator says \u0022His Mommy pets him while he sleeps. This noodle head is loved for keeps.\u0022. Character_Narrator: Pure voice-over narrator; no on-s\u2026. CONTINUE from previous last frame \u2014 same place and character positions; do not reset to the door or restart the walk; pick up exactly where the last clip ended / 480p, 24fps",
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens, no name tags, no name badges, no embroidered names, no lower thirds, no personal names on clothing or props",
           "audio_payload": {
             "delivery": "on_camera",
@@ -936,7 +936,7 @@
           "timestamp": "00:24-00:30",
           "veo_continuation_source": "extend_previous",
           "location_id": "Loc_Mom_And_Daddy_S_Room",
-          "visual_prompt": "INT. MOM AND DADDY'S ROOM - NIGHT. Character_Narrator Buster snore-breathes. A tiny smile. Peaceful room. Character_Narrator: Pure voice-over narrator; no on-s…. CONTINUE from previous last frame — same place and character positions; do not reset to the door or restart the walk; pick up exactly where the last clip ended / 480p, 24fps",
+          "visual_prompt": "INT. MOM AND DADDY\u0027S ROOM - NIGHT. Character_Narrator Buster snore-breathes. A tiny smile. Peaceful room. Character_Narrator: Pure voice-over narrator; no on-s\u2026. CONTINUE from previous last frame \u2014 same place and character positions; do not reset to the door or restart the walk; pick up exactly where the last clip ended / 480p, 24fps",
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens, no name tags, no name badges, no embroidered names, no lower thirds, no personal names on clothing or props",
           "audio_payload": {
             "delivery": "none",
@@ -954,7 +954,7 @@
           "timestamp": "00:30-00:36",
           "veo_continuation_source": "extend_previous",
           "location_id": "Loc_Mom_And_Daddy_S_Room",
-          "visual_prompt": "INT. MOM AND DADDY'S ROOM - NIGHT. Character_Narrator NARRATOR (whisper). OFF-CAMERA VOICEOVER Character_Narrator says \"zzzzzzzzZ\". Character_Narrator: Pure voice-over narrator; no on-s…. CONTINUE from previous last frame — same place and character positions; do not reset to the door or restart the walk; pick up exactly where the last clip ended / 480p, 24fps",
+          "visual_prompt": "INT. MOM AND DADDY\u0027S ROOM - NIGHT. Character_Narrator NARRATOR (whisper). OFF-CAMERA VOICEOVER Character_Narrator says \u0022zzzzzzzzZ\u0022. Character_Narrator: Pure voice-over narrator; no on-s\u2026. CONTINUE from previous last frame \u2014 same place and character positions; do not reset to the door or restart the walk; pick up exactly where the last clip ended / 480p, 24fps",
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens, no name tags, no name badges, no embroidered names, no lower thirds, no personal names on clothing or props",
           "audio_payload": {
             "delivery": "on_camera",
@@ -972,7 +972,7 @@
           "timestamp": "00:36-00:42",
           "veo_continuation_source": "extend_previous",
           "location_id": "Loc_Mom_And_Daddy_S_Room",
-          "visual_prompt": "INT. MOM AND DADDY'S ROOM - NIGHT. Character_Narrator FADE OUT. THE END. Character_Narrator: Pure voice-over narrator; no on-s…. CONTINUE from previous last frame — same place and character positions; do not reset to the door or restart the walk; pick up exactly where the last clip ended / 480p, 24fps",
+          "visual_prompt": "INT. MOM AND DADDY\u0027S ROOM - NIGHT. Character_Narrator FADE OUT. THE END. Character_Narrator: Pure voice-over narrator; no on-s\u2026. CONTINUE from previous last frame \u2014 same place and character positions; do not reset to the door or restart the walk; pick up exactly where the last clip ended / 480p, 24fps",
           "negative_prompt": "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens, no name tags, no name badges, no embroidered names, no lower thirds, no personal names on clothing or props",
           "audio_payload": {
             "delivery": "none",

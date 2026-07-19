@@ -32,6 +32,7 @@ public sealed class FilmJobService
     private readonly Stage1Service _stage1;
     private readonly Stage2PlannerService _stage2;
     private readonly IFfmpegRemux _remux;
+    private readonly VoicePreviewService _voicePreview;
     private readonly CostReportService _costs;
     private readonly IJobStore _jobs;
     private readonly ILockService _locks;
@@ -56,6 +57,7 @@ public sealed class FilmJobService
         Stage1Service stage1,
         Stage2PlannerService stage2,
         IFfmpegRemux remux,
+        VoicePreviewService voicePreview,
         CostReportService costs,
         IJobStore jobs,
         ILockService locks,
@@ -75,6 +77,7 @@ public sealed class FilmJobService
         _stage1 = stage1;
         _stage2 = stage2;
         _remux = remux;
+        _voicePreview = voicePreview;
         _costs = costs;
         _jobs = jobs;
         _locks = locks;
@@ -742,6 +745,94 @@ public sealed class FilmJobService
             },
             lockResources: new[] { LockKeys.Character(projectId, req.CharKey) },
             lockReason: $"char variants {req.CharKey}");
+    }
+
+    /// <summary>
+    /// Short Grok video with VOICE LOCK + dialogue, extract MP3 for Characters Play sample.
+    /// </summary>
+    public Task<JobSnapshot> StartVoicePreviewAsync(StartVoicePreviewRequest req)
+    {
+        if (string.IsNullOrWhiteSpace(req.CharKey))
+            throw new InvalidOperationException("charKey required");
+        var projectId = string.IsNullOrWhiteSpace(req.ProjectId)
+            ? _projects.ActiveProjectId
+            : req.ProjectId;
+        return StartBackgroundJobAsync(
+            ct => RunVoicePreviewAsync(req, ct),
+            new JobEnqueueMeta
+            {
+                Kind = "voice-preview",
+                ProjectId = projectId,
+                CharKey = req.CharKey,
+                Message = req.Force
+                    ? $"Queued voice regenerate for {req.CharKey}…"
+                    : $"Queued voice sample for {req.CharKey}…",
+            },
+            lockResources: new[] { LockKeys.Character(projectId, req.CharKey) },
+            lockReason: $"voice preview {req.CharKey}");
+    }
+
+    private async Task RunVoicePreviewAsync(StartVoicePreviewRequest req, CancellationToken ct)
+    {
+        var projectId = string.IsNullOrWhiteSpace(req.ProjectId)
+            ? _projects.ActiveProjectId
+            : req.ProjectId;
+        await _projects.ActivateAsync(projectId, ct);
+
+        Snapshot = new JobSnapshot
+        {
+            Status = "running",
+            Kind = "voice-preview",
+            ProjectId = projectId,
+            CharKey = req.CharKey,
+            Message = req.Force
+                ? $"Regenerating voice for {req.CharKey}…"
+                : $"Generating voice sample for {req.CharKey}…",
+            Index = 0,
+            Total = 100,
+            StartedAt = DateTimeOffset.UtcNow,
+            Log = new List<string>(),
+        };
+        RegisterActiveJob();
+        await PublishAsync();
+
+        try
+        {
+            await AppendLogAsync(
+                "Voice sample = short film video (VOICE LOCK + dialogue) → audio only");
+
+            var path = await _voicePreview.GenerateAsync(
+                projectId,
+                req.CharKey,
+                req.VoiceProfile,
+                req.VoiceLabel,
+                req.DisplayName,
+                req.SampleText,
+                force: req.Force,
+                onProgress: (index, total, line) =>
+                {
+                    _ = AppendLogAsync(line);
+                    _ = UpdateAsync(s =>
+                    {
+                        s.Index = Math.Clamp(index, 0, Math.Max(1, total));
+                        s.Total = Math.Max(1, total);
+                        s.Message = line;
+                    });
+                },
+                ct: ct);
+
+            await AppendLogAsync($"Saved {Path.GetFileName(path)}");
+            await FinishAsync("done", $"Voice sample ready for {req.CharKey}");
+        }
+        catch (OperationCanceledException)
+        {
+            await FinishAsync("cancelled", "Voice sample cancelled");
+        }
+        catch (Exception ex)
+        {
+            _log.LogError(ex, "Voice preview failed for {Char}", req.CharKey);
+            await FinishAsync("error", ex.Message, ex.Message);
+        }
     }
 
     /// <summary>
@@ -1580,6 +1671,11 @@ public sealed class FilmJobService
                 throw new InvalidOperationException(
                     $"Generate S{scene:D2}C{clip - 1:D2} first — later clips continue from the previous video.");
             }
+
+            // Always silence-trim the previous clip before extend so C2 starts on
+            // the last real speech/action frame, not empty hold tail.
+            await SilenceTrimClipAsync(prevVideoPath, scene, clip - 1, ct).ConfigureAwait(false);
+
             await AppendLogAsync(
                 $"  [Continuity] Imagine video-extend from S{scene:D2}C{clip - 1:D2} " +
                 $"({Path.GetFileName(prevVideoPath)})");
@@ -1615,21 +1711,21 @@ public sealed class FilmJobService
                 $"  [Refs] {built.ReferenceImagePaths.Count}: " +
                 string.Join(", ", built.ReferenceImagePaths.Select(Path.GetFileName)));
 
-        var duration = _opts.DefaultDurationSeconds;
-        if (clipEl.TryGetProperty("duration_seconds", out var d) && d.TryGetInt32(out var ds))
-            duration = Math.Clamp(ds, 1, 15);
-        // Extension / ref / start-frame: new portion typically max 10s
+        // Dialogue-aware duration (tight for short lines — billed per second)
+        var duration = ClipDurationEstimator.EstimateForClip(clipEl);
+        await AppendLogAsync($"  [Duration] estimated {duration}s (dialogue-aware, max {ClipDurationEstimator.MaxSeconds}s)");
+        // Extension / ref: new portion typically max 10s
         if (prevVideoPath is not null || built.ReferenceImagePaths.Count > 0)
             duration = Math.Min(duration, 10);
 
-        var model = _opts.DefaultModel;
+        var model = await ResolveVideoModelAsync(projectId, ct);
         if (string.IsNullOrWhiteSpace(resolution))
             resolution = await ResolveVideoResolutionAsync(projectId, null, ct);
 
         var modeLabel = prevVideoPath is not null ? "video-extend" : built.Mode;
         await AppendLogAsync(
             $"  [Grok] Submit S{scene:D2}C{clip} duration={duration}s res={resolution} " +
-            $"mode={modeLabel} {built.PromptLogSummary}");
+            $"model={model} mode={modeLabel} {built.PromptLogSummary}");
 
         // Prefer official video continue; character refs only on fresh gens (API: no mix)
         var requestId = await _grok.SubmitGenerationAsync(
@@ -1678,6 +1774,9 @@ public sealed class FilmJobService
         }
 
         await AppendLogAsync($"  [Grok] saved {outPath}");
+
+        // Trim trailing silence on THIS clip before any later clip extends from it
+        await SilenceTrimClipAsync(outPath, scene, clip, ct).ConfigureAwait(false);
 
         try
         {
@@ -1777,6 +1876,39 @@ public sealed class FilmJobService
         }
     }
 
+    /// <summary>
+    /// Cut trailing silence so the next video-extend starts on real content.
+    /// </summary>
+    private async Task SilenceTrimClipAsync(
+        string videoPath,
+        int scene,
+        int clip,
+        CancellationToken ct)
+    {
+        if (!_remux.IsAvailable() || !File.Exists(videoPath))
+            return;
+        try
+        {
+            var result = await ClipSilenceTrimmer.TrimTrailingSilenceAsync(
+                _remux.FfmpegPath,
+                videoPath,
+                keepTailSeconds: 0.35,
+                minTrimSavings: 0.4,
+                log: _log,
+                ct: ct).ConfigureAwait(false);
+            if (result.Trimmed)
+                await AppendLogAsync(
+                    $"  [Audio] S{scene:D2}C{clip:D2} silence-trim {result.BeforeSec:F1}s → {result.AfterSec:F1}s ({result.Message})");
+            else
+                await AppendLogAsync(
+                    $"  [Audio] S{scene:D2}C{clip:D2} silence-trim skip: {result.Message}");
+        }
+        catch (Exception ex)
+        {
+            await AppendLogAsync($"  [Audio] silence-trim error: {ex.Message}");
+        }
+    }
+
     private static string? FindClipVisualInBlueprint(JsonElement root, int scene, int clipNum)
     {
         try
@@ -1857,6 +1989,30 @@ public sealed class FilmJobService
 
         return NormalizeResolution(
             string.IsNullOrWhiteSpace(_opts.DefaultResolution) ? "720p" : _opts.DefaultResolution);
+    }
+
+    /// <summary>
+    /// Project <c>model_name</c> → catalog (endpoint/keys), else host <see cref="FilmStudioOptions.DefaultModel"/>.
+    /// </summary>
+    private async Task<string> ResolveVideoModelAsync(string projectId, CancellationToken ct)
+    {
+        string? fromCfg = null;
+        try
+        {
+            var cfg = await _projects.GetConfigAsync(projectId, ct).ConfigureAwait(false);
+            if (cfg.TryGetValue("model_name", out var el) && el.ValueKind == JsonValueKind.String)
+                fromCfg = el.GetString();
+        }
+        catch
+        {
+            /* use default */
+        }
+
+        var resolved = SupportedModelCatalog.ResolveOrDefault(
+            fromCfg,
+            ModelCapability.Video,
+            fallbackId: _opts.DefaultModel);
+        return resolved.Id;
     }
 
     private static string NormalizeResolution(string? value)

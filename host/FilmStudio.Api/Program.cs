@@ -71,6 +71,7 @@ builder.Services.AddSingleton<Stage1Service>();
 builder.Services.AddSingleton<Stage2PlannerService>();
 builder.Services.AddSingleton<FfmpegRemuxService>();
 builder.Services.AddSingleton<IFfmpegRemux>(sp => sp.GetRequiredService<FfmpegRemuxService>());
+builder.Services.AddSingleton<VoicePreviewService>();
 builder.Services.AddSingleton<EditLogService>();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddSingleton<IUserContext, HttpUserContext>();
@@ -116,13 +117,6 @@ else
         c.Timeout = TimeSpan.FromMinutes(20);
     });
 }
-
-// TTS preview works with real API even when video fakes are on (needs XAI_API_KEY)
-builder.Services.AddHttpClient<GrokTtsClient>(c =>
-{
-    c.BaseAddress = new Uri(GrokTtsClient.ApiBase + "/");
-    c.Timeout = TimeSpan.FromMinutes(2);
-});
 
 builder.Services.AddSignalR();
 builder.Services.AddCors(o =>
@@ -595,6 +589,32 @@ app.MapGet("/api/stage2-status", async (ProjectStore store, CancellationToken ct
     });
 });
 
+// ---- Supported models (master catalog: model id → endpoint + required keys) ----
+app.MapGet("/api/models", (string? capability) =>
+{
+    IReadOnlyList<SupportedModelDto> list;
+    if (!string.IsNullOrWhiteSpace(capability) &&
+        Enum.TryParse<ModelCapability>(capability, ignoreCase: true, out var cap))
+    {
+        list = SupportedModelCatalog.ForCapability(cap)
+            .Select(SupportedModelCatalog.ToDto)
+            .ToList();
+    }
+    else
+    {
+        list = SupportedModelCatalog.ToDtoList(enabledOnly: true);
+    }
+
+    return Results.Ok(new
+    {
+        ok = true,
+        models = list,
+        note =
+            "User picks model ids only. Provider, API base, endpoint, and required env keys come from this catalog. " +
+            "Request new models via GitHub feature request, then add them here when wired.",
+    });
+});
+
 // ---- Configuration (pipeline_config.json) ----
 app.MapGet("/api/projects/{id}/config", async (string id, ProjectStore store, CancellationToken ct) =>
 {
@@ -743,45 +763,77 @@ app.MapPost("/api/projects/{id}/characters/{charKey}/voice",
 });
 
 /// <summary>
-/// Preview character voice via xAI TTS (MP3). Uses voice_label as voice_id when it
-/// matches a built-in (eve/ara/leo/rex/sal); otherwise picks a default from profile hints.
+/// Film-pipeline voice sample job: short Grok video (VOICE LOCK + dialogue) → MP3 only.
+/// Use Force=true after editing the profile to regenerate.
 /// </summary>
-app.MapPost("/api/projects/{id}/characters/{charKey}/voice/preview", async (
+app.MapPost("/api/jobs/voice-preview", async (StartVoicePreviewRequest body, FilmJobService jobService) =>
+{
+    try
+    {
+        if (string.IsNullOrWhiteSpace(body.ProjectId) || string.IsNullOrWhiteSpace(body.CharKey))
+            return Results.BadRequest(new { ok = false, error = "projectId and charKey required" });
+        var job = await jobService.StartVoicePreviewAsync(body);
+        return Results.Accepted($"/api/jobs/{job.JobId}", new
+        {
+            ok = true,
+            message = body.Force
+                ? $"Queued voice regenerate for {body.CharKey}"
+                : $"Queued voice sample for {body.CharKey}",
+            job,
+        });
+    }
+    catch (Exception ex)
+    {
+        return JobStartError(ex, jobService);
+    }
+});
+
+/// <summary>Cache status for film voice sample (matches current profile text?).</summary>
+app.MapGet("/api/projects/{id}/characters/{charKey}/voice/audio/status", (
     string id,
     string charKey,
-    VoicePreviewRequest? body,
-    ProjectStore store,
-    GrokTtsClient tts,
-    CancellationToken ct) =>
+    string? voiceProfile,
+    string? voiceLabel,
+    string? sampleText,
+    VoicePreviewService voices) =>
 {
     try
     {
         if (string.IsNullOrWhiteSpace(charKey))
             return Results.BadRequest(new { ok = false, error = "charKey required" });
-        if (!tts.IsConfigured)
-            return Results.BadRequest(new { ok = false, error = "Connect service (XAI_API_KEY) for voice preview." });
+        var info = voices.GetCacheInfo(id, charKey, voiceProfile, voiceLabel, sampleText);
+        return Results.Ok(new VoicePreviewStatusDto
+        {
+            Ok = true,
+            Exists = info.Exists,
+            Matches = info.Matches,
+            Fingerprint = info.Fingerprint,
+            GeneratedAt = info.GeneratedAt,
+            AudioUrl = info.Exists
+                ? $"/api/projects/{Uri.EscapeDataString(id)}/characters/{Uri.EscapeDataString(charKey)}/voice/audio"
+                : null,
+        });
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { ok = false, error = ex.Message });
+    }
+});
 
-        body ??= new VoicePreviewRequest();
-        var profiles = store.LoadCharacterPromptProfiles(id);
-        profiles.TryGetValue(charKey, out var prof);
-
-        var label = !string.IsNullOrWhiteSpace(body.VoiceLabel)
-            ? body.VoiceLabel
-            : prof?.VoiceLabel;
-        var profile = !string.IsNullOrWhiteSpace(body.VoiceProfile)
-            ? body.VoiceProfile
-            : prof?.VoiceProfile;
-        var display = !string.IsNullOrWhiteSpace(body.DisplayName)
-            ? body.DisplayName
-            : prof?.DisplayName ?? charKey.Replace("Character_", "").Replace('_', ' ');
-
-        var voiceId = GrokTtsClient.ResolveVoiceId(label);
-        var sample = !string.IsNullOrWhiteSpace(body.SampleText)
-            ? body.SampleText!.Trim()
-            : GrokTtsClient.BuildSampleText(display, profile);
-
-        var mp3 = await tts.SynthesizeAsync(sample, voiceId, language: "en", ct);
-        return Results.File(mp3, "audio/mpeg", $"{charKey}_preview.mp3");
+/// <summary>Serve cached film voice sample MP3 (audio only — no video).</summary>
+app.MapGet("/api/projects/{id}/characters/{charKey}/voice/audio", (
+    string id,
+    string charKey,
+    VoicePreviewService voices) =>
+{
+    try
+    {
+        if (string.IsNullOrWhiteSpace(charKey))
+            return Results.BadRequest(new { ok = false, error = "charKey required" });
+        var path = voices.GetMp3Path(id, charKey);
+        if (!File.Exists(path) || new FileInfo(path).Length < 64)
+            return Results.NotFound(new { ok = false, error = "No voice sample yet — generate one first." });
+        return Results.File(path, "audio/mpeg", fileDownloadName: $"{charKey}_voice.mp3", enableRangeProcessing: true);
     }
     catch (Exception ex)
     {

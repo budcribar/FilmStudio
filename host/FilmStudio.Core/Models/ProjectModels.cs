@@ -315,14 +315,31 @@ public sealed class UpdateCharacterVoiceRequest
     public string? VoiceProfile { get; set; }
 }
 
-/// <summary>TTS preview for a character voice (optional overrides from the editor).</summary>
-public sealed class VoicePreviewRequest
+/// <summary>
+/// Film-pipeline voice sample: short Grok video with VOICE LOCK, audio extracted to MP3.
+/// </summary>
+public sealed class StartVoicePreviewRequest
 {
+    public string ProjectId { get; set; } = "";
+    public string CharKey { get; set; } = "";
     public string? VoiceLabel { get; set; }
     public string? VoiceProfile { get; set; }
     public string? DisplayName { get; set; }
-    /// <summary>Optional custom sample; default builds from name + profile.</summary>
+    /// <summary>Optional dialogue line; default is a short name intro.</summary>
     public string? SampleText { get; set; }
+    /// <summary>Ignore cache and regenerate (e.g. after editing profile).</summary>
+    public bool Force { get; set; }
+}
+
+/// <summary>Whether a cached film voice sample exists and matches current profile text.</summary>
+public sealed class VoicePreviewStatusDto
+{
+    public bool Ok { get; set; } = true;
+    public bool Exists { get; set; }
+    public bool Matches { get; set; }
+    public string? Fingerprint { get; set; }
+    public DateTimeOffset? GeneratedAt { get; set; }
+    public string? AudioUrl { get; set; }
 }
 
 /// <summary>Update description / visual_lock on character seeds (cast_seeds + blueprint).</summary>

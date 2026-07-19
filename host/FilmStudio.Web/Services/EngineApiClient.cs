@@ -660,6 +660,26 @@ public sealed class EngineApiClient
             JsonOpts,
             ct);
 
+    /// <summary>Master model catalog (id → endpoint + required keys).</summary>
+    public async Task<IReadOnlyList<SupportedModelDto>> GetSupportedModelsAsync(
+        string? capability = null,
+        CancellationToken ct = default)
+    {
+        var path = string.IsNullOrWhiteSpace(capability)
+            ? "/api/models"
+            : $"/api/models?capability={Uri.EscapeDataString(capability)}";
+        using var resp = await _http.GetAsync(path, ct);
+        if (!resp.IsSuccessStatusCode) return Array.Empty<SupportedModelDto>();
+        var dto = await resp.Content.ReadFromJsonAsync<SupportedModelsResponse>(JsonOpts, ct);
+        return dto?.Models ?? (IReadOnlyList<SupportedModelDto>)Array.Empty<SupportedModelDto>();
+    }
+
+    private sealed class SupportedModelsResponse
+    {
+        public bool Ok { get; set; }
+        public List<SupportedModelDto>? Models { get; set; }
+    }
+
     public async Task<ConfigDto?> SaveConfigAsync(
         string projectId,
         Dictionary<string, object?> updates,
@@ -802,33 +822,56 @@ public sealed class EngineApiClient
         }
     }
 
-    /// <summary>xAI TTS preview — returns MP3 bytes.</summary>
-    public async Task<byte[]> PreviewCharacterVoiceAsync(
-        string projectId,
-        string charKey,
-        string? voiceProfile = null,
-        string? voiceLabel = null,
-        string? displayName = null,
-        string? sampleText = null,
+    /// <summary>
+    /// Film-pipeline voice sample: short video with VOICE LOCK → cached MP3 (audio only).
+    /// </summary>
+    public async Task StartVoicePreviewAsync(
+        StartVoicePreviewRequest req,
         CancellationToken ct = default)
     {
         using var resp = await _http.PostAsJsonAsync(
-            $"/api/projects/{Uri.EscapeDataString(projectId)}/characters/{Uri.EscapeDataString(charKey)}/voice/preview",
-            new VoicePreviewRequest
-            {
-                VoiceProfile = voiceProfile,
-                VoiceLabel = voiceLabel,
-                DisplayName = displayName,
-                SampleText = sampleText,
-            },
+            "/api/jobs/voice-preview",
+            req,
             JsonOpts,
             ct);
         if (!resp.IsSuccessStatusCode)
         {
             var err = await resp.Content.ReadAsStringAsync(ct);
-            throw new InvalidOperationException(TryError(err) ?? resp.ReasonPhrase ?? "TTS preview failed");
+            throw new InvalidOperationException(TryError(err) ?? resp.ReasonPhrase ?? "Voice preview failed");
         }
-        return await resp.Content.ReadAsByteArrayAsync(ct);
+    }
+
+    public async Task<VoicePreviewStatusDto?> GetVoicePreviewStatusAsync(
+        string projectId,
+        string charKey,
+        string? voiceProfile = null,
+        string? voiceLabel = null,
+        string? sampleText = null,
+        CancellationToken ct = default)
+    {
+        var q = new List<string>();
+        if (!string.IsNullOrWhiteSpace(voiceProfile))
+            q.Add("voiceProfile=" + Uri.EscapeDataString(voiceProfile));
+        if (!string.IsNullOrWhiteSpace(voiceLabel))
+            q.Add("voiceLabel=" + Uri.EscapeDataString(voiceLabel));
+        if (!string.IsNullOrWhiteSpace(sampleText))
+            q.Add("sampleText=" + Uri.EscapeDataString(sampleText));
+        var qs = q.Count > 0 ? "?" + string.Join("&", q) : "";
+        using var resp = await _http.GetAsync(
+            $"/api/projects/{Uri.EscapeDataString(projectId)}/characters/{Uri.EscapeDataString(charKey)}/voice/audio/status{qs}",
+            ct);
+        if (!resp.IsSuccessStatusCode) return null;
+        return await resp.Content.ReadFromJsonAsync<VoicePreviewStatusDto>(JsonOpts, ct);
+    }
+
+    /// <summary>Absolute URL for cached film voice MP3 (audio player only).</summary>
+    public string CharacterVoiceAudioUrl(string projectId, string charKey, long cacheBust = 0)
+    {
+        var url =
+            $"{ApiBaseUrl}/api/projects/{Uri.EscapeDataString(projectId)}/characters/{Uri.EscapeDataString(charKey)}/voice/audio";
+        if (cacheBust > 0)
+            url += "?t=" + cacheBust;
+        return url;
     }
 
     /// <summary>

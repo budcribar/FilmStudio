@@ -20,11 +20,12 @@ public sealed class Stage2PlannerService
         "blur/obscure environmental signage or screens, no name tags, no name badges, " +
         "no embroidered names, no lower thirds, no personal names on clothing or props";
 
-    private const int GrokMinClip = 6;
-    private const int GrokMaxClip = 10;
-    private const int GrokAbsMax = 15;
-    private const int GrokDefault = 8;
-    private const int GrokSceneMin = 8;
+    // Duration floors/caps live in ClipDurationEstimator (dialogue-aware, cost-sensitive)
+    private const int GrokMinClip = ClipDurationEstimator.MinSeconds;
+    private const int GrokMaxClip = ClipDurationEstimator.MaxSeconds;
+    private const int GrokAbsMax = ClipDurationEstimator.AbsMaxSeconds;
+    private const int GrokDefault = 6;
+    private const int GrokSceneMin = 6;
     private const int PromptSoft = 500;
     private const int PromptHard = 800;
 
@@ -323,8 +324,11 @@ public sealed class Stage2PlannerService
             return BaseSceneShell(scene, lids, primary, cast, GrokSceneMin, new List<object?>(), new List<object?>());
         }
 
-        var target = ToInt(scene.TryGetValue("duration_target_seconds", out var dt) ? dt : beats.Count * GrokDefault);
-        var durs = AllocateDurations(beats, target);
+        // Prefer per-beat dialogue/action estimates over padding every clip to fill a scene budget
+        var target = ToInt(scene.TryGetValue("duration_target_seconds", out var dt) ? dt : 0);
+        var durs = ClipDurationEstimator.AllocateForBeats(
+            beats,
+            sceneTargetSeconds: target > 0 ? target : null);
         var total = durs.Sum();
 
         var sceneWork = new Dictionary<string, object?>(scene)
@@ -560,58 +564,6 @@ public sealed class Stage2PlannerService
             ve.Trim(),
             @"^(FADE\s+IN|FADE\s+OUT|FADE\s+TO\s+BLACK|FADE\s+TO\s+WHITE|CUT\s+TO(\s+BLACK)?|DISSOLVE\s+TO|SMASH\s+CUT\s+TO|BLACK\s+OUT|THE\s+END)[\s\.:]*$",
             RegexOptions.IgnoreCase);
-    }
-
-    private static List<int> AllocateDurations(List<Dictionary<string, object?>> beats, int target)
-    {
-        var n = beats.Count;
-        if (n == 0) return new List<int>();
-        target = Math.Max(GrokSceneMin, target);
-        var weights = beats.Select(BeatDurationWeight).ToList();
-        var wsum = weights.Sum();
-        if (wsum <= 0) wsum = n;
-        var raw = weights.Select(w => w / wsum * target).ToList();
-        var durs = raw.Select(r => (int)Math.Round(Math.Clamp(r, GrokMinClip, GrokMaxClip))).ToList();
-        // Fix sum
-        var diff = target - durs.Sum();
-        var guard = 0;
-        while (diff != 0 && guard++ < 100)
-        {
-            if (diff > 0)
-            {
-                var i = durs.Select((d, idx) => (d, idx)).OrderBy(x => x.d).First().idx;
-                if (durs[i] < GrokAbsMax) { durs[i]++; diff--; }
-                else break;
-            }
-            else
-            {
-                var i = durs.Select((d, idx) => (d, idx)).OrderByDescending(x => x.d).First().idx;
-                if (durs[i] > GrokMinClip) { durs[i]--; diff++; }
-                else break;
-            }
-        }
-        return durs;
-    }
-
-    private static double BeatDurationWeight(Dictionary<string, object?> beat)
-    {
-        double w = 1.0;
-        if (beat.TryGetValue("time_weight", out var tw))
-        {
-            try { w = Convert.ToDouble(tw); } catch { w = 1.0; }
-        }
-        var ac = (CoerceString(beat.TryGetValue("action_class", out var a) ? a : null) ?? "").ToLowerInvariant();
-        w *= ac switch
-        {
-            "big_action" => 1.4,
-            "establishing" => 1.2,
-            "dialogue" => 1.15,
-            "hold" => 0.85,
-            _ => 1.0,
-        };
-        var dlg = CoerceString(beat.TryGetValue("dialogue", out var d) ? d : null) ?? "";
-        if (dlg.Length > 80) w *= 1.15;
-        return Math.Max(0.25, w);
     }
 
     private static bool ForceNone(

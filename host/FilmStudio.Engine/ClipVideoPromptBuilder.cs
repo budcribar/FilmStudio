@@ -161,6 +161,9 @@ public static class ClipVideoPromptBuilder
         }
 
         sb.AppendLine("THIS CLIP:");
+        sb.AppendLine(
+            "End cleanly when the spoken line and primary action finish — " +
+            "do not hold a frozen pose or empty silence after dialogue.");
         sb.Append(visualTagged);
 
         var prompt = sb.ToString().Trim();

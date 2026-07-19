@@ -127,7 +127,7 @@ else if (IsCastComplete && !JobRunning && !_extractingCast)
     </div>
 }
 else if (_job is not null &&
-     (_job.Kind is "character" or "character-plates") &&
+     (_job.Kind is "character" or "character-plates" or "voice-preview") &&
      (_job.Status is "running" or "queued"))
 {
     <div class="card mb-3 border-primary" @key="_job.JobId">
@@ -136,7 +136,16 @@ else if (_job is not null &&
                 <span class="small">@FriendlyCharacterJobStatus(_job)</span>
                 @if (_job.Total > 0 && _job.Status == "running")
                 {
-                    <span class="small text-muted">@_job.Index / @_job.Total</span>
+                    <span class="small text-muted">
+                        @if (string.Equals(_job.Kind, "voice-preview", StringComparison.OrdinalIgnoreCase) && _job.Total == 100)
+                        {
+                            @($"{_job.Index}%")
+                        }
+                        else
+                        {
+                            @($"{_job.Index} / {_job.Total}")
+                        }
+                    </span>
                 }
                 <button type="button" class="btn btn-sm btn-outline-danger ms-auto" disabled="@_busy" @onclick="CancelAsync">
                     Cancel
@@ -153,8 +162,16 @@ else if (_job is not null &&
             <div class="progress mt-2" style="height: 0.5rem;">
                 <div class="progress-bar progress-bar-striped progress-bar-animated"
                      role="progressbar"
-                     style="width: @(pct)%"></div>
+                     style="width: @(pct)%"
+                     aria-valuenow="@pct"
+                     aria-valuemin="0"
+                     aria-valuemax="100"></div>
             </div>
+            @if (!string.IsNullOrEmpty(_job.Message) &&
+                 string.Equals(_job.Kind, "voice-preview", StringComparison.OrdinalIgnoreCase))
+            {
+                <div class="form-text mt-1">@_job.Message</div>
+            }
             @if (Session.IsAdmin && _job.Log.Count > 0)
             {
                 <details class="mt-2">
@@ -546,39 +563,97 @@ else
     private bool _voicePreviewBusy;
     private string? _voicePreviewUrl;
     private string? _voicePreviewError;
+    private string? _voicePreviewHint;
+    private bool _voicePreviewStale;
+    private long _voiceAudioBust;
 
     private int SelectedSeedCount => _seedOrder.Count;
+
+    private bool VoiceJobRunning =>
+        _job is not null &&
+        string.Equals(_job.Kind, "voice-preview", StringComparison.OrdinalIgnoreCase) &&
+        (_job.Status is "running" or "queued") &&
+        string.Equals(_job.CharKey, _selectedKey, StringComparison.OrdinalIgnoreCase);
 
     private RenderFragment RenderVoiceEditor() => __builder =>
     {
         <div class="mb-2">
             <label class="form-label small mb-0">Voice label</label>
-            <input class="form-control form-control-sm" @bind="_editVoiceLabel" disabled="@_busy"
-                   placeholder="eve / ara / leo / rex / sal (or free text)" />
-            <div class="form-text">Built-in IDs: eve, ara, leo, rex, sal — or any label (mapped for preview).</div>
+            <input class="form-control form-control-sm"
+                   value="@_editVoiceLabel"
+                   @oninput="OnVoiceLabelInput"
+                   disabled="@(_busy || _voicePreviewBusy || VoiceJobRunning)"
+                   placeholder="e.g. Daddy" />
         </div>
         <div class="mb-2">
             <label class="form-label small mb-0">Voice profile</label>
-            <textarea class="form-control form-control-sm" rows="4" @bind="_editVoiceProfile" disabled="@_busy"
-                      placeholder="Pitch, pace, accent, energy — for spoken lines"></textarea>
+            <textarea class="form-control form-control-sm" rows="4"
+                      value="@_editVoiceProfile"
+                      @oninput="OnVoiceProfileInput"
+                      disabled="@(_busy || _voicePreviewBusy || VoiceJobRunning)"
+                      placeholder="Adult male; low soft presence — used in film video prompts (VOICE LOCK)"></textarea>
+            <div class="form-text">
+                Play uses the same film path as clips: short video with this description + dialogue, then audio only.
+            </div>
         </div>
         <div class="d-flex flex-wrap gap-2 align-items-center">
-            <button type="button" class="btn btn-sm btn-primary" disabled="@_busy" @onclick="SaveVoiceAsync">
+            <button type="button" class="btn btn-sm btn-primary"
+                    disabled="@(_busy || VoiceJobRunning)" @onclick="SaveVoiceAsync">
                 Save voice
             </button>
             <button type="button"
                     class="btn btn-sm btn-outline-secondary"
-                    disabled="@(_busy || _voicePreviewBusy || string.IsNullOrWhiteSpace(_editVoiceProfile) && string.IsNullOrWhiteSpace(_editVoiceLabel))"
-                    title="Play a short sample via xAI text-to-speech"
-                    @onclick="PlayVoicePreviewAsync">
-                @(_voicePreviewBusy ? "Generating…" : "▶ Play sample")
+                    disabled="@(_busy || _voicePreviewBusy || VoiceJobRunning)"
+                    title="Play cached sample, or generate via film video if missing"
+                    @onclick="() => PlayVoicePreviewAsync(force: false)">
+                ▶ Play
+            </button>
+            <button type="button"
+                    class="btn btn-sm btn-outline-primary"
+                    disabled="@(_busy || _voicePreviewBusy || VoiceJobRunning)"
+                    title="Always regenerate after editing the profile"
+                    @onclick="() => PlayVoicePreviewAsync(force: true)">
+                Regenerate
             </button>
         </div>
+        @if (VoiceJobRunning && _job is not null)
+        {
+            var vpct = _job.Status == "queued" || _job.Total <= 0
+                ? 8
+                : (int)Math.Round(100.0 * Math.Clamp(_job.Index, 0, _job.Total) / Math.Max(1, _job.Total));
+            if (_job.Status == "running" && _job.Index <= 0)
+                vpct = 0;
+            <div class="mt-2">
+                <div class="d-flex justify-content-between small text-muted">
+                    <span>@(_job.Message ?? "Generating voice…")</span>
+                    @if (_job.Status == "running" && _job.Total == 100)
+                    {
+                        <span>@_job.Index%</span>
+                    }
+                </div>
+                <div class="progress mt-1" style="height: 0.5rem;">
+                    <div class="progress-bar progress-bar-striped progress-bar-animated"
+                         role="progressbar"
+                         style="width: @(vpct)%"
+                         aria-valuenow="@vpct"
+                         aria-valuemin="0"
+                         aria-valuemax="100"></div>
+                </div>
+            </div>
+        }
+        @if (!string.IsNullOrEmpty(_voicePreviewHint))
+        {
+            <div class="form-text mt-1">@_voicePreviewHint</div>
+        }
+        @if (_voicePreviewStale && !VoiceJobRunning)
+        {
+            <div class="form-text text-warning mt-1">Profile changed — Regenerate to hear the new voice.</div>
+        }
         @if (!string.IsNullOrEmpty(_voicePreviewError))
         {
             <div class="alert alert-danger py-1 small mt-2 mb-0">@_voicePreviewError</div>
         }
-        @if (!string.IsNullOrEmpty(_voicePreviewUrl))
+        @if (!string.IsNullOrEmpty(_voicePreviewUrl) && !VoiceJobRunning)
         {
             <audio class="mt-2 w-100" controls autoplay src="@_voicePreviewUrl" @key="_voicePreviewUrl"></audio>
         }
@@ -702,6 +777,8 @@ else
                 : "Matching book pictures…";
         if (string.Equals(kind, "character", StringComparison.OrdinalIgnoreCase))
             return "Creating portrait…";
+        if (string.Equals(kind, "voice-preview", StringComparison.OrdinalIgnoreCase))
+            return "Generating voice sample…";
         return "Working…";
     }
 
@@ -711,6 +788,40 @@ else
         // Same job → update as usual
         _job = snap;
         if ((snap.Status is "done" or "error" or "cancelled") &&
+            string.Equals(snap.Kind, "voice-preview", StringComparison.OrdinalIgnoreCase))
+        {
+            _ = InvokeAsync(async () =>
+            {
+                _voicePreviewBusy = false;
+                if (snap.Status == "done" &&
+                    string.Equals(snap.CharKey, _selectedKey, StringComparison.OrdinalIgnoreCase))
+                {
+                    _error = null;
+                    _voicePreviewError = null;
+                    _voiceAudioBust = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+                    _voicePreviewUrl = Engine.CharacterVoiceAudioUrl(
+                        _projectId, snap.CharKey!, _voiceAudioBust);
+                    _voicePreviewStale = false;
+                    _voicePreviewHint = "Film voice sample (audio only).";
+                    _message = null;
+                }
+                else if (snap.Status == "error")
+                {
+                    _message = null;
+                    _voicePreviewError = Session.IsAdmin
+                        ? (snap.Error ?? snap.Message ?? "Voice sample failed.")
+                        : "Could not generate voice sample. Try again.";
+                }
+                else if (snap.Status == "cancelled")
+                {
+                    _voicePreviewError = null;
+                    _voicePreviewHint = "Voice sample cancelled.";
+                }
+                StateHasChanged();
+                await Task.CompletedTask;
+            });
+        }
+        else if ((snap.Status is "done" or "error" or "cancelled") &&
             string.Equals(snap.Kind, "character-plates", StringComparison.OrdinalIgnoreCase))
         {
             _ = InvokeAsync(async () =>
@@ -863,6 +974,11 @@ else
             _editVisualLock = _selected.VisualLock ?? "";
             _editVoiceLabel = _selected.VoiceLabel ?? "";
             _editVoiceProfile = _selected.VoiceProfile ?? "";
+            _voicePreviewUrl = null;
+            _voicePreviewError = null;
+            _voicePreviewHint = null;
+            _voicePreviewStale = false;
+            _ = InvokeAsync(() => TryLoadCachedVoiceAsync());
         }
         if (switched)
         {
@@ -1250,39 +1366,104 @@ else
         finally { _busy = false; }
     }
 
-    private async Task PlayVoicePreviewAsync()
+    private void OnVoiceLabelInput(ChangeEventArgs e)
+    {
+        _editVoiceLabel = e.Value?.ToString() ?? "";
+        MarkVoiceStaleIfPlaying();
+    }
+
+    private void OnVoiceProfileInput(ChangeEventArgs e)
+    {
+        _editVoiceProfile = e.Value?.ToString() ?? "";
+        MarkVoiceStaleIfPlaying();
+    }
+
+    private void MarkVoiceStaleIfPlaying()
+    {
+        if (!string.IsNullOrEmpty(_voicePreviewUrl))
+            _voicePreviewStale = true;
+    }
+
+    private async Task TryLoadCachedVoiceAsync()
     {
         if (_selected is null) return;
-        _voicePreviewBusy = true;
-        _voicePreviewError = null;
-        // Release previous blob URL
-        if (!string.IsNullOrEmpty(_voicePreviewUrl))
-        {
-            try
-            {
-                // browser will GC; clear binding so <audio> reloads
-            }
-            catch { /* ignore */ }
-            _voicePreviewUrl = null;
-        }
-        StateHasChanged();
         try
         {
-            var mp3 = await Engine.PreviewCharacterVoiceAsync(
+            var st = await Engine.GetVoicePreviewStatusAsync(
                 _projectId,
                 _selected.Key,
                 voiceProfile: _editVoiceProfile,
-                voiceLabel: _editVoiceLabel,
-                displayName: _selected.DisplayName);
-            var b64 = Convert.ToBase64String(mp3);
-            _voicePreviewUrl = $"data:audio/mpeg;base64,{b64}";
+                voiceLabel: _editVoiceLabel);
+            if (st is { Exists: true, Matches: true })
+            {
+                _voiceAudioBust = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+                _voicePreviewUrl = Engine.CharacterVoiceAudioUrl(
+                    _projectId, _selected.Key, _voiceAudioBust);
+                _voicePreviewStale = false;
+                _voicePreviewHint = "Cached film voice sample.";
+            }
+            else if (st is { Exists: true, Matches: false })
+            {
+                _voicePreviewStale = true;
+                _voicePreviewHint = "Saved sample is out of date — Regenerate after edits.";
+            }
+            StateHasChanged();
+        }
+        catch { /* optional */ }
+    }
+
+    /// <param name="force">true = always regenerate (after editing profile).</param>
+    private async Task PlayVoicePreviewAsync(bool force)
+    {
+        if (_selected is null) return;
+        _voicePreviewError = null;
+        _voicePreviewHint = null;
+        StateHasChanged();
+
+        try
+        {
+            if (!force)
+            {
+                var st = await Engine.GetVoicePreviewStatusAsync(
+                    _projectId,
+                    _selected.Key,
+                    voiceProfile: _editVoiceProfile,
+                    voiceLabel: _editVoiceLabel);
+                if (st is { Exists: true, Matches: true })
+                {
+                    _voiceAudioBust = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+                    _voicePreviewUrl = Engine.CharacterVoiceAudioUrl(
+                        _projectId, _selected.Key, _voiceAudioBust);
+                    _voicePreviewStale = false;
+                    _voicePreviewHint = "Cached film voice sample.";
+                    return;
+                }
+            }
+
+            _voicePreviewBusy = true;
+            _voicePreviewUrl = null;
+            _voicePreviewHint = force
+                ? "Regenerating film voice sample…"
+                : "Generating film voice sample (short video → audio)…";
+            StateHasChanged();
+
+            await Engine.StartVoicePreviewAsync(new StartVoicePreviewRequest
+            {
+                ProjectId = _projectId,
+                CharKey = _selected.Key,
+                VoiceProfile = _editVoiceProfile,
+                VoiceLabel = _editVoiceLabel,
+                DisplayName = _selected.DisplayName,
+                // force: always regen; cache miss also generates (service skips only matching cache)
+                Force = force,
+            });
+            // Job progress via SignalR; keep busy until done handler clears it
+            var jobs = await Engine.GetJobAsync();
+            _job = jobs?.Job;
         }
         catch (Exception ex)
         {
             _voicePreviewError = ex.Message;
-        }
-        finally
-        {
             _voicePreviewBusy = false;
         }
     }

@@ -1,4 +1,5 @@
 @page "/configuration"
+@using FilmStudio.Core.Models
 @inject EngineApiClient Engine
 @inject IConfiguration AppConfig
 
@@ -41,48 +42,64 @@
 else
 {
     <div class="card mb-3">
-        <div class="card-header">Shot plan</div>
-        <div class="card-body">
-            <label class="form-label">Shot plan file</label>
-            <input class="form-control" @bind="_blueprintFile" disabled="@_busy" />
-        </div>
-    </div>
-
-    <div class="card mb-3">
-        <div class="card-header">Services</div>
+        <div class="card-header">Models</div>
         <div class="card-body row g-2">
-            <div class="col-md-4">
-                <label class="form-label">Video service</label>
-                <select class="form-select" @bind="_videoProvider" disabled="@_busy">
-                    <option value="grok">Grok</option>
-                    <option value="veo">Veo</option>
-                </select>
-            </div>
-            <div class="col-md-4">
-                <label class="form-label">Portrait service</label>
-                <select class="form-select" @bind="_charDesignProvider" disabled="@_busy">
-                    <option value="grok">Grok</option>
-                    <option value="gemini">Gemini</option>
-                </select>
-            </div>
-            <div class="col-md-4">
-                <label class="form-label">Quality check service</label>
-                <select class="form-select" @bind="_qaProvider" disabled="@_busy">
-                    <option value="grok">Grok</option>
-                    <option value="gemini">Gemini</option>
-                </select>
+            <div class="col-12">
+                <p class="small text-muted mb-2">
+                    Pick a model only. The app maps it to the right API endpoint and which key is required
+                    (from the supported-model list). New backends = add to that list (or open a GitHub feature request first).
+                </p>
             </div>
             <div class="col-md-4">
                 <label class="form-label">Video model</label>
-                <input class="form-control" @bind="_modelName" disabled="@_busy" />
+                <select class="form-select" @bind="_modelName" disabled="@_busy">
+                    @foreach (var m in _videoModels)
+                    {
+                        <option value="@m.Id">@m.DisplayName (@m.Id)</option>
+                    }
+                    @if (_videoModels.All(m => !string.Equals(m.Id, _modelName, StringComparison.OrdinalIgnoreCase)))
+                    {
+                        <option value="@_modelName">@_modelName (not in list)</option>
+                    }
+                </select>
+                @if (ModelHint(_modelName, "video") is { } vh)
+                {
+                    <div class="form-text">@vh</div>
+                }
             </div>
             <div class="col-md-4">
                 <label class="form-label">Portrait model</label>
-                <input class="form-control" @bind="_imageModel" disabled="@_busy" />
+                <select class="form-select" @bind="_imageModel" disabled="@_busy">
+                    @foreach (var m in _imageModels)
+                    {
+                        <option value="@m.Id">@m.DisplayName (@m.Id)</option>
+                    }
+                    @if (_imageModels.All(m => !string.Equals(m.Id, _imageModel, StringComparison.OrdinalIgnoreCase)))
+                    {
+                        <option value="@_imageModel">@_imageModel (not in list)</option>
+                    }
+                </select>
+                @if (ModelHint(_imageModel, "image") is { } ih)
+                {
+                    <div class="form-text">@ih</div>
+                }
             </div>
             <div class="col-md-4">
-                <label class="form-label">Quality check model</label>
-                <input class="form-control" @bind="_qaModel" disabled="@_busy" />
+                <label class="form-label">Planning / quality model</label>
+                <select class="form-select" @bind="_qaModel" disabled="@_busy">
+                    @foreach (var m in _chatModels)
+                    {
+                        <option value="@m.Id">@m.DisplayName (@m.Id)</option>
+                    }
+                    @if (_chatModels.All(m => !string.Equals(m.Id, _qaModel, StringComparison.OrdinalIgnoreCase)))
+                    {
+                        <option value="@_qaModel">@_qaModel (not in list)</option>
+                    }
+                </select>
+                @if (ModelHint(_qaModel, "chat") is { } ch)
+                {
+                    <div class="form-text">@ch</div>
+                }
             </div>
             <div class="col-md-4">
                 <label class="form-label">Aspect ratio</label>
@@ -182,9 +199,6 @@ else
     private Dictionary<string, JsonElement>? _cfg;
 
     private string _blueprintFile = "blueprint.clips.grok.json";
-    private string _videoProvider = "grok";
-    private string _charDesignProvider = "grok";
-    private string _qaProvider = "grok";
     private string _modelName = "grok-imagine-video";
     private string _imageModel = "grok-imagine-image-quality";
     private string _qaModel = "grok-4.5";
@@ -205,6 +219,11 @@ else
     private double _rate720 = 0.07;
     private double _rate1080 = 0.25;
 
+    private List<SupportedModelDto> _allModels = new();
+    private List<SupportedModelDto> _videoModels = new();
+    private List<SupportedModelDto> _imageModels = new();
+    private List<SupportedModelDto> _chatModels = new();
+
     protected override async Task OnInitializedAsync()
     {
         try
@@ -216,12 +235,53 @@ else
                 _projectId = aid;
             else if (_projectIds.Count > 0)
                 _projectId = _projectIds[0];
+            await LoadCatalogAsync();
             await LoadAsync();
         }
         catch (Exception ex)
         {
             _error = ex.Message;
         }
+    }
+
+    private async Task LoadCatalogAsync()
+    {
+        try
+        {
+            var list = await Engine.GetSupportedModelsAsync();
+            _allModels = list.ToList();
+            _videoModels = _allModels.Where(m => m.Capability == "video").ToList();
+            _imageModels = _allModels.Where(m => m.Capability == "image").ToList();
+            _chatModels = _allModels.Where(m => m.Capability is "chat" or "vision").GroupBy(m => m.Id)
+                .Select(g => g.First()).ToList();
+            if (_videoModels.Count == 0)
+                _videoModels.Add(new SupportedModelDto { Id = "grok-imagine-video", DisplayName = "Grok Imagine Video" });
+            if (_imageModels.Count == 0)
+                _imageModels.Add(new SupportedModelDto { Id = "grok-imagine-image-quality", DisplayName = "Grok Imagine Image" });
+            if (_chatModels.Count == 0)
+                _chatModels.Add(new SupportedModelDto { Id = "grok-4.5", DisplayName = "Grok 4.5" });
+        }
+        catch
+        {
+            _videoModels = [new SupportedModelDto { Id = "grok-imagine-video", DisplayName = "Grok Imagine Video" }];
+            _imageModels = [new SupportedModelDto { Id = "grok-imagine-image-quality", DisplayName = "Grok Imagine Image" }];
+            _chatModels = [new SupportedModelDto { Id = "grok-4.5", DisplayName = "Grok 4.5" }];
+        }
+    }
+
+    private string? ModelHint(string modelId, string capability)
+    {
+        var m = _allModels.FirstOrDefault(x =>
+            string.Equals(x.Id, modelId, StringComparison.OrdinalIgnoreCase) &&
+            string.Equals(x.Capability, capability, StringComparison.OrdinalIgnoreCase))
+            ?? _allModels.FirstOrDefault(x =>
+                string.Equals(x.Id, modelId, StringComparison.OrdinalIgnoreCase));
+        if (m is null) return null;
+        var keys = m.RequiredEnvKeys is { Count: > 0 }
+            ? string.Join(", ", m.RequiredEnvKeys)
+            : "—";
+        var ep = string.IsNullOrEmpty(m.EndpointPath) ? "" : $" · {m.EndpointPath}";
+        return $"{m.Provider}{ep} · key: {keys}";
     }
 
     private async Task LoadAsync()
@@ -235,9 +295,6 @@ else
             _cfg = dto?.Config;
             if (_cfg is null) return;
             _blueprintFile = GetStr("blueprint_file", _blueprintFile);
-            _videoProvider = GetStr("video_provider", _videoProvider);
-            _charDesignProvider = GetStr("character_design_provider", _charDesignProvider);
-            _qaProvider = GetStr("qa_provider", _qaProvider);
             _modelName = GetStr("model_name", _modelName);
             _imageModel = GetStr("image_model_name", _imageModel);
             _qaModel = GetStr("qa_model_name", _qaModel);
@@ -279,12 +336,18 @@ else
         _message = null;
         try
         {
+            // Derive legacy provider fields from model catalog (cost reports / older readers).
+            var videoProvider = SupportedModelCatalog.LegacyProviderFor(_modelName, ModelCapability.Video);
+            var imageProvider = SupportedModelCatalog.LegacyProviderFor(_imageModel, ModelCapability.Image);
+            var qaProvider = SupportedModelCatalog.LegacyProviderFor(_qaModel, ModelCapability.Chat);
+
             var updates = new Dictionary<string, object?>
             {
                 ["blueprint_file"] = _blueprintFile,
-                ["video_provider"] = _videoProvider,
-                ["character_design_provider"] = _charDesignProvider,
-                ["qa_provider"] = _qaProvider,
+                ["video_provider"] = videoProvider,
+                ["character_design_provider"] = imageProvider,
+                ["image_provider"] = imageProvider,
+                ["qa_provider"] = qaProvider,
                 ["model_name"] = _modelName,
                 ["image_model_name"] = _imageModel,
                 ["qa_model_name"] = _qaModel,

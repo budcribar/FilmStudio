@@ -22,10 +22,17 @@ public static class ImageApiLimits
     public const int DefaultMaxReferenceImages = GrokMaxReferenceImages;
 
     /// <summary>
-    /// Resolve provider id from explicit config and/or model name.
+    /// Resolve provider id from model catalog first, then explicit config / name heuristics.
     /// </summary>
     public static string ResolveProvider(string? imageProvider, string? imageModel)
     {
+        // Master catalog (model id → provider family)
+        var entry = FilmStudio.Core.Models.SupportedModelCatalog.Find(
+            imageModel,
+            FilmStudio.Core.Models.ModelCapability.Image);
+        if (entry is not null)
+            return entry.LegacyProviderId;
+
         var p = (imageProvider ?? "").Trim().ToLowerInvariant();
         if (p is "grok" or "xai" or "x.ai")
             return ProviderGrok;
