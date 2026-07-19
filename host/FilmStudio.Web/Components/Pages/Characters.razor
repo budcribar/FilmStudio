@@ -3,12 +3,25 @@
 @inject EngineApiClient Engine
 @inject JobHubClient Hub
 @inject AdminSessionService Session
+@inject ActiveProjectState ActiveProject
 @using FilmStudio.Core.Models
 @using Microsoft.AspNetCore.Components.Forms
 
 <PageTitle>Characters</PageTitle>
 
 <h1>Characters</h1>
+
+@if (_gateChecked && !ActiveProject.CanCharacters)
+{
+    <p class="text-muted mb-3">
+        @(string.IsNullOrWhiteSpace(ActiveProject.CharactersBlockedReason)
+            ? "Approve the screenplay first."
+            : ActiveProject.CharactersBlockedReason)
+        <a href="adaptation/screenplay">Open screenplay →</a>
+    </p>
+}
+else
+{
 <p class="text-muted mb-1">
     Set each cast member’s look before generating clips.
 </p>
@@ -16,8 +29,15 @@
     <a href="adaptation/screenplay">← Screenplay</a>
     ·
     <a href="adaptation/shots">Shot plan</a>
-    ·
-    <a href="scenes">Scenes →</a>
+    @if (ActiveProject.CanScenes)
+    {
+        <text> · </text>
+        <a href="scenes">Scenes →</a>
+    }
+    else
+    {
+        <span class="text-muted" title="@ActiveProject.ScenesBlockedReason"> · Scenes</span>
+    }
 </p>
 
 @* Setup actions only when needed — hide once cast exists / book pictures are matched *@
@@ -418,6 +438,7 @@ else
         </div>
     </div>
 }
+} @* end CanCharacters gate *@
 
 @code {
     private enum Mode { PickSource, WaitingGenerate, Compare }
@@ -481,6 +502,7 @@ else
             : "No preferred image";
 
     private bool _busy;
+    private bool _gateChecked;
     private string? _error;
     private string? _message;
     private string _projectId = "Buster";
@@ -595,9 +617,17 @@ else
             _projectIds = projs?.Projects.Select(p => p.Id ?? "").Where(s => s.Length > 0).ToList()
                           ?? new List<string> { "Buster" };
             if (projs?.Active?.Id is { Length: > 0 } aid)
+            {
                 _projectId = aid;
+                ActiveProject.Set(aid, projs.Active?.Label ?? projs.Active?.Title ?? aid);
+            }
             else if (_projectIds.Count > 0)
                 _projectId = _projectIds[0];
+
+            await ActiveProject.RefreshReadinessAsync(Engine);
+            _gateChecked = true;
+            if (!ActiveProject.CanCharacters)
+                return;
 
             try { await Hub.StartAsync(); } catch { /* optional */ }
 
@@ -609,6 +639,7 @@ else
         catch (Exception ex)
         {
             _error = ex.Message;
+            _gateChecked = true;
         }
     }
 

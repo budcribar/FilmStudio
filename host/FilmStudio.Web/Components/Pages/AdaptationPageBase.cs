@@ -94,6 +94,7 @@ public abstract class AdaptationPageBase : ComponentBase, IAsyncDisposable
             _ = InvokeAsync(async () =>
             {
                 await SoftLoadAsync();
+                try { await ActiveProject.RefreshReadinessAsync(Engine); } catch { /* nav gates */ }
                 if (snap.Status == "done")
                 {
                     // Avoid flashing technical “Book ready · quality=good…” while Import

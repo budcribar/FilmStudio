@@ -327,7 +327,10 @@
             _projects = result ?? await Engine.GetProjectsAsync();
             var created = _projects?.Active;
             if (created?.Id is { Length: > 0 } cid)
+            {
                 ActiveProject.Set(cid, created.Label ?? created.Title ?? cid);
+                await ActiveProject.RefreshReadinessAsync(Engine);
+            }
             else
                 await ActiveProject.RefreshFromApiAsync(Engine);
             _message = $"Created “{name}”";
@@ -356,6 +359,7 @@
             _projects = await Engine.GetProjectsAsync();
             var a = _projects?.Active;
             ActiveProject.Set(id, a?.Label ?? a?.Title ?? id);
+            await ActiveProject.RefreshReadinessAsync(Engine);
         }
         catch (Exception ex) { _error = ex.Message; }
         finally { _busy = false; }

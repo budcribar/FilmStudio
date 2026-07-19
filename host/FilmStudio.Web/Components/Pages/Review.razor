@@ -2,11 +2,24 @@
 @implements IAsyncDisposable
 @inject EngineApiClient Engine
 @inject JobHubClient Hub
+@inject ActiveProjectState ActiveProject
 @using FilmStudio.Core.Models
 
 <PageTitle>Review</PageTitle>
 
 <h1>Review</h1>
+
+@if (_gateChecked && !ActiveProject.CanReview)
+{
+    <p class="text-muted mb-3">
+        @(string.IsNullOrWhiteSpace(ActiveProject.ReviewBlockedReason)
+            ? "Finish the shot plan first."
+            : ActiveProject.ReviewBlockedReason)
+        <a href="adaptation/shots">Open shot plan →</a>
+    </p>
+}
+else
+{
 <p class="text-muted mb-1">
     Mark clips pass/fail, approve scenes, rebuild scene videos, and rebuild the full movie draft.
 </p>
@@ -387,9 +400,11 @@
         </div>
     }
 </div>
+} @* end CanReview gate *@
 
 @code {
     private bool _busy;
+    private bool _gateChecked;
     private string? _error;
     private string? _message;
     private string _projectId = "Buster";
@@ -443,13 +458,26 @@
             _projectIds = projs?.Projects.Select(p => p.Id ?? "").Where(s => s.Length > 0).ToList()
                           ?? new List<string> { "Buster" };
             if (projs?.Active?.Id is { Length: > 0 } aid)
+            {
                 _projectId = aid;
+                ActiveProject.Set(aid, projs.Active?.Label ?? projs.Active?.Title ?? aid);
+            }
             else if (_projectIds.Count > 0)
                 _projectId = _projectIds[0];
+
+            await ActiveProject.RefreshReadinessAsync(Engine);
+            _gateChecked = true;
+            if (!ActiveProject.CanReview)
+                return;
+
             try { await Hub.StartAsync(); } catch { /* optional */ }
             await LoadAsync();
         }
-        catch (Exception ex) { _error = ex.Message; }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+            _gateChecked = true;
+        }
     }
 
     private void OnJobUpdated(JobSnapshot snap)
