@@ -112,8 +112,18 @@ public sealed class Stage2PlannerService
             ct.ThrowIfCancellationRequested();
             var sn = ToInt(s.TryGetValue("scene_number", out var n) ? n : 0);
             onProgress?.Invoke($"  Scene {sn}…");
-            planned.Add(PlanScene(s, resolution, locSeeds, charSeeds, styleLock));
+            var plannedScene = PlanScene(s, resolution, locSeeds, charSeeds, styleLock);
+            // Skip transition-only phantoms (e.g. FADE IN before first heading)
+            if (plannedScene is null)
+            {
+                onProgress?.Invoke($"  Scene {sn}: skipped (no filmable content)");
+                continue;
+            }
+            planned.Add(plannedScene);
         }
+
+        if (planned.Count == 0)
+            throw new InvalidOperationException("Screenplay has no filmable scenes to plan.");
 
         var outPath = await _projects.FindBlueprintPathAsync(projectId, ct).ConfigureAwait(false)
             ?? Path.Combine(projectDir, "blueprint.clips.grok.json");
@@ -283,18 +293,30 @@ public sealed class Stage2PlannerService
         }
     }
 
-    private static Dictionary<string, object?> PlanScene(
+    /// <summary>
+    /// Build one scene’s clip plan. Returns null when the scene has nothing filmable
+    /// (transition-only / phantom unspecified), so callers can omit it.
+    /// </summary>
+    private static Dictionary<string, object?>? PlanScene(
         Dictionary<string, object?> scene,
         string resolution,
         Dictionary<string, object?> locSeeds,
         Dictionary<string, object?> charSeeds,
         string? styleLock)
     {
-        var beats = GetList(scene, "story_beats").OfType<Dictionary<string, object?>>().ToList();
+        var beats = GetList(scene, "story_beats").OfType<Dictionary<string, object?>>()
+            .Where(b => !IsNoopTransitionBeat(b))
+            .ToList();
         var lids = GetList(scene, "location_ids").Select(x => x?.ToString() ?? "").Where(x => x.Length > 0).ToList();
         var primary = CoerceString(scene.TryGetValue("primary_location_id", out var pl) ? pl : null)
                       ?? (lids.Count > 0 ? lids[0] : null);
         var cast = UnionCharactersOnScreen(scene);
+
+        // Entire scene was only FADE IN / CUT TO — omit (no empty clip)
+        var setting = CoerceString(scene.TryGetValue("setting", out var set) ? set : null) ?? "";
+        if (beats.Count == 0 &&
+            setting.Contains("UNSPECIFIED", StringComparison.OrdinalIgnoreCase))
+            return null;
 
         if (beats.Count == 0)
         {
@@ -524,6 +546,20 @@ public sealed class Stage2PlannerService
             body += "…";
         }
         return body + suffix;
+    }
+
+    /// <summary>FADE IN / CUT TO-only beats produce empty visual prompts — never plan clips for them.</summary>
+    private static bool IsNoopTransitionBeat(Dictionary<string, object?> beat)
+    {
+        var dlg = CoerceString(beat.TryGetValue("dialogue", out var d) ? d : null) ?? "";
+        if (!string.IsNullOrWhiteSpace(dlg)) return false;
+        var ve = CoerceString(beat.TryGetValue("visual_event", out var v) ? v : null) ?? "";
+        if (string.IsNullOrWhiteSpace(ve)) return true;
+        if (FountainParser.IsStandaloneTransitionLine(ve)) return true;
+        return Regex.IsMatch(
+            ve.Trim(),
+            @"^(FADE\s+IN|FADE\s+OUT|FADE\s+TO\s+BLACK|FADE\s+TO\s+WHITE|CUT\s+TO(\s+BLACK)?|DISSOLVE\s+TO|SMASH\s+CUT\s+TO|BLACK\s+OUT|THE\s+END)[\s\.:]*$",
+            RegexOptions.IgnoreCase);
     }
 
     private static List<int> AllocateDurations(List<Dictionary<string, object?>> beats, int target)

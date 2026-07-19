@@ -52,6 +52,13 @@ public static class FountainParser
         @"TO:$",
         RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
+    /// <summary>
+    /// Common standalone transitions that do not end in TO: (FADE IN / FADE OUT / …).
+    /// </summary>
+    private static readonly Regex StandaloneFadeTransition = new(
+        @"^(FADE\s+IN|FADE\s+OUT|FADE\s+TO\s+BLACK|FADE\s+TO\s+WHITE|CUT\s+TO\s+BLACK|BLACK\s+OUT)[\.:]?$",
+        RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
     private static readonly Regex SceneNumberSuffix = new(
         @"\s+#([^#]+)#\s*$",
         RegexOptions.Compiled);
@@ -248,16 +255,20 @@ public static class FountainParser
                 continue;
             }
 
-            // Transition: uppercase, blank before/after, ends with TO:
-            // Spec: spaces after the colon → Action (line no longer ends with a colon).
-            // Do not right-trim before the TO: check — only ignore leading indent.
+            // Transition: uppercase, blank before/after.
+            // Classic Fountain: ends with TO: (spaces after colon → Action).
+            // Also: FADE IN / FADE OUT / FADE TO BLACK (common and would otherwise
+            // invent a phantom scene if treated as Action before the first heading).
             if (prevBlank && nextBlank)
             {
-                var transCandidate = raw.TrimStart(); // keep trailing spaces after colon
-                if (IsAllCapsLine(transCandidate.TrimEnd()) &&
-                    TransitionEnd.IsMatch(transCandidate))
+                var transCandidate = raw.TrimStart(); // keep trailing spaces after colon for TO: rule
+                if (IsStandaloneTransitionLine(transCandidate))
                 {
-                    result.Elements.Add(new Element { Type = ElementType.Transition, Text = transCandidate.Trim() });
+                    result.Elements.Add(new Element
+                    {
+                        Type = ElementType.Transition,
+                        Text = UnescapeFountain(transCandidate.Trim()),
+                    });
                     i++;
                     continue;
                 }
@@ -486,12 +497,8 @@ public static class FountainParser
         if (prevBlank && SceneHeadingStart.IsMatch(trimmed) &&
             (nextBlank || NextIsPageTagOrSynopsis(lines, i)))
             return true;
-        if (prevBlank && nextBlank)
-        {
-            var transCandidate = lines[i].TrimStart();
-            if (IsAllCapsLine(transCandidate.TrimEnd()) && TransitionEnd.IsMatch(transCandidate))
-                return true;
-        }
+        if (prevBlank && nextBlank && IsStandaloneTransitionLine(lines[i].TrimStart()))
+            return true;
         if (prevBlank && !nextBlank && IsCharacterLine(trimmed)) return true;
         return false;
     }
@@ -500,6 +507,28 @@ public static class FountainParser
     {
         trimmed = trimmed.Trim();
         return trimmed.StartsWith('>') && trimmed.EndsWith('<') && trimmed.Length >= 2;
+    }
+
+    /// <summary>
+    /// True for a line that should be a Transition element (not Action / not a scene).
+    /// Public so importers can ignore transition-only noise without inventing scenes.
+    /// </summary>
+    public static bool IsStandaloneTransitionLine(string? line)
+    {
+        if (string.IsNullOrWhiteSpace(line)) return false;
+
+        // Strip emphasis so **FADE IN:** still matches
+        var stripped = StripEmphasis(line).TrimStart();
+        var core = stripped.TrimEnd();
+        if (core.Length == 0) return false;
+        if (!IsAllCapsLine(core)) return false;
+
+        // FADE IN / FADE OUT / FADE TO BLACK (optional trailing period)
+        if (StandaloneFadeTransition.IsMatch(core))
+            return true;
+
+        // Classic Fountain TO: — must end with TO: (trailing spaces after colon → Action)
+        return TransitionEnd.IsMatch(stripped.TrimEnd('\r', '\n'));
     }
 
     private static bool IsCharacterLine(string trimmed)

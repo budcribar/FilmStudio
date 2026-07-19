@@ -106,6 +106,9 @@ public static class FountainStage1Importer
             var text = actionBuf.ToString().Trim();
             actionBuf.Clear();
             if (text.Length == 0) return;
+            // Pure transitions are not filmable beats (would become empty clips)
+            if (FountainParser.IsStandaloneTransitionLine(text) || IsNoopTransitionText(text))
+                return;
             beatIndex++;
             beats.Add(new Dictionary<string, object?>
             {
@@ -159,14 +162,31 @@ public static class FountainStage1Importer
             FlushDialogue();
             pendingChar = null;
             if (curScene is null || beats is null) return;
+
+            // Drop pure transition noise that slipped in as action
+            beats.RemoveAll(b =>
+                b is Dictionary<string, object?> d &&
+                IsNoopBeatDict(d));
+
             if (beats.Count == 0)
             {
+                // Real scene heading with no content yet → short establishing beat.
+                // Phantom unspecified scenes that only had FADE IN are discarded.
+                var setting = curScene.TryGetValue("setting", out var st) ? st?.ToString() ?? "" : "";
+                if (setting.Contains("UNSPECIFIED", StringComparison.OrdinalIgnoreCase))
+                {
+                    curScene = null;
+                    beats = null;
+                    beatIndex = 0;
+                    return;
+                }
+
                 beatIndex++;
                 beats.Add(new Dictionary<string, object?>
                 {
                     ["beat_id"] = $"b{beatIndex}",
                     ["intent"] = "Establish scene",
-                    ["visual_event"] = curScene.TryGetValue("setting", out var st) ? st?.ToString() ?? "Scene" : "Scene",
+                    ["visual_event"] = string.IsNullOrWhiteSpace(setting) ? "Scene" : setting,
                     ["shot_scale_hint"] = "wide",
                     ["action_class"] = "establishing",
                     ["continuity"] = "new_setup",
@@ -228,14 +248,21 @@ public static class FountainStage1Importer
 
                 case FountainParser.ElementType.Action:
                 case FountainParser.ElementType.Lyric:
+                {
+                    var actionText = CleanEmphasis(el.Text);
+                    // Do not invent INT. UNSPECIFIED just for FADE IN / CUT TO before the first heading
+                    if (curScene is null &&
+                        (FountainParser.IsStandaloneTransitionLine(actionText) ||
+                         IsNoopTransitionText(actionText)))
+                        break;
                     if (curScene is null)
                         OpenScene("INT. UNSPECIFIED - DAY");
                     FlushDialogue();
                     pendingChar = null;
                     if (actionBuf.Length > 0) actionBuf.Append(' ');
-                    actionBuf.Append(CleanEmphasis(el.Text));
-                    // Mentioned characters in ALL CAPS action? skip for simplicity
+                    actionBuf.Append(actionText);
                     break;
+                }
 
                 case FountainParser.ElementType.Character:
                     if (curScene is null)
@@ -355,6 +382,26 @@ public static class FountainStage1Importer
         if (string.IsNullOrWhiteSpace(locName))
             locName = "Unspecified";
         return (locType, locName, heading);
+    }
+
+    /// <summary>Transition-only lines that must not become filmable beats/clips.</summary>
+    private static bool IsNoopTransitionText(string? text)
+    {
+        if (string.IsNullOrWhiteSpace(text)) return true;
+        if (FountainParser.IsStandaloneTransitionLine(text)) return true;
+        var t = Regex.Replace(text.Trim(), @"\s+", " ");
+        return Regex.IsMatch(
+            t,
+            @"^(FADE\s+IN|FADE\s+OUT|FADE\s+TO\s+BLACK|FADE\s+TO\s+WHITE|CUT\s+TO(\s+BLACK)?|DISSOLVE\s+TO|SMASH\s+CUT\s+TO|BLACK\s+OUT|THE\s+END)[\s\.:]*$",
+            RegexOptions.IgnoreCase);
+    }
+
+    private static bool IsNoopBeatDict(Dictionary<string, object?> beat)
+    {
+        var ve = beat.TryGetValue("visual_event", out var v) ? v?.ToString() ?? "" : "";
+        var dlg = beat.TryGetValue("dialogue", out var d) ? d?.ToString() ?? "" : "";
+        if (!string.IsNullOrWhiteSpace(dlg)) return false;
+        return IsNoopTransitionText(ve);
     }
 
     private static string EnsureLocation(

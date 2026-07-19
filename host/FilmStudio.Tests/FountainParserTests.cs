@@ -372,6 +372,60 @@ public class FountainParserTests
     }
 
     [Fact]
+    public void Fade_in_and_fade_out_are_transitions_not_action()
+    {
+        var src = """
+            Title: Fade Test
+
+            FADE IN:
+
+            EXT. YARD - DAY
+
+            Dog runs.
+
+            FADE OUT.
+            """;
+        var r = FountainParser.Parse(src);
+        Assert.Contains(r.Elements, e => e.Type == FountainParser.ElementType.Transition &&
+                                         e.Text.Contains("FADE IN", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(r.Elements, e => e.Type == FountainParser.ElementType.Transition &&
+                                         e.Text.Contains("FADE OUT", StringComparison.OrdinalIgnoreCase));
+        Assert.DoesNotContain(r.Elements, e => e.Type == FountainParser.ElementType.Action &&
+                                               e.Text.Contains("FADE IN", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(r.Elements, e => e.Type == FountainParser.ElementType.SceneHeading &&
+                                         e.Text.Contains("YARD", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public void Fade_in_before_first_heading_does_not_create_unspecified_scene()
+    {
+        var fountain = """
+            Title: Buster Test
+
+            FADE IN:
+
+            EXT. BACKYARD - DAY
+
+            Buster runs across the grass.
+
+            NARRATOR
+            He's Buster.
+            """;
+        var model = ScreenplayService.BuildModelFromFountainText(fountain);
+        Assert.True(model.TryGetValue("scenes", out var scenesObj));
+        var scenes = scenesObj as System.Collections.IList
+                     ?? throw new Xunit.Sdk.XunitException("scenes missing");
+        Assert.True(scenes.Count >= 1);
+        foreach (var s in scenes)
+        {
+            var dict = s as System.Collections.Generic.Dictionary<string, object?>
+                       ?? throw new Xunit.Sdk.XunitException("scene not dict");
+            var setting = dict.TryGetValue("setting", out var st) ? st?.ToString() ?? "" : "";
+            Assert.DoesNotContain("UNSPECIFIED", setting, StringComparison.OrdinalIgnoreCase);
+        }
+    }
+
+    [Fact]
     public void Scene_heading_prefixes_and_lowercase()
     {
         var src = """

@@ -165,10 +165,10 @@ public class FountainOpenSourceFixtureTests
         Assert.Contains(transitions, t => t.Contains("NOT A STANDARD TRANSITION", StringComparison.OrdinalIgnoreCase));
         Assert.Contains(transitions, t => t.Equals("GO TO:", StringComparison.OrdinalIgnoreCase) ||
                                           t.Equals("TO:", StringComparison.OrdinalIgnoreCase));
-        // FADE TO BLACK. ends with period → Action
-        Assert.Contains(r.Elements, e => e.Type == FountainParser.ElementType.Action &&
+        // FADE TO BLACK. is a common fade transition (we treat as Transition, not Action)
+        Assert.Contains(r.Elements, e => e.Type == FountainParser.ElementType.Transition &&
                                          e.Text.Contains("FADE TO BLACK", StringComparison.OrdinalIgnoreCase));
-        // CUT TO: with trailing spaces → Action
+        // CUT TO: with trailing spaces → Action (Fountain TO: rule)
         Assert.Contains(r.Elements, e => e.Type == FountainParser.ElementType.Action &&
                                          e.Text.TrimStart().StartsWith("CUT TO:", StringComparison.OrdinalIgnoreCase));
     }
