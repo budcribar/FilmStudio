@@ -536,7 +536,9 @@ else
                 </button>
                 <button class="btn btn-sm btn-primary"
                         disabled="@(_busy || JobRunning || DetailLockedByOther)"
-                        title="@(DetailLockedByOther ? $"Locked by {_detailLockOwner}" : null)"
+                        title="@(DetailLockedByOther
+                            ? $"Locked by {_detailLockOwner}"
+                            : "Generate missing clips in order (C01 → C02 → …)")"
                         @onclick="() => GenOneSceneAsync(_detail.SceneNumber)">
                     Generate scene
                 </button>
@@ -661,6 +663,9 @@ else
                                     }
                                 </td>
                                 <td @onclick:stopPropagation="true">
+                                    @{
+                                        var needPrev = PreviousClipMissing(cn);
+                                    }
                                     <div class="btn-group btn-group-sm">
                                         <button class="btn btn-outline-dark"
                                                 disabled="@(_busy || !c.OnDisk)"
@@ -669,8 +674,10 @@ else
                                             ▶
                                         </button>
                                         <button class="btn btn-outline-warning"
-                                                disabled="@(_busy || JobRunning)"
-                                                title="Force re-generate this clip"
+                                                disabled="@(_busy || JobRunning || needPrev)"
+                                                title="@(needPrev
+                                                    ? $"Generate C{(cn - 1):D2} first — clips continue from the previous video"
+                                                    : "Force re-generate this clip")"
                                                 @onclick="() => RegenClipAsync(_detail.SceneNumber, cn)">
                                             Regen
                                         </button>
@@ -696,9 +703,14 @@ else
                     }
                 </span>
                 <div class="d-flex gap-1">
+                    @{
+                        var clipNeedsPrev = PreviousClipMissing(_clip.ClipNumber);
+                    }
                     <button class="btn btn-sm btn-outline-warning"
-                            disabled="@(_busy || JobRunning)"
-                            title="Force re-generate this clip (overwrites if present)"
+                            disabled="@(_busy || JobRunning || clipNeedsPrev)"
+                            title="@(clipNeedsPrev
+                                ? $"Generate C{(_clip.ClipNumber - 1):D2} first — continues from previous video"
+                                : "Force re-generate this clip (overwrites if present)")"
                             @onclick="() => RegenClipAsync(_detail.SceneNumber, _clip.ClipNumber)">
                         Regen clip
                     </button>
@@ -731,9 +743,18 @@ else
                     {
                         <div class="border rounded p-4 text-center text-muted">
                             No video on disk
+                            @if (PreviousClipMissing(_clip.ClipNumber))
+                            {
+                                <div class="small text-warning mt-2">
+                                    Generate C@((_clip.ClipNumber - 1).ToString("D2")) first — this clip continues from the previous video.
+                                </div>
+                            }
                             <div class="mt-2">
                                 <button class="btn btn-sm btn-warning"
-                                        disabled="@(_busy || JobRunning)"
+                                        disabled="@(_busy || JobRunning || PreviousClipMissing(_clip.ClipNumber))"
+                                        title="@(PreviousClipMissing(_clip.ClipNumber)
+                                            ? $"Need C{(_clip.ClipNumber - 1):D2} on disk"
+                                            : null)"
                                         @onclick="() => RegenClipAsync(_detail.SceneNumber, _clip.ClipNumber)">
                                     Generate this clip
                                 </button>
@@ -819,6 +840,16 @@ else
         _myJobs.Any(j =>
             string.Equals(j.Status, "running", StringComparison.OrdinalIgnoreCase) ||
             string.Equals(j.Status, "queued", StringComparison.OrdinalIgnoreCase));
+
+    /// <summary>
+    /// Clip N (N&gt;1) needs clip N-1 on disk — Imagine continues from the previous video.
+    /// </summary>
+    private bool PreviousClipMissing(int clipNumber)
+    {
+        if (clipNumber <= 1 || _detail is null) return false;
+        var prev = _detail.Clips.FirstOrDefault(c => c.ClipNumber == clipNumber - 1);
+        return prev is null || !prev.OnDisk;
+    }
 
     /// <summary>Jobs that belong on Scenes (not leftover stage2 / character jobs).</summary>
     private static bool IsScenesWorkflowJob(string? kind) =>

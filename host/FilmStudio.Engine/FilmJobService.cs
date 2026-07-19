@@ -1560,7 +1560,8 @@ public sealed class FilmJobService
     {
         var profiles = _projects.LoadCharacterPromptProfiles(projectId);
 
-        // Previous clip in this scene — Imagine /videos/extensions continues from that video
+        // Previous clip in this scene — Imagine /videos/extensions continues from that video.
+        // Clip 2+ requires previous on disk (no gaps in the chain).
         string? prevVisual = null;
         string? prevVideoPath = null;
         var cont = clipEl.TryGetProperty("veo_continuation_source", out var ce)
@@ -1570,30 +1571,26 @@ public sealed class FilmJobService
             string.Equals(cont, "extend_previous", StringComparison.OrdinalIgnoreCase) ||
             clip > 1;
 
+        if (clip > 1)
+        {
+            prevVideoPath = Path.Combine(
+                projectDir, "assets", "video", $"scene_{scene:D2}_clip_{clip - 1:D2}.mp4");
+            if (!File.Exists(prevVideoPath) || new FileInfo(prevVideoPath).Length < 1024)
+            {
+                throw new InvalidOperationException(
+                    $"Generate S{scene:D2}C{clip - 1:D2} first — later clips continue from the previous video.");
+            }
+            await AppendLogAsync(
+                $"  [Continuity] Imagine video-extend from S{scene:D2}C{clip - 1:D2} " +
+                $"({Path.GetFileName(prevVideoPath)})");
+        }
+
         if (previousClipEl is { } prevEl &&
             prevEl.TryGetProperty("visual_prompt", out var pvp))
             prevVisual = pvp.GetString();
 
         if (prevVisual is null && wantContinue && blueprintRoot is { } root)
             prevVisual = FindClipVisualInBlueprint(root, scene, clip - 1);
-
-        if (wantContinue && clip > 1)
-        {
-            prevVideoPath = Path.Combine(
-                projectDir, "assets", "video", $"scene_{scene:D2}_clip_{clip - 1:D2}.mp4");
-            if (!File.Exists(prevVideoPath) || new FileInfo(prevVideoPath).Length < 1024)
-            {
-                await AppendLogAsync(
-                    $"  [Continuity] no previous clip file S{scene:D2}C{clip - 1:D2} — fresh gen");
-                prevVideoPath = null;
-            }
-            else
-            {
-                await AppendLogAsync(
-                    $"  [Continuity] Imagine video-extend from S{scene:D2}C{clip - 1:D2} " +
-                    $"({Path.GetFileName(prevVideoPath)})");
-            }
-        }
 
         // When extending video, skip start-frame stills — API uses the previous video itself
         var built = ClipVideoPromptBuilder.Build(

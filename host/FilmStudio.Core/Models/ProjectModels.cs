@@ -315,6 +315,16 @@ public sealed class UpdateCharacterVoiceRequest
     public string? VoiceProfile { get; set; }
 }
 
+/// <summary>TTS preview for a character voice (optional overrides from the editor).</summary>
+public sealed class VoicePreviewRequest
+{
+    public string? VoiceLabel { get; set; }
+    public string? VoiceProfile { get; set; }
+    public string? DisplayName { get; set; }
+    /// <summary>Optional custom sample; default builds from name + profile.</summary>
+    public string? SampleText { get; set; }
+}
+
 /// <summary>Update description / visual_lock on character seeds (cast_seeds + blueprint).</summary>
 public sealed class UpdateCharacterLookRequest
 {

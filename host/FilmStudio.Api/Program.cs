@@ -117,6 +117,13 @@ else
     });
 }
 
+// TTS preview works with real API even when video fakes are on (needs XAI_API_KEY)
+builder.Services.AddHttpClient<GrokTtsClient>(c =>
+{
+    c.BaseAddress = new Uri(GrokTtsClient.ApiBase + "/");
+    c.Timeout = TimeSpan.FromMinutes(2);
+});
+
 builder.Services.AddSignalR();
 builder.Services.AddCors(o =>
 {
@@ -728,6 +735,53 @@ app.MapPost("/api/projects/{id}/characters/{charKey}/voice",
             charKey,
             message = "Voice seed updated",
         });
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { ok = false, error = ex.Message });
+    }
+});
+
+/// <summary>
+/// Preview character voice via xAI TTS (MP3). Uses voice_label as voice_id when it
+/// matches a built-in (eve/ara/leo/rex/sal); otherwise picks a default from profile hints.
+/// </summary>
+app.MapPost("/api/projects/{id}/characters/{charKey}/voice/preview", async (
+    string id,
+    string charKey,
+    VoicePreviewRequest? body,
+    ProjectStore store,
+    GrokTtsClient tts,
+    CancellationToken ct) =>
+{
+    try
+    {
+        if (string.IsNullOrWhiteSpace(charKey))
+            return Results.BadRequest(new { ok = false, error = "charKey required" });
+        if (!tts.IsConfigured)
+            return Results.BadRequest(new { ok = false, error = "Connect service (XAI_API_KEY) for voice preview." });
+
+        body ??= new VoicePreviewRequest();
+        var profiles = store.LoadCharacterPromptProfiles(id);
+        profiles.TryGetValue(charKey, out var prof);
+
+        var label = !string.IsNullOrWhiteSpace(body.VoiceLabel)
+            ? body.VoiceLabel
+            : prof?.VoiceLabel;
+        var profile = !string.IsNullOrWhiteSpace(body.VoiceProfile)
+            ? body.VoiceProfile
+            : prof?.VoiceProfile;
+        var display = !string.IsNullOrWhiteSpace(body.DisplayName)
+            ? body.DisplayName
+            : prof?.DisplayName ?? charKey.Replace("Character_", "").Replace('_', ' ');
+
+        var voiceId = GrokTtsClient.ResolveVoiceId(label);
+        var sample = !string.IsNullOrWhiteSpace(body.SampleText)
+            ? body.SampleText!.Trim()
+            : GrokTtsClient.BuildSampleText(display, profile);
+
+        var mp3 = await tts.SynthesizeAsync(sample, voiceId, language: "en", ct);
+        return Results.File(mp3, "audio/mpeg", $"{charKey}_preview.mp3");
     }
     catch (Exception ex)
     {

@@ -543,6 +543,9 @@ else
     private string _editVoiceProfile = "";
     private bool _panelPictureOpen = true;
     private bool _panelVoiceOpen;
+    private bool _voicePreviewBusy;
+    private string? _voicePreviewUrl;
+    private string? _voicePreviewError;
 
     private int SelectedSeedCount => _seedOrder.Count;
 
@@ -551,16 +554,34 @@ else
         <div class="mb-2">
             <label class="form-label small mb-0">Voice label</label>
             <input class="form-control form-control-sm" @bind="_editVoiceLabel" disabled="@_busy"
-                   placeholder="e.g. Narrator_WarmStoryteller" />
+                   placeholder="eve / ara / leo / rex / sal (or free text)" />
+            <div class="form-text">Built-in IDs: eve, ara, leo, rex, sal — or any label (mapped for preview).</div>
         </div>
         <div class="mb-2">
             <label class="form-label small mb-0">Voice profile</label>
             <textarea class="form-control form-control-sm" rows="4" @bind="_editVoiceProfile" disabled="@_busy"
                       placeholder="Pitch, pace, accent, energy — for spoken lines"></textarea>
         </div>
-        <button type="button" class="btn btn-sm btn-primary" disabled="@_busy" @onclick="SaveVoiceAsync">
-            Save voice
-        </button>
+        <div class="d-flex flex-wrap gap-2 align-items-center">
+            <button type="button" class="btn btn-sm btn-primary" disabled="@_busy" @onclick="SaveVoiceAsync">
+                Save voice
+            </button>
+            <button type="button"
+                    class="btn btn-sm btn-outline-secondary"
+                    disabled="@(_busy || _voicePreviewBusy || string.IsNullOrWhiteSpace(_editVoiceProfile) && string.IsNullOrWhiteSpace(_editVoiceLabel))"
+                    title="Play a short sample via xAI text-to-speech"
+                    @onclick="PlayVoicePreviewAsync">
+                @(_voicePreviewBusy ? "Generating…" : "▶ Play sample")
+            </button>
+        </div>
+        @if (!string.IsNullOrEmpty(_voicePreviewError))
+        {
+            <div class="alert alert-danger py-1 small mt-2 mb-0">@_voicePreviewError</div>
+        }
+        @if (!string.IsNullOrEmpty(_voicePreviewUrl))
+        {
+            <audio class="mt-2 w-100" controls autoplay src="@_voicePreviewUrl" @key="_voicePreviewUrl"></audio>
+        }
     };
 
     private bool _extractingCast;
@@ -1227,6 +1248,43 @@ else
         }
         catch (Exception ex) { _error = ex.Message; }
         finally { _busy = false; }
+    }
+
+    private async Task PlayVoicePreviewAsync()
+    {
+        if (_selected is null) return;
+        _voicePreviewBusy = true;
+        _voicePreviewError = null;
+        // Release previous blob URL
+        if (!string.IsNullOrEmpty(_voicePreviewUrl))
+        {
+            try
+            {
+                // browser will GC; clear binding so <audio> reloads
+            }
+            catch { /* ignore */ }
+            _voicePreviewUrl = null;
+        }
+        StateHasChanged();
+        try
+        {
+            var mp3 = await Engine.PreviewCharacterVoiceAsync(
+                _projectId,
+                _selected.Key,
+                voiceProfile: _editVoiceProfile,
+                voiceLabel: _editVoiceLabel,
+                displayName: _selected.DisplayName);
+            var b64 = Convert.ToBase64String(mp3);
+            _voicePreviewUrl = $"data:audio/mpeg;base64,{b64}";
+        }
+        catch (Exception ex)
+        {
+            _voicePreviewError = ex.Message;
+        }
+        finally
+        {
+            _voicePreviewBusy = false;
+        }
     }
 
     private async Task RefreshNavReadinessAsync()

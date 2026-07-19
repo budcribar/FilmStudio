@@ -802,6 +802,35 @@ public sealed class EngineApiClient
         }
     }
 
+    /// <summary>xAI TTS preview — returns MP3 bytes.</summary>
+    public async Task<byte[]> PreviewCharacterVoiceAsync(
+        string projectId,
+        string charKey,
+        string? voiceProfile = null,
+        string? voiceLabel = null,
+        string? displayName = null,
+        string? sampleText = null,
+        CancellationToken ct = default)
+    {
+        using var resp = await _http.PostAsJsonAsync(
+            $"/api/projects/{Uri.EscapeDataString(projectId)}/characters/{Uri.EscapeDataString(charKey)}/voice/preview",
+            new VoicePreviewRequest
+            {
+                VoiceProfile = voiceProfile,
+                VoiceLabel = voiceLabel,
+                DisplayName = displayName,
+                SampleText = sampleText,
+            },
+            JsonOpts,
+            ct);
+        if (!resp.IsSuccessStatusCode)
+        {
+            var err = await resp.Content.ReadAsStringAsync(ct);
+            throw new InvalidOperationException(TryError(err) ?? resp.ReasonPhrase ?? "TTS preview failed");
+        }
+        return await resp.Content.ReadAsByteArrayAsync(ct);
+    }
+
     /// <summary>
     /// Save look text; by default API runs AI scrub (literal + base look). Returns cleaned fields.
     /// </summary>
