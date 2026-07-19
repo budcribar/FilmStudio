@@ -72,6 +72,7 @@ builder.Services.AddSingleton<Stage2PlannerService>();
 builder.Services.AddSingleton<FfmpegRemuxService>();
 builder.Services.AddSingleton<IFfmpegRemux>(sp => sp.GetRequiredService<FfmpegRemuxService>());
 builder.Services.AddSingleton<VoicePreviewService>();
+builder.Services.AddSingleton<ClipAutoReviewService>();
 builder.Services.AddSingleton<EditLogService>();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddSingleton<IUserContext, HttpUserContext>();
@@ -1654,6 +1655,70 @@ app.MapGet("/api/projects/{id}/clip-reviews", async (string id, EditLogService l
     {
         var map = await logs.GetClipReviewMapAsync(id, ct);
         return Results.Ok(new { ok = true, projectId = id, reviews = map });
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { ok = false, error = ex.Message });
+    }
+});
+
+/// <summary>Queue AI auto-review for one clip (prev tail + current → draft suggestions).</summary>
+app.MapPost("/api/jobs/clip-auto-review", async (StartClipAutoReviewRequest body, FilmJobService jobService) =>
+{
+    try
+    {
+        if (string.IsNullOrWhiteSpace(body.ProjectId) || body.Scene <= 0 || body.Clip <= 0)
+            return Results.BadRequest(new { ok = false, error = "projectId, scene, clip required" });
+        var job = await jobService.StartClipAutoReviewAsync(body);
+        return Results.Accepted($"/api/jobs/{job.JobId}", new
+        {
+            ok = true,
+            message = $"Queued AI review S{body.Scene:D2}C{body.Clip:D2}",
+            job,
+        });
+    }
+    catch (Exception ex)
+    {
+        return JobStartError(ex, jobService);
+    }
+});
+
+/// <summary>Load latest auto-review draft for a clip (if any).</summary>
+app.MapGet("/api/projects/{id}/scenes/{scene:int}/clips/{clip:int}/auto-review", (
+    string id, int scene, int clip, ClipAutoReviewService reviews) =>
+{
+    try
+    {
+        var draft = reviews.LoadDraft(id, scene, clip);
+        if (draft is null)
+            return Results.NotFound(new { ok = false, error = "No auto-review draft yet." });
+        return Results.Ok(new { ok = true, draft });
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { ok = false, error = ex.Message });
+    }
+});
+
+/// <summary>Write accepted suggestion fields (cast / clip prompt). Does not regen — client starts gen after.</summary>
+app.MapPost("/api/projects/{id}/scenes/{scene:int}/clips/{clip:int}/auto-review/apply", (
+    string id, int scene, int clip, ApplyClipAutoReviewRequest? body, ClipAutoReviewService reviews) =>
+{
+    try
+    {
+        body ??= new ApplyClipAutoReviewRequest();
+        body.ProjectId = id;
+        body.Scene = scene;
+        body.Clip = clip;
+        reviews.ApplySuggestions(id, scene, clip, body.Items);
+        return Results.Ok(new
+        {
+            ok = true,
+            projectId = id,
+            scene,
+            clip,
+            message = $"Applied {body.Items.Count} suggestion(s)",
+        });
     }
     catch (Exception ex)
     {

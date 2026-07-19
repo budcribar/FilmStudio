@@ -3,6 +3,7 @@
 @inject EngineApiClient Engine
 @inject JobHubClient Hub
 @inject ActiveProjectState ActiveProject
+@inject AdminSessionService Session
 @using FilmStudio.Core.Models
 
 <PageTitle>Review</PageTitle>
@@ -300,48 +301,161 @@ else
                 </div>
                 <div class="card-body">
                     <div class="mb-2">
-                        <label class="form-label small">Note (optional)</label>
+                        <label class="form-label small">Note (optional, for Pass/Fail)</label>
                         <input class="form-control form-control-sm" @bind="_note" disabled="@_busy" />
                     </div>
-                    <div class="d-flex flex-wrap gap-2">
+                    <div class="d-flex flex-column gap-3">
                         @for (var c = 1; c <= ClipCountFor(sel); c++)
                         {
                             var cn = c;
                             var key = $"S{sel:D2}C{cn:D2}";
                             var st = _reviews.TryGetValue(key, out var r) ? r : "—";
                             var onDisk = ClipOnDisk(sel, cn);
-                            <div class="border rounded p-2 small" style="min-width:11rem;">
-                                <div>
+                            var autoBusy = IsAutoReviewRunning(sel, cn);
+                            var draft = GetLocalDraft(sel, cn);
+                            var editing = _editKey == key;
+                            <div class="border rounded p-2 small">
+                                <div class="d-flex flex-wrap align-items-center gap-2">
                                     <code>C@(cn.ToString("D2"))</code>
                                     · <span class="badge bg-light text-dark">@st</span>
                                     @if (onDisk)
                                     {
-                                        <span class="badge bg-success ms-1">disk</span>
+                                        <span class="badge bg-success">disk</span>
                                     }
                                     else
                                     {
-                                        <span class="badge bg-secondary ms-1">missing</span>
+                                        <span class="badge bg-secondary">missing</span>
+                                    }
+                                    @if (draft is not null && !editing)
+                                    {
+                                        <span class="badge bg-info text-dark">AI: @draft.Suggestion</span>
                                     }
                                 </div>
                                 <div class="btn-group btn-group-sm mt-1 flex-wrap">
                                     <button class="btn btn-outline-dark" disabled="@(_busy || !onDisk)"
                                             title="Play this clip"
                                             @onclick="() => PlayClip(sel, cn)">▶</button>
-                                    <button class="btn btn-outline-warning" disabled="@(_busy || JobRunning)"
-                                            title="Force re-generate this clip (overwrites if present)"
-                                            @onclick="() => RegenClipAsync(sel, cn)">Regen</button>
+                                    <button class="btn btn-outline-primary"
+                                            disabled="@(_busy || !onDisk || JobRunning || autoBusy)"
+                                            title="AI review: this clip + end of previous (does not change files)"
+                                            @onclick="() => StartAutoReviewAsync(sel, cn)">
+                                        @(autoBusy ? "Reviewing…" : draft is not null && !editing ? "Review again" : "Review")
+                                    </button>
+                                    @if (draft is not null && !editing && !autoBusy)
+                                    {
+                                        <button class="btn btn-primary"
+                                                disabled="@_busy"
+                                                title="Show suggested edits to accept or change"
+                                                @onclick="() => OpenApplyPanel(sel, cn)">
+                                            Apply suggestions
+                                        </button>
+                                    }
+                                    @if (editing)
+                                    {
+                                        <button class="btn btn-warning"
+                                                disabled="@(_busy || JobRunning || !HasIncludedEdits())"
+                                                title="Save accepted edits and re-generate this clip"
+                                                @onclick="() => ApplyAndRegenAsync(sel, cn)">
+                                            Regen
+                                        </button>
+                                        <button class="btn btn-outline-secondary" disabled="@_busy"
+                                                @onclick="CloseApplyPanel">Cancel</button>
+                                    }
+                                    else
+                                    {
+                                        <button class="btn btn-outline-warning" disabled="@(_busy || JobRunning)"
+                                                title="Force re-generate this clip (same plan)"
+                                                @onclick="() => RegenClipAsync(sel, cn)">Regen</button>
+                                    }
                                     <button class="btn btn-outline-success" disabled="@_busy"
                                             @onclick="() => ReviewAsync(sel, cn, passStatus)">Pass</button>
                                     <button class="btn btn-outline-danger" disabled="@_busy"
                                             @onclick="() => ReviewAsync(sel, cn, failStatus)">Fail</button>
                                 </div>
+                                @if (autoBusy && _job is not null)
+                                {
+                                    var pct = _job.Status == "queued" || _job.Total <= 0
+                                        ? 8
+                                        : (int)Math.Round(100.0 * Math.Clamp(_job.Index, 0, _job.Total) / Math.Max(1, _job.Total));
+                                    if (_job.Status == "running" && _job.Index <= 0) pct = 0;
+                                    <div class="mt-2">
+                                        <div class="d-flex justify-content-between text-muted">
+                                            <span>@(_job.Message ?? "Reviewing…")</span>
+                                            @if (_job.Total == 100 && _job.Status == "running")
+                                            {
+                                                <span>@_job.Index%</span>
+                                            }
+                                        </div>
+                                        <div class="progress mt-1" style="height: 0.45rem;">
+                                            <div class="progress-bar progress-bar-striped progress-bar-animated"
+                                                 style="width: @(pct)%"></div>
+                                        </div>
+                                    </div>
+                                }
+                                @if (draft is not null && !editing && !autoBusy)
+                                {
+                                    <div class="form-text mt-1">
+                                        @draft.Note
+                                        @if (draft.IncludedPreviousTail)
+                                        {
+                                            <span class="text-muted"> · continuity: @draft.Continuity</span>
+                                        }
+                                        @if (draft.Suggestions.Count > 0)
+                                        {
+                                            <span> · @draft.Suggestions.Count suggestion(s)</span>
+                                        }
+                                    </div>
+                                }
+                                @if (editing && _editRows is not null)
+                                {
+                                    <div class="mt-2 border-top pt-2">
+                                        @if (!string.IsNullOrEmpty(draft?.Note))
+                                        {
+                                            <div class="mb-2 text-muted">@draft!.Note</div>
+                                        }
+                                        @if (_editRows.Count == 0)
+                                        {
+                                            <p class="text-muted mb-1">No field changes suggested. You can Pass or Regen as-is.</p>
+                                        }
+                                        @foreach (var row in _editRows)
+                                        {
+                                            <div class="border rounded p-2 mb-2 bg-light">
+                                                <div class="form-check mb-1">
+                                                    <input class="form-check-input" type="checkbox"
+                                                           id="@row.Id" @bind="row.Include" disabled="@_busy" />
+                                                    <label class="form-check-label" for="@row.Id">
+                                                        <strong>@row.Label</strong>
+                                                        <span class="text-muted">(@row.Layer@(string.IsNullOrEmpty(row.CharKey) ? "" : " · " + row.CharKey))</span>
+                                                    </label>
+                                                </div>
+                                                @if (!string.IsNullOrEmpty(row.Rationale))
+                                                {
+                                                    <div class="text-muted mb-1">@row.Rationale</div>
+                                                }
+                                                @if (!string.IsNullOrEmpty(row.CurrentValue))
+                                                {
+                                                    <div class="mb-1">
+                                                        <span class="text-muted">Current:</span>
+                                                        <div class="small" style="max-height:4rem;overflow:auto;white-space:pre-wrap;">@row.CurrentValue</div>
+                                                    </div>
+                                                }
+                                                <label class="form-label small mb-0">Suggested (editable)</label>
+                                                <textarea class="form-control form-control-sm" rows="3"
+                                                          @bind="row.Value" disabled="@(_busy || !row.Include)"></textarea>
+                                            </div>
+                                        }
+                                        <p class="form-text mb-0">
+                                            Check what to keep, edit text if needed, then <strong>Regen</strong> saves and re-generates this clip.
+                                        </p>
+                                    </div>
+                                }
                             </div>
                         }
                     </div>
                     <p class="small text-muted mb-0 mt-3">
-                        <strong>Regen</strong> re-runs video gen for that clip only (force). After regen, use
-                        <strong>Rebuild scene</strong> so the composite picks up the new clip. Then optionally
-                        <strong>Rebuild WIP</strong> for the full movie.
+                        <strong>Review</strong> drafts AI feedback (includes previous clip end when C2+).
+                        <strong>Apply suggestions</strong> shows edits; <strong>Regen</strong> writes them and re-gens.
+                        Then <strong>Rebuild scene</strong> / WIP as needed.
                     </p>
                 </div>
             </div>
@@ -445,8 +559,27 @@ else
     private const string passStatus = "pass";
     private const string failStatus = "fail";
 
+    /// <summary>SxxCyy → draft from last auto-review.</summary>
+    private readonly Dictionary<string, ClipAutoReviewDraft> _drafts = new(StringComparer.OrdinalIgnoreCase);
+    private string? _editKey;
+    private List<EditRow>? _editRows;
+
     private bool JobRunning =>
-        string.Equals(_job?.Status, "running", StringComparison.OrdinalIgnoreCase);
+        string.Equals(_job?.Status, "running", StringComparison.OrdinalIgnoreCase) ||
+        string.Equals(_job?.Status, "queued", StringComparison.OrdinalIgnoreCase);
+
+    private sealed class EditRow
+    {
+        public string Id { get; set; } = Guid.NewGuid().ToString("N");
+        public string Layer { get; set; } = "clip";
+        public string Field { get; set; } = "";
+        public string? CharKey { get; set; }
+        public string Label { get; set; } = "";
+        public string CurrentValue { get; set; } = "";
+        public string Value { get; set; } = "";
+        public string? Rationale { get; set; }
+        public bool Include { get; set; } = true;
+    }
 
     protected override async Task OnInitializedAsync()
     {
@@ -489,6 +622,33 @@ else
             {
                 await SoftLoadAsync();
                 if (snap.Status == "done" &&
+                    string.Equals(snap.Kind, "clip-auto-review", StringComparison.OrdinalIgnoreCase) &&
+                    snap.Scene is int rs && snap.Clip is int rc)
+                {
+                    try
+                    {
+                        var d = await Engine.GetClipAutoReviewDraftAsync(_projectId, rs, rc);
+                        if (d is not null)
+                            _drafts[$"S{rs:D2}C{rc:D2}"] = d;
+                        _message = d is null
+                            ? $"Review finished S{rs:D2}C{rc:D2}"
+                            : $"Review ready S{rs:D2}C{rc:D2}: {d.Suggestion} — Apply suggestions or Pass/Fail";
+                        _error = null;
+                    }
+                    catch (Exception ex)
+                    {
+                        _error = ex.Message;
+                    }
+                }
+                else if (snap.Status == "error" &&
+                         string.Equals(snap.Kind, "clip-auto-review", StringComparison.OrdinalIgnoreCase))
+                {
+                    _error = Session.IsAdmin
+                        ? (snap.Error ?? snap.Message ?? "Auto-review failed")
+                        : "Auto-review failed. Try again.";
+                    _message = null;
+                }
+                else if (snap.Status == "done" &&
                     string.Equals(snap.Kind, "remux", StringComparison.OrdinalIgnoreCase))
                 {
                     await SoftLoadAsync();
@@ -576,10 +736,27 @@ else
             var scenes = await Engine.GetScenesAsync(_projectId);
             _scenes = scenes?.Scenes ?? new();
             await RefreshWipMetaAsync();
+            if (_selectedScene is int snSelected)
+                await TryLoadDraftsForSceneAsync(snSelected);
             if (_selectedScene is int sn)
                 await LoadSelectedDetailAsync(sn);
         }
         catch { /* ignore */ }
+    }
+
+    private async Task TryLoadDraftsForSceneAsync(int scene)
+    {
+        var n = ClipCountFor(scene);
+        for (var c = 1; c <= n; c++)
+        {
+            try
+            {
+                var d = await Engine.GetClipAutoReviewDraftAsync(_projectId, scene, c);
+                if (d is not null)
+                    _drafts[ClipKey(scene, c)] = d;
+            }
+            catch { /* optional */ }
+        }
     }
 
     private async Task LoadSelectedDetailAsync(int sn)
@@ -736,7 +913,9 @@ else
     private async Task SelectSceneAsync(int scene)
     {
         _selectedScene = scene;
+        CloseApplyPanel();
         await LoadSelectedDetailAsync(scene);
+        await TryLoadDraftsForSceneAsync(scene);
     }
 
     private int ClipCountFor(int scene) =>
@@ -770,6 +949,117 @@ else
             _message = $"Marked S{scene:D2}C{clip:D2} {status}";
             _note = "";
             await SoftLoadAsync();
+        }
+        catch (Exception ex) { _error = ex.Message; }
+        finally { _busy = false; }
+    }
+
+    private static string ClipKey(int scene, int clip) => $"S{scene:D2}C{clip:D2}";
+
+    private bool IsAutoReviewRunning(int scene, int clip) =>
+        _job is not null &&
+        string.Equals(_job.Kind, "clip-auto-review", StringComparison.OrdinalIgnoreCase) &&
+        (_job.Status is "running" or "queued") &&
+        _job.Scene == scene &&
+        _job.Clip == clip;
+
+    private ClipAutoReviewDraft? GetLocalDraft(int scene, int clip) =>
+        _drafts.TryGetValue(ClipKey(scene, clip), out var d) ? d : null;
+
+    private bool HasIncludedEdits() =>
+        _editRows is { Count: > 0 } && _editRows.Any(r => r.Include && !string.IsNullOrWhiteSpace(r.Value));
+
+    private async Task StartAutoReviewAsync(int scene, int clip)
+    {
+        _busy = true;
+        _error = null;
+        _message = null;
+        CloseApplyPanel();
+        try
+        {
+            await EnsureHubAsync();
+            await Engine.StartClipAutoReviewAsync(_projectId, scene, clip);
+            var jobs = await Engine.GetJobAsync();
+            _job = jobs?.Job;
+            _message = $"Reviewing S{scene:D2}C{clip:D2}…";
+        }
+        catch (Exception ex) { _error = ex.Message; }
+        finally { _busy = false; }
+    }
+
+    private void OpenApplyPanel(int scene, int clip)
+    {
+        var draft = GetLocalDraft(scene, clip);
+        if (draft is null) return;
+        _editKey = ClipKey(scene, clip);
+        _editRows = draft.Suggestions.Select(s => new EditRow
+        {
+            Layer = s.Layer,
+            Field = s.Field,
+            CharKey = s.CharKey,
+            Label = string.IsNullOrWhiteSpace(s.Label) ? s.Field : s.Label,
+            CurrentValue = s.CurrentValue ?? "",
+            Value = s.SuggestedValue ?? "",
+            Rationale = s.Rationale,
+            Include = s.IncludeByDefault,
+        }).ToList();
+        // If no structured suggestions but fail, still allow empty panel + manual regen
+        if (_editRows.Count == 0 &&
+            string.Equals(draft.Suggestion, "fail", StringComparison.OrdinalIgnoreCase) &&
+            !string.IsNullOrWhiteSpace(draft.Note))
+        {
+            _editRows.Add(new EditRow
+            {
+                Layer = "clip",
+                Field = "visual_prompt",
+                Label = "Clip note (add to visual prompt yourself or leave unchecked)",
+                CurrentValue = "",
+                Value = draft.Note,
+                Include = false,
+                Rationale = "AI did not propose a full field rewrite — edit or leave unchecked.",
+            });
+        }
+    }
+
+    private void CloseApplyPanel()
+    {
+        _editKey = null;
+        _editRows = null;
+    }
+
+    private async Task ApplyAndRegenAsync(int scene, int clip)
+    {
+        if (_editRows is null) return;
+        var items = _editRows
+            .Where(r => r.Include && !string.IsNullOrWhiteSpace(r.Value))
+            .Select(r => new ClipAutoReviewApplyItem
+            {
+                Layer = r.Layer,
+                Field = r.Field,
+                CharKey = r.CharKey,
+                Value = r.Value.Trim(),
+            })
+            .ToList();
+
+        _busy = true;
+        _error = null;
+        try
+        {
+            if (items.Count > 0)
+            {
+                await Engine.ApplyClipAutoReviewAsync(_projectId, scene, clip, items);
+                _message = $"Saved {items.Count} change(s) — regenerating S{scene:D2}C{clip:D2}…";
+            }
+            else
+            {
+                _message = $"Regenerating S{scene:D2}C{clip:D2} (no field changes)…";
+            }
+
+            await EnsureHubAsync();
+            await Engine.StartSceneGenAsync(_projectId, scene, onlyMissing: false, clip: clip);
+            var jobs = await Engine.GetJobAsync();
+            _job = jobs?.Job;
+            CloseApplyPanel();
         }
         catch (Exception ex) { _error = ex.Message; }
         finally { _busy = false; }

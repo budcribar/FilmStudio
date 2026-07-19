@@ -423,6 +423,81 @@ public sealed class EngineApiClient
         }
     }
 
+    public async Task StartClipAutoReviewAsync(
+        string projectId,
+        int scene,
+        int clip,
+        CancellationToken ct = default)
+    {
+        SyncIdentityHeaders();
+        using var resp = await _http.PostAsJsonAsync(
+            "/api/jobs/clip-auto-review",
+            new StartClipAutoReviewRequest
+            {
+                ProjectId = projectId,
+                Scene = scene,
+                Clip = clip,
+            },
+            JsonOpts,
+            ct);
+        if (!resp.IsSuccessStatusCode)
+        {
+            var err = await resp.Content.ReadAsStringAsync(ct);
+            throw new InvalidOperationException(TryError(err) ?? resp.ReasonPhrase ?? "Auto-review failed");
+        }
+    }
+
+    public async Task<ClipAutoReviewDraft?> GetClipAutoReviewDraftAsync(
+        string projectId,
+        int scene,
+        int clip,
+        CancellationToken ct = default)
+    {
+        using var resp = await _http.GetAsync(
+            $"/api/projects/{Uri.EscapeDataString(projectId)}/scenes/{scene}/clips/{clip}/auto-review",
+            ct);
+        if (resp.StatusCode == System.Net.HttpStatusCode.NotFound)
+            return null;
+        if (!resp.IsSuccessStatusCode)
+        {
+            var err = await resp.Content.ReadAsStringAsync(ct);
+            throw new InvalidOperationException(TryError(err) ?? resp.ReasonPhrase);
+        }
+        var dto = await resp.Content.ReadFromJsonAsync<ClipAutoReviewDraftEnvelope>(JsonOpts, ct);
+        return dto?.Draft;
+    }
+
+    public async Task ApplyClipAutoReviewAsync(
+        string projectId,
+        int scene,
+        int clip,
+        IReadOnlyList<ClipAutoReviewApplyItem> items,
+        CancellationToken ct = default)
+    {
+        using var resp = await _http.PostAsJsonAsync(
+            $"/api/projects/{Uri.EscapeDataString(projectId)}/scenes/{scene}/clips/{clip}/auto-review/apply",
+            new ApplyClipAutoReviewRequest
+            {
+                ProjectId = projectId,
+                Scene = scene,
+                Clip = clip,
+                Items = items.ToList(),
+            },
+            JsonOpts,
+            ct);
+        if (!resp.IsSuccessStatusCode)
+        {
+            var err = await resp.Content.ReadAsStringAsync(ct);
+            throw new InvalidOperationException(TryError(err) ?? resp.ReasonPhrase ?? "Apply failed");
+        }
+    }
+
+    private sealed class ClipAutoReviewDraftEnvelope
+    {
+        public bool Ok { get; set; }
+        public ClipAutoReviewDraft? Draft { get; set; }
+    }
+
     public async Task ReviewClipAsync(
         string projectId,
         int scene,

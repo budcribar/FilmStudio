@@ -1072,6 +1072,51 @@ public sealed class ProjectStore
         InvalidateReadCaches(projectId);
     }
 
+    /// <summary>
+    /// Patch <c>visual_prompt</c> on a Stage 2 blueprint clip (for auto-review apply + regen).
+    /// </summary>
+    public void UpdateClipVisualPrompt(string projectId, int scene, int clip, string visualPrompt)
+    {
+        var bpPath = FindBlueprintPathSync(projectId);
+        if (bpPath is null || !File.Exists(bpPath))
+            throw new InvalidOperationException("Shot plan (blueprint) not found — cannot update clip prompt.");
+
+        var root = System.Text.Json.Nodes.JsonNode.Parse(File.ReadAllText(bpPath))
+                   as System.Text.Json.Nodes.JsonObject
+                   ?? throw new InvalidOperationException("Invalid blueprint JSON.");
+        var scenes = root["scenes"] as System.Text.Json.Nodes.JsonArray
+                     ?? throw new InvalidOperationException("Blueprint has no scenes array.");
+
+        System.Text.Json.Nodes.JsonObject? clipObj = null;
+        foreach (var sNode in scenes)
+        {
+            if (sNode is not System.Text.Json.Nodes.JsonObject s) continue;
+            var sn = s["scene_number"]?.GetValue<int>()
+                     ?? (int.TryParse(s["scene_number"]?.ToString(), out var n) ? n : -1);
+            if (sn != scene) continue;
+            var clips = s["clips"] as System.Text.Json.Nodes.JsonArray;
+            if (clips is null) break;
+            foreach (var cNode in clips)
+            {
+                if (cNode is not System.Text.Json.Nodes.JsonObject c) continue;
+                var cn = c["clip_number"]?.GetValue<int>()
+                         ?? (int.TryParse(c["clip_number"]?.ToString(), out var m) ? m : -1);
+                if (cn != clip) continue;
+                clipObj = c;
+                break;
+            }
+            break;
+        }
+
+        if (clipObj is null)
+            throw new InvalidOperationException($"Clip S{scene:D2}C{clip:D2} not found in shot plan.");
+
+        clipObj["visual_prompt"] = (visualPrompt ?? "").Trim();
+        File.WriteAllText(bpPath, root.ToJsonString(JsonDefaults.Indented) + "\n");
+        InvalidateSceneListCache(projectId);
+        InvalidateReadCaches(projectId);
+    }
+
     public void UpdateCharacterSeedPlaceholder(string projectId, string charKey, string refFileName)
     {
         var bpPath = FindBlueprintPathSync(projectId);

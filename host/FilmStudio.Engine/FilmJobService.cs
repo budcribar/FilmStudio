@@ -33,6 +33,7 @@ public sealed class FilmJobService
     private readonly Stage2PlannerService _stage2;
     private readonly IFfmpegRemux _remux;
     private readonly VoicePreviewService _voicePreview;
+    private readonly ClipAutoReviewService _clipAutoReview;
     private readonly CostReportService _costs;
     private readonly IJobStore _jobs;
     private readonly ILockService _locks;
@@ -58,6 +59,7 @@ public sealed class FilmJobService
         Stage2PlannerService stage2,
         IFfmpegRemux remux,
         VoicePreviewService voicePreview,
+        ClipAutoReviewService clipAutoReview,
         CostReportService costs,
         IJobStore jobs,
         ILockService locks,
@@ -78,6 +80,7 @@ public sealed class FilmJobService
         _stage2 = stage2;
         _remux = remux;
         _voicePreview = voicePreview;
+        _clipAutoReview = clipAutoReview;
         _costs = costs;
         _jobs = jobs;
         _locks = locks;
@@ -770,6 +773,88 @@ public sealed class FilmJobService
             },
             lockResources: new[] { LockKeys.Character(projectId, req.CharKey) },
             lockReason: $"voice preview {req.CharKey}");
+    }
+
+    /// <summary>AI per-clip review (frames + prev tail) → draft suggestions for Apply → Regen.</summary>
+    public Task<JobSnapshot> StartClipAutoReviewAsync(StartClipAutoReviewRequest req)
+    {
+        if (req.Scene <= 0 || req.Clip <= 0)
+            throw new InvalidOperationException("scene and clip required");
+        var projectId = string.IsNullOrWhiteSpace(req.ProjectId)
+            ? _projects.ActiveProjectId
+            : req.ProjectId;
+        return StartBackgroundJobAsync(
+            ct => RunClipAutoReviewAsync(req, ct),
+            new JobEnqueueMeta
+            {
+                Kind = "clip-auto-review",
+                ProjectId = projectId,
+                Scene = req.Scene,
+                Clip = req.Clip,
+                Message = $"Queued AI review S{req.Scene:D2}C{req.Clip:D2}…",
+            },
+            lockResources: new[] { LockKeys.Scene(projectId, req.Scene) },
+            lockReason: $"auto-review S{req.Scene:D2}C{req.Clip:D2}");
+    }
+
+    private async Task RunClipAutoReviewAsync(StartClipAutoReviewRequest req, CancellationToken ct)
+    {
+        var projectId = string.IsNullOrWhiteSpace(req.ProjectId)
+            ? _projects.ActiveProjectId
+            : req.ProjectId;
+        await _projects.ActivateAsync(projectId, ct);
+
+        Snapshot = new JobSnapshot
+        {
+            Status = "running",
+            Kind = "clip-auto-review",
+            ProjectId = projectId,
+            Scene = req.Scene,
+            Clip = req.Clip,
+            Message = $"Reviewing S{req.Scene:D2}C{req.Clip:D2}…",
+            Index = 0,
+            Total = 100,
+            StartedAt = DateTimeOffset.UtcNow,
+            Log = new List<string>(),
+        };
+        RegisterActiveJob();
+        await PublishAsync();
+
+        try
+        {
+            await AppendLogAsync(
+                "AI review = sample prev tail + this clip → draft suggestions (no auto-apply)");
+            var draft = await _clipAutoReview.ReviewAsync(
+                projectId,
+                req.Scene,
+                req.Clip,
+                onProgress: (index, total, line) =>
+                {
+                    _ = AppendLogAsync(line);
+                    _ = UpdateAsync(s =>
+                    {
+                        s.Index = Math.Clamp(index, 0, Math.Max(1, total));
+                        s.Total = Math.Max(1, total);
+                        s.Message = line;
+                    });
+                },
+                ct: ct);
+
+            await AppendLogAsync(
+                $"Draft: {draft.Suggestion}/{draft.Category} · {draft.Suggestions.Count} suggestion(s)");
+            await FinishAsync(
+                "done",
+                $"Review ready S{req.Scene:D2}C{req.Clip:D2} — {draft.Suggestion} ({draft.Suggestions.Count} suggestions)");
+        }
+        catch (OperationCanceledException)
+        {
+            await FinishAsync("cancelled", "Clip review cancelled");
+        }
+        catch (Exception ex)
+        {
+            _log.LogError(ex, "Clip auto-review failed S{Scene}C{Clip}", req.Scene, req.Clip);
+            await FinishAsync("error", ex.Message, ex.Message);
+        }
     }
 
     private async Task RunVoicePreviewAsync(StartVoicePreviewRequest req, CancellationToken ct)

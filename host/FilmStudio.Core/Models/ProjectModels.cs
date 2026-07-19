@@ -342,6 +342,69 @@ public sealed class VoicePreviewStatusDto
     public string? AudioUrl { get; set; }
 }
 
+/// <summary>Start AI auto-review of one clip (this clip + previous tail for continuity).</summary>
+public sealed class StartClipAutoReviewRequest
+{
+    public string ProjectId { get; set; } = "";
+    public int Scene { get; set; }
+    public int Clip { get; set; }
+}
+
+/// <summary>One suggested edit from auto-review (user may accept/edit before apply).</summary>
+public sealed class ClipAutoReviewSuggestion
+{
+    /// <summary>clip | character | scene</summary>
+    public string Layer { get; set; } = "clip";
+    /// <summary>Field id: visual_prompt | voice_profile | description | visual_lock | note</summary>
+    public string Field { get; set; } = "";
+    /// <summary>Character key when layer=character.</summary>
+    public string? CharKey { get; set; }
+    public string Label { get; set; } = "";
+    public string CurrentValue { get; set; } = "";
+    public string SuggestedValue { get; set; } = "";
+    /// <summary>Default checked when opening Apply panel (high confidence).</summary>
+    public bool IncludeByDefault { get; set; } = true;
+    public string? Rationale { get; set; }
+}
+
+/// <summary>AI draft for one clip — Review → Apply suggestions → Regen.</summary>
+public sealed class ClipAutoReviewDraft
+{
+    public bool Ok { get; set; } = true;
+    public string ProjectId { get; set; } = "";
+    public int Scene { get; set; }
+    public int Clip { get; set; }
+    /// <summary>pass | fail | unclear</summary>
+    public string Suggestion { get; set; } = "unclear";
+    public string Category { get; set; } = "other";
+    public string Confidence { get; set; } = "medium";
+    public string Note { get; set; } = "";
+    public string Continuity { get; set; } = "unclear";
+    public bool IncludedPreviousTail { get; set; }
+    public DateTimeOffset? GeneratedAt { get; set; }
+    public List<ClipAutoReviewSuggestion> Suggestions { get; set; } = new();
+    public string? RawSummary { get; set; }
+    public string? Error { get; set; }
+}
+
+/// <summary>Apply selected suggestion rows (writes seeds / blueprint), optional then regen via gen job.</summary>
+public sealed class ApplyClipAutoReviewRequest
+{
+    public string ProjectId { get; set; } = "";
+    public int Scene { get; set; }
+    public int Clip { get; set; }
+    public List<ClipAutoReviewApplyItem> Items { get; set; } = new();
+}
+
+public sealed class ClipAutoReviewApplyItem
+{
+    public string Layer { get; set; } = "clip";
+    public string Field { get; set; } = "";
+    public string? CharKey { get; set; }
+    /// <summary>Final text to write (user may have edited the suggestion).</summary>
+    public string Value { get; set; } = "";
+}
+
 /// <summary>Update description / visual_lock on character seeds (cast_seeds + blueprint).</summary>
 public sealed class UpdateCharacterLookRequest
 {

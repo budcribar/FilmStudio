@@ -90,4 +90,15 @@ public interface IGrokVisionClient
         IReadOnlyList<CharacterClassifyHint> cast,
         string model = "grok-4.5",
         CancellationToken ct = default);
+
+    /// <summary>
+    /// Multi-image vision completion (clip auto-review: prev tail + current frames).
+    /// Returns model text (JSON expected by caller).
+    /// </summary>
+    Task<string> CompleteWithImagesAsync(
+        string prompt,
+        IReadOnlyList<string> imagePaths,
+        string model = "grok-4.5",
+        string detail = "low",
+        CancellationToken ct = default);
 }

@@ -310,6 +310,66 @@ public sealed class GrokVisionClient : IGrokVisionClient
         return result.GetRawText()[..Math.Min(500, result.GetRawText().Length)];
     }
 
+    /// <inheritdoc />
+    public async Task<string> CompleteWithImagesAsync(
+        string prompt,
+        IReadOnlyList<string> imagePaths,
+        string model = "grok-4.5",
+        string detail = "low",
+        CancellationToken ct = default)
+    {
+        EnsureAuth();
+        if (string.IsNullOrWhiteSpace(prompt))
+            throw new ArgumentException("prompt required", nameof(prompt));
+        var paths = (imagePaths ?? Array.Empty<string>())
+            .Where(p => !string.IsNullOrWhiteSpace(p) && File.Exists(p))
+            .Take(8)
+            .ToList();
+        if (paths.Count == 0)
+            throw new InvalidOperationException("At least one image path required for vision review.");
+
+        var content = new List<object?>();
+        foreach (var path in paths)
+        {
+            content.Add(new Dictionary<string, object?>
+            {
+                ["type"] = "input_image",
+                ["image_url"] = await FileToDataUriAsync(path, ct),
+                ["detail"] = string.IsNullOrWhiteSpace(detail) ? "low" : detail,
+            });
+        }
+        content.Add(new Dictionary<string, object?>
+        {
+            ["type"] = "input_text",
+            ["text"] = prompt,
+        });
+
+        var payload = new Dictionary<string, object?>
+        {
+            ["model"] = model,
+            ["input"] = new object[]
+            {
+                new Dictionary<string, object?>
+                {
+                    ["role"] = "user",
+                    ["content"] = content,
+                },
+            },
+        };
+
+        using var resp = await _http.PostAsJsonAsync("responses", payload, ct);
+        var body = await resp.Content.ReadAsStringAsync(ct);
+        if (!resp.IsSuccessStatusCode)
+            throw new InvalidOperationException(
+                $"Grok vision multi-image HTTP {(int)resp.StatusCode}: {Trim(body, 500)}");
+
+        using var doc = JsonDocument.Parse(body);
+        var text = ExtractResponseText(doc.RootElement);
+        text = Regex.Replace(text.Trim(), @"^```(?:\w+)?\s*", "", RegexOptions.IgnoreCase);
+        text = Regex.Replace(text, @"\s*```$", "").Trim();
+        return text;
+    }
+
     private static async Task<string> FileToDataUriAsync(string path, CancellationToken ct)
     {
         var bytes = await File.ReadAllBytesAsync(path, ct);

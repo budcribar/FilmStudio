@@ -37,4 +37,25 @@ public sealed class FakeGrokVisionClient : IGrokVisionClient
             Matches = new List<CharacterPageMatch>(),
         });
     }
+
+    public Task<string> CompleteWithImagesAsync(
+        string prompt,
+        IReadOnlyList<string> imagePaths,
+        string model = "grok-4.5",
+        string detail = "low",
+        CancellationToken ct = default)
+    {
+        _log.LogInformation("Fake vision multi-image n={N}", imagePaths?.Count ?? 0);
+        // Minimal valid auto-review JSON for UI/job testing without spend
+        return Task.FromResult("""
+            {
+              "suggestion": "unclear",
+              "category": "other",
+              "confidence": "low",
+              "continuity": "unclear",
+              "note": "Fake review — connect API for real analysis.",
+              "suggestions": []
+            }
+            """);
+    }
 }
