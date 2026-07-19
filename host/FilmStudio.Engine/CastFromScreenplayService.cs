@@ -10,10 +10,16 @@ namespace FilmStudio.Engine;
 /// <summary>
 /// AI: approved Fountain (+ optional book) → <c>source/cast_seeds.json</c>.
 /// Cast identity for Characters UI / plates — not parsed solely from dialogue cues.
+/// Book text is used heavily for description / visual_lock so portrait gen starts closer to right.
 /// </summary>
 public sealed class CastFromScreenplayService
 {
     public const string PromptRelativePath = "prompts/fountain_to_cast.txt";
+
+    /// <summary>Fountain budget for cast extract user messages.</summary>
+    public const int FountainPromptChars = 80_000;
+    /// <summary>Book budget (full short stories; sampled for long novels).</summary>
+    public const int BookPromptChars = 100_000;
 
     private readonly ProjectStore _projects;
     private readonly IGrokChatClient _chat;
@@ -91,16 +97,17 @@ public sealed class CastFromScreenplayService
             catch { /* rebuild */ }
         }
 
-        var bookPath = Path.Combine(_projects.GetProjectDir(projectId), "source", "book_full.txt");
-        string? book = null;
-        if (File.Exists(bookPath))
-            book = await File.ReadAllTextAsync(bookPath, ct).ConfigureAwait(false);
+        var book = await LoadBookTextAsync(projectId, ct).ConfigureAwait(false);
+        if (!string.IsNullOrWhiteSpace(book))
+            onProgress?.Invoke($"Book context loaded ({book.Length:N0} chars) for look extraction…");
+        else
+            onProgress?.Invoke("No book_full.txt — looks will come from screenplay action only.");
 
         onProgress?.Invoke("Loading cast prompt…");
         var system = await LoadSystemPromptAsync(_projects.WorkspaceRoot, ct).ConfigureAwait(false);
         var user = BuildUserPrompt(fountain, book);
 
-        onProgress?.Invoke("Calling Grok for closed cast…");
+        onProgress?.Invoke("Calling Grok for closed cast (book-aware looks)…");
         var raw = await _chat.CompleteAsync(system, user, model, temperature: 0.2, ct)
             .ConfigureAwait(false);
         raw = StripFences(raw);
@@ -180,31 +187,93 @@ public sealed class CastFromScreenplayService
         return await File.ReadAllTextAsync(path, ct).ConfigureAwait(false);
     }
 
+    private async Task<string?> LoadBookTextAsync(string projectId, CancellationToken ct)
+    {
+        var source = Path.Combine(_projects.GetProjectDir(projectId), "source");
+        foreach (var name in new[] { "book_full.txt", "book.txt", "source.txt" })
+        {
+            var path = Path.Combine(source, name);
+            if (!File.Exists(path)) continue;
+            var text = await File.ReadAllTextAsync(path, ct).ConfigureAwait(false);
+            if (!string.IsNullOrWhiteSpace(text))
+                return text;
+        }
+        return null;
+    }
+
     private static string BuildUserPrompt(string fountain, string? book)
     {
         var sb = new StringBuilder();
         sb.AppendLine("Extract the closed cast for production pinning.");
         sb.AppendLine("Include silent on-screen characters named only in action (e.g. BUSTER the dog).");
-        sb.AppendLine("Return JSON only (schema_version cast_seeds.v1).");
+        sb.AppendLine("CRITICAL: Fill description + visual_lock with concrete filmable appearance for every");
+        sb.AppendLine("on-screen role (age, build, face, hair, eyes, wardrobe, era). Mine BOOK text when present.");
+        sb.AppendLine("Never use stubs like \"as described in the screenplay\".");
+        sb.AppendLine("On-camera POV/confessor narrators = ok_anytime (not voice-only).");
+        sb.AppendLine("Return JSON only (schema_version cast_seeds.v1, character_seed_tokens).");
         sb.AppendLine();
         sb.AppendLine("--- BEGIN FOUNTAIN ---");
-        sb.AppendLine(TrimForPrompt(fountain, 40_000));
+        sb.AppendLine(SelectTextForPrompt(fountain, FountainPromptChars));
         sb.AppendLine("--- END FOUNTAIN ---");
         if (!string.IsNullOrWhiteSpace(book))
         {
             sb.AppendLine();
-            sb.AppendLine("--- BEGIN BOOK (optional likeness / pages) ---");
-            sb.AppendLine(TrimForPrompt(book, 20_000));
+            sb.AppendLine("--- BEGIN BOOK (primary source for looks / likeness) ---");
+            sb.AppendLine(SelectTextForPrompt(book, BookPromptChars));
             sb.AppendLine("--- END BOOK ---");
+        }
+        else
+        {
+            sb.AppendLine();
+            sb.AppendLine("(No book text attached — infer looks only from Fountain action/description.)");
         }
         return sb.ToString();
     }
 
-    private static string TrimForPrompt(string text, int max)
+    /// <summary>
+    /// Prefer full text when under budget; for long books keep head + middle + tail samples
+    /// so late-appearing wardrobe / age cues are not lost.
+    /// </summary>
+    public static string SelectTextForPrompt(string text, int maxChars)
     {
-        text = text.Replace("\r\n", "\n").Replace('\r', '\n').Trim();
-        if (text.Length <= max) return text;
-        return text[..max] + "\n\n[[truncated for length]]\n";
+        text = (text ?? "").Replace("\r\n", "\n").Replace('\r', '\n').Trim();
+        if (text.Length <= maxChars) return text;
+        if (maxChars < 4_000)
+            return text[..maxChars] + "\n\n[[truncated for length]]\n";
+
+        // Three windows: head 45%, middle 25%, tail 30%
+        var headLen = (int)(maxChars * 0.45);
+        var midLen = (int)(maxChars * 0.25);
+        var tailLen = maxChars - headLen - midLen - 120; // markers
+        if (tailLen < 500) tailLen = 500;
+
+        var head = text[..headLen];
+        var midStart = Math.Max(0, (text.Length / 2) - (midLen / 2));
+        if (midStart + midLen > text.Length)
+            midStart = Math.Max(0, text.Length - midLen);
+        var mid = text.Substring(midStart, Math.Min(midLen, text.Length - midStart));
+        var tail = text[^Math.Min(tailLen, text.Length)..];
+
+        return head
+               + "\n\n[[… middle sample …]]\n\n"
+               + mid
+               + "\n\n[[… toward end …]]\n\n"
+               + tail
+               + "\n\n[[book sampled for length; full source remains on disk]]\n";
+    }
+
+    /// <summary>Weak placeholder looks that must not be written as final seeds.</summary>
+    public static bool IsStubLook(string? text)
+    {
+        if (string.IsNullOrWhiteSpace(text)) return true;
+        var t = text.Trim();
+        if (t.Contains("as described in the screenplay", StringComparison.OrdinalIgnoreCase)) return true;
+        if (t.Contains("as in the screenplay", StringComparison.OrdinalIgnoreCase)) return true;
+        if (t.Contains("as described in the book", StringComparison.OrdinalIgnoreCase)) return true;
+        if (t.Contains("see screenplay", StringComparison.OrdinalIgnoreCase)) return true;
+        if (Regex.IsMatch(t, @"^Match\s+.+\s+consistently", RegexOptions.IgnoreCase)) return true;
+        if (t.Length < 12) return true;
+        return false;
     }
 
     private static string StripFences(string text)
@@ -259,9 +328,13 @@ public sealed class CastFromScreenplayService
                 "never_on_screen",
                 StringComparison.OrdinalIgnoreCase);
 
-            // Visual fields are cleaned by CastVisualLiteralizeService (AI), not regex lists.
-            var desc = CoerceString(seed, "description")
-                ?? (off ? $"{name} (voice only)." : $"{name}, as in the screenplay.");
+            // Prefer real model looks; never invent "as in the screenplay" stubs.
+            var desc = CoerceString(seed, "description") ?? "";
+            if (IsStubLook(desc))
+                desc = off ? $"{name} (voice only; not on screen)." : "";
+            else if (off && string.IsNullOrWhiteSpace(desc))
+                desc = $"{name} (voice only; not on screen).";
+
             var clean = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase)
             {
                 ["description"] = desc,
@@ -274,14 +347,18 @@ public sealed class CastFromScreenplayService
                     ?? ProjectStore.CharacterRefFileName(k),
             };
 
-            var vlock = CoerceString(seed, "visual_lock");
-            if (!off && !string.IsNullOrWhiteSpace(vlock))
-                clean["visual_lock"] = vlock;
-            else if (!off)
-                clean["visual_lock"] = $"Match {name} consistently across scenes.";
+            var vlock = CoerceString(seed, "visual_lock") ?? "";
+            if (!off)
+            {
+                clean["visual_lock"] = IsStubLook(vlock) ? "" : vlock;
+            }
 
             if (seed.TryGetValue("wardrobe_always", out var wa) && wa is List<object?> list)
                 clean["wardrobe_always"] = list;
+            // Common model aliases
+            if (!clean.ContainsKey("wardrobe_always") &&
+                seed.TryGetValue("wardrobe", out var w2) && w2 is List<object?> list2)
+                clean["wardrobe_always"] = list2;
             if (seed.TryGetValue("source_image_pages", out var sip) && sip is List<object?> pages)
                 clean["source_image_pages"] = pages;
 
@@ -296,12 +373,38 @@ public sealed class CastFromScreenplayService
     {
         if (doc.TryGetValue("character_seed_tokens", out var s) && s is Dictionary<string, object?> d)
             return d;
+        // Offline fakes / older models sometimes use cast_seeds
+        if (doc.TryGetValue("cast_seeds", out var cs) && cs is Dictionary<string, object?> dCs)
+            return NormalizeLooseSeedMap(dCs);
         if (doc.TryGetValue("global_production_variables", out var g) &&
             g is Dictionary<string, object?> gpv &&
             gpv.TryGetValue("character_seed_tokens", out var s2) &&
             s2 is Dictionary<string, object?> d2)
             return d2;
         return new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase);
+    }
+
+    /// <summary>Map display_name / wardrobe aliases into seed shape.</summary>
+    private static Dictionary<string, object?> NormalizeLooseSeedMap(Dictionary<string, object?> raw)
+    {
+        var outMap = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase);
+        foreach (var (key, val) in raw)
+        {
+            if (val is not Dictionary<string, object?> seed)
+            {
+                outMap[key] = val;
+                continue;
+            }
+            var copy = new Dictionary<string, object?>(seed, StringComparer.OrdinalIgnoreCase);
+            if (!copy.ContainsKey("canonical_given_name") &&
+                copy.TryGetValue("display_name", out var dn) && dn is not null)
+                copy["canonical_given_name"] = dn.ToString();
+            if (!copy.ContainsKey("wardrobe_always") &&
+                copy.TryGetValue("wardrobe", out var w) && w is List<object?> wl)
+                copy["wardrobe_always"] = wl;
+            outMap[key] = copy;
+        }
+        return outMap;
     }
 
     private static JsonElement GetSeedsElement(JsonElement root)

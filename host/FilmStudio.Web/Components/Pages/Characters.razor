@@ -48,9 +48,11 @@ else
                 class="btn btn-primary btn-sm"
                 data-testid="characters-extract-cast"
                 disabled="@(_busy || JobRunning || _extractingCast)"
+                title="One step: names + looks from screenplay and book (when present)"
                 @onclick="ExtractCastAsync">
-            @(_extractingCast ? "Building cast…" : "Build cast from screenplay")
+            @(_extractingCast ? "Building cast…" : "Build cast")
         </button>
+        <span class="small text-muted ms-2">Screenplay + book → names, voices, and portrait-ready looks</span>
     </div>
 }
 else if (NeedsFindCharacters)
@@ -77,7 +79,9 @@ else if (Session.IsAdmin && HasCast && !JobRunning && !_extractingCast)
         <summary class="small text-muted" style="cursor:pointer">Setup again (admin)</summary>
         <div class="d-flex flex-wrap gap-2 mt-2">
             <button type="button" class="btn btn-sm btn-outline-secondary"
+                    data-testid="characters-extract-cast"
                     disabled="@_busy"
+                    title="Rebuild names and looks from screenplay + book in one step"
                     @onclick="ExtractCastAsync">
                 Rebuild cast
             </button>
@@ -695,6 +699,9 @@ else
         !_plates.SortedByCharacter &&
         !PlateSortRunning;
 
+    /// <summary>
+    /// Single user step: closed cast + book-aware looks (description / visual_lock) for portraits.
+    /// </summary>
     private async Task ExtractCastAsync()
     {
         if (string.IsNullOrWhiteSpace(_projectId) || _extractingCast) return;
@@ -708,13 +715,13 @@ else
             var result = await Engine.ExtractCastFromScreenplayAsync(_projectId, force: true);
             if (result is null || result.Ok != true)
             {
-                _error = result?.Error ?? "Could not build cast from screenplay.";
+                _error = result?.Error ?? "Could not build cast.";
                 _message = null;
             }
             else
             {
                 _message = result.Message
-                    ?? $"Cast ready · {result.CharacterCount} character(s)";
+                    ?? $"Cast ready · {result.CharacterCount} character(s) — review looks, then lock portraits";
                 await LoadAsync();
             }
         }

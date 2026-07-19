@@ -31,11 +31,14 @@ public sealed class FakeGrokChatClient : IGrokChatClient
         var blob = sys + "\n" + user;
 
         // ── Cast from screenplay → cast_seeds-shaped JSON ──────────────────
-        if (sys.Contains("cast", StringComparison.OrdinalIgnoreCase) ||
+        if (sys.Contains("casting director", StringComparison.OrdinalIgnoreCase) ||
+            sys.Contains("CLOSED CAST", StringComparison.OrdinalIgnoreCase) ||
             sys.Contains("fountain_to_cast", StringComparison.OrdinalIgnoreCase) ||
-            user.Contains("cast_seeds", StringComparison.OrdinalIgnoreCase) ||
+            user.Contains("closed cast", StringComparison.OrdinalIgnoreCase) ||
+            user.Contains("character_seed_tokens", StringComparison.OrdinalIgnoreCase) ||
             (sys.Contains("character", StringComparison.OrdinalIgnoreCase) &&
-             sys.Contains("seed", StringComparison.OrdinalIgnoreCase)))
+             sys.Contains("seed", StringComparison.OrdinalIgnoreCase) &&
+             !sys.Contains("literal", StringComparison.OrdinalIgnoreCase)))
         {
             return Task.FromResult(IsPoe(blob) ? PoeCastJson : DefaultCastJson);
         }
@@ -64,10 +67,11 @@ public sealed class FakeGrokChatClient : IGrokChatClient
 
         // ── Visual literalize ──────────────────────────────────────────────
         if (sys.Contains("literal", StringComparison.OrdinalIgnoreCase) ||
-            sys.Contains("wardrobe", StringComparison.OrdinalIgnoreCase) &&
-            sys.Contains("visual", StringComparison.OrdinalIgnoreCase))
+            sys.Contains("figurative", StringComparison.OrdinalIgnoreCase) ||
+            (sys.Contains("wardrobe", StringComparison.OrdinalIgnoreCase) &&
+             sys.Contains("visual", StringComparison.OrdinalIgnoreCase)))
         {
-            return Task.FromResult(user.Length > 40 ? user : "A pale nervous man in a dark wool coat, 1840s.");
+            return Task.FromResult(IsPoe(blob) ? PoeCastJson : DefaultCastJson);
         }
 
         // ── Book → Fountain ────────────────────────────────────────────────
@@ -196,34 +200,39 @@ public sealed class FakeGrokChatClient : IGrokChatClient
 
     private const string PoeCastJson = """
         {
+          "schema_version": "cast_seeds.v1",
           "movie_title": "The Tell-Tale Heart",
-          "cast_seeds": {
+          "render_style_lock": "STYLE LOCK: photoreal live-action period drama circa 1840s; candlelight; naturalistic skin and fabric",
+          "character_seed_tokens": {
             "Character_Narrator": {
-              "display_name": "Narrator",
-              "description": "Pale nervous adult man, 30s, thin face, dark 1840s wool coat, white shirt, haunted eyes, photoreal period drama",
-              "visual_lock": "Same pale face, dark coat, short dark hair every shot; no modern clothing",
-              "voice_profile": "Adult male, intimate, articulate, rising panic under calm English",
-              "voice_label": "tense confessor",
-              "age_band": "adult",
-              "wardrobe": ["dark wool coat", "white collar shirt", "period trousers"]
+              "canonical_given_name": "Narrator",
+              "display_name_policy": "ok_anytime",
+              "description": "Pale nervous adult man, mid-30s, thin gaunt face, dark shoulder-length hair, dark 1840s wool coat, white linen shirt, haunted open eyes, photoreal period drama",
+              "visual_lock": "Always the same pale thin-faced adult man with dark hair and dark wool coat; distinct from the elderly Old Man; no modern clothing",
+              "voice_profile": "Adult male, intimate, articulate, rising panic under calm diction; same on-camera and V.O.",
+              "voice_label": "Narrator",
+              "wardrobe_always": ["dark wool coat", "white linen shirt", "period trousers"],
+              "reference_image_placeholder": "character_narrator_ref.png"
             },
-            "Character_OldMan": {
-              "display_name": "Old Man",
-              "description": "Elderly frail man in nightshirt, white hair, one pale blue filmed eye (vulture eye), 1840s bedchamber",
-              "visual_lock": "White hair, pale blue film over one eye, nightshirt; never modern",
-              "voice_profile": "Elderly male, weak, mostly silent or a single cry",
-              "voice_label": "feeble elder",
-              "age_band": "elder",
-              "wardrobe": ["white nightshirt"]
+            "Character_Old_Man": {
+              "canonical_given_name": "Old Man",
+              "display_name_policy": "ok_anytime",
+              "description": "Elderly frail man in pale nightshirt, sparse white-gray hair, one distinctive pale blue filmed eye that catches light, deeply lined face",
+              "visual_lock": "Always the same frail elderly man with sparse white-gray hair and one pale blue eye; never the Narrator's younger face",
+              "voice_profile": "No spoken dialogue on screen; silent if any breath is heard",
+              "voice_label": "Old Man",
+              "wardrobe_always": ["pale period nightshirt"],
+              "reference_image_placeholder": "character_old_man_ref.png"
             },
             "Character_Officer": {
-              "display_name": "Officer",
-              "description": "Mid-1800s police officer, dark coat, calm official bearing, lantern",
-              "visual_lock": "Dark official coat, beard optional, calm eyes",
-              "voice_profile": "Adult male, calm official tone",
-              "voice_label": "officer",
-              "age_band": "adult",
-              "wardrobe": ["dark official coat"]
+              "canonical_given_name": "Officer",
+              "display_name_policy": "ok_anytime",
+              "description": "Adult man, solid build, neat short brown hair, clean-shaven, mid-19th-century dark wool constable coat with brass buttons, calm polite expression",
+              "visual_lock": "Same neat brown-haired clean-shaven man in dark wool constable coat; composed official bearing",
+              "voice_profile": "Adult male, medium pitch, polite official tone, moderate pace",
+              "voice_label": "Officer",
+              "wardrobe_always": ["dark wool constable coat with brass buttons", "dark trousers"],
+              "reference_image_placeholder": "character_officer_ref.png"
             }
           }
         }
@@ -231,15 +240,18 @@ public sealed class FakeGrokChatClient : IGrokChatClient
 
     private const string DefaultCastJson = """
         {
+          "schema_version": "cast_seeds.v1",
           "movie_title": "Untitled",
-          "cast_seeds": {
+          "character_seed_tokens": {
             "Character_Narrator": {
-              "display_name": "Narrator",
-              "description": "Adult in period clothing",
-              "visual_lock": "Consistent face and wardrobe",
-              "voice_profile": "Adult neutral",
-              "age_band": "adult",
-              "wardrobe": []
+              "canonical_given_name": "Narrator",
+              "display_name_policy": "ok_anytime",
+              "description": "Adult human with clear face and period-appropriate clothing suitable for portrait lock",
+              "visual_lock": "Same face, hair, and primary wardrobe in every scene",
+              "voice_profile": "Adult clear voice, consistent every scene",
+              "voice_label": "Narrator",
+              "wardrobe_always": [],
+              "reference_image_placeholder": "character_narrator_ref.png"
             }
           }
         }

@@ -1118,7 +1118,9 @@ app.MapPost("/api/projects/{id}/characters/extract-cast", async (
                 characterCount = result.CharacterCount,
                 characters = result.CharacterKeys,
                 movieTitle = result.MovieTitle,
-                message = $"Cast ready · {result.CharacterCount} character(s)",
+                message =
+                    $"Cast ready · {result.CharacterCount} character(s) — looks filled from screenplay" +
+                    " + book when available; review then lock portraits",
             })
             : Results.BadRequest(new
             {

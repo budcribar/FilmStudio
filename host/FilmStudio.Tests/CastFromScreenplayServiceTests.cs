@@ -20,6 +20,8 @@ public class CastFromScreenplayServiceTests
         Assert.Contains("silent", text, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Character_", text, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("JSON", text, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("BOOK-FIRST", text, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("FORBIDDEN", text, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
@@ -40,6 +42,39 @@ public class CastFromScreenplayServiceTests
         Assert.Contains("later", text, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("BASE", text, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("wardrobe", text, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Theory]
+    [InlineData("Narrator, as described in the screenplay.", true)]
+    [InlineData("as in the screenplay", true)]
+    [InlineData("Match Bob consistently across scenes.", true)]
+    [InlineData("short", true)]
+    [InlineData("Pale nervous adult man, mid-30s, thin face, dark wool coat, 1840s photoreal.", false)]
+    public void IsStubLook_detects_placeholders(string text, bool expected)
+    {
+        Assert.Equal(expected, CastFromScreenplayService.IsStubLook(text));
+    }
+
+    [Fact]
+    public void SelectTextForPrompt_keeps_short_books_whole()
+    {
+        var book = "Once upon a time there was a pale man and an old man with a vulture eye.";
+        var selected = CastFromScreenplayService.SelectTextForPrompt(book, 100_000);
+        Assert.Equal(book, selected);
+    }
+
+    [Fact]
+    public void SelectTextForPrompt_samples_long_books_with_head_mid_tail()
+    {
+        var head = new string('A', 50_000);
+        var mid = new string('B', 50_000);
+        var tail = new string('C', 50_000);
+        var book = head + mid + tail;
+        var selected = CastFromScreenplayService.SelectTextForPrompt(book, 40_000);
+        Assert.True(selected.Length <= 45_000);
+        Assert.Contains('A', selected);
+        Assert.Contains('C', selected);
+        Assert.Contains("sampled for length", selected, StringComparison.OrdinalIgnoreCase);
     }
 
     private static string? FindRepoWithPrompts()
