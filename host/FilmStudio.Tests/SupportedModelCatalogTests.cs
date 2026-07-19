@@ -18,9 +18,9 @@ public class SupportedModelCatalogTests
     [Fact]
     public void Model_id_implies_provider_without_service_dropdown()
     {
-        Assert.Equal("grok", SupportedModelCatalog.LegacyProviderFor(
+        Assert.Equal("grok", SupportedModelCatalog.ProviderIdFor(
             "grok-imagine-image-quality", ModelCapability.Image));
-        Assert.Equal("grok", SupportedModelCatalog.LegacyProviderFor(
+        Assert.Equal("grok", SupportedModelCatalog.ProviderIdFor(
             "grok-4.5", ModelCapability.Chat));
     }
 

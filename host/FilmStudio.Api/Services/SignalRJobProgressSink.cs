@@ -14,9 +14,7 @@ public sealed class SignalRJobProgressSink : IJobProgressSink
 
     public async Task OnJobUpdatedAsync(JobSnapshot snapshot, CancellationToken ct = default)
     {
-        // Compat: all clients (legacy single-user UI)
-        await _hub.Clients.All.SendAsync(JobHubEvents.JobUpdated, snapshot, ct);
-
+        // Multi-user: only job + owner groups (clients join user:{id} on connect).
         if (!string.IsNullOrWhiteSpace(snapshot.JobId))
             await _hub.Clients.Group($"job:{snapshot.JobId}")
                 .SendAsync(JobHubEvents.JobUpdated, snapshot, ct);
@@ -28,6 +26,9 @@ public sealed class SignalRJobProgressSink : IJobProgressSink
 
     public async Task OnJobLogAsync(string message, CancellationToken ct = default)
     {
-        await _hub.Clients.All.SendAsync(JobHubEvents.JobLog, message, ct);
+        // Progress text also arrives via JobUpdated.Message on user/job groups.
+        // JobLog is optional detail; avoid Clients.All for multi-user isolation.
+        await Task.CompletedTask;
+        _ = message;
     }
 }

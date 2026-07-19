@@ -31,7 +31,7 @@ public static class ImageApiLimits
             imageModel,
             FilmStudio.Core.Models.ModelCapability.Image);
         if (entry is not null)
-            return entry.LegacyProviderId;
+            return entry.ProviderId;
 
         var p = (imageProvider ?? "").Trim().ToLowerInvariant();
         if (p is "grok" or "xai" or "x.ai")

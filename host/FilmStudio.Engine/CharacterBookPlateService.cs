@@ -678,29 +678,22 @@ public sealed class CharacterBookPlateService
     {
         JsonObject? seeds = null;
 
-        // 1) AI cast sidecar first (silent leads + page hints)
-        foreach (var name in new[] { ScreenplayService.CastSeedsFileName, "cast.json" })
+        // 1) cast_seeds.json (canonical cast)
+        var castPath = File.Exists(castSeedsPath)
+            ? castSeedsPath
+            : Path.Combine(_projects.GetProjectDir(projectId), "source", ScreenplayService.CastSeedsFileName);
+        if (File.Exists(castPath))
         {
-            var path = Path.Combine(_projects.GetProjectDir(projectId), "source", name);
-            if (!File.Exists(path) && name != Path.GetFileName(castSeedsPath))
-                continue;
-            var usePath = File.Exists(castSeedsPath) && name == ScreenplayService.CastSeedsFileName
-                ? castSeedsPath
-                : path;
-            if (!File.Exists(usePath)) continue;
             try
             {
-                var existing = JsonNode.Parse(await File.ReadAllTextAsync(usePath, ct).ConfigureAwait(false))
+                var existing = JsonNode.Parse(await File.ReadAllTextAsync(castPath, ct).ConfigureAwait(false))
                                as JsonObject;
                 var existingSeeds = existing?["character_seed_tokens"] as JsonObject
                     ?? existing?["global_production_variables"]?["character_seed_tokens"] as JsonObject;
                 if (existingSeeds is not null && existingSeeds.Count > 0)
-                {
                     seeds = existingSeeds.DeepClone().AsObject();
-                    break;
-                }
             }
-            catch { /* try next */ }
+            catch { /* try fountain */ }
         }
 
         // 2) Fountain-derived cast (dialogue cues) — merge only missing keys
@@ -723,18 +716,6 @@ public sealed class CharacterBookPlateService
                     if (seeds.ContainsKey(key)) continue; // AI cast wins
                     seeds[key] = node.DeepClone();
                 }
-            }
-        }
-
-        // 3) Legacy scenes.json
-        if (seeds is null || seeds.Count == 0)
-        {
-            var scenesPath = _projects.ResolveScenesJsonPath(projectId);
-            if (File.Exists(scenesPath))
-            {
-                var root = JsonNode.Parse(await File.ReadAllTextAsync(scenesPath, ct).ConfigureAwait(false))
-                           as JsonObject;
-                seeds = root?["global_production_variables"]?["character_seed_tokens"] as JsonObject;
             }
         }
 

@@ -18,7 +18,7 @@ Users pick **model ids** in Configuration. The app never asks them to pick a “
 
 API: `GET /api/models` and `GET /api/models?capability=video`.
 
-On save, Configuration still writes legacy `video_provider` / `image_provider` / `qa_provider` derived from the catalog for cost reports and older readers.
+On save, Configuration writes `video_provider` / `image_provider` / `qa_provider` derived from the model catalog (for cost reports).
 
 ## Adding a model
 

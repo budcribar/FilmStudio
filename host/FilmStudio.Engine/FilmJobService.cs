@@ -252,7 +252,7 @@ public sealed class FilmJobService
             return;
         }
 
-        // Fallback: create running job (legacy path)
+        // Fallback: create running job when no pre-queued record
         var recNew = _jobs.Create(new JobRecord
         {
             Status = Snapshot.Status,

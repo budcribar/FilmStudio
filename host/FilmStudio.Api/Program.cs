@@ -1092,7 +1092,7 @@ app.MapPost("/api/projects/{id}/characters/{charKey}/look", async (
 });
 
 /// <summary>
-/// AI: Fountain (+ book) → source/cast_seeds.json (+ cast.json alias).
+/// AI: Fountain (+ book) → source/cast_seeds.json.
 /// Closed cast for Characters UI — not dialogue-cue parse only.
 /// </summary>
 app.MapPost("/api/projects/{id}/characters/extract-cast", async (
@@ -2084,3 +2084,6 @@ app.MapGet("/api/projects/{id}/movie/wip/meta", (string id, ProjectStore store) 
 });
 
 app.Run();
+
+// Expose entry assembly for WebApplicationFactory integration tests.
+public partial class Program { }

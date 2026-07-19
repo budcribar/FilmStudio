@@ -336,10 +336,10 @@ else
         _message = null;
         try
         {
-            // Derive legacy provider fields from model catalog (cost reports / older readers).
-            var videoProvider = SupportedModelCatalog.LegacyProviderFor(_modelName, ModelCapability.Video);
-            var imageProvider = SupportedModelCatalog.LegacyProviderFor(_imageModel, ModelCapability.Image);
-            var qaProvider = SupportedModelCatalog.LegacyProviderFor(_qaModel, ModelCapability.Chat);
+            // Provider fields derived from model catalog (cost reports).
+            var videoProvider = SupportedModelCatalog.ProviderIdFor(_modelName, ModelCapability.Video);
+            var imageProvider = SupportedModelCatalog.ProviderIdFor(_imageModel, ModelCapability.Image);
+            var qaProvider = SupportedModelCatalog.ProviderIdFor(_qaModel, ModelCapability.Chat);
 
             var updates = new Dictionary<string, object?>
             {

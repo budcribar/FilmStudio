@@ -391,7 +391,6 @@ public sealed class ProjectStore
                  {
                      preferredName,
                      "blueprint.clips.grok.json",
-                     "nickandme.clips.grok.json",
                  })
         {
             var full = Path.Combine(dir, candidate);
@@ -1062,12 +1061,8 @@ public sealed class ProjectStore
         }
 
         PatchFile(ScreenplayService.GetCastSeedsPath(this, projectId));
-        var castAlias = Path.Combine(GetProjectDir(projectId), "source", "cast.json");
-        PatchFile(castAlias);
         var bp = FindBlueprintPathSync(projectId);
         if (bp is not null) PatchFile(bp);
-        var legacy = ResolveScenesJsonPath(projectId);
-        if (File.Exists(legacy)) PatchFile(legacy);
         InvalidateSceneListCache(projectId);
         InvalidateReadCaches(projectId);
     }
@@ -2873,11 +2868,10 @@ public sealed class ProjectStore
 
     private Dictionary<string, JsonElement> LoadCharacterSeeds(string projectId)
     {
-        // Prefer AI cast sidecar (cast_seeds.json / cast.json), then blueprint, then
-        // Fountain dialogue-parse fallback, then legacy scenes.json.
+        // Prefer cast_seeds.json, then blueprint.
         try
         {
-            foreach (var name in new[] { ScreenplayService.CastSeedsFileName, "cast.json" })
+            foreach (var name in new[] { ScreenplayService.CastSeedsFileName })
             {
                 var castPath = Path.Combine(GetProjectDir(projectId), "source", name);
                 if (!File.Exists(castPath)) continue;

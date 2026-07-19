@@ -158,14 +158,6 @@ public sealed class CastFromScreenplayService
         var json = JsonSerializer.Serialize(normalized, JsonDefaults.Indented);
         await File.WriteAllTextAsync(outPath, json + "\n", ct).ConfigureAwait(false);
 
-        // Also alias cast.json for clarity (same content)
-        try
-        {
-            var alias = Path.Combine(_projects.GetProjectDir(projectId), "source", "cast.json");
-            await File.WriteAllTextAsync(alias, json + "\n", ct).ConfigureAwait(false);
-        }
-        catch { /* non-fatal */ }
-
         var keys = seedsObj.Keys.OrderBy(k => k, StringComparer.OrdinalIgnoreCase).ToList();
         onProgress?.Invoke($"Cast ready · {keys.Count} character(s)");
         return new ExtractResult

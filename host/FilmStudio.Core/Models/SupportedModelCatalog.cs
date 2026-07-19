@@ -46,7 +46,7 @@ public sealed class SupportedModelEntry
     /// <summary>Env var names that must be set (e.g. <c>XAI_API_KEY</c>).</summary>
     public required IReadOnlyList<string> RequiredEnvKeys { get; init; }
 
-    /// <summary>When false, hidden from Configuration; still resolvable for legacy configs.</summary>
+    /// <summary>When false, hidden from Configuration pickers.</summary>
     public bool Enabled { get; init; } = true;
 
     public string? Notes { get; init; }
@@ -57,8 +57,8 @@ public sealed class SupportedModelEntry
     /// </summary>
     public string? FeatureRequestUrl { get; init; }
 
-    /// <summary>Legacy config value written for cost reports / older code (<c>grok</c>, <c>gemini</c>).</summary>
-    public string LegacyProviderId => Provider switch
+    /// <summary>Provider id for config / cost reports (<c>grok</c>, <c>gemini</c>).</summary>
+    public string ProviderId => Provider switch
     {
         ModelProviderFamily.Google => "gemini",
         _ => "grok",
@@ -212,9 +212,9 @@ public static class SupportedModelCatalog
         };
     }
 
-    /// <summary>Legacy provider string for project config / cost UI.</summary>
-    public static string LegacyProviderFor(string? modelId, ModelCapability capability) =>
-        ResolveOrDefault(modelId, capability).LegacyProviderId;
+    /// <summary>Provider string for project config / cost UI.</summary>
+    public static string ProviderIdFor(string? modelId, ModelCapability capability) =>
+        ResolveOrDefault(modelId, capability).ProviderId;
 
     /// <summary>Missing env keys for this model (empty if ready).</summary>
     public static IReadOnlyList<string> MissingEnvKeys(SupportedModelEntry model)
@@ -246,7 +246,7 @@ public static class SupportedModelCatalog
         Enabled = e.Enabled,
         Notes = e.Notes,
         FeatureRequestUrl = e.FeatureRequestUrl,
-        LegacyProviderId = e.LegacyProviderId,
+        ProviderId = e.ProviderId,
     };
 }
 
@@ -263,5 +263,5 @@ public sealed class SupportedModelDto
     public bool Enabled { get; set; } = true;
     public string? Notes { get; set; }
     public string? FeatureRequestUrl { get; set; }
-    public string? LegacyProviderId { get; set; }
+    public string? ProviderId { get; set; }
 }

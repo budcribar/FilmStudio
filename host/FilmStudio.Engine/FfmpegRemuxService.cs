@@ -598,7 +598,6 @@ public sealed class FfmpegRemuxService : IFfmpegRemux
                      {
                          preferred,
                          "blueprint.clips.grok.json",
-                         "nickandme.clips.grok.json",
                      })
             {
                 var full = Path.Combine(dir, candidate);
