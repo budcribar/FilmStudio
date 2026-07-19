@@ -87,24 +87,23 @@ public sealed class ActiveProjectState
     {
         if (!HasProject || ProjectId is null)
         {
-            if (CanCharacters || CanScenes || CanReview)
-            {
-                ClearReadiness();
-                Changed?.Invoke();
-            }
+            ClearReadiness();
+            Changed?.Invoke();
             return;
         }
 
         try
         {
             var dto = await engine.GetAdaptationAsync(ProjectId, ct);
-            if (ApplyAdaptation(dto?.Adaptation))
-                Changed?.Invoke();
+            ApplyAdaptation(dto?.Adaptation);
         }
         catch
         {
             // Keep last known readiness if API blips
         }
+
+        // Always notify — nav tooltips may change even when enable flags stay the same
+        Changed?.Invoke();
     }
 
     /// <returns>True if any gate flag or reason text changed.</returns>
@@ -123,12 +122,17 @@ public sealed class ActiveProjectState
                               (a.Stage1.Present && a.Stage1.SceneCount > 0);
         var charactersReason = screenplayReady ? "" : "Approve the screenplay first";
 
-        // Scenes / Review: shot plan with clips
+        // Scenes / Review: shot plan with clips (cast alone is not enough)
         var shotsReady = a.Stage2.Stage2Ready && a.Stage2.Stage2Clips > 0;
-        var shotsHint = a.Stage2.Stage2Stale
-            ? "Update the shot plan first"
-            : "Finish the shot plan first";
-        var scenesReason = shotsReady ? "" : shotsHint;
+        string scenesReason;
+        if (shotsReady)
+            scenesReason = "";
+        else if (a.Stage2.Stage2Stale)
+            scenesReason = "Update the shot plan first";
+        else if (!a.Cast.ReadyForShots)
+            scenesReason = "Finish characters, then the shot plan";
+        else
+            scenesReason = "Finish the shot plan first";
 
         var changed =
             CanCharacters != screenplayReady ||

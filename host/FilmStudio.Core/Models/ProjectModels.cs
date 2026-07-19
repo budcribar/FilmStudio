@@ -421,8 +421,19 @@ public sealed class AdaptationStatus
     public ScreenplayStatus Screenplay { get; set; } = new();
     public Stage1Status Stage1 { get; set; } = new();
     public Stage2PlanStatus Stage2 { get; set; } = new();
+    /// <summary>Cast pin progress (look + voice) for next-step gating.</summary>
+    public CastStatus Cast { get; set; } = new();
     public bool XaiConfigured { get; set; }
     public string NextStep { get; set; } = "";
+}
+
+/// <summary>Whether on-screen cast has preferred looks and voice profiles.</summary>
+public sealed class CastStatus
+{
+    public int Total { get; set; }
+    public int Ready { get; set; }
+    /// <summary>True when every cast member has look (if needed) + voice.</summary>
+    public bool ReadyForShots { get; set; }
 }
 
 /// <summary>

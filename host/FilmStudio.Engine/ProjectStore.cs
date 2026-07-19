@@ -1800,6 +1800,8 @@ public sealed class ProjectStore
             stage2.Stage2Stale = true;
         var xai = !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("XAI_API_KEY"));
 
+        var cast = ReadCastStatus(projectId);
+
         // Fountain is the screenplay source of truth.
         // Flow: import → draft/approve → pin characters → shot plan → generate clips (Scenes).
         var next = "done";
@@ -1816,8 +1818,10 @@ public sealed class ProjectStore
             next = "sign_screenplay";
         else if (!stage1.Present || stage1.SceneCount == 0)
             next = screenplay.DraftExists ? "sign_screenplay" : "import_book";
+        else if (!cast.ReadyForShots)
+            next = "pin_characters";
         else if (!stage2.Stage2Ready)
-            next = "pin_characters"; // pin cast before building / generating from the shot plan
+            next = "run_stage2";
         else if (stage2.Stage2Stale)
             next = "replan_stage2";
         else
@@ -1830,9 +1834,49 @@ public sealed class ProjectStore
             Screenplay = screenplay,
             Stage1 = stage1,
             Stage2 = stage2,
+            Cast = cast,
             XaiConfigured = xai,
             NextStep = next,
         };
+    }
+
+    /// <summary>
+    /// Cast is ready when every member has a voice profile and (if on-screen) a preferred/locked look.
+    /// Empty cast (no seeds yet) is not ready.
+    /// </summary>
+    public CastStatus ReadCastStatus(string projectId)
+    {
+        var status = new CastStatus();
+        try
+        {
+            var rows = ListCharacters(projectId);
+            status.Total = rows.Count;
+            if (rows.Count == 0)
+                return status;
+
+            var ready = 0;
+            foreach (var c in rows)
+            {
+                var hasVoice = !string.IsNullOrWhiteSpace(c.VoiceProfile);
+                if (c.VoiceOnly)
+                {
+                    if (hasVoice) ready++;
+                    continue;
+                }
+
+                if ((c.HasPreferred || c.Locked) && hasVoice)
+                    ready++;
+            }
+
+            status.Ready = ready;
+            status.ReadyForShots = ready == rows.Count;
+        }
+        catch
+        {
+            // leave defaults
+        }
+
+        return status;
     }
 
     public async Task<string> SaveBookUploadAsync(

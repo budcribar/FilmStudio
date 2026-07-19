@@ -6,7 +6,7 @@
       "canonical_given_name": "Buster",
       "display_name_policy": "ok_anytime",
       "voice_label": "Buster (nonverbal dog)",
-      "voice_profile": "",
+      "voice_profile": "noise only no speech",
       "reference_image_placeholder": "character_buster_ref.png",
       "visual_lock": "Always a small black-and-white short-coated dog with floppy ears and bright dark eyes. No breed drift, no solid-color coat, no loss of black-and-white pattern.",
       "wardrobe_always": [
@@ -70,7 +70,7 @@
       "canonical_given_name": "Narrator",
       "display_name_policy": "never_on_screen",
       "voice_label": "Narrator",
-      "voice_profile": "",
+      "voice_profile": "calm and soothing",
       "reference_image_placeholder": "character_narrator_ref.png",
       "wardrobe_always": [],
       "source_image_pages": []

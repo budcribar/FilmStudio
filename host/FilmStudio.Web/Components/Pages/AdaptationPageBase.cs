@@ -406,7 +406,7 @@ public abstract class AdaptationPageBase : ComponentBase, IAsyncDisposable
         "sign_screenplay" => "Open Screenplay, edit if needed, then approve",
         "draft_screenplay" => "Create a screenplay draft from the book",
         "run_stage1" => "Build the screenplay from the book",
-        "pin_characters" => "Pin cast likeness on Characters, then build the shot plan",
+        "pin_characters" => "Pin cast looks and voices on Characters",
         "run_stage2" => "Build the shot plan",
         "replan_stage2" => "Update the shot plan (screenplay changed)",
         "generate_clips" => "Open Scenes and create video clips",

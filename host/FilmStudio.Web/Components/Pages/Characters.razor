@@ -96,6 +96,20 @@ else if (Session.IsAdmin && HasCast && !JobRunning && !_extractingCast)
 {
     <div class="alert alert-success">@_message</div>
 }
+@if (IsCastComplete && !JobRunning && !_extractingCast)
+{
+    <div class="alert alert-info py-2 d-flex flex-wrap align-items-center justify-content-between gap-2">
+        <span>Cast ready.</span>
+        @if (ActiveProject.CanScenes)
+        {
+            <a class="btn btn-sm btn-primary" href="scenes">Open Scenes →</a>
+        }
+        else
+        {
+            <a class="btn btn-sm btn-primary" href="adaptation/shots">Build shot plan →</a>
+        }
+    </div>
+}
 
 @* In-progress: progress only (errors land in the single alert above when the job ends) *@
 @if (_extractingCast)
@@ -558,6 +572,13 @@ else
 
     private bool HasCast => _chars is { Count: > 0 };
 
+    /// <summary>Every cast member has look (if needed) + voice — next is shot plan or scenes.</summary>
+    private bool IsCastComplete =>
+        _chars is { Count: > 0 } &&
+        _chars.All(c =>
+            HasVoiceProfile(c) &&
+            (c.VoiceOnly || c.HasPreferred || c.Locked));
+
     /// <summary>Show primary Build cast only when there is no cast yet.</summary>
     private bool NeedsCastBuild =>
         _chars is not null && _chars.Count == 0 && !_extractingCast;
@@ -822,9 +843,8 @@ else
         }
         if (switched)
         {
-            _panelPictureOpen = true;
-            _panelVoiceOpen = false;
             _deleteConfirm = null;
+            ApplyPanelsForSelected();
         }
         if (resetMode)
         {
@@ -833,7 +853,44 @@ else
             _error = null;
             _message = null;
             ResetSeedSelection();
+            // After a full select (list click), open the panel that still needs work
+            ApplyPanelsForSelected();
+        }
+    }
+
+    /// <summary>
+    /// Expand the panel that still needs work: missing picture → Picture;
+    /// picture done but no voice → Voice; both done → Picture (browse).
+    /// </summary>
+    private void ApplyPanelsForSelected()
+    {
+        if (_selected is null)
+        {
             _panelPictureOpen = true;
+            _panelVoiceOpen = false;
+            return;
+        }
+
+        if (_selected.VoiceOnly)
+        {
+            _panelPictureOpen = false;
+            _panelVoiceOpen = true;
+            return;
+        }
+
+        var hasPic = _selected.HasPreferred || _selected.Locked;
+        var hasVoice = HasVoiceProfile(_selected);
+
+        if (hasPic && !hasVoice)
+        {
+            _panelPictureOpen = false;
+            _panelVoiceOpen = true;
+        }
+        else
+        {
+            // Missing look, or both complete — focus picture
+            _panelPictureOpen = true;
+            _panelVoiceOpen = false;
         }
     }
 
@@ -1083,9 +1140,10 @@ else
                 await Engine.LockCharacterBookRefAsync(_projectId, _selected.Key, c.Index);
             _message = $"Locked look for {_selected.DisplayName}";
             await LoadAsync();
+            await RefreshNavReadinessAsync();
             ResetCompare();
             _mode = Mode.PickSource;
-            _panelPictureOpen = true;
+            ApplyPanelsForSelected();
             // Include preferred + remaining generated options as seeds for next regen
             ResetSeedSelection();
             if (_selected is not null)
@@ -1159,9 +1217,19 @@ else
                 _editVoiceLabel = _selected.VoiceLabel ?? "";
                 _editVoiceProfile = _selected.VoiceProfile ?? "";
             }
+            // Nav tooltips / Scenes gate depend on cast + shot-plan readiness
+            try { await ActiveProject.RefreshReadinessAsync(Engine); } catch { /* nav */ }
+            if (IsCastComplete && !ActiveProject.CanScenes)
+                _message = $"Saved voice for {_selected?.DisplayName}. Cast ready — build the shot plan next.";
         }
         catch (Exception ex) { _error = ex.Message; }
         finally { _busy = false; }
+    }
+
+    private async Task RefreshNavReadinessAsync()
+    {
+        try { await ActiveProject.RefreshReadinessAsync(Engine); }
+        catch { /* nav gates */ }
     }
 
     private async Task UnlockAsync()
