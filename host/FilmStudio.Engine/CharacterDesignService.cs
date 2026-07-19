@@ -16,6 +16,7 @@ public sealed class CharacterDesignService
     private readonly ProjectStore _projects;
     private readonly IGrokImageClient _images;
     private readonly CostReportService _costs;
+    private readonly CastVisualLiteralizeService _literalize;
     private readonly FilmStudioOptions _opts;
     private readonly ILogger<CharacterDesignService> _log;
 
@@ -23,12 +24,14 @@ public sealed class CharacterDesignService
         ProjectStore projects,
         IGrokImageClient images,
         CostReportService costs,
+        CastVisualLiteralizeService literalize,
         IOptions<FilmStudioOptions> opts,
         ILogger<CharacterDesignService> log)
     {
         _projects = projects;
         _images = images;
         _costs = costs;
+        _literalize = literalize;
         _opts = opts.Value;
         _log = log;
     }
@@ -104,17 +107,48 @@ public sealed class CharacterDesignService
         onProgress?.Invoke(
             $"Seed mode={NormalizeSeedMode(opts.SeedMode)} · refs={editRefs.Count}/{maxRefs} · variants={n}");
 
-        // Optional edit of description / visual_lock from Characters UI before generating
+        // Resolve text for this generate, then AI-scrub (base look + literal) via prompt —
+        // no special-case regex lists for pajamas / nicknames / etc.
+        var descForGen = opts.DescriptionOverride;
+        var visForGen = opts.VisualLockOverride;
+        if (descForGen is null && seeds.TryGetProperty("description", out var d0))
+            descForGen = d0.GetString();
+        if (visForGen is null && seeds.TryGetProperty("visual_lock", out var v0))
+            visForGen = v0.GetString();
+
+        try
+        {
+            var (dScrub, vScrub, usedAi) = await _literalize.ScrubLookFieldsAsync(
+                charKey,
+                description: descForGen,
+                visualLock: visForGen,
+                model: "grok-4.5",
+                onProgress: onProgress,
+                ct: ct).ConfigureAwait(false);
+            if (usedAi)
+            {
+                descForGen = dScrub;
+                visForGen = vScrub;
+                onProgress?.Invoke("AI scrub applied to look text for this generate");
+            }
+        }
+        catch (Exception ex)
+        {
+            _log.LogWarning(ex, "Look AI scrub before portrait gen failed — using raw text");
+        }
+
+        // Optional persist of (scrubbed) description / visual_lock from Characters UI
         if (opts.PersistDescription &&
-            (opts.DescriptionOverride is not null || opts.VisualLockOverride is not null))
+            (opts.DescriptionOverride is not null || opts.VisualLockOverride is not null ||
+             descForGen is not null || visForGen is not null))
         {
             _projects.UpdateCharacterSeedText(
                 projectId,
                 charKey,
-                description: opts.DescriptionOverride,
-                visualLock: opts.VisualLockOverride);
+                description: descForGen,
+                visualLock: visForGen);
             seeds = _projects.GetCharacterSeed(projectId, charKey) ?? seeds;
-            onProgress?.Invoke("Saved description / visual lock to scenes.json seeds");
+            onProgress?.Invoke("Saved scrubbed description / visual lock to cast seeds");
         }
 
         var hasImageHints = editRefs.Count > 0;
@@ -122,8 +156,8 @@ public sealed class CharacterDesignService
             charKey,
             seeds,
             hasImageHints,
-            descriptionOverride: opts.DescriptionOverride,
-            visualLockOverride: opts.VisualLockOverride);
+            descriptionOverride: descForGen,
+            visualLockOverride: visForGen);
 
         onProgress?.Invoke(
             $"design prompt ready ({prompt.Length} chars) · image_provider={ImageApiLimits.ResolveProvider(imageProvider, imageModel)} max_refs={maxRefs}");
@@ -574,82 +608,128 @@ public sealed class CharacterDesignService
 
         var isAnimalDog = CharacterVisualTextScrubber.IsPrimarilyAnimalCharacter(
             charKey, ageBand, description, visualLock, "dog");
+        var isAnimalOther =
+            CharacterVisualTextScrubber.IsPrimarilyAnimalCharacter(charKey, ageBand, description, visualLock, "cat") ||
+            CharacterVisualTextScrubber.IsPrimarilyAnimalCharacter(charKey, ageBand, description, visualLock, "rabbit") ||
+            CharacterVisualTextScrubber.IsPrimarilyAnimalCharacter(charKey, ageBand, description, visualLock, "bunny") ||
+            CharacterVisualTextScrubber.IsPrimarilyAnimalCharacter(charKey, ageBand, description, visualLock, "bear") ||
+            CharacterVisualTextScrubber.IsPrimarilyAnimalCharacter(charKey, ageBand, description, visualLock, "fox");
+        var isAnimal = isAnimalDog || isAnimalOther;
         var isHumanAdult = CharacterVisualTextScrubber.IsHumanAdultCharacter(
             charKey, ageBand, description, visualLock);
 
-        var ageClause = "";
+        var speciesClause = "";
         if (ageBand.StartsWith("child", StringComparison.OrdinalIgnoreCase) ||
             charKey.EndsWith("_Young", StringComparison.OrdinalIgnoreCase))
         {
-            ageClause =
-                "CRITICAL: this is a CHILD portrait with child proportions, smaller head-to-body ratio, " +
-                "youthful face — NOT an adult, NOT a bodybuilder, NOT aged-up. ";
+            speciesClause =
+                "SPECIES/AGE: CHILD human — child proportions, youthful face; not adult, not aged-up. ";
         }
         else if (ageBand.StartsWith("teen", StringComparison.OrdinalIgnoreCase) ||
                  charKey.EndsWith("_Teen", StringComparison.OrdinalIgnoreCase))
         {
-            ageClause =
-                "CRITICAL: this is a TEEN / late-teen portrait — younger than the adult version, " +
-                "not a middle-aged adult. ";
+            speciesClause =
+                "SPECIES/AGE: TEEN human — younger than adult version; not middle-aged. ";
         }
         else if (isAnimalDog)
         {
-            ageClause =
-                "CRITICAL: this is a DOG portrait (animal), not a human. " +
-                "Match breed look, ear shape, coat color/markings from the description. ";
+            speciesClause =
+                "SPECIES: DOG character (animal), not a human. " +
+                "Keep the illustrated breed/look from the book art — not a photoreal stock dog. " +
+                "Natural fur/coat only unless a reference image clearly shows clothing. ";
+        }
+        else if (isAnimalOther)
+        {
+            speciesClause =
+                "SPECIES: animal character, not a person. Match the book-art creature; " +
+                "not photoreal wildlife photography. No costume unless clearly in refs. ";
         }
         else if (isHumanAdult)
         {
-            // "matching the dog's CG look" means same *render medium*, not species
-            ageClause =
-                "CRITICAL: this is a HUMAN adult portrait — a person, NOT a dog, NOT an anthropomorphic animal. " +
-                "Same stylized picture-book / soft-3D medium as the film is fine; species stays human. ";
+            speciesClause =
+                "SPECIES: HUMAN adult — a person, not an animal. " +
+                "Same illustrated picture-book medium as the film; not photoreal stock photography. ";
         }
 
         var familyClause = "";
         if (!string.IsNullOrWhiteSpace(variantOf))
         {
             familyClause =
-                $"Should clearly read as a younger version of {variantOf} " +
-                "(same ethnicity, hair color family, recognizable family features). ";
+                $"FAMILY: younger version of {variantOf} " +
+                "(same ethnicity/hair family, recognizable related features). ";
         }
 
-        // Scrub is general (any book): nicknames + cross-species medium language
+        // Prompt-time text prep: keep filmable words; image model still gets strong IGNORE rules
         var descSafe = CharacterVisualTextScrubber.ScrubVisualProse(description);
         var visualSafe = CharacterVisualTextScrubber.ScrubVisualProse(visualLock);
-        var visualClauseSafe = string.IsNullOrWhiteSpace(visualSafe) ? "" : $"Visual lock: {visualSafe}. ";
-        const string treatment = "soft even studio lighting";
+
+        // Priority-ordered instructions work better than a long free-form paragraph for Imagine.
+        const string ignoreRules =
+            "IGNORE in the text notes (do not draw these): " +
+            "later-story wardrobe or outfit changes; 'later wears…', 'afterwards…', 'once X is on…'; " +
+            "scene actions and plot (pointing, offering treats, sleeping, chasing); " +
+            "figurative nicknames or idioms taken as objects (food-as-hat, metaphor props); " +
+            "model-sheet labels, arrows, color swatches, UI chrome. ";
+
+        const string outputRules =
+            "OUTPUT: one clean continuity portrait, head and upper body, facing camera, " +
+            "plain soft background. No collage, no split views, no text overlays. ";
+
+        // Style is the main failure mode when book art is cartoon but models default to photo dogs.
+        const string styleLock =
+            "STYLE LOCK (hard): children's picture-book illustration matching the book references — " +
+            "soft painted cartoon / illustrated medium, simplified shapes, gentle shading. " +
+            "NOT photorealistic, NOT live-action photography, NOT stock-photo animal, " +
+            "NOT hyper-detailed fur photography, NOT 3D CGI render. " +
+            "If book plates are attached, copy their line, color, and medium exactly. ";
+
+        var lookBits = new List<string>();
+        if (!string.IsNullOrWhiteSpace(descSafe))
+            lookBits.Add(descSafe.Trim().TrimEnd('.'));
+        if (!string.IsNullOrWhiteSpace(visualSafe))
+            lookBits.Add("Hard constraints: " + visualSafe.Trim().TrimEnd('.'));
+        var lookNotes = lookBits.Count > 0
+            ? string.Join(". ", lookBits) + "."
+            : "Match the character identity from context.";
 
         if (hasImageHints)
         {
-            // Image refs are primary — description only clarifies, never invents a new design
-            var speciesHint = isAnimalDog
-                ? "Match fur, breed, ears, markings from the refs. "
-                : isHumanAdult
-                    ? "Match the human face, hair, and clothing from the preferred ref — do NOT animalize the face. "
-                    : "Match identity from the refs closely. ";
+            var matchBody = isAnimal
+                ? "Match species, coat pattern, ears, and face shape from the illustrated book references. "
+                : "Match face, hair, and default clothing from the preferred illustrated reference. ";
+
             return
-                $"IDENTITY-LOCKED character continuity portrait of {display}. " +
-                "The FIRST attached reference image is the authoritative face/body identity. " +
-                "Any additional attached images are the SAME character (style/markings only). " +
-                "CRITICAL: Match the preferred/reference identity; Do NOT redesign the character. " +
-                speciesHint +
-                "Do NOT turn book nicknames or metaphors into literal objects or props. " +
-                "Do NOT output a labeled model-sheet, callouts, color swatches, arrows, or UI chrome — " +
-                "one clean portrait only, plain soft background, head and upper body, facing camera. " +
-                $"{ageClause}{familyClause}" +
-                $"Supporting text (secondary to images): {descSafe}. {visualClauseSafe}" +
-                $"Style: match the attached art (picture-book / soft 3D as in the refs). {treatment}.";
+                $"CHARACTER CONTINUITY PORTRAIT of {display}. " +
+                styleLock +
+                "PRIORITY 1 — IMAGES: The first attached image is the authoritative identity AND art style. " +
+                "Further images are the SAME character (markings/style only). " +
+                "When text and images disagree, trust the images. " +
+                "Skip any reference that is mostly printed text with no character art. " +
+                "Do not redesign; do not invent a new outfit not clearly visible in the character art. " +
+                matchBody +
+                speciesClause +
+                familyClause +
+                "PRIORITY 2 — BASE LOOK ONLY: default everyday appearance for a faceplate/lock. " +
+                (isAnimal
+                    ? "If book art shows an animal without clothes, draw no clothes or costumes. "
+                    : "Use only default clothes visible in refs; do not add later-story costumes. ") +
+                ignoreRules +
+                $"PRIORITY 3 — TEXT NOTES (secondary hints only): {lookNotes} " +
+                outputRules;
         }
 
         return
-            $"A clean character continuity portrait of {display}: {descSafe}. {visualClauseSafe}" +
-            $"{ageClause}{familyClause}" +
-            "Character centered, facing camera, plain soft background, head and upper body. " +
-            "Use only filmable look words from the description (colors, markings, real garments). " +
-            "No model-sheet labels or annotations. " +
-            "Children's picture-book character style unless text says otherwise. " +
-            treatment + ".";
+            $"CHARACTER CONTINUITY PORTRAIT of {display}. " +
+            styleLock +
+            "BASE LOOK ONLY — default everyday appearance for a faceplate/lock, not a story beat. " +
+            speciesClause +
+            familyClause +
+            ignoreRules +
+            (isAnimal
+                ? "Illustrated animal appearance; clothing only if text clearly states it as the usual look (not 'later'). "
+                : "Default clothes only; skip later-story outfit changes. ") +
+            $"LOOK: {lookNotes} " +
+            outputRules;
     }
 
     private static List<string> ResolveBookRefPaths(string projectDir, JsonElement seedInfo, int maxRefs)

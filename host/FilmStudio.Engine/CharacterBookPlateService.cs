@@ -146,7 +146,7 @@ public sealed class CharacterBookPlateService
                         continue;
                     }
 
-                    // One page → one best cast match (avoids Mom+Dad+Buster all claiming the same dog plate)
+                    // One page → one best cast match (avoids multiple cast claiming the same plate)
                     var bestMatch = PickBestMatch(cls);
                     if (bestMatch is null) continue;
                     if (!scores.TryGetValue(bestMatch.Key, out var list)) continue;
@@ -493,7 +493,7 @@ public sealed class CharacterBookPlateService
         Dictionary<string, List<(BookImageRow Row, double Score)>> scores,
         int maxPerCharacter)
     {
-        // Fewer unique pages ⇒ higher priority (Daddy with only p11 beats Buster who also lists p2,5,11)
+        // Fewer unique pages ⇒ higher priority (supporting cast with one page beats hero with many)
         var uniquePageCount = scores.ToDictionary(
             kv => kv.Key,
             kv => kv.Value.Select(x => x.Row.Page).Where(p => p > 0).Distinct().Count(),
@@ -549,7 +549,7 @@ public sealed class CharacterBookPlateService
         }
 
         // Last resort: cast members still empty after exclusivity may share a high-score page
-        // (e.g. Buster + Daddy on the same bedroom plate) so we never leave everyone blank.
+        // (e.g. two cast members on the same full-page plate) so we never leave someone blank.
         foreach (var (key, list) in scores)
         {
             if (!assigned.TryGetValue(key, out var picks))
@@ -917,8 +917,18 @@ public sealed class CharacterBookPlateService
         if (ProjectStore.IsTextOnlyPlatePath(r.Name) || ProjectStore.IsTextOnlyPlatePath(r.PathRel))
             return true;
 
+        if (r.Name.Contains("text_page", StringComparison.OrdinalIgnoreCase) ||
+            r.Name.Contains("text-only", StringComparison.OrdinalIgnoreCase) ||
+            r.Kind.Contains("text", StringComparison.OrdinalIgnoreCase))
+            return true;
+
+        // Manifest relevance (book_images.v1) — pure text spreads must never seed portraits
+        if (string.Equals(r.Relevance, "text", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(r.Relevance, "text_only", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(r.Relevance, "text_heavy", StringComparison.OrdinalIgnoreCase))
+            return true;
+
         // Full-page PDF renders / embeds are illustrations even when compressed under 400KB.
-        // Size-only filtering used to wipe entire book_images inventories (no character pics).
         if (r.Kind is "rendered_page" or "embedded" or "file")
         {
             if (r.Name.Contains("cover", StringComparison.OrdinalIgnoreCase) ||
@@ -933,7 +943,6 @@ public sealed class CharacterBookPlateService
         try
         {
             var len = new FileInfo(r.AbsPath).Length;
-            // Only treat tiny anonymous files as likely text/OCR samples — not named page plates
             if (len is > 0 and < 400_000 &&
                 !r.Name.Contains("cover", StringComparison.OrdinalIgnoreCase) &&
                 !r.Name.Contains("sparse", StringComparison.OrdinalIgnoreCase) &&
@@ -974,8 +983,14 @@ public sealed class CharacterBookPlateService
                         if (!File.Exists(abs)) continue;
                         var page = im.TryGetProperty("page", out var pg) && pg.TryGetInt32(out var pn) ? pn : 0;
                         var kind = im.TryGetProperty("kind", out var k) ? k.GetString() ?? "" : "";
+                        var relevance = im.TryGetProperty("relevance", out var relEl)
+                            ? relEl.GetString() ?? ""
+                            : "";
                         var pathRel = Path.GetRelativePath(projectDir, abs).Replace('\\', '/');
-                        rows.Add(new BookImageRow(pathRel, abs, page, kind, Path.GetFileName(abs).ToLowerInvariant()));
+                        rows.Add(new BookImageRow(
+                            pathRel, abs, page, kind,
+                            Path.GetFileName(abs).ToLowerInvariant(),
+                            relevance));
                     }
                 }
             }
@@ -1000,5 +1015,11 @@ public sealed class CharacterBookPlateService
         return rows;
     }
 
-    private sealed record BookImageRow(string PathRel, string AbsPath, int Page, string Kind, string Name);
+    private sealed record BookImageRow(
+        string PathRel,
+        string AbsPath,
+        int Page,
+        string Kind,
+        string Name,
+        string Relevance = "");
 }

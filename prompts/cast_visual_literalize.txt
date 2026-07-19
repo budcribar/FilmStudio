@@ -1,31 +1,40 @@
-Act as a continuity supervisor preparing character look cards for generative video/image models.
+Act as a continuity supervisor preparing character look cards for generative image/video models.
 
-Models often interpret figurative or idiomatic language LITERALLY (e.g. "noodle head" → pasta hat;
-"heart of gold" → gold organ; "beanpole" → bean plant). Your job is to make every visual field
-safe and filmable.
+Models often misread prose. Your job is general and book-agnostic — do NOT special-case one title.
+Clean visual fields so they are safe for a DEFAULT continuity portrait (the faceplate / lock look).
 
 ================================================================
-TASK
+PROBLEMS TO FIX (all books)
 ================================================================
-You will receive JSON character seeds (description, visual_lock, optional wardrobe_always).
+1) Figurative / idiomatic / nickname language taken LITERALLY
+   Examples of risk (patterns, not an exhaustive list):
+   - "noodle head" → pasta hat; "heart of gold" → metal organ; "beanpole" → plant
+   - Personality labels as anatomy ("not very bright face")
+   Replace with clear physical filmable words (shape, expression, size, color, species).
 
-For EACH on-screen character, scan description, visual_lock, and wardrobe_always for:
-- Figurative / idiomatic / nickname / epithet language (title words, personality labels as looks)
-- Metaphorical garments or props that are not literal objects in the story
-- Vague personality-as-face ("not very bright look") without anatomy/expression that can be drawn
+2) Later-story wardrobe and scene beats baked into the BASE look
+   Description and visual_lock describe the character's DEFAULT appearance for a continuity portrait.
+   They must NOT include:
+   - Temporal clothing changes ("later wears pajamas", "once the coat is on", "after dressing")
+   - Scene action / plot ("points to the door", "offers a treat", "settled under the covers")
+   - One-off outfit beats that only apply mid-story
+   Put sticky later garments only in wardrobe_always as short notes if needed
+   (e.g. "pajamas after dressing beat — not base portrait").
+   Keep description / visual_lock as undressed-or-default-day look for animals, or default clothes for humans.
 
-Replace those phrases with clear, literal physical descriptions that keep the intended meaning:
-- Good: "soft rounded head shape", "slightly goofy open expression", "small black-and-white dog",
-  "floppy ears", "compact bouncy build"
-- Bad: "noodle head", "biscuit-head hat", "heart of gold face", "beanpole body" (as plants/food)
+3) Vague non-filmable filler
+   Drop pure attitude/plot without visible traits. Keep species, age, size, colors, markings,
+   real garments that are the usual look, real props that define identity.
 
-Preserve:
-- Species, age band, size, real colors/markings, real wardrobe, real props
-- Consistency across description and visual_lock
-- display_name_policy, voice fields, keys, source_image_pages, reference placeholders — do not invent
-  new characters or remove seeds
-
-Voice-only (display_name_policy never_on_screen): leave description minimal; no false body.
+================================================================
+PRESERVE
+================================================================
+- Species, age band, size, real colors/markings
+- Real wardrobe that is the DEFAULT look (not later-only)
+- Consistency between description and visual_lock
+- display_name_policy, voice fields, keys, source_image_pages, placeholders
+- Do not invent new characters or remove seeds
+- Voice-only (never_on_screen): minimal description; no false body
 
 ================================================================
 OUTPUT (HARD) — JSON ONLY
@@ -35,14 +44,12 @@ Return the same structure you received, with only visual text fields cleaned:
 {
   "character_seed_tokens": {
     "Character_Key": {
-      "description": "… literal filmable only …",
-      "visual_lock": "… literal filmable only …",
-      "wardrobe_always": ["… only real items …"]
+      "description": "… literal base look only …",
+      "visual_lock": "… hard constraints for default continuity …",
+      "wardrobe_always": ["… real sticky items; later-only notes OK here …"]
     }
   }
 }
 
-Include every Character_* key from the input. Omit keys you did not change only if you still
-return the full cleaned object for that character (always return all characters).
-
-No markdown fences. No commentary.
+Include every Character_* key from the input with cleaned fields.
+No markdown fences. No commentary. No book-specific hardcoding.

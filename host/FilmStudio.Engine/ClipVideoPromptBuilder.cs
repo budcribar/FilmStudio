@@ -65,7 +65,7 @@ public static class ClipVideoPromptBuilder
         var charDir = Path.Combine(projectDir, "assets", "characters");
         var paths = new List<string>();
 
-        // Prefer animal/hero refs first (Buster before Mom/Dad)
+        // Prefer animal/creature identity refs before human role cast (any book)
         keys = keys
             .OrderBy(k => CharacterRefPriority(k))
             .ThenBy(k => k, StringComparer.OrdinalIgnoreCase)
@@ -173,11 +173,19 @@ public static class ClipVideoPromptBuilder
         return visual;
     }
 
+    /// <summary>
+    /// Lower = earlier. Prefer species/creature keys over generic parental role keys.
+    /// Book-agnostic — never hardcode a project character name.
+    /// </summary>
     private static int CharacterRefPriority(string key)
     {
         var k = key.ToLowerInvariant();
-        if (k.Contains("buster") || k.Contains("dog") || k.Contains("noodle")) return 0;
-        if (k.Contains("mom") || k.Contains("dad") || k.Contains("human")) return 2;
+        // Species token inside Character_* (e.g. Character_Dog, Character_FoxCub)
+        if (Regex.IsMatch(k, @"(^|_)(dog|cat|bear|fox|rabbit|bunny|mouse|bird|horse|pig|wolf|owl)(s|es)?($|_)"))
+            return 0;
+        // Parental / human role labels (Momma, Daddy, Parent_…)
+        if (Regex.IsMatch(k, @"(mom|mum|mother|dad|daddy|father|parent|human)"))
+            return 2;
         return 1;
     }
 

@@ -5,6 +5,33 @@ Follow these unless the user explicitly overrides them for a task.
 
 ---
 
+## General solutions only (any book / any cast)
+
+**Film Studio is a product for arbitrary picture books and casts — not a Buster app.**
+
+When debugging or implementing against a sample project (e.g. Buster / Buster2 / NickAndMe):
+
+1. **Ship general mechanisms**, not title-specific branches.
+   - Prefer prompts, cast metadata (`source_image_pages`, `description`, `visual_lock`, `wardrobe_always`),
+     manifest `relevance`, and book reference images.
+   - **Do not** hardcode character names (`Buster`, `Momma`, …), book titles, page numbers,
+     outfit beats (pajamas), or epithets (`noodle head`) in Engine / Web / API product code.
+2. **Sample data fixes are data, not product code.**
+   - Editing `projects/Buster2/...` (or any one project) to re-seed plates or clean descriptions is fine
+     for the user’s current project.
+   - The **code path** that attaches plates, builds cast, generates portraits, etc. must work for the next book without edits.
+3. **No growing special-case lists.**
+   - Avoid regex / if-ladders of story-specific anti-patterns.
+   - Prefer AI prompt scrubbing, style locks, and image refs over one-off string rules.
+4. **Comments and examples** in code should say “hero animal”, “supporting cast”, “text-only page” —
+   not a specific character name — unless documenting a unit-test fixture.
+5. **Before finishing a task**, ask: *Would this still work for a different book with different cast names?*
+   If not, generalize.
+
+Buster (and other fixtures) are **eval / demo projects**, not product requirements.
+
+---
+
 ## UI copy principles (operator-facing Blazor / product UI)
 
 Apply to **workflow pages** users operate day to day: Adaptation, Characters, Scenes, Review, Home, Cost, and similar.  
@@ -88,4 +115,4 @@ Slightly more technical language is OK on **About** or a collapsible “For deve
 
 ---
 
-*Last updated: 2026-07-18 — UI outcome-only principles.*
+*Last updated: 2026-07-19 — general solutions only (no book-specific product code); UI outcome-only principles.*

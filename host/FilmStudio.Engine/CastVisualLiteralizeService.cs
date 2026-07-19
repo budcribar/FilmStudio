@@ -32,6 +32,7 @@ public sealed class CastVisualLiteralizeService
     /// <summary>
     /// Literalize description / visual_lock / wardrobe_always on each seed in-place (dict).
     /// Non-fatal: returns input seeds if chat fails.
+    /// AI prompt handles figurative language + base-look vs later wardrobe — no special-case lists.
     /// </summary>
     public async Task<Dictionary<string, object?>> LiteralizeSeedsAsync(
         Dictionary<string, object?> seeds,
@@ -42,7 +43,7 @@ public sealed class CastVisualLiteralizeService
         if (seeds.Count == 0 || !_chat.IsConfigured)
             return seeds;
 
-        onProgress?.Invoke("Literalizing visual descriptions (AI)…");
+        onProgress?.Invoke("Scrubbing visual descriptions (AI prompt)…");
         try
         {
             var system = await LoadSystemPromptAsync(_projects.WorkspaceRoot, ct).ConfigureAwait(false);
@@ -51,7 +52,9 @@ public sealed class CastVisualLiteralizeService
                 ["character_seed_tokens"] = BuildVisualPayload(seeds),
             };
             var user =
-                "Literalize figurative/idiomatic visual language in these character seeds.\n" +
+                "Scrub these character seeds for generative image models:\n" +
+                "1) figurative/idiomatic → literal filmable\n" +
+                "2) base portrait look only — strip later-story wardrobe/plot from description & visual_lock\n" +
                 "Return JSON only with character_seed_tokens.\n\n" +
                 JsonSerializer.Serialize(payload, JsonDefaults.Indented);
 
@@ -63,9 +66,59 @@ public sealed class CastVisualLiteralizeService
         catch (Exception ex)
         {
             _log.LogWarning(ex, "Cast visual literalize failed — keeping pre-literalize seeds");
-            onProgress?.Invoke("Literalize pass skipped (non-fatal).");
+            onProgress?.Invoke("AI visual scrub skipped (non-fatal).");
             return seeds;
         }
+    }
+
+    /// <summary>
+    /// Scrub one character's look fields via the same API prompt (Save look / generate).
+    /// Returns cleaned description + visual_lock; non-fatal falls back to input.
+    /// </summary>
+    public async Task<(string Description, string VisualLock, bool UsedAi)> ScrubLookFieldsAsync(
+        string charKey,
+        string? description,
+        string? visualLock,
+        string? wardrobeAlwaysJson = null,
+        string model = "grok-4.5",
+        Action<string>? onProgress = null,
+        CancellationToken ct = default)
+    {
+        var descIn = description ?? "";
+        var visIn = visualLock ?? "";
+        if (!_chat.IsConfigured)
+            return (descIn, visIn, false);
+        if (string.IsNullOrWhiteSpace(descIn) && string.IsNullOrWhiteSpace(visIn))
+            return (descIn, visIn, false);
+
+        var seed = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["description"] = descIn,
+            ["visual_lock"] = visIn,
+        };
+        if (!string.IsNullOrWhiteSpace(wardrobeAlwaysJson))
+        {
+            try
+            {
+                var wa = JsonSerializer.Deserialize<List<object?>>(wardrobeAlwaysJson);
+                if (wa is not null) seed["wardrobe_always"] = wa;
+            }
+            catch { /* optional */ }
+        }
+
+        var bag = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase)
+        {
+            [charKey] = seed,
+        };
+        onProgress?.Invoke("AI scrub: base look + literal filmable…");
+        var cleaned = await LiteralizeSeedsAsync(bag, model, onProgress, ct).ConfigureAwait(false);
+        if (cleaned.TryGetValue(charKey, out var cval) && cval is Dictionary<string, object?> cseed)
+        {
+            var d = cseed.TryGetValue("description", out var dv) ? dv?.ToString() ?? descIn : descIn;
+            var v = cseed.TryGetValue("visual_lock", out var vv) ? vv?.ToString() ?? visIn : visIn;
+            return (d.Trim(), v.Trim(), true);
+        }
+        return (descIn, visIn, false);
     }
 
     public static async Task<string> LoadSystemPromptAsync(string workspaceRoot, CancellationToken ct = default)

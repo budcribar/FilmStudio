@@ -303,6 +303,33 @@ public sealed class UpdateCharacterVoiceRequest
     public string? VoiceProfile { get; set; }
 }
 
+/// <summary>Update description / visual_lock on character seeds (cast_seeds + blueprint).</summary>
+public sealed class UpdateCharacterLookRequest
+{
+    public string ProjectId { get; set; } = "";
+    public string CharKey { get; set; } = "";
+    public string? Description { get; set; }
+    public string? VisualLock { get; set; }
+    /// <summary>
+    /// Run AI visual scrub (literal + base-look, not later wardrobe) before save. Default true.
+    /// </summary>
+    public bool ScrubWithAi { get; set; } = true;
+    public string Model { get; set; } = "grok-4.5";
+}
+
+/// <summary>Response from look save (optional AI scrub applied).</summary>
+public sealed class UpdateCharacterLookResult
+{
+    public bool Ok { get; set; }
+    public string? ProjectId { get; set; }
+    public string? CharKey { get; set; }
+    public bool ScrubbedWithAi { get; set; }
+    public string? Description { get; set; }
+    public string? VisualLock { get; set; }
+    public string? Message { get; set; }
+    public string? Error { get; set; }
+}
+
 public sealed class SceneSummary
 {
     public int SceneNumber { get; set; }

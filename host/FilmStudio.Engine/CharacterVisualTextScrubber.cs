@@ -83,9 +83,9 @@ public static class CharacterVisualTextScrubber
         // Shared medium, not shared species
         t = SoftenCrossSpeciesStyleLanguage(t);
 
-        // Drop legacy anti-pattern boilerplate if any slipped into seeds
-        t = Regex.Replace(t, @"\bnever\s+pasta(?:/food)?(?:\s+hat)?s?\b", "", RegexOptions.IgnoreCase);
-        t = Regex.Replace(t, @"\bnever\s+draw\s+\w+\s+as\s+a\s+hat\b", "", RegexOptions.IgnoreCase);
+        // Lightweight only. Figurative language + later-story wardrobe are scrubbed via
+        // CastVisualLiteralizeService / prompts/cast_visual_literalize.txt (API prompt).
+        // Do not grow book-specific regex lists here.
 
         return CleanDebris(t);
     }

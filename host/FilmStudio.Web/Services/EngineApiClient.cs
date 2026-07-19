@@ -798,6 +798,44 @@ public sealed class EngineApiClient
         }
     }
 
+    /// <summary>
+    /// Save look text; by default API runs AI scrub (literal + base look). Returns cleaned fields.
+    /// </summary>
+    public async Task<UpdateCharacterLookResult> UpdateCharacterLookAsync(
+        string projectId,
+        string charKey,
+        string? description,
+        string? visualLock = null,
+        bool scrubWithAi = true,
+        CancellationToken ct = default)
+    {
+        using var resp = await _http.PostAsJsonAsync(
+            $"/api/projects/{Uri.EscapeDataString(projectId)}/characters/{Uri.EscapeDataString(charKey)}/look",
+            new UpdateCharacterLookRequest
+            {
+                ProjectId = projectId,
+                CharKey = charKey,
+                Description = description,
+                VisualLock = visualLock,
+                ScrubWithAi = scrubWithAi,
+            },
+            JsonOpts,
+            ct);
+        var body = await resp.Content.ReadAsStringAsync(ct);
+        if (!resp.IsSuccessStatusCode)
+            throw new InvalidOperationException(TryError(body) ?? resp.ReasonPhrase);
+
+        try
+        {
+            return JsonSerializer.Deserialize<UpdateCharacterLookResult>(body, JsonOpts)
+                   ?? new UpdateCharacterLookResult { Ok = true };
+        }
+        catch
+        {
+            return new UpdateCharacterLookResult { Ok = true, Message = "Look updated" };
+        }
+    }
+
     public async Task StartCharacterVariantsAsync(
         string projectId,
         string charKey,

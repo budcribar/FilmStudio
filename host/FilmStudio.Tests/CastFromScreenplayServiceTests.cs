@@ -36,7 +36,10 @@ public class CastFromScreenplayServiceTests
         Assert.Contains("figurative", text, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("literal", text, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("JSON", text, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("noodle", text, StringComparison.OrdinalIgnoreCase);
+        // Base-look vs later wardrobe (general, not book-specific lists)
+        Assert.Contains("later", text, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("BASE", text, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("wardrobe", text, StringComparison.OrdinalIgnoreCase);
     }
 
     private static string? FindRepoWithPrompts()

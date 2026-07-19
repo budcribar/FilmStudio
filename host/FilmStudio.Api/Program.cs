@@ -707,7 +707,7 @@ app.MapPost("/api/jobs/character-variants", async (StartCharacterVariantsRequest
     }
 });
 
-/// <summary>Save voice_label / voice_profile into scenes.json (+ blueprint) character seeds.</summary>
+/// <summary>Save voice_label / voice_profile into cast_seeds (+ blueprint) character seeds.</summary>
 app.MapPost("/api/projects/{id}/characters/{charKey}/voice",
     (string id, string charKey, UpdateCharacterVoiceRequest? body, ProjectStore store) =>
 {
@@ -727,6 +727,80 @@ app.MapPost("/api/projects/{id}/characters/{charKey}/voice",
             projectId = id,
             charKey,
             message = "Voice seed updated",
+        });
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { ok = false, error = ex.Message });
+    }
+});
+
+/// <summary>
+/// Save description / visual_lock for portrait continuity (cast_seeds + blueprint).
+/// By default runs AI prompt scrub (literal filmable + base look, not later-story wardrobe).
+/// </summary>
+app.MapPost("/api/projects/{id}/characters/{charKey}/look", async (
+    string id,
+    string charKey,
+    UpdateCharacterLookRequest? body,
+    ProjectStore store,
+    CastVisualLiteralizeService literalize,
+    CancellationToken ct) =>
+{
+    try
+    {
+        body ??= new UpdateCharacterLookRequest();
+        if (string.IsNullOrWhiteSpace(charKey))
+            return Results.BadRequest(new { ok = false, error = "charKey required" });
+
+        var desc = body.Description;
+        var vis = body.VisualLock;
+        var scrubbed = false;
+        if (body.ScrubWithAi && (desc is not null || vis is not null))
+        {
+            var (d2, v2, usedAi) = await literalize.ScrubLookFieldsAsync(
+                charKey,
+                description: desc ?? "",
+                visualLock: vis ?? "",
+                model: string.IsNullOrWhiteSpace(body.Model) ? "grok-4.5" : body.Model,
+                ct: ct).ConfigureAwait(false);
+            if (usedAi)
+            {
+                if (desc is not null) desc = d2;
+                if (vis is not null) vis = v2;
+                scrubbed = true;
+            }
+        }
+
+        store.UpdateCharacterSeedText(
+            id,
+            charKey,
+            description: desc,
+            visualLock: vis);
+
+        // Return cleaned text so the UI can refresh editors without a second guess
+        var seed = store.GetCharacterSeed(id, charKey);
+        string? savedDesc = null;
+        string? savedVis = null;
+        if (seed is not null)
+        {
+            if (seed.Value.TryGetProperty("description", out var dEl))
+                savedDesc = dEl.GetString();
+            if (seed.Value.TryGetProperty("visual_lock", out var vEl))
+                savedVis = vEl.GetString();
+        }
+
+        return Results.Ok(new
+        {
+            ok = true,
+            projectId = id,
+            charKey,
+            scrubbedWithAi = scrubbed,
+            description = savedDesc ?? desc,
+            visualLock = savedVis ?? vis,
+            message = scrubbed
+                ? "Look saved (AI scrubbed: base + literal)"
+                : "Look (description / visual lock) updated",
         });
     }
     catch (Exception ex)

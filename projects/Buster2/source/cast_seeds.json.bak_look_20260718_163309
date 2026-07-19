@@ -8,20 +8,20 @@
   "render_style_lock": "STYLE LOCK: Warm stylized children\u0027s-picture-book live action; soft practical lamp and daylight; cozy home palette; one consistent medium for all cast and creatures throughout\u2014no style drift between backyard, interiors, and dream.",
   "character_seed_tokens": {
     "Character_Buster": {
-      "description": "Small black-and-white dog, short coat, floppy ears, bright eyes, shape, compact bouncy build.",
+      "description": "Small black-and-white dog, short coat, floppy ears, bright eyes, shape, compact bouncy build; later wears snug black-and-white pajama top and bottoms.",
       "canonical_given_name": "Buster",
       "display_name_policy": "ok_anytime",
       "voice_label": "Buster (nonverbal)",
       "voice_profile": "Mostly nonverbal dog: happy pants, skids, gobbles, loud water laps, soft snore-breathes; playful puppy energy, no spoken lines.",
       "reference_image_placeholder": "character_buster_ref.png",
-      "visual_lock": "Always black-and-white coat, floppy ears, bright eyes, compact dog proportions. No clothing in base portrait.",
+      "visual_lock": "Always black-and-white coat, floppy ears, bright eyes, compact dog proportions. Once pajamas are on, black-and-white pajama top and bottoms stay on through bed and dream.",
       "wardrobe_always": [
-        "black-and-white pajamas only after hallway dressing beat (not for base character lock)"
+        "black-and-white pajamas after hallway dressing beat (sticky through end)"
       ],
       "source_image_pages": [
-        1,
-        3,
-        5
+        2,
+        5,
+        11
       ],
       "design_reference_images": [
         "assets/characters/character_buster_bookref_1.png",

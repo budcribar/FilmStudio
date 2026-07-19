@@ -7,5 +7,84 @@
     "sorted_at": "2026-07-18T22:16:36.3082886Z",
     "characters_updated": 4
   },
-  "character_plates_sorted": true
+  "character_plates_sorted": true,
+  "cost_ledger": [
+    {
+      "kind": "image",
+      "model": "grok-imagine-image-quality",
+      "character": "",
+      "n_images": 1,
+      "unit_usd": 0.05,
+      "usd": 0.05,
+      "currency": "USD",
+      "source": "list_rate",
+      "id": "1784413455_0000",
+      "ts": "2026-07-18T16:24:15"
+    },
+    {
+      "kind": "image",
+      "model": "grok-imagine-image-quality",
+      "character": "",
+      "n_images": 1,
+      "unit_usd": 0.05,
+      "usd": 0.05,
+      "currency": "USD",
+      "source": "list_rate",
+      "id": "1784413456_0001",
+      "ts": "2026-07-18T16:24:16"
+    },
+    {
+      "kind": "image",
+      "model": "grok-imagine-image-quality",
+      "character": "",
+      "n_images": 1,
+      "unit_usd": 0.05,
+      "usd": 0.05,
+      "currency": "USD",
+      "source": "list_rate",
+      "id": "1784413456_0002",
+      "ts": "2026-07-18T16:24:16"
+    },
+    {
+      "kind": "image",
+      "model": "grok-imagine-image-quality",
+      "character": "",
+      "n_images": 1,
+      "unit_usd": 0.05,
+      "usd": 0.05,
+      "currency": "USD",
+      "source": "list_rate",
+      "id": "1784422406_0003",
+      "ts": "2026-07-18T18:53:26"
+    },
+    {
+      "kind": "image",
+      "model": "grok-imagine-image-quality",
+      "character": "",
+      "n_images": 1,
+      "unit_usd": 0.05,
+      "usd": 0.05,
+      "currency": "USD",
+      "source": "list_rate",
+      "id": "1784422406_0004",
+      "ts": "2026-07-18T18:53:26"
+    },
+    {
+      "kind": "image",
+      "model": "grok-imagine-image-quality",
+      "character": "",
+      "n_images": 1,
+      "unit_usd": 0.05,
+      "usd": 0.05,
+      "currency": "USD",
+      "source": "list_rate",
+      "id": "1784422406_0005",
+      "ts": "2026-07-18T18:53:26"
+    }
+  ],
+  "cost_totals": {
+    "usd": 0.3,
+    "events": 6,
+    "updated_at": "2026-07-18T18:53:26"
+  }
 }

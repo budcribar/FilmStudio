@@ -121,16 +121,20 @@ public sealed class GrokImageClient : IGrokImageClient
 
             // Multi-ref: first image = identity (preferred), later = book style plates
             var orderHint = imageUris.Count > 1
-                ? "Image 1 is the identity/preferred portrait — match it closely. " +
-                  "Images 2+ are book plates of the SAME character for markings and style only. "
-                : "Match the attached reference image identity closely. ";
+                ? "Image 1 = identity + art-style lock (highest priority). " +
+                  "Images 2+ = same character for markings/style only — not a new costume or photo style. "
+                : "Match the attached reference identity AND illustration style (highest priority over text). ";
+            var variantTail = n > 1
+                ? $" Variation {i + 1} of {n}: tiny pose/expression change only; " +
+                  "same identity, markings, and illustrated medium as the book references. "
+                : " Single refined continuity portrait in the book’s illustration style. ";
             var variantPrompt =
                 orderHint +
                 prompt +
-                (n > 1
-                    ? $" Variation {i + 1} of {n}: tiny pose/expression change only;"
-                    : " Single refined portrait;") +
-                " same face, coat, hat, and style as the references. No labels, no redesign.";
+                variantTail +
+                "Keep children's picture-book illustration style from the refs — not photoreal photography. " +
+                "If refs show no clothing, do not invent costumes. " +
+                "No labels, no redesign, no model sheet.";
 
             // Always send string(s) — single as string, multi as string[]
             object imageField = imageUris.Count == 1
