@@ -674,10 +674,6 @@ public sealed class ProjectStore
             var full = Path.Combine(charDir, name);
             if (File.Exists(full) && new FileInfo(full).Length >= 64)
                 return full;
-            // Legacy nested path from older tools
-            var nested = Path.Combine(charDir, "assets", "characters", name);
-            if (File.Exists(nested) && new FileInfo(nested).Length >= 64)
-                return nested;
         }
         return null;
     }
@@ -842,7 +838,7 @@ public sealed class ProjectStore
 
     /// <summary>
     /// Update description / visual_lock / voice fields on character seeds in cast_seeds.json
-    /// (and blueprint / legacy scenes.json when present). Null args leave that field unchanged.
+    /// (and blueprint / scenes.json when present). Null args leave that field unchanged.
     /// </summary>
     public void UpdateCharacterSeedText(
         string projectId,
@@ -931,9 +927,9 @@ public sealed class ProjectStore
         var bp = FindBlueprintPathSync(projectId);
         if (bp is not null)
             PatchFile(bp, createCastShape: false);
-        var legacy = ResolveScenesJsonPath(projectId);
-        if (File.Exists(legacy))
-            PatchFile(legacy, createCastShape: false);
+        var scenesPath = ResolveScenesJsonPath(projectId);
+        if (File.Exists(scenesPath))
+            PatchFile(scenesPath, createCastShape: false);
     }
 
     /// <summary>
@@ -1223,7 +1219,6 @@ public sealed class ProjectStore
                     state.Method = meth.GetString();
                 return state;
             }
-            // Flat legacy keys
             if (ReadJsonBool(doc.RootElement, "character_plates_sorted"))
             {
                 state.SortedByCharacter = true;
@@ -1834,13 +1829,15 @@ public sealed class ProjectStore
             catch { /* ignore */ }
         }
 
-        foreach (var candidate in new[] { preferred, "scenes.json", "nickandme.scenes.json" })
+        var full = Path.Combine(dir, preferred);
+        if (File.Exists(full))
+            return full;
+        if (!string.Equals(preferred, "scenes.json", StringComparison.OrdinalIgnoreCase))
         {
-            var full = Path.Combine(dir, candidate);
-            if (File.Exists(full))
-                return full;
+            var standard = Path.Combine(dir, "scenes.json");
+            if (File.Exists(standard))
+                return standard;
         }
-
         return Path.Combine(dir, preferred);
     }
 
@@ -2165,24 +2162,20 @@ public sealed class ProjectStore
             catch { /* ignore */ }
         }
 
-        // Re-run path: existing bible + book text is enough even if prepare still flags "not ready"
+        // Re-run path: existing scenes.json + book text is enough even if prepare still flags "not ready"
         try
         {
-            foreach (var name in new[] { "scenes.json", "nickandme.scenes.json" })
+            var scenesPath = Path.Combine(projectDir, "scenes.json");
+            if (!status.ReadyForStage1 &&
+                status.BookTextExists &&
+                status.BookTextBytes > 200 &&
+                File.Exists(scenesPath) &&
+                new FileInfo(scenesPath).Length > 64)
             {
-                var scenesPath = Path.Combine(projectDir, name);
-                if (!status.ReadyForStage1 &&
-                    status.BookTextExists &&
-                    status.BookTextBytes > 200 &&
-                    File.Exists(scenesPath) &&
-                    new FileInfo(scenesPath).Length > 64)
-                {
-                    status.ReadyForStage1 = true;
-                    if (status.Notes.All(n => !n.Contains("Re-run Stage 1", StringComparison.OrdinalIgnoreCase)))
-                        status.Notes.Add(
-                            "Re-run Stage 1 enabled: scenes.json already exists and book_full.txt is present.");
-                    break;
-                }
+                status.ReadyForStage1 = true;
+                if (status.Notes.All(n => !n.Contains("Re-run Stage 1", StringComparison.OrdinalIgnoreCase)))
+                    status.Notes.Add(
+                        "Re-run Stage 1 enabled: scenes.json already exists and book_full.txt is present.");
             }
         }
         catch { /* ignore */ }
@@ -2200,94 +2193,13 @@ public sealed class ProjectStore
             {
                 var model = ScreenplayService.TryBuildModelFromProject(this, projectId);
                 if (model is not null)
-                    return ScreenplayService.StatusFromFountainModel(model, ScreenplayService.GetDraftPath(this, projectId));
+                    return ScreenplayService.StatusFromFountainModel(
+                        model, ScreenplayService.GetDraftPath(this, projectId));
             }
         }
-        catch { /* fall through to legacy scenes.json */ }
+        catch { /* ignore */ }
 
-        var path = ResolveScenesJsonPath(projectId);
-        var status = new Stage1Status { ScenesFile = Path.GetFileName(path) };
-        if (!File.Exists(path))
-            return status;
-
-        try
-        {
-            using var doc = JsonDocument.Parse(File.ReadAllText(path));
-            var root = doc.RootElement;
-            status.Present = true;
-            status.MovieTitle = root.TryGetProperty("movie_title", out var mt) ? mt.GetString() : null;
-            status.SourceBookTitle = root.TryGetProperty("source_book_title", out var sbt) ? sbt.GetString() : null;
-            if (root.TryGetProperty("cumulative_duration_target_seconds", out var rt))
-            {
-                if (rt.TryGetDouble(out var rd)) status.RuntimeSeconds = rd;
-                else if (rt.TryGetInt32(out var ri)) status.RuntimeSeconds = ri;
-            }
-
-            try
-            {
-                status.Mtime = File.GetLastWriteTime(path).ToString("yyyy-MM-dd HH:mm:ss");
-            }
-            catch { /* ignore */ }
-
-            var gpv = root.TryGetProperty("global_production_variables", out var g) ? g : default;
-            if (gpv.ValueKind == JsonValueKind.Object)
-            {
-                if (gpv.TryGetProperty("character_seed_tokens", out var seeds) &&
-                    seeds.ValueKind == JsonValueKind.Object)
-                {
-                    status.CharacterCount = seeds.EnumerateObject().Count();
-                    foreach (var p in seeds.EnumerateObject())
-                    {
-                        var display = p.Name.Replace("Character_", "").Replace("_", " ");
-                        if (p.Value.ValueKind == JsonValueKind.Object &&
-                            p.Value.TryGetProperty("canonical_given_name", out var cn) &&
-                            cn.GetString() is { Length: > 0 } cname)
-                            display = cname;
-                        status.CastNames.Add(display);
-                    }
-                }
-
-                if (gpv.TryGetProperty("location_seed_tokens", out var locs) &&
-                    locs.ValueKind == JsonValueKind.Object)
-                    status.LocationCount = locs.EnumerateObject().Count();
-            }
-
-            if (root.TryGetProperty("scenes", out var scenes) && scenes.ValueKind == JsonValueKind.Array)
-            {
-                foreach (var s in scenes.EnumerateArray())
-                {
-                    var sn = s.TryGetProperty("scene_number", out var sne) && sne.TryGetInt32(out var n) ? n : 0;
-                    var beats = 0;
-                    if (s.TryGetProperty("story_beats", out var sb) && sb.ValueKind == JsonValueKind.Array)
-                        beats = sb.GetArrayLength();
-                    status.BeatCount += beats;
-                    double? dur = null;
-                    if (s.TryGetProperty("duration_target_seconds", out var d) ||
-                        s.TryGetProperty("estimated_duration_seconds", out d))
-                    {
-                        if (d.TryGetDouble(out var dd)) dur = dd;
-                        else if (d.TryGetInt32(out var di)) dur = di;
-                    }
-
-                    status.Scenes.Add(new Stage1SceneRow
-                    {
-                        SceneNumber = sn,
-                        Setting = s.TryGetProperty("setting", out var set) ? set.GetString() ?? "" : "",
-                        BeatCount = beats,
-                        DurationSeconds = dur,
-                    });
-                }
-
-                status.SceneCount = status.Scenes.Count;
-                status.Scenes = status.Scenes.OrderBy(x => x.SceneNumber).ToList();
-            }
-        }
-        catch (Exception)
-        {
-            status.Present = File.Exists(path);
-        }
-
-        return status;
+        return new Stage1Status { Present = false, ScenesFile = "scenes.json" };
     }
 
     private Stage2PlanStatus ReadStage2PlanStatus(string projectId, string projectDir, Stage1Status stage1)
@@ -2422,7 +2334,7 @@ public sealed class ProjectStore
         var scenesToRemux = ListScenesToRemuxForWip(projectId, clipsByScene, blueprintScenes);
         result.ScenesToRemux = scenesToRemux;
 
-        // Stale = missing composite, clips newer, no .sources.json (legacy polluted remux),
+        // Stale = missing composite, clips newer, no .sources.json,
         // or manifest clip set ≠ current exact/blueprint clips.
         var staleScenes = new List<int>();
         foreach (var sn in scenesToRemux)
@@ -2453,7 +2365,7 @@ public sealed class ProjectStore
         {
             result.Stale = true;
             result.Reason =
-                $"Scene composite(s) dirty (missing/legacy/out of date): {string.Join(", ", staleScenes.Select(n => $"S{n:D2}"))}";
+                $"Scene composite(s) dirty (missing/out of date): {string.Join(", ", staleScenes.Select(n => $"S{n:D2}"))}";
             return result;
         }
 
@@ -2560,7 +2472,7 @@ public sealed class ProjectStore
 
     /// <summary>
     /// True when scene should be remuxed before play/WIP.
-    /// Marks legacy composites dirty (no scene_XX.mp4.sources.json) so polluted 1:10 cuts get rebuilt.
+    /// Marks composites dirty when scene_XX.mp4.sources.json is missing so cuts get rebuilt.
     /// </summary>
     public bool IsSceneCompositeDirty(
         string projectId,
@@ -3006,12 +2918,10 @@ public sealed class ProjectStore
         catch { /* fall through */ }
 
         var scenesPath = Path.Combine(GetProjectDir(projectId), "scenes.json");
-        var alt = Path.Combine(GetProjectDir(projectId), "nickandme.scenes.json");
-        var path = File.Exists(scenesPath) ? scenesPath : (File.Exists(alt) ? alt : null);
-        if (path is null)
+        if (!File.Exists(scenesPath))
             return new Dictionary<string, JsonElement>(StringComparer.OrdinalIgnoreCase);
 
-        using var scenesDoc = JsonDocument.Parse(File.ReadAllText(path));
+        using var scenesDoc = JsonDocument.Parse(File.ReadAllText(scenesPath));
         if (scenesDoc.RootElement.TryGetProperty("global_production_variables", out var g2) &&
             g2.TryGetProperty("character_seed_tokens", out var s3) &&
             s3.ValueKind == JsonValueKind.Object)

@@ -59,7 +59,7 @@ public sealed class CharacterBookPlateService
             return result;
         }
 
-        // Prefer AI cast_seeds.json (full cast incl. silent leads); then Fountain; then legacy
+        // Prefer cast_seeds.json (full cast incl. silent leads); else Fountain
         JsonObject seeds;
         try
         {
@@ -669,7 +669,7 @@ public sealed class CharacterBookPlateService
 
     /// <summary>
     /// Prefer AI <c>cast_seeds.json</c> (full cast + source_image_pages), then Fountain parse,
-    /// then legacy scenes.json.
+    /// then scenes.json.
     /// </summary>
     private async Task<JsonObject> LoadOrBuildCastSeedsAsync(
         string projectId,

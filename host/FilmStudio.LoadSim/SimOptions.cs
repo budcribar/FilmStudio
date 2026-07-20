@@ -42,7 +42,7 @@ public sealed class SimOptions
     /// Max seconds for all VUs to complete HTTP ready (health + light warm) before stress clock starts.
     /// </summary>
     public int ReadyTimeoutSec { get; set; } = 60;
-    /// <summary>When true, skip ready barrier (legacy: stress starts immediately).</summary>
+    /// <summary>When true, skip ready barrier (stress starts immediately).</summary>
     public bool SkipReadyBarrier { get; set; }
 
     public static SimOptions Parse(string[] args)
@@ -140,7 +140,7 @@ public sealed class SimOptions
               --waitForApiSec N          wait for /health (default 90; multi-start with Api)
               --warmupSec N              idle delay after API up, before VUs (default 0)
               --readyTimeoutSec N        all VUs must finish HTTP ready before stress clock (default 60)
-              --skipReadyBarrier         legacy: start stress without waiting for all VUs ready
+              --skipReadyBarrier         start stress without waiting for all VUs ready
 
             Ready barrier: each VU hits /health + light projects/scenes (not timed). Metrics
             and --duration start only after every VU is ready (or timeout → exit 2).

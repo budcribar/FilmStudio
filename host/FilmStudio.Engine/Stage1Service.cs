@@ -50,7 +50,6 @@ public sealed class Stage1Service
         Action<string>? onProgress = null,
         CancellationToken ct = default)
     {
-        // Legacy params kept for API compatibility (chunkPages / resume / maxChunks unused).
         _ = (chunkPages, resume, maxChunks, temperature);
 
         if (!_chat.IsConfigured)

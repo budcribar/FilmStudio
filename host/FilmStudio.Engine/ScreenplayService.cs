@@ -252,16 +252,13 @@ public static class ScreenplayService
         }
         else
         {
-            // Legacy: Stage 1 without a Fountain draft — treat as ready (no draft to re-sign)
-            status.Signed = stage1.Present && stage1.SceneCount > 0;
+            status.Signed = false;
             status.Dirty = false;
         }
 
-        // Ready when approved Fountain has scenes (Stage 2 reads Fountain directly).
-        // Legacy: scenes-only projects without a draft still count as ready.
+        // Ready when approved Fountain has scenes (Stage 2 reads Fountain only).
         status.ReadyForShots =
-            (status.DraftExists && status.Signed && status.SceneHeadingCount > 0) ||
-            (!status.DraftExists && stage1.Present && stage1.SceneCount > 0);
+            status.DraftExists && status.Signed && status.SceneHeadingCount > 0;
 
         return status;
     }
@@ -561,7 +558,7 @@ public static class ScreenplayService
         };
     }
 
-    /// <summary>Legacy entry point — structured book → Fountain conversion.</summary>
+    /// <summary>Heuristic book text → Fountain draft (offline stub path).</summary>
     public static string BookTextToFountainDraft(string title, string bookText) =>
         BookToFountainConverter.ConvertHeuristic(title, bookText);
 
@@ -588,7 +585,7 @@ public static class ScreenplayService
         File.WriteAllText(path, json + "\n");
     }
 
-    /// <summary>Lightweight status from Fountain (and legacy scenes.json if no draft).</summary>
+    /// <summary>Lightweight status from Fountain draft.</summary>
     public static Stage1Status ReadStage1Lite(ProjectStore store, string projectId)
     {
         try
@@ -601,31 +598,8 @@ public static class ScreenplayService
                 return StatusFromFountainModel(model, draftPath);
             }
         }
-        catch { /* fall through */ }
+        catch { /* ignore */ }
 
-        // Legacy projects that only have scenes.json
-        var path = store.ResolveScenesJsonPath(projectId);
-        if (!File.Exists(path))
-            return new Stage1Status { Present = false };
-        try
-        {
-            using var doc = JsonDocument.Parse(File.ReadAllText(path));
-            var root = doc.RootElement;
-            var scenes = root.TryGetProperty("scenes", out var s) && s.ValueKind == JsonValueKind.Array
-                ? s.GetArrayLength()
-                : 0;
-            var title = root.TryGetProperty("movie_title", out var t) ? t.GetString() : null;
-            return new Stage1Status
-            {
-                Present = scenes > 0,
-                SceneCount = scenes,
-                MovieTitle = title,
-                ScenesFile = Path.GetFileName(path),
-            };
-        }
-        catch
-        {
-            return new Stage1Status { Present = File.Exists(path) };
-        }
+        return new Stage1Status { Present = false };
     }
 }

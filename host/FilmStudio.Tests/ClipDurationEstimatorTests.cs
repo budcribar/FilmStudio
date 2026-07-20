@@ -7,7 +7,7 @@ namespace FilmStudio.Tests;
 public class ClipDurationEstimatorTests
 {
     [Fact]
-    public void Short_dialogue_is_tighter_than_legacy_8s_default()
+    public void Short_dialogue_is_tighter_than_8s_default()
     {
         var d = ClipDurationEstimator.Estimate(
             dialogue: "Merry Christmas, Uncle!",

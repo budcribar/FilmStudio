@@ -285,7 +285,7 @@ public static class ClipVideoPromptBuilder
     {
         if (string.IsNullOrWhiteSpace(visual)) return "";
         var v = visual.Trim();
-        // Strip legacy Stage2 technical suffixes — gen builder re-appends current resolution/fps
+        // Strip accidental res/fps suffixes from action text (builder re-appends current job res)
         v = Regex.Replace(v, @"\s*/\s*\d{3,4}p\s*,\s*\d{2}fps\s*$", "", RegexOptions.IgnoreCase).Trim();
         v = Regex.Replace(v, @"\s*/\s*\d+p[^/]*24fps\s*$", "", RegexOptions.IgnoreCase).Trim();
         v = Regex.Replace(v, @"\s*/\s*\d{3,4}p\s*$", "", RegexOptions.IgnoreCase).Trim();
@@ -406,33 +406,6 @@ public static class ClipVideoPromptBuilder
             RegexOptions.IgnoreCase);
         return m.Success ? ("STYLE LOCK: " + m.Groups[1].Value.Trim()) : null;
     }
-    /// <summary>Legacy entry used by older call sites.</summary>
-    public static string BuildPrompt(
-        JsonElement clipEl,
-        string projectDir,
-        Dictionary<string, Dictionary<string, string>>? characterVoiceByKey = null,
-        string mode = "fresh")
-    {
-        Dictionary<string, CharacterProfile>? profiles = null;
-        if (characterVoiceByKey is not null)
-        {
-            profiles = new Dictionary<string, CharacterProfile>(StringComparer.OrdinalIgnoreCase);
-            foreach (var (k, v) in characterVoiceByKey)
-            {
-                profiles[k] = new CharacterProfile
-                {
-                    Key = k,
-                    VoiceProfile = v.TryGetValue("voice_profile", out var p) ? p : "",
-                    VoiceLabel = v.TryGetValue("voice_label", out var l) ? l : "",
-                    VoiceOnly = false,
-                };
-            }
-        }
-
-        var result = Build(clipEl, projectDir, profiles);
-        return result.Prompt;
-    }
-
     public static List<string> FindCharacterRefPaths(
         JsonElement clipEl,
         string projectDir,

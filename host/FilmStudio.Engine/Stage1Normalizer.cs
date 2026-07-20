@@ -241,7 +241,7 @@ public static class Stage1Normalizer
 
     /// <summary>
     /// Ensure separate <c>ambient</c> + <c>sfx</c> (root and nested audio).
-    /// V4 greenfield: no <c>ambient_or_sfx</c> — combined field is ignored and removed.
+    /// Separate <c>ambient</c> + <c>sfx</c> only; strips combined fields if present.
     /// </summary>
     public static void NormalizeBeatAudioKeys(Dictionary<string, object?> beat)
     {

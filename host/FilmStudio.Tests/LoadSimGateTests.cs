@@ -127,7 +127,7 @@ public class LoadSimGateTests
         Assert.True(scenes.P95Ms >= scenes.P50Ms);
         Assert.True(scenes.P99Ms >= scenes.P95Ms);
 
-        // Counts dict still present for backward compat
+        // Counts dict still present
         Assert.Equal(40, r.Actions["scenes"]);
     }
 }

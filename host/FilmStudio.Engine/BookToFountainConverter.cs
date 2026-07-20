@@ -299,7 +299,7 @@ public static class BookToFountainConverter
     /// </summary>
     public static bool LooksLikeGoodFountain(string text, bool requirePageTags = false)
     {
-        _ = requirePageTags; // legacy param — page tags are no longer part of the product gate
+        _ = requirePageTags; // unused; page tags are not part of the product gate
         text = StripBookPageTags(text ?? "");
         if (string.IsNullOrWhiteSpace(text) || text.Length < 80) return false;
 

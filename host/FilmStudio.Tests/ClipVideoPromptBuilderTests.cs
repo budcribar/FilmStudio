@@ -106,7 +106,7 @@ public class ClipVideoPromptBuilderTests
     }
 
     [Fact]
-    public void Max_prompt_cap_is_far_above_legacy_4k()
+    public void Max_prompt_cap_is_far_above_4k()
     {
         Assert.True(ClipVideoPromptBuilder.MaxPromptChars >= 50_000);
     }

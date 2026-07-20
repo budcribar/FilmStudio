@@ -15,7 +15,7 @@ public sealed class WorkspaceState
 
 public sealed class JobSnapshot
 {
-    /// <summary>Multi-job id (Phase A+). Empty for legacy idle snapshot.</summary>
+    /// <summary>Multi-job id. Empty when idle / not yet assigned.</summary>
     public string? JobId { get; set; }
     public string Status { get; set; } = "idle"; // idle|running|done|error|cancelled
     public string? Kind { get; set; }
@@ -583,7 +583,7 @@ public sealed class CastStatus
 
 /// <summary>
 /// Fountain draft under source/screenplay.fountain.
-/// Signed = user approved; Stage 1 JSON is materialised only on sign-off (or legacy paths).
+/// Signed = user approved; cast seeds materialised on sign-off.
 /// </summary>
 public sealed class ScreenplayStatus
 {
@@ -599,7 +599,7 @@ public sealed class ScreenplayStatus
     public string? SignedAt { get; set; }
     /// <summary>Draft exists and differs from signed hash (or never signed).</summary>
     public bool Dirty { get; set; }
-    /// <summary>Stage 1 may be used for Characters/Shots (signed, or legacy stage1 without draft).</summary>
+    /// <summary>Characters/Shots may proceed (signed Fountain with scene headings).</summary>
     public bool ReadyForShots { get; set; }
 }
 

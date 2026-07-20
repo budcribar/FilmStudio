@@ -268,7 +268,7 @@ public sealed class EditLogService
             var key = $"S{scene:D2}C{clip:D2}";
             var human = ReadHumanReviewRow(state, key);
             var auto = ReadAutoReviewRow(state, key);
-            // Fall back to on-disk auto_review draft (legacy runs before clip_auto_review state)
+            // Also check on-disk auto_review draft when pipeline_state has no row
             if (string.IsNullOrWhiteSpace(auto.Suggestion))
                 auto = TryReadAutoReviewDraft(projectId, scene, clip);
 

@@ -117,7 +117,7 @@ public sealed class ActiveProjectState
             return true;
         }
 
-        // Characters: signed / ready screenplay (or legacy stage1)
+        // Characters: signed / ready screenplay
         var screenplayReady = a.Screenplay.ReadyForShots || a.Screenplay.Signed ||
                               (a.Stage1.Present && a.Stage1.SceneCount > 0);
         var charactersReason = screenplayReady ? "" : "Approve the screenplay first";

@@ -856,7 +856,7 @@ public sealed class CharacterDesignService
         var style = projectRenderStyleLock ?? "";
         if (style.Length > 0)
         {
-            // Explicit live-action / photoreal project wins over legacy picture-book default.
+            // Explicit live-action / photoreal project wins over picture-book default.
             if (RegexContains(style,
                     @"\b(photoreal|photo-?real|live[- ]?action|cinematic|film photography|" +
                     @"period drama|gothic drama|naturalistic skin)\b"))
@@ -975,7 +975,7 @@ public sealed class CharacterDesignService
             "plain soft background. No collage, no split views, no text overlays. ";
 
         // Honor project render_style_lock (live-action period, picture-book, etc.).
-        // Legacy default was always picture-book — wrong for photoreal projects like Tell-Tale Heart.
+        // Default was always picture-book — wrong for photoreal projects; style lock decides.
         string styleLock;
         if (!string.IsNullOrWhiteSpace(projectRenderStyleLock))
         {

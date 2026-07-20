@@ -48,7 +48,7 @@
         },
         "frame_rate": {
           "type": ["integer", "string"],
-          "description": "Prefer integer 24; string forms like \"24fps\" accepted for legacy extracts."
+          "description": "Prefer integer 24; string forms like \"24fps\" accepted."
         },
         "directorial_treatment": {
           "type": "string",

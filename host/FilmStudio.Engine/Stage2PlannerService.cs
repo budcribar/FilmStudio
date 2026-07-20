@@ -57,39 +57,24 @@ public sealed class Stage2PlannerService
     {
         var projectDir = await _projects.GetProjectDirAsync(projectId, ct).ConfigureAwait(false);
 
-        // Fountain is the screenplay source of truth (approved draft preferred).
+        // Fountain is the only screenplay source of truth.
         ScreenplayService.EnsureCanonicalDraft(_projects, projectId);
         var fountainPath = ScreenplayService.GetDraftPath(_projects, projectId);
-        Dictionary<string, object?> stage1;
-        string sourceLabel;
+        if (!File.Exists(fountainPath))
+            throw new InvalidOperationException(
+                "No screenplay draft. Create and approve a Fountain screenplay first.");
 
-        if (File.Exists(fountainPath))
-        {
-            var screenplay = ScreenplayService.Get(_projects, projectId);
-            if (!screenplay.Status.Signed && screenplay.Status.DraftExists)
-                throw new InvalidOperationException(
-                    "Approve the screenplay before building a shot plan (draft has unapproved changes).");
+        var screenplay = ScreenplayService.Get(_projects, projectId);
+        if (!screenplay.Status.Signed && screenplay.Status.DraftExists)
+            throw new InvalidOperationException(
+                "Approve the screenplay before building a shot plan (draft has unapproved changes).");
 
-            onProgress?.Invoke($"Loading screenplay: {Path.GetFileName(fountainPath)}");
-            stage1 = ScreenplayService.BuildModelFromFountainText(screenplay.Text);
-            sourceLabel = Path.GetFileName(fountainPath);
+        onProgress?.Invoke($"Loading screenplay: {Path.GetFileName(fountainPath)}");
+        var stage1 = ScreenplayService.BuildModelFromFountainText(screenplay.Text);
+        var sourceLabel = Path.GetFileName(fountainPath);
 
-            // Overlay plate/voice edits from cast_seeds.json when present
-            MergeCastSeedsOverlay(_projects, projectId, stage1);
-        }
-        else
-        {
-            // Legacy: scenes.json only (no Fountain draft)
-            var stage1Path = _projects.ResolveScenesJsonPath(projectId);
-            if (!File.Exists(stage1Path))
-                throw new InvalidOperationException(
-                    "No approved screenplay. Create and approve a Fountain draft first.");
-
-            onProgress?.Invoke($"Loading legacy scene list: {Path.GetFileName(stage1Path)}");
-            var stage1Text = await File.ReadAllTextAsync(stage1Path, ct).ConfigureAwait(false);
-            stage1 = GrokChatClient.ParseJsonObject(stage1Text);
-            sourceLabel = Path.GetFileName(stage1Path);
-        }
+        // Overlay plate/voice edits from cast_seeds.json when present
+        MergeCastSeedsOverlay(_projects, projectId, stage1);
 
         var gpv = GetDict(stage1, "global_production_variables");
         var locSeeds = GetDict(gpv, "location_seed_tokens");
@@ -238,7 +223,7 @@ public sealed class Stage2PlannerService
         string scenesFilter) => new()
     {
         ["source_screenplay"] = sourceLabel,
-        ["source_stage1"] = sourceLabel, // legacy key for older tooling
+        ["source_stage1"] = sourceLabel,
         ["resolution"] = resolution,
         ["scene_filter"] = scenesFilter,
         ["planner"] = "Stage2PlannerService (C# Fountain)",
@@ -436,7 +421,7 @@ public sealed class Stage2PlannerService
         int clipIndex)
     {
         var ve = CoerceString(beat.TryGetValue("visual_event", out var vev) ? vev : null) ?? "";
-        // Strip any legacy technical suffix from beat text (res/fps owned at gen time)
+        // Strip accidental technical suffix from beat text (res/fps owned at gen time)
         ve = Regex.Replace(ve, @"\s*/\s*\d+p.*$", "", RegexOptions.IgnoreCase).Trim();
         var cast = ClipCastTokens(scene, beat);
         var primary = CoerceString(beat.TryGetValue("primary_subject", out var ps) ? ps : null)
@@ -664,7 +649,6 @@ public sealed class Stage2PlannerService
             : beat.TryGetValue("speaker", out var s2) ? s2 : null) ?? "";
         var dialogue = CoerceString(nested?.TryGetValue("dialogue", out var dlg) == true ? dlg
             : beat.TryGetValue("dialogue", out var dlg2) ? dlg2 : null) ?? "";
-        // V4: only separate ambient + sfx (no ambient_or_sfx)
         var ambient = CoerceString(nested?.TryGetValue("ambient", out var am) == true ? am
             : beat.TryGetValue("ambient", out var am2) ? am2 : null) ?? "";
         var sfx = CoerceString(nested?.TryGetValue("sfx", out var sx) == true ? sx

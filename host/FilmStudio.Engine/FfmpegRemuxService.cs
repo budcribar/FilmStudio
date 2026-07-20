@@ -365,7 +365,7 @@ public sealed class FfmpegRemuxService : IFfmpegRemux
         if (maxClip > new FileInfo(composite).LastWriteTimeUtc.AddSeconds(1))
             return true;
 
-        // Legacy composites (e.g. included .native.mp4) have no strict manifest → dirty
+        // Composites without a sources manifest are treated as dirty
         var manifestPath = SceneSourcesManifestPath(composite);
         // Also check path next to remux output name
         var remuxOut = Path.Combine(videoDir, $"scene_{sceneNum:D2}.mp4");

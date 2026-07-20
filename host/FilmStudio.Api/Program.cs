@@ -213,7 +213,7 @@ app.MapGet("/api/admin/state", (
             workspace = store.WorkspaceRoot,
         },
         caller = new { userId = user.UserId, roles = user.Roles },
-        // Flatten common fields for Phase B Blazor DTO compatibility
+        // Flatten common fields for Blazor DTO
         generatedAt = DateTimeOffset.UtcNow,
         process = snap.Process,
         capacity = snap.Capacity,

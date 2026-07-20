@@ -152,7 +152,7 @@ public static class BookContextService
             }
         }
 
-        // 2) Explicit PAGE n in heading (legacy dump format)
+        // 2) Explicit PAGE n in heading
         if (!string.IsNullOrWhiteSpace(sceneHeading))
         {
             var hm = HeadingPage.Match(sceneHeading);
@@ -173,7 +173,7 @@ public static class BookContextService
                 return Result(fuzzy.Page, sceneHeading, sceneIndex, pages.Count, "text_match");
         }
 
-        // 4) Sequential: scene i → page i (legacy page-per-scene dumps)
+        // 4) Sequential: scene i → page i
         if (sceneIndex >= 1 && sceneIndex <= pages.Count)
             return Result(pages[sceneIndex - 1], sceneHeading, sceneIndex, pages.Count, "scene_index");
 

@@ -143,7 +143,7 @@ public class Stage2VisualPromptTests : IDisposable
         Assert.Contains("NEGATIVE:", built.Prompt, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("no legible text", built.Prompt, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("no crowd extras", built.Prompt, StringComparison.OrdinalIgnoreCase);
-        // Gen builder owns technical suffix; legacy Stage2 suffix stripped from action
+        // Gen builder owns technical suffix (stripped from action if present, then re-appended)
         Assert.Contains("/ 720p, 24fps", built.Prompt, StringComparison.OrdinalIgnoreCase);
         Assert.Equal(1, Regex.Matches(built.Prompt, @"/\s*\d+p\s*,\s*\d+fps", RegexOptions.IgnoreCase).Count);
     }
