@@ -807,6 +807,7 @@ public sealed class Stage2PlannerService
         var state = new Dictionary<string, List<string>>(StringComparer.Ordinal);
         foreach (var key in cast)
         {
+            // Order: wardrobe_always (identity) then scene sticky; put_on prepends later
             var items = new List<string>();
             if (charSeeds.TryGetValue(key, out var s) && s is Dictionary<string, object?> seed)
                 items.AddRange(Stage1Normalizer.CoerceStringList(
@@ -815,7 +816,7 @@ public sealed class Stage2PlannerService
                 wbc is Dictionary<string, object?> map &&
                 map.TryGetValue(key, out var itemsObj))
                 items.AddRange(Stage1Normalizer.CoerceStringList(itemsObj));
-            state[key] = items.Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+            state[key] = PrioritizeWardrobeItems(items).ToList();
         }
         return state;
     }
@@ -840,11 +841,14 @@ public sealed class Stage2PlannerService
         foreach (var r in remove)
             list.RemoveAll(x => x.Contains(r, StringComparison.OrdinalIgnoreCase) ||
                                 r.Contains(x, StringComparison.OrdinalIgnoreCase));
-        foreach (var p in putOn)
+        // Newest put-on first (most important for current continuity)
+        for (var i = putOn.Count - 1; i >= 0; i--)
         {
-            if (!list.Any(x => x.Equals(p, StringComparison.OrdinalIgnoreCase)))
-                list.Add(p);
+            var p = putOn[i];
+            list.RemoveAll(x => x.Equals(p, StringComparison.OrdinalIgnoreCase));
+            list.Insert(0, p);
         }
+        state[subject] = PrioritizeWardrobeItems(list).ToList();
     }
 
     private static string WardrobeContinuityClause(
@@ -853,19 +857,64 @@ public sealed class Stage2PlannerService
         int clipIndex,
         string primary)
     {
-        // Same item count for every clip in the scene so continuity language does not
-        // thrash between C1 (3 items) and C2+ (2 items).
-        const int maxItemsPerChar = 3;
+        // Full sticky list, importance-ordered. Primary subject first among cast.
         var bits = new List<string>();
-        foreach (var key in cast.Take(4))
+        var orderedCast = cast
+            .OrderBy(k => string.Equals(k, primary, StringComparison.OrdinalIgnoreCase) ? 0 : 1)
+            .ThenBy(k => k, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+        foreach (var key in orderedCast)
         {
             if (!state.TryGetValue(key, out var items) || items.Count == 0) continue;
-            var shown = items.Take(maxItemsPerChar).ToList();
+            var shown = PrioritizeWardrobeItems(items);
             if (shown.Count == 0) continue;
             bits.Add($"{key} still wears {string.Join(", ", shown)}");
         }
         if (bits.Count == 0) return "";
         return string.Join("; ", bits);
+    }
+
+    /// <summary>
+    /// Order wardrobe phrases by continuity importance (signature / face-adjacent first,
+    /// main garments, then accessories). Keeps all items — no artificial cap.
+    /// Stable within rank so recent put-on (front of list) stays preferred when ranks tie.
+    /// </summary>
+    public static IReadOnlyList<string> PrioritizeWardrobeItems(IEnumerable<string>? items)
+    {
+        if (items is null) return Array.Empty<string>();
+        var list = items
+            .Where(s => !string.IsNullOrWhiteSpace(s))
+            .Select(s => s.Trim())
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+        if (list.Count <= 1) return list;
+
+        return list
+            .Select((item, index) => (item, index, rank: WardrobeImportanceRank(item)))
+            .OrderBy(t => t.rank)
+            .ThenBy(t => t.index) // preserve relative order within rank
+            .Select(t => t.item)
+            .ToList();
+    }
+
+    /// <summary>0 = identity-critical, 1 = main garments, 2 = other.</summary>
+    public static int WardrobeImportanceRank(string item)
+    {
+        var t = (item ?? "").ToLowerInvariant();
+        if (t.Length == 0) return 9;
+        // Face / silhouette / signature props — highest continuity value
+        if (Regex.IsMatch(t,
+                @"\b(hat|cap|bonnet|hood|wig|glasses|spectacles|monocle|mask|veil|" +
+                @"badge|collar|leash|nightshirt|nightgown|robe|uniform|armor|" +
+                @"scarf|cravat|tie|eyepatch)\b"))
+            return 0;
+        // Core clothing body
+        if (Regex.IsMatch(t,
+                @"\b(coat|cloak|jacket|dress|gown|suit|shirt|blouse|vest|waistcoat|" +
+                @"trousers|pants|skirt|boots|shoes|slippers|pajamas|pyjamas|" +
+                @"sweater|jumper|overalls|apron)\b"))
+            return 1;
+        return 2;
     }
 
     private static string WardrobeNegativeExtras(

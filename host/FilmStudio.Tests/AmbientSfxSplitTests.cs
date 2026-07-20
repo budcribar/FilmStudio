@@ -87,4 +87,25 @@ public class AmbientSfxSplitTests
         Assert.Contains("shatter", beat["sfx"]?.ToString() ?? "", StringComparison.OrdinalIgnoreCase);
         Assert.Contains("rain", beat["ambient"]?.ToString() ?? "", StringComparison.OrdinalIgnoreCase);
     }
+
+    [Fact]
+    public void PrioritizeWardrobeItems_orders_signature_before_accessories()
+    {
+        var ordered = Stage2PlannerService.PrioritizeWardrobeItems(new[]
+        {
+            "brown leather satchel",
+            "black wool nightshirt",
+            "wire-rim glasses",
+            "soft house slippers",
+        });
+        Assert.Equal(4, ordered.Count);
+        // glasses + nightshirt rank 0, slippers rank 1, satchel rank 2
+        Assert.True(
+            ordered.ToList().FindIndex(s => s.Contains("glasses", StringComparison.OrdinalIgnoreCase)) <
+            ordered.ToList().FindIndex(s => s.Contains("satchel", StringComparison.OrdinalIgnoreCase)));
+        Assert.True(
+            ordered.ToList().FindIndex(s => s.Contains("nightshirt", StringComparison.OrdinalIgnoreCase)) <
+            ordered.ToList().FindIndex(s => s.Contains("satchel", StringComparison.OrdinalIgnoreCase)));
+        Assert.Contains(ordered, s => s.Contains("satchel", StringComparison.OrdinalIgnoreCase));
+    }
 }
