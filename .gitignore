@@ -14,8 +14,12 @@ dist/
 downloads/
 eggs/
 .eggs/
-lib/
+# Python package layouts — do not ignore Blazor client libs under wwwroot/lib
+/lib/
 lib64/
+# Allow committed static client libraries for Film Studio Web
+!host/FilmStudio.Web/wwwroot/lib/
+!host/FilmStudio.Web/wwwroot/lib/**
 parts/
 sdist/
 var/
@@ -289,3 +293,8 @@ host/loadsim*.json
 /host/FilmStudio.Web/obj/Release/net10.0/FilmStudio.Web.assets.cache
 /host/playwright/node_modules
 /host/playwright/package-lock.json
+/host/FilmStudio.Web/obj/Debug/net10.0/FilmStudio.Web.assets.cache
+/host/FilmStudio.Web/obj/Debug/net10.0/FilmStudio.Web.genruntimeconfig.cache
+/host/FilmStudio.Web/obj/FilmStudio.Web.csproj.nuget.dgspec.json
+/host/FilmStudio.Web/obj/project.assets.json
+/host/FilmStudio.Web/obj/project.nuget.cache
