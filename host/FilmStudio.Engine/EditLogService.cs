@@ -149,6 +149,12 @@ public sealed class EditLogService
             string.Equals(e.Id, entryId, StringComparison.OrdinalIgnoreCase));
     }
 
+    /// <summary>
+    /// Minimum length for an override note when human-pass overrides auto-review fail.
+    /// Bare "pass" / "ok" is not enough to ship a failed clip.
+    /// </summary>
+    public const int MinAutoFailOverrideNoteLength = 12;
+
     /// <summary>Pass/fail clip review status in pipeline_state.json + edit log.</summary>
     public async Task SetClipReviewAsync(
         string projectId,
@@ -166,6 +172,26 @@ public sealed class EditLogService
         var statePath = Path.Combine(dir, "pipeline_state.json");
         var state = await LoadStateAsync(statePath, ct).ConfigureAwait(false);
         var key = $"S{scene:D2}C{clip:D2}";
+        note ??= "";
+
+        // Assembly gate: human pass after auto-review fail requires a real override reason.
+        var auto = ReadAutoReviewRow(state, key);
+        var autoFail = IsAutoFailSuggestion(auto.Suggestion);
+        var overrodeAutoFail = false;
+        if (status == "pass" && autoFail)
+        {
+            var trimmed = note.Trim();
+            if (!IsValidAutoFailOverrideNote(trimmed))
+            {
+                throw new InvalidOperationException(
+                    $"S{scene:D2}C{clip:D2}: auto-review failed ({auto.Suggestion}/{auto.Category}). " +
+                    "Pass requires an explicit override reason " +
+                    $"(≥{MinAutoFailOverrideNoteLength} characters, not just \"pass\"/\"ok\"). " +
+                    "Example: why the fail is acceptable for the cut.");
+            }
+            overrodeAutoFail = true;
+        }
+
         if (!state.TryGetValue("clip_review", out var cr) || cr is not Dictionary<string, object?> reviews)
         {
             reviews = new Dictionary<string, object?>();
@@ -174,8 +200,11 @@ public sealed class EditLogService
         reviews[key] = new Dictionary<string, object?>
         {
             ["status"] = status,
-            ["note"] = note ?? "",
+            ["note"] = note,
             ["ts"] = DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ss"),
+            ["overrode_auto_fail"] = overrodeAutoFail,
+            ["auto_suggestion"] = auto.Suggestion ?? "",
+            ["auto_category"] = auto.Category ?? "",
         };
         await SaveStateAsync(statePath, state, ct).ConfigureAwait(false);
 
@@ -185,8 +214,220 @@ public sealed class EditLogService
             note is { Length: > 0 } ? note : status,
             scene: scene,
             clip: clip,
-            actionTaken: $"review_status={status}",
+            actionTaken: overrodeAutoFail
+                ? $"review_status={status};overrode_auto_fail=true"
+                : $"review_status={status}",
             ct: ct).ConfigureAwait(false);
+    }
+
+    /// <summary>Persist last auto-review suggestion for assembly-gate decisions.</summary>
+    public async Task RecordAutoReviewAsync(
+        string projectId,
+        int scene,
+        int clip,
+        string suggestion,
+        string category = "",
+        string note = "",
+        CancellationToken ct = default)
+    {
+        var dir = await _projects.GetProjectDirAsync(projectId, ct).ConfigureAwait(false);
+        var statePath = Path.Combine(dir, "pipeline_state.json");
+        var state = await LoadStateAsync(statePath, ct).ConfigureAwait(false);
+        var key = $"S{scene:D2}C{clip:D2}";
+        if (!state.TryGetValue("clip_auto_review", out var car) || car is not Dictionary<string, object?> autos)
+        {
+            autos = new Dictionary<string, object?>();
+            state["clip_auto_review"] = autos;
+        }
+        autos[key] = new Dictionary<string, object?>
+        {
+            ["suggestion"] = (suggestion ?? "").Trim().ToLowerInvariant(),
+            ["category"] = category ?? "",
+            ["note"] = note ?? "",
+            ["ts"] = DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ss"),
+        };
+        await SaveStateAsync(statePath, state, ct).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Whether a clip may enter scene remux / WIP. Fails and unresolved auto-fails are blocked;
+    /// human pass (including override of auto-fail with note) is allowed.
+    /// </summary>
+    public bool IsClipEligibleForAssembly(
+        string projectId,
+        int scene,
+        int clip,
+        out string blockReason)
+    {
+        blockReason = "";
+        try
+        {
+            var dir = _projects.GetProjectDir(projectId);
+            var statePath = Path.Combine(dir, "pipeline_state.json");
+            var state = LoadStateSync(statePath);
+            var key = $"S{scene:D2}C{clip:D2}";
+            var human = ReadHumanReviewRow(state, key);
+            var auto = ReadAutoReviewRow(state, key);
+            // Fall back to on-disk auto_review draft (legacy runs before clip_auto_review state)
+            if (string.IsNullOrWhiteSpace(auto.Suggestion))
+                auto = TryReadAutoReviewDraft(projectId, scene, clip);
+
+            if (string.Equals(human.Status, "fail", StringComparison.OrdinalIgnoreCase))
+            {
+                blockReason = "human review = fail" +
+                    (string.IsNullOrWhiteSpace(human.Note) ? "" : $": {human.Note.Trim()}");
+                return false;
+            }
+
+            if (IsAutoFailSuggestion(auto.Suggestion))
+            {
+                // Must have explicit human pass that overrode auto-fail (or pass with valid override note)
+                if (!string.Equals(human.Status, "pass", StringComparison.OrdinalIgnoreCase))
+                {
+                    blockReason =
+                        $"auto-review fail ({auto.Suggestion}/{auto.Category}) — not override-passed";
+                    return false;
+                }
+
+                if (!human.OverrodeAutoFail && !IsValidAutoFailOverrideNote(human.Note))
+                {
+                    blockReason =
+                        $"auto-review fail ({auto.Suggestion}/{auto.Category}) — pass lacks override reason";
+                    return false;
+                }
+            }
+
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _log.LogWarning(ex, "Assembly eligibility check failed S{Scene}C{Clip}", scene, clip);
+            // Fail closed only when we cannot read state — safer for shipping cuts
+            blockReason = "could not read review state";
+            return false;
+        }
+    }
+
+    private (string Suggestion, string Category, string Note) TryReadAutoReviewDraft(
+        string projectId, int scene, int clip)
+    {
+        try
+        {
+            var path = Path.Combine(
+                _projects.GetProjectDir(projectId),
+                "assets", "review",
+                $"S{scene:D2}C{clip:D2}.auto_review.json");
+            if (!File.Exists(path)) return ("", "", "");
+            using var doc = JsonDocument.Parse(File.ReadAllText(path));
+            var root = doc.RootElement;
+            var suggestion = root.TryGetProperty("suggestion", out var s) ? s.GetString() ?? ""
+                : root.TryGetProperty("Suggestion", out var s2) ? s2.GetString() ?? "" : "";
+            var category = root.TryGetProperty("category", out var c) ? c.GetString() ?? ""
+                : root.TryGetProperty("Category", out var c2) ? c2.GetString() ?? "" : "";
+            var note = root.TryGetProperty("note", out var n) ? n.GetString() ?? ""
+                : root.TryGetProperty("Note", out var n2) ? n2.GetString() ?? "" : "";
+            return (suggestion, category, note);
+        }
+        catch
+        {
+            return ("", "", "");
+        }
+    }
+
+    /// <summary>List blocked clips that exist as files under assets/video for this project.</summary>
+    public IReadOnlyList<AssemblyBlockedClip> ListBlockedClipsOnDisk(string projectId)
+    {
+        var list = new List<AssemblyBlockedClip>();
+        try
+        {
+            var videoDir = Path.Combine(_projects.GetProjectDir(projectId), "assets", "video");
+            if (!Directory.Exists(videoDir)) return list;
+            foreach (var fi in new DirectoryInfo(videoDir).EnumerateFiles("scene_*_clip_*.mp4"))
+            {
+                if (!FfmpegRemuxService.IsExactClipFileName(fi.Name)) continue;
+                if (fi.Length < 1024) continue;
+                // scene_01_clip_02.mp4
+                var parts = Path.GetFileNameWithoutExtension(fi.Name).Split('_');
+                if (parts.Length < 4) continue;
+                if (!int.TryParse(parts[1], out var sn) || !int.TryParse(parts[3], out var cn))
+                    continue;
+                if (!IsClipEligibleForAssembly(projectId, sn, cn, out var reason))
+                    list.Add(new AssemblyBlockedClip(sn, cn, reason, fi.FullName));
+            }
+        }
+        catch (Exception ex)
+        {
+            _log.LogWarning(ex, "ListBlockedClipsOnDisk failed for {Project}", projectId);
+        }
+
+        return list.OrderBy(x => x.Scene).ThenBy(x => x.Clip).ToList();
+    }
+
+    public static bool IsValidAutoFailOverrideNote(string? note)
+    {
+        if (string.IsNullOrWhiteSpace(note)) return false;
+        var t = note.Trim();
+        if (t.Length < MinAutoFailOverrideNoteLength) return false;
+        if (t.Equals("pass", StringComparison.OrdinalIgnoreCase)) return false;
+        if (t.Equals("ok", StringComparison.OrdinalIgnoreCase)) return false;
+        if (t.Equals("okay", StringComparison.OrdinalIgnoreCase)) return false;
+        if (t.Equals("lgtm", StringComparison.OrdinalIgnoreCase)) return false;
+        if (t.Equals("fine", StringComparison.OrdinalIgnoreCase)) return false;
+        if (t.Equals("ship it", StringComparison.OrdinalIgnoreCase)) return false;
+        return true;
+    }
+
+    public static bool IsAutoFailSuggestion(string? suggestion) =>
+        string.Equals(suggestion?.Trim(), "fail", StringComparison.OrdinalIgnoreCase);
+
+    private static (string Status, string Note, bool OverrodeAutoFail) ReadHumanReviewRow(
+        Dictionary<string, object?> state, string key)
+    {
+        if (!state.TryGetValue("clip_review", out var cr) || cr is not Dictionary<string, object?> reviews)
+            return ("", "", false);
+        if (!reviews.TryGetValue(key, out var row) || row is not Dictionary<string, object?> d)
+            return ("", "", false);
+        var status = d.TryGetValue("status", out var st) ? st?.ToString() ?? "" : "";
+        var note = d.TryGetValue("note", out var n) ? n?.ToString() ?? "" : "";
+        var over = false;
+        if (d.TryGetValue("overrode_auto_fail", out var o))
+        {
+            over = o is bool b && b
+                || (o is string s && bool.TryParse(s, out var pb) && pb)
+                || string.Equals(o?.ToString(), "true", StringComparison.OrdinalIgnoreCase);
+        }
+        return (status, note, over);
+    }
+
+    private static (string Suggestion, string Category, string Note) ReadAutoReviewRow(
+        Dictionary<string, object?> state, string key)
+    {
+        // Prefer pipeline_state clip_auto_review; fall back to draft file is caller's job
+        if (state.TryGetValue("clip_auto_review", out var car) &&
+            car is Dictionary<string, object?> autos &&
+            autos.TryGetValue(key, out var row) &&
+            row is Dictionary<string, object?> d)
+        {
+            return (
+                d.TryGetValue("suggestion", out var s) ? s?.ToString() ?? "" : "",
+                d.TryGetValue("category", out var c) ? c?.ToString() ?? "" : "",
+                d.TryGetValue("note", out var n) ? n?.ToString() ?? "" : "");
+        }
+
+        return ("", "", "");
+    }
+
+    private static Dictionary<string, object?> LoadStateSync(string path)
+    {
+        if (!File.Exists(path)) return new();
+        try
+        {
+            return GrokChatClient.ParseJsonObject(File.ReadAllText(path));
+        }
+        catch
+        {
+            return new();
+        }
     }
 
     public async Task MarkSceneApprovedAsync(
@@ -317,3 +558,6 @@ public sealed class EditLogService
         return $"Note at {loc}: {(note ?? "").Trim()}".Trim();
     }
 }
+
+/// <summary>Clip blocked from scene remux / WIP by the assembly review gate.</summary>
+public readonly record struct AssemblyBlockedClip(int Scene, int Clip, string Reason, string Path);

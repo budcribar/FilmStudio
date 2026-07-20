@@ -35,6 +35,7 @@ public sealed class FfmpegRemuxService : IFfmpegRemux
         RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
     private readonly ProjectStore _projects;
+    private readonly EditLogService _editLogs;
     private readonly FilmStudioOptions _opts;
     private readonly ILogger<FfmpegRemuxService> _log;
     private string? _resolvedPath;
@@ -42,10 +43,12 @@ public sealed class FfmpegRemuxService : IFfmpegRemux
 
     public FfmpegRemuxService(
         ProjectStore projects,
+        EditLogService editLogs,
         IOptions<FilmStudioOptions> opts,
         ILogger<FfmpegRemuxService> log)
     {
         _projects = projects;
+        _editLogs = editLogs;
         _opts = opts.Value;
         _log = log;
     }
@@ -87,7 +90,8 @@ public sealed class FfmpegRemuxService : IFfmpegRemux
         string projectId,
         int sceneNum,
         Action<string>? onProgress = null,
-        CancellationToken ct = default)
+        CancellationToken ct = default,
+        bool ignoreAssemblyGate = false)
     {
         EnsureAvailable(onProgress);
 
@@ -95,11 +99,52 @@ public sealed class FfmpegRemuxService : IFfmpegRemux
         var videoDir = Path.Combine(projectDir, "assets", "video");
         Directory.CreateDirectory(videoDir);
 
-        var clips = ListSceneClipFiles(projectId, videoDir, sceneNum);
-        if (clips.Count == 0)
+        var allClips = ListSceneClipFiles(projectId, videoDir, sceneNum);
+        if (allClips.Count == 0)
             throw new InvalidOperationException(
                 $"No clip files for scene {sceneNum} under {videoDir} " +
                 $"(expected scene_{sceneNum:D2}_clip_XX.mp4 only — not .native sidecars)");
+
+        // Assembly gate: drop human-fail / unresolved auto-fail clips from the composite.
+        var clips = allClips;
+        if (!ignoreAssemblyGate)
+        {
+            var eligible = new List<string>();
+            var blocked = new List<string>();
+            foreach (var path in allClips)
+            {
+                if (!TryParseSceneClip(path, out var sn, out var cn) || sn != sceneNum)
+                {
+                    eligible.Add(path);
+                    continue;
+                }
+                if (_editLogs.IsClipEligibleForAssembly(projectId, sn, cn, out var reason))
+                    eligible.Add(path);
+                else
+                {
+                    blocked.Add($"S{sn:D2}C{cn:D2} ({reason})");
+                    onProgress?.Invoke(
+                        $"Assembly gate: exclude S{sn:D2}C{cn:D2} — {reason}");
+                }
+            }
+
+            if (eligible.Count == 0)
+            {
+                throw new InvalidOperationException(
+                    $"Assembly gate: no eligible clips for S{sceneNum:D2}. " +
+                    $"Blocked: {string.Join("; ", blocked)}. " +
+                    "Pass with override reason, regen, or remux with ignoreAssemblyGate + reason.");
+            }
+
+            if (blocked.Count > 0)
+            {
+                onProgress?.Invoke(
+                    $"Assembly gate: remux S{sceneNum:D2} with {eligible.Count}/{allClips.Count} " +
+                    $"clip(s); excluded {blocked.Count}: {string.Join(", ", blocked)}");
+            }
+
+            clips = eligible;
+        }
 
         onProgress?.Invoke($"Remux S{sceneNum:D2}: {clips.Count} clip(s) via {Path.GetFileName(FfmpegPath)}…");
         onProgress?.Invoke("Probing clip durations…");
@@ -577,8 +622,19 @@ public sealed class FfmpegRemuxService : IFfmpegRemux
         @"^scene_(\d{2})_clip_(\d{2})\.mp4$",
         RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
-    internal static bool IsExactClipFileName(string? fileName) =>
+    public static bool IsExactClipFileName(string? fileName) =>
         !string.IsNullOrEmpty(fileName) && ExactClipNameRe.IsMatch(fileName);
+
+    private static bool TryParseSceneClip(string path, out int scene, out int clip)
+    {
+        scene = 0;
+        clip = 0;
+        var name = Path.GetFileName(path);
+        var m = ExactClipNameRe.Match(name ?? "");
+        if (!m.Success) return false;
+        return int.TryParse(m.Groups[1].Value, out scene) &&
+               int.TryParse(m.Groups[2].Value, out clip);
+    }
 
     /// <summary>
     /// Clips for scene remux: only exact <c>scene_SS_clip_CC.mp4</c> names (≥1KB).

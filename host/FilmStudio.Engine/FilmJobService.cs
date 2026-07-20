@@ -35,6 +35,7 @@ public sealed class FilmJobService
     private readonly VoicePreviewService _voicePreview;
     private readonly ClipAutoReviewService _clipAutoReview;
     private readonly ReviewEventStore _learning;
+    private readonly EditLogService _editLogs;
     private readonly PromptPackService _promptPacks;
     private readonly ProjectRulesService _projectRules;
     private readonly CostReportService _costs;
@@ -64,6 +65,7 @@ public sealed class FilmJobService
         VoicePreviewService voicePreview,
         ClipAutoReviewService clipAutoReview,
         ReviewEventStore learning,
+        EditLogService editLogs,
         PromptPackService promptPacks,
         ProjectRulesService projectRules,
         CostReportService costs,
@@ -88,6 +90,7 @@ public sealed class FilmJobService
         _voicePreview = voicePreview;
         _clipAutoReview = clipAutoReview;
         _learning = learning;
+        _editLogs = editLogs;
         _promptPacks = promptPacks;
         _projectRules = projectRules;
         _costs = costs;
@@ -1370,46 +1373,84 @@ public sealed class FilmJobService
                 throw new InvalidOperationException(
                     "ffmpeg not found. Install ffmpeg and ensure it is on PATH (or set FilmStudio:FfmpegPath).");
 
-            var refreshed = 0;
-            if (req.RefreshStaleScenes)
+            var ignoreGate = req.IgnoreAssemblyGate;
+            if (ignoreGate)
             {
-                // Play WIP: remux only stale scenes (clips newer / missing composite), then stitch WIP.
-                var fresh = _projects.AssessWipFreshness(projectId);
-                var toRemux = fresh.StaleScenes;
-                await AppendLogAsync(
-                    toRemux.Count > 0
-                        ? $"Remuxing {toRemux.Count} stale scene composite(s) before WIP…"
-                        : "No stale scenes — stitching WIP from current composites");
-                var i = 0;
-                foreach (var sn in toRemux)
+                if (!EditLogService.IsValidAutoFailOverrideNote(req.IgnoreAssemblyGateReason))
                 {
-                    ct.ThrowIfCancellationRequested();
-                    i++;
-                    await UpdateAsync(s =>
+                    throw new InvalidOperationException(
+                        "ignoreAssemblyGate requires IgnoreAssemblyGateReason " +
+                        $"(≥{EditLogService.MinAutoFailOverrideNoteLength} chars, not just pass/ok).");
+                }
+                await AppendLogAsync(
+                    $"WARNING: assembly gate disabled for this remux — {req.IgnoreAssemblyGateReason!.Trim()}");
+            }
+
+            var refreshed = 0;
+            if (req.RefreshStaleScenes || req.RebuildWip)
+            {
+                // Before WIP: remux stale scenes AND any scene with assembly-blocked clips
+                // so composites no longer embed failed auto-review / human-fail clips.
+                var fresh = _projects.AssessWipFreshness(projectId);
+                var toRemux = new SortedSet<int>(fresh.StaleScenes);
+                if (!ignoreGate)
+                {
+                    var blocked = _editLogs.ListBlockedClipsOnDisk(projectId);
+                    foreach (var sn in blocked.Select(x => x.Scene).Distinct())
+                        toRemux.Add(sn);
+                    if (blocked.Count > 0)
                     {
-                        s.Scene = sn;
-                        s.Index = i;
-                        s.Total = toRemux.Count;
-                        s.Message = $"Remux stale S{sn:D2} ({i}/{toRemux.Count})…";
-                    });
-                    try
-                    {
-                        await _remux.RemuxSceneAsync(projectId, sn,
-                            line => { _ = OnRemuxProgressAsync(line); }, ct);
-                        refreshed++;
-                        await AppendLogAsync($"Remuxed S{sn:D2}");
+                        await AppendLogAsync(
+                            $"Assembly gate: {blocked.Count} blocked clip(s) — " +
+                            string.Join(", ", blocked.Select(x =>
+                                $"S{x.Scene:D2}C{x.Clip:D2}")) +
+                            " excluded from scene remux");
                     }
-                    catch (Exception ex)
+                }
+
+                if (toRemux.Count > 0 || req.RefreshStaleScenes)
+                {
+                    await AppendLogAsync(
+                        toRemux.Count > 0
+                            ? $"Remuxing {toRemux.Count} scene composite(s) before WIP…"
+                            : "No scenes to remux — stitching WIP from current composites");
+                    var i = 0;
+                    foreach (var sn in toRemux)
                     {
-                        _log.LogWarning(ex, "Remux S{Scene} failed — continuing", sn);
-                        await AppendLogAsync($"S{sn:D2} remux skipped: {ex.Message}");
+                        ct.ThrowIfCancellationRequested();
+                        i++;
+                        await UpdateAsync(s =>
+                        {
+                            s.Scene = sn;
+                            s.Index = i;
+                            s.Total = toRemux.Count;
+                            s.Message = $"Remux S{sn:D2} ({i}/{toRemux.Count})…";
+                        });
+                        try
+                        {
+                            await _remux.RemuxSceneAsync(projectId, sn,
+                                line => { _ = OnRemuxProgressAsync(line); }, ct,
+                                ignoreAssemblyGate: ignoreGate);
+                            refreshed++;
+                            await AppendLogAsync($"Remuxed S{sn:D2}");
+                        }
+                        catch (Exception ex)
+                        {
+                            // Assembly gate "no eligible clips" is fatal for WIP rebuild
+                            if (req.RebuildWip &&
+                                ex.Message.Contains("Assembly gate", StringComparison.OrdinalIgnoreCase))
+                                throw;
+                            _log.LogWarning(ex, "Remux S{Scene} failed — continuing", sn);
+                            await AppendLogAsync($"S{sn:D2} remux skipped: {ex.Message}");
+                        }
                     }
                 }
             }
             else if (req.Scene is int sn && sn > 0)
             {
                 await _remux.RemuxSceneAsync(projectId, sn,
-                    line => { _ = OnRemuxProgressAsync(line); }, ct);
+                    line => { _ = OnRemuxProgressAsync(line); }, ct,
+                    ignoreAssemblyGate: ignoreGate);
             }
 
             if (req.RebuildWip)

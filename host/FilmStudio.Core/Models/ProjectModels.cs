@@ -653,6 +653,13 @@ public sealed class StartRemuxRequest
     public bool RefreshStaleScenes { get; set; }
     /// <summary>When true, 409 if remux locks held by another user (default wait).</summary>
     public bool FailIfLocked { get; set; }
+    /// <summary>
+    /// Emergency only: include human-fail / unresolved auto-fail clips in remux/WIP.
+    /// Requires <see cref="IgnoreAssemblyGateReason"/> (≥12 chars).
+    /// </summary>
+    public bool IgnoreAssemblyGate { get; set; }
+    /// <summary>Required when <see cref="IgnoreAssemblyGate"/> is true.</summary>
+    public string? IgnoreAssemblyGateReason { get; set; }
 }
 
 /// <summary>WIP movie freshness for Play-WIP-one-step UX.</summary>

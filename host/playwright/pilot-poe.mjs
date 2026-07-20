@@ -903,7 +903,8 @@ async function main() {
           await dumpJob(page, `auto-s${scene}c${clip}`);
           await screenshot(page, `07-auto-s${scene}c${clip}`);
 
-          // Human: fail ~FAIL_RATE for learning; otherwise pass if looks ok
+          // Human: fail ~FAIL_RATE for learning; otherwise pass if looks ok.
+          // Assembly gate: after auto-fail, Pass needs a real override note (API enforces).
           const failThis = reviewIndex % failEvery === 0;
           reviewIndex++;
           if (failThis) {
@@ -913,10 +914,22 @@ async function main() {
               log("human FAIL", `S${scene}C${clip}`);
             }
           } else {
-            const pass = page.getByTestId(`review-pass-${scene}-${clip}`);
-            if (await pass.isVisible().catch(() => false) && !(await pass.isDisabled().catch(() => true))) {
-              await pass.click();
-              log("human PASS", `S${scene}C${clip}`);
+            // Prefer API pass with override-capable note so assembly gate can accept after auto-fail
+            const note = `Pilot accept S${scene}C${clip} after auto-review for learning run`;
+            const rev = await apiPost(
+              `/api/projects/${encodeURIComponent(PROJECT_NAME)}/clips/review`,
+              { scene: Number(scene), clip: Number(clip), status: "pass", note }
+            );
+            if (rev.ok) {
+              log("human PASS (API)", `S${scene}C${clip}`, "with override note");
+            } else {
+              log(
+                "human PASS blocked by assembly rules",
+                `S${scene}C${clip}`,
+                String(rev.status),
+                (rev.text || "").slice(0, 200)
+              );
+              // Leave as auto-fail / unpassed — WIP rebuild must exclude it
             }
           }
           await page.waitForTimeout(500);
@@ -926,7 +939,12 @@ async function main() {
       const rebuild = page.getByTestId("review-rebuild-wip");
       if (await rebuild.isVisible().catch(() => false) && !(await rebuild.isDisabled())) {
         await rebuild.click();
-        await waitJobIdle(page, 600_000);
+        // May fail if all clips blocked — that is correct assembly-gate behavior
+        try {
+          await waitJobIdle(page, 600_000);
+        } catch (e) {
+          log("WIP rebuild after review:", String(e).slice(0, 300));
+        }
       }
       await screenshot(page, "07-review-done");
 

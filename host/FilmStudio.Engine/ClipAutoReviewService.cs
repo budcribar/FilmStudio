@@ -165,6 +165,16 @@ public sealed class ClipAutoReviewService
             SaveDraft(draft);
 
             await TryLogAsync(projectId, scene, clip, draft, ct);
+            try
+            {
+                await _logs.RecordAutoReviewAsync(
+                    projectId, scene, clip,
+                    draft.Suggestion, draft.Category, draft.Note, ct).ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                _log.LogDebug(ex, "RecordAutoReview for assembly gate skipped");
+            }
 
             onProgress?.Invoke(100, 100, "Review draft ready");
             return draft;

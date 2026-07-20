@@ -10,7 +10,8 @@ public interface IFfmpegRemux
         string projectId,
         int sceneNum,
         Action<string>? onProgress = null,
-        CancellationToken ct = default);
+        CancellationToken ct = default,
+        bool ignoreAssemblyGate = false);
 
     Task<string?> RebuildWipAsync(
         string projectId,
