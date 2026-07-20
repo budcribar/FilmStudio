@@ -360,6 +360,43 @@ public class ScreenplayServiceTests : IDisposable
         Assert.DoesNotContain("3/25/2025", fixedText, StringComparison.Ordinal);
     }
 
+    [Theory]
+    [InlineData("INT. OLD HOUSE - VARIOUS ROOMS - NIGHT", true)]
+    [InlineData("INT. HOUSE - VARIOUS - NIGHT", true)]
+    [InlineData("INT. MULTIPLE LOCATIONS - NIGHT", true)]
+    [InlineData("INT. HALL AND SITTING ROOM - NIGHT", false)]
+    [InlineData("INT. OLD MAN'S CHAMBER - NIGHT", false)]
+    public void HeadingContainsVagueLocationLanguage_detects_fillers(string heading, bool expected)
+    {
+        Assert.Equal(expected, BookToFountainConverter.HeadingContainsVagueLocationLanguage(heading));
+    }
+
+    [Fact]
+    public void FindVagueLocationHeadings_finds_various_rooms()
+    {
+        var fountain = """
+            Title: T
+
+            INT. BARE ROOM - NIGHT
+
+            NARRATOR
+            Hello there this is enough body text for a cue.
+
+            INT. OLD HOUSE - VARIOUS ROOMS - NIGHT
+
+            NARRATOR (V.O.)
+            We walk about.
+
+            INT. OLD MAN'S CHAMBER - NIGHT
+
+            NARRATOR
+            Here.
+            """;
+        var bad = BookToFountainConverter.FindVagueLocationHeadings(fountain);
+        Assert.Single(bad);
+        Assert.Contains("VARIOUS", bad[0], StringComparison.OrdinalIgnoreCase);
+    }
+
     [Fact]
     public void LooksLikeGoodFountain_allows_novels_without_page_tags()
     {

@@ -87,6 +87,7 @@ public static class ChatCallModes
     public const string BookToFountainChunk = "book_to_fountain_chunk";
     public const string BookToFountainChunkRetry = "book_to_fountain_chunk_retry";
     public const string BookToFountainMerge = "book_to_fountain_merge";
+    public const string BookToFountainLocationsRetry = "book_to_fountain_locations_retry";
     public const string CastFromScreenplay = "cast_from_screenplay";
     public const string CastVisualLiteralize = "cast_visual_literalize";
     public const string LearningPropose = "learning_propose";

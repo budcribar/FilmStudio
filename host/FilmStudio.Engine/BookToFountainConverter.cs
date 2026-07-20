@@ -165,6 +165,10 @@ public static class BookToFountainConverter
             text = ConvertHeuristic(title, bookText, author);
         }
 
+        // Prompt + auto-retry: vague multi-place headings must not ship (no hand-edit path)
+        text = await RepairVagueLocationHeadingsAsync(
+            system, text, chat, model, onProgress, ct).ConfigureAwait(false);
+
         text = EnsureDraftDate(text);
         // Models invent wrong years (e.g. 3/25/2025) — stamp local today before save
         text = FixDraftDate(text);
@@ -174,7 +178,121 @@ public static class BookToFountainConverter
             throw new InvalidOperationException(
                 "Could not build a usable screenplay from the book. Try again or import a .fountain file.");
 
+        var stillVague = FindVagueLocationHeadings(text);
+        if (stillVague.Count > 0)
+        {
+            onProgress?.Invoke(
+                $"Warning: vague location heading(s) remain after repair: {string.Join("; ", stillVague.Take(3))}");
+        }
+
         return ScreenplayService.NormalizeText(text);
+    }
+
+    /// <summary>
+    /// Scene headings that use multi-place filler language (VARIOUS, MULTIPLE, …).
+    /// Detected on raw heading text so "HOUSE - VARIOUS ROOMS" is caught before sanitize.
+    /// </summary>
+    public static IReadOnlyList<string> FindVagueLocationHeadings(string? fountain)
+    {
+        if (string.IsNullOrWhiteSpace(fountain))
+            return Array.Empty<string>();
+
+        return FountainParser.Parse(fountain).Elements
+            .Where(e => e.Type == FountainParser.ElementType.SceneHeading)
+            .Select(e => (e.Text ?? "").Trim())
+            .Where(h => h.Length > 0 && HeadingContainsVagueLocationLanguage(h))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+    }
+
+    /// <summary>True if a scene heading line contains non-filmable multi-place filler.</summary>
+    public static bool HeadingContainsVagueLocationLanguage(string? heading)
+    {
+        if (string.IsNullOrWhiteSpace(heading)) return false;
+        return Regex.IsMatch(
+            heading,
+            @"\b(VARIOUS|MULTIPLE|SEVERAL|ELSEWHERE)\b"
+            + @"|\bDIFFERENT\s+(ROOMS?|PLACES?|LOCATIONS?)\b"
+            + @"|\b(AROUND|THROUGHOUT)\s+THE\s+(HOUSE|HOME|BUILDING)\b"
+            + @"|\b(VARIOUS|MULTIPLE|SEVERAL)\s+(ROOMS?|PLACES?|LOCATIONS?|AREAS?)\b",
+            RegexOptions.IgnoreCase);
+    }
+
+    /// <summary>
+    /// One automatic rewrite pass when the draft still has vague multi-place headings.
+    /// Generation path — do not require operator hand-edits.
+    /// </summary>
+    private static async Task<string> RepairVagueLocationHeadingsAsync(
+        string system,
+        string fountain,
+        IGrokChatClient chat,
+        string model,
+        Action<string>? onProgress,
+        CancellationToken ct)
+    {
+        var bad = FindVagueLocationHeadings(fountain);
+        if (bad.Count == 0 || !chat.IsConfigured)
+            return fountain;
+
+        onProgress?.Invoke(
+            $"Repairing {bad.Count} vague location heading(s) (must be concrete rooms)…");
+
+        var listed = string.Join("\n", bad.Select(h => "  - " + h));
+        var user = $"""
+            LOCATION HEADING REPAIR (HARD)
+            The Fountain draft below is almost ready, but these scene headings use vague
+            multi-place language that cannot be filmed as a single location:
+
+            {listed}
+
+            Rules:
+            - Return the COMPLETE Fountain screenplay again (not a patch list).
+            - Rewrite ONLY those bad headings (and adjust Action if a heading is removed).
+            - Every heading must name 1–2 concrete, filmable places a crew can light/dress.
+            - Forbidden in headings: VARIOUS, VARIOUS ROOMS, MULTIPLE, MULTIPLE LOCATIONS,
+              SEVERAL, SEVERAL ROOMS, ELSEWHERE, DIFFERENT ROOMS/PLACES/LOCATIONS,
+              AROUND THE HOUSE, THROUGHOUT THE HOUSE.
+            - Good replacements: INT. HALL AND SITTING ROOM - NIGHT, INT. STAIRS AND HALL - NIGHT.
+              Or drop the heading and fold a brief walk into the Action of the following scene.
+            - Do not change plot, cast tokens, or dialogue wording except as needed for heading fixes.
+            - No markdown fences. Fountain only.
+
+            --- BEGIN FOUNTAIN ---
+            {fountain}
+            --- END FOUNTAIN ---
+            """;
+
+        try
+        {
+            var repaired = await chat.CompleteAsync(
+                    system, user, model, temperature: 0.1, ct,
+                    mode: ChatCallModes.BookToFountainLocationsRetry)
+                .ConfigureAwait(false);
+            repaired = StripBookPageTags(StripFences(repaired));
+            if (!LooksLikeGoodFountain(repaired))
+            {
+                onProgress?.Invoke("Location repair unusable — keeping prior draft.");
+                return fountain;
+            }
+
+            var remaining = FindVagueLocationHeadings(repaired);
+            if (remaining.Count < bad.Count)
+            {
+                onProgress?.Invoke(
+                    remaining.Count == 0
+                        ? "Location headings repaired."
+                        : $"Location repair partial — {remaining.Count} vague heading(s) left.");
+                return repaired;
+            }
+
+            onProgress?.Invoke("Location repair did not clear vague headings — keeping prior draft.");
+            return fountain;
+        }
+        catch (Exception)
+        {
+            onProgress?.Invoke("Location repair failed — keeping prior draft.");
+            return fountain;
+        }
     }
 
     /// <summary>
