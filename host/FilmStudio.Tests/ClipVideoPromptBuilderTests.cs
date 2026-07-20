@@ -25,7 +25,6 @@ public class ClipVideoPromptBuilderTests
         var tmp = Path.Combine(Path.GetTempPath(), "fs-clip-prompt-" + Guid.NewGuid().ToString("N"));
         var charDir = Path.Combine(tmp, "assets", "characters");
         Directory.CreateDirectory(charDir);
-        // Minimal PNGs so refs resolve
         File.WriteAllBytes(Path.Combine(charDir, "character_buster_ref.png"), new byte[512]);
         File.WriteAllBytes(Path.Combine(charDir, "character_momma_ref.png"), new byte[512]);
 
@@ -67,9 +66,6 @@ public class ClipVideoPromptBuilderTests
         Assert.True(built.ReferenceImagePaths.Count >= 1);
         Assert.Null(built.StartFrameImagePath);
         Assert.True(built.Prompt.Length < ClipVideoPromptBuilder.MaxPromptChars);
-        Assert.DoesNotContain("…", built.Prompt.AsSpan(0, Math.Min(100, built.Prompt.Length)).ToString() == "…"
-            ? "bad"
-            : ""); // prompt should not be artificially truncated for this short sample
         Assert.True(built.Prompt.Length > 200);
 
         try { Directory.Delete(tmp, true); } catch { /* ignore */ }
@@ -91,7 +87,7 @@ public class ClipVideoPromptBuilderTests
         Directory.CreateDirectory(tmp);
 
         var prevVideo = Path.Combine(tmp, "scene_01_clip_01.mp4");
-        File.WriteAllBytes(prevVideo, new byte[2048]); // exists for mode detection
+        File.WriteAllBytes(prevVideo, new byte[2048]);
 
         var built = ClipVideoPromptBuilder.Build(
             clip,
@@ -104,7 +100,6 @@ public class ClipVideoPromptBuilderTests
         Assert.Contains("PREVIOUS CLIP", built.Prompt, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("rockets across the grass", built.Prompt);
         Assert.Contains("EXTENSION", built.Prompt, StringComparison.OrdinalIgnoreCase);
-        // Video-extend cannot also send character reference_images
         Assert.Empty(built.ReferenceImagePaths);
 
         try { Directory.Delete(tmp, true); } catch { /* ignore */ }
@@ -167,7 +162,63 @@ public class ClipVideoPromptBuilderTests
 
         var huge = new string('x', 700_000) + "\n" + full;
         var s2 = ClipVideoPromptBuilder.ShortenPromptForRetry(huge, 2);
-        Assert.True(s2.Length <= 600_000 + 80); // head cap + marker
+        Assert.True(s2.Length <= 600_000 + 80);
         Assert.Contains("shortened after API length limit", s2, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void SanitizeActionText_strips_embedded_cast_count()
+    {
+        var raw = "INT. ROOM. CAST COUNT: exactly 1 on-screen identity(ies) — Character_Narrator. No extra people. An OLD MAN sleeps. / 480p, 24fps";
+        var clean = ClipVideoPromptBuilder.SanitizeActionText(raw, new[] { "Character_Narrator", "Character_Old_Man" });
+        Assert.DoesNotContain("CAST COUNT", clean, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Character_Old_Man", clean);
+        Assert.Contains("Character_Narrator", clean);
+    }
+
+    [Fact]
+    public void InferKeysFromProse_promotes_old_man_and_officers()
+    {
+        var profiles = new Dictionary<string, ClipVideoPromptBuilder.CharacterProfile>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["Character_Narrator"] = new() { Key = "Character_Narrator", DisplayName = "Narrator" },
+            ["Character_Old_Man"] = new() { Key = "Character_Old_Man", DisplayName = "Old Man" },
+            ["Character_Officer"] = new() { Key = "Character_Officer", DisplayName = "Officer" },
+            ["Character_Officer_Two"] = new() { Key = "Character_Officer_Two", DisplayName = "Officer Two" },
+            ["Character_Officer_Three"] = new() { Key = "Character_Officer_Three", DisplayName = "Officer Three" },
+        };
+        var keys = ClipVideoPromptBuilder.InferKeysFromProse(
+            "An OLD MAN sleeps. Three OFFICERS sit over the boards.", profiles);
+        Assert.Contains("Character_Old_Man", keys);
+        Assert.Contains("Character_Officer", keys);
+        Assert.Contains("Character_Officer_Two", keys);
+        Assert.Contains("Character_Officer_Three", keys);
+    }
+
+    [Fact]
+    public void Build_uses_characters_on_screen_and_single_cast_count()
+    {
+        var clip = JsonDocument.Parse("""
+            {
+              "clip_number": 1,
+              "visual_prompt": "INT. CHAMBER. CAST COUNT: exactly 1 on-screen identity(ies) — Character_Narrator. No extra people. An OLD MAN sleeps behind a curtained bed. / 480p, 24fps",
+              "characters_on_screen": ["Character_Narrator", "Character_Old_Man"],
+              "veo_continuation_source": "none",
+              "audio_payload": { "speaker": "", "dialogue": "", "delivery": "none" }
+            }
+            """).RootElement;
+        var profiles = new Dictionary<string, ClipVideoPromptBuilder.CharacterProfile>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["Character_Narrator"] = new() { Key = "Character_Narrator", DisplayName = "Narrator", Description = "pale man" },
+            ["Character_Old_Man"] = new() { Key = "Character_Old_Man", DisplayName = "Old Man", Description = "elderly" },
+        };
+        var built = ClipVideoPromptBuilder.Build(clip, Path.GetTempPath(), profiles);
+        Assert.Equal(2, built.CastCount);
+        Assert.Equal(2, built.OnScreenKeys.Count);
+        Assert.Contains("CAST COUNT: exactly 2", built.Prompt);
+        Assert.Equal(1, System.Text.RegularExpressions.Regex.Matches(built.Prompt, "CAST COUNT:").Count);
+        Assert.DoesNotContain("CAST COUNT: exactly 1", built.Prompt);
+        Assert.True(built.Prompt.IndexOf("CAST COUNT", StringComparison.OrdinalIgnoreCase) <
+                    built.Prompt.IndexOf("THIS CLIP", StringComparison.OrdinalIgnoreCase));
     }
 }

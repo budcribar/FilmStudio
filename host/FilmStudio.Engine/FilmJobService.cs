@@ -1849,6 +1849,20 @@ public sealed class FilmJobService
             prevVisual = FindClipVisualInBlueprint(root, scene, clip - 1);
 
         // When extending video, skip start-frame stills — API uses the previous video itself
+        string? styleHead = null;
+        try
+        {
+            var rules = _projectRules.GetActiveRulesBlock(projectId);
+            if (!string.IsNullOrWhiteSpace(rules))
+            {
+                var m = System.Text.RegularExpressions.Regex.Match(
+                    rules, @"STYLE LOCK:\s*([^\n]+)", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+                if (m.Success)
+                    styleHead = "STYLE LOCK: " + m.Groups[1].Value.Trim().TrimEnd('.', ' ');
+            }
+        }
+        catch { /* non-fatal */ }
+
         var built = ClipVideoPromptBuilder.Build(
             clipEl,
             projectDir,
@@ -1856,7 +1870,8 @@ public sealed class FilmJobService
             previousClipVisualPrompt: prevVisual,
             previousClipVideoPath: prevVideoPath,
             startFrameImagePath: null,
-            maxRefs: 5);
+            maxRefs: 5,
+            styleHead: styleHead);
 
         if (string.IsNullOrWhiteSpace(built.Prompt))
             throw new InvalidOperationException("clip missing visual_prompt");
@@ -1880,19 +1895,11 @@ public sealed class FilmJobService
 
         if (addenda.Count > 0)
         {
-            built = new ClipVideoPromptBuilder.PromptBuildResult
-            {
-                Prompt = built.Prompt.TrimEnd() + "\n\n" + string.Join("\n\n", addenda),
-                ReferenceImagePaths = built.ReferenceImagePaths,
-                StartFrameImagePath = built.StartFrameImagePath,
-                Mode = built.Mode,
-                CharacterKeys = built.CharacterKeys,
-                PromptLogSummary = built.PromptLogSummary + " · learning-addenda",
-            };
+            built = built.WithPrompt(built.Prompt.TrimEnd() + "\n\n" + string.Join("\n\n", addenda), " · learning-addenda");
         }
 
         // Persist + log full prompt for evaluation (admin logs surface this)
-        await WriteAndLogPromptAsync(projectDir, scene, clip, built, ct).ConfigureAwait(false);
+        await WriteAndLogPromptAsync(projectId, projectDir, scene, clip, built, ct).ConfigureAwait(false);
 
         if (built.Prompt.Contains("VOICE LOCK", StringComparison.OrdinalIgnoreCase))
             await AppendLogAsync("  [Voice] VOICE LOCK from character profile");
@@ -1991,6 +1998,7 @@ public sealed class FilmJobService
     }
 
     private async Task WriteAndLogPromptAsync(
+        string projectId,
         string projectDir,
         int scene,
         int clip,
@@ -2004,14 +2012,47 @@ public sealed class FilmJobService
             var path = Path.Combine(dir, $"S{scene:D2}C{clip:D2}.txt");
             var header =
                 $"# S{scene:D2}C{clip:D2}  {built.PromptLogSummary}\n" +
+                $"# projectId: {projectId}\n" +
+                $"# mode: {built.Mode}\n" +
+                $"# castCount: {built.CastCount}\n" +
+                $"# onScreen: {string.Join(", ", built.OnScreenKeys)}\n" +
                 $"# refs: {string.Join(", ", built.ReferenceImagePaths.Select(Path.GetFileName))}\n" +
+                $"# refsAttachedToApi: {built.RefsAttachedToApi}\n" +
                 $"# startFrame: {built.StartFrameImagePath ?? "(none)"}\n" +
                 $"# characters: {string.Join(", ", built.CharacterKeys)}\n\n";
             await File.WriteAllTextAsync(path, header + built.Prompt, ct).ConfigureAwait(false);
-            await AppendLogAsync($"  [Prompt] saved {Path.GetRelativePath(projectDir, path)} ({built.Prompt.Length} chars)");
-            // Full prompt in job log for admin evaluation (operators do not see job log)
+
+            var metaPath = Path.Combine(dir, $"S{scene:D2}C{clip:D2}.meta.json");
+            var meta = new Dictionary<string, object?>
+            {
+                ["projectId"] = projectId,
+                ["scene"] = scene,
+                ["clip"] = clip,
+                ["mode"] = built.Mode,
+                ["castCount"] = built.CastCount,
+                ["onScreenKeys"] = built.OnScreenKeys.ToList(),
+                ["characterKeys"] = built.CharacterKeys.ToList(),
+                ["refs"] = built.ReferenceImagePaths.Select(Path.GetFileName).ToList(),
+                ["refsAttachedToApi"] = built.RefsAttachedToApi,
+                ["styleHead"] = built.StyleHead,
+                ["castCountLine"] = built.CastCountLine,
+                ["actionText"] = built.ActionText,
+                ["promptLen"] = built.Prompt.Length,
+                ["promptLogSummary"] = built.PromptLogSummary,
+                ["startFrame"] = built.StartFrameImagePath,
+                ["builtAtUtc"] = DateTimeOffset.UtcNow.ToString("o"),
+            };
+            var metaJson = System.Text.Json.JsonSerializer.Serialize(meta, new System.Text.Json.JsonSerializerOptions
+            {
+                WriteIndented = true,
+                PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase,
+            }) + "\n";
+            await File.WriteAllTextAsync(metaPath, metaJson, ct).ConfigureAwait(false);
+
+            await AppendLogAsync(
+                $"  [Prompt] saved {Path.GetRelativePath(projectDir, path)} + meta " +
+                $"({built.Prompt.Length} chars, castCount={built.CastCount})");
             await AppendLogAsync("--- PROMPT BEGIN ---");
-            // Chunk if extremely long so SignalR stays healthy
             const int chunk = 3500;
             for (var i = 0; i < built.Prompt.Length; i += chunk)
             {
@@ -2117,7 +2158,7 @@ public sealed class FilmJobService
         ClipVideoPromptBuilder.PromptBuildResult built,
         IReadOnlyDictionary<string, ClipVideoPromptBuilder.CharacterProfile> profiles)
     {
-        var onScreen = built.CharacterKeys
+        var onScreen = (built.OnScreenKeys.Count > 0 ? built.OnScreenKeys : built.CharacterKeys)
             .Where(k =>
             {
                 if (profiles.TryGetValue(k, out var p) && p.VoiceOnly)

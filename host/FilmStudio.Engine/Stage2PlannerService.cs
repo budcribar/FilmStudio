@@ -358,7 +358,7 @@ public sealed class Stage2PlannerService
             if (prevLid is not null && lid is not null && prevLid != lid)
                 cont = "none";
 
-            var clipCast = ClipCastTokens(sceneWork, beat);
+            var clipCast = ClipCastTokens(sceneWork, beat, charSeeds);
             var ps = CoerceString(beat.TryGetValue("primary_subject", out var psv) ? psv : null) ?? "";
             if (ps.StartsWith("Character_", StringComparison.Ordinal) && !clipCast.Contains(ps))
                 clipCast.Insert(0, ps);
@@ -398,6 +398,7 @@ public sealed class Stage2PlannerService
                 ["audio_payload"] = BuildAudioPayload(beat),
                 ["stage1_beat_id"] = beat.TryGetValue("beat_id", out var bi) ? bi : $"b{i + 1}",
                 ["primary_subject"] = beat.TryGetValue("primary_subject", out var psub) ? psub : null,
+                ["characters_on_screen"] = clipCast.Cast<object?>().ToList(),
                 ["duration_seconds"] = dur,
             });
             beatMap.Add(CoerceString(beat.TryGetValue("beat_id", out var bid) ? bid : null) ?? $"b{i + 1}");
@@ -469,10 +470,7 @@ public sealed class Stage2PlannerService
 
         var others = cast.Where(t => t != primary && !ve.Contains(t, StringComparison.Ordinal)).Take(3).ToList();
         var othersBit = others.Count > 0 ? $"also on screen: {string.Join(", ", others)}" : "";
-        // Explicit headcount so models don't invent extra officers/crowd
-        var castCountBit = cast.Count > 0
-            ? $"CAST COUNT: exactly {cast.Count} on-screen identity(ies) — {string.Join(", ", cast)}. No extra people."
-            : "";
+        // CAST COUNT is owned by ClipVideoPromptBuilder at gen time (not embedded in plan visual_prompt).
 
         var block = CoerceString(beat.TryGetValue("blocking_notes", out var bn) ? bn : null) ?? "";
         if (!string.IsNullOrWhiteSpace(block) &&
@@ -498,7 +496,6 @@ public sealed class Stage2PlannerService
             (0, style),
             (2, !string.IsNullOrEmpty(place) && !ve.Contains(place, StringComparison.OrdinalIgnoreCase) ? place : ""),
             (3, othersBit),
-            (4, castCountBit),
             (5, ve),
             (6, speech),
             (7, mustBit),
@@ -623,22 +620,54 @@ public sealed class Stage2PlannerService
         return $"OFF-CAMERA VOICEOVER {speaker} says \"{quote}\"";
     }
 
-    private static List<string> ClipCastTokens(Dictionary<string, object?> scene, Dictionary<string, object?> beat)
+    private static List<string> ClipCastTokens(
+        Dictionary<string, object?> scene,
+        Dictionary<string, object?> beat,
+        Dictionary<string, object?>? charSeeds = null)
     {
         var found = new List<string>();
+        void Add(string? key)
+        {
+            if (string.IsNullOrWhiteSpace(key)) return;
+            if (!key.StartsWith("Character_", StringComparison.Ordinal)) return;
+            if (!found.Contains(key)) found.Add(key);
+        }
         void AddFrom(string? text)
         {
             if (string.IsNullOrEmpty(text)) return;
             foreach (Match m in Regex.Matches(text, @"Character_[A-Za-z0-9_]+"))
-            {
-                if (!found.Contains(m.Value))
-                    found.Add(m.Value);
-            }
+                Add(m.Value);
         }
-        AddFrom(CoerceString(beat.TryGetValue("visual_event", out var ve) ? ve : null));
+        var veText = CoerceString(beat.TryGetValue("visual_event", out var ve) ? ve : null) ?? "";
+        AddFrom(veText);
         AddFrom(CoerceString(beat.TryGetValue("primary_subject", out var ps) ? ps : null));
         AddFrom(CoerceString(beat.TryGetValue("speaker", out var sp) ? sp : null));
         AddFrom(CoerceString(beat.TryGetValue("blocking_notes", out var bn) ? bn : null));
+
+        // Promote free-text names (OLD MAN, three officers) using cast seed keys
+        if (charSeeds is { Count: > 0 })
+        {
+            var profiles = new Dictionary<string, ClipVideoPromptBuilder.CharacterProfile>(StringComparer.OrdinalIgnoreCase);
+            foreach (var (k, v) in charSeeds)
+            {
+                if (v is not Dictionary<string, object?> d) continue;
+                profiles[k] = new ClipVideoPromptBuilder.CharacterProfile
+                {
+                    Key = k,
+                    DisplayName = CoerceString(d.TryGetValue("canonical_given_name", out var cn) ? cn : null)
+                        ?? CoerceString(d.TryGetValue("voice_label", out var vl) ? vl : null)
+                        ?? k.Replace("Character_", "").Replace('_', ' '),
+                };
+            }
+            var prose = string.Join(" ", new[]
+            {
+                veText,
+                CoerceString(beat.TryGetValue("blocking_notes", out var bn2) ? bn2 : null) ?? "",
+            });
+            foreach (var key in ClipVideoPromptBuilder.InferKeysFromProse(prose, profiles))
+                Add(key);
+        }
+
         if (found.Count == 0)
             found.AddRange(UnionCharactersOnScreen(scene));
         return found;
