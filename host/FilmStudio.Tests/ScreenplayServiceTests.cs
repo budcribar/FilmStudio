@@ -343,6 +343,24 @@ public class ScreenplayServiceTests : IDisposable
     }
 
     [Fact]
+    public void FixDraftDate_overwrites_model_invented_year()
+    {
+        var raw = """
+            Title: Test
+            Draft date: 3/25/2025
+
+            INT. ROOM - DAY
+
+            NARRATOR
+            Hello world this is long enough for structural gates and more text.
+            """;
+        var fixedText = BookToFountainConverter.FixDraftDate(raw);
+        var today = DateTime.Now.ToString("M/d/yyyy");
+        Assert.Contains($"Draft date: {today}", fixedText, StringComparison.Ordinal);
+        Assert.DoesNotContain("3/25/2025", fixedText, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void LooksLikeGoodFountain_allows_novels_without_page_tags()
     {
         var novel = """

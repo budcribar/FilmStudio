@@ -345,6 +345,8 @@ public static class ScreenplayService
     public static SaveResult SaveDraft(ProjectStore store, string projectId, string text)
     {
         text = NormalizeText(text ?? "");
+        // Stamp Draft date to today even when the model invents a wrong year
+        text = BookToFountainConverter.FixDraftDate(text);
         var sourceDir = Path.Combine(store.GetProjectDir(projectId), "source");
         Directory.CreateDirectory(sourceDir);
         var draftPath = GetDraftPath(store, projectId);

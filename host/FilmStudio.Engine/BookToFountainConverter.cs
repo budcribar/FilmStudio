@@ -166,6 +166,8 @@ public static class BookToFountainConverter
         }
 
         text = EnsureDraftDate(text);
+        // Models invent wrong years (e.g. 3/25/2025) — stamp local today before save
+        text = FixDraftDate(text);
         // Hard strip — models still emit tags even when the prompt forbids them
         text = StripBookPageTags(text);
         if (!LooksLikeGoodFountain(text))
@@ -173,6 +175,20 @@ public static class BookToFountainConverter
                 "Could not build a usable screenplay from the book. Try again or import a .fountain file.");
 
         return ScreenplayService.NormalizeText(text);
+    }
+
+    /// <summary>
+    /// Overwrite any existing Draft date: line with today's local date (M/d/yyyy).
+    /// Call after <see cref="EnsureDraftDate"/> so a missing key is inserted first.
+    /// </summary>
+    public static string FixDraftDate(string? fountain)
+    {
+        if (string.IsNullOrEmpty(fountain)) return fountain ?? "";
+        var today = DateTime.Now.ToString("M/d/yyyy");
+        return Regex.Replace(
+            fountain,
+            @"(?im)^(Draft date:)\s*.*$",
+            $"$1 {today}");
     }
 
     /// <summary>
