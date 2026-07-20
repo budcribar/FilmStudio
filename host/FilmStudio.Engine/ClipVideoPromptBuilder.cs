@@ -156,6 +156,11 @@ public static class ClipVideoPromptBuilder
                 "background characters may stay mostly still.",
         };
 
+        // video-extend cannot attach locked plates (API continues from previous video only).
+        // Reinforce identity from CHARACTER VARIABLES text so faces/wardrobe do not drift.
+        if (mode is "video-extend" or "continue")
+            continuityBlock += IdentityReinforceBlock(onScreenKeys, useReferenceImages);
+
         if ((mode is "continue" or "video-extend") &&
             !string.IsNullOrWhiteSpace(previousClipVisualPrompt))
         {
@@ -583,6 +588,18 @@ public static class ClipVideoPromptBuilder
         if (Regex.IsMatch(k, @"(mom|mum|mother|dad|daddy|father|parent|human)"))
             return 2;
         return 1;
+    }
+
+
+    /// <summary>
+    /// When API cannot attach locked refs (video-extend), reinforce identity from CHARACTER VARIABLES text.
+    /// </summary>
+    private static string IdentityReinforceBlock(IReadOnlyList<string> onScreenKeys, bool refsAttached)
+    {
+        if (refsAttached || onScreenKeys.Count == 0) return "";
+        return " IDENTITY: Match locked plate descriptions in CHARACTER VARIABLES exactly — " +
+               "do not drift to illustration, anime, cartoon, or a different face/wardrobe. " +
+               "On-screen: " + string.Join(", ", onScreenKeys) + ".";
     }
 
     private static bool IsVoiceOnlyKey(string key, IReadOnlyDictionary<string, CharacterProfile>? characters)

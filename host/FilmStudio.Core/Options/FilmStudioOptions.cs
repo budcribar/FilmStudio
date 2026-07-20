@@ -37,6 +37,14 @@ public sealed class FilmStudioOptions
     public bool RequirePortraitStyleGate { get; set; } = true;
 
     /// <summary>
+    /// When true (default), start a fresh gen with locked character refs whenever the
+    /// on-screen cast set changes vs the previous clip (instead of video-extend).
+    /// Extends still drop API refs; reseed restores identity plates mid-scene.
+    /// Env: FilmStudio__IdentityReseedOnCastChange=false to always extend clip 2+.
+    /// </summary>
+    public bool IdentityReseedOnCastChange { get; set; } = true;
+
+    /// <summary>
     /// When true (default), enable scene-list + project/blueprint/dir read caches.
     /// Set false for A/B soaks: <c>FilmStudio__EnableReadCaches=false</c>.
     /// </summary>

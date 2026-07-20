@@ -1812,7 +1812,7 @@ public sealed class FilmJobService
         var profiles = _projects.LoadCharacterPromptProfiles(projectId);
 
         // Previous clip in this scene — Imagine /videos/extensions continues from that video.
-        // Clip 2+ requires previous on disk (no gaps in the chain).
+        // Clip 2+ requires previous on disk (no gaps). Cast-set changes reseed fresh+refs (PR2).
         string? prevVisual = null;
         string? prevVideoPath = null;
         var cont = clipEl.TryGetProperty("veo_continuation_source", out var ce)
@@ -1822,23 +1822,19 @@ public sealed class FilmJobService
             string.Equals(cont, "extend_previous", StringComparison.OrdinalIgnoreCase) ||
             clip > 1;
 
+        string? prevOnDisk = null;
         if (clip > 1)
         {
-            prevVideoPath = Path.Combine(
+            prevOnDisk = Path.Combine(
                 projectDir, "assets", "video", $"scene_{scene:D2}_clip_{clip - 1:D2}.mp4");
-            if (!File.Exists(prevVideoPath) || new FileInfo(prevVideoPath).Length < 1024)
+            if (!File.Exists(prevOnDisk) || new FileInfo(prevOnDisk).Length < 1024)
             {
                 throw new InvalidOperationException(
                     $"Generate S{scene:D2}C{clip - 1:D2} first — later clips continue from the previous video.");
             }
 
-            // Always silence-trim the previous clip before extend so C2 starts on
-            // the last real speech/action frame, not empty hold tail.
-            await SilenceTrimClipAsync(prevVideoPath, scene, clip - 1, ct).ConfigureAwait(false);
-
-            await AppendLogAsync(
-                $"  [Continuity] Imagine video-extend from S{scene:D2}C{clip - 1:D2} " +
-                $"({Path.GetFileName(prevVideoPath)})");
+            await SilenceTrimClipAsync(prevOnDisk, scene, clip - 1, ct).ConfigureAwait(false);
+            prevVideoPath = prevOnDisk;
         }
 
         if (previousClipEl is { } prevEl &&
@@ -1848,7 +1844,48 @@ public sealed class FilmJobService
         if (prevVisual is null && wantContinue && blueprintRoot is { } root)
             prevVisual = FindClipVisualInBlueprint(root, scene, clip - 1);
 
-        // When extending video, skip start-frame stills — API uses the previous video itself
+        // PR2: reseed with locked refs when on-screen cast set changes (API drops refs on extend).
+        var reseedFresh = false;
+        if (prevVideoPath is not null && _opts.IdentityReseedOnCastChange)
+        {
+            var curKeys = ClipVideoPromptBuilder.ResolveClipCharacterKeys(clipEl, profiles)
+                .Where(k => !(profiles.TryGetValue(k, out var cp) && cp.VoiceOnly))
+                .Select(k => k)
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .OrderBy(k => k, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+            var prevKeys = previousClipEl is { } pe
+                ? ClipVideoPromptBuilder.ResolveClipCharacterKeys(pe, profiles)
+                    .Where(k => !(profiles.TryGetValue(k, out var pp) && pp.VoiceOnly))
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .OrderBy(k => k, StringComparer.OrdinalIgnoreCase)
+                    .ToList()
+                : new List<string>();
+            if (prevKeys.Count > 0 && !OnScreenSetsEqual(curKeys, prevKeys))
+            {
+                reseedFresh = true;
+                await AppendLogAsync(
+                    $"  [Identity] Cast set changed " +
+                    $"[{string.Join(", ", prevKeys)}] → [{string.Join(", ", curKeys)}] — " +
+                    "fresh gen with locked refs (not video-extend)");
+                prevVideoPath = null; // API: attach refs
+                // Keep prevVisual for continuity prose only
+            }
+        }
+
+        if (prevVideoPath is not null)
+        {
+            await AppendLogAsync(
+                $"  [Continuity] Imagine video-extend from S{scene:D2}C{clip - 1:D2} " +
+                $"({Path.GetFileName(prevVideoPath)})");
+        }
+        else if (reseedFresh && prevOnDisk is not null)
+        {
+            await AppendLogAsync(
+                $"  [Identity] Reseed S{scene:D2}C{clip:D2} after S{scene:D2}C{clip - 1:D2} " +
+                "(locked character refs attached)");
+        }
+
         string? styleHead = null;
         try
         {
@@ -1876,9 +1913,14 @@ public sealed class FilmJobService
         if (string.IsNullOrWhiteSpace(built.Prompt))
             throw new InvalidOperationException("clip missing visual_prompt");
 
-        // Fresh gens (not video-extend): every on-screen cast key must have a locked ref attached
+        // Fresh / reseed: every on-screen cast key must have a locked ref attached
         if (prevVideoPath is null)
             EnsureFreshGenHasLockedRefs(projectId, projectDir, built, profiles);
+        else
+        {
+            // Extend still requires locks on disk even when API cannot attach them
+            EnsureOnScreenLocksExist(projectId, projectDir, built, profiles);
+        }
 
         // P2/P4: active gen pack + approved project rules
         var addenda = new List<string>();
@@ -1903,10 +1945,12 @@ public sealed class FilmJobService
 
         if (built.Prompt.Contains("VOICE LOCK", StringComparison.OrdinalIgnoreCase))
             await AppendLogAsync("  [Voice] VOICE LOCK from character profile");
-        if (built.ReferenceImagePaths.Count > 0 && prevVideoPath is null)
+        if (built.ReferenceImagePaths.Count > 0)
             await AppendLogAsync(
-                $"  [Refs] {built.ReferenceImagePaths.Count}: " +
+                $"  [Refs] attached={built.RefsAttachedToApi} count={built.ReferenceImagePaths.Count}: " +
                 string.Join(", ", built.ReferenceImagePaths.Select(Path.GetFileName)));
+        else if (prevVideoPath is not null)
+            await AppendLogAsync("  [Refs] video-extend — locked plates not attached to API (IDENTITY text only)");
 
         // Dialogue-aware duration (tight for short lines — billed per second)
         var duration = ClipDurationEstimator.EstimateForClip(clipEl);
@@ -2149,6 +2193,37 @@ public sealed class FilmJobService
     }
 
     /// <summary>
+    /// Ordered ignore-case set equality for on-screen cast keys (PR2 reseed decision).
+    /// </summary>
+    private static bool OnScreenSetsEqual(IReadOnlyList<string> a, IReadOnlyList<string> b)
+    {
+        if (a.Count != b.Count) return false;
+        // Inputs are expected already sorted ignore-case; still compare as sets.
+        var setA = new HashSet<string>(a, StringComparer.OrdinalIgnoreCase);
+        return setA.SetEquals(b);
+    }
+
+    /// <summary>
+    /// Video-extend cannot attach plates to the API, but locked refs must still exist on disk
+    /// so CHARACTER VARIABLES / future reseeds stay authoritative.
+    /// </summary>
+    private void EnsureOnScreenLocksExist(
+        string projectId,
+        string projectDir,
+        ClipVideoPromptBuilder.PromptBuildResult built,
+        IReadOnlyDictionary<string, ClipVideoPromptBuilder.CharacterProfile> profiles)
+    {
+        var missing = MissingOnScreenLockKeys(projectId, projectDir, built, profiles);
+        if (missing.Count == 0) return;
+
+        throw new InvalidOperationException(
+            "Locked character reference images required on disk before video-extend " +
+            "(identity continuity even though the API cannot attach plates). " +
+            $"Missing ref for: {string.Join(", ", missing)}. " +
+            "Open Characters → generate + lock a portrait for each on-screen role.");
+    }
+
+    /// <summary>
     /// On fresh (non-extend) gens, every non-voice-only character in the clip prompt must have
     /// a locked ref image actually attached — prevents identity drift across clips.
     /// </summary>
@@ -2158,27 +2233,7 @@ public sealed class FilmJobService
         ClipVideoPromptBuilder.PromptBuildResult built,
         IReadOnlyDictionary<string, ClipVideoPromptBuilder.CharacterProfile> profiles)
     {
-        var onScreen = (built.OnScreenKeys.Count > 0 ? built.OnScreenKeys : built.CharacterKeys)
-            .Where(k =>
-            {
-                if (profiles.TryGetValue(k, out var p) && p.VoiceOnly)
-                    return false;
-                return true;
-            })
-            .Distinct(StringComparer.OrdinalIgnoreCase)
-            .ToList();
-        if (onScreen.Count == 0)
-            return;
-
-        var missing = new List<string>();
-        foreach (var key in onScreen)
-        {
-            var path = ClipVideoPromptBuilder.ResolveCharacterRefPathPublic(projectDir, key)
-                       ?? _projects.ResolveCharacterRefPath(projectId, key);
-            if (path is null || !File.Exists(path))
-                missing.Add(key);
-        }
-
+        var missing = MissingOnScreenLockKeys(projectId, projectDir, built, profiles);
         if (missing.Count > 0)
         {
             throw new InvalidOperationException(
@@ -2187,12 +2242,41 @@ public sealed class FilmJobService
                 "Open Characters → generate + lock a portrait for each on-screen role.");
         }
 
-        if (built.ReferenceImagePaths.Count == 0)
+        var onScreen = OnScreenVisualKeys(built, profiles);
+        if (onScreen.Count > 0 && built.ReferenceImagePaths.Count == 0)
         {
             throw new InvalidOperationException(
                 "Fresh video gen built a prompt with on-screen cast but attached 0 reference images. " +
                 "Lock portraits under Characters and retry.");
         }
+    }
+
+    private static List<string> OnScreenVisualKeys(
+        ClipVideoPromptBuilder.PromptBuildResult built,
+        IReadOnlyDictionary<string, ClipVideoPromptBuilder.CharacterProfile> profiles)
+    {
+        return (built.OnScreenKeys.Count > 0 ? built.OnScreenKeys : built.CharacterKeys)
+            .Where(k => !(profiles.TryGetValue(k, out var p) && p.VoiceOnly))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+    }
+
+    private List<string> MissingOnScreenLockKeys(
+        string projectId,
+        string projectDir,
+        ClipVideoPromptBuilder.PromptBuildResult built,
+        IReadOnlyDictionary<string, ClipVideoPromptBuilder.CharacterProfile> profiles)
+    {
+        var onScreen = OnScreenVisualKeys(built, profiles);
+        var missing = new List<string>();
+        foreach (var key in onScreen)
+        {
+            var path = ClipVideoPromptBuilder.ResolveCharacterRefPathPublic(projectDir, key)
+                       ?? _projects.ResolveCharacterRefPath(projectId, key);
+            if (path is null || !File.Exists(path))
+                missing.Add(key);
+        }
+        return missing;
     }
 
     private static string? FindClipVisualInBlueprint(JsonElement root, int scene, int clipNum)
