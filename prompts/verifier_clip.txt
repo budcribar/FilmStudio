@@ -95,7 +95,7 @@ PRIORITY IF CONFLICTS
 6. Aesthetic preference
 
 ================================================================
-GUI LEARNINGS (appended from Streamlit edit log)
+LEARNINGS (appended from Film Studio edit log)
 ================================================================
 <!-- VERIFIER_LEARNINGS_START -->
 <!-- VERIFIER_LEARNINGS_END -->

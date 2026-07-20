@@ -3057,8 +3057,10 @@ public sealed class ProjectStore
         var dir = new DirectoryInfo(AppContext.BaseDirectory);
         for (var i = 0; i < 8 && dir is not null; i++, dir = dir.Parent)
         {
+            // Repo root: projects/ + prompts/ (or host/ sibling of projects/)
             if (Directory.Exists(Path.Combine(dir.FullName, "projects")) &&
-                Directory.Exists(Path.Combine(dir.FullName, "renderer")))
+                (Directory.Exists(Path.Combine(dir.FullName, "prompts")) ||
+                 Directory.Exists(Path.Combine(dir.FullName, "host"))))
             {
                 return dir.FullName;
             }

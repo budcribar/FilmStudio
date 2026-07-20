@@ -51,10 +51,9 @@ def find_pdf(source_dir: Path, explicit: Optional[Path] = None) -> Optional[Path
 
 def _pdf_deps_hint() -> str:
     return (
-        "PDF extract needs pypdf and/or pymupdf in the same Python env as Streamlit/CLI. "
-        "Install into the project venv, then restart Streamlit:\n"
-        "  pip install pypdf pymupdf\n"
-        "  # or: pip install -r requirements-review.txt"
+        "PDF extract needs pypdf and/or pymupdf. Prefer Film Studio book-prepare "
+        "(host API) for production. For this script only:\n"
+        "  pip install pypdf pymupdf"
     )
 
 

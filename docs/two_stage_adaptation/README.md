@@ -5,7 +5,7 @@ Split the old monolithic “book → full clip blueprint” into:
 | Stage | Name | Input | Output | Depends on video generator? |
 |-------|------|--------|--------|-------------------------------|
 | **1** | Scene bible | Book text + cast rules | `*.scenes.json` | **No** |
-| **2** | Shot planner | Scene bible + `VIDEO_PROVIDER` | Clip plan (`veo_clips` per scene) usable by the renderer (`python -m cli`) | **Yes** |
+| **2** | Shot planner | Scene bible + `VIDEO_PROVIDER` | Clip plan (`veo_clips` per scene) usable by Film Studio (`host/` gen / remux) | **Yes** |
 
 ## Why
 
@@ -19,7 +19,7 @@ All operator prompts and the Stage 1 schema live under **`prompts/`** (repo root
 
 | File | Purpose |
 |------|---------|
-| `prompts/adaptation_v16.txt` | Full-film / shared adaptation rules (GUI learnings append here) |
+| `prompts/adaptation_v16.txt` | Full-film / shared adaptation rules (learning appends may land here) |
 | `prompts/book_to_fountain.txt` | Operator prompt: book → Fountain screenplay |
 | `prompts/stage1_scene_bible.schema.json` | Optional schema for internal scene lists (not operator-facing) |
 | `prompts/stage2_shot_planner.txt` | Operator prompt: scene bible → clip plan |
@@ -32,7 +32,7 @@ All operator prompts and the Stage 1 schema live under **`prompts/`** (repo root
 
 1. Run **Stage 1** once (or when story changes).
 2. Run **Stage 2** whenever you change `VIDEO_PROVIDER`, default duration, or resolution policy.
-3. Feed Stage 2 JSON into the renderer / Streamlit (same field names as today: `scenes[].veo_clips`, etc.).
+3. Feed Stage 2 into Film Studio (blueprint / gen jobs; same field names: `scenes[].veo_clips`, etc.).
 4. Stage 0 characters (portraits + `voice_profile`) live in Stage 1 `character_seed_tokens` and are **not** recreated in Stage 2.
 
 ## Extract Stage 1 from current blueprint + book pages
@@ -93,7 +93,7 @@ Grok policy applied by the planner:
 - Global negative + action/orientation extras
 - Continuous-path language reinforced on window/kick smash beats
 
-**Streamlit / CLI load `nickandme.clips.grok.json` by default**  
+**Film Studio loads the active project blueprint / clip plan by default**  
 (`pipeline_config.blueprint_file`). Stage 1 remains `nickandme.scenes.json` (story only).
 
 ```json

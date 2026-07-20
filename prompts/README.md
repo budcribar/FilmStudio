@@ -1,7 +1,7 @@
 # Prompts
 
 Shared operator prompts, schemas, and tiny examples for book → film adaptation.
-Paths are relative to the **workspace root** (repo root with `renderer/`, `gui/`, `cli/`).
+Paths are relative to the **workspace root** (repo root with `host/`, `projects/`, `prompts/`).
 
 ## Naming
 
@@ -12,7 +12,7 @@ Paths are relative to the **workspace root** (repo root with `renderer/`, `gui/`
 | `book_to_fountain.txt` | **Product path:** book → editable Fountain screenplay |
 | `fountain_to_cast.txt` | **Product path:** Fountain (+ book) → `source/cast_seeds.json` closed cast |
 | `cast_visual_literalize.txt` | Cast post-pass: figurative/idiomatic looks → literal filmable prose |
-| `adaptation_v16.txt` | Legacy full-film adaptation rules (optional GUI append) |
+| `adaptation_v16.txt` | Legacy full-film adaptation rules (optional learning append) |
 | `shared_rules.txt` | Rules Stage 2 + verifier must all respect |
 | `stage1_scene_bible.schema.json` | Optional schema for internal materialised scene lists (not an operator prompt) |
 | `stage2_shot_planner.txt` | Shot plan from approved screenplay build (+ multi-cast tokens, audio_payload) |

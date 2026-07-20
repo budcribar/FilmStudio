@@ -466,7 +466,7 @@ OPERATOR QUICK START
    distinct from adult; no TTS ids required), display_name_policy honored for withhold characters.
 
 ================================================================
-GUI REVIEW LEARNINGS (appended from Streamlit edit log)
+LEARNINGS (appended from Film Studio edit log)
 ================================================================
 Rules below are added by the review app when a human applies an Edit Log entry.
 Treat them as hard constraints on future adaptations and prompt rewrites.

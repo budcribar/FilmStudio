@@ -1,60 +1,24 @@
 # Scripts
 
-One-off and maintenance tools. Run from the **repo root** so paths like `nickandme.clips.grok.json` resolve.
+Optional one-off and maintenance tools. Prefer **Film Studio** under `host/` (Blazor UI + API jobs) for product workflows.
 
-## Keep outside this folder
+Run from the **repo root** when a script expects workspace-relative paths.
+
+## Product path (preferred)
 
 | Path | Role |
 |------|------|
-| `renderer/` | Film engine |
-| `cli/` | CLI frontend (`python -m cli`) |
-| `gui/streamlit_app.py` | Review UI entrypoint |
-| `gui/pages/` | Streamlit multipage UI |
-| `gui/review_app/` | UI/API package |
+| `host/FilmStudio.Api` | REST + jobs (Stage 1/2, gen, remux, cast, learning) |
+| `host/FilmStudio.Web` | Operator UI |
+| `host/FilmStudio.Engine` | Native pipeline |
+
+See repo-root `README.md` and `host/README.md`.
 
 ## Tools in this folder
 
-| Script | Purpose |
-|--------|---------|
-| `validate_blueprint.py` | Validate active clip plan |
-| `check_scenes.py` | Quick scene/clip checks |
-| `recalculate_all_timestamps.py` | Fix timestamps from durations |
-| `clean_dialogue.py` | Dialogue cleanup helpers |
-| `append_*.py` / `insert_*.py` / `build_*.py` | Historical scene-append tools |
-| `extract_91_94.py` / `check_page_94.py` | Book page helpers |
-| `_fix_*.py` / `_read_*.py` | Ad-hoc debug |
+Historical / ad-hoc helpers may still live here (including older Python utilities). They are **not** required to run Film Studio. Prefer API jobs and the Adaptation pages for book prepare, Stage 1/2, and generation.
 
-## Two-stage adaptation
+## Two-stage adaptation (concept)
 
-```bash
-python scripts/two_stage_adaptation/extract_stage1_from_blueprint.py
-python scripts/two_stage_adaptation/stage2_plan_grok.py
-```
-
-See `prompts/` for schema and operator prompts; `docs/two_stage_adaptation/README.md` for workflow.
-
-## Location inventory + pins
-
-```bash
-# 1) Cluster settings → Loc_* inventory
-python scripts/inventory_locations.py
-
-# 2) Apply pins into Stage 1 + Stage 2 JSON (location_seed_tokens, location_ids, clip.location_id)
-python scripts/two_stage_adaptation/apply_location_pins.py
-
-# 3) Verify Stage 1 schema/prompt still accept current + legacy bibles
-python scripts/two_stage_adaptation/verify_stage1.py
-
-# 4) Prepare book (auto: extract + vision if text is garbled + runtime defaults)
-#    Prefer this over bare extract for picture books / weak OCR.
-python scripts/two_stage_adaptation/prepare_book_source.py --force
-
-# 5) Run Stage 1 LLM (requires XAI_API_KEY) — auto-extracts PDF if text missing/stale
-#    Or use Adaptation page: Import + prepare → Run Stage 1
-python scripts/two_stage_adaptation/run_stage1_from_book.py --chunk-pages 10
-python scripts/two_stage_adaptation/run_stage1_from_book.py --chunk-pages 12 --resume
-```
-
-Writes / updates under `projects/<active>/`:
-- `location_inventory.json` / `.md`
-- `nickandme.scenes.json`, `nickandme.clips.grok.json` (with timestamped `.bak_loc_*`)
+Stage 1 (scene bible) and Stage 2 (clip plan) are implemented natively in `host/FilmStudio.Engine`.  
+Prompt sources and schemas: `prompts/`. Workflow notes: `docs/two_stage_adaptation/README.md`.

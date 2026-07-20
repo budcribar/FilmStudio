@@ -110,4 +110,4 @@ Uses checked-in **`projects/LoadSimBuster`** (isolated from real Buster). See `d
 | Review / edit log / approve | Yes |
 | SignalR live UI | Yes |
 
-Repo-root `gui/`, `scripts/`, and `renderer/` may still contain historical Python tooling; they are **not** invoked by Film Studio under `host/`.
+See the repo-root `README.md` for the supported run path and workspace layout.

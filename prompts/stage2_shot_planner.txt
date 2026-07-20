@@ -274,7 +274,7 @@ Validate before return:
 Also respect prompts/shared_rules.txt when present.
 
 ================================================================
-GUI LEARNINGS (appended from Streamlit edit log)
+LEARNINGS (appended from Film Studio edit log)
 ================================================================
 <!-- STAGE2_LEARNINGS_START -->
 

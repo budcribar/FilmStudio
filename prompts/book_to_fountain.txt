@@ -156,7 +156,7 @@ OUTPUT
 Fountain only. No JSON. No trailing commentary.
 
 ================================================================
-GUI LEARNINGS (appended from Streamlit edit log)
+LEARNINGS (appended from Film Studio edit log)
 ================================================================
 <!-- STAGE1_LEARNINGS_START -->
 <!-- STAGE1_LEARNINGS_END -->

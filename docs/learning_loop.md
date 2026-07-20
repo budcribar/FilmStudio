@@ -10,7 +10,7 @@ Goal: every review note can improve the **next** plan/render, without auto-poiso
 | `stage2` | Shot design / policy | Yes → stage2 | `prompts/stage2_shot_planner.txt` |
 | `stage1` | Screenplay / story wrong | Yes → fountain + stage2 | `prompts/book_to_fountain.txt` + `source/screenplay.fountain` |
 | `verifier` | Detection rubric | No | `prompts/verifier_clip.txt` |
-| `engine` | Tooling / renderer | No | `review_feedback/SCRIPT_NOTES.md` |
+| `engine` | Tooling / Film Studio engine | No | `review_feedback/SCRIPT_NOTES.md` |
 
 Shared durable facts: `prompts/shared_rules.txt`.
 

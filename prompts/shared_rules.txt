@@ -58,11 +58,11 @@ BASELINE (always on)
 OPERATOR NOTES
 ================================================================
 - Source of truth for product-wide learnings (alongside stage prompts).
-- Streamlit Edit Log can append under GUI LEARNINGS markers below.
+- Film Studio Review / edit log can append under LEARNINGS markers below.
 - Prefer routing: clip-only → Stage 2 policy → Stage 1 story → engine code.
 
 ================================================================
-GUI LEARNINGS (appended from Streamlit edit log)
+LEARNINGS (appended from Film Studio edit log)
 ================================================================
 <!-- SHARED_LEARNINGS_START -->
 <!-- SHARED_LEARNINGS_END -->
