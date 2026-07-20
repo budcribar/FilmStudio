@@ -78,6 +78,9 @@ BODY:
   self-reflective / rhetorical lines there on camera instead of as V.O. over the reenactment.
 - If Action already visually shows what a V.O. line states (a reaction, a sound, a physical
   response), trim the redundant clause from the V.O. rather than restating it in both places.
+- When a single V.O. passage runs more than ~3 sentences over one static Action line,
+  break it into two shorter V.O. beats with a one-line visual or sound micro-beat between
+  them (a sound, a tremor, a silhouette) rather than one long block over one frozen image.
 
 DIALOGUE FIDELITY (HARD — book wording over paraphrase):
 - Prefer the book’s actual spoken words. Do not modernize, soften, or “movie-ize” dialogue.
