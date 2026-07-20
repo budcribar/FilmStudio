@@ -6,3 +6,14 @@
 17:45:06 elapsed 18s
 17:45:06 ======== YellowWallpaper ========
 17:45:06 from-book…
+17:45:59 ok=True scenes=27 bytes=24157 THE_WOMAN=0 dollar=0 VO=31
+17:45:59 elapsed 53s
+17:45:59 TellTaleHeartV4 active
+
+Project           Ok Scenes Bytes TheWoman Dollar VO Sec Err
+-------           -- ------ ----- -------- ------ -- --- ---
+GiftOfTheMagi   True     11 10047        0      0  9  18 
+YellowWallpaper True     27 24157        0      0 31  53 
+
+
+17:45:59 === done ===
