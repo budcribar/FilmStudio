@@ -7,6 +7,7 @@ When reviewing clips, run this checklist (fail when confidence is high):
 3. SILENCE vs EXPRESSION — If the clip has no dialogue / is silent or ambient, fail mid-shout open-mouth or yelling performance. Restrained tension (tight jaw, fist) is OK.
 4. ADDRESS / GAZE — Follow PROJECT performance rules. If performance says confessional / addresses viewer when speaking, fail shut or averted eyes on those address beats. If the project is objective/observational, do NOT require eyes-to-camera.
 5. STYLE + WARDROBE — Match project style (picture-book CG vs photoreal, etc.) and cast wardrobe/period cues. Fail plastic CGI beauty-filter skin on photoreal projects; fail photoreal stock on picture-book projects; fail clear wardrobe/period drift from cast locks.
+6. FACE READABILITY — Fail (high confidence) when the featured face is blank/beauty-blank or emotion clearly mismatches the planned line/energy. Fail shut eyes on dialogue address beats per PERFORMANCE rules (#4). Sleep/death/covered eyes when planned = OK.
 
 Also:
 - Always judge start of current clip against previous clip tail when provided.

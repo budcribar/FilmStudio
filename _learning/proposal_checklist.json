@@ -1,71 +1,71 @@
 {
   "schemaVersion": 1,
   "sourceLabel": "propose_fails_n50",
-  "rawProposal": "- Lock every prompt to photoreal live-action period look and ban illustrated, anime, cartoon, painted, or smooth CGI rendering.\n- State exact CAST COUNT and named identities, and forbid any extras, background crowd, or unlisted people on screen.\n- Lock each character\u2019s face, wardrobe, and grooming for the full clip and forbid mid-clip identity or costume drift.\n- For silent or no-dialogue clips, require closed mouth, calm face, and no speaking, shouting, or agitation gestures.\n- Keep prompts complete and ungarbled, with clear who acts or speaks so the wrong character never performs the beat.\n- Specify naturalistic skin, open eye-line, and intended expression so faces do not read shut, downcast, vampiric, or non-human.\n- Auto-review must fail any clip that breaks style lock, cast count, identity continuity, or silent-mouth rules.",
-  "updatedAt": "2026-07-20T00:54:23.1036118+00:00",
+  "rawProposal": "- Lock every clip to photoreal live-action period look and ban illustrated, anime, painted, cartoon, or smooth CGI skin/faces.\n- State exact CAST COUNT and named identities only; forbid extras, background figures, or unlisted people on screen.\n- Lock each character\u2019s face, wardrobe, and grooming for the full clip and forbid mid-clip identity or costume changes.\n- For silent or no-dialogue clips, keep mouths closed and calm with no open-mouth speech, shouting, or talking gestures.\n- Keep prompts complete and ungarbled; never truncate or conflate distinct character identities in the same shot.\n- Match specified gaze and expression (e.g., eyes open and facing camera) with naturalistic period-human features, not stylized or downcast defaults.\n- Auto-review must fail any frame that drifts from style lock, cast count, identity lock, or silent-mouth rules.",
+  "updatedAt": "2026-07-20T12:59:41.1747533+00:00",
   "items": [
     {
       "id": "6f10b7a830",
       "text": "Lock every prompt to photoreal live-action period look and ban illustrated, anime, cartoon, painted, or smooth CGI rendering.",
-      "status": "pending",
-      "reviewed": false,
-      "disposition": null,
-      "note": null,
-      "reviewedAt": null
+      "status": "reviewed",
+      "reviewed": true,
+      "disposition": "accepted",
+      "note": "Project STYLE LOCK only \u2014 not global gen pack (picture-book projects must stay free).",
+      "reviewedAt": "2026-07-20T18:00:00+00:00"
     },
     {
       "id": "52ac3aac92",
       "text": "State exact CAST COUNT and named identities, and forbid any extras, background crowd, or unlisted people on screen.",
-      "status": "pending",
-      "reviewed": false,
-      "disposition": null,
-      "note": null,
-      "reviewedAt": null
+      "status": "reviewed",
+      "reviewed": true,
+      "disposition": "accepted",
+      "note": "In gen pack \u002B auto-review; remaining gap is regen after fail, not new prose.",
+      "reviewedAt": "2026-07-20T18:00:00+00:00"
     },
     {
       "id": "da9257f13c",
       "text": "Lock each character\u2019s face, wardrobe, and grooming for the full clip and forbid mid-clip identity or costume drift.",
-      "status": "pending",
-      "reviewed": false,
-      "disposition": null,
-      "note": null,
-      "reviewedAt": null
+      "status": "reviewed",
+      "reviewed": true,
+      "disposition": "accepted",
+      "note": "Cast visual_lock \u002B locked refs \u002B project identity rule.",
+      "reviewedAt": "2026-07-20T18:00:00+00:00"
     },
     {
       "id": "f69c008f39",
       "text": "For silent or no-dialogue clips, require closed mouth, calm face, and no speaking, shouting, or agitation gestures.",
-      "status": "pending",
-      "reviewed": false,
-      "disposition": null,
-      "note": null,
-      "reviewedAt": null
+      "status": "reviewed",
+      "reviewed": true,
+      "disposition": "accepted",
+      "note": "Accepted intent; gen pack allows restrained tension (tight jaw/fist) \u2014 not strictly \u0027calm face\u0027.",
+      "reviewedAt": "2026-07-20T18:00:00+00:00"
     },
     {
       "id": "851ba310fd",
       "text": "Keep prompts complete and ungarbled, with clear who acts or speaks so the wrong character never performs the beat.",
-      "status": "pending",
-      "reviewed": false,
-      "disposition": null,
-      "note": null,
-      "reviewedAt": null
+      "status": "reviewed",
+      "reviewed": true,
+      "disposition": "accepted",
+      "note": "Full prompts \u002B API shorten-on-length; no packing truncate.",
+      "reviewedAt": "2026-07-20T18:00:00+00:00"
     },
     {
       "id": "9f0a524998",
       "text": "Specify naturalistic skin, open eye-line, and intended expression so faces do not read shut, downcast, vampiric, or non-human.",
-      "status": "pending",
-      "reviewed": false,
-      "disposition": null,
-      "note": null,
-      "reviewedAt": null
+      "status": "reviewed",
+      "reviewed": true,
+      "disposition": "accepted",
+      "note": "Covered by gen FACE/PERFORMANCE + auto-review #4 ADDRESS/GAZE + #6 FACE READABILITY + project STYLE/PERFORMANCE locks (not a global always-eyes-to-camera rule).",
+      "reviewedAt": "2026-07-20T20:00:00+00:00"
     },
     {
       "id": "a8d1b32c62",
       "text": "Auto-review must fail any clip that breaks style lock, cast count, identity continuity, or silent-mouth rules.",
-      "status": "pending",
-      "reviewed": false,
-      "disposition": null,
-      "note": null,
-      "reviewedAt": null
+      "status": "reviewed",
+      "reviewed": true,
+      "disposition": "accepted",
+      "note": "auto_review pack \u002B assembly gate (fails excluded from WIP without override).",
+      "reviewedAt": "2026-07-20T18:00:00+00:00"
     }
   ]
 }
