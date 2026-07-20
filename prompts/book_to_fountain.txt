@@ -157,6 +157,14 @@ Target about {{TOTAL_RUNTIME_MINUTES}} minutes of finished film.
   when you see BOOK_CHUNK n/m, adapt only that part and honor continuity notes.
 Do not write one scene per chapter or paragraph unless location/purpose truly changes.
 When the source is long and truncated in the prompt, cover only what is provided.
+- Compress secondary/connective beats first. When the book explicitly marks time
+  passing at the story's central violent or emotional peak (the kill, the discovery,
+  the confession) with language like "many minutes," "a long while," "hour after
+  hour," give that moment its own tactile action beat rather than folding it into
+  a single summary clause. One extra waiting gesture, one fading/growing sound, one
+  physical detail there buys more of the book's intended effect per second than the
+  same beat spent on connective tissue elsewhere. Cut runtime from the setup or the
+  aftermath before you cut it from the peak.
 
 ================================================================
 MULTI-CHUNK ADAPT (when BOOK_CHUNK n/m is in the user message)
