@@ -1,0 +1,8 @@
+
+17:44:48 === regen Magi + YellowWallpaper ===
+17:44:48 ======== GiftOfTheMagi ========
+17:44:49 from-book…
+17:45:06 ok=True scenes=11 bytes=10047 THE_WOMAN=0 dollar=0 VO=9
+17:45:06 elapsed 18s
+17:45:06 ======== YellowWallpaper ========
+17:45:06 from-book…

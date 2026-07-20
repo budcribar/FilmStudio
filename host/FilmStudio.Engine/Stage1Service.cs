@@ -166,6 +166,14 @@ public sealed class Stage1Service
                 "clip gen will lean on narration. Prefer on-camera frame cutbacks where possible.");
         }
 
+        var softMaxScenes = BookToFountainConverter.SoftMaxSceneHeadings(analysis.BookKind);
+        if (result.SceneCount > softMaxScenes)
+        {
+            onProgress?.Invoke(
+                $"Note: {result.SceneCount} scenes (soft target ≤{softMaxScenes} for {analysis.BookKind}) — " +
+                "shot plan / clip count may be high.");
+        }
+
         onProgress?.Invoke(
             $"Screenplay ready · {result.SceneCount} scenes · " +
             $"{result.CharacterCount} cast · {result.LocationCount} locations · " +

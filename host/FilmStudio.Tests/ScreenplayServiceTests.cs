@@ -401,14 +401,30 @@ public class ScreenplayServiceTests : IDisposable
     [InlineData("FIRST OFFICER", true)]
     [InlineData("SECOND OFFICER", true)]
     [InlineData("THIRD OFFICER", true)]
+    [InlineData("FIRST BUSINESSMAN", true)]
+    [InlineData("SECOND MERCHANT", true)]
+    [InlineData("THIRD MERCHANT", true)]
     [InlineData("OFFICER 1", true)]
     [InlineData("POLICE OFFICER #2", true)]
+    [InlineData("GUEST 3", true)]
+    [InlineData("MAN 2", true)]
     [InlineData("OFFICER REYNOLDS", false)]
+    [InlineData("MR. TOPPER", false)]
     [InlineData("NARRATOR", false)]
     [InlineData("OLD MAN", false)]
+    [InlineData("SCROOGE", false)]
     public void IsGenericNumberedSpeaker_detects_ordinals(string name, bool expected)
     {
         Assert.Equal(expected, BookToFountainConverter.IsGenericNumberedSpeaker(name));
+    }
+
+    [Theory]
+    [InlineData("picture_book", 20)]
+    [InlineData("short", 22)]
+    [InlineData("novel", 45)]
+    public void SoftMaxSceneHeadings_by_book_kind(string kind, int expected)
+    {
+        Assert.Equal(expected, BookToFountainConverter.SoftMaxSceneHeadings(kind));
     }
 
     [Fact]

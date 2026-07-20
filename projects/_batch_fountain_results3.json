@@ -1,0 +1,47 @@
+[
+  {
+    "Project": "ChristmasCarol",
+    "Title": "A Christmas Carol",
+    "Status": "ok-existing",
+    "Scenes": 54,
+    "Error": "",
+    "Seconds": 0,
+    "FountainBytes": 90757
+  },
+  {
+    "Project": "AlicesAdventures",
+    "Title": "Alice's Adventures in Wonderland",
+    "Status": "ok",
+    "Scenes": 36,
+    "Error": "",
+    "Seconds": 389,
+    "FountainBytes": 98925
+  },
+  {
+    "Project": "JungleBook",
+    "Title": "The Jungle Book",
+    "Status": "ok",
+    "Scenes": 65,
+    "Error": "",
+    "Seconds": 576,
+    "FountainBytes": 72139
+  },
+  {
+    "Project": "Frankenstein",
+    "Title": "Frankenstein",
+    "Status": "ok",
+    "Scenes": 137,
+    "Error": "",
+    "Seconds": 693,
+    "FountainBytes": 81644
+  },
+  {
+    "Project": "Dracula",
+    "Title": "Dracula",
+    "Status": "ok",
+    "Scenes": 93,
+    "Error": "",
+    "Seconds": 720,
+    "FountainBytes": 70821
+  }
+]

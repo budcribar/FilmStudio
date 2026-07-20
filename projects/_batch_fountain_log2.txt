@@ -1,0 +1,5 @@
+
+16:22:48 === batch2 start ===
+16:22:48 ======== ChristmasCarol ========
+16:22:48 activated ChristmasCarol
+16:22:48 from-book attempt 1 …

@@ -11,6 +11,8 @@ GOALS (narrative)
 2. Break the story into scenes a director can schedule: one clear location + time + purpose.
 3. Inside each scene, write ordered concrete events we must SEE or HEAR (action + dialogue).
 4. Keep a closed cast: every speaker is a named CHARACTER (ALL CAPS). No “MAN #2” ghosts.
+   Protagonists with no given name in the book still get a stable token (period-fitting name,
+   or THE NARRATOR / THE WIFE — never bare THE WOMAN / THE MAN as the hero cue).
 5. Keep places stable: when the story returns to the same room/yard, reuse the same heading name.
 6. Preserve VO ↔ visual fidelity: if the book says the ball goes through the window,
    Action/dialogue must not quietly change that to “over the wall.”
@@ -90,9 +92,14 @@ BODY:
   Do not leave an entire peak stretch as only V.O. in one location if a frame already exists.
 - If Action already visually shows what a V.O. line states (a reaction, a sound, a physical
   response), trim the redundant clause from the V.O. rather than restating it in both places.
+  Storybook irony/theme may stay in V.O. only when it adds meaning Action cannot show —
+  do not caption the same beat twice (Action + VO that only repeats it).
 - When a single V.O. passage runs more than ~3 sentences over one static Action line,
   break it into two shorter V.O. beats with a one-line visual or sound micro-beat between
   them (a sound, a tremor, a silhouette) rather than one long block over one frozen image.
+- Action describes what we SEE (props, faces, rooms, weather). Avoid modern currency notation
+  in Action ($8, $20/week); show poverty or wealth visually. Keep exact money in dialogue
+  or brief NARRATOR lines only when the book’s wording needs it.
 
 DIALOGUE FIDELITY (HARD — book wording over paraphrase):
 - Prefer the book’s actual spoken words. Do not modernize, soften, or “movie-ize” dialogue.
@@ -171,11 +178,22 @@ RUNTIME SHAPE
 ================================================================
 Target about {{TOTAL_RUNTIME_MINUTES}} minutes of finished film.
 - Short stories / picture books: few scenes, dense beats, little padding.
+  Aim roughly 8–18 scene headings total unless the story truly needs more.
 - Novellas / novels: more scenes, still ONE coherent film — compress digression,
   keep the emotional/plot spine. Multi-chunk mode may send the book in ordered parts;
   when you see BOOK_CHUNK n/m, adapt only that part and honor continuity notes.
+  Prefer ~15–40 scenes for a short-film cut of a long book, not one heading per paragraph.
 Do not write one scene per chapter or paragraph unless location/purpose truly changes.
 When the source is long and truncated in the prompt, cover only what is provided.
+- Merge consecutive beats that share the same location and time of day into ONE scene
+  with multiple Action/dialogue units — only split when place, time, or dramatic purpose
+  clearly changes. Mark elapsed time in Action (“Two weeks later.”) rather than a dozen
+  identical INT. ROOM - DAY headings.
+- Montage of “hours” or “shopping” or travel: 2–3 specific micro-locations (or progressive
+  Action in one place), not a single vague EXT. STREETS - DAY summary slug.
+- Final thematic button: keep closing NARRATOR essay short (a few sentences) or prefer a
+  silent/action image after the last plot line — do not stack a long VO sermon on top of
+  a full visual resolution unless runtime allows.
 - Compress secondary/connective beats first. When the book explicitly marks time
   passing at the story's central violent or emotional peak (the kill, the discovery,
   the confession) with language like "many minutes," "a long while," "hour after

@@ -195,6 +195,17 @@ public static class BookToFountainConverter
                 $"Warning: generic numbered speaker(s) remain: {string.Join(", ", stillGeneric.Take(5))}");
         }
 
+        // Soft scene-count budget — warn only (Stage 2 clip cost), never block
+        var analysis = BookTextAnalyzer.Analyze(bookText);
+        var sceneCount = CountSceneHeadings(text);
+        var softMax = SoftMaxSceneHeadings(analysis.BookKind);
+        if (sceneCount > softMax)
+        {
+            onProgress?.Invoke(
+                $"Note: {sceneCount} scene headings (soft target ≤{softMax} for {analysis.BookKind}) — " +
+                "shot plan / clip count may be high. Consider merging same-location beats next pass.");
+        }
+
         return ScreenplayService.NormalizeText(text);
     }
 
@@ -307,7 +318,7 @@ public static class BookToFountainConverter
 
     /// <summary>
     /// Character cues that are ordinal/numbered role placeholders
-    /// (FIRST OFFICER, OFFICER 2, POLICE OFFICER #3) — unstable cast keys.
+    /// (FIRST OFFICER, SECOND MERCHANT, BUSINESSMAN 2) — unstable cast keys.
     /// </summary>
     public static IReadOnlyList<string> FindGenericNumberedSpeakers(string? fountain)
     {
@@ -323,31 +334,63 @@ public static class BookToFountainConverter
             .ToList();
     }
 
-    /// <summary>True for FIRST/SECOND OFFICER, OFFICER 1, POLICE #2, etc.</summary>
+    /// <summary>
+    /// True for ordinal/numbered role placeholders: FIRST BUSINESSMAN, SECOND MERCHANT,
+    /// OFFICER 1, GUEST #2, MAN 3, etc. Named people (SCROOGE, OFFICER REYNOLDS) are false.
+    /// </summary>
     public static bool IsGenericNumberedSpeaker(string? characterName)
     {
         if (string.IsNullOrWhiteSpace(characterName)) return false;
         var n = Regex.Replace(characterName.Trim(), @"\s+", " ");
-        // FIRST OFFICER / SECOND GUARD / THIRD MAN
+
+        // FIRST/SECOND/… + any role noun (OFFICER, BUSINESSMAN, MERCHANT, GUEST, …)
         if (Regex.IsMatch(
                 n,
                 @"^(FIRST|SECOND|THIRD|FOURTH|FIFTH|SIXTH|SEVENTH|EIGHTH|NINTH|TENTH|1ST|2ND|3RD|4TH|5TH)\s+\S+",
                 RegexOptions.IgnoreCase))
             return true;
-        // OFFICER 1 / POLICE 2 / GUARD #3
+
+        // Role + number / #number (broad role list)
         if (Regex.IsMatch(
                 n,
-                @"^(OFFICER|POLICE|POLICEMAN|POLICE\s+OFFICER|GUARD|SOLDIER|DETECTIVE|AGENT|COP|DEPUTY|TROOPER)\s*[#]?\s*\d+\b",
+                @"^(OFFICER|POLICE|POLICEMAN|POLICE\s+OFFICER|GUARD|SOLDIER|DETECTIVE|AGENT|COP|DEPUTY|TROOPER|"
+                + @"BUSINESSMAN|BUSINESS\s*MAN|MERCHANT|GENTLEMAN|GENTLEMEN|LADY|GUEST|SERVANT|CLERK|PORTER|"
+                + @"WAITER|MAID|NURSE|DOCTOR|LAWYER|SAILOR|CREWMAN|SOLDIER|CITIZEN|MAN|WOMAN|BOY|GIRL|"
+                + @"ATTENDANT|MESSENGER|COURIER|DRIVER|COACHMAN|FOOTMAN|BUTLER|COOK|WORKMAN|LABORER|"
+                + @"VILLAGER|TOWNSMAN|SHOPKEEPER|CUSTOMER|PATIENT|PRISONER|INMATE|SOLDIER|SAILOR)\s*[#]?\s*\d+\b",
                 RegexOptions.IgnoreCase))
             return true;
-        // OFFICER ONE / POLICE TWO
+
+        // Role + ONE/TWO/THREE…
         if (Regex.IsMatch(
                 n,
-                @"^(OFFICER|POLICE|POLICE\s+OFFICER|GUARD|SOLDIER|DETECTIVE|AGENT|DEPUTY)\s+(ONE|TWO|THREE|FOUR|FIVE|SIX|SEVEN|EIGHT|NINE|TEN)\b",
+                @"^(OFFICER|POLICE|POLICE\s+OFFICER|GUARD|SOLDIER|DETECTIVE|AGENT|DEPUTY|BUSINESSMAN|"
+                + @"MERCHANT|GENTLEMAN|GUEST|SERVANT|CLERK|MAN|WOMAN)\s+"
+                + @"(ONE|TWO|THREE|FOUR|FIVE|SIX|SEVEN|EIGHT|NINE|TEN)\b",
                 RegexOptions.IgnoreCase))
             return true;
+
+        // Trailing digit on multi-word ALL-CAPS role: "STOCK EXCHANGE MAN 1"
+        if (Regex.IsMatch(n, @"\b\d{1,2}$") &&
+            Regex.IsMatch(n, @"\b(OFFICER|MERCHANT|BUSINESS|GENTLEMAN|GUEST|SERVANT|MAN|WOMAN|CLERK)\b",
+                RegexOptions.IgnoreCase))
+            return true;
+
         return false;
     }
+
+    /// <summary>
+    /// Soft scene-heading budget for operator warnings (not a hard fail).
+    /// picture_book ≤20, short ≤22, novel ≤45 for a short-film cut.
+    /// </summary>
+    public static int SoftMaxSceneHeadings(string? bookKind) =>
+        (bookKind ?? "").ToLowerInvariant() switch
+        {
+            "picture_book" => 20,
+            "short" => 22,
+            "novel" => 45,
+            _ => 30,
+        };
 
     /// <summary>
     /// Chat repair: replace generic numbered speakers with stable proper-name tokens.
@@ -378,10 +421,14 @@ public static class BookToFountainConverter
             Rules:
             - Return the COMPLETE Fountain screenplay again (not a patch list).
             - Replace EVERY occurrence of those cues (including CONT'D / V.O. / O.S. lines)
-              with a proper ALL-CAPS name token, e.g. OFFICER REYNOLDS, OFFICER BLAKE,
-              OFFICER COLE — invent period-appropriate surnames if the book is silent.
+              with a proper ALL-CAPS name token. Examples:
+                FIRST OFFICER → OFFICER REYNOLDS
+                SECOND MERCHANT → MERCHANT HALES
+                FIRST BUSINESSMAN → MR. TOPPER (or a period surname)
+                MAN 2 / GUEST #3 → named people, not numbers
+            - Invent period-appropriate given names or surnames if the book is silent.
             - Same person = same token every time. Distinct people = distinct tokens.
-            - Do not leave FIRST/SECOND/THIRD, OFFICER 1, POLICE #2, etc.
+            - Do not leave FIRST/SECOND/THIRD, OFFICER 1, BUSINESSMAN 2, MERCHANT #1, etc.
             - Do not change plot, locations, or book-faithful dialogue wording except the cue names.
             - No markdown fences. Fountain only.
 

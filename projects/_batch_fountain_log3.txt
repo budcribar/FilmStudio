@@ -1,0 +1,38 @@
+
+16:34:34 === batch3 start ===
+16:34:34 ======== ChristmasCarol ========
+16:34:34 activated
+16:34:34 skip complete fountain scenes=54 bytes=90757
+16:34:34 elapsed 0s
+16:34:34 ======== AlicesAdventures ========
+16:34:34 created
+16:34:34 from-book…
+16:41:03 ok scenes=36 bytes=98925
+16:41:03 elapsed 389s
+16:41:03 ======== JungleBook ========
+16:41:03 created
+16:41:03 from-book…
+16:50:39 ok scenes=65 bytes=72139
+16:50:39 elapsed 576s
+16:50:39 ======== Frankenstein ========
+16:50:39 created
+16:50:39 from-book…
+17:02:12 ok scenes=137 bytes=81644
+17:02:12 elapsed 693s
+17:02:12 ======== Dracula ========
+17:02:12 created
+17:02:12 from-book…
+17:14:12 ok scenes=93 bytes=70821
+17:14:12 elapsed 720s
+17:14:12 TellTaleHeartV4 active
+
+Project          Title                            Status      Scenes Error Seconds FountainBytes
+-------          -----                            ------      ------ ----- ------- -------------
+ChristmasCarol   A Christmas Carol                ok-existing     54             0         90757
+AlicesAdventures Alice's Adventures in Wonderland ok              36           389         98925
+JungleBook       The Jungle Book                  ok              65           576         72139
+Frankenstein     Frankenstein                     ok             137           693         81644
+Dracula          Dracula                          ok              93           720         70821
+
+
+17:14:12 === done ===

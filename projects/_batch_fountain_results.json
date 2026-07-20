@@ -1,0 +1,65 @@
+[
+  {
+    "Project": "ChristmasCarol",
+    "Title": "A Christmas Carol",
+    "Status": "error",
+    "Scenes": "",
+    "Error": "Unable to read data from the transport connection: An existing connection was forcibly closed by the remote host..",
+    "Seconds": 39,
+    "FountainBytes": 0
+  },
+  {
+    "Project": "AlicesAdventures",
+    "Title": "Alice's Adventures in Wonderland",
+    "Status": "error",
+    "Scenes": "",
+    "Error": "No connection could be made because the target machine actively refused it.",
+    "Seconds": 2,
+    "FountainBytes": 0
+  },
+  {
+    "Project": "GiftOfTheMagi",
+    "Title": "The Gift of the Magi",
+    "Status": "error",
+    "Scenes": "",
+    "Error": "No connection could be made because the target machine actively refused it.",
+    "Seconds": 2,
+    "FountainBytes": 0
+  },
+  {
+    "Project": "YellowWallpaper",
+    "Title": "The Yellow Wallpaper",
+    "Status": "error",
+    "Scenes": "",
+    "Error": "No connection could be made because the target machine actively refused it.",
+    "Seconds": 2,
+    "FountainBytes": 0
+  },
+  {
+    "Project": "JungleBook",
+    "Title": "The Jungle Book",
+    "Status": "error",
+    "Scenes": "",
+    "Error": "No connection could be made because the target machine actively refused it.",
+    "Seconds": 2,
+    "FountainBytes": 0
+  },
+  {
+    "Project": "Frankenstein",
+    "Title": "Frankenstein",
+    "Status": "error",
+    "Scenes": "",
+    "Error": "No connection could be made because the target machine actively refused it.",
+    "Seconds": 2,
+    "FountainBytes": 0
+  },
+  {
+    "Project": "Dracula",
+    "Title": "Dracula",
+    "Status": "error",
+    "Scenes": "",
+    "Error": "No connection could be made because the target machine actively refused it.",
+    "Seconds": 2,
+    "FountainBytes": 0
+  }
+]

@@ -1,0 +1,17 @@
+16:10:27 === batch start ===
+16:10:27 ======== GiftOfTheMagi ========
+16:10:27 created 200
+16:10:27 seeded book 11455 bytes
+16:10:27 from-book start
+16:10:54 ok scenes=11
+16:10:54 elapsed 27s status=ok
+16:10:54 ======== YellowWallpaper ========
+16:10:54 created 200
+16:10:54 seeded book 32703 bytes
+16:10:54 from-book start
+16:12:40 ok scenes=37
+16:12:40 elapsed 105s status=ok
+16:12:40 ======== ChristmasCarol ========
+16:12:40 activated existing
+16:12:40 seeded book 162220 bytes
+16:12:40 from-book start
