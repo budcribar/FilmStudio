@@ -54,9 +54,12 @@ SCENE HEADINGS:
   Good: INT. LIVING ROOM - NIGHT
   Good: EXT. BACKYARD - DAY
   Good: EXT. CASTLE COURTYARD - NIGHT
+  Good: INT. HALL AND STAIRS - NIGHT
   Bad: INT. STORY - PAGE 3
   Bad: INT. SCENE - DAY
   Bad: INT. CHAPTER 1
+  Bad: INT. HOUSE - VARIOUS - NIGHT
+  Bad: INT. MULTIPLE LOCATIONS - NIGHT
 - Do NOT put PAGE or CHAPTER in the scene heading line itself.
 - Prefer concrete places from the book (COUNTING HOUSE, SHIP DECK, NURSERY, …).
 
@@ -113,6 +116,10 @@ LOCATIONS
 - When the story returns to the same place, use the same heading wording.
 - Multi-place story moments can be separate scenes (preferred) or brief transitions;
   do not invent new plot just to force a location change.
+- Never use a vague placeholder as the location itself (VARIOUS, MULTIPLE, SEVERAL,
+  ELSEWHERE, DIFFERENT ROOMS). If a beat moves through several rooms with no dialogue,
+  either name 1–2 concrete rooms (INT. HALL AND STAIRS - NIGHT) or drop the heading
+  and fold the movement into the Action of the scene it leads into.
 - Epistolary / diary books: prefer dramatized scenes (people in places) over pure
   “INT. STUDY - DAY” letter-reading for every beat; a few journal VO moments are fine.
 

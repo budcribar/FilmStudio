@@ -321,6 +321,51 @@ public class FountainParserTests
         Assert.True(chars!.Count >= 2);
     }
 
+    [Theory]
+    [InlineData("INT. HOUSE - VARIOUS - NIGHT", "HOUSE")]
+    [InlineData("INT. MULTIPLE LOCATIONS - NIGHT", "Unspecified")]
+    [InlineData("INT. HALL AND STAIRS - NIGHT", "HALL AND STAIRS")]
+    [InlineData("INT. LIVING ROOM - NIGHT", "LIVING ROOM")]
+    [InlineData("EXT. CASTLE COURTYARD - DAY", "CASTLE COURTYARD")]
+    public void ParseHeading_strips_vague_location_placeholders(string heading, string expectedLoc)
+    {
+        var (_, locName, setting) = FountainStage1Importer.ParseHeading(heading);
+        Assert.Equal(expectedLoc, locName, ignoreCase: true);
+        Assert.Equal(heading.Trim(), setting);
+    }
+
+    [Fact]
+    public void BuildStage1_does_not_seed_house_various_location_id()
+    {
+        var fountain = """
+            Title: Vague Loc Test
+
+            INT. HOUSE - VARIOUS - NIGHT
+
+            NARRATOR
+            We walk the rooms.
+
+            INT. OLD MAN'S BEDCHAMBER - NIGHT
+
+            NARRATOR
+            Here at last.
+            """;
+        var doc = FountainStage1Importer.BuildStage1(FountainParser.Parse(fountain));
+        var gpv = Assert.IsType<Dictionary<string, object?>>(doc["global_production_variables"]);
+        var locs = Assert.IsType<Dictionary<string, object?>>(gpv["location_seed_tokens"]);
+        Assert.False(
+            locs.Keys.Any(k => k.Contains("VARIOUS", StringComparison.OrdinalIgnoreCase)),
+            "VARIOUS must not become a location seed id");
+        Assert.Contains(locs.Keys, k => k.Contains("HOUSE", StringComparison.OrdinalIgnoreCase)
+                                        || k.Contains("BEDCHAMBER", StringComparison.OrdinalIgnoreCase));
+
+        var scenes = Assert.IsAssignableFrom<System.Collections.IList>(doc["scenes"]);
+        var first = Assert.IsType<Dictionary<string, object?>>(scenes[0]!);
+        var primary = first["primary_location_id"]?.ToString() ?? "";
+        Assert.DoesNotContain("VARIOUS", primary, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("HOUSE", primary, StringComparison.OrdinalIgnoreCase);
+    }
+
     [Fact]
     public void StripEmphasis_handles_escapes_and_space_rules()
     {

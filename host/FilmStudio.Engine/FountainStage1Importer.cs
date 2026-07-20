@@ -445,9 +445,15 @@ public static class FountainStage1Importer
         return (string.Join(", ", ambient), string.Join(", ", sfx));
     }
 
-    private static (string LocType, string LocName, string Setting) ParseHeading(string heading)
+    /// <summary>
+    /// Parse scene heading into type + filmable location name.
+    /// Strips time-of-day after the last " - " and drops vague placeholder segments
+    /// (VARIOUS, MULTIPLE, …) so they never seed location_seed_tokens.
+    /// Public for unit tests.
+    /// </summary>
+    public static (string LocType, string LocName, string Setting) ParseHeading(string heading)
     {
-        heading = heading.Trim();
+        heading = (heading ?? "").Trim();
         var locType = "int";
         var u = heading.ToUpperInvariant();
         if (u.StartsWith("EXT") || u.Contains("EXT."))
@@ -463,9 +469,61 @@ public static class FountainStage1Importer
         if (dash < 0) dash = rest.LastIndexOf(" – ", StringComparison.Ordinal);
         if (dash > 0)
             locName = rest[..dash].Trim();
+        locName = SanitizeLocationName(locName);
         if (string.IsNullOrWhiteSpace(locName))
             locName = "Unspecified";
         return (locType, locName, heading);
+    }
+
+    /// <summary>
+    /// Remove vague multi-place placeholders from a location name.
+    /// e.g. "HOUSE - VARIOUS" → "HOUSE"; "MULTIPLE LOCATIONS" → "Unspecified".
+    /// </summary>
+    public static string SanitizeLocationName(string? locName)
+    {
+        locName = (locName ?? "").Trim();
+        if (locName.Length == 0) return "Unspecified";
+
+        // Split compound headings: HOUSE - VARIOUS → keep solid segments only
+        var parts = Regex.Split(locName, @"\s+[-–]\s+")
+            .Select(p => p.Trim())
+            .Where(p => p.Length > 0)
+            .ToList();
+
+        var kept = parts.Where(p => !IsVagueLocationSegment(p)).ToList();
+        if (kept.Count > 0)
+            return string.Join(" - ", kept);
+
+        // Single segment that is only vague language
+        if (IsVagueLocationSegment(locName))
+            return "Unspecified";
+
+        return locName;
+    }
+
+    /// <summary>True when a heading segment is a non-filmable multi-place placeholder.</summary>
+    public static bool IsVagueLocationSegment(string? segment)
+    {
+        if (string.IsNullOrWhiteSpace(segment)) return true;
+        var s = Regex.Replace(segment.Trim(), @"\s+", " ");
+        // Whole-segment placeholders
+        if (Regex.IsMatch(
+                s,
+                @"^(VARIOUS|MULTIPLE|SEVERAL|ELSEWHERE|DIFFERENT|AROUND|THROUGHOUT|"
+                + @"MULTIPLE\s+LOCATIONS?|VARIOUS\s+LOCATIONS?|DIFFERENT\s+ROOMS?|"
+                + @"DIFFERENT\s+PLACES?|SEVERAL\s+ROOMS?|VARIOUS\s+ROOMS?|"
+                + @"AROUND\s+THE\s+HOUSE|THROUGHOUT\s+THE\s+HOUSE)$",
+                RegexOptions.IgnoreCase))
+            return true;
+
+        // Segment reduces to empty after stripping vague filler words only
+        var stripped = Regex.Replace(
+            s,
+            @"\b(VARIOUS|MULTIPLE|SEVERAL|ELSEWHERE|DIFFERENT|LOCATIONS?|ROOMS?|PLACES?|AREAS?)\b",
+            "",
+            RegexOptions.IgnoreCase);
+        stripped = Regex.Replace(stripped, @"[\s\-/&,]+", "").Trim();
+        return stripped.Length == 0;
     }
 
     /// <summary>Transition-only lines that must not become filmable beats/clips.</summary>
