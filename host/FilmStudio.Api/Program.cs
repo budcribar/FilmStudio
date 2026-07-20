@@ -77,8 +77,9 @@ builder.Services.AddSingleton<PromptPackService>();
 builder.Services.AddSingleton<ProjectRulesService>();
 builder.Services.AddSingleton<LearningProposalService>();
 builder.Services.AddSingleton<ProposalChecklistService>();
-builder.Services.AddSingleton<ClipAutoReviewService>();
 builder.Services.AddSingleton<EditLogService>();
+builder.Services.AddSingleton<ReviewIndexService>();
+builder.Services.AddSingleton<ClipAutoReviewService>();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddSingleton<IUserContext, HttpUserContext>();
 builder.Services.AddSingleton<IUserApiKeyProvider, ConfigUserApiKeyProvider>();
@@ -1976,6 +1977,46 @@ app.MapPost("/api/jobs/clip-auto-review", async (StartClipAutoReviewRequest body
     catch (Exception ex)
     {
         return JobStartError(ex, jobService);
+    }
+});
+
+/// <summary>Batch AI auto-review for on-disk clips (onlyMissing default true). Rebuilds assets/review/index.json.</summary>
+app.MapPost("/api/jobs/clip-auto-review-batch", async (StartClipAutoReviewBatchRequest body, FilmJobService jobService) =>
+{
+    try
+    {
+        if (string.IsNullOrWhiteSpace(body.ProjectId))
+            return Results.BadRequest(new { ok = false, error = "projectId required" });
+        var job = await jobService.StartClipAutoReviewBatchAsync(body);
+        return Results.Accepted($"/api/jobs/{job.JobId}", new
+        {
+            ok = true,
+            message = body.Scene is int sn && sn > 0
+                ? $"Queued batch AI review S{sn:D2}"
+                : "Queued batch AI review (all scenes)",
+            job,
+        });
+    }
+    catch (Exception ex)
+    {
+        return JobStartError(ex, jobService);
+    }
+});
+
+/// <summary>Load or rebuild assets/review/index.json (one row per on-disk clip).</summary>
+app.MapGet("/api/projects/{id}/review/index", (
+    string id, bool? rebuild, ReviewIndexService reviewIndex) =>
+{
+    try
+    {
+        var doc = rebuild == true
+            ? reviewIndex.Rebuild(id)
+            : reviewIndex.Load(id) ?? reviewIndex.Rebuild(id);
+        return Results.Ok(new { ok = true, index = doc });
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { ok = false, error = ex.Message });
     }
 });
 

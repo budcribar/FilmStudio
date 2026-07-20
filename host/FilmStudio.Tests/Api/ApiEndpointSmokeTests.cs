@@ -199,6 +199,7 @@ public class ApiEndpointSmokeTests : IClassFixture<FilmStudioApiFactory>, IAsync
                      "/api/jobs/character-variants",
                      "/api/jobs/voice-preview",
                      "/api/jobs/clip-auto-review",
+                     "/api/jobs/clip-auto-review-batch",
                      "/api/jobs/sort-character-plates",
                      "/api/jobs/book-prepare",
                  })
@@ -210,6 +211,7 @@ public class ApiEndpointSmokeTests : IClassFixture<FilmStudioApiFactory>, IAsync
                 "/api/jobs/character-variants" => JsonSerializer.Serialize(new { projectId = _projectId, charKey = "Character_A" }),
                 "/api/jobs/voice-preview" => JsonSerializer.Serialize(new { projectId = _projectId, charKey = "Character_A" }),
                 "/api/jobs/clip-auto-review" => JsonSerializer.Serialize(new { projectId = _projectId, scene = 1, clip = 1 }),
+                "/api/jobs/clip-auto-review-batch" => JsonSerializer.Serialize(new { projectId = _projectId, onlyMissing = true }),
                 _ => JsonSerializer.Serialize(new { projectId = _projectId }),
             };
             using var content = new StringContent(body, Encoding.UTF8, "application/json");

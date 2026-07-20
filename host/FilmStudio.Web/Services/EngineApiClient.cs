@@ -650,6 +650,54 @@ public sealed class EngineApiClient
         }
     }
 
+    public async Task StartClipAutoReviewBatchAsync(
+        string projectId,
+        int? scene = null,
+        bool onlyMissing = true,
+        CancellationToken ct = default)
+    {
+        SyncIdentityHeaders();
+        using var resp = await _http.PostAsJsonAsync(
+            "/api/jobs/clip-auto-review-batch",
+            new StartClipAutoReviewBatchRequest
+            {
+                ProjectId = projectId,
+                Scene = scene,
+                OnlyMissing = onlyMissing,
+            },
+            JsonOpts,
+            ct);
+        if (!resp.IsSuccessStatusCode)
+        {
+            var err = await resp.Content.ReadAsStringAsync(ct);
+            throw new InvalidOperationException(TryError(err) ?? resp.ReasonPhrase ?? "Batch auto-review failed");
+        }
+    }
+
+    public async Task<ReviewIndexDocument?> GetReviewIndexAsync(
+        string projectId,
+        bool rebuild = false,
+        CancellationToken ct = default)
+    {
+        var q = rebuild ? "?rebuild=true" : "";
+        using var resp = await _http.GetAsync(
+            $"/api/projects/{Uri.EscapeDataString(projectId)}/review/index{q}",
+            ct);
+        if (!resp.IsSuccessStatusCode)
+        {
+            var err = await resp.Content.ReadAsStringAsync(ct);
+            throw new InvalidOperationException(TryError(err) ?? resp.ReasonPhrase);
+        }
+        var dto = await resp.Content.ReadFromJsonAsync<ReviewIndexEnvelope>(JsonOpts, ct);
+        return dto?.Index;
+    }
+
+    private sealed class ReviewIndexEnvelope
+    {
+        public bool Ok { get; set; }
+        public ReviewIndexDocument? Index { get; set; }
+    }
+
     public async Task<ClipAutoReviewDraft?> GetClipAutoReviewDraftAsync(
         string projectId,
         int scene,

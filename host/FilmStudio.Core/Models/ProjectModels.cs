@@ -356,6 +356,46 @@ public sealed class StartClipAutoReviewRequest
     public int Clip { get; set; }
 }
 
+/// <summary>Batch AI auto-review for all (or missing) on-disk clips in a project/scene.</summary>
+public sealed class StartClipAutoReviewBatchRequest
+{
+    public string ProjectId { get; set; } = "";
+    /// <summary>When set, only that scene; otherwise all scenes with clips on disk.</summary>
+    public int? Scene { get; set; }
+    /// <summary>When true (default), skip clips that already have an auto-review draft.</summary>
+    public bool OnlyMissing { get; set; } = true;
+}
+
+/// <summary>Project-wide review index (assets/review/index.json) — one row per on-disk clip.</summary>
+public sealed class ReviewIndexDocument
+{
+    public string ProjectId { get; set; } = "";
+    public DateTimeOffset BuiltAtUtc { get; set; }
+    public string SchemaVersion { get; set; } = "1";
+    public List<ReviewIndexClipRow> Clips { get; set; } = new();
+}
+
+/// <summary>One clip’s QC / assembly / frame paths for V4 audit.</summary>
+public sealed class ReviewIndexClipRow
+{
+    public string Key { get; set; } = "";
+    public int Scene { get; set; }
+    public int Clip { get; set; }
+    public string VideoPath { get; set; } = "";
+    public bool VideoExists { get; set; }
+    public string? AutoSuggestion { get; set; }
+    public string? AutoCategory { get; set; }
+    public string? AutoNote { get; set; }
+    public DateTimeOffset? AutoReviewedAt { get; set; }
+    public string? HumanStatus { get; set; }
+    public string? HumanNote { get; set; }
+    public bool AssemblyEligible { get; set; }
+    public string? AssemblyBlockReason { get; set; }
+    public string? DraftPath { get; set; }
+    public bool HasDraft { get; set; }
+    public List<string> FramePaths { get; set; } = new();
+}
+
 /// <summary>One suggested edit from auto-review (user may accept/edit before apply).</summary>
 public sealed class ClipAutoReviewSuggestion
 {

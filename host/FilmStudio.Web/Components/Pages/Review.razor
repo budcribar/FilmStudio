@@ -52,6 +52,12 @@ else
     </div>
     <div class="col-md-8 d-flex flex-wrap gap-2">
         <button class="btn btn-outline-secondary" data-testid="review-reload" disabled="@_busy" @onclick="LoadAsync">Reload</button>
+        <button class="btn btn-outline-dark" data-testid="review-auto-all"
+                disabled="@(_busy || JobRunning)"
+                title="AI auto-review every on-disk clip that lacks a draft; updates assets/review/index.json + durable frames"
+                @onclick="StartBatchAutoReviewAsync">
+            Auto-review all
+        </button>
         <button class="btn btn-outline-primary" data-testid="review-rebuild-wip" disabled="@(_busy || JobRunning || !_wipCanBuild)" @onclick="RebuildWipAsync"
                 title="FFmpeg: refresh stale scene composites if needed, then stitch WIP">
             Rebuild WIP movie
@@ -648,8 +654,32 @@ else
                         _error = ex.Message;
                     }
                 }
+                else if (snap.Status == "done" &&
+                         string.Equals(snap.Kind, "clip-auto-review-batch", StringComparison.OrdinalIgnoreCase))
+                {
+                    try
+                    {
+                        // Refresh per-clip drafts for selected scene after batch
+                        if (_selectedScene is int sel)
+                        {
+                            for (var c = 1; c <= ClipCountFor(sel); c++)
+                            {
+                                var d = await Engine.GetClipAutoReviewDraftAsync(_projectId, sel, c);
+                                if (d is not null)
+                                    _drafts[ClipKey(sel, c)] = d;
+                            }
+                        }
+                        _message = snap.Message ?? "Batch auto-review finished";
+                        _error = null;
+                    }
+                    catch (Exception ex)
+                    {
+                        _error = ex.Message;
+                    }
+                }
                 else if (snap.Status == "error" &&
-                         string.Equals(snap.Kind, "clip-auto-review", StringComparison.OrdinalIgnoreCase))
+                         (string.Equals(snap.Kind, "clip-auto-review", StringComparison.OrdinalIgnoreCase) ||
+                          string.Equals(snap.Kind, "clip-auto-review-batch", StringComparison.OrdinalIgnoreCase)))
                 {
                     _error = Session.IsAdmin
                         ? (snap.Error ?? snap.Message ?? "Auto-review failed")
@@ -966,10 +996,15 @@ else
 
     private bool IsAutoReviewRunning(int scene, int clip) =>
         _job is not null &&
-        string.Equals(_job.Kind, "clip-auto-review", StringComparison.OrdinalIgnoreCase) &&
         (_job.Status is "running" or "queued") &&
-        _job.Scene == scene &&
-        _job.Clip == clip;
+        (
+            (string.Equals(_job.Kind, "clip-auto-review", StringComparison.OrdinalIgnoreCase) &&
+             _job.Scene == scene &&
+             _job.Clip == clip)
+            ||
+            (string.Equals(_job.Kind, "clip-auto-review-batch", StringComparison.OrdinalIgnoreCase) &&
+             (_job.Scene is null || _job.Scene == scene))
+        );
 
     private ClipAutoReviewDraft? GetLocalDraft(int scene, int clip) =>
         _drafts.TryGetValue(ClipKey(scene, clip), out var d) ? d : null;
@@ -990,6 +1025,24 @@ else
             var jobs = await Engine.GetJobAsync();
             _job = jobs?.Job;
             _message = $"Reviewing S{scene:D2}C{clip:D2}…";
+        }
+        catch (Exception ex) { _error = ex.Message; }
+        finally { _busy = false; }
+    }
+
+    private async Task StartBatchAutoReviewAsync()
+    {
+        _busy = true;
+        _error = null;
+        _message = null;
+        CloseApplyPanel();
+        try
+        {
+            await EnsureHubAsync();
+            await Engine.StartClipAutoReviewBatchAsync(_projectId, scene: null, onlyMissing: true);
+            var jobs = await Engine.GetJobAsync();
+            _job = jobs?.Job;
+            _message = "Batch auto-review started (missing drafts only)…";
         }
         catch (Exception ex) { _error = ex.Message; }
         finally { _busy = false; }

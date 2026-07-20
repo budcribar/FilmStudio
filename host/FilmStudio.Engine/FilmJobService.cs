@@ -34,6 +34,7 @@ public sealed class FilmJobService
     private readonly IFfmpegRemux _remux;
     private readonly VoicePreviewService _voicePreview;
     private readonly ClipAutoReviewService _clipAutoReview;
+    private readonly ReviewIndexService _reviewIndex;
     private readonly ReviewEventStore _learning;
     private readonly EditLogService _editLogs;
     private readonly PromptPackService _promptPacks;
@@ -64,6 +65,7 @@ public sealed class FilmJobService
         IFfmpegRemux remux,
         VoicePreviewService voicePreview,
         ClipAutoReviewService clipAutoReview,
+        ReviewIndexService reviewIndex,
         ReviewEventStore learning,
         EditLogService editLogs,
         PromptPackService promptPacks,
@@ -89,6 +91,7 @@ public sealed class FilmJobService
         _remux = remux;
         _voicePreview = voicePreview;
         _clipAutoReview = clipAutoReview;
+        _reviewIndex = reviewIndex;
         _learning = learning;
         _editLogs = editLogs;
         _promptPacks = promptPacks;
@@ -809,6 +812,32 @@ public sealed class FilmJobService
             lockReason: $"auto-review S{req.Scene:D2}C{req.Clip:D2}");
     }
 
+    /// <summary>Batch AI review: walk on-disk clips (optional scene filter; onlyMissing skips existing drafts).</summary>
+    public Task<JobSnapshot> StartClipAutoReviewBatchAsync(StartClipAutoReviewBatchRequest req)
+    {
+        var projectId = string.IsNullOrWhiteSpace(req.ProjectId)
+            ? _projects.ActiveProjectId
+            : req.ProjectId;
+        if (string.IsNullOrWhiteSpace(projectId))
+            throw new InvalidOperationException("projectId required");
+
+        var sceneLabel = req.Scene is int sn && sn > 0 ? $"S{sn:D2}" : "all scenes";
+        var mode = req.OnlyMissing ? "missing only" : "all clips";
+        return StartBackgroundJobAsync(
+            ct => RunClipAutoReviewBatchAsync(req, ct),
+            new JobEnqueueMeta
+            {
+                Kind = "clip-auto-review-batch",
+                ProjectId = projectId,
+                Scene = req.Scene is int s && s > 0 ? s : null,
+                Message = $"Queued batch auto-review ({sceneLabel}, {mode})…",
+            },
+            lockResources: req.Scene is int one && one > 0
+                ? new[] { LockKeys.Scene(projectId, one) }
+                : new[] { LockKeys.Stage(projectId) },
+            lockReason: $"auto-review-batch {sceneLabel}");
+    }
+
     private async Task RunClipAutoReviewAsync(StartClipAutoReviewRequest req, CancellationToken ct)
     {
         var projectId = string.IsNullOrWhiteSpace(req.ProjectId)
@@ -865,6 +894,114 @@ public sealed class FilmJobService
         catch (Exception ex)
         {
             _log.LogError(ex, "Clip auto-review failed S{Scene}C{Clip}", req.Scene, req.Clip);
+            await FinishAsync("error", ex.Message, ex.Message);
+        }
+    }
+
+    private async Task RunClipAutoReviewBatchAsync(StartClipAutoReviewBatchRequest req, CancellationToken ct)
+    {
+        var projectId = string.IsNullOrWhiteSpace(req.ProjectId)
+            ? _projects.ActiveProjectId
+            : req.ProjectId;
+        await _projects.ActivateAsync(projectId, ct);
+
+        var coords = _reviewIndex.ListOnDiskClipCoords(projectId, req.Scene)
+            .Where(c => !req.OnlyMissing || !_reviewIndex.HasDraft(projectId, c.Scene, c.Clip))
+            .ToList();
+
+        Snapshot = new JobSnapshot
+        {
+            Status = "running",
+            Kind = "clip-auto-review-batch",
+            ProjectId = projectId,
+            Scene = req.Scene is int s0 && s0 > 0 ? s0 : null,
+            Message = coords.Count == 0
+                ? "No clips to auto-review"
+                : $"Batch reviewing {coords.Count} clip(s)…",
+            Index = 0,
+            Total = Math.Max(1, coords.Count),
+            StartedAt = DateTimeOffset.UtcNow,
+            Log = new List<string>(),
+        };
+        RegisterActiveJob();
+        await PublishAsync();
+
+        try
+        {
+            if (coords.Count == 0)
+            {
+                try { _reviewIndex.Rebuild(projectId, req.Scene); } catch { /* non-fatal */ }
+                await FinishAsync("done", "Batch auto-review: nothing to do (no missing drafts)");
+                return;
+            }
+
+            await AppendLogAsync(
+                $"Batch auto-review: {coords.Count} clip(s)" +
+                (req.OnlyMissing ? " (only missing drafts)" : " (all)") +
+                (req.Scene is int sn && sn > 0 ? $" scene S{sn:D2}" : ""));
+
+            var ok = 0;
+            var failed = 0;
+            for (var i = 0; i < coords.Count; i++)
+            {
+                ct.ThrowIfCancellationRequested();
+                var (scene, clip) = coords[i];
+                await UpdateAsync(s =>
+                {
+                    s.Index = i;
+                    s.Total = coords.Count;
+                    s.Scene = scene;
+                    s.Clip = clip;
+                    s.Message = $"Reviewing S{scene:D2}C{clip:D2} ({i + 1}/{coords.Count})…";
+                });
+                await AppendLogAsync($"--- S{scene:D2}C{clip:D2} ({i + 1}/{coords.Count}) ---");
+
+                try
+                {
+                    var draft = await _clipAutoReview.ReviewAsync(
+                        projectId,
+                        scene,
+                        clip,
+                        onProgress: (index, total, line) =>
+                        {
+                            _ = AppendLogAsync($"  {line}");
+                        },
+                        ct: ct);
+                    ok++;
+                    await AppendLogAsync(
+                        $"  → {draft.Suggestion}/{draft.Category} · {draft.Suggestions.Count} suggestion(s)");
+                }
+                catch (OperationCanceledException) { throw; }
+                catch (Exception ex)
+                {
+                    failed++;
+                    _log.LogWarning(ex, "Batch auto-review failed S{Scene}C{Clip}", scene, clip);
+                    await AppendLogAsync($"  → ERROR: {ex.Message}");
+                }
+            }
+
+            try
+            {
+                var index = _reviewIndex.Rebuild(projectId, req.Scene);
+                await AppendLogAsync(
+                    $"Review index rebuilt: {index.Clips.Count} row(s) → assets/review/index.json");
+            }
+            catch (Exception ex)
+            {
+                await AppendLogAsync($"Review index rebuild skipped: {ex.Message}");
+            }
+
+            await FinishAsync(
+                "done",
+                $"Batch auto-review done: {ok} ok, {failed} failed of {coords.Count}");
+        }
+        catch (OperationCanceledException)
+        {
+            await FinishAsync("cancelled", "Batch auto-review cancelled");
+        }
+        catch (Exception ex)
+        {
+            _log.LogError(ex, "Batch auto-review failed for {ProjectId}", projectId);
             await FinishAsync("error", ex.Message, ex.Message);
         }
     }

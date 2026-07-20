@@ -26,6 +26,7 @@ public sealed class ClipAutoReviewService
     private readonly EditLogService _logs;
     private readonly PromptPackService _promptPacks;
     private readonly ProjectRulesService _projectRules;
+    private readonly ReviewIndexService _reviewIndex;
     private readonly ILogger<ClipAutoReviewService> _log;
 
     public ClipAutoReviewService(
@@ -35,6 +36,7 @@ public sealed class ClipAutoReviewService
         EditLogService logs,
         PromptPackService promptPacks,
         ProjectRulesService projectRules,
+        ReviewIndexService reviewIndex,
         ILogger<ClipAutoReviewService> log)
     {
         _projects = projects;
@@ -43,6 +45,7 @@ public sealed class ClipAutoReviewService
         _logs = logs;
         _promptPacks = promptPacks;
         _projectRules = projectRules;
+        _reviewIndex = reviewIndex;
         _log = log;
     }
 
@@ -139,6 +142,18 @@ public sealed class ClipAutoReviewService
             if (images.Count == 0)
                 throw new InvalidOperationException("Could not extract frames from clip video.");
 
+            // PR3: keep 2–4 current-clip frames for humans/export (before temp workDir is deleted)
+            IReadOnlyList<string> durableFrames = Array.Empty<string>();
+            try
+            {
+                durableFrames = _reviewIndex.PersistDurableFrames(
+                    projectId, scene, clip, curFrames, maxFrames: 4);
+            }
+            catch (Exception ex)
+            {
+                _log.LogDebug(ex, "Persist durable frames skipped S{Scene}C{Clip}", scene, clip);
+            }
+
             onProgress?.Invoke(55, 100, "AI reviewing continuity and quality…");
             var prompt = BuildReviewPrompt(scene, clip, plan, profiles, images, prevPath is not null);
             try
@@ -174,6 +189,15 @@ public sealed class ClipAutoReviewService
             catch (Exception ex)
             {
                 _log.LogDebug(ex, "RecordAutoReview for assembly gate skipped");
+            }
+
+            try
+            {
+                _reviewIndex.UpsertClip(projectId, scene, clip, durableFrames, draft);
+            }
+            catch (Exception ex)
+            {
+                _log.LogDebug(ex, "Review index upsert skipped S{Scene}C{Clip}", scene, clip);
             }
 
             onProgress?.Invoke(100, 100, "Review draft ready");
