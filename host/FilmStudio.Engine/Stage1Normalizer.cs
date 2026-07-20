@@ -234,7 +234,60 @@ public static class Stage1Normalizer
                 else
                     b.Remove(wkey);
             }
+
+            NormalizeBeatAudioKeys(b);
         }
+    }
+
+    /// <summary>
+    /// Ensure separate <c>ambient</c> + <c>sfx</c> (root and nested audio).
+    /// V4 greenfield: no <c>ambient_or_sfx</c> — combined field is ignored and removed.
+    /// </summary>
+    public static void NormalizeBeatAudioKeys(Dictionary<string, object?> beat)
+    {
+        Dictionary<string, object?>? nested = null;
+        if (beat.TryGetValue("audio", out var a) && a is Dictionary<string, object?> ad)
+            nested = ad;
+
+        string Get(string key)
+        {
+            if (nested is not null &&
+                nested.TryGetValue(key, out var nv) &&
+                !string.IsNullOrWhiteSpace(CoerceString(nv)))
+                return CoerceString(nv)!.Trim();
+            if (beat.TryGetValue(key, out var rv) && !string.IsNullOrWhiteSpace(CoerceString(rv)))
+                return CoerceString(rv)!.Trim();
+            return "";
+        }
+
+        var ambient = Get("ambient");
+        var sfx = Get("sfx");
+
+        // If still empty, try light cues from visual_event (Fountain importer already does this;
+        // LLM Stage1 may leave ambient/sfx blank).
+        if (string.IsNullOrWhiteSpace(ambient) && string.IsNullOrWhiteSpace(sfx))
+        {
+            var ve = CoerceString(beat.TryGetValue("visual_event", out var vev) ? vev : null) ?? "";
+            var inferred = FountainStage1Importer.InferAmbientAndSfx(ve);
+            ambient = inferred.Ambient;
+            sfx = inferred.Sfx;
+        }
+
+        beat["ambient"] = ambient;
+        beat["sfx"] = sfx;
+        beat.Remove("ambient_or_sfx");
+
+        nested ??= new Dictionary<string, object?>();
+        nested["ambient"] = ambient;
+        nested["sfx"] = sfx;
+        if (!nested.ContainsKey("delivery"))
+            nested["delivery"] = CoerceString(beat.TryGetValue("delivery", out var d) ? d : null) ?? "none";
+        if (!nested.ContainsKey("speaker"))
+            nested["speaker"] = CoerceString(beat.TryGetValue("speaker", out var sp) ? sp : null) ?? "";
+        if (!nested.ContainsKey("dialogue"))
+            nested["dialogue"] = CoerceString(beat.TryGetValue("dialogue", out var dlg) ? dlg : null) ?? "";
+        nested.Remove("ambient_or_sfx");
+        beat["audio"] = nested;
     }
 
     private static string NormLocationType(object? v)

@@ -2044,7 +2044,8 @@ public sealed class FilmJobService
             previousClipVideoPath: prevVideoPath,
             startFrameImagePath: null,
             maxRefs: 5,
-            styleHead: styleHead);
+            styleHead: styleHead,
+            resolution: resolution);
 
         if (string.IsNullOrWhiteSpace(built.Prompt))
             throw new InvalidOperationException("clip missing visual_prompt");

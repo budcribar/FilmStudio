@@ -15,7 +15,11 @@ namespace FilmStudio.Engine;
 /// </summary>
 public sealed class Stage2PlannerService
 {
-    private const string GlobalNegative =
+    /// <summary>
+    /// Provider-agnostic global negatives — applied at gen time by
+    /// <see cref="ClipVideoPromptBuilder"/>, not baked into every blueprint row.
+    /// </summary>
+    public const string GlobalNegativeDefault =
         "no legible text, no watermarks, no logos, no extra limbs, " +
         "blur/obscure environmental signage or screens, no name tags, no name badges, " +
         "no embroidered names, no lower thirds, no personal names on clothing or props";
@@ -365,27 +369,12 @@ public sealed class Stage2PlannerService
 
             UpdateWardrobeFromBeat(wardrobe, beat, clipCast);
 
-            var vp = BuildVisualPrompt(beat, sceneWork, resolution, locSeeds, charSeeds, wardrobe, i);
-            if (cont == "extend_previous" &&
-                !vp.Contains("continue from previous", StringComparison.OrdinalIgnoreCase))
-            {
-                var contCue =
-                    "CONTINUE from previous last frame — same place and character positions; " +
-                    "do not reset to the door or restart the walk; pick up exactly where the last clip ended";
-                var m = Regex.Match(vp, @"\s*/\s*\d+p.*24fps\s*$", RegexOptions.IgnoreCase);
-                var body = m.Success ? vp[..m.Index].Trim() : vp;
-                var suffix = m.Success ? m.Value : $" / {resolution}, 24fps";
-                // Always append — never drop continuity for length
-                vp = $"{body.TrimEnd('.', ' ')}. {contCue}{suffix}";
-            }
+            // Continuity + resolution/fps are owned by ClipVideoPromptBuilder at gen time —
+            // keep blueprint visual_prompt declarative (action/style only).
+            var vp = BuildVisualPrompt(beat, sceneWork, locSeeds, charSeeds, wardrobe, i);
 
-            var neg = GlobalNegative;
-            var extra = NegExtras(beat);
-            if (!string.IsNullOrWhiteSpace(extra))
-                neg = $"{neg}, {extra}";
-            var wardNeg = WardrobeNegativeExtras(wardrobe, clipCast);
-            if (!string.IsNullOrWhiteSpace(wardNeg))
-                neg = $"{neg}, {wardNeg}";
+            // Story-specific negatives only; provider global negatives applied at gen time.
+            var neg = BuildStoryNegativePrompt(beat, wardrobe, clipCast);
 
             clips.Add(new Dictionary<string, object?>
             {
@@ -441,13 +430,13 @@ public sealed class Stage2PlannerService
     private static string BuildVisualPrompt(
         Dictionary<string, object?> beat,
         Dictionary<string, object?> scene,
-        string resolution,
         Dictionary<string, object?> locSeeds,
         Dictionary<string, object?> charSeeds,
         Dictionary<string, List<string>> wardrobe,
         int clipIndex)
     {
         var ve = CoerceString(beat.TryGetValue("visual_event", out var vev) ? vev : null) ?? "";
+        // Strip any legacy technical suffix from beat text (res/fps owned at gen time)
         ve = Regex.Replace(ve, @"\s*/\s*\d+p.*$", "", RegexOptions.IgnoreCase).Trim();
         var cast = ClipCastTokens(scene, beat);
         var primary = CoerceString(beat.TryGetValue("primary_subject", out var ps) ? ps : null)
@@ -465,12 +454,14 @@ public sealed class Stage2PlannerService
                 "(same render family as animal hero) -- not photoreal, not live-action";
         }
 
-        if (!string.IsNullOrEmpty(primary) && !ve.Contains(primary, StringComparison.Ordinal))
+        // Only inject Character_* token when neither the key nor a bare display name is present
+        // (avoids "Character_Narrator Candlelight. A pale NARRATOR faces us…").
+        if (!string.IsNullOrEmpty(primary) && !VisualMentionsSubject(ve, primary))
             ve = $"{primary} {ve}".Trim();
 
         var others = cast.Where(t => t != primary && !ve.Contains(t, StringComparison.Ordinal)).Take(3).ToList();
         var othersBit = others.Count > 0 ? $"also on screen: {string.Join(", ", others)}" : "";
-        // CAST COUNT is owned by ClipVideoPromptBuilder at gen time (not embedded in plan visual_prompt).
+        // CAST COUNT + CHARACTER VARIABLES owned by ClipVideoPromptBuilder at gen time.
 
         var block = CoerceString(beat.TryGetValue("blocking_notes", out var bn) ? bn : null) ?? "";
         if (!string.IsNullOrWhiteSpace(block) &&
@@ -485,12 +476,11 @@ public sealed class Stage2PlannerService
         var speech = SpeechClause(beat, cast);
         var mustNot = GetList(beat, "must_not").Select(x => x?.ToString() ?? "").Where(x => x.Length > 0).Take(3).ToList();
         var mustBit = mustNot.Count > 0 ? $"must not: {string.Join("; ", mustNot)}" : "";
+        // Same wardrobe phrase length for all clips in the scene (consistent continuity language).
         var ward = WardrobeContinuityClause(wardrobe, cast, clipIndex, primary);
-        // Real identity only (skip import stubs). Full locks still come from gen-time CHARACTER VARIABLES + refs.
-        var idCue = IdentityCues(cast, charSeeds);
 
         // Join full slots — no length budget, no dropping fields, no ellipsis packing.
-        // Gen models have ~1M+ context; incomplete prompts waste API spend.
+        // Identity cues omitted: gen-time CHARACTER VARIABLES + locked refs own identity.
         var parts = new List<(int Order, string Text)>
         {
             (0, style),
@@ -500,22 +490,81 @@ public sealed class Stage2PlannerService
             (6, speech),
             (7, mustBit),
             (8, ward),
-            (9, idCue),
         };
-        return JoinVisualPromptParts(parts, resolution);
+        return JoinVisualPromptParts(parts);
     }
 
-    private static string JoinVisualPromptParts(IEnumerable<(int Order, string Text)> parts, string resolution)
+    /// <summary>
+    /// True if visual text already names the character (full key or bare name like NARRATOR / Old Man).
+    /// </summary>
+    public static bool VisualMentionsSubject(string visual, string primaryKey)
     {
-        var suffix = $" / {resolution}, 24fps";
-        var body = string.Join(". ",
-            parts
-                .OrderBy(p => p.Order)
-                .Select(p => Regex.Replace((p.Text ?? "").Trim(), @"\s+", " ").TrimEnd('.', ' '))
-                .Where(t => t.Length > 0));
-        if (string.IsNullOrWhiteSpace(body))
-            body = "Scene action";
-        return body + suffix;
+        if (string.IsNullOrWhiteSpace(visual) || string.IsNullOrWhiteSpace(primaryKey))
+            return false;
+        if (visual.Contains(primaryKey, StringComparison.OrdinalIgnoreCase))
+            return true;
+        var bare = primaryKey.StartsWith("Character_", StringComparison.OrdinalIgnoreCase)
+            ? primaryKey["Character_".Length..]
+            : primaryKey;
+        if (string.IsNullOrWhiteSpace(bare)) return false;
+        // Character_Old_Man → "Old Man", "Old_Man", "OLDMAN"
+        var spaced = bare.Replace('_', ' ');
+        if (visual.Contains(spaced, StringComparison.OrdinalIgnoreCase))
+            return true;
+        if (visual.Contains(bare, StringComparison.OrdinalIgnoreCase))
+            return true;
+        var compact = Regex.Replace(bare, @"[_ ]+", "");
+        if (compact.Length >= 3 &&
+            Regex.IsMatch(visual, $@"\b{Regex.Escape(compact)}\b", RegexOptions.IgnoreCase))
+            return true;
+        return false;
+    }
+
+    private static string JoinVisualPromptParts(IEnumerable<(int Order, string Text)> parts)
+    {
+        var sentences = parts
+            .OrderBy(p => p.Order)
+            .Select(p => NormalizeSentencePart(p.Text))
+            .Where(t => t.Length > 0)
+            .ToList();
+        if (sentences.Count == 0)
+            sentences.Add("Scene action");
+        var body = string.Join(". ", sentences);
+        return body.TrimEnd('.', ' ', '\t');
+    }
+
+    private static string NormalizeSentencePart(string? text)
+    {
+        if (string.IsNullOrWhiteSpace(text)) return "";
+        var t = Regex.Replace(text.Trim(), @"\s+", " ");
+        // Collapse internal double punctuation / trailing junk
+        t = Regex.Replace(t, @"\s*\.\s*\.+", ".");
+        t = t.TrimEnd('.', ',', ';', ' ', '\t');
+        return t;
+    }
+
+    /// <summary>Story-specific negatives only (must_not + wardrobe soft ban), deduped.</summary>
+    public static string BuildStoryNegativePrompt(
+        Dictionary<string, object?> beat,
+        Dictionary<string, List<string>> wardrobe,
+        List<string> clipCast)
+    {
+        var items = new List<string>();
+        void Add(string? raw)
+        {
+            if (string.IsNullOrWhiteSpace(raw)) return;
+            foreach (var piece in raw.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+            {
+                if (piece.Length == 0) continue;
+                if (items.Any(x => x.Equals(piece, StringComparison.OrdinalIgnoreCase)))
+                    continue;
+                items.Add(piece);
+            }
+        }
+
+        Add(NegExtras(beat));
+        Add(WardrobeNegativeExtras(wardrobe, clipCast));
+        return string.Join(", ", items);
     }
 
     /// <summary>FADE IN / CUT TO-only beats produce empty visual prompts — never plan clips for them.</summary>
@@ -570,14 +619,34 @@ public sealed class Stage2PlannerService
     private static bool IsOnCameraSpeech(Dictionary<string, object?> beat)
     {
         var (delivery, speaker) = BeatAudio(beat);
-        return delivery == "spoken_on_camera" && !speaker.Contains("narrator", StringComparison.OrdinalIgnoreCase);
+        return IsOnCameraDelivery(delivery) &&
+               !speaker.Contains("narrator", StringComparison.OrdinalIgnoreCase);
+    }
+
+    /// <summary>Blueprint may use on_camera or spoken_on_camera for lip-sync dialogue.</summary>
+    public static bool IsOnCameraDelivery(string? delivery)
+    {
+        var d = (delivery ?? "").Trim().ToLowerInvariant();
+        return d is "spoken_on_camera" or "on_camera" or "spoken";
+    }
+
+    /// <summary>Normalize delivery aliases to canonical tokens for audio_payload.</summary>
+    public static string NormalizeDelivery(string? delivery)
+    {
+        var d = (delivery ?? "none").Trim().ToLowerInvariant();
+        if (string.IsNullOrEmpty(d)) return "none";
+        if (d is "on_camera" or "spoken" or "dialogue_on_camera")
+            return "spoken_on_camera";
+        if (d is "vo" or "voiceover" or "voice_over" or "off_camera" or "offcamera")
+            return "voiceover_internal";
+        return d;
     }
 
     private static (string Delivery, string Speaker) BeatAudio(Dictionary<string, object?> beat)
     {
         var nested = beat.TryGetValue("audio", out var a) && a is Dictionary<string, object?> ad ? ad : null;
-        var delivery = (CoerceString(nested?.TryGetValue("delivery", out var d) == true ? d
-            : beat.TryGetValue("delivery", out var d2) ? d2 : null) ?? "").ToLowerInvariant();
+        var delivery = NormalizeDelivery(CoerceString(nested?.TryGetValue("delivery", out var d) == true ? d
+            : beat.TryGetValue("delivery", out var d2) ? d2 : null));
         var speaker = (CoerceString(nested?.TryGetValue("speaker", out var s) == true ? s
             : beat.TryGetValue("speaker", out var s2) ? s2 : null) ?? "").ToLowerInvariant();
         return (delivery, speaker);
@@ -585,22 +654,29 @@ public sealed class Stage2PlannerService
 
     private static Dictionary<string, object?> BuildAudioPayload(Dictionary<string, object?> beat)
     {
+        // Prefer normalized separate keys (Stage1Normalizer / Fountain importer)
+        Stage1Normalizer.NormalizeBeatAudioKeys(beat);
+
         var nested = beat.TryGetValue("audio", out var a) && a is Dictionary<string, object?> ad ? ad : null;
-        var delivery = CoerceString(nested?.TryGetValue("delivery", out var d) == true ? d
-            : beat.TryGetValue("delivery", out var d2) ? d2 : null) ?? "none";
+        var delivery = NormalizeDelivery(CoerceString(nested?.TryGetValue("delivery", out var d) == true ? d
+            : beat.TryGetValue("delivery", out var d2) ? d2 : null) ?? "none");
         var speaker = CoerceString(nested?.TryGetValue("speaker", out var s) == true ? s
             : beat.TryGetValue("speaker", out var s2) ? s2 : null) ?? "";
         var dialogue = CoerceString(nested?.TryGetValue("dialogue", out var dlg) == true ? dlg
             : beat.TryGetValue("dialogue", out var dlg2) ? dlg2 : null) ?? "";
+        // V4: only separate ambient + sfx (no ambient_or_sfx)
+        var ambient = CoerceString(nested?.TryGetValue("ambient", out var am) == true ? am
+            : beat.TryGetValue("ambient", out var am2) ? am2 : null) ?? "";
         var sfx = CoerceString(nested?.TryGetValue("sfx", out var sx) == true ? sx
-            : beat.TryGetValue("ambient_or_sfx", out var sx2) ? sx2 : null) ?? "";
+            : beat.TryGetValue("sfx", out var sx2) ? sx2 : null) ?? "";
+
         return new Dictionary<string, object?>
         {
-            ["delivery"] = delivery.Trim().ToLowerInvariant(),
+            ["delivery"] = delivery,
             ["speaker"] = speaker,
             ["dialogue"] = dialogue,
             ["sfx"] = sfx,
-            ["ambient"] = "",
+            ["ambient"] = ambient,
         };
     }
 
@@ -615,7 +691,7 @@ public sealed class Stage2PlannerService
         // Keep full dialogue in the visual speech cue — audio_payload already has the full line;
         // truncating here produced mid-quote "…" and incomplete lip-sync guidance.
         var quote = dialogue.Trim();
-        if (delivery is "spoken_on_camera")
+        if (IsOnCameraDelivery(delivery))
             return $"{speaker} ON CAMERA lip-syncs \"{quote}\"";
         return $"OFF-CAMERA VOICEOVER {speaker} says \"{quote}\"";
     }
@@ -719,38 +795,6 @@ public sealed class Stage2PlannerService
         CoerceString(scene.TryGetValue("render_style_lock", out var r) ? r : null) ?? "";
 
     /// <summary>
-    /// Optional identity hints for Stage 2 visual_prompt when cast seeds already have real locks.
-    /// Skips import placeholders so we never emit "Name, as described in the scr…".
-    /// Full character sheets are applied at gen time (ClipVideoPromptBuilder + locked refs).
-    /// </summary>
-    private static string IdentityCues(List<string> cast, Dictionary<string, object?> charSeeds)
-    {
-        var bits = new List<string>();
-        foreach (var key in cast.Take(4))
-        {
-            if (!charSeeds.TryGetValue(key, out var s) || s is not Dictionary<string, object?> seed)
-                continue;
-            // Prefer visual_lock; fall back to description only if it is real (not a stub)
-            var vl = CoerceString(seed.TryGetValue("visual_lock", out var v) ? v : null) ?? "";
-            if (string.IsNullOrWhiteSpace(vl) || IsPlaceholderIdentityText(vl))
-            {
-                vl = CoerceString(seed.TryGetValue("description", out var d) ? d : null) ?? "";
-                if (string.IsNullOrWhiteSpace(vl) || IsPlaceholderIdentityText(vl))
-                    continue;
-            }
-
-            // Same hygiene as Stage 1 / portraits — any book, not story-specific
-            vl = CharacterVisualTextScrubber.ScrubVisualProse(vl);
-            if (string.IsNullOrWhiteSpace(vl) || IsPlaceholderIdentityText(vl))
-                continue;
-
-            bits.Add($"{key}: {vl}");
-        }
-        if (bits.Count == 0) return "";
-        return string.Join("; ", bits);
-    }
-
-    /// <summary>
     /// True for empty / generic import stubs that must not appear in visual prompts.
     /// </summary>
     public static bool IsPlaceholderIdentityText(string? text)
@@ -825,11 +869,14 @@ public sealed class Stage2PlannerService
         int clipIndex,
         string primary)
     {
+        // Same item count for every clip in the scene so continuity language does not
+        // thrash between C1 (3 items) and C2+ (2 items).
+        const int maxItemsPerChar = 3;
         var bits = new List<string>();
         foreach (var key in cast.Take(4))
         {
             if (!state.TryGetValue(key, out var items) || items.Count == 0) continue;
-            var shown = items.Take(clipIndex == 0 ? 3 : 2).ToList();
+            var shown = items.Take(maxItemsPerChar).ToList();
             if (shown.Count == 0) continue;
             bits.Add($"{key} still wears {string.Join(", ", shown)}");
         }

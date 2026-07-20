@@ -404,7 +404,14 @@
               "type": "string",
               "description": "Full or partial line for this beat. Empty if none."
             },
-            "ambient_or_sfx": { "type": "string" }
+            "ambient": {
+              "type": "string",
+              "description": "Continuous room bed / weather / tone (not a one-shot event). Empty if none."
+            },
+            "sfx": {
+              "type": "string",
+              "description": "Transient sound effects (knock, slam, shatter, footsteps, …). Empty if none."
+            }
           }
         },
         "continuity": {

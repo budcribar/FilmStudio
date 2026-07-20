@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using FilmStudio.Core.Options;
 using FilmStudio.Engine;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -74,6 +75,127 @@ public class Stage2VisualPromptTests : IDisposable
     public void IsPlaceholderIdentityText_detects_stubs(string text, bool expected)
     {
         Assert.Equal(expected, Stage2PlannerService.IsPlaceholderIdentityText(text));
+    }
+
+    [Theory]
+    [InlineData("spoken_on_camera", true)]
+    [InlineData("on_camera", true)]
+    [InlineData("spoken", true)]
+    [InlineData("voiceover_internal", false)]
+    [InlineData("none", false)]
+    public void On_camera_delivery_aliases(string delivery, bool onCam)
+    {
+        Assert.Equal(onCam, Stage2PlannerService.IsOnCameraDelivery(delivery));
+        if (onCam)
+            Assert.Equal("spoken_on_camera", Stage2PlannerService.NormalizeDelivery(delivery));
+    }
+
+    [Theory]
+    [InlineData("Character_Narrator faces the lens.", "Character_Narrator", true)]
+    [InlineData("A pale NARRATOR faces us in candlelight.", "Character_Narrator", true)]
+    [InlineData("Candlelight. Empty room.", "Character_Narrator", false)]
+    [InlineData("The Old Man sleeps.", "Character_Old_Man", true)]
+    public void VisualMentionsSubject_avoids_awkward_prepend(string visual, string key, bool mentions)
+    {
+        Assert.Equal(mentions, Stage2PlannerService.VisualMentionsSubject(visual, key));
+    }
+
+    [Fact]
+    public void BuildStoryNegativePrompt_dedupes_and_omits_global()
+    {
+        var beat = new Dictionary<string, object?>
+        {
+            ["must_not"] = new List<object?> { "no watermarks", "no crowd extras", "no watermarks" },
+        };
+        var wardrobe = new Dictionary<string, List<string>>
+        {
+            ["Character_Hero"] = new List<string> { "coat" },
+        };
+        var neg = Stage2PlannerService.BuildStoryNegativePrompt(
+            beat, wardrobe, new List<string> { "Character_Hero" });
+        Assert.DoesNotContain("no legible text", neg, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("no watermarks", neg, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("no crowd extras", neg, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal(1, Regex.Matches(neg, "no watermarks", RegexOptions.IgnoreCase).Count);
+        Assert.Contains("no extra unmentioned hats", neg, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void ClipBuilder_appends_global_and_story_negatives()
+    {
+        var clip = System.Text.Json.JsonDocument.Parse("""
+            {
+              "clip_number": 1,
+              "visual_prompt": "Character_Hero walks. / 480p, 24fps",
+              "characters_on_screen": ["Character_Hero"],
+              "negative_prompt": "no crowd extras",
+              "veo_continuation_source": "none",
+              "audio_payload": { "speaker": "", "dialogue": "", "delivery": "none" }
+            }
+            """).RootElement;
+        var profiles = new Dictionary<string, ClipVideoPromptBuilder.CharacterProfile>(
+            StringComparer.OrdinalIgnoreCase)
+        {
+            ["Character_Hero"] = new() { Key = "Character_Hero", DisplayName = "Hero", Description = "tall" },
+        };
+        var built = ClipVideoPromptBuilder.Build(
+            clip, Path.GetTempPath(), profiles, resolution: "720p");
+        Assert.Contains("NEGATIVE:", built.Prompt, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("no legible text", built.Prompt, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("no crowd extras", built.Prompt, StringComparison.OrdinalIgnoreCase);
+        // Gen builder owns technical suffix; legacy Stage2 suffix stripped from action
+        Assert.Contains("/ 720p, 24fps", built.Prompt, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal(1, Regex.Matches(built.Prompt, @"/\s*\d+p\s*,\s*\d+fps", RegexOptions.IgnoreCase).Count);
+    }
+
+    [Fact]
+    public async Task Stage2_visual_prompts_omit_resolution_fps_suffix()
+    {
+        const string projectId = "Demo";
+        var fountain = """
+            Title: Res Check
+
+            INT. ROOM - DAY
+
+            HERO
+            Hello world.
+            """;
+        ScreenplayService.SaveDraft(_store, projectId, fountain);
+        var sign = ScreenplayService.SignOff(_store, projectId);
+        Assert.True(sign.Ok, sign.Error);
+
+        var planner = new Stage2PlannerService(_store, NullLogger<Stage2PlannerService>.Instance);
+        var result = await planner.PlanAsync(projectId, resolution: "720p", scenes: "all");
+        Assert.True(result.Ok);
+        Assert.True(File.Exists(result.OutPath));
+
+        var bp = await File.ReadAllTextAsync(result.OutPath!);
+        Assert.DoesNotContain("24fps", bp, StringComparison.OrdinalIgnoreCase);
+        // visual_prompt values should not end with bare /720p technical suffix
+        using var doc = System.Text.Json.JsonDocument.Parse(bp);
+        var anyClip = false;
+        void Walk(System.Text.Json.JsonElement el)
+        {
+            if (el.ValueKind == System.Text.Json.JsonValueKind.Object)
+            {
+                if (el.TryGetProperty("visual_prompt", out var vp))
+                {
+                    anyClip = true;
+                    var text = vp.GetString() ?? "";
+                    Assert.DoesNotContain("24fps", text, StringComparison.OrdinalIgnoreCase);
+                    Assert.DoesNotMatch(new Regex(@"/\s*\d{3,4}p\s*$", RegexOptions.IgnoreCase), text);
+                }
+                foreach (var p in el.EnumerateObject())
+                    Walk(p.Value);
+            }
+            else if (el.ValueKind == System.Text.Json.JsonValueKind.Array)
+            {
+                foreach (var i in el.EnumerateArray())
+                    Walk(i);
+            }
+        }
+        Walk(doc.RootElement);
+        Assert.True(anyClip);
     }
 
     [Fact]

@@ -11,6 +11,9 @@ namespace FilmStudio.Engine;
 /// </summary>
 public static class ClipVideoPromptBuilder
 {
+    /// <summary>Provider default negatives (not stored per-clip in Stage 2 blueprint).</summary>
+    public static string GlobalNegativePrompt { get; set; } = Stage2PlannerService.GlobalNegativeDefault;
+
     /// <summary>
     /// Hint only — we do not pre-truncate to this. On API "prompt too long" errors the client
     /// shortens and retries (see <see cref="ShortenPromptForRetry"/>).
@@ -82,9 +85,12 @@ public static class ClipVideoPromptBuilder
         string? previousClipVideoPath = null,
         string? startFrameImagePath = null,
         int maxRefs = 5,
-        string? styleHead = null)
+        string? styleHead = null,
+        string? resolution = null,
+        int frameRate = 24)
     {
         characters ??= new Dictionary<string, CharacterProfile>(StringComparer.OrdinalIgnoreCase);
+        var res = NormalizeResolutionLabel(resolution);
 
         // Mode follows actual media inputs, not blueprint cont alone.
         // Cast-change reseed (PR2) clears previousClipVideoPath while blueprint may still say
@@ -229,6 +235,16 @@ public static class ClipVideoPromptBuilder
             "End cleanly when the spoken line and primary action finish — " +
             "do not hold a frozen pose or empty silence after dialogue.");
         sb.Append(actionTagged);
+        // Technical output spec owned here (not Stage2 blueprint) — resolution + frame rate
+        sb.Append($" / {res}, {Math.Clamp(frameRate, 12, 60)}fps");
+
+        var negBlock = BuildNegativeBlock(clipEl);
+        if (!string.IsNullOrWhiteSpace(negBlock))
+        {
+            sb.AppendLine();
+            sb.AppendLine();
+            sb.Append(negBlock);
+        }
 
         var prompt = sb.ToString().Trim();
         IReadOnlyList<string> attached = useReferenceImages ? refPaths : Array.Empty<string>();
@@ -269,7 +285,10 @@ public static class ClipVideoPromptBuilder
     {
         if (string.IsNullOrWhiteSpace(visual)) return "";
         var v = visual.Trim();
+        // Strip legacy Stage2 technical suffixes — gen builder re-appends current resolution/fps
+        v = Regex.Replace(v, @"\s*/\s*\d{3,4}p\s*,\s*\d{2}fps\s*$", "", RegexOptions.IgnoreCase).Trim();
         v = Regex.Replace(v, @"\s*/\s*\d+p[^/]*24fps\s*$", "", RegexOptions.IgnoreCase).Trim();
+        v = Regex.Replace(v, @"\s*/\s*\d{3,4}p\s*$", "", RegexOptions.IgnoreCase).Trim();
         v = Regex.Replace(
             v,
             @"\bCAST COUNT:\s*exactly\s+\d+[^.]*\.\s*(?:No extra people\.\s*)?",
@@ -541,11 +560,14 @@ public static class ClipVideoPromptBuilder
 
         var speaker = audio.TryGetProperty("speaker", out var sp) ? sp.GetString() ?? "" : "";
         var dialogue = audio.TryGetProperty("dialogue", out var dlg) ? dlg.GetString() ?? "" : "";
-        var delivery = (audio.TryGetProperty("delivery", out var del) ? del.GetString() ?? "none" : "none")
-            .ToLowerInvariant();
+        var delivery = Stage2PlannerService.NormalizeDelivery(
+            audio.TryGetProperty("delivery", out var del) ? del.GetString() ?? "none" : "none");
         var sfx = audio.TryGetProperty("sfx", out var sx) ? sx.GetString() ?? "" : "";
+        var ambient = audio.TryGetProperty("ambient", out var am) ? am.GetString() ?? "" : "";
 
-        if (string.IsNullOrWhiteSpace(dialogue) && string.IsNullOrWhiteSpace(sfx))
+        if (string.IsNullOrWhiteSpace(dialogue) &&
+            string.IsNullOrWhiteSpace(sfx) &&
+            string.IsNullOrWhiteSpace(ambient))
             return "";
 
         var voiceLock = "";
@@ -564,27 +586,78 @@ public static class ClipVideoPromptBuilder
                              delivery is "voiceover_internal" or "internal" or "narration" or "vo" or "thought";
             // Keep full dialogue — long context is fine for evaluation
             var quote = dialogue.Trim();
+            var bed = !string.IsNullOrWhiteSpace(ambient)
+                ? $" Ambient bed: {ambient.Trim()}."
+                : !string.IsNullOrWhiteSpace(sfx)
+                    ? $" Ambient/Foley: {sfx.Trim()}."
+                    : " Secondary layer = soft room tone / Foley.";
             if (isNarrator)
             {
                 return
                     $"AUDIO: REQUIRED native Grok off-camera voiceover. {who} narrates " +
-                    $"exactly: \"{quote}\". Do not lip-sync on-screen cast to this VO. " +
-                    $"Secondary layer = soft room tone / Foley.{voiceLock}";
+                    $"exactly: \"{quote}\". Do not lip-sync on-screen cast to this VO.{bed}{voiceLock}";
             }
+            // spoken_on_camera / on_camera (normalized)
             return
                 $"AUDIO: REQUIRED native Grok dialogue. {who} ON CAMERA lip-syncs " +
-                $"exactly: \"{quote}\". Other mouths closed. Speech intelligible; never silent.{voiceLock}";
+                $"exactly: \"{quote}\". Other mouths closed. Speech intelligible; never silent.{bed}{voiceLock}";
         }
 
-        if (!string.IsNullOrWhiteSpace(sfx))
-            return $"AUDIO: ambient/Foley only — {sfx}. No dialogue.";
+        if (!string.IsNullOrWhiteSpace(ambient) || !string.IsNullOrWhiteSpace(sfx))
+        {
+            var layers = new List<string>();
+            if (!string.IsNullOrWhiteSpace(ambient)) layers.Add(ambient.Trim());
+            if (!string.IsNullOrWhiteSpace(sfx)) layers.Add(sfx.Trim());
+            return $"AUDIO: ambient/Foley only — {string.Join("; ", layers)}. No dialogue.";
+        }
         return "";
+    }
+
+    /// <summary>
+    /// Global provider negatives + story-specific <c>negative_prompt</c> from the blueprint.
+    /// </summary>
+    private static string BuildNegativeBlock(JsonElement clipEl)
+    {
+        var story = clipEl.TryGetProperty("negative_prompt", out var np)
+            ? (np.GetString() ?? "").Trim()
+            : "";
+        var global = (GlobalNegativePrompt ?? "").Trim();
+        if (global.Length == 0 && story.Length == 0)
+            return "";
+
+        // Dedupe tokens across global + story
+        var items = new List<string>();
+        void AddCsv(string csv)
+        {
+            foreach (var p in csv.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+            {
+                if (p.Length == 0) continue;
+                if (items.Any(x => x.Equals(p, StringComparison.OrdinalIgnoreCase))) continue;
+                items.Add(p);
+            }
+        }
+        if (global.Length > 0) AddCsv(global);
+        if (story.Length > 0) AddCsv(story);
+        if (items.Count == 0) return "";
+        return "NEGATIVE: " + string.Join(", ", items) + ".";
     }
 
     private static string SimplifyVisual(string visual)
     {
         visual = Regex.Replace(visual, @"\s+", " ").Trim();
         return visual;
+    }
+
+    /// <summary>Normalize resolution labels for prompt technical suffix (API may use same string).</summary>
+    public static string NormalizeResolutionLabel(string? resolution)
+    {
+        var r = (resolution ?? "").Trim().ToLowerInvariant();
+        if (string.IsNullOrEmpty(r)) return "480p";
+        if (r is "480" or "480p") return "480p";
+        if (r is "720" or "720p") return "720p";
+        if (r is "1080" or "1080p") return "1080p";
+        if (Regex.IsMatch(r, @"^\d{3,4}p$")) return r;
+        return r.EndsWith('p') ? r : r + "p";
     }
 
     private static int CharacterRefPriority(string key)

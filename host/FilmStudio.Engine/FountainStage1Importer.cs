@@ -110,6 +110,7 @@ public static class FountainStage1Importer
             if (FountainParser.IsStandaloneTransitionLine(text) || IsNoopTransitionText(text))
                 return;
             beatIndex++;
+            var (ambient, sfx) = InferAmbientAndSfx(text);
             beats.Add(new Dictionary<string, object?>
             {
                 ["beat_id"] = $"b{beatIndex}",
@@ -120,7 +121,18 @@ public static class FountainStage1Importer
                 ["continuity"] = beatIndex == 1 ? "new_setup" : "continuous_from_previous_beat",
                 ["time_weight"] = Math.Clamp(text.Split(' ', StringSplitOptions.RemoveEmptyEntries).Length / 12.0, 0.5, 3.0),
                 ["delivery"] = "none",
+                ["speaker"] = "",
                 ["dialogue"] = "",
+                ["ambient"] = ambient,
+                ["sfx"] = sfx,
+                ["audio"] = new Dictionary<string, object?>
+                {
+                    ["delivery"] = "none",
+                    ["speaker"] = "",
+                    ["dialogue"] = "",
+                    ["ambient"] = ambient,
+                    ["sfx"] = sfx,
+                },
                 ["characters_on_screen"] = CurrentOnScreen(curScene),
             });
         }
@@ -138,6 +150,9 @@ public static class FountainStage1Importer
             var visual = string.IsNullOrWhiteSpace(pendingParen)
                 ? $"{pendingChar} speaks."
                 : $"{pendingChar} ({pendingParen}).";
+            var delivery = IsOffScreen(pendingChar) ? "voiceover_internal" : "spoken_on_camera";
+            // Parenthetical may carry light sfx ("whispering", rare); usually empty for dialogue
+            var (_, parenSfx) = InferAmbientAndSfx(pendingParen ?? "");
             beats.Add(new Dictionary<string, object?>
             {
                 ["beat_id"] = $"b{beatIndex}",
@@ -147,9 +162,19 @@ public static class FountainStage1Importer
                 ["action_class"] = "dialogue",
                 ["continuity"] = beatIndex == 1 ? "new_setup" : "continuous_from_previous_beat",
                 ["time_weight"] = Math.Clamp(text.Split(' ', StringSplitOptions.RemoveEmptyEntries).Length / 8.0, 0.5, 4.0),
-                ["delivery"] = IsOffScreen(pendingChar) ? "voiceover_internal" : "on_camera",
+                ["delivery"] = delivery,
                 ["speaker"] = charKey,
                 ["dialogue"] = text,
+                ["ambient"] = "",
+                ["sfx"] = parenSfx,
+                ["audio"] = new Dictionary<string, object?>
+                {
+                    ["delivery"] = delivery,
+                    ["speaker"] = charKey,
+                    ["dialogue"] = text,
+                    ["ambient"] = "",
+                    ["sfx"] = parenSfx,
+                },
                 ["primary_subject"] = charKey,
                 ["characters_on_screen"] = CurrentOnScreen(curScene),
             });
@@ -192,7 +217,18 @@ public static class FountainStage1Importer
                     ["continuity"] = "new_setup",
                     ["time_weight"] = 1.0,
                     ["delivery"] = "none",
+                    ["speaker"] = "",
                     ["dialogue"] = "",
+                    ["ambient"] = "",
+                    ["sfx"] = "",
+                    ["audio"] = new Dictionary<string, object?>
+                    {
+                        ["delivery"] = "none",
+                        ["speaker"] = "",
+                        ["dialogue"] = "",
+                        ["ambient"] = "",
+                        ["sfx"] = "",
+                    },
                     ["characters_on_screen"] = CurrentOnScreen(curScene),
                 });
             }
@@ -360,6 +396,54 @@ public static class FountainStage1Importer
 
     private static string? FirstTitle(FountainParser.ParseResult p, string key) =>
         p.TitlePage.TryGetValue(key, out var v) ? v : null;
+
+    private static readonly Regex AmbientCueRe = new(
+        @"\b(" +
+        @"rain|raining|rainfall|drizzle|storm|thunder|wind|winds|breeze|" +
+        @"hum(?:ming)?|murmur(?:ing)?|buzz(?:ing)?|drone|" +
+        @"room\s+tone|ambience|ambient|" +
+        @"crackling\s+fire|fire\s+crackles?|ticking\s+clock|clock\s+ticks?|" +
+        @"distant\s+traffic|traffic\s+noise|waves?|ocean|surf|" +
+        @"birds?(?:\s+chirp(?:ing)?)?|crickets?|cicadas?|" +
+        @"crowd\s+noise|soft\s+music|underscore" +
+        @")\b",
+        RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
+    private static readonly Regex SfxCueRe = new(
+        @"\b(" +
+        @"knock(?:s|ing)?|slam(?:s|med|ming)?|bang(?:s|ed|ing)?|crash(?:es|ed|ing)?|" +
+        @"thud(?:s|ded)?|creak(?:s|ed|ing)?|click(?:s|ed|ing)?|snap(?:s|ped|ping)?|" +
+        @"shatter(?:s|ed|ing)?|gunshot(?:s)?|explosion(?:s)?|blast(?:s)?|" +
+        @"footsteps?|footfalls?|door\s+(?:opens?|closes?|slams?)|" +
+        @"phone\s+rings?|glass\s+breaks?|splash(?:es|ed|ing)?|" +
+        @"screech(?:es|ed|ing)?|roar(?:s|ed|ing)?|beep(?:s|ed|ing)?|" +
+        @"alarm|siren|whistle|clap(?:s|ped|ping)?|thump(?:s|ed|ing)?" +
+        @")\b",
+        RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
+    /// <summary>
+    /// Split action prose into continuous <c>ambient</c> bed vs transient <c>sfx</c> hits.
+    /// Deterministic keyword cues only — no free-form NLP.
+    /// </summary>
+    public static (string Ambient, string Sfx) InferAmbientAndSfx(string? text)
+    {
+        if (string.IsNullOrWhiteSpace(text)) return ("", "");
+        var ambient = new List<string>();
+        var sfx = new List<string>();
+        foreach (Match m in AmbientCueRe.Matches(text))
+        {
+            var t = m.Value.Trim().ToLowerInvariant();
+            if (!ambient.Contains(t, StringComparer.OrdinalIgnoreCase))
+                ambient.Add(t);
+        }
+        foreach (Match m in SfxCueRe.Matches(text))
+        {
+            var t = m.Value.Trim().ToLowerInvariant();
+            if (!sfx.Contains(t, StringComparer.OrdinalIgnoreCase))
+                sfx.Add(t);
+        }
+        return (string.Join(", ", ambient), string.Join(", ", sfx));
+    }
 
     private static (string LocType, string LocName, string Setting) ParseHeading(string heading)
     {

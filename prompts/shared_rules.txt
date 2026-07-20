@@ -18,8 +18,9 @@ BASELINE (always on)
 - **VO↔visual:** If the beat/VO says through the window, the picture must not do over the wall.
 - **Cast automation:** Stage 1 scenes list full `characters_on_screen`; Stage 2 copies it and
   names every still-visible Character_* in visual_prompt so the engine can multi-lock refs.
-- **Audio automation:** Stage 1 beat root (or nested audio) carries delivery/speaker/dialogue;
-  Stage 2 must map that into clip audio_payload — never drop book lines.
+- **Audio automation:** Stage 1 beat root (or nested audio) carries delivery/speaker/dialogue
+  and separate **ambient** (bed) + **sfx** (one-shots); Stage 2 maps into clip audio_payload —
+  never drop book lines. Do not combine ambient and sfx into one ambient_or_sfx field.
   Stage 2 must **name who talks and what they say**. Single speaker: root fields +
   saying: "…". Multi-speaker banter: one continuous clip with `dialogue_turns`
   (ordered speaker+line list) so conversation can bounce without a cut per line;

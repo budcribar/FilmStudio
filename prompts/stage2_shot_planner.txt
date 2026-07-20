@@ -118,8 +118,10 @@ MAPPING BEATS → CLIPS
 9. Honor blocking_notes and must_not in visual_prompt and/or negative_prompt extras.
 10. **Audio mapping (critical for automation):** build clip `audio_payload` from Stage 1 beat
     fields. Accept **either**:
-    - beat root: `delivery`, `speaker`, `dialogue`, `ambient_or_sfx`, **or**
-    - nested: `beat.audio.{delivery,speaker,dialogue,...}`
+    - beat root: `delivery`, `speaker`, `dialogue`, `ambient`, `sfx`, **or**
+    - nested: `beat.audio.{delivery,speaker,dialogue,ambient,sfx}`
+    Prefer **separate** `ambient` (continuous bed) and `sfx` (one-shot events).  
+    Do **not** use a combined ambient_or_sfx field (V4 greenfield).  
     Never emit empty audio_payload when Stage 1 has dialogue. delivery must be one of
     spoken_on_camera | voiceover_internal | none. Narrator → voiceover_internal.
     Split long dialogue across clips with ellipsis/phrase boundaries — do not rewrite meaning.
@@ -179,7 +181,7 @@ Required:
 - negative_prompt: EXACT global string:
   "no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens, no name tags, no name badges, no embroidered names, no lower thirds, no personal names on clothing or props"
   (append orientation bans only when Stage 1 blocking requires it)
-- audio_payload: { speaker, dialogue, delivery }
+- audio_payload: { speaker, dialogue, delivery, ambient, sfx }
 
 visual_prompt must:
 - **Open with render_style_lock** (film-wide medium) when Stage 1 set it — especially any
@@ -217,7 +219,7 @@ visual_prompt must:
 audio_payload must:
 - speaker / dialogue / delivery always present (use speaker "none", dialogue "", delivery "none"
   only for true silent/ambient takes)
-- Copy ambient into audio_payload.ambient when Stage 1 set ambient_or_sfx
+- Copy Stage 1 `ambient` → audio_payload.ambient and `sfx` → audio_payload.sfx (separate keys only)
 
 Do NOT invent voice_profile text per clip — pipeline injects seed voice locks.
 You may add momentary emotion (“angry, short”) without changing age/sex/accent.
