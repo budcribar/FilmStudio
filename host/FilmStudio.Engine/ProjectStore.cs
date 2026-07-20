@@ -502,13 +502,13 @@ public sealed class ProjectStore
             using var existing = await JsonDocument.ParseAsync(stream, cancellationToken: ct)
                 .ConfigureAwait(false);
             foreach (var p in existing.RootElement.EnumerateObject())
-                merged[p.Name] = JsonSerializer.Deserialize<object>(p.Value.GetRawText());
+                merged[p.Name] = p.Value.Deserialize<object>();
         }
 
         if (updates.ValueKind == JsonValueKind.Object)
         {
             foreach (var p in updates.EnumerateObject())
-                merged[p.Name] = JsonSerializer.Deserialize<object>(p.Value.GetRawText());
+                merged[p.Name] = p.Value.Deserialize<object>();
         }
 
         var json = JsonSerializer.Serialize(merged, JsonDefaults.Indented);
@@ -1140,7 +1140,7 @@ public sealed class ProjectStore
             using var doc = JsonDocument.Parse(File.ReadAllText(bpPath));
             var root = doc.RootElement.Clone();
             // Rebuild via mutable dictionary tree
-            var tree = JsonSerializer.Deserialize<Dictionary<string, object?>>(root.GetRawText())
+            var tree = root.Deserialize<Dictionary<string, object?>>()
                        ?? new Dictionary<string, object?>();
             if (!tree.TryGetValue("global_production_variables", out var gpvObj) || gpvObj is null)
                 return;
@@ -1302,7 +1302,7 @@ public sealed class ProjectStore
         using var rawDoc = JsonDocument.Parse(File.ReadAllText(path));
         var merged = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase);
         foreach (var p in rawDoc.RootElement.EnumerateObject())
-            merged[p.Name] = JsonSerializer.Deserialize<object>(p.Value.GetRawText());
+            merged[p.Name] = p.Value.Deserialize<object>();
         return merged;
     }
 
@@ -1321,7 +1321,7 @@ public sealed class ProjectStore
                 if (crDoc.RootElement.ValueKind == JsonValueKind.Object)
                 {
                     foreach (var p in crDoc.RootElement.EnumerateObject())
-                        revs[p.Name] = JsonSerializer.Deserialize<object>(p.Value.GetRawText());
+                        revs[p.Name] = p.Value.Deserialize<object>();
                 }
             }
             catch { /* ignore */ }

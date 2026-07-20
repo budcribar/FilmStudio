@@ -584,7 +584,7 @@ public sealed class CostReportService
                 existing.ValueKind == JsonValueKind.Array)
             {
                 foreach (var item in existing.EnumerateArray())
-                    ledgerList.Add(JsonSerializer.Deserialize<object>(item.GetRawText()));
+                    ledgerList.Add(item.Deserialize<object>());
             }
 
             var ts = DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ss");
@@ -600,7 +600,7 @@ public sealed class CostReportService
             {
                 if (p.Name is "cost_ledger" or "cost_totals")
                     continue;
-                merged[p.Name] = JsonSerializer.Deserialize<object>(p.Value.GetRawText());
+                merged[p.Name] = p.Value.Deserialize<object>();
             }
 
             merged["cost_ledger"] = ledgerList;

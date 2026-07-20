@@ -1262,7 +1262,7 @@ public sealed class EngineApiClient
         {
             using var doc = JsonDocument.Parse(body);
             if (doc.RootElement.TryGetProperty("attach", out var att))
-                return JsonSerializer.Deserialize<AttachCharacterPlatesResult>(att.GetRawText(), JsonOpts);
+                return att.Deserialize<AttachCharacterPlatesResult>(JsonOpts);
         }
         catch { /* ignore */ }
         return null;
