@@ -1820,6 +1820,10 @@ public sealed class FilmJobService
         if (string.IsNullOrWhiteSpace(built.Prompt))
             throw new InvalidOperationException("clip missing visual_prompt");
 
+        // Fresh gens (not video-extend): every on-screen cast key must have a locked ref attached
+        if (prevVideoPath is null)
+            EnsureFreshGenHasLockedRefs(projectId, projectDir, built, profiles);
+
         // P2/P4: active gen pack + approved project rules
         var addenda = new List<string>();
         try
@@ -2040,10 +2044,72 @@ public sealed class FilmJobService
             else
                 await AppendLogAsync(
                     $"  [Audio] S{scene:D2}C{clip:D2} silence-trim skip: {result.Message}");
+
+            // Clip 2+ often starts with dead air at the join — trim leading silence too
+            if (clip > 1)
+            {
+                var lead = await ClipSilenceTrimmer.TrimLeadingSilenceAsync(
+                    _remux.FfmpegPath,
+                    videoPath,
+                    keepHeadSeconds: 0.08,
+                    minTrimSavings: 0.25,
+                    log: _log,
+                    ct: ct).ConfigureAwait(false);
+                if (lead.Trimmed)
+                    await AppendLogAsync(
+                        $"  [Audio] S{scene:D2}C{clip:D2} lead-silence-trim ({lead.Message})");
+            }
         }
         catch (Exception ex)
         {
             await AppendLogAsync($"  [Audio] silence-trim error: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// On fresh (non-extend) gens, every non-voice-only character in the clip prompt must have
+    /// a locked ref image actually attached — prevents identity drift across clips.
+    /// </summary>
+    private void EnsureFreshGenHasLockedRefs(
+        string projectId,
+        string projectDir,
+        ClipVideoPromptBuilder.PromptBuildResult built,
+        IReadOnlyDictionary<string, ClipVideoPromptBuilder.CharacterProfile> profiles)
+    {
+        var onScreen = built.CharacterKeys
+            .Where(k =>
+            {
+                if (profiles.TryGetValue(k, out var p) && p.VoiceOnly)
+                    return false;
+                return true;
+            })
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+        if (onScreen.Count == 0)
+            return;
+
+        var missing = new List<string>();
+        foreach (var key in onScreen)
+        {
+            var path = ClipVideoPromptBuilder.ResolveCharacterRefPathPublic(projectDir, key)
+                       ?? _projects.ResolveCharacterRefPath(projectId, key);
+            if (path is null || !File.Exists(path))
+                missing.Add(key);
+        }
+
+        if (missing.Count > 0)
+        {
+            throw new InvalidOperationException(
+                "Locked character reference images required for fresh video gen (avoids face drift). " +
+                $"Missing ref for: {string.Join(", ", missing)}. " +
+                "Open Characters → generate + lock a portrait for each on-screen role.");
+        }
+
+        if (built.ReferenceImagePaths.Count == 0)
+        {
+            throw new InvalidOperationException(
+                "Fresh video gen built a prompt with on-screen cast but attached 0 reference images. " +
+                "Lock portraits under Characters and retry.");
         }
     }
 
@@ -2198,7 +2264,7 @@ public sealed class FilmJobService
             $"Scene {sceneNumber}: locked character refs required before video gen. " +
             $"Missing lock(s): {names}. " +
             "Open Characters → lock a book plate or generate + lock a portrait. " +
-            "(Narrator is voice-only and does not need an image.)");
+            "(Only true voice-only roles skip images.)");
     }
 
     /// <summary>

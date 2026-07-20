@@ -100,6 +100,129 @@ public static class ClipSilenceTrimmer
     }
 
     /// <summary>
+    /// Trim silence at the start of a clip (common dead air after hard concat).
+    /// Rewrites <paramref name="videoPath"/> in place when enough leading silence is found.
+    /// </summary>
+    public static async Task<TrimResult> TrimLeadingSilenceAsync(
+        string ffmpegPath,
+        string videoPath,
+        double keepHeadSeconds = 0.08,
+        double minTrimSavings = 0.25,
+        double noiseDb = -35,
+        double minSilenceSec = 0.2,
+        ILogger? log = null,
+        CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(ffmpegPath) || !File.Exists(videoPath))
+            return TrimResult.Skipped("missing file or ffmpeg");
+
+        var total = await ProbeDurationAsync(ffmpegPath, videoPath, ct).ConfigureAwait(false);
+        if (total is null or < 1.5)
+            return TrimResult.Skipped("duration unknown or too short");
+
+        var silenceLog = await RunSilenceDetectAsync(
+            ffmpegPath, videoPath, noiseDb, minSilenceSec, ct).ConfigureAwait(false);
+
+        var startAt = ComputeLeadInPoint(silenceLog, total.Value, keepHeadSeconds);
+        if (startAt is null)
+            return TrimResult.Skipped("no leading silence");
+
+        var savings = startAt.Value;
+        if (savings < minTrimSavings)
+            return TrimResult.Skipped($"head only {savings:F2}s");
+
+        if (total.Value - startAt.Value < ClipDurationEstimator.MinSeconds - 0.25)
+            return TrimResult.Skipped("would cut below minimum length");
+
+        var dir = Path.GetDirectoryName(videoPath)!;
+        var tmp = Path.Combine(dir, $"_trimlead_{Path.GetFileName(videoPath)}.tmp.mp4");
+        try
+        {
+            if (File.Exists(tmp)) File.Delete(tmp);
+            var ss = startAt.Value.ToString("0.###", CultureInfo.InvariantCulture);
+            var ok = await RunFfmpegAsync(
+                ffmpegPath,
+                $"-hide_banner -nostats -loglevel error -y -ss {ss} -i \"{videoPath}\" " +
+                $"-c:v libx264 -preset veryfast -crf 18 -c:a aac -b:a 128k -movflags +faststart \"{tmp}\"",
+                ct).ConfigureAwait(false);
+            if (!ok || !File.Exists(tmp) || new FileInfo(tmp).Length < 1024)
+                return TrimResult.Skipped("ffmpeg lead-trim failed");
+
+            File.Copy(tmp, videoPath, overwrite: true);
+            try { File.Delete(tmp); } catch { /* ignore */ }
+
+            var newDur = total.Value - startAt.Value;
+            try
+            {
+                await MediaDurationProbe.WriteDurationSidecarAsync(videoPath, newDur, ct)
+                    .ConfigureAwait(false);
+            }
+            catch { /* optional */ }
+
+            log?.LogInformation(
+                "Lead-silence-trimmed {File}: drop first {Saved:F2}s → {After:F2}s",
+                Path.GetFileName(videoPath), savings, newDur);
+
+            return new TrimResult(true, total.Value, newDur, $"lead-trimmed −{savings:F2}s");
+        }
+        catch (Exception ex)
+        {
+            try { if (File.Exists(tmp)) File.Delete(tmp); } catch { /* ignore */ }
+            return TrimResult.Skipped(ex.Message);
+        }
+    }
+
+    /// <summary>
+    /// If file starts with silence, return the timestamp to start decode (after silence + keepHead).
+    /// </summary>
+    public static double? ComputeLeadInPoint(
+        string silenceDetectLog,
+        double totalDuration,
+        double keepHeadSeconds)
+    {
+        if (string.IsNullOrWhiteSpace(silenceDetectLog) || totalDuration < 1.0)
+            return null;
+
+        var starts = SilenceStartRe.Matches(silenceDetectLog)
+            .Select(m => double.Parse(m.Groups[1].Value, CultureInfo.InvariantCulture))
+            .OrderBy(x => x)
+            .ToList();
+        var ends = SilenceEndRe.Matches(silenceDetectLog)
+            .Select(m => double.Parse(m.Groups[1].Value, CultureInfo.InvariantCulture))
+            .OrderBy(x => x)
+            .ToList();
+
+        // Leading silence: silence_start near 0, or silence_end early with no prior start
+        if (starts.Count == 0 || starts[0] > 0.35)
+        {
+            if (ends.Count > 0 && ends[0] > 0.3 && ends[0] < totalDuration * 0.5 &&
+                (starts.Count == 0 || starts[0] > ends[0]))
+            {
+                var cut = Math.Max(0, ends[0] - keepHeadSeconds);
+                if (cut >= 0.2 && totalDuration - cut >= ClipDurationEstimator.MinSeconds - 0.25)
+                    return cut;
+            }
+            return null;
+        }
+
+        var leadStart = starts[0];
+        var end = ends.FirstOrDefault(e => e > leadStart + 0.05);
+        if (end <= leadStart)
+            return null;
+
+        var leadLen = end - Math.Max(0, leadStart);
+        if (leadLen < 0.25)
+            return null;
+
+        var startAt = Math.Max(0, end - keepHeadSeconds);
+        if (startAt < 0.2)
+            return null;
+        if (totalDuration - startAt < ClipDurationEstimator.MinSeconds - 0.25)
+            return null;
+        return startAt;
+    }
+
+    /// <summary>
     /// Cut after last real audio when the file ends in silence.
     /// Mid-file pauses alone do not trigger a cut.
     /// </summary>

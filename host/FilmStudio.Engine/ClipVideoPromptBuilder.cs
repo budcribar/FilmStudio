@@ -166,6 +166,21 @@ public static class ClipVideoPromptBuilder
             "do not hold a frozen pose or empty silence after dialogue.");
         sb.Append(visualTagged);
 
+        // Explicit cast count — prevents officer crowds / extra faces vs script
+        var onScreenKeys = keys
+            .Where(k => !IsVoiceOnlyKey(k, characters))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(k => k, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+        if (onScreenKeys.Count > 0)
+        {
+            sb.AppendLine();
+            sb.AppendLine(
+                $"CAST COUNT: exactly {onScreenKeys.Count} distinct on-screen character identity(ies) only — " +
+                string.Join(", ", onScreenKeys) +
+                ". Do not invent extra people, duplicate faces, or crowd extras not listed.");
+        }
+
         // Full prompt always — never pre-clamp. Length failures are handled by API retry+shorten.
         var prompt = sb.ToString().Trim();
 
@@ -265,13 +280,19 @@ public static class ClipVideoPromptBuilder
         return found.ToList();
     }
 
-    private static string? ResolveCharacterRefPath(string projectDir, string key)
+    private static string? ResolveCharacterRefPath(string projectDir, string key) =>
+        ResolveCharacterRefPathPublic(projectDir, key);
+
+    /// <summary>Resolve locked <c>*_ref.png</c> for a character (canonical + aliases).</summary>
+    public static string? ResolveCharacterRefPathPublic(string projectDir, string key)
     {
         var charDir = Path.Combine(projectDir, "assets", "characters");
-        var name = ProjectStore.CharacterRefFileName(key);
-        var full = Path.Combine(charDir, name);
-        if (File.Exists(full) && new FileInfo(full).Length >= 256)
-            return full;
+        foreach (var name in ProjectStore.CharacterRefFileCandidates(key))
+        {
+            var full = Path.Combine(charDir, name);
+            if (File.Exists(full) && new FileInfo(full).Length >= 64)
+                return full;
+        }
         return null;
     }
 

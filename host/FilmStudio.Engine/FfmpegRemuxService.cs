@@ -107,32 +107,12 @@ public sealed class FfmpegRemuxService : IFfmpegRemux
         if (totalSec is > 0)
             onProgress?.Invoke($"Estimated total duration ~{FormatHms(totalSec.Value)}");
 
-        var listFile = Path.Combine(videoDir, $"_concat_s{sceneNum:D2}.txt");
-        var sb = new StringBuilder();
-        foreach (var c in clips)
-        {
-            var escaped = c.Replace("\\", "/").Replace("'", "'\\''");
-            sb.AppendLine($"file '{escaped}'");
-        }
-        await File.WriteAllTextAsync(listFile, sb.ToString(), ct);
-
         var outPath = Path.Combine(videoDir, $"scene_{sceneNum:D2}.mp4");
-        var args = $"-y -f concat -safe 0 -i \"{listFile}\" -c copy \"{outPath}\"";
-        var (exit, log) = await RunFfmpegAsync(
-            args, projectDir, ct, onProgress, totalSec, label: $"S{sceneNum:D2} copy");
-        try { File.Delete(listFile); } catch { /* ignore */ }
-
-        if (exit != 0)
-        {
-            onProgress?.Invoke("Concat copy failed — re-encoding…");
-            await File.WriteAllTextAsync(listFile, sb.ToString(), ct);
-            args =
-                $"-y -f concat -safe 0 -i \"{listFile}\" -c:v libx264 -preset veryfast -crf 20 " +
-                $"-c:a aac -b:a 160k \"{outPath}\"";
-            (exit, log) = await RunFfmpegAsync(
-                args, projectDir, ct, onProgress, totalSec, label: $"S{sceneNum:D2} encode");
-            try { File.Delete(listFile); } catch { /* ignore */ }
-        }
+        // Multi-clip: re-encode with short audio crossfades so cut joins don't leave dead air.
+        // Single clip: stream-copy when possible.
+        var (exit, log) = await ConcatVideosAsync(
+            clips, outPath, projectDir, videoDir, totalSec, onProgress,
+            label: $"S{sceneNum:D2}", ct).ConfigureAwait(false);
 
         if (exit != 0 || !File.Exists(outPath) || new FileInfo(outPath).Length < 1024)
             throw new InvalidOperationException($"FFmpeg remux failed for scene {sceneNum}: {TrimLog(log)}");
@@ -302,28 +282,9 @@ public sealed class FfmpegRemuxService : IFfmpegRemux
         if (totalSec is > 0)
             onProgress?.Invoke($"Estimated total duration ~{FormatHms(totalSec.Value)}");
 
-        var listFile = Path.Combine(videoDir, "_concat_wip.txt");
-        var sb = new StringBuilder();
-        foreach (var c in sceneFiles)
-        {
-            var escaped = c.Replace("\\", "/").Replace("'", "'\\''");
-            sb.AppendLine($"file '{escaped}'");
-        }
-        await File.WriteAllTextAsync(listFile, sb.ToString(), ct);
-
-        var args = $"-y -f concat -safe 0 -i \"{listFile}\" -c copy \"{wipPath}\"";
-        var (exit, log) = await RunFfmpegAsync(
-            args, projectDir, ct, onProgress, totalSec, label: "WIP copy");
-        if (exit != 0)
-        {
-            onProgress?.Invoke("WIP stream-copy failed — re-encoding…");
-            args =
-                $"-y -f concat -safe 0 -i \"{listFile}\" -c:v libx264 -preset veryfast -crf 20 " +
-                $"-c:a aac -b:a 160k \"{wipPath}\"";
-            (exit, log) = await RunFfmpegAsync(
-                args, projectDir, ct, onProgress, totalSec, label: "WIP encode");
-        }
-        try { File.Delete(listFile); } catch { /* ignore */ }
+        var (exit, log) = await ConcatVideosAsync(
+            sceneFiles, wipPath, projectDir, videoDir, totalSec, onProgress,
+            label: "WIP", ct).ConfigureAwait(false);
 
         if (exit != 0 || !File.Exists(wipPath))
             throw new InvalidOperationException($"FFmpeg WIP rebuild failed: {TrimLog(log)}");
@@ -331,6 +292,92 @@ public sealed class FfmpegRemuxService : IFfmpegRemux
         await WriteWipSourcesManifestAsync(projectId, wipPath, sceneFiles).ConfigureAwait(false);
         onProgress?.Invoke($"WIP → {wipPath} ({sceneFiles.Count} source(s))");
         return wipPath;
+    }
+
+    /// <summary>
+    /// Concat clips/scenes. Prefer short audio crossfade on multi-input joins (reduces dead air at cuts).
+    /// Falls back to concat demuxer copy, then plain re-encode.
+    /// </summary>
+    private async Task<(int Exit, string Log)> ConcatVideosAsync(
+        IReadOnlyList<string> inputs,
+        string outPath,
+        string projectDir,
+        string workDir,
+        double? totalSec,
+        Action<string>? onProgress,
+        string label,
+        CancellationToken ct)
+    {
+        if (inputs.Count == 0)
+            return (1, "no inputs");
+
+        if (inputs.Count == 1)
+        {
+            var listFile = Path.Combine(workDir, $"_concat_{label.Replace(' ', '_')}.txt");
+            var escaped = inputs[0].Replace("\\", "/").Replace("'", "'\\''");
+            await File.WriteAllTextAsync(listFile, $"file '{escaped}'\n", ct);
+            var args = $"-y -f concat -safe 0 -i \"{listFile}\" -c copy \"{outPath}\"";
+            var r = await RunFfmpegAsync(args, projectDir, ct, onProgress, totalSec, label: $"{label} copy");
+            if (r.Exit != 0)
+            {
+                args =
+                    $"-y -f concat -safe 0 -i \"{listFile}\" -c:v libx264 -preset veryfast -crf 20 " +
+                    $"-c:a aac -b:a 160k \"{outPath}\"";
+                r = await RunFfmpegAsync(args, projectDir, ct, onProgress, totalSec, label: $"{label} encode");
+            }
+            try { File.Delete(listFile); } catch { /* ignore */ }
+            return (r.Exit, r.Log);
+        }
+
+        // Multi-input: video hard-cut concat + audio acrossfade (~100ms) at each join
+        const double crossfadeSec = 0.10;
+        onProgress?.Invoke($"{label}: concat {inputs.Count} with ~{crossfadeSec * 1000:0}ms audio crossfade…");
+        var fc = BuildAcrossfadeFilterComplex(inputs.Count, crossfadeSec);
+        var inputArgs = string.Join(" ", inputs.Select(p => $"-i \"{p}\""));
+        var xfadeArgs =
+            $"-y {inputArgs} -filter_complex \"{fc}\" -map \"[v]\" -map \"[a]\" " +
+            $"-c:v libx264 -preset veryfast -crf 20 -c:a aac -b:a 160k -movflags +faststart \"{outPath}\"";
+        var xfade = await RunFfmpegAsync(
+            xfadeArgs, projectDir, ct, onProgress, totalSec, label: $"{label} xfade");
+        if (xfade.Exit == 0 && File.Exists(outPath) && new FileInfo(outPath).Length >= 1024)
+            return (xfade.Exit, xfade.Log);
+
+        onProgress?.Invoke($"{label}: crossfade failed — plain concat re-encode…");
+        var list2 = Path.Combine(workDir, $"_concat_{label.Replace(' ', '_')}.txt");
+        var sb = new StringBuilder();
+        foreach (var c in inputs)
+        {
+            var esc = c.Replace("\\", "/").Replace("'", "'\\''");
+            sb.AppendLine($"file '{esc}'");
+        }
+        await File.WriteAllTextAsync(list2, sb.ToString(), ct);
+        var plain =
+            $"-y -f concat -safe 0 -i \"{list2}\" -c:v libx264 -preset veryfast -crf 20 " +
+            $"-c:a aac -b:a 160k \"{outPath}\"";
+        var plainR = await RunFfmpegAsync(plain, projectDir, ct, onProgress, totalSec, label: $"{label} encode");
+        try { File.Delete(list2); } catch { /* ignore */ }
+        return (plainR.Exit, plainR.Log);
+    }
+
+    /// <summary>
+    /// Build filter_complex: concat all video streams; chain acrossfade on audio.
+    /// </summary>
+    public static string BuildAcrossfadeFilterComplex(int n, double crossfadeSec)
+    {
+        if (n < 2) throw new ArgumentOutOfRangeException(nameof(n));
+        var d = crossfadeSec.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture);
+        var vInputs = string.Join("", Enumerable.Range(0, n).Select(i => $"[{i}:v]"));
+        var sb = new StringBuilder();
+        sb.Append($"{vInputs}concat=n={n}:v=1:a=0[v];");
+        for (var i = 1; i < n; i++)
+        {
+            var outL = i == n - 1 ? "a" : $"ax{i}";
+            if (i == 1)
+                sb.Append($"[0:a][1:a]acrossfade=d={d}:c1=tri:c2=tri[{outL}]");
+            else
+                sb.Append($";[ax{i - 1}][{i}:a]acrossfade=d={d}:c1=tri:c2=tri[{outL}]");
+        }
+        return sb.ToString();
     }
 
     /// <summary>

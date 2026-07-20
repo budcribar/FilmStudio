@@ -469,6 +469,10 @@ public sealed class Stage2PlannerService
 
         var others = cast.Where(t => t != primary && !ve.Contains(t, StringComparison.Ordinal)).Take(3).ToList();
         var othersBit = others.Count > 0 ? $"also on screen: {string.Join(", ", others)}" : "";
+        // Explicit headcount so models don't invent extra officers/crowd
+        var castCountBit = cast.Count > 0
+            ? $"CAST COUNT: exactly {cast.Count} on-screen identity(ies) — {string.Join(", ", cast)}. No extra people."
+            : "";
 
         var block = CoerceString(beat.TryGetValue("blocking_notes", out var bn) ? bn : null) ?? "";
         if (!string.IsNullOrWhiteSpace(block) &&
@@ -494,11 +498,12 @@ public sealed class Stage2PlannerService
             (0, style),
             (2, !string.IsNullOrEmpty(place) && !ve.Contains(place, StringComparison.OrdinalIgnoreCase) ? place : ""),
             (3, othersBit),
-            (4, ve),
-            (5, speech),
-            (6, mustBit),
-            (7, ward),
-            (8, idCue),
+            (4, castCountBit),
+            (5, ve),
+            (6, speech),
+            (7, mustBit),
+            (8, ward),
+            (9, idCue),
         };
         return JoinVisualPromptParts(parts, resolution);
     }

@@ -2,7 +2,7 @@
 
 When reviewing clips, run this checklist (fail when confidence is high):
 
-1. IDENTITY — On-screen faces match intended Character_* / cast look descriptions. No swap or merge of roles (e.g. Narrator vs Old Man).
+1. IDENTITY — On-screen faces match intended Character_* / cast look descriptions. No swap or merge of roles (e.g. Narrator vs Old Man). Fail if the frame invents extra people or a larger crowd than CAST COUNT / listed cast (e.g. five officers when three are named).
 2. PROMPT COMPLETENESS — Planned visual_prompt should be usable (not truncated stubs like "as described in the scr…"). If the plan text is incomplete but the video still matches cast+style, note it; if the video is wrong and the plan is stubby, fail and suggest a full visual_prompt rewrite.
 3. SILENCE vs EXPRESSION — If the clip has no dialogue / is silent or ambient, fail mid-shout open-mouth or yelling performance. Restrained tension (tight jaw, fist) is OK.
 4. ADDRESS / GAZE — Follow PROJECT performance rules. If performance says confessional / addresses viewer when speaking, fail shut or averted eyes on those address beats. If the project is objective/observational, do NOT require eyes-to-camera.

@@ -116,6 +116,30 @@ public class ClipVideoPromptBuilderTests
         Assert.True(ClipVideoPromptBuilder.MaxPromptChars >= 50_000);
     }
 
+    [Fact]
+    public void Build_includes_cast_count_for_on_screen_keys()
+    {
+        var json = """
+            {
+              "visual_prompt": "INT. ROOM - DAY. Character_Hero and Character_Villain face off.",
+              "primary_subject": "Character_Hero",
+              "audio_payload": { "speaker": "Character_Hero", "dialogue": "Stop.", "delivery": "spoken_on_camera" }
+            }
+            """;
+        using var doc = System.Text.Json.JsonDocument.Parse(json);
+        var built = ClipVideoPromptBuilder.Build(
+            doc.RootElement,
+            projectDir: Path.GetTempPath(),
+            characters: new Dictionary<string, ClipVideoPromptBuilder.CharacterProfile>(StringComparer.OrdinalIgnoreCase)
+            {
+                ["Character_Hero"] = new() { Key = "Character_Hero", DisplayName = "Hero", Description = "tall hero" },
+                ["Character_Villain"] = new() { Key = "Character_Villain", DisplayName = "Villain", Description = "scarred villain" },
+            });
+        Assert.Contains("CAST COUNT: exactly 2", built.Prompt, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Character_Hero", built.Prompt);
+        Assert.Contains("Character_Villain", built.Prompt);
+    }
+
     [Theory]
     [InlineData("Grok submit HTTP 400: prompt too long", true)]
     [InlineData("context_length_exceeded", true)]
