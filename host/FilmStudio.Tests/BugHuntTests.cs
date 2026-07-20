@@ -1106,6 +1106,42 @@ public class BugHuntTests
     }
 
     [Fact]
+    public void Bug67_BookTextAnalyzer_plain_txt_uses_paragraph_page_fallback()
+    {
+        // No --- PAGE N --- markers: must not collapse to a single synthetic page when
+        // paragraphs exist (same rules as BookContextService.ParseBookPages).
+        var plain = string.Join("\n\n", Enumerable.Range(1, 12).Select(i =>
+            $"Paragraph {i}. " + string.Join(' ', Enumerable.Repeat("word", 100)) +
+            " more narrative text for this block."));
+
+        var bodies = BookTextAnalyzer.PageBodies(plain);
+        var ctx = BookContextService.ParseBookPages(plain);
+        Assert.Equal(ctx.Count, bodies.Count);
+        Assert.True(bodies.Count >= 10, $"expected paragraph pages, got {bodies.Count}");
+        Assert.Equal(ctx.Select(p => p.Text).ToList(), bodies);
+
+        var analysis = BookTextAnalyzer.Analyze(plain);
+        Assert.Equal(bodies.Count, analysis.Pages);
+        // Before the fix, plain .txt was always pages=1 → avg-chars meaningless.
+        Assert.True(analysis.Pages > 1);
+        Assert.True(analysis.AvgCharsPerPage < analysis.TextChars);
+        // Enough words + multi-paragraph density → short story, not picture_book.
+        Assert.True(analysis.TextWords >= 800, $"words={analysis.TextWords}");
+        Assert.NotEqual("picture_book", analysis.BookKind);
+    }
+
+    [Fact]
+    public void Bug67_BookTextAnalyzer_page_markers_still_preferred()
+    {
+        var marked =
+            "--- PAGE 1 ---\nAlpha line one.\n\n--- PAGE 2 ---\nBeta line two.\n\n--- PAGE 3 ---\nGamma line three.\n";
+        var bodies = BookTextAnalyzer.PageBodies(marked);
+        Assert.Equal(3, bodies.Count);
+        Assert.Contains("Alpha", bodies[0], StringComparison.Ordinal);
+        Assert.Contains("Gamma", bodies[2], StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void Bug65_StitchFountainParts_null_safe()
     {
         Assert.Equal("", BookToFountainConverter.StitchFountainParts(null));

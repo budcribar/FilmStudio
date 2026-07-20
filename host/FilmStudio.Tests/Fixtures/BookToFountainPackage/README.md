@@ -1,39 +1,39 @@
 # Book-to-Fountain Test Package
 
-Two folders:
+## Source texts → repo root `books/`
 
-## /source_texts/ — real public-domain source texts (7 of 10)
+Public-domain source texts (and the Buster picture-book PDF) live at:
 
-Downloaded as-is from **GITenberg** (github.com/GITenberg), a project that
-mirrors genuinely public-domain Project Gutenberg books as git repos. These
-are the real, unabridged original novels/stories, not adaptations:
+```text
+books/   # repo root, not under Fixtures
+```
 
-- Alices_Adventures_in_Wonderland.txt (Lewis Carroll, 1865)
-- A_Christmas_Carol.txt (Charles Dickens, 1843)
-- Dracula.txt (Bram Stoker, 1897)
-- Frankenstein.txt (Mary Shelley, 1818)
-- The_Jungle_Book.txt (Rudyard Kipling, 1894)
-- The_Yellow_Wallpaper.txt (Charlotte Perkins Gilman, 1892)
-- The_Gift_of_the_Magi.txt (O. Henry, 1905)
+Contents currently include:
 
-**Not included as source text:** "The Tell-Tale Heart" and "The Raven"
-(Poe) aren't published standalone on Gutenberg — they're bundled inside a
-multi-hundred-page "Complete Works" volume, so pulling a clean individual
-text file wasn't practical here. You can get clean standalone copies at:
-- Tell-Tale Heart: https://www.gutenberg.org/ebooks/2148 (Poe, Vol. 2)
-- The Raven: https://www.gutenberg.org/ebooks/25525 (Raven Edition, Vol. 1)
+- `Alices_Adventures_in_Wonderland.txt` (Lewis Carroll, 1865)
+- `A_Christmas_Carol.txt` (Charles Dickens, 1843)
+- `Dracula.txt` (Bram Stoker, 1897)
+- `Frankenstein.txt` (Mary Shelley, 1818)
+- `The_Jungle_Book.txt` (Rudyard Kipling, 1894)
+- `The_Yellow_Wallpaper.txt` (Charlotte Perkins Gilman, 1892)
+- `The_Gift_of_the_Magi.txt` (O. Henry, 1905)
+- `The_Tell-Tale_Heart.txt` (Edgar Allan Poe)
+- `Buster_Noodle_Head_Dog_Goes_to_Bed_merged.pdf` (sample picture book)
 
-**"The Lottery" (Shirley Jackson) is NOT included** — it was published in
-1948 and is still under copyright (protected until ~2043 in the US), so I
-couldn't download or adapt it. I substituted **"The Monkey's Paw"** by
-W.W. Jacobs (1902), which is genuinely public domain.
+Most plain-text titles were downloaded as-is from **GITenberg** (github.com/GITenberg),
+mirroring public-domain Project Gutenberg books.
+
+**Not included as source text:** "The Raven" isn't published as a clean standalone
+on Gutenberg the same way — see https://www.gutenberg.org/ebooks/25525.
+
+**"The Lottery" (Shirley Jackson) is NOT included** — still under copyright
+(US ~2043). The package substitutes **"The Monkey's Paw"** by W.W. Jacobs (1902)
+as a fountain adaptation only.
 
 ## /fountain_adaptations/ — original screenplay adaptations (10 of 10)
 
-These are original scenes I wrote myself, adapting the public-domain
-plots/characters/dialogue beats into proper Fountain syntax. They are
-**not** transcriptions of the source text — they're new scene-by-scene
-adaptations exercising different parser features:
+These are original scenes adapting public-domain plots/characters into Fountain
+syntax for parser tests. They are **not** transcriptions of the source text:
 
 | File | Notable for parser testing |
 |---|---|
@@ -48,6 +48,6 @@ adaptations exercising different parser features:
 | 09_The_Raven.fountain | Poem-to-screenplay, unusual pacing, single location |
 | 10_The_Monkeys_Paw.fountain | Substituted for "The Lottery" (see above) |
 
-All ten include a title page block, and lean on standard Fountain syntax
+All ten include a title page block and standard Fountain syntax
 (scene headings, action, dialogue, parentheticals, transitions, V.O./O.S.,
-CONT'D). Good luck with the parser!
+CONT'D).

@@ -137,19 +137,15 @@ public static class BookTextAnalyzer
         };
     }
 
-    public static List<string> PageBodies(string text)
-    {
-        var parts = Regex.Split(text ?? "", @"(?=---\s*PAGE\s+\d+\s*---)", RegexOptions.IgnoreCase);
-        var bodies = new List<string>();
-        foreach (var p in parts)
-        {
-            var t = p.Trim();
-            if (t.Length == 0) continue;
-            var body = Regex.Replace(t, @"^---\s*PAGE\s+\d+\s*---\s*", "", RegexOptions.IgnoreCase).Trim();
-            bodies.Add(body);
-        }
-        return bodies;
-    }
+    /// <summary>
+    /// Page bodies for density/quality heuristics. Same split rules as
+    /// <see cref="BookContextService.ParseBookPages"/>: <c>--- PAGE N ---</c> markers
+    /// when present, otherwise paragraph-based synthetic pages (plain .txt).
+    /// </summary>
+    public static List<string> PageBodies(string text) =>
+        BookContextService.ParseBookPages(text ?? "")
+            .Select(p => p.Text ?? "")
+            .ToList();
 
     public static bool IsIllustrationOnly(string body)
     {

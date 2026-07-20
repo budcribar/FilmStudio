@@ -66,7 +66,7 @@ public class CastFromScreenplayServiceTests
     }
 
     [Fact]
-    public void SelectTextForPrompt_samples_long_books_with_head_mid_tail()
+    public void SelectTextForPrompt_samples_long_books_with_spine_windows()
     {
         var head = new string('A', 50_000);
         var mid = new string('B', 50_000);
@@ -77,6 +77,77 @@ public class CastFromScreenplayServiceTests
         Assert.Contains('A', selected);
         Assert.Contains('C', selected);
         Assert.Contains("sampled for length", selected, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void ExtractNameHintsFromFountain_includes_dialogue_cues()
+    {
+        var fountain = """
+            Title: Test
+
+            INT. ROOM - DAY
+
+            ZARA
+            Hello.
+
+            OLD MAN (V.O.)
+            Listen.
+            """;
+        var names = CastFromScreenplayService.ExtractNameHintsFromFountain(fountain);
+        Assert.Contains(names, n => n.Equals("ZARA", StringComparison.OrdinalIgnoreCase)
+                                    || n.Equals("Zara", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(names, n => n.Contains("OLD", StringComparison.OrdinalIgnoreCase)
+                                    || n.Contains("Old", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public void SelectBookTextForCastPrompt_includes_late_name_look_when_over_budget()
+    {
+        // Novel-length padding so we must sample; unique look only appears late.
+        var early = string.Join("\n\n", Enumerable.Range(0, 80).Select(i =>
+            $"Chapter filler {i}. " + new string('x', 900)));
+        var lateLook =
+            "\n\nZara stepped into the firelight. She had silver hair and a green velvet coat with brass buttons.\n\n";
+        var after = string.Join("\n\n", Enumerable.Range(0, 20).Select(i =>
+            $"Epilogue pad {i}. " + new string('y', 400)));
+        var book = early + lateLook + after;
+        Assert.True(book.Length > 100_000);
+
+        var fountain = """
+            Title: Late Reveal
+
+            INT. HALL - NIGHT
+
+            ZARA
+            I am here.
+            """;
+        var names = CastFromScreenplayService.ExtractNameHintsFromFountain(fountain);
+        Assert.NotEmpty(names);
+
+        var selected = CastFromScreenplayService.SelectBookTextForCastPrompt(
+            book, maxChars: 40_000, nameHints: names);
+
+        Assert.Contains("silver hair", selected, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("green velvet", selected, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("LOOK EXCERPTS", selected, StringComparison.OrdinalIgnoreCase);
+        // Must not be head-only: late look would be missing if we only took the first 40k
+        Assert.DoesNotContain(selected, early.AsSpan(0, Math.Min(early.Length, 5000)).ToString() == selected);
+    }
+
+    [Fact]
+    public void HarvestNameLookExcerpts_prefers_appearance_language()
+    {
+        var book = """
+            Bob walked down the street and said nothing interesting for a long while about weather.
+
+            Bob had curly red hair and a blue wool coat that marked him in every scene.
+
+            Alice smiled once.
+            """;
+        var harvested = CastFromScreenplayService.HarvestNameLookExcerpts(
+            book, new[] { "Bob", "Alice" }, maxChars: 2_000);
+        Assert.Contains("curly red hair", harvested, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("blue wool coat", harvested, StringComparison.OrdinalIgnoreCase);
     }
 
     private static string? FindRepoWithPrompts()

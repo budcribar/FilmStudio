@@ -18,8 +18,18 @@ public sealed class CastFromScreenplayService
 
     /// <summary>Fountain budget for cast extract user messages.</summary>
     public const int FountainPromptChars = 80_000;
-    /// <summary>Book budget (full short stories; sampled for long novels).</summary>
+    /// <summary>
+    /// Book budget for cast extract. Full text when under this size; otherwise
+    /// name-targeted look excerpts from the whole book + multi-window spine samples
+    /// so late-appearing / wardrobe-change cues still reach visual_lock.
+    /// </summary>
     public const int BookPromptChars = 100_000;
+
+    /// <summary>Share of book budget reserved for name-targeted look excerpts on long novels.</summary>
+    public const double BookNameExcerptBudgetShare = 0.55;
+
+    /// <summary>Evenly spaced narrative windows when the book is truncated (covers late chapters).</summary>
+    public const int BookSpineWindowCount = 5;
 
     private readonly ProjectStore _projects;
     private readonly IGrokChatClient _chat;
@@ -229,6 +239,7 @@ public sealed class CastFromScreenplayService
         sb.AppendLine("Include silent on-screen characters named only in action (e.g. BUSTER the dog).");
         sb.AppendLine("CRITICAL: Fill description + visual_lock with concrete filmable appearance for every");
         sb.AppendLine("on-screen role (age, build, face, hair, eyes, wardrobe, era). Mine BOOK text when present.");
+        sb.AppendLine("When BOOK is sampled, prefer LOOK EXCERPTS tagged by character name for description/visual_lock.");
         sb.AppendLine("Never use stubs like \"as described in the screenplay\".");
         sb.AppendLine("On-camera POV/confessor narrators = ok_anytime (not voice-only).");
         sb.AppendLine("Return JSON only (schema_version cast_seeds.v1, character_seed_tokens).");
@@ -238,9 +249,10 @@ public sealed class CastFromScreenplayService
         sb.AppendLine("--- END FOUNTAIN ---");
         if (!string.IsNullOrWhiteSpace(book))
         {
+            var nameHints = ExtractNameHintsFromFountain(fountain);
             sb.AppendLine();
             sb.AppendLine("--- BEGIN BOOK (primary source for looks / likeness) ---");
-            sb.AppendLine(SelectTextForPrompt(book, BookPromptChars));
+            sb.AppendLine(SelectBookTextForCastPrompt(book, BookPromptChars, nameHints));
             sb.AppendLine("--- END BOOK ---");
         }
         else
@@ -252,35 +264,321 @@ public sealed class CastFromScreenplayService
     }
 
     /// <summary>
-    /// Prefer full text when under budget; for long books keep head + middle + tail samples
-    /// so late-appearing wardrobe / age cues are not lost.
+    /// Prefer full text when under budget; otherwise evenly spaced windows (spine sample).
+    /// For books with cast names, prefer <see cref="SelectBookTextForCastPrompt"/>.
     /// </summary>
     public static string SelectTextForPrompt(string text, int maxChars)
     {
-        text = (text ?? "").Replace("\r\n", "\n").Replace('\r', '\n').Trim();
+        text = NormalizeNewlines(text);
         if (text.Length <= maxChars) return text;
         if (maxChars < 4_000)
             return text[..maxChars] + "\n\n[[truncated for length]]\n";
 
-        // Three windows: head 45%, middle 25%, tail 30%
-        var headLen = (int)(maxChars * 0.45);
-        var midLen = (int)(maxChars * 0.25);
-        var tailLen = maxChars - headLen - midLen - 120; // markers
-        if (tailLen < 500) tailLen = 500;
+        return SelectSpineWindows(text, maxChars, BookSpineWindowCount)
+               + "\n\n[[sampled for length; full source remains on disk]]\n";
+    }
 
-        var head = text[..headLen];
-        var midStart = Math.Max(0, (text.Length / 2) - (midLen / 2));
-        if (midStart + midLen > text.Length)
-            midStart = Math.Max(0, text.Length - midLen);
-        var mid = text.Substring(midStart, Math.Min(midLen, text.Length - midStart));
-        var tail = text[^Math.Min(tailLen, text.Length)..];
+    /// <summary>
+    /// Book text for cast look extraction. Under budget → full book. Over budget →
+    /// (1) paragraphs that mention Fountain cast names (prioritize look/wardrobe language),
+    /// (2) remaining budget as multi-window spine samples across the novel.
+    /// </summary>
+    public static string SelectBookTextForCastPrompt(
+        string bookText,
+        int maxChars,
+        IReadOnlyList<string>? nameHints = null)
+    {
+        bookText = NormalizeNewlines(bookText);
+        if (bookText.Length <= maxChars) return bookText;
+        if (maxChars < 4_000)
+            return bookText[..maxChars] + "\n\n[[book truncated for length]]\n";
 
-        return head
-               + "\n\n[[… middle sample …]]\n\n"
-               + mid
-               + "\n\n[[… toward end …]]\n\n"
-               + tail
-               + "\n\n[[book sampled for length; full source remains on disk]]\n";
+        nameHints ??= Array.Empty<string>();
+        var sb = new StringBuilder(maxChars + 512);
+        var used = 0;
+        const int markerReserve = 200;
+
+        // 1) Name-targeted look harvest from the full book (late descriptions, wardrobe changes)
+        if (nameHints.Count > 0)
+        {
+            var nameBudget = Math.Max(2_000, (int)(maxChars * BookNameExcerptBudgetShare) - markerReserve);
+            var excerpts = HarvestNameLookExcerpts(bookText, nameHints, nameBudget);
+            if (!string.IsNullOrWhiteSpace(excerpts))
+            {
+                sb.AppendLine("[[LOOK EXCERPTS — paragraphs mentioning cast names (full-book scan)]]");
+                sb.AppendLine(excerpts.TrimEnd());
+                sb.AppendLine();
+                used = sb.Length;
+            }
+        }
+
+        // 2) Spine windows so plot context / unnamed look prose still appears
+        var spineBudget = maxChars - used - 160;
+        if (spineBudget >= 2_000)
+        {
+            sb.AppendLine("[[NARRATIVE SPINE — evenly spaced samples]]");
+            sb.Append(SelectSpineWindows(bookText, spineBudget, BookSpineWindowCount));
+            sb.AppendLine();
+        }
+
+        sb.AppendLine("[[book sampled for length; name look-excerpts scan full source; remainder on disk]]");
+        var result = sb.ToString();
+        if (result.Length > maxChars + 500)
+            result = result[..maxChars] + "\n\n[[truncated for length]]\n";
+        return result;
+    }
+
+    /// <summary>
+    /// Character-name tokens from Fountain (dialogue cues + ALL-CAPS action names)
+    /// for full-book look harvest. Public for tests.
+    /// </summary>
+    public static IReadOnlyList<string> ExtractNameHintsFromFountain(string? fountain)
+    {
+        fountain = NormalizeNewlines(fountain ?? "");
+        if (fountain.Length == 0) return Array.Empty<string>();
+
+        var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        try
+        {
+            var parsed = FountainParser.Parse(fountain);
+            foreach (var el in parsed.Elements)
+            {
+                if (el.Type != FountainParser.ElementType.Character) continue;
+                var raw = (el.Text ?? "").Trim();
+                // Strip extensions: JANE (V.O.) / JANE (O.S.)
+                raw = Regex.Replace(raw, @"\s*\([^)]*\)\s*$", "").Trim();
+                raw = raw.TrimStart('@', '^', '*').Trim();
+                if (raw.Length < 2) continue;
+                if (IsNoiseCastToken(raw)) continue;
+                names.Add(raw);
+                // Title-case variant for prose books ("JANE" → "Jane")
+                var title = ToTitleToken(raw);
+                if (title.Length >= 2) names.Add(title);
+            }
+        }
+        catch
+        {
+            // fall through to regex
+        }
+
+        // Silent heroes often only in action: "BUSTER, a small dog," / "MOMMA smiles"
+        foreach (Match m in Regex.Matches(
+                     fountain,
+                     @"(?m)^[ \t]*([A-Z][A-Z0-9][A-Z0-9 \-']{0,40}?)(?=,|\s+(?:the|a|an|is|was|runs|walks|smiles|looks|stands|sits)\b)"))
+        {
+            var tok = m.Groups[1].Value.Trim();
+            if (tok.Length < 2 || IsNoiseCastToken(tok)) continue;
+            if (tok.Split(' ', StringSplitOptions.RemoveEmptyEntries).Length > 4) continue;
+            names.Add(tok);
+            var title = ToTitleToken(tok);
+            if (title.Length >= 2) names.Add(title);
+        }
+
+        return names
+            .OrderBy(n => n, StringComparer.OrdinalIgnoreCase)
+            .Take(48)
+            .ToList();
+    }
+
+    /// <summary>
+    /// Pull paragraphs that mention cast names, preferring appearance/wardrobe language.
+    /// Scans the full book regardless of length. Public for tests.
+    /// </summary>
+    public static string HarvestNameLookExcerpts(
+        string bookText,
+        IReadOnlyList<string> nameHints,
+        int maxChars)
+    {
+        bookText = NormalizeNewlines(bookText);
+        if (string.IsNullOrWhiteSpace(bookText) || nameHints.Count == 0 || maxChars < 200)
+            return "";
+
+        var paras = Regex.Split(bookText.Trim(), @"\n\s*\n+")
+            .Select(p => p.Trim())
+            .Where(p => p.Length > 0)
+            .ToList();
+        if (paras.Count == 0)
+            paras.Add(bookText.Trim());
+
+        // Build name matchers (word-boundary, case-insensitive)
+        var nameRes = new List<(string Name, Regex Rx)>();
+        foreach (var n in nameHints
+                     .Where(n => !string.IsNullOrWhiteSpace(n))
+                     .Distinct(StringComparer.OrdinalIgnoreCase)
+                     .Take(40))
+        {
+            var escaped = Regex.Escape(n.Trim());
+            // Allow multi-word names; avoid matching inside longer tokens
+            nameRes.Add((n.Trim(), new Regex($@"\b{escaped}\b", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)));
+        }
+
+        // Cap per-name so one lead doesn't consume the whole budget
+        var perNameCap = Math.Max(800, maxChars / Math.Max(3, Math.Min(nameRes.Count, 12)));
+        var perNameUsed = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+        var candidates = new List<(int Score, int Index, string Name, string Para)>();
+        var selectedIdx = new HashSet<int>();
+        var totalUsed = 0;
+
+        for (var i = 0; i < paras.Count; i++)
+        {
+            var para = paras[i];
+            if (para.Length < 24) continue;
+            string? hitName = null;
+            foreach (var (name, rx) in nameRes)
+            {
+                if (!rx.IsMatch(para)) continue;
+                hitName = name;
+                break;
+            }
+            if (hitName is null) continue;
+
+            var score = 1;
+            if (LookLanguage.IsMatch(para)) score += 5;
+            if (para.Length is >= 80 and <= 1_200) score += 1;
+            // Prefer later paragraphs slightly (wardrobe reveals often come mid/late)
+            score += Math.Min(3, i * 3 / Math.Max(1, paras.Count));
+
+            candidates.Add((score, i, hitName, para));
+        }
+
+        // Best paragraphs first; keep total under maxChars
+        foreach (var item in candidates.OrderByDescending(c => c.Score).ThenBy(c => c.Index))
+        {
+            if (selectedIdx.Contains(item.Index)) continue;
+            perNameUsed.TryGetValue(item.Name, out var usedForName);
+
+            var slice = item.Para.Length > 1_600 ? item.Para[..1_600] + "…" : item.Para;
+            var addCost = slice.Length + item.Name.Length + 32;
+            if (usedForName > 0 && usedForName + addCost > perNameCap) continue;
+            if (usedForName == 0 && addCost > perNameCap * 2) continue; // pathological mega-para
+            if (totalUsed + addCost > maxChars) continue;
+
+            selectedIdx.Add(item.Index);
+            perNameUsed[item.Name] = usedForName + addCost;
+            totalUsed += addCost;
+        }
+
+        // Emit in book order for readability
+        var sb = new StringBuilder();
+        foreach (var item in candidates
+                     .Where(c => selectedIdx.Contains(c.Index))
+                     .GroupBy(c => c.Index)
+                     .Select(g => g.First())
+                     .OrderBy(c => c.Index))
+        {
+            var slice = item.Para.Length > 1_600 ? item.Para[..1_600] + "…" : item.Para;
+            var block = $"[{item.Name}] {slice}\n\n";
+            if (sb.Length + block.Length > maxChars)
+            {
+                var room = maxChars - sb.Length - 20;
+                if (room > 200)
+                    sb.Append(block.AsSpan(0, Math.Min(room, block.Length))).Append("…\n");
+                break;
+            }
+            sb.Append(block);
+        }
+
+        return sb.ToString().TrimEnd();
+    }
+
+    private static readonly Regex LookLanguage = new(
+        @"\b(hair|eyes?|wore|wearing|dressed|dress|coat|cloak|hat|beard|mustache|face|skin|pale|dark|"
+        + @"fair|tall|short|thin|stout|slender|young|old|aged|years?\s+old|beautiful|handsome|"
+        + @"blonde|blond|brunette|redhead|curly|bald|scar|freckle|wardrobe|gown|suit|boots?|"
+        + @"complexion|features|figure|build|shoulder|cheek|lip|brow|forehead|chin|nose|"
+        + @"species|fur|mane|paw|tail|whisker|feather|scale)\b",
+        RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
+    private static string SelectSpineWindows(string text, int maxChars, int windowCount)
+    {
+        text = NormalizeNewlines(text);
+        if (text.Length <= maxChars) return text;
+        windowCount = Math.Clamp(windowCount, 2, 8);
+
+        // Leave room for separators between windows
+        var sepOverhead = (windowCount - 1) * 40;
+        var usable = Math.Max(1_000, maxChars - sepOverhead);
+        var winLen = Math.Max(400, usable / windowCount);
+
+        var sb = new StringBuilder(maxChars + 64);
+        for (var w = 0; w < windowCount; w++)
+        {
+            int start;
+            if (windowCount == 1)
+                start = 0;
+            else if (w == 0)
+                start = 0;
+            else if (w == windowCount - 1)
+                start = Math.Max(0, text.Length - winLen);
+            else
+            {
+                // Even interior anchors
+                var frac = w / (double)(windowCount - 1);
+                var center = (int)(frac * text.Length);
+                start = Math.Clamp(center - winLen / 2, 0, Math.Max(0, text.Length - winLen));
+            }
+
+            var len = Math.Min(winLen, text.Length - start);
+            // Snap to nearby newline to avoid mid-word cuts
+            if (start > 0 && start < text.Length)
+            {
+                var searchLen = Math.Min(200, text.Length - start);
+                var nl = text.IndexOf('\n', start, searchLen);
+                if (nl >= start && nl < start + searchLen)
+                {
+                    start = nl + 1;
+                    len = Math.Min(winLen, text.Length - start);
+                }
+            }
+
+            if (len <= 0) continue;
+            var slice = text.Substring(start, len).Trim();
+            if (slice.Length == 0) continue;
+
+            if (sb.Length > 0)
+                sb.Append("\n\n[[… sample ").Append(w + 1).Append('/').Append(windowCount).Append(" …]]\n\n");
+            sb.Append(slice);
+
+            if (sb.Length >= maxChars)
+                break;
+        }
+
+        if (sb.Length > maxChars)
+            return sb.ToString(0, maxChars);
+        return sb.ToString();
+    }
+
+    private static string NormalizeNewlines(string? text) =>
+        (text ?? "").Replace("\r\n", "\n").Replace('\r', '\n').Trim();
+
+    private static bool IsNoiseCastToken(string raw)
+    {
+        if (string.IsNullOrWhiteSpace(raw)) return true;
+        if (Regex.IsMatch(raw, @"^(INT|EXT|EST|I/E|FADE|CUT|TITLE|THE END|OMITTED|CONTINUED)\b",
+                RegexOptions.IgnoreCase))
+            return true;
+        // Pure transitions / camera
+        if (raw is "V.O." or "O.S." or "O.C." or "CONT'D" or "CONTINUED") return true;
+        return false;
+    }
+
+    private static string ToTitleToken(string raw)
+    {
+        raw = raw.Trim();
+        if (raw.Length == 0) return raw;
+        // "JANE DOE" / "JANE" → "Jane Doe" / "Jane"
+        var parts = raw.Split(new[] { ' ', '-' }, StringSplitOptions.RemoveEmptyEntries);
+        for (var i = 0; i < parts.Length; i++)
+        {
+            var p = parts[i];
+            if (p.Length == 0) continue;
+            parts[i] = char.ToUpperInvariant(p[0]) + (p.Length > 1 ? p[1..].ToLowerInvariant() : "");
+        }
+        // Preserve hyphenated form loosely
+        if (raw.Contains('-', StringComparison.Ordinal))
+            return string.Join('-', parts);
+        return string.Join(' ', parts);
     }
 
     /// <summary>Weak placeholder looks that must not be written as final seeds.</summary>
