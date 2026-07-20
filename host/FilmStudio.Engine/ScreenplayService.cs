@@ -345,6 +345,8 @@ public static class ScreenplayService
     public static SaveResult SaveDraft(ProjectStore store, string projectId, string text)
     {
         text = NormalizeText(text ?? "");
+        // Unify drifted same-place headings before they seed location_seed_tokens
+        text = BookToFountainConverter.NormalizeSceneHeadingWording(text);
         // Stamp Draft date to today even when the model invents a wrong year
         text = BookToFountainConverter.FixDraftDate(text);
         var sourceDir = Path.Combine(store.GetProjectDir(projectId), "source");

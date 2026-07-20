@@ -397,6 +397,86 @@ public class ScreenplayServiceTests : IDisposable
         Assert.Contains("VARIOUS", bad[0], StringComparison.OrdinalIgnoreCase);
     }
 
+    [Theory]
+    [InlineData("FIRST OFFICER", true)]
+    [InlineData("SECOND OFFICER", true)]
+    [InlineData("THIRD OFFICER", true)]
+    [InlineData("OFFICER 1", true)]
+    [InlineData("POLICE OFFICER #2", true)]
+    [InlineData("OFFICER REYNOLDS", false)]
+    [InlineData("NARRATOR", false)]
+    [InlineData("OLD MAN", false)]
+    public void IsGenericNumberedSpeaker_detects_ordinals(string name, bool expected)
+    {
+        Assert.Equal(expected, BookToFountainConverter.IsGenericNumberedSpeaker(name));
+    }
+
+    [Fact]
+    public void FindGenericNumberedSpeakers_lists_ordinal_cues()
+    {
+        var fountain = """
+            Title: T
+
+            INT. DOOR - NIGHT
+
+            FIRST OFFICER
+            Open up.
+
+            SECOND OFFICER
+            Search.
+
+            OFFICER REYNOLDS
+            Already named.
+            """;
+        var found = BookToFountainConverter.FindGenericNumberedSpeakers(fountain);
+        Assert.Contains(found, n => n.Equals("FIRST OFFICER", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(found, n => n.Equals("SECOND OFFICER", StringComparison.OrdinalIgnoreCase));
+        Assert.DoesNotContain(found, n => n.Contains("REYNOLDS", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public void NormalizeSceneHeadingWording_unifies_prefixed_hallway()
+    {
+        var fountain = """
+            Title: T
+
+            INT. OLD HOUSE - HALL OUTSIDE CHAMBER - NIGHT
+
+            NARRATOR
+            Outside first.
+
+            INT. HALL OUTSIDE CHAMBER - NIGHT
+
+            NARRATOR
+            Outside again.
+
+            INT. OLD MAN'S CHAMBER - NIGHT
+
+            NARRATOR
+            Inside.
+            """;
+        var norm = BookToFountainConverter.NormalizeSceneHeadingWording(fountain);
+        var halls = Regex.Matches(norm, @"(?im)^(INT\..*HALL OUTSIDE CHAMBER.*)$")
+            .Select(m => m.Groups[1].Value.Trim())
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+        Assert.True(halls.Count == 1, "expected one hallway wording, got: " + string.Join(" | ", halls));
+        Assert.DoesNotContain("OLD HOUSE - HALL", norm, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("INT. HALL OUTSIDE CHAMBER - NIGHT", norm, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("INT. OLD MAN'S CHAMBER - NIGHT", norm, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void IsLocationNameAlias_detects_prefix_drift()
+    {
+        Assert.True(BookToFountainConverter.IsLocationNameAlias(
+            "OLD HOUSE - HALL OUTSIDE CHAMBER", "HALL OUTSIDE CHAMBER"));
+        Assert.False(BookToFountainConverter.IsLocationNameAlias(
+            "OLD MAN'S CHAMBER", "CHAMBER"));
+        Assert.False(BookToFountainConverter.IsLocationNameAlias(
+            "HALL", "HALL OUTSIDE CHAMBER"));
+    }
+
     [Fact]
     public void LooksLikeGoodFountain_allows_novels_without_page_tags()
     {

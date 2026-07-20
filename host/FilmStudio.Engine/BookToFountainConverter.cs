@@ -165,8 +165,11 @@ public static class BookToFountainConverter
             text = ConvertHeuristic(title, bookText, author);
         }
 
-        // Prompt + auto-retry: vague multi-place headings must not ship (no hand-edit path)
+        // Generation repairs — no operator hand-edit path
         text = await RepairVagueLocationHeadingsAsync(
+            system, text, chat, model, onProgress, ct).ConfigureAwait(false);
+        text = NormalizeSceneHeadingWording(text);
+        text = await RepairGenericNumberedSpeakersAsync(
             system, text, chat, model, onProgress, ct).ConfigureAwait(false);
 
         text = EnsureDraftDate(text);
@@ -183,6 +186,13 @@ public static class BookToFountainConverter
         {
             onProgress?.Invoke(
                 $"Warning: vague location heading(s) remain after repair: {string.Join("; ", stillVague.Take(3))}");
+        }
+
+        var stillGeneric = FindGenericNumberedSpeakers(text);
+        if (stillGeneric.Count > 0)
+        {
+            onProgress?.Invoke(
+                $"Warning: generic numbered speaker(s) remain: {string.Join(", ", stillGeneric.Take(5))}");
         }
 
         return ScreenplayService.NormalizeText(text);
@@ -293,6 +303,261 @@ public static class BookToFountainConverter
             onProgress?.Invoke("Location repair failed — keeping prior draft.");
             return fountain;
         }
+    }
+
+    /// <summary>
+    /// Character cues that are ordinal/numbered role placeholders
+    /// (FIRST OFFICER, OFFICER 2, POLICE OFFICER #3) — unstable cast keys.
+    /// </summary>
+    public static IReadOnlyList<string> FindGenericNumberedSpeakers(string? fountain)
+    {
+        if (string.IsNullOrWhiteSpace(fountain))
+            return Array.Empty<string>();
+
+        return FountainParser.Parse(fountain).Elements
+            .Where(e => e.Type == FountainParser.ElementType.Character)
+            .Select(e => (e.Text ?? "").Trim())
+            .Where(n => n.Length > 0 && IsGenericNumberedSpeaker(n))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(n => n, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+    }
+
+    /// <summary>True for FIRST/SECOND OFFICER, OFFICER 1, POLICE #2, etc.</summary>
+    public static bool IsGenericNumberedSpeaker(string? characterName)
+    {
+        if (string.IsNullOrWhiteSpace(characterName)) return false;
+        var n = Regex.Replace(characterName.Trim(), @"\s+", " ");
+        // FIRST OFFICER / SECOND GUARD / THIRD MAN
+        if (Regex.IsMatch(
+                n,
+                @"^(FIRST|SECOND|THIRD|FOURTH|FIFTH|SIXTH|SEVENTH|EIGHTH|NINTH|TENTH|1ST|2ND|3RD|4TH|5TH)\s+\S+",
+                RegexOptions.IgnoreCase))
+            return true;
+        // OFFICER 1 / POLICE 2 / GUARD #3
+        if (Regex.IsMatch(
+                n,
+                @"^(OFFICER|POLICE|POLICEMAN|POLICE\s+OFFICER|GUARD|SOLDIER|DETECTIVE|AGENT|COP|DEPUTY|TROOPER)\s*[#]?\s*\d+\b",
+                RegexOptions.IgnoreCase))
+            return true;
+        // OFFICER ONE / POLICE TWO
+        if (Regex.IsMatch(
+                n,
+                @"^(OFFICER|POLICE|POLICE\s+OFFICER|GUARD|SOLDIER|DETECTIVE|AGENT|DEPUTY)\s+(ONE|TWO|THREE|FOUR|FIVE|SIX|SEVEN|EIGHT|NINE|TEN)\b",
+                RegexOptions.IgnoreCase))
+            return true;
+        return false;
+    }
+
+    /// <summary>
+    /// Chat repair: replace generic numbered speakers with stable proper-name tokens.
+    /// </summary>
+    private static async Task<string> RepairGenericNumberedSpeakersAsync(
+        string system,
+        string fountain,
+        IGrokChatClient chat,
+        string model,
+        Action<string>? onProgress,
+        CancellationToken ct)
+    {
+        var bad = FindGenericNumberedSpeakers(fountain);
+        if (bad.Count == 0 || !chat.IsConfigured)
+            return fountain;
+
+        onProgress?.Invoke(
+            $"Naming {bad.Count} generic numbered speaker(s) (stable cast tokens)…");
+
+        var listed = string.Join("\n", bad.Select(n => "  - " + n));
+        var user = $"""
+            SPEAKER NAMING REPAIR (HARD)
+            The Fountain draft below uses generic numbered / ordinal role cues that make
+            unstable cast keys for production (portraits, continuity, shot plans):
+
+            {listed}
+
+            Rules:
+            - Return the COMPLETE Fountain screenplay again (not a patch list).
+            - Replace EVERY occurrence of those cues (including CONT'D / V.O. / O.S. lines)
+              with a proper ALL-CAPS name token, e.g. OFFICER REYNOLDS, OFFICER BLAKE,
+              OFFICER COLE — invent period-appropriate surnames if the book is silent.
+            - Same person = same token every time. Distinct people = distinct tokens.
+            - Do not leave FIRST/SECOND/THIRD, OFFICER 1, POLICE #2, etc.
+            - Do not change plot, locations, or book-faithful dialogue wording except the cue names.
+            - No markdown fences. Fountain only.
+
+            --- BEGIN FOUNTAIN ---
+            {fountain}
+            --- END FOUNTAIN ---
+            """;
+
+        try
+        {
+            var repaired = await chat.CompleteAsync(
+                    system, user, model, temperature: 0.15, ct,
+                    mode: ChatCallModes.BookToFountainSpeakersRetry)
+                .ConfigureAwait(false);
+            repaired = StripBookPageTags(StripFences(repaired));
+            if (!LooksLikeGoodFountain(repaired))
+            {
+                onProgress?.Invoke("Speaker naming repair unusable — keeping prior draft.");
+                return fountain;
+            }
+
+            var remaining = FindGenericNumberedSpeakers(repaired);
+            if (remaining.Count < bad.Count)
+            {
+                onProgress?.Invoke(
+                    remaining.Count == 0
+                        ? "Generic speakers named."
+                        : $"Speaker naming partial — {remaining.Count} generic cue(s) left.");
+                return repaired;
+            }
+
+            onProgress?.Invoke("Speaker naming did not clear generic cues — keeping prior draft.");
+            return fountain;
+        }
+        catch (Exception)
+        {
+            onProgress?.Invoke("Speaker naming repair failed — keeping prior draft.");
+            return fountain;
+        }
+    }
+
+    /// <summary>
+    /// Deterministic: when two scene headings name the same place with drifted wording
+    /// (e.g. "OLD HOUSE - HALL OUTSIDE CHAMBER" vs "HALL OUTSIDE CHAMBER"), rewrite
+    /// all visits to one canonical location phrase so location_seed_tokens stay unified.
+    /// Public for tests and SaveDraft.
+    /// </summary>
+    public static string NormalizeSceneHeadingWording(string? fountain)
+    {
+        if (string.IsNullOrWhiteSpace(fountain))
+            return fountain ?? "";
+
+        fountain = fountain.Replace("\r\n", "\n").Replace('\r', '\n');
+        var headings = FountainParser.Parse(fountain).Elements
+            .Where(e => e.Type == FountainParser.ElementType.SceneHeading)
+            .Select(e => (e.Text ?? "").Trim())
+            .Where(h => h.Length > 0)
+            .ToList();
+        if (headings.Count < 2)
+            return fountain;
+
+        // Unique heading forms + frequency
+        var forms = headings
+            .GroupBy(h => h, StringComparer.OrdinalIgnoreCase)
+            .Select(g => g.First())
+            .ToList();
+        var freq = headings
+            .GroupBy(h => h, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(g => g.First(), g => g.Count(), StringComparer.OrdinalIgnoreCase);
+
+        // locName per heading form
+        var locByHeading = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var h in forms)
+        {
+            var (_, loc, _) = FountainStage1Importer.ParseHeading(h);
+            locByHeading[h] = loc;
+        }
+
+        var locNames = locByHeading.Values
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        // Alias longer "PREFIX - CORE" names to shorter CORE when CORE is also used
+        var canonicalLoc = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var loc in locNames)
+            canonicalLoc[loc] = loc;
+
+        foreach (var longer in locNames.OrderByDescending(l => l.Length))
+        {
+            foreach (var shorter in locNames
+                         .Where(s => s.Length < longer.Length)
+                         .OrderByDescending(s => s.Length))
+            {
+                if (!IsLocationNameAlias(longer, shorter)) continue;
+                // Prefer shorter core as canonical (stable key, less drift)
+                var root = canonicalLoc.TryGetValue(shorter, out var c) ? c : shorter;
+                canonicalLoc[longer] = root;
+                break;
+            }
+        }
+
+        // Only rewrite if at least one alias collapsed
+        if (!canonicalLoc.Any(kv =>
+                !kv.Key.Equals(kv.Value, StringComparison.OrdinalIgnoreCase)))
+            return fountain;
+
+        // Preferred loc phrase = canonical; rebuild each heading with original time-of-day
+        var map = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var h in forms)
+        {
+            var loc = locByHeading[h];
+            var canon = canonicalLoc.TryGetValue(loc, out var c) ? c : loc;
+            if (loc.Equals(canon, StringComparison.OrdinalIgnoreCase))
+            {
+                map[h] = h;
+                continue;
+            }
+
+            var (prefix, _, time) = SplitSceneHeadingParts(h);
+            var rebuilt = string.IsNullOrEmpty(time)
+                ? $"{prefix}{canon}"
+                : $"{prefix}{canon} - {time}";
+            map[h] = rebuilt;
+        }
+
+        // Prefer most frequent original form's casing for the same rebuilt target? use as-is
+        var lines = fountain.Split('\n');
+        for (var i = 0; i < lines.Length; i++)
+        {
+            var t = lines[i].TrimEnd('\r');
+            var key = t.Trim();
+            if (map.TryGetValue(key, out var repl) &&
+                !key.Equals(repl, StringComparison.Ordinal))
+            {
+                // preserve leading whitespace if any
+                var lead = t.Length - t.TrimStart().Length;
+                lines[i] = (lead > 0 ? t[..lead] : "") + repl;
+            }
+        }
+
+        return string.Join("\n", lines);
+    }
+
+    /// <summary>
+    /// True when <paramref name="longer"/> is the same place as <paramref name="shorter"/>
+    /// with a redundant building/site prefix (e.g. "OLD HOUSE - HALL…" vs "HALL…").
+    /// </summary>
+    public static bool IsLocationNameAlias(string longer, string shorter)
+    {
+        longer = (longer ?? "").Trim();
+        shorter = (shorter ?? "").Trim();
+        if (longer.Length <= shorter.Length || shorter.Length < 4)
+            return false;
+        if (!longer.EndsWith(shorter, StringComparison.OrdinalIgnoreCase))
+            return false;
+        var prefix = longer[..^shorter.Length];
+        return prefix.EndsWith(" - ", StringComparison.Ordinal)
+               || prefix.EndsWith(" – ", StringComparison.Ordinal);
+    }
+
+    private static (string Prefix, string LocName, string Time) SplitSceneHeadingParts(string heading)
+    {
+        heading = (heading ?? "").Trim();
+        var m = Regex.Match(
+            heading,
+            @"^(INT\./EXT|INT/EXT|I\./E|I/E|INT\.?|EXT\.?|EST\.?)\s*",
+            RegexOptions.IgnoreCase);
+        var prefix = m.Success ? m.Value : "INT. ";
+        if (!prefix.EndsWith(' ') && prefix.Length > 0)
+            prefix += " ";
+        var rest = m.Success ? heading[m.Length..].Trim() : heading;
+        var dash = rest.LastIndexOf(" - ", StringComparison.Ordinal);
+        if (dash < 0) dash = rest.LastIndexOf(" – ", StringComparison.Ordinal);
+        if (dash > 0)
+            return (prefix, rest[..dash].Trim(), rest[(dash + 3)..].Trim());
+        return (prefix, rest, "");
     }
 
     /// <summary>

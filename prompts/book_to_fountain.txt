@@ -125,12 +125,17 @@ later shots stay consistent:
 - Exclusive OR in the book: pick ONE for that beat.
 - Pure voice-only narrator: NARRATOR dialogue; do not force a face on screen.
 - Recurring speakers use the same ALL-CAPS token every time (SCROOGE, ALICE, DELLA, …).
+- Supporting roles with dialogue (officers, guards, servants, neighbors): give each a proper
+  ALL-CAPS name token (OFFICER REYNOLDS, MRS. CLEMM), not FIRST/SECOND/THIRD OFFICER,
+  OFFICER 1, POLICE OFFICER #2. Numbers and ordinals are not stable cast keys.
 
 ================================================================
 LOCATIONS
 ================================================================
 - Use real, filmable place names grounded in the book.
-- When the story returns to the same place, use the same heading wording.
+- When the story returns to the same place, use the **exact same heading wording**
+  (same location phrase every time — do not add/drop a building prefix like "OLD HOUSE -"
+  on some visits and omit it on others).
 - Multi-place story moments can be separate scenes (preferred) or brief transitions;
   do not invent new plot just to force a location change.
 - Never use a vague placeholder as the location itself — including synonyms the model
