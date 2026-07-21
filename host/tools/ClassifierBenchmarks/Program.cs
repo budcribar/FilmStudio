@@ -5,9 +5,10 @@ using FilmStudio.Engine;
 // ClassifierBenchmarks — durable AI vs baseline scorer with model/prompt matrix + history.
 //
 // Usage:
-//   ClassifierBenchmarks run [--project The_Jungle_Book] [--tasks ambient_sfx,species_kind]
+//   ClassifierBenchmarks run [--project The_Jungle_Book] [--tasks ambient_sfx,onscreen_cast,silent_beat_action]
 //                            [--models grok-4.5] [--prompts v1_product,v2_grounded]
 //                            [--temp 0] [--temps 0,0.2] [--note "after prompt tweak"]
+//   silent_beat_action gold is multi-book under gold/_all_books/ (project flag ignored for gold path).
 //   ClassifierBenchmarks report          # rebuild LATEST.md + history.html from history/index.json
 //   ClassifierBenchmarks history         # print recent runs
 //   ClassifierBenchmarks list-prompts --task ambient_sfx
@@ -56,7 +57,8 @@ static void PrintHelp()
         Examples:
           dotnet run --project host/tools/ClassifierBenchmarks -- run --tasks ambient_sfx --prompts v1_product,v2_grounded --temps 0,0.2
           dotnet run --project host/tools/ClassifierBenchmarks -- run --tasks onscreen_cast --prompts v1_product,v2_grounded
-          dotnet run --project host/tools/ClassifierBenchmarks -- run --tasks ambient_sfx,species_kind,onscreen_cast --models grok-4.5
+          dotnet run --project host/tools/ClassifierBenchmarks -- run --tasks silent_beat_action --prompts v2_product
+          dotnet run --project host/tools/ClassifierBenchmarks -- run --tasks ambient_sfx,species_kind,onscreen_cast,silent_beat_action
           dotnet run --project host/tools/ClassifierBenchmarks -- report
         """);
 }
@@ -150,18 +152,28 @@ static async Task<int> CmdRunAsync(BenchPaths paths, string[] args)
             {
                 foreach (var temperature in cfg.Temperatures)
                 {
-                    Console.WriteLine($"  → {task} · {model} · {promptId} · t={temperature:0.##}");
+                    // Map default/global prompt names onto this task's files when needed
+                    var effectivePromptId = promptId;
+                    if (task == "silent_beat_action" && !File.Exists(paths.PromptFile(task, promptId)))
+                        effectivePromptId = "v2_product";
+
+                    Console.WriteLine($"  → {task} · {model} · {effectivePromptId} · t={temperature:0.##}");
                     try
                     {
                         PromptBundle prompt;
                         try
                         {
-                            prompt = PromptStore.Load(paths, task, promptId);
+                            prompt = PromptStore.Load(paths, task, effectivePromptId);
                         }
-                        catch (FileNotFoundException) when (task == "species_kind" && promptId == "v1_product")
+                        catch (FileNotFoundException) when (task == "species_kind" && effectivePromptId == "v1_product")
                         {
                             await EnsureDefaultSpeciesPromptAsync(paths);
-                            prompt = PromptStore.Load(paths, task, promptId);
+                            prompt = PromptStore.Load(paths, task, effectivePromptId);
+                        }
+                        catch (FileNotFoundException) when (task == "silent_beat_action")
+                        {
+                            await EnsureDefaultSilentBeatPromptAsync(paths);
+                            prompt = PromptStore.Load(paths, task, "v2_product");
                         }
 
                         TaskResult result = task switch
@@ -172,8 +184,10 @@ static async Task<int> CmdRunAsync(BenchPaths paths, string[] args)
                                 paths, cfg.ProjectId, model, temperature, prompt, chat),
                             "onscreen_cast" => await TaskRunners.RunOnScreenCastAsync(
                                 paths, cfg.ProjectId, model, temperature, prompt, chat),
+                            "silent_beat_action" => await TaskRunners.RunSilentBeatActionAsync(
+                                paths, cfg.ProjectId, model, temperature, prompt, chat),
                             _ => throw new InvalidOperationException(
-                                $"Unknown task '{task}'. Supported: ambient_sfx, species_kind, onscreen_cast"),
+                                $"Unknown task '{task}'. Supported: ambient_sfx, species_kind, onscreen_cast, silent_beat_action"),
                         };
 
                         run.Results.Add(result);
@@ -224,6 +238,24 @@ static async Task EnsureDefaultSpeciesPromptAsync(BenchPaths paths)
                 id = "v1_product",
                 task = "species_kind",
                 label = "Product SpeciesKindClassifier prompt",
+            }, JsonDefaults.Pretty));
+    }
+}
+
+static async Task EnsureDefaultSilentBeatPromptAsync(BenchPaths paths)
+{
+    var dir = Path.Combine(paths.Prompts, "silent_beat_action");
+    Directory.CreateDirectory(dir);
+    var txt = Path.Combine(dir, "v2_product.txt");
+    if (!File.Exists(txt))
+    {
+        await File.WriteAllTextAsync(txt, SilentBeatActionClassifier.SystemPromptV2().Trim() + Environment.NewLine);
+        await File.WriteAllTextAsync(Path.Combine(dir, "v2_product.meta.json"),
+            JsonSerializer.Serialize(new
+            {
+                id = "v2_product",
+                task = "silent_beat_action",
+                label = "Product SilentBeatActionClassifier (v2)",
             }, JsonDefaults.Pretty));
     }
 }

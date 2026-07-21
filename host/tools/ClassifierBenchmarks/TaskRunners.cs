@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using FilmStudio.Engine;
 
 namespace ClassifierBenchmarks;
@@ -371,10 +372,152 @@ public static class TaskRunners
         return keys.OrderBy(k => k, StringComparer.OrdinalIgnoreCase).ToList();
     }
 
+    public static async Task<TaskResult> RunSilentBeatActionAsync(
+        BenchPaths paths,
+        string projectId,
+        string model,
+        double temperature,
+        PromptBundle prompt,
+        ChatRunner chat,
+        CancellationToken ct = default)
+    {
+        // Multi-book gold lives under gold/_all_books (ignore --project for path; keep for metadata).
+        var goldPath = paths.GoldFile("_all_books", "silent_beat_action");
+        if (!File.Exists(goldPath))
+            throw new FileNotFoundException($"Missing gold: {goldPath}");
+
+        using var goldDoc = JsonDocument.Parse(await File.ReadAllTextAsync(goldPath, ct));
+        var root = goldDoc.RootElement;
+        var curated = root.TryGetProperty("curated", out var cEl) && cEl.GetBoolean();
+        var samples = new List<(string Key, string Project, string Id, string Visual, bool IsFirst, string Gold)>();
+        foreach (var el in root.GetProperty("labels").EnumerateArray())
+        {
+            var book = el.TryGetProperty("projectId", out var pEl) ? pEl.GetString() ?? "" : "";
+            var id = el.TryGetProperty("id", out var idEl) ? idEl.GetString() ?? "" : "";
+            var gold = el.TryGetProperty("gold", out var gEl) ? gEl.GetString() ?? "" : "";
+            var visual = el.TryGetProperty("visual", out var vEl) ? vEl.GetString() ?? "" : "";
+            var isFirst = el.TryGetProperty("is_first_silent_in_scene", out var fEl) &&
+                          (fEl.ValueKind == JsonValueKind.True ||
+                           (fEl.ValueKind == JsonValueKind.String &&
+                            bool.TryParse(fEl.GetString(), out var fb) && fb));
+            if (id.Length == 0 || gold.Length == 0 || visual.Length == 0) continue;
+            var nGold = SilentBeatActionClassifier.NormalizeClass(gold) ?? gold.Trim().ToLowerInvariant();
+            // Composite key so s1_b1 across books doesn't collide in the chat batch
+            var key = $"{book}::{id}";
+            samples.Add((key, book, id, visual, isFirst, nGold));
+        }
+
+        // Batch chat (product uses ~30)
+        const int batchSize = 30;
+        var aiMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        var sw = Stopwatch.StartNew();
+        var chatCalls = 0;
+        for (var offset = 0; offset < samples.Count; offset += batchSize)
+        {
+            ct.ThrowIfCancellationRequested();
+            var chunk = samples.Skip(offset).Take(batchSize).ToList();
+            var payload = chunk.Select(s => new Dictionary<string, object?>
+            {
+                ["id"] = s.Key,
+                ["visual_event"] = Trunc(s.Visual, 280),
+                ["is_first_silent_in_scene"] = s.IsFirst,
+            }).ToList();
+            var raw = await chat.CompleteAsync(
+                model, temperature, prompt.Text,
+                "Label each silent beat for duration budgeting. Return JSON only.\n\n" +
+                JsonSerializer.Serialize(new { beats = payload }),
+                ct);
+            chatCalls++;
+            foreach (var kv in SilentBeatActionClassifier.ParseLabels(raw))
+                aiMap[kv.Key] = kv.Value;
+        }
+        sw.Stop();
+
+        var sampleScores = new List<SampleScore>();
+        int baseOk = 0, aiOk = 0, hits = 0;
+        foreach (var s in samples)
+        {
+            var h = FrozenBaselineSilentActionClass(s.Visual, s.IsFirst);
+            aiMap.TryGetValue(s.Key, out var ac);
+            if (aiMap.ContainsKey(s.Key)) hits++;
+            ac ??= "";
+            var b = string.Equals(h, s.Gold, StringComparison.OrdinalIgnoreCase) ? 1.0 : 0.0;
+            var a = string.Equals(ac, s.Gold, StringComparison.OrdinalIgnoreCase) ? 1.0 : 0.0;
+            baseOk += (int)b;
+            aiOk += (int)a;
+            sampleScores.Add(new SampleScore
+            {
+                Id = s.Key,
+                Visual = Trunc($"[{s.Project}] {s.Visual}", 200),
+                GoldLabel = s.Gold,
+                BaselineLabel = h,
+                AiLabel = ac,
+                BaselineScore = b,
+                AiScore = a,
+            });
+        }
+
+        var n = samples.Count;
+        var baseMean = n == 0 ? 0 : (double)baseOk / n;
+        var aiMean = n == 0 ? 0 : (double)aiOk / n;
+        return new TaskResult
+        {
+            Task = "silent_beat_action",
+            ProjectId = projectId is "_all_books" or "" ? "_all_books" : projectId,
+            Model = model,
+            PromptId = prompt.Id,
+            PromptLabel = prompt.Label,
+            PromptHash = prompt.Hash,
+            Temperature = temperature,
+            CuratedGold = curated,
+            SampleCount = n,
+            Metric = "accuracy",
+            BaselineScore = baseMean,
+            AiScore = aiMean,
+            Winner = Winner(baseMean, aiMean),
+            LatencyMs = sw.ElapsedMilliseconds,
+            AiParseHits = hits,
+            Note = $"{prompt.Notes}; chat_calls={chatCalls}; books=multi",
+            Samples = sampleScores,
+        };
+    }
+
+    /// <summary>
+    /// Frozen fair baseline (BeatLabelEval BaselineInferActionClass): first silent → establishing.
+    /// Do not use eval-tuned InferActionClass here.
+    /// </summary>
+    public static string FrozenBaselineSilentActionClass(string actionText, bool isFirstBeatInScene)
+    {
+        var t = (actionText ?? "").Trim();
+        if (t.Length == 0)
+            return isFirstBeatInScene ? "establishing" : "hold";
+
+        var lower = t.ToLowerInvariant();
+        var words = Regex.Split(lower, @"\s+").Count(w => w.Length > 0);
+
+        if (Regex.IsMatch(lower,
+                @"\b(chase|races?|sprints?|explodes?|crashes?|fights?|attacks?|leaps?|bounds?|lunges?|slams?)\b"))
+            return "big_action";
+
+        if (isFirstBeatInScene)
+            return "establishing";
+
+        if (words <= 24 &&
+            Regex.IsMatch(lower,
+                @"\b(smile|smiles|smiling|nods?|turns?|looks?|gazes?|freezes?|waits?|steadies|thin smile|hands on|sits still|leans?|pauses?|watches?|listens?)\b"))
+            return "hold";
+
+        if (words <= 8)
+            return "hold";
+
+        return "action";
+    }
+
     public static string DefaultPromptId(string task) => task switch
     {
         "ambient_sfx" => "v2_grounded",
         "onscreen_cast" => "v2_grounded",
+        "silent_beat_action" => "v2_product",
         "species_kind" => "v1_product",
         _ => "v1_product",
     };

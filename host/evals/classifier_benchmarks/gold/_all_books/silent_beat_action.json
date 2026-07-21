@@ -1,0 +1,1334 @@
+{
+  "notes": "Human ground truth from host/evals/beat_label_eval/ground_truth (7 books). Visuals/isFirst from annotate. Fair baseline: frozen first-silent->establishing heuristic.",
+  "schema": "classifier_gold.v1",
+  "task": "silent_beat_action",
+  "curated": true,
+  "curated_at": "2026-07-21",
+  "labels": [
+    {
+      "projectId": "AlicesAdventures",
+      "id": "s1_b1",
+      "gold": "establishing",
+      "visual": "Notes: Period live-action Victorian fantasy; humans and talking animals share one stylized live-action medium. ALICE: about seven, fair hair, knee-length blue dress, white apron, striped stockings. WHITE RABBIT: white fur, pink eyes, waistcoat, pocket-watch. Recurring places keep identical heading names.",
+      "is_first_silent_in_scene": true,
+      "setting": "INT. UNSPECIFIED - DAY",
+      "note": "Style notes + Alice intro as setup open"
+    },
+    {
+      "projectId": "AlicesAdventures",
+      "id": "s6_b1",
+      "gold": "establishing",
+      "visual": "A long, low hall lit by a row of lamps hanging from the roof. Doors all round. Alice tries every one: all locked. She walks sadly down the middle. A little three-legged table of solid glass stands alone. On it: a tiny golden key. She tries the key on the doors - locks too large, or key too small. On a second circuit she finds a low curtain and, behind it, a little door about fifteen inches high. The golden key fits. She opens the door onto a small passage no larger than a rat-hole. Beyond: the loveliest garden - bright flower-beds, cool fountains. She kneels, longing, but cannot get even her head through.",
+      "is_first_silent_in_scene": true,
+      "setting": "INT. LONG LOW HALL - DAY",
+      "note": "Long low hall doors — place open then try locks"
+    },
+    {
+      "projectId": "AlicesAdventures",
+      "id": "s7_b30",
+      "gold": "hold",
+      "visual": "She ticks off children she knows.",
+      "is_first_silent_in_scene": false,
+      "setting": "INT. LONG LOW HALL - MOMENTS LATER",
+      "note": "Ticks off children — micro"
+    },
+    {
+      "projectId": "AlicesAdventures",
+      "id": "s8_b22",
+      "gold": "hold",
+      "visual": "The Mouse bristles all over.",
+      "is_first_silent_in_scene": false,
+      "setting": "INT. POOL OF TEARS - CONTINUOUS",
+      "note": "Mouse bristles"
+    },
+    {
+      "projectId": "AlicesAdventures",
+      "id": "s9_b46",
+      "gold": "action",
+      "visual": "The Dodo receives the thimble solemnly, then presents it back to Alice, saying -",
+      "is_first_silent_in_scene": false,
+      "setting": "EXT. BANK OF THE POOL - DAY",
+      "note": "Dodo receives and returns thimble"
+    },
+    {
+      "projectId": "AlicesAdventures",
+      "id": "s12_b11",
+      "gold": "hold",
+      "visual": "The bottle has had its full effect. She grows no larger - still very uncomfortable, wedged in the little room.",
+      "is_first_silent_in_scene": false,
+      "setting": "INT. WHITE RABBIT'S TIDY LITTLE ROOM - DAY",
+      "note": "Wedged still after bottle"
+    },
+    {
+      "projectId": "AlicesAdventures",
+      "id": "s16_b8",
+      "gold": "action",
+      "visual": "She gives one sharp kick.",
+      "is_first_silent_in_scene": false,
+      "setting": "INT. WHITE RABBIT'S TIDY LITTLE ROOM - DAY",
+      "note": "One sharp kick"
+    },
+    {
+      "projectId": "AlicesAdventures",
+      "id": "s23_b8",
+      "gold": "action",
+      "visual": "She looks all round at the flowers and blades of grass. Nothing that looks like the right thing. A large mushroom grows near her, about the same height as herself. She looks under it, on both sides, behind it - then stretches up on tiptoe and peeps over the edge. Her eyes meet those of a large CATERPILLAR, sitting on the top with its arms folded, quietly smoking a long hookah, taking not the smallest notice of her.",
+      "is_first_silent_in_scene": false,
+      "setting": "EXT. WOOD - BUTTERCUP CLEARING - DAY",
+      "note": "Looks round; finds mushroom"
+    },
+    {
+      "projectId": "AlicesAdventures",
+      "id": "s25_b1",
+      "gold": "big_action",
+      "visual": "Alice's head frees itself. She is delighted - until she finds her shoulders gone; all she can see when she looks down is an immense length of neck, rising like a stalk out of a sea of green leaves far below.",
+      "is_first_silent_in_scene": true,
+      "setting": "EXT. WOOD - NEAR MUSHROOM - DAY",
+      "note": "Neck grows immense — continuous transformation"
+    },
+    {
+      "projectId": "AlicesAdventures",
+      "id": "s27_b3",
+      "gold": "hold",
+      "visual": "She says it aloud, half to herself. The Duchess only scowls. The cook takes no notice.",
+      "is_first_silent_in_scene": false,
+      "setting": "INT. DUCHESS'S KITCHEN - DAY",
+      "note": "Speaks half to self; scowls ignored"
+    },
+    {
+      "projectId": "AlicesAdventures",
+      "id": "s28_b43",
+      "gold": "action",
+      "visual": "This time it vanishes quite slowly, beginning with the end of the tail, and ending with the grin, which remains some time after the rest of it has gone.",
+      "is_first_silent_in_scene": false,
+      "setting": "EXT. WOOD NEAR DUCHESS'S HOUSE - DAY",
+      "note": "Cat vanishes slowly leaving grin"
+    },
+    {
+      "projectId": "AlicesAdventures",
+      "id": "s29_b72",
+      "gold": "hold",
+      "visual": "The Hatter shakes his head mournfully.",
+      "is_first_silent_in_scene": false,
+      "setting": "EXT. MARCH HARE'S HOUSE - DAY",
+      "note": "Hatter shakes head"
+    },
+    {
+      "projectId": "AlicesAdventures",
+      "id": "s31_b1",
+      "gold": "establishing",
+      "visual": "Once more she finds herself in the long hall, close to the little glass table.",
+      "is_first_silent_in_scene": true,
+      "setting": "INT. LONG LOW HALL - DAY",
+      "note": "Back in long hall by glass table"
+    },
+    {
+      "projectId": "AlicesAdventures",
+      "id": "s32_b38",
+      "gold": "action",
+      "visual": "The Knave does so, very carefully, with one foot.",
+      "is_first_silent_in_scene": false,
+      "setting": "EXT. QUEEN'S GARDEN - DAY",
+      "note": "Knave carefully one foot"
+    },
+    {
+      "projectId": "AlicesAdventures",
+      "id": "s33_b39",
+      "gold": "action",
+      "visual": "The King and executioner argue whether a head can be beheaded without a body. The Cat's head begins to fade away. By the time they have settled anything, the head is entirely gone. The Queen stamps off, shouting \"Off with his head!\" at anyone who happens to be in her way. Alice thinks she had better go back and see how the game is going on. She hears the Queen's voice in the distance, screaming with passion. She has already heard her sentence three of the players to be executed for having missed their turns. Alice leaves the croquet-ground. She finds the Duchess's arm slipped through hers, and the Duchess smiling in a pleasant way.",
+      "is_first_silent_in_scene": false,
+      "setting": "EXT. CROQUET-GROUND - DAY",
+      "note": "Argue beheading; head fades"
+    },
+    {
+      "projectId": "AlicesAdventures",
+      "id": "s35_b6",
+      "gold": "hold",
+      "visual": "He sighs deeply, drawing the back of one flapper across his eyes. He tries to speak; sobs choke his voice.",
+      "is_first_silent_in_scene": false,
+      "setting": "EXT. MOCK TURTLE'S ROCK - DAY",
+      "note": "Sighs, flapper across eyes, sobs"
+    },
+    {
+      "projectId": "AlicesAdventures",
+      "id": "s35_b110",
+      "gold": "hold",
+      "visual": "Alice looks down at her shoes.",
+      "is_first_silent_in_scene": false,
+      "setting": "EXT. MOCK TURTLE'S ROCK - DAY",
+      "note": "Looks down at shoes"
+    },
+    {
+      "projectId": "AlicesAdventures",
+      "id": "s36_b1",
+      "gold": "establishing",
+      "visual": "The KING OF HEARTS and QUEEN OF HEARTS sit on their throne. A great crowd of little birds and beasts and the whole pack of cards assembles about them. The KNAVE OF HEARTS stands before them in chains, a SOLDIER on each side. Near the King stands the WHITE RABBIT, trumpet in one hand, scroll of parchment in the other. In the middle of the court: a table with a large dish of tarts. Alice and the Gryphon arrive. Alice eyes the tarts hungrily. Alice looks about, pleased to know the names of things. The King wears his crown over a great wig and does not look comfortable. Twelve jurors - animals and birds mixed - write busily on slates in the jury-box. Among them: BILL THE LIZARD.",
+      "is_first_silent_in_scene": true,
+      "setting": "EXT. COURT OF HEARTS - DAY",
+      "note": "Throne room court assembles"
+    },
+    {
+      "projectId": "AlicesAdventures",
+      "id": "s36_b62",
+      "gold": "action",
+      "visual": "One of the GUINEA-PIGS cheers and is immediately suppressed by officers: they slip him head first into a large canvas bag, tie it up, and sit upon it. Alice watches with interest.",
+      "is_first_silent_in_scene": false,
+      "setting": "EXT. COURT OF HEARTS - DAY",
+      "note": "Guinea-pig suppressed into bag"
+    },
+    {
+      "projectId": "AlicesAdventures",
+      "id": "s36_b111",
+      "gold": "hold",
+      "visual": "The King turns pale, and shuts his note-book hastily.",
+      "is_first_silent_in_scene": false,
+      "setting": "EXT. COURT OF HEARTS - DAY",
+      "note": "King turns pale, shuts notebook"
+    },
+    {
+      "projectId": "ChristmasCarol",
+      "id": "s1_b1",
+      "gold": "action",
+      "visual": "A heavy burial register lies open. A CLERGYMAN, a CLERK, an UNDERTAKER, and EBENEZER SCROOGE sign in turn. Scrooge's hand is steady, businesslike. Snow light at the window.",
+      "is_first_silent_in_scene": true,
+      "setting": "INT. REGISTER OFFICE - DAY",
+      "note": "Signing register — business, not place open"
+    },
+    {
+      "projectId": "ChristmasCarol",
+      "id": "s5_b64",
+      "gold": "action",
+      "visual": "As Fred goes out, he lets two others in: MR. ALMSLEY and MR. WITHERS-portly, pleasant, hats off, books and papers in hand. They bow.",
+      "is_first_silent_in_scene": false,
+      "setting": "INT. SCROOGE AND MARLEY COUNTING-HOUSE - LATE AFTERNOON",
+      "note": "Visitors enter and bow"
+    },
+    {
+      "projectId": "ChristmasCarol",
+      "id": "s10_b1",
+      "gold": "establishing",
+      "visual": "A lowering pile of building up a yard-gloomy chambers that once belonged to Marley. Nobody lives in it now but Scrooge; other rooms let out as offices. The yard is so dark that even Scrooge, who knows its every stone, gropes with his hands. He approaches his door. The knocker-large, old-fashioned-is ordinary iron one moment. The next: JACOB MARLEY's face. Not angry or ferocious-looking at Scrooge as Marley used to look: ghostly spectacles turned up on its ghostly forehead. The hair is curiously stirred, as if by breath or hot air; the eyes wide open, motionless; the colour horrible, livid. Scrooge stares. The apparition becomes a knocker again. He turns the key, walks in, and lights his candle. He does pause, with a moment's irresolution, before he shuts the door-and he does look cautiously behind it first, as if he half expects to be terrified with the sight of Marley's pigtail sticking out into the hall. But there is nothing.",
+      "is_first_silent_in_scene": true,
+      "setting": "EXT. SCROOGE'S YARD - NIGHT",
+      "note": "Marley chambers / yard open"
+    },
+    {
+      "projectId": "ChristmasCarol",
+      "id": "s12_b71",
+      "gold": "hold",
+      "visual": "Scrooge is very much dismayed.",
+      "is_first_silent_in_scene": false,
+      "setting": "INT. SCROOGE'S SITTING ROOM - NIGHT",
+      "note": "Dismayed reaction"
+    },
+    {
+      "projectId": "ChristmasCarol",
+      "id": "s13_b19",
+      "gold": "hold",
+      "visual": "It puts out its strong hand and clasps him gently by the arm.",
+      "is_first_silent_in_scene": false,
+      "setting": "INT. SCROOGE'S BEDROOM - NIGHT",
+      "note": "Gentle arm clasp"
+    },
+    {
+      "projectId": "ChristmasCarol",
+      "id": "s15_b5",
+      "gold": "action",
+      "visual": "Scrooge nods-he knows it-and sobs. They leave the high-road by a well-remembered lane.",
+      "is_first_silent_in_scene": false,
+      "setting": "EXT. ROAD NEAR MARKET-TOWN - DAY",
+      "note": "Nod, sob, leave high-road"
+    },
+    {
+      "projectId": "ChristmasCarol",
+      "id": "s18_b30",
+      "gold": "hold",
+      "visual": "She claps her tiny hands, bends down to laugh.",
+      "is_first_silent_in_scene": false,
+      "setting": "INT. SCHOOLROOM - DAY",
+      "note": "Clap hands, bend to laugh"
+    },
+    {
+      "projectId": "ChristmasCarol",
+      "id": "s23_b3",
+      "gold": "action",
+      "visual": "OLD FEZZIWIG lays down his pen, looks up at the clock-seven. Rubs his hands; adjusts his capacious waistcoat; laughs all over himself from his shoes to his organ of benevolence. Comfortable, oily, rich, fat, jovial voice:",
+      "is_first_silent_in_scene": false,
+      "setting": "INT. FEZZIWIG'S WAREHOUSE - NIGHT",
+      "note": "Fezziwig pen down, clock, laugh"
+    },
+    {
+      "projectId": "ChristmasCarol",
+      "id": "s24_b35",
+      "gold": "hold",
+      "visual": "Young Scrooge seems to yield to the justice of this supposition, in spite of himself. But he says, with a struggle-",
+      "is_first_silent_in_scene": false,
+      "setting": "INT. A ROOM - EVENING",
+      "note": "Yields before speech — micro"
+    },
+    {
+      "projectId": "ChristmasCarol",
+      "id": "s27_b3",
+      "gold": "action",
+      "visual": "Scrooge enters timidly, hanging his head.",
+      "is_first_silent_in_scene": false,
+      "setting": "INT. SCROOGE'S SITTING ROOM - CONTINUOUS",
+      "note": "Enters timidly"
+    },
+    {
+      "projectId": "ChristmasCarol",
+      "id": "s31_b4",
+      "gold": "action",
+      "visual": "They dance about the table in luxurious thoughts of sage and onion, and exalt Peter to the skies. Peter, not proud although his collars nearly choke him, blows the fire until the slow potatoes bubble up and knock loudly at the saucepan-lid.",
+      "is_first_silent_in_scene": false,
+      "setting": "INT. CRATCHIT SITTING ROOM - DAY",
+      "note": "Dance about table, Peter collars"
+    },
+    {
+      "projectId": "ChristmasCarol",
+      "id": "s33_b1",
+      "gold": "action",
+      "visual": "In half a minute Mrs. Cratchit enters-flushed, but smiling proudly-with the pudding, like a speckled cannon-ball, so hard and firm, blazing in half of half-a-quartern of ignited brandy, and bedight with Christmas holly stuck into the top.",
+      "is_first_silent_in_scene": true,
+      "setting": "INT. CRATCHIT SITTING ROOM - DAY",
+      "note": "Mrs Cratchit enters with pudding"
+    },
+    {
+      "projectId": "ChristmasCarol",
+      "id": "s35_b26",
+      "gold": "big_action",
+      "visual": "They play at forfeits, at How, When, and Where, and at Blind-man's buff-Topper chasing the plump sister with determined cunning. They sing. They laugh until the house rings. Scrooge joins in despite himself-softly, invisibly-guessing at the games, begging to stay until the end. The Ghost smiles.",
+      "is_first_silent_in_scene": false,
+      "setting": "INT. FRED'S DRAWING ROOM - AFTERNOON",
+      "note": "Blind-man's buff chase energy"
+    },
+    {
+      "projectId": "ChristmasCarol",
+      "id": "s38_b11",
+      "gold": "hold",
+      "visual": "No reply. The hand points straight before them.",
+      "is_first_silent_in_scene": false,
+      "setting": "EXT. OPEN PLACE - CONTINUOUS",
+      "note": "Hand points — stillness"
+    },
+    {
+      "projectId": "ChristmasCarol",
+      "id": "s42_b1",
+      "gold": "establishing",
+      "visual": "Upon the floor: heaps of rusty keys, nails, chains, hinges, files, scales, weights, refuse iron. Mountains of unseemly rags, masses of corrupted fat, sepulchres of bones. OLD JOE, grey-haired, nearly seventy, sits among the wares by a charcoal stove of old bricks, screened from the cold by a frousy curtaining of miscellaneous tatters hung upon a line. He smokes his pipe in calm retirement. Scrooge and the Phantom enter just as a woman with a heavy bundle slinks in-the CHARWOMAN. Scarcely has she entered when MRS. DILBER, similarly laden, comes in too, closely followed by the UNDERTAKER'S MAN in faded black. All three startle at the sight of each other. After blank astonishment-in which Old Joe joins-they burst into a laugh.",
+      "is_first_silent_in_scene": true,
+      "setting": "INT. OLD JOE'S SHOP - NIGHT",
+      "note": "Rag-and-bone heap place open"
+    },
+    {
+      "projectId": "ChristmasCarol",
+      "id": "s43_b10",
+      "gold": "hold",
+      "visual": "The Phantom spreads its dark robe before him for a moment, like a wing.",
+      "is_first_silent_in_scene": false,
+      "setting": "INT. DARK BEDCHAMBER - NIGHT",
+      "note": "Robe spreads like wing"
+    },
+    {
+      "projectId": "ChristmasCarol",
+      "id": "s45_b19",
+      "gold": "action",
+      "visual": "She hurries out to meet him. Bob enters-his comforter needed now more than ever. He is a little late. He sits down. They try to help him with tea and comfort.",
+      "is_first_silent_in_scene": false,
+      "setting": "INT. CRATCHIT SITTING ROOM - NIGHT",
+      "note": "Hurries meet Bob, sit, tea"
+    },
+    {
+      "projectId": "ChristmasCarol",
+      "id": "s46_b17",
+      "gold": "hold",
+      "visual": "For the first time the hand appears to shake.",
+      "is_first_silent_in_scene": false,
+      "setting": "EXT. CHURCHYARD - NIGHT",
+      "note": "Hand shakes — micro"
+    },
+    {
+      "projectId": "ChristmasCarol",
+      "id": "s47_b28",
+      "gold": "hold",
+      "visual": "A BOY IN SUNDAY CLOTHES in the street below looks up.",
+      "is_first_silent_in_scene": false,
+      "setting": "INT. SCROOGE'S BEDROOM - MORNING",
+      "note": "Boy looks up"
+    },
+    {
+      "projectId": "ChristmasCarol",
+      "id": "s50_b8",
+      "gold": "big_action",
+      "visual": "He leaps from his stool, and gives Bob such a dig in the waistcoat that he staggers back into the Tank-",
+      "is_first_silent_in_scene": false,
+      "setting": "INT. SCROOGE AND MARLEY COUNTING-HOUSE - MORNING",
+      "note": "Leaps stool, digs Bob into tank"
+    },
+    {
+      "projectId": "Dracula",
+      "id": "s1_b1",
+      "gold": "establishing",
+      "visual": "Gaslight on high shelves. JONATHAN HARKER, late twenties, neat brown hair, clean-shaven English solicitor in a dark traveling suit, bends over maps and heavy folios. He copies notes into a small shorthand journal with careful, lawyerly hand.",
+      "is_first_silent_in_scene": true,
+      "setting": "INT. BRITISH MUSEUM LIBRARY - DAY",
+      "note": "Gaslit study + Harker at maps"
+    },
+    {
+      "projectId": "Dracula",
+      "id": "s9_b1",
+      "gold": "action",
+      "visual": "At the door, LANDLADY ELISABETA-elderly, cheery-looking, white undergarment with long double apron of coloured stuff fitting almost too tight for modesty-bows as Jonathan approaches.",
+      "is_first_silent_in_scene": true,
+      "setting": "EXT. GOLDEN KRONE HOTEL - TWILIGHT",
+      "note": "Landlady bows at door — social not place open"
+    },
+    {
+      "projectId": "Dracula",
+      "id": "s12_b15",
+      "gold": "hold",
+      "visual": "She goes out. Jonathan stands alone, the crucifix on his breast. Coach horn distant below.",
+      "is_first_silent_in_scene": false,
+      "setting": "INT. GOLDEN KRONE HOTEL, JONATHAN'S ROOM - DAY",
+      "note": "Alone with crucifix after she goes"
+    },
+    {
+      "projectId": "Dracula",
+      "id": "s18_b5",
+      "gold": "hold",
+      "visual": "The handshake so akin to the Driver's that Jonathan stares.",
+      "is_first_silent_in_scene": false,
+      "setting": "INT. CASTLE DRACULA ENTRANCE HALL - NIGHT",
+      "note": "Handshake stare reaction"
+    },
+    {
+      "projectId": "Dracula",
+      "id": "s23_b8",
+      "gold": "action",
+      "visual": "The Count takes the cover from a dish. Excellent roast chicken, cheese, salad, a bottle of old Tokay. Jonathan eats. Two glasses of wine. During the meal the Count asks many questions as to the journey. Jonathan tells him, by degrees, all he has experienced. Supper done. At the Count's desire Jonathan draws a chair by the fire and smokes a cigar the Count offers-excusing himself that he does not smoke. Firelight on the Count. Jonathan observes him. Strong-very strong-aquiline face; high bridge of the thin nose; peculiarly arched nostrils; lofty domed forehead; hair scant round the temples but profuse elsewhere. Eyebrows massive, almost meeting over the nose, bushy hair curling in its own profusion. Mouth under the heavy moustache fixed and rather cruel-looking; peculiarly sharp white teeth protruding over the lips; remarkable ruddiness of those lips. Ears pale, extremely pointed at the tops. Chin broad and strong; cheeks firm though thin. Extraordinary pallor. The backs of the hands on his knees seemed white and fine-close now: coarse, broad, squat fingers. Hairs in the centre of the palm. Nails long and fine, cut to a sharp point. The Count leans over; his hands touch Jonathan. Jonathan cannot repress a shudder. Rank breath-horrible nausea he cannot conceal. The Count notices, draws back. A grim sort of smile shows more than yet his protuberant teeth. He sits again on his own side of the fireplace. Silence. Jonathan looks toward the window: the first dim streak of coming dawn. Strange stillness-then, from down below in the valley, the howling of many wolves. The Count's eyes gleam.",
+      "is_first_silent_in_scene": false,
+      "setting": "INT. CASTLE DRACULA DINING ROOM - NIGHT",
+      "note": "Meal service multi-step"
+    },
+    {
+      "projectId": "Dracula",
+      "id": "s27_b6",
+      "gold": "action",
+      "visual": "Jonathan draws papers. The Count signs with a hand that never warms.",
+      "is_first_silent_in_scene": false,
+      "setting": "INT. CASTLE DRACULA LIBRARY - NIGHT",
+      "note": "Papers, Count signs"
+    },
+    {
+      "projectId": "Dracula",
+      "id": "s33_b7",
+      "gold": "hold",
+      "visual": "He holds up his arms.",
+      "is_first_silent_in_scene": false,
+      "setting": "INT. CASTLE DRACULA LIBRARY - NIGHT",
+      "note": "Holds up arms — gesture"
+    },
+    {
+      "projectId": "Dracula",
+      "id": "s35_b1",
+      "gold": "action",
+      "visual": "Jonathan, restless, finds a door unlocked that was not before. He enters a dusty chamber long unused-old furniture, moth-eaten hangings, a great bed. Moonlight through tall windows. He lies down in his clothes, exhausted, the crucifix at his throat. Sleep takes him-then half-waking horror. Three young women materialize in the moonlight. Two dark, with hard bright pride and full red lips; one fair, with golden hair and eyes like pale sapphires-all voluptuous, all with brilliant white teeth that shine like pearls against the ruby of their voluptuous lips. They whisper together. A silvery, musical laugh.",
+      "is_first_silent_in_scene": true,
+      "setting": "INT. CASTLE DRACULA SOUTH ROOM - NIGHT",
+      "note": "Finds unlocked door, enters dusty chamber"
+    },
+    {
+      "projectId": "Dracula",
+      "id": "s38_b14",
+      "gold": "hold",
+      "visual": "Jonathan writes. His face goes bloodless.",
+      "is_first_silent_in_scene": false,
+      "setting": "INT. CASTLE DRACULA LIBRARY - NIGHT",
+      "note": "Writes, face bloodless"
+    },
+    {
+      "projectId": "Dracula",
+      "id": "s43_b1",
+      "gold": "hold",
+      "visual": "Jonathan lies down. Exhaustion takes him. No dreams.",
+      "is_first_silent_in_scene": true,
+      "setting": "INT. CASTLE DRACULA JONATHAN'S BEDROOM - NIGHT",
+      "note": "Lies down, exhaustion"
+    },
+    {
+      "projectId": "Dracula",
+      "id": "s50_b6",
+      "gold": "big_action",
+      "visual": "He knots sheets, climbs to the window ledge, and lowers himself into the abyss of night.",
+      "is_first_silent_in_scene": false,
+      "setting": "INT. CASTLE DRACULA JONATHAN'S BEDROOM - NIGHT",
+      "note": "Knots sheets, climbs, lowers into abyss"
+    },
+    {
+      "projectId": "Dracula",
+      "id": "s52_b10",
+      "gold": "action",
+      "visual": "Seward almost sits upon his silk hat, catches himself, and thereafter turns a lancet absently between his fingers until Lucy's eyes flick to it with a suppressed start.",
+      "is_first_silent_in_scene": false,
+      "setting": "INT. WESTENRA DRAWING ROOM - DAY",
+      "note": "Near-sit hat, turns lancet — fidget business"
+    },
+    {
+      "projectId": "Dracula",
+      "id": "s54_b15",
+      "gold": "action",
+      "visual": "He bows and goes. Lucy sinks onto the sofa, crying quietly, letter-paper already blotted beside her.",
+      "is_first_silent_in_scene": false,
+      "setting": "INT. WESTENRA DRAWING ROOM - DAY",
+      "note": "Bows goes; Lucy sinks crying"
+    },
+    {
+      "projectId": "Dracula",
+      "id": "s57_b1",
+      "gold": "action",
+      "visual": "DR. JOHN SEWARD at his phonograph, speaking into the tube-professional mask cracked by private pain.",
+      "is_first_silent_in_scene": true,
+      "setting": "INT. SEWARD'S STUDY, PURFLEET ASYLUM - NIGHT",
+      "note": "Seward at phonograph speaking"
+    },
+    {
+      "projectId": "Dracula",
+      "id": "s62_b1",
+      "gold": "establishing",
+      "visual": "Days later. Bright sun. LUCY WESTENRA in white lawn frock, beautiful colour in her face, sits with MINA MURRAY. MR. SWALES and his two cronies lose no time joining them. The old men soften toward Lucy at once; even Swales does not contradict her-he turns the full force of his talk on Mina instead.",
+      "is_first_silent_in_scene": true,
+      "setting": "EXT. WHITBY CHURCHYARD - DAY",
+      "note": "Bright sun seat with Lucy/Mina — social setup open"
+    },
+    {
+      "projectId": "Dracula",
+      "id": "s64_b1",
+      "gold": "establishing",
+      "visual": "Sultry August light. Holiday-makers thin along the cliff walk. High in the north-west sky, mares'-tails streak the blue. COASTGUARD DONOVAN stands with his spy-glass. An OLD FISHERMAN beside him squints seaward, emphatic.",
+      "is_first_silent_in_scene": true,
+      "setting": "EXT. WHITBY CHURCHYARD - DUSK",
+      "note": "Cliff walk weather + coastguard"
+    },
+    {
+      "projectId": "Dracula",
+      "id": "s68_b1",
+      "gold": "action",
+      "visual": "Mate's watch. One hand, PETROFSKY, relieved-does not go to bunk. Dawn: he is missing. Crew downcast.",
+      "is_first_silent_in_scene": true,
+      "setting": "EXT. DEMETER DECK - NIGHT (FLASHBACK)",
+      "note": "Watch relief, dawn missing man"
+    },
+    {
+      "projectId": "Dracula",
+      "id": "s74_b1",
+      "gold": "establishing",
+      "visual": "After the storm. Mina and Lucy on their seat. Below, the wrecked schooner Demeter lies under the East Cliff. Crowds stare. The immense dog is not found. MR. SWALES sits heavily, quieter than his wont. He looks long at the sea.",
+      "is_first_silent_in_scene": true,
+      "setting": "EXT. WHITBY CHURCHYARD - DAY",
+      "note": "Wreck under cliff after storm"
+    },
+    {
+      "projectId": "Dracula",
+      "id": "s80_b1",
+      "gold": "action",
+      "visual": "They hide in a doorway as a not-quite-sober man passes. Heartbeats loud. Home without meeting another soul.",
+      "is_first_silent_in_scene": true,
+      "setting": "EXT. WHITBY STREETS - NIGHT",
+      "note": "Hide in doorway, get home"
+    },
+    {
+      "projectId": "Dracula",
+      "id": "s87_b1",
+      "gold": "action",
+      "visual": "Lucy moving back to bed, fast asleep, breathing heavily, hand to her throat. Mina does not wake her. Tucks her up. Door locked, window fastened. Lucy pale, drawn, haggard under the eyes.",
+      "is_first_silent_in_scene": true,
+      "setting": "INT. MINA AND LUCY'S BEDROOM - NIGHT",
+      "note": "Lucy to bed asleep; Mina tucks, locks"
+    },
+    {
+      "projectId": "Frankenstein",
+      "id": "s1_b1",
+      "gold": "establishing",
+      "visual": "Late 18th century. Snow packed hard underfoot. A cold northern breeze cuts the air. ROBERT WALTON, twenty-eight, lean and bright-eyed, walks in heavy furs. The wind strikes his cheeks. He closes his eyes a moment, smiling, braced and delighted. He looks north, as if he can already see the pole.",
+      "is_first_silent_in_scene": true,
+      "setting": "EXT. STREETS OF ST. PETERSBURGH - DAY",
+      "note": "Arctic cold exterior + Walton walks"
+    },
+    {
+      "projectId": "Frankenstein",
+      "id": "s8_b1",
+      "gold": "hold",
+      "visual": "Back to the letter. Walton's face is open, almost pleading with the page.",
+      "is_first_silent_in_scene": true,
+      "setting": "INT. WALTON'S LODGING - ST. PETERSBURGH - NIGHT",
+      "note": "Face open pleading at letter"
+    },
+    {
+      "projectId": "Frankenstein",
+      "id": "s13_b5",
+      "gold": "action",
+      "visual": "He seals the letter.",
+      "is_first_silent_in_scene": false,
+      "setting": "INT. ARCHANGEL LODGING - NIGHT",
+      "note": "Seals letter"
+    },
+    {
+      "projectId": "Frankenstein",
+      "id": "s21_b1",
+      "gold": "action",
+      "visual": "A modest carriage pulls away from Geneva's walls. Beaufort does not look back. Caroline steadies him.",
+      "is_first_silent_in_scene": true,
+      "setting": "EXT. ROAD TO LUCERNE - DAY",
+      "note": "Carriage pulls away from Geneva"
+    },
+    {
+      "projectId": "Frankenstein",
+      "id": "s31_b1",
+      "gold": "action",
+      "visual": "Morning. Caroline presents Elizabeth. Young Victor receives her with childish seriousness-as a possession of his own to protect, love, and cherish.",
+      "is_first_silent_in_scene": true,
+      "setting": "INT. FRANKENSTEIN HOUSE - GENEVA - DAY",
+      "note": "Presents Elizabeth; Victor receives"
+    },
+    {
+      "projectId": "Frankenstein",
+      "id": "s39_b1",
+      "gold": "action",
+      "visual": "Alphonse, broken but upright. Victor prepares for university. Elizabeth and Clerval bid him farewell with tears and forced cheer.",
+      "is_first_silent_in_scene": true,
+      "setting": "INT. FRANKENSTEIN HOUSE - GENEVA - DAY",
+      "note": "Farewell for university"
+    },
+    {
+      "projectId": "Frankenstein",
+      "id": "s46_b4",
+      "gold": "hold",
+      "visual": "He closes the book. Resolve hardens.",
+      "is_first_silent_in_scene": false,
+      "setting": "INT. VICTOR'S APARTMENT - INGOLSTADT - NIGHT",
+      "note": "Closes book, resolve hardens"
+    },
+    {
+      "projectId": "Frankenstein",
+      "id": "s54_b1",
+      "gold": "establishing",
+      "visual": "A solitary chamber, almost a cell, separated by gallery and stair. Filthy creation: instruments, vats, the vast unfinished form under cloth. Victor's eyeballs starting from their sockets as he works the details of fibre, muscle, vein. Rain at the high small window. His person emaciated; confinement written in every line of him.",
+      "is_first_silent_in_scene": true,
+      "setting": "INT. VICTOR'S WORKSHOP - TOP OF THE HOUSE - NIGHT",
+      "note": "Solitary creation chamber setup"
+    },
+    {
+      "projectId": "Frankenstein",
+      "id": "s59_b20",
+      "gold": "hold",
+      "visual": "Victor nods almost imperceptibly-memory of a frank, happy face.",
+      "is_first_silent_in_scene": false,
+      "setting": "INT. VICTOR'S APARTMENT - INGOLSTADT - DAY",
+      "note": "Almost imperceptible nod"
+    },
+    {
+      "projectId": "Frankenstein",
+      "id": "s62_b9",
+      "gold": "hold",
+      "visual": "Krempe launches into a eulogy on himself. Victor breathes again.",
+      "is_first_silent_in_scene": false,
+      "setting": "INT. UNIVERSITY CORRIDOR AND KREMPE'S ROOMS - DAY",
+      "note": "Breathes again after eulogy"
+    },
+    {
+      "projectId": "Frankenstein",
+      "id": "s68_b1",
+      "gold": "big_action",
+      "visual": "Thunder. In a flash of lightning Victor sees among the trees a gigantic figure-the Creature-climbing the rocks of a nearby precipice with superhuman speed.",
+      "is_first_silent_in_scene": true,
+      "setting": "EXT. PLAINPALAIS - NIGHT",
+      "note": "Creature climbing precipice superhuman speed"
+    },
+    {
+      "projectId": "Frankenstein",
+      "id": "s70_b45",
+      "gold": "action",
+      "visual": "A murmur of approbation-excited by Elizabeth's generous interference, not in favour of Justine. Public indignation turns on the accused with renewed violence. Victor's face is a mask of agony. He can sustain it no longer. He rushes out of the court.",
+      "is_first_silent_in_scene": false,
+      "setting": "INT. COURT OF GENEVA - DAY",
+      "note": "Court murmur / crowd turn"
+    },
+    {
+      "projectId": "Frankenstein",
+      "id": "s77_b1",
+      "gold": "action",
+      "visual": "Weeks of gloom. Victor wanders alone, unable to rest. The family removes to Belrive. He takes the boat at night and drifts under the stars, sometimes tempted by the water's peace.",
+      "is_first_silent_in_scene": true,
+      "setting": "EXT. SHORES OF LAKE GENEVA - DAY",
+      "note": "Weeks wander, boat at night"
+    },
+    {
+      "projectId": "Frankenstein",
+      "id": "s84_b61",
+      "gold": "hold",
+      "visual": "Victor's rage falters into a bitter necessity of hearing.",
+      "is_first_silent_in_scene": false,
+      "setting": "EXT. SEA OF ICE - DAY",
+      "note": "Rage falters — internal beat"
+    },
+    {
+      "projectId": "Frankenstein",
+      "id": "s96_b1",
+      "gold": "action",
+      "visual": "Morning. Agatha opens the door-astonished at the great pile of wood. Felix joins her; surprise breaks his habitual sadness. He does not go to the forest that day.",
+      "is_first_silent_in_scene": true,
+      "setting": "EXT. COTTAGE - DAY - FLASHBACK",
+      "note": "Agatha opens door to wood pile"
+    },
+    {
+      "projectId": "Frankenstein",
+      "id": "s104_b1",
+      "gold": "action",
+      "visual": "Autumn light. DE LACEY sits alone with his guitar. He plays a mournful air, then lays it aside. A knock.",
+      "is_first_silent_in_scene": true,
+      "setting": "INT. COTTAGE - DAY - FLASHBACK",
+      "note": "Guitar then knock"
+    },
+    {
+      "projectId": "Frankenstein",
+      "id": "s110_b1",
+      "gold": "action",
+      "visual": "Justine asleep in the barn, exhausted from searching. The Creature sees her-sees a way to wound his creator further. He plants the miniature in the folds of her dress and flees.",
+      "is_first_silent_in_scene": true,
+      "setting": "EXT. BARN NEAR GENEVA - NIGHT - FLASHBACK",
+      "note": "Plants miniature on Justine"
+    },
+    {
+      "projectId": "Frankenstein",
+      "id": "s117_b1",
+      "gold": "hold",
+      "visual": "Victor pauses over the unfinished female. Imagination shows him a race of devils; the female refusing the compact; two monsters loose upon the world. He looks up. At the window-the Creature's face, a ghastly grin. In a frenzy Victor tears the half-finished creature to pieces. The work of months destroyed in moments. Outside, a howl of rage. The Creature bursts into the hut.",
+      "is_first_silent_in_scene": true,
+      "setting": "INT. ORKNEY HUT - WORKSHOP - NIGHT",
+      "note": "Pauses over unfinished female — dread stillness"
+    },
+    {
+      "projectId": "Frankenstein",
+      "id": "s126_b1",
+      "gold": "action",
+      "visual": "Elizabeth retires to the chamber. Victor paces the outer rooms and passages, pistol in hand, determined to meet his enemy alone. A dreadful scream from the bedroom. Victor rushes in. Elizabeth lies flung across the bed, murdered-the murderous mark of the fiend's grasp on her neck. Her golden hair spilled. Her face half-covered. At the open window, for an instant, the Creature's grinning face in a flash of lightning-then gone into the night. Victor fires into the dark. Emptiness. He falls upon Elizabeth's body in helpless agony.",
+      "is_first_silent_in_scene": true,
+      "setting": "INT. VILLA AT EVIAN - BEDCHAMBER - NIGHT",
+      "note": "Paces armed; scream from bedroom"
+    },
+    {
+      "projectId": "Frankenstein",
+      "id": "s133_b1",
+      "gold": "action",
+      "visual": "The ice closes harder about the ship. The crew, led by Willoughby's anxious courage and Fletcher's quiet concern, beg Walton to turn south when the floes open.",
+      "is_first_silent_in_scene": true,
+      "setting": "EXT. ARCTIC SEA - PACK ICE - DAY",
+      "note": "Ice closes; crew beg Walton"
+    },
+    {
+      "projectId": "GiftOfTheMagi",
+      "id": "s1_b1",
+      "gold": "establishing",
+      "visual": "A shabby little room. Worn red carpet. A thin pier-glass between the windows. A battered couch. On a small table: a meager scatter of coins. DELLA, about twenty, slender, in a plain worn dress, counts the money with fierce care. Brown hair pinned up. Cheeks flushed. She finishes. Counts again. And a third time.",
+      "is_first_silent_in_scene": true,
+      "setting": "INT. FURNISHED FLAT - DAY",
+      "note": "Room open first; place setup is the job"
+    },
+    {
+      "projectId": "GiftOfTheMagi",
+      "id": "s1_b6",
+      "gold": "action",
+      "visual": "Della stares at the coins. Nothing left to do. She flops down on the shabby little couch and howls-raw, helpless sobs.",
+      "is_first_silent_in_scene": false,
+      "setting": "INT. FURNISHED FLAT - DAY",
+      "note": "Stare then flop and sob — multi-step business"
+    },
+    {
+      "projectId": "GiftOfTheMagi",
+      "id": "s2_b1",
+      "gold": "establishing",
+      "visual": "A letter-box into which no letter would go. An electric button that will not ring. A card: \"MR. JAMES DILLINGHAM YOUNG.\"",
+      "is_first_silent_in_scene": true,
+      "setting": "INT. VESTIBULE BELOW - DAY",
+      "note": "Vestibule fixtures / name card setup"
+    },
+    {
+      "projectId": "GiftOfTheMagi",
+      "id": "s3_b1",
+      "gold": "action",
+      "visual": "Della finishes her cry. She attends to her cheeks with a powder rag. She stands by the window and looks out dully.",
+      "is_first_silent_in_scene": true,
+      "setting": "INT. FURNISHED FLAT - DAY",
+      "note": "Powder cheeks, move to window — not a place open"
+    },
+    {
+      "projectId": "GiftOfTheMagi",
+      "id": "s4_b1",
+      "gold": "establishing",
+      "visual": "A gray cat walks a gray fence in a gray backyard.",
+      "is_first_silent_in_scene": true,
+      "setting": "EXT. BACKYARD - DAY (THROUGH WINDOW)",
+      "note": "Exterior backyard tableau through window"
+    },
+    {
+      "projectId": "GiftOfTheMagi",
+      "id": "s5_b7",
+      "gold": "action",
+      "visual": "Della whirls from the window and stands before the pier-glass. Her eyes shine brilliantly; the color drains from her face. She pulls down her hair and lets it fall to its full length. It ripples and shines like a cascade of brown waters-below her knee, almost a garment.",
+      "is_first_silent_in_scene": true,
+      "setting": "INT. FURNISHED FLAT - DAY",
+      "note": "Whirl, stand at glass, let hair down"
+    },
+    {
+      "projectId": "GiftOfTheMagi",
+      "id": "s5_b10",
+      "gold": "action",
+      "visual": "She stands very still. A tear or two splashes on the worn red carpet. Then she does the hair up again, nervously, quickly. On goes her old brown jacket. On goes her old brown hat. With a whirl of skirts and the brilliant sparkle still in her eyes, she flutters out the door.",
+      "is_first_silent_in_scene": false,
+      "setting": "INT. FURNISHED FLAT - DAY",
+      "note": "Still then dress and exit — multi-step"
+    },
+    {
+      "projectId": "GiftOfTheMagi",
+      "id": "s6_b1",
+      "gold": "action",
+      "visual": "Della hurries along the cold sidewalk among Christmas shoppers, small and determined in the brown jacket and hat. She stops under a sign: \"MME. SOFRONIE. HAIR GOODS OF ALL KINDS.\" She runs up one flight.",
+      "is_first_silent_in_scene": true,
+      "setting": "EXT. STREET - DAY",
+      "note": "Hurries street, stops at sign, runs up"
+    },
+    {
+      "projectId": "GiftOfTheMagi",
+      "id": "s7_b1",
+      "gold": "establishing",
+      "visual": "MADAME SOFRONIE-large, too white, chilly-waits behind the counter. Hardly the romance of \"Sofronie.\" Della collects herself, panting.",
+      "is_first_silent_in_scene": true,
+      "setting": "INT. MME. SOFRONIE'S SHOP - DAY",
+      "note": "New shop interior; Madame at counter setup"
+    },
+    {
+      "projectId": "GiftOfTheMagi",
+      "id": "s7_b4",
+      "gold": "action",
+      "visual": "Della removes the hat. Down ripples the brown cascade. Madame lifts the mass with a practised hand.",
+      "is_first_silent_in_scene": false,
+      "setting": "INT. MME. SOFRONIE'S SHOP - DAY",
+      "note": "Hat off, hair cascade, lift mass"
+    },
+    {
+      "projectId": "GiftOfTheMagi",
+      "id": "s7_b7",
+      "gold": "action",
+      "visual": "Madame works with scissors and pins. The cascade falls away. Coins clink into Della's palm-twenty dollars. Della's eyes are wet and bright. She closes her fist on the money and goes.",
+      "is_first_silent_in_scene": false,
+      "setting": "INT. MME. SOFRONIE'S SHOP - DAY",
+      "note": "Cut hair, coins, exit"
+    },
+    {
+      "projectId": "GiftOfTheMagi",
+      "id": "s8_b1",
+      "gold": "action",
+      "visual": "The next two hours on rosy wings. Della ransacks store after store-counters of watches, trays of trinkets-searching, turning things over, shaking her head, pressing on.",
+      "is_first_silent_in_scene": true,
+      "setting": "EXT. CITY STREETS - DAY",
+      "note": "Store-to-store search — busy not chase spectacle"
+    },
+    {
+      "projectId": "GiftOfTheMagi",
+      "id": "s9_b1",
+      "gold": "action",
+      "visual": "She finds it. A platinum fob chain, simple and chaste in design-value by substance alone, not ornament. She knows at once. It is like him. Quietness and value. She pays. Twenty-one dollars. She hurries out with eighty-seven cents left.",
+      "is_first_silent_in_scene": true,
+      "setting": "INT. JEWELRY COUNTER - DAY",
+      "note": "Find chain, pay, hurry out"
+    },
+    {
+      "projectId": "GiftOfTheMagi",
+      "id": "s10_b1",
+      "gold": "action",
+      "visual": "Della's intoxication gives way a little to prudence and reason. She gets out her curling irons, lights the gas, and goes to work repairing the ravages made by generosity added to love. Within forty minutes her head is covered with tiny, close-lying curls-wonderfully like a truant schoolboy. She looks at her reflection in the pier-glass long, carefully, critically.",
+      "is_first_silent_in_scene": true,
+      "setting": "INT. FURNISHED FLAT - LATE AFTERNOON",
+      "note": "Curling-iron repair work"
+    },
+    {
+      "projectId": "GiftOfTheMagi",
+      "id": "s11_b1",
+      "gold": "action",
+      "visual": "Seven o'clock. Coffee made. The frying-pan on the back of the stove, hot and ready to cook the chops. Della doubles the fob chain in her hand and sits on the corner of the table near the door he always enters. A step on the stair, away down on the first flight. She turns white for just a moment. Whispers:",
+      "is_first_silent_in_scene": true,
+      "setting": "INT. FURNISHED FLAT - EVENING",
+      "note": "Evening prop setup + sit wait by door"
+    },
+    {
+      "projectId": "GiftOfTheMagi",
+      "id": "s11_b3",
+      "gold": "action",
+      "visual": "The door opens. JIM steps in and closes it-thin, very serious, only twenty-two. Needs a new overcoat. Without gloves. He stops inside the door, as immovable as a setter at the scent of quail. His eyes fix upon Della. An expression she cannot read. It terrifies her. Not anger, nor surprise, nor disapproval, nor horror. He simply stares, fixedly. Della wriggles off the table and goes for him.",
+      "is_first_silent_in_scene": false,
+      "setting": "INT. FURNISHED FLAT - EVENING",
+      "note": "Jim enters, freeze stare, Della moves to him"
+    },
+    {
+      "projectId": "GiftOfTheMagi",
+      "id": "s11_b11",
+      "gold": "hold",
+      "visual": "Laboriously-as if he had not arrived at that patent fact yet.",
+      "is_first_silent_in_scene": false,
+      "setting": "INT. FURNISHED FLAT - EVENING",
+      "note": "Micro reaction between dialogue lines"
+    },
+    {
+      "projectId": "GiftOfTheMagi",
+      "id": "s11_b14",
+      "gold": "hold",
+      "visual": "Jim looks about the room curiously.",
+      "is_first_silent_in_scene": false,
+      "setting": "INT. FURNISHED FLAT - EVENING",
+      "note": "Looks about — pure look"
+    },
+    {
+      "projectId": "GiftOfTheMagi",
+      "id": "s11_b20",
+      "gold": "action",
+      "visual": "Out of his trance Jim seems quickly to wake. He enfolds his Della.",
+      "is_first_silent_in_scene": false,
+      "setting": "INT. FURNISHED FLAT - EVENING",
+      "note": "Wakes from trance, enfolds her"
+    },
+    {
+      "projectId": "GiftOfTheMagi",
+      "id": "s11_b25",
+      "gold": "action",
+      "visual": "Jim draws a package from his overcoat pocket and throws it upon the table.",
+      "is_first_silent_in_scene": false,
+      "setting": "INT. FURNISHED FLAT - EVENING",
+      "note": "Draw package, throw on table"
+    },
+    {
+      "projectId": "GiftOfTheMagi",
+      "id": "s11_b30",
+      "gold": "action",
+      "visual": "White fingers and nimble tear at the string and paper. An ecstatic scream of joy- -then a quick change to hysterical tears and wails. Jim holds her, all the comforting powers of the lord of the flat. On the table: The Combs. Side and back. Pure tortoise shell, with jewelled rims-just the shade to wear in the beautiful vanished hair.",
+      "is_first_silent_in_scene": false,
+      "setting": "INT. FURNISHED FLAT - EVENING",
+      "note": "Unwrap, reaction, combs reveal — multi-step"
+    },
+    {
+      "projectId": "GiftOfTheMagi",
+      "id": "s11_b34",
+      "gold": "hold",
+      "visual": "She hugs them to her bosom. At length she looks up with dim eyes and a smile.",
+      "is_first_silent_in_scene": false,
+      "setting": "INT. FURNISHED FLAT - EVENING",
+      "note": "Hug combs, look up smile"
+    },
+    {
+      "projectId": "GiftOfTheMagi",
+      "id": "s11_b36",
+      "gold": "big_action",
+      "visual": "Then she leaps up like a little singed cat.",
+      "is_first_silent_in_scene": false,
+      "setting": "INT. FURNISHED FLAT - EVENING",
+      "note": "Leaps up — energy is the point"
+    },
+    {
+      "projectId": "GiftOfTheMagi",
+      "id": "s11_b38",
+      "gold": "hold",
+      "visual": "Jim has not yet seen his present. She holds it out eagerly upon her open palm. The dull precious metal seems to flash with a reflection of her bright and ardent spirit.",
+      "is_first_silent_in_scene": false,
+      "setting": "INT. FURNISHED FLAT - EVENING",
+      "note": "Holds chain out on palm — present gesture"
+    },
+    {
+      "projectId": "GiftOfTheMagi",
+      "id": "s11_b42",
+      "gold": "action",
+      "visual": "Instead of obeying, Jim tumbles down on the couch and puts his hands under the back of his head and smiles.",
+      "is_first_silent_in_scene": false,
+      "setting": "INT. FURNISHED FLAT - EVENING",
+      "note": "Tumbles onto couch, settles, smiles"
+    },
+    {
+      "projectId": "GiftOfTheMagi",
+      "id": "s11_b47",
+      "gold": "action",
+      "visual": "She stares at him. Then laughter breaks through the tears. She sinks beside him on the couch, the chain in one hand, the combs in the other. He draws her in. The chops wait on the stove. The little flat holds them both.",
+      "is_first_silent_in_scene": false,
+      "setting": "INT. FURNISHED FLAT - EVENING",
+      "note": "Stare, laugh, sink beside, embrace"
+    },
+    {
+      "projectId": "GiftOfTheMagi",
+      "id": "s11_b57",
+      "gold": "hold",
+      "visual": "Jim and Della hold each other. The combs and the chain rest between them-useless, priceless.",
+      "is_first_silent_in_scene": false,
+      "setting": "INT. FURNISHED FLAT - EVENING",
+      "note": "Still tableau holding each other"
+    },
+    {
+      "projectId": "JungleBook",
+      "id": "s1_b1",
+      "gold": "establishing",
+      "visual": "Moon over teak and grass. A warm wind. Far off, a kite wheels home.",
+      "is_first_silent_in_scene": true,
+      "setting": "EXT. SEEONEE HILLS - NIGHT",
+      "note": "Moon over jungle open"
+    },
+    {
+      "projectId": "JungleBook",
+      "id": "s4_b5",
+      "gold": "hold",
+      "visual": "The whine changes to a humming purr from every quarter-the sound that bewilders woodcutters in the open.",
+      "is_first_silent_in_scene": false,
+      "setting": "INT. WOLF CAVE - NIGHT",
+      "note": "Sound change / stillness of forest"
+    },
+    {
+      "projectId": "JungleBook",
+      "id": "s6_b35",
+      "gold": "action",
+      "visual": "Shere Khan backs out growling. Clear of the mouth, he shouts:",
+      "is_first_silent_in_scene": false,
+      "setting": "INT. WOLF CAVE - NIGHT",
+      "note": "Shere Khan backs out growling"
+    },
+    {
+      "projectId": "JungleBook",
+      "id": "s8_b22",
+      "gold": "hold",
+      "visual": "Baloo lifts his muzzle.",
+      "is_first_silent_in_scene": false,
+      "setting": "EXT. JUNGLE CLEARING - DAY",
+      "note": "Lifts muzzle"
+    },
+    {
+      "projectId": "JungleBook",
+      "id": "s8_b68",
+      "gold": "hold",
+      "visual": "Baloo's voice rumbles like thunder on a hot night. The forest stills.",
+      "is_first_silent_in_scene": false,
+      "setting": "EXT. JUNGLE CLEARING - DAY",
+      "note": "Voice; forest stills"
+    },
+    {
+      "projectId": "JungleBook",
+      "id": "s11_b1",
+      "gold": "big_action",
+      "visual": "Bagheera climbs as never before; thin branches break; he slips down, claws full of bark. Baloo sets off at a clumsy trot.",
+      "is_first_silent_in_scene": true,
+      "setting": "EXT. JUNGLE FLOOR - DAY",
+      "note": "Bagheera climbs/slips; Baloo trot pursuit"
+    },
+    {
+      "projectId": "JungleBook",
+      "id": "s17_b8",
+      "gold": "hold",
+      "visual": "He licks his lips, looking at the monkey-dead on the terrace and round the tank.",
+      "is_first_silent_in_scene": false,
+      "setting": "EXT. COLD LAIRS TERRACE - NIGHT",
+      "note": "Licks lips looking at dead"
+    },
+    {
+      "projectId": "JungleBook",
+      "id": "s18_b1",
+      "gold": "action",
+      "visual": "Under the still trees, BALOO shakes himself all over.",
+      "is_first_silent_in_scene": true,
+      "setting": "EXT. JUNGLE OUTSIDE COLD LAIRS - NIGHT",
+      "note": "Shakes himself all over"
+    },
+    {
+      "projectId": "JungleBook",
+      "id": "s20_b1",
+      "gold": "action",
+      "visual": "Sun on rough track. MOWGLI-long hair, white scars on arms and legs, barefoot-jogs at a steady pace down the valley. Behind him, the jungle. Ahead, country he does not know. Nearly twenty miles at the jog-trot.",
+      "is_first_silent_in_scene": true,
+      "setting": "EXT. VALLEY ROAD - DAY",
+      "note": "Mowgli jogs valley track"
+    },
+    {
+      "projectId": "JungleBook",
+      "id": "s26_b1",
+      "gold": "action",
+      "visual": "Mowgli comes toward the village with the hide on his head. Buldeo meets him on the road, greedy for the reward on Shere Khan.",
+      "is_first_silent_in_scene": true,
+      "setting": "EXT. VILLAGE GATE - TWILIGHT",
+      "note": "Comes to village with hide; meets Buldeo"
+    },
+    {
+      "projectId": "JungleBook",
+      "id": "s26_b32",
+      "gold": "action",
+      "visual": "He turns on his heel and walks away with AKELA into the darkening plain.",
+      "is_first_silent_in_scene": false,
+      "setting": "EXT. VILLAGE GATE - TWILIGHT",
+      "note": "Turns, walks into plain with Akela"
+    },
+    {
+      "projectId": "JungleBook",
+      "id": "s29_b12",
+      "gold": "action",
+      "visual": "The old call rolls into the jungle. Wolves answer from habit. They limp in-lame from traps, shot-wounded, mangy from bad food. Many places in the circle empty. All that are left of the Pack gather and stare at the striped hide, huge claws dangling from the empty feet. MOWGLI leaps onto the rattling skin. A song rises in his throat. He shouts it, beating time with his heels, dancing till breath fails. GRAY BROTHER and AKELA howl between the verses.",
+      "is_first_silent_in_scene": false,
+      "setting": "EXT. COUNCIL ROCK - NIGHT",
+      "note": "Call; wolves limp into circle"
+    },
+    {
+      "projectId": "JungleBook",
+      "id": "s35_b1",
+      "gold": "big_action",
+      "visual": "KOTICK bursts up gasping and puffing into open water at the farther end, mane streaming.",
+      "is_first_silent_in_scene": true,
+      "setting": "EXT. SAFE BEACHES BEYOND THE TUNNEL - DAY",
+      "note": "Kotick bursts into open water"
+    },
+    {
+      "projectId": "JungleBook",
+      "id": "s37_b23",
+      "gold": "big_action",
+      "visual": "KOTICK's curly white mane stands up with rage. Eyes flame. Big dog-teeth glisten. He is splendid. SEA CATCH sees him tearing past, hauling grizzled old seals about as though they were halibut, upsetting young bachelors in all directions.",
+      "is_first_silent_in_scene": false,
+      "setting": "EXT. NOVASTOSHNAH BEACH - DAY",
+      "note": "Rage, tearing seals — fight energy"
+    },
+    {
+      "projectId": "JungleBook",
+      "id": "s41_b6",
+      "gold": "hold",
+      "visual": "The song of pleasant stations beside the salt lagoons, The song of blowing squadrons that shuffled down the dunes, The song of midnight dances that churned the sea to flame- The Beaches of Lukannon-before the sealers came! I met my mates in the morning (I'll never meet them more!); They came and went in legions that darkened all the shore. And o'er the foam-flecked offing as far as voice could reach We hailed the landing-parties and we sang them up the beach. The Beaches of Lukannon-the winter wheat so tall- The dripping, crinkled lichens, and the sea-fog drenching all! The platforms of our playground, all shining smooth and worn! The Beaches of Lukannon-the home where we were born! I met my mates in the morning, a broken, scattered band. Men shoot us in the water and club us on the land; Men drive us to the Salt House like silly sheep and tame, And still we sing Lukannon-before the sealers came. Wheel down, wheel down to southward; oh, Gooverooska, go! And tell the Deep-Sea Viceroys the story of our woe; Ere, empty as the shark's egg the tempest flings ashore, The Beaches of Lukannon shall know their sons no more!",
+      "is_first_silent_in_scene": false,
+      "setting": "EXT. OPEN SEA - DAY",
+      "note": "Song text overlay — treat as hold/performance"
+    },
+    {
+      "projectId": "JungleBook",
+      "id": "s45_b3",
+      "gold": "action",
+      "visual": "NAG-five feet of cobra, spectacles on his hood-rises from the grass.",
+      "is_first_silent_in_scene": false,
+      "setting": "EXT. BUNGALOW GARDEN - DAY",
+      "note": "Nag rises from grass"
+    },
+    {
+      "projectId": "JungleBook",
+      "id": "s49_b5",
+      "gold": "hold",
+      "visual": "Sing to your fledglings again, Mother, oh lift up your head! Evil that plagued us is slain, Death in the garden lies dead. Terror that hid in the roses is impotent-flung on the dung-hill and dead! Who has delivered us, who? Tell me his nest and his name. Rikki, the valiant, the true, Tikki, with eyeballs of flame, Rikk-tikki-tikki, the ivory-fanged, the hunter with eyeballs of flame! Give him the Thanks of the Birds, Bowing with tail feathers spread! Praise him with nightingale words- Nay, I will praise him instead. Hear! I will sing you the praise of the bottle-tailed Rikki, with eyeballs of red! RIKKI-TIKKI pops up under the bush, impatient.",
+      "is_first_silent_in_scene": false,
+      "setting": "EXT. BUNGALOW GARDEN - DAY",
+      "note": "Song lyric beat"
+    },
+    {
+      "projectId": "JungleBook",
+      "id": "s55_b1",
+      "gold": "big_action",
+      "visual": "The stockade quivers. Torches. Yells. Blank cartridges. LITTLE TOOMAI climbs a stockade post, hair flying, a goblin in the torch-light. Below, KALA NAG battles a wild tusker.",
+      "is_first_silent_in_scene": true,
+      "setting": "EXT. KEDDAH STOCKADE - NIGHT",
+      "note": "Stockade battle torch chaos"
+    },
+    {
+      "projectId": "JungleBook",
+      "id": "s59_b1",
+      "gold": "big_action",
+      "visual": "KALA NAG breaks his picket-rope and walks into the forest. LITTLE TOOMAI clings on, half afraid, half wild with joy. Other elephants join from the darkness-wild and tame together-until a host moves under the stars toward the Garo hills.",
+      "is_first_silent_in_scene": true,
+      "setting": "EXT. JUNGLE PATH - NIGHT",
+      "note": "Elephant break picket into forest"
+    },
+    {
+      "projectId": "JungleBook",
+      "id": "s63_b8",
+      "gold": "action",
+      "visual": "NARRATOR-a man in boots and waterproof-scrambles out into the slush. Little VIXEN, a fox terrier, darts out the other side. A roaring, grunting, bubbling. The tent caves in as the pole snaps and dances like a mad ghost-a camel has blundered into it. NARRATOR laughs once, wet and angry, then runs on through the mud, out of sight of the camp lights.",
+      "is_first_silent_in_scene": false,
+      "setting": "EXT. RAWAL PINDI CAMP - NIGHT",
+      "note": "Narrator scrambles; dog darts; tiger sound"
+    },
+    {
+      "projectId": "YellowWallpaper",
+      "id": "s1_b1",
+      "gold": "establishing",
+      "visual": "A hereditary estate set well back from the road: hedges, locking gates, broken greenhouses, a large shady garden of box-bordered paths and grape-covered arbors. The house stands empty-looking, handsome, and wrong.",
+      "is_first_silent_in_scene": true,
+      "setting": "EXT. COLONIAL MANSION - DAY",
+      "note": "Estate grounds wide open"
+    },
+    {
+      "projectId": "YellowWallpaper",
+      "id": "s2_b8",
+      "gold": "hold",
+      "visual": "He smiles, already certain.",
+      "is_first_silent_in_scene": false,
+      "setting": "INT. NURSERY - DAY",
+      "note": "Smile only"
+    },
+    {
+      "projectId": "YellowWallpaper",
+      "id": "s3_b15",
+      "gold": "action",
+      "visual": "He checks the barred windows, satisfied, and goes. She exhales, exhausted by the performance of calm.",
+      "is_first_silent_in_scene": false,
+      "setting": "INT. NURSERY - DAY",
+      "note": "Checks windows, exits; she exhales"
+    },
+    {
+      "projectId": "YellowWallpaper",
+      "id": "s4_b10",
+      "gold": "action",
+      "visual": "She rises softly, touches the wall. A draught. John stirs.",
+      "is_first_silent_in_scene": false,
+      "setting": "INT. NURSERY - NIGHT",
+      "note": "Rises, touches wall; John stirs"
+    },
+    {
+      "projectId": "YellowWallpaper",
+      "id": "s6_b1",
+      "gold": "hold",
+      "visual": "Two weeks in. THE NARRATOR at the window again, journal open. She is thinner in the face; the effort of dressing shows.",
+      "is_first_silent_in_scene": true,
+      "setting": "INT. NURSERY - DAY",
+      "note": "Same room again, thinner at window — not new place"
+    },
+    {
+      "projectId": "YellowWallpaper",
+      "id": "s7_b8",
+      "gold": "hold",
+      "visual": "He takes her in his arms, fond, dismissing.",
+      "is_first_silent_in_scene": false,
+      "setting": "INT. NURSERY - DAY",
+      "note": "Takes her in arms — brief fond gesture"
+    },
+    {
+      "projectId": "YellowWallpaper",
+      "id": "s8_b7",
+      "gold": "action",
+      "visual": "JENNIE's figure appears far down the winding road. THE NARRATOR hides the journal at once. JENNIE enters with clean linen, cheerful, thorough.",
+      "is_first_silent_in_scene": false,
+      "setting": "INT. NURSERY - DAY",
+      "note": "Jennie appears, hide journal, enter tidy"
+    },
+    {
+      "projectId": "YellowWallpaper",
+      "id": "s10_b1",
+      "gold": "hold",
+      "visual": "JOHN sits beside her, professional kindness.",
+      "is_first_silent_in_scene": true,
+      "setting": "INT. NURSERY - DAY",
+      "note": "John sits beside — professional stillness"
+    },
+    {
+      "projectId": "YellowWallpaper",
+      "id": "s11_b1",
+      "gold": "hold",
+      "visual": "She tries to speak earnestly. Tears come before she finishes.",
+      "is_first_silent_in_scene": true,
+      "setting": "INT. NURSERY - DAY",
+      "note": "Tries to speak, tears — reaction"
+    },
+    {
+      "projectId": "YellowWallpaper",
+      "id": "s12_b21",
+      "gold": "hold",
+      "visual": "He sits up straight-stern, reproachful. She stops.",
+      "is_first_silent_in_scene": false,
+      "setting": "INT. NURSERY - NIGHT",
+      "note": "Sits up stern; she stops"
+    },
+    {
+      "projectId": "YellowWallpaper",
+      "id": "s14_b1",
+      "gold": "hold",
+      "visual": "Different light. THE NARRATOR watches the first long straight ray from the east window. The paper changes as she watches.",
+      "is_first_silent_in_scene": true,
+      "setting": "INT. NURSERY - DAY",
+      "note": "Watches light/paper change — still observation"
+    },
+    {
+      "projectId": "YellowWallpaper",
+      "id": "s15_b3",
+      "gold": "hold",
+      "visual": "When he leaves, she sits up and stares at the wall again.",
+      "is_first_silent_in_scene": false,
+      "setting": "INT. NURSERY - DAY",
+      "note": "Sits up, stares at wall"
+    },
+    {
+      "projectId": "YellowWallpaper",
+      "id": "s17_b1",
+      "gold": "action",
+      "visual": "THE NARRATOR brighter, secret energy. She eats. JOHN laughs, relieved.",
+      "is_first_silent_in_scene": true,
+      "setting": "INT. NURSERY - DAY",
+      "note": "Eats, John laughs — light business"
+    },
+    {
+      "projectId": "YellowWallpaper",
+      "id": "s19_b1",
+      "gold": "action",
+      "visual": "THE NARRATOR descends slowly. The yellow smell seems to wait on the treads. She touches the banister, then her hair.",
+      "is_first_silent_in_scene": true,
+      "setting": "INT. HALL AND STAIRS - DAY",
+      "note": "Descends stairs, touches banister"
+    },
+    {
+      "projectId": "YellowWallpaper",
+      "id": "s22_b1",
+      "gold": "action",
+      "visual": "From the nursery windows, THE NARRATOR's POV: a woman creeping in the long shaded lane; creeping in the dark grape arbors; creeping the long road under the trees-hiding under blackberry vines when a carriage passes.",
+      "is_first_silent_in_scene": true,
+      "setting": "EXT. GARDEN AND LANE - DAY",
+      "note": "POV creeping woman montage — motion not place open"
+    },
+    {
+      "projectId": "YellowWallpaper",
+      "id": "s25_b1",
+      "gold": "action",
+      "visual": "Last full night. JOHN stays in town. JENNIE offers to sleep in; THE NARRATOR refuses, sweet and firm.",
+      "is_first_silent_in_scene": true,
+      "setting": "INT. NURSERY - NIGHT",
+      "note": "Refuse Jennie sleep-in — social beat"
+    },
+    {
+      "projectId": "YellowWallpaper",
+      "id": "s26_b1",
+      "gold": "establishing",
+      "visual": "Moving day tomorrow. Furniture already going downstairs. The room empties toward bareness: the great bedstead nailed down, canvas mattress left. JENNIE stares at the stripped wall in amazement.",
+      "is_first_silent_in_scene": true,
+      "setting": "INT. NURSERY - DAY",
+      "note": "Moving day room emptying — setup of bare room"
+    },
+    {
+      "projectId": "YellowWallpaper",
+      "id": "s26_b19",
+      "gold": "big_action",
+      "visual": "She fastens the rope-secures herself to the room's logic-and begins to creep, shoulder in the long smooch, round and round on the bare floor.",
+      "is_first_silent_in_scene": false,
+      "setting": "INT. NURSERY - DAY",
+      "note": "Creeps round and round — continuous motion is the point"
+    },
+    {
+      "projectId": "YellowWallpaper",
+      "id": "s27_b3",
+      "gold": "action",
+      "visual": "THE NARRATOR keeps creeping.",
+      "is_first_silent_in_scene": false,
+      "setting": "INT. NURSERY - DAY",
+      "note": "Keeps creeping — sustained motion"
+    },
+    {
+      "projectId": "YellowWallpaper",
+      "id": "s27_b10",
+      "gold": "action",
+      "visual": "THE NARRATOR keeps creeping. She looks at him over her shoulder.",
+      "is_first_silent_in_scene": false,
+      "setting": "INT. NURSERY - DAY",
+      "note": "Creeps, looks over shoulder"
+    }
+  ],
+  "metric": "accuracy",
+  "projectId": "_all_books"
+}

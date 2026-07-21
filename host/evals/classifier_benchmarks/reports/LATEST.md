@@ -1,6 +1,6 @@
 # Classifier benchmarks — history
 
-Updated: 2026-07-21 21:53:54Z
+Updated: 2026-07-21 22:05:20Z
 
 Open **`reports/history.html`** for interactive charts (model / prompt / task over time).
 
@@ -10,12 +10,14 @@ Open **`reports/history.html`** for interactive charts (model / prompt / task ov
 |------|--------|-------|--------|------|----|----------|-----------|--------|---|------------|-----|
 | `ambient_sfx` | mean_token_jaccard | `grok-4.5` | `v2_grounded` | 0.2 | **0.897** | 0.742 | +0.156 | **AI** | 30 | 2026-07-21 21:09:15Z | `20260721T210915Z_acb202` |
 | `onscreen_cast` | mean_set_f1 | `grok-4.5` | `v2_grounded` | 0 | **0.975** | 0.812 | +0.163 | **AI** | 20 | 2026-07-21 21:35:32Z | `20260721T213532Z_254377` |
+| `silent_beat_action` | accuracy | `grok-4.5` | `v2_product` | 0 | **0.871** | 0.469 | +0.401 | **AI** | 147 | 2026-07-21 22:00:45Z | `20260721T220045Z_f6fc27` |
 | `species_kind` | accuracy | `grok-4.5` | `v1_product` | 0 | **0.863** | 0.490 | +0.373 | **AI** | 51 | 2026-07-21 20:52:32Z | `20260721T205232Z_9f5c1e` |
 
 ## Latest runs
 
 | When (UTC) | Run | Task | Model | Prompt | Temp | Metric | Baseline | AI | Winner | n |
 |------------|-----|------|-------|--------|------|--------|----------|----|--------|---|
+| 2026-07-21 22:00:45Z | `20260721T220045Z_f6fc27` | silent_beat_action | `grok-4.5` | `v2_product` | 0 | accuracy | 0.469 | 0.871 | **AI** | 147 |
 | 2026-07-21 21:35:32Z | `20260721T213532Z_254377` | onscreen_cast | `grok-4.5` | `v1_product` | 0 | mean_set_f1 | 0.812 | 0.910 | **AI** | 20 |
 | 2026-07-21 21:35:32Z | `20260721T213532Z_254377` | onscreen_cast | `grok-4.5` | `v2_grounded` | 0 | mean_set_f1 | 0.812 | 0.975 | **AI** | 20 |
 | 2026-07-21 21:09:15Z | `20260721T210915Z_acb202` | ambient_sfx | `grok-4.5` | `v1_product` | 0 | mean_token_jaccard | 0.742 | 0.850 | **AI** | 30 |
@@ -52,6 +54,12 @@ Open **`reports/history.html`** for interactive charts (model / prompt / task ov
 |-----|-------|--------|------|----|----------|
 | `20260721T213532Z_254377` | `grok-4.5` | `v1_product` | 0 | 0.910 | 0.812 |
 | `20260721T213532Z_254377` | `grok-4.5` | `v2_grounded` | 0 | 0.975 | 0.812 |
+
+### `silent_beat_action`
+
+| Run | Model | Prompt | Temp | AI | Baseline |
+|-----|-------|--------|------|----|----------|
+| `20260721T220045Z_f6fc27` | `grok-4.5` | `v2_product` | 0 | 0.871 | 0.469 |
 
 ### `species_kind`
 

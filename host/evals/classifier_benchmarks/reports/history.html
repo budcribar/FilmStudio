@@ -53,7 +53,7 @@
 </head>
 <body>
   <h1>Classifier benchmarks</h1>
-  <p class="muted">Generated 2026-07-21 21:53:54Z · gold under <code>host/evals/classifier_benchmarks/gold</code></p>
+  <p class="muted">Generated 2026-07-21 22:05:20Z · gold under <code>host/evals/classifier_benchmarks/gold</code></p>
 
   <h2>Top configuration per task</h2>
   <p class="muted">Best <strong>AI</strong> score in history for each classifier (ties keep the newer run).</p>
@@ -67,6 +67,7 @@
     <tbody>
 <tr class="leader-row" data-task="ambient_sfx"><td><code>ambient_sfx</code></td><td>mean_token_jaccard</td><td><code>grok-4.5</code></td><td><code>v2_grounded</code></td><td>0.2</td><td class="num ai"><strong>0.897</strong></td><td class="num">0.742</td><td class="num">+0.156</td><td><strong>AI</strong></td><td>30</td><td>2026-07-21 21:09:15Z</td><td><code>20260721T210915Z_acb202</code></td></tr>
 <tr class="leader-row" data-task="onscreen_cast"><td><code>onscreen_cast</code></td><td>mean_set_f1</td><td><code>grok-4.5</code></td><td><code>v2_grounded</code></td><td>0</td><td class="num ai"><strong>0.975</strong></td><td class="num">0.812</td><td class="num">+0.163</td><td><strong>AI</strong></td><td>20</td><td>2026-07-21 21:35:32Z</td><td><code>20260721T213532Z_254377</code></td></tr>
+<tr class="leader-row" data-task="silent_beat_action"><td><code>silent_beat_action</code></td><td>accuracy</td><td><code>grok-4.5</code></td><td><code>v2_product</code></td><td>0</td><td class="num ai"><strong>0.871</strong></td><td class="num">0.469</td><td class="num">+0.401</td><td><strong>AI</strong></td><td>147</td><td>2026-07-21 22:00:45Z</td><td><code>20260721T220045Z_f6fc27</code></td></tr>
 <tr class="leader-row" data-task="species_kind"><td><code>species_kind</code></td><td>accuracy</td><td><code>grok-4.5</code></td><td><code>v1_product</code></td><td>0</td><td class="num ai"><strong>0.863</strong></td><td class="num">0.490</td><td class="num">+0.373</td><td><strong>AI</strong></td><td>51</td><td>2026-07-21 20:52:32Z</td><td><code>20260721T205232Z_9f5c1e</code></td></tr>
 
     </tbody>
@@ -81,6 +82,7 @@
     <span class="label">Show:</span>
 <button type="button" class="filter-btn active" data-task="ambient_sfx" aria-pressed="true">ambient_sfx</button>
 <button type="button" class="filter-btn" data-task="onscreen_cast" aria-pressed="false">onscreen_cast</button>
+<button type="button" class="filter-btn" data-task="silent_beat_action" aria-pressed="false">silent_beat_action</button>
 <button type="button" class="filter-btn" data-task="species_kind" aria-pressed="false">species_kind</button>
 
     <button type="button" class="filter-btn meta" data-action="all" aria-pressed="false">All</button>
@@ -93,8 +95,7 @@
   <table id="latest-table">
     <thead><tr><th>Task</th><th>Model</th><th>Prompt</th><th>Temp</th><th>Metric</th><th>Baseline</th><th>AI</th><th>Winner</th><th>n</th></tr></thead>
     <tbody>
-<tr class="score-row hidden-row" data-task="onscreen_cast"><td>onscreen_cast</td><td><code>grok-4.5</code></td><td><code>v1_product</code></td><td>0</td><td>mean_set_f1</td><td>0.812</td><td><strong>0.910</strong></td><td>AI</td><td>20</td></tr>
-<tr class="score-row hidden-row" data-task="onscreen_cast"><td>onscreen_cast</td><td><code>grok-4.5</code></td><td><code>v2_grounded</code></td><td>0</td><td>mean_set_f1</td><td>0.812</td><td><strong>0.975</strong></td><td>AI</td><td>20</td></tr>
+<tr class="score-row hidden-row" data-task="silent_beat_action"><td>silent_beat_action</td><td><code>grok-4.5</code></td><td><code>v2_product</code></td><td>0</td><td>accuracy</td><td>0.469</td><td><strong>0.871</strong></td><td>AI</td><td>147</td></tr>
 
     </tbody>
   </table>
@@ -108,6 +109,7 @@
     <table id="history-table">
       <thead><tr><th>UTC</th><th>Run</th><th>Task</th><th>Model</th><th>Prompt</th><th>Temp</th><th>Baseline</th><th>AI</th><th>Winner</th></tr></thead>
       <tbody>
+<tr class="score-row hidden-row" data-task="silent_beat_action"><td>2026-07-21 22:00:45Z</td><td><code>20260721T220045Z_f6fc27</code></td><td>silent_beat_action</td><td><code>grok-4.5</code></td><td><code>v2_product</code></td><td>0</td><td>0.469</td><td>0.871</td><td>AI</td></tr>
 <tr class="score-row hidden-row" data-task="onscreen_cast"><td>2026-07-21 21:35:32Z</td><td><code>20260721T213532Z_254377</code></td><td>onscreen_cast</td><td><code>grok-4.5</code></td><td><code>v1_product</code></td><td>0</td><td>0.812</td><td>0.910</td><td>AI</td></tr>
 <tr class="score-row hidden-row" data-task="onscreen_cast"><td>2026-07-21 21:35:32Z</td><td><code>20260721T213532Z_254377</code></td><td>onscreen_cast</td><td><code>grok-4.5</code></td><td><code>v2_grounded</code></td><td>0</td><td>0.812</td><td>0.975</td><td>AI</td></tr>
 <tr class="score-row" data-task="ambient_sfx"><td>2026-07-21 21:09:15Z</td><td><code>20260721T210915Z_acb202</code></td><td>ambient_sfx</td><td><code>grok-4.5</code></td><td><code>v1_product</code></td><td>0</td><td>0.742</td><td>0.850</td><td>AI</td></tr>
@@ -133,7 +135,8 @@
     "2026-07-21 20:44:53Z",
     "2026-07-21 20:52:32Z",
     "2026-07-21 21:09:15Z",
-    "2026-07-21 21:35:32Z"
+    "2026-07-21 21:35:32Z",
+    "2026-07-21 22:00:45Z"
   ],
   "datasets": [
     {
@@ -144,6 +147,7 @@
         null,
         null,
         0.8138888888888888,
+        null,
         null
       ],
       "borderColor": "#2563eb",
@@ -163,6 +167,7 @@
         null,
         null,
         0.7416666666666667,
+        null,
         null
       ],
       "borderColor": "#2563eb",
@@ -187,6 +192,7 @@
         null,
         null,
         0.8527777777777777,
+        null,
         null
       ],
       "borderColor": "#dc2626",
@@ -206,6 +212,7 @@
         null,
         null,
         0.7416666666666667,
+        null,
         null
       ],
       "borderColor": "#dc2626",
@@ -230,6 +237,7 @@
         null,
         0.7388888888888888,
         0.85,
+        null,
         null
       ],
       "borderColor": "#16a34a",
@@ -249,6 +257,7 @@
         null,
         0.7416666666666667,
         0.7416666666666667,
+        null,
         null
       ],
       "borderColor": "#16a34a",
@@ -273,6 +282,7 @@
         null,
         null,
         0.7611111111111111,
+        null,
         null
       ],
       "borderColor": "#ca8a04",
@@ -292,6 +302,7 @@
         null,
         null,
         0.7416666666666667,
+        null,
         null
       ],
       "borderColor": "#ca8a04",
@@ -316,6 +327,7 @@
         null,
         null,
         0.8722222222222221,
+        null,
         null
       ],
       "borderColor": "#9333ea",
@@ -335,6 +347,7 @@
         null,
         null,
         0.7416666666666667,
+        null,
         null
       ],
       "borderColor": "#9333ea",
@@ -359,6 +372,7 @@
         null,
         null,
         0.8972222222222221,
+        null,
         null
       ],
       "borderColor": "#0891b2",
@@ -378,6 +392,7 @@
         null,
         null,
         0.7416666666666667,
+        null,
         null
       ],
       "borderColor": "#0891b2",
@@ -402,7 +417,8 @@
         null,
         null,
         null,
-        0.9095238095238095
+        0.9095238095238095,
+        null
       ],
       "borderColor": "#ea580c",
       "backgroundColor": "#ea580c33",
@@ -421,7 +437,8 @@
         null,
         null,
         null,
-        0.811904761904762
+        0.811904761904762,
+        null
       ],
       "borderColor": "#ea580c",
       "backgroundColor": "transparent",
@@ -445,7 +462,8 @@
         null,
         null,
         null,
-        0.975
+        0.975,
+        null
       ],
       "borderColor": "#4f46e5",
       "backgroundColor": "#4f46e533",
@@ -464,9 +482,55 @@
         null,
         null,
         null,
-        0.811904761904762
+        0.811904761904762,
+        null
       ],
       "borderColor": "#4f46e5",
+      "backgroundColor": "transparent",
+      "borderWidth": 2,
+      "borderDash": [
+        7,
+        4
+      ],
+      "spanGaps": true,
+      "tension": 0,
+      "pointRadius": 2,
+      "pointHoverRadius": 4,
+      "pointStyle": "rectRot",
+      "hidden": true
+    },
+    {
+      "label": "silent_beat_action \u00B7 grok-4.5 \u00B7 v2_product \u00B7 t=0 \u00B7 AI",
+      "task": "silent_beat_action",
+      "data": [
+        null,
+        null,
+        null,
+        null,
+        null,
+        0.8707482993197279
+      ],
+      "borderColor": "#0d9488",
+      "backgroundColor": "#0d948833",
+      "borderWidth": 2.5,
+      "spanGaps": true,
+      "tension": 0.2,
+      "pointRadius": 3,
+      "pointHoverRadius": 5,
+      "hidden": true
+    },
+    {
+      "label": "silent_beat_action \u00B7 grok-4.5 \u00B7 v2_product \u00B7 t=0 \u00B7 baseline",
+      "task": "silent_beat_action",
+      "data": [
+        null,
+        null,
+        null,
+        null,
+        null,
+        0.46938775510204084
+      ],
+      "borderColor": "#0d9488",
       "backgroundColor": "transparent",
       "borderWidth": 2,
       "borderDash": [
@@ -488,10 +552,11 @@
         0.8627450980392157,
         0.8627450980392157,
         null,
+        null,
         null
       ],
-      "borderColor": "#0d9488",
-      "backgroundColor": "#0d948833",
+      "borderColor": "#be185d",
+      "backgroundColor": "#be185d33",
       "borderWidth": 2.5,
       "spanGaps": true,
       "tension": 0.2,
@@ -507,9 +572,10 @@
         0.49019607843137253,
         0.49019607843137253,
         null,
+        null,
         null
       ],
-      "borderColor": "#0d9488",
+      "borderColor": "#be185d",
       "backgroundColor": "transparent",
       "borderWidth": 2,
       "borderDash": [
@@ -525,7 +591,7 @@
     }
   ]
 };
-    const allTasks = ["ambient_sfx","onscreen_cast","species_kind"];
+    const allTasks = ["ambient_sfx","onscreen_cast","silent_beat_action","species_kind"];
     const defaultTask = "ambient_sfx";
     const active = new Set([defaultTask]);
 

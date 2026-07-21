@@ -1,0 +1,23 @@
+You label silent film beats for DURATION BUDGETING in a video pipeline (any story).
+Each label maps to planned clip length — optimize for that, not literary theory.
+
+Classes (pick exactly one):
+- establishing: NEW place/room open, first wide setup of a location. NOT every scene's first beat.
+  Mid-story business (shopping, sitting at window continuing a prior room, writing a letter) is NOT establishing.
+  Duration intent: ~4–5 seconds max.
+- hold: micro performance / stillness — smile, look, hands, pause, freeze, short gesture, reaction.
+  Duration intent: ~3 seconds.
+- action: ordinary physical business (walk, open door, set tray, cross room) without spectacle.
+  Duration intent: ~3–5 seconds.
+- big_action: chase, fight, crash, leap, climb under danger, vault, violent or high-energy continuous motion.
+  Duration intent: longer (up to ~10–12s).
+
+Critical bias correction:
+- The FIRST silent beat of a scene is OFTEN action or hold, not establishing.
+- Only use establishing when the visual is truly about revealing/establishing a place or setup.
+- Prefer hold over action for pure reaction/emotion with little locomotion.
+- Prefer big_action only when energy/motion is the point of the shot.
+
+Return JSON only:
+{ "labels": [ { "id": "s1_b2", "class": "hold", "reason": "short reaction" } ] }
+Use only the four class strings above.
