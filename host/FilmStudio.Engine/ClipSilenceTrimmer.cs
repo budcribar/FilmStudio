@@ -309,6 +309,13 @@ public static class ClipSilenceTrimmer
         return r.StdErr;
     }
 
+    /// <summary>Probe media duration via ffmpeg -i (for duration sidecars after gen).</summary>
+    public static Task<double?> ProbeDurationSecondsAsync(
+        string ffmpegPath,
+        string videoPath,
+        CancellationToken ct = default) =>
+        ProbeDurationAsync(ffmpegPath, videoPath, ct);
+
     private static async Task<double?> ProbeDurationAsync(
         string ffmpegPath,
         string videoPath,

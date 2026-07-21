@@ -15,10 +15,16 @@ public static class ClipVideoPromptBuilder
     public static string GlobalNegativePrompt { get; set; } = Stage2PlannerService.GlobalNegativeDefault;
 
     /// <summary>
-    /// Hint only — we do not pre-truncate to this. On API "prompt too long" errors the client
-    /// shortens and retries (see <see cref="ShortenPromptForRetry"/>).
+    /// xAI Grok video API hard limit on the <c>prompt</c> string (~4096 chars).
+    /// Build and pre-budget to this; retry shorten is a safety net only.
     /// </summary>
-    public const int MaxPromptChars = 1_000_000;
+    public const int VideoPromptHardCapChars = 4000;
+
+    /// <summary>
+    /// Soft ceiling for internal assembly before addenda (same as video hard cap).
+    /// Prefer fitting under <see cref="VideoPromptHardCapChars"/> at build time.
+    /// </summary>
+    public const int MaxPromptChars = VideoPromptHardCapChars;
 
     public sealed class CharacterProfile
     {
@@ -104,9 +110,14 @@ public static class ClipVideoPromptBuilder
             : hasStartFrame ? "continue"
             : "fresh";
 
-        var allKeys = ResolveClipCharacterKeys(clipEl, characters);
-        var onScreenKeys = allKeys
+        // On-screen cast = plan only (never free-text names from dialogue prose)
+        var onScreenKeys = ResolveOnScreenCharacterKeys(clipEl)
             .Where(k => !IsVoiceOnlyKey(k, characters))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(k => k, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+        // Variables may include voice-only speaker + primary subject without putting them on camera
+        var allKeys = ResolveClipCharacterKeys(clipEl, characters)
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .OrderBy(k => k, StringComparer.OrdinalIgnoreCase)
             .ToList();
@@ -246,7 +257,7 @@ public static class ClipVideoPromptBuilder
             sb.Append(negBlock);
         }
 
-        var prompt = sb.ToString().Trim();
+        var prompt = FitPromptToVideoBudget(sb.ToString().Trim());
         IReadOnlyList<string> attached = useReferenceImages ? refPaths : Array.Empty<string>();
 
         var summary =
@@ -307,10 +318,12 @@ public static class ClipVideoPromptBuilder
         return v.Trim();
     }
 
-    /// <summary>Prefer plan <c>characters_on_screen</c>, then token scan, then prose→keys.</summary>
-    public static List<string> ResolveClipCharacterKeys(
-        JsonElement clipEl,
-        IReadOnlyDictionary<string, CharacterProfile>? characters = null)
+    /// <summary>
+    /// On-screen identities for CAST COUNT and ref plates.
+    /// Prefer blueprint <c>characters_on_screen</c>; never free-text names from dialogue
+    /// (e.g. "I loved the old man" must not attach Character_Old_Man).
+    /// </summary>
+    public static List<string> ResolveOnScreenCharacterKeys(JsonElement clipEl)
     {
         var found = new List<string>();
         void Add(string? key)
@@ -329,17 +342,78 @@ public static class ClipVideoPromptBuilder
                 Add(x.GetString());
         }
 
+        // Authoritative plan list present (even empty) — do not re-infer from prose
+        if (clipEl.TryGetProperty("characters_on_screen", out cos) &&
+            cos.ValueKind == JsonValueKind.Array)
+            return found;
+
+        // Legacy clips without the field: explicit Character_* tokens only
+        if (clipEl.TryGetProperty("primary_subject", out var ps))
+            Add(ps.GetString());
         foreach (var k in ClipCharacterKeys(clipEl))
             Add(k);
 
-        if (characters is { Count: > 0 } &&
-            clipEl.TryGetProperty("visual_prompt", out var vp))
+        return found;
+    }
+
+    /// <summary>
+    /// Keys for character variable blocks: on-screen + speaker + primary_subject
+    /// (voice-only speakers included). Does <b>not</b> promote free-text names from prose.
+    /// </summary>
+    public static List<string> ResolveClipCharacterKeys(
+        JsonElement clipEl,
+        IReadOnlyDictionary<string, CharacterProfile>? characters = null)
+    {
+        _ = characters; // reserved for future voice-only metadata filters
+        var found = new List<string>();
+        void Add(string? key)
         {
-            foreach (var key in InferKeysFromProse(vp.GetString() ?? "", characters))
-                Add(key);
+            if (string.IsNullOrWhiteSpace(key)) return;
+            key = key.Trim();
+            if (!key.StartsWith("Character_", StringComparison.OrdinalIgnoreCase)) return;
+            if (found.Any(k => string.Equals(k, key, StringComparison.OrdinalIgnoreCase))) return;
+            found.Add(key);
+        }
+
+        foreach (var k in ResolveOnScreenCharacterKeys(clipEl))
+            Add(k);
+
+        if (clipEl.TryGetProperty("primary_subject", out var ps))
+            Add(ps.GetString());
+
+        if (clipEl.TryGetProperty("audio_payload", out var ap) && ap.ValueKind == JsonValueKind.Object &&
+            ap.TryGetProperty("speaker", out var sp))
+            Add(sp.GetString());
+
+        // Only when plan list is missing — Character_* tokens in visual (not free-text names)
+        if (!(clipEl.TryGetProperty("characters_on_screen", out var cos) &&
+              cos.ValueKind == JsonValueKind.Array))
+        {
+            foreach (var k in ClipCharacterKeys(clipEl))
+                Add(k);
         }
 
         return found;
+    }
+
+    /// <summary>
+    /// Fit a finished prompt under the video API hard cap before the first request.
+    /// Drops gen-pack / house-rule addenda first, then head-caps if still over.
+    /// </summary>
+    public static string FitPromptToVideoBudget(
+        string prompt,
+        int hardCapChars = VideoPromptHardCapChars)
+    {
+        if (string.IsNullOrEmpty(prompt)) return prompt ?? "";
+        hardCapChars = Math.Max(256, hardCapChars);
+        if (prompt.Length <= hardCapChars)
+            return prompt;
+
+        var p = StripLearningAddenda(prompt);
+        if (p.Length <= hardCapChars)
+            return p;
+
+        return HeadCap(p, hardCapChars);
     }
 
     /// <summary>
@@ -411,7 +485,7 @@ public static class ClipVideoPromptBuilder
         string projectDir,
         int maxRefs = 5)
     {
-        var keys = ResolveClipCharacterKeys(clipEl)
+        var keys = ResolveOnScreenCharacterKeys(clipEl)
             .Where(k => !IsVoiceOnlyKey(k, null))
             .ToList();
         return FindCharacterRefPathsForKeys(keys, projectDir, maxRefs);
@@ -707,23 +781,16 @@ public static class ClipVideoPromptBuilder
     {
         if (string.IsNullOrEmpty(prompt)) return prompt;
         attempt = Math.Max(1, attempt);
-        var p = prompt;
-
-        // Step 1+: drop gen pack / project house rules (appended at gen time)
-        p = StripLearningAddenda(p);
-
-        // xAI video often hard-caps ~4096 characters — hit that early on retry
-        const int videoHardCap = 4000;
+        // Retry always drops gen pack / house rules first (even if under cap)
+        var p = StripLearningAddenda(prompt);
+        if (p.Length > VideoPromptHardCapChars)
+            p = HeadCap(p, VideoPromptHardCapChars);
 
         if (attempt == 1)
-        {
-            if (p.Length < prompt.Length && p.Length <= videoHardCap)
-                return p;
-            return HeadCap(p, Math.Min(videoHardCap, (int)(prompt.Length * 0.75)));
-        }
+            return p;
 
         // Later attempts: tighter caps (chars), keep head where identity/action live
-        var caps = new[] { 0, 0, videoHardCap, 3200, 2400, 1800, 1200 };
+        var caps = new[] { 0, 0, VideoPromptHardCapChars, 3200, 2400, 1800, 1200 };
         var cap = attempt < caps.Length ? caps[attempt] : 1000;
         if (p.Length <= cap)
             return p;

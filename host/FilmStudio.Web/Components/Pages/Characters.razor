@@ -4,10 +4,8 @@
 @inject JobHubClient Hub
 @inject AdminSessionService Session
 @inject ActiveProjectState ActiveProject
-@using FilmStudio.Core
 @using FilmStudio.Core.Models
 @using Microsoft.AspNetCore.Components.Forms
-@using System.Text.Json
 
 <PageTitle>Characters</PageTitle>
 
@@ -101,11 +99,7 @@ else if (Session.IsAdmin && HasCast && !JobRunning && !_extractingCast)
     <div class="alert alert-danger">@_error</div>
 }
 @* One outcome surface: success flash OR next-step CTA — not both saying “ready” *@
-@if (!string.IsNullOrEmpty(_lookWarning) && !_extractingCast && !JobRunning)
-{
-    <div class="alert alert-warning">@_lookWarning</div>
-}
-else if (!string.IsNullOrEmpty(_message) && !_extractingCast && !JobRunning && !IsCastComplete)
+@if (!string.IsNullOrEmpty(_message) && !_extractingCast && !JobRunning && !IsCastComplete)
 {
     <div class="alert alert-success">@_message</div>
 }
@@ -568,8 +562,6 @@ else
     private bool _gateChecked;
     private string? _error;
     private string? _message;
-    /// <summary>Non-blocking look distinctness note (near-duplicate of another cast member).</summary>
-    private string? _lookWarning;
     private string _projectId = "";
     private List<string> _projectIds = new();
     private List<CharacterSummary>? _chars;
@@ -1038,7 +1030,6 @@ else
         if (switched)
         {
             _deleteConfirm = null;
-            _lookWarning = null;
             ApplyPanelsForSelected();
         }
         if (resetMode)
@@ -1371,8 +1362,6 @@ else
         {
             _error = null;
             _message = "No look changes.";
-            // Still surface a local distinctness note if this look already matches another cast member
-            _lookWarning = LocalNearDuplicateLookWarning(desc, vis);
             return;
         }
 
@@ -1380,7 +1369,6 @@ else
         _savingLook = true;
         _error = null;
         _message = null;
-        _lookWarning = null;
         try
         {
             var result = await Engine.UpdateCharacterLookAsync(
@@ -1400,10 +1388,7 @@ else
                     _editVisualLock = result.VisualLock;
             }
 
-            _lookWarning = string.IsNullOrWhiteSpace(result.Warning) ? null : result.Warning;
-            _message = string.IsNullOrEmpty(_lookWarning)
-                ? $"Saved look for {displayName}"
-                : null; // warning owns the banner (one fact, one place)
+            _message = $"Saved look for {displayName}";
 
             await SoftReloadAsync();
             if (stillOnChar &&
@@ -1422,37 +1407,12 @@ else
                 _savedLookVisualLock = _editVisualLock;
             }
         }
-        catch (Exception ex) { _error = ex.Message; _message = null; _lookWarning = null; }
+        catch (Exception ex) { _error = ex.Message; _message = null; }
         finally
         {
             _busy = false;
             _savingLook = false;
         }
-    }
-
-    /// <summary>
-    /// Client-side mirror of server near-duplicate look check (no API when text unchanged).
-    /// </summary>
-    private string? LocalNearDuplicateLookWarning(string desc, string vis)
-    {
-        if (_chars is null || _selected is null)
-            return null;
-        var bag = new Dictionary<string, JsonElement>(StringComparer.OrdinalIgnoreCase);
-        foreach (var c in _chars)
-        {
-            using var doc = JsonDocument.Parse(
-                JsonSerializer.Serialize(new
-                {
-                    description = c.Description ?? "",
-                    visual_lock = c.VisualLock ?? "",
-                    canonical_given_name = c.DisplayName,
-                }));
-            bag[c.Key] = doc.RootElement.Clone();
-        }
-        var hits = CharacterLookDistinctness.FindNearDuplicates(
-            bag, _selected.Key, desc, vis);
-        return CharacterLookDistinctness.FormatWarning(
-            hits, k => _chars.FirstOrDefault(x => x.Key == k)?.DisplayName ?? k);
     }
 
     private async Task SaveVoiceAsync()

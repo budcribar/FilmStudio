@@ -13,6 +13,7 @@ public class ClipVideoPromptBuilderTests
             {
               "clip_number": 1,
               "visual_prompt": "Character_Buster runs across the grass. Character_Momma watches.",
+              "characters_on_screen": ["Character_Buster", "Character_Momma"],
               "veo_continuation_source": "none",
               "audio_payload": {
                 "speaker": "Character_Narrator",
@@ -106,9 +107,12 @@ public class ClipVideoPromptBuilderTests
     }
 
     [Fact]
-    public void Max_prompt_cap_is_far_above_4k()
+    public void Video_prompt_hard_cap_matches_xai_limit()
     {
-        Assert.True(ClipVideoPromptBuilder.MaxPromptChars >= 50_000);
+        Assert.Equal(4000, ClipVideoPromptBuilder.VideoPromptHardCapChars);
+        Assert.Equal(
+            ClipVideoPromptBuilder.VideoPromptHardCapChars,
+            ClipVideoPromptBuilder.MaxPromptChars);
     }
 
     [Fact]
@@ -117,6 +121,7 @@ public class ClipVideoPromptBuilderTests
         var json = """
             {
               "visual_prompt": "INT. ROOM - DAY. Character_Hero and Character_Villain face off.",
+              "characters_on_screen": ["Character_Hero", "Character_Villain"],
               "primary_subject": "Character_Hero",
               "audio_payload": { "speaker": "Character_Hero", "dialogue": "Stop.", "delivery": "spoken_on_camera" }
             }
@@ -160,10 +165,76 @@ public class ClipVideoPromptBuilderTests
         Assert.Contains("Character_Hero", s1);
         Assert.True(s1.Length < full.Length);
 
-        var huge = new string('x', 700_000) + "\n" + full;
+        var huge = new string('x', 12_000) + "\n" + full;
         var s2 = ClipVideoPromptBuilder.ShortenPromptForRetry(huge, 2);
-        Assert.True(s2.Length <= 600_000 + 80);
+        Assert.True(s2.Length <= ClipVideoPromptBuilder.VideoPromptHardCapChars + 80);
         Assert.Contains("shortened after API length limit", s2, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void FitPromptToVideoBudget_strips_gen_pack_before_first_send()
+    {
+        var core = "CHARACTER VARIABLES\n- Character_Hero: pale man\n\nTHIS CLIP:\nHe walks.\n";
+        var pack = "\n# Film Studio gen pack (active addendum)\n\n" + new string('z', 4500);
+        var full = core + pack;
+        Assert.True(full.Length > ClipVideoPromptBuilder.VideoPromptHardCapChars);
+
+        var fitted = ClipVideoPromptBuilder.FitPromptToVideoBudget(full);
+        Assert.True(fitted.Length <= ClipVideoPromptBuilder.VideoPromptHardCapChars);
+        Assert.DoesNotContain("Film Studio gen pack", fitted, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Character_Hero", fitted);
+    }
+
+    [Fact]
+    public void Build_does_not_attach_cast_only_named_in_dialogue()
+    {
+        // Blueprint: Narrator only. Dialogue names "the old man" — must not promote Old Man on screen.
+        var clip = JsonDocument.Parse("""
+            {
+              "clip_number": 4,
+              "visual_prompt": "INT. CONFESSION ROOM. Character_Narrator ON CAMERA lip-syncs \"I loved the old man. I think it was his eye!\".",
+              "characters_on_screen": ["Character_Narrator"],
+              "primary_subject": "Character_Narrator",
+              "audio_payload": {
+                "speaker": "Character_Narrator",
+                "dialogue": "I loved the old man. I think it was his eye!",
+                "delivery": "spoken_on_camera"
+              }
+            }
+            """).RootElement;
+
+        var tmp = Path.Combine(Path.GetTempPath(), "fs-cast-dlg-" + Guid.NewGuid().ToString("N"));
+        var charDir = Path.Combine(tmp, "assets", "characters");
+        Directory.CreateDirectory(charDir);
+        File.WriteAllBytes(Path.Combine(charDir, "character_narrator_ref.png"), new byte[512]);
+        File.WriteAllBytes(Path.Combine(charDir, "character_old_man_ref.png"), new byte[512]);
+
+        var profiles = new Dictionary<string, ClipVideoPromptBuilder.CharacterProfile>(
+            StringComparer.OrdinalIgnoreCase)
+        {
+            ["Character_Narrator"] = new()
+            {
+                Key = "Character_Narrator",
+                DisplayName = "Narrator",
+                Description = "lean pale man",
+            },
+            ["Character_Old_Man"] = new()
+            {
+                Key = "Character_Old_Man",
+                DisplayName = "Old Man",
+                Description = "elderly white-haired man",
+            },
+        };
+
+        var built = ClipVideoPromptBuilder.Build(clip, tmp, profiles, maxRefs: 5);
+        Assert.Equal(1, built.CastCount);
+        Assert.DoesNotContain("Character_Old_Man", built.OnScreenKeys, StringComparer.OrdinalIgnoreCase);
+        Assert.Contains("CAST COUNT: exactly 1", built.Prompt, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("Character_Old_Man", built.Prompt, StringComparison.OrdinalIgnoreCase);
+        Assert.Single(built.ReferenceImagePaths);
+        Assert.Contains("narrator", Path.GetFileName(built.ReferenceImagePaths[0]), StringComparison.OrdinalIgnoreCase);
+
+        try { Directory.Delete(tmp, true); } catch { /* ignore */ }
     }
 
     [Fact]

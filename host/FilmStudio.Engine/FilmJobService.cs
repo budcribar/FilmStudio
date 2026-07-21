@@ -1986,14 +1986,14 @@ public sealed class FilmJobService
         var reseedFresh = false;
         if (prevVideoPath is not null && _opts.IdentityReseedOnCastChange)
         {
-            var curKeys = ClipVideoPromptBuilder.ResolveClipCharacterKeys(clipEl, profiles)
+            var curKeys = ClipVideoPromptBuilder.ResolveOnScreenCharacterKeys(clipEl)
                 .Where(k => !(profiles.TryGetValue(k, out var cp) && cp.VoiceOnly))
                 .Select(k => k)
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .OrderBy(k => k, StringComparer.OrdinalIgnoreCase)
                 .ToList();
             var prevKeys = previousClipEl is { } pe
-                ? ClipVideoPromptBuilder.ResolveClipCharacterKeys(pe, profiles)
+                ? ClipVideoPromptBuilder.ResolveOnScreenCharacterKeys(pe)
                     .Where(k => !(profiles.TryGetValue(k, out var pp) && pp.VoiceOnly))
                     .Distinct(StringComparer.OrdinalIgnoreCase)
                     .OrderBy(k => k, StringComparer.OrdinalIgnoreCase)
@@ -2079,6 +2079,17 @@ public sealed class FilmJobService
             built = built.WithPrompt(built.Prompt.TrimEnd() + "\n\n" + string.Join("\n\n", addenda), " · learning-addenda");
         }
 
+        // Pre-budget to xAI video ~4096 char hard cap (strip gen pack / house rules first).
+        // Avoids a guaranteed first-attempt 400 on every clip.
+        var preLen = built.Prompt.Length;
+        var fitted = ClipVideoPromptBuilder.FitPromptToVideoBudget(built.Prompt);
+        if (fitted.Length < preLen)
+        {
+            built = built.WithPrompt(fitted, $" · pre-budget {preLen}→{fitted.Length}");
+            await AppendLogAsync(
+                $"  [Prompt] pre-budget {preLen}→{fitted.Length} chars (video hard cap {ClipVideoPromptBuilder.VideoPromptHardCapChars})");
+        }
+
         // Persist + log full prompt for evaluation (admin logs surface this)
         await WriteAndLogPromptAsync(projectId, projectDir, scene, clip, built, ct).ConfigureAwait(false);
 
@@ -2157,6 +2168,9 @@ public sealed class FilmJobService
 
         // Trim trailing silence on THIS clip before any later clip extends from it
         await SilenceTrimClipAsync(outPath, scene, clip, ct).ConfigureAwait(false);
+
+        // Always write duration sidecar (even when silence-trim is a no-op)
+        await EnsureClipDurationSidecarAsync(outPath, scene, clip, ct).ConfigureAwait(false);
 
         try
         {
@@ -2330,6 +2344,40 @@ public sealed class FilmJobService
         catch (Exception ex)
         {
             await AppendLogAsync($"  [Audio] silence-trim error: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Probe final clip length and write <c>*.mp4.duration.json</c> (needed even when trim skips).
+    /// </summary>
+    private async Task EnsureClipDurationSidecarAsync(
+        string videoPath,
+        int scene,
+        int clip,
+        CancellationToken ct)
+    {
+        if (!File.Exists(videoPath))
+            return;
+        try
+        {
+            if (_remux.IsAvailable())
+            {
+                var sec = await ClipSilenceTrimmer.ProbeDurationSecondsAsync(
+                    _remux.FfmpegPath, videoPath, ct).ConfigureAwait(false);
+                if (sec is > 0)
+                {
+                    await MediaDurationProbe.WriteDurationSidecarAsync(videoPath, sec.Value, ct)
+                        .ConfigureAwait(false);
+                    await AppendLogAsync(
+                        $"  [Duration] S{scene:D2}C{clip:D2} sidecar {sec.Value:F2}s");
+                    return;
+                }
+            }
+
+        }
+        catch (Exception ex)
+        {
+            await AppendLogAsync($"  [Duration] sidecar skip: {ex.Message}");
         }
     }
 

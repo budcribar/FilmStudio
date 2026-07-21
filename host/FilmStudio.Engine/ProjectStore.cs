@@ -817,20 +817,6 @@ public sealed class ProjectStore
         LoadCharacterSeeds(projectId);
 
     /// <summary>
-    /// Near-duplicate look text vs other cast members (description / visual_lock).
-    /// </summary>
-    public IReadOnlyList<FilmStudio.Core.CharacterLookDistinctness.SimilarLookHit> FindNearDuplicateLooks(
-        string projectId,
-        string charKey,
-        string? description,
-        string? visualLock) =>
-        FilmStudio.Core.CharacterLookDistinctness.FindNearDuplicates(
-            LoadCharacterSeeds(projectId),
-            charKey,
-            description,
-            visualLock);
-
-    /// <summary>
     /// Max multi-ref image seeds for Characters UI, based on image_provider / image_model_name.
     /// </summary>
     public ImageSeedLimits GetImageSeedLimits(string projectId)
