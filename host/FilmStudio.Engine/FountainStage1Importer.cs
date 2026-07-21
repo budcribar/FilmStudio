@@ -111,13 +111,15 @@ public static class FountainStage1Importer
                 return;
             beatIndex++;
             var (ambient, sfx) = InferAmbientAndSfx(text);
+            var isFirstInScene = beats.Count == 0;
+            var actionClass = InferActionClass(text, isFirstInScene);
             beats.Add(new Dictionary<string, object?>
             {
                 ["beat_id"] = $"b{beatIndex}",
                 ["intent"] = Trunc(text, 120),
                 ["visual_event"] = text,
-                ["shot_scale_hint"] = "medium",
-                ["action_class"] = "action",
+                ["shot_scale_hint"] = actionClass is "establishing" ? "wide" : "medium",
+                ["action_class"] = actionClass,
                 ["continuity"] = beatIndex == 1 ? "new_setup" : "continuous_from_previous_beat",
                 ["time_weight"] = Math.Clamp(text.Split(' ', StringSplitOptions.RemoveEmptyEntries).Length / 12.0, 0.5, 3.0),
                 ["delivery"] = "none",
@@ -633,6 +635,39 @@ public static class FountainStage1Importer
                 : char.ToUpperInvariant(p[0]) + p[1..].ToLowerInvariant()));
         }
         return name;
+    }
+
+    /// <summary>
+    /// Classify silent action for duration (establishing / hold / big_action / action).
+    /// First filmable beat in a scene is establishing; short gesture lines are holds.
+    /// </summary>
+    public static string InferActionClass(string actionText, bool isFirstBeatInScene)
+    {
+        var t = (actionText ?? "").Trim();
+        if (t.Length == 0)
+            return isFirstBeatInScene ? "establishing" : "hold";
+
+        var lower = t.ToLowerInvariant();
+        var words = ClipDurationEstimator.CountWords(t);
+
+        if (Regex.IsMatch(lower,
+                @"\b(chase|races?|sprints?|explodes?|crashes?|fights?|attacks?|leaps?|bounds?|lunges?|slams?)\b"))
+            return "big_action";
+
+        if (isFirstBeatInScene)
+            return "establishing";
+
+        // Micro performance / stillness — smile, hands, look, freeze (C09-style)
+        if (words <= 24 &&
+            Regex.IsMatch(lower,
+                @"\b(smile|smiles|smiling|nods?|turns?|looks?|gazes?|freezes?|waits?|steadies|thin smile|hands on|sits still|leans?|pauses?|watches?|listens?)\b"))
+            return "hold";
+
+        // Very short non-gesture lines only (avoid classifying "opens the door…" as hold)
+        if (words <= 8)
+            return "hold";
+
+        return "action";
     }
 
     /// <summary>

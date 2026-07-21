@@ -34,7 +34,25 @@ public class ClipDurationEstimatorTests
             dialogue: "",
             visualOrAction: "Buster runs across the grass.",
             actionClass: "action");
-        Assert.InRange(d, ClipDurationEstimator.ActionOnlyMinSeconds, 8);
+        Assert.InRange(d, ClipDurationEstimator.ActionOnlyMinSeconds, ClipDurationEstimator.SilentActionMaxSeconds);
+    }
+
+    [Fact]
+    public void Hold_is_minimum_and_establishing_is_capped()
+    {
+        var hold = ClipDurationEstimator.Estimate(
+            dialogue: "",
+            visualOrAction: "He steadies his hands on his knees. A thin smile.",
+            actionClass: "hold");
+        Assert.Equal(ClipDurationEstimator.ActionOnlyMinSeconds, hold);
+
+        var longEstablish =
+            "A bare lamplit chamber with close walls and a plain wooden chair faces us. " +
+            "The lean man of middle years sits with pale skin dark disordered hair and eyes too bright " +
+            "leaning forward as if answering an unseen accuser in period dress with no modern detail " +
+            "and many more words of room dressing that must not buy ten seconds of silence.";
+        var est = ClipDurationEstimator.Estimate("", longEstablish, "establishing");
+        Assert.InRange(est, ClipDurationEstimator.ActionOnlyMinSeconds, ClipDurationEstimator.EstablishingMaxSeconds);
     }
 
     [Fact]
@@ -57,6 +75,46 @@ public class ClipDurationEstimatorTests
         };
         var durs = ClipDurationEstimator.AllocateForBeats(beats, sceneTargetSeconds: 40);
         Assert.All(durs, d => Assert.True(d <= 6, $"dialogue clip padded to {d}"));
+    }
+
+    [Fact]
+    public void Allocate_does_not_stretch_silent_holds_to_scene_budget()
+    {
+        var beats = new List<Dictionary<string, object?>>
+        {
+            new()
+            {
+                ["dialogue"] = "",
+                ["visual_event"] = "A bare room. Narrator sits in a chair.",
+                ["action_class"] = "establishing",
+            },
+            new()
+            {
+                ["dialogue"] = "Hello there friend of mine.",
+                ["visual_event"] = "Narrator speaks.",
+                ["action_class"] = "dialogue",
+                ["delivery"] = "spoken_on_camera",
+            },
+            new()
+            {
+                ["dialogue"] = "",
+                ["visual_event"] = "He steadies his hands. A thin smile.",
+                ["action_class"] = "hold",
+            },
+        };
+        var durs = ClipDurationEstimator.AllocateForBeats(beats, sceneTargetSeconds: 80);
+        Assert.True(durs[0] <= ClipDurationEstimator.EstablishingMaxSeconds, $"establish padded to {durs[0]}");
+        Assert.Equal(ClipDurationEstimator.ActionOnlyMinSeconds, durs[2]); // hold never padded
+    }
+
+    [Theory]
+    [InlineData("He steadies his hands on his knees. A thin smile.", false, "hold")]
+    [InlineData("A bare, lamplit chamber. Close walls. A plain wooden chair faces us. Narrator sits.", true, "establishing")]
+    [InlineData("They chase through the alley and crash into the stalls.", false, "big_action")]
+    [InlineData("He crosses the room and opens the heavy oak door to the hall.", false, "action")]
+    public void InferActionClass_tags_silent_beats(string text, bool first, string expected)
+    {
+        Assert.Equal(expected, FountainStage1Importer.InferActionClass(text, first));
     }
 
     [Fact]

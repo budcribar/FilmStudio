@@ -31,8 +31,23 @@ public static class ClipDurationEstimator
     /// </summary>
     public const double DialogueModelPaddingSeconds = 1.5;
 
-    /// <summary>Minimum visual beat with no dialogue.</summary>
+    /// <summary>Minimum visual beat with no dialogue (also <c>hold</c> duration).</summary>
     public const int ActionOnlyMinSeconds = 3;
+
+    /// <summary>
+    /// Max for ordinary silent action (no dialogue). Prevents long empty holds when visual
+    /// prose is wordy or scene budget padding used to stretch silent clips.
+    /// </summary>
+    public const int SilentActionMaxSeconds = 5;
+
+    /// <summary>Max for establishing / open-room silent beats.</summary>
+    public const int EstablishingMaxSeconds = 5;
+
+    /// <summary>
+    /// Cap word count used when estimating silent-action length so wardrobe/location
+    /// boilerplate does not inflate duration.
+    /// </summary>
+    public const int SilentVisualWordCap = 20;
 
     /// <summary>
     /// Estimate duration for a planned beat (Stage 2).
@@ -81,10 +96,14 @@ public static class ClipDurationEstimator
                 planned = (int)Math.Round(s, MidpointRounding.AwayFromZero);
         }
 
-        var est = Estimate(dialogue, visual, actionClass: "", delivery);
+        var actionClass = "";
+        // Prefer action_class from blueprint when present (silent caps)
+        // (not always set on older blueprints)
+
+        var est = Estimate(dialogue, visual, actionClass: actionClass, delivery);
         // Prefer estimator; never use a planned value that is much longer without dialogue
         if (planned > 0 && string.IsNullOrWhiteSpace(dialogue))
-            return Math.Clamp(Math.Min(planned, est + 2), MinSeconds, MaxSeconds);
+            return Math.Clamp(Math.Min(planned, est), ActionOnlyMinSeconds, SilentActionMaxSeconds);
         if (planned > 0 && !string.IsNullOrWhiteSpace(dialogue))
             // Cap over-planned dialogue clips
             return Math.Clamp(Math.Min(planned, Math.Max(est, MinSeconds)), MinSeconds, MaxSeconds);
@@ -119,13 +138,14 @@ public static class ClipDurationEstimator
         double action = 0;
         if (dlg.Length == 0)
         {
-            var aw = CountWords(visual);
+            // Cap words so long establish copy / wardrobe restatements do not buy empty seconds
+            var aw = Math.Min(CountWords(visual), SilentVisualWordCap);
             action = actionClass switch
             {
                 "big_action" => Math.Clamp(4.5 + aw / 8.0, 5, AbsMaxSeconds),
-                "establishing" => Math.Clamp(3.5 + aw / 10.0, ActionOnlyMinSeconds, 8),
+                "establishing" => Math.Clamp(3.5 + aw / 10.0, ActionOnlyMinSeconds, EstablishingMaxSeconds),
                 "hold" => ActionOnlyMinSeconds,
-                _ => Math.Clamp(3.0 + aw / 12.0, ActionOnlyMinSeconds, 8),
+                _ => Math.Clamp(3.0 + aw / 12.0, ActionOnlyMinSeconds, SilentActionMaxSeconds),
             };
         }
         else
@@ -139,6 +159,18 @@ public static class ClipDurationEstimator
             total = ActionOnlyMinSeconds;
 
         var rounded = (int)Math.Round(total, MidpointRounding.AwayFromZero);
+        if (dlg.Length == 0)
+        {
+            var silentMax = actionClass switch
+            {
+                "big_action" => AbsMaxSeconds,
+                "establishing" => EstablishingMaxSeconds,
+                "hold" => ActionOnlyMinSeconds,
+                _ => SilentActionMaxSeconds,
+            };
+            return Math.Clamp(rounded, ActionOnlyMinSeconds, silentMax);
+        }
+
         return Math.Clamp(rounded, MinSeconds, MaxSeconds);
     }
 
@@ -171,13 +203,13 @@ public static class ClipDurationEstimator
         double action = 0;
         if (dlg.Length == 0)
         {
-            var aw = CountWords(visual);
+            var aw = Math.Min(CountWords(visual), SilentVisualWordCap);
             action = actionClass switch
             {
                 "big_action" => Math.Clamp(4.5 + aw / 8.0, 5, AbsMaxSeconds),
-                "establishing" => Math.Clamp(3.5 + aw / 10.0, ActionOnlyMinSeconds, 8),
+                "establishing" => Math.Clamp(3.5 + aw / 10.0, ActionOnlyMinSeconds, EstablishingMaxSeconds),
                 "hold" => ActionOnlyMinSeconds,
-                _ => Math.Clamp(3.0 + aw / 12.0, ActionOnlyMinSeconds, 8),
+                _ => Math.Clamp(3.0 + aw / 12.0, ActionOnlyMinSeconds, SilentActionMaxSeconds),
             };
         }
         else
@@ -320,7 +352,7 @@ public static class ClipDurationEstimator
 
     /// <summary>
     /// Allocate one duration per beat from content (not forced scene-budget padding).
-    /// Optional scene target only gently stretches pure action clips, never dialogue.
+    /// Optional scene target may add at most 1s to non-hold silent clips (never dialogue, never hold).
     /// </summary>
     public static List<int> AllocateForBeats(
         IReadOnlyList<Dictionary<string, object?>> beats,
@@ -334,31 +366,50 @@ public static class ClipDurationEstimator
 
         if (sceneTargetSeconds is int target && target > durs.Sum() + 2)
         {
-            // Only pad action-only clips toward target (avoid charging for empty speech tails)
-            var need = target - durs.Sum();
+            // Sharply limited pad: silent empty holds must not absorb monologue-scale scene budget
+            var need = Math.Min(target - durs.Sum(), beats.Count); // at most +1s per beat overall
             var actionIdx = new List<int>();
             for (var i = 0; i < beats.Count; i++)
             {
-                var dlg = beats[i] is null ? "" : Coerce(beats[i]!, "dialogue");
-                if (string.IsNullOrWhiteSpace(dlg) && durs[i] < MaxSeconds)
+                if (beats[i] is null) continue;
+                var dlg = Coerce(beats[i]!, "dialogue");
+                if (!string.IsNullOrWhiteSpace(dlg)) continue;
+                var ac = Coerce(beats[i]!, "action_class").ToLowerInvariant();
+                if (ac is "hold") continue; // never pad micro-beats
+                var maxFor = SilentPadCap(ac);
+                if (durs[i] < maxFor)
                     actionIdx.Add(i);
             }
+
             var guard = 0;
             while (need > 0 && actionIdx.Count > 0 && guard++ < 50)
             {
+                var progressed = false;
                 foreach (var i in actionIdx)
                 {
                     if (need <= 0) break;
-                    if (durs[i] >= MaxSeconds) continue;
+                    var ac = beats[i] is null ? "" : Coerce(beats[i]!, "action_class").ToLowerInvariant();
+                    var maxFor = SilentPadCap(ac);
+                    if (durs[i] >= maxFor) continue;
                     durs[i]++;
                     need--;
+                    progressed = true;
                 }
-                if (actionIdx.All(i => durs[i] >= MaxSeconds)) break;
+                if (!progressed) break;
             }
         }
 
         return durs;
     }
+
+    private static int SilentPadCap(string actionClass) =>
+        actionClass switch
+        {
+            "big_action" => AbsMaxSeconds,
+            "establishing" => EstablishingMaxSeconds,
+            "hold" => ActionOnlyMinSeconds,
+            _ => SilentActionMaxSeconds,
+        };
 
     public static int CountWords(string text)
     {
