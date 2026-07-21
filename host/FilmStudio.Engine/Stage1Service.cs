@@ -153,10 +153,33 @@ public sealed class Stage1Service
             VoPercent = voPct,
             VerifyErrors = new List<string>(),
             HardErrors = new List<string>(),
+            Warnings = new List<string>(),
         };
 
         if (!result.Ok)
             result.HardErrors.Add("Fountain approved but no scenes were found.");
+
+        // Re-check for issues the generation-time auto-repair may have failed to clear
+        // (e.g. a transient API failure on the repair call itself). Checked from the
+        // saved draft every run, not just once at generation time, so it doesn't rely
+        // on catching a one-off progress message.
+        var stillVagueHeadings = BookToFountainConverter.FindVagueLocationHeadings(fountainText);
+        if (stillVagueHeadings.Count > 0)
+        {
+            var msg = $"{stillVagueHeadings.Count} vague location heading(s) unresolved: " +
+                      string.Join("; ", stillVagueHeadings.Take(3));
+            result.Warnings.Add(msg);
+            onProgress?.Invoke($"Warning: {msg}");
+        }
+
+        var stillGenericSpeakers = BookToFountainConverter.FindGenericNumberedSpeakers(fountainText);
+        if (stillGenericSpeakers.Count > 0)
+        {
+            var msg = $"{stillGenericSpeakers.Count} generic numbered speaker(s) unresolved: " +
+                      string.Join("; ", stillGenericSpeakers.Take(3));
+            result.Warnings.Add(msg);
+            onProgress?.Invoke($"Warning: {msg}");
+        }
 
         // Surface-only: high V.O. share is fine for confessional prose but leans clip gen on narration
         if (totalCues > 0 && voPct >= 45)
@@ -174,10 +197,11 @@ public sealed class Stage1Service
                 "shot plan / clip count may be high.");
         }
 
+        var warningsSuffix = result.Warnings.Count > 0 ? $" · {result.Warnings.Count} warning(s)" : "";
         onProgress?.Invoke(
             $"Screenplay ready · {result.SceneCount} scenes · " +
             $"{result.CharacterCount} cast · {result.LocationCount} locations · " +
-            $"V.O. {voCues}/{totalCues} ({voPct}%) · {Path.GetFileName(draftPath)}");
+            $"V.O. {voCues}/{totalCues} ({voPct}%){warningsSuffix} · {Path.GetFileName(draftPath)}");
         return result;
     }
 }
@@ -199,4 +223,10 @@ public sealed class Stage1Result
     public int VoPercent { get; set; }
     public List<string> VerifyErrors { get; set; } = new();
     public List<string> HardErrors { get; set; } = new();
+    /// <summary>
+    /// Non-fatal issues that survived generation-time auto-repair (e.g. a repair call
+    /// that failed both attempts). Re-checked from the saved draft on every Stage1 run,
+    /// so it resurfaces here even if the original progress message was missed.
+    /// </summary>
+    public List<string> Warnings { get; set; } = new();
 }

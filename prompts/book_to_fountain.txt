@@ -41,6 +41,8 @@ OUTPUT FORMAT (HARD) — FOUNTAIN ONLY
 ================================================================
 Return ONLY a complete Fountain 1.1 plain-text screenplay.
 No markdown fences. No commentary before or after.
+Do not emit Fountain page-break markers (a line of === or ===N===) anywhere,
+including right after the title page. Just the title page, a blank line, then scenes.
 
 TITLE PAGE (Fountain keys, first lines):
 Title: …

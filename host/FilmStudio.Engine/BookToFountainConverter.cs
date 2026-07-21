@@ -20,8 +20,15 @@ public static class BookToFountainConverter
     /// <summary>Default soft max book chars per adapt chunk when caller omits budget.</summary>
     public const int ChunkSoftMaxChars = 16_000;
 
-    /// <summary>Hard cap on adapt calls (cost / latency).</summary>
+    /// <summary>Default cap on adapt calls for typical books (cost / latency).</summary>
     public const int MaxAdaptChunks = 8;
+
+    /// <summary>
+    /// Absolute ceiling on adapt calls even for very long books. <see cref="ResolveMaxChunks"/>
+    /// scales past <see cref="MaxAdaptChunks"/> up to this when the book needs it, so a long
+    /// novel doesn't dump everything past chunk N into one oversized final chunk.
+    /// </summary>
+    public const int AbsoluteMaxAdaptChunks = 24;
 
     /// <summary>Default max BOOK_TEXT chars for one chat call (large-context chat models).</summary>
     public const int DefaultSingleShotBookMaxChars = 120_000;
@@ -134,7 +141,7 @@ public static class BookToFountainConverter
                         system, title, author, pageCount, totalRuntimeMinutes, bookText,
                         chat, model, onProgress, ct,
                         softMaxChars: budget.ChunkSoftMaxChars,
-                        maxChunks: budget.MaxChunks).ConfigureAwait(false);
+                        maxChunks: ResolveMaxChunks(bookText, budget)).ConfigureAwait(false);
                 }
                 else
                 {
@@ -149,7 +156,7 @@ public static class BookToFountainConverter
                     system, title, author, pageCount, totalRuntimeMinutes, bookText,
                     chat, model, onProgress, ct,
                     softMaxChars: budget.ChunkSoftMaxChars,
-                    maxChunks: budget.MaxChunks).ConfigureAwait(false);
+                    maxChunks: ResolveMaxChunks(bookText, budget)).ConfigureAwait(false);
             }
 
             // Multi path: soft coverage failures still accept a structurally good draft
@@ -177,6 +184,9 @@ public static class BookToFountainConverter
         text = FixDraftDate(text);
         // Hard strip — models still emit tags even when the prompt forbids them
         text = StripBookPageTags(text);
+        // Hard strip — models occasionally emit a Fountain page-break (===) right after
+        // the title page; valid syntax, but nothing in the prompt asks for it here.
+        text = StripFountainPageBreaks(text);
         if (!LooksLikeGoodFountain(text))
             throw new InvalidOperationException(
                 "Could not build a usable screenplay from the book. Try again or import a .fountain file.");
@@ -240,6 +250,42 @@ public static class BookToFountainConverter
     }
 
     /// <summary>
+    /// Runs one chat completion attempt, retrying once after a transient failure
+    /// (network error, timeout). Repair calls are best-effort; a timeout should not
+    /// permanently leave the original problem when a retry would likely succeed.
+    /// Returns null only if both attempts fail. Does not retry cancellation.
+    /// </summary>
+    private static async Task<string?> CompleteWithOneRetryAsync(
+        IGrokChatClient chat,
+        string system,
+        string user,
+        string model,
+        double temperature,
+        string mode,
+        string retryLabel,
+        Action<string>? onProgress,
+        CancellationToken ct)
+    {
+        for (var attempt = 1; attempt <= 2; attempt++)
+        {
+            try
+            {
+                return await chat.CompleteAsync(system, user, model, temperature, ct, mode: mode)
+                    .ConfigureAwait(false);
+            }
+            catch (OperationCanceledException) when (ct.IsCancellationRequested)
+            {
+                throw;
+            }
+            catch (Exception) when (attempt == 1)
+            {
+                onProgress?.Invoke($"{retryLabel} call failed — retrying once…");
+            }
+        }
+        return null;
+    }
+
+    /// <summary>
     /// One automatic rewrite pass when the draft still has vague multi-place headings.
     /// Generation path — do not require operator hand-edits.
     /// </summary>
@@ -285,11 +331,18 @@ public static class BookToFountainConverter
 
         try
         {
-            var repaired = await chat.CompleteAsync(
-                    system, user, model, temperature: 0.1, ct,
-                    mode: ChatCallModes.BookToFountainLocationsRetry)
+            var raw = await CompleteWithOneRetryAsync(
+                    chat, system, user, model, temperature: 0.1,
+                    mode: ChatCallModes.BookToFountainLocationsRetry,
+                    retryLabel: "Location repair", onProgress, ct)
                 .ConfigureAwait(false);
-            repaired = StripBookPageTags(StripFences(repaired));
+            if (raw is null)
+            {
+                onProgress?.Invoke("Location repair failed twice — keeping prior draft.");
+                return fountain;
+            }
+
+            var repaired = StripBookPageTags(StripFences(raw));
             if (!LooksLikeGoodFountain(repaired))
             {
                 onProgress?.Invoke("Location repair unusable — keeping prior draft.");
@@ -439,11 +492,18 @@ public static class BookToFountainConverter
 
         try
         {
-            var repaired = await chat.CompleteAsync(
-                    system, user, model, temperature: 0.15, ct,
-                    mode: ChatCallModes.BookToFountainSpeakersRetry)
+            var raw = await CompleteWithOneRetryAsync(
+                    chat, system, user, model, temperature: 0.15,
+                    mode: ChatCallModes.BookToFountainSpeakersRetry,
+                    retryLabel: "Speaker naming repair", onProgress, ct)
                 .ConfigureAwait(false);
-            repaired = StripBookPageTags(StripFences(repaired));
+            if (raw is null)
+            {
+                onProgress?.Invoke("Speaker naming repair failed twice — keeping prior draft.");
+                return fountain;
+            }
+
+            var repaired = StripBookPageTags(StripFences(raw));
             if (!LooksLikeGoodFountain(repaired))
             {
                 onProgress?.Invoke("Speaker naming repair unusable — keeping prior draft.");
@@ -659,6 +719,29 @@ public static class BookToFountainConverter
         };
     }
 
+    /// <summary>
+    /// Chunk count actually needed for this book at the budget's soft-max chunk size,
+    /// floored at <paramref name="budget"/>.MaxChunks (usually <see cref="MaxAdaptChunks"/>)
+    /// and capped at <see cref="AbsoluteMaxAdaptChunks"/> for cost/latency safety.
+    /// Without this, ChunkBookForAdaptation silently packs everything past the flat chunk
+    /// cap into the LAST chunk — e.g. an 838K-char book at a 40K soft-max and an 8-chunk
+    /// cap produced 7 normal ~40K chunks and one ~660K-char final chunk, which measurably
+    /// lost adaptation density (much lower response/prompt ratio) versus the earlier ones.
+    /// </summary>
+    public static int ResolveMaxChunks(string? bookText, PromptBudget budget)
+    {
+        ArgumentNullException.ThrowIfNull(budget);
+        var normalized = NormalizeBookText(bookText ?? "");
+        if (normalized.Length == 0)
+            return budget.MaxChunks;
+
+        var softMax = Math.Max(1, budget.ChunkSoftMaxChars);
+        // Unit packing rarely fills soft-max exactly; size as if each pack holds ~85%.
+        var effectiveCapacity = Math.Max(1, (int)(softMax * 0.85));
+        var needed = (int)Math.Ceiling(normalized.Length / (double)effectiveCapacity);
+        return Math.Clamp(Math.Max(budget.MaxChunks, needed), budget.MaxChunks, AbsoluteMaxAdaptChunks);
+    }
+
     /// <summary>True when the full book fits one adapt call under <paramref name="budget"/>.</summary>
     public static bool FitsSingleShot(string bookText, PromptBudget budget)
     {
@@ -777,6 +860,27 @@ public static class BookToFountainConverter
         return fountain.TrimEnd() + (fountain.EndsWith('\n') || fountain.Length == 0 ? "" : "\n");
     }
 
+    /// <summary>
+    /// Remove standalone Fountain page-break markers (a line of three or more `=`,
+    /// optionally with a page number, e.g. <c>===</c> or <c>===13===</c>). Nothing in
+    /// the prompt asks for these; the model still emits one after the title page on
+    /// roughly a third of runs. Valid Fountain syntax, but an unrequested artifact here —
+    /// stripped rather than banned-only-by-prompt, same reasoning as StripBookPageTags.
+    /// </summary>
+    public static string StripFountainPageBreaks(string? fountain)
+    {
+        if (string.IsNullOrEmpty(fountain)) return fountain ?? "";
+
+        fountain = Regex.Replace(
+            fountain,
+            @"(?m)^[ \t]*={3,}[ \t]*(?:\d+[ \t]*=+[ \t]*)?$\r?\n?",
+            "");
+
+        fountain = Regex.Replace(fountain, @"\n{3,}", "\n\n");
+        var trimmed = fountain.TrimEnd();
+        return trimmed.Length == 0 ? "" : trimmed + "\n";
+    }
+
     /// <summary>Load <c>prompts/book_to_fountain.txt</c>.</summary>
     public static Task<string> BuildSystemPromptAsync(
         string workspaceRoot,
@@ -797,7 +901,7 @@ public static class BookToFountainConverter
         int softMaxChars = ChunkSoftMaxChars)
     {
         bookText = NormalizeBookText(bookText);
-        maxChunks = Math.Clamp(maxChunks, 1, 16);
+        maxChunks = Math.Clamp(maxChunks, 1, AbsoluteMaxAdaptChunks);
         softMaxChars = Math.Clamp(softMaxChars, 4_000, 120_000);
 
         if (bookText.Length <= softMaxChars)

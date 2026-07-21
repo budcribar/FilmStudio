@@ -9,7 +9,7 @@
   "performance_lock": "PERFORMANCE LOCK: First-person confessional frame\u2014the Narrator often leans toward and addresses an unseen accuser/implied camera when in the confession room; flashback scenes use objective staging where characters look at each other and scene action, not the viewer. Heightened nervous energy and controlled calm alternate in the confessor\u2019s address.",
   "character_seed_tokens": {
     "Character_Narrator": {
-      "description": "Lean man of middle years (about 35\u201345), pale sallow skin, dark disordered hair, sharp cheekbones, eyes too bright and wide-set with a feverish gleam; thin lips. Mid-19th-century men\u0027s dress: dark waistcoat unbuttoned at the throat over a white shirt, dark trousers, period boots; no modern detail.",
+      "description": "Lean man of middle years (about 35-45), pale sallow skin, dark disordered hair, sharp cheekbones, wide-set eyes unnaturally bright with an intense gleam; thin lips. Mid-19th-century men\u0027s dress: dark waistcoat unbuttoned at the throat over a white shirt, dark trousers, period boots; no modern detail.",
       "canonical_given_name": "Narrator",
       "display_name_policy": "ok_anytime",
       "voice_label": "middle-aged male confessor",
@@ -25,13 +25,13 @@
       "performance_notes": "In confession room: direct address to implied listener/camera, leaning forward, hands on knees. In house scenes: false hearty kindness to the Old Man; later mounting panic before the officers while still trying to chat and smile."
     },
     "Character_Old_Man": {
-      "description": "Elderly thin man, fragile build, white hair, aged lined face; one pale blue eye with a milky film\u2014the other eye may be ordinary but the filmed pale-blue eye is the signature. Mid-19th-century night dress: soft dressing gown over nightclothes. Skin aged and pale; overall frail, not robust.",
+      "description": "Elderly thin man, frail build, white hair, aged lined face; one pale blue eye with a milky film, the other eye ordinary. Soft dressing gown over nightclothes. Skin aged and pale.",
       "canonical_given_name": "Old Man",
       "display_name_policy": "ok_anytime",
       "voice_label": "elderly frail male",
       "voice_profile": "Elderly male; thin, reedy, quieter pitch; slow careful pace when calm (\u201CWell enough\u201D); sharp startled cry when afraid; whispered self-soothing mutters in the dark\u2014same aged voice throughout.",
       "reference_image_placeholder": "character_old_man_ref.png",
-      "visual_lock": "Constants: elderly thin white-haired man; unmistakable pale blue eye with milky veil/film over it. Must never share the Narrator\u2019s dark disordered hair, lean middle-aged face, or waistcoat\u2014always older, frailer, white-haired, dressing-gown silhouette.",
+      "visual_lock": "Constants: elderly thin white-haired man; unmistakable pale blue eye with milky veil/film over it; dressing-gown silhouette. Must never share the Narrator\u0027s dark disordered hair, lean middle-aged face, or waistcoat\u2014always older, frailer, white-haired, dressing-gown silhouette.",
       "wardrobe_always": [
         "period dressing gown",
         "nightclothes",
@@ -41,13 +41,13 @@
       "performance_notes": "Looks at Narrator or into the dark of his room, not at the confessional camera; terror is inward\u2014listening, groaning, sitting bolt upright."
     },
     "Character_Officer_Reynolds": {
-      "description": "Senior police officer, middle-aged to late middle years, calm composed face, steady gaze; mid-19th-century police coat and hat, dark uniform cloth, practical boots. Distinct from the broader Hayes and younger Clemm.",
+      "description": "Broad-built adult male police officer with a solid, heavier wider frame, solid shoulders, and alert eyes; mid-19th-century police coat and hat in period uniform.",
       "canonical_given_name": "Officer Reynolds",
       "display_name_policy": "ok_anytime",
       "voice_label": "senior calm male officer",
       "voice_profile": "Male, mature; even mid pitch, measured unhurried pace, polite official energy\u2014calm suavity that does not rise with the Narrator\u2019s panic.",
       "reference_image_placeholder": "character_officer_reynolds_ref.png",
-      "visual_lock": "Constants: senior calm officer in period police coat and hat; composed older-than-Hayes-and-Clemm face. Never the Narrator\u2019s disordered civilian look; never elderly or white-haired like the Old Man.",
+      "visual_lock": "Constants: broad stocky adult male officer in mid-19th-century police coat and hat; period police uniform; heavier wider build is the distinguisher. Not lean; not elderly.",
       "wardrobe_always": [
         "mid-19th-century police coat",
         "police hat"
@@ -56,13 +56,13 @@
       "performance_notes": "Addresses Narrator and fellow officers in-scene; pleasant official mask until the confession, then looks to the floorboards."
     },
     "Character_Officer_Hayes": {
-      "description": "Broad-built police officer, watchful face, solid shoulders; mid-19th-century police coat and hat matching the other officers\u2019 period uniform. Adult male, physically heavier/wider than Reynolds and Clemm; alert eyes.",
+      "description": "Broad-built adult male police officer with a solid face, solid shoulders, and open eyes; mid-19th-century police coat and hat in period uniform. Physically heavier and wider build.",
       "canonical_given_name": "Officer Hayes",
       "display_name_policy": "ok_anytime",
       "voice_label": "broad watchful male officer",
       "voice_profile": "Male, adult; fuller lower-mid pitch, steady moderate pace, reserved watchful energy\u2014speaks little; presence is physical and observant.",
       "reference_image_placeholder": "character_officer_hayes_ref.png",
-      "visual_lock": "Constants: broad watchful officer in same period police coat and hat family as the other two\u2014stockier build is the distinguisher. Not lean like the Narrator; not elderly; not the notebook-carrying younger Clemm.",
+      "visual_lock": "Constants: broad stocky adult male officer in mid-19th-century police coat and hat; period police uniform; heavier wider build is the distinguisher. Not lean; not elderly.",
       "wardrobe_always": [
         "mid-19th-century police coat",
         "police hat"
@@ -71,13 +71,13 @@
       "performance_notes": "In-scene with partners; exchanges pleasant glances while Narrator unravels; first to move toward the planks when the mask drops."
     },
     "Character_Officer_Clemm": {
-      "description": "Younger police officer, slimmer or less heavy than Hayes, alert face; carries a small notebook. Mid-19th-century police coat and hat consistent with Reynolds and Hayes. Youthful relative to the senior Reynolds\u2014clean period grooming.",
+      "description": "Younger police officer, slimmer build, alert face; carries a small notebook. Mid-19th-century police coat and hat. Youthful, clean period grooming.",
       "canonical_given_name": "Officer Clemm",
       "display_name_policy": "ok_anytime",
       "voice_label": "younger male officer",
       "voice_profile": "Male, younger adult; lighter mid pitch, crisp polite pace, restrained official energy\u2014supports the senior officer rather than leading.",
       "reference_image_placeholder": "character_officer_clemm_ref.png",
-      "visual_lock": "Constants: youngest of the three officers, period police coat and hat, notebook as signature prop. Distinct from broad Hayes and calm senior Reynolds; never confused with the pale disordered civilian Narrator.",
+      "visual_lock": "Constants: youngest of the three officers, slimmer build, period police coat and hat, notebook as signature prop. Distinct from broader or senior officers; never confused with a pale disordered civilian.",
       "wardrobe_always": [
         "mid-19th-century police coat",
         "police hat",

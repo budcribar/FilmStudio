@@ -63,6 +63,81 @@ public class BookToFountainPathTests
     }
 
     [Fact]
+    public void ResolveMaxChunks_stays_at_default_for_typical_book()
+    {
+        var budget = BookToFountainConverter.ResolvePromptBudget("grok-4.5");
+        var book = BuildChapteredBook(chapters: 12, bodyChars: 3_000); // ~40K chars
+        var resolved = BookToFountainConverter.ResolveMaxChunks(book, budget);
+        Assert.Equal(budget.MaxChunks, resolved);
+    }
+
+    [Fact]
+    public void ResolveMaxChunks_scales_up_for_a_dracula_scale_book()
+    {
+        var budget = BookToFountainConverter.ResolvePromptBudget("grok-4.5");
+        // ~840K chars, same order of magnitude as Dracula's stripped content —
+        // needs ~21 chunks at a 40K soft-max, well past the flat 8-chunk default.
+        var book = BuildChapteredBook(chapters: 200, bodyChars: 4_100);
+        Assert.True(book.Length > 800_000, $"test book too small: {book.Length}");
+
+        var resolved = BookToFountainConverter.ResolveMaxChunks(book, budget);
+
+        Assert.True(resolved > budget.MaxChunks,
+            $"expected scaling past default {budget.MaxChunks}, got {resolved}");
+        Assert.True(resolved <= BookToFountainConverter.AbsoluteMaxAdaptChunks);
+    }
+
+    [Fact]
+    public void ResolveMaxChunks_never_exceeds_absolute_ceiling_for_extreme_books()
+    {
+        var budget = BookToFountainConverter.ResolvePromptBudget("grok-4.5");
+        var huge = new string('a', 5_000_000);
+        var resolved = BookToFountainConverter.ResolveMaxChunks(huge, budget);
+        Assert.Equal(BookToFountainConverter.AbsoluteMaxAdaptChunks, resolved);
+    }
+
+    [Fact]
+    public void ChunkBookForAdaptation_with_resolved_chunks_avoids_one_oversized_final_chunk()
+    {
+        var budget = BookToFountainConverter.ResolvePromptBudget("grok-4.5");
+        var book = BuildChapteredBook(chapters: 200, bodyChars: 4_100); // ~840K chars
+
+        // Old behavior: flat MaxAdaptChunks (8) forces most of the book into the last chunk.
+        var flatChunks = BookToFountainConverter.ChunkBookForAdaptation(
+            book, BookToFountainConverter.MaxAdaptChunks, budget.ChunkSoftMaxChars);
+        Assert.True(flatChunks[^1].Length > budget.ChunkSoftMaxChars * 4,
+            $"expected the flat-cap regression to reproduce here, last chunk was {flatChunks[^1].Length}");
+
+        // Fixed behavior: a resolved (scaled) chunk count keeps every chunk close to soft-max.
+        var resolvedMax = BookToFountainConverter.ResolveMaxChunks(book, budget);
+        var scaledChunks = BookToFountainConverter.ChunkBookForAdaptation(
+            book, resolvedMax, budget.ChunkSoftMaxChars);
+        foreach (var chunk in scaledChunks)
+        {
+            Assert.True(chunk.Length <= budget.ChunkSoftMaxChars * 2,
+                $"chunk of {chunk.Length} chars is more than 2x the {budget.ChunkSoftMaxChars} soft max");
+        }
+    }
+
+    [Fact]
+    public void StripFountainPageBreaks_removes_standalone_marker_after_title_page()
+    {
+        var fountain = "Title: Test\nAuthor: Unit\n\n===\n\nFADE IN:\n\nINT. ROOM - DAY\n\nSomething happens.\n";
+        var cleaned = BookToFountainConverter.StripFountainPageBreaks(fountain);
+        Assert.DoesNotContain("===", cleaned);
+        Assert.Contains("FADE IN:", cleaned);
+        Assert.Contains("INT. ROOM - DAY", cleaned);
+    }
+
+    [Fact]
+    public void StripFountainPageBreaks_leaves_normal_content_alone()
+    {
+        var fountain = "Title: Test\nAuthor: Unit\n\nFADE IN:\n\nINT. ROOM - DAY\n\nA sign reads: OPEN.\n";
+        var cleaned = BookToFountainConverter.StripFountainPageBreaks(fountain);
+        Assert.Equal(fountain.TrimEnd() + "\n", cleaned);
+    }
+
+    [Fact]
     public void EvaluateQuality_short_good_fountain_passes_single()
     {
         var book = "--- PAGE 1 ---\nA little dog naps by the warm fire tonight under soft blankets.\n";

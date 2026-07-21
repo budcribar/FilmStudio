@@ -1160,6 +1160,37 @@ app.MapPost("/api/projects/{id}/characters/{charKey}/look", async (
         var desc = body.Description;
         var vis = body.VisualLock;
         var scrubbed = false;
+
+        // Skip AI scrub when posted text matches what is already stored
+        string? storedDesc = null;
+        string? storedVis = null;
+        var existing = store.GetCharacterSeed(id, charKey);
+        if (existing is not null)
+        {
+            if (existing.Value.TryGetProperty("description", out var d0))
+                storedDesc = d0.GetString();
+            if (existing.Value.TryGetProperty("visual_lock", out var v0))
+                storedVis = v0.GetString();
+        }
+
+        var lookUnchanged =
+            string.Equals(desc ?? "", storedDesc ?? "", StringComparison.Ordinal) &&
+            string.Equals(vis ?? "", storedVis ?? "", StringComparison.Ordinal);
+
+        if (lookUnchanged)
+        {
+            return Results.Ok(new
+            {
+                ok = true,
+                projectId = id,
+                charKey,
+                scrubbedWithAi = false,
+                description = storedDesc ?? desc,
+                visualLock = storedVis ?? vis,
+                message = "Look unchanged",
+            });
+        }
+
         if (body.ScrubWithAi && (desc is not null || vis is not null))
         {
             var (d2, v2, usedAi) = await literalize.ScrubLookFieldsAsync(

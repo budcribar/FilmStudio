@@ -318,6 +318,17 @@ else
                                         @onclick="SaveLookAsync">
                                     Save look
                                 </button>
+                                @if (_savingLook)
+                                {
+                                    <div class="mt-2">
+                                        <div class="small text-muted mb-1">Saving look…</div>
+                                        <div class="progress" style="height: 0.5rem;">
+                                            <div class="progress-bar progress-bar-striped progress-bar-animated"
+                                                 role="progressbar" style="width: 100%"
+                                                 aria-label="Saving look"></div>
+                                        </div>
+                                    </div>
+                                }
                             </div>
 
                             @if (_mode == Mode.PickSource)
@@ -567,6 +578,10 @@ else
     private readonly List<string> _seedOrder = new(); // "p", "v1", "b0"… click order = priority
     private string _editDescription = "";
     private string _editVisualLock = "";
+    /// <summary>Last loaded/saved look text — skip scrub API when editors match.</summary>
+    private string _savedLookDescription = "";
+    private string _savedLookVisualLock = "";
+    private bool _savingLook;
     private string _editVoiceLabel = "";
     private string _editVoiceProfile = "";
     private bool _panelPictureOpen = true;
@@ -989,6 +1004,8 @@ else
         {
             _editDescription = _selected.Description ?? "";
             _editVisualLock = _selected.VisualLock ?? "";
+            _savedLookDescription = _editDescription;
+            _savedLookVisualLock = _editVisualLock;
             _editVoiceLabel = _selected.VoiceLabel ?? "";
             _editVoiceProfile = _selected.VoiceProfile ?? "";
             _voicePreviewUrl = null;
@@ -1319,7 +1336,20 @@ else
     private async Task SaveLookAsync()
     {
         if (_selected is null) return;
+
+        // No text change → no API (skip Grok scrub + disk write)
+        var desc = _editDescription ?? "";
+        var vis = _editVisualLock ?? "";
+        if (string.Equals(desc, _savedLookDescription, StringComparison.Ordinal) &&
+            string.Equals(vis, _savedLookVisualLock, StringComparison.Ordinal))
+        {
+            _error = null;
+            _message = "No look changes.";
+            return;
+        }
+
         _busy = true;
+        _savingLook = true;
         _error = null;
         _message = null;
         try
@@ -1327,8 +1357,8 @@ else
             var result = await Engine.UpdateCharacterLookAsync(
                 _projectId,
                 _selected.Key,
-                description: _editDescription,
-                visualLock: _editVisualLock,
+                description: desc,
+                visualLock: vis,
                 scrubWithAi: true);
             // Prefer server-returned scrubbed text so the editor shows what will generate
             if (!string.IsNullOrWhiteSpace(result.Description))
@@ -1347,10 +1377,16 @@ else
                     _editVisualLock = result.VisualLock;
                 else
                     _editVisualLock = _selected.VisualLock ?? "";
+                _savedLookDescription = _editDescription;
+                _savedLookVisualLock = _editVisualLock;
             }
         }
         catch (Exception ex) { _error = ex.Message; _message = null; }
-        finally { _busy = false; }
+        finally
+        {
+            _busy = false;
+            _savingLook = false;
+        }
     }
 
     private async Task SaveVoiceAsync()
