@@ -23,10 +23,10 @@ Labels are for **clip duration budgeting** in Film Studio, not literary analysis
 dotnet run --project host/tools/BeatLabelEval -- --export-annotate --all
 ```
 
-Edit `projects/_beat_label_eval/annotate/{ProjectId}.json` → set each `gold.class`.  
+Edit `host/evals/beat_label_eval/annotate/{ProjectId}.json` → set each `gold.class`.  
 Save canonical gold as:
 
-`projects/_beat_label_eval/ground_truth/{ProjectId}.json`
+`host/evals/beat_label_eval/ground_truth/{ProjectId}.json`
 
 ```json
 {

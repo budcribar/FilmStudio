@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "active": [
+    {
+      "id": "style_from_cast",
+      "text": "STYLE LOCK: Period live-action jungle adventure; photoreal animals and humans share one continuous realistic medium\u2014no cartoon stylization. Warm earth and leaf tones by day; moonlit blues at Council Rock; fire as the sole hard orange; wet fog and pearly light on seal beaches; dusty cantonment and mud-camp realism for later tales.",
+      "category": "style",
+      "approvedAt": "2026-07-21T16:51:45.193643+00:00",
+      "approvedBy": "cast_extract",
+      "sourceFailCount": 0
+    },
+    {
+      "id": "performance_from_cast",
+      "text": "PERFORMANCE LOCK: Objective storybook anthology staging with a framing storyteller voice; default gaze is character-to-character and scene action, not the viewer. Animals speak with full dramatic address to partners while bodies stay species-true. Human village and camp scenes play naturalistically. Brief first-person camp episode places the Narrator on camera among animals who converse among themselves as if overheard.",
+      "category": "performance",
+      "approvedAt": "2026-07-21T16:51:45.2154762+00:00",
+      "approvedBy": "cast_extract",
+      "sourceFailCount": 0
+    }
+  ],
+  "pending": []
+}

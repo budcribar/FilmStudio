@@ -13,7 +13,8 @@ namespace FilmStudio.Engine;
 /// </summary>
 public sealed class AmbientSfxClassifier
 {
-    public const string PromptVersion = "v1";
+    /// <summary>Shipped prompt id (matches host/evals/classifier_benchmarks/prompts/ambient_sfx/v2_grounded).</summary>
+    public const string PromptVersion = "v2_grounded";
     public const string DefaultModel = "grok-4.5";
     public const int DefaultBatchSize = 30;
 
@@ -140,12 +141,30 @@ You label film audio layers from silent or action visual prose (any story).
 
 Return continuous ambient BED vs transient SFX hits as short lowercase phrases.
 
-Rules:
-- ambient: ongoing bed (rain, wind, room tone, fire crackle, distant traffic, soft underscore, waves). Empty if none.
-- sfx: discrete events (knock, door slam, crash, footsteps as a hit, glass break, phone ring). Empty if none.
-- Do not invent weather or doors not implied by the visual.
-- Prefer short tokens suitable for an audio_payload (comma-separated).
-- You may refine or correct the heuristic_* fields.
+## Layers
+- ambient: ongoing bed only — rain, wind, room/den tone, fire crackle, waves/underwater, crowd murmur, distant song/bugle practice, continuous animal pack whisper. Empty if none is clearly implied.
+- sfx: short discrete hits only — door slam, footsteps, trunk slide, cubs tumble, wolf pads, temple bells, conches, howl hit, laughter, running/shouting as crowd hits. Empty if none.
+
+## Strict empty cases (output empty ambient AND empty sfx)
+- Pure dialogue cues: "X speaks.", "X speaks undertone…", line reads.
+- Performance parentheticals only: (dry), (aloud), (smiling…), (purring), (shouting), (snuffling) — these are dialogue/performance, not beds or hits.
+- Verbs that are only speech acts: scolds, whispers as dialogue delivery, "speaks", "says".
+- Thin stage direction with no sound word and no physical motion that makes noise (e.g. two animals look at each other).
+
+## Grounding (do not invent)
+- Every token must be supported by a word or clear action in the visual. Prefer reusing story words (whisper → monkey whispers; rain softens → soft rain).
+- Do NOT invent weather, doors, breeze, room tone, or crowd beds when the visual does not imply them.
+- When unsure, leave the field empty. Empty is better than a guess.
+
+## Layering tips
+- Continuous / far / ongoing → ambient (distant weeping on the wind, distant bugle, soft rain, underwater).
+- One-shot physical events → sfx (slide, footsteps, bangs, bells as hits, howl, laughter).
+- Do not put the same event in both fields.
+- Do not put character dialogue or speech manner into either field.
+
+## Format
+- Short comma-separated tokens for audio_payload.
+- You may refine or correct heuristic_* when they are wrong or incomplete; ignore them when they invent.
 
 JSON only:
 {"labels":[{"id":"s1_b1","ambient":"rain, distant traffic","sfx":"door slam"}]}

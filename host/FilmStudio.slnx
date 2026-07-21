@@ -13,4 +13,5 @@
   <Project Path="FilmStudio.LoadSim/FilmStudio.LoadSim.csproj" />
   <Project Path="FilmStudio.Tests/FilmStudio.Tests.csproj" />
   <Project Path="FilmStudio.Web/FilmStudio.Web.csproj" />
+  <Project Path="tools/ClassifierBenchmarks/ClassifierBenchmarks.csproj" />
 </Solution>

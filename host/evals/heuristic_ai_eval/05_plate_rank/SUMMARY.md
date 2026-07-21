@@ -1,21 +1,28 @@
 # 05 — Book plate ranking fill
 
-## Status: **SHIPPED**
+## Status: **SHIPPED** + mock-plate eval on The_Jungle_Book
 
 ## Product
 - Class: `PlateRankClassifier`
-- Used from `CharacterBookPlateService.HeuristicPicksRankedAsync` after filename/illustration candidates
-- Config: `FilmStudio__ClassifyPlateRankWithChat`
+- Used from `CharacterBookPlateService.HeuristicPicksRankedAsync`
 
-## Baseline
-`HeuristicPicks` / name hits / early pages.
+## Mock plates (Playwright)
+```bash
+cd host/playwright
+npm install && npx playwright install chromium
+npm run jungle-plates   # node make-jungle-plates.mjs
+```
+Writes:
+- `projects/The_Jungle_Book/source/book_images/` (22 PNGs)
+- `projects/The_Jungle_Book/assets/characters/` (49 PNGs)
 
-## Holdout TellTaleHeartV4
+**Note:** These are HTML screenshot “book plates” (name + description cards), not illustrated PDF pages. Useful for ranking/filename eval only.
+
+## Holdout The_Jungle_Book (2026-07-21)
 | Metric | Baseline | AI |
 |--------|----------|-----|
-| recall@3 (Narrator assets) | 1.00 | 1.00 |
+| mean recall@3 (12 cast) | 1.00 | 1.00 |
 
-**Winner: tie** (filenames already contain character name).
+**Winner: tie** — gold files are named with character slugs, so filename heuristic is perfect. AI matches but does not beat.
 
-## Ship decision
-Ship re-rank for multi-character books without name-in-filename; no harm when names already match.
+Harder eval would need ambiguous filenames (page_03.png without names).

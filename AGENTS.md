@@ -147,6 +147,10 @@ Slightly more technical language is OK on **About** or a collapsible “For deve
 
 | Doc | Purpose |
 |-----|---------|
+| `host/evals/README.md` | App eval root (not story projects) |
+| `host/evals/classifier_benchmarks/README.md` | Classifier AI vs baseline suite; history, model/prompt matrix, charts |
+| `host/evals/beat_label_eval/README.md` | Silent-beat action_class ground truth + model comparison |
+| `host/evals/heuristic_ai_eval/` | Legacy holdout / ambient blind dumps |
 | `host/docs/perf-findings-2026-07.md` | Multi-user perf soak findings; optimization paused; files→DB notes |
 | `host/docs/async-io-pass-plan.md` | Async I/O multipass status |
 | `host/docs/loadsim-soak.md` | How to run LoadSim |

@@ -1,0 +1,6 @@
+{
+  "id": "v1_product",
+  "task": "ambient_sfx",
+  "label": "Legacy product prompt (pre v2_grounded)",
+  "notes": "Former AmbientSfxClassifier.SystemPrompt. Superseded by v2_grounded (shipped)."
+}

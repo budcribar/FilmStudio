@@ -1,0 +1,312 @@
+{
+  "labels": [
+    {
+      "key": "Character_Narrator",
+      "description": "Lean English officer-type man, mid-30s to 40s, period moustache, shirt-sleeves under a waterproof coat; angular face, weathered outdoor skin, short neat hair.",
+      "gold": "human",
+      "note": "curated from cast_seeds"
+    },
+    {
+      "key": "Character_Father_Wolf",
+      "description": "Adult lean gray Indian wolf, male, rangy muscle under coarse gray coat, pale underbelly, amber eyes, long muzzle, alert ears.",
+      "gold": "animal",
+      "note": "curated from cast_seeds"
+    },
+    {
+      "key": "Character_Mother_Wolf",
+      "description": "Great gray she-wolf (Raksha), heavy maternal build, big gray nose, thick ruff, green-reflecting eyes, powerful shoulders.",
+      "gold": "animal",
+      "note": "curated from cast_seeds"
+    },
+    {
+      "key": "Character_Wolf_Cubs",
+      "description": "Four small gray wolf cubs, soft puppy coats, oversized paws and ears, dark muzzle masks, bright curious eyes.",
+      "gold": "animal",
+      "note": "curated from cast_seeds"
+    },
+    {
+      "key": "Character_Tabaqui",
+      "description": "Indian jackal, smaller than the wolves, dusty scruffy coat, bushy tail, pointed muzzle, bright eyes, low posture, lean ribs.",
+      "gold": "animal",
+      "note": "curated from cast_seeds"
+    },
+    {
+      "key": "Character_Shere_Khan",
+      "description": "Huge adult male Bengal tiger, great square head and massive shoulders, rich orange coat with bold black stripes, white ruffs, amber eyes; permanently lame in on",
+      "gold": "animal",
+      "note": "curated from cast_seeds"
+    },
+    {
+      "key": "Character_Mowgli",
+      "description": "Indian human male: brown skin, long dark hair, hard bare feet; ages from naked soft dimpled baby just walking, to bare jungle child about 7, to lean athletic ne",
+      "gold": "human",
+      "note": "curated from cast_seeds"
+    },
+    {
+      "key": "Character_Akela",
+      "description": "Great gray Lone Wolf, pack leader: large mature male, full gray coat, heavier bone than Father Wolf, noble muzzle; ages to thinner, stiffer old wolf.",
+      "gold": "animal",
+      "note": "curated from cast_seeds"
+    },
+    {
+      "key": "Character_Young_Wolf",
+      "description": "Young adult Seeonee wolf in fourth year, leaner and darker-mixed gray than Akela, intense eyes.",
+      "gold": "animal",
+      "note": "curated from cast_seeds"
+    },
+    {
+      "key": "Character_Baloo",
+      "description": "Large old brown sloth bear, heavy body, shaggy brown coat, blunt muzzle, small eyes, big padded paws, furry stomach.",
+      "gold": "animal",
+      "note": "curated from cast_seeds"
+    },
+    {
+      "key": "Character_Bagheera",
+      "description": "Adult black panther (melanistic leopard), inky black coat with ghost rosettes visible as watered-silk sheen in light, sleek muscular body, soft fur, green eyes,",
+      "gold": "animal",
+      "note": "curated from cast_seeds"
+    },
+    {
+      "key": "Character_Bandar_Log",
+      "description": "Troop of gray langur-like monkeys—long limbs, gray fur, black faces and hands, restless tails.",
+      "gold": "animal",
+      "note": "curated from cast_seeds"
+    },
+    {
+      "key": "Character_Rann",
+      "description": "Large kite (bird of prey), brown and white underwings, hooked beak, very keen eyes, long wings.",
+      "gold": "animal",
+      "note": "curated from cast_seeds"
+    },
+    {
+      "key": "Character_Kaa",
+      "description": "Huge rock python about thirty feet, thick muscular coils, gleaming patterned scales, scarred nose, wedge head, bright eyes.",
+      "gold": "animal",
+      "note": "curated from cast_seeds"
+    },
+    {
+      "key": "Character_Cobras_Cold_Lairs",
+      "description": "Indian cobras—hooded, scaled bodies; dusty ruin-dwelling snakes smaller than Kaa.",
+      "gold": "animal",
+      "note": "curated from cast_seeds"
+    },
+    {
+      "key": "Character_Gray_Brother",
+      "description": "Young gray wolf, one of Mother Wolf’s litter grown—lean Seeonee gray coat, soft gray nose, pack-brother build.",
+      "gold": "animal",
+      "note": "curated from cast_seeds"
+    },
+    {
+      "key": "Character_Tattered_Wolf",
+      "description": "Gaunt adult pack wolf, mangy tattered coat, shot-scarred or trap-lame look, hollow flanks.",
+      "gold": "animal",
+      "note": "curated from cast_seeds"
+    },
+    {
+      "key": "Character_Messua",
+      "description": "Kind-faced Indian village woman, adult, warm brown skin, dark hair, soft maternal eyes; simple rural sari/cloth of a Waingunga-plain household.",
+      "gold": "human",
+      "note": "curated from cast_seeds"
+    },
+    {
+      "key": "Character_Priest",
+      "description": "Big fat Indian village priest, white clothes, red-and-yellow caste mark on forehead, heavy belly and jowls.",
+      "gold": "human",
+      "note": "curated from cast_seeds"
+    },
+    {
+      "key": "Character_Buldeo",
+      "description": "Adult Indian village hunter, lean weathered man with Tower musket, waist-cloth.",
+      "gold": "human",
+      "note": "curated from cast_seeds"
+    },
+    {
+      "key": "Character_Villagers",
+      "description": "Crowd of North Indian plain villagers—men, women, children in dhotis, saris, turbans; herd-boys, yellow pariah dogs at edges.",
+      "gold": "human",
+      "note": "curated from cast_seeds"
+    },
+    {
+      "key": "Character_Sea_Catch",
+      "description": "Huge fifteen-year-old gray fur seal bull, nearly a mane on shoulders, long wicked dog-teeth, scarred all over from fights; stands over four feet on flippers, ab",
+      "gold": "animal",
+      "note": "curated from cast_seeds"
+    },
+    {
+      "key": "Character_Matkah",
+      "description": "Adult female fur seal, gentler softer bulk than Sea Catch, smooth dark coat, maternal eyes.",
+      "gold": "animal",
+      "note": "curated from cast_seeds"
+    },
+    {
+      "key": "Character_Kotick",
+      "description": "The White Seal: born with pale watery-blue eyes, large head and shoulders; grows to pure white fur, full-grown sea-catch bulk with curly white mane, heavy build",
+      "gold": "animal",
+      "note": "curated from cast_seeds"
+    },
+    {
+      "key": "Character_Young_Seal",
+      "description": "Young adult dark fur seal about Kotick’s age, beach-fighter bulk, dark coat without white.",
+      "gold": "animal",
+      "note": "curated from cast_seeds"
+    },
+    {
+      "key": "Character_Seals_Chorus",
+      "description": "Mass of fur seals—bulls, cows, holluschickie bachelors, pups—dark coats in dense groups on basalt and sand.",
+      "gold": "animal",
+      "note": "curated from cast_seeds"
+    },
+    {
+      "key": "Character_Sea_Cow",
+      "description": "Great sea-cow (manatee-like), huge slow gray-brown body, calm face.",
+      "gold": "animal",
+      "note": "curated from cast_seeds"
+    },
+    {
+      "key": "Character_Rikki_Tikki",
+      "description": "Small Indian mongoose, catlike fur, weasel-like head, pink eyes and restless pink nose, bottle-brush tail when roused, ivory fangs.",
+      "gold": "animal",
+      "note": "curated from cast_seeds"
+    },
+    {
+      "key": "Character_Teddy",
+      "description": "Small English boy in Segowlee cantonment, fair colonial child, period light clothes, big eyes.",
+      "gold": "human",
+      "note": "curated from cast_seeds"
+    },
+    {
+      "key": "Character_Alice",
+      "description": "Teddy’s Mother—English woman Alice, adult, kind face, period bungalow dress.",
+      "gold": "human",
+      "note": "curated from cast_seeds"
+    },
+    {
+      "key": "Character_Teddys_Father",
+      "description": "Big Englishman, adult male, period colonial shirt and trousers, solid paternal build; moustache optional.",
+      "gold": "other",
+      "note": "curated from cast_seeds"
+    },
+    {
+      "key": "Character_Darzee",
+      "description": "Tailor-bird male, small songbird, olive-brown upperparts, pale underparts, long tail feathers.",
+      "gold": "animal",
+      "note": "curated from cast_seeds"
+    },
+    {
+      "key": "Character_Darzees_Wife",
+      "description": "Female tailor-bird, slightly duller small songbird, same species as Darzee.",
+      "gold": "animal",
+      "note": "curated from cast_seeds"
+    },
+    {
+      "key": "Character_Nag",
+      "description": "Big black cobra, five feet long, spectacled hood spread, dull glowing eyes, thick body; spectacle mark on hood.",
+      "gold": "animal",
+      "note": "curated from cast_seeds"
+    },
+    {
+      "key": "Character_Nagaina",
+      "description": "Adult female cobra, sleek hooded body, black-olive sheen matching Nag, intense eyes.",
+      "gold": "animal",
+      "note": "curated from cast_seeds"
+    },
+    {
+      "key": "Character_Chuchundra",
+      "description": "Muskrat, small brown wet-furred rodent, timid low posture along walls, whiskered pointed face.",
+      "gold": "animal",
+      "note": "curated from cast_seeds"
+    },
+    {
+      "key": "Character_Kala_Nag",
+      "description": "Great Asian elephant nearly seventy years old; ten feet at the shoulder, dark wrinkled hide, tusks cut short at five feet and bound with copper bands; large eye",
+      "gold": "animal",
+      "note": "curated from cast_seeds"
+    },
+    {
+      "key": "Character_Big_Toomai",
+      "description": "Weathered adult Indian mahout, dark sun-leathered skin, strong hands, working camp clothes; adult father build.",
+      "gold": "human",
+      "note": "curated from cast_seeds"
+    },
+    {
+      "key": "Character_Little_Toomai",
+      "description": "Indian boy ten years old, four feet high, sun-bleached brown hair flying loose, barefoot jungle-camp child in a single rag garment.",
+      "gold": "human",
+      "note": "curated from cast_seeds"
+    },
+    {
+      "key": "Character_Petersen_Sahib",
+      "description": "English Keddah chief, adult man, field mustache, solar-topee era colonial hunting dress.",
+      "gold": "human",
+      "note": "curated from cast_seeds"
+    },
+    {
+      "key": "Character_Machua_Appa",
+      "description": "Head tracker, adult Assamese/jungle Indian man, lean scarred hunter build, gun and field cloth.",
+      "gold": "human",
+      "note": "curated from cast_seeds"
+    },
+    {
+      "key": "Character_Pudmini",
+      "description": "Clever adult she-elephant, slightly smaller than Kala Nag, working government elephant, calm intelligent eye.",
+      "gold": "animal",
+      "note": "curated from cast_seeds"
+    },
+    {
+      "key": "Character_Toomais_Mother",
+      "description": "Young Indian woman in simple sari, soft maternal face.",
+      "gold": "human",
+      "note": "curated from cast_seeds"
+    },
+    {
+      "key": "Character_Vixen",
+      "description": "Sharp fox terrier, white with brown markings, small dog carriage.",
+      "gold": "animal",
+      "note": "curated from cast_seeds"
+    },
+    {
+      "key": "Character_Camp_Runner",
+      "description": "Adult camp man, period soldier-servant clothes, wet camp kit.",
+      "gold": "human",
+      "note": "curated from cast_seeds"
+    },
+    {
+      "key": "Character_Billy",
+      "description": "Tough screw-gun mule, straps rings and chains on saddle-pad, campaigner build; breech-piece mule of number two gun, First Screw Battery.",
+      "gold": "human",
+      "note": "curated from cast_seeds"
+    },
+    {
+      "key": "Character_Baggage_Camel",
+      "description": "Large baggage camel of the 39th Native Infantry, soft feet, long bobbing neck, humped bulk.",
+      "gold": "animal",
+      "note": "curated from cast_seeds"
+    },
+    {
+      "key": "Character_Troop_Horse",
+      "description": "Big Australian cavalry mount, Number Fifteen, E troop, Ninth Lancers; parade-fit, silky tail when groomed, one ear forward one back.",
+      "gold": "other",
+      "note": "curated from cast_seeds"
+    },
+    {
+      "key": "Character_Gun_Bullocks",
+      "description": "Pair of enormous patient gun-bullocks, heavy flanks, heavy yokes, slaty working cattle build.",
+      "gold": "animal",
+      "note": "curated from cast_seeds"
+    },
+    {
+      "key": "Character_Gun_Elephant",
+      "description": "Huge gun-team elephant, forty years’ service, harnessed to siege gun; trunk and dual-end bulk.",
+      "gold": "animal",
+      "note": "curated from cast_seeds"
+    },
+    {
+      "key": "Character_Amir",
+      "description": "Amir of Afghanistan, Central Asian king, high big black astrakhan-wool hat, great diamond star, horseman in royal riding dress.",
+      "gold": "other",
+      "note": "curated from cast_seeds"
+    }
+  ],
+  "annotator": "curated",
+  "projectId": "The_Jungle_Book"
+}

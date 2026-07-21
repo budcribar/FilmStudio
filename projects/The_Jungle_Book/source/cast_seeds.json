@@ -1,0 +1,631 @@
+{
+  "schema_version": "cast_seeds.v1",
+  "generation": {
+    "method": "CastFromScreenplayService",
+    "ts": "2026-07-21T10:50:20"
+  },
+  "movie_title": "The Jungle Book",
+  "render_style_lock": "STYLE LOCK: Period live-action jungle adventure; photoreal animals and humans share one continuous realistic medium\u2014no cartoon stylization. Warm earth and leaf tones by day; moonlit blues at Council Rock; fire as the sole hard orange; wet fog and pearly light on seal beaches; dusty cantonment and mud-camp realism for later tales.",
+  "performance_lock": "PERFORMANCE LOCK: Objective storybook anthology staging with a framing storyteller voice; default gaze is character-to-character and scene action, not the viewer. Animals speak with full dramatic address to partners while bodies stay species-true. Human village and camp scenes play naturalistically. Brief first-person camp episode places the Narrator on camera among animals who converse among themselves as if overheard.",
+  "character_seed_tokens": {
+    "Character_Narrator": {
+      "description": "Lean English man, mid-30s to 40s, period moustache, angular face, weathered outdoor skin, short neat hair; default look in shirt-sleeves under a waterproof coat.",
+      "canonical_given_name": "Narrator",
+      "display_name_policy": "ok_anytime",
+      "voice_label": "dry English storyteller",
+      "voice_profile": "Adult male, educated Anglo-Indian cadence, medium pitch, unhurried clear pace, warm ironic energy; same voice for V.O. bridges and on-camera lines.",
+      "reference_image_placeholder": "character_narrator_ref.png",
+      "visual_lock": "Same lean build, period moustache, short neat hair, angular weathered face, shirt-sleeves under waterproof coat in every on-camera beat; never aged into an elderly man. Distinct from Teddy\u0027s Father (family man, bungalow) and Petersen Sahib (mustached Keddah chief).",
+      "wardrobe_always": [
+        "period shirt-sleeves",
+        "waterproof coat",
+        "muddy boots"
+      ],
+      "source_image_pages": [],
+      "performance_notes": "V.O. addresses the implied listener; on-camera he reacts as a participant in the camp stampede, not a podium host."
+    },
+    "Character_Father_Wolf": {
+      "description": "Adult lean gray Indian wolf, male, rangy muscle under coarse gray coat, pale underbelly, amber eyes, long muzzle, alert ears.",
+      "canonical_given_name": "Father Wolf",
+      "display_name_policy": "ok_anytime",
+      "voice_label": "stern gray wolf",
+      "voice_profile": "Adult male, low-medium gravel, clipped jungle cadence, controlled heat when angry; steady pack-authority energy.",
+      "reference_image_placeholder": "character_father_wolf_ref.png",
+      "visual_lock": "Lean gray coat and rangy male silhouette every scene; never as bulky as Akela or as pale as Gray Brother cubs. Same scar-free working-pack face.",
+      "wardrobe_always": [],
+      "source_image_pages": []
+    },
+    "Character_Mother_Wolf": {
+      "description": "Great gray she-wolf (Raksha), heavy maternal build, big gray nose, thick ruff, green-reflecting eyes, powerful shoulders.",
+      "canonical_given_name": "Mother Wolf",
+      "display_name_policy": "ok_anytime",
+      "voice_label": "fierce she-wolf",
+      "voice_profile": "Adult female, low rich alto, velvet that turns to steel roar; fierce maternal energy, never shrill.",
+      "reference_image_placeholder": "character_mother_wolf_ref.png",
+      "visual_lock": "Larger heavier gray she-wolf than Father Wolf; green-reflecting eyes and broad unique versus other pack wolves. Same great gray coat always.",
+      "wardrobe_always": [],
+      "source_image_pages": []
+    },
+    "Character_Wolf_Cubs": {
+      "description": "Four small gray wolf cubs, soft puppy coats, oversized paws and ears, dark muzzle masks, bright curious eyes.",
+      "canonical_given_name": "Wolf Cubs",
+      "display_name_policy": "ok_anytime",
+      "voice_label": "wolf cub pack",
+      "voice_profile": "High puppy yelps and squeals; minimal speech, animal play energy.",
+      "reference_image_placeholder": "character_wolf_cubs_ref.png",
+      "visual_lock": "Four matching Seeonee gray cubs\u2014soft juvenile coats, not adult lean hunters\u2014readable as one litter beside Mother Wolf.",
+      "wardrobe_always": [],
+      "source_image_pages": []
+    },
+    "Character_Tabaqui": {
+      "description": "Indian jackal, smaller than the wolves, dusty scruffy coat, bushy tail, pointed muzzle, bright eyes, low posture, lean ribs.",
+      "canonical_given_name": "Tabaqui",
+      "display_name_policy": "ok_anytime",
+      "voice_label": "wheedling jackal",
+      "voice_profile": "Adult male, thin nasal whine, quick oily pace, spiteful delighted energy; singsong flattery that turns spiteful.",
+      "reference_image_placeholder": "character_tabaqui_ref.png",
+      "visual_lock": "Jackal proportions\u2014not wolf\u2014scruffy coat, bushy tail, and bright eyes every appearance; always smaller and scruffier than pack wolves.",
+      "wardrobe_always": [],
+      "source_image_pages": []
+    },
+    "Character_Shere_Khan": {
+      "description": "Huge adult male Bengal tiger, great and massive shoulders, rich orange coat with bold black stripes, white ruffs, amber eyes; permanently lame in one forefoot from birth.",
+      "canonical_given_name": "Shere Khan",
+      "display_name_policy": "ok_anytime",
+      "voice_label": "lame tiger tyrant",
+      "voice_profile": "Deep adult male roar-bass, dry angry snarly singsong when thwarted; arrogant thunderous energy.",
+      "reference_image_placeholder": "character_shere_khan_ref.png",
+      "visual_lock": "Largest cat on screen, lame forefoot, and massive bulk never drift. Distinct from Bagheera\u0027s black panther sleekness.",
+      "wardrobe_always": [],
+      "source_image_pages": []
+    },
+    "Character_Mowgli": {
+      "description": "Indian human male: brown skin, long dark hair, hard bare feet; ages from soft dimpled toddler just walking, to bare jungle child about 7, to lean athletic nearly grown youth with jungle-scarred limbs.",
+      "canonical_given_name": "Mowgli",
+      "display_name_policy": "ok_anytime",
+      "voice_label": "man-cub",
+      "voice_profile": "Boy treble aging to adolescent male; clear bold diction, jungle-trained cadence, proud then wounded energy; same identity across ages.",
+      "reference_image_placeholder": "character_mowgli_ref.png",
+      "visual_lock": "Same continuous brown-skinned Indian male face aging toddler to child to youth; long dark hair, hard bare feet, jungle-scarred limbs. Never a pale European child; distinct from Teddy and Little Toomai.",
+      "wardrobe_always": [
+        "often bare",
+        "simple village cloth when dressed"
+      ],
+      "source_image_pages": [],
+      "performance_notes": "Addresses animal brothers as equals; among villagers stands apart, imitates speech, holds fire and hide with defiant directness to the Pack."
+    },
+    "Character_Akela": {
+      "description": "Large mature male gray wolf, full gray coat, heavy bone structure, strong dignified muzzle.",
+      "canonical_given_name": "Akela",
+      "display_name_policy": "ok_anytime",
+      "voice_label": "lone wolf leader",
+      "voice_profile": "Deep adult male, measured ceremonial pace, authority without shout until challenged; later weary but clear.",
+      "reference_image_placeholder": "character_akela_ref.png",
+      "visual_lock": "Largest gray wolf, heavy bulk, full gray coat, strong muzzle\u2014never jackal-lean.",
+      "wardrobe_always": [],
+      "source_image_pages": []
+    },
+    "Character_Young_Wolf": {
+      "description": "Young adult Seeonee wolf in fourth year, leaner and darker-mixed gray than Akela, intense eyes.",
+      "canonical_given_name": "Young Wolf",
+      "display_name_policy": "ok_anytime",
+      "voice_label": "challenger wolf",
+      "voice_profile": "Young adult male, sharper higher growl than Akela, impatient pack energy.",
+      "reference_image_placeholder": "character_young_wolf_ref.png",
+      "visual_lock": "Fourth-year male\u2014not cub, not Akela\u2019s bulk\u2014distinct pack face.",
+      "wardrobe_always": [],
+      "source_image_pages": []
+    },
+    "Character_Baloo": {
+      "description": "Large old brown sloth bear, heavy body, shaggy brown coat, blunt muzzle, small eyes, big padded paws, furry stomach.",
+      "canonical_given_name": "Baloo",
+      "display_name_policy": "ok_anytime",
+      "voice_label": "old brown bear teacher",
+      "voice_profile": "Deep warm adult male, slow deliberate pace, gruff tenderness that can thunder; patient then hurt pride.",
+      "reference_image_placeholder": "character_baloo_ref.png",
+      "visual_lock": "Only brown bear\u2014shaggy chocolate-brown coat, massive haunches, heavy bulk. Never black like Bagheera or striped like Shere Khan.",
+      "wardrobe_always": [],
+      "source_image_pages": []
+    },
+    "Character_Bagheera": {
+      "description": "Adult black panther (melanistic leopard), inky black coat with ghost rosettes visible as a subtle sheen pattern in light, sleek muscular body, soft fur, green eyes, white whiskers.",
+      "canonical_given_name": "Bagheera",
+      "display_name_policy": "ok_anytime",
+      "voice_label": "black panther",
+      "voice_profile": "Adult male, soft honey-low baritone, amused precise diction, controlled lethal calm; purrs and dry rebuke.",
+      "reference_image_placeholder": "character_bagheera_ref.png",
+      "visual_lock": "Inky black coat with ghost-rosette sheen under light; sleek panther build always\u2014never brown bear bulk or tiger stripes. Green eyes.",
+      "wardrobe_always": [],
+      "source_image_pages": []
+    },
+    "Character_Bandar_Log": {
+      "description": "Troop of gray langur-like monkeys\u2014long limbs, gray fur, black faces and hands, restless tails.",
+      "canonical_given_name": "Bandar-log",
+      "display_name_policy": "ok_anytime",
+      "voice_label": "monkey people chorus",
+      "voice_profile": "Many high chattering voices, boastful overlapping pace, manic shallow energy; stolen scraps of jungle speech.",
+      "reference_image_placeholder": "character_bandar_log_ref.png",
+      "visual_lock": "Gray monkey troop identity: gray coats, black faces, group mass; never solitary hero framing. Readable mass with a few foreground faces.",
+      "wardrobe_always": [],
+      "source_image_pages": []
+    },
+    "Character_Rann": {
+      "description": "Large kite (bird of prey), brown and white underwings, hooked beak, very keen eyes, long wings.",
+      "canonical_given_name": "Rann",
+      "display_name_policy": "ok_anytime",
+      "voice_label": "kite scout",
+      "voice_profile": "Adult male, thin whistling carry, quick report cadence, cool aerial confidence.",
+      "reference_image_placeholder": "character_rann_ref.png",
+      "visual_lock": "High-soaring kite silhouette and brown-and-white wing markings constant; only speaking raptor ally.",
+      "wardrobe_always": [],
+      "source_image_pages": []
+    },
+    "Character_Kaa": {
+      "description": "Huge rock python about thirty feet, thick muscular coils, gleaming patterned scales, scarred nose, bright eyes.",
+      "canonical_given_name": "Kaa",
+      "display_name_policy": "ok_anytime",
+      "voice_label": "rock python",
+      "voice_profile": "Adult male, long sibilant bass, unhurried hypnotic pace, dry humor under menace; humming song energy in the Hunger Dance.",
+      "reference_image_placeholder": "character_kaa_ref.png",
+      "visual_lock": "Longest reptile on screen\u2014thirty-foot bulk, scarred nose, gleaming scales. Distinct from shorter cobras Nag/Nagaina.",
+      "wardrobe_always": [],
+      "source_image_pages": []
+    },
+    "Character_Cobras_Cold_Lairs": {
+      "description": "Indian cobras\u2014hooded, scaled bodies; dusty ruin-dwelling snakes smaller than Kaa.",
+      "canonical_given_name": "Cobras",
+      "display_name_policy": "ok_anytime",
+      "voice_label": "poison people",
+      "voice_profile": "Dry hissing ensemble, irritated warning tone, brief lines.",
+      "reference_image_placeholder": "character_cobras_cold_lairs_ref.png",
+      "visual_lock": "Hooded cobras; smaller than Kaa; not Nag/Nagaina\u2019s garden pair.",
+      "wardrobe_always": [],
+      "source_image_pages": []
+    },
+    "Character_Gray_Brother": {
+      "description": "Young gray wolf, lean gray coat, soft gray nose, lean build.",
+      "canonical_given_name": "Gray Brother",
+      "display_name_policy": "ok_anytime",
+      "voice_label": "loyal young wolf",
+      "voice_profile": "Young adult male, clear mid wolf tone, earnest steady energy.",
+      "reference_image_placeholder": "character_gray_brother_ref.png",
+      "visual_lock": "Younger leaner gray wolf than Akela/Father Wolf; soft gray nose cue; lean gray wolf face.",
+      "wardrobe_always": [],
+      "source_image_pages": []
+    },
+    "Character_Tattered_Wolf": {
+      "description": "Gaunt adult pack wolf, mangy tattered coat, shot-scarred or trap-lame look, hollow flanks.",
+      "canonical_given_name": "Tattered Wolf",
+      "display_name_policy": "ok_anytime",
+      "voice_label": "broken pack wolf",
+      "voice_profile": "Adult male, rough tired growl, pleading pack energy.",
+      "reference_image_placeholder": "character_tattered_wolf_ref.png",
+      "visual_lock": "Visibly tattered mangy coat and damaged condition unique among named wolves; not Akela\u2019s noble gray.",
+      "wardrobe_always": [],
+      "source_image_pages": []
+    },
+    "Character_Messua": {
+      "description": "Kind-faced Indian village woman, adult, warm brown skin, dark hair, soft maternal eyes; simple rural sari/cloth of a Waingunga-plain household.",
+      "canonical_given_name": "Messua",
+      "display_name_policy": "ok_anytime",
+      "voice_label": "village mother",
+      "voice_profile": "Adult female, warm mid register, gentle urgent pace, grieving-kind energy.",
+      "reference_image_placeholder": "character_messua_ref.png",
+      "visual_lock": "Same kind maternal face and village-woman dress; distinct from Alice\u2019s English bungalow mother and Toomai\u2019s Mother.",
+      "wardrobe_always": [
+        "simple Indian village sari or wrap"
+      ],
+      "source_image_pages": []
+    },
+    "Character_Priest": {
+      "description": "Big fat Indian village priest, white clothes, red-and-yellow caste mark on forehead, heavy belly and jowls.",
+      "canonical_given_name": "Priest",
+      "display_name_policy": "ok_anytime",
+      "voice_label": "village priest",
+      "voice_profile": "Adult male, full loud carrying voice, ceremonial then panicky condemnation.",
+      "reference_image_placeholder": "character_priest_ref.png",
+      "visual_lock": "Obesity, white garments, and red-yellow forehead mark locked; never confused with lean Buldeo hunter.",
+      "wardrobe_always": [
+        "white priestly clothes",
+        "red-and-yellow forehead mark"
+      ],
+      "source_image_pages": []
+    },
+    "Character_Buldeo": {
+      "description": "Adult Indian village hunter, lean weathered man with Tower musket, waist-cloth.",
+      "canonical_given_name": "Buldeo",
+      "display_name_policy": "ok_anytime",
+      "voice_label": "village hunter",
+      "voice_profile": "Adult male, rough boastful baritone, angry bluster when mocked.",
+      "reference_image_placeholder": "character_buldeo_ref.png",
+      "visual_lock": "Musket-carrying hunter silhouette and weathered village-male face; distinct from fat Priest.",
+      "wardrobe_always": [
+        "waist-cloth",
+        "Tower musket"
+      ],
+      "source_image_pages": []
+    },
+    "Character_Villagers": {
+      "description": "Crowd of North Indian plain villagers\u2014men, women, children in dhotis, saris, turbans; herd-boys, yellow pariah dogs at edges.",
+      "canonical_given_name": "Villagers",
+      "display_name_policy": "ok_anytime",
+      "voice_label": "village mob",
+      "voice_profile": "Overlapping adult shouts, fear and accusation, chorus of \u2018Wolf!\u2019 energy.",
+      "reference_image_placeholder": "character_villagers_ref.png",
+      "visual_lock": "Period rural Indian crowd palette; readable mass without inventing named faces beyond Priest, Messua, Buldeo.",
+      "wardrobe_always": [
+        "village cotton wraps and turbans"
+      ],
+      "source_image_pages": []
+    },
+    "Character_Sea_Catch": {
+      "description": "Huge fifteen-year-old gray fur seal bull, nearly a mane on shoulders, long wicked dog-teeth, scarred all over from fights; stands over four feet on flippers, about 700 lb bulk.",
+      "canonical_given_name": "Sea Catch",
+      "display_name_policy": "ok_anytime",
+      "voice_label": "scarred seal bull",
+      "voice_profile": "Deep adult male roar, gruff short lines, proud fighting energy.",
+      "reference_image_placeholder": "character_sea_catch_ref.png",
+      "visual_lock": "Largest scarred gray beachmaster; mane shoulders and dog-teeth always; father to white Kotick\u2014never white himself.",
+      "wardrobe_always": [],
+      "source_image_pages": []
+    },
+    "Character_Matkah": {
+      "description": "Adult female fur seal, gentler softer bulk than Sea Catch, smooth dark coat, maternal eyes.",
+      "canonical_given_name": "Matkah",
+      "display_name_policy": "ok_anytime",
+      "voice_label": "mother seal",
+      "voice_profile": "Adult female, soft cooing mid tone, soothing then anxious counsel.",
+      "reference_image_placeholder": "character_matkah_ref.png",
+      "visual_lock": "Gentle dark cow seal\u2014no heavy scarred mane; constant mother pairing with white pup Kotick.",
+      "wardrobe_always": [],
+      "source_image_pages": []
+    },
+    "Character_Kotick": {
+      "description": "The White Seal: born with pale watery-blue eyes, large head and shoulders; grows to pure white fur, full-grown sea-catch bulk with curly white mane, heavy build matching his father.",
+      "canonical_given_name": "Kotick",
+      "display_name_policy": "ok_anytime",
+      "voice_label": "white seal",
+      "voice_profile": "Young male aging to powerful adult roar; clear determined pace, visionary then battle fury.",
+      "reference_image_placeholder": "character_kotick_ref.png",
+      "visual_lock": "Only pure-white fur seal\u2014white mane as adult, blue-eyed youth; unmistakable versus gray Sea Catch and dark holluschickie.",
+      "wardrobe_always": [],
+      "source_image_pages": []
+    },
+    "Character_Young_Seal": {
+      "description": "Young adult dark fur seal about Kotick\u2019s age, beach-fighter bulk, dark coat without white.",
+      "canonical_given_name": "Young Seal",
+      "display_name_policy": "ok_anytime",
+      "voice_label": "mocking young seal",
+      "voice_profile": "Young adult male, ugly chuckle edge, taunting pace.",
+      "reference_image_placeholder": "character_young_seal_ref.png",
+      "visual_lock": "Dark holluschickie/young catch\u2014never white; foil fighter build to Kotick.",
+      "wardrobe_always": [],
+      "source_image_pages": []
+    },
+    "Character_Seals_Chorus": {
+      "description": "Mass of fur seals\u2014bulls, cows, holluschickie bachelors, pups\u2014dark coats in dense groups on basalt and sand.",
+      "canonical_given_name": "Seals",
+      "display_name_policy": "ok_anytime",
+      "voice_label": "seal nation chorus",
+      "voice_profile": "Thousands of tired blended voices; deep-sea choral song, sad anthem energy on Lukannon verses.",
+      "reference_image_placeholder": "character_seals_chorus_ref.png",
+      "visual_lock": "Living dark seal carpet and swimming groups; not individually hero-framed except when answering Kotick.",
+      "wardrobe_always": [],
+      "source_image_pages": []
+    },
+    "Character_Sea_Cow": {
+      "description": "Great sea-cow (manatee-like), huge slow gray-brown body, calm face.",
+      "canonical_given_name": "Sea Cow",
+      "display_name_policy": "ok_anytime",
+      "voice_label": "silent sea cow",
+      "voice_profile": "Mostly silent presence; occasional deep aquatic breath sounds, no chatter.",
+      "reference_image_placeholder": "character_sea_cow_ref.png",
+      "visual_lock": "Manatee bulk and slow underwater grace\u2014unique non-seal marine mammal.",
+      "wardrobe_always": [],
+      "source_image_pages": []
+    },
+    "Character_Rikki_Tikki": {
+      "description": "Small Indian mongoose, catlike fur, weasel-like head, pink eyes and restless pink nose, bottle-brush tail when roused, ivory fangs.",
+      "canonical_given_name": "Rikki-tikki-tavi",
+      "display_name_policy": "ok_anytime",
+      "voice_label": "mongoose warrior",
+      "voice_profile": "Young male, quick bright chatter-baritone, rapid curious pace, modest practical courage after victory.",
+      "reference_image_placeholder": "character_rikki_tikki_ref.png",
+      "visual_lock": "Same small mongoose body\u2014pink nose/eyes, catlike fur, bottle-brush tail fluff in fight\u2014hero scale versus five-foot cobras. Never a cat or dog.",
+      "wardrobe_always": [],
+      "source_image_pages": []
+    },
+    "Character_Teddy": {
+      "description": "Small English boy in Segowlee cantonment, fair colonial child, period light clothes, big eyes.",
+      "canonical_given_name": "Teddy",
+      "display_name_policy": "ok_anytime",
+      "voice_label": "English boy",
+      "voice_profile": "Child male treble, bright simple lines, startled then trusting energy.",
+      "reference_image_placeholder": "character_teddy_ref.png",
+      "visual_lock": "Fair English child face and bungalow-boy wardrobe; distinct from brown Mowgli and Little Toomai.",
+      "wardrobe_always": [
+        "period English child\u2019s light colonial clothes"
+      ],
+      "source_image_pages": []
+    },
+    "Character_Alice": {
+      "description": "Teddy\u2019s Mother\u2014English woman Alice, adult, kind face, period bungalow dress.",
+      "canonical_given_name": "Alice",
+      "display_name_policy": "ok_anytime",
+      "voice_label": "Teddy\u0027s mother",
+      "voice_profile": "Adult female, educated English mid tone, worried warmth.",
+      "reference_image_placeholder": "character_alice_ref.png",
+      "visual_lock": "English memsahib face and period dress; named Alice in dialogue; not Messua or Toomai\u2019s Mother.",
+      "wardrobe_always": [
+        "period English bungalow dress"
+      ],
+      "source_image_pages": []
+    },
+    "Character_Teddys_Father": {
+      "description": "Big Englishman, adult male, period colonial shirt and trousers, solid paternal build; moustache optional.",
+      "canonical_given_name": "Teddy\u0027s Father",
+      "display_name_policy": "ok_anytime",
+      "voice_label": "English father",
+      "voice_profile": "Adult male, calm assured English baritone, practical reassurance.",
+      "reference_image_placeholder": "character_teddys_father_ref.png",
+      "visual_lock": "Large English father silhouette\u2014bigger than lean Narrator; bungalow domestic, not Petersen\u2019s field kit.",
+      "wardrobe_always": [
+        "period colonial men\u2019s bungalow clothes"
+      ],
+      "source_image_pages": []
+    },
+    "Character_Darzee": {
+      "description": "Tailor-bird male, small songbird, olive-brown upperparts, pale underparts, long tail feathers.",
+      "canonical_given_name": "Darzee",
+      "display_name_policy": "ok_anytime",
+      "voice_label": "tailor-bird",
+      "voice_profile": "High fluting male bird voice, musical boastful pace, easily distracted praise-singer.",
+      "reference_image_placeholder": "character_darzee_ref.png",
+      "visual_lock": "Tiny tailor-bird shape and long tail display; small singer identity versus mongoose scale.",
+      "wardrobe_always": [],
+      "source_image_pages": []
+    },
+    "Character_Darzees_Wife": {
+      "description": "Female tailor-bird, slightly duller small songbird, same species as Darzee.",
+      "canonical_given_name": "Darzee\u0027s Wife",
+      "display_name_policy": "ok_anytime",
+      "voice_label": "tailor-bird wife",
+      "voice_profile": "High female bird tone, sharper practical urgency than Darzee.",
+      "reference_image_placeholder": "character_darzees_wife_ref.png",
+      "visual_lock": "Matching tailor-bird pair scale; quieter duller plumage than male Darzee.",
+      "wardrobe_always": [],
+      "source_image_pages": []
+    },
+    "Character_Nag": {
+      "description": "Big black cobra, five feet long, spectacled hood spread, dull glowing eyes, thick body; spectacle mark on hood.",
+      "canonical_given_name": "Nag",
+      "display_name_policy": "ok_anytime",
+      "voice_label": "cobra husband",
+      "voice_profile": "Adult male, cold low hiss-speech, proud god-mark arrogance, slow menace.",
+      "reference_image_placeholder": "character_nag_ref.png",
+      "visual_lock": "Five-foot black cobra male\u2014hood mark, dull glowing eyes\u2014garden threat; pair with Nagaina, shorter than Kaa.",
+      "wardrobe_always": [],
+      "source_image_pages": []
+    },
+    "Character_Nagaina": {
+      "description": "Adult female cobra, sleek hooded body, black-olive sheen matching Nag, intense eyes.",
+      "canonical_given_name": "Nagaina",
+      "display_name_policy": "ok_anytime",
+      "voice_label": "cobra wife",
+      "voice_profile": "Adult female, sharper venomous hiss-voice, grief-rage intensity, bargaining then strike fury.",
+      "reference_image_placeholder": "character_nagaina_ref.png",
+      "visual_lock": "Female cobra paired to Nag\u2014same species hooded threat, distinct head shape from male.",
+      "wardrobe_always": [],
+      "source_image_pages": []
+    },
+    "Character_Chuchundra": {
+      "description": "Muskrat, small brown wet-furred rodent, timid low posture along walls, whiskered pointed face.",
+      "canonical_given_name": "Chuchundra",
+      "display_name_policy": "ok_anytime",
+      "voice_label": "timid muskrat",
+      "voice_profile": "Thin whispering male, sorrowful frightened pace, almost never comes into the middle of the room.",
+      "reference_image_placeholder": "character_chuchundra_ref.png",
+      "visual_lock": "Tiny muskrat\u2014not mongoose\u2014hugging walls; small timid silhouette versus Rikki\u2019s bold stance.",
+      "wardrobe_always": [],
+      "source_image_pages": []
+    },
+    "Character_Kala_Nag": {
+      "description": "Great Asian elephant nearly seventy years old; ten feet at the shoulder, dark wrinkled hide, tusks cut short at five feet and bound with copper bands; large eyes, soft trunk.",
+      "canonical_given_name": "Kala Nag",
+      "display_name_policy": "ok_anytime",
+      "voice_label": "black snake elephant",
+      "voice_profile": "Mostly elephantine rumbles and trumpet; obedient silent power under mahout command, rare deep breath-voice if used.",
+      "reference_image_placeholder": "character_kala_nag_ref.png",
+      "visual_lock": "Largest elephant\u2014ten-foot height, copper-banded short tusks, dark hide. Distinct from Pudmini she-elephant and gun-team elephant in camp tale.",
+      "wardrobe_always": [
+        "copper bands on shortened tusks"
+      ],
+      "source_image_pages": []
+    },
+    "Character_Big_Toomai": {
+      "description": "Weathered adult Indian mahout, dark sun-leathered skin, strong hands, working camp clothes; adult father build.",
+      "canonical_given_name": "Big Toomai",
+      "display_name_policy": "ok_anytime",
+      "voice_label": "mahout father",
+      "voice_profile": "Adult male, gruff Hindi-English cadence, scolding bass, practical camp energy.",
+      "reference_image_placeholder": "character_big_toomai_ref.png",
+      "visual_lock": "Adult mahout build and weathered face\u2014older heavier than Little Toomai.",
+      "wardrobe_always": [
+        "mahout working cloth",
+        "ankus when riding"
+      ],
+      "source_image_pages": []
+    },
+    "Character_Little_Toomai": {
+      "description": "Indian boy ten years old, four feet high, sun-bleached brown hair flying loose, barefoot jungle-camp child in a single rag garment.",
+      "canonical_given_name": "Little Toomai",
+      "display_name_policy": "ok_anytime",
+      "voice_label": "elephant boy",
+      "voice_profile": "Child male, high-pitched yells in Keddah, bashful whisper before Sahib; eager wild energy.",
+      "reference_image_placeholder": "character_little_toomai_ref.png",
+      "visual_lock": "Small four-foot rag-clad boy, sun-bleached brown flying hair\u2014unique versus Mowgli\u2019s long black jungle hair and Teddy\u2019s fair English look.",
+      "wardrobe_always": [
+        "single rag garment",
+        "bare feet"
+      ],
+      "source_image_pages": []
+    },
+    "Character_Petersen_Sahib": {
+      "description": "English Keddah chief, adult man, field mustache, solar-topee era colonial hunting dress.",
+      "canonical_given_name": "Petersen Sahib",
+      "display_name_policy": "ok_anytime",
+      "voice_label": "Keddah sahib",
+      "voice_profile": "Adult male, amused English command voice, gentle when addressing the boy, clear carrying pace.",
+      "reference_image_placeholder": "character_petersen_sahib_ref.png",
+      "visual_lock": "Mustached white Keddah sahib\u2014distinct from bungalow Teddy\u2019s Father and lean camp Narrator.",
+      "wardrobe_always": [
+        "colonial field kit",
+        "mustache"
+      ],
+      "source_image_pages": []
+    },
+    "Character_Machua_Appa": {
+      "description": "Head tracker, adult Assamese/jungle Indian man, lean scarred hunter build, gun and field cloth.",
+      "canonical_given_name": "Machua Appa",
+      "display_name_policy": "ok_anytime",
+      "voice_label": "head tracker",
+      "voice_profile": "Adult male, ringing proclamation voice, proud ceremonial energy in the renaming speech.",
+      "reference_image_placeholder": "character_machua_appa_ref.png",
+      "visual_lock": "Native head-tracker face and hunter kit\u2014not plains mahout Big Toomai.",
+      "wardrobe_always": [
+        "tracker\u2019s field clothes"
+      ],
+      "source_image_pages": []
+    },
+    "Character_Pudmini": {
+      "description": "Clever adult she-elephant, slightly smaller than Kala Nag, working government elephant, calm intelligent eye.",
+      "canonical_given_name": "Pudmini",
+      "display_name_policy": "ok_anytime",
+      "voice_label": "she-elephant",
+      "voice_profile": "Soft elephant rumbles; mostly silent obedient presence.",
+      "reference_image_placeholder": "character_pudmini_ref.png",
+      "visual_lock": "She-elephant without Kala Nag\u2019s copper-stumped tusk signature; paired to Petersen\u2019s seat.",
+      "wardrobe_always": [],
+      "source_image_pages": []
+    },
+    "Character_Toomais_Mother": {
+      "description": "Young Indian woman in simple sari, soft maternal face.",
+      "canonical_given_name": "Toomai\u0027s Mother",
+      "display_name_policy": "ok_anytime",
+      "voice_label": "mahout mother singer",
+      "voice_profile": "Young adult female, clear soft singing voice, lullaby pace, tender finish to whisper.",
+      "reference_image_placeholder": "character_toomais_mother_ref.png",
+      "visual_lock": "Young mother in simple sari\u2014distinct from Messua and Alice.",
+      "wardrobe_always": [
+        "simple sari"
+      ],
+      "source_image_pages": [],
+      "performance_notes": "Primarily sings to the baby; intimate hut staging, not public address."
+    },
+    "Character_Vixen": {
+      "description": "Sharp fox terrier, white with brown markings, small dog carriage.",
+      "canonical_given_name": "Vixen",
+      "display_name_policy": "ok_anytime",
+      "voice_label": "fox terrier",
+      "voice_profile": "Small dog yap, quick conceited remarks, loyal to Narrator.",
+      "reference_image_placeholder": "character_vixen_ref.png",
+      "visual_lock": "White-and-brown fox terrier only\u2014small dog scale among mules and camels; never mongoose shape.",
+      "wardrobe_always": [],
+      "source_image_pages": []
+    },
+    "Character_Camp_Runner": {
+      "description": "Adult camp man, period soldier-servant clothes, wet camp kit.",
+      "canonical_given_name": "Camp Runner",
+      "display_name_policy": "ok_anytime",
+      "voice_label": "camp runner",
+      "voice_profile": "Adult male, shouted urgent alarm, single burst energy.",
+      "reference_image_placeholder": "character_camp_runner_ref.png",
+      "visual_lock": "Brief human messenger\u2014distinct face from Narrator; soaked camp kit.",
+      "wardrobe_always": [
+        "wet camp clothes"
+      ],
+      "source_image_pages": []
+    },
+    "Character_Billy": {
+      "description": "Tough screw-gun mule, straps rings and chains on saddle-pad, campaigner build; breech-piece mule of number two gun, First Screw Battery.",
+      "canonical_given_name": "Billy",
+      "display_name_policy": "ok_anytime",
+      "voice_label": "screw-gun mule",
+      "voice_profile": "Adult male mule voice, dry cockney-soldier wit, impatient practical energy.",
+      "reference_image_placeholder": "character_billy_ref.png",
+      "visual_lock": "Harnessed screw-gun mule with full pad chains\u2014not troop horse elegance; old-campaigner mule stance.",
+      "wardrobe_always": [
+        "screw-gun mule harness",
+        "straps rings and chains"
+      ],
+      "source_image_pages": []
+    },
+    "Character_Baggage_Camel": {
+      "description": "Large baggage camel of the 39th Native Infantry, soft feet, long bobbing neck, humped bulk.",
+      "canonical_given_name": "Baggage Camel",
+      "display_name_policy": "ok_anytime",
+      "voice_label": "baggage camel",
+      "voice_profile": "Adult male, bubbling humbly frightened tone, apologetic slow pace.",
+      "reference_image_placeholder": "character_baggage_camel_ref.png",
+      "visual_lock": "Only speaking camel\u2014long neck, baggage straps, doubled-up sit; contrast to Billy and Troop-Horse.",
+      "wardrobe_always": [
+        "military baggage tack"
+      ],
+      "source_image_pages": []
+    },
+    "Character_Troop_Horse": {
+      "description": "Big Australian cavalry mount, Number Fifteen, E troop, Ninth Lancers; parade-fit, silky tail when groomed, one ear forward one back.",
+      "canonical_given_name": "Troop-Horse",
+      "display_name_policy": "ok_anytime",
+      "voice_label": "Lancer troop-horse",
+      "voice_profile": "Adult male, polished confident diction, parade-ground pride, disdain for camels.",
+      "reference_image_placeholder": "character_troop_horse_ref.png",
+      "visual_lock": "Tall cavalry horse\u2014Australian type, Lancer condition\u2014never mule stockiness.",
+      "wardrobe_always": [
+        "cavalry bridle and gear"
+      ],
+      "source_image_pages": []
+    },
+    "Character_Gun_Bullocks": {
+      "description": "Pair of enormous patient gun-bullocks, heavy flanks, heavy yokes, slaty working cattle build.",
+      "canonical_given_name": "Gun Bullocks",
+      "display_name_policy": "ok_anytime",
+      "voice_label": "gun bullocks",
+      "voice_profile": "Deep slow dual cattle voices, patient factual energy about pulling guns.",
+      "reference_image_placeholder": "character_gun_bullocks_ref.png",
+      "visual_lock": "Yoked twin bullocks\u2014massive cattle, not horses; calm working pair.",
+      "wardrobe_always": [
+        "gun yoke and chains"
+      ],
+      "source_image_pages": []
+    },
+    "Character_Gun_Elephant": {
+      "description": "Huge gun-team elephant, forty years\u2019 service, harnessed to siege gun; trunk and dual-end bulk.",
+      "canonical_given_name": "Elephant",
+      "display_name_policy": "ok_anytime",
+      "voice_label": "gun elephant",
+      "voice_profile": "Deep soft amused rumble, elder peacemaker pace among the battery beasts.",
+      "reference_image_placeholder": "character_gun_elephant_ref.png",
+      "visual_lock": "Artillery elephant in gun harness\u2014not Kala Nag\u2019s copper tusks or Keddah kit; night lines beside cannon.",
+      "wardrobe_always": [
+        "gun-team elephant harness"
+      ],
+      "source_image_pages": []
+    },
+    "Character_Amir": {
+      "description": "Amir of Afghanistan, Central Asian king, high big black astrakhan-wool hat, great diamond star, horseman in royal riding dress.",
+      "canonical_given_name": "Amir of Afghanistan",
+      "display_name_policy": "ok_anytime",
+      "voice_label": "Amir",
+      "voice_profile": "Mostly silent on-screen presence; commanding stillness, eyes widening at the review advance.",
+      "reference_image_placeholder": "character_amir_ref.png",
+      "visual_lock": "Astrakhan hat and diamond star signature; Central Asian royal horseman\u2014brief review presence.",
+      "wardrobe_always": [
+        "black astrakhan hat",
+        "diamond star",
+        "Central Asian royal riding dress"
+      ],
+      "source_image_pages": []
+    }
+  }
+}

@@ -1,0 +1,58 @@
+{
+  "runId": "20260721T205232Z_9f5c1e",
+  "utc": "2026-07-21 20:52:32Z",
+  "schema": "classifier_benchmark_run.v1",
+  "config": {
+    "projectId": "The_Jungle_Book",
+    "tasks": [
+      "ambient_sfx",
+      "species_kind"
+    ],
+    "models": [
+      "grok-4.5"
+    ],
+    "prompts": [
+      "v1_product"
+    ],
+    "temperature": 0,
+    "note": "full suite ambient\u002Bspecies"
+  },
+  "repoRoot": "C:\\Users\\budcr\\source\\repos\\FilmStudio",
+  "results": [
+    {
+      "task": "ambient_sfx",
+      "projectId": "The_Jungle_Book",
+      "model": "grok-4.5",
+      "promptId": "v1_product",
+      "promptLabel": "Product prompt (shipped AmbientSfxClassifier)",
+      "promptHash": "e7681f0e991d",
+      "curatedGold": true,
+      "sampleCount": 30,
+      "metric": "mean_token_jaccard",
+      "baselineScore": 0.7416666666666667,
+      "aiScore": 0.7388888888888888,
+      "winner": "tie",
+      "latencyMs": 29964,
+      "aiParseHits": 30,
+      "note": "Matches FilmStudio.Engine AmbientSfxClassifier.SystemPrompt as of 2026-07-21.",
+      "samples": []
+    },
+    {
+      "task": "species_kind",
+      "projectId": "The_Jungle_Book",
+      "model": "grok-4.5",
+      "promptId": "v1_product",
+      "promptLabel": "Product SpeciesKindClassifier prompt",
+      "promptHash": "cf01f9be7a08",
+      "curatedGold": true,
+      "sampleCount": 51,
+      "metric": "accuracy",
+      "baselineScore": 0.49019607843137253,
+      "aiScore": 0.8627450980392157,
+      "winner": "AI",
+      "latencyMs": 24306,
+      "aiParseHits": 51,
+      "samples": []
+    }
+  ]
+}

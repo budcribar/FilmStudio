@@ -1,0 +1,215 @@
+{
+  "projectId": "The_Jungle_Book",
+  "plateFileCount": 62,
+  "charactersEvaluated": 10,
+  "meanBaselineRecallAt3": 1,
+  "meanAiRecallAt3": 1,
+  "details": [
+    {
+      "character": "Character_Narrator",
+      "gold_top3": [
+        "character_narrator_ref.png",
+        "character_narrator_variant_01.png",
+        "character_narrator_variant_02.png"
+      ],
+      "baseline_top3": [
+        "character_narrator_ref.png",
+        "character_narrator_variant_01.png",
+        "character_narrator_variant_02.png"
+      ],
+      "ai_top3": [
+        "character_narrator_ref.png",
+        "character_narrator_variant_01.png",
+        "character_narrator_variant_02.png"
+      ],
+      "baselineRecallAt3": 1,
+      "aiRecallAt3": 1
+    },
+    {
+      "character": "Character_Father_Wolf",
+      "gold_top3": [
+        "character_father_wolf_ref.png",
+        "character_father_wolf_variant_01.png",
+        "character_father_wolf_variant_02.png"
+      ],
+      "baseline_top3": [
+        "character_father_wolf_ref.png",
+        "character_father_wolf_variant_01.png",
+        "character_father_wolf_variant_02.png"
+      ],
+      "ai_top3": [
+        "character_father_wolf_ref.png",
+        "character_father_wolf_variant_01.png",
+        "character_father_wolf_variant_02.png",
+        "character_father_wolf_variant_03.png"
+      ],
+      "baselineRecallAt3": 1,
+      "aiRecallAt3": 1
+    },
+    {
+      "character": "Character_Mother_Wolf",
+      "gold_top3": [
+        "character_mother_wolf_ref.png",
+        "character_mother_wolf_variant_01.png",
+        "character_mother_wolf_variant_02.png"
+      ],
+      "baseline_top3": [
+        "character_mother_wolf_ref.png",
+        "character_mother_wolf_variant_01.png",
+        "character_mother_wolf_variant_02.png"
+      ],
+      "ai_top3": [
+        "character_mother_wolf_ref.png",
+        "character_mother_wolf_variant_01.png",
+        "character_mother_wolf_variant_02.png"
+      ],
+      "baselineRecallAt3": 1,
+      "aiRecallAt3": 1
+    },
+    {
+      "character": "Character_Wolf_Cubs",
+      "gold_top3": [
+        "character_wolf_cubs_ref.png",
+        "character_wolf_cubs_variant_01.png",
+        "character_wolf_cubs_variant_02.png"
+      ],
+      "baseline_top3": [
+        "character_wolf_cubs_ref.png",
+        "character_wolf_cubs_variant_01.png",
+        "character_wolf_cubs_variant_02.png"
+      ],
+      "ai_top3": [
+        "character_wolf_cubs_ref.png",
+        "character_wolf_cubs_variant_01.png",
+        "character_wolf_cubs_variant_02.png"
+      ],
+      "baselineRecallAt3": 1,
+      "aiRecallAt3": 1
+    },
+    {
+      "character": "Character_Tabaqui",
+      "gold_top3": [
+        "character_tabaqui_ref.png",
+        "character_tabaqui_variant_01.png",
+        "character_tabaqui_variant_02.png"
+      ],
+      "baseline_top3": [
+        "character_tabaqui_ref.png",
+        "character_tabaqui_variant_01.png",
+        "character_tabaqui_variant_02.png"
+      ],
+      "ai_top3": [
+        "character_tabaqui_ref.png",
+        "character_tabaqui_variant_01.png",
+        "character_tabaqui_variant_02.png"
+      ],
+      "baselineRecallAt3": 1,
+      "aiRecallAt3": 1
+    },
+    {
+      "character": "Character_Mowgli",
+      "gold_top3": [
+        "character_mowgli_ref.png",
+        "character_mowgli_variant_01.png",
+        "character_mowgli_variant_02.png"
+      ],
+      "baseline_top3": [
+        "character_mowgli_ref.png",
+        "character_mowgli_variant_01.png",
+        "character_mowgli_variant_02.png"
+      ],
+      "ai_top3": [
+        "character_mowgli_ref.png",
+        "character_mowgli_variant_01.png",
+        "character_mowgli_variant_02.png"
+      ],
+      "baselineRecallAt3": 1,
+      "aiRecallAt3": 1
+    },
+    {
+      "character": "Character_Akela",
+      "gold_top3": [
+        "character_akela_ref.png",
+        "character_akela_variant_01.png",
+        "character_akela_variant_02.png"
+      ],
+      "baseline_top3": [
+        "character_akela_ref.png",
+        "character_akela_variant_01.png",
+        "character_akela_variant_02.png"
+      ],
+      "ai_top3": [
+        "character_akela_ref.png",
+        "character_akela_variant_01.png",
+        "character_akela_variant_02.png",
+        "character_akela_variant_03.png"
+      ],
+      "baselineRecallAt3": 1,
+      "aiRecallAt3": 1
+    },
+    {
+      "character": "Character_Young_Wolf",
+      "gold_top3": [
+        "character_young_wolf_ref.png",
+        "character_young_wolf_variant_01.png",
+        "character_young_wolf_variant_02.png"
+      ],
+      "baseline_top3": [
+        "character_young_wolf_ref.png",
+        "character_young_wolf_variant_01.png",
+        "character_young_wolf_variant_02.png"
+      ],
+      "ai_top3": [
+        "character_young_wolf_ref.png",
+        "character_young_wolf_variant_01.png",
+        "character_young_wolf_variant_02.png",
+        "character_gray_brother_ref.png",
+        "character_father_wolf_ref.png",
+        "character_akela_ref.png"
+      ],
+      "baselineRecallAt3": 1,
+      "aiRecallAt3": 1
+    },
+    {
+      "character": "Character_Baloo",
+      "gold_top3": [
+        "character_baloo_ref.png",
+        "character_baloo_variant_01.png",
+        "character_baloo_variant_02.png"
+      ],
+      "baseline_top3": [
+        "character_baloo_ref.png",
+        "character_baloo_variant_01.png",
+        "character_baloo_variant_02.png"
+      ],
+      "ai_top3": [
+        "character_baloo_ref.png",
+        "character_baloo_variant_01.png",
+        "character_baloo_variant_02.png",
+        "character_baloo_variant_03.png"
+      ],
+      "baselineRecallAt3": 1,
+      "aiRecallAt3": 1
+    },
+    {
+      "character": "Character_Bandar_Log",
+      "gold_top3": [
+        "character_bandar_log_ref.png",
+        "character_bandar_log_variant_01.png",
+        "character_bandar_log_variant_02.png"
+      ],
+      "baseline_top3": [
+        "character_bandar_log_ref.png",
+        "character_bandar_log_variant_01.png",
+        "character_bandar_log_variant_02.png"
+      ],
+      "ai_top3": [
+        "character_bandar_log_ref.png",
+        "character_bandar_log_variant_01.png",
+        "character_bandar_log_variant_02.png"
+      ],
+      "baselineRecallAt3": 1,
+      "aiRecallAt3": 1
+    }
+  ]
+}

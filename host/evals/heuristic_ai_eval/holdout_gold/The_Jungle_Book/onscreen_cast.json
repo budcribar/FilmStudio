@@ -1,0 +1,202 @@
+{
+  "labels": [
+    {
+      "Id": "s1_b1",
+      "visual": "Moonlight spills into a rocky den in the Seeonee hills. FATHER WOLF, a lean gray wolf, wakes from his day\u0027s rest, scratches, yawns, and spreads his paws one after another. MOTHER W\u2026",
+      "heuristic_keys": [
+        "Character_Father_Wolf",
+        "Character_Mother_Wolf",
+        "Character_Wolf_Cubs"
+      ],
+      "gold_keys": [
+        "Character_Father_Wolf",
+        "Character_Mother_Wolf",
+        "Character_Wolf_Cubs"
+      ]
+    },
+    {
+      "Id": "s3_b6",
+      "visual": "Father Wolf speaks.",
+      "heuristic_keys": [
+        "Character_Father_Wolf"
+      ],
+      "gold_keys": [
+        "Character_Father_Wolf"
+      ]
+    },
+    {
+      "Id": "s7_b30",
+      "visual": "Mother Wolf speaks.",
+      "heuristic_keys": [
+        "Character_Mother_Wolf"
+      ],
+      "gold_keys": [
+        "Character_Mother_Wolf"
+      ]
+    },
+    {
+      "Id": "s8_b24",
+      "visual": "Bagheera speaks.",
+      "heuristic_keys": [
+        "Character_Bagheera"
+      ],
+      "gold_keys": [
+        "Character_Bagheera"
+      ]
+    },
+    {
+      "Id": "s9_b22",
+      "visual": "Baloo speaks.",
+      "heuristic_keys": [
+        "Character_Baloo"
+      ],
+      "gold_keys": [
+        "Character_Baloo"
+      ]
+    },
+    {
+      "Id": "s9_b61",
+      "visual": "Mowgli (snuffling).",
+      "heuristic_keys": [
+        "Character_Mowgli"
+      ],
+      "gold_keys": [
+        "Character_Mowgli"
+      ]
+    },
+    {
+      "Id": "s10_b5",
+      "visual": "Narrator speaks.",
+      "heuristic_keys": [
+        "Character_Narrator"
+      ],
+      "gold_keys": [
+        "Character_Narrator"
+      ]
+    },
+    {
+      "Id": "s16_b8",
+      "visual": "Silence clamps the city once more.",
+      "heuristic_keys": [],
+      "gold_keys": []
+    },
+    {
+      "Id": "s18_b31",
+      "visual": "Kaa speaks.",
+      "heuristic_keys": [
+        "Character_Kaa"
+      ],
+      "gold_keys": [
+        "Character_Kaa"
+      ]
+    },
+    {
+      "Id": "s19_b22",
+      "visual": "Bagheera speaks.",
+      "heuristic_keys": [
+        "Character_Bagheera"
+      ],
+      "gold_keys": [
+        "Character_Bagheera"
+      ]
+    },
+    {
+      "Id": "s23_b1",
+      "visual": "Messua feeds Mowgli milk and bread, dresses him in cloth, tries to comb his hair. He endures it, learning the names of things.",
+      "heuristic_keys": [
+        "Character_Messua",
+        "Character_Mowgli"
+      ],
+      "gold_keys": [
+        "Character_Messua",
+        "Character_Mowgli"
+      ]
+    },
+    {
+      "Id": "s27_b3",
+      "visual": "Mowgli speaks.",
+      "heuristic_keys": [
+        "Character_Mowgli"
+      ],
+      "gold_keys": [
+        "Character_Mowgli"
+      ]
+    },
+    {
+      "Id": "s32_b3",
+      "visual": "An old SEA LION shrugs. A WALRUS grumbles of ice only. At last Kotick meets the great lazy SEA COW-manatee-like, slow, wise in currents-who leads him without words under a cliff.",
+      "heuristic_keys": [
+        "Character_Kotick",
+        "Character_Sea_Cow"
+      ],
+      "gold_keys": [
+        "Character_Kotick",
+        "Character_Sea_Cow"
+      ]
+    },
+    {
+      "Id": "s36_b8",
+      "visual": "A murmur like the ripple of the tide all up and down the beaches.",
+      "heuristic_keys": [],
+      "gold_keys": []
+    },
+    {
+      "Id": "s42_b5",
+      "visual": "Nag speaks.",
+      "heuristic_keys": [
+        "Character_Nag"
+      ],
+      "gold_keys": [
+        "Character_Nag"
+      ]
+    },
+    {
+      "Id": "s50_b3",
+      "visual": "He calls Kala Nag a fat old pig and makes him lift his feet one after the other. Kala Nag obeys without a grumble.",
+      "heuristic_keys": [
+        "Character_Kala_Nag",
+        "Character_Nag"
+      ],
+      "gold_keys": [
+        "Character_Kala_Nag",
+        "Character_Nag"
+      ]
+    },
+    {
+      "Id": "s53_b5",
+      "visual": "Petersen Sahib speaks.",
+      "heuristic_keys": [
+        "Character_Petersen_Sahib"
+      ],
+      "gold_keys": [
+        "Character_Petersen_Sahib"
+      ]
+    },
+    {
+      "Id": "s57_b7",
+      "visual": "Machua Appa speaks.",
+      "heuristic_keys": [
+        "Character_Machua_Appa"
+      ],
+      "gold_keys": [
+        "Character_Machua_Appa"
+      ]
+    },
+    {
+      "Id": "s58_b23",
+      "visual": "Toomai\u0027s Mother speaks.",
+      "heuristic_keys": [],
+      "gold_keys": []
+    },
+    {
+      "Id": "s63_b19",
+      "visual": "Billy speaks.",
+      "heuristic_keys": [
+        "Character_Billy"
+      ],
+      "gold_keys": [
+        "Character_Billy"
+      ]
+    }
+  ]
+}

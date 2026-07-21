@@ -1,5 +1,7 @@
 # Silent beat `action_class` eval (keep for model comparison)
 
+**Location:** `host/evals/beat_label_eval` (app eval data — not under `projects/`).
+
 Offline harness + gold labels for duration budgeting classes:
 
 `establishing` | `hold` | `action` | `big_action`
@@ -39,7 +41,7 @@ Compares against `ground_truth/`:
    ```bash
    dotnet run -c Release -- --label-ai --all --fresh --prompt v2
    ```
-   (Store under a new folder name if you add `--out` later; today writes `projects/_beat_label_eval/{prompt}/`.)
+   (Store under a new folder name if you add `--out` later; today writes `host/evals/beat_label_eval/{prompt}/`.)
 3. Score:
    ```bash
    dotnet run -c Release -- --score-gt --all --ai-from v2

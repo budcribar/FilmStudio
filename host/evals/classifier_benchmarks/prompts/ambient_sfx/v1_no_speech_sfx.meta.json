@@ -1,0 +1,6 @@
+{
+  "id": "v1_no_speech_sfx",
+  "task": "ambient_sfx",
+  "label": "Product + no speech/performance as SFX",
+  "notes": "Adds explicit ban on parenthetical manner and scolding-as-SFX (lesson from ambient blind rounds)."
+}

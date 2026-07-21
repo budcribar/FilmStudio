@@ -1,0 +1,107 @@
+{
+  "seed": 20260721,
+  "holdout": "The_Jungle_Book",
+  "sampleCount": 10,
+  "rows": [
+    {
+      "n": 1,
+      "id": "s28_b17",
+      "visual": "Bagheera (purring).",
+      "baseline_ambient": "",
+      "baseline_sfx": "",
+      "ai_ambient": "purring",
+      "ai_sfx": "",
+      "agree": false
+    },
+    {
+      "n": 2,
+      "id": "s8_b37",
+      "visual": "Narrator speaks.",
+      "baseline_ambient": "",
+      "baseline_sfx": "",
+      "ai_ambient": "",
+      "ai_sfx": "",
+      "agree": true
+    },
+    {
+      "n": 3,
+      "id": "s18_b10",
+      "visual": "Bagheera (dry).",
+      "baseline_ambient": "",
+      "baseline_sfx": "",
+      "ai_ambient": "",
+      "ai_sfx": "",
+      "agree": true
+    },
+    {
+      "n": 4,
+      "id": "s8_b24",
+      "visual": "Bagheera speaks.",
+      "baseline_ambient": "",
+      "baseline_sfx": "",
+      "ai_ambient": "",
+      "ai_sfx": "",
+      "agree": true
+    },
+    {
+      "n": 5,
+      "id": "s57_b18",
+      "visual": "Machua Appa speaks.",
+      "baseline_ambient": "",
+      "baseline_sfx": "",
+      "ai_ambient": "",
+      "ai_sfx": "",
+      "agree": true
+    },
+    {
+      "n": 6,
+      "id": "s9_b47",
+      "visual": "Bagheera (aloud).",
+      "baseline_ambient": "",
+      "baseline_sfx": "",
+      "ai_ambient": "",
+      "ai_sfx": "",
+      "agree": true
+    },
+    {
+      "n": 7,
+      "id": "s28_b2",
+      "visual": "Mowgli (shouting).",
+      "baseline_ambient": "",
+      "baseline_sfx": "",
+      "ai_ambient": "",
+      "ai_sfx": "",
+      "agree": true
+    },
+    {
+      "n": 8,
+      "id": "s9_b51",
+      "visual": "Bagheera speaks.",
+      "baseline_ambient": "",
+      "baseline_sfx": "",
+      "ai_ambient": "",
+      "ai_sfx": "",
+      "agree": true
+    },
+    {
+      "n": 9,
+      "id": "s9_b29",
+      "visual": "Mowgli slides down a trunk, angry and indignant.",
+      "baseline_ambient": "",
+      "baseline_sfx": "",
+      "ai_ambient": "",
+      "ai_sfx": "trunk slide",
+      "agree": false
+    },
+    {
+      "n": 10,
+      "id": "s63_b24",
+      "visual": "Billy speaks.",
+      "baseline_ambient": "",
+      "baseline_sfx": "",
+      "ai_ambient": "",
+      "ai_sfx": "",
+      "agree": true
+    }
+  ]
+}

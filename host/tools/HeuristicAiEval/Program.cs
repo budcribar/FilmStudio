@@ -9,10 +9,10 @@ using FilmStudio.Engine;
 //   HeuristicAiEval --holdout TellTaleHeartV4
 //   HeuristicAiEval --holdout TellTaleHeartV4 --write-gold-draft
 //
-// Writes projects/_heuristic_ai_eval/HOLDOUT_RESULTS.md and per-task scores.
+// Writes host/evals/heuristic_ai_eval/HOLDOUT_RESULTS.md and per-task scores.
 
 var repo = FindRepoRoot();
-var evalRoot = Path.Combine(repo, "projects", "_heuristic_ai_eval");
+var evalRoot = Path.Combine(repo, "host", "evals", "heuristic_ai_eval");
 Directory.CreateDirectory(evalRoot);
 
 var writeDraft = args.Any(a => a == "--write-gold-draft");
@@ -263,36 +263,100 @@ foreach (var g in spGold)
     if (spAi.TryGetValue(g.Key, out var ac) && ac == g.Class) spAiOk++;
 }
 
-// ── 5 Plate rank (filenames from TellTale assets) ────────────────────────
+// ── 5 Plate rank (assets/characters basenames; mock plates OK for eval) ──
 var plateDir = Path.Combine(repo, "projects", holdoutId, "assets", "characters");
-var plateNames = Directory.Exists(plateDir)
-    ? Directory.GetFiles(plateDir).Select(Path.GetFileName).Where(n => n is not null).Cast<string>().ToList()
-    : new List<string>();
+var bookImgDir = Path.Combine(repo, "projects", holdoutId, "source", "book_images");
+var plateNames = new List<string>();
+if (Directory.Exists(plateDir))
+    plateNames.AddRange(Directory.GetFiles(plateDir).Select(Path.GetFileName!).Where(n => n.EndsWith(".png", StringComparison.OrdinalIgnoreCase)));
+// Also include book_images basenames so ranking can prefer illustrated plates
+if (Directory.Exists(bookImgDir))
+{
+    foreach (var n in Directory.GetFiles(bookImgDir).Select(Path.GetFileName!).Where(n => n.EndsWith(".png", StringComparison.OrdinalIgnoreCase)))
+        if (!plateNames.Contains(n, StringComparer.OrdinalIgnoreCase))
+            plateNames.Add(n);
+}
 var plateGoldPath = Path.Combine(goldDir, "plate_rank.json");
-// Gold: for Narrator, prefer character_narrator_ref / variants
-var plateGold = new List<string> { "character_narrator_ref.png", "character_narrator_variant_01.png", "character_narrator_variant_02.png" };
-// Baseline heuristic: name contains narrator
-var plateBase = plateNames
-    .Where(n => n.Contains("narrator", StringComparison.OrdinalIgnoreCase))
-    .OrderBy(n => n.Contains("_ref", StringComparison.OrdinalIgnoreCase) ? 0 : 1)
-    .Take(3).ToList();
-if (plateBase.Count == 0) plateBase = plateNames.Take(3).ToList();
-var plateRaw = await ChatAsync(http, PlateRankClassifier.SystemPrompt(),
-    JsonSerializer.Serialize(new
+
+// Multi-character plate eval when cast seeds exist (Jungle Book mock plates, TellTale real)
+var plateTargets = new List<(string Key, string Desc, string Token)>();
+foreach (var row in speciesRows.Take(12))
+{
+    var token = row.Key.Replace("Character_", "", StringComparison.OrdinalIgnoreCase).Replace("_", "").ToLowerInvariant();
+    // filename slug uses underscores: character_shere_khan_ref.png
+    var slug = row.Key.Replace("Character_", "", StringComparison.OrdinalIgnoreCase)
+        .Replace(" ", "_").ToLowerInvariant();
+    plateTargets.Add((row.Key, row.Desc, slug));
+}
+if (plateTargets.Count == 0)
+    plateTargets.Add(("Character_Narrator", "Pale nervous adult man", "narrator"));
+
+double plateBaseRecSum = 0, plateAiRecSum = 0;
+var plateDetails = new List<object>();
+var plateEvalN = 0;
+foreach (var (pKey, pDesc, slug) in plateTargets)
+{
+    if (plateNames.Count == 0) break;
+    // Gold: files whose name contains this character slug (ref + variants preferred)
+    var gold = plateNames
+        .Where(n => n.Contains(slug, StringComparison.OrdinalIgnoreCase) ||
+                    n.Contains(slug.Replace("_", ""), StringComparison.OrdinalIgnoreCase))
+        .OrderBy(n => n.Contains("_ref", StringComparison.OrdinalIgnoreCase) ? 0 : 1)
+        .ThenBy(n => n, StringComparer.OrdinalIgnoreCase)
+        .Take(3)
+        .ToList();
+    if (gold.Count == 0) continue;
+
+    var baseline = plateNames
+        .Where(n => n.Contains(slug, StringComparison.OrdinalIgnoreCase) ||
+                    n.Contains(slug.Replace("_", ""), StringComparison.OrdinalIgnoreCase))
+        .OrderBy(n => n.Contains("_ref", StringComparison.OrdinalIgnoreCase) ? 0 : 1)
+        .Take(3)
+        .ToList();
+    if (baseline.Count == 0) baseline = plateNames.Take(3).ToList();
+
+    // Candidate pool: mix of matching + decoys (up to 24)
+    var candidates = gold
+        .Concat(plateNames.Where(n => !gold.Contains(n, StringComparer.OrdinalIgnoreCase)).Take(20))
+        .Distinct(StringComparer.OrdinalIgnoreCase)
+        .Take(24)
+        .ToList();
+
+    var plateRaw = await ChatAsync(http, PlateRankClassifier.SystemPrompt(),
+        JsonSerializer.Serialize(new
+        {
+            character_key = pKey,
+            description = Trunc(pDesc, 240),
+            candidates,
+        }));
+    var plateAi = PlateRankClassifier.ParseRank(plateRaw, candidates);
+    var bRec = PlateRankClassifier.RecallAtK(baseline, gold, 3);
+    var aRec = PlateRankClassifier.RecallAtK(plateAi, gold, 3);
+    plateBaseRecSum += bRec;
+    plateAiRecSum += aRec;
+    plateEvalN++;
+    plateDetails.Add(new
     {
-        character_key = "Character_Narrator",
-        description = "Pale nervous adult man mid-30s dark wool coat",
-        candidates = plateNames.Take(24).ToList(),
-    }));
-var plateAi = PlateRankClassifier.ParseRank(plateRaw, plateNames);
-var plateBaseRec = PlateRankClassifier.RecallAtK(plateBase, plateGold, 3);
-var plateAiRec = PlateRankClassifier.RecallAtK(plateAi, plateGold, 3);
+        character = pKey,
+        gold_top3 = gold,
+        baseline_top3 = baseline,
+        ai_top3 = plateAi,
+        baselineRecallAt3 = bRec,
+        aiRecallAt3 = aRec,
+    });
+    Console.WriteLine($"  plate {pKey}: base={bRec:F2} ai={aRec:F2}");
+}
+
+var plateBaseRec = plateEvalN > 0 ? plateBaseRecSum / plateEvalN : 0;
+var plateAiRec = plateEvalN > 0 ? plateAiRecSum / plateEvalN : 0;
 await File.WriteAllTextAsync(plateGoldPath, JsonSerializer.Serialize(new
 {
-    character = "Character_Narrator",
-    gold_top3 = plateGold,
-    baseline_top3 = plateBase,
-    ai_top3 = plateAi,
+    projectId = holdoutId,
+    plateFileCount = plateNames.Count,
+    charactersEvaluated = plateEvalN,
+    meanBaselineRecallAt3 = plateBaseRec,
+    meanAiRecallAt3 = plateAiRec,
+    details = plateDetails,
 }, Pretty()));
 
 // ── Results table ────────────────────────────────────────────────────────

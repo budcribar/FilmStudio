@@ -1,0 +1,172 @@
+{
+  "labels": [
+    {
+      "Id": "s1_b1",
+      "visual": "Moonlight spills into a rocky den in the Seeonee hills. FATHER WOLF, a lean gray wolf, wakes from his day\u0027s rest, scratches, yawns, and spreads his paws one aft\u2026",
+      "prev": "",
+      "heuristic": "hard_cut",
+      "gold": "hard_cut"
+    },
+    {
+      "Id": "s2_b2",
+      "visual": "Father Wolf speaks.",
+      "prev": "Below in the valley that runs to a little river: the dry, angry, snarly, singsong whine of a tiger w\u2026",
+      "heuristic": "extend",
+      "gold": "extend"
+    },
+    {
+      "Id": "s7_b18",
+      "visual": "Shere Khan speaks.",
+      "prev": "Father Wolf speaks.",
+      "heuristic": "extend",
+      "gold": "extend"
+    },
+    {
+      "Id": "s8_b5",
+      "visual": "Akela speaks.",
+      "prev": "Father Wolf and Mother Wolf arrive with their cubs and young MOWGLI THE FROG. Father Wolf pushes Mow\u2026",
+      "heuristic": "extend",
+      "gold": "extend"
+    },
+    {
+      "Id": "s8_b37",
+      "visual": "Narrator speaks.",
+      "prev": "Narrator speaks.",
+      "heuristic": "extend",
+      "gold": "extend"
+    },
+    {
+      "Id": "s9_b29",
+      "visual": "Mowgli slides down a trunk, angry and indignant.",
+      "prev": "Mowgli speaks.",
+      "heuristic": "extend",
+      "gold": "extend"
+    },
+    {
+      "Id": "s9_b61",
+      "visual": "Mowgli (snuffling).",
+      "prev": "Mowgli (snuffling).",
+      "heuristic": "extend",
+      "gold": "extend"
+    },
+    {
+      "Id": "s9_b93",
+      "visual": "Baloo speaks.",
+      "prev": "Bagheera speaks.",
+      "heuristic": "extend",
+      "gold": "extend"
+    },
+    {
+      "Id": "s14_b8",
+      "visual": "Kaa speaks.",
+      "prev": "Baloo speaks.",
+      "heuristic": "extend",
+      "gold": "extend"
+    },
+    {
+      "Id": "s18_b12",
+      "visual": "Bagheera (dry).",
+      "prev": "Bagheera (dry).",
+      "heuristic": "extend",
+      "gold": "extend"
+    },
+    {
+      "Id": "s18_b44",
+      "visual": "Bagheera (whispering).",
+      "prev": "All move again. Mowgli lays his hands on Baloo and Bagheera. The two great beasts start as if waked \u2026",
+      "heuristic": "extend",
+      "gold": "extend"
+    },
+    {
+      "Id": "s20_b2",
+      "visual": "Shere Khan speaks.",
+      "prev": "Years later. Akela is old; his leadership fails. Young wolves, fed by Shere Khan\u0027s flattery, turn on\u2026",
+      "heuristic": "extend",
+      "gold": "extend"
+    },
+    {
+      "Id": "s23_b1",
+      "visual": "Messua feeds Mowgli milk and bread, dresses him in cloth, tries to comb his hair. He endures it, learning the names of things.",
+      "prev": "",
+      "heuristic": "hard_cut",
+      "gold": "hard_cut"
+    },
+    {
+      "Id": "s26_b24",
+      "visual": "Mowgli (scornfully).",
+      "prev": "Mowgli (scornfully).",
+      "heuristic": "extend",
+      "gold": "extend"
+    },
+    {
+      "Id": "s29_b1",
+      "visual": "Gray cold water under a low sky. Fog banks. A tiny Winter Wren clings exhausted to steamer rigging, then is cupped in human hands and carried below.",
+      "prev": "",
+      "heuristic": "hard_cut",
+      "gold": "hard_cut"
+    },
+    {
+      "Id": "s35_b11",
+      "visual": "Kotick speaks.",
+      "prev": "Young Seal (ugly chuckle).",
+      "heuristic": "extend",
+      "gold": "extend"
+    },
+    {
+      "Id": "s39_b5",
+      "visual": "Seals (singing).",
+      "prev": "Seals (singing).",
+      "heuristic": "extend",
+      "gold": "extend"
+    },
+    {
+      "Id": "s44_b1",
+      "visual": "Nagaina, mad with grief and rage, plots among the melons. She will kill the family and avenge Nag. Darzee\u0027s wife pretends a broken wing and lures Nagaina from h\u2026",
+      "prev": "",
+      "heuristic": "hard_cut",
+      "gold": "hard_cut"
+    },
+    {
+      "Id": "s50_b3",
+      "visual": "He calls Kala Nag a fat old pig and makes him lift his feet one after the other. Kala Nag obeys without a grumble.",
+      "prev": "Little Toomai speaks.",
+      "heuristic": "extend",
+      "gold": "extend"
+    },
+    {
+      "Id": "s52_b17",
+      "visual": "Little Toomai speaks.",
+      "prev": "Little Toomai goes. At Kala Nag\u0027s feet he turns up the fringe of the huge right ear and works out a \u2026",
+      "heuristic": "extend",
+      "gold": "extend"
+    },
+    {
+      "Id": "s53_b31",
+      "visual": "Another roar of laughter-the old joke that means never. Kala Nag sets Little Toomai down. The boy bows to the earth again.",
+      "prev": "Petersen Sahib speaks.",
+      "heuristic": "extend",
+      "gold": "extend"
+    },
+    {
+      "Id": "s58_b4",
+      "visual": "Toomai\u0027s Mother speaks.",
+      "prev": "Toomai\u0027s Mother speaks.",
+      "heuristic": "extend",
+      "gold": "extend"
+    },
+    {
+      "Id": "s59_b8",
+      "visual": "Narrator speaks.",
+      "prev": "Narrator speaks.",
+      "heuristic": "extend",
+      "gold": "extend"
+    },
+    {
+      "Id": "s63_b26",
+      "visual": "Baggage Camel speaks.",
+      "prev": "Billy speaks.",
+      "heuristic": "extend",
+      "gold": "extend"
+    }
+  ]
+}

@@ -1,0 +1,422 @@
+{
+  "character_revisions": {
+    "Character_Mowgli": {
+      "revision": 1,
+      "updated_at": "2026-07-21T13:59:06",
+      "reason": "Locked reference from character_mowgli_variant_02.png"
+    },
+    "Character_Baloo": {
+      "revision": 1,
+      "updated_at": "2026-07-21T13:59:21",
+      "reason": "Locked reference from character_baloo_variant_02.png"
+    },
+    "Character_Akela": {
+      "revision": 1,
+      "updated_at": "2026-07-21T14:00:39",
+      "reason": "Locked reference from character_akela_variant_02.png"
+    },
+    "Character_Father_Wolf": {
+      "revision": 1,
+      "updated_at": "2026-07-21T14:00:53",
+      "reason": "Locked reference from character_father_wolf_variant_02.png"
+    },
+    "Character_Mother_Wolf": {
+      "revision": 1,
+      "updated_at": "2026-07-21T14:01:14",
+      "reason": "Locked reference from character_mother_wolf_variant_02.png"
+    },
+    "Character_Tabaqui": {
+      "revision": 1,
+      "updated_at": "2026-07-21T14:01:36",
+      "reason": "Locked reference from character_tabaqui_variant_02.png"
+    },
+    "Character_Kaa": {
+      "revision": 1,
+      "updated_at": "2026-07-21T14:01:55",
+      "reason": "Locked reference from character_kaa_variant_02.png"
+    },
+    "Character_Narrator": {
+      "revision": 1,
+      "updated_at": "2026-07-21T14:02:17",
+      "reason": "Locked reference from character_narrator_variant_02.png"
+    },
+    "Character_Gray_Brother": {
+      "revision": 1,
+      "updated_at": "2026-07-21T14:03:55",
+      "reason": "Locked reference from character_gray_brother_variant_02.png"
+    },
+    "Character_Buldeo": {
+      "revision": 1,
+      "updated_at": "2026-07-21T14:04:15",
+      "reason": "Locked reference from character_buldeo_variant_02.png"
+    }
+  },
+  "characters_designed": true,
+  "cost_ledger": [
+    {
+      "kind": "image",
+      "model": "grok-imagine-image-quality",
+      "character": "",
+      "n_images": 1,
+      "unit_usd": 0.05,
+      "usd": 0.05,
+      "currency": "USD",
+      "source": "list_rate",
+      "id": "1784663939_0000",
+      "ts": "2026-07-21T13:58:59"
+    },
+    {
+      "kind": "image",
+      "model": "grok-imagine-image-quality",
+      "character": "",
+      "n_images": 1,
+      "unit_usd": 0.05,
+      "usd": 0.05,
+      "currency": "USD",
+      "source": "list_rate",
+      "id": "1784663939_0001",
+      "ts": "2026-07-21T13:58:59"
+    },
+    {
+      "kind": "image",
+      "model": "grok-imagine-image-quality",
+      "character": "",
+      "n_images": 1,
+      "unit_usd": 0.05,
+      "usd": 0.05,
+      "currency": "USD",
+      "source": "list_rate",
+      "id": "1784663939_0002",
+      "ts": "2026-07-21T13:58:59"
+    },
+    {
+      "kind": "image",
+      "model": "grok-imagine-image-quality",
+      "character": "",
+      "n_images": 1,
+      "unit_usd": 0.05,
+      "usd": 0.05,
+      "currency": "USD",
+      "source": "list_rate",
+      "id": "1784663956_0003",
+      "ts": "2026-07-21T13:59:16"
+    },
+    {
+      "kind": "image",
+      "model": "grok-imagine-image-quality",
+      "character": "",
+      "n_images": 1,
+      "unit_usd": 0.05,
+      "usd": 0.05,
+      "currency": "USD",
+      "source": "list_rate",
+      "id": "1784663957_0004",
+      "ts": "2026-07-21T13:59:17"
+    },
+    {
+      "kind": "image",
+      "model": "grok-imagine-image-quality",
+      "character": "",
+      "n_images": 1,
+      "unit_usd": 0.05,
+      "usd": 0.05,
+      "currency": "USD",
+      "source": "list_rate",
+      "id": "1784663957_0005",
+      "ts": "2026-07-21T13:59:17"
+    },
+    {
+      "kind": "image",
+      "model": "grok-imagine-image-quality",
+      "character": "",
+      "n_images": 1,
+      "unit_usd": 0.05,
+      "usd": 0.05,
+      "currency": "USD",
+      "source": "list_rate",
+      "id": "1784664031_0006",
+      "ts": "2026-07-21T14:00:31"
+    },
+    {
+      "kind": "image",
+      "model": "grok-imagine-image-quality",
+      "character": "",
+      "n_images": 1,
+      "unit_usd": 0.05,
+      "usd": 0.05,
+      "currency": "USD",
+      "source": "list_rate",
+      "id": "1784664031_0007",
+      "ts": "2026-07-21T14:00:31"
+    },
+    {
+      "kind": "image",
+      "model": "grok-imagine-image-quality",
+      "character": "",
+      "n_images": 1,
+      "unit_usd": 0.05,
+      "usd": 0.05,
+      "currency": "USD",
+      "source": "list_rate",
+      "id": "1784664031_0008",
+      "ts": "2026-07-21T14:00:31"
+    },
+    {
+      "kind": "image",
+      "model": "grok-imagine-image-quality",
+      "character": "",
+      "n_images": 1,
+      "unit_usd": 0.05,
+      "usd": 0.05,
+      "currency": "USD",
+      "source": "list_rate",
+      "id": "1784664049_0009",
+      "ts": "2026-07-21T14:00:49"
+    },
+    {
+      "kind": "image",
+      "model": "grok-imagine-image-quality",
+      "character": "",
+      "n_images": 1,
+      "unit_usd": 0.05,
+      "usd": 0.05,
+      "currency": "USD",
+      "source": "list_rate",
+      "id": "1784664049_0010",
+      "ts": "2026-07-21T14:00:49"
+    },
+    {
+      "kind": "image",
+      "model": "grok-imagine-image-quality",
+      "character": "",
+      "n_images": 1,
+      "unit_usd": 0.05,
+      "usd": 0.05,
+      "currency": "USD",
+      "source": "list_rate",
+      "id": "1784664050_0011",
+      "ts": "2026-07-21T14:00:50"
+    },
+    {
+      "kind": "image",
+      "model": "grok-imagine-image-quality",
+      "character": "",
+      "n_images": 1,
+      "unit_usd": 0.05,
+      "usd": 0.05,
+      "currency": "USD",
+      "source": "list_rate",
+      "id": "1784664067_0012",
+      "ts": "2026-07-21T14:01:07"
+    },
+    {
+      "kind": "image",
+      "model": "grok-imagine-image-quality",
+      "character": "",
+      "n_images": 1,
+      "unit_usd": 0.05,
+      "usd": 0.05,
+      "currency": "USD",
+      "source": "list_rate",
+      "id": "1784664067_0013",
+      "ts": "2026-07-21T14:01:07"
+    },
+    {
+      "kind": "image",
+      "model": "grok-imagine-image-quality",
+      "character": "",
+      "n_images": 1,
+      "unit_usd": 0.05,
+      "usd": 0.05,
+      "currency": "USD",
+      "source": "list_rate",
+      "id": "1784664067_0014",
+      "ts": "2026-07-21T14:01:07"
+    },
+    {
+      "kind": "image",
+      "model": "grok-imagine-image-quality",
+      "character": "",
+      "n_images": 1,
+      "unit_usd": 0.05,
+      "usd": 0.05,
+      "currency": "USD",
+      "source": "list_rate",
+      "id": "1784664086_0015",
+      "ts": "2026-07-21T14:01:26"
+    },
+    {
+      "kind": "image",
+      "model": "grok-imagine-image-quality",
+      "character": "",
+      "n_images": 1,
+      "unit_usd": 0.05,
+      "usd": 0.05,
+      "currency": "USD",
+      "source": "list_rate",
+      "id": "1784664086_0016",
+      "ts": "2026-07-21T14:01:26"
+    },
+    {
+      "kind": "image",
+      "model": "grok-imagine-image-quality",
+      "character": "",
+      "n_images": 1,
+      "unit_usd": 0.05,
+      "usd": 0.05,
+      "currency": "USD",
+      "source": "list_rate",
+      "id": "1784664086_0017",
+      "ts": "2026-07-21T14:01:26"
+    },
+    {
+      "kind": "image",
+      "model": "grok-imagine-image-quality",
+      "character": "",
+      "n_images": 1,
+      "unit_usd": 0.05,
+      "usd": 0.05,
+      "currency": "USD",
+      "source": "list_rate",
+      "id": "1784664109_0018",
+      "ts": "2026-07-21T14:01:49"
+    },
+    {
+      "kind": "image",
+      "model": "grok-imagine-image-quality",
+      "character": "",
+      "n_images": 1,
+      "unit_usd": 0.05,
+      "usd": 0.05,
+      "currency": "USD",
+      "source": "list_rate",
+      "id": "1784664109_0019",
+      "ts": "2026-07-21T14:01:49"
+    },
+    {
+      "kind": "image",
+      "model": "grok-imagine-image-quality",
+      "character": "",
+      "n_images": 1,
+      "unit_usd": 0.05,
+      "usd": 0.05,
+      "currency": "USD",
+      "source": "list_rate",
+      "id": "1784664109_0020",
+      "ts": "2026-07-21T14:01:49"
+    },
+    {
+      "kind": "image",
+      "model": "grok-imagine-image-quality",
+      "character": "",
+      "n_images": 1,
+      "unit_usd": 0.05,
+      "usd": 0.05,
+      "currency": "USD",
+      "source": "list_rate",
+      "id": "1784664133_0021",
+      "ts": "2026-07-21T14:02:13"
+    },
+    {
+      "kind": "image",
+      "model": "grok-imagine-image-quality",
+      "character": "",
+      "n_images": 1,
+      "unit_usd": 0.05,
+      "usd": 0.05,
+      "currency": "USD",
+      "source": "list_rate",
+      "id": "1784664133_0022",
+      "ts": "2026-07-21T14:02:13"
+    },
+    {
+      "kind": "image",
+      "model": "grok-imagine-image-quality",
+      "character": "",
+      "n_images": 1,
+      "unit_usd": 0.05,
+      "usd": 0.05,
+      "currency": "USD",
+      "source": "list_rate",
+      "id": "1784664133_0023",
+      "ts": "2026-07-21T14:02:13"
+    },
+    {
+      "kind": "image",
+      "model": "grok-imagine-image-quality",
+      "character": "",
+      "n_images": 1,
+      "unit_usd": 0.05,
+      "usd": 0.05,
+      "currency": "USD",
+      "source": "list_rate",
+      "id": "1784664230_0024",
+      "ts": "2026-07-21T14:03:50"
+    },
+    {
+      "kind": "image",
+      "model": "grok-imagine-image-quality",
+      "character": "",
+      "n_images": 1,
+      "unit_usd": 0.05,
+      "usd": 0.05,
+      "currency": "USD",
+      "source": "list_rate",
+      "id": "1784664230_0025",
+      "ts": "2026-07-21T14:03:50"
+    },
+    {
+      "kind": "image",
+      "model": "grok-imagine-image-quality",
+      "character": "",
+      "n_images": 1,
+      "unit_usd": 0.05,
+      "usd": 0.05,
+      "currency": "USD",
+      "source": "list_rate",
+      "id": "1784664230_0026",
+      "ts": "2026-07-21T14:03:50"
+    },
+    {
+      "kind": "image",
+      "model": "grok-imagine-image-quality",
+      "character": "",
+      "n_images": 1,
+      "unit_usd": 0.05,
+      "usd": 0.05,
+      "currency": "USD",
+      "source": "list_rate",
+      "id": "1784664250_0027",
+      "ts": "2026-07-21T14:04:10"
+    },
+    {
+      "kind": "image",
+      "model": "grok-imagine-image-quality",
+      "character": "",
+      "n_images": 1,
+      "unit_usd": 0.05,
+      "usd": 0.05,
+      "currency": "USD",
+      "source": "list_rate",
+      "id": "1784664250_0028",
+      "ts": "2026-07-21T14:04:10"
+    },
+    {
+      "kind": "image",
+      "model": "grok-imagine-image-quality",
+      "character": "",
+      "n_images": 1,
+      "unit_usd": 0.05,
+      "usd": 0.05,
+      "currency": "USD",
+      "source": "list_rate",
+      "id": "1784664250_0029",
+      "ts": "2026-07-21T14:04:10"
+    }
+  ],
+  "cost_totals": {
+    "usd": 1.5,
+    "events": 30,
+    "updated_at": "2026-07-21T14:04:10"
+  }
+}

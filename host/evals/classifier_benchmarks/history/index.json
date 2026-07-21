@@ -1,0 +1,213 @@
+{
+  "schema": "classifier_benchmark_history.v1",
+  "runs": [
+    {
+      "runId": "20260721T210915Z_acb202",
+      "utc": "2026-07-21 21:09:15Z",
+      "projectId": "The_Jungle_Book",
+      "tasks": [
+        "ambient_sfx"
+      ],
+      "models": [
+        "grok-4.5"
+      ],
+      "prompts": [
+        "v1_product",
+        "v1_no_speech_sfx",
+        "v2_grounded"
+      ],
+      "summaryRel": "runs/20260721T210915Z_acb202/summary.json",
+      "note": "v2_grounded \u002B temp matrix; matched-color baseline chart",
+      "scores": [
+        {
+          "task": "ambient_sfx",
+          "model": "grok-4.5",
+          "promptId": "v1_product",
+          "temperature": 0,
+          "metric": "mean_token_jaccard",
+          "baselineScore": 0.7416666666666667,
+          "aiScore": 0.85,
+          "winner": "AI",
+          "sampleCount": 30,
+          "curatedGold": true
+        },
+        {
+          "task": "ambient_sfx",
+          "model": "grok-4.5",
+          "promptId": "v1_product",
+          "temperature": 0.2,
+          "metric": "mean_token_jaccard",
+          "baselineScore": 0.7416666666666667,
+          "aiScore": 0.7611111111111111,
+          "winner": "tie",
+          "sampleCount": 30,
+          "curatedGold": true
+        },
+        {
+          "task": "ambient_sfx",
+          "model": "grok-4.5",
+          "promptId": "v1_no_speech_sfx",
+          "temperature": 0,
+          "metric": "mean_token_jaccard",
+          "baselineScore": 0.7416666666666667,
+          "aiScore": 0.8138888888888888,
+          "winner": "AI",
+          "sampleCount": 30,
+          "curatedGold": true
+        },
+        {
+          "task": "ambient_sfx",
+          "model": "grok-4.5",
+          "promptId": "v1_no_speech_sfx",
+          "temperature": 0.2,
+          "metric": "mean_token_jaccard",
+          "baselineScore": 0.7416666666666667,
+          "aiScore": 0.8527777777777777,
+          "winner": "AI",
+          "sampleCount": 30,
+          "curatedGold": true
+        },
+        {
+          "task": "ambient_sfx",
+          "model": "grok-4.5",
+          "promptId": "v2_grounded",
+          "temperature": 0,
+          "metric": "mean_token_jaccard",
+          "baselineScore": 0.7416666666666667,
+          "aiScore": 0.8722222222222221,
+          "winner": "AI",
+          "sampleCount": 30,
+          "curatedGold": true
+        },
+        {
+          "task": "ambient_sfx",
+          "model": "grok-4.5",
+          "promptId": "v2_grounded",
+          "temperature": 0.2,
+          "metric": "mean_token_jaccard",
+          "baselineScore": 0.7416666666666667,
+          "aiScore": 0.8972222222222221,
+          "winner": "AI",
+          "sampleCount": 30,
+          "curatedGold": true
+        }
+      ]
+    },
+    {
+      "runId": "20260721T205232Z_9f5c1e",
+      "utc": "2026-07-21 20:52:32Z",
+      "projectId": "The_Jungle_Book",
+      "tasks": [
+        "ambient_sfx",
+        "species_kind"
+      ],
+      "models": [
+        "grok-4.5"
+      ],
+      "prompts": [
+        "v1_product"
+      ],
+      "summaryRel": "runs/20260721T205232Z_9f5c1e/summary.json",
+      "note": "full suite ambient\u002Bspecies",
+      "scores": [
+        {
+          "task": "ambient_sfx",
+          "model": "grok-4.5",
+          "promptId": "v1_product",
+          "temperature": 0,
+          "metric": "mean_token_jaccard",
+          "baselineScore": 0.7416666666666667,
+          "aiScore": 0.7388888888888888,
+          "winner": "tie",
+          "sampleCount": 30,
+          "curatedGold": true
+        },
+        {
+          "task": "species_kind",
+          "model": "grok-4.5",
+          "promptId": "v1_product",
+          "temperature": 0,
+          "metric": "accuracy",
+          "baselineScore": 0.49019607843137253,
+          "aiScore": 0.8627450980392157,
+          "winner": "AI",
+          "sampleCount": 51,
+          "curatedGold": true
+        }
+      ]
+    },
+    {
+      "runId": "20260721T204453Z_dd5b72",
+      "utc": "2026-07-21 20:44:53Z",
+      "projectId": "The_Jungle_Book",
+      "tasks": [
+        "species_kind"
+      ],
+      "models": [
+        "grok-4.5"
+      ],
+      "prompts": [
+        "v1_product"
+      ],
+      "summaryRel": "runs/20260721T204453Z_dd5b72/summary.json",
+      "note": "seed species into history",
+      "scores": [
+        {
+          "task": "species_kind",
+          "model": "grok-4.5",
+          "promptId": "v1_product",
+          "temperature": 0,
+          "metric": "accuracy",
+          "baselineScore": 0.49019607843137253,
+          "aiScore": 0.8627450980392157,
+          "winner": "AI",
+          "sampleCount": 51,
+          "curatedGold": true
+        }
+      ]
+    },
+    {
+      "runId": "20260721T204308Z_22056f",
+      "utc": "2026-07-21 20:43:08Z",
+      "projectId": "The_Jungle_Book",
+      "tasks": [
+        "ambient_sfx"
+      ],
+      "models": [
+        "grok-4.5"
+      ],
+      "prompts": [
+        "v1_product",
+        "v1_no_speech_sfx"
+      ],
+      "summaryRel": "runs/20260721T204308Z_22056f/summary.json",
+      "note": "curated ambient gold; AI declared winner from blind rounds",
+      "scores": [
+        {
+          "task": "ambient_sfx",
+          "model": "grok-4.5",
+          "promptId": "v1_product",
+          "temperature": 0,
+          "metric": "mean_token_jaccard",
+          "baselineScore": 0.7416666666666667,
+          "aiScore": 0.7861111111111111,
+          "winner": "AI",
+          "sampleCount": 30,
+          "curatedGold": true
+        },
+        {
+          "task": "ambient_sfx",
+          "model": "grok-4.5",
+          "promptId": "v1_no_speech_sfx",
+          "temperature": 0,
+          "metric": "mean_token_jaccard",
+          "baselineScore": 0.7416666666666667,
+          "aiScore": 0.8,
+          "winner": "AI",
+          "sampleCount": 30,
+          "curatedGold": true
+        }
+      ]
+    }
+  ]
+}

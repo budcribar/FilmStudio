@@ -1,0 +1,142 @@
+{
+  "runId": "20260721T210915Z_acb202",
+  "utc": "2026-07-21 21:09:15Z",
+  "schema": "classifier_benchmark_run.v1",
+  "config": {
+    "projectId": "The_Jungle_Book",
+    "tasks": [
+      "ambient_sfx"
+    ],
+    "models": [
+      "grok-4.5"
+    ],
+    "prompts": [
+      "v1_product",
+      "v1_no_speech_sfx",
+      "v2_grounded"
+    ],
+    "temperatures": [
+      0,
+      0.2
+    ],
+    "note": "v2_grounded \u002B temp matrix; matched-color baseline chart",
+    "temperature": 0
+  },
+  "repoRoot": "C:\\Users\\budcr\\source\\repos\\FilmStudio",
+  "results": [
+    {
+      "task": "ambient_sfx",
+      "projectId": "The_Jungle_Book",
+      "model": "grok-4.5",
+      "promptId": "v1_product",
+      "promptLabel": "Product prompt (shipped AmbientSfxClassifier)",
+      "promptHash": "e7681f0e991d",
+      "temperature": 0,
+      "curatedGold": true,
+      "sampleCount": 30,
+      "metric": "mean_token_jaccard",
+      "baselineScore": 0.7416666666666667,
+      "aiScore": 0.85,
+      "winner": "AI",
+      "latencyMs": 29072,
+      "aiParseHits": 30,
+      "note": "Matches FilmStudio.Engine AmbientSfxClassifier.SystemPrompt as of 2026-07-21.",
+      "samples": []
+    },
+    {
+      "task": "ambient_sfx",
+      "projectId": "The_Jungle_Book",
+      "model": "grok-4.5",
+      "promptId": "v1_product",
+      "promptLabel": "Product prompt (shipped AmbientSfxClassifier)",
+      "promptHash": "e7681f0e991d",
+      "temperature": 0.2,
+      "curatedGold": true,
+      "sampleCount": 30,
+      "metric": "mean_token_jaccard",
+      "baselineScore": 0.7416666666666667,
+      "aiScore": 0.7611111111111111,
+      "winner": "tie",
+      "latencyMs": 36552,
+      "aiParseHits": 30,
+      "note": "Matches FilmStudio.Engine AmbientSfxClassifier.SystemPrompt as of 2026-07-21.",
+      "samples": []
+    },
+    {
+      "task": "ambient_sfx",
+      "projectId": "The_Jungle_Book",
+      "model": "grok-4.5",
+      "promptId": "v1_no_speech_sfx",
+      "promptLabel": "Product \u002B no speech/performance as SFX",
+      "promptHash": "adefd55ac2ee",
+      "temperature": 0,
+      "curatedGold": true,
+      "sampleCount": 30,
+      "metric": "mean_token_jaccard",
+      "baselineScore": 0.7416666666666667,
+      "aiScore": 0.8138888888888888,
+      "winner": "AI",
+      "latencyMs": 37388,
+      "aiParseHits": 29,
+      "note": "Adds explicit ban on parenthetical manner and scolding-as-SFX (lesson from ambient blind rounds).",
+      "samples": []
+    },
+    {
+      "task": "ambient_sfx",
+      "projectId": "The_Jungle_Book",
+      "model": "grok-4.5",
+      "promptId": "v1_no_speech_sfx",
+      "promptLabel": "Product \u002B no speech/performance as SFX",
+      "promptHash": "adefd55ac2ee",
+      "temperature": 0.2,
+      "curatedGold": true,
+      "sampleCount": 30,
+      "metric": "mean_token_jaccard",
+      "baselineScore": 0.7416666666666667,
+      "aiScore": 0.8527777777777777,
+      "winner": "AI",
+      "latencyMs": 38499,
+      "aiParseHits": 30,
+      "note": "Adds explicit ban on parenthetical manner and scolding-as-SFX (lesson from ambient blind rounds).",
+      "samples": []
+    },
+    {
+      "task": "ambient_sfx",
+      "projectId": "The_Jungle_Book",
+      "model": "grok-4.5",
+      "promptId": "v2_grounded",
+      "promptLabel": "v2 grounded \u002B empty-safe (anti over-tag)",
+      "promptHash": "a85e267e27b3",
+      "temperature": 0,
+      "curatedGold": true,
+      "sampleCount": 30,
+      "metric": "mean_token_jaccard",
+      "baselineScore": 0.7416666666666667,
+      "aiScore": 0.8722222222222221,
+      "winner": "AI",
+      "latencyMs": 37386,
+      "aiParseHits": 30,
+      "note": "Tightens empty cases (speech/parentheticals), no invented beds, layer rules from blind review \u002B score variance analysis (shout/den tone/night breeze flakes).",
+      "samples": []
+    },
+    {
+      "task": "ambient_sfx",
+      "projectId": "The_Jungle_Book",
+      "model": "grok-4.5",
+      "promptId": "v2_grounded",
+      "promptLabel": "v2 grounded \u002B empty-safe (anti over-tag)",
+      "promptHash": "a85e267e27b3",
+      "temperature": 0.2,
+      "curatedGold": true,
+      "sampleCount": 30,
+      "metric": "mean_token_jaccard",
+      "baselineScore": 0.7416666666666667,
+      "aiScore": 0.8972222222222221,
+      "winner": "AI",
+      "latencyMs": 33760,
+      "aiParseHits": 30,
+      "note": "Tightens empty cases (speech/parentheticals), no invented beds, layer rules from blind review \u002B score variance analysis (shout/den tone/night breeze flakes).",
+      "samples": []
+    }
+  ]
+}

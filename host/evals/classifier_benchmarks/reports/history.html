@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Classifier benchmarks</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <style>
+    :root { font-family: ui-sans-serif, system-ui, Segoe UI, sans-serif; color: #0f172a; }
+    body { margin: 24px; max-width: 1200px; }
+    h1 { font-size: 1.5rem; }
+    h2 { font-size: 1.15rem; margin-top: 2rem; }
+    .muted { color: #64748b; font-size: 0.9rem; }
+    table { border-collapse: collapse; width: 100%; font-size: 0.9rem; }
+    th, td { border-bottom: 1px solid #e2e8f0; padding: 6px 8px; text-align: left; }
+    th { background: #f8fafc; }
+    code { font-size: 0.85em; }
+    .chart-wrap { background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; }
+    .swatch { display: inline-block; width: 28px; height: 0; border-top: 3px solid #2563eb; vertical-align: middle; margin-right: 4px; }
+    .swatch.dash { border-top-style: dashed; }
+  </style>
+</head>
+<body>
+  <h1>Classifier benchmarks</h1>
+  <p class="muted">AI vs baseline over time · compare models and prompts · curated gold in <code>host/evals/classifier_benchmarks/gold</code></p>
+  <p class="muted">
+    Legend: <span class="swatch"></span> solid = AI &nbsp;
+    <span class="swatch dash"></span> dashed = baseline (same color as its AI pair)
+  </p>
+  <p class="muted">Generated 2026-07-21 21:12:48Z</p>
+
+  <h2>Score over time (AI solid · baseline dashed · matched colors)</h2>
+  <div class="chart-wrap"><canvas id="trend" height="140"></canvas></div>
+
+  <h2>Latest run scores</h2>
+  <table>
+    <thead><tr><th>Task</th><th>Model</th><th>Prompt</th><th>Temp</th><th>Metric</th><th>Baseline</th><th>AI</th><th>Winner</th><th>n</th></tr></thead>
+    <tbody>
+<tr><td>ambient_sfx</td><td><code>grok-4.5</code></td><td><code>v1_no_speech_sfx</code></td><td>0</td><td>mean_token_jaccard</td><td>0.742</td><td><strong>0.814</strong></td><td>AI</td><td>30</td></tr>
+<tr><td>ambient_sfx</td><td><code>grok-4.5</code></td><td><code>v1_no_speech_sfx</code></td><td>0.2</td><td>mean_token_jaccard</td><td>0.742</td><td><strong>0.853</strong></td><td>AI</td><td>30</td></tr>
+<tr><td>ambient_sfx</td><td><code>grok-4.5</code></td><td><code>v1_product</code></td><td>0</td><td>mean_token_jaccard</td><td>0.742</td><td><strong>0.850</strong></td><td>AI</td><td>30</td></tr>
+<tr><td>ambient_sfx</td><td><code>grok-4.5</code></td><td><code>v1_product</code></td><td>0.2</td><td>mean_token_jaccard</td><td>0.742</td><td><strong>0.761</strong></td><td>tie</td><td>30</td></tr>
+<tr><td>ambient_sfx</td><td><code>grok-4.5</code></td><td><code>v2_grounded</code></td><td>0</td><td>mean_token_jaccard</td><td>0.742</td><td><strong>0.872</strong></td><td>AI</td><td>30</td></tr>
+<tr><td>ambient_sfx</td><td><code>grok-4.5</code></td><td><code>v2_grounded</code></td><td>0.2</td><td>mean_token_jaccard</td><td>0.742</td><td><strong>0.897</strong></td><td>AI</td><td>30</td></tr>
+
+    </tbody>
+  </table>
+
+  <h2>History</h2>
+  <table>
+    <thead><tr><th>UTC</th><th>Run</th><th>Task</th><th>Model</th><th>Prompt</th><th>Temp</th><th>Baseline</th><th>AI</th><th>Winner</th></tr></thead>
+    <tbody>
+<tr><td>2026-07-21 21:09:15Z</td><td><code>20260721T210915Z_acb202</code></td><td>ambient_sfx</td><td><code>grok-4.5</code></td><td><code>v1_product</code></td><td>0</td><td>0.742</td><td>0.850</td><td>AI</td></tr>
+<tr><td>2026-07-21 21:09:15Z</td><td><code>20260721T210915Z_acb202</code></td><td>ambient_sfx</td><td><code>grok-4.5</code></td><td><code>v1_product</code></td><td>0.2</td><td>0.742</td><td>0.761</td><td>tie</td></tr>
+<tr><td>2026-07-21 21:09:15Z</td><td><code>20260721T210915Z_acb202</code></td><td>ambient_sfx</td><td><code>grok-4.5</code></td><td><code>v1_no_speech_sfx</code></td><td>0</td><td>0.742</td><td>0.814</td><td>AI</td></tr>
+<tr><td>2026-07-21 21:09:15Z</td><td><code>20260721T210915Z_acb202</code></td><td>ambient_sfx</td><td><code>grok-4.5</code></td><td><code>v1_no_speech_sfx</code></td><td>0.2</td><td>0.742</td><td>0.853</td><td>AI</td></tr>
+<tr><td>2026-07-21 21:09:15Z</td><td><code>20260721T210915Z_acb202</code></td><td>ambient_sfx</td><td><code>grok-4.5</code></td><td><code>v2_grounded</code></td><td>0</td><td>0.742</td><td>0.872</td><td>AI</td></tr>
+<tr><td>2026-07-21 21:09:15Z</td><td><code>20260721T210915Z_acb202</code></td><td>ambient_sfx</td><td><code>grok-4.5</code></td><td><code>v2_grounded</code></td><td>0.2</td><td>0.742</td><td>0.897</td><td>AI</td></tr>
+<tr><td>2026-07-21 20:52:32Z</td><td><code>20260721T205232Z_9f5c1e</code></td><td>ambient_sfx</td><td><code>grok-4.5</code></td><td><code>v1_product</code></td><td>0</td><td>0.742</td><td>0.739</td><td>tie</td></tr>
+<tr><td>2026-07-21 20:52:32Z</td><td><code>20260721T205232Z_9f5c1e</code></td><td>species_kind</td><td><code>grok-4.5</code></td><td><code>v1_product</code></td><td>0</td><td>0.490</td><td>0.863</td><td>AI</td></tr>
+<tr><td>2026-07-21 20:44:53Z</td><td><code>20260721T204453Z_dd5b72</code></td><td>species_kind</td><td><code>grok-4.5</code></td><td><code>v1_product</code></td><td>0</td><td>0.490</td><td>0.863</td><td>AI</td></tr>
+<tr><td>2026-07-21 20:43:08Z</td><td><code>20260721T204308Z_22056f</code></td><td>ambient_sfx</td><td><code>grok-4.5</code></td><td><code>v1_product</code></td><td>0</td><td>0.742</td><td>0.786</td><td>AI</td></tr>
+<tr><td>2026-07-21 20:43:08Z</td><td><code>20260721T204308Z_22056f</code></td><td>ambient_sfx</td><td><code>grok-4.5</code></td><td><code>v1_no_speech_sfx</code></td><td>0</td><td>0.742</td><td>0.800</td><td>AI</td></tr>
+
+    </tbody>
+  </table>
+
+  <script>
+    const payload = {
+  "labels": [
+    "2026-07-21 20:43:08Z",
+    "2026-07-21 20:44:53Z",
+    "2026-07-21 20:52:32Z",
+    "2026-07-21 21:09:15Z"
+  ],
+  "datasets": [
+    {
+      "label": "ambient_sfx \u00B7 grok-4.5 \u00B7 v1_no_speech_sfx \u00B7 t=0 \u00B7 AI",
+      "data": [
+        0.8,
+        null,
+        null,
+        0.8138888888888888
+      ],
+      "borderColor": "#2563eb",
+      "backgroundColor": "#2563eb33",
+      "borderWidth": 2.5,
+      "spanGaps": true,
+      "tension": 0.2,
+      "pointRadius": 3,
+      "pointHoverRadius": 5
+    },
+    {
+      "label": "ambient_sfx \u00B7 grok-4.5 \u00B7 v1_no_speech_sfx \u00B7 t=0 \u00B7 baseline",
+      "data": [
+        0.7416666666666667,
+        null,
+        null,
+        0.7416666666666667
+      ],
+      "borderColor": "#2563eb",
+      "backgroundColor": "transparent",
+      "borderWidth": 2,
+      "borderDash": [
+        7,
+        4
+      ],
+      "spanGaps": true,
+      "tension": 0,
+      "pointRadius": 2,
+      "pointHoverRadius": 4,
+      "pointStyle": "rectRot"
+    },
+    {
+      "label": "ambient_sfx \u00B7 grok-4.5 \u00B7 v1_no_speech_sfx \u00B7 t=0.2 \u00B7 AI",
+      "data": [
+        null,
+        null,
+        null,
+        0.8527777777777777
+      ],
+      "borderColor": "#dc2626",
+      "backgroundColor": "#dc262633",
+      "borderWidth": 2.5,
+      "spanGaps": true,
+      "tension": 0.2,
+      "pointRadius": 3,
+      "pointHoverRadius": 5
+    },
+    {
+      "label": "ambient_sfx \u00B7 grok-4.5 \u00B7 v1_no_speech_sfx \u00B7 t=0.2 \u00B7 baseline",
+      "data": [
+        null,
+        null,
+        null,
+        0.7416666666666667
+      ],
+      "borderColor": "#dc2626",
+      "backgroundColor": "transparent",
+      "borderWidth": 2,
+      "borderDash": [
+        7,
+        4
+      ],
+      "spanGaps": true,
+      "tension": 0,
+      "pointRadius": 2,
+      "pointHoverRadius": 4,
+      "pointStyle": "rectRot"
+    },
+    {
+      "label": "ambient_sfx \u00B7 grok-4.5 \u00B7 v1_product \u00B7 t=0 \u00B7 AI",
+      "data": [
+        0.7861111111111111,
+        null,
+        0.7388888888888888,
+        0.85
+      ],
+      "borderColor": "#16a34a",
+      "backgroundColor": "#16a34a33",
+      "borderWidth": 2.5,
+      "spanGaps": true,
+      "tension": 0.2,
+      "pointRadius": 3,
+      "pointHoverRadius": 5
+    },
+    {
+      "label": "ambient_sfx \u00B7 grok-4.5 \u00B7 v1_product \u00B7 t=0 \u00B7 baseline",
+      "data": [
+        0.7416666666666667,
+        null,
+        0.7416666666666667,
+        0.7416666666666667
+      ],
+      "borderColor": "#16a34a",
+      "backgroundColor": "transparent",
+      "borderWidth": 2,
+      "borderDash": [
+        7,
+        4
+      ],
+      "spanGaps": true,
+      "tension": 0,
+      "pointRadius": 2,
+      "pointHoverRadius": 4,
+      "pointStyle": "rectRot"
+    },
+    {
+      "label": "ambient_sfx \u00B7 grok-4.5 \u00B7 v1_product \u00B7 t=0.2 \u00B7 AI",
+      "data": [
+        null,
+        null,
+        null,
+        0.7611111111111111
+      ],
+      "borderColor": "#ca8a04",
+      "backgroundColor": "#ca8a0433",
+      "borderWidth": 2.5,
+      "spanGaps": true,
+      "tension": 0.2,
+      "pointRadius": 3,
+      "pointHoverRadius": 5
+    },
+    {
+      "label": "ambient_sfx \u00B7 grok-4.5 \u00B7 v1_product \u00B7 t=0.2 \u00B7 baseline",
+      "data": [
+        null,
+        null,
+        null,
+        0.7416666666666667
+      ],
+      "borderColor": "#ca8a04",
+      "backgroundColor": "transparent",
+      "borderWidth": 2,
+      "borderDash": [
+        7,
+        4
+      ],
+      "spanGaps": true,
+      "tension": 0,
+      "pointRadius": 2,
+      "pointHoverRadius": 4,
+      "pointStyle": "rectRot"
+    },
+    {
+      "label": "ambient_sfx \u00B7 grok-4.5 \u00B7 v2_grounded \u00B7 t=0 \u00B7 AI",
+      "data": [
+        null,
+        null,
+        null,
+        0.8722222222222221
+      ],
+      "borderColor": "#9333ea",
+      "backgroundColor": "#9333ea33",
+      "borderWidth": 2.5,
+      "spanGaps": true,
+      "tension": 0.2,
+      "pointRadius": 3,
+      "pointHoverRadius": 5
+    },
+    {
+      "label": "ambient_sfx \u00B7 grok-4.5 \u00B7 v2_grounded \u00B7 t=0 \u00B7 baseline",
+      "data": [
+        null,
+        null,
+        null,
+        0.7416666666666667
+      ],
+      "borderColor": "#9333ea",
+      "backgroundColor": "transparent",
+      "borderWidth": 2,
+      "borderDash": [
+        7,
+        4
+      ],
+      "spanGaps": true,
+      "tension": 0,
+      "pointRadius": 2,
+      "pointHoverRadius": 4,
+      "pointStyle": "rectRot"
+    },
+    {
+      "label": "ambient_sfx \u00B7 grok-4.5 \u00B7 v2_grounded \u00B7 t=0.2 \u00B7 AI",
+      "data": [
+        null,
+        null,
+        null,
+        0.8972222222222221
+      ],
+      "borderColor": "#0891b2",
+      "backgroundColor": "#0891b233",
+      "borderWidth": 2.5,
+      "spanGaps": true,
+      "tension": 0.2,
+      "pointRadius": 3,
+      "pointHoverRadius": 5
+    },
+    {
+      "label": "ambient_sfx \u00B7 grok-4.5 \u00B7 v2_grounded \u00B7 t=0.2 \u00B7 baseline",
+      "data": [
+        null,
+        null,
+        null,
+        0.7416666666666667
+      ],
+      "borderColor": "#0891b2",
+      "backgroundColor": "transparent",
+      "borderWidth": 2,
+      "borderDash": [
+        7,
+        4
+      ],
+      "spanGaps": true,
+      "tension": 0,
+      "pointRadius": 2,
+      "pointHoverRadius": 4,
+      "pointStyle": "rectRot"
+    },
+    {
+      "label": "species_kind \u00B7 grok-4.5 \u00B7 v1_product \u00B7 t=0 \u00B7 AI",
+      "data": [
+        null,
+        0.8627450980392157,
+        0.8627450980392157,
+        null
+      ],
+      "borderColor": "#ea580c",
+      "backgroundColor": "#ea580c33",
+      "borderWidth": 2.5,
+      "spanGaps": true,
+      "tension": 0.2,
+      "pointRadius": 3,
+      "pointHoverRadius": 5
+    },
+    {
+      "label": "species_kind \u00B7 grok-4.5 \u00B7 v1_product \u00B7 t=0 \u00B7 baseline",
+      "data": [
+        null,
+        0.49019607843137253,
+        0.49019607843137253,
+        null
+      ],
+      "borderColor": "#ea580c",
+      "backgroundColor": "transparent",
+      "borderWidth": 2,
+      "borderDash": [
+        7,
+        4
+      ],
+      "spanGaps": true,
+      "tension": 0,
+      "pointRadius": 2,
+      "pointHoverRadius": 4,
+      "pointStyle": "rectRot"
+    }
+  ]
+};
+    new Chart(document.getElementById('trend'), {
+      type: 'line',
+      data: payload,
+      options: {
+        responsive: true,
+        interaction: { mode: 'nearest', axis: 'x', intersect: false },
+        scales: {
+          y: { min: 0, max: 1, title: { display: true, text: 'Score (0–1)' } },
+          x: { title: { display: true, text: 'Run time (UTC)' } }
+        },
+        plugins: {
+          legend: {
+            position: 'bottom',
+            labels: { boxWidth: 16, usePointStyle: false }
+          },
+          title: { display: false }
+        }
+      }
+    });
+  </script>
+</body>
+</html>

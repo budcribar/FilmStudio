@@ -1,0 +1,80 @@
+# Classifier benchmarks
+
+Durable **AI vs baseline** evals for Film Studio classifiers. Re-run over time as models and prompts change; history and charts show whether scores improve.
+
+**Location:** `host/evals/classifier_benchmarks` (app eval data — not under `projects/`).
+
+## Layout
+
+| Path | Purpose |
+|------|---------|
+| `gold/{project}/{task}.json` | Curated (or draft) labels |
+| `prompts/{task}/{promptId}.txt` | Prompt text variants |
+| `prompts/{task}/{promptId}.meta.json` | Optional label/notes |
+| `history/index.json` | Run index (newest first) |
+| `history/runs/{runId}/` | `summary.json`, `details.json`, `report.md` |
+| `reports/LATEST.md` | Latest history table |
+| `reports/history.html` | Charts (Chart.js) — open in a browser |
+
+## Tasks
+
+| Task id | Metric | Gold |
+|---------|--------|------|
+| `ambient_sfx` | mean token Jaccard (ambient + sfx) | **Curated** Jungle Book blind rounds (2026-07-21). Product prompt: **`v2_grounded`** (`AmbientSfxClassifier`) |
+| `species_kind` | accuracy | Curated cast species labels |
+
+## Run
+
+```powershell
+# From repo root (requires XAI_API_KEY)
+cd host
+dotnet run --project tools/ClassifierBenchmarks -c Release -- run `
+  --project The_Jungle_Book `
+  --tasks ambient_sfx `
+  --models grok-4.5 `
+  --prompts v1_product,v1_no_speech_sfx `
+  --note "after ambient gold curation"
+
+# Model matrix
+dotnet run --project tools/ClassifierBenchmarks -c Release -- run `
+  --tasks ambient_sfx,species_kind `
+  --models grok-4.5 `
+
+# Rebuild reports only
+dotnet run --project tools/ClassifierBenchmarks -c Release -- report
+
+# List prompt variants
+dotnet run --project tools/ClassifierBenchmarks -c Release -- list-prompts --task ambient_sfx
+```
+
+## Compare prompts
+
+1. Copy `prompts/ambient_sfx/v1_product.txt` → `prompts/ambient_sfx/my_variant.txt`
+2. Edit text; optional `my_variant.meta.json` with `{ "label": "…", "notes": "…" }`
+3. Run with `--prompts v1_product,my_variant` (same model)
+4. Open the run’s `report.md` **Prompt compare** section and `reports/history.html`
+
+Each result stores `promptId` + `promptHash` so you can see when the text actually changed.
+
+## Compare models
+
+```text
+--models grok-4.5,some-other-model --prompts v1_product
+```
+
+History charts plot one series per `task · model · prompt`.
+
+## Gold curation notes (ambient_sfx)
+
+- Built from AmbientBlind rounds 1–2 (30 samples).
+- Prefer grounded AI labels for action beds/hits.
+- Empty gold for dialogue-only / performance parentheticals.
+- Dropped speech-as-SFX (`scolding`, `undertone speech`, `purring` as ambient).
+
+## What is stored per run
+
+- Config: project, tasks, models, prompts, temperature, note  
+- Per cell: baseline score, AI score, winner, n, latency, parse hits, prompt hash  
+- Per sample (details.json): gold vs baseline vs AI strings and scores  
+
+Baseline always uses the product heuristic (`FountainStage1Importer.InferAmbientAndSfx`, `SpeciesKindClassifier.BaselineKind`, …) so model upgrades are not confounded with heuristic drift.

@@ -1,0 +1,228 @@
+{
+  "seed": 20260722,
+  "holdout": "The_Jungle_Book",
+  "mode": "stratified",
+  "sampleCount": 20,
+  "rows": [
+    {
+      "n": 1,
+      "id": "s27_b4",
+      "visual": "Moonlight turns the plain milky white. Far behind, temple bells bang and conches blare. Messua\u0027s distant weeping carries on the wind.",
+      "baseline_ambient": "wind",
+      "baseline_sfx": "bang",
+      "ai_ambient": "distant weeping, wind",
+      "ai_sfx": "conches blare, temple bells",
+      "agree": false,
+      "action_like": true
+    },
+    {
+      "n": 2,
+      "id": "s10_b1",
+      "visual": "High above, gray shapes of the BANDAR-LOG watch, whisper, invent a plan among themselves. Below, Mowgli walks ashamed between Bear and Panther.",
+      "baseline_ambient": "",
+      "baseline_sfx": "",
+      "ai_ambient": "monkey whispers",
+      "ai_sfx": "",
+      "agree": false,
+      "action_like": true
+    },
+    {
+      "n": 3,
+      "id": "s3_b3",
+      "visual": "The whine becomes a humming purr from every quarter-then the full-throated aaooughh:",
+      "baseline_ambient": "humming",
+      "baseline_sfx": "",
+      "ai_ambient": "humming purr",
+      "ai_sfx": "aaooughh howl",
+      "agree": false,
+      "action_like": true
+    },
+    {
+      "n": 4,
+      "id": "s53_b16",
+      "visual": "Petersen Sahib (smiling under his mustache).",
+      "baseline_ambient": "",
+      "baseline_sfx": "",
+      "ai_ambient": "",
+      "ai_sfx": "",
+      "agree": true,
+      "action_like": true
+    },
+    {
+      "n": 5,
+      "id": "s22_b3",
+      "visual": "He sits by the gate. A VILLAGE MAN comes out. Mowgli stands, opens his mouth, points down it-food. The man stares and runs shouting up the single street. PRIEST-big, fat, white clothes, red-and-yellow mark on his forehead-comes with a crowd of a hundred. They stare, talk, shout, point. MESSUA, a kind-faced woman, pushes forward, eyes wet.",
+      "baseline_ambient": "",
+      "baseline_sfx": "",
+      "ai_ambient": "crowd murmur",
+      "ai_sfx": "running, shouting",
+      "agree": false,
+      "action_like": true
+    },
+    {
+      "n": 6,
+      "id": "s39_b1",
+      "visual": "Seals swim in a long dark line, heading toward summer beaches. Their voices rise together-a deep-sea song, sad as a national anthem.",
+      "baseline_ambient": "",
+      "baseline_sfx": "",
+      "ai_ambient": "seal song",
+      "ai_sfx": "",
+      "agree": false,
+      "action_like": true
+    },
+    {
+      "n": 7,
+      "id": "s8_b1",
+      "visual": "Full moon. A hilltop of stones and boulders. AKELA, great gray Lone Wolf, lies full length on his rock. Below him, forty or more wolves of every size and color. Cubs tumble in the center. Senior wolves pad up, inspect, return. Anxious mothers push cubs into the moonlight.",
+      "baseline_ambient": "",
+      "baseline_sfx": "",
+      "ai_ambient": "",
+      "ai_sfx": "cubs tumble, wolf pads",
+      "agree": false,
+      "action_like": true
+    },
+    {
+      "n": 8,
+      "id": "s52_b1",
+      "visual": "Morning. Big Toomai scolds while Little Toomai hangs his head.",
+      "baseline_ambient": "",
+      "baseline_sfx": "",
+      "ai_ambient": "",
+      "ai_sfx": "scolding",
+      "agree": false,
+      "action_like": true
+    },
+    {
+      "n": 9,
+      "id": "s32_b3",
+      "visual": "An old SEA LION shrugs. A WALRUS grumbles of ice only. At last Kotick meets the great lazy SEA COW-manatee-like, slow, wise in currents-who leads him without words under a cliff.",
+      "baseline_ambient": "",
+      "baseline_sfx": "",
+      "ai_ambient": "",
+      "ai_sfx": "walrus grumble",
+      "agree": false,
+      "action_like": true
+    },
+    {
+      "n": 10,
+      "id": "s27_b1",
+      "visual": "Mowgli looks up at the stars. He and Akela move at a steady pace. Gray Brother joins them. The great striped hide is rolled into a bundle on Mowgli\u0027s head.",
+      "baseline_ambient": "",
+      "baseline_sfx": "",
+      "ai_ambient": "",
+      "ai_sfx": "footsteps",
+      "agree": false,
+      "action_like": true
+    },
+    {
+      "n": 11,
+      "id": "s9_b5",
+      "visual": "Mowgli speaks.",
+      "baseline_ambient": "",
+      "baseline_sfx": "",
+      "ai_ambient": "",
+      "ai_sfx": "",
+      "agree": true,
+      "action_like": false
+    },
+    {
+      "n": 12,
+      "id": "s49_b10",
+      "visual": "Narrator speaks.",
+      "baseline_ambient": "",
+      "baseline_sfx": "",
+      "ai_ambient": "",
+      "ai_sfx": "",
+      "agree": true,
+      "action_like": false
+    },
+    {
+      "n": 13,
+      "id": "s3_b1",
+      "visual": "Father Wolf at the mouth. Mother Wolf lifts her head.",
+      "baseline_ambient": "",
+      "baseline_sfx": "",
+      "ai_ambient": "",
+      "ai_sfx": "",
+      "agree": true,
+      "action_like": true
+    },
+    {
+      "n": 14,
+      "id": "s63_b51",
+      "visual": "Vixen creeps under the waterproof to NARRATOR. The animals settle. Rain softens. Far off, a bugle practices for the morning.",
+      "baseline_ambient": "rain",
+      "baseline_sfx": "",
+      "ai_ambient": "distant bugle, soft rain",
+      "ai_sfx": "",
+      "agree": false,
+      "action_like": true
+    },
+    {
+      "n": 15,
+      "id": "s33_b1",
+      "visual": "Dark water. Kotick follows the Sea Cow through a long drowned tunnel beneath the cliffs, lungs burning, until-",
+      "baseline_ambient": "",
+      "baseline_sfx": "",
+      "ai_ambient": "underwater",
+      "ai_sfx": "",
+      "agree": false,
+      "action_like": true
+    },
+    {
+      "n": 16,
+      "id": "s40_b1",
+      "visual": "Hot sun. A small draggled mongoose lies senseless on the middle of a garden path-fur like a little cat, head and habits like a weasel, eyes and restless nose pink. TEDDY, a small English boy, stands over him. TEDDY\u0027S MOTHER (ALICE) and TEDDY\u0027S FATHER, a big Englishman new to the bungalow, come up.",
+      "baseline_ambient": "",
+      "baseline_sfx": "",
+      "ai_ambient": "",
+      "ai_sfx": "footsteps",
+      "agree": false,
+      "action_like": true
+    },
+    {
+      "n": 17,
+      "id": "s19_b23",
+      "visual": "Bagheera speaks.",
+      "baseline_ambient": "",
+      "baseline_sfx": "",
+      "ai_ambient": "",
+      "ai_sfx": "",
+      "agree": true,
+      "action_like": false
+    },
+    {
+      "n": 18,
+      "id": "s53_b1",
+      "visual": "A native clerk at a table pays wages. Drivers take their pay and join the line of elephants ready to start. Catchers and hunters lean on guns and laugh at the plains drivers. PETERSEN SAHIB lies along the back of his clever she-elephant PUDMINI. MACHUA APPA, the head tracker, speaks undertone to a friend as Big Toomai and Little Toomai approach the clerk.",
+      "baseline_ambient": "",
+      "baseline_sfx": "",
+      "ai_ambient": "",
+      "ai_sfx": "laughter, undertone speech",
+      "agree": false,
+      "action_like": true
+    },
+    {
+      "n": 19,
+      "id": "s59_b3",
+      "visual": "Narrator speaks.",
+      "baseline_ambient": "",
+      "baseline_sfx": "",
+      "ai_ambient": "",
+      "ai_sfx": "",
+      "agree": true,
+      "action_like": false
+    },
+    {
+      "n": 20,
+      "id": "s50_b2",
+      "visual": "Little Toomai speaks.",
+      "baseline_ambient": "",
+      "baseline_sfx": "",
+      "ai_ambient": "",
+      "ai_sfx": "",
+      "agree": true,
+      "action_like": false
+    }
+  ]
+}

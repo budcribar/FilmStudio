@@ -1,0 +1,59 @@
+{
+  "runId": "20260721T204308Z_22056f",
+  "utc": "2026-07-21 20:43:08Z",
+  "schema": "classifier_benchmark_run.v1",
+  "config": {
+    "projectId": "The_Jungle_Book",
+    "tasks": [
+      "ambient_sfx"
+    ],
+    "models": [
+      "grok-4.5"
+    ],
+    "prompts": [
+      "v1_product",
+      "v1_no_speech_sfx"
+    ],
+    "temperature": 0,
+    "note": "curated ambient gold; AI declared winner from blind rounds"
+  },
+  "repoRoot": "C:\\Users\\budcr\\source\\repos\\FilmStudio",
+  "results": [
+    {
+      "task": "ambient_sfx",
+      "projectId": "The_Jungle_Book",
+      "model": "grok-4.5",
+      "promptId": "v1_product",
+      "promptLabel": "Product prompt (shipped AmbientSfxClassifier)",
+      "promptHash": "e7681f0e991d",
+      "curatedGold": true,
+      "sampleCount": 30,
+      "metric": "mean_token_jaccard",
+      "baselineScore": 0.7416666666666667,
+      "aiScore": 0.7861111111111111,
+      "winner": "AI",
+      "latencyMs": 30970,
+      "aiParseHits": 30,
+      "note": "Matches FilmStudio.Engine AmbientSfxClassifier.SystemPrompt as of 2026-07-21.",
+      "samples": []
+    },
+    {
+      "task": "ambient_sfx",
+      "projectId": "The_Jungle_Book",
+      "model": "grok-4.5",
+      "promptId": "v1_no_speech_sfx",
+      "promptLabel": "Product \u002B no speech/performance as SFX",
+      "promptHash": "adefd55ac2ee",
+      "curatedGold": true,
+      "sampleCount": 30,
+      "metric": "mean_token_jaccard",
+      "baselineScore": 0.7416666666666667,
+      "aiScore": 0.8,
+      "winner": "AI",
+      "latencyMs": 37017,
+      "aiParseHits": 30,
+      "note": "Adds explicit ban on parenthetical manner and scolding-as-SFX (lesson from ambient blind rounds).",
+      "samples": []
+    }
+  ]
+}

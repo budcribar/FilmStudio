@@ -6,7 +6,7 @@ using FilmStudio.Engine;
 
 // Beat-label eval: score HEURISTIC and AI against GROUND TRUTH (not each other).
 // Keep this tool + ground_truth/ + gt_score/ to compare models over time.
-// See projects/_beat_label_eval/README.md
+// See host/evals/beat_label_eval/README.md
 //
 // Usage:
 //   BeatLabelEval --export-annotate --all
@@ -16,7 +16,7 @@ using FilmStudio.Engine;
 // Product classifier: FilmStudio.Engine.SilentBeatActionClassifier (prompt v2).
 
 var repo = FindRepoRoot();
-var evalRoot = Path.Combine(repo, "projects", "_beat_label_eval");
+var evalRoot = Path.Combine(repo, "host", "evals", "beat_label_eval");
 var gtDir = Path.Combine(evalRoot, "ground_truth");
 var annotateDir = Path.Combine(evalRoot, "annotate");
 Directory.CreateDirectory(gtDir);

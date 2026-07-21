@@ -1,0 +1,247 @@
+{
+  "projectId": "The_Jungle_Book",
+  "curated": true,
+  "notes": "Human-curated from AmbientBlind rounds (seed 20260721 n=10 pure-random; seed 20260722 n=20 stratified). Gold prefers grounded AI labels; drops speech/performance-as-SFX (scolding, purring, undertone speech). Metric: mean token Jaccard on ambient + sfx vs gold.",
+  "labels": [
+    {
+      "Id": "s28_b17",
+      "visual": "Bagheera (purring).",
+      "heuristic_ambient": "",
+      "heuristic_sfx": "",
+      "gold_ambient": "",
+      "gold_sfx": ""
+    },
+    {
+      "Id": "s8_b37",
+      "visual": "Narrator speaks.",
+      "heuristic_ambient": "",
+      "heuristic_sfx": "",
+      "gold_ambient": "",
+      "gold_sfx": ""
+    },
+    {
+      "Id": "s18_b10",
+      "visual": "Bagheera (dry).",
+      "heuristic_ambient": "",
+      "heuristic_sfx": "",
+      "gold_ambient": "",
+      "gold_sfx": ""
+    },
+    {
+      "Id": "s8_b24",
+      "visual": "Bagheera speaks.",
+      "heuristic_ambient": "",
+      "heuristic_sfx": "",
+      "gold_ambient": "",
+      "gold_sfx": ""
+    },
+    {
+      "Id": "s57_b18",
+      "visual": "Machua Appa speaks.",
+      "heuristic_ambient": "",
+      "heuristic_sfx": "",
+      "gold_ambient": "",
+      "gold_sfx": ""
+    },
+    {
+      "Id": "s9_b47",
+      "visual": "Bagheera (aloud).",
+      "heuristic_ambient": "",
+      "heuristic_sfx": "",
+      "gold_ambient": "",
+      "gold_sfx": ""
+    },
+    {
+      "Id": "s28_b2",
+      "visual": "Mowgli (shouting).",
+      "heuristic_ambient": "",
+      "heuristic_sfx": "",
+      "gold_ambient": "",
+      "gold_sfx": ""
+    },
+    {
+      "Id": "s9_b51",
+      "visual": "Bagheera speaks.",
+      "heuristic_ambient": "",
+      "heuristic_sfx": "",
+      "gold_ambient": "",
+      "gold_sfx": ""
+    },
+    {
+      "Id": "s9_b29",
+      "visual": "Mowgli slides down a trunk, angry and indignant.",
+      "heuristic_ambient": "",
+      "heuristic_sfx": "",
+      "gold_ambient": "",
+      "gold_sfx": "trunk slide"
+    },
+    {
+      "Id": "s63_b24",
+      "visual": "Billy speaks.",
+      "heuristic_ambient": "",
+      "heuristic_sfx": "",
+      "gold_ambient": "",
+      "gold_sfx": ""
+    },
+    {
+      "Id": "s27_b4",
+      "visual": "Moonlight turns the plain milky white. Far behind, temple bells bang and conches blare. Messua's distant weeping carries on the wind.",
+      "heuristic_ambient": "",
+      "heuristic_sfx": "",
+      "gold_ambient": "distant weeping, wind",
+      "gold_sfx": "conches blare, temple bells"
+    },
+    {
+      "Id": "s10_b1",
+      "visual": "High above, gray shapes of the BANDAR-LOG watch, whisper, invent a plan among themselves. Below, Mowgli walks ashamed between Bear and Panther.",
+      "heuristic_ambient": "",
+      "heuristic_sfx": "",
+      "gold_ambient": "monkey whispers",
+      "gold_sfx": ""
+    },
+    {
+      "Id": "s3_b3",
+      "visual": "The whine becomes a humming purr from every quarter-then the full-throated aaooughh:",
+      "heuristic_ambient": "",
+      "heuristic_sfx": "",
+      "gold_ambient": "humming purr",
+      "gold_sfx": "aaooughh howl"
+    },
+    {
+      "Id": "s53_b16",
+      "visual": "Petersen Sahib (smiling under his mustache).",
+      "heuristic_ambient": "",
+      "heuristic_sfx": "",
+      "gold_ambient": "",
+      "gold_sfx": ""
+    },
+    {
+      "Id": "s22_b3",
+      "visual": "He sits by the gate. A VILLAGE MAN comes out. Mowgli stands, opens his mouth, points down it-food. The man stares and runs shouting up the single street. PRIEST-big, fat, white clothes, red-and-yellow mark on his forehead-comes with a crowd of a hundred. They stare, talk, shout, point. MESSUA, a kind-faced woman, pushes forward, eyes wet.",
+      "heuristic_ambient": "",
+      "heuristic_sfx": "",
+      "gold_ambient": "crowd murmur",
+      "gold_sfx": "running, shouting"
+    },
+    {
+      "Id": "s39_b1",
+      "visual": "Seals swim in a long dark line, heading toward summer beaches. Their voices rise together-a deep-sea song, sad as a national anthem.",
+      "heuristic_ambient": "",
+      "heuristic_sfx": "",
+      "gold_ambient": "seal song",
+      "gold_sfx": ""
+    },
+    {
+      "Id": "s8_b1",
+      "visual": "Full moon. A hilltop of stones and boulders. AKELA, great gray Lone Wolf, lies full length on his rock. Below him, forty or more wolves of every size and color. Cubs tumble in the center. Senior wolves pad up, inspect, return. Anxious mothers push cubs into the moonlight.",
+      "heuristic_ambient": "",
+      "heuristic_sfx": "",
+      "gold_ambient": "",
+      "gold_sfx": "cubs tumble, wolf pads"
+    },
+    {
+      "Id": "s52_b1",
+      "visual": "Morning. Big Toomai scolds while Little Toomai hangs his head.",
+      "heuristic_ambient": "",
+      "heuristic_sfx": "",
+      "gold_ambient": "",
+      "gold_sfx": ""
+    },
+    {
+      "Id": "s32_b3",
+      "visual": "An old SEA LION shrugs. A WALRUS grumbles of ice only. At last Kotick meets the great lazy SEA COW-manatee-like, slow, wise in currents-who leads him without words under a cliff.",
+      "heuristic_ambient": "",
+      "heuristic_sfx": "",
+      "gold_ambient": "",
+      "gold_sfx": "walrus grumble"
+    },
+    {
+      "Id": "s27_b1",
+      "visual": "Mowgli looks up at the stars. He and Akela move at a steady pace. Gray Brother joins them. The great striped hide is rolled into a bundle on Mowgli's head.",
+      "heuristic_ambient": "",
+      "heuristic_sfx": "",
+      "gold_ambient": "",
+      "gold_sfx": "footsteps"
+    },
+    {
+      "Id": "s9_b5",
+      "visual": "Mowgli speaks.",
+      "heuristic_ambient": "",
+      "heuristic_sfx": "",
+      "gold_ambient": "",
+      "gold_sfx": ""
+    },
+    {
+      "Id": "s49_b10",
+      "visual": "Narrator speaks.",
+      "heuristic_ambient": "",
+      "heuristic_sfx": "",
+      "gold_ambient": "",
+      "gold_sfx": ""
+    },
+    {
+      "Id": "s3_b1",
+      "visual": "Father Wolf at the mouth. Mother Wolf lifts her head.",
+      "heuristic_ambient": "",
+      "heuristic_sfx": "",
+      "gold_ambient": "",
+      "gold_sfx": ""
+    },
+    {
+      "Id": "s63_b51",
+      "visual": "Vixen creeps under the waterproof to NARRATOR. The animals settle. Rain softens. Far off, a bugle practices for the morning.",
+      "heuristic_ambient": "",
+      "heuristic_sfx": "",
+      "gold_ambient": "distant bugle, soft rain",
+      "gold_sfx": ""
+    },
+    {
+      "Id": "s33_b1",
+      "visual": "Dark water. Kotick follows the Sea Cow through a long drowned tunnel beneath the cliffs, lungs burning, until-",
+      "heuristic_ambient": "",
+      "heuristic_sfx": "",
+      "gold_ambient": "underwater",
+      "gold_sfx": ""
+    },
+    {
+      "Id": "s40_b1",
+      "visual": "Hot sun. A small draggled mongoose lies senseless on the middle of a garden path-fur like a little cat, head and habits like a weasel, eyes and restless nose pink. TEDDY, a small English boy, stands over him. TEDDY'S MOTHER (ALICE) and TEDDY'S FATHER, a big Englishman new to the bungalow, come up.",
+      "heuristic_ambient": "",
+      "heuristic_sfx": "",
+      "gold_ambient": "",
+      "gold_sfx": "footsteps"
+    },
+    {
+      "Id": "s19_b23",
+      "visual": "Bagheera speaks.",
+      "heuristic_ambient": "",
+      "heuristic_sfx": "",
+      "gold_ambient": "",
+      "gold_sfx": ""
+    },
+    {
+      "Id": "s53_b1",
+      "visual": "A native clerk at a table pays wages. Drivers take their pay and join the line of elephants ready to start. Catchers and hunters lean on guns and laugh at the plains drivers. PETERSEN SAHIB lies along the back of his clever she-elephant PUDMINI. MACHUA APPA, the head tracker, speaks undertone to a friend as Big Toomai and Little Toomai approach the clerk.",
+      "heuristic_ambient": "",
+      "heuristic_sfx": "",
+      "gold_ambient": "",
+      "gold_sfx": "laughter"
+    },
+    {
+      "Id": "s59_b3",
+      "visual": "Narrator speaks.",
+      "heuristic_ambient": "",
+      "heuristic_sfx": "",
+      "gold_ambient": "",
+      "gold_sfx": ""
+    },
+    {
+      "Id": "s50_b2",
+      "visual": "Little Toomai speaks.",
+      "heuristic_ambient": "",
+      "heuristic_sfx": "",
+      "gold_ambient": "",
+      "gold_sfx": ""
+    }
+  ]
+}

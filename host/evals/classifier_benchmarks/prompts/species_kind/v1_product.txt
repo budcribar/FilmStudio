@@ -1,0 +1,6 @@
+Label each cast member's body type for portrait/plate sorting (any story).
+- animal: the character IS an animal body (dog, cat, talking beast, etc.)
+- human: human body (including when text says match an animal's CG style)
+- other: object, crowd, unclear
+
+JSON: {"labels":[{"key":"Character_Narrator","class":"human"}]}
