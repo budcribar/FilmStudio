@@ -1,13 +1,23 @@
 # Classifier benchmarks — history
 
-Updated: 2026-07-21 21:12:48Z
+Updated: 2026-07-21 21:53:54Z
 
 Open **`reports/history.html`** for interactive charts (model / prompt / task over time).
+
+## Top configuration per task (best AI score in history)
+
+| Task | Metric | Model | Prompt | Temp | AI | Baseline | Δ vs base | Winner | n | When (UTC) | Run |
+|------|--------|-------|--------|------|----|----------|-----------|--------|---|------------|-----|
+| `ambient_sfx` | mean_token_jaccard | `grok-4.5` | `v2_grounded` | 0.2 | **0.897** | 0.742 | +0.156 | **AI** | 30 | 2026-07-21 21:09:15Z | `20260721T210915Z_acb202` |
+| `onscreen_cast` | mean_set_f1 | `grok-4.5` | `v2_grounded` | 0 | **0.975** | 0.812 | +0.163 | **AI** | 20 | 2026-07-21 21:35:32Z | `20260721T213532Z_254377` |
+| `species_kind` | accuracy | `grok-4.5` | `v1_product` | 0 | **0.863** | 0.490 | +0.373 | **AI** | 51 | 2026-07-21 20:52:32Z | `20260721T205232Z_9f5c1e` |
 
 ## Latest runs
 
 | When (UTC) | Run | Task | Model | Prompt | Temp | Metric | Baseline | AI | Winner | n |
 |------------|-----|------|-------|--------|------|--------|----------|----|--------|---|
+| 2026-07-21 21:35:32Z | `20260721T213532Z_254377` | onscreen_cast | `grok-4.5` | `v1_product` | 0 | mean_set_f1 | 0.812 | 0.910 | **AI** | 20 |
+| 2026-07-21 21:35:32Z | `20260721T213532Z_254377` | onscreen_cast | `grok-4.5` | `v2_grounded` | 0 | mean_set_f1 | 0.812 | 0.975 | **AI** | 20 |
 | 2026-07-21 21:09:15Z | `20260721T210915Z_acb202` | ambient_sfx | `grok-4.5` | `v1_product` | 0 | mean_token_jaccard | 0.742 | 0.850 | **AI** | 30 |
 | 2026-07-21 21:09:15Z | `20260721T210915Z_acb202` | ambient_sfx | `grok-4.5` | `v1_product` | 0.2 | mean_token_jaccard | 0.742 | 0.761 | **tie** | 30 |
 | 2026-07-21 21:09:15Z | `20260721T210915Z_acb202` | ambient_sfx | `grok-4.5` | `v1_no_speech_sfx` | 0 | mean_token_jaccard | 0.742 | 0.814 | **AI** | 30 |
@@ -35,6 +45,13 @@ Open **`reports/history.html`** for interactive charts (model / prompt / task ov
 | `20260721T205232Z_9f5c1e` | `grok-4.5` | `v1_product` | 0 | 0.739 | 0.742 |
 | `20260721T204308Z_22056f` | `grok-4.5` | `v1_product` | 0 | 0.786 | 0.742 |
 | `20260721T204308Z_22056f` | `grok-4.5` | `v1_no_speech_sfx` | 0 | 0.800 | 0.742 |
+
+### `onscreen_cast`
+
+| Run | Model | Prompt | Temp | AI | Baseline |
+|-----|-------|--------|------|----|----------|
+| `20260721T213532Z_254377` | `grok-4.5` | `v1_product` | 0 | 0.910 | 0.812 |
+| `20260721T213532Z_254377` | `grok-4.5` | `v2_grounded` | 0 | 0.975 | 0.812 |
 
 ### `species_kind`
 

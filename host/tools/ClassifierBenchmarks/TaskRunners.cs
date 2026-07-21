@@ -201,9 +201,180 @@ public static class TaskRunners
         };
     }
 
+    public static async Task<TaskResult> RunOnScreenCastAsync(
+        BenchPaths paths,
+        string projectId,
+        string model,
+        double temperature,
+        PromptBundle prompt,
+        ChatRunner chat,
+        CancellationToken ct = default)
+    {
+        var goldPath = paths.GoldFile(projectId, "onscreen_cast");
+        if (!File.Exists(goldPath))
+            throw new FileNotFoundException($"Missing gold: {goldPath}");
+
+        using var goldDoc = JsonDocument.Parse(await File.ReadAllTextAsync(goldPath, ct));
+        var root = goldDoc.RootElement;
+        var curated = root.TryGetProperty("curated", out var cEl) && cEl.GetBoolean();
+
+        var samples = new List<(string Id, string Visual, string Dialogue, string Speaker, bool Vo, List<string> Gold)>();
+        foreach (var el in root.GetProperty("labels").EnumerateArray())
+        {
+            var id = el.TryGetProperty("id", out var idEl) ? idEl.GetString() ?? "" : "";
+            if (id.Length == 0) continue;
+            var visual = el.TryGetProperty("visual", out var vEl) ? vEl.GetString() ?? "" : "";
+            var dialogue = el.TryGetProperty("dialogue", out var dEl) ? dEl.GetString() ?? "" : "";
+            var speaker = el.TryGetProperty("speaker", out var sEl) ? sEl.GetString() ?? "" : "";
+            var vo = el.TryGetProperty("is_voiceover", out var voEl) && voEl.ValueKind == JsonValueKind.True;
+            var gold = new List<string>();
+            if (el.TryGetProperty("gold_keys", out var gk) && gk.ValueKind == JsonValueKind.Array)
+            {
+                foreach (var k in gk.EnumerateArray())
+                    if (k.GetString() is { Length: > 0 } ks)
+                        gold.Add(ks);
+            }
+            samples.Add((id, visual, dialogue, speaker, vo, gold));
+        }
+
+        var castKeys = await LoadCastKeysAsync(paths.RepoRoot, projectId, samples, ct);
+        var profiles = castKeys.ToDictionary(
+            k => k,
+            k => new ClipVideoPromptBuilder.CharacterProfile
+            {
+                DisplayName = k.Replace("Character_", "", StringComparison.OrdinalIgnoreCase).Replace('_', ' '),
+            },
+            StringComparer.OrdinalIgnoreCase);
+
+        var payload = samples.Select(s =>
+        {
+            var h = BaselineOnScreen(s.Visual, s.Dialogue, s.Speaker, s.Vo, profiles);
+            return new Dictionary<string, object?>
+            {
+                ["id"] = s.Id,
+                ["visual_event"] = Trunc(s.Visual, 280),
+                ["dialogue"] = Trunc(s.Dialogue, 120),
+                ["speaker_key"] = s.Speaker,
+                ["is_voiceover"] = s.Vo,
+                ["heuristic_keys"] = h,
+            };
+        }).ToList();
+
+        var sw = Stopwatch.StartNew();
+        var raw = await chat.CompleteAsync(
+            model, temperature, prompt.Text,
+            "Pick on-screen Character_* keys from the closed cast. JSON only.\n" +
+            JsonSerializer.Serialize(new { cast_keys = castKeys, beats = payload }),
+            ct);
+        sw.Stop();
+
+        var aiMap = OnScreenCastClassifier.ParseLabels(raw, castKeys);
+        var sampleScores = new List<SampleScore>();
+        double baseSum = 0, aiSum = 0;
+        var hits = 0;
+        foreach (var s in samples)
+        {
+            var h = BaselineOnScreen(s.Visual, s.Dialogue, s.Speaker, s.Vo, profiles);
+            aiMap.TryGetValue(s.Id, out var ak);
+            if (aiMap.ContainsKey(s.Id)) hits++;
+            ak ??= new List<string>();
+            var bScore = OnScreenCastClassifier.SetF1(h, s.Gold);
+            var aScore = OnScreenCastClassifier.SetF1(ak, s.Gold);
+            baseSum += bScore;
+            aiSum += aScore;
+            sampleScores.Add(new SampleScore
+            {
+                Id = s.Id,
+                Visual = Trunc(s.Visual, 220),
+                GoldLabel = string.Join(", ", s.Gold),
+                BaselineLabel = string.Join(", ", h),
+                AiLabel = string.Join(", ", ak),
+                BaselineScore = bScore,
+                AiScore = aScore,
+            });
+        }
+
+        var n = samples.Count;
+        var baseMean = n == 0 ? 0 : baseSum / n;
+        var aiMean = n == 0 ? 0 : aiSum / n;
+        return new TaskResult
+        {
+            Task = "onscreen_cast",
+            ProjectId = projectId,
+            Model = model,
+            PromptId = prompt.Id,
+            PromptLabel = prompt.Label,
+            PromptHash = prompt.Hash,
+            Temperature = temperature,
+            CuratedGold = curated,
+            SampleCount = n,
+            Metric = "mean_set_f1",
+            BaselineScore = baseMean,
+            AiScore = aiMean,
+            Winner = Winner(baseMean, aiMean),
+            LatencyMs = sw.ElapsedMilliseconds,
+            AiParseHits = hits,
+            Note = prompt.Notes,
+            Samples = sampleScores,
+        };
+    }
+
+    static List<string> BaselineOnScreen(
+        string visual,
+        string dialogue,
+        string speaker,
+        bool isVoiceover,
+        Dictionary<string, ClipVideoPromptBuilder.CharacterProfile> profiles)
+    {
+        var inferred = ClipVideoPromptBuilder.InferKeysFromProse(visual + " " + dialogue, profiles);
+        if (!string.IsNullOrWhiteSpace(speaker) &&
+            !isVoiceover &&
+            !inferred.Contains(speaker, StringComparer.OrdinalIgnoreCase))
+            inferred.Add(speaker);
+        return inferred;
+    }
+
+    static async Task<List<string>> LoadCastKeysAsync(
+        string repoRoot,
+        string projectId,
+        List<(string Id, string Visual, string Dialogue, string Speaker, bool Vo, List<string> Gold)> samples,
+        CancellationToken ct)
+    {
+        var keys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var castPath = Directory.GetFiles(Path.Combine(repoRoot, "projects"), "cast_seeds.json", SearchOption.AllDirectories)
+            .FirstOrDefault(p => p.Contains(projectId, StringComparison.OrdinalIgnoreCase) &&
+                                 !p.Contains($"{Path.DirectorySeparatorChar}_", StringComparison.Ordinal));
+        if (castPath is not null && File.Exists(castPath))
+        {
+            try
+            {
+                using var doc = JsonDocument.Parse(await File.ReadAllTextAsync(castPath, ct));
+                if (doc.RootElement.TryGetProperty("character_seed_tokens", out var seeds) &&
+                    seeds.ValueKind == JsonValueKind.Object)
+                {
+                    foreach (var p in seeds.EnumerateObject())
+                        if (p.Name.StartsWith("Character_", StringComparison.OrdinalIgnoreCase))
+                            keys.Add(p.Name);
+                }
+            }
+            catch { /* fall through */ }
+        }
+
+        foreach (var s in samples)
+        {
+            foreach (var g in s.Gold) keys.Add(g);
+            if (!string.IsNullOrWhiteSpace(s.Speaker)) keys.Add(s.Speaker);
+        }
+
+        if (keys.Count == 0)
+            throw new InvalidOperationException($"No cast keys for project {projectId} (need cast_seeds.json or gold keys).");
+        return keys.OrderBy(k => k, StringComparer.OrdinalIgnoreCase).ToList();
+    }
+
     public static string DefaultPromptId(string task) => task switch
     {
-        "ambient_sfx" => "v1_product",
+        "ambient_sfx" => "v2_grounded",
+        "onscreen_cast" => "v2_grounded",
         "species_kind" => "v1_product",
         _ => "v1_product",
     };

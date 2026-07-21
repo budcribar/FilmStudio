@@ -1,228 +1,203 @@
 {
+  "schema": "classifier_gold.v1",
+  "task": "onscreen_cast",
   "projectId": "The_Jungle_Book",
   "curated": true,
+  "curated_at": "2026-07-21",
   "notes": "Human-curated from cast_blind_20 (seed 20260722 stratified). Prefer living on-camera cast; exclude hide/prop mentions; exclude dialogue-only names not shown in visual; drop substring false positives (Nag inside Kala Nag). Metric: mean set F1.",
+  "metric": "mean_set_f1",
   "labels": [
     {
-      "Id": "s53_b15",
+      "id": "s53_b15",
       "visual": "Petersen Sahib (smiling under his mustache).",
       "dialogue": "Was it to help thee steal green corn from the roofs of the houses when the ears are",
       "speaker": "Character_Petersen_Sahib",
-      "heuristic_keys": [],
-      "gold_keys": [
-        "Character_Petersen_Sahib"
-      ]
+      "is_voiceover": false,
+      "gold_keys": ["Character_Petersen_Sahib"],
+      "source": "blind_r1",
+      "notes": "Agree; speaker on camera."
     },
     {
-      "Id": "s11_b1",
+      "id": "s11_b1",
       "visual": "Mowgli sleeps between Bagheera and Baloo, resolving to have no more to do with the Monkey People. Hard strong little hands seize his legs and arms. A swash of branches in his face. Baloo wakes the jungle with deep cries. Bagheera bounds up a trunk, every tooth bared. The Bandar-log howl with triumph and scuffle to the upper branches where the panther dare not follow.",
       "dialogue": "",
       "speaker": "",
-      "heuristic_keys": [],
-      "gold_keys": [
-        "Character_Bagheera",
-        "Character_Baloo",
-        "Character_Bandar_Log",
-        "Character_Mowgli"
-      ]
+      "is_voiceover": false,
+      "gold_keys": ["Character_Bagheera", "Character_Baloo", "Character_Bandar_Log", "Character_Mowgli"],
+      "source": "blind_r1",
+      "notes": "AI: include Bandar-log acting on camera."
     },
     {
-      "Id": "s18_b4",
+      "id": "s18_b4",
       "visual": "Kaa finds a discolored crack in the marble tracery. Two or three light taps for distance-then six feet of body lifts clear and smashes home, nose-first, half a dozen full-power blows. Screen-work explodes in dust and rubbish. Mowgli leaps through and flings himself between Baloo and Bagheera-an arm around each big neck.",
       "dialogue": "",
       "speaker": "",
-      "heuristic_keys": [],
-      "gold_keys": [
-        "Character_Bagheera",
-        "Character_Baloo",
-        "Character_Kaa",
-        "Character_Mowgli"
-      ]
+      "is_voiceover": false,
+      "gold_keys": ["Character_Bagheera", "Character_Baloo", "Character_Kaa", "Character_Mowgli"],
+      "source": "blind_r1"
     },
     {
-      "Id": "s56_b1",
+      "id": "s56_b1",
       "visual": "Little Toomai leads Petersen Sahib and Machua Appa to the beaten ground-the dance-floor stamped hard as a road. The men stare. Petersen Sahib looks long at the boy.",
       "dialogue": "",
       "speaker": "",
-      "heuristic_keys": [],
-      "gold_keys": [
-        "Character_Little_Toomai",
-        "Character_Machua_Appa",
-        "Character_Petersen_Sahib"
-      ]
+      "is_voiceover": false,
+      "gold_keys": ["Character_Little_Toomai", "Character_Machua_Appa", "Character_Petersen_Sahib"],
+      "source": "blind_r1"
     },
     {
-      "Id": "s34_b8",
+      "id": "s34_b8",
       "visual": "He explores thoroughly-every beach, every shoal-so he can answer all questions. Then he dives, finds the tunnel mouth again, and races south.",
       "dialogue": "",
       "speaker": "",
-      "heuristic_keys": [],
-      "gold_keys": [
-        "Character_Kotick"
-      ]
+      "is_voiceover": false,
+      "gold_keys": ["Character_Kotick"],
+      "source": "blind_r1",
+      "notes": "Pronoun-only continuation; Kotick is the exploring white seal."
     },
     {
-      "Id": "s41_b8",
+      "id": "s41_b8",
       "visual": "Rikki snuffs at the boy's ear, climbs down, sits rubbing his nose.",
       "dialogue": "",
       "speaker": "",
-      "heuristic_keys": [],
-      "gold_keys": [
-        "Character_Rikki_Tikki",
-        "Character_Teddy"
-      ]
+      "is_voiceover": false,
+      "gold_keys": ["Character_Rikki_Tikki", "Character_Teddy"],
+      "source": "blind_r1",
+      "notes": "Rikki + boy (Teddy); baseline missed nickname/substring."
     },
     {
-      "Id": "s8_b1",
+      "id": "s8_b1",
       "visual": "Full moon. A hilltop of stones and boulders. AKELA, great gray Lone Wolf, lies full length on his rock. Below him, forty or more wolves of every size and color. Cubs tumble in the center. Senior wolves pad up, inspect, return. Anxious mothers push cubs into the moonlight.",
       "dialogue": "",
       "speaker": "",
-      "heuristic_keys": [],
-      "gold_keys": [
-        "Character_Akela",
-        "Character_Wolf_Cubs"
-      ]
+      "is_voiceover": false,
+      "gold_keys": ["Character_Akela", "Character_Wolf_Cubs"],
+      "source": "blind_r1",
+      "notes": "Named pack leader + cubs as cast token; anonymous pack not individual keys."
     },
     {
-      "Id": "s42_b1",
+      "id": "s42_b1",
       "visual": "Rikki-tikki explores: melon beds, roses, a thorn-bush, the long grass. He meets DARZEE the tailor-bird and his wife, fluttering in distress-a fledgling eaten.",
       "dialogue": "",
       "speaker": "",
-      "heuristic_keys": [],
-      "gold_keys": [
-        "Character_Darzee",
-        "Character_Darzees_Wife",
-        "Character_Rikki_Tikki"
-      ]
+      "is_voiceover": false,
+      "gold_keys": ["Character_Darzee", "Character_Darzees_Wife", "Character_Rikki_Tikki"],
+      "source": "blind_r1"
     },
     {
-      "Id": "s3_b3",
+      "id": "s3_b3",
       "visual": "The whine becomes a humming purr from every quarter-then the full-throated aaooughh:",
       "dialogue": "",
       "speaker": "",
-      "heuristic_keys": [],
-      "gold_keys": []
+      "is_voiceover": false,
+      "gold_keys": [],
+      "source": "blind_r1",
+      "notes": "Sound-only pack call; no named on-screen individual."
     },
     {
-      "Id": "s53_b18",
+      "id": "s53_b18",
       "visual": "The men roar with laughter. Little Toomai hangs eight feet up and wishes he were eight feet underground.",
       "dialogue": "",
       "speaker": "",
-      "heuristic_keys": [],
-      "gold_keys": [
-        "Character_Little_Toomai"
-      ]
+      "is_voiceover": false,
+      "gold_keys": ["Character_Little_Toomai"],
+      "source": "blind_r1"
     },
     {
-      "Id": "s9_b14",
+      "id": "s9_b14",
       "visual": "Baloo speaks.",
       "dialogue": "That is why I teach him these things, and that is why I hit him, very softly, when",
       "speaker": "Character_Baloo",
-      "heuristic_keys": [],
-      "gold_keys": [
-        "Character_Baloo"
-      ]
+      "is_voiceover": false,
+      "gold_keys": ["Character_Baloo"],
+      "source": "blind_r1"
     },
     {
-      "Id": "s50_b2",
+      "id": "s50_b2",
       "visual": "Little Toomai speaks.",
       "dialogue": "Wah! Thou art a big elephant.",
       "speaker": "Character_Little_Toomai",
-      "heuristic_keys": [],
-      "gold_keys": [
-        "Character_Little_Toomai"
-      ]
+      "is_voiceover": false,
+      "gold_keys": ["Character_Little_Toomai"],
+      "source": "blind_r1",
+      "notes": "Dialogue addresses elephant but visual is dialogue stub only — do not invent Kala Nag on screen."
     },
     {
-      "Id": "s28_b11",
+      "id": "s28_b11",
       "visual": "From habit the Pack answers. Lame wolves, shot-wounded wolves, mangy wolves-many missing-drag themselves to the Rock. They stare at the striped hide, huge claws dangling from empty feet. Mowgli leaps upon the rattling skin. He beats time with his heels and shouts the song that rises in his throat. Gray Brother and Akela howl between the verses.",
       "dialogue": "",
       "speaker": "",
-      "heuristic_keys": [],
-      "gold_keys": [
-        "Character_Akela",
-        "Character_Gray_Brother",
-        "Character_Mowgli"
-      ]
+      "is_voiceover": false,
+      "gold_keys": ["Character_Akela", "Character_Gray_Brother", "Character_Mowgli"],
+      "source": "blind_r1",
+      "notes": "Hide is prop, not Shere Khan living."
     },
     {
-      "Id": "s28_b9",
+      "id": "s28_b9",
       "visual": "Bagheera runs to Mowgli's bare feet. They clamber up the Council Rock together. Mowgli spreads Shere Khan's striped hide on the flat stone where Akela used to sit, pegs it with four bamboo slivers. Akela lies down upon it.",
       "dialogue": "",
       "speaker": "",
-      "heuristic_keys": [],
-      "gold_keys": [
-        "Character_Akela",
-        "Character_Bagheera",
-        "Character_Mowgli"
-      ]
+      "is_voiceover": false,
+      "gold_keys": ["Character_Akela", "Character_Bagheera", "Character_Mowgli"],
+      "source": "blind_r1",
+      "notes": "Shere Khan hide ≠ Character_Shere_Khan on camera."
     },
     {
-      "Id": "s3_b1",
+      "id": "s3_b1",
       "visual": "Father Wolf at the mouth. Mother Wolf lifts her head.",
       "dialogue": "",
       "speaker": "",
-      "heuristic_keys": [],
-      "gold_keys": [
-        "Character_Father_Wolf",
-        "Character_Mother_Wolf"
-      ]
+      "is_voiceover": false,
+      "gold_keys": ["Character_Father_Wolf", "Character_Mother_Wolf"],
+      "source": "blind_r1"
     },
     {
-      "Id": "s25_b1",
+      "id": "s25_b1",
       "visual": "Mowgli divides the herd-Akela taking the big bulls one way, Gray Brother the cows and calves the other-trapping Shere Khan, heavy with a village meal, in the narrow ravine. Buffaloes thunder. Dust. The lame tiger cannot climb the walls.",
       "dialogue": "",
       "speaker": "",
-      "heuristic_keys": [],
-      "gold_keys": [
-        "Character_Akela",
-        "Character_Gray_Brother",
-        "Character_Mowgli",
-        "Character_Shere_Khan"
-      ]
+      "is_voiceover": false,
+      "gold_keys": ["Character_Akela", "Character_Gray_Brother", "Character_Mowgli", "Character_Shere_Khan"],
+      "source": "blind_r1",
+      "notes": "Living tiger trapped — Shere Khan on screen."
     },
     {
-      "Id": "s20_b4",
+      "id": "s20_b4",
       "visual": "Akela speaks.",
       "dialogue": "He is our brother in all but blood.",
       "speaker": "Character_Akela",
-      "heuristic_keys": [],
-      "gold_keys": [
-        "Character_Akela"
-      ]
+      "is_voiceover": false,
+      "gold_keys": ["Character_Akela"],
+      "source": "blind_r1"
     },
     {
-      "Id": "s35_b1",
+      "id": "s35_b1",
       "visual": "Six days later. Kotick hauls out just above Sea Lion's Neck. The seal who has been waiting for him meets him first. She sees by the look in his eyes that he has found his island at last. The holluschickie, Sea Catch, and the other seals gather as he tells them. They laugh. A YOUNG SEAL about Kotick's age twists his head from side to side-newly married, making a great fuss.",
       "dialogue": "",
       "speaker": "",
-      "heuristic_keys": [],
-      "gold_keys": [
-        "Character_Kotick",
-        "Character_Sea_Catch",
-        "Character_Seals_Chorus",
-        "Character_Young_Seal"
-      ]
+      "is_voiceover": false,
+      "gold_keys": ["Character_Kotick", "Character_Sea_Catch", "Character_Seals_Chorus", "Character_Young_Seal"],
+      "source": "blind_r1",
+      "notes": "Other seals → Seals_Chorus when that cast key exists."
     },
     {
-      "Id": "s59_b4",
+      "id": "s59_b4",
       "visual": "Narrator speaks.",
       "dialogue": "be reviewed by the Viceroy of India.",
       "speaker": "Character_Narrator",
-      "heuristic_keys": [],
-      "gold_keys": [
-        "Character_Narrator"
-      ]
+      "is_voiceover": false,
+      "gold_keys": ["Character_Narrator"],
+      "source": "blind_r1"
     },
     {
-      "Id": "s50_b5",
+      "id": "s50_b5",
       "visual": "Little Toomai speaks.",
       "dialogue": "When thou art old, Kala Nag, some rich rajah will buy thee.",
       "speaker": "Character_Little_Toomai",
-      "heuristic_keys": [],
-      "gold_keys": [
-        "Character_Little_Toomai"
-      ]
+      "is_voiceover": false,
+      "gold_keys": ["Character_Little_Toomai"],
+      "source": "blind_r1",
+      "notes": "Visual is dialogue-only stub: speaker only. Do not add Kala Nag (or false Nag) from dialogue name alone."
     }
   ]
 }

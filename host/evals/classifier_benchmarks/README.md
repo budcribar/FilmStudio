@@ -20,7 +20,8 @@ Durable **AI vs baseline** evals for Film Studio classifiers. Re-run over time a
 
 | Task id | Metric | Gold |
 |---------|--------|------|
-| `ambient_sfx` | mean token Jaccard (ambient + sfx) | **Curated** Jungle Book blind rounds (2026-07-21). Product prompt: **`v2_grounded`** (`AmbientSfxClassifier`) |
+| `ambient_sfx` | mean token Jaccard (ambient + sfx) | **Curated** Jungle Book blind rounds. Product: **`v2_grounded`** |
+| `onscreen_cast` | mean set F1 | **Curated** Jungle Book cast blind (20). Product: **`v2_grounded`** (`OnScreenCastClassifier`) |
 | `species_kind` | accuracy | Curated cast species labels |
 
 ## Run

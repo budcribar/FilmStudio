@@ -1,0 +1,6 @@
+{
+  "id": "v2_grounded",
+  "task": "onscreen_cast",
+  "label": "v2 grounded cast — SHIPPED",
+  "notes": "Shipped in FilmStudio.Engine OnScreenCastClassifier (PromptVersion=v2_grounded). Anti prop/substring; dialogue≠on-screen; groups/nicknames."
+}

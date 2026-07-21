@@ -170,6 +170,20 @@ public static class ReportWriter
         sb.AppendLine();
         sb.AppendLine("Open **`reports/history.html`** for interactive charts (model / prompt / task over time).");
         sb.AppendLine();
+        sb.AppendLine("## Top configuration per task (best AI score in history)");
+        sb.AppendLine();
+        sb.AppendLine("| Task | Metric | Model | Prompt | Temp | AI | Baseline | Δ vs base | Winner | n | When (UTC) | Run |");
+        sb.AppendLine("|------|--------|-------|--------|------|----|----------|-----------|--------|---|------------|-----|");
+        foreach (var top in ComputeLeaders(index))
+        {
+            var delta = top.AiScore - top.BaselineScore;
+            sb.AppendLine(
+                $"| `{top.Task}` | {top.Metric} | `{top.Model}` | `{top.PromptId}` | {top.Temperature:0.##} | " +
+                $"**{top.AiScore:F3}** | {top.BaselineScore:F3} | {delta.ToString("+0.000;-0.000;0", CultureInfo.InvariantCulture)} | " +
+                $"**{top.Winner}** | {top.SampleCount} | {top.Utc} | `{top.RunId}` |");
+        }
+
+        sb.AppendLine();
         sb.AppendLine("## Latest runs");
         sb.AppendLine();
         sb.AppendLine("| When (UTC) | Run | Task | Model | Prompt | Temp | Metric | Baseline | AI | Winner | n |");
@@ -204,10 +218,57 @@ public static class ReportWriter
         return sb.ToString();
     }
 
+    /// <summary>Best AI score per task across all history (ties → newer run).</summary>
+    static List<LeaderRow> ComputeLeaders(HistoryIndex index)
+    {
+        var best = new Dictionary<string, LeaderRow>(StringComparer.OrdinalIgnoreCase);
+        // Newest first so first max wins ties on equal score when we only replace if strictly greater
+        foreach (var run in index.Runs) // index is newest-first
+        {
+            foreach (var s in run.Scores)
+            {
+                if (string.IsNullOrWhiteSpace(s.Task) || s.Metric == "error") continue;
+                if (!best.TryGetValue(s.Task, out var cur) || s.AiScore > cur.AiScore + 1e-9)
+                {
+                    best[s.Task] = new LeaderRow
+                    {
+                        Task = s.Task,
+                        Metric = s.Metric,
+                        Model = s.Model,
+                        PromptId = s.PromptId,
+                        Temperature = s.Temperature,
+                        AiScore = s.AiScore,
+                        BaselineScore = s.BaselineScore,
+                        Winner = s.Winner,
+                        SampleCount = s.SampleCount,
+                        Utc = run.Utc,
+                        RunId = run.RunId,
+                    };
+                }
+            }
+        }
+        return best.Values.OrderBy(x => x.Task, StringComparer.OrdinalIgnoreCase).ToList();
+    }
+
+    sealed class LeaderRow
+    {
+        public string Task { get; set; } = "";
+        public string Metric { get; set; } = "";
+        public string Model { get; set; } = "";
+        public string PromptId { get; set; } = "";
+        public double Temperature { get; set; }
+        public double AiScore { get; set; }
+        public double BaselineScore { get; set; }
+        public string Winner { get; set; } = "";
+        public int SampleCount { get; set; }
+        public string Utc { get; set; } = "";
+        public string RunId { get; set; } = "";
+    }
+
     public static string BuildHistoryHtml(HistoryIndex index)
     {
         // One series key per task·model·prompt·temp; AI solid + baseline dashed share color.
-        var seriesMap = new Dictionary<string, List<(string Utc, double Ai, double Base)>>();
+        var seriesMap = new Dictionary<string, List<(string Utc, double Ai, double Base, string Task)>>();
         foreach (var run in index.Runs.AsEnumerable().Reverse())
         {
             foreach (var s in run.Scores)
@@ -215,12 +276,22 @@ public static class ReportWriter
                 var key = SeriesKey(s);
                 if (!seriesMap.TryGetValue(key, out var list))
                 {
-                    list = new List<(string, double, double)>();
+                    list = new List<(string, double, double, string)>();
                     seriesMap[key] = list;
                 }
-                list.Add((run.Utc, s.AiScore, s.BaselineScore));
+                list.Add((run.Utc, s.AiScore, s.BaselineScore, s.Task));
             }
         }
+
+        var tasks = index.Runs.SelectMany(r => r.Scores).Select(s => s.Task)
+            .Where(t => !string.IsNullOrWhiteSpace(t))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(t => t, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+        // Default: one classifier on (prefer ambient_sfx, else first). All others off.
+        var defaultTask = tasks.FirstOrDefault(t => t.Equals("ambient_sfx", StringComparison.OrdinalIgnoreCase))
+                          ?? tasks.FirstOrDefault()
+                          ?? "ambient_sfx";
 
         var labels = index.Runs.AsEnumerable().Reverse().Select(r => r.Utc).Distinct().ToList();
         var colors = new[]
@@ -235,6 +306,7 @@ public static class ReportWriter
         {
             var color = colors[i % colors.Length];
             i++;
+            var task = pts.FirstOrDefault().Task ?? key.Split('·')[0].Trim();
             var aiData = labels.Select(lab =>
             {
                 var hit = pts.LastOrDefault(p => p.Utc == lab);
@@ -246,10 +318,10 @@ public static class ReportWriter
                 return hit.Utc == null ? (double?)null : hit.Base;
             }).ToList();
 
-            // AI — solid, same color family
             datasets.Add(new Dictionary<string, object?>
             {
                 ["label"] = key + " · AI",
+                ["task"] = task,
                 ["data"] = aiData,
                 ["borderColor"] = color,
                 ["backgroundColor"] = color + "33",
@@ -258,11 +330,12 @@ public static class ReportWriter
                 ["tension"] = 0.2,
                 ["pointRadius"] = 3,
                 ["pointHoverRadius"] = 5,
+                ["hidden"] = !task.Equals(defaultTask, StringComparison.OrdinalIgnoreCase),
             });
-            // Baseline — dashed, identical color (easy pair compare)
             datasets.Add(new Dictionary<string, object?>
             {
                 ["label"] = key + " · baseline",
+                ["task"] = task,
                 ["data"] = baseData,
                 ["borderColor"] = color,
                 ["backgroundColor"] = "transparent",
@@ -273,10 +346,22 @@ public static class ReportWriter
                 ["pointRadius"] = 2,
                 ["pointHoverRadius"] = 4,
                 ["pointStyle"] = "rectRot",
+                ["hidden"] = !task.Equals(defaultTask, StringComparison.OrdinalIgnoreCase),
             });
         }
 
         var chartPayload = JsonSerializer.Serialize(new { labels, datasets }, JsonDefaults.Pretty);
+        var tasksJson = JsonSerializer.Serialize(tasks);
+        var defaultTaskJson = JsonSerializer.Serialize(defaultTask);
+
+        var filterButtons = new StringBuilder();
+        foreach (var t in tasks)
+        {
+            var on = t.Equals(defaultTask, StringComparison.OrdinalIgnoreCase);
+            filterButtons.Append(
+                $"<button type=\"button\" class=\"filter-btn{(on ? " active" : "")}\" data-task=\"{Esc(t)}\" " +
+                $"aria-pressed=\"{(on ? "true" : "false")}\">{Esc(t)}</button>\n");
+        }
 
         var latest = index.Runs.FirstOrDefault();
         var promptRows = new StringBuilder();
@@ -285,8 +370,10 @@ public static class ReportWriter
             foreach (var s in latest.Scores.OrderBy(x => x.Task).ThenBy(x => x.Model)
                          .ThenBy(x => x.PromptId).ThenBy(x => x.Temperature).ThenByDescending(x => x.AiScore))
             {
+                var show = s.Task.Equals(defaultTask, StringComparison.OrdinalIgnoreCase) ? "" : " hidden-row";
                 promptRows.AppendLine(
-                    $"<tr><td>{Esc(s.Task)}</td><td><code>{Esc(s.Model)}</code></td><td><code>{Esc(s.PromptId)}</code></td>" +
+                    $"<tr class=\"score-row{show}\" data-task=\"{Esc(s.Task)}\">" +
+                    $"<td>{Esc(s.Task)}</td><td><code>{Esc(s.Model)}</code></td><td><code>{Esc(s.PromptId)}</code></td>" +
                     $"<td>{s.Temperature:0.##}</td><td>{s.Metric}</td><td>{s.BaselineScore:F3}</td>" +
                     $"<td><strong>{s.AiScore:F3}</strong></td><td>{Esc(s.Winner)}</td><td>{s.SampleCount}</td></tr>");
             }
@@ -297,12 +384,34 @@ public static class ReportWriter
         {
             foreach (var s in run.Scores)
             {
+                var show = s.Task.Equals(defaultTask, StringComparison.OrdinalIgnoreCase) ? "" : " hidden-row";
                 histRows.AppendLine(
-                    $"<tr><td>{Esc(run.Utc)}</td><td><code>{Esc(run.RunId)}</code></td><td>{Esc(s.Task)}</td>" +
+                    $"<tr class=\"score-row{show}\" data-task=\"{Esc(s.Task)}\">" +
+                    $"<td>{Esc(run.Utc)}</td><td><code>{Esc(run.RunId)}</code></td><td>{Esc(s.Task)}</td>" +
                     $"<td><code>{Esc(s.Model)}</code></td><td><code>{Esc(s.PromptId)}</code></td>" +
                     $"<td>{s.Temperature:0.##}</td>" +
                     $"<td>{s.BaselineScore:F3}</td><td>{s.AiScore:F3}</td><td>{Esc(s.Winner)}</td></tr>");
             }
+        }
+
+        var leaderRows = new StringBuilder();
+        foreach (var top in ComputeLeaders(index))
+        {
+            var delta = top.AiScore - top.BaselineScore;
+            leaderRows.AppendLine(
+                $"<tr class=\"leader-row\" data-task=\"{Esc(top.Task)}\">" +
+                $"<td><code>{Esc(top.Task)}</code></td>" +
+                $"<td>{Esc(top.Metric)}</td>" +
+                $"<td><code>{Esc(top.Model)}</code></td>" +
+                $"<td><code>{Esc(top.PromptId)}</code></td>" +
+                $"<td>{top.Temperature:0.##}</td>" +
+                $"<td class=\"num ai\"><strong>{top.AiScore:F3}</strong></td>" +
+                $"<td class=\"num\">{top.BaselineScore:F3}</td>" +
+                $"<td class=\"num\">{delta.ToString("+0.000;-0.000;0", CultureInfo.InvariantCulture)}</td>" +
+                $"<td><strong>{Esc(top.Winner)}</strong></td>" +
+                $"<td>{top.SampleCount}</td>" +
+                $"<td>{Esc(top.Utc)}</td>" +
+                $"<td><code>{Esc(top.RunId)}</code></td></tr>");
         }
 
         return $$"""
@@ -321,48 +430,140 @@ public static class ReportWriter
     table { border-collapse: collapse; width: 100%; font-size: 0.9rem; }
     th, td { border-bottom: 1px solid #e2e8f0; padding: 6px 8px; text-align: left; }
     th { background: #f8fafc; }
+    td.num { font-variant-numeric: tabular-nums; }
+    td.ai { color: #1d4ed8; }
     code { font-size: 0.85em; }
     .chart-wrap { background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; }
     .swatch { display: inline-block; width: 28px; height: 0; border-top: 3px solid #2563eb; vertical-align: middle; margin-right: 4px; }
     .swatch.dash { border-top-style: dashed; }
+    .filter-bar {
+      display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
+      margin: 16px 0; padding: 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;
+    }
+    .filter-bar .label { font-size: 0.85rem; color: #64748b; margin-right: 4px; }
+    .filter-btn {
+      border: 1px solid #cbd5e1; background: #fff; color: #334155;
+      border-radius: 999px; padding: 6px 12px; font-size: 0.85rem; cursor: pointer;
+    }
+    .filter-btn:hover { border-color: #94a3b8; background: #f1f5f9; }
+    .filter-btn.active {
+      background: #2563eb; border-color: #2563eb; color: #fff; font-weight: 600;
+    }
+    .filter-btn.meta { background: #f1f5f9; }
+    .filter-btn.meta.active { background: #0f172a; border-color: #0f172a; color: #fff; }
+    tr.hidden-row { display: none; }
+    #leaders-table { margin-bottom: 0.5rem; }
+    #leaders-table tbody tr:hover { background: #f8fafc; }
+    .section-toggle {
+      display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+      margin-top: 2rem;
+    }
+    .section-toggle h2 { margin: 0; font-size: 1.15rem; }
+    .toggle-btn {
+      border: 1px solid #cbd5e1; background: #fff; color: #334155;
+      border-radius: 6px; padding: 4px 10px; font-size: 0.8rem; cursor: pointer;
+    }
+    .toggle-btn:hover { background: #f1f5f9; }
+    .toggle-btn[aria-expanded="true"] { background: #e2e8f0; }
+    .collapsible.collapsed { display: none; }
   </style>
 </head>
 <body>
   <h1>Classifier benchmarks</h1>
-  <p class="muted">AI vs baseline over time · compare models and prompts · curated gold in <code>host/evals/classifier_benchmarks/gold</code></p>
+  <p class="muted">Generated {{DateTimeOffset.UtcNow:u}} · gold under <code>host/evals/classifier_benchmarks/gold</code></p>
+
+  <h2>Top configuration per task</h2>
+  <p class="muted">Best <strong>AI</strong> score in history for each classifier (ties keep the newer run).</p>
+  <table id="leaders-table">
+    <thead>
+      <tr>
+        <th>Task</th><th>Metric</th><th>Model</th><th>Prompt</th><th>Temp</th>
+        <th>AI</th><th>Baseline</th><th>Δ vs base</th><th>Winner</th><th>n</th><th>When (UTC)</th><th>Run</th>
+      </tr>
+    </thead>
+    <tbody>
+{{leaderRows}}
+    </tbody>
+  </table>
+
+  <h2>AI vs baseline over time</h2>
   <p class="muted">
     Legend: <span class="swatch"></span> solid = AI &nbsp;
     <span class="swatch dash"></span> dashed = baseline (same color as its AI pair)
   </p>
-  <p class="muted">Generated {{DateTimeOffset.UtcNow:u}}</p>
-
-  <h2>Score over time (AI solid · baseline dashed · matched colors)</h2>
+  <div class="filter-bar" id="filter-bar" role="group" aria-label="Classifier filters">
+    <span class="label">Show:</span>
+{{filterButtons}}
+    <button type="button" class="filter-btn meta" data-action="all" aria-pressed="false">All</button>
+    <button type="button" class="filter-btn meta" data-action="none" aria-pressed="false">None</button>
+  </div>
+  <p class="muted" id="filter-hint">Showing <strong id="filter-active">{{Esc(defaultTask)}}</strong> only. Click classifiers to toggle.</p>
   <div class="chart-wrap"><canvas id="trend" height="140"></canvas></div>
 
   <h2>Latest run scores</h2>
-  <table>
+  <table id="latest-table">
     <thead><tr><th>Task</th><th>Model</th><th>Prompt</th><th>Temp</th><th>Metric</th><th>Baseline</th><th>AI</th><th>Winner</th><th>n</th></tr></thead>
     <tbody>
 {{promptRows}}
     </tbody>
   </table>
 
-  <h2>History</h2>
-  <table>
-    <thead><tr><th>UTC</th><th>Run</th><th>Task</th><th>Model</th><th>Prompt</th><th>Temp</th><th>Baseline</th><th>AI</th><th>Winner</th></tr></thead>
-    <tbody>
+  <div class="section-toggle">
+    <h2>History</h2>
+    <button type="button" class="toggle-btn" id="history-toggle" aria-expanded="false" aria-controls="history-panel">Show history</button>
+  </div>
+  <div id="history-panel" class="collapsible collapsed">
+    <p class="muted">Full run log (filtered by classifier pills above).</p>
+    <table id="history-table">
+      <thead><tr><th>UTC</th><th>Run</th><th>Task</th><th>Model</th><th>Prompt</th><th>Temp</th><th>Baseline</th><th>AI</th><th>Winner</th></tr></thead>
+      <tbody>
 {{histRows}}
-    </tbody>
-  </table>
+      </tbody>
+    </table>
+  </div>
 
   <script>
     const payload = {{chartPayload}};
-    new Chart(document.getElementById('trend'), {
+    const allTasks = {{tasksJson}};
+    const defaultTask = {{defaultTaskJson}};
+    const active = new Set([defaultTask]);
+
+    // Tooltip: only the hovered setup; if other points sit on top of it (pixel overlap), include those too.
+    const OVERLAP_PX = 8;
+    Chart.Interaction.modes.nearestOverlap = function(chart, e, options, useFinalPosition) {
+      const nearest = Chart.Interaction.modes.nearest(
+        chart, e, { axis: 'xy', intersect: false }, useFinalPosition);
+      if (!nearest.length) return [];
+      const primary = nearest[0];
+      const pe = primary.element;
+      if (!pe || pe.skip) return nearest;
+
+      const hits = [];
+      const seen = new Set();
+      chart.data.datasets.forEach((ds, datasetIndex) => {
+        if (ds.hidden) return;
+        const meta = chart.getDatasetMeta(datasetIndex);
+        if (!meta || meta.hidden) return;
+        meta.data.forEach((el, index) => {
+          if (!el || el.skip || el.x == null || el.y == null) return;
+          const dist = Math.hypot(el.x - pe.x, el.y - pe.y);
+          if (dist <= OVERLAP_PX) {
+            const key = datasetIndex + ':' + index;
+            if (seen.has(key)) return;
+            seen.add(key);
+            hits.push({ datasetIndex, index, element: el });
+          }
+        });
+      });
+      return hits.length ? hits : nearest;
+    };
+
+    const chart = new Chart(document.getElementById('trend'), {
       type: 'line',
       data: payload,
       options: {
         responsive: true,
-        interaction: { mode: 'nearest', axis: 'x', intersect: false },
+        interaction: { mode: 'nearestOverlap', intersect: false },
         scales: {
           y: { min: 0, max: 1, title: { display: true, text: 'Score (0–1)' } },
           x: { title: { display: true, text: 'Run time (UTC)' } }
@@ -370,12 +571,114 @@ public static class ReportWriter
         plugins: {
           legend: {
             position: 'bottom',
-            labels: { boxWidth: 16, usePointStyle: false }
+            labels: {
+              boxWidth: 16,
+              usePointStyle: false,
+              filter: (item, data) => {
+                const ds = data.datasets[item.datasetIndex];
+                return !ds.hidden;
+              }
+            }
+          },
+          tooltip: {
+            mode: 'nearestOverlap',
+            intersect: false,
+            itemSort: (a, b) => (b.parsed?.y ?? 0) - (a.parsed?.y ?? 0),
+            filter: (item) => item.parsed?.y != null && !Number.isNaN(item.parsed.y),
+            callbacks: {
+              title: (items) => {
+                if (!items.length) return '';
+                // Same x = same run time label
+                return items[0].label || '';
+              },
+              label: (item) => {
+                const y = item.parsed?.y;
+                if (y == null || Number.isNaN(y)) return null;
+                // dataset.label is already "task · model · prompt · t=… · AI|baseline"
+                return `${item.dataset.label}: ${Number(y).toFixed(3)}`;
+              },
+              footer: (items) => {
+                if (items.length <= 1) return '';
+                return `(${items.length} overlapping points)`;
+              }
+            }
           },
           title: { display: false }
         }
       }
     });
+
+    function applyFilter() {
+      // Chart series
+      chart.data.datasets.forEach(ds => {
+        const t = ds.task || '';
+        ds.hidden = active.size === 0 ? true : !active.has(t);
+      });
+      chart.update();
+
+      // Tables
+      document.querySelectorAll('tr.score-row').forEach(row => {
+        const t = row.getAttribute('data-task') || '';
+        const show = active.size === 0 ? false : active.has(t);
+        row.classList.toggle('hidden-row', !show);
+      });
+
+      // Buttons
+      document.querySelectorAll('.filter-btn[data-task]').forEach(btn => {
+        const t = btn.getAttribute('data-task');
+        const on = active.has(t);
+        btn.classList.toggle('active', on);
+        btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+      });
+      const allOn = allTasks.length > 0 && allTasks.every(t => active.has(t));
+      const noneOn = active.size === 0;
+      document.querySelectorAll('.filter-btn[data-action="all"]').forEach(b => {
+        b.classList.toggle('active', allOn);
+        b.setAttribute('aria-pressed', allOn ? 'true' : 'false');
+      });
+      document.querySelectorAll('.filter-btn[data-action="none"]').forEach(b => {
+        b.classList.toggle('active', noneOn);
+        b.setAttribute('aria-pressed', noneOn ? 'true' : 'false');
+      });
+
+      const hint = document.getElementById('filter-active');
+      if (hint) {
+        if (active.size === 0) hint.textContent = 'nothing';
+        else if (allOn) hint.textContent = 'all classifiers';
+        else hint.textContent = [...active].sort().join(', ');
+      }
+    }
+
+    document.getElementById('filter-bar').addEventListener('click', (e) => {
+      const btn = e.target.closest('.filter-btn');
+      if (!btn) return;
+      const action = btn.getAttribute('data-action');
+      if (action === 'all') {
+        active.clear();
+        allTasks.forEach(t => active.add(t));
+      } else if (action === 'none') {
+        active.clear();
+      } else {
+        const t = btn.getAttribute('data-task');
+        if (!t) return;
+        if (active.has(t)) active.delete(t);
+        else active.add(t);
+      }
+      applyFilter();
+    });
+
+    const historyToggle = document.getElementById('history-toggle');
+    const historyPanel = document.getElementById('history-panel');
+    if (historyToggle && historyPanel) {
+      historyToggle.addEventListener('click', () => {
+        historyPanel.classList.toggle('collapsed');
+        const isOpen = !historyPanel.classList.contains('collapsed');
+        historyToggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+        historyToggle.textContent = isOpen ? 'Hide history' : 'Show history';
+      });
+    }
+
+    applyFilter();
   </script>
 </body>
 </html>

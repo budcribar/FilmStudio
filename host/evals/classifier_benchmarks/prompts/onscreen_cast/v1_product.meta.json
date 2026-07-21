@@ -1,0 +1,6 @@
+{
+  "id": "v1_product",
+  "task": "onscreen_cast",
+  "label": "Legacy product prompt (pre v2_grounded)",
+  "notes": "Former OnScreenCastClassifier.SystemPrompt. Superseded by v2_grounded (shipped)."
+}

@@ -55,7 +55,8 @@ static void PrintHelp()
 
         Examples:
           dotnet run --project host/tools/ClassifierBenchmarks -- run --tasks ambient_sfx --prompts v1_product,v2_grounded --temps 0,0.2
-          dotnet run --project host/tools/ClassifierBenchmarks -- run --tasks ambient_sfx,species_kind --models grok-4.5
+          dotnet run --project host/tools/ClassifierBenchmarks -- run --tasks onscreen_cast --prompts v1_product,v2_grounded
+          dotnet run --project host/tools/ClassifierBenchmarks -- run --tasks ambient_sfx,species_kind,onscreen_cast --models grok-4.5
           dotnet run --project host/tools/ClassifierBenchmarks -- report
         """);
 }
@@ -169,8 +170,10 @@ static async Task<int> CmdRunAsync(BenchPaths paths, string[] args)
                                 paths, cfg.ProjectId, model, temperature, prompt, chat),
                             "species_kind" => await TaskRunners.RunSpeciesAsync(
                                 paths, cfg.ProjectId, model, temperature, prompt, chat),
+                            "onscreen_cast" => await TaskRunners.RunOnScreenCastAsync(
+                                paths, cfg.ProjectId, model, temperature, prompt, chat),
                             _ => throw new InvalidOperationException(
-                                $"Unknown task '{task}'. Supported: ambient_sfx, species_kind"),
+                                $"Unknown task '{task}'. Supported: ambient_sfx, species_kind, onscreen_cast"),
                         };
 
                         run.Results.Add(result);

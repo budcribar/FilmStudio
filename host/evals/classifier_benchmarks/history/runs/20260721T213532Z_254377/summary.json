@@ -1,0 +1,64 @@
+{
+  "runId": "20260721T213532Z_254377",
+  "utc": "2026-07-21 21:35:32Z",
+  "schema": "classifier_benchmark_run.v1",
+  "config": {
+    "projectId": "The_Jungle_Book",
+    "tasks": [
+      "onscreen_cast"
+    ],
+    "models": [
+      "grok-4.5"
+    ],
+    "prompts": [
+      "v1_product",
+      "v2_grounded"
+    ],
+    "temperatures": [
+      0
+    ],
+    "note": "curated cast gold; v1 vs v2_grounded",
+    "temperature": 0
+  },
+  "repoRoot": "C:\\Users\\budcr\\source\\repos\\FilmStudio",
+  "results": [
+    {
+      "task": "onscreen_cast",
+      "projectId": "The_Jungle_Book",
+      "model": "grok-4.5",
+      "promptId": "v1_product",
+      "promptLabel": "Product OnScreenCastClassifier prompt (shipped v1)",
+      "promptHash": "cafa2a9aac8f",
+      "temperature": 0,
+      "curatedGold": true,
+      "sampleCount": 20,
+      "metric": "mean_set_f1",
+      "baselineScore": 0.811904761904762,
+      "aiScore": 0.9095238095238095,
+      "winner": "AI",
+      "latencyMs": 28558,
+      "aiParseHits": 20,
+      "note": "Matches FilmStudio.Engine OnScreenCastClassifier.SystemPrompt.",
+      "samples": []
+    },
+    {
+      "task": "onscreen_cast",
+      "projectId": "The_Jungle_Book",
+      "model": "grok-4.5",
+      "promptId": "v2_grounded",
+      "promptLabel": "v2 grounded cast (anti prop/substring; dialogue\u2260on-screen)",
+      "promptHash": "c787aeea84d7",
+      "temperature": 0,
+      "curatedGold": true,
+      "sampleCount": 20,
+      "metric": "mean_set_f1",
+      "baselineScore": 0.811904761904762,
+      "aiScore": 0.975,
+      "winner": "AI",
+      "latencyMs": 44913,
+      "aiParseHits": 20,
+      "note": "From cast blind review: Bandar-log/cubs/nicknames; exclude hide-as-character and Nag-inside-Kala-Nag; dialogue-only names off-screen.",
+      "samples": []
+    }
+  ]
+}

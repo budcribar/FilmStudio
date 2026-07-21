@@ -2,6 +2,49 @@
   "schema": "classifier_benchmark_history.v1",
   "runs": [
     {
+      "runId": "20260721T213532Z_254377",
+      "utc": "2026-07-21 21:35:32Z",
+      "projectId": "The_Jungle_Book",
+      "tasks": [
+        "onscreen_cast"
+      ],
+      "models": [
+        "grok-4.5"
+      ],
+      "prompts": [
+        "v1_product",
+        "v2_grounded"
+      ],
+      "summaryRel": "runs/20260721T213532Z_254377/summary.json",
+      "note": "curated cast gold; v1 vs v2_grounded",
+      "scores": [
+        {
+          "task": "onscreen_cast",
+          "model": "grok-4.5",
+          "promptId": "v1_product",
+          "temperature": 0,
+          "metric": "mean_set_f1",
+          "baselineScore": 0.811904761904762,
+          "aiScore": 0.9095238095238095,
+          "winner": "AI",
+          "sampleCount": 20,
+          "curatedGold": true
+        },
+        {
+          "task": "onscreen_cast",
+          "model": "grok-4.5",
+          "promptId": "v2_grounded",
+          "temperature": 0,
+          "metric": "mean_set_f1",
+          "baselineScore": 0.811904761904762,
+          "aiScore": 0.975,
+          "winner": "AI",
+          "sampleCount": 20,
+          "curatedGold": true
+        }
+      ]
+    },
+    {
       "runId": "20260721T210915Z_acb202",
       "utc": "2026-07-21 21:09:15Z",
       "projectId": "The_Jungle_Book",
