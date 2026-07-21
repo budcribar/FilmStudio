@@ -1,0 +1,64 @@
+{
+  "runId": "20260721T222801Z_acdf1d",
+  "utc": "2026-07-21 22:28:01Z",
+  "schema": "classifier_benchmark_run.v1",
+  "config": {
+    "projectId": "The_Jungle_Book",
+    "tasks": [
+      "extend_cut"
+    ],
+    "models": [
+      "grok-4.5"
+    ],
+    "prompts": [
+      "v1_product",
+      "v2_grounded"
+    ],
+    "temperatures": [
+      0
+    ],
+    "note": "curated extend gold; v1 vs v2",
+    "temperature": 0
+  },
+  "repoRoot": "C:\\Users\\budcr\\source\\repos\\FilmStudio",
+  "results": [
+    {
+      "task": "extend_cut",
+      "projectId": "The_Jungle_Book",
+      "model": "grok-4.5",
+      "promptId": "v1_product",
+      "promptLabel": "Product ExtendCutClassifier prompt (shipped v1)",
+      "promptHash": "937646d35465",
+      "temperature": 0,
+      "curatedGold": true,
+      "sampleCount": 24,
+      "metric": "accuracy",
+      "baselineScore": 0.9166666666666666,
+      "aiScore": 1,
+      "winner": "AI",
+      "latencyMs": 35182,
+      "aiParseHits": 24,
+      "note": "Matches FilmStudio.Engine ExtendCutClassifier.SystemPrompt.",
+      "samples": []
+    },
+    {
+      "task": "extend_cut",
+      "projectId": "The_Jungle_Book",
+      "model": "grok-4.5",
+      "promptId": "v2_grounded",
+      "promptLabel": "v2 grounded cut (time jump, fight energy, subject reframe)",
+      "promptHash": "20eb7021c63e",
+      "temperature": 0,
+      "curatedGold": true,
+      "sampleCount": 24,
+      "metric": "accuracy",
+      "baselineScore": 0.9166666666666666,
+      "aiScore": 0.9583333333333334,
+      "winner": "AI",
+      "latencyMs": 17833,
+      "aiParseHits": 24,
+      "note": "From extend blind: baseline and v1 nearly agree; v2 targets mid-scene fight energy and new-subject scrambles baseline misses.",
+      "samples": []
+    }
+  ]
+}

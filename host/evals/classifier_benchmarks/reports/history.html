@@ -53,7 +53,7 @@
 </head>
 <body>
   <h1>Classifier benchmarks</h1>
-  <p class="muted">Generated 2026-07-21 22:05:20Z · gold under <code>host/evals/classifier_benchmarks/gold</code></p>
+  <p class="muted">Generated 2026-07-21 22:28:54Z · gold under <code>host/evals/classifier_benchmarks/gold</code></p>
 
   <h2>Top configuration per task</h2>
   <p class="muted">Best <strong>AI</strong> score in history for each classifier (ties keep the newer run).</p>
@@ -66,6 +66,7 @@
     </thead>
     <tbody>
 <tr class="leader-row" data-task="ambient_sfx"><td><code>ambient_sfx</code></td><td>mean_token_jaccard</td><td><code>grok-4.5</code></td><td><code>v2_grounded</code></td><td>0.2</td><td class="num ai"><strong>0.897</strong></td><td class="num">0.742</td><td class="num">+0.156</td><td><strong>AI</strong></td><td>30</td><td>2026-07-21 21:09:15Z</td><td><code>20260721T210915Z_acb202</code></td></tr>
+<tr class="leader-row" data-task="extend_cut"><td><code>extend_cut</code></td><td>accuracy</td><td><code>grok-4.5</code></td><td><code>v1_product</code></td><td>0</td><td class="num ai"><strong>1.000</strong></td><td class="num">0.917</td><td class="num">+0.083</td><td><strong>AI</strong></td><td>24</td><td>2026-07-21 22:28:01Z</td><td><code>20260721T222801Z_acdf1d</code></td></tr>
 <tr class="leader-row" data-task="onscreen_cast"><td><code>onscreen_cast</code></td><td>mean_set_f1</td><td><code>grok-4.5</code></td><td><code>v2_grounded</code></td><td>0</td><td class="num ai"><strong>0.975</strong></td><td class="num">0.812</td><td class="num">+0.163</td><td><strong>AI</strong></td><td>20</td><td>2026-07-21 21:35:32Z</td><td><code>20260721T213532Z_254377</code></td></tr>
 <tr class="leader-row" data-task="silent_beat_action"><td><code>silent_beat_action</code></td><td>accuracy</td><td><code>grok-4.5</code></td><td><code>v2_product</code></td><td>0</td><td class="num ai"><strong>0.871</strong></td><td class="num">0.469</td><td class="num">+0.401</td><td><strong>AI</strong></td><td>147</td><td>2026-07-21 22:00:45Z</td><td><code>20260721T220045Z_f6fc27</code></td></tr>
 <tr class="leader-row" data-task="species_kind"><td><code>species_kind</code></td><td>accuracy</td><td><code>grok-4.5</code></td><td><code>v1_product</code></td><td>0</td><td class="num ai"><strong>0.863</strong></td><td class="num">0.490</td><td class="num">+0.373</td><td><strong>AI</strong></td><td>51</td><td>2026-07-21 20:52:32Z</td><td><code>20260721T205232Z_9f5c1e</code></td></tr>
@@ -81,6 +82,7 @@
   <div class="filter-bar" id="filter-bar" role="group" aria-label="Classifier filters">
     <span class="label">Show:</span>
 <button type="button" class="filter-btn active" data-task="ambient_sfx" aria-pressed="true">ambient_sfx</button>
+<button type="button" class="filter-btn" data-task="extend_cut" aria-pressed="false">extend_cut</button>
 <button type="button" class="filter-btn" data-task="onscreen_cast" aria-pressed="false">onscreen_cast</button>
 <button type="button" class="filter-btn" data-task="silent_beat_action" aria-pressed="false">silent_beat_action</button>
 <button type="button" class="filter-btn" data-task="species_kind" aria-pressed="false">species_kind</button>
@@ -95,7 +97,8 @@
   <table id="latest-table">
     <thead><tr><th>Task</th><th>Model</th><th>Prompt</th><th>Temp</th><th>Metric</th><th>Baseline</th><th>AI</th><th>Winner</th><th>n</th></tr></thead>
     <tbody>
-<tr class="score-row hidden-row" data-task="silent_beat_action"><td>silent_beat_action</td><td><code>grok-4.5</code></td><td><code>v2_product</code></td><td>0</td><td>accuracy</td><td>0.469</td><td><strong>0.871</strong></td><td>AI</td><td>147</td></tr>
+<tr class="score-row hidden-row" data-task="extend_cut"><td>extend_cut</td><td><code>grok-4.5</code></td><td><code>v1_product</code></td><td>0</td><td>accuracy</td><td>0.917</td><td><strong>1.000</strong></td><td>AI</td><td>24</td></tr>
+<tr class="score-row hidden-row" data-task="extend_cut"><td>extend_cut</td><td><code>grok-4.5</code></td><td><code>v2_grounded</code></td><td>0</td><td>accuracy</td><td>0.917</td><td><strong>0.958</strong></td><td>AI</td><td>24</td></tr>
 
     </tbody>
   </table>
@@ -109,6 +112,8 @@
     <table id="history-table">
       <thead><tr><th>UTC</th><th>Run</th><th>Task</th><th>Model</th><th>Prompt</th><th>Temp</th><th>Baseline</th><th>AI</th><th>Winner</th></tr></thead>
       <tbody>
+<tr class="score-row hidden-row" data-task="extend_cut"><td>2026-07-21 22:28:01Z</td><td><code>20260721T222801Z_acdf1d</code></td><td>extend_cut</td><td><code>grok-4.5</code></td><td><code>v1_product</code></td><td>0</td><td>0.917</td><td>1.000</td><td>AI</td></tr>
+<tr class="score-row hidden-row" data-task="extend_cut"><td>2026-07-21 22:28:01Z</td><td><code>20260721T222801Z_acdf1d</code></td><td>extend_cut</td><td><code>grok-4.5</code></td><td><code>v2_grounded</code></td><td>0</td><td>0.917</td><td>0.958</td><td>AI</td></tr>
 <tr class="score-row hidden-row" data-task="silent_beat_action"><td>2026-07-21 22:00:45Z</td><td><code>20260721T220045Z_f6fc27</code></td><td>silent_beat_action</td><td><code>grok-4.5</code></td><td><code>v2_product</code></td><td>0</td><td>0.469</td><td>0.871</td><td>AI</td></tr>
 <tr class="score-row hidden-row" data-task="onscreen_cast"><td>2026-07-21 21:35:32Z</td><td><code>20260721T213532Z_254377</code></td><td>onscreen_cast</td><td><code>grok-4.5</code></td><td><code>v1_product</code></td><td>0</td><td>0.812</td><td>0.910</td><td>AI</td></tr>
 <tr class="score-row hidden-row" data-task="onscreen_cast"><td>2026-07-21 21:35:32Z</td><td><code>20260721T213532Z_254377</code></td><td>onscreen_cast</td><td><code>grok-4.5</code></td><td><code>v2_grounded</code></td><td>0</td><td>0.812</td><td>0.975</td><td>AI</td></tr>
@@ -136,7 +141,8 @@
     "2026-07-21 20:52:32Z",
     "2026-07-21 21:09:15Z",
     "2026-07-21 21:35:32Z",
-    "2026-07-21 22:00:45Z"
+    "2026-07-21 22:00:45Z",
+    "2026-07-21 22:28:01Z"
   ],
   "datasets": [
     {
@@ -147,6 +153,7 @@
         null,
         null,
         0.8138888888888888,
+        null,
         null,
         null
       ],
@@ -167,6 +174,7 @@
         null,
         null,
         0.7416666666666667,
+        null,
         null,
         null
       ],
@@ -193,6 +201,7 @@
         null,
         0.8527777777777777,
         null,
+        null,
         null
       ],
       "borderColor": "#dc2626",
@@ -212,6 +221,7 @@
         null,
         null,
         0.7416666666666667,
+        null,
         null,
         null
       ],
@@ -238,6 +248,7 @@
         0.7388888888888888,
         0.85,
         null,
+        null,
         null
       ],
       "borderColor": "#16a34a",
@@ -257,6 +268,7 @@
         null,
         0.7416666666666667,
         0.7416666666666667,
+        null,
         null,
         null
       ],
@@ -283,6 +295,7 @@
         null,
         0.7611111111111111,
         null,
+        null,
         null
       ],
       "borderColor": "#ca8a04",
@@ -302,6 +315,7 @@
         null,
         null,
         0.7416666666666667,
+        null,
         null,
         null
       ],
@@ -328,6 +342,7 @@
         null,
         0.8722222222222221,
         null,
+        null,
         null
       ],
       "borderColor": "#9333ea",
@@ -347,6 +362,7 @@
         null,
         null,
         0.7416666666666667,
+        null,
         null,
         null
       ],
@@ -373,6 +389,7 @@
         null,
         0.8972222222222221,
         null,
+        null,
         null
       ],
       "borderColor": "#0891b2",
@@ -393,6 +410,7 @@
         null,
         0.7416666666666667,
         null,
+        null,
         null
       ],
       "borderColor": "#0891b2",
@@ -410,6 +428,100 @@
       "hidden": false
     },
     {
+      "label": "extend_cut \u00B7 grok-4.5 \u00B7 v1_product \u00B7 t=0 \u00B7 AI",
+      "task": "extend_cut",
+      "data": [
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        1
+      ],
+      "borderColor": "#ea580c",
+      "backgroundColor": "#ea580c33",
+      "borderWidth": 2.5,
+      "spanGaps": true,
+      "tension": 0.2,
+      "pointRadius": 3,
+      "pointHoverRadius": 5,
+      "hidden": true
+    },
+    {
+      "label": "extend_cut \u00B7 grok-4.5 \u00B7 v1_product \u00B7 t=0 \u00B7 baseline",
+      "task": "extend_cut",
+      "data": [
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        0.9166666666666666
+      ],
+      "borderColor": "#ea580c",
+      "backgroundColor": "transparent",
+      "borderWidth": 2,
+      "borderDash": [
+        7,
+        4
+      ],
+      "spanGaps": true,
+      "tension": 0,
+      "pointRadius": 2,
+      "pointHoverRadius": 4,
+      "pointStyle": "rectRot",
+      "hidden": true
+    },
+    {
+      "label": "extend_cut \u00B7 grok-4.5 \u00B7 v2_grounded \u00B7 t=0 \u00B7 AI",
+      "task": "extend_cut",
+      "data": [
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        0.9583333333333334
+      ],
+      "borderColor": "#4f46e5",
+      "backgroundColor": "#4f46e533",
+      "borderWidth": 2.5,
+      "spanGaps": true,
+      "tension": 0.2,
+      "pointRadius": 3,
+      "pointHoverRadius": 5,
+      "hidden": true
+    },
+    {
+      "label": "extend_cut \u00B7 grok-4.5 \u00B7 v2_grounded \u00B7 t=0 \u00B7 baseline",
+      "task": "extend_cut",
+      "data": [
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        0.9166666666666666
+      ],
+      "borderColor": "#4f46e5",
+      "backgroundColor": "transparent",
+      "borderWidth": 2,
+      "borderDash": [
+        7,
+        4
+      ],
+      "spanGaps": true,
+      "tension": 0,
+      "pointRadius": 2,
+      "pointHoverRadius": 4,
+      "pointStyle": "rectRot",
+      "hidden": true
+    },
+    {
       "label": "onscreen_cast \u00B7 grok-4.5 \u00B7 v1_product \u00B7 t=0 \u00B7 AI",
       "task": "onscreen_cast",
       "data": [
@@ -418,10 +530,11 @@
         null,
         null,
         0.9095238095238095,
+        null,
         null
       ],
-      "borderColor": "#ea580c",
-      "backgroundColor": "#ea580c33",
+      "borderColor": "#0d9488",
+      "backgroundColor": "#0d948833",
       "borderWidth": 2.5,
       "spanGaps": true,
       "tension": 0.2,
@@ -438,9 +551,10 @@
         null,
         null,
         0.811904761904762,
+        null,
         null
       ],
-      "borderColor": "#ea580c",
+      "borderColor": "#0d9488",
       "backgroundColor": "transparent",
       "borderWidth": 2,
       "borderDash": [
@@ -463,10 +577,11 @@
         null,
         null,
         0.975,
+        null,
         null
       ],
-      "borderColor": "#4f46e5",
-      "backgroundColor": "#4f46e533",
+      "borderColor": "#be185d",
+      "backgroundColor": "#be185d33",
       "borderWidth": 2.5,
       "spanGaps": true,
       "tension": 0.2,
@@ -483,9 +598,10 @@
         null,
         null,
         0.811904761904762,
+        null,
         null
       ],
-      "borderColor": "#4f46e5",
+      "borderColor": "#be185d",
       "backgroundColor": "transparent",
       "borderWidth": 2,
       "borderDash": [
@@ -508,10 +624,11 @@
         null,
         null,
         null,
-        0.8707482993197279
+        0.8707482993197279,
+        null
       ],
-      "borderColor": "#0d9488",
-      "backgroundColor": "#0d948833",
+      "borderColor": "#65a30d",
+      "backgroundColor": "#65a30d33",
       "borderWidth": 2.5,
       "spanGaps": true,
       "tension": 0.2,
@@ -528,9 +645,10 @@
         null,
         null,
         null,
-        0.46938775510204084
+        0.46938775510204084,
+        null
       ],
-      "borderColor": "#0d9488",
+      "borderColor": "#65a30d",
       "backgroundColor": "transparent",
       "borderWidth": 2,
       "borderDash": [
@@ -553,10 +671,11 @@
         0.8627450980392157,
         null,
         null,
+        null,
         null
       ],
-      "borderColor": "#be185d",
-      "backgroundColor": "#be185d33",
+      "borderColor": "#7c3aed",
+      "backgroundColor": "#7c3aed33",
       "borderWidth": 2.5,
       "spanGaps": true,
       "tension": 0.2,
@@ -573,9 +692,10 @@
         0.49019607843137253,
         null,
         null,
+        null,
         null
       ],
-      "borderColor": "#be185d",
+      "borderColor": "#7c3aed",
       "backgroundColor": "transparent",
       "borderWidth": 2,
       "borderDash": [
@@ -591,7 +711,7 @@
     }
   ]
 };
-    const allTasks = ["ambient_sfx","onscreen_cast","silent_beat_action","species_kind"];
+    const allTasks = ["ambient_sfx","extend_cut","onscreen_cast","silent_beat_action","species_kind"];
     const defaultTask = "ambient_sfx";
     const active = new Set([defaultTask]);
 

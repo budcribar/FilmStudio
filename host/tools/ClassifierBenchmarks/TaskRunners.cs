@@ -513,10 +513,122 @@ public static class TaskRunners
         return "action";
     }
 
+    public static async Task<TaskResult> RunExtendCutAsync(
+        BenchPaths paths,
+        string projectId,
+        string model,
+        double temperature,
+        PromptBundle prompt,
+        ChatRunner chat,
+        CancellationToken ct = default)
+    {
+        var goldPath = paths.GoldFile(projectId, "extend_cut");
+        if (!File.Exists(goldPath))
+            throw new FileNotFoundException($"Missing gold: {goldPath}");
+
+        using var goldDoc = JsonDocument.Parse(await File.ReadAllTextAsync(goldPath, ct));
+        var root = goldDoc.RootElement;
+        var curated = root.TryGetProperty("curated", out var cEl) && cEl.GetBoolean();
+        var samples = new List<(string Id, string Visual, string Prev, string ActionClass, bool SameLoc, bool IsFirst, string Gold)>();
+        foreach (var el in root.GetProperty("labels").EnumerateArray())
+        {
+            var id = el.TryGetProperty("id", out var idEl) ? idEl.GetString() ?? "" : "";
+            if (id.Length == 0) continue;
+            var visual = el.TryGetProperty("visual", out var vEl) ? vEl.GetString() ?? "" : "";
+            var prev = el.TryGetProperty("prev", out var pEl) ? pEl.GetString() ?? "" : "";
+            var ac = el.TryGetProperty("action_class", out var aEl) ? aEl.GetString() ?? "" : "";
+            var same = el.TryGetProperty("same_location", out var sEl) &&
+                       (sEl.ValueKind == JsonValueKind.True ||
+                        (sEl.ValueKind == JsonValueKind.String && bool.TryParse(sEl.GetString(), out var sb) && sb));
+            var first = el.TryGetProperty("is_first", out var fEl) &&
+                        (fEl.ValueKind == JsonValueKind.True ||
+                         (fEl.ValueKind == JsonValueKind.String && bool.TryParse(fEl.GetString(), out var fb) && fb));
+            var gold = el.TryGetProperty("gold", out var gEl) ? gEl.GetString() ?? "" : "";
+            gold = gold.Trim().ToLowerInvariant().Replace(' ', '_');
+            if (gold is "hardcut" or "cut") gold = "hard_cut";
+            if (gold is not ("hard_cut" or "extend")) continue;
+            samples.Add((id, visual, prev, ac, same, first, gold));
+        }
+
+        var payload = samples.Select(s =>
+        {
+            var h = ExtendCutClassifier.BaselineHardCut(s.Visual, s.ActionClass, s.SameLoc, s.IsFirst)
+                ? "hard_cut" : "extend";
+            return new Dictionary<string, object?>
+            {
+                ["id"] = s.Id,
+                ["prev_visual"] = Trunc(s.Prev, 160),
+                ["visual_event"] = Trunc(s.Visual, 200),
+                ["same_location"] = s.SameLoc,
+                ["action_class"] = s.ActionClass,
+                ["heuristic"] = h,
+            };
+        }).ToList();
+
+        var sw = Stopwatch.StartNew();
+        var raw = await chat.CompleteAsync(
+            model, temperature, prompt.Text,
+            "Label hard_cut vs extend for video continuity. JSON only.\n" +
+            JsonSerializer.Serialize(new { beats = payload }),
+            ct);
+        sw.Stop();
+
+        var aiMap = ExtendCutClassifier.ParseLabels(raw);
+        var sampleScores = new List<SampleScore>();
+        int baseOk = 0, aiOk = 0, hits = 0;
+        foreach (var s in samples)
+        {
+            var h = ExtendCutClassifier.BaselineHardCut(s.Visual, s.ActionClass, s.SameLoc, s.IsFirst)
+                ? "hard_cut" : "extend";
+            aiMap.TryGetValue(s.Id, out var ac);
+            if (aiMap.ContainsKey(s.Id)) hits++;
+            ac ??= "";
+            var b = string.Equals(h, s.Gold, StringComparison.OrdinalIgnoreCase) ? 1.0 : 0.0;
+            var a = string.Equals(ac, s.Gold, StringComparison.OrdinalIgnoreCase) ? 1.0 : 0.0;
+            baseOk += (int)b;
+            aiOk += (int)a;
+            sampleScores.Add(new SampleScore
+            {
+                Id = s.Id,
+                Visual = Trunc(s.Visual, 200),
+                GoldLabel = s.Gold,
+                BaselineLabel = h,
+                AiLabel = ac,
+                BaselineScore = b,
+                AiScore = a,
+            });
+        }
+
+        var n = samples.Count;
+        var baseMean = n == 0 ? 0 : (double)baseOk / n;
+        var aiMean = n == 0 ? 0 : (double)aiOk / n;
+        return new TaskResult
+        {
+            Task = "extend_cut",
+            ProjectId = projectId,
+            Model = model,
+            PromptId = prompt.Id,
+            PromptLabel = prompt.Label,
+            PromptHash = prompt.Hash,
+            Temperature = temperature,
+            CuratedGold = curated,
+            SampleCount = n,
+            Metric = "accuracy",
+            BaselineScore = baseMean,
+            AiScore = aiMean,
+            Winner = Winner(baseMean, aiMean),
+            LatencyMs = sw.ElapsedMilliseconds,
+            AiParseHits = hits,
+            Note = prompt.Notes,
+            Samples = sampleScores,
+        };
+    }
+
     public static string DefaultPromptId(string task) => task switch
     {
         "ambient_sfx" => "v2_grounded",
         "onscreen_cast" => "v2_grounded",
+        "extend_cut" => "v2_grounded",
         "silent_beat_action" => "v2_product",
         "species_kind" => "v1_product",
         _ => "v1_product",

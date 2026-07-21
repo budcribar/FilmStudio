@@ -1,6 +1,6 @@
 # Classifier benchmarks — history
 
-Updated: 2026-07-21 22:05:20Z
+Updated: 2026-07-21 22:28:54Z
 
 Open **`reports/history.html`** for interactive charts (model / prompt / task over time).
 
@@ -9,6 +9,7 @@ Open **`reports/history.html`** for interactive charts (model / prompt / task ov
 | Task | Metric | Model | Prompt | Temp | AI | Baseline | Δ vs base | Winner | n | When (UTC) | Run |
 |------|--------|-------|--------|------|----|----------|-----------|--------|---|------------|-----|
 | `ambient_sfx` | mean_token_jaccard | `grok-4.5` | `v2_grounded` | 0.2 | **0.897** | 0.742 | +0.156 | **AI** | 30 | 2026-07-21 21:09:15Z | `20260721T210915Z_acb202` |
+| `extend_cut` | accuracy | `grok-4.5` | `v1_product` | 0 | **1.000** | 0.917 | +0.083 | **AI** | 24 | 2026-07-21 22:28:01Z | `20260721T222801Z_acdf1d` |
 | `onscreen_cast` | mean_set_f1 | `grok-4.5` | `v2_grounded` | 0 | **0.975** | 0.812 | +0.163 | **AI** | 20 | 2026-07-21 21:35:32Z | `20260721T213532Z_254377` |
 | `silent_beat_action` | accuracy | `grok-4.5` | `v2_product` | 0 | **0.871** | 0.469 | +0.401 | **AI** | 147 | 2026-07-21 22:00:45Z | `20260721T220045Z_f6fc27` |
 | `species_kind` | accuracy | `grok-4.5` | `v1_product` | 0 | **0.863** | 0.490 | +0.373 | **AI** | 51 | 2026-07-21 20:52:32Z | `20260721T205232Z_9f5c1e` |
@@ -17,6 +18,8 @@ Open **`reports/history.html`** for interactive charts (model / prompt / task ov
 
 | When (UTC) | Run | Task | Model | Prompt | Temp | Metric | Baseline | AI | Winner | n |
 |------------|-----|------|-------|--------|------|--------|----------|----|--------|---|
+| 2026-07-21 22:28:01Z | `20260721T222801Z_acdf1d` | extend_cut | `grok-4.5` | `v1_product` | 0 | accuracy | 0.917 | 1.000 | **AI** | 24 |
+| 2026-07-21 22:28:01Z | `20260721T222801Z_acdf1d` | extend_cut | `grok-4.5` | `v2_grounded` | 0 | accuracy | 0.917 | 0.958 | **AI** | 24 |
 | 2026-07-21 22:00:45Z | `20260721T220045Z_f6fc27` | silent_beat_action | `grok-4.5` | `v2_product` | 0 | accuracy | 0.469 | 0.871 | **AI** | 147 |
 | 2026-07-21 21:35:32Z | `20260721T213532Z_254377` | onscreen_cast | `grok-4.5` | `v1_product` | 0 | mean_set_f1 | 0.812 | 0.910 | **AI** | 20 |
 | 2026-07-21 21:35:32Z | `20260721T213532Z_254377` | onscreen_cast | `grok-4.5` | `v2_grounded` | 0 | mean_set_f1 | 0.812 | 0.975 | **AI** | 20 |
@@ -47,6 +50,13 @@ Open **`reports/history.html`** for interactive charts (model / prompt / task ov
 | `20260721T205232Z_9f5c1e` | `grok-4.5` | `v1_product` | 0 | 0.739 | 0.742 |
 | `20260721T204308Z_22056f` | `grok-4.5` | `v1_product` | 0 | 0.786 | 0.742 |
 | `20260721T204308Z_22056f` | `grok-4.5` | `v1_no_speech_sfx` | 0 | 0.800 | 0.742 |
+
+### `extend_cut`
+
+| Run | Model | Prompt | Temp | AI | Baseline |
+|-----|-------|--------|------|----|----------|
+| `20260721T222801Z_acdf1d` | `grok-4.5` | `v1_product` | 0 | 1.000 | 0.917 |
+| `20260721T222801Z_acdf1d` | `grok-4.5` | `v2_grounded` | 0 | 0.958 | 0.917 |
 
 ### `onscreen_cast`
 

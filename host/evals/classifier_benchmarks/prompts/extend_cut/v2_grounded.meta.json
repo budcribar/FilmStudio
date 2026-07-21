@@ -1,0 +1,6 @@
+{
+  "id": "v2_grounded",
+  "task": "extend_cut",
+  "label": "v2 grounded cut (time jump, fight energy, subject reframe)",
+  "notes": "From extend blind: baseline and v1 nearly agree; v2 targets mid-scene fight energy and new-subject scrambles baseline misses."
+}

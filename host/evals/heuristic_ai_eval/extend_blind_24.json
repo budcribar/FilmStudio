@@ -1,251 +1,296 @@
 {
-  "projectId": "The_Jungle_Book",
-  "metric": "accuracy",
-  "task": "extend_cut",
-  "curated_at": "2026-07-21",
-  "schema": "classifier_gold.v1",
-  "curated": true,
-  "labels": [
+  "seed": 20260722,
+  "holdout": "The_Jungle_Book",
+  "sampleCount": 24,
+  "agree": 23,
+  "rows": [
     {
+      "n": 1,
       "id": "s28_b11",
       "prev": "Akela speaks.",
       "visual": "From habit the Pack answers. Lame wolves, shot-wounded wolves, mangy wolves-many missing-drag themselves to the Rock. They stare at the striped hide, huge claws dangling from empty feet. Mowgli leaps upon the rattling skin. He beats time with his heels and shouts the song that rises in his throat. Gray Brother and Akela howl between the verses.",
       "action_class": "big_action",
       "same_location": true,
       "is_first": false,
-      "gold": "hard_cut",
-      "note": "agree"
+      "baseline": "hard_cut",
+      "ai": "hard_cut",
+      "agree": true
     },
     {
+      "n": 2,
       "id": "s6_b1",
       "prev": "",
       "visual": "Bushes rustle. Father Wolf drops on his haunches, ready to leap-then checks in mid-spring, shoots straight up four or five feet, and lands almost where he left ground.",
       "action_class": "big_action",
       "same_location": true,
       "is_first": true,
-      "gold": "hard_cut",
-      "note": "agree"
+      "baseline": "hard_cut",
+      "ai": "hard_cut",
+      "agree": true
     },
     {
+      "n": 3,
       "id": "s52_b9",
       "prev": "Big Toomai speaks.",
       "visual": "Big Toomai speaks.",
       "action_class": "dialogue",
       "same_location": true,
       "is_first": false,
-      "gold": "extend",
-      "note": "agree"
+      "baseline": "extend",
+      "ai": "extend",
+      "agree": true
     },
     {
+      "n": 4,
       "id": "s32_b1",
       "prev": "",
       "visual": "Kotick swims thousands of miles-year after year-searching. He asks sea birds, sharks, walruses. He visits beaches from California to Japan. Everywhere: seals, and the shadow of the sealers.",
       "action_class": "establishing",
       "same_location": true,
       "is_first": true,
-      "gold": "hard_cut",
-      "note": "agree"
+      "baseline": "hard_cut",
+      "ai": "hard_cut",
+      "agree": true
     },
     {
+      "n": 5,
       "id": "s61_b3",
       "prev": "Camp Runner speaks.",
       "visual": "NARRATOR-a lean Englishman in shirt-sleeves, period moustache-jams on boots and waterproof. Vixen bolts out the other side.",
       "action_class": "hold",
       "same_location": true,
       "is_first": false,
-      "gold": "hard_cut",
-      "note": "New primary subject (Narrator+Vixen scramble) after runner line — hard_cut for setup even same camp."
+      "baseline": "extend",
+      "ai": "hard_cut",
+      "agree": false
     },
     {
+      "n": 6,
       "id": "s60_b1",
       "prev": "",
       "visual": "Mud and drizzle. Heel-ropes snap. A mob of Afghan horses stampede through the dark between tent ropes. Camels break loose, blunder, fall over guy-lines. Men shout. Canvas heaves.",
       "action_class": "establishing",
       "same_location": true,
       "is_first": true,
-      "gold": "hard_cut",
-      "note": "agree"
+      "baseline": "hard_cut",
+      "ai": "hard_cut",
+      "agree": true
     },
     {
+      "n": 7,
       "id": "s16_b1",
       "prev": "",
       "visual": "Baloo and Bagheera burst from the jungle. Monkeys scream and fling themselves upon them. Bagheera fights toward the tank; Baloo stands like a rock under a rain of biting, scratching bodies.",
       "action_class": "big_action",
       "same_location": true,
       "is_first": true,
-      "gold": "hard_cut",
-      "note": "agree"
+      "baseline": "hard_cut",
+      "ai": "hard_cut",
+      "agree": true
     },
     {
+      "n": 8,
       "id": "s38_b1",
       "prev": "",
       "visual": "Year upon year, more seals leave Novastoshnah, Lukannon, and the other nurseries for the quiet sheltered beaches. Kotick sits all the summer through, getting bigger and fatter and stronger, while the holluschickie play around him in that sea where no man comes.",
       "action_class": "establishing",
       "same_location": true,
       "is_first": true,
-      "gold": "hard_cut",
-      "note": "agree"
+      "baseline": "hard_cut",
+      "ai": "hard_cut",
+      "agree": true
     },
     {
+      "n": 9,
       "id": "s52_b11",
       "prev": "Big Toomai speaks.",
       "visual": "Big Toomai speaks.",
       "action_class": "dialogue",
       "same_location": true,
       "is_first": false,
-      "gold": "extend",
-      "note": "agree"
+      "baseline": "extend",
+      "ai": "extend",
+      "agree": true
     },
     {
+      "n": 10,
       "id": "s35_b14",
       "prev": "Young Seal (carelessly).",
-      "visual": "He has no time to change his mind. Kotick's head is out; teeth sink in the blubber of the young seal's neck. Kotick throws himself back on his haunches, hauls his enemy down the beach, shakes him, knocks him over.",
+      "visual": "He has no time to change his mind. Kotick\u0027s head is out; teeth sink in the blubber of the young seal\u0027s neck. Kotick throws himself back on his haunches, hauls his enemy down the beach, shakes him, knocks him over.",
       "action_class": "action",
       "same_location": true,
       "is_first": false,
-      "gold": "hard_cut",
-      "note": "Violent throw/shake fight mid-scene — hard_cut for energy (baseline misses non-keyword combat)."
+      "baseline": "extend",
+      "ai": "extend",
+      "agree": true
     },
     {
+      "n": 11,
       "id": "s58_b12",
-      "prev": "Toomai's Mother speaks.",
-      "visual": "Toomai's Mother speaks.",
+      "prev": "Toomai\u0027s Mother speaks.",
+      "visual": "Toomai\u0027s Mother speaks.",
       "action_class": "dialogue",
       "same_location": true,
       "is_first": false,
-      "gold": "extend",
-      "note": "agree"
+      "baseline": "extend",
+      "ai": "extend",
+      "agree": true
     },
     {
+      "n": 12,
       "id": "s41_b1",
       "prev": "",
-      "visual": "Teddy's Father picks the mongoose up between finger and thumb.",
+      "visual": "Teddy\u0027s Father picks the mongoose up between finger and thumb.",
       "action_class": "establishing",
       "same_location": true,
       "is_first": true,
-      "gold": "hard_cut",
-      "note": "agree"
+      "baseline": "hard_cut",
+      "ai": "hard_cut",
+      "agree": true
     },
     {
+      "n": 13,
       "id": "s9_b89",
       "prev": "Baloo speaks.",
       "visual": "Baloo speaks.",
       "action_class": "dialogue",
       "same_location": true,
       "is_first": false,
-      "gold": "extend",
-      "note": "agree"
+      "baseline": "extend",
+      "ai": "extend",
+      "agree": true
     },
     {
+      "n": 14,
       "id": "s63_b35",
       "prev": "Gun Bullock speaks.",
       "visual": "From the dark, a deep soft voice-the ELEPHANT of the gun-team, huge beyond the gun-wheels.",
       "action_class": "action",
       "same_location": true,
       "is_first": false,
-      "gold": "extend",
-      "note": "agree"
+      "baseline": "extend",
+      "ai": "extend",
+      "agree": true
     },
     {
+      "n": 15,
       "id": "s7_b36",
       "prev": "Mother Wolf throws herself down panting among the cubs.",
       "visual": "Father Wolf speaks.",
       "action_class": "dialogue",
       "same_location": true,
       "is_first": false,
-      "gold": "extend",
-      "note": "agree"
+      "baseline": "extend",
+      "ai": "extend",
+      "agree": true
     },
     {
+      "n": 16,
       "id": "s59_b1",
       "prev": "",
       "visual": "Rain sheets down on a vast military camp-thirty thousand men, camels, elephants, horses, bullocks, and mules gathered for review. Mud roads, tent lines, gun parks. Flags hang heavy and wet.",
       "action_class": "establishing",
       "same_location": true,
       "is_first": true,
-      "gold": "hard_cut",
-      "note": "agree"
+      "baseline": "hard_cut",
+      "ai": "hard_cut",
+      "agree": true
     },
     {
+      "n": 17,
       "id": "s13_b4",
       "prev": "Bagheera speaks.",
       "visual": "Baloo speaks.",
       "action_class": "dialogue",
       "same_location": true,
       "is_first": false,
-      "gold": "extend",
-      "note": "agree"
+      "baseline": "extend",
+      "ai": "extend",
+      "agree": true
     },
     {
+      "n": 18,
       "id": "s7_b1",
       "prev": "",
       "visual": "Mother Wolf speaks.",
       "action_class": "dialogue",
       "same_location": true,
       "is_first": true,
-      "gold": "hard_cut",
-      "note": "agree"
+      "baseline": "hard_cut",
+      "ai": "hard_cut",
+      "agree": true
     },
     {
+      "n": 19,
       "id": "s3_b1",
       "prev": "",
       "visual": "Father Wolf at the mouth. Mother Wolf lifts her head.",
       "action_class": "establishing",
       "same_location": true,
       "is_first": true,
-      "gold": "hard_cut",
-      "note": "agree"
+      "baseline": "hard_cut",
+      "ai": "hard_cut",
+      "agree": true
     },
     {
+      "n": 20,
       "id": "s21_b1",
       "prev": "",
       "visual": "Mowgli, bare and scarred, jogs steadily along a rough road down the valley-twenty miles of dust and heat.",
       "action_class": "establishing",
       "same_location": true,
       "is_first": true,
-      "gold": "hard_cut",
-      "note": "agree"
+      "baseline": "hard_cut",
+      "ai": "hard_cut",
+      "agree": true
     },
     {
+      "n": 21,
       "id": "s58_b17",
-      "prev": "Toomai's Mother speaks.",
-      "visual": "Toomai's Mother speaks.",
+      "prev": "Toomai\u0027s Mother speaks.",
+      "visual": "Toomai\u0027s Mother speaks.",
       "action_class": "dialogue",
       "same_location": true,
       "is_first": false,
-      "gold": "extend",
-      "note": "agree"
+      "baseline": "extend",
+      "ai": "extend",
+      "agree": true
     },
     {
+      "n": 22,
       "id": "s15_b1",
       "prev": "",
       "visual": "Ruined city swallowed by jungle: broken domes, terraces, a great reservoir tank, marble summerhouse with pierced screen-work. Bandar-log pour over walls with Mowgli, chattering of kings and laws they will make.",
       "action_class": "establishing",
       "same_location": true,
       "is_first": true,
-      "gold": "hard_cut",
-      "note": "agree"
+      "baseline": "hard_cut",
+      "ai": "hard_cut",
+      "agree": true
     },
     {
+      "n": 23,
       "id": "s9_b92",
       "prev": "Baloo speaks.",
       "visual": "Bagheera speaks.",
       "action_class": "dialogue",
       "same_location": true,
       "is_first": false,
-      "gold": "extend",
-      "note": "agree"
+      "baseline": "extend",
+      "ai": "extend",
+      "agree": true
     },
     {
+      "n": 24,
       "id": "s26_b23",
-      "prev": "Akela's yell cracks across the plain. The buffaloes charge the gate like a whirlwind, scattering villagers right and left.",
+      "prev": "Akela\u0027s yell cracks across the plain. The buffaloes charge the gate like a whirlwind, scattering villagers right and left.",
       "visual": "Mowgli (scornfully).",
       "action_class": "dialogue",
       "same_location": true,
       "is_first": false,
-      "gold": "extend",
-      "note": "agree"
+      "baseline": "extend",
+      "ai": "extend",
+      "agree": true
     }
-  ],
-  "notes": "Human-curated from extend_blind_24 (seed 20260722). Most labels match baseline=AI. Overrides: s61_b3 hard_cut (new subject scramble); s35_b14 hard_cut (fight energy). Metric: accuracy."
+  ]
 }
