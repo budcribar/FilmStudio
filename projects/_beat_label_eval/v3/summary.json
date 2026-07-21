@@ -1,0 +1,69 @@
+{
+  "ts": "2026-07-21T14:46:05.7639130\u002B00:00",
+  "promptVersion": "v3",
+  "baselineNote": "v1 baseline was ~50.9% agreement on 7 books with first-silent=establishing heuristic",
+  "overallAgreementPct": 44.6,
+  "overallAgree": 119,
+  "overallDisagree": 148,
+  "overallDurationWouldChange": 108,
+  "bookStats": [
+    {
+      "projectId": "AlicesAdventures",
+      "Agree": 27,
+      "Disagree": 13,
+      "agreementPct": 67.5,
+      "durationWouldChange": 11
+    },
+    {
+      "projectId": "ChristmasCarol",
+      "Agree": 20,
+      "Disagree": 20,
+      "agreementPct": 50,
+      "durationWouldChange": 17
+    },
+    {
+      "projectId": "Dracula",
+      "Agree": 17,
+      "Disagree": 23,
+      "agreementPct": 42.5,
+      "durationWouldChange": 14
+    },
+    {
+      "projectId": "Frankenstein",
+      "Agree": 13,
+      "Disagree": 27,
+      "agreementPct": 32.5,
+      "durationWouldChange": 16
+    },
+    {
+      "projectId": "GiftOfTheMagi",
+      "Agree": 13,
+      "Disagree": 14,
+      "agreementPct": 48.1,
+      "durationWouldChange": 9
+    },
+    {
+      "projectId": "JungleBook",
+      "Agree": 16,
+      "Disagree": 24,
+      "agreementPct": 40,
+      "durationWouldChange": 22
+    },
+    {
+      "projectId": "YellowWallpaper",
+      "Agree": 13,
+      "Disagree": 27,
+      "agreementPct": 32.5,
+      "durationWouldChange": 19
+    }
+  ],
+  "disagreementHistogramAll": {
+    "action\u2192hold": 41,
+    "establishing\u2192action": 40,
+    "establishing\u2192hold": 22,
+    "action\u2192big_action": 17,
+    "establishing\u2192big_action": 14,
+    "hold\u2192action": 12,
+    "big_action\u2192action": 2
+  }
+}

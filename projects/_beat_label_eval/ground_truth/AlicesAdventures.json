@@ -1,0 +1,27 @@
+{
+  "projectId": "AlicesAdventures",
+  "annotator": "human",
+  "rubric": "ground_truth/RUBRIC.md — duration budgeting",
+  "labels": [
+    { "id": "s1_b1", "class": "establishing", "note": "Style notes + Alice intro as setup open" },
+    { "id": "s6_b1", "class": "establishing", "note": "Long low hall doors — place open then try locks" },
+    { "id": "s7_b30", "class": "hold", "note": "Ticks off children — micro" },
+    { "id": "s8_b22", "class": "hold", "note": "Mouse bristles" },
+    { "id": "s9_b46", "class": "action", "note": "Dodo receives and returns thimble" },
+    { "id": "s12_b11", "class": "hold", "note": "Wedged still after bottle" },
+    { "id": "s16_b8", "class": "action", "note": "One sharp kick" },
+    { "id": "s23_b8", "class": "action", "note": "Looks round; finds mushroom" },
+    { "id": "s25_b1", "class": "big_action", "note": "Neck grows immense — continuous transformation" },
+    { "id": "s27_b3", "class": "hold", "note": "Speaks half to self; scowls ignored" },
+    { "id": "s28_b43", "class": "action", "note": "Cat vanishes slowly leaving grin" },
+    { "id": "s29_b72", "class": "hold", "note": "Hatter shakes head" },
+    { "id": "s31_b1", "class": "establishing", "note": "Back in long hall by glass table" },
+    { "id": "s32_b38", "class": "action", "note": "Knave carefully one foot" },
+    { "id": "s33_b39", "class": "action", "note": "Argue beheading; head fades" },
+    { "id": "s35_b6", "class": "hold", "note": "Sighs, flapper across eyes, sobs" },
+    { "id": "s35_b110", "class": "hold", "note": "Looks down at shoes" },
+    { "id": "s36_b1", "class": "establishing", "note": "Throne room court assembles" },
+    { "id": "s36_b62", "class": "action", "note": "Guinea-pig suppressed into bag" },
+    { "id": "s36_b111", "class": "hold", "note": "King turns pale, shuts notebook" }
+  ]
+}

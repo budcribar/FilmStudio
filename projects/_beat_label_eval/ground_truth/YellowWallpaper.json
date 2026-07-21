@@ -1,0 +1,27 @@
+{
+  "projectId": "YellowWallpaper",
+  "annotator": "human",
+  "rubric": "ground_truth/RUBRIC.md — duration budgeting",
+  "labels": [
+    { "id": "s1_b1", "class": "establishing", "note": "Estate grounds wide open" },
+    { "id": "s2_b8", "class": "hold", "note": "Smile only" },
+    { "id": "s3_b15", "class": "action", "note": "Checks windows, exits; she exhales" },
+    { "id": "s4_b10", "class": "action", "note": "Rises, touches wall; John stirs" },
+    { "id": "s6_b1", "class": "hold", "note": "Same room again, thinner at window — not new place" },
+    { "id": "s7_b8", "class": "hold", "note": "Takes her in arms — brief fond gesture" },
+    { "id": "s8_b7", "class": "action", "note": "Jennie appears, hide journal, enter tidy" },
+    { "id": "s10_b1", "class": "hold", "note": "John sits beside — professional stillness" },
+    { "id": "s11_b1", "class": "hold", "note": "Tries to speak, tears — reaction" },
+    { "id": "s12_b21", "class": "hold", "note": "Sits up stern; she stops" },
+    { "id": "s14_b1", "class": "hold", "note": "Watches light/paper change — still observation" },
+    { "id": "s15_b3", "class": "hold", "note": "Sits up, stares at wall" },
+    { "id": "s17_b1", "class": "action", "note": "Eats, John laughs — light business" },
+    { "id": "s19_b1", "class": "action", "note": "Descends stairs, touches banister" },
+    { "id": "s22_b1", "class": "action", "note": "POV creeping woman montage — motion not place open" },
+    { "id": "s25_b1", "class": "action", "note": "Refuse Jennie sleep-in — social beat" },
+    { "id": "s26_b1", "class": "establishing", "note": "Moving day room emptying — setup of bare room" },
+    { "id": "s26_b19", "class": "big_action", "note": "Creeps round and round — continuous motion is the point" },
+    { "id": "s27_b3", "class": "action", "note": "Keeps creeping — sustained motion" },
+    { "id": "s27_b10", "class": "action", "note": "Creeps, looks over shoulder" }
+  ]
+}

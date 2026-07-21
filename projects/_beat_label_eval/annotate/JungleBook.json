@@ -1,0 +1,795 @@
+{
+  "projectId": "JungleBook",
+  "path": "C:\\Users\\budcr\\source\\repos\\FilmStudio\\projects\\JungleBook\\source\\screenplay.fountain",
+  "rubric": "See ground_truth/RUBRIC.md \u2014 label for DURATION budgeting, not literary theory.",
+  "labels": [
+    {
+      "id": "s1_b1",
+      "scene": 1,
+      "beat_index": 1,
+      "is_first_silent_in_scene": true,
+      "setting": "EXT. SEEONEE HILLS - NIGHT",
+      "visual_event": "Moon over teak and grass. A warm wind. Far off, a kite wheels home.",
+      "prev_beat": null,
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "Narrator speaks.",
+        "dialogue": "Now Rann the Kite brings home the night that Mang the Bat sets free."
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s2_b12",
+      "scene": 2,
+      "beat_index": 12,
+      "is_first_silent_in_scene": false,
+      "setting": "INT. WOLF CAVE - NIGHT",
+      "visual_event": "He scuttles to the back, finds a buck bone with meat, cracks it merrily.",
+      "prev_beat": {
+        "kind": "dialogue",
+        "visual": "Tabaqui speaks.",
+        "dialogue": "Who are we, the Gidur-log, to pick and choose?"
+      },
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "Tabaqui speaks.",
+        "dialogue": "All thanks for this good meal. How beautiful are the noble children! How large a\u2026"
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s4_b5",
+      "scene": 4,
+      "beat_index": 5,
+      "is_first_silent_in_scene": false,
+      "setting": "INT. WOLF CAVE - NIGHT",
+      "visual_event": "The whine changes to a humming purr from every quarter-the sound that bewilders woodcutters in the open.",
+      "prev_beat": {
+        "kind": "dialogue",
+        "visual": "Mother Wolf speaks.",
+        "dialogue": "H\u0027sh. It is neither bullock nor buck he hunts to-night. It is Man."
+      },
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "Father Wolf (showing white teeth).",
+        "dialogue": "Man! Faugh!"
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s6_b6",
+      "scene": 6,
+      "beat_index": 6,
+      "is_first_silent_in_scene": false,
+      "setting": "INT. WOLF CAVE - NIGHT",
+      "visual_event": "Father Wolf mouths the child as gently as an egg, jaws on the back, not a scratch, and lays him among the cubs.",
+      "prev_beat": {
+        "kind": "dialogue",
+        "visual": "Mother Wolf speaks.",
+        "dialogue": "Is that a man\u0027s cub? I have never seen one. Bring it here."
+      },
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "Mother Wolf speaks.",
+        "dialogue": "How little! How naked, and-how bold!"
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s6_b35",
+      "scene": 6,
+      "beat_index": 35,
+      "is_first_silent_in_scene": false,
+      "setting": "INT. WOLF CAVE - NIGHT",
+      "visual_event": "Shere Khan backs out growling. Clear of the mouth, he shouts:",
+      "prev_beat": {
+        "kind": "dialogue",
+        "visual": "Mother Wolf speaks.",
+        "dialogue": "Go!"
+      },
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "Shere Khan speaks.",
+        "dialogue": "Each dog barks in his own yard!"
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s7_b11",
+      "scene": 7,
+      "beat_index": 11,
+      "is_first_silent_in_scene": false,
+      "setting": "EXT. COUNCIL ROCK - NIGHT",
+      "visual_event": "A young wolf snarls. Others join. The Pack is divided. BAGHEERA-inky black panther, moon-marks of water on his coat-drops into the circle as softly as ink poured from a bottle. BALOO the brown bear pushes up among the wolves.",
+      "prev_beat": {
+        "kind": "dialogue",
+        "visual": "Akela speaks.",
+        "dialogue": "What have the Free People to do with the orders of any save the Free People? Loo\u2026"
+      },
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "Baloo speaks.",
+        "dialogue": "I speak for the man\u0027s cub. There is no harm in a man\u0027s cub."
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s8_b22",
+      "scene": 8,
+      "beat_index": 22,
+      "is_first_silent_in_scene": false,
+      "setting": "EXT. JUNGLE CLEARING - DAY",
+      "visual_event": "Baloo lifts his muzzle.",
+      "prev_beat": {
+        "kind": "dialogue",
+        "visual": "Bagheera speaks.",
+        "dialogue": "He is no tree trunk to sharpen thy blunt claws upon. But what are those Master W\u2026"
+      },
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "Baloo speaks.",
+        "dialogue": "Come, Little Brother!"
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s8_b37",
+      "scene": 8,
+      "beat_index": 37,
+      "is_first_silent_in_scene": false,
+      "setting": "EXT. JUNGLE CLEARING - DAY",
+      "visual_event": "Mowgli answers with a long, perfect hiss. He kicks up his heels, claps, and vaults onto Bagheera\u0027s back, drumming the glossy hide and making faces at Baloo.",
+      "prev_beat": {
+        "kind": "dialogue",
+        "visual": "Bagheera speaks.",
+        "dialogue": "Now for the Snake-People."
+      },
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "Baloo speaks.",
+        "dialogue": "There-there! That was worth a little bruise. Some day thou wilt remember me."
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s8_b68",
+      "scene": 8,
+      "beat_index": 68,
+      "is_first_silent_in_scene": false,
+      "setting": "EXT. JUNGLE CLEARING - DAY",
+      "visual_event": "Baloo\u0027s voice rumbles like thunder on a hot night. The forest stills.",
+      "prev_beat": {
+        "kind": "dialogue",
+        "visual": "Mowgli speaks.",
+        "dialogue": "Bad Baloo, let me up! I will play with them again."
+      },
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "Baloo speaks.",
+        "dialogue": "Listen, man-cub."
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s10_b1",
+      "scene": 10,
+      "beat_index": 1,
+      "is_first_silent_in_scene": true,
+      "setting": "EXT. JUNGLE TREETOPS - DAY",
+      "visual_event": "The flight: roads and crossroads fifty to a hundred feet up. Mowgli\u0027s escort rushes him to thinning topmost branches that crackle and bend, then flings outward and down to the next tree. Glimpses of green miles; leaves lash his face; the jerk over empty air brings his heart between his teeth. Sick and giddy, he still feels the wild rush. He stares upward into blue. Far off, RANN THE KITE balances and wheels, watching the jungle. Rann drops a few hundred yards, whistles surprise at the man-cub. Mowgli gives the Kite call.",
+      "prev_beat": null,
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "Mowgli speaks.",
+        "dialogue": "We be of one blood, thou and I!"
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s11_b1",
+      "scene": 11,
+      "beat_index": 1,
+      "is_first_silent_in_scene": true,
+      "setting": "EXT. JUNGLE FLOOR - DAY",
+      "visual_event": "Bagheera climbs as never before; thin branches break; he slips down, claws full of bark. Baloo sets off at a clumsy trot.",
+      "prev_beat": null,
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "Bagheera speaks.",
+        "dialogue": "Why didst thou not warn the man-cub?"
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s14_b1",
+      "scene": 14,
+      "beat_index": 1,
+      "is_first_silent_in_scene": true,
+      "setting": "INT. RUINED SUMMER-HOUSE - DUSK",
+      "visual_event": "COBRAS coil in the dust among the rubbish. Mowgli stands among them and gives the Master Word.",
+      "prev_beat": null,
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "Mowgli speaks.",
+        "dialogue": "We be of one blood, ye and I."
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s17_b8",
+      "scene": 17,
+      "beat_index": 8,
+      "is_first_silent_in_scene": false,
+      "setting": "EXT. COLD LAIRS TERRACE - NIGHT",
+      "visual_event": "He licks his lips, looking at the monkey-dead on the terrace and round the tank.",
+      "prev_beat": {
+        "kind": "dialogue",
+        "visual": "Bagheera speaks.",
+        "dialogue": "Others also."
+      },
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "Baloo speaks.",
+        "dialogue": "It is nothing, it is nothing, if thou art safe, oh, my pride of all little frogs\u2026"
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s17_b33",
+      "scene": 17,
+      "beat_index": 33,
+      "is_first_silent_in_scene": false,
+      "setting": "EXT. COLD LAIRS TERRACE - NIGHT",
+      "visual_event": "The moon sinks behind the hills. Lines of trembling monkeys huddle on the walls like ragged shaky fringes. BALOO goes down to the tank for a drink. BAGHEERA puts his fur in order. KAA glides into the center of the terrace and brings his jaws together with a ringing snap. Every monkey eye fixes on him.",
+      "prev_beat": {
+        "kind": "dialogue",
+        "visual": "Kaa speaks.",
+        "dialogue": "Go and sleep, for the moon sets, and what follows it is not well that thou shoul\u2026"
+      },
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "Kaa speaks.",
+        "dialogue": "The moon sets. Is there yet light enough to see?"
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s18_b1",
+      "scene": 18,
+      "beat_index": 1,
+      "is_first_silent_in_scene": true,
+      "setting": "EXT. JUNGLE OUTSIDE COLD LAIRS - NIGHT",
+      "visual_event": "Under the still trees, BALOO shakes himself all over.",
+      "prev_beat": null,
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "Baloo speaks.",
+        "dialogue": "Whoof! Never more will I make an ally of Kaa."
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s19_b7",
+      "scene": 19,
+      "beat_index": 7,
+      "is_first_silent_in_scene": false,
+      "setting": "EXT. COUNCIL ROCK - NIGHT",
+      "visual_event": "Mowgli steps into the firelight with a blazing branch-the Red Flower stolen from the village. Wolves shrink. Shere Khan flinches from the heat.",
+      "prev_beat": {
+        "kind": "dialogue",
+        "visual": "Bagheera speaks.",
+        "dialogue": "Open thy mouth, Little Brother. The Red Flower."
+      },
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "Mowgli speaks.",
+        "dialogue": "Good hunting to you all, my masters. Free People, ye have cast me out. I go. But\u2026"
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s20_b1",
+      "scene": 20,
+      "beat_index": 1,
+      "is_first_silent_in_scene": true,
+      "setting": "EXT. VALLEY ROAD - DAY",
+      "visual_event": "Sun on rough track. MOWGLI-long hair, white scars on arms and legs, barefoot-jogs at a steady pace down the valley. Behind him, the jungle. Ahead, country he does not know. Nearly twenty miles at the jog-trot.",
+      "prev_beat": null,
+      "next_beat": null,
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s22_b7",
+      "scene": 22,
+      "beat_index": 7,
+      "is_first_silent_in_scene": false,
+      "setting": "EXT. VILLAGE GATE - DAY",
+      "visual_event": "She takes Mowgli\u0027s hands. The Priest claims a miracle and a hundred rupees. Messua leads Mowgli home.",
+      "prev_beat": {
+        "kind": "dialogue",
+        "visual": "Messua speaks.",
+        "dialogue": "Nathoo! Nathoo! My son that was taken by the tiger!"
+      },
+      "next_beat": null,
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s26_b1",
+      "scene": 26,
+      "beat_index": 1,
+      "is_first_silent_in_scene": true,
+      "setting": "EXT. VILLAGE GATE - TWILIGHT",
+      "visual_event": "Mowgli comes toward the village with the hide on his head. Buldeo meets him on the road, greedy for the reward on Shere Khan.",
+      "prev_beat": null,
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "Buldeo speaks.",
+        "dialogue": "That skin is mine. A boy does not kill the Tiger."
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s26_b10",
+      "scene": 26,
+      "beat_index": 10,
+      "is_first_silent_in_scene": false,
+      "setting": "EXT. VILLAGE GATE - TWILIGHT",
+      "visual_event": "The PRIEST waves a sprig of sacred tulsi plant.",
+      "prev_beat": {
+        "kind": "dialogue",
+        "visual": "Akela speaks.",
+        "dialogue": "It is in my head that, if bullets mean anything, they would cast thee out."
+      },
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "Priest speaks.",
+        "dialogue": "Wolf! Wolf\u0027s cub! Go away!"
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s26_b32",
+      "scene": 26,
+      "beat_index": 32,
+      "is_first_silent_in_scene": false,
+      "setting": "EXT. VILLAGE GATE - TWILIGHT",
+      "visual_event": "He turns on his heel and walks away with AKELA into the darkening plain.",
+      "prev_beat": {
+        "kind": "dialogue",
+        "visual": "Mowgli (scornfully).",
+        "dialogue": "and hunt you up and down your street."
+      },
+      "next_beat": null,
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s29_b1",
+      "scene": 29,
+      "beat_index": 1,
+      "is_first_silent_in_scene": true,
+      "setting": "EXT. COUNCIL ROCK - NIGHT",
+      "visual_event": "Moon almost down. MOWGLI, AKELA, and GRAY BROTHER climb the hill and stop at the mouth of Mother Wolf\u0027s cave. MOWGLI still bears the rolled hide.",
+      "prev_beat": null,
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "Mowgli speaks.",
+        "dialogue": "They have cast me out from the Man - Pack, Mother, but I come with the hide of S\u2026"
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s29_b12",
+      "scene": 29,
+      "beat_index": 12,
+      "is_first_silent_in_scene": false,
+      "setting": "EXT. COUNCIL ROCK - NIGHT",
+      "visual_event": "The old call rolls into the jungle. Wolves answer from habit. They limp in-lame from traps, shot-wounded, mangy from bad food. Many places in the circle empty. All that are left of the Pack gather and stare at the striped hide, huge claws dangling from the empty feet. MOWGLI leaps onto the rattling skin. A song rises in his throat. He shouts it, beating time with his heels, dancing till breath fails. GRAY BROTHER and AKELA howl between the verses.",
+      "prev_beat": {
+        "kind": "dialogue",
+        "visual": "Akela speaks.",
+        "dialogue": "Look-look well, O Wolves!"
+      },
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "Mowgli speaks.",
+        "dialogue": "The Song of Mowgli-I, Mowgli, am singing. Let the jungle listen to the things I \u2026"
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s31_b1",
+      "scene": 31,
+      "beat_index": 1,
+      "is_first_silent_in_scene": true,
+      "setting": "INT. STEAMER CABIN - NIGHT",
+      "visual_event": "Warm lamp light. LIMMERSHIN hops on a berth edge, feathers drying, crumbs before him. Beyond the porthole, black Bering water.",
+      "prev_beat": null,
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "Narrator speaks.",
+        "dialogue": "Limmershin, the Winter Wren, told me the tale when he was blown on to the riggin\u2026"
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s35_b1",
+      "scene": 35,
+      "beat_index": 1,
+      "is_first_silent_in_scene": true,
+      "setting": "EXT. SAFE BEACHES BEYOND THE TUNNEL - DAY",
+      "visual_event": "KOTICK bursts up gasping and puffing into open water at the farther end, mane streaming.",
+      "prev_beat": null,
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "Kotick speaks.",
+        "dialogue": "My wig! It was a long dive, but it was worth it."
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s37_b1",
+      "scene": 37,
+      "beat_index": 1,
+      "is_first_silent_in_scene": true,
+      "setting": "EXT. NOVASTOSHNAH BEACH - DAY",
+      "visual_event": "Six days later. KOTICK hauls out just above Sea Lion\u0027s Neck. The first person he meets is SHE-SEAL, who has been waiting. She sees by the look in his eyes that he has found his island at last. HOLLOSCHICKIE SEAL, SEA CATCH, and the other seals crowd round as he tells them. They laugh. YOUNG SEAL, about Kotick\u0027s age, twists his head from side to side. He has just married that year and makes a great fuss about it.",
+      "prev_beat": null,
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "Young Seal speaks.",
+        "dialogue": "This is all very well, Kotick, but you can\u0027t come from no one knows where and or\u2026"
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s37_b23",
+      "scene": 37,
+      "beat_index": 23,
+      "is_first_silent_in_scene": false,
+      "setting": "EXT. NOVASTOSHNAH BEACH - DAY",
+      "visual_event": "KOTICK\u0027s curly white mane stands up with rage. Eyes flame. Big dog-teeth glisten. He is splendid. SEA CATCH sees him tearing past, hauling grizzled old seals about as though they were halibut, upsetting young bachelors in all directions.",
+      "prev_beat": {
+        "kind": "dialogue",
+        "visual": "Narrator speaks.",
+        "dialogue": "His deep-sea swimming kept him in perfect condition. And he had never fought bef\u2026"
+      },
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "Sea Catch (roaring).",
+        "dialogue": "He may be a fool, but he is the best fighter on the beaches!"
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s38_b11",
+      "scene": 38,
+      "beat_index": 11,
+      "is_first_silent_in_scene": false,
+      "setting": "EXT. NOVASTOSHNAH BEACH - NIGHT",
+      "visual_event": "KOTICK drops his head between his shoulders and shuts his eyes proudly. He is not a white seal any more, but red from head to tail. He scorns to look at or touch one of his wounds.",
+      "prev_beat": {
+        "kind": "dialogue",
+        "visual": "Seals (thousands of tired voices).",
+        "dialogue": "We will come. We will follow Kotick, the White Seal."
+      },
+      "next_beat": null,
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s41_b6",
+      "scene": 41,
+      "beat_index": 6,
+      "is_first_silent_in_scene": false,
+      "setting": "EXT. OPEN SEA - DAY",
+      "visual_event": "The song of pleasant stations beside the salt lagoons, The song of blowing squadrons that shuffled down the dunes, The song of midnight dances that churned the sea to flame- The Beaches of Lukannon-before the sealers came! I met my mates in the morning (I\u0027ll never meet them more!); They came and went in legions that darkened all the shore. And o\u0027er the foam-flecked offing as far as voice could reach We hailed the landing-parties and we sang them up the beach. The Beaches of Lukannon-the winter wheat so tall- The dripping, crinkled lichens, and the sea-fog drenching all! The platforms of our playground, all shining smooth and worn! The Beaches of Lukannon-the home where we were born! I met my mates in the morning, a broken, scattered band. Men shoot us in the water and club us on the land; Men drive us to the Salt House like silly sheep and tame, And still we sing Lukannon-before the sealers came. Wheel down, wheel down to southward; oh, Gooverooska, go! And tell the Deep-Sea Viceroys the story of our woe; Ere, empty as the shark\u0027s egg the tempest flings ashore, The Beaches of Lukannon shall know their sons no more!",
+      "prev_beat": {
+        "kind": "dialogue",
+        "visual": "Narrator speaks.",
+        "dialogue": "strong."
+      },
+      "next_beat": null,
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s44_b3",
+      "scene": 44,
+      "beat_index": 3,
+      "is_first_silent_in_scene": false,
+      "setting": "INT. BUNGALOW SITTING ROOM - DAY",
+      "visual_event": "They wrap the mongoose in cotton wool and warm him over a little fire. RIKKI-TIKKI opens his eyes and sneezes.",
+      "prev_beat": {
+        "kind": "dialogue",
+        "visual": "Teddy\u0027s Father speaks.",
+        "dialogue": "Not dead. Half choked."
+      },
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "Teddy\u0027s Father speaks.",
+        "dialogue": "Now, don\u0027t frighten him, and we\u0027ll see what he\u0027ll do."
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s45_b3",
+      "scene": 45,
+      "beat_index": 3,
+      "is_first_silent_in_scene": false,
+      "setting": "EXT. BUNGALOW GARDEN - DAY",
+      "visual_event": "NAG-five feet of cobra, spectacles on his hood-rises from the grass.",
+      "prev_beat": {
+        "kind": "dialogue",
+        "visual": "Rikki-tikki speaks.",
+        "dialogue": "Who is Nag?"
+      },
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "Nag speaks.",
+        "dialogue": "I am Nag. Look, and be afraid!"
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s47_b1",
+      "scene": 47,
+      "beat_index": 1,
+      "is_first_silent_in_scene": true,
+      "setting": "EXT. BUNGALOW GARDEN - DAY",
+      "visual_event": "Nagaina mourns and plots. She means to kill the family and avenge Nag. Darzee\u0027s wife pretends a broken wing and lures her from the melon-bed where the cobra eggs lie. Rikki smashes egg after egg-soft and white-until one remains. Nagaina returns in fury.",
+      "prev_beat": null,
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "Nagaina speaks.",
+        "dialogue": "Give me the last of my eggs, and I will go. Give it and be still!"
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s49_b5",
+      "scene": 49,
+      "beat_index": 5,
+      "is_first_silent_in_scene": false,
+      "setting": "EXT. BUNGALOW GARDEN - DAY",
+      "visual_event": "Sing to your fledglings again, Mother, oh lift up your head! Evil that plagued us is slain, Death in the garden lies dead. Terror that hid in the roses is impotent-flung on the dung-hill and dead! Who has delivered us, who? Tell me his nest and his name. Rikki, the valiant, the true, Tikki, with eyeballs of flame, Rikk-tikki-tikki, the ivory-fanged, the hunter with eyeballs of flame! Give him the Thanks of the Birds, Bowing with tail feathers spread! Praise him with nightingale words- Nay, I will praise him instead. Hear! I will sing you the praise of the bottle-tailed Rikki, with eyeballs of red! RIKKI-TIKKI pops up under the bush, impatient.",
+      "prev_beat": {
+        "kind": "dialogue",
+        "visual": "Darzee speaks.",
+        "dialogue": "the house that I sew."
+      },
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "Rikki-tikki speaks.",
+        "dialogue": "That\u0027s enough, Darzee."
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s53_b1",
+      "scene": 53,
+      "beat_index": 1,
+      "is_first_silent_in_scene": true,
+      "setting": "EXT. ELEPHANT CAMP CLEARING - DAY",
+      "visual_event": "KALA NAG stands picketed. BIG TOOMAI, a weathered mahout in working cloth, the son of Black Toomai, runs a hand along the elephant\u0027s leg. LITTLE TOOMAI, ten years old, four feet high, sun-bleached brown hair loose on his shoulders, one rag for clothes, stands up to his full height beside the great forefoot.",
+      "prev_beat": null,
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "Big Toomai speaks.",
+        "dialogue": "Yes. There is nothing that the Black Snake fears except me."
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s55_b1",
+      "scene": 55,
+      "beat_index": 1,
+      "is_first_silent_in_scene": true,
+      "setting": "EXT. KEDDAH STOCKADE - NIGHT",
+      "visual_event": "The stockade quivers. Torches. Yells. Blank cartridges. LITTLE TOOMAI climbs a stockade post, hair flying, a goblin in the torch-light. Below, KALA NAG battles a wild tusker.",
+      "prev_beat": null,
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "Little Toomai speaks.",
+        "dialogue": "Mael, mael, Kala Nag! Dant do! Somalo! Somalo! Maro! Mar! Mind the post! Arre! A\u2026"
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s58_b1",
+      "scene": 58,
+      "beat_index": 1,
+      "is_first_silent_in_scene": true,
+      "setting": "EXT. HILL PAY CAMP UNDER TREES - DAY",
+      "visual_event": "The season ending. Newly caught elephants in a restless line. A native clerk at a table under a tree pays wages. Catchers and hunters lean on guns and laugh at the plains drivers going away. PETERSEN SAHIB, the head of the Keddah operations, lies along the back of his clever she-elephant PUDMINI. MACHUA APPA, the head tracker, speaks undertone to a friend as BIG TOOMAI and LITTLE TOOMAI approach the clerk.",
+      "prev_beat": null,
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "Machua Appa speaks.",
+        "dialogue": "There goes one piece of good elephant stuff at least."
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s59_b1",
+      "scene": 59,
+      "beat_index": 1,
+      "is_first_silent_in_scene": true,
+      "setting": "EXT. JUNGLE PATH - NIGHT",
+      "visual_event": "KALA NAG breaks his picket-rope and walks into the forest. LITTLE TOOMAI clings on, half afraid, half wild with joy. Other elephants join from the darkness-wild and tame together-until a host moves under the stars toward the Garo hills.",
+      "prev_beat": null,
+      "next_beat": null,
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s61_b21",
+      "scene": 61,
+      "beat_index": 21,
+      "is_first_silent_in_scene": false,
+      "setting": "EXT. PETERSEN SAHIB\u0027S CAMP - NIGHT",
+      "visual_event": "At that last wild yell the whole line flings up their trunks till the tips touch their foreheads, and breaks out into the full salute-the crashing trumpet-peal that only the Viceroy of India hears, the Salaamut of the Keddah. LITTLE TOOMAI-Toomai of the Elephants-stands small in the firelight beneath the lifted trunks, the blood-mark bright on his brow.",
+      "prev_beat": {
+        "kind": "dialogue",
+        "visual": "Machua Appa speaks.",
+        "dialogue": "Together! To Toomai of the Elephants. Barrao!"
+      },
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "Narrator speaks.",
+        "dialogue": "But it was all for the sake of Little Toomai, who had seen what never man had se\u2026"
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s63_b8",
+      "scene": 63,
+      "beat_index": 8,
+      "is_first_silent_in_scene": false,
+      "setting": "EXT. RAWAL PINDI CAMP - NIGHT",
+      "visual_event": "NARRATOR-a man in boots and waterproof-scrambles out into the slush. Little VIXEN, a fox terrier, darts out the other side. A roaring, grunting, bubbling. The tent caves in as the pole snaps and dances like a mad ghost-a camel has blundered into it. NARRATOR laughs once, wet and angry, then runs on through the mud, out of sight of the camp lights.",
+      "prev_beat": {
+        "kind": "dialogue",
+        "visual": "Camp Man speaks.",
+        "dialogue": "Get out, quick! They\u0027re coming! My tent\u0027s gone!"
+      },
+      "next_beat": null,
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s64_b31",
+      "scene": 64,
+      "beat_index": 31,
+      "is_first_silent_in_scene": false,
+      "setting": "EXT. ARTILLERY LINES - NIGHT",
+      "visual_event": "A chain drags. A yoke of great sulky white GUN BULLOCKS-the seventh yoke of the first gun of the Big Gun Battery-come shouldering along. Almost stepping on the chain, YOUNG MULE calls wildly.",
+      "prev_beat": {
+        "kind": "dialogue",
+        "visual": "Billy speaks.",
+        "dialogue": "It takes a good deal of prodding to put up a gun-bullock."
+      },
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "Young Mule speaks.",
+        "dialogue": "Billy! Billy!"
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    }
+  ]
+}

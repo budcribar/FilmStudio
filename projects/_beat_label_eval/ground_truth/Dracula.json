@@ -1,0 +1,27 @@
+{
+  "projectId": "Dracula",
+  "annotator": "human",
+  "rubric": "ground_truth/RUBRIC.md — duration budgeting",
+  "labels": [
+    { "id": "s1_b1", "class": "establishing", "note": "Gaslit study + Harker at maps" },
+    { "id": "s9_b1", "class": "action", "note": "Landlady bows at door — social not place open" },
+    { "id": "s12_b15", "class": "hold", "note": "Alone with crucifix after she goes" },
+    { "id": "s18_b5", "class": "hold", "note": "Handshake stare reaction" },
+    { "id": "s23_b8", "class": "action", "note": "Meal service multi-step" },
+    { "id": "s27_b6", "class": "action", "note": "Papers, Count signs" },
+    { "id": "s33_b7", "class": "hold", "note": "Holds up arms — gesture" },
+    { "id": "s35_b1", "class": "action", "note": "Finds unlocked door, enters dusty chamber" },
+    { "id": "s38_b14", "class": "hold", "note": "Writes, face bloodless" },
+    { "id": "s43_b1", "class": "hold", "note": "Lies down, exhaustion" },
+    { "id": "s50_b6", "class": "big_action", "note": "Knots sheets, climbs, lowers into abyss" },
+    { "id": "s52_b10", "class": "action", "note": "Near-sit hat, turns lancet — fidget business" },
+    { "id": "s54_b15", "class": "action", "note": "Bows goes; Lucy sinks crying" },
+    { "id": "s57_b1", "class": "action", "note": "Seward at phonograph speaking" },
+    { "id": "s62_b1", "class": "establishing", "note": "Bright sun seat with Lucy/Mina — social setup open" },
+    { "id": "s64_b1", "class": "establishing", "note": "Cliff walk weather + coastguard" },
+    { "id": "s68_b1", "class": "action", "note": "Watch relief, dawn missing man" },
+    { "id": "s74_b1", "class": "establishing", "note": "Wreck under cliff after storm" },
+    { "id": "s80_b1", "class": "action", "note": "Hide in doorway, get home" },
+    { "id": "s87_b1", "class": "action", "note": "Lucy to bed asleep; Mina tucks, locks" }
+  ]
+}

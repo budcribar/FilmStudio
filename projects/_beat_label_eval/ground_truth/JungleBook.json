@@ -1,0 +1,27 @@
+{
+  "projectId": "JungleBook",
+  "annotator": "human",
+  "rubric": "ground_truth/RUBRIC.md — duration budgeting",
+  "labels": [
+    { "id": "s1_b1", "class": "establishing", "note": "Moon over jungle open" },
+    { "id": "s4_b5", "class": "hold", "note": "Sound change / stillness of forest" },
+    { "id": "s6_b35", "class": "action", "note": "Shere Khan backs out growling" },
+    { "id": "s8_b22", "class": "hold", "note": "Lifts muzzle" },
+    { "id": "s8_b68", "class": "hold", "note": "Voice; forest stills" },
+    { "id": "s11_b1", "class": "big_action", "note": "Bagheera climbs/slips; Baloo trot pursuit" },
+    { "id": "s17_b8", "class": "hold", "note": "Licks lips looking at dead" },
+    { "id": "s18_b1", "class": "action", "note": "Shakes himself all over" },
+    { "id": "s20_b1", "class": "action", "note": "Mowgli jogs valley track" },
+    { "id": "s26_b1", "class": "action", "note": "Comes to village with hide; meets Buldeo" },
+    { "id": "s26_b32", "class": "action", "note": "Turns, walks into plain with Akela" },
+    { "id": "s29_b12", "class": "action", "note": "Call; wolves limp into circle" },
+    { "id": "s35_b1", "class": "big_action", "note": "Kotick bursts into open water" },
+    { "id": "s37_b23", "class": "big_action", "note": "Rage, tearing seals — fight energy" },
+    { "id": "s41_b6", "class": "hold", "note": "Song text overlay — treat as hold/performance" },
+    { "id": "s45_b3", "class": "action", "note": "Nag rises from grass" },
+    { "id": "s49_b5", "class": "hold", "note": "Song lyric beat" },
+    { "id": "s55_b1", "class": "big_action", "note": "Stockade battle torch chaos" },
+    { "id": "s59_b1", "class": "big_action", "note": "Elephant break picket into forest" },
+    { "id": "s63_b8", "class": "action", "note": "Narrator scrambles; dog darts; tiger sound" }
+  ]
+}

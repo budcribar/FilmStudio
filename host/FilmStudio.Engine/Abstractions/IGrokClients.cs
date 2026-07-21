@@ -92,6 +92,7 @@ public static class ChatCallModes
     public const string CastFromScreenplay = "cast_from_screenplay";
     public const string CastVisualLiteralize = "cast_visual_literalize";
     public const string LearningPropose = "learning_propose";
+    public const string SilentBeatClassify = "silent_beat_classify";
 }
 
 /// <summary>xAI (or fake) vision (transcribe / classify).</summary>

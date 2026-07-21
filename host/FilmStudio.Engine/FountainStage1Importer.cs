@@ -638,8 +638,10 @@ public static class FountainStage1Importer
     }
 
     /// <summary>
-    /// Classify silent action for duration (establishing / hold / big_action / action).
-    /// First filmable beat in a scene is establishing; short gesture lines are holds.
+    /// Deterministic silent-action class for duration (establishing / hold / big_action / action).
+    /// Product fallback when chat classify is off or fails. First filmable silent beat in a scene
+    /// is establishing; short gesture lines are holds. Prefer
+    /// <see cref="SilentBeatActionClassifier"/> at shot-plan time for better labels.
     /// </summary>
     public static string InferActionClass(string actionText, bool isFirstBeatInScene)
     {
@@ -657,7 +659,7 @@ public static class FountainStage1Importer
         if (isFirstBeatInScene)
             return "establishing";
 
-        // Micro performance / stillness — smile, hands, look, freeze (C09-style)
+        // Micro performance / stillness — smile, hands, look, freeze
         if (words <= 24 &&
             Regex.IsMatch(lower,
                 @"\b(smile|smiles|smiling|nods?|turns?|looks?|gazes?|freezes?|waits?|steadies|thin smile|hands on|sits still|leans?|pauses?|watches?|listens?)\b"))

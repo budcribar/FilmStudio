@@ -1432,7 +1432,7 @@ public sealed class FilmJobService
 
         try
         {
-            await AppendLogAsync("Stage 2: C# Stage2PlannerService (deterministic, no API)");
+            await AppendLogAsync("Stage 2: building shot plan from screenplay");
             ct.ThrowIfCancellationRequested();
             var resolution = await ResolveVideoResolutionAsync(projectId, req.Resolution, ct);
             var result = await _stage2.PlanAsync(

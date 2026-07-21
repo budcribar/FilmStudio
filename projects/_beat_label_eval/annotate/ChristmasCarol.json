@@ -1,0 +1,815 @@
+{
+  "projectId": "ChristmasCarol",
+  "path": "C:\\Users\\budcr\\source\\repos\\FilmStudio\\projects\\ChristmasCarol\\source\\screenplay.fountain",
+  "rubric": "See ground_truth/RUBRIC.md \u2014 label for DURATION budgeting, not literary theory.",
+  "labels": [
+    {
+      "id": "s1_b1",
+      "scene": 1,
+      "beat_index": 1,
+      "is_first_silent_in_scene": true,
+      "setting": "INT. REGISTER OFFICE - DAY",
+      "visual_event": "A heavy burial register lies open. A CLERGYMAN, a CLERK, an UNDERTAKER, and EBENEZER SCROOGE sign in turn. Scrooge\u0027s hand is steady, businesslike. Snow light at the window.",
+      "prev_beat": null,
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "Narrator speaks.",
+        "dialogue": "Marley was dead: to begin with. There is no doubt whatever about that."
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s4_b7",
+      "scene": 4,
+      "beat_index": 7,
+      "is_first_silent_in_scene": false,
+      "setting": "EXT. LONDON STREET - DAY",
+      "visual_event": "Scrooge does not look back. The city gives him room.",
+      "prev_beat": {
+        "kind": "dialogue",
+        "visual": "Narrator speaks.",
+        "dialogue": "made his eyes red, his thin lips blue; and spoke out shrewdly in his grating voi\u2026"
+      },
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "Narrator speaks.",
+        "dialogue": "He carried his own low temperature always about with him."
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s5_b64",
+      "scene": 5,
+      "beat_index": 64,
+      "is_first_silent_in_scene": false,
+      "setting": "INT. SCROOGE AND MARLEY COUNTING-HOUSE - LATE AFTERNOON",
+      "visual_event": "As Fred goes out, he lets two others in: MR. ALMSLEY and MR. WITHERS-portly, pleasant, hats off, books and papers in hand. They bow.",
+      "prev_beat": {
+        "kind": "dialogue",
+        "visual": "Scrooge (muttering).",
+        "dialogue": "I\u0027ll retire to Bedlam."
+      },
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "Mr. Almsley speaks.",
+        "dialogue": "Scrooge and Marley\u0027s, I believe. Have I the pleasure of addressing Mr. Scrooge, \u2026"
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s7_b1",
+      "scene": 7,
+      "beat_index": 1,
+      "is_first_silent_in_scene": true,
+      "setting": "INT. SCROOGE AND MARLEY COUNTING-HOUSE - CONTINUOUS",
+      "visual_event": "Scrooge seizes his ruler with sudden energy. The boy flees; fog and frost reclaim the keyhole. At last, shutting-up time. Scrooge dismounts his stool with ill will. In the Tank, Cratchit snuffs his candle and puts on his hat.",
+      "prev_beat": null,
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "Scrooge speaks.",
+        "dialogue": "You\u0027ll want all day to-morrow, I suppose?"
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s10_b1",
+      "scene": 10,
+      "beat_index": 1,
+      "is_first_silent_in_scene": true,
+      "setting": "EXT. SCROOGE\u0027S YARD - NIGHT",
+      "visual_event": "A lowering pile of building up a yard-gloomy chambers that once belonged to Marley. Nobody lives in it now but Scrooge; other rooms let out as offices. The yard is so dark that even Scrooge, who knows its every stone, gropes with his hands. He approaches his door. The knocker-large, old-fashioned-is ordinary iron one moment. The next: JACOB MARLEY\u0027s face. Not angry or ferocious-looking at Scrooge as Marley used to look: ghostly spectacles turned up on its ghostly forehead. The hair is curiously stirred, as if by breath or hot air; the eyes wide open, motionless; the colour horrible, livid. Scrooge stares. The apparition becomes a knocker again. He turns the key, walks in, and lights his candle. He does pause, with a moment\u0027s irresolution, before he shuts the door-and he does look cautiously behind it first, as if he half expects to be terrified with the sight of Marley\u0027s pigtail sticking out into the hall. But there is nothing.",
+      "prev_beat": null,
+      "next_beat": null,
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s12_b21",
+      "scene": 12,
+      "beat_index": 21,
+      "is_first_silent_in_scene": false,
+      "setting": "INT. SCROOGE\u0027S SITTING ROOM - NIGHT",
+      "visual_event": "Scrooge tries to be smart-to keep down his terror. Marley raises a frightful cry and shakes his chain with such a dismal and appalling noise that Scrooge holds on tight to his chair. The spectre takes the bandage from its head: its lower jaw drops down upon its breast.",
+      "prev_beat": {
+        "kind": "dialogue",
+        "visual": "Scrooge speaks.",
+        "dialogue": "There\u0027s more of gravy than of grave about you, whatever you are!"
+      },
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "Scrooge speaks.",
+        "dialogue": "Mercy! Dreadful apparition, why do you trouble me?"
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s12_b71",
+      "scene": 12,
+      "beat_index": 71,
+      "is_first_silent_in_scene": false,
+      "setting": "INT. SCROOGE\u0027S SITTING ROOM - NIGHT",
+      "visual_event": "Scrooge is very much dismayed.",
+      "prev_beat": {
+        "kind": "dialogue",
+        "visual": "Marley speaks.",
+        "dialogue": "Were there no poor homes to which its light would have conducted me!"
+      },
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "Marley speaks.",
+        "dialogue": "Hear me! My time is nearly gone."
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s13_b3",
+      "scene": 13,
+      "beat_index": 3,
+      "is_first_silent_in_scene": false,
+      "setting": "INT. SCROOGE\u0027S BEDROOM - NIGHT",
+      "visual_event": "The hour bell sounds-a deep, dull, hollow, melancholy ONE. Light flashes up in the room upon the instant. The bed-curtains at his face are drawn aside by a hand. Scrooge starts up half-recumbent-face to face with an unearthly visitor, as close as breath. THE GHOST OF CHRISTMAS PAST stands there: a strange figure, like a child yet not so like a child as like an old man viewed through some supernatural medium, diminished to a child\u0027s proportions. Hair white as if with age hangs about its neck and down its back; the face has not a wrinkle, and the tenderest bloom is on the skin. Long muscular arms and hands; legs and feet bare and delicately formed. A tunic of the purest white; round its waist a lustrous belt that sparkles and shifts. In one hand, a branch of fresh green holly; its dress trimmed with summer flowers. From the crown of its head springs a bright clear jet of light. Under its arm it holds a great extinguisher for a cap. As Scrooge stares, the figure fluctuates-now one arm, now one leg, now twenty legs, now a head without a body-then is itself again, distinct and clear.",
+      "prev_beat": {
+        "kind": "dialogue",
+        "visual": "Scrooge speaks.",
+        "dialogue": "The hour itself, and nothing else!"
+      },
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "Scrooge speaks.",
+        "dialogue": "Are you the Spirit, sir, whose coming was foretold to me?"
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s13_b19",
+      "scene": 13,
+      "beat_index": 19,
+      "is_first_silent_in_scene": false,
+      "setting": "INT. SCROOGE\u0027S BEDROOM - NIGHT",
+      "visual_event": "It puts out its strong hand and clasps him gently by the arm.",
+      "prev_beat": {
+        "kind": "dialogue",
+        "visual": "Ghost Of Christmas Past speaks.",
+        "dialogue": "Your reclamation, then. Take heed!"
+      },
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "Ghost Of Christmas Past speaks.",
+        "dialogue": "Rise! And walk with me!"
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s14_b1",
+      "scene": 14,
+      "beat_index": 1,
+      "is_first_silent_in_scene": true,
+      "setting": "EXT. COUNTRY ROAD - DAY",
+      "visual_event": "Open country road; fields on either hand. Snow upon the ground. Clear, cold winter day. The city has entirely vanished. Darkness and mist gone with it. Scrooge, still in slippers, dressing-gown, and nightcap, clasps his hands.",
+      "prev_beat": null,
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "Scrooge speaks.",
+        "dialogue": "Good Heaven! I was bred in this place. I was a boy here!"
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s15_b5",
+      "scene": 15,
+      "beat_index": 5,
+      "is_first_silent_in_scene": false,
+      "setting": "EXT. ROAD NEAR MARKET-TOWN - DAY",
+      "visual_event": "Scrooge nods-he knows it-and sobs. They leave the high-road by a well-remembered lane.",
+      "prev_beat": {
+        "kind": "dialogue",
+        "visual": "Ghost Of Christmas Past speaks.",
+        "dialogue": "The school is not quite deserted. A solitary child, neglected by his friends, is\u2026"
+      },
+      "next_beat": null,
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s18_b10",
+      "scene": 18,
+      "beat_index": 10,
+      "is_first_silent_in_scene": false,
+      "setting": "INT. SCHOOLROOM - DAY",
+      "visual_event": "Scrooge\u0027s face is heightened and excited-between laughing and crying.",
+      "prev_beat": {
+        "kind": "dialogue",
+        "visual": "Scrooge (in ecstasy).",
+        "dialogue": "What business had he to be married to the Princess!"
+      },
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "Scrooge speaks.",
+        "dialogue": "There\u0027s the Parrot!"
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s18_b30",
+      "scene": 18,
+      "beat_index": 30,
+      "is_first_silent_in_scene": false,
+      "setting": "INT. SCHOOLROOM - DAY",
+      "visual_event": "She claps her tiny hands, bends down to laugh.",
+      "prev_beat": {
+        "kind": "dialogue",
+        "visual": "Fan speaks.",
+        "dialogue": "Dear, dear brother. I have come to bring you home, dear brother!"
+      },
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "Fan speaks.",
+        "dialogue": "To bring you home, home, home!"
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s20_b1",
+      "scene": 20,
+      "beat_index": 1,
+      "is_first_silent_in_scene": true,
+      "setting": "INT. SCHOOL BEST-PARLOUR - DAY",
+      "visual_event": "A shivering old well of a room. Maps on the wall; celestial and terrestrial globes in the windows, waxy with cold. The Schoolmaster produces a decanter of curiously light wine and a block of curiously heavy cake; administers instalments to the young people. A meagre servant is sent out with a glass of \u0022something\u0022 for the postboy. Master Scrooge\u0027s trunk is tied on the chaise. The children bid the Schoolmaster good-bye right willingly.",
+      "prev_beat": null,
+      "next_beat": null,
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s23_b3",
+      "scene": 23,
+      "beat_index": 3,
+      "is_first_silent_in_scene": false,
+      "setting": "INT. FEZZIWIG\u0027S WAREHOUSE - NIGHT",
+      "visual_event": "OLD FEZZIWIG lays down his pen, looks up at the clock-seven. Rubs his hands; adjusts his capacious waistcoat; laughs all over himself from his shoes to his organ of benevolence. Comfortable, oily, rich, fat, jovial voice:",
+      "prev_beat": {
+        "kind": "dialogue",
+        "visual": "Scrooge (great excitement).",
+        "dialogue": "Why, it\u0027s old Fezziwig! Bless his heart; it\u0027s Fezziwig alive again!"
+      },
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "Fezziwig speaks.",
+        "dialogue": "Yo ho, there! Ebenezer! Dick!"
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s23_b14",
+      "scene": 23,
+      "beat_index": 14,
+      "is_first_silent_in_scene": false,
+      "setting": "INT. FEZZIWIG\u0027S WAREHOUSE - NIGHT",
+      "visual_event": "Every movable packed off; floor swept and watered; lamps trimmed; fuel heaped upon the fire. The warehouse becomes as snug, warm, dry, and bright a ball-room as one could desire on a winter\u0027s night. In comes a FIDDLER with a music-book; up to the lofty desk; makes an orchestra of it; tunes like fifty stomach-aches. In comes MRS. FEZZIWIG-one vast substantial smile. In come the three Miss Fezziwigs, beaming. In come six young followers. In come all the young men and women employed in the business. Housemaid with her cousin the baker; cook with the milkman; the boy from over the way hiding behind the girl from next door. In they all come-shy, bold, graceful, awkward-anyhow and everyhow. Away they go: twenty couple at once; hands half round and back; down the middle and up again; old top couple turning up in the wrong place. Fezziwig claps to the time, walks it, walks it with his dancing partner Mrs. Fezziwig-top couple too, with a good stiff piece of work cut out for them. There were more dances, and there were forfeits, and more dances, and there was cake, and there was negus, and there was a great piece of Cold Roast, and there was a great piece of Cold Boiled, and there were mince-pies, and plenty of beer. When the clock strikes eleven, the domestic ball breaks up. Mr. and Mrs. Fezziwig take their stations, one on either side of the door, and shaking hands with every person individually as he or she goes out, wish him or her a Merry Christmas. During the whole of this time, Scrooge has acted like a man out of his wits. His heart and soul are in the scene. He remembers everything, enjoys everything.",
+      "prev_beat": {
+        "kind": "dialogue",
+        "visual": "Fezziwig speaks.",
+        "dialogue": "Clear away, my lads, and let\u0027s have lots of room here! Hilli-ho, Dick! Chirrup, \u2026"
+      },
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "Ghost Of Christmas Past speaks.",
+        "dialogue": "A small matter to make these silly folks so full of gratitude."
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s24_b35",
+      "scene": 24,
+      "beat_index": 35,
+      "is_first_silent_in_scene": false,
+      "setting": "INT. A ROOM - EVENING",
+      "visual_event": "Young Scrooge seems to yield to the justice of this supposition, in spite of himself. But he says, with a struggle-",
+      "prev_beat": {
+        "kind": "dialogue",
+        "visual": "Belle speaks.",
+        "dialogue": "Ah, no!"
+      },
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "Young Scrooge speaks.",
+        "dialogue": "You think not."
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s25_b1",
+      "scene": 25,
+      "beat_index": 1,
+      "is_first_silent_in_scene": true,
+      "setting": "INT. BELLE\u0027S PARLOUR - NIGHT",
+      "visual_event": "A room, not very large or handsome, but full of comfort. Near to the winter fire sits a beautiful young girl-Belle\u0027s daughter. Opposite her, the same Belle, now a comely matron, sits beside her daughter. The door opens. BELLE\u0027S HUSBAND comes in, laden with Christmas toys and presents. The children scramble about him, laughing. He sits down at the fireside with Belle.",
+      "prev_beat": null,
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "Belle\u0027s Husband speaks.",
+        "dialogue": "Belle, I saw an old friend of yours this afternoon."
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s27_b3",
+      "scene": 27,
+      "beat_index": 3,
+      "is_first_silent_in_scene": false,
+      "setting": "INT. SCROOGE\u0027S SITTING ROOM - CONTINUOUS",
+      "visual_event": "Scrooge enters timidly, hanging his head.",
+      "prev_beat": {
+        "kind": "dialogue",
+        "visual": "Ghost Of Christmas Present speaks.",
+        "dialogue": "Come in! Come in! and know me better, man!"
+      },
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "Ghost Of Christmas Present speaks.",
+        "dialogue": "I am the Ghost of Christmas Present. Look upon me!"
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s29_b1",
+      "scene": 29,
+      "beat_index": 1,
+      "is_first_silent_in_scene": true,
+      "setting": "INT. BAKER\u0027S DOORWAY - DAY",
+      "visual_event": "The GHOST OF CHRISTMAS PRESENT stands with SCROOGE beside him in a baker\u0027s doorway. He takes off the covers as the bearers pass and sprinkles incense on their dinners from his torch. Once or twice, when angry words rise between dinner-carriers who have jostled each other, he sheds a few drops of water on them from the torch. Their good humour is restored directly.",
+      "prev_beat": null,
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "Dinner-carrier speaks.",
+        "dialogue": "It was a shame to quarrel upon Christmas Day."
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s31_b4",
+      "scene": 31,
+      "beat_index": 4,
+      "is_first_silent_in_scene": false,
+      "setting": "INT. CRATCHIT SITTING ROOM - DAY",
+      "visual_event": "They dance about the table in luxurious thoughts of sage and onion, and exalt Peter to the skies. Peter, not proud although his collars nearly choke him, blows the fire until the slow potatoes bubble up and knock loudly at the saucepan-lid.",
+      "prev_beat": {
+        "kind": "dialogue",
+        "visual": "Little Girl Cratchit speaks.",
+        "dialogue": "And knew it for our own!"
+      },
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "Mrs. Cratchit speaks.",
+        "dialogue": "What has ever got your precious father then? And your brother, Tiny Tim!"
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s31_b31",
+      "scene": 31,
+      "beat_index": 31,
+      "is_first_silent_in_scene": false,
+      "setting": "INT. CRATCHIT SITTING ROOM - DAY",
+      "visual_event": "Tiny Tim\u0027s active little crutch is heard upon the floor. Back he comes, escorted by his brother and sister, to his stool before the fire. Bob turns up his cuffs-as if they were capable of being made more shabby-and compounds some hot mixture in a jug with gin and lemons, stirs it round and round, and puts it on the hob to simmer. Peter and the two young Cratchits go to fetch the goose. They return in high procession. Such a bustle ensues that a goose might be the rarest of all birds. Mrs. Cratchit makes the gravy (ready beforehand in a little saucepan) hissing hot. Peter mashes the potatoes with incredible vigour. Belinda sweetens up the apple-sauce. Martha dusts the hot plates. Bob takes Tiny Tim beside him in a tiny corner at the table. The two young Cratchits set chairs for everybody, not forgetting themselves, and mount guard upon their posts, cramming spoons into their mouths lest they shriek for goose before their turn. The dishes are set on. Grace is said. A breathless pause. Mrs. Cratchit looks slowly all along the carving-knife, then plunges it in the breast. The long-expected gush of stuffing issues forth. One murmur of delight arises all round the board. Tiny Tim, excited by the two young Cratchits, beats on the table with the handle of his knife.",
+      "prev_beat": {
+        "kind": "dialogue",
+        "visual": "Bob Cratchit speaks.",
+        "dialogue": "Tiny Tim was growing strong and hearty."
+      },
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "Tiny Tim speaks.",
+        "dialogue": "Hurrah!"
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s33_b1",
+      "scene": 33,
+      "beat_index": 1,
+      "is_first_silent_in_scene": true,
+      "setting": "INT. CRATCHIT SITTING ROOM - DAY",
+      "visual_event": "In half a minute Mrs. Cratchit enters-flushed, but smiling proudly-with the pudding, like a speckled cannon-ball, so hard and firm, blazing in half of half-a-quartern of ignited brandy, and bedight with Christmas holly stuck into the top.",
+      "prev_beat": null,
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "Bob Cratchit (calmly).",
+        "dialogue": "I regard it as the greatest success achieved by Mrs. Cratchit since our marriage\u2026"
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s33_b38",
+      "scene": 33,
+      "beat_index": 38,
+      "is_first_silent_in_scene": false,
+      "setting": "INT. CRATCHIT SITTING ROOM - DAY",
+      "visual_event": "The children drink the toast after her. Tiny Tim drinks it last of all. Bob looks about him gently, as if to find some kinder words; but Scrooge is the Ogre of the family. The mention of his name casts a dark shadow on the party, which is not dispelled for full five minutes. After it has passed away, they are ten times merrier than before. They sing; they tell stories; Tiny Tim sings, with a plaintive little voice, about a lost child travelling in the snow. Bob holds him close. By and by they fade, and Scrooge and the Spirit are again upon their travels.",
+      "prev_beat": {
+        "kind": "dialogue",
+        "visual": "Mrs. Cratchit speaks.",
+        "dialogue": "He\u0027ll be very merry and very happy, I have no doubt!"
+      },
+      "next_beat": null,
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s35_b26",
+      "scene": 35,
+      "beat_index": 26,
+      "is_first_silent_in_scene": false,
+      "setting": "INT. FRED\u0027S DRAWING ROOM - AFTERNOON",
+      "visual_event": "They play at forfeits, at How, When, and Where, and at Blind-man\u0027s buff-Topper chasing the plump sister with determined cunning. They sing. They laugh until the house rings. Scrooge joins in despite himself-softly, invisibly-guessing at the games, begging to stay until the end. The Ghost smiles.",
+      "prev_beat": {
+        "kind": "dialogue",
+        "visual": "Fred speaks.",
+        "dialogue": "and I think I shook him yesterday."
+      },
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "Ghost Of Christmas Present speaks.",
+        "dialogue": "To the next!"
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s37_b11",
+      "scene": 37,
+      "beat_index": 11,
+      "is_first_silent_in_scene": false,
+      "setting": "INT. SCROOGE\u0027S SITTING ROOM - NIGHT",
+      "visual_event": "From the fold of its robe, it brings two children-wretched, abject, frightful, hideous, miserable. A boy and a girl-yellow, meagre, ragged, scowling, wolfish-but prostrate too in their humility. Where graceful youth should have filled their features out, a stale and shrivelled hand has pinched and twisted them.",
+      "prev_beat": {
+        "kind": "dialogue",
+        "visual": "Ghost Of Christmas Present speaks.",
+        "dialogue": "It might be a claw, for the flesh there is upon it. Look here."
+      },
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "Scrooge speaks.",
+        "dialogue": "Spirit! are they yours?"
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s38_b11",
+      "scene": 38,
+      "beat_index": 11,
+      "is_first_silent_in_scene": false,
+      "setting": "EXT. OPEN PLACE - CONTINUOUS",
+      "visual_event": "No reply. The hand points straight before them.",
+      "prev_beat": {
+        "kind": "dialogue",
+        "visual": "Scrooge speaks.",
+        "dialogue": "Will you not speak to me?"
+      },
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "Scrooge speaks.",
+        "dialogue": "Lead on! Lead on! The night is waning fast, and it is precious time to me, I kno\u2026"
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s39_b22",
+      "scene": 39,
+      "beat_index": 22,
+      "is_first_silent_in_scene": false,
+      "setting": "EXT. THE EXCHANGE - DAY",
+      "visual_event": "Speakers and listeners stroll away and mix with other groups. Scrooge knows the men. He looks toward the Spirit for an explanation. The Phantom glides on.",
+      "prev_beat": {
+        "kind": "dialogue",
+        "visual": "Fat Merchant speaks.",
+        "dialogue": "for we used to stop and speak whenever we met. Bye, bye!"
+      },
+      "next_beat": null,
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s42_b1",
+      "scene": 42,
+      "beat_index": 1,
+      "is_first_silent_in_scene": true,
+      "setting": "INT. OLD JOE\u0027S SHOP - NIGHT",
+      "visual_event": "Upon the floor: heaps of rusty keys, nails, chains, hinges, files, scales, weights, refuse iron. Mountains of unseemly rags, masses of corrupted fat, sepulchres of bones. OLD JOE, grey-haired, nearly seventy, sits among the wares by a charcoal stove of old bricks, screened from the cold by a frousy curtaining of miscellaneous tatters hung upon a line. He smokes his pipe in calm retirement. Scrooge and the Phantom enter just as a woman with a heavy bundle slinks in-the CHARWOMAN. Scarcely has she entered when MRS. DILBER, similarly laden, comes in too, closely followed by the UNDERTAKER\u0027S MAN in faded black. All three startle at the sight of each other. After blank astonishment-in which Old Joe joins-they burst into a laugh.",
+      "prev_beat": null,
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "Charwoman speaks.",
+        "dialogue": "Let the charwoman alone to be the first! Let the laundress alone to be the secon\u2026"
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s42_b66",
+      "scene": 42,
+      "beat_index": 66,
+      "is_first_silent_in_scene": false,
+      "setting": "INT. OLD JOE\u0027S SHOP - NIGHT",
+      "visual_event": "Scrooge listens in horror. Grouped about their spoil in the scanty lamp-light, he views them with detestation and disgust. Old Joe produces a flannel bag with money and tells out their several gains upon the ground.",
+      "prev_beat": {
+        "kind": "dialogue",
+        "visual": "Charwoman (with a laugh).",
+        "dialogue": "It\u0027s quite as becoming to the body. He can\u0027t look uglier than he did in that one\u2026"
+      },
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "Charwoman speaks.",
+        "dialogue": "Ha, ha! This is the end of it, you see!"
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s43_b10",
+      "scene": 43,
+      "beat_index": 10,
+      "is_first_silent_in_scene": false,
+      "setting": "INT. DARK BEDCHAMBER - NIGHT",
+      "visual_event": "The Phantom spreads its dark robe before him for a moment, like a wing.",
+      "prev_beat": {
+        "kind": "dialogue",
+        "visual": "Scrooge (agonised).",
+        "dialogue": "person to me, Spirit, I beseech you!"
+      },
+      "next_beat": null,
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s45_b1",
+      "scene": 45,
+      "beat_index": 1,
+      "is_first_silent_in_scene": true,
+      "setting": "INT. CRATCHIT SITTING ROOM - NIGHT",
+      "visual_event": "The house is very quiet. Quiet. Very quiet. The noisy little Cratchits are as still as statues in one corner, and sat looking up at Peter, who has a book before him. The mother and her daughters are engaged in sewing. A chair is set carefully aside-empty-by the fire. Tiny Tim\u0027s little crutch leans in the corner.",
+      "prev_beat": null,
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "Peter Cratchit (reading).",
+        "dialogue": "\u0022And He took a child, and set him in the midst of them.\u0022"
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s45_b19",
+      "scene": 45,
+      "beat_index": 19,
+      "is_first_silent_in_scene": false,
+      "setting": "INT. CRATCHIT SITTING ROOM - NIGHT",
+      "visual_event": "She hurries out to meet him. Bob enters-his comforter needed now more than ever. He is a little late. He sits down. They try to help him with tea and comfort.",
+      "prev_beat": {
+        "kind": "dialogue",
+        "visual": "Mrs. Cratchit speaks.",
+        "dialogue": "And there is your father at the door!"
+      },
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "Bob Cratchit speaks.",
+        "dialogue": "I went there to-day, my dear."
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s46_b5",
+      "scene": 46,
+      "beat_index": 5,
+      "is_first_silent_in_scene": false,
+      "setting": "EXT. CHURCHYARD - NIGHT",
+      "visual_event": "Still the Ghost points downward to the grave by which it stands.",
+      "prev_beat": {
+        "kind": "dialogue",
+        "visual": "Scrooge speaks.",
+        "dialogue": "be, only?"
+      },
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "Scrooge speaks.",
+        "dialogue": "Men\u0027s courses will foreshadow certain ends, to which, if persevered in, they mus\u2026"
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s46_b17",
+      "scene": 46,
+      "beat_index": 17,
+      "is_first_silent_in_scene": false,
+      "setting": "EXT. CHURCHYARD - NIGHT",
+      "visual_event": "For the first time the hand appears to shake.",
+      "prev_beat": {
+        "kind": "dialogue",
+        "visual": "Scrooge speaks.",
+        "dialogue": "Why show me this, if I am past all hope!"
+      },
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "Scrooge speaks.",
+        "dialogue": "Good Spirit, your nature intercedes for me, and pities me."
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s47_b10",
+      "scene": 47,
+      "beat_index": 10,
+      "is_first_silent_in_scene": false,
+      "setting": "INT. SCROOGE\u0027S BEDROOM - MORNING",
+      "visual_event": "His hands are busy with his garments; turning them inside out, putting them on upside down, tearing them, mislaying them.",
+      "prev_beat": {
+        "kind": "dialogue",
+        "visual": "Scrooge speaks.",
+        "dialogue": "They will be. I know they will!"
+      },
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "Scrooge speaks.",
+        "dialogue": "I don\u0027t know what to do!"
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s47_b28",
+      "scene": 47,
+      "beat_index": 28,
+      "is_first_silent_in_scene": false,
+      "setting": "INT. SCROOGE\u0027S BEDROOM - MORNING",
+      "visual_event": "A BOY IN SUNDAY CLOTHES in the street below looks up.",
+      "prev_beat": {
+        "kind": "dialogue",
+        "visual": "Scrooge (calling down).",
+        "dialogue": "What\u0027s to-day?"
+      },
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "Boy In Sunday Clothes speaks.",
+        "dialogue": "Eh?"
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s48_b15",
+      "scene": 48,
+      "beat_index": 15,
+      "is_first_silent_in_scene": false,
+      "setting": "EXT. LONDON STREETS - CHRISTMAS MORNING",
+      "visual_event": "He goes to church, and walks the streets, and watches the people hurrying to and fro, and pats children on the head, and questions beggars, and looks down into the kitchens of houses, and up to the windows, and finds that everything could yield him pleasure. He had never dreamed that any walk-that anything-could give him so much happiness. In the afternoon he turns his steps towards his nephew\u0027s house.",
+      "prev_beat": {
+        "kind": "dialogue",
+        "visual": "Scrooge speaks.",
+        "dialogue": "Thank\u0027ee. I am much obliged to you. I thank you fifty times. Bless you!"
+      },
+      "next_beat": null,
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s50_b8",
+      "scene": 50,
+      "beat_index": 8,
+      "is_first_silent_in_scene": false,
+      "setting": "INT. SCROOGE AND MARLEY COUNTING-HOUSE - MORNING",
+      "visual_event": "He leaps from his stool, and gives Bob such a dig in the waistcoat that he staggers back into the Tank-",
+      "prev_beat": {
+        "kind": "dialogue",
+        "visual": "Scrooge speaks.",
+        "dialogue": "I am not going to stand this sort of thing any longer. And therefore-"
+      },
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "Scrooge speaks.",
+        "dialogue": "-and therefore I am about to raise your salary!"
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s52_b1",
+      "scene": 52,
+      "beat_index": 1,
+      "is_first_silent_in_scene": true,
+      "setting": "INT. CRATCHIT HOME - DAY",
+      "visual_event": "A small room made warm by a good fire and a second coal-scuttle. BOB CRATCHIT at the table; MRS. CRATCHIT laying bread; PETER CRATCHIT, MARTHA CRATCHIT, LITTLE GIRL CRATCHIT, LITTLE BOY CRATCHIT crowded near. TINY TIM, living, bright-eyed, his little crutch against the chair, sits upon SCROOGE\u0027S knee as upon a second father\u0027s. Scrooge steadies the boy. Tim leans into him without fear.",
+      "prev_beat": null,
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "Narrator speaks.",
+        "dialogue": "And to Tiny Tim, who did NOT die, he was a second father."
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    }
+  ]
+}

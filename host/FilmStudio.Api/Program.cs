@@ -68,6 +68,7 @@ builder.Services.AddSingleton<CastVisualLiteralizeService>();
 builder.Services.AddSingleton<CastFromScreenplayService>();
 builder.Services.AddSingleton<BookPrepareService>();
 builder.Services.AddSingleton<Stage1Service>();
+builder.Services.AddSingleton<SilentBeatActionClassifier>();
 builder.Services.AddSingleton<Stage2PlannerService>();
 builder.Services.AddSingleton<FfmpegRemuxService>();
 builder.Services.AddSingleton<IFfmpegRemux>(sp => sp.GetRequiredService<FfmpegRemuxService>());

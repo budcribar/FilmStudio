@@ -112,6 +112,9 @@ public class ClipDurationEstimatorTests
     [InlineData("A bare, lamplit chamber. Close walls. A plain wooden chair faces us. Narrator sits.", true, "establishing")]
     [InlineData("They chase through the alley and crash into the stalls.", false, "big_action")]
     [InlineData("He crosses the room and opens the heavy oak door to the hall.", false, "action")]
+    // Baseline product fallback: first silent → establishing (chat classify overrides at plan time)
+    [InlineData("She finishes her cry. She attends to her cheeks with a powder rag and looks out dully.", true, "establishing")]
+    [InlineData("They chase through the alley and crash into the stalls.", true, "big_action")]
     public void InferActionClass_tags_silent_beats(string text, bool first, string expected)
     {
         Assert.Equal(expected, FountainStage1Importer.InferActionClass(text, first));

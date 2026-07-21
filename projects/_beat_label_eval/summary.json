@@ -1,0 +1,2336 @@
+{
+  "ts": "2026-07-21T14:13:42.3251443\u002B00:00",
+  "overallAgreementPct": 50.9,
+  "overallAgree": 136,
+  "overallDisagree": 131,
+  "books": [
+    {
+      "projectId": "GiftOfTheMagi",
+      "path": "C:\\Users\\budcr\\source\\repos\\FilmStudio\\projects\\GiftOfTheMagi\\source\\screenplay.fountain",
+      "silentActionBeats": 27,
+      "sampled": 27,
+      "agree": 15,
+      "disagree": 12,
+      "missing": 0,
+      "agreementPct": 55.6,
+      "disagreementHistogram": {
+        "establishing\u2192action": 5,
+        "action\u2192hold": 5,
+        "establishing\u2192hold": 1,
+        "hold\u2192action": 1
+      },
+      "comparisons": [
+        {
+          "Id": "s1_b1",
+          "Scene": 1,
+          "heuristic": "establishing",
+          "ai": "establishing",
+          "match": true,
+          "visual": "A shabby little room. Worn red carpet. A thin pier-glass between the windows. A battered couch. On a small table: a meager scatter of coins. DELLA, about twenty\u2026"
+        },
+        {
+          "Id": "s1_b6",
+          "Scene": 1,
+          "heuristic": "action",
+          "ai": "action",
+          "match": true,
+          "visual": "Della stares at the coins. Nothing left to do. She flops down on the shabby little couch and howls-raw, helpless sobs."
+        },
+        {
+          "Id": "s2_b1",
+          "Scene": 2,
+          "heuristic": "establishing",
+          "ai": "establishing",
+          "match": true,
+          "visual": "A letter-box into which no letter would go. An electric button that will not ring. A card: \u0022MR. JAMES DILLINGHAM YOUNG.\u0022"
+        },
+        {
+          "Id": "s3_b1",
+          "Scene": 3,
+          "heuristic": "establishing",
+          "ai": "action",
+          "match": false,
+          "visual": "Della finishes her cry. She attends to her cheeks with a powder rag. She stands by the window and looks out dully."
+        },
+        {
+          "Id": "s4_b1",
+          "Scene": 4,
+          "heuristic": "establishing",
+          "ai": "establishing",
+          "match": true,
+          "visual": "A gray cat walks a gray fence in a gray backyard."
+        },
+        {
+          "Id": "s5_b7",
+          "Scene": 5,
+          "heuristic": "action",
+          "ai": "action",
+          "match": true,
+          "visual": "Della whirls from the window and stands before the pier-glass. Her eyes shine brilliantly; the color drains from her face. She pulls down her hair and lets it f\u2026"
+        },
+        {
+          "Id": "s5_b10",
+          "Scene": 5,
+          "heuristic": "action",
+          "ai": "action",
+          "match": true,
+          "visual": "She stands very still. A tear or two splashes on the worn red carpet. Then she does the hair up again, nervously, quickly. On goes her old brown jacket. On goes\u2026"
+        },
+        {
+          "Id": "s6_b1",
+          "Scene": 6,
+          "heuristic": "establishing",
+          "ai": "action",
+          "match": false,
+          "visual": "Della hurries along the cold sidewalk among Christmas shoppers, small and determined in the brown jacket and hat. She stops under a sign: \u0022MME. SOFRONIE. HAIR G\u2026"
+        },
+        {
+          "Id": "s7_b1",
+          "Scene": 7,
+          "heuristic": "establishing",
+          "ai": "establishing",
+          "match": true,
+          "visual": "MADAME SOFRONIE-large, too white, chilly-waits behind the counter. Hardly the romance of \u0022Sofronie.\u0022 Della collects herself, panting."
+        },
+        {
+          "Id": "s7_b4",
+          "Scene": 7,
+          "heuristic": "action",
+          "ai": "action",
+          "match": true,
+          "visual": "Della removes the hat. Down ripples the brown cascade. Madame lifts the mass with a practised hand."
+        },
+        {
+          "Id": "s7_b7",
+          "Scene": 7,
+          "heuristic": "action",
+          "ai": "action",
+          "match": true,
+          "visual": "Madame works with scissors and pins. The cascade falls away. Coins clink into Della\u0027s palm-twenty dollars. Della\u0027s eyes are wet and bright. She closes her fist \u2026"
+        },
+        {
+          "Id": "s8_b1",
+          "Scene": 8,
+          "heuristic": "establishing",
+          "ai": "action",
+          "match": false,
+          "visual": "The next two hours on rosy wings. Della ransacks store after store-counters of watches, trays of trinkets-searching, turning things over, shaking her head, pres\u2026"
+        },
+        {
+          "Id": "s9_b1",
+          "Scene": 9,
+          "heuristic": "establishing",
+          "ai": "action",
+          "match": false,
+          "visual": "She finds it. A platinum fob chain, simple and chaste in design-value by substance alone, not ornament. She knows at once. It is like him. Quietness and value. \u2026"
+        },
+        {
+          "Id": "s10_b1",
+          "Scene": 10,
+          "heuristic": "establishing",
+          "ai": "action",
+          "match": false,
+          "visual": "Della\u0027s intoxication gives way a little to prudence and reason. She gets out her curling irons, lights the gas, and goes to work repairing the ravages made by g\u2026"
+        },
+        {
+          "Id": "s11_b1",
+          "Scene": 11,
+          "heuristic": "establishing",
+          "ai": "hold",
+          "match": false,
+          "visual": "Seven o\u0027clock. Coffee made. The frying-pan on the back of the stove, hot and ready to cook the chops. Della doubles the fob chain in her hand and sits on the co\u2026"
+        },
+        {
+          "Id": "s11_b3",
+          "Scene": 11,
+          "heuristic": "action",
+          "ai": "hold",
+          "match": false,
+          "visual": "The door opens. JIM steps in and closes it-thin, very serious, only twenty-two. Needs a new overcoat. Without gloves. He stops inside the door, as immovable as \u2026"
+        },
+        {
+          "Id": "s11_b11",
+          "Scene": 11,
+          "heuristic": "action",
+          "ai": "hold",
+          "match": false,
+          "visual": "Laboriously-as if he had not arrived at that patent fact yet."
+        },
+        {
+          "Id": "s11_b14",
+          "Scene": 11,
+          "heuristic": "hold",
+          "ai": "hold",
+          "match": true,
+          "visual": "Jim looks about the room curiously."
+        },
+        {
+          "Id": "s11_b20",
+          "Scene": 11,
+          "heuristic": "action",
+          "ai": "action",
+          "match": true,
+          "visual": "Out of his trance Jim seems quickly to wake. He enfolds his Della."
+        },
+        {
+          "Id": "s11_b25",
+          "Scene": 11,
+          "heuristic": "action",
+          "ai": "action",
+          "match": true,
+          "visual": "Jim draws a package from his overcoat pocket and throws it upon the table."
+        },
+        {
+          "Id": "s11_b30",
+          "Scene": 11,
+          "heuristic": "action",
+          "ai": "action",
+          "match": true,
+          "visual": "White fingers and nimble tear at the string and paper. An ecstatic scream of joy- -then a quick change to hysterical tears and wails. Jim holds her, all the com\u2026"
+        },
+        {
+          "Id": "s11_b34",
+          "Scene": 11,
+          "heuristic": "hold",
+          "ai": "hold",
+          "match": true,
+          "visual": "She hugs them to her bosom. At length she looks up with dim eyes and a smile."
+        },
+        {
+          "Id": "s11_b36",
+          "Scene": 11,
+          "heuristic": "big_action",
+          "ai": "big_action",
+          "match": true,
+          "visual": "Then she leaps up like a little singed cat."
+        },
+        {
+          "Id": "s11_b38",
+          "Scene": 11,
+          "heuristic": "action",
+          "ai": "hold",
+          "match": false,
+          "visual": "Jim has not yet seen his present. She holds it out eagerly upon her open palm. The dull precious metal seems to flash with a reflection of her bright and ardent\u2026"
+        },
+        {
+          "Id": "s11_b42",
+          "Scene": 11,
+          "heuristic": "hold",
+          "ai": "action",
+          "match": false,
+          "visual": "Instead of obeying, Jim tumbles down on the couch and puts his hands under the back of his head and smiles."
+        },
+        {
+          "Id": "s11_b47",
+          "Scene": 11,
+          "heuristic": "action",
+          "ai": "hold",
+          "match": false,
+          "visual": "She stares at him. Then laughter breaks through the tears. She sinks beside him on the couch, the chain in one hand, the combs in the other. He draws her in. Th\u2026"
+        },
+        {
+          "Id": "s11_b57",
+          "Scene": 11,
+          "heuristic": "action",
+          "ai": "hold",
+          "match": false,
+          "visual": "Jim and Della hold each other. The combs and the chain rest between them-useless, priceless."
+        }
+      ],
+      "aiRawPreview": "{\n  \u0022labels\u0022: [\n    { \u0022id\u0022: \u0022s1_b1\u0022, \u0022class\u0022: \u0022establishing\u0022, \u0022reason\u0022: \u0022first wide view of shabby flat and room details\u0022 },\n    { \u0022id\u0022: \u0022s1_b6\u0022, \u0022class\u0022: \u0022action\u0022, \u0022reason\u0022: \u0022flops onto couch and sobs\u0022 },\n    { \u0022id\u0022: \u0022s2_b1\u0022, \u0022class\u0022: \u0022establishing\u0022, \u0022reason\u0022: \u0022first view of vestibule fixtures and name card\u0022 },\n    { \u0022id\u0022: \u0022s3_b1\u0022, \u0022class\u0022: \u0022action\u0022, \u0022reason\u0022: \u0022powders cheeks then moves to window\u0022 },\n    { \u0022id\u0022: \u0022s4_b1\u0022, \u0022class\u0022: \u0022establishing\u0022, \u0022reason\u0022: \u0022new exterior backyard view through win\u2026"
+    },
+    {
+      "projectId": "YellowWallpaper",
+      "path": "C:\\Users\\budcr\\source\\repos\\FilmStudio\\projects\\YellowWallpaper\\source\\screenplay.fountain",
+      "silentActionBeats": 52,
+      "sampled": 40,
+      "agree": 16,
+      "disagree": 24,
+      "missing": 0,
+      "agreementPct": 40,
+      "disagreementHistogram": {
+        "establishing\u2192action": 8,
+        "establishing\u2192hold": 8,
+        "hold\u2192action": 6,
+        "establishing\u2192big_action": 1,
+        "action\u2192big_action": 1
+      },
+      "comparisons": [
+        {
+          "Id": "s1_b1",
+          "Scene": 1,
+          "heuristic": "establishing",
+          "ai": "establishing",
+          "match": true,
+          "visual": "A hereditary estate set well back from the road: hedges, locking gates, broken greenhouses, a large shady garden of box-bordered paths and grape-covered arbors.\u2026"
+        },
+        {
+          "Id": "s2_b1",
+          "Scene": 2,
+          "heuristic": "establishing",
+          "ai": "establishing",
+          "match": true,
+          "visual": "A big airy room at the top of the house, nearly the whole floor. Windows look all ways-barred. Rings and things in the walls. A great heavy bedstead. The wallpa\u2026"
+        },
+        {
+          "Id": "s2_b8",
+          "Scene": 2,
+          "heuristic": "hold",
+          "ai": "hold",
+          "match": true,
+          "visual": "He smiles, already certain."
+        },
+        {
+          "Id": "s3_b1",
+          "Scene": 3,
+          "heuristic": "establishing",
+          "ai": "action",
+          "match": false,
+          "visual": "Later. THE NARRATOR sits by a window with her journal, writing in quick secret strokes. Sunshine pours in. Below: garden, arbors, a shaded lane toward a private\u2026"
+        },
+        {
+          "Id": "s3_b15",
+          "Scene": 3,
+          "heuristic": "action",
+          "ai": "action",
+          "match": true,
+          "visual": "He checks the barred windows, satisfied, and goes. She exhales, exhausted by the performance of calm."
+        },
+        {
+          "Id": "s4_b1",
+          "Scene": 4,
+          "heuristic": "establishing",
+          "ai": "establishing",
+          "match": true,
+          "visual": "Moonlight. THE NARRATOR lies on the nailed-down bed. John sleeps beside her. She stares at the wallpaper: lame uncertain curves that plunge off at outrageous an\u2026"
+        },
+        {
+          "Id": "s4_b10",
+          "Scene": 4,
+          "heuristic": "action",
+          "ai": "action",
+          "match": true,
+          "visual": "She rises softly, touches the wall. A draught. John stirs."
+        },
+        {
+          "Id": "s5_b1",
+          "Scene": 5,
+          "heuristic": "establishing",
+          "ai": "establishing",
+          "match": true,
+          "visual": "Box-bordered paths, long grape arbors with seats, riotous old-fashioned flowers, gnarly trees. THE NARRATOR walks slowly, supervised by distance. JENNIE-John\u0027s \u2026"
+        },
+        {
+          "Id": "s6_b1",
+          "Scene": 6,
+          "heuristic": "establishing",
+          "ai": "hold",
+          "match": false,
+          "visual": "Two weeks in. THE NARRATOR at the window again, journal open. She is thinner in the face; the effort of dressing shows."
+        },
+        {
+          "Id": "s6_b7",
+          "Scene": 6,
+          "heuristic": "hold",
+          "ai": "hold",
+          "match": true,
+          "visual": "She looks toward a closed door-somewhere below, a baby cries once, then is soothed."
+        },
+        {
+          "Id": "s7_b8",
+          "Scene": 7,
+          "heuristic": "hold",
+          "ai": "action",
+          "match": false,
+          "visual": "He takes her in his arms, fond, dismissing."
+        },
+        {
+          "Id": "s8_b1",
+          "Scene": 8,
+          "heuristic": "establishing",
+          "ai": "hold",
+          "match": false,
+          "visual": "THE NARRATOR alone, tracing the pattern with her eyes from the bed. A recurrent spot: the pattern lolls like a broken neck; two bulbous eyes stare upside-down. \u2026"
+        },
+        {
+          "Id": "s8_b7",
+          "Scene": 8,
+          "heuristic": "action",
+          "ai": "action",
+          "match": true,
+          "visual": "JENNIE\u0027s figure appears far down the winding road. THE NARRATOR hides the journal at once. JENNIE enters with clean linen, cheerful, thorough."
+        },
+        {
+          "Id": "s8_b10",
+          "Scene": 8,
+          "heuristic": "hold",
+          "ai": "action",
+          "match": false,
+          "visual": "JENNIE smiles, unconvinced, and begins to tidy. She smooths a yellow smooch on the baseboard without comment-yet."
+        },
+        {
+          "Id": "s10_b1",
+          "Scene": 10,
+          "heuristic": "establishing",
+          "ai": "hold",
+          "match": false,
+          "visual": "JOHN sits beside her, professional kindness."
+        },
+        {
+          "Id": "s10_b9",
+          "Scene": 10,
+          "heuristic": "hold",
+          "ai": "action",
+          "match": false,
+          "visual": "He doses her with cod-liver oil, tonics; pours a little wine. Rare meat waits on a tray."
+        },
+        {
+          "Id": "s11_b1",
+          "Scene": 11,
+          "heuristic": "establishing",
+          "ai": "hold",
+          "match": false,
+          "visual": "She tries to speak earnestly. Tears come before she finishes."
+        },
+        {
+          "Id": "s12_b1",
+          "Scene": 12,
+          "heuristic": "establishing",
+          "ai": "action",
+          "match": false,
+          "visual": "Moonlight creeps in one window, then another. JOHN asleep. THE NARRATOR watches the undulating paper. Behind the outside pattern, a faint figure seems to shake \u2026"
+        },
+        {
+          "Id": "s12_b21",
+          "Scene": 12,
+          "heuristic": "hold",
+          "ai": "hold",
+          "match": true,
+          "visual": "He sits up straight-stern, reproachful. She stops."
+        },
+        {
+          "Id": "s13_b1",
+          "Scene": 13,
+          "heuristic": "establishing",
+          "ai": "hold",
+          "match": false,
+          "visual": "Harsh daylight. THE NARRATOR on the bed, following the pattern hour after hour-gymnastics of the eye. Bloated curves, debased Romanesque with delirium tremens; \u2026"
+        },
+        {
+          "Id": "s14_b1",
+          "Scene": 14,
+          "heuristic": "establishing",
+          "ai": "hold",
+          "match": false,
+          "visual": "Different light. THE NARRATOR watches the first long straight ray from the east window. The paper changes as she watches."
+        },
+        {
+          "Id": "s15_b1",
+          "Scene": 15,
+          "heuristic": "establishing",
+          "ai": "hold",
+          "match": false,
+          "visual": "After meals: enforced lying-down. THE NARRATOR\u0027s eyes stay open. She does not sleep. Deceit settles in as habit. JOHN looks in, pleased by her stillness."
+        },
+        {
+          "Id": "s15_b3",
+          "Scene": 15,
+          "heuristic": "action",
+          "ai": "action",
+          "match": true,
+          "visual": "When he leaves, she sits up and stares at the wall again."
+        },
+        {
+          "Id": "s16_b1",
+          "Scene": 16,
+          "heuristic": "establishing",
+          "ai": "action",
+          "match": false,
+          "visual": "THE NARRATOR pretends sleep, then rises on innocent excuses. She catches JOHN looking at the wallpaper. Later-JENNIE with her hand on it."
+        },
+        {
+          "Id": "s17_b1",
+          "Scene": 17,
+          "heuristic": "establishing",
+          "ai": "action",
+          "match": false,
+          "visual": "THE NARRATOR brighter, secret energy. She eats. JOHN laughs, relieved."
+        },
+        {
+          "Id": "s18_b1",
+          "Scene": 18,
+          "heuristic": "establishing",
+          "ai": "action",
+          "match": false,
+          "visual": "Fog and rain against the barred windows. A yellow smell hangs in the room-gentle at first, then enduring, awful. THE NARRATOR wakes and finds it hanging over he\u2026"
+        },
+        {
+          "Id": "s19_b1",
+          "Scene": 19,
+          "heuristic": "establishing",
+          "ai": "establishing",
+          "match": true,
+          "visual": "THE NARRATOR descends slowly. The yellow smell seems to wait on the treads. She touches the banister, then her hair."
+        },
+        {
+          "Id": "s21_b1",
+          "Scene": 21,
+          "heuristic": "establishing",
+          "ai": "big_action",
+          "match": false,
+          "visual": "Moonlight. The front pattern moves because the woman behind shakes it. Sometimes many women; sometimes one, crawling fast. In bright spots she keeps still; in s\u2026"
+        },
+        {
+          "Id": "s22_b1",
+          "Scene": 22,
+          "heuristic": "establishing",
+          "ai": "action",
+          "match": false,
+          "visual": "From the nursery windows, THE NARRATOR\u0027s POV: a woman creeping in the long shaded lane; creeping in the dark grape arbors; creeping the long road under the tree\u2026"
+        },
+        {
+          "Id": "s23_b1",
+          "Scene": 23,
+          "heuristic": "establishing",
+          "ai": "action",
+          "match": false,
+          "visual": "THE NARRATOR locks the door. Alone, she creeps along the smooch-line on the floor, shoulder fitted to the mark. She rises quickly when a board creaks-John must \u2026"
+        },
+        {
+          "Id": "s25_b1",
+          "Scene": 25,
+          "heuristic": "establishing",
+          "ai": "hold",
+          "match": false,
+          "visual": "Last full night. JOHN stays in town. JENNIE offers to sleep in; THE NARRATOR refuses, sweet and firm."
+        },
+        {
+          "Id": "s25_b3",
+          "Scene": 25,
+          "heuristic": "big_action",
+          "ai": "big_action",
+          "match": true,
+          "visual": "JENNIE goes. Moonlight. The poor thing behind the pattern crawls and shakes. THE NARRATOR leaps up to help-pulls while the figure shakes, shakes while it pulls.\u2026"
+        },
+        {
+          "Id": "s26_b1",
+          "Scene": 26,
+          "heuristic": "establishing",
+          "ai": "establishing",
+          "match": true,
+          "visual": "Moving day tomorrow. Furniture already going downstairs. The room empties toward bareness: the great bedstead nailed down, canvas mattress left. JENNIE stares a\u2026"
+        },
+        {
+          "Id": "s26_b6",
+          "Scene": 26,
+          "heuristic": "action",
+          "ai": "action",
+          "match": true,
+          "visual": "JENNIE tries to coax her out. THE NARRATOR resists."
+        },
+        {
+          "Id": "s26_b19",
+          "Scene": 26,
+          "heuristic": "action",
+          "ai": "action",
+          "match": true,
+          "visual": "She fastens the rope-secures herself to the room\u0027s logic-and begins to creep, shoulder in the long smooch, round and round on the bare floor."
+        },
+        {
+          "Id": "s27_b1",
+          "Scene": 27,
+          "heuristic": "establishing",
+          "ai": "action",
+          "match": false,
+          "visual": "Pounding at the door. JOHN\u0027s voice."
+        },
+        {
+          "Id": "s27_b3",
+          "Scene": 27,
+          "heuristic": "hold",
+          "ai": "action",
+          "match": false,
+          "visual": "THE NARRATOR keeps creeping."
+        },
+        {
+          "Id": "s27_b8",
+          "Scene": 27,
+          "heuristic": "hold",
+          "ai": "action",
+          "match": false,
+          "visual": "She repeats it gently, slowly, often. At last his footsteps retreat, return. The key turns. JOHN enters-stops short by the door."
+        },
+        {
+          "Id": "s27_b10",
+          "Scene": 27,
+          "heuristic": "hold",
+          "ai": "action",
+          "match": false,
+          "visual": "THE NARRATOR keeps creeping. She looks at him over her shoulder."
+        },
+        {
+          "Id": "s27_b13",
+          "Scene": 27,
+          "heuristic": "action",
+          "ai": "big_action",
+          "match": false,
+          "visual": "JOHN faints across her path by the wall. THE NARRATOR pauses only to consider him-then creeps over him, again and again, shoulder to the smooch, circling the ro\u2026"
+        }
+      ],
+      "aiRawPreview": "{\n  \u0022labels\u0022: [\n    { \u0022id\u0022: \u0022s1_b1\u0022, \u0022class\u0022: \u0022establishing\u0022, \u0022reason\u0022: \u0022wide first view of mansion grounds\u0022 },\n    { \u0022id\u0022: \u0022s2_b1\u0022, \u0022class\u0022: \u0022establishing\u0022, \u0022reason\u0022: \u0022first wide reveal of nursery interior\u0022 },\n    { \u0022id\u0022: \u0022s2_b8\u0022, \u0022class\u0022: \u0022hold\u0022, \u0022reason\u0022: \u0022brief smile performance\u0022 },\n    { \u0022id\u0022: \u0022s3_b1\u0022, \u0022class\u0022: \u0022action\u0022, \u0022reason\u0022: \u0022sits and writes in journal\u0022 },\n    { \u0022id\u0022: \u0022s3_b15\u0022, \u0022class\u0022: \u0022action\u0022, \u0022reason\u0022: \u0022checks windows then exits; she exhales\u0022 },\n    { \u0022id\u0022: \u0022s4_b1\u0022, \u0022class\u0022: \u0022esta\u2026"
+    },
+    {
+      "projectId": "ChristmasCarol",
+      "path": "C:\\Users\\budcr\\source\\repos\\FilmStudio\\projects\\ChristmasCarol\\source\\screenplay.fountain",
+      "silentActionBeats": 181,
+      "sampled": 40,
+      "agree": 24,
+      "disagree": 16,
+      "missing": 0,
+      "agreementPct": 60,
+      "disagreementHistogram": {
+        "action\u2192hold": 9,
+        "establishing\u2192action": 4,
+        "action\u2192big_action": 2,
+        "hold\u2192action": 1
+      },
+      "comparisons": [
+        {
+          "Id": "s1_b1",
+          "Scene": 1,
+          "heuristic": "establishing",
+          "ai": "action",
+          "match": false,
+          "visual": "A heavy burial register lies open. A CLERGYMAN, a CLERK, an UNDERTAKER, and EBENEZER SCROOGE sign in turn. Scrooge\u0027s hand is steady, businesslike. Snow light at\u2026"
+        },
+        {
+          "Id": "s4_b7",
+          "Scene": 4,
+          "heuristic": "hold",
+          "ai": "hold",
+          "match": true,
+          "visual": "Scrooge does not look back. The city gives him room."
+        },
+        {
+          "Id": "s5_b64",
+          "Scene": 5,
+          "heuristic": "action",
+          "ai": "action",
+          "match": true,
+          "visual": "As Fred goes out, he lets two others in: MR. ALMSLEY and MR. WITHERS-portly, pleasant, hats off, books and papers in hand. They bow."
+        },
+        {
+          "Id": "s7_b1",
+          "Scene": 7,
+          "heuristic": "establishing",
+          "ai": "action",
+          "match": false,
+          "visual": "Scrooge seizes his ruler with sudden energy. The boy flees; fog and frost reclaim the keyhole. At last, shutting-up time. Scrooge dismounts his stool with ill w\u2026"
+        },
+        {
+          "Id": "s10_b1",
+          "Scene": 10,
+          "heuristic": "establishing",
+          "ai": "establishing",
+          "match": true,
+          "visual": "A lowering pile of building up a yard-gloomy chambers that once belonged to Marley. Nobody lives in it now but Scrooge; other rooms let out as offices. The yard\u2026"
+        },
+        {
+          "Id": "s12_b21",
+          "Scene": 12,
+          "heuristic": "action",
+          "ai": "big_action",
+          "match": false,
+          "visual": "Scrooge tries to be smart-to keep down his terror. Marley raises a frightful cry and shakes his chain with such a dismal and appalling noise that Scrooge holds \u2026"
+        },
+        {
+          "Id": "s12_b71",
+          "Scene": 12,
+          "heuristic": "hold",
+          "ai": "hold",
+          "match": true,
+          "visual": "Scrooge is very much dismayed."
+        },
+        {
+          "Id": "s13_b3",
+          "Scene": 13,
+          "heuristic": "action",
+          "ai": "action",
+          "match": true,
+          "visual": "The hour bell sounds-a deep, dull, hollow, melancholy ONE. Light flashes up in the room upon the instant. The bed-curtains at his face are drawn aside by a hand\u2026"
+        },
+        {
+          "Id": "s13_b19",
+          "Scene": 13,
+          "heuristic": "action",
+          "ai": "hold",
+          "match": false,
+          "visual": "It puts out its strong hand and clasps him gently by the arm."
+        },
+        {
+          "Id": "s14_b1",
+          "Scene": 14,
+          "heuristic": "establishing",
+          "ai": "establishing",
+          "match": true,
+          "visual": "Open country road; fields on either hand. Snow upon the ground. Clear, cold winter day. The city has entirely vanished. Darkness and mist gone with it. Scrooge,\u2026"
+        },
+        {
+          "Id": "s15_b5",
+          "Scene": 15,
+          "heuristic": "hold",
+          "ai": "hold",
+          "match": true,
+          "visual": "Scrooge nods-he knows it-and sobs. They leave the high-road by a well-remembered lane."
+        },
+        {
+          "Id": "s18_b10",
+          "Scene": 18,
+          "heuristic": "action",
+          "ai": "hold",
+          "match": false,
+          "visual": "Scrooge\u0027s face is heightened and excited-between laughing and crying."
+        },
+        {
+          "Id": "s18_b30",
+          "Scene": 18,
+          "heuristic": "action",
+          "ai": "hold",
+          "match": false,
+          "visual": "She claps her tiny hands, bends down to laugh."
+        },
+        {
+          "Id": "s20_b1",
+          "Scene": 20,
+          "heuristic": "establishing",
+          "ai": "establishing",
+          "match": true,
+          "visual": "A shivering old well of a room. Maps on the wall; celestial and terrestrial globes in the windows, waxy with cold. The Schoolmaster produces a decanter of curio\u2026"
+        },
+        {
+          "Id": "s23_b3",
+          "Scene": 23,
+          "heuristic": "action",
+          "ai": "hold",
+          "match": false,
+          "visual": "OLD FEZZIWIG lays down his pen, looks up at the clock-seven. Rubs his hands; adjusts his capacious waistcoat; laughs all over himself from his shoes to his orga\u2026"
+        },
+        {
+          "Id": "s23_b14",
+          "Scene": 23,
+          "heuristic": "action",
+          "ai": "action",
+          "match": true,
+          "visual": "Every movable packed off; floor swept and watered; lamps trimmed; fuel heaped upon the fire. The warehouse becomes as snug, warm, dry, and bright a ball-room as\u2026"
+        },
+        {
+          "Id": "s24_b35",
+          "Scene": 24,
+          "heuristic": "action",
+          "ai": "hold",
+          "match": false,
+          "visual": "Young Scrooge seems to yield to the justice of this supposition, in spite of himself. But he says, with a struggle-"
+        },
+        {
+          "Id": "s25_b1",
+          "Scene": 25,
+          "heuristic": "establishing",
+          "ai": "establishing",
+          "match": true,
+          "visual": "A room, not very large or handsome, but full of comfort. Near to the winter fire sits a beautiful young girl-Belle\u0027s daughter. Opposite her, the same Belle, now\u2026"
+        },
+        {
+          "Id": "s27_b3",
+          "Scene": 27,
+          "heuristic": "hold",
+          "ai": "action",
+          "match": false,
+          "visual": "Scrooge enters timidly, hanging his head."
+        },
+        {
+          "Id": "s29_b1",
+          "Scene": 29,
+          "heuristic": "establishing",
+          "ai": "action",
+          "match": false,
+          "visual": "The GHOST OF CHRISTMAS PRESENT stands with SCROOGE beside him in a baker\u0027s doorway. He takes off the covers as the bearers pass and sprinkles incense on their d\u2026"
+        },
+        {
+          "Id": "s31_b4",
+          "Scene": 31,
+          "heuristic": "action",
+          "ai": "action",
+          "match": true,
+          "visual": "They dance about the table in luxurious thoughts of sage and onion, and exalt Peter to the skies. Peter, not proud although his collars nearly choke him, blows \u2026"
+        },
+        {
+          "Id": "s31_b31",
+          "Scene": 31,
+          "heuristic": "action",
+          "ai": "action",
+          "match": true,
+          "visual": "Tiny Tim\u0027s active little crutch is heard upon the floor. Back he comes, escorted by his brother and sister, to his stool before the fire. Bob turns up his cuffs\u2026"
+        },
+        {
+          "Id": "s33_b1",
+          "Scene": 33,
+          "heuristic": "establishing",
+          "ai": "action",
+          "match": false,
+          "visual": "In half a minute Mrs. Cratchit enters-flushed, but smiling proudly-with the pudding, like a speckled cannon-ball, so hard and firm, blazing in half of half-a-qu\u2026"
+        },
+        {
+          "Id": "s33_b38",
+          "Scene": 33,
+          "heuristic": "action",
+          "ai": "action",
+          "match": true,
+          "visual": "The children drink the toast after her. Tiny Tim drinks it last of all. Bob looks about him gently, as if to find some kinder words; but Scrooge is the Ogre of \u2026"
+        },
+        {
+          "Id": "s35_b26",
+          "Scene": 35,
+          "heuristic": "action",
+          "ai": "big_action",
+          "match": false,
+          "visual": "They play at forfeits, at How, When, and Where, and at Blind-man\u0027s buff-Topper chasing the plump sister with determined cunning. They sing. They laugh until the\u2026"
+        },
+        {
+          "Id": "s37_b11",
+          "Scene": 37,
+          "heuristic": "action",
+          "ai": "action",
+          "match": true,
+          "visual": "From the fold of its robe, it brings two children-wretched, abject, frightful, hideous, miserable. A boy and a girl-yellow, meagre, ragged, scowling, wolfish-bu\u2026"
+        },
+        {
+          "Id": "s38_b11",
+          "Scene": 38,
+          "heuristic": "hold",
+          "ai": "hold",
+          "match": true,
+          "visual": "No reply. The hand points straight before them."
+        },
+        {
+          "Id": "s39_b22",
+          "Scene": 39,
+          "heuristic": "action",
+          "ai": "action",
+          "match": true,
+          "visual": "Speakers and listeners stroll away and mix with other groups. Scrooge knows the men. He looks toward the Spirit for an explanation. The Phantom glides on."
+        },
+        {
+          "Id": "s42_b1",
+          "Scene": 42,
+          "heuristic": "establishing",
+          "ai": "establishing",
+          "match": true,
+          "visual": "Upon the floor: heaps of rusty keys, nails, chains, hinges, files, scales, weights, refuse iron. Mountains of unseemly rags, masses of corrupted fat, sepulchres\u2026"
+        },
+        {
+          "Id": "s42_b66",
+          "Scene": 42,
+          "heuristic": "action",
+          "ai": "hold",
+          "match": false,
+          "visual": "Scrooge listens in horror. Grouped about their spoil in the scanty lamp-light, he views them with detestation and disgust. Old Joe produces a flannel bag with m\u2026"
+        },
+        {
+          "Id": "s43_b10",
+          "Scene": 43,
+          "heuristic": "action",
+          "ai": "hold",
+          "match": false,
+          "visual": "The Phantom spreads its dark robe before him for a moment, like a wing."
+        },
+        {
+          "Id": "s45_b1",
+          "Scene": 45,
+          "heuristic": "establishing",
+          "ai": "establishing",
+          "match": true,
+          "visual": "The house is very quiet. Quiet. Very quiet. The noisy little Cratchits are as still as statues in one corner, and sat looking up at Peter, who has a book before\u2026"
+        },
+        {
+          "Id": "s45_b19",
+          "Scene": 45,
+          "heuristic": "action",
+          "ai": "action",
+          "match": true,
+          "visual": "She hurries out to meet him. Bob enters-his comforter needed now more than ever. He is a little late. He sits down. They try to help him with tea and comfort."
+        },
+        {
+          "Id": "s46_b5",
+          "Scene": 46,
+          "heuristic": "action",
+          "ai": "hold",
+          "match": false,
+          "visual": "Still the Ghost points downward to the grave by which it stands."
+        },
+        {
+          "Id": "s46_b17",
+          "Scene": 46,
+          "heuristic": "action",
+          "ai": "hold",
+          "match": false,
+          "visual": "For the first time the hand appears to shake."
+        },
+        {
+          "Id": "s47_b10",
+          "Scene": 47,
+          "heuristic": "action",
+          "ai": "action",
+          "match": true,
+          "visual": "His hands are busy with his garments; turning them inside out, putting them on upside down, tearing them, mislaying them."
+        },
+        {
+          "Id": "s47_b28",
+          "Scene": 47,
+          "heuristic": "hold",
+          "ai": "hold",
+          "match": true,
+          "visual": "A BOY IN SUNDAY CLOTHES in the street below looks up."
+        },
+        {
+          "Id": "s48_b15",
+          "Scene": 48,
+          "heuristic": "action",
+          "ai": "action",
+          "match": true,
+          "visual": "He goes to church, and walks the streets, and watches the people hurrying to and fro, and pats children on the head, and questions beggars, and looks down into \u2026"
+        },
+        {
+          "Id": "s50_b8",
+          "Scene": 50,
+          "heuristic": "big_action",
+          "ai": "big_action",
+          "match": true,
+          "visual": "He leaps from his stool, and gives Bob such a dig in the waistcoat that he staggers back into the Tank-"
+        },
+        {
+          "Id": "s52_b1",
+          "Scene": 52,
+          "heuristic": "establishing",
+          "ai": "establishing",
+          "match": true,
+          "visual": "A small room made warm by a good fire and a second coal-scuttle. BOB CRATCHIT at the table; MRS. CRATCHIT laying bread; PETER CRATCHIT, MARTHA CRATCHIT, LITTLE \u2026"
+        }
+      ],
+      "aiRawPreview": "{\n  \u0022labels\u0022: [\n    { \u0022id\u0022: \u0022s1_b1\u0022, \u0022class\u0022: \u0022action\u0022, \u0022reason\u0022: \u0022sequential signing of the register\u0022 },\n    { \u0022id\u0022: \u0022s4_b7\u0022, \u0022class\u0022: \u0022hold\u0022, \u0022reason\u0022: \u0022still refusal to look back\u0022 },\n    { \u0022id\u0022: \u0022s5_b64\u0022, \u0022class\u0022: \u0022action\u0022, \u0022reason\u0022: \u0022visitors enter and bow\u0022 },\n    { \u0022id\u0022: \u0022s7_b1\u0022, \u0022class\u0022: \u0022action\u0022, \u0022reason\u0022: \u0022seize ruler, boy flees, shut-up business\u0022 },\n    { \u0022id\u0022: \u0022s10_b1\u0022, \u0022class\u0022: \u0022establishing\u0022, \u0022reason\u0022: \u0022first view of dark yard and door\u0022 },\n    { \u0022id\u0022: \u0022s12_b21\u0022, \u0022class\u0022: \u0022big_action\u0022\u2026"
+    },
+    {
+      "projectId": "Dracula",
+      "path": "C:\\Users\\budcr\\source\\repos\\FilmStudio\\projects\\Dracula\\source\\screenplay.fountain",
+      "silentActionBeats": 200,
+      "sampled": 40,
+      "agree": 21,
+      "disagree": 19,
+      "missing": 0,
+      "agreementPct": 52.5,
+      "disagreementHistogram": {
+        "establishing\u2192action": 8,
+        "action\u2192hold": 7,
+        "establishing\u2192big_action": 2,
+        "establishing\u2192hold": 1,
+        "action\u2192big_action": 1
+      },
+      "comparisons": [
+        {
+          "Id": "s1_b1",
+          "Scene": 1,
+          "heuristic": "establishing",
+          "ai": "establishing",
+          "match": true,
+          "visual": "Gaslight on high shelves. JONATHAN HARKER, late twenties, neat brown hair, clean-shaven English solicitor in a dark traveling suit, bends over maps and heavy fo\u2026"
+        },
+        {
+          "Id": "s4_b4",
+          "Scene": 4,
+          "heuristic": "hold",
+          "ai": "hold",
+          "match": true,
+          "visual": "Jonathan scribbles in his journal."
+        },
+        {
+          "Id": "s9_b1",
+          "Scene": 9,
+          "heuristic": "establishing",
+          "ai": "action",
+          "match": false,
+          "visual": "At the door, LANDLADY ELISABETA-elderly, cheery-looking, white undergarment with long double apron of coloured stuff fitting almost too tight for modesty-bows a\u2026"
+        },
+        {
+          "Id": "s11_b5",
+          "Scene": 11,
+          "heuristic": "action",
+          "ai": "hold",
+          "match": false,
+          "visual": "Josef and Elisabeta cross themselves. Fear tightens both faces."
+        },
+        {
+          "Id": "s12_b15",
+          "Scene": 12,
+          "heuristic": "action",
+          "ai": "hold",
+          "match": false,
+          "visual": "She goes out. Jonathan stands alone, the crucifix on his breast. Coach horn distant below."
+        },
+        {
+          "Id": "s16_b1",
+          "Scene": 16,
+          "heuristic": "big_action",
+          "ai": "big_action",
+          "match": true,
+          "visual": "The cal\u00E8che tears through blue-black forest. Wolves howl on every side-blue flames flicker among the trees. Jonathan grips the seat. The Driver raises a hand; t\u2026"
+        },
+        {
+          "Id": "s18_b5",
+          "Scene": 18,
+          "heuristic": "action",
+          "ai": "hold",
+          "match": false,
+          "visual": "The handshake so akin to the Driver\u0027s that Jonathan stares."
+        },
+        {
+          "Id": "s21_b1",
+          "Scene": 21,
+          "heuristic": "establishing",
+          "ai": "establishing",
+          "match": true,
+          "visual": "A small octagonal room lit by a single lamp. Seemingly without a window. The Count opens a further door and motions Jonathan through."
+        },
+        {
+          "Id": "s23_b8",
+          "Scene": 23,
+          "heuristic": "action",
+          "ai": "action",
+          "match": true,
+          "visual": "The Count takes the cover from a dish. Excellent roast chicken, cheese, salad, a bottle of old Tokay. Jonathan eats. Two glasses of wine. During the meal the Co\u2026"
+        },
+        {
+          "Id": "s25_b1",
+          "Scene": 25,
+          "heuristic": "establishing",
+          "ai": "establishing",
+          "match": true,
+          "visual": "Early morning light-7 May. Jonathan enters dressed. A cold breakfast laid out; coffee kept hot on the hearth. A card on the table."
+        },
+        {
+          "Id": "s27_b6",
+          "Scene": 27,
+          "heuristic": "action",
+          "ai": "action",
+          "match": true,
+          "visual": "Jonathan draws papers. The Count signs with a hand that never warms."
+        },
+        {
+          "Id": "s29_b6",
+          "Scene": 29,
+          "heuristic": "action",
+          "ai": "action",
+          "match": true,
+          "visual": "Below-the great door shuts. The Count has returned."
+        },
+        {
+          "Id": "s33_b7",
+          "Scene": 33,
+          "heuristic": "hold",
+          "ai": "hold",
+          "match": true,
+          "visual": "He holds up his arms."
+        },
+        {
+          "Id": "s34_b1",
+          "Scene": 34,
+          "heuristic": "establishing",
+          "ai": "establishing",
+          "match": true,
+          "visual": "Another night. Books open. The Count questions Jonathan on legal matters-methodical, precise."
+        },
+        {
+          "Id": "s35_b1",
+          "Scene": 35,
+          "heuristic": "establishing",
+          "ai": "establishing",
+          "match": true,
+          "visual": "Jonathan, restless, finds a door unlocked that was not before. He enters a dusty chamber long unused-old furniture, moth-eaten hangings, a great bed. Moonlight \u2026"
+        },
+        {
+          "Id": "s36_b6",
+          "Scene": 36,
+          "heuristic": "action",
+          "ai": "action",
+          "match": true,
+          "visual": "He rises, pale, and forces himself toward the door."
+        },
+        {
+          "Id": "s38_b14",
+          "Scene": 38,
+          "heuristic": "hold",
+          "ai": "hold",
+          "match": true,
+          "visual": "Jonathan writes. His face goes bloodless."
+        },
+        {
+          "Id": "s42_b1",
+          "Scene": 42,
+          "heuristic": "establishing",
+          "ai": "action",
+          "match": false,
+          "visual": "Jonathan reads by the window. The door opens. Count Dracula enters, smoothest voice, two letters in his hand. He sits beside Jonathan."
+        },
+        {
+          "Id": "s43_b1",
+          "Scene": 43,
+          "heuristic": "establishing",
+          "ai": "hold",
+          "match": false,
+          "visual": "Jonathan lies down. Exhaustion takes him. No dreams."
+        },
+        {
+          "Id": "s48_b1",
+          "Scene": 48,
+          "heuristic": "establishing",
+          "ai": "big_action",
+          "match": false,
+          "visual": "Before morning. Jonathan has run up the winding stair. He watches from the south window. Below and across: from the Count\u0027s window, a figure emerges-the whole m\u2026"
+        },
+        {
+          "Id": "s50_b6",
+          "Scene": 50,
+          "heuristic": "action",
+          "ai": "big_action",
+          "match": false,
+          "visual": "He knots sheets, climbs to the window ledge, and lowers himself into the abyss of night."
+        },
+        {
+          "Id": "s51_b20",
+          "Scene": 51,
+          "heuristic": "action",
+          "ai": "hold",
+          "match": false,
+          "visual": "A distant clock strikes ten. She starts, sanding the letter."
+        },
+        {
+          "Id": "s52_b10",
+          "Scene": 52,
+          "heuristic": "action",
+          "ai": "hold",
+          "match": false,
+          "visual": "Seward almost sits upon his silk hat, catches himself, and thereafter turns a lancet absently between his fingers until Lucy\u0027s eyes flick to it with a suppresse\u2026"
+        },
+        {
+          "Id": "s53_b22",
+          "Scene": 53,
+          "heuristic": "action",
+          "ai": "hold",
+          "match": false,
+          "visual": "She laughs through sudden tears, seals the letter in haste."
+        },
+        {
+          "Id": "s54_b15",
+          "Scene": 54,
+          "heuristic": "action",
+          "ai": "hold",
+          "match": false,
+          "visual": "He bows and goes. Lucy sinks onto the sofa, crying quietly, letter-paper already blotted beside her."
+        },
+        {
+          "Id": "s55_b20",
+          "Scene": 55,
+          "heuristic": "hold",
+          "ai": "hold",
+          "match": true,
+          "visual": "Lucy\u0027s eyes fill. She nods."
+        },
+        {
+          "Id": "s57_b1",
+          "Scene": 57,
+          "heuristic": "establishing",
+          "ai": "establishing",
+          "match": true,
+          "visual": "DR. JOHN SEWARD at his phonograph, speaking into the tube-professional mask cracked by private pain."
+        },
+        {
+          "Id": "s60_b1",
+          "Scene": 60,
+          "heuristic": "establishing",
+          "ai": "establishing",
+          "match": true,
+          "visual": "A bright sitting-room with sea-light at the windows. MRS. WESTENRA greets Mina warmly, then gathers gloves and card-case."
+        },
+        {
+          "Id": "s62_b1",
+          "Scene": 62,
+          "heuristic": "establishing",
+          "ai": "establishing",
+          "match": true,
+          "visual": "Days later. Bright sun. LUCY WESTENRA in white lawn frock, beautiful colour in her face, sits with MINA MURRAY. MR. SWALES and his two cronies lose no time join\u2026"
+        },
+        {
+          "Id": "s62_b52",
+          "Scene": 62,
+          "heuristic": "hold",
+          "ai": "hold",
+          "match": true,
+          "visual": "Lucy leans over; the letters face her."
+        },
+        {
+          "Id": "s64_b1",
+          "Scene": 64,
+          "heuristic": "establishing",
+          "ai": "establishing",
+          "match": true,
+          "visual": "Sultry August light. Holiday-makers thin along the cliff walk. High in the north-west sky, mares\u0027-tails streak the blue. COASTGUARD DONOVAN stands with his spy-\u2026"
+        },
+        {
+          "Id": "s66_b1",
+          "Scene": 66,
+          "heuristic": "establishing",
+          "ai": "big_action",
+          "match": false,
+          "visual": "No one on the little pier at first. COASTGUARD DONOVAN runs down from the eastern side, first to climb aboard. Searchlight men scour the entrance, then hold the\u2026"
+        },
+        {
+          "Id": "s68_b1",
+          "Scene": 68,
+          "heuristic": "establishing",
+          "ai": "action",
+          "match": false,
+          "visual": "Mate\u0027s watch. One hand, PETROFSKY, relieved-does not go to bunk. Dawn: he is missing. Crew downcast."
+        },
+        {
+          "Id": "s72_b1",
+          "Scene": 72,
+          "heuristic": "establishing",
+          "ai": "action",
+          "match": false,
+          "visual": "Fog thick. Captain wakes to a cry outside his port. Rushes on deck-runs against Mate Dragomir. Man of watch gone. One more."
+        },
+        {
+          "Id": "s74_b1",
+          "Scene": 74,
+          "heuristic": "establishing",
+          "ai": "establishing",
+          "match": true,
+          "visual": "After the storm. Mina and Lucy on their seat. Below, the wrecked schooner Demeter lies under the East Cliff. Crowds stare. The immense dog is not found. MR. SWA\u2026"
+        },
+        {
+          "Id": "s76_b3",
+          "Scene": 76,
+          "heuristic": "action",
+          "ai": "action",
+          "match": true,
+          "visual": "Mina throws on clothes, snatches a big heavy shawl, runs out."
+        },
+        {
+          "Id": "s80_b1",
+          "Scene": 80,
+          "heuristic": "establishing",
+          "ai": "action",
+          "match": false,
+          "visual": "They hide in a doorway as a not-quite-sober man passes. Heartbeats loud. Home without meeting another soul."
+        },
+        {
+          "Id": "s84_b1",
+          "Scene": 84,
+          "heuristic": "establishing",
+          "ai": "action",
+          "match": false,
+          "visual": "Mina wakes. Lucy sitting up in bed, still asleep, pointing to the window. Mina pulls aside the blind. Brilliant moonlight. Between her and the moon a great bat \u2026"
+        },
+        {
+          "Id": "s87_b1",
+          "Scene": 87,
+          "heuristic": "establishing",
+          "ai": "action",
+          "match": false,
+          "visual": "Lucy moving back to bed, fast asleep, breathing heavily, hand to her throat. Mina does not wake her. Tucks her up. Door locked, window fastened. Lucy pale, draw\u2026"
+        },
+        {
+          "Id": "s91_b1",
+          "Scene": 91,
+          "heuristic": "establishing",
+          "ai": "action",
+          "match": false,
+          "visual": "Acknowledgment. Goods delivered. Keys left in main hall. Overplus returned."
+        }
+      ],
+      "aiRawPreview": "{\n  \u0022labels\u0022: [\n    { \u0022id\u0022: \u0022s1_b1\u0022, \u0022class\u0022: \u0022establishing\u0022, \u0022reason\u0022: \u0022first wide view of library shelves and Harker at work\u0022 },\n    { \u0022id\u0022: \u0022s4_b4\u0022, \u0022class\u0022: \u0022hold\u0022, \u0022reason\u0022: \u0022small hand business scribbling in journal\u0022 },\n    { \u0022id\u0022: \u0022s9_b1\u0022, \u0022class\u0022: \u0022action\u0022, \u0022reason\u0022: \u0022approach and bow at doorway\u0022 },\n    { \u0022id\u0022: \u0022s11_b5\u0022, \u0022class\u0022: \u0022hold\u0022, \u0022reason\u0022: \u0022cross themselves; fear on faces\u0022 },\n    { \u0022id\u0022: \u0022s12_b15\u0022, \u0022class\u0022: \u0022hold\u0022, \u0022reason\u0022: \u0022stands alone in stillness with crucifix\u0022 },\n    { \u0022id\u0022\u2026"
+    },
+    {
+      "projectId": "Frankenstein",
+      "path": "C:\\Users\\budcr\\source\\repos\\FilmStudio\\projects\\Frankenstein\\source\\screenplay.fountain",
+      "silentActionBeats": 223,
+      "sampled": 40,
+      "agree": 13,
+      "disagree": 27,
+      "missing": 0,
+      "agreementPct": 32.5,
+      "disagreementHistogram": {
+        "establishing\u2192action": 14,
+        "action\u2192hold": 5,
+        "establishing\u2192hold": 4,
+        "establishing\u2192big_action": 2,
+        "hold\u2192action": 1,
+        "action\u2192big_action": 1
+      },
+      "comparisons": [
+        {
+          "Id": "s1_b1",
+          "Scene": 1,
+          "heuristic": "establishing",
+          "ai": "establishing",
+          "match": true,
+          "visual": "Late 18th century. Snow packed hard underfoot. A cold northern breeze cuts the air. ROBERT WALTON, twenty-eight, lean and bright-eyed, walks in heavy furs. The \u2026"
+        },
+        {
+          "Id": "s4_b1",
+          "Scene": 4,
+          "heuristic": "establishing",
+          "ai": "action",
+          "match": false,
+          "visual": "Walton writes on, fervor rising."
+        },
+        {
+          "Id": "s8_b1",
+          "Scene": 8,
+          "heuristic": "establishing",
+          "ai": "hold",
+          "match": false,
+          "visual": "Back to the letter. Walton\u0027s face is open, almost pleading with the page."
+        },
+        {
+          "Id": "s11_b5",
+          "Scene": 11,
+          "heuristic": "action",
+          "ai": "hold",
+          "match": false,
+          "visual": "He stops. The room is empty. The silence presses."
+        },
+        {
+          "Id": "s13_b5",
+          "Scene": 13,
+          "heuristic": "hold",
+          "ai": "action",
+          "match": false,
+          "visual": "He seals the letter."
+        },
+        {
+          "Id": "s17_b1",
+          "Scene": 17,
+          "heuristic": "establishing",
+          "ai": "action",
+          "match": false,
+          "visual": "Victor wrapped in blankets, fevered, slowly mending under Walton\u0027s care. Walton sits by him with broth and quiet talk."
+        },
+        {
+          "Id": "s21_b1",
+          "Scene": 21,
+          "heuristic": "establishing",
+          "ai": "action",
+          "match": false,
+          "visual": "A modest carriage pulls away from Geneva\u0027s walls. Beaufort does not look back. Caroline steadies him."
+        },
+        {
+          "Id": "s27_b1",
+          "Scene": 27,
+          "heuristic": "establishing",
+          "ai": "establishing",
+          "match": true,
+          "visual": "Years later. Young Victor, about five-slim, dark hair, intent curious face-walks with Caroline past poor cottages. Alphonse has gone ahead toward Milan. A disco\u2026"
+        },
+        {
+          "Id": "s31_b1",
+          "Scene": 31,
+          "heuristic": "establishing",
+          "ai": "action",
+          "match": false,
+          "visual": "Morning. Caroline presents Elizabeth. Young Victor receives her with childish seriousness-as a possession of his own to protect, love, and cherish."
+        },
+        {
+          "Id": "s35_b3",
+          "Scene": 35,
+          "heuristic": "hold",
+          "ai": "hold",
+          "match": true,
+          "visual": "Victor\u0027s disappointment hardens into secret resolve."
+        },
+        {
+          "Id": "s39_b1",
+          "Scene": 39,
+          "heuristic": "establishing",
+          "ai": "action",
+          "match": false,
+          "visual": "Alphonse, broken but upright. Victor prepares for university. Elizabeth and Clerval bid him farewell with tears and forced cheer."
+        },
+        {
+          "Id": "s43_b1",
+          "Scene": 43,
+          "heuristic": "establishing",
+          "ai": "action",
+          "match": false,
+          "visual": "Candles burnt low. Victor still at work as the high steeple outside pales toward morning. Stars disappear in the light. His application no longer fluctuating-ar\u2026"
+        },
+        {
+          "Id": "s46_b4",
+          "Scene": 46,
+          "heuristic": "hold",
+          "ai": "hold",
+          "match": true,
+          "visual": "He closes the book. Resolve hardens."
+        },
+        {
+          "Id": "s50_b1",
+          "Scene": 50,
+          "heuristic": "establishing",
+          "ai": "hold",
+          "match": false,
+          "visual": "Walton leans forward, eagerness naked in his eyes. Victor meets that look and stops him with a raised hand."
+        },
+        {
+          "Id": "s54_b1",
+          "Scene": 54,
+          "heuristic": "establishing",
+          "ai": "establishing",
+          "match": true,
+          "visual": "A solitary chamber, almost a cell, separated by gallery and stair. Filthy creation: instruments, vats, the vast unfinished form under cloth. Victor\u0027s eyeballs s\u2026"
+        },
+        {
+          "Id": "s57_b1",
+          "Scene": 57,
+          "heuristic": "establishing",
+          "ai": "action",
+          "match": false,
+          "visual": "Victor wanders, unable to return. Morning light finds him exhausted near an inn. A coach rattles in. HENRY CLERVAL springs down, radiant."
+        },
+        {
+          "Id": "s59_b20",
+          "Scene": 59,
+          "heuristic": "hold",
+          "ai": "hold",
+          "match": true,
+          "visual": "Victor nods almost imperceptibly-memory of a frank, happy face."
+        },
+        {
+          "Id": "s61_b1",
+          "Scene": 61,
+          "heuristic": "establishing",
+          "ai": "establishing",
+          "match": true,
+          "visual": "Books, specimens, soft light. M. WALDMAN-kind, silvered, warm-clasps Victor\u0027s hand, then Henry\u0027s."
+        },
+        {
+          "Id": "s62_b9",
+          "Scene": 62,
+          "heuristic": "action",
+          "ai": "hold",
+          "match": false,
+          "visual": "Krempe launches into a eulogy on himself. Victor breathes again."
+        },
+        {
+          "Id": "s65_b3",
+          "Scene": 65,
+          "heuristic": "hold",
+          "ai": "hold",
+          "match": true,
+          "visual": "Victor turns, radiant, and throws an arm toward the open sky."
+        },
+        {
+          "Id": "s68_b1",
+          "Scene": 68,
+          "heuristic": "establishing",
+          "ai": "big_action",
+          "match": false,
+          "visual": "Thunder. In a flash of lightning Victor sees among the trees a gigantic figure-the Creature-climbing the rocks of a nearby precipice with superhuman speed."
+        },
+        {
+          "Id": "s70_b7",
+          "Scene": 70,
+          "heuristic": "action",
+          "ai": "hold",
+          "match": false,
+          "visual": "A murmur of horror fills the court. Justine\u0027s countenance alters-surprise, horror, misery."
+        },
+        {
+          "Id": "s70_b45",
+          "Scene": 70,
+          "heuristic": "action",
+          "ai": "action",
+          "match": true,
+          "visual": "A murmur of approbation-excited by Elizabeth\u0027s generous interference, not in favour of Justine. Public indignation turns on the accused with renewed violence. V\u2026"
+        },
+        {
+          "Id": "s74_b1",
+          "Scene": 74,
+          "heuristic": "establishing",
+          "ai": "action",
+          "match": false,
+          "visual": "Justine on a straw pallet, eyes swollen. Elizabeth and Victor enter. Justine rises and falls into Elizabeth\u0027s arms."
+        },
+        {
+          "Id": "s77_b1",
+          "Scene": 77,
+          "heuristic": "establishing",
+          "ai": "action",
+          "match": false,
+          "visual": "Weeks of gloom. Victor wanders alone, unable to rest. The family removes to Belrive. He takes the boat at night and drifts under the stars, sometimes tempted by\u2026"
+        },
+        {
+          "Id": "s82_b5",
+          "Scene": 82,
+          "heuristic": "hold",
+          "ai": "hold",
+          "match": true,
+          "visual": "He pauses on a winding, rain streaking his face."
+        },
+        {
+          "Id": "s84_b61",
+          "Scene": 84,
+          "heuristic": "action",
+          "ai": "hold",
+          "match": false,
+          "visual": "Victor\u0027s rage falters into a bitter necessity of hearing."
+        },
+        {
+          "Id": "s90_b1",
+          "Scene": 90,
+          "heuristic": "establishing",
+          "ai": "establishing",
+          "match": true,
+          "visual": "A mean shed built against a cottage of neat plainness. The Creature crawls in, finds it empty of occupant, and lies on straw, grateful for shelter."
+        },
+        {
+          "Id": "s96_b1",
+          "Scene": 96,
+          "heuristic": "establishing",
+          "ai": "action",
+          "match": false,
+          "visual": "Morning. Agatha opens the door-astonished at the great pile of wood. Felix joins her; surprise breaks his habitual sadness. He does not go to the forest that da\u2026"
+        },
+        {
+          "Id": "s99_b1",
+          "Scene": 99,
+          "heuristic": "establishing",
+          "ai": "action",
+          "match": false,
+          "visual": "Thaw. The Creature comes upon a transparent pool. He leans to drink-and starts back from his own reflection. Yellow eyes. Scarred yellow skin. Enormous frame. H\u2026"
+        },
+        {
+          "Id": "s104_b1",
+          "Scene": 104,
+          "heuristic": "establishing",
+          "ai": "action",
+          "match": false,
+          "visual": "Autumn light. DE LACEY sits alone with his guitar. He plays a mournful air, then lays it aside. A knock."
+        },
+        {
+          "Id": "s105_b1",
+          "Scene": 105,
+          "heuristic": "establishing",
+          "ai": "hold",
+          "match": false,
+          "visual": "The Creature howls into the dark."
+        },
+        {
+          "Id": "s110_b1",
+          "Scene": 110,
+          "heuristic": "establishing",
+          "ai": "action",
+          "match": false,
+          "visual": "Justine asleep in the barn, exhausted from searching. The Creature sees her-sees a way to wound his creator further. He plants the miniature in the folds of her\u2026"
+        },
+        {
+          "Id": "s111_b54",
+          "Scene": 111,
+          "heuristic": "action",
+          "ai": "big_action",
+          "match": false,
+          "visual": "The Creature departs over the ice with the speed of lightning. Victor is left alone in the hut as the sun sets behind the snowy precipices."
+        },
+        {
+          "Id": "s117_b1",
+          "Scene": 117,
+          "heuristic": "big_action",
+          "ai": "big_action",
+          "match": true,
+          "visual": "Victor pauses over the unfinished female. Imagination shows him a race of devils; the female refusing the compact; two monsters loose upon the world. He looks u\u2026"
+        },
+        {
+          "Id": "s122_b1",
+          "Scene": 122,
+          "heuristic": "establishing",
+          "ai": "hold",
+          "match": false,
+          "visual": "Father and son on deck. Victor is a shadow. Alphonse tries to speak of Elizabeth, of hope. Victor hears only the Creature\u0027s promise."
+        },
+        {
+          "Id": "s126_b1",
+          "Scene": 126,
+          "heuristic": "establishing",
+          "ai": "big_action",
+          "match": false,
+          "visual": "Elizabeth retires to the chamber. Victor paces the outer rooms and passages, pistol in hand, determined to meet his enemy alone. A dreadful scream from the bedr\u2026"
+        },
+        {
+          "Id": "s129_b9",
+          "Scene": 129,
+          "heuristic": "action",
+          "ai": "action",
+          "match": true,
+          "visual": "Victor springs up, but the Creature is already fled."
+        },
+        {
+          "Id": "s133_b1",
+          "Scene": 133,
+          "heuristic": "establishing",
+          "ai": "action",
+          "match": false,
+          "visual": "The ice closes harder about the ship. The crew, led by Willoughby\u0027s anxious courage and Fletcher\u0027s quiet concern, beg Walton to turn south when the floes open."
+        },
+        {
+          "Id": "s135_b6",
+          "Scene": 135,
+          "heuristic": "action",
+          "ai": "hold",
+          "match": false,
+          "visual": "His eyes close. A last breath. Victor Frankenstein dies. Walton weeps over the body of his friend."
+        }
+      ],
+      "aiRawPreview": "{\n  \u0022labels\u0022: [\n    { \u0022id\u0022: \u0022s1_b1\u0022, \u0022class\u0022: \u0022establishing\u0022, \u0022reason\u0022: \u0022first wide view of snowy streets and Walton entering frame\u0022 },\n    { \u0022id\u0022: \u0022s4_b1\u0022, \u0022class\u0022: \u0022action\u0022, \u0022reason\u0022: \u0022continues ordinary business of writing\u0022 },\n    { \u0022id\u0022: \u0022s8_b1\u0022, \u0022class\u0022: \u0022hold\u0022, \u0022reason\u0022: \u0022open pleading facial expression on the page\u0022 },\n    { \u0022id\u0022: \u0022s11_b5\u0022, \u0022class\u0022: \u0022hold\u0022, \u0022reason\u0022: \u0022stops still as empty-room silence presses\u0022 },\n    { \u0022id\u0022: \u0022s13_b5\u0022, \u0022class\u0022: \u0022action\u0022, \u0022reason\u0022: \u0022seals the letter\u0022 },\n    \u2026"
+    },
+    {
+      "projectId": "JungleBook",
+      "path": "C:\\Users\\budcr\\source\\repos\\FilmStudio\\projects\\JungleBook\\source\\screenplay.fountain",
+      "silentActionBeats": 187,
+      "sampled": 40,
+      "agree": 19,
+      "disagree": 21,
+      "missing": 0,
+      "agreementPct": 47.5,
+      "disagreementHistogram": {
+        "action\u2192hold": 8,
+        "establishing\u2192big_action": 6,
+        "action\u2192big_action": 4,
+        "establishing\u2192hold": 1,
+        "establishing\u2192action": 1,
+        "hold\u2192action": 1
+      },
+      "comparisons": [
+        {
+          "Id": "s1_b1",
+          "Scene": 1,
+          "heuristic": "establishing",
+          "ai": "establishing",
+          "match": true,
+          "visual": "Moon over teak and grass. A warm wind. Far off, a kite wheels home."
+        },
+        {
+          "Id": "s2_b12",
+          "Scene": 2,
+          "heuristic": "action",
+          "ai": "action",
+          "match": true,
+          "visual": "He scuttles to the back, finds a buck bone with meat, cracks it merrily."
+        },
+        {
+          "Id": "s4_b5",
+          "Scene": 4,
+          "heuristic": "action",
+          "ai": "hold",
+          "match": false,
+          "visual": "The whine changes to a humming purr from every quarter-the sound that bewilders woodcutters in the open."
+        },
+        {
+          "Id": "s6_b6",
+          "Scene": 6,
+          "heuristic": "action",
+          "ai": "action",
+          "match": true,
+          "visual": "Father Wolf mouths the child as gently as an egg, jaws on the back, not a scratch, and lays him among the cubs."
+        },
+        {
+          "Id": "s6_b35",
+          "Scene": 6,
+          "heuristic": "action",
+          "ai": "action",
+          "match": true,
+          "visual": "Shere Khan backs out growling. Clear of the mouth, he shouts:"
+        },
+        {
+          "Id": "s7_b11",
+          "Scene": 7,
+          "heuristic": "action",
+          "ai": "action",
+          "match": true,
+          "visual": "A young wolf snarls. Others join. The Pack is divided. BAGHEERA-inky black panther, moon-marks of water on his coat-drops into the circle as softly as ink poure\u2026"
+        },
+        {
+          "Id": "s8_b22",
+          "Scene": 8,
+          "heuristic": "hold",
+          "ai": "hold",
+          "match": true,
+          "visual": "Baloo lifts his muzzle."
+        },
+        {
+          "Id": "s8_b37",
+          "Scene": 8,
+          "heuristic": "action",
+          "ai": "big_action",
+          "match": false,
+          "visual": "Mowgli answers with a long, perfect hiss. He kicks up his heels, claps, and vaults onto Bagheera\u0027s back, drumming the glossy hide and making faces at Baloo."
+        },
+        {
+          "Id": "s8_b68",
+          "Scene": 8,
+          "heuristic": "action",
+          "ai": "hold",
+          "match": false,
+          "visual": "Baloo\u0027s voice rumbles like thunder on a hot night. The forest stills."
+        },
+        {
+          "Id": "s10_b1",
+          "Scene": 10,
+          "heuristic": "establishing",
+          "ai": "big_action",
+          "match": false,
+          "visual": "The flight: roads and crossroads fifty to a hundred feet up. Mowgli\u0027s escort rushes him to thinning topmost branches that crackle and bend, then flings outward \u2026"
+        },
+        {
+          "Id": "s11_b1",
+          "Scene": 11,
+          "heuristic": "establishing",
+          "ai": "big_action",
+          "match": false,
+          "visual": "Bagheera climbs as never before; thin branches break; he slips down, claws full of bark. Baloo sets off at a clumsy trot."
+        },
+        {
+          "Id": "s14_b1",
+          "Scene": 14,
+          "heuristic": "establishing",
+          "ai": "establishing",
+          "match": true,
+          "visual": "COBRAS coil in the dust among the rubbish. Mowgli stands among them and gives the Master Word."
+        },
+        {
+          "Id": "s17_b8",
+          "Scene": 17,
+          "heuristic": "action",
+          "ai": "hold",
+          "match": false,
+          "visual": "He licks his lips, looking at the monkey-dead on the terrace and round the tank."
+        },
+        {
+          "Id": "s17_b33",
+          "Scene": 17,
+          "heuristic": "action",
+          "ai": "action",
+          "match": true,
+          "visual": "The moon sinks behind the hills. Lines of trembling monkeys huddle on the walls like ragged shaky fringes. BALOO goes down to the tank for a drink. BAGHEERA put\u2026"
+        },
+        {
+          "Id": "s18_b1",
+          "Scene": 18,
+          "heuristic": "establishing",
+          "ai": "hold",
+          "match": false,
+          "visual": "Under the still trees, BALOO shakes himself all over."
+        },
+        {
+          "Id": "s19_b7",
+          "Scene": 19,
+          "heuristic": "action",
+          "ai": "action",
+          "match": true,
+          "visual": "Mowgli steps into the firelight with a blazing branch-the Red Flower stolen from the village. Wolves shrink. Shere Khan flinches from the heat."
+        },
+        {
+          "Id": "s20_b1",
+          "Scene": 20,
+          "heuristic": "establishing",
+          "ai": "establishing",
+          "match": true,
+          "visual": "Sun on rough track. MOWGLI-long hair, white scars on arms and legs, barefoot-jogs at a steady pace down the valley. Behind him, the jungle. Ahead, country he do\u2026"
+        },
+        {
+          "Id": "s22_b7",
+          "Scene": 22,
+          "heuristic": "action",
+          "ai": "action",
+          "match": true,
+          "visual": "She takes Mowgli\u0027s hands. The Priest claims a miracle and a hundred rupees. Messua leads Mowgli home."
+        },
+        {
+          "Id": "s26_b1",
+          "Scene": 26,
+          "heuristic": "establishing",
+          "ai": "action",
+          "match": false,
+          "visual": "Mowgli comes toward the village with the hide on his head. Buldeo meets him on the road, greedy for the reward on Shere Khan."
+        },
+        {
+          "Id": "s26_b10",
+          "Scene": 26,
+          "heuristic": "action",
+          "ai": "hold",
+          "match": false,
+          "visual": "The PRIEST waves a sprig of sacred tulsi plant."
+        },
+        {
+          "Id": "s26_b32",
+          "Scene": 26,
+          "heuristic": "hold",
+          "ai": "action",
+          "match": false,
+          "visual": "He turns on his heel and walks away with AKELA into the darkening plain."
+        },
+        {
+          "Id": "s29_b1",
+          "Scene": 29,
+          "heuristic": "establishing",
+          "ai": "establishing",
+          "match": true,
+          "visual": "Moon almost down. MOWGLI, AKELA, and GRAY BROTHER climb the hill and stop at the mouth of Mother Wolf\u0027s cave. MOWGLI still bears the rolled hide."
+        },
+        {
+          "Id": "s29_b12",
+          "Scene": 29,
+          "heuristic": "big_action",
+          "ai": "big_action",
+          "match": true,
+          "visual": "The old call rolls into the jungle. Wolves answer from habit. They limp in-lame from traps, shot-wounded, mangy from bad food. Many places in the circle empty. \u2026"
+        },
+        {
+          "Id": "s31_b1",
+          "Scene": 31,
+          "heuristic": "establishing",
+          "ai": "establishing",
+          "match": true,
+          "visual": "Warm lamp light. LIMMERSHIN hops on a berth edge, feathers drying, crumbs before him. Beyond the porthole, black Bering water."
+        },
+        {
+          "Id": "s35_b1",
+          "Scene": 35,
+          "heuristic": "establishing",
+          "ai": "big_action",
+          "match": false,
+          "visual": "KOTICK bursts up gasping and puffing into open water at the farther end, mane streaming."
+        },
+        {
+          "Id": "s37_b1",
+          "Scene": 37,
+          "heuristic": "establishing",
+          "ai": "establishing",
+          "match": true,
+          "visual": "Six days later. KOTICK hauls out just above Sea Lion\u0027s Neck. The first person he meets is SHE-SEAL, who has been waiting. She sees by the look in his eyes that \u2026"
+        },
+        {
+          "Id": "s37_b23",
+          "Scene": 37,
+          "heuristic": "action",
+          "ai": "big_action",
+          "match": false,
+          "visual": "KOTICK\u0027s curly white mane stands up with rage. Eyes flame. Big dog-teeth glisten. He is splendid. SEA CATCH sees him tearing past, hauling grizzled old seals ab\u2026"
+        },
+        {
+          "Id": "s38_b11",
+          "Scene": 38,
+          "heuristic": "action",
+          "ai": "hold",
+          "match": false,
+          "visual": "KOTICK drops his head between his shoulders and shuts his eyes proudly. He is not a white seal any more, but red from head to tail. He scorns to look at or touc\u2026"
+        },
+        {
+          "Id": "s41_b6",
+          "Scene": 41,
+          "heuristic": "action",
+          "ai": "hold",
+          "match": false,
+          "visual": "The song of pleasant stations beside the salt lagoons, The song of blowing squadrons that shuffled down the dunes, The song of midnight dances that churned the \u2026"
+        },
+        {
+          "Id": "s44_b3",
+          "Scene": 44,
+          "heuristic": "action",
+          "ai": "action",
+          "match": true,
+          "visual": "They wrap the mongoose in cotton wool and warm him over a little fire. RIKKI-TIKKI opens his eyes and sneezes."
+        },
+        {
+          "Id": "s45_b3",
+          "Scene": 45,
+          "heuristic": "action",
+          "ai": "hold",
+          "match": false,
+          "visual": "NAG-five feet of cobra, spectacles on his hood-rises from the grass."
+        },
+        {
+          "Id": "s47_b1",
+          "Scene": 47,
+          "heuristic": "establishing",
+          "ai": "big_action",
+          "match": false,
+          "visual": "Nagaina mourns and plots. She means to kill the family and avenge Nag. Darzee\u0027s wife pretends a broken wing and lures her from the melon-bed where the cobra egg\u2026"
+        },
+        {
+          "Id": "s49_b5",
+          "Scene": 49,
+          "heuristic": "action",
+          "ai": "hold",
+          "match": false,
+          "visual": "Sing to your fledglings again, Mother, oh lift up your head! Evil that plagued us is slain, Death in the garden lies dead. Terror that hid in the roses is impot\u2026"
+        },
+        {
+          "Id": "s53_b1",
+          "Scene": 53,
+          "heuristic": "establishing",
+          "ai": "establishing",
+          "match": true,
+          "visual": "KALA NAG stands picketed. BIG TOOMAI, a weathered mahout in working cloth, the son of Black Toomai, runs a hand along the elephant\u0027s leg. LITTLE TOOMAI, ten yea\u2026"
+        },
+        {
+          "Id": "s55_b1",
+          "Scene": 55,
+          "heuristic": "establishing",
+          "ai": "big_action",
+          "match": false,
+          "visual": "The stockade quivers. Torches. Yells. Blank cartridges. LITTLE TOOMAI climbs a stockade post, hair flying, a goblin in the torch-light. Below, KALA NAG battles \u2026"
+        },
+        {
+          "Id": "s58_b1",
+          "Scene": 58,
+          "heuristic": "establishing",
+          "ai": "establishing",
+          "match": true,
+          "visual": "The season ending. Newly caught elephants in a restless line. A native clerk at a table under a tree pays wages. Catchers and hunters lean on guns and laugh at \u2026"
+        },
+        {
+          "Id": "s59_b1",
+          "Scene": 59,
+          "heuristic": "establishing",
+          "ai": "big_action",
+          "match": false,
+          "visual": "KALA NAG breaks his picket-rope and walks into the forest. LITTLE TOOMAI clings on, half afraid, half wild with joy. Other elephants join from the darkness-wild\u2026"
+        },
+        {
+          "Id": "s61_b21",
+          "Scene": 61,
+          "heuristic": "action",
+          "ai": "big_action",
+          "match": false,
+          "visual": "At that last wild yell the whole line flings up their trunks till the tips touch their foreheads, and breaks out into the full salute-the crashing trumpet-peal \u2026"
+        },
+        {
+          "Id": "s63_b8",
+          "Scene": 63,
+          "heuristic": "action",
+          "ai": "big_action",
+          "match": false,
+          "visual": "NARRATOR-a man in boots and waterproof-scrambles out into the slush. Little VIXEN, a fox terrier, darts out the other side. A roaring, grunting, bubbling. The t\u2026"
+        },
+        {
+          "Id": "s64_b31",
+          "Scene": 64,
+          "heuristic": "action",
+          "ai": "action",
+          "match": true,
+          "visual": "A chain drags. A yoke of great sulky white GUN BULLOCKS-the seventh yoke of the first gun of the Big Gun Battery-come shouldering along. Almost stepping on the \u2026"
+        }
+      ],
+      "aiRawPreview": "{\n  \u0022labels\u0022: [\n    { \u0022id\u0022: \u0022s1_b1\u0022, \u0022class\u0022: \u0022establishing\u0022, \u0022reason\u0022: \u0022wide night landscape opener, first view of hills\u0022 },\n    { \u0022id\u0022: \u0022s2_b12\u0022, \u0022class\u0022: \u0022action\u0022, \u0022reason\u0022: \u0022scuttles, finds bone, cracks it\u2014ordinary business\u0022 },\n    { \u0022id\u0022: \u0022s4_b5\u0022, \u0022class\u0022: \u0022hold\u0022, \u0022reason\u0022: \u0022atmospheric sound shift; stillness, no physical business\u0022 },\n    { \u0022id\u0022: \u0022s6_b6\u0022, \u0022class\u0022: \u0022action\u0022, \u0022reason\u0022: \u0022gentle carry and lay-down of the child\u0022 },\n    { \u0022id\u0022: \u0022s6_b35\u0022, \u0022class\u0022: \u0022action\u0022, \u0022reason\u0022: \u0022backs out of\u2026"
+    },
+    {
+      "projectId": "AlicesAdventures",
+      "path": "C:\\Users\\budcr\\source\\repos\\FilmStudio\\projects\\AlicesAdventures\\source\\screenplay.fountain",
+      "silentActionBeats": 282,
+      "sampled": 40,
+      "agree": 28,
+      "disagree": 12,
+      "missing": 0,
+      "agreementPct": 70,
+      "disagreementHistogram": {
+        "action\u2192hold": 6,
+        "hold\u2192action": 2,
+        "establishing\u2192action": 2,
+        "action\u2192big_action": 1,
+        "establishing\u2192big_action": 1
+      },
+      "comparisons": [
+        {
+          "Id": "s1_b1",
+          "Scene": 1,
+          "heuristic": "establishing",
+          "ai": "establishing",
+          "match": true,
+          "visual": "Notes: Period live-action Victorian fantasy; humans and talking animals share one stylized live-action medium. ALICE: about seven, fair hair, knee-length blue d\u2026"
+        },
+        {
+          "Id": "s4_b10",
+          "Scene": 4,
+          "heuristic": "hold",
+          "ai": "hold",
+          "match": true,
+          "visual": "She considers, solemn."
+        },
+        {
+          "Id": "s6_b1",
+          "Scene": 6,
+          "heuristic": "establishing",
+          "ai": "establishing",
+          "match": true,
+          "visual": "A long, low hall lit by a row of lamps hanging from the roof. Doors all round. Alice tries every one: all locked. She walks sadly down the middle. A little thre\u2026"
+        },
+        {
+          "Id": "s7_b2",
+          "Scene": 7,
+          "heuristic": "action",
+          "ai": "big_action",
+          "match": false,
+          "visual": "She shoots upward, opening out like the largest telescope."
+        },
+        {
+          "Id": "s7_b30",
+          "Scene": 7,
+          "heuristic": "hold",
+          "ai": "hold",
+          "match": true,
+          "visual": "She ticks off children she knows."
+        },
+        {
+          "Id": "s7_b64",
+          "Scene": 7,
+          "heuristic": "action",
+          "ai": "action",
+          "match": true,
+          "visual": "She runs to the little door - shut again; the golden key lies on the glass table as before."
+        },
+        {
+          "Id": "s8_b22",
+          "Scene": 8,
+          "heuristic": "hold",
+          "ai": "hold",
+          "match": true,
+          "visual": "The Mouse bristles all over."
+        },
+        {
+          "Id": "s9_b5",
+          "Scene": 9,
+          "heuristic": "hold",
+          "ai": "hold",
+          "match": true,
+          "visual": "They sit in a large ring, Mouse in the middle. Alice watches anxiously, sure of a bad cold if she stays wet."
+        },
+        {
+          "Id": "s9_b46",
+          "Scene": 9,
+          "heuristic": "action",
+          "ai": "action",
+          "match": true,
+          "visual": "The Dodo receives the thimble solemnly, then presents it back to Alice, saying -"
+        },
+        {
+          "Id": "s9_b69",
+          "Scene": 9,
+          "heuristic": "action",
+          "ai": "action",
+          "match": true,
+          "visual": "Alice guesses at once: the fan and the white kid gloves. She hunts about good-naturedly. Nothing. The great hall, the glass table, the little door - all vanishe\u2026"
+        },
+        {
+          "Id": "s12_b11",
+          "Scene": 12,
+          "heuristic": "action",
+          "ai": "hold",
+          "match": false,
+          "visual": "The bottle has had its full effect. She grows no larger - still very uncomfortable, wedged in the little room."
+        },
+        {
+          "Id": "s13_b12",
+          "Scene": 13,
+          "heuristic": "hold",
+          "ai": "hold",
+          "match": true,
+          "visual": "Long silence. Whispers."
+        },
+        {
+          "Id": "s16_b8",
+          "Scene": 16,
+          "heuristic": "hold",
+          "ai": "action",
+          "match": false,
+          "visual": "She gives one sharp kick."
+        },
+        {
+          "Id": "s20_b4",
+          "Scene": 20,
+          "heuristic": "action",
+          "ai": "hold",
+          "match": false,
+          "visual": "Another dead silence outside. Alice notices with surprise: the pebbles on the floor are all turning into little cakes."
+        },
+        {
+          "Id": "s23_b8",
+          "Scene": 23,
+          "heuristic": "action",
+          "ai": "action",
+          "match": true,
+          "visual": "She looks all round at the flowers and blades of grass. Nothing that looks like the right thing. A large mushroom grows near her, about the same height as herse\u2026"
+        },
+        {
+          "Id": "s24_b36",
+          "Scene": 24,
+          "heuristic": "action",
+          "ai": "hold",
+          "match": false,
+          "visual": "\u0022In my youth,\u0022 Father William replied to his son, \u0022I feared it might injure the brain; But, now that I\u0027m perfectly sure I have none, Why, I do it again and agai\u2026"
+        },
+        {
+          "Id": "s25_b1",
+          "Scene": 25,
+          "heuristic": "establishing",
+          "ai": "big_action",
+          "match": false,
+          "visual": "Alice\u0027s head frees itself. She is delighted - until she finds her shoulders gone; all she can see when she looks down is an immense length of neck, rising like \u2026"
+        },
+        {
+          "Id": "s26_b1",
+          "Scene": 26,
+          "heuristic": "establishing",
+          "ai": "establishing",
+          "match": true,
+          "visual": "Alice stands before the door, wondering what to do next, when suddenly a footman in livery comes running out of the wood - the face of a fish, powdered hair dra\u2026"
+        },
+        {
+          "Id": "s27_b3",
+          "Scene": 27,
+          "heuristic": "action",
+          "ai": "hold",
+          "match": false,
+          "visual": "She says it aloud, half to herself. The Duchess only scowls. The cook takes no notice."
+        },
+        {
+          "Id": "s28_b1",
+          "Scene": 28,
+          "heuristic": "establishing",
+          "ai": "action",
+          "match": false,
+          "visual": "Alice nurses the baby as she walks."
+        },
+        {
+          "Id": "s28_b43",
+          "Scene": 28,
+          "heuristic": "action",
+          "ai": "action",
+          "match": true,
+          "visual": "This time it vanishes quite slowly, beginning with the end of the tail, and ending with the grin, which remains some time after the rest of it has gone."
+        },
+        {
+          "Id": "s29_b19",
+          "Scene": 29,
+          "heuristic": "hold",
+          "ai": "hold",
+          "match": true,
+          "visual": "(aloud) I believe I can guess that."
+        },
+        {
+          "Id": "s29_b72",
+          "Scene": 29,
+          "heuristic": "hold",
+          "ai": "hold",
+          "match": true,
+          "visual": "The Hatter shakes his head mournfully."
+        },
+        {
+          "Id": "s29_b125",
+          "Scene": 29,
+          "heuristic": "action",
+          "ai": "action",
+          "match": true,
+          "visual": "He moves on. The Dormouse follows him. The March Hare moves into the Dormouse\u0027s place. Alice rather unwillingly takes the place of the March Hare. The March Har\u2026"
+        },
+        {
+          "Id": "s31_b1",
+          "Scene": 31,
+          "heuristic": "establishing",
+          "ai": "establishing",
+          "match": true,
+          "visual": "Once more she finds herself in the long hall, close to the little glass table."
+        },
+        {
+          "Id": "s32_b23",
+          "Scene": 32,
+          "heuristic": "hold",
+          "ai": "hold",
+          "match": true,
+          "visual": "The Knave only bows and smiles."
+        },
+        {
+          "Id": "s32_b38",
+          "Scene": 32,
+          "heuristic": "action",
+          "ai": "action",
+          "match": true,
+          "visual": "The Knave does so, very carefully, with one foot."
+        },
+        {
+          "Id": "s33_b1",
+          "Scene": 33,
+          "heuristic": "establishing",
+          "ai": "action",
+          "match": false,
+          "visual": "Alice walks beside the White Rabbit, who peeps anxiously into her face."
+        },
+        {
+          "Id": "s33_b39",
+          "Scene": 33,
+          "heuristic": "action",
+          "ai": "action",
+          "match": true,
+          "visual": "The King and executioner argue whether a head can be beheaded without a body. The Cat\u0027s head begins to fade away. By the time they have settled anything, the he\u2026"
+        },
+        {
+          "Id": "s33_b89",
+          "Scene": 33,
+          "heuristic": "action",
+          "ai": "action",
+          "match": true,
+          "visual": "As they walk off together, Alice hears the King say in a low voice to the company generally -"
+        },
+        {
+          "Id": "s35_b6",
+          "Scene": 35,
+          "heuristic": "action",
+          "ai": "hold",
+          "match": false,
+          "visual": "He sighs deeply, drawing the back of one flapper across his eyes. He tries to speak; sobs choke his voice."
+        },
+        {
+          "Id": "s35_b56",
+          "Scene": 35,
+          "heuristic": "action",
+          "ai": "action",
+          "match": true,
+          "visual": "The Gryphon shakes him and punches him in the back. At last the Mock Turtle recovers."
+        },
+        {
+          "Id": "s35_b110",
+          "Scene": 35,
+          "heuristic": "hold",
+          "ai": "hold",
+          "match": true,
+          "visual": "Alice looks down at her shoes."
+        },
+        {
+          "Id": "s35_b152",
+          "Scene": 35,
+          "heuristic": "action",
+          "ai": "hold",
+          "match": false,
+          "visual": "The Panther took pie-crust, and gravy, and meat, While the Owl had the dish as its share of the treat. When the pie was all finished, the Owl, as a boon, Was ki\u2026"
+        },
+        {
+          "Id": "s36_b1",
+          "Scene": 36,
+          "heuristic": "establishing",
+          "ai": "establishing",
+          "match": true,
+          "visual": "The KING OF HEARTS and QUEEN OF HEARTS sit on their throne. A great crowd of little birds and beasts and the whole pack of cards assembles about them. The KNAVE\u2026"
+        },
+        {
+          "Id": "s36_b29",
+          "Scene": 36,
+          "heuristic": "hold",
+          "ai": "action",
+          "match": false,
+          "visual": "The jury makes a memorandum."
+        },
+        {
+          "Id": "s36_b62",
+          "Scene": 36,
+          "heuristic": "action",
+          "ai": "action",
+          "match": true,
+          "visual": "One of the GUINEA-PIGS cheers and is immediately suppressed by officers: they slip him head first into a large canvas bag, tie it up, and sit upon it. Alice wat\u2026"
+        },
+        {
+          "Id": "s36_b82",
+          "Scene": 36,
+          "heuristic": "action",
+          "ai": "action",
+          "match": true,
+          "visual": "A general confusion. The Queen has the Dormouse turned out of court. The whole jury has to write down all the dates on their slates, and then add them up."
+        },
+        {
+          "Id": "s36_b111",
+          "Scene": 36,
+          "heuristic": "hold",
+          "ai": "hold",
+          "match": true,
+          "visual": "The King turns pale, and shuts his note-book hastily."
+        },
+        {
+          "Id": "s36_b147",
+          "Scene": 36,
+          "heuristic": "hold",
+          "ai": "hold",
+          "match": true,
+          "visual": "He turns to the Knave. The Knave shakes his head sadly."
+        }
+      ],
+      "aiRawPreview": "{\n  \u0022labels\u0022: [\n    { \u0022id\u0022: \u0022s1_b1\u0022, \u0022class\u0022: \u0022establishing\u0022, \u0022reason\u0022: \u0022world/character setup notes; opening stylized milieu\u0022 },\n    { \u0022id\u0022: \u0022s4_b10\u0022, \u0022class\u0022: \u0022hold\u0022, \u0022reason\u0022: \u0022solemn pause; micro consideration\u0022 },\n    { \u0022id\u0022: \u0022s6_b1\u0022, \u0022class\u0022: \u0022establishing\u0022, \u0022reason\u0022: \u0022first wide view of hall, lamps, doors, glass table\u0022 },\n    { \u0022id\u0022: \u0022s7_b2\u0022, \u0022class\u0022: \u0022big_action\u0022, \u0022reason\u0022: \u0022rapid telescope-like growth surge\u0022 },\n    { \u0022id\u0022: \u0022s7_b30\u0022, \u0022class\u0022: \u0022hold\u0022, \u0022reason\u0022: \u0022ticking-off gesture; mental\u2026"
+    }
+  ],
+  "bookStats": [
+    {
+      "projectId": "AlicesAdventures",
+      "Agree": 28,
+      "Disagree": 12,
+      "agreementPct": 70
+    },
+    {
+      "projectId": "ChristmasCarol",
+      "Agree": 24,
+      "Disagree": 16,
+      "agreementPct": 60
+    },
+    {
+      "projectId": "Dracula",
+      "Agree": 21,
+      "Disagree": 19,
+      "agreementPct": 52.5
+    },
+    {
+      "projectId": "Frankenstein",
+      "Agree": 13,
+      "Disagree": 27,
+      "agreementPct": 32.5
+    },
+    {
+      "projectId": "GiftOfTheMagi",
+      "Agree": 15,
+      "Disagree": 12,
+      "agreementPct": 55.6
+    },
+    {
+      "projectId": "JungleBook",
+      "Agree": 19,
+      "Disagree": 21,
+      "agreementPct": 47.5
+    },
+    {
+      "projectId": "YellowWallpaper",
+      "Agree": 16,
+      "Disagree": 24,
+      "agreementPct": 40
+    }
+  ],
+  "disagreementHistogramAll": {
+    "establishing\u2192action": 42,
+    "action\u2192hold": 40,
+    "establishing\u2192hold": 15,
+    "hold\u2192action": 12,
+    "establishing\u2192big_action": 12,
+    "action\u2192big_action": 10
+  }
+}

@@ -1,0 +1,341 @@
+{
+  "projectId": "JungleBook",
+  "path": "C:\\Users\\budcr\\source\\repos\\FilmStudio\\projects\\JungleBook\\source\\screenplay.fountain",
+  "silentActionBeats": 187,
+  "sampled": 40,
+  "agree": 19,
+  "disagree": 21,
+  "missing": 0,
+  "agreementPct": 47.5,
+  "disagreementHistogram": {
+    "action\u2192hold": 8,
+    "establishing\u2192big_action": 6,
+    "action\u2192big_action": 4,
+    "establishing\u2192hold": 1,
+    "establishing\u2192action": 1,
+    "hold\u2192action": 1
+  },
+  "comparisons": [
+    {
+      "Id": "s1_b1",
+      "Scene": 1,
+      "heuristic": "establishing",
+      "ai": "establishing",
+      "match": true,
+      "visual": "Moon over teak and grass. A warm wind. Far off, a kite wheels home."
+    },
+    {
+      "Id": "s2_b12",
+      "Scene": 2,
+      "heuristic": "action",
+      "ai": "action",
+      "match": true,
+      "visual": "He scuttles to the back, finds a buck bone with meat, cracks it merrily."
+    },
+    {
+      "Id": "s4_b5",
+      "Scene": 4,
+      "heuristic": "action",
+      "ai": "hold",
+      "match": false,
+      "visual": "The whine changes to a humming purr from every quarter-the sound that bewilders woodcutters in the open."
+    },
+    {
+      "Id": "s6_b6",
+      "Scene": 6,
+      "heuristic": "action",
+      "ai": "action",
+      "match": true,
+      "visual": "Father Wolf mouths the child as gently as an egg, jaws on the back, not a scratch, and lays him among the cubs."
+    },
+    {
+      "Id": "s6_b35",
+      "Scene": 6,
+      "heuristic": "action",
+      "ai": "action",
+      "match": true,
+      "visual": "Shere Khan backs out growling. Clear of the mouth, he shouts:"
+    },
+    {
+      "Id": "s7_b11",
+      "Scene": 7,
+      "heuristic": "action",
+      "ai": "action",
+      "match": true,
+      "visual": "A young wolf snarls. Others join. The Pack is divided. BAGHEERA-inky black panther, moon-marks of water on his coat-drops into the circle as softly as ink poure\u2026"
+    },
+    {
+      "Id": "s8_b22",
+      "Scene": 8,
+      "heuristic": "hold",
+      "ai": "hold",
+      "match": true,
+      "visual": "Baloo lifts his muzzle."
+    },
+    {
+      "Id": "s8_b37",
+      "Scene": 8,
+      "heuristic": "action",
+      "ai": "big_action",
+      "match": false,
+      "visual": "Mowgli answers with a long, perfect hiss. He kicks up his heels, claps, and vaults onto Bagheera\u0027s back, drumming the glossy hide and making faces at Baloo."
+    },
+    {
+      "Id": "s8_b68",
+      "Scene": 8,
+      "heuristic": "action",
+      "ai": "hold",
+      "match": false,
+      "visual": "Baloo\u0027s voice rumbles like thunder on a hot night. The forest stills."
+    },
+    {
+      "Id": "s10_b1",
+      "Scene": 10,
+      "heuristic": "establishing",
+      "ai": "big_action",
+      "match": false,
+      "visual": "The flight: roads and crossroads fifty to a hundred feet up. Mowgli\u0027s escort rushes him to thinning topmost branches that crackle and bend, then flings outward \u2026"
+    },
+    {
+      "Id": "s11_b1",
+      "Scene": 11,
+      "heuristic": "establishing",
+      "ai": "big_action",
+      "match": false,
+      "visual": "Bagheera climbs as never before; thin branches break; he slips down, claws full of bark. Baloo sets off at a clumsy trot."
+    },
+    {
+      "Id": "s14_b1",
+      "Scene": 14,
+      "heuristic": "establishing",
+      "ai": "establishing",
+      "match": true,
+      "visual": "COBRAS coil in the dust among the rubbish. Mowgli stands among them and gives the Master Word."
+    },
+    {
+      "Id": "s17_b8",
+      "Scene": 17,
+      "heuristic": "action",
+      "ai": "hold",
+      "match": false,
+      "visual": "He licks his lips, looking at the monkey-dead on the terrace and round the tank."
+    },
+    {
+      "Id": "s17_b33",
+      "Scene": 17,
+      "heuristic": "action",
+      "ai": "action",
+      "match": true,
+      "visual": "The moon sinks behind the hills. Lines of trembling monkeys huddle on the walls like ragged shaky fringes. BALOO goes down to the tank for a drink. BAGHEERA put\u2026"
+    },
+    {
+      "Id": "s18_b1",
+      "Scene": 18,
+      "heuristic": "establishing",
+      "ai": "hold",
+      "match": false,
+      "visual": "Under the still trees, BALOO shakes himself all over."
+    },
+    {
+      "Id": "s19_b7",
+      "Scene": 19,
+      "heuristic": "action",
+      "ai": "action",
+      "match": true,
+      "visual": "Mowgli steps into the firelight with a blazing branch-the Red Flower stolen from the village. Wolves shrink. Shere Khan flinches from the heat."
+    },
+    {
+      "Id": "s20_b1",
+      "Scene": 20,
+      "heuristic": "establishing",
+      "ai": "establishing",
+      "match": true,
+      "visual": "Sun on rough track. MOWGLI-long hair, white scars on arms and legs, barefoot-jogs at a steady pace down the valley. Behind him, the jungle. Ahead, country he do\u2026"
+    },
+    {
+      "Id": "s22_b7",
+      "Scene": 22,
+      "heuristic": "action",
+      "ai": "action",
+      "match": true,
+      "visual": "She takes Mowgli\u0027s hands. The Priest claims a miracle and a hundred rupees. Messua leads Mowgli home."
+    },
+    {
+      "Id": "s26_b1",
+      "Scene": 26,
+      "heuristic": "establishing",
+      "ai": "action",
+      "match": false,
+      "visual": "Mowgli comes toward the village with the hide on his head. Buldeo meets him on the road, greedy for the reward on Shere Khan."
+    },
+    {
+      "Id": "s26_b10",
+      "Scene": 26,
+      "heuristic": "action",
+      "ai": "hold",
+      "match": false,
+      "visual": "The PRIEST waves a sprig of sacred tulsi plant."
+    },
+    {
+      "Id": "s26_b32",
+      "Scene": 26,
+      "heuristic": "hold",
+      "ai": "action",
+      "match": false,
+      "visual": "He turns on his heel and walks away with AKELA into the darkening plain."
+    },
+    {
+      "Id": "s29_b1",
+      "Scene": 29,
+      "heuristic": "establishing",
+      "ai": "establishing",
+      "match": true,
+      "visual": "Moon almost down. MOWGLI, AKELA, and GRAY BROTHER climb the hill and stop at the mouth of Mother Wolf\u0027s cave. MOWGLI still bears the rolled hide."
+    },
+    {
+      "Id": "s29_b12",
+      "Scene": 29,
+      "heuristic": "big_action",
+      "ai": "big_action",
+      "match": true,
+      "visual": "The old call rolls into the jungle. Wolves answer from habit. They limp in-lame from traps, shot-wounded, mangy from bad food. Many places in the circle empty. \u2026"
+    },
+    {
+      "Id": "s31_b1",
+      "Scene": 31,
+      "heuristic": "establishing",
+      "ai": "establishing",
+      "match": true,
+      "visual": "Warm lamp light. LIMMERSHIN hops on a berth edge, feathers drying, crumbs before him. Beyond the porthole, black Bering water."
+    },
+    {
+      "Id": "s35_b1",
+      "Scene": 35,
+      "heuristic": "establishing",
+      "ai": "big_action",
+      "match": false,
+      "visual": "KOTICK bursts up gasping and puffing into open water at the farther end, mane streaming."
+    },
+    {
+      "Id": "s37_b1",
+      "Scene": 37,
+      "heuristic": "establishing",
+      "ai": "establishing",
+      "match": true,
+      "visual": "Six days later. KOTICK hauls out just above Sea Lion\u0027s Neck. The first person he meets is SHE-SEAL, who has been waiting. She sees by the look in his eyes that \u2026"
+    },
+    {
+      "Id": "s37_b23",
+      "Scene": 37,
+      "heuristic": "action",
+      "ai": "big_action",
+      "match": false,
+      "visual": "KOTICK\u0027s curly white mane stands up with rage. Eyes flame. Big dog-teeth glisten. He is splendid. SEA CATCH sees him tearing past, hauling grizzled old seals ab\u2026"
+    },
+    {
+      "Id": "s38_b11",
+      "Scene": 38,
+      "heuristic": "action",
+      "ai": "hold",
+      "match": false,
+      "visual": "KOTICK drops his head between his shoulders and shuts his eyes proudly. He is not a white seal any more, but red from head to tail. He scorns to look at or touc\u2026"
+    },
+    {
+      "Id": "s41_b6",
+      "Scene": 41,
+      "heuristic": "action",
+      "ai": "hold",
+      "match": false,
+      "visual": "The song of pleasant stations beside the salt lagoons, The song of blowing squadrons that shuffled down the dunes, The song of midnight dances that churned the \u2026"
+    },
+    {
+      "Id": "s44_b3",
+      "Scene": 44,
+      "heuristic": "action",
+      "ai": "action",
+      "match": true,
+      "visual": "They wrap the mongoose in cotton wool and warm him over a little fire. RIKKI-TIKKI opens his eyes and sneezes."
+    },
+    {
+      "Id": "s45_b3",
+      "Scene": 45,
+      "heuristic": "action",
+      "ai": "hold",
+      "match": false,
+      "visual": "NAG-five feet of cobra, spectacles on his hood-rises from the grass."
+    },
+    {
+      "Id": "s47_b1",
+      "Scene": 47,
+      "heuristic": "establishing",
+      "ai": "big_action",
+      "match": false,
+      "visual": "Nagaina mourns and plots. She means to kill the family and avenge Nag. Darzee\u0027s wife pretends a broken wing and lures her from the melon-bed where the cobra egg\u2026"
+    },
+    {
+      "Id": "s49_b5",
+      "Scene": 49,
+      "heuristic": "action",
+      "ai": "hold",
+      "match": false,
+      "visual": "Sing to your fledglings again, Mother, oh lift up your head! Evil that plagued us is slain, Death in the garden lies dead. Terror that hid in the roses is impot\u2026"
+    },
+    {
+      "Id": "s53_b1",
+      "Scene": 53,
+      "heuristic": "establishing",
+      "ai": "establishing",
+      "match": true,
+      "visual": "KALA NAG stands picketed. BIG TOOMAI, a weathered mahout in working cloth, the son of Black Toomai, runs a hand along the elephant\u0027s leg. LITTLE TOOMAI, ten yea\u2026"
+    },
+    {
+      "Id": "s55_b1",
+      "Scene": 55,
+      "heuristic": "establishing",
+      "ai": "big_action",
+      "match": false,
+      "visual": "The stockade quivers. Torches. Yells. Blank cartridges. LITTLE TOOMAI climbs a stockade post, hair flying, a goblin in the torch-light. Below, KALA NAG battles \u2026"
+    },
+    {
+      "Id": "s58_b1",
+      "Scene": 58,
+      "heuristic": "establishing",
+      "ai": "establishing",
+      "match": true,
+      "visual": "The season ending. Newly caught elephants in a restless line. A native clerk at a table under a tree pays wages. Catchers and hunters lean on guns and laugh at \u2026"
+    },
+    {
+      "Id": "s59_b1",
+      "Scene": 59,
+      "heuristic": "establishing",
+      "ai": "big_action",
+      "match": false,
+      "visual": "KALA NAG breaks his picket-rope and walks into the forest. LITTLE TOOMAI clings on, half afraid, half wild with joy. Other elephants join from the darkness-wild\u2026"
+    },
+    {
+      "Id": "s61_b21",
+      "Scene": 61,
+      "heuristic": "action",
+      "ai": "big_action",
+      "match": false,
+      "visual": "At that last wild yell the whole line flings up their trunks till the tips touch their foreheads, and breaks out into the full salute-the crashing trumpet-peal \u2026"
+    },
+    {
+      "Id": "s63_b8",
+      "Scene": 63,
+      "heuristic": "action",
+      "ai": "big_action",
+      "match": false,
+      "visual": "NARRATOR-a man in boots and waterproof-scrambles out into the slush. Little VIXEN, a fox terrier, darts out the other side. A roaring, grunting, bubbling. The t\u2026"
+    },
+    {
+      "Id": "s64_b31",
+      "Scene": 64,
+      "heuristic": "action",
+      "ai": "action",
+      "match": true,
+      "visual": "A chain drags. A yoke of great sulky white GUN BULLOCKS-the seventh yoke of the first gun of the Big Gun Battery-come shouldering along. Almost stepping on the \u2026"
+    }
+  ],
+  "aiRawPreview": "{\n  \u0022labels\u0022: [\n    { \u0022id\u0022: \u0022s1_b1\u0022, \u0022class\u0022: \u0022establishing\u0022, \u0022reason\u0022: \u0022wide night landscape opener, first view of hills\u0022 },\n    { \u0022id\u0022: \u0022s2_b12\u0022, \u0022class\u0022: \u0022action\u0022, \u0022reason\u0022: \u0022scuttles, finds bone, cracks it\u2014ordinary business\u0022 },\n    { \u0022id\u0022: \u0022s4_b5\u0022, \u0022class\u0022: \u0022hold\u0022, \u0022reason\u0022: \u0022atmospheric sound shift; stillness, no physical business\u0022 },\n    { \u0022id\u0022: \u0022s6_b6\u0022, \u0022class\u0022: \u0022action\u0022, \u0022reason\u0022: \u0022gentle carry and lay-down of the child\u0022 },\n    { \u0022id\u0022: \u0022s6_b35\u0022, \u0022class\u0022: \u0022action\u0022, \u0022reason\u0022: \u0022backs out of\u2026"
+}

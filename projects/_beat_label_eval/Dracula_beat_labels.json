@@ -1,0 +1,340 @@
+{
+  "projectId": "Dracula",
+  "path": "C:\\Users\\budcr\\source\\repos\\FilmStudio\\projects\\Dracula\\source\\screenplay.fountain",
+  "silentActionBeats": 200,
+  "sampled": 40,
+  "agree": 21,
+  "disagree": 19,
+  "missing": 0,
+  "agreementPct": 52.5,
+  "disagreementHistogram": {
+    "establishing\u2192action": 8,
+    "action\u2192hold": 7,
+    "establishing\u2192big_action": 2,
+    "establishing\u2192hold": 1,
+    "action\u2192big_action": 1
+  },
+  "comparisons": [
+    {
+      "Id": "s1_b1",
+      "Scene": 1,
+      "heuristic": "establishing",
+      "ai": "establishing",
+      "match": true,
+      "visual": "Gaslight on high shelves. JONATHAN HARKER, late twenties, neat brown hair, clean-shaven English solicitor in a dark traveling suit, bends over maps and heavy fo\u2026"
+    },
+    {
+      "Id": "s4_b4",
+      "Scene": 4,
+      "heuristic": "hold",
+      "ai": "hold",
+      "match": true,
+      "visual": "Jonathan scribbles in his journal."
+    },
+    {
+      "Id": "s9_b1",
+      "Scene": 9,
+      "heuristic": "establishing",
+      "ai": "action",
+      "match": false,
+      "visual": "At the door, LANDLADY ELISABETA-elderly, cheery-looking, white undergarment with long double apron of coloured stuff fitting almost too tight for modesty-bows a\u2026"
+    },
+    {
+      "Id": "s11_b5",
+      "Scene": 11,
+      "heuristic": "action",
+      "ai": "hold",
+      "match": false,
+      "visual": "Josef and Elisabeta cross themselves. Fear tightens both faces."
+    },
+    {
+      "Id": "s12_b15",
+      "Scene": 12,
+      "heuristic": "action",
+      "ai": "hold",
+      "match": false,
+      "visual": "She goes out. Jonathan stands alone, the crucifix on his breast. Coach horn distant below."
+    },
+    {
+      "Id": "s16_b1",
+      "Scene": 16,
+      "heuristic": "big_action",
+      "ai": "big_action",
+      "match": true,
+      "visual": "The cal\u00E8che tears through blue-black forest. Wolves howl on every side-blue flames flicker among the trees. Jonathan grips the seat. The Driver raises a hand; t\u2026"
+    },
+    {
+      "Id": "s18_b5",
+      "Scene": 18,
+      "heuristic": "action",
+      "ai": "hold",
+      "match": false,
+      "visual": "The handshake so akin to the Driver\u0027s that Jonathan stares."
+    },
+    {
+      "Id": "s21_b1",
+      "Scene": 21,
+      "heuristic": "establishing",
+      "ai": "establishing",
+      "match": true,
+      "visual": "A small octagonal room lit by a single lamp. Seemingly without a window. The Count opens a further door and motions Jonathan through."
+    },
+    {
+      "Id": "s23_b8",
+      "Scene": 23,
+      "heuristic": "action",
+      "ai": "action",
+      "match": true,
+      "visual": "The Count takes the cover from a dish. Excellent roast chicken, cheese, salad, a bottle of old Tokay. Jonathan eats. Two glasses of wine. During the meal the Co\u2026"
+    },
+    {
+      "Id": "s25_b1",
+      "Scene": 25,
+      "heuristic": "establishing",
+      "ai": "establishing",
+      "match": true,
+      "visual": "Early morning light-7 May. Jonathan enters dressed. A cold breakfast laid out; coffee kept hot on the hearth. A card on the table."
+    },
+    {
+      "Id": "s27_b6",
+      "Scene": 27,
+      "heuristic": "action",
+      "ai": "action",
+      "match": true,
+      "visual": "Jonathan draws papers. The Count signs with a hand that never warms."
+    },
+    {
+      "Id": "s29_b6",
+      "Scene": 29,
+      "heuristic": "action",
+      "ai": "action",
+      "match": true,
+      "visual": "Below-the great door shuts. The Count has returned."
+    },
+    {
+      "Id": "s33_b7",
+      "Scene": 33,
+      "heuristic": "hold",
+      "ai": "hold",
+      "match": true,
+      "visual": "He holds up his arms."
+    },
+    {
+      "Id": "s34_b1",
+      "Scene": 34,
+      "heuristic": "establishing",
+      "ai": "establishing",
+      "match": true,
+      "visual": "Another night. Books open. The Count questions Jonathan on legal matters-methodical, precise."
+    },
+    {
+      "Id": "s35_b1",
+      "Scene": 35,
+      "heuristic": "establishing",
+      "ai": "establishing",
+      "match": true,
+      "visual": "Jonathan, restless, finds a door unlocked that was not before. He enters a dusty chamber long unused-old furniture, moth-eaten hangings, a great bed. Moonlight \u2026"
+    },
+    {
+      "Id": "s36_b6",
+      "Scene": 36,
+      "heuristic": "action",
+      "ai": "action",
+      "match": true,
+      "visual": "He rises, pale, and forces himself toward the door."
+    },
+    {
+      "Id": "s38_b14",
+      "Scene": 38,
+      "heuristic": "hold",
+      "ai": "hold",
+      "match": true,
+      "visual": "Jonathan writes. His face goes bloodless."
+    },
+    {
+      "Id": "s42_b1",
+      "Scene": 42,
+      "heuristic": "establishing",
+      "ai": "action",
+      "match": false,
+      "visual": "Jonathan reads by the window. The door opens. Count Dracula enters, smoothest voice, two letters in his hand. He sits beside Jonathan."
+    },
+    {
+      "Id": "s43_b1",
+      "Scene": 43,
+      "heuristic": "establishing",
+      "ai": "hold",
+      "match": false,
+      "visual": "Jonathan lies down. Exhaustion takes him. No dreams."
+    },
+    {
+      "Id": "s48_b1",
+      "Scene": 48,
+      "heuristic": "establishing",
+      "ai": "big_action",
+      "match": false,
+      "visual": "Before morning. Jonathan has run up the winding stair. He watches from the south window. Below and across: from the Count\u0027s window, a figure emerges-the whole m\u2026"
+    },
+    {
+      "Id": "s50_b6",
+      "Scene": 50,
+      "heuristic": "action",
+      "ai": "big_action",
+      "match": false,
+      "visual": "He knots sheets, climbs to the window ledge, and lowers himself into the abyss of night."
+    },
+    {
+      "Id": "s51_b20",
+      "Scene": 51,
+      "heuristic": "action",
+      "ai": "hold",
+      "match": false,
+      "visual": "A distant clock strikes ten. She starts, sanding the letter."
+    },
+    {
+      "Id": "s52_b10",
+      "Scene": 52,
+      "heuristic": "action",
+      "ai": "hold",
+      "match": false,
+      "visual": "Seward almost sits upon his silk hat, catches himself, and thereafter turns a lancet absently between his fingers until Lucy\u0027s eyes flick to it with a suppresse\u2026"
+    },
+    {
+      "Id": "s53_b22",
+      "Scene": 53,
+      "heuristic": "action",
+      "ai": "hold",
+      "match": false,
+      "visual": "She laughs through sudden tears, seals the letter in haste."
+    },
+    {
+      "Id": "s54_b15",
+      "Scene": 54,
+      "heuristic": "action",
+      "ai": "hold",
+      "match": false,
+      "visual": "He bows and goes. Lucy sinks onto the sofa, crying quietly, letter-paper already blotted beside her."
+    },
+    {
+      "Id": "s55_b20",
+      "Scene": 55,
+      "heuristic": "hold",
+      "ai": "hold",
+      "match": true,
+      "visual": "Lucy\u0027s eyes fill. She nods."
+    },
+    {
+      "Id": "s57_b1",
+      "Scene": 57,
+      "heuristic": "establishing",
+      "ai": "establishing",
+      "match": true,
+      "visual": "DR. JOHN SEWARD at his phonograph, speaking into the tube-professional mask cracked by private pain."
+    },
+    {
+      "Id": "s60_b1",
+      "Scene": 60,
+      "heuristic": "establishing",
+      "ai": "establishing",
+      "match": true,
+      "visual": "A bright sitting-room with sea-light at the windows. MRS. WESTENRA greets Mina warmly, then gathers gloves and card-case."
+    },
+    {
+      "Id": "s62_b1",
+      "Scene": 62,
+      "heuristic": "establishing",
+      "ai": "establishing",
+      "match": true,
+      "visual": "Days later. Bright sun. LUCY WESTENRA in white lawn frock, beautiful colour in her face, sits with MINA MURRAY. MR. SWALES and his two cronies lose no time join\u2026"
+    },
+    {
+      "Id": "s62_b52",
+      "Scene": 62,
+      "heuristic": "hold",
+      "ai": "hold",
+      "match": true,
+      "visual": "Lucy leans over; the letters face her."
+    },
+    {
+      "Id": "s64_b1",
+      "Scene": 64,
+      "heuristic": "establishing",
+      "ai": "establishing",
+      "match": true,
+      "visual": "Sultry August light. Holiday-makers thin along the cliff walk. High in the north-west sky, mares\u0027-tails streak the blue. COASTGUARD DONOVAN stands with his spy-\u2026"
+    },
+    {
+      "Id": "s66_b1",
+      "Scene": 66,
+      "heuristic": "establishing",
+      "ai": "big_action",
+      "match": false,
+      "visual": "No one on the little pier at first. COASTGUARD DONOVAN runs down from the eastern side, first to climb aboard. Searchlight men scour the entrance, then hold the\u2026"
+    },
+    {
+      "Id": "s68_b1",
+      "Scene": 68,
+      "heuristic": "establishing",
+      "ai": "action",
+      "match": false,
+      "visual": "Mate\u0027s watch. One hand, PETROFSKY, relieved-does not go to bunk. Dawn: he is missing. Crew downcast."
+    },
+    {
+      "Id": "s72_b1",
+      "Scene": 72,
+      "heuristic": "establishing",
+      "ai": "action",
+      "match": false,
+      "visual": "Fog thick. Captain wakes to a cry outside his port. Rushes on deck-runs against Mate Dragomir. Man of watch gone. One more."
+    },
+    {
+      "Id": "s74_b1",
+      "Scene": 74,
+      "heuristic": "establishing",
+      "ai": "establishing",
+      "match": true,
+      "visual": "After the storm. Mina and Lucy on their seat. Below, the wrecked schooner Demeter lies under the East Cliff. Crowds stare. The immense dog is not found. MR. SWA\u2026"
+    },
+    {
+      "Id": "s76_b3",
+      "Scene": 76,
+      "heuristic": "action",
+      "ai": "action",
+      "match": true,
+      "visual": "Mina throws on clothes, snatches a big heavy shawl, runs out."
+    },
+    {
+      "Id": "s80_b1",
+      "Scene": 80,
+      "heuristic": "establishing",
+      "ai": "action",
+      "match": false,
+      "visual": "They hide in a doorway as a not-quite-sober man passes. Heartbeats loud. Home without meeting another soul."
+    },
+    {
+      "Id": "s84_b1",
+      "Scene": 84,
+      "heuristic": "establishing",
+      "ai": "action",
+      "match": false,
+      "visual": "Mina wakes. Lucy sitting up in bed, still asleep, pointing to the window. Mina pulls aside the blind. Brilliant moonlight. Between her and the moon a great bat \u2026"
+    },
+    {
+      "Id": "s87_b1",
+      "Scene": 87,
+      "heuristic": "establishing",
+      "ai": "action",
+      "match": false,
+      "visual": "Lucy moving back to bed, fast asleep, breathing heavily, hand to her throat. Mina does not wake her. Tucks her up. Door locked, window fastened. Lucy pale, draw\u2026"
+    },
+    {
+      "Id": "s91_b1",
+      "Scene": 91,
+      "heuristic": "establishing",
+      "ai": "action",
+      "match": false,
+      "visual": "Acknowledgment. Goods delivered. Keys left in main hall. Overplus returned."
+    }
+  ],
+  "aiRawPreview": "{\n  \u0022labels\u0022: [\n    { \u0022id\u0022: \u0022s1_b1\u0022, \u0022class\u0022: \u0022establishing\u0022, \u0022reason\u0022: \u0022first wide view of library shelves and Harker at work\u0022 },\n    { \u0022id\u0022: \u0022s4_b4\u0022, \u0022class\u0022: \u0022hold\u0022, \u0022reason\u0022: \u0022small hand business scribbling in journal\u0022 },\n    { \u0022id\u0022: \u0022s9_b1\u0022, \u0022class\u0022: \u0022action\u0022, \u0022reason\u0022: \u0022approach and bow at doorway\u0022 },\n    { \u0022id\u0022: \u0022s11_b5\u0022, \u0022class\u0022: \u0022hold\u0022, \u0022reason\u0022: \u0022cross themselves; fear on faces\u0022 },\n    { \u0022id\u0022: \u0022s12_b15\u0022, \u0022class\u0022: \u0022hold\u0022, \u0022reason\u0022: \u0022stands alone in stillness with crucifix\u0022 },\n    { \u0022id\u0022\u2026"
+}

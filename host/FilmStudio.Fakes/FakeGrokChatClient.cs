@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using FilmStudio.Engine.Abstractions;
 using Microsoft.Extensions.Logging;
 
@@ -84,6 +85,15 @@ public sealed class FakeGrokChatClient : IGrokChatClient
             return Task.FromResult(IsPoe(blob) ? PoeFountain : DefaultFountain);
         }
 
+        // ── Silent beat duration classes ───────────────────────────────────
+        if (sys.Contains("DURATION BUDGETING", StringComparison.OrdinalIgnoreCase) ||
+            sys.Contains("action_class", StringComparison.OrdinalIgnoreCase) ||
+            user.Contains("silent beat", StringComparison.OrdinalIgnoreCase) ||
+            mode == ChatCallModes.SilentBeatClassify)
+        {
+            return Task.FromResult(BuildSilentBeatLabelsJson(user));
+        }
+
         // ── Minimal Stage1-shaped stub ─────────────────────────────────────
         return Task.FromResult("""
             {
@@ -100,6 +110,20 @@ public sealed class FakeGrokChatClient : IGrokChatClient
               "scenes": []
             }
             """);
+    }
+
+    /// <summary>Echo beat ids with deterministic classes for fakes/CI (heuristic-shaped).</summary>
+    private static string BuildSilentBeatLabelsJson(string user)
+    {
+        var labels = new List<string>();
+        foreach (Match m in Regex.Matches(user, @"""id""\s*:\s*""([^""]+)"""))
+        {
+            var id = m.Groups[1].Value;
+            // Stable fake: first silent in scene → establishing; else action
+            var cls = Regex.IsMatch(id, @"_b1$") ? "establishing" : "action";
+            labels.Add($$"""{"id":"{{id}}","class":"{{cls}}","reason":"fake"}""");
+        }
+        return """{"labels":[""" + string.Join(",", labels) + "]}";
     }
 
     private static bool IsPoe(string blob) =>

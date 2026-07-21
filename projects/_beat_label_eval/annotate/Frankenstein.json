@@ -1,0 +1,723 @@
+{
+  "projectId": "Frankenstein",
+  "path": "C:\\Users\\budcr\\source\\repos\\FilmStudio\\projects\\Frankenstein\\source\\screenplay.fountain",
+  "rubric": "See ground_truth/RUBRIC.md \u2014 label for DURATION budgeting, not literary theory.",
+  "labels": [
+    {
+      "id": "s1_b1",
+      "scene": 1,
+      "beat_index": 1,
+      "is_first_silent_in_scene": true,
+      "setting": "EXT. STREETS OF ST. PETERSBURGH - DAY",
+      "visual_event": "Late 18th century. Snow packed hard underfoot. A cold northern breeze cuts the air. ROBERT WALTON, twenty-eight, lean and bright-eyed, walks in heavy furs. The wind strikes his cheeks. He closes his eyes a moment, smiling, braced and delighted. He looks north, as if he can already see the pole.",
+      "prev_beat": null,
+      "next_beat": null,
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s4_b1",
+      "scene": 4,
+      "beat_index": 1,
+      "is_first_silent_in_scene": true,
+      "setting": "INT. WALTON\u0027S LODGING - ST. PETERSBURGH - NIGHT",
+      "visual_event": "Walton writes on, fervor rising.",
+      "prev_beat": null,
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "Robert Walton speaks.",
+        "dialogue": "These are my enticements, and they are sufficient to conquer all fear of danger \u2026"
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s8_b1",
+      "scene": 8,
+      "beat_index": 1,
+      "is_first_silent_in_scene": true,
+      "setting": "INT. WALTON\u0027S LODGING - ST. PETERSBURGH - NIGHT",
+      "visual_event": "Back to the letter. Walton\u0027s face is open, almost pleading with the page.",
+      "prev_beat": null,
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "Robert Walton speaks.",
+        "dialogue": "And now, dear Margaret, do I not deserve to accomplish some great purpose?"
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s11_b5",
+      "scene": 11,
+      "beat_index": 5,
+      "is_first_silent_in_scene": false,
+      "setting": "INT. ARCHANGEL LODGING - NIGHT",
+      "visual_event": "He stops. The room is empty. The silence presses.",
+      "prev_beat": {
+        "kind": "dialogue",
+        "visual": "Robert Walton speaks.",
+        "dialogue": "I have hired a vessel and am occupied in collecting my sailors."
+      },
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "Robert Walton speaks.",
+        "dialogue": "But I have one want which I have never yet been able to satisfy."
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s13_b5",
+      "scene": 13,
+      "beat_index": 5,
+      "is_first_silent_in_scene": false,
+      "setting": "INT. ARCHANGEL LODGING - NIGHT",
+      "visual_event": "He seals the letter.",
+      "prev_beat": {
+        "kind": "dialogue",
+        "visual": "Robert Walton speaks.",
+        "dialogue": "to my care."
+      },
+      "next_beat": null,
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s17_b1",
+      "scene": 17,
+      "beat_index": 1,
+      "is_first_silent_in_scene": true,
+      "setting": "INT. WALTON\u0027S CABIN - NIGHT",
+      "visual_event": "Victor wrapped in blankets, fevered, slowly mending under Walton\u0027s care. Walton sits by him with broth and quiet talk.",
+      "prev_beat": null,
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "Robert Walton speaks.",
+        "dialogue": "I never saw a more interesting creature."
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s21_b1",
+      "scene": 21,
+      "beat_index": 1,
+      "is_first_silent_in_scene": true,
+      "setting": "EXT. ROAD TO LUCERNE - DAY",
+      "visual_event": "A modest carriage pulls away from Geneva\u0027s walls. Beaufort does not look back. Caroline steadies him.",
+      "prev_beat": null,
+      "next_beat": null,
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s27_b1",
+      "scene": 27,
+      "beat_index": 1,
+      "is_first_silent_in_scene": true,
+      "setting": "EXT. SHORES OF THE LAKE OF COMO - DAY",
+      "visual_event": "Years later. Young Victor, about five-slim, dark hair, intent curious face-walks with Caroline past poor cottages. Alphonse has gone ahead toward Milan. A disconsolate cot in a vale. Half-clothed children. Caroline\u0027s face softens with necessity and memory.",
+      "prev_beat": null,
+      "next_beat": null,
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s31_b1",
+      "scene": 31,
+      "beat_index": 1,
+      "is_first_silent_in_scene": true,
+      "setting": "INT. FRANKENSTEIN HOUSE - GENEVA - DAY",
+      "visual_event": "Morning. Caroline presents Elizabeth. Young Victor receives her with childish seriousness-as a possession of his own to protect, love, and cherish.",
+      "prev_beat": null,
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "Young Victor speaks.",
+        "dialogue": "Cousin."
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s35_b3",
+      "scene": 35,
+      "beat_index": 3,
+      "is_first_silent_in_scene": false,
+      "setting": "INT. FRANKENSTEIN HOUSE - GENEVA - NIGHT",
+      "visual_event": "Victor\u0027s disappointment hardens into secret resolve.",
+      "prev_beat": {
+        "kind": "dialogue",
+        "visual": "Alphonse Frankenstein speaks.",
+        "dialogue": "Ah! Cornelius Agrippa! My dear Victor, do not waste your time upon this; it is s\u2026"
+      },
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "Victor speaks.",
+        "dialogue": "If, instead of this remark, my father had taken the pains to explain that the pr\u2026"
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s39_b1",
+      "scene": 39,
+      "beat_index": 1,
+      "is_first_silent_in_scene": true,
+      "setting": "INT. FRANKENSTEIN HOUSE - GENEVA - DAY",
+      "visual_event": "Alphonse, broken but upright. Victor prepares for university. Elizabeth and Clerval bid him farewell with tears and forced cheer.",
+      "prev_beat": null,
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "Elizabeth speaks.",
+        "dialogue": "Write, Victor. Come home to us soon."
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s43_b1",
+      "scene": 43,
+      "beat_index": 1,
+      "is_first_silent_in_scene": true,
+      "setting": "INT. VICTOR\u0027S APARTMENT - INGOLSTADT - NIGHT",
+      "visual_event": "Candles burnt low. Victor still at work as the high steeple outside pales toward morning. Stars disappear in the light. His application no longer fluctuating-ardent, eager, alone.",
+      "prev_beat": null,
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "Victor speaks.",
+        "dialogue": "From this day natural philosophy, and particularly chemistry, became nearly my s\u2026"
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s46_b4",
+      "scene": 46,
+      "beat_index": 4,
+      "is_first_silent_in_scene": false,
+      "setting": "INT. VICTOR\u0027S APARTMENT - INGOLSTADT - NIGHT",
+      "visual_event": "He closes the book. Resolve hardens.",
+      "prev_beat": {
+        "kind": "dialogue",
+        "visual": "Victor speaks.",
+        "dialogue": "Whence, I often asked myself, did the principle of life proceed?"
+      },
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "Victor speaks.",
+        "dialogue": "It was a bold question."
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s50_b1",
+      "scene": 50,
+      "beat_index": 1,
+      "is_first_silent_in_scene": true,
+      "setting": "INT. WALTON\u0027S CABIN - NIGHT",
+      "visual_event": "Walton leans forward, eagerness naked in his eyes. Victor meets that look and stops him with a raised hand.",
+      "prev_beat": null,
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "Victor speaks.",
+        "dialogue": "I see by your eagerness and the wonder and hope which your eyes express, my frie\u2026"
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s54_b1",
+      "scene": 54,
+      "beat_index": 1,
+      "is_first_silent_in_scene": true,
+      "setting": "INT. VICTOR\u0027S WORKSHOP - TOP OF THE HOUSE - NIGHT",
+      "visual_event": "A solitary chamber, almost a cell, separated by gallery and stair. Filthy creation: instruments, vats, the vast unfinished form under cloth. Victor\u0027s eyeballs starting from their sockets as he works the details of fibre, muscle, vein. Rain at the high small window. His person emaciated; confinement written in every line of him.",
+      "prev_beat": null,
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "Victor speaks.",
+        "dialogue": "In a solitary chamber, or rather cell, at the top of the house, I kept my worksh\u2026"
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s57_b1",
+      "scene": 57,
+      "beat_index": 1,
+      "is_first_silent_in_scene": true,
+      "setting": "EXT. STREETS OF INGOLSTADT - DAWN",
+      "visual_event": "Victor wanders, unable to return. Morning light finds him exhausted near an inn. A coach rattles in. HENRY CLERVAL springs down, radiant.",
+      "prev_beat": null,
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "Henry Clerval speaks.",
+        "dialogue": "My dear Frankenstein-how glad I am to see you!"
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s59_b20",
+      "scene": 59,
+      "beat_index": 20,
+      "is_first_silent_in_scene": false,
+      "setting": "INT. VICTOR\u0027S APARTMENT - INGOLSTADT - DAY",
+      "visual_event": "Victor nods almost imperceptibly-memory of a frank, happy face.",
+      "prev_beat": {
+        "kind": "dialogue",
+        "visual": "Elizabeth speaks.",
+        "dialogue": "Justine, you may remember, was a great favourite of yours."
+      },
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "Elizabeth speaks.",
+        "dialogue": "When my dearest aunt died, poor Justine attended her with the most anxious affec\u2026"
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s61_b1",
+      "scene": 61,
+      "beat_index": 1,
+      "is_first_silent_in_scene": true,
+      "setting": "INT. M. WALDMAN\u0027S STUDY - UNIVERSITY - DAY",
+      "visual_event": "Books, specimens, soft light. M. WALDMAN-kind, silvered, warm-clasps Victor\u0027s hand, then Henry\u0027s.",
+      "prev_beat": null,
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "M. Waldman speaks.",
+        "dialogue": "M. Frankenstein. Returned to us. And this is M. Clerval-welcome."
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s62_b9",
+      "scene": 62,
+      "beat_index": 9,
+      "is_first_silent_in_scene": false,
+      "setting": "INT. UNIVERSITY CORRIDOR AND KREMPE\u0027S ROOMS - DAY",
+      "visual_event": "Krempe launches into a eulogy on himself. Victor breathes again.",
+      "prev_beat": {
+        "kind": "dialogue",
+        "visual": "M. Krempe (CONT\u0027D).",
+        "dialogue": "Young men should be diffident of themselves, you know, M. Clerval."
+      },
+      "next_beat": null,
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s65_b3",
+      "scene": 65,
+      "beat_index": 3,
+      "is_first_silent_in_scene": false,
+      "setting": "EXT. COUNTRY ROAD NEAR INGOLSTADT - DAY",
+      "visual_event": "Victor turns, radiant, and throws an arm toward the open sky.",
+      "prev_beat": {
+        "kind": "dialogue",
+        "visual": "Henry Clerval speaks.",
+        "dialogue": "There-there is my friend again."
+      },
+      "next_beat": null,
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s68_b1",
+      "scene": 68,
+      "beat_index": 1,
+      "is_first_silent_in_scene": true,
+      "setting": "EXT. PLAINPALAIS - NIGHT",
+      "visual_event": "Thunder. In a flash of lightning Victor sees among the trees a gigantic figure-the Creature-climbing the rocks of a nearby precipice with superhuman speed.",
+      "prev_beat": null,
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "Victor (whispered).",
+        "dialogue": "It is he. The murderer of my brother."
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s70_b7",
+      "scene": 70,
+      "beat_index": 7,
+      "is_first_silent_in_scene": false,
+      "setting": "INT. COURT OF GENEVA - DAY",
+      "visual_event": "A murmur of horror fills the court. Justine\u0027s countenance alters-surprise, horror, misery.",
+      "prev_beat": {
+        "kind": "dialogue",
+        "visual": "Elizabeth (faltering, rising).",
+        "dialogue": "It is the same which, an hour before the child had been missed, I placed round h\u2026"
+      },
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "Justine speaks.",
+        "dialogue": "God knows how entirely I am innocent. But I do not pretend that my protestations\u2026"
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s70_b45",
+      "scene": 70,
+      "beat_index": 45,
+      "is_first_silent_in_scene": false,
+      "setting": "INT. COURT OF GENEVA - DAY",
+      "visual_event": "A murmur of approbation-excited by Elizabeth\u0027s generous interference, not in favour of Justine. Public indignation turns on the accused with renewed violence. Victor\u0027s face is a mask of agony. He can sustain it no longer. He rushes out of the court.",
+      "prev_beat": {
+        "kind": "dialogue",
+        "visual": "Elizabeth speaks.",
+        "dialogue": "have willingly given it to her."
+      },
+      "next_beat": null,
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s74_b1",
+      "scene": 74,
+      "beat_index": 1,
+      "is_first_silent_in_scene": true,
+      "setting": "INT. PRISON CELL - GENEVA - DAY",
+      "visual_event": "Justine on a straw pallet, eyes swollen. Elizabeth and Victor enter. Justine rises and falls into Elizabeth\u0027s arms.",
+      "prev_beat": null,
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "Justine speaks.",
+        "dialogue": "I do not fear to die. That pang is past."
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s77_b1",
+      "scene": 77,
+      "beat_index": 1,
+      "is_first_silent_in_scene": true,
+      "setting": "EXT. SHORES OF LAKE GENEVA - DAY",
+      "visual_event": "Weeks of gloom. Victor wanders alone, unable to rest. The family removes to Belrive. He takes the boat at night and drifts under the stars, sometimes tempted by the water\u0027s peace.",
+      "prev_beat": null,
+      "next_beat": null,
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s82_b5",
+      "scene": 82,
+      "beat_index": 5,
+      "is_first_silent_in_scene": false,
+      "setting": "EXT. PATH TO MONTANVERT - DAY",
+      "visual_event": "He pauses on a winding, rain streaking his face.",
+      "prev_beat": {
+        "kind": "dialogue",
+        "visual": "Victor speaks.",
+        "dialogue": "If our impulses were confined to hunger, thirst, and desire, we might be nearly \u2026"
+      },
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "Victor speaks.",
+        "dialogue": "We rest; a dream has power to poison sleep. We rise; one wandering thought pollu\u2026"
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s84_b61",
+      "scene": 84,
+      "beat_index": 61,
+      "is_first_silent_in_scene": false,
+      "setting": "EXT. SEA OF ICE - DAY",
+      "visual_event": "Victor\u0027s rage falters into a bitter necessity of hearing.",
+      "prev_beat": {
+        "kind": "dialogue",
+        "visual": "The Creature speaks.",
+        "dialogue": "Oh, praise the eternal justice of man!"
+      },
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "The Creature (CONT\u0027D).",
+        "dialogue": "Come to the hut upon the mountain. The sun is yet high in the heavens;"
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s90_b1",
+      "scene": 90,
+      "beat_index": 1,
+      "is_first_silent_in_scene": true,
+      "setting": "EXT. HOVEL BESIDE THE COTTAGE - NIGHT - FLASHBACK",
+      "visual_event": "A mean shed built against a cottage of neat plainness. The Creature crawls in, finds it empty of occupant, and lies on straw, grateful for shelter.",
+      "prev_beat": null,
+      "next_beat": null,
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s96_b1",
+      "scene": 96,
+      "beat_index": 1,
+      "is_first_silent_in_scene": true,
+      "setting": "EXT. COTTAGE - DAY - FLASHBACK",
+      "visual_event": "Morning. Agatha opens the door-astonished at the great pile of wood. Felix joins her; surprise breaks his habitual sadness. He does not go to the forest that day.",
+      "prev_beat": null,
+      "next_beat": null,
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s99_b1",
+      "scene": 99,
+      "beat_index": 1,
+      "is_first_silent_in_scene": true,
+      "setting": "EXT. POOL IN THE WOODS - DAY - FLASHBACK",
+      "visual_event": "Thaw. The Creature comes upon a transparent pool. He leans to drink-and starts back from his own reflection. Yellow eyes. Scarred yellow skin. Enormous frame. Hideous proportions. He turns his face away, filled with despondence and mortification.",
+      "prev_beat": null,
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "The Creature speaks.",
+        "dialogue": "Alas! I did not yet entirely know the fatal effects of this miserable deformity."
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s104_b1",
+      "scene": 104,
+      "beat_index": 1,
+      "is_first_silent_in_scene": true,
+      "setting": "INT. COTTAGE - DAY - FLASHBACK",
+      "visual_event": "Autumn light. DE LACEY sits alone with his guitar. He plays a mournful air, then lays it aside. A knock.",
+      "prev_beat": null,
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "De Lacey speaks.",
+        "dialogue": "Who is there? Come in."
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s105_b1",
+      "scene": 105,
+      "beat_index": 1,
+      "is_first_silent_in_scene": true,
+      "setting": "INT. HOVEL BESIDE THE COTTAGE - NIGHT - FLASHBACK",
+      "visual_event": "The Creature howls into the dark.",
+      "prev_beat": null,
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "The Creature speaks.",
+        "dialogue": "Cursed, cursed creator! Why did I live?"
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s110_b1",
+      "scene": 110,
+      "beat_index": 1,
+      "is_first_silent_in_scene": true,
+      "setting": "EXT. BARN NEAR GENEVA - NIGHT - FLASHBACK",
+      "visual_event": "Justine asleep in the barn, exhausted from searching. The Creature sees her-sees a way to wound his creator further. He plants the miniature in the folds of her dress and flees.",
+      "prev_beat": null,
+      "next_beat": null,
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s111_b54",
+      "scene": 111,
+      "beat_index": 54,
+      "is_first_silent_in_scene": false,
+      "setting": "INT. HUT ON THE MOUNTAIN - DAY",
+      "visual_event": "The Creature departs over the ice with the speed of lightning. Victor is left alone in the hut as the sun sets behind the snowy precipices.",
+      "prev_beat": {
+        "kind": "dialogue",
+        "visual": "The Creature speaks.",
+        "dialogue": "I shall be with you on your wedding-night."
+      },
+      "next_beat": null,
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s117_b1",
+      "scene": 117,
+      "beat_index": 1,
+      "is_first_silent_in_scene": true,
+      "setting": "INT. ORKNEY HUT - WORKSHOP - NIGHT",
+      "visual_event": "Victor pauses over the unfinished female. Imagination shows him a race of devils; the female refusing the compact; two monsters loose upon the world. He looks up. At the window-the Creature\u0027s face, a ghastly grin. In a frenzy Victor tears the half-finished creature to pieces. The work of months destroyed in moments. Outside, a howl of rage. The Creature bursts into the hut.",
+      "prev_beat": null,
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "The Creature speaks.",
+        "dialogue": "Shall each man find a wife for his bosom, and each beast have his mate, and I be"
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s122_b1",
+      "scene": 122,
+      "beat_index": 1,
+      "is_first_silent_in_scene": true,
+      "setting": "EXT. SEA VOYAGE TO GENEVA - DAY",
+      "visual_event": "Father and son on deck. Victor is a shadow. Alphonse tries to speak of Elizabeth, of hope. Victor hears only the Creature\u0027s promise.",
+      "prev_beat": null,
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "Victor speaks.",
+        "dialogue": "I shall be with you on your wedding-night."
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s126_b1",
+      "scene": 126,
+      "beat_index": 1,
+      "is_first_silent_in_scene": true,
+      "setting": "INT. VILLA AT EVIAN - BEDCHAMBER - NIGHT",
+      "visual_event": "Elizabeth retires to the chamber. Victor paces the outer rooms and passages, pistol in hand, determined to meet his enemy alone. A dreadful scream from the bedroom. Victor rushes in. Elizabeth lies flung across the bed, murdered-the murderous mark of the fiend\u0027s grasp on her neck. Her golden hair spilled. Her face half-covered. At the open window, for an instant, the Creature\u0027s grinning face in a flash of lightning-then gone into the night. Victor fires into the dark. Emptiness. He falls upon Elizabeth\u0027s body in helpless agony.",
+      "prev_beat": null,
+      "next_beat": null,
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s129_b9",
+      "scene": 129,
+      "beat_index": 9,
+      "is_first_silent_in_scene": false,
+      "setting": "INT. CEMETERY - GENEVA - NIGHT",
+      "visual_event": "Victor springs up, but the Creature is already fled.",
+      "prev_beat": {
+        "kind": "dialogue",
+        "visual": "The Creature speaks.",
+        "dialogue": "I am satisfied, miserable wretch! You have determined to live, and I am satisfie\u2026"
+      },
+      "next_beat": null,
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s133_b1",
+      "scene": 133,
+      "beat_index": 1,
+      "is_first_silent_in_scene": true,
+      "setting": "EXT. ARCTIC SEA - PACK ICE - DAY",
+      "visual_event": "The ice closes harder about the ship. The crew, led by Willoughby\u0027s anxious courage and Fletcher\u0027s quiet concern, beg Walton to turn south when the floes open.",
+      "prev_beat": null,
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "Lieutenant Willoughby speaks.",
+        "dialogue": "Sir-the men will not perish for glory. When the passage clears, we must return."
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s135_b6",
+      "scene": 135,
+      "beat_index": 6,
+      "is_first_silent_in_scene": false,
+      "setting": "INT. WALTON\u0027S CABIN - NIGHT",
+      "visual_event": "His eyes close. A last breath. Victor Frankenstein dies. Walton weeps over the body of his friend.",
+      "prev_beat": {
+        "kind": "dialogue",
+        "visual": "Victor speaks.",
+        "dialogue": "Yet why do I say this? I have myself been blasted in these hopes, yet another ma\u2026"
+      },
+      "next_beat": null,
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    }
+  ]
+}

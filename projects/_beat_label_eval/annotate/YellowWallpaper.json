@@ -1,0 +1,783 @@
+{
+  "projectId": "YellowWallpaper",
+  "path": "C:\\Users\\budcr\\source\\repos\\FilmStudio\\projects\\YellowWallpaper\\source\\screenplay.fountain",
+  "rubric": "See ground_truth/RUBRIC.md \u2014 label for DURATION budgeting, not literary theory.",
+  "labels": [
+    {
+      "id": "s1_b1",
+      "scene": 1,
+      "beat_index": 1,
+      "is_first_silent_in_scene": true,
+      "setting": "EXT. COLONIAL MANSION - DAY",
+      "visual_event": "A hereditary estate set well back from the road: hedges, locking gates, broken greenhouses, a large shady garden of box-bordered paths and grape-covered arbors. The house stands empty-looking, handsome, and wrong.",
+      "prev_beat": null,
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "The Narrator speaks.",
+        "dialogue": "It is very seldom that mere ordinary people like John and myself secure ancestra\u2026"
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s2_b1",
+      "scene": 2,
+      "beat_index": 1,
+      "is_first_silent_in_scene": true,
+      "setting": "INT. NURSERY - DAY",
+      "visual_event": "A big airy room at the top of the house, nearly the whole floor. Windows look all ways-barred. Rings and things in the walls. A great heavy bedstead. The wallpaper is stripped in great patches: a sprawling flamboyant pattern, smouldering unclean yellow, dull yet lurid orange in places, sickly sulphur in others. THE NARRATOR, late twenties, pale, slight, hair simply dressed, in a light summer gown, stands taking it in. She carries a small hidden journal and pencil. JOHN, thirties, upright, practical, physician\u0027s neat summer suit, watches her with fond authority.",
+      "prev_beat": null,
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "The Narrator speaks.",
+        "dialogue": "Still I will proudly declare that there is something queer about it."
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s2_b8",
+      "scene": 2,
+      "beat_index": 8,
+      "is_first_silent_in_scene": false,
+      "setting": "INT. NURSERY - DAY",
+      "visual_event": "He smiles, already certain.",
+      "prev_beat": {
+        "kind": "dialogue",
+        "visual": "John speaks.",
+        "dialogue": "We took the nursery on your account. Perfect rest."
+      },
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "The Narrator speaks.",
+        "dialogue": "John is practical in the extreme."
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s3_b1",
+      "scene": 3,
+      "beat_index": 1,
+      "is_first_silent_in_scene": true,
+      "setting": "INT. NURSERY - DAY",
+      "visual_event": "Later. THE NARRATOR sits by a window with her journal, writing in quick secret strokes. Sunshine pours in. Below: garden, arbors, a shaded lane toward a private wharf and the bay.",
+      "prev_beat": null,
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "The Narrator speaks.",
+        "dialogue": "If a physician of high standing, and one\u0027s own husband, assures friends and rela\u2026"
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s3_b15",
+      "scene": 3,
+      "beat_index": 15,
+      "is_first_silent_in_scene": false,
+      "setting": "INT. NURSERY - DAY",
+      "visual_event": "He checks the barred windows, satisfied, and goes. She exhales, exhausted by the performance of calm.",
+      "prev_beat": {
+        "kind": "dialogue",
+        "visual": "John speaks.",
+        "dialogue": "Don\u0027t give way to fancy."
+      },
+      "next_beat": null,
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s4_b1",
+      "scene": 4,
+      "beat_index": 1,
+      "is_first_silent_in_scene": true,
+      "setting": "INT. NURSERY - NIGHT",
+      "visual_event": "Moonlight. THE NARRATOR lies on the nailed-down bed. John sleeps beside her. She stares at the wallpaper: lame uncertain curves that plunge off at outrageous angles.",
+      "prev_beat": null,
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "The Narrator speaks.",
+        "dialogue": "I don\u0027t like our room a bit."
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s4_b10",
+      "scene": 4,
+      "beat_index": 10,
+      "is_first_silent_in_scene": false,
+      "setting": "INT. NURSERY - NIGHT",
+      "visual_event": "She rises softly, touches the wall. A draught. John stirs.",
+      "prev_beat": {
+        "kind": "dialogue",
+        "visual": "The Narrator speaks.",
+        "dialogue": "The color is repellant, almost revolting; a smouldering, unclean yellow, strange\u2026"
+      },
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "John speaks.",
+        "dialogue": "What is it, little girl? Don\u0027t go walking about like that-you\u0027ll get cold."
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s5_b1",
+      "scene": 5,
+      "beat_index": 1,
+      "is_first_silent_in_scene": true,
+      "setting": "EXT. GARDEN - DAY",
+      "visual_event": "Box-bordered paths, long grape arbors with seats, riotous old-fashioned flowers, gnarly trees. THE NARRATOR walks slowly, supervised by distance. JENNIE-John\u0027s sister, capable, neat, enthusiastic housekeeper-cuts roses, watches her with bright care.",
+      "prev_beat": null,
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "The Narrator speaks.",
+        "dialogue": "There is a delicious garden! I never saw such a garden."
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s6_b1",
+      "scene": 6,
+      "beat_index": 1,
+      "is_first_silent_in_scene": true,
+      "setting": "INT. NURSERY - DAY",
+      "visual_event": "Two weeks in. THE NARRATOR at the window again, journal open. She is thinner in the face; the effort of dressing shows.",
+      "prev_beat": null,
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "The Narrator speaks.",
+        "dialogue": "We have been here two weeks, and I haven\u0027t felt like writing before, since that \u2026"
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s6_b7",
+      "scene": 6,
+      "beat_index": 7,
+      "is_first_silent_in_scene": false,
+      "setting": "INT. NURSERY - DAY",
+      "visual_event": "She looks toward a closed door-somewhere below, a baby cries once, then is soothed.",
+      "prev_beat": {
+        "kind": "dialogue",
+        "visual": "The Narrator speaks.",
+        "dialogue": "He knows there is no reason to suffer, and that satisfies him."
+      },
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "The Narrator speaks.",
+        "dialogue": "It is fortunate Mary is so good with the baby. Such a dear baby!"
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s7_b8",
+      "scene": 7,
+      "beat_index": 8,
+      "is_first_silent_in_scene": false,
+      "setting": "INT. NURSERY - DAY",
+      "visual_event": "He takes her in his arms, fond, dismissing.",
+      "prev_beat": {
+        "kind": "dialogue",
+        "visual": "The Narrator speaks.",
+        "dialogue": "Then do let us go downstairs. There are such pretty rooms there."
+      },
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "John speaks.",
+        "dialogue": "Blessed little goose. I would go down cellar if you wished, and have it whitewas\u2026"
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s8_b1",
+      "scene": 8,
+      "beat_index": 1,
+      "is_first_silent_in_scene": true,
+      "setting": "INT. NURSERY - DAY",
+      "visual_event": "THE NARRATOR alone, tracing the pattern with her eyes from the bed. A recurrent spot: the pattern lolls like a broken neck; two bulbous eyes stare upside-down. Where two breadths failed to match, the eyes go up and down the line.",
+      "prev_beat": null,
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "The Narrator speaks.",
+        "dialogue": "I\u0027m really getting quite fond of the big room, all but that horrid paper."
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s8_b7",
+      "scene": 8,
+      "beat_index": 7,
+      "is_first_silent_in_scene": false,
+      "setting": "INT. NURSERY - DAY",
+      "visual_event": "JENNIE\u0027s figure appears far down the winding road. THE NARRATOR hides the journal at once. JENNIE enters with clean linen, cheerful, thorough.",
+      "prev_beat": {
+        "kind": "dialogue",
+        "visual": "The Narrator speaks.",
+        "dialogue": "I never saw so much expression in an inanimate thing before."
+      },
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "Jennie speaks.",
+        "dialogue": "Writing again? Rest is what you need. I verily believe it is the writing which m\u2026"
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s8_b10",
+      "scene": 8,
+      "beat_index": 10,
+      "is_first_silent_in_scene": false,
+      "setting": "INT. NURSERY - DAY",
+      "visual_event": "JENNIE smiles, unconvinced, and begins to tidy. She smooths a yellow smooch on the baseboard without comment-yet.",
+      "prev_beat": {
+        "kind": "dialogue",
+        "visual": "The Narrator speaks.",
+        "dialogue": "I was only looking at the garden."
+      },
+      "next_beat": null,
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s10_b1",
+      "scene": 10,
+      "beat_index": 1,
+      "is_first_silent_in_scene": true,
+      "setting": "INT. NURSERY - DAY",
+      "visual_event": "JOHN sits beside her, professional kindness.",
+      "prev_beat": null,
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "John speaks.",
+        "dialogue": "If you don\u0027t pick up faster I shall send you to Weir Mitchell in the fall."
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s10_b9",
+      "scene": 10,
+      "beat_index": 9,
+      "is_first_silent_in_scene": false,
+      "setting": "INT. NURSERY - DAY",
+      "visual_event": "He doses her with cod-liver oil, tonics; pours a little wine. Rare meat waits on a tray.",
+      "prev_beat": {
+        "kind": "dialogue",
+        "visual": "John speaks.",
+        "dialogue": "Don\u0027t let any silly fancies run away with you."
+      },
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "The Narrator speaks.",
+        "dialogue": "Dear John! He loves me very dearly, and hates to have me sick."
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s11_b1",
+      "scene": 11,
+      "beat_index": 1,
+      "is_first_silent_in_scene": true,
+      "setting": "INT. NURSERY - DAY",
+      "visual_event": "She tries to speak earnestly. Tears come before she finishes.",
+      "prev_beat": null,
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "The Narrator speaks.",
+        "dialogue": "I wish you would let me go and make a visit to Cousin Henry and Julia."
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s12_b1",
+      "scene": 12,
+      "beat_index": 1,
+      "is_first_silent_in_scene": true,
+      "setting": "INT. NURSERY - NIGHT",
+      "visual_event": "Moonlight creeps in one window, then another. JOHN asleep. THE NARRATOR watches the undulating paper. Behind the outside pattern, a faint figure seems to shake it-as if she wanted to get out. THE NARRATOR rises, feels the wall. Paper still. She turns back. JOHN is awake.",
+      "prev_beat": null,
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "John speaks.",
+        "dialogue": "What is it, little girl?"
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s12_b21",
+      "scene": 12,
+      "beat_index": 21,
+      "is_first_silent_in_scene": false,
+      "setting": "INT. NURSERY - NIGHT",
+      "visual_event": "He sits up straight-stern, reproachful. She stops.",
+      "prev_beat": {
+        "kind": "dialogue",
+        "visual": "The Narrator speaks.",
+        "dialogue": "Better in body perhaps-"
+      },
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "John speaks.",
+        "dialogue": "My darling, I beg of you, for my sake and for our child\u0027s sake, as well as for"
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s13_b1",
+      "scene": 13,
+      "beat_index": 1,
+      "is_first_silent_in_scene": true,
+      "setting": "INT. NURSERY - DAY",
+      "visual_event": "Harsh daylight. THE NARRATOR on the bed, following the pattern hour after hour-gymnastics of the eye. Bloated curves, debased Romanesque with delirium tremens; slanting waves of optic horror; a horizontal frieze that multiplies the confusion.",
+      "prev_beat": null,
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "The Narrator speaks.",
+        "dialogue": "On a pattern like this, by daylight, there is a lack of sequence, a defiance of \u2026"
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s14_b1",
+      "scene": 14,
+      "beat_index": 1,
+      "is_first_silent_in_scene": true,
+      "setting": "INT. NURSERY - DAY",
+      "visual_event": "Different light. THE NARRATOR watches the first long straight ray from the east window. The paper changes as she watches.",
+      "prev_beat": null,
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "The Narrator speaks.",
+        "dialogue": "There is one marked peculiarity about this paper, a thing nobody seems to notice\u2026"
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s15_b1",
+      "scene": 15,
+      "beat_index": 1,
+      "is_first_silent_in_scene": true,
+      "setting": "INT. NURSERY - DAY",
+      "visual_event": "After meals: enforced lying-down. THE NARRATOR\u0027s eyes stay open. She does not sleep. Deceit settles in as habit. JOHN looks in, pleased by her stillness.",
+      "prev_beat": null,
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "John speaks.",
+        "dialogue": "Sleep all you can. It is good for you."
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s15_b3",
+      "scene": 15,
+      "beat_index": 3,
+      "is_first_silent_in_scene": false,
+      "setting": "INT. NURSERY - DAY",
+      "visual_event": "When he leaves, she sits up and stares at the wall again.",
+      "prev_beat": {
+        "kind": "dialogue",
+        "visual": "John speaks.",
+        "dialogue": "Sleep all you can. It is good for you."
+      },
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "The Narrator speaks.",
+        "dialogue": "It is a very bad habit, I am convinced, for, you see, I don\u0027t sleep."
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s16_b1",
+      "scene": 16,
+      "beat_index": 1,
+      "is_first_silent_in_scene": true,
+      "setting": "INT. NURSERY - DAY",
+      "visual_event": "THE NARRATOR pretends sleep, then rises on innocent excuses. She catches JOHN looking at the wallpaper. Later-JENNIE with her hand on it.",
+      "prev_beat": null,
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "The Narrator (quiet, restrained).",
+        "dialogue": "What are you doing with the paper?"
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s17_b1",
+      "scene": 17,
+      "beat_index": 1,
+      "is_first_silent_in_scene": true,
+      "setting": "INT. NURSERY - DAY",
+      "visual_event": "THE NARRATOR brighter, secret energy. She eats. JOHN laughs, relieved.",
+      "prev_beat": null,
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "John speaks.",
+        "dialogue": "You seem to be flourishing in spite of your wallpaper."
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s18_b1",
+      "scene": 18,
+      "beat_index": 1,
+      "is_first_silent_in_scene": true,
+      "setting": "INT. NURSERY - NIGHT",
+      "visual_event": "Fog and rain against the barred windows. A yellow smell hangs in the room-gentle at first, then enduring, awful. THE NARRATOR wakes and finds it hanging over her. She sits up, breathing it.",
+      "prev_beat": null,
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "The Narrator speaks.",
+        "dialogue": "There is something else about that paper-the smell! It creeps all over the house\u2026"
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s19_b1",
+      "scene": 19,
+      "beat_index": 1,
+      "is_first_silent_in_scene": true,
+      "setting": "INT. HALL AND STAIRS - DAY",
+      "visual_event": "THE NARRATOR descends slowly. The yellow smell seems to wait on the treads. She touches the banister, then her hair.",
+      "prev_beat": null,
+      "next_beat": null,
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s21_b1",
+      "scene": 21,
+      "beat_index": 1,
+      "is_first_silent_in_scene": true,
+      "setting": "INT. NURSERY - NIGHT",
+      "visual_event": "Moonlight. The front pattern moves because the woman behind shakes it. Sometimes many women; sometimes one, crawling fast. In bright spots she keeps still; in shady spots she takes hold of the bars and shakes them hard. She tries to climb through. The pattern strangles-heads through, turned upside-down, eyes white.",
+      "prev_beat": null,
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "The Narrator speaks.",
+        "dialogue": "I really have discovered something at last. The front pattern does move-and no w\u2026"
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s22_b1",
+      "scene": 22,
+      "beat_index": 1,
+      "is_first_silent_in_scene": true,
+      "setting": "EXT. GARDEN AND LANE - DAY",
+      "visual_event": "From the nursery windows, THE NARRATOR\u0027s POV: a woman creeping in the long shaded lane; creeping in the dark grape arbors; creeping the long road under the trees-hiding under blackberry vines when a carriage passes.",
+      "prev_beat": null,
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "The Narrator speaks.",
+        "dialogue": "I think that woman gets out in the daytime! And I\u0027ll tell you why-privately-I\u0027ve\u2026"
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s23_b1",
+      "scene": 23,
+      "beat_index": 1,
+      "is_first_silent_in_scene": true,
+      "setting": "INT. NURSERY - DAY",
+      "visual_event": "THE NARRATOR locks the door. Alone, she creeps along the smooch-line on the floor, shoulder fitted to the mark. She rises quickly when a board creaks-John must not suspect.",
+      "prev_beat": null,
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "The Narrator speaks.",
+        "dialogue": "I always lock the door when I creep by daylight."
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s25_b1",
+      "scene": 25,
+      "beat_index": 1,
+      "is_first_silent_in_scene": true,
+      "setting": "INT. NURSERY - NIGHT",
+      "visual_event": "Last full night. JOHN stays in town. JENNIE offers to sleep in; THE NARRATOR refuses, sweet and firm.",
+      "prev_beat": null,
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "The Narrator speaks.",
+        "dialogue": "I shall undoubtedly rest better for a night all alone."
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s25_b3",
+      "scene": 25,
+      "beat_index": 3,
+      "is_first_silent_in_scene": false,
+      "setting": "INT. NURSERY - NIGHT",
+      "visual_event": "JENNIE goes. Moonlight. The poor thing behind the pattern crawls and shakes. THE NARRATOR leaps up to help-pulls while the figure shakes, shakes while it pulls. Yards of paper peel away in a strip as high as her head, half around the room. Dawn. The awful pattern seems to laugh in the first sun. She sets her jaw.",
+      "prev_beat": {
+        "kind": "dialogue",
+        "visual": "The Narrator speaks.",
+        "dialogue": "I shall undoubtedly rest better for a night all alone."
+      },
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "The Narrator speaks.",
+        "dialogue": "I declared I would finish it to-day!"
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s26_b1",
+      "scene": 26,
+      "beat_index": 1,
+      "is_first_silent_in_scene": true,
+      "setting": "INT. NURSERY - DAY",
+      "visual_event": "Moving day tomorrow. Furniture already going downstairs. The room empties toward bareness: the great bedstead nailed down, canvas mattress left. JENNIE stares at the stripped wall in amazement.",
+      "prev_beat": null,
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "The Narrator (merrily).",
+        "dialogue": "I did it out of pure spite at the vicious thing."
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s26_b6",
+      "scene": 26,
+      "beat_index": 6,
+      "is_first_silent_in_scene": false,
+      "setting": "INT. NURSERY - DAY",
+      "visual_event": "JENNIE tries to coax her out. THE NARRATOR resists.",
+      "prev_beat": {
+        "kind": "dialogue",
+        "visual": "The Narrator speaks.",
+        "dialogue": "But I am here, and no person touches this paper but me-not alive!"
+      },
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "The Narrator speaks.",
+        "dialogue": "It is so quiet and empty and clean now."
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s26_b19",
+      "scene": 26,
+      "beat_index": 19,
+      "is_first_silent_in_scene": false,
+      "setting": "INT. NURSERY - DAY",
+      "visual_event": "She fastens the rope-secures herself to the room\u0027s logic-and begins to creep, shoulder in the long smooch, round and round on the bare floor.",
+      "prev_beat": {
+        "kind": "dialogue",
+        "visual": "The Narrator speaks.",
+        "dialogue": "I wonder if they all come out of that wallpaper as I did?"
+      },
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "The Narrator speaks.",
+        "dialogue": "But I am securely fastened now by my well - hidden rope - you don\u0027t get me out i\u2026"
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s27_b1",
+      "scene": 27,
+      "beat_index": 1,
+      "is_first_silent_in_scene": true,
+      "setting": "INT. NURSERY - DAY",
+      "visual_event": "Pounding at the door. JOHN\u0027s voice.",
+      "prev_beat": null,
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "John speaks.",
+        "dialogue": "Open the door! Open the door!"
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s27_b3",
+      "scene": 27,
+      "beat_index": 3,
+      "is_first_silent_in_scene": false,
+      "setting": "INT. NURSERY - DAY",
+      "visual_event": "THE NARRATOR keeps creeping.",
+      "prev_beat": {
+        "kind": "dialogue",
+        "visual": "John speaks.",
+        "dialogue": "Open the door! Open the door!"
+      },
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "The Narrator (gentlest voice).",
+        "dialogue": "John dear! The key is down by the front steps, under a plantain leaf!"
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s27_b8",
+      "scene": 27,
+      "beat_index": 8,
+      "is_first_silent_in_scene": false,
+      "setting": "INT. NURSERY - DAY",
+      "visual_event": "She repeats it gently, slowly, often. At last his footsteps retreat, return. The key turns. JOHN enters-stops short by the door.",
+      "prev_beat": {
+        "kind": "dialogue",
+        "visual": "The Narrator speaks.",
+        "dialogue": "The key is down by the front door under a plantain leaf!"
+      },
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "John speaks.",
+        "dialogue": "What is the matter? For God\u0027s sake, what are you doing!"
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s27_b10",
+      "scene": 27,
+      "beat_index": 10,
+      "is_first_silent_in_scene": false,
+      "setting": "INT. NURSERY - DAY",
+      "visual_event": "THE NARRATOR keeps creeping. She looks at him over her shoulder.",
+      "prev_beat": {
+        "kind": "dialogue",
+        "visual": "John speaks.",
+        "dialogue": "What is the matter? For God\u0027s sake, what are you doing!"
+      },
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "The Narrator speaks.",
+        "dialogue": "I\u0027ve got out at last, in spite of you and Jane!"
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s27_b13",
+      "scene": 27,
+      "beat_index": 13,
+      "is_first_silent_in_scene": false,
+      "setting": "INT. NURSERY - DAY",
+      "visual_event": "JOHN faints across her path by the wall. THE NARRATOR pauses only to consider him-then creeps over him, again and again, shoulder to the smooch, circling the room as the yellow light holds.",
+      "prev_beat": {
+        "kind": "dialogue",
+        "visual": "The Narrator speaks.",
+        "dialogue": "And I\u0027ve pulled off most of the paper, so you can\u0027t put me back!"
+      },
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "The Narrator speaks.",
+        "dialogue": "Now why should that man have fainted?"
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    }
+  ]
+}

@@ -1,0 +1,755 @@
+{
+  "projectId": "Dracula",
+  "path": "C:\\Users\\budcr\\source\\repos\\FilmStudio\\projects\\Dracula\\source\\screenplay.fountain",
+  "rubric": "See ground_truth/RUBRIC.md \u2014 label for DURATION budgeting, not literary theory.",
+  "labels": [
+    {
+      "id": "s1_b1",
+      "scene": 1,
+      "beat_index": 1,
+      "is_first_silent_in_scene": true,
+      "setting": "INT. BRITISH MUSEUM LIBRARY - DAY",
+      "visual_event": "Gaslight on high shelves. JONATHAN HARKER, late twenties, neat brown hair, clean-shaven English solicitor in a dark traveling suit, bends over maps and heavy folios. He copies notes into a small shorthand journal with careful, lawyerly hand.",
+      "prev_beat": null,
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "Jonathan Harker speaks.",
+        "dialogue": "Having had some time at my disposal when in London, I visited the British Museum\u2026"
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s4_b4",
+      "scene": 4,
+      "beat_index": 4,
+      "is_first_silent_in_scene": false,
+      "setting": "INT. HOTEL ROYALE DINING ROOM - NIGHT",
+      "visual_event": "Jonathan scribbles in his journal.",
+      "prev_beat": {
+        "kind": "dialogue",
+        "visual": "Waiter speaks.",
+        "dialogue": "National dish. Anywhere along the Carpathians."
+      },
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "Jonathan Harker speaks.",
+        "dialogue": "Mem., get recipe for Mina. My smattering of German is very useful here."
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s9_b1",
+      "scene": 9,
+      "beat_index": 1,
+      "is_first_silent_in_scene": true,
+      "setting": "EXT. GOLDEN KRONE HOTEL - TWILIGHT",
+      "visual_event": "At the door, LANDLADY ELISABETA-elderly, cheery-looking, white undergarment with long double apron of coloured stuff fitting almost too tight for modesty-bows as Jonathan approaches.",
+      "prev_beat": null,
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "Landlady Elisabeta speaks.",
+        "dialogue": "The Herr Englishman?"
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s11_b5",
+      "scene": 11,
+      "beat_index": 5,
+      "is_first_silent_in_scene": false,
+      "setting": "INT. GOLDEN KRONE HOTEL, LOBBY - DAY",
+      "visual_event": "Josef and Elisabeta cross themselves. Fear tightens both faces.",
+      "prev_beat": {
+        "kind": "dialogue",
+        "visual": "Jonathan Harker speaks.",
+        "dialogue": "Do you know Count Dracula? Can you tell me anything of his castle?"
+      },
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "Landlord Josef speaks.",
+        "dialogue": "We know nothing at all."
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s12_b15",
+      "scene": 12,
+      "beat_index": 15,
+      "is_first_silent_in_scene": false,
+      "setting": "INT. GOLDEN KRONE HOTEL, JONATHAN\u0027S ROOM - DAY",
+      "visual_event": "She goes out. Jonathan stands alone, the crucifix on his breast. Coach horn distant below.",
+      "prev_beat": {
+        "kind": "dialogue",
+        "visual": "Landlady Elisabeta speaks.",
+        "dialogue": "For your mother\u0027s sake."
+      },
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "Jonathan Harker speaks.",
+        "dialogue": "I am writing up this part of the diary whilst I am waiting for the coach, which \u2026"
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s16_b1",
+      "scene": 16,
+      "beat_index": 1,
+      "is_first_silent_in_scene": true,
+      "setting": "EXT. FOREST ROAD NEAR CASTLE - NIGHT",
+      "visual_event": "The cal\u00E8che tears through blue-black forest. Wolves howl on every side-blue flames flicker among the trees. Jonathan grips the seat. The Driver raises a hand; the howling falls to silence. Horses race on.",
+      "prev_beat": null,
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "Jonathan Harker speaks.",
+        "dialogue": "I was afraid to speak or move. The time seemed interminable."
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s18_b5",
+      "scene": 18,
+      "beat_index": 5,
+      "is_first_silent_in_scene": false,
+      "setting": "INT. CASTLE DRACULA ENTRANCE HALL - NIGHT",
+      "visual_event": "The handshake so akin to the Driver\u0027s that Jonathan stares.",
+      "prev_beat": {
+        "kind": "dialogue",
+        "visual": "Count Dracula speaks.",
+        "dialogue": "Welcome to my house. Come freely. Go safely; and leave something of the happines\u2026"
+      },
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "Jonathan Harker speaks.",
+        "dialogue": "Count Dracula?"
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s21_b1",
+      "scene": 21,
+      "beat_index": 1,
+      "is_first_silent_in_scene": true,
+      "setting": "INT. CASTLE DRACULA OCTAGONAL ROOM - NIGHT",
+      "visual_event": "A small octagonal room lit by a single lamp. Seemingly without a window. The Count opens a further door and motions Jonathan through.",
+      "prev_beat": null,
+      "next_beat": null,
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s23_b8",
+      "scene": 23,
+      "beat_index": 8,
+      "is_first_silent_in_scene": false,
+      "setting": "INT. CASTLE DRACULA DINING ROOM - NIGHT",
+      "visual_event": "The Count takes the cover from a dish. Excellent roast chicken, cheese, salad, a bottle of old Tokay. Jonathan eats. Two glasses of wine. During the meal the Count asks many questions as to the journey. Jonathan tells him, by degrees, all he has experienced. Supper done. At the Count\u0027s desire Jonathan draws a chair by the fire and smokes a cigar the Count offers-excusing himself that he does not smoke. Firelight on the Count. Jonathan observes him. Strong-very strong-aquiline face; high bridge of the thin nose; peculiarly arched nostrils; lofty domed forehead; hair scant round the temples but profuse elsewhere. Eyebrows massive, almost meeting over the nose, bushy hair curling in its own profusion. Mouth under the heavy moustache fixed and rather cruel-looking; peculiarly sharp white teeth protruding over the lips; remarkable ruddiness of those lips. Ears pale, extremely pointed at the tops. Chin broad and strong; cheeks firm though thin. Extraordinary pallor. The backs of the hands on his knees seemed white and fine-close now: coarse, broad, squat fingers. Hairs in the centre of the palm. Nails long and fine, cut to a sharp point. The Count leans over; his hands touch Jonathan. Jonathan cannot repress a shudder. Rank breath-horrible nausea he cannot conceal. The Count notices, draws back. A grim sort of smile shows more than yet his protuberant teeth. He sits again on his own side of the fireplace. Silence. Jonathan looks toward the window: the first dim streak of coming dawn. Strange stillness-then, from down below in the valley, the howling of many wolves. The Count\u0027s eyes gleam.",
+      "prev_beat": {
+        "kind": "dialogue",
+        "visual": "Jonathan Harker speaks.",
+        "dialogue": "He shall be ready to attend on you when you will during his stay...\u0022"
+      },
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "Count Dracula speaks.",
+        "dialogue": "Listen to them-the children of the night. What music they make!"
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s25_b1",
+      "scene": 25,
+      "beat_index": 1,
+      "is_first_silent_in_scene": true,
+      "setting": "INT. CASTLE DRACULA DINING ROOM - DAY",
+      "visual_event": "Early morning light-7 May. Jonathan enters dressed. A cold breakfast laid out; coffee kept hot on the hearth. A card on the table.",
+      "prev_beat": null,
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "Insert - The Card speaks.",
+        "dialogue": "I have to be absent for a while. Do not wait for me.-D."
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s27_b6",
+      "scene": 27,
+      "beat_index": 6,
+      "is_first_silent_in_scene": false,
+      "setting": "INT. CASTLE DRACULA LIBRARY - NIGHT",
+      "visual_event": "Jonathan draws papers. The Count signs with a hand that never warms.",
+      "prev_beat": {
+        "kind": "dialogue",
+        "visual": "Count Dracula speaks.",
+        "dialogue": "and, after all, how few days go to make up a century."
+      },
+      "next_beat": null,
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s29_b6",
+      "scene": 29,
+      "beat_index": 6,
+      "is_first_silent_in_scene": false,
+      "setting": "INT. CASTLE DRACULA STAIRS AND SOUTH ROOM - DAY",
+      "visual_event": "Below-the great door shuts. The Count has returned.",
+      "prev_beat": {
+        "kind": "dialogue",
+        "visual": "Jonathan Harker speaks.",
+        "dialogue": "My only plan will be to keep my knowledge and my fears to myself, and my eyes op\u2026"
+      },
+      "next_beat": null,
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s33_b7",
+      "scene": 33,
+      "beat_index": 7,
+      "is_first_silent_in_scene": false,
+      "setting": "INT. CASTLE DRACULA LIBRARY - NIGHT",
+      "visual_event": "He holds up his arms.",
+      "prev_beat": {
+        "kind": "dialogue",
+        "visual": "Count Dracula speaks.",
+        "dialogue": "ay, and of Asia and Africa too, till the peoples thought that the were - wolves \u2026"
+      },
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "Count Dracula speaks.",
+        "dialogue": "Here, too, when they came, they found the Huns, whose warlike fury had swept the\u2026"
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s34_b1",
+      "scene": 34,
+      "beat_index": 1,
+      "is_first_silent_in_scene": true,
+      "setting": "INT. CASTLE DRACULA LIBRARY - NIGHT",
+      "visual_event": "Another night. Books open. The Count questions Jonathan on legal matters-methodical, precise.",
+      "prev_beat": null,
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "Count Dracula speaks.",
+        "dialogue": "Might a man in England have two solicitors or more?"
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s35_b1",
+      "scene": 35,
+      "beat_index": 1,
+      "is_first_silent_in_scene": true,
+      "setting": "INT. CASTLE DRACULA SOUTH ROOM - NIGHT",
+      "visual_event": "Jonathan, restless, finds a door unlocked that was not before. He enters a dusty chamber long unused-old furniture, moth-eaten hangings, a great bed. Moonlight through tall windows. He lies down in his clothes, exhausted, the crucifix at his throat. Sleep takes him-then half-waking horror. Three young women materialize in the moonlight. Two dark, with hard bright pride and full red lips; one fair, with golden hair and eyes like pale sapphires-all voluptuous, all with brilliant white teeth that shine like pearls against the ruby of their voluptuous lips. They whisper together. A silvery, musical laugh.",
+      "prev_beat": null,
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "Fair Woman speaks.",
+        "dialogue": "Go on! You are first, and we shall follow; yours is the right to begin."
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s36_b6",
+      "scene": 36,
+      "beat_index": 6,
+      "is_first_silent_in_scene": false,
+      "setting": "INT. CASTLE DRACULA JONATHAN\u0027S BEDROOM - DAY",
+      "visual_event": "He rises, pale, and forces himself toward the door.",
+      "prev_beat": {
+        "kind": "dialogue",
+        "visual": "Jonathan Harker speaks.",
+        "dialogue": "dreadful than those awful women, who were - who are - waiting to suck my blood."
+      },
+      "next_beat": null,
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s38_b14",
+      "scene": 38,
+      "beat_index": 14,
+      "is_first_silent_in_scene": false,
+      "setting": "INT. CASTLE DRACULA LIBRARY - NIGHT",
+      "visual_event": "Jonathan writes. His face goes bloodless.",
+      "prev_beat": {
+        "kind": "dialogue",
+        "visual": "Count Dracula speaks.",
+        "dialogue": "The first should be June 12, the second June 19, and the third June 29."
+      },
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "Jonathan Harker speaks.",
+        "dialogue": "I know now the span of my life. God help me!"
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s42_b1",
+      "scene": 42,
+      "beat_index": 1,
+      "is_first_silent_in_scene": true,
+      "setting": "INT. CASTLE DRACULA LIBRARY - DAY",
+      "visual_event": "Jonathan reads by the window. The door opens. Count Dracula enters, smoothest voice, two letters in his hand. He sits beside Jonathan.",
+      "prev_beat": null,
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "Count Dracula speaks.",
+        "dialogue": "The Szgany has given me these, of which, though I know not whence they come, I s\u2026"
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s43_b1",
+      "scene": 43,
+      "beat_index": 1,
+      "is_first_silent_in_scene": true,
+      "setting": "INT. CASTLE DRACULA JONATHAN\u0027S BEDROOM - NIGHT",
+      "visual_event": "Jonathan lies down. Exhaustion takes him. No dreams.",
+      "prev_beat": null,
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "Jonathan Harker speaks.",
+        "dialogue": "Despair has its own calms."
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s48_b1",
+      "scene": 48,
+      "beat_index": 1,
+      "is_first_silent_in_scene": true,
+      "setting": "INT. CASTLE DRACULA SOUTH ROOM - NIGHT",
+      "visual_event": "Before morning. Jonathan has run up the winding stair. He watches from the south window. Below and across: from the Count\u0027s window, a figure emerges-the whole man. COUNT DRACULA wears Jonathan\u0027s travelling suit, the terrible bag slung over his shoulder. He crawls down the wall, lizard-fashion, head down, and is gone into the dark.",
+      "prev_beat": null,
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "Jonathan Harker speaks.",
+        "dialogue": "There could be no doubt as to his quest, and in my garb, too!"
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s50_b6",
+      "scene": 50,
+      "beat_index": 6,
+      "is_first_silent_in_scene": false,
+      "setting": "INT. CASTLE DRACULA JONATHAN\u0027S BEDROOM - NIGHT",
+      "visual_event": "He knots sheets, climbs to the window ledge, and lowers himself into the abyss of night.",
+      "prev_beat": {
+        "kind": "dialogue",
+        "visual": "Jonathan Harker speaks.",
+        "dialogue": "good-bye, all. God help me!"
+      },
+      "next_beat": null,
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s51_b20",
+      "scene": 51,
+      "beat_index": 20,
+      "is_first_silent_in_scene": false,
+      "setting": "INT. MINA MURRAY\u0027S LODGINGS - NIGHT",
+      "visual_event": "A distant clock strikes ten. She starts, sanding the letter.",
+      "prev_beat": {
+        "kind": "dialogue",
+        "visual": "Mina Murray speaks.",
+        "dialogue": "I wonder if we-I mean Jonathan and I-shall ever see them together."
+      },
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "Mina Murray speaks.",
+        "dialogue": "There is the ten o\u0027clock bell ringing. Good-bye. Your loving Mina."
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s52_b10",
+      "scene": 52,
+      "beat_index": 10,
+      "is_first_silent_in_scene": false,
+      "setting": "INT. WESTENRA DRAWING ROOM - DAY",
+      "visual_event": "Seward almost sits upon his silk hat, catches himself, and thereafter turns a lancet absently between his fingers until Lucy\u0027s eyes flick to it with a suppressed start.",
+      "prev_beat": {
+        "kind": "dialogue",
+        "visual": "Lucy Westenra (lightly, aside to herself).",
+        "dialogue": "A tough nut to crack."
+      },
+      "next_beat": null,
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s53_b22",
+      "scene": 53,
+      "beat_index": 22,
+      "is_first_silent_in_scene": false,
+      "setting": "INT. WESTENRA DRAWING ROOM - DAY",
+      "visual_event": "She laughs through sudden tears, seals the letter in haste.",
+      "prev_beat": {
+        "kind": "dialogue",
+        "visual": "Lucy Westenra speaks.",
+        "dialogue": "But oh, Mina, I love him; I love him; I love him!"
+      },
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "Lucy Westenra speaks.",
+        "dialogue": "P.S.-I need not tell you this is a secret. Good-night again."
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s54_b15",
+      "scene": 54,
+      "beat_index": 15,
+      "is_first_silent_in_scene": false,
+      "setting": "INT. WESTENRA DRAWING ROOM - DAY",
+      "visual_event": "He bows and goes. Lucy sinks onto the sofa, crying quietly, letter-paper already blotted beside her.",
+      "prev_beat": {
+        "kind": "dialogue",
+        "visual": "Dr. John Seward speaks.",
+        "dialogue": "And if you ever wanted a friend, you must count me one of your best."
+      },
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "Lucy Westenra speaks.",
+        "dialogue": "Being proposed to is all very nice - but it isn\u0027t at all a happy thing when you \u2026"
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s55_b20",
+      "scene": 55,
+      "beat_index": 20,
+      "is_first_silent_in_scene": false,
+      "setting": "INT. WESTENRA DRAWING ROOM - DAY",
+      "visual_event": "Lucy\u0027s eyes fill. She nods.",
+      "prev_beat": {
+        "kind": "dialogue",
+        "visual": "Quincey Morris speaks.",
+        "dialogue": "let me, a very faithful friend."
+      },
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "Lucy Westenra speaks.",
+        "dialogue": "There is some one I love, though he has not told me yet that he even loves me."
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s57_b1",
+      "scene": 57,
+      "beat_index": 1,
+      "is_first_silent_in_scene": true,
+      "setting": "INT. SEWARD\u0027S STUDY, PURFLEET ASYLUM - NIGHT",
+      "visual_event": "DR. JOHN SEWARD at his phonograph, speaking into the tube-professional mask cracked by private pain.",
+      "prev_beat": null,
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "Dr. John Seward speaks.",
+        "dialogue": "I love her with all my heart. I could not, however, speak of my troubles to her."
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s60_b1",
+      "scene": 60,
+      "beat_index": 1,
+      "is_first_silent_in_scene": true,
+      "setting": "INT. WESTENRA LODGINGS, THE CRESCENT - DAY",
+      "visual_event": "A bright sitting-room with sea-light at the windows. MRS. WESTENRA greets Mina warmly, then gathers gloves and card-case.",
+      "prev_beat": null,
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "Mrs. Westenra speaks.",
+        "dialogue": "Duty calls only, my dears. We shan\u0027t be long."
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s62_b1",
+      "scene": 62,
+      "beat_index": 1,
+      "is_first_silent_in_scene": true,
+      "setting": "EXT. WHITBY CHURCHYARD - DAY",
+      "visual_event": "Days later. Bright sun. LUCY WESTENRA in white lawn frock, beautiful colour in her face, sits with MINA MURRAY. MR. SWALES and his two cronies lose no time joining them. The old men soften toward Lucy at once; even Swales does not contradict her-he turns the full force of his talk on Mina instead.",
+      "prev_beat": null,
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "Mina Murray speaks.",
+        "dialogue": "And the legends, Mr. Swales-the bans and warnings-"
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s62_b52",
+      "scene": 62,
+      "beat_index": 52,
+      "is_first_silent_in_scene": false,
+      "setting": "EXT. WHITBY CHURCHYARD - DAY",
+      "visual_event": "Lucy leans over; the letters face her.",
+      "prev_beat": {
+        "kind": "dialogue",
+        "visual": "Mr. Swales speaks.",
+        "dialogue": "Read the lies on that thruff-stean."
+      },
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "Lucy Westenra speaks.",
+        "dialogue": "\u0022 Sacred to the memory of George Canon, who died, in the hope of a glorious resu\u2026"
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s64_b1",
+      "scene": 64,
+      "beat_index": 1,
+      "is_first_silent_in_scene": true,
+      "setting": "EXT. WHITBY CHURCHYARD - DUSK",
+      "visual_event": "Sultry August light. Holiday-makers thin along the cliff walk. High in the north-west sky, mares\u0027-tails streak the blue. COASTGUARD DONOVAN stands with his spy-glass. An OLD FISHERMAN beside him squints seaward, emphatic.",
+      "prev_beat": null,
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "Old Fisherman speaks.",
+        "dialogue": "She\u0027s comin\u0027. Sudden. Mark me."
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s66_b1",
+      "scene": 66,
+      "beat_index": 1,
+      "is_first_silent_in_scene": true,
+      "setting": "EXT. TATE HILL PIER - NIGHT",
+      "visual_event": "No one on the little pier at first. COASTGUARD DONOVAN runs down from the eastern side, first to climb aboard. Searchlight men scour the entrance, then hold the beam on the derelict. Donovan runs aft to the wheel, bends to examine-and recoils as under a blow. Crowds begin to run the long way round by the Drawbridge. A NEWSPAPER CORRESPONDENT arrives ahead of most. Police and coastguard hold the crowd off the ship. By courtesy Donovan lets the correspondent and a small group climb on deck. At the wheel: the dead seaman, hands tied one over the other to a spoke. Between inner hand and wood, a crucifix; beads around both wrists and wheel, all kept fast by the binding cords. Flesh cut to the bone where cords worked through the buffeting. SURGEON CAFFYN arrives, examines.",
+      "prev_beat": null,
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "Surgeon Caffyn speaks.",
+        "dialogue": "Dead for quite two days."
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s68_b1",
+      "scene": 68,
+      "beat_index": 1,
+      "is_first_silent_in_scene": true,
+      "setting": "EXT. DEMETER DECK - NIGHT (FLASHBACK)",
+      "visual_event": "Mate\u0027s watch. One hand, PETROFSKY, relieved-does not go to bunk. Dawn: he is missing. Crew downcast.",
+      "prev_beat": null,
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "Crewman Olgaren speaks.",
+        "dialogue": "There is something aboard."
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s72_b1",
+      "scene": 72,
+      "beat_index": 1,
+      "is_first_silent_in_scene": true,
+      "setting": "EXT. DEMETER DECK - NIGHT (FLASHBACK)",
+      "visual_event": "Fog thick. Captain wakes to a cry outside his port. Rushes on deck-runs against Mate Dragomir. Man of watch gone. One more.",
+      "prev_beat": null,
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "Mate Dragomir (past Dover; North Foreland in a lift of fog).",
+        "dialogue": "Only God can guide us. And God seems to have deserted us."
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s74_b1",
+      "scene": 74,
+      "beat_index": 1,
+      "is_first_silent_in_scene": true,
+      "setting": "EXT. WHITBY CHURCHYARD - DAY",
+      "visual_event": "After the storm. Mina and Lucy on their seat. Below, the wrecked schooner Demeter lies under the East Cliff. Crowds stare. The immense dog is not found. MR. SWALES sits heavily, quieter than his wont. He looks long at the sea.",
+      "prev_beat": null,
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "Mr. Swales speaks.",
+        "dialogue": "I have seen a deal o\u0027 life in my time, miss - an\u0027 I tell ye true, I felt"
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s76_b3",
+      "scene": 76,
+      "beat_index": 3,
+      "is_first_silent_in_scene": false,
+      "setting": "INT. MINA AND LUCY\u0027S BEDROOM - NIGHT",
+      "visual_event": "Mina throws on clothes, snatches a big heavy shawl, runs out.",
+      "prev_beat": {
+        "kind": "dialogue",
+        "visual": "Mina Murray speaks.",
+        "dialogue": "Thank God. She cannot be far. Only in her nightdress."
+      },
+      "next_beat": null,
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s80_b1",
+      "scene": 80,
+      "beat_index": 1,
+      "is_first_silent_in_scene": true,
+      "setting": "EXT. WHITBY STREETS - NIGHT",
+      "visual_event": "They hide in a doorway as a not-quite-sober man passes. Heartbeats loud. Home without meeting another soul.",
+      "prev_beat": null,
+      "next_beat": null,
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s84_b1",
+      "scene": 84,
+      "beat_index": 1,
+      "is_first_silent_in_scene": true,
+      "setting": "INT. MINA AND LUCY\u0027S BEDROOM - NIGHT",
+      "visual_event": "Mina wakes. Lucy sitting up in bed, still asleep, pointing to the window. Mina pulls aside the blind. Brilliant moonlight. Between her and the moon a great bat whirls in circles, comes close, flits away across the harbour toward the abbey. Lucy has lain down again, sleeping peacefully.",
+      "prev_beat": null,
+      "next_beat": null,
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s87_b1",
+      "scene": 87,
+      "beat_index": 1,
+      "is_first_silent_in_scene": true,
+      "setting": "INT. MINA AND LUCY\u0027S BEDROOM - NIGHT",
+      "visual_event": "Lucy moving back to bed, fast asleep, breathing heavily, hand to her throat. Mina does not wake her. Tucks her up. Door locked, window fastened. Lucy pale, drawn, haggard under the eyes.",
+      "prev_beat": null,
+      "next_beat": null,
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s91_b1",
+      "scene": 91,
+      "beat_index": 1,
+      "is_first_silent_in_scene": true,
+      "setting": "INT. CARTER PATERSON OFFICE, LONDON - DAY",
+      "visual_event": "Acknowledgment. Goods delivered. Keys left in main hall. Overplus returned.",
+      "prev_beat": null,
+      "next_beat": null,
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    }
+  ]
+}

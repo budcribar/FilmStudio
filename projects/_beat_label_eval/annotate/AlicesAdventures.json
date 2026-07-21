@@ -1,0 +1,843 @@
+{
+  "projectId": "AlicesAdventures",
+  "path": "C:\\Users\\budcr\\source\\repos\\FilmStudio\\projects\\AlicesAdventures\\source\\screenplay.fountain",
+  "rubric": "See ground_truth/RUBRIC.md \u2014 label for DURATION budgeting, not literary theory.",
+  "labels": [
+    {
+      "id": "s1_b1",
+      "scene": 1,
+      "beat_index": 1,
+      "is_first_silent_in_scene": true,
+      "setting": "INT. UNSPECIFIED - DAY",
+      "visual_event": "Notes: Period live-action Victorian fantasy; humans and talking animals share one stylized live-action medium. ALICE: about seven, fair hair, knee-length blue dress, white apron, striped stockings. WHITE RABBIT: white fur, pink eyes, waistcoat, pocket-watch. Recurring places keep identical heading names.",
+      "prev_beat": null,
+      "next_beat": null,
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s4_b10",
+      "scene": 4,
+      "beat_index": 10,
+      "is_first_silent_in_scene": false,
+      "setting": "INT. RABBIT-HOLE TUNNEL - CONTINUOUS",
+      "visual_event": "She considers, solemn.",
+      "prev_beat": {
+        "kind": "dialogue",
+        "visual": "Alice speaks.",
+        "dialogue": "but then I wonder what Latitude or Longitude I\u0027ve got to?"
+      },
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "Alice speaks.",
+        "dialogue": "I wonder if I shall fall right through the earth!"
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s6_b1",
+      "scene": 6,
+      "beat_index": 1,
+      "is_first_silent_in_scene": true,
+      "setting": "INT. LONG LOW HALL - DAY",
+      "visual_event": "A long, low hall lit by a row of lamps hanging from the roof. Doors all round. Alice tries every one: all locked. She walks sadly down the middle. A little three-legged table of solid glass stands alone. On it: a tiny golden key. She tries the key on the doors - locks too large, or key too small. On a second circuit she finds a low curtain and, behind it, a little door about fifteen inches high. The golden key fits. She opens the door onto a small passage no larger than a rat-hole. Beyond: the loveliest garden - bright flower-beds, cool fountains. She kneels, longing, but cannot get even her head through.",
+      "prev_beat": null,
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "Alice speaks.",
+        "dialogue": "And even if my head would go through, it would be of very little use without my \u2026"
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s7_b2",
+      "scene": 7,
+      "beat_index": 2,
+      "is_first_silent_in_scene": true,
+      "setting": "INT. LONG LOW HALL - MOMENTS LATER",
+      "visual_event": "She shoots upward, opening out like the largest telescope.",
+      "prev_beat": {
+        "kind": "dialogue",
+        "visual": "Alice speaks.",
+        "dialogue": "Curiouser and curiouser!"
+      },
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "Alice speaks.",
+        "dialogue": "Now I\u0027m opening out like the largest telescope that ever was! Good-bye, feet!"
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s7_b30",
+      "scene": 7,
+      "beat_index": 30,
+      "is_first_silent_in_scene": false,
+      "setting": "INT. LONG LOW HALL - MOMENTS LATER",
+      "visual_event": "She ticks off children she knows.",
+      "prev_beat": {
+        "kind": "dialogue",
+        "visual": "Alice speaks.",
+        "dialogue": "Ah, that\u0027s the great puzzle!"
+      },
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "Alice speaks.",
+        "dialogue": "I\u0027m sure I\u0027m not Ada, for her hair goes in such long ringlets, and mine doesn\u0027t \u2026"
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s7_b64",
+      "scene": 7,
+      "beat_index": 64,
+      "is_first_silent_in_scene": false,
+      "setting": "INT. LONG LOW HALL - MOMENTS LATER",
+      "visual_event": "She runs to the little door - shut again; the golden key lies on the glass table as before.",
+      "prev_beat": {
+        "kind": "dialogue",
+        "visual": "Alice speaks.",
+        "dialogue": "That was a narrow escape! And now for the garden!"
+      },
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "Alice speaks.",
+        "dialogue": "And things are worse than ever, for I never was so small as this before, never!"
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s8_b22",
+      "scene": 8,
+      "beat_index": 22,
+      "is_first_silent_in_scene": false,
+      "setting": "INT. POOL OF TEARS - CONTINUOUS",
+      "visual_event": "The Mouse bristles all over.",
+      "prev_beat": {
+        "kind": "dialogue",
+        "visual": "Alice (soothing).",
+        "dialogue": "a capital one for catching mice - oh, I beg your pardon!"
+      },
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "Alice speaks.",
+        "dialogue": "We won\u0027t talk about her any more if you\u0027d rather not."
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s9_b5",
+      "scene": 9,
+      "beat_index": 5,
+      "is_first_silent_in_scene": false,
+      "setting": "EXT. BANK OF THE POOL - DAY",
+      "visual_event": "They sit in a large ring, Mouse in the middle. Alice watches anxiously, sure of a bad cold if she stays wet.",
+      "prev_beat": {
+        "kind": "dialogue",
+        "visual": "The Mouse speaks.",
+        "dialogue": "Sit down, all of you, and listen to me! I\u0027ll soon make you dry enough!"
+      },
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "The Mouse (with an important air).",
+        "dialogue": "Ahem! Are you all ready? This is the driest thing I know. Silence all round, if \u2026"
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s9_b46",
+      "scene": 9,
+      "beat_index": 46,
+      "is_first_silent_in_scene": false,
+      "setting": "EXT. BANK OF THE POOL - DAY",
+      "visual_event": "The Dodo receives the thimble solemnly, then presents it back to Alice, saying -",
+      "prev_beat": {
+        "kind": "dialogue",
+        "visual": "The Dodo speaks.",
+        "dialogue": "Hand it over here."
+      },
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "The Dodo speaks.",
+        "dialogue": "We beg your acceptance of this elegant thimble."
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s9_b69",
+      "scene": 9,
+      "beat_index": 69,
+      "is_first_silent_in_scene": false,
+      "setting": "EXT. BANK OF THE POOL - DAY",
+      "visual_event": "Alice guesses at once: the fan and the white kid gloves. She hunts about good-naturedly. Nothing. The great hall, the glass table, the little door - all vanished. The bank and wood have changed since the swim. The Rabbit notices her and calls out in an angry tone.",
+      "prev_beat": {
+        "kind": "dialogue",
+        "visual": "White Rabbit speaks.",
+        "dialogue": "She\u0027ll get me executed, as sure as ferrets are ferrets! Where CAN I have dropped\u2026"
+      },
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "White Rabbit speaks.",
+        "dialogue": "Why, Mary Ann, what ARE you doing out here?"
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s12_b11",
+      "scene": 12,
+      "beat_index": 11,
+      "is_first_silent_in_scene": false,
+      "setting": "INT. WHITE RABBIT\u0027S TIDY LITTLE ROOM - DAY",
+      "visual_event": "The bottle has had its full effect. She grows no larger - still very uncomfortable, wedged in the little room.",
+      "prev_beat": {
+        "kind": "dialogue",
+        "visual": "Alice speaks.",
+        "dialogue": "Now I can do no more, whatever happens. What WILL become of me?"
+      },
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "Alice (unhappy, to herself).",
+        "dialogue": "It was much pleasanter at home, when one wasn\u0027t always growing larger and smalle\u2026"
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s13_b12",
+      "scene": 13,
+      "beat_index": 12,
+      "is_first_silent_in_scene": false,
+      "setting": "EXT. WHITE RABBIT\u0027S HOUSE - GARDEN - DAY",
+      "visual_event": "Long silence. Whispers.",
+      "prev_beat": {
+        "kind": "dialogue",
+        "visual": "White Rabbit speaks.",
+        "dialogue": "Well, it\u0027s got no business there, at any rate: go and take it away!"
+      },
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "Pat (whispering).",
+        "dialogue": "Sure, I don\u0027t like it, yer honour, at all, at all!"
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s16_b8",
+      "scene": 16,
+      "beat_index": 8,
+      "is_first_silent_in_scene": false,
+      "setting": "INT. WHITE RABBIT\u0027S TIDY LITTLE ROOM - DAY",
+      "visual_event": "She gives one sharp kick.",
+      "prev_beat": {
+        "kind": "dialogue",
+        "visual": "Alice speaks.",
+        "dialogue": "This is Bill."
+      },
+      "next_beat": null,
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s20_b4",
+      "scene": 20,
+      "beat_index": 4,
+      "is_first_silent_in_scene": false,
+      "setting": "INT. WHITE RABBIT\u0027S TIDY LITTLE ROOM - DAY",
+      "visual_event": "Another dead silence outside. Alice notices with surprise: the pebbles on the floor are all turning into little cakes.",
+      "prev_beat": {
+        "kind": "dialogue",
+        "visual": "Alice (shouting).",
+        "dialogue": "You\u0027d better not do that again!"
+      },
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "Alice (to herself).",
+        "dialogue": "If I eat one of these cakes, it\u0027s sure to make SOME change in my size;"
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s23_b8",
+      "scene": 23,
+      "beat_index": 8,
+      "is_first_silent_in_scene": false,
+      "setting": "EXT. WOOD - BUTTERCUP CLEARING - DAY",
+      "visual_event": "She looks all round at the flowers and blades of grass. Nothing that looks like the right thing. A large mushroom grows near her, about the same height as herself. She looks under it, on both sides, behind it - then stretches up on tiptoe and peeps over the edge. Her eyes meet those of a large CATERPILLAR, sitting on the top with its arms folded, quietly smoking a long hookah, taking not the smallest notice of her.",
+      "prev_beat": {
+        "kind": "dialogue",
+        "visual": "Alice speaks.",
+        "dialogue": "I suppose I ought to eat or drink something or other; but the great question is,\u2026"
+      },
+      "next_beat": null,
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s24_b36",
+      "scene": 24,
+      "beat_index": 36,
+      "is_first_silent_in_scene": false,
+      "setting": "EXT. WOOD - MUSHROOM - DAY",
+      "visual_event": "\u0022In my youth,\u0022 Father William replied to his son, \u0022I feared it might injure the brain; But, now that I\u0027m perfectly sure I have none, Why, I do it again and again.\u0022 \u0022You are old,\u0022 said the youth, \u0022as I mentioned before, And have grown most uncommonly fat; Yet you turned a back-somersault in at the door - Pray, what is the reason of that?\u0022 \u0022In my youth,\u0022 said the sage, as he shook his grey locks, \u0022I kept all my limbs very supple By the use of this ointment - one shilling the box - Allow me to sell you a couple?\u0022 \u0022You are old,\u0022 said the youth, \u0022and your jaws are too weak For anything tougher than suet; Yet you finished the goose, with the bones and the beak - Pray, how did you manage to do it?\u0022 \u0022In my youth,\u0022 said his father, \u0022I took to the law, And argued each case with my wife; And the muscular strength, which it gave to my jaw, Has lasted the rest of my life.\u0022 \u0022You are old,\u0022 said the youth, \u0022one would hardly suppose That your eye was as steady as ever; Yet you balanced an eel on the end of your nose - What made you so awfully clever?\u0022 \u0022I have answered three questions, and that is enough,\u0022 Said his father; \u0022don\u0027t give yourself airs! Do you think I can listen all day to such stuff? Be off, or I\u0027ll kick you down stairs!\u0022",
+      "prev_beat": {
+        "kind": "dialogue",
+        "visual": "Alice speaks.",
+        "dialogue": "And yet you incessantly stand on your head - Do you think, at your age, it is ri\u2026"
+      },
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "Caterpillar speaks.",
+        "dialogue": "That is not said right."
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s25_b1",
+      "scene": 25,
+      "beat_index": 1,
+      "is_first_silent_in_scene": true,
+      "setting": "EXT. WOOD - NEAR MUSHROOM - DAY",
+      "visual_event": "Alice\u0027s head frees itself. She is delighted - until she finds her shoulders gone; all she can see when she looks down is an immense length of neck, rising like a stalk out of a sea of green leaves far below.",
+      "prev_beat": null,
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "Alice (surprised).",
+        "dialogue": "What can all that green stuff be? And where have my shoulders got to?"
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s26_b1",
+      "scene": 26,
+      "beat_index": 1,
+      "is_first_silent_in_scene": true,
+      "setting": "EXT. DUCHESS\u0027S HOUSE - DAY",
+      "visual_event": "Alice stands before the door, wondering what to do next, when suddenly a footman in livery comes running out of the wood - the face of a fish, powdered hair drawn into a bag - and raps loudly at the door with his knuckles. It is opened by another FOOTMAN with a round face and large eyes like a frog. Both have powdered hair curled all round their heads. Alice watches with great curiosity. The Fish-Footman produces from under his arm a great letter, nearly as large as himself, and hands it over.",
+      "prev_beat": null,
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "Fish-footman speaks.",
+        "dialogue": "For the Duchess. An invitation from the Queen to play croquet."
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s27_b3",
+      "scene": 27,
+      "beat_index": 3,
+      "is_first_silent_in_scene": false,
+      "setting": "INT. DUCHESS\u0027S KITCHEN - DAY",
+      "visual_event": "She says it aloud, half to herself. The Duchess only scowls. The cook takes no notice.",
+      "prev_beat": {
+        "kind": "dialogue",
+        "visual": "Alice (to herself).",
+        "dialogue": "There\u0027s certainly too much pepper in that soup!"
+      },
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "Alice speaks.",
+        "dialogue": "Please would you tell me why your cat grins like that?"
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s28_b1",
+      "scene": 28,
+      "beat_index": 1,
+      "is_first_silent_in_scene": true,
+      "setting": "EXT. WOOD NEAR DUCHESS\u0027S HOUSE - DAY",
+      "visual_event": "Alice nurses the baby as she walks.",
+      "prev_beat": null,
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "Alice (to the baby).",
+        "dialogue": "Don\u0027t grunt. That\u0027s not at all a proper way of expressing yourself."
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s28_b43",
+      "scene": 28,
+      "beat_index": 43,
+      "is_first_silent_in_scene": false,
+      "setting": "EXT. WOOD NEAR DUCHESS\u0027S HOUSE - DAY",
+      "visual_event": "This time it vanishes quite slowly, beginning with the end of the tail, and ending with the grin, which remains some time after the rest of it has gone.",
+      "prev_beat": {
+        "kind": "dialogue",
+        "visual": "Cheshire Cat speaks.",
+        "dialogue": "All right."
+      },
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "Alice speaks.",
+        "dialogue": "Well! I\u0027ve often seen a cat without a grin, but a grin without a cat!"
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s29_b19",
+      "scene": 29,
+      "beat_index": 19,
+      "is_first_silent_in_scene": false,
+      "setting": "EXT. MARCH HARE\u0027S HOUSE - DAY",
+      "visual_event": "(aloud) I believe I can guess that.",
+      "prev_beat": {
+        "kind": "dialogue",
+        "visual": "Alice (to herself, pleased).",
+        "dialogue": "Come, we shall have some fun now! I\u0027m glad they\u0027ve begun asking riddles."
+      },
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "March Hare speaks.",
+        "dialogue": "Do you mean that you think you can find out the answer to it?"
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s29_b72",
+      "scene": 29,
+      "beat_index": 72,
+      "is_first_silent_in_scene": false,
+      "setting": "EXT. MARCH HARE\u0027S HOUSE - DAY",
+      "visual_event": "The Hatter shakes his head mournfully.",
+      "prev_beat": {
+        "kind": "dialogue",
+        "visual": "Alice speaks.",
+        "dialogue": "Is that the way you manage?"
+      },
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "Hatter speaks.",
+        "dialogue": "Not I! We quarrelled last March - just before he went mad, you know -"
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s29_b125",
+      "scene": 29,
+      "beat_index": 125,
+      "is_first_silent_in_scene": false,
+      "setting": "EXT. MARCH HARE\u0027S HOUSE - DAY",
+      "visual_event": "He moves on. The Dormouse follows him. The March Hare moves into the Dormouse\u0027s place. Alice rather unwillingly takes the place of the March Hare. The March Hare has just upset the milk-jug into his plate; Alice is worse off than before.",
+      "prev_beat": {
+        "kind": "dialogue",
+        "visual": "Hatter speaks.",
+        "dialogue": "I want a clean cup. Let\u0027s all move one place on."
+      },
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "Alice (cautiously).",
+        "dialogue": "But I don\u0027t understand. Where did they draw the treacle from?"
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s31_b1",
+      "scene": 31,
+      "beat_index": 1,
+      "is_first_silent_in_scene": true,
+      "setting": "INT. LONG LOW HALL - DAY",
+      "visual_event": "Once more she finds herself in the long hall, close to the little glass table.",
+      "prev_beat": null,
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "Alice speaks.",
+        "dialogue": "Now, I\u0027ll manage better this time."
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s32_b23",
+      "scene": 32,
+      "beat_index": 23,
+      "is_first_silent_in_scene": false,
+      "setting": "EXT. QUEEN\u0027S GARDEN - DAY",
+      "visual_event": "The Knave only bows and smiles.",
+      "prev_beat": {
+        "kind": "dialogue",
+        "visual": "Queen Of Hearts (severely, to the Knave).",
+        "dialogue": "Who is this?"
+      },
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "Queen Of Hearts speaks.",
+        "dialogue": "Idiot!"
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s32_b38",
+      "scene": 32,
+      "beat_index": 38,
+      "is_first_silent_in_scene": false,
+      "setting": "EXT. QUEEN\u0027S GARDEN - DAY",
+      "visual_event": "The Knave does so, very carefully, with one foot.",
+      "prev_beat": {
+        "kind": "dialogue",
+        "visual": "Queen Of Hearts (to the Knave).",
+        "dialogue": "Turn them over!"
+      },
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "Queen Of Hearts (shrill, loud).",
+        "dialogue": "Get up!"
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s33_b1",
+      "scene": 33,
+      "beat_index": 1,
+      "is_first_silent_in_scene": true,
+      "setting": "EXT. CROQUET-GROUND - DAY",
+      "visual_event": "Alice walks beside the White Rabbit, who peeps anxiously into her face.",
+      "prev_beat": null,
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "White Rabbit (timid).",
+        "dialogue": "It\u0027s - it\u0027s a very fine day!"
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s33_b39",
+      "scene": 33,
+      "beat_index": 39,
+      "is_first_silent_in_scene": false,
+      "setting": "EXT. CROQUET-GROUND - DAY",
+      "visual_event": "The King and executioner argue whether a head can be beheaded without a body. The Cat\u0027s head begins to fade away. By the time they have settled anything, the head is entirely gone. The Queen stamps off, shouting \u0022Off with his head!\u0022 at anyone who happens to be in her way. Alice thinks she had better go back and see how the game is going on. She hears the Queen\u0027s voice in the distance, screaming with passion. She has already heard her sentence three of the players to be executed for having missed their turns. Alice leaves the croquet-ground. She finds the Duchess\u0027s arm slipped through hers, and the Duchess smiling in a pleasant way.",
+      "prev_beat": {
+        "kind": "dialogue",
+        "visual": "Queen Of Hearts (pointing).",
+        "dialogue": "However, it may kiss my hand, if it likes."
+      },
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "Duchess speaks.",
+        "dialogue": "You can\u0027t think how glad I am to see you again, you dear old thing!"
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s33_b89",
+      "scene": 33,
+      "beat_index": 89,
+      "is_first_silent_in_scene": false,
+      "setting": "EXT. CROQUET-GROUND - DAY",
+      "visual_event": "As they walk off together, Alice hears the King say in a low voice to the company generally -",
+      "prev_beat": {
+        "kind": "dialogue",
+        "visual": "Queen Of Hearts speaks.",
+        "dialogue": "Come on, then, and he shall tell you his history."
+      },
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "King Of Hearts speaks.",
+        "dialogue": "You are all pardoned."
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s35_b6",
+      "scene": 35,
+      "beat_index": 6,
+      "is_first_silent_in_scene": false,
+      "setting": "EXT. MOCK TURTLE\u0027S ROCK - DAY",
+      "visual_event": "He sighs deeply, drawing the back of one flapper across his eyes. He tries to speak; sobs choke his voice.",
+      "prev_beat": {
+        "kind": "dialogue",
+        "visual": "Mock Turtle speaks.",
+        "dialogue": "Once, I was a real Turtle."
+      },
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "Gryphon speaks.",
+        "dialogue": "Same as if he had a bone in his throat."
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s35_b56",
+      "scene": 35,
+      "beat_index": 56,
+      "is_first_silent_in_scene": false,
+      "setting": "EXT. MOCK TURTLE\u0027S ROCK - DAY",
+      "visual_event": "The Gryphon shakes him and punches him in the back. At last the Mock Turtle recovers.",
+      "prev_beat": {
+        "kind": "dialogue",
+        "visual": "Gryphon speaks.",
+        "dialogue": "Same as if he had a bone in his throat."
+      },
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "Mock Turtle speaks.",
+        "dialogue": "You may not have lived much under the sea -"
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s35_b110",
+      "scene": 35,
+      "beat_index": 110,
+      "is_first_silent_in_scene": false,
+      "setting": "EXT. MOCK TURTLE\u0027S ROCK - DAY",
+      "visual_event": "Alice looks down at her shoes.",
+      "prev_beat": {
+        "kind": "dialogue",
+        "visual": "Gryphon speaks.",
+        "dialogue": "Why, what are YOUR shoes done with? I mean, what makes them so shiny?"
+      },
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "Alice speaks.",
+        "dialogue": "They\u0027re done with blacking, I believe."
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s35_b152",
+      "scene": 35,
+      "beat_index": 152,
+      "is_first_silent_in_scene": false,
+      "setting": "EXT. MOCK TURTLE\u0027S ROCK - DAY",
+      "visual_event": "The Panther took pie-crust, and gravy, and meat, While the Owl had the dish as its share of the treat. When the pie was all finished, the Owl, as a boon, Was kindly permitted to pocket the spoon: While the Panther received knife and fork with a growl, And concluded the banquet -",
+      "prev_beat": {
+        "kind": "dialogue",
+        "visual": "Alice speaks.",
+        "dialogue": "a pie -"
+      },
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "Mock Turtle (interrupting).",
+        "dialogue": "What IS the use of repeating all that stuff, if you don\u0027t explain it as you go o\u2026"
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s36_b1",
+      "scene": 36,
+      "beat_index": 1,
+      "is_first_silent_in_scene": true,
+      "setting": "EXT. COURT OF HEARTS - DAY",
+      "visual_event": "The KING OF HEARTS and QUEEN OF HEARTS sit on their throne. A great crowd of little birds and beasts and the whole pack of cards assembles about them. The KNAVE OF HEARTS stands before them in chains, a SOLDIER on each side. Near the King stands the WHITE RABBIT, trumpet in one hand, scroll of parchment in the other. In the middle of the court: a table with a large dish of tarts. Alice and the Gryphon arrive. Alice eyes the tarts hungrily. Alice looks about, pleased to know the names of things. The King wears his crown over a great wig and does not look comfortable. Twelve jurors - animals and birds mixed - write busily on slates in the jury-box. Among them: BILL THE LIZARD.",
+      "prev_beat": null,
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "Alice (whispering to the Gryphon).",
+        "dialogue": "What are they doing? They can\u0027t have anything to put down yet, before the trial\u0027\u2026"
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s36_b29",
+      "scene": 36,
+      "beat_index": 29,
+      "is_first_silent_in_scene": false,
+      "setting": "EXT. COURT OF HEARTS - DAY",
+      "visual_event": "The jury makes a memorandum.",
+      "prev_beat": {
+        "kind": "dialogue",
+        "visual": "King Of Hearts (turning to the jury).",
+        "dialogue": "Stolen!"
+      },
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "Hatter speaks.",
+        "dialogue": "I keep them to sell: I\u0027ve none of my own. I\u0027m a hatter."
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s36_b62",
+      "scene": 36,
+      "beat_index": 62,
+      "is_first_silent_in_scene": false,
+      "setting": "EXT. COURT OF HEARTS - DAY",
+      "visual_event": "One of the GUINEA-PIGS cheers and is immediately suppressed by officers: they slip him head first into a large canvas bag, tie it up, and sit upon it. Alice watches with interest.",
+      "prev_beat": {
+        "kind": "dialogue",
+        "visual": "King Of Hearts speaks.",
+        "dialogue": "You\u0027re a very poor speaker."
+      },
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "King Of Hearts speaks.",
+        "dialogue": "If that\u0027s all you know about it, you may stand down."
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s36_b82",
+      "scene": 36,
+      "beat_index": 82,
+      "is_first_silent_in_scene": false,
+      "setting": "EXT. COURT OF HEARTS - DAY",
+      "visual_event": "A general confusion. The Queen has the Dormouse turned out of court. The whole jury has to write down all the dates on their slates, and then add them up.",
+      "prev_beat": {
+        "kind": "dialogue",
+        "visual": "Dormouse (waking with a little shriek).",
+        "dialogue": "Treacle."
+      },
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "King Of Hearts speaks.",
+        "dialogue": "Never mind!"
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s36_b111",
+      "scene": 36,
+      "beat_index": 111,
+      "is_first_silent_in_scene": false,
+      "setting": "EXT. COURT OF HEARTS - DAY",
+      "visual_event": "The King turns pale, and shuts his note-book hastily.",
+      "prev_beat": {
+        "kind": "dialogue",
+        "visual": "Alice speaks.",
+        "dialogue": "Then it ought to be Number One."
+      },
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "King Of Hearts speaks.",
+        "dialogue": "Consider your verdict."
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s36_b147",
+      "scene": 36,
+      "beat_index": 147,
+      "is_first_silent_in_scene": false,
+      "setting": "EXT. COURT OF HEARTS - DAY",
+      "visual_event": "He turns to the Knave. The Knave shakes his head sadly.",
+      "prev_beat": {
+        "kind": "dialogue",
+        "visual": "King Of Hearts (running his eye over the verses).",
+        "dialogue": "\u0022- said I could not swim -\u0022 you can\u0027t swim, can you?"
+      },
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "Knave Of Hearts speaks.",
+        "dialogue": "Do I look like it?"
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    }
+  ]
+}

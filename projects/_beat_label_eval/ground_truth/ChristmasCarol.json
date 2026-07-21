@@ -1,0 +1,27 @@
+{
+  "projectId": "ChristmasCarol",
+  "annotator": "human",
+  "rubric": "ground_truth/RUBRIC.md — duration budgeting",
+  "labels": [
+    { "id": "s1_b1", "class": "action", "note": "Signing register — business, not place open" },
+    { "id": "s5_b64", "class": "action", "note": "Visitors enter and bow" },
+    { "id": "s10_b1", "class": "establishing", "note": "Marley chambers / yard open" },
+    { "id": "s12_b71", "class": "hold", "note": "Dismayed reaction" },
+    { "id": "s13_b19", "class": "hold", "note": "Gentle arm clasp" },
+    { "id": "s15_b5", "class": "action", "note": "Nod, sob, leave high-road" },
+    { "id": "s18_b30", "class": "hold", "note": "Clap hands, bend to laugh" },
+    { "id": "s23_b3", "class": "action", "note": "Fezziwig pen down, clock, laugh" },
+    { "id": "s24_b35", "class": "hold", "note": "Yields before speech — micro" },
+    { "id": "s27_b3", "class": "action", "note": "Enters timidly" },
+    { "id": "s31_b4", "class": "action", "note": "Dance about table, Peter collars" },
+    { "id": "s33_b1", "class": "action", "note": "Mrs Cratchit enters with pudding" },
+    { "id": "s35_b26", "class": "big_action", "note": "Blind-man's buff chase energy" },
+    { "id": "s38_b11", "class": "hold", "note": "Hand points — stillness" },
+    { "id": "s42_b1", "class": "establishing", "note": "Rag-and-bone heap place open" },
+    { "id": "s43_b10", "class": "hold", "note": "Robe spreads like wing" },
+    { "id": "s45_b19", "class": "action", "note": "Hurries meet Bob, sit, tea" },
+    { "id": "s46_b17", "class": "hold", "note": "Hand shakes — micro" },
+    { "id": "s47_b28", "class": "hold", "note": "Boy looks up" },
+    { "id": "s50_b8", "class": "big_action", "note": "Leaps stool, digs Bob into tank" }
+  ]
+}

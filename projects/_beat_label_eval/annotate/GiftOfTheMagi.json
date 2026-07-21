@@ -1,0 +1,533 @@
+{
+  "projectId": "GiftOfTheMagi",
+  "path": "C:\\Users\\budcr\\source\\repos\\FilmStudio\\projects\\GiftOfTheMagi\\source\\screenplay.fountain",
+  "rubric": "See ground_truth/RUBRIC.md \u2014 label for DURATION budgeting, not literary theory.",
+  "labels": [
+    {
+      "id": "s1_b1",
+      "scene": 1,
+      "beat_index": 1,
+      "is_first_silent_in_scene": true,
+      "setting": "INT. FURNISHED FLAT - DAY",
+      "visual_event": "A shabby little room. Worn red carpet. A thin pier-glass between the windows. A battered couch. On a small table: a meager scatter of coins. DELLA, about twenty, slender, in a plain worn dress, counts the money with fierce care. Brown hair pinned up. Cheeks flushed. She finishes. Counts again. And a third time.",
+      "prev_beat": null,
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "Narrator speaks.",
+        "dialogue": "One dollar and eighty-seven cents. That was all. And sixty cents of it was in pe\u2026"
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s1_b6",
+      "scene": 1,
+      "beat_index": 6,
+      "is_first_silent_in_scene": false,
+      "setting": "INT. FURNISHED FLAT - DAY",
+      "visual_event": "Della stares at the coins. Nothing left to do. She flops down on the shabby little couch and howls-raw, helpless sobs.",
+      "prev_beat": {
+        "kind": "dialogue",
+        "visual": "Narrator speaks.",
+        "dialogue": "Three times Della counted it. One dollar and eighty-seven cents. And the next da\u2026"
+      },
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "Narrator speaks.",
+        "dialogue": "Which instigates the moral reflection that life is made up of sobs, sniffles, an\u2026"
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s2_b1",
+      "scene": 2,
+      "beat_index": 1,
+      "is_first_silent_in_scene": true,
+      "setting": "INT. VESTIBULE BELOW - DAY",
+      "visual_event": "A letter-box into which no letter would go. An electric button that will not ring. A card: \u0022MR. JAMES DILLINGHAM YOUNG.\u0022",
+      "prev_beat": null,
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "Narrator speaks.",
+        "dialogue": "A furnished flat at eight dollars per week."
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s3_b1",
+      "scene": 3,
+      "beat_index": 1,
+      "is_first_silent_in_scene": true,
+      "setting": "INT. FURNISHED FLAT - DAY",
+      "visual_event": "Della finishes her cry. She attends to her cheeks with a powder rag. She stands by the window and looks out dully.",
+      "prev_beat": null,
+      "next_beat": null,
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s4_b1",
+      "scene": 4,
+      "beat_index": 1,
+      "is_first_silent_in_scene": true,
+      "setting": "EXT. BACKYARD - DAY (THROUGH WINDOW)",
+      "visual_event": "A gray cat walks a gray fence in a gray backyard.",
+      "prev_beat": null,
+      "next_beat": null,
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s5_b7",
+      "scene": 5,
+      "beat_index": 7,
+      "is_first_silent_in_scene": true,
+      "setting": "INT. FURNISHED FLAT - DAY",
+      "visual_event": "Della whirls from the window and stands before the pier-glass. Her eyes shine brilliantly; the color drains from her face. She pulls down her hair and lets it fall to its full length. It ripples and shines like a cascade of brown waters-below her knee, almost a garment.",
+      "prev_beat": {
+        "kind": "dialogue",
+        "visual": "Narrator speaks.",
+        "dialogue": "of being owned by Jim."
+      },
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "Narrator speaks.",
+        "dialogue": "Now, there were two possessions of the James Dillingham Youngs in which they bot\u2026"
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s5_b10",
+      "scene": 5,
+      "beat_index": 10,
+      "is_first_silent_in_scene": false,
+      "setting": "INT. FURNISHED FLAT - DAY",
+      "visual_event": "She stands very still. A tear or two splashes on the worn red carpet. Then she does the hair up again, nervously, quickly. On goes her old brown jacket. On goes her old brown hat. With a whirl of skirts and the brilliant sparkle still in her eyes, she flutters out the door.",
+      "prev_beat": {
+        "kind": "dialogue",
+        "visual": "Narrator speaks.",
+        "dialogue": "One was Jim\u0027s gold watch that had been his father\u0027s and his grandfather\u0027s. The o\u2026"
+      },
+      "next_beat": null,
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s6_b1",
+      "scene": 6,
+      "beat_index": 1,
+      "is_first_silent_in_scene": true,
+      "setting": "EXT. STREET - DAY",
+      "visual_event": "Della hurries along the cold sidewalk among Christmas shoppers, small and determined in the brown jacket and hat. She stops under a sign: \u0022MME. SOFRONIE. HAIR GOODS OF ALL KINDS.\u0022 She runs up one flight.",
+      "prev_beat": null,
+      "next_beat": null,
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s7_b1",
+      "scene": 7,
+      "beat_index": 1,
+      "is_first_silent_in_scene": true,
+      "setting": "INT. MME. SOFRONIE\u0027S SHOP - DAY",
+      "visual_event": "MADAME SOFRONIE-large, too white, chilly-waits behind the counter. Hardly the romance of \u0022Sofronie.\u0022 Della collects herself, panting.",
+      "prev_beat": null,
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "Della speaks.",
+        "dialogue": "Will you buy my hair?"
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s7_b4",
+      "scene": 7,
+      "beat_index": 4,
+      "is_first_silent_in_scene": false,
+      "setting": "INT. MME. SOFRONIE\u0027S SHOP - DAY",
+      "visual_event": "Della removes the hat. Down ripples the brown cascade. Madame lifts the mass with a practised hand.",
+      "prev_beat": {
+        "kind": "dialogue",
+        "visual": "Madame Sofronie speaks.",
+        "dialogue": "I buy hair. Take yer hat off and let\u0027s have a sight at the looks of it."
+      },
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "Madame Sofronie speaks.",
+        "dialogue": "Twenty dollars."
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s7_b7",
+      "scene": 7,
+      "beat_index": 7,
+      "is_first_silent_in_scene": false,
+      "setting": "INT. MME. SOFRONIE\u0027S SHOP - DAY",
+      "visual_event": "Madame works with scissors and pins. The cascade falls away. Coins clink into Della\u0027s palm-twenty dollars. Della\u0027s eyes are wet and bright. She closes her fist on the money and goes.",
+      "prev_beat": {
+        "kind": "dialogue",
+        "visual": "Della speaks.",
+        "dialogue": "Give it to me quick."
+      },
+      "next_beat": null,
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s8_b1",
+      "scene": 8,
+      "beat_index": 1,
+      "is_first_silent_in_scene": true,
+      "setting": "EXT. CITY STREETS - DAY",
+      "visual_event": "The next two hours on rosy wings. Della ransacks store after store-counters of watches, trays of trinkets-searching, turning things over, shaking her head, pressing on.",
+      "prev_beat": null,
+      "next_beat": null,
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s9_b1",
+      "scene": 9,
+      "beat_index": 1,
+      "is_first_silent_in_scene": true,
+      "setting": "INT. JEWELRY COUNTER - DAY",
+      "visual_event": "She finds it. A platinum fob chain, simple and chaste in design-value by substance alone, not ornament. She knows at once. It is like him. Quietness and value. She pays. Twenty-one dollars. She hurries out with eighty-seven cents left.",
+      "prev_beat": null,
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "Narrator speaks.",
+        "dialogue": "It surely had been made for Jim and no one else. It was even worthy of The Watch\u2026"
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s10_b1",
+      "scene": 10,
+      "beat_index": 1,
+      "is_first_silent_in_scene": true,
+      "setting": "INT. FURNISHED FLAT - LATE AFTERNOON",
+      "visual_event": "Della\u0027s intoxication gives way a little to prudence and reason. She gets out her curling irons, lights the gas, and goes to work repairing the ravages made by generosity added to love. Within forty minutes her head is covered with tiny, close-lying curls-wonderfully like a truant schoolboy. She looks at her reflection in the pier-glass long, carefully, critically.",
+      "prev_beat": null,
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "Della speaks.",
+        "dialogue": "If Jim doesn\u0027t kill me before he takes a second look at me, he\u0027ll say I look lik\u2026"
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s11_b1",
+      "scene": 11,
+      "beat_index": 1,
+      "is_first_silent_in_scene": true,
+      "setting": "INT. FURNISHED FLAT - EVENING",
+      "visual_event": "Seven o\u0027clock. Coffee made. The frying-pan on the back of the stove, hot and ready to cook the chops. Della doubles the fob chain in her hand and sits on the corner of the table near the door he always enters. A step on the stair, away down on the first flight. She turns white for just a moment. Whispers:",
+      "prev_beat": null,
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "Della speaks.",
+        "dialogue": "Please God, make him think I am still pretty."
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s11_b3",
+      "scene": 11,
+      "beat_index": 3,
+      "is_first_silent_in_scene": false,
+      "setting": "INT. FURNISHED FLAT - EVENING",
+      "visual_event": "The door opens. JIM steps in and closes it-thin, very serious, only twenty-two. Needs a new overcoat. Without gloves. He stops inside the door, as immovable as a setter at the scent of quail. His eyes fix upon Della. An expression she cannot read. It terrifies her. Not anger, nor surprise, nor disapproval, nor horror. He simply stares, fixedly. Della wriggles off the table and goes for him.",
+      "prev_beat": {
+        "kind": "dialogue",
+        "visual": "Della speaks.",
+        "dialogue": "Please God, make him think I am still pretty."
+      },
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "Della speaks.",
+        "dialogue": "Jim, darling, don\u0027t look at me that way."
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s11_b11",
+      "scene": 11,
+      "beat_index": 11,
+      "is_first_silent_in_scene": false,
+      "setting": "INT. FURNISHED FLAT - EVENING",
+      "visual_event": "Laboriously-as if he had not arrived at that patent fact yet.",
+      "prev_beat": {
+        "kind": "dialogue",
+        "visual": "Jim speaks.",
+        "dialogue": "You\u0027ve cut off your hair?"
+      },
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "Della speaks.",
+        "dialogue": "Cut it off and sold it. Don\u0027t you like me just as well, anyhow?"
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s11_b14",
+      "scene": 11,
+      "beat_index": 14,
+      "is_first_silent_in_scene": false,
+      "setting": "INT. FURNISHED FLAT - EVENING",
+      "visual_event": "Jim looks about the room curiously.",
+      "prev_beat": {
+        "kind": "dialogue",
+        "visual": "Della speaks.",
+        "dialogue": "I\u0027m me without my hair, ain\u0027t I?"
+      },
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "Jim speaks.",
+        "dialogue": "You say your hair is gone?"
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s11_b20",
+      "scene": 11,
+      "beat_index": 20,
+      "is_first_silent_in_scene": false,
+      "setting": "INT. FURNISHED FLAT - EVENING",
+      "visual_event": "Out of his trance Jim seems quickly to wake. He enfolds his Della.",
+      "prev_beat": {
+        "kind": "dialogue",
+        "visual": "Della speaks.",
+        "dialogue": "Shall I put the chops on, Jim?"
+      },
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "Narrator speaks.",
+        "dialogue": "For ten seconds let us regard with discreet scrutiny some inconsequential object\u2026"
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s11_b25",
+      "scene": 11,
+      "beat_index": 25,
+      "is_first_silent_in_scene": false,
+      "setting": "INT. FURNISHED FLAT - EVENING",
+      "visual_event": "Jim draws a package from his overcoat pocket and throws it upon the table.",
+      "prev_beat": {
+        "kind": "dialogue",
+        "visual": "Narrator speaks.",
+        "dialogue": "This dark assertion will be illuminated later on."
+      },
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "Jim speaks.",
+        "dialogue": "Don\u0027t make any mistake, Dell, about me."
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s11_b30",
+      "scene": 11,
+      "beat_index": 30,
+      "is_first_silent_in_scene": false,
+      "setting": "INT. FURNISHED FLAT - EVENING",
+      "visual_event": "White fingers and nimble tear at the string and paper. An ecstatic scream of joy- -then a quick change to hysterical tears and wails. Jim holds her, all the comforting powers of the lord of the flat. On the table: The Combs. Side and back. Pure tortoise shell, with jewelled rims-just the shade to wear in the beautiful vanished hair.",
+      "prev_beat": {
+        "kind": "dialogue",
+        "visual": "Jim speaks.",
+        "dialogue": "But if you\u0027ll unwrap that package you may see why you had me going a while at fi\u2026"
+      },
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "Narrator speaks.",
+        "dialogue": "Beautiful combs that Della had worshipped long in a Broadway window."
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s11_b34",
+      "scene": 11,
+      "beat_index": 34,
+      "is_first_silent_in_scene": false,
+      "setting": "INT. FURNISHED FLAT - EVENING",
+      "visual_event": "She hugs them to her bosom. At length she looks up with dim eyes and a smile.",
+      "prev_beat": {
+        "kind": "dialogue",
+        "visual": "Narrator speaks.",
+        "dialogue": "And now they were hers, but the tresses that should have adorned the coveted ado\u2026"
+      },
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "Della speaks.",
+        "dialogue": "My hair grows so fast, Jim!"
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s11_b36",
+      "scene": 11,
+      "beat_index": 36,
+      "is_first_silent_in_scene": false,
+      "setting": "INT. FURNISHED FLAT - EVENING",
+      "visual_event": "Then she leaps up like a little singed cat.",
+      "prev_beat": {
+        "kind": "dialogue",
+        "visual": "Della speaks.",
+        "dialogue": "My hair grows so fast, Jim!"
+      },
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "Della speaks.",
+        "dialogue": "Oh, oh!"
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s11_b38",
+      "scene": 11,
+      "beat_index": 38,
+      "is_first_silent_in_scene": false,
+      "setting": "INT. FURNISHED FLAT - EVENING",
+      "visual_event": "Jim has not yet seen his present. She holds it out eagerly upon her open palm. The dull precious metal seems to flash with a reflection of her bright and ardent spirit.",
+      "prev_beat": {
+        "kind": "dialogue",
+        "visual": "Della speaks.",
+        "dialogue": "Oh, oh!"
+      },
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "Della speaks.",
+        "dialogue": "Isn\u0027t it a dandy, Jim? I hunted all over town to find it."
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s11_b42",
+      "scene": 11,
+      "beat_index": 42,
+      "is_first_silent_in_scene": false,
+      "setting": "INT. FURNISHED FLAT - EVENING",
+      "visual_event": "Instead of obeying, Jim tumbles down on the couch and puts his hands under the back of his head and smiles.",
+      "prev_beat": {
+        "kind": "dialogue",
+        "visual": "Della speaks.",
+        "dialogue": "I want to see how it looks on it."
+      },
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "Jim speaks.",
+        "dialogue": "Dell, let\u0027s put our Christmas presents away and keep \u0027em a while."
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s11_b47",
+      "scene": 11,
+      "beat_index": 47,
+      "is_first_silent_in_scene": false,
+      "setting": "INT. FURNISHED FLAT - EVENING",
+      "visual_event": "She stares at him. Then laughter breaks through the tears. She sinks beside him on the couch, the chain in one hand, the combs in the other. He draws her in. The chops wait on the stove. The little flat holds them both.",
+      "prev_beat": {
+        "kind": "dialogue",
+        "visual": "Jim speaks.",
+        "dialogue": "And now suppose you put the chops on."
+      },
+      "next_beat": {
+        "kind": "dialogue",
+        "visual": "Narrator speaks.",
+        "dialogue": "The magi, as you know, were wise men - wonderfully wise men - who brought gifts \u2026"
+      },
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    },
+    {
+      "id": "s11_b57",
+      "scene": 11,
+      "beat_index": 57,
+      "is_first_silent_in_scene": false,
+      "setting": "INT. FURNISHED FLAT - EVENING",
+      "visual_event": "Jim and Della hold each other. The combs and the chain rest between them-useless, priceless.",
+      "prev_beat": {
+        "kind": "dialogue",
+        "visual": "Narrator speaks.",
+        "dialogue": "They are the magi."
+      },
+      "next_beat": null,
+      "gold": {
+        "class": "",
+        "note": ""
+      }
+    }
+  ]
+}

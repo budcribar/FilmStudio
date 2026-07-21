@@ -5,11 +5,28 @@ Follow these unless the user explicitly overrides them for a task.
 
 ---
 
+## Product north star (always decide with this in mind)
+
+**Main goal:** Film Studio produces **excellent** results on **any** input story with **minimal user input**.
+
+Ideal experience: the user **selects a story** (and connection settings if needed) and gets an **excellent film** — without hand-editing fountain, tuning duration regexes, fixing cast swaps, or nursing prompt retries.
+
+Implications for every design/code choice:
+
+1. **Generalize** — mechanisms must work for the next book/cast without product code edits.
+2. **Automate judgment** — prefer AI prompts / metadata / style locks for semantic decisions; avoid never-ending verb/name/outfit lists.
+3. **Deterministic for budgets and safety** — duration caps, model max clip length, 4096 prompt budget, cast-from-plan-only, gates that prevent wasted spend.
+4. **Minimize operator steps (long-term)** — ideal end state is select story → excellent film. **Do not rush full auto-runs** until the manual path is proven: each full pipeline burns real API $; agents and humans should finish **import → strong scene 1** (and a few more titles by hand) before building “one-click produce film.”
+5. **Near-term working mode** — deliberate, manual steps (approve screenplay, cast, rebuild shot plan, gen scene, review, fix product code). Prefer small general pipeline fixes over batch automation or soak scripts that re-gen whole movies.
+6. **Before finishing a task**, ask: *Would a first-time user still get a strong film from a different story without us patching this?* If not, fix the pipeline, not the one project.
+
+---
+
 ## General solutions only (any book / any cast)
 
-**Film Studio is a product for arbitrary picture books and casts — not a Buster app.**
+**Film Studio is a product for arbitrary stories and casts — not a single-title app.**
 
-When debugging or implementing against a sample project (e.g. Buster / Buster2 / NickAndMe):
+When debugging or implementing against a sample project (e.g. Buster / Buster2 / NickAndMe / TellTaleHeartV4):
 
 1. **Ship general mechanisms**, not title-specific branches.
    - Prefer prompts, cast metadata (`source_image_pages`, `description`, `visual_lock`, `wardrobe_always`),
@@ -144,4 +161,4 @@ Slightly more technical language is OK on **About** or a collapsible “For deve
 
 ---
 
-*Last updated: 2026-07-19 — no redundant UI messages; no UI commentary/decision process; general solutions only; UI outcome-only principles.*
+*Last updated: 2026-07-21 — product north star (any story → excellent film); auto-run is long-term; near-term = manual path to good scene 1; general solutions only; UI outcome-only principles.*

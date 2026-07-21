@@ -51,6 +51,25 @@ public sealed class FilmStudioOptions
     public bool EnableReadCaches { get; set; } = true;
 
     /// <summary>
+    /// When true (default), batch-classify silent beat <c>action_class</c> via chat at shot-plan
+    /// time for duration budgeting. On failure: retry then heuristic fallback.
+    /// Env: <c>FilmStudio__ClassifySilentBeatsWithChat=false</c>.
+    /// </summary>
+    public bool ClassifySilentBeatsWithChat { get; set; } = true;
+
+    /// <summary>Chat model for silent beat classify (compare via BeatLabelEval).</summary>
+    public string SilentBeatClassifyModel { get; set; } = "grok-4.5";
+
+    /// <summary>Sampling temperature for silent beat classify (0 = most stable).</summary>
+    public double SilentBeatClassifyTemperature { get; set; } = 0.0;
+
+    /// <summary>Max chat attempts per batch (1 try + retries) before heuristic fallback.</summary>
+    public int SilentBeatClassifyMaxAttempts { get; set; } = 3;
+
+    /// <summary>Base ms for quadratic backoff between classify retries (tests may set 0).</summary>
+    public int SilentBeatClassifyBackoffBaseMs { get; set; } = 400;
+
+    /// <summary>
     /// Optional ThreadPool min-thread ramp for multi-user / LoadSim ready-barrier.
     /// Leave defaults (0) unless soaks show global latency floors under concurrent clients.
     /// Env: <c>FilmStudio__ThreadPool__MinWorkerThreads=64</c>.

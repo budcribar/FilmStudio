@@ -1,0 +1,27 @@
+{
+  "projectId": "Frankenstein",
+  "annotator": "human",
+  "rubric": "ground_truth/RUBRIC.md — duration budgeting",
+  "labels": [
+    { "id": "s1_b1", "class": "establishing", "note": "Arctic cold exterior + Walton walks" },
+    { "id": "s8_b1", "class": "hold", "note": "Face open pleading at letter" },
+    { "id": "s13_b5", "class": "action", "note": "Seals letter" },
+    { "id": "s21_b1", "class": "action", "note": "Carriage pulls away from Geneva" },
+    { "id": "s31_b1", "class": "action", "note": "Presents Elizabeth; Victor receives" },
+    { "id": "s39_b1", "class": "action", "note": "Farewell for university" },
+    { "id": "s46_b4", "class": "hold", "note": "Closes book, resolve hardens" },
+    { "id": "s54_b1", "class": "establishing", "note": "Solitary creation chamber setup" },
+    { "id": "s59_b20", "class": "hold", "note": "Almost imperceptible nod" },
+    { "id": "s62_b9", "class": "hold", "note": "Breathes again after eulogy" },
+    { "id": "s68_b1", "class": "big_action", "note": "Creature climbing precipice superhuman speed" },
+    { "id": "s70_b45", "class": "action", "note": "Court murmur / crowd turn" },
+    { "id": "s77_b1", "class": "action", "note": "Weeks wander, boat at night" },
+    { "id": "s84_b61", "class": "hold", "note": "Rage falters — internal beat" },
+    { "id": "s96_b1", "class": "action", "note": "Agatha opens door to wood pile" },
+    { "id": "s104_b1", "class": "action", "note": "Guitar then knock" },
+    { "id": "s110_b1", "class": "action", "note": "Plants miniature on Justine" },
+    { "id": "s117_b1", "class": "hold", "note": "Pauses over unfinished female — dread stillness" },
+    { "id": "s126_b1", "class": "action", "note": "Paces armed; scream from bedroom" },
+    { "id": "s133_b1", "class": "action", "note": "Ice closes; crew beg Walton" }
+  ]
+}
