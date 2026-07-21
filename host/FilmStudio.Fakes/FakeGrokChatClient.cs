@@ -87,11 +87,66 @@ public sealed class FakeGrokChatClient : IGrokChatClient
 
         // ── Silent beat duration classes ───────────────────────────────────
         if (sys.Contains("DURATION BUDGETING", StringComparison.OrdinalIgnoreCase) ||
-            sys.Contains("action_class", StringComparison.OrdinalIgnoreCase) ||
-            user.Contains("silent beat", StringComparison.OrdinalIgnoreCase) ||
             mode == ChatCallModes.SilentBeatClassify)
         {
             return Task.FromResult(BuildSilentBeatLabelsJson(user));
+        }
+
+        if (mode == ChatCallModes.AmbientSfxClassify ||
+            sys.Contains("ambient bed vs SFX", StringComparison.OrdinalIgnoreCase) ||
+            sys.Contains("ambient BED vs transient SFX", StringComparison.OrdinalIgnoreCase))
+        {
+            return Task.FromResult(BuildIdLabels(user, id =>
+                $$"""{"id":"{{id}}","ambient":"","sfx":""}"""));
+        }
+
+        if (mode == ChatCallModes.OnScreenCastClassify ||
+            sys.Contains("ON CAMERA", StringComparison.OrdinalIgnoreCase))
+        {
+            return Task.FromResult(BuildIdLabels(user, id =>
+                $$"""{"id":"{{id}}","keys":[]}"""));
+        }
+
+        if (mode == ChatCallModes.ExtendCutClassify ||
+            sys.Contains("hard_cut vs extend", StringComparison.OrdinalIgnoreCase))
+        {
+            return Task.FromResult(BuildIdLabels(user, id =>
+            {
+                var cls = id.EndsWith("_b1") ? "hard_cut" : "extend";
+                return $$"""{"id":"{{id}}","class":"{{cls}}"}""";
+            }));
+        }
+
+        if (mode == ChatCallModes.SpeciesKindClassify ||
+            sys.Contains("animal|human|other", StringComparison.OrdinalIgnoreCase))
+        {
+            // key-based payload
+            var labels = new List<string>();
+            foreach (Match m in Regex.Matches(user, @"""key""\s*:\s*""([^""]+)"""))
+            {
+                var key = m.Groups[1].Value;
+                var cls = key.Contains("Narrator", StringComparison.OrdinalIgnoreCase) ||
+                          key.Contains("Officer", StringComparison.OrdinalIgnoreCase) ||
+                          key.Contains("Man", StringComparison.OrdinalIgnoreCase) ||
+                          key.Contains("Mom", StringComparison.OrdinalIgnoreCase) ||
+                          key.Contains("Dad", StringComparison.OrdinalIgnoreCase)
+                    ? "human"
+                    : "other";
+                labels.Add($$"""{"key":"{{key}}","class":"{{cls}}"}""");
+            }
+            return Task.FromResult("""{"labels":[""" + string.Join(",", labels) + "]}");
+        }
+
+        if (mode == ChatCallModes.PlateRankClassify ||
+            sys.Contains("book image basenames", StringComparison.OrdinalIgnoreCase))
+        {
+            var names = Regex.Matches(user, @"""([^""]+\.(?:png|jpe?g|webp))""", RegexOptions.IgnoreCase)
+                .Select(m => m.Groups[1].Value)
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .Take(3)
+                .Select(n => "\"" + n.Replace("\\", "\\\\") + "\"")
+                .ToList();
+            return Task.FromResult("""{"ranked":[""" + string.Join(",", names) + "]}");
         }
 
         // ── Minimal Stage1-shaped stub ─────────────────────────────────────
@@ -113,16 +168,18 @@ public sealed class FakeGrokChatClient : IGrokChatClient
     }
 
     /// <summary>Echo beat ids with deterministic classes for fakes/CI (heuristic-shaped).</summary>
-    private static string BuildSilentBeatLabelsJson(string user)
+    private static string BuildSilentBeatLabelsJson(string user) =>
+        BuildIdLabels(user, id =>
+        {
+            var cls = Regex.IsMatch(id, @"_b1$") ? "establishing" : "action";
+            return $$"""{"id":"{{id}}","class":"{{cls}}","reason":"fake"}""";
+        });
+
+    private static string BuildIdLabels(string user, Func<string, string> labelForId)
     {
         var labels = new List<string>();
         foreach (Match m in Regex.Matches(user, @"""id""\s*:\s*""([^""]+)"""))
-        {
-            var id = m.Groups[1].Value;
-            // Stable fake: first silent in scene → establishing; else action
-            var cls = Regex.IsMatch(id, @"_b1$") ? "establishing" : "action";
-            labels.Add($$"""{"id":"{{id}}","class":"{{cls}}","reason":"fake"}""");
-        }
+            labels.Add(labelForId(m.Groups[1].Value));
         return """{"labels":[""" + string.Join(",", labels) + "]}";
     }
 

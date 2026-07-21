@@ -1,0 +1,197 @@
+{
+  "projectId": "TellTaleHeartV4",
+  "labels": [
+    {
+      "Id": "s1_b1",
+      "visual": "A bare, lamplit chamber. Close walls. A plain wooden chair faces us. NARRATOR sits in it - a lean man of middle years, pale skin, dark hair disordered, waistcoat unbuttoned at the throat, eyes too bri…",
+      "heuristic_ambient": "",
+      "heuristic_sfx": "",
+      "gold_ambient": "",
+      "gold_sfx": ""
+    },
+    {
+      "Id": "s1_b5",
+      "visual": "Narrator speaks.",
+      "heuristic_ambient": "",
+      "heuristic_sfx": "",
+      "gold_ambient": "",
+      "gold_sfx": ""
+    },
+    {
+      "Id": "s1_b10",
+      "visual": "Narrator (CONT'D).",
+      "heuristic_ambient": "",
+      "heuristic_sfx": "",
+      "gold_ambient": "",
+      "gold_sfx": ""
+    },
+    {
+      "Id": "s2_b1",
+      "visual": "OLD MAN sits by a shuttered window - elderly, thin, white hair, dressing gown. He turns. One pale blue eye shows a milky film: the vulture eye.",
+      "heuristic_ambient": "",
+      "heuristic_sfx": "",
+      "gold_ambient": "",
+      "gold_sfx": ""
+    },
+    {
+      "Id": "s2_b6",
+      "visual": "Narrator speaks.",
+      "heuristic_ambient": "",
+      "heuristic_sfx": "",
+      "gold_ambient": "",
+      "gold_sfx": ""
+    },
+    {
+      "Id": "s3_b4",
+      "visual": "Narrator speaks.",
+      "heuristic_ambient": "",
+      "heuristic_sfx": "",
+      "gold_ambient": "",
+      "gold_sfx": ""
+    },
+    {
+      "Id": "s4_b5",
+      "visual": "Narrator speaks.",
+      "heuristic_ambient": "",
+      "heuristic_sfx": "",
+      "gold_ambient": "",
+      "gold_sfx": ""
+    },
+    {
+      "Id": "s6_b2",
+      "visual": "Narrator speaks.",
+      "heuristic_ambient": "",
+      "heuristic_sfx": "",
+      "gold_ambient": "",
+      "gold_sfx": ""
+    },
+    {
+      "Id": "s6_b7",
+      "visual": "Narrator speaks.",
+      "heuristic_ambient": "",
+      "heuristic_sfx": "",
+      "gold_ambient": "",
+      "gold_sfx": ""
+    },
+    {
+      "Id": "s7_b1",
+      "visual": "Narrator speaks.",
+      "heuristic_ambient": "",
+      "heuristic_sfx": "",
+      "gold_ambient": "",
+      "gold_sfx": ""
+    },
+    {
+      "Id": "s9_b1",
+      "visual": "On the bed, OLD MAN stirs suddenly, as if startled. NARRATOR's head is already in. He does not draw back. He pushes the door on steadily, steadily. Black as pitch. His thumb slips on the tin fastening…",
+      "heuristic_ambient": "",
+      "heuristic_sfx": "click",
+      "gold_ambient": "",
+      "gold_sfx": ""
+    },
+    {
+      "Id": "s10_b2",
+      "visual": "Narrator speaks.",
+      "heuristic_ambient": "",
+      "heuristic_sfx": "",
+      "gold_ambient": "",
+      "gold_sfx": ""
+    },
+    {
+      "Id": "s11_b2",
+      "visual": "Narrator speaks.",
+      "heuristic_ambient": "",
+      "heuristic_sfx": "",
+      "gold_ambient": "",
+      "gold_sfx": ""
+    },
+    {
+      "Id": "s11_b6",
+      "visual": "Old Man (whispering to himself).",
+      "heuristic_ambient": "",
+      "heuristic_sfx": "",
+      "gold_ambient": "",
+      "gold_sfx": ""
+    },
+    {
+      "Id": "s11_b11",
+      "visual": "Narrator speaks.",
+      "heuristic_ambient": "",
+      "heuristic_sfx": "",
+      "gold_ambient": "",
+      "gold_sfx": ""
+    },
+    {
+      "Id": "s11_b15",
+      "visual": "A low, dull, quick sound - such as a watch makes when enveloped in cotton. The beating of the OLD MAN's heart. It quickens. Louder. Louder. NARRATOR holds the lantern motionless. Scarcely breathes. Th…",
+      "heuristic_ambient": "",
+      "heuristic_sfx": "",
+      "gold_ambient": "heartbeat",
+      "gold_sfx": ""
+    },
+    {
+      "Id": "s11_b20",
+      "visual": "He refrains still - some minutes longer - standing frozen while the beat fills the dark.",
+      "heuristic_ambient": "",
+      "heuristic_sfx": "",
+      "gold_ambient": "rain",
+      "gold_sfx": ""
+    },
+    {
+      "Id": "s11_b24",
+      "visual": "With a loud yell NARRATOR throws open the lantern and leaps into the room. OLD MAN shrieks once - once only. NARRATOR drags him to the floor and pulls the heavy bed over him. Then stands, smiling gail…",
+      "heuristic_ambient": "",
+      "heuristic_sfx": "",
+      "gold_ambient": "",
+      "gold_sfx": ""
+    },
+    {
+      "Id": "s13_b2",
+      "visual": "Narrator (soft, delighted).",
+      "heuristic_ambient": "",
+      "heuristic_sfx": "",
+      "gold_ambient": "",
+      "gold_sfx": ""
+    },
+    {
+      "Id": "s14_b3",
+      "visual": "Officer Reynolds speaks.",
+      "heuristic_ambient": "",
+      "heuristic_sfx": "",
+      "gold_ambient": "",
+      "gold_sfx": ""
+    },
+    {
+      "Id": "s16_b1",
+      "visual": "NARRATOR ushers them in. Shows the old man's treasures - secure, undisturbed. In the enthusiasm of his confidence he brings chairs and places them. He sets his own seat deliberately upon the very boar…",
+      "heuristic_ambient": "",
+      "heuristic_sfx": "",
+      "gold_ambient": "",
+      "gold_sfx": ""
+    },
+    {
+      "Id": "s16_b5",
+      "visual": "Narrator speaks.",
+      "heuristic_ambient": "",
+      "heuristic_sfx": "",
+      "gold_ambient": "",
+      "gold_sfx": ""
+    },
+    {
+      "Id": "s16_b10",
+      "visual": "Narrator (CONT'D).",
+      "heuristic_ambient": "",
+      "heuristic_sfx": "",
+      "gold_ambient": "",
+      "gold_sfx": ""
+    },
+    {
+      "Id": "s16_b14",
+      "visual": "He cannot bear the hypocritical smiles. The beat pounds - again - louder - louder - louder - louder!",
+      "heuristic_ambient": "",
+      "heuristic_sfx": "",
+      "gold_ambient": "",
+      "gold_sfx": ""
+    }
+  ]
+}

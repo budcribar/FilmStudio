@@ -191,7 +191,7 @@ else
 
 @if (_job is not null &&
      (_job.Status is "running" or "done" or "error" or "cancelled") &&
-     (_job.Kind is "remux" or "scene" or "batch" or "book_prepare" or "stage1" or "stage2"))
+     (_job.Kind is "remux" or "scene" or "batch" or "book_prepare" or "book_import" or "stage1" or "stage2"))
 {
     <div class="card mb-3 border-@(_job.Status == "running" ? "primary" : _job.Status == "error" ? "danger" : "secondary")">
         <div class="card-body py-2">

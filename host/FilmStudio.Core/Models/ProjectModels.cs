@@ -294,6 +294,22 @@ public sealed class StartBookPrepareRequest
     public string VisionModel { get; set; } = "grok-4.5";
 }
 
+/// <summary>
+/// Import pipeline job: optional book prepare (PDF/OCR) + book→Fountain adapt.
+/// Prefer this over sync from-book for long novels.
+/// </summary>
+public sealed class StartBookImportRequest
+{
+    public string ProjectId { get; set; } = "";
+    /// <summary>When true, skip PDF/OCR and only run book→Fountain (book_full.txt must exist).</summary>
+    public bool SkipPrepare { get; set; }
+    public bool ForceExtract { get; set; } = true;
+    public bool ForceVision { get; set; }
+    public bool AutoVision { get; set; } = true;
+    public string VisionModel { get; set; } = "grok-4.5";
+    public string Model { get; set; } = "grok-4.5";
+}
+
 /// <summary>POST /api/projects — create a new project folder.</summary>
 public sealed class CreateProjectRequest
 {

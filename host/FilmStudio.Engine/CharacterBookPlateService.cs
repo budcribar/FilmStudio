@@ -17,16 +17,19 @@ public sealed class CharacterBookPlateService
 {
     private readonly ProjectStore _projects;
     private readonly IGrokVisionClient _vision;
+    private readonly PlateRankClassifier? _plateRank;
     private readonly ILogger<CharacterBookPlateService> _log;
 
     public CharacterBookPlateService(
         ProjectStore projects,
         IGrokVisionClient vision,
-        ILogger<CharacterBookPlateService> log)
+        ILogger<CharacterBookPlateService> log,
+        PlateRankClassifier? plateRank = null)
     {
         _projects = projects;
         _vision = vision;
         _log = log;
+        _plateRank = plateRank;
     }
 
     public async Task<FilmStudio.Core.Models.AttachCharacterPlatesResult> AttachAsync(
@@ -168,14 +171,16 @@ public sealed class CharacterBookPlateService
                 onProgress?.Invoke(
                     $"{emptyCast} cast member(s) still empty — filling from pages / hero heuristic…");
                 method += "+heuristic_fill";
-                ApplyHeuristicScores(scores, inventory, seeds, onlyCharKey, onlyEmpty: true, heroOnly: false);
+                await ApplyHeuristicScoresAsync(scores, inventory, seeds, onlyCharKey, onlyEmpty: true, heroOnly: false, ct)
+                    .ConfigureAwait(false);
             }
         }
         else
         {
             method = fromPages > 0 ? "source_image_pages+heuristic" : "heuristic";
             onProgress?.Invoke("Heuristic plate sort (cast pages + illustration ranking)…");
-            ApplyHeuristicScores(scores, inventory, seeds, onlyCharKey, onlyEmpty: fromPages > 0);
+            await ApplyHeuristicScoresAsync(scores, inventory, seeds, onlyCharKey, onlyEmpty: fromPages > 0, ct: ct)
+                .ConfigureAwait(false);
         }
 
         result.Method = method;
@@ -387,13 +392,14 @@ public sealed class CharacterBookPlateService
         return cast;
     }
 
-    private static void ApplyHeuristicScores(
+    private async Task ApplyHeuristicScoresAsync(
         Dictionary<string, List<(BookImageRow Row, double Score)>> scores,
         List<BookImageRow> inventory,
         JsonObject seeds,
         string? onlyCharKey,
         bool onlyEmpty = false,
-        bool heroOnly = false)
+        bool heroOnly = false,
+        CancellationToken ct = default)
     {
         var index = 0;
         foreach (var (key, seedNode) in seeds)
@@ -420,8 +426,6 @@ public sealed class CharacterBookPlateService
                 continue;
             }
 
-            var token = key.Replace("Character_", "", StringComparison.OrdinalIgnoreCase).ToLowerInvariant();
-            var given = (seed["canonical_given_name"]?.GetValue<string>() ?? "").ToLowerInvariant();
             var desc = (seed["description"]?.GetValue<string>() ?? "").ToLowerInvariant();
             // Hero = first cast or primary animal species — not humans whose text mentions the animal medium
             var isHero = index == 0 ||
@@ -443,12 +447,14 @@ public sealed class CharacterBookPlateService
             {
                 picks = RowsForPages(inventory, pages);
                 if (picks.Count == 0)
-                    picks = HeuristicPicks(inventory, key, seed, index, nameHitsOnly: !isHero);
+                    picks = await HeuristicPicksRankedAsync(inventory, key, seed, index, nameHitsOnly: !isHero, ct)
+                        .ConfigureAwait(false);
             }
             else
             {
                 // Non-hero: only filename/name hits — never dump generic early pages onto Mom/Dad
-                picks = HeuristicPicks(inventory, key, seed, index, nameHitsOnly: !isHero);
+                picks = await HeuristicPicksRankedAsync(inventory, key, seed, index, nameHitsOnly: !isHero, ct)
+                    .ConfigureAwait(false);
             }
 
             foreach (var p in picks.Where(r => !IsLikelyTextLayout(r)))
@@ -859,10 +865,45 @@ public sealed class CharacterBookPlateService
                      CharacterVisualTextScrubber.IsPrimarilyAnimalCharacter(
                          key, "", desc, "", "cat");
 
-        if (nameHits.Count > 0) return nameHits.Take(3).ToList();
-        if (nameHitsOnly) return new List<BookImageRow>(); // supporting cast: no plate is correct
-        if (isHero) return early.Take(3).ToList();
-        return new List<BookImageRow>(); // never invent plates for supporting cast
+        List<BookImageRow> baseline;
+        if (nameHits.Count > 0) baseline = nameHits.Take(8).ToList();
+        else if (nameHitsOnly) return new List<BookImageRow>(); // supporting cast: no plate is correct
+        else if (isHero) baseline = early.Take(8).ToList();
+        else return new List<BookImageRow>(); // never invent plates for supporting cast
+
+        // Optional chat re-rank of basenames (sync path keeps baseline; async attach uses RankHeuristicAsync)
+        return baseline.Take(3).ToList();
+    }
+
+    /// <summary>Async wrapper: heuristic candidates then optional chat re-rank.</summary>
+    private async Task<List<BookImageRow>> HeuristicPicksRankedAsync(
+        List<BookImageRow> inventory,
+        string key,
+        JsonObject seed,
+        int index,
+        bool nameHitsOnly = false,
+        CancellationToken ct = default)
+    {
+        var baseline = HeuristicPicks(inventory, key, seed, index, nameHitsOnly);
+        if (_plateRank is null || !_plateRank.IsEnabled || baseline.Count <= 1)
+            return baseline;
+        var names = baseline.Select(r => r.Name).ToList();
+        var desc = seed["description"]?.GetValue<string>() ?? "";
+        var (ranked, usedAi) = await _plateRank.RankAsync(key, desc, names, ct).ConfigureAwait(false);
+        if (!usedAi || ranked.Count == 0) return baseline.Take(3).ToList();
+        var byName = baseline.ToDictionary(r => r.Name, StringComparer.OrdinalIgnoreCase);
+        var ordered = new List<BookImageRow>();
+        foreach (var n in ranked)
+        {
+            if (byName.TryGetValue(n, out var row))
+                ordered.Add(row);
+        }
+        foreach (var row in baseline)
+        {
+            if (!ordered.Any(o => o.Name.Equals(row.Name, StringComparison.OrdinalIgnoreCase)))
+                ordered.Add(row);
+        }
+        return ordered.Take(3).ToList();
     }
 
     private static List<BookImageRow> RankIllustrationFirst(IEnumerable<BookImageRow> rows) =>

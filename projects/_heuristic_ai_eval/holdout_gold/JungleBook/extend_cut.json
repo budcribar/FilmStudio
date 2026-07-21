@@ -1,0 +1,172 @@
+{
+  "labels": [
+    {
+      "Id": "s1_b1",
+      "visual": "Moon over teak and grass. A warm wind. Far off, a kite wheels home.",
+      "prev": "",
+      "heuristic": "hard_cut",
+      "gold": "hard_cut"
+    },
+    {
+      "Id": "s2_b27",
+      "visual": "Mother Wolf speaks.",
+      "prev": "Mother Wolf speaks.",
+      "heuristic": "extend",
+      "gold": "extend"
+    },
+    {
+      "Id": "s6_b6",
+      "visual": "Father Wolf mouths the child as gently as an egg, jaws on the back, not a scratch, and lays him among the cubs.",
+      "prev": "Mother Wolf speaks.",
+      "heuristic": "extend",
+      "gold": "extend"
+    },
+    {
+      "Id": "s6_b37",
+      "visual": "Shere Khan speaks.",
+      "prev": "Shere Khan speaks.",
+      "heuristic": "extend",
+      "gold": "extend"
+    },
+    {
+      "Id": "s7_b19",
+      "visual": "Bagheera speaks.",
+      "prev": "Bagheera speaks.",
+      "heuristic": "extend",
+      "gold": "extend"
+    },
+    {
+      "Id": "s8_b23",
+      "visual": "Baloo speaks.",
+      "prev": "Baloo lifts his muzzle.",
+      "heuristic": "extend",
+      "gold": "extend"
+    },
+    {
+      "Id": "s8_b54",
+      "visual": "Bagheera speaks.",
+      "prev": "Bagheera speaks.",
+      "heuristic": "extend",
+      "gold": "extend"
+    },
+    {
+      "Id": "s8_b85",
+      "visual": "Baloo speaks.",
+      "prev": "Baloo speaks.",
+      "heuristic": "extend",
+      "gold": "extend"
+    },
+    {
+      "Id": "s12_b2",
+      "visual": "Baloo speaks.",
+      "prev": "KAA-thirty feet of rock-python, newly changed coat dull and loose-lies half in sun, half in shadow. \u2026",
+      "heuristic": "extend",
+      "gold": "extend"
+    },
+    {
+      "Id": "s17_b8",
+      "visual": "He licks his lips, looking at the monkey-dead on the terrace and round the tank.",
+      "prev": "Bagheera speaks.",
+      "heuristic": "extend",
+      "gold": "extend"
+    },
+    {
+      "Id": "s17_b39",
+      "visual": "Bandar-log speaks.",
+      "prev": "Kaa speaks.",
+      "heuristic": "extend",
+      "gold": "extend"
+    },
+    {
+      "Id": "s18_b23",
+      "visual": "Bagheera speaks.",
+      "prev": "Bagheera speaks.",
+      "heuristic": "extend",
+      "gold": "extend"
+    },
+    {
+      "Id": "s22_b6",
+      "visual": "Messua speaks.",
+      "prev": "MESSUA-kind-eyed village woman-pushes through.",
+      "heuristic": "extend",
+      "gold": "extend"
+    },
+    {
+      "Id": "s26_b20",
+      "visual": "A stone hits MOWGLI in the mouth. He laughs a short, ugly laugh. Blood on his lip.",
+      "prev": "Villagers speaks.",
+      "heuristic": "extend",
+      "gold": "extend"
+    },
+    {
+      "Id": "s29_b12",
+      "visual": "The old call rolls into the jungle. Wolves answer from habit. They limp in-lame from traps, shot-wounded, mangy from bad food. Many places in the circle empty. \u2026",
+      "prev": "Akela speaks.",
+      "heuristic": "hard_cut",
+      "gold": "hard_cut"
+    },
+    {
+      "Id": "s35_b5",
+      "visual": "Kotick speaks.",
+      "prev": "Kotick speaks.",
+      "heuristic": "extend",
+      "gold": "extend"
+    },
+    {
+      "Id": "s38_b1",
+      "visual": "Northern Lights wink and flash through the fog. KOTICK climbs a bare rock and looks down on the scattered nurseries and the torn and bleeding seals.",
+      "prev": "",
+      "heuristic": "hard_cut",
+      "gold": "hard_cut"
+    },
+    {
+      "Id": "s44_b8",
+      "visual": "RIKKI-TIKKI snuffs at the boy\u0027s ear, climbs down, sits rubbing his nose.",
+      "prev": "Teddy speaks.",
+      "heuristic": "extend",
+      "gold": "extend"
+    },
+    {
+      "Id": "s50_b4",
+      "visual": "Narrator speaks.",
+      "prev": "Narrator speaks.",
+      "heuristic": "extend",
+      "gold": "extend"
+    },
+    {
+      "Id": "s55_b3",
+      "visual": "Little Toomai speaks.",
+      "prev": "Little Toomai speaks.",
+      "heuristic": "extend",
+      "gold": "extend"
+    },
+    {
+      "Id": "s58_b9",
+      "visual": "Machua Appa speaks.",
+      "prev": "Machua Appa speaks.",
+      "heuristic": "extend",
+      "gold": "extend"
+    },
+    {
+      "Id": "s61_b13",
+      "visual": "Machua Appa speaks.",
+      "prev": "Machua Appa speaks.",
+      "heuristic": "extend",
+      "gold": "extend"
+    },
+    {
+      "Id": "s64_b5",
+      "visual": "Baggage Camel speaks.",
+      "prev": "Baggage Camel speaks.",
+      "heuristic": "extend",
+      "gold": "extend"
+    },
+    {
+      "Id": "s64_b36",
+      "visual": "Young Mule speaks.",
+      "prev": "The gun-bullocks lie down together and chew the cud. Young Mule huddles close to Billy.",
+      "heuristic": "extend",
+      "gold": "extend"
+    }
+  ]
+}

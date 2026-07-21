@@ -1427,6 +1427,36 @@ public sealed class EngineApiClient
         }
     }
 
+    /// <summary>Background prepare + book→Fountain (or adapt-only when <paramref name="skipPrepare"/>).</summary>
+    public async Task StartBookImportAsync(
+        string projectId,
+        bool skipPrepare = false,
+        bool forceExtract = true,
+        bool forceVision = false,
+        bool autoVision = true,
+        string model = "grok-4.5",
+        CancellationToken ct = default)
+    {
+        using var resp = await _http.PostAsJsonAsync(
+            "/api/jobs/book-import",
+            new StartBookImportRequest
+            {
+                ProjectId = projectId,
+                SkipPrepare = skipPrepare,
+                ForceExtract = forceExtract,
+                ForceVision = forceVision,
+                AutoVision = autoVision,
+                Model = model,
+            },
+            JsonOpts,
+            ct);
+        if (!resp.IsSuccessStatusCode)
+        {
+            var err = await resp.Content.ReadAsStringAsync(ct);
+            throw new InvalidOperationException(TryError(err) ?? resp.ReasonPhrase);
+        }
+    }
+
     public async Task LockCharacterVariantAsync(
         string projectId,
         string charKey,

@@ -69,6 +69,11 @@ builder.Services.AddSingleton<CastFromScreenplayService>();
 builder.Services.AddSingleton<BookPrepareService>();
 builder.Services.AddSingleton<Stage1Service>();
 builder.Services.AddSingleton<SilentBeatActionClassifier>();
+builder.Services.AddSingleton<AmbientSfxClassifier>();
+builder.Services.AddSingleton<OnScreenCastClassifier>();
+builder.Services.AddSingleton<ExtendCutClassifier>();
+builder.Services.AddSingleton<SpeciesKindClassifier>();
+builder.Services.AddSingleton<PlateRankClassifier>();
 builder.Services.AddSingleton<Stage2PlannerService>();
 builder.Services.AddSingleton<FfmpegRemuxService>();
 builder.Services.AddSingleton<IFfmpegRemux>(sp => sp.GetRequiredService<FfmpegRemuxService>());
@@ -1505,6 +1510,29 @@ app.MapPost("/api/jobs/book-prepare", async (StartBookPrepareRequest body, FilmJ
         {
             ok = true,
             message = "Queued book prepare (C# PDF extract / vision OCR)",
+            job,
+        });
+    }
+    catch (Exception ex)
+    {
+        return JobStartError(ex, jobService);
+    }
+});
+
+/// <summary>Prepare (optional) + book→Fountain draft as one background job.</summary>
+app.MapPost("/api/jobs/book-import", async (StartBookImportRequest body, FilmJobService jobService) =>
+{
+    try
+    {
+        if (string.IsNullOrWhiteSpace(body.ProjectId))
+            return Results.BadRequest(new { ok = false, error = "projectId required" });
+        var job = await jobService.StartBookImportAsync(body);
+        return Results.Accepted($"/api/jobs/{job.JobId}", new
+        {
+            ok = true,
+            message = body.SkipPrepare
+                ? "Queued screenplay draft from book"
+                : "Queued book import (prepare + screenplay)",
             job,
         });
     }

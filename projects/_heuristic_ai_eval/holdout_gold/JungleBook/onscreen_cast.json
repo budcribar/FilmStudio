@@ -1,0 +1,198 @@
+{
+  "labels": [
+    {
+      "Id": "s1_b1",
+      "visual": "Moon over teak and grass. A warm wind. Far off, a kite wheels home.",
+      "heuristic_keys": [],
+      "gold_keys": []
+    },
+    {
+      "Id": "s2_b33",
+      "visual": "He slips out.",
+      "heuristic_keys": [],
+      "gold_keys": []
+    },
+    {
+      "Id": "s6_b18",
+      "visual": "Shere Khan speaks.",
+      "heuristic_keys": [
+        "Character_Shere_Khan"
+      ],
+      "gold_keys": [
+        "Character_Shere_Khan"
+      ]
+    },
+    {
+      "Id": "s7_b6",
+      "visual": "A muffled roar from behind the rocks-SHERE KHAN.",
+      "heuristic_keys": [
+        "Character_Shere_Khan"
+      ],
+      "gold_keys": [
+        "Character_Shere_Khan"
+      ]
+    },
+    {
+      "Id": "s8_b16",
+      "visual": "Baloo speaks.",
+      "heuristic_keys": [
+        "Character_Baloo"
+      ],
+      "gold_keys": [
+        "Character_Baloo"
+      ]
+    },
+    {
+      "Id": "s8_b54",
+      "visual": "Bagheera speaks.",
+      "heuristic_keys": [
+        "Character_Bagheera"
+      ],
+      "gold_keys": [
+        "Character_Bagheera"
+      ]
+    },
+    {
+      "Id": "s8_b91",
+      "visual": "A fresh shower. Baloo and Bagheera trot away, taking Mowgli with them.",
+      "heuristic_keys": [
+        "Character_Bagheera",
+        "Character_Baloo",
+        "Character_Mowgli"
+      ],
+      "gold_keys": [
+        "Character_Bagheera",
+        "Character_Baloo",
+        "Character_Mowgli"
+      ]
+    },
+    {
+      "Id": "s15_b2",
+      "visual": "Bagheera speaks.",
+      "heuristic_keys": [
+        "Character_Bagheera"
+      ],
+      "gold_keys": [
+        "Character_Bagheera"
+      ]
+    },
+    {
+      "Id": "s17_b26",
+      "visual": "Mowgli speaks.",
+      "heuristic_keys": [
+        "Character_Mowgli"
+      ],
+      "gold_keys": [
+        "Character_Mowgli"
+      ]
+    },
+    {
+      "Id": "s18_b16",
+      "visual": "Bagheera speaks.",
+      "heuristic_keys": [
+        "Character_Bagheera"
+      ],
+      "gold_keys": [
+        "Character_Bagheera"
+      ]
+    },
+    {
+      "Id": "s22_b6",
+      "visual": "Messua speaks.",
+      "heuristic_keys": [
+        "Character_Messua"
+      ],
+      "gold_keys": [
+        "Character_Messua"
+      ]
+    },
+    {
+      "Id": "s26_b26",
+      "visual": "Mowgli speaks.",
+      "heuristic_keys": [
+        "Character_Mowgli"
+      ],
+      "gold_keys": [
+        "Character_Mowgli"
+      ]
+    },
+    {
+      "Id": "s29_b24",
+      "visual": "Gray Brother speaks.",
+      "heuristic_keys": [
+        "Character_Gray_Brother"
+      ],
+      "gold_keys": [
+        "Character_Gray_Brother"
+      ]
+    },
+    {
+      "Id": "s37_b14",
+      "visual": "He has no time to change his mind. KOTICK\u0027s head is out; teeth sink in the blubber of the young seal\u0027s neck. KOTICK throws himself back on his haunches, hauls his enemy down the be\u2026",
+      "heuristic_keys": [
+        "Character_Kotick",
+        "Character_Young_Seal"
+      ],
+      "gold_keys": [
+        "Character_Kotick",
+        "Character_Young_Seal"
+      ]
+    },
+    {
+      "Id": "s44_b1",
+      "visual": "TEDDY\u0027S FATHER, a big Englishman, picks RIKKI-TIKKI up between finger and thumb.",
+      "heuristic_keys": [
+        "Character_Teddy"
+      ],
+      "gold_keys": [
+        "Character_Teddy"
+      ]
+    },
+    {
+      "Id": "s50_b4",
+      "visual": "Narrator speaks.",
+      "heuristic_keys": [
+        "Character_Narrator"
+      ],
+      "gold_keys": [
+        "Character_Narrator"
+      ]
+    },
+    {
+      "Id": "s56_b5",
+      "visual": "Little Toomai speaks.",
+      "heuristic_keys": [
+        "Character_Little_Toomai"
+      ],
+      "gold_keys": [
+        "Character_Little_Toomai"
+      ]
+    },
+    {
+      "Id": "s58_b21",
+      "visual": "Petersen Sahib speaks.",
+      "heuristic_keys": [
+        "Character_Petersen_Sahib"
+      ],
+      "gold_keys": [
+        "Character_Petersen_Sahib"
+      ]
+    },
+    {
+      "Id": "s62_b8",
+      "visual": "Wheat he gave to rich folk, millet to the poor, Broken scraps for holy men that beg from door to door; Battle to the tiger, carrion to the kite, And rags and bones to wicked wolves\u2026",
+      "heuristic_keys": [],
+      "gold_keys": []
+    },
+    {
+      "Id": "s64_b29",
+      "visual": "Billy speaks.",
+      "heuristic_keys": [
+        "Character_Billy"
+      ],
+      "gold_keys": [
+        "Character_Billy"
+      ]
+    }
+  ]
+}

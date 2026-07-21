@@ -43,15 +43,27 @@ public sealed class Stage2PlannerService
     private readonly ProjectStore _projects;
     private readonly ILogger<Stage2PlannerService> _log;
     private readonly SilentBeatActionClassifier? _silentBeatClassifier;
+    private readonly AmbientSfxClassifier? _ambientSfxClassifier;
+    private readonly OnScreenCastClassifier? _onScreenCastClassifier;
+    private readonly ExtendCutClassifier? _extendCutClassifier;
+    private readonly SpeciesKindClassifier? _speciesKindClassifier;
 
     public Stage2PlannerService(
         ProjectStore projects,
         ILogger<Stage2PlannerService> log,
-        SilentBeatActionClassifier? silentBeatClassifier = null)
+        SilentBeatActionClassifier? silentBeatClassifier = null,
+        AmbientSfxClassifier? ambientSfxClassifier = null,
+        OnScreenCastClassifier? onScreenCastClassifier = null,
+        ExtendCutClassifier? extendCutClassifier = null,
+        SpeciesKindClassifier? speciesKindClassifier = null)
     {
         _projects = projects;
         _log = log;
         _silentBeatClassifier = silentBeatClassifier;
+        _ambientSfxClassifier = ambientSfxClassifier;
+        _onScreenCastClassifier = onScreenCastClassifier;
+        _extendCutClassifier = extendCutClassifier;
+        _speciesKindClassifier = speciesKindClassifier;
     }
 
     public async Task<Stage2PlanResult> PlanAsync(
@@ -82,13 +94,39 @@ public sealed class Stage2PlannerService
         // Overlay plate/voice edits from cast_seeds.json when present
         MergeCastSeedsOverlay(_projects, projectId, stage1);
 
-        // Duration classes: chat preferred, retry, then heuristic (eval: ~86% vs ~47% baseline)
+        // AI enrichments (each: chat preferred → retry → heuristic fallback)
         SilentBeatClassifyResult? classifyMeta = null;
+        var enrichMeta = new Dictionary<string, object?>();
         if (_silentBeatClassifier is not null)
         {
             classifyMeta = await _silentBeatClassifier
                 .ClassifyStage1Async(stage1, onProgress, ct)
                 .ConfigureAwait(false);
+            enrichMeta["silent_beat"] = classifyMeta.ToMetaDict();
+        }
+        if (_ambientSfxClassifier is not null)
+        {
+            var amb = await _ambientSfxClassifier.ClassifyStage1Async(stage1, onProgress, ct)
+                .ConfigureAwait(false);
+            enrichMeta["ambient_sfx"] = amb.ToMetaDict();
+        }
+        if (_speciesKindClassifier is not null)
+        {
+            var sp = await _speciesKindClassifier.ClassifyStage1Async(stage1, onProgress, ct)
+                .ConfigureAwait(false);
+            enrichMeta["species_kind"] = sp.ToMetaDict();
+        }
+        if (_onScreenCastClassifier is not null)
+        {
+            var osc = await _onScreenCastClassifier.ClassifyStage1Async(stage1, onProgress, ct)
+                .ConfigureAwait(false);
+            enrichMeta["onscreen_cast"] = osc.ToMetaDict();
+        }
+        if (_extendCutClassifier is not null)
+        {
+            var ext = await _extendCutClassifier.ClassifyStage1Async(stage1, onProgress, ct)
+                .ConfigureAwait(false);
+            enrichMeta["extend_hardcut"] = ext.ToMetaDict();
         }
 
         var gpv = GetDict(stage1, "global_production_variables");
@@ -146,17 +184,17 @@ public sealed class Stage2PlannerService
             {
                 var existingText = await File.ReadAllTextAsync(outPath, ct).ConfigureAwait(false);
                 var existing = GrokChatClient.ParseJsonObject(existingText);
-                plan = MergePlannedScenes(existing, planned, stage1, gpv, sourceLabel, resolution, scenes, classifyMeta);
+                plan = MergePlannedScenes(existing, planned, stage1, gpv, sourceLabel, resolution, scenes, classifyMeta, enrichMeta);
                 onProgress?.Invoke("Merged planned scenes into existing blueprint");
             }
             catch
             {
-                plan = BuildFullPlan(stage1, gpv, planned, sourceLabel, resolution, scenes, classifyMeta);
+                plan = BuildFullPlan(stage1, gpv, planned, sourceLabel, resolution, scenes, classifyMeta, enrichMeta);
             }
         }
         else
         {
-            plan = BuildFullPlan(stage1, gpv, planned, sourceLabel, resolution, scenes, classifyMeta);
+            plan = BuildFullPlan(stage1, gpv, planned, sourceLabel, resolution, scenes, classifyMeta, enrichMeta);
         }
 
         await File.WriteAllTextAsync(
@@ -187,7 +225,8 @@ public sealed class Stage2PlannerService
         string sourceLabel,
         string resolution,
         string scenesFilter,
-        SilentBeatClassifyResult? classifyMeta) => new()
+        SilentBeatClassifyResult? classifyMeta,
+        Dictionary<string, object?>? enrichMeta) => new()
     {
         ["schema_version"] = "stage2.v1",
         ["movie_title"] = stage1.TryGetValue("movie_title", out var mt) ? mt : null,
@@ -195,7 +234,7 @@ public sealed class Stage2PlannerService
         ["video_provider_profile"] = "grok",
         ["global_production_variables"] = gpv,
         ["scenes"] = planned.Cast<object?>().ToList(),
-        ["stage2_meta"] = MakeMeta(stage1, planned, sourceLabel, resolution, scenesFilter, classifyMeta),
+        ["stage2_meta"] = MakeMeta(stage1, planned, sourceLabel, resolution, scenesFilter, classifyMeta, enrichMeta),
     };
 
     private static Dictionary<string, object?> MergePlannedScenes(
@@ -206,7 +245,8 @@ public sealed class Stage2PlannerService
         string sourceLabel,
         string resolution,
         string scenesFilter,
-        SilentBeatClassifyResult? classifyMeta)
+        SilentBeatClassifyResult? classifyMeta,
+        Dictionary<string, object?>? enrichMeta)
     {
         var byN = new Dictionary<int, Dictionary<string, object?>>();
         foreach (var s in GetList(existing, "scenes").OfType<Dictionary<string, object?>>())
@@ -228,7 +268,7 @@ public sealed class Stage2PlannerService
         existing["video_provider_profile"] = "grok";
         existing["global_production_variables"] = gpv;
         existing["scenes"] = all.Cast<object?>().ToList();
-        existing["stage2_meta"] = MakeMeta(stage1, all, sourceLabel, resolution, scenesFilter, classifyMeta);
+        existing["stage2_meta"] = MakeMeta(stage1, all, sourceLabel, resolution, scenesFilter, classifyMeta, enrichMeta);
         return existing;
     }
 
@@ -238,7 +278,8 @@ public sealed class Stage2PlannerService
         string sourceLabel,
         string resolution,
         string scenesFilter,
-        SilentBeatClassifyResult? classifyMeta)
+        SilentBeatClassifyResult? classifyMeta,
+        Dictionary<string, object?>? enrichMeta)
     {
         var meta = new Dictionary<string, object?>
         {
@@ -258,6 +299,8 @@ public sealed class Stage2PlannerService
         };
         if (classifyMeta is not null)
             meta["silent_beat_classify"] = classifyMeta.ToMetaDict();
+        if (enrichMeta is { Count: > 0 })
+            meta["ai_enrichments"] = enrichMeta;
         return meta;
     }
 
@@ -670,6 +713,11 @@ public sealed class Stage2PlannerService
         string? locationId)
     {
         if (clipIndex == 0) return true;
+        // AI / enricher cut decision (hard_cut|extend) — preferred when present
+        var cut = (CoerceString(beat.TryGetValue("cut_decision", out var cd) ? cd : null) ?? "").ToLowerInvariant();
+        if (cut is "hard_cut" or "hardcut" or "none") return true;
+        if (cut is "extend" or "continue" or "continuous") return false;
+
         var ac = (CoerceString(beat.TryGetValue("action_class", out var a) ? a : null) ?? "").ToLowerInvariant();
         var cont = (CoerceString(beat.TryGetValue("continuity", out var c) ? c : null) ?? "").ToLowerInvariant();
         if (ac is "big_action" or "establishing" or "hard_cut" or "flashback_enter" or "flashback_exit" or "montage")
@@ -793,6 +841,14 @@ public sealed class Stage2PlannerService
             if (string.IsNullOrEmpty(text)) return;
             foreach (Match m in Regex.Matches(text, @"Character_[A-Za-z0-9_]+"))
                 Add(m.Value);
+        }
+        // AI / enricher closed-set list preferred when present
+        if (beat.TryGetValue("characters_on_screen", out var cos) && cos is List<object?> cosList && cosList.Count > 0)
+        {
+            foreach (var x in cosList)
+                Add(x?.ToString());
+            if (found.Count > 0)
+                return found;
         }
         var veText = CoerceString(beat.TryGetValue("visual_event", out var ve) ? ve : null) ?? "";
         AddFrom(veText);

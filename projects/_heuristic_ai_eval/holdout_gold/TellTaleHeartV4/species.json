@@ -1,0 +1,31 @@
+{
+  "labels": [
+    {
+      "key": "Character_Narrator",
+      "gold": "human",
+      "note": "adult man confessor"
+    },
+    {
+      "key": "Character_Old_Man",
+      "gold": "human",
+      "note": "elderly man"
+    },
+    {
+      "key": "Character_Officer",
+      "gold": "human",
+      "note": "officer"
+    },
+    {
+      "key": "Character_Officer_Clemm",
+      "gold": "human"
+    },
+    {
+      "key": "Character_Officer_Hayes",
+      "gold": "human"
+    },
+    {
+      "key": "Character_Officer_Reynolds",
+      "gold": "human"
+    }
+  ]
+}

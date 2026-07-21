@@ -43,6 +43,23 @@
     <div class="alert alert-info">@Host.Message</div>
 }
 
+@* In-page busy (e.g. screenplay approve) — not a background job, but can take many seconds.
+   Skip on Import: that page already has its own progress card. *@
+@if (Host.Busy && !Host.JobRunning && Step is not "import" and not "book")
+{
+    <div class="card mb-3 border-primary" data-testid="busy-progress">
+        <div class="card-body py-2">
+            <div class="small mb-1">@(string.IsNullOrWhiteSpace(Host.BusyMessage) ? "Working…" : Host.BusyMessage)</div>
+            <div class="progress" style="height: 0.85rem;" role="progressbar"
+                 aria-valuemin="0" aria-valuemax="100" aria-valuenow="45"
+                 aria-label="@(Host.BusyMessage ?? "Working")">
+                <div class="progress-bar progress-bar-striped progress-bar-animated bg-primary"
+                     style="width: 45%"></div>
+            </div>
+        </div>
+    </div>
+}
+
 @* Job panel: skip on Import (progress lives in the Import card). Show on screenplay/shots. *@
 @if (ShowJobPanel)
 {
@@ -157,7 +174,7 @@ else
         Host.Job is not null &&
         Step is not ("import" or "book") &&
         (Host.Job.Status is "running" or "error" or "cancelled" ||
-         (Host.Job.Status == "done" && Host.Job.Kind is "stage1" or "stage2" or "book_prepare"));
+         (Host.Job.Status == "done" && Host.Job.Kind is "stage1" or "stage2" or "book_prepare" or "book_import"));
 
     protected override async Task OnInitializedAsync()
     {

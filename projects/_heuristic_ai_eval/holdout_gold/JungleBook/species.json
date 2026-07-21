@@ -1,0 +1,268 @@
+{
+  "labels": [
+    {
+      "key": "Character_Narrator",
+      "description": "",
+      "heuristic": "other",
+      "gold": "human"
+    },
+    {
+      "key": "Character_Father_Wolf",
+      "description": "",
+      "heuristic": "animal",
+      "gold": "animal"
+    },
+    {
+      "key": "Character_Tabaqui",
+      "description": "",
+      "heuristic": "other",
+      "gold": "animal"
+    },
+    {
+      "key": "Character_Mother_Wolf",
+      "description": "",
+      "heuristic": "animal",
+      "gold": "animal"
+    },
+    {
+      "key": "Character_Shere_Khan",
+      "description": "",
+      "heuristic": "other",
+      "gold": "animal"
+    },
+    {
+      "key": "Character_Akela",
+      "description": "",
+      "heuristic": "other",
+      "gold": "animal"
+    },
+    {
+      "key": "Character_Anxious_Mothers",
+      "description": "",
+      "heuristic": "human",
+      "gold": "other"
+    },
+    {
+      "key": "Character_Baloo",
+      "description": "",
+      "heuristic": "other",
+      "gold": "animal"
+    },
+    {
+      "key": "Character_Bagheera",
+      "description": "",
+      "heuristic": "other",
+      "gold": "animal"
+    },
+    {
+      "key": "Character_Mowgli",
+      "description": "",
+      "heuristic": "other",
+      "gold": "human"
+    },
+    {
+      "key": "Character_Bandar_log",
+      "description": "",
+      "heuristic": "other",
+      "gold": "other"
+    },
+    {
+      "key": "Character_Rann",
+      "description": "",
+      "heuristic": "other",
+      "gold": "other"
+    },
+    {
+      "key": "Character_Kaa",
+      "description": "",
+      "heuristic": "other",
+      "gold": "animal"
+    },
+    {
+      "key": "Character_Cobras",
+      "description": "",
+      "heuristic": "other",
+      "gold": "animal"
+    },
+    {
+      "key": "Character_Messua",
+      "description": "",
+      "heuristic": "other",
+      "gold": "human"
+    },
+    {
+      "key": "Character_Gray_Brother",
+      "description": "",
+      "heuristic": "human",
+      "gold": "other"
+    },
+    {
+      "key": "Character_Buldeo",
+      "description": "",
+      "heuristic": "other",
+      "gold": "human"
+    },
+    {
+      "key": "Character_Villagers",
+      "description": "",
+      "heuristic": "other",
+      "gold": "human"
+    },
+    {
+      "key": "Character_Priest",
+      "description": "",
+      "heuristic": "other",
+      "gold": "other"
+    },
+    {
+      "key": "Character_Tattered_Wolf",
+      "description": "",
+      "heuristic": "animal",
+      "gold": "animal"
+    },
+    {
+      "key": "Character_Matkah",
+      "description": "",
+      "heuristic": "other",
+      "gold": "animal"
+    },
+    {
+      "key": "Character_Sea_Catch",
+      "description": "",
+      "heuristic": "animal",
+      "gold": "other"
+    },
+    {
+      "key": "Character_Kotick",
+      "description": "",
+      "heuristic": "other",
+      "gold": "animal"
+    },
+    {
+      "key": "Character_Young_Seal",
+      "description": "",
+      "heuristic": "other",
+      "gold": "animal"
+    },
+    {
+      "key": "Character_Seals",
+      "description": "",
+      "heuristic": "other",
+      "gold": "animal"
+    },
+    {
+      "key": "Character_Teddy",
+      "description": "",
+      "heuristic": "other",
+      "gold": "other"
+    },
+    {
+      "key": "Character_Alice",
+      "description": "",
+      "heuristic": "other",
+      "gold": "other"
+    },
+    {
+      "key": "Character_Teddy_s_Father",
+      "description": "",
+      "heuristic": "human",
+      "gold": "other"
+    },
+    {
+      "key": "Character_Rikki_tikki",
+      "description": "",
+      "heuristic": "other",
+      "gold": "animal"
+    },
+    {
+      "key": "Character_Nag",
+      "description": "",
+      "heuristic": "other",
+      "gold": "animal"
+    },
+    {
+      "key": "Character_Nagaina",
+      "description": "",
+      "heuristic": "other",
+      "gold": "animal"
+    },
+    {
+      "key": "Character_Darzee",
+      "description": "",
+      "heuristic": "other",
+      "gold": "animal"
+    },
+    {
+      "key": "Character_Big_Toomai",
+      "description": "",
+      "heuristic": "other",
+      "gold": "human"
+    },
+    {
+      "key": "Character_Little_Toomai",
+      "description": "",
+      "heuristic": "other",
+      "gold": "human"
+    },
+    {
+      "key": "Character_Machua_Appa",
+      "description": "",
+      "heuristic": "other",
+      "gold": "human"
+    },
+    {
+      "key": "Character_Petersen_Sahib",
+      "description": "",
+      "heuristic": "other",
+      "gold": "other"
+    },
+    {
+      "key": "Character_Toomai_s_Mother",
+      "description": "",
+      "heuristic": "human",
+      "gold": "human"
+    },
+    {
+      "key": "Character_Camp_Man",
+      "description": "",
+      "heuristic": "other",
+      "gold": "other"
+    },
+    {
+      "key": "Character_Baggage_Camel",
+      "description": "",
+      "heuristic": "other",
+      "gold": "animal"
+    },
+    {
+      "key": "Character_Billy",
+      "description": "",
+      "heuristic": "other",
+      "gold": "human"
+    },
+    {
+      "key": "Character_Troop_horse",
+      "description": "",
+      "heuristic": "other",
+      "gold": "other"
+    },
+    {
+      "key": "Character_Young_Mule",
+      "description": "",
+      "heuristic": "other",
+      "gold": "other"
+    },
+    {
+      "key": "Character_Gun_Elephant",
+      "description": "",
+      "heuristic": "other",
+      "gold": "animal"
+    },
+    {
+      "key": "Character_Gun_Bullock",
+      "description": "",
+      "heuristic": "other",
+      "gold": "animal"
+    }
+  ]
+}

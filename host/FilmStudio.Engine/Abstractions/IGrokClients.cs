@@ -93,6 +93,11 @@ public static class ChatCallModes
     public const string CastVisualLiteralize = "cast_visual_literalize";
     public const string LearningPropose = "learning_propose";
     public const string SilentBeatClassify = "silent_beat_classify";
+    public const string AmbientSfxClassify = "ambient_sfx_classify";
+    public const string OnScreenCastClassify = "onscreen_cast_classify";
+    public const string ExtendCutClassify = "extend_cut_classify";
+    public const string SpeciesKindClassify = "species_kind_classify";
+    public const string PlateRankClassify = "plate_rank_classify";
 }
 
 /// <summary>xAI (or fake) vision (transcribe / classify).</summary>

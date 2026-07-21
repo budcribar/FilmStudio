@@ -69,6 +69,23 @@ public sealed class FilmStudioOptions
     /// <summary>Base ms for quadratic backoff between classify retries (tests may set 0).</summary>
     public int SilentBeatClassifyBackoffBaseMs { get; set; } = 400;
 
+    public bool ClassifyAmbientSfxWithChat { get; set; } = true;
+    public string AmbientSfxClassifyModel { get; set; } = "grok-4.5";
+    public double AmbientSfxClassifyTemperature { get; set; } = 0;
+    public int AmbientSfxClassifyMaxAttempts { get; set; } = 3;
+
+    public bool ClassifyOnScreenCastWithChat { get; set; } = true;
+    public string OnScreenCastClassifyModel { get; set; } = "grok-4.5";
+
+    public bool ClassifyExtendCutWithChat { get; set; } = true;
+    public string ExtendCutClassifyModel { get; set; } = "grok-4.5";
+
+    public bool ClassifySpeciesKindWithChat { get; set; } = true;
+    public string SpeciesKindClassifyModel { get; set; } = "grok-4.5";
+
+    public bool ClassifyPlateRankWithChat { get; set; } = true;
+    public string PlateRankClassifyModel { get; set; } = "grok-4.5";
+
     /// <summary>
     /// Optional ThreadPool min-thread ramp for multi-user / LoadSim ready-barrier.
     /// Leave defaults (0) unless soaks show global latency floors under concurrent clients.

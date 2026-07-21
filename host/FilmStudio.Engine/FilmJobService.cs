@@ -29,6 +29,7 @@ public sealed class FilmJobService
     private readonly CharacterDesignService _characters;
     private readonly CharacterBookPlateService _plates;
     private readonly BookPrepareService _books;
+    private readonly IGrokChatClient _chat;
     private readonly Stage1Service _stage1;
     private readonly Stage2PlannerService _stage2;
     private readonly IFfmpegRemux _remux;
@@ -62,6 +63,7 @@ public sealed class FilmJobService
         CharacterDesignService characters,
         CharacterBookPlateService plates,
         BookPrepareService books,
+        IGrokChatClient chat,
         Stage1Service stage1,
         Stage2PlannerService stage2,
         IFfmpegRemux remux,
@@ -90,6 +92,7 @@ public sealed class FilmJobService
         _characters = characters;
         _plates = plates;
         _books = books;
+        _chat = chat;
         _stage1 = stage1;
         _stage2 = stage2;
         _remux = remux;
@@ -653,7 +656,7 @@ public sealed class FilmJobService
             lockReason: "stage2");
     }
 
-    /// <summary>C# PDF extract + optional Grok vision OCR → book_full.txt.</summary>
+    /// <summary>C# PDF extract + optional Grok vision OCR → book_full.txt (prepare only).</summary>
     public Task<JobSnapshot> StartBookPrepareAsync(StartBookPrepareRequest req)
     {
         if (string.IsNullOrWhiteSpace(req.ProjectId))
@@ -668,6 +671,28 @@ public sealed class FilmJobService
             },
             lockResources: new[] { LockKeys.Stage(req.ProjectId) },
             lockReason: "book prepare");
+    }
+
+    /// <summary>
+    /// Full import path: prepare book text (unless skipped) then book→Fountain draft.
+    /// Use for PDF/TXT Import; Screenplay “draft from book” can set <see cref="StartBookImportRequest.SkipPrepare"/>.
+    /// </summary>
+    public Task<JobSnapshot> StartBookImportAsync(StartBookImportRequest req)
+    {
+        if (string.IsNullOrWhiteSpace(req.ProjectId))
+            throw new InvalidOperationException("projectId required");
+        return StartBackgroundJobAsync(
+            ct => RunBookImportAsync(req, ct),
+            new JobEnqueueMeta
+            {
+                Kind = "book_import",
+                ProjectId = req.ProjectId,
+                Message = req.SkipPrepare
+                    ? "Queued screenplay draft from book…"
+                    : "Queued book import (prepare + screenplay)…",
+            },
+            lockResources: new[] { LockKeys.Stage(req.ProjectId) },
+            lockReason: "book import");
     }
 
     private sealed class JobRunState
@@ -740,6 +765,171 @@ public sealed class FilmJobService
         {
             _log.LogError(ex, "Book prepare failed");
             await FinishAsync("error", ex.Message, ex.Message);
+        }
+    }
+
+    private async Task RunBookImportAsync(StartBookImportRequest req, CancellationToken ct)
+    {
+        var projectId = req.ProjectId;
+        await _projects.ActivateAsync(projectId, ct).ConfigureAwait(false);
+
+        // Progress: 0–4 prepare, 5–10 adapt (chunk messages bump index)
+        Snapshot = new JobSnapshot
+        {
+            Status = "running",
+            Kind = "book_import",
+            ProjectId = projectId,
+            Message = req.SkipPrepare
+                ? "Writing screenplay from book…"
+                : "Importing book (prepare + screenplay)…",
+            Index = 0,
+            Total = 10,
+            StartedAt = DateTimeOffset.UtcNow,
+            Log = new List<string>(),
+        };
+        RegisterActiveJob();
+        await PublishAsync().ConfigureAwait(false);
+
+        try
+        {
+            var projectDir = await _projects.GetProjectDirAsync(projectId, ct).ConfigureAwait(false);
+            var bookPath = Path.Combine(projectDir, "source", "book_full.txt");
+            var needPrepare = !req.SkipPrepare;
+
+            // TXT may already have book_full after upload; still allow force extract for PDF
+            if (needPrepare && File.Exists(bookPath) && !req.ForceExtract && !req.ForceVision)
+            {
+                // Light skip if text already good and not forcing — still run prepare for PDF path consistency
+                // Import always sets ForceExtract=true for PDF; SkipPrepare for re-draft only.
+            }
+
+            if (needPrepare)
+            {
+                await AppendLogAsync("Phase 1: prepare book text").ConfigureAwait(false);
+                await UpdateAsync(s =>
+                {
+                    s.Index = 1;
+                    s.Message = "Reading book…";
+                }).ConfigureAwait(false);
+
+                var prep = await _books.PrepareAsync(
+                    projectId,
+                    forceExtract: req.ForceExtract,
+                    forceVision: req.ForceVision,
+                    autoVision: req.AutoVision,
+                    visionModel: string.IsNullOrWhiteSpace(req.VisionModel) ? "grok-4.5" : req.VisionModel,
+                    onProgress: line =>
+                    {
+                        _ = AppendLogAsync(line);
+                        _ = UpdateAsync(s =>
+                        {
+                            s.Message = line;
+                            if (line.Contains("Extract", StringComparison.OrdinalIgnoreCase))
+                                s.Index = Math.Max(s.Index, 2);
+                            else if (line.Contains("Vision", StringComparison.OrdinalIgnoreCase) ||
+                                     line.Contains("page", StringComparison.OrdinalIgnoreCase))
+                                s.Index = Math.Max(s.Index, 3);
+                            else
+                                s.Index = Math.Max(s.Index, 2);
+                        });
+                    },
+                    ct: ct).ConfigureAwait(false);
+
+                if (!prep.Ok)
+                {
+                    await FinishAsync("error", prep.StrategyReason ?? "Book prepare failed",
+                        prep.StrategyReason ?? "Book prepare failed").ConfigureAwait(false);
+                    return;
+                }
+
+                await AppendLogAsync(
+                    $"Book text ready · {prep.TextWords} words · {prep.TextEngine}").ConfigureAwait(false);
+            }
+            else
+            {
+                await AppendLogAsync("Skipping prepare — using existing book text").ConfigureAwait(false);
+            }
+
+            if (!File.Exists(bookPath))
+            {
+                await FinishAsync("error", "No book text after prepare",
+                    "No book text after prepare").ConfigureAwait(false);
+                return;
+            }
+
+            await UpdateAsync(s =>
+            {
+                s.Index = 5;
+                s.Message = "Writing screenplay draft…";
+            }).ConfigureAwait(false);
+            await AppendLogAsync("Phase 2: book → Fountain screenplay").ConfigureAwait(false);
+
+            if (!_chat.IsConfigured)
+            {
+                await FinishAsync("error", "Chat service not configured",
+                    "Chat service not configured").ConfigureAwait(false);
+                return;
+            }
+
+            var model = string.IsNullOrWhiteSpace(req.Model) ? "grok-4.5" : req.Model.Trim();
+            var save = await ScreenplayService.CreateDraftFromBookAsync(
+                _projects,
+                projectId,
+                _chat,
+                model: model,
+                onProgress: line =>
+                {
+                    _ = AppendLogAsync(line);
+                    _ = UpdateAsync(s =>
+                    {
+                        s.Message = line;
+                        // Map adapt progress into 5–9
+                        if (line.Contains("chunk", StringComparison.OrdinalIgnoreCase))
+                        {
+                            var m = System.Text.RegularExpressions.Regex.Match(
+                                line, @"(\d+)\s*/\s*(\d+)");
+                            if (m.Success &&
+                                int.TryParse(m.Groups[1].Value, out var cur) &&
+                                int.TryParse(m.Groups[2].Value, out var tot) &&
+                                tot > 0)
+                            {
+                                s.Index = 5 + (int)Math.Round(4.0 * Math.Clamp(cur, 0, tot) / tot);
+                            }
+                            else
+                                s.Index = Math.Max(s.Index, 6);
+                        }
+                        else if (line.Contains("Merge", StringComparison.OrdinalIgnoreCase) ||
+                                 line.Contains("Stitch", StringComparison.OrdinalIgnoreCase))
+                            s.Index = Math.Max(s.Index, 9);
+                        else if (line.Contains("repair", StringComparison.OrdinalIgnoreCase) ||
+                                 line.Contains("retry", StringComparison.OrdinalIgnoreCase))
+                            s.Index = Math.Max(s.Index, 8);
+                        else
+                            s.Index = Math.Max(s.Index, 6);
+                    });
+                },
+                ct: ct).ConfigureAwait(false);
+
+            if (!save.Ok)
+            {
+                await FinishAsync("error", save.Error ?? "Screenplay draft failed",
+                    save.Error ?? "Screenplay draft failed").ConfigureAwait(false);
+                return;
+            }
+
+            await UpdateAsync(s => s.Index = 10).ConfigureAwait(false);
+            await FinishAsync(
+                "done",
+                save.Message ?? "Screenplay draft ready — review and approve").ConfigureAwait(false);
+        }
+        catch (OperationCanceledException)
+        {
+            await FinishAsync("cancelled", "Cancelled by user").ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+            _log.LogError(ex, "Book import failed");
+            await FinishAsync("error", ex.Message, ex.Message).ConfigureAwait(false);
         }
     }
 

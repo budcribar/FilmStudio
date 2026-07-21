@@ -1145,19 +1145,30 @@ public static class BookToFountainConverter
         var firstMode = string.IsNullOrEmpty(extraUserSuffix)
             ? ChatCallModes.BookToFountain
             : ChatCallModes.BookToFountainCoverage;
-        var text = await chat.CompleteAsync(
-                system, user, model, temperature: 0.2, ct, mode: firstMode)
+        var text = await CompleteWithOneRetryAsync(
+                chat, system, user, model, temperature: 0.2,
+                mode: firstMode,
+                retryLabel: "Book adapt",
+                onProgress: null,
+                ct)
             .ConfigureAwait(false);
+        if (text is null)
+            throw new InvalidOperationException(
+                "Book adapt timed out or failed after retry. Try again or import a .fountain file.");
         text = StripBookPageTags(StripFences(text));
 
         if (!LooksLikeGoodFountain(text))
         {
             var retryUser = user + RetrySuffix(hasPageMarkers: false);
-            text = await chat.CompleteAsync(
-                    system, retryUser, model, temperature: 0.15, ct,
-                    mode: ChatCallModes.BookToFountainRetry)
+            var retryText = await CompleteWithOneRetryAsync(
+                    chat, system, retryUser, model, temperature: 0.15,
+                    mode: ChatCallModes.BookToFountainRetry,
+                    retryLabel: "Book adapt structure",
+                    onProgress: null,
+                    ct)
                 .ConfigureAwait(false);
-            text = StripBookPageTags(StripFences(text));
+            if (retryText is not null)
+                text = StripBookPageTags(StripFences(retryText));
         }
 
         if (!LooksLikeGoodFountain(text))
@@ -1196,19 +1207,28 @@ public static class BookToFountainConverter
                 title, author, pageCount, totalMinutes, chunks[i],
                 chunkIndex: i, chunkTotal: chunks.Count, continuity: continuity);
 
-            var part = await chat.CompleteAsync(
-                    system, user, model, temperature: 0.2, ct,
-                    mode: ChatCallModes.BookToFountainChunk)
+            // One transport retry on timeout/cancel (chunk calls can exceed short proxies)
+            var part = await CompleteWithOneRetryAsync(
+                    chat, system, user, model, temperature: 0.2,
+                    mode: ChatCallModes.BookToFountainChunk,
+                    retryLabel: $"Chunk {i + 1}/{chunks.Count}",
+                    onProgress, ct)
                 .ConfigureAwait(false);
+            if (part is null)
+                throw new InvalidOperationException(
+                    $"Book adapt chunk {i + 1}/{chunks.Count} failed after retry (timeout or network). Try again.");
             part = StripBookPageTags(StripFences(part));
 
             if (!LooksLikeGoodFountain(part) && part.Length < 80)
             {
-                part = await chat.CompleteAsync(
-                        system, user + RetrySuffix(false), model, 0.15, ct,
-                        mode: ChatCallModes.BookToFountainChunkRetry)
+                var retryPart = await CompleteWithOneRetryAsync(
+                        chat, system, user + RetrySuffix(false), model, temperature: 0.15,
+                        mode: ChatCallModes.BookToFountainChunkRetry,
+                        retryLabel: $"Chunk {i + 1} structure",
+                        onProgress, ct)
                     .ConfigureAwait(false);
-                part = StripBookPageTags(StripFences(part));
+                if (retryPart is not null)
+                    part = StripBookPageTags(StripFences(retryPart));
             }
 
             parts.Add(part);

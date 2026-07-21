@@ -1,0 +1,197 @@
+{
+  "projectId": "JungleBook",
+  "labels": [
+    {
+      "Id": "s1_b1",
+      "visual": "Moon over teak and grass. A warm wind. Far off, a kite wheels home.",
+      "heuristic_ambient": "wind",
+      "heuristic_sfx": "",
+      "gold_ambient": "wind",
+      "gold_sfx": ""
+    },
+    {
+      "Id": "s2_b27",
+      "visual": "Mother Wolf speaks.",
+      "heuristic_ambient": "",
+      "heuristic_sfx": "",
+      "gold_ambient": "",
+      "gold_sfx": ""
+    },
+    {
+      "Id": "s6_b6",
+      "visual": "Father Wolf mouths the child as gently as an egg, jaws on the back, not a scratch, and lays him among the cubs.",
+      "heuristic_ambient": "",
+      "heuristic_sfx": "",
+      "gold_ambient": "",
+      "gold_sfx": ""
+    },
+    {
+      "Id": "s6_b37",
+      "visual": "Shere Khan speaks.",
+      "heuristic_ambient": "",
+      "heuristic_sfx": "",
+      "gold_ambient": "",
+      "gold_sfx": ""
+    },
+    {
+      "Id": "s7_b19",
+      "visual": "Bagheera speaks.",
+      "heuristic_ambient": "",
+      "heuristic_sfx": "",
+      "gold_ambient": "",
+      "gold_sfx": ""
+    },
+    {
+      "Id": "s8_b23",
+      "visual": "Baloo speaks.",
+      "heuristic_ambient": "",
+      "heuristic_sfx": "",
+      "gold_ambient": "",
+      "gold_sfx": ""
+    },
+    {
+      "Id": "s8_b54",
+      "visual": "Bagheera speaks.",
+      "heuristic_ambient": "",
+      "heuristic_sfx": "",
+      "gold_ambient": "",
+      "gold_sfx": ""
+    },
+    {
+      "Id": "s8_b85",
+      "visual": "Baloo speaks.",
+      "heuristic_ambient": "",
+      "heuristic_sfx": "",
+      "gold_ambient": "",
+      "gold_sfx": ""
+    },
+    {
+      "Id": "s12_b2",
+      "visual": "Baloo speaks.",
+      "heuristic_ambient": "",
+      "heuristic_sfx": "",
+      "gold_ambient": "",
+      "gold_sfx": ""
+    },
+    {
+      "Id": "s17_b8",
+      "visual": "He licks his lips, looking at the monkey-dead on the terrace and round the tank.",
+      "heuristic_ambient": "",
+      "heuristic_sfx": "",
+      "gold_ambient": "",
+      "gold_sfx": ""
+    },
+    {
+      "Id": "s17_b39",
+      "visual": "Bandar-log speaks.",
+      "heuristic_ambient": "",
+      "heuristic_sfx": "",
+      "gold_ambient": "",
+      "gold_sfx": ""
+    },
+    {
+      "Id": "s18_b23",
+      "visual": "Bagheera speaks.",
+      "heuristic_ambient": "",
+      "heuristic_sfx": "",
+      "gold_ambient": "",
+      "gold_sfx": ""
+    },
+    {
+      "Id": "s22_b6",
+      "visual": "Messua speaks.",
+      "heuristic_ambient": "",
+      "heuristic_sfx": "",
+      "gold_ambient": "",
+      "gold_sfx": ""
+    },
+    {
+      "Id": "s26_b20",
+      "visual": "A stone hits MOWGLI in the mouth. He laughs a short, ugly laugh. Blood on his lip.",
+      "heuristic_ambient": "",
+      "heuristic_sfx": "",
+      "gold_ambient": "",
+      "gold_sfx": ""
+    },
+    {
+      "Id": "s29_b12",
+      "visual": "The old call rolls into the jungle. Wolves answer from habit. They limp in-lame from traps, shot-wounded, mangy from bad food. Many places in the circle empty. All that are left of the Pack gather and\u2026",
+      "heuristic_ambient": "",
+      "heuristic_sfx": "",
+      "gold_ambient": "",
+      "gold_sfx": ""
+    },
+    {
+      "Id": "s35_b5",
+      "visual": "Kotick speaks.",
+      "heuristic_ambient": "",
+      "heuristic_sfx": "",
+      "gold_ambient": "",
+      "gold_sfx": ""
+    },
+    {
+      "Id": "s38_b1",
+      "visual": "Northern Lights wink and flash through the fog. KOTICK climbs a bare rock and looks down on the scattered nurseries and the torn and bleeding seals.",
+      "heuristic_ambient": "",
+      "heuristic_sfx": "",
+      "gold_ambient": "",
+      "gold_sfx": ""
+    },
+    {
+      "Id": "s44_b8",
+      "visual": "RIKKI-TIKKI snuffs at the boy\u0027s ear, climbs down, sits rubbing his nose.",
+      "heuristic_ambient": "",
+      "heuristic_sfx": "",
+      "gold_ambient": "",
+      "gold_sfx": ""
+    },
+    {
+      "Id": "s50_b4",
+      "visual": "Narrator speaks.",
+      "heuristic_ambient": "",
+      "heuristic_sfx": "",
+      "gold_ambient": "",
+      "gold_sfx": ""
+    },
+    {
+      "Id": "s55_b3",
+      "visual": "Little Toomai speaks.",
+      "heuristic_ambient": "",
+      "heuristic_sfx": "",
+      "gold_ambient": "",
+      "gold_sfx": ""
+    },
+    {
+      "Id": "s58_b9",
+      "visual": "Machua Appa speaks.",
+      "heuristic_ambient": "",
+      "heuristic_sfx": "",
+      "gold_ambient": "",
+      "gold_sfx": ""
+    },
+    {
+      "Id": "s61_b13",
+      "visual": "Machua Appa speaks.",
+      "heuristic_ambient": "",
+      "heuristic_sfx": "",
+      "gold_ambient": "",
+      "gold_sfx": ""
+    },
+    {
+      "Id": "s64_b5",
+      "visual": "Baggage Camel speaks.",
+      "heuristic_ambient": "",
+      "heuristic_sfx": "",
+      "gold_ambient": "",
+      "gold_sfx": ""
+    },
+    {
+      "Id": "s64_b36",
+      "visual": "Young Mule speaks.",
+      "heuristic_ambient": "",
+      "heuristic_sfx": "",
+      "gold_ambient": "",
+      "gold_sfx": ""
+    }
+  ]
+}

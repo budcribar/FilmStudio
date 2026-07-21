@@ -14,6 +14,8 @@ public abstract class AdaptationPageBase : ComponentBase, IAsyncDisposable
     [Inject] protected ActiveProjectState ActiveProject { get; set; } = null!;
 
     public bool Busy;
+    /// <summary>Short operator-facing label while <see cref="Busy"/> (shown with progress bar).</summary>
+    public string? BusyMessage;
     public string? Error;
     public string? Message;
     public string ProjectId = "";
@@ -418,6 +420,7 @@ public abstract class AdaptationPageBase : ComponentBase, IAsyncDisposable
     public static string OperatorJobDoneMessage(JobSnapshot snap) => snap.Kind switch
     {
         "book_prepare" => "Book text is ready",
+        "book_import" => "Screenplay draft ready",
         "stage1" => snap.Message is { Length: > 0 } m && !m.Contains("quality=", StringComparison.Ordinal)
             ? m
             : "Screenplay draft ready",
@@ -437,6 +440,7 @@ public abstract class AdaptationPageBase : ComponentBase, IAsyncDisposable
     public static string JobKindLabel(string? kind) => kind switch
     {
         "book_prepare" => "book",
+        "book_import" => "import",
         "stage1" => "screenplay",
         "stage2" => "shot plan",
         _ => kind ?? "",

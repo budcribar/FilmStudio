@@ -154,42 +154,28 @@
                 await Engine.UploadBookAsync(ProjectId, name, stream);
             }
 
-            if (IsPdfName(name))
+            if (IsPdfName(name) || IsTxtName(name))
             {
-                _importStatus = "Reading book…";
-                _importPct = 25;
+                // One job: prepare (PDF/OCR) + book→Fountain (long books need background lifetime)
+                Message = null;
+                _importStatus = IsPdfName(name) ? "Reading book…" : "Writing screenplay…";
+                _importPct = 20;
                 StateHasChanged();
 
                 await EnsureHubAsync();
-                await Engine.StartBookPrepareAsync(
+                await Engine.StartBookImportAsync(
                     ProjectId,
-                    forceExtract: true,
+                    skipPrepare: IsTxtName(name), // upload already wrote book text for plain .txt
+                    forceExtract: IsPdfName(name),
                     forceVision: false,
                     autoVision: true);
 
                 var ok = await WaitForJobDoneAsync(
-                    "book_prepare",
-                    basePct: 25,
-                    spanPct: 50);
+                    "book_import",
+                    basePct: 20,
+                    spanPct: 75);
                 if (!ok)
                     return;
-
-                // Book text is ready — keep progress UI only (no “Book ready” / Next banners)
-                Message = null;
-                _importStatus = "Writing screenplay draft…";
-                _importPct = 85;
-                StateHasChanged();
-
-                await Engine.CreateScreenplayFromBookAsync(ProjectId);
-            }
-            else if (IsTxtName(name))
-            {
-                Message = null;
-                _importStatus = "Writing screenplay draft…";
-                _importPct = 55;
-                StateHasChanged();
-
-                await Engine.CreateScreenplayFromBookAsync(ProjectId);
             }
             else
             {
@@ -224,7 +210,8 @@
         await Task.Delay(400);
         var sawRunning = false;
 
-        for (var i = 0; i < 900; i++)
+        // Long novels: multi-chunk adapt can run 30–60+ minutes
+        for (var i = 0; i < 3600; i++)
         {
             try
             {
@@ -259,7 +246,7 @@
 
                     if (st is "error" or "cancelled")
                     {
-                        Error = FriendlyError(snap.Error ?? snap.Message ?? "Could not prepare the book");
+                        Error = FriendlyError(snap.Error ?? snap.Message ?? "Could not import the book");
                         return false;
                     }
 
@@ -275,7 +262,7 @@
             await Task.Delay(1000);
         }
 
-        Error = "Timed out while preparing the book.";
+        Error = "Timed out while importing the book.";
         return false;
     }
 
@@ -288,6 +275,25 @@
             msg, @"page\s+(\d+)\s*/\s*(\d+)", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
         if (m.Success)
             return $"Reading book — page {m.Groups[1].Value} of {m.Groups[2].Value}";
+
+        // Adapt phase (chunk / stitch / repair)
+        var chunk = System.Text.RegularExpressions.Regex.Match(
+            msg, @"chunk\s+(\d+)\s*/\s*(\d+)", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+        if (chunk.Success)
+            return $"Writing screenplay — part {chunk.Groups[1].Value} of {chunk.Groups[2].Value}";
+        if (msg.Contains("Adapting", StringComparison.OrdinalIgnoreCase) ||
+            msg.Contains("chunk", StringComparison.OrdinalIgnoreCase))
+            return "Writing screenplay…";
+        if (msg.Contains("Merge", StringComparison.OrdinalIgnoreCase) ||
+            msg.Contains("Stitch", StringComparison.OrdinalIgnoreCase))
+            return "Combining screenplay parts…";
+        if (msg.Contains("repair", StringComparison.OrdinalIgnoreCase) ||
+            msg.Contains("retry", StringComparison.OrdinalIgnoreCase))
+            return "Refining screenplay…";
+        if (msg.Contains("Fountain", StringComparison.OrdinalIgnoreCase) ||
+            msg.Contains("screenplay", StringComparison.OrdinalIgnoreCase) ||
+            msg.Contains("Phase 2", StringComparison.OrdinalIgnoreCase))
+            return "Writing screenplay…";
 
         if (msg.Contains("extract", StringComparison.OrdinalIgnoreCase) ||
             msg.Contains("PdfPig", StringComparison.OrdinalIgnoreCase))
@@ -302,11 +308,13 @@
         if (msg.Contains("strategy", StringComparison.OrdinalIgnoreCase) ||
             msg.Contains("quality", StringComparison.OrdinalIgnoreCase))
             return "Checking book text…";
-        if (msg.Contains("looking", StringComparison.OrdinalIgnoreCase))
-            return "Looking for the book…";
-        if (string.IsNullOrWhiteSpace(msg))
+        if (msg.Contains("looking", StringComparison.OrdinalIgnoreCase) ||
+            msg.Contains("Phase 1", StringComparison.OrdinalIgnoreCase) ||
+            msg.Contains("prepare", StringComparison.OrdinalIgnoreCase))
             return "Reading book…";
-        return "Reading book…";
+        if (string.IsNullOrWhiteSpace(msg))
+            return "Importing…";
+        return "Importing…";
     }
 
     private static string FriendlyError(string? raw)

@@ -1,0 +1,246 @@
+using System.Text.Json;
+using System.Text.RegularExpressions;
+using FilmStudio.Core.Options;
+using FilmStudio.Engine.Abstractions;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+
+namespace FilmStudio.Engine;
+
+/// <summary>
+/// Labels each non-first beat as hard_cut vs extend for video continuity.
+/// Baseline mirrors <see cref="Stage2PlannerService"/> ForceNone rules (public helper).
+/// Writes <c>cut_decision</c> = hard_cut|extend on each beat.
+/// </summary>
+public sealed class ExtendCutClassifier
+{
+    public const string PromptVersion = "v1";
+
+    private readonly IGrokChatClient _chat;
+    private readonly FilmStudioOptions _opts;
+    private readonly ILogger<ExtendCutClassifier> _log;
+
+    public ExtendCutClassifier(
+        IGrokChatClient chat,
+        IOptions<FilmStudioOptions> opts,
+        ILogger<ExtendCutClassifier> log)
+    {
+        _chat = chat;
+        _opts = opts.Value;
+        _log = log;
+    }
+
+    public bool IsEnabled => _opts.ClassifyExtendCutWithChat && _chat.IsConfigured;
+
+    public async Task<SimpleClassifyResult> ClassifyStage1Async(
+        Dictionary<string, object?> stage1,
+        Action<string>? onProgress = null,
+        CancellationToken ct = default)
+    {
+        var result = new SimpleClassifyResult
+        {
+            Name = "extend_hardcut",
+            PromptVersion = PromptVersion,
+            Enabled = IsEnabled,
+            Model = _opts.ExtendCutClassifyModel,
+        };
+        var pairs = CollectPairs(stage1);
+        result.ItemCount = pairs.Count;
+        foreach (var p in pairs)
+        {
+            var hard = BaselineHardCut(p);
+            p.Beat["cut_decision"] = hard ? "hard_cut" : "extend";
+            if (hard)
+                p.Beat["continuity"] = "new_setup";
+        }
+
+        if (!IsEnabled || pairs.Count == 0)
+        {
+            result.FallbackCount = pairs.Count;
+            result.Note = "heuristic only";
+            onProgress?.Invoke($"Extend/cut: heuristic only ({pairs.Count})");
+            return result;
+        }
+
+        onProgress?.Invoke($"Classifying extend vs hard-cut for {pairs.Count} beat(s)…");
+        var model = string.IsNullOrWhiteSpace(_opts.ExtendCutClassifyModel) ? "grok-4.5" : _opts.ExtendCutClassifyModel;
+        var maxAttempts = Math.Clamp(_opts.SilentBeatClassifyMaxAttempts, 1, 5);
+        var labeled = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        const int batchSize = 30;
+        for (var offset = 0; offset < pairs.Count; offset += batchSize)
+        {
+            var chunk = pairs.Skip(offset).Take(batchSize).ToList();
+            var missing = chunk.Select(p => p.Id).ToList();
+            var byId = chunk.ToDictionary(p => p.Id, StringComparer.OrdinalIgnoreCase);
+            for (var attempt = 1; attempt <= maxAttempts && missing.Count > 0; attempt++)
+            {
+                try
+                {
+                    var payload = missing.Select(id =>
+                    {
+                        var p = byId[id];
+                        return new Dictionary<string, object?>
+                        {
+                            ["id"] = p.Id,
+                            ["prev_visual"] = Trunc(p.PrevVisual, 160),
+                            ["visual_event"] = Trunc(p.Visual, 200),
+                            ["same_location"] = p.SameLocation,
+                            ["action_class"] = p.ActionClass,
+                            ["heuristic"] = BaselineHardCut(p) ? "hard_cut" : "extend",
+                        };
+                    }).ToList();
+                    var user = "Label hard_cut vs extend for video continuity. JSON only.\n" +
+                               JsonSerializer.Serialize(new { beats = payload });
+                    var raw = await _chat.CompleteAsync(SystemPrompt(), user, model, 0, ct, ChatCallModes.ExtendCutClassify)
+                        .ConfigureAwait(false);
+                    result.ChatCalls++;
+                    var parsed = ParseLabels(raw);
+                    foreach (var id in missing.ToList())
+                    {
+                        if (!parsed.TryGetValue(id, out var dec)) continue;
+                        var p = byId[id];
+                        p.Beat["cut_decision"] = dec;
+                        if (dec == "hard_cut")
+                            p.Beat["continuity"] = "new_setup";
+                        else
+                            p.Beat["continuity"] = "continuous_from_previous_beat";
+                        missing.Remove(id);
+                        labeled.Add(id);
+                    }
+                    if (missing.Count > 0)
+                        await Task.Delay(Math.Max(0, _opts.SilentBeatClassifyBackoffBaseMs) * attempt, ct);
+                }
+                catch (OperationCanceledException) { throw; }
+                catch (Exception ex)
+                {
+                    _log.LogWarning(ex, "ExtendCut attempt {A}", attempt);
+                    result.LastError = ex.Message;
+                    await Task.Delay(Math.Max(0, _opts.SilentBeatClassifyBackoffBaseMs) * attempt, ct);
+                }
+            }
+        }
+
+        result.AiCount = labeled.Count;
+        result.FallbackCount = pairs.Count - labeled.Count;
+        result.Note = $"AI {labeled.Count}/{pairs.Count}";
+        onProgress?.Invoke($"Extend/cut: {result.Note}");
+        return result;
+    }
+
+    public static string SystemPrompt() => """
+You decide video continuity for an automated film pipeline (any story).
+Classes:
+- hard_cut: new setup, location change, big energy/action, flashback, VO after on-camera speech, clear scene break.
+- extend: same place continuous business, small gesture, should blend from previous clip tail.
+
+JSON: {"labels":[{"id":"s1_b3","class":"extend"}]}
+""";
+
+    public static Dictionary<string, string> ParseLabels(string raw)
+    {
+        var map = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        raw = Strip(raw);
+        try
+        {
+            using var doc = JsonDocument.Parse(raw);
+            var arr = doc.RootElement.ValueKind == JsonValueKind.Array
+                ? doc.RootElement
+                : doc.RootElement.GetProperty("labels");
+            foreach (var el in arr.EnumerateArray())
+            {
+                var id = el.GetProperty("id").GetString();
+                var cls = el.TryGetProperty("class", out var c) ? c.GetString()
+                    : el.TryGetProperty("decision", out var d) ? d.GetString() : null;
+                if (string.IsNullOrWhiteSpace(id) || string.IsNullOrWhiteSpace(cls)) continue;
+                cls = cls!.Trim().ToLowerInvariant().Replace(' ', '_');
+                if (cls is "hard_cut" or "hardcut" or "cut" or "none") cls = "hard_cut";
+                if (cls is "extend" or "continue" or "continuous") cls = "extend";
+                if (cls is not ("hard_cut" or "extend")) continue;
+                map[id!] = cls;
+            }
+        }
+        catch { }
+        return map;
+    }
+
+    /// <summary>Public baseline used by eval (mirrors Stage2 ForceNone intent for same-location pairs).</summary>
+    public static bool BaselineHardCut(string visual, string actionClass, bool sameLocation, bool isFirst)
+    {
+        if (isFirst) return true;
+        if (!sameLocation) return true;
+        var ac = (actionClass ?? "").ToLowerInvariant();
+        if (ac is "big_action" or "establishing") return true;
+        var ve = (visual ?? "").ToLowerInvariant();
+        if (Regex.IsMatch(ve,
+                @"\b(kick|smash|punch|sprint|crash|explod|slam|throw|rocket|wide shot|establishing|flashback|back to present|cut to)\b"))
+            return true;
+        return false;
+    }
+
+    private static bool BaselineHardCut(Pair p) =>
+        BaselineHardCut(p.Visual, p.ActionClass, p.SameLocation, p.IsFirst);
+
+    private static List<Pair> CollectPairs(Dictionary<string, object?> stage1)
+    {
+        var list = new List<Pair>();
+        var scenes = stage1.TryGetValue("scenes", out var sObj) && sObj is List<object?> sl ? sl : new();
+        var si = 0;
+        foreach (var sItem in scenes)
+        {
+            if (sItem is not Dictionary<string, object?> scene) continue;
+            si++;
+            var primary = scene.TryGetValue("primary_location_id", out var pl) ? pl?.ToString() ?? "" : "";
+            var beats = scene.TryGetValue("story_beats", out var sb) && sb is List<object?> bl ? bl : new();
+            string? prevVe = null;
+            string? prevLid = null;
+            var bi = 0;
+            var first = true;
+            foreach (var bItem in beats)
+            {
+                if (bItem is not Dictionary<string, object?> beat) continue;
+                bi++;
+                var ve = beat.TryGetValue("visual_event", out var v) ? v?.ToString() ?? "" : "";
+                var dlg = beat.TryGetValue("dialogue", out var d) ? d?.ToString() ?? "" : "";
+                if (string.IsNullOrWhiteSpace(ve) && string.IsNullOrWhiteSpace(dlg)) continue;
+                var lid = beat.TryGetValue("location_id", out var l) ? l?.ToString() ?? primary : primary;
+                var ac = beat.TryGetValue("action_class", out var a) ? a?.ToString() ?? "" : "";
+                list.Add(new Pair
+                {
+                    Id = $"s{si}_b{bi}",
+                    Visual = ve,
+                    PrevVisual = prevVe ?? "",
+                    ActionClass = ac,
+                    SameLocation = prevLid is null || string.Equals(prevLid, lid, StringComparison.OrdinalIgnoreCase),
+                    IsFirst = first,
+                    Beat = beat,
+                });
+                first = false;
+                prevVe = ve;
+                prevLid = lid;
+            }
+        }
+        return list;
+    }
+
+    private static string Strip(string raw)
+    {
+        raw = (raw ?? "").Trim();
+        if (!raw.StartsWith("```")) return raw;
+        raw = Regex.Replace(raw, @"^```(?:json)?\s*", "", RegexOptions.IgnoreCase);
+        return Regex.Replace(raw, @"\s*```\s*$", "");
+    }
+
+    private static string Trunc(string s, int n) =>
+        string.IsNullOrEmpty(s) ? "" : s.Length <= n ? s : s[..n] + "…";
+
+    private sealed class Pair
+    {
+        public required string Id { get; init; }
+        public string Visual { get; init; } = "";
+        public string PrevVisual { get; init; } = "";
+        public string ActionClass { get; init; } = "";
+        public bool SameLocation { get; init; }
+        public bool IsFirst { get; init; }
+        public required Dictionary<string, object?> Beat { get; init; }
+    }
+}

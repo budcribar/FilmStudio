@@ -1,0 +1,19 @@
+{
+  "character": "Character_Narrator",
+  "gold_top3": [
+    "character_narrator_ref.png",
+    "character_narrator_variant_01.png",
+    "character_narrator_variant_02.png"
+  ],
+  "baseline_top3": [
+    "character_narrator_ref.png",
+    "character_narrator_variant_01.png",
+    "character_narrator_variant_02.png"
+  ],
+  "ai_top3": [
+    "character_narrator_ref.png",
+    "character_narrator_variant_01.png",
+    "character_narrator_variant_02.png",
+    "character_narrator_variant_03.png"
+  ]
+}

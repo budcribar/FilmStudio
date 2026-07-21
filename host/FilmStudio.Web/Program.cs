@@ -19,7 +19,9 @@ builder.Services.AddHttpClient("FilmStudio.Api", (sp, client) =>
         ? "http://127.0.0.1:5088"
         : opts.BaseUrl.TrimEnd('/') + "/";
     client.BaseAddress = new Uri(baseUrl);
-    client.Timeout = TimeSpan.FromMinutes(2);
+    // Book import / multi-chunk adapt often exceeds 2 minutes; default was 120s and canceled long jobs.
+    var minutes = opts.TimeoutMinutes > 0 ? opts.TimeoutMinutes : 30;
+    client.Timeout = TimeSpan.FromMinutes(Math.Clamp(minutes, 5, 120));
 });
 builder.Services.AddScoped(sp =>
 {

@@ -1,0 +1,172 @@
+{
+  "labels": [
+    {
+      "Id": "s1_b1",
+      "visual": "A bare, lamplit chamber. Close walls. A plain wooden chair faces us. NARRATOR sits in it - a lean man of middle years, pale skin, dark hair disordered, waistcoa\u2026",
+      "prev": "",
+      "heuristic": "hard_cut",
+      "gold": "hard_cut"
+    },
+    {
+      "Id": "s1_b5",
+      "visual": "Narrator speaks.",
+      "prev": "Narrator speaks.",
+      "heuristic": "extend",
+      "gold": "extend"
+    },
+    {
+      "Id": "s1_b10",
+      "visual": "Narrator (CONT\u0027D).",
+      "prev": "He steadies his hands on his knees. A thin smile.",
+      "heuristic": "extend",
+      "gold": "extend"
+    },
+    {
+      "Id": "s2_b1",
+      "visual": "OLD MAN sits by a shuttered window - elderly, thin, white hair, dressing gown. He turns. One pale blue eye shows a milky film: the vulture eye.",
+      "prev": "",
+      "heuristic": "hard_cut",
+      "gold": "hard_cut"
+    },
+    {
+      "Id": "s2_b6",
+      "visual": "Narrator speaks.",
+      "prev": "Narrator speaks.",
+      "heuristic": "extend",
+      "gold": "extend"
+    },
+    {
+      "Id": "s3_b4",
+      "visual": "Narrator speaks.",
+      "prev": "Narrator speaks.",
+      "heuristic": "extend",
+      "gold": "extend"
+    },
+    {
+      "Id": "s4_b5",
+      "visual": "Narrator speaks.",
+      "prev": "NARRATOR sets the tray with care. Pats the coverlet. The kindness is perfect - and false.",
+      "heuristic": "extend",
+      "gold": "extend"
+    },
+    {
+      "Id": "s6_b2",
+      "visual": "Narrator speaks.",
+      "prev": "Pitch black. Shutters close-fastened. NARRATOR eases his head through the opening, then the dark lan\u2026",
+      "heuristic": "extend",
+      "gold": "extend"
+    },
+    {
+      "Id": "s6_b7",
+      "visual": "Narrator speaks.",
+      "prev": "Narrator speaks.",
+      "heuristic": "extend",
+      "gold": "extend"
+    },
+    {
+      "Id": "s7_b1",
+      "visual": "Narrator speaks.",
+      "prev": "",
+      "heuristic": "hard_cut",
+      "gold": "hard_cut"
+    },
+    {
+      "Id": "s9_b1",
+      "visual": "On the bed, OLD MAN stirs suddenly, as if startled. NARRATOR\u0027s head is already in. He does not draw back. He pushes the door on steadily, steadily. Black as pit\u2026",
+      "prev": "",
+      "heuristic": "hard_cut",
+      "gold": "hard_cut"
+    },
+    {
+      "Id": "s10_b2",
+      "visual": "Narrator speaks.",
+      "prev": "Narrator speaks.",
+      "heuristic": "extend",
+      "gold": "extend"
+    },
+    {
+      "Id": "s11_b2",
+      "visual": "Narrator speaks.",
+      "prev": "OLD MAN upright in the dark, listening. Time stretches. A slight groan - low, stifled - mortal terro\u2026",
+      "heuristic": "extend",
+      "gold": "extend"
+    },
+    {
+      "Id": "s11_b6",
+      "visual": "Old Man (whispering to himself).",
+      "prev": "Narrator speaks.",
+      "heuristic": "extend",
+      "gold": "extend"
+    },
+    {
+      "Id": "s11_b11",
+      "visual": "Narrator speaks.",
+      "prev": "NARRATOR, head still within the room, waits. Patient. Then - stealthily - opens a very little crevic\u2026",
+      "heuristic": "extend",
+      "gold": "extend"
+    },
+    {
+      "Id": "s11_b15",
+      "visual": "A low, dull, quick sound - such as a watch makes when enveloped in cotton. The beating of the OLD MAN\u0027s heart. It quickens. Louder. Louder. NARRATOR holds the l\u2026",
+      "prev": "Narrator speaks.",
+      "heuristic": "extend",
+      "gold": "extend"
+    },
+    {
+      "Id": "s11_b20",
+      "visual": "He refrains still - some minutes longer - standing frozen while the beat fills the dark.",
+      "prev": "Narrator speaks.",
+      "heuristic": "extend",
+      "gold": "extend"
+    },
+    {
+      "Id": "s11_b24",
+      "visual": "With a loud yell NARRATOR throws open the lantern and leaps into the room. OLD MAN shrieks once - once only. NARRATOR drags him to the floor and pulls the heavy\u2026",
+      "prev": "Narrator speaks.",
+      "heuristic": "hard_cut",
+      "gold": "hard_cut"
+    },
+    {
+      "Id": "s13_b2",
+      "visual": "Narrator (soft, delighted).",
+      "prev": "Candlelight. NARRATOR works hastily, in silence. A tub stands ready. He dismembers the corpse - head\u2026",
+      "heuristic": "extend",
+      "gold": "extend"
+    },
+    {
+      "Id": "s14_b3",
+      "visual": "Officer Reynolds speaks.",
+      "prev": "Officer Reynolds speaks.",
+      "heuristic": "extend",
+      "gold": "extend"
+    },
+    {
+      "Id": "s16_b1",
+      "visual": "NARRATOR ushers them in. Shows the old man\u0027s treasures - secure, undisturbed. In the enthusiasm of his confidence he brings chairs and places them. He sets his \u2026",
+      "prev": "",
+      "heuristic": "hard_cut",
+      "gold": "hard_cut"
+    },
+    {
+      "Id": "s16_b5",
+      "visual": "Narrator speaks.",
+      "prev": "The OFFICERS sit. They chat of familiar things. NARRATOR answers cheerily. Singularly at ease. Then \u2026",
+      "heuristic": "extend",
+      "gold": "extend"
+    },
+    {
+      "Id": "s16_b10",
+      "visual": "Narrator (CONT\u0027D).",
+      "prev": "He rises. Argues about trifles in a high key, violent gesticulations. The noise steadily increases.",
+      "heuristic": "extend",
+      "gold": "extend"
+    },
+    {
+      "Id": "s16_b14",
+      "visual": "He cannot bear the hypocritical smiles. The beat pounds - again - louder - louder - louder - louder!",
+      "prev": "Narrator (internal agony breaking through).",
+      "heuristic": "extend",
+      "gold": "extend"
+    }
+  ]
+}

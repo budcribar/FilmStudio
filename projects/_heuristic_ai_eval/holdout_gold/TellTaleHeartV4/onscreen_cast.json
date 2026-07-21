@@ -1,0 +1,204 @@
+{
+  "labels": [
+    {
+      "Id": "s1_b1",
+      "visual": "A bare, lamplit chamber. Close walls. A plain wooden chair faces us. NARRATOR sits in it - a lean man of middle years, pale skin, dark hair disordered, waistcoat unbuttoned at the …",
+      "heuristic_keys": [
+        "Character_Narrator"
+      ],
+      "gold_keys": [
+        "Character_Narrator"
+      ]
+    },
+    {
+      "Id": "s1_b6",
+      "visual": "Narrator speaks.",
+      "heuristic_keys": [
+        "Character_Narrator"
+      ],
+      "gold_keys": [
+        "Character_Narrator"
+      ]
+    },
+    {
+      "Id": "s1_b11",
+      "visual": "Narrator (CONT'D).",
+      "heuristic_keys": [
+        "Character_Narrator"
+      ],
+      "gold_keys": [
+        "Character_Narrator"
+      ]
+    },
+    {
+      "Id": "s2_b4",
+      "visual": "NARRATOR - younger in bearing only by composure, same face and waistcoat - freezes in the doorway under that gaze. His blood drains from his face.",
+      "heuristic_keys": [
+        "Character_Narrator"
+      ],
+      "gold_keys": [
+        "Character_Narrator"
+      ]
+    },
+    {
+      "Id": "s3_b3",
+      "visual": "Narrator speaks.",
+      "heuristic_keys": [
+        "Character_Narrator"
+      ],
+      "gold_keys": [
+        "Character_Narrator"
+      ]
+    },
+    {
+      "Id": "s4_b5",
+      "visual": "Narrator speaks.",
+      "heuristic_keys": [
+        "Character_Narrator"
+      ],
+      "gold_keys": [
+        "Character_Narrator"
+      ]
+    },
+    {
+      "Id": "s6_b3",
+      "visual": "Narrator speaks.",
+      "heuristic_keys": [
+        "Character_Narrator"
+      ],
+      "gold_keys": [
+        "Character_Narrator"
+      ]
+    },
+    {
+      "Id": "s6_b8",
+      "visual": "Narrator speaks.",
+      "heuristic_keys": [
+        "Character_Narrator"
+      ],
+      "gold_keys": [
+        "Character_Narrator"
+      ]
+    },
+    {
+      "Id": "s7_b4",
+      "visual": "Narrator speaks.",
+      "heuristic_keys": [
+        "Character_Narrator"
+      ],
+      "gold_keys": [
+        "Character_Narrator"
+      ]
+    },
+    {
+      "Id": "s10_b1",
+      "visual": "Narrator speaks.",
+      "heuristic_keys": [
+        "Character_Narrator"
+      ],
+      "gold_keys": [
+        "Character_Narrator"
+      ]
+    },
+    {
+      "Id": "s11_b2",
+      "visual": "Narrator speaks.",
+      "heuristic_keys": [
+        "Character_Narrator"
+      ],
+      "gold_keys": [
+        "Character_Narrator"
+      ]
+    },
+    {
+      "Id": "s11_b7",
+      "visual": "Old Man (whispering to himself).",
+      "heuristic_keys": [
+        "Character_Old_Man"
+      ],
+      "gold_keys": [
+        "Character_Old_Man"
+      ]
+    },
+    {
+      "Id": "s11_b12",
+      "visual": "Narrator speaks.",
+      "heuristic_keys": [
+        "Character_Narrator"
+      ],
+      "gold_keys": [
+        "Character_Narrator"
+      ]
+    },
+    {
+      "Id": "s11_b18",
+      "visual": "Narrator speaks.",
+      "heuristic_keys": [
+        "Character_Narrator"
+      ],
+      "gold_keys": [
+        "Character_Narrator"
+      ]
+    },
+    {
+      "Id": "s11_b23",
+      "visual": "Narrator speaks.",
+      "heuristic_keys": [
+        "Character_Narrator"
+      ],
+      "gold_keys": [
+        "Character_Narrator"
+      ]
+    },
+    {
+      "Id": "s13_b2",
+      "visual": "Narrator (soft, delighted).",
+      "heuristic_keys": [
+        "Character_Narrator"
+      ],
+      "gold_keys": [
+        "Character_Narrator"
+      ]
+    },
+    {
+      "Id": "s14_b4",
+      "visual": "NARRATOR smiles - for what has he now to fear?",
+      "heuristic_keys": [
+        "Character_Narrator"
+      ],
+      "gold_keys": [
+        "Character_Narrator"
+      ]
+    },
+    {
+      "Id": "s16_b2",
+      "visual": "Narrator speaks.",
+      "heuristic_keys": [
+        "Character_Narrator"
+      ],
+      "gold_keys": [
+        "Character_Narrator"
+      ]
+    },
+    {
+      "Id": "s16_b8",
+      "visual": "Narrator (more quickly, vehemently).",
+      "heuristic_keys": [
+        "Character_Narrator"
+      ],
+      "gold_keys": [
+        "Character_Narrator"
+      ]
+    },
+    {
+      "Id": "s16_b13",
+      "visual": "Narrator (internal agony breaking through).",
+      "heuristic_keys": [
+        "Character_Narrator"
+      ],
+      "gold_keys": [
+        "Character_Narrator"
+      ]
+    }
+  ]
+}

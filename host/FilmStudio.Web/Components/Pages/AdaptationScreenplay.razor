@@ -130,7 +130,7 @@
                             data-testid="screenplay-signoff"
                             disabled="@(Busy || JobRunning || string.IsNullOrWhiteSpace(_text))"
                             @onclick="SignOffAsync">
-                        Looks good — continue
+                        @(Busy && !string.IsNullOrWhiteSpace(BusyMessage) ? BusyMessage : "Looks good — continue")
                     </button>
                     <div data-testid="screenplay-status"
                          data-signed="@(_screenplayStatus?.Signed == true && _screenplayStatus.Dirty != true ? "true" : "false")"
@@ -627,11 +627,19 @@
         }
 
         Busy = true;
+        BusyMessage = "Approving…";
         Error = null;
+        // Paint progress before the long sign-off call (includes cast build on the server)
+        await InvokeAsync(StateHasChanged);
+
         try
         {
             if (_editorReady)
                 await Js.InvokeVoidAsync("fountainEditor.setReadOnly", EditorId, true);
+
+            // Server may spend many seconds extracting cast after approve
+            BusyMessage = "Approving and preparing cast…";
+            await InvokeAsync(StateHasChanged);
 
             var result = await Engine.SignOffScreenplayAsync(ProjectId, _text);
             _loadedText = _text;
@@ -644,7 +652,11 @@
                 await SoftLoadAsync();
             Message = result?.Message ?? "Screenplay approved";
             if (result?.Ok == true)
+            {
+                BusyMessage = "Opening cast…";
+                await InvokeAsync(StateHasChanged);
                 Nav.NavigateTo("characters");
+            }
         }
         catch (Exception ex)
         {
@@ -653,6 +665,7 @@
         finally
         {
             Busy = false;
+            BusyMessage = null;
             if (_editorReady)
             {
                 try { await Js.InvokeVoidAsync("fountainEditor.setReadOnly", EditorId, false); }
@@ -669,13 +682,47 @@
         }
 
         Busy = true;
+        BusyMessage = "Drafting screenplay…";
         Error = null;
+        await InvokeAsync(StateHasChanged);
         try
         {
-            var result = await Engine.CreateScreenplayFromBookAsync(ProjectId);
-            Message = result?.Message ?? "Draft created from book";
-            if (result?.Adaptation is not null)
-                Status = result.Adaptation;
+            await EnsureHubAsync();
+            await Engine.StartBookImportAsync(
+                ProjectId,
+                skipPrepare: true,
+                forceExtract: false,
+                forceVision: false,
+                autoVision: false);
+            // Poll until draft job finishes (same path as Import adapt phase)
+            for (var i = 0; i < 3600; i++)
+            {
+                var jobs = await Engine.GetJobAsync();
+                var snap = jobs?.Job;
+                if (snap is not null)
+                {
+                    Job = snap;
+                    if (!string.IsNullOrWhiteSpace(snap.Message))
+                        BusyMessage = snap.Message.Contains("chunk", StringComparison.OrdinalIgnoreCase)
+                            ? "Writing screenplay…"
+                            : "Drafting screenplay…";
+                    await InvokeAsync(StateHasChanged);
+                    var st = snap.Status ?? "";
+                    if (st is "error" or "cancelled")
+                    {
+                        Error = snap.Error ?? snap.Message ?? "Could not create draft";
+                        return;
+                    }
+                    if (st == "done" &&
+                        (string.IsNullOrEmpty(snap.Kind) ||
+                         snap.Kind is "book_import" or "book_prepare" or "stage1"))
+                        break;
+                }
+                await Task.Delay(1000);
+            }
+
+            Message = "Draft created from book";
+            await SoftLoadAsync();
             await LoadEditorDataAsync();
             if (_editorReady)
                 await Js.InvokeVoidAsync("fountainEditor.setValue", EditorId, _text);
@@ -687,6 +734,7 @@
         finally
         {
             Busy = false;
+            BusyMessage = null;
         }
     }
 
