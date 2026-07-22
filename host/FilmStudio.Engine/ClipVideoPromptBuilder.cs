@@ -824,16 +824,19 @@ public static class ClipVideoPromptBuilder
                 : !string.IsNullOrWhiteSpace(sfx)
                     ? $" Ambient/Foley: {sfx.Trim()}."
                     : " Secondary layer = soft room tone / Foley.";
+            // Leave a short closed-mouth breath at the end so the next monologue clip does not butt-join
+            const string endPause =
+                " After the last word, hold a brief natural pause with a closed mouth (about half a second); do not freeze mid-syllable or trail into empty staring.";
             if (isNarrator)
             {
                 return
                     $"AUDIO: REQUIRED native Grok off-camera voiceover. {who} narrates " +
-                    $"exactly: \"{quote}\".{openCue} Do not lip-sync on-screen cast to this VO.{bed}{voiceLock}";
+                    $"exactly: \"{quote}\".{openCue}{endPause} Do not lip-sync on-screen cast to this VO.{bed}{voiceLock}";
             }
             // spoken_on_camera / on_camera (normalized)
             return
                 $"AUDIO: REQUIRED native Grok dialogue. {who} ON CAMERA lip-syncs " +
-                $"exactly: \"{quote}\".{openCue} Other mouths closed. Speech intelligible; never silent.{bed}{voiceLock}";
+                $"exactly: \"{quote}\".{openCue}{endPause} Other mouths closed. Speech intelligible; never silent.{bed}{voiceLock}";
         }
 
         if (!string.IsNullOrWhiteSpace(ambient) || !string.IsNullOrWhiteSpace(sfx))

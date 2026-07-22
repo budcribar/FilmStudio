@@ -2161,7 +2161,14 @@ public sealed class FilmJobService
                     $"Generate S{scene:D2}C{clip - 1:D2} first — later clips continue from the previous video.");
             }
 
-            await SilenceTrimClipAsync(prevOnDisk, scene, clip - 1, ct).ConfigureAwait(false);
+            // Keep a longer breath tail on spoken→spoken so monologue joins feel natural
+            JsonElement? prevMetaForTail = previousClipEl;
+            if (prevMetaForTail is null && blueprintRoot is { } brTail)
+                prevMetaForTail = FindClipElementInBlueprint(brTail, scene, clip - 1);
+            var prevKeepTail = SpeechTailKeepSeconds(
+                prevMetaForTail, currentHasSpeech: ClipHasSpokenAudio(clipEl));
+            await SilenceTrimClipAsync(prevOnDisk, scene, clip - 1, ct, keepTailSeconds: prevKeepTail)
+                .ConfigureAwait(false);
             prevVideoPath = prevOnDisk;
         }
 
@@ -2373,8 +2380,13 @@ public sealed class FilmJobService
 
         await AppendLogAsync($"  [Grok] saved {outPath}");
 
-        // Trim trailing silence on THIS clip before any later clip extends from it
-        await SilenceTrimClipAsync(outPath, scene, clip, ct).ConfigureAwait(false);
+        // Trim trailing silence on THIS clip before any later clip extends from it.
+        // Spoken lines keep a longer breath tail (~0.7s) so the next monologue clip does not butt-join.
+        var keepTail = ClipHasSpokenAudio(clipEl)
+            ? ClipSilenceTrimmer.SpeechBreathTailSeconds
+            : ClipSilenceTrimmer.DefaultKeepTailSeconds;
+        await SilenceTrimClipAsync(outPath, scene, clip, ct, keepTailSeconds: keepTail)
+            .ConfigureAwait(false);
 
         // Always write duration sidecar (even when silence-trim is a no-op)
         await EnsureClipDurationSidecarAsync(outPath, scene, clip, ct).ConfigureAwait(false);
@@ -2507,22 +2519,38 @@ public sealed class FilmJobService
     }
 
     /// <summary>
+    /// When the previous clip was spoken and this one is too, keep a longer end-breath on prev.
+    /// </summary>
+    private static double SpeechTailKeepSeconds(JsonElement? previousClipEl, bool currentHasSpeech)
+    {
+        if (!currentHasSpeech)
+            return ClipSilenceTrimmer.DefaultKeepTailSeconds;
+        if (previousClipEl is { } pe && ClipHasSpokenAudio(pe))
+            return ClipSilenceTrimmer.SpeechBreathTailSeconds;
+        // Prev silent / unknown — short tail is fine (fresh speech start does not need prev pause)
+        return ClipSilenceTrimmer.DefaultKeepTailSeconds;
+    }
+
+    /// <summary>
     /// Cut trailing silence so the next video-extend starts on real content.
+    /// Spoken clips keep a short breath so monologue joins (C2→C3) are not butt-joined.
     /// </summary>
     private async Task SilenceTrimClipAsync(
         string videoPath,
         int scene,
         int clip,
-        CancellationToken ct)
+        CancellationToken ct,
+        double? keepTailSeconds = null)
     {
         if (!_remux.IsAvailable() || !File.Exists(videoPath))
             return;
         try
         {
+            var keep = keepTailSeconds ?? ClipSilenceTrimmer.DefaultKeepTailSeconds;
             var result = await ClipSilenceTrimmer.TrimTrailingSilenceAsync(
                 _remux.FfmpegPath,
                 videoPath,
-                keepTailSeconds: 0.35,
+                keepTailSeconds: keep,
                 minTrimSavings: 0.4,
                 log: _log,
                 ct: ct).ConfigureAwait(false);

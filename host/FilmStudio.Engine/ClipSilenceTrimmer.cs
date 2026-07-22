@@ -7,9 +7,18 @@ namespace FilmStudio.Engine;
 /// <summary>
 /// Post-gen: trim trailing silence / dead air so the next video-extend
 /// starts from the last real speech or action, not empty hold frames.
+/// Spoken monologue clips keep a short breath tail so joins are not butt-joined.
 /// </summary>
 public static class ClipSilenceTrimmer
 {
+    /// <summary>Default keep after last non-silence (silent / action clips).</summary>
+    public const double DefaultKeepTailSeconds = 0.35;
+
+    /// <summary>
+    /// Keep after spoken dialogue — natural breath between monologue clips (~C2→C3).
+    /// Budget above the ~0.35–0.4s feel we want; models often leave less than asked.
+    /// </summary>
+    public const double SpeechBreathTailSeconds = 0.90;
     private static readonly Regex SilenceEndRe = new(
         @"silence_end:\s*([0-9]+(?:\.[0-9]+)?)",
         RegexOptions.IgnoreCase | RegexOptions.Compiled);

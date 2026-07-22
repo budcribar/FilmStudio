@@ -28,8 +28,11 @@ public static class ClipDurationEstimator
     /// </summary>
     public const double SpeechHeadSeconds = 0.55;
 
-    /// <summary>Pad after speech so the line can land (not multi-second dead air).</summary>
-    public const double SpeechTailSeconds = 0.55;
+    /// <summary>
+    /// Pad after speech so the line can land and leave a short breath before the next clip
+    /// (matches silence-trim speech breath tail; not multi-second dead air).
+    /// </summary>
+    public const double SpeechTailSeconds = 0.90;
 
     /// <summary>
     /// Extra headroom under <see cref="MaxSeconds"/> when packing monologue splits so lip-sync
