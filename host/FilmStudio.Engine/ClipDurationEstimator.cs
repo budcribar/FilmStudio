@@ -112,7 +112,7 @@ public static class ClipDurationEstimator
         var est = Estimate(dialogue, visual, actionClass: actionClass, delivery);
         // Prefer estimator; never use a planned value that is much longer without dialogue
         if (planned > 0 && string.IsNullOrWhiteSpace(dialogue))
-            return Math.Clamp(Math.Min(planned, est), ActionOnlyMinSeconds, SilentActionMaxSeconds);
+            return Math.Clamp(planned, ActionOnlyMinSeconds, SilentActionMaxSeconds);
         if (!string.IsNullOrWhiteSpace(dialogue))
         {
             // Never under-run speech need — under-planned clips rush and clip the first word.

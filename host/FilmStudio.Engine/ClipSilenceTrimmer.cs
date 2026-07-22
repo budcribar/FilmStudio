@@ -151,7 +151,7 @@ public static class ClipSilenceTrimmer
             var ss = startAt.Value.ToString("0.###", CultureInfo.InvariantCulture);
             var ok = await RunFfmpegAsync(
                 ffmpegPath,
-                $"-hide_banner -nostats -loglevel error -y -ss {ss} -i \"{videoPath}\" " +
+                $"-hide_banner -nostats -loglevel error -y -i \"{videoPath}\" -ss {ss} " +
                 $"-c:v libx264 -preset veryfast -crf 18 -c:a aac -b:a 128k -movflags +faststart \"{tmp}\"",
                 ct).ConfigureAwait(false);
             if (!ok || !File.Exists(tmp) || new FileInfo(tmp).Length < 1024)

@@ -2503,7 +2503,7 @@ public sealed class FilmJobService
             // -sseof -N seeks N seconds before EOF; -t N takes that tail.
             // Drain pipes via FfmpegProcess — WaitForExit without reading stderr deadlocks on re-encode.
             var args =
-                $"-hide_banner -nostats -loglevel error -y -sseof -{sec} -i \"{extendedVideoPath}\" " +
+                $"-hide_banner -nostats -loglevel error -y -i \"{extendedVideoPath}\" -sseof -{sec} " +
                 $"-t {sec} -c:v libx264 -preset veryfast -crf 18 -c:a aac -b:a 128k \"{outClipPath}\"";
             var r = await FfmpegProcess.RunAsync(
                     _remux.FfmpegPath, args, ct, timeoutMs: 180_000)
