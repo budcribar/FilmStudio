@@ -148,11 +148,59 @@
       "currency": "USD",
       "id": "1784689679_0005",
       "ts": "2026-07-21T21:07:59"
+    },
+    {
+      "kind": "image",
+      "model": "grok-imagine-image-quality",
+      "character": "",
+      "n_images": 1,
+      "unit_usd": 0.05,
+      "usd": 0.05,
+      "currency": "USD",
+      "source": "list_rate",
+      "id": "1784726107_0006",
+      "ts": "2026-07-22T07:15:07"
+    },
+    {
+      "kind": "image",
+      "model": "grok-imagine-image-quality",
+      "character": "",
+      "n_images": 1,
+      "unit_usd": 0.05,
+      "usd": 0.05,
+      "currency": "USD",
+      "source": "list_rate",
+      "id": "1784726133_0007",
+      "ts": "2026-07-22T07:15:33"
+    },
+    {
+      "kind": "image",
+      "model": "grok-imagine-image-quality",
+      "character": "",
+      "n_images": 1,
+      "unit_usd": 0.05,
+      "usd": 0.05,
+      "currency": "USD",
+      "source": "list_rate",
+      "id": "1784726133_0008",
+      "ts": "2026-07-22T07:15:33"
+    },
+    {
+      "kind": "image",
+      "model": "grok-imagine-image-quality",
+      "character": "",
+      "n_images": 1,
+      "unit_usd": 0.05,
+      "usd": 0.05,
+      "currency": "USD",
+      "source": "list_rate",
+      "id": "1784726133_0009",
+      "ts": "2026-07-22T07:15:33"
     }
   ],
   "cost_totals": {
-    "usd": 2.542,
-    "events": 6,
-    "updated_at": "2026-07-21T21:07:59"
+    "usd": 2.742,
+    "events": 10,
+    "updated_at": "2026-07-22T07:15:33"
   }
 }

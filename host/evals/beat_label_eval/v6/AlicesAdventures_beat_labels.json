@@ -1,0 +1,452 @@
+{
+  "promptVersion": "v6",
+  "projectId": "AlicesAdventures",
+  "path": "C:\\Users\\budcr\\source\\repos\\FilmStudio\\projects\\AlicesAdventures\\source\\screenplay.fountain",
+  "silentActionBeats": 282,
+  "sampled": 40,
+  "labels": [
+    {
+      "id": "s1_b1",
+      "class": "establishing"
+    },
+    {
+      "id": "s4_b13",
+      "class": "hold"
+    },
+    {
+      "id": "s6_b1",
+      "class": "action"
+    },
+    {
+      "id": "s7_b2",
+      "class": "big_action"
+    },
+    {
+      "id": "s7_b35",
+      "class": "hold"
+    },
+    {
+      "id": "s7_b73",
+      "class": "action"
+    },
+    {
+      "id": "s8_b26",
+      "class": "hold"
+    },
+    {
+      "id": "s9_b6",
+      "class": "action"
+    },
+    {
+      "id": "s9_b53",
+      "class": "action"
+    },
+    {
+      "id": "s9_b78",
+      "class": "action"
+    },
+    {
+      "id": "s12_b12",
+      "class": "hold"
+    },
+    {
+      "id": "s13_b13",
+      "class": "hold"
+    },
+    {
+      "id": "s16_b9",
+      "class": "action"
+    },
+    {
+      "id": "s20_b4",
+      "class": "hold"
+    },
+    {
+      "id": "s23_b9",
+      "class": "action"
+    },
+    {
+      "id": "s24_b44",
+      "class": "hold"
+    },
+    {
+      "id": "s25_b1",
+      "class": "action"
+    },
+    {
+      "id": "s26_b1",
+      "class": "action"
+    },
+    {
+      "id": "s27_b3",
+      "class": "hold"
+    },
+    {
+      "id": "s28_b1",
+      "class": "action"
+    },
+    {
+      "id": "s28_b48",
+      "class": "hold"
+    },
+    {
+      "id": "s29_b20",
+      "class": "hold"
+    },
+    {
+      "id": "s29_b81",
+      "class": "hold"
+    },
+    {
+      "id": "s29_b138",
+      "class": "action"
+    },
+    {
+      "id": "s31_b1",
+      "class": "hold"
+    },
+    {
+      "id": "s32_b25",
+      "class": "hold"
+    },
+    {
+      "id": "s32_b40",
+      "class": "action"
+    },
+    {
+      "id": "s33_b1",
+      "class": "action"
+    },
+    {
+      "id": "s33_b43",
+      "class": "action"
+    },
+    {
+      "id": "s33_b99",
+      "class": "action"
+    },
+    {
+      "id": "s35_b7",
+      "class": "hold"
+    },
+    {
+      "id": "s35_b63",
+      "class": "action"
+    },
+    {
+      "id": "s35_b122",
+      "class": "hold"
+    },
+    {
+      "id": "s35_b167",
+      "class": "hold"
+    },
+    {
+      "id": "s36_b1",
+      "class": "establishing"
+    },
+    {
+      "id": "s36_b31",
+      "class": "action"
+    },
+    {
+      "id": "s36_b68",
+      "class": "action"
+    },
+    {
+      "id": "s36_b88",
+      "class": "action"
+    },
+    {
+      "id": "s36_b120",
+      "class": "hold"
+    },
+    {
+      "id": "s36_b161",
+      "class": "hold"
+    }
+  ],
+  "comparisons": [
+    {
+      "Id": "s1_b1",
+      "Scene": 1,
+      "heuristic": "establishing",
+      "ai": "establishing",
+      "visual": "Notes: Period live-action Victorian fantasy; humans and talking animals share one stylized live-action medium. ALICE: about seven, fair hair, knee-length blue d\u2026"
+    },
+    {
+      "Id": "s4_b13",
+      "Scene": 4,
+      "heuristic": "hold",
+      "ai": "hold",
+      "visual": "She considers, solemn."
+    },
+    {
+      "Id": "s6_b1",
+      "Scene": 6,
+      "heuristic": "establishing",
+      "ai": "action",
+      "visual": "A long, low hall lit by a row of lamps hanging from the roof. Doors all round. Alice tries every one: all locked. She walks sadly down the middle. A little thre\u2026"
+    },
+    {
+      "Id": "s7_b2",
+      "Scene": 7,
+      "heuristic": "action",
+      "ai": "big_action",
+      "visual": "She shoots upward, opening out like the largest telescope."
+    },
+    {
+      "Id": "s7_b35",
+      "Scene": 7,
+      "heuristic": "hold",
+      "ai": "hold",
+      "visual": "She ticks off children she knows."
+    },
+    {
+      "Id": "s7_b73",
+      "Scene": 7,
+      "heuristic": "action",
+      "ai": "action",
+      "visual": "She runs to the little door - shut again; the golden key lies on the glass table as before."
+    },
+    {
+      "Id": "s8_b26",
+      "Scene": 8,
+      "heuristic": "hold",
+      "ai": "hold",
+      "visual": "The Mouse bristles all over."
+    },
+    {
+      "Id": "s9_b6",
+      "Scene": 9,
+      "heuristic": "hold",
+      "ai": "action",
+      "visual": "They sit in a large ring, Mouse in the middle. Alice watches anxiously, sure of a bad cold if she stays wet."
+    },
+    {
+      "Id": "s9_b53",
+      "Scene": 9,
+      "heuristic": "action",
+      "ai": "action",
+      "visual": "The Dodo receives the thimble solemnly, then presents it back to Alice, saying -"
+    },
+    {
+      "Id": "s9_b78",
+      "Scene": 9,
+      "heuristic": "action",
+      "ai": "action",
+      "visual": "Alice guesses at once: the fan and the white kid gloves. She hunts about good-naturedly. Nothing. The great hall, the glass table, the little door - all vanishe\u2026"
+    },
+    {
+      "Id": "s12_b12",
+      "Scene": 12,
+      "heuristic": "action",
+      "ai": "hold",
+      "visual": "The bottle has had its full effect. She grows no larger - still very uncomfortable, wedged in the little room."
+    },
+    {
+      "Id": "s13_b13",
+      "Scene": 13,
+      "heuristic": "hold",
+      "ai": "hold",
+      "visual": "Long silence. Whispers."
+    },
+    {
+      "Id": "s16_b9",
+      "Scene": 16,
+      "heuristic": "hold",
+      "ai": "action",
+      "visual": "She gives one sharp kick."
+    },
+    {
+      "Id": "s20_b4",
+      "Scene": 20,
+      "heuristic": "action",
+      "ai": "hold",
+      "visual": "Another dead silence outside. Alice notices with surprise: the pebbles on the floor are all turning into little cakes."
+    },
+    {
+      "Id": "s23_b9",
+      "Scene": 23,
+      "heuristic": "action",
+      "ai": "action",
+      "visual": "She looks all round at the flowers and blades of grass. Nothing that looks like the right thing. A large mushroom grows near her, about the same height as herse\u2026"
+    },
+    {
+      "Id": "s24_b44",
+      "Scene": 24,
+      "heuristic": "action",
+      "ai": "hold",
+      "visual": "\u0022In my youth,\u0022 Father William replied to his son, \u0022I feared it might injure the brain; But, now that I\u0027m perfectly sure I have none, Why, I do it again and agai\u2026"
+    },
+    {
+      "Id": "s25_b1",
+      "Scene": 25,
+      "heuristic": "establishing",
+      "ai": "action",
+      "visual": "Alice\u0027s head frees itself. She is delighted - until she finds her shoulders gone; all she can see when she looks down is an immense length of neck, rising like \u2026"
+    },
+    {
+      "Id": "s26_b1",
+      "Scene": 26,
+      "heuristic": "establishing",
+      "ai": "action",
+      "visual": "Alice stands before the door, wondering what to do next, when suddenly a footman in livery comes running out of the wood - the face of a fish, powdered hair dra\u2026"
+    },
+    {
+      "Id": "s27_b3",
+      "Scene": 27,
+      "heuristic": "action",
+      "ai": "hold",
+      "visual": "She says it aloud, half to herself. The Duchess only scowls. The cook takes no notice."
+    },
+    {
+      "Id": "s28_b1",
+      "Scene": 28,
+      "heuristic": "establishing",
+      "ai": "action",
+      "visual": "Alice nurses the baby as she walks."
+    },
+    {
+      "Id": "s28_b48",
+      "Scene": 28,
+      "heuristic": "action",
+      "ai": "hold",
+      "visual": "This time it vanishes quite slowly, beginning with the end of the tail, and ending with the grin, which remains some time after the rest of it has gone."
+    },
+    {
+      "Id": "s29_b20",
+      "Scene": 29,
+      "heuristic": "hold",
+      "ai": "hold",
+      "visual": "(aloud) I believe I can guess that."
+    },
+    {
+      "Id": "s29_b81",
+      "Scene": 29,
+      "heuristic": "hold",
+      "ai": "hold",
+      "visual": "The Hatter shakes his head mournfully."
+    },
+    {
+      "Id": "s29_b138",
+      "Scene": 29,
+      "heuristic": "action",
+      "ai": "action",
+      "visual": "He moves on. The Dormouse follows him. The March Hare moves into the Dormouse\u0027s place. Alice rather unwillingly takes the place of the March Hare. The March Har\u2026"
+    },
+    {
+      "Id": "s31_b1",
+      "Scene": 31,
+      "heuristic": "establishing",
+      "ai": "hold",
+      "visual": "Once more she finds herself in the long hall, close to the little glass table."
+    },
+    {
+      "Id": "s32_b25",
+      "Scene": 32,
+      "heuristic": "hold",
+      "ai": "hold",
+      "visual": "The Knave only bows and smiles."
+    },
+    {
+      "Id": "s32_b40",
+      "Scene": 32,
+      "heuristic": "action",
+      "ai": "action",
+      "visual": "The Knave does so, very carefully, with one foot."
+    },
+    {
+      "Id": "s33_b1",
+      "Scene": 33,
+      "heuristic": "establishing",
+      "ai": "action",
+      "visual": "Alice walks beside the White Rabbit, who peeps anxiously into her face."
+    },
+    {
+      "Id": "s33_b43",
+      "Scene": 33,
+      "heuristic": "action",
+      "ai": "action",
+      "visual": "The King and executioner argue whether a head can be beheaded without a body. The Cat\u0027s head begins to fade away. By the time they have settled anything, the he\u2026"
+    },
+    {
+      "Id": "s33_b99",
+      "Scene": 33,
+      "heuristic": "action",
+      "ai": "action",
+      "visual": "As they walk off together, Alice hears the King say in a low voice to the company generally -"
+    },
+    {
+      "Id": "s35_b7",
+      "Scene": 35,
+      "heuristic": "action",
+      "ai": "hold",
+      "visual": "He sighs deeply, drawing the back of one flapper across his eyes. He tries to speak; sobs choke his voice."
+    },
+    {
+      "Id": "s35_b63",
+      "Scene": 35,
+      "heuristic": "action",
+      "ai": "action",
+      "visual": "The Gryphon shakes him and punches him in the back. At last the Mock Turtle recovers."
+    },
+    {
+      "Id": "s35_b122",
+      "Scene": 35,
+      "heuristic": "hold",
+      "ai": "hold",
+      "visual": "Alice looks down at her shoes."
+    },
+    {
+      "Id": "s35_b167",
+      "Scene": 35,
+      "heuristic": "action",
+      "ai": "hold",
+      "visual": "The Panther took pie-crust, and gravy, and meat, While the Owl had the dish as its share of the treat. When the pie was all finished, the Owl, as a boon, Was ki\u2026"
+    },
+    {
+      "Id": "s36_b1",
+      "Scene": 36,
+      "heuristic": "establishing",
+      "ai": "establishing",
+      "visual": "The KING OF HEARTS and QUEEN OF HEARTS sit on their throne. A great crowd of little birds and beasts and the whole pack of cards assembles about them. The KNAVE\u2026"
+    },
+    {
+      "Id": "s36_b31",
+      "Scene": 36,
+      "heuristic": "hold",
+      "ai": "action",
+      "visual": "The jury makes a memorandum."
+    },
+    {
+      "Id": "s36_b68",
+      "Scene": 36,
+      "heuristic": "action",
+      "ai": "action",
+      "visual": "One of the GUINEA-PIGS cheers and is immediately suppressed by officers: they slip him head first into a large canvas bag, tie it up, and sit upon it. Alice wat\u2026"
+    },
+    {
+      "Id": "s36_b88",
+      "Scene": 36,
+      "heuristic": "action",
+      "ai": "action",
+      "visual": "A general confusion. The Queen has the Dormouse turned out of court. The whole jury has to write down all the dates on their slates, and then add them up."
+    },
+    {
+      "Id": "s36_b120",
+      "Scene": 36,
+      "heuristic": "hold",
+      "ai": "hold",
+      "visual": "The King turns pale, and shuts his note-book hastily."
+    },
+    {
+      "Id": "s36_b161",
+      "Scene": 36,
+      "heuristic": "hold",
+      "ai": "hold",
+      "visual": "He turns to the Knave. The Knave shakes his head sadly."
+    }
+  ],
+  "aiRawPreview": "{\n  \u0022labels\u0022: [\n    { \u0022id\u0022: \u0022s1_b1\u0022, \u0022class\u0022: \u0022establishing\u0022, \u0022reason\u0022: \u0022film/world open with character-place setup notes; first-scene reveal\u0022 },\n    { \u0022id\u0022: \u0022s4_b13\u0022, \u0022class\u0022: \u0022hold\u0022, \u0022reason\u0022: \u0022solemn consider; pure micro reaction, no locomotion\u0022 },\n    { \u0022id\u0022: \u0022s6_b1\u0022, \u0022class\u0022: \u0022action\u0022, \u0022reason\u0022: \u0022multi-step business: try doors, walk hall, find key, try locks\u0022 },\n    { \u0022id\u0022: \u0022s7_b2\u0022, \u0022class\u0022: \u2026"
+}

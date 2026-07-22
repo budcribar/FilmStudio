@@ -72,6 +72,11 @@ public sealed class GeminiImageClient : IImageClient
     }
 
     /// <summary>Reference-guided edits (character continuity). One call per variant.</summary>
+    /// <param name="costumeRefPath">
+    /// Optional shared wardrobe-only reference (see <see cref="CharacterDesignService"/>
+    /// uniform-lock flow) — attached last with an instruction to copy wardrobe only and
+    /// ignore its face/identity.
+    /// </param>
     public async Task<IReadOnlyList<byte[]>> EditVariantsAsync(
         string prompt,
         IReadOnlyList<string> referenceImagePaths,
@@ -79,6 +84,8 @@ public sealed class GeminiImageClient : IImageClient
         string aspectRatio = "1:1",
         string? model = null,
         int maxRefs = 0,
+        string? costumeRefPath = null,
+        bool illustratedMedium = true,
         Action<string>? onProgress = null,
         CancellationToken ct = default)
     {
@@ -87,12 +94,25 @@ public sealed class GeminiImageClient : IImageClient
             ? Math.Clamp(maxRefs, 1, ImageApiLimits.GeminiMaxReferenceImages)
             : ImageApiLimits.GeminiMaxReferenceImages;
 
+        var hasCostumeRef = !string.IsNullOrWhiteSpace(costumeRefPath) && File.Exists(costumeRefPath);
+        var identityCap = hasCostumeRef ? Math.Max(1, cap - 1) : cap;
+
         var refs = referenceImagePaths
             .Where(p => !string.IsNullOrWhiteSpace(p) && File.Exists(p))
-            .Take(cap)
+            .Take(identityCap)
             .ToList();
-        if (refs.Count == 0)
+        if (refs.Count == 0 && !hasCostumeRef)
             throw new InvalidOperationException("No usable reference images for character edit.");
+
+        var allRefs = hasCostumeRef ? refs.Append(costumeRefPath!).ToList() : refs;
+        var costumeClause = hasCostumeRef
+            ? " The LAST reference image is a COSTUME REFERENCE ONLY (shared wardrobe design) — " +
+              "copy its coat, hat, and badge exactly; completely ignore any face or person in it; " +
+              "this character's own face/identity comes from the other reference(s)/text, never from it."
+            : "";
+        var mediumClause = illustratedMedium
+            ? " Keep the illustrated/picture-book medium from the refs — not photoreal photography."
+            : " Keep the photoreal live-action medium from the refs — not illustration, not cartoon.";
 
         var images = new List<byte[]>();
         for (var i = 0; i < n; i++)
@@ -100,9 +120,9 @@ public sealed class GeminiImageClient : IImageClient
             ct.ThrowIfCancellationRequested();
             onProgress?.Invoke($"edit variant {i + 1}/{n}");
             var variantPrompt = n > 1
-                ? $"{prompt} Variation {i + 1} of {n}: tiny pose/expression change only; same identity."
-                : prompt;
-            var one = await GenerateOneAsync(modelName, variantPrompt, aspectRatio, refs, ct)
+                ? $"{prompt}{costumeClause}{mediumClause} Variation {i + 1} of {n}: tiny pose/expression change only; same identity."
+                : $"{prompt}{costumeClause}{mediumClause}";
+            var one = await GenerateOneAsync(modelName, variantPrompt, aspectRatio, allRefs, ct)
                 .ConfigureAwait(false);
             if (one is not null)
                 images.Add(one);

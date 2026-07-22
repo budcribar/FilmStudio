@@ -1,127 +1,116 @@
 {
-  "ts": "2026-07-21T15:02:08.8847669\u002B00:00",
+  "ts": "2026-07-22T12:42:54.2709393\u002B00:00",
   "metric": "accuracy vs human ground truth",
   "fairComparison": "baselineHeuristic (checked-in) vs AI vs gold \u2014 not tuned heuristic, not heuristic\u2194AI agreement",
   "contaminationNote": "tunedHeuristic was edited after reviewing these eval books; report only for diagnostics. AI prompt few-shots also touched similar examples \u2014 prefer held-out books for final ship decision.",
-  "aiFrom": "v3",
-  "promptVersion": "v3",
-  "goldBeatsScored": 147,
-  "booksWithGold": 7,
+  "aiFrom": "v5",
+  "promptVersion": "v5",
+  "goldBeatsScored": 75,
+  "booksWithGold": 6,
   "baselineHeuristic": {
     "description": "Checked-in InferActionClass: first silent \u2192 establishing; short holds; big_action verbs",
-    "correct": 69,
-    "accuracyPct": 46.9,
-    "durationOk": 100,
-    "durationOkPct": 68,
+    "correct": 27,
+    "accuracyPct": 36,
+    "durationOk": 55,
+    "durationOkPct": 73.3,
     "errorHistogram": {
-      "establishing\u2192action": 31,
-      "action\u2192hold": 21,
-      "hold\u2192action": 8,
+      "establishing\u2192action": 28,
       "establishing\u2192hold": 6,
-      "establishing\u2192big_action": 6,
-      "action\u2192big_action": 4,
-      "big_action\u2192hold": 1,
-      "big_action\u2192action": 1
+      "hold\u2192action": 5,
+      "action\u2192hold": 4,
+      "establishing\u2192big_action": 2,
+      "big_action\u2192action": 1,
+      "action\u2192big_action": 1,
+      "big_action\u2192hold": 1
     }
   },
   "tunedHeuristic": {
     "description": "Working-tree InferActionClass after eval-driven edits (contaminated on this book set)",
     "contaminated": true,
-    "correct": 84,
-    "accuracyPct": 57.1,
-    "durationOk": 99,
-    "durationOkPct": 67.3,
+    "correct": 27,
+    "accuracyPct": 36,
+    "durationOk": 55,
+    "durationOkPct": 73.3,
     "errorHistogram": {
-      "action\u2192hold": 22,
-      "hold\u2192action": 11,
-      "action\u2192big_action": 8,
-      "action\u2192establishing": 8,
-      "establishing\u2192action": 7,
-      "hold\u2192establishing": 2,
+      "establishing\u2192action": 28,
+      "establishing\u2192hold": 6,
+      "hold\u2192action": 5,
+      "action\u2192hold": 4,
       "establishing\u2192big_action": 2,
-      "big_action\u2192hold": 1,
       "big_action\u2192action": 1,
-      "establishing\u2192hold": 1
+      "action\u2192big_action": 1,
+      "big_action\u2192hold": 1
     }
   },
   "ai": {
-    "correct": 126,
-    "accuracyPct": 85.7,
-    "durationOk": 129,
-    "durationOkPct": 87.8,
+    "correct": 60,
+    "accuracyPct": 80,
+    "durationOk": 64,
+    "durationOkPct": 85.3,
     "errorHistogram": {
-      "hold\u2192action": 10,
-      "big_action\u2192action": 4,
-      "action\u2192big_action": 2,
-      "establishing\u2192action": 2,
+      "establishing\u2192action": 3,
+      "big_action\u2192action": 2,
+      "action\u2192hold": 2,
+      "hold\u2192action": 1,
       "action\u2192establishing": 1,
-      "big_action\u2192hold": 1,
-      "hold\u2192establishing": 1
+      "action\u2192big_action": 1,
+      "big_action\u2192hold": 1
     }
   },
   "books": [
     {
       "projectId": "GiftOfTheMagi",
-      "goldCount": 27,
-      "baselineHeuristicAccuracyPct": 59.3,
-      "tunedHeuristicAccuracyPct": 74.1,
-      "aiAccuracyPct": 81.5,
-      "baselineDurationOkPct": 85.2,
-      "aiDurationOkPct": 81.5
+      "goldCount": 13,
+      "baselineHeuristicAccuracyPct": 38.5,
+      "tunedHeuristicAccuracyPct": 38.5,
+      "aiAccuracyPct": 92.3,
+      "baselineDurationOkPct": 92.3,
+      "aiDurationOkPct": 92.3
     },
     {
       "projectId": "YellowWallpaper",
-      "goldCount": 20,
-      "baselineHeuristicAccuracyPct": 40,
-      "tunedHeuristicAccuracyPct": 55,
-      "aiAccuracyPct": 90,
-      "baselineDurationOkPct": 60,
-      "aiDurationOkPct": 95
-    },
-    {
-      "projectId": "ChristmasCarol",
-      "goldCount": 20,
-      "baselineHeuristicAccuracyPct": 50,
-      "tunedHeuristicAccuracyPct": 55,
-      "aiAccuracyPct": 95,
-      "baselineDurationOkPct": 60,
-      "aiDurationOkPct": 95
-    },
-    {
-      "projectId": "Dracula",
-      "goldCount": 20,
-      "baselineHeuristicAccuracyPct": 50,
-      "tunedHeuristicAccuracyPct": 75,
-      "aiAccuracyPct": 80,
-      "baselineDurationOkPct": 80,
-      "aiDurationOkPct": 85
-    },
-    {
-      "projectId": "Frankenstein",
-      "goldCount": 20,
-      "baselineHeuristicAccuracyPct": 25,
-      "tunedHeuristicAccuracyPct": 45,
-      "aiAccuracyPct": 85,
-      "baselineDurationOkPct": 70,
-      "aiDurationOkPct": 85
-    },
-    {
-      "projectId": "JungleBook",
-      "goldCount": 20,
-      "baselineHeuristicAccuracyPct": 25,
-      "tunedHeuristicAccuracyPct": 30,
-      "aiAccuracyPct": 75,
-      "baselineDurationOkPct": 40,
+      "goldCount": 15,
+      "baselineHeuristicAccuracyPct": 20,
+      "tunedHeuristicAccuracyPct": 20,
+      "aiAccuracyPct": 73.3,
+      "baselineDurationOkPct": 46.7,
       "aiDurationOkPct": 80
     },
     {
+      "projectId": "ChristmasCarol",
+      "goldCount": 11,
+      "baselineHeuristicAccuracyPct": 54.5,
+      "tunedHeuristicAccuracyPct": 54.5,
+      "aiAccuracyPct": 81.8,
+      "baselineDurationOkPct": 72.7,
+      "aiDurationOkPct": 81.8
+    },
+    {
+      "projectId": "Dracula",
+      "goldCount": 14,
+      "baselineHeuristicAccuracyPct": 50,
+      "tunedHeuristicAccuracyPct": 50,
+      "aiAccuracyPct": 78.6,
+      "baselineDurationOkPct": 92.9,
+      "aiDurationOkPct": 85.7
+    },
+    {
+      "projectId": "Frankenstein",
+      "goldCount": 15,
+      "baselineHeuristicAccuracyPct": 13.3,
+      "tunedHeuristicAccuracyPct": 13.3,
+      "aiAccuracyPct": 73.3,
+      "baselineDurationOkPct": 73.3,
+      "aiDurationOkPct": 86.7
+    },
+    {
       "projectId": "AlicesAdventures",
-      "goldCount": 20,
-      "baselineHeuristicAccuracyPct": 75,
-      "tunedHeuristicAccuracyPct": 60,
-      "aiAccuracyPct": 95,
-      "baselineDurationOkPct": 75,
-      "aiDurationOkPct": 95
+      "goldCount": 7,
+      "baselineHeuristicAccuracyPct": 57.1,
+      "tunedHeuristicAccuracyPct": 57.1,
+      "aiAccuracyPct": 85.7,
+      "baselineDurationOkPct": 57.1,
+      "aiDurationOkPct": 85.7
     }
   ]
 }

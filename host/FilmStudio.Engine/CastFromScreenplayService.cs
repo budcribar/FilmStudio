@@ -166,6 +166,15 @@ public sealed class CastFromScreenplayService
         normalized["character_seed_tokens"] = literalSeeds;
         seedsObj = literalSeeds;
 
+        // Same figurative→literal / base-look scrub pass, applied once to the shared wardrobe
+        // group text instead of per-character (there may be several members pointing at it).
+        if (normalized.TryGetValue("wardrobe_lock_tokens", out var wlObj) &&
+            wlObj is Dictionary<string, object?> wlDict && wlDict.Count > 0)
+        {
+            normalized["wardrobe_lock_tokens"] = await _literalize.LiteralizeSeedsAsync(
+                wlDict, model, onProgress, ct).ConfigureAwait(false);
+        }
+
         onProgress?.Invoke($"Writing {seedsObj.Count} character seed(s)…");
         Directory.CreateDirectory(Path.GetDirectoryName(outPath)!);
         if (File.Exists(outPath))
@@ -691,12 +700,51 @@ public sealed class CastFromScreenplayService
             if (!string.IsNullOrWhiteSpace(perfNotes))
                 clean["performance_notes"] = perfNotes;
 
+            // Shared uniform group (e.g. several police officers): the group's own
+            // wardrobe_lock_tokens entry is the wardrobe source of truth, not this character's
+            // own description/wardrobe_always — see EnsureWardrobeReferenceAsync.
+            var wardrobeLock = CoerceString(seed, "wardrobe_lock");
+            if (!string.IsNullOrWhiteSpace(wardrobeLock))
+                clean["wardrobe_lock"] = NormalizeWardrobeKey(wardrobeLock!);
+
             seedsOut[k] = clean;
         }
 
         outDoc["character_seed_tokens"] = seedsOut;
+
+        var wardrobeIn = GetWardrobeLockDict(parsed);
+        if (wardrobeIn.Count > 0)
+        {
+            var wardrobeOut = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase);
+            foreach (var (rawKey, rawVal) in wardrobeIn)
+            {
+                if (rawVal is not Dictionary<string, object?> entry) continue;
+                var desc = CoerceString(entry, "description") ?? "";
+                if (string.IsNullOrWhiteSpace(desc)) continue;
+                var k = NormalizeWardrobeKey(rawKey);
+                var clean = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase)
+                {
+                    ["description"] = desc,
+                    ["reference_image_placeholder"] = CoerceString(entry, "reference_image_placeholder")
+                        ?? ProjectStore.WardrobeRefFileName(k),
+                };
+                var vlock = CoerceString(entry, "visual_lock");
+                if (!string.IsNullOrWhiteSpace(vlock))
+                    clean["visual_lock"] = vlock;
+                wardrobeOut[k] = clean;
+            }
+            if (wardrobeOut.Count > 0)
+                outDoc["wardrobe_lock_tokens"] = wardrobeOut;
+        }
+
         return outDoc;
     }
+
+    /// <summary>Foreign-key-safe wardrobe group key, e.g. "police officer" → "Wardrobe_Police_Officer".</summary>
+    private static string NormalizeWardrobeKey(string raw) =>
+        raw.StartsWith("Wardrobe_", StringComparison.OrdinalIgnoreCase)
+            ? raw
+            : "Wardrobe_" + Regex.Replace(raw, @"[^A-Za-z0-9]+", "_").Trim('_');
 
     private static Dictionary<string, object?> GetSeedsDict(Dictionary<string, object?> doc)
     {
@@ -708,6 +756,18 @@ public sealed class CastFromScreenplayService
         if (doc.TryGetValue("global_production_variables", out var g) &&
             g is Dictionary<string, object?> gpv &&
             gpv.TryGetValue("character_seed_tokens", out var s2) &&
+            s2 is Dictionary<string, object?> d2)
+            return d2;
+        return new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase);
+    }
+
+    private static Dictionary<string, object?> GetWardrobeLockDict(Dictionary<string, object?> doc)
+    {
+        if (doc.TryGetValue("wardrobe_lock_tokens", out var s) && s is Dictionary<string, object?> d)
+            return d;
+        if (doc.TryGetValue("global_production_variables", out var g) &&
+            g is Dictionary<string, object?> gpv &&
+            gpv.TryGetValue("wardrobe_lock_tokens", out var s2) &&
             s2 is Dictionary<string, object?> d2)
             return d2;
         return new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase);

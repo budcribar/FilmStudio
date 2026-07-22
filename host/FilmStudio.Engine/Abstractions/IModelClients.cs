@@ -56,6 +56,8 @@ public interface IImageClient
         string aspectRatio = "1:1",
         string? model = null,
         int maxRefs = 0,
+        string? costumeRefPath = null,
+        bool illustratedMedium = true,
         Action<string>? onProgress = null,
         CancellationToken ct = default);
 }

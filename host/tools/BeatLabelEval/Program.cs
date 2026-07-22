@@ -13,7 +13,7 @@ using FilmStudio.Engine;
 //   BeatLabelEval --score-gt --all [--ai-from v3]
 //   BeatLabelEval --label-ai --all --prompt v2 --fresh
 //
-// Product classifier: FilmStudio.Engine.SilentBeatActionClassifier (prompt v2).
+// Product classifier: FilmStudio.Engine.SilentBeatActionClassifier (v2_pp = v2 chat + PostProcess).
 
 var repo = FindRepoRoot();
 var evalRoot = Path.Combine(repo, "host", "evals", "beat_label_eval");
@@ -28,7 +28,7 @@ var labelAi = args.Any(a => a is "--label-ai");
 var fresh = args.Any(a => a is "--fresh" or "-f");
 var allBooks = args.Any(a => a is "--all" or "-a");
 
-var promptVer = "v3";
+var promptVer = "v2";
 string? aiFrom = null;
 for (var i = 0; i < args.Length - 1; i++)
 {
@@ -64,16 +64,26 @@ if (fountainPaths.Count < 1)
 
 string ResolvePath(string preferId, int fallbackIndex)
 {
-    var hit = fountainPaths.FirstOrDefault(p =>
-        p.Contains(Path.DirectorySeparatorChar + preferId + Path.DirectorySeparatorChar,
-            StringComparison.OrdinalIgnoreCase) ||
-        p.Contains(preferId, StringComparison.OrdinalIgnoreCase));
-    return hit ?? fountainPaths[fallbackIndex % fountainPaths.Count];
+    // Aliases for folder names that differ from gold/eval ids
+    var aliases = preferId.Equals("JungleBook", StringComparison.OrdinalIgnoreCase)
+        ? new[] { "The_Jungle_Book", "JungleBook", "Jungle_Book" }
+        : new[] { preferId };
+
+    foreach (var id in aliases)
+    {
+        var hit = fountainPaths.FirstOrDefault(p =>
+            p.Contains(Path.DirectorySeparatorChar + id + Path.DirectorySeparatorChar,
+                StringComparison.OrdinalIgnoreCase) ||
+            p.Contains(id, StringComparison.OrdinalIgnoreCase));
+        if (hit is not null)
+            return hit;
+    }
+    return fountainPaths[fallbackIndex % fountainPaths.Count];
 }
 
 var namedArgs = args
     .Where(a => !a.StartsWith('-'))
-    .Where(a => a is not ("v2" or "v3" or "v4h"))
+    .Where(a => a is not ("v2" or "v3" or "v4" or "v5" or "v6" or "v4h"))
     .Where(a => !string.Equals(a, promptVer, StringComparison.OrdinalIgnoreCase))
     .Where(a => !string.Equals(a, aiFrom, StringComparison.OrdinalIgnoreCase))
     .ToList();
@@ -84,7 +94,7 @@ if (allBooks || namedArgs.Count == 0)
     var preferred = new[]
     {
         "GiftOfTheMagi", "YellowWallpaper", "ChristmasCarol", "Dracula",
-        "Frankenstein", "JungleBook", "AlicesAdventures",
+        "Frankenstein", "The_Jungle_Book", "AlicesAdventures",
     };
     selected = preferred.Select((id, i) => ResolvePath(id, i)).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
 }
@@ -110,6 +120,9 @@ http.Timeout = TimeSpan.FromMinutes(4);
 var systemPrompt = promptVer switch
 {
     "v3" => SystemPromptV3(),
+    "v4" => SilentBeatActionClassifier.SystemPromptV4(),
+    "v5" => SilentBeatActionClassifier.SystemPromptV5(),
+    "v6" => SilentBeatActionClassifier.SystemPromptV6(),
     _ => SystemPromptV2(),
 };
 
@@ -898,6 +911,8 @@ Few-shot (class only):
 Return JSON only:
 {"labels":[{"id":"s1_b2","class":"hold","reason":"≤12 words"}]}
 """;
+
+// v4 lives on SilentBeatActionClassifier.SystemPromptV4 (product + eval share one string).
 
 record FlatBeat(
     string Id,

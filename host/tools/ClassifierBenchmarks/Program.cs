@@ -256,18 +256,19 @@ static async Task EnsureDefaultSilentBeatPromptAsync(BenchPaths paths)
 {
     var dir = Path.Combine(paths.Prompts, "silent_beat_action");
     Directory.CreateDirectory(dir);
+    // Refresh product prompt so ship id stays aligned with Engine (v2 chat + post-process).
     var txt = Path.Combine(dir, "v2_product.txt");
-    if (!File.Exists(txt))
-    {
-        await File.WriteAllTextAsync(txt, SilentBeatActionClassifier.SystemPromptV2().Trim() + Environment.NewLine);
-        await File.WriteAllTextAsync(Path.Combine(dir, "v2_product.meta.json"),
-            JsonSerializer.Serialize(new
-            {
-                id = "v2_product",
-                task = "silent_beat_action",
-                label = "Product SilentBeatActionClassifier (v2)",
-            }, JsonDefaults.Pretty));
-    }
+    await File.WriteAllTextAsync(txt, SilentBeatActionClassifier.SystemPromptV2().Trim() + Environment.NewLine);
+    await File.WriteAllTextAsync(Path.Combine(dir, "v2_product.meta.json"),
+        JsonSerializer.Serialize(new
+        {
+            id = "v2_product",
+            task = "silent_beat_action",
+            label = $"Product SilentBeatActionClassifier ({SilentBeatActionClassifier.PromptVersion})",
+            chatPrompt = "v2",
+            postProcess = "PostProcessActionClass (multi-step hold→action; busy-not-spectacle big_action→action)",
+            note = "Chat uses SystemPromptV2; product applies PostProcessActionClass after parse.",
+        }, JsonDefaults.Pretty));
 }
 
 static async Task<int> CmdReportAsync(BenchPaths paths)

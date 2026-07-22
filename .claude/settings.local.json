@@ -15,7 +15,23 @@
       "Bash(git commit -m ' *)",
       "Bash(dotnet run *)",
       "Bash(CB_DEBUG_RAW=1 dotnet run --project tools/ClassifierBenchmarks -c Release -- run --project Buster2 --tasks plate_rank --models claude-haiku-4-5-20251001 --prompts v2_picture_book --note \"debug raw\")",
-      "Bash(xargs -I{} echo {})"
+      "Bash(xargs -I{} echo {})",
+      "Bash(grep -v \"\\\\.g\\\\.cs\\\\|obj[\\\\\\\\/]\")",
+      "Bash(EngineApi__BaseUrl=\"http://127.0.0.1:5088\" dotnet run --project FilmStudio.Web --launch-profile http)",
+      "Bash(echo \"WEB PID: $!\")",
+      "Bash(curl -s -m 5 http://127.0.0.1:5088/health)",
+      "Bash(curl -s -m 5 -o /dev/null -w \"web status: %{http_code}\\\\n\" http://localhost:5079/)",
+      "Bash(node -e \"console.log\\(require\\('playwright/package.json'\\).version\\)\")",
+      "Bash(node wardrobe-uniform-verify.mjs)",
+      "Bash(node -e ' *)",
+      "Bash(powershell -NoProfile -Command \"Get-NetTCPConnection -LocalPort 5088,5079 -State Listen -ErrorAction SilentlyContinue | Select-Object -Property LocalPort,OwningProcess\")",
+      "Bash(powershell -NoProfile -Command \"Get-Process -Id 4940,10152 -ErrorAction SilentlyContinue | Select-Object Id,ProcessName,Path,StartTime\")",
+      "Bash(powershell -NoProfile -Command \"Stop-Process -Id 10152,4940 -Force -ErrorAction SilentlyContinue; Start-Sleep -Seconds 1; Get-Process -Id 10152,4940 -ErrorAction SilentlyContinue\")",
+      "Bash(curl -s -m 3 http://127.0.0.1:5088/health)",
+      "Bash(echo \"exit:$?\")",
+      "Bash(curl -s -m 3 http://localhost:5079/)",
+      "Bash(curl -s -m 3 -o /dev/null -w \"web http_code: %{http_code} exitcheck\\\\n\" http://localhost:5079/)",
+      "Bash(echo \"curl exit:$?\")"
     ]
   }
 }

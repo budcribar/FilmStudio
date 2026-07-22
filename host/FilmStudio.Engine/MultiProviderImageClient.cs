@@ -39,10 +39,13 @@ public sealed class MultiProviderImageClient : IImageClient
         string aspectRatio = "1:1",
         string? model = null,
         int maxRefs = 0,
+        string? costumeRefPath = null,
+        bool illustratedMedium = true,
         Action<string>? onProgress = null,
         CancellationToken ct = default) =>
         Resolve(model).EditVariantsAsync(
-            prompt, referenceImagePaths, n, aspectRatio, model, maxRefs, onProgress, ct);
+            prompt, referenceImagePaths, n, aspectRatio, model, maxRefs, costumeRefPath, illustratedMedium,
+            onProgress, ct);
 
     private IImageClient Resolve(string? model)
     {

@@ -1,0 +1,309 @@
+{
+  "promptVersion": "v5",
+  "projectId": "GiftOfTheMagi",
+  "path": "C:\\Users\\budcr\\source\\repos\\FilmStudio\\projects\\GiftOfTheMagi\\source\\screenplay.fountain",
+  "silentActionBeats": 27,
+  "sampled": 27,
+  "labels": [
+    {
+      "id": "s1_b1",
+      "class": "establishing"
+    },
+    {
+      "id": "s1_b8",
+      "class": "action"
+    },
+    {
+      "id": "s2_b1",
+      "class": "establishing"
+    },
+    {
+      "id": "s3_b1",
+      "class": "action"
+    },
+    {
+      "id": "s4_b1",
+      "class": "establishing"
+    },
+    {
+      "id": "s5_b7",
+      "class": "action"
+    },
+    {
+      "id": "s5_b12",
+      "class": "action"
+    },
+    {
+      "id": "s6_b1",
+      "class": "action"
+    },
+    {
+      "id": "s7_b1",
+      "class": "establishing"
+    },
+    {
+      "id": "s7_b5",
+      "class": "action"
+    },
+    {
+      "id": "s7_b8",
+      "class": "action"
+    },
+    {
+      "id": "s8_b1",
+      "class": "action"
+    },
+    {
+      "id": "s9_b1",
+      "class": "action"
+    },
+    {
+      "id": "s10_b1",
+      "class": "action"
+    },
+    {
+      "id": "s11_b1",
+      "class": "action"
+    },
+    {
+      "id": "s11_b3",
+      "class": "action"
+    },
+    {
+      "id": "s11_b13",
+      "class": "hold"
+    },
+    {
+      "id": "s11_b16",
+      "class": "hold"
+    },
+    {
+      "id": "s11_b23",
+      "class": "action"
+    },
+    {
+      "id": "s11_b29",
+      "class": "action"
+    },
+    {
+      "id": "s11_b35",
+      "class": "action"
+    },
+    {
+      "id": "s11_b40",
+      "class": "hold"
+    },
+    {
+      "id": "s11_b42",
+      "class": "big_action"
+    },
+    {
+      "id": "s11_b44",
+      "class": "hold"
+    },
+    {
+      "id": "s11_b48",
+      "class": "action"
+    },
+    {
+      "id": "s11_b53",
+      "class": "action"
+    },
+    {
+      "id": "s11_b64",
+      "class": "hold"
+    }
+  ],
+  "comparisons": [
+    {
+      "Id": "s1_b1",
+      "Scene": 1,
+      "heuristic": "establishing",
+      "ai": "establishing",
+      "visual": "A shabby little room. Worn red carpet. A thin pier-glass between the windows. A battered couch. On a small table: a meager scatter of coins. DELLA, about twenty\u2026"
+    },
+    {
+      "Id": "s1_b8",
+      "Scene": 1,
+      "heuristic": "action",
+      "ai": "action",
+      "visual": "Della stares at the coins. Nothing left to do. She flops down on the shabby little couch and howls-raw, helpless sobs."
+    },
+    {
+      "Id": "s2_b1",
+      "Scene": 2,
+      "heuristic": "establishing",
+      "ai": "establishing",
+      "visual": "A letter-box into which no letter would go. An electric button that will not ring. A card: \u0022MR. JAMES DILLINGHAM YOUNG.\u0022"
+    },
+    {
+      "Id": "s3_b1",
+      "Scene": 3,
+      "heuristic": "establishing",
+      "ai": "action",
+      "visual": "Della finishes her cry. She attends to her cheeks with a powder rag. She stands by the window and looks out dully."
+    },
+    {
+      "Id": "s4_b1",
+      "Scene": 4,
+      "heuristic": "establishing",
+      "ai": "establishing",
+      "visual": "A gray cat walks a gray fence in a gray backyard."
+    },
+    {
+      "Id": "s5_b7",
+      "Scene": 5,
+      "heuristic": "action",
+      "ai": "action",
+      "visual": "Della whirls from the window and stands before the pier-glass. Her eyes shine brilliantly; the color drains from her face. She pulls down her hair and lets it f\u2026"
+    },
+    {
+      "Id": "s5_b12",
+      "Scene": 5,
+      "heuristic": "action",
+      "ai": "action",
+      "visual": "She stands very still. A tear or two splashes on the worn red carpet. Then she does the hair up again, nervously, quickly. On goes her old brown jacket. On goes\u2026"
+    },
+    {
+      "Id": "s6_b1",
+      "Scene": 6,
+      "heuristic": "establishing",
+      "ai": "action",
+      "visual": "Della hurries along the cold sidewalk among Christmas shoppers, small and determined in the brown jacket and hat. She stops under a sign: \u0022MME. SOFRONIE. HAIR G\u2026"
+    },
+    {
+      "Id": "s7_b1",
+      "Scene": 7,
+      "heuristic": "establishing",
+      "ai": "establishing",
+      "visual": "MADAME SOFRONIE-large, too white, chilly-waits behind the counter. Hardly the romance of \u0022Sofronie.\u0022 Della collects herself, panting."
+    },
+    {
+      "Id": "s7_b5",
+      "Scene": 7,
+      "heuristic": "action",
+      "ai": "action",
+      "visual": "Della removes the hat. Down ripples the brown cascade. Madame lifts the mass with a practised hand."
+    },
+    {
+      "Id": "s7_b8",
+      "Scene": 7,
+      "heuristic": "action",
+      "ai": "action",
+      "visual": "Madame works with scissors and pins. The cascade falls away. Coins clink into Della\u0027s palm-twenty dollars. Della\u0027s eyes are wet and bright. She closes her fist \u2026"
+    },
+    {
+      "Id": "s8_b1",
+      "Scene": 8,
+      "heuristic": "establishing",
+      "ai": "action",
+      "visual": "The next two hours on rosy wings. Della ransacks store after store-counters of watches, trays of trinkets-searching, turning things over, shaking her head, pres\u2026"
+    },
+    {
+      "Id": "s9_b1",
+      "Scene": 9,
+      "heuristic": "establishing",
+      "ai": "action",
+      "visual": "She finds it. A platinum fob chain, simple and chaste in design-value by substance alone, not ornament. She knows at once. It is like him. Quietness and value. \u2026"
+    },
+    {
+      "Id": "s10_b1",
+      "Scene": 10,
+      "heuristic": "establishing",
+      "ai": "action",
+      "visual": "Della\u0027s intoxication gives way a little to prudence and reason. She gets out her curling irons, lights the gas, and goes to work repairing the ravages made by g\u2026"
+    },
+    {
+      "Id": "s11_b1",
+      "Scene": 11,
+      "heuristic": "establishing",
+      "ai": "action",
+      "visual": "Seven o\u0027clock. Coffee made. The frying-pan on the back of the stove, hot and ready to cook the chops. Della doubles the fob chain in her hand and sits on the co\u2026"
+    },
+    {
+      "Id": "s11_b3",
+      "Scene": 11,
+      "heuristic": "action",
+      "ai": "action",
+      "visual": "The door opens. JIM steps in and closes it-thin, very serious, only twenty-two. Needs a new overcoat. Without gloves. He stops inside the door, as immovable as \u2026"
+    },
+    {
+      "Id": "s11_b13",
+      "Scene": 11,
+      "heuristic": "action",
+      "ai": "hold",
+      "visual": "Laboriously-as if he had not arrived at that patent fact yet."
+    },
+    {
+      "Id": "s11_b16",
+      "Scene": 11,
+      "heuristic": "hold",
+      "ai": "hold",
+      "visual": "Jim looks about the room curiously."
+    },
+    {
+      "Id": "s11_b23",
+      "Scene": 11,
+      "heuristic": "action",
+      "ai": "action",
+      "visual": "Out of his trance Jim seems quickly to wake. He enfolds his Della."
+    },
+    {
+      "Id": "s11_b29",
+      "Scene": 11,
+      "heuristic": "action",
+      "ai": "action",
+      "visual": "Jim draws a package from his overcoat pocket and throws it upon the table."
+    },
+    {
+      "Id": "s11_b35",
+      "Scene": 11,
+      "heuristic": "action",
+      "ai": "action",
+      "visual": "White fingers and nimble tear at the string and paper. An ecstatic scream of joy- -then a quick change to hysterical tears and wails. Jim holds her, all the com\u2026"
+    },
+    {
+      "Id": "s11_b40",
+      "Scene": 11,
+      "heuristic": "hold",
+      "ai": "hold",
+      "visual": "She hugs them to her bosom. At length she looks up with dim eyes and a smile."
+    },
+    {
+      "Id": "s11_b42",
+      "Scene": 11,
+      "heuristic": "big_action",
+      "ai": "big_action",
+      "visual": "Then she leaps up like a little singed cat."
+    },
+    {
+      "Id": "s11_b44",
+      "Scene": 11,
+      "heuristic": "action",
+      "ai": "hold",
+      "visual": "Jim has not yet seen his present. She holds it out eagerly upon her open palm. The dull precious metal seems to flash with a reflection of her bright and ardent\u2026"
+    },
+    {
+      "Id": "s11_b48",
+      "Scene": 11,
+      "heuristic": "hold",
+      "ai": "action",
+      "visual": "Instead of obeying, Jim tumbles down on the couch and puts his hands under the back of his head and smiles."
+    },
+    {
+      "Id": "s11_b53",
+      "Scene": 11,
+      "heuristic": "action",
+      "ai": "action",
+      "visual": "She stares at him. Then laughter breaks through the tears. She sinks beside him on the couch, the chain in one hand, the combs in the other. He draws her in. Th\u2026"
+    },
+    {
+      "Id": "s11_b64",
+      "Scene": 11,
+      "heuristic": "action",
+      "ai": "hold",
+      "visual": "Jim and Della hold each other. The combs and the chain rest between them-useless, priceless."
+    }
+  ],
+  "aiRawPreview": "{\n  \u0022labels\u0022: [\n    { \u0022id\u0022: \u0022s1_b1\u0022, \u0022class\u0022: \u0022establishing\u0022, \u0022reason\u0022: \u0022opens on new flat with wide room detail before counting business\u0022 },\n    { \u0022id\u0022: \u0022s1_b8\u0022, \u0022class\u0022: \u0022action\u0022, \u0022reason\u0022: \u0022stare then flop/howl is multi-step body work\u0022 },\n    { \u0022id\u0022: \u0022s2_b1\u0022, \u0022class\u0022: \u0022establishing\u0022, \u0022reason\u0022: \u0022pure vestibule/place reveal: box, button, name card\u0022 },\n    { \u0022id\u0022: \u0022s3_b1\u0022, \u0022class\u0022: \u0022action\u0022, \u0022reas\u2026"
+}

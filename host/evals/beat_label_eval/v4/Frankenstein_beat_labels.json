@@ -1,0 +1,452 @@
+{
+  "promptVersion": "v4",
+  "projectId": "Frankenstein",
+  "path": "C:\\Users\\budcr\\source\\repos\\FilmStudio\\projects\\Frankenstein\\source\\screenplay.fountain",
+  "silentActionBeats": 223,
+  "sampled": 40,
+  "labels": [
+    {
+      "id": "s1_b1",
+      "class": "establishing"
+    },
+    {
+      "id": "s4_b1",
+      "class": "action"
+    },
+    {
+      "id": "s8_b1",
+      "class": "hold"
+    },
+    {
+      "id": "s11_b5",
+      "class": "hold"
+    },
+    {
+      "id": "s13_b5",
+      "class": "action"
+    },
+    {
+      "id": "s17_b1",
+      "class": "establishing"
+    },
+    {
+      "id": "s21_b1",
+      "class": "establishing"
+    },
+    {
+      "id": "s27_b1",
+      "class": "establishing"
+    },
+    {
+      "id": "s31_b1",
+      "class": "action"
+    },
+    {
+      "id": "s35_b4",
+      "class": "hold"
+    },
+    {
+      "id": "s39_b1",
+      "class": "action"
+    },
+    {
+      "id": "s43_b1",
+      "class": "establishing"
+    },
+    {
+      "id": "s46_b5",
+      "class": "hold"
+    },
+    {
+      "id": "s50_b1",
+      "class": "action"
+    },
+    {
+      "id": "s54_b1",
+      "class": "establishing"
+    },
+    {
+      "id": "s57_b1",
+      "class": "action"
+    },
+    {
+      "id": "s59_b22",
+      "class": "hold"
+    },
+    {
+      "id": "s61_b1",
+      "class": "establishing"
+    },
+    {
+      "id": "s62_b10",
+      "class": "hold"
+    },
+    {
+      "id": "s65_b3",
+      "class": "action"
+    },
+    {
+      "id": "s68_b1",
+      "class": "big_action"
+    },
+    {
+      "id": "s70_b9",
+      "class": "hold"
+    },
+    {
+      "id": "s70_b57",
+      "class": "action"
+    },
+    {
+      "id": "s74_b1",
+      "class": "action"
+    },
+    {
+      "id": "s77_b1",
+      "class": "establishing"
+    },
+    {
+      "id": "s82_b5",
+      "class": "hold"
+    },
+    {
+      "id": "s84_b74",
+      "class": "hold"
+    },
+    {
+      "id": "s90_b1",
+      "class": "establishing"
+    },
+    {
+      "id": "s96_b1",
+      "class": "action"
+    },
+    {
+      "id": "s99_b1",
+      "class": "action"
+    },
+    {
+      "id": "s104_b1",
+      "class": "establishing"
+    },
+    {
+      "id": "s105_b1",
+      "class": "action"
+    },
+    {
+      "id": "s110_b1",
+      "class": "action"
+    },
+    {
+      "id": "s111_b66",
+      "class": "big_action"
+    },
+    {
+      "id": "s117_b1",
+      "class": "big_action"
+    },
+    {
+      "id": "s122_b1",
+      "class": "establishing"
+    },
+    {
+      "id": "s126_b1",
+      "class": "action"
+    },
+    {
+      "id": "s129_b9",
+      "class": "action"
+    },
+    {
+      "id": "s133_b1",
+      "class": "establishing"
+    },
+    {
+      "id": "s135_b7",
+      "class": "action"
+    }
+  ],
+  "comparisons": [
+    {
+      "Id": "s1_b1",
+      "Scene": 1,
+      "heuristic": "establishing",
+      "ai": "establishing",
+      "visual": "Late 18th century. Snow packed hard underfoot. A cold northern breeze cuts the air. ROBERT WALTON, twenty-eight, lean and bright-eyed, walks in heavy furs. The \u2026"
+    },
+    {
+      "Id": "s4_b1",
+      "Scene": 4,
+      "heuristic": "establishing",
+      "ai": "action",
+      "visual": "Walton writes on, fervor rising."
+    },
+    {
+      "Id": "s8_b1",
+      "Scene": 8,
+      "heuristic": "establishing",
+      "ai": "hold",
+      "visual": "Back to the letter. Walton\u0027s face is open, almost pleading with the page."
+    },
+    {
+      "Id": "s11_b5",
+      "Scene": 11,
+      "heuristic": "action",
+      "ai": "hold",
+      "visual": "He stops. The room is empty. The silence presses."
+    },
+    {
+      "Id": "s13_b5",
+      "Scene": 13,
+      "heuristic": "hold",
+      "ai": "action",
+      "visual": "He seals the letter."
+    },
+    {
+      "Id": "s17_b1",
+      "Scene": 17,
+      "heuristic": "establishing",
+      "ai": "establishing",
+      "visual": "Victor wrapped in blankets, fevered, slowly mending under Walton\u0027s care. Walton sits by him with broth and quiet talk."
+    },
+    {
+      "Id": "s21_b1",
+      "Scene": 21,
+      "heuristic": "establishing",
+      "ai": "establishing",
+      "visual": "A modest carriage pulls away from Geneva\u0027s walls. Beaufort does not look back. Caroline steadies him."
+    },
+    {
+      "Id": "s27_b1",
+      "Scene": 27,
+      "heuristic": "establishing",
+      "ai": "establishing",
+      "visual": "Years later. Young Victor, about five-slim, dark hair, intent curious face-walks with Caroline past poor cottages. Alphonse has gone ahead toward Milan. A disco\u2026"
+    },
+    {
+      "Id": "s31_b1",
+      "Scene": 31,
+      "heuristic": "establishing",
+      "ai": "action",
+      "visual": "Morning. Caroline presents Elizabeth. Young Victor receives her with childish seriousness-as a possession of his own to protect, love, and cherish."
+    },
+    {
+      "Id": "s35_b4",
+      "Scene": 35,
+      "heuristic": "hold",
+      "ai": "hold",
+      "visual": "Victor\u0027s disappointment hardens into secret resolve."
+    },
+    {
+      "Id": "s39_b1",
+      "Scene": 39,
+      "heuristic": "establishing",
+      "ai": "action",
+      "visual": "Alphonse, broken but upright. Victor prepares for university. Elizabeth and Clerval bid him farewell with tears and forced cheer."
+    },
+    {
+      "Id": "s43_b1",
+      "Scene": 43,
+      "heuristic": "establishing",
+      "ai": "establishing",
+      "visual": "Candles burnt low. Victor still at work as the high steeple outside pales toward morning. Stars disappear in the light. His application no longer fluctuating-ar\u2026"
+    },
+    {
+      "Id": "s46_b5",
+      "Scene": 46,
+      "heuristic": "hold",
+      "ai": "hold",
+      "visual": "He closes the book. Resolve hardens."
+    },
+    {
+      "Id": "s50_b1",
+      "Scene": 50,
+      "heuristic": "establishing",
+      "ai": "action",
+      "visual": "Walton leans forward, eagerness naked in his eyes. Victor meets that look and stops him with a raised hand."
+    },
+    {
+      "Id": "s54_b1",
+      "Scene": 54,
+      "heuristic": "establishing",
+      "ai": "establishing",
+      "visual": "A solitary chamber, almost a cell, separated by gallery and stair. Filthy creation: instruments, vats, the vast unfinished form under cloth. Victor\u0027s eyeballs s\u2026"
+    },
+    {
+      "Id": "s57_b1",
+      "Scene": 57,
+      "heuristic": "establishing",
+      "ai": "action",
+      "visual": "Victor wanders, unable to return. Morning light finds him exhausted near an inn. A coach rattles in. HENRY CLERVAL springs down, radiant."
+    },
+    {
+      "Id": "s59_b22",
+      "Scene": 59,
+      "heuristic": "hold",
+      "ai": "hold",
+      "visual": "Victor nods almost imperceptibly-memory of a frank, happy face."
+    },
+    {
+      "Id": "s61_b1",
+      "Scene": 61,
+      "heuristic": "establishing",
+      "ai": "establishing",
+      "visual": "Books, specimens, soft light. M. WALDMAN-kind, silvered, warm-clasps Victor\u0027s hand, then Henry\u0027s."
+    },
+    {
+      "Id": "s62_b10",
+      "Scene": 62,
+      "heuristic": "action",
+      "ai": "hold",
+      "visual": "Krempe launches into a eulogy on himself. Victor breathes again."
+    },
+    {
+      "Id": "s65_b3",
+      "Scene": 65,
+      "heuristic": "hold",
+      "ai": "action",
+      "visual": "Victor turns, radiant, and throws an arm toward the open sky."
+    },
+    {
+      "Id": "s68_b1",
+      "Scene": 68,
+      "heuristic": "establishing",
+      "ai": "big_action",
+      "visual": "Thunder. In a flash of lightning Victor sees among the trees a gigantic figure-the Creature-climbing the rocks of a nearby precipice with superhuman speed."
+    },
+    {
+      "Id": "s70_b9",
+      "Scene": 70,
+      "heuristic": "action",
+      "ai": "hold",
+      "visual": "A murmur of horror fills the court. Justine\u0027s countenance alters-surprise, horror, misery."
+    },
+    {
+      "Id": "s70_b57",
+      "Scene": 70,
+      "heuristic": "action",
+      "ai": "action",
+      "visual": "A murmur of approbation-excited by Elizabeth\u0027s generous interference, not in favour of Justine. Public indignation turns on the accused with renewed violence. V\u2026"
+    },
+    {
+      "Id": "s74_b1",
+      "Scene": 74,
+      "heuristic": "establishing",
+      "ai": "action",
+      "visual": "Justine on a straw pallet, eyes swollen. Elizabeth and Victor enter. Justine rises and falls into Elizabeth\u0027s arms."
+    },
+    {
+      "Id": "s77_b1",
+      "Scene": 77,
+      "heuristic": "establishing",
+      "ai": "establishing",
+      "visual": "Weeks of gloom. Victor wanders alone, unable to rest. The family removes to Belrive. He takes the boat at night and drifts under the stars, sometimes tempted by\u2026"
+    },
+    {
+      "Id": "s82_b5",
+      "Scene": 82,
+      "heuristic": "hold",
+      "ai": "hold",
+      "visual": "He pauses on a winding, rain streaking his face."
+    },
+    {
+      "Id": "s84_b74",
+      "Scene": 84,
+      "heuristic": "action",
+      "ai": "hold",
+      "visual": "Victor\u0027s rage falters into a bitter necessity of hearing."
+    },
+    {
+      "Id": "s90_b1",
+      "Scene": 90,
+      "heuristic": "establishing",
+      "ai": "establishing",
+      "visual": "A mean shed built against a cottage of neat plainness. The Creature crawls in, finds it empty of occupant, and lies on straw, grateful for shelter."
+    },
+    {
+      "Id": "s96_b1",
+      "Scene": 96,
+      "heuristic": "establishing",
+      "ai": "action",
+      "visual": "Morning. Agatha opens the door-astonished at the great pile of wood. Felix joins her; surprise breaks his habitual sadness. He does not go to the forest that da\u2026"
+    },
+    {
+      "Id": "s99_b1",
+      "Scene": 99,
+      "heuristic": "establishing",
+      "ai": "action",
+      "visual": "Thaw. The Creature comes upon a transparent pool. He leans to drink-and starts back from his own reflection. Yellow eyes. Scarred yellow skin. Enormous frame. H\u2026"
+    },
+    {
+      "Id": "s104_b1",
+      "Scene": 104,
+      "heuristic": "establishing",
+      "ai": "establishing",
+      "visual": "Autumn light. DE LACEY sits alone with his guitar. He plays a mournful air, then lays it aside. A knock."
+    },
+    {
+      "Id": "s105_b1",
+      "Scene": 105,
+      "heuristic": "establishing",
+      "ai": "action",
+      "visual": "The Creature howls into the dark."
+    },
+    {
+      "Id": "s110_b1",
+      "Scene": 110,
+      "heuristic": "establishing",
+      "ai": "action",
+      "visual": "Justine asleep in the barn, exhausted from searching. The Creature sees her-sees a way to wound his creator further. He plants the miniature in the folds of her\u2026"
+    },
+    {
+      "Id": "s111_b66",
+      "Scene": 111,
+      "heuristic": "action",
+      "ai": "big_action",
+      "visual": "The Creature departs over the ice with the speed of lightning. Victor is left alone in the hut as the sun sets behind the snowy precipices."
+    },
+    {
+      "Id": "s117_b1",
+      "Scene": 117,
+      "heuristic": "big_action",
+      "ai": "big_action",
+      "visual": "Victor pauses over the unfinished female. Imagination shows him a race of devils; the female refusing the compact; two monsters loose upon the world. He looks u\u2026"
+    },
+    {
+      "Id": "s122_b1",
+      "Scene": 122,
+      "heuristic": "establishing",
+      "ai": "establishing",
+      "visual": "Father and son on deck. Victor is a shadow. Alphonse tries to speak of Elizabeth, of hope. Victor hears only the Creature\u0027s promise."
+    },
+    {
+      "Id": "s126_b1",
+      "Scene": 126,
+      "heuristic": "establishing",
+      "ai": "action",
+      "visual": "Elizabeth retires to the chamber. Victor paces the outer rooms and passages, pistol in hand, determined to meet his enemy alone. A dreadful scream from the bedr\u2026"
+    },
+    {
+      "Id": "s129_b9",
+      "Scene": 129,
+      "heuristic": "action",
+      "ai": "action",
+      "visual": "Victor springs up, but the Creature is already fled."
+    },
+    {
+      "Id": "s133_b1",
+      "Scene": 133,
+      "heuristic": "establishing",
+      "ai": "establishing",
+      "visual": "The ice closes harder about the ship. The crew, led by Willoughby\u0027s anxious courage and Fletcher\u0027s quiet concern, beg Walton to turn south when the floes open."
+    },
+    {
+      "Id": "s135_b7",
+      "Scene": 135,
+      "heuristic": "action",
+      "ai": "action",
+      "visual": "His eyes close. A last breath. Victor Frankenstein dies. Walton weeps over the body of his friend."
+    }
+  ],
+  "aiRawPreview": "{\u0022labels\u0022:[{\u0022id\u0022:\u0022s1_b1\u0022,\u0022class\u0022:\u0022establishing\u0022,\u0022reason\u0022:\u0022New exterior streets/landscape opened with period setup and Walton introduced in wide place-reveal.\u0022},{\u0022id\u0022:\u0022s4_b1\u0022,\u0022class\u0022:\u0022action\u0022,\u0022reason\u0022:\u0022Ordinary writing business with rising fervor; not place-reveal or micro-stillness.\u0022},{\u0022id\u0022:\u0022s8_b1\u0022,\u0022class\u0022:\u0022hold\u0022,\u0022reason\u0022:\u0022Micro facial reaction pleading at the page before dialogue.\u0022},{\u0022id\u0022:\u0022s11_b5\u2026"
+}

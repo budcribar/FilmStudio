@@ -38,6 +38,52 @@ public class SilentBeatActionClassifierTests
         Assert.Null(SilentBeatActionClassifier.NormalizeClass("dialogue"));
     }
 
+    [Theory]
+    [InlineData(
+        "hold",
+        "She stares at the coins. Nothing left to do. She flops down on the couch and howls.",
+        "action")]
+    [InlineData(
+        "hold",
+        "He freezes; a thin smile.",
+        "hold")]
+    [InlineData(
+        "big_action",
+        "She ransacks store after store—counters of watches, trays of trinkets—searching.",
+        "action")]
+    [InlineData(
+        "big_action",
+        "They chase through the alley and crash into the stalls.",
+        "big_action")]
+    public void PostProcessActionClass_multi_step_and_busy_rules(
+        string ai, string visual, string expected)
+    {
+        Assert.Equal(expected, SilentBeatActionClassifier.PostProcessActionClass(ai, visual));
+    }
+
+    [Fact]
+    public async Task Classify_post_processes_hold_into_action_for_multi_step()
+    {
+        var chat = new ScriptedChat(_ => """
+            {"labels":[
+              {"id":"s1_b1","class":"hold","reason":"emotion"},
+              {"id":"s1_b2","class":"hold","reason":"smile"}
+            ]}
+            """);
+        var clf = NewClassifier(chat, enabled: true);
+        // Override visual for b1 to multi-step business
+        var stage1 = MiniStage1();
+        var beats = Beats(stage1);
+        beats[0]["visual_event"] =
+            "She stares at the coins, then flops on the couch and sobs.";
+        beats[1]["visual_event"] = "He freezes; a thin smile.";
+        var result = await clf.ClassifyStage1Async(stage1);
+        Assert.Equal(2, result.AiCount);
+        Assert.Equal("action", Beats(stage1)[0]["action_class"]?.ToString());
+        Assert.Equal("hold", Beats(stage1)[1]["action_class"]?.ToString());
+        Assert.Equal("v2_pp", result.PromptVersion);
+    }
+
     [Fact]
     public async Task Classify_uses_AI_when_chat_returns_labels()
     {

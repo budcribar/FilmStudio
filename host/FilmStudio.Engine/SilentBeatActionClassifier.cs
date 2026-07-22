@@ -15,8 +15,11 @@ namespace FilmStudio.Engine;
 /// </summary>
 public sealed class SilentBeatActionClassifier
 {
-    /// <summary>Eval / ship prompt id (duration-linked defs; tied with v1/v3 on gold).</summary>
-    public const string PromptVersion = "v2";
+    /// <summary>
+    /// Eval / ship prompt id. <c>v2_pp</c> = duration-linked v2 chat prompt + deterministic
+    /// multi-step / busy-not-spectacle post-process (gold ~88.4% vs v2/v3 ~85.7%).
+    /// </summary>
+    public const string PromptVersion = "v2_pp";
 
     public const string DefaultModel = "grok-4.5";
     public const double DefaultTemperature = 0.0;
@@ -186,6 +189,7 @@ public sealed class SilentBeatActionClassifier
         {
             if (aiLabels.TryGetValue(t.Id, out var cls))
             {
+                cls = PostProcessActionClass(cls, t.VisualEvent);
                 t.Beat["action_class"] = cls;
                 // Establishing often wants a wider scale hint when AI reclassifies
                 if (string.Equals(cls, "establishing", StringComparison.OrdinalIgnoreCase))
@@ -358,7 +362,7 @@ public sealed class SilentBeatActionClassifier
         };
     }
 
-    /// <summary>Public for unit tests and BeatLabelEval alignment.</summary>
+    /// <summary>Public for unit tests and BeatLabelEval alignment (shipped through v3).</summary>
     public static string SystemPromptV2() => """
 You label silent film beats for DURATION BUDGETING in a video pipeline (any story).
 Each label maps to planned clip length — optimize for that, not literary theory.
@@ -379,6 +383,140 @@ Critical bias correction:
 - Only use establishing when the visual is truly about revealing/establishing a place or setup.
 - Prefer hold over action for pure reaction/emotion with little locomotion.
 - Prefer big_action only when energy/motion is the point of the shot.
+
+Return JSON only:
+{ "labels": [ { "id": "s1_b2", "class": "hold", "reason": "short reaction" } ] }
+Use only the four class strings above.
+""";
+
+    /// <summary>
+    /// v4: decision tree for duration budgeting — reduces hold↔action and big_action confusions.
+    /// </summary>
+    public static string SystemPromptV4() => """
+You label silent film beats for DURATION BUDGETING (any story). Labels set planned clip length — not literary genre.
+
+Classes (exactly one):
+| class | seconds | meaning |
+| establishing | 4–5 | Shot job is revealing a NEW place/setup (wide open of a room/landscape). |
+| hold | 3 | Micro stillness/reaction: look, freeze, smile, short gesture — almost no multi-step business. |
+| action | 3–5 | Ordinary physical business or multi-step body work without spectacle. |
+| big_action | 6–12 | Continuous high-energy motion is the POINT (chase, fight, crash, leap-under-danger, scramble). |
+
+Decision order (stop at first match):
+1) big_action — ONLY if continuous high energy / spectacle is the purpose of the beat.
+   YES: chase, fight, crash, vault, stampede, scramble under threat, leap as climax energy.
+   NO: busy shopping or store-to-store search; a single stand-up or step; multi-step enter/stare/embrace;
+       "paces then a scream is heard" without the beat itself being continuous combat.
+2) establishing — ONLY if the visual is primarily about opening a place we have not already occupied
+   in this scene (empty room setup, new exterior, first wide of a location).
+   NO: continuing business already in a known room; first silent after dialogue in same setting;
+       character enters mid-story without place-reveal as the job; "jogs along a familiar track".
+3) hold — ONLY if the beat is mostly stillness/reaction with little locomotion or multi-step business.
+   YES: freeze stare, short look, hands still, listen, pause over an object with dread (no multi-step).
+   NO: stare THEN flop/sob; enter AND cross to someone; rise from grass and coil; multi-step tidy/tuck/lock.
+4) action — default for ordinary multi-step business, locomotion, prop work, enter/exit, tidy, shake-off,
+   sit-to-bed sequences, near-miss fidget with tools, call-and-gather without full chase spectacle.
+
+Hard biases to correct:
+- Prefer action over hold when the visual lists 2+ distinct physical steps or clear locomotion.
+- Prefer action over big_action when energy is moderate/busy, not continuous spectacle.
+- Prefer hold over establishing for reaction/emotion in an already-known place.
+- is_first_silent_in_scene does NOT imply establishing.
+- If next_beat is dialogue, a micro visual before speech is often hold — unless multi-step business dominates.
+
+Generic examples (class only):
+- "Bare room. Chair faces us. Character sits." → establishing
+- "He freezes; a thin smile." → hold
+- "She stares at coins, then flops on the couch and sobs." → action (multi-step)
+- "He hurries store to store searching counters." → action (busy, not chase spectacle)
+- "They chase and crash through stalls." → big_action
+- "She sits by the same window with a journal, weeks later." → hold or action, NOT establishing
+- "He leaps onto a stool and hauls another into a tank." → big_action
+- "Shakes himself all over." → action
+
+Return JSON only:
+{"labels":[{"id":"s1_b2","class":"hold","reason":"micro reaction"}]}
+Use only: establishing | hold | action | big_action.
+""";
+
+    /// <summary>
+    /// v5: v2 baseline + targeted multi-step / big_action corrections (eval 2026-07).
+    /// </summary>
+    public static string SystemPromptV5() => """
+You label silent film beats for DURATION BUDGETING in a video pipeline (any story).
+Each label maps to planned clip length — optimize for that, not literary theory.
+
+Classes (pick exactly one):
+- establishing: NEW place/room open, first wide setup of a location. NOT every scene's first beat.
+  Mid-story business (shopping, sitting at window continuing a prior room, writing a letter) is NOT establishing.
+  Duration intent: ~4–5 seconds max.
+- hold: micro performance / stillness — smile, look, hands, pause, freeze, short SINGLE gesture, pure reaction.
+  Duration intent: ~3 seconds.
+- action: ordinary physical business (walk, open door, set tray, cross room) OR multi-step body work without spectacle.
+  Duration intent: ~3–5 seconds.
+- big_action: chase, fight, crash, leap, climb under danger, vault, violent or high-energy continuous motion.
+  Duration intent: longer (up to ~10–12s).
+
+Critical bias correction:
+- The FIRST silent beat of a scene is OFTEN action or hold, not establishing.
+- Only use establishing when the visual is truly about revealing/establishing a place or setup.
+- Prefer hold over action for pure reaction/emotion with little locomotion.
+- Prefer big_action only when energy/motion is the point of the shot.
+
+Multi-step rule (common miss):
+- If the visual lists TWO OR MORE distinct physical steps (stare then flop/sob; enter then cross to someone;
+  rise then coil; tuck then lock; whirl then pull hair; ransack counters store-to-store), choose action — not hold.
+- Busy multi-place walking/searching without chase/fight/crash energy → action, not big_action.
+- A single leap/stand-up as pure energy climax may be big_action; a short stand-up inside dialogue business is often action.
+
+Return JSON only:
+{ "labels": [ { "id": "s1_b2", "class": "hold", "reason": "short reaction" } ] }
+Use only the four class strings above.
+""";
+
+    /// <summary>
+    /// v6: v2 core + few-shot examples that teach multi-step→action and busy≠big_action
+    /// so the model generalizes without a separate post-processor.
+    /// Examples are paraphrased patterns (not gold strings).
+    /// </summary>
+    public static string SystemPromptV6() => """
+You label silent film beats for DURATION BUDGETING in a video pipeline (any story).
+Each label maps to planned clip length — optimize for that, not literary theory.
+
+Classes (pick exactly one):
+- establishing: NEW place/room open, first wide setup of a location. NOT every scene's first beat.
+  Mid-story business (shopping, sitting at window continuing a prior room, writing a letter) is NOT establishing.
+  Duration intent: ~4–5 seconds max.
+- hold: micro performance / stillness — smile, look, hands, pause, freeze, short SINGLE gesture, pure reaction.
+  Duration intent: ~3 seconds.
+- action: ordinary physical business (walk, open door, set tray, cross room) OR multi-step body work without spectacle.
+  Duration intent: ~3–5 seconds.
+- big_action: chase, fight, crash, leap, climb under danger, vault, violent or high-energy continuous motion.
+  Duration intent: longer (up to ~10–12s).
+
+Critical bias correction:
+- The FIRST silent beat of a scene is OFTEN action or hold, not establishing.
+- Only use establishing when the visual is truly about revealing/establishing a place or setup.
+- Prefer hold over action for pure reaction/emotion with little locomotion.
+- Prefer big_action only when energy/motion is the point of the shot.
+
+Few-shot (generalize the pattern — do not only match wording):
+1) "She looks at the small pile of coins, then collapses onto the couch and sobs." → action
+   Why: two+ physical steps (look → collapse → sob), not a micro hold.
+2) "He freezes in the doorway; a thin smile." → hold
+   Why: single stillness/reaction, almost no locomotion.
+3) "He goes from shop to shop, turning over trays, shaking his head, pressing on." → action
+   Why: busy multi-place search, not a chase/fight spectacle → not big_action.
+4) "They race down the alley and smash through the market stalls." → big_action
+   Why: continuous high-energy motion is the point of the shot.
+5) "A bare lamplit room. A plain chair faces us. She sits." → establishing
+   Why: place/setup open is the job.
+6) "Same nursery as before. She sits by the window with her journal again." → hold
+   Why: known place; stillness/continuation, not a new establishing open.
+7) "He enters, stops cold, then crosses the room to her." → action
+   Why: enter + stop + cross = multi-step business (not hold).
+8) "He leaps onto the stool and hauls the other man into the tank." → big_action
+   Why: leap + haul under force — energy is the point.
 
 Return JSON only:
 { "labels": [ { "id": "s1_b2", "class": "hold", "reason": "short reaction" } ] }
@@ -438,6 +576,57 @@ Use only the four class strings above.
             "bigaction" => "big_action",
             _ => null,
         };
+    }
+
+    /// <summary>
+    /// Deterministic corrections after chat labels. Fixes systematic hold↔action and
+    /// busy-search→big_action confusions without title-specific rules.
+    /// </summary>
+    public static string PostProcessActionClass(string? aiClass, string? visualEvent)
+    {
+        var cls = NormalizeClass(aiClass ?? "") ?? "action";
+        var ve = visualEvent ?? "";
+
+        // Multi-step physical business should not be budgeted as a 3s hold
+        if (cls == "hold" && LooksMultiStepBusiness(ve))
+            return "action";
+
+        // Busy multi-place search/shopping is action, not chase spectacle
+        if (cls == "big_action" && LooksBusyNotSpectacle(ve))
+            return "action";
+
+        return cls;
+    }
+
+    /// <summary>
+    /// Two+ distinct body-business steps, or an explicit "then" sequence.
+    /// Pure look/stare/listen alone does not count.
+    /// </summary>
+    public static bool LooksMultiStepBusiness(string? visualEvent)
+    {
+        var lower = (visualEvent ?? "").ToLowerInvariant();
+        if (lower.Length == 0) return false;
+        if (Regex.IsMatch(lower, @"\bthen\b"))
+            return true;
+        // Strong business / locomotion verbs (not mere looks/smiles)
+        var n = Regex.Matches(
+            lower,
+            @"\b(enters?|stands?|pulls?|flops?|howls?|sobs?|tucks?|locks?|whirls?|hurries?|ransacks?|" +
+            @"crosses?|walks?|goes?|moves?|attends?|embraces?|sinks?|leaps?|jogs?|shakes?|scrambles?|" +
+            @"darts?|creeps?|paces?|plants?|flees?|rushes?|opens?|freezes?|hauls?|digs?|climbs?)\b").Count;
+        return n >= 2;
+    }
+
+    /// <summary>Busy multi-location walking/search without chase/fight energy.</summary>
+    public static bool LooksBusyNotSpectacle(string? visualEvent)
+    {
+        var lower = (visualEvent ?? "").ToLowerInvariant();
+        if (lower.Length == 0) return false;
+        if (Regex.IsMatch(lower,
+                @"\b(chase|crash|fight|stampede|vault|explod|sprint|stampede)\b"))
+            return false;
+        return Regex.IsMatch(lower,
+            @"\b(store after store|ransacks?|shopping|searching|counters|trays of|shop after shop)\b");
     }
 
     private static string Trunc(string s, int n) =>

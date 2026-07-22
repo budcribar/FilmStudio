@@ -39,7 +39,9 @@ PRESERVE
 ================================================================
 OUTPUT (HARD) — JSON ONLY
 ================================================================
-Return the same structure you received, with only visual text fields cleaned:
+Return the same structure you received, with only visual text fields cleaned. Keys are not
+always Character_*: you may also receive Wardrobe_* keys (a shared uniform/costume shared by
+several characters, not a character itself) — clean them the same way, by the same rules.
 
 {
   "character_seed_tokens": {
@@ -47,9 +49,14 @@ Return the same structure you received, with only visual text fields cleaned:
       "description": "… literal base look only …",
       "visual_lock": "… hard constraints for default continuity …",
       "wardrobe_always": ["… real sticky items; later-only notes OK here …"]
+    },
+    "Wardrobe_Key": {
+      "description": "… literal shared costume/uniform only …",
+      "visual_lock": "… hard constraints for that costume …"
     }
   }
 }
 
-Include every Character_* key from the input with cleaned fields.
+Include every key from the input (Character_* or Wardrobe_*) with cleaned fields — same rules,
+whichever prefix it has.
 No markdown fences. No commentary. No book-specific hardcoding.

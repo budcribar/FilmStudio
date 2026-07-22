@@ -817,6 +817,64 @@ public sealed class ProjectStore
         LoadCharacterSeeds(projectId);
 
     /// <summary>
+    /// Shared wardrobe/uniform lock token (see <c>wardrobe_lock_tokens</c> in cast_seeds.json) —
+    /// lets several characters (e.g. three police officers) point at one costume description
+    /// and one shared reference plate instead of each re-describing/re-generating the uniform.
+    /// </summary>
+    public JsonElement? GetWardrobeLock(string projectId, string wardrobeKey)
+    {
+        var locks = LoadWardrobeLocks(projectId);
+        return locks.TryGetValue(wardrobeKey, out var info) ? info : null;
+    }
+
+    /// <summary>All wardrobe lock tokens for the project.</summary>
+    public IReadOnlyDictionary<string, JsonElement> GetAllWardrobeLocks(string projectId) =>
+        LoadWardrobeLocks(projectId);
+
+    /// <summary>
+    /// Resolves a character's <c>wardrobe_lock</c> pointer (if set) to the shared group token.
+    /// Null when the character has no wardrobe lock or it points at an unknown key.
+    /// </summary>
+    public JsonElement? ResolveCharacterWardrobeLock(string projectId, string charKey)
+    {
+        var seed = GetCharacterSeed(projectId, charKey);
+        if (seed is null ||
+            !seed.Value.TryGetProperty("wardrobe_lock", out var wl) ||
+            wl.ValueKind != JsonValueKind.String)
+            return null;
+        var key = wl.GetString();
+        return string.IsNullOrWhiteSpace(key) ? null : GetWardrobeLock(projectId, key!);
+    }
+
+    /// <summary>Character's raw <c>wardrobe_lock</c> key (foreign key into wardrobe_lock_tokens), or null.</summary>
+    public static string? GetWardrobeLockKey(JsonElement characterSeed) =>
+        characterSeed.TryGetProperty("wardrobe_lock", out var wl) && wl.ValueKind == JsonValueKind.String
+            ? wl.GetString()
+            : null;
+
+    /// <summary>
+    /// Canonical shared costume reference file: <c>wardrobe_{key}_ref.png</c>
+    /// e.g. Wardrobe_PoliceOfficer → wardrobe_policeofficer_ref.png.
+    /// </summary>
+    public static string WardrobeRefFileName(string wardrobeKey)
+    {
+        var k = (wardrobeKey ?? "").Trim().Replace(' ', '_').Replace('\\', '/');
+        k = Path.GetFileName(k).ToLowerInvariant();
+        k = k.StartsWith("wardrobe_", StringComparison.OrdinalIgnoreCase) ? k : $"wardrobe_{k}";
+        if (string.IsNullOrWhiteSpace(k) || k is "." or "..")
+            k = "wardrobe_unknown";
+        return k.EndsWith("_ref.png", StringComparison.OrdinalIgnoreCase) ? k : $"{k}_ref.png";
+    }
+
+    /// <summary>Existing shared costume reference path for a wardrobe group, or null if not generated yet.</summary>
+    public string? ResolveWardrobeRefPath(string projectId, string wardrobeKey)
+    {
+        var path = Path.Combine(
+            GetProjectDir(projectId), "assets", "characters", WardrobeRefFileName(wardrobeKey));
+        return File.Exists(path) && new FileInfo(path).Length >= 64 ? path : null;
+    }
+
+    /// <summary>
     /// Max multi-ref image seeds for Characters UI, based on image_provider / image_model_name.
     /// </summary>
     public ImageSeedLimits GetImageSeedLimits(string projectId)
@@ -918,6 +976,102 @@ public sealed class ProjectStore
                 }
 
                 PatchSeedsObject(seeds);
+                Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+                File.WriteAllText(path, root.ToJsonString(JsonDefaults.Indented) + "\n");
+            }
+            catch
+            {
+                /* non-fatal */
+            }
+        }
+
+        PatchFile(ScreenplayService.GetCastSeedsPath(this, projectId), createCastShape: true);
+        var bp = FindBlueprintPathSync(projectId);
+        if (bp is not null)
+            PatchFile(bp, createCastShape: false);
+        var scenesPath = ResolveScenesJsonPath(projectId);
+        if (File.Exists(scenesPath))
+            PatchFile(scenesPath, createCastShape: false);
+    }
+
+    /// <summary>
+    /// Update description / visual_lock on a shared wardrobe lock token (wardrobe_lock_tokens
+    /// in cast_seeds.json, mirrored into blueprint / scenes.json) — same triple-file-sync
+    /// pattern as <see cref="UpdateCharacterSeedText"/>, keyed on the wardrobe group instead of
+    /// a single character. Editing this affects every character whose <c>wardrobe_lock</c>
+    /// points at <paramref name="wardrobeKey"/>, but only for future generations — it does not
+    /// touch already-locked character reference images.
+    /// </summary>
+    public void UpdateWardrobeLockText(
+        string projectId,
+        string wardrobeKey,
+        string? description = null,
+        string? visualLock = null)
+    {
+        void PatchLockObject(System.Text.Json.Nodes.JsonObject locks)
+        {
+            System.Text.Json.Nodes.JsonObject? entry = null;
+            string? foundKey = null;
+            foreach (var (k, v) in locks)
+            {
+                if (string.Equals(k, wardrobeKey, StringComparison.OrdinalIgnoreCase) &&
+                    v is System.Text.Json.Nodes.JsonObject jo)
+                {
+                    entry = jo;
+                    foundKey = k;
+                    break;
+                }
+            }
+            if (entry is null || foundKey is null)
+            {
+                entry = new System.Text.Json.Nodes.JsonObject();
+                foundKey = wardrobeKey;
+                locks[foundKey] = entry;
+            }
+            if (description is not null)
+                entry["description"] = CharacterVisualTextScrubber.ScrubVisualProse(description);
+            if (visualLock is not null)
+                entry["visual_lock"] = CharacterVisualTextScrubber.ScrubVisualProse(visualLock);
+            locks[foundKey] = entry;
+        }
+
+        void PatchFile(string path, bool createCastShape)
+        {
+            try
+            {
+                System.Text.Json.Nodes.JsonObject root;
+                if (File.Exists(path))
+                {
+                    root = System.Text.Json.Nodes.JsonNode.Parse(File.ReadAllText(path))
+                           as System.Text.Json.Nodes.JsonObject
+                           ?? new System.Text.Json.Nodes.JsonObject();
+                }
+                else if (createCastShape)
+                {
+                    root = new System.Text.Json.Nodes.JsonObject { ["schema_version"] = "cast_seeds.v1" };
+                }
+                else return;
+
+                System.Text.Json.Nodes.JsonObject? locks;
+                if (root["wardrobe_lock_tokens"] is System.Text.Json.Nodes.JsonObject direct)
+                {
+                    locks = direct;
+                }
+                else
+                {
+                    var gpv = root["global_production_variables"] as System.Text.Json.Nodes.JsonObject;
+                    if (gpv is not null && gpv["wardrobe_lock_tokens"] is System.Text.Json.Nodes.JsonObject gpvLocks)
+                    {
+                        locks = gpvLocks;
+                    }
+                    else
+                    {
+                        locks = new System.Text.Json.Nodes.JsonObject();
+                        root["wardrobe_lock_tokens"] = locks;
+                    }
+                }
+
+                PatchLockObject(locks);
                 Directory.CreateDirectory(Path.GetDirectoryName(path)!);
                 File.WriteAllText(path, root.ToJsonString(JsonDefaults.Indented) + "\n");
             }
@@ -2948,6 +3102,61 @@ public sealed class ProjectStore
                 dict[p.Name] = p.Value.Clone();
             return dict;
         }
+        return new Dictionary<string, JsonElement>(StringComparer.OrdinalIgnoreCase);
+    }
+
+    private Dictionary<string, JsonElement> LoadWardrobeLocks(string projectId)
+    {
+        // Prefer cast_seeds.json, then blueprint, then scenes.json — same precedence as
+        // LoadCharacterSeeds, since UpdateWardrobeLockText keeps all three in sync.
+        static Dictionary<string, JsonElement>? TryRead(JsonElement root)
+        {
+            JsonElement el = default;
+            if (root.TryGetProperty("wardrobe_lock_tokens", out var s) && s.ValueKind == JsonValueKind.Object)
+                el = s;
+            else if (root.TryGetProperty("global_production_variables", out var g) &&
+                     g.TryGetProperty("wardrobe_lock_tokens", out var s2) &&
+                     s2.ValueKind == JsonValueKind.Object)
+                el = s2;
+            if (el.ValueKind != JsonValueKind.Object) return null;
+            var dict = new Dictionary<string, JsonElement>(StringComparer.OrdinalIgnoreCase);
+            foreach (var p in el.EnumerateObject())
+                dict[p.Name] = p.Value.Clone();
+            return dict.Count > 0 ? dict : null;
+        }
+
+        try
+        {
+            var castPath = Path.Combine(GetProjectDir(projectId), "source", ScreenplayService.CastSeedsFileName);
+            if (File.Exists(castPath))
+            {
+                using var doc = JsonDocument.Parse(File.ReadAllText(castPath));
+                if (TryRead(doc.RootElement) is { } fromCast)
+                    return fromCast;
+            }
+        }
+        catch { /* fall through */ }
+
+        try
+        {
+            using var bp = LoadBlueprintSync(projectId);
+            if (bp is not null && TryRead(bp.RootElement) is { } fromBp)
+                return fromBp;
+        }
+        catch { /* fall through */ }
+
+        try
+        {
+            var scenesPath = Path.Combine(GetProjectDir(projectId), "scenes.json");
+            if (File.Exists(scenesPath))
+            {
+                using var scenesDoc = JsonDocument.Parse(File.ReadAllText(scenesPath));
+                if (TryRead(scenesDoc.RootElement) is { } fromScenes)
+                    return fromScenes;
+            }
+        }
+        catch { /* fall through */ }
+
         return new Dictionary<string, JsonElement>(StringComparer.OrdinalIgnoreCase);
     }
 

@@ -144,6 +144,12 @@ public sealed class GrokImageClient : IImageClient
     /// <summary>
     /// Reference-guided edits (book plates). One API call per variant for reliability.
     /// </summary>
+    /// <param name="costumeRefPath">
+    /// Optional wardrobe-only reference (see <see cref="CharacterDesignService"/> uniform-lock
+    /// flow): a shared, faceless/generic costume plate reused across several characters so their
+    /// coat/hat/badge design stays pixel-identical. Attached as the LAST reference image with an
+    /// instruction to copy wardrobe only and ignore its face — never treated as an identity ref.
+    /// </param>
     public async Task<IReadOnlyList<byte[]>> EditVariantsAsync(
         string prompt,
         IReadOnlyList<string> referenceImagePaths,
@@ -151,6 +157,8 @@ public sealed class GrokImageClient : IImageClient
         string aspectRatio = "1:1",
         string? model = null,
         int maxRefs = 0,
+        string? costumeRefPath = null,
+        bool illustratedMedium = true,
         Action<string>? onProgress = null,
         CancellationToken ct = default)
     {
@@ -165,39 +173,74 @@ public sealed class GrokImageClient : IImageClient
         // This client is Grok-only — always enforce Grok cap even if project says gemini
         cap = Math.Min(cap, ImageApiLimits.GrokMaxReferenceImages);
 
+        var hasCostumeRef = !string.IsNullOrWhiteSpace(costumeRefPath) && File.Exists(costumeRefPath);
+        // Reserve one slot for the costume ref so identity refs + costume ref never exceed cap
+        var identityCap = hasCostumeRef ? Math.Max(1, cap - 1) : cap;
+
         var refs = referenceImagePaths
             .Where(p => !string.IsNullOrWhiteSpace(p) && File.Exists(p))
-            .Take(cap)
+            .Take(identityCap)
             .ToList();
-        if (refs.Count == 0)
+        if (refs.Count == 0 && !hasCostumeRef)
             throw new InvalidOperationException("No usable reference images for character edit.");
 
         // Downscale book plates — three full-page PNGs as data URIs (~7MB+) often fail;
         // two can succeed by luck under the request size limit.
-        var imageUris = new List<string>(refs.Count);
+        var imageUris = new List<string>(refs.Count + (hasCostumeRef ? 1 : 0));
         foreach (var path in refs)
             imageUris.Add(await FileToDataUriAsync(path, ct, maxEdge: 1024, jpegQuality: 85)
                 .ConfigureAwait(false));
+        var identityCount = imageUris.Count;
+        var costumeIndex = -1;
+        if (hasCostumeRef)
+        {
+            imageUris.Add(await FileToDataUriAsync(costumeRefPath!, ct, maxEdge: 1024, jpegQuality: 85)
+                .ConfigureAwait(false));
+            costumeIndex = imageUris.Count - 1;
+        }
 
         var refNames = refs.Select(Path.GetFileName).Where(x => x is not null).Cast<string>().ToList();
+        if (hasCostumeRef && Path.GetFileName(costumeRefPath) is { } costumeFileName)
+            refNames.Add(costumeFileName);
         var images = new List<byte[]>();
         for (var i = 0; i < n; i++)
         {
             ct.ThrowIfCancellationRequested();
             onProgress?.Invoke($"edit variant {i + 1}/{n}");
 
-            var orderHint = imageUris.Count > 1
-                ? BuildMultiImageOrderHint(imageUris.Count)
-                : "Match the attached reference identity AND illustration style (highest priority over text). ";
-            var variantTail = n > 1
-                ? $" Variation {i + 1} of {n}: tiny pose/expression change only; " +
-                  "same identity, markings, and illustrated medium as the book references. "
-                : " Single refined continuity portrait in the book’s illustration style. ";
+            var orderHint = identityCount switch
+            {
+                > 1 => BuildMultiImageOrderHint(identityCount),
+                1 => "Match the attached reference identity AND illustration style (highest priority over text). ",
+                _ => "",
+            };
+            if (costumeIndex >= 0)
+            {
+                orderHint +=
+                    $"<IMAGE_{costumeIndex}> is a COSTUME REFERENCE ONLY (shared wardrobe design) — " +
+                    "copy its coat, hat/cap, badge, and garment details exactly. " +
+                    "COMPLETELY IGNORE any face, body, or person shown in that image — " +
+                    "this character's own face and identity must come from " +
+                    (identityCount > 0 ? "the other reference image(s) and " : "") +
+                    "the text description below, never from the costume reference. ";
+            }
+            var variantTail = illustratedMedium
+                ? (n > 1
+                    ? $" Variation {i + 1} of {n}: tiny pose/expression change only; " +
+                      "same identity, markings, and illustrated medium as the book references. "
+                    : " Single refined continuity portrait in the book’s illustration style. ")
+                : (n > 1
+                    ? $" Variation {i + 1} of {n}: tiny pose/expression change only; " +
+                      "same identity, markings, and photoreal medium as the reference(s). "
+                    : " Single refined photoreal continuity portrait matching the reference(s). ");
+            var mediumClause = illustratedMedium
+                ? "Keep the children's picture-book illustration style from the refs — not photoreal photography. "
+                : "Keep the photoreal live-action look from the refs — NOT illustration, NOT cartoon, NOT painted/drawn medium. ";
             var variantPrompt =
                 orderHint +
                 prompt +
                 variantTail +
-                "Keep children's picture-book illustration style from the refs — not photoreal photography. " +
+                mediumClause +
                 "If refs show no clothing, do not invent costumes. " +
                 "No labels, no redesign, no model sheet.";
 

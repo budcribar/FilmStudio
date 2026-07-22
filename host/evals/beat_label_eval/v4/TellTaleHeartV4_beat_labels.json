@@ -1,0 +1,353 @@
+{
+  "promptVersion": "v4",
+  "projectId": "TellTaleHeartV4",
+  "path": "C:\\Users\\budcr\\source\\repos\\FilmStudio\\projects\\TellTaleHeartV4\\source\\screenplay.fountain",
+  "silentActionBeats": 31,
+  "sampled": 31,
+  "labels": [
+    {
+      "id": "s1_b1",
+      "class": "establishing"
+    },
+    {
+      "id": "s1_b9",
+      "class": "hold"
+    },
+    {
+      "id": "s2_b1",
+      "class": "establishing"
+    },
+    {
+      "id": "s2_b5",
+      "class": "hold"
+    },
+    {
+      "id": "s4_b1",
+      "class": "action"
+    },
+    {
+      "id": "s4_b4",
+      "class": "action"
+    },
+    {
+      "id": "s5_b1",
+      "class": "action"
+    },
+    {
+      "id": "s6_b1",
+      "class": "action"
+    },
+    {
+      "id": "s6_b5",
+      "class": "action"
+    },
+    {
+      "id": "s6_b10",
+      "class": "action"
+    },
+    {
+      "id": "s8_b1",
+      "class": "hold"
+    },
+    {
+      "id": "s9_b1",
+      "class": "action"
+    },
+    {
+      "id": "s9_b3",
+      "class": "hold"
+    },
+    {
+      "id": "s11_b1",
+      "class": "hold"
+    },
+    {
+      "id": "s11_b12",
+      "class": "action"
+    },
+    {
+      "id": "s11_b17",
+      "class": "hold"
+    },
+    {
+      "id": "s11_b22",
+      "class": "hold"
+    },
+    {
+      "id": "s11_b26",
+      "class": "big_action"
+    },
+    {
+      "id": "s13_b1",
+      "class": "action"
+    },
+    {
+      "id": "s13_b3",
+      "class": "action"
+    },
+    {
+      "id": "s14_b1",
+      "class": "establishing"
+    },
+    {
+      "id": "s14_b5",
+      "class": "hold"
+    },
+    {
+      "id": "s15_b1",
+      "class": "action"
+    },
+    {
+      "id": "s16_b1",
+      "class": "action"
+    },
+    {
+      "id": "s16_b4",
+      "class": "action"
+    },
+    {
+      "id": "s16_b8",
+      "class": "action"
+    },
+    {
+      "id": "s16_b10",
+      "class": "action"
+    },
+    {
+      "id": "s16_b12",
+      "class": "action"
+    },
+    {
+      "id": "s16_b15",
+      "class": "hold"
+    },
+    {
+      "id": "s16_b19",
+      "class": "action"
+    },
+    {
+      "id": "s17_b1",
+      "class": "hold"
+    }
+  ],
+  "comparisons": [
+    {
+      "Id": "s1_b1",
+      "Scene": 1,
+      "heuristic": "establishing",
+      "ai": "establishing",
+      "visual": "A bare, lamplit chamber. Close walls. A plain wooden chair faces us. NARRATOR sits in it - a lean man of middle years, pale skin, dark hair disordered, waistcoa\u2026"
+    },
+    {
+      "Id": "s1_b9",
+      "Scene": 1,
+      "heuristic": "hold",
+      "ai": "hold",
+      "visual": "He steadies his hands on his knees. A thin smile."
+    },
+    {
+      "Id": "s2_b1",
+      "Scene": 2,
+      "heuristic": "establishing",
+      "ai": "establishing",
+      "visual": "OLD MAN sits by a shuttered window - elderly, thin, white hair, dressing gown. He turns. One pale blue eye shows a milky film: the vulture eye."
+    },
+    {
+      "Id": "s2_b5",
+      "Scene": 2,
+      "heuristic": "hold",
+      "ai": "hold",
+      "visual": "NARRATOR - younger in bearing only by composure, same face and waistcoat - freezes in the doorway under that gaze. His blood drains from his face."
+    },
+    {
+      "Id": "s4_b1",
+      "Scene": 4,
+      "heuristic": "establishing",
+      "ai": "action",
+      "visual": "Morning light through a crack in the shutters. NARRATOR enters boldly with a tray, hearty, smiling. OLD MAN in bed, the filmed eye half-lidded."
+    },
+    {
+      "Id": "s4_b4",
+      "Scene": 4,
+      "heuristic": "action",
+      "ai": "action",
+      "visual": "NARRATOR sets the tray with care. Pats the coverlet. The kindness is perfect - and false."
+    },
+    {
+      "Id": "s5_b1",
+      "Scene": 5,
+      "heuristic": "establishing",
+      "ai": "action",
+      "visual": "A dark lantern in NARRATOR\u0027s hand, fully closed. Midnight hush. He turns the latch - oh, so gently - and opens the door a hand\u0027s breadth."
+    },
+    {
+      "Id": "s6_b1",
+      "Scene": 6,
+      "heuristic": "establishing",
+      "ai": "action",
+      "visual": "Pitch black. Shutters close-fastened. NARRATOR eases his head through the opening, then the dark lantern, closed so no light spills. He moves with agonizing slo\u2026"
+    },
+    {
+      "Id": "s6_b5",
+      "Scene": 6,
+      "heuristic": "action",
+      "ai": "action",
+      "visual": "A single thin ray as he undoes the lantern a hair - hinges threaten to creak. The ray seeks the pillow. The OLD MAN\u0027s eye is closed in sleep."
+    },
+    {
+      "Id": "s6_b10",
+      "Scene": 6,
+      "heuristic": "hold",
+      "ai": "action",
+      "visual": "He withdraws. The door eases shut."
+    },
+    {
+      "Id": "s8_b1",
+      "Scene": 8,
+      "heuristic": "establishing",
+      "ai": "hold",
+      "visual": "NARRATOR at the latch again. Sweat at his temple. He chuckles under his breath - a tiny sound - and freezes."
+    },
+    {
+      "Id": "s9_b1",
+      "Scene": 9,
+      "heuristic": "establishing",
+      "ai": "action",
+      "visual": "On the bed, OLD MAN stirs suddenly, as if startled. NARRATOR\u0027s head is already in. He does not draw back. He pushes the door on steadily, steadily. Black as pit\u2026"
+    },
+    {
+      "Id": "s9_b3",
+      "Scene": 9,
+      "heuristic": "action",
+      "ai": "hold",
+      "visual": "Silence. NARRATOR does not move a muscle. Does not breathe."
+    },
+    {
+      "Id": "s11_b1",
+      "Scene": 11,
+      "heuristic": "establishing",
+      "ai": "hold",
+      "visual": "OLD MAN upright in the dark, listening. Time stretches. A slight groan - low, stifled - mortal terror, not pain."
+    },
+    {
+      "Id": "s11_b12",
+      "Scene": 11,
+      "heuristic": "action",
+      "ai": "action",
+      "visual": "NARRATOR, head still within the room, waits. Patient. Then - stealthily - opens a very little crevice in the lantern. A single dim ray, like the thread of a spi\u2026"
+    },
+    {
+      "Id": "s11_b17",
+      "Scene": 11,
+      "heuristic": "action",
+      "ai": "hold",
+      "visual": "A low, dull, quick sound - such as a watch makes when enveloped in cotton. The beating of the OLD MAN\u0027s heart. It quickens. Louder. Louder. NARRATOR holds the l\u2026"
+    },
+    {
+      "Id": "s11_b22",
+      "Scene": 11,
+      "heuristic": "action",
+      "ai": "hold",
+      "visual": "He refrains still - some minutes longer - standing frozen while the beat fills the dark."
+    },
+    {
+      "Id": "s11_b26",
+      "Scene": 11,
+      "heuristic": "big_action",
+      "ai": "big_action",
+      "visual": "With a loud yell NARRATOR throws open the lantern and leaps into the room. OLD MAN shrieks once - once only. NARRATOR drags him to the floor and pulls the heavy\u2026"
+    },
+    {
+      "Id": "s13_b1",
+      "Scene": 13,
+      "heuristic": "establishing",
+      "ai": "action",
+      "visual": "Candlelight. NARRATOR works hastily, in silence. A tub stands ready. He dismembers the corpse - head, arms, legs - methodical, wary. No blood-spot reaches the f\u2026"
+    },
+    {
+      "Id": "s13_b3",
+      "Scene": 13,
+      "heuristic": "action",
+      "ai": "action",
+      "visual": "He smooths the boards. Nothing wrong. Nothing to wash out. A distant BELL sounds four."
+    },
+    {
+      "Id": "s14_b1",
+      "Scene": 14,
+      "heuristic": "establishing",
+      "ai": "establishing",
+      "visual": "Still dark as midnight. A knocking at the street door. NARRATOR descends with a light heart and opens. Three men in police coats and hats: OFFICER REYNOLDS (sen\u2026"
+    },
+    {
+      "Id": "s14_b5",
+      "Scene": 14,
+      "heuristic": "hold",
+      "ai": "hold",
+      "visual": "NARRATOR smiles - for what has he now to fear?"
+    },
+    {
+      "Id": "s15_b1",
+      "Scene": 15,
+      "heuristic": "establishing",
+      "ai": "action",
+      "visual": "NARRATOR leads them through with easy hospitality. Lamps raised. Cupboards opened. Nothing amiss."
+    },
+    {
+      "Id": "s16_b1",
+      "Scene": 16,
+      "heuristic": "establishing",
+      "ai": "action",
+      "visual": "NARRATOR ushers them in. Shows the old man\u0027s treasures - secure, undisturbed. In the enthusiasm of his confidence he brings chairs and places them. He sets his \u2026"
+    },
+    {
+      "Id": "s16_b4",
+      "Scene": 16,
+      "heuristic": "action",
+      "ai": "action",
+      "visual": "The OFFICERS sit. They chat of familiar things. NARRATOR answers cheerily. Singularly at ease. Then - a change. He pales. A hand to his temple."
+    },
+    {
+      "Id": "s16_b8",
+      "Scene": 16,
+      "heuristic": "action",
+      "ai": "action",
+      "visual": "The ringing becomes more distinct. He talks more freely to shake it off. It gains definiteness - until he knows the noise is not within his ears. A low, dull, q\u2026"
+    },
+    {
+      "Id": "s16_b10",
+      "Scene": 16,
+      "heuristic": "action",
+      "ai": "action",
+      "visual": "He rises. Argues about trifles in a high key, violent gesticulations. The noise steadily increases."
+    },
+    {
+      "Id": "s16_b12",
+      "Scene": 16,
+      "heuristic": "action",
+      "ai": "action",
+      "visual": "He paces the floor with heavy strides. Foams. Raves. Swears. Swings his chair and grates it upon the boards - but the noise arises over all. Louder - louder - l\u2026"
+    },
+    {
+      "Id": "s16_b15",
+      "Scene": 16,
+      "heuristic": "hold",
+      "ai": "hold",
+      "visual": "He cannot bear the hypocritical smiles. The beat pounds - again - louder - louder - louder - louder!"
+    },
+    {
+      "Id": "s16_b19",
+      "Scene": 16,
+      "heuristic": "action",
+      "ai": "action",
+      "visual": "He stabs a finger at the floorboards beneath his feet. The OFFICERS rise. The pleasant masks fall. OFFICER REYNOLDS looks down at the planks. OFFICER HAYES alre\u2026"
+    },
+    {
+      "Id": "s17_b1",
+      "Scene": 17,
+      "heuristic": "establishing",
+      "ai": "hold",
+      "visual": "NARRATOR in the chair again. Spent. Staring at us. The lamp gutters. He says nothing more."
+    }
+  ],
+  "aiRawPreview": "{\u0022labels\u0022:[{\u0022id\u0022:\u0022s1_b1\u0022,\u0022class\u0022:\u0022establishing\u0022,\u0022reason\u0022:\u0022first wide bare chamber and chair setup\u0022},{\u0022id\u0022:\u0022s1_b9\u0022,\u0022class\u0022:\u0022hold\u0022,\u0022reason\u0022:\u0022micro hands steady and thin smile\u0022},{\u0022id\u0022:\u0022s2_b1\u0022,\u0022class\u0022:\u0022establishing\u0022,\u0022reason\u0022:\u0022new bedroom setup; old man and vulture eye revealed\u0022},{\u0022id\u0022:\u0022s2_b5\u0022,\u0022class\u0022:\u0022hold\u0022,\u0022reason\u0022:\u0022freeze in doorway; blood-drain reaction\u0022},{\u0022id\u0022:\u0022s4_b1\u0022,\u0022class\u0022:\u0022action\u0022,\u0022reason\u0022:\u0022en\u2026"
+}

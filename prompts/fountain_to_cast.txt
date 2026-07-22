@@ -29,6 +29,17 @@ GOALS
    film-level lock in performance_lock. Per character, optional performance_notes when
    that role has a special address pattern. Do NOT hardcode "eyes open facing camera"
    for every project — only state conventions the book/screenplay actually support.
+9. **SHARED UNIFORMS (HARD):** If two or more on-screen characters wear the same
+   professional uniform/costume (police officers, soldiers, servants, sports team, etc.),
+   do NOT re-describe the coat/hat/badge/insignia separately in each character's own
+   description/wardrobe_always — that invites each portrait to independently reinvent the
+   uniform and drift out of sync with the others. Instead emit ONE entry in
+   wardrobe_lock_tokens keyed Wardrobe_<Group> with a single concrete, unambiguous
+   description (name the exact silhouette — e.g. "rounded peaked cap", not "a hat"; name
+   the badge shape/wording, not just "a badge"). Point every member character's
+   wardrobe_lock at that key. Each member's own description/visual_lock should then cover
+   ONLY what makes that person distinguishable — build, face, hair, age — never the shared
+   garment. Characters who don't share a uniform with anyone need no wardrobe_lock at all.
 
 PRIORITY IF CONFLICTS:
 1. Valid JSON matching the schema below
@@ -49,9 +60,10 @@ Return ONLY a JSON object (no markdown fences, no commentary):
   "performance_lock": "PERFORMANCE LOCK: … how this film addresses the viewer / default gaze & staging conventions inferred from book+screenplay …",
   "character_seed_tokens": {
     "Character_Example": {
-      "description": "filmable identity: species/age/build/hair/face/wardrobe + stable colors",
+      "description": "filmable identity: species/age/build/hair/face + stable colors (omit shared uniform details if wardrobe_lock is set — see below)",
       "visual_lock": "1–3 sentences of constants that must not drift between scenes",
-      "wardrobe_always": ["optional free-text sticky items"],
+      "wardrobe_always": ["optional free-text sticky items — personal items only, not a shared uniform"],
+      "wardrobe_lock": "optional: Wardrobe_<Group> key when this role shares a uniform with other cast (see wardrobe_lock_tokens)",
       "canonical_given_name": "Display name",
       "display_name_policy": "ok_anytime | never_on_screen | withheld_until_reveal",
       "voice_label": "short label",
@@ -59,6 +71,12 @@ Return ONLY a JSON object (no markdown fences, no commentary):
       "performance_notes": "optional: how this role addresses camera or partners when speaking",
       "reference_image_placeholder": "character_example_ref.png",
       "source_image_pages": [2, 4]
+    }
+  },
+  "wardrobe_lock_tokens": {
+    "Wardrobe_Example": {
+      "description": "one concrete, unambiguous shared costume — name exact garment/hat/badge silhouette, not a vague category",
+      "visual_lock": "optional constants that must not drift"
     }
   }
 }
@@ -68,7 +86,11 @@ FIELD RULES:
   eyes, skin, wardrobe, era/medium). Enough for a portrait model with no other context.
 - visual_lock: 1–3 sentences of **constants that must not drift** (same face, hair,
   signature garment/feature). Explicitly distinguish from other cast when similar.
-- wardrobe_always: sticky garments/colors only (not full plot costume changes).
+- wardrobe_always: sticky garments/colors only (not full plot costume changes). Do not
+  duplicate a shared uniform here — use wardrobe_lock_tokens + wardrobe_lock instead
+  (see SHARED UNIFORMS rule above).
+- wardrobe_lock_tokens / wardrobe_lock: only emit when 2+ on-screen characters genuinely
+  share one professional uniform/costume. Omit entirely for casts with no shared uniform.
 - description / visual_lock / wardrobe_always: **filmable only** — species, size, age,
   coat/hair colors, markings, face shape, real garments/props with color/shape.
 - **FORBIDDEN in description/visual_lock:** "as described in the screenplay",

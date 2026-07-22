@@ -419,7 +419,7 @@ await File.WriteAllTextAsync(progressPath, $"""
 
 | # | Classifier | Status | Product class | Holdout winner |
 |---|------------|--------|---------------|----------------|
-| 0 | Silent beat action_class | DONE (prior) | SilentBeatActionClassifier | AI (~86% prior gold) |
+| 0 | Silent beat action_class | SHIPPED | SilentBeatActionClassifier v2_pp | AI v2 + post-process (~88.4% gold) |
 | 1 | Ambient / SFX | SHIPPED | AmbientSfxClassifier | {rows[0].Winner} |
 | 2 | On-screen cast | SHIPPED | OnScreenCastClassifier | {rows[1].Winner} |
 | 3 | Extend vs hard-cut | SHIPPED | ExtendCutClassifier | {rows[2].Winner} |

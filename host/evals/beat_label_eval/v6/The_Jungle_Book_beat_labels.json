@@ -1,0 +1,452 @@
+{
+  "promptVersion": "v6",
+  "projectId": "The_Jungle_Book",
+  "path": "C:\\Users\\budcr\\source\\repos\\FilmStudio\\projects\\The_Jungle_Book\\source\\screenplay.fountain",
+  "silentActionBeats": 169,
+  "sampled": 40,
+  "labels": [
+    {
+      "id": "s1_b1",
+      "class": "establishing"
+    },
+    {
+      "id": "s2_b1",
+      "class": "establishing"
+    },
+    {
+      "id": "s4_b1",
+      "class": "action"
+    },
+    {
+      "id": "s7_b13",
+      "class": "action"
+    },
+    {
+      "id": "s7_b42",
+      "class": "action"
+    },
+    {
+      "id": "s8_b16",
+      "class": "action"
+    },
+    {
+      "id": "s9_b14",
+      "class": "action"
+    },
+    {
+      "id": "s9_b47",
+      "class": "action"
+    },
+    {
+      "id": "s9_b65",
+      "class": "hold"
+    },
+    {
+      "id": "s11_b4",
+      "class": "big_action"
+    },
+    {
+      "id": "s13_b1",
+      "class": "big_action"
+    },
+    {
+      "id": "s16_b1",
+      "class": "big_action"
+    },
+    {
+      "id": "s17_b1",
+      "class": "establishing"
+    },
+    {
+      "id": "s18_b28",
+      "class": "hold"
+    },
+    {
+      "id": "s18_b50",
+      "class": "action"
+    },
+    {
+      "id": "s19_b31",
+      "class": "action"
+    },
+    {
+      "id": "s22_b1",
+      "class": "establishing"
+    },
+    {
+      "id": "s25_b1",
+      "class": "big_action"
+    },
+    {
+      "id": "s26_b25",
+      "class": "action"
+    },
+    {
+      "id": "s27_b5",
+      "class": "hold"
+    },
+    {
+      "id": "s28_b12",
+      "class": "big_action"
+    },
+    {
+      "id": "s30_b1",
+      "class": "establishing"
+    },
+    {
+      "id": "s33_b1",
+      "class": "big_action"
+    },
+    {
+      "id": "s35_b6",
+      "class": "hold"
+    },
+    {
+      "id": "s35_b22",
+      "class": "big_action"
+    },
+    {
+      "id": "s37_b1",
+      "class": "action"
+    },
+    {
+      "id": "s40_b1",
+      "class": "establishing"
+    },
+    {
+      "id": "s41_b15",
+      "class": "action"
+    },
+    {
+      "id": "s43_b1",
+      "class": "big_action"
+    },
+    {
+      "id": "s45_b3",
+      "class": "big_action"
+    },
+    {
+      "id": "s47_b4",
+      "class": "hold"
+    },
+    {
+      "id": "s49_b6",
+      "class": "action"
+    },
+    {
+      "id": "s51_b4",
+      "class": "action"
+    },
+    {
+      "id": "s53_b4",
+      "class": "hold"
+    },
+    {
+      "id": "s53_b34",
+      "class": "action"
+    },
+    {
+      "id": "s56_b1",
+      "class": "establishing"
+    },
+    {
+      "id": "s58_b9",
+      "class": "hold"
+    },
+    {
+      "id": "s59_b7",
+      "class": "action"
+    },
+    {
+      "id": "s62_b1",
+      "class": "big_action"
+    },
+    {
+      "id": "s63_b33",
+      "class": "hold"
+    }
+  ],
+  "comparisons": [
+    {
+      "Id": "s1_b1",
+      "Scene": 1,
+      "heuristic": "establishing",
+      "ai": "establishing",
+      "visual": "Moonlight spills into a rocky den in the Seeonee hills. FATHER WOLF, a lean gray wolf, wakes from his day\u0027s rest, scratches, yawns, and spreads his paws one aft\u2026"
+    },
+    {
+      "Id": "s2_b1",
+      "Scene": 2,
+      "heuristic": "establishing",
+      "ai": "establishing",
+      "visual": "Below in the valley that runs to a little river: the dry, angry, snarly, singsong whine of a tiger who has caught nothing."
+    },
+    {
+      "Id": "s4_b1",
+      "Scene": 4,
+      "heuristic": "establishing",
+      "ai": "action",
+      "visual": "SHERE KHAN, huge lame tiger, tumbles in the scrub, muttering, feet scorched. Tabaqui dances near him."
+    },
+    {
+      "Id": "s7_b13",
+      "Scene": 7,
+      "heuristic": "action",
+      "ai": "action",
+      "visual": "Moonlight at the mouth is blocked. Shere Khan\u0027s great square head and shoulders thrust into the entrance. Tabaqui squeaks behind him."
+    },
+    {
+      "Id": "s7_b42",
+      "Scene": 7,
+      "heuristic": "action",
+      "ai": "action",
+      "visual": "Mother Wolf throws herself down panting among the cubs."
+    },
+    {
+      "Id": "s8_b16",
+      "Scene": 8,
+      "heuristic": "big_action",
+      "ai": "action",
+      "visual": "No answer. Mother Wolf gathers herself for a last fight. BALOO, a sleepy brown bear, rises on his hindquarters and grunts."
+    },
+    {
+      "Id": "s9_b14",
+      "Scene": 9,
+      "heuristic": "action",
+      "ai": "action",
+      "visual": "Mowgli sighs, climbs a low branch, drops, runs a circle, swims a hand through a pool\u0027s edge as if rehearsing."
+    },
+    {
+      "Id": "s9_b47",
+      "Scene": 9,
+      "heuristic": "action",
+      "ai": "action",
+      "visual": "Mowgli answers with a long, perfect hiss. He kicks up his heels, claps, jumps sideways onto Bagheera\u0027s back, drums with his heels on the glossy hide, and makes \u2026"
+    },
+    {
+      "Id": "s9_b65",
+      "Scene": 9,
+      "heuristic": "hold",
+      "ai": "hold",
+      "visual": "Mowgli looks to Bagheera. The panther\u0027s eyes are hard as jade."
+    },
+    {
+      "Id": "s11_b4",
+      "Scene": 11,
+      "heuristic": "big_action",
+      "ai": "big_action",
+      "visual": "Two strong monkeys catch Mowgli under the arms and swing off through the treetops, twenty feet at a bound. The whole tribe sweeps along the tree-roads with Mowg\u2026"
+    },
+    {
+      "Id": "s13_b1",
+      "Scene": 13,
+      "heuristic": "establishing",
+      "ai": "big_action",
+      "visual": "Baloo and Bagheera crash through undergrowth, furious and spent. Rann stoops and cries the news."
+    },
+    {
+      "Id": "s16_b1",
+      "Scene": 16,
+      "heuristic": "big_action",
+      "ai": "big_action",
+      "visual": "Baloo and Bagheera burst from the jungle. Monkeys scream and fling themselves upon them. Bagheera fights toward the tank; Baloo stands like a rock under a rain \u2026"
+    },
+    {
+      "Id": "s17_b1",
+      "Scene": 17,
+      "heuristic": "establishing",
+      "ai": "establishing",
+      "visual": "The curve of the broken dome hangs above Mowgli. Cobras recoil in the dust."
+    },
+    {
+      "Id": "s18_b28",
+      "Scene": 18,
+      "heuristic": "hold",
+      "ai": "hold",
+      "visual": "He holds out his hands."
+    },
+    {
+      "Id": "s18_b50",
+      "Scene": 18,
+      "heuristic": "hold",
+      "ai": "action",
+      "visual": "All move again. Mowgli lays his hands on Baloo and Bagheera. The two great beasts start as if waked from a dream."
+    },
+    {
+      "Id": "s19_b31",
+      "Scene": 19,
+      "heuristic": "action",
+      "ai": "action",
+      "visual": "Mowgli lays his head on Bagheera\u0027s back and sleeps as they move into the dark."
+    },
+    {
+      "Id": "s22_b1",
+      "Scene": 22,
+      "heuristic": "establishing",
+      "ai": "establishing",
+      "visual": "The valley opens into a great plain dotted with rocks and cut by ravines. At one end a little village; at the other the thick jungle stops as if cut with a hoe.\u2026"
+    },
+    {
+      "Id": "s25_b1",
+      "Scene": 25,
+      "heuristic": "establishing",
+      "ai": "big_action",
+      "visual": "Mowgli divides the herd-Akela taking the big bulls one way, Gray Brother the cows and calves the other-trapping Shere Khan, heavy with a village meal, in the na\u2026"
+    },
+    {
+      "Id": "s26_b25",
+      "Scene": 26,
+      "heuristic": "hold",
+      "ai": "action",
+      "visual": "Messua flees back toward the houses."
+    },
+    {
+      "Id": "s27_b5",
+      "Scene": 27,
+      "heuristic": "hold",
+      "ai": "hold",
+      "visual": "Moonlight turns the plain milky white. Far behind, temple bells bang and conches blare. Messua\u0027s distant weeping carries on the wind."
+    },
+    {
+      "Id": "s28_b12",
+      "Scene": 28,
+      "heuristic": "big_action",
+      "ai": "big_action",
+      "visual": "From habit the Pack answers. Lame wolves, shot-wounded wolves, mangy wolves-many missing-drag themselves to the Rock. They stare at the striped hide, huge claws\u2026"
+    },
+    {
+      "Id": "s30_b1",
+      "Scene": 30,
+      "heuristic": "big_action",
+      "ai": "establishing",
+      "visual": "Miles of basalt rock and sand drowned in seals-hundreds of thousands. Bulls roar and fight in the breakers and on the nurseries. Surf dotted with heads hurrying\u2026"
+    },
+    {
+      "Id": "s33_b1",
+      "Scene": 33,
+      "heuristic": "establishing",
+      "ai": "big_action",
+      "visual": "Dark water. Kotick follows the Sea Cow through a long drowned tunnel beneath the cliffs, lungs burning, until-"
+    },
+    {
+      "Id": "s35_b6",
+      "Scene": 35,
+      "heuristic": "hold",
+      "ai": "hold",
+      "visual": "The others laugh with him."
+    },
+    {
+      "Id": "s35_b22",
+      "Scene": 35,
+      "heuristic": "big_action",
+      "ai": "big_action",
+      "visual": "Kotick roars in answer. Sea Catch waddles in, mustache on end, blowing like a locomotive. Matkah and the seal that will marry Kotick cower down and admire their\u2026"
+    },
+    {
+      "Id": "s37_b1",
+      "Scene": 37,
+      "heuristic": "establishing",
+      "ai": "action",
+      "visual": "A week later. Kotick leads his army-nearly ten thousand holluschickie and old seals-away north toward the Sea Cow\u0027s tunnel. Seals that stay at Novastoshnah call\u2026"
+    },
+    {
+      "Id": "s40_b1",
+      "Scene": 40,
+      "heuristic": "establishing",
+      "ai": "establishing",
+      "visual": "Hot sun. A small draggled mongoose lies senseless on the middle of a garden path-fur like a little cat, head and habits like a weasel, eyes and restless nose pi\u2026"
+    },
+    {
+      "Id": "s41_b15",
+      "Scene": 41,
+      "heuristic": "action",
+      "ai": "action",
+      "visual": "They feed him raw meat. Rikki-tikki sleeps in Teddy\u0027s nursery that night on the boy\u0027s pillow."
+    },
+    {
+      "Id": "s43_b1",
+      "Scene": 43,
+      "heuristic": "establishing",
+      "ai": "big_action",
+      "visual": "Rikki-tikki hears a dry slither. Nag has entered through the sluice to wait for Teddy\u0027s Father in the morning. Rikki waits on the rim of the water jar. When Nag\u2026"
+    },
+    {
+      "Id": "s45_b3",
+      "Scene": 45,
+      "heuristic": "action",
+      "ai": "big_action",
+      "visual": "She snatches the egg and flies for the rat-hole by the melon bed. Rikki follows her down into the dark."
+    },
+    {
+      "Id": "s47_b4",
+      "Scene": 47,
+      "heuristic": "action",
+      "ai": "hold",
+      "visual": "He settles again, proud but not too proud, eyes already half shut."
+    },
+    {
+      "Id": "s49_b6",
+      "Scene": 49,
+      "heuristic": "big_action",
+      "ai": "action",
+      "visual": "Through the trees moves a great elephant, nearly seventy years old, ten fair feet at the shoulders: KALA NAG-Black Snake-tusks cut short and bound with copper b\u2026"
+    },
+    {
+      "Id": "s51_b4",
+      "Scene": 51,
+      "heuristic": "action",
+      "ai": "action",
+      "visual": "In a lull he slides down, slips between the elephants, and throws up the loose end of a rope to a driver struggling with a kicking young calf. Kala Nag sees him\u2026"
+    },
+    {
+      "Id": "s53_b4",
+      "Scene": 53,
+      "heuristic": "hold",
+      "ai": "hold",
+      "visual": "Petersen Sahib turns."
+    },
+    {
+      "Id": "s53_b34",
+      "Scene": 53,
+      "heuristic": "action",
+      "ai": "action",
+      "visual": "Another roar of laughter-the old joke that means never. Kala Nag sets Little Toomai down. The boy bows to the earth again."
+    },
+    {
+      "Id": "s56_b1",
+      "Scene": 56,
+      "heuristic": "establishing",
+      "ai": "establishing",
+      "visual": "Little Toomai leads Petersen Sahib and Machua Appa to the beaten ground-the dance-floor stamped hard as a road. The men stare. Petersen Sahib looks long at the \u2026"
+    },
+    {
+      "Id": "s58_b9",
+      "Scene": 58,
+      "heuristic": "hold",
+      "ai": "hold",
+      "visual": "She draws the cloth closer about the child."
+    },
+    {
+      "Id": "s59_b7",
+      "Scene": 59,
+      "heuristic": "action",
+      "ai": "action",
+      "visual": "Through the murk: the AMIR OF AFGHANISTAN rides with a bodyguard of eight hundred savage men and horses who stare at locomotives and tent-streets as at miracles\u2026"
+    },
+    {
+      "Id": "s62_b1",
+      "Scene": 62,
+      "heuristic": "establishing",
+      "ai": "big_action",
+      "visual": "Roaring, grunting, bubbling. The tent-pole snaps. The whole tent caves and dances like a mad ghost as a big baggage camel blunders through it. NARRATOR, wet and\u2026"
+    },
+    {
+      "Id": "s63_b33",
+      "Scene": 63,
+      "heuristic": "hold",
+      "ai": "hold",
+      "visual": "Billy cocks one ear."
+    }
+  ],
+  "aiRawPreview": "{\n  \u0022labels\u0022: [\n    { \u0022id\u0022: \u0022s1_b1\u0022, \u0022class\u0022: \u0022establishing\u0022, \u0022reason\u0022: \u0022New wolf-cave open: moonlight den \u002B family tableau setup\u0022 },\n    { \u0022id\u0022: \u0022s2_b1\u0022, \u0022class\u0022: \u0022establishing\u0022, \u0022reason\u0022: \u0022New valley wide: place below to the river with offscreen tiger\u0022 },\n    { \u0022id\u0022: \u0022s4_b1\u0022, \u0022class\u0022: \u0022action\u0022, \u0022reason\u0022: \u0022Tiger tumbles in scrub; Tabaqui dances\u2014physical business, not place reveal\u0022 },\n    { \u0022id\u0022: \u2026"
+}

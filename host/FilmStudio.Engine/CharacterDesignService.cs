@@ -58,6 +58,11 @@ public sealed class CharacterDesignService
         if (IsVoiceOnly(charKey, seeds))
             throw new InvalidOperationException($"{charKey} is voice-only — no portrait variants.");
 
+        var wardrobeLockKey = ProjectStore.GetWardrobeLockKey(seeds);
+        var wardrobeLock = !string.IsNullOrWhiteSpace(wardrobeLockKey)
+            ? _projects.GetWardrobeLock(projectId, wardrobeLockKey!)
+            : null;
+
         var charDir = Path.Combine(projectDir, "assets", "characters");
         Directory.CreateDirectory(charDir);
 
@@ -81,6 +86,17 @@ public sealed class CharacterDesignService
             maxRefs = clientCap;
         }
         var maxBook = Math.Clamp(opts.MaxBookHints < 0 ? Math.Max(0, maxRefs - 1) : opts.MaxBookHints, 0, maxRefs);
+
+        // Shared uniform lock: reuse (or generate once) a costume-only reference plate so
+        // every character in this wardrobe group renders the identical coat/hat/badge design
+        // instead of each independently re-imagining "civil hat"/"badge" per generate call.
+        string? costumeRefPath = null;
+        if (wardrobeLock is not null && wardrobeLockKey is not null)
+        {
+            costumeRefPath = await EnsureWardrobeReferenceAsync(
+                projectId, wardrobeLockKey, wardrobeLock.Value, imageModel, onProgress, ct)
+                .ConfigureAwait(false);
+        }
 
         var preferredPath = ResolvePreferredImagePath(projectId, charKey, charDir);
         var preferredName = preferredPath is null ? "" : Path.GetFileName(preferredPath);
@@ -154,15 +170,20 @@ public sealed class CharacterDesignService
             onProgress?.Invoke("Saved scrubbed description / visual lock to cast seeds");
         }
 
-        var hasImageHints = editRefs.Count > 0;
+        var hasImageHints = editRefs.Count > 0 || costumeRefPath is not null;
         var projectStyle = ReadProjectRenderStyleLock(projectDir);
-        var prompt = BuildDesignPrompt(
+        var wardrobeDescription = wardrobeLock is { } wl && wl.TryGetProperty("description", out var wd)
+            ? wd.GetString()
+            : null;
+        var (prompt, illustratedMedium) = BuildDesignPrompt(
             charKey,
             seeds,
             hasImageHints,
             descriptionOverride: descForGen,
             visualLockOverride: visForGen,
-            projectRenderStyleLock: projectStyle);
+            projectRenderStyleLock: projectStyle,
+            wardrobeLockDescription: wardrobeDescription,
+            hasIdentityRefs: editRefs.Count > 0);
 
         onProgress?.Invoke(
             $"design prompt ready ({prompt.Length} chars) · image_provider={ImageApiLimits.ResolveProvider(imageProvider, imageModel)} max_refs={maxRefs}");
@@ -187,8 +208,13 @@ public sealed class CharacterDesignService
 
             if (hasImageHints)
             {
+                var identityLabel = editRefs.Count > 0 ? Path.GetFileName(editRefs[0]) : "(none — costume ref only)";
                 onProgress?.Invoke(
-                    $"Grok image edit with {editRefs.Count} hint(s) [primary={Path.GetFileName(editRefs[0])}]: " +
+                    $"Grok image edit with {editRefs.Count} identity hint(s)" +
+                    (costumeRefPath is not null
+                        ? $" + shared costume ref ({Path.GetFileName(costumeRefPath)})"
+                        : "") +
+                    $" [primary={identityLabel}]: " +
                     string.Join(", ", editRefs.Select(Path.GetFileName)));
                 try
                 {
@@ -200,11 +226,14 @@ public sealed class CharacterDesignService
                         aspectRatio: "1:1",
                         model: imageModel,
                         maxRefs: maxRefs,
+                        costumeRefPath: costumeRefPath,
+                        illustratedMedium: illustratedMedium,
                         onProgress: onProgress,
                         ct: ct);
                     mode = alreadyLocked
                         ? (primary.Count > 1 ? "preferred_multi" : "preferred_locked")
                         : (primary.Count > 1 ? "preferred_or_book_multi" : "preferred_or_book");
+                    if (costumeRefPath is not null) mode += "_wardrobe_locked";
                 }
                 catch (Exception ex)
                 {
@@ -223,7 +252,9 @@ public sealed class CharacterDesignService
                                 n,
                                 aspectRatio: "1:1",
                                 model: imageModel,
-                                maxRefs: 1,
+                                maxRefs: costumeRefPath is not null ? 2 : 1,
+                                costumeRefPath: costumeRefPath,
+                                illustratedMedium: illustratedMedium,
                                 onProgress: onProgress,
                                 ct: ct);
                             mode = "preferred_only_retry";
@@ -235,6 +266,15 @@ public sealed class CharacterDesignService
                                 "Not falling back to text-only — that invents a different character. " +
                                 $"Last error: {ex2.Message}", ex2);
                         }
+                    }
+                    else if (costumeRefPath is not null && editRefs.Count == 0)
+                    {
+                        // Only the shared costume ref was attached (no face ref yet for this
+                        // character) — nothing smaller to retry with.
+                        throw new InvalidOperationException(
+                            "Image-guided edit failed using the shared wardrobe reference. " +
+                            "Not falling back to text-only — that would break uniform consistency " +
+                            $"with the rest of the group. Error: {ex.Message}", ex);
                     }
                     else
                     {
@@ -822,6 +862,71 @@ public sealed class CharacterDesignService
     }
 
     /// <summary>
+    /// Resolves the shared costume-only reference plate for a wardrobe lock group, generating
+    /// it once (text-only, no character identity involved) if it doesn't exist yet. Every
+    /// character whose seed points at <paramref name="wardrobeKey"/> reuses this same image as
+    /// a wardrobe anchor — see the COSTUME REFERENCE clause built into
+    /// <see cref="GrokImageClient.EditVariantsAsync"/> — so their coat/hat/badge design stays
+    /// pixel-identical instead of being independently re-imagined per character/per variant.
+    /// </summary>
+    private async Task<string?> EnsureWardrobeReferenceAsync(
+        string projectId,
+        string wardrobeKey,
+        JsonElement wardrobeSeed,
+        string imageModel,
+        Action<string>? onProgress,
+        CancellationToken ct)
+    {
+        var existing = _projects.ResolveWardrobeRefPath(projectId, wardrobeKey);
+        if (existing is not null)
+            return existing;
+
+        var projectDir = _projects.GetProjectDir(projectId);
+        var charDir = Path.Combine(projectDir, "assets", "characters");
+        Directory.CreateDirectory(charDir);
+
+        var description = wardrobeSeed.TryGetProperty("description", out var d) ? d.GetString() ?? "" : "";
+        var descSafe = CharacterVisualTextScrubber.ScrubVisualProse(description).Trim().TrimEnd('.');
+        var projectStyle = ReadProjectRenderStyleLock(projectDir);
+        var styleClause = !string.IsNullOrWhiteSpace(projectStyle)
+            ? projectStyle!.Trim()
+            : "Photoreal live-action continuity reference.";
+
+        var prompt =
+            "COSTUME REFERENCE PLATE — this is NOT a character portrait; no individual identity matters here. " +
+            styleClause + " " +
+            "Show ONLY the uniform/wardrobe design, worn by a generic, unremarkable, forgettable figure " +
+            "so the garment reads clearly. This figure's face/likeness will NEVER be reused as any " +
+            "character's identity — only the coat, hat, badge, and garment details are meaningful. " +
+            "Plain soft background, head-to-torso framing, facing camera, one clean continuity image. " +
+            "No collage, no split views, no text overlays, no labels. " +
+            "WARDROBE TO DEPICT: " +
+            (string.IsNullOrWhiteSpace(descSafe) ? "period uniform as described in project notes." : descSafe + ".");
+
+        onProgress?.Invoke($"Generating shared uniform reference for '{wardrobeKey}' (one-time)…");
+        var blobs = await _images.GenerateVariantsAsync(
+            prompt, 1, aspectRatio: "1:1", model: imageModel, ct: ct).ConfigureAwait(false);
+        if (blobs.Count < 1)
+            throw new InvalidOperationException($"No image generated for wardrobe reference '{wardrobeKey}'");
+
+        var fileName = ProjectStore.WardrobeRefFileName(wardrobeKey);
+        var full = Path.Combine(charDir, fileName);
+        await File.WriteAllBytesAsync(full, blobs[0], ct).ConfigureAwait(false);
+        onProgress?.Invoke($"Saved shared uniform reference → {fileName}");
+
+        try
+        {
+            await _costs.RecordImageGenerationAsync(projectId, 1, imageModel, quality: true, ct: ct);
+        }
+        catch (Exception costEx)
+        {
+            _log.LogWarning(costEx, "Could not record wardrobe reference image cost");
+        }
+
+        return full;
+    }
+
+    /// <summary>
     /// Project medium from cast extract (<c>render_style_lock</c>). Null when missing.
     /// </summary>
     internal static string? ReadProjectRenderStyleLock(string projectDir)
@@ -875,13 +980,15 @@ public sealed class CharacterDesignService
         System.Text.RegularExpressions.Regex.IsMatch(
             text, pattern, System.Text.RegularExpressions.RegexOptions.IgnoreCase);
 
-    private static string BuildDesignPrompt(
+    private static (string Prompt, bool Illustrated) BuildDesignPrompt(
         string charKey,
         JsonElement seedInfo,
         bool hasImageHints,
         string? descriptionOverride = null,
         string? visualLockOverride = null,
-        string? projectRenderStyleLock = null)
+        string? projectRenderStyleLock = null,
+        string? wardrobeLockDescription = null,
+        bool hasIdentityRefs = true)
     {
         var description = !string.IsNullOrWhiteSpace(descriptionOverride)
             ? descriptionOverride!
@@ -958,6 +1065,18 @@ public sealed class CharacterDesignService
                 "(same ethnicity/hair family, recognizable related features). ";
         }
 
+        // Shared uniform group (see wardrobe_lock_tokens / CharacterDesignService.EnsureWardrobeReferenceAsync):
+        // authoritative wardrobe text lives on the group, not repeated/re-invented per character.
+        var wardrobeClause = "";
+        if (!string.IsNullOrWhiteSpace(wardrobeLockDescription))
+        {
+            var wardrobeSafe = CharacterVisualTextScrubber.ScrubVisualProse(wardrobeLockDescription)
+                .Trim().TrimEnd('.');
+            wardrobeClause =
+                $"SHARED UNIFORM (hard constraint — must match every other character in this same " +
+                $"uniform group exactly, not just similar): {wardrobeSafe}. ";
+        }
+
         // Prompt-time text prep: keep filmable words; image model still gets strong IGNORE rules
         var descSafe = CharacterVisualTextScrubber.ScrubVisualProse(description);
         var visualSafe = CharacterVisualTextScrubber.ScrubVisualProse(visualLock);
@@ -1014,25 +1133,36 @@ public sealed class CharacterDesignService
 
         if (hasImageHints)
         {
-            var matchBody = isAnimal
-                ? (illustrated
-                    ? "Match species, coat pattern, ears, and face shape from the illustrated book references. "
-                    : "Match species, coat, and face from the attached reference images. ")
-                : (illustrated
-                    ? "Match face, hair, and default clothing from the preferred illustrated reference. "
-                    : "Match face, hair, and default clothing from the preferred reference photo/portrait. ");
+            var matchBody = !hasIdentityRefs
+                ? "Take ONLY the wardrobe/costume from the attached costume reference; " +
+                  "face, hair, build, and species come from the text description below, never from that image. "
+                : isAnimal
+                    ? (illustrated
+                        ? "Match species, coat pattern, ears, and face shape from the illustrated book references. "
+                        : "Match species, coat, and face from the attached reference images. ")
+                    : (illustrated
+                        ? "Match face, hair, and default clothing from the preferred illustrated reference. "
+                        : "Match face, hair, and default clothing from the preferred reference photo/portrait. ");
 
-            return
+            var priority1 = hasIdentityRefs
+                ? "PRIORITY 1 — IMAGES: The first attached image is the authoritative identity AND art style. " +
+                  "Further images are the SAME character (markings/style only) or a costume reference " +
+                  "as separately labeled below. " +
+                  "When text and images disagree, trust the images for face/identity. "
+                : "PRIORITY 1 — IMAGE: the attached reference is a COSTUME REFERENCE ONLY (see label below) — " +
+                  "it shows the required wardrobe, not this character's face. This character's face/identity " +
+                  "comes entirely from the text description below, not from that image. ";
+
+            var withHints =
                 $"CHARACTER CONTINUITY PORTRAIT of {display}. " +
                 styleLock +
-                "PRIORITY 1 — IMAGES: The first attached image is the authoritative identity AND art style. " +
-                "Further images are the SAME character (markings/style only). " +
-                "When text and images disagree, trust the images. " +
+                priority1 +
                 "Skip any reference that is mostly printed text with no character art. " +
-                "Do not redesign; do not invent a new outfit not clearly visible in the character art. " +
+                "Do not redesign; do not invent a new outfit not clearly visible in the character/costume art. " +
                 matchBody +
                 speciesClause +
                 familyClause +
+                wardrobeClause +
                 "PRIORITY 2 — BASE LOOK ONLY: default everyday appearance for a faceplate/lock. " +
                 (isAnimal
                     ? "If book art shows an animal without clothes, draw no clothes or costumes. "
@@ -1040,14 +1170,16 @@ public sealed class CharacterDesignService
                 ignoreRules +
                 $"PRIORITY 3 — TEXT NOTES (secondary hints only): {lookNotes} " +
                 outputRules;
+            return (withHints, illustrated);
         }
 
-        return
+        var noHints =
             $"CHARACTER CONTINUITY PORTRAIT of {display}. " +
             styleLock +
             "BASE LOOK ONLY — default everyday appearance for a faceplate/lock, not a story beat. " +
             speciesClause +
             familyClause +
+            wardrobeClause +
             ignoreRules +
             (isAnimal
                 ? (illustrated
@@ -1056,6 +1188,7 @@ public sealed class CharacterDesignService
                 : "Default clothes only; skip later-story outfit changes. ") +
             $"LOOK: {lookNotes} " +
             outputRules;
+        return (noHints, illustrated);
     }
 
     private static List<string> ResolveBookRefPaths(string projectDir, JsonElement seedInfo, int maxRefs)

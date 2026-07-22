@@ -8,7 +8,7 @@ Offline harness + gold labels for duration budgeting classes:
 
 ## Product path (shipped)
 
-- **Service:** `SilentBeatActionClassifier` (prompt **v2**, temp **0**, model from config)
+- **Service:** `SilentBeatActionClassifier` (prompt **v2_pp** = v2 chat + multi-step post-process, temp **0**, model from config)
 - **When:** Stage 2 shot plan (`Stage2PlannerService`)
 - **Policy:** AI preferred → retry on flake → **baseline** `InferActionClass` fallback only if no valid label
 - **Config:**
@@ -63,11 +63,14 @@ Compares against `ground_truth/`:
 | `v4h/` | Tuned heuristic rescore (contaminated) |
 | `gt_score/` | **Canonical:** baseline H / tuned H / AI vs gold |
 
-### Snapshot (2026-07-21, 147 gold beats)
+### Snapshot (2026-07-21 / 2026-07-22, 147 gold beats)
 
 | System | Class accuracy | Duration OK |
 |--------|----------------|-------------|
 | Baseline H | ~46.9% | ~68% |
 | AI v1/v2/v3 | ~85.7–86.4% | ~88–90% |
+| AI v2 + multi-step post-process (**v2_pp**, ship) | **~88.4%** | ~90%+ |
+| AI v4 decision-tree (rejected) | ~76% (subset) | — |
+| AI v5 additive only (rejected) | ~80% (subset) | — |
 
-No clear AI prompt winner among v1/v2/v3; ship **v2**.
+No clear chat-prompt winner among v1/v2/v3. **Ship v2_pp** (v2 prompt + deterministic multi-step / busy-not-spectacle post-process).

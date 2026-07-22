@@ -1,0 +1,20 @@
+{
+  "metric": "accuracy vs human ground truth",
+  "v3_chat_only": {
+    "accuracyPct": 85.7,
+    "correct": 126
+  },
+  "rejected": {
+    "v4_decision_tree": "76% on 75 scorable beats after fountain drift",
+    "v5_additive_prompt": "80% on 75 scorable beats"
+  },
+  "goldBeatsScored": 147,
+  "ts": "2026-07-22T06:45:03.1562160-06:00",
+  "note": "v2_pp = chat prompt v2 + PostProcessActionClass (multi-step hold->action, busy-not-spectacle big_action->action). Offline replay on v3 label cache + gold.",
+  "v2_pp_ship": {
+    "netHurts": 1,
+    "correct": 130,
+    "netFixes": 5,
+    "accuracyPct": 88.4
+  }
+}

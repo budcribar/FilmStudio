@@ -39,52 +39,46 @@
       "performance_notes": "Looks toward door/darkness and the Narrator, not the camera; terror and listening stillness more than speech."
     },
     "Character_OfficerReynolds": {
-      "description": "Adult man, solid competent build, clean period grooming; dark 19th-century civil officer\u2019s coat, badge, civil hat; composed face distinct from the Narrator\u2019s pale disordered look.",
+      "description": "Adult man, solid competent build, clean period grooming; composed face distinct from the Narrator\u2019s pale disordered look \u2014 the lead officer look among the three.",
       "canonical_given_name": "Officer Reynolds",
       "display_name_policy": "ok_anytime",
       "voice_label": "calm adult male officer",
       "voice_profile": "Adult male; medium pitch; even, civil, official pace; polite authority without aggression.",
       "reference_image_placeholder": "character_officer_reynolds_ref.png",
-      "visual_lock": "Same dark period coat, badge, and civil hat; steady composed face; lead officer look among the three; never pale disordered like the Narrator, never elderly frail like the Old Man.",
-      "wardrobe_always": [
-        "dark period officer coat",
-        "badge",
-        "civil hat"
-      ],
+      "visual_lock": "Steady composed face, solid competent build; never pale disordered like the Narrator, never elderly frail like the Old Man.",
+      "wardrobe_lock": "Wardrobe_PoliceOfficer",
       "source_image_pages": [],
       "performance_notes": "Addresses the Narrator and fellow officers; professional search demeanor; remains pleasantly chatty until the final spring-up."
     },
     "Character_OfficerHale": {
-      "description": "Adult man, medium build, period facial hair or clean-shaven but distinct from Reynolds and Briggs; dark period officer coat, badge, civil hat.",
+      "description": "Adult man, medium build, period facial hair or clean-shaven but distinct from Reynolds and Briggs.",
       "canonical_given_name": "Officer Hale",
       "display_name_policy": "ok_anytime",
       "voice_label": "quiet adult male officer",
       "voice_profile": "Adult male; medium-low pitch; spare speech, calm energy; same civil register as the other officers.",
       "reference_image_placeholder": "character_officer_hale_ref.png",
-      "visual_lock": "Dark period coat and badge consistent with the other officers; face clearly different from Reynolds and Briggs (separate bone structure/hair); calm composed expression.",
-      "wardrobe_always": [
-        "dark period officer coat",
-        "badge",
-        "civil hat"
-      ],
+      "visual_lock": "Face clearly different from Reynolds and Briggs (separate bone structure/hair); calm composed expression.",
+      "wardrobe_lock": "Wardrobe_PoliceOfficer",
       "source_image_pages": [],
       "performance_notes": "Primarily observational; exchanges mild glances with Briggs; does not address camera."
     },
     "Character_OfficerBriggs": {
-      "description": "Adult man, sturdy build, distinct face from Reynolds and Hale (different hairline/features); dark period officer coat, badge, civil hat.",
+      "description": "Adult man, sturdy build, distinct face from Reynolds and Hale (different hairline/features).",
       "canonical_given_name": "Officer Briggs",
       "display_name_policy": "ok_anytime",
       "voice_label": "reserved adult male officer",
       "voice_profile": "Adult male; medium pitch; minimal lines if any; steady, unhurried civil energy.",
       "reference_image_placeholder": "character_officer_briggs_ref.png",
-      "visual_lock": "Matching dark period officer wardrobe; uniquely recognizable face among the three officers; composed civil expression.",
-      "wardrobe_always": [
-        "dark period officer coat",
-        "badge",
-        "civil hat"
-      ],
+      "visual_lock": "Uniquely recognizable face among the three officers; composed civil expression.",
+      "wardrobe_lock": "Wardrobe_PoliceOfficer",
       "source_image_pages": [],
       "performance_notes": "Works the search with Hale; pleasant chat and smiles; springs up with the others at the confession."
+    }
+  },
+  "wardrobe_lock_tokens": {
+    "Wardrobe_PoliceOfficer": {
+      "description": "Dark navy-black double-breasted wool police coat with two vertical columns of brass buttons; a flat-topped rounded 'custodian' style peaked cap (NOT a British bobby helmet, NOT a wide-brim hat, NOT a kepi) with a round metal badge centered on the front band; a matching shield-shaped metal badge on the left breast reading POLICE; plain dark civil-issue trousers.",
+      "visual_lock": "Same coat cut, button pattern, cap style, and badge design on every officer in every scene \u2014 differences between officers come only from face/build, never from the uniform."
     }
   }
 }
