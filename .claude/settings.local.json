@@ -10,7 +10,9 @@
       "Bash(powershell -Command \"Get-Process -Id 39676 | Select-Object Id,ProcessName,Path\")",
       "Bash(taskkill *)",
       "Bash(git stash *)",
-      "Bash(echo \"exit: $?\")"
+      "Bash(echo \"exit: $?\")",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)"
     ]
   }
 }
