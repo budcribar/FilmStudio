@@ -787,6 +787,12 @@ public sealed class ProjectStore
             : raw;
         Add($"{bare}_ref.png");
         Add(bare);
+        if (bare.StartsWith("The_", StringComparison.OrdinalIgnoreCase))
+        {
+            var noThe = bare["The_".Length..];
+            Add($"character_{noThe}_ref.png");
+            Add($"{noThe}_ref.png");
+        }
         // Dad / Daddy alias
         if (bare.Equals("Dad", StringComparison.OrdinalIgnoreCase) ||
             bare.Equals("Daddy", StringComparison.OrdinalIgnoreCase))
