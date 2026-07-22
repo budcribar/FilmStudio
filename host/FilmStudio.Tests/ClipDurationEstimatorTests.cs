@@ -140,6 +140,31 @@ public class ClipDurationEstimatorTests
     }
 
     [Fact]
+    public void EstimateForClip_does_not_under_run_speech_when_plan_is_short()
+    {
+        // Plan said 5s; line needs more with head+tail so first word is not clipped
+        const string line = "True! Nervous - very, very dreadfully nervous I had been and am;";
+        var est = ClipDurationEstimator.Estimate(line, "Narrator speaks.", "dialogue", "spoken_on_camera");
+        Assert.True(est >= 6, $"expected >=6s for confession open, got {est}");
+
+        var clip = JsonDocument.Parse(
+            """
+            {
+              "duration_seconds": 5,
+              "visual_prompt": "Narrator speaks.",
+              "audio_payload": {
+                "speaker": "Character_Narrator",
+                "dialogue": "True! Nervous - very, very dreadfully nervous I had been and am;",
+                "delivery": "spoken_on_camera"
+              }
+            }
+            """).RootElement;
+        var d = ClipDurationEstimator.EstimateForClip(clip);
+        Assert.Equal(est, d);
+        Assert.True(d > 5, "must not lock to under-planned 5s");
+    }
+
+    [Fact]
     public void Short_dialogue_is_not_split()
     {
         var line = "Well enough. Well enough.";

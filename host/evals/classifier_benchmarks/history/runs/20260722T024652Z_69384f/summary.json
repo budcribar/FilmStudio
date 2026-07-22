@@ -1,0 +1,104 @@
+{
+  "runId": "20260722T024652Z_69384f",
+  "utc": "2026-07-22 02:46:52Z",
+  "schema": "classifier_benchmark_run.v1",
+  "config": {
+    "projectId": "The_Jungle_Book",
+    "tasks": [
+      "extend_cut"
+    ],
+    "models": [
+      "grok-4.5",
+      "claude-sonnet-5",
+      "claude-haiku-4-5-20251001",
+      "claude-fable-5"
+    ],
+    "prompts": [
+      "v2_grounded"
+    ],
+    "temperatures": [
+      0
+    ],
+    "note": "clarify group-scene new-voice rule after s63_b35 verification",
+    "temperature": 0
+  },
+  "repoRoot": "C:\\Users\\budcr\\source\\repos\\FilmStudio",
+  "results": [
+    {
+      "task": "extend_cut",
+      "projectId": "The_Jungle_Book",
+      "model": "grok-4.5",
+      "promptId": "v2_grounded",
+      "promptLabel": "v2 grounded cut (time jump, fight energy, subject reframe)",
+      "promptHash": "f4c4cb5c14d8",
+      "temperature": 0,
+      "curatedGold": true,
+      "sampleCount": 24,
+      "metric": "accuracy",
+      "baselineScore": 0.9166666666666666,
+      "aiScore": 1,
+      "winner": "AI",
+      "latencyMs": 23847,
+      "aiParseHits": 24,
+      "note": "From extend blind: baseline and v1 nearly agree; v2 targets mid-scene fight energy and new-subject scrambles baseline misses. Updated 2026-07-22: 3/4 models (grok-4.5, claude-sonnet-5, claude-fable-5) flipped s63_b35 (\u0027a deep soft voice-the ELEPHANT of the gun-team\u0027) to hard_cut, over-applying the new-subject rule to a new voice joining an already-established group scene (verified against screenplay.fountain: this is one line in an ongoing multi-animal dialogue circle, same_location=true, prev also a speaker cue). Added a clarifying extend rule for that case; new-subject hard_cut now requires actual physical entrance/blocking, not just descriptive color on a voice.",
+      "samples": []
+    },
+    {
+      "task": "extend_cut",
+      "projectId": "The_Jungle_Book",
+      "model": "claude-sonnet-5",
+      "promptId": "v2_grounded",
+      "promptLabel": "v2 grounded cut (time jump, fight energy, subject reframe)",
+      "promptHash": "f4c4cb5c14d8",
+      "temperature": 0,
+      "curatedGold": true,
+      "sampleCount": 24,
+      "metric": "accuracy",
+      "baselineScore": 0.9166666666666666,
+      "aiScore": 0.9583333333333334,
+      "winner": "AI",
+      "latencyMs": 18276,
+      "aiParseHits": 24,
+      "note": "From extend blind: baseline and v1 nearly agree; v2 targets mid-scene fight energy and new-subject scrambles baseline misses. Updated 2026-07-22: 3/4 models (grok-4.5, claude-sonnet-5, claude-fable-5) flipped s63_b35 (\u0027a deep soft voice-the ELEPHANT of the gun-team\u0027) to hard_cut, over-applying the new-subject rule to a new voice joining an already-established group scene (verified against screenplay.fountain: this is one line in an ongoing multi-animal dialogue circle, same_location=true, prev also a speaker cue). Added a clarifying extend rule for that case; new-subject hard_cut now requires actual physical entrance/blocking, not just descriptive color on a voice.",
+      "samples": []
+    },
+    {
+      "task": "extend_cut",
+      "projectId": "The_Jungle_Book",
+      "model": "claude-haiku-4-5-20251001",
+      "promptId": "v2_grounded",
+      "promptLabel": "v2 grounded cut (time jump, fight energy, subject reframe)",
+      "promptHash": "f4c4cb5c14d8",
+      "temperature": 0,
+      "curatedGold": true,
+      "sampleCount": 24,
+      "metric": "accuracy",
+      "baselineScore": 0.9166666666666666,
+      "aiScore": 0.9583333333333334,
+      "winner": "AI",
+      "latencyMs": 2796,
+      "aiParseHits": 24,
+      "note": "From extend blind: baseline and v1 nearly agree; v2 targets mid-scene fight energy and new-subject scrambles baseline misses. Updated 2026-07-22: 3/4 models (grok-4.5, claude-sonnet-5, claude-fable-5) flipped s63_b35 (\u0027a deep soft voice-the ELEPHANT of the gun-team\u0027) to hard_cut, over-applying the new-subject rule to a new voice joining an already-established group scene (verified against screenplay.fountain: this is one line in an ongoing multi-animal dialogue circle, same_location=true, prev also a speaker cue). Added a clarifying extend rule for that case; new-subject hard_cut now requires actual physical entrance/blocking, not just descriptive color on a voice.",
+      "samples": []
+    },
+    {
+      "task": "extend_cut",
+      "projectId": "The_Jungle_Book",
+      "model": "claude-fable-5",
+      "promptId": "v2_grounded",
+      "promptLabel": "v2 grounded cut (time jump, fight energy, subject reframe)",
+      "promptHash": "f4c4cb5c14d8",
+      "temperature": 0,
+      "curatedGold": true,
+      "sampleCount": 24,
+      "metric": "accuracy",
+      "baselineScore": 0.9166666666666666,
+      "aiScore": 1,
+      "winner": "AI",
+      "latencyMs": 14871,
+      "aiParseHits": 24,
+      "note": "From extend blind: baseline and v1 nearly agree; v2 targets mid-scene fight energy and new-subject scrambles baseline misses. Updated 2026-07-22: 3/4 models (grok-4.5, claude-sonnet-5, claude-fable-5) flipped s63_b35 (\u0027a deep soft voice-the ELEPHANT of the gun-team\u0027) to hard_cut, over-applying the new-subject rule to a new voice joining an already-established group scene (verified against screenplay.fountain: this is one line in an ongoing multi-animal dialogue circle, same_location=true, prev also a speaker cue). Added a clarifying extend rule for that case; new-subject hard_cut now requires actual physical entrance/blocking, not just descriptive color on a voice.",
+      "samples": []
+    }
+  ]
+}

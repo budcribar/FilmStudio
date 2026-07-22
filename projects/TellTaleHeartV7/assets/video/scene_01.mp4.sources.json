@@ -1,5 +1,5 @@
 {
-  "builtAtUtc": "2026-07-22T02:16:48.5471516Z",
+  "builtAtUtc": "2026-07-22T02:48:40.8642042Z",
   "scene": 1,
   "count": 2,
   "clips": [
@@ -14,8 +14,8 @@
       "name": "scene_01_clip_02.mp4",
       "scene": 1,
       "clip": 2,
-      "bytes": 738993,
-      "mtimeUtc": "2026-07-22T02:16:21.4281285Z"
+      "bytes": 727972,
+      "mtimeUtc": "2026-07-22T02:48:10.0292778Z"
     }
   ],
   "included": [
@@ -35,5 +35,5 @@
   "excluded": [],
   "strict": true,
   "assemblyGate": true,
-  "totalDurationSeconds": 8.71
+  "totalDurationSeconds": 8.62
 }

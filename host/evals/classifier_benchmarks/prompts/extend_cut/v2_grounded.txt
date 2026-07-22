@@ -9,7 +9,9 @@ Classes (pick exactly one):
 - Location change (or same_location=false).
 - Clear time jump (years later, next morning, season change) even if place is related.
 - High-energy violence or chase becomes the shot purpose (fight, stampede, charge, leap/crash) even mid-scene.
-- New primary on-camera subject after a different speaker/line — scramble, entrance, or reframe that restarts coverage.
+- New primary on-camera subject after a different speaker/line — an actual scramble,
+  physical entrance, or reframe that restarts coverage (new blocking/movement into frame),
+  not simply a new voice taking its turn in an already-established group scene.
 - Flashback / cut to / wide establishing language in the visual.
 - action_class is establishing or big_action (when provided).
 
@@ -17,6 +19,11 @@ Classes (pick exactly one):
 - Same place, continuous dialogue ping-pong or short parentheticals.
 - Small gesture / reaction / hold after related action in the same space.
 - Business continues without a new setup (walk a few steps, pick up object, keep talking).
+- A new speaker's first line inside an already-established multi-speaker scene (same
+  location, and the previous beat was also someone speaking) — even when the action line
+  gives that speaker vivid physical/scale description ("huge beyond the gun-wheels", "a
+  deep soft voice"). Descriptive color on a voice is not a physical entrance; nothing moved
+  into frame, so there is no new setup to cut to.
 
 ## Do not
 - Force hard_cut on every long visual if it is clearly continuous with prev.

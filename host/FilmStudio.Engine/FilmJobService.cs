@@ -2201,6 +2201,23 @@ public sealed class FilmJobService
             }
         }
 
+        // Silent → first spoken/VO: video-extend often clips the opening word (mouth stays closed
+        // from the prior silent clip). Require prev on disk for order, but gen fresh + plates.
+        if (prevVideoPath is not null)
+        {
+            JsonElement? prevMeta = previousClipEl;
+            if (prevMeta is null && blueprintRoot is { } br)
+                prevMeta = FindClipElementInBlueprint(br, scene, clip - 1);
+            if (prevMeta is { } pm && ClipHasSpokenAudio(clipEl) && !ClipHasSpokenAudio(pm))
+            {
+                reseedFresh = true;
+                prevVideoPath = null;
+                await AppendLogAsync(
+                    $"  [Speech] S{scene:D2}C{clip:D2} is first spoken after silence — " +
+                    "fresh gen with locked refs (not video-extend) so the opening word is not clipped");
+            }
+        }
+
         if (prevVideoPath is not null)
         {
             await AppendLogAsync(

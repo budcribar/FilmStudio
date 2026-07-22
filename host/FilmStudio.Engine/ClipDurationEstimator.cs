@@ -19,11 +19,17 @@ public static class ClipDurationEstimator
     /// <summary>Absolute max if action is huge.</summary>
     public const int AbsMaxSeconds = 12;
 
-    /// <summary>Words per second for spoken dialogue (~150 wpm).</summary>
-    public const double DialogueWordsPerSecond = 2.5;
+    /// <summary>Words per second for spoken dialogue (~140 wpm — slightly under natural so models do not rush).</summary>
+    public const double DialogueWordsPerSecond = 2.3;
+
+    /// <summary>
+    /// Lead-in before speech so lip-sync / video-extend does not clip the first word
+    /// (common on the first spoken clip after a silent establish).
+    /// </summary>
+    public const double SpeechHeadSeconds = 0.55;
 
     /// <summary>Pad after speech so the line can land (not multi-second dead air).</summary>
-    public const double SpeechTailSeconds = 0.45;
+    public const double SpeechTailSeconds = 0.55;
 
     /// <summary>
     /// Extra headroom under <see cref="MaxSeconds"/> when packing monologue splits so lip-sync
@@ -104,9 +110,12 @@ public static class ClipDurationEstimator
         // Prefer estimator; never use a planned value that is much longer without dialogue
         if (planned > 0 && string.IsNullOrWhiteSpace(dialogue))
             return Math.Clamp(Math.Min(planned, est), ActionOnlyMinSeconds, SilentActionMaxSeconds);
-        if (planned > 0 && !string.IsNullOrWhiteSpace(dialogue))
-            // Cap over-planned dialogue clips
-            return Math.Clamp(Math.Min(planned, Math.Max(est, MinSeconds)), MinSeconds, MaxSeconds);
+        if (!string.IsNullOrWhiteSpace(dialogue))
+        {
+            // Never under-run speech need — under-planned clips rush and clip the first word.
+            // Cap only at model max (do not force plan seconds when shorter than est).
+            return Math.Clamp(Math.Max(est, MinSeconds), MinSeconds, MaxSeconds);
+        }
         return est;
     }
 
@@ -127,9 +136,9 @@ public static class ClipDurationEstimator
         if (dlg.Length > 0)
         {
             var words = CountWords(dlg);
-            speech = words / DialogueWordsPerSecond + SpeechTailSeconds;
+            speech = SpeechHeadSeconds + words / DialogueWordsPerSecond + SpeechTailSeconds;
             // Very short lines still need a beat
-            speech = Math.Max(1.6, speech);
+            speech = Math.Max(1.8, speech);
             // VO can be slightly snappier
             if (delivery is "voiceover_internal" or "internal" or "narration" or "vo" or "thought")
                 speech *= 0.95;
@@ -194,8 +203,8 @@ public static class ClipDurationEstimator
         if (dlg.Length > 0)
         {
             var words = CountWords(dlg);
-            speech = words / DialogueWordsPerSecond + SpeechTailSeconds;
-            speech = Math.Max(1.6, speech);
+            speech = SpeechHeadSeconds + words / DialogueWordsPerSecond + SpeechTailSeconds;
+            speech = Math.Max(1.8, speech);
             if (delivery is "voiceover_internal" or "internal" or "narration" or "vo" or "thought")
                 speech *= 0.95;
         }

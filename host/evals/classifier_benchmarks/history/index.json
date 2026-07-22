@@ -2,6 +2,144 @@
   "schema": "classifier_benchmark_history.v1",
   "runs": [
     {
+      "runId": "20260722T024652Z_69384f",
+      "utc": "2026-07-22 02:46:52Z",
+      "projectId": "The_Jungle_Book",
+      "tasks": [
+        "extend_cut"
+      ],
+      "models": [
+        "grok-4.5",
+        "claude-sonnet-5",
+        "claude-haiku-4-5-20251001",
+        "claude-fable-5"
+      ],
+      "prompts": [
+        "v2_grounded"
+      ],
+      "summaryRel": "runs/20260722T024652Z_69384f/summary.json",
+      "note": "clarify group-scene new-voice rule after s63_b35 verification",
+      "scores": [
+        {
+          "task": "extend_cut",
+          "model": "grok-4.5",
+          "promptId": "v2_grounded",
+          "temperature": 0,
+          "metric": "accuracy",
+          "baselineScore": 0.9166666666666666,
+          "aiScore": 1,
+          "winner": "AI",
+          "sampleCount": 24,
+          "curatedGold": true
+        },
+        {
+          "task": "extend_cut",
+          "model": "claude-sonnet-5",
+          "promptId": "v2_grounded",
+          "temperature": 0,
+          "metric": "accuracy",
+          "baselineScore": 0.9166666666666666,
+          "aiScore": 0.9583333333333334,
+          "winner": "AI",
+          "sampleCount": 24,
+          "curatedGold": true
+        },
+        {
+          "task": "extend_cut",
+          "model": "claude-haiku-4-5-20251001",
+          "promptId": "v2_grounded",
+          "temperature": 0,
+          "metric": "accuracy",
+          "baselineScore": 0.9166666666666666,
+          "aiScore": 0.9583333333333334,
+          "winner": "AI",
+          "sampleCount": 24,
+          "curatedGold": true
+        },
+        {
+          "task": "extend_cut",
+          "model": "claude-fable-5",
+          "promptId": "v2_grounded",
+          "temperature": 0,
+          "metric": "accuracy",
+          "baselineScore": 0.9166666666666666,
+          "aiScore": 1,
+          "winner": "AI",
+          "sampleCount": 24,
+          "curatedGold": true
+        }
+      ]
+    },
+    {
+      "runId": "20260722T022229Z_26f5a0",
+      "utc": "2026-07-22 02:22:29Z",
+      "projectId": "The_Jungle_Book",
+      "tasks": [
+        "silent_beat_action"
+      ],
+      "models": [
+        "grok-4.5",
+        "claude-sonnet-5",
+        "claude-haiku-4-5-20251001",
+        "claude-fable-5"
+      ],
+      "prompts": [
+        "v2_product"
+      ],
+      "summaryRel": "runs/20260722T022229Z_26f5a0/summary.json",
+      "note": "post Strip() fix - full model matrix",
+      "scores": [
+        {
+          "task": "silent_beat_action",
+          "model": "grok-4.5",
+          "promptId": "v2_product",
+          "temperature": 0,
+          "metric": "accuracy",
+          "baselineScore": 0.46938775510204084,
+          "aiScore": 0.8503401360544217,
+          "winner": "AI",
+          "sampleCount": 147,
+          "curatedGold": true
+        },
+        {
+          "task": "silent_beat_action",
+          "model": "claude-sonnet-5",
+          "promptId": "v2_product",
+          "temperature": 0,
+          "metric": "accuracy",
+          "baselineScore": 0.46938775510204084,
+          "aiScore": 0.7687074829931972,
+          "winner": "AI",
+          "sampleCount": 147,
+          "curatedGold": true
+        },
+        {
+          "task": "silent_beat_action",
+          "model": "claude-haiku-4-5-20251001",
+          "promptId": "v2_product",
+          "temperature": 0,
+          "metric": "accuracy",
+          "baselineScore": 0.46938775510204084,
+          "aiScore": 0.782312925170068,
+          "winner": "AI",
+          "sampleCount": 147,
+          "curatedGold": true
+        },
+        {
+          "task": "silent_beat_action",
+          "model": "claude-fable-5",
+          "promptId": "v2_product",
+          "temperature": 0,
+          "metric": "accuracy",
+          "baselineScore": 0.46938775510204084,
+          "aiScore": 0.8503401360544217,
+          "winner": "AI",
+          "sampleCount": 147,
+          "curatedGold": true
+        }
+      ]
+    },
+    {
       "runId": "20260722T022734Z_ad3b25",
       "utc": "2026-07-22 02:27:34Z",
       "projectId": "Buster2",

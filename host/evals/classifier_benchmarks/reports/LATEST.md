@@ -1,6 +1,6 @@
 # Classifier benchmarks — history
 
-Updated: 2026-07-22 02:28:04Z
+Updated: 2026-07-22 02:47:52Z
 
 Open **`reports/history.html`** for interactive charts (model / prompt / task over time).
 
@@ -9,7 +9,7 @@ Open **`reports/history.html`** for interactive charts (model / prompt / task ov
 | Task | Metric | Model | Prompt | Temp | AI | Baseline | Δ vs base | Winner | n | When (UTC) | Run |
 |------|--------|-------|--------|------|----|----------|-----------|--------|---|------------|-----|
 | `ambient_sfx` | mean_token_jaccard | `grok-4.5` | `v2_grounded` | 0.2 | **0.897** | 0.742 | +0.156 | **AI** | 30 | 2026-07-21 21:09:15Z | `20260721T210915Z_acb202` |
-| `extend_cut` | accuracy | `grok-4.5` | `v1_product` | 0 | **1.000** | 0.917 | +0.083 | **AI** | 24 | 2026-07-21 22:28:01Z | `20260721T222801Z_acdf1d` |
+| `extend_cut` | accuracy | `grok-4.5` | `v2_grounded` | 0 | **1.000** | 0.917 | +0.083 | **AI** | 24 | 2026-07-22 02:46:52Z | `20260722T024652Z_69384f` |
 | `onscreen_cast` | mean_set_f1 | `claude-fable-5` | `v2_grounded` | 0 | **0.990** | 0.812 | +0.178 | **AI** | 20 | 2026-07-22 02:25:02Z | `20260722T022502Z_146ee3` |
 | `plate_rank` | mean_recall_at_3_capped | `grok-4.5` | `v2_picture_book` | 0 | **1.000** | 0.500 | +0.500 | **AI** | 2 | 2026-07-22 02:27:34Z | `20260722T022734Z_ad3b25` |
 | `silent_beat_action` | accuracy | `grok-4.5` | `v2_product` | 0 | **0.871** | 0.469 | +0.401 | **AI** | 147 | 2026-07-21 22:00:45Z | `20260721T220045Z_f6fc27` |
@@ -19,6 +19,14 @@ Open **`reports/history.html`** for interactive charts (model / prompt / task ov
 
 | When (UTC) | Run | Task | Model | Prompt | Temp | Metric | Baseline | AI | Winner | n |
 |------------|-----|------|-------|--------|------|--------|----------|----|--------|---|
+| 2026-07-22 02:46:52Z | `20260722T024652Z_69384f` | extend_cut | `grok-4.5` | `v2_grounded` | 0 | accuracy | 0.917 | 1.000 | **AI** | 24 |
+| 2026-07-22 02:46:52Z | `20260722T024652Z_69384f` | extend_cut | `claude-sonnet-5` | `v2_grounded` | 0 | accuracy | 0.917 | 0.958 | **AI** | 24 |
+| 2026-07-22 02:46:52Z | `20260722T024652Z_69384f` | extend_cut | `claude-haiku-4-5-20251001` | `v2_grounded` | 0 | accuracy | 0.917 | 0.958 | **AI** | 24 |
+| 2026-07-22 02:46:52Z | `20260722T024652Z_69384f` | extend_cut | `claude-fable-5` | `v2_grounded` | 0 | accuracy | 0.917 | 1.000 | **AI** | 24 |
+| 2026-07-22 02:22:29Z | `20260722T022229Z_26f5a0` | silent_beat_action | `grok-4.5` | `v2_product` | 0 | accuracy | 0.469 | 0.850 | **AI** | 147 |
+| 2026-07-22 02:22:29Z | `20260722T022229Z_26f5a0` | silent_beat_action | `claude-sonnet-5` | `v2_product` | 0 | accuracy | 0.469 | 0.769 | **AI** | 147 |
+| 2026-07-22 02:22:29Z | `20260722T022229Z_26f5a0` | silent_beat_action | `claude-haiku-4-5-20251001` | `v2_product` | 0 | accuracy | 0.469 | 0.782 | **AI** | 147 |
+| 2026-07-22 02:22:29Z | `20260722T022229Z_26f5a0` | silent_beat_action | `claude-fable-5` | `v2_product` | 0 | accuracy | 0.469 | 0.850 | **AI** | 147 |
 | 2026-07-22 02:27:34Z | `20260722T022734Z_ad3b25` | plate_rank | `grok-4.5` | `v2_picture_book` | 0 | mean_recall_at_3_capped | 0.500 | 1.000 | **AI** | 2 |
 | 2026-07-22 02:27:34Z | `20260722T022734Z_ad3b25` | plate_rank | `claude-sonnet-5` | `v2_picture_book` | 0 | mean_recall_at_3_capped | 0.500 | 1.000 | **AI** | 2 |
 | 2026-07-22 02:27:34Z | `20260722T022734Z_ad3b25` | plate_rank | `claude-haiku-4-5-20251001` | `v2_picture_book` | 0 | mean_recall_at_3_capped | 0.500 | 1.000 | **AI** | 2 |
@@ -115,6 +123,10 @@ Open **`reports/history.html`** for interactive charts (model / prompt / task ov
 
 | Run | Model | Prompt | Temp | AI | Baseline |
 |-----|-------|--------|------|----|----------|
+| `20260722T024652Z_69384f` | `grok-4.5` | `v2_grounded` | 0 | 1.000 | 0.917 |
+| `20260722T024652Z_69384f` | `claude-sonnet-5` | `v2_grounded` | 0 | 0.958 | 0.917 |
+| `20260722T024652Z_69384f` | `claude-haiku-4-5-20251001` | `v2_grounded` | 0 | 0.958 | 0.917 |
+| `20260722T024652Z_69384f` | `claude-fable-5` | `v2_grounded` | 0 | 1.000 | 0.917 |
 | `20260722T022629Z_dab9ab` | `grok-4.5` | `v2_grounded` | 0 | 0.958 | 0.917 |
 | `20260722T022629Z_dab9ab` | `claude-sonnet-5` | `v2_grounded` | 0 | 0.958 | 0.917 |
 | `20260722T022629Z_dab9ab` | `claude-haiku-4-5-20251001` | `v2_grounded` | 0 | 0.958 | 0.917 |
@@ -165,6 +177,10 @@ Open **`reports/history.html`** for interactive charts (model / prompt / task ov
 
 | Run | Model | Prompt | Temp | AI | Baseline |
 |-----|-------|--------|------|----|----------|
+| `20260722T022229Z_26f5a0` | `grok-4.5` | `v2_product` | 0 | 0.850 | 0.469 |
+| `20260722T022229Z_26f5a0` | `claude-sonnet-5` | `v2_product` | 0 | 0.769 | 0.469 |
+| `20260722T022229Z_26f5a0` | `claude-haiku-4-5-20251001` | `v2_product` | 0 | 0.782 | 0.469 |
+| `20260722T022229Z_26f5a0` | `claude-fable-5` | `v2_product` | 0 | 0.850 | 0.469 |
 | `20260722T015106Z_55356a` | `claude-haiku-4-5-20251001` | `v2_product` | 0 | 0.701 | 0.469 |
 | `20260722T015106Z_55356a` | `claude-fable-5` | `v2_product` | 0 | 0.864 | 0.469 |
 | `20260722T013902Z_f13a84` | `claude-sonnet-5` | `v2_product` | 0 | 0.762 | 0.469 |

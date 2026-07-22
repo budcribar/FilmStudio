@@ -793,6 +793,8 @@ public sealed class Stage2PlannerService
             : beat.TryGetValue("speaker", out var s2) ? s2 : null) ?? "";
         var dialogue = CoerceString(nested?.TryGetValue("dialogue", out var dlg) == true ? dlg
             : beat.TryGetValue("dialogue", out var dlg2) ? dlg2 : null) ?? "";
+        // Store speech-safe dialogue in the plan (UI + gen see the same text)
+        dialogue = ClipVideoPromptBuilder.SanitizeSpokenDialogue(dialogue);
         var ambient = CoerceString(nested?.TryGetValue("ambient", out var am) == true ? am
             : beat.TryGetValue("ambient", out var am2) ? am2 : null) ?? "";
         var sfx = CoerceString(nested?.TryGetValue("sfx", out var sx) == true ? sx
@@ -816,8 +818,7 @@ public sealed class Stage2PlannerService
         var dialogue = ap["dialogue"] as string ?? "";
         if (string.IsNullOrWhiteSpace(dialogue) || delivery is "none" or "")
             return "";
-        // Keep full dialogue in the visual speech cue — audio_payload already has the full line;
-        // truncating here produced mid-quote "…" and incomplete lip-sync guidance.
+        // Full speech-safe line (BuildAudioPayload already sanitized)
         var quote = dialogue.Trim();
         if (IsOnCameraDelivery(delivery))
             return $"{speaker} ON CAMERA lip-syncs \"{quote}\"";

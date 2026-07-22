@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
@@ -307,6 +308,8 @@ public static class ClipVideoPromptBuilder
             RegexOptions.IgnoreCase);
         v = Regex.Replace(v, @"\bNo extra people\.\s*", "", RegexOptions.IgnoreCase);
         v = StripFountainLeakage(v);
+        // Blueprint may embed lip-sync / says quotes with crushed dashes — speech-safe for gen
+        v = SanitizeSpokenQuotesInVisual(v);
         v = SimplifyVisual(v);
         if (onScreenKeys is { Count: > 0 })
         {
@@ -317,6 +320,131 @@ public static class ClipVideoPromptBuilder
             }
         }
         return v.Trim();
+    }
+
+    /// <summary>
+    /// Speech-safe form of a dialogue line for video/audio gen payloads.
+    /// Same words; clearer pauses. Fixes fountain em-dashes and parser-crushed
+    /// <c>True!-nervous-very</c> glue so models do not mumble hyphen compounds.
+    /// Keeps real compounds (to-day, writing-desk, good-bye, …). Does not paraphrase.
+    /// Empty/whitespace → empty string.
+    /// </summary>
+    public static string SanitizeSpokenDialogue(string? dialogue)
+    {
+        if (string.IsNullOrWhiteSpace(dialogue))
+            return "";
+
+        var t = dialogue.Trim();
+
+        // Unicode dashes → spaced em-dash pause
+        t = Regex.Replace(t, @"\s*[\u2012\u2013\u2014\u2015]\s*", " — ");
+        // ASCII double-hyphen pause
+        t = Regex.Replace(t, @"\s*--\s*", " — ");
+        // Parser glue after ! ? . ; :  e.g. True!-nervous → True! nervous
+        t = Regex.Replace(t, @"([!?.;:])-(\S)", "$1 $2");
+
+        // Letter-letter ASCII hyphen may be (a) crushed em-dash pause or (b) a real compound.
+        // Mask known/safe compounds, expand remaining mid-word hyphens as pauses, unmask.
+        t = ExpandNonCompoundLetterHyphens(t);
+
+        // Collapse whitespace
+        t = Regex.Replace(t, @"\s+", " ").Trim();
+        // After .!? an em-dash pause is redundant — drop it and capitalize the next word
+        // e.g. True! — nervous → True! Nervous
+        t = Regex.Replace(
+            t,
+            @"([.!?])\s+—\s+(\p{L})",
+            m => m.Groups[1].Value + " " +
+                 char.ToUpper(m.Groups[2].Value[0], CultureInfo.InvariantCulture) +
+                 m.Groups[2].Value[1..]);
+        // Capitalize first letter after sentence-ending punctuation (no dash case)
+        t = Regex.Replace(
+            t,
+            @"([.!?])\s+(\p{Ll})",
+            m => m.Groups[1].Value + " " +
+                 char.ToUpper(m.Groups[2].Value[0], CultureInfo.InvariantCulture) +
+                 m.Groups[2].Value[1..]);
+
+        return t;
+    }
+
+    /// <summary>
+    /// Expand letter-letter ASCII hyphens to speech pauses, except real compounds
+    /// (Victorian to-day / writing-desk / good-bye, modern well-known, etc.).
+    /// </summary>
+    private static string ExpandNonCompoundLetterHyphens(string text)
+    {
+        if (string.IsNullOrEmpty(text) || text.IndexOf('-') < 0)
+            return text;
+
+        // Mask protected compounds so the generic expand cannot touch them
+        var masks = new List<string>();
+        var masked = ProtectedCompoundHyphen.Replace(text, m =>
+        {
+            var token = $"\uE000{masks.Count}\uE001";
+            masks.Add(m.Value);
+            return token;
+        });
+
+        // Mask short-left compounds only (to-day, age-old, mid-*). Do NOT mask short-right
+        // (healthily-how is a crushed pause; good-bye is on the protected list).
+        masked = Regex.Replace(
+            masked,
+            @"\b(\p{L}{1,3})-(\p{L}+)\b",
+            m =>
+            {
+                var token = $"\uE000{masks.Count}\uE001";
+                masks.Add(m.Value);
+                return token;
+            });
+
+        // Remaining letter-letter hyphens → pause (nervous-very, unhappy-to)
+        masked = Regex.Replace(masked, @"(?<=\p{L})-(?=\p{L})", " — ");
+
+        // Unmask
+        for (var i = 0; i < masks.Count; i++)
+            masked = masked.Replace($"\uE000{i}\uE001", masks[i], StringComparison.Ordinal);
+
+        return masked;
+    }
+
+    /// <summary>
+    /// High-frequency hyphenated compounds (any book) that must stay hyphenated for speech.
+    /// Not title-specific — Victorian / general English patterns from the fountain corpus.
+    /// </summary>
+    private static readonly Regex ProtectedCompoundHyphen = new(
+        @"\b(?:" +
+        // time / greeting
+        @"to-(?:day|morrow|night)|good-(?:bye|night|day)|" +
+        @"half-(?:past|an?|a)|half-an?-crown|" +
+        // common literary / modern compounds
+        @"writing-desk|well-known|well-used|age-old|door-nail|" +
+        @"tea-(?:time|party|things|pot|cup)|bread-and-butter|" +
+        @"look-out|sky-rocket|rose-tree|day-school|sea-shore|" +
+        @"bed-curtains?|ill-(?:used|will)|even-handed|" +
+        @"tight-fisted|grind-stone|self-\p{L}+|mid-\p{L}+|" +
+        @"jack-in-the-box|pig-baby|and-butter|cattle-killer|" +
+        // number words: eighty-seven, twenty-one
+        @"(?:twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety)-\p{L}+|" +
+        // modern speech compounds often kept hyphenated
+        @"co-\p{L}+|re-\p{L}+|pre-\p{L}+|non-\p{L}+" +
+        @")\b",
+        RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
+
+    /// <summary>
+    /// Apply <see cref="SanitizeSpokenDialogue"/> to quoted lines after lip-syncs / says / narrates
+    /// in Stage2 visual prose so gen sees the same speech-safe text as the AUDIO block.
+    /// </summary>
+    public static string SanitizeSpokenQuotesInVisual(string? visual)
+    {
+        if (string.IsNullOrWhiteSpace(visual))
+            return visual ?? "";
+
+        return Regex.Replace(
+            visual,
+            @"(?<=(?:lip-syncs|says|narrates(?:\s+exactly)?)\s+)""([^""]*)""",
+            m => "\"" + SanitizeSpokenDialogue(m.Groups[1].Value) + "\"",
+            RegexOptions.IgnoreCase);
     }
 
     /// <summary>
@@ -675,8 +803,8 @@ public static class ClipVideoPromptBuilder
             var who = string.IsNullOrWhiteSpace(speaker) ? "SPEAKER" : speaker.Trim();
             var isNarrator = who.Contains("narrator", StringComparison.OrdinalIgnoreCase) ||
                              delivery is "voiceover_internal" or "internal" or "narration" or "vo" or "thought";
-            // Keep full dialogue — long context is fine for evaluation
-            var quote = dialogue.Trim();
+            // Full line, speech-safe punctuation (em-dash normalize, !- glue) — same words
+            var quote = SanitizeSpokenDialogue(dialogue);
             var bed = !string.IsNullOrWhiteSpace(ambient)
                 ? $" Ambient bed: {ambient.Trim()}."
                 : !string.IsNullOrWhiteSpace(sfx)

@@ -1665,6 +1665,8 @@ public sealed class ProjectStore
                     if (ap.TryGetProperty("delivery", out var del))
                         delivery = del.GetString();
                 }
+                // Speech-safe form for operator UI (same helper as video gen payload)
+                dialogue = ClipVideoPromptBuilder.SanitizeSpokenDialogue(dialogue);
 
                 var dur = 0;
                 if (c.TryGetProperty("duration_seconds", out var dEl) && dEl.TryGetInt32(out var ds))
@@ -1676,6 +1678,9 @@ public sealed class ProjectStore
                     var clipPath = ResolveClipVideoPath(projectId, sceneNumber, cn);
                     actualClip = _duration.GetDurationSeconds(clipPath);
                 }
+
+                var visualPrompt = c.TryGetProperty("visual_prompt", out var vp) ? vp.GetString() ?? "" : "";
+                visualPrompt = ClipVideoPromptBuilder.SanitizeSpokenQuotesInVisual(visualPrompt);
 
                 clips.Add(new ClipSummary
                 {
@@ -1689,7 +1694,7 @@ public sealed class ProjectStore
                     PrimarySubject = c.TryGetProperty("primary_subject", out var ps)
                         ? ps.GetString() ?? ""
                         : "",
-                    VisualPrompt = c.TryGetProperty("visual_prompt", out var vp) ? vp.GetString() ?? "" : "",
+                    VisualPrompt = visualPrompt,
                     NegativePrompt = c.TryGetProperty("negative_prompt", out var np) ? np.GetString() ?? "" : "",
                     Dialogue = dialogue,
                     Speaker = speaker,

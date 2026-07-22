@@ -265,6 +265,82 @@ public class ClipVideoPromptBuilderTests
         Assert.DoesNotContain("Character_Narrator He", clean, StringComparison.OrdinalIgnoreCase);
     }
 
+    [Theory]
+    [InlineData(
+        "True!-nervous-very, very dreadfully nervous I had been and am;",
+        "True! Nervous — very, very dreadfully nervous I had been and am;")]
+    [InlineData(
+        "True!—nervous—very, very dreadfully nervous I had been and am;",
+        "True! Nervous — very, very dreadfully nervous I had been and am;")]
+    [InlineData(
+        "healthily-how calmly I can tell you",
+        "healthily — how calmly I can tell you")]
+    [InlineData("Wait -- please!", "Wait — please!")]
+    [InlineData("Oh God -- what have I done?", "Oh God — what have I done?")]
+    [InlineData("", "")]
+    [InlineData("  Hello world.  ", "Hello world.")]
+    public void SanitizeSpokenDialogue_speech_safe_pauses(string raw, string expected)
+    {
+        Assert.Equal(expected, ClipVideoPromptBuilder.SanitizeSpokenDialogue(raw));
+    }
+
+    /// <summary>Real compounds must stay hyphenated (not become speech pauses).</summary>
+    [Theory]
+    [InlineData("Why is a raven like a writing-desk?", "writing-desk")]
+    [InlineData("Good-bye, feet!", "Good-bye")]
+    [InlineData("Come dine with us to-morrow.", "to-morrow")]
+    [InlineData("What's to-day?", "to-day")]
+    [InlineData("I am here to-night to warn you.", "to-night")]
+    [InlineData("It's always tea-time.", "tea-time")]
+    [InlineData("The stupidest tea-party I ever was at.", "tea-party")]
+    [InlineData("Dead as a door-nail.", "door-nail")]
+    [InlineData("A well-known fact.", "well-known")]
+    [InlineData("An age-old idea.", "age-old")]
+    [InlineData("Half-past one.", "Half-past")]
+    [InlineData("I cut some more bread-and-butter.", "bread-and-butter")]
+    [InlineData("Ah! Bed-curtains!", "Bed-curtains")]
+    public void SanitizeSpokenDialogue_preserves_hyphenated_compounds(string raw, string mustContain)
+    {
+        var cleaned = ClipVideoPromptBuilder.SanitizeSpokenDialogue(raw);
+        Assert.Contains(mustContain, cleaned, StringComparison.OrdinalIgnoreCase);
+        // Must not have turned that compound into an em-dash pause
+        var broken = mustContain.Replace("-", " — ", StringComparison.Ordinal);
+        Assert.DoesNotContain(broken, cleaned, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void Build_audio_and_visual_use_sanitized_spoken_dialogue()
+    {
+        var clip = JsonDocument.Parse("""
+            {
+              "clip_number": 2,
+              "visual_prompt": "INT. BARE ROOM - NIGHT. The Narrator speaks. Character_The_Narrator ON CAMERA lip-syncs \"True!-nervous-very, very dreadfully nervous I had been and am;\"",
+              "characters_on_screen": ["Character_The_Narrator"],
+              "veo_continuation_source": "extend_previous",
+              "audio_payload": {
+                "speaker": "Character_The_Narrator",
+                "dialogue": "True!-nervous-very, very dreadfully nervous I had been and am;",
+                "delivery": "spoken_on_camera"
+              }
+            }
+            """).RootElement;
+        var profiles = new Dictionary<string, ClipVideoPromptBuilder.CharacterProfile>(
+            StringComparer.OrdinalIgnoreCase)
+        {
+            ["Character_The_Narrator"] = new()
+            {
+                Key = "Character_The_Narrator",
+                DisplayName = "Narrator",
+                Description = "pale man",
+                VoiceProfile = "tense confessor",
+            },
+        };
+        var built = ClipVideoPromptBuilder.Build(clip, Path.GetTempPath(), profiles);
+        Assert.DoesNotContain("True!-nervous", built.Prompt, StringComparison.Ordinal);
+        Assert.Contains("True! Nervous — very", built.Prompt, StringComparison.Ordinal);
+        Assert.Contains("lip-syncs", built.Prompt, StringComparison.OrdinalIgnoreCase);
+    }
+
     [Fact]
     public void InferKeysFromProse_promotes_old_man_and_officers()
     {

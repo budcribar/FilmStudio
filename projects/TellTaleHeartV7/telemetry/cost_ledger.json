@@ -1,9 +1,9 @@
 {
   "projectId": "TellTaleHeartV7",
-  "builtAtUtc": "2026-07-22T02:16:48.610481+00:00",
+  "builtAtUtc": "2026-07-22T02:48:40.8955815+00:00",
   "source": "pipeline_state.cost_ledger",
   "disclaimer": "List-rate estimates, not xAI invoices.",
-  "eventCount": 2,
+  "eventCount": 3,
   "events": [
     {
       "id": "1784686390_0000",
@@ -25,6 +25,23 @@
     {
       "id": "1784686581_0001",
       "ts": "2026-07-21T20:16:21",
+      "kind": "video",
+      "scene": 1,
+      "clip": 2,
+      "model": "grok-imagine-video",
+      "resolution": "720p",
+      "durationSec": 5,
+      "usd": 0.402,
+      "currency": "USD",
+      "source": "list_rate",
+      "character": null,
+      "outputRatePerSec": 0.07,
+      "hasRefImage": true,
+      "isExtend": true
+    },
+    {
+      "id": "1784688490_0002",
+      "ts": "2026-07-21T20:48:10",
       "kind": "video",
       "scene": 1,
       "clip": 2,
