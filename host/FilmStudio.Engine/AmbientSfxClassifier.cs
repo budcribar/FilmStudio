@@ -44,7 +44,7 @@ public sealed class AmbientSfxClassifier
             ? DefaultModel
             : _opts.AmbientSfxClassifyModel.Trim();
         var temp = _opts.AmbientSfxClassifyTemperature;
-        if (double.IsNaN(temp) || temp < 0) temp = 0;
+        if (double.IsNaN(temp) || temp < 0) temp = 0.2;
         var maxAttempts = Math.Clamp(_opts.AmbientSfxClassifyMaxAttempts, 1, 5);
         var result = new AmbientSfxClassifyResult
         {

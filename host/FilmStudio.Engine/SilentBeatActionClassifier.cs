@@ -241,7 +241,7 @@ public sealed class SilentBeatActionClassifier
                 if (ix > 0) prev = sceneBeats[ix - 1];
                 if (ix >= 0 && ix < sceneBeats.Count - 1) next = sceneBeats[ix + 1];
             }
-            return new Dictionary<string, object?>
+            var d = new Dictionary<string, object?>
             {
                 ["id"] = b.Id,
                 ["scene"] = b.Scene,
@@ -252,6 +252,9 @@ public sealed class SilentBeatActionClassifier
                 ["prev_beat"] = prev is null ? null : DescribeNeighbor(prev),
                 ["next_beat"] = next is null ? null : DescribeNeighbor(next),
             };
+            if (!string.IsNullOrWhiteSpace(b.BookProse))
+                d["book_prose"] = Trunc(b.BookProse, 200);
+            return d;
         }).ToList();
 
         var user =
@@ -287,6 +290,9 @@ public sealed class SilentBeatActionClassifier
             if (sItem is not Dictionary<string, object?> scene) continue;
             sceneIdx++;
             var setting = scene.TryGetValue("setting", out var st) ? st?.ToString() ?? "" : "";
+            var bookProse = scene.TryGetValue("source_prose", out var sp) ? sp?.ToString() ?? ""
+                : scene.TryGetValue("book_excerpt", out var be) ? be?.ToString() ?? ""
+                : scene.TryGetValue("source_text", out var stx) ? stx?.ToString() ?? "" : "";
             var beats = scene.TryGetValue("story_beats", out var sb) && sb is List<object?> bl
                 ? bl
                 : new List<object?>();
@@ -309,6 +315,7 @@ public sealed class SilentBeatActionClassifier
                     IndexInScene = bi,
                     Setting = setting,
                     VisualEvent = ve,
+                    BookProse = bookProse,
                     IsFirstSilentInScene = isFirst,
                     Beat = beat,
                 });
@@ -642,6 +649,7 @@ Use only the four class strings above.
         public int IndexInScene { get; init; }
         public string Setting { get; init; } = "";
         public string VisualEvent { get; init; } = "";
+        public string BookProse { get; init; } = "";
         public bool IsFirstSilentInScene { get; init; }
         public required Dictionary<string, object?> Beat { get; init; }
         public string Heuristic { get; set; } = "";

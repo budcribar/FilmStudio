@@ -71,7 +71,7 @@ public sealed class FilmStudioOptions
 
     public bool ClassifyAmbientSfxWithChat { get; set; } = true;
     public string AmbientSfxClassifyModel { get; set; } = "grok-4.5";
-    public double AmbientSfxClassifyTemperature { get; set; } = 0;
+    public double AmbientSfxClassifyTemperature { get; set; } = 0.2;
     public int AmbientSfxClassifyMaxAttempts { get; set; } = 3;
 
     public bool ClassifyOnScreenCastWithChat { get; set; } = true;
