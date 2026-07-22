@@ -122,6 +122,12 @@ DIALOGUE FIDELITY (HARD — book wording over paraphrase):
   modern speech. Do not “save runtime” by summarizing a spine monologue into two bland
   sentences — drop whole minor beats instead.
 - When runtime forces cuts: drop whole minor beats; do not paraphrase the lines you keep.
+- Summarized exchanges (the book only states that people talked/chatted/exchanged
+  pleasantries, without quoting words) get AT MOST one brief, generic, period-appropriate
+  line for the whole beat — never one invented line per named character. Prefer folding
+  the beat into Action ("They chat of familiar things.") over writing new banter. Any
+  spoken line in that beat is dialogue invented beyond the book — default to zero
+  invented lines, and add the one line only if Action alone cannot carry the beat.
 - Narration in the book that is clearly spoken or recited on-camera may become dialogue;
   pure prose description stays Action or NARRATOR VO — still use book phrases when VO quotes the text.
 
@@ -149,7 +155,9 @@ later shots stay consistent:
 - Recurring speakers use the same ALL-CAPS token every time (SCROOGE, ALICE, DELLA, …).
 - Supporting roles with dialogue (officers, guards, servants, neighbors): give each a proper
   ALL-CAPS name token (OFFICER REYNOLDS, MRS. CLEMM), not FIRST/SECOND/THIRD OFFICER,
-  OFFICER 1, POLICE OFFICER #2. Numbers and ordinals are not stable cast keys.
+  OFFICER 1, POLICE OFFICER #2. Numbers and ordinals are not stable cast keys. Naming a
+  supporting role does not obligate a line for them — only give one a line where Action
+  alone can't carry the beat, subject to the summarized-exchange cap under DIALOGUE FIDELITY.
 
 ================================================================
 LOCATIONS
