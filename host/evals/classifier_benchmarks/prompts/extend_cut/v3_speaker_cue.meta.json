@@ -1,0 +1,6 @@
+{
+  "id": "v3_speaker_cue",
+  "task": "extend_cut",
+  "label": "v3 speaker-cue clarified (bare name/parenthetical/off-screen voice = extend)",
+  "notes": "From claude-sonnet-5 run 20260722T014117Z_cae4d8 tie vs baseline: model flipped s63_b35 ('a deep soft voice-the ELEPHANT') and s26_b23 ('Mowgli (scornfully).') to hard_cut, reading the 'new primary subject after a different speaker' rule too literally against bare speaker-naming cues. v3 clarifies that rule is for an actual physical entrance/reframe, not a name tag, and explicitly lists off-screen voice reveals and name+parenthetical cues under extend."
+}

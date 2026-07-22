@@ -1,0 +1,44 @@
+{
+  "runId": "20260722T013807Z_1bb9b9",
+  "utc": "2026-07-22 01:38:07Z",
+  "schema": "classifier_benchmark_run.v1",
+  "config": {
+    "projectId": "The_Jungle_Book",
+    "tasks": [
+      "ambient_sfx"
+    ],
+    "models": [
+      "claude-sonnet-5"
+    ],
+    "prompts": [
+      "v2_grounded"
+    ],
+    "temperatures": [
+      0
+    ],
+    "note": "Claude support added",
+    "temperature": 0
+  },
+  "repoRoot": "C:\\Users\\budcr\\source\\repos\\FilmStudio",
+  "results": [
+    {
+      "task": "ambient_sfx",
+      "projectId": "The_Jungle_Book",
+      "model": "claude-sonnet-5",
+      "promptId": "v2_grounded",
+      "promptLabel": "v2 grounded \u002B empty-safe (anti over-tag) \u2014 SHIPPED",
+      "promptHash": "a85e267e27b3",
+      "temperature": 0,
+      "curatedGold": true,
+      "sampleCount": 30,
+      "metric": "mean_token_jaccard",
+      "baselineScore": 0.7416666666666667,
+      "aiScore": 0.8805555555555554,
+      "winner": "AI",
+      "latencyMs": 15437,
+      "aiParseHits": 30,
+      "note": "Shipped in FilmStudio.Engine AmbientSfxClassifier (PromptVersion=v2_grounded). Tightens empty cases (speech/parentheticals), no invented beds, layer rules from blind review \u002B score variance analysis.",
+      "samples": []
+    }
+  ]
+}

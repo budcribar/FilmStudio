@@ -1,0 +1,64 @@
+{
+  "runId": "20260722T014322Z_c4c719",
+  "utc": "2026-07-22 01:43:22Z",
+  "schema": "classifier_benchmark_run.v1",
+  "config": {
+    "projectId": "The_Jungle_Book",
+    "tasks": [
+      "extend_cut"
+    ],
+    "models": [
+      "claude-sonnet-5"
+    ],
+    "prompts": [
+      "v2_grounded",
+      "v3_speaker_cue"
+    ],
+    "temperatures": [
+      0
+    ],
+    "note": "v3 speaker-cue prompt fix attempt",
+    "temperature": 0
+  },
+  "repoRoot": "C:\\Users\\budcr\\source\\repos\\FilmStudio",
+  "results": [
+    {
+      "task": "extend_cut",
+      "projectId": "The_Jungle_Book",
+      "model": "claude-sonnet-5",
+      "promptId": "v2_grounded",
+      "promptLabel": "v2 grounded cut (time jump, fight energy, subject reframe)",
+      "promptHash": "20eb7021c63e",
+      "temperature": 0,
+      "curatedGold": true,
+      "sampleCount": 24,
+      "metric": "accuracy",
+      "baselineScore": 0.9166666666666666,
+      "aiScore": 0,
+      "winner": "baseline",
+      "latencyMs": 24899,
+      "aiParseHits": 0,
+      "note": "From extend blind: baseline and v1 nearly agree; v2 targets mid-scene fight energy and new-subject scrambles baseline misses.",
+      "samples": []
+    },
+    {
+      "task": "extend_cut",
+      "projectId": "The_Jungle_Book",
+      "model": "claude-sonnet-5",
+      "promptId": "v3_speaker_cue",
+      "promptLabel": "v3 speaker-cue clarified (bare name/parenthetical/off-screen voice = extend)",
+      "promptHash": "58a45e098b59",
+      "temperature": 0,
+      "curatedGold": true,
+      "sampleCount": 24,
+      "metric": "accuracy",
+      "baselineScore": 0.9166666666666666,
+      "aiScore": 0.9166666666666666,
+      "winner": "tie",
+      "latencyMs": 21951,
+      "aiParseHits": 24,
+      "note": "From claude-sonnet-5 run 20260722T014117Z_cae4d8 tie vs baseline: model flipped s63_b35 (\u0027a deep soft voice-the ELEPHANT\u0027) and s26_b23 (\u0027Mowgli (scornfully).\u0027) to hard_cut, reading the \u0027new primary subject after a different speaker\u0027 rule too literally against bare speaker-naming cues. v3 clarifies that rule is for an actual physical entrance/reframe, not a name tag, and explicitly lists off-screen voice reveals and name\u002Bparenthetical cues under extend.",
+      "samples": []
+    }
+  ]
+}

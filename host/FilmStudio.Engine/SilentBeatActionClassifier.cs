@@ -386,7 +386,10 @@ Use only the four class strings above.
         if (raw.StartsWith("```", StringComparison.Ordinal))
         {
             raw = Regex.Replace(raw, @"^```(?:json)?\s*", "", RegexOptions.IgnoreCase);
-            raw = Regex.Replace(raw, @"\s*```\s*$", "");
+            // Truncate at the closing fence wherever it falls — some models append prose
+            // (e.g. a "Reasoning:" section) after the fenced JSON instead of ending on it.
+            var fenceEnd = raw.IndexOf("```", StringComparison.Ordinal);
+            raw = (fenceEnd >= 0 ? raw[..fenceEnd] : raw).TrimEnd();
         }
 
         try

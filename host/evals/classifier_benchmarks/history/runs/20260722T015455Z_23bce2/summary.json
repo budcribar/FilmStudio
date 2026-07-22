@@ -1,0 +1,64 @@
+{
+  "runId": "20260722T015455Z_23bce2",
+  "utc": "2026-07-22 01:54:55Z",
+  "schema": "classifier_benchmark_run.v1",
+  "config": {
+    "projectId": "The_Jungle_Book",
+    "tasks": [
+      "extend_cut"
+    ],
+    "models": [
+      "claude-haiku-4-5-20251001",
+      "claude-fable-5"
+    ],
+    "prompts": [
+      "v2_grounded"
+    ],
+    "temperatures": [
+      0
+    ],
+    "note": "cheap-model probe",
+    "temperature": 0
+  },
+  "repoRoot": "C:\\Users\\budcr\\source\\repos\\FilmStudio",
+  "results": [
+    {
+      "task": "extend_cut",
+      "projectId": "The_Jungle_Book",
+      "model": "claude-haiku-4-5-20251001",
+      "promptId": "v2_grounded",
+      "promptLabel": "v2 grounded cut (time jump, fight energy, subject reframe)",
+      "promptHash": "20eb7021c63e",
+      "temperature": 0,
+      "curatedGold": true,
+      "sampleCount": 24,
+      "metric": "accuracy",
+      "baselineScore": 0.9166666666666666,
+      "aiScore": 0.9583333333333334,
+      "winner": "AI",
+      "latencyMs": 3017,
+      "aiParseHits": 24,
+      "note": "From extend blind: baseline and v1 nearly agree; v2 targets mid-scene fight energy and new-subject scrambles baseline misses.",
+      "samples": []
+    },
+    {
+      "task": "extend_cut",
+      "projectId": "The_Jungle_Book",
+      "model": "claude-fable-5",
+      "promptId": "v2_grounded",
+      "promptLabel": "v2 grounded cut (time jump, fight energy, subject reframe)",
+      "promptHash": "20eb7021c63e",
+      "temperature": 0,
+      "curatedGold": true,
+      "sampleCount": 24,
+      "metric": "accuracy",
+      "baselineScore": 0.9166666666666666,
+      "aiScore": 0.9583333333333334,
+      "winner": "AI",
+      "latencyMs": 14634,
+      "aiParseHits": 24,
+      "note": "From extend blind: baseline and v1 nearly agree; v2 targets mid-scene fight energy and new-subject scrambles baseline misses.",
+      "samples": []
+    }
+  ]
+}

@@ -907,14 +907,24 @@ public sealed class Stage2PlannerService
         return set;
     }
 
-    private static string LocationLockPhrase(
+    /// <summary>
+    /// Place line for visual_prompt. Prefer the scene's full heading (correct DAY/NIGHT)
+    /// so we never stamp the first-visit time-of-day from a shared location seed.
+    /// </summary>
+    public static string LocationLockPhrase(
         Dictionary<string, object?> scene,
         Dictionary<string, object?> beat,
         Dictionary<string, object?> locSeeds)
     {
+        // Current scene heading wins — includes correct time of day for this visit
+        var setting = CoerceString(scene.TryGetValue("setting", out var st) ? st : null)?.Trim();
+        if (!string.IsNullOrWhiteSpace(setting) && LooksLikeSceneHeading(setting))
+            return setting!;
+
         var lid = CoerceString(beat.TryGetValue("location_id", out var bl) ? bl : null)
                   ?? CoerceString(scene.TryGetValue("primary_location_id", out var pl) ? pl : null);
-        if (string.IsNullOrEmpty(lid)) return "";
+        if (string.IsNullOrEmpty(lid)) return setting ?? "";
+
         if (locSeeds.TryGetValue(lid, out var seedObj) && seedObj is Dictionary<string, object?> seed)
         {
             var lockTxt = CoerceString(seed.TryGetValue("visual_lock", out var vl) ? vl : null)
@@ -922,9 +932,24 @@ public sealed class Stage2PlannerService
                           ?? lid;
             if (IsPlaceholderIdentityText(lockTxt))
                 return lid;
+            // If seed still has a full heading with TOD, prefer scene setting when available
+            if (!string.IsNullOrWhiteSpace(setting))
+                return setting!;
             return lockTxt;
         }
-        return lid;
+
+        return !string.IsNullOrWhiteSpace(setting) ? setting! : lid;
+    }
+
+    /// <summary>True for Fountain-style INT./EXT. headings (used to prefer scene.setting as place lock).</summary>
+    public static bool LooksLikeSceneHeading(string? text)
+    {
+        if (string.IsNullOrWhiteSpace(text)) return false;
+        var t = text.Trim();
+        return Regex.IsMatch(
+            t,
+            @"^(INT\.?|EXT\.?|EST\.?|I/?E\.?|INT\.?\s*/\s*EXT\.?)\b",
+            RegexOptions.IgnoreCase);
     }
 
     private static string RenderStyleLock(Dictionary<string, object?> scene) =>

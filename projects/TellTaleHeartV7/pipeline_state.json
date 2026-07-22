@@ -1,0 +1,74 @@
+{
+  "character_revisions": {
+    "Character_OldMan": {
+      "revision": 1,
+      "updated_at": "2026-07-21T19:29:57",
+      "reason": "Locked reference from upload (character_old_man_ref.png)"
+    },
+    "Character_OfficerReynolds": {
+      "revision": 1,
+      "updated_at": "2026-07-21T19:30:45",
+      "reason": "Locked reference from upload (character_officer_reynolds_ref.png)"
+    },
+    "Character_OfficerHale": {
+      "revision": 1,
+      "updated_at": "2026-07-21T19:31:21",
+      "reason": "Locked reference from upload (character_officer_hayes_ref.png)"
+    },
+    "Character_OfficerBriggs": {
+      "revision": 1,
+      "updated_at": "2026-07-21T19:31:39",
+      "reason": "Locked reference from upload (character_officer_clemm_ref.png)"
+    }
+  },
+  "characters_designed": true,
+  "cost_ledger": [
+    {
+      "kind": "video",
+      "scene": 1,
+      "clip": 1,
+      "model": "grok-imagine-video",
+      "request_id": "grok:ecb38d3d-0905-9631-b206-16dc444f232d",
+      "has_ref_image": true,
+      "is_extend": false,
+      "source": "list_rate",
+      "duration_sec": 5,
+      "attempts": 1,
+      "resolution": "720p",
+      "output_rate_per_sec": 0.07,
+      "video_output_usd": 0.35,
+      "ref_image_usd": 0.002,
+      "extend_input_usd": 0,
+      "usd": 0.352,
+      "currency": "USD",
+      "id": "1784686390_0000",
+      "ts": "2026-07-21T20:13:10"
+    },
+    {
+      "kind": "video",
+      "scene": 1,
+      "clip": 2,
+      "model": "grok-imagine-video",
+      "request_id": "grok:9cbe330f-3e94-9e34-bb85-7356e8770b91",
+      "has_ref_image": true,
+      "is_extend": true,
+      "source": "list_rate",
+      "duration_sec": 5,
+      "attempts": 1,
+      "resolution": "720p",
+      "output_rate_per_sec": 0.07,
+      "video_output_usd": 0.35,
+      "ref_image_usd": 0.002,
+      "extend_input_usd": 0.05,
+      "usd": 0.402,
+      "currency": "USD",
+      "id": "1784686581_0001",
+      "ts": "2026-07-21T20:16:21"
+    }
+  ],
+  "cost_totals": {
+    "usd": 0.754,
+    "events": 2,
+    "updated_at": "2026-07-21T20:16:21"
+  }
+}

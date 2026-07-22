@@ -94,7 +94,11 @@ public static class FountainStage1Importer
         Dictionary<string, object?>? curScene = null;
         List<object?>? beats = null;
         string? pendingChar = null;
+        /// <summary>Character-cue extension from parser Meta (V.O. / O.S. / CONT'D), not performance paren.</summary>
+        string? pendingMeta = null;
         string? pendingParen = null;
+        /// <summary>Last filmable action visual in the open scene — reused as picture under V.O.</summary>
+        string? lastPictureVisual = null;
         var actionBuf = new StringBuilder();
         var dialogueBuf = new StringBuilder();
         var beatIndex = 0;
@@ -113,6 +117,7 @@ public static class FountainStage1Importer
             var (ambient, sfx) = InferAmbientAndSfx(text);
             var isFirstInScene = beats.Count == 0;
             var actionClass = InferActionClass(text, isFirstInScene);
+            lastPictureVisual = text;
             beats.Add(new Dictionary<string, object?>
             {
                 ["beat_id"] = $"b{beatIndex}",
@@ -144,14 +149,26 @@ public static class FountainStage1Importer
             if (pendingChar is null || dialogueBuf.Length == 0 || beats is null) return;
             var text = dialogueBuf.ToString().Trim();
             dialogueBuf.Clear();
-            if (text.Length == 0) { pendingParen = null; return; }
+            if (text.Length == 0)
+            {
+                pendingParen = null;
+                pendingMeta = null;
+                return;
+            }
 
-            var charKey = EnsureCharacter(charSeeds, pendingChar);
-            EnsureOnScreen(curScene, charKey);
+            var charKey = EnsureCharacter(charSeeds, pendingChar, pendingMeta);
+            // V.O./O.S. lives in parser Meta after SplitCharacter — not in pendingChar name alone.
+            var offScreen = IsOffScreenCue(pendingChar, pendingMeta);
+            if (!offScreen)
+                EnsureOnScreen(curScene, charKey);
+
             // Prose uses clean display name — never "NARRATOR (CONT'D) speaks."
             var displayName = CleanCharacterName(pendingChar);
-            var visual = BuildDialogueVisualEvent(displayName, pendingParen, pendingChar);
-            var delivery = IsOffScreen(pendingChar) ? "voiceover_internal" : "spoken_on_camera";
+            // On-camera: lip-sync visual. V.O.: keep picture (last action), not "X speaks."
+            var visual = offScreen
+                ? BuildVoiceoverVisualEvent(lastPictureVisual)
+                : BuildDialogueVisualEvent(displayName, pendingParen, pendingChar);
+            var delivery = offScreen ? "voiceover_internal" : "spoken_on_camera";
             // Parenthetical may carry light sfx ("whispering", rare); usually empty for dialogue
             var (_, parenSfx) = InferAmbientAndSfx(pendingParen ?? "");
 
@@ -159,6 +176,12 @@ public static class FountainStage1Importer
             var parts = ClipDurationEstimator.SplitDialogueToFitModelMax(text, delivery);
             if (parts.Count == 0)
                 parts = new[] { text };
+
+            // Picture cast for V.O.: who was already on screen — do not force speaker into frame
+            var pictureCast = CurrentOnScreen(curScene);
+            var primary = offScreen
+                ? FirstCharacterKey(pictureCast)
+                : charKey;
 
             for (var p = 0; p < parts.Count; p++)
             {
@@ -170,12 +193,14 @@ public static class FountainStage1Importer
                     ["beat_id"] = $"b{beatIndex}",
                     ["intent"] = Trunc(
                         parts.Count > 1
-                            ? $"Dialogue: {displayName} ({p + 1}/{parts.Count})"
-                            : $"Dialogue: {displayName}",
+                            ? (offScreen
+                                ? $"V.O.: {displayName} ({p + 1}/{parts.Count})"
+                                : $"Dialogue: {displayName} ({p + 1}/{parts.Count})")
+                            : (offScreen ? $"V.O.: {displayName}" : $"Dialogue: {displayName}"),
                         120),
                     ["visual_event"] = visual,
-                    ["shot_scale_hint"] = "medium close",
-                    ["action_class"] = "dialogue",
+                    ["shot_scale_hint"] = offScreen ? "medium" : "medium close",
+                    ["action_class"] = offScreen ? "hold" : "dialogue",
                     ["continuity"] = isFirst
                         ? "new_setup"
                         : "continuous_from_previous_beat",
@@ -194,12 +219,13 @@ public static class FountainStage1Importer
                         ["ambient"] = "",
                         ["sfx"] = parenSfx,
                     },
-                    ["primary_subject"] = charKey,
-                    ["characters_on_screen"] = CurrentOnScreen(curScene),
+                    ["primary_subject"] = primary is { Length: > 0 } ? primary : null,
+                    ["characters_on_screen"] = pictureCast.ToList(),
                 });
             }
 
             pendingParen = null;
+            pendingMeta = null;
         }
 
         void CloseScene()
@@ -207,6 +233,9 @@ public static class FountainStage1Importer
             FlushAction();
             FlushDialogue();
             pendingChar = null;
+            pendingMeta = null;
+            pendingParen = null;
+            lastPictureVisual = null;
             if (curScene is null || beats is null) return;
 
             // Drop pure transition noise that slipped in as action
@@ -279,6 +308,9 @@ public static class FountainStage1Importer
             sceneNum++;
             var (locType, locName, setting) = ParseHeading(heading);
             var locId = EnsureLocation(locSeeds, locName, locType, setting);
+            lastPictureVisual = null;
+            pendingMeta = null;
+            pendingParen = null;
             curScene = new Dictionary<string, object?>
             {
                 ["scene_number"] = sceneNum,
@@ -327,15 +359,18 @@ public static class FountainStage1Importer
                     FlushAction();
                     FlushDialogue();
                     pendingChar = el.Text.Trim();
-                    if (!string.IsNullOrWhiteSpace(el.Meta))
-                        pendingParen = el.Meta.Trim('(', ')').Trim();
-                    else
-                        pendingParen = null;
-                    EnsureCharacter(charSeeds, pendingChar);
-                    EnsureOnScreen(curScene, CharacterKey(pendingChar));
+                    // Meta holds (V.O.) / (O.S.) / CONT'D from SplitCharacter — keep separate from
+                    // performance parentheticals that follow on their own line.
+                    pendingMeta = string.IsNullOrWhiteSpace(el.Meta) ? null : el.Meta.Trim();
+                    pendingParen = null;
+                    EnsureCharacter(charSeeds, pendingChar, pendingMeta);
+                    // Voice-over / O.S. speakers are not forced into the on-screen cast list
+                    if (!IsOffScreenCue(pendingChar, pendingMeta))
+                        EnsureOnScreen(curScene, CharacterKey(pendingChar));
                     break;
 
                 case FountainParser.ElementType.Parenthetical:
+                    // Performance direction only — must not overwrite V.O./O.S. meta on the cue
                     pendingParen = el.Text;
                     break;
 
@@ -576,23 +611,31 @@ public static class FountainStage1Importer
         var id = "Loc_" + SlugKey(locName);
         if (!seeds.ContainsKey(id))
         {
+            // Place identity only — do NOT freeze first-visit DAY/NIGHT into visual_lock.
+            // Stage 2 prefixes the current scene heading (correct time of day) at plan time.
             seeds[id] = new Dictionary<string, object?>
             {
                 ["display_name"] = locName,
-                ["description"] = setting,
-                ["visual_lock"] = setting,
+                ["description"] = locName,
+                ["visual_lock"] = locName,
+                ["location_type"] = locType,
                 ["reference_image_placeholder"] = id.ToLowerInvariant() + "_ref.png",
             };
         }
+        // setting retained only for callers that still pass it; seed stays time-agnostic
+        _ = setting;
         return id;
     }
 
-    private static string EnsureCharacter(Dictionary<string, object?> seeds, string displayName)
+    private static string EnsureCharacter(
+        Dictionary<string, object?> seeds,
+        string displayName,
+        string? cueMeta = null)
     {
         var key = CharacterKey(displayName);
+        var off = IsOffScreenCue(displayName, cueMeta);
         if (!seeds.ContainsKey(key))
         {
-            var off = IsOffScreen(displayName);
             var name = CleanCharacterName(displayName);
             // Do not invent looks from Fountain. Leave description/visual_lock empty for on-screen
             // cast so Stage 2 cannot embed "as described in the screenplay" stubs into visual prompts.
@@ -611,8 +654,26 @@ public static class FountainStage1Importer
             if (!off)
                 ((Dictionary<string, object?>)seeds[key]!)["visual_lock"] = "";
         }
+        else if (!off &&
+                 seeds[key] is Dictionary<string, object?> existing &&
+                 string.Equals(
+                     CoerceSeedString(existing, "display_name_policy"),
+                     "never_on_screen",
+                     StringComparison.OrdinalIgnoreCase))
+        {
+            // Later on-camera appearance upgrades a V.O.-only first seed
+            existing["display_name_policy"] = "ok_anytime";
+            if (string.IsNullOrWhiteSpace(CoerceSeedString(existing, "description")) ||
+                (CoerceSeedString(existing, "description")?.Contains("voice only", StringComparison.OrdinalIgnoreCase) ?? false))
+                existing["description"] = "";
+            if (!existing.ContainsKey("visual_lock"))
+                existing["visual_lock"] = "";
+        }
         return key;
     }
+
+    private static string? CoerceSeedString(Dictionary<string, object?> seed, string key) =>
+        seed.TryGetValue(key, out var v) ? v?.ToString() : null;
 
     private static string CharacterKey(string name)
     {
@@ -693,22 +754,62 @@ public static class FountainStage1Importer
         if (!string.IsNullOrWhiteSpace(performanceParen))
         {
             var p = performanceParen.Trim().Trim('(', ')').Trim();
+            // Strip pure extension tokens if a performance paren was polluted with Meta
             if (p.Length > 0 &&
                 !Regex.IsMatch(p, @"^(CONT|CONTINUED|V\.?\s*O\.?|O\.?\s*S\.?|O\.?\s*C\.?)$",
-                    RegexOptions.IgnoreCase))
+                    RegexOptions.IgnoreCase) &&
+                !IsOffScreenToken(p))
                 return $"{name} ({p}).";
         }
 
         return continued ? $"{name} continues." : $"{name} speaks.";
     }
 
-    private static bool IsOffScreen(string name) =>
-        name.Contains("O.S.", StringComparison.OrdinalIgnoreCase) ||
-        name.Contains("O.S", StringComparison.OrdinalIgnoreCase) ||
-        name.Contains("V.O.", StringComparison.OrdinalIgnoreCase) ||
-        name.Contains("V.O", StringComparison.OrdinalIgnoreCase) ||
-        name.Contains("OS)", StringComparison.OrdinalIgnoreCase) ||
-        name.Contains("VO)", StringComparison.OrdinalIgnoreCase);
+    /// <summary>
+    /// Picture under voice-over: reuse the last action visual when present; never "X speaks."
+    /// Stage 2 SpeechClause adds OFF-CAMERA VOICEOVER from audio_payload.
+    /// </summary>
+    public static string BuildVoiceoverVisualEvent(string? lastPictureVisual)
+    {
+        var pic = (lastPictureVisual ?? "").Trim();
+        if (pic.Length > 0)
+            return pic;
+        return "Scene continues under voice-over.";
+    }
+
+    /// <summary>
+    /// True when the character cue (name and/or parser Meta) indicates voice-over or off-screen.
+    /// FountainParser puts extensions like (V.O.) in Meta after splitting them off the name —
+    /// checking the bare name alone always misses V.O.
+    /// </summary>
+    public static bool IsOffScreenCue(string? characterName, string? metaOrExtension = null) =>
+        IsOffScreenToken(characterName) || IsOffScreenToken(metaOrExtension);
+
+    /// <summary>True when text contains a V.O. / O.S. / O.C. extension token.</summary>
+    public static bool IsOffScreenToken(string? text)
+    {
+        if (string.IsNullOrWhiteSpace(text)) return false;
+        // Optional dots/spaces/parens: (V.O.), V.O, VO, (O. S.), O.S., O.C.
+        if (Regex.IsMatch(text, @"\bV\s*\.?\s*O\s*\.?\b", RegexOptions.IgnoreCase))
+            return true;
+        if (Regex.IsMatch(text, @"\bO\s*\.?\s*S\s*\.?\b", RegexOptions.IgnoreCase))
+            return true;
+        if (Regex.IsMatch(text, @"\bO\s*\.?\s*C\s*\.?\b", RegexOptions.IgnoreCase))
+            return true;
+        return false;
+    }
+
+    private static string? FirstCharacterKey(List<object?> cast)
+    {
+        foreach (var x in cast)
+        {
+            var s = x?.ToString();
+            if (!string.IsNullOrWhiteSpace(s) &&
+                s.StartsWith("Character_", StringComparison.Ordinal))
+                return s;
+        }
+        return null;
+    }
 
     private static void EnsureOnScreen(Dictionary<string, object?>? scene, string charKey)
     {

@@ -1,0 +1,44 @@
+{
+  "runId": "20260722T014117Z_cae4d8",
+  "utc": "2026-07-22 01:41:17Z",
+  "schema": "classifier_benchmark_run.v1",
+  "config": {
+    "projectId": "The_Jungle_Book",
+    "tasks": [
+      "extend_cut"
+    ],
+    "models": [
+      "claude-sonnet-5"
+    ],
+    "prompts": [
+      "v2_grounded"
+    ],
+    "temperatures": [
+      0
+    ],
+    "note": "Claude support added",
+    "temperature": 0
+  },
+  "repoRoot": "C:\\Users\\budcr\\source\\repos\\FilmStudio",
+  "results": [
+    {
+      "task": "extend_cut",
+      "projectId": "The_Jungle_Book",
+      "model": "claude-sonnet-5",
+      "promptId": "v2_grounded",
+      "promptLabel": "v2 grounded cut (time jump, fight energy, subject reframe)",
+      "promptHash": "20eb7021c63e",
+      "temperature": 0,
+      "curatedGold": true,
+      "sampleCount": 24,
+      "metric": "accuracy",
+      "baselineScore": 0.9166666666666666,
+      "aiScore": 0.9166666666666666,
+      "winner": "tie",
+      "latencyMs": 19393,
+      "aiParseHits": 24,
+      "note": "From extend blind: baseline and v1 nearly agree; v2 targets mid-scene fight energy and new-subject scrambles baseline misses.",
+      "samples": []
+    }
+  ]
+}

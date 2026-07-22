@@ -12,7 +12,9 @@
       "Bash(git stash *)",
       "Bash(echo \"exit: $?\")",
       "Bash(git add *)",
-      "Bash(git commit -m ' *)"
+      "Bash(git commit -m ' *)",
+      "Bash(dotnet run *)",
+      "Bash(CB_DEBUG_RAW=1 dotnet run --project tools/ClassifierBenchmarks -c Release -- run --project Buster2 --tasks plate_rank --models claude-haiku-4-5-20251001 --prompts v2_picture_book --note \"debug raw\")"
     ]
   }
 }

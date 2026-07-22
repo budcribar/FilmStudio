@@ -30,7 +30,7 @@ Durable **AI vs baseline** evals for Film Studio classifiers. Re-run over time a
 ## Run
 
 ```powershell
-# From repo root (requires XAI_API_KEY)
+# From repo root (requires XAI_API_KEY for grok-* models, CLAUDE_API_KEY for claude-* models)
 cd host
 dotnet run --project tools/ClassifierBenchmarks -c Release -- run `
   --project The_Jungle_Book `
@@ -39,10 +39,15 @@ dotnet run --project tools/ClassifierBenchmarks -c Release -- run `
   --prompts v1_product,v1_no_speech_sfx `
   --note "after ambient gold curation"
 
-# Model matrix
+# Claude model (reads CLAUDE_API_KEY)
+dotnet run --project tools/ClassifierBenchmarks -c Release -- run `
+  --tasks ambient_sfx `
+  --models claude-sonnet-5 `
+
+# Model matrix (mixes providers in one run; needs both keys set)
 dotnet run --project tools/ClassifierBenchmarks -c Release -- run `
   --tasks ambient_sfx,species_kind `
-  --models grok-4.5 `
+  --models grok-4.5,claude-sonnet-5 `
 
 # Rebuild reports only
 dotnet run --project tools/ClassifierBenchmarks -c Release -- report
@@ -63,8 +68,13 @@ Each result stores `promptId` + `promptHash` so you can see when the text actual
 ## Compare models
 
 ```text
---models grok-4.5,some-other-model --prompts v1_product
+--models grok-4.5,claude-sonnet-5 --prompts v1_product
 ```
+
+Model routing is by name prefix: any model id starting with `claude` (case-insensitive) calls the
+Anthropic Messages API (`https://api.anthropic.com/v1/messages`, `CLAUDE_API_KEY`); everything else
+calls the xAI-compatible chat completions API (`XAI_API_KEY`). Anthropic temperature is clamped to
+0–1 (vs. 0–2 for xAI/OpenAI) since that's the API's valid range.
 
 History charts plot one series per `task · model · prompt`.
 

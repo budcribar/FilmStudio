@@ -274,7 +274,10 @@ JSON only:
         raw = (raw ?? "").Trim();
         if (!raw.StartsWith("```")) return raw;
         raw = Regex.Replace(raw, @"^```(?:json)?\s*", "", RegexOptions.IgnoreCase);
-        return Regex.Replace(raw, @"\s*```\s*$", "");
+        // Truncate at the closing fence wherever it falls — some models append prose
+        // (e.g. a "Reasoning:" section) after the fenced JSON instead of ending on it.
+        var fenceEnd = raw.IndexOf("```", StringComparison.Ordinal);
+        return (fenceEnd >= 0 ? raw[..fenceEnd] : raw).TrimEnd();
     }
 
     private static string Trunc(string s, int n) =>

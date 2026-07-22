@@ -316,4 +316,159 @@ public class Stage2VisualPromptTests : IDisposable
         // Real lock prose may appear in visual_prompt identity cues
         Assert.Contains("wire glasses", bp, StringComparison.OrdinalIgnoreCase);
     }
+
+    [Theory]
+    [InlineData("NARRATOR", null, false)]
+    [InlineData("NARRATOR", "(V.O.)", true)]
+    [InlineData("NARRATOR", "V.O.", true)]
+    [InlineData("NARRATOR", "(V.O.) (CONT'D)", true)]
+    [InlineData("NARRATOR", "(O.S.)", true)]
+    [InlineData("HERO", "(CONT'D)", false)]
+    [InlineData("NARRATOR (V.O.)", null, true)]
+    public void IsOffScreenCue_reads_meta_not_only_bare_name(string name, string? meta, bool expected)
+    {
+        Assert.Equal(expected, FountainStage1Importer.IsOffScreenCue(name, meta));
+    }
+
+    [Fact]
+    public void BuildStage1_vo_cue_sets_voiceover_internal_not_lip_sync_visual()
+    {
+        var fountain = """
+            Title: VO Import
+
+            INT. BEDCHAMBER - NIGHT
+
+            THE OLD MAN sleeps under heavy covers.
+
+            NARRATOR (V.O.)
+            It took me an hour to place my whole head within the opening.
+
+            NARRATOR
+            And now I speak on camera in another beat.
+            """;
+        var doc = Stage1Normalizer.Normalize(
+            FountainStage1Importer.BuildStage1(FountainParser.Parse(fountain)));
+        var scenes = Assert.IsType<List<object?>>(doc["scenes"]);
+        Assert.NotEmpty(scenes);
+        var scene = Assert.IsType<Dictionary<string, object?>>(scenes[0]);
+        var beats = Assert.IsType<List<object?>>(scene["story_beats"]);
+        var dicts = beats.OfType<Dictionary<string, object?>>().ToList();
+
+        var vo = dicts.First(b =>
+            (b.TryGetValue("dialogue", out var d) ? d?.ToString() : null)?.Contains("hour") == true);
+        Assert.Equal("voiceover_internal", vo["delivery"]?.ToString());
+        var voAudio = Assert.IsType<Dictionary<string, object?>>(vo["audio"]);
+        Assert.Equal("voiceover_internal", voAudio["delivery"]?.ToString());
+        var voVisual = vo["visual_event"]?.ToString() ?? "";
+        Assert.Contains("OLD MAN", voVisual, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("speaks", voVisual, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("lip-sync", voVisual, StringComparison.OrdinalIgnoreCase);
+
+        var onCam = dicts.First(b =>
+            (b.TryGetValue("dialogue", out var d) ? d?.ToString() : null)?.Contains("on camera") == true);
+        Assert.Equal("spoken_on_camera", onCam["delivery"]?.ToString());
+        Assert.Contains("speaks", onCam["visual_event"]?.ToString() ?? "", StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void LocationLockPhrase_prefers_scene_setting_time_of_day()
+    {
+        var sceneDay = new Dictionary<string, object?>
+        {
+            ["setting"] = "INT. OLD MAN'S BEDCHAMBER - DAY",
+            ["primary_location_id"] = "Loc_Old_Mans_Bedchamber",
+        };
+        var sceneNight = new Dictionary<string, object?>
+        {
+            ["setting"] = "INT. OLD MAN'S BEDCHAMBER - NIGHT",
+            ["primary_location_id"] = "Loc_Old_Mans_Bedchamber",
+        };
+        var beat = new Dictionary<string, object?>
+        {
+            ["location_id"] = "Loc_Old_Mans_Bedchamber",
+        };
+        // Seed frozen on first DAY visit (legacy poison) — plan must still use current heading
+        var seeds = new Dictionary<string, object?>
+        {
+            ["Loc_Old_Mans_Bedchamber"] = new Dictionary<string, object?>
+            {
+                ["visual_lock"] = "INT. OLD MAN'S BEDCHAMBER - DAY",
+                ["description"] = "INT. OLD MAN'S BEDCHAMBER - DAY",
+            },
+        };
+
+        Assert.Equal(
+            "INT. OLD MAN'S BEDCHAMBER - DAY",
+            Stage2PlannerService.LocationLockPhrase(sceneDay, beat, seeds));
+        Assert.Equal(
+            "INT. OLD MAN'S BEDCHAMBER - NIGHT",
+            Stage2PlannerService.LocationLockPhrase(sceneNight, beat, seeds));
+        Assert.True(Stage2PlannerService.LooksLikeSceneHeading("INT. ROOM - NIGHT"));
+        Assert.False(Stage2PlannerService.LooksLikeSceneHeading("OLD MAN'S BEDCHAMBER"));
+    }
+
+    [Fact]
+    public async Task Stage2_night_scene_prompt_keeps_night_not_day_from_shared_loc()
+    {
+        const string projectId = "Demo";
+        var fountain = """
+            Title: TOD Check
+
+            INT. OLD MAN'S BEDCHAMBER - DAY
+
+            THE OLD MAN sits by the window.
+
+            NARRATOR (V.O.)
+            I saw his eye by day.
+
+            INT. OLD MAN'S BEDCHAMBER - NIGHT
+
+            Pitch black. A thin ray finds the pillow.
+
+            NARRATOR (V.O.)
+            And at midnight the eye was closed.
+            """;
+        ScreenplayService.SaveDraft(_store, projectId, fountain);
+        Assert.True(ScreenplayService.SignOff(_store, projectId).Ok);
+
+        var planner = new Stage2PlannerService(_store, NullLogger<Stage2PlannerService>.Instance);
+        var result = await planner.PlanAsync(projectId, resolution: "480p", scenes: "all");
+        Assert.True(result.Ok);
+
+        using var doc = System.Text.Json.JsonDocument.Parse(await File.ReadAllTextAsync(result.OutPath!));
+        var scenes = doc.RootElement.GetProperty("scenes");
+        Assert.True(scenes.GetArrayLength() >= 2);
+
+        string? nightPrompt = null;
+        string? nightDelivery = null;
+        foreach (var scene in scenes.EnumerateArray())
+        {
+            var setting = scene.GetProperty("setting").GetString() ?? "";
+            if (!setting.Contains("NIGHT", StringComparison.OrdinalIgnoreCase))
+                continue;
+            foreach (var clip in scene.GetProperty("veo_clips").EnumerateArray())
+            {
+                var vp = clip.GetProperty("visual_prompt").GetString() ?? "";
+                if (vp.Contains("BEDCHAMBER", StringComparison.OrdinalIgnoreCase) ||
+                    vp.Contains("Pitch black", StringComparison.OrdinalIgnoreCase) ||
+                    vp.Contains("midnight", StringComparison.OrdinalIgnoreCase) ||
+                    vp.Contains("OFF-CAMERA", StringComparison.OrdinalIgnoreCase))
+                {
+                    nightPrompt = vp;
+                    nightDelivery = clip.GetProperty("audio_payload").GetProperty("delivery").GetString();
+                    if (nightDelivery == "voiceover_internal")
+                        break;
+                }
+            }
+            if (nightDelivery == "voiceover_internal")
+                break;
+        }
+
+        Assert.NotNull(nightPrompt);
+        Assert.Contains("NIGHT", nightPrompt, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("BEDCHAMBER - DAY", nightPrompt, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal("voiceover_internal", nightDelivery);
+        Assert.DoesNotContain("ON CAMERA lip-syncs", nightPrompt, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("OFF-CAMERA VOICEOVER", nightPrompt, StringComparison.OrdinalIgnoreCase);
+    }
 }

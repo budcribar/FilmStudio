@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "active": [
+    {
+      "id": "style_from_cast",
+      "text": "STYLE LOCK: Period gothic live-action; candlelight and deep shadows; desaturated cool-brown palette; 19th-century domestic interiors; naturalistic skin and fabric texture; no modern clothing or lighting.",
+      "category": "style",
+      "approvedAt": "2026-07-22T01:29:16.1818164+00:00",
+      "approvedBy": "cast_extract",
+      "sourceFailCount": 0
+    },
+    {
+      "id": "performance_from_cast",
+      "text": "PERFORMANCE LOCK: First-person confessional adaptation\u2014THE NARRATOR often faces and addresses the implied listener/camera when recounting; flashback scenes are objective staging where characters look at each other and scene action, not the viewer. Officers remain calm, civil, observational.",
+      "category": "performance",
+      "approvedAt": "2026-07-22T01:29:16.2008788+00:00",
+      "approvedBy": "cast_extract",
+      "sourceFailCount": 0
+    }
+  ],
+  "pending": []
+}

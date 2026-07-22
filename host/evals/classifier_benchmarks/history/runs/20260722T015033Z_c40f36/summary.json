@@ -1,0 +1,64 @@
+{
+  "runId": "20260722T015033Z_c40f36",
+  "utc": "2026-07-22 01:50:33Z",
+  "schema": "classifier_benchmark_run.v1",
+  "config": {
+    "projectId": "The_Jungle_Book",
+    "tasks": [
+      "onscreen_cast"
+    ],
+    "models": [
+      "claude-haiku-4-5-20251001",
+      "claude-fable-5"
+    ],
+    "prompts": [
+      "v2_grounded"
+    ],
+    "temperatures": [
+      0
+    ],
+    "note": "cheap-model probe",
+    "temperature": 0
+  },
+  "repoRoot": "C:\\Users\\budcr\\source\\repos\\FilmStudio",
+  "results": [
+    {
+      "task": "onscreen_cast",
+      "projectId": "The_Jungle_Book",
+      "model": "claude-haiku-4-5-20251001",
+      "promptId": "v2_grounded",
+      "promptLabel": "v2 grounded cast \u2014 SHIPPED",
+      "promptHash": "c787aeea84d7",
+      "temperature": 0,
+      "curatedGold": true,
+      "sampleCount": 20,
+      "metric": "mean_set_f1",
+      "baselineScore": 0.811904761904762,
+      "aiScore": 0.9095238095238096,
+      "winner": "AI",
+      "latencyMs": 4877,
+      "aiParseHits": 20,
+      "note": "Shipped in FilmStudio.Engine OnScreenCastClassifier (PromptVersion=v2_grounded). Anti prop/substring; dialogue\u2260on-screen; groups/nicknames.",
+      "samples": []
+    },
+    {
+      "task": "onscreen_cast",
+      "projectId": "The_Jungle_Book",
+      "model": "claude-fable-5",
+      "promptId": "v2_grounded",
+      "promptLabel": "v2 grounded cast \u2014 SHIPPED",
+      "promptHash": "c787aeea84d7",
+      "temperature": 0,
+      "curatedGold": true,
+      "sampleCount": 20,
+      "metric": "mean_set_f1",
+      "baselineScore": 0.811904761904762,
+      "aiScore": 0.99,
+      "winner": "AI",
+      "latencyMs": 24883,
+      "aiParseHits": 20,
+      "note": "Shipped in FilmStudio.Engine OnScreenCastClassifier (PromptVersion=v2_grounded). Anti prop/substring; dialogue\u2260on-screen; groups/nicknames.",
+      "samples": []
+    }
+  ]
+}

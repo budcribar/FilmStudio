@@ -1,0 +1,64 @@
+{
+  "runId": "20260722T015106Z_55356a",
+  "utc": "2026-07-22 01:51:06Z",
+  "schema": "classifier_benchmark_run.v1",
+  "config": {
+    "projectId": "The_Jungle_Book",
+    "tasks": [
+      "silent_beat_action"
+    ],
+    "models": [
+      "claude-haiku-4-5-20251001",
+      "claude-fable-5"
+    ],
+    "prompts": [
+      "v2_product"
+    ],
+    "temperatures": [
+      0
+    ],
+    "note": "cheap-model probe",
+    "temperature": 0
+  },
+  "repoRoot": "C:\\Users\\budcr\\source\\repos\\FilmStudio",
+  "results": [
+    {
+      "task": "silent_beat_action",
+      "projectId": "The_Jungle_Book",
+      "model": "claude-haiku-4-5-20251001",
+      "promptId": "v2_product",
+      "promptLabel": "Product SilentBeatActionClassifier (v2) \u2014 SHIPPED",
+      "promptHash": "7aad11c81172",
+      "temperature": 0,
+      "curatedGold": true,
+      "sampleCount": 147,
+      "metric": "accuracy",
+      "baselineScore": 0.46938775510204084,
+      "aiScore": 0.7006802721088435,
+      "winner": "AI",
+      "latencyMs": 62693,
+      "aiParseHits": 147,
+      "note": "Matches FilmStudio.Engine SilentBeatActionClassifier.SystemPromptV2 / PromptVersion=v2. Gold: beat_label_eval ground_truth multi-book.; chat_calls=5; books=multi",
+      "samples": []
+    },
+    {
+      "task": "silent_beat_action",
+      "projectId": "The_Jungle_Book",
+      "model": "claude-fable-5",
+      "promptId": "v2_product",
+      "promptLabel": "Product SilentBeatActionClassifier (v2) \u2014 SHIPPED",
+      "promptHash": "7aad11c81172",
+      "temperature": 0,
+      "curatedGold": true,
+      "sampleCount": 147,
+      "metric": "accuracy",
+      "baselineScore": 0.46938775510204084,
+      "aiScore": 0.8639455782312925,
+      "winner": "AI",
+      "latencyMs": 163581,
+      "aiParseHits": 147,
+      "note": "Matches FilmStudio.Engine SilentBeatActionClassifier.SystemPromptV2 / PromptVersion=v2. Gold: beat_label_eval ground_truth multi-book.; chat_calls=5; books=multi",
+      "samples": []
+    }
+  ]
+}
