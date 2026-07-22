@@ -332,14 +332,20 @@ public sealed class Stage2PlannerService
             {
                 if (val is not Dictionary<string, object?> ov)
                     continue;
-                if (!seeds.TryGetValue(key, out var existing) || existing is not Dictionary<string, object?> cur)
+                var norm = NormalizeCharacterKey(key);
+                var matchKey = seeds.Keys.FirstOrDefault(k => NormalizeCharacterKey(k) == norm) ?? key;
+
+                if (!seeds.TryGetValue(matchKey, out var existing) || existing is not Dictionary<string, object?> cur)
                 {
-                    seeds[key] = ov;
-                    continue;
+                    seeds[matchKey] = ov;
                 }
-                foreach (var (fk, fv) in ov)
-                    cur[fk] = fv;
-                seeds[key] = cur;
+                else
+                {
+                    foreach (var (fk, fv) in ov)
+                        cur[fk] = fv;
+                    seeds[matchKey] = cur;
+                }
+                seeds[key] = seeds[matchKey];
             }
             gpv["character_seed_tokens"] = seeds;
             stage1["global_production_variables"] = gpv;
@@ -348,6 +354,18 @@ public sealed class Stage2PlannerService
         {
             /* non-fatal */
         }
+    }
+
+    public static string NormalizeCharacterKey(string key)
+    {
+        if (string.IsNullOrWhiteSpace(key)) return "";
+        var s = key.Trim();
+        if (s.StartsWith("Character_", StringComparison.OrdinalIgnoreCase))
+            s = s["Character_".Length..];
+        if (s.StartsWith("The_", StringComparison.OrdinalIgnoreCase))
+            s = s["The_".Length..];
+        s = s.Replace("_", "");
+        return s.ToLowerInvariant();
     }
 
     /// <summary>

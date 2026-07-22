@@ -750,7 +750,7 @@ public static class ClipVideoPromptBuilder
         var any = false;
         foreach (var key in keys)
         {
-            characters.TryGetValue(key, out var p);
+            var p = GetCharacterProfile(characters, key);
             var display = !string.IsNullOrWhiteSpace(p?.DisplayName)
                 ? p!.DisplayName
                 : key.Replace("Character_", "").Replace('_', ' ');
@@ -779,6 +779,16 @@ public static class ClipVideoPromptBuilder
         return any ? sb.ToString().TrimEnd() : "";
     }
 
+    public static CharacterProfile? GetCharacterProfile(
+        IReadOnlyDictionary<string, CharacterProfile>? characters,
+        string? key)
+    {
+        if (characters is null || string.IsNullOrWhiteSpace(key)) return null;
+        if (characters.TryGetValue(key, out var prof)) return prof;
+        var norm = Stage2PlannerService.NormalizeCharacterKey(key);
+        return characters.FirstOrDefault(kv => Stage2PlannerService.NormalizeCharacterKey(kv.Key) == norm).Value;
+    }
+
     private static string BuildAudioBlock(
         JsonElement clipEl,
         IReadOnlyDictionary<string, CharacterProfile>? characters)
@@ -800,9 +810,9 @@ public static class ClipVideoPromptBuilder
             return "";
 
         var voiceLock = "";
+        var prof = GetCharacterProfile(characters, speaker);
         if (!string.IsNullOrWhiteSpace(speaker) &&
-            characters is not null &&
-            characters.TryGetValue(speaker, out var prof) &&
+            prof is not null &&
             !string.IsNullOrWhiteSpace(prof.VoiceProfile))
         {
             voiceLock = $" VOICE LOCK {speaker}: {prof.VoiceProfile}";
