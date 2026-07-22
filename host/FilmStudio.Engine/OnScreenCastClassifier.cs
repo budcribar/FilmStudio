@@ -16,12 +16,12 @@ public sealed class OnScreenCastClassifier
     /// <summary>Shipped prompt id (matches host/evals/classifier_benchmarks/prompts/onscreen_cast/v2_grounded).</summary>
     public const string PromptVersion = "v2_grounded";
 
-    private readonly IGrokChatClient _chat;
+    private readonly IChatClient _chat;
     private readonly FilmStudioOptions _opts;
     private readonly ILogger<OnScreenCastClassifier> _log;
 
     public OnScreenCastClassifier(
-        IGrokChatClient chat,
+        IChatClient chat,
         IOptions<FilmStudioOptions> opts,
         ILogger<OnScreenCastClassifier> log)
     {

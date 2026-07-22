@@ -16,12 +16,12 @@ public sealed class ExtendCutClassifier
 {
     public const string PromptVersion = "v1";
 
-    private readonly IGrokChatClient _chat;
+    private readonly IChatClient _chat;
     private readonly FilmStudioOptions _opts;
     private readonly ILogger<ExtendCutClassifier> _log;
 
     public ExtendCutClassifier(
-        IGrokChatClient chat,
+        IChatClient chat,
         IOptions<FilmStudioOptions> opts,
         ILogger<ExtendCutClassifier> log)
     {

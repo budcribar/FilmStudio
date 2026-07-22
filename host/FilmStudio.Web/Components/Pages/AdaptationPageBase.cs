@@ -239,6 +239,8 @@ public abstract class AdaptationPageBase : ComponentBase, IAsyncDisposable
             TotalMinutes = Math.Clamp(m, 3, 180);
         if (Status?.Book.SuggestedChunkPages is int c && c > 0)
             ChunkPages = Math.Clamp(c, 5, 30);
+        if (!string.IsNullOrWhiteSpace(Status?.PlanningModel))
+            Model = Status.PlanningModel;
     }
 
     public void OnFileSelected(InputFileChangeEventArgs e)

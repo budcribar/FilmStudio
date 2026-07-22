@@ -17,13 +17,13 @@ namespace FilmStudio.Engine;
 public sealed class BookPrepareService
 {
     private readonly ProjectStore _projects;
-    private readonly IGrokVisionClient _vision;
+    private readonly IVisionClient _vision;
     private readonly FilmStudioOptions _opts;
     private readonly ILogger<BookPrepareService> _log;
 
     public BookPrepareService(
         ProjectStore projects,
-        IGrokVisionClient vision,
+        IVisionClient vision,
         IOptions<FilmStudioOptions> opts,
         ILogger<BookPrepareService> log)
     {

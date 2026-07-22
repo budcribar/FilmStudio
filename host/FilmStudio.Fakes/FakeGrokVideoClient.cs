@@ -10,7 +10,7 @@ namespace FilmStudio.Fakes;
 /// <summary>
 /// Fake video client: delay + copy fixture MP4 (merge-realistic size when available).
 /// </summary>
-public sealed class FakeGrokVideoClient : IGrokVideoClient
+public sealed class FakeGrokVideoClient : IVideoClient
 {
     private readonly FilmStudioOptions _opts;
     private readonly ILogger<FakeGrokVideoClient> _log;

@@ -432,7 +432,7 @@ public static class ScreenplayService
     public static async Task<SaveResult> CreateDraftFromBookAsync(
         ProjectStore store,
         string projectId,
-        FilmStudio.Engine.Abstractions.IGrokChatClient? chat = null,
+        FilmStudio.Engine.Abstractions.IChatClient? chat = null,
         string model = "grok-4.5",
         Action<string>? onProgress = null,
         CancellationToken ct = default)

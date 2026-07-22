@@ -9,12 +9,12 @@ namespace FilmStudio.Engine;
 public sealed class LearningProposalService
 {
     private readonly ReviewEventStore _learning;
-    private readonly IGrokChatClient _chat;
+    private readonly IChatClient _chat;
     private readonly ILogger<LearningProposalService> _log;
 
     public LearningProposalService(
         ReviewEventStore learning,
-        IGrokChatClient chat,
+        IChatClient chat,
         ILogger<LearningProposalService> log)
     {
         _learning = learning;

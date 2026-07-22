@@ -21,6 +21,8 @@ public enum ModelProviderFamily
     Xai = 0,
     /// <summary>Google Gemini (reserved; not fully wired yet).</summary>
     Google = 1,
+    /// <summary>Anthropic Claude (reserved; not fully wired yet).</summary>
+    Anthropic = 2,
 }
 
 /// <summary>
@@ -57,10 +59,11 @@ public sealed class SupportedModelEntry
     /// </summary>
     public string? FeatureRequestUrl { get; init; }
 
-    /// <summary>Provider id for config / cost reports (<c>grok</c>, <c>gemini</c>).</summary>
+    /// <summary>Provider id for config / cost reports (<c>grok</c>, <c>gemini</c>, <c>anthropic</c>).</summary>
     public string ProviderId => Provider switch
     {
         ModelProviderFamily.Google => "gemini",
+        ModelProviderFamily.Anthropic => "anthropic",
         _ => "grok",
     };
 }
@@ -73,6 +76,14 @@ public static class SupportedModelCatalog
 {
     public const string XaiApiBase = "https://api.x.ai/v1";
     public const string XaiApiKeyEnv = "XAI_API_KEY";
+
+    /// <summary>Google Gemini API. No client wired yet — see notes on entries below.</summary>
+    public const string GoogleApiBase = "https://generativelanguage.googleapis.com/v1beta";
+    public const string GoogleApiKeyEnv = "GEMINI_API_KEY";
+
+    /// <summary>Anthropic Messages API. No client wired yet — see notes on entries below.</summary>
+    public const string AnthropicApiBase = "https://api.anthropic.com/v1";
+    public const string AnthropicApiKeyEnv = "ANTHROPIC_API_KEY";
 
     private static readonly SupportedModelEntry[] All =
     [
@@ -87,6 +98,21 @@ public static class SupportedModelCatalog
             EndpointPath = "videos/generations",
             RequiredEnvKeys = [XaiApiKeyEnv],
             Notes = "Also uses videos/extensions for clip continue.",
+        },
+        new()
+        {
+            Id = "veo-3.1",
+            DisplayName = "Google Veo 3.1",
+            Capability = ModelCapability.Video,
+            Provider = ModelProviderFamily.Google,
+            ApiBase = GoogleApiBase,
+            EndpointPath = "models/veo-3.1:predictLongRunning",
+            RequiredEnvKeys = [GoogleApiKeyEnv],
+            Notes = "Wired via GeminiVideoClient (Veo long-running-operation flow). Not smoke-tested " +
+                    "against a live account yet — see the CONFIDENCE NOTE on that class. " +
+                    "Reference/extend-clip mechanics differ from Grok Imagine and are not mapped: " +
+                    "only text-to-video and image-to-video (first frame) work today.",
+            FeatureRequestUrl = "https://github.com/budcribar/FilmStudio/issues",
         },
 
         // ── Image / portraits ──────────────────────────────────────────────
@@ -111,6 +137,23 @@ public static class SupportedModelCatalog
             EndpointPath = "images/generations",
             RequiredEnvKeys = [XaiApiKeyEnv],
         },
+        new()
+        {
+            Id = "gemini-3-pro-image",
+            DisplayName = "Gemini 3 Pro Image",
+            Capability = ModelCapability.Image,
+            Provider = ModelProviderFamily.Google,
+            ApiBase = GoogleApiBase,
+            EndpointPath = "models/gemini-3-pro-image:generateContent",
+            RequiredEnvKeys = [GoogleApiKeyEnv],
+            Notes = "Wired via GeminiImageClient. Supports up to 14 reference images (see " +
+                    "ImageApiLimits.cs), vs. Grok's 3. Response-shape parsing is not smoke-tested " +
+                    "against a live account yet.",
+            FeatureRequestUrl = "https://github.com/budcribar/FilmStudio/issues",
+        },
+        // Note: no Claude/Anthropic entry here on purpose — Anthropic does not offer an image
+        // generation API, so there is no real backend this could ever call. Claude is added
+        // below under Chat instead, where it's a real, callable capability.
 
         // ── Chat / planning / scrub ────────────────────────────────────────
         new()
@@ -134,6 +177,33 @@ public static class SupportedModelCatalog
             EndpointPath = "chat/completions",
             RequiredEnvKeys = [XaiApiKeyEnv],
         },
+        new()
+        {
+            Id = "claude-sonnet-5",
+            DisplayName = "Claude Sonnet 5",
+            Capability = ModelCapability.Chat,
+            Provider = ModelProviderFamily.Anthropic,
+            ApiBase = AnthropicApiBase,
+            EndpointPath = "messages",
+            RequiredEnvKeys = [AnthropicApiKeyEnv],
+            Notes = "Wired via AnthropicChatClient, routed automatically through " +
+                    "MultiProviderChatClient for planning/QA calls.",
+            FeatureRequestUrl = "https://github.com/budcribar/FilmStudio/issues",
+        },
+        new()
+        {
+            Id = "gemini-3-pro",
+            DisplayName = "Gemini 3 Pro",
+            Capability = ModelCapability.Chat,
+            Provider = ModelProviderFamily.Google,
+            ApiBase = GoogleApiBase,
+            EndpointPath = "models/gemini-3-pro:generateContent",
+            RequiredEnvKeys = [GoogleApiKeyEnv],
+            Notes = "Wired via GeminiChatClient, routed automatically through " +
+                    "MultiProviderChatClient for planning/QA calls. Response-shape parsing is not " +
+                    "smoke-tested against a live account yet.",
+            FeatureRequestUrl = "https://github.com/budcribar/FilmStudio/issues",
+        },
 
         // ── Vision (same chat models with image input; listed for QA config) ─
         new()
@@ -146,6 +216,35 @@ public static class SupportedModelCatalog
             EndpointPath = "chat/completions",
             RequiredEnvKeys = [XaiApiKeyEnv],
             Notes = "Book plates / frame QA when wired.",
+        },
+        new()
+        {
+            Id = "claude-sonnet-5",
+            DisplayName = "Claude Sonnet 5 (vision)",
+            Capability = ModelCapability.Vision,
+            Provider = ModelProviderFamily.Anthropic,
+            ApiBase = AnthropicApiBase,
+            EndpointPath = "messages",
+            RequiredEnvKeys = [AnthropicApiKeyEnv],
+            Notes = "Wired for clip/frame review (CompleteWithImagesAsync) via " +
+                    "MultiProviderVisionClient. Book-page OCR and cast classify still run on Grok " +
+                    "only — those two methods are not implemented for Anthropic.",
+            FeatureRequestUrl = "https://github.com/budcribar/FilmStudio/issues",
+        },
+        new()
+        {
+            Id = "gemini-3-pro",
+            DisplayName = "Gemini 3 Pro (vision)",
+            Capability = ModelCapability.Vision,
+            Provider = ModelProviderFamily.Google,
+            ApiBase = GoogleApiBase,
+            EndpointPath = "models/gemini-3-pro:generateContent",
+            RequiredEnvKeys = [GoogleApiKeyEnv],
+            Notes = "Wired for clip/frame review (CompleteWithImagesAsync) via " +
+                    "MultiProviderVisionClient. Book-page OCR and cast classify still run on Grok " +
+                    "only — those two methods are not implemented for Gemini. Response-shape " +
+                    "parsing is not smoke-tested against a live account yet.",
+            FeatureRequestUrl = "https://github.com/budcribar/FilmStudio/issues",
         },
 
         // Film character voice samples use video (VOICE LOCK), not a separate TTS model.

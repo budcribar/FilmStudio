@@ -16,12 +16,12 @@ public sealed class CastVisualLiteralizeService
     public const string PromptRelativePath = "prompts/cast_visual_literalize.txt";
 
     private readonly ProjectStore _projects;
-    private readonly IGrokChatClient _chat;
+    private readonly IChatClient _chat;
     private readonly ILogger<CastVisualLiteralizeService> _log;
 
     public CastVisualLiteralizeService(
         ProjectStore projects,
-        IGrokChatClient chat,
+        IChatClient chat,
         ILogger<CastVisualLiteralizeService> log)
     {
         _projects = projects;

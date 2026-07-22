@@ -23,12 +23,12 @@ public sealed class SilentBeatActionClassifier
     public const int DefaultMaxAttempts = 3; // 1 try + 2 retries
     public const int DefaultBatchSize = 40;
 
-    private readonly IGrokChatClient _chat;
+    private readonly IChatClient _chat;
     private readonly FilmStudioOptions _opts;
     private readonly ILogger<SilentBeatActionClassifier> _log;
 
     public SilentBeatActionClassifier(
-        IGrokChatClient chat,
+        IChatClient chat,
         IOptions<FilmStudioOptions> opts,
         ILogger<SilentBeatActionClassifier> log)
     {

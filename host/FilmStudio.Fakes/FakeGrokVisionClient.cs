@@ -4,7 +4,7 @@ using Microsoft.Extensions.Logging;
 
 namespace FilmStudio.Fakes;
 
-public sealed class FakeGrokVisionClient : IGrokVisionClient
+public sealed class FakeGrokVisionClient : IVisionClient
 {
     private readonly ILogger<FakeGrokVisionClient> _log;
 

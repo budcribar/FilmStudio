@@ -17,13 +17,13 @@ namespace FilmStudio.Engine;
 public sealed class CharacterBookPlateService
 {
     private readonly ProjectStore _projects;
-    private readonly IGrokVisionClient _vision;
+    private readonly IVisionClient _vision;
     private readonly PlateRankClassifier? _plateRank;
     private readonly ILogger<CharacterBookPlateService> _log;
 
     public CharacterBookPlateService(
         ProjectStore projects,
-        IGrokVisionClient vision,
+        IVisionClient vision,
         ILogger<CharacterBookPlateService> log,
         PlateRankClassifier? plateRank = null)
     {

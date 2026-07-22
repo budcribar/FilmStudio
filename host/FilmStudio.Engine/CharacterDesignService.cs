@@ -14,8 +14,8 @@ namespace FilmStudio.Engine;
 public sealed class CharacterDesignService
 {
     private readonly ProjectStore _projects;
-    private readonly IGrokImageClient _images;
-    private readonly IGrokVisionClient _vision;
+    private readonly IImageClient _images;
+    private readonly IVisionClient _vision;
     private readonly CostReportService _costs;
     private readonly CastVisualLiteralizeService _literalize;
     private readonly FilmStudioOptions _opts;
@@ -23,8 +23,8 @@ public sealed class CharacterDesignService
 
     public CharacterDesignService(
         ProjectStore projects,
-        IGrokImageClient images,
-        IGrokVisionClient vision,
+        IImageClient images,
+        IVisionClient vision,
         CostReportService costs,
         CastVisualLiteralizeService literalize,
         IOptions<FilmStudioOptions> opts,

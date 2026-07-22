@@ -25,11 +25,11 @@ public sealed class FilmJobService
     private static readonly TimeSpan DefaultLockTtl = TimeSpan.FromHours(2);
 
     private readonly ProjectStore _projects;
-    private readonly IGrokVideoClient _grok;
+    private readonly IVideoClient _grok;
     private readonly CharacterDesignService _characters;
     private readonly CharacterBookPlateService _plates;
     private readonly BookPrepareService _books;
-    private readonly IGrokChatClient _chat;
+    private readonly IChatClient _chat;
     private readonly Stage1Service _stage1;
     private readonly Stage2PlannerService _stage2;
     private readonly IFfmpegRemux _remux;
@@ -59,11 +59,11 @@ public sealed class FilmJobService
 
     public FilmJobService(
         ProjectStore projects,
-        IGrokVideoClient grok,
+        IVideoClient grok,
         CharacterDesignService characters,
         CharacterBookPlateService plates,
         BookPrepareService books,
-        IGrokChatClient chat,
+        IChatClient chat,
         Stage1Service stage1,
         Stage2PlannerService stage2,
         IFfmpegRemux remux,

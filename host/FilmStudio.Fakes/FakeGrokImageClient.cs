@@ -4,7 +4,7 @@ using Microsoft.Extensions.Logging;
 namespace FilmStudio.Fakes;
 
 /// <summary>Returns a 1×1 PNG for each requested variant.</summary>
-public sealed class FakeGrokImageClient : IGrokImageClient
+public sealed class FakeGrokImageClient : IImageClient
 {
     private static readonly byte[] TinyPng =
     {

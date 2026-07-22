@@ -8,7 +8,7 @@ namespace FilmStudio.Fakes;
 /// Deterministic chat stubs for offline / Playwright fakes mode.
 /// Returns valid-looking Fountain, cast seeds, auto-review, and learning text.
 /// </summary>
-public sealed class FakeGrokChatClient : IGrokChatClient
+public sealed class FakeGrokChatClient : IChatClient
 {
     private readonly ILogger<FakeGrokChatClient> _log;
 

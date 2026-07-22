@@ -378,7 +378,7 @@ public class BookToFountainPathTests
         return sb.ToString();
     }
 
-    private sealed class RecordingChatClient : IGrokChatClient
+    private sealed class RecordingChatClient : IChatClient
     {
         private readonly Func<int, string> _responseForCall;
 

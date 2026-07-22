@@ -21,7 +21,7 @@ public sealed class ClipAutoReviewService
     };
 
     private readonly ProjectStore _projects;
-    private readonly IGrokVisionClient _vision;
+    private readonly IVisionClient _vision;
     private readonly FfmpegRemuxService _ffmpeg;
     private readonly EditLogService _logs;
     private readonly PromptPackService _promptPacks;
@@ -32,7 +32,7 @@ public sealed class ClipAutoReviewService
 
     public ClipAutoReviewService(
         ProjectStore projects,
-        IGrokVisionClient vision,
+        IVisionClient vision,
         FfmpegRemuxService ffmpeg,
         EditLogService logs,
         PromptPackService promptPacks,
@@ -53,6 +53,15 @@ public sealed class ClipAutoReviewService
     }
 
     public bool IsConfigured => _vision.IsConfigured;
+
+    private async Task<string> GetConfigStringAsync(
+        string projectId, string key, string fallback, CancellationToken ct)
+    {
+        var cfg = await _projects.GetConfigAsync(projectId, ct).ConfigureAwait(false);
+        if (cfg.TryGetValue(key, out var el) && el.ValueKind == JsonValueKind.String)
+            return el.GetString() ?? fallback;
+        return fallback;
+    }
 
     public string DraftPath(string projectId, int scene, int clip) =>
         Path.Combine(
@@ -171,10 +180,11 @@ public sealed class ClipAutoReviewService
             }
             catch { /* non-fatal */ }
             var imagePaths = images.Select(i => i.Path).ToList();
+            var qualityModel = await GetConfigStringAsync(projectId, "quality_model_name", "grok-4.5", ct);
             var raw = await _vision.CompleteWithImagesAsync(
                 prompt,
                 imagePaths,
-                model: "grok-4.5",
+                model: qualityModel,
                 detail: "low",
                 ct: ct);
 

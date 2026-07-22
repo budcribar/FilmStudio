@@ -108,7 +108,7 @@ public class LearningServicesTests : IDisposable
         Assert.Contains("voice", block, StringComparison.OrdinalIgnoreCase);
     }
 
-    private sealed class OfflineChat : IGrokChatClient
+    private sealed class OfflineChat : IChatClient
     {
         public bool IsConfigured => false;
         public Task<string> CompleteAsync(

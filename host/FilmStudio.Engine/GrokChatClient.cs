@@ -12,7 +12,7 @@ using FilmStudio.Engine.Abstractions;
 namespace FilmStudio.Engine;
 
 /// <summary>xAI chat/completions client for Stage 1 scene bible generation.</summary>
-public sealed class GrokChatClient : IGrokChatClient
+public sealed class GrokChatClient : IChatClient
 {
     public const string ApiBase = "https://api.x.ai/v1";
 

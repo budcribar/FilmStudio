@@ -95,21 +95,40 @@ else
                 }
             </div>
             <div class="col-md-4">
-                <label class="form-label">Planning / quality model</label>
-                <select class="form-select" @bind="_qaModel" disabled="@_busy">
+                <label class="form-label">Planning model</label>
+                <select class="form-select" @bind="_planningModel" disabled="@_busy">
                     @foreach (var m in _chatModels)
                     {
                         <option value="@m.Id">@m.DisplayName (@m.Id)</option>
                     }
-                    @if (_chatModels.All(m => !string.Equals(m.Id, _qaModel, StringComparison.OrdinalIgnoreCase)))
+                    @if (_chatModels.All(m => !string.Equals(m.Id, _planningModel, StringComparison.OrdinalIgnoreCase)))
                     {
-                        <option value="@_qaModel">@_qaModel (not in list)</option>
+                        <option value="@_planningModel">@_planningModel (not in list)</option>
                     }
                 </select>
-                @if (ModelHint(_qaModel, "chat") is { } ch)
+                @if (ModelHint(_planningModel, "chat") is { } ph)
                 {
-                    <div class="form-text">@ch</div>
+                    <div class="form-text">@ph</div>
                 }
+                <div class="form-text">Screenplay / shot-plan / cast-scrub reasoning.</div>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Quality model</label>
+                <select class="form-select" @bind="_qualityModel" disabled="@_busy">
+                    @foreach (var m in _chatModels)
+                    {
+                        <option value="@m.Id">@m.DisplayName (@m.Id)</option>
+                    }
+                    @if (_chatModels.All(m => !string.Equals(m.Id, _qualityModel, StringComparison.OrdinalIgnoreCase)))
+                    {
+                        <option value="@_qualityModel">@_qualityModel (not in list)</option>
+                    }
+                </select>
+                @if (ModelHint(_qualityModel, "chat") is { } qh)
+                {
+                    <div class="form-text">@qh</div>
+                }
+                <div class="form-text">Clip / frame review scoring (vision-capable models preferred).</div>
             </div>
             <div class="col-md-4">
                 <label class="form-label">Aspect ratio</label>
@@ -211,7 +230,8 @@ else
     private string _blueprintFile = "blueprint.clips.grok.json";
     private string _modelName = "grok-imagine-video";
     private string _imageModel = "grok-imagine-image-quality";
-    private string _qaModel = "grok-4.5";
+    private string _planningModel = "grok-4.5";
+    private string _qualityModel = "grok-4.5";
     private string _aspect = "16:9";
     private string _resolution = "480p";
     private int _durationSeconds = 8;
@@ -318,7 +338,8 @@ else
             _blueprintFile = GetStr("blueprint_file", _blueprintFile);
             _modelName = GetStr("model_name", _modelName);
             _imageModel = GetStr("image_model_name", _imageModel);
-            _qaModel = GetStr("qa_model_name", _qaModel);
+            _planningModel = GetStr("planning_model_name", _planningModel);
+            _qualityModel = GetStr("quality_model_name", _qualityModel);
             _aspect = GetStr("aspect_ratio", _aspect);
             _resolution = GetStr("resolution", _resolution);
             _durationSeconds = GetInt("duration_seconds", _durationSeconds);
@@ -366,7 +387,8 @@ else
             // Provider fields derived from model catalog (cost reports).
             var videoProvider = SupportedModelCatalog.ProviderIdFor(_modelName, ModelCapability.Video);
             var imageProvider = SupportedModelCatalog.ProviderIdFor(_imageModel, ModelCapability.Image);
-            var qaProvider = SupportedModelCatalog.ProviderIdFor(_qaModel, ModelCapability.Chat);
+            var planningProvider = SupportedModelCatalog.ProviderIdFor(_planningModel, ModelCapability.Chat);
+            var qualityProvider = SupportedModelCatalog.ProviderIdFor(_qualityModel, ModelCapability.Chat);
 
             var updates = new Dictionary<string, object?>
             {
@@ -374,10 +396,12 @@ else
                 ["video_provider"] = videoProvider,
                 ["character_design_provider"] = imageProvider,
                 ["image_provider"] = imageProvider,
-                ["qa_provider"] = qaProvider,
+                ["planning_provider"] = planningProvider,
+                ["quality_provider"] = qualityProvider,
                 ["model_name"] = _modelName,
                 ["image_model_name"] = _imageModel,
-                ["qa_model_name"] = _qaModel,
+                ["planning_model_name"] = _planningModel,
+                ["quality_model_name"] = _qualityModel,
                 ["aspect_ratio"] = _aspect,
                 ["resolution"] = _resolution,
                 ["duration_seconds"] = _durationSeconds,

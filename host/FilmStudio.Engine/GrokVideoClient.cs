@@ -13,7 +13,7 @@ namespace FilmStudio.Engine;
 /// <summary>
 /// xAI Grok video generate / poll / download client.
 /// </summary>
-public sealed class GrokVideoClient : IGrokVideoClient
+public sealed class GrokVideoClient : IVideoClient
 {
     public const string ApiBase = "https://api.x.ai/v1";
     /// <summary>Full prompt first; on length errors, shorten and retry up to this many times.</summary>

@@ -14,14 +14,14 @@ namespace FilmStudio.Engine;
 public sealed class Stage1Service
 {
     private readonly ProjectStore _projects;
-    private readonly IGrokChatClient _chat;
+    private readonly IChatClient _chat;
     private readonly BookPrepareService _books;
     private readonly CharacterBookPlateService _plates;
     private readonly ILogger<Stage1Service> _log;
 
     public Stage1Service(
         ProjectStore projects,
-        IGrokChatClient chat,
+        IChatClient chat,
         BookPrepareService books,
         CharacterBookPlateService plates,
         IOptions<FilmStudioOptions> opts,

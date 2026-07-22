@@ -580,6 +580,8 @@ public sealed class AdaptationStatus
     /// <summary>Cast pin progress (look + voice) for next-step gating.</summary>
     public CastStatus Cast { get; set; } = new();
     public bool XaiConfigured { get; set; }
+    /// <summary>Configured planning model (Configuration page) — Stage 1 / book→Fountain / cast scrub.</summary>
+    public string PlanningModel { get; set; } = "grok-4.5";
     public string NextStep { get; set; } = "";
 }
 

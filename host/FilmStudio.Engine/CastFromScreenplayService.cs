@@ -32,14 +32,14 @@ public sealed class CastFromScreenplayService
     public const int BookSpineWindowCount = 5;
 
     private readonly ProjectStore _projects;
-    private readonly IGrokChatClient _chat;
+    private readonly IChatClient _chat;
     private readonly CastVisualLiteralizeService _literalize;
     private readonly ProjectRulesService _projectRules;
     private readonly ILogger<CastFromScreenplayService> _log;
 
     public CastFromScreenplayService(
         ProjectStore projects,
-        IGrokChatClient chat,
+        IChatClient chat,
         CastVisualLiteralizeService literalize,
         ProjectRulesService projectRules,
         ILogger<CastFromScreenplayService> log)

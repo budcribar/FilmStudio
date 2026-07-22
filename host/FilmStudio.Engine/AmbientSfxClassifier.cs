@@ -18,12 +18,12 @@ public sealed class AmbientSfxClassifier
     public const string DefaultModel = "grok-4.5";
     public const int DefaultBatchSize = 30;
 
-    private readonly IGrokChatClient _chat;
+    private readonly IChatClient _chat;
     private readonly FilmStudioOptions _opts;
     private readonly ILogger<AmbientSfxClassifier> _log;
 
     public AmbientSfxClassifier(
-        IGrokChatClient chat,
+        IChatClient chat,
         IOptions<FilmStudioOptions> opts,
         ILogger<AmbientSfxClassifier> log)
     {

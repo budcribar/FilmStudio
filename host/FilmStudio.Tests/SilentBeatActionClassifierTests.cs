@@ -129,7 +129,7 @@ public class SilentBeatActionClassifierTests
     }
 
     private static SilentBeatActionClassifier NewClassifier(
-        IGrokChatClient chat,
+        IChatClient chat,
         bool enabled,
         int maxAttempts = 3)
     {
@@ -186,7 +186,7 @@ public class SilentBeatActionClassifierTests
             .ToList();
     }
 
-    private sealed class ScriptedChat : IGrokChatClient
+    private sealed class ScriptedChat : IChatClient
     {
         private readonly Func<string, string> _reply;
         public ScriptedChat(Func<string, string> reply) => _reply = reply;

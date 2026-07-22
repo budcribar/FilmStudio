@@ -1556,7 +1556,7 @@ public class BugHuntTests
         Assert.Contains("world", text);
     }
 
-    private sealed class OfflineChatClient : IGrokChatClient
+    private sealed class OfflineChatClient : IChatClient
     {
         public bool IsConfigured => false;
         public Task<string> CompleteAsync(

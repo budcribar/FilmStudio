@@ -15,12 +15,12 @@ public sealed class SpeciesKindClassifier
 {
     public const string PromptVersion = "v1";
 
-    private readonly IGrokChatClient _chat;
+    private readonly IChatClient _chat;
     private readonly FilmStudioOptions _opts;
     private readonly ILogger<SpeciesKindClassifier> _log;
 
     public SpeciesKindClassifier(
-        IGrokChatClient chat,
+        IChatClient chat,
         IOptions<FilmStudioOptions> opts,
         ILogger<SpeciesKindClassifier> log)
     {

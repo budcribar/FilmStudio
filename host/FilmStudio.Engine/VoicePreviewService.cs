@@ -19,14 +19,14 @@ public sealed class VoicePreviewService
     public const string PreviewResolution = "480p";
 
     private readonly ProjectStore _projects;
-    private readonly IGrokVideoClient _video;
+    private readonly IVideoClient _video;
     private readonly FfmpegRemuxService _ffmpeg;
     private readonly FilmStudioOptions _opts;
     private readonly ILogger<VoicePreviewService> _log;
 
     public VoicePreviewService(
         ProjectStore projects,
-        IGrokVideoClient video,
+        IVideoClient video,
         FfmpegRemuxService ffmpeg,
         IOptions<FilmStudioOptions> opts,
         ILogger<VoicePreviewService> log)

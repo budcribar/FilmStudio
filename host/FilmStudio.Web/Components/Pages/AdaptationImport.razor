@@ -168,7 +168,8 @@
                     skipPrepare: IsTxtName(name), // upload already wrote book text for plain .txt
                     forceExtract: IsPdfName(name),
                     forceVision: false,
-                    autoVision: true);
+                    autoVision: true,
+                    model: Model);
 
                 var ok = await WaitForJobDoneAsync(
                     "book_import",

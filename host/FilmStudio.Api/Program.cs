@@ -111,26 +111,59 @@ if (useFakes)
 }
 else
 {
-    builder.Services.AddHttpClient<IGrokVideoClient, GrokVideoClient>(c =>
+    // Concrete provider clients — each gets its own named HttpClient + base address.
+    builder.Services.AddHttpClient<GrokVideoClient>(c =>
     {
         c.BaseAddress = new Uri(GrokVideoClient.ApiBase + "/");
         c.Timeout = TimeSpan.FromMinutes(15);
     });
-    builder.Services.AddHttpClient<IGrokImageClient, GrokImageClient>(c =>
+    builder.Services.AddHttpClient<GeminiVideoClient>(c =>
+    {
+        c.BaseAddress = new Uri(GeminiVideoClient.ApiBase + "/");
+        c.Timeout = TimeSpan.FromMinutes(15);
+    });
+    builder.Services.AddHttpClient<GrokImageClient>(c =>
     {
         c.BaseAddress = new Uri(GrokImageClient.ApiBase + "/");
         c.Timeout = TimeSpan.FromMinutes(5);
     });
-    builder.Services.AddHttpClient<IGrokVisionClient, GrokVisionClient>(c =>
+    builder.Services.AddHttpClient<GeminiImageClient>(c =>
+    {
+        c.BaseAddress = new Uri(GeminiImageClient.ApiBase + "/");
+        c.Timeout = TimeSpan.FromMinutes(5);
+    });
+    builder.Services.AddHttpClient<GrokVisionClient>(c =>
     {
         c.BaseAddress = new Uri(GrokVisionClient.ApiBase + "/");
         c.Timeout = TimeSpan.FromMinutes(5);
     });
-    builder.Services.AddHttpClient<IGrokChatClient, GrokChatClient>(c =>
+    builder.Services.AddHttpClient<GrokChatClient>(c =>
     {
         c.BaseAddress = new Uri(GrokChatClient.ApiBase + "/");
         c.Timeout = TimeSpan.FromMinutes(20);
     });
+    builder.Services.AddHttpClient<AnthropicChatClient>(c =>
+    {
+        c.BaseAddress = new Uri(AnthropicChatClient.ApiBase + "/");
+        c.Timeout = TimeSpan.FromMinutes(20);
+    });
+    builder.Services.AddHttpClient<GeminiChatClient>(c =>
+    {
+        c.BaseAddress = new Uri(GeminiChatClient.ApiBase + "/");
+        c.Timeout = TimeSpan.FromMinutes(20);
+    });
+
+    // Dispatchers: every existing caller keeps depending on IChatClient / IImageClient /
+    // IVideoClient / IVisionClient and is routed to the right concrete provider client
+    // per-call based on the requested model (see SupportedModelCatalog). Book-page OCR / cast
+    // classify (TranscribePageAsync / ClassifyCharactersOnImageAsync) still only run on Grok in
+    // practice — routing one of those to Anthropic or Gemini surfaces the NotSupportedException
+    // those clients already throw for them — but clip/frame review (CompleteWithImagesAsync) is
+    // real on all three and now follows the configured quality model.
+    builder.Services.AddSingleton<IVideoClient, MultiProviderVideoClient>();
+    builder.Services.AddSingleton<IImageClient, MultiProviderImageClient>();
+    builder.Services.AddSingleton<IChatClient, MultiProviderChatClient>();
+    builder.Services.AddSingleton<IVisionClient, MultiProviderVisionClient>();
 }
 
 builder.Services.AddSignalR();
@@ -637,7 +670,7 @@ app.MapPost("/api/jobs/{jobId}/cancel", async (string jobId, FilmJobService jobS
     return Results.Ok(new { ok = true, job = jobService.GetJob(jobId) });
 });
 
-app.MapGet("/health", (ProjectStore store, IOptions<FilmStudioOptions> opts, IGrokVideoClient video, IUserContext user) =>
+app.MapGet("/health", (ProjectStore store, IOptions<FilmStudioOptions> opts, IUserContext user) =>
     Results.Ok(new
     {
         ok = true,
@@ -647,7 +680,10 @@ app.MapGet("/health", (ProjectStore store, IOptions<FilmStudioOptions> opts, IGr
         useFakes = opts.Value.UseFakes || useFakes,
         enableReadCaches = store.ReadCachesEnabled,
         capacity = opts.Value.Capacity,
-        xaiConfigured = video.IsConfigured || useFakes,
+        // Specifically XAI, not "is any video provider configured" — video is now
+        // multi-provider (Grok/Gemini) via MultiProviderVideoClient, so IVideoClient.IsConfigured
+        // would be true whenever *either* is set. Match xaiKeyPresent's own env-var check.
+        xaiConfigured = !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("XAI_API_KEY")) || useFakes,
         xaiKeyPresent = !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("XAI_API_KEY")),
         userId = user.UserId,
         isAdmin = user.IsAdmin,
@@ -1709,7 +1745,7 @@ app.MapPost("/api/projects/{id}/screenplay/sign-off", async (
     HttpRequest req,
     ProjectStore store,
     CastFromScreenplayService castService,
-    FilmStudio.Engine.Abstractions.IGrokChatClient chat,
+    FilmStudio.Engine.Abstractions.IChatClient chat,
     CancellationToken ct) =>
 {
     try
@@ -1789,7 +1825,7 @@ app.MapPost("/api/projects/{id}/screenplay/sign-off", async (
 app.MapPost("/api/projects/{id}/screenplay/from-book", async (
     string id,
     ProjectStore store,
-    FilmStudio.Engine.Abstractions.IGrokChatClient chat,
+    FilmStudio.Engine.Abstractions.IChatClient chat,
     CancellationToken ct) =>
 {
     try

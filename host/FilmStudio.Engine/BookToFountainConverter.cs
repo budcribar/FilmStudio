@@ -100,7 +100,7 @@ public static class BookToFountainConverter
         string bookText,
         string? author = null,
         int totalRuntimeMinutes = 10,
-        IGrokChatClient? chat = null,
+        IChatClient? chat = null,
         string model = "grok-4.5",
         Action<string>? onProgress = null,
         CancellationToken ct = default,
@@ -256,7 +256,7 @@ public static class BookToFountainConverter
     /// Returns null only if both attempts fail. Does not retry cancellation.
     /// </summary>
     private static async Task<string?> CompleteWithOneRetryAsync(
-        IGrokChatClient chat,
+        IChatClient chat,
         string system,
         string user,
         string model,
@@ -292,7 +292,7 @@ public static class BookToFountainConverter
     private static async Task<string> RepairVagueLocationHeadingsAsync(
         string system,
         string fountain,
-        IGrokChatClient chat,
+        IChatClient chat,
         string model,
         Action<string>? onProgress,
         CancellationToken ct)
@@ -451,7 +451,7 @@ public static class BookToFountainConverter
     private static async Task<string> RepairGenericNumberedSpeakersAsync(
         string system,
         string fountain,
-        IGrokChatClient chat,
+        IChatClient chat,
         string model,
         Action<string>? onProgress,
         CancellationToken ct)
@@ -1087,7 +1087,7 @@ public static class BookToFountainConverter
         int pageCount,
         int totalMinutes,
         string bookText,
-        IGrokChatClient chat,
+        IChatClient chat,
         string model,
         PromptBudget budget,
         Action<string>? onProgress,
@@ -1128,7 +1128,7 @@ public static class BookToFountainConverter
         int pageCount,
         int totalMinutes,
         string bookText,
-        IGrokChatClient chat,
+        IChatClient chat,
         string model,
         CancellationToken ct,
         int bookMaxChars = DefaultSingleShotBookMaxChars,
@@ -1185,7 +1185,7 @@ public static class BookToFountainConverter
         int pageCount,
         int totalMinutes,
         string bookText,
-        IGrokChatClient chat,
+        IChatClient chat,
         string model,
         Action<string>? onProgress,
         CancellationToken ct,
@@ -1274,7 +1274,7 @@ public static class BookToFountainConverter
         string? author,
         int totalMinutes,
         IReadOnlyList<string> parts,
-        IGrokChatClient chat,
+        IChatClient chat,
         string model,
         CancellationToken ct)
     {

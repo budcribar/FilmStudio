@@ -1857,6 +1857,13 @@ public sealed class ProjectStore
             stage2.Stage2Stale = true;
         var xai = !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("XAI_API_KEY"));
 
+        var cfg = GetConfigSync(projectId);
+        var planningModel = cfg.TryGetValue("planning_model_name", out var pmEl) &&
+                             pmEl.ValueKind == JsonValueKind.String &&
+                             pmEl.GetString() is { Length: > 0 } pm
+            ? pm
+            : "grok-4.5";
+
         var cast = ReadCastStatus(projectId);
 
         // Fountain is the screenplay source of truth.
@@ -1893,6 +1900,7 @@ public sealed class ProjectStore
             Stage2 = stage2,
             Cast = cast,
             XaiConfigured = xai,
+            PlanningModel = planningModel,
             NextStep = next,
         };
     }

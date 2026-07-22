@@ -2,7 +2,14 @@
   "permissions": {
     "allow": [
       "Bash(python3 *)",
-      "Bash(git apply *)"
+      "Bash(git apply *)",
+      "Bash(dotnet build *)",
+      "Bash(dotnet test *)",
+      "Bash(xargs -0 sed -i -e 's/\\\\bIGrokChatClient\\\\b/IChatClient/g' -e 's/\\\\bIGrokImageClient\\\\b/IImageClient/g' -e 's/\\\\bIGrokVideoClient\\\\b/IVideoClient/g' -e 's/\\\\bIGrokVisionClient\\\\b/IVisionClient/g')",
+      "Bash(tasklist //FI \"PID eq 39676\")",
+      "Bash(powershell -Command \"Get-Process -Id 39676 | Select-Object Id,ProcessName,Path\")",
+      "Bash(taskkill *)",
+      "Bash(git stash *)"
     ]
   }
 }

@@ -15,12 +15,12 @@ public sealed class PlateRankClassifier
 {
     public const string PromptVersion = "v1";
 
-    private readonly IGrokChatClient _chat;
+    private readonly IChatClient _chat;
     private readonly FilmStudioOptions _opts;
     private readonly ILogger<PlateRankClassifier> _log;
 
     public PlateRankClassifier(
-        IGrokChatClient chat,
+        IChatClient chat,
         IOptions<FilmStudioOptions> opts,
         ILogger<PlateRankClassifier> log)
     {
