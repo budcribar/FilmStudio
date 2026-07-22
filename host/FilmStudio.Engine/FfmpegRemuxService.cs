@@ -511,20 +511,19 @@ public sealed class FfmpegRemuxService : IFfmpegRemux
             return (r.Exit, r.Log);
         }
 
-        // Multi-input: video hard-cut concat + audio acrossfade (~100ms) at each join
-        const double crossfadeSec = 0.10;
-        onProgress?.Invoke($"{label}: concat {inputs.Count} with ~{crossfadeSec * 1000:0}ms audio crossfade…");
-        var fc = BuildAcrossfadeFilterComplex(inputs.Count, crossfadeSec);
+        // Multi-input: synchronized hard-cut concat for video and audio streams
+        onProgress?.Invoke($"{label}: concat {inputs.Count} clip(s) with synchronized video/audio…");
+        var fc = BuildConcatFilterComplex(inputs.Count);
         var inputArgs = string.Join(" ", inputs.Select(p => $"-i \"{p}\""));
-        var xfadeArgs =
+        var concatArgs =
             $"-y {inputArgs} -filter_complex \"{fc}\" -map \"[v]\" -map \"[a]\" " +
             $"-c:v libx264 -preset veryfast -crf 20 -c:a aac -b:a 160k -movflags +faststart \"{outPath}\"";
-        var xfade = await RunFfmpegAsync(
-            xfadeArgs, projectDir, ct, onProgress, totalSec, label: $"{label} xfade");
-        if (xfade.Exit == 0 && File.Exists(outPath) && new FileInfo(outPath).Length >= 1024)
-            return (xfade.Exit, xfade.Log);
+        var concatRun = await RunFfmpegAsync(
+            concatArgs, projectDir, ct, onProgress, totalSec, label: $"{label} concat");
+        if (concatRun.Exit == 0 && File.Exists(outPath) && new FileInfo(outPath).Length >= 1024)
+            return (concatRun.Exit, concatRun.Log);
 
-        onProgress?.Invoke($"{label}: crossfade failed — plain concat re-encode…");
+        onProgress?.Invoke($"{label}: filter_complex concat failed — plain concat demuxer re-encode…");
         var list2 = Path.Combine(workDir, $"_concat_{label.Replace(' ', '_')}.txt");
         var sb = new StringBuilder();
         foreach (var c in inputs)
@@ -542,24 +541,14 @@ public sealed class FfmpegRemuxService : IFfmpegRemux
     }
 
     /// <summary>
-    /// Build filter_complex: concat all video streams; chain acrossfade on audio.
+    /// Build filter_complex: synchronized hard-cut concat for N video and audio streams.
+    /// Preserves 1:1 lip sync across clip boundaries without audio drift.
     /// </summary>
-    public static string BuildAcrossfadeFilterComplex(int n, double crossfadeSec)
+    public static string BuildConcatFilterComplex(int n)
     {
         if (n < 2) throw new ArgumentOutOfRangeException(nameof(n));
-        var d = crossfadeSec.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture);
-        var vInputs = string.Join("", Enumerable.Range(0, n).Select(i => $"[{i}:v]"));
-        var sb = new StringBuilder();
-        sb.Append($"{vInputs}concat=n={n}:v=1:a=0[v];");
-        for (var i = 1; i < n; i++)
-        {
-            var outL = i == n - 1 ? "a" : $"ax{i}";
-            if (i == 1)
-                sb.Append($"[0:a][1:a]acrossfade=d={d}:c1=tri:c2=tri[{outL}]");
-            else
-                sb.Append($";[ax{i - 1}][{i}:a]acrossfade=d={d}:c1=tri:c2=tri[{outL}]");
-        }
-        return sb.ToString();
+        var inputs = string.Join("", Enumerable.Range(0, n).Select(i => $"[{i}:v][{i}:a]"));
+        return $"{inputs}concat=n={n}:v=1:a=1[v][a]";
     }
 
     /// <summary>
