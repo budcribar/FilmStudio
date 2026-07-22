@@ -85,17 +85,24 @@ BODY:
 - Parentheticals sparingly when delivery matters
 - Dual dialogue: caret ^ on the second speaker only when simultaneous
 - Recurring address / commentary speakers (first-person confessor, storybook NARRATOR,
-  diarist, guide, chorus): do not default every reflective line to V.O. over the action.
+  diarist, guide, chorus): do NOT default every reflective line to V.O. over the action.
   If you establish an on-camera "frame" early (a room, chair, desk, or stage position where
-  they speak to camera or an implied listener), reuse that same heading as a cutback
-  through the film for some of their commentary — especially at major turns (setup,
-  escalation, crisis/peak, aftermath). Keep V.O. when the words must ride over
-  simultaneous action that we need to see (the key prop, the blow, the chase, the reveal).
+  they speak to camera or an implied listener), use TWO modes with the SAME heading wording
+  every cutback (do not rename the frame room mid-draft):
+  (A) ON-FRAME dialogue — reflective turns, setup, motive, mid-story judgment, aftermath.
+      Prefer a short cutback to the frame at major turns (setup, escalation, crisis/peak
+      pivot, aftermath) rather than stacking all commentary as V.O. over one location.
+  (B) V.O. — only when the words must ride simultaneous MUST-SEE action (the key prop,
+      the blow, the chase, the reveal, waiting under threat).
   Do not leave an entire peak stretch as only V.O. in one location if a frame already exists.
-- If Action already visually shows what a V.O. line states (a reaction, a sound, a physical
-  response), trim the redundant clause from the V.O. rather than restating it in both places.
-  Storybook irony/theme may stay in V.O. only when it adds meaning Action cannot show —
-  do not caption the same beat twice (Action + VO that only repeats it).
+  Book diction applies to BOTH modes: keep the source’s voice; compress by dropping
+  secondary clauses, not by paraphrasing into generic modern speech.
+- Action ↔ V.O. (no double caption): Action = what the camera sees/hears now (gesture,
+  sound, prop, face). V.O. = motive, irony, memory, or book voice Action cannot carry.
+  If Action already shows X, delete the V.O. clause that only restates X; keep the next
+  clause that adds judgment or cadence. Prefer short Action → short V.O. (book words) →
+  new Action micro-beat over a long Action paragraph plus a long V.O. that retells it.
+  Storybook irony/theme may stay in V.O. only when it adds meaning Action cannot show.
 - When a single V.O. passage runs more than ~3 sentences over one static Action line,
   break it into two shorter V.O. beats with a one-line visual or sound micro-beat between
   them (a sound, a tremor, a silhouette) rather than one long block over one frozen image.
@@ -110,8 +117,10 @@ DIALOGUE FIDELITY (HARD — book wording over paraphrase):
   Tiny Tim “God bless us, every one!”, Alice “Curiouser and curiouser!”,
   Dracula “Welcome to my house…”, Tell-Tale Heart opening “True! — nervous — very, very dreadfully nervous…”,
   Raven refrain “Nevermore”, Magi / Jungle Book set pieces, etc.
-- First-person monologues and verse: keep the book’s voice; compress by cutting
-  secondary lines, not by rewriting the narrator into generic modern speech.
+- First-person monologues and verse: keep the book’s voice on the lines you keep; compress
+  by cutting secondary / repeated motive lines, not by rewriting the narrator into generic
+  modern speech. Do not “save runtime” by summarizing a spine monologue into two bland
+  sentences — drop whole minor beats instead.
 - When runtime forces cuts: drop whole minor beats; do not paraphrase the lines you keep.
 - Narration in the book that is clearly spoken or recited on-camera may become dialogue;
   pure prose description stays Action or NARRATOR VO — still use book phrases when VO quotes the text.
@@ -193,17 +202,23 @@ When the source is long and truncated in the prompt, cover only what is provided
   identical INT. ROOM - DAY headings.
 - Montage of “hours” or “shopping” or travel: 2–3 specific micro-locations (or progressive
   Action in one place), not a single vague EXT. STREETS - DAY summary slug.
-- Final thematic button: keep closing NARRATOR essay short (a few sentences) or prefer a
-  silent/action image after the last plot line — do not stack a long VO sermon on top of
-  a full visual resolution unless runtime allows.
-- Compress secondary/connective beats first. When the book explicitly marks time
-  passing at the story's central violent or emotional peak (the kill, the discovery,
-  the confession) with language like "many minutes," "a long while," "hour after
-  hour," give that moment its own tactile action beat rather than folding it into
-  a single summary clause. One extra waiting gesture, one fading/growing sound, one
-  physical detail there buys more of the book's intended effect per second than the
-  same beat spent on connective tissue elsewhere. Cut runtime from the setup or the
-  aftermath before you cut it from the peak.
+- Closing button (HARD once a frame exists): after the last plot beat (reveal, confession,
+  rescue, death, reunion…), do not FADE OUT on the peak alone. If you established an
+  on-camera frame per BODY above (a room/chair/desk the narrator already cut back to more
+  than once), you MUST return to that exact same heading wording once more, immediately
+  before FADE OUT, for a short closing beat — even when the peak itself landed in a
+  different location. Only skip the return if no such frame was ever established anywhere
+  in this draft. Otherwise (no frame in play): one short closing image — silent Action, or
+  a few lines of dialogue/VO. Keep any closing NARRATOR essay short; do not stack a long VO
+  sermon on top of a full visual resolution unless runtime allows.
+- Compress secondary/connective beats first. At the story’s central violent or emotional
+  peak (the kill, the discovery, the confession), do not choose only long V.O. OR only
+  mute Action — interleave book-voice lines with concrete micro-beats (sound grows/fades,
+  hand freezes, light moves, breath held, object shifts). When the book marks duration
+  there ("many minutes," "a long while," "hour after hour"), give at least two distinct
+  visual/sound beats across that span, not one summary sentence under a paragraph of V.O.
+  That peak density buys more of the book’s intended effect per second than the same beat
+  spent on connective tissue. Cut runtime from setup or aftermath before you cut the peak.
 
 ================================================================
 MULTI-CHUNK ADAPT (when BOOK_CHUNK n/m is in the user message)
