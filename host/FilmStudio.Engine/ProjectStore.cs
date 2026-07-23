@@ -2893,7 +2893,17 @@ public sealed class ProjectStore
                     list.Add(path);
             }
             if (list.Count > 0)
+            {
+                var creditsPath = Path.Combine(videoDir, "credits.mp4");
+                if (list.Count == blueprintScenes.Count &&
+                    File.Exists(creditsPath) &&
+                    new FileInfo(creditsPath).Length >= 1024 &&
+                    !list.Contains(creditsPath, StringComparer.OrdinalIgnoreCase))
+                {
+                    list.Add(creditsPath);
+                }
                 return list;
+            }
         }
 
         return FfmpegRemuxService.ListWipSourceFiles(videoDir);

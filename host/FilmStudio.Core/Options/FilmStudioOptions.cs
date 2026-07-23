@@ -153,6 +153,17 @@ public sealed class FilmStudioOptions
     public CapacityOptions Capacity { get; set; } = new();
     public FakesOptions Fakes { get; set; } = new();
     public AuthOptions Auth { get; set; } = new();
+    public CreditsOptions Credits { get; set; } = new();
+}
+
+/// <summary>Options for automatic end credits clip generation and movie WIP appending.</summary>
+public sealed class CreditsOptions
+{
+    public bool AutoAppendCredits { get; set; } = true;
+    public string SoftwareName { get; set; } = "FilmStudio";
+    public string SoftwareAuthor { get; set; } = "Nick";
+    public string RepositoryUrl { get; set; } = "https://github.com/budcribar/FilmStudio";
+    public string FairUseNotice { get; set; } = "Produced under Fair Use and Public Domain for Non-Commercial Creative Purposes.";
 }
 
 /// <summary>ThreadPool pre-warm for sudden multi-user load (optional).</summary>
