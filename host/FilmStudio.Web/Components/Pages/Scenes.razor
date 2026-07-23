@@ -673,10 +673,34 @@ else
                 </p>
             }
 
+            @if (_selectedClips.Count > 0)
+            {
+                <div class="d-flex align-items-center gap-2 mb-2 p-2 border rounded bg-light" data-testid="clip-batch-bar">
+                    <span class="small">
+                        <strong>@_selectedClips.Count</strong> clip@(_selectedClips.Count == 1 ? "" : "s") selected
+                        @if (EstimateSelectedClipsCostUsd() is { } scc)
+                        {
+                            <span class="text-muted">· ~$@(scc.ToString("0.00"))</span>
+                        }
+                    </span>
+                    <button type="button" class="btn btn-sm btn-warning"
+                            data-testid="clip-batch-regen"
+                            disabled="@(_busy || JobRunning || !CastReady)"
+                            title="@(!CastReady ? CastBlockedTitle : "Force re-generate every selected clip")"
+                            @onclick="RegenSelectedClipsAsync">
+                        Regen @_selectedClips.Count selected
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" disabled="@_busy" @onclick="ClearClipSelection">
+                        Clear
+                    </button>
+                </div>
+            }
+
             <div class="table-responsive">
                 <table class="table table-sm table-hover align-middle">
                     <thead>
                         <tr>
+                            <th style="width:2rem;"></th>
                             <th>Clip</th>
                             <th>Dur</th>
                             <th>Subject</th>
@@ -690,8 +714,16 @@ else
                         {
                             var active = _selectedClip == c.ClipNumber;
                             var cn = c.ClipNumber;
-                            <tr class="@(active ? "table-primary" : "")" style="cursor:pointer;"
+                            var isChecked = _selectedClips.Contains(cn);
+                            <tr class="@(active ? "table-primary" : isChecked ? "table-warning" : "")" style="cursor:pointer;"
                                 @onclick="() => SelectClip(cn)">
+                                <td @onclick:stopPropagation="true">
+                                    <input class="form-check-input" type="checkbox"
+                                           data-testid="@($"clip-select-{cn}")"
+                                           checked="@isChecked"
+                                           disabled="@_busy"
+                                           @onchange="e => ToggleClipSelect(cn, (bool)(e.Value ?? false))" />
+                                </td>
                                 <td><code>C@(cn.ToString("D2"))</code></td>
                                 <td class="small">
                                     @if (c.ActualDurationSeconds is double ca)
@@ -936,6 +968,8 @@ else
     private SceneDetail? _detail;
     private int? _selectedClip;
     private ClipSummary? _clip;
+    /// <summary>Multi-select clip numbers within the currently open scene's clip table, for batch regen.</summary>
+    private readonly HashSet<int> _selectedClips = new();
     private JobSnapshot? _job;
     private List<JobSnapshot> _myJobs = new();
     private bool _wipExists;
@@ -1429,6 +1463,7 @@ else
             _selectedScene = sn;
             _selectedClip = null;
             _clip = null;
+            _selectedClips.Clear();
         }
         catch (Exception ex) { _error = ex.Message; }
         finally { _busy = false; }
@@ -1447,7 +1482,46 @@ else
         _detail = null;
         _selectedClip = null;
         _clip = null;
+        _selectedClips.Clear();
         await ReloadListAsync();
+    }
+
+    private void ToggleClipSelect(int cn, bool on)
+    {
+        if (on) _selectedClips.Add(cn);
+        else _selectedClips.Remove(cn);
+    }
+
+    private void ClearClipSelection() => _selectedClips.Clear();
+
+    private double? EstimateSelectedClipsCostUsd()
+    {
+        if (_costReport is null || _detail is null) return null;
+        var row = _costReport.Scenes.FirstOrDefault(r => r.Scene == _detail.SceneNumber);
+        if (row is null || row.ClipsTotal <= 0) return null;
+        // Approximate: whole-scene draft cost spread evenly per clip (force-regen ignores on-disk state).
+        return row.AllDraftUsd / row.ClipsTotal * _selectedClips.Count;
+    }
+
+    private async Task RegenSelectedClipsAsync()
+    {
+        if (_detail is null || _selectedClips.Count == 0) return;
+        _busy = true;
+        _error = null;
+        _message = null;
+        try
+        {
+            var sn = _detail.SceneNumber;
+            var targets = _selectedClips.OrderBy(c => c).Select(c => (Scene: sn, Clip: c)).ToList();
+            await EnsureHubAsync();
+            await Engine.StartClipBatchGenAsync(_projectId, targets, resolution: _genResolution);
+            _message = $"Regenerating {targets.Count} clip(s) in S{sn:D2} @ {_genResolution}";
+            var jobs = await Engine.GetJobAsync();
+            _job = jobs?.Job;
+            _selectedClips.Clear();
+        }
+        catch (Exception ex) { _error = ex.Message; }
+        finally { _busy = false; }
     }
 
     private void SelectClip(int? cn)

@@ -597,23 +597,30 @@ public sealed class FilmJobService
 
     public Task<JobSnapshot> StartBatchGenAsync(StartBatchGenRequest req)
     {
-        if (req.Scenes is null || req.Scenes.Count == 0)
-            throw new InvalidOperationException("At least one scene is required.");
+        var hasClips = req.Clips is { Count: > 0 };
+        if ((req.Scenes is null || req.Scenes.Count == 0) && !hasClips)
+            throw new InvalidOperationException("At least one scene or clip is required.");
         var projectId = string.IsNullOrWhiteSpace(req.ProjectId)
             ? _projects.ActiveProjectId
             : req.ProjectId;
-        var locks = req.Scenes
+        var sceneNumbers = hasClips
+            ? req.Clips!.Select(c => c.Scene)
+            : req.Scenes ?? new List<int>();
+        var locks = sceneNumbers
             .Where(s => s > 0)
             .Select(s => LockKeys.Scene(projectId, s))
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToList();
+        var queuedMsg = hasClips
+            ? $"Queued batch gen ({req.Clips!.Count} clip(s))…"
+            : $"Queued batch gen ({req.Scenes!.Count} scenes)…";
         return StartBackgroundJobAsync(
             ct => RunBatchGenAsync(req, ct),
             new JobEnqueueMeta
             {
                 Kind = "batch",
                 ProjectId = projectId,
-                Message = $"Queued batch gen ({req.Scenes.Count} scenes)…",
+                Message = queuedMsg,
             },
             lockResources: locks,
             lockReason: "batch scene gen",
@@ -1822,13 +1829,17 @@ public sealed class FilmJobService
             : req.ProjectId;
         await _projects.ActivateAsync(projectId, ct);
 
-        var scenes = req.Scenes.Distinct().OrderBy(s => s).ToList();
+        var hasClips = req.Clips is { Count: > 0 };
+        var scenes = (hasClips ? req.Clips!.Select(c => c.Scene) : req.Scenes)
+            .Distinct().OrderBy(s => s).ToList();
         Snapshot = new JobSnapshot
         {
             Status = "running",
             Kind = "batch",
             ProjectId = projectId,
-            Message = $"Batch: {scenes.Count} scene(s)…",
+            Message = hasClips
+                ? $"Batch: {req.Clips!.Count} clip(s)…"
+                : $"Batch: {scenes.Count} scene(s)…",
             StartedAt = DateTimeOffset.UtcNow,
             Log = new List<string>(),
         };
@@ -1857,29 +1868,53 @@ public sealed class FilmJobService
 
             // Pre-count work units
             var work = new List<(int Scene, int Clip, JsonElement ClipEl)>();
-            foreach (var sn in scenes)
+            if (hasClips)
             {
-                var sceneEl = FindScene(bp.RootElement, sn);
-                if (sceneEl is null)
+                // Explicit multi-select of specific clips — always force-regen (ignore OnlyMissing),
+                // same as single-clip regen.
+                foreach (var target in req.Clips!.OrderBy(c => c.Scene).ThenBy(c => c.Clip))
                 {
-                    await AppendLogAsync($"Scene {sn}: not in blueprint — skip");
-                    continue;
+                    var sceneEl = FindScene(bp.RootElement, target.Scene);
+                    if (sceneEl is null)
+                    {
+                        await AppendLogAsync($"Scene {target.Scene}: not in blueprint — skip");
+                        continue;
+                    }
+                    var clipEl = FindClipInScene(sceneEl.Value, target.Clip);
+                    if (clipEl is null)
+                    {
+                        await AppendLogAsync($"S{target.Scene:D2}C{target.Clip}: not in blueprint — skip");
+                        continue;
+                    }
+                    work.Add((Scene: target.Scene, Clip: target.Clip, ClipEl: clipEl.Value.Clone()));
                 }
-                if (!sceneEl.Value.TryGetProperty("veo_clips", out var clipsEl) ||
-                    clipsEl.ValueKind != JsonValueKind.Array)
+            }
+            else
+            {
+                foreach (var sn in scenes)
                 {
-                    await AppendLogAsync($"Scene {sn}: no veo_clips — skip");
-                    continue;
-                }
+                    var sceneEl = FindScene(bp.RootElement, sn);
+                    if (sceneEl is null)
+                    {
+                        await AppendLogAsync($"Scene {sn}: not in blueprint — skip");
+                        continue;
+                    }
+                    if (!sceneEl.Value.TryGetProperty("veo_clips", out var clipsEl) ||
+                        clipsEl.ValueKind != JsonValueKind.Array)
+                    {
+                        await AppendLogAsync($"Scene {sn}: no veo_clips — skip");
+                        continue;
+                    }
 
-                foreach (var c in clipsEl.EnumerateArray())
-                {
-                    var cn = c.TryGetProperty("clip_number", out var n) && n.TryGetInt32(out var v) ? v : 0;
-                    if (cn <= 0) continue;
-                    var path = Path.Combine(projectDir, "assets", "video", $"scene_{sn:D2}_clip_{cn:D2}.mp4");
-                    var missing = !File.Exists(path) || new FileInfo(path).Length < 1024;
-                    if (!req.OnlyMissing || missing)
-                        work.Add((Scene: sn, Clip: cn, ClipEl: c.Clone()));
+                    foreach (var c in clipsEl.EnumerateArray())
+                    {
+                        var cn = c.TryGetProperty("clip_number", out var n) && n.TryGetInt32(out var v) ? v : 0;
+                        if (cn <= 0) continue;
+                        var path = Path.Combine(projectDir, "assets", "video", $"scene_{sn:D2}_clip_{cn:D2}.mp4");
+                        var missing = !File.Exists(path) || new FileInfo(path).Length < 1024;
+                        if (!req.OnlyMissing || missing)
+                            work.Add((Scene: sn, Clip: cn, ClipEl: c.Clone()));
+                    }
                 }
             }
 

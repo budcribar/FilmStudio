@@ -126,6 +126,13 @@ public sealed class StartBatchGenRequest
 {
     public string ProjectId { get; set; } = "";
     public List<int> Scenes { get; set; } = new();
+    /// <summary>
+    /// Explicit (scene, clip) targets — e.g. a multi-select of specific clips across one or more
+    /// scenes. When set and non-empty, this replaces the <see cref="Scenes"/>-derived work list
+    /// (every listed clip is force-regenerated, ignoring <see cref="OnlyMissing"/>, matching the
+    /// single-clip regen behavior). <see cref="Scenes"/> may be left empty in this mode.
+    /// </summary>
+    public List<ClipTarget>? Clips { get; set; }
     public bool OnlyMissing { get; set; } = true;
     /// <summary>Video resolution for this gen (e.g. 480p / 720p). Empty → project Configuration.</summary>
     public string? Resolution { get; set; }
@@ -136,6 +143,13 @@ public sealed class StartBatchGenRequest
     public bool RequireLockedCharacters { get; set; } = true;
     /// <summary>When true, 409 if any scene lock is held by another user (default wait).</summary>
     public bool FailIfLocked { get; set; }
+}
+
+/// <summary>One explicit clip target for a multi-select clip regen batch.</summary>
+public sealed class ClipTarget
+{
+    public int Scene { get; set; }
+    public int Clip { get; set; }
 }
 
 public sealed class CharacterImageRef

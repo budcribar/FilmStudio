@@ -1105,11 +1105,32 @@
       "currency": "USD",
       "id": "1784770017_0069",
       "ts": "2026-07-22T19:26:57"
+    },
+    {
+      "kind": "video",
+      "scene": 2,
+      "clip": 1,
+      "model": "grok-imagine-video",
+      "request_id": "grok:6f35956f-310b-9b9b-9c44-38045cc34bcc",
+      "has_ref_image": true,
+      "is_extend": false,
+      "source": "list_rate",
+      "duration_sec": 5,
+      "attempts": 1,
+      "resolution": "720p",
+      "output_rate_per_sec": 0.07,
+      "video_output_usd": 0.35,
+      "ref_image_usd": 0.002,
+      "extend_input_usd": 0,
+      "usd": 0.352,
+      "currency": "USD",
+      "id": "1784773057_0070",
+      "ts": "2026-07-22T20:17:37"
     }
   ],
   "cost_totals": {
-    "usd": 15.614,
-    "events": 70,
-    "updated_at": "2026-07-22T19:26:57"
+    "usd": 15.966,
+    "events": 71,
+    "updated_at": "2026-07-22T20:17:37"
   }
 }

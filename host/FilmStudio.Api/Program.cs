@@ -865,15 +865,18 @@ app.MapPost("/api/jobs/gen-batch", async (StartBatchGenRequest body, FilmJobServ
 {
     try
     {
-        if (body.Scenes is null || body.Scenes.Count == 0)
-            return Results.BadRequest(new { ok = false, error = "scenes required" });
+        var hasClips = body.Clips is { Count: > 0 };
+        if ((body.Scenes is null || body.Scenes.Count == 0) && !hasClips)
+            return Results.BadRequest(new { ok = false, error = "scenes or clips required" });
         var job = await jobService.StartBatchGenAsync(body);
+        var count = hasClips ? body.Clips!.Count : body.Scenes?.Count ?? 0;
+        var unit = hasClips ? "clip" : "scene";
         return Results.Accepted($"/api/jobs/{job.JobId}", new
         {
             ok = true,
             message = job.Status == "queued"
-                ? $"Queued batch for {body.Scenes.Count} scene(s)"
-                : $"Started batch for {body.Scenes.Count} scene(s)",
+                ? $"Queued batch for {count} {unit}(s)"
+                : $"Started batch for {count} {unit}(s)",
             job,
         });
     }
