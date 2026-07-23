@@ -283,6 +283,12 @@ public sealed class CostReportService
         };
     }
 
+    /// <param name="durationSec">
+    /// Billed length — prefer probed final file seconds after silence trim; fall back to API request duration.
+    /// </param>
+    /// <param name="requestedDurationSec">
+    /// Optional API-requested duration when <paramref name="durationSec"/> is measured (for audit).
+    /// </param>
     public async Task RecordVideoGenerationAsync(
         string projectId,
         int scene,
@@ -293,12 +299,13 @@ public sealed class CostReportService
         bool hasRefImage = false,
         bool isExtend = false,
         string? requestId = null,
+        double? requestedDurationSec = null,
         CancellationToken ct = default)
     {
         var cfg = await LoadConfigMapAsync(projectId, ct).ConfigureAwait(false);
         var rates = RatesFromConfig(cfg);
         var priced = PriceVideo(durationSec, resolution, rates, hasRefImage, isExtend, 1);
-        await AppendCostEventAsync(projectId, new Dictionary<string, object?>
+        var evt = new Dictionary<string, object?>
         {
             ["kind"] = "video",
             ["scene"] = scene,
@@ -308,6 +315,7 @@ public sealed class CostReportService
             ["has_ref_image"] = hasRefImage,
             ["is_extend"] = isExtend,
             ["source"] = "list_rate",
+            // Primary duration used for pricing (probed when available)
             ["duration_sec"] = priced.DurationSec,
             ["attempts"] = 1.0,
             ["resolution"] = resolution,
@@ -317,7 +325,19 @@ public sealed class CostReportService
             ["extend_input_usd"] = priced.ExtendIn,
             ["usd"] = priced.Usd,
             ["currency"] = "USD",
-        }, save: true, ct).ConfigureAwait(false);
+        };
+        if (requestedDurationSec is > 0 &&
+            Math.Abs(requestedDurationSec.Value - priced.DurationSec) >= 0.05)
+        {
+            evt["request_duration_sec"] = Math.Round(requestedDurationSec.Value, 3);
+            evt["duration_source"] = "probed";
+        }
+        else
+        {
+            evt["duration_source"] = requestedDurationSec is > 0 ? "request" : "probed_or_request";
+        }
+
+        await AppendCostEventAsync(projectId, evt, save: true, ct).ConfigureAwait(false);
     }
 
     public async Task<IReadOnlyList<CostEvent>> GetCostLedgerAsync(

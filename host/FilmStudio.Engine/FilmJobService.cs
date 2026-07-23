@@ -2599,8 +2599,16 @@ public sealed class FilmJobService
             await SilenceTrimClipAsync(outPath, scene, clip, ct, keepTailSeconds: keepTail)
                 .ConfigureAwait(false);
 
-            // Always write duration sidecar (even when silence-trim is a no-op)
-            await EnsureClipDurationSidecarAsync(outPath, scene, clip, ct).ConfigureAwait(false);
+            // Always write duration sidecar (even when silence-trim is a no-op).
+            // Prefer probed final length for cost (silence trim often shortens vs API request).
+            var probedSec = await EnsureClipDurationSidecarAsync(outPath, scene, clip, ct)
+                .ConfigureAwait(false);
+            var costDurationSec = probedSec is > 0.05 ? probedSec.Value : duration;
+            if (probedSec is > 0.05 && Math.Abs(probedSec.Value - duration) >= 0.25)
+            {
+                await AppendLogAsync(
+                    $"  [Cost] using probed {probedSec.Value:F2}s (API request was {duration}s)");
+            }
 
             try
             {
@@ -2609,14 +2617,16 @@ public sealed class FilmJobService
                     costProjectId,
                     scene,
                     clip,
-                    duration,
+                    costDurationSec,
                     resolution,
                     model,
                     hasRefImage: built.ReferenceImagePaths.Count > 0 || prevVideoPath is not null,
                     isExtend: prevVideoPath is not null,
                     requestId: requestId,
+                    requestedDurationSec: duration,
                     ct: ct);
-                await AppendLogAsync($"  [Cost] tracked list-rate for S{scene:D2}C{clip}");
+                await AppendLogAsync(
+                    $"  [Cost] tracked list-rate for S{scene:D2}C{clip} ({costDurationSec:F2}s)");
             }
             catch (Exception ex)
             {
@@ -2875,15 +2885,16 @@ public sealed class FilmJobService
 
     /// <summary>
     /// Probe final clip length and write <c>*.mp4.duration.json</c> (needed even when trim skips).
+    /// Returns probed seconds when known (for cost ledger); null if probe unavailable.
     /// </summary>
-    private async Task EnsureClipDurationSidecarAsync(
+    private async Task<double?> EnsureClipDurationSidecarAsync(
         string videoPath,
         int scene,
         int clip,
         CancellationToken ct)
     {
         if (!File.Exists(videoPath))
-            return;
+            return null;
         try
         {
             if (_remux.IsAvailable())
@@ -2896,15 +2907,16 @@ public sealed class FilmJobService
                         .ConfigureAwait(false);
                     await AppendLogAsync(
                         $"  [Duration] S{scene:D2}C{clip:D2} sidecar {sec.Value:F2}s");
-                    return;
+                    return sec.Value;
                 }
             }
-
         }
         catch (Exception ex)
         {
             await AppendLogAsync($"  [Duration] sidecar skip: {ex.Message}");
         }
+
+        return null;
     }
 
     /// <summary>
