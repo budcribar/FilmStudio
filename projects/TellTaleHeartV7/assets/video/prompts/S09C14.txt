@@ -1,0 +1,23 @@
+# S09C14  mode=video-extend chars=2 onScreen=2 refs=0 startFrame=no promptLen=3455 prevVideo=_prev_extend_s09c14.mp4 · learning-addenda · pre-budget 6087→3455
+# projectId: TellTaleHeartV7
+# mode: video-extend
+# castCount: 2
+# onScreen: Character_The_Narrator, Character_The_Old_Man
+# refs: 
+# refsAttachedToApi: False
+# startFrame: (none)
+# characters: Character_The_Narrator, Character_The_Old_Man
+
+STYLE LOCK: Period gothic live-action, mid-19th-century interiors; candlelight and deep shadows; desaturated cool-gray palette; naturalistic skin and fabric texture; no illustration or stylized animation
+
+CHARACTER VARIABLES (use these identities consistently; do not redesign faces or wardrobe):
+- Character_The_Narrator [The Narrator]: Lean man of middle years (about 40–50), pale sallow skin, hollow cheeks, dark disordered medium-length hair, bright intense dark eyes, thin tense mouth; plain dark wool waistcoat over white shirtsleeves, dark trousers; period clothing. Visual lock: Same lean pale face, dark disordered hair, and bright intense dark eyes in every scene; always plain dark waistcoat and shirtsleeves as default; never elderly, never white-haired, never the filmed blue eye. Voice: Male, middle years; medium-high tense pitch; precise, controlled pace that sharpens into fevered urgency; intimate confessional energy, same voice on-camera and in V.O.
+- Character_The_Old_Man [The Old Man]: Frail elderly man, thin stooped build, sparse white hair, deeply lined pale face; one pale blue eye with a dull filmy veil, the other eye ordinary; wears a plain white period nightshirt. Visual lock: Always elderly, white-haired, frail; signature constant is the single pale blue eye with dull filmy veil that must not drift to clear blue or to the Narrator's face; nightshirt is his default on-screen garment. Voice: Elderly male; thin, reedy, low energy; short startled phrases; weak breath support; same fragile voice in the single spoken line and any murmur.
+
+CAST COUNT: exactly 2 distinct on-screen character identity(ies) only — Character_The_Narrator, Character_The_Old_Man. Do not invent extra people, duplicate faces, or crowd extras not listed.
+
+AUDIO: REQUIRED native Grok off-camera voiceover. Character_The_Narrator narrates exactly: "I knew what the old man felt, and pitied him, although I chuckled at heart.". Start speaking immediately with "I" — do not skip, delay, or swallow the opening word. After the last word, hold a brief natural pause with a closed mouth (about half a second); do not freeze mid-syllable or trail into empty staring. Do not lip-sync on-screen cast to this VO. Ambient bed: deathwatch beetle ticks. VOICE LOCK Character_The_Narrator: Male, middle years; medium-high tense pitch; precise, controlled pace that sharpens into fevered urgency; intimate confessional energy, same voice on-camera and in V.O.
+
+PREVIOUS CLIP (already provided as video input — continue from its last frame):
+INT. OLD MAN'S BEDCHAMBER - NIGHT. also on screen: Character_The_Narrator. The Old Man A long hold: two silhouettes in the dark-one standing in the door-gap, one upright in the bed. A deathwatch beetle ticks in the wall. A slight groan-low, stifled. OFF-CAMERA VOICEOVER Character_The_Narrator says "I knew the sound well.". Character_The_Old_Man still wears loose white cotton nightshirt, barefoot; Character_The_Narrator still wears dark waistcoat, black shirtsleeves, quiet leather shoes Camera directive: Medium shot drifting, 50mm lens, from old man to narrator's still silhouette knowing the sound well. Performance: Acting intensity 7/10: Knowing predatory stillness, cold half-smile flicker, eyes glitter Optics: f/2.8 moderate depth of field Color grading: Kodak Vision3 500T 5219, pitch-black voids, cool-teal shadows, faint warm amber lantern spill
+[prompt shortened after API length limit — retry]

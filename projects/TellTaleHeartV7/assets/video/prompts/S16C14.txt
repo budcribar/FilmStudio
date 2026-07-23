@@ -1,0 +1,24 @@
+# S16C14  mode=fresh chars=3 onScreen=3 refs=3 startFrame=no promptLen=3465 · learning-addenda · pre-budget 6097→3465
+# projectId: TellTaleHeartV7
+# mode: fresh
+# castCount: 3
+# onScreen: Character_OfficerBriggs, Character_OfficerHale, Character_The_Narrator
+# refs: character_officerbriggs_ref.png, character_officerhale_ref.png, character_the_narrator_ref.png
+# refsAttachedToApi: True
+# startFrame: (none)
+# characters: Character_OfficerBriggs, Character_OfficerHale, Character_The_Narrator
+
+STYLE LOCK: Period gothic live-action, mid-19th-century interiors; candlelight and deep shadows; desaturated cool-gray palette; naturalistic skin and fabric texture; no illustration or stylized animation
+
+CHARACTER VARIABLES (use these identities consistently; do not redesign faces or wardrobe):
+- Character_OfficerBriggs <IMAGE_1> [Officer Briggs]: Man in late 20s to about 30, shorter stocky build, rounder face, sandy-blond hair cut short, clean-shaven, freckled fair skin, light hazel eyes; younger and smoother-faced than the other two officers. Visual lock: Youngest officer: sandy-blond, freckled, stocky, clean-shaven—never brown-haired like Reynolds or mustached like Hale; shared coat/hat/badge only through wardrobe_lock. Voice: Male, ~30; medium pitch slightly lighter than Reynolds; pleasant civil pace; easy unhurried energy while chatting. Match appearance of reference <IMAGE_1> exactly.
+- Character_OfficerHale <IMAGE_2> [Officer Hale]: Man in late 30s, lean tall build, long narrow face, dark hair combed back from a high forehead, thin dark mustache, gray-blue eyes, pale indoor complexion. Visual lock: The only officer with a thin dark mustache and long narrow face; must not match Reynolds's clean-shaven square jaw or Briggs's fair younger look; uniform only via wardrobe_lock. Voice: Male, late 30s; medium pitch; spare, quiet delivery; low energy, observational; little speech, same restrained tone if he speaks. Match appearance of reference <IMAGE_2> exactly.
+- Character_The_Narrator <IMAGE_3> [The Narrator]: Lean man of middle years (about 40–50), pale sallow skin, hollow cheeks, dark disordered medium-length hair, bright intense dark eyes, thin tense mouth; plain dark wool waistcoat over white shirtsleeves, dark trousers; period clothing. Visual lock: Same lean pale face, dark disordered hair, and bright intense dark eyes in every scene; always plain dark waistcoat and shirtsleeves as default; never elderly, never white-haired, never the filmed blue eye. Voice: Male, middle years; medium-high tense pitch; precise, controlled pace that sharpens into fevered urgency; intimate confessional energy, same voice on-camera and in V.O. Match appearance of reference <IMAGE_3> exactly.
+
+CAST COUNT: exactly 3 distinct on-screen character identity(ies) only — Character_OfficerBriggs, Character_OfficerHale, Character_The_Narrator. Do not invent extra people, duplicate faces, or crowd extras not listed.
+
+AUDIO: ambient/Foley only — heartbeat, increasing noise; chair grate, heavy strides, wood scream. No dialogue.
+
+CONTEXT (prior clip in scene — new cast plate refs attached; match location/lighting if still valid; identity from CHARACTER VARIABLES + locked plates only):
+INT. OLD MAN'S BEDCHAMBER - NIGHT. The Narrator (heightened, fluent). Character_The_Narrator ON CAMERA lip-syncs "-as I say, the house is quiet — always quiet-". Character_The_Narrator still wears loose white cotton nightshirt, barefoot Camera directive: Close-up of heightened Narrator speaking fluently about the quiet house, sweat beading. Performance: Acting intensity 7/10: Heightened fluent smile with too-wide eyes insisting house is quiet Optics: f/2.0 shallow-moderate depth of field Color grading: Kodak Vision3 500T 5219 film stock, deep charcoal shadows, sickly cool-blue undertones, dim warm amber highlights Character_OfficerBriggs is on screen. Character_OfficerHale is on screen.
+[prompt shortened after API length limit — retry]

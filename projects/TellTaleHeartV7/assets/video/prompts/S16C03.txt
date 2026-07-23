@@ -1,0 +1,26 @@
+# S16C03  mode=fresh chars=5 onScreen=5 refs=5 startFrame=no promptLen=3762 · learning-addenda · pre-budget 6394→3762
+# projectId: TellTaleHeartV7
+# mode: fresh
+# castCount: 5
+# onScreen: Character_OfficerBriggs, Character_OfficerHale, Character_OfficerReynolds, Character_Officer_Reynolds, Character_The_Narrator
+# refs: character_officerbriggs_ref.png, character_officerhale_ref.png, character_officerreynolds_ref.png, character_officer_reynolds_ref.png, character_the_narrator_ref.png
+# refsAttachedToApi: True
+# startFrame: (none)
+# characters: Character_OfficerBriggs, Character_OfficerHale, Character_OfficerReynolds, Character_Officer_Reynolds, Character_The_Narrator
+
+STYLE LOCK: Period gothic live-action, mid-19th-century interiors; candlelight and deep shadows; desaturated cool-gray palette; naturalistic skin and fabric texture; no illustration or stylized animation
+
+CHARACTER VARIABLES (use these identities consistently; do not redesign faces or wardrobe):
+- Character_OfficerBriggs <IMAGE_1> [Officer Briggs]: Also present (not shot focus); keep identity consistent: Man in late 20s to about 30, shorter stocky build, rounde.... Match reference <IMAGE_1>.
+- Character_OfficerHale <IMAGE_2> [Officer Hale]: Also present (not shot focus); keep identity consistent: Man in late 30s, lean tall build, long narrow face, dark .... Match reference <IMAGE_2>.
+- Character_OfficerReynolds <IMAGE_3> [Officer Reynolds]: Also present (not shot focus); keep identity consistent: Man in early 40s, solid medium build, square jaw, short n.... Match reference <IMAGE_3>.
+- Character_Officer_Reynolds <IMAGE_4> [Officer Reynolds]: Also present (not shot focus); keep identity consistent: Man in early 40s, solid medium build, square jaw, short n.... Match reference <IMAGE_4>.
+- Character_The_Narrator <IMAGE_5> [The Narrator]: Lean man of middle years (about 40–50), pale sallow skin, hollow cheeks, dark disordered medium-length hair, bright intense dark eyes, thin tense mouth; plain dark wool waistcoat over white shirtsleeves, dark trousers; period clothing. Visual lock: Same lean pale face, dark disordered hair, and bright intense dark eyes in every scene; always plain dark waistcoat and shirtsleeves as default; never elderly, never white-haired, never the filmed blue eye. Voice: Male, middle years; medium-high tense pitch; precise, controlled pace that sharpens into fevered urgency; intimate confessional energy, same voice on-camera and in V.O. Match appearance of reference <IMAGE_5> exactly.
+
+CAST COUNT: exactly 5 distinct on-screen character identity(ies) only — Character_OfficerBriggs, Character_OfficerHale, Character_OfficerReynolds, Character_Officer_Reynolds, Character_The_Narrator. Do not invent extra people, duplicate faces, or crowd extras not listed.
+
+AUDIO: REQUIRED native Grok off-camera voiceover. Character_The_Narrator narrates exactly: "The officers were satisfied. My manner had convinced them. I was singularly at ease.". Start speaking immediately with "The" — do not skip, delay, or swallow the opening word. After the last word, hold a brief natural pause with a closed mouth (about half a second); do not freeze mid-syllable or trail into empty staring. Do not lip-sync on-screen cast to this VO. Ambient/Foley: sit. VOICE LOCK Character_The_Narrator: Male, middle years; medium-high tense pitch; precise, controlled pace that sharpens into fevered urgency; intimate confessional energy, same voice on-camera and in V.O.
+
+CONTEXT (prior clip in scene — new cast plate refs attached; match location/lighting if still valid; identity from CHARACTER VARIABLES + locked plates only):
+INT. OLD MAN'S BEDCHAMBER - NIGHT. also on screen: Character_OfficerHale, Character_OfficerBriggs, Character_Officer_Reynolds. They sit. THE NARRATOR answers cheerily. The officers chat of familiar things-easy, satisfied. OFFICER REYNOLDS nods, convinced. Character_The_Narrator still wears loose white cotton nightshirt, barefoot Camera directive: Static medium two-shot of officers chatting easily while Narrator sits confidently opposite them. Performance: Acting intensity 4/10: Easy half-smile with soft crinkled eyes, calmly satisfied Optics: f/4 moderate-deep depth of field Color grading: Kodak Vision3 500T 5219 film stock, deep charcoal shadows, sickly cool-blue undertones, dim warm amber highlights Character_OfficerReynolds is on screen.
+[prompt shortened after API length limit — retry]

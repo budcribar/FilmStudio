@@ -1,0 +1,31 @@
+{
+  "projectId": "TellTaleHeartV7",
+  "scene": 15,
+  "clip": 2,
+  "mode": "fresh",
+  "castCount": 3,
+  "onScreenKeys": [
+    "Character_OfficerBriggs",
+    "Character_OfficerHale",
+    "Character_The_Narrator"
+  ],
+  "characterKeys": [
+    "Character_OfficerBriggs",
+    "Character_OfficerHale",
+    "Character_The_Narrator"
+  ],
+  "refs": [
+    "character_officerbriggs_ref.png",
+    "character_officerhale_ref.png",
+    "character_the_narrator_ref.png"
+  ],
+  "refsAttachedToApi": true,
+  "styleHead": "STYLE LOCK: Period gothic live-action, mid-19th-century interiors; candlelight and deep shadows; desaturated cool-gray palette; naturalistic skin and fabric texture; no illustration or stylized animation",
+  "castCountLine": "CAST COUNT: exactly 3 distinct on-screen character identity(ies) only \u2014 Character_OfficerBriggs, Character_OfficerHale, Character_The_Narrator. Do not invent extra people, duplicate faces, or crowd extras not listed.",
+  "actionText": "INT. HALL AND SITTING ROOM - NIGHT. also on screen: Character_OfficerHale \u003CIMAGE_2\u003E, Character_OfficerBriggs \u003CIMAGE_1\u003E. THE NARRATOR leads them through-opens cupboards, lifts cloths, shows empty corners. OFFICER HALE and OFFICER BRIGGS search with quiet thoroughness. Nothing. OFF-CAMERA VOICEOVER Character_The_Narrator \u003CIMAGE_3\u003E says \u0022I took my visitors all over the house. I bade them search \u2014 search well.\u0022. Character_The_Narrator \u003CIMAGE_3\u003E still wears dark waistcoat, white shirtsleeves, tailored trousers, indoor shoes Camera directive: Wide anamorphic shot leading Narrator and officers deeper into the house, capturing thorough quiet searches of empty spaces. Performance: Acting intensity 6/10: Broad unnatural inviting smile with overly steady gaze urging thorough search Optics: f/4 moderate-deep depth of field, environment readable Color grading: Kodak Vision3 500T 5219, desaturated cool-blue shadows, muted tungsten highlights, empty night interiors",
+  "prompt": "STYLE LOCK: Period gothic live-action, mid-19th-century interiors; candlelight and deep shadows; desaturated cool-gray palette; naturalistic skin and fabric texture; no illustration or stylized animation\r\n\r\nCHARACTER VARIABLES (use these identities consistently; do not redesign faces or wardrobe):\r\n- Character_OfficerBriggs \u003CIMAGE_1\u003E [Officer Briggs]: Also present (not shot focus); keep identity consistent: Man in late 20s to about 30, shorter stocky build, rounde.... Match reference \u003CIMAGE_1\u003E.\r\n- Character_OfficerHale \u003CIMAGE_2\u003E [Officer Hale]: Also present (not shot focus); keep identity consistent: Man in late 30s, lean tall build, long narrow face, dark .... Match reference \u003CIMAGE_2\u003E.\r\n- Character_The_Narrator \u003CIMAGE_3\u003E [The Narrator]: Lean man of middle years (about 40\u201350), pale sallow skin, hollow cheeks, dark disordered medium-length hair, bright intense dark eyes, thin tense mouth; plain dark wool waistcoat over white shirtsleeves, dark trousers; period clothing. Visual lock: Same lean pale face, dark disordered hair, and bright intense dark eyes in every scene; always plain dark waistcoat and shirtsleeves as default; never elderly, never white-haired, never the filmed blue eye. Voice: Male, middle years; medium-high tense pitch; precise, controlled pace that sharpens into fevered urgency; intimate confessional energy, same voice on-camera and in V.O. Match appearance of reference \u003CIMAGE_3\u003E exactly.\r\n\r\nCAST COUNT: exactly 3 distinct on-screen character identity(ies) only \u2014 Character_OfficerBriggs, Character_OfficerHale, Character_The_Narrator. Do not invent extra people, duplicate faces, or crowd extras not listed.\r\n\r\nAUDIO: REQUIRED native Grok off-camera voiceover. Character_The_Narrator narrates exactly: \u0022I took my visitors all over the house. I bade them search \u2014 search well.\u0022. Start speaking immediately with \u0022I\u0022 \u2014 do not skip, delay, or swallow the opening word. After the last word, hold a brief natural pause with a closed mouth (about half a second); do not freeze mid-syllable or trail into empty staring. Do not lip-sync on-screen cast to this VO. Ambient/Foley: cloth lifts, cupboard opens. VOICE LOCK Character_The_Narrator: Male, middle years; medium-high tense pitch; precise, controlled pace that sharpens into fevered urgency; intimate confessional energy, same voice on-camera and in V.O.\r\n\r\nCONTEXT (prior clip in scene \u2014 new cast plate refs attached; match location/lighting if still valid; identity from CHARACTER VARIABLES \u002B locked plates only):\nINT. HALL AND SITTING ROOM - NIGHT. also on screen: Character_OfficerHale, Character_OfficerBriggs, Character_Officer_Reynolds. THE NARRATOR leads them through-opens cupboards, lifts cloths, shows empty corners. OFFICER HALE and OFFICER BRIGGS search with quiet thoroughness. Nothing. OFF-CAMERA VOICEOVER Character_The_Narrator says \u0022I smiled,-for what had I to fear? I bade the gentlemen welcome.\u0022. Character_The_Narrator still wears dark waistcoat, white shirtsleeves, tailored trousers, indoor shoes Camera directive: Medium shot tracking beside Narrator as he smiles and welcomes officers, revealing empty cupboards and corners in dim night light. Performance: Acting intensity 5/10: Tight forced polite smile masking inner tension while calmly welcoming Optics: f/2.8 moderate depth of field Color grading: Kodak Vision3 500T 5219, desaturated cool-blue shadows, muted tungsten highlights, empty night interiors\n[prompt shortened after API length limit \u2014 retry]",
+  "promptLen": 3473,
+  "promptLogSummary": "mode=fresh chars=3 onScreen=3 refs=3 startFrame=no promptLen=3473 \u00B7 learning-addenda \u00B7 pre-budget 6105\u21923473",
+  "startFrame": null,
+  "builtAtUtc": "2026-07-23T20:11:17.6416541\u002B00:00"
+}

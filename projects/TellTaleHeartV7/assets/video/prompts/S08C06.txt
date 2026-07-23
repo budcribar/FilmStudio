@@ -1,0 +1,22 @@
+# S08C06  mode=video-extend chars=1 onScreen=1 refs=0 startFrame=no promptLen=2764 prevVideo=_prev_extend_s08c06.mp4 · learning-addenda · pre-budget 5396→2764
+# projectId: TellTaleHeartV7
+# mode: video-extend
+# castCount: 1
+# onScreen: Character_The_Narrator
+# refs: 
+# refsAttachedToApi: False
+# startFrame: (none)
+# characters: Character_The_Narrator
+
+STYLE LOCK: Period gothic live-action, mid-19th-century interiors; candlelight and deep shadows; desaturated cool-gray palette; naturalistic skin and fabric texture; no illustration or stylized animation
+
+CHARACTER VARIABLES (use these identities consistently; do not redesign faces or wardrobe):
+- Character_The_Narrator [The Narrator]: Lean man of middle years (about 40–50), pale sallow skin, hollow cheeks, dark disordered medium-length hair, bright intense dark eyes, thin tense mouth; plain dark wool waistcoat over white shirtsleeves, dark trousers; period clothing. Visual lock: Same lean pale face, dark disordered hair, and bright intense dark eyes in every scene; always plain dark waistcoat and shirtsleeves as default; never elderly, never white-haired, never the filmed blue eye. Voice: Male, middle years; medium-high tense pitch; precise, controlled pace that sharpens into fevered urgency; intimate confessional energy, same voice on-camera and in V.O.
+
+CAST COUNT: exactly 1 distinct on-screen character identity(ies) only — Character_The_Narrator. Do not invent extra people, duplicate faces, or crowd extras not listed.
+
+AUDIO: REQUIRED native Grok off-camera voiceover. Character_The_Narrator narrates exactly: "the opening of the door, and I kept pushing it on steadily, steadily.". Start speaking immediately with "the" — do not skip, delay, or swallow the opening word. After the last word, hold a brief natural pause with a closed mouth (about half a second); do not freeze mid-syllable or trail into empty staring. Do not lip-sync on-screen cast to this VO. Ambient/Foley: bedclothes shift, soft chuckle. VOICE LOCK Character_The_Narrator: Male, middle years; medium-high tense pitch; precise, controlled pace that sharpens into fevered urgency; intimate confessional energy, same voice on-camera and in V.O.
+
+PREVIOUS CLIP (already provided as video input — continue from its last frame):
+INT. HALL OUTSIDE BEDCHAMBER - NIGHT. THE NARRATOR at the door again. He pushes it by degrees. A soft chuckle escapes him. From within: a sudden shift of bedclothes. OFF-CAMERA VOICEOVER Character_The_Narrator says "close fastened, through fear of robbers, and so I knew that he could not see". Character_The_Narrator still wears loose white cotton nightshirt, barefoot Camera directive: Medium shot over Narrator's shoulder into blackness, 35mm lens, gradual push-in underscoring shutters sealed against robbers. Performance: Acting intensity 6/10: Gleaming confidant eyes with slow predatory smile and controlled breath Optics: f/2.8 moderate depth of field, controlled shadows Color grading: Kodak Vision3 500T 5219, deep charcoal shadows, cool blue hallway tones, warm amber door spill
+[prompt shortened after API length limit — retry]

@@ -1,0 +1,26 @@
+# S08C01  mode=fresh chars=1 onScreen=1 refs=1 startFrame=no promptLen=3481 · learning-addenda · pre-budget 6113→3481
+# projectId: TellTaleHeartV7
+# mode: fresh
+# castCount: 1
+# onScreen: Character_The_Narrator
+# refs: character_the_narrator_ref.png
+# refsAttachedToApi: True
+# startFrame: (none)
+# characters: Character_The_Narrator
+
+STYLE LOCK: Period gothic live-action, mid-19th-century interiors; candlelight and deep shadows; desaturated cool-gray palette; naturalistic skin and fabric texture; no illustration or stylized animation
+
+CHARACTER VARIABLES (use these identities consistently; do not redesign faces or wardrobe):
+- Character_The_Narrator <IMAGE_1> [The Narrator]: Lean man of middle years (about 40–50), pale sallow skin, hollow cheeks, dark disordered medium-length hair, bright intense dark eyes, thin tense mouth; plain dark wool waistcoat over white shirtsleeves, dark trousers; period clothing. Visual lock: Same lean pale face, dark disordered hair, and bright intense dark eyes in every scene; always plain dark waistcoat and shirtsleeves as default; never elderly, never white-haired, never the filmed blue eye. Voice: Male, middle years; medium-high tense pitch; precise, controlled pace that sharpens into fevered urgency; intimate confessional energy, same voice on-camera and in V.O. Match appearance of reference <IMAGE_1> exactly.
+
+CAST COUNT: exactly 1 distinct on-screen character identity(ies) only — Character_The_Narrator. Do not invent extra people, duplicate faces, or crowd extras not listed.
+
+AUDIO: REQUIRED native Grok off-camera voiceover. Character_The_Narrator narrates exactly: "I fairly chuckled at the idea; and perhaps he heard me;". Start speaking immediately with "I" — do not skip, delay, or swallow the opening word. After the last word, hold a brief natural pause with a closed mouth (about half a second); do not freeze mid-syllable or trail into empty staring. Do not lip-sync on-screen cast to this VO. Ambient/Foley: bedclothes shift, soft chuckle. VOICE LOCK Character_The_Narrator: Male, middle years; medium-high tense pitch; precise, controlled pace that sharpens into fevered urgency; intimate confessional energy, same voice on-camera and in V.O.
+
+Follow the camera framing and location in this prompt exactly. Prioritize the PRIMARY subject and ONE clear action with visible motion; background characters may stay mostly still.
+
+THIS CLIP:
+End cleanly when the spoken line and primary action finish — do not hold a frozen pose or empty silence after dialogue.
+INT. HALL OUTSIDE BEDCHAMBER - NIGHT. THE NARRATOR at the door again. He pushes it by degrees. A soft chuckle escapes him. From within: a sudden shift of bedclothes. OFF-CAMERA VOICEOVER Character_The_Narrator <IMAGE_1> says "I fairly chuckled at the idea; and perhaps he heard me;". Character_The_Narrator <IMAGE_1> still wears loose white cotton nightshirt, barefoot Camera directive: Medium shot of Narrator at door, 35mm lens, subtle push-in as soft chuckle escapes while he eases the door. Performance: Acting intensity 5/10: Suppressed sly half-smile with crinkled amused eyes and private glee Optics: f/1.4 shallow depth of field, creamy background bokeh Color grading: Kodak Vision3 500T 5219, deep charcoal shadows, cool blue hallway tones, warm amber door spill / 480p, 24fps
+
+NEGATIVE: no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens, no name tags, no name badges, no embroidered names, no lower thirds, no personal names on clothing or props, no extra unmentioned hats or jackets, no modern wristwatches, no electric light bulbs, no plastic, no zippers, no modern cars, no printed logos, no denim, no asphalt, no modern hair gel, no light switches, no electrical outlets, no sneakers, no synthetic fabrics.

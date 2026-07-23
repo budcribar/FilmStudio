@@ -1,0 +1,37 @@
+{
+  "projectId": "TellTaleHeartV7",
+  "scene": 16,
+  "clip": 12,
+  "mode": "fresh",
+  "castCount": 5,
+  "onScreenKeys": [
+    "Character_OfficerBriggs",
+    "Character_OfficerHale",
+    "Character_OfficerReynolds",
+    "Character_Officer_Reynolds",
+    "Character_The_Narrator"
+  ],
+  "characterKeys": [
+    "Character_OfficerBriggs",
+    "Character_OfficerHale",
+    "Character_OfficerReynolds",
+    "Character_Officer_Reynolds",
+    "Character_The_Narrator"
+  ],
+  "refs": [
+    "character_officerbriggs_ref.png",
+    "character_officerhale_ref.png",
+    "character_officerreynolds_ref.png",
+    "character_officer_reynolds_ref.png",
+    "character_the_narrator_ref.png"
+  ],
+  "refsAttachedToApi": true,
+  "styleHead": "STYLE LOCK: Period gothic live-action, mid-19th-century interiors; candlelight and deep shadows; desaturated cool-gray palette; naturalistic skin and fabric texture; no illustration or stylized animation",
+  "castCountLine": "CAST COUNT: exactly 5 distinct on-screen character identity(ies) only \u2014 Character_OfficerBriggs, Character_OfficerHale, Character_OfficerReynolds, Character_Officer_Reynolds, Character_The_Narrator. Do not invent extra people, duplicate faces, or crowd extras not listed.",
+  "actionText": "INT. OLD MAN\u0027S BEDCHAMBER - NIGHT. also on screen: Character_OfficerHale \u003CIMAGE_2\u003E, Character_OfficerBriggs \u003CIMAGE_1\u003E, Character_Officer_Reynolds \u003CIMAGE_4\u003E. He talks on-too freely. The officers smile, polite. The sound clarifies: low, dull, quick-a watch in cotton. From under the floorboards. From under his chair. THE NARRATOR gasps for breath. The officers do not react. They did not hear. Character_The_Narrator \u003CIMAGE_5\u003E still wears loose white cotton nightshirt, barefoot Camera directive: Medium shot tilts from polite smiling officers down to floorboards under Narrator\u0027s chair then back to his gasp. Performance: Acting intensity 8/10: Gasping open mouth and bulging eyes talking too freely Optics: f/1.4 shallow depth of field Color grading: Kodak Vision3 500T 5219 film stock, deep charcoal shadows, sickly cool-blue undertones, dim warm amber highlights Character_OfficerReynolds \u003CIMAGE_3\u003E is on screen.",
+  "prompt": "STYLE LOCK: Period gothic live-action, mid-19th-century interiors; candlelight and deep shadows; desaturated cool-gray palette; naturalistic skin and fabric texture; no illustration or stylized animation\r\n\r\nCHARACTER VARIABLES (use these identities consistently; do not redesign faces or wardrobe):\r\n- Character_OfficerBriggs \u003CIMAGE_1\u003E [Officer Briggs]: Also present (not shot focus); keep identity consistent: Man in late 20s to about 30, shorter stocky build, rounde.... Match reference \u003CIMAGE_1\u003E.\r\n- Character_OfficerHale \u003CIMAGE_2\u003E [Officer Hale]: Also present (not shot focus); keep identity consistent: Man in late 30s, lean tall build, long narrow face, dark .... Match reference \u003CIMAGE_2\u003E.\r\n- Character_OfficerReynolds \u003CIMAGE_3\u003E [Officer Reynolds]: Also present (not shot focus); keep identity consistent: Man in early 40s, solid medium build, square jaw, short n.... Match reference \u003CIMAGE_3\u003E.\r\n- Character_Officer_Reynolds \u003CIMAGE_4\u003E [Officer Reynolds]: Also present (not shot focus); keep identity consistent: Man in early 40s, solid medium build, square jaw, short n.... Match reference \u003CIMAGE_4\u003E.\r\n- Character_The_Narrator \u003CIMAGE_5\u003E [The Narrator]: Lean man of middle years (about 40\u201350), pale sallow skin, hollow cheeks, dark disordered medium-length hair, bright intense dark eyes, thin tense mouth; plain dark wool waistcoat over white shirtsleeves, dark trousers; period clothing. Visual lock: Same lean pale face, dark disordered hair, and bright intense dark eyes in every scene; always plain dark waistcoat and shirtsleeves as default; never elderly, never white-haired, never the filmed blue eye. Voice: Male, middle years; medium-high tense pitch; precise, controlled pace that sharpens into fevered urgency; intimate confessional energy, same voice on-camera and in V.O. Match appearance of reference \u003CIMAGE_5\u003E exactly.\r\n\r\nCAST COUNT: exactly 5 distinct on-screen character identity(ies) only \u2014 Character_OfficerBriggs, Character_OfficerHale, Character_OfficerReynolds, Character_Officer_Reynolds, Character_The_Narrator. Do not invent extra people, duplicate faces, or crowd extras not listed.\r\n\r\nAUDIO: ambient/Foley only \u2014 low dull quick watch in cotton; gasp. No dialogue.\r\n\r\nCONTEXT (prior clip in scene \u2014 new cast plate refs attached; match location/lighting if still valid; identity from CHARACTER VARIABLES \u002B locked plates only):\nINT. OLD MAN\u0027S BEDCHAMBER - NIGHT. A thin ringing enters THE NARRATOR\u0027s face. He pales. Touches his temple. OFF-CAMERA VOICEOVER Character_The_Narrator says \u0022I found that the noise was not within my ears.\u0022. Character_The_Narrator still wears loose white cotton nightshirt, barefoot Camera directive: Extreme close-up on Narrator\u0027s widening eye as he understands the sound is not inside his ears. Performance: Acting intensity 7/10: Shocked realization flicker realizing noise is not within ears Optics: f/1.2 extremely shallow depth of field, swirling bokeh Color grading: Kodak Vision3 500T 5219 film stock, deep charcoal shadows, sickly cool-blue undertones, dim warm amber highlights Character_OfficerBriggs is on screen. Character_OfficerHale is on screen. Character_OfficerReynolds is on screen. Character_Officer_Reynolds is on screen.\n[prompt shortened after API length limit \u2014 retry]",
+  "promptLen": 3250,
+  "promptLogSummary": "mode=fresh chars=5 onScreen=5 refs=5 startFrame=no promptLen=3250 \u00B7 learning-addenda \u00B7 pre-budget 5882\u21923250",
+  "startFrame": null,
+  "builtAtUtc": "2026-07-23T20:18:35.7607331\u002B00:00"
+}

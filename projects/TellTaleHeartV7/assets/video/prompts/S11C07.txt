@@ -1,0 +1,22 @@
+# S11C07  mode=fresh chars=1 onScreen=1 refs=1 startFrame=no promptLen=2793 · learning-addenda · pre-budget 5425→2793
+# projectId: TellTaleHeartV7
+# mode: fresh
+# castCount: 1
+# onScreen: Character_The_Narrator
+# refs: character_the_narrator_ref.png
+# refsAttachedToApi: True
+# startFrame: (none)
+# characters: Character_The_Narrator
+
+STYLE LOCK: Period gothic live-action, mid-19th-century interiors; candlelight and deep shadows; desaturated cool-gray palette; naturalistic skin and fabric texture; no illustration or stylized animation
+
+CHARACTER VARIABLES (use these identities consistently; do not redesign faces or wardrobe):
+- Character_The_Narrator <IMAGE_1> [The Narrator]: Lean man of middle years (about 40–50), pale sallow skin, hollow cheeks, dark disordered medium-length hair, bright intense dark eyes, thin tense mouth; plain dark wool waistcoat over white shirtsleeves, dark trousers; period clothing. Visual lock: Same lean pale face, dark disordered hair, and bright intense dark eyes in every scene; always plain dark waistcoat and shirtsleeves as default; never elderly, never white-haired, never the filmed blue eye. Voice: Male, middle years; medium-high tense pitch; precise, controlled pace that sharpens into fevered urgency; intimate confessional energy, same voice on-camera and in V.O. Match appearance of reference <IMAGE_1> exactly.
+
+CAST COUNT: exactly 1 distinct on-screen character identity(ies) only — Character_The_Narrator. Do not invent extra people, duplicate faces, or crowd extras not listed.
+
+AUDIO: REQUIRED native Grok off-camera voiceover. Character_The_Narrator narrates exactly: "And have I not told you that what you mistake for madness is but over -". Start speaking immediately with "And" — do not skip, delay, or swallow the opening word. After the last word, hold a brief natural pause with a closed mouth (about half a second); do not freeze mid-syllable or trail into empty staring. Do not lip-sync on-screen cast to this VO. Ambient bed: low dull quick sound like watch in cotton. VOICE LOCK Character_The_Narrator: Male, middle years; medium-high tense pitch; precise, controlled pace that sharpens into fevered urgency; intimate confessional energy, same voice on-camera and in V.O.
+
+CONTEXT (prior clip in scene — new cast plate refs attached; match location/lighting if still valid; identity from CHARACTER VARIABLES + locked plates only):
+INT. OLD MAN'S BEDCHAMBER - NIGHT. THE NARRATOR's face in the spill of light-rapt, furious. A low, dull, quick sound: like a watch enveloped in cotton. Soft at first. Then clearer. Character_The_Narrator still wears loose dark nightshirt, barefoot, holding lantern Camera directive: Close-up of Narrator’s rapt furious face half-lit by lantern spill, eyes wide, low dull heartbeat rising. Performance: Acting intensity 8/10: Rapt furious face, eyes wide burning, brows high, savage open focus Optics: f/2.0 shallow depth of field, soft spill falloff Color grading: Kodak Vision3 500T 5219, crushed charcoal shadows, cold blue-black tones, single sickly amber lantern ray
+[prompt shortened after API length limit — retry]

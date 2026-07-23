@@ -929,6 +929,12 @@ else
     /// <summary>Highest progress % shown for the current job — bar never bounces backward.</summary>
     private int _progressFloor;
     private string? _progressFloorJobId;
+    /// <summary>Throttle mid-job list refresh so clips x/y + status pills stay live without thrashing.</summary>
+    private int _lastListRefreshIndex = -1;
+    private int? _lastListRefreshScene;
+    private string? _lastListRefreshMessage;
+    private DateTimeOffset _lastListRefreshAt = DateTimeOffset.MinValue;
+    private bool _listRefreshInFlight;
     private bool _wipExists;
     private bool _wipStale;
     private bool _wipCanBuild;
@@ -1303,10 +1309,16 @@ else
     private void OnJobUpdated(JobSnapshot snap)
     {
         _job = snap;
-        _ = InvokeAsync(RefreshMyJobsAsync);
-        if (snap.Status is "done" or "partial" or "error" or "cancelled")
-            _ = InvokeAsync(async () =>
+        _ = InvokeAsync(async () =>
+        {
+            if (Session.IsAdmin)
+                await RefreshMyJobsAsync();
+
+            if (snap.Status is "done" or "partial" or "error" or "cancelled")
             {
+                _lastListRefreshIndex = -1;
+                _lastListRefreshScene = null;
+                _lastListRefreshMessage = null;
                 await SoftReloadAsync();
                 if (snap.Status == "done" &&
                     string.Equals(snap.Kind, "remux", StringComparison.OrdinalIgnoreCase))
@@ -1351,10 +1363,82 @@ else
                     if (_selectedClip == cn)
                         SelectClip(cn);
                 }
-                StateHasChanged();
-            });
-        else
-            _ = InvokeAsync(StateHasChanged);
+            }
+            else if (ShouldRefreshSceneListWhileRunning(snap))
+            {
+                // Clips x/y + scene status pills: refresh while gen/remux is still running.
+                await SoftReloadListLiveAsync();
+            }
+
+            StateHasChanged();
+        });
+    }
+
+    /// <summary>
+    /// True when a live scene/batch/remux job advanced far enough that list counts may have changed.
+    /// Throttled so long ffmpeg/API polls don't hammer GetScenes.
+    /// </summary>
+    private bool ShouldRefreshSceneListWhileRunning(JobSnapshot snap)
+    {
+        if (!IsScenesWorkflowJob(snap.Kind))
+            return false;
+        if (snap.Status is not ("running" or "queued"))
+            return false;
+
+        var msg = snap.Message ?? "";
+        var indexChanged = snap.Index != _lastListRefreshIndex || snap.Scene != _lastListRefreshScene;
+        var msgChanged = !string.Equals(msg, _lastListRefreshMessage, StringComparison.Ordinal);
+        var clipFinished =
+            msg.StartsWith("Done S", StringComparison.OrdinalIgnoreCase) ||
+            msg.StartsWith("Failed S", StringComparison.OrdinalIgnoreCase) ||
+            msg.StartsWith("Remuxed S", StringComparison.OrdinalIgnoreCase) ||
+            msg.Contains("complete", StringComparison.OrdinalIgnoreCase);
+        // Starting the next clip also implies the previous one landed on disk.
+        var nextClipStarted =
+            msg.Contains("Generating S", StringComparison.OrdinalIgnoreCase) ||
+            msg.Contains("Combining scene", StringComparison.OrdinalIgnoreCase) ||
+            msg.Contains("Combining clips", StringComparison.OrdinalIgnoreCase);
+
+        if (!indexChanged && !clipFinished && !nextClipStarted)
+            return false;
+
+        // Avoid double SoftReload for the same snapshot payload.
+        if (!indexChanged && !msgChanged)
+            return false;
+
+        var now = DateTimeOffset.UtcNow;
+        // Clip-finished lines always refresh (after min gap); other advances throttle harder.
+        var minGap = clipFinished ? TimeSpan.FromMilliseconds(400) : TimeSpan.FromSeconds(1.5);
+        if (now - _lastListRefreshAt < minGap)
+            return false;
+
+        _lastListRefreshIndex = snap.Index;
+        _lastListRefreshScene = snap.Scene;
+        _lastListRefreshMessage = msg;
+        _lastListRefreshAt = now;
+        return true;
+    }
+
+    /// <summary>Light list/detail refresh while a job runs (no cast/cost thrash).</summary>
+    private async Task SoftReloadListLiveAsync()
+    {
+        if (_listRefreshInFlight) return;
+        _listRefreshInFlight = true;
+        try
+        {
+            var dto = await Engine.GetScenesAsync(_projectId);
+            _scenes = dto?.Scenes ?? new List<SceneSummary>();
+            await RefreshWipMetaAsync();
+            if (_selectedScene is int sn)
+            {
+                var detail = await Engine.GetSceneDetailAsync(_projectId, sn);
+                _detail = detail?.Scene;
+                if (_selectedClip is int cn && _detail is not null)
+                    _clip = _detail.Clips.FirstOrDefault(c => c.ClipNumber == cn);
+            }
+        }
+        catch { /* ignore mid-job refresh errors */ }
+        finally { _listRefreshInFlight = false; }
     }
 
     private void OnJobLog(string line)
@@ -1761,6 +1845,11 @@ else
         _error = null;
         _message = null;
         _showAdminJobLog = false;
+        _progressFloor = 0;
+        _progressFloorJobId = null;
+        _lastListRefreshIndex = -1;
+        _lastListRefreshScene = null;
+        _lastListRefreshMessage = null;
         _pendingRegenScene = sn;
         try
         {
@@ -1787,6 +1876,11 @@ else
         _error = null;
         _message = null;
         _showAdminJobLog = false;
+        _progressFloor = 0;
+        _progressFloorJobId = null;
+        _lastListRefreshIndex = -1;
+        _lastListRefreshScene = null;
+        _lastListRefreshMessage = null;
         try
         {
             var list = _selected.OrderBy(x => x).ToList();

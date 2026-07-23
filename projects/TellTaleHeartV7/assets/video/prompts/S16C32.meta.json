@@ -1,0 +1,37 @@
+{
+  "projectId": "TellTaleHeartV7",
+  "scene": 16,
+  "clip": 32,
+  "mode": "fresh",
+  "castCount": 5,
+  "onScreenKeys": [
+    "Character_OfficerBriggs",
+    "Character_OfficerHale",
+    "Character_OfficerReynolds",
+    "Character_Officer_Reynolds",
+    "Character_The_Narrator"
+  ],
+  "characterKeys": [
+    "Character_OfficerBriggs",
+    "Character_OfficerHale",
+    "Character_OfficerReynolds",
+    "Character_Officer_Reynolds",
+    "Character_The_Narrator"
+  ],
+  "refs": [
+    "character_officerbriggs_ref.png",
+    "character_officerhale_ref.png",
+    "character_officerreynolds_ref.png",
+    "character_officer_reynolds_ref.png",
+    "character_the_narrator_ref.png"
+  ],
+  "refsAttachedToApi": true,
+  "styleHead": "STYLE LOCK: Period gothic live-action, mid-19th-century interiors; candlelight and deep shadows; desaturated cool-gray palette; naturalistic skin and fabric texture; no illustration or stylized animation",
+  "castCountLine": "CAST COUNT: exactly 5 distinct on-screen character identity(ies) only \u2014 Character_OfficerBriggs, Character_OfficerHale, Character_OfficerReynolds, Character_Officer_Reynolds, Character_The_Narrator. Do not invent extra people, duplicate faces, or crowd extras not listed.",
+  "actionText": "INT. OLD MAN\u0027S BEDCHAMBER - NIGHT. also on screen: Character_OfficerHale \u003CIMAGE_2\u003E, Character_OfficerReynolds \u003CIMAGE_3\u003E, Character_Officer_Reynolds \u003CIMAGE_4\u003E. Officer Briggs The officers spring up. THE NARRATOR still points, raving, at the boards. Character_The_Narrator \u003CIMAGE_5\u003E still wears loose white cotton nightshirt, barefoot Camera directive: Wide shot pulls back as officers spring to their feet while Narrator still raves pointing at the boards. Performance: Acting intensity 10/10: Raving pointed stare froth at mouth still pointing at boards Optics: f/4 moderate-deep depth of field Color grading: Kodak Vision3 500T 5219 film stock, deep charcoal shadows, sickly cool-blue undertones, dim warm amber highlights Character_OfficerBriggs \u003CIMAGE_1\u003E is on screen.",
+  "prompt": "STYLE LOCK: Period gothic live-action, mid-19th-century interiors; candlelight and deep shadows; desaturated cool-gray palette; naturalistic skin and fabric texture; no illustration or stylized animation\r\n\r\nCHARACTER VARIABLES (use these identities consistently; do not redesign faces or wardrobe):\r\n- Character_OfficerBriggs \u003CIMAGE_1\u003E [Officer Briggs]: Man in late 20s to about 30, shorter stocky build, rounder face, sandy-blond hair cut short, clean-shaven, freckled fair skin, light hazel eyes; younger and smoother-faced than the other two officers. Visual lock: Youngest officer: sandy-blond, freckled, stocky, clean-shaven\u2014never brown-haired like Reynolds or mustached like Hale; shared coat/hat/badge only through wardrobe_lock. Voice: Male, ~30; medium pitch slightly lighter than Reynolds; pleasant civil pace; easy unhurried energy while chatting. Match appearance of reference \u003CIMAGE_1\u003E exactly.\r\n- Character_OfficerHale \u003CIMAGE_2\u003E [Officer Hale]: Also present (not shot focus); keep identity consistent: Man in late 30s, lean tall build, long narrow face, dark .... Match reference \u003CIMAGE_2\u003E.\r\n- Character_OfficerReynolds \u003CIMAGE_3\u003E [Officer Reynolds]: Also present (not shot focus); keep identity consistent: Man in early 40s, solid medium build, square jaw, short n.... Match reference \u003CIMAGE_3\u003E.\r\n- Character_Officer_Reynolds \u003CIMAGE_4\u003E [Officer Reynolds]: Also present (not shot focus); keep identity consistent: Man in early 40s, solid medium build, square jaw, short n.... Match reference \u003CIMAGE_4\u003E.\r\n- Character_The_Narrator \u003CIMAGE_5\u003E [The Narrator]: Also present (not shot focus); keep identity consistent: Lean man of middle years (about 40\u201350), pale sallow skin,.... Match reference \u003CIMAGE_5\u003E.\r\n\r\nCAST COUNT: exactly 5 distinct on-screen character identity(ies) only \u2014 Character_OfficerBriggs, Character_OfficerHale, Character_OfficerReynolds, Character_Officer_Reynolds, Character_The_Narrator. Do not invent extra people, duplicate faces, or crowd extras not listed.\r\n\r\nAUDIO: ambient/Foley only \u2014 officers spring up. No dialogue.\r\n\r\nCONTEXT (prior clip in scene \u2014 new cast plate refs attached; match location/lighting if still valid; identity from CHARACTER VARIABLES \u002B locked plates only):\nINT. OLD MAN\u0027S BEDCHAMBER - NIGHT. The Narrator speaks. Character_The_Narrator ON CAMERA lip-syncs \u0022of his hideous heart!\u0022. Character_The_Narrator still wears loose white cotton nightshirt, barefoot Camera directive: Extreme close-up on Narrator\u0027s mouth spitting the final words about the beating of his hideous heart. Performance: Acting intensity 10/10: Final broken horror eyes staring madly it is his hideous heart Optics: f/1.4 shallow depth of field, creamy bokeh Color grading: Kodak Vision3 500T 5219 film stock, deep charcoal shadows, sickly cool-blue undertones, dim warm amber highlights Character_OfficerBriggs is on screen. Character_OfficerHale is on screen. Character_OfficerReynolds is on screen. Character_Officer_Reynolds is on screen.\n[prompt shortened after API length limit \u2014 retry]",
+  "promptLen": 3017,
+  "promptLogSummary": "mode=fresh chars=5 onScreen=5 refs=5 startFrame=no promptLen=3017 \u00B7 learning-addenda \u00B7 pre-budget 5649\u21923017",
+  "startFrame": null,
+  "builtAtUtc": "2026-07-23T20:30:44.7698973\u002B00:00"
+}

@@ -1,0 +1,28 @@
+{
+  "projectId": "TellTaleHeartV7",
+  "scene": 11,
+  "clip": 25,
+  "mode": "fresh",
+  "castCount": 2,
+  "onScreenKeys": [
+    "Character_The_Narrator",
+    "Character_The_Old_Man"
+  ],
+  "characterKeys": [
+    "Character_The_Narrator",
+    "Character_The_Old_Man"
+  ],
+  "refs": [
+    "character_the_narrator_ref.png",
+    "character_old_man_ref.png"
+  ],
+  "refsAttachedToApi": true,
+  "styleHead": "STYLE LOCK: Period gothic live-action, mid-19th-century interiors; candlelight and deep shadows; desaturated cool-gray palette; naturalistic skin and fabric texture; no illustration or stylized animation",
+  "castCountLine": "CAST COUNT: exactly 2 distinct on-screen character identity(ies) only \u2014 Character_The_Narrator, Character_The_Old_Man. Do not invent extra people, duplicate faces, or crowd extras not listed.",
+  "actionText": "INT. OLD MAN\u0027S BEDCHAMBER - NIGHT. also on screen: Character_The_Old_Man \u003CIMAGE_2\u003E. With a loud yell he throws the lantern wide and leaps into the room. THE OLD MAN shrieks once-once only. THE NARRATOR drags him to the floor and pulls the heavy bed over him. Struggle under the weight-muffled. Then THE NARRATOR stands back, smiling gaily. Under the bed: the heart still beats-muffled, stubborn. ONE continuous take no cut; unbroken cause-to-effect motion. Character_The_Narrator \u003CIMAGE_1\u003E still wears loose dark nightshirt, barefoot, holding lantern Camera directive: Wide chaotic rush as Narrator yells, throws lantern, leaps, drags old man, heaves bed over the struggle. Performance: Acting intensity 10/10: Explosive rage-yell face, insane eyes, then manic gay high-cheek smile Optics: f/2.8 moderate depth of field, dynamic action coverage Color grading: Kodak Vision3 500T 5219, crushed charcoal shadows, cold blue-black tones, single sickly amber lantern ray",
+  "prompt": "STYLE LOCK: Period gothic live-action, mid-19th-century interiors; candlelight and deep shadows; desaturated cool-gray palette; naturalistic skin and fabric texture; no illustration or stylized animation\r\n\r\nCHARACTER VARIABLES (use these identities consistently; do not redesign faces or wardrobe):\r\n- Character_The_Narrator \u003CIMAGE_1\u003E [The Narrator]: Lean man of middle years (about 40\u201350), pale sallow skin, hollow cheeks, dark disordered medium-length hair, bright intense dark eyes, thin tense mouth; plain dark wool waistcoat over white shirtsleeves, dark trousers; period clothing. Visual lock: Same lean pale face, dark disordered hair, and bright intense dark eyes in every scene; always plain dark waistcoat and shirtsleeves as default; never elderly, never white-haired, never the filmed blue eye. Voice: Male, middle years; medium-high tense pitch; precise, controlled pace that sharpens into fevered urgency; intimate confessional energy, same voice on-camera and in V.O. Match appearance of reference \u003CIMAGE_1\u003E exactly.\r\n- Character_The_Old_Man \u003CIMAGE_2\u003E [The Old Man]: Frail elderly man, thin stooped build, sparse white hair, deeply lined pale face; one pale blue eye with a dull filmy veil, the other eye ordinary; wears a plain white period nightshirt. Visual lock: Always elderly, white-haired, frail; signature constant is the single pale blue eye with dull filmy veil that must not drift to clear blue or to the Narrator\u0027s face; nightshirt is his default on-screen garment. Voice: Elderly male; thin, reedy, low energy; short startled phrases; weak breath support; same fragile voice in the single spoken line and any murmur. Match appearance of reference \u003CIMAGE_2\u003E exactly.\r\n\r\nCAST COUNT: exactly 2 distinct on-screen character identity(ies) only \u2014 Character_The_Narrator, Character_The_Old_Man. Do not invent extra people, duplicate faces, or crowd extras not listed.\r\n\r\nAUDIO: ambient/Foley only \u2014 muffled stubborn heartbeat; drag to floor, heavy bed pull, lantern throw, leap, loud yell, muffled struggle, old man shriek. No dialogue.\r\n\r\nCONTEXT (prior clip in scene \u2014 new cast plate refs attached; match location/lighting if still valid; identity from CHARACTER VARIABLES \u002B locked plates only):\nINT. OLD MAN\u0027S BEDCHAMBER - NIGHT. Louder. THE NARRATOR\u0027s free hand trembles, then stills. OFF-CAMERA VOICEOVER Character_The_Narrator says \u0022The old man\u0027s hour had come!\u0022. Character_The_Narrator still wears loose dark nightshirt, barefoot, holding lantern Camera directive: Final pre-strike close-up, Narrator\u2019s eyes decisive: the old man\u2019s hour has come. Performance: Acting intensity 10/10: Lethal calm flood, cold final eyes, grim executioner\u0027s mouth line Optics: f/1.4 shallow depth of field, decisive isolation Color grading: Kodak Vision3 500T 5219, crushed charcoal shadows, cold blue-black tones, single sickly amber lantern ray Character_The_Old_Man is on screen.\n[prompt shortened after API length limit \u2014 retry]",
+  "promptLen": 2941,
+  "promptLogSummary": "mode=fresh chars=2 onScreen=2 refs=2 startFrame=no promptLen=2941 \u00B7 learning-addenda \u00B7 pre-budget 5573\u21922941",
+  "startFrame": null,
+  "builtAtUtc": "2026-07-23T19:58:29.4817138\u002B00:00"
+}

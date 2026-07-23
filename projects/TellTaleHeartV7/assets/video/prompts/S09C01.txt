@@ -1,0 +1,26 @@
+# S09C01  mode=fresh chars=1 onScreen=1 refs=1 startFrame=no promptLen=3294 · learning-addenda · pre-budget 5926→3294
+# projectId: TellTaleHeartV7
+# mode: fresh
+# castCount: 1
+# onScreen: Character_The_Old_Man
+# refs: character_old_man_ref.png
+# refsAttachedToApi: True
+# startFrame: (none)
+# characters: Character_The_Old_Man
+
+STYLE LOCK: Period gothic live-action, mid-19th-century interiors; candlelight and deep shadows; desaturated cool-gray palette; naturalistic skin and fabric texture; no illustration or stylized animation
+
+CHARACTER VARIABLES (use these identities consistently; do not redesign faces or wardrobe):
+- Character_The_Old_Man <IMAGE_1> [The Old Man]: Frail elderly man, thin stooped build, sparse white hair, deeply lined pale face; one pale blue eye with a dull filmy veil, the other eye ordinary; wears a plain white period nightshirt. Visual lock: Always elderly, white-haired, frail; signature constant is the single pale blue eye with dull filmy veil that must not drift to clear blue or to the Narrator's face; nightshirt is his default on-screen garment. Voice: Elderly male; thin, reedy, low energy; short startled phrases; weak breath support; same fragile voice in the single spoken line and any murmur. Match appearance of reference <IMAGE_1> exactly.
+
+CAST COUNT: exactly 1 distinct on-screen character identity(ies) only — Character_The_Old_Man. Do not invent extra people, duplicate faces, or crowd extras not listed.
+
+AUDIO: REQUIRED native Grok dialogue. Character_The_Old_Man ON CAMERA lip-syncs exactly: "Who's there?". Start speaking immediately with "Who's" — do not skip, delay, or swallow the opening word. After the last word, hold a brief natural pause with a closed mouth (about half a second); do not freeze mid-syllable or trail into empty staring. Other mouths closed. Speech intelligible; never silent. Ambient/Foley: click. VOICE LOCK Character_The_Old_Man: Elderly male; thin, reedy, low energy; short startled phrases; weak breath support; same fragile voice in the single spoken line and any murmur.
+
+Follow the camera framing and location in this prompt exactly. Prioritize the PRIMARY subject and ONE clear action with visible motion; background characters may stay mostly still.
+
+THIS CLIP:
+End cleanly when the spoken line and primary action finish — do not hold a frozen pose or empty silence after dialogue.
+INT. OLD MAN'S BEDCHAMBER - NIGHT. Pitch black. THE NARRATOR's head is in. His thumb slips on the tin fastening of the lantern- A metallic click. THE OLD MAN springs up in the dark. The Old Man speaks. Character_The_Old_Man <IMAGE_1> ON CAMERA lip-syncs "Who's there?". Character_The_Old_Man <IMAGE_1> still wears loose white cotton nightshirt, barefoot Camera directive: Medium shot in near-blackness, 35mm lens, old man bolts upright in bed silhouette as metallic click echoes. Performance: Acting intensity 8/10: Sudden wide terrified eyes, brows high, mouth agape in dark Optics: f/1.4 shallow depth of field, creamy background bokeh Color grading: Kodak Vision3 500T 5219, pitch-black voids, cool-teal shadows, faint warm amber lantern spill / 480p, 24fps
+
+NEGATIVE: no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens, no name tags, no name badges, no embroidered names, no lower thirds, no personal names on clothing or props, no extra unmentioned hats or jackets, no modern wristwatches, no electric light bulbs, no plastic, no zippers, no denim, no printed logos, no sneakers, no light switches, no synthetic fabrics, no modern clocks, no asphalt, no power cords, no hair gel.

@@ -1887,6 +1887,7 @@ public sealed class FilmJobService
                                 line => { _ = OnLine(line); }, ct,
                                 ignoreAssemblyGate: ignoreGate);
                             refreshed++;
+                            _projects.InvalidateSceneListCache(projectId);
                             await UpdateAsync(s =>
                             {
                                 s.Total = 100;
@@ -1926,6 +1927,7 @@ public sealed class FilmJobService
                 await _remux.RemuxSceneAsync(projectId, sn,
                     line => { _ = OnLine(line); }, ct,
                     ignoreAssemblyGate: ignoreGate);
+                _projects.InvalidateSceneListCache(projectId);
             }
 
             if (req.RebuildWip)
@@ -1950,6 +1952,7 @@ public sealed class FilmJobService
                 });
                 await _remux.RebuildWipAsync(projectId,
                     line => { _ = OnLine(line); }, ct);
+                _projects.InvalidateSceneListCache(projectId);
             }
 
             var doneMsg = (req.RefreshStaleScenes, req.Scene is int dsn && dsn > 0, req.RebuildWip) switch
@@ -2125,6 +2128,8 @@ public sealed class FilmJobService
                         previousClipEl: prevClipEl,
                         blueprintRoot: bp.RootElement);
                     done++;
+                    // Fresh clips x/y + status pills while batch is still running.
+                    _projects.InvalidateSceneListCache(projectId);
                     await AppendLogAsync($"Done S{sn:D2} C{cn}");
                 }
                 catch (OperationCanceledException)
@@ -2281,6 +2286,8 @@ public sealed class FilmJobService
                         previousClipEl: prevClipEl,
                         blueprintRoot: bp.RootElement);
                     done++;
+                    // Fresh clips x/y + status pills while scene gen is still running.
+                    _projects.InvalidateSceneListCache(projectId);
                     await AppendLogAsync($"Done S{req.Scene:D2} C{cn}");
                 }
                 catch (OperationCanceledException)

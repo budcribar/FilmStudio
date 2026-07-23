@@ -1,0 +1,26 @@
+# S16C04  mode=video-extend chars=5 onScreen=5 refs=0 startFrame=no promptLen=3594 prevVideo=_prev_extend_s16c04.mp4 · learning-addenda · pre-budget 6226→3594
+# projectId: TellTaleHeartV7
+# mode: video-extend
+# castCount: 5
+# onScreen: Character_OfficerBriggs, Character_OfficerHale, Character_OfficerReynolds, Character_Officer_Reynolds, Character_The_Narrator
+# refs: 
+# refsAttachedToApi: False
+# startFrame: (none)
+# characters: Character_OfficerBriggs, Character_OfficerHale, Character_OfficerReynolds, Character_Officer_Reynolds, Character_The_Narrator
+
+STYLE LOCK: Period gothic live-action, mid-19th-century interiors; candlelight and deep shadows; desaturated cool-gray palette; naturalistic skin and fabric texture; no illustration or stylized animation
+
+CHARACTER VARIABLES (use these identities consistently; do not redesign faces or wardrobe):
+- Character_OfficerBriggs [Officer Briggs]: Also present (not shot focus); keep identity consistent: Man in late 20s to about 30, shorter stocky build, rounde....
+- Character_OfficerHale [Officer Hale]: Also present (not shot focus); keep identity consistent: Man in late 30s, lean tall build, long narrow face, dark ....
+- Character_OfficerReynolds [Officer Reynolds]: Also present (not shot focus); keep identity consistent: Man in early 40s, solid medium build, square jaw, short n....
+- Character_Officer_Reynolds [Officer Reynolds]: Also present (not shot focus); keep identity consistent: Man in early 40s, solid medium build, square jaw, short n....
+- Character_The_Narrator [The Narrator]: Lean man of middle years (about 40–50), pale sallow skin, hollow cheeks, dark disordered medium-length hair, bright intense dark eyes, thin tense mouth; plain dark wool waistcoat over white shirtsleeves, dark trousers; period clothing. Visual lock: Same lean pale face, dark disordered hair, and bright intense dark eyes in every scene; always plain dark waistcoat and shirtsleeves as default; never elderly, never white-haired, never the filmed blue eye. Voice: Male, middle years; medium-high tense pitch; precise, controlled pace that sharpens into fevered urgency; intimate confessional energy, same voice on-camera and in V.O.
+
+CAST COUNT: exactly 5 distinct on-screen character identity(ies) only — Character_OfficerBriggs, Character_OfficerHale, Character_OfficerReynolds, Character_Officer_Reynolds, Character_The_Narrator. Do not invent extra people, duplicate faces, or crowd extras not listed.
+
+AUDIO: REQUIRED native Grok off-camera voiceover. Character_The_Narrator narrates exactly: "They sat, and while I answered cheerily, they chatted of familiar things.". Start speaking immediately with "They" — do not skip, delay, or swallow the opening word. After the last word, hold a brief natural pause with a closed mouth (about half a second); do not freeze mid-syllable or trail into empty staring. Do not lip-sync on-screen cast to this VO. Ambient/Foley: sit. VOICE LOCK Character_The_Narrator: Male, middle years; medium-high tense pitch; precise, controlled pace that sharpens into fevered urgency; intimate confessional energy, same voice on-camera and in V.O.
+
+PREVIOUS CLIP (already provided as video input — continue from its last frame):
+INT. OLD MAN'S BEDCHAMBER - NIGHT. also on screen: Character_OfficerHale, Character_OfficerBriggs, Character_Officer_Reynolds. They sit. THE NARRATOR answers cheerily. The officers chat of familiar things-easy, satisfied. OFFICER REYNOLDS nods, convinced. OFF-CAMERA VOICEOVER Character_The_Narrator says "The officers were satisfied. My manner had convinced them. I was singularly at ease.". Character_The_Narrator still wears loose white cotton nightshirt, barefoot Camera directive: Slow push-in on Narrator answering cheerily, officers relaxed in soft background bokeh. Performance: Acting intensity 4/10: Cheerful open smile and steady warm gaze, singularly at ease Optics: f/2.8 moderate depth of field Color grading: Kodak Vision3 500T 5219 film stock, deep charcoal shadows, sickly cool-blue undertones, dim warm amber highlights Character_OfficerReynolds is on screen.
+[prompt shortened after API length limit — retry]
