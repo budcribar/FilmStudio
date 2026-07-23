@@ -197,6 +197,12 @@ public sealed class FakeGrokChatClient : IChatClient
             return Task.FromResult("""{"sound_design":[]}""");
         }
 
+        if (mode == ChatCallModes.DepthOfFieldClassify ||
+            sys.Contains("Focus Puller and Optical Cinematographer", StringComparison.OrdinalIgnoreCase))
+        {
+            return Task.FromResult("""{"dof":[]}""");
+        }
+
         // ── Minimal Stage1-shaped stub ─────────────────────────────────────
         return Task.FromResult("""
             {

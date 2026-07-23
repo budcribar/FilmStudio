@@ -82,6 +82,7 @@ builder.Services.AddSingleton<NegativePromptClassifier>();
 builder.Services.AddSingleton<WardrobeContinuityClassifier>();
 builder.Services.AddSingleton<CharacterEmotionArcClassifier>();
 builder.Services.AddSingleton<SoundDesignComposerClassifier>();
+builder.Services.AddSingleton<DepthOfFieldClassifier>();
 builder.Services.AddSingleton<Stage2PlannerService>();
 builder.Services.AddSingleton<FfmpegRemuxService>();
 builder.Services.AddSingleton<IFfmpegRemux>(sp => sp.GetRequiredService<FfmpegRemuxService>());

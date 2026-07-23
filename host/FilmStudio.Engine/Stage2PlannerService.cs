@@ -55,6 +55,7 @@ public sealed class Stage2PlannerService
     private readonly WardrobeContinuityClassifier? _wardrobeClassifier;
     private readonly CharacterEmotionArcClassifier? _emotionClassifier;
     private readonly SoundDesignComposerClassifier? _soundComposerClassifier;
+    private readonly DepthOfFieldClassifier? _dofClassifier;
 
     public Stage2PlannerService(
         ProjectStore projects,
@@ -71,7 +72,8 @@ public sealed class Stage2PlannerService
         NegativePromptClassifier? negativeClassifier = null,
         WardrobeContinuityClassifier? wardrobeClassifier = null,
         CharacterEmotionArcClassifier? emotionClassifier = null,
-        SoundDesignComposerClassifier? soundComposerClassifier = null)
+        SoundDesignComposerClassifier? soundComposerClassifier = null,
+        DepthOfFieldClassifier? dofClassifier = null)
     {
         _projects = projects;
         _log = log;
@@ -88,6 +90,7 @@ public sealed class Stage2PlannerService
         _wardrobeClassifier = wardrobeClassifier;
         _emotionClassifier = emotionClassifier;
         _soundComposerClassifier = soundComposerClassifier;
+        _dofClassifier = dofClassifier;
     }
 
     public async Task<Stage2PlanResult> PlanAsync(
@@ -235,7 +238,17 @@ public sealed class Stage2PlannerService
                 sceneBeats = CoalesceSilentPreludeBeats(sceneBeats);
                 aiSound = await _soundComposerClassifier.ClassifySceneSoundDesignAsync(s, sceneBeats, onProgress, ct).ConfigureAwait(false);
             }
-            var plannedScene = PlanScene(s, resolution, locSeeds, charSeeds, styleLock, aiPacing, aiLighting, aiCamera, aiNegative, aiWardrobe, aiEmotion, aiSound);
+            Dictionary<string, DepthOfFieldDirective>? aiDof = null;
+            if (_dofClassifier is not null)
+            {
+                var sceneBeats = GetList(s, "story_beats").OfType<Dictionary<string, object?>>()
+                    .Where(b => !IsNoopTransitionBeat(b))
+                    .ToList();
+                sceneBeats = ClipDurationEstimator.ExpandLongDialogueBeats(sceneBeats);
+                sceneBeats = CoalesceSilentPreludeBeats(sceneBeats);
+                aiDof = await _dofClassifier.ClassifySceneDepthOfFieldAsync(s, sceneBeats, onProgress, ct).ConfigureAwait(false);
+            }
+            var plannedScene = PlanScene(s, resolution, locSeeds, charSeeds, styleLock, aiPacing, aiLighting, aiCamera, aiNegative, aiWardrobe, aiEmotion, aiSound, aiDof);
             // Skip transition-only phantoms (e.g. FADE IN before first heading)
             if (plannedScene is null)
             {
@@ -468,7 +481,8 @@ public sealed class Stage2PlannerService
         string? aiNegative = null,
         Dictionary<string, string>? aiWardrobe = null,
         Dictionary<string, EmotionDirective>? aiEmotion = null,
-        Dictionary<string, SoundDesignDirective>? aiSound = null)
+        Dictionary<string, SoundDesignDirective>? aiSound = null,
+        Dictionary<string, DepthOfFieldDirective>? aiDof = null)
     {
         var sceneInput = new Dictionary<string, object?>(scene);
         if (!string.IsNullOrWhiteSpace(aiLighting))
@@ -586,6 +600,12 @@ public sealed class Stage2PlannerService
                     vp = $"{vp} Performance: {emoDir.ActingPrompt}";
             }
 
+            if (aiDof is not null && aiDof.TryGetValue(beatIdStr, out var dofDir))
+            {
+                if (!string.IsNullOrWhiteSpace(dofDir.Aperture))
+                    vp = $"{vp} Optics: {dofDir.Aperture}";
+            }
+
             var clipDict = new Dictionary<string, object?>
             {
                 ["clip_number"] = i + 1,
@@ -600,6 +620,14 @@ public sealed class Stage2PlannerService
                 ["characters_on_screen"] = clipCast.Cast<object?>().ToList(),
                 ["duration_seconds"] = dur,
             };
+
+            if (aiDof is not null && aiDof.TryGetValue(beatIdStr, out var dfd))
+            {
+                clipDict["aperture"] = dfd.Aperture;
+                clipDict["focal_plane"] = dfd.FocalPlane;
+                if (!string.IsNullOrWhiteSpace(dfd.RackFocus))
+                    clipDict["rack_focus"] = dfd.RackFocus;
+            }
 
             if (aiEmotion is not null && aiEmotion.TryGetValue(beatIdStr, out var ed))
             {
