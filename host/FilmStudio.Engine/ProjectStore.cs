@@ -144,10 +144,24 @@ public sealed class ProjectStore
             string.Equals(p.Id, projectId, StringComparison.OrdinalIgnoreCase));
     }
 
+    /// <summary>
+    /// Validates a project exists, without touching the process-global active-project
+    /// pointer or workspace.json. Use this from background job execution instead of
+    /// <see cref="ActivateAsync"/> — background jobs run concurrently across projects/users
+    /// and must not race each other (or the UI) for the shared "active project" preference.
+    /// </summary>
+    public async Task<ProjectInfo> RequireProjectAsync(string projectId, CancellationToken ct = default) =>
+        await GetProjectAsync(projectId, ct).ConfigureAwait(false)
+            ?? throw new InvalidOperationException($"Unknown project: {projectId}");
+
+    /// <summary>
+    /// UI-only preference: sets the process-global active project and persists it to
+    /// workspace.json. Do not call this from background job execution — see
+    /// <see cref="RequireProjectAsync"/>.
+    /// </summary>
     public async Task<ProjectInfo> ActivateAsync(string projectId, CancellationToken ct = default)
     {
-        var p = await GetProjectAsync(projectId, ct).ConfigureAwait(false)
-            ?? throw new InvalidOperationException($"Unknown project: {projectId}");
+        var p = await RequireProjectAsync(projectId, ct).ConfigureAwait(false);
         _activeProjectId = p.Id;
         var wsPath = Path.Combine(WorkspaceRoot, "projects", "workspace.json");
         Directory.CreateDirectory(Path.GetDirectoryName(wsPath)!);
@@ -2000,6 +2014,34 @@ public sealed class ProjectStore
         if (!full.StartsWith(root, StringComparison.OrdinalIgnoreCase))
             return null;
         return File.Exists(full) && new FileInfo(full).Length >= 1024 ? full : null;
+    }
+
+    /// <summary>Last successful YouTube upload for a project, or null if never uploaded.</summary>
+    public async Task<YouTubeUploadInfo?> GetYouTubeUploadInfoAsync(string projectId, CancellationToken ct = default)
+    {
+        var path = Path.Combine(GetProjectDir(projectId), "assets", "youtube_upload.json");
+        if (!File.Exists(path))
+            return null;
+        try
+        {
+            await using var stream = File.OpenRead(path);
+            return await JsonSerializer.DeserializeAsync<YouTubeUploadInfo>(stream, JsonOpts, ct)
+                .ConfigureAwait(false);
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    public async Task SaveYouTubeUploadInfoAsync(string projectId, YouTubeUploadInfo info, CancellationToken ct = default)
+    {
+        var dir = Path.Combine(GetProjectDir(projectId), "assets");
+        Directory.CreateDirectory(dir);
+        await File.WriteAllTextAsync(
+            Path.Combine(dir, "youtube_upload.json"),
+            JsonSerializer.Serialize(info, JsonOpts),
+            ct).ConfigureAwait(false);
     }
 
     public string ResolveScenesJsonPath(string projectId)

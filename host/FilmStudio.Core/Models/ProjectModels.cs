@@ -734,6 +734,25 @@ public sealed class StartRemuxRequest
     public string? IgnoreAssemblyGateReason { get; set; }
 }
 
+public sealed class StartYouTubeUploadRequest
+{
+    public string ProjectId { get; set; } = "";
+    public string? Title { get; set; }
+    public string? Description { get; set; }
+    /// <summary>private | unlisted | public. Default unlisted (link-shareable, not publicly listed).</summary>
+    public string PrivacyStatus { get; set; } = "unlisted";
+}
+
+/// <summary>Last successful YouTube upload for a project (sidecar assets/youtube_upload.json).</summary>
+public sealed class YouTubeUploadInfo
+{
+    public string VideoId { get; set; } = "";
+    public string Url { get; set; } = "";
+    public string Title { get; set; } = "";
+    public string PrivacyStatus { get; set; } = "";
+    public DateTimeOffset UploadedAt { get; set; }
+}
+
 /// <summary>WIP movie freshness for Play-WIP-one-step UX.</summary>
 public sealed class WipFreshness
 {

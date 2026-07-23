@@ -3,6 +3,8 @@ using System.Text.Json;
 using FilmStudio.Core.Models;
 using FilmStudio.Core.Options;
 using FilmStudio.Engine.Abstractions;
+using Google.Apis.Upload;
+using Google.Apis.YouTube.v3.Data;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
@@ -47,6 +49,7 @@ public sealed class FilmJobService
     private readonly ILockService _locks;
     private readonly ApiWorkerPool _apiPool;
     private readonly LocalWorkerPool _localPool;
+    private readonly YouTubeAuthService _youTube;
     private readonly IServerMetricsService _metrics;
     private readonly FilmStudioOptions _opts;
     private readonly ILogger<FilmJobService> _log;
@@ -81,6 +84,7 @@ public sealed class FilmJobService
         ILockService locks,
         ApiWorkerPool apiPool,
         LocalWorkerPool localPool,
+        YouTubeAuthService youTube,
         IServerMetricsService metrics,
         IOptions<FilmStudioOptions> opts,
         ILogger<FilmJobService> log,
@@ -110,6 +114,7 @@ public sealed class FilmJobService
         _locks = locks;
         _apiPool = apiPool;
         _localPool = localPool;
+        _youTube = youTube;
         _metrics = metrics;
         _opts = opts.Value;
         _log = log;
@@ -656,7 +661,7 @@ public sealed class FilmJobService
             ? _projects.ActiveProjectId
             : req.ProjectId;
         return StartBackgroundJobAsync(
-            ct => RunSceneGenAsync(req, ct),
+            ct => RunSceneGenAsync(req, projectId, ct),
             new JobEnqueueMeta
             {
                 Kind = "scene",
@@ -690,7 +695,7 @@ public sealed class FilmJobService
             ? $"Queued batch gen ({req.Clips!.Count} clip(s))…"
             : $"Queued batch gen ({req.Scenes!.Count} scenes)…";
         return StartBackgroundJobAsync(
-            ct => RunBatchGenAsync(req, ct),
+            ct => RunBatchGenAsync(req, projectId, ct),
             new JobEnqueueMeta
             {
                 Kind = "batch",
@@ -709,7 +714,7 @@ public sealed class FilmJobService
             ? _projects.ActiveProjectId
             : req.ProjectId;
         return StartBackgroundJobAsync(
-            ct => RunStage1Async(req, ct),
+            ct => RunStage1Async(req, projectId, ct),
             new JobEnqueueMeta
             {
                 Kind = "stage1",
@@ -727,7 +732,7 @@ public sealed class FilmJobService
             ? _projects.ActiveProjectId
             : req.ProjectId;
         return StartBackgroundJobAsync(
-            ct => RunStage2Async(req, ct),
+            ct => RunStage2Async(req, projectId, ct),
             new JobEnqueueMeta
             {
                 Kind = "stage2",
@@ -796,7 +801,7 @@ public sealed class FilmJobService
     private async Task RunBookPrepareAsync(StartBookPrepareRequest req, CancellationToken ct)
     {
         var projectId = req.ProjectId;
-        await _projects.ActivateAsync(projectId, ct);
+        await _projects.RequireProjectAsync(projectId, ct);
         Snapshot = new JobSnapshot
         {
             Status = "running",
@@ -853,7 +858,7 @@ public sealed class FilmJobService
     private async Task RunBookImportAsync(StartBookImportRequest req, CancellationToken ct)
     {
         var projectId = req.ProjectId;
-        await _projects.ActivateAsync(projectId, ct).ConfigureAwait(false);
+        await _projects.RequireProjectAsync(projectId, ct).ConfigureAwait(false);
 
         // Progress: 0–4 prepare, 5–10 adapt (chunk messages bump index)
         Snapshot = new JobSnapshot
@@ -1024,7 +1029,7 @@ public sealed class FilmJobService
             ? _projects.ActiveProjectId
             : req.ProjectId;
         return StartBackgroundJobAsync(
-            ct => RunCharacterVariantsAsync(req, ct),
+            ct => RunCharacterVariantsAsync(req, projectId, ct),
             new JobEnqueueMeta
             {
                 Kind = "character_variants",
@@ -1047,7 +1052,7 @@ public sealed class FilmJobService
             ? _projects.ActiveProjectId
             : req.ProjectId;
         return StartBackgroundJobAsync(
-            ct => RunVoicePreviewAsync(req, ct),
+            ct => RunVoicePreviewAsync(req, projectId, ct),
             new JobEnqueueMeta
             {
                 Kind = "voice-preview",
@@ -1070,7 +1075,7 @@ public sealed class FilmJobService
             ? _projects.ActiveProjectId
             : req.ProjectId;
         return StartBackgroundJobAsync(
-            ct => RunClipAutoReviewAsync(req, ct),
+            ct => RunClipAutoReviewAsync(req, projectId, ct),
             new JobEnqueueMeta
             {
                 Kind = "clip-auto-review",
@@ -1095,7 +1100,7 @@ public sealed class FilmJobService
         var sceneLabel = req.Scene is int sn && sn > 0 ? $"S{sn:D2}" : "all scenes";
         var mode = req.OnlyMissing ? "missing only" : "all clips";
         return StartBackgroundJobAsync(
-            ct => RunClipAutoReviewBatchAsync(req, ct),
+            ct => RunClipAutoReviewBatchAsync(req, projectId, ct),
             new JobEnqueueMeta
             {
                 Kind = "clip-auto-review-batch",
@@ -1109,12 +1114,9 @@ public sealed class FilmJobService
             lockReason: $"auto-review-batch {sceneLabel}");
     }
 
-    private async Task RunClipAutoReviewAsync(StartClipAutoReviewRequest req, CancellationToken ct)
+    private async Task RunClipAutoReviewAsync(StartClipAutoReviewRequest req, string projectId, CancellationToken ct)
     {
-        var projectId = string.IsNullOrWhiteSpace(req.ProjectId)
-            ? _projects.ActiveProjectId
-            : req.ProjectId;
-        await _projects.ActivateAsync(projectId, ct);
+        await _projects.RequireProjectAsync(projectId, ct);
 
         Snapshot = new JobSnapshot
         {
@@ -1169,12 +1171,9 @@ public sealed class FilmJobService
         }
     }
 
-    private async Task RunClipAutoReviewBatchAsync(StartClipAutoReviewBatchRequest req, CancellationToken ct)
+    private async Task RunClipAutoReviewBatchAsync(StartClipAutoReviewBatchRequest req, string projectId, CancellationToken ct)
     {
-        var projectId = string.IsNullOrWhiteSpace(req.ProjectId)
-            ? _projects.ActiveProjectId
-            : req.ProjectId;
-        await _projects.ActivateAsync(projectId, ct);
+        await _projects.RequireProjectAsync(projectId, ct);
 
         var coords = _reviewIndex.ListOnDiskClipCoords(projectId, req.Scene)
             .Where(c => !req.OnlyMissing || !_reviewIndex.HasDraft(projectId, c.Scene, c.Clip))
@@ -1277,12 +1276,9 @@ public sealed class FilmJobService
         }
     }
 
-    private async Task RunVoicePreviewAsync(StartVoicePreviewRequest req, CancellationToken ct)
+    private async Task RunVoicePreviewAsync(StartVoicePreviewRequest req, string projectId, CancellationToken ct)
     {
-        var projectId = string.IsNullOrWhiteSpace(req.ProjectId)
-            ? _projects.ActiveProjectId
-            : req.ProjectId;
-        await _projects.ActivateAsync(projectId, ct);
+        await _projects.RequireProjectAsync(projectId, ct);
 
         Snapshot = new JobSnapshot
         {
@@ -1350,7 +1346,7 @@ public sealed class FilmJobService
             ? _projects.ActiveProjectId
             : req.ProjectId;
         return StartBackgroundJobAsync(
-            ct => RunSortCharacterPlatesAsync(req, ct),
+            ct => RunSortCharacterPlatesAsync(req, projectId, ct),
             new JobEnqueueMeta
             {
                 Kind = "character-plates",
@@ -1361,12 +1357,9 @@ public sealed class FilmJobService
             lockReason: "character plates");
     }
 
-    private async Task RunSortCharacterPlatesAsync(AttachCharacterPlatesRequest req, CancellationToken ct)
+    private async Task RunSortCharacterPlatesAsync(AttachCharacterPlatesRequest req, string projectId, CancellationToken ct)
     {
-        var projectId = string.IsNullOrWhiteSpace(req.ProjectId)
-            ? _projects.ActiveProjectId
-            : req.ProjectId;
-        await _projects.ActivateAsync(projectId, ct);
+        await _projects.RequireProjectAsync(projectId, ct);
 
         Snapshot = new JobSnapshot
         {
@@ -1505,12 +1498,9 @@ public sealed class FilmJobService
         throw new InvalidOperationException($"Image not found: {imagePath}");
     }
 
-    private async Task RunCharacterVariantsAsync(StartCharacterVariantsRequest req, CancellationToken ct)
+    private async Task RunCharacterVariantsAsync(StartCharacterVariantsRequest req, string projectId, CancellationToken ct)
     {
-        var projectId = string.IsNullOrWhiteSpace(req.ProjectId)
-            ? _projects.ActiveProjectId
-            : req.ProjectId;
-        await _projects.ActivateAsync(projectId, ct);
+        await _projects.RequireProjectAsync(projectId, ct);
 
         Snapshot = new JobSnapshot
         {
@@ -1605,12 +1595,9 @@ public sealed class FilmJobService
         return 0;
     }
 
-    private async Task RunStage1Async(StartStage1Request req, CancellationToken ct)
+    private async Task RunStage1Async(StartStage1Request req, string projectId, CancellationToken ct)
     {
-        var projectId = string.IsNullOrWhiteSpace(req.ProjectId)
-            ? _projects.ActiveProjectId
-            : req.ProjectId;
-        await _projects.ActivateAsync(projectId, ct);
+        await _projects.RequireProjectAsync(projectId, ct);
 
         // Progress: 10 fixed phases (same scale as book_import) so the UI bar never sticks at
         // the "Total=0 → 35%" placeholder during a long single-pass adapt call.
@@ -1685,12 +1672,9 @@ public sealed class FilmJobService
         }
     }
 
-    private async Task RunStage2Async(StartStage2Request req, CancellationToken ct)
+    private async Task RunStage2Async(StartStage2Request req, string projectId, CancellationToken ct)
     {
-        var projectId = string.IsNullOrWhiteSpace(req.ProjectId)
-            ? _projects.ActiveProjectId
-            : req.ProjectId;
-        await _projects.ActivateAsync(projectId, ct);
+        await _projects.RequireProjectAsync(projectId, ct);
 
         Snapshot = new JobSnapshot
         {
@@ -1978,12 +1962,124 @@ public sealed class FilmJobService
         }
     }
 
-    private async Task RunBatchGenAsync(StartBatchGenRequest req, CancellationToken ct)
+    /// <summary>Upload the WIP movie to YouTube (resumable upload, youtube.upload scope).</summary>
+    public Task<JobSnapshot> StartYouTubeUploadAsync(StartYouTubeUploadRequest req)
     {
-        var projectId = string.IsNullOrWhiteSpace(req.ProjectId)
-            ? _projects.ActiveProjectId
-            : req.ProjectId;
-        await _projects.ActivateAsync(projectId, ct);
+        if (string.IsNullOrWhiteSpace(req.ProjectId))
+            throw new InvalidOperationException("projectId required");
+        var projectId = req.ProjectId;
+        return StartBackgroundJobAsync(
+            ct => RunYouTubeUploadAsync(req, projectId, ct),
+            new JobEnqueueMeta
+            {
+                Kind = "youtube_upload",
+                ProjectId = projectId,
+                Message = "Queued YouTube upload…",
+            },
+            lockResources: new[] { LockKeys.YouTube(projectId) },
+            lockReason: "youtube upload");
+    }
+
+    private async Task RunYouTubeUploadAsync(StartYouTubeUploadRequest req, string projectId, CancellationToken ct)
+    {
+        await _projects.RequireProjectAsync(projectId, ct);
+
+        Snapshot = new JobSnapshot
+        {
+            Status = "running",
+            Kind = "youtube_upload",
+            ProjectId = projectId,
+            Message = "Connecting to YouTube…",
+            Index = 0,
+            Total = 100,
+            StartedAt = DateTimeOffset.UtcNow,
+            Log = new List<string>(),
+        };
+        RegisterActiveJob();
+        await PublishAsync();
+
+        try
+        {
+            var path = _projects.ResolveWipMoviePath(projectId)
+                ?? throw new InvalidOperationException("No WIP movie to upload — rebuild WIP first.");
+
+            var youtube = await _youTube.GetServiceAsync(ct)
+                ?? throw new InvalidOperationException("YouTube is not connected — connect it from Review first.");
+
+            var title = string.IsNullOrWhiteSpace(req.Title) ? $"{projectId} — WIP" : req.Title.Trim();
+            var privacy = req.PrivacyStatus is "private" or "unlisted" or "public"
+                ? req.PrivacyStatus
+                : "unlisted";
+
+            var video = new Video
+            {
+                Snippet = new VideoSnippet
+                {
+                    Title = title,
+                    Description = req.Description ?? "",
+                    CategoryId = "1", // Film & Animation
+                },
+                Status = new VideoStatus { PrivacyStatus = privacy },
+            };
+
+            var bytes = new FileInfo(path).Length;
+            await AppendLogAsync($"Uploading {Path.GetFileName(path)} ({bytes / (1024 * 1024)} MB, {privacy})…");
+
+            await using var stream = File.OpenRead(path);
+            var upload = youtube.Videos.Insert(video, "snippet,status", stream, "video/mp4");
+            string? videoId = null;
+            upload.ResponseReceived += v => videoId = v.Id;
+            upload.ProgressChanged += p =>
+            {
+                var pct = bytes > 0 ? (int)Math.Clamp(p.BytesSent * 100 / bytes, 0, 100) : 0;
+                _ = UpdateAsync(s =>
+                {
+                    s.Index = pct;
+                    s.Total = 100;
+                    s.Message = p.Status switch
+                    {
+                        UploadStatus.Uploading => $"Uploading… {pct}%",
+                        UploadStatus.Completed => "Upload complete — finalizing…",
+                        UploadStatus.Failed => $"Upload failed: {p.Exception?.Message}",
+                        _ => s.Message,
+                    };
+                });
+            };
+
+            var result = await upload.UploadAsync(ct);
+            if (result.Status != UploadStatus.Completed || videoId is null)
+            {
+                if (ct.IsCancellationRequested)
+                    throw new OperationCanceledException(ct);
+                throw result.Exception ?? new InvalidOperationException($"YouTube upload failed: {result.Status}");
+            }
+
+            var url = $"https://youtu.be/{videoId}";
+            await _projects.SaveYouTubeUploadInfoAsync(projectId, new YouTubeUploadInfo
+            {
+                VideoId = videoId,
+                Url = url,
+                Title = title,
+                PrivacyStatus = privacy,
+                UploadedAt = DateTimeOffset.UtcNow,
+            }, ct);
+
+            await FinishAsync("done", $"Uploaded to YouTube: {url}");
+        }
+        catch (OperationCanceledException)
+        {
+            await FinishAsync("cancelled", "YouTube upload cancelled");
+        }
+        catch (Exception ex)
+        {
+            _log.LogError(ex, "YouTube upload failed for {ProjectId}", projectId);
+            await FinishAsync("error", ex.Message, ex.Message);
+        }
+    }
+
+    private async Task RunBatchGenAsync(StartBatchGenRequest req, string projectId, CancellationToken ct)
+    {
+        await _projects.RequireProjectAsync(projectId, ct);
 
         var hasClips = req.Clips is { Count: > 0 };
         var scenes = (hasClips ? req.Clips!.Select(c => c.Scene) : req.Scenes)
@@ -2167,12 +2263,9 @@ public sealed class FilmJobService
         }
     }
 
-    private async Task RunSceneGenAsync(StartSceneGenRequest req, CancellationToken ct)
+    private async Task RunSceneGenAsync(StartSceneGenRequest req, string projectId, CancellationToken ct)
     {
-        var projectId = string.IsNullOrWhiteSpace(req.ProjectId)
-            ? _projects.ActiveProjectId
-            : req.ProjectId;
-        await _projects.ActivateAsync(projectId, ct);
+        await _projects.RequireProjectAsync(projectId, ct);
 
         Snapshot = new JobSnapshot
         {

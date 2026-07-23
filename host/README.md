@@ -74,6 +74,7 @@ Open `host/FilmStudio.slnx`, set **multiple startup projects**: Api + Web.
 | POST | `/api/jobs/stage2` | Stage 2 clip plan |
 | POST | `/api/jobs/gen-scene` | Generate scene clips |
 | POST | `/api/jobs/remux` | Scene remux / WIP (ffmpeg progress over SignalR) |
+| POST | `/api/jobs/youtube-upload` | Upload the WIP movie to YouTube (resumable upload, SignalR progress) |
 | POST | `/api/jobs/cancel` | Cancel all / active |
 | GET | `/api/stage2-status` | Blueprint present? |
 
@@ -85,6 +86,32 @@ Events: `JobUpdated` (JobSnapshot), `JobLog` (string)
 ## Config
 
 `FilmStudio.Api/appsettings.json` → `FilmStudio:WorkspaceRoot` (empty = auto-detect repo root).
+
+### YouTube upload (Review screen)
+
+The Review screen's **Upload to YouTube** button uploads `assets/movie_wip.mp4` via the
+YouTube Data API v3 (resumable upload, `youtube.upload` scope). It's off by default — no
+button appears until an admin connects a channel. To enable it:
+
+1. In [Google Cloud Console](https://console.cloud.google.com/) → APIs & Services →
+   Credentials, create an **OAuth client ID** (Application type: **Web application**), and
+   enable the **YouTube Data API v3**.
+2. Add an authorized redirect URI matching your Api host, e.g.
+   `http://127.0.0.1:5088/api/youtube/oauth2callback`.
+3. Set in `FilmStudio.Api/appsettings.json` (or env vars
+   `FilmStudio__YouTube__ClientId` / `__ClientSecret` / `__RedirectUri`):
+   ```json
+   "FilmStudio": {
+     "YouTube": {
+       "ClientId": "...apps.googleusercontent.com",
+       "ClientSecret": "...",
+       "RedirectUri": "http://127.0.0.1:5088/api/youtube/oauth2callback"
+     }
+   }
+   ```
+4. Sign in as admin, open **Review**, click **Connect YouTube**, and approve access. The
+   refresh token is stored under `{workspace}/.filmstudio/youtube_token/` — one shared
+   channel per FilmStudio instance, not per-user.
 
 ## LoadSim (Phase E)
 

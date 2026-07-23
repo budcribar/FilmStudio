@@ -4,6 +4,7 @@
 @inject JobHubClient Hub
 @inject ActiveProjectState ActiveProject
 @inject AdminSessionService Session
+@inject NavigationManager Nav
 @using FilmStudio.Core.Models
 
 <PageTitle>Review</PageTitle>
@@ -89,12 +90,80 @@ else
                 title="@WipPlayTitle">
             @(_showWipPlayer && _wipExists && !_wipStale ? "Hide WIP player" : _wipStale || !_wipExists ? "▶ Play WIP (refresh)" : "▶ Play WIP")
         </button>
+        @if (_youTubeStatus?.Connected == true)
+        {
+            <button class="btn btn-outline-danger" data-testid="review-upload-youtube" disabled="@(_busy || JobRunning || !_wipExists)"
+                    @onclick="OpenYouTubeUploadDialog"
+                    title="@(_wipExists ? "Upload the current WIP movie to YouTube" : "Rebuild/play WIP first")">
+                Upload to YouTube
+            </button>
+        }
+        else if (Session.IsAdmin)
+        {
+            <button class="btn btn-outline-secondary" data-testid="review-connect-youtube" disabled="@(_busy || _youTubeStatus?.Configured != true)"
+                    @onclick="ConnectYouTubeAsync"
+                    title="@(_youTubeStatus?.Configured == true ? "Connect a YouTube channel to enable uploads" : "Set FilmStudio:YouTube:ClientId/ClientSecret/RedirectUri first")">
+                Connect YouTube
+            </button>
+        }
         @if (JobRunning)
         {
             <button class="btn btn-outline-danger" disabled="@_busy" @onclick="CancelAsync">Cancel job</button>
         }
     </div>
 </div>
+
+@if (_youTubeUpload is not null)
+{
+    <p class="small text-muted mb-3" data-testid="review-youtube-last-upload">
+        Last YouTube upload: <strong>@_youTubeUpload.Title</strong> (@_youTubeUpload.PrivacyStatus, @_youTubeUpload.UploadedAt.ToLocalTime().ToString("g")) —
+        <a href="@_youTubeUpload.Url" target="_blank" rel="noopener">@_youTubeUpload.Url</a>
+        @if (Session.IsAdmin)
+        {
+            <a href="#" class="ms-2" @onclick="DisconnectYouTubeAsync" @onclick:preventDefault="true">(disconnect channel)</a>
+        }
+    </p>
+}
+
+@if (_showYouTubeUploadDialog)
+{
+    <div class="modal fade show d-block" tabindex="-1" role="dialog" aria-modal="true"
+         style="background:rgba(0,0,0,.45);" @onclick="CloseYouTubeUploadDialog">
+        <div class="modal-dialog modal-dialog-centered" @onclick:stopPropagation="true">
+            <div class="modal-content">
+                <div class="modal-header py-2">
+                    <h5 class="modal-title">Upload WIP to YouTube</h5>
+                    <button type="button" class="btn-close" aria-label="Close" @onclick="CloseYouTubeUploadDialog"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-2">
+                        <label class="form-label small">Title</label>
+                        <input class="form-control form-control-sm" @bind="_youTubeTitle" maxlength="100" />
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label small">Description</label>
+                        <textarea class="form-control form-control-sm" rows="3" @bind="_youTubeDescription"></textarea>
+                    </div>
+                    <div class="mb-0">
+                        <label class="form-label small">Privacy</label>
+                        <select class="form-select form-select-sm" @bind="_youTubePrivacy">
+                            <option value="unlisted">Unlisted (link-only)</option>
+                            <option value="private">Private</option>
+                            <option value="public">Public</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer py-2">
+                    <button type="button" class="btn btn-sm btn-secondary" @onclick="CloseYouTubeUploadDialog">Cancel</button>
+                    <button type="button" class="btn btn-sm btn-danger" data-testid="review-upload-youtube-confirm"
+                            disabled="@_busy" @onclick="StartYouTubeUploadAsync">
+                        Upload
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
 
 @if (_showWipPlayer && _wipExists)
 {
@@ -576,6 +645,12 @@ else
     private string? _wipUpdatedAt;
     private long _wipBytes;
     private long _wipVideoKey;
+    private YouTubeStatusDto? _youTubeStatus;
+    private YouTubeUploadInfo? _youTubeUpload;
+    private bool _showYouTubeUploadDialog;
+    private string _youTubeTitle = "";
+    private string _youTubeDescription = "";
+    private string _youTubePrivacy = "unlisted";
 
     private string WipPlayTitle =>
         !_wipCanBuild && !_wipExists
@@ -625,6 +700,7 @@ else
     {
         Hub.JobUpdated += OnJobUpdated;
         Hub.JobLog += OnJobLog;
+        HandleYouTubeOAuthRedirect();
         try
         {
             var projs = await Engine.GetProjectsAsync();
@@ -757,6 +833,20 @@ else
                     if (_selectedScene == genSn)
                         await LoadSelectedDetailAsync(genSn);
                 }
+                else if (string.Equals(snap.Kind, "youtube_upload", StringComparison.OrdinalIgnoreCase))
+                {
+                    if (snap.Status == "done")
+                    {
+                        await RefreshYouTubeStatusAsync();
+                        _message = snap.Message ?? "Uploaded to YouTube";
+                        _error = null;
+                    }
+                    else if (snap.Status == "error")
+                    {
+                        _error = snap.Error ?? snap.Message ?? "YouTube upload failed";
+                        _message = null;
+                    }
+                }
                 StateHasChanged();
             });
         }
@@ -785,6 +875,7 @@ else
             var jobs = await Engine.GetJobAsync();
             _job = jobs?.Job;
             await RefreshWipMetaAsync();
+            await RefreshYouTubeStatusAsync();
             if (_selectedScene is int sn)
                 await LoadSelectedDetailAsync(sn);
         }
@@ -860,6 +951,16 @@ else
             _wipStale = true;
             _wipCanBuild = false;
         }
+    }
+
+    private async Task RefreshYouTubeStatusAsync()
+    {
+        try
+        {
+            _youTubeStatus = await Engine.GetYouTubeStatusAsync();
+            _youTubeUpload = await Engine.GetYouTubeUploadInfoAsync(_projectId);
+        }
+        catch { /* optional feature — ignore */ }
     }
 
     /// <summary>
@@ -1257,6 +1358,77 @@ else
             _job = jobs?.Job;
         }
         catch (Exception ex) { _error = ex.Message; }
+    }
+
+    private void HandleYouTubeOAuthRedirect()
+    {
+        var uri = new Uri(Nav.Uri);
+        var query = Microsoft.AspNetCore.WebUtilities.QueryHelpers.ParseQuery(uri.Query);
+        if (!query.TryGetValue("youtube", out var status))
+            return;
+        if (status == "connected")
+            _message = "YouTube channel connected";
+        else if (status == "error")
+            _error = query.TryGetValue("message", out var msg) ? msg.ToString() : "YouTube connect failed";
+        // Drop the one-shot query params so a page refresh doesn't re-show the toast.
+        Nav.NavigateTo(uri.GetLeftPart(UriPartial.Path), replace: true);
+    }
+
+    private void OpenYouTubeUploadDialog()
+    {
+        _youTubeTitle = string.IsNullOrWhiteSpace(_youTubeTitle) ? $"{_projectId} — WIP" : _youTubeTitle;
+        _showYouTubeUploadDialog = true;
+    }
+
+    private void CloseYouTubeUploadDialog() => _showYouTubeUploadDialog = false;
+
+    private async Task ConnectYouTubeAsync()
+    {
+        _busy = true;
+        _error = null;
+        try
+        {
+            var url = await Engine.GetYouTubeConnectUrlAsync();
+            Nav.NavigateTo(url, forceLoad: true);
+        }
+        catch (Exception ex) { _error = ex.Message; _busy = false; }
+    }
+
+    private async Task DisconnectYouTubeAsync()
+    {
+        _busy = true;
+        _error = null;
+        try
+        {
+            await Engine.DisconnectYouTubeAsync();
+            _message = "YouTube channel disconnected";
+            await RefreshYouTubeStatusAsync();
+        }
+        catch (Exception ex) { _error = ex.Message; }
+        finally { _busy = false; }
+    }
+
+    private async Task StartYouTubeUploadAsync()
+    {
+        _busy = true;
+        _error = null;
+        try
+        {
+            await EnsureHubAsync();
+            await Engine.StartYouTubeUploadAsync(new StartYouTubeUploadRequest
+            {
+                ProjectId = _projectId,
+                Title = _youTubeTitle,
+                Description = _youTubeDescription,
+                PrivacyStatus = _youTubePrivacy,
+            });
+            _showYouTubeUploadDialog = false;
+            _message = "Uploading to YouTube…";
+            var jobs = await Engine.GetJobAsync();
+            _job = jobs?.Job;
+        }
+        catch (Exception ex) { _error = ex.Message; }
+        finally { _busy = false; }
     }
 
     private Task EnsureHubAsync() => Hub.EnsureStartedAsync();

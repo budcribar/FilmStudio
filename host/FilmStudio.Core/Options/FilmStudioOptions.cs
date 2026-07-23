@@ -153,6 +153,22 @@ public sealed class FilmStudioOptions
     public CapacityOptions Capacity { get; set; } = new();
     public FakesOptions Fakes { get; set; } = new();
     public AuthOptions Auth { get; set; } = new();
+    public YouTubeOptions YouTube { get; set; } = new();
+}
+
+/// <summary>
+/// OAuth2 client for uploading the WIP movie to YouTube (Videos.Insert, youtube.upload
+/// scope). Create an "OAuth client ID" (Web application) in Google Cloud Console → APIs
+/// &amp; Services → Credentials, with <see cref="RedirectUri"/> added as an authorized
+/// redirect URI. One shared channel connection per FilmStudio instance (admin-managed via
+/// POST /api/youtube/connect), not per-user.
+/// </summary>
+public sealed class YouTubeOptions
+{
+    public string ClientId { get; set; } = "";
+    public string ClientSecret { get; set; } = "";
+    /// <summary>Must exactly match an authorized redirect URI on the OAuth client, e.g. https://host/api/youtube/oauth2callback.</summary>
+    public string RedirectUri { get; set; } = "";
 }
 
 /// <summary>ThreadPool pre-warm for sudden multi-user load (optional).</summary>
