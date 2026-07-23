@@ -2,14 +2,14 @@
 
 Map of project-local artifacts for manual whole-project review (e.g. point Claude/Codex at this folder). Zip export deferred; data lives here.
 
-Built: **2026-07-23 13:51:05Z** · Ready for manual final review: **no**
+Built: **2026-07-23 18:53:43Z** · Ready for manual final review: **no**
 
 ## Stats
 
-- **clipMp4Count**: 20
-- **sceneCompositeCount**: 2
-- **promptTxtCount**: 20
-- **promptMetaCount**: 20
+- **clipMp4Count**: 41
+- **sceneCompositeCount**: 5
+- **promptTxtCount**: 41
+- **promptMetaCount**: 41
 - **autoReviewDraftCount**: 0
 - **hasReviewIndex**: False
 - **reviewFrameCount**: 0
@@ -52,6 +52,9 @@ Built: **2026-07-23 13:51:05Z** · Ready for manual final review: **no**
 | yes | `artifact_index.json` | Machine-readable artifact presence map |
 | yes | `assets/video/scene_01.mp4.sources.json` | Scene remux include/exclude manifest |
 | yes | `assets/video/scene_02.mp4.sources.json` | Scene remux include/exclude manifest |
+| yes | `assets/video/scene_03.mp4.sources.json` | Scene remux include/exclude manifest |
+| yes | `assets/video/scene_04.mp4.sources.json` | Scene remux include/exclude manifest |
+| yes | `assets/video/scene_05.mp4.sources.json` | Scene remux include/exclude manifest |
 
 ## How to review manually (Claude / external AI)
 

@@ -26,7 +26,8 @@ else
 {
     <div class="alert alert-danger">@_error</div>
 }
-@if (!string.IsNullOrEmpty(_message))
+@* Don't stack a success banner under the live progress card *@
+@if (!string.IsNullOrEmpty(_message) && !JobRunning)
 {
     <div class="alert alert-info">@_message</div>
 }
@@ -158,28 +159,27 @@ else if (_showScenePlayer && _playingScene is int busySn && IsSceneGenBusy(busyS
     </div>
 }
 
-@* Operator: short gen progress only. Admin: full job card + log + My jobs. *@
-@if (ShowOperatorGenProgress && _job is not null)
+@* Live gen: one compact surface — status + bar + Cancel only (no badges, no Grok dump, no log). *@
+@if (ShowLiveGenProgress && _job is not null)
 {
-    <div class="card mb-3 border-primary">
-        <div class="card-body py-2 d-flex justify-content-between align-items-center flex-wrap gap-2">
-            <span class="small">
-                @OperatorGenStatusText(_job)
-                @if (_job.Total > 0)
-                {
-                    <span class="text-muted">· @_job.Index / @_job.Total</span>
-                    @if (KeyFormatting.EstimateTimeRemaining(_job.StartedAt, _job.Index, _job.Total) is { } eta)
-                    {
-                        <span class="text-muted">· @eta</span>
-                    }
-                }
-            </span>
-            <div class="d-flex gap-2">
-                @if (JobRunning)
-                {
-                    <button class="btn btn-sm btn-outline-danger" disabled="@_busy" @onclick="CancelAsync">Cancel</button>
-                }
-                <button class="btn btn-sm btn-outline-secondary" disabled="@_busy" @onclick="ReloadListAsync">Refresh</button>
+    <div class="card mb-3 border-primary" data-testid="scenes-gen-progress">
+        <div class="card-body py-2">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <span class="small">@LiveGenStatusLabel(_job)</span>
+                <button type="button"
+                        class="btn btn-sm btn-outline-danger"
+                        data-testid="scenes-gen-cancel"
+                        disabled="@_busy"
+                        @onclick="CancelAsync">Cancel</button>
+            </div>
+            @{
+                var pct = LiveGenProgressPercent(_job);
+            }
+            <div class="progress mt-2" style="height: 0.85rem;" role="progressbar"
+                 aria-valuenow="@pct" aria-valuemin="0" aria-valuemax="100"
+                 aria-label="@LiveGenStatusLabel(_job)">
+                <div class="progress-bar progress-bar-striped progress-bar-animated bg-primary"
+                     style="width: @pct%"></div>
             </div>
         </div>
     </div>
@@ -187,68 +187,38 @@ else if (_showScenePlayer && _playingScene is int busySn && IsSceneGenBusy(busyS
 else if (ShowOperatorGenPartial && _job is not null)
 {
     <div class="alert alert-warning py-2 d-flex justify-content-between align-items-center flex-wrap gap-2">
-        <span class="small">@(_job.Message ?? "Some clips finished; others failed.")</span>
+        <span class="small">Some clips finished; others failed. Refresh and retry the missing ones.</span>
         <button class="btn btn-sm btn-outline-secondary" disabled="@_busy" @onclick="ReloadListAsync">Refresh</button>
     </div>
 }
 else if (ShowOperatorGenError && _job is not null)
 {
     <div class="alert alert-danger py-2 d-flex justify-content-between align-items-center flex-wrap gap-2">
-        <span class="small">@(_job.Error ?? _job.Message ?? "Generation failed")</span>
+        <span class="small">Generation failed. Try again.</span>
         <button class="btn btn-sm btn-outline-secondary" disabled="@_busy" @onclick="ReloadListAsync">Refresh</button>
     </div>
 }
 else if (Session.IsAdmin && _job is not null &&
-         (_job.Status is "running" or "queued" or "done" or "partial" or "error" or "cancelled"))
+         (_job.Status is "done" or "partial" or "error" or "cancelled"))
 {
-    <div class="card mb-3 border-@(_job.Status is "running" or "queued" ? "primary" : _job.Status == "error" ? "danger" : _job.Status == "partial" ? "warning" : "secondary")">
+    @* Admin: finished-job summary only — no live log dump (that belonged under generating). *@
+    <div class="card mb-3 border-@(_job.Status == "error" ? "danger" : _job.Status == "partial" ? "warning" : "secondary")">
         <div class="card-body py-2">
             <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
-                <div>
-                    <span class="badge bg-secondary">@_job.Status</span>
-                    @if (_job.Kind is { Length: > 0 } k)
-                    {
-                        <span class="badge bg-info text-dark ms-1">@k</span>
-                    }
-                    @if (_job.Scene is int sn)
-                    {
-                        <span class="ms-1">S@(sn.ToString("D2"))</span>
-                    }
-                    @if (_job.Clip is int cn)
-                    {
-                        <span>C@cn</span>
-                    }
-                    @if (_job.Total > 0)
-                    {
-                        <span class="ms-1 text-muted">@_job.Index / @_job.Total</span>
-                        @if (KeyFormatting.EstimateTimeRemaining(_job.StartedAt, _job.Index, _job.Total) is { } eta)
-                        {
-                            <span class="ms-1 text-muted">· @eta</span>
-                        }
-                    }
-                    <span class="ms-2 small">@_job.Message</span>
-                </div>
-                <div class="d-flex gap-2">
-                    @if (_job.Status is "running" or "queued")
-                    {
-                        <button class="btn btn-sm btn-outline-danger" disabled="@_busy" @onclick="CancelAsync">Cancel</button>
-                    }
-                    <button class="btn btn-sm btn-outline-secondary" disabled="@_busy" @onclick="ReloadListAsync">Refresh list</button>
-                </div>
+                <span class="small">@(_job.Message ?? _job.Status)</span>
+                <button class="btn btn-sm btn-outline-secondary" disabled="@_busy" @onclick="ReloadListAsync">Refresh list</button>
             </div>
-            @if (_job.Status is "running" or "queued" && _job.Total > 0)
+            @if (_job.Log.Count > 0)
             {
-                var pct = (int)Math.Round(_job.Index * 100.0 / Math.Max(1, _job.Total));
-                <div class="progress mt-2" style="height: 0.85rem;" role="progressbar"
-                     aria-valuenow="@pct" aria-valuemin="0" aria-valuemax="100">
-                    <div class="progress-bar progress-bar-striped progress-bar-animated bg-primary"
-                         style="width: @(Math.Clamp(pct, 5, 100))%"></div>
-                </div>
-            }
-            @* Technical job log — admin only; operators get the terse status line above. *@
-            @if (Session.IsAdmin && _job.Log.Count > 0)
-            {
-                <pre class="small mb-0 mt-2" style="max-height: 120px; overflow: auto;">@string.Join("\n", _job.Log.TakeLast(20))</pre>
+                <button type="button"
+                        class="btn btn-sm btn-link text-muted p-0 mt-1 text-decoration-none"
+                        @onclick="() => _showAdminJobLog = !_showAdminJobLog">
+                    @(_showAdminJobLog ? "Hide details" : "Details (admin)")
+                </button>
+                @if (_showAdminJobLog)
+                {
+                    <pre class="small mb-0 mt-1" style="max-height: 120px; overflow: auto;">@string.Join("\n", _job.Log.TakeLast(20))</pre>
+                }
             }
         </div>
     </div>
@@ -954,6 +924,11 @@ else
     private readonly HashSet<int> _selectedClips = new();
     private JobSnapshot? _job;
     private List<JobSnapshot> _myJobs = new();
+    /// <summary>Admin-only: expand finished-job log under the compact result card.</summary>
+    private bool _showAdminJobLog;
+    /// <summary>Highest progress % shown for the current job — bar never bounces backward.</summary>
+    private int _progressFloor;
+    private string? _progressFloorJobId;
     private bool _wipExists;
     private bool _wipStale;
     private bool _wipCanBuild;
@@ -1057,8 +1032,11 @@ else
     private static bool IsScenesWorkflowJob(string? kind) =>
         kind is "scene" or "batch" or "remux";
 
-    private bool ShowOperatorGenProgress =>
-        !Session.IsAdmin &&
+    /// <summary>
+    /// One compact progress card while video work runs — operators and admin.
+    /// No badges, provider names, raw engine message, or live log.
+    /// </summary>
+    private bool ShowLiveGenProgress =>
         _job is not null &&
         IsScenesWorkflowJob(_job.Kind) &&
         (_job.Status is "running" or "queued");
@@ -1075,14 +1053,85 @@ else
         IsScenesWorkflowJob(_job.Kind) &&
         string.Equals(_job.Status, "partial", StringComparison.OrdinalIgnoreCase);
 
-    private static string OperatorGenStatusText(JobSnapshot job) => job.Kind switch
+    /// <summary>Short outcome label for the live bar (no provider / path / status dump).</summary>
+    private static string LiveGenStatusLabel(JobSnapshot job)
     {
-        "remux" => "Combining video…",
-        "batch" => "Generating clips…",
-        "scene" when job.Clip is int => "Generating clip…",
-        "scene" => "Generating scene…",
-        _ => "Working…",
-    };
+        var kind = job.Kind ?? "";
+        if (string.Equals(job.Status, "queued", StringComparison.OrdinalIgnoreCase))
+            return "Waiting…";
+
+        if (string.Equals(kind, "remux", StringComparison.OrdinalIgnoreCase))
+        {
+            var msg = job.Message ?? "";
+            // Engine already sends short operator lines for remux ("Combining scene 2 of 5…").
+            if (msg.StartsWith("Combining", StringComparison.OrdinalIgnoreCase) ||
+                msg.StartsWith("Measuring", StringComparison.OrdinalIgnoreCase))
+                return msg.Length > 80 ? msg[..77] + "…" : msg;
+            return "Combining video…";
+        }
+
+        if (job.Total > 0 &&
+            !string.Equals(kind, "remux", StringComparison.OrdinalIgnoreCase))
+        {
+            // Clip gen: Index is current clip (1..Total).
+            var display = job.Index <= 0 ? 1 : Math.Min(job.Index, job.Total);
+            return $"Generating… {display} of {job.Total}";
+        }
+
+        if (string.Equals(kind, "scene", StringComparison.OrdinalIgnoreCase) && job.Clip is int)
+            return "Generating clip…";
+        if (string.Equals(kind, "scene", StringComparison.OrdinalIgnoreCase))
+            return "Generating scene…";
+        if (string.Equals(kind, "batch", StringComparison.OrdinalIgnoreCase))
+            return "Generating clips…";
+        return "Generating…";
+    }
+
+    /// <summary>
+    /// Progress percent while running. Remux uses a fixed 0–100 scale and is monotonic
+    /// (no soft-crawl / waiting math that made the bar bounce during ffmpeg).
+    /// </summary>
+    private int LiveGenProgressPercent(JobSnapshot job)
+    {
+        // New job id → reset floor so a finished 92% doesn't pin the next job.
+        var jid = job.JobId ?? "";
+        if (!string.Equals(jid, _progressFloorJobId, StringComparison.Ordinal))
+        {
+            _progressFloorJobId = jid;
+            _progressFloor = 0;
+        }
+
+        int pct;
+        var kind = job.Kind ?? "";
+        if (string.Equals(kind, "remux", StringComparison.OrdinalIgnoreCase))
+        {
+            // Engine: Total=100, Index=0..99 while running (FinishAsync → 100).
+            var total = job.Total > 0 ? job.Total : 100;
+            var index = Math.Clamp(job.Index, 0, total);
+            pct = (int)Math.Round(100.0 * index / total);
+            pct = Math.Clamp(pct, 5, 92);
+        }
+        else
+        {
+            var total = job.Total;
+            var index = Math.Max(0, job.Index);
+            // Clip gen: do not treat as "waiting" soft-crawl — discrete clip steps only.
+            // (IsJobInFlightMessage soft-crawl is for long screenplay LLM calls.)
+            pct = AdaptationPageBase.ComputeProgressPercent(
+                displayIndex: index,
+                total: total,
+                waiting: string.Equals(job.Status, "queued", StringComparison.OrdinalIgnoreCase),
+                jobRunning: true,
+                startedAt: job.StartedAt);
+        }
+
+        // Monotonic while the same job runs — never bounce backward on mid-phase resets.
+        if (pct < _progressFloor)
+            pct = _progressFloor;
+        else
+            _progressFloor = pct;
+        return pct;
+    }
 
     private bool SelectedLockedByOther =>
         _scenes is not null &&
@@ -1310,9 +1359,17 @@ else
 
     private void OnJobLog(string line)
     {
-        if (_job is not null)
-            _job.Message = line;
-        _ = InvokeAsync(StateHasChanged);
+        // Keep log for admin "Details" after finish — never push raw engine lines into the live status.
+        if (_job is not null && !string.IsNullOrWhiteSpace(line))
+        {
+            _job.Log.Add(line);
+            if (_job.Log.Count > 200)
+                _job.Log.RemoveRange(0, _job.Log.Count - 200);
+        }
+        // No StateHasChanged while running — Index/Total come from JobUpdated; avoid thrashing UI on every log line.
+        if (_job is not null &&
+            (_job.Status is "done" or "partial" or "error" or "cancelled"))
+            _ = InvokeAsync(StateHasChanged);
     }
 
     private async Task OnProjectChangedAsync()
@@ -1563,12 +1620,14 @@ else
         {
             _busy = true;
             _error = null;
+            _message = null;
+            _progressFloor = 0;
+            _progressFloorJobId = null;
             try
             {
                 await EnsureHubAsync();
                 _playSceneAfterRemux = sn;
                 await Engine.StartRemuxAsync(_projectId, sn, rebuildWip: false);
-                _message = $"Rebuilding S{sn:D2} composite then play…";
                 var jobs = await Engine.GetJobAsync();
                 _job = jobs?.Job;
             }
@@ -1602,6 +1661,8 @@ else
         _busy = true;
         _error = null;
         _message = null;
+        _progressFloor = 0;
+        _progressFloorJobId = null;
         // Hide any open scene player so rebuild shows progress, not dual/stale playback.
         _playSceneAfterRemux = null;
         if (_playingScene == sn || _showScenePlayer)
@@ -1613,7 +1674,7 @@ else
         {
             await EnsureHubAsync();
             await Engine.StartRemuxAsync(_projectId, sn, rebuildWip: false);
-            _message = $"Rebuilding S{sn:D2} scene composite…";
+            // Live progress card only — no duplicate banner under the bar.
             var jobs = await Engine.GetJobAsync();
             _job = jobs?.Job;
         }
@@ -1699,11 +1760,12 @@ else
         _busy = true;
         _error = null;
         _message = null;
+        _showAdminJobLog = false;
         _pendingRegenScene = sn;
         try
         {
             await Engine.StartSceneGenAsync(_projectId, sn, _onlyMissing, resolution: _genResolution);
-            _message = $"Started scene {sn} @ {_genResolution}";
+            // Live progress card only — no duplicate "started" banner.
             await EnsureHubAsync();
             var jobs = await Engine.GetJobAsync();
             _job = jobs?.Job;
@@ -1724,11 +1786,12 @@ else
         _busy = true;
         _error = null;
         _message = null;
+        _showAdminJobLog = false;
         try
         {
             var list = _selected.OrderBy(x => x).ToList();
             await Engine.StartBatchGenAsync(_projectId, list, _onlyMissing, resolution: _genResolution);
-            _message = $"Started batch for {list.Count} scene(s) @ {_genResolution}";
+            // Live progress card only — no duplicate "started" banner.
             await EnsureHubAsync();
             var jobs = await Engine.GetJobAsync();
             _job = jobs?.Job;
@@ -1846,12 +1909,14 @@ else
 
         _busy = true;
         _error = null;
+        _message = null;
+        _progressFloor = 0;
+        _progressFloorJobId = null;
         try
         {
             await EnsureHubAsync();
             _playWipAfterRemux = true;
             await Engine.StartRemuxAsync(_projectId, scene: null, rebuildWip: true, refreshStaleScenes: true);
-            _message = $"Auto-remux then play… {_wipReason}";
             var jobs = await Engine.GetJobAsync();
             _job = jobs?.Job;
         }

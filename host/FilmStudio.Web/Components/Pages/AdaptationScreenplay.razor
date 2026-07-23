@@ -682,8 +682,11 @@
         }
 
         Busy = true;
-        BusyMessage = "Drafting screenplay…";
+        BusyMessage = "Writing screenplay…";
         Error = null;
+        Message = null;
+        ProgressIndex = 0;
+        ProgressTotal = 10;
         await InvokeAsync(StateHasChanged);
         try
         {
@@ -695,23 +698,23 @@
                 forceVision: false,
                 autoVision: false,
                 model: Model);
-            // Poll until draft job finishes (same path as Import adapt phase)
+            var jobs0 = await Engine.GetJobAsync();
+            Job = jobs0?.Job;
+            AbsorbProgressFromSnapshot(Job ?? new JobSnapshot());
+            // Shared poller re-renders soft progress while the long draft call is quiet.
+            StartJobPolling();
+            // Wait until draft job finishes (poller keeps Job + bar live)
             for (var i = 0; i < 3600; i++)
             {
-                var jobs = await Engine.GetJobAsync();
-                var snap = jobs?.Job;
+                var snap = Job;
                 if (snap is not null)
                 {
-                    Job = snap;
-                    if (!string.IsNullOrWhiteSpace(snap.Message))
-                        BusyMessage = snap.Message.Contains("chunk", StringComparison.OrdinalIgnoreCase)
-                            ? "Writing screenplay…"
-                            : "Drafting screenplay…";
+                    BusyMessage = AdaptationPageBase.OperatorJobRunningMessage(snap);
                     await InvokeAsync(StateHasChanged);
                     var st = snap.Status ?? "";
                     if (st is "error" or "cancelled")
                     {
-                        Error = snap.Error ?? snap.Message ?? "Could not create draft";
+                        Error = snap.Error ?? snap.Message ?? "Could not create draft. Try again.";
                         return;
                     }
                     if (st == "done" &&

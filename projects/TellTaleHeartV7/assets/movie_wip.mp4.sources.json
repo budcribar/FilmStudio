@@ -1,6 +1,6 @@
 {
-  "builtAtUtc": "2026-07-23T13:51:05.2540684Z",
-  "count": 2,
+  "builtAtUtc": "2026-07-23T18:53:43.1788628Z",
+  "count": 5,
   "sources": [
     {
       "name": "scene_01.mp4",
@@ -12,8 +12,29 @@
     {
       "name": "scene_02.mp4",
       "scene": 2,
-      "bytes": 2716447,
-      "mtimeUtc": "2026-07-23T13:50:58.9967639Z",
+      "bytes": 2084692,
+      "mtimeUtc": "2026-07-23T18:53:22.5732883Z",
+      "kind": "scene_composite"
+    },
+    {
+      "name": "scene_03.mp4",
+      "scene": 3,
+      "bytes": 3279721,
+      "mtimeUtc": "2026-07-23T18:53:24.9915760Z",
+      "kind": "scene_composite"
+    },
+    {
+      "name": "scene_04.mp4",
+      "scene": 4,
+      "bytes": 4045107,
+      "mtimeUtc": "2026-07-23T18:53:27.7904883Z",
+      "kind": "scene_composite"
+    },
+    {
+      "name": "scene_05.mp4",
+      "scene": 5,
+      "bytes": 5942523,
+      "mtimeUtc": "2026-07-23T18:53:31.9184061Z",
       "kind": "scene_composite"
     }
   ],
@@ -28,8 +49,29 @@
     {
       "name": "scene_02.mp4",
       "scene": 2,
-      "bytes": 2716447,
-      "mtimeUtc": "2026-07-23T13:50:58.9967639Z",
+      "bytes": 2084692,
+      "mtimeUtc": "2026-07-23T18:53:22.5732883Z",
+      "kind": "scene_composite"
+    },
+    {
+      "name": "scene_03.mp4",
+      "scene": 3,
+      "bytes": 3279721,
+      "mtimeUtc": "2026-07-23T18:53:24.9915760Z",
+      "kind": "scene_composite"
+    },
+    {
+      "name": "scene_04.mp4",
+      "scene": 4,
+      "bytes": 4045107,
+      "mtimeUtc": "2026-07-23T18:53:27.7904883Z",
+      "kind": "scene_composite"
+    },
+    {
+      "name": "scene_05.mp4",
+      "scene": 5,
+      "bytes": 5942523,
+      "mtimeUtc": "2026-07-23T18:53:31.9184061Z",
       "kind": "scene_composite"
     }
   ],
@@ -53,7 +95,7 @@
     16,
     17
   ],
-  "blueprintMtimeUtc": "2026-07-23T12:26:42.8484331Z",
+  "blueprintMtimeUtc": "2026-07-23T18:36:40.9822478Z",
   "assemblyGate": true,
   "note": "WIP concatenates scene composites. Clip include/exclude decisions live on each scene_XX.mp4.sources.json (assembly gate applied at remux)."
 }

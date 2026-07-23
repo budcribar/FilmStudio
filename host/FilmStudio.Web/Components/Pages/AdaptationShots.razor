@@ -9,64 +9,76 @@
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
                 <span>Shot plan</span>
-                @if (Status.Stage2.Stage2Ready && !Status.Stage2.Stage2Stale)
+                @if (!JobRunning && Status.Stage2.Stage2Ready && !Status.Stage2.Stage2Stale)
                 {
                     <span class="small text-muted">
                         <strong>@Status.Stage2.Stage2Scenes</strong> scenes ·
                         <strong>@Status.Stage2.Stage2Clips</strong> clips
-                        @if (!string.IsNullOrEmpty(Status.Stage2.LastCompletedAt))
-                        {
-                            <span>· @Status.Stage2.LastCompletedAt</span>
-                        }
                     </span>
                 }
-                else if (Status.Stage2.Stage2Stale)
+                else if (!JobRunning && Status.Stage2.Stage2Stale)
                 {
                     <span class="badge bg-warning text-dark">needs update</span>
                 }
             </div>
             <div class="card-body">
-                @if (!Status.Stage1.Present || Status.Stage1.SceneCount <= 0)
+                @* Status alerts only when idle — during a job the progress card is the single surface *@
+                @if (!JobRunning)
                 {
-                    <div class="alert alert-secondary py-2 small mb-3">
-                        Approve the <a href="adaptation/screenplay">screenplay</a> first.
-                    </div>
-                }
-                else if (Status.Stage2.Stage2Stale)
-                {
-                    <div class="alert alert-warning py-2 small mb-3">
-                        Screenplay changed — update the shot plan before making video.
-                    </div>
-                }
-                else if (!Status.Stage2.Stage2Ready)
-                {
-                    <div class="alert alert-warning py-2 small mb-3">
-                        Screenplay has @Status.Stage2.Stage1Scenes scene(s) but no shot plan yet.
-                    </div>
+                    @if (!Status.Stage1.Present || Status.Stage1.SceneCount <= 0)
+                    {
+                        <div class="alert alert-secondary py-2 small mb-3">
+                            Approve the <a href="adaptation/screenplay">screenplay</a> first.
+                        </div>
+                    }
+                    else if (Status.Stage2.Stage2Stale)
+                    {
+                        <div class="alert alert-warning py-2 small mb-3">
+                            Screenplay changed — update the shot plan before making video.
+                        </div>
+                    }
+                    else if (!Status.Stage2.Stage2Ready)
+                    {
+                        <div class="alert alert-warning py-2 small mb-3">
+                            Screenplay has @Status.Stage2.Stage1Scenes scene(s) but no shot plan yet.
+                        </div>
+                    }
                 }
 
-                <div class="d-flex flex-wrap gap-2 align-items-center">
-                    <button class="btn btn-primary"
-                            data-testid="shots-build"
-                            disabled="@(Busy || JobRunning || !Status.Stage2.Stage1Exists)"
-                            @onclick="RunShotsAsync">
-                        @(Status.Stage2.Stage2Ready
-                            ? (Status.Stage2.Stage2Stale ? "▶ Update shot plan" : "🔁 Rebuild shot plan")
-                            : "▶ Build shot plan")
-                    </button>
-                    <a class="btn btn-outline-secondary" data-testid="shots-to-characters" href="characters">← Characters</a>
-                    @if (Status.Stage2.Stage2Ready && !Status.Stage2.Stage2Stale)
-                    {
-                        <a class="btn btn-outline-primary" data-testid="shots-to-scenes" href="scenes">Open Scenes →</a>
-                    }
+                @* While building: only Cancel (in job panel) is interactive — hide other actions. *@
+                @if (!JobRunning)
+                {
+                    <div class="d-flex flex-wrap gap-2 align-items-center">
+                        <button class="btn btn-primary"
+                                data-testid="shots-build"
+                                disabled="@(Busy || !Status.Stage2.Stage1Exists)"
+                                @onclick="RunShotsAsync">
+                            @(Status.Stage2.Stage2Ready
+                                ? (Status.Stage2.Stage2Stale ? "Update shot plan" : "Rebuild shot plan")
+                                : "Build shot plan")
+                        </button>
+                        @if (Status.Stage2.Stage2Ready && !Status.Stage2.Stage2Stale)
+                        {
+                            <a class="btn btn-outline-primary" data-testid="shots-to-scenes" href="scenes">Open Scenes</a>
+                        }
+                        <div data-testid="shots-status"
+                             data-ready="@(Status.Stage2.Stage2Ready && !Status.Stage2.Stage2Stale ? "true" : "false")"
+                             data-scenes="@Status.Stage2.Stage2Scenes"
+                             data-clips="@Status.Stage2.Stage2Clips"
+                             class="visually-hidden"
+                             aria-hidden="true"></div>
+                    </div>
+                }
+                else
+                {
                     <div data-testid="shots-status"
-                         data-ready="@(Status.Stage2.Stage2Ready && !Status.Stage2.Stage2Stale ? "true" : "false")"
+                         data-ready="false"
+                         data-building="true"
                          data-scenes="@Status.Stage2.Stage2Scenes"
                          data-clips="@Status.Stage2.Stage2Clips"
                          class="visually-hidden"
                          aria-hidden="true"></div>
-                    <a class="btn btn-outline-secondary" href="adaptation/screenplay">Screenplay</a>
-                </div>
+                }
             </div>
         </div>
     }

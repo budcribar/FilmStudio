@@ -1,0 +1,23 @@
+{
+  "projectId": "TellTaleHeartV7",
+  "scene": 5,
+  "clip": 3,
+  "mode": "video-extend",
+  "castCount": 1,
+  "onScreenKeys": [
+    "Character_The_Narrator"
+  ],
+  "characterKeys": [
+    "Character_The_Narrator"
+  ],
+  "refs": [],
+  "refsAttachedToApi": false,
+  "styleHead": "STYLE LOCK: Period gothic live-action, mid-19th-century interiors; candlelight and deep shadows; desaturated cool-gray palette; naturalistic skin and fabric texture; no illustration or stylized animation",
+  "castCountLine": "CAST COUNT: exactly 1 distinct on-screen character identity(ies) only \u2014 Character_The_Narrator. Do not invent extra people, duplicate faces, or crowd extras not listed.",
+  "actionText": "INT. HALL OUTSIDE BEDCHAMBER - NIGHT. Midnight. A dark lantern, fully closed, in THE NARRATOR\u0027s hand. He turns the latch-oh, so gently-and eases the door open a crack. He slides the lantern in, then, inch by inch. OFF-CAMERA VOICEOVER Character_The_Narrator says \u0022And then, when I had made an opening sufficient for my head, I put in\u0022. Character_The_Narrator still wears loose dark nightshirt, soft slippers, quiet tread Camera directive: Medium shot over narrator\u0027s shoulder as door cracks open, 35mm lens, slow push toward the dark gap. Performance: Acting intensity 6/10: Intense focused stare with jaw clenched rigid and brows lifted Optics: f/2.0 shallow depth of field, soft environmental falloff Color grading: Kodak Vision3 500T 5219, near-black voids, cold blue-steel shadows, sparse warm amber lantern spill",
+  "prompt": "STYLE LOCK: Period gothic live-action, mid-19th-century interiors; candlelight and deep shadows; desaturated cool-gray palette; naturalistic skin and fabric texture; no illustration or stylized animation\r\n\r\nCHARACTER VARIABLES (use these identities consistently; do not redesign faces or wardrobe):\r\n- Character_The_Narrator [The Narrator]: Lean man of middle years (about 40\u201350), pale sallow skin, hollow cheeks, dark disordered medium-length hair, bright intense dark eyes, thin tense mouth; plain dark wool waistcoat over white shirtsleeves, dark trousers; period clothing. Visual lock: Same lean pale face, dark disordered hair, and bright intense dark eyes in every scene; always plain dark waistcoat and shirtsleeves as default; never elderly, never white-haired, never the filmed blue eye. Voice: Male, middle years; medium-high tense pitch; precise, controlled pace that sharpens into fevered urgency; intimate confessional energy, same voice on-camera and in V.O.\r\n\r\nCAST COUNT: exactly 1 distinct on-screen character identity(ies) only \u2014 Character_The_Narrator. Do not invent extra people, duplicate faces, or crowd extras not listed.\r\n\r\nAUDIO: REQUIRED native Grok off-camera voiceover. Character_The_Narrator narrates exactly: \u0022And then, when I had made an opening sufficient for my head, I put in\u0022. Start speaking immediately with \u0022And\u0022 \u2014 do not skip, delay, or swallow the opening word. After the last word, hold a brief natural pause with a closed mouth (about half a second); do not freeze mid-syllable or trail into empty staring. Do not lip-sync on-screen cast to this VO. Ambient/Foley: door open, lantern slide, latch turn. VOICE LOCK Character_The_Narrator: Male, middle years; medium-high tense pitch; precise, controlled pace that sharpens into fevered urgency; intimate confessional energy, same voice on-camera and in V.O.\r\n\r\nPREVIOUS CLIP (already provided as video input \u2014 continue from its last frame):\nINT. HALL OUTSIDE BEDCHAMBER - NIGHT. Midnight. A dark lantern, fully closed, in THE NARRATOR\u0027s hand. He turns the latch-oh, so gently-and eases the door open a crack. He slides the lantern in, then, inch by inch. OFF-CAMERA VOICEOVER Character_The_Narrator says \u0022oh, so gently!\u0022. Character_The_Narrator still wears loose dark nightshirt, soft slippers, quiet tread Camera directive: Extreme close-up of fingers easing the latch, 100mm macro, shallow focus on metal click suppressed. Performance: Acting intensity 6/10: Wide gleaming eyes and exaggerated soft smile frozen unnaturally tight Optics: f/1.4 shallow depth of field, creamy soft bokeh Color grading: Kodak Vision3 500T 5219, near-black voids, cold blue-steel shadows, sparse warm amber lantern spill\n[prompt shortened after API length limit \u2014 retry]",
+  "promptLen": 2742,
+  "promptLogSummary": "mode=video-extend chars=1 onScreen=1 refs=0 startFrame=no promptLen=2742 prevVideo=_prev_extend_s05c03.mp4 \u00B7 learning-addenda \u00B7 pre-budget 5374\u21922742",
+  "startFrame": null,
+  "builtAtUtc": "2026-07-23T18:47:30.5818044\u002B00:00"
+}

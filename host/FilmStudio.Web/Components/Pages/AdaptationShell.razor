@@ -15,22 +15,26 @@
 </div>
 <p class="text-muted mb-3">Import → screenplay → characters → shot plan → scenes.</p>
 
-@* ---- Step strip ---- *@
+@* ---- Step strip (frozen while a job runs — only Cancel in the progress card is live) ---- *@
+@{
+    var stepsLocked = Host.JobRunning;
+}
 <nav class="nav nav-pills flex-wrap gap-1 mb-3" aria-label="Adaptation steps">
-    <a class="nav-link @(Step == "import" || Step == "book" ? "active" : "")"
-       href="adaptation/import">1 · Import</a>
-    <a class="nav-link @(Step == "screenplay" ? "active" : "") @(!OutlineEnabled ? "disabled" : "")"
-       href="@(OutlineEnabled ? "adaptation/screenplay" : "adaptation/import")"
-       @onclick:preventDefault="@(!OutlineEnabled)"
-       title="@(OutlineEnabled ? null : "Import a source first")">2 · Screenplay</a>
-    <a class="nav-link @(Step == "characters" ? "active" : "") @(!ShotsEnabled ? "disabled" : "")"
-       href="@(ShotsEnabled ? "characters" : "adaptation/screenplay")"
-       @onclick:preventDefault="@(!ShotsEnabled)"
-       title="@(ShotsEnabled ? "Pin cast likeness before clips" : "Approve a screenplay first")">3 · Characters</a>
-    <a class="nav-link @(Step == "shots" ? "active" : "") @(!ShotsEnabled ? "disabled" : "")"
-       href="@(ShotsEnabled ? "adaptation/shots" : "adaptation/screenplay")"
-       @onclick:preventDefault="@(!ShotsEnabled)"
-       title="@(ShotsEnabled ? null : "Approve a screenplay first")">4 · Shot plan</a>
+    <a class="nav-link @(Step == "import" || Step == "book" ? "active" : "") @(stepsLocked ? "disabled" : "")"
+       href="@(stepsLocked ? "javascript:void(0)" : "adaptation/import")"
+       @onclick:preventDefault="stepsLocked">1 · Import</a>
+    <a class="nav-link @(Step == "screenplay" ? "active" : "") @(!OutlineEnabled || stepsLocked ? "disabled" : "")"
+       href="@(!OutlineEnabled || stepsLocked ? "javascript:void(0)" : "adaptation/screenplay")"
+       @onclick:preventDefault="@(!OutlineEnabled || stepsLocked)"
+       title="@(stepsLocked ? "Wait for the current job to finish" : OutlineEnabled ? null : "Import a source first")">2 · Screenplay</a>
+    <a class="nav-link @(Step == "characters" ? "active" : "") @(!ShotsEnabled || stepsLocked ? "disabled" : "")"
+       href="@(!ShotsEnabled || stepsLocked ? "javascript:void(0)" : "characters")"
+       @onclick:preventDefault="@(!ShotsEnabled || stepsLocked)"
+       title="@(stepsLocked ? "Wait for the current job to finish" : ShotsEnabled ? "Pin cast likeness before clips" : "Approve a screenplay first")">3 · Characters</a>
+    <a class="nav-link @(Step == "shots" ? "active" : "") @(!ShotsEnabled || stepsLocked ? "disabled" : "")"
+       href="@(!ShotsEnabled || stepsLocked ? "javascript:void(0)" : "adaptation/shots")"
+       @onclick:preventDefault="@(!ShotsEnabled || stepsLocked)"
+       title="@(stepsLocked ? "Wait for the current job to finish" : ShotsEnabled ? null : "Approve a screenplay first")">4 · Shot plan</a>
 </nav>
 
 @if (!string.IsNullOrEmpty(Host.Error))
@@ -60,62 +64,62 @@
     </div>
 }
 
-@* Job panel: skip on Import (progress lives in the Import card). Show on screenplay/shots. *@
+@* Job panel: progress + Cancel only while running. Admin can expand Details. *@
 @if (ShowJobPanel)
 {
-    <div class="card mb-3 border-@(Host.Job!.Status == "running" ? "primary" : Host.Job.Status == "error" ? "danger" : "secondary")"
+    <div class="card mb-3 border-@(Host.Job!.Status is "running" or "queued" ? "primary" : Host.Job.Status == "error" ? "danger" : "secondary")"
          data-testid="job-panel"
          data-job-status="@Host.Job.Status"
          data-job-kind="@(Host.Job.Kind ?? "")"
          data-job-running="@(Host.JobRunning ? "true" : "false")">
         <div class="card-body py-2">
+            @{
+                var (jobIdx, jobTot, waiting, displayIdx) = AdaptationPageBase.ComputeJobProgress(
+                    Host.Job, Host.ProgressIndex, Host.ProgressTotal, Host.JobRunning);
+            }
             <div class="d-flex justify-content-between flex-wrap gap-2 align-items-center">
-                <div>
+                <div class="small">
                     <span class="visually-hidden" data-testid="job-status">@Host.Job.Status</span>
-                    @{
-                        var (jobIdx, jobTot, waiting, displayIdx) = AdaptationPageBase.ComputeJobProgress(
-                            Host.Job, Host.ProgressIndex, Host.ProgressTotal, Host.JobRunning);
-                    }
-                    @if (jobTot > 0)
+                    @if (Host.JobRunning)
                     {
-                        <span class="small text-muted me-2">
-                            @displayIdx / @jobTot completed
-                            @if (waiting)
-                            {
-                                <text> · in progress</text>
-                            }
-                        </span>
+                        <span>@AdaptationPageBase.OperatorJobRunningMessage(Host.Job)</span>
                     }
-                    <span class="small">@Host.Job.Message</span>
-                    @if (Host.Job.Log.Count > 0)
+                    else
                     {
-                        <button type="button"
-                                class="btn btn-sm btn-link text-muted p-0 ms-2 text-decoration-none"
-                                @onclick="() => _showHistory = !_showHistory"
-                                title="Toggle job history log">
-                            @(_showHistory ? "▲ Hide history" : "▼ History")
-                        </button>
+                        <span>@AdaptationPageBase.OperatorJobDoneMessage(Host.Job)</span>
                     }
                 </div>
                 @if (Host.JobRunning)
                 {
-                    <button class="btn btn-sm btn-outline-danger" disabled="@Host.Busy" @onclick="Host.CancelAsync">Cancel</button>
+                    <button type="button"
+                            class="btn btn-sm btn-outline-danger"
+                            data-testid="job-cancel"
+                            @onclick="Host.CancelAsync">Cancel</button>
                 }
             </div>
             @if (Host.JobRunning)
             {
-                var pct = AdaptationPageBase.ComputeProgressPercent(displayIdx, jobTot, waiting, Host.JobRunning);
+                var pct = AdaptationPageBase.ComputeProgressPercent(
+                    displayIdx, jobTot, waiting, Host.JobRunning, Host.Job.StartedAt);
                 <div class="progress mt-2" style="height: 0.85rem;" role="progressbar"
-                     aria-valuenow="@pct" aria-valuemin="0" aria-valuemax="100">
+                     aria-valuenow="@pct" aria-valuemin="0" aria-valuemax="100"
+                     aria-label="@AdaptationPageBase.OperatorJobRunningMessage(Host.Job)">
                     <div class="progress-bar progress-bar-striped progress-bar-animated bg-primary"
-                         style="width: @pct%">
-                        <span class="small">@pct%</span>
-                    </div>
+                         style="width: @pct%"></div>
                 </div>
             }
-            @if (_showHistory && Host.Job.Log.Count > 0)
+            @* Admin-only: expandable log — not shown by default (avoids stacking with the message line). *@
+            @if (Session.IsAdmin && Host.Job.Log.Count > 0 && !Host.JobRunning)
             {
-                <pre class="small mb-0 mt-2" style="max-height: 200px; overflow: auto;">@string.Join("\n", Host.Job.Log.TakeLast(40))</pre>
+                <button type="button"
+                        class="btn btn-sm btn-link text-muted p-0 mt-1 text-decoration-none"
+                        @onclick="() => _showHistory = !_showHistory">
+                    @(_showHistory ? "Hide details" : "Details (admin)")
+                </button>
+                @if (_showHistory)
+                {
+                    <pre class="small mb-0 mt-1" style="max-height: 200px; overflow: auto;">@string.Join("\n", Host.Job.Log.TakeLast(40))</pre>
+                }
             }
         </div>
     </div>

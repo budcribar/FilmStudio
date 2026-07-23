@@ -1,0 +1,23 @@
+{
+  "projectId": "TellTaleHeartV7",
+  "scene": 5,
+  "clip": 5,
+  "mode": "video-extend",
+  "castCount": 1,
+  "onScreenKeys": [
+    "Character_The_Narrator"
+  ],
+  "characterKeys": [
+    "Character_The_Narrator"
+  ],
+  "refs": [],
+  "refsAttachedToApi": false,
+  "styleHead": "STYLE LOCK: Period gothic live-action, mid-19th-century interiors; candlelight and deep shadows; desaturated cool-gray palette; naturalistic skin and fabric texture; no illustration or stylized animation",
+  "castCountLine": "CAST COUNT: exactly 1 distinct on-screen character identity(ies) only \u2014 Character_The_Narrator. Do not invent extra people, duplicate faces, or crowd extras not listed.",
+  "actionText": "INT. HALL OUTSIDE BEDCHAMBER - NIGHT. Midnight. A dark lantern, fully closed, in THE NARRATOR\u0027s hand. He turns the latch-oh, so gently-and eases the door open a crack. He slides the lantern in, then, inch by inch. OFF-CAMERA VOICEOVER Character_The_Narrator says \u0022in my head.\u0022. Character_The_Narrator still wears loose dark nightshirt, soft slippers, quiet tread Camera directive: Close-up profile of narrator thrusting his head into the narrow opening, 85mm, tense shallow depth. Performance: Acting intensity 7/10: Eyes bulging slightly in thrill with lips parted in silent glee Optics: f/2.0 shallow depth of field, intimate isolation Color grading: Kodak Vision3 500T 5219, near-black voids, cold blue-steel shadows, sparse warm amber lantern spill",
+  "prompt": "STYLE LOCK: Period gothic live-action, mid-19th-century interiors; candlelight and deep shadows; desaturated cool-gray palette; naturalistic skin and fabric texture; no illustration or stylized animation\r\n\r\nCHARACTER VARIABLES (use these identities consistently; do not redesign faces or wardrobe):\r\n- Character_The_Narrator [The Narrator]: Lean man of middle years (about 40\u201350), pale sallow skin, hollow cheeks, dark disordered medium-length hair, bright intense dark eyes, thin tense mouth; plain dark wool waistcoat over white shirtsleeves, dark trousers; period clothing. Visual lock: Same lean pale face, dark disordered hair, and bright intense dark eyes in every scene; always plain dark waistcoat and shirtsleeves as default; never elderly, never white-haired, never the filmed blue eye. Voice: Male, middle years; medium-high tense pitch; precise, controlled pace that sharpens into fevered urgency; intimate confessional energy, same voice on-camera and in V.O.\r\n\r\nCAST COUNT: exactly 1 distinct on-screen character identity(ies) only \u2014 Character_The_Narrator. Do not invent extra people, duplicate faces, or crowd extras not listed.\r\n\r\nAUDIO: REQUIRED native Grok off-camera voiceover. Character_The_Narrator narrates exactly: \u0022in my head.\u0022. Start speaking immediately with \u0022in\u0022 \u2014 do not skip, delay, or swallow the opening word. After the last word, hold a brief natural pause with a closed mouth (about half a second); do not freeze mid-syllable or trail into empty staring. Do not lip-sync on-screen cast to this VO. Ambient/Foley: door open, lantern slide, latch turn. VOICE LOCK Character_The_Narrator: Male, middle years; medium-high tense pitch; precise, controlled pace that sharpens into fevered urgency; intimate confessional energy, same voice on-camera and in V.O.\r\n\r\nPREVIOUS CLIP (already provided as video input \u2014 continue from its last frame):\nINT. HALL OUTSIDE BEDCHAMBER - NIGHT. Midnight. A dark lantern, fully closed, in THE NARRATOR\u0027s hand. He turns the latch-oh, so gently-and eases the door open a crack. He slides the lantern in, then, inch by inch. OFF-CAMERA VOICEOVER Character_The_Narrator says \u0022a dark lantern, all closed, closed, that no light shone out, and then I thrust\u0022. Character_The_Narrator still wears loose dark nightshirt, soft slippers, quiet tread Camera directive: Close-up of dark lantern sliding inch by inch through the opening, 50mm, no light escaping the closed shutters. Performance: Acting intensity 7/10: Feverish wide-eyed concentration with tight unnatural half-smile Optics: f/1.4 shallow depth of field, creamy background bokeh Color grading: Kodak Vision3 500T 5219, near-black voids, cold blue-steel shadows, sparse warm amber lantern spill\n[prompt shortened after API length limit \u2014 retry]",
+  "promptLen": 2759,
+  "promptLogSummary": "mode=video-extend chars=1 onScreen=1 refs=0 startFrame=no promptLen=2759 prevVideo=_prev_extend_s05c05.mp4 \u00B7 learning-addenda \u00B7 pre-budget 5391\u21922759",
+  "startFrame": null,
+  "builtAtUtc": "2026-07-23T18:49:05.2411351\u002B00:00"
+}

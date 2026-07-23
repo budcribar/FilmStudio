@@ -1612,14 +1612,16 @@ public sealed class FilmJobService
             : req.ProjectId;
         await _projects.ActivateAsync(projectId, ct);
 
+        // Progress: 10 fixed phases (same scale as book_import) so the UI bar never sticks at
+        // the "Total=0 → 35%" placeholder during a long single-pass adapt call.
         Snapshot = new JobSnapshot
         {
             Status = "running",
             Kind = "stage1",
             ProjectId = projectId,
-            Message = "Building screenplay from book → Fountain…",
+            Message = "Building screenplay…",
             Index = 0,
-            Total = 0,
+            Total = 10,
             StartedAt = DateTimeOffset.UtcNow,
             Log = new List<string>(),
         };
@@ -1628,7 +1630,7 @@ public sealed class FilmJobService
 
         try
         {
-            await AppendLogAsync("Screenplay: book → Fountain (prompts/book_to_fountain.txt) → approve");
+            await AppendLogAsync("Screenplay: book → draft → approve");
             // Sequential progress pump — no GetAwaiter; preserves line order for SignalR
             var progress = System.Threading.Channels.Channel.CreateUnbounded<string>(
                 new System.Threading.Channels.UnboundedChannelOptions
@@ -1695,7 +1697,9 @@ public sealed class FilmJobService
             Status = "running",
             Kind = "stage2",
             ProjectId = projectId,
-            Message = "Starting Stage 2 planner (C#)…",
+            Message = "Building shot plan…",
+            Index = 0,
+            Total = 10,
             StartedAt = DateTimeOffset.UtcNow,
             Log = new List<string>(),
         };
@@ -1704,7 +1708,7 @@ public sealed class FilmJobService
 
         try
         {
-            await AppendLogAsync("Stage 2: building shot plan from screenplay");
+            await AppendLogAsync("Building shot plan from screenplay");
             ct.ThrowIfCancellationRequested();
             var resolution = await ResolveVideoResolutionAsync(projectId, req.Resolution, ct);
             var result = await _stage2.PlanAsync(
@@ -1714,7 +1718,33 @@ public sealed class FilmJobService
                 onProgress: line =>
                 {
                     _ = AppendLogAsync(line);
-                    _ = UpdateAsync(s => s.Message = line);
+                    _ = UpdateAsync(s =>
+                    {
+                        s.Message = line;
+                        s.Total = Math.Max(s.Total, 10);
+                        // "Planning N scene(s)" / "Scene N…" — map into 1–9
+                        var mPlan = System.Text.RegularExpressions.Regex.Match(
+                            line, @"Planning\s+(\d+)\s+scene", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+                        if (mPlan.Success && int.TryParse(mPlan.Groups[1].Value, out var nScenes) && nScenes > 0)
+                        {
+                            s.Index = Math.Max(s.Index, 1);
+                            return;
+                        }
+                        var mSc = System.Text.RegularExpressions.Regex.Match(
+                            line, @"Scene\s+(\d+)", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+                        if (mSc.Success && int.TryParse(mSc.Groups[1].Value, out var sn) && sn > 0)
+                        {
+                            // Approximate: scene numbers climb; keep under 9 until merge/done
+                            s.Index = Math.Max(s.Index, Math.Min(8, 1 + sn));
+                            return;
+                        }
+                        if (line.Contains("Merged", StringComparison.OrdinalIgnoreCase) ||
+                            line.Contains("Backed up", StringComparison.OrdinalIgnoreCase) ||
+                            line.Contains("complete", StringComparison.OrdinalIgnoreCase))
+                            s.Index = Math.Max(s.Index, 9);
+                        else
+                            s.Index = Math.Max(s.Index, 1);
+                    });
                 },
                 ct: ct);
 
@@ -1765,13 +1795,17 @@ public sealed class FilmJobService
     {
         var projectId = req.ProjectId;
         await _projects.ActivateAsync(projectId, ct);
+        // Always Total=100 / Index=0..100 (monotonic). Never flip to scene-count or
+        // ffmpeg-tenths scales mid-job — that made the Scenes progress bar bounce.
         Snapshot = new JobSnapshot
         {
             Status = "running",
             Kind = "remux",
             ProjectId = projectId,
             Scene = req.Scene,
-            Message = "Remux / WIP…",
+            Message = "Combining video…",
+            Index = 0,
+            Total = 100,
             StartedAt = DateTimeOffset.UtcNow,
             Log = new List<string>(),
         };
@@ -1795,6 +1829,11 @@ public sealed class FilmJobService
                 await AppendLogAsync(
                     $"WARNING: assembly gate disabled for this remux — {req.IgnoreAssemblyGateReason!.Trim()}");
             }
+
+            // Phase windows into 0–100 so multi-scene + WIP never reset the bar.
+            var phaseBase = 0;
+            var phaseSpan = 100;
+            Task OnLine(string line) => OnRemuxProgressAsync(line, () => (phaseBase, phaseSpan));
 
             var refreshed = 0;
             if (req.RefreshStaleScenes || req.RebuildWip)
@@ -1824,25 +1863,35 @@ public sealed class FilmJobService
                         toRemux.Count > 0
                             ? $"Remuxing {toRemux.Count} scene composite(s) before WIP…"
                             : "No scenes to remux — stitching WIP from current composites");
+                    var n = Math.Max(1, toRemux.Count);
+                    // Reserve last 15% for WIP when rebuilding after scene remuxes.
+                    var sceneBudget = req.RebuildWip && toRemux.Count > 0 ? 85 : 100;
                     var i = 0;
                     var remuxErrors = new List<string>();
                     foreach (var sn in toRemux)
                     {
                         ct.ThrowIfCancellationRequested();
                         i++;
+                        phaseBase = (int)Math.Round((i - 1) * (double)sceneBudget / n);
+                        phaseSpan = Math.Max(1, (int)Math.Round((double)sceneBudget / n));
                         await UpdateAsync(s =>
                         {
                             s.Scene = sn;
-                            s.Index = i;
-                            s.Total = toRemux.Count;
-                            s.Message = $"Remux S{sn:D2} ({i}/{toRemux.Count})…";
+                            s.Total = 100;
+                            s.Index = Math.Max(s.Index, phaseBase);
+                            s.Message = $"Combining scene {i} of {toRemux.Count}…";
                         });
                         try
                         {
                             await _remux.RemuxSceneAsync(projectId, sn,
-                                line => { _ = OnRemuxProgressAsync(line); }, ct,
+                                line => { _ = OnLine(line); }, ct,
                                 ignoreAssemblyGate: ignoreGate);
                             refreshed++;
+                            await UpdateAsync(s =>
+                            {
+                                s.Total = 100;
+                                s.Index = Math.Max(s.Index, phaseBase + phaseSpan);
+                            });
                             await AppendLogAsync($"Remuxed S{sn:D2}");
                         }
                         catch (Exception ex)
@@ -1865,20 +1914,42 @@ public sealed class FilmJobService
             }
             else if (req.Scene is int sn && sn > 0)
             {
+                phaseBase = 0;
+                phaseSpan = 100;
+                await UpdateAsync(s =>
+                {
+                    s.Scene = sn;
+                    s.Total = 100;
+                    s.Index = Math.Max(s.Index, 2);
+                    s.Message = "Combining clips…";
+                });
                 await _remux.RemuxSceneAsync(projectId, sn,
-                    line => { _ = OnRemuxProgressAsync(line); }, ct,
+                    line => { _ = OnLine(line); }, ct,
                     ignoreAssemblyGate: ignoreGate);
             }
 
             if (req.RebuildWip)
             {
+                phaseBase = Math.Max(phaseBase, Snapshot.Index > 0 ? Math.Min(85, Snapshot.Index) : 0);
+                if (req.RefreshStaleScenes || (req.Scene is int && req.Scene > 0))
+                {
+                    phaseBase = Math.Max(phaseBase, 85);
+                    phaseSpan = 15;
+                }
+                else
+                {
+                    phaseBase = 0;
+                    phaseSpan = 100;
+                }
                 await UpdateAsync(s =>
                 {
                     s.Scene = null;
-                    s.Message = "Stitching WIP from scene composites…";
+                    s.Total = 100;
+                    s.Index = Math.Max(s.Index, phaseBase);
+                    s.Message = "Combining scenes into movie…";
                 });
                 await _remux.RebuildWipAsync(projectId,
-                    line => { _ = OnRemuxProgressAsync(line); }, ct);
+                    line => { _ = OnLine(line); }, ct);
             }
 
             var doneMsg = (req.RefreshStaleScenes, req.Scene is int dsn && dsn > 0, req.RebuildWip) switch
@@ -3249,11 +3320,15 @@ public sealed class FilmJobService
     /// Remux progress → job Message + log + SignalR JobLog.
     /// Parses <c>(12.3%)</c> from ffmpeg progress lines into Index/Total (0–1000).
     /// </summary>
-    private async Task OnRemuxProgressAsync(string line)
+    /// <summary>
+    /// Map ffmpeg remux log lines onto a single 0–100 scale.
+    /// <paramref name="phase"/> supplies (base, span) so multi-scene + WIP phases stay monotonic
+    /// (never flip Total between scene counts and percent tenths).
+    /// </summary>
+    private async Task OnRemuxProgressAsync(string line, Func<(int Base, int Span)>? phase = null)
     {
         if (string.IsNullOrWhiteSpace(line)) return;
 
-        // Prefer compact progress lines for the badge; still log everything.
         var isProgress = line.Contains('[') && (
             line.Contains("time ", StringComparison.OrdinalIgnoreCase) ||
             line.Contains('%') ||
@@ -3261,36 +3336,98 @@ public sealed class FilmJobService
             line.Contains("speed ", StringComparison.OrdinalIgnoreCase) ||
             line.Contains("complete", StringComparison.OrdinalIgnoreCase));
 
-        int? pctTenths = null;
+        double? ffmpegPct = null;
         var m = System.Text.RegularExpressions.Regex.Match(line, @"\((\d+(?:\.\d+)?)%\)");
         if (m.Success &&
             double.TryParse(m.Groups[1].Value, System.Globalization.NumberStyles.Float,
                 System.Globalization.CultureInfo.InvariantCulture, out var pct))
         {
-            pctTenths = (int)Math.Clamp(Math.Round(pct * 10), 0, 1000);
+            ffmpegPct = Math.Clamp(pct, 0, 100);
         }
+
+        // probe i/N → small advance inside phase (no Total flip)
+        int? probeIdx = null, probeTot = null;
+        var mp = System.Text.RegularExpressions.Regex.Match(
+            line, @"probe\s+(\d+)\s*/\s*(\d+)", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+        if (mp.Success &&
+            int.TryParse(mp.Groups[1].Value, out var pi) &&
+            int.TryParse(mp.Groups[2].Value, out var pt) &&
+            pt > 0)
+        {
+            probeIdx = pi;
+            probeTot = pt;
+        }
+
+        var (phaseBase, phaseSpan) = phase?.Invoke() ?? (0, 100);
+        phaseBase = Math.Clamp(phaseBase, 0, 100);
+        phaseSpan = Math.Clamp(phaseSpan, 1, 100 - phaseBase);
 
         await UpdateAsync(s =>
         {
             s.Log.Add(line);
             if (s.Log.Count > 120)
                 s.Log = s.Log.TakeLast(120).ToList();
-            // Keep live badge on progress; still update message for probe/errors
-            if (isProgress || s.Message is null || s.Message.Length == 0 ||
-                line.StartsWith("ffmpeg:", StringComparison.OrdinalIgnoreCase) ||
-                line.Contains("failed", StringComparison.OrdinalIgnoreCase) ||
-                line.Contains("Remux", StringComparison.OrdinalIgnoreCase) ||
-                line.Contains("WIP", StringComparison.OrdinalIgnoreCase) ||
-                line.Contains("Probing", StringComparison.OrdinalIgnoreCase) ||
-                line.Contains("complete", StringComparison.OrdinalIgnoreCase))
+
+            // Keep Total locked at 100 for the whole remux job.
+            s.Total = 100;
+
+            // Operator-facing message: keep phase labels; only attach % when useful.
+            if (isProgress && ffmpegPct is double fp)
             {
-                s.Message = line;
+                // Don't dump raw ffmpeg lines into operator UI message.
+                if (s.Message is null ||
+                    s.Message.Contains("Combining", StringComparison.OrdinalIgnoreCase) ||
+                    s.Message.Contains('%'))
+                {
+                    var overall = phaseBase + phaseSpan * (fp / 100.0);
+                    s.Message = $"Combining video… {Math.Clamp((int)Math.Round(overall), 0, 99)}%";
+                }
             }
-            if (pctTenths is int p)
+            else if (s.Message is null || s.Message.Length == 0 ||
+                     line.Contains("failed", StringComparison.OrdinalIgnoreCase) ||
+                     line.Contains("Remux", StringComparison.OrdinalIgnoreCase) ||
+                     line.Contains("WIP", StringComparison.OrdinalIgnoreCase) ||
+                     line.Contains("Probing", StringComparison.OrdinalIgnoreCase) ||
+                     line.Contains("Combining", StringComparison.OrdinalIgnoreCase) ||
+                     line.Contains("complete", StringComparison.OrdinalIgnoreCase))
             {
-                s.Total = 1000;
-                s.Index = p;
+                // Prefer short outcome text over paths / ffmpeg binary names.
+                if (line.Contains("Probing", StringComparison.OrdinalIgnoreCase) ||
+                    line.Contains("probe", StringComparison.OrdinalIgnoreCase))
+                    s.Message = "Measuring clips…";
+                else if (line.Contains("WIP", StringComparison.OrdinalIgnoreCase) &&
+                         line.Contains("rebuild", StringComparison.OrdinalIgnoreCase))
+                    s.Message = "Combining scenes into movie…";
+                else if (line.Contains("Remux", StringComparison.OrdinalIgnoreCase) ||
+                         line.Contains("concat", StringComparison.OrdinalIgnoreCase))
+                    s.Message = s.Message is { Length: > 0 } ? s.Message : "Combining clips…";
+                else if (line.Contains("failed", StringComparison.OrdinalIgnoreCase))
+                    s.Message = line.Length > 120 ? line[..117] + "…" : line;
             }
+
+            int mapped;
+            if (ffmpegPct is double p)
+            {
+                mapped = phaseBase + (int)Math.Round(phaseSpan * p / 100.0);
+            }
+            else if (probeIdx is int pi2 && probeTot is int pt2)
+            {
+                // First ~8% of the phase for probes
+                var probeSpan = Math.Max(1, phaseSpan / 12);
+                mapped = phaseBase + (int)Math.Round(probeSpan * Math.Clamp(pi2, 0, pt2) / (double)pt2);
+            }
+            else if (line.Contains("complete", StringComparison.OrdinalIgnoreCase) ||
+                     line.Contains("done", StringComparison.OrdinalIgnoreCase))
+            {
+                mapped = phaseBase + phaseSpan;
+            }
+            else
+            {
+                mapped = phaseBase;
+            }
+
+            mapped = Math.Clamp(mapped, 0, 99); // 100 reserved for FinishAsync
+            s.Index = Math.Max(s.Index, mapped); // monotonic — never bounce backward
         });
 
         if (_sink is not null)
@@ -3299,7 +3436,9 @@ public sealed class FilmJobService
 
     private async Task ReportStage1ProgressAsync(string line)
     {
-        // Single UpdateAsync so Index/Total + log stay atomic (no race losing counters)
+        // Single UpdateAsync so Index/Total + log stay atomic (no race losing counters).
+        // Keep Total on a 10-step phase scale so single-pass adapt still moves the bar
+        // (legacy chunk-only counters left Total=0 → UI stuck at 35%).
         await UpdateAsync(s =>
         {
             if (s.Log.Count == 0 || s.Log[^1] != line)
@@ -3309,18 +3448,9 @@ public sealed class FilmJobService
                     s.Log = s.Log.TakeLast(120).ToList();
             }
             s.Message = line;
+            s.Total = Math.Max(s.Total, 10);
 
-            var mChunks = System.Text.RegularExpressions.Regex.Match(
-                line, @"Stage 1:\s+(\d+)\s+book chunk", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
-            if (mChunks.Success && int.TryParse(mChunks.Groups[1].Value, out var totalChunks) && totalChunks > 0)
-            {
-                s.Total = Math.Max(s.Total, totalChunks);
-                if (s.Index < 0) s.Index = 0;
-                return;
-            }
-
-            // Chunk progress: Index = completed chunks (not current number while waiting).
-            // "chunk 1/1 — waiting" → 0/1; "chunk 1/1 done" → 1/1.
+            // Multi-chunk adapt: map chunk i/N into phases 4–8
             var m = System.Text.RegularExpressions.Regex.Match(
                 line, @"chunk\s+(\d+)\s*/\s*(\d+)", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
             if (m.Success &&
@@ -3328,25 +3458,59 @@ public sealed class FilmJobService
                 int.TryParse(m.Groups[2].Value, out var tot) &&
                 tot > 0)
             {
-                s.Total = Math.Max(s.Total, tot);
                 var chunkDone = line.Contains("done", StringComparison.OrdinalIgnoreCase);
-                s.Index = chunkDone
-                    ? Math.Max(s.Index, idx)
-                    : Math.Max(s.Index, Math.Max(0, idx - 1));
+                var frac = chunkDone
+                    ? Math.Clamp((double)idx / tot, 0, 1)
+                    : Math.Clamp((idx - 1.0) / tot, 0, 1);
+                s.Index = Math.Max(s.Index, 4 + (int)Math.Round(4.0 * frac));
                 return;
             }
 
-            // Vision: page i/N while processing → completed = i-1 until last page finishes
+            // Vision prepare: page i/N → phases 1–3
             var mVis = System.Text.RegularExpressions.Regex.Match(
-                line, @"Grok vision\s+(\d+)/(\d+)", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+                line, @"(?:Grok vision|Reading page|page)\s+(\d+)\s*/\s*(\d+)",
+                System.Text.RegularExpressions.RegexOptions.IgnoreCase);
             if (mVis.Success &&
                 int.TryParse(mVis.Groups[1].Value, out var vi) &&
                 int.TryParse(mVis.Groups[2].Value, out var vt) &&
                 vt > 0)
             {
-                s.Total = Math.Max(s.Total, vt);
-                s.Index = Math.Max(s.Index, Math.Max(0, vi - 1));
+                var frac = Math.Clamp((vi - 1.0) / vt, 0, 1);
+                s.Index = Math.Max(s.Index, 1 + (int)Math.Round(2.0 * frac));
+                return;
             }
+
+            if (line.Contains("Screenplay ready", StringComparison.OrdinalIgnoreCase))
+                s.Index = Math.Max(s.Index, 10);
+            else if (line.Contains("approving", StringComparison.OrdinalIgnoreCase) ||
+                     line.Contains("Fountain draft saved", StringComparison.OrdinalIgnoreCase) ||
+                     line.Contains("plate", StringComparison.OrdinalIgnoreCase) ||
+                     line.Contains("Attaching", StringComparison.OrdinalIgnoreCase))
+                s.Index = Math.Max(s.Index, 9);
+            else if (line.Contains("Merge", StringComparison.OrdinalIgnoreCase) ||
+                     line.Contains("Stitch", StringComparison.OrdinalIgnoreCase))
+                s.Index = Math.Max(s.Index, 8);
+            else if (line.Contains("repair", StringComparison.OrdinalIgnoreCase) ||
+                     line.Contains("retry", StringComparison.OrdinalIgnoreCase) ||
+                     line.Contains("Refin", StringComparison.OrdinalIgnoreCase))
+                s.Index = Math.Max(s.Index, 7);
+            else if (line.Contains("single pass", StringComparison.OrdinalIgnoreCase) ||
+                     line.Contains("Adapting book", StringComparison.OrdinalIgnoreCase) ||
+                     line.Contains("Book split", StringComparison.OrdinalIgnoreCase) ||
+                     line.Contains("multi-chunk", StringComparison.OrdinalIgnoreCase))
+                s.Index = Math.Max(s.Index, 4);
+            else if (line.Contains("Target runtime", StringComparison.OrdinalIgnoreCase) ||
+                     line.Contains("building Fountain", StringComparison.OrdinalIgnoreCase) ||
+                     line.Contains("Writing screenplay", StringComparison.OrdinalIgnoreCase))
+                s.Index = Math.Max(s.Index, 3);
+            else if (line.Contains("prepare", StringComparison.OrdinalIgnoreCase) ||
+                     line.Contains("Extract", StringComparison.OrdinalIgnoreCase) ||
+                     line.Contains("Vision", StringComparison.OrdinalIgnoreCase) ||
+                     line.Contains("book text", StringComparison.OrdinalIgnoreCase) ||
+                     line.Contains("Checking book", StringComparison.OrdinalIgnoreCase))
+                s.Index = Math.Max(s.Index, 1);
+            else
+                s.Index = Math.Max(s.Index, 1);
         });
         if (_sink is not null)
             await _sink.OnJobLogAsync(line);

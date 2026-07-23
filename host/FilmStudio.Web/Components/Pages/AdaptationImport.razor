@@ -226,15 +226,15 @@
 
                     _importStatus = FriendlyJobStatus(snap);
 
-                    if (snap.Total > 0)
-                    {
-                        var frac = Math.Clamp((double)snap.Index / snap.Total, 0, 1);
-                        _importPct = basePct + (int)Math.Round(spanPct * frac);
-                    }
-                    else
-                    {
-                        _importPct = Math.Min(basePct + spanPct - 5, basePct + 5 + (i % 40));
-                    }
+                    // Prefer engine Index/Total (phase scale); soft-crawl when quiet mid-adapt.
+                    var (_, tot, waiting, displayIdx) = AdaptationPageBase.ComputeJobProgress(
+                        snap, ProgressIndex, ProgressTotal, jobRunning: true);
+                    var pctWithin = AdaptationPageBase.ComputeProgressPercent(
+                        displayIdx, tot > 0 ? tot : 10, waiting, jobRunning: true, snap.StartedAt);
+                    var mapped = basePct + (int)Math.Round(spanPct * (pctWithin / 100.0));
+                    var lo = basePct;
+                    var hi = basePct + spanPct - 1;
+                    _importPct = mapped < lo ? lo : mapped > hi ? hi : mapped;
 
                     await InvokeAsync(StateHasChanged);
 
@@ -268,55 +268,8 @@
     }
 
     /// <summary>Operator-facing status (no mechanism jargon). Admins still see raw log below.</summary>
-    private static string FriendlyJobStatus(JobSnapshot snap)
-    {
-        var msg = snap.Message ?? "";
-        // Page progress if present
-        var m = System.Text.RegularExpressions.Regex.Match(
-            msg, @"page\s+(\d+)\s*/\s*(\d+)", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
-        if (m.Success)
-            return $"Reading book — page {m.Groups[1].Value} of {m.Groups[2].Value}";
-
-        // Adapt phase (chunk / stitch / repair)
-        var chunk = System.Text.RegularExpressions.Regex.Match(
-            msg, @"chunk\s+(\d+)\s*/\s*(\d+)", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
-        if (chunk.Success)
-            return $"Writing screenplay — part {chunk.Groups[1].Value} of {chunk.Groups[2].Value}";
-        if (msg.Contains("Adapting", StringComparison.OrdinalIgnoreCase) ||
-            msg.Contains("chunk", StringComparison.OrdinalIgnoreCase))
-            return "Writing screenplay…";
-        if (msg.Contains("Merge", StringComparison.OrdinalIgnoreCase) ||
-            msg.Contains("Stitch", StringComparison.OrdinalIgnoreCase))
-            return "Combining screenplay parts…";
-        if (msg.Contains("repair", StringComparison.OrdinalIgnoreCase) ||
-            msg.Contains("retry", StringComparison.OrdinalIgnoreCase))
-            return "Refining screenplay…";
-        if (msg.Contains("Fountain", StringComparison.OrdinalIgnoreCase) ||
-            msg.Contains("screenplay", StringComparison.OrdinalIgnoreCase) ||
-            msg.Contains("Phase 2", StringComparison.OrdinalIgnoreCase))
-            return "Writing screenplay…";
-
-        if (msg.Contains("extract", StringComparison.OrdinalIgnoreCase) ||
-            msg.Contains("PdfPig", StringComparison.OrdinalIgnoreCase))
-            return "Extracting text from the book…";
-        if (msg.Contains("image", StringComparison.OrdinalIgnoreCase) ||
-            msg.Contains("render", StringComparison.OrdinalIgnoreCase))
-            return "Preparing page pictures…";
-        if (msg.Contains("vision", StringComparison.OrdinalIgnoreCase) ||
-            msg.Contains("OCR", StringComparison.OrdinalIgnoreCase) ||
-            msg.Contains("Grok", StringComparison.OrdinalIgnoreCase))
-            return "Reading book pages…";
-        if (msg.Contains("strategy", StringComparison.OrdinalIgnoreCase) ||
-            msg.Contains("quality", StringComparison.OrdinalIgnoreCase))
-            return "Checking book text…";
-        if (msg.Contains("looking", StringComparison.OrdinalIgnoreCase) ||
-            msg.Contains("Phase 1", StringComparison.OrdinalIgnoreCase) ||
-            msg.Contains("prepare", StringComparison.OrdinalIgnoreCase))
-            return "Reading book…";
-        if (string.IsNullOrWhiteSpace(msg))
-            return "Importing…";
-        return "Importing…";
-    }
+    private static string FriendlyJobStatus(JobSnapshot snap) =>
+        AdaptationPageBase.OperatorJobRunningMessage(snap);
 
     private static string FriendlyError(string? raw)
     {

@@ -119,11 +119,14 @@ public abstract class AdaptationPageBase : ComponentBase, IAsyncDisposable
     {
         if (Job is null)
         {
+            // Preserve phase Total when log arrives before full snapshot (avoid Total=0 → 35% bar).
             Job = new JobSnapshot
             {
                 Status = "running",
                 Message = line,
                 Log = new List<string> { line },
+                Index = ProgressIndex,
+                Total = ProgressTotal > 0 ? ProgressTotal : 10,
             };
         }
         else
@@ -137,10 +140,15 @@ public abstract class AdaptationPageBase : ComponentBase, IAsyncDisposable
             }
         }
         AbsorbProgressFromLine(line);
-        if (Job is not null && ProgressTotal > 0)
+        if (Job is not null)
         {
-            Job.Index = Math.Max(Job.Index, ProgressIndex);
-            Job.Total = Math.Max(Job.Total, ProgressTotal);
+            // Always keep a positive Total for adapt jobs so the bar can move.
+            if (Job.Total <= 0)
+                Job.Total = ProgressTotal > 0 ? ProgressTotal : 10;
+            if (ProgressTotal > 0)
+                Job.Total = Math.Max(Job.Total, ProgressTotal);
+            if (ProgressIndex > 0)
+                Job.Index = Math.Max(Job.Index, ProgressIndex);
         }
         _ = InvokeAsync(StateHasChanged);
     }
@@ -151,19 +159,19 @@ public abstract class AdaptationPageBase : ComponentBase, IAsyncDisposable
             ProgressTotal = Math.Max(ProgressTotal, snap.Total);
         if (snap.Index > 0)
             ProgressIndex = Math.Max(ProgressIndex, snap.Index);
+        // Never let a live adapt job report Total=0 after we have phase scale.
+        if (JobRunning && ProgressTotal <= 0 &&
+            snap.Kind is "stage1" or "stage2" or "book_import" or "book_prepare")
+            ProgressTotal = 10;
     }
 
     protected void AbsorbProgressFromLine(string? line)
     {
         if (string.IsNullOrWhiteSpace(line)) return;
 
-        var mChunks = System.Text.RegularExpressions.Regex.Match(
-            line, @"Stage 1:\s+(\d+)\s+book chunk", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
-        if (mChunks.Success && int.TryParse(mChunks.Groups[1].Value, out var n) && n > 0)
-        {
-            ProgressTotal = Math.Max(ProgressTotal, n);
-            return;
-        }
+        // Prefer a fixed 10-step phase scale for screenplay/shot-plan jobs so the bar
+        // moves on phase messages even when there are no "chunk i/N" lines (single-pass).
+        ProgressTotal = Math.Max(ProgressTotal, 10);
 
         var mChunk = System.Text.RegularExpressions.Regex.Match(
             line, @"chunk\s+(\d+)\s*/\s*(\d+)", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
@@ -172,10 +180,11 @@ public abstract class AdaptationPageBase : ComponentBase, IAsyncDisposable
             int.TryParse(mChunk.Groups[2].Value, out var cTot) &&
             cTot > 0)
         {
-            ProgressTotal = Math.Max(ProgressTotal, cTot);
             var done = line.Contains("done", StringComparison.OrdinalIgnoreCase);
-            var completed = done ? cIdx : Math.Max(0, cIdx - 1);
-            ProgressIndex = Math.Max(ProgressIndex, completed);
+            var frac = done
+                ? Math.Clamp((double)cIdx / cTot, 0, 1)
+                : Math.Clamp((cIdx - 1.0) / cTot, 0, 1);
+            ProgressIndex = Math.Max(ProgressIndex, 4 + (int)Math.Round(4.0 * frac));
             return;
         }
 
@@ -187,9 +196,43 @@ public abstract class AdaptationPageBase : ComponentBase, IAsyncDisposable
             int.TryParse(mVis.Groups[2].Value, out var vTot) &&
             vTot > 0)
         {
-            ProgressTotal = Math.Max(ProgressTotal, vTot);
-            ProgressIndex = Math.Max(ProgressIndex, Math.Max(0, vIdx - 1));
+            var frac = Math.Clamp((vIdx - 1.0) / vTot, 0, 1);
+            ProgressIndex = Math.Max(ProgressIndex, 1 + (int)Math.Round(2.0 * frac));
+            return;
         }
+
+        if (line.Contains("Screenplay ready", StringComparison.OrdinalIgnoreCase) ||
+            line.Contains("Stage 2 complete", StringComparison.OrdinalIgnoreCase) ||
+            line.Contains("shot plan ready", StringComparison.OrdinalIgnoreCase))
+            ProgressIndex = Math.Max(ProgressIndex, 10);
+        else if (line.Contains("approving", StringComparison.OrdinalIgnoreCase) ||
+                 line.Contains("Fountain draft saved", StringComparison.OrdinalIgnoreCase) ||
+                 line.Contains("plate", StringComparison.OrdinalIgnoreCase) ||
+                 line.Contains("Attaching", StringComparison.OrdinalIgnoreCase) ||
+                 line.Contains("Merged", StringComparison.OrdinalIgnoreCase))
+            ProgressIndex = Math.Max(ProgressIndex, 9);
+        else if (line.Contains("Merge", StringComparison.OrdinalIgnoreCase) ||
+                 line.Contains("Stitch", StringComparison.OrdinalIgnoreCase))
+            ProgressIndex = Math.Max(ProgressIndex, 8);
+        else if (line.Contains("repair", StringComparison.OrdinalIgnoreCase) ||
+                 line.Contains("retry", StringComparison.OrdinalIgnoreCase))
+            ProgressIndex = Math.Max(ProgressIndex, 7);
+        else if (line.Contains("single pass", StringComparison.OrdinalIgnoreCase) ||
+                 line.Contains("Adapting", StringComparison.OrdinalIgnoreCase) ||
+                 line.Contains("Book split", StringComparison.OrdinalIgnoreCase) ||
+                 line.Contains("Writing screenplay", StringComparison.OrdinalIgnoreCase) ||
+                 line.Contains("Drafting", StringComparison.OrdinalIgnoreCase))
+            ProgressIndex = Math.Max(ProgressIndex, 5);
+        else if (line.Contains("Target runtime", StringComparison.OrdinalIgnoreCase) ||
+                 line.Contains("Planning", StringComparison.OrdinalIgnoreCase) ||
+                 line.Contains("building", StringComparison.OrdinalIgnoreCase))
+            ProgressIndex = Math.Max(ProgressIndex, 3);
+        else if (line.Contains("prepare", StringComparison.OrdinalIgnoreCase) ||
+                 line.Contains("Extract", StringComparison.OrdinalIgnoreCase) ||
+                 line.Contains("Checking book", StringComparison.OrdinalIgnoreCase) ||
+                 line.Contains("book text", StringComparison.OrdinalIgnoreCase) ||
+                 line.Contains("Loading screenplay", StringComparison.OrdinalIgnoreCase))
+            ProgressIndex = Math.Max(ProgressIndex, 1);
     }
 
     public static bool IsJobInFlightMessage(string? message)
@@ -199,7 +242,85 @@ public abstract class AdaptationPageBase : ComponentBase, IAsyncDisposable
                || message.Contains("calling", StringComparison.OrdinalIgnoreCase)
                || message.Contains("parsing", StringComparison.OrdinalIgnoreCase)
                || message.Contains("Grok vision", StringComparison.OrdinalIgnoreCase)
-               || message.Contains("Reading page", StringComparison.OrdinalIgnoreCase);
+               || message.Contains("Reading page", StringComparison.OrdinalIgnoreCase)
+               || message.Contains("single pass", StringComparison.OrdinalIgnoreCase)
+               || message.Contains("Adapting", StringComparison.OrdinalIgnoreCase)
+               || message.Contains("Writing screenplay", StringComparison.OrdinalIgnoreCase)
+               || message.Contains("Drafting", StringComparison.OrdinalIgnoreCase);
+    }
+
+    /// <summary>
+    /// Operator-facing live job line (no provider / path / mechanism jargon).
+    /// </summary>
+    public static string OperatorJobRunningMessage(JobSnapshot snap)
+    {
+        if (string.Equals(snap.Status, "queued", StringComparison.OrdinalIgnoreCase))
+            return "Waiting…";
+
+        var msg = snap.Message ?? "";
+        var kind = snap.Kind ?? "";
+
+        var page = System.Text.RegularExpressions.Regex.Match(
+            msg, @"page\s+(\d+)\s*/\s*(\d+)", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+        if (page.Success)
+            return $"Reading book — page {page.Groups[1].Value} of {page.Groups[2].Value}";
+
+        var chunk = System.Text.RegularExpressions.Regex.Match(
+            msg, @"chunk\s+(\d+)\s*/\s*(\d+)", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+        if (chunk.Success)
+            return $"Writing screenplay — part {chunk.Groups[1].Value} of {chunk.Groups[2].Value}";
+
+        var scene = System.Text.RegularExpressions.Regex.Match(
+            msg, @"Scene\s+(\d+)", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+        if (scene.Success && kind is "stage2")
+            return $"Planning shots — scene {scene.Groups[1].Value}";
+
+        if (msg.Contains("Merge", StringComparison.OrdinalIgnoreCase) ||
+            msg.Contains("Stitch", StringComparison.OrdinalIgnoreCase) ||
+            msg.Contains("Combining", StringComparison.OrdinalIgnoreCase))
+            return "Combining screenplay parts…";
+        if (msg.Contains("repair", StringComparison.OrdinalIgnoreCase) ||
+            msg.Contains("retry", StringComparison.OrdinalIgnoreCase) ||
+            msg.Contains("Refin", StringComparison.OrdinalIgnoreCase))
+            return "Refining screenplay…";
+        if (msg.Contains("approving", StringComparison.OrdinalIgnoreCase))
+            return "Approving screenplay…";
+        if (msg.Contains("plate", StringComparison.OrdinalIgnoreCase) ||
+            msg.Contains("Attaching", StringComparison.OrdinalIgnoreCase))
+            return "Matching book pictures…";
+        if (msg.Contains("Adapting", StringComparison.OrdinalIgnoreCase) ||
+            msg.Contains("single pass", StringComparison.OrdinalIgnoreCase) ||
+            msg.Contains("Fountain", StringComparison.OrdinalIgnoreCase) ||
+            msg.Contains("screenplay", StringComparison.OrdinalIgnoreCase) ||
+            msg.Contains("Phase 2", StringComparison.OrdinalIgnoreCase) ||
+            msg.Contains("Writing", StringComparison.OrdinalIgnoreCase) ||
+            msg.Contains("Drafting", StringComparison.OrdinalIgnoreCase) ||
+            kind is "stage1" or "book_import")
+        {
+            if (kind is "stage2")
+                return "Building shot plan…";
+            return "Writing screenplay…";
+        }
+        if (msg.Contains("Planning", StringComparison.OrdinalIgnoreCase) || kind is "stage2")
+            return "Building shot plan…";
+        if (msg.Contains("extract", StringComparison.OrdinalIgnoreCase))
+            return "Extracting text from the book…";
+        if (msg.Contains("vision", StringComparison.OrdinalIgnoreCase) ||
+            msg.Contains("OCR", StringComparison.OrdinalIgnoreCase) ||
+            msg.Contains("Grok", StringComparison.OrdinalIgnoreCase) ||
+            msg.Contains("Reading", StringComparison.OrdinalIgnoreCase) ||
+            msg.Contains("prepare", StringComparison.OrdinalIgnoreCase) ||
+            kind is "book_prepare")
+            return "Reading book…";
+        if (string.IsNullOrWhiteSpace(msg))
+            return kind switch
+            {
+                "stage2" => "Building shot plan…",
+                "stage1" or "book_import" => "Writing screenplay…",
+                _ => "Working…",
+            };
+        // Last resort: short clean message, never dump long engine lines
+        return msg.Length > 80 ? msg[..77] + "…" : msg;
     }
 
     public virtual async Task LoadAsync()
@@ -303,14 +424,14 @@ public abstract class AdaptationPageBase : ComponentBase, IAsyncDisposable
         {
             await EnsureHubAsync();
             ProgressIndex = 0;
-            ProgressTotal = 0;
+            ProgressTotal = 10;
             await Engine.StartStage1Async(new StartStage1Request
             {
                 ProjectId = ProjectId,
                 TotalMinutes = TotalMinutes,
                 Model = Model,
             });
-            Message = "Building Fountain from book… (may take a few minutes) — live log below";
+            Message = null; // live progress card is enough
             var jobs = await Engine.GetJobAsync();
             Job = jobs?.Job;
             AbsorbProgressFromSnapshot(Job ?? new JobSnapshot());
@@ -328,6 +449,8 @@ public abstract class AdaptationPageBase : ComponentBase, IAsyncDisposable
         try
         {
             await EnsureHubAsync();
+            ProgressIndex = 0;
+            ProgressTotal = 10;
             // Resolution comes from project Configuration (shot plan structure is resolution-independent;
             // config is only used as a default tag if the planner still stamps prompts).
             await Engine.StartStage2Async(new StartStage2Request
@@ -335,9 +458,10 @@ public abstract class AdaptationPageBase : ComponentBase, IAsyncDisposable
                 ProjectId = ProjectId,
                 Scenes = "all",
             });
-            Message = "Building shot plan… — live log below";
+            Message = null; // live progress card is enough
             var jobs = await Engine.GetJobAsync();
             Job = jobs?.Job;
+            AbsorbProgressFromSnapshot(Job ?? new JobSnapshot());
             StartJobPolling();
         }
         catch (Exception ex) { Error = ex.Message; }
@@ -474,15 +598,26 @@ public abstract class AdaptationPageBase : ComponentBase, IAsyncDisposable
         status is not null && status.Screenplay.ReadyForShots;
 
     /// <summary>
-    /// Technical job log is admin-only. Operators use Import progress / simple status.
+    /// Compact progress + Cancel while adaptation jobs run (operators and admin).
     /// Import page never shows this card (progress lives in the Import card).
+    /// Admin can expand log after the job finishes; operators never see raw logs here.
     /// </summary>
-    public static bool ShowJobPanel(bool isAdmin, JobSnapshot? job, string step) =>
-        isAdmin &&
-        job is not null &&
-        step is not ("import" or "book") &&
-        (job.Status is "running" or "error" or "cancelled" ||
-         (job.Status == "done" && job.Kind is "stage1" or "stage2" or "book_prepare" or "book_import"));
+    public static bool ShowJobPanel(bool isAdmin, JobSnapshot? job, string step)
+    {
+        if (job is null || step is "import" or "book")
+            return false;
+
+        var kind = job.Kind ?? "";
+        var adaptationJob = kind is "stage1" or "stage2" or "book_prepare" or "book_import";
+        if (job.Status is "running" or "queued")
+            return adaptationJob || isAdmin;
+
+        // Idle finished/error: admin-only so operators don't see leftover job cards
+        if (!isAdmin)
+            return false;
+        return job.Status is "error" or "cancelled" ||
+               (job.Status == "done" && adaptationJob);
+    }
 
     /// <summary>Merges job-reported and locally-tracked (log-scraped) progress into one index/total/waiting triple.</summary>
     public static (int Index, int Total, bool Waiting, int DisplayIndex) ComputeJobProgress(
@@ -497,17 +632,50 @@ public abstract class AdaptationPageBase : ComponentBase, IAsyncDisposable
         return (index, total, waiting, displayIndex);
     }
 
-    /// <summary>Progress-bar percent for a running job — never 0% or 100% while still running, so the bar always reads as "in motion".</summary>
+    /// <summary>
+    /// Progress-bar percent for a running job — never 0% or 100% while still running.
+    /// When Total is missing or a long adapt call is in-flight, soft-crawls so the bar
+    /// does not freeze at a single placeholder (old Total=0 → hard 35%).
+    /// </summary>
     public static int ComputeProgressPercent(int displayIndex, int total, bool waiting, bool jobRunning)
+        => ComputeProgressPercent(displayIndex, total, waiting, jobRunning, startedAt: null);
+
+    public static int ComputeProgressPercent(
+        int displayIndex, int total, bool waiting, bool jobRunning, DateTimeOffset? startedAt)
     {
-        int pct;
+        if (!jobRunning)
+            return 100;
+
+        int basePct;
         if (total <= 0)
-            pct = 35;
+        {
+            // Soft indeterminate crawl ~12% → ~70% over a few minutes (no hard 35% stick).
+            basePct = SoftCrawlPercent(startedAt, floor: 12, ceiling: 70, tauSeconds: 90);
+        }
         else if (waiting)
-            pct = (int)Math.Round(100.0 * (displayIndex + 0.35) / total);
+        {
+            var stepped = (int)Math.Round(100.0 * (displayIndex + 0.35) / total);
+            // During long single-pass adapt, ease upward from the stepped floor so the bar
+            // keeps moving between phase messages.
+            var crawl = SoftCrawlPercent(startedAt, floor: stepped, ceiling: 88, tauSeconds: 120);
+            basePct = Math.Max(stepped, crawl);
+        }
         else
-            pct = (int)Math.Round(100.0 * Math.Clamp(displayIndex, 0, total) / total);
-        return Math.Clamp(pct, total > 0 ? 5 : 8, jobRunning ? 92 : 100);
+        {
+            basePct = (int)Math.Round(100.0 * Math.Clamp(displayIndex, 0, total) / total);
+        }
+
+        return Math.Clamp(basePct, total > 0 ? 5 : 8, 92);
+    }
+
+    /// <summary>Asymptotic crawl floor→ceiling with half-life ~tauSeconds.</summary>
+    public static int SoftCrawlPercent(DateTimeOffset? startedAt, int floor, int ceiling, double tauSeconds)
+    {
+        if (ceiling <= floor) return floor;
+        if (startedAt is null) return floor;
+        var sec = Math.Max(0, (DateTimeOffset.UtcNow - startedAt.Value).TotalSeconds);
+        var t = 1.0 - Math.Exp(-sec / Math.Max(1.0, tauSeconds));
+        return (int)Math.Round(floor + (ceiling - floor) * t);
     }
 
     /// <summary>
