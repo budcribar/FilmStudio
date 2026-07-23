@@ -256,45 +256,20 @@ host/**/.vs/
 # Generated review frames
 /projects/Buster/assets/video/_review_1fps
 /projects/Buster/assets/video/_review_5fps
-/host/FilmStudio.Web/bin/**
-
-/host/FilmStudio.Web/obj/Debug/net10.0/apphost.exe
-/host/FilmStudio.Web/bin/Debug/net10.0/FilmStudio.Web.pdb
-/host/FilmStudio.Web/obj/Debug/net10.0/FilmStudio.Web.AssemblyInfo.cs
-/host/FilmStudio.Web/obj/Debug/net10.0/FilmStudio.Web.AssemblyInfoInputs.cache
-/host/FilmStudio.Web/obj/Debug/net10.0/FilmStudio.Web.csproj.FileListAbsolute.txt
-/host/FilmStudio.Web/obj/Debug/net10.0/FilmStudio.Web.dll
-/host/FilmStudio.Web/obj/Debug/net10.0/FilmStudio.Web.pdb
-/host/FilmStudio.Web/obj/Debug/net10.0/FilmStudio.Web.sourcelink.json
-/host/FilmStudio.Web/obj/Debug/net10.0/rjsmcshtml.dswa.cache.json
-/host/FilmStudio.Web/obj/Debug/net10.0/rjsmrazor.dswa.cache.json
-/host/FilmStudio.Web/obj/Debug/net10.0/rpswa.dswa.cache.json
-/host/FilmStudio.Web/obj/Debug/net10.0/FilmStudio.Web.csproj.CoreCompileInputs.cache
-/host/FilmStudio.Web/bin/Debug/net10.0/FilmStudio.Web.staticwebassets.endpoints.json
-/host/FilmStudio.Web/bin/Debug/net10.0/FilmStudio.Web.staticwebassets.runtime.json
-/host/FilmStudio.Web/obj/Debug/net10.0/scopedcss/bundle/FilmStudio.Web.styles.css
-/host/FilmStudio.Web/obj/Debug/net10.0/scopedcss/Components/Layout/NavMenu.razor.rz.scp.css
-/host/FilmStudio.Web/obj/Debug/net10.0/scopedcss/projectbundle/FilmStudio.Web.bundle.scp.css
-/host/FilmStudio.Web/obj/Debug/net10.0/rbcswa.dswa.cache.json
-/host/FilmStudio.Web/obj/Debug/net10.0/staticwebassets.build.endpoints.json
-/host/FilmStudio.Web/obj/Debug/net10.0/staticwebassets.build.json
-/host/FilmStudio.Web/obj/Debug/net10.0/staticwebassets.build.json.cache
-/host/FilmStudio.Web/obj/Debug/net10.0/staticwebassets.development.json
-/host/FilmStudio.Web/bin/Debug/net10.0/FilmStudio.Web.staticwebassets.endpoints.json
-/host/FilmStudio.Web/obj/Debug/net10.0/FilmStudio.Web.GeneratedMSBuildEditorConfig.editorconfig
 
 # LoadSim local results (not the projects/LoadSimBuster sandbox)
 loadsim*.json
 host/loadsim*.json
 
-/host/FilmStudio.Web/obj/Debug/net10.0/compressed/zvwq7fvd6a-{0}-khy4lop6wu-khy4lop6wu.gz
-/host/FilmStudio.Web/obj/Debug/net10.0/rjimswa.dswa.cache.json
-/host/FilmStudio.Web/obj/Debug/net10.0/compressed/zvwq7fvd6a-{0}-khy4lop6wu-khy4lop6wu.gz
-/host/FilmStudio.Web/obj/Release/net10.0/FilmStudio.Web.assets.cache
 /host/playwright/node_modules
 /host/playwright/package-lock.json
-/host/FilmStudio.Web/obj/Debug/net10.0/FilmStudio.Web.assets.cache
-/host/FilmStudio.Web/obj/Debug/net10.0/FilmStudio.Web.genruntimeconfig.cache
-/host/FilmStudio.Web/obj/FilmStudio.Web.csproj.nuget.dgspec.json
-/host/FilmStudio.Web/obj/project.assets.json
-/host/FilmStudio.Web/obj/project.nuget.cache
+
+# Visual Studio / MSBuild output for every project under host/ (bin, obj, Debug/Release
+# build artifacts, staticwebassets caches, scopedcss, dswa caches, etc). One blanket rule
+# instead of individually-listed generated files — those drift every build and previously
+# had to be re-added to .gitignore by hand file-by-file.
+host/**/bin/**
+host/**/obj/**
+/host/FilmStudio.Web/obj/Debug/net10.0/compressed/1oe8lfys5g-{0}-46ein0sx1k-46ein0sx1k.gz
+/host/FilmStudio.Web/obj/Debug/net10.0/compressed/ifmkw8u0bh-{0}-abdmv1u4y3-abdmv1u4y3.gz
+/host/FilmStudio.Web/obj/Debug/net10.0/compressed/z5i4g3mbzm-{0}-v0zj4ognzu-v0zj4ognzu.gz
