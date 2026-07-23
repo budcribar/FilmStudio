@@ -3,6 +3,9 @@
 @using FilmStudio.Core.Models
 @inject EngineApiClient Engine
 @inject IConfiguration AppConfig
+@inject ActiveProjectState ActiveProject
+@inject ThemeState Theme
+@inject IJSRuntime Js
 
 <PageTitle>Configuration</PageTitle>
 
@@ -51,6 +54,23 @@ else if (_cfg is null)
 }
 else
 {
+    <div class="card mb-3">
+        <div class="card-header">Appearance</div>
+        <div class="card-body row g-2">
+            <div class="col-md-4">
+                <label class="form-label">Theme</label>
+                <select class="form-select" data-testid="config-theme" @bind="_uiTheme" @bind:after="PreviewThemeAsync" disabled="@_busy">
+                    <option value="dark">Dark</option>
+                    <option value="light">Light</option>
+                    <option value="system">Use system</option>
+                </select>
+                <div class="form-text">
+                    Saved with this project's settings. Previews immediately; click Save to persist.
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="card mb-3">
         <div class="card-header">Models</div>
         <div class="card-body row g-2">
@@ -227,6 +247,7 @@ else
     private List<string> _projectIds = new();
     private Dictionary<string, JsonElement>? _cfg;
 
+    private string _uiTheme = "dark";
     private string _blueprintFile = "blueprint.clips.grok.json";
     private string _modelName = "grok-imagine-video";
     private string _imageModel = "grok-imagine-image-quality";
@@ -335,6 +356,7 @@ else
             var dto = await Engine.GetConfigAsync(_projectId);
             _cfg = dto?.Config;
             if (_cfg is null) return;
+            _uiTheme = ThemeState.Normalize(GetStr("ui_theme", _uiTheme));
             _blueprintFile = GetStr("blueprint_file", _blueprintFile);
             _modelName = GetStr("model_name", _modelName);
             _imageModel = GetStr("image_model_name", _imageModel);
@@ -392,6 +414,7 @@ else
 
             var updates = new Dictionary<string, object?>
             {
+                ["ui_theme"] = _uiTheme,
                 ["blueprint_file"] = _blueprintFile,
                 ["video_provider"] = videoProvider,
                 ["character_design_provider"] = imageProvider,
@@ -456,6 +479,18 @@ else
             _error = ex.Message;
         }
         finally { _busy = false; }
+    }
+
+    /// <summary>Live-apply the theme pick to this browser tab so it's visible before Save.
+    /// Only touches the DOM when editing the currently-active project — previewing a theme
+    /// for some other project you happen to have selected here shouldn't repaint the whole app.</summary>
+    private async Task PreviewThemeAsync()
+    {
+        if (!string.Equals(_projectId, ActiveProject.ProjectId, StringComparison.OrdinalIgnoreCase))
+            return;
+        Theme.Set(_uiTheme);
+        try { await Js.InvokeVoidAsync("fsTheme.apply", _uiTheme); }
+        catch { /* ignore */ }
     }
 
     private string GetStr(string key, string fallback) =>

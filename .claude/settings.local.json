@@ -54,7 +54,12 @@
       "Bash(curl *)",
       "Bash(cp /c/Users/budcr/AppData/Local/Temp/claude/C--Users-budcr-source-repos-FilmStudio/de564faa-a0bb-43ba-8492-a0d11a3f5d3b/scratchpad/shot_scenes.mjs /c/Users/budcr/source/repos/FilmStudio/host/playwright/_shot_scenes.mjs)",
       "Bash(node _shot_scenes.mjs /c/Users/budcr/AppData/Local/Temp/claude/C--Users-budcr-source-repos-FilmStudio/de564faa-a0bb-43ba-8492-a0d11a3f5d3b/scratchpad/scenes_after.png)",
-      "Bash(node *)"
+      "Bash(node *)",
+      "Bash(git -C /c/Users/budcr/source/repos/FilmStudio status --porcelain -- host/playwright)",
+      "Bash(tasklist //FI \"IMAGENAME eq dotnet.exe\" //FO CSV)",
+      "Bash(tasklist //FI \"IMAGENAME eq FilmStudio.Web.exe\" //FO CSV)",
+      "Bash(tasklist //FI \"IMAGENAME eq FilmStudio.Api.exe\" //FO CSV)",
+      "Bash(grep -n \"theme\\\\|color\\\\|#[0-9a-fA-F]\\\\{3,6\\\\}\" /c/Users/budcr/source/repos/FilmStudio/host/FilmStudio.Web/wwwroot/js/fountain/fountain-editor.js)"
     ]
   }
 }

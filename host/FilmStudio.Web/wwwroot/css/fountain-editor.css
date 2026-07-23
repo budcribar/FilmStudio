@@ -65,9 +65,9 @@
 }
 
 .fe-panel {
-  border: 1px solid #dee2e6;
+  border: 1px solid var(--fs-border-color);
   border-radius: 0.375rem;
-  background: #fff;
+  background: var(--fs-bg-card);
   display: flex;
   flex-direction: column;
   min-height: 0;
@@ -79,10 +79,10 @@
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.03em;
-  color: #6c757d;
+  color: var(--fs-text-muted);
   padding: 0.4rem 0.65rem;
-  border-bottom: 1px solid #eee;
-  background: #f8f9fa;
+  border-bottom: 1px solid var(--fs-border-color);
+  background: var(--fs-overlay-soft);
   flex-shrink: 0;
 }
 
@@ -96,7 +96,7 @@
 .fe-scenes-expand-btn {
   border: none;
   background: transparent;
-  color: #0d6efd;
+  color: var(--fs-link);
   font-size: 0.65rem;
   font-weight: 600;
   letter-spacing: 0.03em;
@@ -108,7 +108,7 @@
 }
 
 .fe-scenes-expand-btn:hover {
-  background: #e7f1ff;
+  background: var(--fe-link-hover-bg);
   text-decoration: underline;
 }
 
@@ -131,7 +131,7 @@
 }
 
 .fe-scene-row.is-active {
-  background: #e7f1ff;
+  background: var(--fe-row-active-bg);
 }
 
 .fe-scene-btn {
@@ -144,7 +144,7 @@
   padding: 0.35rem 0.35rem 0.35rem 0.45rem;
   font-size: 0.75rem;
   line-height: 1.25;
-  color: #212529;
+  color: var(--fs-text-primary);
   border-radius: 0.25rem;
   cursor: pointer;
   /* Collapsed: single line with ellipsis */
@@ -162,11 +162,11 @@
 }
 
 .fe-scene-btn:hover {
-  background: #e9ecef;
+  background: var(--fs-bg-card-hover);
 }
 
 .fe-scene-row.is-active .fe-scene-btn {
-  color: #0b5ed7;
+  color: var(--fs-link);
   font-weight: 600;
 }
 
@@ -178,7 +178,7 @@
   flex: 0 0 auto;
   border: none;
   background: transparent;
-  color: #0d6efd;
+  color: var(--fs-link);
   font-size: 0.68rem;
   font-weight: 600;
   letter-spacing: 0.02em;
@@ -191,7 +191,7 @@
 }
 
 .fe-scene-book:hover {
-  background: #e7f1ff;
+  background: var(--fe-link-hover-bg);
   text-decoration: underline;
 }
 
@@ -209,10 +209,10 @@
   max-height: calc(100vh - 2rem);
   display: flex;
   flex-direction: column;
-  background: #fff;
-  border: 1px solid #dee2e6;
+  background: var(--fs-bg-card);
+  border: 1px solid var(--fs-border-color);
   border-radius: 0.5rem;
-  box-shadow: 0 0.5rem 1.75rem rgba(0, 0, 0, 0.18);
+  box-shadow: var(--fs-shadow-card);
   overflow: hidden;
   resize: both; /* corner-resize on supporting browsers */
 }
@@ -223,8 +223,8 @@
   justify-content: space-between;
   gap: 0.5rem;
   padding: 0.65rem 0.75rem;
-  border-bottom: 1px solid #eee;
-  background: #fffaf3;
+  border-bottom: 1px solid var(--fs-border-color);
+  background: var(--fe-note-bg);
   cursor: grab;
   user-select: none;
   touch-action: none;
@@ -238,12 +238,12 @@
   font-size: 0.95rem;
   font-weight: 600;
   margin: 0;
-  color: #664d03;
+  color: var(--fe-note-fg);
 }
 
 .fe-book-window-header .fe-book-sub {
   font-size: 0.75rem;
-  color: #6c757d;
+  color: var(--fs-text-muted);
   margin-top: 0.15rem;
   font-weight: 400;
   max-width: 18rem;
@@ -257,7 +257,7 @@
   font-weight: 500;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: #adb5bd;
+  color: var(--fs-text-muted);
   margin-top: 0.15rem;
 }
 
@@ -270,13 +270,13 @@
   line-height: 1.5;
   white-space: pre-wrap;
   font-family: Georgia, "Times New Roman", serif;
-  color: #333;
+  color: var(--fs-text-primary);
   cursor: text;
   user-select: text;
 }
 
 .fe-book-window-body .fe-book-empty {
-  color: #868e96;
+  color: var(--fs-text-muted);
   font-family: system-ui, sans-serif;
   font-size: 0.88rem;
   user-select: none;
@@ -287,7 +287,7 @@
   background: transparent;
   font-size: 1.25rem;
   line-height: 1;
-  color: #6c757d;
+  color: var(--fs-text-muted);
   cursor: pointer;
   padding: 0.15rem 0.35rem;
   border-radius: 0.25rem;
@@ -295,13 +295,13 @@
 }
 
 .fe-book-window-close:hover {
-  background: #f1f3f5;
-  color: #212529;
+  background: var(--fs-bg-card-hover);
+  color: var(--fs-text-primary);
 }
 
 .fe-scenes-empty {
   font-size: 0.8rem;
-  color: #adb5bd;
+  color: var(--fs-text-muted);
   padding: 0.5rem;
 }
 
@@ -316,42 +316,69 @@
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
   font-size: 0.88rem;
   line-height: 1.45;
+  background: var(--fs-bg-card);
+  color: var(--fe-editor-fg);
 }
 
 .fe-editor-host .CodeMirror-scroll {
   min-height: 100%;
 }
 
+.fe-editor-host .CodeMirror-gutters {
+  background: var(--fs-bg-card);
+  border-right: 1px solid var(--fs-border-color);
+}
+
+.fe-editor-host .CodeMirror-linenumber {
+  color: var(--fe-editor-gutter-fg);
+}
+
+.fe-editor-host .CodeMirror-cursor {
+  border-left-color: var(--fe-editor-cursor);
+}
+
+.fe-editor-host .CodeMirror-selected {
+  background: var(--fe-editor-selection);
+}
+
+.fe-editor-host .CodeMirror-activeline-background {
+  background: var(--fs-bg-card-hover);
+}
+
+.fe-editor-host .CodeMirror-matchingbracket {
+  color: var(--fe-token-header) !important;
+}
+
 /* Fountain mode token colors */
 .cm-s-default .cm-keyword {
-  color: #0b5ed7;
+  color: var(--fe-token-keyword);
   font-weight: 600;
   text-transform: none;
 }
 .cm-s-default .cm-def {
-  color: #6f42c1;
+  color: var(--fe-token-def);
   font-weight: 600;
 }
 .cm-s-default .cm-string {
-  color: #1a1a1a;
+  color: var(--fe-editor-fg);
 }
 .cm-s-default .cm-comment {
-  color: #6c757d;
+  color: var(--fs-text-muted);
   font-style: italic;
 }
 .cm-s-default .cm-atom {
-  color: #a15c00;
+  color: var(--fe-token-atom);
   font-weight: 600;
 }
 .cm-s-default .cm-variable-2 {
-  color: #212529;
+  color: var(--fe-editor-fg);
 }
 .cm-s-default .cm-header {
-  color: #198754;
+  color: var(--fe-token-header);
   font-weight: 600;
 }
 .cm-s-default .cm-hr {
-  color: #adb5bd;
+  color: var(--fs-text-muted);
 }
 
 /* Preview — page layout only (not an editor). Click jumps left; no edit affordances. */
@@ -367,13 +394,13 @@
   font-weight: 500;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: #adb5bd;
+  color: var(--fs-text-muted);
 }
 
 .fe-preview-body {
   flex: 1;
   overflow: auto;
-  background: #e9ecef; /* flat viewer chrome, not page paper */
+  background: var(--fe-chrome-bg); /* flat viewer chrome, not page paper */
   padding: 0.75rem;
   cursor: default;
   /* No text caret / I-beam — this is a view, not a field */
@@ -405,19 +432,19 @@
 .fp-page {
   max-width: 42rem;
   margin: 0 auto;
-  background: #fafafa;
+  background: var(--fe-page-bg);
   padding: 1.75rem 2rem 2.5rem;
-  border: 1px solid #dee2e6;
+  border: 1px solid var(--fs-border-color);
   box-shadow: none; /* less “document you type in” */
   font-family: "Courier New", Courier, monospace;
   font-size: 0.82rem;
   line-height: 1.35;
-  color: #343a40; /* slightly muted vs pure black edit pane */
+  color: var(--fe-page-fg); /* slightly muted vs pure edit-pane text */
   pointer-events: none; /* clicks don’t look like field focus; scroll still works on parent */
 }
 
 .fp-empty {
-  color: #868e96;
+  color: var(--fs-text-muted);
   font-family: system-ui, sans-serif;
   font-size: 0.9rem;
   text-align: center;
@@ -449,14 +476,14 @@
 }
 
 .fp-character.fp-dual {
-  color: #495057;
+  color: var(--fs-text-muted);
 }
 
 .fp-dual-mark {
   font-size: 0.7rem;
   font-weight: 400;
   text-transform: none;
-  color: #868e96;
+  color: var(--fs-text-muted);
 }
 
 .fp-paren {
@@ -464,7 +491,7 @@
   width: 42%;
   text-align: center;
   font-style: italic;
-  color: #333;
+  color: var(--fs-text-muted);
 }
 
 .fp-dialogue {
@@ -499,14 +526,14 @@
 .fp-section {
   margin: 1rem 0 0.35rem;
   font-weight: 700;
-  color: #198754;
+  color: var(--fe-token-header);
   font-family: system-ui, sans-serif;
   font-size: 0.85rem;
 }
 
 .fp-synopsis {
   margin: 0.25rem 0 0.75rem;
-  color: #6c757d;
+  color: var(--fs-text-muted);
   font-family: system-ui, sans-serif;
   font-size: 0.8rem;
   font-style: italic;
@@ -515,17 +542,17 @@
 .fp-note {
   margin: 0.5rem 0;
   padding: 0.35rem 0.5rem;
-  background: #fff8e1;
-  border-left: 3px solid #ffc107;
+  background: var(--fe-note-bg);
+  border-left: 3px solid var(--fe-note-border);
   font-family: system-ui, sans-serif;
   font-size: 0.78rem;
-  color: #664d03;
+  color: var(--fe-note-fg);
   font-style: italic;
 }
 
 .fp-pagebreak {
   border: none;
-  border-top: 2px dashed #ced4da;
+  border-top: 2px dashed var(--fs-border-color);
   margin: 1.25rem 0;
 }
 
@@ -536,7 +563,7 @@
 /* Locate-in-view only (not a selection/caret) */
 .fp-flash {
   outline: none;
-  box-shadow: inset 0 0 0 1px #ced4da;
-  background: #f1f3f5;
+  box-shadow: inset 0 0 0 1px var(--fs-border-hover);
+  background: var(--fs-bg-card-hover);
   transition: background 0.4s ease;
 }

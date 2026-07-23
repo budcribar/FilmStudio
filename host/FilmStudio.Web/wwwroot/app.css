@@ -1,8 +1,11 @@
-/* Master Executive Dark Theme — Film Studio Studio UI */
-:root {
+/* Master Executive Theme — Film Studio Studio UI (dark default, light variant via [data-theme]) */
+:root,
+:root[data-theme="dark"] {
     --fs-bg-main: #0c0e12;
     --fs-bg-card: #151922;
     --fs-bg-card-hover: #1c212d;
+    --fs-bg-input: #1a1f2c;
+    --fs-bg-input-focus: #1e2434;
     --fs-border-color: rgba(255, 255, 255, 0.08);
     --fs-border-hover: rgba(99, 102, 241, 0.4);
     --fs-text-primary: #f1f5f9;
@@ -11,6 +14,98 @@
     --fs-accent-indigo-hover: #4f46e5;
     --fs-accent-amber: #e2b342;
     --fs-shadow-card: 0 10px 30px -5px rgba(0, 0, 0, 0.5);
+    --fs-link: #818cf8;
+    --fs-link-hover: #a5b4fc;
+    --fs-code-color: #d63384;
+    --fs-overlay-soft: rgba(255, 255, 255, 0.03);
+    --fs-overlay-mid: rgba(255, 255, 255, 0.06);
+
+    --fs-alert-info-bg: rgba(56, 189, 248, 0.1);
+    --fs-alert-info-border: rgba(56, 189, 248, 0.25);
+    --fs-alert-info-text: #7dd3fc;
+    --fs-alert-warning-bg: rgba(245, 158, 11, 0.1);
+    --fs-alert-warning-border: rgba(245, 158, 11, 0.25);
+    --fs-alert-warning-text: #fde68a;
+    --fs-alert-danger-bg: rgba(239, 68, 68, 0.1);
+    --fs-alert-danger-border: rgba(239, 68, 68, 0.25);
+    --fs-alert-danger-text: #fca5a5;
+    --fs-alert-success-bg: rgba(34, 197, 94, 0.1);
+    --fs-alert-success-border: rgba(34, 197, 94, 0.25);
+    --fs-alert-success-text: #86efac;
+    --fs-alert-secondary-bg: rgba(255, 255, 255, 0.04);
+    --fs-alert-secondary-text: #cbd5e1;
+
+    /* Fountain screenplay editor (scenes list / CodeMirror / page preview) */
+    --fe-editor-fg: var(--fs-text-primary);
+    --fe-editor-gutter-fg: var(--fs-text-muted);
+    --fe-editor-cursor: var(--fs-text-primary);
+    --fe-editor-selection: rgba(99, 102, 241, 0.28);
+    --fe-token-keyword: #7dd3fc;
+    --fe-token-def: #c4b5fd;
+    --fe-token-atom: #e2b342;
+    --fe-token-header: #86efac;
+    --fe-row-active-bg: rgba(99, 102, 241, 0.16);
+    --fe-link-hover-bg: rgba(99, 102, 241, 0.15);
+    --fe-note-bg: rgba(226, 179, 66, 0.1);
+    --fe-note-border: rgba(226, 179, 66, 0.4);
+    --fe-note-fg: #e2b342;
+    --fe-chrome-bg: var(--fs-bg-main);
+    --fe-page-bg: var(--fs-bg-card);
+    --fe-page-fg: #d7dce3;
+}
+
+:root[data-theme="light"] {
+    --fs-bg-main: #f5f6f8;
+    --fs-bg-card: #ffffff;
+    --fs-bg-card-hover: #f4f5f8;
+    --fs-bg-input: #ffffff;
+    --fs-bg-input-focus: #ffffff;
+    --fs-border-color: rgba(15, 23, 42, 0.12);
+    --fs-border-hover: rgba(79, 70, 229, 0.4);
+    --fs-text-primary: #191c24;
+    --fs-text-muted: #5b6472;
+    --fs-accent-indigo: #4f46e5;
+    --fs-accent-indigo-hover: #4338ca;
+    --fs-accent-amber: #b45309;
+    --fs-shadow-card: 0 8px 24px -6px rgba(15, 23, 42, 0.12);
+    --fs-link: #4f46e5;
+    --fs-link-hover: #4338ca;
+    --fs-code-color: #c2255c;
+    --fs-overlay-soft: rgba(15, 23, 42, 0.03);
+    --fs-overlay-mid: rgba(15, 23, 42, 0.05);
+
+    --fs-alert-info-bg: rgba(2, 132, 199, 0.08);
+    --fs-alert-info-border: rgba(2, 132, 199, 0.25);
+    --fs-alert-info-text: #075985;
+    --fs-alert-warning-bg: rgba(217, 119, 6, 0.1);
+    --fs-alert-warning-border: rgba(217, 119, 6, 0.3);
+    --fs-alert-warning-text: #7c3d05;
+    --fs-alert-danger-bg: rgba(220, 38, 38, 0.08);
+    --fs-alert-danger-border: rgba(220, 38, 38, 0.25);
+    --fs-alert-danger-text: #991b1b;
+    --fs-alert-success-bg: rgba(21, 128, 61, 0.08);
+    --fs-alert-success-border: rgba(21, 128, 61, 0.25);
+    --fs-alert-success-text: #166534;
+    --fs-alert-secondary-bg: rgba(15, 23, 42, 0.035);
+    --fs-alert-secondary-text: #384252;
+
+    /* Fountain screenplay editor (scenes list / CodeMirror / page preview) */
+    --fe-editor-fg: #1a1a1a;
+    --fe-editor-gutter-fg: #999999;
+    --fe-editor-cursor: #1a1a1a;
+    --fe-editor-selection: #d9d9d9;
+    --fe-token-keyword: #0b5ed7;
+    --fe-token-def: #6f42c1;
+    --fe-token-atom: #a15c00;
+    --fe-token-header: #198754;
+    --fe-row-active-bg: #e7f1ff;
+    --fe-link-hover-bg: #e7f1ff;
+    --fe-note-bg: #fff8e1;
+    --fe-note-border: #ffc107;
+    --fe-note-fg: #664d03;
+    --fe-chrome-bg: #e9ecef;
+    --fe-page-bg: #fafafa;
+    --fe-page-fg: #343a40;
 }
 
 html, body {
@@ -33,35 +128,56 @@ h1, h2, h3, h4, h5, h6, .h1, .h2, .h3, .h4, .h5, .h6 {
     height: 8px;
 }
 ::-webkit-scrollbar-track {
-    background: #090b10;
+    background: var(--fs-bg-main);
 }
 ::-webkit-scrollbar-thumb {
-    background: #252b3b;
+    background: var(--fs-border-hover);
     border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
-    background: #3b4358;
+    background: var(--fs-accent-indigo);
 }
 
-/* Glassmorphic Dark Cards */
+/* Glassmorphic Cards */
 .card {
     background: var(--fs-bg-card);
     border: 1px solid var(--fs-border-color);
     border-radius: 12px;
     box-shadow: var(--fs-shadow-card);
     transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    color: var(--fs-text-primary);
 }
 
-.card-header {
-    background: rgba(255, 255, 255, 0.02);
+.card-header, .card-footer {
+    background: var(--fs-overlay-soft);
     border-bottom: 1px solid var(--fs-border-color);
+    color: var(--fs-text-primary);
     font-weight: 600;
     font-family: 'Outfit', sans-serif;
     padding: 0.85rem 1.25rem;
 }
 
+.card-footer {
+    border-top: 1px solid var(--fs-border-color);
+    border-bottom: none;
+    font-weight: 400;
+    font-family: inherit;
+}
+
 .card-body {
     padding: 1.25rem;
+}
+
+/* Labels / help text — Bootstrap defaults to near-black body text here, which
+   only reads correctly on a light background. Force theme text color explicitly. */
+label,
+.form-label,
+.form-check-label {
+    color: var(--fs-text-primary);
+}
+
+.form-text {
+    color: var(--fs-text-muted);
 }
 
 /* Button Refinements */
@@ -86,80 +202,151 @@ h1, h2, h3, h4, h5, h6, .h1, .h2, .h3, .h4, .h5, .h6 {
 }
 
 .btn-outline-primary {
-    color: #818cf8;
+    color: var(--fs-accent-indigo);
     border-color: rgba(99, 102, 241, 0.5);
     background: transparent;
 }
 
 .btn-outline-primary:hover:not(:disabled) {
     background: rgba(99, 102, 241, 0.15);
-    color: #a5b4fc;
-    border-color: #818cf8;
+    color: var(--fs-accent-indigo-hover);
+    border-color: var(--fs-accent-indigo);
 }
 
 .btn-outline-secondary {
-    color: #cbd5e1;
-    border-color: rgba(255, 255, 255, 0.15);
+    color: var(--fs-text-primary);
+    border-color: var(--fs-border-color);
     background: transparent;
 }
 
 .btn-outline-secondary:hover:not(:disabled) {
-    background: rgba(255, 255, 255, 0.06);
-    color: #fff;
-    border-color: rgba(255, 255, 255, 0.3);
+    background: var(--fs-overlay-mid);
+    color: var(--fs-text-primary);
+    border-color: var(--fs-border-hover);
 }
 
 .btn:focus, .btn:active:focus, .form-control:focus, .form-select:focus {
     box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.35);
 }
 
-/* Form inputs dark styling */
+/* Form inputs */
 .form-control, .form-select, textarea.form-control {
-    background-color: #1a1f2c;
+    background-color: var(--fs-bg-input);
     border: 1px solid var(--fs-border-color);
     color: var(--fs-text-primary);
     border-radius: 8px;
 }
 
 .form-control:focus, .form-select:focus {
-    background-color: #1e2434;
-    border-color: #6366f1;
+    background-color: var(--fs-bg-input-focus);
+    border-color: var(--fs-accent-indigo);
     color: var(--fs-text-primary);
 }
 
 .form-control::placeholder {
-    color: #64748b;
+    color: var(--fs-text-muted);
+}
+
+/* Tables — Bootstrap defaults to a solid white row background, which breaks
+   the theme and drags every muted/link color inside it out of contrast. */
+.table {
+    color: var(--fs-text-primary);
+    border-color: var(--fs-border-color);
+}
+
+.table > :not(caption) > * > * {
+    background-color: var(--fs-bg-card);
+    color: var(--fs-text-primary);
+    border-bottom-color: var(--fs-border-color);
+    box-shadow: none;
+}
+
+.table > thead > tr > * {
+    color: var(--fs-text-muted);
+    font-weight: 600;
+}
+
+.table-hover > tbody > tr:hover > * {
+    background-color: var(--fs-bg-card-hover);
+}
+
+.table-striped > tbody > tr:nth-of-type(odd) > * {
+    background-color: var(--fs-overlay-soft);
+}
+
+/* List groups (project list, cast list) — same white-background default gap. */
+.list-group-item {
+    background-color: var(--fs-bg-card);
+    color: var(--fs-text-primary);
+    border-color: var(--fs-border-color);
+}
+
+.list-group-item-action:hover,
+.list-group-item-action:focus {
+    background-color: var(--fs-bg-card-hover);
+    color: var(--fs-text-primary);
+}
+
+.list-group-item.active {
+    background-color: var(--fs-accent-indigo);
+    border-color: var(--fs-accent-indigo);
+    color: #fff;
+}
+
+/* Preformatted / code blocks (About page architecture + run scripts, etc.) */
+pre, .bg-light {
+    background-color: var(--fs-bg-card) !important;
+    color: var(--fs-text-primary) !important;
+    border: 1px solid var(--fs-border-color);
+}
+
+code {
+    color: var(--fs-code-color);
 }
 
 /* Alerts styling */
 .alert-info {
-    background-color: rgba(56, 189, 248, 0.1);
-    border: 1px solid rgba(56, 189, 248, 0.25);
-    color: #7dd3fc;
+    background-color: var(--fs-alert-info-bg);
+    border: 1px solid var(--fs-alert-info-border);
+    color: var(--fs-alert-info-text);
 }
 
 .alert-warning {
-    background-color: rgba(245, 158, 11, 0.1);
-    border: 1px solid rgba(245, 158, 11, 0.25);
-    color: #fde68a;
+    background-color: var(--fs-alert-warning-bg);
+    border: 1px solid var(--fs-alert-warning-border);
+    color: var(--fs-alert-warning-text);
 }
 
 .alert-secondary {
-    background-color: rgba(255, 255, 255, 0.04);
+    background-color: var(--fs-alert-secondary-bg);
     border: 1px solid var(--fs-border-color);
-    color: #cbd5e1;
+    color: var(--fs-alert-secondary-text);
 }
 
 .alert-danger {
-    background-color: rgba(239, 68, 68, 0.1);
-    border: 1px solid rgba(239, 68, 68, 0.25);
-    color: #fca5a5;
+    background-color: var(--fs-alert-danger-bg);
+    border: 1px solid var(--fs-alert-danger-border);
+    color: var(--fs-alert-danger-text);
+}
+
+.alert-success {
+    background-color: var(--fs-alert-success-bg);
+    border: 1px solid var(--fs-alert-success-border);
+    color: var(--fs-alert-success-text);
+}
+
+.alert strong {
+    color: inherit;
+}
+
+.text-warning {
+    color: var(--fs-accent-amber) !important;
 }
 
 /* Nav Pills (Step navigation) */
 .nav-pills .nav-link {
-    color: #94a3b8;
-    background: rgba(255, 255, 255, 0.03);
+    color: var(--fs-text-muted);
+    background: var(--fs-overlay-soft);
     border: 1px solid var(--fs-border-color);
     border-radius: 8px;
     padding: 0.5rem 1rem;
@@ -169,23 +356,19 @@ h1, h2, h3, h4, h5, h6, .h1, .h2, .h3, .h4, .h5, .h6 {
 
 .nav-pills .nav-link.active {
     background: linear-gradient(135deg, rgba(99, 102, 241, 0.2) 0%, rgba(79, 70, 229, 0.2) 100%);
-    border-color: #6366f1;
-    color: #a5b4fc;
+    border-color: var(--fs-accent-indigo);
+    color: var(--fs-accent-indigo-hover);
     box-shadow: 0 2px 8px rgba(99, 102, 241, 0.2);
 }
 
 .nav-pills .nav-link:hover:not(.active):not(.disabled) {
-    background: rgba(255, 255, 255, 0.06);
-    color: #f1f5f9;
+    background: var(--fs-overlay-mid);
+    color: var(--fs-text-primary);
 }
 
 .nav-pills .nav-link.disabled {
     opacity: 0.4;
     cursor: not-allowed;
-}
-
-.text-muted {
-    color: var(--fs-text-muted) !important;
 }
 
 /* Badges */
@@ -201,8 +384,8 @@ h1, h2, h3, h4, h5, h6, .h1, .h2, .h3, .h4, .h5, .h6 {
     border-radius: 0.75rem;
 }
 .loadsim-kpi {
-    background: rgba(255,255,255,0.04);
-    border: 1px solid rgba(148,163,184,0.15);
+    background: var(--fs-overlay-soft);
+    border: 1px solid var(--fs-border-color);
     border-radius: 0.5rem;
     padding: 0.55rem 0.4rem;
 }
@@ -210,23 +393,23 @@ h1, h2, h3, h4, h5, h6, .h1, .h2, .h3, .h4, .h5, .h6 {
     font-size: 1.35rem;
     font-weight: 700;
     line-height: 1.2;
-    color: #f1f5f9;
+    color: var(--fs-text-primary);
     font-variant-numeric: tabular-nums;
 }
 .loadsim-kpi__lbl {
     font-size: 0.7rem;
     text-transform: uppercase;
     letter-spacing: 0.04em;
-    color: #94a3b8;
+    color: var(--fs-text-muted);
     margin-top: 0.15rem;
 }
 .loadsim-chart-wrap {
     height: 220px;
     position: relative;
-    background: rgba(15,23,42,0.6);
+    background: var(--fs-overlay-soft);
     border-radius: 0.5rem;
     padding: 0.5rem 0.5rem 0.25rem;
-    border: 1px solid rgba(148,163,184,0.12);
+    border: 1px solid var(--fs-border-color);
     display: flex;
     flex-direction: column;
 }
@@ -237,7 +420,7 @@ h1, h2, h3, h4, h5, h6, .h1, .h2, .h3, .h4, .h5, .h6 {
     font-size: 0.75rem;
     text-transform: uppercase;
     letter-spacing: 0.04em;
-    color: #94a3b8;
+    color: var(--fs-text-muted);
     margin-bottom: 0.35rem;
     flex: 0 0 auto;
 }
@@ -248,30 +431,34 @@ h1, h2, h3, h4, h5, h6, .h1, .h2, .h3, .h4, .h5, .h6 {
 .loadsim-action-table {
     font-size: 0.8rem;
     --bs-table-bg: transparent;
-    --bs-table-color: #cbd5e1;
-    --bs-table-border-color: rgba(148,163,184,0.15);
-    --bs-table-striped-bg: rgba(255,255,255,0.03);
+    --bs-table-color: var(--fs-text-primary);
+    --bs-table-border-color: var(--fs-border-color);
+    --bs-table-striped-bg: var(--fs-overlay-soft);
 }
 .loadsim-action-table thead th {
-    color: #94a3b8;
+    color: var(--fs-text-muted);
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.03em;
     font-size: 0.68rem;
-    border-bottom-color: rgba(148,163,184,0.25);
+    border-bottom-color: var(--fs-border-color);
 }
 .loadsim-action-table tbody tr.table-warning {
     --bs-table-bg: rgba(245, 158, 11, 0.12);
-    --bs-table-color: #fde68a;
-    color: #fde68a;
+    --bs-table-color: var(--fs-alert-warning-text);
+    color: var(--fs-alert-warning-text);
 }
 
 a, .btn-link {
-    color: #818cf8;
+    color: var(--fs-link);
 }
 
 a:hover, .btn-link:hover {
-    color: #a5b4fc;
+    color: var(--fs-link-hover);
+}
+
+.text-muted {
+    color: var(--fs-text-muted) !important;
 }
 
 .content {

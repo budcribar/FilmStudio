@@ -1,105 +1,98 @@
 {
-  "builtAtUtc": "2026-07-22T20:25:19.4051792Z",
+  "builtAtUtc": "2026-07-23T13:50:56.4145088Z",
   "scene": 1,
-  "count": 14,
+  "count": 13,
   "clips": [
     {
       "name": "scene_01_clip_01.mp4",
       "scene": 1,
       "clip": 1,
-      "bytes": 1355354,
-      "mtimeUtc": "2026-07-22T02:13:09.7283542Z"
+      "bytes": 668027,
+      "mtimeUtc": "2026-07-23T12:38:14.4059556Z"
     },
     {
       "name": "scene_01_clip_02.mp4",
       "scene": 1,
       "clip": 2,
-      "bytes": 1008245,
-      "mtimeUtc": "2026-07-22T14:06:41.5762688Z"
+      "bytes": 495787,
+      "mtimeUtc": "2026-07-23T12:38:56.5476068Z"
     },
     {
       "name": "scene_01_clip_03.mp4",
       "scene": 1,
       "clip": 3,
-      "bytes": 1212372,
-      "mtimeUtc": "2026-07-22T14:08:40.2383264Z"
+      "bytes": 770878,
+      "mtimeUtc": "2026-07-23T12:39:38.2985923Z"
     },
     {
       "name": "scene_01_clip_04.mp4",
       "scene": 1,
       "clip": 4,
-      "bytes": 1494658,
-      "mtimeUtc": "2026-07-22T14:35:18.5208094Z"
+      "bytes": 486534,
+      "mtimeUtc": "2026-07-23T12:40:20.7784900Z"
     },
     {
       "name": "scene_01_clip_05.mp4",
       "scene": 1,
       "clip": 5,
-      "bytes": 907903,
-      "mtimeUtc": "2026-07-22T14:36:49.2096163Z"
+      "bytes": 758950,
+      "mtimeUtc": "2026-07-23T12:41:02.9671355Z"
     },
     {
       "name": "scene_01_clip_06.mp4",
       "scene": 1,
       "clip": 6,
-      "bytes": 2247301,
-      "mtimeUtc": "2026-07-22T14:38:22.0793817Z"
+      "bytes": 828170,
+      "mtimeUtc": "2026-07-23T12:42:05.9570284Z"
     },
     {
       "name": "scene_01_clip_07.mp4",
       "scene": 1,
       "clip": 7,
-      "bytes": 1233685,
-      "mtimeUtc": "2026-07-22T14:39:58.4347178Z"
+      "bytes": 1070580,
+      "mtimeUtc": "2026-07-23T12:42:55.3802941Z"
     },
     {
       "name": "scene_01_clip_08.mp4",
       "scene": 1,
       "clip": 8,
-      "bytes": 1857934,
-      "mtimeUtc": "2026-07-22T14:41:32.1880832Z"
+      "bytes": 854568,
+      "mtimeUtc": "2026-07-23T12:43:30.9817477Z"
     },
     {
       "name": "scene_01_clip_09.mp4",
       "scene": 1,
       "clip": 9,
-      "bytes": 1130857,
-      "mtimeUtc": "2026-07-22T14:42:49.7373401Z"
+      "bytes": 449780,
+      "mtimeUtc": "2026-07-23T12:44:06.7168250Z"
     },
     {
       "name": "scene_01_clip_10.mp4",
       "scene": 1,
       "clip": 10,
-      "bytes": 821317,
-      "mtimeUtc": "2026-07-22T14:44:03.9725202Z"
+      "bytes": 672864,
+      "mtimeUtc": "2026-07-23T12:44:54.5672688Z"
     },
     {
       "name": "scene_01_clip_11.mp4",
       "scene": 1,
       "clip": 11,
-      "bytes": 1681642,
-      "mtimeUtc": "2026-07-22T14:45:47.6076759Z"
+      "bytes": 399659,
+      "mtimeUtc": "2026-07-23T12:45:41.2198833Z"
     },
     {
       "name": "scene_01_clip_12.mp4",
       "scene": 1,
       "clip": 12,
-      "bytes": 1845594,
-      "mtimeUtc": "2026-07-22T14:47:50.2796943Z"
+      "bytes": 701187,
+      "mtimeUtc": "2026-07-23T12:46:17.7592716Z"
     },
     {
       "name": "scene_01_clip_13.mp4",
       "scene": 1,
       "clip": 13,
-      "bytes": 2067387,
-      "mtimeUtc": "2026-07-22T14:49:27.7764995Z"
-    },
-    {
-      "name": "scene_01_clip_14.mp4",
-      "scene": 1,
-      "clip": 14,
-      "bytes": 2674530,
-      "mtimeUtc": "2026-07-22T16:32:10.6408463Z"
+      "bytes": 541854,
+      "mtimeUtc": "2026-07-23T12:46:54.6494175Z"
     }
   ],
   "included": [
@@ -180,16 +173,10 @@
       "scene": 1,
       "clip": 13,
       "reason": "eligible"
-    },
-    {
-      "name": "scene_01_clip_14.mp4",
-      "scene": 1,
-      "clip": 14,
-      "reason": "eligible"
     }
   ],
   "excluded": [],
   "strict": true,
   "assemblyGate": true,
-  "totalDurationSeconds": 82.33
+  "totalDurationSeconds": 63.64
 }

@@ -1,6 +1,8 @@
 @inject AdminSessionService Session
 @inject ActiveProjectState ActiveProject
 @inject EngineApiClient Engine
+@inject ThemeState Theme
+@inject IJSRuntime Js
 @implements IDisposable
 
 @* Mobile hamburger (desktop collapse is on MainLayout) *@
@@ -125,6 +127,8 @@
         </div>
     };
 
+    private string? _themedProjectId;
+
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (!firstRender || _started) return;
@@ -133,6 +137,7 @@
         Session.Changed += OnSessionChanged;
         ActiveProject.Changed += OnProjectChanged;
         await ActiveProject.RefreshFromApiAsync(Engine);
+        await RefreshThemeAsync();
         StateHasChanged();
     }
 
@@ -140,7 +145,38 @@
 
     // Readiness is refreshed by RefreshFromApiAsync / callers after Set — only re-render here
     // (RefreshReadinessAsync must not be invoked from Changed or it loops).
-    private void OnProjectChanged() => InvokeAsync(StateHasChanged);
+    private void OnProjectChanged() => InvokeAsync(async () =>
+    {
+        await RefreshThemeAsync();
+        StateHasChanged();
+    });
+
+    /// <summary>Pulls ui_theme from the active project's config and applies it to the DOM.
+    /// Cheap no-op re-fetch guarded by project id so it only hits the API on an actual switch.</summary>
+    private async Task RefreshThemeAsync()
+    {
+        var pid = ActiveProject.HasProject ? ActiveProject.ProjectId : null;
+        if (string.Equals(pid, _themedProjectId, StringComparison.OrdinalIgnoreCase)) return;
+        _themedProjectId = pid;
+
+        var pref = "dark";
+        if (pid is { Length: > 0 })
+        {
+            try
+            {
+                var dto = await Engine.GetConfigAsync(pid);
+                if (dto?.Config is { } cfg &&
+                    cfg.TryGetValue("ui_theme", out var el) &&
+                    el.ValueKind == System.Text.Json.JsonValueKind.String)
+                    pref = el.GetString() ?? "dark";
+            }
+            catch { /* API blip — keep default */ }
+        }
+
+        Theme.Set(pref);
+        try { await Js.InvokeVoidAsync("fsTheme.apply", pref); }
+        catch { /* prerender / no JS yet */ }
+    }
 
     public void Dispose()
     {

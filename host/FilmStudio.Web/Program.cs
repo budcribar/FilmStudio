@@ -11,6 +11,7 @@ builder.Services.Configure<EngineApiOptions>(
 
 builder.Services.AddScoped<AdminSessionService>();
 builder.Services.AddScoped<ActiveProjectState>();
+builder.Services.AddScoped<ThemeState>();
 // ProtectedSessionStorage is used by AdminSessionService to survive per-page circuits
 builder.Services.AddHttpClient("FilmStudio.Api", (sp, client) =>
 {

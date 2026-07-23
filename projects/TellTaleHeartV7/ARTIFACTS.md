@@ -2,7 +2,7 @@
 
 Map of project-local artifacts for manual whole-project review (e.g. point Claude/Codex at this folder). Zip export deferred; data lives here.
 
-Built: **2026-07-23 12:26:43Z** · Ready for manual final review: **no**
+Built: **2026-07-23 13:51:05Z** · Ready for manual final review: **no**
 
 ## Stats
 
@@ -31,7 +31,7 @@ Built: **2026-07-23 12:26:43Z** · Ready for manual final review: **no**
 | yes | `project.json` | Project id/title |
 | yes | `project_rules.json` | Approved house rules / style locks *(core)* |
 | yes | `pipeline_state.json` | Clip reviews, auto-review state, cost_ledger *(core)* |
-| no | `pipeline_config.json` | Per-project gen config (model, resolution) |
+| yes | `pipeline_config.json` | Per-project gen config (model, resolution) |
 | no | `edit_feedback_log.json` | Human edit / pass-fail log |
 | yes | `blueprint.clips.grok.json` | Stage 2 shot plan / clips *(core)* |
 | yes | `assets/movie_wip.mp4` | Full cut (WIP) *(core)* |

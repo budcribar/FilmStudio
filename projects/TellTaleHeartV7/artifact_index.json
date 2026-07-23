@@ -1,6 +1,6 @@
 {
   "projectId": "TellTaleHeartV7",
-  "builtAtUtc": "2026-07-23T12:26:43.0039981+00:00",
+  "builtAtUtc": "2026-07-23T13:51:05.7056609+00:00",
   "schemaVersion": "1",
   "purpose": "Map of project-local artifacts for manual whole-project review (e.g. point Claude/Codex at this folder). Zip export deferred; data lives here.",
   "readyForManualFinalReview": false,
@@ -68,15 +68,15 @@
       "path": "pipeline_state.json",
       "role": "Clip reviews, auto-review state, cost_ledger",
       "exists": true,
-      "bytes": 33253,
+      "bytes": 43861,
       "fileCount": null,
       "requiredForManualReview": true
     },
     {
       "path": "pipeline_config.json",
       "role": "Per-project gen config (model, resolution)",
-      "exists": false,
-      "bytes": null,
+      "exists": true,
+      "bytes": 1028,
       "fileCount": null,
       "requiredForManualReview": false
     },
@@ -100,7 +100,7 @@
       "path": "assets/movie_wip.mp4",
       "role": "Full cut (WIP)",
       "exists": true,
-      "bytes": 27732926,
+      "bytes": 9463022,
       "fileCount": null,
       "requiredForManualReview": true
     },
@@ -108,7 +108,7 @@
       "path": "assets/movie_wip.mp4.sources.json",
       "role": "WIP concat sources \u002B assembly note",
       "exists": true,
-      "bytes": 1234,
+      "bytes": 1230,
       "fileCount": null,
       "requiredForManualReview": false
     },
@@ -124,15 +124,15 @@
       "path": "assets/video",
       "role": "Clips \u002B scene composites \u002B duration sidecars",
       "exists": true,
-      "bytes": 54664302,
-      "fileCount": 86,
+      "bytes": 52536240,
+      "fileCount": 122,
       "requiredForManualReview": true
     },
     {
       "path": "assets/video/prompts",
       "role": "Full prompt .txt \u002B .meta.json per clip",
       "exists": true,
-      "bytes": 137152,
+      "bytes": 194599,
       "fileCount": 40,
       "requiredForManualReview": true
     },
@@ -180,7 +180,7 @@
       "path": "telemetry/cost_ledger.json",
       "role": "Cost events snapshot (from pipeline_state)",
       "exists": true,
-      "bytes": 32991,
+      "bytes": 40630,
       "fileCount": null,
       "requiredForManualReview": true
     },
@@ -188,7 +188,7 @@
       "path": "telemetry/models.json",
       "role": "Resolved models/options snapshot",
       "exists": true,
-      "bytes": 366,
+      "bytes": 1484,
       "fileCount": null,
       "requiredForManualReview": false
     },
@@ -196,7 +196,7 @@
       "path": "telemetry/api_calls.jsonl",
       "role": "Live API call log (full prompts)",
       "exists": true,
-      "bytes": 2514743,
+      "bytes": 2598108,
       "fileCount": null,
       "requiredForManualReview": false
     },
@@ -204,7 +204,7 @@
       "path": "telemetry/ffmpeg.jsonl",
       "role": "Condensed ffmpeg ops",
       "exists": true,
-      "bytes": 18515,
+      "bytes": 24047,
       "fileCount": null,
       "requiredForManualReview": false
     },
@@ -228,7 +228,7 @@
       "path": "assets/video/scene_01.mp4.sources.json",
       "role": "Scene remux include/exclude manifest",
       "exists": true,
-      "bytes": 4220,
+      "bytes": 3923,
       "fileCount": null,
       "requiredForManualReview": false
     },
@@ -236,7 +236,7 @@
       "path": "assets/video/scene_02.mp4.sources.json",
       "role": "Scene remux include/exclude manifest",
       "exists": true,
-      "bytes": 1928,
+      "bytes": 1641,
       "fileCount": null,
       "requiredForManualReview": false
     }
