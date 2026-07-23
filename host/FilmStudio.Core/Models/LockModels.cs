@@ -40,6 +40,12 @@ public static class LockKeys
         return $"project:{projectId.Trim()}:char:{charKey.Trim()}";
     }
 
+    public static string YouTube(string projectId)
+    {
+        RequireProjectId(projectId);
+        return $"project:{projectId.Trim()}:youtube";
+    }
+
     private static void RequireProjectId(string projectId)
     {
         if (string.IsNullOrWhiteSpace(projectId))

@@ -2016,6 +2016,34 @@ public sealed class ProjectStore
         return File.Exists(full) && new FileInfo(full).Length >= 1024 ? full : null;
     }
 
+    /// <summary>Last successful YouTube upload for a project, or null if never uploaded.</summary>
+    public async Task<YouTubeUploadInfo?> GetYouTubeUploadInfoAsync(string projectId, CancellationToken ct = default)
+    {
+        var path = Path.Combine(GetProjectDir(projectId), "assets", "youtube_upload.json");
+        if (!File.Exists(path))
+            return null;
+        try
+        {
+            await using var stream = File.OpenRead(path);
+            return await JsonSerializer.DeserializeAsync<YouTubeUploadInfo>(stream, JsonOpts, ct)
+                .ConfigureAwait(false);
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    public async Task SaveYouTubeUploadInfoAsync(string projectId, YouTubeUploadInfo info, CancellationToken ct = default)
+    {
+        var dir = Path.Combine(GetProjectDir(projectId), "assets");
+        Directory.CreateDirectory(dir);
+        await File.WriteAllTextAsync(
+            Path.Combine(dir, "youtube_upload.json"),
+            JsonSerializer.Serialize(info, JsonOpts),
+            ct).ConfigureAwait(false);
+    }
+
     public string ResolveScenesJsonPath(string projectId)
     {
         var dir = GetProjectDir(projectId);

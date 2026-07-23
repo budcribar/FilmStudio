@@ -98,6 +98,7 @@ builder.Services.AddSingleton<ProjectTelemetryService>();
 builder.Services.AddSingleton<ReviewIndexService>();
 builder.Services.AddSingleton<ClipAutoReviewService>();
 builder.Services.AddSingleton<ProjectArtifactIndexService>();
+builder.Services.AddSingleton<YouTubeAuthService>();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddSingleton<IUserContext, HttpUserContext>();
 builder.Services.AddSingleton<IUserApiKeyProvider, ConfigUserApiKeyProvider>();
@@ -689,6 +690,56 @@ app.MapPost("/api/admin/locks/release", (AdminReleaseLockRequest body, IUserCont
         return Results.BadRequest(new { ok = false, error = "resource required" });
     var ok = locks.Release(body.Resource.Trim(), user.UserId, force: body.Force || true);
     return Results.Ok(new { ok, resource = body.Resource, locks = locks.ListActive() });
+});
+
+// Shared, instance-wide YouTube channel connection (not per-user). Status is readable by
+// anyone; connecting/disconnecting the channel is admin-only.
+app.MapGet("/api/youtube/status", async (YouTubeAuthService youTube, CancellationToken ct) =>
+{
+    var connected = youTube.IsConfigured && await youTube.IsConnectedAsync(ct);
+    return Results.Ok(new { ok = true, configured = youTube.IsConfigured, connected });
+});
+
+app.MapGet("/api/youtube/connect-url", (IUserContext user, YouTubeAuthService youTube) =>
+{
+    if (!user.IsAdmin)
+        return Results.Json(new { ok = false, error = "admin role required" },
+            statusCode: StatusCodes.Status403Forbidden);
+    if (!youTube.IsConfigured)
+        return Results.Json(new
+        {
+            ok = false,
+            error = "YouTube OAuth is not configured (FilmStudio:YouTube:ClientId/ClientSecret/RedirectUri).",
+        }, statusCode: StatusCodes.Status409Conflict);
+    var state = Guid.NewGuid().ToString("N");
+    return Results.Ok(new { ok = true, url = youTube.BuildAuthorizationUrl(state) });
+});
+
+app.MapGet("/api/youtube/oauth2callback", async (
+    string? code, string? state, string? error, YouTubeAuthService youTube, CancellationToken ct) =>
+{
+    if (!string.IsNullOrWhiteSpace(error))
+        return Results.Redirect($"/review?youtube=error&message={Uri.EscapeDataString(error)}");
+    if (string.IsNullOrWhiteSpace(code) || string.IsNullOrWhiteSpace(state) || !youTube.ConsumeState(state))
+        return Results.Redirect("/review?youtube=error&message=" + Uri.EscapeDataString("Invalid or expired request."));
+    try
+    {
+        await youTube.ExchangeCodeAsync(code, ct);
+        return Results.Redirect("/review?youtube=connected");
+    }
+    catch (Exception ex)
+    {
+        return Results.Redirect($"/review?youtube=error&message={Uri.EscapeDataString(ex.Message)}");
+    }
+});
+
+app.MapPost("/api/youtube/disconnect", async (IUserContext user, YouTubeAuthService youTube, CancellationToken ct) =>
+{
+    if (!user.IsAdmin)
+        return Results.Json(new { ok = false, error = "admin role required" },
+            statusCode: StatusCodes.Status403Forbidden);
+    await youTube.DisconnectAsync(ct);
+    return Results.Ok(new { ok = true });
 });
 
 app.MapPost("/api/jobs/{jobId}/cancel", async (string jobId, FilmJobService jobService, IUserContext user) =>
@@ -2028,6 +2079,26 @@ app.MapPost("/api/jobs/remux", async (StartRemuxRequest body, FilmJobService job
     }
 });
 
+app.MapPost("/api/jobs/youtube-upload", async (StartYouTubeUploadRequest body, FilmJobService jobService) =>
+{
+    try
+    {
+        if (string.IsNullOrWhiteSpace(body.ProjectId))
+            return Results.BadRequest(new { ok = false, error = "projectId required" });
+        var job = await jobService.StartYouTubeUploadAsync(body);
+        return Results.Accepted($"/api/jobs/{job.JobId}", new
+        {
+            ok = true,
+            message = "Queued YouTube upload",
+            job,
+        });
+    }
+    catch (Exception ex)
+    {
+        return JobStartError(ex, jobService);
+    }
+});
+
 // ---- Review / edit log ----
 app.MapGet("/api/projects/{id}/edit-log", async (string id, EditLogService logs, CancellationToken ct) =>
 {
@@ -2404,6 +2475,20 @@ app.MapGet("/api/projects/{id}/movie/wip", (string id, ProjectStore store) =>
         if (path is null)
             return Results.NotFound(new { ok = false, error = "WIP movie not found — rebuild WIP first" });
         return Results.File(path, "video/mp4", enableRangeProcessing: true);
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { ok = false, error = ex.Message });
+    }
+});
+
+/// <summary>Most recent YouTube upload for this project's WIP movie, if any.</summary>
+app.MapGet("/api/projects/{id}/movie/youtube", async (string id, ProjectStore store, CancellationToken ct) =>
+{
+    try
+    {
+        var info = await store.GetYouTubeUploadInfoAsync(id, ct);
+        return Results.Ok(new { ok = true, projectId = id, upload = info });
     }
     catch (Exception ex)
     {

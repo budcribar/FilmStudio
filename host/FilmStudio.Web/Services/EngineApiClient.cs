@@ -600,6 +600,49 @@ public sealed class EngineApiClient
             JsonOpts,
             ct);
 
+    public async Task<YouTubeStatusDto?> GetYouTubeStatusAsync(CancellationToken ct = default) =>
+        await _http.GetFromJsonAsync<YouTubeStatusDto>("/api/youtube/status", JsonOpts, ct);
+
+    /// <summary>Admin-only. Returns the Google consent URL to navigate the browser to.</summary>
+    public async Task<string> GetYouTubeConnectUrlAsync(CancellationToken ct = default)
+    {
+        using var resp = await _http.GetAsync("/api/youtube/connect-url", ct);
+        var body = await resp.Content.ReadAsStringAsync(ct);
+        if (!resp.IsSuccessStatusCode)
+            throw new InvalidOperationException(TryError(body) ?? resp.ReasonPhrase);
+        var dto = JsonSerializer.Deserialize<YouTubeConnectUrlDto>(body, JsonOpts);
+        return dto?.Url ?? "";
+    }
+
+    public async Task DisconnectYouTubeAsync(CancellationToken ct = default)
+    {
+        using var resp = await _http.PostAsync("/api/youtube/disconnect", null, ct);
+        if (!resp.IsSuccessStatusCode)
+        {
+            var err = await resp.Content.ReadAsStringAsync(ct);
+            throw new InvalidOperationException(TryError(err) ?? resp.ReasonPhrase);
+        }
+    }
+
+    public async Task StartYouTubeUploadAsync(StartYouTubeUploadRequest req, CancellationToken ct = default)
+    {
+        using var resp = await _http.PostAsJsonAsync("/api/jobs/youtube-upload", req, JsonOpts, ct);
+        if (!resp.IsSuccessStatusCode)
+        {
+            var err = await resp.Content.ReadAsStringAsync(ct);
+            throw new InvalidOperationException(TryError(err) ?? resp.ReasonPhrase);
+        }
+    }
+
+    public async Task<YouTubeUploadInfo?> GetYouTubeUploadInfoAsync(string projectId, CancellationToken ct = default)
+    {
+        var dto = await _http.GetFromJsonAsync<YouTubeUploadInfoDto>(
+            $"/api/projects/{Uri.EscapeDataString(projectId)}/movie/youtube",
+            JsonOpts,
+            ct);
+        return dto?.Upload;
+    }
+
     public async Task<AdaptationDto?> GetAdaptationAsync(string projectId, CancellationToken ct = default) =>
         await _http.GetFromJsonAsync<AdaptationDto>(
             $"/api/projects/{Uri.EscapeDataString(projectId)}/adaptation",
@@ -1784,6 +1827,26 @@ public sealed class WipMovieMetaDto
     public string? UpdatedAt { get; set; }
     public string? Url { get; set; }
     public List<int> StaleScenes { get; set; } = new();
+}
+
+public sealed class YouTubeStatusDto
+{
+    public bool Ok { get; set; }
+    public bool Configured { get; set; }
+    public bool Connected { get; set; }
+}
+
+public sealed class YouTubeConnectUrlDto
+{
+    public bool Ok { get; set; }
+    public string? Url { get; set; }
+}
+
+public sealed class YouTubeUploadInfoDto
+{
+    public bool Ok { get; set; }
+    public string? ProjectId { get; set; }
+    public YouTubeUploadInfo? Upload { get; set; }
 }
 
 public sealed class SceneDetailDto

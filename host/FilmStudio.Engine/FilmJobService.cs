@@ -3,6 +3,8 @@ using System.Text.Json;
 using FilmStudio.Core.Models;
 using FilmStudio.Core.Options;
 using FilmStudio.Engine.Abstractions;
+using Google.Apis.Upload;
+using Google.Apis.YouTube.v3.Data;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
@@ -47,6 +49,7 @@ public sealed class FilmJobService
     private readonly ILockService _locks;
     private readonly ApiWorkerPool _apiPool;
     private readonly LocalWorkerPool _localPool;
+    private readonly YouTubeAuthService _youTube;
     private readonly IServerMetricsService _metrics;
     private readonly FilmStudioOptions _opts;
     private readonly ILogger<FilmJobService> _log;
@@ -81,6 +84,7 @@ public sealed class FilmJobService
         ILockService locks,
         ApiWorkerPool apiPool,
         LocalWorkerPool localPool,
+        YouTubeAuthService youTube,
         IServerMetricsService metrics,
         IOptions<FilmStudioOptions> opts,
         ILogger<FilmJobService> log,
@@ -110,6 +114,7 @@ public sealed class FilmJobService
         _locks = locks;
         _apiPool = apiPool;
         _localPool = localPool;
+        _youTube = youTube;
         _metrics = metrics;
         _opts = opts.Value;
         _log = log;
@@ -1804,6 +1809,121 @@ public sealed class FilmJobService
         catch (Exception ex)
         {
             _log.LogError(ex, "Remux failed");
+            await FinishAsync("error", ex.Message, ex.Message);
+        }
+    }
+
+    /// <summary>Upload the WIP movie to YouTube (resumable upload, youtube.upload scope).</summary>
+    public Task<JobSnapshot> StartYouTubeUploadAsync(StartYouTubeUploadRequest req)
+    {
+        if (string.IsNullOrWhiteSpace(req.ProjectId))
+            throw new InvalidOperationException("projectId required");
+        var projectId = req.ProjectId;
+        return StartBackgroundJobAsync(
+            ct => RunYouTubeUploadAsync(req, projectId, ct),
+            new JobEnqueueMeta
+            {
+                Kind = "youtube_upload",
+                ProjectId = projectId,
+                Message = "Queued YouTube upload…",
+            },
+            lockResources: new[] { LockKeys.YouTube(projectId) },
+            lockReason: "youtube upload");
+    }
+
+    private async Task RunYouTubeUploadAsync(StartYouTubeUploadRequest req, string projectId, CancellationToken ct)
+    {
+        await _projects.RequireProjectAsync(projectId, ct);
+
+        Snapshot = new JobSnapshot
+        {
+            Status = "running",
+            Kind = "youtube_upload",
+            ProjectId = projectId,
+            Message = "Connecting to YouTube…",
+            Index = 0,
+            Total = 100,
+            StartedAt = DateTimeOffset.UtcNow,
+            Log = new List<string>(),
+        };
+        RegisterActiveJob();
+        await PublishAsync();
+
+        try
+        {
+            var path = _projects.ResolveWipMoviePath(projectId)
+                ?? throw new InvalidOperationException("No WIP movie to upload — rebuild WIP first.");
+
+            var youtube = await _youTube.GetServiceAsync(ct)
+                ?? throw new InvalidOperationException("YouTube is not connected — connect it from Review first.");
+
+            var title = string.IsNullOrWhiteSpace(req.Title) ? $"{projectId} — WIP" : req.Title.Trim();
+            var privacy = req.PrivacyStatus is "private" or "unlisted" or "public"
+                ? req.PrivacyStatus
+                : "unlisted";
+
+            var video = new Video
+            {
+                Snippet = new VideoSnippet
+                {
+                    Title = title,
+                    Description = req.Description ?? "",
+                    CategoryId = "1", // Film & Animation
+                },
+                Status = new VideoStatus { PrivacyStatus = privacy },
+            };
+
+            var bytes = new FileInfo(path).Length;
+            await AppendLogAsync($"Uploading {Path.GetFileName(path)} ({bytes / (1024 * 1024)} MB, {privacy})…");
+
+            await using var stream = File.OpenRead(path);
+            var upload = youtube.Videos.Insert(video, "snippet,status", stream, "video/mp4");
+            string? videoId = null;
+            upload.ResponseReceived += v => videoId = v.Id;
+            upload.ProgressChanged += p =>
+            {
+                var pct = bytes > 0 ? (int)Math.Clamp(p.BytesSent * 100 / bytes, 0, 100) : 0;
+                _ = UpdateAsync(s =>
+                {
+                    s.Index = pct;
+                    s.Total = 100;
+                    s.Message = p.Status switch
+                    {
+                        UploadStatus.Uploading => $"Uploading… {pct}%",
+                        UploadStatus.Completed => "Upload complete — finalizing…",
+                        UploadStatus.Failed => $"Upload failed: {p.Exception?.Message}",
+                        _ => s.Message,
+                    };
+                });
+            };
+
+            var result = await upload.UploadAsync(ct);
+            if (result.Status != UploadStatus.Completed || videoId is null)
+            {
+                if (ct.IsCancellationRequested)
+                    throw new OperationCanceledException(ct);
+                throw result.Exception ?? new InvalidOperationException($"YouTube upload failed: {result.Status}");
+            }
+
+            var url = $"https://youtu.be/{videoId}";
+            await _projects.SaveYouTubeUploadInfoAsync(projectId, new YouTubeUploadInfo
+            {
+                VideoId = videoId,
+                Url = url,
+                Title = title,
+                PrivacyStatus = privacy,
+                UploadedAt = DateTimeOffset.UtcNow,
+            }, ct);
+
+            await FinishAsync("done", $"Uploaded to YouTube: {url}");
+        }
+        catch (OperationCanceledException)
+        {
+            await FinishAsync("cancelled", "YouTube upload cancelled");
+        }
+        catch (Exception ex)
+        {
+            _log.LogError(ex, "YouTube upload failed for {ProjectId}", projectId);
             await FinishAsync("error", ex.Message, ex.Message);
         }
     }
