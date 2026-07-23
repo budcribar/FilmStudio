@@ -153,7 +153,8 @@ public static class ClipVideoPromptBuilder
         }
 
         var style = (styleHead ?? ExtractStyleHead(rawVisual) ?? "").Trim();
-        var varBlock = BuildCharacterVariablesBlock(allKeys, characters, imageTagByKey, useReferenceImages);
+        var activeKeys = FilterActiveKeysForClip(allKeys, onScreenKeys, clipEl, actionText, characters);
+        var varBlock = BuildCharacterVariablesBlock(allKeys, characters, imageTagByKey, useReferenceImages, activeKeys);
         var audioBlock = BuildAudioBlock(clipEl, characters);
 
         var continuityBlock = mode switch
@@ -782,11 +783,68 @@ public static class ClipVideoPromptBuilder
         return null;
     }
 
+    private static HashSet<string> FilterActiveKeysForClip(
+        IReadOnlyList<string> allKeys,
+        IReadOnlyList<string> onScreenKeys,
+        JsonElement clipEl,
+        string actionText,
+        IReadOnlyDictionary<string, CharacterProfile>? characters)
+    {
+        var set = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        if (onScreenKeys.Count <= 1)
+        {
+            foreach (var k in allKeys) set.Add(k);
+            return set;
+        }
+
+        // 1. Primary subject
+        if (clipEl.TryGetProperty("primary_subject", out var psEl) && psEl.ValueKind == JsonValueKind.String)
+        {
+            var ps = psEl.GetString() ?? "";
+            if (!string.IsNullOrWhiteSpace(ps)) set.Add(ps);
+        }
+
+        // 2. Dialogue speaker
+        if (clipEl.TryGetProperty("audio_payload", out var ap) && ap.ValueKind == JsonValueKind.Object &&
+            ap.TryGetProperty("speaker", out var spEl) && spEl.ValueKind == JsonValueKind.String)
+        {
+            var sp = spEl.GetString() ?? "";
+            if (!string.IsNullOrWhiteSpace(sp)) set.Add(sp);
+        }
+
+        // 3. Characters performing active motion in their own sentence clause
+        var activeVerbs = new[] { "turn", "walk", "look", "speak", "leap", "enter", "slide", "open", "reach", "draw", "stirs", "moves", "thrust", "undid", "screams", "raves", "eases", "runs" };
+        var sentences = actionText.Split(new[] { '.', ';', '!' }, StringSplitOptions.RemoveEmptyEntries);
+        foreach (var key in onScreenKeys)
+        {
+            if (set.Contains(key)) continue;
+            var display = GetCharacterProfile(characters, key)?.DisplayName ?? key.Replace("Character_", "").Replace('_', ' ');
+            foreach (var sent in sentences)
+            {
+                if (sent.Contains(key, StringComparison.OrdinalIgnoreCase) ||
+                    sent.Contains(display, StringComparison.OrdinalIgnoreCase))
+                {
+                    if (activeVerbs.Any(v => sent.Contains(v, StringComparison.OrdinalIgnoreCase)))
+                    {
+                        set.Add(key);
+                        break;
+                    }
+                }
+            }
+        }
+
+        if (set.Count == 0 && onScreenKeys.Count > 0)
+            set.Add(onScreenKeys[0]);
+
+        return set;
+    }
+
     private static string BuildCharacterVariablesBlock(
         IReadOnlyList<string> keys,
         IReadOnlyDictionary<string, CharacterProfile> characters,
         IReadOnlyDictionary<string, string> imageTagByKey,
-        bool useImageTags)
+        bool useImageTags,
+        HashSet<string>? activeKeys = null)
     {
         if (keys.Count == 0) return "";
         var sb = new StringBuilder();
@@ -807,6 +865,18 @@ public static class ClipVideoPromptBuilder
                 sb.AppendLine(
                     $"- {key}{tag} [{display}] VOICE ONLY — not on screen." +
                     (voice.Length > 0 ? $" Voice: {voice}" : ""));
+                any = true;
+                continue;
+            }
+
+            // Multi-character compaction: if activeKeys specified and key is passive, emit compact identity
+            var isActive = activeKeys is null || activeKeys.Contains(key);
+            if (!isActive && keys.Count > 1)
+            {
+                var shortDesc = desc.Length > 60 ? desc.Substring(0, 57) + "..." : desc;
+                var compact = $"- {key}{tag} [{display}]: Passive background; {shortDesc}.";
+                if (useImageTags && tag.Length > 0) compact += $" Match reference {tag.Trim()}.";
+                sb.AppendLine(compact);
                 any = true;
                 continue;
             }

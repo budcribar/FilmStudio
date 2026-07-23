@@ -650,4 +650,87 @@ public class ClipVideoPromptBuilderTests
 
         try { Directory.Delete(tmp, true); } catch { /* ignore */ }
     }
+
+    [Fact]
+    public void Build_compacts_passive_characters_in_multi_character_clips()
+    {
+        var clip = JsonDocument.Parse("""
+            {
+              "clip_number": 1,
+              "visual_prompt": "INT. BEDCHAMBER. Character_Narrator eases open the door crack. Character_Old_Man sleeps.",
+              "characters_on_screen": ["Character_Narrator", "Character_Old_Man"],
+              "primary_subject": "Character_Narrator",
+              "audio_payload": { "speaker": "Character_Narrator", "dialogue": "I opened it gently.", "delivery": "spoken_on_camera" }
+            }
+            """).RootElement;
+
+        var tmp = Path.Combine(Path.GetTempPath(), "fs-multi-compact-" + Guid.NewGuid().ToString("N"));
+        var charDir = Path.Combine(tmp, "assets", "characters");
+        Directory.CreateDirectory(charDir);
+        File.WriteAllBytes(Path.Combine(charDir, "character_narrator_ref.png"), new byte[512]);
+        File.WriteAllBytes(Path.Combine(charDir, "character_old_man_ref.png"), new byte[512]);
+
+        var profiles = new Dictionary<string, ClipVideoPromptBuilder.CharacterProfile>(
+            StringComparer.OrdinalIgnoreCase)
+        {
+            ["Character_Narrator"] = new()
+            {
+                Key = "Character_Narrator",
+                DisplayName = "Narrator",
+                Description = "Lean pale man in waistcoat",
+                VisualLock = "Same lean pale face",
+            },
+            ["Character_Old_Man"] = new()
+            {
+                Key = "Character_Old_Man",
+                DisplayName = "Old Man",
+                Description = "Frail elderly man with sparse white hair and blue eye",
+                VisualLock = "Always elderly, white-haired",
+            },
+        };
+
+        var built = ClipVideoPromptBuilder.Build(clip, tmp, profiles, maxRefs: 5);
+        Assert.Contains("Character_Narrator", built.Prompt);
+        Assert.Contains("Passive background", built.Prompt, StringComparison.OrdinalIgnoreCase);
+
+        try { Directory.Delete(tmp, true); } catch { /* ignore */ }
+    }
+
+    [Fact]
+    public void Stage2_CoalesceShortMonologueBeats_merges_consecutive_short_monologues()
+    {
+        var b1 = new Dictionary<string, object?>
+        {
+            ["beat_id"] = "b1",
+            ["speaker"] = "Character_Narrator",
+            ["dialogue"] = "True! Nervous I had been.",
+            ["delivery"] = "spoken_on_camera",
+            ["visual_event"] = "Narrator sits at table.",
+        };
+        var b2 = new Dictionary<string, object?>
+        {
+            ["beat_id"] = "b2",
+            ["speaker"] = "Character_Narrator",
+            ["dialogue"] = "But why will you say I am mad?",
+            ["delivery"] = "spoken_on_camera",
+            ["visual_event"] = "Narrator leans in.",
+        };
+        var beats = new List<Dictionary<string, object?>> { b1, b2 };
+
+        var coalesced = Stage2PlannerService.CoalesceShortMonologueBeats(beats);
+        Assert.Single(coalesced);
+        Assert.Contains("True! Nervous I had been. But why will you say I am mad?", coalesced[0]["dialogue"]?.ToString());
+    }
+
+    [Theory]
+    [InlineData(0, "Medium shot")]
+    [InlineData(1, "Extreme close-up on eyes")]
+    [InlineData(2, "Over-the-shoulder shot")]
+    [InlineData(3, "Close-up on hands")]
+    public void Stage2_GetMonologueCameraFraming_cycles_framing(int step, string expectedFraming)
+    {
+        var framing = Stage2PlannerService.GetMonologueCameraFraming(step, "Narrator");
+        Assert.Contains(expectedFraming, framing, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Narrator", framing);
+    }
 }
