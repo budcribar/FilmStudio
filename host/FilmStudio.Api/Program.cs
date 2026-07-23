@@ -839,7 +839,7 @@ app.MapGet("/api/jobs", (FilmJobService jobService, IUserContext user, string? m
             examples = new[]
             {
                 "/api/jobs?mine=1",
-                "/api/jobs?projectId=Buster",
+                "/api/jobs?projectId=MyStory",
                 "/api/jobs/{jobId}",
             },
         });

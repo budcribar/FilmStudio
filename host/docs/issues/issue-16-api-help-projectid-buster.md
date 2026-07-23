@@ -3,18 +3,14 @@
 | Field | Value |
 |-------|-------|
 | Severity | nit |
-| Status | open |
+| Status | **fixed** |
 | Branch | `fix/issue-16-api-help-projectid-buster` |
-| Related files | host/FilmStudio.Api/Program.cs (error/help example text) |
+| Related files | `host/FilmStudio.Api/Program.cs` |
 
 ## Problem
 
-Error or help example hardcodes projectId=Buster in API surface text. Minor north-star consistency issue: product code should not use a sample title as the canonical example.
+Error/help example hardcodes `projectId=Buster` in API surface text. North-star: product code should not use a sample title as the canonical example.
 
-## Suggested fix
+## Fix implemented
 
-Use a generic example (projectId=MyStory).
-
-## Notes
-
-Tracked from the FilmStudio.Api / Core / Engine code review (2026-07). This branch documents the problem only; implementation is follow-up work on this branch.
+`GET /api/jobs` 400 examples use `projectId=MyStory` instead of `Buster`.
