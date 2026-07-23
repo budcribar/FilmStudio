@@ -106,6 +106,7 @@ public static class ChatCallModes
     public const string CameraDirectorClassify = "camera_director_classify";
     public const string NegativePromptClassify = "negative_prompt_classify";
     public const string WardrobeContinuityClassify = "wardrobe_continuity_classify";
+    public const string CharacterEmotionArcClassify = "character_emotion_arc_classify";
 }
 
 /// <summary>

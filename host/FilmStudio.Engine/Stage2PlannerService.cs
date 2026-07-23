@@ -53,6 +53,7 @@ public sealed class Stage2PlannerService
     private readonly CameraDirectorClassifier? _cameraClassifier;
     private readonly NegativePromptClassifier? _negativeClassifier;
     private readonly WardrobeContinuityClassifier? _wardrobeClassifier;
+    private readonly CharacterEmotionArcClassifier? _emotionClassifier;
 
     public Stage2PlannerService(
         ProjectStore projects,
@@ -67,7 +68,8 @@ public sealed class Stage2PlannerService
         CinematicLightingClassifier? lightingClassifier = null,
         CameraDirectorClassifier? cameraClassifier = null,
         NegativePromptClassifier? negativeClassifier = null,
-        WardrobeContinuityClassifier? wardrobeClassifier = null)
+        WardrobeContinuityClassifier? wardrobeClassifier = null,
+        CharacterEmotionArcClassifier? emotionClassifier = null)
     {
         _projects = projects;
         _log = log;
@@ -82,6 +84,7 @@ public sealed class Stage2PlannerService
         _cameraClassifier = cameraClassifier;
         _negativeClassifier = negativeClassifier;
         _wardrobeClassifier = wardrobeClassifier;
+        _emotionClassifier = emotionClassifier;
     }
 
     public async Task<Stage2PlanResult> PlanAsync(
@@ -209,7 +212,17 @@ public sealed class Stage2PlannerService
                 var sceneCast = UnionCharactersOnScreen(s);
                 aiWardrobe = await _wardrobeClassifier.ClassifySceneWardrobeAsync(s, sceneCast, onProgress, ct).ConfigureAwait(false);
             }
-            var plannedScene = PlanScene(s, resolution, locSeeds, charSeeds, styleLock, aiPacing, aiLighting, aiCamera, aiNegative, aiWardrobe);
+            Dictionary<string, EmotionDirective>? aiEmotion = null;
+            if (_emotionClassifier is not null)
+            {
+                var sceneBeats = GetList(s, "story_beats").OfType<Dictionary<string, object?>>()
+                    .Where(b => !IsNoopTransitionBeat(b))
+                    .ToList();
+                sceneBeats = ClipDurationEstimator.ExpandLongDialogueBeats(sceneBeats);
+                sceneBeats = CoalesceSilentPreludeBeats(sceneBeats);
+                aiEmotion = await _emotionClassifier.ClassifySceneEmotionAsync(s, sceneBeats, onProgress, ct).ConfigureAwait(false);
+            }
+            var plannedScene = PlanScene(s, resolution, locSeeds, charSeeds, styleLock, aiPacing, aiLighting, aiCamera, aiNegative, aiWardrobe, aiEmotion);
             // Skip transition-only phantoms (e.g. FADE IN before first heading)
             if (plannedScene is null)
             {
@@ -440,7 +453,8 @@ public sealed class Stage2PlannerService
         string? aiLighting = null,
         Dictionary<string, CameraDirective>? aiCamera = null,
         string? aiNegative = null,
-        Dictionary<string, string>? aiWardrobe = null)
+        Dictionary<string, string>? aiWardrobe = null,
+        Dictionary<string, EmotionDirective>? aiEmotion = null)
     {
         var sceneInput = new Dictionary<string, object?>(scene);
         if (!string.IsNullOrWhiteSpace(aiLighting))
@@ -552,6 +566,12 @@ public sealed class Stage2PlannerService
                 cameraMoveToken = $"{camDir.LensSpec}, {camDir.CameraMovement}";
             }
 
+            if (aiEmotion is not null && aiEmotion.TryGetValue(beatIdStr, out var emoDir))
+            {
+                if (!string.IsNullOrWhiteSpace(emoDir.ActingPrompt))
+                    vp = $"{vp} Performance: {emoDir.ActingPrompt}";
+            }
+
             var clipDict = new Dictionary<string, object?>
             {
                 ["clip_number"] = i + 1,
@@ -566,6 +586,13 @@ public sealed class Stage2PlannerService
                 ["characters_on_screen"] = clipCast.Cast<object?>().ToList(),
                 ["duration_seconds"] = dur,
             };
+
+            if (aiEmotion is not null && aiEmotion.TryGetValue(beatIdStr, out var ed))
+            {
+                clipDict["acting_intensity"] = ed.Intensity;
+                if (!string.IsNullOrWhiteSpace(ed.MicroExpression))
+                    clipDict["micro_expression"] = ed.MicroExpression;
+            }
 
             if (aiCamera is not null && aiCamera.TryGetValue(beatIdStr, out var cd))
             {

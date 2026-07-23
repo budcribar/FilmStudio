@@ -80,6 +80,7 @@ builder.Services.AddSingleton<CinematicLightingClassifier>();
 builder.Services.AddSingleton<CameraDirectorClassifier>();
 builder.Services.AddSingleton<NegativePromptClassifier>();
 builder.Services.AddSingleton<WardrobeContinuityClassifier>();
+builder.Services.AddSingleton<CharacterEmotionArcClassifier>();
 builder.Services.AddSingleton<Stage2PlannerService>();
 builder.Services.AddSingleton<FfmpegRemuxService>();
 builder.Services.AddSingleton<IFfmpegRemux>(sp => sp.GetRequiredService<FfmpegRemuxService>());

@@ -185,6 +185,12 @@ public sealed class FakeGrokChatClient : IChatClient
             return Task.FromResult("""{"wardrobe":[]}""");
         }
 
+        if (mode == ChatCallModes.CharacterEmotionArcClassify ||
+            sys.Contains("Acting Coach and Performance Director", StringComparison.OrdinalIgnoreCase))
+        {
+            return Task.FromResult("""{"emotions":[]}""");
+        }
+
         // ── Minimal Stage1-shaped stub ─────────────────────────────────────
         return Task.FromResult("""
             {
