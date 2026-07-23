@@ -181,7 +181,6 @@ public sealed class CreditsOptions
     public string RepositoryUrl { get; set; } = "https://github.com/budcribar/FilmStudio";
     public string FairUseNotice { get; set; } = "Produced under Fair Use and Public Domain for Non-Commercial Creative Purposes.";
 }
-}
 
 /// <summary>ThreadPool pre-warm for sudden multi-user load (optional).</summary>
 public sealed class ThreadPoolOptions
