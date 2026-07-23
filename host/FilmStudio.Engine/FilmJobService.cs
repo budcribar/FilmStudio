@@ -1932,6 +1932,14 @@ public sealed class FilmJobService
                 return;
             }
 
+            // Fail before any API spend if the selected video model cannot do multi-clip / plates.
+            await EnsureVideoModelCapabilitiesAsync(
+                    projectId,
+                    needContinue: work.Any(w => w.Clip > 1),
+                    needReferenceImages: req.RequireLockedCharacters,
+                    ct)
+                .ConfigureAwait(false);
+
             var resolution = await ResolveVideoResolutionAsync(projectId, req.Resolution, ct);
             await UpdateAsync(s =>
             {
@@ -2072,6 +2080,14 @@ public sealed class FilmJobService
                 await FinishAsync("done", "No clips to generate");
                 return;
             }
+
+            // Fail before any API spend if the selected video model cannot do multi-clip / plates.
+            await EnsureVideoModelCapabilitiesAsync(
+                    projectId,
+                    needContinue: todo.Any(t => t.ClipNum > 1),
+                    needReferenceImages: req.RequireLockedCharacters,
+                    ct)
+                .ConfigureAwait(false);
 
             var resolution = await ResolveVideoResolutionAsync(projectId, req.Resolution, ct);
             var startMsg = $"Scene {req.Scene}: {todo.Count} clip(s) @ {resolution}";
@@ -2977,6 +2993,39 @@ public sealed class FilmJobService
 
         return NormalizeResolution(
             string.IsNullOrWhiteSpace(_opts.DefaultResolution) ? "720p" : _opts.DefaultResolution);
+    }
+
+    /// <summary>
+    /// Fail closed before video spend when the selected model lacks continue/refs required for this job.
+    /// </summary>
+    private async Task EnsureVideoModelCapabilitiesAsync(
+        string projectId,
+        bool needContinue,
+        bool needReferenceImages,
+        CancellationToken ct)
+    {
+        if (!needContinue && !needReferenceImages)
+            return;
+
+        var modelId = await ResolveVideoModelAsync(projectId, ct).ConfigureAwait(false);
+        var entry = SupportedModelCatalog.ResolveOrDefault(modelId, ModelCapability.Video);
+        if (needContinue && !entry.SupportsVideoContinue)
+        {
+            throw new InvalidOperationException(
+                $"Video model '{entry.Id}' does not support clip-to-clip continue " +
+                "(required for clip 2+). Switch project video model to grok-imagine-video " +
+                "(or another model with video-extend). " +
+                (string.IsNullOrWhiteSpace(entry.Notes) ? "" : entry.Notes));
+        }
+
+        if (needReferenceImages && !entry.SupportsReferenceImages)
+        {
+            throw new InvalidOperationException(
+                $"Video model '{entry.Id}' cannot attach locked character reference plates. " +
+                "Switch project video model to grok-imagine-video, or disable the cast lock gate " +
+                "only if you accept identity drift. " +
+                (string.IsNullOrWhiteSpace(entry.Notes) ? "" : entry.Notes));
+        }
     }
 
     /// <summary>
