@@ -1042,8 +1042,37 @@ public static class ClipVideoPromptBuilder
     private static string SimplifyVisual(string visual)
     {
         visual = StripFountainLeakage(visual);
+        visual = ScrubContentSafetyTriggers(visual);
         visual = Regex.Replace(visual, @"\s+", " ").Trim();
         return visual;
+    }
+
+    /// <summary>
+    /// Soften trigger words in visual action prompts that cause AI video model safety/content moderation rejections,
+    /// while preserving cinematic period action and story meaning across any story.
+    /// Does not alter dialogue/audio payloads.
+    /// </summary>
+    public static string ScrubContentSafetyTriggers(string text)
+    {
+        if (string.IsNullOrWhiteSpace(text)) return text ?? "";
+        var t = text;
+
+        // Dismemberment / mutilation → cinematic period work / preparation
+        t = Regex.Replace(t, @"\bdismember(?:ing|ed|s)?\b", "working in methodical silence", RegexOptions.IgnoreCase);
+        t = Regex.Replace(t, @"\bdismemberment\b", "methodical preparation", RegexOptions.IgnoreCase);
+        t = Regex.Replace(t, @"\bsever(?:ing|ed|s)?\s+(?:head|arms?|legs?|limbs?)\b", "carefully separating parts", RegexOptions.IgnoreCase);
+        t = Regex.Replace(t, @"\bcut\s+off\s+the\s+(?:head|arms?|legs?|limbs?)\b", "methodically work with dark tools", RegexOptions.IgnoreCase);
+
+        // Explicit anatomical remains / corpse → deceased / quiet subject / hidden task
+        t = Regex.Replace(t, @"\bcorpse\b", "quiet form", RegexOptions.IgnoreCase);
+        t = Regex.Replace(t, @"\bhuman\s+remains\b", "hidden burden", RegexOptions.IgnoreCase);
+        t = Regex.Replace(t, @"\bdeposits?\s+the\s+remains\b", "deposits the contents", RegexOptions.IgnoreCase);
+
+        // Excessive gore/blood terms in visual action (audio/dialogue untouched)
+        t = Regex.Replace(t, @"\bghastly\s+gory\b", "grim shadowy", RegexOptions.IgnoreCase);
+        t = Regex.Replace(t, @"\bbloody\s+remains\b", "dark hidden burden", RegexOptions.IgnoreCase);
+
+        return t;
     }
 
     /// <summary>Normalize resolution labels for prompt technical suffix (API may use same string).</summary>

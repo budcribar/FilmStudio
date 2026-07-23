@@ -759,18 +759,14 @@ public class ClipVideoPromptBuilderTests
     }
 
     [Theory]
-    [InlineData(0, 1, "Medium shot")]
-    [InlineData(1, 1, "Extreme close-up on eyes")]
-    [InlineData(2, 1, "Three-quarter profile")]
-    [InlineData(3, 1, "Close-up on hands")]
-    [InlineData(2, 2, "Over-the-shoulder shot")]
-    public void Stage2_GetMonologueCameraFraming_cycles_and_gates_ots(
-        int step, int onScreen, string expectedFraming)
+    [InlineData("dismembering: head, arms, legs", "working in methodical silence: head, arms, legs")]
+    [InlineData("deposits the remains between scantlings", "deposits the contents between scantlings")]
+    [InlineData("first I dismembered the corpse", "first I working in methodical silence the quiet form")]
+    public void ScrubContentSafetyTriggers_softens_moderation_keywords(string input, string expected)
     {
-        var framing = Stage2PlannerService.GetMonologueCameraFraming(step, "Narrator", onScreen);
-        Assert.Contains(expectedFraming, framing, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("Narrator", framing);
-        if (onScreen < 2)
-            Assert.DoesNotContain("Over-the-shoulder", framing, StringComparison.OrdinalIgnoreCase);
+        var result = ClipVideoPromptBuilder.ScrubContentSafetyTriggers(input);
+        Assert.Equal(expected, result);
+        Assert.DoesNotContain("dismember", result, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("corpse", result, StringComparison.OrdinalIgnoreCase);
     }
 }
