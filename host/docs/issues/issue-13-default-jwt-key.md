@@ -3,18 +3,21 @@
 | Field | Value |
 |-------|-------|
 | Severity | suggestion |
-| Status | open |
+| Status | **fixed** |
 | Branch | `fix/issue-13-default-jwt-key` |
-| Related files | host/FilmStudio.Core/Options/FilmStudioOptions.cs; host/FilmStudio.Api/appsettings.json |
+| Related files | `host/FilmStudio.Core/Options/FilmStudioOptions.cs`; `host/FilmStudio.Api/Program.cs`; `AdminAuthService.cs` |
 
 ## Problem
 
-Default JWT signing key is a committed dev constant (FilmStudio-Dev-Only-Change-Me-32chars!!). Production without FILMSTUDIO_JWT_KEY accepts forged admin tokens if the key is known.
+Default JWT signing key was a committed dev constant (`FilmStudio-Dev-Only-Change-Me-32chars!!`). Production without `FILMSTUDIO_JWT_KEY` accepted forged admin tokens if the key was known.
 
-## Suggested fix
+## Fix implemented
 
-Refuse to start with the default key outside Development; require an env override.
+1. **`AuthOptions.DefaultDevJwtSigningKey`** + **`IsInsecureDefaultJwtSigningKey`** helper.
+2. **Api startup** (after `Build`): outside Development, throw if effective key (env or config) is still the default.
+3. **`AdminAuthService.ResolveSigningKey`**: same refusal when issuing/validating tokens outside Development.
+4. **appsettings** comment notes the env override.
 
-## Notes
+## Suggested fix (original)
 
-Tracked from the FilmStudio.Api / Core / Engine code review (2026-07). This branch documents the problem only; implementation is follow-up work on this branch.
+Refuse to start with default key outside Development; require env override.

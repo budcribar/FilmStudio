@@ -134,6 +134,12 @@ public sealed class AdminAuthService : IAdminAuthService
     {
         var env = Environment.GetEnvironmentVariable("FILMSTUDIO_JWT_KEY");
         var key = !string.IsNullOrWhiteSpace(env) ? env.Trim() : (_auth.JwtSigningKey ?? "");
+        if (AuthOptions.IsInsecureDefaultJwtSigningKey(key) && !_env.IsDevelopment())
+        {
+            throw new InvalidOperationException(
+                "JWT signing key is the insecure development default. " +
+                "Set FILMSTUDIO_JWT_KEY (or Auth:JwtSigningKey) outside Development.");
+        }
         if (key.Length < 32)
             key = (key + "FilmStudio-Pad-Key-To-32-Chars!!!!").PadRight(32)[..64];
         return key;

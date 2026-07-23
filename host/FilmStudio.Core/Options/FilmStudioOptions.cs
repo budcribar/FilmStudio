@@ -194,13 +194,24 @@ public sealed class AuthOptions
     /// <summary>ASP.NET Core Identity v3 password hash (optional).</summary>
     public string AdminPasswordHash { get; set; } = "";
 
+    /// <summary>
+    /// Insecure development-only default. Host must refuse this outside Development
+    /// (see FilmStudio.Api startup + FILMSTUDIO_JWT_KEY).
+    /// </summary>
+    public const string DefaultDevJwtSigningKey = "FilmStudio-Dev-Only-Change-Me-32chars!!";
+
     /// <summary>JWT signing key (min 32 chars). Env FILMSTUDIO_JWT_KEY overrides.</summary>
-    public string JwtSigningKey { get; set; } = "FilmStudio-Dev-Only-Change-Me-32chars!!";
+    public string JwtSigningKey { get; set; } = DefaultDevJwtSigningKey;
 
     public int JwtHours { get; set; } = 8;
 
     /// <summary>Development only: accept any password for admin username.</summary>
     public bool AllowDevBypass { get; set; }
+
+    /// <summary>True when the effective key is missing or still the committed dev default.</summary>
+    public static bool IsInsecureDefaultJwtSigningKey(string? key) =>
+        string.IsNullOrWhiteSpace(key) ||
+        string.Equals(key.Trim(), DefaultDevJwtSigningKey, StringComparison.Ordinal);
 }
 
 /// <summary>Server-side concurrency caps (Phase A+; multi-worker in later phases).</summary>

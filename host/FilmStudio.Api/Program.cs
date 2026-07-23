@@ -198,6 +198,21 @@ builder.Services.AddCors(o =>
 
 var app = builder.Build();
 
+// Refuse default JWT signing key outside Development (forged admin tokens if key is public).
+{
+    var authOpts = app.Services.GetRequiredService<IOptions<FilmStudioOptions>>().Value.Auth
+                   ?? new AuthOptions();
+    var envKey = Environment.GetEnvironmentVariable("FILMSTUDIO_JWT_KEY");
+    var effective = !string.IsNullOrWhiteSpace(envKey) ? envKey.Trim() : authOpts.JwtSigningKey;
+    if (!app.Environment.IsDevelopment() && AuthOptions.IsInsecureDefaultJwtSigningKey(effective))
+    {
+        throw new InvalidOperationException(
+            "JWT signing key is the insecure development default. " +
+            "Set environment variable FILMSTUDIO_JWT_KEY (or Auth:JwtSigningKey) to a unique " +
+            "secret of at least 32 characters before running outside Development.");
+    }
+}
+
 // Wire SignalR sink into job service
 var jobs = app.Services.GetRequiredService<FilmJobService>();
 jobs.SetProgressSink(app.Services.GetRequiredService<IJobProgressSink>());
