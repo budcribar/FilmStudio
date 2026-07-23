@@ -1750,6 +1750,7 @@ public sealed class FilmJobService
                             ? $"Remuxing {toRemux.Count} scene composite(s) before WIP…"
                             : "No scenes to remux — stitching WIP from current composites");
                     var i = 0;
+                    var remuxErrors = new List<string>();
                     foreach (var sn in toRemux)
                     {
                         ct.ThrowIfCancellationRequested();
@@ -1771,13 +1772,19 @@ public sealed class FilmJobService
                         }
                         catch (Exception ex)
                         {
-                            // Assembly gate "no eligible clips" is fatal for WIP rebuild
-                            if (req.RebuildWip &&
-                                ex.Message.Contains("Assembly gate", StringComparison.OrdinalIgnoreCase))
-                                throw;
-                            _log.LogWarning(ex, "Remux S{Scene} failed — continuing", sn);
-                            await AppendLogAsync($"S{sn:D2} remux skipped: {ex.Message}");
+                            // Loud failure — do not stitch WIP from a partial remux set.
+                            remuxErrors.Add($"S{sn:D2}: {ex.Message}");
+                            _log.LogWarning(ex, "Remux S{Scene} failed", sn);
+                            await AppendLogAsync($"S{sn:D2} remux failed: {ex.Message}");
                         }
+                    }
+
+                    if (remuxErrors.Count > 0)
+                    {
+                        throw new InvalidOperationException(
+                            $"Scene remux incomplete ({refreshed}/{toRemux.Count} ok) — " +
+                            string.Join("; ", remuxErrors) +
+                            (req.RebuildWip ? " (WIP not rebuilt)" : ""));
                     }
                 }
             }
@@ -2446,10 +2453,12 @@ public sealed class FilmJobService
                     .ConfigureAwait(false);
                 if (!trimmed)
                 {
-                    // Fallback: keep full extended file as this clip (better than nothing)
-                    File.Copy(extendedTmp, outPath, overwrite: true);
-                    await AppendLogAsync(
-                        "  [Grok] trim failed — saved full extended video as clip (includes previous)");
+                    // Never accept prev+new as this clip — that poisons remux and the next extend.
+                    try { if (File.Exists(outPath)) File.Delete(outPath); } catch { /* ignore */ }
+                    try { File.Delete(extendedTmp); } catch { /* ignore */ }
+                    throw new InvalidOperationException(
+                        $"S{scene:D2}C{clip:D2}: extend-tail trim failed — not saving cumulative " +
+                        "prev+new as this clip (retry; check ffmpeg).");
                 }
                 try { File.Delete(extendedTmp); } catch { /* ignore */ }
             }

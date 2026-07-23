@@ -105,14 +105,19 @@ public static class ClipDurationEstimator
                 planned = (int)Math.Round(s, MidpointRounding.AwayFromZero);
         }
 
+        // Prefer action_class from Stage 2 clip (older blueprints may omit it).
         var actionClass = "";
-        // Prefer action_class from blueprint when present (silent caps)
-        // (not always set on older blueprints)
+        if (clipEl.TryGetProperty("action_class", out var acEl) &&
+            acEl.ValueKind == JsonValueKind.String)
+            actionClass = (acEl.GetString() ?? "").Trim().ToLowerInvariant();
 
         var est = Estimate(dialogue, visual, actionClass: actionClass, delivery);
-        // Prefer estimator; never use a planned value that is much longer without dialogue
+        // Silent: honor Stage 2 planned duration within the class-aware cap (not a flat 5s).
         if (planned > 0 && string.IsNullOrWhiteSpace(dialogue))
-            return Math.Clamp(planned, ActionOnlyMinSeconds, SilentActionMaxSeconds);
+        {
+            var silentMax = SilentMaxForActionClass(actionClass);
+            return Math.Clamp(planned, ActionOnlyMinSeconds, silentMax);
+        }
         if (!string.IsNullOrWhiteSpace(dialogue))
         {
             // Never under-run speech need — under-planned clips rush and clip the first word.
@@ -121,6 +126,16 @@ public static class ClipDurationEstimator
         }
         return est;
     }
+
+    /// <summary>Upper bound for dialogue-free clips at gen time (matches <see cref="Estimate"/> caps).</summary>
+    public static int SilentMaxForActionClass(string? actionClass) =>
+        (actionClass ?? "").Trim().ToLowerInvariant() switch
+        {
+            "big_action" => AbsMaxSeconds,
+            "establishing" => EstablishingMaxSeconds,
+            "hold" => ActionOnlyMinSeconds,
+            _ => SilentActionMaxSeconds,
+        };
 
     public static int Estimate(
         string? dialogue,

@@ -140,6 +140,39 @@ public class ClipDurationEstimatorTests
     }
 
     [Fact]
+    public void EstimateForClip_honors_planned_silent_big_action_beyond_default_5s()
+    {
+        // Stage 2 writes duration_seconds + action_class; gen must not clamp all silent to 5s.
+        var clip = JsonDocument.Parse(
+            """
+            {
+              "duration_seconds": 9,
+              "action_class": "big_action",
+              "visual_prompt": "The chase crashes through the hall and down the stairs."
+            }
+            """).RootElement;
+        var d = ClipDurationEstimator.EstimateForClip(clip);
+        Assert.Equal(9, d);
+        Assert.True(
+            d > ClipDurationEstimator.SilentActionMaxSeconds,
+            "big_action planned length must exceed flat silent cap");
+    }
+
+    [Fact]
+    public void EstimateForClip_silent_without_class_still_caps_at_5s()
+    {
+        var clip = JsonDocument.Parse(
+            """
+            {
+              "duration_seconds": 9,
+              "visual_prompt": "A quiet hold on the empty doorway."
+            }
+            """).RootElement;
+        var d = ClipDurationEstimator.EstimateForClip(clip);
+        Assert.Equal(ClipDurationEstimator.SilentActionMaxSeconds, d);
+    }
+
+    [Fact]
     public void EstimateForClip_does_not_under_run_speech_when_plan_is_short()
     {
         // Plan said 5s; line needs more with head+tail so first word is not clipped

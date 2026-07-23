@@ -606,6 +606,8 @@ public sealed class Stage2PlannerService
                 ["audio_payload"] = BuildAudioPayload(beat, aiSound is not null && aiSound.TryGetValue(beatIdStr, out var sd) ? sd : null),
                 ["stage1_beat_id"] = beatIdStr,
                 ["primary_subject"] = beat.TryGetValue("primary_subject", out var psub) ? psub : null,
+                // Propagate for gen-time duration (EstimateForClip) — silent big_action etc.
+                ["action_class"] = beat.TryGetValue("action_class", out var beatAc) ? beatAc : null,
                 ["characters_on_screen"] = clipCast.Cast<object?>().ToList(),
                 ["duration_seconds"] = dur,
             };

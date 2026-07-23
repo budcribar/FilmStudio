@@ -865,8 +865,8 @@ public static class ClipVideoPromptBuilder
         if (!string.IsNullOrWhiteSpace(dialogue))
         {
             var who = string.IsNullOrWhiteSpace(speaker) ? "SPEAKER" : speaker.Trim();
-            var isNarrator = who.Contains("narrator", StringComparison.OrdinalIgnoreCase) ||
-                             delivery is "voiceover_internal" or "internal" or "narration" or "vo" or "thought";
+            var isVoiceover = delivery is "voiceover_internal" or "internal" or "narration" or "vo" or "thought" ||
+                              (delivery is not "spoken_on_camera" and not "on_camera" && who.Contains("narrator", StringComparison.OrdinalIgnoreCase));
             // Full line, speech-safe punctuation (em-dash normalize, !- glue) — same words
             var quote = SanitizeSpokenDialogue(dialogue);
             var open = FirstSpokenToken(quote);
@@ -881,7 +881,7 @@ public static class ClipVideoPromptBuilder
             // Leave a short closed-mouth breath at the end so the next monologue clip does not butt-join
             const string endPause =
                 " After the last word, hold a brief natural pause with a closed mouth (about half a second); do not freeze mid-syllable or trail into empty staring.";
-            if (isNarrator)
+            if (isVoiceover)
             {
                 return
                     $"AUDIO: REQUIRED native Grok off-camera voiceover. {who} narrates " +

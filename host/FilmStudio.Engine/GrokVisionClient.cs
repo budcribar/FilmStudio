@@ -43,14 +43,7 @@ public sealed class GrokVisionClient : IVisionClient
             _http.BaseAddress = new Uri(ApiBase + "/");
     }
 
-    public bool IsConfigured
-    {
-        get
-        {
-            EnsureAuth();
-            return _http.DefaultRequestHeaders.Authorization is not null;
-        }
-    }
+    public bool IsConfigured => !string.IsNullOrWhiteSpace(ResolveApiKey());
 
     public async Task<string> TranscribePageAsync(
         string imagePath,
@@ -58,7 +51,6 @@ public sealed class GrokVisionClient : IVisionClient
         string model = "grok-4.5",
         CancellationToken ct = default)
     {
-        EnsureAuth();
         var dataUri = await FileToDataUriAsync(imagePath, ct);
         var payload = BuildVisionPayload(
             model,
@@ -66,7 +58,7 @@ public sealed class GrokVisionClient : IVisionClient
             detail: "high",
             text: $"Page {page} of the book.\n\n{TranscribePrompt}");
 
-        using var resp = await _http.PostAsJsonAsync("responses", payload, ct);
+        using var resp = await SendJsonAsync(HttpMethod.Post, "responses", payload, ct);
         var body = await resp.Content.ReadAsStringAsync(ct);
         if (!resp.IsSuccessStatusCode)
             throw new InvalidOperationException(
@@ -90,7 +82,6 @@ public sealed class GrokVisionClient : IVisionClient
         string model = "grok-4.5",
         CancellationToken ct = default)
     {
-        EnsureAuth();
         if (cast.Count == 0)
             return new CharacterPageClassification { Page = page, PageKind = "unknown" };
 
@@ -134,7 +125,7 @@ public sealed class GrokVisionClient : IVisionClient
         // low detail is enough for "who is on this page" and cheaper/faster for many pages
         var payload = BuildVisionPayload(model, dataUri, detail: "low", text: prompt);
 
-        using var resp = await _http.PostAsJsonAsync("responses", payload, ct);
+        using var resp = await SendJsonAsync(HttpMethod.Post, "responses", payload, ct);
         var body = await resp.Content.ReadAsStringAsync(ct);
         if (!resp.IsSuccessStatusCode)
             throw new InvalidOperationException(
@@ -322,7 +313,6 @@ public sealed class GrokVisionClient : IVisionClient
         string detail = "low",
         CancellationToken ct = default)
     {
-        EnsureAuth();
         if (string.IsNullOrWhiteSpace(prompt))
             throw new ArgumentException("prompt required", nameof(prompt));
         var paths = (imagePaths ?? Array.Empty<string>())
@@ -365,7 +355,7 @@ public sealed class GrokVisionClient : IVisionClient
         var imageNames = paths.Select(Path.GetFileName).Where(n => n is not null).Cast<string>().ToList();
         try
         {
-            using var resp = await _http.PostAsJsonAsync("responses", payload, ct);
+            using var resp = await SendJsonAsync(HttpMethod.Post, "responses", payload, ct);
             var body = await resp.Content.ReadAsStringAsync(ct);
             if (!resp.IsSuccessStatusCode)
             {
@@ -439,17 +429,21 @@ public sealed class GrokVisionClient : IVisionClient
         return $"data:{mime};base64,{Convert.ToBase64String(bytes)}";
     }
 
-    private void EnsureAuth()
+    private static string? ResolveApiKey() =>
+        ApiKeyScope.Current ?? Environment.GetEnvironmentVariable("XAI_API_KEY");
+
+    private async Task<HttpResponseMessage> SendJsonAsync(
+        HttpMethod method, string uri, object payload, CancellationToken ct)
     {
-        var key = Abstractions.ApiKeyScope.Current
-                  ?? Environment.GetEnvironmentVariable("XAI_API_KEY");
-        if (string.IsNullOrWhiteSpace(key))
+        // Per-request Bearer — never mutate shared DefaultRequestHeaders (multi-user race).
+        using var req = new HttpRequestMessage(method, uri)
         {
-            _http.DefaultRequestHeaders.Authorization = null;
-            return;
-        }
-        _http.DefaultRequestHeaders.Authorization =
-            new AuthenticationHeaderValue("Bearer", key.Trim());
+            Content = JsonContent.Create(payload),
+        };
+        var key = ResolveApiKey();
+        if (!string.IsNullOrWhiteSpace(key))
+            req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", key.Trim());
+        return await _http.SendAsync(req, ct).ConfigureAwait(false);
     }
 
     private static string Trim(string s, int n) => s.Length <= n ? s : s[..n];

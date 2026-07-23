@@ -37,14 +37,7 @@ public sealed class GrokImageClient : IImageClient
             _http.BaseAddress = new Uri(ApiBase + "/");
     }
 
-    public bool IsConfigured
-    {
-        get
-        {
-            EnsureAuthHeader();
-            return _http.DefaultRequestHeaders.Authorization is not null;
-        }
-    }
+    public bool IsConfigured => !string.IsNullOrWhiteSpace(ResolveApiKey());
 
     /// <summary>Text-only portrait generation → n image blobs.</summary>
     public async Task<IReadOnlyList<byte[]>> GenerateVariantsAsync(
@@ -54,7 +47,6 @@ public sealed class GrokImageClient : IImageClient
         string? model = null,
         CancellationToken ct = default)
     {
-        EnsureAuthHeader();
         var modelName = string.IsNullOrWhiteSpace(model)
             ? _opts.DefaultImageModel
             : model;
@@ -70,7 +62,7 @@ public sealed class GrokImageClient : IImageClient
         var sw = Stopwatch.StartNew();
         try
         {
-            using var resp = await _http.PostAsJsonAsync("images/generations", payload, ct);
+            using var resp = await SendJsonAsync(HttpMethod.Post, "images/generations", payload, ct);
             var body = await resp.Content.ReadAsStringAsync(ct);
             if (!resp.IsSuccessStatusCode)
             {
@@ -162,7 +154,6 @@ public sealed class GrokImageClient : IImageClient
         Action<string>? onProgress = null,
         CancellationToken ct = default)
     {
-        EnsureAuthHeader();
         var modelName = string.IsNullOrWhiteSpace(model)
             ? _opts.DefaultImageModel
             : model;
@@ -345,7 +336,12 @@ public sealed class GrokImageClient : IImageClient
                 payload.ToJsonString(),
                 Encoding.UTF8,
                 "application/json");
-            using var resp = await _http.PostAsync("images/edits", content, ct).ConfigureAwait(false);
+            // Per-request Bearer — never mutate shared DefaultRequestHeaders (multi-user race).
+            using var req = new HttpRequestMessage(HttpMethod.Post, "images/edits") { Content = content };
+            var key = ResolveApiKey();
+            if (!string.IsNullOrWhiteSpace(key))
+                req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", key.Trim());
+            using var resp = await _http.SendAsync(req, ct).ConfigureAwait(false);
             var body = await resp.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
             return (resp.IsSuccessStatusCode, (int)resp.StatusCode, body);
         }
@@ -526,17 +522,20 @@ public sealed class GrokImageClient : IImageClient
         }
     }
 
-    private void EnsureAuthHeader()
+    private static string? ResolveApiKey() =>
+        ApiKeyScope.Current ?? Environment.GetEnvironmentVariable("XAI_API_KEY");
+
+    private async Task<HttpResponseMessage> SendJsonAsync(
+        HttpMethod method, string uri, object payload, CancellationToken ct)
     {
-        var key = Abstractions.ApiKeyScope.Current
-                  ?? Environment.GetEnvironmentVariable("XAI_API_KEY");
-        if (string.IsNullOrWhiteSpace(key))
+        using var req = new HttpRequestMessage(method, uri)
         {
-            _http.DefaultRequestHeaders.Authorization = null;
-            return;
-        }
-        _http.DefaultRequestHeaders.Authorization =
-            new AuthenticationHeaderValue("Bearer", key.Trim());
+            Content = JsonContent.Create(payload),
+        };
+        var key = ResolveApiKey();
+        if (!string.IsNullOrWhiteSpace(key))
+            req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", key.Trim());
+        return await _http.SendAsync(req, ct).ConfigureAwait(false);
     }
 
     private static string Trim(string s, int n) =>

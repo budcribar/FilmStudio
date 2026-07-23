@@ -38,14 +38,7 @@ public sealed class GrokVideoClient : IVideoClient
             _http.BaseAddress = new Uri(ApiBase + "/");
     }
 
-    public bool IsConfigured
-    {
-        get
-        {
-            EnsureAuthHeader();
-            return _http.DefaultRequestHeaders.Authorization is not null;
-        }
-    }
+    public bool IsConfigured => !string.IsNullOrWhiteSpace(ResolveApiKey());
 
     /// <param name="referenceImagePaths">Character/style refs → API <c>reference_images</c> + prompt <c>&lt;IMAGE_n&gt;</c> tags.</param>
     /// <param name="startFrameImagePath">Optional first-frame still (image-to-video). Prefer video continue when possible.</param>
@@ -60,7 +53,6 @@ public sealed class GrokVideoClient : IVideoClient
         string? startFrameImagePath = null,
         string? continueFromVideoPath = null)
     {
-        EnsureAuthHeader();
         var refs = (referenceImagePaths ?? Array.Empty<string>())
             .Where(p => !string.IsNullOrWhiteSpace(p) && File.Exists(p))
             .Take(7)
@@ -239,7 +231,7 @@ public sealed class GrokVideoClient : IVideoClient
             "Grok video EXTEND from={Prev} extensionDur={Dur}s promptLen={Len}",
             Path.GetFileName(continueFromVideoPath), durationSeconds, prompt.Length);
 
-        using var extResp = await _http.PostAsJsonAsync("videos/extensions", extPayload, ct);
+        using var extResp = await SendJsonAsync(HttpMethod.Post, "videos/extensions", extPayload, ct);
         var extBody = await extResp.Content.ReadAsStringAsync(ct);
         if (!extResp.IsSuccessStatusCode)
             throw new InvalidOperationException(
@@ -296,7 +288,7 @@ public sealed class GrokVideoClient : IVideoClient
                 prompt.Length, durationSeconds);
         }
 
-        using var resp = await _http.PostAsJsonAsync("videos/generations", payload, ct);
+        using var resp = await SendJsonAsync(HttpMethod.Post, "videos/generations", payload, ct);
         var body = await resp.Content.ReadAsStringAsync(ct);
         if (!resp.IsSuccessStatusCode)
             throw new InvalidOperationException($"Grok submit HTTP {(int)resp.StatusCode}: {Trim(body, 400)}");
@@ -336,7 +328,6 @@ public sealed class GrokVideoClient : IVideoClient
         Action<string>? onProgress,
         CancellationToken ct)
     {
-        EnsureAuthHeader();
         var deadline = DateTime.UtcNow.AddSeconds(Math.Max(60, _opts.GrokTimeoutSeconds));
         var poll = Math.Max(2, _opts.GrokPollSeconds);
         var sw = Stopwatch.StartNew();
@@ -346,7 +337,7 @@ public sealed class GrokVideoClient : IVideoClient
         {
             ct.ThrowIfCancellationRequested();
             polls++;
-            using var resp = await _http.GetAsync($"videos/{requestId}", ct);
+            using var resp = await SendAsync(HttpMethod.Get, $"videos/{requestId}", content: null, ct);
             var body = await resp.Content.ReadAsStringAsync(ct);
             if (!resp.IsSuccessStatusCode)
             {
@@ -427,18 +418,29 @@ public sealed class GrokVideoClient : IVideoClient
         _log.LogInformation("Downloaded {Bytes} bytes → {Path}", new FileInfo(destPath).Length, destPath);
     }
 
-    private void EnsureAuthHeader()
+    /// <summary>
+    /// Prefer ambient job/request key (multi-user), else process env.
+    /// Auth is applied per <see cref="HttpRequestMessage"/> — never on the shared
+    /// <see cref="HttpClient.DefaultRequestHeaders"/> (concurrent jobs would race).
+    /// </summary>
+    private static string? ResolveApiKey() =>
+        ApiKeyScope.Current ?? Environment.GetEnvironmentVariable("XAI_API_KEY");
+
+    private async Task<HttpResponseMessage> SendJsonAsync(
+        HttpMethod method, string uri, object payload, CancellationToken ct)
     {
-        // Prefer ambient job/request key (multi-user), else process env.
-        var key = Abstractions.ApiKeyScope.Current
-                  ?? Environment.GetEnvironmentVariable("XAI_API_KEY");
-        if (string.IsNullOrWhiteSpace(key))
-        {
-            _http.DefaultRequestHeaders.Authorization = null;
-            return;
-        }
-        _http.DefaultRequestHeaders.Authorization =
-            new AuthenticationHeaderValue("Bearer", key.Trim());
+        var content = JsonContent.Create(payload);
+        return await SendAsync(method, uri, content, ct).ConfigureAwait(false);
+    }
+
+    private async Task<HttpResponseMessage> SendAsync(
+        HttpMethod method, string uri, HttpContent? content, CancellationToken ct)
+    {
+        using var req = new HttpRequestMessage(method, uri) { Content = content };
+        var key = ResolveApiKey();
+        if (!string.IsNullOrWhiteSpace(key))
+            req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", key.Trim());
+        return await _http.SendAsync(req, ct).ConfigureAwait(false);
     }
 
     private static string Trim(string s, int n) =>

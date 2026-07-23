@@ -40,14 +40,7 @@ public sealed class GeminiImageClient : IImageClient
             _http.BaseAddress = new Uri(ApiBase + "/");
     }
 
-    public bool IsConfigured
-    {
-        get
-        {
-            EnsureAuth();
-            return _http.DefaultRequestHeaders.Contains("x-goog-api-key");
-        }
-    }
+    public bool IsConfigured => !string.IsNullOrWhiteSpace(ResolveApiKey());
 
     /// <summary>Text-only portrait generation → n image blobs (one call per variant).</summary>
     public async Task<IReadOnlyList<byte[]>> GenerateVariantsAsync(
@@ -144,7 +137,6 @@ public sealed class GeminiImageClient : IImageClient
         IReadOnlyList<string>? referenceImagePaths,
         CancellationToken ct)
     {
-        EnsureAuth();
         var parts = new List<object?>();
         if (referenceImagePaths is { Count: > 0 })
         {
@@ -178,7 +170,15 @@ public sealed class GeminiImageClient : IImageClient
             .Select(Path.GetFileName).Where(x => x is not null).Cast<string>().ToList();
         try
         {
-            using var resp = await _http.PostAsJsonAsync(endpoint, payload, ct).ConfigureAwait(false);
+            // Per-request API key — never mutate shared DefaultRequestHeaders (multi-user race).
+            using var req = new HttpRequestMessage(HttpMethod.Post, endpoint)
+            {
+                Content = JsonContent.Create(payload),
+            };
+            var key = ResolveApiKey();
+            if (!string.IsNullOrWhiteSpace(key))
+                req.Headers.TryAddWithoutValidation("x-goog-api-key", key.Trim());
+            using var resp = await _http.SendAsync(req, ct).ConfigureAwait(false);
             var body = await resp.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
             if (!resp.IsSuccessStatusCode)
             {
@@ -287,14 +287,8 @@ public sealed class GeminiImageClient : IImageClient
         return (mime, Convert.ToBase64String(bytes));
     }
 
-    private void EnsureAuth()
-    {
-        var key = Environment.GetEnvironmentVariable(SupportedModelCatalog.GoogleApiKeyEnv);
-        _http.DefaultRequestHeaders.Remove("x-goog-api-key");
-        if (string.IsNullOrWhiteSpace(key))
-            return;
-        _http.DefaultRequestHeaders.Add("x-goog-api-key", key.Trim());
-    }
+    private static string? ResolveApiKey() =>
+        Environment.GetEnvironmentVariable(SupportedModelCatalog.GoogleApiKeyEnv);
 
     private static string Trim(string s, int n) => s.Length <= n ? s : s[..n];
 }

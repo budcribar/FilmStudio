@@ -44,14 +44,7 @@ public sealed class GeminiVideoClient : IVideoClient
             _http.BaseAddress = new Uri(ApiBase + "/");
     }
 
-    public bool IsConfigured
-    {
-        get
-        {
-            EnsureAuth();
-            return _http.DefaultRequestHeaders.Contains("x-goog-api-key");
-        }
-    }
+    public bool IsConfigured => !string.IsNullOrWhiteSpace(ResolveApiKey());
 
     /// <summary>
     /// Veo does not have a direct equivalent of Grok's reference_images / video-extend on the
@@ -80,7 +73,6 @@ public sealed class GeminiVideoClient : IVideoClient
                 "GeminiVideoClient does not implement multi reference-image conditioning yet — " +
                 "use a single startFrameImagePath, or route this clip to Grok.");
 
-        EnsureAuth();
         var hasStart = !string.IsNullOrWhiteSpace(startFrameImagePath) && File.Exists(startFrameImagePath);
         durationSeconds = Math.Clamp(durationSeconds, 1, 10);
 
@@ -111,7 +103,7 @@ public sealed class GeminiVideoClient : IVideoClient
         var sw = Stopwatch.StartNew();
         try
         {
-            using var resp = await _http.PostAsJsonAsync(endpoint, payload, ct).ConfigureAwait(false);
+            using var resp = await SendJsonAsync(HttpMethod.Post, endpoint, payload, ct).ConfigureAwait(false);
             var body = await resp.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
             if (!resp.IsSuccessStatusCode)
             {
@@ -181,7 +173,6 @@ public sealed class GeminiVideoClient : IVideoClient
         Action<string>? onProgress,
         CancellationToken ct)
     {
-        EnsureAuth();
         var deadline = DateTime.UtcNow.AddSeconds(Math.Max(60, _opts.GrokTimeoutSeconds));
         var poll = Math.Max(2, _opts.GrokPollSeconds);
         var sw = Stopwatch.StartNew();
@@ -194,7 +185,7 @@ public sealed class GeminiVideoClient : IVideoClient
         {
             ct.ThrowIfCancellationRequested();
             polls++;
-            using var resp = await _http.GetAsync(opPath, ct).ConfigureAwait(false);
+            using var resp = await SendAsync(HttpMethod.Get, opPath, content: null, ct).ConfigureAwait(false);
             var body = await resp.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
             if (!resp.IsSuccessStatusCode)
             {
@@ -313,14 +304,12 @@ public sealed class GeminiVideoClient : IVideoClient
 
     public async Task DownloadToFileAsync(string url, string destPath, CancellationToken ct)
     {
-        EnsureAuth();
         Directory.CreateDirectory(Path.GetDirectoryName(destPath)!);
-        // Google file/media download URLs generally need the same API key as the rest of the
-        // API, not an anonymous GET — the auth header set by EnsureAuth covers this as long as
-        // the URL is same-origin with ApiBase; if Veo returns a signed URL on a different host,
-        // this header is harmless (HttpClient only sends default headers to its BaseAddress
-        // origin in most configs, but review this if downloads start failing with 401/403).
-        using var resp = await _http.GetAsync(url, HttpCompletionOption.ResponseHeadersRead, ct)
+        // Google file/media download URLs generally need the same API key as the rest of the API.
+        // Auth is on the request only (not shared DefaultRequestHeaders).
+        using var req = new HttpRequestMessage(HttpMethod.Get, url);
+        ApplyApiKey(req);
+        using var resp = await _http.SendAsync(req, HttpCompletionOption.ResponseHeadersRead, ct)
             .ConfigureAwait(false);
         resp.EnsureSuccessStatusCode();
         await using var fs = File.Create(destPath);
@@ -350,13 +339,27 @@ public sealed class GeminiVideoClient : IVideoClient
         return (mime, Convert.ToBase64String(bytes));
     }
 
-    private void EnsureAuth()
+    private static string? ResolveApiKey() =>
+        Environment.GetEnvironmentVariable(SupportedModelCatalog.GoogleApiKeyEnv);
+
+    private static void ApplyApiKey(HttpRequestMessage req)
     {
-        var key = Environment.GetEnvironmentVariable(SupportedModelCatalog.GoogleApiKeyEnv);
-        _http.DefaultRequestHeaders.Remove("x-goog-api-key");
-        if (string.IsNullOrWhiteSpace(key))
-            return;
-        _http.DefaultRequestHeaders.Add("x-goog-api-key", key.Trim());
+        var key = ResolveApiKey();
+        if (!string.IsNullOrWhiteSpace(key))
+            req.Headers.TryAddWithoutValidation("x-goog-api-key", key.Trim());
+    }
+
+    private async Task<HttpResponseMessage> SendJsonAsync(
+        HttpMethod method, string uri, object payload, CancellationToken ct) =>
+        await SendAsync(method, uri, JsonContent.Create(payload), ct).ConfigureAwait(false);
+
+    private async Task<HttpResponseMessage> SendAsync(
+        HttpMethod method, string uri, HttpContent? content, CancellationToken ct)
+    {
+        // Per-request API key — never mutate shared DefaultRequestHeaders (multi-user race).
+        using var req = new HttpRequestMessage(method, uri) { Content = content };
+        ApplyApiKey(req);
+        return await _http.SendAsync(req, ct).ConfigureAwait(false);
     }
 
     private static string Trim(string s, int n) => s.Length <= n ? s : s[..n];
