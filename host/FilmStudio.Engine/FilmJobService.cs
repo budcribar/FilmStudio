@@ -1930,8 +1930,7 @@ public sealed class FilmJobService
 
         try
         {
-            if (!_grok.IsConfigured)
-                throw new InvalidOperationException("XAI_API_KEY is not set.");
+            await EnsureVideoProviderConfiguredAsync(projectId, ct).ConfigureAwait(false);
 
             using var bp = await _projects.LoadBlueprintAsync(projectId, ct)
                 ?? throw new InvalidOperationException(
@@ -2109,8 +2108,7 @@ public sealed class FilmJobService
 
         try
         {
-            if (!_grok.IsConfigured)
-                throw new InvalidOperationException("XAI_API_KEY is not set.");
+            await EnsureVideoProviderConfiguredAsync(projectId, ct).ConfigureAwait(false);
 
             using var bp = await _projects.LoadBlueprintAsync(projectId, ct)
                 ?? throw new InvalidOperationException(
@@ -3154,6 +3152,29 @@ public sealed class FilmJobService
             "1080" or "1080p" => "1080p",
             _ => v.EndsWith('p') ? v : $"{v}p",
         };
+    }
+
+    /// <summary>
+    /// Require env keys for the project's selected video model (not a hardcoded XAI_API_KEY message).
+    /// MultiProvider IsConfigured is true if either provider has a key — that misdirects Gemini-only setups.
+    /// </summary>
+    private async Task EnsureVideoProviderConfiguredAsync(string projectId, CancellationToken ct)
+    {
+        var modelId = await ResolveVideoModelAsync(projectId, ct).ConfigureAwait(false);
+        var entry = SupportedModelCatalog.ResolveOrDefault(modelId, ModelCapability.Video);
+
+        // Ambient multi-user key (Grok) counts as configured for Xai models.
+        if (entry.Provider == ModelProviderFamily.Xai &&
+            !string.IsNullOrWhiteSpace(ApiKeyScope.Current))
+            return;
+
+        var missing = SupportedModelCatalog.MissingEnvKeys(entry);
+        if (missing.Count == 0)
+            return;
+
+        var keys = string.Join(" / ", missing);
+        throw new InvalidOperationException(
+            $"{keys} is not set (required for video model '{entry.Id}' / {entry.ProviderId}).");
     }
 
     /// <summary>
