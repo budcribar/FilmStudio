@@ -48,18 +48,22 @@ public sealed class FfmpegRemuxService : IFfmpegRemux
     private int? _lastExcludedCount;
     private int? _lastRemuxScene;
 
+    private readonly CreditsGeneratorService? _creditsGenerator;
+
     public FfmpegRemuxService(
         ProjectStore projects,
         EditLogService editLogs,
         ProjectTelemetryService telemetry,
         IOptions<FilmStudioOptions> opts,
-        ILogger<FfmpegRemuxService> log)
+        ILogger<FfmpegRemuxService> log,
+        CreditsGeneratorService? creditsGenerator = null)
     {
         _projects = projects;
         _editLogs = editLogs;
         _telemetry = telemetry;
         _opts = opts.Value;
         _log = log;
+        _creditsGenerator = creditsGenerator;
     }
 
     /// <summary>Resolved ffmpeg executable path (absolute when possible).</summary>
@@ -450,6 +454,15 @@ public sealed class FfmpegRemuxService : IFfmpegRemux
         Directory.CreateDirectory(Path.GetDirectoryName(wipPath)!);
 
         var videoDir = Path.Combine(projectDir, "assets", "video");
+
+        if (_creditsGenerator is not null && _opts.Credits.AutoAppendCredits)
+        {
+            if (_creditsGenerator.AreAllScenesComplete(projectId))
+            {
+                var creditsClip = await _creditsGenerator.EnsureCreditsClipAsync(projectId, FfmpegPath, onProgress, ct).ConfigureAwait(false);
+            }
+        }
+
         // Prefer Stage 2 scene order / set when blueprint exists
         var sceneFiles = _projects.ListWipSourceFilesForProject(projectId);
         if (sceneFiles.Count == 0)

@@ -154,6 +154,7 @@ public sealed class FilmStudioOptions
     public FakesOptions Fakes { get; set; } = new();
     public AuthOptions Auth { get; set; } = new();
     public YouTubeOptions YouTube { get; set; } = new();
+    public CreditsOptions Credits { get; set; } = new();
 }
 
 /// <summary>
@@ -169,6 +170,17 @@ public sealed class YouTubeOptions
     public string ClientSecret { get; set; } = "";
     /// <summary>Must exactly match an authorized redirect URI on the OAuth client, e.g. https://host/api/youtube/oauth2callback.</summary>
     public string RedirectUri { get; set; } = "";
+}
+
+/// <summary>Options for automatic end credits clip generation and movie WIP appending.</summary>
+public sealed class CreditsOptions
+{
+    public bool AutoAppendCredits { get; set; } = true;
+    public string SoftwareName { get; set; } = "FilmStudio";
+    public string SoftwareAuthor { get; set; } = "Nick";
+    public string RepositoryUrl { get; set; } = "https://github.com/budcribar/FilmStudio";
+    public string FairUseNotice { get; set; } = "Produced under Fair Use and Public Domain for Non-Commercial Creative Purposes.";
+}
 }
 
 /// <summary>ThreadPool pre-warm for sudden multi-user load (optional).</summary>
