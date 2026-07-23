@@ -98,7 +98,8 @@ public sealed class ShotPlanRefiningClassifier
                 SystemPrompt(),
                 userPrompt,
                 effectiveModel,
-                temperature: 0.2,
+                // 0, not 0.2 — see BeatPacingClassifier for why (cacheable categorical labeling).
+                temperature: 0,
                 ct: ct,
                 mode: ChatCallModes.ShotPlanRefineClassify).ConfigureAwait(false);
 

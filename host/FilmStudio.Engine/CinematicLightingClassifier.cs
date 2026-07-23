@@ -69,7 +69,8 @@ public sealed class CinematicLightingClassifier
                 SystemPrompt(),
                 userPrompt,
                 effectiveModel,
-                temperature: 0.2,
+                // 0, not 0.2 — see BeatPacingClassifier for why (cacheable categorical labeling).
+                temperature: 0,
                 ct: ct,
                 mode: ChatCallModes.CinematicLightingClassify).ConfigureAwait(false);
 

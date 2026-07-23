@@ -79,7 +79,11 @@ public sealed class BeatPacingClassifier
                 SystemPrompt(),
                 userPrompt,
                 effectiveModel,
-                temperature: 0.2,
+                // 0, not 0.2: this is a categorical labeling task (same input should get the
+                // same label), and 0 is what makes CachingChatClient treat it as cacheable by
+                // default — a cancelled/retried Stage2 job re-hits already-classified scenes
+                // instead of re-querying and re-billing them.
+                temperature: 0,
                 ct: ct,
                 mode: ChatCallModes.BeatPacingClassify).ConfigureAwait(false);
 

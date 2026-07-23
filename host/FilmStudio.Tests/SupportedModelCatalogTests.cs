@@ -161,12 +161,21 @@ public class SupportedModelCatalogTests
     }
 
     [Fact]
-    public void Video_models_carry_per_second_pricing()
+    public void Video_models_carry_per_resolution_pricing()
     {
+        // Grok's numbers also match Configuration.razor's default $/sec fields (480p/720p/1080p)
+        // exactly — same underlying xAI pricing, sourced independently; should never drift apart
+        // silently.
         var grok = SupportedModelCatalog.Find("grok-imagine-video", ModelCapability.Video);
+        Assert.NotNull(grok?.VideoCostPerSecondByResolution);
+        Assert.Equal(0.05, grok!.VideoCostPerSecondByResolution!["480p"]);
+        Assert.Equal(0.07, grok.VideoCostPerSecondByResolution["720p"]);
+        Assert.Equal(0.25, grok.VideoCostPerSecondByResolution["1080p"]);
+
         var veo = SupportedModelCatalog.Find("veo-3.1", ModelCapability.Video);
-        Assert.Equal(0.05, grok?.VideoCostPerSecond);
-        Assert.Equal(0.40, veo?.VideoCostPerSecond);
+        Assert.NotNull(veo?.VideoCostPerSecondByResolution);
+        Assert.Equal(0.40, veo!.VideoCostPerSecondByResolution!["720p"]);
+        Assert.Equal(0.40, veo.VideoCostPerSecondByResolution["1080p"]);
     }
 
     [Fact]
@@ -182,7 +191,7 @@ public class SupportedModelCatalogTests
     {
         foreach (var e in SupportedModelCatalog.ForCapability(ModelCapability.Chat, enabledOnly: false))
         {
-            Assert.Null(e.VideoCostPerSecond);
+            Assert.Null(e.VideoCostPerSecondByResolution);
             Assert.Null(e.ImageCostPerImage);
         }
     }

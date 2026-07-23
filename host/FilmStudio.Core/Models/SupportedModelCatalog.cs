@@ -67,12 +67,14 @@ public sealed class SupportedModelEntry
     public double? OutputCostPerMillionTokens { get; init; }
 
     /// <summary>
-    /// USD per second of generated output (Video only). Null when not applicable. This is a
-    /// separate figure from the project-level <c>cost_estimates.video_output_per_sec</c> table
-    /// in Configuration — that one is an operator-editable planning estimate keyed by resolution
-    /// for whichever video model is active; this is the catalog's own reference price per model.
+    /// USD per second of generated output, by resolution (Video only) — same key convention
+    /// ("480p" / "720p" / "1080p") as the project-level <c>cost_estimates.video_output_per_sec</c>
+    /// table in Configuration. That table is an operator-editable planning estimate for whichever
+    /// video model is active; this is the catalog's own reference price per model, and a given
+    /// model may not price every resolution (only confirmed keys are present). Null when no
+    /// per-resolution pricing applies (non-video capabilities).
     /// </summary>
-    public double? VideoCostPerSecond { get; init; }
+    public IReadOnlyDictionary<string, double>? VideoCostPerSecondByResolution { get; init; }
 
     /// <summary>USD per generated image (Image only). Null when not applicable.</summary>
     public double? ImageCostPerImage { get; init; }
@@ -123,12 +125,15 @@ public static class SupportedModelCatalog
             ApiBase = XaiApiBase,
             EndpointPath = "videos/generations",
             RequiredEnvKeys = [XaiApiKeyEnv],
-            // xAI docs, 2026-07: $0.05/sec @ 480p (matches this project's own Configuration →
-            // Cost estimates default), $0.07/sec @ 720p, $0.25/sec @ 1080p. This field carries
-            // the base/lowest-resolution rate; per-resolution rates stay in project config.
-            VideoCostPerSecond = 0.05,
-            Notes = "Also uses videos/extensions for clip continue. $0.05/sec @480p, $0.07/sec " +
-                    "@720p, $0.25/sec @1080p — VideoCostPerSecond here is the 480p base rate.",
+            // xAI docs, 2026-07 — matches this project's own Configuration → Cost estimates
+            // defaults exactly.
+            VideoCostPerSecondByResolution = new Dictionary<string, double>
+            {
+                ["480p"] = 0.05,
+                ["720p"] = 0.07,
+                ["1080p"] = 0.25,
+            },
+            Notes = "Also uses videos/extensions for clip continue.",
         },
         new()
         {
@@ -139,15 +144,20 @@ public static class SupportedModelCatalog
             ApiBase = GoogleApiBase,
             EndpointPath = "models/veo-3.1:predictLongRunning",
             RequiredEnvKeys = [GoogleApiKeyEnv],
-            // Google AI pricing, 2026-07: $0.40/sec Standard quality (720p/1080p). Lite ($0.05/sec)
-            // and Fast ($0.10/sec) tiers exist but aren't separately selectable in this catalog.
-            VideoCostPerSecond = 0.40,
+            // Google AI pricing, 2026-07: Standard quality — same $0.40/sec at both 720p and
+            // 1080p. Lite ($0.05/sec) and Fast ($0.10/sec) quality tiers exist but aren't
+            // separately selectable in this catalog (only one veo-3.1 entry).
+            VideoCostPerSecondByResolution = new Dictionary<string, double>
+            {
+                ["720p"] = 0.40,
+                ["1080p"] = 0.40,
+            },
             Notes = "Wired via GeminiVideoClient (Veo long-running-operation flow). Not smoke-tested " +
                     "against a live account yet — see the CONFIDENCE NOTE on that class. " +
                     "Reference/extend-clip mechanics differ from Grok Imagine and are not mapped: " +
                     "only text-to-video and image-to-video (first frame) work today. " +
-                    "$0.40/sec is the Standard-quality rate; Lite/Fast tiers are cheaper but not " +
-                    "separately modeled here.",
+                    "$0.40/sec is the Standard-quality rate (same at 720p/1080p); Lite/Fast " +
+                    "quality tiers are cheaper but not separately modeled here.",
             FeatureRequestUrl = "https://github.com/budcribar/FilmStudio/issues",
         },
 
@@ -441,7 +451,9 @@ public static class SupportedModelCatalog
         MaxInputTokens = e.MaxInputTokens,
         InputCostPerMillionTokens = e.InputCostPerMillionTokens,
         OutputCostPerMillionTokens = e.OutputCostPerMillionTokens,
-        VideoCostPerSecond = e.VideoCostPerSecond,
+        VideoCostPerSecondByResolution = e.VideoCostPerSecondByResolution is { } v
+            ? new Dictionary<string, double>(v)
+            : null,
         ImageCostPerImage = e.ImageCostPerImage,
         Notes = e.Notes,
         FeatureRequestUrl = e.FeatureRequestUrl,
@@ -463,7 +475,7 @@ public sealed class SupportedModelDto
     public int? MaxInputTokens { get; set; }
     public double? InputCostPerMillionTokens { get; set; }
     public double? OutputCostPerMillionTokens { get; set; }
-    public double? VideoCostPerSecond { get; set; }
+    public Dictionary<string, double>? VideoCostPerSecondByResolution { get; set; }
     public double? ImageCostPerImage { get; set; }
     public string? Notes { get; set; }
     public string? FeatureRequestUrl { get; set; }
