@@ -47,6 +47,8 @@ public sealed class Stage2PlannerService
     private readonly OnScreenCastClassifier? _onScreenCastClassifier;
     private readonly ExtendCutClassifier? _extendCutClassifier;
     private readonly SpeciesKindClassifier? _speciesKindClassifier;
+    private readonly ShotPlanRefiningClassifier? _shotPlanRefiner;
+    private readonly BeatPacingClassifier? _beatPacingClassifier;
 
     public Stage2PlannerService(
         ProjectStore projects,
@@ -55,7 +57,9 @@ public sealed class Stage2PlannerService
         AmbientSfxClassifier? ambientSfxClassifier = null,
         OnScreenCastClassifier? onScreenCastClassifier = null,
         ExtendCutClassifier? extendCutClassifier = null,
-        SpeciesKindClassifier? speciesKindClassifier = null)
+        SpeciesKindClassifier? speciesKindClassifier = null,
+        ShotPlanRefiningClassifier? shotPlanRefiner = null,
+        BeatPacingClassifier? beatPacingClassifier = null)
     {
         _projects = projects;
         _log = log;
@@ -64,6 +68,8 @@ public sealed class Stage2PlannerService
         _onScreenCastClassifier = onScreenCastClassifier;
         _extendCutClassifier = extendCutClassifier;
         _speciesKindClassifier = speciesKindClassifier;
+        _shotPlanRefiner = shotPlanRefiner;
+        _beatPacingClassifier = beatPacingClassifier;
     }
 
     public async Task<Stage2PlanResult> PlanAsync(
@@ -155,12 +161,26 @@ public sealed class Stage2PlannerService
             ct.ThrowIfCancellationRequested();
             var sn = ToInt(s.TryGetValue("scene_number", out var n) ? n : 0);
             onProgress?.Invoke($"  Scene {sn}…");
-            var plannedScene = PlanScene(s, resolution, locSeeds, charSeeds, styleLock);
+            Dictionary<string, int>? aiPacing = null;
+            if (_beatPacingClassifier is not null)
+            {
+                var sceneBeats = GetList(s, "story_beats").OfType<Dictionary<string, object?>>()
+                    .Where(b => !IsNoopTransitionBeat(b))
+                    .ToList();
+                sceneBeats = ClipDurationEstimator.ExpandLongDialogueBeats(sceneBeats);
+                sceneBeats = CoalesceSilentPreludeBeats(sceneBeats);
+                aiPacing = await _beatPacingClassifier.ClassifyScenePacingAsync(s, sceneBeats, onProgress, ct).ConfigureAwait(false);
+            }
+            var plannedScene = PlanScene(s, resolution, locSeeds, charSeeds, styleLock, aiPacing);
             // Skip transition-only phantoms (e.g. FADE IN before first heading)
             if (plannedScene is null)
             {
                 onProgress?.Invoke($"  Scene {sn}: skipped (no filmable content)");
                 continue;
+            }
+            if (_shotPlanRefiner is not null)
+            {
+                await _shotPlanRefiner.RefinePlannedSceneAsync(plannedScene, onProgress, ct).ConfigureAwait(false);
             }
             planned.Add(plannedScene);
         }
@@ -377,13 +397,15 @@ public sealed class Stage2PlannerService
         string resolution,
         Dictionary<string, object?> locSeeds,
         Dictionary<string, object?> charSeeds,
-        string? styleLock)
+        string? styleLock,
+        Dictionary<string, int>? aiPacing = null)
     {
         var beats = GetList(scene, "story_beats").OfType<Dictionary<string, object?>>()
             .Where(b => !IsNoopTransitionBeat(b))
             .ToList();
         // Idempotent: monologues already split at fountain import stay; legacy long cues expand here
         beats = ClipDurationEstimator.ExpandLongDialogueBeats(beats);
+        beats = CoalesceSilentPreludeBeats(beats);
         var lids = GetList(scene, "location_ids").Select(x => x?.ToString() ?? "").Where(x => x.Length > 0).ToList();
         var primary = CoerceString(scene.TryGetValue("primary_location_id", out var pl) ? pl : null)
                       ?? (lids.Count > 0 ? lids[0] : null);
@@ -405,6 +427,18 @@ public sealed class Stage2PlannerService
         var durs = ClipDurationEstimator.AllocateForBeats(
             beats,
             sceneTargetSeconds: target > 0 ? target : null);
+
+        if (aiPacing is not null && aiPacing.Count > 0)
+        {
+            for (var i = 0; i < beats.Count; i++)
+            {
+                var bid = CoerceString(beats[i].TryGetValue("beat_id", out var bval) ? bval : null) ?? $"b{i + 1}";
+                if (aiPacing.TryGetValue(bid, out var customDur))
+                {
+                    durs[i] = customDur;
+                }
+            }
+        }
         var total = durs.Sum();
 
         var sceneWork = new Dictionary<string, object?>(scene)
@@ -498,6 +532,55 @@ public sealed class Stage2PlannerService
         ["spoiler_constraints"] = scene.TryGetValue("spoiler_constraints", out var sp) ? sp : new List<object?>(),
         ["source_book_refs"] = scene.TryGetValue("source_book_refs", out var sbr) ? sbr : new List<object?>(),
     };
+
+    /// <summary>
+    /// If Beat 1 of a scene is a short silent action beat (<= 5s, no dialogue) preceding a dialogue/VO beat (Beat 2)
+    /// in the exact same location, fold Beat 1's visual event into Beat 2 so dialogue begins on frame 1.
+    /// </summary>
+    public static List<Dictionary<string, object?>> CoalesceSilentPreludeBeats(List<Dictionary<string, object?>> beats)
+    {
+        if (beats.Count < 2) return beats;
+
+        var b1 = beats[0];
+        var b2 = beats[1];
+
+        var d1 = CoerceString(b1.TryGetValue("dialogue", out var v1) ? v1 : null);
+        var s1 = CoerceString(b1.TryGetValue("speaker", out var sp1) ? sp1 : null);
+        var d2 = CoerceString(b2.TryGetValue("dialogue", out var v2) ? v2 : null);
+
+        // Beat 1 must be silent (no dialogue, no speaker) and Beat 2 must have dialogue
+        if (string.IsNullOrWhiteSpace(d1) && string.IsNullOrWhiteSpace(s1) && !string.IsNullOrWhiteSpace(d2))
+        {
+            var l1 = CoerceString(b1.TryGetValue("location_id", out var loc1) ? loc1 : null);
+            var l2 = CoerceString(b2.TryGetValue("location_id", out var loc2) ? loc2 : null);
+
+            // Same location or empty
+            if (string.Equals(l1, l2, StringComparison.OrdinalIgnoreCase) || string.IsNullOrEmpty(l1) || string.IsNullOrEmpty(l2))
+            {
+                var ve1 = CoerceString(b1.TryGetValue("visual_event", out var vev1) ? vev1 : null);
+                var ve2 = CoerceString(b2.TryGetValue("visual_event", out var vev2) ? vev2 : null);
+
+                if (!string.IsNullOrWhiteSpace(ve1))
+                {
+                    if (string.IsNullOrWhiteSpace(ve2))
+                    {
+                        b2["visual_event"] = ve1;
+                    }
+                    else if (!ve2.Contains(ve1, StringComparison.OrdinalIgnoreCase))
+                    {
+                        b2["visual_event"] = $"{ve1} {ve2}";
+                    }
+                }
+
+                // Remove silent prelude b1 so b2 becomes clip 1 (frame-1 VO onset)
+                var result = new List<Dictionary<string, object?>>(beats);
+                result.RemoveAt(0);
+                return result;
+            }
+        }
+
+        return beats;
+    }
 
     private static string BuildVisualPrompt(
         Dictionary<string, object?> beat,
@@ -1219,16 +1302,16 @@ public sealed class Stage2PlannerService
         return $"{Fmt(start)}-{Fmt(end)}";
     }
 
-    private static List<Dictionary<string, object?>> GetScenes(Dictionary<string, object?> d) =>
+    public static List<Dictionary<string, object?>> GetScenes(Dictionary<string, object?> d) =>
         GetList(d, "scenes").OfType<Dictionary<string, object?>>().ToList();
 
-    private static Dictionary<string, object?> GetDict(Dictionary<string, object?> d, string key) =>
+    public static Dictionary<string, object?> GetDict(Dictionary<string, object?> d, string key) =>
         d.TryGetValue(key, out var v) && v is Dictionary<string, object?> x ? x : new();
 
-    private static List<object?> GetList(Dictionary<string, object?> d, string key) =>
+    public static List<object?> GetList(Dictionary<string, object?> d, string key) =>
         d.TryGetValue(key, out var v) && v is List<object?> list ? list : new();
 
-    private static int ToInt(object? v) => v switch
+    public static int ToInt(object? v) => v switch
     {
         null => 0, int i => i, long l => (int)l, double d => (int)d,
         string s when int.TryParse(s, out var n) => n, _ => 0,

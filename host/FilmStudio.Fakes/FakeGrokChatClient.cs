@@ -149,6 +149,18 @@ public sealed class FakeGrokChatClient : IChatClient
             return Task.FromResult("""{"ranked":[""" + string.Join(",", names) + "]}");
         }
 
+        if (mode == ChatCallModes.ShotPlanRefineClassify ||
+            sys.Contains("cinematographer refining shot plans", StringComparison.OrdinalIgnoreCase))
+        {
+            return Task.FromResult("""{"refinements":[]}""");
+        }
+
+        if (mode == ChatCallModes.BeatPacingClassify ||
+            sys.Contains("duration pacing for screenplay beats", StringComparison.OrdinalIgnoreCase))
+        {
+            return Task.FromResult("""{"pacing":[]}""");
+        }
+
         // ── Minimal Stage1-shaped stub ─────────────────────────────────────
         return Task.FromResult("""
             {

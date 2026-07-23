@@ -100,6 +100,8 @@ public static class ChatCallModes
     public const string ExtendCutClassify = "extend_cut_classify";
     public const string SpeciesKindClassify = "species_kind_classify";
     public const string PlateRankClassify = "plate_rank_classify";
+    public const string ShotPlanRefineClassify = "shot_plan_refine_classify";
+    public const string BeatPacingClassify = "beat_pacing_classify";
 }
 
 /// <summary>

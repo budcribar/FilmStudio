@@ -22,8 +22,10 @@ host/
 |---------|------|
 | **FilmStudio.Web** | Blazor UI (projects, adaptation, scenes, characters, review, cost) |
 | **FilmStudio.Api** | Backend: REST + `/hubs/jobs` SignalR |
-| **FilmStudio.Engine** | Native C# job runner (Stage 1/2, video, remux, book prepare) |
+| **FilmStudio.Engine** | Native C# job runner (Stage 1/2 adaptation, AI classifiers, video prompt builder, remux, book prepare) |
 | **FilmStudio.Core** | DTOs / options |
+
+> **AI Pipeline Overview**: See the root [README.md](../README.md#how-film-studio-converts-source-text-to-a-movie-step-by-step-ai-pipeline) for the complete 7-step guide detailing how LLMs, Vision Classifiers, Image/Video Generation APIs, and 6 specialized AI Classifiers transform raw text into a finished film.
 
 ## Run (two terminals)
 

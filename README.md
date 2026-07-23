@@ -68,6 +68,66 @@ More detail: **`host/README.md`**.
 7. Remux scene composites + rebuild WIP  
 8. Admin Learning: propose rules, approve into project rules / checklist  
 
+---
+
+## How Film Studio Converts Source Text to a Movie (Step-by-Step AI Pipeline)
+
+```mermaid
+flowchart TD
+    A["Raw Story Text / PDF / Fountain"] --> B["Step 1: Text Ingestion\n(BookPrepareService)"]
+    B --> C["Step 2: Stage 1 Adaptation\n(Grok 4.5 LLM Screenwriter)"]
+    C --> D["Step 3: Cast Discovery & Vision Gate\n(Grok 4.5 + Grok/Gemini Image + Vision Classifier)"]
+    D --> E["Step 4: Stage 2 Shot Planning\n(6 Grok 4.5 AI Classifiers)"]
+    E --> F["Step 5: Video Generation\n(Grok Imagine Video / Veo + Reference Locks)"]
+    F --> G["Step 6: AI Multi-Frame Auto-Review\n(Grok Multi-Frame Vision Classifier)"]
+    G --> H["Step 7: Composition & Lossless Remux\n(FfmpegRemuxService)"]
+    H --> I["🎬 Final Compiled Movie (movie_wip.mp4)"]
+```
+
+### 1. Source Text Ingestion (`BookPrepareService`)
+- **Input**: Raw text (`.txt`), PDF book, or existing Fountain screenplay (`.fountain`).
+- **Processing**: Cleans Gutenberg headers/boilerplate, normalizes line breaks, extracts chapter boundaries, and formats source text chunks for adaptation.
+
+### 2. Stage 1: Screenplay Adaptation (`BookToFountainConverter`)
+- **AI Engine**: **Grok 4.5 LLM (`book_to_fountain`)**
+- **Action**: Converts raw book prose into a valid **Fountain 1.1** screenplay containing filmable scene headings (`INT.`/`EXT.`), visual action prose, character dialogue, and voiceover (`V.O.`).
+- **Automated AI Recovery**: Verifies screenplay formatting against strict Fountain syntax rules. If scene headings or dialogue cues contain formatting errors, specialized AI fixup passes (`book_to_fountain_locations_retry`, `book_to_fountain_speakers_retry`) resolve errors automatically without human intervention.
+
+### 3. Character Discovery & Visual Style Lock (`CastFromScreenplayService` & `CharacterDesignService`)
+- **AI Engine**: **Grok 4.5 LLM (`cast_from_screenplay`)** + **Grok Imagine Image / Gemini Image** + **Grok Vision Classifier**
+- **Action**:
+  1. **Character Extraction**: AI analyzes the screenplay to extract character identities, species, estimated age, build, clothing, and visual locks (unvarying physical traits).
+  2. **Portrait Generation**: Generates candidate reference portraits for each character.
+  3. **AI Vision Style Gate (`RequirePortraitStyleGate`)**: An AI Vision Classifier audits generated portraits against the project's global render style (e.g. *period live-action gothic* vs. *3D CG animation*) before locking, ensuring zero visual style drift across the cast.
+
+### 4. Stage 2: Shot Planning & AI Classifier Suite (`Stage2PlannerService`)
+- **AI Engine**: **7 Specialized Grok 4.5 Classifiers**
+- **Action**: Transforms the Fountain screenplay into a frame-accurate, timestamped shot plan (`blueprint.clips.json`) using 7 AI classifiers:
+  1. **`OnScreenCastClassifier`**: Evaluates dialogue and action per beat to determine on-screen vs. off-screen/VO characters per shot, enforcing off-camera speaker rules.
+  2. **`SilentBeatActionClassifier`**: Classifies silent action beats (`action_class`) with surrounding narrative context to allocate precise duration budgets ($3\text{s}$–$8\text{s}$).
+  3. **`AmbientSfxClassifier`**: Separates background ambient soundscapes from transient sound effects (SFX).
+  4. **`SpeciesKindClassifier`**: Categorizes character body types (`animal`, `human`, `other`) to enforce prompt framing rules.
+  5. **`ExtendCutClassifier`**: Determines continuity transitions (`extend_previous` vs. `hard_cut`).
+  6. **`ShotPlanRefiningClassifier`**: Evaluates multi-clip monologues to generate progressive camera angles (Establishing Wide $\rightarrow$ Close-Up on detail $\rightarrow$ Reaction Shot), eliminating static visual prompt repetition across extended scenes.
+  7. **`BeatPacingClassifier`**: Analyzes narrative rhythm, suspense, and emotional weight to assign dynamic clip duration budgets ($2\text{s}$–$12\text{s}$) tailored to scene tension.
+- **Deterministic Pacing**: *Silent Prelude Coalescing* automatically folds 5s silent lead-in beats into Beat 2 so voiceover/dialogue begins on frame 1 of the scene.
+
+### 5. Video Generation (`ClipVideoPromptBuilder` & `GrokVideoClient` / `GeminiVideoClient`)
+- **AI Engine**: **Grok Imagine Video / Veo**
+- **Action**: Constructs 4,000-character prompts incorporating style locks, on-screen cast counts, visual action prose, and locked character reference images (`<IMAGE_1>`, `<IMAGE_2>`).
+- **Identity Attachment**: Attaches locked reference image plates directly to the video generation API call for 100% character face and wardrobe consistency across shots.
+
+### 6. AI Multi-Frame Auto-Review (`ClipAutoReviewService`)
+- **AI Engine**: **Grok Multi-Frame Vision (`CompleteWithImagesAsync`)**
+- **Action**: Inspects generated video clip frames (head, mid, tail) alongside the previous clip's tail frame.
+- **Quality Audit**: Audits character identity consistency, visual artifacts, and style adherence, assigning `Pass` or `Fail` with automated assembly gates that prevent bad clips from reaching the final movie build.
+
+### 7. Composition & Lossless Remux (`FfmpegRemuxService`)
+- **Engine**: Native `ffmpeg` remuxing pipeline.
+- **Action**: Filters clips passing the assembly gate, layers audio tracks (dialogue, ambient, SFX, music bed), performs lossy/lossless ffmpeg remux, and compiles the final movie draft (`movie_wip.mp4`).
+
+---
+
 ## Playwright pilot
 
 ```powershell
