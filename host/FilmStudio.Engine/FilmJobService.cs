@@ -581,7 +581,7 @@ public sealed class FilmJobService
             ? _projects.ActiveProjectId
             : req.ProjectId;
         return StartBackgroundJobAsync(
-            ct => RunSceneGenAsync(req, ct),
+            ct => RunSceneGenAsync(req, projectId, ct),
             new JobEnqueueMeta
             {
                 Kind = "scene",
@@ -615,7 +615,7 @@ public sealed class FilmJobService
             ? $"Queued batch gen ({req.Clips!.Count} clip(s))…"
             : $"Queued batch gen ({req.Scenes!.Count} scenes)…";
         return StartBackgroundJobAsync(
-            ct => RunBatchGenAsync(req, ct),
+            ct => RunBatchGenAsync(req, projectId, ct),
             new JobEnqueueMeta
             {
                 Kind = "batch",
@@ -634,7 +634,7 @@ public sealed class FilmJobService
             ? _projects.ActiveProjectId
             : req.ProjectId;
         return StartBackgroundJobAsync(
-            ct => RunStage1Async(req, ct),
+            ct => RunStage1Async(req, projectId, ct),
             new JobEnqueueMeta
             {
                 Kind = "stage1",
@@ -652,7 +652,7 @@ public sealed class FilmJobService
             ? _projects.ActiveProjectId
             : req.ProjectId;
         return StartBackgroundJobAsync(
-            ct => RunStage2Async(req, ct),
+            ct => RunStage2Async(req, projectId, ct),
             new JobEnqueueMeta
             {
                 Kind = "stage2",
@@ -721,7 +721,7 @@ public sealed class FilmJobService
     private async Task RunBookPrepareAsync(StartBookPrepareRequest req, CancellationToken ct)
     {
         var projectId = req.ProjectId;
-        await _projects.ActivateAsync(projectId, ct);
+        await _projects.RequireProjectAsync(projectId, ct);
         Snapshot = new JobSnapshot
         {
             Status = "running",
@@ -778,7 +778,7 @@ public sealed class FilmJobService
     private async Task RunBookImportAsync(StartBookImportRequest req, CancellationToken ct)
     {
         var projectId = req.ProjectId;
-        await _projects.ActivateAsync(projectId, ct).ConfigureAwait(false);
+        await _projects.RequireProjectAsync(projectId, ct).ConfigureAwait(false);
 
         // Progress: 0–4 prepare, 5–10 adapt (chunk messages bump index)
         Snapshot = new JobSnapshot
@@ -949,7 +949,7 @@ public sealed class FilmJobService
             ? _projects.ActiveProjectId
             : req.ProjectId;
         return StartBackgroundJobAsync(
-            ct => RunCharacterVariantsAsync(req, ct),
+            ct => RunCharacterVariantsAsync(req, projectId, ct),
             new JobEnqueueMeta
             {
                 Kind = "character_variants",
@@ -972,7 +972,7 @@ public sealed class FilmJobService
             ? _projects.ActiveProjectId
             : req.ProjectId;
         return StartBackgroundJobAsync(
-            ct => RunVoicePreviewAsync(req, ct),
+            ct => RunVoicePreviewAsync(req, projectId, ct),
             new JobEnqueueMeta
             {
                 Kind = "voice-preview",
@@ -995,7 +995,7 @@ public sealed class FilmJobService
             ? _projects.ActiveProjectId
             : req.ProjectId;
         return StartBackgroundJobAsync(
-            ct => RunClipAutoReviewAsync(req, ct),
+            ct => RunClipAutoReviewAsync(req, projectId, ct),
             new JobEnqueueMeta
             {
                 Kind = "clip-auto-review",
@@ -1020,7 +1020,7 @@ public sealed class FilmJobService
         var sceneLabel = req.Scene is int sn && sn > 0 ? $"S{sn:D2}" : "all scenes";
         var mode = req.OnlyMissing ? "missing only" : "all clips";
         return StartBackgroundJobAsync(
-            ct => RunClipAutoReviewBatchAsync(req, ct),
+            ct => RunClipAutoReviewBatchAsync(req, projectId, ct),
             new JobEnqueueMeta
             {
                 Kind = "clip-auto-review-batch",
@@ -1034,12 +1034,9 @@ public sealed class FilmJobService
             lockReason: $"auto-review-batch {sceneLabel}");
     }
 
-    private async Task RunClipAutoReviewAsync(StartClipAutoReviewRequest req, CancellationToken ct)
+    private async Task RunClipAutoReviewAsync(StartClipAutoReviewRequest req, string projectId, CancellationToken ct)
     {
-        var projectId = string.IsNullOrWhiteSpace(req.ProjectId)
-            ? _projects.ActiveProjectId
-            : req.ProjectId;
-        await _projects.ActivateAsync(projectId, ct);
+        await _projects.RequireProjectAsync(projectId, ct);
 
         Snapshot = new JobSnapshot
         {
@@ -1094,12 +1091,9 @@ public sealed class FilmJobService
         }
     }
 
-    private async Task RunClipAutoReviewBatchAsync(StartClipAutoReviewBatchRequest req, CancellationToken ct)
+    private async Task RunClipAutoReviewBatchAsync(StartClipAutoReviewBatchRequest req, string projectId, CancellationToken ct)
     {
-        var projectId = string.IsNullOrWhiteSpace(req.ProjectId)
-            ? _projects.ActiveProjectId
-            : req.ProjectId;
-        await _projects.ActivateAsync(projectId, ct);
+        await _projects.RequireProjectAsync(projectId, ct);
 
         var coords = _reviewIndex.ListOnDiskClipCoords(projectId, req.Scene)
             .Where(c => !req.OnlyMissing || !_reviewIndex.HasDraft(projectId, c.Scene, c.Clip))
@@ -1202,12 +1196,9 @@ public sealed class FilmJobService
         }
     }
 
-    private async Task RunVoicePreviewAsync(StartVoicePreviewRequest req, CancellationToken ct)
+    private async Task RunVoicePreviewAsync(StartVoicePreviewRequest req, string projectId, CancellationToken ct)
     {
-        var projectId = string.IsNullOrWhiteSpace(req.ProjectId)
-            ? _projects.ActiveProjectId
-            : req.ProjectId;
-        await _projects.ActivateAsync(projectId, ct);
+        await _projects.RequireProjectAsync(projectId, ct);
 
         Snapshot = new JobSnapshot
         {
@@ -1275,7 +1266,7 @@ public sealed class FilmJobService
             ? _projects.ActiveProjectId
             : req.ProjectId;
         return StartBackgroundJobAsync(
-            ct => RunSortCharacterPlatesAsync(req, ct),
+            ct => RunSortCharacterPlatesAsync(req, projectId, ct),
             new JobEnqueueMeta
             {
                 Kind = "character-plates",
@@ -1286,12 +1277,9 @@ public sealed class FilmJobService
             lockReason: "character plates");
     }
 
-    private async Task RunSortCharacterPlatesAsync(AttachCharacterPlatesRequest req, CancellationToken ct)
+    private async Task RunSortCharacterPlatesAsync(AttachCharacterPlatesRequest req, string projectId, CancellationToken ct)
     {
-        var projectId = string.IsNullOrWhiteSpace(req.ProjectId)
-            ? _projects.ActiveProjectId
-            : req.ProjectId;
-        await _projects.ActivateAsync(projectId, ct);
+        await _projects.RequireProjectAsync(projectId, ct);
 
         Snapshot = new JobSnapshot
         {
@@ -1430,12 +1418,9 @@ public sealed class FilmJobService
         throw new InvalidOperationException($"Image not found: {imagePath}");
     }
 
-    private async Task RunCharacterVariantsAsync(StartCharacterVariantsRequest req, CancellationToken ct)
+    private async Task RunCharacterVariantsAsync(StartCharacterVariantsRequest req, string projectId, CancellationToken ct)
     {
-        var projectId = string.IsNullOrWhiteSpace(req.ProjectId)
-            ? _projects.ActiveProjectId
-            : req.ProjectId;
-        await _projects.ActivateAsync(projectId, ct);
+        await _projects.RequireProjectAsync(projectId, ct);
 
         Snapshot = new JobSnapshot
         {
@@ -1530,12 +1515,9 @@ public sealed class FilmJobService
         return 0;
     }
 
-    private async Task RunStage1Async(StartStage1Request req, CancellationToken ct)
+    private async Task RunStage1Async(StartStage1Request req, string projectId, CancellationToken ct)
     {
-        var projectId = string.IsNullOrWhiteSpace(req.ProjectId)
-            ? _projects.ActiveProjectId
-            : req.ProjectId;
-        await _projects.ActivateAsync(projectId, ct);
+        await _projects.RequireProjectAsync(projectId, ct);
 
         Snapshot = new JobSnapshot
         {
@@ -1608,12 +1590,9 @@ public sealed class FilmJobService
         }
     }
 
-    private async Task RunStage2Async(StartStage2Request req, CancellationToken ct)
+    private async Task RunStage2Async(StartStage2Request req, string projectId, CancellationToken ct)
     {
-        var projectId = string.IsNullOrWhiteSpace(req.ProjectId)
-            ? _projects.ActiveProjectId
-            : req.ProjectId;
-        await _projects.ActivateAsync(projectId, ct);
+        await _projects.RequireProjectAsync(projectId, ct);
 
         Snapshot = new JobSnapshot
         {
@@ -1689,7 +1668,7 @@ public sealed class FilmJobService
     private async Task RunRemuxAsync(StartRemuxRequest req, CancellationToken ct)
     {
         var projectId = req.ProjectId;
-        await _projects.ActivateAsync(projectId, ct);
+        await _projects.RequireProjectAsync(projectId, ct);
         Snapshot = new JobSnapshot
         {
             Status = "running",
@@ -1829,12 +1808,9 @@ public sealed class FilmJobService
         }
     }
 
-    private async Task RunBatchGenAsync(StartBatchGenRequest req, CancellationToken ct)
+    private async Task RunBatchGenAsync(StartBatchGenRequest req, string projectId, CancellationToken ct)
     {
-        var projectId = string.IsNullOrWhiteSpace(req.ProjectId)
-            ? _projects.ActiveProjectId
-            : req.ProjectId;
-        await _projects.ActivateAsync(projectId, ct);
+        await _projects.RequireProjectAsync(projectId, ct);
 
         var hasClips = req.Clips is { Count: > 0 };
         var scenes = (hasClips ? req.Clips!.Select(c => c.Scene) : req.Scenes)
@@ -2004,12 +1980,9 @@ public sealed class FilmJobService
         }
     }
 
-    private async Task RunSceneGenAsync(StartSceneGenRequest req, CancellationToken ct)
+    private async Task RunSceneGenAsync(StartSceneGenRequest req, string projectId, CancellationToken ct)
     {
-        var projectId = string.IsNullOrWhiteSpace(req.ProjectId)
-            ? _projects.ActiveProjectId
-            : req.ProjectId;
-        await _projects.ActivateAsync(projectId, ct);
+        await _projects.RequireProjectAsync(projectId, ct);
 
         Snapshot = new JobSnapshot
         {

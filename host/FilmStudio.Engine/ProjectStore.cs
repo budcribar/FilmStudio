@@ -144,10 +144,24 @@ public sealed class ProjectStore
             string.Equals(p.Id, projectId, StringComparison.OrdinalIgnoreCase));
     }
 
+    /// <summary>
+    /// Validates a project exists, without touching the process-global active-project
+    /// pointer or workspace.json. Use this from background job execution instead of
+    /// <see cref="ActivateAsync"/> — background jobs run concurrently across projects/users
+    /// and must not race each other (or the UI) for the shared "active project" preference.
+    /// </summary>
+    public async Task<ProjectInfo> RequireProjectAsync(string projectId, CancellationToken ct = default) =>
+        await GetProjectAsync(projectId, ct).ConfigureAwait(false)
+            ?? throw new InvalidOperationException($"Unknown project: {projectId}");
+
+    /// <summary>
+    /// UI-only preference: sets the process-global active project and persists it to
+    /// workspace.json. Do not call this from background job execution — see
+    /// <see cref="RequireProjectAsync"/>.
+    /// </summary>
     public async Task<ProjectInfo> ActivateAsync(string projectId, CancellationToken ct = default)
     {
-        var p = await GetProjectAsync(projectId, ct).ConfigureAwait(false)
-            ?? throw new InvalidOperationException($"Unknown project: {projectId}");
+        var p = await RequireProjectAsync(projectId, ct).ConfigureAwait(false);
         _activeProjectId = p.Id;
         var wsPath = Path.Combine(WorkspaceRoot, "projects", "workspace.json");
         Directory.CreateDirectory(Path.GetDirectoryName(wsPath)!);
