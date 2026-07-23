@@ -54,9 +54,28 @@ public static class CharacterVisualTextScrubber
         RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
     /// <summary>
+    /// Shared render medium only — no species/age assumption.
+    /// Use for animal-to-animal or unknown cast; do not force "human adult".
+    /// </summary>
+    public const string SharedFilmMediumPhrase =
+        "same stylized picture-book soft-3D medium as the film";
+
+    /// <summary>
+    /// Medium phrase for known human cast when scrubbing "matching the animal's look"
+    /// (keeps species from bleeding without rewriting animals as human).
+    /// </summary>
+    public const string SharedFilmMediumHumanDisambiguationPhrase =
+        "same stylized picture-book soft-3D medium as the film (human — not an animal)";
+
+    /// <summary>
     /// Scrub description / visual_lock prose for Stage 1 seeds and portrait prompts.
     /// </summary>
-    public static string ScrubVisualProse(string? text)
+    /// <param name="disambiguateCrossSpeciesAsHuman">
+    /// When true (caller knows this seed is human), cross-species "matching animal look"
+    /// rewrites may add a human/not-animal disambiguation. Default false so animal seeds
+    /// never get "human adult" injected.
+    /// </param>
+    public static string ScrubVisualProse(string? text, bool disambiguateCrossSpeciesAsHuman = false)
     {
         if (string.IsNullOrWhiteSpace(text))
             return text ?? "";
@@ -81,7 +100,7 @@ public static class CharacterVisualTextScrubber
         t = Regex.Replace(t, @"\bnot\s+very\s+bright\b", "", RegexOptions.IgnoreCase);
 
         // Shared medium, not shared species
-        t = SoftenCrossSpeciesStyleLanguage(t);
+        t = SoftenCrossSpeciesStyleLanguage(t, disambiguateCrossSpeciesAsHuman);
 
         // Lightweight only. Figurative language + later-story wardrobe are scrubbed via
         // CastVisualLiteralizeService / prompts/cast_visual_literalize.txt (API prompt).
@@ -91,22 +110,28 @@ public static class CharacterVisualTextScrubber
     }
 
     /// <summary>
-    /// "Matching the {animal}'s look" → shared render medium (still human if that was the intent).
-    /// Safe for any book with mixed animal + human casts.
+    /// "Matching the {animal}'s look" → shared render medium (not shared species).
+    /// Neutral by default so animal-to-animal style matching is not rewritten as human adult.
     /// </summary>
-    public static string SoftenCrossSpeciesStyleLanguage(string? text)
+    /// <param name="disambiguateAsHuman">
+    /// When true, use medium phrasing that also says human / not an animal (for known human seeds only).
+    /// </param>
+    public static string SoftenCrossSpeciesStyleLanguage(
+        string? text,
+        bool disambiguateAsHuman = false)
     {
         if (string.IsNullOrWhiteSpace(text))
             return text ?? "";
 
         var t = text;
-        const string mediumHuman =
-            "same stylized picture-book soft-3D medium as the film (human adult — not an animal)";
+        var medium = disambiguateAsHuman
+            ? SharedFilmMediumHumanDisambiguationPhrase
+            : SharedFilmMediumPhrase;
 
-        t = MatchingAnimalLook.Replace(t, mediumHuman);
-        t = SameLookAsAnimal.Replace(t, mediumHuman);
-        // Named hero ("matching Buster's CG look") — keep general medium language
-        t = MatchingNamedHeroLook.Replace(t, mediumHuman);
+        t = MatchingAnimalLook.Replace(t, medium);
+        t = SameLookAsAnimal.Replace(t, medium);
+        // Named hero ("matching Character_Hero's CG look") — same medium language
+        t = MatchingNamedHeroLook.Replace(t, medium);
 
         return CleanDebris(t);
     }

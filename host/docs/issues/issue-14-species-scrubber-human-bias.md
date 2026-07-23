@@ -3,18 +3,22 @@
 | Field | Value |
 |-------|-------|
 | Severity | suggestion |
-| Status | open |
+| Status | **fixed** |
 | Branch | `fix/issue-14-species-scrubber-human-bias` |
-| Related files | host/FilmStudio.Engine/CharacterVisualTextScrubber.cs (~103-109) |
+| Related files | `host/FilmStudio.Engine/CharacterVisualTextScrubber.cs`; `CharacterDesignService.cs` |
 
 ## Problem
 
-Cross-species "matching X CG look" rewrites always to human adult medium language. For animal-to-animal style matching this can force "human adult — not an animal" into animal seed prose (wrong medium/species). The logic is general but biased.
+Cross-species "matching X CG look" rewrites always used human adult medium language. For animal-to-animal style matching this forced "human adult — not an animal" into animal seed prose (wrong medium/species).
 
-## Suggested fix
+## Fix implemented
 
-Rewrite to neutral shared-medium phrasing without assuming human (e.g. same stylized picture-book soft-3D medium as the film) unless age_band/description already indicates human.
+1. **Default** replacement is neutral: `same stylized picture-book soft-3D medium as the film` (no species/age).
+2. **Optional** human disambiguation phrase for known human seeds only: `(human — not an animal)` — not "human adult".
+3. **`ScrubVisualProse` / `SoftenCrossSpeciesStyleLanguage`** take `disambiguateCrossSpeciesAsHuman` (default false).
+4. **Portrait prompts** (`CharacterDesignService`) pass the flag only when `isHumanAdult && !isAnimal`.
+5. Generic seed scrubbing (ProjectStore, etc.) stays neutral so animals are never rewritten as human.
 
-## Notes
+## Suggested fix (original)
 
-Tracked from the FilmStudio.Api / Core / Engine code review (2026-07). This branch documents the problem only; implementation is follow-up work on this branch.
+Rewrite to neutral shared-medium phrasing without assuming human unless age_band/description already indicates human.

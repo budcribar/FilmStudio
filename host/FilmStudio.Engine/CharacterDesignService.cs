@@ -1117,9 +1117,12 @@ public sealed class CharacterDesignService
                 $"uniform group exactly, not just similar): {wardrobeSafe}. ";
         }
 
-        // Prompt-time text prep: keep filmable words; image model still gets strong IGNORE rules
-        var descSafe = CharacterVisualTextScrubber.ScrubVisualProse(description);
-        var visualSafe = CharacterVisualTextScrubber.ScrubVisualProse(visualLock);
+        // Prompt-time text prep: keep filmable words; image model still gets strong IGNORE rules.
+        // Only known human seeds may get "human — not an animal" in cross-species medium rewrites.
+        var descSafe = CharacterVisualTextScrubber.ScrubVisualProse(
+            description, disambiguateCrossSpeciesAsHuman: isHumanAdult && !isAnimal);
+        var visualSafe = CharacterVisualTextScrubber.ScrubVisualProse(
+            visualLock, disambiguateCrossSpeciesAsHuman: isHumanAdult && !isAnimal);
 
         // Priority-ordered instructions work better than a long free-form paragraph for Imagine.
         const string ignoreRules =
