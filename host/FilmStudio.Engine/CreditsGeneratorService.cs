@@ -113,7 +113,7 @@ public class CreditsGeneratorService
         var t = string.IsNullOrWhiteSpace(title) ? "MOTION PICTURE" : title.Trim().ToUpperInvariant();
         var a = string.IsNullOrWhiteSpace(author) ? "Public Domain / Adapted Work" : author.Trim();
         var softName = string.IsNullOrWhiteSpace(opts.SoftwareName) ? "FilmStudio" : opts.SoftwareName.Trim();
-        var softAuthor = string.IsNullOrWhiteSpace(opts.SoftwareAuthor) ? "Nick" : opts.SoftwareAuthor.Trim();
+        var softAuthor = string.IsNullOrWhiteSpace(opts.SoftwareAuthor) ? "Bud Cribar" : opts.SoftwareAuthor.Trim();
         var repo = string.IsNullOrWhiteSpace(opts.RepositoryUrl) ? "https://github.com/budcribar/FilmStudio" : opts.RepositoryUrl.Trim();
         var fairUse = string.IsNullOrWhiteSpace(opts.FairUseNotice)
             ? "Produced under Fair Use and Public Domain for Non-Commercial Creative Purposes."

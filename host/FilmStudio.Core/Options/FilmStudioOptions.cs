@@ -177,7 +177,7 @@ public sealed class CreditsOptions
 {
     public bool AutoAppendCredits { get; set; } = true;
     public string SoftwareName { get; set; } = "FilmStudio";
-    public string SoftwareAuthor { get; set; } = "Nick";
+    public string SoftwareAuthor { get; set; } = "Bud Cribar";
     public string RepositoryUrl { get; set; } = "https://github.com/budcribar/FilmStudio";
     public string FairUseNotice { get; set; } = "Produced under Fair Use and Public Domain for Non-Commercial Creative Purposes.";
 }
