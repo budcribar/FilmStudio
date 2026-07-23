@@ -605,7 +605,8 @@ public sealed class Stage2PlannerService
             else if (!string.IsNullOrWhiteSpace(dlg))
             {
                 var spkDisplay = !string.IsNullOrWhiteSpace(spk) ? DisplayNameForKey(spk, charSeeds) : "speaker";
-                var framing = GetMonologueCameraFraming(monologueStep, spkDisplay);
+                // OTS only when ≥2 on-screen — solo monologue must not invent a listener.
+                var framing = GetMonologueCameraFraming(monologueStep, spkDisplay, clipCast.Count);
                 vp = $"{vp} Camera directive: {framing}";
             }
 
@@ -626,6 +627,18 @@ public sealed class Stage2PlannerService
                 vp = $"{vp} {aiColor.GradingPrompt}";
             }
 
+            var actionClassVal = beat.TryGetValue("action_class", out var beatAc) ? beatAc : null;
+            var primaryVal = beat.TryGetValue("primary_subject", out var psub) ? psub : null;
+            var audioPayload = BuildAudioPayload(beat, aiSound is not null && aiSound.TryGetValue(beatIdStr, out var sd) ? sd : null);
+            var speakerForFocus = CoerceString(beat.TryGetValue("speaker", out var spkFocus) ? spkFocus : null);
+            var focusKeys = ClipVideoPromptBuilder.ResolveFocusKeys(
+                    clipCast,
+                    CoerceString(primaryVal),
+                    speakerForFocus,
+                    CoerceString(actionClassVal))
+                .OrderBy(k => k, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
             var clipDict = new Dictionary<string, object?>
             {
                 ["clip_number"] = i + 1,
@@ -634,12 +647,14 @@ public sealed class Stage2PlannerService
                 ["location_id"] = lid,
                 ["visual_prompt"] = vp,
                 ["negative_prompt"] = neg,
-                ["audio_payload"] = BuildAudioPayload(beat, aiSound is not null && aiSound.TryGetValue(beatIdStr, out var sd) ? sd : null),
+                ["audio_payload"] = audioPayload,
                 ["stage1_beat_id"] = beatIdStr,
-                ["primary_subject"] = beat.TryGetValue("primary_subject", out var psub) ? psub : null,
+                ["primary_subject"] = primaryVal,
                 // Propagate for gen-time duration (EstimateForClip) — silent big_action etc.
-                ["action_class"] = beat.TryGetValue("action_class", out var beatAc) ? beatAc : null,
+                ["action_class"] = actionClassVal,
                 ["characters_on_screen"] = clipCast.Cast<object?>().ToList(),
+                // Full identity lock at gen; others on-screen get compact "also present" lines
+                ["focus_keys"] = focusKeys.Cast<object?>().ToList(),
                 ["duration_seconds"] = dur,
             };
 
@@ -846,17 +861,25 @@ public sealed class Stage2PlannerService
     }
 
     /// <summary>
-    /// Cycle camera framing distance across continuous monologue beats:
-    /// Medium Shot -> Extreme Close-Up on eyes -> Over-The-Shoulder -> Hands
+    /// Cycle camera framing across continuous monologue beats.
+    /// Multi-cast: Medium → ECU eyes → OTS → Hands.
+    /// Solo: Medium → ECU eyes → three-quarter profile → Hands (never OTS — no invented listener).
     /// </summary>
-    public static string GetMonologueCameraFraming(int step, string speakerDisplay = "speaker")
+    public static string GetMonologueCameraFraming(
+        int step,
+        string speakerDisplay = "speaker",
+        int onScreenCastCount = 1)
     {
         var s = string.IsNullOrWhiteSpace(speakerDisplay) ? "speaker" : speakerDisplay;
+        var multi = onScreenCastCount >= 2;
         return (step % 4) switch
         {
             0 => $"Medium shot, 35mm lens, slow push-in as {s} speaks",
             1 => $"Extreme close-up on eyes and facial intensity of {s}, 85mm lens, shallow depth of field",
-            2 => $"Over-the-shoulder shot, 50mm lens, listening perspective facing {s}",
+            2 when multi =>
+                $"Over-the-shoulder shot, 50mm lens, listening perspective facing {s}",
+            2 =>
+                $"Three-quarter profile of {s}, 50mm lens, intimate confessional angle",
             3 => $"Close-up on hands of {s}, 50mm macro lens, capturing subtle hand movements and gestures",
             _ => $"Medium shot, 35mm lens, slow push-in as {s} speaks",
         };
