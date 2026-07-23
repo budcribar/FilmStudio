@@ -4772,11 +4772,33 @@
       "duration_source": "request",
       "id": "1784838774_0234",
       "ts": "2026-07-23T14:32:54"
+    },
+    {
+      "kind": "video",
+      "scene": 13,
+      "clip": 1,
+      "model": "grok-imagine-video",
+      "request_id": "grok:df58d6ab-2484-9af4-903b-ef4e35b0187c",
+      "has_ref_image": true,
+      "is_extend": false,
+      "source": "list_rate",
+      "duration_sec": 5.04,
+      "attempts": 1,
+      "resolution": "480p",
+      "output_rate_per_sec": 0.05,
+      "video_output_usd": 0.252,
+      "ref_image_usd": 0.002,
+      "extend_input_usd": 0,
+      "usd": 0.254,
+      "currency": "USD",
+      "duration_source": "request",
+      "id": "1784842718_0235",
+      "ts": "2026-07-23T15:38:38"
     }
   ],
   "cost_totals": {
-    "usd": 69.7563,
-    "events": 235,
-    "updated_at": "2026-07-23T14:32:54"
+    "usd": 70.0103,
+    "events": 236,
+    "updated_at": "2026-07-23T15:38:38"
   }
 }
