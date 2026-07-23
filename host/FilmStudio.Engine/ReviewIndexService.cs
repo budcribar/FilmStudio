@@ -127,6 +127,40 @@ public sealed class ReviewIndexService
         return doc;
     }
 
+    /// <summary>
+    /// Remove one clip's row (if present) plus its auto-review draft and durable frames.
+    /// Unlike <see cref="Rebuild"/>, this only touches the one row — other scenes/clips in
+    /// the index are left untouched.
+    /// </summary>
+    public void RemoveClip(string projectId, int scene, int clip)
+    {
+        var key = $"S{scene:D2}C{clip:D2}";
+        var doc = Load(projectId);
+        if (doc is not null)
+        {
+            var removed = doc.Clips.RemoveAll(c => string.Equals(c.Key, key, StringComparison.OrdinalIgnoreCase));
+            if (removed > 0)
+                Save(doc);
+        }
+
+        var draftAbs = Path.Combine(_projects.GetProjectDir(projectId),
+            DraftRelPath(scene, clip).Replace('/', Path.DirectorySeparatorChar));
+        if (File.Exists(draftAbs))
+        {
+            try { File.Delete(draftAbs); } catch { /* best effort */ }
+        }
+
+        var framesDir = FramesDir(projectId);
+        if (Directory.Exists(framesDir))
+        {
+            var prefix = $"{key}_";
+            foreach (var f in Directory.EnumerateFiles(framesDir, prefix + "*.jpg"))
+            {
+                try { File.Delete(f); } catch { /* best effort */ }
+            }
+        }
+    }
+
     /// <summary>On-disk (scene, clip) pairs under assets/video, optional scene filter.</summary>
     public IReadOnlyList<(int Scene, int Clip)> ListOnDiskClipCoords(
         string projectId,

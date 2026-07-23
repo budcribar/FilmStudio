@@ -556,10 +556,31 @@ public sealed class ClipSummary
     public string Dialogue { get; set; } = "";
     public string? Speaker { get; set; }
     public string? Delivery { get; set; }
+    public List<string> CharactersOnScreen { get; set; } = new();
+    public string? ColorPalette { get; set; }
+    public string? FilmStock { get; set; }
     public bool OnDisk { get; set; }
     public long SizeBytes { get; set; }
     public string? VideoUrl { get; set; }
     public string? FileName { get; set; }
+}
+
+/// <summary>Create or fully edit a clip's shot-plan fields (Scenes clip editor).</summary>
+public sealed class ClipEditRequest
+{
+    public string ProjectId { get; set; } = "";
+    public int Scene { get; set; }
+    public int Clip { get; set; }
+    public string VisualPrompt { get; set; } = "";
+    public string NegativePrompt { get; set; } = "";
+    public string Dialogue { get; set; } = "";
+    public string? Speaker { get; set; }
+    public string? Delivery { get; set; }
+    public string PrimarySubject { get; set; } = "";
+    public List<string> CharactersOnScreen { get; set; } = new();
+    public string? ColorPalette { get; set; }
+    public string? FilmStock { get; set; }
+    public int DurationSeconds { get; set; }
 }
 
 public sealed class SceneDetail

@@ -1327,6 +1327,194 @@ public sealed class ProjectStore
         InvalidateReadCaches(projectId);
     }
 
+    private static System.Text.Json.Nodes.JsonArray? FindSceneClipsArray(
+        System.Text.Json.Nodes.JsonArray scenes, int scene)
+    {
+        foreach (var sNode in scenes)
+        {
+            if (sNode is not System.Text.Json.Nodes.JsonObject s) continue;
+            if (ReadJsonNodeInt(s["scene_number"]) != scene) continue;
+            return s["veo_clips"] as System.Text.Json.Nodes.JsonArray
+                   ?? s["clips"] as System.Text.Json.Nodes.JsonArray;
+        }
+        return null;
+    }
+
+    private static System.Text.Json.Nodes.JsonObject? FindClipNode(
+        System.Text.Json.Nodes.JsonArray clips, int clip)
+    {
+        foreach (var cNode in clips)
+        {
+            if (cNode is System.Text.Json.Nodes.JsonObject c && ReadJsonNodeInt(c["clip_number"]) == clip)
+                return c;
+        }
+        return null;
+    }
+
+    private static void ApplyClipFields(System.Text.Json.Nodes.JsonObject clipObj, ClipEditRequest fields)
+    {
+        clipObj["visual_prompt"] = (fields.VisualPrompt ?? "").Trim();
+        clipObj["negative_prompt"] = (fields.NegativePrompt ?? "").Trim();
+        clipObj["primary_subject"] = (fields.PrimarySubject ?? "").Trim();
+        clipObj["duration_seconds"] = Math.Max(0, fields.DurationSeconds);
+        clipObj["characters_on_screen"] = new System.Text.Json.Nodes.JsonArray(
+            (fields.CharactersOnScreen ?? new List<string>())
+                .Where(c => !string.IsNullOrWhiteSpace(c))
+                .Select(c => System.Text.Json.Nodes.JsonValue.Create(c.Trim()) as System.Text.Json.Nodes.JsonNode)
+                .ToArray());
+        clipObj["color_palette"] = string.IsNullOrWhiteSpace(fields.ColorPalette) ? null : fields.ColorPalette.Trim();
+        clipObj["film_stock"] = string.IsNullOrWhiteSpace(fields.FilmStock) ? null : fields.FilmStock.Trim();
+
+        if (clipObj["audio_payload"] is not System.Text.Json.Nodes.JsonObject audio)
+        {
+            audio = new System.Text.Json.Nodes.JsonObject();
+            clipObj["audio_payload"] = audio;
+        }
+        audio["dialogue"] = (fields.Dialogue ?? "").Trim();
+        audio["speaker"] = string.IsNullOrWhiteSpace(fields.Speaker) ? null : fields.Speaker.Trim();
+        audio["delivery"] = string.IsNullOrWhiteSpace(fields.Delivery) ? null : fields.Delivery.Trim();
+    }
+
+    /// <summary>
+    /// Full clip field editor (Scenes "Edit clip" dialog): visual/negative prompt, dialogue +
+    /// speaker/delivery, primary subject, characters on screen, and lighting/color fields.
+    /// Structural fields (clip_number, veo_continuation_source, timestamp, camera/lens, etc.)
+    /// are left untouched — those are pipeline-managed, not hand-edited.
+    /// </summary>
+    public void UpdateClipFields(string projectId, int scene, int clip, ClipEditRequest fields)
+    {
+        var bpPath = FindBlueprintPathSync(projectId);
+        if (bpPath is null || !File.Exists(bpPath))
+            throw new InvalidOperationException("Shot plan (blueprint) not found — cannot update clip.");
+
+        var root = System.Text.Json.Nodes.JsonNode.Parse(File.ReadAllText(bpPath))
+                   as System.Text.Json.Nodes.JsonObject
+                   ?? throw new InvalidOperationException("Invalid blueprint JSON.");
+        var scenes = root["scenes"] as System.Text.Json.Nodes.JsonArray
+                     ?? throw new InvalidOperationException("Blueprint has no scenes array.");
+
+        var clips = FindSceneClipsArray(scenes, scene)
+                    ?? throw new InvalidOperationException($"Scene {scene} not found in shot plan.");
+        var clipObj = FindClipNode(clips, clip)
+                      ?? throw new InvalidOperationException($"Clip S{scene:D2}C{clip:D2} not found in shot plan.");
+
+        ApplyClipFields(clipObj, fields);
+
+        File.WriteAllText(bpPath, root.ToJsonString(JsonDefaults.Indented) + "\n");
+        InvalidateSceneListCache(projectId);
+        InvalidateReadCaches(projectId);
+    }
+
+    /// <summary>
+    /// Add a brand-new clip to a scene's shot plan (no video yet — generate it afterward).
+    /// Inserted in <c>clip_number</c> order; siblings are untouched. Rejects a duplicate
+    /// clip number.
+    /// </summary>
+    public void AddClip(string projectId, int scene, ClipEditRequest fields)
+    {
+        if (fields.Clip <= 0)
+            throw new InvalidOperationException("Clip number must be positive.");
+
+        var bpPath = FindBlueprintPathSync(projectId);
+        if (bpPath is null || !File.Exists(bpPath))
+            throw new InvalidOperationException("Shot plan (blueprint) not found — cannot add clip.");
+
+        var root = System.Text.Json.Nodes.JsonNode.Parse(File.ReadAllText(bpPath))
+                   as System.Text.Json.Nodes.JsonObject
+                   ?? throw new InvalidOperationException("Invalid blueprint JSON.");
+        var scenes = root["scenes"] as System.Text.Json.Nodes.JsonArray
+                     ?? throw new InvalidOperationException("Blueprint has no scenes array.");
+
+        var clips = FindSceneClipsArray(scenes, scene)
+                    ?? throw new InvalidOperationException($"Scene {scene} not found in shot plan.");
+        if (FindClipNode(clips, fields.Clip) is not null)
+            throw new InvalidOperationException($"Clip S{scene:D2}C{fields.Clip:D2} already exists.");
+
+        var clipObj = new System.Text.Json.Nodes.JsonObject
+        {
+            ["clip_number"] = fields.Clip,
+            ["timestamp"] = "",
+            ["veo_continuation_source"] = "none",
+        };
+        ApplyClipFields(clipObj, fields);
+
+        var insertAt = 0;
+        while (insertAt < clips.Count &&
+               clips[insertAt] is System.Text.Json.Nodes.JsonObject existing &&
+               ReadJsonNodeInt(existing["clip_number"]) < fields.Clip)
+        {
+            insertAt++;
+        }
+        clips.Insert(insertAt, clipObj);
+
+        File.WriteAllText(bpPath, root.ToJsonString(JsonDefaults.Indented) + "\n");
+        InvalidateSceneListCache(projectId);
+        InvalidateReadCaches(projectId);
+    }
+
+    /// <summary>
+    /// Delete one clip: removes its <c>veo_clips</c> node from the Stage 2 blueprint and
+    /// its on-disk video (+ <c>.native</c> sidecar). Clip numbers are not required to be
+    /// contiguous — siblings are left untouched, no renumbering. The scene composite /
+    /// WIP become stale automatically (existing staleness checks); caller should prompt a
+    /// rebuild. Returns false if the clip was not present in the blueprint (still deletes
+    /// an orphaned video file if one exists).
+    /// </summary>
+    public bool DeleteClip(string projectId, int scene, int clip)
+    {
+        var projectDir = GetProjectDir(projectId);
+        var bpPath = FindBlueprintPathSync(projectId);
+        var removedFromBlueprint = false;
+
+        if (bpPath is not null && File.Exists(bpPath))
+        {
+            var root = System.Text.Json.Nodes.JsonNode.Parse(File.ReadAllText(bpPath))
+                       as System.Text.Json.Nodes.JsonObject
+                       ?? throw new InvalidOperationException("Invalid blueprint JSON.");
+            var scenes = root["scenes"] as System.Text.Json.Nodes.JsonArray
+                         ?? throw new InvalidOperationException("Blueprint has no scenes array.");
+
+            foreach (var sNode in scenes)
+            {
+                if (sNode is not System.Text.Json.Nodes.JsonObject s) continue;
+                if (ReadJsonNodeInt(s["scene_number"]) != scene) continue;
+                var clips = s["veo_clips"] as System.Text.Json.Nodes.JsonArray
+                            ?? s["clips"] as System.Text.Json.Nodes.JsonArray;
+                if (clips is null) break;
+                for (var i = 0; i < clips.Count; i++)
+                {
+                    if (clips[i] is not System.Text.Json.Nodes.JsonObject c) continue;
+                    if (ReadJsonNodeInt(c["clip_number"]) != clip) continue;
+                    clips.RemoveAt(i);
+                    removedFromBlueprint = true;
+                    break;
+                }
+                break;
+            }
+
+            if (removedFromBlueprint)
+                File.WriteAllText(bpPath, root.ToJsonString(JsonDefaults.Indented) + "\n");
+        }
+
+        var videoPath = Path.Combine(projectDir, "assets", "video", $"scene_{scene:D2}_clip_{clip:D2}.mp4");
+        var deletedVideo = false;
+        if (File.Exists(videoPath))
+        {
+            File.Delete(videoPath);
+            deletedVideo = true;
+        }
+        var nativePath = videoPath + ".native";
+        if (File.Exists(nativePath))
+            File.Delete(nativePath);
+
+        if (!removedFromBlueprint && !deletedVideo)
+            throw new InvalidOperationException($"Clip S{scene:D2}C{clip:D2} not found.");
+
+        InvalidateSceneListCache(projectId);
+        InvalidateReadCaches(projectId);
+        return removedFromBlueprint;
+    }
+
     public void UpdateCharacterSeedPlaceholder(string projectId, string charKey, string refFileName)
     {
         var bpPath = FindBlueprintPathSync(projectId);
@@ -1897,6 +2085,16 @@ public sealed class ProjectStore
                     Dialogue = dialogue,
                     Speaker = speaker,
                     Delivery = delivery,
+                    CharactersOnScreen = c.TryGetProperty("characters_on_screen", out var clipCos) &&
+                                         clipCos.ValueKind == JsonValueKind.Array
+                        ? clipCos.EnumerateArray()
+                            .Select(x => x.GetString())
+                            .Where(x => !string.IsNullOrWhiteSpace(x))
+                            .Select(x => x!)
+                            .ToList()
+                        : new List<string>(),
+                    ColorPalette = c.TryGetProperty("color_palette", out var cp) ? cp.GetString() : null,
+                    FilmStock = c.TryGetProperty("film_stock", out var fs) ? fs.GetString() : null,
                     OnDisk = onDisk,
                     SizeBytes = size,
                     FileName = onDisk ? fileName : null,
