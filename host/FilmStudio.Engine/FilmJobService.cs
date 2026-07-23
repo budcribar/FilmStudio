@@ -2211,6 +2211,8 @@ public sealed class FilmJobService
         // Clip 2+ requires previous on disk (no gaps). Cast-set changes reseed fresh+refs (PR2).
         string? prevVisual = null;
         string? prevVideoPath = null;
+        // Disposable working copy of prev for silence-trim / extend — never rewrite clip N-1 on disk.
+        string? prevExtendWorkTemp = null;
         var cont = clipEl.TryGetProperty("veo_continuation_source", out var ce)
             ? (ce.GetString() ?? "none")
             : "none";
@@ -2229,15 +2231,13 @@ public sealed class FilmJobService
                     $"Generate S{scene:D2}C{clip - 1:D2} first — later clips continue from the previous video.");
             }
 
-            // Keep a longer breath tail on spoken→spoken so monologue joins feel natural
-            JsonElement? prevMetaForTail = previousClipEl;
-            if (prevMetaForTail is null && blueprintRoot is { } brTail)
-                prevMetaForTail = FindClipElementInBlueprint(brTail, scene, clip - 1);
-            var prevKeepTail = SpeechTailKeepSeconds(
-                prevMetaForTail, currentHasSpeech: ClipHasSpokenAudio(clipEl));
-            await SilenceTrimClipAsync(prevOnDisk, scene, clip - 1, ct, keepTailSeconds: prevKeepTail)
-                .ConfigureAwait(false);
-            prevVideoPath = prevOnDisk;
+            // Breath-tail silence trim for extend input only. Mutating prevOnDisk in place used to
+            // permanently shorten a finished clip when this job then failed/cancelled before C_N
+            // was written (no backup of N-1). Work on a throwaway copy instead.
+            prevExtendWorkTemp = Path.Combine(
+                projectDir, "assets", "video", $"_prev_extend_s{scene:D2}c{clip:D2}.mp4");
+            File.Copy(prevOnDisk, prevExtendWorkTemp, overwrite: true);
+            prevVideoPath = prevExtendWorkTemp;
         }
 
         if (previousClipEl is { } prevEl &&
@@ -2249,174 +2249,187 @@ public sealed class FilmJobService
 
         // PR2: reseed with locked refs when on-screen cast set changes (API drops refs on extend).
         var reseedFresh = false;
-        if (prevVideoPath is not null && _opts.IdentityReseedOnCastChange)
-        {
-            var curKeys = ClipVideoPromptBuilder.ResolveOnScreenCharacterKeys(clipEl)
-                .Where(k => !(profiles.TryGetValue(k, out var cp) && cp.VoiceOnly))
-                .Select(k => k)
-                .Distinct(StringComparer.OrdinalIgnoreCase)
-                .OrderBy(k => k, StringComparer.OrdinalIgnoreCase)
-                .ToList();
-            var prevKeys = previousClipEl is { } pe
-                ? ClipVideoPromptBuilder.ResolveOnScreenCharacterKeys(pe)
-                    .Where(k => !(profiles.TryGetValue(k, out var pp) && pp.VoiceOnly))
-                    .Distinct(StringComparer.OrdinalIgnoreCase)
-                    .OrderBy(k => k, StringComparer.OrdinalIgnoreCase)
-                    .ToList()
-                : new List<string>();
-            if (prevKeys.Count > 0 && !OnScreenSetsEqual(curKeys, prevKeys))
-            {
-                reseedFresh = true;
-                await AppendLogAsync(
-                    $"  [Identity] Cast set changed " +
-                    $"[{string.Join(", ", prevKeys)}] → [{string.Join(", ", curKeys)}] — " +
-                    "fresh gen with locked refs (not video-extend)");
-                prevVideoPath = null; // API: attach refs
-                // Keep prevVisual for continuity prose only
-            }
-        }
-
-        // Silent → first spoken/VO: video-extend often clips the opening word (mouth stays closed
-        // from the prior silent clip). Require prev on disk for order, but gen fresh + plates.
-        if (prevVideoPath is not null)
-        {
-            JsonElement? prevMeta = previousClipEl;
-            if (prevMeta is null && blueprintRoot is { } br)
-                prevMeta = FindClipElementInBlueprint(br, scene, clip - 1);
-            if (prevMeta is { } pm && ClipHasSpokenAudio(clipEl) && !ClipHasSpokenAudio(pm))
-            {
-                reseedFresh = true;
-                prevVideoPath = null;
-                await AppendLogAsync(
-                    $"  [Speech] S{scene:D2}C{clip:D2} is first spoken after silence — " +
-                    "fresh gen with locked refs (not video-extend) so the opening word is not clipped");
-            }
-        }
-
         // Imagine /videos/extensions rejects input video longer than 15s.
         // Bad extension-tail trims (or re-extend chains) can leave a prev clip over that cap —
         // clamp to the last ≤15s so continuity still uses the ending frames.
         string? extendInputTemp = null;
-        if (prevVideoPath is not null)
+        try
         {
-            var clamped = await ClampExtendInputIfNeededAsync(prevVideoPath, scene, clip, ct)
-                .ConfigureAwait(false);
-            if (clamped is not null)
+            // Breath-tail silence trim on the disposable copy only (never mutates clip N-1 on disk).
+            if (prevVideoPath is not null && prevExtendWorkTemp is not null)
             {
-                extendInputTemp = clamped;
-                prevVideoPath = clamped;
+                JsonElement? prevMetaForTail = previousClipEl;
+                if (prevMetaForTail is null && blueprintRoot is { } brTail)
+                    prevMetaForTail = FindClipElementInBlueprint(brTail, scene, clip - 1);
+                var prevKeepTail = SpeechTailKeepSeconds(
+                    prevMetaForTail, currentHasSpeech: ClipHasSpokenAudio(clipEl));
+                await SilenceTrimClipAsync(
+                        prevExtendWorkTemp, scene, clip - 1, ct, keepTailSeconds: prevKeepTail)
+                    .ConfigureAwait(false);
             }
-        }
 
-        if (prevVideoPath is not null)
-        {
-            await AppendLogAsync(
-                $"  [Continuity] Imagine video-extend from S{scene:D2}C{clip - 1:D2} " +
-                $"({Path.GetFileName(prevVideoPath)})");
-        }
-        else if (reseedFresh && prevOnDisk is not null)
-        {
-            await AppendLogAsync(
-                $"  [Identity] Reseed S{scene:D2}C{clip:D2} after S{scene:D2}C{clip - 1:D2} " +
-                "(locked character refs attached)");
-        }
-
-        string? styleHead = null;
-        try
-        {
-            var rules = _projectRules.GetActiveRulesBlock(projectId);
-            if (!string.IsNullOrWhiteSpace(rules))
+            if (prevVideoPath is not null && _opts.IdentityReseedOnCastChange)
             {
-                var m = System.Text.RegularExpressions.Regex.Match(
-                    rules, @"STYLE LOCK:\s*([^\n]+)", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
-                if (m.Success)
-                    styleHead = "STYLE LOCK: " + m.Groups[1].Value.Trim().TrimEnd('.', ' ');
+                var curKeys = ClipVideoPromptBuilder.ResolveOnScreenCharacterKeys(clipEl)
+                    .Where(k => !(profiles.TryGetValue(k, out var cp) && cp.VoiceOnly))
+                    .Select(k => k)
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .OrderBy(k => k, StringComparer.OrdinalIgnoreCase)
+                    .ToList();
+                var prevKeys = previousClipEl is { } pe
+                    ? ClipVideoPromptBuilder.ResolveOnScreenCharacterKeys(pe)
+                        .Where(k => !(profiles.TryGetValue(k, out var pp) && pp.VoiceOnly))
+                        .Distinct(StringComparer.OrdinalIgnoreCase)
+                        .OrderBy(k => k, StringComparer.OrdinalIgnoreCase)
+                        .ToList()
+                    : new List<string>();
+                if (prevKeys.Count > 0 && !OnScreenSetsEqual(curKeys, prevKeys))
+                {
+                    reseedFresh = true;
+                    await AppendLogAsync(
+                        $"  [Identity] Cast set changed " +
+                        $"[{string.Join(", ", prevKeys)}] → [{string.Join(", ", curKeys)}] — " +
+                        "fresh gen with locked refs (not video-extend)");
+                    prevVideoPath = null; // API: attach refs
+                    // Keep prevVisual for continuity prose only
+                }
             }
-        }
-        catch { /* non-fatal */ }
 
-        var built = ClipVideoPromptBuilder.Build(
-            clipEl,
-            projectDir,
-            characters: profiles,
-            previousClipVisualPrompt: prevVisual,
-            previousClipVideoPath: prevVideoPath,
-            startFrameImagePath: null,
-            maxRefs: 5,
-            styleHead: styleHead,
-            resolution: resolution);
+            // Silent → first spoken/VO: video-extend often clips the opening word (mouth stays closed
+            // from the prior silent clip). Require prev on disk for order, but gen fresh + plates.
+            if (prevVideoPath is not null)
+            {
+                JsonElement? prevMeta = previousClipEl;
+                if (prevMeta is null && blueprintRoot is { } br)
+                    prevMeta = FindClipElementInBlueprint(br, scene, clip - 1);
+                if (prevMeta is { } pm && ClipHasSpokenAudio(clipEl) && !ClipHasSpokenAudio(pm))
+                {
+                    reseedFresh = true;
+                    prevVideoPath = null;
+                    await AppendLogAsync(
+                        $"  [Speech] S{scene:D2}C{clip:D2} is first spoken after silence — " +
+                        "fresh gen with locked refs (not video-extend) so the opening word is not clipped");
+                }
+            }
 
-        if (string.IsNullOrWhiteSpace(built.Prompt))
-            throw new InvalidOperationException("clip missing visual_prompt");
+            if (prevVideoPath is not null)
+            {
+                var clamped = await ClampExtendInputIfNeededAsync(prevVideoPath, scene, clip, ct)
+                    .ConfigureAwait(false);
+                if (clamped is not null)
+                {
+                    extendInputTemp = clamped;
+                    prevVideoPath = clamped;
+                }
+            }
 
-        // Fresh / reseed: every on-screen cast key must have a locked ref attached
-        if (prevVideoPath is null)
-            EnsureFreshGenHasLockedRefs(projectId, projectDir, built, profiles);
-        else
-        {
-            // Extend still requires locks on disk even when API cannot attach them
-            EnsureOnScreenLocksExist(projectId, projectDir, built, profiles);
-        }
+            if (prevVideoPath is not null)
+            {
+                await AppendLogAsync(
+                    $"  [Continuity] Imagine video-extend from S{scene:D2}C{clip - 1:D2} " +
+                    $"({Path.GetFileName(prevVideoPath)})");
+            }
+            else if (reseedFresh && prevOnDisk is not null)
+            {
+                await AppendLogAsync(
+                    $"  [Identity] Reseed S{scene:D2}C{clip:D2} after S{scene:D2}C{clip - 1:D2} " +
+                    "(locked character refs attached)");
+            }
 
-        // P2/P4: active gen pack + approved project rules
-        var addenda = new List<string>();
-        try
-        {
-            var pack = _promptPacks.LoadActivePackText(PromptPackService.KindGen);
-            if (!string.IsNullOrWhiteSpace(pack))
-                addenda.Add(pack.Trim());
-            var rules = _projectRules.GetActiveRulesBlock(projectId);
-            if (!string.IsNullOrWhiteSpace(rules))
-                addenda.Add(rules.Trim());
-        }
-        catch { /* non-fatal */ }
+            string? styleHead = null;
+            try
+            {
+                var rules = _projectRules.GetActiveRulesBlock(projectId);
+                if (!string.IsNullOrWhiteSpace(rules))
+                {
+                    var m = System.Text.RegularExpressions.Regex.Match(
+                        rules, @"STYLE LOCK:\s*([^\n]+)", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+                    if (m.Success)
+                        styleHead = "STYLE LOCK: " + m.Groups[1].Value.Trim().TrimEnd('.', ' ');
+                }
+            }
+            catch { /* non-fatal */ }
 
-        if (addenda.Count > 0)
-        {
-            built = built.WithPrompt(built.Prompt.TrimEnd() + "\n\n" + string.Join("\n\n", addenda), " · learning-addenda");
-        }
+            var built = ClipVideoPromptBuilder.Build(
+                clipEl,
+                projectDir,
+                characters: profiles,
+                previousClipVisualPrompt: prevVisual,
+                previousClipVideoPath: prevVideoPath,
+                startFrameImagePath: null,
+                maxRefs: 5,
+                styleHead: styleHead,
+                resolution: resolution);
 
-        // Pre-budget to xAI video ~4096 char hard cap (strip gen pack / house rules first).
-        // Avoids a guaranteed first-attempt 400 on every clip.
-        var preLen = built.Prompt.Length;
-        var fitted = ClipVideoPromptBuilder.FitPromptToVideoBudget(built.Prompt);
-        if (fitted.Length < preLen)
-        {
-            built = built.WithPrompt(fitted, $" · pre-budget {preLen}→{fitted.Length}");
+            if (string.IsNullOrWhiteSpace(built.Prompt))
+                throw new InvalidOperationException("clip missing visual_prompt");
+
+            // Fresh / reseed: every on-screen cast key must have a locked ref attached
+            if (prevVideoPath is null)
+                EnsureFreshGenHasLockedRefs(projectId, projectDir, built, profiles);
+            else
+            {
+                // Extend still requires locks on disk even when API cannot attach them
+                EnsureOnScreenLocksExist(projectId, projectDir, built, profiles);
+            }
+
+            // P2/P4: active gen pack + approved project rules
+            var addenda = new List<string>();
+            try
+            {
+                var pack = _promptPacks.LoadActivePackText(PromptPackService.KindGen);
+                if (!string.IsNullOrWhiteSpace(pack))
+                    addenda.Add(pack.Trim());
+                var rules = _projectRules.GetActiveRulesBlock(projectId);
+                if (!string.IsNullOrWhiteSpace(rules))
+                    addenda.Add(rules.Trim());
+            }
+            catch { /* non-fatal */ }
+
+            if (addenda.Count > 0)
+            {
+                built = built.WithPrompt(built.Prompt.TrimEnd() + "\n\n" + string.Join("\n\n", addenda), " · learning-addenda");
+            }
+
+            // Pre-budget to xAI video ~4096 char hard cap (strip gen pack / house rules first).
+            // Avoids a guaranteed first-attempt 400 on every clip.
+            var preLen = built.Prompt.Length;
+            var fitted = ClipVideoPromptBuilder.FitPromptToVideoBudget(built.Prompt);
+            if (fitted.Length < preLen)
+            {
+                built = built.WithPrompt(fitted, $" · pre-budget {preLen}→{fitted.Length}");
+                await AppendLogAsync(
+                    $"  [Prompt] pre-budget {preLen}→{fitted.Length} chars (video hard cap {ClipVideoPromptBuilder.VideoPromptHardCapChars})");
+            }
+
+            // Persist + log full prompt for evaluation (admin logs surface this)
+            await WriteAndLogPromptAsync(projectId, projectDir, scene, clip, built, ct).ConfigureAwait(false);
+
+            if (built.Prompt.Contains("VOICE LOCK", StringComparison.OrdinalIgnoreCase))
+                await AppendLogAsync("  [Voice] VOICE LOCK from character profile");
+            if (built.ReferenceImagePaths.Count > 0)
+                await AppendLogAsync(
+                    $"  [Refs] attached={built.RefsAttachedToApi} count={built.ReferenceImagePaths.Count}: " +
+                    string.Join(", ", built.ReferenceImagePaths.Select(Path.GetFileName)));
+            else if (prevVideoPath is not null)
+                await AppendLogAsync("  [Refs] video-extend — locked plates not attached to API (IDENTITY text only)");
+
+            // Dialogue-aware duration (tight for short lines — billed per second)
+            var duration = ClipDurationEstimator.EstimateForClip(clipEl);
+            await AppendLogAsync($"  [Duration] estimated {duration}s (dialogue-aware, max {ClipDurationEstimator.MaxSeconds}s)");
+            // Extension / ref: new portion typically max 10s
+            if (prevVideoPath is not null || built.ReferenceImagePaths.Count > 0)
+                duration = Math.Min(duration, 10);
+
+            var model = await ResolveVideoModelAsync(projectId, ct);
+            if (string.IsNullOrWhiteSpace(resolution))
+                resolution = await ResolveVideoResolutionAsync(projectId, null, ct);
+
+            var modeLabel = prevVideoPath is not null ? "video-extend" : built.Mode;
             await AppendLogAsync(
-                $"  [Prompt] pre-budget {preLen}→{fitted.Length} chars (video hard cap {ClipVideoPromptBuilder.VideoPromptHardCapChars})");
-        }
+                $"  [Grok] Submit S{scene:D2}C{clip} duration={duration}s res={resolution} " +
+                $"model={model} mode={modeLabel} {built.PromptLogSummary}");
 
-        // Persist + log full prompt for evaluation (admin logs surface this)
-        await WriteAndLogPromptAsync(projectId, projectDir, scene, clip, built, ct).ConfigureAwait(false);
-
-        if (built.Prompt.Contains("VOICE LOCK", StringComparison.OrdinalIgnoreCase))
-            await AppendLogAsync("  [Voice] VOICE LOCK from character profile");
-        if (built.ReferenceImagePaths.Count > 0)
-            await AppendLogAsync(
-                $"  [Refs] attached={built.RefsAttachedToApi} count={built.ReferenceImagePaths.Count}: " +
-                string.Join(", ", built.ReferenceImagePaths.Select(Path.GetFileName)));
-        else if (prevVideoPath is not null)
-            await AppendLogAsync("  [Refs] video-extend — locked plates not attached to API (IDENTITY text only)");
-
-        // Dialogue-aware duration (tight for short lines — billed per second)
-        var duration = ClipDurationEstimator.EstimateForClip(clipEl);
-        await AppendLogAsync($"  [Duration] estimated {duration}s (dialogue-aware, max {ClipDurationEstimator.MaxSeconds}s)");
-        // Extension / ref: new portion typically max 10s
-        if (prevVideoPath is not null || built.ReferenceImagePaths.Count > 0)
-            duration = Math.Min(duration, 10);
-
-        var model = await ResolveVideoModelAsync(projectId, ct);
-        if (string.IsNullOrWhiteSpace(resolution))
-            resolution = await ResolveVideoResolutionAsync(projectId, null, ct);
-
-        var modeLabel = prevVideoPath is not null ? "video-extend" : built.Mode;
-        await AppendLogAsync(
-            $"  [Grok] Submit S{scene:D2}C{clip} duration={duration}s res={resolution} " +
-            $"model={model} mode={modeLabel} {built.PromptLogSummary}");
-
-        try
-        {
             // Prefer official video continue; character refs only on fresh gens (API: no mix)
             var requestId = await _grok.SubmitGenerationAsync(
                 built.Prompt,
@@ -2506,6 +2519,10 @@ public sealed class FilmJobService
             if (extendInputTemp is not null)
             {
                 try { File.Delete(extendInputTemp); } catch { /* ignore */ }
+            }
+            if (prevExtendWorkTemp is not null)
+            {
+                try { File.Delete(prevExtendWorkTemp); } catch { /* ignore */ }
             }
         }
     }
