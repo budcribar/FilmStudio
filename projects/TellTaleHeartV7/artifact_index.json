@@ -1,6 +1,6 @@
 {
   "projectId": "TellTaleHeartV7",
-  "builtAtUtc": "2026-07-22T20:25:39.7285233+00:00",
+  "builtAtUtc": "2026-07-23T02:38:33.1888725+00:00",
   "schemaVersion": "1",
   "purpose": "Map of project-local artifacts for manual whole-project review (e.g. point Claude/Codex at this folder). Zip export deferred; data lives here.",
   "readyForManualFinalReview": false,
@@ -68,7 +68,7 @@
       "path": "pipeline_state.json",
       "role": "Clip reviews, auto-review state, cost_ledger",
       "exists": true,
-      "bytes": 28539,
+      "bytes": 33253,
       "fileCount": null,
       "requiredForManualReview": true
     },
@@ -124,7 +124,7 @@
       "path": "assets/video",
       "role": "Clips \u002B scene composites \u002B duration sidecars",
       "exists": true,
-      "bytes": 66483923,
+      "bytes": 54664302,
       "fileCount": 86,
       "requiredForManualReview": true
     },
@@ -132,7 +132,7 @@
       "path": "assets/video/prompts",
       "role": "Full prompt .txt \u002B .meta.json per clip",
       "exists": true,
-      "bytes": 137020,
+      "bytes": 137152,
       "fileCount": 40,
       "requiredForManualReview": true
     },
@@ -180,7 +180,7 @@
       "path": "telemetry/cost_ledger.json",
       "role": "Cost events snapshot (from pipeline_state)",
       "exists": true,
-      "bytes": 29595,
+      "bytes": 32991,
       "fileCount": null,
       "requiredForManualReview": true
     },
@@ -196,7 +196,7 @@
       "path": "telemetry/api_calls.jsonl",
       "role": "Live API call log (full prompts)",
       "exists": true,
-      "bytes": 1437366,
+      "bytes": 1471286,
       "fileCount": null,
       "requiredForManualReview": false
     },
@@ -204,7 +204,7 @@
       "path": "telemetry/ffmpeg.jsonl",
       "role": "Condensed ffmpeg ops",
       "exists": true,
-      "bytes": 16614,
+      "bytes": 18515,
       "fileCount": null,
       "requiredForManualReview": false
     },
@@ -220,7 +220,7 @@
       "path": "artifact_index.json",
       "role": "Machine-readable artifact presence map",
       "exists": true,
-      "bytes": 7080,
+      "bytes": 7082,
       "fileCount": null,
       "requiredForManualReview": false
     },
@@ -236,7 +236,7 @@
       "path": "assets/video/scene_02.mp4.sources.json",
       "role": "Scene remux include/exclude manifest",
       "exists": true,
-      "bytes": 1931,
+      "bytes": 1928,
       "fileCount": null,
       "requiredForManualReview": false
     }

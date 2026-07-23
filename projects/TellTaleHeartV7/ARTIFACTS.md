@@ -2,7 +2,7 @@
 
 Map of project-local artifacts for manual whole-project review (e.g. point Claude/Codex at this folder). Zip export deferred; data lives here.
 
-Built: **2026-07-22 20:25:39Z** · Ready for manual final review: **no**
+Built: **2026-07-23 02:38:33Z** · Ready for manual final review: **no**
 
 ## Stats
 

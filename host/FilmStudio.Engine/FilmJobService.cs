@@ -2161,6 +2161,32 @@ public sealed class FilmJobService
         }
     }
 
+    /// <summary>
+    /// Before a regen overwrites a previously-rendered clip, copy it (plus its duration sidecar)
+    /// into assets/video/_backup/ so a bad regen can be restored by hand. Keeps only the
+    /// immediately-previous version — not unbounded history.
+    /// </summary>
+    private static void BackupExistingClipFile(string outPath, int scene, int clip)
+    {
+        if (!File.Exists(outPath)) return;
+        try
+        {
+            var videoDir = Path.GetDirectoryName(outPath)!;
+            var backupDir = Path.Combine(videoDir, "_backup");
+            Directory.CreateDirectory(backupDir);
+            var backupPath = Path.Combine(backupDir, $"scene_{scene:D2}_clip_{clip:D2}.mp4");
+            File.Copy(outPath, backupPath, overwrite: true);
+
+            var sidecar = outPath + ".duration.json";
+            if (File.Exists(sidecar))
+                File.Copy(sidecar, backupPath + ".duration.json", overwrite: true);
+        }
+        catch
+        {
+            // Best-effort safety net — never block a regen because the backup copy failed.
+        }
+    }
+
     private async Task GenerateOneClipAsync(
         string projectId,
         string projectDir,
@@ -2405,6 +2431,8 @@ public sealed class FilmJobService
 
             var outPath = Path.Combine(
                 projectDir, "assets", "video", $"scene_{scene:D2}_clip_{clip:D2}.mp4");
+
+            BackupExistingClipFile(outPath, scene, clip);
 
             if (prevVideoPath is not null)
             {

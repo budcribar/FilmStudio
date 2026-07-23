@@ -21,9 +21,6 @@
 }
 else
 {
-<p class="text-muted mb-3">
-    Browse scenes and create video clips.
-</p>
 
 @if (!string.IsNullOrEmpty(_error))
 {
@@ -51,15 +48,6 @@ else
 }
 
 <div class="row mb-3 g-2 align-items-end">
-    <div class="col-md-2">
-        <label class="form-label">Project</label>
-        <select class="form-select" @bind="_projectId" @bind:after="OnProjectChangedAsync" disabled="@_busy">
-            @foreach (var p in _projectIds)
-            {
-                <option value="@p">@p</option>
-            }
-        </select>
-    </div>
     <div class="col-md-2">
         <label class="form-label">Character</label>
         <select class="form-select" @bind="_filterCharacter" disabled="@_busy">
@@ -241,41 +229,21 @@ else if (Session.IsAdmin && _job is not null &&
                     <button class="btn btn-sm btn-outline-secondary" disabled="@_busy" @onclick="ReloadListAsync">Refresh list</button>
                 </div>
             </div>
-            @if (_job.Log.Count > 0)
+            @if (_job.Status is "running" or "queued" && _job.Total > 0)
+            {
+                var pct = (int)Math.Round(_job.Index * 100.0 / Math.Max(1, _job.Total));
+                <div class="progress mt-2" style="height: 0.85rem;" role="progressbar"
+                     aria-valuenow="@pct" aria-valuemin="0" aria-valuemax="100">
+                    <div class="progress-bar progress-bar-striped progress-bar-animated bg-primary"
+                         style="width: @(Math.Clamp(pct, 5, 100))%"></div>
+                </div>
+            }
+            @* Technical job log — admin only; operators get the terse status line above. *@
+            @if (Session.IsAdmin && _job.Log.Count > 0)
             {
                 <pre class="small mb-0 mt-2" style="max-height: 120px; overflow: auto;">@string.Join("\n", _job.Log.TakeLast(20))</pre>
             }
         </div>
-    </div>
-}
-
-@if (Session.IsAdmin && _myJobs.Count > 0)
-{
-    <div class="card mb-3 border-secondary">
-        <div class="card-header py-2 d-flex justify-content-between align-items-center">
-            <span>My jobs <span class="badge text-bg-secondary">@_myJobs.Count</span> <span class="badge text-bg-dark">admin</span></span>
-            <button class="btn btn-sm btn-outline-secondary" disabled="@_busy" @onclick="RefreshMyJobsAsync">Refresh</button>
-        </div>
-        <ul class="list-group list-group-flush small">
-            @foreach (var j in _myJobs.Take(8))
-            {
-                <li class="list-group-item d-flex justify-content-between align-items-center py-1">
-                    <span>
-                        <span class="badge bg-secondary">@j.Status</span>
-                        @(j.Kind ?? "job")
-                        @if (j.Scene is int jsn) { <span>S@(jsn.ToString("D2"))</span> }
-                        @if (j.Total > 0) { <span class="text-muted">@j.Index/@j.Total</span> }
-                        <span class="text-muted ms-1">@j.Message</span>
-                    </span>
-                    @if (string.Equals(j.Status, "running", StringComparison.OrdinalIgnoreCase) ||
-                         string.Equals(j.Status, "queued", StringComparison.OrdinalIgnoreCase))
-                    {
-                        <button class="btn btn-sm btn-outline-danger" disabled="@_busy"
-                                @onclick="() => CancelMyJobAsync(j.JobId)">Cancel</button>
-                    }
-                </li>
-            }
-        </ul>
     </div>
 }
 
@@ -758,7 +726,14 @@ else
                                     }
                                 </td>
                                 <td>
-                                    @if (c.OnDisk)
+                                    @{
+                                        var clipBusy = IsClipGenBusy(cn);
+                                    }
+                                    @if (clipBusy)
+                                    {
+                                        <span class="badge bg-warning text-dark">regenerating…</span>
+                                    }
+                                    else if (c.OnDisk)
                                     {
                                         <span class="badge bg-success">on disk</span>
                                         <span class="small text-muted">@FormatSize(c.SizeBytes)</span>
@@ -774,8 +749,8 @@ else
                                     }
                                     <div class="btn-group btn-group-sm">
                                         <button class="btn btn-outline-dark"
-                                                disabled="@(_busy || !c.OnDisk)"
-                                                title="Play clip"
+                                                disabled="@(_busy || !c.OnDisk || clipBusy)"
+                                                title="@(clipBusy ? "Regenerating — file is about to change" : "Play clip")"
                                                 @onclick="() => SelectClip(cn)">
                                             ▶
                                         </button>
@@ -997,11 +972,19 @@ else
             string.Equals(j.Status, "queued", StringComparison.OrdinalIgnoreCase));
 
     /// <summary>
+    /// Set for the brief window between kicking off a regen and the job snapshot round-trip
+    /// confirming it server-side — closes the gap where <see cref="IsSceneGenBusy"/> would
+    /// otherwise still see the previous (already-finished) job and let a stale composite show.
+    /// </summary>
+    private int? _pendingRegenScene;
+
+    /// <summary>
     /// True when a clip/scene/remux job is active for this scene — hide stale composite player.
     /// </summary>
     private bool IsSceneGenBusy(int sceneNumber)
     {
         if (sceneNumber <= 0) return false;
+        if (_pendingRegenScene == sceneNumber) return true;
 
         static bool Active(string? status) =>
             string.Equals(status, "running", StringComparison.OrdinalIgnoreCase) ||
@@ -1016,6 +999,29 @@ else
                 return true;
             return j.Scene is int sn && sn == sceneNumber;
         }
+
+        if (_job is not null && Affects(_job))
+            return true;
+        return _myJobs.Any(Affects);
+    }
+
+    /// <summary>
+    /// True when this exact clip is the one currently being (re)generated — the server updates
+    /// the job's Scene/Clip to whichever item it's actively working on, for both single-clip
+    /// regen (kind "scene") and multi-select batch regen (kind "batch"). Used to avoid showing
+    /// a stale "on disk" pill or letting Play open the file mid-overwrite.
+    /// </summary>
+    private bool IsClipGenBusy(int clipNumber)
+    {
+        if (_detail is null) return false;
+        var sn = _detail.SceneNumber;
+        if (_pendingRegenScene == sn) return true;
+
+        bool Affects(JobSnapshot j) =>
+            (string.Equals(j.Status, "running", StringComparison.OrdinalIgnoreCase) ||
+             string.Equals(j.Status, "queued", StringComparison.OrdinalIgnoreCase)) &&
+            IsScenesWorkflowJob(j.Kind) &&
+            j.Scene == sn && j.Clip == clipNumber;
 
         if (_job is not null && Affects(_job))
             return true;
@@ -1439,20 +1445,6 @@ else
         }
     }
 
-    private async Task CancelMyJobAsync(string? jobId)
-    {
-        if (string.IsNullOrWhiteSpace(jobId)) return;
-        _busy = true;
-        try
-        {
-            await Engine.CancelJobByIdAsync(jobId);
-            _message = $"Cancel requested for {jobId}";
-            await RefreshMyJobsAsync();
-        }
-        catch (Exception ex) { _error = ex.Message; }
-        finally { _busy = false; }
-    }
-
     private async Task OpenSceneAsync(int sn)
     {
         _busy = true;
@@ -1506,12 +1498,13 @@ else
     private async Task RegenSelectedClipsAsync()
     {
         if (_detail is null || _selectedClips.Count == 0) return;
+        var sn = _detail.SceneNumber;
         _busy = true;
         _error = null;
         _message = null;
+        _pendingRegenScene = sn;
         try
         {
-            var sn = _detail.SceneNumber;
             var targets = _selectedClips.OrderBy(c => c).Select(c => (Scene: sn, Clip: c)).ToList();
             await EnsureHubAsync();
             await Engine.StartClipBatchGenAsync(_projectId, targets, resolution: _genResolution);
@@ -1521,7 +1514,7 @@ else
             _selectedClips.Clear();
         }
         catch (Exception ex) { _error = ex.Message; }
-        finally { _busy = false; }
+        finally { _busy = false; _pendingRegenScene = null; }
     }
 
     private void SelectClip(int? cn)
@@ -1627,6 +1620,7 @@ else
         _busy = true;
         _error = null;
         _message = null;
+        _pendingRegenScene = sn;
         try
         {
             await EnsureHubAsync();
@@ -1636,7 +1630,7 @@ else
             _job = jobs?.Job;
         }
         catch (Exception ex) { _error = ex.Message; }
-        finally { _busy = false; }
+        finally { _busy = false; _pendingRegenScene = null; }
     }
 
     private void ToggleSelect(int sn, bool on)
@@ -1692,6 +1686,7 @@ else
         _busy = true;
         _error = null;
         _message = null;
+        _pendingRegenScene = sn;
         try
         {
             await Engine.StartSceneGenAsync(_projectId, sn, _onlyMissing, resolution: _genResolution);
@@ -1701,7 +1696,7 @@ else
             _job = jobs?.Job;
         }
         catch (Exception ex) { _error = ex.Message; }
-        finally { _busy = false; }
+        finally { _busy = false; _pendingRegenScene = null; }
     }
 
     private async Task StartBatchAsync()
