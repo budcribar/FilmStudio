@@ -2128,6 +2128,65 @@ app.MapPost("/api/projects/{id}/clips/review", async (
     }
 });
 
+app.MapPost("/api/projects/{id}/scenes/{scene:int}/clips", (
+    string id, int scene, ClipEditRequest body, ProjectStore store) =>
+{
+    try
+    {
+        body.ProjectId = id;
+        body.Scene = scene;
+        store.AddClip(id, scene, body);
+        return Results.Ok(new { ok = true, projectId = id, scene, clip = body.Clip, added = true });
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { ok = false, error = ex.Message });
+    }
+});
+
+app.MapPut("/api/projects/{id}/scenes/{scene:int}/clips/{clip:int}", (
+    string id, int scene, int clip, ClipEditRequest body, ProjectStore store) =>
+{
+    try
+    {
+        body.ProjectId = id;
+        body.Scene = scene;
+        body.Clip = clip;
+        store.UpdateClipFields(id, scene, clip, body);
+        return Results.Ok(new { ok = true, projectId = id, scene, clip });
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { ok = false, error = ex.Message });
+    }
+});
+
+app.MapDelete("/api/projects/{id}/scenes/{scene:int}/clips/{clip:int}", async (
+    string id, int scene, int clip, ProjectStore store, ReviewIndexService reviewIndex,
+    EditLogService logs, CancellationToken ct) =>
+{
+    try
+    {
+        var wasInBlueprint = store.DeleteClip(id, scene, clip);
+        reviewIndex.RemoveClip(id, scene, clip);
+        await logs.RemoveClipReviewStateAsync(id, scene, clip, ct);
+        return Results.Ok(new
+        {
+            ok = true,
+            projectId = id,
+            scene,
+            clip,
+            deleted = true,
+            wasInBlueprint,
+            message = $"Deleted S{scene:D2}C{clip:D2} — rebuild the scene composite / WIP to drop it from the assembled movie",
+        });
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { ok = false, error = ex.Message });
+    }
+});
+
 app.MapPost("/api/projects/{id}/scenes/{scene:int}/approve", async (
     string id, int scene, SceneApproveRequest? body, EditLogService logs, FilmJobService jobs, CancellationToken ct) =>
 {

@@ -220,6 +220,41 @@ public sealed class EditLogService
             ct: ct).ConfigureAwait(false);
     }
 
+    /// <summary>
+    /// Drop a deleted clip's human/auto review state from pipeline_state.json so a stale
+    /// pass/fail doesn't linger if the clip number is regenerated later. Logs a
+    /// <c>clip_delete</c> edit-log entry for the audit trail.
+    /// </summary>
+    public async Task RemoveClipReviewStateAsync(
+        string projectId,
+        int scene,
+        int clip,
+        CancellationToken ct = default)
+    {
+        var dir = await _projects.GetProjectDirAsync(projectId, ct).ConfigureAwait(false);
+        var statePath = Path.Combine(dir, "pipeline_state.json");
+        var state = await LoadStateAsync(statePath, ct).ConfigureAwait(false);
+        var key = $"S{scene:D2}C{clip:D2}";
+        var changed = false;
+
+        if (state.TryGetValue("clip_review", out var cr) && cr is Dictionary<string, object?> reviews)
+            changed |= reviews.Remove(key);
+        if (state.TryGetValue("clip_auto_review", out var car) && car is Dictionary<string, object?> autos)
+            changed |= autos.Remove(key);
+
+        if (changed)
+            await SaveStateAsync(statePath, state, ct).ConfigureAwait(false);
+
+        await AddAsync(
+            projectId,
+            "clip_delete",
+            "Clip deleted",
+            scene: scene,
+            clip: clip,
+            actionTaken: "clip_deleted",
+            ct: ct).ConfigureAwait(false);
+    }
+
     /// <summary>Persist last auto-review suggestion for assembly-gate decisions.</summary>
     public async Task RecordAutoReviewAsync(
         string projectId,

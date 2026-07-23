@@ -892,6 +892,59 @@ public sealed class EngineApiClient
         }
     }
 
+    public async Task AddClipAsync(
+        string projectId,
+        int scene,
+        ClipEditRequest fields,
+        CancellationToken ct = default)
+    {
+        using var resp = await _http.PostAsJsonAsync(
+            $"/api/projects/{Uri.EscapeDataString(projectId)}/scenes/{scene}/clips",
+            fields,
+            JsonOpts,
+            ct);
+        if (!resp.IsSuccessStatusCode)
+        {
+            var err = await resp.Content.ReadAsStringAsync(ct);
+            throw new InvalidOperationException(TryError(err) ?? resp.ReasonPhrase);
+        }
+    }
+
+    public async Task UpdateClipAsync(
+        string projectId,
+        int scene,
+        int clip,
+        ClipEditRequest fields,
+        CancellationToken ct = default)
+    {
+        using var resp = await _http.PutAsJsonAsync(
+            $"/api/projects/{Uri.EscapeDataString(projectId)}/scenes/{scene}/clips/{clip}",
+            fields,
+            JsonOpts,
+            ct);
+        if (!resp.IsSuccessStatusCode)
+        {
+            var err = await resp.Content.ReadAsStringAsync(ct);
+            throw new InvalidOperationException(TryError(err) ?? resp.ReasonPhrase);
+        }
+    }
+
+    public async Task DeleteClipAsync(
+        string projectId,
+        int scene,
+        int clip,
+        CancellationToken ct = default)
+    {
+        using var resp = await _http.DeleteAsync(
+            $"/api/projects/{Uri.EscapeDataString(projectId)}/scenes/{scene}/clips/{clip}",
+            ct);
+        if (!resp.IsSuccessStatusCode)
+        {
+            var err = await resp.Content.ReadAsStringAsync(ct);
+            throw new InvalidOperationException(TryError(err) ?? resp.ReasonPhrase);
+        }
+    }
+
     public async Task ApproveSceneAsync(
         string projectId,
         int scene,

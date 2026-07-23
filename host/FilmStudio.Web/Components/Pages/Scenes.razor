@@ -559,6 +559,13 @@ else
                         @onclick="() => GenOneSceneAsync(_detail.SceneNumber)">
                     Generate scene
                 </button>
+                <button class="btn btn-sm btn-outline-secondary"
+                        data-testid="clip-add-open"
+                        disabled="@(_busy || JobRunning)"
+                        title="Add a new clip to this scene (define fields, then generate its video)"
+                        @onclick="OpenAddClipDialog">
+                    + Add clip
+                </button>
                 @if (DetailLockedByOther)
                 {
                     <span class="badge bg-warning text-dark">🔒 @_detailLockOwner</span>
@@ -764,6 +771,20 @@ else
                                                 @onclick="() => RegenClipAsync(_detail.SceneNumber, cn)">
                                             Regen
                                         </button>
+                                        <button class="btn btn-outline-secondary"
+                                                data-testid="@($"clip-edit-{cn}")"
+                                                disabled="@(_busy || JobRunning)"
+                                                title="Edit clip fields (dialogue, prompt, characters, lighting…)"
+                                                @onclick="() => OpenClipEditor(c)">
+                                            Edit
+                                        </button>
+                                        <button class="btn btn-outline-danger"
+                                                data-testid="@($"clip-delete-{cn}")"
+                                                disabled="@(_busy || JobRunning)"
+                                                title="Delete this clip (video + shot plan entry)"
+                                                @onclick="() => RequestDeleteClip(_detail.SceneNumber, cn)">
+                                            Delete
+                                        </button>
                                     </div>
                                 </td>
                             </tr>
@@ -798,6 +819,18 @@ else
                                 : "Force re-generate this clip (overwrites if present)")"
                             @onclick="() => RegenClipAsync(_detail.SceneNumber, _clip.ClipNumber)">
                         Regen clip
+                    </button>
+                    <button class="btn btn-sm btn-outline-secondary"
+                            disabled="@(_busy || JobRunning)"
+                            title="Edit clip fields (dialogue, prompt, characters, lighting…)"
+                            @onclick="() => OpenClipEditor(_clip)">
+                        Edit clip
+                    </button>
+                    <button class="btn btn-sm btn-outline-danger"
+                            disabled="@(_busy || JobRunning)"
+                            title="Delete this clip (video + shot plan entry)"
+                            @onclick="() => RequestDeleteClip(_detail.SceneNumber, _clip.ClipNumber)">
+                        Delete clip
                     </button>
                     <button class="btn btn-sm btn-outline-secondary" @onclick="() => SelectClip(null)">Close</button>
                 </div>
@@ -876,6 +909,10 @@ else
                     {
                         <p class="small text-muted">—</p>
                     }
+                    @if (_clip.CharactersOnScreen.Count > 0)
+                    {
+                        <p class="small text-muted mb-1">on screen: @string.Join(", ", _clip.CharactersOnScreen.Select(ShortChar))</p>
+                    }
                     <p class="small text-muted mb-0">
                         subject: @(_clip.PrimarySubject is { Length: > 0 } ps ? ps : "—")
                         · continuation: @_clip.Continuation
@@ -913,6 +950,148 @@ else
     </div>
 }
 
+@if (_deleteClipTarget is { } delTarget)
+{
+    <div class="modal fade show d-block" tabindex="-1" role="dialog" aria-modal="true"
+         style="background:rgba(0,0,0,.45);" @onclick="CancelDeleteClip">
+        <div class="modal-dialog modal-dialog-centered" @onclick:stopPropagation="true">
+            <div class="modal-content">
+                <div class="modal-header py-2">
+                    <h5 class="modal-title">Delete clip?</h5>
+                    <button type="button" class="btn-close" aria-label="Close" @onclick="CancelDeleteClip"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="mb-0">
+                        Delete <code>S@(delTarget.Scene.ToString("D2"))C@(delTarget.Clip.ToString("D2"))</code>?
+                        This removes the video file and its shot-plan entry — cannot be undone.
+                        Rebuild the scene composite / WIP afterward to drop it from the assembled movie.
+                    </p>
+                </div>
+                <div class="modal-footer py-2">
+                    <button type="button" class="btn btn-sm btn-secondary" disabled="@_busy" @onclick="CancelDeleteClip">Cancel</button>
+                    <button type="button" class="btn btn-sm btn-danger" data-testid="clip-delete-confirm"
+                            disabled="@_busy" @onclick="ConfirmDeleteClipAsync">Delete clip</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@if (_clipEditor is { } ed)
+{
+    <div class="modal fade show d-block" tabindex="-1" role="dialog" aria-modal="true"
+         style="background:rgba(0,0,0,.45);" @onclick="CloseClipEditor">
+        <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-lg" @onclick:stopPropagation="true">
+            <div class="modal-content">
+                <div class="modal-header py-2">
+                    <h5 class="modal-title" data-testid="clip-editor-title">
+                        @(_clipEditorIsNew ? "Add clip" : "Edit clip") <code>S@(ed.Scene.ToString("D2"))C@(ed.Clip.ToString("D2"))</code>
+                    </h5>
+                    <button type="button" class="btn-close" aria-label="Close" @onclick="CloseClipEditor"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row g-2 mb-2">
+                        <div class="col-4">
+                            <label class="form-label small mb-0">Clip number</label>
+                            <input type="number" class="form-control form-control-sm" min="1"
+                                   data-testid="clip-editor-number"
+                                   @bind="ed.Clip" disabled="@(!_clipEditorIsNew)" />
+                        </div>
+                        <div class="col-4">
+                            <label class="form-label small mb-0">Duration (s)</label>
+                            <input type="number" class="form-control form-control-sm" min="0"
+                                   @bind="ed.DurationSeconds" />
+                        </div>
+                        <div class="col-4">
+                            <label class="form-label small mb-0">Primary subject</label>
+                            <input class="form-control form-control-sm" @bind="ed.PrimarySubject" />
+                        </div>
+                    </div>
+
+                    <label class="form-label small mb-0">Characters on screen</label>
+                    <div class="d-flex flex-wrap gap-2 mb-2 p-2 border rounded">
+                        @if (CharacterOptions.Count == 0)
+                        {
+                            <span class="small text-muted">No characters yet — add them on the Characters page.</span>
+                        }
+                        @foreach (var ck in CharacterOptions)
+                        {
+                            var isOn = _clipEditorCast.Contains(ck);
+                            <div class="form-check form-check-inline mb-0">
+                                <input class="form-check-input" type="checkbox" id="@($"cast-{ck}")"
+                                       checked="@isOn"
+                                       @onchange="e => ToggleClipEditorCast(ck, (bool)(e.Value ?? false))" />
+                                <label class="form-check-label small" for="@($"cast-{ck}")">@ShortChar(ck)</label>
+                            </div>
+                        }
+                    </div>
+
+                    <label class="form-label small mb-0">Visual prompt</label>
+                    <textarea class="form-control form-control-sm mb-2" rows="5" @bind="ed.VisualPrompt"></textarea>
+
+                    <label class="form-label small mb-0">Negative prompt</label>
+                    <textarea class="form-control form-control-sm mb-2" rows="2" @bind="ed.NegativePrompt"></textarea>
+
+                    <div class="row g-2 mb-2">
+                        <div class="col-6">
+                            <label class="form-label small mb-0">Speaker</label>
+                            <select class="form-select form-select-sm" @bind="ed.Speaker">
+                                <option value="">— none —</option>
+                                @foreach (var ck in CharacterOptions)
+                                {
+                                    <option value="@ck">@ShortChar(ck)</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small mb-0">Delivery</label>
+                            <input class="form-control form-control-sm" list="clip-editor-delivery-options"
+                                   @bind="ed.Delivery" placeholder="spoken_on_camera" />
+                            <datalist id="clip-editor-delivery-options">
+                                <option value="spoken_on_camera" />
+                                <option value="voiceover_internal" />
+                                <option value="off_camera" />
+                                <option value="none" />
+                            </datalist>
+                        </div>
+                    </div>
+
+                    <label class="form-label small mb-0">Dialogue</label>
+                    <textarea class="form-control form-control-sm mb-2" rows="3"
+                              data-testid="clip-editor-dialogue"
+                              @bind="ed.Dialogue"></textarea>
+
+                    <h6 class="mt-2">Lighting &amp; color</h6>
+                    <div class="row g-2">
+                        <div class="col-6">
+                            <label class="form-label small mb-0">Color palette</label>
+                            <input class="form-control form-control-sm" @bind="ed.ColorPalette"
+                                   placeholder="e.g. desaturated cool-teal shadows, warm amber highlights" />
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small mb-0">Film stock</label>
+                            <input class="form-control form-control-sm" @bind="ed.FilmStock"
+                                   placeholder="e.g. Kodak Vision3 500T 5219, subtle grain" />
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer py-2">
+                    <span class="small text-muted me-auto">
+                        @(_clipEditorIsNew
+                            ? "Creates the shot-plan entry only — generate its video afterward."
+                            : "Regen the clip afterward to re-render video/audio with these fields.")
+                    </span>
+                    <button type="button" class="btn btn-sm btn-secondary" disabled="@_busy" @onclick="CloseClipEditor">Cancel</button>
+                    <button type="button" class="btn btn-sm btn-primary" data-testid="clip-editor-save"
+                            disabled="@_busy" @onclick="SaveClipEditorAsync">
+                        @(_clipEditorIsNew ? "Add clip" : "Save clip")
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
 @code {
     private bool _busy;
     private bool _gateChecked;
@@ -943,6 +1122,10 @@ else
     private SceneDetail? _detail;
     private int? _selectedClip;
     private ClipSummary? _clip;
+    private (int Scene, int Clip)? _deleteClipTarget;
+    private ClipEditRequest? _clipEditor;
+    private bool _clipEditorIsNew;
+    private HashSet<string> _clipEditorCast = new(StringComparer.OrdinalIgnoreCase);
     /// <summary>Multi-select clip numbers within the currently open scene's clip table, for batch regen.</summary>
     private readonly HashSet<int> _selectedClips = new();
     private JobSnapshot? _job;
@@ -1631,6 +1814,104 @@ else
         }
         catch (Exception ex) { _error = ex.Message; }
         finally { _busy = false; _pendingRegenScene = null; }
+    }
+
+    private void OpenClipEditor(ClipSummary clip)
+    {
+        if (_detail is null) return;
+        _clipEditorIsNew = false;
+        _clipEditor = new ClipEditRequest
+        {
+            ProjectId = _projectId,
+            Scene = _detail.SceneNumber,
+            Clip = clip.ClipNumber,
+            VisualPrompt = clip.VisualPrompt,
+            NegativePrompt = clip.NegativePrompt,
+            Dialogue = clip.Dialogue,
+            Speaker = clip.Speaker,
+            Delivery = clip.Delivery,
+            PrimarySubject = clip.PrimarySubject,
+            CharactersOnScreen = new List<string>(clip.CharactersOnScreen),
+            ColorPalette = clip.ColorPalette,
+            FilmStock = clip.FilmStock,
+            DurationSeconds = clip.DurationSeconds,
+        };
+        _clipEditorCast = new HashSet<string>(clip.CharactersOnScreen, StringComparer.OrdinalIgnoreCase);
+    }
+
+    private void OpenAddClipDialog()
+    {
+        if (_detail is null) return;
+        var nextClip = _detail.Clips.Count == 0 ? 1 : _detail.Clips.Max(c => c.ClipNumber) + 1;
+        _clipEditorIsNew = true;
+        _clipEditor = new ClipEditRequest
+        {
+            ProjectId = _projectId,
+            Scene = _detail.SceneNumber,
+            Clip = nextClip,
+            DurationSeconds = 5,
+        };
+        _clipEditorCast = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+    }
+
+    private void CloseClipEditor() => _clipEditor = null;
+
+    private void ToggleClipEditorCast(string charKey, bool on)
+    {
+        if (on) _clipEditorCast.Add(charKey);
+        else _clipEditorCast.Remove(charKey);
+    }
+
+    private async Task SaveClipEditorAsync()
+    {
+        if (_clipEditor is null || _detail is null) return;
+        _busy = true;
+        _error = null;
+        try
+        {
+            _clipEditor.CharactersOnScreen = _clipEditorCast.ToList();
+            if (_clipEditorIsNew)
+            {
+                await Engine.AddClipAsync(_projectId, _detail.SceneNumber, _clipEditor);
+                _message = $"Added S{_detail.SceneNumber:D2}C{_clipEditor.Clip:D2} — generate its video when ready";
+            }
+            else
+            {
+                await Engine.UpdateClipAsync(_projectId, _detail.SceneNumber, _clipEditor.Clip, _clipEditor);
+                _message = $"Saved S{_detail.SceneNumber:D2}C{_clipEditor.Clip:D2} — Regen the clip to re-render video/audio with the new fields";
+            }
+            _clipEditor = null;
+            await LoadDetailAsync(_detail.SceneNumber);
+            if (_selectedClip is int sel)
+                _clip = _detail.Clips.FirstOrDefault(c => c.ClipNumber == sel);
+        }
+        catch (Exception ex) { _error = ex.Message; }
+        finally { _busy = false; }
+    }
+
+    private void RequestDeleteClip(int scene, int clip) => _deleteClipTarget = (scene, clip);
+
+    private void CancelDeleteClip() => _deleteClipTarget = null;
+
+    private async Task ConfirmDeleteClipAsync()
+    {
+        if (_deleteClipTarget is not { } target) return;
+        _busy = true;
+        _error = null;
+        try
+        {
+            await Engine.DeleteClipAsync(_projectId, target.Scene, target.Clip);
+            _deleteClipTarget = null;
+            if (_selectedClip == target.Clip)
+            {
+                _selectedClip = null;
+                _clip = null;
+            }
+            _message = $"Deleted S{target.Scene:D2}C{target.Clip:D2} — rebuild the scene composite / WIP to drop it from the assembled movie";
+            await ReloadListAsync();
+        }
+        catch (Exception ex) { _error = ex.Message; }
+        finally { _busy = false; }
     }
 
     private void ToggleSelect(int sn, bool on)
