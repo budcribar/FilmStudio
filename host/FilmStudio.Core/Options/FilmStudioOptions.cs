@@ -113,6 +113,9 @@ public sealed class FilmStudioOptions
     public bool ClassifyDepthOfFieldWithChat { get; set; } = true;
     public string DepthOfFieldClassifyModel { get; set; } = "grok-4.5";
 
+    public bool ClassifyColorPaletteGradingWithChat { get; set; } = true;
+    public string ColorPaletteGradingClassifyModel { get; set; } = "grok-4.5";
+
     /// <summary>
     /// Optional ThreadPool min-thread ramp for multi-user / LoadSim ready-barrier.
     /// Leave defaults (0) unless soaks show global latency floors under concurrent clients.

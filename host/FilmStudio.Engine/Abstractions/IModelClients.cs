@@ -109,6 +109,7 @@ public static class ChatCallModes
     public const string CharacterEmotionArcClassify = "character_emotion_arc_classify";
     public const string SoundDesignComposerClassify = "sound_design_composer_classify";
     public const string DepthOfFieldClassify = "depth_of_field_classify";
+    public const string ColorPaletteGradingClassify = "color_palette_grading_classify";
 }
 
 /// <summary>

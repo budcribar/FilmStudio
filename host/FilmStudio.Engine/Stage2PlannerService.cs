@@ -56,6 +56,7 @@ public sealed class Stage2PlannerService
     private readonly CharacterEmotionArcClassifier? _emotionClassifier;
     private readonly SoundDesignComposerClassifier? _soundComposerClassifier;
     private readonly DepthOfFieldClassifier? _dofClassifier;
+    private readonly ColorPaletteGradingClassifier? _colorGradingClassifier;
 
     public Stage2PlannerService(
         ProjectStore projects,
@@ -73,7 +74,8 @@ public sealed class Stage2PlannerService
         WardrobeContinuityClassifier? wardrobeClassifier = null,
         CharacterEmotionArcClassifier? emotionClassifier = null,
         SoundDesignComposerClassifier? soundComposerClassifier = null,
-        DepthOfFieldClassifier? dofClassifier = null)
+        DepthOfFieldClassifier? dofClassifier = null,
+        ColorPaletteGradingClassifier? colorGradingClassifier = null)
     {
         _projects = projects;
         _log = log;
@@ -91,6 +93,7 @@ public sealed class Stage2PlannerService
         _emotionClassifier = emotionClassifier;
         _soundComposerClassifier = soundComposerClassifier;
         _dofClassifier = dofClassifier;
+        _colorGradingClassifier = colorGradingClassifier;
     }
 
     public async Task<Stage2PlanResult> PlanAsync(
@@ -248,7 +251,12 @@ public sealed class Stage2PlannerService
                 sceneBeats = CoalesceSilentPreludeBeats(sceneBeats);
                 aiDof = await _dofClassifier.ClassifySceneDepthOfFieldAsync(s, sceneBeats, onProgress, ct).ConfigureAwait(false);
             }
-            var plannedScene = PlanScene(s, resolution, locSeeds, charSeeds, styleLock, aiPacing, aiLighting, aiCamera, aiNegative, aiWardrobe, aiEmotion, aiSound, aiDof);
+            ColorGradingDirective? aiColor = null;
+            if (_colorGradingClassifier is not null)
+            {
+                aiColor = await _colorGradingClassifier.ClassifySceneColorGradingAsync(s, onProgress, ct).ConfigureAwait(false);
+            }
+            var plannedScene = PlanScene(s, resolution, locSeeds, charSeeds, styleLock, aiPacing, aiLighting, aiCamera, aiNegative, aiWardrobe, aiEmotion, aiSound, aiDof, aiColor);
             // Skip transition-only phantoms (e.g. FADE IN before first heading)
             if (plannedScene is null)
             {
@@ -482,7 +490,8 @@ public sealed class Stage2PlannerService
         Dictionary<string, string>? aiWardrobe = null,
         Dictionary<string, EmotionDirective>? aiEmotion = null,
         Dictionary<string, SoundDesignDirective>? aiSound = null,
-        Dictionary<string, DepthOfFieldDirective>? aiDof = null)
+        Dictionary<string, DepthOfFieldDirective>? aiDof = null,
+        ColorGradingDirective? aiColor = null)
     {
         var sceneInput = new Dictionary<string, object?>(scene);
         if (!string.IsNullOrWhiteSpace(aiLighting))
@@ -606,6 +615,11 @@ public sealed class Stage2PlannerService
                     vp = $"{vp} Optics: {dofDir.Aperture}";
             }
 
+            if (aiColor is not null && !string.IsNullOrWhiteSpace(aiColor.GradingPrompt))
+            {
+                vp = $"{vp} {aiColor.GradingPrompt}";
+            }
+
             var clipDict = new Dictionary<string, object?>
             {
                 ["clip_number"] = i + 1,
@@ -620,6 +634,14 @@ public sealed class Stage2PlannerService
                 ["characters_on_screen"] = clipCast.Cast<object?>().ToList(),
                 ["duration_seconds"] = dur,
             };
+
+            if (aiColor is not null)
+            {
+                if (!string.IsNullOrWhiteSpace(aiColor.FilmStock))
+                    clipDict["film_stock"] = aiColor.FilmStock;
+                if (!string.IsNullOrWhiteSpace(aiColor.ColorPalette))
+                    clipDict["color_palette"] = aiColor.ColorPalette;
+            }
 
             if (aiDof is not null && aiDof.TryGetValue(beatIdStr, out var dfd))
             {

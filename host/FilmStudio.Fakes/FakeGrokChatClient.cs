@@ -203,6 +203,12 @@ public sealed class FakeGrokChatClient : IChatClient
             return Task.FromResult("""{"dof":[]}""");
         }
 
+        if (mode == ChatCallModes.ColorPaletteGradingClassify ||
+            sys.Contains("Master Colorist and Film Stock Director", StringComparison.OrdinalIgnoreCase))
+        {
+            return Task.FromResult("""{"film_stock":"Kodak Vision3 500T 5219 film stock, subtle 35mm grain","color_palette":"Desaturated cool-teal shadow tones with warm amber candle highlights","grading_prompt":"Color grading: Kodak Vision3 500T 5219 film stock, desaturated cool-teal shadows and warm amber candle highlights"}""");
+        }
+
         // ── Minimal Stage1-shaped stub ─────────────────────────────────────
         return Task.FromResult("""
             {
