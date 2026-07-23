@@ -191,6 +191,12 @@ public sealed class FakeGrokChatClient : IChatClient
             return Task.FromResult("""{"emotions":[]}""");
         }
 
+        if (mode == ChatCallModes.SoundDesignComposerClassify ||
+            sys.Contains("Sound Designer and Audio Supervisor", StringComparison.OrdinalIgnoreCase))
+        {
+            return Task.FromResult("""{"sound_design":[]}""");
+        }
+
         // ── Minimal Stage1-shaped stub ─────────────────────────────────────
         return Task.FromResult("""
             {

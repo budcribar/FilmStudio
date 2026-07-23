@@ -54,6 +54,7 @@ public sealed class Stage2PlannerService
     private readonly NegativePromptClassifier? _negativeClassifier;
     private readonly WardrobeContinuityClassifier? _wardrobeClassifier;
     private readonly CharacterEmotionArcClassifier? _emotionClassifier;
+    private readonly SoundDesignComposerClassifier? _soundComposerClassifier;
 
     public Stage2PlannerService(
         ProjectStore projects,
@@ -69,7 +70,8 @@ public sealed class Stage2PlannerService
         CameraDirectorClassifier? cameraClassifier = null,
         NegativePromptClassifier? negativeClassifier = null,
         WardrobeContinuityClassifier? wardrobeClassifier = null,
-        CharacterEmotionArcClassifier? emotionClassifier = null)
+        CharacterEmotionArcClassifier? emotionClassifier = null,
+        SoundDesignComposerClassifier? soundComposerClassifier = null)
     {
         _projects = projects;
         _log = log;
@@ -85,6 +87,7 @@ public sealed class Stage2PlannerService
         _negativeClassifier = negativeClassifier;
         _wardrobeClassifier = wardrobeClassifier;
         _emotionClassifier = emotionClassifier;
+        _soundComposerClassifier = soundComposerClassifier;
     }
 
     public async Task<Stage2PlanResult> PlanAsync(
@@ -222,7 +225,17 @@ public sealed class Stage2PlannerService
                 sceneBeats = CoalesceSilentPreludeBeats(sceneBeats);
                 aiEmotion = await _emotionClassifier.ClassifySceneEmotionAsync(s, sceneBeats, onProgress, ct).ConfigureAwait(false);
             }
-            var plannedScene = PlanScene(s, resolution, locSeeds, charSeeds, styleLock, aiPacing, aiLighting, aiCamera, aiNegative, aiWardrobe, aiEmotion);
+            Dictionary<string, SoundDesignDirective>? aiSound = null;
+            if (_soundComposerClassifier is not null)
+            {
+                var sceneBeats = GetList(s, "story_beats").OfType<Dictionary<string, object?>>()
+                    .Where(b => !IsNoopTransitionBeat(b))
+                    .ToList();
+                sceneBeats = ClipDurationEstimator.ExpandLongDialogueBeats(sceneBeats);
+                sceneBeats = CoalesceSilentPreludeBeats(sceneBeats);
+                aiSound = await _soundComposerClassifier.ClassifySceneSoundDesignAsync(s, sceneBeats, onProgress, ct).ConfigureAwait(false);
+            }
+            var plannedScene = PlanScene(s, resolution, locSeeds, charSeeds, styleLock, aiPacing, aiLighting, aiCamera, aiNegative, aiWardrobe, aiEmotion, aiSound);
             // Skip transition-only phantoms (e.g. FADE IN before first heading)
             if (plannedScene is null)
             {
@@ -454,7 +467,8 @@ public sealed class Stage2PlannerService
         Dictionary<string, CameraDirective>? aiCamera = null,
         string? aiNegative = null,
         Dictionary<string, string>? aiWardrobe = null,
-        Dictionary<string, EmotionDirective>? aiEmotion = null)
+        Dictionary<string, EmotionDirective>? aiEmotion = null,
+        Dictionary<string, SoundDesignDirective>? aiSound = null)
     {
         var sceneInput = new Dictionary<string, object?>(scene);
         if (!string.IsNullOrWhiteSpace(aiLighting))
@@ -580,7 +594,7 @@ public sealed class Stage2PlannerService
                 ["location_id"] = lid,
                 ["visual_prompt"] = vp,
                 ["negative_prompt"] = neg,
-                ["audio_payload"] = BuildAudioPayload(beat),
+                ["audio_payload"] = BuildAudioPayload(beat, aiSound is not null && aiSound.TryGetValue(beatIdStr, out var sd) ? sd : null),
                 ["stage1_beat_id"] = beatIdStr,
                 ["primary_subject"] = beat.TryGetValue("primary_subject", out var psub) ? psub : null,
                 ["characters_on_screen"] = clipCast.Cast<object?>().ToList(),
@@ -1008,7 +1022,9 @@ public sealed class Stage2PlannerService
         return (delivery, speaker);
     }
 
-    private static Dictionary<string, object?> BuildAudioPayload(Dictionary<string, object?> beat)
+    private static Dictionary<string, object?> BuildAudioPayload(
+        Dictionary<string, object?> beat,
+        SoundDesignDirective? sd = null)
     {
         // Prefer normalized separate keys (Stage1Normalizer / Fountain importer)
         Stage1Normalizer.NormalizeBeatAudioKeys(beat);
@@ -1027,7 +1043,7 @@ public sealed class Stage2PlannerService
         var sfx = CoerceString(nested?.TryGetValue("sfx", out var sx) == true ? sx
             : beat.TryGetValue("sfx", out var sx2) ? sx2 : null) ?? "";
 
-        return new Dictionary<string, object?>
+        var payload = new Dictionary<string, object?>
         {
             ["delivery"] = delivery,
             ["speaker"] = speaker,
@@ -1035,6 +1051,18 @@ public sealed class Stage2PlannerService
             ["sfx"] = sfx,
             ["ambient"] = ambient,
         };
+
+        if (sd is not null)
+        {
+            if (!string.IsNullOrWhiteSpace(sd.AmbientLayer))
+                payload["ambient_layer"] = sd.AmbientLayer;
+            if (!string.IsNullOrWhiteSpace(sd.FoleyLayer))
+                payload["foley_layer"] = sd.FoleyLayer;
+            if (!string.IsNullOrWhiteSpace(sd.ScoreLayer))
+                payload["score_layer"] = sd.ScoreLayer;
+        }
+
+        return payload;
     }
 
     private static string SpeechClause(Dictionary<string, object?> beat, List<string> cast)

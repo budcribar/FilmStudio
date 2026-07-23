@@ -101,8 +101,8 @@ flowchart TD
   3. **AI Vision Style Gate (`RequirePortraitStyleGate`)**: An AI Vision Classifier audits generated portraits against the project's global render style (e.g. *period live-action gothic* vs. *3D CG animation*) before locking, ensuring zero visual style drift across the cast.
 
 ### 4. Stage 2: Shot Planning & AI Classifier Suite (`Stage2PlannerService`)
-- **AI Engine**: **12 Specialized Grok 4.5 Classifiers**
-- **Action**: Transforms the Fountain screenplay into a frame-accurate, timestamped shot plan (`blueprint.clips.json`) using 12 AI classifiers:
+- **AI Engine**: **13 Specialized Grok 4.5 Classifiers**
+- **Action**: Transforms the Fountain screenplay into a frame-accurate, timestamped shot plan (`blueprint.clips.json`) using 13 AI classifiers:
   1. **`OnScreenCastClassifier`**: Evaluates dialogue and action per beat to determine on-screen vs. off-screen/VO characters per shot, enforcing off-camera speaker rules.
   2. **`SilentBeatActionClassifier`**: Classifies silent action beats (`action_class`) with surrounding narrative context to allocate precise duration budgets ($3\text{s}$–$8\text{s}$).
   3. **`AmbientSfxClassifier`**: Separates background ambient soundscapes from transient sound effects (SFX).
@@ -115,6 +115,7 @@ flowchart TD
   10. **`NegativePromptClassifier`**: Evaluates period setting and scene environment to generate era-specific anachronism negative prompts (*"no modern wristwatches, no electric light bulbs, no plastic, no zippers"*), eliminating visual immersion glitches.
   11. **`WardrobeContinuityClassifier`**: Acts as a Costume Department Supervisor to dynamically track and assign context-appropriate attire per character per scene based on location, time of day, and story beats.
   12. **`CharacterEmotionArcClassifier`**: Acts as an Acting Coach & Performance Director, calculating emotional intensity ($1$–$10$ scale) and facial micro-expressions per beat to drive acting performances in video generation.
+  13. **`SoundDesignComposerClassifier`**: Acts as a Film Sound Designer & Audio Supervisor, composing 3-layer audio blueprints (`ambient_layer`, `foley_layer`, `score_layer`) per beat for multi-channel synthesis and `ffmpeg` remuxing.
 - **Deterministic Pacing**: *Silent Prelude Coalescing* automatically folds 5s silent lead-in beats into Beat 2 so voiceover/dialogue begins on frame 1 of the scene.
 
 ### 5. Video Generation (`ClipVideoPromptBuilder` & `GrokVideoClient` / `GeminiVideoClient`)
