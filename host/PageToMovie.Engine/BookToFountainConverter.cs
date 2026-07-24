@@ -1510,8 +1510,11 @@ public static class BookToFountainConverter
         }
     }
 
-    private static string NormalizeBookText(string bookText) =>
-        bookText.Replace("\r\n", "\n").Replace('\r', '\n').Trim();
+    private static string NormalizeBookText(string bookText)
+    {
+        var cleaned = PageToMovie.Core.Utils.GutenbergCleaner.StripHeaderAndFooter(bookText ?? "");
+        return cleaned.Replace("\r\n", "\n").Replace('\r', '\n').Trim();
+    }
 
     private static int CountPageMarkers(string bookText) =>
         Regex.Matches(bookText, @"---\s*PAGE\s+\d+\s*---", RegexOptions.IgnoreCase).Count;

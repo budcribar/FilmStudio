@@ -2,6 +2,7 @@ using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using PageToMovie.Core.Options;
+using PageToMovie.Core.Utils;
 using PageToMovie.Engine.Abstractions;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -63,7 +64,8 @@ public sealed class BookPrepareService
         if (pdf is not null && (forceExtract || !File.Exists(bookTxt)))
         {
             onProgress?.Invoke($"Extracting text from {Path.GetFileName(pdf)} (PdfPig)…");
-            var (text, pageCount) = ExtractTextPdfPig(pdf);
+            var (rawExtractText, pageCount) = ExtractTextPdfPig(pdf);
+            var text = GutenbergCleaner.StripHeaderAndFooter(rawExtractText);
             engine = "pdfpig";
             analysis = BookTextAnalyzer.Analyze(text, pageCount);
             analysis.TextEngine = engine;
