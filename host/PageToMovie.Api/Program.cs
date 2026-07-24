@@ -277,6 +277,12 @@ builder.Services.AddCors(o =>
 
 var app = builder.Build();
 
+// Map Blazor UI components (PageToMovie.Web)
+app.MapRazorComponents<App>()
+    .AddInteractiveServerRenderMode();
+
+app.UseCors();
+
 // Wire SignalR sink into job service
 var jobs = app.Services.GetRequiredService<FilmJobService>();
 jobs.SetProgressSink(app.Services.GetRequiredService<IJobProgressSink>());
