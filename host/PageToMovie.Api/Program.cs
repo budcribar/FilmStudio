@@ -283,8 +283,7 @@ app.UseAntiforgery();
 
 // Map Blazor UI components (PageToMovie.Web)
 app.MapRazorComponents<App>()
-    .AddInteractiveServerRenderMode()
-    .AddAdditionalAssemblies(typeof(App).Assembly);
+    .AddInteractiveServerRenderMode();
 
 app.UseCors();
 
