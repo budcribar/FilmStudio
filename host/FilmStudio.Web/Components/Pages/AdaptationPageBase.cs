@@ -705,8 +705,10 @@ public abstract class AdaptationPageBase : ComponentBase, IAsyncDisposable
         }
         if (step == "shots")
         {
-            // Hide plain "build shot plan"; keep replan / go elsewhere / generate
-            return next is not ("run_stage2" or "pin_characters");
+            // Hide plain "build shot plan"; keep replan / go elsewhere.
+            // Hide "generate_clips" too — the page's own "Open Scenes" button already
+            // says this; it carries the hint as a hover tooltip instead.
+            return next is not ("run_stage2" or "pin_characters" or "generate_clips");
         }
         return true;
     }

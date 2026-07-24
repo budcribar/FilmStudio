@@ -293,6 +293,33 @@ label,
     color: #fff;
 }
 
+/* Modals — Bootstrap defaults to a white modal-content background with
+   near-black text, same white-background gap as .card/.table above. */
+.modal-content {
+    background: var(--fs-bg-card);
+    border: 1px solid var(--fs-border-color);
+    color: var(--fs-text-primary);
+    box-shadow: var(--fs-shadow-card);
+}
+
+.modal-header,
+.modal-footer {
+    border-color: var(--fs-border-color);
+}
+
+.modal-title {
+    color: var(--fs-text-primary);
+}
+
+/* Bootstrap's close-button icon is drawn dark — invisible on a dark modal. */
+.btn-close {
+    filter: invert(1) grayscale(100%) brightness(200%);
+}
+
+:root[data-theme="light"] .btn-close {
+    filter: none;
+}
+
 /* Preformatted / code blocks (About page architecture + run scripts, etc.) */
 pre, .bg-light {
     background-color: var(--fs-bg-card) !important;

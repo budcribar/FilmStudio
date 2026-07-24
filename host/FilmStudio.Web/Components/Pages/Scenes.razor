@@ -48,81 +48,52 @@ else
     </div>
 }
 
-<div class="row mb-3 g-2 align-items-end">
-    <div class="col-md-2">
-        <label class="form-label">Character</label>
-        <select class="form-select" @bind="_filterCharacter" disabled="@_busy">
-            <option value="">All characters</option>
-            @foreach (var c in CharacterOptions)
-            {
-                <option value="@c">@ShortChar(c)</option>
-            }
-        </select>
-    </div>
-    <div class="col-md-2">
-        <label class="form-label">Location</label>
-        <select class="form-select" @bind="_filterLocation" disabled="@_busy">
-            <option value="">All locations</option>
-            @foreach (var loc in LocationOptions)
-            {
-                <option value="@loc">@ShortLoc(loc)</option>
-            }
-        </select>
-    </div>
-    <div class="col-md-3">
-        <label class="form-label">Setting text</label>
-        <input class="form-control" @bind="_filter" @bind:event="oninput" disabled="@_busy" placeholder="e.g. pajamas" />
-    </div>
-    <div class="col-md-3 d-flex gap-2 flex-wrap">
-        <button class="btn btn-outline-secondary" data-testid="scenes-reload" disabled="@_busy" @onclick="ReloadListAsync">Reload</button>
-        <button class="btn btn-success" data-testid="scenes-play-wip" disabled="@(_busy || JobRunning || (!_wipExists && !_wipCanBuild))"
-                @onclick="PlayWipAsync"
-                title="@WipPlayTitle">
-            @(_showWipPlayer && _wipExists && !_wipStale ? "Hide WIP" : _wipStale || !_wipExists ? "▶ Play WIP (refresh)" : "▶ Play WIP")
-        </button>
+<div class="d-flex gap-2 flex-wrap align-items-center mb-3">
+    <button class="btn btn-outline-secondary" data-testid="scenes-filters-toggle"
+            disabled="@_busy" @onclick="() => _showFilters = !_showFilters">
+        Filters
         @if (HasActiveFilters)
         {
-            <button class="btn btn-outline-secondary" disabled="@_busy" @onclick="ClearFilters">Clear filters</button>
+            <span class="badge rounded-pill bg-primary ms-1">@ActiveFilterCount</span>
         }
-        @if (_selectedScene is int)
-        {
-            <button class="btn btn-outline-primary" disabled="@_busy" @onclick="BackToListAsync">← All scenes</button>
-        }
-    </div>
+    </button>
+    <button class="btn btn-outline-secondary" data-testid="scenes-reload" disabled="@_busy" @onclick="ReloadListAsync">Reload</button>
+    @if (HasActiveFilters)
+    {
+        <button class="btn btn-outline-secondary" disabled="@_busy" @onclick="ClearFilters">Clear filters</button>
+    }
+    @if (_selectedScene is int)
+    {
+        <button class="btn btn-outline-primary" disabled="@_busy" @onclick="BackToListAsync">← All scenes</button>
+    }
 </div>
 
-@if (_showWipPlayer && _wipExists)
+@if (_showFilters)
 {
-    <div class="card mb-3 border-success">
-        <div class="card-header d-flex justify-content-between align-items-center py-2 flex-wrap gap-2">
-            <span>
-                WIP movie <code class="small">@(_wipPath ?? "assets/movie_wip.mp4")</code>
-                @if (_wipStale)
+    <div class="row mb-3 g-2 align-items-end p-2 border rounded" data-testid="scenes-filters-panel">
+        <div class="col-md-3">
+            <label class="form-label">Character</label>
+            <select class="form-select" @bind="_filterCharacter" disabled="@_busy">
+                <option value="">All characters</option>
+                @foreach (var c in CharacterOptions)
                 {
-                    <span class="badge bg-warning text-dark ms-1">stale</span>
+                    <option value="@c">@ShortChar(c)</option>
                 }
-            </span>
-            @if (!string.IsNullOrEmpty(_wipUpdatedAt))
-            {
-                <span class="small text-muted">@_wipUpdatedAt · @FormatBytes(_wipBytes)</span>
-            }
+            </select>
         </div>
-        <div class="card-body py-2">
-            @if (!string.IsNullOrEmpty(_wipReason) && _wipStale)
-            {
-                <p class="small text-warning mb-2">@_wipReason</p>
-            }
-            <video controls playsinline autoplay
-                   style="width:100%;max-height:70vh;background:#000;border-radius:0.35rem;"
-                   src="@CacheBust(Engine.WipMovieUrl(_projectId))"
-                   @key="_wipVideoKey"
-                   onloadeddata="this.play().catch(function(){})">
-                Your browser does not support HTML5 video.
-            </video>
-            <p class="small text-muted mb-0 mt-2">
-                <strong>Play WIP</strong> auto-refreshes if out of date (mux only — no clip re-gen).
-                <a href="@Engine.WipMovieUrl(_projectId)" target="_blank" rel="noopener">Open in new tab</a>
-            </p>
+        <div class="col-md-3">
+            <label class="form-label">Location</label>
+            <select class="form-select" @bind="_filterLocation" disabled="@_busy">
+                <option value="">All locations</option>
+                @foreach (var loc in LocationOptions)
+                {
+                    <option value="@loc">@ShortLoc(loc)</option>
+                }
+            </select>
+        </div>
+        <div class="col-md-4">
+            <label class="form-label">Setting text</label>
+            <input class="form-control" @bind="_filter" @bind:event="oninput" disabled="@_busy" placeholder="e.g. pajamas" />
         </div>
     </div>
 }
@@ -378,7 +349,14 @@ else if (Session.IsAdmin && _job is not null &&
             <table class="table table-hover table-sm align-middle">
                 <thead>
                     <tr>
-                        <th style="width:2.5rem;"></th>
+                        <th style="width:2.5rem;">
+                            <input class="form-check-input" type="checkbox"
+                                   data-testid="scenes-select-all"
+                                   title="Select all shown scenes"
+                                   checked="@AllShownScenesSelected"
+                                   disabled="@(_busy || FilteredScenes.Count == 0)"
+                                   @onchange="e => ToggleSelectAllShown((bool)(e.Value ?? false))" />
+                        </th>
                         <th style="width:4rem;">#</th>
                         <th>Setting</th>
                         <th>Cast / location</th>
@@ -652,13 +630,18 @@ else
                 <table class="table table-sm table-hover align-middle">
                     <thead>
                         <tr>
-                            <th style="width:2rem;"></th>
+                            <th style="width:2rem;">
+                                <input class="form-check-input" type="checkbox"
+                                       data-testid="clip-select-all"
+                                       title="Select all clips"
+                                       checked="@AllClipsSelected"
+                                       disabled="@(_busy || _detail is not { Clips.Count: > 0 })"
+                                       @onchange="e => ToggleSelectAllClips((bool)(e.Value ?? false))" />
+                            </th>
                             <th>Clip</th>
                             <th>Dur</th>
-                            <th>Subject</th>
                             <th>Dialogue</th>
-                            <th>Disk</th>
-                            <th style="width:8rem;"></th>
+                            <th style="width:9rem;"></th>
                         </tr>
                     </thead>
                     <tbody>
@@ -676,7 +659,25 @@ else
                                            disabled="@_busy"
                                            @onchange="e => ToggleClipSelect(cn, (bool)(e.Value ?? false))" />
                                 </td>
-                                <td><code>C@(cn.ToString("D2"))</code></td>
+                                <td @onclick:stopPropagation="true">
+                                    @{
+                                        var clipBusy = IsClipGenBusy(cn);
+                                    }
+                                    @if (clipBusy)
+                                    {
+                                        <span class="badge bg-warning text-dark" title="Regenerating — file is about to change">C@(cn.ToString("D2"))</span>
+                                    }
+                                    else if (c.OnDisk)
+                                    {
+                                        <button class="btn btn-sm btn-success" title="Play clip" @onclick="() => SelectClip(cn)">
+                                            ▶ C@(cn.ToString("D2"))
+                                        </button>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-secondary" title="Not generated yet">C@(cn.ToString("D2"))</span>
+                                    }
+                                </td>
                                 <td class="small">
                                     @if (c.ActualDurationSeconds is double ca)
                                     {
@@ -695,36 +696,18 @@ else
                                         <span class="text-muted">—</span>
                                     }
                                 </td>
-                                <td class="small">@Trunc(c.PrimarySubject, 28)</td>
                                 <td class="small"
-                                    title="@(string.IsNullOrWhiteSpace(c.Dialogue) ? null : c.Dialogue)"
+                                    title="@(string.IsNullOrWhiteSpace(c.Dialogue) ? "Click to add dialogue" : c.Dialogue + " (click to edit)")"
+                                    style="cursor:pointer;"
                                     @onclick:stopPropagation="true"
-                                    @onclick="() => ShowDialoguePopup(c)">
+                                    @onclick="() => OpenClipEditor(c)">
                                     @if (string.IsNullOrWhiteSpace(c.Dialogue))
                                     {
-                                        <span class="text-muted">—</span>
+                                        <span class="text-muted text-decoration-underline" style="text-decoration-style:dotted;">—</span>
                                     }
                                     else
                                     {
-                                        <span class="text-decoration-underline" style="text-decoration-style:dotted;cursor:pointer;">@Trunc(c.Dialogue, 40)</span>
-                                    }
-                                </td>
-                                <td>
-                                    @{
-                                        var clipBusy = IsClipGenBusy(cn);
-                                    }
-                                    @if (clipBusy)
-                                    {
-                                        <span class="badge bg-warning text-dark">regenerating…</span>
-                                    }
-                                    else if (c.OnDisk)
-                                    {
-                                        <span class="badge bg-success">on disk</span>
-                                        <span class="small text-muted">@FormatSize(c.SizeBytes)</span>
-                                    }
-                                    else
-                                    {
-                                        <span class="badge bg-secondary">missing</span>
+                                        <span class="text-decoration-underline" style="text-decoration-style:dotted;">@Trunc(c.Dialogue, 40)</span>
                                     }
                                 </td>
                                 <td @onclick:stopPropagation="true">
@@ -732,12 +715,6 @@ else
                                         var needPrev = PreviousClipMissing(cn);
                                     }
                                     <div class="btn-group btn-group-sm">
-                                        <button class="btn btn-outline-dark"
-                                                disabled="@(_busy || !c.OnDisk || clipBusy)"
-                                                title="@(clipBusy ? "Regenerating — file is about to change" : "Play clip")"
-                                                @onclick="() => SelectClip(cn)">
-                                            ▶
-                                        </button>
                                         <button class="btn btn-outline-warning"
                                                 disabled="@(_busy || JobRunning || !CastReady || needPrev)"
                                                 title="@(!CastReady
@@ -747,13 +724,6 @@ else
                                                     : "Force re-generate this clip")"
                                                 @onclick="() => RegenClipAsync(_detail.SceneNumber, cn)">
                                             Regen
-                                        </button>
-                                        <button class="btn btn-outline-secondary"
-                                                data-testid="@($"clip-edit-{cn}")"
-                                                disabled="@(_busy || JobRunning)"
-                                                title="Edit clip fields (dialogue, prompt, characters, lighting…)"
-                                                @onclick="() => OpenClipEditor(c)">
-                                            Edit
                                         </button>
                                         <button class="btn btn-outline-danger"
                                                 data-testid="@($"clip-delete-{cn}")"
@@ -877,14 +847,13 @@ else
                     </p>
                     @if (_clip.Dialogue is { Length: > 0 } fullDlg)
                     {
-                        <pre class="small bg-light border rounded p-2 mb-2"
-                             style="max-height:160px; overflow:auto; white-space:pre-wrap; word-break:break-word;">@fullDlg</pre>
-                        <button type="button" class="btn btn-link btn-sm p-0 mb-2"
-                                @onclick="() => ShowDialoguePopup(_clip)">Full dialogue</button>
+                        <pre class="small bg-light border rounded p-2 mb-2" style="cursor:pointer;
+                             max-height:160px; overflow:auto; white-space:pre-wrap; word-break:break-word;"
+                             @onclick="() => OpenClipEditor(_clip)" title="Click to edit">@fullDlg</pre>
                     }
                     else
                     {
-                        <p class="small text-muted">—</p>
+                        <p class="small text-muted" style="cursor:pointer;" @onclick="() => OpenClipEditor(_clip)" title="Click to add dialogue">— (click to add)</p>
                     }
                     @if (_clip.CharactersOnScreen.Count > 0)
                     {
@@ -905,27 +874,6 @@ else
     }
 }
 } @* end CanScenes gate *@
-
-@if (_dialoguePopup is { Length: > 0 })
-{
-    <div class="modal fade show d-block" tabindex="-1" role="dialog" aria-modal="true"
-         style="background:rgba(0,0,0,.45);" @onclick="CloseDialoguePopup">
-        <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable" @onclick:stopPropagation="true">
-            <div class="modal-content">
-                <div class="modal-header py-2">
-                    <h5 class="modal-title">@_dialoguePopupTitle</h5>
-                    <button type="button" class="btn-close" aria-label="Close" @onclick="CloseDialoguePopup"></button>
-                </div>
-                <div class="modal-body">
-                    <pre class="small mb-0" style="white-space:pre-wrap; word-break:break-word;">@_dialoguePopup</pre>
-                </div>
-                <div class="modal-footer py-2">
-                    <button type="button" class="btn btn-sm btn-secondary" @onclick="CloseDialoguePopup">Close</button>
-                </div>
-            </div>
-        </div>
-    </div>
-}
 
 @if (_deleteClipTarget is { } delTarget)
 {
@@ -1074,13 +1022,12 @@ else
     private bool _gateChecked;
     private string? _error;
     private string? _message;
-    private string? _dialoguePopup;
-    private string _dialoguePopupTitle = "Dialogue";
     private string _projectId = "";
     private List<string> _projectIds = new();
     private string _filter = "";
     private string _filterCharacter = "";
     private string _filterLocation = "";
+    private bool _showFilters;
     private bool _onlyMissing = true;
     /// <summary>Video gen resolution (defaults from Configuration).</summary>
     private string _genResolution = "720p";
@@ -1118,17 +1065,7 @@ else
     private string? _lastListRefreshMessage;
     private DateTimeOffset _lastListRefreshAt = DateTimeOffset.MinValue;
     private bool _listRefreshInFlight;
-    private bool _wipExists;
-    private bool _wipStale;
-    private bool _wipCanBuild;
-    private string? _wipReason;
-    private bool _showWipPlayer;
-    private bool _playWipAfterRemux;
     private int? _playSceneAfterRemux;
-    private string? _wipPath;
-    private string? _wipUpdatedAt;
-    private long _wipBytes;
-    private long _wipVideoKey;
     private bool _showScenePlayer;
     private int? _playingScene;
     private long _sceneVideoKey;
@@ -1165,8 +1102,12 @@ else
         {
             if (!Active(j.Status) || !IsScenesWorkflowJob(j.Kind))
                 return false;
-            // Batch may include this scene; hide composite to avoid playing stale mux
-            if (string.Equals(j.Kind, "batch", StringComparison.OrdinalIgnoreCase))
+            // Batch may include this scene; hide composite to avoid playing stale mux.
+            // Remux job.Scene goes null during the WIP-stitch phase ("Combining scenes
+            // into movie…") — treat that the same way: hide every composite rather than
+            // let one sit there mid-rewrite with a Play button live on it.
+            if (string.Equals(j.Kind, "batch", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(j.Kind, "remux", StringComparison.OrdinalIgnoreCase))
                 return true;
             return j.Scene is int sn && sn == sceneNumber;
         }
@@ -1335,13 +1276,6 @@ else
             ? null
             : _scenes?.FirstOrDefault(s => s.SceneNumber == _detail.SceneNumber)?.LockOwnerUserId;
 
-    private string WipPlayTitle =>
-        !_wipCanBuild && !_wipExists
-            ? "No scene/clip videos to build WIP"
-            : _wipStale || !_wipExists
-                ? $"Refresh then play: {_wipReason ?? "out of date"}"
-                : "Play streamed movie_wip.mp4 (up to date)";
-
     private string SelectionMode => _selectionMode;
 
     private int IncompleteCount =>
@@ -1351,6 +1285,11 @@ else
         !string.IsNullOrWhiteSpace(_filter) ||
         !string.IsNullOrWhiteSpace(_filterCharacter) ||
         !string.IsNullOrWhiteSpace(_filterLocation);
+
+    private int ActiveFilterCount =>
+        (string.IsNullOrWhiteSpace(_filter) ? 0 : 1) +
+        (string.IsNullOrWhiteSpace(_filterCharacter) ? 0 : 1) +
+        (string.IsNullOrWhiteSpace(_filterLocation) ? 0 : 1);
 
     private List<string> CharacterOptions =>
         _scenes is null
@@ -1506,23 +1445,12 @@ else
                 if (snap.Status == "done" &&
                     string.Equals(snap.Kind, "remux", StringComparison.OrdinalIgnoreCase))
                 {
-                    await RefreshWipMetaAsync();
                     // Bust cache so next manual play / inline preview loads the new file.
                     var bust = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
                     _sceneVideoKey = bust;
                     _inlineCompositeKey = bust;
 
-                    if (_playWipAfterRemux)
-                    {
-                        _playWipAfterRemux = false;
-                        if (_wipExists)
-                        {
-                            _showWipPlayer = true;
-                            _wipVideoKey = bust;
-                            _message = "WIP ready — player below";
-                        }
-                    }
-                    else if (_playSceneAfterRemux is int playSn)
+                    if (_playSceneAfterRemux is int playSn)
                     {
                         // Explicit Play scene (auto-remux) — open player once.
                         _playSceneAfterRemux = null;
@@ -1611,7 +1539,6 @@ else
         {
             var dto = await Engine.GetScenesAsync(_projectId);
             _scenes = dto?.Scenes ?? new List<SceneSummary>();
-            await RefreshWipMetaAsync();
             if (_selectedScene is int sn)
             {
                 var detail = await Engine.GetSceneDetailAsync(_projectId, sn);
@@ -1666,7 +1593,6 @@ else
             var jobs = await Engine.GetJobAsync();
             _job = jobs?.Job;
             await RefreshMyJobsAsync();
-            await RefreshWipMetaAsync();
             await RefreshCastGateAsync();
             await RefreshCostEstimateAsync();
         }
@@ -1748,7 +1674,6 @@ else
             var dto = await Engine.GetScenesAsync(_projectId);
             _scenes = dto?.Scenes ?? new List<SceneSummary>();
             await RefreshMyJobsAsync();
-            await RefreshWipMetaAsync();
             await RefreshCastGateAsync();
             if (_selectedScene is int sn)
             {
@@ -1822,6 +1747,23 @@ else
     }
 
     private void ClearClipSelection() => _selectedClips.Clear();
+
+    private bool AllClipsSelected =>
+        _detail is { Clips.Count: > 0 } && _detail.Clips.All(c => _selectedClips.Contains(c.ClipNumber));
+
+    private void ToggleSelectAllClips(bool on)
+    {
+        if (_detail is null) return;
+        if (on)
+        {
+            foreach (var c in _detail.Clips)
+                _selectedClips.Add(c.ClipNumber);
+        }
+        else
+        {
+            _selectedClips.Clear();
+        }
+    }
 
     private double? EstimateSelectedClipsCostUsd()
     {
@@ -2100,6 +2042,15 @@ else
         _selectionMode = "";
     }
 
+    private bool AllShownScenesSelected =>
+        FilteredScenes.Count > 0 && FilteredScenes.All(s => _selected.Contains(s.SceneNumber));
+
+    private void ToggleSelectAllShown(bool on)
+    {
+        if (on) SelectAll();
+        else ClearSelection();
+    }
+
     private int EstimateSelectedClips()
     {
         if (_scenes is null) return 0;
@@ -2204,22 +2155,6 @@ else
         return s.Length <= n ? s : s[..(n - 1)] + "…";
     }
 
-    private void ShowDialoguePopup(ClipSummary c)
-    {
-        if (string.IsNullOrWhiteSpace(c.Dialogue))
-            return;
-        var sn = _detail?.SceneNumber ?? 0;
-        _dialoguePopupTitle = sn > 0
-            ? $"S{sn:D2}C{c.ClipNumber:D2} dialogue"
-            : $"C{c.ClipNumber:D2} dialogue";
-        _dialoguePopup = c.Dialogue;
-    }
-
-    private void CloseDialoguePopup()
-    {
-        _dialoguePopup = null;
-    }
-
     private static string ShortChar(string key) => KeyFormatting.ShortChar(key);
 
     private static string ShortLoc(string key) => KeyFormatting.ShortLoc(key);
@@ -2231,77 +2166,7 @@ else
         return $"{bytes / (1024.0 * 1024):0.#} MB";
     }
 
-    private async Task RefreshWipMetaAsync()
-    {
-        try
-        {
-            var meta = await Engine.GetWipMovieMetaAsync(_projectId);
-            _wipExists = meta?.Exists == true;
-            _wipStale = meta?.Stale == true || !_wipExists;
-            _wipCanBuild = meta?.CanBuild == true;
-            _wipReason = meta?.Reason;
-            _wipPath = meta?.Path;
-            _wipUpdatedAt = meta?.UpdatedAt;
-            _wipBytes = meta?.Bytes ?? 0;
-            if (!_wipExists)
-                _showWipPlayer = false;
-        }
-        catch
-        {
-            _wipExists = false;
-            _wipStale = true;
-            _wipCanBuild = false;
-        }
-    }
-
-    private async Task PlayWipAsync()
-    {
-        if (_showWipPlayer && _wipExists && !_wipStale)
-        {
-            await RefreshWipMetaAsync();
-            if (_wipExists && !_wipStale)
-            {
-                _showWipPlayer = false;
-                return;
-            }
-        }
-
-        // Always re-check: scenes added/removed/out-of-date trigger auto-remux
-        await RefreshWipMetaAsync();
-        if (_wipExists && !_wipStale)
-        {
-            _showWipPlayer = true;
-            _wipVideoKey = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-            _message = "Playing WIP (up to date)";
-            return;
-        }
-
-        if (!_wipCanBuild && !_wipExists)
-        {
-            _error = _wipReason ?? "Nothing on disk to build WIP";
-            return;
-        }
-
-        _busy = true;
-        _error = null;
-        _message = null;
-        _progressFloor = 0;
-        _progressFloorJobId = null;
-        try
-        {
-            await EnsureHubAsync();
-            _playWipAfterRemux = true;
-            await Engine.StartRemuxAsync(_projectId, scene: null, rebuildWip: true, refreshStaleScenes: true);
-            var jobs = await Engine.GetJobAsync();
-            _job = jobs?.Job;
-        }
-        catch (Exception ex) { _error = ex.Message; _playWipAfterRemux = false; }
-        finally { _busy = false; }
-    }
-
     private static string CacheBust(string url) => KeyFormatting.CacheBust(url);
-
-    private static string FormatBytes(long n) => FormatSize(n);
 
     /// <summary>Format seconds as m:ss or plain seconds when under a minute.</summary>
     private static string FormatClock(double seconds)
