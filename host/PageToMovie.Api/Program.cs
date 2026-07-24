@@ -9,6 +9,7 @@ using PageToMovie.Core.Options;
 using PageToMovie.Engine;
 using PageToMovie.Engine.Abstractions;
 using PageToMovie.Fakes;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Options;
 
@@ -112,8 +113,10 @@ builder.Services.AddSingleton<ProjectTelemetryService>();
 builder.Services.AddSingleton<ReviewIndexService>();
 builder.Services.AddSingleton<ClipAutoReviewService>();
 builder.Services.AddSingleton<ProjectArtifactIndexService>();
-builder.Services.AddSingleton<YouTubeAuthService>();
-builder.Services.AddDataProtection();
+var dpKeysDir = Directory.Exists("/data") ? "/data/keys" : (Directory.Exists("/app/data") ? "/app/data/keys" : Path.Combine(Path.GetTempPath(), "ptm-dp-keys"));
+Directory.CreateDirectory(dpKeysDir);
+builder.Services.AddDataProtection()
+    .PersistKeysToFileSystem(new DirectoryInfo(dpKeysDir));
 builder.Services.AddSingleton<UserDatabaseService>();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddSingleton<IUserContext, HttpUserContext>();
