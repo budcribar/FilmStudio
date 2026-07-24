@@ -278,6 +278,7 @@ builder.Services.AddCors(o =>
 
 var app = builder.Build();
 
+app.MapStaticAssets();
 app.UseStaticFiles();
 app.UseAntiforgery();
 
