@@ -223,7 +223,10 @@ public sealed class ProjectStore
         return await ActivateAsync(id, ct).ConfigureAwait(false);
     }
 
-    private static string SanitizeProjectId(string raw)
+    private static string SanitizeProjectId(string raw) => SanitizeProjectIdPublic(raw);
+
+    /// <summary>Public sanitize for import/export tooling (safe folder name).</summary>
+    public static string SanitizeProjectIdPublic(string raw)
     {
         // Prefer Pascal/camel-ish folder: strip path junk, keep letters/digits/_/-
         var sb = new System.Text.StringBuilder(raw.Length);

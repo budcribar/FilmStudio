@@ -209,6 +209,9 @@ public sealed class CastFromScreenplayService
 
         var keys = seedsObj.Keys.OrderBy(k => k, StringComparer.OrdinalIgnoreCase).ToList();
         onProgress?.Invoke($"Cast ready · {keys.Count} character(s)");
+        _log.LogInformation(
+            "Cast extract {Project}: {Count} character(s) → {Keys}",
+            projectId, keys.Count, string.Join(", ", keys));
         return new ExtractResult
         {
             Ok = true,

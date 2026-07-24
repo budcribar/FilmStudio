@@ -8,6 +8,29 @@ window.PageToMovieExport = {
     _directoryHandle: null,
 
     /**
+     * Download a binary stream from Blazor (DotNetStreamReference) as a file.
+     * Used for admin full-project zip export.
+     */
+    downloadStreamAsync: async function (fileName, contentStreamReference) {
+        try {
+            const arrayBuffer = await contentStreamReference.arrayBuffer();
+            const blob = new Blob([arrayBuffer], { type: "application/zip" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = fileName || "PageToMovie_project.zip";
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            return { success: true };
+        } catch (err) {
+            console.error("downloadStreamAsync failed:", err);
+            return { success: false, error: err.message || String(err) };
+        }
+    },
+
+    /**
      * Checks if modern File System Access API is supported by the user's browser.
      */
     supportsFileSystemAccess: function () {

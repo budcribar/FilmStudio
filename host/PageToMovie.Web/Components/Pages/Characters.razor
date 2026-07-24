@@ -103,6 +103,19 @@ else if (Session.IsAdmin && HasCast && !JobRunning && !_extractingCast)
 {
     <div class="alert alert-success">@_message</div>
 }
+@if (Session.IsAdmin && _lastCastExtractKeys is { Count: > 0 } && !_extractingCast)
+{
+    <div class="alert alert-secondary py-2 small mb-3">
+        <strong>Admin · last cast extract</strong>
+        · @_lastCastExtractKeys.Count key(s):
+        <code class="user-select-all">@string.Join(", ", _lastCastExtractKeys)</code>
+        <div class="text-muted mt-1 mb-0">
+            Built from the approved screenplay (not plate OCR). Missing leads like Buster usually means
+            the Fountain has no clear character cue / seed for them — rebuild cast after fixing the screenplay,
+            or check Railway logs for cast extract.
+        </div>
+    </div>
+}
 else if (IsCastComplete && !JobRunning && !_extractingCast)
 {
     <div class="alert alert-info py-2 d-flex flex-wrap align-items-center justify-content-between gap-2">
@@ -562,6 +575,7 @@ else
     private bool _gateChecked;
     private string? _error;
     private string? _message;
+    private List<string>? _lastCastExtractKeys;
     private string _projectId = "";
     private List<string> _projectIds = new();
     private List<CharacterSummary>? _chars;
@@ -733,12 +747,23 @@ else
             if (result is null || result.Ok != true)
             {
                 _error = result?.Error ?? "Could not build cast.";
+                if (Session.IsAdmin && !string.IsNullOrWhiteSpace(result?.RawPath))
+                    _error += $" (admin raw dump: {result.RawPath})";
                 _message = null;
+                _lastCastExtractKeys = null;
             }
             else
             {
+                _lastCastExtractKeys = result.Characters?
+                    .Where(k => !string.IsNullOrWhiteSpace(k))
+                    .ToList();
+                var keysPart = _lastCastExtractKeys is { Count: > 0 }
+                    ? " · " + string.Join(", ", _lastCastExtractKeys)
+                    : "";
                 _message = result.Message
-                    ?? $"Cast ready · {result.CharacterCount} character(s) — review looks, then lock portraits";
+                    ?? $"Cast ready · {result.CharacterCount} character(s){keysPart} — review looks, then lock portraits";
+                if (string.IsNullOrWhiteSpace(result.Message) == false && _lastCastExtractKeys is { Count: > 0 })
+                    _message = $"{result.Message}{keysPart}";
                 await LoadAsync();
             }
         }

@@ -87,6 +87,7 @@ builder.Services.AddSingleton<ApiWorkerPool>();
 builder.Services.AddSingleton<LocalWorkerPool>();
 builder.Services.AddSingleton<LoginRateLimiter>();
 builder.Services.AddSingleton<CreditService>();
+builder.Services.AddSingleton<ProjectArchiveService>();
 builder.Services.AddSingleton<CostReportService>();
 builder.Services.AddSingleton<CharacterDesignService>();
 builder.Services.AddSingleton<CharacterBookPlateService>();
@@ -280,16 +281,17 @@ builder.Services.AddCors(o =>
             .SetIsOriginAllowed(_ => true));
 });
 
-// Large picture-book PDFs (e.g. Buster ~12MB+) — Blazor allows 80MB client-side; match server form limit.
+// Large picture-book PDFs + full project zip import (book_images + assets).
+// Blazor InputFile / admin import allow up to 512MB; match server form + Kestrel limits.
 builder.Services.Configure<Microsoft.AspNetCore.Http.Features.FormOptions>(o =>
 {
-    o.MultipartBodyLengthLimit = 100 * 1024 * 1024;
+    o.MultipartBodyLengthLimit = 512L * 1024 * 1024;
     o.ValueLengthLimit = int.MaxValue;
     o.MultipartHeadersLengthLimit = 64 * 1024;
 });
 builder.WebHost.ConfigureKestrel(o =>
 {
-    o.Limits.MaxRequestBodySize = 100 * 1024 * 1024;
+    o.Limits.MaxRequestBodySize = 512L * 1024 * 1024;
 });
 
 var app = builder.Build();
@@ -811,6 +813,81 @@ app.MapGet("/api/admin/users", async (IUserContext user, CreditService credits) 
 
     var overview = await credits.GetAdminOverviewAsync(recentLedger: 50);
     return Results.Ok(new { ok = true, overview });
+});
+
+/// <summary>Admin: download full project folder as zip for local debug.</summary>
+app.MapGet("/api/admin/projects/{id}/export", async (
+    string id,
+    IUserContext user,
+    ProjectArchiveService archives,
+    CancellationToken ct) =>
+{
+    if (!user.IsAdmin)
+        return Results.Json(new { ok = false, error = "admin role required" },
+            statusCode: StatusCodes.Status403Forbidden);
+    try
+    {
+        var exp = await archives.ExportAsync(id, ct);
+        return Results.File(
+            exp.Stream,
+            exp.ContentType,
+            exp.FileName,
+            enableRangeProcessing: false);
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { ok = false, error = ex.Message });
+    }
+});
+
+/// <summary>
+/// Admin: import a project zip (full folder). Multipart field <c>file</c>;
+/// optional form fields <c>projectId</c>, <c>overwrite</c>=true|false.
+/// </summary>
+app.MapPost("/api/admin/projects/import", async (
+    HttpRequest req,
+    IUserContext user,
+    ProjectArchiveService archives,
+    CancellationToken ct) =>
+{
+    if (!user.IsAdmin)
+        return Results.Json(new { ok = false, error = "admin role required" },
+            statusCode: StatusCodes.Status403Forbidden);
+
+    if (!req.HasFormContentType)
+        return Results.BadRequest(new { ok = false, error = "multipart form with file required" });
+
+    var form = await req.ReadFormAsync(ct);
+    var file = form.Files.GetFile("file") ?? form.Files.FirstOrDefault();
+    if (file is null || file.Length == 0)
+        return Results.BadRequest(new { ok = false, error = "file required (project zip)" });
+
+    var preferredId = form["projectId"].ToString();
+    if (string.IsNullOrWhiteSpace(preferredId))
+        preferredId = form["id"].ToString();
+    var overwrite = string.Equals(form["overwrite"].ToString(), "true", StringComparison.OrdinalIgnoreCase)
+                    || string.Equals(form["overwrite"].ToString(), "1", StringComparison.OrdinalIgnoreCase);
+
+    try
+    {
+        await using var stream = file.OpenReadStream();
+        var result = await archives.ImportAsync(
+            stream,
+            preferredId: string.IsNullOrWhiteSpace(preferredId) ? null : preferredId.Trim(),
+            overwrite: overwrite,
+            ct: ct);
+        return Results.Ok(new
+        {
+            ok = true,
+            projectId = result.ProjectId,
+            active = result.Project,
+            message = result.Message,
+        });
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { ok = false, error = ex.Message });
+    }
 });
 
 app.MapPost("/api/admin/users/credits", async (

@@ -181,6 +181,56 @@ public sealed class EngineApiClient
         await SendJsonAsync<object>(req, ct);
     }
 
+    /// <summary>
+    /// Admin full-project zip. Returns open response stream + suggested filename.
+    /// Caller must dispose the response/stream.
+    /// </summary>
+    public async Task<(HttpResponseMessage Response, string FileName)> ExportProjectZipAsync(
+        string projectId,
+        CancellationToken ct = default)
+    {
+        SyncIdentityHeaders();
+        var req = new HttpRequestMessage(
+            HttpMethod.Get,
+            $"/api/admin/projects/{Uri.EscapeDataString(projectId)}/export");
+        var resp = await _http.SendAsync(req, HttpCompletionOption.ResponseHeadersRead, ct);
+        if (!resp.IsSuccessStatusCode)
+        {
+            var err = await resp.Content.ReadAsStringAsync(ct);
+            resp.Dispose();
+            throw new InvalidOperationException(TryError(err) ?? resp.ReasonPhrase ?? "export failed");
+        }
+
+        var fileName = resp.Content.Headers.ContentDisposition?.FileName?.Trim('"')
+                       ?? resp.Content.Headers.ContentDisposition?.FileNameStar?.Trim('"')
+                       ?? $"PageToMovie_{projectId}.zip";
+        return (resp, fileName);
+    }
+
+    /// <summary>Admin import project zip (multipart field name: file).</summary>
+    public async Task<AdminProjectImportResultDto?> ImportProjectZipAsync(
+        Stream zipStream,
+        string fileName,
+        string? preferredId = null,
+        bool overwrite = false,
+        CancellationToken ct = default)
+    {
+        SyncIdentityHeaders();
+        using var content = new MultipartFormDataContent();
+        var streamContent = new StreamContent(zipStream);
+        streamContent.Headers.ContentType = new MediaTypeHeaderValue("application/zip");
+        content.Add(streamContent, "file", string.IsNullOrWhiteSpace(fileName) ? "project.zip" : fileName);
+        if (!string.IsNullOrWhiteSpace(preferredId))
+            content.Add(new StringContent(preferredId.Trim()), "projectId");
+        content.Add(new StringContent(overwrite ? "true" : "false"), "overwrite");
+
+        using var resp = await _http.PostAsync("/api/admin/projects/import", content, ct);
+        var raw = await resp.Content.ReadAsStringAsync(ct);
+        if (!resp.IsSuccessStatusCode)
+            throw new InvalidOperationException(TryError(raw) ?? resp.ReasonPhrase ?? "import failed");
+        return JsonSerializer.Deserialize<AdminProjectImportResultDto>(raw, JsonOpts);
+    }
+
     public async Task<AdminCreditsOverviewDto?> GetAdminUsersCreditsAsync(CancellationToken ct = default)
     {
         using var req = new HttpRequestMessage(HttpMethod.Get, "/api/admin/users");
@@ -2014,6 +2064,15 @@ public sealed class AdminGrantCreditsResponse
 {
     public bool Ok { get; set; }
     public UserCreditSummaryDto? User { get; set; }
+}
+
+public sealed class AdminProjectImportResultDto
+{
+    public bool Ok { get; set; }
+    public string? ProjectId { get; set; }
+    public ProjectInfo? Active { get; set; }
+    public string? Message { get; set; }
+    public string? Error { get; set; }
 }
 
 public sealed class JobsDto

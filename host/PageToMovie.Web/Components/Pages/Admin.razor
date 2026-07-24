@@ -5,6 +5,7 @@
 @inject JobHubClient Hub
 @inject NavigationManager Nav
 @inject IJSRuntime Js
+@using Microsoft.AspNetCore.Components.Forms
 
 <PageTitle>Admin — Film Studio</PageTitle>
 
@@ -319,6 +320,77 @@
             </div>
         </div>
 
+        <div class="card mt-3">
+            <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
+                <span>Project export / import</span>
+                <span class="small text-muted">Full folder zip for local debug</span>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <div class="fw-semibold small mb-2">Export (download zip)</div>
+                        <div class="d-flex flex-wrap gap-2 align-items-center">
+                            <select class="form-select form-select-sm" style="max-width: 16rem;"
+                                    @bind="_exportProjectId"
+                                    disabled="@(_archiveBusy || _projectOptions.Count == 0)">
+                                @if (_projectOptions.Count == 0)
+                                {
+                                    <option value="">No projects</option>
+                                }
+                                else
+                                {
+                                    @foreach (var p in _projectOptions)
+                                    {
+                                        <option value="@p">@p</option>
+                                    }
+                                }
+                            </select>
+                            <button type="button" class="btn btn-sm btn-primary"
+                                    disabled="@(_archiveBusy || string.IsNullOrWhiteSpace(_exportProjectId))"
+                                    @onclick="ExportProjectAsync">
+                                @(_archiveBusy && _archiveAction == "export" ? "Zipping…" : "Download full project")
+                            </button>
+                        </div>
+                        <p class="form-text mb-0 mt-1">
+                            Includes <code>source/</code>, <code>assets/</code>, scenes, cast, book page PNGs, clips.
+                        </p>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="fw-semibold small mb-2">Import (upload zip)</div>
+                        <InputFile OnChange="OnImportFileSelected" accept=".zip,application/zip"
+                                   class="form-control form-control-sm mb-2"
+                                   disabled="@_archiveBusy" />
+                        <div class="d-flex flex-wrap gap-2 align-items-center">
+                            <input class="form-control form-control-sm" style="max-width: 12rem;"
+                                   placeholder="Optional new id"
+                                   @bind="_importPreferredId"
+                                   disabled="@_archiveBusy" />
+                            <div class="form-check mb-0">
+                                <InputCheckbox class="form-check-input" id="importOverwrite" @bind-Value="_importOverwrite" />
+                                <label class="form-check-label small" for="importOverwrite">Overwrite if exists</label>
+                            </div>
+                            <button type="button" class="btn btn-sm btn-success"
+                                    disabled="@(_archiveBusy || _importFile is null)"
+                                    @onclick="ImportProjectAsync">
+                                @(_archiveBusy && _archiveAction == "import" ? "Importing…" : "Import project")
+                            </button>
+                        </div>
+                        <p class="form-text mb-0 mt-1">
+                            Max ~512&nbsp;MB. Zip should contain <code>project.json</code> (optionally under a top folder).
+                        </p>
+                    </div>
+                </div>
+                @if (!string.IsNullOrEmpty(_archiveMsg))
+                {
+                    <div class="alert alert-info py-2 small mt-3 mb-0">@_archiveMsg</div>
+                }
+                @if (!string.IsNullOrEmpty(_archiveError))
+                {
+                    <div class="alert alert-danger py-2 small mt-3 mb-0">@_archiveError</div>
+                }
+            </div>
+        </div>
+
         <div class="row g-3 mt-1">
             <div class="col-lg-7">
                 <div class="card">
@@ -346,7 +418,8 @@
                                     <tbody>
                                     @foreach (var j in items)
                                     {
-                                        <tr>
+                                        var selected = string.Equals(j.JobId, _logJobId, StringComparison.OrdinalIgnoreCase);
+                                        <tr class="@(selected ? "table-active" : null)">
                                             <td class="font-monospace small">@(ShortId(j.JobId))</td>
                                             <td>@(j.UserId ?? "—")</td>
                                             <td>@(j.Kind ?? "—")</td>
@@ -354,7 +427,13 @@
                                             <td>@(j.Status ?? "—")</td>
                                             <td>@(j.Total > 0 ? $"{j.Index}/{j.Total}" : "—")</td>
                                             <td>@FormatAge(j.AgeMs)</td>
-                                            <td>
+                                            <td class="text-nowrap">
+                                                <button class="btn btn-sm btn-outline-primary me-1"
+                                                        disabled="@(string.IsNullOrEmpty(j.JobId))"
+                                                        title="Load job log"
+                                                        @onclick="() => LoadJobLogAsync(j.JobId!)">
+                                                    Log
+                                                </button>
                                                 <button class="btn btn-sm btn-outline-danger"
                                                         disabled="@_busy || string.IsNullOrEmpty(j.JobId)"
                                                         @onclick="() => CancelJobAsync(j.JobId!)">
@@ -371,6 +450,62 @@
                         {
                             <p class="text-muted p-3 mb-0">No active jobs.</p>
                         }
+
+                        <div class="border-top p-3">
+                            <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2">
+                                <div class="small fw-semibold">Job log</div>
+                                <div class="d-flex flex-wrap gap-2 align-items-center">
+                                    <input class="form-control form-control-sm font-monospace"
+                                           style="width: 12rem;"
+                                           placeholder="Job id…"
+                                           @bind="_logJobIdInput"
+                                           @bind:event="oninput"
+                                           title="Paste a job id from Home / Characters or this table" />
+                                    <button class="btn btn-sm btn-outline-secondary"
+                                            disabled="@(string.IsNullOrWhiteSpace(_logJobIdInput))"
+                                            @onclick="() => LoadJobLogAsync(_logJobIdInput.Trim())">
+                                        Load
+                                    </button>
+                                    @if (_jobLog is not null)
+                                    {
+                                        <button class="btn btn-sm btn-outline-secondary" @onclick="ClearJobLog">Clear</button>
+                                    }
+                                </div>
+                            </div>
+                            @if (!string.IsNullOrEmpty(_logError))
+                            {
+                                <div class="alert alert-warning py-1 small mb-2">@_logError</div>
+                            }
+                            @if (_jobLog is null)
+                            {
+                                <p class="text-muted small mb-0">
+                                    Click <strong>Log</strong> on a running job, or paste a job id.
+                                    Cast “Build cast” is not a job (no log) — use Characters admin details after extract.
+                                </p>
+                            }
+                            else
+                            {
+                                <div class="small mb-2">
+                                    <code>@_jobLog.JobId</code>
+                                    · @(_jobLog.Kind ?? "—")
+                                    · <span class="badge text-bg-secondary">@(_jobLog.Status ?? "—")</span>
+                                    @if (!string.IsNullOrWhiteSpace(_jobLog.ProjectId))
+                                    {
+                                        <span class="text-muted"> · @_jobLog.ProjectId</span>
+                                    }
+                                    @if (!string.IsNullOrWhiteSpace(_jobLog.Message))
+                                    {
+                                        <div class="text-muted mt-1">@_jobLog.Message</div>
+                                    }
+                                    @if (!string.IsNullOrWhiteSpace(_jobLog.Error))
+                                    {
+                                        <div class="text-danger mt-1">@_jobLog.Error</div>
+                                    }
+                                </div>
+                                <pre class="small mb-0 p-2 rounded border bg-dark text-light"
+                                     style="max-height: 22rem; overflow: auto; white-space: pre-wrap;">@JobLogText</pre>
+                            }
+                        </div>
                     </div>
                 </div>
             </div>
@@ -433,6 +568,27 @@
     private List<ProcessSampleDto> _processHistory = new();
     /// <summary>Set when a chart upsert throws after we had real data to draw — surfaced in the UI so failures aren't silent.</summary>
     private string? _chartWarning;
+
+    private string? _logJobId;
+    private string _logJobIdInput = "";
+    private JobSnapshot? _jobLog;
+    private string? _logError;
+
+    private string JobLogText =>
+        _jobLog?.Log is { Count: > 0 } lines
+            ? string.Join("\n", lines)
+            : "(no log lines — job may have finished and been pruned, or never wrote logs)";
+
+    private List<string> _projectOptions = new();
+    private string _exportProjectId = "";
+    private string _importPreferredId = "";
+    private bool _importOverwrite;
+    private IBrowserFile? _importFile;
+    private bool _archiveBusy;
+    private string? _archiveAction;
+    private string? _archiveMsg;
+    private string? _archiveError;
+    private const long MaxImportBytes = 512L * 1024 * 1024;
 
     private bool _started;
 
@@ -516,6 +672,7 @@
                 _processHistory = _state.ProcessHistory ?? new();
             }
             _error = null;
+            await RefreshProjectOptionsAsync();
             await UpdateChartsAsync();
         }
         catch (Exception ex)
@@ -538,6 +695,119 @@
         }
     }
 
+    private async Task RefreshProjectOptionsAsync()
+    {
+        try
+        {
+            var projs = await Api.GetProjectsAsync();
+            _projectOptions = projs?.Projects?
+                                  .Select(p => p.Id ?? "")
+                                  .Where(s => s.Length > 0)
+                                  .OrderBy(s => s, StringComparer.OrdinalIgnoreCase)
+                                  .ToList()
+                              ?? new List<string>();
+            if (string.IsNullOrWhiteSpace(_exportProjectId) ||
+                !_projectOptions.Contains(_exportProjectId, StringComparer.OrdinalIgnoreCase))
+            {
+                _exportProjectId = projs?.Active?.Id
+                                   ?? _projectOptions.FirstOrDefault()
+                                   ?? "";
+            }
+        }
+        catch
+        {
+            /* keep prior list */
+        }
+    }
+
+    private void OnImportFileSelected(InputFileChangeEventArgs e)
+    {
+        _importFile = e.FileCount > 0 ? e.File : null;
+        _archiveError = null;
+        _archiveMsg = _importFile is null
+            ? null
+            : $"Selected {_importFile.Name} ({_importFile.Size / (1024.0 * 1024.0):F1} MB)";
+    }
+
+    private async Task ExportProjectAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_exportProjectId)) return;
+        _archiveBusy = true;
+        _archiveAction = "export";
+        _archiveError = null;
+        _archiveMsg = "Building zip…";
+        try
+        {
+            var (resp, fileName) = await Api.ExportProjectZipAsync(_exportProjectId);
+            using (resp)
+            {
+                await using var stream = await resp.Content.ReadAsStreamAsync();
+                using var streamRef = new DotNetStreamReference(stream);
+                var result = await Js.InvokeAsync<JsonElement>(
+                    "PageToMovieExport.downloadStreamAsync",
+                    fileName,
+                    streamRef);
+                if (result.TryGetProperty("success", out var ok) && ok.GetBoolean())
+                    _archiveMsg = $"Downloaded {fileName}";
+                else
+                {
+                    var err = result.TryGetProperty("error", out var e) ? e.GetString() : "download failed";
+                    _archiveError = err;
+                    _archiveMsg = null;
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _archiveError = ex.Message;
+            _archiveMsg = null;
+        }
+        finally
+        {
+            _archiveBusy = false;
+            _archiveAction = null;
+        }
+    }
+
+    private async Task ImportProjectAsync()
+    {
+        if (_importFile is null) return;
+        if (_importFile.Size > MaxImportBytes)
+        {
+            _archiveError = $"File too large ({_importFile.Size / (1024.0 * 1024):F0} MB). Max is 512 MB.";
+            return;
+        }
+
+        _archiveBusy = true;
+        _archiveAction = "import";
+        _archiveError = null;
+        _archiveMsg = "Uploading and importing…";
+        try
+        {
+            await using var stream = _importFile.OpenReadStream(MaxImportBytes);
+            var result = await Api.ImportProjectZipAsync(
+                stream,
+                _importFile.Name,
+                preferredId: string.IsNullOrWhiteSpace(_importPreferredId) ? null : _importPreferredId.Trim(),
+                overwrite: _importOverwrite);
+            _archiveMsg = result?.Message
+                          ?? $"Imported {result?.ProjectId ?? "project"}";
+            _importFile = null;
+            await RefreshProjectOptionsAsync();
+            await RefreshAsync();
+        }
+        catch (Exception ex)
+        {
+            _archiveError = ex.Message;
+            _archiveMsg = null;
+        }
+        finally
+        {
+            _archiveBusy = false;
+            _archiveAction = null;
+        }
+    }
+
     private async Task CancelJobAsync(string jobId)
     {
         _busy = true;
@@ -550,6 +820,35 @@
         }
         catch (Exception ex) { _actionMsg = ex.Message; }
         finally { _busy = false; }
+    }
+
+    private async Task LoadJobLogAsync(string jobId)
+    {
+        if (string.IsNullOrWhiteSpace(jobId)) return;
+        _logError = null;
+        _logJobId = jobId.Trim();
+        _logJobIdInput = _logJobId;
+        try
+        {
+            var detail = await Api.GetJobByIdAsync(_logJobId);
+            _jobLog = detail?.Job;
+            if (_jobLog is null)
+                _logError = "Job not found (finished jobs are pruned from memory after a while). Check Railway logs for older work.";
+            else
+                _actionMsg = $"Loaded log for {ShortId(_logJobId)} · {_jobLog.Log?.Count ?? 0} line(s)";
+        }
+        catch (Exception ex)
+        {
+            _jobLog = null;
+            _logError = ex.Message;
+        }
+    }
+
+    private void ClearJobLog()
+    {
+        _jobLog = null;
+        _logJobId = null;
+        _logError = null;
     }
 
     private async Task ReleaseLockAsync(string resource)
