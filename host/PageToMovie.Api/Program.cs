@@ -278,8 +278,8 @@ builder.Services.AddCors(o =>
 
 var app = builder.Build();
 
-app.MapStaticAssets();
 app.UseStaticFiles();
+app.MapStaticAssets();
 app.UseAntiforgery();
 
 // Map Blazor UI components (PageToMovie.Web)
