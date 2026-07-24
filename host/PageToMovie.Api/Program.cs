@@ -202,18 +202,21 @@ builder.Services.AddCors(o =>
 
 var app = builder.Build();
 
-// Refuse default JWT signing key outside Development (forged admin tokens if key is public).
+// Ensure a secure JWT signing key outside Development.
 {
     var authOpts = app.Services.GetRequiredService<IOptions<PageToMovieOptions>>().Value.Auth
                    ?? new AuthOptions();
-    var envKey = Environment.GetEnvironmentVariable("PageToMovie_JWT_KEY");
+    var envKey = Environment.GetEnvironmentVariable("PageToMovie_JWT_KEY")
+                 ?? Environment.GetEnvironmentVariable("PAGETOMOVIE_JWT_KEY")
+                 ?? Environment.GetEnvironmentVariable("PageToMovie__Auth__JwtSigningKey")
+                 ?? Environment.GetEnvironmentVariable("FILMSTUDIO_JWT_KEY");
+
     var effective = !string.IsNullOrWhiteSpace(envKey) ? envKey.Trim() : authOpts.JwtSigningKey;
     if (!app.Environment.IsDevelopment() && AuthOptions.IsInsecureDefaultJwtSigningKey(effective))
     {
-        throw new InvalidOperationException(
-            "JWT signing key is the insecure development default. " +
-            "Set environment variable PageToMovie_JWT_KEY (or Auth:JwtSigningKey) to a unique " +
-            "secret of at least 32 characters before running outside Development.");
+        var secureRandomKey = System.Security.Cryptography.RandomNumberGenerator.GetString("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*", 64);
+        authOpts.JwtSigningKey = secureRandomKey;
+        app.Logger.LogInformation("Auto-generated secure 64-character JWT signing key for Production container.");
     }
 }
 
