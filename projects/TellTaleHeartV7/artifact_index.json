@@ -1,6 +1,6 @@
 {
   "projectId": "TellTaleHeartV7",
-  "builtAtUtc": "2026-07-23T23:23:12.9550543+00:00",
+  "builtAtUtc": "2026-07-24T02:01:36.5867311+00:00",
   "schemaVersion": "1",
   "purpose": "Map of project-local artifacts for manual whole-project review (e.g. point Claude/Codex at this folder). Zip export deferred; data lives here.",
   "readyForManualFinalReview": false,
@@ -100,7 +100,7 @@
       "path": "assets/movie_wip.mp4",
       "role": "Full cut (WIP)",
       "exists": true,
-      "bytes": 98786888,
+      "bytes": 103692863,
       "fileCount": null,
       "requiredForManualReview": true
     },
@@ -108,7 +108,7 @@
       "path": "assets/movie_wip.mp4.sources.json",
       "role": "WIP concat sources \u002B assembly note",
       "exists": true,
-      "bytes": 6473,
+      "bytes": 6803,
       "fileCount": null,
       "requiredForManualReview": false
     },
@@ -124,7 +124,7 @@
       "path": "assets/video",
       "role": "Clips \u002B scene composites \u002B duration sidecars",
       "exists": true,
-      "bytes": 266628610,
+      "bytes": 266655463,
       "fileCount": 779,
       "requiredForManualReview": true
     },
@@ -204,7 +204,7 @@
       "path": "telemetry/ffmpeg.jsonl",
       "role": "Condensed ffmpeg ops",
       "exists": true,
-      "bytes": 65365,
+      "bytes": 66229,
       "fileCount": null,
       "requiredForManualReview": false
     },
@@ -212,7 +212,7 @@
       "path": "ARTIFACTS.md",
       "role": "Human map of this project for Claude/manual review",
       "exists": true,
-      "bytes": 4194,
+      "bytes": 5290,
       "fileCount": null,
       "requiredForManualReview": false
     },
@@ -220,7 +220,7 @@
       "path": "artifact_index.json",
       "role": "Machine-readable artifact presence map",
       "exists": true,
-      "bytes": 7797,
+      "bytes": 10661,
       "fileCount": null,
       "requiredForManualReview": false
     },

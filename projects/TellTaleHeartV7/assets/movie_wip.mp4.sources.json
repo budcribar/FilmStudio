@@ -1,6 +1,6 @@
 {
-  "builtAtUtc": "2026-07-23T23:23:12.1945336Z",
-  "count": 17,
+  "builtAtUtc": "2026-07-24T02:01:36.0133100Z",
+  "count": 18,
   "sources": [
     {
       "name": "scene_01.mp4",
@@ -120,6 +120,13 @@
       "bytes": 1104628,
       "mtimeUtc": "2026-07-23T23:04:18.3829427Z",
       "kind": "scene_composite"
+    },
+    {
+      "name": "credits.mp4",
+      "scene": null,
+      "bytes": 26853,
+      "mtimeUtc": "2026-07-24T02:01:33.9577374Z",
+      "kind": "source"
     }
   ],
   "included": [
@@ -241,6 +248,13 @@
       "bytes": 1104628,
       "mtimeUtc": "2026-07-23T23:04:18.3829427Z",
       "kind": "scene_composite"
+    },
+    {
+      "name": "credits.mp4",
+      "scene": null,
+      "bytes": 26853,
+      "mtimeUtc": "2026-07-24T02:01:33.9577374Z",
+      "kind": "source"
     }
   ],
   "excluded": [],
