@@ -5,7 +5,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <base href="/" />
-    <script src="js/theme.js"></script>
+    <script src="/js/theme.js"></script>
     <ResourcePreloader />
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -13,10 +13,10 @@
     <link rel="stylesheet" href="@Assets["lib/bootstrap/dist/css/bootstrap.min.css"]" />
     <link rel="stylesheet" href="@Assets["app.css"]" />
     <link rel="stylesheet" href="@Assets["PageToMovie.Web.styles.css"]" />
-    <link rel="stylesheet" href="lib/codemirror/codemirror.min.css" />
-    <link rel="stylesheet" href="css/fountain-editor.css" />
+    <link rel="stylesheet" href="/lib/codemirror/codemirror.min.css" />
+    <link rel="stylesheet" href="/css/fountain-editor.css" />
     <ImportMap />
-    <link rel="icon" type="image/png" href="favicon.png" />
+    <link rel="icon" type="image/png" href="/favicon.png" />
     <HeadOutlet @rendermode="InteractiveServerNoPrerender" />
 </head>
 
@@ -25,13 +25,13 @@
        AdminSessionService survives /admin/login → /admin navigation. *@
     <Routes @rendermode="InteractiveServerNoPrerender" />
     <ReconnectModal />
-    <script src="_framework/blazor.web.js"></script>
-    <script src="js/admin-charts.js"></script>
-    <script src="lib/codemirror/codemirror.min.js"></script>
-    <script src="js/fountain/fountain-syntax.js"></script>
-    <script src="js/fountain/fountain-preview.js"></script>
-    <script src="js/fountain/fountain-editor.js"></script>
-    <script src="js/pagetomovie-export.js"></script>
+    <script src="/_framework/blazor.web.js"></script>
+    <script src="/js/admin-charts.js"></script>
+    <script src="/lib/codemirror/codemirror.min.js"></script>
+    <script src="/js/fountain/fountain-syntax.js"></script>
+    <script src="/js/fountain/fountain-preview.js"></script>
+    <script src="/js/fountain/fountain-editor.js"></script>
+    <script src="/js/pagetomovie-export.js"></script>
 </body>
 
 </html>
