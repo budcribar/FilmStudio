@@ -13,6 +13,9 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <BlazorDisableThrowNavigationException>true</BlazorDisableThrowNavigationException>
+    <!-- Hosted by PageToMovie.Api — framework JS (blazor.web.js) is owned by the Api project
+         to avoid duplicate Microsoft.AspNetCore.App.Internal.Assets entries on publish. -->
+    <RequiresAspNetWebAssets>false</RequiresAspNetWebAssets>
   </PropertyGroup>
 
 </Project>

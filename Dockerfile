@@ -11,14 +11,18 @@ COPY host/PageToMovie.Api/PageToMovie.Api.csproj host/PageToMovie.Api/
 RUN dotnet restore host/PageToMovie.Api/PageToMovie.Api.csproj
 
 # Force Railway Docker cache invalidation for new deployment
-ARG CACHEBUSTER=20260724121430
+ARG CACHEBUSTER=20260724183000
 RUN echo "Invalidating build cache: ${CACHEBUSTER}"
 
 # Copy remaining source code
 COPY host/ host/
 
-# Publish Api (which automatically bundles PageToMovie.Web static assets into /app/publish/wwwroot)
-RUN dotnet publish host/PageToMovie.Api/PageToMovie.Api.csproj -c Release --no-restore -o /app/publish /p:UseAppHost=false
+# Publish Api (which automatically bundles PageToMovie.Web static assets into /app/publish/wwwroot).
+# RequiresAspNetWebAssets is set on the csproj so blazor.web.js is included (Linux/Docker often
+# skips Microsoft.AspNetCore.App.Internal.Assets unless that property is true).
+RUN dotnet publish host/PageToMovie.Api/PageToMovie.Api.csproj -c Release --no-restore -o /app/publish /p:UseAppHost=false \
+    && test -f /app/publish/wwwroot/_framework/blazor.web.js \
+    || (echo "ERROR: blazor.web.js missing from publish output — framework static assets not packaged" && ls -laR /app/publish/wwwroot 2>/dev/null; exit 1)
 
 # Stage 2: Runtime
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS final
