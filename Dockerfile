@@ -29,6 +29,9 @@ COPY --from=build /app/publish .
 
 # Environment defaults
 ENV ASPNETCORE_HTTP_PORTS=8080
+ENV PageToMovie_JWT_KEY="PageToMovie-Production-Docker-Secret-Key-64Chars-Long-1234567890!!"
+ENV PAGETOMOVIE_JWT_KEY="PageToMovie-Production-Docker-Secret-Key-64Chars-Long-1234567890!!"
+ENV PageToMovie__Auth__JwtSigningKey="PageToMovie-Production-Docker-Secret-Key-64Chars-Long-1234567890!!"
 EXPOSE 8080
 
 ENTRYPOINT ["dotnet", "PageToMovie.Api.dll"]
