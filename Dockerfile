@@ -6,6 +6,7 @@ WORKDIR /src
 COPY host/PageToMovie.Core/PageToMovie.Core.csproj host/PageToMovie.Core/
 COPY host/PageToMovie.Engine/PageToMovie.Engine.csproj host/PageToMovie.Engine/
 COPY host/PageToMovie.Fakes/PageToMovie.Fakes.csproj host/PageToMovie.Fakes/
+COPY host/PageToMovie.Web/PageToMovie.Web.csproj host/PageToMovie.Web/
 COPY host/PageToMovie.Api/PageToMovie.Api.csproj host/PageToMovie.Api/
 RUN dotnet restore host/PageToMovie.Api/PageToMovie.Api.csproj
 

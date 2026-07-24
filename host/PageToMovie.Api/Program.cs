@@ -3,6 +3,7 @@ using System.Text.Json;
 using PageToMovie.Api.Auth;
 using PageToMovie.Api.Hubs;
 using PageToMovie.Api.Services;
+using PageToMovie.Web.Services;
 using PageToMovie.Core.Auth;
 using PageToMovie.Core.Models;
 using PageToMovie.Core.Options;
@@ -138,6 +139,45 @@ builder.Services.AddDataProtection()
     .PersistKeysToFileSystem(new DirectoryInfo(dpKeysDir));
 builder.Services.AddSingleton<UserDatabaseService>();
 builder.Services.AddHttpContextAccessor();
+
+// Blazor Web UI
+builder.Services.AddRazorComponents()
+    .AddInteractiveServerComponents();
+
+builder.Services.Configure<EngineApiOptions>(
+    builder.Configuration.GetSection(EngineApiOptions.SectionName));
+
+builder.Services.AddScoped<AdminSessionService>();
+builder.Services.AddScoped<ActiveProjectState>();
+builder.Services.AddScoped<ThemeState>();
+builder.Services.AddHttpClient("PageToMovie.Api", (sp, client) =>
+{
+    var opts = sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<EngineApiOptions>>().Value;
+    var port = Environment.GetEnvironmentVariable("PORT") ?? "5088";
+    var baseUrl = string.IsNullOrWhiteSpace(opts.BaseUrl)
+        ? $"http://127.0.0.1:{port}"
+        : opts.BaseUrl.TrimEnd('/') + "/";
+    client.BaseAddress = new Uri(baseUrl);
+    var minutes = opts.TimeoutMinutes > 0 ? opts.TimeoutMinutes : 30;
+    client.Timeout = TimeSpan.FromMinutes(Math.Clamp(minutes, 5, 120));
+});
+builder.Services.AddScoped(sp =>
+{
+    var http = sp.GetRequiredService<IHttpClientFactory>().CreateClient("PageToMovie.Api");
+    return new EngineApiClient(http, sp.GetRequiredService<AdminSessionService>());
+});
+
+builder.Services.AddScoped(sp =>
+{
+    var opts = sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<EngineApiOptions>>();
+    return new JobHubClient(opts, sp.GetRequiredService<AdminSessionService>());
+});
+
+builder.Services.AddAntiforgery(options =>
+{
+    options.Cookie.Name = "PageToMovie.Antiforgery";
+    options.Cookie.SameSite = SameSiteMode.Lax;
+});
 builder.Services.AddSingleton<IUserContext, HttpUserContext>();
 builder.Services.AddSingleton<IUserApiKeyProvider, DbUserApiKeyProvider>();
 builder.Services.AddSingleton<IAdminAuthService, AdminAuthService>();
@@ -2727,16 +2767,16 @@ app.MapPost("/api/user/settings", async (UpdateUserSettingsRequest req, IUserCon
     }
 });
 
-app.MapGet("/", () => Results.Ok(new
-{
-    ok = true,
-    service = "PageToMovie API",
-    status = "healthy",
-    health = "/health",
-    version = "1.0.0"
-}));
+app.UseStaticFiles();
+app.UseAntiforgery();
+
+app.MapRazorComponents<PageToMovie.Web.Components.App>()
+    .AddInteractiveServerRenderMode();
 
 app.Run();
 
-// Expose entry assembly for WebApplicationFactory integration tests.
-public partial class Program { }
+namespace PageToMovie.Api
+{
+    // Expose entry assembly for WebApplicationFactory integration tests.
+    public partial class Program { }
+}

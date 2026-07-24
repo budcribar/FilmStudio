@@ -14,6 +14,7 @@
     <ProjectReference Include="..\PageToMovie.Engine\PageToMovie.Engine.csproj" />
     <ProjectReference Include="..\PageToMovie.Core\PageToMovie.Core.csproj" />
     <ProjectReference Include="..\PageToMovie.Fakes\PageToMovie.Fakes.csproj" />
+    <ProjectReference Include="..\PageToMovie.Web\PageToMovie.Web.csproj" />
   </ItemGroup>
 
   <ItemGroup>
