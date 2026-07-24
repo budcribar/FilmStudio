@@ -2727,6 +2727,15 @@ app.MapPost("/api/user/settings", async (UpdateUserSettingsRequest req, IUserCon
     }
 });
 
+app.MapGet("/", () => Results.Ok(new
+{
+    ok = true,
+    service = "PageToMovie API",
+    status = "healthy",
+    health = "/health",
+    version = "1.0.0"
+}));
+
 app.Run();
 
 // Expose entry assembly for WebApplicationFactory integration tests.
