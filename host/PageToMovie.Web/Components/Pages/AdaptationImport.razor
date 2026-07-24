@@ -9,19 +9,18 @@
 <AdaptationShell Host="this" Step="import">
     @if (Status is not null)
     {
-        <div class="card mb-3">
-            <div class="card-header">Import</div>
-            <div class="card-body">
+        <div class="card mb-4">
+            <div class="card-body p-4">
+                <h5 class="card-title mb-3">Upload Source File</h5>
                 <div class="mb-3">
-                    <label class="form-label small d-block">Source file</label>
                     <InputFile OnChange="OnSourceSelectedAsync"
-                               class="form-control form-control-sm"
-                               style="max-width: 22rem;"
+                               class="form-control"
+                               style="max-width: 28rem;"
                                accept=".fountain,.spmd,.pdf,.txt"
                                data-testid="import-file-input"
                                disabled="@(_importing || Busy || JobRunning)" />
-                    <div class="form-text">
-                        Screenplay (.fountain), PDF, or .txt — starts as soon as you choose a file
+                    <div class="form-text mt-2">
+                        Supports screenplay (.fountain), PDF, or book text (.txt)
                     </div>
                 </div>
 

@@ -6,35 +6,34 @@
     return;
 }
 
-<div class="d-flex flex-wrap align-items-baseline justify-content-between gap-2 mb-1">
+<div class="d-flex flex-wrap align-items-baseline justify-content-between gap-2 mb-3">
     <h1 class="mb-0">Adaptation</h1>
     @if (!string.IsNullOrEmpty(Host.ProjectLabel))
     {
-        <span class="text-muted small">@Host.ProjectLabel</span>
+        <span class="badge text-bg-secondary px-2 py-1 fs-6">@Host.ProjectLabel</span>
     }
 </div>
-<p class="text-muted mb-3">Import → screenplay → characters → shot plan → scenes.</p>
 
-@* ---- Step strip (frozen while a job runs — only Cancel in the progress card is live) ---- *@
+@* ---- Step navigation bar ---- *@
 @{
     var stepsLocked = Host.JobRunning;
 }
-<nav class="nav nav-pills flex-wrap gap-1 mb-3" aria-label="Adaptation steps">
+<nav class="nav nav-pills flex-wrap gap-2 mb-4" aria-label="Adaptation steps">
     <a class="nav-link @(Step == "import" || Step == "book" ? "active" : "") @(stepsLocked ? "disabled" : "")"
        href="@(stepsLocked ? "javascript:void(0)" : "adaptation/import")"
-       @onclick:preventDefault="stepsLocked">1 · Import</a>
+       @onclick:preventDefault="stepsLocked">Import</a>
     <a class="nav-link @(Step == "screenplay" ? "active" : "") @(!OutlineEnabled || stepsLocked ? "disabled" : "")"
        href="@(!OutlineEnabled || stepsLocked ? "javascript:void(0)" : "adaptation/screenplay")"
        @onclick:preventDefault="@(!OutlineEnabled || stepsLocked)"
-       title="@(stepsLocked ? "Wait for the current job to finish" : OutlineEnabled ? null : "Import a source first")">2 · Screenplay</a>
+       title="@(stepsLocked ? "Wait for the current job to finish" : OutlineEnabled ? null : "Import a source first")">Screenplay</a>
     <a class="nav-link @(Step == "characters" ? "active" : "") @(!ShotsEnabled || stepsLocked ? "disabled" : "")"
        href="@(!ShotsEnabled || stepsLocked ? "javascript:void(0)" : "characters")"
        @onclick:preventDefault="@(!ShotsEnabled || stepsLocked)"
-       title="@(stepsLocked ? "Wait for the current job to finish" : ShotsEnabled ? "Pin cast likeness before clips" : "Approve a screenplay first")">3 · Characters</a>
+       title="@(stepsLocked ? "Wait for the current job to finish" : ShotsEnabled ? "Pin cast likeness before clips" : "Approve a screenplay first")">Characters</a>
     <a class="nav-link @(Step == "shots" ? "active" : "") @(!ShotsEnabled || stepsLocked ? "disabled" : "")"
        href="@(!ShotsEnabled || stepsLocked ? "javascript:void(0)" : "adaptation/shots")"
        @onclick:preventDefault="@(!ShotsEnabled || stepsLocked)"
-       title="@(stepsLocked ? "Wait for the current job to finish" : ShotsEnabled ? null : "Approve a screenplay first")">4 · Shot plan</a>
+       title="@(stepsLocked ? "Wait for the current job to finish" : ShotsEnabled ? null : "Approve a screenplay first")">Shot plan</a>
 </nav>
 
 @if (!string.IsNullOrEmpty(Host.Error))
