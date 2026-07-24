@@ -48,6 +48,19 @@ builder.Services.PostConfigure<PageToMovieOptions>(o =>
 {
     if (string.IsNullOrWhiteSpace(o.WorkspaceRoot) || !Directory.Exists(o.WorkspaceRoot))
         o.WorkspaceRoot = repoGuess;
+
+    o.Auth ??= new AuthOptions();
+    var envKey = Environment.GetEnvironmentVariable("PageToMovie_JWT_KEY")
+                 ?? Environment.GetEnvironmentVariable("PAGETOMOVIE_JWT_KEY")
+                 ?? Environment.GetEnvironmentVariable("PageToMovie__Auth__JwtSigningKey")
+                 ?? Environment.GetEnvironmentVariable("FILMSTUDIO_JWT_KEY");
+
+    var effective = !string.IsNullOrWhiteSpace(envKey) ? envKey.Trim() : o.Auth.JwtSigningKey;
+    if (!builder.Environment.IsDevelopment() && AuthOptions.IsInsecureDefaultJwtSigningKey(effective))
+    {
+        var secureKey = System.Security.Cryptography.RandomNumberGenerator.GetString("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*", 64);
+        o.Auth.JwtSigningKey = secureKey;
+    }
 });
 
 builder.Services.AddSingleton<MediaDurationProbe>();
@@ -201,24 +214,6 @@ builder.Services.AddCors(o =>
 });
 
 var app = builder.Build();
-
-// Ensure a secure JWT signing key outside Development.
-{
-    var authOpts = app.Services.GetRequiredService<IOptions<PageToMovieOptions>>().Value.Auth
-                   ?? new AuthOptions();
-    var envKey = Environment.GetEnvironmentVariable("PageToMovie_JWT_KEY")
-                 ?? Environment.GetEnvironmentVariable("PAGETOMOVIE_JWT_KEY")
-                 ?? Environment.GetEnvironmentVariable("PageToMovie__Auth__JwtSigningKey")
-                 ?? Environment.GetEnvironmentVariable("FILMSTUDIO_JWT_KEY");
-
-    var effective = !string.IsNullOrWhiteSpace(envKey) ? envKey.Trim() : authOpts.JwtSigningKey;
-    if (!app.Environment.IsDevelopment() && AuthOptions.IsInsecureDefaultJwtSigningKey(effective))
-    {
-        var secureRandomKey = System.Security.Cryptography.RandomNumberGenerator.GetString("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*", 64);
-        authOpts.JwtSigningKey = secureRandomKey;
-        app.Logger.LogInformation("Auto-generated secure 64-character JWT signing key for Production container.");
-    }
-}
 
 // Wire SignalR sink into job service
 var jobs = app.Services.GetRequiredService<FilmJobService>();
