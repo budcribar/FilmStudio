@@ -3,6 +3,7 @@ using System.Text.Json;
 using PageToMovie.Api.Auth;
 using PageToMovie.Api.Hubs;
 using PageToMovie.Api.Services;
+using PageToMovie.Web.Components;
 using PageToMovie.Web.Services;
 using PageToMovie.Core.Auth;
 using PageToMovie.Core.Models;
@@ -277,9 +278,13 @@ builder.Services.AddCors(o =>
 
 var app = builder.Build();
 
+app.UseStaticFiles();
+app.UseAntiforgery();
+
 // Map Blazor UI components (PageToMovie.Web)
 app.MapRazorComponents<App>()
-    .AddInteractiveServerRenderMode();
+    .AddInteractiveServerRenderMode()
+    .AddAdditionalAssemblies(typeof(App).Assembly);
 
 app.UseCors();
 
