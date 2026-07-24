@@ -96,6 +96,11 @@ else
                 title="Directly save WIP movie to your local disk via File System Access API (Zero Server CPU)">
             💾 Save Movie to Disk
         </button>
+        <button class="btn btn-outline-info" data-testid="review-connect-folder" disabled="@_busy"
+                @onclick="SelectOutputFolderAsync"
+                title="Select a local folder once for automatic background saves of all generated movie files">
+            📁 @(string.IsNullOrEmpty(_exportFolderName) ? "Connect Output Folder" : $"Folder: {_exportFolderName}")
+        </button>
         @if (_youTubeStatus?.Connected == true)
         {
             <button class="btn btn-outline-danger" data-testid="review-upload-youtube" disabled="@(_busy || JobRunning || !_wipExists)"
@@ -1435,6 +1440,31 @@ else
         }
         catch (Exception ex) { _error = ex.Message; }
         finally { _busy = false; }
+    }
+
+    private string? _exportFolderName;
+
+    private async Task SelectOutputFolderAsync()
+    {
+        _message = null;
+        _error = null;
+        try
+        {
+            var res = await JS.InvokeAsync<System.Text.Json.JsonElement>("PageToMovieExport.selectExportDirectoryAsync");
+            if (res.TryGetProperty("success", out var succ) && succ.GetBoolean())
+            {
+                _exportFolderName = res.GetProperty("folderName").GetString();
+                _message = res.GetProperty("message").GetString();
+            }
+            else if (res.TryGetProperty("error", out var err))
+            {
+                _error = err.GetString();
+            }
+        }
+        catch (Exception ex)
+        {
+            _error = "Folder selection failed: " + ex.Message;
+        }
     }
 
     private async Task ExportMovieToDiskAsync()
