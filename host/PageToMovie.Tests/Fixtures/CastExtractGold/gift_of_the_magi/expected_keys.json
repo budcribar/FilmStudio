@@ -1,0 +1,10 @@
+{
+  "id": "gift_of_the_magi",
+  "title": "The Gift of the Magi",
+  "notes": "Della and Jim are the closed romantic pair; narrator may be VO.",
+  "fountain_from_package": "06_The_Gift_of_the_Magi.fountain",
+  "required_keys": [
+    "Character_Della",
+    "Character_Jim"
+  ]
+}

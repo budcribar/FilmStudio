@@ -1,0 +1,10 @@
+{
+  "id": "yellow_wallpaper",
+  "title": "The Yellow Wallpaper",
+  "notes": "Jane (narrator/diarist) and John (husband physician) are core cast.",
+  "fountain_from_package": "08_The_Yellow_Wallpaper.fountain",
+  "required_keys": [
+    "Character_Jane",
+    "Character_John"
+  ]
+}

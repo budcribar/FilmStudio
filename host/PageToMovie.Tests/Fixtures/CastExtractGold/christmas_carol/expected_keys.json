@@ -1,0 +1,12 @@
+{
+  "id": "christmas_carol",
+  "title": "A Christmas Carol",
+  "notes": "Classic multi-cast; ghosts and Cratchits must survive speaker-bias filters.",
+  "fountain_from_package": "02_A_Christmas_Carol.fountain",
+  "required_keys": [
+    "Character_Scrooge",
+    "Character_Bob_Cratchit",
+    "Character_Tiny_Tim",
+    "Character_Marley"
+  ]
+}

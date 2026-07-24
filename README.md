@@ -154,7 +154,13 @@ See `host/playwright/README.md`.
 
 ```powershell
 cd host
+# Free / default — excludes paid LiveApi tests
 dotnet test PageToMovie.Tests
+
+# Paid provider calls (opt-in; costs API tokens) — see host/PageToMovie.Tests/LiveApi/README.md
+$env:PAGETOMOVIE_LIVE_API_TESTS = "1"
+$env:XAI_API_KEY = "xai-..."
+dotnet test PageToMovie.Tests --filter "Category=LiveApi"
 ```
 
 ## Docs

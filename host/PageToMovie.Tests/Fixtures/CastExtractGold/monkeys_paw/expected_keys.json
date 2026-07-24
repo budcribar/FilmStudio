@@ -1,0 +1,11 @@
+{
+  "id": "monkeys_paw",
+  "title": "The Monkey's Paw",
+  "notes": "White family + Morris; Herbert may be more present in book than late fountain.",
+  "fountain_from_package": "10_The_Monkeys_Paw.fountain",
+  "required_keys": [
+    "Character_Mr_White",
+    "Character_Mrs_White",
+    "Character_Herbert_White"
+  ]
+}

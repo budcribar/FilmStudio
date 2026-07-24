@@ -1,0 +1,13 @@
+{
+  "id": "jungle_book",
+  "title": "The Jungle Book",
+  "notes": "Animal cast + human cub; multi-species closed cast.",
+  "fountain_from_package": "05_The_Jungle_Book.fountain",
+  "required_keys": [
+    "Character_Mowgli",
+    "Character_Shere_Khan",
+    "Character_Baloo",
+    "Character_Bagheera",
+    "Character_Akela"
+  ]
+}

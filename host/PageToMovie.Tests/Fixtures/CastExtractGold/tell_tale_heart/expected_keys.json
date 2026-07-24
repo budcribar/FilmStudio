@@ -1,0 +1,10 @@
+{
+  "id": "tell_tale_heart",
+  "title": "The Tell-Tale Heart",
+  "notes": "On-camera confessor narrator + Old Man; narrator is not voice-only only.",
+  "fountain_from_package": "07_The_Tell-Tale_Heart.fountain",
+  "required_keys": [
+    "Character_Narrator",
+    "Character_Old_Man"
+  ]
+}

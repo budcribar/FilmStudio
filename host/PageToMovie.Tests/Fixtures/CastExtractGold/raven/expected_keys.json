@@ -1,0 +1,10 @@
+{
+  "id": "raven",
+  "title": "The Raven",
+  "notes": "Man (speaker) and Raven (title creature, may only say Nevermore).",
+  "fountain_from_package": "09_The_Raven.fountain",
+  "required_keys": [
+    "Character_Man",
+    "Character_Raven"
+  ]
+}

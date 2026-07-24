@@ -1,0 +1,12 @@
+{
+  "id": "dracula",
+  "title": "Dracula",
+  "notes": "Count Dracula + core hunters; Harker is the entry POV.",
+  "fountain_from_package": "03_Dracula.fountain",
+  "required_keys": [
+    "Character_Count_Dracula",
+    "Character_Jonathan_Harker",
+    "Character_Mina",
+    "Character_Van_Helsing"
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "id": "frankenstein",
+  "title": "Frankenstein",
+  "notes": "Victor and the Creature are both required; Creature may be underspecified as 'monster' in prose.",
+  "fountain_from_package": "04_Frankenstein.fountain",
+  "required_keys": [
+    "Character_Victor_Frankenstein",
+    "Character_The_Creature"
+  ]
+}

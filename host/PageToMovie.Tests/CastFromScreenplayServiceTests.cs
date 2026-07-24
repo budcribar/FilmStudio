@@ -101,6 +101,96 @@ public class CastFromScreenplayServiceTests
     }
 
     [Fact]
+    public void ExtractNameHintsFromBook_includes_title_hero_buster()
+    {
+        var book = """
+            --- PAGE 1 ---
+            BUSTER
+            THE NOODLE HEAD DOG
+            GOES TO BED
+
+            Debra McGuinty
+
+            --- PAGE 2 ---
+            He's Buster the Noodle Head Dog
+            He jumps around like a frog
+            He's small, black, and white
+            But not very bright!
+            He's Buster the Noodle Head Dog
+
+            --- PAGE 4 ---
+            When Momma says, "It's time for bed",
+            He wants to rest his furry head
+            """;
+        var names = CastFromScreenplayService.ExtractNameHintsFromBook(book);
+        Assert.Contains(names, n => n.Equals("Buster", StringComparison.OrdinalIgnoreCase)
+                                    || n.Equals("BUSTER", StringComparison.OrdinalIgnoreCase));
+        // "Momma" appears once as title-case — family role names still count via He's/When patterns
+        Assert.True(
+            names.Any(n => n.Contains("Mom", StringComparison.OrdinalIgnoreCase)
+                           || n.Contains("Buster", StringComparison.OrdinalIgnoreCase)),
+            "expected Buster (and ideally Momma); got " + string.Join(", ", names));
+        Assert.DoesNotContain(names, n => n.Equals("Dog", StringComparison.OrdinalIgnoreCase));
+        Assert.DoesNotContain(names, n => n.Equals("GOES", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public void EnsureSeedsForNameHints_adds_buster_when_model_only_returned_mom()
+    {
+        var seeds = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["Character_Mom"] = new Dictionary<string, object?>
+            {
+                ["canonical_given_name"] = "Mom",
+                ["description"] = "Adult woman, gentle.",
+                ["display_name_policy"] = "ok_anytime",
+            },
+            ["Character_Narrator"] = new Dictionary<string, object?>
+            {
+                ["canonical_given_name"] = "Narrator",
+                ["description"] = "Narrator (voice only).",
+                ["display_name_policy"] = "never_on_screen",
+            },
+        };
+        var book = """
+            BUSTER
+            He's Buster the Noodle Head Dog
+            He's small, black, and white
+            When Momma says bed time
+            """;
+        var fountain = """
+            Title: BUSTER
+
+            EXT. YARD - DAY
+
+            This is BUSTER. A small dog.
+
+            MOM
+            Bed time.
+            """;
+        var hints = CastFromScreenplayService.CollectCastNameHints(fountain, book);
+        Assert.Contains(hints, n => n.Contains("Buster", StringComparison.OrdinalIgnoreCase));
+
+        var added = CastFromScreenplayService.EnsureSeedsForNameHints(seeds, hints, book, fountain);
+        Assert.True(added >= 1);
+        Assert.True(
+            seeds.Keys.Any(k => k.Contains("Buster", StringComparison.OrdinalIgnoreCase)),
+            "expected Character_Buster (or similar) after backfill; keys=" + string.Join(",", seeds.Keys));
+        // Mom already present — do not duplicate as Momma
+        Assert.Single(seeds.Keys.Where(k =>
+            k.Contains("Mom", StringComparison.OrdinalIgnoreCase)));
+    }
+
+    [Fact]
+    public void NameToCharacterKey_pascalizes()
+    {
+        Assert.Equal("Character_Buster", CastFromScreenplayService.NameToCharacterKey("BUSTER"));
+        Assert.Equal("Character_Buster", CastFromScreenplayService.NameToCharacterKey("Buster the Dog"));
+        Assert.Equal("Character_Bob_Cratchit", CastFromScreenplayService.NameToCharacterKey("BOB CRATCHIT"));
+        Assert.Equal("Character_Queen_Of_Hearts", CastFromScreenplayService.NameToCharacterKey("QUEEN OF HEARTS"));
+    }
+
+    [Fact]
     public void SelectBookTextForCastPrompt_includes_late_name_look_when_over_budget()
     {
         // Novel-length padding so we must sample; unique look only appears late.

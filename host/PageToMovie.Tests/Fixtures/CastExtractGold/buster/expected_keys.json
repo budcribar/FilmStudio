@@ -1,0 +1,15 @@
+{
+  "id": "buster",
+  "title": "Buster the Noodle Head Dog Goes to Bed",
+  "notes": "Silent animal title hero MUST be cast; dialogue-only Mom+Narrator is a release blocker.",
+  "required_keys": [
+    "Character_Buster",
+    "Character_Mom",
+    "Character_Narrator"
+  ],
+  "forbidden_key_substrings": [
+    "Character_Dog",
+    "Character_Goes",
+    "Character_Noodle"
+  ]
+}

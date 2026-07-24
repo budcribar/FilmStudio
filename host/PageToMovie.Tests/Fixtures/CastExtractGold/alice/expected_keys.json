@@ -1,0 +1,11 @@
+{
+  "id": "alice",
+  "title": "Alice's Adventures in Wonderland",
+  "notes": "Title heroine Alice must never be dropped; major Wonderland cast present in package fountain.",
+  "fountain_from_package": "01_Alices_Adventures_in_Wonderland.fountain",
+  "required_keys": [
+    "Character_Alice",
+    "Character_White_Rabbit",
+    "Character_Queen_of_Hearts"
+  ]
+}

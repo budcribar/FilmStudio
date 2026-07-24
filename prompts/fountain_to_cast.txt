@@ -14,6 +14,10 @@ GOALS
 4. Use stable keys: Character_<PascalOrSnake> (e.g. Character_Buster, Character_Momma).
 5. Picture-book / silent heroes often only appear in action lines (e.g. "BUSTER, a
    small dog, runs…") — they MUST still get a seed even with no dialogue cue.
+5b. **BOOK / TITLE = CAST STATUS (HARD):** If the BOOK names a being (person or animal)
+   in the title, cover, refrain, or body text (e.g. "Buster the Noodle Head Dog",
+   "Momma says"), that name MUST get a Character_* seed. Dialogue is not required.
+   A speaking Mom + VO Narrator without the titled animal hero is incomplete cast.
 6. **BOOK-FIRST LOOKS:** When BOOK text is provided, mine it for age, build, hair,
    eyes, face, clothing, era, and distinguishing traits. description + visual_lock
    must be concrete enough to drive portrait generation and prevent role swaps
