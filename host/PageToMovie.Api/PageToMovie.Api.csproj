@@ -18,8 +18,8 @@
 
   <ItemGroup>
     <!-- Admin JWT login (Phase B) -->
-    <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.14.0" />
-    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.0" />
+    <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.21.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.10" />
   </ItemGroup>
 
   <!-- Copy fake video fixtures next to API output for FakeGrokVideoClient -->
@@ -27,10 +27,7 @@
     <ItemGroup>
       <_FakeFixtures Include="..\PageToMovie.Fakes\Fixtures\**\*.*" Condition="Exists('..\PageToMovie.Fakes\Fixtures')" />
     </ItemGroup>
-    <Copy SourceFiles="@(_FakeFixtures)"
-          DestinationFolder="$(OutDir)Fixtures\%(RecursiveDir)"
-          SkipUnchangedFiles="true"
-          Condition="'@(_FakeFixtures)' != ''" />
+    <Copy SourceFiles="@(_FakeFixtures)" DestinationFolder="$(OutDir)Fixtures\%(RecursiveDir)" SkipUnchangedFiles="true" Condition="'@(_FakeFixtures)' != ''" />
   </Target>
 
   <!--
@@ -43,13 +40,8 @@
       <_FfmpegSrc Condition="'$(_FfmpegSrc)' == '' and Exists('..\PageToMovie.Engine\bin\$(Configuration)\$(TargetFramework)\Resources\ffmpeg.exe')">..\PageToMovie.Engine\bin\$(Configuration)\$(TargetFramework)\Resources\ffmpeg.exe</_FfmpegSrc>
     </PropertyGroup>
     <MakeDir Directories="$(OutDir)Resources" Condition="'$(_FfmpegSrc)' != ''" />
-    <Copy SourceFiles="$(_FfmpegSrc)"
-          DestinationFiles="$(OutDir)Resources\ffmpeg.exe"
-          SkipUnchangedFiles="true"
-          Condition="'$(_FfmpegSrc)' != '' and Exists('$(_FfmpegSrc)')" />
-    <Message Importance="high"
-             Text="Bundled ffmpeg → $(OutDir)Resources\ffmpeg.exe"
-             Condition="Exists('$(OutDir)Resources\ffmpeg.exe')" />
+    <Copy SourceFiles="$(_FfmpegSrc)" DestinationFiles="$(OutDir)Resources\ffmpeg.exe" SkipUnchangedFiles="true" Condition="'$(_FfmpegSrc)' != '' and Exists('$(_FfmpegSrc)')" />
+    <Message Importance="high" Text="Bundled ffmpeg → $(OutDir)Resources\ffmpeg.exe" Condition="Exists('$(OutDir)Resources\ffmpeg.exe')" />
   </Target>
 
   <Target Name="CopyBundledFfmpegOnPublish" AfterTargets="Publish">
@@ -57,10 +49,7 @@
       <_FfmpegSrc Condition="Exists('$(USERPROFILE)\.nuget\packages\soenneker.libraries.ffmpeg\3.0.658\content\Resources\ffmpeg.exe')">$(USERPROFILE)\.nuget\packages\soenneker.libraries.ffmpeg\3.0.658\content\Resources\ffmpeg.exe</_FfmpegSrc>
     </PropertyGroup>
     <MakeDir Directories="$(PublishDir)Resources" Condition="'$(_FfmpegSrc)' != ''" />
-    <Copy SourceFiles="$(_FfmpegSrc)"
-          DestinationFiles="$(PublishDir)Resources\ffmpeg.exe"
-          SkipUnchangedFiles="true"
-          Condition="'$(_FfmpegSrc)' != '' and Exists('$(_FfmpegSrc)')" />
+    <Copy SourceFiles="$(_FfmpegSrc)" DestinationFiles="$(PublishDir)Resources\ffmpeg.exe" SkipUnchangedFiles="true" Condition="'$(_FfmpegSrc)' != '' and Exists('$(_FfmpegSrc)')" />
   </Target>
 
 </Project>

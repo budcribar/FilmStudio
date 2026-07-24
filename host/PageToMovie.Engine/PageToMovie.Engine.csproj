@@ -13,17 +13,17 @@
   <ItemGroup>
     <PackageReference Include="Google.Apis.YouTube.v3" Version="1.75.0.4207" />
     <PackageReference Include="Microsoft.Bcl.Memory" Version="10.0.10" />
-    <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.0-preview.1.25080.5" />
-    <PackageReference Include="Microsoft.AspNetCore.DataProtection" Version="10.0.0-preview.1.25080.5" />
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.10" />
+    <PackageReference Include="Microsoft.AspNetCore.DataProtection" Version="10.0.10" />
     <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.10" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.10" />
     <PackageReference Include="Microsoft.Extensions.Options" Version="10.0.10" />
     <PackageReference Include="Microsoft.ML.Tokenizers" Version="2.0.0" />
     <PackageReference Include="Microsoft.ML.Tokenizers.Data.Cl100kBase" Version="2.0.0" />
     <PackageReference Include="PdfPig" Version="0.1.15" />
-    <PackageReference Include="PDFtoImage" Version="4.1.1" />
+    <PackageReference Include="PDFtoImage" Version="5.2.1" />
     <!-- Ships Windows ffmpeg.exe under Resources/ (content file). -->
-    <PackageReference Include="Soenneker.Libraries.FFmpeg" Version="3.0.658" GeneratePathProperty="true" />
+    <PackageReference Include="Soenneker.Libraries.FFmpeg" Version="4.0.1095" GeneratePathProperty="true" />
   </ItemGroup>
 
   <!-- Explicit copy: package contentFiles target net9.0; force-copy for net10 hosts. -->
