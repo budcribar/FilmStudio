@@ -176,8 +176,9 @@ label,
     color: var(--fs-text-primary);
 }
 
-.form-text {
-    color: var(--fs-text-muted);
+.form-text,
+.text-muted {
+    color: var(--fs-text-muted) !important;
 }
 
 /* Button Refinements */
@@ -274,23 +275,42 @@ label,
     background-color: var(--fs-overlay-soft);
 }
 
-/* List groups (project list, cast list) — same white-background default gap. */
+/* List groups (project list, cast list) — explicit high-contrast theme text color. */
 .list-group-item {
     background-color: var(--fs-bg-card);
-    color: var(--fs-text-primary);
+    color: var(--fs-text-primary) !important;
     border-color: var(--fs-border-color);
+}
+
+.project-list__pick {
+    color: var(--fs-text-primary) !important;
+    font-weight: 600;
+    transition: color 0.15s ease;
+}
+
+.project-list__pick:hover {
+    color: var(--fs-accent-indigo) !important;
+}
+
+.list-group-item.active .project-list__pick,
+.list-group-item.active .project-list__pick:hover {
+    color: #ffffff !important;
+}
+
+.list-group-item-action {
+    color: var(--fs-text-primary) !important;
 }
 
 .list-group-item-action:hover,
 .list-group-item-action:focus {
     background-color: var(--fs-bg-card-hover);
-    color: var(--fs-text-primary);
+    color: var(--fs-text-primary) !important;
 }
 
 .list-group-item.active {
-    background-color: var(--fs-accent-indigo);
-    border-color: var(--fs-accent-indigo);
-    color: #fff;
+    background-color: var(--fs-accent-indigo) !important;
+    border-color: var(--fs-accent-indigo) !important;
+    color: #ffffff !important;
 }
 
 /* Modals — Bootstrap defaults to a white modal-content background with
