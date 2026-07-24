@@ -57,7 +57,6 @@ else
             <span class="badge rounded-pill bg-primary ms-1">@ActiveFilterCount</span>
         }
     </button>
-    <button class="btn btn-outline-secondary" data-testid="scenes-reload" disabled="@_busy" @onclick="ReloadListAsync">Reload</button>
     @if (HasActiveFilters)
     {
         <button class="btn btn-outline-secondary" disabled="@_busy" @onclick="ClearFilters">Clear filters</button>
