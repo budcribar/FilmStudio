@@ -7,7 +7,7 @@ using Microsoft.Extensions.DependencyInjection;
 namespace PageToMovie.Tests.Api;
 
 /// <summary>In-process API host with fakes + isolated temp workspace.</summary>
-public sealed class PageToMovieApiFactory : WebApplicationFactory<Program>
+public sealed class PageToMovieApiFactory : WebApplicationFactory<PageToMovie.Api.Program>
 {
     private readonly string _workspace;
 

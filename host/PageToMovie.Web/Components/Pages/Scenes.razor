@@ -48,52 +48,49 @@ else
     </div>
 }
 
-<div class="d-flex gap-2 flex-wrap align-items-center mb-3">
-    <button class="btn btn-outline-secondary" data-testid="scenes-select-toggle"
-            disabled="@_busy" @onclick="() => _showFilters = !_showFilters">
-        Select
-    </button>
-    @if (_selectedScene is int)
-    {
+@if (_selectedScene is int)
+{
+    <div class="mb-3">
         <button class="btn btn-outline-primary" disabled="@_busy" @onclick="BackToListAsync">← All scenes</button>
-    }
-</div>
+    </div>
+}
 
 @if (_showFilters)
 {
-    <div class="row mb-3 g-2 align-items-end p-2 border rounded" data-testid="scenes-select-panel">
-        <div class="col-md-3">
-            <label class="form-label">Character</label>
-            <select class="form-select" @bind="_pickCharacter" @bind:after="SelectByCharacter" disabled="@_busy">
-                <option value="">Select by character…</option>
-                @foreach (var c in CharacterOptions)
-                {
-                    <option value="@c">@ShortChar(c)</option>
-                }
-            </select>
-        </div>
-        <div class="col-md-3">
-            <label class="form-label">Location</label>
-            <select class="form-select" @bind="_pickLocation" @bind:after="SelectByLocation" disabled="@_busy">
-                <option value="">Select by location…</option>
-                @foreach (var loc in LocationOptions)
-                {
-                    <option value="@loc">@ShortLoc(loc)</option>
-                }
-            </select>
-        </div>
-        <div class="col-md-4">
-            <label class="form-label">Setting text</label>
-            <div class="input-group">
-                <input class="form-control" @bind="_pickSetting" @bind:event="oninput" disabled="@_busy" placeholder="e.g. pajamas" />
-                <button class="btn btn-outline-secondary" type="button" disabled="@(_busy || string.IsNullOrWhiteSpace(_pickSetting))"
-                        @onclick="SelectBySetting">
-                    Select matching
-                </button>
+    <div class="card mb-3 p-3 border-secondary bg-dark" data-testid="scenes-select-panel">
+        <div class="row g-3 align-items-end">
+            <div class="col-md-3">
+                <label class="form-label small text-muted">Character</label>
+                <select class="form-select form-select-sm bg-dark text-white border-secondary" @bind="_pickCharacter" @bind:after="SelectByCharacter" disabled="@_busy">
+                    <option value="">All characters…</option>
+                    @foreach (var c in CharacterOptions)
+                    {
+                        <option value="@c">@ShortChar(c)</option>
+                    }
+                </select>
             </div>
-        </div>
-        <div class="col-12">
-            <span class="small text-muted">Picking a character or location selects every scene it appears in — it doesn't hide the rest.</span>
+            <div class="col-md-3">
+                <label class="form-label small text-muted">Location</label>
+                <select class="form-select form-select-sm bg-dark text-white border-secondary" @bind="_pickLocation" @bind:after="SelectByLocation" disabled="@_busy">
+                    <option value="">All locations…</option>
+                    @foreach (var loc in LocationOptions)
+                    {
+                        <option value="@loc">@ShortLoc(loc)</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label small text-muted">Setting text</label>
+                <input class="form-control form-control-sm bg-dark text-white border-secondary" @bind="_pickSetting" @bind:event="oninput" disabled="@_busy" placeholder="Filter by text e.g. pajamas" />
+            </div>
+            <div class="col-md-2">
+                @if (HasActiveFilters)
+                {
+                    <button class="btn btn-sm btn-outline-danger w-100" type="button" @onclick="ClearFilters">
+                        Clear filters
+                    </button>
+                }
+            </div>
         </div>
     </div>
 }
@@ -245,66 +242,43 @@ else if (Session.IsAdmin && _job is not null &&
     }
     else
     {
-        <div class="batch-panel mb-3">
-            <div class="batch-panel__head">
-                <div class="batch-panel__title">
-                    <span class="batch-panel__icon" aria-hidden="true">▶</span>
-                    <div>
-                        <div class="batch-panel__heading">Batch generate</div>
-                        <div class="batch-panel__sub">
-                            @_scenes.Count scene@(_scenes.Count == 1 ? "" : "s")
-                            · @_scenes.Sum(s => s.ClipsOnDisk)/@_scenes.Sum(s => s.ClipCount) clips on disk
-                            @if (IncompleteCount > 0)
-                            {
-                                <span class="batch-panel__warn"> · @IncompleteCount incomplete</span>
-                            }
-                            @if (Session.IsAdmin && _myJobs.Count > 0)
-                            {
-                                <span> · <strong>@_myJobs.Count</strong> job@(_myJobs.Count == 1 ? "" : "s")</span>
-                            }
-                        </div>
-                    </div>
-                </div>
-                <div class="batch-panel__stats">
-                    <div class="batch-stat @(_selected.Count > 0 ? "batch-stat--active" : "")">
-                        <span class="batch-stat__value">@_selected.Count</span>
-                        <span class="batch-stat__label">selected</span>
-                    </div>
-                    <div class="batch-stat @(_selected.Count > 0 ? "batch-stat--clips" : "")">
-                        <span class="batch-stat__value">~@EstimateSelectedClips()</span>
-                        <span class="batch-stat__label">clips</span>
-                    </div>
-                </div>
-            </div>
+        <div class="card mb-3 p-3 bg-dark border-secondary">
+            <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+                <div class="d-flex align-items-center gap-2 flex-wrap">
+                    <button type="button"
+                            data-testid="scenes-generate-batch"
+                            class="btn batch-go @(_selected.Count > 0 && !JobRunning && CastReady ? "batch-go--ready" : "")"
+                            disabled="@(_busy || _selected.Count == 0 || JobRunning || !CastReady || SelectedLockedByOther)"
+                            title="@(!CastReady ? CastBlockedTitle : SelectedLockedByOther ? "Selection includes scenes locked by another user" : null)"
+                            @onclick="StartBatchAsync">
+                        @if (JobRunning)
+                        {
+                            <span class="batch-go__spin" aria-hidden="true"></span>
+                            <span>Generating…</span>
+                        }
+                        else
+                        {
+                            <span class="batch-go__play" aria-hidden="true">▶</span>
+                            <span>
+                                Generate @(_selected.Count > 0 ? $"{_selected.Count} scene{(_selected.Count == 1 ? "" : "s")}" : "Batch")
+                                @if (_selected.Count > 0)
+                                {
+                                    <span class="batch-go__meta">· ~@EstimateSelectedClips() clips</span>
+                                }
+                            </span>
+                        }
+                    </button>
 
-            <div class="batch-panel__body">
-                <div class="batch-panel__select">
-                    @if (IncompleteCount > 0)
-                    {
-                        <div class="batch-chip-group" role="group" aria-label="Selection shortcuts">
-                            <button type="button"
-                                    class="batch-chip @(SelectionMode == "incomplete" ? "batch-chip--on" : "")"
-                                    disabled="@(_busy || IncompleteCount == 0)"
-                                    @onclick="SelectIncomplete"
-                                    title="Scenes with missing clips">
-                                Incomplete
-                                <span class="batch-chip__count">@IncompleteCount</span>
-                            </button>
-                        </div>
-                    }
-                </div>
-
-                <div class="batch-panel__actions">
-                    <label class="batch-toggle" title="Skip clips already on disk">
-                        <input type="checkbox" class="form-check-input" @bind="_onlyMissing" disabled="@_busy" />
+                    <label class="form-check-label d-flex align-items-center gap-1 small text-white ms-2" title="Skip clips already on disk">
+                        <input type="checkbox" class="form-check-input mt-0" @bind="_onlyMissing" disabled="@_busy" />
                         <span>Only missing clips</span>
                     </label>
 
-                    <div class="d-flex align-items-center gap-1">
+                    <div class="d-flex align-items-center gap-1 ms-2">
                         <label class="small text-muted mb-0" for="genResBatch">Resolution</label>
                         <select id="genResBatch"
                                 data-testid="scenes-resolution"
-                                class="form-select form-select-sm"
+                                class="form-select form-select-sm bg-dark text-white border-secondary"
                                 style="width:auto"
                                 @bind="_genResolution"
                                 @bind:after="RefreshCostEstimateAsync"
@@ -316,60 +290,39 @@ else if (Session.IsAdmin && _job is not null &&
                         </select>
                         @if (ResolutionLocked)
                         {
-                            <span class="badge bg-secondary ms-1" style="font-size: 0.75rem;" title="Resolution locked because clips already exist for this project.">🔒 Locked</span>
+                            <span class="badge bg-secondary" style="font-size: 0.75rem;" title="Resolution locked because clips already exist for this project.">🔒 Locked</span>
                         }
                     </div>
+                </div>
 
+                <div class="d-flex align-items-center gap-2">
                     <button type="button"
                             data-testid="scenes-play-selected"
-                            class="btn btn-outline-primary"
+                            class="btn btn-outline-primary btn-sm"
                             disabled="@(_busy || _selected.Count == 0 || JobRunning)"
-                            title="Stitch the selected scenes together in order (auto-remuxes any that are stale)"
+                            title="Stitch the selected scenes together in order"
                             @onclick="PlaySelectedAsync">
                         ▶ Play selected@(_selected.Count > 0 ? $" ({_selected.Count})" : "")
                     </button>
-
-                    <button type="button"
-                            data-testid="scenes-generate-batch"
-                            class="btn batch-go @(_selected.Count > 0 && !JobRunning && CastReady ? "batch-go--ready" : "")"
-                            disabled="@(_busy || _selected.Count == 0 || JobRunning || !CastReady || (_onlyMissing && EstimateSelectedClips() == 0) || SelectedLockedByOther)"
-                            title="@(!CastReady ? CastBlockedTitle : SelectedLockedByOther ? "Selection includes scenes locked by another user" : null)"
-                            @onclick="StartBatchAsync">
-                        @if (JobRunning)
-                        {
-                            <span class="batch-go__spin" aria-hidden="true"></span>
-                            <span>Generating…</span>
-                        }
-                        else if (_selected.Count == 0)
-                        {
-                            <span class="batch-go__play" aria-hidden="true">▶</span>
-                            <span>Batch generate</span>
-                        }
-                        else if (_onlyMissing && EstimateSelectedClips() == 0)
-                        {
-                            <span>Nothing missing in selection</span>
-                        }
-                        else
-                        {
-                            <span class="batch-go__play" aria-hidden="true">▶</span>
-                            <span>
-                                Generate @_selected.Count scene@(_selected.Count == 1 ? "" : "s")
-                                <span class="batch-go__meta">
-                                    · ~@EstimateSelectedClips() clip@((EstimateSelectedClips() == 1) ? "" : "s")
-                                    @if (_costReport is not null)
-                                    {
-                                        <text> · ~$@(EstimateSelectedCostUsd().ToString("0.00"))</text>
-                                    }
-                                </span>
-                            </span>
-                        }
+                    <button class="btn btn-sm btn-outline-secondary" data-testid="scenes-select-toggle"
+                            disabled="@_busy" @onclick="() => _showFilters = !_showFilters">
+                        🔍 Filters @(HasActiveFilters ? " (Active)" : "")
                     </button>
                 </div>
             </div>
 
-            <div class="batch-panel__foot">
-                Video gen is blocked until <strong>every</strong> character has an approved voice and (for on-screen roles) a locked image — approve them under Characters first so you do not waste API spend.
-            </div>
+            @if (IncompleteCount > 0)
+            {
+                <div class="mt-2 pt-2 border-top border-secondary d-flex align-items-center gap-2 small">
+                    <span class="text-muted">Shortcut:</span>
+                    <button type="button"
+                            class="btn btn-sm btn-outline-warning py-0 px-2"
+                            disabled="@(_busy || IncompleteCount == 0)"
+                            @onclick="SelectIncomplete">
+                        Select @IncompleteCount Incomplete Scene@((IncompleteCount == 1) ? "" : "s")
+                    </button>
+                </div>
+            }
         </div>
 
         <div class="table-responsive">
@@ -384,7 +337,7 @@ else if (Session.IsAdmin && _job is not null &&
                                    disabled="@(_busy || VisibleScenes.Count == 0)"
                                    @onchange="e => ToggleSelectAllShown((bool)(e.Value ?? false))" />
                         </th>
-                        <th style="width:5rem; cursor:pointer; user-select:none;" @onclick='() => ToggleSort("number")' title="Click to sort by Scene Number">
+                        <th style="width:7rem; cursor:pointer; user-select:none;" @onclick='() => ToggleSort("number")' title="Click to sort by Scene Number">
                             # @(_sortBy == "number" ? (_sortAscending ? "▲" : "▼") : "⇅")
                         </th>
                         <th>Setting</th>
@@ -393,7 +346,6 @@ else if (Session.IsAdmin && _job is not null &&
                         <th style="width:7.5rem; cursor:pointer; user-select:none;" @onclick='() => ToggleSort("duration")' title="Click to sort by Duration">
                             Dur @(_sortBy == "duration" ? (_sortAscending ? "▲" : "▼") : "⇅")
                         </th>
-                        <th style="width:4rem;"></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -408,15 +360,27 @@ else if (Session.IsAdmin && _job is not null &&
                                        disabled="@_busy"
                                        @onchange="e => ToggleSelect(sn, (bool)(e.Value ?? false))" />
                             </td>
-                            <td @onclick="() => OpenSceneAsync(sn)">
-                                <span class="badge @StatusBadge(s.Status)">S@(sn.ToString("D2"))</span>
+                            <td class="text-nowrap" @onclick="() => OpenSceneAsync(sn)">
+                                <span class="badge @(s.ClipsComplete ? "bg-success text-white" : "bg-warning text-dark") px-2 py-1 rounded-pill" style="font-weight:600;">
+                                    S@(sn.ToString("D2"))
+                                </span>
+                                <button type="button"
+                                        class="btn btn-sm btn-link text-danger p-0 ms-2 text-decoration-none"
+                                        title="Delete scene S@(sn.ToString("D2")) from plan"
+                                        @onclick:stopPropagation="true"
+                                        @onclick="() => DeleteSceneAsync(sn)">
+                                    🗑️
+                                </button>
+                                <button type="button"
+                                        class="btn btn-sm btn-link text-info p-0 ms-1 text-decoration-none"
+                                        title="Open editor for scene S@(sn.ToString("D2"))"
+                                        @onclick:stopPropagation="true"
+                                        @onclick="() => OpenSceneAsync(sn)">
+                                    ✏️
+                                </button>
                                 @if (s.LockedByOther)
                                 {
                                     <span class="badge bg-warning text-dark ms-1" title="Locked by @s.LockOwnerUserId">🔒 @s.LockOwnerUserId</span>
-                                }
-                                else if (!string.IsNullOrEmpty(s.LockOwnerUserId))
-                                {
-                                    <span class="badge bg-info text-dark ms-1" title="You hold this lock">you</span>
                                 }
                             </td>
                             <td @onclick="() => OpenSceneAsync(sn)">
@@ -464,16 +428,6 @@ else if (Session.IsAdmin && _job is not null &&
                                 {
                                     <span class="text-muted">—</span>
                                 }
-                            </td>
-                            <td @onclick:stopPropagation="true">
-                                <div class="d-flex gap-1 justify-content-end">
-                                    <button class="btn btn-sm btn-outline-primary"
-                                            disabled="@(_busy || JobRunning || (s.ClipsOnDisk == 0 && !s.CompositeExists))"
-                                            title="@(s.CompositeExists ? "Play scene composite" : s.ClipsOnDisk > 0 ? "Remux & play scene composite" : "No clips generated yet")"
-                                            @onclick="() => PlaySceneCompositeAsync(sn)">
-                                        ▶
-                                    </button>
-                                </div>
                             </td>
                         </tr>
                     }
@@ -1375,49 +1329,86 @@ else
                 .OrderBy(ShortLoc, StringComparer.OrdinalIgnoreCase)
                 .ToList();
 
-    /// <summary>All scenes — character/location/setting pickers select matching scenes instead of hiding the rest.</summary>
-    private List<SceneSummary> VisibleScenes => _scenes ?? new List<SceneSummary>();
+    private bool HasActiveFilters =>
+        !string.IsNullOrWhiteSpace(_pickCharacter) ||
+        !string.IsNullOrWhiteSpace(_pickLocation) ||
+        !string.IsNullOrWhiteSpace(_pickSetting);
+
+    private void ClearFilters()
+    {
+        _pickCharacter = "";
+        _pickLocation = "";
+        _pickSetting = "";
+    }
+
+    private IEnumerable<SceneSummary> FilteredScenes
+    {
+        get
+        {
+            if (_scenes is null) return Enumerable.Empty<SceneSummary>();
+            IEnumerable<SceneSummary> list = _scenes;
+            if (!string.IsNullOrWhiteSpace(_pickCharacter))
+            {
+                var match = _pickCharacter;
+                list = list.Where(s => s.CharactersOnScreen.Any(c =>
+                    string.Equals(c, match, StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(ShortChar(c), match, StringComparison.OrdinalIgnoreCase)));
+            }
+            if (!string.IsNullOrWhiteSpace(_pickLocation))
+            {
+                var match = _pickLocation;
+                list = list.Where(s =>
+                    string.Equals(s.PrimaryLocationId, match, StringComparison.OrdinalIgnoreCase) ||
+                    s.LocationIds.Any(l => string.Equals(l, match, StringComparison.OrdinalIgnoreCase)));
+            }
+            if (!string.IsNullOrWhiteSpace(_pickSetting))
+            {
+                var text = _pickSetting;
+                list = list.Where(s => (s.Setting ?? "").Contains(text, StringComparison.OrdinalIgnoreCase));
+            }
+            return list;
+        }
+    }
+
+    private List<SceneSummary> VisibleScenes => FilteredScenes.ToList();
 
     private void SelectByCharacter()
     {
-        if (_scenes is null || string.IsNullOrWhiteSpace(_pickCharacter))
-            return;
+        if (_scenes is null) return;
+        if (string.IsNullOrWhiteSpace(_pickCharacter)) return;
         var match = _pickCharacter;
+        _selected.Clear();
         foreach (var s in _scenes.Where(s =>
-            s.CharactersOnScreen.Any(c => string.Equals(c, match, StringComparison.OrdinalIgnoreCase))))
+            s.CharactersOnScreen.Any(c =>
+                string.Equals(c, match, StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(ShortChar(c), match, StringComparison.OrdinalIgnoreCase))))
         {
             _selected.Add(s.SceneNumber);
         }
-        _selectionMode = "";
-        _pickCharacter = "";
     }
 
     private void SelectByLocation()
     {
-        if (_scenes is null || string.IsNullOrWhiteSpace(_pickLocation))
-            return;
+        if (_scenes is null || string.IsNullOrWhiteSpace(_pickLocation)) return;
         var match = _pickLocation;
+        _selected.Clear();
         foreach (var s in _scenes.Where(s =>
             string.Equals(s.PrimaryLocationId, match, StringComparison.OrdinalIgnoreCase) ||
             s.LocationIds.Any(l => string.Equals(l, match, StringComparison.OrdinalIgnoreCase))))
         {
             _selected.Add(s.SceneNumber);
         }
-        _selectionMode = "";
-        _pickLocation = "";
     }
 
-    private void SelectBySetting()
+    private Task DeleteSceneAsync(int sn)
     {
-        if (_scenes is null || string.IsNullOrWhiteSpace(_pickSetting))
-            return;
-        var text = _pickSetting;
-        foreach (var s in _scenes.Where(s =>
-            (s.Setting ?? "").Contains(text, StringComparison.OrdinalIgnoreCase)))
+        if (_scenes is not null)
         {
-            _selected.Add(s.SceneNumber);
+            _scenes.RemoveAll(s => s.SceneNumber == sn);
+            _selected.Remove(sn);
+            StateHasChanged();
         }
-        _selectionMode = "";
+        return Task.CompletedTask;
     }
 
     private void ResetPickers()
