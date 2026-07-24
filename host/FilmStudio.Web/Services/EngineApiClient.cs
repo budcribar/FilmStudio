@@ -1135,6 +1135,16 @@ public sealed class EngineApiClient
             ct);
     }
 
+    /// <summary>Resolution already used by this project's on-disk clips, or null if none yet.</summary>
+    public async Task<string?> GetResolutionLockAsync(string projectId, CancellationToken ct = default)
+    {
+        var dto = await _http.GetFromJsonAsync<ResolutionLockDto>(
+            $"/api/projects/{Uri.EscapeDataString(projectId)}/resolution-lock",
+            JsonOpts,
+            ct);
+        return dto?.Locked;
+    }
+
     public async Task<CostBackfillDto?> BackfillCostAsync(string projectId, CancellationToken ct = default)
     {
         using var resp = await _http.PostAsJsonAsync(
@@ -1980,6 +1990,13 @@ public sealed class CostDto
     public bool Ok { get; set; }
     public string? ProjectId { get; set; }
     public CostReport? Cost { get; set; }
+}
+
+public sealed class ResolutionLockDto
+{
+    public bool Ok { get; set; }
+    public string? ProjectId { get; set; }
+    public string? Locked { get; set; }
 }
 
 public sealed class CostBackfillDto

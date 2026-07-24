@@ -293,11 +293,16 @@ else if (Session.IsAdmin && _job is not null &&
                                 style="width:auto"
                                 @bind="_genResolution"
                                 @bind:after="RefreshCostEstimateAsync"
-                                disabled="@_busy">
+                                disabled="@(_busy || ResolutionLocked)"
+                                title="@(ResolutionLocked ? $"Locked at {_resolutionLock} — this project already has clips at that resolution. Delete them first to change it." : null)">
                             <option value="480p">480p</option>
                             <option value="720p">720p</option>
                             <option value="1080p">1080p</option>
                         </select>
+                        @if (ResolutionLocked)
+                        {
+                            <span class="small text-muted" title="This project already has clips at @_resolutionLock — generating at a different resolution would mix them.">🔒</span>
+                        }
                     </div>
 
                     <button type="button"
@@ -483,11 +488,16 @@ else
                             style="width:auto"
                             @bind="_genResolution"
                             @bind:after="RefreshCostEstimateAsync"
-                            disabled="@_busy">
+                            disabled="@(_busy || ResolutionLocked)"
+                            title="@(ResolutionLocked ? $"Locked at {_resolutionLock} — this project already has clips at that resolution." : null)">
                         <option value="480p">480p</option>
                         <option value="720p">720p</option>
                         <option value="1080p">1080p</option>
                     </select>
+                    @if (ResolutionLocked)
+                    {
+                        <span class="small text-muted" title="Locked to on-disk resolution">🔒</span>
+                    }
                 </div>
                 <button class="btn btn-sm btn-success"
                         disabled="@(_busy || JobRunning || (_detail.ClipsOnDisk == 0 && !_detail.CompositeExists))"
@@ -1030,6 +1040,9 @@ else
     private bool _onlyMissing = true;
     /// <summary>Video gen resolution (defaults from Configuration).</summary>
     private string _genResolution = "720p";
+    /// <summary>Resolution already used by this project's on-disk clips, if consistent — null when unset.</summary>
+    private string? _resolutionLock;
+    private bool ResolutionLocked => !string.IsNullOrEmpty(_resolutionLock);
     /// <summary>Cost estimate at the current resolution, refreshed on load and resolution change.</summary>
     private CostReport? _costReport;
     /// <summary>Project-wide cast gate: every character voice + locked image before video spend.</summary>
@@ -1593,6 +1606,7 @@ else
             _job = jobs?.Job;
             await RefreshMyJobsAsync();
             await RefreshCastGateAsync();
+            await RefreshResolutionLockAsync();
             await RefreshCostEstimateAsync();
         }
         catch (Exception ex)
@@ -1601,6 +1615,21 @@ else
             _scenes = null;
         }
         finally { _busy = false; }
+    }
+
+    /// <summary>
+    /// Once a project has on-disk clips at a consistent resolution, lock the resolution
+    /// picker to it so a later Regen/batch can't silently mix resolutions in one movie.
+    /// </summary>
+    private async Task RefreshResolutionLockAsync()
+    {
+        try
+        {
+            _resolutionLock = await Engine.GetResolutionLockAsync(_projectId);
+            if (_resolutionLock is { Length: > 0 })
+                _genResolution = _resolutionLock;
+        }
+        catch { /* fail open — leave picker editable */ }
     }
 
     /// <summary>Refreshes the per-scene cost report at the currently selected generation resolution.</summary>
@@ -1674,6 +1703,7 @@ else
             _scenes = dto?.Scenes ?? new List<SceneSummary>();
             await RefreshMyJobsAsync();
             await RefreshCastGateAsync();
+            await RefreshResolutionLockAsync();
             if (_selectedScene is int sn)
             {
                 var detail = await Engine.GetSceneDetailAsync(_projectId, sn);

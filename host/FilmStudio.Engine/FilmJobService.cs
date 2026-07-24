@@ -3254,38 +3254,102 @@ public sealed class FilmJobService
     }
 
     /// <summary>
-    /// Prefer explicit request resolution, else project Configuration, else app default.
+    /// Prefer explicit request resolution, else project Configuration, else app default —
+    /// then guard against mixing resolutions within one project (see
+    /// <see cref="GetLockedResolutionAsync"/>).
     /// </summary>
     private async Task<string> ResolveVideoResolutionAsync(
         string projectId,
         string? requested,
         CancellationToken ct)
     {
+        string resolution;
         if (!string.IsNullOrWhiteSpace(requested))
-            return NormalizeResolution(requested);
+        {
+            resolution = NormalizeResolution(requested);
+        }
+        else
+        {
+            resolution = null!;
+            try
+            {
+                var cfg = await _projects.GetConfigAsync(projectId, ct).ConfigureAwait(false);
+                if (cfg.TryGetValue("resolution", out var el))
+                {
+                    var fromCfg = el.ValueKind switch
+                    {
+                        JsonValueKind.String => el.GetString(),
+                        JsonValueKind.Number => el.ToString(),
+                        _ => null,
+                    };
+                    if (!string.IsNullOrWhiteSpace(fromCfg))
+                        resolution = NormalizeResolution(fromCfg);
+                }
+            }
+            catch
+            {
+                // fall through to app default
+            }
 
+            resolution ??= NormalizeResolution(
+                string.IsNullOrWhiteSpace(_opts.DefaultResolution) ? "720p" : _opts.DefaultResolution);
+        }
+
+        var locked = await GetLockedResolutionAsync(projectId, ct).ConfigureAwait(false);
+        if (locked is not null && !string.Equals(locked, resolution, StringComparison.OrdinalIgnoreCase))
+        {
+            throw new InvalidOperationException(
+                $"This project's existing clips are {locked} — generating at {resolution} would mix " +
+                $"resolutions in one movie. Delete the existing clips first, or generate at {locked}.");
+        }
+
+        return resolution;
+    }
+
+    /// <summary>
+    /// The resolution already used by this project's on-disk clips, if consistent — guards
+    /// against accidentally mixing resolutions within one project. Null when there are no
+    /// on-disk clips yet, or existing data doesn't settle on one value (fail-open: never
+    /// block generation on ambiguous or missing cost-ledger history).
+    /// </summary>
+    public async Task<string?> GetLockedResolutionAsync(string projectId, CancellationToken ct = default)
+    {
         try
         {
-            var cfg = await _projects.GetConfigAsync(projectId, ct).ConfigureAwait(false);
-            if (cfg.TryGetValue("resolution", out var el))
-            {
-                var fromCfg = el.ValueKind switch
-                {
-                    JsonValueKind.String => el.GetString(),
-                    JsonValueKind.Number => el.ToString(),
-                    _ => null,
-                };
-                if (!string.IsNullOrWhiteSpace(fromCfg))
-                    return NormalizeResolution(fromCfg);
-            }
+            var onDisk = _reviewIndex.ListOnDiskClipCoords(projectId);
+            var ledger = await _costs.GetCostLedgerAsync(projectId, ct).ConfigureAwait(false);
+            return DetermineLockedResolution(onDisk, ledger);
         }
         catch
         {
-            // fall through to app default
+            return null;
         }
+    }
 
-        return NormalizeResolution(
-            string.IsNullOrWhiteSpace(_opts.DefaultResolution) ? "720p" : _opts.DefaultResolution);
+    /// <summary>
+    /// Pure decision: given which (scene, clip) pairs are on disk and the project's cost
+    /// ledger, what resolution (if any) is this project locked to? Null when there are no
+    /// on-disk clips, or the ledger doesn't settle on one consistent value for them
+    /// (fail-open — ambiguous/missing history never blocks generation).
+    /// </summary>
+    public static string? DetermineLockedResolution(
+        IEnumerable<(int Scene, int Clip)> onDiskClips,
+        IEnumerable<CostEvent> costLedger)
+    {
+        var onDisk = onDiskClips as ICollection<(int Scene, int Clip)> ?? onDiskClips.ToList();
+        if (onDisk.Count == 0)
+            return null;
+
+        var onDiskSet = onDisk.ToHashSet();
+        var resolutions = costLedger
+            .Where(e => e.Scene is int s && e.Clip is int c &&
+                        onDiskSet.Contains((s, c)) &&
+                        !string.IsNullOrWhiteSpace(e.Resolution))
+            .Select(e => NormalizeResolution(e.Resolution))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        return resolutions.Count == 1 ? resolutions[0] : null;
     }
 
     /// <summary>

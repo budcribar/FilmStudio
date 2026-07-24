@@ -2453,6 +2453,21 @@ app.MapGet("/api/projects/{id}/cost", async (
     }
 });
 
+/// <summary>Resolution already used by this project's on-disk clips, if consistent — null once no clips exist yet.</summary>
+app.MapGet("/api/projects/{id}/resolution-lock", async (
+    string id, FilmJobService jobs, CancellationToken ct) =>
+{
+    try
+    {
+        var locked = await jobs.GetLockedResolutionAsync(id, ct);
+        return Results.Ok(new { ok = true, projectId = id, locked });
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { ok = false, error = ex.Message });
+    }
+});
+
 app.MapPost("/api/projects/{id}/cost/backfill", async (
     string id, ProjectStore store, CostReportService costs, CancellationToken ct) =>
 {
