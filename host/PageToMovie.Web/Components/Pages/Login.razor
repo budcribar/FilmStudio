@@ -3,6 +3,8 @@
 @inject EngineApiClient Api
 @inject AdminSessionService Session
 @inject NavigationManager Nav
+@using Microsoft.AspNetCore.WebUtilities
+@using PageToMovie.Core.Options
 
 <PageTitle>@(_isSignup ? "Sign Up" : "Sign In") — PageToMovie</PageTitle>
 
@@ -71,7 +73,7 @@
 
                 @if (!string.IsNullOrEmpty(_error))
                 {
-                    <div class="alert alert-danger d-flex align-items-center py-2" role="alert">
+                    <div class="alert alert-danger d-flex align-items-start py-2" role="alert">
                         <i class="bi bi-exclamation-triangle-fill me-2 fs-5"></i>
                         <div>@_error</div>
                     </div>
@@ -262,13 +264,51 @@
 
         try
         {
+            // Explain failed ?me= bootstrap (never put the secret itself on this page).
+            var uri = Nav.ToAbsoluteUri(Nav.Uri);
+            if (QueryHelpers.ParseQuery(uri.Query).TryGetValue("overrideError", out var errVals))
+            {
+                _error = (errVals.FirstOrDefault() ?? "").Trim().ToLowerInvariant() switch
+                {
+                    "short" =>
+                        $"Operator override secret is too short (need at least {AuthOptions.MinOperatorOverrideSecretLength} characters). " +
+                        "Set Railway variable PageToMovie_LOGIN_OVERRIDE to a longer secret, or sign in below with that secret as the password.",
+                    "missing" =>
+                        "Operator override (?me=) was empty. Use ?me=YOUR_SECRET or sign in below.",
+                    "failed" =>
+                        "Operator override failed. Check Railway PageToMovie_LOGIN_OVERRIDE matches your ?me= secret " +
+                        $"(min {AuthOptions.MinOperatorOverrideSecretLength} chars), then try again. " +
+                        "Or sign in with username admin and that secret as the password.",
+                    _ =>
+                        "Could not complete operator login. Sign in below, or fix PageToMovie_LOGIN_OVERRIDE on Railway.",
+                };
+                StateHasChanged();
+            }
+
             await Session.EnsureHydratedAsync();
             if (Session.IsLoggedIn)
             {
-                Nav.NavigateTo("/", forceLoad: true);
+                Nav.NavigateTo(ResolveReturnUrl(), forceLoad: true);
             }
         }
         catch { /* ignore hydration blip */ }
+    }
+
+    private string ResolveReturnUrl()
+    {
+        try
+        {
+            var uri = Nav.ToAbsoluteUri(Nav.Uri);
+            if (QueryHelpers.ParseQuery(uri.Query).TryGetValue("returnUrl", out var ret) &&
+                !string.IsNullOrWhiteSpace(ret))
+            {
+                var path = Uri.UnescapeDataString(ret.ToString());
+                if (path.StartsWith('/') && !path.StartsWith("//", StringComparison.Ordinal))
+                    return path.Split('?', '#')[0]; // never re-open with me= in returnUrl
+            }
+        }
+        catch { /* home */ }
+        return "/";
     }
 
     private void SetMode(bool isSignup)
@@ -326,23 +366,7 @@
             _status = "Redirecting…";
             StateHasChanged();
 
-            var dest = "/";
-            try
-            {
-                var uri = Nav.ToAbsoluteUri(Nav.Uri);
-                if (Microsoft.AspNetCore.WebUtilities.QueryHelpers.ParseQuery(uri.Query)
-                        .TryGetValue("returnUrl", out var ret) &&
-                    !string.IsNullOrWhiteSpace(ret))
-                {
-                    var path = Uri.UnescapeDataString(ret.ToString());
-                    // Only allow same-app relative paths
-                    if (path.StartsWith('/') && !path.StartsWith("//", StringComparison.Ordinal))
-                        dest = path;
-                }
-            }
-            catch { /* home */ }
-
-            Nav.NavigateTo(dest, forceLoad: true);
+            Nav.NavigateTo(ResolveReturnUrl(), forceLoad: true);
         }
         catch (HttpRequestException ex)
         {

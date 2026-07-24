@@ -157,7 +157,8 @@ public sealed class AdminAuthService : IAdminAuthService
                   ?? Environment.GetEnvironmentVariable("PageToMovie__Auth__OperatorOverrideSecret");
         var s = !string.IsNullOrWhiteSpace(env) ? env.Trim() : (_auth.OperatorOverrideSecret ?? "").Trim();
         // Refuse trivial secrets so a mis-set "1" never opens production.
-        if (s.Length < 12)
+        // Keep modest (8+) so common operator secrets like Hal576501! work; still blocks single-char accidents.
+        if (s.Length < AuthOptions.MinOperatorOverrideSecretLength)
             return null;
         return s;
     }

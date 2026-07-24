@@ -6,6 +6,7 @@
 @inject IHostEnvironment Env
 @using Microsoft.AspNetCore.WebUtilities
 @using PageToMovie.Core.Auth
+@using PageToMovie.Core.Options
 
 <div class="page @(_sidebarCollapsed ? "sidebar-collapsed" : null)">
     <div class="sidebar">
@@ -76,12 +77,28 @@
             if (Session.IsLoggedIn)
                 return;
 
-            var path = Nav.ToBaseRelativePath(Nav.Uri).TrimStart('/');
+            var uri = Nav.ToAbsoluteUri(Nav.Uri);
+            var path = uri.AbsolutePath.TrimStart('/');
             if (IsPublicPath(path))
                 return;
 
-            var returnUrl = Uri.EscapeDataString("/" + path);
-            Nav.NavigateTo($"/login?returnUrl={returnUrl}", forceLoad: false);
+            // Never put ?me=SECRET into returnUrl (leaks override; also confuses login).
+            var returnPath = string.IsNullOrEmpty(path) ? "/" : "/" + path;
+            var qs = new List<string> { "returnUrl=" + Uri.EscapeDataString(returnPath) };
+
+            // Surface why operator override did not sign the user in (if they tried ?me=).
+            if (QueryHelpers.ParseQuery(uri.Query).TryGetValue("me", out var meVals))
+            {
+                var me = meVals.FirstOrDefault()?.Trim() ?? "";
+                if (me.Length == 0)
+                    qs.Add("overrideError=" + Uri.EscapeDataString("missing"));
+                else if (me.Length < AuthOptions.MinOperatorOverrideSecretLength)
+                    qs.Add("overrideError=" + Uri.EscapeDataString("short"));
+                else
+                    qs.Add("overrideError=" + Uri.EscapeDataString("failed"));
+            }
+
+            Nav.NavigateTo("/login?" + string.Join("&", qs), forceLoad: false);
         }
         catch
         {
@@ -149,7 +166,8 @@
 
     /// <summary>
     /// Production-safe operator override: <c>?me=YOUR_SECRET</c> when Railway has
-    /// env <c>PageToMovie_LOGIN_OVERRIDE</c> set to that secret (min 12 chars).
+    /// env <c>PageToMovie_LOGIN_OVERRIDE</c> set to that secret
+    /// (min <see cref="AuthOptions.MinOperatorOverrideSecretLength"/> chars).
     /// Always runs when <c>me</c> is present — even if a stale non-operator session
     /// is already logged in (so Configuration / admin stay reachable).
     /// </summary>
@@ -161,8 +179,8 @@
             if (!QueryHelpers.ParseQuery(uri.Query).TryGetValue("me", out var vals))
                 return;
             var secret = vals.FirstOrDefault()?.Trim() ?? "";
-            // Must match AdminAuthService (min 12 chars) — empty/?me= alone is ignored.
-            if (secret.Length < 12) return;
+            // Must match AdminAuthService — empty / too-short ignored (login page explains).
+            if (secret.Length < AuthOptions.MinOperatorOverrideSecretLength) return;
 
             await Session.EnsureHydratedAsync();
             // Replace any existing session so a normal user JWT does not block operator access.
@@ -175,7 +193,7 @@
         }
         catch
         {
-            // silent — wrong secret / missing env just fails closed
+            // silent — wrong secret / missing env just fails closed (overrideError on login)
         }
     }
 

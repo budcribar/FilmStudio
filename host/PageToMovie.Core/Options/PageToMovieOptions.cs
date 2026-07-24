@@ -249,8 +249,14 @@ public sealed class AuthOptions
     public double DefaultSignupCreditsUsd { get; set; } = 5.0;
 
     /// <summary>
+    /// Minimum length for <see cref="OperatorOverrideSecret"/> / <c>PageToMovie_LOGIN_OVERRIDE</c>.
+    /// Shorter values are treated as unset so a typo like <c>1</c> cannot open production.
+    /// </summary>
+    public const int MinOperatorOverrideSecretLength = 8;
+
+    /// <summary>
     /// Operator login override secret (or env <c>PageToMovie_LOGIN_OVERRIDE</c>).
-    /// When set (min 12 chars), you can:
+    /// When set (min <see cref="MinOperatorOverrideSecretLength"/> chars), you can:
     /// <list type="bullet">
     /// <item>Sign in as <see cref="OperatorUserId"/> with this secret as the password</item>
     /// <item>Visit any page with <c>?me=SECRET</c> to auto-login (works on Railway)</item>
