@@ -9,6 +9,16 @@
 <AdaptationShell Host="this" Step="import">
     @if (Status is not null)
     {
+        @if (!Status.XaiConfigured)
+        {
+            <div class="alert alert-warning d-flex align-items-center justify-content-between flex-wrap gap-2 mb-4">
+                <div>
+                    <strong>⚠️ Service Connection Required:</strong> An AI API key (XAI/Grok or Gemini) is needed to convert books into screenplays.
+                </div>
+                <a class="btn btn-sm btn-warning fw-semibold" href="configuration">Connect Service →</a>
+            </div>
+        }
+
         <div class="card mb-4">
             <div class="card-body p-4">
                 <h5 class="card-title mb-3">Upload Source File</h5>

@@ -10,6 +10,7 @@ public sealed class ActiveProjectState
 {
     public string? ProjectId { get; private set; }
     public string? Label { get; private set; }
+    public AdaptationStatus? Status { get; private set; }
 
     public bool HasProject => !string.IsNullOrWhiteSpace(ProjectId);
 
@@ -109,6 +110,7 @@ public sealed class ActiveProjectState
     /// <returns>True if any gate flag or reason text changed.</returns>
     private bool ApplyAdaptation(AdaptationStatus? a)
     {
+        Status = a;
         if (a is null)
         {
             if (!CanCharacters && !CanScenes && !CanReview)

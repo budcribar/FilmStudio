@@ -879,6 +879,14 @@ public sealed class FilmJobService
 
         try
         {
+            if (!_chat.IsConfigured)
+            {
+                await FinishAsync("error",
+                    "API key missing. Please connect your AI service key in Configuration before starting import.",
+                    "API key missing. Please connect your AI service key in Configuration before starting import.").ConfigureAwait(false);
+                return;
+            }
+
             var projectDir = await _projects.GetProjectDirAsync(projectId, ct).ConfigureAwait(false);
             var bookPath = Path.Combine(projectDir, "source", "book_full.txt");
             var needPrepare = !req.SkipPrepare;
