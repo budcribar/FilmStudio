@@ -9,10 +9,14 @@ COPY host/PageToMovie.Fakes/PageToMovie.Fakes.csproj host/PageToMovie.Fakes/
 COPY host/PageToMovie.Api/PageToMovie.Api.csproj host/PageToMovie.Api/
 RUN dotnet restore host/PageToMovie.Api/PageToMovie.Api.csproj
 
+# Force Railway Docker cache invalidation
+ARG CACHEBUSTER=20260724084700
+RUN echo "Invalidating build cache: ${CACHEBUSTER}"
+
 # Copy remaining source code
 COPY host/ host/
 WORKDIR /src/host/PageToMovie.Api
-RUN dotnet publish -c Release -o /app/publish /p:UseAppHost=false
+RUN dotnet publish -c Release --no-restore -o /app/publish /p:UseAppHost=false
 
 # Stage 2: Runtime
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS final
