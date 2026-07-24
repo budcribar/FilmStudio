@@ -55,6 +55,36 @@ else if (_cfg is null)
 else
 {
     <div class="card mb-3">
+        <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+            <span>🔑 Account & API Key Settings</span>
+            @if (_userSettings?.HasXaiApiKey == true)
+            {
+                <span class="badge bg-success">Key Active (@_userSettings.MaskedXaiApiKey)</span>
+            }
+            else
+            {
+                <span class="badge bg-warning text-dark">No Personal Key Attached</span>
+            }
+        </div>
+        <div class="card-body">
+            <p class="small text-muted mb-2">
+                <strong>Bring Your Own Key:</strong> Attach your personal xAI / Grok API key here. Your key is encrypted at rest using AES-256 and used exclusively for your account's video generation requests.
+            </p>
+            <div class="row g-2 align-items-end">
+                <div class="col-md-6">
+                    <label class="form-label">xAI / Grok API Key</label>
+                    <input type="password" class="form-control" placeholder="xai-..." @bind="_inputXaiApiKey" disabled="@_busy" />
+                </div>
+                <div class="col-md-4">
+                    <button class="btn btn-outline-primary" disabled="@(_busy || string.IsNullOrWhiteSpace(_inputXaiApiKey))" @onclick="SaveUserApiKeyAsync">
+                        Save API Key
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mb-3">
         <div class="card-header">Appearance</div>
         <div class="card-body row g-2">
             <div class="col-md-4">
@@ -344,6 +374,22 @@ else
         return baseHint;
     }
 
+    private UserSettingsDto? _userSettings;
+    private string? _inputXaiApiKey;
+
+    private async Task SaveUserApiKeyAsync()
+    {
+        try
+        {
+            _busy = true;
+            _userSettings = await Engine.UpdateUserSettingsAsync(_inputXaiApiKey);
+            _inputXaiApiKey = null;
+            _message = "Your xAI API key has been encrypted and saved to your account!";
+        }
+        catch (Exception ex) { _error = ex.Message; }
+        finally { _busy = false; }
+    }
+
     private async Task LoadAsync()
     {
         _busy = true;
@@ -351,6 +397,8 @@ else
         _message = null;
         try
         {
+            try { _userSettings = await Engine.GetUserSettingsAsync(); } catch { }
+
             if (string.IsNullOrWhiteSpace(_projectId))
             {
                 _cfg = null;

@@ -179,6 +179,25 @@ public sealed class EngineApiClient
         return env?.Manifest;
     }
 
+    public sealed record UserSettingsEnvelope(bool Ok, UserSettingsDto? Settings, string? Message, string? Error);
+
+    public async Task<UserSettingsDto?> GetUserSettingsAsync(CancellationToken ct = default)
+    {
+        using var req = new HttpRequestMessage(HttpMethod.Get, "/api/user/settings");
+        var env = await SendJsonAsync<UserSettingsEnvelope>(req, ct);
+        return env?.Settings;
+    }
+
+    public async Task<UserSettingsDto?> UpdateUserSettingsAsync(string? xaiApiKey, CancellationToken ct = default)
+    {
+        using var req = new HttpRequestMessage(HttpMethod.Post, "/api/user/settings")
+        {
+            Content = JsonContent.Create(new UpdateUserSettingsRequest { XaiApiKey = xaiApiKey }, options: JsonOpts),
+        };
+        var env = await SendJsonAsync<UserSettingsEnvelope>(req, ct);
+        return env?.Settings;
+    }
+
     public async Task<byte[]?> GetWipMovieBytesAsync(string projectId, CancellationToken ct = default)
     {
         SyncIdentityHeaders();
