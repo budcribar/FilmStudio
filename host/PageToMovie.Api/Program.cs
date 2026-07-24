@@ -16,9 +16,14 @@ using Microsoft.Extensions.Options;
 var builder = WebApplication.CreateBuilder(args);
 var processStartedUtc = DateTimeOffset.UtcNow;
 
-var railwayPort = Environment.GetEnvironmentVariable("PORT");
-var listenPort = !string.IsNullOrWhiteSpace(railwayPort) ? railwayPort : "5088";
-builder.WebHost.UseUrls($"http://0.0.0.0:{listenPort}");
+var listenPorts = new HashSet<string> { "5088", "8080", "80" };
+var railwayEnvPort = Environment.GetEnvironmentVariable("PORT");
+if (!string.IsNullOrWhiteSpace(railwayEnvPort))
+{
+    listenPorts.Add(railwayEnvPort.Trim());
+}
+var bindUrls = string.Join(";", listenPorts.Select(p => $"http://0.0.0.0:{p}"));
+builder.WebHost.UseUrls(bindUrls);
 
 builder.Services.Configure<PageToMovieOptions>(
     builder.Configuration.GetSection(PageToMovieOptions.SectionName));
