@@ -32,10 +32,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY --from=build /app/publish .
 
 # Environment defaults
-ENV ASPNETCORE_HTTP_PORTS=8080
+ENV ASPNETCORE_HTTP_PORTS=5088
+ENV PORT=5088
 ENV PageToMovie_JWT_KEY="PageToMovie-Production-Docker-Secret-Key-64Chars-Long-1234567890!!"
 ENV PAGETOMOVIE_JWT_KEY="PageToMovie-Production-Docker-Secret-Key-64Chars-Long-1234567890!!"
 ENV PageToMovie__Auth__JwtSigningKey="PageToMovie-Production-Docker-Secret-Key-64Chars-Long-1234567890!!"
-EXPOSE 8080
+EXPOSE 5088
 
 ENTRYPOINT ["dotnet", "PageToMovie.Api.dll"]
