@@ -181,20 +181,23 @@ public class CreditsGeneratorService
             }
         };
 
-        var tcs = new TaskCompletionSource<int>();
-        process.EnableRaisingEvents = true;
-        process.Exited += (_, _) => tcs.TrySetResult(process.ExitCode);
-
         try
         {
             process.Start();
-            using var reg = ct.Register(() => { try { process.Kill(); } catch { } });
-            var exitCode = await tcs.Task.ConfigureAwait(false);
+            var readOutTask = process.StandardOutput.ReadToEndAsync(ct);
+            var readErrTask = process.StandardError.ReadToEndAsync(ct);
 
-            if (exitCode == 0 && File.Exists(creditsMoviePath) && new FileInfo(creditsMoviePath).Length >= 1024)
+            await process.WaitForExitAsync(ct).ConfigureAwait(false);
+            await Task.WhenAll(readOutTask, readErrTask).ConfigureAwait(false);
+
+            if (process.ExitCode == 0 && File.Exists(creditsMoviePath) && new FileInfo(creditsMoviePath).Length >= 1024)
             {
                 onProgress?.Invoke("End credits clip generated successfully.");
                 return creditsMoviePath;
+            }
+            else
+            {
+                _logger.LogWarning("FFmpeg credits generation exit code {ExitCode}: {Stderr}", process.ExitCode, readErrTask.Result);
             }
         }
         catch (Exception ex)
