@@ -114,8 +114,17 @@ builder.Services.AddSingleton<ReviewIndexService>();
 builder.Services.AddSingleton<ClipAutoReviewService>();
 builder.Services.AddSingleton<ProjectArtifactIndexService>();
 builder.Services.AddSingleton<YouTubeAuthService>();
-var dpKeysDir = Directory.Exists("/data") ? "/data/keys" : (Directory.Exists("/app/data") ? "/app/data/keys" : Path.Combine(Path.GetTempPath(), "ptm-dp-keys"));
-Directory.CreateDirectory(dpKeysDir);
+string dpKeysDir;
+try
+{
+    dpKeysDir = "/data/keys";
+    Directory.CreateDirectory(dpKeysDir);
+}
+catch
+{
+    dpKeysDir = Path.Combine(Path.GetTempPath(), "ptm-dp-keys");
+    Directory.CreateDirectory(dpKeysDir);
+}
 builder.Services.AddDataProtection()
     .PersistKeysToFileSystem(new DirectoryInfo(dpKeysDir));
 builder.Services.AddSingleton<UserDatabaseService>();
