@@ -5,6 +5,7 @@
 @inject ActiveProjectState ActiveProject
 @inject AdminSessionService Session
 @inject NavigationManager Nav
+@inject IJSRuntime JS
 @using PageToMovie.Core.Models
 
 <PageTitle>Review</PageTitle>
@@ -89,6 +90,11 @@ else
                 @onclick="PlayWipAsync"
                 title="@WipPlayTitle">
             @(_showWipPlayer && _wipExists && !_wipStale ? "Hide WIP player" : _wipStale || !_wipExists ? "▶ Play WIP (refresh)" : "▶ Play WIP")
+        </button>
+        <button class="btn btn-outline-success" data-testid="review-export-disk" disabled="@(_busy || JobRunning || !_wipExists)"
+                @onclick="ExportMovieToDiskAsync"
+                title="Directly save WIP movie to your local disk via File System Access API (Zero Server CPU)">
+            💾 Save Movie to Disk
         </button>
         @if (_youTubeStatus?.Connected == true)
         {
@@ -1429,6 +1435,30 @@ else
         }
         catch (Exception ex) { _error = ex.Message; }
         finally { _busy = false; }
+    }
+
+    private async Task ExportMovieToDiskAsync()
+    {
+        _message = null;
+        _error = null;
+        try
+        {
+            var bytes = await Engine.GetWipMovieBytesAsync(_projectId);
+            if (bytes == null || bytes.Length == 0)
+            {
+                _error = "WIP movie is not available on server.";
+                return;
+            }
+
+            var base64 = Convert.ToBase64String(bytes);
+            var filename = $"{_projectId}_WIP.mp4";
+            await JS.InvokeVoidAsync("PageToMovieExport.saveMovieToDiskAsync", filename, base64, "video/mp4");
+            _message = "Movie saved to your local disk!";
+        }
+        catch (Exception ex)
+        {
+            _error = "Export error: " + ex.Message;
+        }
     }
 
     private Task EnsureHubAsync() => Hub.EnsureStartedAsync();

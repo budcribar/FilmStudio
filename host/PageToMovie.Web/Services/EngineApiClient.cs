@@ -179,6 +179,15 @@ public sealed class EngineApiClient
         return env?.Manifest;
     }
 
+    public async Task<byte[]?> GetWipMovieBytesAsync(string projectId, CancellationToken ct = default)
+    {
+        SyncIdentityHeaders();
+        using var req = new HttpRequestMessage(HttpMethod.Get, $"/api/projects/{Uri.EscapeDataString(projectId)}/movie/wip");
+        var res = await _http.SendAsync(req, ct);
+        if (!res.IsSuccessStatusCode) return null;
+        return await res.Content.ReadAsByteArrayAsync(ct);
+    }
+
     public async Task<string?> GetLearningPackTextAsync(string packId, CancellationToken ct = default)
     {
         using var req = new HttpRequestMessage(HttpMethod.Get, $"/api/admin/learning/packs/{Uri.EscapeDataString(packId)}");
