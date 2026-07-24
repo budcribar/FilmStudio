@@ -32,6 +32,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY --from=build /app/publish .
 
 # Environment defaults
+ENV ASPNETCORE_URLS="http://0.0.0.0:5088"
 ENV ASPNETCORE_HTTP_PORTS=5088
 ENV PORT=5088
 ENV PageToMovie_JWT_KEY="PageToMovie-Production-Docker-Secret-Key-64Chars-Long-1234567890!!"
