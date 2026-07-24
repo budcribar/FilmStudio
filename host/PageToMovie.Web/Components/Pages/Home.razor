@@ -95,8 +95,10 @@
                                         data-testid="@($"home-project-{id}")"
                                         data-project-id="@id"
                                         data-project-active="@(active ? "true" : "false")"
+                                        title="Click to select, double-click to open"
                                         disabled="@_busy"
-                                        @onclick="() => SelectProjectAsync(id)">
+                                        @onclick="() => SelectProjectAsync(id)"
+                                        @ondblclick="() => OpenProjectAsync(id)">
                                     <strong>@(p.Label ?? p.Title ?? id)</strong>
                                 </button>
                                 @if (active)
@@ -404,6 +406,13 @@
         }
         catch (Exception ex) { _error = ex.Message; }
         finally { _busy = false; }
+    }
+
+    private async Task OpenProjectAsync(string id)
+    {
+        if (string.IsNullOrWhiteSpace(id)) return;
+        await SelectProjectAsync(id);
+        Nav.NavigateTo("adaptation");
     }
 
     private Task BeginDeleteAsync(string id, string label)
