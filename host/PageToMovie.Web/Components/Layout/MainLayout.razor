@@ -150,19 +150,24 @@
     /// <summary>
     /// Production-safe operator override: <c>?me=YOUR_SECRET</c> when Railway has
     /// env <c>PageToMovie_LOGIN_OVERRIDE</c> set to that secret (min 12 chars).
+    /// Always runs when <c>me</c> is present — even if a stale non-operator session
+    /// is already logged in (so Configuration / admin stay reachable).
     /// </summary>
     private async Task TryBootstrapOperatorOverrideFromQueryAsync()
     {
         try
         {
-            await Session.EnsureHydratedAsync();
-            if (Session.IsLoggedIn) return;
-
             var uri = Nav.ToAbsoluteUri(Nav.Uri);
             if (!QueryHelpers.ParseQuery(uri.Query).TryGetValue("me", out var vals))
                 return;
             var secret = vals.FirstOrDefault()?.Trim() ?? "";
+            // Must match AdminAuthService (min 12 chars) — empty/?me= alone is ignored.
             if (secret.Length < 12) return;
+
+            await Session.EnsureHydratedAsync();
+            // Replace any existing session so a normal user JWT does not block operator access.
+            if (Session.IsLoggedIn)
+                Session.Clear();
 
             var login = await Engine.LoginWithOperatorOverrideAsync(secret);
             if (login?.Ok == true && !string.IsNullOrWhiteSpace(login.Token))
@@ -170,7 +175,7 @@
         }
         catch
         {
-            // silent — wrong secret just fails closed
+            // silent — wrong secret / missing env just fails closed
         }
     }
 
