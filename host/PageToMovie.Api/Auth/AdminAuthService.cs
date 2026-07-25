@@ -13,11 +13,21 @@ namespace PageToMovie.Api.Auth;
 
 public interface IAdminAuthService
 {
+    /// <summary>JWT claim marking short-lived media tokens safe for URL query use.</summary>
+    public const string TokenUseClaim = "token_use";
+    public const string TokenUseMedia = "media";
+    /// <summary>Default media-token lifetime (minutes). Full session JWT must not go in query strings.</summary>
+    public const int MediaTokenMinutes = 30;
+
     LoginResponse Login(string username, string password);
     LoginResponse Signup(string username, string password);
     /// <summary>Issue operator JWT when secret matches PageToMovie_LOGIN_OVERRIDE.</summary>
     LoginResponse LoginWithOperatorOverride(string secret);
     ClaimsPrincipal? ValidateToken(string token);
+    /// <summary>True when principal is a short-lived media token (allowed in ?mt=).</summary>
+    bool IsMediaToken(ClaimsPrincipal? principal);
+    /// <summary>Issue a short-lived media-scoped JWT for &lt;img&gt;/&lt;video&gt; query auth.</summary>
+    string IssueMediaToken(ClaimsPrincipal sessionPrincipal);
 }
 
 public sealed class AdminAuthService : IAdminAuthService
@@ -91,8 +101,8 @@ public sealed class AdminAuthService : IAdminAuthService
         if (string.IsNullOrWhiteSpace(username))
             return Fail("Username is required");
 
-        // 0. Operator override: password (or username) matches LOGIN_OVERRIDE secret
-        if (MatchesOperatorOverride(password) || MatchesOperatorOverride(username))
+        // 0. Operator override: password only (never match username — usernames are log-prone).
+        if (MatchesOperatorOverride(password))
             return IssueOperatorLogin();
 
         // 1. Check SQLite database for user
@@ -217,6 +227,36 @@ public sealed class AdminAuthService : IAdminAuthService
         }
     }
 
+    public bool IsMediaToken(ClaimsPrincipal? principal)
+    {
+        if (principal?.Identity?.IsAuthenticated != true)
+            return false;
+        var use = principal.FindFirst(IAdminAuthService.TokenUseClaim)?.Value
+                  ?? principal.FindFirst("token_use")?.Value;
+        return string.Equals(use, IAdminAuthService.TokenUseMedia, StringComparison.Ordinal);
+    }
+
+    public string IssueMediaToken(ClaimsPrincipal sessionPrincipal)
+    {
+        if (sessionPrincipal?.Identity?.IsAuthenticated != true)
+            throw new InvalidOperationException("Not authenticated");
+
+        var userId = sessionPrincipal.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                     ?? sessionPrincipal.FindFirst("sub")?.Value
+                     ?? sessionPrincipal.Identity?.Name
+                     ?? "";
+        if (string.IsNullOrWhiteSpace(userId))
+            throw new InvalidOperationException("No user id on session");
+
+        var roles = sessionPrincipal.FindAll(ClaimTypes.Role).Select(c => c.Value).ToList();
+        if (roles.Count == 0)
+            roles.Add(AppRoles.User);
+
+        var minutes = Math.Clamp(IAdminAuthService.MediaTokenMinutes, 5, 120);
+        var expires = DateTimeOffset.UtcNow.AddMinutes(minutes);
+        return IssueJwt(userId.Trim(), roles, expires, tokenUse: IAdminAuthService.TokenUseMedia);
+    }
+
     private bool VerifyPassword(string password)
     {
         if (_auth.AllowDevBypass && _env.IsDevelopment())
@@ -242,7 +282,11 @@ public sealed class AdminAuthService : IAdminAuthService
         return _env.IsDevelopment() && password.Length == 0;
     }
 
-    private string IssueJwt(string userId, IEnumerable<string> roles, DateTimeOffset expires)
+    private string IssueJwt(
+        string userId,
+        IEnumerable<string> roles,
+        DateTimeOffset expires,
+        string? tokenUse = null)
     {
         var key = ResolveSigningKey();
         var creds = new SigningCredentials(
@@ -257,6 +301,8 @@ public sealed class AdminAuthService : IAdminAuthService
         };
         foreach (var r in roles.Distinct(StringComparer.OrdinalIgnoreCase))
             claims.Add(new Claim(ClaimTypes.Role, r));
+        if (!string.IsNullOrWhiteSpace(tokenUse))
+            claims.Add(new Claim(IAdminAuthService.TokenUseClaim, tokenUse.Trim()));
 
         var token = new JwtSecurityToken(
             issuer: "PageToMovie.Api",

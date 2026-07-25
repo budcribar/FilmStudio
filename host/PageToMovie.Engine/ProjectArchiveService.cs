@@ -14,6 +14,15 @@ public sealed class ProjectArchiveService
 {
     private static readonly JsonSerializerOptions JsonOpts = JsonDefaults.IndentedCaseInsensitive;
 
+    /// <summary>Compressed zip size cap (matches Kestrel multipart limit for admin import).</summary>
+    public const long MaxZipBytes = 512L * 1024 * 1024;
+    /// <summary>Max entries in a project zip (directories + files).</summary>
+    public const int MaxZipEntries = 50_000;
+    /// <summary>Max total uncompressed payload extracted from a zip.</summary>
+    public const long MaxUncompressedTotalBytes = 2L * 1024 * 1024 * 1024;
+    /// <summary>Max size of any single extracted entry.</summary>
+    public const long MaxSingleEntryUncompressedBytes = 512L * 1024 * 1024;
+
     private readonly ProjectStore _projects;
     private readonly ILogger<ProjectArchiveService> _log;
 
@@ -127,11 +136,11 @@ public sealed class ProjectArchiveService
         {
             await using (var fs = new FileStream(tempZip, FileMode.Create, FileAccess.Write, FileShare.None))
             {
-                await zipStream.CopyToAsync(fs, ct).ConfigureAwait(false);
+                await CopyWithSizeCapAsync(zipStream, fs, MaxZipBytes, ct).ConfigureAwait(false);
             }
 
             Directory.CreateDirectory(tempExtract);
-            ZipFile.ExtractToDirectory(tempZip, tempExtract, overwriteFiles: true);
+            ExtractZipSafely(tempZip, tempExtract, ct);
 
             var contentRoot = FindProjectContentRoot(tempExtract)
                 ?? throw new InvalidOperationException(
@@ -189,6 +198,115 @@ public sealed class ProjectArchiveService
         {
             try { if (File.Exists(tempZip)) File.Delete(tempZip); } catch { /* ignore */ }
             try { if (Directory.Exists(tempExtract)) Directory.Delete(tempExtract, recursive: true); } catch { /* ignore */ }
+        }
+    }
+
+    /// <summary>
+    /// Extract zip with entry-count / total-size / path-traversal guards (zip-bomb mitigation).
+    /// </summary>
+    internal static void ExtractZipSafely(string zipPath, string destDir, CancellationToken ct = default)
+    {
+        destDir = Path.GetFullPath(destDir);
+        Directory.CreateDirectory(destDir);
+
+        using var archive = ZipFile.OpenRead(zipPath);
+        if (archive.Entries.Count > MaxZipEntries)
+        {
+            throw new InvalidOperationException(
+                $"Zip has too many entries ({archive.Entries.Count:N0}; max {MaxZipEntries:N0}).");
+        }
+
+        long totalUncompressed = 0;
+        var entryCount = 0;
+        foreach (var entry in archive.Entries)
+        {
+            ct.ThrowIfCancellationRequested();
+            entryCount++;
+            if (entryCount > MaxZipEntries)
+            {
+                throw new InvalidOperationException(
+                    $"Zip has too many entries (max {MaxZipEntries:N0}).");
+            }
+
+            // Directory entries end with / or \
+            var name = entry.FullName.Replace('\\', '/');
+            if (string.IsNullOrWhiteSpace(name) || name.EndsWith('/'))
+            {
+                // Ensure directory exists (still count toward bomb limits via empty path only).
+                if (!string.IsNullOrWhiteSpace(name))
+                {
+                    var dirPath = Path.GetFullPath(Path.Combine(destDir, name));
+                    EnsureUnderRoot(destDir, dirPath);
+                    Directory.CreateDirectory(dirPath);
+                }
+                continue;
+            }
+
+            if (entry.Length < 0 || entry.Length > MaxSingleEntryUncompressedBytes)
+            {
+                throw new InvalidOperationException(
+                    $"Zip entry too large: {entry.FullName} ({entry.Length:N0} bytes; max {MaxSingleEntryUncompressedBytes:N0}).");
+            }
+
+            totalUncompressed += entry.Length;
+            if (totalUncompressed > MaxUncompressedTotalBytes)
+            {
+                throw new InvalidOperationException(
+                    $"Zip uncompressed size exceeds limit ({MaxUncompressedTotalBytes:N0} bytes).");
+            }
+
+            var destPath = Path.GetFullPath(Path.Combine(destDir, name));
+            EnsureUnderRoot(destDir, destPath);
+
+            var parent = Path.GetDirectoryName(destPath);
+            if (!string.IsNullOrEmpty(parent))
+                Directory.CreateDirectory(parent);
+
+            entry.ExtractToFile(destPath, overwrite: true);
+
+            // Defense in depth: measure actual written size (some archives lie in headers).
+            var written = new FileInfo(destPath).Length;
+            if (written > MaxSingleEntryUncompressedBytes)
+            {
+                try { File.Delete(destPath); } catch { /* ignore */ }
+                throw new InvalidOperationException(
+                    $"Extracted entry exceeded size cap: {entry.FullName}");
+            }
+        }
+    }
+
+    private static void EnsureUnderRoot(string root, string candidate)
+    {
+        var rootFull = Path.GetFullPath(root)
+            .TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)
+            + Path.DirectorySeparatorChar;
+        var full = Path.GetFullPath(candidate);
+        if (!full.StartsWith(rootFull, StringComparison.OrdinalIgnoreCase)
+            && !string.Equals(full.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar),
+                rootFull.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar),
+                StringComparison.OrdinalIgnoreCase))
+        {
+            throw new InvalidOperationException("Zip entry path escapes destination directory.");
+        }
+    }
+
+    private static async Task CopyWithSizeCapAsync(
+        Stream source,
+        Stream dest,
+        long maxBytes,
+        CancellationToken ct)
+    {
+        var buffer = new byte[128 * 1024];
+        long total = 0;
+        while (true)
+        {
+            var n = await source.ReadAsync(buffer.AsMemory(0, buffer.Length), ct).ConfigureAwait(false);
+            if (n <= 0) break;
+            total += n;
+            if (total > maxBytes)
+                throw new InvalidOperationException(
+                    $"Zip file exceeds size limit ({maxBytes:N0} bytes).");
+            await dest.WriteAsync(buffer.AsMemory(0, n), ct).ConfigureAwait(false);
         }
     }
 

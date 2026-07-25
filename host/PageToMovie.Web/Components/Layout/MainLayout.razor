@@ -85,6 +85,15 @@
         await TryBootstrapAdminFromQueryAsync();
         await TryBootstrapOperatorOverrideFromQueryAsync();
 
+        // Short-lived media tokens for &lt;img&gt;/&lt;video&gt; (never put session JWT in query).
+        try
+        {
+            await Session.EnsureHydratedAsync();
+            if (Session.IsLoggedIn)
+                await Engine.EnsureMediaAccessAsync();
+        }
+        catch { /* optional */ }
+
         // Signed-in required for studio pages (projects, config keys, import/OCR).
         // Public: /demo, /about, /login, /signup — no account required.
         await EnforceLoginGateAsync();

@@ -346,6 +346,37 @@ app.MapPost("/api/auth/logout", () =>
     Results.Ok(new { ok = true, message = "Client should discard JWT" }));
 
 /// <summary>
+/// Short-lived media token for &lt;img&gt;/&lt;video src&gt; query auth (?mt=).
+/// Requires a full session Bearer JWT. Media tokens carry token_use=media and expire in ~30m.
+/// </summary>
+app.MapPost("/api/auth/media-token", (HttpContext http, IAdminAuthService auth, IUserContext user) =>
+{
+    if (http.User?.Identity?.IsAuthenticated != true)
+        return Results.Json(new { ok = false, error = "Sign in required" }, statusCode: StatusCodes.Status401Unauthorized);
+    // Must be a full session token, not another media token (prevents refresh loops with weak tokens).
+    if (auth.IsMediaToken(http.User))
+        return Results.Json(new { ok = false, error = "Use a session JWT (Authorization: Bearer)" }, statusCode: StatusCodes.Status401Unauthorized);
+
+    try
+    {
+        var token = auth.IssueMediaToken(http.User);
+        var expires = DateTimeOffset.UtcNow.AddMinutes(IAdminAuthService.MediaTokenMinutes);
+        return Results.Ok(new
+        {
+            ok = true,
+            token,
+            expiresAt = expires,
+            tokenUse = IAdminAuthService.TokenUseMedia,
+            minutes = IAdminAuthService.MediaTokenMinutes,
+        });
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { ok = false, error = ex.Message });
+    }
+});
+
+/// <summary>
 /// Operator override: POST { "secret": "…" } matching PageToMovie_LOGIN_OVERRIDE.
 /// Used by <c>?me=SECRET</c> bootstrap on Railway (not localhost-only).
 /// </summary>

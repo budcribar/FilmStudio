@@ -23,6 +23,12 @@ public sealed class EngineApiClient
     private readonly AdminSessionService? _session;
     private readonly EngineApiOptions _opts;
 
+    /// <summary>Short-lived media token for &lt;img&gt;/&lt;video&gt; query auth (not the session JWT).</summary>
+    private string? _mediaToken;
+    private DateTimeOffset _mediaTokenExpires = DateTimeOffset.MinValue;
+    private readonly SemaphoreSlim _mediaTokenLock = new(1, 1);
+    private int _mediaRefreshQueued;
+
     public EngineApiClient(
         HttpClient http,
         AdminSessionService? session = null,
@@ -33,7 +39,17 @@ public sealed class EngineApiClient
         _opts = opts?.Value ?? new EngineApiOptions();
         SyncIdentityHeaders();
         if (_session is not null)
-            _session.Changed += SyncIdentityHeaders;
+            _session.Changed += OnSessionChanged;
+    }
+
+    private void OnSessionChanged()
+    {
+        SyncIdentityHeaders();
+        // Drop cached media token when session changes; refresh in background when signed in.
+        _mediaToken = null;
+        _mediaTokenExpires = DateTimeOffset.MinValue;
+        if (_session?.IsLoggedIn == true)
+            _ = EnsureMediaAccessAsync();
     }
 
     /// <summary>Push X-User-Id / Bearer onto the shared HttpClient defaults (scoped client).</summary>
@@ -56,6 +72,68 @@ public sealed class EngineApiClient
         {
             // ignore header races
         }
+    }
+
+    /// <summary>
+    /// Ensure a short-lived media token is cached for element src URLs.
+    /// Call after login / page load so &lt;video&gt;/&lt;img&gt; do not embed the session JWT.
+    /// </summary>
+    public async Task EnsureMediaAccessAsync(CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(_session?.Token))
+        {
+            _mediaToken = null;
+            _mediaTokenExpires = DateTimeOffset.MinValue;
+            return;
+        }
+
+        if (HasFreshMediaToken())
+            return;
+
+        await _mediaTokenLock.WaitAsync(ct).ConfigureAwait(false);
+        try
+        {
+            if (HasFreshMediaToken())
+                return;
+
+            using var req = new HttpRequestMessage(HttpMethod.Post, "/api/auth/media-token");
+            ApplyAuth(req);
+            using var resp = await _http.SendAsync(req, ct).ConfigureAwait(false);
+            if (!resp.IsSuccessStatusCode)
+                return;
+            var dto = await resp.Content.ReadFromJsonAsync<MediaTokenDto>(JsonOpts, ct)
+                .ConfigureAwait(false);
+            if (dto is null || string.IsNullOrWhiteSpace(dto.Token))
+                return;
+            _mediaToken = dto.Token.Trim();
+            _mediaTokenExpires = dto.ExpiresAt
+                ?? DateTimeOffset.UtcNow.AddMinutes(Math.Clamp(dto.Minutes ?? 30, 5, 120));
+        }
+        catch
+        {
+            // media may 401 until next retry
+        }
+        finally
+        {
+            _mediaTokenLock.Release();
+        }
+    }
+
+    private bool HasFreshMediaToken() =>
+        !string.IsNullOrWhiteSpace(_mediaToken)
+        && _mediaTokenExpires > DateTimeOffset.UtcNow.AddMinutes(2);
+
+    private void QueueMediaTokenRefreshIfNeeded()
+    {
+        if (HasFreshMediaToken() || string.IsNullOrWhiteSpace(_session?.Token))
+            return;
+        if (Interlocked.CompareExchange(ref _mediaRefreshQueued, 1, 0) != 0)
+            return;
+        _ = Task.Run(async () =>
+        {
+            try { await EnsureMediaAccessAsync().ConfigureAwait(false); }
+            finally { Interlocked.Exchange(ref _mediaRefreshQueued, 0); }
+        });
     }
 
     private void ApplyAuth(HttpRequestMessage req)
@@ -1510,7 +1588,10 @@ public sealed class EngineApiClient
         return BrowserMediaPath(path);
     }
 
-    /// <summary>Browser URL for a root-relative API media path.</summary>
+    /// <summary>
+    /// Browser URL for a root-relative API media path.
+    /// Uses a short-lived media token (?mt=), never the full session JWT.
+    /// </summary>
     public string BrowserMediaPath(string rootRelativePath)
     {
         if (string.IsNullOrWhiteSpace(rootRelativePath))
@@ -1518,12 +1599,16 @@ public sealed class EngineApiClient
         var path = rootRelativePath.StartsWith('/')
             ? rootRelativePath
             : "/" + rootRelativePath.TrimStart('/');
-        // Attach JWT so &lt;video&gt;/&lt;img&gt; can hit RequireLogin media routes.
-        var jwt = _session?.Token?.Trim();
-        if (!string.IsNullOrWhiteSpace(jwt))
+        // Prefer short-lived media token. Never put the session JWT in the query string
+        // (access logs, browser history, Referer).
+        if (HasFreshMediaToken())
         {
             path += (path.Contains('?', StringComparison.Ordinal) ? "&" : "?")
-                    + "access_token=" + Uri.EscapeDataString(jwt);
+                    + "mt=" + Uri.EscapeDataString(_mediaToken!);
+        }
+        else
+        {
+            QueueMediaTokenRefreshIfNeeded();
         }
         var origin = BrowserMediaOrigin;
         return string.IsNullOrEmpty(origin) ? path : origin + path;
@@ -2291,6 +2376,16 @@ public sealed class CostBackfillDto
     public bool Ok { get; set; }
     public string? ProjectId { get; set; }
     public CostBackfillResult? Backfill { get; set; }
+}
+
+public sealed class MediaTokenDto
+{
+    public bool Ok { get; set; }
+    public string? Token { get; set; }
+    public DateTimeOffset? ExpiresAt { get; set; }
+    public string? TokenUse { get; set; }
+    public int? Minutes { get; set; }
+    public string? Error { get; set; }
 }
 
 public sealed class DemoListEnvelope

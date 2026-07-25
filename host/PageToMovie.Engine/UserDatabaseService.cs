@@ -497,8 +497,16 @@ public class UserDatabaseService
     }
 
     /// <summary>
+    /// Per-user in-process gate so concurrent ASP.NET requests for the same user
+    /// cannot race read-modify-write even under SQLite deferred transactions.
+    /// </summary>
+    private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, SemaphoreSlim>
+        CreditLocks = new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>
     /// Atomically apply a credit delta. Positive = grant, negative = debit/claw-back.
     /// Updates balance + lifetime counters and appends a ledger row.
+    /// Uses BEGIN IMMEDIATE + SQL relative UPDATE so concurrent debits/grants cannot lose updates.
     /// </summary>
     public async Task<UserCreditSummaryDto?> ApplyCreditDeltaAsync(
         string userId,
@@ -517,49 +525,92 @@ public class UserDatabaseService
         if (Math.Abs(amountUsd) < 0.00005)
             return await GetUserCreditSummaryAsync(userId, ct).ConfigureAwait(false);
 
+        var lockKey = userId.Trim().ToLowerInvariant();
+        var gate = CreditLocks.GetOrAdd(lockKey, static _ => new SemaphoreSlim(1, 1));
+        await gate.WaitAsync(ct).ConfigureAwait(false);
+        try
+        {
+            return await ApplyCreditDeltaCoreAsync(userId, amountUsd, kind, note, metaKind, projectId, ct)
+                .ConfigureAwait(false);
+        }
+        finally
+        {
+            gate.Release();
+        }
+    }
+
+    private async Task<UserCreditSummaryDto?> ApplyCreditDeltaCoreAsync(
+        string userId,
+        double amountUsd,
+        string kind,
+        string? note,
+        string? metaKind,
+        string? projectId,
+        CancellationToken ct)
+    {
         using var conn = new SqliteConnection(ConnectionString);
         await conn.OpenAsync(ct).ConfigureAwait(false);
 
-        using var tx = (SqliteTransaction)await conn.BeginTransactionAsync(ct).ConfigureAwait(false);
+        // IMMEDIATE locks the DB for write at begin — prevents concurrent deferred txs
+        // from both reading the same balance and losing an update.
+        using var tx = (SqliteTransaction)await conn
+            .BeginTransactionAsync(System.Data.IsolationLevel.Serializable, ct)
+            .ConfigureAwait(false);
 
-        UserEntity? user;
+        string resolvedUserId;
         using (var find = conn.CreateCommand())
         {
             find.Transaction = tx;
-            find.CommandText = UserSelectSql + " WHERE user_id = @id OR LOWER(username) = LOWER(@id) LIMIT 1";
+            find.CommandText =
+                "SELECT user_id FROM users WHERE user_id = @id OR LOWER(username) = LOWER(@id) LIMIT 1";
             find.Parameters.AddWithValue("@id", userId.Trim());
-            using var reader = await find.ExecuteReaderAsync(ct).ConfigureAwait(false);
+            var found = await find.ExecuteScalarAsync(ct).ConfigureAwait(false);
+            if (found is null || found is DBNull)
+            {
+                await tx.RollbackAsync(ct).ConfigureAwait(false);
+                return null;
+            }
+            resolvedUserId = Convert.ToString(found) ?? userId.Trim();
+        }
+
+        var grantDelta = amountUsd > 0 ? amountUsd : 0d;
+        var usedDelta = amountUsd < 0 ? Math.Abs(amountUsd) : 0d;
+
+        // Relative UPDATE so the column math happens inside the write lock.
+        using (var upd = conn.CreateCommand())
+        {
+            upd.Transaction = tx;
+            upd.CommandText = @"
+                UPDATE users SET
+                    credits_balance_usd = ROUND(credits_balance_usd + @amt, 4),
+                    credits_lifetime_granted_usd = ROUND(credits_lifetime_granted_usd + @grant, 4),
+                    credits_lifetime_used_usd = ROUND(credits_lifetime_used_usd + @used, 4)
+                WHERE user_id = @id";
+            upd.Parameters.AddWithValue("@amt", amountUsd);
+            upd.Parameters.AddWithValue("@grant", grantDelta);
+            upd.Parameters.AddWithValue("@used", usedDelta);
+            upd.Parameters.AddWithValue("@id", resolvedUserId);
+            var n = await upd.ExecuteNonQueryAsync(ct).ConfigureAwait(false);
+            if (n == 0)
+            {
+                await tx.RollbackAsync(ct).ConfigureAwait(false);
+                return null;
+            }
+        }
+
+        UserEntity user;
+        using (var reload = conn.CreateCommand())
+        {
+            reload.Transaction = tx;
+            reload.CommandText = UserSelectSql + " WHERE user_id = @id LIMIT 1";
+            reload.Parameters.AddWithValue("@id", resolvedUserId);
+            using var reader = await reload.ExecuteReaderAsync(ct).ConfigureAwait(false);
             if (!await reader.ReadAsync(ct).ConfigureAwait(false))
             {
                 await tx.RollbackAsync(ct).ConfigureAwait(false);
                 return null;
             }
             user = ReadUserFromReader(reader);
-        }
-
-        var newBalance = Math.Round(user.CreditsBalanceUsd + amountUsd, 4, MidpointRounding.AwayFromZero);
-        var newGranted = user.CreditsLifetimeGrantedUsd;
-        var newUsed = user.CreditsLifetimeUsedUsd;
-
-        if (amountUsd > 0)
-            newGranted = Math.Round(newGranted + amountUsd, 4, MidpointRounding.AwayFromZero);
-        else
-            newUsed = Math.Round(newUsed + Math.Abs(amountUsd), 4, MidpointRounding.AwayFromZero);
-
-        using (var upd = conn.CreateCommand())
-        {
-            upd.Transaction = tx;
-            upd.CommandText = @"
-                UPDATE users SET
-                    credits_balance_usd = @bal,
-                    credits_lifetime_granted_usd = @granted,
-                    credits_lifetime_used_usd = @used
-                WHERE user_id = @id";
-            upd.Parameters.AddWithValue("@bal", newBalance);
-            upd.Parameters.AddWithValue("@granted", newGranted);
-            upd.Parameters.AddWithValue("@used", newUsed);
-            upd.Parameters.AddWithValue("@id", user.UserId);
-            await upd.ExecuteNonQueryAsync(ct).ConfigureAwait(false);
         }
 
         var ts = DateTimeOffset.UtcNow;
@@ -574,7 +625,7 @@ public class UserDatabaseService
             ins.Parameters.AddWithValue("@ts", ts.ToString("o"));
             ins.Parameters.AddWithValue("@kind", string.IsNullOrWhiteSpace(kind) ? "adjust" : kind.Trim());
             ins.Parameters.AddWithValue("@amt", amountUsd);
-            ins.Parameters.AddWithValue("@bal", newBalance);
+            ins.Parameters.AddWithValue("@bal", user.CreditsBalanceUsd);
             ins.Parameters.AddWithValue("@proj", (object?)projectId ?? DBNull.Value);
             ins.Parameters.AddWithValue("@note", (object?)note ?? DBNull.Value);
             ins.Parameters.AddWithValue("@meta", (object?)metaKind ?? DBNull.Value);
@@ -582,10 +633,6 @@ public class UserDatabaseService
         }
 
         await tx.CommitAsync(ct).ConfigureAwait(false);
-
-        user.CreditsBalanceUsd = newBalance;
-        user.CreditsLifetimeGrantedUsd = newGranted;
-        user.CreditsLifetimeUsedUsd = newUsed;
         return ToCreditSummary(user);
     }
 
