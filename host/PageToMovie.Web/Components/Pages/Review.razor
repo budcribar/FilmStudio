@@ -28,7 +28,7 @@ else
     Mark clips pass/fail, approve scenes, and rebuild the full movie draft.
 </p>
 <p class="small text-muted">
-    <strong>Assembly gate:</strong> auto-review <em>fail</em> and human <em>fail</em> clips are excluded from remux / WIP
+    <strong>Assembly gate:</strong> auto-review <em>fail</em> and human <em>fail</em> clips are excluded from Play stitch / export
     until you Pass with an override note.
     <strong>Play scene</strong> / <strong>Play WIP</strong> stitch in your browser when composites are missing or stale
     (no server ffmpeg for preview).
@@ -380,7 +380,7 @@ else if (_showScenePlayer && _clientStitching)
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <span>Scenes &amp; clips</span>
-                <span class="small text-muted fw-normal">Play remuxes if needed · WIP is separate</span>
+                <span class="small text-muted fw-normal">Play stitches in browser · WIP is separate</span>
             </div>
             <div class="card-body p-0">
                 @if (_scenes.Count == 0)
@@ -452,13 +452,13 @@ else if (_showScenePlayer && _clientStitching)
                                             <div class="d-flex flex-wrap gap-1 justify-content-end">
                                                 <button class="btn btn-sm btn-success"
                                                         disabled="@(_busy || JobRunning || (s.ClipsOnDisk == 0 && !s.CompositeExists))"
-                                                        title="Play scene (auto-remux if out of date)"
+                                                        title="Play scene (browser stitch from clips)"
                                                         @onclick="() => PlaySceneAsync(sn)">
                                                     ▶ Play
                                                 </button>
                                                 <button class="btn btn-sm btn-outline-success"
                                                         disabled="@(_busy || JobRunning)"
-                                                        title="Mark approved and remux this scene’s composite"
+                                                        title="Mark scene approved"
                                                         @onclick="() => ApproveAsync(sn)">
                                                     Approve
                                                 </button>
@@ -485,7 +485,7 @@ else if (_showScenePlayer && _clientStitching)
                     <div class="d-flex gap-1">
                         <button class="btn btn-sm btn-success"
                                 disabled="@(_busy || JobRunning || (ClipCountOnDisk(sel) == 0 && !SceneHasComposite(sel)))"
-                                title="Play scene composite (auto-remux if missing/out of date)"
+                                title="Play scene (browser stitch from clips)"
                                 @onclick="() => PlaySceneAsync(sel)">
                             ▶ Play scene
                         </button>
@@ -1495,9 +1495,9 @@ else if (_showScenePlayer && _clientStitching)
         try
         {
             await EnsureHubAsync();
-            // Approve logs + remux scene composite only (WIP rebuilds on Play WIP when needed)
-            await Engine.ApproveSceneAsync(_projectId, scene, _note, remux: true, rebuildWip: false);
-            _message = $"Approved S{scene:D2} — remuxing scene composite";
+            // Approve is review state only — Play stitches in the browser (no server remux).
+            await Engine.ApproveSceneAsync(_projectId, scene, _note, remux: false, rebuildWip: false);
+            _message = $"Approved S{scene:D2}";
             await SoftLoadAsync();
             var jobs = await Engine.GetJobAsync();
             _job = jobs?.Job;

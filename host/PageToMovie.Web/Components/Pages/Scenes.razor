@@ -497,7 +497,7 @@ else
                 </div>
                 <button class="btn btn-sm btn-success"
                         disabled="@(_busy || JobRunning || (_detail.ClipsOnDisk == 0 && !_detail.CompositeExists))"
-                        title="Play scene (auto-remux if missing or clips newer)"
+                        title="Play scene (browser stitch from clips)"
                         @onclick="() => PlaySceneCompositeAsync(_detail.SceneNumber)">
                     ▶ Play scene
                 </button>
@@ -577,7 +577,7 @@ else
                            @key="_inlineCompositeKey"
                            poster=""></video>
                     <p class="small text-muted mb-0 mt-1">
-                        This is the remuxed scene (~@(_detail.ActualDurationSeconds is double ad ? FormatClock(ad) : "?")).
+                        Scene composite on disk (~@(_detail.ActualDurationSeconds is double ad ? FormatClock(ad) : "?")).
                         Select a clip row below to play one clip only.
                     </p>
                 </div>
@@ -876,7 +876,7 @@ else
                 </div>
             </div>
             <div class="card-footer small text-muted">
-                After regen, <strong>Play scene</strong> remuxes the composite automatically.
+                After regen, <strong>Play scene</strong> stitches clips in the browser.
                 Pass/fail: <a href="review">Review</a>. Full movie: rebuild WIP on Review.
             </div>
         </div>
