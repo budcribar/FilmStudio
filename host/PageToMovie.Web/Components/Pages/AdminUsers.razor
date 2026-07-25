@@ -290,12 +290,12 @@
                             <div class="form-text mt-1">At least 4 characters. Tell the user out of band.</div>
                         </div>
                         <div class="col-md-5">
-                            <label class="form-label fw-medium mb-1">Your admin password</label>
+                            <label class="form-label fw-medium mb-1">Your admin password (optional)</label>
                             <div class="input-group">
                                 <input type="@(_showResetAdminPassword ? "text" : "password")"
                                        class="form-control"
                                        @bind="_resetAdminPassword"
-                                       placeholder="Confirm admin password"
+                                       placeholder="Optional — leave blank for override"
                                        autocomplete="current-password" />
                                 <button class="btn btn-outline-secondary" type="button"
                                         title="@(_showResetAdminPassword ? "Hide password" : "Show password")"
@@ -303,7 +303,7 @@
                                     @(_showResetAdminPassword ? "🙈 Hide" : "👁️ Show")
                                 </button>
                             </div>
-                            <div class="form-text mt-1">Your password (or operator override secret).</div>
+                            <div class="form-text mt-1">Optional. Leave blank if using operator override bypass.</div>
                         </div>
                         <div class="col-md-2 d-flex flex-column justify-content-start">
                             <label class="form-label d-none d-md-block mb-1">&nbsp;</label>
