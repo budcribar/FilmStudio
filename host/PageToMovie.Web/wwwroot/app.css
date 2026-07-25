@@ -442,9 +442,23 @@ input[type="file"]:disabled::file-selector-button {
     color: var(--fs-text-primary) !important;
 }
 
-.list-group-item.active {
+.list-group-item.active,
+.list-group-item.active:hover,
+.list-group-item.active:focus,
+.list-group-item.active:focus-visible,
+.list-group-item-action.active,
+.list-group-item-action.active:hover,
+.list-group-item-action.active:focus,
+.list-group-item-action.active:focus-visible {
     background-color: var(--fs-accent-indigo) !important;
     border-color: var(--fs-accent-indigo) !important;
+    color: #ffffff !important;
+}
+
+/* Labels on active row stay white (Bootstrap / theme often leave child spans near-white-on-white). */
+.list-group-item.active .char-list-name,
+.list-group-item.active .project-list__pick,
+.list-group-item.active > span:not([class*="thumb"]):not([class*="badge"]):not([class*="miss"]) {
     color: #ffffff !important;
 }
 
