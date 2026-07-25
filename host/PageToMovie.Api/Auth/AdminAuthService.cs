@@ -20,7 +20,7 @@ public interface IAdminAuthService
     public const int MediaTokenMinutes = 30;
 
     LoginResponse Login(string username, string password);
-    LoginResponse Signup(string username, string password);
+    LoginResponse Signup(string username, string password, string? email = null);
     /// <summary>Issue operator JWT when secret matches PageToMovie_LOGIN_OVERRIDE.</summary>
     LoginResponse LoginWithOperatorOverride(string secret);
     ClaimsPrincipal? ValidateToken(string token);
@@ -38,9 +38,11 @@ public interface IAdminAuthService
 public sealed class AdminAuthService : IAdminAuthService
 {
     private readonly AuthOptions _auth;
+    private readonly MailOptions _mail;
     private readonly IHostEnvironment _env;
     private readonly UserDatabaseService _userDb;
     private readonly CreditService? _credits;
+    private readonly PageToMovie.Engine.Abstractions.IEmailSender? _email;
     private readonly PasswordHasher<object> _hasher = new();
     private readonly object _hashTarget = new();
 
@@ -48,54 +50,119 @@ public sealed class AdminAuthService : IAdminAuthService
         IOptions<PageToMovieOptions> opts,
         IHostEnvironment env,
         UserDatabaseService userDb,
-        CreditService? credits = null)
+        CreditService? credits = null,
+        PageToMovie.Engine.Abstractions.IEmailSender? email = null)
     {
         _auth = opts.Value.Auth ?? new AuthOptions();
+        _mail = opts.Value.Mail ?? new MailOptions();
         _env = env;
         _userDb = userDb;
         _credits = credits;
+        _email = email;
     }
 
-    public LoginResponse Signup(string username, string password)
+    public LoginResponse Signup(string username, string password, string? email = null)
     {
         username = (username ?? "").Trim();
         password = (password ?? "").Trim();
+        email = UserDatabaseService.NormalizeEmail(email);
 
         if (username.Length < 3)
             return Fail("Username must be at least 3 characters long");
         if (password.Length < 4)
             return Fail("Password must be at least 4 characters long");
+        if (!UserDatabaseService.IsValidEmail(email))
+            return Fail("A valid email address is required");
 
         var existing = _userDb.GetUserByUsernameAsync(username).GetAwaiter().GetResult();
         if (existing is not null)
             return Fail("Username is already taken");
+        var byEmail = _userDb.GetUserByEmailAsync(email!).GetAwaiter().GetResult();
+        if (byEmail is not null)
+            return Fail("That email is already registered");
 
         var user = new UserEntity
         {
             UserId = username.ToLowerInvariant(),
             Username = username,
             PasswordHash = UserDatabaseService.HashPassword(password),
+            Email = email,
+            EmailConfirmedAt = null,
             Role = AppRoles.User,
             CreatedAt = DateTime.UtcNow
         };
 
-        _userDb.InsertUserAsync(user).GetAwaiter().GetResult();
+        try
+        {
+            _userDb.InsertUserAsync(user).GetAwaiter().GetResult();
+        }
+        catch (Exception)
+        {
+            return Fail("Could not create account (username or email may already be in use)");
+        }
 
         // Signup grant (list-rate credits). Failures are non-fatal.
         _credits?.GrantSignupCreditsAsync(user.UserId).GetAwaiter().GetResult();
 
-        var hours = Math.Clamp(_auth.JwtHours, 1, 168);
-        var expires = DateTimeOffset.UtcNow.AddHours(hours);
-        var token = IssueJwt(user.Username, new[] { AppRoles.User }, expires);
+        try
+        {
+            SendEmailConfirmAsync(user).GetAwaiter().GetResult();
+        }
+        catch
+        {
+            // Account exists; user can request resend
+        }
 
         return new LoginResponse
         {
             Ok = true,
-            Token = token,
+            RequiresEmailConfirmation = true,
             UserId = user.Username,
-            Roles = new List<string> { AppRoles.User },
-            ExpiresAt = expires,
+            Message =
+                "Account created. Check your email for a confirmation link before signing in. " +
+                "(In development, confirmation links are written to the API log if SMTP is not configured.)",
         };
+    }
+
+    public async Task SendEmailConfirmAsync(UserEntity user)
+    {
+        if (user is null || string.IsNullOrWhiteSpace(user.Email)) return;
+        var raw = await _userDb.CreateAuthTokenAsync(
+            user.UserId, UserDatabaseService.AuthPurposeEmailConfirm, TimeSpan.FromDays(2));
+        var link = BuildAppLink($"/login?confirmEmail={Uri.EscapeDataString(raw)}");
+        var subject = "Confirm your PageToMovie email";
+        var text = $"Hi {user.Username},\n\nConfirm your email:\n{link}\n\nThis link expires in 48 hours.\n";
+        var html = $"<p>Hi {System.Net.WebUtility.HtmlEncode(user.Username)},</p>" +
+                   $"<p><a href=\"{System.Net.WebUtility.HtmlEncode(link)}\">Confirm your email</a></p>" +
+                   "<p>This link expires in 48 hours.</p>";
+        if (_email is not null)
+            await _email.SendAsync(user.Email!, subject, html, text);
+    }
+
+    public async Task SendPasswordResetEmailAsync(UserEntity user)
+    {
+        if (user is null || string.IsNullOrWhiteSpace(user.Email)) return;
+        var raw = await _userDb.CreateAuthTokenAsync(
+            user.UserId, UserDatabaseService.AuthPurposePasswordReset, TimeSpan.FromHours(1));
+        var link = BuildAppLink($"/login?resetToken={Uri.EscapeDataString(raw)}");
+        var subject = "Reset your PageToMovie password";
+        var text = $"Hi {user.Username},\n\nReset your password:\n{link}\n\nThis link expires in 1 hour.\n";
+        var html = $"<p>Hi {System.Net.WebUtility.HtmlEncode(user.Username)},</p>" +
+                   $"<p><a href=\"{System.Net.WebUtility.HtmlEncode(link)}\">Reset your password</a></p>" +
+                   "<p>This link expires in 1 hour. If you did not request this, ignore this email.</p>";
+        if (_email is not null)
+            await _email.SendAsync(user.Email!, subject, html, text);
+    }
+
+    private string BuildAppLink(string pathAndQuery)
+    {
+        var bas = (_mail.PublicBaseUrl ?? "").Trim().TrimEnd('/');
+        if (string.IsNullOrWhiteSpace(bas))
+            bas = Environment.GetEnvironmentVariable("PAGETOMOVIE_PUBLIC_BASE_URL")?.Trim().TrimEnd('/')
+                  ?? "http://localhost:5079";
+        if (!pathAndQuery.StartsWith('/'))
+            pathAndQuery = "/" + pathAndQuery;
+        return bas + pathAndQuery;
     }
 
     public LoginResponse Login(string username, string password)
@@ -120,6 +187,17 @@ public sealed class AdminAuthService : IAdminAuthService
             var hash = UserDatabaseService.HashPassword(password);
             if (dbUser.PasswordHash == hash)
             {
+                if (!UserDatabaseService.IsEmailConfirmed(dbUser))
+                {
+                    return new LoginResponse
+                    {
+                        Ok = false,
+                        RequiresEmailConfirmation = true,
+                        UserId = dbUser.Username,
+                        Error = "Confirm your email before signing in. Check your inbox (or the API log in development).",
+                    };
+                }
+
                 var userRoles = new List<string> { AppRoles.User };
                 if (string.Equals(dbUser.Role, "Admin", StringComparison.OrdinalIgnoreCase) ||
                     string.Equals(username, _auth.AdminUsername, StringComparison.OrdinalIgnoreCase) ||

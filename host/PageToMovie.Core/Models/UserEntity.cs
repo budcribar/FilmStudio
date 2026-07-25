@@ -11,6 +11,10 @@ public class UserEntity
     public string UserId { get; set; } = "";
     public string Username { get; set; } = "";
     public string PasswordHash { get; set; } = "";
+    /// <summary>Normalized lowercase email (unique when set).</summary>
+    public string? Email { get; set; }
+    /// <summary>When the email was confirmed; null until confirmed. Legacy users with no email are treated as confirmed.</summary>
+    public DateTimeOffset? EmailConfirmedAt { get; set; }
     public string? EncryptedXaiApiKey { get; set; }
     public string? EncryptedGeminiApiKey { get; set; }
     public string? EncryptedAnthropicApiKey { get; set; }

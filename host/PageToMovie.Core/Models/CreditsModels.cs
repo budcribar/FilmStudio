@@ -25,6 +25,9 @@ public sealed class UserCreditSummaryDto
     /// <summary>Admin-disabled account — cannot sign in or use the API.</summary>
     public bool IsDisabled { get; set; }
 
+    /// <summary>User requested password help from the sign-in screen.</summary>
+    public DateTimeOffset? PasswordResetRequestedAt { get; set; }
+
     /// <summary>Remaining balance (USD list-rate).</summary>
     public double CreditsBalanceUsd { get; set; }
 
@@ -55,6 +58,21 @@ public sealed class AdminDeleteUserRequest
     public string AdminPassword { get; set; } = "";
     /// <summary>When true, also delete projects owned by this user and their demo submissions.</summary>
     public bool DeleteOwnedProjects { get; set; } = true;
+}
+
+/// <summary>Public forgot-password request (no auth). Always succeeds generically.</summary>
+public sealed class ForgotPasswordRequest
+{
+    public string Username { get; set; } = "";
+}
+
+/// <summary>Admin sets a user's password after a forgot-password request (or anytime).</summary>
+public sealed class AdminSetUserPasswordRequest
+{
+    public string UserId { get; set; } = "";
+    public string NewPassword { get; set; } = "";
+    /// <summary>Password of the acting admin (or operator override secret).</summary>
+    public string AdminPassword { get; set; } = "";
 }
 
 public sealed class CreditLedgerEntryDto

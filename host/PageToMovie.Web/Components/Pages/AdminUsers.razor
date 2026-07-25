@@ -127,6 +127,12 @@
                                     <td>
                                         <div class="fw-semibold">@u.Username</div>
                                         <div class="small text-muted font-monospace">@u.UserId</div>
+                                        @if (u.PasswordResetRequestedAt is not null)
+                                        {
+                                            <div class="small text-warning mt-1" title="@u.PasswordResetRequestedAt.Value.ToLocalTime().ToString("g")">
+                                                Password help requested
+                                            </div>
+                                        }
                                     </td>
                                     <td><span class="badge text-bg-light">@u.Role</span></td>
                                     <td>
@@ -137,6 +143,10 @@
                                         else
                                         {
                                             <span class="badge text-bg-success">Active</span>
+                                        }
+                                        @if (u.PasswordResetRequestedAt is not null)
+                                        {
+                                            <span class="badge text-bg-warning text-dark ms-1">Reset?</span>
                                         }
                                     </td>
                                     <td class="text-end">
@@ -170,6 +180,12 @@
                                                     @onclick="() => OpenGrant(u)"
                                                     disabled="@(_busy || u.IsDisabled)">
                                                 Grant…
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-secondary"
+                                                    @onclick="() => OpenResetPassword(u)"
+                                                    disabled="@_busy"
+                                                    title="Set a new password for this user">
+                                                Password…
                                             </button>
                                             @if (u.IsDisabled)
                                             {
@@ -237,6 +253,40 @@
                         <button type="button" class="btn btn-sm btn-outline-secondary" @onclick="() => QuickGrant(5)">+$5 (500)</button>
                         <button type="button" class="btn btn-sm btn-outline-secondary" @onclick="() => QuickGrant(10)">+$10 (1000)</button>
                         <button type="button" class="btn btn-sm btn-outline-secondary" @onclick="() => QuickGrant(25)">+$25 (2500)</button>
+                    </div>
+                </div>
+            </div>
+        }
+
+        @if (_resetUser is not null)
+        {
+            <div class="card mb-4 border-warning">
+                <div class="card-header">Set password — @_resetUser.Username</div>
+                <div class="card-body">
+                    @if (_resetUser.PasswordResetRequestedAt is not null)
+                    {
+                        <p class="small text-warning mb-2">
+                            User requested help at @_resetUser.PasswordResetRequestedAt.Value.ToLocalTime().ToString("g").
+                        </p>
+                    }
+                    <div class="row g-2 align-items-end">
+                        <div class="col-md-4">
+                            <label class="form-label">New password</label>
+                            <input type="password" class="form-control" @bind="_resetNewPassword"
+                                   autocomplete="new-password" />
+                            <div class="form-text">At least 4 characters. Tell the user out of band.</div>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Your admin password</label>
+                            <input type="password" class="form-control" @bind="_resetAdminPassword"
+                                   autocomplete="current-password" />
+                        </div>
+                        <div class="col-md-4 d-flex gap-2">
+                            <button class="btn btn-warning" disabled="@_busy" @onclick="SubmitResetPasswordAsync">
+                                @(_busy ? "…" : "Set password")
+                            </button>
+                            <button class="btn btn-outline-secondary" disabled="@_busy" @onclick="CloseResetPassword">Cancel</button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -350,6 +400,10 @@
     private string _deleteAdminPassword = "";
     private bool _deleteOwnedProjects = true;
 
+    private UserCreditSummaryDto? _resetUser;
+    private string _resetNewPassword = "";
+    private string _resetAdminPassword = "";
+
     private bool IsSelf(UserCreditSummaryDto u) =>
         string.Equals(u.UserId, Session.UserId, StringComparison.OrdinalIgnoreCase) ||
         string.Equals(u.Username, Session.UserId, StringComparison.OrdinalIgnoreCase);
@@ -404,6 +458,7 @@
     private void OpenGrant(UserCreditSummaryDto u)
     {
         _deleteUser = null;
+        _resetUser = null;
         _grantUser = u;
         _grantUsd = 5;
         _grantCredits = 500;
@@ -418,9 +473,54 @@
         _message = null;
     }
 
+    private void OpenResetPassword(UserCreditSummaryDto u)
+    {
+        _grantUser = null;
+        _deleteUser = null;
+        _resetUser = u;
+        _resetNewPassword = "";
+        _resetAdminPassword = "";
+        _message = null;
+        _error = null;
+    }
+
+    private void CloseResetPassword()
+    {
+        _resetUser = null;
+        _resetNewPassword = "";
+        _resetAdminPassword = "";
+    }
+
+    private async Task SubmitResetPasswordAsync()
+    {
+        if (_resetUser is null) return;
+        _busy = true;
+        _error = null;
+        _message = null;
+        try
+        {
+            await Api.AdminSetUserPasswordAsync(
+                _resetUser.UserId,
+                _resetNewPassword,
+                _resetAdminPassword);
+            _message = $"Password updated for {_resetUser.Username}.";
+            CloseResetPassword();
+            await LoadAsync();
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
     private void OpenDelete(UserCreditSummaryDto u)
     {
         _grantUser = null;
+        _resetUser = null;
         _deleteUser = u;
         _deleteConfirmUsername = "";
         _deleteAdminPassword = "";

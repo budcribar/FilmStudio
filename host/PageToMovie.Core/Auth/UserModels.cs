@@ -16,6 +16,19 @@ public sealed class LoginRequest
 {
     public string Username { get; set; } = "";
     public string Password { get; set; } = "";
+    /// <summary>Required on signup; ignored on login (login still uses username).</summary>
+    public string? Email { get; set; }
+}
+
+public sealed class ConfirmEmailRequest
+{
+    public string Token { get; set; } = "";
+}
+
+public sealed class ResetPasswordWithTokenRequest
+{
+    public string Token { get; set; } = "";
+    public string NewPassword { get; set; } = "";
 }
 
 /// <summary>Body for POST /api/auth/operator-override.</summary>
@@ -46,6 +59,9 @@ public sealed class LoginResponse
     public List<string> Roles { get; set; } = new();
     public string? Error { get; set; }
     public DateTimeOffset? ExpiresAt { get; set; }
+    /// <summary>When true, account needs email confirmation before a session token is issued.</summary>
+    public bool RequiresEmailConfirmation { get; set; }
+    public string? Message { get; set; }
 }
 
 public sealed class MeResponse

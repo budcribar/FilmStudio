@@ -6,7 +6,7 @@
 @using Microsoft.AspNetCore.WebUtilities
 @using PageToMovie.Core.Options
 
-<PageTitle>@(_isSignup ? "Sign Up" : "Sign In") — PageToMovie</PageTitle>
+<PageTitle>@PageTitleText — PageToMovie</PageTitle>
 
 <div class="auth-container">
     <div class="auth-card">
@@ -16,22 +16,38 @@
                 <span class="logo-text fs-2 fw-bold mb-0">PageToMovie</span>
             </div>
             <p class="auth-subtitle">
-                @(_isSignup
-                    ? "Create your account to start generating films"
-                    : "Sign in with your username and password (operator override secret goes in the password field only)")
+                @if (_resetTokenMode)
+                {
+                    <text>Choose a new password for your account.</text>
+                }
+                else if (_forgotMode)
+                {
+                    <text>Enter your username or email — we’ll send a reset link if the account has a confirmed address.</text>
+                }
+                else if (_isSignup)
+                {
+                    <text>Create your account to start generating films</text>
+                }
+                else
+                {
+                    <text>Sign in with your username and password (operator override secret goes in the password field only)</text>
+                }
             </p>
         </div>
 
-        <div class="auth-tabs">
-            <button type="button" class="tab-btn @(!_isSignup ? "active" : "")" @onclick="() => SetMode(false)">
-                Sign In
-            </button>
-            <button type="button" class="tab-btn @(_isSignup ? "active" : "")" @onclick="() => SetMode(true)">
-                Create Account
-            </button>
-        </div>
+        @if (!_forgotMode && !_resetTokenMode)
+        {
+            <div class="auth-tabs">
+                <button type="button" class="tab-btn @(!_isSignup ? "active" : "")" @onclick="() => SetMode(false)">
+                    Sign In
+                </button>
+                <button type="button" class="tab-btn @(_isSignup ? "active" : "")" @onclick="() => SetMode(true)">
+                    Create Account
+                </button>
+            </div>
+        }
 
-        @if (_busy && string.IsNullOrEmpty(_error))
+        @if (_busy && string.IsNullOrEmpty(_error) && string.IsNullOrEmpty(_info))
         {
             <div class="auth-status text-center py-4">
                 <div class="spinner-border text-primary mb-3" role="status">
@@ -39,6 +55,101 @@
                 </div>
                 <p class="text-muted mb-0">@_status</p>
             </div>
+        }
+        else if (_resetTokenMode)
+        {
+            <form class="auth-form" @onsubmit="SubmitResetWithTokenAsync">
+                <div class="mb-3">
+                    <label class="form-label" for="reset-password-input">New password</label>
+                    <div class="input-group">
+                        <span class="input-group-text" aria-hidden="true">🔒</span>
+                        <input id="reset-password-input"
+                               type="@(_showPassword ? "text" : "password")"
+                               class="form-control"
+                               @bind="_password"
+                               @bind:event="oninput"
+                               placeholder="New password"
+                               autocomplete="new-password"
+                               required />
+                        <button type="button"
+                                class="btn btn-outline-secondary password-toggle"
+                                @onclick="ToggleShowPassword"
+                                title="@(_showPassword ? "Hide password" : "Show password")"
+                                aria-label="@(_showPassword ? "Hide password" : "Show password")"
+                                aria-pressed="@_showPassword">
+                            @(_showPassword ? "Hide" : "Show")
+                        </button>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label" for="reset-confirm-input">Confirm new password</label>
+                    <div class="input-group">
+                        <span class="input-group-text" aria-hidden="true">✓</span>
+                        <input id="reset-confirm-input"
+                               type="@(_showPassword ? "text" : "password")"
+                               class="form-control"
+                               @bind="_confirmPassword"
+                               @bind:event="oninput"
+                               placeholder="Confirm password"
+                               autocomplete="new-password"
+                               required />
+                    </div>
+                </div>
+
+                @if (!string.IsNullOrEmpty(_error))
+                {
+                    <div class="alert alert-danger py-2" role="alert">@_error</div>
+                }
+                @if (!string.IsNullOrEmpty(_info))
+                {
+                    <div class="alert alert-success py-2" role="alert">@_info</div>
+                }
+
+                <button type="submit" class="btn btn-gradient w-100 py-2 mt-2" disabled="@_busy">
+                    @(_busy ? "Updating…" : "Set new password")
+                </button>
+                <button type="button" class="btn btn-link w-100 mt-2 text-decoration-none" @onclick="ExitResetTokenMode">
+                    ← Back to sign in
+                </button>
+            </form>
+        }
+        else if (_forgotMode)
+        {
+            <form class="auth-form" @onsubmit="SubmitForgotAsync">
+                <div class="mb-3">
+                    <label class="form-label" for="forgot-username">Username or email</label>
+                    <div class="input-group">
+                        <span class="input-group-text" aria-hidden="true">👤</span>
+                        <input id="forgot-username"
+                               class="form-control"
+                               @bind="_username"
+                               @bind:event="oninput"
+                               placeholder="username or you@example.com"
+                               autocomplete="username"
+                               required />
+                    </div>
+                    <div class="form-text text-muted">
+                        If the account has email, a one-hour reset link is sent (check the API log in development without SMTP).
+                        An administrator can also set a new password on the Users page.
+                    </div>
+                </div>
+
+                @if (!string.IsNullOrEmpty(_error))
+                {
+                    <div class="alert alert-danger py-2" role="alert">@_error</div>
+                }
+                @if (!string.IsNullOrEmpty(_info))
+                {
+                    <div class="alert alert-success py-2" role="alert">@_info</div>
+                }
+
+                <button type="submit" class="btn btn-gradient w-100 py-2 mt-2" disabled="@_busy">
+                    @(_busy ? "Submitting…" : "Send reset link")
+                </button>
+                <button type="button" class="btn btn-link w-100 mt-2 text-decoration-none" @onclick="ExitForgotMode">
+                    ← Back to sign in
+                </button>
+            </form>
         }
         else
         {
@@ -50,6 +161,27 @@
                         <input id="username-input" class="form-control" @bind="_username" @bind:event="oninput" placeholder="Enter username" autocomplete="username" required />
                     </div>
                 </div>
+
+                @if (_isSignup)
+                {
+                    <div class="mb-3">
+                        <label class="form-label" for="email-input">Email</label>
+                        <div class="input-group">
+                            <span class="input-group-text" aria-hidden="true">✉</span>
+                            <input id="email-input"
+                                   type="email"
+                                   class="form-control"
+                                   @bind="_email"
+                                   @bind:event="oninput"
+                                   placeholder="you@example.com"
+                                   autocomplete="email"
+                                   required />
+                        </div>
+                        <div class="form-text text-muted">
+                            We’ll send a confirmation link before you can sign in.
+                        </div>
+                    </div>
+                }
 
                 <div class="mb-3">
                     <label class="form-label" for="password-input">Password</label>
@@ -103,8 +235,33 @@
                 @if (!string.IsNullOrEmpty(_error))
                 {
                     <div class="alert alert-danger d-flex align-items-start py-2" role="alert">
-                        <i class="bi bi-exclamation-triangle-fill me-2 fs-5"></i>
-                        <div>@_error</div>
+                        <div>
+                            <div>@_error</div>
+                            @if (_needsResend)
+                            {
+                                <button type="button"
+                                        class="btn btn-link btn-sm p-0 mt-1"
+                                        disabled="@_busy"
+                                        @onclick="ResendConfirmationAsync">
+                                    Resend confirmation email
+                                </button>
+                            }
+                        </div>
+                    </div>
+                }
+                @if (!string.IsNullOrEmpty(_info))
+                {
+                    <div class="alert alert-success py-2" role="alert">
+                        <div>@_info</div>
+                        @if (_needsResend)
+                        {
+                            <button type="button"
+                                    class="btn btn-link btn-sm p-0 mt-1"
+                                    disabled="@_busy"
+                                    @onclick="ResendConfirmationAsync">
+                                Resend confirmation email
+                            </button>
+                        }
                     </div>
                 }
 
@@ -119,11 +276,27 @@
                         <span>@(_isSignup ? "Create Account" : "Sign In")</span>
                     }
                 </button>
+
+                @if (!_isSignup)
+                {
+                    <div class="text-center mt-3">
+                        <button type="button" class="btn btn-link btn-sm p-0 text-decoration-none" @onclick="EnterForgotMode">
+                            Forgot password?
+                        </button>
+                    </div>
+                }
             </form>
         }
 
         <div class="auth-footer text-center mt-4">
-            @if (!_isSignup)
+            @if (_resetTokenMode || _forgotMode)
+            {
+                <span class="text-muted small">Remembered it? </span>
+                <button type="button" class="btn btn-link p-0 text-decoration-none" @onclick="BackToSignIn">
+                    Sign in
+                </button>
+            }
+            else if (!_isSignup)
             {
                 <span class="text-muted">Don't have an account yet? </span>
                 <button type="button" class="btn btn-link p-0 text-decoration-none" @onclick="() => SetMode(true)">
@@ -289,18 +462,172 @@
 
 @code {
     private string _username = "";
+    private string _email = "";
     private string _password = "";
     private string _confirmPassword = "";
+    private string? _resetToken;
     private bool _isSignup;
+    private bool _forgotMode;
+    private bool _resetTokenMode;
     private bool _showPassword;
+    private bool _needsResend;
     private string? _error;
+    private string? _info;
     private string _status = "Checking session…";
     private bool _busy;
     private bool _started;
 
-    private void ToggleShowPassword()
+    private string PageTitleText =>
+        _resetTokenMode ? "Reset password"
+        : _forgotMode ? "Forgot password"
+        : _isSignup ? "Sign Up"
+        : "Sign In";
+
+    private void ToggleShowPassword() => _showPassword = !_showPassword;
+
+    private void EnterForgotMode()
     {
-        _showPassword = !_showPassword;
+        _forgotMode = true;
+        _resetTokenMode = false;
+        _isSignup = false;
+        _error = null;
+        _info = null;
+        _needsResend = false;
+        _password = "";
+        _confirmPassword = "";
+    }
+
+    private void ExitForgotMode()
+    {
+        _forgotMode = false;
+        _error = null;
+        _info = null;
+    }
+
+    private void ExitResetTokenMode()
+    {
+        _resetTokenMode = false;
+        _resetToken = null;
+        _error = null;
+        _info = null;
+        _password = "";
+        _confirmPassword = "";
+        // Drop token from URL without reloading the whole app if possible
+        try { Nav.NavigateTo("/login", replace: true); } catch { /* ignore */ }
+    }
+
+    private void BackToSignIn()
+    {
+        _forgotMode = false;
+        _resetTokenMode = false;
+        _resetToken = null;
+        _isSignup = false;
+        _error = null;
+        _info = null;
+        _needsResend = false;
+        _password = "";
+        _confirmPassword = "";
+        try { Nav.NavigateTo("/login", replace: true); } catch { /* ignore */ }
+    }
+
+    private async Task SubmitForgotAsync()
+    {
+        _error = null;
+        _info = null;
+        var id = _username.Trim();
+        if (id.Length < 3 && !id.Contains('@'))
+        {
+            _error = "Enter your username (at least 3 characters) or email.";
+            return;
+        }
+
+        _busy = true;
+        _status = "Submitting request…";
+        try
+        {
+            _info = await Api.ForgotPasswordAsync(id);
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task SubmitResetWithTokenAsync()
+    {
+        _error = null;
+        _info = null;
+        if (string.IsNullOrWhiteSpace(_resetToken))
+        {
+            _error = "Missing reset token. Open the link from your email again.";
+            return;
+        }
+        if (string.IsNullOrWhiteSpace(_password) || _password.Length < 4)
+        {
+            _error = "Password must be at least 4 characters long.";
+            return;
+        }
+        if (_password != _confirmPassword)
+        {
+            _error = "Passwords do not match.";
+            return;
+        }
+
+        _busy = true;
+        _status = "Updating password…";
+        try
+        {
+            var (ok, msg) = await Api.ResetPasswordWithTokenAsync(_resetToken, _password);
+            if (!ok)
+            {
+                _error = msg;
+                return;
+            }
+            _info = msg;
+            _resetTokenMode = false;
+            _resetToken = null;
+            _password = "";
+            _confirmPassword = "";
+            _isSignup = false;
+            _forgotMode = false;
+            try { Nav.NavigateTo("/login", replace: true); } catch { /* ignore */ }
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task ResendConfirmationAsync()
+    {
+        var id = !string.IsNullOrWhiteSpace(_username) ? _username.Trim() : _email.Trim();
+        if (id.Length < 3)
+        {
+            _error = "Enter your username or email first.";
+            return;
+        }
+        _busy = true;
+        try
+        {
+            _info = await Api.ResendConfirmationAsync(id);
+            _error = null;
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            _busy = false;
+        }
     }
 
     protected override void OnInitialized()
@@ -316,9 +643,11 @@
 
         try
         {
-            // Explain failed ?me= bootstrap (never put the secret itself on this page).
             var uri = Nav.ToAbsoluteUri(Nav.Uri);
-            if (QueryHelpers.ParseQuery(uri.Query).TryGetValue("overrideError", out var errVals))
+            var q = QueryHelpers.ParseQuery(uri.Query);
+
+            // Explain failed ?me= bootstrap (never put the secret itself on this page).
+            if (q.TryGetValue("overrideError", out var errVals))
             {
                 _error = (errVals.FirstOrDefault() ?? "").Trim().ToLowerInvariant() switch
                 {
@@ -337,8 +666,63 @@
                 StateHasChanged();
             }
 
+            // Flash after confirm redirect
+            if (q.TryGetValue("emailConfirmed", out var confFlash) &&
+                string.Equals(confFlash.FirstOrDefault(), "1", StringComparison.Ordinal))
+            {
+                _info = "Email confirmed. You can sign in now.";
+                _isSignup = false;
+                StateHasChanged();
+            }
+
+            // Email confirmation link: /login?confirmEmail=TOKEN
+            if (q.TryGetValue("confirmEmail", out var confirmVals))
+            {
+                var token = (confirmVals.FirstOrDefault() ?? "").Trim();
+                if (token.Length >= 10)
+                {
+                    _busy = true;
+                    _status = "Confirming email…";
+                    StateHasChanged();
+                    try
+                    {
+                        var (ok, msg) = await Api.ConfirmEmailAsync(token);
+                        if (ok)
+                        {
+                            // Replace URL so a refresh does not re-consume; flash message via query
+                            Nav.NavigateTo("/login?emailConfirmed=1", replace: true);
+                            return; // remount will show flash
+                        }
+                        _error = msg;
+                    }
+                    catch (Exception ex)
+                    {
+                        _error = ex.Message;
+                    }
+                    finally
+                    {
+                        _busy = false;
+                        StateHasChanged();
+                    }
+                }
+            }
+
+            // Password reset link: /login?resetToken=TOKEN
+            if (q.TryGetValue("resetToken", out var resetVals))
+            {
+                var token = (resetVals.FirstOrDefault() ?? "").Trim();
+                if (token.Length >= 10)
+                {
+                    _resetToken = token;
+                    _resetTokenMode = true;
+                    _forgotMode = false;
+                    _isSignup = false;
+                    StateHasChanged();
+                }
+            }
+
             await Session.EnsureHydratedAsync();
-            if (Session.IsLoggedIn)
+            if (Session.IsLoggedIn && !_resetTokenMode)
             {
                 Nav.NavigateTo(ResolveReturnUrl(), forceLoad: true);
             }
@@ -366,7 +750,11 @@
     private void SetMode(bool isSignup)
     {
         _isSignup = isSignup;
+        _forgotMode = false;
+        _resetTokenMode = false;
         _error = null;
+        _info = null;
+        _needsResend = false;
         if (_isSignup && !Nav.Uri.EndsWith("/signup", StringComparison.OrdinalIgnoreCase))
             Nav.NavigateTo("/signup", replace: true);
         else if (!_isSignup && !Nav.Uri.EndsWith("/login", StringComparison.OrdinalIgnoreCase))
@@ -376,11 +764,23 @@
     private async Task SubmitAsync()
     {
         _error = null;
+        _info = null;
+        _needsResend = false;
 
         if (string.IsNullOrWhiteSpace(_username) || _username.Trim().Length < 3)
         {
             _error = "Username must be at least 3 characters long.";
             return;
+        }
+
+        if (_isSignup)
+        {
+            var email = (_email ?? "").Trim();
+            if (email.Length < 5 || !email.Contains('@') || !email.Contains('.'))
+            {
+                _error = "Enter a valid email address.";
+                return;
+            }
         }
 
         if (string.IsNullOrWhiteSpace(_password) || _password.Length < 4)
@@ -402,12 +802,37 @@
         try
         {
             var resp = _isSignup
-                ? await Api.SignupAsync(_username.Trim(), _password)
+                ? await Api.SignupAsync(_username.Trim(), _password, (_email ?? "").Trim())
                 : await Api.LoginAsync(_username.Trim(), _password);
 
-            if (resp is null || !resp.Ok || string.IsNullOrWhiteSpace(resp.Token))
+            if (resp is null)
             {
-                _error = resp?.Error ?? (_isSignup ? "Sign up failed." : "Sign in failed.");
+                _error = _isSignup ? "Sign up failed." : "Sign in failed.";
+                return;
+            }
+
+            // Signup (or login) that still needs email confirmation — no session yet
+            if (resp.RequiresEmailConfirmation || (_isSignup && resp.Ok && string.IsNullOrWhiteSpace(resp.Token)))
+            {
+                _needsResend = true;
+                if (resp.Ok || !string.IsNullOrWhiteSpace(resp.Message))
+                {
+                    _info = resp.Message
+                            ?? "Account created. Check your email for a confirmation link before signing in.";
+                    _error = null;
+                    _isSignup = false;
+                }
+                else
+                {
+                    _error = resp.Error
+                             ?? "Confirm your email before signing in. Check your inbox (or the API log in development).";
+                }
+                return;
+            }
+
+            if (!resp.Ok || string.IsNullOrWhiteSpace(resp.Token))
+            {
+                _error = resp.Error ?? (_isSignup ? "Sign up failed." : "Sign in failed.");
                 return;
             }
 

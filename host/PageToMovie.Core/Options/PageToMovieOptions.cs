@@ -146,6 +146,7 @@ public sealed class PageToMovieOptions
     public CapacityOptions Capacity { get; set; } = new();
     public FakesOptions Fakes { get; set; } = new();
     public AuthOptions Auth { get; set; } = new();
+    public MailOptions Mail { get; set; } = new();
     public YouTubeOptions YouTube { get; set; } = new();
     public CreditsOptions Credits { get; set; } = new();
 }
@@ -189,6 +190,61 @@ public sealed class ThreadPoolOptions
     /// otherwise leave CLR default.
     /// </summary>
     public int MinIoThreads { get; set; }
+}
+
+/// <summary>
+/// Outbound email (confirm / password reset).
+/// Preference: Resend API key → SMTP → log-only (dev).
+/// On Railway set env <c>Resend_Key</c> (or <c>RESEND_API_KEY</c>).
+/// </summary>
+public sealed class MailOptions
+{
+    /// <summary>Public site origin for links, e.g. https://www.pagetomovie.com (no trailing slash).</summary>
+    public string PublicBaseUrl { get; set; } = "";
+    public string FromAddress { get; set; } = "noreply@pagetomovie.com";
+    public string FromName { get; set; } = "PageToMovie";
+    /// <summary>Optional reply-to for transactional mail.</summary>
+    public string? ReplyTo { get; set; }
+
+    /// <summary>
+    /// Resend API key (<c>re_…</c>). Prefer env <c>Resend_Key</c> on Railway.
+    /// When set, <see cref="PageToMovie.Engine.ResendEmailSender"/> is used (HTTPS; works on Railway Hobby).
+    /// </summary>
+    public string? ResendApiKey { get; set; }
+
+    /// <summary>When set with port (and no Resend key), use SMTP. Often blocked on Railway Hobby.</summary>
+    public string? SmtpHost { get; set; }
+    public int SmtpPort { get; set; } = 587;
+    public string? SmtpUser { get; set; }
+    public string? SmtpPassword { get; set; }
+    public bool SmtpUseSsl { get; set; } = true;
+
+    /// <summary>
+    /// Resolve Resend key from options or common env names.
+    /// Railway: <c>Resend_Key</c>; also <c>RESEND_API_KEY</c>, <c>PageToMovie__Mail__ResendApiKey</c>.
+    /// </summary>
+    public static string? ResolveResendApiKey(MailOptions? mail)
+    {
+        var fromOpts = mail?.ResendApiKey?.Trim();
+        if (!string.IsNullOrWhiteSpace(fromOpts))
+            return fromOpts;
+
+        foreach (var name in new[]
+                 {
+                     "Resend_Key",
+                     "RESEND_API_KEY",
+                     "RESEND_KEY",
+                     "PageToMovie__Mail__ResendApiKey",
+                     "PageToMovie_Mail_ResendApiKey",
+                 })
+        {
+            var v = Environment.GetEnvironmentVariable(name)?.Trim();
+            if (!string.IsNullOrWhiteSpace(v))
+                return v;
+        }
+
+        return null;
+    }
 }
 
 /// <summary>User identity, per-user API keys, admin login (Phase B).</summary>

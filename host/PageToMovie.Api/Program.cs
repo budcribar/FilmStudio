@@ -155,6 +155,21 @@ builder.Services.AddAntiforgery(options =>
 });
 builder.Services.AddSingleton<IUserContext, HttpUserContext>();
 builder.Services.AddSingleton<IUserApiKeyProvider, DbUserApiKeyProvider>();
+// Mail: Resend (Railway Resend_Key / RESEND_API_KEY) → SMTP → log-only
+builder.Services.AddHttpClient("resend", c =>
+{
+    c.Timeout = TimeSpan.FromSeconds(30);
+    c.DefaultRequestHeaders.TryAddWithoutValidation("User-Agent", "PageToMovie/1.0");
+});
+builder.Services.AddSingleton<IEmailSender>(sp =>
+{
+    var mail = sp.GetRequiredService<IOptions<PageToMovieOptions>>().Value.Mail;
+    if (!string.IsNullOrWhiteSpace(MailOptions.ResolveResendApiKey(mail)))
+        return ActivatorUtilities.CreateInstance<ResendEmailSender>(sp);
+    if (!string.IsNullOrWhiteSpace(mail?.SmtpHost))
+        return ActivatorUtilities.CreateInstance<SmtpEmailSender>(sp);
+    return ActivatorUtilities.CreateInstance<LoggingEmailSender>(sp);
+});
 builder.Services.AddSingleton<IAdminAuthService, AdminAuthService>();
 builder.Services.AddSingleton<FilmJobService>();
 builder.Services.AddSingleton<IJobProgressSink, SignalRJobProgressSink>();
@@ -379,7 +394,7 @@ app.MapPost("/api/auth/signup", (LoginRequest body, IAdminAuthService auth, Logi
             statusCode: StatusCodes.Status429TooManyRequests);
     }
 
-    var result = auth.Signup(body.Username ?? "", body.Password ?? "");
+    var result = auth.Signup(body.Username ?? "", body.Password ?? "", body.Email);
     if (!result.Ok)
     {
         limiter.RecordFailure(key);
@@ -411,6 +426,128 @@ app.MapPost("/api/auth/login", (LoginRequest body, IAdminAuthService auth, Login
 
 app.MapPost("/api/auth/logout", () =>
     Results.Ok(new { ok = true, message = "Client should discard JWT" }));
+
+/// <summary>
+/// Forgot password — emails a reset link when the account has an email; also marks admin request.
+/// Always returns the same generic success message (no user enumeration).
+/// </summary>
+app.MapPost("/api/auth/forgot-password", async (
+    ForgotPasswordRequest? body,
+    UserDatabaseService userDb,
+    IAdminAuthService auth,
+    LoginRateLimiter limiter,
+    HttpContext http) =>
+{
+    var name = (body?.Username ?? "").Trim();
+    var key = $"forgot|{name}|{http.Connection.RemoteIpAddress}";
+    if (limiter.IsBlocked(key, out var retryAfter))
+    {
+        return Results.Json(
+            new { ok = false, error = $"Too many requests. Retry in {retryAfter}s." },
+            statusCode: StatusCodes.Status429TooManyRequests);
+    }
+
+    if (name.Length >= 3 || name.Contains('@'))
+    {
+        try
+        {
+            await userDb.NotePasswordResetRequestedAsync(name);
+            var user = await userDb.ResolveUserAsync(name)
+                       ?? await userDb.GetUserByEmailAsync(name);
+            if (user is not null && !user.IsDisabled && !string.IsNullOrWhiteSpace(user.Email))
+            {
+                if (auth is AdminAuthService concrete)
+                    await concrete.SendPasswordResetEmailAsync(user);
+            }
+        }
+        catch { /* never leak */ }
+    }
+
+    limiter.RecordSuccess(key);
+    return Results.Ok(new
+    {
+        ok = true,
+        message =
+            "If that account exists and has a confirmed email, a reset link was sent. " +
+            "Also, an administrator can set a new password on the Users page. " +
+            "(In development without SMTP, check the API log for the link.)",
+    });
+});
+
+/// <summary>Confirm email with one-time token from signup email.</summary>
+app.MapPost("/api/auth/confirm-email", async (
+    ConfirmEmailRequest? body,
+    UserDatabaseService userDb) =>
+{
+    var token = (body?.Token ?? "").Trim();
+    if (token.Length < 10)
+        return Results.BadRequest(new { ok = false, error = "Invalid or missing token." });
+
+    var userId = await userDb.ConsumeAuthTokenAsync(token, UserDatabaseService.AuthPurposeEmailConfirm);
+    if (userId is null)
+        return Results.BadRequest(new { ok = false, error = "This confirmation link is invalid or expired." });
+
+    await userDb.ConfirmEmailAsync(userId);
+    return Results.Ok(new { ok = true, message = "Email confirmed. You can sign in now." });
+});
+
+/// <summary>Resend confirmation email (by username or email).</summary>
+app.MapPost("/api/auth/resend-confirmation", async (
+    ForgotPasswordRequest? body,
+    UserDatabaseService userDb,
+    IAdminAuthService auth,
+    LoginRateLimiter limiter,
+    HttpContext http) =>
+{
+    var name = (body?.Username ?? "").Trim();
+    var key = $"reconfirm|{name}|{http.Connection.RemoteIpAddress}";
+    if (limiter.IsBlocked(key, out var retryAfter))
+    {
+        return Results.Json(
+            new { ok = false, error = $"Too many requests. Retry in {retryAfter}s." },
+            statusCode: StatusCodes.Status429TooManyRequests);
+    }
+
+    try
+    {
+        var user = await userDb.ResolveUserAsync(name) ?? await userDb.GetUserByEmailAsync(name);
+        if (user is not null && !UserDatabaseService.IsEmailConfirmed(user) && auth is AdminAuthService concrete)
+            await concrete.SendEmailConfirmAsync(user);
+    }
+    catch { /* */ }
+
+    limiter.RecordSuccess(key);
+    return Results.Ok(new
+    {
+        ok = true,
+        message = "If that account needs confirmation, a new email was sent (or logged in development).",
+    });
+});
+
+/// <summary>Complete password reset with token from email.</summary>
+app.MapPost("/api/auth/reset-password", async (
+    ResetPasswordWithTokenRequest? body,
+    UserDatabaseService userDb) =>
+{
+    var token = (body?.Token ?? "").Trim();
+    var pw = body?.NewPassword ?? "";
+    if (token.Length < 10)
+        return Results.BadRequest(new { ok = false, error = "Invalid or missing token." });
+    if (pw.Length < 4)
+        return Results.BadRequest(new { ok = false, error = "Password must be at least 4 characters." });
+
+    var userId = await userDb.ConsumeAuthTokenAsync(token, UserDatabaseService.AuthPurposePasswordReset);
+    if (userId is null)
+        return Results.BadRequest(new { ok = false, error = "This reset link is invalid or expired." });
+
+    if (!await userDb.SetPasswordAsync(userId, pw))
+        return Results.BadRequest(new { ok = false, error = "Could not update password." });
+
+    // If they had unconfirmed email, allow login after proving inbox via reset link
+    await userDb.ConfirmEmailAsync(userId);
+
+    return Results.Ok(new { ok = true, message = "Password updated. You can sign in." });
+});
 
 /// <summary>
 /// Short-lived media token for &lt;img&gt;/&lt;video src&gt; query auth (?mt=).
@@ -919,6 +1056,42 @@ app.MapPost("/api/admin/users/credits", async (
         return Results.NotFound(new { ok = false, error = "user not found" });
 
     return Results.Ok(new { ok = true, user = summary });
+});
+
+/// <summary>Admin: set a user's password (forgot-password completion or support).</summary>
+app.MapPost("/api/admin/users/set-password", async (
+    AdminSetUserPasswordRequest body,
+    IUserContext user,
+    UserDatabaseService userDb,
+    IAdminAuthService auth) =>
+{
+    if (!user.IsAdmin)
+        return Results.Json(new { ok = false, error = "admin role required" },
+            statusCode: StatusCodes.Status403Forbidden);
+
+    if (body is null || string.IsNullOrWhiteSpace(body.UserId))
+        return Results.BadRequest(new { ok = false, error = "userId is required" });
+    if (string.IsNullOrWhiteSpace(body.NewPassword) || body.NewPassword.Length < 4)
+        return Results.BadRequest(new { ok = false, error = "New password must be at least 4 characters." });
+    if (!auth.VerifyCallerPassword(user.UserId, body.AdminPassword ?? ""))
+        return Results.Json(new { ok = false, error = "Admin password is incorrect." },
+            statusCode: StatusCodes.Status403Forbidden);
+
+    var target = await userDb.ResolveUserAsync(body.UserId.Trim());
+    if (target is null)
+        return Results.NotFound(new { ok = false, error = "user not found" });
+
+    var ok = await userDb.SetPasswordAsync(target.UserId, body.NewPassword);
+    if (!ok)
+        return Results.BadRequest(new { ok = false, error = "Could not update password." });
+
+    return Results.Ok(new
+    {
+        ok = true,
+        userId = target.UserId,
+        username = target.Username,
+        message = $"Password updated for {target.Username}.",
+    });
 });
 
 /// <summary>Admin: disable or re-enable a user account.</summary>

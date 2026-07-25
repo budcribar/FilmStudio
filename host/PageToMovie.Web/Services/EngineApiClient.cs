@@ -160,11 +160,17 @@ public sealed class EngineApiClient
         return await resp.Content.ReadFromJsonAsync<T>(JsonOpts, ct);
     }
 
-    public async Task<LoginResponse?> SignupAsync(string username, string password, CancellationToken ct = default)
+    public async Task<LoginResponse?> SignupAsync(
+        string username,
+        string password,
+        string? email = null,
+        CancellationToken ct = default)
     {
         using var req = new HttpRequestMessage(HttpMethod.Post, "/api/auth/signup")
         {
-            Content = JsonContent.Create(new LoginRequest { Username = username, Password = password }, options: JsonOpts),
+            Content = JsonContent.Create(
+                new LoginRequest { Username = username, Password = password, Email = email },
+                options: JsonOpts),
         };
         using var resp = await _http.SendAsync(req, ct);
         var body = await resp.Content.ReadFromJsonAsync<LoginResponse>(JsonOpts, ct);
@@ -173,6 +179,89 @@ public sealed class EngineApiClient
         if (!resp.IsSuccessStatusCode && body.Ok)
             body.Ok = false;
         return body;
+    }
+
+    /// <summary>
+    /// Request password reset. Emails a link when the account has an address;
+    /// also flags the account for admin-assisted reset. Always ok if accepted.
+    /// </summary>
+    public async Task<string> ForgotPasswordAsync(string usernameOrEmail, CancellationToken ct = default)
+    {
+        using var req = new HttpRequestMessage(HttpMethod.Post, "/api/auth/forgot-password")
+        {
+            Content = JsonContent.Create(
+                new ForgotPasswordRequest { Username = usernameOrEmail },
+                options: JsonOpts),
+        };
+        using var resp = await _http.SendAsync(req, ct);
+        var body = await resp.Content.ReadFromJsonAsync<ForgotPasswordResponse>(JsonOpts, ct);
+        if (!resp.IsSuccessStatusCode)
+            throw new InvalidOperationException(body?.Error ?? body?.Message ?? "Request failed");
+        return body?.Message
+               ?? "If that account exists and has email, a reset link was sent. An admin can also set a password.";
+    }
+
+    public async Task<(bool Ok, string Message)> ConfirmEmailAsync(string token, CancellationToken ct = default)
+    {
+        using var req = new HttpRequestMessage(HttpMethod.Post, "/api/auth/confirm-email")
+        {
+            Content = JsonContent.Create(new ConfirmEmailRequest { Token = token }, options: JsonOpts),
+        };
+        using var resp = await _http.SendAsync(req, ct);
+        var body = await resp.Content.ReadFromJsonAsync<ForgotPasswordResponse>(JsonOpts, ct);
+        var msg = body?.Message ?? body?.Error ?? (resp.IsSuccessStatusCode ? "Email confirmed." : "Confirmation failed.");
+        return (resp.IsSuccessStatusCode && body?.Ok != false, msg);
+    }
+
+    public async Task<string> ResendConfirmationAsync(string usernameOrEmail, CancellationToken ct = default)
+    {
+        using var req = new HttpRequestMessage(HttpMethod.Post, "/api/auth/resend-confirmation")
+        {
+            Content = JsonContent.Create(
+                new ForgotPasswordRequest { Username = usernameOrEmail },
+                options: JsonOpts),
+        };
+        using var resp = await _http.SendAsync(req, ct);
+        var body = await resp.Content.ReadFromJsonAsync<ForgotPasswordResponse>(JsonOpts, ct);
+        if (!resp.IsSuccessStatusCode)
+            throw new InvalidOperationException(body?.Error ?? body?.Message ?? "Request failed");
+        return body?.Message
+               ?? "If that account needs confirmation, a new email was sent.";
+    }
+
+    public async Task<(bool Ok, string Message)> ResetPasswordWithTokenAsync(
+        string token,
+        string newPassword,
+        CancellationToken ct = default)
+    {
+        using var req = new HttpRequestMessage(HttpMethod.Post, "/api/auth/reset-password")
+        {
+            Content = JsonContent.Create(
+                new ResetPasswordWithTokenRequest { Token = token, NewPassword = newPassword },
+                options: JsonOpts),
+        };
+        using var resp = await _http.SendAsync(req, ct);
+        var body = await resp.Content.ReadFromJsonAsync<ForgotPasswordResponse>(JsonOpts, ct);
+        var msg = body?.Message ?? body?.Error ?? (resp.IsSuccessStatusCode ? "Password updated." : "Reset failed.");
+        return (resp.IsSuccessStatusCode && body?.Ok != false, msg);
+    }
+
+    public async Task AdminSetUserPasswordAsync(
+        string userId,
+        string newPassword,
+        string adminPassword,
+        CancellationToken ct = default)
+    {
+        using var req = new HttpRequestMessage(HttpMethod.Post, "/api/admin/users/set-password")
+        {
+            Content = JsonContent.Create(new AdminSetUserPasswordRequest
+            {
+                UserId = userId,
+                NewPassword = newPassword,
+                AdminPassword = adminPassword,
+            }, options: JsonOpts),
+        };
+        await SendJsonAsync<object>(req, ct);
     }
 
     public async Task<LoginResponse?> LoginAsync(string username, string password, CancellationToken ct = default)
@@ -2348,6 +2437,13 @@ public sealed class AdminUsersCreditsResponse
 {
     public bool Ok { get; set; }
     public AdminCreditsOverviewDto? Overview { get; set; }
+}
+
+public sealed class ForgotPasswordResponse
+{
+    public bool Ok { get; set; }
+    public string? Message { get; set; }
+    public string? Error { get; set; }
 }
 
 public sealed class AdminGrantCreditsResponse

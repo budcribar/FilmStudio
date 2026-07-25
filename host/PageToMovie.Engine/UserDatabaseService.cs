@@ -150,6 +150,36 @@ public class UserDatabaseService
                 // Admin disable (soft ban) — blocks login / API without deleting ledger.
                 EnsureColumn(conn, "users", "is_disabled", "INTEGER NOT NULL DEFAULT 0");
 
+                // Forgot-password request marker (legacy admin path; email reset preferred).
+                EnsureColumn(conn, "users", "password_reset_requested_at", "TEXT");
+                EnsureColumn(conn, "users", "email", "TEXT");
+                EnsureColumn(conn, "users", "email_confirmed_at", "TEXT");
+
+                using (var cmd = conn.CreateCommand())
+                {
+                    cmd.CommandText = @"
+                        CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email
+                        ON users(email) WHERE email IS NOT NULL AND TRIM(email) != '';
+                    ";
+                    try { cmd.ExecuteNonQuery(); } catch { /* index may already exist */ }
+                }
+
+                using (var cmd = conn.CreateCommand())
+                {
+                    cmd.CommandText = @"
+                        CREATE TABLE IF NOT EXISTS auth_tokens (
+                            token_hash TEXT PRIMARY KEY,
+                            user_id TEXT NOT NULL,
+                            purpose TEXT NOT NULL,
+                            expires_at TEXT NOT NULL,
+                            created_at TEXT NOT NULL,
+                            used_at TEXT
+                        );
+                        CREATE INDEX IF NOT EXISTS idx_auth_tokens_user ON auth_tokens(user_id);
+                    ";
+                    cmd.ExecuteNonQuery();
+                }
+
                 using (var cmd = conn.CreateCommand())
                 {
                     cmd.CommandText = @"
@@ -250,6 +280,9 @@ public class UserDatabaseService
         return await GetUserByUsernameAsync(userIdOrName, ct).ConfigureAwait(false);
     }
 
+    public const string AuthPurposeEmailConfirm = "email_confirm";
+    public const string AuthPurposePasswordReset = "password_reset";
+
     private const string UserSelectSql = @"
             SELECT user_id, username, password_hash,
                    encrypted_xai_api_key, encrypted_gemini_api_key, encrypted_anthropic_api_key,
@@ -257,7 +290,9 @@ public class UserDatabaseService
                    COALESCE(credits_balance_usd, 0),
                    COALESCE(credits_lifetime_granted_usd, 0),
                    COALESCE(credits_lifetime_used_usd, 0),
-                   COALESCE(is_disabled, 0)
+                   COALESCE(is_disabled, 0),
+                   email,
+                   email_confirmed_at
             FROM users";
 
     /// <summary>Saves or updates a user's encrypted xAI API key in SQLite.</summary>
@@ -412,9 +447,9 @@ public class UserDatabaseService
                 encrypted_xai_api_key, encrypted_gemini_api_key, encrypted_anthropic_api_key,
                 role, created_at, last_login_at,
                 credits_balance_usd, credits_lifetime_granted_usd, credits_lifetime_used_usd,
-                is_disabled)
+                is_disabled, email, email_confirmed_at)
             VALUES (@id, @name, @hash, @xai, @gemini, @anthropic, @role, @created, @login,
-                    @bal, @granted, @used, @disabled)
+                    @bal, @granted, @used, @disabled, @email, @email_confirmed)
             ON CONFLICT(user_id) DO UPDATE SET
                 username = excluded.username,
                 encrypted_xai_api_key = COALESCE(excluded.encrypted_xai_api_key, users.encrypted_xai_api_key),
@@ -434,6 +469,9 @@ public class UserDatabaseService
         cmd.Parameters.AddWithValue("@granted", user.CreditsLifetimeGrantedUsd);
         cmd.Parameters.AddWithValue("@used", user.CreditsLifetimeUsedUsd);
         cmd.Parameters.AddWithValue("@disabled", user.IsDisabled ? 1 : 0);
+        cmd.Parameters.AddWithValue("@email", (object?)NormalizeEmail(user.Email) ?? DBNull.Value);
+        cmd.Parameters.AddWithValue("@email_confirmed",
+            (object?)user.EmailConfirmedAt?.ToString("o") ?? DBNull.Value);
 
         await cmd.ExecuteNonQueryAsync(ct).ConfigureAwait(false);
     }
@@ -532,6 +570,71 @@ public class UserDatabaseService
         return string.Equals(user.PasswordHash, hash, StringComparison.Ordinal);
     }
 
+    /// <summary>
+    /// Marks a password-reset request if the account exists. Does not reveal whether it exists.
+    /// </summary>
+    public async Task NotePasswordResetRequestedAsync(string usernameOrId, CancellationToken ct = default)
+    {
+        var user = await ResolveUserAsync(usernameOrId, ct).ConfigureAwait(false);
+        if (user is null || user.IsDisabled) return;
+
+        using var conn = new SqliteConnection(ConnectionString);
+        await conn.OpenAsync(ct).ConfigureAwait(false);
+        using var cmd = conn.CreateCommand();
+        cmd.CommandText = @"
+            UPDATE users SET password_reset_requested_at = @t WHERE user_id = @id";
+        cmd.Parameters.AddWithValue("@t", DateTimeOffset.UtcNow.ToString("O"));
+        cmd.Parameters.AddWithValue("@id", user.UserId);
+        await cmd.ExecuteNonQueryAsync(ct).ConfigureAwait(false);
+        _logger.LogInformation("Password reset requested for user {UserId}", user.UserId);
+    }
+
+    /// <summary>Sets a new password hash and clears any forgot-password marker.</summary>
+    public async Task<bool> SetPasswordAsync(string userId, string newPassword, CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(userId)) return false;
+        newPassword ??= "";
+        if (newPassword.Length < 4) return false;
+
+        using var conn = new SqliteConnection(ConnectionString);
+        await conn.OpenAsync(ct).ConfigureAwait(false);
+        using var cmd = conn.CreateCommand();
+        cmd.CommandText = @"
+            UPDATE users
+            SET password_hash = @hash,
+                password_reset_requested_at = NULL
+            WHERE user_id = @id";
+        cmd.Parameters.AddWithValue("@hash", HashPassword(newPassword));
+        cmd.Parameters.AddWithValue("@id", userId.Trim());
+        var n = await cmd.ExecuteNonQueryAsync(ct).ConfigureAwait(false);
+        if (n > 0)
+            _logger.LogInformation("Password set for user {UserId}", userId.Trim());
+        return n > 0;
+    }
+
+    public async Task<Dictionary<string, DateTimeOffset>> GetPasswordResetRequestedMapAsync(
+        CancellationToken ct = default)
+    {
+        var map = new Dictionary<string, DateTimeOffset>(StringComparer.OrdinalIgnoreCase);
+        using var conn = new SqliteConnection(ConnectionString);
+        await conn.OpenAsync(ct).ConfigureAwait(false);
+        using var cmd = conn.CreateCommand();
+        cmd.CommandText = @"
+            SELECT user_id, password_reset_requested_at
+            FROM users
+            WHERE password_reset_requested_at IS NOT NULL
+              AND TRIM(password_reset_requested_at) != ''";
+        using var reader = await cmd.ExecuteReaderAsync(ct).ConfigureAwait(false);
+        while (await reader.ReadAsync(ct).ConfigureAwait(false))
+        {
+            var id = reader.GetString(0);
+            var raw = reader.IsDBNull(1) ? null : reader.GetString(1);
+            if (DateTimeOffset.TryParse(raw, out var when))
+                map[id] = when;
+        }
+        return map;
+    }
+
     // ── Credits ──────────────────────────────────────────────────────────────
 
     public async Task<List<UserCreditSummaryDto>> ListUserCreditSummariesAsync(CancellationToken ct = default)
@@ -546,6 +649,13 @@ public class UserDatabaseService
         using var reader = await cmd.ExecuteReaderAsync(ct).ConfigureAwait(false);
         while (await reader.ReadAsync(ct).ConfigureAwait(false))
             list.Add(ToCreditSummary(ReadUserFromReader(reader)));
+
+        var resets = await GetPasswordResetRequestedMapAsync(ct).ConfigureAwait(false);
+        foreach (var u in list)
+        {
+            if (resets.TryGetValue(u.UserId, out var when))
+                u.PasswordResetRequestedAt = when;
+        }
         return list;
     }
 
@@ -916,10 +1026,162 @@ public class UserDatabaseService
         return Convert.ToBase64String(bytes);
     }
 
+    public static string? NormalizeEmail(string? email)
+    {
+        if (string.IsNullOrWhiteSpace(email)) return null;
+        return email.Trim().ToLowerInvariant();
+    }
+
+    public static bool IsValidEmail(string? email)
+    {
+        var e = NormalizeEmail(email);
+        if (e is null || e.Length < 5 || e.Length > 254) return false;
+        var at = e.IndexOf('@');
+        if (at <= 0 || at != e.LastIndexOf('@')) return false;
+        var domain = e[(at + 1)..];
+        return domain.Contains('.') && !e.Contains(' ');
+    }
+
+    /// <summary>Legacy accounts with no email are treated as confirmed.</summary>
+    public static bool IsEmailConfirmed(UserEntity? user)
+    {
+        if (user is null) return false;
+        if (string.IsNullOrWhiteSpace(user.Email)) return true;
+        return user.EmailConfirmedAt is not null;
+    }
+
+    public async Task<UserEntity?> GetUserByEmailAsync(string email, CancellationToken ct = default)
+    {
+        var e = NormalizeEmail(email);
+        if (e is null) return null;
+        using var conn = new SqliteConnection(ConnectionString);
+        await conn.OpenAsync(ct).ConfigureAwait(false);
+        using var cmd = conn.CreateCommand();
+        cmd.CommandText = UserSelectSql + " WHERE LOWER(email) = @e LIMIT 1";
+        cmd.Parameters.AddWithValue("@e", e);
+        using var reader = await cmd.ExecuteReaderAsync(ct).ConfigureAwait(false);
+        if (await reader.ReadAsync(ct).ConfigureAwait(false))
+            return ReadUserFromReader(reader);
+        return null;
+    }
+
+    /// <summary>Creates a single-use token; returns the raw token (email to the user). Stores only a hash.</summary>
+    public async Task<string> CreateAuthTokenAsync(
+        string userId,
+        string purpose,
+        TimeSpan lifetime,
+        CancellationToken ct = default)
+    {
+        var raw = Convert.ToBase64String(RandomNumberGenerator.GetBytes(32))
+            .TrimEnd('=').Replace('+', '-').Replace('/', '_');
+        var hash = HashToken(raw);
+        var now = DateTimeOffset.UtcNow;
+        using var conn = new SqliteConnection(ConnectionString);
+        await conn.OpenAsync(ct).ConfigureAwait(false);
+        // Invalidate previous unused tokens of same purpose for this user
+        using (var clear = conn.CreateCommand())
+        {
+            clear.CommandText = @"
+                DELETE FROM auth_tokens
+                WHERE user_id = @u AND purpose = @p AND used_at IS NULL";
+            clear.Parameters.AddWithValue("@u", userId.Trim());
+            clear.Parameters.AddWithValue("@p", purpose);
+            await clear.ExecuteNonQueryAsync(ct).ConfigureAwait(false);
+        }
+        using var cmd = conn.CreateCommand();
+        cmd.CommandText = @"
+            INSERT INTO auth_tokens (token_hash, user_id, purpose, expires_at, created_at)
+            VALUES (@h, @u, @p, @exp, @c)";
+        cmd.Parameters.AddWithValue("@h", hash);
+        cmd.Parameters.AddWithValue("@u", userId.Trim());
+        cmd.Parameters.AddWithValue("@p", purpose);
+        cmd.Parameters.AddWithValue("@exp", (now + lifetime).ToString("o"));
+        cmd.Parameters.AddWithValue("@c", now.ToString("o"));
+        await cmd.ExecuteNonQueryAsync(ct).ConfigureAwait(false);
+        return raw;
+    }
+
+    /// <summary>Validates and consumes a token. Returns user_id or null.</summary>
+    public async Task<string?> ConsumeAuthTokenAsync(
+        string rawToken,
+        string purpose,
+        CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(rawToken)) return null;
+        var hash = HashToken(rawToken.Trim());
+        using var conn = new SqliteConnection(ConnectionString);
+        await conn.OpenAsync(ct).ConfigureAwait(false);
+        using var tx = (SqliteTransaction)await conn.BeginTransactionAsync(ct).ConfigureAwait(false);
+        string? userId = null;
+        string? expRaw = null;
+        using (var sel = conn.CreateCommand())
+        {
+            sel.Transaction = tx;
+            sel.CommandText = @"
+                SELECT user_id, expires_at, used_at FROM auth_tokens
+                WHERE token_hash = @h AND purpose = @p LIMIT 1";
+            sel.Parameters.AddWithValue("@h", hash);
+            sel.Parameters.AddWithValue("@p", purpose);
+            using var r = await sel.ExecuteReaderAsync(ct).ConfigureAwait(false);
+            if (!await r.ReadAsync(ct).ConfigureAwait(false))
+            {
+                await tx.RollbackAsync(ct).ConfigureAwait(false);
+                return null;
+            }
+            userId = r.GetString(0);
+            expRaw = r.GetString(1);
+            if (!r.IsDBNull(2))
+            {
+                await tx.RollbackAsync(ct).ConfigureAwait(false);
+                return null; // already used
+            }
+        }
+        if (!DateTimeOffset.TryParse(expRaw, out var exp) || exp < DateTimeOffset.UtcNow)
+        {
+            await tx.RollbackAsync(ct).ConfigureAwait(false);
+            return null;
+        }
+        using (var upd = conn.CreateCommand())
+        {
+            upd.Transaction = tx;
+            upd.CommandText = "UPDATE auth_tokens SET used_at = @t WHERE token_hash = @h";
+            upd.Parameters.AddWithValue("@t", DateTimeOffset.UtcNow.ToString("o"));
+            upd.Parameters.AddWithValue("@h", hash);
+            await upd.ExecuteNonQueryAsync(ct).ConfigureAwait(false);
+        }
+        await tx.CommitAsync(ct).ConfigureAwait(false);
+        return userId;
+    }
+
+    public async Task<bool> ConfirmEmailAsync(string userId, CancellationToken ct = default)
+    {
+        using var conn = new SqliteConnection(ConnectionString);
+        await conn.OpenAsync(ct).ConfigureAwait(false);
+        using var cmd = conn.CreateCommand();
+        cmd.CommandText = @"
+            UPDATE users SET email_confirmed_at = @t WHERE user_id = @id";
+        cmd.Parameters.AddWithValue("@t", DateTimeOffset.UtcNow.ToString("o"));
+        cmd.Parameters.AddWithValue("@id", userId.Trim());
+        return await cmd.ExecuteNonQueryAsync(ct).ConfigureAwait(false) > 0;
+    }
+
+    public static string HashToken(string raw)
+    {
+        using var sha = SHA256.Create();
+        var bytes = sha.ComputeHash(Encoding.UTF8.GetBytes("ptm-token:" + raw));
+        return Convert.ToHexString(bytes).ToLowerInvariant();
+    }
+
     private static UserEntity ReadUserFromReader(SqliteDataReader reader)
     {
-        // Columns: 0 id, 1 name, 2 hash, 3 xai, 4 gemini, 5 anthropic, 6 role, 7 created, 8 login,
-        //          9 balance, 10 granted, 11 used, 12 is_disabled
+        // 0 id, 1 name, 2 hash, 3 xai, 4 gemini, 5 anthropic, 6 role, 7 created, 8 login,
+        // 9 balance, 10 granted, 11 used, 12 is_disabled, 13 email, 14 email_confirmed_at
+        DateTimeOffset? confirmed = null;
+        if (reader.FieldCount > 14 && !reader.IsDBNull(14))
+        {
+            var raw = reader.GetString(14);
+            if (DateTimeOffset.TryParse(raw, out var c)) confirmed = c;
+        }
         return new UserEntity
         {
             UserId = reader.GetString(0),
@@ -935,6 +1197,8 @@ public class UserDatabaseService
             CreditsLifetimeGrantedUsd = reader.FieldCount > 10 && !reader.IsDBNull(10) ? reader.GetDouble(10) : 0,
             CreditsLifetimeUsedUsd = reader.FieldCount > 11 && !reader.IsDBNull(11) ? reader.GetDouble(11) : 0,
             IsDisabled = reader.FieldCount > 12 && !reader.IsDBNull(12) && reader.GetInt64(12) != 0,
+            Email = reader.FieldCount > 13 && !reader.IsDBNull(13) ? reader.GetString(13) : null,
+            EmailConfirmedAt = confirmed,
         };
     }
 }
