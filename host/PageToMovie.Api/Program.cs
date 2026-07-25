@@ -1295,7 +1295,14 @@ app.MapPost("/api/admin/test-email", async (
         return Results.BadRequest(new { ok = false, error = "Valid recipient email address (toEmail) is required." });
 
     var senderType = sender.GetType().Name;
-    var resendKeyResolved = !string.IsNullOrWhiteSpace(MailOptions.ResolveResendApiKey(opts.Value.Mail));
+    var resolvedKey = MailOptions.ResolveResendApiKey(opts.Value.Mail);
+    var resendKeyResolved = !string.IsNullOrWhiteSpace(resolvedKey);
+
+    var checkedEnvs = new Dictionary<string, bool>();
+    foreach (var name in new[] { "Resend_Key", "RESEND_API_KEY", "RESEND_KEY", "PageToMovie__Mail__ResendApiKey", "PageToMovie_Mail_ResendApiKey" })
+    {
+        checkedEnvs[name] = !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable(name));
+    }
 
     try
     {
@@ -1311,6 +1318,7 @@ app.MapPost("/api/admin/test-email", async (
             message = $"Test email sent to {to} via {senderType}.",
             senderType,
             resendKeyResolved,
+            checkedEnvs,
         });
     }
     catch (Exception ex)
@@ -1321,6 +1329,7 @@ app.MapPost("/api/admin/test-email", async (
             error = ex.Message,
             senderType,
             resendKeyResolved,
+            checkedEnvs,
         }, statusCode: StatusCodes.Status500InternalServerError);
     }
 });
