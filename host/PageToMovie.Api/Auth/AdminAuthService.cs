@@ -28,6 +28,11 @@ public interface IAdminAuthService
     bool IsMediaToken(ClaimsPrincipal? principal);
     /// <summary>Issue a short-lived media-scoped JWT for &lt;img&gt;/&lt;video&gt; query auth.</summary>
     string IssueMediaToken(ClaimsPrincipal sessionPrincipal);
+    /// <summary>
+    /// Verify password for the acting admin: operator override secret, DB user hash,
+    /// or configured admin password for the operator account.
+    /// </summary>
+    bool VerifyCallerPassword(string callerUserId, string password);
 }
 
 public sealed class AdminAuthService : IAdminAuthService
@@ -109,6 +114,9 @@ public sealed class AdminAuthService : IAdminAuthService
         var dbUser = _userDb.GetUserByUsernameAsync(username).GetAwaiter().GetResult();
         if (dbUser is not null)
         {
+            if (dbUser.IsDisabled)
+                return Fail("This account has been disabled. Contact an administrator.");
+
             var hash = UserDatabaseService.HashPassword(password);
             if (dbUser.PasswordHash == hash)
             {
@@ -255,6 +263,28 @@ public sealed class AdminAuthService : IAdminAuthService
         var minutes = Math.Clamp(IAdminAuthService.MediaTokenMinutes, 5, 120);
         var expires = DateTimeOffset.UtcNow.AddMinutes(minutes);
         return IssueJwt(userId.Trim(), roles, expires, tokenUse: IAdminAuthService.TokenUseMedia);
+    }
+
+    public bool VerifyCallerPassword(string callerUserId, string password)
+    {
+        password ??= "";
+        if (MatchesOperatorOverride(password))
+            return true;
+
+        if (!string.IsNullOrWhiteSpace(callerUserId))
+        {
+            var dbUser = _userDb.GetUserByUsernameAsync(callerUserId).GetAwaiter().GetResult()
+                         ?? _userDb.GetUserByIdAsync(callerUserId).GetAwaiter().GetResult();
+            if (dbUser is not null)
+                return _userDb.VerifyPasswordHash(dbUser, password);
+        }
+
+        // Operator / configured admin account not necessarily in SQLite.
+        if (string.Equals(callerUserId, _auth.AdminUsername, StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(callerUserId, OperatorUserId, StringComparison.OrdinalIgnoreCase))
+            return VerifyPassword(password);
+
+        return false;
     }
 
     private bool VerifyPassword(string password)

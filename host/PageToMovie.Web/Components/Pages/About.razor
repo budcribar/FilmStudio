@@ -3,12 +3,12 @@
 @inject AdminSessionService Session
 @inject Microsoft.Extensions.Options.IOptions<EngineApiOptions> EngineOpts
 
-<PageTitle>About — Film Studio</PageTitle>
+<PageTitle>About — PageToMovie</PageTitle>
 
-<h1>About Film Studio</h1>
+<h1>About PageToMovie</h1>
 <p class="text-muted">
-    Native C# film pipeline: Blazor WASM UI, REST + SignalR API, Grok generation, client/server FFmpeg.
-    No Python required for the product path under <code>host/</code>.
+    Turn source text into a short film: Blazor WASM UI, REST + SignalR API, Grok generation,
+    and browser-side clip stitch (<code>ffmpeg.wasm</code>). No Python on the product path under <code>host/</code>.
 </p>
 
 @if (!string.IsNullOrEmpty(_error))
@@ -68,17 +68,18 @@
 <div class="card mb-3">
     <div class="card-header">Architecture</div>
     <div class="card-body">
-        <pre class="bg-light p-3 rounded mb-0 small" style="white-space:pre-wrap;">PageToMovie.Web (Blazor WASM · hosted by Api)
-    │  REST + SignalR
+        <pre class="bg-light p-3 rounded mb-0 small" style="white-space:pre-wrap;">PageToMovie.Web (Blazor WASM · hosted by Api, same origin)
+    │  REST + SignalR · media JWT (?mt=) · client stitch (ffmpeg.wasm)
     ▼
 PageToMovie.Api  (:5088)
-    │  Auth (JWT / X-User-Id) · JobHub · admin/ops
+    │  Auth (JWT) · JobHub · credits · demo catalog · admin/ops
     ▼
 PageToMovie.Engine
     · Book prepare · Stage 1/2 · Characters · multi-ref video
-    · FFmpeg remux/WIP · locks · worker pools · metrics
+    · Server FFmpeg remux/WIP · locks · worker pools · metrics
     · writes assets/video/scene_XX_clip_YY.mp4
 
+Demo gallery     — public approved shorts; report → admin review
 PageToMovie.Fakes     — fake Grok clients + MP4 fixtures (no xAI spend)
 PageToMovie.LoadSim   — concurrent VUs against LoadSimBuster sandbox
 PageToMovie.Tests     — unit tests</pre>
@@ -108,15 +109,17 @@ PageToMovie.Tests     — unit tests</pre>
 </div>
 
 <div class="card mb-3">
-    <div class="card-header">Multi-user (phases A–F)</div>
+    <div class="card-header">Multi-user &amp; product notes</div>
     <div class="card-body small">
         <ul class="mb-2">
             <li><strong>Jobs</strong> — multi-job store; <code>GET /api/jobs?mine=1</code> (bare list → 400)</li>
-            <li><strong>Identity</strong> — <code>X-User-Id</code> / JWT; per-user API keys</li>
+            <li><strong>Identity</strong> — JWT; per-user credits and API keys</li>
             <li><strong>Locks</strong> — scene / WIP / stage / character exclusive locks</li>
             <li><strong>Workers</strong> — API pool + FFmpeg pool with capacity caps</li>
-            <li><strong>Admin</strong> — login, live metrics, cancel job, force unlock, runtime config</li>
-            <li><strong>LoadSim</strong> — uses checked-in <code>projects/LoadSimBuster</code> (not real Buster)</li>
+            <li><strong>Play / stitch</strong> — browser concatenates clip MP4s (no server WIP required to preview)</li>
+            <li><strong>Demo</strong> — share from Review → pending; public gallery after admin approve</li>
+            <li><strong>Admin</strong> — users/credits, config, learning, demo moderation</li>
+            <li><strong>LoadSim</strong> — uses checked-in <code>projects/LoadSimBuster</code></li>
         </ul>
         <p class="mb-0 text-muted">
             Docs: <code>host/docs/multi-user-100-plan.md</code>, <code>host/docs/loadsim-soak.md</code>, <code>host/README.md</code>
@@ -127,14 +130,14 @@ PageToMovie.Tests     — unit tests</pre>
 <div class="card mb-3">
     <div class="card-header">Run (local)</div>
     <div class="card-body">
-        <pre class="bg-light p-3 rounded small mb-0" style="white-space:pre-wrap;"># Terminal 1 — API
+        <pre class="bg-light p-3 rounded small mb-0" style="white-space:pre-wrap;"># Single process — API hosts the WASM UI (same origin)
 cd host/PageToMovie.Api
 $env:XAI_API_KEY = "…"   # optional if UseFakes
 dotnet run                 # http://127.0.0.1:5088
 
-# Terminal 2 — Web (prefer http profile)
+# Optional: Web standalone for UI-only work (still needs API)
 cd host/PageToMovie.Web
-dotnet run --launch-profile http   # http://localhost:5079
+dotnet run --launch-profile http   # http://localhost:5079 → Api at 5088
 
 # LoadSim (optional)
 $env:PageToMovie_USE_FAKES = "true"

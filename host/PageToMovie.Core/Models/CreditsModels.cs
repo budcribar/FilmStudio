@@ -22,6 +22,8 @@ public sealed class UserCreditSummaryDto
     public DateTime CreatedAt { get; set; }
     public DateTime? LastLoginAt { get; set; }
     public bool HasXaiApiKey { get; set; }
+    /// <summary>Admin-disabled account — cannot sign in or use the API.</summary>
+    public bool IsDisabled { get; set; }
 
     /// <summary>Remaining balance (USD list-rate).</summary>
     public double CreditsBalanceUsd { get; set; }
@@ -35,6 +37,24 @@ public sealed class UserCreditSummaryDto
     public int CreditsBalance => CreditUnits.ToCredits(CreditsBalanceUsd);
     public int CreditsLifetimeGranted => CreditUnits.ToCredits(CreditsLifetimeGrantedUsd);
     public int CreditsLifetimeUsed => CreditUnits.ToCredits(CreditsLifetimeUsedUsd);
+}
+
+public sealed class AdminSetUserDisabledRequest
+{
+    public string UserId { get; set; } = "";
+    public bool Disabled { get; set; }
+}
+
+/// <summary>Hard-delete a user. Requires admin password + typing the target username.</summary>
+public sealed class AdminDeleteUserRequest
+{
+    public string UserId { get; set; } = "";
+    /// <summary>Must match the target account username exactly (case-insensitive).</summary>
+    public string ConfirmUsername { get; set; } = "";
+    /// <summary>Password of the acting admin (or operator override secret).</summary>
+    public string AdminPassword { get; set; } = "";
+    /// <summary>When true, also delete projects owned by this user and their demo submissions.</summary>
+    public bool DeleteOwnedProjects { get; set; } = true;
 }
 
 public sealed class CreditLedgerEntryDto

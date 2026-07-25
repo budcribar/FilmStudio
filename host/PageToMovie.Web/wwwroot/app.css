@@ -1,4 +1,4 @@
-/* Master Executive Theme — Film Studio Studio UI (dark default, light variant via [data-theme]) */
+/* Master Executive Theme — PageToMovie UI (dark default, light variant via [data-theme]) */
 :root,
 :root[data-theme="dark"] {
     color-scheme: dark;

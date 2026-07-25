@@ -18,6 +18,9 @@ public class UserEntity
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? LastLoginAt { get; set; }
 
+    /// <summary>When true, login and authenticated API use are rejected.</summary>
+    public bool IsDisabled { get; set; }
+
     /// <summary>Remaining list-rate credit balance (USD). 1 credit = $0.01.</summary>
     public double CreditsBalanceUsd { get; set; }
 

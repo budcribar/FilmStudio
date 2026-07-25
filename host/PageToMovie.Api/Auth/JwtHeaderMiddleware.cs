@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using PageToMovie.Engine;
 
 namespace PageToMovie.Api.Auth;
 
@@ -6,6 +7,7 @@ namespace PageToMovie.Api.Auth;
 /// Accepts Authorization: Bearer JWT (full session) and short-lived media tokens
 /// via query <c>mt</c> for &lt;video&gt;/&lt;img&gt; (cannot send Authorization).
 /// Full session JWTs are never accepted from the query string.
+/// Rejects principals for accounts that have been admin-disabled.
 /// </summary>
 public sealed class JwtHeaderMiddleware
 {
@@ -13,7 +15,7 @@ public sealed class JwtHeaderMiddleware
 
     public JwtHeaderMiddleware(RequestDelegate next) => _next = next;
 
-    public async Task InvokeAsync(HttpContext ctx, IAdminAuthService auth)
+    public async Task InvokeAsync(HttpContext ctx, IAdminAuthService auth, UserDatabaseService userDb)
     {
         if (ctx.User?.Identity?.IsAuthenticated != true)
         {
@@ -45,7 +47,26 @@ public sealed class JwtHeaderMiddleware
             }
 
             if (principal is not null)
+            {
+                var uid = principal.FindFirstValue(ClaimTypes.NameIdentifier)
+                          ?? principal.FindFirstValue("sub")
+                          ?? principal.Identity?.Name;
+                if (!string.IsNullOrWhiteSpace(uid) &&
+                    await userDb.IsUserDisabledAsync(uid).ConfigureAwait(false))
+                {
+                    ctx.Response.StatusCode = StatusCodes.Status403Forbidden;
+                    ctx.Response.ContentType = "application/json";
+                    await ctx.Response.WriteAsJsonAsync(new
+                    {
+                        ok = false,
+                        error = "This account has been disabled.",
+                        code = "account_disabled",
+                    }).ConfigureAwait(false);
+                    return;
+                }
+
                 ctx.User = principal;
+            }
         }
 
         await _next(ctx);

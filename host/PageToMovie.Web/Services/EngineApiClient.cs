@@ -328,6 +328,28 @@ public sealed class EngineApiClient
         return wrap?.User;
     }
 
+    public async Task<AdminUserActionResultDto?> SetAdminUserDisabledAsync(
+        AdminSetUserDisabledRequest body,
+        CancellationToken ct = default)
+    {
+        using var req = new HttpRequestMessage(HttpMethod.Post, "/api/admin/users/disabled")
+        {
+            Content = JsonContent.Create(body, options: JsonOpts),
+        };
+        return await SendJsonAsync<AdminUserActionResultDto>(req, ct);
+    }
+
+    public async Task<AdminDeleteUserResultDto?> DeleteAdminUserAsync(
+        AdminDeleteUserRequest body,
+        CancellationToken ct = default)
+    {
+        using var req = new HttpRequestMessage(HttpMethod.Post, "/api/admin/users/delete")
+        {
+            Content = JsonContent.Create(body, options: JsonOpts),
+        };
+        return await SendJsonAsync<AdminDeleteUserResultDto>(req, ct);
+    }
+
     // ---- Admin Learning (P0–P4) ----
     public async Task<LearningInsightsDto?> GetLearningInsightsAsync(
         string? projectId = null,
@@ -2264,6 +2286,26 @@ public sealed class AdminGrantCreditsResponse
 {
     public bool Ok { get; set; }
     public UserCreditSummaryDto? User { get; set; }
+}
+
+public sealed class AdminUserActionResultDto
+{
+    public bool Ok { get; set; }
+    public string? Error { get; set; }
+    public string? Message { get; set; }
+    public UserCreditSummaryDto? User { get; set; }
+}
+
+public sealed class AdminDeleteUserResultDto
+{
+    public bool Ok { get; set; }
+    public string? Error { get; set; }
+    public string? Message { get; set; }
+    public string? UserId { get; set; }
+    public string? Username { get; set; }
+    public int DeletedProjects { get; set; }
+    public int DeletedDemos { get; set; }
+    public List<string>? ProjectErrors { get; set; }
 }
 
 public sealed class AdminProjectImportResultDto

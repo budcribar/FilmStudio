@@ -3,7 +3,7 @@
 @inject AdminSessionService Session
 @inject NavigationManager Nav
 
-<PageTitle>Users &amp; Credits — Film Studio</PageTitle>
+<PageTitle>Users &amp; Credits — PageToMovie</PageTitle>
 
 <div class="container-fluid py-3">
     <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
@@ -102,6 +102,7 @@
                         <tr>
                             <th>User</th>
                             <th>Role</th>
+                            <th>Status</th>
                             <th class="text-end">Balance</th>
                             <th class="text-end">Used</th>
                             <th class="text-end">Granted</th>
@@ -114,19 +115,30 @@
                         @if (_overview.Users.Count == 0)
                         {
                             <tr>
-                                <td colspan="8" class="text-muted text-center py-3">No users yet.</td>
+                                <td colspan="9" class="text-muted text-center py-3">No users yet.</td>
                             </tr>
                         }
                         else
                         {
                             @foreach (var u in _overview.Users)
                             {
-                                <tr>
+                                var isSelf = IsSelf(u);
+                                <tr class="@(u.IsDisabled ? "table-secondary" : null)">
                                     <td>
                                         <div class="fw-semibold">@u.Username</div>
                                         <div class="small text-muted font-monospace">@u.UserId</div>
                                     </td>
                                     <td><span class="badge text-bg-light">@u.Role</span></td>
+                                    <td>
+                                        @if (u.IsDisabled)
+                                        {
+                                            <span class="badge text-bg-danger">Disabled</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge text-bg-success">Active</span>
+                                        }
+                                    </td>
                                     <td class="text-end">
                                         <span class="@(u.CreditsBalanceUsd < 0 ? "text-danger" : "")">
                                             @u.CreditsBalance.ToString("N0")
@@ -153,11 +165,37 @@
                                     </td>
                                     <td class="small text-muted">@u.CreatedAt.ToLocalTime().ToString("g")</td>
                                     <td class="text-end">
-                                        <button class="btn btn-sm btn-outline-primary"
-                                                @onclick="() => OpenGrant(u)"
-                                                disabled="@_busy">
-                                            Grant…
-                                        </button>
+                                        <div class="d-flex flex-wrap gap-1 justify-content-end">
+                                            <button class="btn btn-sm btn-outline-primary"
+                                                    @onclick="() => OpenGrant(u)"
+                                                    disabled="@(_busy || u.IsDisabled)">
+                                                Grant…
+                                            </button>
+                                            @if (u.IsDisabled)
+                                            {
+                                                <button class="btn btn-sm btn-outline-success"
+                                                        @onclick="() => SetDisabledAsync(u, false)"
+                                                        disabled="@_busy"
+                                                        title="Allow this account to sign in again">
+                                                    Enable
+                                                </button>
+                                            }
+                                            else
+                                            {
+                                                <button class="btn btn-sm btn-outline-warning"
+                                                        @onclick="() => SetDisabledAsync(u, true)"
+                                                        disabled="@(_busy || isSelf)"
+                                                        title="@(isSelf ? "You cannot disable yourself" : "Block login and API use")">
+                                                    Disable
+                                                </button>
+                                            }
+                                            <button class="btn btn-sm btn-outline-danger"
+                                                    @onclick="() => OpenDelete(u)"
+                                                    disabled="@(_busy || isSelf)"
+                                                    title="@(isSelf ? "You cannot delete yourself" : "Permanently delete account")">
+                                                Delete…
+                                            </button>
+                                        </div>
                                     </td>
                                 </tr>
                             }
@@ -199,6 +237,44 @@
                         <button type="button" class="btn btn-sm btn-outline-secondary" @onclick="() => QuickGrant(5)">+$5 (500)</button>
                         <button type="button" class="btn btn-sm btn-outline-secondary" @onclick="() => QuickGrant(10)">+$10 (1000)</button>
                         <button type="button" class="btn btn-sm btn-outline-secondary" @onclick="() => QuickGrant(25)">+$25 (2500)</button>
+                    </div>
+                </div>
+            </div>
+        }
+
+        @if (_deleteUser is not null)
+        {
+            <div class="card mb-4 border-danger">
+                <div class="card-header text-danger">Hard-delete user — @_deleteUser.Username</div>
+                <div class="card-body">
+                    <p class="small mb-3">
+                        Permanently removes the account, credit ledger, demo submissions,
+                        and (by default) projects owned by this user. This cannot be undone.
+                    </p>
+                    <div class="row g-2 align-items-end">
+                        <div class="col-md-4">
+                            <label class="form-label">Type username to confirm</label>
+                            <InputText class="form-control" @bind-Value="_deleteConfirmUsername"
+                                       placeholder="@_deleteUser.Username" autocomplete="off" />
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Your admin password</label>
+                            <input type="password" class="form-control" @bind="_deleteAdminPassword"
+                                   autocomplete="current-password" />
+                            <div class="form-text">Your password (or operator override secret).</div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-check mb-2">
+                                <InputCheckbox class="form-check-input" @bind-Value="_deleteOwnedProjects" id="delProjects" />
+                                <label class="form-check-label" for="delProjects">Delete owned projects</label>
+                            </div>
+                            <div class="d-flex gap-2">
+                                <button class="btn btn-danger" disabled="@_busy" @onclick="SubmitDeleteAsync">
+                                    @(_busy ? "…" : "Delete permanently")
+                                </button>
+                                <button class="btn btn-outline-secondary" disabled="@_busy" @onclick="CloseDelete">Cancel</button>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -269,6 +345,15 @@
     private string? _grantNote;
     private int _lastSyncedCredits;
 
+    private UserCreditSummaryDto? _deleteUser;
+    private string _deleteConfirmUsername = "";
+    private string _deleteAdminPassword = "";
+    private bool _deleteOwnedProjects = true;
+
+    private bool IsSelf(UserCreditSummaryDto u) =>
+        string.Equals(u.UserId, Session.UserId, StringComparison.OrdinalIgnoreCase) ||
+        string.Equals(u.Username, Session.UserId, StringComparison.OrdinalIgnoreCase);
+
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (!firstRender || _started) return;
@@ -318,6 +403,7 @@
 
     private void OpenGrant(UserCreditSummaryDto u)
     {
+        _deleteUser = null;
         _grantUser = u;
         _grantUsd = 5;
         _grantCredits = 500;
@@ -330,6 +416,96 @@
     {
         _grantUser = null;
         _message = null;
+    }
+
+    private void OpenDelete(UserCreditSummaryDto u)
+    {
+        _grantUser = null;
+        _deleteUser = u;
+        _deleteConfirmUsername = "";
+        _deleteAdminPassword = "";
+        _deleteOwnedProjects = true;
+        _message = null;
+        _error = null;
+    }
+
+    private void CloseDelete()
+    {
+        _deleteUser = null;
+        _deleteConfirmUsername = "";
+        _deleteAdminPassword = "";
+    }
+
+    private async Task SetDisabledAsync(UserCreditSummaryDto u, bool disabled)
+    {
+        _busy = true;
+        _error = null;
+        _message = null;
+        try
+        {
+            var result = await Api.SetAdminUserDisabledAsync(new AdminSetUserDisabledRequest
+            {
+                UserId = u.UserId,
+                Disabled = disabled,
+            });
+            if (result is null || !result.Ok)
+            {
+                _error = result?.Error ?? (disabled ? "Disable failed." : "Enable failed.");
+            }
+            else
+            {
+                _message = result.Message
+                           ?? (disabled ? $"Disabled {u.Username}." : $"Re-enabled {u.Username}.");
+                await LoadAsync();
+            }
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task SubmitDeleteAsync()
+    {
+        if (_deleteUser is null) return;
+        _busy = true;
+        _error = null;
+        _message = null;
+        try
+        {
+            var result = await Api.DeleteAdminUserAsync(new AdminDeleteUserRequest
+            {
+                UserId = _deleteUser.UserId,
+                ConfirmUsername = _deleteConfirmUsername,
+                AdminPassword = _deleteAdminPassword,
+                DeleteOwnedProjects = _deleteOwnedProjects,
+            });
+            if (result is null || !result.Ok)
+            {
+                _error = result?.Error ?? "Delete failed.";
+            }
+            else
+            {
+                _message = result.Message
+                           ?? $"Deleted {_deleteUser.Username}.";
+                if (result.ProjectErrors is { Count: > 0 })
+                    _message += " Some projects could not be deleted: " + string.Join("; ", result.ProjectErrors);
+                CloseDelete();
+                await LoadAsync();
+            }
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            _busy = false;
+        }
     }
 
     private void QuickGrant(double usd)

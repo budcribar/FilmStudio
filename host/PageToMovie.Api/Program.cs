@@ -855,6 +855,147 @@ app.MapPost("/api/admin/users/credits", async (
     return Results.Ok(new { ok = true, user = summary });
 });
 
+/// <summary>Admin: disable or re-enable a user account.</summary>
+app.MapPost("/api/admin/users/disabled", async (
+    AdminSetUserDisabledRequest body,
+    IUserContext user,
+    UserDatabaseService userDb) =>
+{
+    if (!user.IsAdmin)
+        return Results.Json(new { ok = false, error = "admin role required" },
+            statusCode: StatusCodes.Status403Forbidden);
+
+    if (body is null || string.IsNullOrWhiteSpace(body.UserId))
+        return Results.BadRequest(new { ok = false, error = "userId is required" });
+
+    var target = await userDb.ResolveUserAsync(body.UserId.Trim());
+    if (target is null)
+        return Results.NotFound(new { ok = false, error = "user not found" });
+
+    if (string.Equals(target.UserId, user.UserId, StringComparison.OrdinalIgnoreCase) ||
+        string.Equals(target.Username, user.UserId, StringComparison.OrdinalIgnoreCase))
+        return Results.BadRequest(new { ok = false, error = "You cannot disable your own account." });
+
+    if (body.Disabled &&
+        string.Equals(target.Role, "Admin", StringComparison.OrdinalIgnoreCase))
+    {
+        var activeAdmins = await userDb.CountActiveAdminsAsync();
+        // If this admin is currently active, disabling them must leave ≥1 admin.
+        if (!target.IsDisabled && activeAdmins <= 1)
+            return Results.BadRequest(new { ok = false, error = "Cannot disable the last active admin." });
+    }
+
+    var summary = await userDb.SetUserDisabledAsync(target.UserId, body.Disabled);
+    if (summary is null)
+        return Results.NotFound(new { ok = false, error = "user not found" });
+
+    return Results.Ok(new
+    {
+        ok = true,
+        user = summary,
+        message = body.Disabled
+            ? $"Disabled {summary.Username}."
+            : $"Re-enabled {summary.Username}.",
+    });
+});
+
+/// <summary>
+/// Admin hard-delete: requires typing the target username + the acting admin's password
+/// (or operator override secret). Cascades credit ledger, demos, and owned projects.
+/// </summary>
+app.MapPost("/api/admin/users/delete", async (
+    AdminDeleteUserRequest body,
+    IUserContext user,
+    IAdminAuthService auth,
+    UserDatabaseService userDb,
+    ProjectStore projects,
+    DemoCatalogService demos,
+    CancellationToken ct) =>
+{
+    if (!user.IsAdmin)
+        return Results.Json(new { ok = false, error = "admin role required" },
+            statusCode: StatusCodes.Status403Forbidden);
+
+    if (body is null || string.IsNullOrWhiteSpace(body.UserId))
+        return Results.BadRequest(new { ok = false, error = "userId is required" });
+    if (string.IsNullOrWhiteSpace(body.ConfirmUsername))
+        return Results.BadRequest(new { ok = false, error = "confirmUsername is required" });
+    if (string.IsNullOrEmpty(body.AdminPassword))
+        return Results.BadRequest(new { ok = false, error = "adminPassword is required" });
+
+    if (!auth.VerifyCallerPassword(user.UserId, body.AdminPassword))
+        return Results.Json(new { ok = false, error = "Admin password is incorrect." },
+            statusCode: StatusCodes.Status403Forbidden);
+
+    var target = await userDb.ResolveUserAsync(body.UserId.Trim(), ct);
+    if (target is null)
+        return Results.NotFound(new { ok = false, error = "user not found" });
+
+    if (!string.Equals(body.ConfirmUsername.Trim(), target.Username, StringComparison.OrdinalIgnoreCase) &&
+        !string.Equals(body.ConfirmUsername.Trim(), target.UserId, StringComparison.OrdinalIgnoreCase))
+        return Results.BadRequest(new
+        {
+            ok = false,
+            error = "confirmUsername must match the target username exactly.",
+        });
+
+    if (string.Equals(target.UserId, user.UserId, StringComparison.OrdinalIgnoreCase) ||
+        string.Equals(target.Username, user.UserId, StringComparison.OrdinalIgnoreCase))
+        return Results.BadRequest(new { ok = false, error = "You cannot delete your own account." });
+
+    if (string.Equals(target.Role, "Admin", StringComparison.OrdinalIgnoreCase))
+    {
+        var activeAdmins = await userDb.CountActiveAdminsAsync(ct);
+        var countsAsActive = !target.IsDisabled;
+        if (countsAsActive && activeAdmins <= 1)
+            return Results.BadRequest(new { ok = false, error = "Cannot delete the last active admin." });
+    }
+
+    var deletedProjects = 0;
+    var projectErrors = new List<string>();
+    if (body.DeleteOwnedProjects)
+    {
+        var all = await projects.ListProjectsAsync(ct);
+        var owned = all.Where(p =>
+            !string.IsNullOrWhiteSpace(p.OwnerUserId) &&
+            (string.Equals(p.OwnerUserId, target.UserId, StringComparison.OrdinalIgnoreCase) ||
+             string.Equals(p.OwnerUserId, target.Username, StringComparison.OrdinalIgnoreCase)))
+            .ToList();
+        foreach (var p in owned)
+        {
+            try
+            {
+                await projects.DeleteProjectAsync(p.Id, ct);
+                deletedProjects++;
+            }
+            catch (Exception ex)
+            {
+                projectErrors.Add($"{p.Id}: {ex.Message}");
+            }
+        }
+    }
+
+    var deletedDemos = demos.HardDeleteAllByUser(target.UserId);
+    // Also match demos stored under username if different from user_id.
+    if (!string.Equals(target.UserId, target.Username, StringComparison.OrdinalIgnoreCase))
+        deletedDemos += demos.HardDeleteAllByUser(target.Username);
+
+    var removed = await userDb.HardDeleteUserAsync(target.UserId, ct);
+    if (!removed)
+        return Results.NotFound(new { ok = false, error = "user not found or already deleted" });
+
+    return Results.Ok(new
+    {
+        ok = true,
+        userId = target.UserId,
+        username = target.Username,
+        deletedProjects,
+        deletedDemos,
+        projectErrors = projectErrors.Count > 0 ? projectErrors : null,
+        message = $"Deleted {target.Username} (projects: {deletedProjects}, demos: {deletedDemos}).",
+    });
+});
+
 app.MapGet("/api/admin/config", (IUserContext user, IRuntimeConfigStore config) =>
 {
     if (!user.IsAdmin)

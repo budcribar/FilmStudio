@@ -1,6 +1,6 @@
-# Film Studio (.NET solution)
+# PageToMovie (.NET solution)
 
-Visual Studio / `dotnet` solution: **Blazor UI + C# API/engine**, with live **SignalR** job progress.
+Visual Studio / `dotnet` solution: **Blazor WASM UI + C# API/engine**, with live **SignalR** job progress.
 **No Python runtime is required** for the product path under `host/`.
 
 ```text
@@ -8,8 +8,8 @@ host/
   PageToMovie.slnx          # open this in Visual Studio
   PageToMovie.Core/         # shared models + options
   PageToMovie.Engine/       # project store + Grok jobs + remux
-  PageToMovie.Api/          # REST + SignalR hub (:5088)
-  PageToMovie.Web/          # Blazor Server UI
+  PageToMovie.Api/          # REST + SignalR hub (:5088); hosts WASM UI
+  PageToMovie.Web/          # Blazor WebAssembly UI
   PageToMovie.Fakes/        # fake Grok clients + fixtures
   PageToMovie.LoadSim/      # concurrent virtual-user load client
   PageToMovie.Tests/        # unit tests

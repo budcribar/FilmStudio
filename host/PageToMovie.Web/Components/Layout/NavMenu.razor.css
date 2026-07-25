@@ -4,7 +4,7 @@
     width: 3.5rem;
     height: 2.5rem;
     color: white;
-    /* Sit below the brand row so it never covers "Film Studio" */
+    /* Sit below the brand row so it never covers the brand label */
     position: relative;
     display: block;
     margin: 0.35rem 0.65rem 0.25rem auto;

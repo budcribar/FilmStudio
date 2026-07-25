@@ -339,6 +339,27 @@ public sealed class DemoCatalogService
         }
     }
 
+    /// <summary>Hard-delete every demo created by <paramref name="userId"/> (admin cascade).</summary>
+    public int HardDeleteAllByUser(string? userId)
+    {
+        if (string.IsNullOrWhiteSpace(userId)) return 0;
+        List<string> ids;
+        lock (_lock)
+        {
+            ids = LoadAllUnlocked()
+                .Where(e => string.Equals(e.CreatedBy, userId, StringComparison.OrdinalIgnoreCase))
+                .Select(e => e.Id)
+                .ToList();
+        }
+        var n = 0;
+        foreach (var id in ids)
+        {
+            if (Delete(id, requesterUserId: null, isAdmin: true))
+                n++;
+        }
+        return n;
+    }
+
     public bool Delete(string id, string? requesterUserId, bool isAdmin)
     {
         var entry = TryGet(id);

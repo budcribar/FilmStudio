@@ -147,6 +147,9 @@ public class UserDatabaseService
                 EnsureColumn(conn, "users", "credits_lifetime_granted_usd", "REAL NOT NULL DEFAULT 0");
                 EnsureColumn(conn, "users", "credits_lifetime_used_usd", "REAL NOT NULL DEFAULT 0");
 
+                // Admin disable (soft ban) — blocks login / API without deleting ledger.
+                EnsureColumn(conn, "users", "is_disabled", "INTEGER NOT NULL DEFAULT 0");
+
                 using (var cmd = conn.CreateCommand())
                 {
                     cmd.CommandText = @"
@@ -253,7 +256,8 @@ public class UserDatabaseService
                    role, created_at, last_login_at,
                    COALESCE(credits_balance_usd, 0),
                    COALESCE(credits_lifetime_granted_usd, 0),
-                   COALESCE(credits_lifetime_used_usd, 0)
+                   COALESCE(credits_lifetime_used_usd, 0),
+                   COALESCE(is_disabled, 0)
             FROM users";
 
     /// <summary>Saves or updates a user's encrypted xAI API key in SQLite.</summary>
@@ -407,9 +411,10 @@ public class UserDatabaseService
                 user_id, username, password_hash,
                 encrypted_xai_api_key, encrypted_gemini_api_key, encrypted_anthropic_api_key,
                 role, created_at, last_login_at,
-                credits_balance_usd, credits_lifetime_granted_usd, credits_lifetime_used_usd)
+                credits_balance_usd, credits_lifetime_granted_usd, credits_lifetime_used_usd,
+                is_disabled)
             VALUES (@id, @name, @hash, @xai, @gemini, @anthropic, @role, @created, @login,
-                    @bal, @granted, @used)
+                    @bal, @granted, @used, @disabled)
             ON CONFLICT(user_id) DO UPDATE SET
                 username = excluded.username,
                 encrypted_xai_api_key = COALESCE(excluded.encrypted_xai_api_key, users.encrypted_xai_api_key),
@@ -428,8 +433,103 @@ public class UserDatabaseService
         cmd.Parameters.AddWithValue("@bal", user.CreditsBalanceUsd);
         cmd.Parameters.AddWithValue("@granted", user.CreditsLifetimeGrantedUsd);
         cmd.Parameters.AddWithValue("@used", user.CreditsLifetimeUsedUsd);
+        cmd.Parameters.AddWithValue("@disabled", user.IsDisabled ? 1 : 0);
 
         await cmd.ExecuteNonQueryAsync(ct).ConfigureAwait(false);
+    }
+
+    /// <summary>True when the account exists and is admin-disabled.</summary>
+    public async Task<bool> IsUserDisabledAsync(string? userIdOrName, CancellationToken ct = default)
+    {
+        var user = await ResolveUserAsync(userIdOrName ?? "", ct).ConfigureAwait(false);
+        return user?.IsDisabled == true;
+    }
+
+    /// <summary>
+    /// Enable or disable an account. Returns null when user not found.
+    /// Caller must enforce self-disable and last-admin rules.
+    /// </summary>
+    public async Task<UserCreditSummaryDto?> SetUserDisabledAsync(
+        string userId,
+        bool disabled,
+        CancellationToken ct = default)
+    {
+        var user = await ResolveUserAsync(userId, ct).ConfigureAwait(false);
+        if (user is null) return null;
+
+        using var conn = new SqliteConnection(ConnectionString);
+        await conn.OpenAsync(ct).ConfigureAwait(false);
+        using var cmd = conn.CreateCommand();
+        cmd.CommandText = "UPDATE users SET is_disabled = @d WHERE user_id = @id";
+        cmd.Parameters.AddWithValue("@d", disabled ? 1 : 0);
+        cmd.Parameters.AddWithValue("@id", user.UserId);
+        await cmd.ExecuteNonQueryAsync(ct).ConfigureAwait(false);
+
+        user.IsDisabled = disabled;
+        return ToCreditSummary(user);
+    }
+
+    /// <summary>Count non-disabled accounts with Role = Admin.</summary>
+    public async Task<int> CountActiveAdminsAsync(CancellationToken ct = default)
+    {
+        using var conn = new SqliteConnection(ConnectionString);
+        await conn.OpenAsync(ct).ConfigureAwait(false);
+        using var cmd = conn.CreateCommand();
+        cmd.CommandText = @"
+            SELECT COUNT(*) FROM users
+            WHERE LOWER(role) = 'admin'
+              AND COALESCE(is_disabled, 0) = 0";
+        var scalar = await cmd.ExecuteScalarAsync(ct).ConfigureAwait(false);
+        return Convert.ToInt32(scalar ?? 0);
+    }
+
+    /// <summary>
+    /// Hard-delete user row + credit ledger. Does not touch projects/demos (API orchestrates those).
+    /// </summary>
+    public async Task<bool> HardDeleteUserAsync(string userId, CancellationToken ct = default)
+    {
+        var user = await ResolveUserAsync(userId, ct).ConfigureAwait(false);
+        if (user is null) return false;
+
+        using var conn = new SqliteConnection(ConnectionString);
+        await conn.OpenAsync(ct).ConfigureAwait(false);
+        using var tx = (SqliteTransaction)await conn
+            .BeginTransactionAsync(System.Data.IsolationLevel.Serializable, ct)
+            .ConfigureAwait(false);
+
+        using (var delLedger = conn.CreateCommand())
+        {
+            delLedger.Transaction = tx;
+            delLedger.CommandText = "DELETE FROM credit_ledger WHERE user_id = @id OR LOWER(user_id) = LOWER(@id)";
+            delLedger.Parameters.AddWithValue("@id", user.UserId);
+            await delLedger.ExecuteNonQueryAsync(ct).ConfigureAwait(false);
+        }
+
+        using (var delUser = conn.CreateCommand())
+        {
+            delUser.Transaction = tx;
+            delUser.CommandText = "DELETE FROM users WHERE user_id = @id";
+            delUser.Parameters.AddWithValue("@id", user.UserId);
+            var rows = await delUser.ExecuteNonQueryAsync(ct).ConfigureAwait(false);
+            if (rows == 0)
+            {
+                await tx.RollbackAsync(ct).ConfigureAwait(false);
+                return false;
+            }
+        }
+
+        await tx.CommitAsync(ct).ConfigureAwait(false);
+        _logger.LogInformation("Hard-deleted user {UserId} ({Username})", user.UserId, user.Username);
+        return true;
+    }
+
+    /// <summary>True when password matches the stored hash for this user.</summary>
+    public bool VerifyPasswordHash(UserEntity user, string password)
+    {
+        if (user is null || string.IsNullOrEmpty(user.PasswordHash))
+            return false;
+        var hash = HashPassword(password ?? "");
+        return string.Equals(user.PasswordHash, hash, StringComparison.Ordinal);
     }
 
     // ── Credits ──────────────────────────────────────────────────────────────
@@ -644,6 +744,7 @@ public class UserDatabaseService
         CreatedAt = u.CreatedAt,
         LastLoginAt = u.LastLoginAt,
         HasXaiApiKey = !string.IsNullOrWhiteSpace(u.EncryptedXaiApiKey),
+        IsDisabled = u.IsDisabled,
         CreditsBalanceUsd = u.CreditsBalanceUsd,
         CreditsLifetimeGrantedUsd = u.CreditsLifetimeGrantedUsd,
         CreditsLifetimeUsedUsd = u.CreditsLifetimeUsedUsd,
@@ -818,7 +919,7 @@ public class UserDatabaseService
     private static UserEntity ReadUserFromReader(SqliteDataReader reader)
     {
         // Columns: 0 id, 1 name, 2 hash, 3 xai, 4 gemini, 5 anthropic, 6 role, 7 created, 8 login,
-        //          9 balance, 10 granted, 11 used
+        //          9 balance, 10 granted, 11 used, 12 is_disabled
         return new UserEntity
         {
             UserId = reader.GetString(0),
@@ -833,6 +934,7 @@ public class UserDatabaseService
             CreditsBalanceUsd = reader.FieldCount > 9 && !reader.IsDBNull(9) ? reader.GetDouble(9) : 0,
             CreditsLifetimeGrantedUsd = reader.FieldCount > 10 && !reader.IsDBNull(10) ? reader.GetDouble(10) : 0,
             CreditsLifetimeUsedUsd = reader.FieldCount > 11 && !reader.IsDBNull(11) ? reader.GetDouble(11) : 0,
+            IsDisabled = reader.FieldCount > 12 && !reader.IsDBNull(12) && reader.GetInt64(12) != 0,
         };
     }
 }
