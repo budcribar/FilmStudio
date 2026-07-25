@@ -94,15 +94,11 @@
                 return;
             }
 
-            Session.SetSession(resp.Token!, resp.UserId, resp.Roles, resp.ExpiresAt);
-
-            // Give sessionStorage a moment to flush
-            await Task.Delay(50);
-            await Session.EnsureHydratedAsync();
+            await Session.SetSessionAsync(resp.Token!, resp.UserId, resp.Roles, resp.ExpiresAt);
 
             if (!Session.IsAdmin)
             {
-                Session.Clear();
+                await Session.ClearAsync();
                 _error = "Token missing admin role. Check PageToMovie:Auth on the API.";
                 return;
             }

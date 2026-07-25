@@ -6,6 +6,8 @@ namespace PageToMovie.Web.Services;
 /// <summary>
 /// Scoped admin identity (Blazor WASM scope = browser tab). Mirrors JWT into
 /// sessionStorage via JS so a full page reload can restore the session.
+/// Persist/clear are awaited before forceLoad navigations so the old session
+/// cannot win a race and reappear (e.g. after renaming a user in the DB).
 /// </summary>
 public sealed class AdminSessionService
 {
@@ -36,7 +38,29 @@ public sealed class AdminSessionService
         _ = PersistAsync();
     }
 
+    /// <summary>In-memory update only. Prefer <see cref="SetSessionAsync"/> before forceLoad.</summary>
     public void SetSession(string token, string? userId, IEnumerable<string>? roles, DateTimeOffset? expiresAt)
+    {
+        ApplySession(token, userId, roles, expiresAt);
+        _ = PersistAsync();
+    }
+
+    /// <summary>Write session to sessionStorage and wait (safe before forceLoad navigate).</summary>
+    public async Task SetSessionAsync(
+        string token,
+        string? userId,
+        IEnumerable<string>? roles,
+        DateTimeOffset? expiresAt)
+    {
+        ApplySession(token, userId, roles, expiresAt);
+        await PersistAsync().ConfigureAwait(false);
+    }
+
+    private void ApplySession(
+        string token,
+        string? userId,
+        IEnumerable<string>? roles,
+        DateTimeOffset? expiresAt)
     {
         Token = token;
         UserId = string.IsNullOrWhiteSpace(userId) ? "local" : userId.Trim();
@@ -45,10 +69,23 @@ public sealed class AdminSessionService
         ExpiresAt = expiresAt;
         _hydrated = true;
         Changed?.Invoke();
-        _ = PersistAsync();
     }
 
+    /// <summary>In-memory clear only. Prefer <see cref="ClearAsync"/> before forceLoad.</summary>
     public void Clear()
+    {
+        ApplyClear();
+        _ = ClearPersistAsync();
+    }
+
+    /// <summary>Remove session from sessionStorage and wait (safe before forceLoad navigate).</summary>
+    public async Task ClearAsync()
+    {
+        ApplyClear();
+        await ClearPersistAsync().ConfigureAwait(false);
+    }
+
+    private void ApplyClear()
     {
         Token = null;
         UserId = "local";
@@ -56,7 +93,6 @@ public sealed class AdminSessionService
         ExpiresAt = null;
         _hydrated = true;
         Changed?.Invoke();
-        _ = ClearPersistAsync();
     }
 
     /// <summary>

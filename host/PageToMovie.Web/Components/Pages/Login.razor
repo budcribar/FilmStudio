@@ -364,9 +364,12 @@
                 return;
             }
 
-            Session.SetSession(resp.Token!, resp.UserId ?? _username.Trim(), resp.Roles, resp.ExpiresAt);
-            await Task.Delay(50);
-            await Session.EnsureHydratedAsync();
+            // Await storage write so forceLoad cannot rehydrate a previous user id (e.g. renamed account).
+            await Session.SetSessionAsync(
+                resp.Token!,
+                resp.UserId ?? _username.Trim(),
+                resp.Roles,
+                resp.ExpiresAt);
 
             _status = "Redirecting…";
             StateHasChanged();

@@ -198,7 +198,7 @@
 
             var login = await Engine.LoginAsync(user, pass);
             if (login?.Ok == true && !string.IsNullOrWhiteSpace(login.Token))
-                ApplyLoginAndStripQuery(login, uri, user);
+                await ApplyLoginAndStripQueryAsync(login, uri, user);
         }
         catch
         {
@@ -227,11 +227,11 @@
             await Session.EnsureHydratedAsync();
             // Replace any existing session so a normal user JWT does not block operator access.
             if (Session.IsLoggedIn)
-                Session.Clear();
+                await Session.ClearAsync();
 
             var login = await Engine.LoginWithOperatorOverrideAsync(secret);
             if (login?.Ok == true && !string.IsNullOrWhiteSpace(login.Token))
-                ApplyLoginAndStripQuery(login, uri, login.UserId ?? "admin");
+                await ApplyLoginAndStripQueryAsync(login, uri, login.UserId ?? "admin");
         }
         catch
         {
@@ -239,9 +239,9 @@
         }
     }
 
-    private void ApplyLoginAndStripQuery(LoginResponse login, Uri uri, string fallbackUser)
+    private async Task ApplyLoginAndStripQueryAsync(LoginResponse login, Uri uri, string fallbackUser)
     {
-        Session.SetSession(
+        await Session.SetSessionAsync(
             login.Token!,
             login.UserId ?? fallbackUser,
             login.Roles,

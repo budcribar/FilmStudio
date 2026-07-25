@@ -686,7 +686,7 @@
                 msg.Contains("admin role required", StringComparison.OrdinalIgnoreCase) ||
                 msg.Contains("Unauthorized", StringComparison.OrdinalIgnoreCase))
             {
-                Session.Clear();
+                await Session.ClearAsync();
                 Nav.NavigateTo("/admin/login", forceLoad: true);
             }
         }

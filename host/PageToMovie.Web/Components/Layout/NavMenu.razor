@@ -296,7 +296,8 @@
     {
         _userMenuOpen = false;
         await Engine.LogoutAsync();
-        Session.Clear();
+        // LogoutAsync already ClearAsync's the session; ensure storage is gone before forceLoad.
+        await Session.ClearAsync();
         Nav.NavigateTo("/login", forceLoad: true);
     }
 

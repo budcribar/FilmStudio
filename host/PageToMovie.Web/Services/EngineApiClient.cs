@@ -220,7 +220,8 @@ public sealed class EngineApiClient
         }
         finally
         {
-            _session?.Clear();
+            if (_session is not null)
+                await _session.ClearAsync().ConfigureAwait(false);
         }
     }
 
