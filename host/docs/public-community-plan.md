@@ -14,7 +14,7 @@ Nothing in this doc is required for current production unless explicitly schedul
 | # | Feature | Status | Notes |
 |---|---------|--------|--------|
 | 1 | **Project collaborators** | **planned** | Owner invites users to **same** project; see § Project collaborators. **Higher priority than fork/merge.** |
-| 2 | **Demo ratings (upvotes only)** | **planned** | One upvote per user per playable demo; rank gallery by **most upvotes**. See § Demo ratings. |
+| 2 | **Demo ratings (upvotes only)** | **done** (basic) | ★ on `/demo`; sort top/new. See § Demo ratings. |
 | 3 | Project / listing mode: **private · public · open** | **planned** | Locked matrix: see § Visibility modes. |
 | 4 | Content hash of exportable package | idea | Freshness for contributions (fork PRs). |
 | 5 | **Fork** (plan-only package v1) | idea | Copy story/cast/blueprint; no clip binaries; **open** only. |
@@ -153,7 +153,9 @@ Owner chooses one mode for the **public surface** of their work (demo listing an
 
 ---
 
-## Demo ratings (planned — do not implement yet)
+## Demo ratings (basic implementation shipped)
+
+Implemented: `DemoUpvoteService` (SQLite `demo_upvotes`), `POST/DELETE /api/demos/{id}/upvote`, gallery `sort=top|new`, Demo page ★ button.
 
 ### Intent
 Lightweight quality signal for **approved public demos**. Independent of fork/merge and of collaborators.
@@ -263,8 +265,8 @@ Characters are **global** (high blast radius); scenes are a **timeline of clips*
 
 ## Suggested ship order
 
-1. **Project collaborators** (owner + editors, invite by username, project list includes member-of).  
-2. **Demo upvotes + rank by most upvotes** — standalone gallery signal.  
+1. **Demo upvotes + rank by most upvotes** — **done (basic)** on `/demo`.  
+2. **Project collaborators** (owner + editors, invite by username, project list includes member-of).  
 3. Wire **private / public / open** (play/fork matrix) on publish/listing.  
 4. Plan-only **fork** for **open** only.  
 5. Prompt/JSON **contributions** + owner merge + conflict UX.  

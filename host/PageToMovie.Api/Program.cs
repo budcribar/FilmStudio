@@ -124,6 +124,7 @@ builder.Services.AddSingleton<ClipAutoReviewService>();
 builder.Services.AddSingleton<ProjectArtifactIndexService>();
 builder.Services.AddSingleton<MediaShareService>();
 builder.Services.AddSingleton<DemoCatalogService>();
+builder.Services.AddSingleton<DemoUpvoteService>();
 builder.Services.AddSingleton<MediaRegistryService>();
 builder.Services.AddSingleton<MediaProxyTicketStore>();
 builder.Services.AddSingleton<YouTubeAuthService>();
@@ -3137,7 +3138,10 @@ app.MapGet("/api/share/{token}", (string token, MediaShareService shares, Projec
     }
 });
 
-static object DemoPublicDto(DemoCatalogService.DemoEntry d) => new
+static object DemoPublicDto(
+    DemoCatalogService.DemoEntry d,
+    int upvoteCount = 0,
+    bool upvotedByMe = false) => new
 {
     d.Id,
     d.Title,
@@ -3148,6 +3152,8 @@ static object DemoPublicDto(DemoCatalogService.DemoEntry d) => new
     d.SizeBytes,
     d.Status,
     d.ReportCount,
+    upvoteCount,
+    upvotedByMe,
     videoPath = $"/api/demos/{Uri.EscapeDataString(d.Id)}/video",
 };
 
@@ -3170,11 +3176,35 @@ static object DemoAdminDto(DemoCatalogService.DemoEntry d) => new
     videoPath = $"/api/demos/{Uri.EscapeDataString(d.Id)}/video",
 };
 
-/// <summary>Public gallery: only approved demos (no login).</summary>
-app.MapGet("/api/demos", (DemoCatalogService demos, int? take) =>
+/// <summary>Public gallery: only approved demos (no login). sort=top|new (default top by upvotes).</summary>
+app.MapGet("/api/demos", (
+    DemoCatalogService demos,
+    DemoUpvoteService upvotes,
+    IUserContext user,
+    int? take,
+    string? sort) =>
 {
-    var list = demos.ListPublic(take ?? 50);
-    return Results.Ok(new { ok = true, demos = list.Select(DemoPublicDto) });
+    var list = demos.ListPublic(take ?? 50).ToList();
+    var ids = list.Select(d => d.Id).ToList();
+    var counts = upvotes.GetCounts(ids);
+    var mine = upvotes.GetUpvotedSet(user.UserId, ids);
+    var sortKey = (sort ?? "top").Trim().ToLowerInvariant();
+    IEnumerable<DemoCatalogService.DemoEntry> ordered = sortKey switch
+    {
+        "new" => list.OrderByDescending(d => d.CreatedAt),
+        _ => list
+            .OrderByDescending(d => counts.GetValueOrDefault(d.Id))
+            .ThenByDescending(d => d.CreatedAt),
+    };
+    return Results.Ok(new
+    {
+        ok = true,
+        sort = sortKey is "new" ? "new" : "top",
+        demos = ordered.Select(d => DemoPublicDto(
+            d,
+            counts.GetValueOrDefault(d.Id),
+            mine.Contains(d.Id))),
+    });
 });
 
 /// <summary>Admin moderation list (pending / all statuses).</summary>
@@ -3205,6 +3235,7 @@ app.MapGet("/api/admin/demos", (
 app.MapGet("/api/demos/{demoId}", (
     string demoId,
     DemoCatalogService demos,
+    DemoUpvoteService upvotes,
     IUserContext user) =>
 {
     var d = demos.TryGet(demoId);
@@ -3212,7 +3243,75 @@ app.MapGet("/api/demos/{demoId}", (
         return Results.NotFound(new { ok = false, error = "Demo not found" });
     if (!demos.CanUserViewVideo(d, user.UserId, user.IsAdmin))
         return Results.NotFound(new { ok = false, error = "Demo not found" });
-    return Results.Ok(new { ok = true, demo = user.IsAdmin ? DemoAdminDto(d) : DemoPublicDto(d) });
+    var count = upvotes.GetCount(demoId);
+    var me = upvotes.HasUpvoted(demoId, user.UserId);
+    if (user.IsAdmin)
+    {
+        return Results.Ok(new
+        {
+            ok = true,
+            demo = DemoAdminDto(d),
+            upvoteCount = count,
+            upvotedByMe = me,
+        });
+    }
+    return Results.Ok(new { ok = true, demo = DemoPublicDto(d, count, me) });
+});
+
+/// <summary>Star / upvote a public demo (signed-in). Idempotent. No self-upvote.</summary>
+app.MapPost("/api/demos/{demoId}/upvote", (
+    string demoId,
+    DemoCatalogService demos,
+    DemoUpvoteService upvotes,
+    IUserContext user,
+    IOptions<PageToMovieOptions> opts) =>
+{
+    if (AuthGate.RequireLogin(user, opts) is { } denied)
+        return denied;
+    var d = demos.TryGet(demoId);
+    if (d is null || !demos.IsPubliclyStreamable(d))
+        return Results.NotFound(new { ok = false, error = "Demo not found" });
+    if (!string.IsNullOrWhiteSpace(d.CreatedBy) &&
+        string.Equals(d.CreatedBy, user.UserId, StringComparison.OrdinalIgnoreCase))
+    {
+        return Results.Json(new
+        {
+            ok = false,
+            error = "You can’t star your own demo.",
+            code = "self_upvote",
+        }, statusCode: StatusCodes.Status403Forbidden);
+    }
+
+    upvotes.TryAdd(demoId, user.UserId!);
+    return Results.Ok(new
+    {
+        ok = true,
+        upvoteCount = upvotes.GetCount(demoId),
+        upvotedByMe = true,
+    });
+});
+
+/// <summary>Remove star / upvote (signed-in).</summary>
+app.MapDelete("/api/demos/{demoId}/upvote", (
+    string demoId,
+    DemoCatalogService demos,
+    DemoUpvoteService upvotes,
+    IUserContext user,
+    IOptions<PageToMovieOptions> opts) =>
+{
+    if (AuthGate.RequireLogin(user, opts) is { } denied)
+        return denied;
+    var d = demos.TryGet(demoId);
+    if (d is null || !demos.IsPubliclyStreamable(d))
+        return Results.NotFound(new { ok = false, error = "Demo not found" });
+
+    upvotes.TryRemove(demoId, user.UserId!);
+    return Results.Ok(new
+    {
+        ok = true,
+        upvoteCount = upvotes.GetCount(demoId),
+        upvotedByMe = false,
+    });
 });
 
 /// <summary>Stream demo video if public, or owner/admin for pending.</summary>

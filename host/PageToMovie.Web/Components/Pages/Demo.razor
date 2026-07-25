@@ -13,11 +13,26 @@
         <p class="demo-hero-lead">
             Approved shorts made with PageToMovie — open to everyone.
             New submissions wait for human review before they appear here
-            (no automatic AI scanning).
+            (no automatic AI scanning). Star films you like
+            @if (!Session.IsLoggedIn)
+            {
+                <span> (sign in to star)</span>
+            }
+            — ranked by most stars.
         </p>
         @if (!_loading && _demos.Count > 0)
         {
-            <p class="demo-hero-meta">@_demos.Count film@(_demos.Count == 1 ? "" : "s") on the wall</p>
+            <div class="demo-hero-toolbar">
+                <p class="demo-hero-meta mb-0">@_demos.Count film@(_demos.Count == 1 ? "" : "s") on the wall</p>
+                <div class="demo-sort btn-group btn-group-sm" role="group" aria-label="Sort gallery">
+                    <button type="button"
+                            class="btn @(_sort == "top" ? "btn-primary" : "btn-outline-secondary")"
+                            @onclick="SortByTopAsync">Most stars</button>
+                    <button type="button"
+                            class="btn @(_sort == "new" ? "btn-primary" : "btn-outline-secondary")"
+                            @onclick="SortByNewAsync">Newest</button>
+                </div>
+            </div>
         }
     </header>
 
@@ -108,6 +123,15 @@
                             </div>
                             <div class="demo-card-actions">
                                 <button type="button"
+                                        class="btn btn-sm @(d.UpvotedByMe ? "btn-warning" : "btn-outline-secondary") demo-star-btn"
+                                        disabled="@(_busy || IsOwnDemo(d))"
+                                        title="@(StarButtonTitle(d))"
+                                        aria-pressed="@(d.UpvotedByMe ? "true" : "false")"
+                                        @onclick="() => ToggleStarAsync(d)">
+                                    <span aria-hidden="true">★</span>
+                                    <span class="demo-star-count">@d.UpvoteCount</span>
+                                </button>
+                                <button type="button"
                                         class="btn btn-sm btn-outline-warning"
                                         disabled="@(_busy || _reported.Contains(d.Id))"
                                         title="Report inappropriate content"
@@ -139,6 +163,7 @@
     private string? _message;
     private string? _highlightId;
     private string? _playingId;
+    private string _sort = "top";
     private readonly HashSet<string> _reported = new(StringComparer.OrdinalIgnoreCase);
 
     protected override async Task OnInitializedAsync()
@@ -155,13 +180,23 @@
         await ReloadAsync();
     }
 
+    private Task SortByTopAsync() => SetSortAsync("top");
+    private Task SortByNewAsync() => SetSortAsync("new");
+
+    private async Task SetSortAsync(string sort)
+    {
+        if (string.Equals(_sort, sort, StringComparison.OrdinalIgnoreCase)) return;
+        _sort = sort;
+        await ReloadAsync();
+    }
+
     private async Task ReloadAsync()
     {
         _loading = true;
         _error = null;
         try
         {
-            _demos = await Engine.ListDemosAsync(100);
+            _demos = await Engine.ListDemosAsync(100, _sort);
         }
         catch (Exception ex)
         {
@@ -171,6 +206,52 @@
         finally
         {
             _loading = false;
+        }
+    }
+
+    private bool IsOwnDemo(DemoListItem d) =>
+        Session.IsLoggedIn
+        && !string.IsNullOrWhiteSpace(d.CreatedBy)
+        && string.Equals(d.CreatedBy, Session.UserId, StringComparison.OrdinalIgnoreCase);
+
+    private string StarButtonTitle(DemoListItem d)
+    {
+        if (IsOwnDemo(d)) return "You can’t star your own demo";
+        if (!Session.IsLoggedIn) return "Sign in to star this film";
+        return d.UpvotedByMe ? "Remove star" : "Star this film";
+    }
+
+    private async Task ToggleStarAsync(DemoListItem d)
+    {
+        if (_busy || IsOwnDemo(d)) return;
+        if (!Session.IsLoggedIn)
+        {
+            Nav.NavigateTo("/login?returnUrl=/demo");
+            return;
+        }
+
+        _busy = true;
+        _error = null;
+        try
+        {
+            var (count, me) = d.UpvotedByMe
+                ? await Engine.RemoveDemoUpvoteAsync(d.Id)
+                : await Engine.UpvoteDemoAsync(d.Id);
+            d.UpvoteCount = count;
+            d.UpvotedByMe = me;
+            if (_sort == "top")
+                _demos = _demos
+                    .OrderByDescending(x => x.UpvoteCount)
+                    .ThenByDescending(x => x.CreatedAt)
+                    .ToList();
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            _busy = false;
         }
     }
 

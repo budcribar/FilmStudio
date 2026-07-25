@@ -418,13 +418,47 @@ public sealed class EngineApiClient
         return await res.Content.ReadAsByteArrayAsync(ct);
     }
 
-    /// <summary>Public demo gallery (approved only; no auth required).</summary>
-    public async Task<List<DemoListItem>> ListDemosAsync(int take = 50, CancellationToken ct = default)
+    /// <summary>Public demo gallery (approved only; no auth required). sort=top|new.</summary>
+    public async Task<List<DemoListItem>> ListDemosAsync(
+        int take = 50,
+        string sort = "top",
+        CancellationToken ct = default)
     {
         SyncIdentityHeaders();
+        var q = $"take={take}&sort={Uri.EscapeDataString(sort ?? "top")}";
         var dto = await _http.GetFromJsonAsync<DemoListEnvelope>(
-            $"/api/demos?take={take}", JsonOpts, ct);
+            $"/api/demos?{q}", JsonOpts, ct);
         return dto?.Demos ?? new List<DemoListItem>();
+    }
+
+    /// <summary>Star a public demo (signed-in). Returns updated count.</summary>
+    public async Task<(int Count, bool UpvotedByMe)> UpvoteDemoAsync(
+        string demoId, CancellationToken ct = default)
+    {
+        SyncIdentityHeaders();
+        using var req = new HttpRequestMessage(
+            HttpMethod.Post,
+            $"/api/demos/{Uri.EscapeDataString(demoId)}/upvote");
+        var dto = await SendJsonAsync<DemoUpvoteResult>(req, ct)
+                  ?? throw new InvalidOperationException("Upvote failed");
+        if (!dto.Ok)
+            throw new InvalidOperationException(dto.Error ?? "Upvote failed");
+        return (dto.UpvoteCount, dto.UpvotedByMe);
+    }
+
+    /// <summary>Remove star from a public demo (signed-in).</summary>
+    public async Task<(int Count, bool UpvotedByMe)> RemoveDemoUpvoteAsync(
+        string demoId, CancellationToken ct = default)
+    {
+        SyncIdentityHeaders();
+        using var req = new HttpRequestMessage(
+            HttpMethod.Delete,
+            $"/api/demos/{Uri.EscapeDataString(demoId)}/upvote");
+        var dto = await SendJsonAsync<DemoUpvoteResult>(req, ct)
+                  ?? throw new InvalidOperationException("Remove star failed");
+        if (!dto.Ok)
+            throw new InvalidOperationException(dto.Error ?? "Remove star failed");
+        return (dto.UpvoteCount, dto.UpvotedByMe);
     }
 
     /// <summary>Admin moderation list (any status).</summary>
@@ -2583,6 +2617,16 @@ public sealed class DemoListItem
     public DateTimeOffset? ReviewedAt { get; set; }
     public string? ReviewNote { get; set; }
     public string? VideoPath { get; set; }
+    public int UpvoteCount { get; set; }
+    public bool UpvotedByMe { get; set; }
+}
+
+public sealed class DemoUpvoteResult
+{
+    public bool Ok { get; set; }
+    public string? Error { get; set; }
+    public int UpvoteCount { get; set; }
+    public bool UpvotedByMe { get; set; }
 }
 
 public sealed class DemoPublishResult
