@@ -1280,6 +1280,50 @@ app.MapPost("/api/admin/chat-cache/clear", (IUserContext user, IServiceProvider 
     return Results.Ok(new { ok = true, filesRemoved = removed });
 });
 
+app.MapPost("/api/admin/test-email", async (
+    TestEmailRequest? body,
+    IUserContext user,
+    IEmailSender sender,
+    IOptions<PageToMovieOptions> opts) =>
+{
+    if (!user.IsAdmin)
+        return Results.Json(new { ok = false, error = "admin role required" }, statusCode: StatusCodes.Status403Forbidden);
+
+    var to = (body?.ToEmail ?? "").Trim();
+    if (string.IsNullOrWhiteSpace(to) || !to.Contains('@'))
+        return Results.BadRequest(new { ok = false, error = "Valid recipient email address (toEmail) is required." });
+
+    var senderType = sender.GetType().Name;
+    var resendKeyResolved = !string.IsNullOrWhiteSpace(MailOptions.ResolveResendApiKey(opts.Value.Mail));
+
+    try
+    {
+        await sender.SendAsync(
+            to,
+            "PageToMovie Resend Test Email",
+            $"<h1>PageToMovie Email Test</h1><p>This email was successfully sent via <strong>{senderType}</strong> on Railway.</p>",
+            $"PageToMovie Email Test: Sent via {senderType} on Railway.");
+
+        return Results.Ok(new
+        {
+            ok = true,
+            message = $"Test email sent to {to} via {senderType}.",
+            senderType,
+            resendKeyResolved,
+        });
+    }
+    catch (Exception ex)
+    {
+        return Results.Json(new
+        {
+            ok = false,
+            error = ex.Message,
+            senderType,
+            resendKeyResolved,
+        }, statusCode: StatusCodes.Status500InternalServerError);
+    }
+});
+
 app.MapPost("/api/admin/jobs/{jobId}/cancel", async (string jobId, IUserContext user, FilmJobService jobService) =>
 {
     if (!user.IsAdmin)
@@ -3949,6 +3993,11 @@ app.Run();
 
 namespace PageToMovie.Api
 {
+    public sealed class TestEmailRequest
+    {
+        public string ToEmail { get; set; } = "";
+    }
+
     // Expose entry assembly for WebApplicationFactory integration tests.
     public partial class Program { }
 }
