@@ -97,8 +97,8 @@ article.content {
         height: 100vh;
         position: sticky;
         top: 0;
+        z-index: 10;
         transition: width 0.15s ease, min-width 0.15s ease;
-        overflow: hidden;
         display: flex;
         flex-direction: column;
     }

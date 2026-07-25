@@ -194,7 +194,8 @@
 .nav-user-dropdown {
     position: absolute;
     left: 0;
-    right: 0;
+    right: auto;
+    width: 15rem;
     bottom: calc(100% + 0.4rem);
     z-index: 50;
     padding: 0.45rem;
@@ -412,7 +413,6 @@
         display: flex;
         flex-direction: column;
         height: calc(100vh - 3.5rem);
-        overflow: hidden;
         flex: 1;
     }
 }
