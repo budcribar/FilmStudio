@@ -896,16 +896,19 @@ public sealed class Stage2PlannerService
         var ve = CoerceString(beat.TryGetValue("visual_event", out var vev) ? vev : null) ?? "";
         // Strip accidental technical suffix from beat text (res/fps owned at gen time)
         ve = Regex.Replace(ve, @"\s*/\s*\d+p.*$", "", RegexOptions.IgnoreCase).Trim();
-        var cast = ClipCastTokens(scene, beat);
+        var cast = ClipCastTokens(scene, beat, charSeeds);
         var primary = CoerceString(beat.TryGetValue("primary_subject", out var ps) ? ps : null)
                       ?? (cast.Count > 0 ? cast[0] : "");
 
         var place = LocationLockPhrase(scene, beat, locSeeds);
         var style = RenderStyleLock(scene);
+        // Bug fix: previously only fired for human cast tokens ("mom"/"dad"/"human"),
+        // so animal-only scenes (e.g. Buster's backyard opener) received no style lock and
+        // rendered in a completely different visual style from all subsequent scenes.
+        // Fix: fire for any on-screen character that is visually present, i.e. not a
+        // pure-voice-only character (display_name_policy = "never_on_screen").
         if (string.IsNullOrWhiteSpace(style) &&
-            cast.Any(t => t.Contains("mom", StringComparison.OrdinalIgnoreCase) ||
-                          t.Contains("dad", StringComparison.OrdinalIgnoreCase) ||
-                          t.Contains("human", StringComparison.OrdinalIgnoreCase)))
+            cast.Any(t => !IsNeverOnScreenCharacter(t, charSeeds)))
         {
             style =
                 "STYLE LOCK: stylized 3D animated children's picture-book CG " +
@@ -1263,6 +1266,13 @@ public sealed class Stage2PlannerService
         return $"OFF-CAMERA VOICEOVER {speaker} says \"{quote}\"";
     }
 
+    /// <summary>Test hook — thin public wrapper for <see cref="ClipCastTokens"/>.</summary>
+    public static List<string> ClipCastTokensPublic(
+        Dictionary<string, object?> scene,
+        Dictionary<string, object?> beat,
+        Dictionary<string, object?>? charSeeds = null)
+        => ClipCastTokens(scene, beat, charSeeds);
+
     private static List<string> ClipCastTokens(
         Dictionary<string, object?> scene,
         Dictionary<string, object?> beat,
@@ -1281,12 +1291,22 @@ public sealed class Stage2PlannerService
             foreach (Match m in Regex.Matches(text, @"Character_[A-Za-z0-9_]+"))
                 Add(m.Value);
         }
-        // AI / enricher closed-set list preferred when present
+        // AI / enricher closed-set list preferred when present.
+        // Bug fix: previously short-circuited as soon as *any* character was found in
+        // characters_on_screen, even when all found characters are pure voice-only
+        // (display_name_policy = "never_on_screen", e.g. a narrator V.O.). This caused
+        // visible on-screen characters described in visual_event prose (like Buster bounding
+        // across the yard in Scene 1) to be silently dropped — resulting in no reference
+        // image being attached for the visually present animal lead.
+        // Fix: only short-circuit if at least one found character is visually present.
         if (beat.TryGetValue("characters_on_screen", out var cos) && cos is List<object?> cosList && cosList.Count > 0)
         {
             foreach (var x in cosList)
                 Add(x?.ToString());
-            if (found.Count > 0)
+            // Short-circuit only when at least one found character is actually on screen.
+            // If every character listed is a never_on_screen voice-only role, fall through
+            // and also scan visual_event prose for additional visible characters.
+            if (found.Any(k => !IsNeverOnScreenCharacter(k, charSeeds)))
                 return found;
         }
         var veText = CoerceString(beat.TryGetValue("visual_event", out var ve) ? ve : null) ?? "";
@@ -1393,6 +1413,27 @@ public sealed class Stage2PlannerService
 
     private static string RenderStyleLock(Dictionary<string, object?> scene) =>
         CoerceString(scene.TryGetValue("render_style_lock", out var r) ? r : null) ?? "";
+
+    /// <summary>
+    /// True when a character key has <c>display_name_policy = "never_on_screen"</c> in the
+    /// character seed dictionary, meaning it is a pure voice-only role (e.g. a V.O. narrator)
+    /// that never appears visually. Used by both bug fixes:
+    /// <list type="bullet">
+    ///   <item>STYLE LOCK fallback — only fires when at least one <em>visually present</em>
+    ///   character is in the cast (Bug 1).</item>
+    ///   <item>ClipCastTokens short-circuit — only skips prose scan when at least one
+    ///   character that is NOT a voice-only role was found in characters_on_screen (Bug 2).</item>
+    /// </list>
+    /// </summary>
+    private static bool IsNeverOnScreenCharacter(string key, Dictionary<string, object?>? charSeeds)
+    {
+        if (charSeeds is null) return false;
+        if (!charSeeds.TryGetValue(key, out var seedObj) || seedObj is not Dictionary<string, object?> seed)
+            return false;
+        var policy = CoerceString(seed.TryGetValue("display_name_policy", out var p) ? p : null);
+        return string.Equals(policy, "never_on_screen", StringComparison.OrdinalIgnoreCase);
+    }
+
 
     /// <summary>
     /// True for empty / generic import stubs that must not appear in visual prompts.

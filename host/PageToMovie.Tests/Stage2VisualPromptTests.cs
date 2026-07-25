@@ -471,4 +471,129 @@ public class Stage2VisualPromptTests : IDisposable
         Assert.DoesNotContain("ON CAMERA lip-syncs", nightPrompt, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("OFF-CAMERA VOICEOVER", nightPrompt, StringComparison.OrdinalIgnoreCase);
     }
+
+    // ── Bug regression tests ────────────────────────────────────────────────
+
+    /// <summary>
+    /// Bug 1 regression: STYLE LOCK must appear in visual_prompt for animal-only scenes.
+    /// Previously the fallback only fired when the cast contained "mom", "dad", or "human",
+    /// so a backyard scene with only Character_Buster (a dog) + a V.O.-only Narrator got
+    /// no style lock and rendered in a different visual style from all subsequent scenes.
+    /// </summary>
+    [Fact]
+    public async Task StyleLock_included_for_animal_only_scene()
+    {
+        const string projectId = "Demo";
+
+        // Fountain: Narrator is V.O. only; Buster is the visual lead (animal).
+        // BUSTER must have an on-camera line BEFORE the narrator V.O. so Stage1's
+        // CurrentOnScreen includes him in the pictureCast for the narrator beat.
+        const string fountain = """
+            Title: Buster StyleLock Regression
+
+            EXT. SUBURBAN BACKYARD - DAY
+
+            BUSTER
+            (barks excitedly)
+            Woof!
+
+            NARRATOR (V.O.)
+            He's Buster the Noodle Head Dog.
+            """;
+
+        ScreenplayService.SaveDraft(_store, projectId, fountain);
+        Assert.True(ScreenplayService.SignOff(_store, projectId).Ok);
+
+        // Inject cast_seeds.json: Narrator = never_on_screen, Buster = ok_anytime animal
+        var sourceDir = Path.Combine(_store.GetProjectDir(projectId), "source");
+        Directory.CreateDirectory(sourceDir);
+        await File.WriteAllTextAsync(Path.Combine(sourceDir, "cast_seeds.json"), """
+            {
+              "schema_version": "cast_seeds.v1",
+              "character_seed_tokens": {
+                "Character_Narrator": {
+                  "canonical_given_name": "Narrator",
+                  "display_name_policy": "never_on_screen",
+                  "description": "Narrator (voice only; not on screen).",
+                  "voice_profile": "Warm adult storyteller."
+                },
+                "Character_Buster": {
+                  "canonical_given_name": "Buster",
+                  "display_name_policy": "ok_anytime",
+                  "description": "Small black-and-white dog.",
+                  "visual_lock": "Always the same small dog.",
+                  "species_kind": "animal"
+                }
+              }
+            }
+            """);
+
+        var planner = new Stage2PlannerService(_store, NullLogger<Stage2PlannerService>.Instance);
+        var result = await planner.PlanAsync(projectId, resolution: "480p", scenes: "all");
+        Assert.True(result.Ok, "PlanAsync failed");
+        Assert.True(File.Exists(result.OutPath));
+
+        var bp = await File.ReadAllTextAsync(result.OutPath!);
+        using var doc = System.Text.Json.JsonDocument.Parse(bp);
+
+        // Every clip in the animal-only Scene 1 must have STYLE LOCK in its visual_prompt
+        var foundStyleLock = false;
+        foreach (var scene in doc.RootElement.GetProperty("scenes").EnumerateArray())
+        {
+            foreach (var clip in scene.GetProperty("veo_clips").EnumerateArray())
+            {
+                var vp = clip.GetProperty("visual_prompt").GetString() ?? "";
+                if (vp.Contains("STYLE LOCK", StringComparison.OrdinalIgnoreCase))
+                    foundStyleLock = true;
+            }
+        }
+        Assert.True(foundStyleLock,
+            "Expected at least one clip to have 'STYLE LOCK' in its visual_prompt, " +
+            "but none did. Animal-only scenes were not getting a style lock injected.");
+    }
+
+    /// <summary>
+    /// Bug 2 regression: ClipCastTokens must not short-circuit and drop visible characters
+    /// when characters_on_screen only lists a never_on_screen (V.O.) character.
+    /// Previously it returned immediately after finding the Narrator, silently dropping
+    /// Buster who was described in the visual_event prose — so no reference portrait was
+    /// attached for the on-screen animal lead.
+    /// </summary>
+    [Fact]
+    public void ClipCastTokens_finds_visible_character_in_prose_when_cos_lists_only_narrator()
+    {
+        var charSeeds = new Dictionary<string, object?>
+        {
+            ["Character_Narrator"] = new Dictionary<string, object?>
+            {
+                ["display_name_policy"] = "never_on_screen",
+                ["canonical_given_name"] = "Narrator",
+            },
+            ["Character_Buster"] = new Dictionary<string, object?>
+            {
+                ["display_name_policy"] = "ok_anytime",
+                ["canonical_given_name"] = "Buster",
+            },
+        };
+
+        // Only the V.O. narrator is in characters_on_screen; Buster is in the action prose
+        var beat = new Dictionary<string, object?>
+        {
+            ["characters_on_screen"] = new List<object?> { "Character_Narrator" },
+            ["visual_event"] = "Character_Buster bounds across the grass, leaping like a frog.",
+            ["primary_subject"] = (object?)null,
+            ["speaker"] = "Character_Narrator",
+        };
+
+        var scene = new Dictionary<string, object?>
+        {
+            ["characters_on_screen"] = new List<object?> { "Character_Narrator" },
+            ["story_beats"] = new List<object?> { beat },
+        };
+
+        var cast = Stage2PlannerService.ClipCastTokensPublic(scene, beat, charSeeds);
+
+        // Buster must appear — was silently dropped before the bug fix
+        Assert.Contains("Character_Buster", cast, StringComparer.OrdinalIgnoreCase);
+    }
 }

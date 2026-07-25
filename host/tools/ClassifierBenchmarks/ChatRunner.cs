@@ -10,21 +10,29 @@ public sealed class ChatRunner : IDisposable
     private readonly HttpClient _http;
     private readonly string? _xaiApiKey;
     private readonly string? _claudeApiKey;
+    private readonly string? _geminiApiKey;
 
-    public ChatRunner(string? xaiApiKey, string? claudeApiKey)
+    public ChatRunner(string? xaiApiKey, string? claudeApiKey, string? geminiApiKey = null)
     {
         _xaiApiKey = xaiApiKey;
         _claudeApiKey = claudeApiKey;
+        _geminiApiKey = geminiApiKey;
         _http = new HttpClient { Timeout = TimeSpan.FromMinutes(5) };
     }
 
     public static bool IsClaudeModel(string model) =>
         model.StartsWith("claude", StringComparison.OrdinalIgnoreCase);
 
+    public static bool IsGeminiModel(string model) =>
+        model.StartsWith("gemini", StringComparison.OrdinalIgnoreCase) ||
+        model.StartsWith("veo", StringComparison.OrdinalIgnoreCase);
+
     public async Task<string> CompleteAsync(string model, double temperature, string system, string user, CancellationToken ct = default) =>
         IsClaudeModel(model)
             ? await CompleteClaudeAsync(model, temperature, system, user, ct)
-            : await CompleteXaiAsync(model, temperature, system, user, ct);
+            : IsGeminiModel(model)
+                ? await CompleteGeminiAsync(model, temperature, system, user, ct)
+                : await CompleteXaiAsync(model, temperature, system, user, ct);
 
     private async Task<string> CompleteXaiAsync(string model, double temperature, string system, string user, CancellationToken ct)
     {
@@ -95,6 +103,47 @@ public sealed class ChatRunner : IDisposable
                 sb.Append(txt.GetString());
         }
         return sb.ToString();
+    }
+
+    private async Task<string> CompleteGeminiAsync(string model, double temperature, string system, string user, CancellationToken ct)
+    {
+        var key = _geminiApiKey ?? Environment.GetEnvironmentVariable("GEMINI_API_KEY") ?? Environment.GetEnvironmentVariable("GOOGLE_API_KEY");
+        if (string.IsNullOrWhiteSpace(key))
+            throw new InvalidOperationException($"GEMINI_API_KEY required for model '{model}'");
+
+        var body = new Dictionary<string, object?>
+        {
+            ["system_instruction"] = new Dictionary<string, object?>
+            {
+                ["parts"] = new object[] { new Dictionary<string, object?> { ["text"] = system } },
+            },
+            ["contents"] = new object[]
+            {
+                new Dictionary<string, object?>
+                {
+                    ["role"] = "user",
+                    ["parts"] = new object[] { new Dictionary<string, object?> { ["text"] = user } },
+                },
+            },
+            ["generationConfig"] = new Dictionary<string, object?> { ["temperature"] = temperature },
+        };
+
+        using var req = new HttpRequestMessage(HttpMethod.Post, $"https://generativelanguage.googleapis.com/v1beta/models/{Uri.EscapeDataString(model)}:generateContent")
+        {
+            Content = new StringContent(JsonSerializer.Serialize(body), Encoding.UTF8, "application/json"),
+        };
+        req.Headers.Add("x-goog-api-key", key.Trim());
+
+        using var resp = await _http.SendAsync(req, ct);
+        var text = await resp.Content.ReadAsStringAsync(ct);
+        if (!resp.IsSuccessStatusCode)
+            throw new InvalidOperationException($"gemini chat {(int)resp.StatusCode}: {Trim(text, 400)}");
+
+        using var doc = JsonDocument.Parse(text);
+        if (!doc.RootElement.TryGetProperty("candidates", out var candidates) || candidates.GetArrayLength() == 0) return "";
+        var content = candidates[0].GetProperty("content");
+        if (!content.TryGetProperty("parts", out var parts) || parts.GetArrayLength() == 0) return "";
+        return parts[0].GetProperty("text").GetString() ?? "";
     }
 
     public static string Sha256Short(string s)
