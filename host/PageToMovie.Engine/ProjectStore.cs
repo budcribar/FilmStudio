@@ -116,6 +116,7 @@ public sealed class ProjectStore
             var metaPath = Path.Combine(dir, "project.json");
             string? title = null;
             string? label = null;
+            string? ownerUserId = null;
             if (File.Exists(metaPath))
             {
                 try
@@ -127,6 +128,9 @@ public sealed class ProjectStore
                         title = t.GetString();
                     if (doc.RootElement.TryGetProperty("label", out var l))
                         label = l.GetString();
+                    if (doc.RootElement.TryGetProperty("ownerUserId", out var o) ||
+                        doc.RootElement.TryGetProperty("owner_user_id", out o))
+                        ownerUserId = o.GetString();
                 }
                 catch { /* ignore */ }
             }
@@ -136,6 +140,7 @@ public sealed class ProjectStore
                 Title = title,
                 Label = label ?? title ?? id,
                 Path = dir,
+                OwnerUserId = string.IsNullOrWhiteSpace(ownerUserId) ? null : ownerUserId.Trim(),
             });
         }
         return list.OrderBy(p => p.Id, StringComparer.OrdinalIgnoreCase).ToList();
@@ -183,7 +188,8 @@ public sealed class ProjectStore
     public async Task<ProjectInfo> CreateProjectAsync(
         string idOrTitle,
         string? title = null,
-        CancellationToken ct = default)
+        CancellationToken ct = default,
+        string? ownerUserId = null)
     {
         var raw = (idOrTitle ?? "").Trim();
         if (raw.Length == 0)
@@ -204,6 +210,7 @@ public sealed class ProjectStore
         Directory.CreateDirectory(Path.Combine(dir, "assets", "video"));
 
         var displayTitle = string.IsNullOrWhiteSpace(title) ? raw : title.Trim();
+        var owner = string.IsNullOrWhiteSpace(ownerUserId) ? null : ownerUserId.Trim();
         var meta = new Dictionary<string, object?>
         {
             ["id"] = id,
@@ -213,6 +220,8 @@ public sealed class ProjectStore
             ["config_file"] = "pipeline_config.json",
             ["state_file"] = "pipeline_state.json",
             ["description"] = "",
+            ["ownerUserId"] = owner,
+            ["createdAt"] = DateTimeOffset.UtcNow.ToString("o"),
         };
         await File.WriteAllTextAsync(
             Path.Combine(dir, "project.json"),
@@ -221,6 +230,29 @@ public sealed class ProjectStore
 
         InvalidateReadCaches(null); // projects list
         return await ActivateAsync(id, ct).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// True when the user may publish this project's media publicly (demo gallery).
+    /// Admin always; otherwise must match project.json ownerUserId.
+    /// Legacy projects with no owner are admin-only for public publish.
+    /// </summary>
+    public async Task<bool> CanUserPublishDemoAsync(
+        string projectId,
+        string? userId,
+        bool isAdmin,
+        CancellationToken ct = default)
+    {
+        if (isAdmin)
+            return true;
+        if (string.IsNullOrWhiteSpace(userId) || string.IsNullOrWhiteSpace(projectId))
+            return false;
+        var p = await GetProjectAsync(projectId, ct).ConfigureAwait(false);
+        if (p is null)
+            return false;
+        if (string.IsNullOrWhiteSpace(p.OwnerUserId))
+            return false; // unowned / legacy → admin only
+        return string.Equals(p.OwnerUserId.Trim(), userId.Trim(), StringComparison.OrdinalIgnoreCase);
     }
 
     private static string SanitizeProjectId(string raw) => SanitizeProjectIdPublic(raw);

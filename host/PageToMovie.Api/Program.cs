@@ -1014,8 +1014,15 @@ app.MapGet("/api/capacity", (FilmJobService jobService, IOptions<PageToMovieOpti
     });
 });
 
-app.MapGet("/api/projects", async (ProjectStore store, CancellationToken ct) =>
+app.MapGet("/api/projects", async (
+    ProjectStore store,
+    IUserContext user,
+    IOptions<PageToMovieOptions> opts,
+    CancellationToken ct) =>
 {
+    // Project inventory is not public — requires sign-in (prevents anonymous enumeration).
+    if (AuthGate.RequireLogin(user, opts) is { } denied)
+        return denied;
     var list = await store.ListProjectsAsync(ct);
     var activeId = store.ActiveProjectId;
     if (string.IsNullOrWhiteSpace(activeId) && list.Count > 0)
@@ -1025,8 +1032,15 @@ app.MapGet("/api/projects", async (ProjectStore store, CancellationToken ct) =>
     return Results.Ok(new { ok = true, active, projects = list });
 });
 
-app.MapPost("/api/projects/{id}/activate", async (string id, ProjectStore store, CancellationToken ct) =>
+app.MapPost("/api/projects/{id}/activate", async (
+    string id,
+    ProjectStore store,
+    IUserContext user,
+    IOptions<PageToMovieOptions> opts,
+    CancellationToken ct) =>
 {
+    if (AuthGate.RequireLogin(user, opts) is { } denied)
+        return denied;
     try
     {
         var p = await store.ActivateAsync(id, ct);
@@ -1052,7 +1066,7 @@ app.MapPost("/api/projects", async (
     {
         var name = body?.Name ?? body?.Id ?? body?.Title ?? "";
         var title = body?.Title;
-        var p = await store.CreateProjectAsync(name, title, ct);
+        var p = await store.CreateProjectAsync(name, title, ct, ownerUserId: user.UserId);
         var list = await store.ListProjectsAsync(ct);
         return Results.Ok(new
         {
@@ -2992,8 +3006,8 @@ app.MapGet("/api/demos/{demoId}/video", (string demoId, DemoCatalogService demos
 });
 
 /// <summary>
-/// Publish a demo: either multipart file upload, or copy current project WIP when only projectId is sent.
-/// Login required. Listed on the public /demo page.
+/// Publish a demo: multipart MP4 upload and/or copy project WIP.
+/// Requires login + ownership of projectId (or admin). Listed on public /demo.
 /// </summary>
 app.MapPost("/api/demos", async (
     HttpRequest request,
@@ -3033,9 +3047,48 @@ app.MapPost("/api/demos", async (
         description = string.IsNullOrWhiteSpace(description) ? null : description.Trim();
         projectId = string.IsNullOrWhiteSpace(projectId) ? null : projectId.Trim();
 
+        // projectId required so we can enforce ownership (no orphan anonymous uploads).
+        if (string.IsNullOrWhiteSpace(projectId))
+        {
+            return Results.BadRequest(new
+            {
+                ok = false,
+                error = "projectId is required to publish a demo",
+                code = "project_required",
+            });
+        }
+
+        await store.RequireProjectAsync(projectId, CancellationToken.None);
+        if (!await store.CanUserPublishDemoAsync(projectId, user.UserId, user.IsAdmin, CancellationToken.None))
+        {
+            return Results.Json(new
+            {
+                ok = false,
+                error =
+                    "You can only publish demos for projects you own. " +
+                    "Legacy projects without an owner require an admin.",
+                code = "project_forbidden",
+            }, statusCode: StatusCodes.Status403Forbidden);
+        }
+
         DemoCatalogService.DemoEntry entry;
         if (file is not null && file.Length > 0)
         {
+            // Reject non-video Content-Type early when the browser sets it.
+            var ctHeader = file.ContentType ?? "";
+            if (!string.IsNullOrWhiteSpace(ctHeader) &&
+                !ctHeader.Contains("video", StringComparison.OrdinalIgnoreCase) &&
+                !ctHeader.Contains("octet-stream", StringComparison.OrdinalIgnoreCase) &&
+                !ctHeader.Contains("mp4", StringComparison.OrdinalIgnoreCase))
+            {
+                return Results.BadRequest(new
+                {
+                    ok = false,
+                    error = $"Unsupported content type for demo upload: {ctHeader}",
+                    code = "invalid_media_type",
+                });
+            }
+
             await using var stream = file.OpenReadStream();
             entry = await demos.PublishFromStreamAsync(
                 stream,
@@ -3044,18 +3097,13 @@ app.MapPost("/api/demos", async (
                 projectId,
                 user.UserId);
         }
-        else if (!string.IsNullOrWhiteSpace(projectId))
+        else
         {
-            await store.RequireProjectAsync(projectId, CancellationToken.None);
             entry = demos.PublishFromWip(
                 projectId,
                 title ?? projectId,
                 description,
                 user.UserId);
-        }
-        else
-        {
-            return Results.BadRequest(new { ok = false, error = "Provide a video file or projectId with a built WIP" });
         }
 
         return Results.Ok(new

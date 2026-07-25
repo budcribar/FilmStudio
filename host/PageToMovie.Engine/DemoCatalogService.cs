@@ -114,7 +114,12 @@ public sealed class DemoCatalogService
         return PublishFromFile(wip, title, description, projectId, createdBy);
     }
 
-    /// <summary>Store an uploaded stream as a new demo.</summary>
+    /// <summary>Max accepted demo upload size (512 MB).</summary>
+    public const long MaxUploadBytes = 512L * 1024 * 1024;
+    /// <summary>Minimum plausible MP4 size.</summary>
+    public const long MinUploadBytes = 1024;
+
+    /// <summary>Store an uploaded stream as a new demo (must look like a real MP4).</summary>
     public async Task<DemoEntry> PublishFromStreamAsync(
         Stream content,
         string title,
@@ -136,12 +141,16 @@ public sealed class DemoCatalogService
                              moviePath, FileMode.CreateNew, FileAccess.Write, FileShare.None,
                              128 * 1024, FileOptions.Asynchronous | FileOptions.SequentialScan))
             {
-                await content.CopyToAsync(fs, ct).ConfigureAwait(false);
+                await CopyWithSizeCapAsync(content, fs, MaxUploadBytes, ct).ConfigureAwait(false);
             }
 
             var fi = new FileInfo(moviePath);
-            if (fi.Length < 1024)
+            if (fi.Length < MinUploadBytes)
                 throw new InvalidOperationException("Uploaded video is too small");
+
+            if (!LooksLikeMp4(moviePath))
+                throw new InvalidOperationException(
+                    "Upload is not a valid MP4 (missing ftyp box). Only MP4 video is accepted.");
 
             var entry = new DemoEntry
             {
@@ -177,6 +186,53 @@ public sealed class DemoCatalogService
         }
     }
 
+    /// <summary>
+    /// ISO BMFF: bytes 4–7 are 'ftyp' for MP4/MOV-family files.
+    /// Rejects arbitrary blobs that would otherwise be hosted as video/mp4.
+    /// </summary>
+    public static bool LooksLikeMp4(string path)
+    {
+        try
+        {
+            using var fs = File.OpenRead(path);
+            if (fs.Length < 12)
+                return false;
+            Span<byte> header = stackalloc byte[12];
+            var n = fs.Read(header);
+            if (n < 12)
+                return false;
+            // size(4) + 'ftyp'(4) + brand(4)
+            return header[4] == (byte)'f'
+                   && header[5] == (byte)'t'
+                   && header[6] == (byte)'y'
+                   && header[7] == (byte)'p';
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    private static async Task CopyWithSizeCapAsync(
+        Stream source,
+        Stream dest,
+        long maxBytes,
+        CancellationToken ct)
+    {
+        var buffer = new byte[128 * 1024];
+        long total = 0;
+        while (true)
+        {
+            var n = await source.ReadAsync(buffer.AsMemory(0, buffer.Length), ct).ConfigureAwait(false);
+            if (n <= 0) break;
+            total += n;
+            if (total > maxBytes)
+                throw new InvalidOperationException(
+                    $"Upload exceeds size limit ({maxBytes:N0} bytes).");
+            await dest.WriteAsync(buffer.AsMemory(0, n), ct).ConfigureAwait(false);
+        }
+    }
+
     public DemoEntry PublishFromFile(
         string sourceMp4Path,
         string title,
@@ -195,8 +251,10 @@ public sealed class DemoCatalogService
         {
             File.Copy(sourceMp4Path, moviePath, overwrite: false);
             var fi = new FileInfo(moviePath);
-            if (fi.Length < 1024)
+            if (fi.Length < MinUploadBytes)
                 throw new InvalidOperationException("Movie file is too small");
+            if (!LooksLikeMp4(moviePath))
+                throw new InvalidOperationException("Source file is not a valid MP4.");
 
             var entry = new DemoEntry
             {

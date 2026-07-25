@@ -6,6 +6,11 @@ public sealed class ProjectInfo
     public string? Label { get; set; }
     public string? Title { get; set; }
     public string Path { get; set; } = "";
+    /// <summary>
+    /// Owning user id from project.json (ownerUserId). Null/empty = legacy unowned project
+    /// (admin-only for public demo publish).
+    /// </summary>
+    public string? OwnerUserId { get; set; }
 }
 
 public sealed class WorkspaceState
