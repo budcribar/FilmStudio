@@ -306,16 +306,20 @@ public sealed class Stage2PlannerService
         string resolution,
         string scenesFilter,
         SilentBeatClassifyResult? classifyMeta,
-        Dictionary<string, object?>? enrichMeta) => new()
+        Dictionary<string, object?>? enrichMeta)
     {
-        ["schema_version"] = "stage2.v1",
-        ["movie_title"] = stage1.TryGetValue("movie_title", out var mt) ? mt : null,
-        ["source_book_title"] = stage1.TryGetValue("source_book_title", out var sbt) ? sbt : null,
-        ["video_provider_profile"] = "grok",
-        ["global_production_variables"] = gpv,
-        ["scenes"] = planned.Cast<object?>().ToList(),
-        ["stage2_meta"] = MakeMeta(stage1, planned, sourceLabel, resolution, scenesFilter, classifyMeta, enrichMeta),
-    };
+        EnsureEndCreditsScene(planned);
+        return new()
+        {
+            ["schema_version"] = "stage2.v1",
+            ["movie_title"] = stage1.TryGetValue("movie_title", out var mt) ? mt : null,
+            ["source_book_title"] = stage1.TryGetValue("source_book_title", out var sbt) ? sbt : null,
+            ["video_provider_profile"] = "grok",
+            ["global_production_variables"] = gpv,
+            ["scenes"] = planned.Cast<object?>().ToList(),
+            ["stage2_meta"] = MakeMeta(stage1, planned, sourceLabel, resolution, scenesFilter, classifyMeta, enrichMeta),
+        };
+    }
 
     private static Dictionary<string, object?> MergePlannedScenes(
         Dictionary<string, object?> existing,
@@ -340,6 +344,7 @@ public sealed class Stage2PlannerService
             if (n > 0) byN[n] = s;
         }
         var all = byN.OrderBy(kv => kv.Key).Select(kv => kv.Value).ToList();
+        EnsureEndCreditsScene(all);
         existing["schema_version"] = "stage2.v1";
         existing["movie_title"] = stage1.TryGetValue("movie_title", out var mt) ? mt
             : existing.TryGetValue("movie_title", out var emt) ? emt : null;
@@ -350,6 +355,44 @@ public sealed class Stage2PlannerService
         existing["scenes"] = all.Cast<object?>().ToList();
         existing["stage2_meta"] = MakeMeta(stage1, all, sourceLabel, resolution, scenesFilter, classifyMeta, enrichMeta);
         return existing;
+    }
+
+    public static void EnsureEndCreditsScene(List<Dictionary<string, object?>> scenes)
+    {
+        if (scenes == null || scenes.Count == 0) return;
+
+        if (scenes.Any(s =>
+            (s.TryGetValue("is_credits", out var ic) && (ic is true || ic?.ToString()?.Equals("true", StringComparison.OrdinalIgnoreCase) == true)) ||
+            (s.TryGetValue("scene_heading", out var sh) && sh?.ToString()?.Contains("CREDITS", StringComparison.OrdinalIgnoreCase) == true)))
+        {
+            return;
+        }
+
+        var maxSn = scenes.Select(s => ToInt(s.TryGetValue("scene_number", out var sn) ? sn : 0)).DefaultIfEmpty(0).Max();
+        var creditsSceneNumber = maxSn + 1;
+
+        var creditsClip = new Dictionary<string, object?>
+        {
+            ["clip_index"] = 1,
+            ["primary_subject"] = "End Credits Title Card",
+            ["characters_on_screen"] = new List<object?>(),
+            ["focus_keys"] = new List<object?>(),
+            ["action_summary"] = "Scrolling film end credits and attribution title card.",
+            ["duration_seconds"] = 6,
+            ["is_credits"] = true,
+            ["visual_prompt"] = "Cinematic elegant movie end credits title card, glowing silver typography on dark atmospheric background, scrolling film credits listing cast, crew, and PageToMovie attribution, 8k resolution, cinematic lighting",
+        };
+
+        var creditsScene = new Dictionary<string, object?>
+        {
+            ["scene_number"] = creditsSceneNumber,
+            ["scene_heading"] = "FADE OUT. END CREDITS",
+            ["is_credits"] = true,
+            ["total_estimated_duration_seconds"] = 6,
+            ["veo_clips"] = new List<object?> { creditsClip },
+        };
+
+        scenes.Add(creditsScene);
     }
 
     private static Dictionary<string, object?> MakeMeta(

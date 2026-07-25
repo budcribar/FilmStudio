@@ -596,4 +596,22 @@ public class Stage2VisualPromptTests : IDisposable
         // Buster must appear — was silently dropped before the bug fix
         Assert.Contains("Character_Buster", cast, StringComparer.OrdinalIgnoreCase);
     }
+
+    [Fact]
+    public void EnsureEndCreditsScene_appends_credits_scene_when_missing()
+    {
+        var scenes = new List<Dictionary<string, object?>>
+        {
+            new() { ["scene_number"] = 1, ["scene_heading"] = "INT. ROOM - DAY" },
+            new() { ["scene_number"] = 2, ["scene_heading"] = "EXT. PARK - DAY" },
+        };
+
+        Stage2PlannerService.EnsureEndCreditsScene(scenes);
+
+        Assert.Equal(3, scenes.Count);
+        var credits = scenes.Last();
+        Assert.Equal(3, credits["scene_number"]);
+        Assert.Equal("FADE OUT. END CREDITS", credits["scene_heading"]);
+        Assert.True((bool)credits["is_credits"]!);
+    }
 }

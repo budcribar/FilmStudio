@@ -57,12 +57,6 @@ else
                 title="@WipPlayTitle">
             @(_showWipPlayer && _wipExists && !_wipStale ? "Hide" : "▶ Play")
         </button>
-        <button class="btn btn-outline-secondary" data-testid="review-credits"
-                disabled="@(_busy || JobRunning || string.IsNullOrWhiteSpace(_projectId))"
-                @onclick="StartCreditsGenAsync"
-                title="Generate end-credits title card via video API (saves to media folder as credits.mp4)">
-            Credits plate
-        </button>
         <button class="btn btn-outline-primary" data-testid="review-save"
                 disabled="@(_busy || JobRunning || !CanShareMovie)"
                 @onclick="OpenSaveDialog"
