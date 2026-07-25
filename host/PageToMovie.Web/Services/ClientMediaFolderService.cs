@@ -12,6 +12,8 @@ public sealed class ClientMediaFolderService
     private readonly EngineApiClient _api;
     private readonly JobHubClient _hub;
     private bool _hubHooked;
+    /// <summary>In-flight saves keyed by projectId|relativePath — avoids double JobUpdated.</summary>
+    private readonly HashSet<string> _savingKeys = new(StringComparer.OrdinalIgnoreCase);
 
     public ClientMediaFolderService(IJSRuntime js, EngineApiClient api, JobHubClient hub)
     {
@@ -73,6 +75,13 @@ public sealed class ClientMediaFolderService
 
     public async Task SaveJobMediaAsync(JobSnapshot snap)
     {
+        var key = $"{snap.ProjectId}|{snap.ClientRelativePath}";
+        lock (_savingKeys)
+        {
+            if (!_savingKeys.Add(key))
+                return; // already saving this path
+        }
+
         try
         {
             if (!IsConnected)
@@ -91,10 +100,28 @@ public sealed class ClientMediaFolderService
                 // same-origin relative
             }
 
+            // Silence-trim in browser (ffmpeg.wasm) before write — port of ClipSilenceTrimmer.
+            // Longer breath tail for speech-style clips; lead trim on clip 2+.
+            var clipNum = snap.Clip ?? 1;
+            var isCredits = (snap.ClientRelativePath ?? "")
+                .Contains("credits.mp4", StringComparison.OrdinalIgnoreCase);
+            var keepTail = isCredits
+                ? 0.35
+                : 0.90; // SpeechBreathTailSeconds — safe default without dialogue metadata
+            var silenceOpts = new
+            {
+                silenceTrim = !isCredits, // credits plate is title card; leave full length
+                keepTailSeconds = keepTail,
+                trimLeading = clipNum > 1,
+                keepHeadSeconds = 0.08,
+            };
+
             var saved = await _js.InvokeAsync<JsSaveResult>(
                 "PageToMovieMedia.saveFromUrlAsync",
                 url,
-                snap.ClientRelativePath);
+                snap.ClientRelativePath,
+                null,
+                silenceOpts);
 
             if (saved is not { Success: true } || string.IsNullOrWhiteSpace(saved.Sha256))
             {
@@ -110,18 +137,27 @@ public sealed class ClientMediaFolderService
                 RelativePath = saved.RelativePath ?? snap.ClientRelativePath!,
                 Sha256 = saved.Sha256,
                 SizeBytes = saved.SizeBytes,
-                Kind = "clip",
+                Kind = isCredits ? "credits" : "clip",
                 Scene = scene,
                 Clip = clip,
             });
 
-            LastStatus = $"Saved {Path.GetFileName(snap.ClientRelativePath)} ({saved.SizeBytes / 1024} KB)";
+            var sil = string.IsNullOrWhiteSpace(saved.SilenceMessage)
+                ? ""
+                : $" · silence: {saved.SilenceMessage}";
+            LastStatus =
+                $"Saved {Path.GetFileName(snap.ClientRelativePath)} ({saved.SizeBytes / 1024} KB){sil}";
             Changed?.Invoke();
         }
         catch (Exception ex)
         {
             LastStatus = ex.Message;
             Changed?.Invoke();
+        }
+        finally
+        {
+            lock (_savingKeys)
+                _savingKeys.Remove(key);
         }
     }
 
@@ -183,6 +219,7 @@ public sealed class ClientMediaFolderService
         public long SizeBytes { get; set; }
         public string? RelativePath { get; set; }
         public string? Error { get; set; }
+        public string? SilenceMessage { get; set; }
     }
 
     private sealed class JsBlobResult
