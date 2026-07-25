@@ -56,6 +56,12 @@ else
                 title="@WipPlayTitle">
             @(_showWipPlayer && _wipExists && !_wipStale ? "Hide" : "▶ Play")
         </button>
+        <button class="btn btn-outline-secondary" data-testid="review-credits"
+                disabled="@(_busy || JobRunning || string.IsNullOrWhiteSpace(_projectId))"
+                @onclick="StartCreditsGenAsync"
+                title="Generate end-credits title card via video API (saves to media folder as credits.mp4)">
+            Credits plate
+        </button>
         <button class="btn btn-outline-primary" data-testid="review-save"
                 disabled="@(_busy || JobRunning || !CanShareMovie)"
                 @onclick="OpenSaveDialog"
@@ -1505,6 +1511,32 @@ else if (_showScenePlayer && _clientStitching)
         }
         catch (Exception ex) { _error = ex.Message; }
         finally { _busy = false; }
+    }
+
+    private async Task StartCreditsGenAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_projectId)) return;
+        _busy = true;
+        _error = null;
+        _message = null;
+        try
+        {
+            await MediaFolder.EnsureHubHookAsync();
+            if (!MediaFolder.IsConnected)
+                await MediaFolder.ConnectFolderAsync();
+            await Engine.StartCreditsGenAsync(_projectId);
+            _message = "Credits plate queued — when done it saves to your media folder as assets/video/credits.mp4";
+            var jobs = await Engine.GetJobAsync();
+            _job = jobs?.Job;
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            _busy = false;
+        }
     }
 
     private async Task CancelAsync()

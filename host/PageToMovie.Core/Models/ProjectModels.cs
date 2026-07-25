@@ -760,6 +760,13 @@ public sealed class StartYouTubeUploadRequest
     public string PrivacyStatus { get; set; } = "unlisted";
 }
 
+/// <summary>Generate end-credits plate via video API (client saves credits.mp4).</summary>
+public sealed class StartCreditsGenRequest
+{
+    public string ProjectId { get; set; } = "";
+    public string? Resolution { get; set; }
+}
+
 /// <summary>Last successful YouTube upload for a project (sidecar assets/youtube_upload.json).</summary>
 public sealed class YouTubeUploadInfo
 {

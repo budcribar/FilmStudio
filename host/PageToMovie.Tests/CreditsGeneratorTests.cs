@@ -1,9 +1,6 @@
-using System;
-using System.IO;
-using System.Text.Json;
-using System.Threading.Tasks;
 using PageToMovie.Core.Options;
 using PageToMovie.Engine;
+using PageToMovie.Engine.Abstractions;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Xunit;
@@ -12,13 +9,20 @@ namespace PageToMovie.Tests;
 
 public class CreditsGeneratorTests
 {
+    private static CreditsGeneratorService MakeService(string workspace)
+    {
+        var opts = Options.Create(new PageToMovieOptions { WorkspaceRoot = workspace });
+        var store = new ProjectStore(opts);
+        var video = new StubVideoClient();
+        var proxy = new MediaProxyTicketStore();
+        return new CreditsGeneratorService(
+            store, opts, video, proxy, NullLogger<CreditsGeneratorService>.Instance);
+    }
+
     [Fact]
     public void FormatCreditsText_includes_story_software_nick_repo_and_fair_use()
     {
-        var opts = Options.Create(new PageToMovieOptions { WorkspaceRoot = Path.GetTempPath() });
-        var store = new ProjectStore(opts);
-        var service = new CreditsGeneratorService(store, opts, NullLogger<CreditsGeneratorService>.Instance);
-
+        var service = MakeService(Path.GetTempPath());
         var formatted = service.FormatCreditsText("The Tell-Tale Heart", "Edgar Allan Poe");
 
         Assert.Contains("THE TELL-TALE HEART", formatted);
@@ -30,31 +34,55 @@ public class CreditsGeneratorTests
     }
 
     [Fact]
+    public void BuildCreditsVideoPrompt_includes_title_card_guidance()
+    {
+        var tmp = Path.Combine(Path.GetTempPath(), "fs-credits-prompt-" + Guid.NewGuid().ToString("N"));
+        var sourceDir = Path.Combine(tmp, "projects", "TestProject", "source");
+        Directory.CreateDirectory(sourceDir);
+        File.WriteAllText(Path.Combine(sourceDir, "screenplay.fountain"),
+            "Title: The Tell-Tale Heart\nAuthor: Edgar Allan Poe\n\nFADE IN:\n");
+
+        try
+        {
+            var service = MakeService(tmp);
+            var prompt = service.BuildCreditsVideoPrompt("TestProject");
+            Assert.Contains("end-credits", prompt, StringComparison.OrdinalIgnoreCase);
+            Assert.Contains("TELL-TALE HEART", prompt, StringComparison.OrdinalIgnoreCase);
+            Assert.Contains("Edgar Allan Poe", prompt);
+            Assert.Contains("PageToMovie", prompt);
+            Assert.DoesNotContain("ffmpeg", prompt, StringComparison.OrdinalIgnoreCase);
+        }
+        finally
+        {
+            try { Directory.Delete(tmp, true); } catch { /* */ }
+        }
+    }
+
+    [Fact]
     public void ExtractStoryTitleAndAuthor_parses_fountain_headers()
     {
         var tmp = Path.Combine(Path.GetTempPath(), "fs-credits-test-" + Guid.NewGuid().ToString("N"));
         var sourceDir = Path.Combine(tmp, "projects", "TestProject", "source");
         Directory.CreateDirectory(sourceDir);
-
-        var fountain = """
+        File.WriteAllText(Path.Combine(sourceDir, "screenplay.fountain"), """
             Title: The Tell-Tale Heart
             Author: Edgar Allan Poe
             Credit: Written by
 
             FADE IN:
-            """;
-        File.WriteAllText(Path.Combine(sourceDir, "screenplay.fountain"), fountain);
+            """);
 
-        var opts = Options.Create(new PageToMovieOptions { WorkspaceRoot = tmp });
-        var store = new ProjectStore(opts);
-        var service = new CreditsGeneratorService(store, opts, NullLogger<CreditsGeneratorService>.Instance);
-
-        var (title, author) = service.ExtractStoryTitleAndAuthor("TestProject");
-
-        Assert.Equal("The Tell-Tale Heart", title);
-        Assert.Equal("Edgar Allan Poe", author);
-
-        try { Directory.Delete(tmp, true); } catch { }
+        try
+        {
+            var service = MakeService(tmp);
+            var (title, author) = service.ExtractStoryTitleAndAuthor("TestProject");
+            Assert.Equal("The Tell-Tale Heart", title);
+            Assert.Equal("Edgar Allan Poe", author);
+        }
+        finally
+        {
+            try { Directory.Delete(tmp, true); } catch { /* */ }
+        }
     }
 
     [Fact]
@@ -65,48 +93,43 @@ public class CreditsGeneratorTests
         var videoDir = Path.Combine(projDir, "assets", "video");
         Directory.CreateDirectory(videoDir);
 
-        var bp = """
+        File.WriteAllText(Path.Combine(projDir, "blueprint.clips.grok.json"), """
             {
               "scenes": [
                 { "scene_number": 1 },
                 { "scene_number": 2 }
               ]
             }
-            """;
-        File.WriteAllText(Path.Combine(projDir, "blueprint.clips.grok.json"), bp);
+            """);
         File.WriteAllBytes(Path.Combine(videoDir, "scene_01.mp4"), new byte[2048]);
         File.WriteAllBytes(Path.Combine(videoDir, "scene_02.mp4"), new byte[2048]);
 
-        var opts = Options.Create(new PageToMovieOptions { WorkspaceRoot = tmp });
-        var store = new ProjectStore(opts);
-        var service = new CreditsGeneratorService(store, opts, NullLogger<CreditsGeneratorService>.Instance);
-
-        Assert.True(service.AreAllScenesComplete("TestProject"));
-
-        try { Directory.Delete(tmp, true); } catch { }
-    }
-    
-    //[Fact]
-    public async Task EnsureCreditsClipAsync_generates_credits_mp4()
-    {
-        var tmp = Path.Combine(Path.GetTempPath(), "fs-credits-gen-" + Guid.NewGuid().ToString("N"));
-        var projDir = Path.Combine(tmp, "projects", "TestProject");
-        var videoDir = Path.Combine(projDir, "assets", "video");
-        Directory.CreateDirectory(videoDir);
-
-        var opts = Options.Create(new PageToMovieOptions { WorkspaceRoot = tmp });
-        var store = new ProjectStore(opts);
-        var service = new CreditsGeneratorService(store, opts, NullLogger<CreditsGeneratorService>.Instance);
-
-        var ffmpegPath = Path.Combine(AppContext.BaseDirectory, "Resources", "ffmpeg.exe");
-        if (File.Exists(ffmpegPath))
+        try
         {
-            var path = await service.EnsureCreditsClipAsync("TestProject", ffmpegPath);
-            Assert.NotNull(path);
-            Assert.True(File.Exists(path));
-            Assert.True(new FileInfo(path!).Length > 1024);
+            var service = MakeService(tmp);
+            Assert.True(service.AreAllScenesComplete("TestProject"));
         }
+        finally
+        {
+            try { Directory.Delete(tmp, true); } catch { /* */ }
+        }
+    }
 
-        try { Directory.Delete(tmp, true); } catch { }
+    private sealed class StubVideoClient : IVideoClient
+    {
+        public bool IsConfigured => true;
+
+        public Task<string> SubmitGenerationAsync(
+            string prompt, int durationSeconds, string resolution, string model,
+            CancellationToken ct, IReadOnlyList<string>? referenceImagePaths = null,
+            string? startFrameImagePath = null, string? continueFromVideoPath = null) =>
+            Task.FromResult("req-credits");
+
+        public Task<string> PollForVideoUrlAsync(
+            string requestId, Action<string>? onProgress, CancellationToken ct) =>
+            Task.FromResult("https://example.com/credits.mp4");
+
+        public Task DownloadToFileAsync(string url, string destPath, CancellationToken ct) =>
+            Task.CompletedTask;
     }
 }
