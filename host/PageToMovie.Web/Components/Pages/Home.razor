@@ -383,6 +383,17 @@
                 return;
             }
 
+            // Project inventory requires sign-in — do not hit /api/projects while anonymous
+            // (avoids noisy 401 in the browser console on Home / login returnUrl=/).
+            if (!Session.IsLoggedIn)
+            {
+                _projects = new ProjectsDto { Ok = true, Projects = new List<ProjectInfo>() };
+                _job = null;
+                _myJobs = new List<JobSnapshot>();
+                SyncJobsExpandedFromJob();
+                return;
+            }
+
             _projects = await Engine.GetProjectsAsync();
             await ActiveProject.RefreshFromApiAsync(Engine);
 
@@ -402,7 +413,19 @@
         }
         catch (Exception ex)
         {
-            _error = ex.Message;
+            // Stale token / expired JWT → treat as signed out rather than a red wall of text
+            var msg = ex.Message ?? "";
+            if (msg.Contains("401", StringComparison.OrdinalIgnoreCase) ||
+                msg.Contains("Unauthorized", StringComparison.OrdinalIgnoreCase) ||
+                msg.Contains("auth_required", StringComparison.OrdinalIgnoreCase))
+            {
+                _projects = new ProjectsDto { Ok = true, Projects = new List<ProjectInfo>() };
+                _error = null;
+            }
+            else
+            {
+                _error = msg;
+            }
         }
         finally
         {
