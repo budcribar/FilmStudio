@@ -1,6 +1,11 @@
 # Multi-user architecture plan (≈100 concurrent users)
 
-**Goal:** Evolve PageToMovie from single-operator / single-job to support ~**100 concurrent UI sessions**, with **per-user API keys**, **scene-level isolation**, **fair local workers**, a **load simulator** that does not burn real xAI credits, and an **admin console** (login, live server state, server configuration).
+> **Status (2026):** Historical design notes. **Native server ffmpeg / LocalWorkerPool / remux jobs are gone.**  
+> Media stitch, silence-trim, and auto-review frames run in the browser (`ffmpeg.wasm`).  
+> Server capacity is **API/video slots** only (`MaxVideoInFlight`, per-user, queue).  
+> Sections below may still mention remux/ffmpeg as original intent — treat those as superseded.
+
+**Goal:** Evolve PageToMovie from single-operator / single-job to support ~**100 concurrent UI sessions**, with **per-user API keys**, **scene-level isolation**, a **load simulator** that does not burn real xAI credits, and an **admin console** (login, live server state, server configuration).
 
 **Non-goals (v1 of this plan):** CRDT co-editing, multi-region, full SaaS billing portal, multi-admin RBAC beyond `admin` vs `user`.
 
@@ -13,7 +18,7 @@
 | Concurrent UI sessions (API + optional Blazor) | **100** |
 | Concurrent **video gens** (global) | **8–16** (configurable) |
 | Concurrent video gens **per user** | **1–2** |
-| Concurrent ffmpeg (remux/WIP) | **2** |
+| Browser media ops (stitch/trim/frames) | **Per client** (not server-capped) |
 | WIP rebuilds per project | **1** (single-flight + coalesce) |
 | Scene gens same scene, two users | **Rejected** (scene lock) |
 | Scene gens different scenes, same project | **Allowed** |

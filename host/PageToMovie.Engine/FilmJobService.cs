@@ -1175,7 +1175,7 @@ public sealed class FilmJobService
 
     /// <summary>
     /// Batch AI review (server walk). Prefer client-orchestrated batch: browser samples frames
-    /// per clip then calls single auto-review. Server batch cannot sample video without ffmpeg.
+    /// per clip then calls single auto-review. Server batch cannot sample video (browser frames required).
     /// </summary>
     public Task<JobSnapshot> StartClipAutoReviewBatchAsync(StartClipAutoReviewBatchRequest req)
     {

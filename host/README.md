@@ -137,7 +137,7 @@ Uses checked-in **`projects/LoadSimBuster`** (isolated from real Buster). See `d
 | Stage 2 clip planner | Yes |
 | Multi-ref video + audio prompt build | Yes |
 | Character portrait gen / lock | Yes |
-| FFmpeg scene remux + WIP (progress via SignalR) | Yes |
+| Browser stitch / silence-trim / auto-review frames (ffmpeg.wasm) | Yes |
 | Review / edit log / approve | Yes |
 | SignalR live UI | Yes |
 

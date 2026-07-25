@@ -2,7 +2,6 @@
   "capacity": {
     "maxVideoInFlight": 4,
     "maxVideoInFlightPerUser": 1,
-    "maxFfmpegInFlight": 2,
     "maxQueuePerUser": 5
   },
   "fakes": {

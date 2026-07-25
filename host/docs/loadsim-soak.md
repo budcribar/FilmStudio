@@ -75,7 +75,7 @@ Exit code **0** = gates pass. Results JSON is written to `--out`.
 | `browse` | health, projects, scenes, detail |
 | `play` | range GET clip/composite |
 | `gen` | POST gen-scene (onlyMissing) |
-| `remux` | POST remux scene |
+| `remux` | *(removed)* server remux gone — use browse/play/gen |
 | `review` | POST clip review pass |
 | `mixed` | weighted mix (CLI weights) |
 
@@ -95,7 +95,7 @@ Exit code **0** = gates pass. Results JSON is written to `--out`.
 
 ```powershell
 # Terminal 1
-# Default multi-user caps: 4 video / 1 per user / 2 ffmpeg (raise only if browse p95 stays healthy)
+# Default multi-user caps: 4 video / 1 per user (raise only if browse p95 stays healthy)
 $env:PageToMovie_USE_FAKES = "true"
 $env:PageToMovie__Capacity__MaxVideoInFlight = "4"
 $env:PageToMovie__Capacity__MaxVideoInFlightPerUser = "1"

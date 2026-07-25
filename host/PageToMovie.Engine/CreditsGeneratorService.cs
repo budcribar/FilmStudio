@@ -262,14 +262,12 @@ public class CreditsGeneratorService
         };
     }
 
-    /// <summary>Legacy name: video-gen path (ffmpeg path ignored).</summary>
+    /// <summary>Legacy entry: video-gen handoff only (no server file path).</summary>
     public async Task<string?> EnsureCreditsClipAsync(
         string projectId,
-        string? ffmpegExePath = null,
         Action<string>? onProgress = null,
         CancellationToken ct = default)
     {
-        _ = ffmpegExePath;
         var handoff = await GenerateCreditsForClientAsync(projectId, null, onProgress, ct)
             .ConfigureAwait(false);
         // No server path — client must save. Return null so callers don't treat as local file.

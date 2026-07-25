@@ -17,7 +17,7 @@ Goal: keep Kestrel request threads free during disk/JSON work. Multi-pass by des
 |-------|--------|
 | `EditLogService` | `LoadAsync` / `SaveAsync` / review APIs; pipeline_state async |
 | `RuntimeConfigStore` | `UpdateAsync` + async persist/audit; `SemaphoreSlim` gate |
-| `FfmpegRemuxService` | scene/WIP sources manifests `Write*Async`; `LoadConfigAsync` |
+| ~~`FfmpegRemuxService`~~ (removed) | browser stitch; no server remux |
 | `ProjectStore` | `GetConfigAsync` / `SaveConfigAsync` |
 | `MediaDurationProbe` | `WriteDurationSidecarAsync` |
 | API | admin config PUT, project config, edit-log, clip review, approve |

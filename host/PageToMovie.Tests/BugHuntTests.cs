@@ -1332,7 +1332,7 @@ public class BugHuntTests
         try
         {
             var opts = Options.Create(new PageToMovieOptions { WorkspaceRoot = root, EnableReadCaches = false });
-            // VoicePreviewService needs video+ffmpeg — only test static fingerprint / SafeFileName path
+            // VoicePreviewService static helpers (fingerprint / SafeFileName)
             var fp = VoicePreviewService.ComputeFingerprintForCache(
                 "Character_X", "adult male", null, "X", null);
             Assert.False(string.IsNullOrWhiteSpace(fp));

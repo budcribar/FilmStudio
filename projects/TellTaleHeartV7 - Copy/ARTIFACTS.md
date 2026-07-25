@@ -47,7 +47,7 @@ Built: **2026-07-23 12:26:43Z** · Ready for manual final review: **no**
 | yes | `telemetry/cost_ledger.json` | Cost events snapshot (from pipeline_state) *(core)* |
 | yes | `telemetry/models.json` | Resolved models/options snapshot |
 | yes | `telemetry/api_calls.jsonl` | Live API call log (full prompts) |
-| yes | `telemetry/ffmpeg.jsonl` | Condensed ffmpeg ops |
+| yes | `telemetry/media_ops.jsonl (legacy: ffmpeg.jsonl)` | Optional local media ops (browser stitch/trim) |
 | yes | `ARTIFACTS.md` | Human map of this project for Claude/manual review |
 | yes | `artifact_index.json` | Machine-readable artifact presence map |
 | yes | `assets/video/scene_01.mp4.sources.json` | Scene remux include/exclude manifest |
@@ -61,7 +61,7 @@ Built: **2026-07-23 12:26:43Z** · Ready for manual final review: **no**
 4. Identity: `assets/characters/*_ref.png`, `assets/video/prompts/*.meta.json` (`prompt`, `castCount`, `refsAttachedToApi`).
 5. QC: `assets/review/*.auto_review.json`, `assets/review/index.json`, `assets/review/frames/`.
 6. Assembly: `assets/video/scene_*.mp4.sources.json` (`included` / `excluded`).
-7. Telemetry: `telemetry/api_calls.jsonl` (full prompts), `telemetry/ffmpeg.jsonl`, `telemetry/cost_ledger.json`.
+7. Telemetry: `telemetry/api_calls.jsonl` (full prompts), `telemetry/media_ops.jsonl (legacy: ffmpeg.jsonl)`, `telemetry/cost_ledger.json`.
 8. Scores: copy `assets/review/FINAL_REVIEW_TEMPLATE.json` → `final_review.json` and fill **human** (and optionally **ai** notes).
 9. Zip export is deferred — all durable data stays in this directory.
 
