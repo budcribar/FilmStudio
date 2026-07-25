@@ -229,18 +229,26 @@ public sealed class MailOptions
         if (!string.IsNullOrWhiteSpace(fromOpts))
             return fromOpts;
 
-        foreach (var name in new[]
-                 {
-                     "Resend_Key",
-                     "RESEND_API_KEY",
-                     "RESEND_KEY",
-                     "PageToMovie__Mail__ResendApiKey",
-                     "PageToMovie_Mail_ResendApiKey",
-                 })
+        var targetKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
         {
-            var v = Environment.GetEnvironmentVariable(name)?.Trim();
-            if (!string.IsNullOrWhiteSpace(v))
-                return v;
+            "Resend_Key",
+            "Resend_key",
+            "RESEND_API_KEY",
+            "RESEND_KEY",
+            "PageToMovie__Mail__ResendApiKey",
+            "PageToMovie_Mail_ResendApiKey",
+            "ResendApiKey",
+            "RESEND_TOKEN",
+        };
+
+        foreach (System.Collections.DictionaryEntry de in Environment.GetEnvironmentVariables())
+        {
+            var key = de.Key?.ToString();
+            var val = de.Value?.ToString()?.Trim();
+            if (!string.IsNullOrWhiteSpace(key) && targetKeys.Contains(key) && !string.IsNullOrWhiteSpace(val))
+            {
+                return val;
+            }
         }
 
         return null;

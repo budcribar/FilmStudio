@@ -1298,10 +1298,14 @@ app.MapPost("/api/admin/test-email", async (
     var resolvedKey = MailOptions.ResolveResendApiKey(opts.Value.Mail);
     var resendKeyResolved = !string.IsNullOrWhiteSpace(resolvedKey);
 
-    var checkedEnvs = new Dictionary<string, bool>();
-    foreach (var name in new[] { "Resend_Key", "RESEND_API_KEY", "RESEND_KEY", "PageToMovie__Mail__ResendApiKey", "PageToMovie_Mail_ResendApiKey" })
+    var checkedEnvs = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
+    foreach (System.Collections.DictionaryEntry de in Environment.GetEnvironmentVariables())
     {
-        checkedEnvs[name] = !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable(name));
+        var k = de.Key?.ToString();
+        if (!string.IsNullOrWhiteSpace(k) && (k.StartsWith("Resend", StringComparison.OrdinalIgnoreCase) || k.Contains("Mail", StringComparison.OrdinalIgnoreCase)))
+        {
+            checkedEnvs[k] = !string.IsNullOrWhiteSpace(de.Value?.ToString());
+        }
     }
 
     try
