@@ -1041,10 +1041,12 @@ public sealed class EngineApiClient
         await SendJsonAsync<object>(req, ct);
     }
 
-    public async Task StartClipAutoReviewAsync(
+    /// <returns>Queued job snapshot (includes JobId for polling).</returns>
+    public async Task<JobSnapshot?> StartClipAutoReviewAsync(
         string projectId,
         int scene,
         int clip,
+        IReadOnlyList<ClipAutoReviewClientFrame>? frames = null,
         CancellationToken ct = default)
     {
         SyncIdentityHeaders();
@@ -1055,6 +1057,7 @@ public sealed class EngineApiClient
                 ProjectId = projectId,
                 Scene = scene,
                 Clip = clip,
+                Frames = frames?.ToList(),
             },
             JsonOpts,
             ct);
@@ -1063,8 +1066,28 @@ public sealed class EngineApiClient
             var err = await resp.Content.ReadAsStringAsync(ct);
             throw new InvalidOperationException(TryError(err) ?? resp.ReasonPhrase ?? "Auto-review failed");
         }
+
+        try
+        {
+            var env = await resp.Content.ReadFromJsonAsync<JobStartEnvelope>(JsonOpts, ct);
+            return env?.Job;
+        }
+        catch
+        {
+            return null;
+        }
     }
 
+    private sealed class JobStartEnvelope
+    {
+        public bool Ok { get; set; }
+        public JobSnapshot? Job { get; set; }
+        public string? Message { get; set; }
+    }
+
+    /// <summary>
+    /// Server batch no longer samples frames. Prefer client loop: sample + StartClipAutoReviewAsync.
+    /// </summary>
     public async Task StartClipAutoReviewBatchAsync(
         string projectId,
         int? scene = null,
@@ -1087,6 +1110,51 @@ public sealed class EngineApiClient
             var err = await resp.Content.ReadAsStringAsync(ct);
             throw new InvalidOperationException(TryError(err) ?? resp.ReasonPhrase ?? "Batch auto-review failed");
         }
+    }
+
+    /// <summary>
+    /// Poll until a specific job reaches a terminal status (sequential client batch).
+    /// When <paramref name="jobId"/> is null, waits for the primary mine job to leave running/queued.
+    /// </summary>
+    public async Task<JobSnapshot?> WaitForJobTerminalAsync(
+        string? jobId = null,
+        TimeSpan? timeout = null,
+        CancellationToken ct = default,
+        TimeSpan? pollInterval = null)
+    {
+        var deadline = DateTime.UtcNow + (timeout ?? TimeSpan.FromMinutes(8));
+        var delay = pollInterval ?? TimeSpan.FromMilliseconds(600);
+        while (DateTime.UtcNow < deadline)
+        {
+            ct.ThrowIfCancellationRequested();
+            JobSnapshot? snap = null;
+            if (!string.IsNullOrWhiteSpace(jobId))
+            {
+                try
+                {
+                    var detail = await GetJobByIdAsync(jobId, ct);
+                    snap = detail?.Job;
+                }
+                catch
+                {
+                    snap = null;
+                }
+            }
+            else
+            {
+                var jobs = await GetJobAsync(ct);
+                snap = jobs?.Job;
+            }
+
+            if (snap is not null)
+            {
+                var st = snap.Status ?? "";
+                if (st is "done" or "partial" or "error" or "cancelled")
+                    return snap;
+            }
+            await Task.Delay(delay, ct);
+        }
+        throw new TimeoutException("Timed out waiting for job to finish.");
     }
 
     public async Task<ReviewIndexDocument?> GetReviewIndexAsync(

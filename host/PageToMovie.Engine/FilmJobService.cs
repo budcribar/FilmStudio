@@ -1183,7 +1183,10 @@ public sealed class FilmJobService
             lockReason: $"auto-review S{req.Scene:D2}C{req.Clip:D2}");
     }
 
-    /// <summary>Batch AI review: walk on-disk clips (optional scene filter; onlyMissing skips existing drafts).</summary>
+    /// <summary>
+    /// Batch AI review (server walk). Prefer client-orchestrated batch: browser samples frames
+    /// per clip then calls single auto-review. Server batch cannot sample video without ffmpeg.
+    /// </summary>
     public Task<JobSnapshot> StartClipAutoReviewBatchAsync(StartClipAutoReviewBatchRequest req)
     {
         var projectId = string.IsNullOrWhiteSpace(req.ProjectId)
@@ -1192,21 +1195,10 @@ public sealed class FilmJobService
         if (string.IsNullOrWhiteSpace(projectId))
             throw new InvalidOperationException("projectId required");
 
-        var sceneLabel = req.Scene is int sn && sn > 0 ? $"S{sn:D2}" : "all scenes";
-        var mode = req.OnlyMissing ? "missing only" : "all clips";
-        return StartBackgroundJobAsync(
-            ct => RunClipAutoReviewBatchAsync(req, projectId, ct),
-            new JobEnqueueMeta
-            {
-                Kind = "clip-auto-review-batch",
-                ProjectId = projectId,
-                Scene = req.Scene is int s && s > 0 ? s : null,
-                Message = $"Queued batch auto-review ({sceneLabel}, {mode})…",
-            },
-            lockResources: req.Scene is int one && one > 0
-                ? new[] { LockKeys.Scene(projectId, one) }
-                : new[] { LockKeys.Stage(projectId) },
-            lockReason: $"auto-review-batch {sceneLabel}");
+        // Server no longer extracts frames; batch must be driven from the browser Review page.
+        throw new InvalidOperationException(
+            "Batch auto-review must run from the browser (samples frames with ffmpeg.wasm). " +
+            "Use Review → Auto-review all.");
     }
 
     private async Task RunClipAutoReviewAsync(StartClipAutoReviewRequest req, string projectId, CancellationToken ct)
@@ -1231,8 +1223,11 @@ public sealed class FilmJobService
 
         try
         {
+            var frameCount = req.Frames?.Count ?? 0;
             await AppendLogAsync(
-                "AI review = sample prev tail + this clip → draft suggestions (no auto-apply)");
+                frameCount > 0
+                    ? $"AI review = {frameCount} browser frame(s) → vision (key stays on server) → draft"
+                    : "AI review requires browser-sampled frames (no server ffmpeg)");
             var draft = await _clipAutoReview.ReviewAsync(
                 projectId,
                 req.Scene,
@@ -1247,7 +1242,8 @@ public sealed class FilmJobService
                         s.Message = line;
                     });
                 },
-                ct: ct);
+                ct: ct,
+                clientFrames: req.Frames);
 
             await AppendLogAsync(
                 $"Draft: {draft.Suggestion}/{draft.Category} · {draft.Suggestions.Count} suggestion(s)");

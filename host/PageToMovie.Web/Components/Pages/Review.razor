@@ -33,6 +33,7 @@ else
     until you Pass with an override note.
     <strong>Play scene</strong> / <strong>Play WIP</strong> stitch in your browser when composites are missing or stale
     (no server ffmpeg for preview).
+    <strong>Auto-review</strong> samples frames in the browser (ffmpeg.wasm), then the server runs vision with the API key.
 </p>
 
 @if (!string.IsNullOrEmpty(_error))
@@ -47,7 +48,7 @@ else
 <div class="d-flex flex-wrap gap-2 mb-3">
         <button class="btn btn-outline-dark" data-testid="review-auto-all"
                 disabled="@(_busy || JobRunning)"
-                title="AI auto-review every on-disk clip that lacks a draft; updates assets/review/index.json + durable frames"
+                title="Sample frames in the browser, then AI-review every on-disk clip that lacks a draft"
                 @onclick="StartBatchAutoReviewAsync">
             Auto-review all
         </button>
@@ -1390,9 +1391,21 @@ else if (_showScenePlayer && _clientStitching)
         try
         {
             await EnsureHubAsync();
-            await Engine.StartClipAutoReviewAsync(_projectId, scene, clip);
-            var jobs = await Engine.GetJobAsync();
-            _job = jobs?.Job;
+            _message = $"Sampling frames S{scene:D2}C{clip:D2}…";
+            StateHasChanged();
+            var (frames, sampleErr) = await Stitch.SampleAutoReviewFramesAsync(_projectId, scene, clip);
+            if (!string.IsNullOrWhiteSpace(sampleErr) || frames.Count == 0)
+                throw new InvalidOperationException(sampleErr ?? "No frames sampled");
+
+            _message = $"Uploading {frames.Count} frame(s) · reviewing S{scene:D2}C{clip:D2}…";
+            StateHasChanged();
+            var started = await Engine.StartClipAutoReviewAsync(_projectId, scene, clip, frames);
+            _job = started;
+            if (_job is null)
+            {
+                var jobs = await Engine.GetJobAsync();
+                _job = jobs?.Job;
+            }
             _message = $"Reviewing S{scene:D2}C{clip:D2}…";
         }
         catch (Exception ex) { _error = ex.Message; }
@@ -1408,10 +1421,114 @@ else if (_showScenePlayer && _clientStitching)
         try
         {
             await EnsureHubAsync();
-            await Engine.StartClipAutoReviewBatchAsync(_projectId, scene: null, onlyMissing: true);
-            var jobs = await Engine.GetJobAsync();
-            _job = jobs?.Job;
-            _message = "Batch auto-review started (missing drafts only)…";
+            // Client-orchestrated: sample frames per clip, then single authenticated review job.
+            var targets = new List<(int Scene, int Clip)>();
+            foreach (var s in _scenes.OrderBy(x => x.SceneNumber))
+            {
+                if (s.ClipsOnDisk <= 0 && s.ClipCount <= 0) continue;
+                // Prefer detail when selected; otherwise use summary counts
+                SceneDetail? detail = null;
+                if (_selectedScene == s.SceneNumber)
+                    detail = _selectedDetail;
+                else
+                {
+                    try
+                    {
+                        detail = (await Engine.GetSceneDetailAsync(_projectId, s.SceneNumber))?.Scene;
+                    }
+                    catch { /* fall through */ }
+                }
+
+                if (detail?.Clips is { Count: > 0 })
+                {
+                    foreach (var c in detail.Clips.Where(c => c.OnDisk).OrderBy(c => c.ClipNumber))
+                        targets.Add((s.SceneNumber, c.ClipNumber));
+                }
+                else if (s.ClipsOnDisk > 0)
+                {
+                    for (var c = 1; c <= Math.Max(s.ClipCount, s.ClipsOnDisk); c++)
+                    {
+                        if (ClipOnDisk(s.SceneNumber, c))
+                            targets.Add((s.SceneNumber, c));
+                    }
+                }
+            }
+
+            // onlyMissing: skip clips that already have a draft
+            var todo = new List<(int Scene, int Clip)>();
+            foreach (var (scene, clip) in targets)
+            {
+                if (_drafts.ContainsKey(ClipKey(scene, clip)))
+                    continue;
+                try
+                {
+                    var existing = await Engine.GetClipAutoReviewDraftAsync(_projectId, scene, clip);
+                    if (existing is not null)
+                    {
+                        _drafts[ClipKey(scene, clip)] = existing;
+                        continue;
+                    }
+                }
+                catch { /* treat as missing */ }
+                todo.Add((scene, clip));
+            }
+
+            if (todo.Count == 0)
+            {
+                _message = "Batch auto-review: nothing to do (no missing drafts)";
+                return;
+            }
+
+            var ok = 0;
+            var failed = 0;
+            for (var i = 0; i < todo.Count; i++)
+            {
+                var (scene, clip) = todo[i];
+                _message = $"Auto-review {i + 1}/{todo.Count}: sampling S{scene:D2}C{clip:D2}…";
+                StateHasChanged();
+                try
+                {
+                    var (frames, sampleErr) = await Stitch.SampleAutoReviewFramesAsync(_projectId, scene, clip);
+                    if (!string.IsNullOrWhiteSpace(sampleErr) || frames.Count == 0)
+                        throw new InvalidOperationException(sampleErr ?? "No frames");
+
+                    _message = $"Auto-review {i + 1}/{todo.Count}: reviewing S{scene:D2}C{clip:D2} ({frames.Count} frames)…";
+                    StateHasChanged();
+                    var started = await Engine.StartClipAutoReviewAsync(_projectId, scene, clip, frames);
+                    _job = started;
+                    var snap = await Engine.WaitForJobTerminalAsync(
+                        jobId: started?.JobId,
+                        timeout: TimeSpan.FromMinutes(6));
+                    _job = snap ?? started;
+                    if (snap is not null &&
+                        string.Equals(snap.Status, "done", StringComparison.OrdinalIgnoreCase))
+                    {
+                        ok++;
+                        try
+                        {
+                            var d = await Engine.GetClipAutoReviewDraftAsync(_projectId, scene, clip);
+                            if (d is not null)
+                                _drafts[ClipKey(scene, clip)] = d;
+                        }
+                        catch { /* optional */ }
+                    }
+                    else
+                    {
+                        failed++;
+                        var err = snap?.Error ?? snap?.Message ?? "job failed";
+                        _error = $"S{scene:D2}C{clip:D2}: {err}";
+                    }
+                }
+                catch (Exception ex)
+                {
+                    failed++;
+                    _error = $"S{scene:D2}C{clip:D2}: {ex.Message}";
+                }
+            }
+
+            try { await Engine.GetReviewIndexAsync(_projectId, rebuild: true); } catch { /* optional */ }
+            await SoftLoadAsync();
+            _message = $"Batch auto-review done: {ok} ok, {failed} failed of {todo.Count}";
         }
         catch (Exception ex) { _error = ex.Message; }
         finally { _busy = false; }

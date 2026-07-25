@@ -395,12 +395,31 @@ public sealed class VoicePreviewStatusDto
     public string? AudioUrl { get; set; }
 }
 
+/// <summary>
+/// One JPEG (or PNG) frame sampled in the browser for auto-review.
+/// Server never holds the provider key client-side; frames are uploaded over an authenticated API.
+/// </summary>
+public sealed class ClipAutoReviewClientFrame
+{
+    /// <summary>PREVIOUS_CLIP_TAIL | CURRENT_CLIP</summary>
+    public string Label { get; set; } = "CURRENT_CLIP";
+    /// <summary>image/jpeg or image/png</summary>
+    public string Mime { get; set; } = "image/jpeg";
+    /// <summary>Raw base64 (no data: prefix).</summary>
+    public string Base64 { get; set; } = "";
+}
+
 /// <summary>Start AI auto-review of one clip (this clip + previous tail for continuity).</summary>
 public sealed class StartClipAutoReviewRequest
 {
     public string ProjectId { get; set; } = "";
     public int Scene { get; set; }
     public int Clip { get; set; }
+    /// <summary>
+    /// Browser-sampled frames (ffmpeg.wasm). Required — server has no native ffmpeg.
+    /// Order: previous-tail frames (if any), then current-clip frames.
+    /// </summary>
+    public List<ClipAutoReviewClientFrame>? Frames { get; set; }
 }
 
 /// <summary>Batch AI auto-review for all (or missing) on-disk clips in a project/scene.</summary>

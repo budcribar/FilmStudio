@@ -714,4 +714,127 @@ window.PageToMovieFfmpeg = {
             }
         });
     },
+
+    /**
+     * Sample JPEG frames from a video URL for AI auto-review (no server ffmpeg).
+     *
+     * Modes:
+     *  - "tail": last ~1.5s at ~2 fps (previous-clip continuity)
+     *  - "span": ~3 frames across the clip (start / mid / end-ish)
+     *
+     * @param {string} url blob: or http(s)
+     * @param {{ mode?: 'tail'|'span', count?: number, maxWidth?: number, quality?: number }} [opts]
+     * @returns {{ success:boolean, frames?: { base64:string, mime:string }[], error?:string }}
+     */
+    extractFramesAsync: async function (url, opts, onProgress) {
+        opts = opts || {};
+        if (!url) return { success: false, error: "No URL" };
+        const mode = (opts.mode || "span").toLowerCase();
+        const count = Math.max(1, Math.min(6, opts.count != null ? opts.count : (mode === "tail" ? 3 : 3)));
+        const maxWidth = opts.maxWidth != null ? opts.maxWidth : 640;
+        const quality = opts.quality != null ? opts.quality : 5; // mjpeg q:v, lower = better
+
+        const self = this;
+        return this._runExclusiveAsync(async function () {
+            const load = await self.ensureLoadedAsync(onProgress);
+            if (!load.success) return { success: false, error: load.error || "ffmpeg load failed" };
+
+            const ffmpeg = self._ffmpeg;
+            const fetchFile = (window.FFmpegUtil || {}).fetchFile;
+            if (typeof fetchFile !== "function")
+                return { success: false, error: "ffmpeg util fetchFile missing" };
+
+            const inName = "frame_in.mp4";
+            const written = [];
+            try {
+                onProgress && onProgress(10, "Loading video for frames…");
+                const data = await fetchFile(url);
+                await ffmpeg.writeFile(inName, data);
+                written.push(inName);
+
+                const scale = "scale='min(" + maxWidth + ",iw)':-2";
+                const pattern = "frame_%02d.jpg";
+                onProgress && onProgress(40, mode === "tail" ? "Sampling clip end…" : "Sampling clip…");
+
+                try {
+                    if (mode === "tail") {
+                        // Last ~1.5s @ ~2 fps (matches former server ExtractTailFrames)
+                        await ffmpeg.exec([
+                            "-hide_banner", "-y",
+                            "-sseof", "-1.5",
+                            "-i", inName,
+                            "-vf", scale + ",fps=2",
+                            "-frames:v", String(count),
+                            "-q:v", String(quality),
+                            pattern,
+                        ]);
+                    } else {
+                        // ~3 frames spaced through the clip
+                        await ffmpeg.exec([
+                            "-hide_banner", "-y",
+                            "-i", inName,
+                            "-vf", scale + ",fps=1/2",
+                            "-frames:v", String(count),
+                            "-q:v", String(quality),
+                            pattern,
+                        ]);
+                    }
+                } catch (execErr) {
+                    // Fallback: single frame near start
+                    self._log("frame extract primary failed: " + (execErr && execErr.message));
+                    try {
+                        await ffmpeg.exec([
+                            "-hide_banner", "-y",
+                            "-ss", "0.5",
+                            "-i", inName,
+                            "-vf", scale,
+                            "-frames:v", "1",
+                            "-q:v", String(quality),
+                            "frame_01.jpg",
+                        ]);
+                    } catch (fbErr) {
+                        return {
+                            success: false,
+                            error: "Frame extract failed: " + (fbErr.message || String(fbErr)),
+                        };
+                    }
+                }
+
+                onProgress && onProgress(80, "Encoding frames…");
+                const frames = [];
+                for (let i = 1; i <= count + 2; i++) {
+                    const name = "frame_" + String(i).padStart(2, "0") + ".jpg";
+                    try {
+                        const out = await ffmpeg.readFile(name);
+                        written.push(name);
+                        if (!out || !out.length) continue;
+                        const bytes = out instanceof Uint8Array ? out : new Uint8Array(out.buffer || out);
+                        if (bytes.length < 64) continue;
+                        frames.push({
+                            base64: self._bytesToBase64(bytes),
+                            mime: "image/jpeg",
+                        });
+                    } catch (_) {
+                        // no more frames
+                        if (i > 1) break;
+                    }
+                }
+
+                for (const n of written) {
+                    try { await ffmpeg.deleteFile(n); } catch (_) { /* */ }
+                }
+
+                if (frames.length === 0)
+                    return { success: false, error: "No frames produced" };
+
+                onProgress && onProgress(100, "Frames ready");
+                return { success: true, frames: frames };
+            } catch (err) {
+                for (const n of written) {
+                    try { await ffmpeg.deleteFile(n); } catch (_) { /* */ }
+                }
+                return { success: false, error: err.message || String(err) };
+            }
+        });
+    },
 };

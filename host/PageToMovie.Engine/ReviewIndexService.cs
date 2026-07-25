@@ -324,11 +324,15 @@ public sealed class ReviewIndexService
         }
     }
 
+    private static readonly Regex ExactClipClientJsonRe = new(
+        @"^scene_(\d{2})_clip_(\d{2})\.mp4\.client\.json$",
+        RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
     private static List<(int Scene, int Clip)> ListOnDiskClips(string projectDir, int? sceneFilter)
     {
         var videoDir = Path.Combine(projectDir, "assets", "video");
-        var list = new List<(int, int)>();
-        if (!Directory.Exists(videoDir)) return list;
+        var set = new HashSet<(int, int)>();
+        if (!Directory.Exists(videoDir)) return new List<(int, int)>();
 
         foreach (var fi in new DirectoryInfo(videoDir).EnumerateFiles("scene_*_clip_*.mp4"))
         {
@@ -339,10 +343,22 @@ public sealed class ReviewIndexService
                 !int.TryParse(m.Groups[2].Value, out var cn))
                 continue;
             if (sceneFilter is int only && only > 0 && sn != only) continue;
-            list.Add((sn, cn));
+            set.Add((sn, cn));
         }
 
-        return list
+        // Client media folder: hash registered without server MP4 bytes
+        foreach (var fi in new DirectoryInfo(videoDir).EnumerateFiles("scene_*_clip_*.mp4.client.json"))
+        {
+            var m = ExactClipClientJsonRe.Match(fi.Name);
+            if (!m.Success) continue;
+            if (!int.TryParse(m.Groups[1].Value, out var sn) ||
+                !int.TryParse(m.Groups[2].Value, out var cn))
+                continue;
+            if (sceneFilter is int only && only > 0 && sn != only) continue;
+            set.Add((sn, cn));
+        }
+
+        return set
             .OrderBy(x => x.Item1)
             .ThenBy(x => x.Item2)
             .ToList();

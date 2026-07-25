@@ -91,35 +91,18 @@ public sealed class ClipAutoReviewService
         int scene,
         int clip,
         Action<int, int, string>? onProgress = null,
-        CancellationToken ct = default)
+        CancellationToken ct = default,
+        IReadOnlyList<ClipAutoReviewClientFrame>? clientFrames = null)
     {
         if (!_vision.IsConfigured)
             throw new InvalidOperationException("Connect service (XAI_API_KEY) for clip review.");
-        // Frame sampling used native ffmpeg; product is browser-only for media tools.
-        // Auto-review still records a lightweight draft so the UI can drive human pass/fail.
-        throw new InvalidOperationException(
-            "Server frame sampling was removed (no native ffmpeg). " +
-            "Review clips manually in Review, or re-enable a client-side frame sample path later.");
 
-#pragma warning disable CS0162 // intentional: keep method body for future client-frame path
         using var _telScope = _telemetry.UseProject(projectId);
         var projectDir = _projects.GetProjectDir(projectId);
-        var videoDir = Path.Combine(projectDir, "assets", "video");
-        var clipPath = Path.Combine(videoDir, $"scene_{scene:D2}_clip_{clip:D2}.mp4");
-        if (!File.Exists(clipPath) || new FileInfo(clipPath).Length < 512)
-            throw new InvalidOperationException($"Clip not on disk: S{scene:D2}C{clip:D2}");
 
         onProgress?.Invoke(5, 100, "Loading clip plan…");
         var plan = LoadClipPlan(projectId, scene, clip);
         var profiles = _projects.LoadCharacterPromptProfiles(projectId);
-
-        string? prevPath = null;
-        if (clip > 1)
-        {
-            var cand = Path.Combine(videoDir, $"scene_{scene:D2}_clip_{clip - 1:D2}.mp4");
-            if (File.Exists(cand) && new FileInfo(cand).Length >= 512)
-                prevPath = cand;
-        }
 
         var workDir = Path.Combine(projectDir, "assets", "review", $"_frames_S{scene:D2}C{clip:D2}");
         try
@@ -131,34 +114,31 @@ public sealed class ClipAutoReviewService
             Directory.CreateDirectory(workDir);
 
             var images = new List<(string Path, string Label)>();
-            if (prevPath is not null)
+            var curFramePaths = new List<string>();
+            var hasPrev = false;
+
+            if (clientFrames is { Count: > 0 })
             {
-                onProgress?.Invoke(15, 100, "Sampling end of previous clip…");
-                var prevFrames = await ExtractTailFramesAsync(prevPath, workDir, "prev", count: 3, ct);
-                foreach (var f in prevFrames)
-                    images.Add((f, "PREVIOUS_CLIP_TAIL"));
+                onProgress?.Invoke(20, 100, "Receiving browser sample frames…");
+                images = MaterializeClientFrames(workDir, clientFrames, out curFramePaths, out hasPrev);
             }
             else
             {
-                onProgress?.Invoke(15, 100, clip == 1
-                    ? "First clip — no previous for continuity…"
-                    : "Previous clip missing — reviewing this clip only…");
+                // No native ffmpeg on server — browser must sample via ffmpeg.wasm.
+                throw new InvalidOperationException(
+                    "Browser frame samples required for auto-review (no server ffmpeg). " +
+                    "Use Review → Auto-review in the app so the client can sample frames first.");
             }
 
-            onProgress?.Invoke(35, 100, "Sampling this clip…");
-            var curFrames = await ExtractSpanFramesAsync(clipPath, workDir, "cur", ct);
-            foreach (var f in curFrames)
-                images.Add((f, "CURRENT_CLIP"));
-
             if (images.Count == 0)
-                throw new InvalidOperationException("Could not extract frames from clip video.");
+                throw new InvalidOperationException("No usable sample frames (upload empty or invalid).");
 
             // PR3: keep 2–4 current-clip frames for humans/export (before temp workDir is deleted)
             IReadOnlyList<string> durableFrames = Array.Empty<string>();
             try
             {
                 durableFrames = _reviewIndex.PersistDurableFrames(
-                    projectId, scene, clip, curFrames, maxFrames: 4);
+                    projectId, scene, clip, curFramePaths, maxFrames: 4);
             }
             catch (Exception ex)
             {
@@ -166,7 +146,7 @@ public sealed class ClipAutoReviewService
             }
 
             onProgress?.Invoke(55, 100, "AI reviewing continuity and quality…");
-            var prompt = BuildReviewPrompt(scene, clip, plan, profiles, images, prevPath is not null);
+            var prompt = BuildReviewPrompt(scene, clip, plan, profiles, images, hasPrev);
             // Project-scoped rules only (checklist lives in embedded clip_auto_review.txt).
             try
             {
@@ -185,7 +165,7 @@ public sealed class ClipAutoReviewService
                 ct: ct);
 
             onProgress?.Invoke(85, 100, "Parsing suggestions…");
-            var draft = ParseDraft(raw, projectId, scene, clip, plan, profiles, prevPath is not null);
+            var draft = ParseDraft(raw, projectId, scene, clip, plan, profiles, hasPrev);
             draft.GeneratedAt = DateTimeOffset.UtcNow;
             SaveDraft(draft);
 
@@ -595,39 +575,63 @@ public sealed class ClipAutoReviewService
         return draft;
     }
 
-    private async Task<List<string>> ExtractTailFramesAsync(
-        string videoPath, string workDir, string prefix, int count, CancellationToken ct)
+    /// <summary>
+    /// Write browser-uploaded base64 frames to workDir. Max 8 images, ~2.5MB each decoded.
+    /// </summary>
+    private static List<(string Path, string Label)> MaterializeClientFrames(
+        string workDir,
+        IReadOnlyList<ClipAutoReviewClientFrame> clientFrames,
+        out List<string> currentClipPaths,
+        out bool hasPrev)
     {
-        // Last ~1.5s at ~2 fps
-        var pattern = Path.Combine(workDir, $"{prefix}_%02d.jpg");
-        var args =
-            $"-y -sseof -1.5 -i \"{videoPath}\" -vf fps=2 -frames:v {count} -q:v 5 \"{pattern}\"";
-        await RunFfmpegAsync(args, ct);
-        return Directory.GetFiles(workDir, $"{prefix}_*.jpg").OrderBy(f => f).ToList();
-    }
+        const int maxFrames = 8;
+        const int maxBytesEach = 2_500_000;
+        currentClipPaths = new List<string>();
+        hasPrev = false;
+        var images = new List<(string Path, string Label)>();
+        var i = 0;
+        foreach (var frame in clientFrames.Take(maxFrames))
+        {
+            if (frame is null || string.IsNullOrWhiteSpace(frame.Base64))
+                continue;
+            var b64 = frame.Base64.Trim();
+            // Allow accidental data-URL paste
+            var comma = b64.IndexOf(',');
+            if (b64.StartsWith("data:", StringComparison.OrdinalIgnoreCase) && comma > 0)
+                b64 = b64[(comma + 1)..];
 
-    private async Task<List<string>> ExtractSpanFramesAsync(
-        string videoPath, string workDir, string prefix, CancellationToken ct)
-    {
-        // ~3 frames across the clip (start-ish, mid, end-ish)
-        var pattern = Path.Combine(workDir, $"{prefix}_%02d.jpg");
-        var args =
-            $"-y -i \"{videoPath}\" -vf \"fps=1/2\" -frames:v 3 -q:v 5 \"{pattern}\"";
-        await RunFfmpegAsync(args, ct);
-        var files = Directory.GetFiles(workDir, $"{prefix}_*.jpg").OrderBy(f => f).ToList();
-        if (files.Count > 0) return files;
+            byte[] bytes;
+            try
+            {
+                bytes = Convert.FromBase64String(b64);
+            }
+            catch
+            {
+                continue;
+            }
 
-        // Fallback: single frame at 0.5s
-        var one = Path.Combine(workDir, $"{prefix}_01.jpg");
-        await RunFfmpegAsync($"-y -ss 0.5 -i \"{videoPath}\" -frames:v 1 -q:v 5 \"{one}\"", ct);
-        return File.Exists(one) ? new List<string> { one } : new List<string>();
-    }
+            if (bytes.Length < 32 || bytes.Length > maxBytesEach)
+                continue;
 
-    private Task RunFfmpegAsync(string args, CancellationToken ct)
-    {
-        _ = args;
-        _ = ct;
-        throw new InvalidOperationException("Native ffmpeg removed — cannot sample frames on the server.");
+            var mime = (frame.Mime ?? "image/jpeg").Trim().ToLowerInvariant();
+            var ext = mime.Contains("png", StringComparison.Ordinal) ? "png" : "jpg";
+            var label = string.IsNullOrWhiteSpace(frame.Label)
+                ? "CURRENT_CLIP"
+                : frame.Label.Trim().ToUpperInvariant();
+            if (label is not ("PREVIOUS_CLIP_TAIL" or "CURRENT_CLIP"))
+                label = "CURRENT_CLIP";
+
+            i++;
+            var path = Path.Combine(workDir, $"f{i:D2}_{label.ToLowerInvariant()}.{ext}");
+            File.WriteAllBytes(path, bytes);
+            images.Add((path, label));
+            if (label == "PREVIOUS_CLIP_TAIL")
+                hasPrev = true;
+            else
+                currentClipPaths.Add(path);
+        }
+
+        return images;
     }
 
     private static string GetStr(JsonElement el, string name, string fallback)

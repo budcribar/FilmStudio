@@ -197,6 +197,102 @@ public sealed class ClientVideoStitchService
         }
     }
 
+    /// <summary>
+    /// Sample JPEG frames for one clip (and previous tail when clip &gt; 1) for auto-review upload.
+    /// Prefers local media-folder blobs, else authenticated clip proxy URLs.
+    /// </summary>
+    public async Task<(IReadOnlyList<ClipAutoReviewClientFrame> Frames, string? Error)> SampleAutoReviewFramesAsync(
+        string projectId,
+        int scene,
+        int clip,
+        CancellationToken ct = default)
+    {
+        var frames = new List<ClipAutoReviewClientFrame>();
+        try
+        {
+            if (clip > 1)
+            {
+                var prevUrl = await ResolveClipUrlAsync(projectId, scene, clip - 1, ct);
+                if (!string.IsNullOrWhiteSpace(prevUrl))
+                {
+                    var prev = await ExtractFramesRawAsync(prevUrl, mode: "tail", count: 3, ct);
+                    if (prev.Success && prev.Frames is { Count: > 0 })
+                    {
+                        foreach (var f in prev.Frames)
+                        {
+                            if (string.IsNullOrWhiteSpace(f.Base64)) continue;
+                            frames.Add(new ClipAutoReviewClientFrame
+                            {
+                                Label = "PREVIOUS_CLIP_TAIL",
+                                Mime = string.IsNullOrWhiteSpace(f.Mime) ? "image/jpeg" : f.Mime,
+                                Base64 = f.Base64,
+                            });
+                        }
+                    }
+                }
+            }
+
+            var curUrl = await ResolveClipUrlAsync(projectId, scene, clip, ct);
+            if (string.IsNullOrWhiteSpace(curUrl))
+                return (frames, $"No video URL for S{scene:D2}C{clip:D2} (connect media folder or ensure clip exists).");
+
+            var cur = await ExtractFramesRawAsync(curUrl, mode: "span", count: 3, ct);
+            if (!cur.Success || cur.Frames is null || cur.Frames.Count == 0)
+                return (frames, cur.Error ?? "Could not sample frames from current clip");
+
+            foreach (var f in cur.Frames)
+            {
+                if (string.IsNullOrWhiteSpace(f.Base64)) continue;
+                frames.Add(new ClipAutoReviewClientFrame
+                {
+                    Label = "CURRENT_CLIP",
+                    Mime = string.IsNullOrWhiteSpace(f.Mime) ? "image/jpeg" : f.Mime,
+                    Base64 = f.Base64,
+                });
+            }
+
+            if (frames.Count == 0)
+                return (frames, "No frames produced");
+            return (frames, null);
+        }
+        catch (Exception ex)
+        {
+            return (frames, ex.Message);
+        }
+    }
+
+    private async Task<string?> ResolveClipUrlAsync(
+        string projectId, int scene, int clip, CancellationToken ct)
+    {
+        _ = ct;
+        var rel = $"assets/video/scene_{scene:D2}_clip_{clip:D2}.mp4";
+        if (_media is not null)
+        {
+            var local = await _media.GetLocalBlobUrlAsync(rel);
+            if (!string.IsNullOrWhiteSpace(local))
+                return local;
+        }
+        return _engine.ClipVideoUrl(projectId, scene, clip);
+    }
+
+    private async Task<JsFramesResult> ExtractFramesRawAsync(
+        string url, string mode, int count, CancellationToken ct)
+    {
+        try
+        {
+            var raw = await _js.InvokeAsync<JsFramesResult>(
+                "PageToMovieFfmpeg.extractFramesAsync",
+                ct,
+                url,
+                new { mode, count, maxWidth = 640, quality = 5 });
+            return raw ?? new JsFramesResult { Success = false, Error = "No response from frame extract" };
+        }
+        catch (Exception ex)
+        {
+            return new JsFramesResult { Success = false, Error = ex.Message };
+        }
+    }
+
     private sealed class JsConcatResult
     {
         public bool Success { get; set; }
@@ -211,6 +307,19 @@ public sealed class ClientVideoStitchService
         public bool Success { get; set; }
         public double Seconds { get; set; }
         public string? Error { get; set; }
+    }
+
+    private sealed class JsFramesResult
+    {
+        public bool Success { get; set; }
+        public string? Error { get; set; }
+        public List<JsFrameItem>? Frames { get; set; }
+    }
+
+    private sealed class JsFrameItem
+    {
+        public string? Base64 { get; set; }
+        public string? Mime { get; set; }
     }
 }
 
