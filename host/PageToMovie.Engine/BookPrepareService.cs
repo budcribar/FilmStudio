@@ -471,6 +471,7 @@ public sealed class BookPrepareService
             using var ms = new MemoryStream(pdfBytes);
             var options = new PDFtoImage.RenderOptions(Dpi: 150);
             var index = 0;
+            var pageErrors = new List<string>();
             foreach (var bitmap in PDFtoImage.Conversion.ToImages(ms, options: options))
             {
                 index++;
@@ -502,15 +503,21 @@ public sealed class BookPrepareService
                 }
                 catch (Exception pageEx)
                 {
+                    // Skip only this page — never abort the whole render loop.
                     try { bitmap.Dispose(); } catch { /* ignore */ }
-                    // Keep going; return partial results + first page error if nothing rendered.
-                    if (rows.Count == 0)
-                        return (rows, $"Page {index} encode failed: {pageEx.GetType().Name}: {pageEx.Message}");
+                    if (pageErrors.Count < 8)
+                    {
+                        pageErrors.Add(
+                            $"page {index}: {pageEx.GetType().Name}: {pageEx.Message}");
+                    }
                 }
             }
 
             if (rows.Count == 0 && index == 0)
                 return (rows, "PDFtoImage returned no page bitmaps (empty or unreadable PDF).");
+            if (rows.Count == 0 && pageErrors.Count > 0)
+                return (rows, "All page renders failed. " + string.Join("; ", pageErrors));
+            // Partial success: ignore per-page noise (caller uses row count).
         }
         catch (DllNotFoundException ex)
         {
@@ -520,6 +527,9 @@ public sealed class BookPrepareService
         }
         catch (Exception ex)
         {
+            // Outer failure (e.g. mid-enumeration): keep any pages already rendered.
+            if (rows.Count > 0)
+                return (rows, null);
             return (rows, $"{ex.GetType().Name}: {ex.Message}");
         }
         return (rows, null);
