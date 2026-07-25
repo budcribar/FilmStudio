@@ -238,15 +238,8 @@ public sealed class CastFromScreenplayService
         };
     }
 
-    public static async Task<string> LoadSystemPromptAsync(string workspaceRoot, CancellationToken ct = default)
-    {
-        var path = Path.Combine(
-            workspaceRoot,
-            PromptRelativePath.Replace('/', Path.DirectorySeparatorChar));
-        if (!File.Exists(path))
-            throw new InvalidOperationException($"Cast prompt not found: {path}");
-        return await File.ReadAllTextAsync(path, ct).ConfigureAwait(false);
-    }
+    public static Task<string> LoadSystemPromptAsync(string workspaceRoot, CancellationToken ct = default) =>
+        PromptFiles.ReadAsync(PromptRelativePath, workspaceRoot, ct);
 
     private async Task<string?> LoadBookTextAsync(string projectId, CancellationToken ct)
     {

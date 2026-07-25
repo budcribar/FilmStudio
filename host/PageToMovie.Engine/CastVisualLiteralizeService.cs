@@ -123,15 +123,8 @@ public sealed class CastVisualLiteralizeService
         return (descIn, visIn, false);
     }
 
-    public static async Task<string> LoadSystemPromptAsync(string workspaceRoot, CancellationToken ct = default)
-    {
-        var path = Path.Combine(
-            workspaceRoot,
-            PromptRelativePath.Replace('/', Path.DirectorySeparatorChar));
-        if (!File.Exists(path))
-            throw new InvalidOperationException($"Visual literalize prompt not found: {path}");
-        return await File.ReadAllTextAsync(path, ct).ConfigureAwait(false);
-    }
+    public static Task<string> LoadSystemPromptAsync(string workspaceRoot, CancellationToken ct = default) =>
+        PromptFiles.ReadAsync(PromptRelativePath, workspaceRoot, ct);
 
     private static Dictionary<string, object?> BuildVisualPayload(Dictionary<string, object?> seeds)
     {

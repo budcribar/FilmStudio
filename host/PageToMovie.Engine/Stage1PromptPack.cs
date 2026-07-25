@@ -20,23 +20,16 @@ public static class Stage1PromptPack
         CancellationToken ct = default)
     {
         totalRuntimeMinutes = Math.Clamp(totalRuntimeMinutes, 3, 180);
-        var path = Path.Combine(
-            workspaceRoot,
-            BookToFountainRelativePath.Replace('/', Path.DirectorySeparatorChar));
 
         string body;
-        if (File.Exists(path))
+        try
         {
-            body = await File.ReadAllTextAsync(path, ct).ConfigureAwait(false);
+            body = await PromptFiles.ReadAsync(BookToFountainRelativePath, workspaceRoot, ct)
+                .ConfigureAwait(false);
         }
-        else if (!string.IsNullOrWhiteSpace(fallbackBody))
+        catch (InvalidOperationException) when (!string.IsNullOrWhiteSpace(fallbackBody))
         {
-            body = fallbackBody;
-        }
-        else
-        {
-            throw new InvalidOperationException(
-                $"Book→Fountain prompt not found: {path}. Expected prompts/book_to_fountain.txt at workspace root.");
+            body = fallbackBody!;
         }
 
         return body.Replace("{{TOTAL_RUNTIME_MINUTES}}", totalRuntimeMinutes.ToString());
