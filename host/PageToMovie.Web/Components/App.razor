@@ -11,7 +11,9 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="app.css" />
-    <link rel="stylesheet" href="PageToMovie.Web.styles.css" />
+    @* Host project owns the scoped-CSS entry (imports PageToMovie.Web.*.bundle.scp.css).
+       Plain PageToMovie.Web.styles.css is not emitted into Api publish wwwroot → 404. *@
+    <link rel="stylesheet" href="PageToMovie.Api.styles.css" />
     <link rel="stylesheet" href="/lib/codemirror/codemirror.min.css" />
     <link rel="stylesheet" href="/css/fountain-editor.css" />
     <link rel="icon" type="image/png" href="favicon.png" />
