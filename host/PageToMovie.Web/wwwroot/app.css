@@ -113,11 +113,14 @@
     --fe-page-fg: #343a40;
 }
 
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Outfit:wght@400;500;600;700&display=swap');
+
 html, body {
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     background-color: var(--fs-bg-main);
     color: var(--fs-text-primary);
     -webkit-font-smoothing: antialiased;
+    transition: background-color 0.25s ease, color 0.25s ease, border-color 0.25s ease;
 }
 
 h1, h2, h3, h4, h5, h6, .h1, .h2, .h3, .h4, .h5, .h6 {
@@ -125,6 +128,10 @@ h1, h2, h3, h4, h5, h6, .h1, .h2, .h3, .h4, .h5, .h6 {
     font-weight: 600;
     letter-spacing: -0.02em;
     color: var(--fs-text-primary);
+}
+
+code, kbd, samp, pre, .font-monospace, .code-token, .badge-code, pre code {
+    font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', 'Source Code Pro', SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
 /* Custom Sleek Scrollbar */
@@ -143,14 +150,24 @@ h1, h2, h3, h4, h5, h6, .h1, .h2, .h3, .h4, .h5, .h6 {
     background: var(--fs-accent-indigo);
 }
 
-/* Glassmorphic Cards */
+/* Glassmorphic Cards & Micro-Interactions */
 .card {
     background: var(--fs-bg-card);
     border: 1px solid var(--fs-border-color);
     border-radius: 12px;
     box-shadow: var(--fs-shadow-card);
-    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.25s ease, box-shadow 0.25s ease, background-color 0.25s ease;
     color: var(--fs-text-primary);
+}
+
+.card-interactive, .card-hover, .card[onclick], .card:has(a.stretched-link) {
+    cursor: pointer;
+}
+
+.card-interactive:hover, .card-hover:hover, .card[onclick]:hover {
+    transform: translateY(-3px);
+    border-color: var(--fs-border-hover);
+    box-shadow: 0 12px 30px -4px rgba(99, 102, 241, 0.25);
 }
 
 .card-header, .card-footer {
