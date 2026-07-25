@@ -88,6 +88,26 @@ public sealed class ResendEmailSender : IEmailSender
         var body = await resp.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
         if (!resp.IsSuccessStatusCode)
         {
+            if (resp.StatusCode == System.Net.HttpStatusCode.Forbidden &&
+                !string.Equals(fromAddr, "onboarding@resend.dev", StringComparison.OrdinalIgnoreCase) &&
+                body.Contains("not verified", StringComparison.OrdinalIgnoreCase))
+            {
+                _log.LogWarning("Resend domain {FromAddr} is not verified. Retrying with onboarding@resend.dev sandbox address.", fromAddr);
+                payload.From = $"{fromName} <onboarding@resend.dev>";
+                using var retryReq = new HttpRequestMessage(HttpMethod.Post, "https://api.resend.com/emails")
+                {
+                    Content = JsonContent.Create(payload, options: JsonOpts),
+                };
+                retryReq.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _apiKey);
+                var retryResp = await client.SendAsync(retryReq, ct).ConfigureAwait(false);
+                var retryBody = await retryResp.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
+                if (retryResp.IsSuccessStatusCode)
+                {
+                    _log.LogInformation("Resend email sent via onboarding@resend.dev sandbox To={To} Subject={Subject}", toEmail, subject);
+                    return;
+                }
+            }
+
             _log.LogError(
                 "Resend send failed To={To} Status={Status} Body={Body}",
                 toEmail,
