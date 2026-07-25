@@ -273,7 +273,7 @@ public sealed class ProjectArtifactIndexService
         if (Directory.Exists(video))
         {
             var clips = Directory.GetFiles(video, "scene_*_clip_*.mp4")
-                .Where(f => FfmpegRemuxService.IsExactClipFileName(Path.GetFileName(f)))
+                .Where(f => ClipFileNaming.IsExactClipFileName(Path.GetFileName(f)))
                 .ToList();
             var scenes = Directory.GetFiles(video, "scene_??.mp4");
             stats["clipMp4Count"] = clips.Count;

@@ -22,7 +22,6 @@ public sealed class ClipAutoReviewService
 
     private readonly ProjectStore _projects;
     private readonly IVisionClient _vision;
-    private readonly FfmpegRemuxService _ffmpeg;
     private readonly EditLogService _logs;
     private readonly ProjectRulesService _projectRules;
     private readonly ReviewIndexService _reviewIndex;
@@ -32,7 +31,6 @@ public sealed class ClipAutoReviewService
     public ClipAutoReviewService(
         ProjectStore projects,
         IVisionClient vision,
-        FfmpegRemuxService ffmpeg,
         EditLogService logs,
         ProjectRulesService projectRules,
         ReviewIndexService reviewIndex,
@@ -41,7 +39,6 @@ public sealed class ClipAutoReviewService
     {
         _projects = projects;
         _vision = vision;
-        _ffmpeg = ffmpeg;
         _logs = logs;
         _projectRules = projectRules;
         _reviewIndex = reviewIndex;
@@ -98,9 +95,13 @@ public sealed class ClipAutoReviewService
     {
         if (!_vision.IsConfigured)
             throw new InvalidOperationException("Connect service (XAI_API_KEY) for clip review.");
-        if (!_ffmpeg.IsAvailable())
-            throw new InvalidOperationException("ffmpeg required to sample frames for clip review.");
+        // Frame sampling used native ffmpeg; product is browser-only for media tools.
+        // Auto-review still records a lightweight draft so the UI can drive human pass/fail.
+        throw new InvalidOperationException(
+            "Server frame sampling was removed (no native ffmpeg). " +
+            "Review clips manually in Review, or re-enable a client-side frame sample path later.");
 
+#pragma warning disable CS0162 // intentional: keep method body for future client-frame path
         using var _telScope = _telemetry.UseProject(projectId);
         var projectDir = _projects.GetProjectDir(projectId);
         var videoDir = Path.Combine(projectDir, "assets", "video");
@@ -622,47 +623,11 @@ public sealed class ClipAutoReviewService
         return File.Exists(one) ? new List<string> { one } : new List<string>();
     }
 
-    private async Task RunFfmpegAsync(string args, CancellationToken ct)
+    private Task RunFfmpegAsync(string args, CancellationToken ct)
     {
-        // Quiet log + drain pipes: WaitForExit without reading stderr deadlocks on verbose encodes
-        var fullArgs = $"-hide_banner -nostats -loglevel error {args}";
-        var sw = System.Diagnostics.Stopwatch.StartNew();
-        var r = await FfmpegProcess.RunAsync(
-                _ffmpeg.FfmpegPath,
-                fullArgs,
-                ct,
-                timeoutMs: 60_000)
-            .ConfigureAwait(false);
-        try
-        {
-            var rec = ProjectTelemetryService.CondenseFfmpegOp(
-                op: "frame_sample",
-                args: fullArgs.Length > 2000 ? fullArgs[..2000] + "…" : fullArgs,
-                inputs: null,
-                output: null,
-                exitCode: r.ExitCode,
-                timedOut: r.TimedOut,
-                wallMs: sw.ElapsedMilliseconds,
-                rawLog: r.CombinedLog,
-                ffmpegExe: _ffmpeg.FfmpegPath);
-            _telemetry.LogFfmpeg(rec);
-        }
-        catch (Exception ex)
-        {
-            _log.LogDebug(ex, "frame_sample telemetry skip");
-        }
-
-        if (r.TimedOut)
-        {
-            _log.LogWarning("ffmpeg frame extract timed out: {Args}", args.Length > 120 ? args[..120] : args);
-            return;
-        }
-        if (!r.Success)
-        {
-            var err = r.StdErr;
-            _log.LogWarning("ffmpeg frame extract exit {Code}: {Err}",
-                r.ExitCode, err.Length > 300 ? err[..300] : err);
-        }
+        _ = args;
+        _ = ct;
+        throw new InvalidOperationException("Native ffmpeg removed — cannot sample frames on the server.");
     }
 
     private static string GetStr(JsonElement el, string name, string fallback)

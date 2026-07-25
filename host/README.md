@@ -42,9 +42,8 @@ dotnet run
 
 You need **two processes**: Api **and** Web. If only Web is running, health checks fail with connection refused.
 
-**Video stitch / remux / silence-trim default to the browser** (`ffmpeg.wasm` in PageToMovie.Web).  
-Server native `ffmpeg` is **off** by default (`PageToMovie:UseNativeFfmpeg=false`).  
-Optional local server remux: set `UseNativeFfmpeg=true` and install ffmpeg (or NuGet `Soenneker.Libraries.FFmpeg` / `PageToMovie:FfmpegPath`).
+**All video stitch / trim is in the browser** (`ffmpeg.wasm` in PageToMovie.Web).  
+The API host never installs or spawns native `ffmpeg`.
 
 ### 2) Blazor UI
 

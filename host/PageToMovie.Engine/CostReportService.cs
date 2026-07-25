@@ -849,7 +849,7 @@ public sealed class CostReportService
             {
                 var name = fi.Name;
                 // Exact scene_01_clip_02.mp4 only (not .native.mp4 sidecars)
-                if (!FfmpegRemuxService.IsExactClipFileName(name)) continue;
+                if (!ClipFileNaming.IsExactClipFileName(name)) continue;
                 var stem = Path.GetFileNameWithoutExtension(name);
                 var parts = stem.Split('_');
                 if (parts.Length >= 4 &&

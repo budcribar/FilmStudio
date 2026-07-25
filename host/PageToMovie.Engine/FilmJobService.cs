@@ -34,7 +34,6 @@ public sealed class FilmJobService
     private readonly IChatClient _chat;
     private readonly Stage1Service _stage1;
     private readonly Stage2PlannerService _stage2;
-    private readonly IFfmpegRemux _remux;
     private readonly VoicePreviewService _voicePreview;
     private readonly ClipAutoReviewService _clipAutoReview;
     private readonly ReviewIndexService _reviewIndex;
@@ -68,7 +67,6 @@ public sealed class FilmJobService
         IChatClient chat,
         Stage1Service stage1,
         Stage2PlannerService stage2,
-        IFfmpegRemux remux,
         VoicePreviewService voicePreview,
         ClipAutoReviewService clipAutoReview,
         ReviewIndexService reviewIndex,
@@ -97,7 +95,6 @@ public sealed class FilmJobService
         _chat = chat;
         _stage1 = stage1;
         _stage2 = stage2;
-        _remux = remux;
         _voicePreview = voicePreview;
         _clipAutoReview = clipAutoReview;
         _reviewIndex = reviewIndex;
@@ -2341,29 +2338,14 @@ public sealed class FilmJobService
         string? extendInputTemp = null;
         try
         {
-            // Breath-tail silence trim on the disposable copy only (never mutates clip N-1 on disk).
-            // Requires native ffmpeg — skipped when UseNativeFfmpeg=false (client wasm path).
-            if (prevVideoPath is not null && prevExtendWorkTemp is not null && _remux.IsAvailable())
-            {
-                JsonElement? prevMetaForTail = previousClipEl;
-                if (prevMetaForTail is null && blueprintRoot is { } brTail)
-                    prevMetaForTail = FindClipElementInBlueprint(brTail, scene, clip - 1);
-                var prevKeepTail = SpeechTailKeepSeconds(
-                    prevMetaForTail, currentHasSpeech: ClipHasSpokenAudio(clipEl));
-                await SilenceTrimClipAsync(
-                        prevExtendWorkTemp, scene, clip - 1, ct, keepTailSeconds: prevKeepTail)
-                    .ConfigureAwait(false);
-            }
-
-            // Video-extend returns prev+new and needs server ffmpeg to keep only the new tail.
-            // Without native ffmpeg, generate fresh with locked character plates instead.
-            if (prevVideoPath is not null && !_remux.IsAvailable())
+            // No native ffmpeg: never video-extend (cannot split prev+new). Fresh gen + locked plates.
+            if (prevVideoPath is not null)
             {
                 reseedFresh = true;
                 prevVideoPath = null;
                 await AppendLogAsync(
-                    $"  [Continuity] native ffmpeg off — S{scene:D2}C{clip:D2} fresh gen with locked refs " +
-                    "(no video-extend; browser stitch handles play/export)");
+                    $"  [Continuity] S{scene:D2}C{clip:D2} fresh gen with locked refs " +
+                    "(no server video-extend; browser stitch for play/export)");
             }
 
             if (prevVideoPath is not null && _opts.IdentityReseedOnCastChange)
@@ -2407,17 +2389,6 @@ public sealed class FilmJobService
                     await AppendLogAsync(
                         $"  [Speech] S{scene:D2}C{clip:D2} is first spoken after silence — " +
                         "fresh gen with locked refs (not video-extend) so the opening word is not clipped");
-                }
-            }
-
-            if (prevVideoPath is not null)
-            {
-                var clamped = await ClampExtendInputIfNeededAsync(prevVideoPath, scene, clip, ct)
-                    .ConfigureAwait(false);
-                if (clamped is not null)
-                {
-                    extendInputTemp = clamped;
-                    prevVideoPath = clamped;
                 }
             }
 
@@ -2548,44 +2519,11 @@ public sealed class FilmJobService
 
             BackupExistingClipFile(outPath, scene, clip);
 
-            if (prevVideoPath is not null)
-            {
-                // Extension returns prev+new as one file — keep only the new portion as this clip
-                var extendedTmp = Path.Combine(
-                    projectDir, "assets", "video", $"_extend_s{scene:D2}c{clip:D2}.mp4");
-                await _grok.DownloadToFileAsync(url, extendedTmp, ct);
-                await AppendLogAsync(
-                    $"  [Grok] extended video downloaded ({new FileInfo(extendedTmp).Length} bytes) — trimming new {duration}s");
-                var trimmed = await TryTrimExtensionTailAsync(extendedTmp, outPath, duration, ct)
-                    .ConfigureAwait(false);
-                if (!trimmed)
-                {
-                    // Never accept prev+new as this clip — that poisons remux and the next extend.
-                    try { if (File.Exists(outPath)) File.Delete(outPath); } catch { /* ignore */ }
-                    try { File.Delete(extendedTmp); } catch { /* ignore */ }
-                    throw new InvalidOperationException(
-                        $"S{scene:D2}C{clip:D2}: extend-tail trim failed — not saving cumulative " +
-                        "prev+new as this clip (retry; check ffmpeg).");
-                }
-                try { File.Delete(extendedTmp); } catch { /* ignore */ }
-            }
-            else
-            {
-                await _grok.DownloadToFileAsync(url, outPath, ct);
-            }
+            await _grok.DownloadToFileAsync(url, outPath, ct);
 
             await AppendLogAsync($"  [Grok] saved {outPath}");
 
-            // Trim trailing silence on THIS clip before any later clip extends from it.
-            // Spoken lines keep a longer breath tail (~0.7s) so the next monologue clip does not butt-join.
-            var keepTail = ClipHasSpokenAudio(clipEl)
-                ? ClipSilenceTrimmer.SpeechBreathTailSeconds
-                : ClipSilenceTrimmer.DefaultKeepTailSeconds;
-            await SilenceTrimClipAsync(outPath, scene, clip, ct, keepTailSeconds: keepTail)
-                .ConfigureAwait(false);
-
-            // Always write duration sidecar (even when silence-trim is a no-op).
-            // Prefer probed final length for cost (silence trim often shortens vs API request).
+            // Duration sidecar via pure MP4 parse (no native ffmpeg).
             var probedSec = await EnsureClipDurationSidecarAsync(outPath, scene, clip, ct)
                 .ConfigureAwait(false);
             var costDurationSec = probedSec is > 0.05 ? probedSec.Value : duration;
@@ -2703,175 +2641,8 @@ public sealed class FilmJobService
             await AppendLogAsync($"  [Prompt] log failed: {ex.Message}");
         }
     }
-
     /// <summary>
-    /// Imagine <c>/videos/extensions</c> rejects input longer than 15s
-    /// (<c>Input video must not exceed 15 seconds</c>).
-    /// </summary>
-    private const double MaxVideoExtendInputSeconds = 15.0;
-
-    /// <summary>
-    /// If <paramref name="prevVideoPath"/> is longer than the API max, write a temp file
-    /// with only the last ≤15s (ending frames for continuity) and return that path.
-    /// Returns null when no clamp is needed (caller keeps the original path).
-    /// </summary>
-    private async Task<string?> ClampExtendInputIfNeededAsync(
-        string prevVideoPath,
-        int scene,
-        int clip,
-        CancellationToken ct)
-    {
-        if (!_remux.IsAvailable() || !File.Exists(prevVideoPath))
-            return null;
-
-        var total = await ClipSilenceTrimmer.ProbeDurationSecondsAsync(
-            _remux.FfmpegPath, prevVideoPath, ct).ConfigureAwait(false);
-        if (total is not > MaxVideoExtendInputSeconds)
-            return null;
-
-        // Slightly under 15s so float rounding / container padding never trips the API.
-        var keepSec = Math.Min(total.Value, MaxVideoExtendInputSeconds - 0.05);
-        var dir = Path.GetDirectoryName(prevVideoPath)!;
-        var tmp = Path.Combine(dir, $"_extend_in_s{scene:D2}c{clip:D2}.mp4");
-        var ok = await TryExtractVideoTailAsync(prevVideoPath, tmp, keepSec, ct)
-            .ConfigureAwait(false);
-        if (!ok)
-        {
-            await AppendLogAsync(
-                $"  [Continuity] prev clip is {total.Value:F1}s (> {MaxVideoExtendInputSeconds:0}s API max) " +
-                "but tail clamp failed — extend will likely be rejected");
-            return null;
-        }
-
-        await AppendLogAsync(
-            $"  [Continuity] prev clip {total.Value:F1}s exceeds {MaxVideoExtendInputSeconds:0}s extend limit — " +
-            $"using last {keepSec:F1}s for API input");
-        return tmp;
-    }
-
-    /// <summary>
-    /// Extension API returns prev+new. Keep only the last <paramref name="extensionSeconds"/>
-    /// as this clip file so remux still stitches independent clips.
-    /// </summary>
-    private async Task<bool> TryTrimExtensionTailAsync(
-        string extendedVideoPath,
-        string outClipPath,
-        int extensionSeconds,
-        CancellationToken ct)
-    {
-        var sec = Math.Max(1, extensionSeconds);
-        return await TryExtractVideoTailAsync(extendedVideoPath, outClipPath, sec, ct)
-            .ConfigureAwait(false);
-    }
-
-    /// <summary>
-    /// Extract the last <paramref name="tailSeconds"/> of a video into <paramref name="outPath"/>.
-    /// <c>-sseof</c> is an input option and must precede <c>-i</c> (same pattern as frame review).
-    /// </summary>
-    private async Task<bool> TryExtractVideoTailAsync(
-        string videoPath,
-        string outPath,
-        double tailSeconds,
-        CancellationToken ct)
-    {
-        try
-        {
-            if (!_remux.IsAvailable()) return false;
-            Directory.CreateDirectory(Path.GetDirectoryName(outPath)!);
-            var sec = Math.Max(0.5, tailSeconds);
-            // Format with invariant culture so "14.95" never becomes "14,95".
-            var secArg = sec.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture);
-            // -sseof -N MUST come before -i (input option). After -i it is ignored/fails,
-            // which previously left full prev+new files on disk and broke the next extend at 15s.
-            var args =
-                $"-hide_banner -nostats -loglevel error -y -sseof -{secArg} -i \"{videoPath}\" " +
-                $"-t {secArg} -c:v libx264 -preset veryfast -crf 18 -c:a aac -b:a 128k \"{outPath}\"";
-            var r = await FfmpegProcess.RunAsync(
-                    _remux.FfmpegPath, args, ct, timeoutMs: 180_000)
-                .ConfigureAwait(false);
-            if (r.Success &&
-                File.Exists(outPath) &&
-                new FileInfo(outPath).Length >= 1024)
-                return true;
-
-            if (!string.IsNullOrWhiteSpace(r.StdErr))
-                _log.LogWarning("ffmpeg tail extract failed: {Err}", r.StdErr.Trim());
-            return false;
-        }
-        catch (Exception ex)
-        {
-            _log.LogWarning(ex, "ffmpeg tail extract exception for {Path}", videoPath);
-            return false;
-        }
-    }
-
-    /// <summary>
-    /// When the previous clip was spoken and this one is too, keep a longer end-breath on prev.
-    /// </summary>
-    private static double SpeechTailKeepSeconds(JsonElement? previousClipEl, bool currentHasSpeech)
-    {
-        if (!currentHasSpeech)
-            return ClipSilenceTrimmer.DefaultKeepTailSeconds;
-        if (previousClipEl is { } pe && ClipHasSpokenAudio(pe))
-            return ClipSilenceTrimmer.SpeechBreathTailSeconds;
-        // Prev silent / unknown — short tail is fine (fresh speech start does not need prev pause)
-        return ClipSilenceTrimmer.DefaultKeepTailSeconds;
-    }
-
-    /// <summary>
-    /// Cut trailing silence so the next video-extend starts on real content.
-    /// Spoken clips keep a short breath so monologue joins (C2→C3) are not butt-joined.
-    /// </summary>
-    private async Task SilenceTrimClipAsync(
-        string videoPath,
-        int scene,
-        int clip,
-        CancellationToken ct,
-        double? keepTailSeconds = null)
-    {
-        if (!_remux.IsAvailable() || !File.Exists(videoPath))
-            return;
-        try
-        {
-            var keep = keepTailSeconds ?? ClipSilenceTrimmer.DefaultKeepTailSeconds;
-            var result = await ClipSilenceTrimmer.TrimTrailingSilenceAsync(
-                _remux.FfmpegPath,
-                videoPath,
-                keepTailSeconds: keep,
-                minTrimSavings: 0.4,
-                log: _log,
-                ct: ct).ConfigureAwait(false);
-            if (result.Trimmed)
-                await AppendLogAsync(
-                    $"  [Audio] S{scene:D2}C{clip:D2} silence-trim {result.BeforeSec:F1}s → {result.AfterSec:F1}s ({result.Message})");
-            else
-                await AppendLogAsync(
-                    $"  [Audio] S{scene:D2}C{clip:D2} silence-trim skip: {result.Message}");
-
-            // Clip 2+ often starts with dead air at the join — trim leading silence too
-            if (clip > 1)
-            {
-                var lead = await ClipSilenceTrimmer.TrimLeadingSilenceAsync(
-                    _remux.FfmpegPath,
-                    videoPath,
-                    keepHeadSeconds: 0.08,
-                    minTrimSavings: 0.25,
-                    log: _log,
-                    ct: ct).ConfigureAwait(false);
-                if (lead.Trimmed)
-                    await AppendLogAsync(
-                        $"  [Audio] S{scene:D2}C{clip:D2} lead-silence-trim ({lead.Message})");
-            }
-        }
-        catch (Exception ex)
-        {
-            await AppendLogAsync($"  [Audio] silence-trim error: {ex.Message}");
-        }
-    }
-
-    /// <summary>
-    /// Probe final clip length and write <c>*.mp4.duration.json</c> (needed even when trim skips).
-    /// Returns probed seconds when known (for cost ledger); null if probe unavailable.
+    /// Probe final clip length (MP4 box parse) and write duration sidecar for cost ledger.
     /// </summary>
     private async Task<double?> EnsureClipDurationSidecarAsync(
         string videoPath,
@@ -2883,14 +2654,7 @@ public sealed class FilmJobService
             return null;
         try
         {
-            double? sec = null;
-            if (_remux.IsAvailable())
-            {
-                sec = await ClipSilenceTrimmer.ProbeDurationSecondsAsync(
-                    _remux.FfmpegPath, videoPath, ct).ConfigureAwait(false);
-            }
-            sec ??= Mp4DurationReader.TryReadSeconds(videoPath);
-
+            var sec = Mp4DurationReader.TryReadSeconds(videoPath);
             if (sec is > 0)
             {
                 await MediaDurationProbe.WriteDurationSidecarAsync(videoPath, sec.Value, ct)
@@ -2908,9 +2672,6 @@ public sealed class FilmJobService
         return null;
     }
 
-    /// <summary>
-    /// Ordered ignore-case set equality for on-screen cast keys (PR2 reseed decision).
-    /// </summary>
     private static bool OnScreenSetsEqual(IReadOnlyList<string> a, IReadOnlyList<string> b)
     {
         if (a.Count != b.Count) return false;

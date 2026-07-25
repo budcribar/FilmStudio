@@ -160,59 +160,9 @@ public class CreditsGeneratorService
             return creditsMoviePath;
         }
 
-        if (string.IsNullOrWhiteSpace(ffmpegExePath) || !_options.UseNativeFfmpeg)
-        {
-            onProgress?.Invoke("Skipping end credits clip (native ffmpeg disabled — client stitch has no credits plate).");
-            _logger.LogInformation(
-                "Credits clip skipped for {ProjectId} (UseNativeFfmpeg=false)", projectId);
-            return null;
-        }
-
-        onProgress?.Invoke($"Generating end credits clip ({title} by {author})…");
-
-        // Format path for FFmpeg filter graph (forward slashes and escaped colon)
-        var filterPath = textFilePath.Replace('\\', '/').Replace(":", "\\:");
-        var fontPath = ResolveSystemFontPath();
-        var fontOpt = fontPath is not null ? $"fontfile='{fontPath.Replace('\\', '/').Replace(":", "\\:")}':" : "";
-        var filter = $"drawtext={fontOpt}textfile='{filterPath}':fontcolor=white:fontsize=18:line_spacing=10:x=(w-text_w)/2:y=(h-text_h)/2";
-
-        var process = new System.Diagnostics.Process
-        {
-            StartInfo = new System.Diagnostics.ProcessStartInfo
-            {
-                FileName = ffmpegExePath,
-                Arguments = $"-y -f lavfi -i color=c=black:s=848x480:r=24:d=6 -f lavfi -i anullsrc=r=44100:cl=stereo -vf \"{filter}\" -c:v libx264 -preset veryfast -crf 20 -c:a aac -b:a 160k -shortest \"{creditsMoviePath}\"",
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                UseShellExecute = false,
-                CreateNoWindow = true,
-            }
-        };
-
-        try
-        {
-            process.Start();
-            var readOutTask = process.StandardOutput.ReadToEndAsync(ct);
-            var readErrTask = process.StandardError.ReadToEndAsync(ct);
-
-            await process.WaitForExitAsync(ct).ConfigureAwait(false);
-            await Task.WhenAll(readOutTask, readErrTask).ConfigureAwait(false);
-
-            if (process.ExitCode == 0 && File.Exists(creditsMoviePath) && new FileInfo(creditsMoviePath).Length >= 1024)
-            {
-                onProgress?.Invoke("End credits clip generated successfully.");
-                return creditsMoviePath;
-            }
-            else
-            {
-                _logger.LogWarning("FFmpeg credits generation exit code {ExitCode}: {Stderr}", process.ExitCode, readErrTask.Result);
-            }
-        }
-        catch (Exception ex)
-        {
-            _logger.LogWarning(ex, "Failed to render credits.mp4 for project {ProjectId}", projectId);
-        }
-
+        _ = ffmpegExePath;
+        onProgress?.Invoke("Skipping end credits clip (no native ffmpeg — browser stitch only).");
+        _logger.LogInformation("Credits clip skipped for {ProjectId} (native ffmpeg removed)", projectId);
         return null;
     }
 

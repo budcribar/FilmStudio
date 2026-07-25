@@ -379,7 +379,7 @@ public sealed class EditLogService
             if (!Directory.Exists(videoDir)) return list;
             foreach (var fi in new DirectoryInfo(videoDir).EnumerateFiles("scene_*_clip_*.mp4"))
             {
-                if (!FfmpegRemuxService.IsExactClipFileName(fi.Name)) continue;
+                if (!ClipFileNaming.IsExactClipFileName(fi.Name)) continue;
                 if (fi.Length < 1024) continue;
                 // scene_01_clip_02.mp4
                 var parts = Path.GetFileNameWithoutExtension(fi.Name).Split('_');

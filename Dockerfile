@@ -44,8 +44,7 @@ WORKDIR /app
 
 # fontconfig/freetype/png/jpeg for SkiaSharp + PDFtoImage (Pdfium) page renders used by
 # picture-book OCR. Missing these → silent 0 page images → failed book import on Railway.
-# Native ffmpeg is NOT installed: remux/stitch/silence-trim run in the browser (ffmpeg.wasm).
-# Set PageToMovie__UseNativeFfmpeg=true and install ffmpeg only if you re-enable server remux.
+# No native ffmpeg: all video stitch/trim is browser ffmpeg.wasm.
 RUN apt-get update && apt-get install -y --no-install-recommends \
     fonts-dejavu-core \
     fontconfig \

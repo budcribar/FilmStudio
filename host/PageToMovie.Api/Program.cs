@@ -113,8 +113,6 @@ builder.Services.AddSingleton<DepthOfFieldClassifier>();
 builder.Services.AddSingleton<ColorPaletteGradingClassifier>();
 builder.Services.AddSingleton<Stage2PlannerService>();
 builder.Services.AddSingleton<CreditsGeneratorService>();
-builder.Services.AddSingleton<FfmpegRemuxService>();
-builder.Services.AddSingleton<IFfmpegRemux>(sp => sp.GetRequiredService<FfmpegRemuxService>());
 builder.Services.AddSingleton<VoicePreviewService>();
 builder.Services.AddSingleton<ReviewEventStore>();
 builder.Services.AddSingleton<ProjectRulesService>();

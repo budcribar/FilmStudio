@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
@@ -12,6 +11,7 @@ namespace PageToMovie.Engine;
 /// <summary>
 /// Film-pipeline voice sample (not TTS): short Grok video with VOICE LOCK + dialogue, then extract audio only.
 /// Caches MP3 under assets/characters/voice_previews/ keyed by character + profile + sample text.
+/// Audio extract previously used native ffmpeg and is disabled until a client-side path exists.
 /// </summary>
 public sealed class VoicePreviewService
 {
@@ -20,26 +20,23 @@ public sealed class VoicePreviewService
 
     private readonly ProjectStore _projects;
     private readonly IVideoClient _video;
-    private readonly FfmpegRemuxService _ffmpeg;
     private readonly PageToMovieOptions _opts;
     private readonly ILogger<VoicePreviewService> _log;
 
     public VoicePreviewService(
         ProjectStore projects,
         IVideoClient video,
-        FfmpegRemuxService ffmpeg,
         IOptions<PageToMovieOptions> opts,
         ILogger<VoicePreviewService> log)
     {
         _projects = projects;
         _video = video;
-        _ffmpeg = ffmpeg;
         _opts = opts.Value;
         _log = log;
     }
 
     public bool IsVideoConfigured => _video.IsConfigured;
-    public bool IsFfmpegAvailable => _ffmpeg.IsAvailable();
+    public bool IsFfmpegAvailable => false;
 
     public static string BuildSampleDialogue(string? displayName)
     {
@@ -161,9 +158,11 @@ public sealed class VoicePreviewService
     {
         if (!_video.IsConfigured)
             throw new InvalidOperationException("Connect service (XAI_API_KEY) for voice preview.");
-        if (!_ffmpeg.IsAvailable())
-            throw new InvalidOperationException("ffmpeg required to extract audio from voice preview video.");
+        throw new InvalidOperationException(
+            "Voice preview audio extract used native ffmpeg, which was removed. " +
+            "Generate a short clip and play it instead.");
 
+#pragma warning disable CS0162
         var profiles = _projects.LoadCharacterPromptProfiles(projectId);
         profiles.TryGetValue(charKey, out var prof);
 
@@ -319,33 +318,14 @@ public sealed class VoicePreviewService
         }
     }
 
-    private async Task ExtractAudioMp3Async(string videoPath, string mp3Path, CancellationToken ct)
+    private Task ExtractAudioMp3Async(string videoPath, string mp3Path, CancellationToken ct)
     {
-        var ffmpeg = _ffmpeg.FfmpegPath;
-        // Re-encode to portable MP3 (video may use AAC)
-        var args =
-            $"-y -i \"{videoPath}\" -vn -acodec libmp3lame -q:a 4 -ar 24000 -ac 1 \"{mp3Path}\"";
-
-        var psi = new ProcessStartInfo
-        {
-            FileName = ffmpeg,
-            Arguments = args,
-            RedirectStandardError = true,
-            RedirectStandardOutput = true,
-            UseShellExecute = false,
-            CreateNoWindow = true,
-        };
-        using var proc = Process.Start(psi)
-            ?? throw new InvalidOperationException("Could not start ffmpeg for audio extract.");
-        var err = await proc.StandardError.ReadToEndAsync(ct);
-        await proc.WaitForExitAsync(ct);
-        if (proc.ExitCode != 0)
-        {
-            _log.LogWarning("ffmpeg audio extract exit {Code}: {Err}",
-                proc.ExitCode, err.Length > 400 ? err[..400] : err);
-            throw new InvalidOperationException(
-                $"ffmpeg failed to extract audio (exit {proc.ExitCode}).");
-        }
+        _ = videoPath;
+        _ = mp3Path;
+        _ = ct;
+        throw new InvalidOperationException(
+            "Voice preview audio extract used native ffmpeg, which was removed. " +
+            "Generate a short clip and play it instead.");
     }
 
     /// <summary>Test hook for progress percent parsing.</summary>

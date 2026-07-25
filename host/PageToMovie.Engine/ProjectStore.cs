@@ -2432,7 +2432,7 @@ public sealed class ProjectStore
     }
 
     /// <summary>
-    /// Multi-scene stitched preview built by <see cref="FfmpegRemuxService.RebuildPreviewAsync"/>
+    /// Multi-scene stitched preview path (legacy; play uses browser stitch)
     /// (assets/movie_preview.mp4). Null if missing/empty.
     /// </summary>
     public string? ResolvePreviewMoviePath(string projectId)
@@ -3056,7 +3056,7 @@ public sealed class ProjectStore
             return result;
         }
 
-        var manifestPath = FfmpegRemuxService.WipSourcesManifestPath(wipFullPath);
+        var manifestPath = ClipFileNaming.WipSourcesManifestPath(wipFullPath);
         if (bpMtime is DateTime bpm && File.Exists(manifestPath))
         {
             try
@@ -3182,10 +3182,10 @@ public sealed class ProjectStore
         if (maxClipMtime > new FileInfo(composite).LastWriteTimeUtc.AddSeconds(1))
             return true;
 
-        var manifestPath = FfmpegRemuxService.SceneSourcesManifestPath(composite);
+        var manifestPath = ClipFileNaming.SceneSourcesManifestPath(composite);
         var remuxOut = Path.Combine(videoDir, $"scene_{sceneNum:D2}.mp4");
         if (!File.Exists(manifestPath) && File.Exists(remuxOut))
-            manifestPath = FfmpegRemuxService.SceneSourcesManifestPath(remuxOut);
+            manifestPath = ClipFileNaming.SceneSourcesManifestPath(remuxOut);
 
         // No strict manifest → treat as dirty (old remux may have concat'd .native + orphans)
         if (!File.Exists(manifestPath))
@@ -3232,7 +3232,7 @@ public sealed class ProjectStore
             foreach (var fi in files.OrderBy(f => f.Name, StringComparer.OrdinalIgnoreCase))
             {
                 var name = fi.Name;
-                if (!FfmpegRemuxService.IsExactClipFileName(name)) continue;
+                if (!ClipFileNaming.IsExactClipFileName(name)) continue;
                 if (allowed is { Count: > 0 })
                 {
                     if (!int.TryParse(name.AsSpan(14, 2), out var cn) || !allowed.Contains(cn))
@@ -3334,7 +3334,7 @@ public sealed class ProjectStore
         foreach (var fi in new DirectoryInfo(videoDir).EnumerateFiles("scene_*_clip_*.mp4"))
         {
             var name = fi.Name;
-            if (!FfmpegRemuxService.IsExactClipFileName(name)) continue;
+            if (!ClipFileNaming.IsExactClipFileName(name)) continue;
             if (!int.TryParse(name.AsSpan(6, 2), out var sn) || sn <= 0) continue;
             if (fi.Length < 1024) continue;
             if (!clipsByScene.TryGetValue(sn, out var list))
@@ -3385,7 +3385,7 @@ public sealed class ProjectStore
             }
         }
 
-        return FfmpegRemuxService.ListWipSourceFiles(videoDir);
+        return ClipFileNaming.ListWipSourceFiles(videoDir);
     }
 
     /// <summary>Full path for WIP file from config (may not exist yet).</summary>
@@ -3412,7 +3412,7 @@ public sealed class ProjectStore
     /// </summary>
     private static string? CompareWipSourcesManifest(string wipPath, IReadOnlyList<string> currentSources)
     {
-        var manifestPath = FfmpegRemuxService.WipSourcesManifestPath(wipPath);
+        var manifestPath = ClipFileNaming.WipSourcesManifestPath(wipPath);
         if (!File.Exists(manifestPath))
             return null; // caller uses mtime fallback
 

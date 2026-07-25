@@ -1,32 +1,22 @@
 using System.Collections.Concurrent;
-using System.Diagnostics;
 using System.Text.Json;
-using System.Text.RegularExpressions;
-using PageToMovie.Core.Options;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using PageToMovie.Core.Options;
 
 namespace PageToMovie.Engine;
 
 /// <summary>
-/// Probe media duration via ffmpeg -i (cached by path + mtime + size).
-/// Also reads totalDurationSeconds from *.sources.json when present.
+/// Probe media duration via MP4 box parse and duration sidecars (no native ffmpeg).
 /// </summary>
 public sealed class MediaDurationProbe
 {
-    private static readonly Regex DurationRe = new(
-        @"Duration:\s*(\d{1,2}):(\d{2}):(\d{2}(?:\.\d+)?)",
-        RegexOptions.IgnoreCase | RegexOptions.Compiled);
-
     private readonly ConcurrentDictionary<string, (long Ticks, long Length, double Sec)> _cache = new();
-    private readonly PageToMovieOptions _opts;
     private readonly ILogger<MediaDurationProbe> _log;
-    private string? _ffmpeg;
-    private readonly object _ffmpegLock = new();
 
     public MediaDurationProbe(IOptions<PageToMovieOptions> opts, ILogger<MediaDurationProbe> log)
     {
-        _opts = opts.Value;
+        _ = opts;
         _log = log;
     }
 
@@ -47,7 +37,6 @@ public sealed class MediaDurationProbe
                 hit.Length == fi.Length)
                 return hit.Sec;
 
-            // Prefer duration written at remux time
             var fromManifest = TryReadManifestDuration(mediaPath);
             if (fromManifest is > 0)
             {
@@ -55,27 +44,15 @@ public sealed class MediaDurationProbe
                 return fromManifest;
             }
 
-            // Prefer pure MP4 box parse (no process). Native ffmpeg only when UseNativeFfmpeg.
             var fromMp4 = Mp4DurationReader.TryReadSeconds(fi.FullName);
             if (fromMp4 is > 0)
             {
                 _cache[key] = (fi.LastWriteTimeUtc.Ticks, fi.Length, fromMp4.Value);
                 return fromMp4;
             }
-
-            if (_opts.UseNativeFfmpeg)
-            {
-                var probed = ProbeWithFfmpeg(fi.FullName);
-                if (probed is > 0)
-                {
-                    _cache[key] = (fi.LastWriteTimeUtc.Ticks, fi.Length, probed.Value);
-                    return probed;
-                }
-            }
         }
         catch (Exception ex)
         {
-            // CA1873: skip formatting when debug logging is off
             if (_log.IsEnabled(LogLevel.Debug))
                 _log.LogDebug(ex, "Duration probe failed for {Path}", mediaPath);
         }
@@ -83,9 +60,6 @@ public sealed class MediaDurationProbe
         return null;
     }
 
-    /// <summary>
-    /// Actual scene length: composite if present, else sum of exact on-disk clips for that scene.
-    /// </summary>
     public double? GetSceneActualDurationSeconds(
         string? compositePath,
         IEnumerable<string> exactClipPaths)
@@ -133,7 +107,6 @@ public sealed class MediaDurationProbe
 
     private static double? TryReadManifestDuration(string mediaPath)
     {
-        // scene_01.mp4.sources.json may include totalDurationSeconds
         foreach (var candidate in new[]
                  {
                      mediaPath + ".sources.json",
@@ -143,7 +116,6 @@ public sealed class MediaDurationProbe
             if (!File.Exists(candidate)) continue;
             try
             {
-                // Sidecars are tiny; ReadAllBytes avoids encoding work
                 using var doc = JsonDocument.Parse(File.ReadAllBytes(candidate));
                 var root = doc.RootElement;
                 if (root.TryGetProperty("totalDurationSeconds", out var t) && t.TryGetDouble(out var td) && td > 0)
@@ -157,48 +129,14 @@ public sealed class MediaDurationProbe
         return null;
     }
 
-    private double? ProbeWithFfmpeg(string fullPath)
-    {
-        var ffmpeg = ResolveFfmpeg();
-        if (string.IsNullOrWhiteSpace(ffmpeg)) return null;
-
-        try
-        {
-            var psi = new ProcessStartInfo
-            {
-                FileName = ffmpeg,
-                Arguments = $"-hide_banner -i \"{fullPath}\"",
-                RedirectStandardError = true,
-                RedirectStandardOutput = true,
-                UseShellExecute = false,
-                CreateNoWindow = true,
-            };
-            using var p = Process.Start(psi);
-            if (p is null) return null;
-            var err = p.StandardError.ReadToEnd();
-            _ = p.StandardOutput.ReadToEnd();
-            if (!p.WaitForExit(12_000))
-            {
-                try { p.Kill(entireProcessTree: true); } catch { /* ignore */ }
-                return null;
-            }
-
-            return TryParseFfmpegDurationLine(err);
-        }
-        catch (Exception ex)
-        {
-            _log.LogDebug(ex, "ffmpeg duration probe failed");
-            return null;
-        }
-    }
-
-    /// <summary>
-    /// Parse ffmpeg banner "Duration: HH:MM:SS.xx" using invariant culture (testable).
-    /// </summary>
+    /// <summary>Parse ffmpeg-style Duration line (kept for unit tests / log parsing).</summary>
     public static double? TryParseFfmpegDurationLine(string? ffmpegStderrOrLine)
     {
         if (string.IsNullOrWhiteSpace(ffmpegStderrOrLine)) return null;
-        var m = DurationRe.Match(ffmpegStderrOrLine);
+        var m = System.Text.RegularExpressions.Regex.Match(
+            ffmpegStderrOrLine,
+            @"Duration:\s*(\d{1,2}):(\d{2}):(\d{2}(?:\.\d+)?)",
+            System.Text.RegularExpressions.RegexOptions.IgnoreCase);
         if (!m.Success) return null;
         try
         {
@@ -212,45 +150,6 @@ public sealed class MediaDurationProbe
         catch
         {
             return null;
-        }
-    }
-
-    private string ResolveFfmpeg()
-    {
-        if (_ffmpeg is not null) return _ffmpeg;
-        lock (_ffmpegLock)
-        {
-            if (_ffmpeg is not null) return _ffmpeg;
-
-            var candidates = new List<string>();
-            if (!string.IsNullOrWhiteSpace(_opts.FfmpegPath) && File.Exists(_opts.FfmpegPath))
-                candidates.Add(Path.GetFullPath(_opts.FfmpegPath!));
-
-            foreach (var root in new[]
-                     {
-                         AppContext.BaseDirectory,
-                         Path.GetDirectoryName(typeof(MediaDurationProbe).Assembly.Location) ?? "",
-                     }.Where(r => r.Length > 0))
-            {
-                candidates.Add(Path.Combine(root, "Resources", "ffmpeg.exe"));
-                candidates.Add(Path.Combine(root, "ffmpeg.exe"));
-            }
-
-            foreach (var c in candidates)
-            {
-                try
-                {
-                    if (File.Exists(c) && new FileInfo(c).Length > 100_000)
-                    {
-                        _ffmpeg = Path.GetFullPath(c);
-                        return _ffmpeg;
-                    }
-                }
-                catch { /* ignore */ }
-            }
-
-            _ffmpeg = "ffmpeg";
-            return _ffmpeg;
         }
     }
 }

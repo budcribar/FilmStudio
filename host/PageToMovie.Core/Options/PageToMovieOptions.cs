@@ -19,21 +19,6 @@ public sealed class PageToMovieOptions
     public int GrokPollSeconds { get; set; } = 5;
     public int GrokTimeoutSeconds { get; set; } = 900;
 
-    /// <summary>
-    /// ffmpeg executable for optional server-side remux / silence-trim / extend-tail.
-    /// Empty → auto: NuGet Soenneker Resources/ffmpeg.exe, then PATH.
-    /// Ignored when <see cref="UseNativeFfmpeg"/> is false (default) — processing is client wasm.
-    /// </summary>
-    public string FfmpegPath { get; set; } = "";
-
-    /// <summary>
-    /// When false (default), the API never spawns a native <c>ffmpeg</c> process.
-    /// Play/stitch/silence-trim run in the browser via ffmpeg.wasm; gen skips server-side
-    /// video-extend tail split (uses locked-ref fresh gen instead).
-    /// Set true only for local debugging of server remux jobs.
-    /// </summary>
-    public bool UseNativeFfmpeg { get; set; }
-
     /// <summary>When true, DI registers fake Grok clients (no xAI spend).</summary>
     public bool UseFakes { get; set; }
 

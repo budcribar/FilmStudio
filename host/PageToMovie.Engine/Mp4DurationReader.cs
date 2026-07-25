@@ -4,7 +4,7 @@ namespace PageToMovie.Engine;
 
 /// <summary>
 /// Read movie duration from MP4/ISO-BMFF <c>mvhd</c> without spawning ffmpeg.
-/// Used when <see cref="PageToMovie.Core.Options.PageToMovieOptions.UseNativeFfmpeg"/> is false.
+/// No native ffmpeg — pure ISO-BMFF parse.
 /// </summary>
 public static class Mp4DurationReader
 {

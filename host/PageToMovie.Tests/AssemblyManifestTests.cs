@@ -50,8 +50,8 @@ public class AssemblyManifestTests
     [Fact]
     public void IsExactClipFileName_rejects_native_sidecars()
     {
-        Assert.True(FfmpegRemuxService.IsExactClipFileName("scene_01_clip_02.mp4"));
-        Assert.False(FfmpegRemuxService.IsExactClipFileName("scene_01_clip_02.mp4.native.mp4"));
-        Assert.False(FfmpegRemuxService.IsExactClipFileName("scene_01.mp4"));
+        Assert.True(ClipFileNaming.IsExactClipFileName("scene_01_clip_02.mp4"));
+        Assert.False(ClipFileNaming.IsExactClipFileName("scene_01_clip_02.mp4.native.mp4"));
+        Assert.False(ClipFileNaming.IsExactClipFileName("scene_01.mp4"));
     }
 }
