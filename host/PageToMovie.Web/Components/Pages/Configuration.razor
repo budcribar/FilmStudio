@@ -151,12 +151,18 @@ else
                                 @(p.HasPersonalKey ? "Replace personal key" : "Add personal key")
                             </label>
                             <div class="input-group input-group-sm mb-2">
-                                <input type="password"
-                                       class="form-control"
+                                <input type="@(IsKeyVisible(p.ProviderId) ? "text" : "password")"
+                                       class="form-control font-monospace"
                                        placeholder="@ProviderPlaceholder(p.ProviderId)"
                                        value="@GetKeyInput(p.ProviderId)"
                                        @oninput="e => SetKeyInput(p.ProviderId, e.Value?.ToString())"
                                        disabled="@(_busy || _apiKeySaving)" />
+                                <button class="btn btn-outline-secondary"
+                                        type="button"
+                                        title="@(IsKeyVisible(p.ProviderId) ? "Hide key" : "Show key")"
+                                        @onclick="() => ToggleKeyVisible(p.ProviderId)">
+                                    @(IsKeyVisible(p.ProviderId) ? "🙈" : "👁️")
+                                </button>
                                 <button class="btn btn-primary"
                                         type="button"
                                         disabled="@(_busy || _apiKeySaving || string.IsNullOrWhiteSpace(GetKeyInput(p.ProviderId)))"
@@ -544,6 +550,16 @@ else
         ["gemini"] = null,
         ["anthropic"] = null,
     };
+    private readonly HashSet<string> _visibleKeyProviders = new(StringComparer.OrdinalIgnoreCase);
+
+    private bool IsKeyVisible(string providerId) => _visibleKeyProviders.Contains(providerId);
+
+    private void ToggleKeyVisible(string providerId)
+    {
+        if (!IsKeyVisible(providerId)) _visibleKeyProviders.Add(providerId);
+        else _visibleKeyProviders.Remove(providerId);
+    }
+
     private bool _apiKeySaving;
     private string? _savingProviderId;
     private string? _apiKeyFeedback;
