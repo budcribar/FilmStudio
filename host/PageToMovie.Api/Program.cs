@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Text.Json;
+using PageToMovie.Api;
 using PageToMovie.Api.Auth;
 using PageToMovie.Api.Hubs;
 using PageToMovie.Api.Services;
