@@ -880,7 +880,7 @@ else
                     <p class="mb-0">
                         Delete <code>S@(delTarget.Scene.ToString("D2"))C@(delTarget.Clip.ToString("D2"))</code>?
                         This removes the video file and its shot-plan entry — cannot be undone.
-                        Rebuild the scene composite / WIP afterward to drop it from the assembled movie.
+                        Play scene / Play WIP afterward to drop it from the assembled cut.
                     </p>
                 </div>
                 <div class="modal-footer py-2">
@@ -2009,7 +2009,7 @@ else
 
         if (!compositeOk)
         {
-            _error = $"No composite for S{sn:D2} — generate clips or rebuild scene first";
+            _error = $"No composite for S{sn:D2} — generate clips first, then Play scene";
             return;
         }
 
@@ -2223,7 +2223,7 @@ else
                 _selectedClip = null;
                 _clip = null;
             }
-            _message = $"Deleted S{target.Scene:D2}C{target.Clip:D2} — rebuild the scene composite / WIP to drop it from the assembled movie";
+            _message = $"Deleted S{target.Scene:D2}C{target.Clip:D2} — Play scene / Play WIP to refresh the assembled cut";
             await ReloadListAsync();
         }
         catch (Exception ex) { _error = ex.Message; }

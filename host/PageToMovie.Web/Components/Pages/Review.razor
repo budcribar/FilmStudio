@@ -24,13 +24,13 @@
 else
 {
 <p class="text-muted mb-1">
-    Mark clips pass/fail, approve scenes, rebuild scene videos, and rebuild the full movie draft.
+    Mark clips pass/fail, approve scenes, and rebuild the full movie draft.
 </p>
 <p class="small text-muted">
-    <strong>Assembly gate:</strong> auto-review <em>fail</em> and human <em>fail</em> clips are excluded from scene remux / WIP
-    until you Pass with an explicit override note (not just “pass”).
-    <strong>Rebuild scene</strong> combines eligible clips only.
-    <strong>Rebuild movie draft</strong> re-composites scenes that still have blocked clips, then stitches WIP.
+    <strong>Assembly gate:</strong> auto-review <em>fail</em> and human <em>fail</em> clips are excluded from remux / WIP
+    until you Pass with an override note.
+    <strong>Play scene</strong> remuxes that scene when needed.
+    <strong>Play WIP</strong> refreshes stale scenes and rebuilds the full cut when clips have changed.
 </p>
 
 @if (!string.IsNullOrEmpty(_error))
@@ -42,86 +42,28 @@ else
     <div class="alert alert-info">@_message</div>
 }
 
-@if (_artifactMapLoaded)
-{
-    <div class="alert @(_artifactReady ? "alert-success" : "alert-warning") py-2 small mb-3" data-testid="review-artifacts-status">
-        <strong>Manual final review map:</strong>
-        @if (_artifactReady)
-        {
-            <span>core artifacts present — open project folder + <code>ARTIFACTS.md</code> in Claude.</span>
-        }
-        else
-        {
-            <span>missing: @string.Join(", ", _artifactMissing)</span>
-        }
-        <span class="text-muted ms-1">(writes <code>ARTIFACTS.md</code>, <code>artifact_index.json</code>, <code>telemetry/</code>)</span>
-    </div>
-}
-
-<div class="row mb-3 g-2 align-items-end">
-    <div class="col-md-4">
-        <label class="form-label">Project</label>
-        <select class="form-select" @bind="_projectId" @bind:after="LoadAsync" disabled="@_busy">
-            @foreach (var p in _projectIds)
-            {
-                <option value="@p">@p</option>
-            }
-        </select>
-    </div>
-    <div class="col-md-8 d-flex flex-wrap gap-2">
-        <button class="btn btn-outline-secondary" data-testid="review-reload" disabled="@_busy" @onclick="LoadAsync">Reload</button>
-        <button class="btn btn-outline-secondary" data-testid="review-artifacts-map"
-                disabled="@_busy"
-                title="Write ARTIFACTS.md + artifact_index.json + telemetry snapshots for manual Claude review of this project folder"
-                @onclick="RefreshArtifactMapAsync">
-            Refresh artifact map
-        </button>
+<div class="d-flex flex-wrap gap-2 mb-3">
         <button class="btn btn-outline-dark" data-testid="review-auto-all"
                 disabled="@(_busy || JobRunning)"
                 title="AI auto-review every on-disk clip that lacks a draft; updates assets/review/index.json + durable frames"
                 @onclick="StartBatchAutoReviewAsync">
             Auto-review all
         </button>
-        <button class="btn btn-outline-primary" data-testid="review-rebuild-wip" disabled="@(_busy || JobRunning || !_wipCanBuild)" @onclick="RebuildWipAsync"
-                title="FFmpeg: refresh stale scene composites if needed, then stitch WIP">
-            Rebuild WIP movie
-        </button>
         <button class="btn btn-success" data-testid="review-play-wip" disabled="@(_busy || JobRunning || (!_wipExists && !_wipCanBuild))"
                 @onclick="PlayWipAsync"
                 title="@WipPlayTitle">
-            @(_showWipPlayer && _wipExists && !_wipStale ? "Hide WIP player" : _wipStale || !_wipExists ? "▶ Play WIP (refresh)" : "▶ Play WIP")
+            @(_showWipPlayer && _wipExists && !_wipStale ? "Hide" : "▶ Play")
         </button>
-        <button class="btn btn-outline-success" data-testid="review-export-disk" disabled="@(_busy || JobRunning || !_wipExists)"
-                @onclick="ExportMovieToDiskAsync"
-                title="Directly save WIP movie to your local disk via File System Access API (Zero Server CPU)">
-            💾 Save Movie to Disk
+        <button class="btn btn-outline-primary" data-testid="review-save"
+                disabled="@(_busy || JobRunning || !_wipExists || _wipStale)"
+                @onclick="OpenSaveDialog"
+                title="@(_wipExists && !_wipStale ? "Download or upload to YouTube" : "Play first (rebuilds if clips changed)")">
+            Save…
         </button>
-        <button class="btn btn-outline-info" data-testid="review-connect-folder" disabled="@_busy"
-                @onclick="SelectOutputFolderAsync"
-                title="Select a local folder once for automatic background saves of all generated movie files">
-            📁 @(string.IsNullOrEmpty(_exportFolderName) ? "Connect Output Folder" : $"Folder: {_exportFolderName}")
-        </button>
-        @if (_youTubeStatus?.Connected == true)
-        {
-            <button class="btn btn-outline-danger" data-testid="review-upload-youtube" disabled="@(_busy || JobRunning || !_wipExists)"
-                    @onclick="OpenYouTubeUploadDialog"
-                    title="@(_wipExists ? "Upload the current WIP movie to YouTube" : "Rebuild/play WIP first")">
-                Upload to YouTube
-            </button>
-        }
-        else if (Session.IsAdmin)
-        {
-            <button class="btn btn-outline-secondary" data-testid="review-connect-youtube" disabled="@(_busy || _youTubeStatus?.Configured != true)"
-                    @onclick="ConnectYouTubeAsync"
-                    title="@(_youTubeStatus?.Configured == true ? "Connect a YouTube channel to enable uploads" : "Set PageToMovie:YouTube:ClientId/ClientSecret/RedirectUri first")">
-                Connect YouTube
-            </button>
-        }
         @if (JobRunning)
         {
             <button class="btn btn-outline-danger" disabled="@_busy" @onclick="CancelAsync">Cancel job</button>
         }
-    </div>
 </div>
 
 @if (_youTubeUpload is not null)
@@ -136,39 +78,106 @@ else
     </p>
 }
 
-@if (_showYouTubeUploadDialog)
+@if (_showSaveDialog)
 {
     <div class="modal fade show d-block" tabindex="-1" role="dialog" aria-modal="true"
-         style="background:rgba(0,0,0,.45);" @onclick="CloseYouTubeUploadDialog">
+         style="background:rgba(0,0,0,.45);" @onclick="CloseSaveDialog">
         <div class="modal-dialog modal-dialog-centered" @onclick:stopPropagation="true">
             <div class="modal-content">
                 <div class="modal-header py-2">
-                    <h5 class="modal-title">Upload WIP to YouTube</h5>
-                    <button type="button" class="btn-close" aria-label="Close" @onclick="CloseYouTubeUploadDialog"></button>
+                    <h5 class="modal-title">Save movie</h5>
+                    <button type="button" class="btn-close" aria-label="Close" @onclick="CloseSaveDialog"></button>
                 </div>
                 <div class="modal-body">
-                    <div class="mb-2">
-                        <label class="form-label small">Title</label>
-                        <input class="form-control form-control-sm" @bind="_youTubeTitle" maxlength="100" />
+                    <div class="mb-3">
+                        <label class="form-label small mb-1">Where</label>
+                        <div class="d-flex flex-column gap-2">
+                            <label class="form-check mb-0">
+                                <input class="form-check-input" type="radio" name="saveDest" value="download"
+                                       checked="@(_saveDestination == "download")"
+                                       @onchange="@(() => _saveDestination = "download")" />
+                                <span class="form-check-label">Download to this computer</span>
+                            </label>
+                            <label class="form-check mb-0">
+                                <input class="form-check-input" type="radio" name="saveDest" value="link"
+                                       checked="@(_saveDestination == "link")"
+                                       @onchange="OnShareLinkSelectedAsync" />
+                                <span class="form-check-label">Copy share link</span>
+                            </label>
+                            <label class="form-check mb-0">
+                                <input class="form-check-input" type="radio" name="saveDest" value="youtube"
+                                       checked="@(_saveDestination == "youtube")"
+                                       disabled="@(_youTubeStatus?.Connected != true)"
+                                       @onchange="@(() => _saveDestination = "youtube")" />
+                                <span class="form-check-label">
+                                    Upload to YouTube
+                                    @if (_youTubeStatus?.Connected != true)
+                                    {
+                                        <span class="text-muted">(not connected)</span>
+                                    }
+                                </span>
+                            </label>
+                        </div>
+                        @if (_saveDestination == "link")
+                        {
+                            <div class="mt-2">
+                                <label class="form-label small mb-0">Link</label>
+                                <input class="form-control form-control-sm font-monospace user-select-all"
+                                       readonly value="@(_wipShareLink.Length > 0 ? _wipShareLink : "(create on Copy link)")"
+                                       onclick="this.select()" />
+                                <div class="form-text">
+                                    Public stream link (tokenized). Direct project URLs require sign-in.
+                                    Default expiry 30 days.
+                                </div>
+                            </div>
+                        }
+                        @if (_youTubeStatus?.Connected != true && Session.IsAdmin)
+                        {
+                            <div class="form-text">
+                                <button type="button" class="btn btn-link btn-sm p-0 align-baseline"
+                                        data-testid="review-connect-youtube"
+                                        disabled="@(_busy || _youTubeStatus?.Configured != true)"
+                                        @onclick="ConnectYouTubeAsync">
+                                    Connect YouTube channel
+                                </button>
+                                @if (_youTubeStatus?.Configured != true)
+                                {
+                                    <span class="text-muted"> — configure YouTube client id/secret first</span>
+                                }
+                            </div>
+                        }
                     </div>
-                    <div class="mb-2">
-                        <label class="form-label small">Description</label>
-                        <textarea class="form-control form-control-sm" rows="3" @bind="_youTubeDescription"></textarea>
-                    </div>
-                    <div class="mb-0">
-                        <label class="form-label small">Privacy</label>
-                        <select class="form-select form-select-sm" @bind="_youTubePrivacy">
-                            <option value="unlisted">Unlisted (link-only)</option>
-                            <option value="private">Private</option>
-                            <option value="public">Public</option>
-                        </select>
-                    </div>
+                    @if (_saveDestination == "youtube" && _youTubeStatus?.Connected == true)
+                    {
+                        <div class="mb-2">
+                            <label class="form-label small">Title</label>
+                            <input class="form-control form-control-sm" @bind="_youTubeTitle" maxlength="100" />
+                        </div>
+                        <div class="mb-2">
+                            <label class="form-label small">Description</label>
+                            <textarea class="form-control form-control-sm" rows="3" @bind="_youTubeDescription"></textarea>
+                        </div>
+                        <div class="mb-0">
+                            <label class="form-label small">Privacy</label>
+                            <select class="form-select form-select-sm" @bind="_youTubePrivacy">
+                                <option value="unlisted">Unlisted (link-only)</option>
+                                <option value="private">Private</option>
+                                <option value="public">Public</option>
+                            </select>
+                        </div>
+                    }
                 </div>
                 <div class="modal-footer py-2">
-                    <button type="button" class="btn btn-sm btn-secondary" @onclick="CloseYouTubeUploadDialog">Cancel</button>
-                    <button type="button" class="btn btn-sm btn-danger" data-testid="review-upload-youtube-confirm"
-                            disabled="@_busy" @onclick="StartYouTubeUploadAsync">
-                        Upload
+                    <button type="button" class="btn btn-sm btn-secondary" @onclick="CloseSaveDialog">Cancel</button>
+                    <button type="button" class="btn btn-sm btn-primary" data-testid="review-save-confirm"
+                            disabled="@(_busy || (_saveDestination == "youtube" && _youTubeStatus?.Connected != true))"
+                            @onclick="ConfirmSaveAsync">
+                        @(_saveDestination switch
+                        {
+                            "youtube" => "Upload",
+                            "link" => "Copy link",
+                            _ => "Download",
+                        })
                     </button>
                 </div>
             </div>
@@ -209,7 +218,7 @@ else
                 Your browser does not support HTML5 video.
             </video>
             <p class="small text-muted mb-0 mt-2">
-                Full cut of scene composites. <strong>Play WIP</strong> refreshes automatically if out of date (does not re-gen clips).
+                Full cut of scene composites. Rebuilds automatically when clips/scenes change (Play WIP).
                 <a href="@Engine.WipMovieUrl(_projectId)" target="_blank" rel="noopener">Open in new tab</a>
             </p>
         </div>
@@ -236,7 +245,6 @@ else
                 Your browser does not support HTML5 video.
             </video>
             <p class="small text-muted mb-0 mt-2">
-                If playback fails, run <strong>Rebuild scene</strong> first (needs clips on disk).
                 <a href="@Engine.CompositeVideoUrl(_projectId, playSn)" target="_blank" rel="noopener">Open in new tab</a>
             </p>
         </div>
@@ -263,7 +271,7 @@ else
             </video>
             <p class="small text-muted mb-0 mt-2">
                 <a href="@Engine.ClipVideoUrl(_projectId, clipSn, clipCn)" target="_blank" rel="noopener">Open in new tab</a>
-                · after regen, rebuild the scene composite if you want the updated cut
+                · after regen, <strong>Play scene</strong> remuxes the composite automatically
             </p>
         </div>
     </div>
@@ -313,7 +321,7 @@ else
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <span>Scenes &amp; clips</span>
-                <span class="small text-muted fw-normal">Play / rebuild = scene composite · WIP is separate</span>
+                <span class="small text-muted fw-normal">Play remuxes if needed · WIP is separate</span>
             </div>
             <div class="card-body p-0">
                 @if (_scenes.Count == 0)
@@ -326,24 +334,47 @@ else
                         <table class="table table-sm mb-0 align-middle">
                             <thead>
                                 <tr>
-                                    <th>Scene</th>
+                                    <th style="cursor:pointer; user-select:none;" @onclick='() => ToggleSceneSort("number")' title="Sort by scene number">
+                                        Scene @(_sceneSortBy == "number" ? (_sceneSortAsc ? "▲" : "▼") : "⇅")
+                                    </th>
                                     <th>Clips</th>
-                                    <th>On disk</th>
+                                    <th style="cursor:pointer; user-select:none;" @onclick='() => ToggleSceneSort("duration")' title="Sort by duration">
+                                        Dur @(_sceneSortBy == "duration" ? (_sceneSortAsc ? "▲" : "▼") : "⇅")
+                                    </th>
                                     <th>Composite</th>
                                     <th></th>
                                 </tr>
                             </thead>
                             <tbody>
-                                @foreach (var s in _scenes)
+                                @foreach (var s in SortedReviewScenes)
                                 {
                                     var sn = s.SceneNumber;
+                                    var clipsDone = s.ClipsComplete || (s.ClipCount > 0 && s.ClipsOnDisk >= s.ClipCount);
                                     <tr class="@(_selectedScene == sn ? "table-active" : "")">
-                                        <td>
-                                            <code>S@(sn.ToString("D2"))</code>
-                                            <div class="small text-muted">@(string.IsNullOrEmpty(s.Setting) ? "—" : s.Setting)</div>
+                                        <td class="text-nowrap">
+                                            <span class="badge @(clipsDone ? "bg-success text-white" : "bg-warning text-dark") px-2 py-1 rounded-pill"
+                                                  style="font-weight:600;cursor:pointer;"
+                                                  title="@(clipsDone ? "All clips on disk" : "Missing clips")"
+                                                  @onclick="() => SelectSceneAsync(sn)">
+                                                S@(sn.ToString("D2"))
+                                            </span>
+                                            <div class="small text-muted mt-1">@(string.IsNullOrEmpty(s.Setting) ? "—" : s.Setting)</div>
                                         </td>
-                                        <td>@s.ClipCount</td>
-                                        <td>@s.ClipsOnDisk</td>
+                                        <td class="small">@s.ClipsOnDisk/@s.ClipCount</td>
+                                        <td class="small">
+                                            @if (s.ActualDurationSeconds is double ad)
+                                            {
+                                                <span>@FormatClock(ad)</span>
+                                            }
+                                            else if (s.PlannedDurationSeconds is double pd)
+                                            {
+                                                <span class="text-muted">~@FormatClock(pd)</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="text-muted">—</span>
+                                            }
+                                        </td>
                                         <td>
                                             @if (s.CompositeExists)
                                             {
@@ -351,7 +382,7 @@ else
                                             }
                                             else if (s.ClipsOnDisk > 0)
                                             {
-                                                <span class="badge bg-warning text-dark">needs rebuild</span>
+                                                <span class="badge bg-warning text-dark">stale</span>
                                             }
                                             else
                                             {
@@ -362,19 +393,13 @@ else
                                             <div class="d-flex flex-wrap gap-1 justify-content-end">
                                                 <button class="btn btn-sm btn-success"
                                                         disabled="@(_busy || JobRunning || (s.ClipsOnDisk == 0 && !s.CompositeExists))"
-                                                        title="@(s.CompositeExists ? "Play scene (auto-remux if out of date)" : s.ClipsOnDisk > 0 ? "Remux clips then play" : "No clips on disk")"
+                                                        title="Play scene (auto-remux if out of date)"
                                                         @onclick="() => PlaySceneAsync(sn)">
                                                     ▶ Play
                                                 </button>
-                                                <button class="btn btn-sm btn-outline-primary"
-                                                        disabled="@(_busy || JobRunning || s.ClipsOnDisk == 0)"
-                                                        title="FFmpeg: concat this scene’s clips into scene composite (does not rebuild WIP)"
-                                                        @onclick="() => RebuildSceneAsync(sn)">
-                                                    Rebuild scene
-                                                </button>
                                                 <button class="btn btn-sm btn-outline-success"
                                                         disabled="@(_busy || JobRunning)"
-                                                        title="Mark approved and rebuild this scene’s composite"
+                                                        title="Mark approved and remux this scene’s composite"
                                                         @onclick="() => ApproveAsync(sn)">
                                                     Approve
                                                 </button>
@@ -405,12 +430,6 @@ else
                                 @onclick="() => PlaySceneAsync(sel)">
                             ▶ Play scene
                         </button>
-                        <button class="btn btn-sm btn-outline-primary"
-                                disabled="@(_busy || JobRunning || ClipCountOnDisk(sel) == 0)"
-                                title="Concat clips → scene composite only"
-                                @onclick="() => RebuildSceneAsync(sel)">
-                            Rebuild scene
-                        </button>
                     </div>
                 </div>
                 <div class="card-body">
@@ -431,16 +450,12 @@ else
                             var editing = _editKey == key;
                             <div class="border rounded p-2 small">
                                 <div class="d-flex flex-wrap align-items-center gap-2">
-                                    <code>C@(cn.ToString("D2"))</code>
-                                    · <span class="badge bg-light text-dark">@st</span>
-                                    @if (onDisk)
-                                    {
-                                        <span class="badge bg-success">disk</span>
-                                    }
-                                    else
-                                    {
-                                        <span class="badge bg-secondary">missing</span>
-                                    }
+                                    <span class="badge @(onDisk ? "bg-success text-white" : "bg-warning text-dark") px-2 py-1 rounded-pill"
+                                          style="font-weight:600;"
+                                          title="@(onDisk ? "On disk" : "Not on disk yet")">
+                                        C@(cn.ToString("D2"))
+                                    </span>
+                                    <span class="badge bg-light text-dark">@st</span>
                                     @if (draft is not null && !editing)
                                     {
                                         <span class="badge bg-info text-dark">AI: @draft.Suggestion</span>
@@ -476,16 +491,10 @@ else
                                                 disabled="@(_busy || JobRunning || !HasIncludedEdits())"
                                                 title="Save accepted edits and re-generate this clip"
                                                 @onclick="() => ApplyAndRegenAsync(sel, cn)">
-                                            Regen
+                                            Apply + regen
                                         </button>
                                         <button class="btn btn-outline-secondary" disabled="@_busy"
                                                 @onclick="CloseApplyPanel">Cancel</button>
-                                    }
-                                    else
-                                    {
-                                        <button class="btn btn-outline-warning" data-testid="@($"review-regen-{sel}-{cn}")" disabled="@(_busy || JobRunning)"
-                                                title="Force re-generate this clip (same plan)"
-                                                @onclick="() => RegenClipAsync(sel, cn)">Regen</button>
                                     }
                                     <button class="btn btn-outline-success" data-testid="@($"review-pass-{sel}-{cn}")" disabled="@_busy"
                                             @onclick="() => ReviewAsync(sel, cn, passStatus)">Pass</button>
@@ -535,7 +544,7 @@ else
                                         }
                                         @if (_editRows.Count == 0)
                                         {
-                                            <p class="text-muted mb-1">No field changes suggested. You can Pass or Regen as-is.</p>
+                                            <p class="text-muted mb-1">No field changes suggested. You can Pass or Apply + regen as-is.</p>
                                         }
                                         @foreach (var row in _editRows)
                                         {
@@ -565,7 +574,7 @@ else
                                             </div>
                                         }
                                         <p class="form-text mb-0">
-                                            Check what to keep, edit text if needed, then <strong>Regen</strong> saves and re-generates this clip.
+                                            Check what to keep, edit text if needed, then <strong>Apply + regen</strong> saves and re-generates this clip.
                                         </p>
                                     </div>
                                 }
@@ -574,8 +583,8 @@ else
                     </div>
                     <p class="small text-muted mb-0 mt-3">
                         <strong>Review</strong> drafts AI feedback (includes previous clip end when C2+).
-                        <strong>Apply suggestions</strong> shows edits; <strong>Regen</strong> writes them and re-gens.
-                        Then <strong>Rebuild scene</strong> / WIP as needed.
+                        <strong>Apply suggestions</strong> shows edits; <strong>Apply + regen</strong> writes them and re-gens.
+                        <strong>Play scene</strong> remuxes the composite when needed; <strong>Play WIP</strong> rebuilds the full cut when clips changed.
                     </p>
                 </div>
             </div>
@@ -642,8 +651,47 @@ else
     private string? _error;
     private string? _message;
     private string _projectId = "";
-    private List<string> _projectIds = new();
     private List<SceneSummary> _scenes = new();
+    private string _sceneSortBy = "number"; // "number" | "duration"
+    private bool _sceneSortAsc = true;
+
+    private void ToggleSceneSort(string column)
+    {
+        if (_sceneSortBy == column)
+            _sceneSortAsc = !_sceneSortAsc;
+        else
+        {
+            _sceneSortBy = column;
+            _sceneSortAsc = true;
+        }
+    }
+
+    private IEnumerable<SceneSummary> SortedReviewScenes
+    {
+        get
+        {
+            return _sceneSortBy switch
+            {
+                "duration" => _sceneSortAsc
+                    ? _scenes.OrderBy(s => s.ActualDurationSeconds ?? s.PlannedDurationSeconds ?? 0)
+                    : _scenes.OrderByDescending(s => s.ActualDurationSeconds ?? s.PlannedDurationSeconds ?? 0),
+                _ => _sceneSortAsc
+                    ? _scenes.OrderBy(s => s.SceneNumber)
+                    : _scenes.OrderByDescending(s => s.SceneNumber),
+            };
+        }
+    }
+
+    private static string FormatClock(double seconds)
+    {
+        if (seconds < 0 || double.IsNaN(seconds) || double.IsInfinity(seconds))
+            return "—";
+        var t = TimeSpan.FromSeconds(seconds);
+        return t.TotalHours >= 1
+            ? $"{(int)t.TotalHours}:{t.Minutes:D2}:{t.Seconds:D2}"
+            : $"{t.Minutes}:{t.Seconds:D2}";
+    }
+
     private SceneDetail? _selectedDetail;
     private bool _wipExists;
     private bool _wipStale;
@@ -658,7 +706,8 @@ else
     private long _wipVideoKey;
     private YouTubeStatusDto? _youTubeStatus;
     private YouTubeUploadInfo? _youTubeUpload;
-    private bool _showYouTubeUploadDialog;
+    private bool _showSaveDialog;
+    private string _saveDestination = "download"; // "download" | "youtube"
     private string _youTubeTitle = "";
     private string _youTubeDescription = "";
     private string _youTubePrivacy = "unlisted";
@@ -714,21 +763,9 @@ else
         HandleYouTubeOAuthRedirect();
         try
         {
-            var projs = await Engine.GetProjectsAsync();
-            _projectIds = projs?.Projects.Select(p => p.Id ?? "").Where(s => s.Length > 0).ToList()
-                          ?? new List<string>();
-            if (projs?.Active?.Id is { Length: > 0 } aid &&
-                _projectIds.Exists(id => string.Equals(id, aid, StringComparison.OrdinalIgnoreCase)))
-            {
-                _projectId = aid;
-                ActiveProject.Set(aid, projs.Active?.Label ?? projs.Active?.Title ?? aid);
-            }
-            else if (_projectIds.Count > 0)
-                _projectId = _projectIds[0];
-            else
-                _projectId = "";
-
+            try { await Session.EnsureHydratedAsync(); } catch { /* optional */ }
             await ActiveProject.RefreshReadinessAsync(Engine);
+            _projectId = ActiveProject.ProjectId ?? "";
             _gateChecked = true;
             if (string.IsNullOrEmpty(_projectId) || !ActiveProject.CanReview)
                 return;
@@ -840,7 +877,7 @@ else
                          snap.Scene is int genSn &&
                          snap.Clip is int genCn)
                 {
-                    _message = $"Clip S{genSn:D2}C{genCn:D2} gen finished — play it, then Rebuild scene if needed";
+                    _message = $"Clip S{genSn:D2}C{genCn:D2} gen finished — Play scene when you want the updated composite";
                     if (_selectedScene == genSn)
                         await LoadSelectedDetailAsync(genSn);
                 }
@@ -1188,29 +1225,6 @@ else
         finally { _busy = false; }
     }
 
-    private bool _artifactMapLoaded;
-    private bool _artifactReady;
-    private List<string> _artifactMissing = new();
-
-    private async Task RefreshArtifactMapAsync()
-    {
-        _busy = true;
-        _error = null;
-        _message = null;
-        try
-        {
-            var r = await Engine.RebuildArtifactIndexAsync(_projectId);
-            _artifactMapLoaded = true;
-            _artifactReady = r.ReadyForManualFinalReview;
-            _artifactMissing = r.MissingRequired ?? new List<string>();
-            _message = r.ReadyForManualFinalReview
-                ? "Artifact map updated — open projects/" + _projectId + "/ARTIFACTS.md for Claude."
-                : "Artifact map updated — still missing: " + string.Join(", ", _artifactMissing);
-        }
-        catch (Exception ex) { _error = ex.Message; }
-        finally { _busy = false; }
-    }
-
     private void OpenApplyPanel(int scene, int clip)
     {
         var draft = GetLocalDraft(scene, clip);
@@ -1296,62 +1310,10 @@ else
         try
         {
             await EnsureHubAsync();
-            // Approve logs + rebuild scene composite only (not full WIP)
+            // Approve logs + remux scene composite only (WIP rebuilds on Play WIP when needed)
             await Engine.ApproveSceneAsync(_projectId, scene, _note, remux: true, rebuildWip: false);
-            _message = $"Approved S{scene:D2} — rebuilding scene composite (not WIP)";
+            _message = $"Approved S{scene:D2} — remuxing scene composite";
             await SoftLoadAsync();
-            var jobs = await Engine.GetJobAsync();
-            _job = jobs?.Job;
-        }
-        catch (Exception ex) { _error = ex.Message; }
-        finally { _busy = false; }
-    }
-
-    /// <summary>FFmpeg concat clips → scene composite only. Does not rebuild WIP.</summary>
-    private async Task RebuildSceneAsync(int scene)
-    {
-        _busy = true;
-        _error = null;
-        try
-        {
-            await EnsureHubAsync();
-            await Engine.StartRemuxAsync(_projectId, scene, rebuildWip: false);
-            _message = $"Rebuilding S{scene:D2} scene composite (clips → composite; WIP unchanged)";
-            var jobs = await Engine.GetJobAsync();
-            _job = jobs?.Job;
-        }
-        catch (Exception ex) { _error = ex.Message; }
-        finally { _busy = false; }
-    }
-
-    /// <summary>FFmpeg: refresh stale scene composites + stitch WIP.</summary>
-    private async Task RebuildWipAsync()
-    {
-        _busy = true;
-        _error = null;
-        try
-        {
-            await EnsureHubAsync();
-            _playWipAfterRemux = true;
-            await Engine.StartRemuxAsync(_projectId, scene: null, rebuildWip: true, refreshStaleScenes: true);
-            _message = "Refreshing stale scenes + rebuilding WIP…";
-            var jobs = await Engine.GetJobAsync();
-            _job = jobs?.Job;
-        }
-        catch (Exception ex) { _error = ex.Message; _playWipAfterRemux = false; }
-        finally { _busy = false; }
-    }
-
-    private async Task RegenClipAsync(int scene, int clip)
-    {
-        _busy = true;
-        _error = null;
-        try
-        {
-            await EnsureHubAsync();
-            // Force re-gen this clip only (onlyMissing: false)
-            await Engine.StartSceneGenAsync(_projectId, scene, onlyMissing: false, clip: clip);
-            _message = $"Regenerating S{scene:D2}C{clip:D2}…";
             var jobs = await Engine.GetJobAsync();
             _job = jobs?.Job;
         }
@@ -1385,13 +1347,87 @@ else
         Nav.NavigateTo(uri.GetLeftPart(UriPartial.Path), replace: true);
     }
 
-    private void OpenYouTubeUploadDialog()
+    private void OpenSaveDialog()
     {
-        _youTubeTitle = string.IsNullOrWhiteSpace(_youTubeTitle) ? $"{_projectId} — WIP" : _youTubeTitle;
-        _showYouTubeUploadDialog = true;
+        _saveDestination = "download";
+        _wipShareLink = "";
+        if (string.IsNullOrWhiteSpace(_youTubeTitle))
+            _youTubeTitle = $"{_projectId} — WIP";
+        _showSaveDialog = true;
     }
 
-    private void CloseYouTubeUploadDialog() => _showYouTubeUploadDialog = false;
+    private void CloseSaveDialog() => _showSaveDialog = false;
+
+    /// <summary>Public share URL (tokenized). Empty until created for this dialog session.</summary>
+    private string _wipShareLink = "";
+
+    private async Task ConfirmSaveAsync()
+    {
+        if (_saveDestination == "youtube")
+            await StartYouTubeUploadAsync();
+        else if (_saveDestination == "link")
+            await CopyShareLinkAsync();
+        else
+            await ExportMovieToDiskAsync();
+    }
+
+    private async Task OnShareLinkSelectedAsync()
+    {
+        _saveDestination = "link";
+        _error = null;
+        try
+        {
+            await EnsureShareLinkAsync();
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+    }
+
+    private async Task EnsureShareLinkAsync()
+    {
+        if (!string.IsNullOrWhiteSpace(_wipShareLink)) return;
+        await RefreshWipMetaAsync();
+        if (_wipStale || !_wipExists)
+            throw new InvalidOperationException(
+                "WIP is missing or out of date — use Play first (it rebuilds automatically).");
+        var dto = await Engine.CreateWipShareLinkAsync(_projectId);
+        if (dto is null || (string.IsNullOrWhiteSpace(dto.Url) && string.IsNullOrWhiteSpace(dto.Path)))
+            throw new InvalidOperationException(dto?.Error ?? "Could not create share link.");
+        if (!string.IsNullOrWhiteSpace(dto.Url))
+            _wipShareLink = dto.Url!;
+        else
+        {
+            var path = dto.Path!.StartsWith('/') ? dto.Path : "/" + dto.Path;
+            _wipShareLink = Nav.BaseUri.TrimEnd('/') + path;
+        }
+    }
+
+    private async Task CopyShareLinkAsync()
+    {
+        _error = null;
+        try
+        {
+            await EnsureShareLinkAsync();
+            var res = await JS.InvokeAsync<System.Text.Json.JsonElement>(
+                "PageToMovieExport.copyTextAsync", _wipShareLink);
+            if (res.TryGetProperty("success", out var ok) && ok.GetBoolean())
+            {
+                _showSaveDialog = false;
+                _message = "Share link copied — anyone with the link can watch until it expires.";
+            }
+            else
+            {
+                var err = res.TryGetProperty("error", out var e) ? e.GetString() : "unknown";
+                _error = "Could not copy automatically — select the link and copy manually. (" + err + ")";
+            }
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+    }
 
     private async Task ConnectYouTubeAsync()
     {
@@ -1433,7 +1469,7 @@ else
                 Description = _youTubeDescription,
                 PrivacyStatus = _youTubePrivacy,
             });
-            _showYouTubeUploadDialog = false;
+            _showSaveDialog = false;
             _message = "Uploading to YouTube…";
             var jobs = await Engine.GetJobAsync();
             _job = jobs?.Job;
@@ -1442,37 +1478,18 @@ else
         finally { _busy = false; }
     }
 
-    private string? _exportFolderName;
-
-    private async Task SelectOutputFolderAsync()
-    {
-        _message = null;
-        _error = null;
-        try
-        {
-            var res = await JS.InvokeAsync<System.Text.Json.JsonElement>("PageToMovieExport.selectExportDirectoryAsync");
-            if (res.TryGetProperty("success", out var succ) && succ.GetBoolean())
-            {
-                _exportFolderName = res.GetProperty("folderName").GetString();
-                _message = res.GetProperty("message").GetString();
-            }
-            else if (res.TryGetProperty("error", out var err))
-            {
-                _error = err.GetString();
-            }
-        }
-        catch (Exception ex)
-        {
-            _error = "Folder selection failed: " + ex.Message;
-        }
-    }
-
     private async Task ExportMovieToDiskAsync()
     {
         _message = null;
         _error = null;
         try
         {
+            await RefreshWipMetaAsync();
+            if (_wipStale || !_wipExists)
+            {
+                _error = "WIP is missing or out of date — use Play first (it rebuilds automatically).";
+                return;
+            }
             var bytes = await Engine.GetWipMovieBytesAsync(_projectId);
             if (bytes == null || bytes.Length == 0)
             {
@@ -1483,7 +1500,8 @@ else
             var base64 = Convert.ToBase64String(bytes);
             var filename = $"{_projectId}_WIP.mp4";
             await JS.InvokeVoidAsync("PageToMovieExport.saveMovieToDiskAsync", filename, base64, "video/mp4");
-            _message = "Movie saved to your local disk!";
+            _showSaveDialog = false;
+            _message = "Movie saved to your computer.";
         }
         catch (Exception ex)
         {

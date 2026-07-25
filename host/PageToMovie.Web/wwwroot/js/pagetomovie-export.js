@@ -153,5 +153,30 @@ window.PageToMovieExport = {
             console.error('Browser WASM concatenation error:', err);
             return { success: false, error: err.message };
         }
+    },
+
+    /**
+     * Copy text to the system clipboard (share links, etc.).
+     */
+    copyTextAsync: async function (text) {
+        try {
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                await navigator.clipboard.writeText(text || "");
+                return { success: true };
+            }
+            // Fallback for older browsers / non-secure contexts
+            const ta = document.createElement("textarea");
+            ta.value = text || "";
+            ta.setAttribute("readonly", "");
+            ta.style.position = "fixed";
+            ta.style.left = "-9999px";
+            document.body.appendChild(ta);
+            ta.select();
+            const ok = document.execCommand("copy");
+            document.body.removeChild(ta);
+            return ok ? { success: true } : { success: false, error: "Copy command failed" };
+        } catch (err) {
+            return { success: false, error: err.message || String(err) };
+        }
     }
 };

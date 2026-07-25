@@ -672,9 +672,30 @@ public sealed class EngineApiClient
         BrowserMediaPath(
             $"/api/projects/{Uri.EscapeDataString(projectId)}/scenes/{sceneNumber}/composite");
 
-    /// <summary>Stream URL for the WIP full movie (range requests enabled).</summary>
+    /// <summary>Stream URL for the WIP full movie (range requests enabled; login via access_token).</summary>
     public string WipMovieUrl(string projectId) =>
         BrowserMediaPath($"/api/projects/{Uri.EscapeDataString(projectId)}/movie/wip");
+
+    /// <summary>Public share URL path for WIP (no login). Creates or reuses an active token.</summary>
+    public async Task<WipShareLinkDto?> CreateWipShareLinkAsync(
+        string projectId,
+        CancellationToken ct = default)
+    {
+        using var req = new HttpRequestMessage(
+            HttpMethod.Post,
+            $"/api/projects/{Uri.EscapeDataString(projectId)}/movie/wip/share");
+        return await SendJsonAsync<WipShareLinkDto>(req, ct);
+    }
+
+    public sealed class WipShareLinkDto
+    {
+        public bool Ok { get; set; }
+        public string? Token { get; set; }
+        public string? Path { get; set; }
+        public string? Url { get; set; }
+        public DateTimeOffset? ExpiresAt { get; set; }
+        public string? Error { get; set; }
+    }
 
     public async Task<WipMovieMetaDto?> GetWipMovieMetaAsync(
         string projectId,
@@ -1443,6 +1464,13 @@ public sealed class EngineApiClient
         var path = rootRelativePath.StartsWith('/')
             ? rootRelativePath
             : "/" + rootRelativePath.TrimStart('/');
+        // Attach JWT so &lt;video&gt;/&lt;img&gt; can hit RequireLogin media routes.
+        var jwt = _session?.Token?.Trim();
+        if (!string.IsNullOrWhiteSpace(jwt))
+        {
+            path += (path.Contains('?', StringComparison.Ordinal) ? "&" : "?")
+                    + "access_token=" + Uri.EscapeDataString(jwt);
+        }
         var origin = BrowserMediaOrigin;
         return string.IsNullOrEmpty(origin) ? path : origin + path;
     }

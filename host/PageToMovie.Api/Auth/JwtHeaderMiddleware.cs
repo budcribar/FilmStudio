@@ -15,10 +15,18 @@ public sealed class JwtHeaderMiddleware
     {
         if (ctx.User?.Identity?.IsAuthenticated != true)
         {
+            string? token = null;
             var header = ctx.Request.Headers.Authorization.ToString();
             if (header.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
+                token = header["Bearer ".Length..].Trim();
+            // <video>/<img src> cannot send Authorization — allow JWT as query for media URLs.
+            if (string.IsNullOrWhiteSpace(token) &&
+                ctx.Request.Query.TryGetValue("access_token", out var q) &&
+                !string.IsNullOrWhiteSpace(q))
+                token = q.ToString().Trim();
+
+            if (!string.IsNullOrWhiteSpace(token))
             {
-                var token = header["Bearer ".Length..].Trim();
                 var principal = auth.ValidateToken(token);
                 if (principal is not null)
                     ctx.User = principal;

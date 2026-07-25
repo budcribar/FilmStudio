@@ -125,6 +125,7 @@ builder.Services.AddSingleton<ProjectTelemetryService>();
 builder.Services.AddSingleton<ReviewIndexService>();
 builder.Services.AddSingleton<ClipAutoReviewService>();
 builder.Services.AddSingleton<ProjectArtifactIndexService>();
+builder.Services.AddSingleton<MediaShareService>();
 builder.Services.AddSingleton<YouTubeAuthService>();
 string dpKeysDir;
 try
@@ -2498,7 +2499,7 @@ app.MapDelete("/api/projects/{id}/scenes/{scene:int}/clips/{clip:int}", async (
             clip,
             deleted = true,
             wasInBlueprint,
-            message = $"Deleted S{scene:D2}C{clip:D2} — rebuild the scene composite / WIP to drop it from the assembled movie",
+            message = $"Deleted S{scene:D2}C{clip:D2} — Play scene / Play WIP to refresh the assembled cut",
         });
     }
     catch (Exception ex)
@@ -2829,8 +2830,10 @@ app.MapGet("/api/projects/{id}/scenes/{sceneNumber:int}", async (
 });
 
 app.MapGet("/api/projects/{id}/scenes/{sceneNumber:int}/clips/{clipNumber:int}/video",
-    (string id, int sceneNumber, int clipNumber, ProjectStore store) =>
+    (string id, int sceneNumber, int clipNumber, ProjectStore store, IUserContext user, IOptions<PageToMovieOptions> opts) =>
 {
+    if (AuthGate.RequireLogin(user, opts) is { } denied)
+        return denied;
     try
     {
         var path = store.ResolveClipVideoPath(id, sceneNumber, clipNumber);
@@ -2845,8 +2848,10 @@ app.MapGet("/api/projects/{id}/scenes/{sceneNumber:int}/clips/{clipNumber:int}/v
 });
 
 app.MapGet("/api/projects/{id}/scenes/{sceneNumber:int}/composite",
-    (string id, int sceneNumber, ProjectStore store) =>
+    (string id, int sceneNumber, ProjectStore store, IUserContext user, IOptions<PageToMovieOptions> opts) =>
 {
+    if (AuthGate.RequireLogin(user, opts) is { } denied)
+        return denied;
     try
     {
         var path = store.ResolveCompositePath(id, sceneNumber);
@@ -2860,14 +2865,69 @@ app.MapGet("/api/projects/{id}/scenes/{sceneNumber:int}/composite",
     }
 });
 
-/// <summary>Stream the WIP full movie (assets/movie_wip.mp4 by default).</summary>
-app.MapGet("/api/projects/{id}/movie/wip", (string id, ProjectStore store) =>
+/// <summary>Stream the WIP full movie (authenticated). Public share uses /api/share/{{token}}.</summary>
+app.MapGet("/api/projects/{id}/movie/wip", (string id, ProjectStore store, IUserContext user, IOptions<PageToMovieOptions> opts) =>
 {
+    if (AuthGate.RequireLogin(user, opts) is { } denied)
+        return denied;
     try
     {
         var path = store.ResolveWipMoviePath(id);
         if (path is null)
-            return Results.NotFound(new { ok = false, error = "WIP movie not found — rebuild WIP first" });
+            return Results.NotFound(new { ok = false, error = "WIP movie not found — Play first so the cut is built" });
+        return Results.File(path, "video/mp4", enableRangeProcessing: true);
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { ok = false, error = ex.Message });
+    }
+});
+
+/// <summary>Create or reuse a public share link for the WIP movie (login required).</summary>
+app.MapPost("/api/projects/{id}/movie/wip/share", (
+    string id,
+    IUserContext user,
+    IOptions<PageToMovieOptions> opts,
+    MediaShareService shares,
+    HttpContext http) =>
+{
+    if (AuthGate.RequireLogin(user, opts) is { } denied)
+        return denied;
+    try
+    {
+        var rec = shares.EnsureWipShare(id, user.UserId);
+        var path = $"/api/share/{Uri.EscapeDataString(rec.Token)}";
+        var baseUrl = $"{http.Request.Scheme}://{http.Request.Host}";
+        return Results.Ok(new
+        {
+            ok = true,
+            token = rec.Token,
+            path,
+            url = baseUrl + path,
+            expiresAt = rec.ExpiresAt,
+            projectId = rec.ProjectId,
+            kind = rec.Kind,
+        });
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { ok = false, error = ex.Message });
+    }
+});
+
+/// <summary>Public stream for a shared WIP (no login — token is the capability).</summary>
+app.MapGet("/api/share/{token}", (string token, MediaShareService shares, ProjectStore store) =>
+{
+    var rec = shares.TryGet(token);
+    if (rec is null)
+        return Results.NotFound(new { ok = false, error = "Share link not found or expired" });
+    if (!string.Equals(rec.Kind, "wip", StringComparison.OrdinalIgnoreCase))
+        return Results.NotFound(new { ok = false, error = "Unsupported share kind" });
+    try
+    {
+        var path = store.ResolveWipMoviePath(rec.ProjectId);
+        if (path is null)
+            return Results.NotFound(new { ok = false, error = "Shared movie is no longer available" });
         return Results.File(path, "video/mp4", enableRangeProcessing: true);
     }
     catch (Exception ex)
@@ -2877,8 +2937,10 @@ app.MapGet("/api/projects/{id}/movie/wip", (string id, ProjectStore store) =>
 });
 
 /// <summary>Stream the most recently built multi-scene preview (assets/movie_preview.mp4).</summary>
-app.MapGet("/api/projects/{id}/movie/preview", (string id, ProjectStore store) =>
+app.MapGet("/api/projects/{id}/movie/preview", (string id, ProjectStore store, IUserContext user, IOptions<PageToMovieOptions> opts) =>
 {
+    if (AuthGate.RequireLogin(user, opts) is { } denied)
+        return denied;
     try
     {
         var path = store.ResolvePreviewMoviePath(id);
