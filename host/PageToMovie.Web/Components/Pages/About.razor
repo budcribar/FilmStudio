@@ -69,15 +69,15 @@
     <div class="card-header">Architecture</div>
     <div class="card-body">
         <pre class="bg-light p-3 rounded mb-0 small" style="white-space:pre-wrap;">PageToMovie.Web (Blazor WASM · hosted by Api, same origin)
-    │  REST + SignalR · media JWT (?mt=) · client stitch (ffmpeg.wasm)
+    │  REST + SignalR · media JWT (?mt=) · all video stitch/trim (ffmpeg.wasm)
     ▼
 PageToMovie.Api  (:5088)
     │  Auth (JWT) · JobHub · credits · demo catalog · admin/ops
     ▼
 PageToMovie.Engine
     · Book prepare · Stage 1/2 · Characters · multi-ref video
-    · Server FFmpeg remux/WIP · locks · worker pools · metrics
-    · writes assets/video/scene_XX_clip_YY.mp4
+    · No native ffmpeg by default (UseNativeFfmpeg=false)
+    · locks · worker pools · metrics · assets/video/scene_XX_clip_YY.mp4
 
 Demo gallery     — public approved shorts; report → admin review
 PageToMovie.Fakes     — fake Grok clients + MP4 fixtures (no xAI spend)

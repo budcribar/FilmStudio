@@ -66,14 +66,22 @@ public sealed class FfmpegRemuxService : IFfmpegRemux
         _creditsGenerator = creditsGenerator;
     }
 
-    /// <summary>Resolved ffmpeg executable path (absolute when possible).</summary>
-    public string FfmpegPath => ResolveFfmpegPath();
+    /// <summary>Resolved ffmpeg executable path (absolute when possible). Empty when native ffmpeg is disabled.</summary>
+    public string FfmpegPath => _opts.UseNativeFfmpeg ? ResolveFfmpegPath() : "";
 
+    /// <summary>
+    /// True only when <see cref="PageToMovieOptions.UseNativeFfmpeg"/> is enabled and a binary works.
+    /// Default product path is client-side ffmpeg.wasm — this is false in production.
+    /// </summary>
     public bool IsAvailable()
     {
+        if (!_opts.UseNativeFfmpeg)
+            return false;
         try
         {
             var path = ResolveFfmpegPath();
+            if (string.IsNullOrWhiteSpace(path))
+                return false;
             var psi = new ProcessStartInfo
             {
                 FileName = path,
@@ -741,8 +749,9 @@ public sealed class FfmpegRemuxService : IFfmpegRemux
         }
 
         throw new InvalidOperationException(
-            "ffmpeg not found. Expected NuGet-shipped Resources/ffmpeg.exe " +
-            "(Soenneker.Libraries.FFmpeg), PageToMovie:FfmpegPath, or ffmpeg on PATH.");
+            "Server native ffmpeg is disabled (PageToMovie:UseNativeFfmpeg=false) or not found. " +
+            "Use browser Play/stitch (ffmpeg.wasm), or enable UseNativeFfmpeg and install ffmpeg " +
+            "(NuGet Soenneker Resources/ffmpeg.exe, PageToMovie:FfmpegPath, or PATH).");
     }
 
     /// <summary>

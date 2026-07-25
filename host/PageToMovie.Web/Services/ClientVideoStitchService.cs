@@ -142,6 +142,45 @@ public sealed class ClientVideoStitchService
         }
     }
 
+    /// <summary>Browser duration probe (ffmpeg.wasm).</summary>
+    public async Task<double?> ProbeDurationAsync(string url, CancellationToken ct = default)
+    {
+        try
+        {
+            var raw = await _js.InvokeAsync<JsProbeResult>(
+                "PageToMovieFfmpeg.probeDurationAsync", ct, url);
+            return raw is { Success: true, Seconds: > 0 } ? raw.Seconds : null;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    /// <summary>Browser re-encode slice (silence trim / extend-tail on the client).</summary>
+    public async Task<ClientStitchResult> TrimAsync(
+        string url,
+        double? startSec = null,
+        double? durationSec = null,
+        CancellationToken ct = default)
+    {
+        try
+        {
+            var raw = await _js.InvokeAsync<JsConcatResult>(
+                "PageToMovieFfmpeg.trimVideoAsync",
+                ct,
+                url,
+                new { startSec, durationSec });
+            if (raw is null || !raw.Success || string.IsNullOrWhiteSpace(raw.Url))
+                return ClientStitchResult.Fail(raw?.Error ?? "Browser trim failed");
+            return ClientStitchResult.Ok(raw.Url!, 1, single: true);
+        }
+        catch (Exception ex)
+        {
+            return ClientStitchResult.Fail(ex.Message);
+        }
+    }
+
     private sealed class JsConcatResult
     {
         public bool Success { get; set; }
@@ -149,6 +188,13 @@ public sealed class ClientVideoStitchService
         public string? Error { get; set; }
         public int Count { get; set; }
         public bool Single { get; set; }
+    }
+
+    private sealed class JsProbeResult
+    {
+        public bool Success { get; set; }
+        public double Seconds { get; set; }
+        public string? Error { get; set; }
     }
 }
 

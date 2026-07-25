@@ -1820,7 +1820,8 @@ public sealed class FilmJobService
         {
             if (!_remux.IsAvailable())
                 throw new InvalidOperationException(
-                    "ffmpeg not found. Install ffmpeg and ensure it is on PATH (or set PageToMovie:FfmpegPath).");
+                    "Server ffmpeg is disabled (client-side ffmpeg.wasm). " +
+                    "Use Play on Scenes/Review to stitch in the browser, or set PageToMovie:UseNativeFfmpeg=true for local server remux.");
 
             var ignoreGate = req.IgnoreAssemblyGate;
             if (ignoreGate)
@@ -2035,7 +2036,8 @@ public sealed class FilmJobService
         {
             if (!_remux.IsAvailable())
                 throw new InvalidOperationException(
-                    "ffmpeg not found. Install ffmpeg and ensure it is on PATH (or set PageToMovie:FfmpegPath).");
+                    "Server ffmpeg is disabled (client-side ffmpeg.wasm). " +
+                    "Use Play on Scenes/Review to stitch in the browser, or set PageToMovie:UseNativeFfmpeg=true for local server remux.");
 
             var ignoreGate = req.IgnoreAssemblyGate;
             if (ignoreGate && !EditLogService.IsValidAutoFailOverrideNote(req.IgnoreAssemblyGateReason))
@@ -2713,7 +2715,8 @@ public sealed class FilmJobService
         try
         {
             // Breath-tail silence trim on the disposable copy only (never mutates clip N-1 on disk).
-            if (prevVideoPath is not null && prevExtendWorkTemp is not null)
+            // Requires native ffmpeg — skipped when UseNativeFfmpeg=false (client wasm path).
+            if (prevVideoPath is not null && prevExtendWorkTemp is not null && _remux.IsAvailable())
             {
                 JsonElement? prevMetaForTail = previousClipEl;
                 if (prevMetaForTail is null && blueprintRoot is { } brTail)
@@ -2723,6 +2726,17 @@ public sealed class FilmJobService
                 await SilenceTrimClipAsync(
                         prevExtendWorkTemp, scene, clip - 1, ct, keepTailSeconds: prevKeepTail)
                     .ConfigureAwait(false);
+            }
+
+            // Video-extend returns prev+new and needs server ffmpeg to keep only the new tail.
+            // Without native ffmpeg, generate fresh with locked character plates instead.
+            if (prevVideoPath is not null && !_remux.IsAvailable())
+            {
+                reseedFresh = true;
+                prevVideoPath = null;
+                await AppendLogAsync(
+                    $"  [Continuity] native ffmpeg off — S{scene:D2}C{clip:D2} fresh gen with locked refs " +
+                    "(no video-extend; browser stitch handles play/export)");
             }
 
             if (prevVideoPath is not null && _opts.IdentityReseedOnCastChange)
@@ -3242,18 +3256,21 @@ public sealed class FilmJobService
             return null;
         try
         {
+            double? sec = null;
             if (_remux.IsAvailable())
             {
-                var sec = await ClipSilenceTrimmer.ProbeDurationSecondsAsync(
+                sec = await ClipSilenceTrimmer.ProbeDurationSecondsAsync(
                     _remux.FfmpegPath, videoPath, ct).ConfigureAwait(false);
-                if (sec is > 0)
-                {
-                    await MediaDurationProbe.WriteDurationSidecarAsync(videoPath, sec.Value, ct)
-                        .ConfigureAwait(false);
-                    await AppendLogAsync(
-                        $"  [Duration] S{scene:D2}C{clip:D2} sidecar {sec.Value:F2}s");
-                    return sec.Value;
-                }
+            }
+            sec ??= Mp4DurationReader.TryReadSeconds(videoPath);
+
+            if (sec is > 0)
+            {
+                await MediaDurationProbe.WriteDurationSidecarAsync(videoPath, sec.Value, ct)
+                    .ConfigureAwait(false);
+                await AppendLogAsync(
+                    $"  [Duration] S{scene:D2}C{clip:D2} sidecar {sec.Value:F2}s");
+                return sec.Value;
             }
         }
         catch (Exception ex)

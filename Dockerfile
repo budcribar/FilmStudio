@@ -42,11 +42,11 @@ RUN dotnet publish host/PageToMovie.Api/PageToMovie.Api.csproj -c Release --no-r
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS final
 WORKDIR /app
 
-# ffmpeg for remux; fontconfig/freetype/png/jpeg for SkiaSharp + PDFtoImage (Pdfium)
-# page renders used by picture-book OCR (Buster etc.). Missing these → silent 0 page images
-# → "No page images for vision" / failed book import on Railway.
+# fontconfig/freetype/png/jpeg for SkiaSharp + PDFtoImage (Pdfium) page renders used by
+# picture-book OCR. Missing these → silent 0 page images → failed book import on Railway.
+# Native ffmpeg is NOT installed: remux/stitch/silence-trim run in the browser (ffmpeg.wasm).
+# Set PageToMovie__UseNativeFfmpeg=true and install ffmpeg only if you re-enable server remux.
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    ffmpeg \
     fonts-dejavu-core \
     fontconfig \
     libfontconfig1 \

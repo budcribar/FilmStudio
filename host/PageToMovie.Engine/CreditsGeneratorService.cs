@@ -160,6 +160,14 @@ public class CreditsGeneratorService
             return creditsMoviePath;
         }
 
+        if (string.IsNullOrWhiteSpace(ffmpegExePath) || !_options.UseNativeFfmpeg)
+        {
+            onProgress?.Invoke("Skipping end credits clip (native ffmpeg disabled — client stitch has no credits plate).");
+            _logger.LogInformation(
+                "Credits clip skipped for {ProjectId} (UseNativeFfmpeg=false)", projectId);
+            return null;
+        }
+
         onProgress?.Invoke($"Generating end credits clip ({title} by {author})…");
 
         // Format path for FFmpeg filter graph (forward slashes and escaped colon)

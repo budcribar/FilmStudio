@@ -55,11 +55,22 @@ public sealed class MediaDurationProbe
                 return fromManifest;
             }
 
-            var probed = ProbeWithFfmpeg(fi.FullName);
-            if (probed is > 0)
+            // Prefer pure MP4 box parse (no process). Native ffmpeg only when UseNativeFfmpeg.
+            var fromMp4 = Mp4DurationReader.TryReadSeconds(fi.FullName);
+            if (fromMp4 is > 0)
             {
-                _cache[key] = (fi.LastWriteTimeUtc.Ticks, fi.Length, probed.Value);
-                return probed;
+                _cache[key] = (fi.LastWriteTimeUtc.Ticks, fi.Length, fromMp4.Value);
+                return fromMp4;
+            }
+
+            if (_opts.UseNativeFfmpeg)
+            {
+                var probed = ProbeWithFfmpeg(fi.FullName);
+                if (probed is > 0)
+                {
+                    _cache[key] = (fi.LastWriteTimeUtc.Ticks, fi.Length, probed.Value);
+                    return probed;
+                }
             }
         }
         catch (Exception ex)

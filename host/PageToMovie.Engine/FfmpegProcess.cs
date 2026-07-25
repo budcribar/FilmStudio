@@ -31,7 +31,18 @@ public static class FfmpegProcess
         string? workingDirectory = null)
     {
         if (string.IsNullOrWhiteSpace(ffmpegPath))
-            return new Result(-1, "", "ffmpeg path empty", TimedOut: false);
+            return new Result(-1, "",
+                "Native ffmpeg disabled or path empty (client-side ffmpeg.wasm is the default).",
+                TimedOut: false);
+
+        // Hard refuse common package / PATH names when env says client-only (defense in depth).
+        var envOff = Environment.GetEnvironmentVariable("PageToMovie__UseNativeFfmpeg")
+                     ?? Environment.GetEnvironmentVariable("PageToMovie_USE_NATIVE_FFMPEG");
+        if (string.Equals(envOff, "false", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(envOff, "0", StringComparison.OrdinalIgnoreCase))
+        {
+            return new Result(-1, "", "Native ffmpeg disabled (PageToMovie:UseNativeFfmpeg=false).", TimedOut: false);
+        }
 
         var psi = new ProcessStartInfo
         {

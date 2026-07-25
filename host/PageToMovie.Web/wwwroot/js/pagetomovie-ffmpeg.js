@@ -249,4 +249,99 @@ window.PageToMovieFfmpeg = {
             return { success: false, error: err.message || String(err) };
         }
     },
+
+    /**
+     * Probe duration (seconds) of a video URL via ffmpeg.wasm -i (parses Duration: line).
+     * @returns {{ success:boolean, seconds?:number, error?:string }}
+     */
+    probeDurationAsync: async function (url) {
+        if (!url) return { success: false, error: "No URL" };
+        const load = await this.ensureLoadedAsync();
+        if (!load.success) return load;
+        const ffmpeg = this._ffmpeg;
+        const fetchFile = (window.FFmpegUtil || {}).fetchFile;
+        if (typeof fetchFile !== "function")
+            return { success: false, error: "ffmpeg util fetchFile missing" };
+
+        let logs = "";
+        const onLog = ({ message }) => { logs += message + "\n"; };
+        try {
+            ffmpeg.on("log", onLog);
+            const data = await fetchFile(url);
+            await ffmpeg.writeFile("probe.mp4", data);
+            try {
+                await ffmpeg.exec(["-hide_banner", "-i", "probe.mp4"]);
+            } catch (_) {
+                // -i with no output exits non-zero; Duration is still in logs
+            }
+            const m = /Duration:\s*(\d{1,2}):(\d{2}):(\d{2}(?:\.\d+)?)/i.exec(logs);
+            try { await ffmpeg.deleteFile("probe.mp4"); } catch (_) { /* */ }
+            if (!m) return { success: false, error: "Duration not found" };
+            const sec = (+m[1]) * 3600 + (+m[2]) * 60 + parseFloat(m[3]);
+            return { success: true, seconds: sec };
+        } catch (err) {
+            return { success: false, error: err.message || String(err) };
+        } finally {
+            try { ffmpeg.off("log", onLog); } catch (_) { /* */ }
+        }
+    },
+
+    /**
+     * Re-encode a slice of a video URL (client-side silence trim / extend-tail).
+     * @param {string} url
+     * @param {{ startSec?:number, durationSec?:number }} opts  startSec = -ss, durationSec = -t
+     * @returns {{ success:boolean, url?:string, error?:string }}
+     */
+    trimVideoAsync: async function (url, opts, onProgress) {
+        opts = opts || {};
+        if (!url) return { success: false, error: "No URL" };
+        const load = await this.ensureLoadedAsync(onProgress);
+        if (!load.success) return load;
+        const ffmpeg = this._ffmpeg;
+        const fetchFile = (window.FFmpegUtil || {}).fetchFile;
+        if (typeof fetchFile !== "function")
+            return { success: false, error: "ffmpeg util fetchFile missing" };
+
+        try {
+            onProgress && onProgress(10, "Downloading…");
+            const data = await fetchFile(url);
+            await ffmpeg.writeFile("in.mp4", data);
+            onProgress && onProgress(40, "Trimming…");
+            const args = ["-hide_banner", "-y"];
+            if (opts.startSec != null && opts.startSec > 0.001)
+                args.push("-ss", String(opts.startSec));
+            args.push("-i", "in.mp4");
+            if (opts.durationSec != null && opts.durationSec > 0.05)
+                args.push("-t", String(opts.durationSec));
+            args.push(
+                "-c:v", "libx264", "-preset", "ultrafast", "-crf", "23",
+                "-c:a", "aac", "-b:a", "128k",
+                "-movflags", "+faststart",
+                "out.mp4");
+            await ffmpeg.exec(args);
+            onProgress && onProgress(90, "Preparing…");
+            const out = await ffmpeg.readFile("out.mp4");
+            const blob = new Blob([out.buffer], { type: "video/mp4" });
+            this.revokePreviewUrl();
+            this._blobUrl = URL.createObjectURL(blob);
+            try { await ffmpeg.deleteFile("in.mp4"); } catch (_) { /* */ }
+            try { await ffmpeg.deleteFile("out.mp4"); } catch (_) { /* */ }
+            onProgress && onProgress(100, "Ready");
+            return { success: true, url: this._blobUrl };
+        } catch (err) {
+            return { success: false, error: err.message || String(err) };
+        }
+    },
+
+    /**
+     * Extract the last tailSec seconds of a video (extend-tail / 15s clamp equivalent).
+     */
+    extractTailAsync: async function (url, tailSec, onProgress) {
+        const probe = await this.probeDurationAsync(url);
+        if (!probe.success || !(probe.seconds > 0))
+            return { success: false, error: probe.error || "Could not probe duration" };
+        const keep = Math.max(0.5, tailSec || 1);
+        const start = Math.max(0, probe.seconds - keep);
+        return this.trimVideoAsync(url, { startSec: start, durationSec: keep }, onProgress);
+    },
 };

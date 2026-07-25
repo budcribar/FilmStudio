@@ -42,7 +42,9 @@ dotnet run
 
 You need **two processes**: Api **and** Web. If only Web is running, health checks fail with connection refused.
 
-ffmpeg for remux/WIP is **bundled** on Windows via NuGet (`Soenneker.Libraries.FFmpeg` → `Resources/ffmpeg.exe`). Override with `PageToMovie:FfmpegPath` if needed.
+**Video stitch / remux / silence-trim default to the browser** (`ffmpeg.wasm` in PageToMovie.Web).  
+Server native `ffmpeg` is **off** by default (`PageToMovie:UseNativeFfmpeg=false`).  
+Optional local server remux: set `UseNativeFfmpeg=true` and install ffmpeg (or NuGet `Soenneker.Libraries.FFmpeg` / `PageToMovie:FfmpegPath`).
 
 ### 2) Blazor UI
 
