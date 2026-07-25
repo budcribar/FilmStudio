@@ -1,17 +1,23 @@
+using System.Reflection;
+
 namespace PageToMovie.Engine;
 
 /// <summary>
 /// Resolve shipped prompt files. Workspace root (e.g. Railway <c>/data</c>) holds projects,
-/// not necessarily <c>prompts/</c> — those ship next to the app binary or in the repo.
+/// not necessarily <c>prompts/</c> — those ship next to the app binary, in the repo, or as
+/// embedded resources in this assembly.
 /// </summary>
 public static class PromptFiles
 {
     /// <summary>Optional absolute/relative override (env <c>PAGETOMOVIE_PROMPTS_DIR</c>).</summary>
     public static string? PromptsDirOverride { get; set; }
 
+    private static readonly Assembly EngineAssembly = typeof(PromptFiles).Assembly;
+
     /// <summary>
     /// Find <paramref name="relativePath"/> such as <c>prompts/fountain_to_cast.txt</c>.
     /// Tries workspace, app base directory, and parent folders (dev repo layout).
+    /// Returns null if only the embedded resource exists (use <see cref="ReadAsync"/>).
     /// </summary>
     public static string? Resolve(string relativePath, string? workspaceRoot = null)
     {
@@ -46,21 +52,43 @@ public static class PromptFiles
         return null;
     }
 
+    /// <summary>Logical name for embedded core prompts (see Engine.csproj).</summary>
+    public static string EmbeddedLogicalName(string relativePath)
+    {
+        var leaf = Path.GetFileName(relativePath.Replace('\\', '/'));
+        return "PageToMovie.Prompts." + leaf;
+    }
+
+    public static string? TryReadEmbedded(string relativePath)
+    {
+        var name = EmbeddedLogicalName(relativePath);
+        using var stream = EngineAssembly.GetManifestResourceStream(name);
+        if (stream is null) return null;
+        using var reader = new StreamReader(stream);
+        return reader.ReadToEnd();
+    }
+
     public static async Task<string> ReadAsync(
         string relativePath,
         string? workspaceRoot = null,
         CancellationToken ct = default)
     {
         var path = Resolve(relativePath, workspaceRoot);
-        if (path is null)
-        {
-            var tried = string.Join(" | ", CandidateRoots(workspaceRoot).Take(12));
-            throw new InvalidOperationException(
-                $"Prompt not found: {relativePath}. Searched under: {tried}. " +
-                "Ensure prompts are published with the app (Docker) or set PAGETOMOVIE_PROMPTS_DIR.");
-        }
+        if (path is not null)
+            return await File.ReadAllTextAsync(path, ct).ConfigureAwait(false);
 
-        return await File.ReadAllTextAsync(path, ct).ConfigureAwait(false);
+        // Docker / Railway: prompts may only be embedded (no file next to DLL)
+        var embedded = TryReadEmbedded(relativePath);
+        if (!string.IsNullOrEmpty(embedded))
+            return embedded;
+
+        var tried = string.Join(" | ", CandidateRoots(workspaceRoot).Take(12));
+        var resNames = string.Join(", ", EngineAssembly.GetManifestResourceNames().Take(20));
+        throw new InvalidOperationException(
+            $"Prompt not found: {relativePath}. " +
+            "File search under: " + tried + ". " +
+            "Embedded resources: " + (string.IsNullOrEmpty(resNames) ? "(none)" : resNames) + ". " +
+            "Redeploy so prompts ship with the app, or set PAGETOMOVIE_PROMPTS_DIR.");
     }
 
     public static IEnumerable<string> CandidateRoots(string? workspaceRoot = null)

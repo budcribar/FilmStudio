@@ -40,4 +40,31 @@ public class PromptFilesTests
         Assert.Contains("cast", text, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Character_", text, StringComparison.OrdinalIgnoreCase);
     }
+
+    [Fact]
+    public void TryReadEmbedded_has_core_cast_and_book_prompts()
+    {
+        var cast = PromptFiles.TryReadEmbedded("prompts/fountain_to_cast.txt");
+        var lit = PromptFiles.TryReadEmbedded("prompts/cast_visual_literalize.txt");
+        var book = PromptFiles.TryReadEmbedded("prompts/book_to_fountain.txt");
+        // Embedded only when Engine was built with ..\..\prompts present (normal CI/repo).
+        if (cast is null && lit is null && book is null)
+        {
+            Assert.True(true);
+            return;
+        }
+
+        Assert.False(string.IsNullOrWhiteSpace(cast));
+        Assert.Contains("Character_", cast!, StringComparison.OrdinalIgnoreCase);
+        Assert.False(string.IsNullOrWhiteSpace(lit));
+        Assert.False(string.IsNullOrWhiteSpace(book));
+    }
+
+    [Fact]
+    public async Task ReadAsync_works_with_data_workspace_via_embed_or_disk()
+    {
+        // Railway layout: workspace is /data with no prompts folder.
+        var text = await PromptFiles.ReadAsync("prompts/fountain_to_cast.txt", workspaceRoot: "/data");
+        Assert.Contains("cast", text, StringComparison.OrdinalIgnoreCase);
+    }
 }

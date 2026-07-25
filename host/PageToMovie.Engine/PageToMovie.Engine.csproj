@@ -10,6 +10,13 @@
     <ProjectReference Include="..\PageToMovie.Core\PageToMovie.Core.csproj" />
   </ItemGroup>
 
+  <!-- Embed core prompts so Railway /data (projects only) never needs prompts/ on disk. -->
+  <ItemGroup Condition="Exists('..\..\prompts')">
+    <EmbeddedResource Include="..\..\prompts\fountain_to_cast.txt" LogicalName="PageToMovie.Prompts.fountain_to_cast.txt" />
+    <EmbeddedResource Include="..\..\prompts\cast_visual_literalize.txt" LogicalName="PageToMovie.Prompts.cast_visual_literalize.txt" />
+    <EmbeddedResource Include="..\..\prompts\book_to_fountain.txt" LogicalName="PageToMovie.Prompts.book_to_fountain.txt" />
+  </ItemGroup>
+
   <ItemGroup>
     <PackageReference Include="Google.Apis.YouTube.v3" Version="1.75.0.4207" />
     <PackageReference Include="Microsoft.Bcl.Memory" Version="10.0.10" />
