@@ -17,7 +17,7 @@ RUN dotnet restore host/PageToMovie.Api/PageToMovie.Api.csproj
 ARG CACHEBUSTER=20260724220000
 RUN echo "Invalidating build cache: ${CACHEBUSTER}"
 
-# Copy remaining source code (host apps + repo-root prompts used at runtime)
+# Copy remaining source (prompts/ needed at build time as Engine EmbeddedResource)
 COPY host/ host/
 COPY prompts/ prompts/
 
@@ -25,17 +25,13 @@ COPY prompts/ prompts/
 # (avoids stale --no-restore when only .cs files changed but package needs differ).
 RUN dotnet restore host/PageToMovie.Api/PageToMovie.Api.csproj
 
-# Publish Api host; Web static web assets (including _framework/blazor.web.js) flow in
-# via ProjectReference. Fail the image build if framework JS is missing — blank UI on Railway.
-# prompts/ must ship next to the DLL: WorkspaceRoot is /data (projects only), not prompts.
+# Publish Api host. Core prompts are embedded in PageToMovie.Engine (not /data).
+# Fail the image build if framework JS is missing — blank UI on Railway.
 RUN dotnet publish host/PageToMovie.Api/PageToMovie.Api.csproj -c Release --no-restore -o /app/publish /p:UseAppHost=false \
-    && mkdir -p /app/publish/prompts \
-    && cp -a prompts/. /app/publish/prompts/ \
-    && test -f /app/publish/prompts/fountain_to_cast.txt \
     && test -f /app/publish/wwwroot/_framework/blazor.web.js \
     && test -f /app/publish/PageToMovie.Api.staticwebassets.endpoints.json \
-    || (echo "ERROR: blazor.web.js, prompts, or staticwebassets endpoints missing from publish" \
-        && ls -la /app/publish 2>/dev/null; ls -la /app/publish/prompts 2>/dev/null; ls -laR /app/publish/wwwroot 2>/dev/null; exit 1)
+    || (echo "ERROR: blazor.web.js or staticwebassets endpoints missing from publish" \
+        && ls -la /app/publish 2>/dev/null; ls -laR /app/publish/wwwroot 2>/dev/null; exit 1)
 
 # Stage 2: Runtime
 # mcr.microsoft.com/dotnet/aspnet:10.0 is Ubuntu 24.04 (noble), not Debian —

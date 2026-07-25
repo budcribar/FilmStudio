@@ -22,14 +22,6 @@
     <ProjectReference Include="..\PageToMovie.Web\PageToMovie.Web.csproj" />
   </ItemGroup>
 
-  <!-- Ship repo prompts/ next to the API (Railway /data is projects only — not prompts). -->
-  <ItemGroup>
-    <Content Include="..\..\prompts\**\*.*"
-             Link="prompts\%(RecursiveDir)%(Filename)%(Extension)"
-             CopyToOutputDirectory="PreserveNewest"
-             CopyToPublishDirectory="PreserveNewest"
-             Condition="Exists('..\..\prompts')" />
-  </ItemGroup>
 
   <ItemGroup>
     <!-- Admin JWT login (Phase B) -->
