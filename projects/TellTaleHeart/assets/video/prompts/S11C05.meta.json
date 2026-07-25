@@ -1,0 +1,24 @@
+{
+  "projectId": "TellTaleHeartV7",
+  "scene": 11,
+  "clip": 5,
+  "mode": "video-extend",
+  "castCount": 1,
+  "onScreenKeys": [
+    "Character_The_Old_Man"
+  ],
+  "characterKeys": [
+    "Character_The_Narrator",
+    "Character_The_Old_Man"
+  ],
+  "refs": [],
+  "refsAttachedToApi": false,
+  "styleHead": "STYLE LOCK: Period gothic live-action, mid-19th-century interiors; candlelight and deep shadows; desaturated cool-gray palette; naturalistic skin and fabric texture; no illustration or stylized animation",
+  "castCountLine": "CAST COUNT: exactly 1 distinct on-screen character identity(ies) only \u2014 Character_The_Old_Man. Do not invent extra people, duplicate faces, or crowd extras not listed.",
+  "actionText": "INT. OLD MAN\u0027S BEDCHAMBER - NIGHT. The Old Man A single dim ray, like the thread of a spider, shoots from the lantern and falls full upon the vulture eye. It is open-wide, wide open. OFF-CAMERA VOICEOVER Character_The_Narrator says \u0022had directed the ray as if by instinct, precisely upon the damned spot.\u0022 Camera directive: Instinct-guided ray locked on the open eye, macro push tightening as fury builds in the narration. Performance: Acting intensity 8/10: Feverish triumphant glare, mad precision gleam, predatory smile flicker Optics: f/1.4 shallow depth of field, creamy background bokeh Color grading: Kodak Vision3 500T 5219, crushed charcoal shadows, cold blue-black tones, single sickly amber lantern ray Character_The_Old_Man is on screen.",
+  "prompt": "STYLE LOCK: Period gothic live-action, mid-19th-century interiors; candlelight and deep shadows; desaturated cool-gray palette; naturalistic skin and fabric texture; no illustration or stylized animation\r\n\r\nCHARACTER VARIABLES (use these identities consistently; do not redesign faces or wardrobe):\r\n- Character_The_Narrator [The Narrator]: Also present (not shot focus); keep identity consistent: Lean man of middle years (about 40\u201350), pale sallow skin,....\r\n- Character_The_Old_Man [The Old Man]: Frail elderly man, thin stooped build, sparse white hair, deeply lined pale face; one pale blue eye with a dull filmy veil, the other eye ordinary; wears a plain white period nightshirt. Visual lock: Always elderly, white-haired, frail; signature constant is the single pale blue eye with dull filmy veil that must not drift to clear blue or to the Narrator\u0027s face; nightshirt is his default on-screen garment. Voice: Elderly male; thin, reedy, low energy; short startled phrases; weak breath support; same fragile voice in the single spoken line and any murmur.\r\n\r\nCAST COUNT: exactly 1 distinct on-screen character identity(ies) only \u2014 Character_The_Old_Man. Do not invent extra people, duplicate faces, or crowd extras not listed.\r\n\r\nAUDIO: REQUIRED native Grok off-camera voiceover. Character_The_Narrator narrates exactly: \u0022had directed the ray as if by instinct, precisely upon the damned spot.\u0022. Start speaking immediately with \u0022had\u0022 \u2014 do not skip, delay, or swallow the opening word. After the last word, hold a brief natural pause with a closed mouth (about half a second); do not freeze mid-syllable or trail into empty staring. Do not lip-sync on-screen cast to this VO. Secondary layer = soft room tone / Foley. VOICE LOCK Character_The_Narrator: Male, middle years; medium-high tense pitch; precise, controlled pace that sharpens into fevered urgency; intimate confessional energy, same voice on-camera and in V.O.\r\n\r\nPREVIOUS CLIP (already provided as video input \u2014 continue from its last frame):\nINT. OLD MAN\u0027S BEDCHAMBER - NIGHT. The Old Man A single dim ray, like the thread of a spider, shoots from the lantern and falls full upon the vulture eye. It is open-wide, wide open. OFF-CAMERA VOICEOVER Character_The_Narrator says \u0022but I could see nothing else of the old man\u0027s face or person: for I\u0022 Camera directive: Nothing but the damned eye in frame, lantern ray precise, rest of the old man\u2019s face swallowed by black. Performance: Acting intensity 7/10: Obsessive tunnel-vision stare, forehead creased, lips thin, deathly still Optics: f/1.4 shallow depth of field, extreme isolation Color grading: Kodak Vision3 500T 5219, crushed charcoal shadows, cold blue-black tones, single sickly amber lantern ray Character_The_Old_Man is on screen.\n[prompt shortened after API length limit \u2014 retry]",
+  "promptLen": 2808,
+  "promptLogSummary": "mode=video-extend chars=2 onScreen=1 refs=0 startFrame=no promptLen=2808 prevVideo=_prev_extend_s11c05.mp4 \u00B7 learning-addenda \u00B7 pre-budget 5440\u21922808",
+  "startFrame": null,
+  "builtAtUtc": "2026-07-23T19:45:23.9490804\u002B00:00"
+}

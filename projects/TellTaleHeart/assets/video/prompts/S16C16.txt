@@ -1,0 +1,24 @@
+# S16C16  mode=video-extend chars=3 onScreen=3 refs=0 startFrame=no promptLen=3293 prevVideo=_prev_extend_s16c16.mp4 · learning-addenda · pre-budget 5925→3293
+# projectId: TellTaleHeartV7
+# mode: video-extend
+# castCount: 3
+# onScreen: Character_OfficerBriggs, Character_OfficerHale, Character_The_Narrator
+# refs: 
+# refsAttachedToApi: False
+# startFrame: (none)
+# characters: Character_OfficerBriggs, Character_OfficerHale, Character_The_Narrator
+
+STYLE LOCK: Period gothic live-action, mid-19th-century interiors; candlelight and deep shadows; desaturated cool-gray palette; naturalistic skin and fabric texture; no illustration or stylized animation
+
+CHARACTER VARIABLES (use these identities consistently; do not redesign faces or wardrobe):
+- Character_OfficerBriggs [Officer Briggs]: Also present (not shot focus); keep identity consistent: Man in late 20s to about 30, shorter stocky build, rounde....
+- Character_OfficerHale [Officer Hale]: Also present (not shot focus); keep identity consistent: Man in late 30s, lean tall build, long narrow face, dark ....
+- Character_The_Narrator [The Narrator]: Lean man of middle years (about 40–50), pale sallow skin, hollow cheeks, dark disordered medium-length hair, bright intense dark eyes, thin tense mouth; plain dark wool waistcoat over white shirtsleeves, dark trousers; period clothing. Visual lock: Same lean pale face, dark disordered hair, and bright intense dark eyes in every scene; always plain dark waistcoat and shirtsleeves as default; never elderly, never white-haired, never the filmed blue eye. Voice: Male, middle years; medium-high tense pitch; precise, controlled pace that sharpens into fevered urgency; intimate confessional energy, same voice on-camera and in V.O.
+
+CAST COUNT: exactly 3 distinct on-screen character identity(ies) only — Character_OfficerBriggs, Character_OfficerHale, Character_The_Narrator. Do not invent extra people, duplicate faces, or crowd extras not listed.
+
+AUDIO: REQUIRED native Grok off-camera voiceover. Character_The_Narrator narrates exactly: "I foamed — I raved — I swore!". Start speaking immediately with "I" — do not skip, delay, or swallow the opening word. After the last word, hold a brief natural pause with a closed mouth (about half a second); do not freeze mid-syllable or trail into empty staring. Do not lip-sync on-screen cast to this VO. Ambient bed: heartbeat, increasing noise. VOICE LOCK Character_The_Narrator: Male, middle years; medium-high tense pitch; precise, controlled pace that sharpens into fevered urgency; intimate confessional energy, same voice on-camera and in V.O.
+
+PREVIOUS CLIP (already provided as video input — continue from its last frame):
+INT. OLD MAN'S BEDCHAMBER - NIGHT. also on screen: Character_OfficerHale, Character_OfficerBriggs. The noise steadily increases. He rises. Argues about trifles in a high key, violent gesticulations. OFFICER HALE exchanges a mild glance with OFFICER BRIGGS-still pleasant. THE NARRATOR paces with heavy strides. Foams. Raves. Swings his chair and grates it upon the boards-wood scream over wood. The heartbeat rises over all. OFF-CAMERA VOICEOVER Character_The_Narrator says "Why would they not be gone? Oh God! What could I do?". Character_The_Narrator still wears loose white cotton nightshirt, barefoot Camera directive: Low-angle medium tracks Narrator's heavy pacing and rising panic while officers remain pleasantly seated. Performance: Acting intensity 8/10: Desperate wide stare and twisted grimace pleading why not gone Optics: f/1.8 shallow depth of field Color grading: Kodak Vision3 500T 5219 film stock, deep charcoal shadows, sickly cool-blue undertones, dim warm amber highlights
+[prompt shortened after API length limit — retry]

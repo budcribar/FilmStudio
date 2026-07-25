@@ -281,6 +281,73 @@ app.UseCors();
 var jobs = app.Services.GetRequiredService<FilmJobService>();
 jobs.SetProgressSink(app.Services.GetRequiredService<IJobProgressSink>());
 
+// ── Seed demos on first boot ─────────────────────────────────────────────────
+// Copy any bundled seed_demos/* entries into /data/_demos/ if not already present.
+// This ensures TellTaleHeart (and any future seeds) are available as public demos
+// for all new Railway deployments without manual admin steps.
+try
+{
+    var store = app.Services.GetRequiredService<ProjectStore>();
+    var demoCatalog = app.Services.GetRequiredService<DemoCatalogService>();
+    var demosDir = demoCatalog.DemosDir;
+    Directory.CreateDirectory(demosDir);
+
+    // seed_demos/ is baked into the image at /app/seed_demos/
+    var seedRoot = Path.Combine(AppContext.BaseDirectory, "seed_demos");
+    if (Directory.Exists(seedRoot))
+    {
+        foreach (var seedDir in Directory.EnumerateDirectories(seedRoot))
+        {
+            var id = Path.GetFileName(seedDir);
+            var targetDir = Path.Combine(demosDir, id);
+            var targetMeta = Path.Combine(targetDir, "meta.json");
+            var targetMovie = Path.Combine(targetDir, "movie.mp4");
+
+            if (File.Exists(targetMeta) && File.Exists(targetMovie))
+                continue; // already seeded — never overwrite user data
+
+            Directory.CreateDirectory(targetDir);
+
+            // Copy meta.json
+            var srcMeta = Path.Combine(seedDir, "meta.json");
+            if (File.Exists(srcMeta))
+                File.Copy(srcMeta, targetMeta, overwrite: false);
+
+            // Copy movie.mp4 — may be bundled in image or referenced from project WIP
+            var srcMovie = Path.Combine(seedDir, "movie.mp4");
+            if (!File.Exists(srcMovie))
+            {
+                // Fall back: resolve movie from linked projectId in meta.json
+                try
+                {
+                    var meta = System.Text.Json.JsonSerializer.Deserialize<System.Text.Json.JsonElement>(
+                        File.ReadAllText(srcMeta));
+                    if (meta.TryGetProperty("projectId", out var pidEl) &&
+                        pidEl.GetString() is { Length: > 0 } pid)
+                    {
+                        var wipPath = store.ResolveWipMoviePath(pid);
+                        if (wipPath is not null && File.Exists(wipPath))
+                            srcMovie = wipPath;
+                    }
+                }
+                catch { /* ignore — seed gracefully skipped if movie unavailable */ }
+            }
+
+            if (File.Exists(srcMovie) && !File.Exists(targetMovie))
+                File.Copy(srcMovie, targetMovie, overwrite: false);
+
+            if (File.Exists(targetMeta) && File.Exists(targetMovie))
+                app.Logger.LogInformation("Seeded demo {Id} into {TargetDir}", id, targetDir);
+            else
+                app.Logger.LogWarning("Demo seed {Id} skipped — movie not found at {Src}", id, srcMovie);
+        }
+    }
+}
+catch (Exception ex)
+{
+    app.Logger.LogWarning(ex, "Demo seeding failed (non-fatal)");
+}
+
 app.UseMiddleware<HttpRequestMetricsMiddleware>();
 app.UseMiddleware<JwtHeaderMiddleware>();
 app.Use(async (context, next) =>

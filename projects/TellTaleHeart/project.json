@@ -1,0 +1,9 @@
+{
+  "id": "TellTaleHeart",
+  "title": "The Tell-Tale Heart",
+  "blueprint_file": "blueprint.clips.grok.json",
+  "scenes_file": "scenes.json",
+  "config_file": "pipeline_config.json",
+  "state_file": "pipeline_state.json",
+  "description": "A short film adaptation of Edgar Allan Poe's 'The Tell-Tale Heart'."
+}

@@ -1,0 +1,25 @@
+{
+  "projectId": "TellTaleHeartV7",
+  "scene": 16,
+  "clip": 13,
+  "mode": "fresh",
+  "castCount": 1,
+  "onScreenKeys": [
+    "Character_The_Narrator"
+  ],
+  "characterKeys": [
+    "Character_The_Narrator"
+  ],
+  "refs": [
+    "character_the_narrator_ref.png"
+  ],
+  "refsAttachedToApi": true,
+  "styleHead": "STYLE LOCK: Period gothic live-action, mid-19th-century interiors; candlelight and deep shadows; desaturated cool-gray palette; naturalistic skin and fabric texture; no illustration or stylized animation",
+  "castCountLine": "CAST COUNT: exactly 1 distinct on-screen character identity(ies) only \u2014 Character_The_Narrator. Do not invent extra people, duplicate faces, or crowd extras not listed.",
+  "actionText": "INT. OLD MAN\u0027S BEDCHAMBER - NIGHT. The Narrator (heightened, fluent). Character_The_Narrator \u003CIMAGE_1\u003E ON CAMERA lip-syncs \u0022-as I say, the house is quiet \u2014 always quiet-\u0022. Character_The_Narrator \u003CIMAGE_1\u003E still wears loose white cotton nightshirt, barefoot Camera directive: Close-up of heightened Narrator speaking fluently about the quiet house, sweat beading. Performance: Acting intensity 7/10: Heightened fluent smile with too-wide eyes insisting house is quiet Optics: f/2.0 shallow-moderate depth of field Color grading: Kodak Vision3 500T 5219 film stock, deep charcoal shadows, sickly cool-blue undertones, dim warm amber highlights",
+  "prompt": "STYLE LOCK: Period gothic live-action, mid-19th-century interiors; candlelight and deep shadows; desaturated cool-gray palette; naturalistic skin and fabric texture; no illustration or stylized animation\r\n\r\nCHARACTER VARIABLES (use these identities consistently; do not redesign faces or wardrobe):\r\n- Character_The_Narrator \u003CIMAGE_1\u003E [The Narrator]: Lean man of middle years (about 40\u201350), pale sallow skin, hollow cheeks, dark disordered medium-length hair, bright intense dark eyes, thin tense mouth; plain dark wool waistcoat over white shirtsleeves, dark trousers; period clothing. Visual lock: Same lean pale face, dark disordered hair, and bright intense dark eyes in every scene; always plain dark waistcoat and shirtsleeves as default; never elderly, never white-haired, never the filmed blue eye. Voice: Male, middle years; medium-high tense pitch; precise, controlled pace that sharpens into fevered urgency; intimate confessional energy, same voice on-camera and in V.O. Match appearance of reference \u003CIMAGE_1\u003E exactly.\r\n\r\nCAST COUNT: exactly 1 distinct on-screen character identity(ies) only \u2014 Character_The_Narrator. Do not invent extra people, duplicate faces, or crowd extras not listed.\r\n\r\nAUDIO: REQUIRED native Grok dialogue. Character_The_Narrator ON CAMERA lip-syncs exactly: \u0022-as I say, the house is quiet \u2014 always quiet-\u0022. Start speaking immediately with the first word of the line \u2014 do not skip the opening. After the last word, hold a brief natural pause with a closed mouth (about half a second); do not freeze mid-syllable or trail into empty staring. Other mouths closed. Speech intelligible; never silent. Secondary layer = soft room tone / Foley. VOICE LOCK Character_The_Narrator: Male, middle years; medium-high tense pitch; precise, controlled pace that sharpens into fevered urgency; intimate confessional energy, same voice on-camera and in V.O.\r\n\r\nCONTEXT (prior clip in scene \u2014 new cast plate refs attached; match location/lighting if still valid; identity from CHARACTER VARIABLES \u002B locked plates only):\nINT. OLD MAN\u0027S BEDCHAMBER - NIGHT. also on screen: Character_OfficerHale, Character_OfficerBriggs, Character_Officer_Reynolds. He talks on-too freely. The officers smile, polite. The sound clarifies: low, dull, quick-a watch in cotton. From under the floorboards. From under his chair. THE NARRATOR gasps for breath. The officers do not react. They did not hear. Character_The_Narrator still wears loose white cotton nightshirt, barefoot Camera directive: Medium shot tilts from polite smiling officers down to floorboards under Narrator\u0027s chair then back to his gasp. Performance: Acting intensity 8/10: Gasping open mouth and bulging eyes talking too freely Optics: f/1.4 shallow depth of field Color grading: Kodak Vision3 500T 5219 film stock, deep charcoal shadows, sickly cool-blue undertones, dim warm amber highlights\n[prompt shortened after API length limit \u2014 retry]",
+  "promptLen": 2917,
+  "promptLogSummary": "mode=fresh chars=1 onScreen=1 refs=1 startFrame=no promptLen=2917 \u00B7 learning-addenda \u00B7 pre-budget 5549\u21922917",
+  "startFrame": null,
+  "builtAtUtc": "2026-07-23T20:19:05.2636136\u002B00:00"
+}

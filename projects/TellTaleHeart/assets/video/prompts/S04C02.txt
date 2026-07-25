@@ -1,0 +1,28 @@
+# S04C02  mode=fresh chars=2 onScreen=2 refs=2 startFrame=no promptLen=3982 · learning-addenda · pre-budget 6614→3982
+# projectId: TellTaleHeartV7
+# mode: fresh
+# castCount: 2
+# onScreen: Character_The_Narrator, Character_The_Old_Man
+# refs: character_the_narrator_ref.png, character_old_man_ref.png
+# refsAttachedToApi: True
+# startFrame: (none)
+# characters: Character_The_Narrator, Character_The_Old_Man
+
+STYLE LOCK: Period gothic live-action, mid-19th-century interiors; candlelight and deep shadows; desaturated cool-gray palette; naturalistic skin and fabric texture; no illustration or stylized animation
+
+CHARACTER VARIABLES (use these identities consistently; do not redesign faces or wardrobe):
+- Character_The_Narrator <IMAGE_1> [The Narrator]: Lean man of middle years (about 40–50), pale sallow skin, hollow cheeks, dark disordered medium-length hair, bright intense dark eyes, thin tense mouth; plain dark wool waistcoat over white shirtsleeves, dark trousers; period clothing. Visual lock: Same lean pale face, dark disordered hair, and bright intense dark eyes in every scene; always plain dark waistcoat and shirtsleeves as default; never elderly, never white-haired, never the filmed blue eye. Voice: Male, middle years; medium-high tense pitch; precise, controlled pace that sharpens into fevered urgency; intimate confessional energy, same voice on-camera and in V.O. Match appearance of reference <IMAGE_1> exactly.
+- Character_The_Old_Man <IMAGE_2> [The Old Man]: Also present (not shot focus); keep identity consistent: Frail elderly man, thin stooped build, sparse white hair,.... Match reference <IMAGE_2>.
+
+CAST COUNT: exactly 2 distinct on-screen character identity(ies) only — Character_The_Narrator, Character_The_Old_Man. Do not invent extra people, duplicate faces, or crowd extras not listed.
+
+CONTEXT (prior clip in scene — new cast plate refs attached; match location/lighting if still valid; identity from CHARACTER VARIABLES + locked plates only):
+INT. OLD MAN'S BEDCHAMBER - DAY. Morning. THE NARRATOR throws open the shutters, hearty, smiling. THE OLD MAN sits up in bed, blinking the filmed eye. The Narrator speaks. Character_The_Narrator ON CAMERA lip-syncs "And how have you passed the night?". Character_The_Narrator still wears dark woolen waistcoat, plain white shirtsleeves, tailored trousers Camera directive: Wide establishing shot, 24mm anamorphic, morning light floods as Narrator throws open shutters, Old Man sits up blinking. Performance: Acting intensity 5/10: Broad hearty smile, crinkled eyes, subtle jaw tension masking eagerness Optics: f/2.8 moderate depth of field Color grading: Kodak Vision3 250D 5207 film stock, soft warm golden morning light with muted dusty ochre and pale cool-gray shadows Character_The_Old_Man is on screen.
+
+Follow the camera framing and location in this prompt exactly. Prioritize the PRIMARY subject and ONE clear action with visible motion; background characters may stay mostly still.
+
+THIS CLIP:
+Silent beat — no dialogue in this clip. Do not show any on-screen character speaking or mouthing words; keep mouths closed/neutral. End cleanly when the primary physical action finishes.
+INT. OLD MAN'S BEDCHAMBER - DAY. also on screen: Character_The_Old_Man <IMAGE_2>. THE OLD MAN murmurs a thin reply. THE NARRATOR clasps his shoulder, all warmth. Character_The_Narrator <IMAGE_1> still wears dark woolen waistcoat, plain white shirtsleeves, tailored trousers Camera directive: Medium two-shot, 35mm prime, Narrator clasps Old Man's shoulder with forced warmth after thin murmured reply. Performance: Acting intensity 4/10: Warm soft smile with gentle eye crinkle and faint possessive mouth tightness Optics: f/2.0 shallow depth of field, soft bokeh on bed linens Color grading: Kodak Vision3 250D 5207 film stock, soft warm golden morning light with muted dusty ochre and pale cool-gray shadows / 480p, 24fps
+
+NEGATIVE: no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens, no name tags, no name badges, no embroidered names, no lower thirds, no personal names on clothing or props, no extra unmentioned hats or jackets, no modern wristwatches, no electric light bulbs, no plastic, no zippers, no printed logos, no denim, no modern hair gel, no sneakers, no smartphones, no synthetic fabrics, no LED screens, no asphalt, no power cords.

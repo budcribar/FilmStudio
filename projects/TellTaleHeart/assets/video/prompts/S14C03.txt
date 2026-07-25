@@ -1,0 +1,23 @@
+# S14C03  mode=fresh chars=4 onScreen=4 refs=4 startFrame=no promptLen=2773 · learning-addenda · pre-budget 5405→2773
+# projectId: TellTaleHeartV7
+# mode: fresh
+# castCount: 4
+# onScreen: Character_OfficerBriggs, Character_OfficerHale, Character_Officer_Reynolds, Character_The_Narrator
+# refs: character_officerbriggs_ref.png, character_officerhale_ref.png, character_officer_reynolds_ref.png, character_the_narrator_ref.png
+# refsAttachedToApi: True
+# startFrame: (none)
+# characters: Character_OfficerBriggs, Character_OfficerHale, Character_Officer_Reynolds, Character_The_Narrator
+
+STYLE LOCK: Period gothic live-action, mid-19th-century interiors; candlelight and deep shadows; desaturated cool-gray palette; naturalistic skin and fabric texture; no illustration or stylized animation
+
+CHARACTER VARIABLES (use these identities consistently; do not redesign faces or wardrobe):
+- Character_OfficerBriggs <IMAGE_1> [Officer Briggs]: Also present (not shot focus); keep identity consistent: Man in late 20s to about 30, shorter stocky build, rounde.... Match reference <IMAGE_1>.
+- Character_OfficerHale <IMAGE_2> [Officer Hale]: Also present (not shot focus); keep identity consistent: Man in late 30s, lean tall build, long narrow face, dark .... Match reference <IMAGE_2>.
+- Character_Officer_Reynolds <IMAGE_3> [Officer Reynolds]: Also present (not shot focus); keep identity consistent: Man in early 40s, solid medium build, square jaw, short n.... Match reference <IMAGE_3>.
+- Character_The_Narrator <IMAGE_4> [The Narrator]: Lean man of middle years (about 40–50), pale sallow skin, hollow cheeks, dark disordered medium-length hair, bright intense dark eyes, thin tense mouth; plain dark wool waistcoat over white shirtsleeves, dark trousers; period clothing. Visual lock: Same lean pale face, dark disordered hair, and bright intense dark eyes in every scene; always plain dark waistcoat and shirtsleeves as default; never elderly, never white-haired, never the filmed blue eye. Voice: Male, middle years; medium-high tense pitch; precise, controlled pace that sharpens into fevered urgency; intimate confessional energy, same voice on-camera and in V.O. Match appearance of reference <IMAGE_4> exactly.
+
+CAST COUNT: exactly 4 distinct on-screen character identity(ies) only — Character_OfficerBriggs, Character_OfficerHale, Character_Officer_Reynolds, Character_The_Narrator. Do not invent extra people, duplicate faces, or crowd extras not listed.
+
+CONTEXT (prior clip in scene — new cast plate refs attached; match location/lighting if still valid; identity from CHARACTER VARIABLES + locked plates only):
+INT. STREET DOOR - NIGHT. Officer Reynolds speaks. Character_Officer_Reynolds ON CAMERA lip-syncs "We are to search the premises.". Character_Officer_Reynolds still wears dark wool coat, civil hat, leather boots, lantern in hand Camera directive: Close-up on Officer Reynolds' stern face, 85mm lens, static hold as he declares the search. Performance: Acting intensity 5/10: Direct unblinking gaze, raised chin, calm official authority Optics: f/2.8 moderate depth of field Color grading: Kodak Vision3 500T 5219, cool indigo shadows and warm amber lantern highlights Character_OfficerBriggs is on screen. Character_OfficerHale is on screen. Character_The_Narrator is on screen.
+[prompt shortened after API length limit — retry]
