@@ -6,6 +6,7 @@
 @inject AdminSessionService Session
 @inject NavigationManager Nav
 @inject IJSRuntime JS
+@inject ClientVideoStitchService Stitch
 @using PageToMovie.Core.Models
 
 <PageTitle>Review</PageTitle>
@@ -29,8 +30,8 @@ else
 <p class="small text-muted">
     <strong>Assembly gate:</strong> auto-review <em>fail</em> and human <em>fail</em> clips are excluded from remux / WIP
     until you Pass with an override note.
-    <strong>Play scene</strong> remuxes that scene when needed.
-    <strong>Play WIP</strong> refreshes stale scenes and rebuilds the full cut when clips have changed.
+    <strong>Play scene</strong> / <strong>Play WIP</strong> stitch in your browser when composites are missing or stale
+    (no server ffmpeg for preview).
 </p>
 
 @if (!string.IsNullOrEmpty(_error))
@@ -55,10 +56,10 @@ else
             @(_showWipPlayer && _wipExists && !_wipStale ? "Hide" : "▶ Play")
         </button>
         <button class="btn btn-outline-primary" data-testid="review-save"
-                disabled="@(_busy || JobRunning || !_wipExists || _wipStale)"
+                disabled="@(_busy || JobRunning || !CanShareMovie)"
                 @onclick="OpenSaveDialog"
-                title="@(_wipExists && !_wipStale ? "Download or upload to YouTube" : "Play first (rebuilds if clips changed)")">
-            Save…
+                title="@(CanShareMovie ? "Upload to Demo gallery or YouTube" : "Play WIP first so a cut exists (browser stitch or on-disk WIP)")">
+            Share…
         </button>
         @if (JobRunning)
         {
@@ -85,7 +86,7 @@ else
         <div class="modal-dialog modal-dialog-centered" @onclick:stopPropagation="true">
             <div class="modal-content">
                 <div class="modal-header py-2">
-                    <h5 class="modal-title">Save movie</h5>
+                    <h5 class="modal-title">Share movie</h5>
                     <button type="button" class="btn-close" aria-label="Close" @onclick="CloseSaveDialog"></button>
                 </div>
                 <div class="modal-body">
@@ -93,16 +94,12 @@ else
                         <label class="form-label small mb-1">Where</label>
                         <div class="d-flex flex-column gap-2">
                             <label class="form-check mb-0">
-                                <input class="form-check-input" type="radio" name="saveDest" value="download"
-                                       checked="@(_saveDestination == "download")"
-                                       @onchange="@(() => _saveDestination = "download")" />
-                                <span class="form-check-label">Download to this computer</span>
-                            </label>
-                            <label class="form-check mb-0">
-                                <input class="form-check-input" type="radio" name="saveDest" value="link"
-                                       checked="@(_saveDestination == "link")"
-                                       @onchange="OnShareLinkSelectedAsync" />
-                                <span class="form-check-label">Copy share link</span>
+                                <input class="form-check-input" type="radio" name="saveDest" value="demo"
+                                       checked="@(_saveDestination == "demo")"
+                                       @onchange="@(() => _saveDestination = "demo")" />
+                                <span class="form-check-label">
+                                    Upload to <strong>Demo</strong> gallery (public)
+                                </span>
                             </label>
                             <label class="form-check mb-0">
                                 <input class="form-check-input" type="radio" name="saveDest" value="youtube"
@@ -118,19 +115,6 @@ else
                                 </span>
                             </label>
                         </div>
-                        @if (_saveDestination == "link")
-                        {
-                            <div class="mt-2">
-                                <label class="form-label small mb-0">Link</label>
-                                <input class="form-control form-control-sm font-monospace user-select-all"
-                                       readonly value="@(_wipShareLink.Length > 0 ? _wipShareLink : "(create on Copy link)")"
-                                       onclick="this.select()" />
-                                <div class="form-text">
-                                    Public stream link (tokenized). Direct project URLs require sign-in.
-                                    Default expiry 30 days.
-                                </div>
-                            </div>
-                        }
                         @if (_youTubeStatus?.Connected != true && Session.IsAdmin)
                         {
                             <div class="form-text">
@@ -147,6 +131,35 @@ else
                             </div>
                         }
                     </div>
+                    @if (_saveDestination == "demo")
+                    {
+                        <div class="mb-2">
+                            <label class="form-label small">Film title</label>
+                            <input class="form-control form-control-sm" @bind="_demoTitle" maxlength="120"
+                                   placeholder="e.g. The Tell-Tale Heart — WIP cut" />
+                        </div>
+                        <div class="mb-0">
+                            <label class="form-label small">About this film</label>
+                            <textarea class="form-control form-control-sm" rows="4" @bind="_demoDescription"
+                                      placeholder="A short pitch for the gallery: tone, story, what’s special about this cut…"
+                                      maxlength="800"></textarea>
+                            <div class="form-text">
+                                Shown on the public <a href="/demo" target="_blank">Demo</a> page under the video.
+                                A sentence or two is enough.
+                            </div>
+                        </div>
+                        <div class="form-text mt-2">
+                            Uploads the cut to the server for anyone to watch.
+                            @if (!string.IsNullOrEmpty(_clientWipUrl))
+                            {
+                                <span> Uses your browser-stitched preview.</span>
+                            }
+                            else if (_wipExists && !_wipStale)
+                            {
+                                <span> Uses the on-disk WIP.</span>
+                            }
+                        </div>
+                    }
                     @if (_saveDestination == "youtube" && _youTubeStatus?.Connected == true)
                     {
                         <div class="mb-2">
@@ -172,12 +185,7 @@ else
                     <button type="button" class="btn btn-sm btn-primary" data-testid="review-save-confirm"
                             disabled="@(_busy || (_saveDestination == "youtube" && _youTubeStatus?.Connected != true))"
                             @onclick="ConfirmSaveAsync">
-                        @(_saveDestination switch
-                        {
-                            "youtube" => "Upload",
-                            "link" => "Copy link",
-                            _ => "Download",
-                        })
+                        @(_saveDestination == "youtube" ? "Upload to YouTube" : "Publish to Demo")
                     </button>
                 </div>
             </div>
@@ -185,68 +193,109 @@ else
     </div>
 }
 
-@if (_showWipPlayer && _wipExists)
+@if (_showWipPlayer && _clientStitching)
+{
+    <div class="card mb-3 border-secondary">
+        <div class="card-body py-2 small text-muted">
+            Combining full cut in browser… @_clientStitchStatus
+        </div>
+    </div>
+}
+else if (_showWipPlayer && (!string.IsNullOrEmpty(_clientWipUrl) || _wipExists))
 {
     <div class="card mb-3 border-success">
         <div class="card-header d-flex justify-content-between align-items-center py-2 flex-wrap gap-2">
             <span>
-                WIP movie <code class="small">@(_wipPath ?? "assets/movie_wip.mp4")</code>
-                @if (_wipStale)
+                @if (!string.IsNullOrEmpty(_clientWipUrl))
                 {
-                    <span class="badge bg-warning text-dark ms-1">stale</span>
+                    <span>WIP preview <span class="badge bg-info text-dark ms-1">client stitch</span></span>
                 }
                 else
                 {
-                    <span class="badge bg-success ms-1">current</span>
+                    <span>WIP movie <code class="small">@(_wipPath ?? "assets/movie_wip.mp4")</code></span>
+                    @if (_wipStale)
+                    {
+                        <span class="badge bg-warning text-dark ms-1">stale</span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-success ms-1">current</span>
+                    }
                 }
             </span>
-            @if (!string.IsNullOrEmpty(_wipUpdatedAt))
+            @if (string.IsNullOrEmpty(_clientWipUrl) && !string.IsNullOrEmpty(_wipUpdatedAt))
             {
                 <span class="small text-muted">updated @_wipUpdatedAt · @FormatBytes(_wipBytes)</span>
             }
+            <button type="button" class="btn btn-sm btn-outline-secondary" @onclick="HideWipPlayerAsync">Hide</button>
         </div>
         <div class="card-body py-2">
-            @if (!string.IsNullOrEmpty(_wipReason) && _wipStale)
+            @if (!string.IsNullOrEmpty(_wipReason) && _wipStale && string.IsNullOrEmpty(_clientWipUrl))
             {
                 <p class="small text-warning mb-2">@_wipReason</p>
             }
             <video controls playsinline autoplay
                    style="width:100%;max-height:70vh;background:#000;border-radius:0.35rem;"
-                   src="@CacheBust(Engine.WipMovieUrl(_projectId))"
+                   src="@(string.IsNullOrEmpty(_clientWipUrl) ? CacheBust(Engine.WipMovieUrl(_projectId)) : _clientWipUrl)"
                    @key="_wipVideoKey"
                    onloadeddata="this.play().catch(function(){})">
                 Your browser does not support HTML5 video.
             </video>
             <p class="small text-muted mb-0 mt-2">
-                Full cut of scene composites. Rebuilds automatically when clips/scenes change (Play WIP).
-                <a href="@Engine.WipMovieUrl(_projectId)" target="_blank" rel="noopener">Open in new tab</a>
+                @if (!string.IsNullOrEmpty(_clientWipUrl))
+                {
+                    <span>Stitched in browser from scene composites/clips — not written as movie_wip.mp4.</span>
+                }
+                else
+                {
+                    <span>Full cut on disk.</span>
+                    <a href="@Engine.WipMovieUrl(_projectId)" target="_blank" rel="noopener">Open in new tab</a>
+                }
             </p>
         </div>
     </div>
 }
 
-@if (_showScenePlayer && _playingScene is int playSn)
+@if (_showScenePlayer && _playingScene is int playSn && !_clientStitching)
 {
     <div class="card mb-3 border-primary">
         <div class="card-header d-flex justify-content-between align-items-center py-2">
             <span>
-                Scene composite
+                Scene
                 <code class="small">S@(playSn.ToString("D2"))</code>
-                · clips → one scene file
+                @if (!string.IsNullOrEmpty(_clientSceneUrl))
+                {
+                    <span class="badge bg-info text-dark ms-1">client stitch</span>
+                }
             </span>
-            <button type="button" class="btn btn-sm btn-outline-secondary" @onclick="HideScenePlayer">Hide</button>
+            <button type="button" class="btn btn-sm btn-outline-secondary" @onclick="HideScenePlayerAsync">Hide</button>
         </div>
         <div class="card-body py-2">
             <video controls playsinline autoplay
                    style="width:100%;max-height:70vh;background:#000;border-radius:0.35rem;"
-                   src="@CacheBust(Engine.CompositeVideoUrl(_projectId, playSn))"
+                   src="@(string.IsNullOrEmpty(_clientSceneUrl) ? CacheBust(Engine.CompositeVideoUrl(_projectId, playSn)) : _clientSceneUrl)"
                    @key="_sceneVideoKey"
                    onloadeddata="this.play().catch(function(){})">
                 Your browser does not support HTML5 video.
             </video>
             <p class="small text-muted mb-0 mt-2">
-                <a href="@Engine.CompositeVideoUrl(_projectId, playSn)" target="_blank" rel="noopener">Open in new tab</a>
+                @if (string.IsNullOrEmpty(_clientSceneUrl))
+                {
+                    <a href="@Engine.CompositeVideoUrl(_projectId, playSn)" target="_blank" rel="noopener">Open in new tab</a>
+                }
+                else
+                {
+                    <span>Stitched in browser from clips (not written to disk).</span>
+                }
             </p>
+        </div>
+    </div>
+}
+else if (_showScenePlayer && _clientStitching)
+{
+    <div class="card mb-3 border-secondary">
+        <div class="card-body py-2 small text-muted">
+            Combining scene in browser… @_clientStitchStatus
         </div>
     </div>
 }
@@ -271,7 +320,7 @@ else
             </video>
             <p class="small text-muted mb-0 mt-2">
                 <a href="@Engine.ClipVideoUrl(_projectId, clipSn, clipCn)" target="_blank" rel="noopener">Open in new tab</a>
-                · after regen, <strong>Play scene</strong> remuxes the composite automatically
+                · after regen, <strong>Play scene</strong> stitches the updated cut in the browser
             </p>
         </div>
     </div>
@@ -584,7 +633,7 @@ else
                     <p class="small text-muted mb-0 mt-3">
                         <strong>Review</strong> drafts AI feedback (includes previous clip end when C2+).
                         <strong>Apply suggestions</strong> shows edits; <strong>Apply + regen</strong> writes them and re-gens.
-                        <strong>Play scene</strong> remuxes the composite when needed; <strong>Play WIP</strong> rebuilds the full cut when clips changed.
+                        <strong>Play scene</strong> / <strong>Play WIP</strong> stitch in the browser when needed (no server ffmpeg for preview).
                     </p>
                 </div>
             </div>
@@ -707,17 +756,29 @@ else
     private YouTubeStatusDto? _youTubeStatus;
     private YouTubeUploadInfo? _youTubeUpload;
     private bool _showSaveDialog;
-    private string _saveDestination = "download"; // "download" | "youtube"
+    private string _saveDestination = "demo"; // "demo" | "youtube"
     private string _youTubeTitle = "";
     private string _youTubeDescription = "";
     private string _youTubePrivacy = "unlisted";
+    private string _demoTitle = "";
+    private string _demoDescription = "";
+
+    /// <summary>Can publish when browser stitch or fresh on-disk WIP is available, or scenes can be stitched.</summary>
+    private bool CanShareMovie =>
+        !string.IsNullOrEmpty(_clientWipUrl)
+        || (_wipExists && !_wipStale)
+        || _scenes.Any(s => s.CompositeExists || s.ClipsOnDisk > 0);
 
     private string WipPlayTitle =>
-        !_wipCanBuild && !_wipExists
+        !_wipCanBuild && !_wipExists && string.IsNullOrEmpty(_clientWipUrl)
             ? "No scene/clip videos to build WIP"
             : _wipStale || !_wipExists
-                ? $"Refresh then play: {_wipReason ?? "out of date"}"
+                ? $"Stitch in browser: {_wipReason ?? "out of date"}"
                 : "Play streamed movie_wip.mp4 (up to date)";
+    private string? _clientWipUrl;
+    private string? _clientSceneUrl;
+    private bool _clientStitching;
+    private string? _clientStitchStatus;
     private bool _showScenePlayer;
     private int? _playingScene;
     private long _sceneVideoKey;
@@ -1012,18 +1073,23 @@ else
     }
 
     /// <summary>
-    /// One-step play: re-check freshness every click. If scenes out of date, added, or removed,
-    /// remux those scenes + rebuild WIP, then open the player. Does not re-gen clips.
+    /// Play full cut: stream on-disk WIP when current; otherwise stitch composites/clips in the browser.
     /// </summary>
     private async Task PlayWipAsync()
     {
-        if (_showWipPlayer && _wipExists && !_wipStale)
+        if (_busy || _clientStitching) return;
+
+        if (_showWipPlayer && (_wipExists && !_wipStale || !string.IsNullOrEmpty(_clientWipUrl)))
         {
-            // Still re-check — might have changed since last open
             await RefreshWipMetaAsync();
-            if (_wipExists && !_wipStale)
+            if (_wipExists && !_wipStale && string.IsNullOrEmpty(_clientWipUrl))
             {
-                _showWipPlayer = false;
+                await HideWipPlayerAsync();
+                return;
+            }
+            if (!string.IsNullOrEmpty(_clientWipUrl))
+            {
+                await HideWipPlayerAsync();
                 return;
             }
         }
@@ -1031,76 +1097,184 @@ else
         await RefreshWipMetaAsync();
         if (_wipExists && !_wipStale)
         {
+            _clientWipUrl = null;
             _showWipPlayer = true;
+            _showScenePlayer = false;
             _wipVideoKey = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
             _message = "Playing WIP (up to date)";
             return;
         }
 
-        if (!_wipCanBuild && !_wipExists)
+        var sceneNums = _scenes
+            .Where(s => s.CompositeExists || s.ClipsOnDisk > 0)
+            .OrderBy(s => s.SceneNumber)
+            .Select(s => s.SceneNumber)
+            .ToList();
+        if (sceneNums.Count == 0)
         {
             _error = _wipReason ?? "Nothing on disk to build WIP";
             return;
         }
 
         _busy = true;
+        _clientStitching = true;
         _error = null;
+        _clientStitchStatus = "Collecting scenes…";
+        _showClipPlayer = false;
+        _showScenePlayer = false;
+        _clientSceneUrl = null;
+        _showWipPlayer = true;
+        _clientWipUrl = null;
         try
         {
-            await EnsureHubAsync();
-            _playWipAfterRemux = true;
-            await Engine.StartRemuxAsync(_projectId, scene: null, rebuildWip: true, refreshStaleScenes: true);
-            _message = $"Auto-remux then play… {_wipReason}";
-            var jobs = await Engine.GetJobAsync();
-            _job = jobs?.Job;
+            var meta = await Engine.GetWipMovieMetaAsync(_projectId);
+            var stale = meta?.StaleScenes?.ToHashSet() ?? new HashSet<int>();
+            var urls = await Stitch.CollectSceneMediaUrlsAsync(_projectId, sceneNums, _scenes, stale);
+            if (urls.Count == 0)
+            {
+                _error = "No playable composites or clips for WIP";
+                _showWipPlayer = false;
+                return;
+            }
+
+            _clientStitchStatus = urls.Count == 1
+                ? "Loading…"
+                : $"Combining {urls.Count} file(s)…";
+            await Stitch.RevokePreviewUrlAsync();
+            var result = await Stitch.ConcatAsync(urls);
+            if (!result.Success || string.IsNullOrWhiteSpace(result.Url))
+            {
+                _error = result.Error ?? "Browser stitch failed";
+                _showWipPlayer = false;
+                return;
+            }
+
+            _clientWipUrl = result.Url;
+            _wipVideoKey = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+            _message = $"WIP preview ready (browser) — {sceneNums.Count} scene(s)";
         }
-        catch (Exception ex) { _error = ex.Message; _playWipAfterRemux = false; }
-        finally { _busy = false; }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+            _showWipPlayer = false;
+            _clientWipUrl = null;
+        }
+        finally
+        {
+            _busy = false;
+            _clientStitching = false;
+            _clientStitchStatus = null;
+        }
     }
 
     private async Task PlaySceneAsync(int scene)
     {
+        if (_busy || _clientStitching) return;
+
         _showClipPlayer = false;
         await RefreshWipMetaAsync();
         var summary = _scenes.FirstOrDefault(s => s.SceneNumber == scene);
-        var needsRemux = summary is null
-                         || !summary.CompositeExists
-                         || (await Engine.GetWipMovieMetaAsync(_projectId))?.StaleScenes?.Contains(scene) == true;
+        var stale = (await Engine.GetWipMovieMetaAsync(_projectId))?.StaleScenes?.Contains(scene) == true;
+        var compositeOk = summary?.CompositeExists == true;
+        var needsStitch = !compositeOk || stale;
 
-        if (needsRemux && summary is { ClipsOnDisk: > 0 } && !JobRunning)
+        if (!needsStitch && compositeOk)
         {
-            _busy = true;
-            _error = null;
-            try
-            {
-                await EnsureHubAsync();
-                _playSceneAfterRemux = scene;
-                await Engine.StartRemuxAsync(_projectId, scene, rebuildWip: false, refreshStaleScenes: false);
-                _message = $"Rebuilding S{scene:D2} composite then play…";
-                var jobs = await Engine.GetJobAsync();
-                _job = jobs?.Job;
-            }
-            catch (Exception ex) { _error = ex.Message; _playSceneAfterRemux = null; }
-            finally { _busy = false; }
+            _clientSceneUrl = null;
+            _showWipPlayer = false;
+            _playingScene = scene;
+            _showScenePlayer = true;
+            _sceneVideoKey = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+            _message = $"Playing S{scene:D2} composite";
             return;
         }
 
-        if (summary is null || !summary.CompositeExists)
+        var clipsOnDisk = summary?.ClipsOnDisk ?? 0;
+        if (clipsOnDisk <= 0 && !compositeOk)
         {
-            _error = $"No composite for S{scene:D2} — generate clips first";
+            _error = $"No clips for S{scene:D2} — generate clips first";
             return;
         }
 
+        _busy = true;
+        _clientStitching = true;
+        _error = null;
+        _clientStitchStatus = "Collecting clips…";
+        _showWipPlayer = false;
+        _clientWipUrl = null;
         _playingScene = scene;
         _showScenePlayer = true;
-        _sceneVideoKey = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-        _message = $"Playing S{scene:D2} composite";
+        _clientSceneUrl = null;
+        try
+        {
+            var urls = await Stitch.CollectClipUrlsAsync(_projectId, scene);
+            if (urls.Count == 0 && compositeOk)
+            {
+                _clientSceneUrl = null;
+                _sceneVideoKey = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+                _message = $"Playing S{scene:D2} composite (may be stale)";
+                return;
+            }
+
+            if (urls.Count == 0)
+            {
+                _error = $"No on-disk clips for S{scene:D2}";
+                _showScenePlayer = false;
+                _playingScene = null;
+                return;
+            }
+
+            _clientStitchStatus = urls.Count == 1 ? "Loading…" : $"Combining {urls.Count} clips…";
+            await Stitch.RevokePreviewUrlAsync();
+            var result = await Stitch.ConcatAsync(urls);
+            if (!result.Success || string.IsNullOrWhiteSpace(result.Url))
+            {
+                _error = result.Error ?? "Browser stitch failed";
+                _showScenePlayer = false;
+                _playingScene = null;
+                return;
+            }
+
+            _clientSceneUrl = result.Url;
+            _sceneVideoKey = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+            _message = urls.Count == 1
+                ? $"Playing S{scene:D2} (single clip)"
+                : $"Playing S{scene:D2} — {urls.Count} clips stitched in browser";
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+            _showScenePlayer = false;
+            _playingScene = null;
+            _clientSceneUrl = null;
+        }
+        finally
+        {
+            _busy = false;
+            _clientStitching = false;
+            _clientStitchStatus = null;
+        }
     }
 
-    private void HideScenePlayer()
+    private async Task HideScenePlayerAsync()
     {
         _showScenePlayer = false;
         _playingScene = null;
+        if (!string.IsNullOrEmpty(_clientSceneUrl))
+        {
+            _clientSceneUrl = null;
+            await Stitch.RevokePreviewUrlAsync();
+        }
+    }
+
+    private async Task HideWipPlayerAsync()
+    {
+        _showWipPlayer = false;
+        if (!string.IsNullOrEmpty(_clientWipUrl))
+        {
+            _clientWipUrl = null;
+            await Stitch.RevokePreviewUrlAsync();
+        }
     }
 
     private void PlayClip(int scene, int clip)
@@ -1349,83 +1523,170 @@ else
 
     private void OpenSaveDialog()
     {
-        _saveDestination = "download";
-        _wipShareLink = "";
+        _saveDestination = "demo";
         if (string.IsNullOrWhiteSpace(_youTubeTitle))
             _youTubeTitle = $"{_projectId} — WIP";
+        if (string.IsNullOrWhiteSpace(_demoTitle))
+            _demoTitle = $"{_projectId}";
+        if (string.IsNullOrWhiteSpace(_demoDescription))
+            _demoDescription = BuildDefaultDemoAbout();
         _showSaveDialog = true;
     }
 
-    private void CloseSaveDialog() => _showSaveDialog = false;
+    /// <summary>Starter blurb for the public gallery — user can edit before publish.</summary>
+    private string BuildDefaultDemoAbout()
+    {
+        var withMedia = _scenes.Count(s => s.CompositeExists || s.ClipsOnDisk > 0);
+        var clips = _scenes.Sum(s => s.ClipsOnDisk);
+        var bits = new List<string>();
+        bits.Add($"A PageToMovie short from “{_projectId}”.");
+        if (withMedia > 0)
+        {
+            bits.Add(withMedia == 1
+                ? "One scene with picture locked."
+                : $"{withMedia} scenes with picture on disk.");
+        }
+        if (clips > 0)
+            bits.Add(clips == 1 ? "1 clip assembled." : $"{clips} clips assembled.");
+        bits.Add("AI-assisted adaptation cut shared for feedback.");
+        return string.Join(" ", bits);
+    }
 
-    /// <summary>Public share URL (tokenized). Empty until created for this dialog session.</summary>
-    private string _wipShareLink = "";
+    private void CloseSaveDialog() => _showSaveDialog = false;
 
     private async Task ConfirmSaveAsync()
     {
         if (_saveDestination == "youtube")
             await StartYouTubeUploadAsync();
-        else if (_saveDestination == "link")
-            await CopyShareLinkAsync();
         else
-            await ExportMovieToDiskAsync();
+            await PublishDemoAsync();
     }
 
-    private async Task OnShareLinkSelectedAsync()
+    /// <summary>
+    /// Ensure a playable full-cut URL (client stitch blob or on-disk WIP), upload to /api/demos, open gallery.
+    /// </summary>
+    private async Task PublishDemoAsync()
     {
-        _saveDestination = "link";
+        _busy = true;
         _error = null;
+        _message = null;
         try
         {
-            await EnsureShareLinkAsync();
-        }
-        catch (Exception ex)
-        {
-            _error = ex.Message;
-        }
-    }
+            var mediaUrl = await EnsureShareableMovieUrlAsync();
+            if (string.IsNullOrWhiteSpace(mediaUrl))
+            {
+                _error = "Could not build a movie to share — generate clips first.";
+                return;
+            }
 
-    private async Task EnsureShareLinkAsync()
-    {
-        if (!string.IsNullOrWhiteSpace(_wipShareLink)) return;
-        await RefreshWipMetaAsync();
-        if (_wipStale || !_wipExists)
-            throw new InvalidOperationException(
-                "WIP is missing or out of date — use Play first (it rebuilds automatically).");
-        var dto = await Engine.CreateWipShareLinkAsync(_projectId);
-        if (dto is null || (string.IsNullOrWhiteSpace(dto.Url) && string.IsNullOrWhiteSpace(dto.Path)))
-            throw new InvalidOperationException(dto?.Error ?? "Could not create share link.");
-        if (!string.IsNullOrWhiteSpace(dto.Url))
-            _wipShareLink = dto.Url!;
-        else
-        {
-            var path = dto.Path!.StartsWith('/') ? dto.Path : "/" + dto.Path;
-            _wipShareLink = Nav.BaseUri.TrimEnd('/') + path;
-        }
-    }
+            // Prefer client upload (works for blob: and for same-origin WIP with token).
+            var uploadPath = "/api/demos";
+            var token = Session.Token;
+            var title = string.IsNullOrWhiteSpace(_demoTitle) ? _projectId : _demoTitle.Trim();
+            var description = string.IsNullOrWhiteSpace(_demoDescription) ? "" : _demoDescription.Trim();
 
-    private async Task CopyShareLinkAsync()
-    {
-        _error = null;
-        try
-        {
-            await EnsureShareLinkAsync();
             var res = await JS.InvokeAsync<System.Text.Json.JsonElement>(
-                "PageToMovieExport.copyTextAsync", _wipShareLink);
-            if (res.TryGetProperty("success", out var ok) && ok.GetBoolean())
+                "PageToMovieExport.uploadDemoMovieAsync",
+                mediaUrl,
+                uploadPath,
+                token,
+                new
+                {
+                    title,
+                    description,
+                    projectId = _projectId,
+                    fileName = $"{_projectId}_demo.mp4",
+                });
+
+            if (!res.TryGetProperty("success", out var ok) || !ok.GetBoolean())
             {
-                _showSaveDialog = false;
-                _message = "Share link copied — anyone with the link can watch until it expires.";
+                // Fallback: server copies on-disk WIP when no client blob
+                if (_wipExists && !_wipStale && string.IsNullOrEmpty(_clientWipUrl))
+                {
+                    var pub = await Engine.PublishDemoFromWipAsync(
+                        _projectId,
+                        string.IsNullOrWhiteSpace(_demoTitle) ? _projectId : _demoTitle.Trim(),
+                        string.IsNullOrWhiteSpace(_demoDescription) ? null : _demoDescription.Trim());
+                    if (pub?.Ok == true && pub.Demo is not null)
+                    {
+                        _showSaveDialog = false;
+                        _message = $"Published “{pub.Demo.Title}” to Demo gallery.";
+                        Nav.NavigateTo(pub.Demo.PagePath ?? $"/demo#{pub.Demo.Id}");
+                        return;
+                    }
+                    _error = pub?.Error ?? "Demo publish failed";
+                    return;
+                }
+
+                var err = res.TryGetProperty("error", out var e) ? e.GetString() : "upload failed";
+                _error = err ?? "Demo upload failed";
+                return;
             }
-            else
+
+            string? demoId = null;
+            var publishedTitle = title;
+            if (res.TryGetProperty("demo", out var demoEl) && demoEl.ValueKind == System.Text.Json.JsonValueKind.Object)
             {
-                var err = res.TryGetProperty("error", out var e) ? e.GetString() : "unknown";
-                _error = "Could not copy automatically — select the link and copy manually. (" + err + ")";
+                if (demoEl.TryGetProperty("id", out var idEl))
+                    demoId = idEl.GetString();
+                if (demoEl.TryGetProperty("title", out var tEl))
+                    publishedTitle = tEl.GetString() ?? publishedTitle;
             }
+
+            _showSaveDialog = false;
+            _message = $"Published “{publishedTitle}” to Demo gallery.";
+            Nav.NavigateTo(string.IsNullOrWhiteSpace(demoId) ? "/demo" : $"/demo#{demoId}");
         }
         catch (Exception ex)
         {
             _error = ex.Message;
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    /// <summary>Return a browser-fetchable URL for the full cut (blob or authenticated WIP).</summary>
+    private async Task<string?> EnsureShareableMovieUrlAsync()
+    {
+        if (!string.IsNullOrEmpty(_clientWipUrl))
+            return _clientWipUrl;
+
+        await RefreshWipMetaAsync();
+        if (_wipExists && !_wipStale)
+            return Engine.WipMovieUrl(_projectId);
+
+        // Stitch in browser like Play WIP
+        var sceneNums = _scenes
+            .Where(s => s.CompositeExists || s.ClipsOnDisk > 0)
+            .OrderBy(s => s.SceneNumber)
+            .Select(s => s.SceneNumber)
+            .ToList();
+        if (sceneNums.Count == 0)
+            return null;
+
+        _clientStitching = true;
+        _clientStitchStatus = "Preparing cut for upload…";
+        try
+        {
+            var meta = await Engine.GetWipMovieMetaAsync(_projectId);
+            var stale = meta?.StaleScenes?.ToHashSet() ?? new HashSet<int>();
+            var urls = await Stitch.CollectSceneMediaUrlsAsync(_projectId, sceneNums, _scenes, stale);
+            if (urls.Count == 0) return null;
+            await Stitch.RevokePreviewUrlAsync();
+            var result = await Stitch.ConcatAsync(urls);
+            if (!result.Success || string.IsNullOrWhiteSpace(result.Url))
+                throw new InvalidOperationException(result.Error ?? "Browser stitch failed");
+            _clientWipUrl = result.Url;
+            _showWipPlayer = true;
+            _wipVideoKey = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+            return _clientWipUrl;
+        }
+        finally
+        {
+            _clientStitching = false;
+            _clientStitchStatus = null;
         }
     }
 
@@ -1461,6 +1722,12 @@ else
         _error = null;
         try
         {
+            await RefreshWipMetaAsync();
+            if (!_wipExists || _wipStale)
+            {
+                _error = "YouTube upload needs an on-disk WIP — use server remux or publish Demo from a browser stitch first.";
+                return;
+            }
             await EnsureHubAsync();
             await Engine.StartYouTubeUploadAsync(new StartYouTubeUploadRequest
             {
@@ -1478,43 +1745,14 @@ else
         finally { _busy = false; }
     }
 
-    private async Task ExportMovieToDiskAsync()
-    {
-        _message = null;
-        _error = null;
-        try
-        {
-            await RefreshWipMetaAsync();
-            if (_wipStale || !_wipExists)
-            {
-                _error = "WIP is missing or out of date — use Play first (it rebuilds automatically).";
-                return;
-            }
-            var bytes = await Engine.GetWipMovieBytesAsync(_projectId);
-            if (bytes == null || bytes.Length == 0)
-            {
-                _error = "WIP movie is not available on server.";
-                return;
-            }
-
-            var base64 = Convert.ToBase64String(bytes);
-            var filename = $"{_projectId}_WIP.mp4";
-            await JS.InvokeVoidAsync("PageToMovieExport.saveMovieToDiskAsync", filename, base64, "video/mp4");
-            _showSaveDialog = false;
-            _message = "Movie saved to your computer.";
-        }
-        catch (Exception ex)
-        {
-            _error = "Export error: " + ex.Message;
-        }
-    }
-
     private Task EnsureHubAsync() => Hub.EnsureStartedAsync();
 
     public async ValueTask DisposeAsync()
     {
         Hub.JobUpdated -= OnJobUpdated;
         Hub.JobLog -= OnJobLog;
-        await Task.CompletedTask;
+        _clientWipUrl = null;
+        _clientSceneUrl = null;
+        await Stitch.RevokePreviewUrlAsync();
     }
 }

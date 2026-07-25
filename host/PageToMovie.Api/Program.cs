@@ -126,6 +126,7 @@ builder.Services.AddSingleton<ReviewIndexService>();
 builder.Services.AddSingleton<ClipAutoReviewService>();
 builder.Services.AddSingleton<ProjectArtifactIndexService>();
 builder.Services.AddSingleton<MediaShareService>();
+builder.Services.AddSingleton<DemoCatalogService>();
 builder.Services.AddSingleton<YouTubeAuthService>();
 string dpKeysDir;
 try
@@ -143,41 +144,9 @@ builder.Services.AddDataProtection()
 builder.Services.AddSingleton<UserDatabaseService>();
 builder.Services.AddHttpContextAccessor();
 
-// Blazor Web UI
+// Blazor Web UI — Interactive WebAssembly (client DI lives in PageToMovie.Web Program.cs)
 builder.Services.AddRazorComponents()
-    .AddInteractiveServerComponents();
-
-builder.Services.Configure<EngineApiOptions>(
-    builder.Configuration.GetSection(EngineApiOptions.SectionName));
-
-builder.Services.AddScoped<AdminSessionService>();
-builder.Services.AddScoped<ActiveProjectState>();
-builder.Services.AddScoped<ThemeState>();
-builder.Services.AddHttpClient("PageToMovie.Api", (sp, client) =>
-{
-    var opts = sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<EngineApiOptions>>().Value;
-    var port = Environment.GetEnvironmentVariable("PORT") ?? "5088";
-    var baseUrl = string.IsNullOrWhiteSpace(opts.BaseUrl)
-        ? $"http://127.0.0.1:{port}"
-        : opts.BaseUrl.TrimEnd('/') + "/";
-    client.BaseAddress = new Uri(baseUrl);
-    var minutes = opts.TimeoutMinutes > 0 ? opts.TimeoutMinutes : 30;
-    client.Timeout = TimeSpan.FromMinutes(Math.Clamp(minutes, 5, 120));
-});
-builder.Services.AddScoped(sp =>
-{
-    var http = sp.GetRequiredService<IHttpClientFactory>().CreateClient("PageToMovie.Api");
-    return new EngineApiClient(
-        http,
-        sp.GetRequiredService<AdminSessionService>(),
-        sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<EngineApiOptions>>());
-});
-
-builder.Services.AddScoped(sp =>
-{
-    var opts = sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<EngineApiOptions>>();
-    return new JobHubClient(opts, sp.GetRequiredService<AdminSessionService>());
-});
+    .AddInteractiveWebAssemblyComponents();
 
 builder.Services.AddAntiforgery(options =>
 {
@@ -300,9 +269,10 @@ app.UseStaticFiles();
 app.MapStaticAssets();
 app.UseAntiforgery();
 
-// Map Blazor UI components (PageToMovie.Web)
+// Map Blazor UI (PageToMovie.Web WASM) — same origin as REST + SignalR
 app.MapRazorComponents<App>()
-    .AddInteractiveServerRenderMode();
+    .AddInteractiveWebAssemblyRenderMode()
+    .AddAdditionalAssemblies(typeof(PageToMovie.Web.Services.EngineApiClient).Assembly);
 
 app.UseCors();
 
@@ -2934,6 +2904,163 @@ app.MapGet("/api/share/{token}", (string token, MediaShareService shares, Projec
     {
         return Results.BadRequest(new { ok = false, error = ex.Message });
     }
+});
+
+/// <summary>Public demo gallery list (no login).</summary>
+app.MapGet("/api/demos", (DemoCatalogService demos, int? take) =>
+{
+    var list = demos.List(take ?? 50);
+    return Results.Ok(new
+    {
+        ok = true,
+        demos = list.Select(d => new
+        {
+            d.Id,
+            d.Title,
+            d.Description,
+            d.ProjectId,
+            d.CreatedBy,
+            d.CreatedAt,
+            d.SizeBytes,
+            videoPath = $"/api/demos/{Uri.EscapeDataString(d.Id)}/video",
+        }),
+    });
+});
+
+/// <summary>Public demo metadata.</summary>
+app.MapGet("/api/demos/{demoId}", (string demoId, DemoCatalogService demos) =>
+{
+    var d = demos.TryGet(demoId);
+    if (d is null)
+        return Results.NotFound(new { ok = false, error = "Demo not found" });
+    return Results.Ok(new
+    {
+        ok = true,
+        demo = new
+        {
+            d.Id,
+            d.Title,
+            d.Description,
+            d.ProjectId,
+            d.CreatedBy,
+            d.CreatedAt,
+            d.SizeBytes,
+            videoPath = $"/api/demos/{Uri.EscapeDataString(d.Id)}/video",
+        },
+    });
+});
+
+/// <summary>Public demo video stream (no login).</summary>
+app.MapGet("/api/demos/{demoId}/video", (string demoId, DemoCatalogService demos) =>
+{
+    var path = demos.ResolveMoviePath(demoId);
+    if (path is null)
+        return Results.NotFound(new { ok = false, error = "Demo video not found" });
+    return Results.File(path, "video/mp4", enableRangeProcessing: true);
+});
+
+/// <summary>
+/// Publish a demo: either multipart file upload, or copy current project WIP when only projectId is sent.
+/// Login required. Listed on the public /demo page.
+/// </summary>
+app.MapPost("/api/demos", async (
+    HttpRequest request,
+    IUserContext user,
+    IOptions<PageToMovieOptions> opts,
+    DemoCatalogService demos,
+    ProjectStore store) =>
+{
+    if (AuthGate.RequireLogin(user, opts) is { } denied)
+        return denied;
+
+    try
+    {
+        string? title = null;
+        string? description = null;
+        string? projectId = null;
+        IFormFile? file = null;
+
+        if (request.HasFormContentType)
+        {
+            var form = await request.ReadFormAsync();
+            title = form["title"].ToString();
+            description = form["description"].ToString();
+            projectId = form["projectId"].ToString();
+            file = form.Files.GetFile("file") ?? form.Files.FirstOrDefault();
+        }
+        else
+        {
+            using var doc = await JsonDocument.ParseAsync(request.Body);
+            var root = doc.RootElement;
+            if (root.TryGetProperty("title", out var t)) title = t.GetString();
+            if (root.TryGetProperty("description", out var d)) description = d.GetString();
+            if (root.TryGetProperty("projectId", out var p)) projectId = p.GetString();
+        }
+
+        title = string.IsNullOrWhiteSpace(title) ? null : title.Trim();
+        description = string.IsNullOrWhiteSpace(description) ? null : description.Trim();
+        projectId = string.IsNullOrWhiteSpace(projectId) ? null : projectId.Trim();
+
+        DemoCatalogService.DemoEntry entry;
+        if (file is not null && file.Length > 0)
+        {
+            await using var stream = file.OpenReadStream();
+            entry = await demos.PublishFromStreamAsync(
+                stream,
+                title ?? projectId ?? file.FileName ?? "Demo",
+                description,
+                projectId,
+                user.UserId);
+        }
+        else if (!string.IsNullOrWhiteSpace(projectId))
+        {
+            await store.RequireProjectAsync(projectId, CancellationToken.None);
+            entry = demos.PublishFromWip(
+                projectId,
+                title ?? projectId,
+                description,
+                user.UserId);
+        }
+        else
+        {
+            return Results.BadRequest(new { ok = false, error = "Provide a video file or projectId with a built WIP" });
+        }
+
+        return Results.Ok(new
+        {
+            ok = true,
+            demo = new
+            {
+                entry.Id,
+                entry.Title,
+                entry.Description,
+                entry.ProjectId,
+                entry.CreatedBy,
+                entry.CreatedAt,
+                entry.SizeBytes,
+                videoPath = $"/api/demos/{Uri.EscapeDataString(entry.Id)}/video",
+                pagePath = $"/demo#{Uri.EscapeDataString(entry.Id)}",
+            },
+        });
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { ok = false, error = ex.Message });
+    }
+});
+
+/// <summary>Delete a demo (owner or admin).</summary>
+app.MapDelete("/api/demos/{demoId}", (
+    string demoId,
+    IUserContext user,
+    IOptions<PageToMovieOptions> opts,
+    DemoCatalogService demos) =>
+{
+    if (AuthGate.RequireLogin(user, opts) is { } denied)
+        return denied;
+    if (!demos.Delete(demoId, user.UserId, user.IsAdmin))
+        return Results.NotFound(new { ok = false, error = "Demo not found or not allowed" });
+    return Results.Ok(new { ok = true });
 });
 
 /// <summary>Stream the most recently built multi-scene preview (assets/movie_preview.mp4).</summary>

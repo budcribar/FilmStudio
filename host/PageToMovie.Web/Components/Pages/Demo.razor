@@ -1,0 +1,233 @@
+@page "/demo"
+@inject EngineApiClient Engine
+@inject AdminSessionService Session
+@inject NavigationManager Nav
+@using PageToMovie.Core.Models
+
+<PageTitle>Demo gallery — PageToMovie</PageTitle>
+
+<div class="demo-page">
+    <header class="demo-hero">
+        <div class="demo-hero-badge">Public gallery</div>
+        <h1 class="demo-hero-title">Demo films</h1>
+        <p class="demo-hero-lead">
+            Short movies made with PageToMovie — open to everyone, no account needed.
+            Filmmakers publish from <strong>Review → Share…</strong>
+        </p>
+        @if (!_loading && _demos.Count > 0)
+        {
+            <p class="demo-hero-meta">@_demos.Count film@(_demos.Count == 1 ? "" : "s") on the wall</p>
+        }
+    </header>
+
+    @if (!string.IsNullOrEmpty(_error))
+    {
+        <div class="alert alert-danger">@_error</div>
+    }
+    @if (!string.IsNullOrEmpty(_message))
+    {
+        <div class="alert alert-info">@_message</div>
+    }
+
+    @if (_loading)
+    {
+        <div class="demo-loading">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading…</span>
+            </div>
+            <p class="text-muted mb-0 mt-2">Loading the gallery…</p>
+        </div>
+    }
+    else if (_demos.Count == 0)
+    {
+        <div class="demo-empty card">
+            <div class="card-body text-center py-5">
+                <div class="demo-empty-icon" aria-hidden="true">🎬</div>
+                <h2 class="h4 mb-2">No films yet</h2>
+                <p class="text-muted mb-0 mx-auto" style="max-width: 28rem;">
+                    When someone finishes a cut in the studio, they can share it here with a short synopsis.
+                    Check back soon — or <a href="/login">sign in</a> to make your own.
+                </p>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="demo-grid">
+            @foreach (var d in _demos)
+            {
+                var about = AboutText(d);
+                var isHighlight = _highlightId == d.Id;
+                <article class="demo-card @(_playingId == d.Id ? "is-playing" : "") @(isHighlight ? "is-highlight" : "")"
+                         id="@d.Id"
+                         data-testid="demo-card">
+                    <div class="demo-card-media">
+                        <video controls playsinline preload="metadata"
+                               poster=""
+                               src="@Engine.DemoVideoUrl(d.Id)"
+                               @key="d.Id"
+                               @onplay="() => _playingId = d.Id"
+                               @onpause="() => { if (_playingId == d.Id) _playingId = null; }">
+                            Your browser does not support HTML5 video.
+                        </video>
+                    </div>
+                    <div class="demo-card-body">
+                        <header class="demo-card-header">
+                            <h2 class="demo-card-title">@d.Title</h2>
+                            <div class="demo-card-chips">
+                                @if (!string.IsNullOrWhiteSpace(d.ProjectId))
+                                {
+                                    <span class="demo-chip" title="Studio project">@d.ProjectId</span>
+                                }
+                                <span class="demo-chip demo-chip-muted">@RelativeDate(d.CreatedAt)</span>
+                                @if (d.SizeBytes > 0)
+                                {
+                                    <span class="demo-chip demo-chip-muted">@FormatBytes(d.SizeBytes)</span>
+                                }
+                            </div>
+                        </header>
+
+                        <div class="demo-card-about">
+                            <h3 class="demo-about-label">About this film</h3>
+                            <p class="demo-about-text">@about</p>
+                        </div>
+
+                        <footer class="demo-card-footer">
+                            <div class="demo-card-byline">
+                                @if (!string.IsNullOrWhiteSpace(d.CreatedBy))
+                                {
+                                    <span>Shared by <strong>@d.CreatedBy</strong></span>
+                                }
+                                else
+                                {
+                                    <span class="text-muted">Anonymous share</span>
+                                }
+                                <span class="demo-card-date" title="@d.CreatedAt.ToLocalTime().ToString("f")">
+                                    · @d.CreatedAt.ToLocalTime().ToString("MMM d, yyyy")
+                                </span>
+                            </div>
+                            <div class="demo-card-actions">
+                                <a class="btn btn-sm btn-outline-secondary"
+                                   href="@Engine.DemoVideoUrl(d.Id)"
+                                   target="_blank"
+                                   rel="noopener">
+                                    Open file
+                                </a>
+                                @if (CanRemove(d))
+                                {
+                                    <button type="button"
+                                            class="btn btn-sm btn-outline-danger"
+                                            disabled="@_busy"
+                                            @onclick="() => DeleteAsync(d.Id)">
+                                        Remove
+                                    </button>
+                                }
+                            </div>
+                        </footer>
+                    </div>
+                </article>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    private List<DemoListItem> _demos = new();
+    private bool _loading = true;
+    private bool _busy;
+    private string? _error;
+    private string? _message;
+    private string? _highlightId;
+    private string? _playingId;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try { await Session.EnsureHydratedAsync(); } catch { /* optional */ }
+        try
+        {
+            var uri = Nav.ToAbsoluteUri(Nav.Uri);
+            if (!string.IsNullOrEmpty(uri.Fragment))
+                _highlightId = uri.Fragment.TrimStart('#');
+        }
+        catch { /* ignore */ }
+
+        await ReloadAsync();
+    }
+
+    private async Task ReloadAsync()
+    {
+        _loading = true;
+        _error = null;
+        try
+        {
+            _demos = await Engine.ListDemosAsync(100);
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+            _demos = new();
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private bool CanRemove(DemoListItem d) =>
+        Session.IsAdmin
+        || (!string.IsNullOrWhiteSpace(Session.UserId)
+            && string.Equals(Session.UserId, d.CreatedBy, StringComparison.OrdinalIgnoreCase));
+
+    /// <summary>Prefer publisher synopsis; otherwise a friendly default blurb.</summary>
+    private static string AboutText(DemoListItem d)
+    {
+        if (!string.IsNullOrWhiteSpace(d.Description))
+            return d.Description.Trim();
+
+        var project = string.IsNullOrWhiteSpace(d.ProjectId) ? null : d.ProjectId.Trim();
+        if (project is not null)
+            return $"A short film produced in PageToMovie from the “{project}” project — an AI-assisted adaptation cut shared with the community.";
+        return "A short film produced in PageToMovie — an AI-assisted adaptation shared with the community.";
+    }
+
+    private async Task DeleteAsync(string id)
+    {
+        if (_busy) return;
+        _busy = true;
+        _error = null;
+        try
+        {
+            await Engine.DeleteDemoAsync(id);
+            _message = "Film removed from the gallery.";
+            await ReloadAsync();
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private static string FormatBytes(long bytes)
+    {
+        if (bytes < 1024) return $"{bytes} B";
+        if (bytes < 1024 * 1024) return $"{bytes / 1024.0:0.#} KB";
+        if (bytes < 1024L * 1024 * 1024) return $"{bytes / (1024.0 * 1024):0.#} MB";
+        return $"{bytes / (1024.0 * 1024 * 1024):0.##} GB";
+    }
+
+    private static string RelativeDate(DateTimeOffset when)
+    {
+        var local = when.ToLocalTime();
+        var span = DateTimeOffset.Now - when;
+        if (span.TotalMinutes < 2) return "Just now";
+        if (span.TotalHours < 1) return $"{(int)span.TotalMinutes}m ago";
+        if (span.TotalDays < 1) return $"{(int)span.TotalHours}h ago";
+        if (span.TotalDays < 14) return $"{(int)span.TotalDays}d ago";
+        if (local.Year == DateTime.Now.Year) return local.ToString("MMM d");
+        return local.ToString("MMM d, yyyy");
+    }
+}

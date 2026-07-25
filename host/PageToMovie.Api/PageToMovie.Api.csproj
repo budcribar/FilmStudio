@@ -5,10 +5,9 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <ErrorOnDuplicatePublishOutputFiles>false</ErrorOnDuplicatePublishOutputFiles>
-    <!-- Framework static assets (blazor.web.js) come from PageToMovie.Web
-         (RequiresAspNetWebAssets=true there). Do not enable here — both true →
-         DiscoverPrecompressedAssets duplicate-key failure on publish. -->
-    <RequiresAspNetWebAssets>false</RequiresAspNetWebAssets>
+    <!-- blazor.web.js + WASM boot assets: host provides framework static assets;
+         client is PageToMovie.Web (Sdk.BlazorWebAssembly). -->
+    <RequiresAspNetWebAssets>true</RequiresAspNetWebAssets>
   </PropertyGroup>
 
   <!-- Microsoft.AspNetCore.OpenApi pulled vulnerable Microsoft.OpenApi 2.0.0 (GHSA-v5pm-xwqc-g5wc).
@@ -27,6 +26,8 @@
     <!-- Admin JWT login (Phase B) -->
     <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.21.0" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.10" />
+    <!-- Host Blazor WebAssembly UI (PageToMovie.Web) -->
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Server" Version="10.0.10" />
   </ItemGroup>
 
   <!-- Copy fake video fixtures next to API output for FakeGrokVideoClient -->

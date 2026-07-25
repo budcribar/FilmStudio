@@ -1,10 +1,8 @@
-using PageToMovie.Web.Components;
+using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
+using Microsoft.Extensions.Options;
 using PageToMovie.Web.Services;
 
-var builder = WebApplication.CreateBuilder(args);
-
-builder.Services.AddRazorComponents()
-    .AddInteractiveServerComponents();
+var builder = WebAssemblyHostBuilder.CreateDefault(args);
 
 builder.Services.Configure<EngineApiOptions>(
     builder.Configuration.GetSection(EngineApiOptions.SectionName));
@@ -12,63 +10,39 @@ builder.Services.Configure<EngineApiOptions>(
 builder.Services.AddScoped<AdminSessionService>();
 builder.Services.AddScoped<ActiveProjectState>();
 builder.Services.AddScoped<ThemeState>();
-// ProtectedSessionStorage is used by AdminSessionService to survive per-page circuits
-builder.Services.AddHttpClient("PageToMovie.Api", (sp, client) =>
-{
-    var opts = sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<EngineApiOptions>>().Value;
-    var baseUrl = string.IsNullOrWhiteSpace(opts.BaseUrl)
-        ? "http://127.0.0.1:5088"
-        : opts.BaseUrl.TrimEnd('/') + "/";
-    client.BaseAddress = new Uri(baseUrl);
-    // Book import / multi-chunk adapt often exceeds 2 minutes; default was 120s and canceled long jobs.
-    var minutes = opts.TimeoutMinutes > 0 ? opts.TimeoutMinutes : 30;
-    client.Timeout = TimeSpan.FromMinutes(Math.Clamp(minutes, 5, 120));
-});
+builder.Services.AddScoped<ClientVideoStitchService>();
+
+// Same-origin by default (Api hosts this WASM). Override EngineApi:BaseUrl only when
+// the API is on a different origin (local split ports).
 builder.Services.AddScoped(sp =>
 {
-    var http = sp.GetRequiredService<IHttpClientFactory>().CreateClient("PageToMovie.Api");
+    var opts = sp.GetRequiredService<IOptions<EngineApiOptions>>().Value;
+    var nav = sp.GetRequiredService<Microsoft.AspNetCore.Components.NavigationManager>();
+    var baseUrl = string.IsNullOrWhiteSpace(opts.BaseUrl)
+        ? nav.BaseUri
+        : opts.BaseUrl.TrimEnd('/') + "/";
+    var minutes = opts.TimeoutMinutes > 0 ? opts.TimeoutMinutes : 30;
+    return new HttpClient
+    {
+        BaseAddress = new Uri(baseUrl, UriKind.Absolute),
+        Timeout = TimeSpan.FromMinutes(Math.Clamp(minutes, 5, 120)),
+    };
+});
+
+builder.Services.AddScoped(sp =>
+{
+    var http = sp.GetRequiredService<HttpClient>();
     return new EngineApiClient(
         http,
         sp.GetRequiredService<AdminSessionService>(),
-        sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<EngineApiOptions>>());
+        sp.GetRequiredService<IOptions<EngineApiOptions>>());
 });
 
 builder.Services.AddScoped(sp =>
 {
-    var opts = sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<EngineApiOptions>>();
-    return new JobHubClient(opts, sp.GetRequiredService<AdminSessionService>());
+    var opts = sp.GetRequiredService<IOptions<EngineApiOptions>>();
+    var nav = sp.GetRequiredService<Microsoft.AspNetCore.Components.NavigationManager>();
+    return new JobHubClient(opts, sp.GetRequiredService<AdminSessionService>(), nav);
 });
 
-// Antiforgery: allow HTTP localhost in Development (avoid Secure cookie blocked on http://)
-builder.Services.AddAntiforgery(options =>
-{
-    options.Cookie.Name = "PageToMovie.Antiforgery";
-    options.Cookie.SameSite = SameSiteMode.Lax;
-    options.Cookie.SecurePolicy = appEnvIsDev(builder)
-        ? CookieSecurePolicy.SameAsRequest
-        : CookieSecurePolicy.Always;
-});
-
-var app = builder.Build();
-
-if (!app.Environment.IsDevelopment())
-{
-    app.UseExceptionHandler("/Error", createScopeForErrors: true);
-    app.UseHsts();
-    app.UseHttpsRedirection();
-}
-// Development: no HTTPS redirect — API is http://127.0.0.1:5088; mixed https Web + http
-// breaks SameSite cookies (admin login antiforgery, etc.).
-
-app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);
-
-app.UseAntiforgery();
-
-app.MapStaticAssets();
-app.MapRazorComponents<App>()
-    .AddInteractiveServerRenderMode();
-
-app.Run();
-
-static bool appEnvIsDev(WebApplicationBuilder b) =>
-    b.Environment.IsDevelopment();
+await builder.Build().RunAsync();

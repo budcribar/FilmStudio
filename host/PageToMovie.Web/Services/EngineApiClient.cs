@@ -36,7 +36,7 @@ public sealed class EngineApiClient
             _session.Changed += SyncIdentityHeaders;
     }
 
-    /// <summary>Push X-User-Id / Bearer onto the shared HttpClient defaults (circuit-scoped client).</summary>
+    /// <summary>Push X-User-Id / Bearer onto the shared HttpClient defaults (scoped client).</summary>
     public void SyncIdentityHeaders()
     {
         try
@@ -315,6 +315,60 @@ public sealed class EngineApiClient
         var res = await _http.SendAsync(req, ct);
         if (!res.IsSuccessStatusCode) return null;
         return await res.Content.ReadAsByteArrayAsync(ct);
+    }
+
+    /// <summary>Public demo gallery list (no auth required on API).</summary>
+    public async Task<List<DemoListItem>> ListDemosAsync(int take = 50, CancellationToken ct = default)
+    {
+        SyncIdentityHeaders();
+        var dto = await _http.GetFromJsonAsync<DemoListEnvelope>(
+            $"/api/demos?take={take}", JsonOpts, ct);
+        return dto?.Demos ?? new List<DemoListItem>();
+    }
+
+    /// <summary>
+    /// Publish demo from server WIP (projectId) or after client already uploaded via JS.
+    /// Prefer <see cref="PublishDemoFromUrlViaJsAsync"/> when only a browser blob/media URL exists.
+    /// </summary>
+    public async Task<DemoPublishResult?> PublishDemoFromWipAsync(
+        string projectId,
+        string title,
+        string? description = null,
+        CancellationToken ct = default)
+    {
+        using var req = new HttpRequestMessage(HttpMethod.Post, "/api/demos")
+        {
+            Content = JsonContent.Create(new
+            {
+                projectId,
+                title,
+                description,
+            }, options: JsonOpts),
+        };
+        return await SendJsonAsync<DemoPublishResult>(req, ct);
+    }
+
+    public async Task DeleteDemoAsync(string demoId, CancellationToken ct = default)
+    {
+        using var req = new HttpRequestMessage(
+            HttpMethod.Delete,
+            $"/api/demos/{Uri.EscapeDataString(demoId)}");
+        using var resp = await _http.SendAsync(req, ct);
+        if (!resp.IsSuccessStatusCode)
+        {
+            var err = await resp.Content.ReadAsStringAsync(ct);
+            throw new InvalidOperationException(TryError(err) ?? resp.ReasonPhrase);
+        }
+    }
+
+    /// <summary>
+    /// Public demo stream URL — no access_token (gallery is open to everyone).
+    /// </summary>
+    public string DemoVideoUrl(string demoId)
+    {
+        var path = $"/api/demos/{Uri.EscapeDataString(demoId)}/video";
+        var origin = BrowserMediaOrigin;
+        return string.IsNullOrEmpty(origin) ? path : origin + path;
     }
 
     public async Task<ProposeLearningRulesResult?> ProposeLearningRulesAsync(
@@ -1412,7 +1466,7 @@ public sealed class EngineApiClient
 
     /// <summary>Server-side HttpClient origin (often loopback). Do not use for browser &lt;img&gt; src.</summary>
     public string ApiBaseUrl =>
-        (_http.BaseAddress?.ToString() ?? "http://127.0.0.1:5088").TrimEnd('/');
+        (_http.BaseAddress?.ToString() ?? "").TrimEnd('/');
 
     /// <summary>
     /// Origin (or empty for same-origin) that the browser should use for media.
@@ -2237,4 +2291,42 @@ public sealed class CostBackfillDto
     public bool Ok { get; set; }
     public string? ProjectId { get; set; }
     public CostBackfillResult? Backfill { get; set; }
+}
+
+public sealed class DemoListEnvelope
+{
+    public bool Ok { get; set; }
+    public List<DemoListItem> Demos { get; set; } = new();
+}
+
+public sealed class DemoListItem
+{
+    public string Id { get; set; } = "";
+    public string Title { get; set; } = "";
+    public string? Description { get; set; }
+    public string? ProjectId { get; set; }
+    public string? CreatedBy { get; set; }
+    public DateTimeOffset CreatedAt { get; set; }
+    public long SizeBytes { get; set; }
+    public string? VideoPath { get; set; }
+}
+
+public sealed class DemoPublishResult
+{
+    public bool Ok { get; set; }
+    public string? Error { get; set; }
+    public DemoPublishItem? Demo { get; set; }
+}
+
+public sealed class DemoPublishItem
+{
+    public string Id { get; set; } = "";
+    public string Title { get; set; } = "";
+    public string? Description { get; set; }
+    public string? ProjectId { get; set; }
+    public string? CreatedBy { get; set; }
+    public DateTimeOffset CreatedAt { get; set; }
+    public long SizeBytes { get; set; }
+    public string? VideoPath { get; set; }
+    public string? PagePath { get; set; }
 }

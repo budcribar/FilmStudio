@@ -178,5 +178,53 @@ window.PageToMovieExport = {
         } catch (err) {
             return { success: false, error: err.message || String(err) };
         }
+    },
+
+    /**
+     * Upload a browser media URL (blob: or /api/… with access_token) to POST /api/demos as multipart.
+     * @param {string} mediaUrl blob or same-origin media URL
+     * @param {string} uploadUrl absolute or root-relative POST target (e.g. /api/demos)
+     * @param {string|null} accessToken JWT for Authorization header
+     * @param {{ title?: string, description?: string, projectId?: string, fileName?: string }} meta
+     */
+    uploadDemoMovieAsync: async function (mediaUrl, uploadUrl, accessToken, meta) {
+        try {
+            if (!mediaUrl) return { success: false, error: "No media URL" };
+            meta = meta || {};
+            const res = await fetch(mediaUrl);
+            if (!res.ok) {
+                return { success: false, error: "Could not read video (" + res.status + ")" };
+            }
+            const blob = await res.blob();
+            if (!blob || blob.size < 1024) {
+                return { success: false, error: "Video is empty or too small" };
+            }
+            const form = new FormData();
+            form.append("file", blob, meta.fileName || "movie.mp4");
+            if (meta.title) form.append("title", meta.title);
+            if (meta.description) form.append("description", meta.description);
+            if (meta.projectId) form.append("projectId", meta.projectId);
+
+            const headers = {};
+            if (accessToken) headers["Authorization"] = "Bearer " + accessToken;
+
+            const up = await fetch(uploadUrl, {
+                method: "POST",
+                headers: headers,
+                body: form,
+                credentials: "same-origin",
+            });
+            const text = await up.text();
+            let json = null;
+            try { json = text ? JSON.parse(text) : null; } catch (_) { /* */ }
+            if (!up.ok) {
+                const err = (json && (json.error || json.message)) || text || ("HTTP " + up.status);
+                return { success: false, error: String(err) };
+            }
+            return { success: true, demo: json && json.demo ? json.demo : json };
+        } catch (err) {
+            console.error("uploadDemoMovieAsync failed:", err);
+            return { success: false, error: err.message || String(err) };
+        }
     }
 };

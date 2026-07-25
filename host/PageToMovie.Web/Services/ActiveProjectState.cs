@@ -3,7 +3,7 @@ using PageToMovie.Core.Models;
 namespace PageToMovie.Web.Services;
 
 /// <summary>
-/// Circuit-scoped active project for nav gating (hide Adaptation/Scenes/etc. until chosen).
+/// Scoped active project for nav gating (hide Adaptation/Scenes/etc. until chosen).
 /// Also tracks which workflow steps are available for the active project.
 /// </summary>
 public sealed class ActiveProjectState

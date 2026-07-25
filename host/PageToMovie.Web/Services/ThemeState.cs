@@ -1,7 +1,7 @@
 namespace PageToMovie.Web.Services;
 
 /// <summary>
-/// Circuit-scoped UI theme preference ("dark" | "light" | "system"), sourced from the
+/// Scoped UI theme preference ("dark" | "light" | "system"), sourced from the
 /// active project's config (<c>ui_theme</c> in pipeline_config.json). Components that
 /// render theme-dependent chrome (e.g. NavMenu) apply it to the DOM via JS interop and
 /// notify subscribers so the preference stays in sync across the app.

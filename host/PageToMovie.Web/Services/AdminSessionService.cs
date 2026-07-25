@@ -4,8 +4,8 @@ using Microsoft.JSInterop;
 namespace PageToMovie.Web.Services;
 
 /// <summary>
-/// Circuit-scoped admin identity. Also mirrors JWT into sessionStorage via JS
-/// so a full page reload can restore the session.
+/// Scoped admin identity (Blazor WASM scope = browser tab). Mirrors JWT into
+/// sessionStorage via JS so a full page reload can restore the session.
 /// </summary>
 public sealed class AdminSessionService
 {

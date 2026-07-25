@@ -1,4 +1,5 @@
 using PageToMovie.Core.Models;
+using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.Extensions.Options;
 
@@ -8,6 +9,7 @@ public sealed class JobHubClient : IAsyncDisposable
 {
     private readonly EngineApiOptions _opts;
     private readonly AdminSessionService? _session;
+    private readonly NavigationManager? _nav;
     private HubConnection? _connection;
 
     public event Action<JobSnapshot>? JobUpdated;
@@ -17,10 +19,14 @@ public sealed class JobHubClient : IAsyncDisposable
     public bool IsConnected =>
         _connection?.State == HubConnectionState.Connected;
 
-    public JobHubClient(IOptions<EngineApiOptions> opts, AdminSessionService? session = null)
+    public JobHubClient(
+        IOptions<EngineApiOptions> opts,
+        AdminSessionService? session = null,
+        NavigationManager? nav = null)
     {
         _opts = opts.Value;
         _session = session;
+        _nav = nav;
     }
 
     public async Task StartAsync(CancellationToken ct = default)
@@ -34,7 +40,7 @@ public sealed class JobHubClient : IAsyncDisposable
             _connection = null;
         }
 
-        var baseUrl = (_opts.BaseUrl ?? "http://127.0.0.1:5088").TrimEnd('/');
+        var baseUrl = ResolveApiBase().TrimEnd('/');
         var userId = _session?.UserId ?? "local";
         var url = $"{baseUrl}/hubs/jobs?userId={Uri.EscapeDataString(userId)}";
 
@@ -62,6 +68,15 @@ public sealed class JobHubClient : IAsyncDisposable
     {
         if (IsConnected) return;
         try { await StartAsync(); } catch { /* optional */ }
+    }
+
+    private string ResolveApiBase()
+    {
+        if (!string.IsNullOrWhiteSpace(_opts.BaseUrl))
+            return _opts.BaseUrl.Trim().TrimEnd('/');
+        if (_nav is not null)
+            return _nav.BaseUri.TrimEnd('/');
+        return "";
     }
 
     private const string AuthHeaderUserId = "X-User-Id";

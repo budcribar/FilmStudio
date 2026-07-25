@@ -3,9 +3,8 @@ FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 
 # Copy project files and restore dependencies
-# PageToMovie.Web.csproj sets RequiresAspNetWebAssets=true so restore pulls
-# Microsoft.AspNetCore.App.Internal.Assets (blazor.web.js). Api keeps that false
-# so publish does not double-register the same framework files.
+# PageToMovie.Web is Blazor WebAssembly (hosted by Api). Api sets
+# RequiresAspNetWebAssets=true for blazor.web.js + WASM boot assets.
 COPY host/PageToMovie.Core/PageToMovie.Core.csproj host/PageToMovie.Core/
 COPY host/PageToMovie.Engine/PageToMovie.Engine.csproj host/PageToMovie.Engine/
 COPY host/PageToMovie.Fakes/PageToMovie.Fakes.csproj host/PageToMovie.Fakes/

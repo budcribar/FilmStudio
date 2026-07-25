@@ -4,6 +4,7 @@
 @inject JobHubClient Hub
 @inject ActiveProjectState ActiveProject
 @inject AdminSessionService Session
+@inject ClientVideoStitchService Stitch
 @using PageToMovie.Core.Models
 
 <PageTitle>Scenes &amp; Clips</PageTitle>
@@ -91,67 +92,88 @@ else
     </div>
 }
 
-@if (_showScenePlayer && _playingScene is int playSn && !IsSceneGenBusy(playSn))
+@if (_showScenePlayer && _playingScene is int playSn && !IsSceneGenBusy(playSn) && !_clientStitching)
 {
     <div class="card mb-3 border-primary">
         <div class="card-header d-flex justify-content-between align-items-center py-2">
-            <span>Scene composite <code class="small">S@(playSn.ToString("D2"))</code></span>
+            <span>
+                Scene <code class="small">S@(playSn.ToString("D2"))</code>
+                @if (!string.IsNullOrEmpty(_clientSceneUrl))
+                {
+                    <span class="badge bg-info text-dark ms-1">client stitch</span>
+                }
+            </span>
             <button type="button" class="btn btn-sm btn-outline-secondary" @onclick="HideScenePlayer">Hide</button>
         </div>
         <div class="card-body py-2">
             <video controls playsinline autoplay
                    style="width:100%;max-height:70vh;background:#000;border-radius:0.35rem;"
-                   src="@CacheBust(Engine.CompositeVideoUrl(_projectId, playSn))"
+                   src="@ScenePlayerSrc(playSn)"
                    @key="_sceneVideoKey"
                    onloadeddata="this.play().catch(function(){})">
                 Your browser does not support HTML5 video.
             </video>
             <p class="small text-muted mb-0 mt-2">
-                <a href="@Engine.CompositeVideoUrl(_projectId, playSn)" target="_blank" rel="noopener">Open in new tab</a>
+                @if (string.IsNullOrEmpty(_clientSceneUrl))
+                {
+                    <a href="@Engine.CompositeVideoUrl(_projectId, playSn)" target="_blank" rel="noopener">Open in new tab</a>
+                }
+                else
+                {
+                    <span>Stitched in browser from clips (not written to disk).</span>
+                }
             </p>
         </div>
     </div>
 }
-else if (_showScenePlayer && _playingScene is int busySn && IsSceneGenBusy(busySn))
+else if (_showScenePlayer && _playingScene is int busySn && (IsSceneGenBusy(busySn) || _clientStitching))
 {
     <div class="card mb-3 border-secondary">
         <div class="card-body py-2 small text-muted">
-            Scene composite hidden while generating <code>S@(busySn.ToString("D2"))</code>.
+            @if (_clientStitching)
+            {
+                <span>Combining clips in browser… @_clientStitchStatus</span>
+            }
+            else
+            {
+                <span>Scene hidden while generating <code>S@(busySn.ToString("D2"))</code>.</span>
+            }
             <button type="button" class="btn btn-link btn-sm p-0 align-baseline ms-1" @onclick="HideScenePlayer">Dismiss</button>
         </div>
     </div>
 }
 
-@if (_showPreviewPlayer && !IsPreviewBusy)
+@if (_showPreviewPlayer && !string.IsNullOrEmpty(_clientPreviewUrl) && !_clientStitching)
 {
     <div class="card mb-3 border-primary" data-testid="scenes-preview-player">
         <div class="card-header d-flex justify-content-between align-items-center py-2">
             <span>
                 Preview — @_previewScenes.Count scene@(_previewScenes.Count == 1 ? "" : "s"):
                 <code class="small">@string.Join(", ", _previewScenes.Select(s => $"S{s:D2}"))</code>
+                <span class="badge bg-info text-dark ms-1">client stitch</span>
             </span>
-            <button type="button" class="btn btn-sm btn-outline-secondary" @onclick="() => _showPreviewPlayer = false">Hide</button>
+            <button type="button" class="btn btn-sm btn-outline-secondary" @onclick="HidePreviewPlayerAsync">Hide</button>
         </div>
         <div class="card-body py-2">
             <video controls playsinline autoplay
                    style="width:100%;max-height:70vh;background:#000;border-radius:0.35rem;"
-                   src="@CacheBust(Engine.PreviewMovieUrl(_projectId))"
+                   src="@_clientPreviewUrl"
                    @key="_previewVideoKey"
                    onloadeddata="this.play().catch(function(){})">
                 Your browser does not support HTML5 video.
             </video>
             <p class="small text-muted mb-0 mt-2">
-                Temporary — not saved anywhere. Change the selection and click <strong>Play selected</strong> again
-                to audition a different cut (e.g. drop a scene to see how it flows without it).
+                Combined in your browser — not saved on the server. Change the selection and click
+                <strong>Play selected</strong> again to audition a different cut.
             </p>
         </div>
     </div>
 }
-else if (_showPreviewPlayer && IsPreviewBusy)
+else if (_showPreviewPlayer && _clientStitching)
 {
-    <div class="card mb-3 border-secondary">
+    <div class="card mb-3 border-secondary" data-testid="scenes-preview-player">
         <div class="card-body py-2 small text-muted">
-            Preview hidden while combining selected scenes…
+            Combining selected scenes in browser… @_clientStitchStatus
         </div>
     </div>
 }
@@ -300,8 +322,8 @@ else if (Session.IsAdmin && _job is not null &&
                     <button type="button"
                             data-testid="scenes-play-selected"
                             class="btn btn-outline-primary btn-sm"
-                            disabled="@(_busy || _selected.Count == 0 || JobRunning)"
-                            title="Stitch the selected scenes together in order"
+                            disabled="@(_busy || _clientStitching || _selected.Count == 0)"
+                            title="Stitch selected scenes in the browser (composites or clips)"
                             @onclick="PlaySelectedAsync">
                         ▶ Play selected@(_selected.Count > 0 ? $" ({_selected.Count})" : "")
                     </button>
@@ -1152,10 +1174,14 @@ else
     private long _sceneVideoKey;
     private long _inlineCompositeKey;
     private long _clipVideoKey;
-    /// <summary>"Play selected" — multi-scene (possibly non-contiguous) stitched preview.</summary>
+    /// <summary>"Play selected" — multi-scene (possibly non-contiguous) client-stitched preview.</summary>
     private bool _showPreviewPlayer;
     private long _previewVideoKey;
     private List<int> _previewScenes = new();
+    private string? _clientPreviewUrl;
+    private string? _clientSceneUrl;
+    private bool _clientStitching;
+    private string? _clientStitchStatus;
 
     private bool JobRunning =>
         string.Equals(_job?.Status, "running", StringComparison.OrdinalIgnoreCase) ||
@@ -1979,90 +2005,186 @@ else
 
     private async Task PlaySceneCompositeAsync(int sn)
     {
+        if (_busy || _clientStitching) return;
+
         var meta = await Engine.GetWipMovieMetaAsync(_projectId);
         var summary = _scenes?.FirstOrDefault(s => s.SceneNumber == sn);
         var compositeOk = summary?.CompositeExists == true
                           || (_detail is { SceneNumber: var dsn, CompositeExists: true } && dsn == sn);
         var clipsOnDisk = summary?.ClipsOnDisk
                           ?? (_detail is { SceneNumber: var d2 } && d2 == sn ? _detail.ClipsOnDisk : 0);
-        var needsRemux = !compositeOk || meta?.StaleScenes?.Contains(sn) == true;
+        var stale = meta?.StaleScenes?.Contains(sn) == true;
+        var needsStitch = !compositeOk || stale;
 
-        if (needsRemux && clipsOnDisk > 0 && !JobRunning)
+        // Fresh composite on disk — stream it directly (no stitch).
+        if (!needsStitch && compositeOk)
         {
-            _busy = true;
-            _error = null;
-            _message = null;
-            _progressFloor = 0;
-            _progressFloorJobId = null;
-            try
-            {
-                await EnsureHubAsync();
-                _playSceneAfterRemux = sn;
-                await Engine.StartRemuxAsync(_projectId, sn, rebuildWip: false);
-                var jobs = await Engine.GetJobAsync();
-                _job = jobs?.Job;
-            }
-            catch (Exception ex) { _error = ex.Message; _playSceneAfterRemux = null; }
-            finally { _busy = false; }
+            _clientSceneUrl = null;
+            _playingScene = sn;
+            _showScenePlayer = true;
+            _sceneVideoKey = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+            _inlineCompositeKey = _sceneVideoKey;
+            _message = $"Playing S{sn:D2} composite";
             return;
         }
 
-        if (!compositeOk)
+        if (clipsOnDisk <= 0 && !compositeOk)
         {
-            _error = $"No composite for S{sn:D2} — generate clips first, then Play scene";
+            _error = $"No clips for S{sn:D2} — generate clips first";
             return;
         }
 
+        // Missing or stale composite: stitch clips (or fall back to stale composite) in the browser.
+        _busy = true;
+        _clientStitching = true;
+        _error = null;
+        _message = null;
+        _clientStitchStatus = "Collecting clips…";
+        _showPreviewPlayer = false;
+        _clientPreviewUrl = null;
         _playingScene = sn;
         _showScenePlayer = true;
-        _sceneVideoKey = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-        _inlineCompositeKey = _sceneVideoKey;
-        _message = $"Playing S{sn:D2} composite";
+        _clientSceneUrl = null;
+        try
+        {
+            SceneDetail? detail = _detail is { SceneNumber: var d } && d == sn
+                ? _detail
+                : null;
+            var urls = await Stitch.CollectClipUrlsAsync(_projectId, sn, detail);
+            if (urls.Count == 0 && compositeOk)
+            {
+                // Stale composite still playable
+                _clientSceneUrl = null;
+                _sceneVideoKey = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+                _message = $"Playing S{sn:D2} composite (may be stale)";
+                return;
+            }
+
+            if (urls.Count == 0)
+            {
+                _error = $"No on-disk clips for S{sn:D2}";
+                _showScenePlayer = false;
+                _playingScene = null;
+                return;
+            }
+
+            _clientStitchStatus = urls.Count == 1 ? "Loading…" : $"Combining {urls.Count} clips…";
+            await Stitch.RevokePreviewUrlAsync();
+            var result = await Stitch.ConcatAsync(urls);
+            if (!result.Success || string.IsNullOrWhiteSpace(result.Url))
+            {
+                _error = result.Error ?? "Browser stitch failed";
+                _showScenePlayer = false;
+                _playingScene = null;
+                return;
+            }
+
+            _clientSceneUrl = result.Url;
+            _sceneVideoKey = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+            _inlineCompositeKey = _sceneVideoKey;
+            _message = urls.Count == 1
+                ? $"Playing S{sn:D2} (single clip)"
+                : $"Playing S{sn:D2} — {urls.Count} clips stitched in browser";
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+            _showScenePlayer = false;
+            _playingScene = null;
+            _clientSceneUrl = null;
+        }
+        finally
+        {
+            _busy = false;
+            _clientStitching = false;
+            _clientStitchStatus = null;
+        }
     }
 
-    private void HideScenePlayer()
+    private async Task HideScenePlayer()
     {
         _showScenePlayer = false;
         _playingScene = null;
-    }
-
-    private bool IsPreviewBusy
-    {
-        get
+        if (!string.IsNullOrEmpty(_clientSceneUrl))
         {
-            static bool Active(string? status) =>
-                string.Equals(status, "running", StringComparison.OrdinalIgnoreCase) ||
-                string.Equals(status, "queued", StringComparison.OrdinalIgnoreCase);
-            static bool IsPreview(string? kind) =>
-                string.Equals(kind, "preview", StringComparison.OrdinalIgnoreCase);
-
-            if (_job is not null && IsPreview(_job.Kind) && Active(_job.Status))
-                return true;
-            return _myJobs.Any(j => IsPreview(j.Kind) && Active(j.Status));
+            _clientSceneUrl = null;
+            await Stitch.RevokePreviewUrlAsync();
         }
     }
 
-    /// <summary>Stitch the current selection (in ascending scene order, gaps allowed) into a temporary preview.</summary>
+    private string? ScenePlayerSrc(int sn) =>
+        !string.IsNullOrEmpty(_clientSceneUrl) && _playingScene == sn
+            ? _clientSceneUrl
+            : CacheBust(Engine.CompositeVideoUrl(_projectId, sn));
+
+    private async Task HidePreviewPlayerAsync()
+    {
+        _showPreviewPlayer = false;
+        _clientPreviewUrl = null;
+        await Stitch.RevokePreviewUrlAsync();
+    }
+
+    /// <summary>Stitch the current selection in the browser (composites preferred, else clips).</summary>
     private async Task PlaySelectedAsync()
     {
-        if (_selected.Count == 0 || JobRunning)
+        if (_selected.Count == 0 || _busy || _clientStitching)
             return;
+
         _busy = true;
+        _clientStitching = true;
         _error = null;
         _message = null;
-        _progressFloor = 0;
-        _progressFloorJobId = null;
+        _clientStitchStatus = "Preparing…";
+        _previewScenes = _selected.OrderBy(x => x).ToList();
+        _showScenePlayer = false;
+        _playingScene = null;
+        _clientSceneUrl = null;
+        _showPreviewPlayer = true;
+        _clientPreviewUrl = null;
         try
         {
-            await EnsureHubAsync();
-            _previewScenes = _selected.OrderBy(x => x).ToList();
-            _showPreviewPlayer = true;
-            await Engine.StartPreviewAsync(_projectId, _previewScenes);
-            var jobs = await Engine.GetJobAsync();
-            _job = jobs?.Job;
+            var meta = await Engine.GetWipMovieMetaAsync(_projectId);
+            var stale = meta?.StaleScenes?.ToHashSet() ?? new HashSet<int>();
+            _clientStitchStatus = "Collecting media…";
+            var urls = await Stitch.CollectSceneMediaUrlsAsync(
+                _projectId, _previewScenes, _scenes, stale);
+            if (urls.Count == 0)
+            {
+                _error = "No composites or on-disk clips for the selected scenes";
+                _showPreviewPlayer = false;
+                return;
+            }
+
+            _clientStitchStatus = urls.Count == 1
+                ? "Loading…"
+                : $"Combining {urls.Count} clip/scene file(s)…";
+            await Stitch.RevokePreviewUrlAsync();
+            var result = await Stitch.ConcatAsync(urls);
+            if (!result.Success || string.IsNullOrWhiteSpace(result.Url))
+            {
+                _error = result.Error ?? "Browser stitch failed";
+                _showPreviewPlayer = false;
+                return;
+            }
+
+            _clientPreviewUrl = result.Url;
+            _previewVideoKey = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+            _message =
+                $"Preview ready (browser) — {_previewScenes.Count} scene(s): " +
+                string.Join(", ", _previewScenes.Select(s => $"S{s:D2}"));
         }
-        catch (Exception ex) { _error = ex.Message; }
-        finally { _busy = false; }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+            _showPreviewPlayer = false;
+            _clientPreviewUrl = null;
+        }
+        finally
+        {
+            _busy = false;
+            _clientStitching = false;
+            _clientStitchStatus = null;
+        }
     }
 
     /// <summary>Force re-generate a single clip (onlyMissing: false).</summary>
@@ -2394,8 +2516,8 @@ else
     {
         Hub.JobUpdated -= OnJobUpdated;
         Hub.JobLog -= OnJobLog;
-        // Don't dispose shared hub if Studio also uses it — JobHubClient is scoped per circuit usually.
-        // Safe to leave connection; Studio page owns its own instance if scoped.
-        await Task.CompletedTask;
+        _clientPreviewUrl = null;
+        _clientSceneUrl = null;
+        await Stitch.RevokePreviewUrlAsync();
     }
 }

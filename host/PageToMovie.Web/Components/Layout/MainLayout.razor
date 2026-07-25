@@ -1,9 +1,11 @@
 @inherits LayoutComponentBase
+@implements IDisposable
 @inject IJSRuntime Js
 @inject NavigationManager Nav
 @inject EngineApiClient Engine
 @inject AdminSessionService Session
-@inject IHostEnvironment Env
+@inject IWebAssemblyHostEnvironment Env
+@using Microsoft.AspNetCore.Components.WebAssembly.Hosting
 @using Microsoft.AspNetCore.WebUtilities
 @using PageToMovie.Core.Auth
 @using PageToMovie.Core.Options
@@ -45,6 +47,24 @@
 @code {
     private bool _sidebarCollapsed;
     private bool _hydrated;
+    private bool _locationHooked;
+
+    protected override void OnInitialized()
+    {
+        if (_locationHooked) return;
+        _locationHooked = true;
+        // Re-check on every navigation so /demo stays open to guests and studio routes re-gate.
+        Nav.LocationChanged += OnLocationChanged;
+    }
+
+    private void OnLocationChanged(object? sender, Microsoft.AspNetCore.Components.Routing.LocationChangedEventArgs e)
+    {
+        _ = InvokeAsync(async () =>
+        {
+            try { await EnforceLoginGateAsync(); }
+            catch { /* ignore */ }
+        });
+    }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -66,6 +86,7 @@
         await TryBootstrapOperatorOverrideFromQueryAsync();
 
         // Signed-in required for studio pages (projects, config keys, import/OCR).
+        // Public: /demo, /about, /login, /signup — no account required.
         await EnforceLoginGateAsync();
     }
 
@@ -106,15 +127,26 @@
         }
     }
 
+    /// <summary>
+    /// Routes that work without sign-in (demo gallery is public for everyone).
+    /// </summary>
     private static bool IsPublicPath(string path)
     {
         if (string.IsNullOrWhiteSpace(path))
             return false; // home requires login
-        path = path.Split('?', '#')[0];
-        return path.Equals("login", StringComparison.OrdinalIgnoreCase)
-               || path.Equals("signup", StringComparison.OrdinalIgnoreCase)
-               || path.Equals("about", StringComparison.OrdinalIgnoreCase)
-               || path.StartsWith("admin/login", StringComparison.OrdinalIgnoreCase);
+        path = path.Split('?', '#')[0].Trim().TrimStart('/');
+        // Tolerate trailing slash: "demo/" → "demo"
+        path = path.TrimEnd('/');
+        if (path.Equals("login", StringComparison.OrdinalIgnoreCase)
+            || path.Equals("signup", StringComparison.OrdinalIgnoreCase)
+            || path.Equals("about", StringComparison.OrdinalIgnoreCase)
+            || path.Equals("demo", StringComparison.OrdinalIgnoreCase)
+            || path.StartsWith("admin/login", StringComparison.OrdinalIgnoreCase))
+            return true;
+        // Future nested public demo routes e.g. demo/xyz
+        if (path.StartsWith("demo/", StringComparison.OrdinalIgnoreCase))
+            return true;
+        return false;
     }
 
     /// <summary>
@@ -226,5 +258,14 @@
                 _sidebarCollapsed ? "1" : "0");
         }
         catch { /* ignore */ }
+    }
+
+    public void Dispose()
+    {
+        if (_locationHooked)
+        {
+            Nav.LocationChanged -= OnLocationChanged;
+            _locationHooked = false;
+        }
     }
 }

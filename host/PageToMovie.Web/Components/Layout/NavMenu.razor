@@ -19,6 +19,13 @@
             </NavLink>
         </div>
 
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="/demo" title="Public demo gallery — no sign-in required" data-testid="nav-demo">
+                <span class="bi bi-film-nav-menu" aria-hidden="true"></span>
+                @if (!Collapsed) { <span class="nav-label">Demo</span> }
+            </NavLink>
+        </div>
+
         @if (ActiveProject.HasProject)
         {
             <div class="nav-item px-3">

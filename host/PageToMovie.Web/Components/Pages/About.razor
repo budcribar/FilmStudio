@@ -7,7 +7,7 @@
 
 <h1>About Film Studio</h1>
 <p class="text-muted">
-    Native C# film pipeline: Blazor UI, REST + SignalR API, Grok generation, FFmpeg remux.
+    Native C# film pipeline: Blazor WASM UI, REST + SignalR API, Grok generation, client/server FFmpeg.
     No Python required for the product path under <code>host/</code>.
 </p>
 
@@ -68,7 +68,7 @@
 <div class="card mb-3">
     <div class="card-header">Architecture</div>
     <div class="card-body">
-        <pre class="bg-light p-3 rounded mb-0 small" style="white-space:pre-wrap;">PageToMovie.Web (Blazor Server · :5079)
+        <pre class="bg-light p-3 rounded mb-0 small" style="white-space:pre-wrap;">PageToMovie.Web (Blazor WASM · hosted by Api)
     │  REST + SignalR
     ▼
 PageToMovie.Api  (:5088)

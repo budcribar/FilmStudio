@@ -5,16 +5,18 @@ public sealed class EngineApiOptions
     public const string SectionName = "EngineApi";
 
     /// <summary>
-    /// Base URL of PageToMovie.Api for server-side HttpClient (REST + SignalR).
-    /// On the unified Docker/Railway host this is loopback; the browser must not use it for media.
+    /// Base URL of PageToMovie.Api for browser HttpClient + SignalR.
+    /// Empty (default): same origin as the Blazor WASM app (correct for unified Api host).
+    /// Set only when the API is on another origin, e.g. local split ports.
+    /// Env: EngineApi__BaseUrl
     /// </summary>
-    public string BaseUrl { get; set; } = "http://127.0.0.1:5088";
+    public string BaseUrl { get; set; } = "";
 
     /// <summary>
-    /// Origin the <b>browser</b> should use for &lt;img&gt;/&lt;video&gt; media.
+    /// Origin the browser should use for &lt;img&gt;/&lt;video&gt; media.
     /// <list type="bullet">
-    /// <item>Empty (default): root-relative <c>/api/...</c> — correct for unified host (Railway, Docker Api+Blazor).</item>
-    /// <item>Set when Blazor Web runs on another port than the API, e.g. <c>http://127.0.0.1:5088</c>.</item>
+    /// <item>Empty (default): root-relative <c>/api/...</c> — correct for unified host.</item>
+    /// <item>Set when media is served from a different origin than the UI.</item>
     /// </list>
     /// Env: EngineApi__BrowserMediaBaseUrl
     /// </summary>
