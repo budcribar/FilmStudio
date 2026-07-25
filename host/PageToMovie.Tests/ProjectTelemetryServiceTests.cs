@@ -52,7 +52,7 @@ public class ProjectTelemetryServiceTests : IDisposable
     }
 
     [Fact]
-    public void LogFfmpeg_condensed_drops_frame_spam()
+    public void LogMediaOp_condensed_drops_frame_spam()
     {
         var raw = string.Join('\n',
             "frame=  1 fps=0.0",
@@ -61,7 +61,7 @@ public class ProjectTelemetryServiceTests : IDisposable
             "speed=1.2x",
             "Error opening input file missing.mp4",
             "Conversion failed!");
-        var rec = ProjectTelemetryService.CondenseFfmpegOp(
+        var rec = ProjectTelemetryService.CondenseMediaOp(
             op: "remux",
             args: "-i a.mp4 -i b.mp4 out.mp4",
             inputs: new[] { "a.mp4", "b.mp4" },
@@ -81,10 +81,11 @@ public class ProjectTelemetryServiceTests : IDisposable
         Assert.NotNull(rec.Progress);
 
         using (_tel.UseProject("P"))
-            _tel.LogFfmpeg(rec);
+            _tel.LogMediaOp(rec);
 
-        var path = _tel.FfmpegPath("P");
+        var path = _tel.MediaOpsPath("P");
         Assert.True(File.Exists(path));
+        Assert.EndsWith("media_ops.jsonl", path, StringComparison.OrdinalIgnoreCase);
         var line = File.ReadAllText(path);
         Assert.Contains("\"op\":\"remux\"", line.Replace(" ", ""));
         Assert.DoesNotContain("frame=  2", line);

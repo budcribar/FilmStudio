@@ -123,7 +123,7 @@ public sealed class ProjectArtifactIndexService
         Add("telemetry/cost_ledger.json", "Cost events snapshot (from pipeline_state)", requiredForManualReview: true);
         Add("telemetry/models.json", "Resolved models/options snapshot");
         Add("telemetry/api_calls.jsonl", "Live API call log (full prompts)", requiredForManualReview: false);
-        Add("telemetry/ffmpeg.jsonl", "Condensed ffmpeg ops", requiredForManualReview: false);
+        Add("telemetry/media_ops.jsonl", "Optional local media-op log (legacy: ffmpeg.jsonl)", requiredForManualReview: false);
         // Written by this rebuild — not "required" for readiness (would always be missing mid-scan)
         Add("ARTIFACTS.md", "Human map of this project for Claude/manual review");
         Add("artifact_index.json", "Machine-readable artifact presence map");
@@ -259,9 +259,10 @@ public sealed class ProjectArtifactIndexService
             | `cost_ledger.json` | Snapshot of cost events from `pipeline_state` (list rates) |
             | `models.json` | Resolved model/options snapshot at last artifact-index rebuild |
             | `api_calls.jsonl` | Append-only: one JSON line per live API call (full prompts) |
-            | `ffmpeg.jsonl` | Append-only: condensed remux / WIP / frame-sample ops |
+            | `media_ops.jsonl` | Optional: condensed local media ops (stitch/trim are browser-side) |
 
-            `api_calls` and `ffmpeg` are written during jobs (project scope).  
+            `api_calls` is written during jobs (project scope).  
+            Stitch/trim/silence/frame-sample run in the browser — not on the API host.  
             Rebuild this folder’s snapshots via `POST /api/projects/{id}/artifacts/index`.
             """ + "\n", ct).ConfigureAwait(false);
     }
@@ -348,7 +349,7 @@ public sealed class ProjectArtifactIndexService
         sb.AppendLine("4. Identity: `assets/characters/*_ref.png`, `assets/video/prompts/*.meta.json` (`prompt`, `castCount`, `refsAttachedToApi`).");
         sb.AppendLine("5. QC: `assets/review/*.auto_review.json`, `assets/review/index.json`, `assets/review/frames/`.");
         sb.AppendLine("6. Assembly: `assets/video/scene_*.mp4.sources.json` (`included` / `excluded`).");
-        sb.AppendLine("7. Telemetry: `telemetry/api_calls.jsonl` (full prompts), `telemetry/ffmpeg.jsonl`, `telemetry/cost_ledger.json`.");
+        sb.AppendLine("7. Telemetry: `telemetry/api_calls.jsonl` (full prompts), `telemetry/cost_ledger.json` (optional `media_ops.jsonl`).");
         sb.AppendLine("8. Scores: copy `assets/review/FINAL_REVIEW_TEMPLATE.json` → `final_review.json` and fill **human** (and optionally **ai** notes).");
         sb.AppendLine("9. Zip export is deferred — all durable data stays in this directory.");
         sb.AppendLine();

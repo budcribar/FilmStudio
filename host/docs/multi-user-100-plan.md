@@ -43,7 +43,7 @@
 │ PageToMovie.Api                                                         │
 │  Auth (user + admin roles)                                             │
 │  JobRouter → JobQueue (multi-job)                                      │
-│  ApiWorkerPool / LocalWorkerPool                                       │
+│  ApiWorkerPool (video/API slots)                                       │
 │  LockService · ProjectStore                                            │
 │  ServerMetricsService (snapshots for admin)                            │
 │  RuntimeConfigStore (capacity + fakes; hot-reloadable)                 │
@@ -60,7 +60,7 @@
 | Work | Scheduler | Cap |
 |------|-----------|-----|
 | Video / image / vision / Stage1–2 LLM | **ApiWorkerPool** | Global + per-user |
-| Scene remux, WIP | **LocalWorkerPool** | Global ffmpeg semaphore |
+| Browser stitch / silence / frames | **Client (ffmpeg.wasm)** | No server local pool |
 | Browse, review, play | Request threads | No job slot |
 
 ### 2.2 Locks
@@ -113,7 +113,7 @@ Admin is a **first-class role**, not “whoever knows the API port.”
 | Section | Fields |
 |---------|--------|
 | **Process** | uptime, GC heap, working set, thread count, env (Dev/Prod), `UseFakes` |
-| **Capacity** | MaxVideoInFlight, MaxVideoInFlightPerUser, MaxFfmpegInFlight, MaxQueuePerUser (effective values) |
+| **Capacity** | MaxVideoInFlight, MaxVideoInFlightPerUser, MaxQueuePerUser (effective values) |
 | **API pool** | inFlight video/image/chat, queue depth **global**, queue depth **per user** (top N), RR cursor |
 | **Local pool** | ffmpeg inFlight, WIP jobs running |
 | **Jobs (live)** | running list (jobId, userId, projectId, kind, scene, clip, **age / elapsed**, progress %) |
@@ -218,7 +218,7 @@ JobTiming {
 
 | Group | Settings |
 |-------|----------|
-| **Capacity** | MaxVideoInFlight, MaxVideoInFlightPerUser, MaxFfmpegInFlight, MaxQueuePerUser, MaxUiSessions (soft warn) |
+| **Capacity** | MaxVideoInFlight, MaxVideoInFlightPerUser, MaxQueuePerUser, MaxUiSessions (soft warn) |
 | **Fakes** | UseFakes (may require note: “new clients only” or restart), VideoDelayMs, FailRate, RateLimitEveryN |
 | **Jobs** | Default clip quantum, job TTL / cancel policy |
 | **WIP** | Auto-coalesce on/off |
@@ -347,7 +347,6 @@ Introduce interfaces **at the edges** that cost money or CPU. Keep domain servic
   "Capacity": {
     "MaxVideoInFlight": 12,
     "MaxVideoInFlightPerUser": 1,
-    "MaxFfmpegInFlight": 2,
     "MaxQueuePerUser": 5
   }
 }
@@ -517,7 +516,7 @@ Optional: write .duration.json sidecar with fixture duration for fast UI probe
 **C3. Worker pools** ✅
 
 - **ApiWorkerPool:** `MaxVideoInFlight` global + `MaxVideoInFlightPerUser` semaphores (wait/queue).
-- **LocalWorkerPool:** `MaxFfmpegInFlight` for remux/WIP.
+- Media stitch/trim/frames run in the browser (ffmpeg.wasm); server capacity is API/video slots only.
 - Job state isolated via `AsyncLocal` (multi-job safe).
 
 **C4. SignalR groups** ✅

@@ -114,7 +114,7 @@ On **Scenes**: operators never see leftover Stage 2 / adaptation job cards. Show
 | Sort plates with Grok | **Find characters** |
 | Re-sort with Grok | **Find characters again** |
 | Generate with Grok | **Generate portraits** |
-| ffmpeg / concat / composite path | combine clips / rebuild scene video / movie draft |
+| ffmpeg / concat / composite path | Play / combine clips / export movie (browser tools) |
 
 ### 5. Keep it short
 

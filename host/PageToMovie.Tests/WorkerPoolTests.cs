@@ -107,31 +107,4 @@ public class WorkerPoolTests
         Assert.Equal(4, started);
     }
 
-    [Fact]
-    public async Task LocalWorkerPool_resize_under_load_does_not_fault_waiters()
-    {
-        var cap = new CapacityOptions { MaxFfmpegInFlight = 2 };
-        var opts = Options.Create(new PageToMovieOptions { Capacity = cap });
-        var pool = new LocalWorkerPool(opts);
-        var started = 0;
-        var hold = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-
-        var runners = Enumerable.Range(0, 3)
-            .Select(_ => pool.RunAsync(async ct =>
-            {
-                Interlocked.Increment(ref started);
-                await hold.Task;
-            }, CancellationToken.None))
-            .ToArray();
-
-        while (Volatile.Read(ref started) < 2)
-            await Task.Delay(10);
-
-        cap.MaxFfmpegInFlight = 1;
-        _ = pool.InFlight; // EnsureCaps
-
-        hold.TrySetResult();
-        await Task.WhenAll(runners);
-        Assert.Equal(3, started);
-    }
 }

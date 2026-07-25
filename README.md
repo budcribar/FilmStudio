@@ -11,7 +11,7 @@ Needs:
 
 - .NET SDK (solution targets `net10.0`)
 - `XAI_API_KEY` for real Stage 1 / images / video / vision (optional fakes for UI soaks)
-- ffmpeg is **bundled** with the API on Windows (override with `PageToMovie:FfmpegPath` if needed)
+- A modern browser for **client** media tools (Chrome/Edge preferred): stitch, silence trim, auto-review frames use **ffmpeg.wasm** in the browser — the API host does **not** install or spawn native ffmpeg
 
 ### 1) API / engine (`http://127.0.0.1:5088`)
 
@@ -64,8 +64,8 @@ More detail: **`host/README.md`**.
 3. **Build cast** → generate + lock portraits (style gate) + voices  
 4. Build shot plan (Stage 2)  
 5. Generate scenes (cast must be ready)  
-6. Auto-review + Pass/Fail (assembly gate: fails stay out of WIP unless override)  
-7. Remux scene composites + rebuild WIP  
+6. Auto-review + Pass/Fail (browser samples frames; vision runs on the server with the API key)  
+7. Play / export: stitch clips in the browser (no server remux)  
 8. Admin Learning: propose rules, approve into project rules / checklist  
 
 ---
@@ -79,9 +79,9 @@ flowchart TD
     C --> D["Step 3: Cast Discovery & Vision Gate\n(Grok 4.5 + Grok/Gemini Image + Vision Classifier)"]
     D --> E["Step 4: Stage 2 Shot Planning\n(6 Grok 4.5 AI Classifiers)"]
     E --> F["Step 5: Video Generation\n(Grok Imagine Video / Veo + Reference Locks)"]
-    F --> G["Step 6: AI Multi-Frame Auto-Review\n(Grok Multi-Frame Vision Classifier)"]
-    G --> H["Step 7: Composition & Lossless Remux\n(FfmpegRemuxService)"]
-    H --> I["🎬 Final Compiled Movie (movie_wip.mp4)"]
+    F --> G["Step 6: Multi-Frame Auto-Review\n(browser frames + server vision)"]
+    G --> H["Step 7: Browser Stitch / Export\n(ffmpeg.wasm in PageToMovie.Web)"]
+    H --> I["🎬 Playable draft / export (client media folder)"]
 ```
 
 ### 1. Source Text Ingestion (`BookPrepareService`)
@@ -115,7 +115,7 @@ flowchart TD
   10. **`NegativePromptClassifier`**: Evaluates period setting and scene environment to generate era-specific anachronism negative prompts (*"no modern wristwatches, no electric light bulbs, no plastic, no zippers"*), eliminating visual immersion glitches.
   11. **`WardrobeContinuityClassifier`**: Acts as a Costume Department Supervisor to dynamically track and assign context-appropriate attire per character per scene based on location, time of day, and story beats.
   12. **`CharacterEmotionArcClassifier`**: Acts as an Acting Coach & Performance Director, calculating emotional intensity ($1$–$10$ scale) and facial micro-expressions per beat to drive acting performances in video generation.
-  13. **`SoundDesignComposerClassifier`**: Acts as a Film Sound Designer & Audio Supervisor, composing 3-layer audio blueprints (`ambient_layer`, `foley_layer`, `score_layer`) per beat for multi-channel synthesis and `ffmpeg` remuxing.
+  13. **`SoundDesignComposerClassifier`**: Acts as a Film Sound Designer & Audio Supervisor, composing 3-layer audio blueprints (`ambient_layer`, `foley_layer`, `score_layer`) per beat for synthesis planning (export stitch is client-side).
   14. **`DepthOfFieldClassifier`**: Acts as a Focus Puller & Optical Cinematographer, assigning optical aperture settings ($f/1.4$ to $f/8$), primary focal planes, and dynamic rack-focus transitions per shot.
   15. **`ColorPaletteGradingClassifier`**: Acts as a Master Colorist & Film Stock Director, assigning film stock emulsion characteristics (*Kodak Vision3 500T 5219*, *Fuji Eterna*), color palettes, and color grading prompts per scene.
 - **Deterministic Pacing**: *Silent Prelude Coalescing* automatically folds 5s silent lead-in beats into Beat 2 so voiceover/dialogue begins on frame 1 of the scene.
@@ -125,14 +125,15 @@ flowchart TD
 - **Action**: Constructs 4,000-character prompts incorporating style locks, on-screen cast counts, visual action prose, and locked character reference images (`<IMAGE_1>`, `<IMAGE_2>`).
 - **Identity Attachment**: Attaches locked reference image plates directly to the video generation API call for 100% character face and wardrobe consistency across shots.
 
-### 6. AI Multi-Frame Auto-Review (`ClipAutoReviewService`)
-- **AI Engine**: **Grok Multi-Frame Vision (`CompleteWithImagesAsync`)**
-- **Action**: Inspects generated video clip frames (head, mid, tail) alongside the previous clip's tail frame.
-- **Quality Audit**: Audits character identity consistency, visual artifacts, and style adherence, assigning `Pass` or `Fail` with automated assembly gates that prevent bad clips from reaching the final movie build.
+### 6. Multi-Frame Auto-Review (`ClipAutoReviewService`)
+- **Browser**: Samples previous-clip tail + current-clip frames with **ffmpeg.wasm**, uploads JPEGs over the authenticated job API.
+- **Server**: Vision review with the provider key (`CompleteWithImagesAsync`) — key never leaves the API host.
+- **Quality Audit**: Character identity, continuity, style; `Pass` / `Fail` with assembly gates for Play stitch / export.
 
-### 7. Composition & Lossless Remux (`FfmpegRemuxService`)
-- **Engine**: Native `ffmpeg` remuxing pipeline.
-- **Action**: Filters clips passing the assembly gate, layers audio tracks (dialogue, ambient, SFX, music bed), performs lossy/lossless ffmpeg remux, and compiles the final movie draft (`movie_wip.mp4`).
+### 7. Browser stitch / export (`PageToMovieFfmpeg` / `ClientVideoStitchService`)
+- **Engine**: **ffmpeg.wasm** in the Blazor client (concat, silence trim on gen save, frame sample).
+- **Action**: Combine eligible clips for Play/export; gen clips can live in the user media folder with server-side SHA-256 registry only.
+- **Not used**: native server `ffmpeg`, remux jobs, or bundled `ffmpeg.exe`.
 
 ---
 

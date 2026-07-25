@@ -10,8 +10,6 @@ public interface IServerMetricsService
     void NoteRateLimit();
     void NoteApiSlotAcquired(string userId);
     void NoteApiSlotReleased(string userId);
-    void NoteFfmpegSlotAcquired();
-    void NoteFfmpegSlotReleased();
     void NoteJobQueued(string kind, string? userId);
     void NoteJobStarted(string kind, string? userId, DateTimeOffset queuedAt);
     void NoteJobFinished(string kind, string? userId, bool success, DateTimeOffset queuedAt, DateTimeOffset startedAt);
@@ -29,7 +27,6 @@ public sealed class CapacityOptionsSnapshot
 {
     public int MaxVideoInFlight { get; set; }
     public int MaxVideoInFlightPerUser { get; set; }
-    public int MaxFfmpegInFlight { get; set; }
     public int MaxQueuePerUser { get; set; }
 }
 
@@ -49,7 +46,6 @@ public sealed class ServerMetricsSnapshot
     public ProcessMetricsSnapshot Process { get; set; } = new();
     public CapacityOptionsSnapshot Capacity { get; set; } = new();
     public int ApiInFlight { get; set; }
-    public int FfmpegInFlight { get; set; }
     public int CapacityRejects { get; set; }
     public int LockConflicts { get; set; }
     public int RateLimits { get; set; }

@@ -369,7 +369,7 @@ public sealed class UpdateCharacterVoiceRequest
 }
 
 /// <summary>
-/// Film-pipeline voice sample: short Grok video with VOICE LOCK, audio extracted to MP3.
+/// Film-pipeline voice sample: short video with voice style + dialogue (cached as MP4).
 /// </summary>
 public sealed class StartVoicePreviewRequest
 {
@@ -392,7 +392,10 @@ public sealed class VoicePreviewStatusDto
     public bool Matches { get; set; }
     public string? Fingerprint { get; set; }
     public DateTimeOffset? GeneratedAt { get; set; }
+    /// <summary>Same-origin media URL (MP4 or legacy MP3).</summary>
     public string? AudioUrl { get; set; }
+    /// <summary>video/mp4 or audio/mpeg</summary>
+    public string? ContentType { get; set; }
 }
 
 /// <summary>

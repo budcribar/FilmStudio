@@ -530,23 +530,6 @@ public class BugHuntTests
         Assert.Equal(12, pct);
     }
 
-    // ── 25. LocalWorkerPool.InFlight never negative ─────────────────────
-
-    [Fact]
-    public void Bug25_LocalWorkerPool_InFlight_non_negative()
-    {
-        var opts = Options.Create(new PageToMovieOptions
-        {
-            Capacity = new CapacityOptions { MaxFfmpegInFlight = 2 },
-        });
-        var pool = new LocalWorkerPool(opts);
-        // Force resize path then read — must not throw / go negative
-        opts.Value.Capacity!.MaxFfmpegInFlight = 1;
-        // Trigger EnsureCaps via a no-op run that completes immediately is hard without async;
-        // InFlight property should always be >= 0
-        Assert.True(pool.InFlight >= 0);
-    }
-
     // ── 26. LockKeys.Character rejects empty key ────────────────────────
 
     [Fact]
@@ -1377,31 +1360,18 @@ public class BugHuntTests
     }
 
     [Fact]
-    public async Task Bug89_LocalWorkerPool_InFlight_after_resize_path()
-    {
-        var opts = Options.Create(new PageToMovieOptions
-        {
-            Capacity = new CapacityOptions { MaxFfmpegInFlight = 3 },
-        });
-        var pool = new LocalWorkerPool(opts);
-        opts.Value.Capacity!.MaxFfmpegInFlight = 1;
-        await pool.RunAsync(_ => Task.CompletedTask, CancellationToken.None);
-        Assert.True(pool.InFlight >= 0);
-    }
-
-    [Fact]
-    public void Bug90_ServerMetrics_unmatched_ffmpeg_release()
+    public void Bug90_ServerMetrics_unmatched_api_release_stays_non_negative()
     {
         var m = new ServerMetricsService();
-        m.NoteFfmpegSlotReleased();
-        m.NoteFfmpegSlotReleased();
-        m.NoteFfmpegSlotAcquired();
+        m.NoteApiSlotReleased("u");
+        m.NoteApiSlotReleased("u");
+        m.NoteApiSlotAcquired("u");
         var snap = m.GetSnapshot(
             new JobStore(),
             new InMemoryLockService(),
             new CapacityOptionsSnapshot { MaxVideoInFlight = 4 },
             new ProcessMetricsSnapshot());
-        Assert.Equal(1, snap.FfmpegInFlight);
+        Assert.Equal(1, snap.ApiInFlight);
     }
 
     // ═══════════════════════════════════════════════════════════════════════

@@ -15,7 +15,7 @@ public sealed record SoundDesignDirective(
 /// <summary>
 /// AI Classifier acting as a Film Sound Designer & Audio Director.
 /// Composes 3-track cinematic audio blueprints (ambient background, physical foley, score mood)
-/// per beat for audio synthesis and native ffmpeg multi-channel remuxing.
+/// per beat for audio synthesis (client stitch/export; no server remux).
 /// </summary>
 public sealed class SoundDesignComposerClassifier
 {

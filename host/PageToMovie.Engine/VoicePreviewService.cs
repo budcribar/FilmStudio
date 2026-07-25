@@ -9,9 +9,8 @@ using Microsoft.Extensions.Options;
 namespace PageToMovie.Engine;
 
 /// <summary>
-/// Film-pipeline voice sample (not TTS): short Grok video with VOICE LOCK + dialogue, then extract audio only.
-/// Caches MP3 under assets/characters/voice_previews/ keyed by character + profile + sample text.
-/// Audio extract previously used native ffmpeg and is disabled until a client-side path exists.
+/// Film-pipeline voice sample (not TTS): short video with VOICE LOCK + dialogue.
+/// Caches MP4 under assets/characters/voice_previews/ (no native ffmpeg / no MP3 extract).
 /// </summary>
 public sealed class VoicePreviewService
 {
@@ -36,7 +35,6 @@ public sealed class VoicePreviewService
     }
 
     public bool IsVideoConfigured => _video.IsConfigured;
-    public bool IsFfmpegAvailable => false;
 
     public static string BuildSampleDialogue(string? displayName)
     {
@@ -82,11 +80,28 @@ public sealed class VoicePreviewService
     public string GetPreviewDir(string projectId) =>
         Path.Combine(_projects.GetProjectDir(projectId), "assets", "characters", "voice_previews");
 
+    /// <summary>Preferred sample path (short MP4; no server audio extract).</summary>
+    public string GetMp4Path(string projectId, string charKey) =>
+        Path.Combine(GetPreviewDir(projectId), SafeFileName(charKey) + ".mp4");
+
+    /// <summary>Legacy MP3 path from pre-wasm era (still recognized for cache/serve).</summary>
     public string GetMp3Path(string projectId, string charKey) =>
         Path.Combine(GetPreviewDir(projectId), SafeFileName(charKey) + ".mp3");
 
     public string GetMetaPath(string projectId, string charKey) =>
         Path.Combine(GetPreviewDir(projectId), SafeFileName(charKey) + ".meta.json");
+
+    /// <summary>Absolute path to cached sample (MP4 preferred, else legacy MP3), or null.</summary>
+    public string? GetSampleMediaPath(string projectId, string charKey)
+    {
+        var mp4 = GetMp4Path(projectId, charKey);
+        if (File.Exists(mp4) && new FileInfo(mp4).Length >= 512)
+            return mp4;
+        var mp3 = GetMp3Path(projectId, charKey);
+        if (File.Exists(mp3) && new FileInfo(mp3).Length >= 64)
+            return mp3;
+        return null;
+    }
 
     public VoicePreviewCacheInfo GetCacheInfo(
         string projectId,
@@ -96,10 +111,10 @@ public sealed class VoicePreviewService
         string? sampleText = null,
         string? displayName = null)
     {
-        var mp3 = GetMp3Path(projectId, charKey);
+        var media = GetSampleMediaPath(projectId, charKey);
         var metaPath = GetMetaPath(projectId, charKey);
         var expected = ComputeFingerprintForCache(charKey, voiceProfile, voiceLabel, displayName, sampleText);
-        if (!File.Exists(mp3) || new FileInfo(mp3).Length < 64)
+        if (media is null)
         {
             return new VoicePreviewCacheInfo
             {
@@ -137,13 +152,17 @@ public sealed class VoicePreviewService
             Fingerprint = storedFp,
             ExpectedFingerprint = expected,
             GeneratedAt = generatedAt,
-            Mp3Path = mp3,
-            ByteLength = new FileInfo(mp3).Length,
+            Mp3Path = media, // historical name; may be .mp4
+            MediaPath = media,
+            ContentType = media.EndsWith(".mp3", StringComparison.OrdinalIgnoreCase)
+                ? "audio/mpeg"
+                : "video/mp4",
+            ByteLength = new FileInfo(media).Length,
         };
     }
 
     /// <summary>
-    /// Generate (or reuse cache) a film-style voice sample. Returns absolute path to MP3.
+    /// Generate (or reuse cache) a film-style voice sample. Returns absolute path to MP4 (or legacy MP3).
     /// </summary>
     public async Task<string> GenerateAsync(
         string projectId,
@@ -158,11 +177,7 @@ public sealed class VoicePreviewService
     {
         if (!_video.IsConfigured)
             throw new InvalidOperationException("Connect service (XAI_API_KEY) for voice preview.");
-        throw new InvalidOperationException(
-            "Voice preview audio extract used native ffmpeg, which was removed. " +
-            "Generate a short clip and play it instead.");
 
-#pragma warning disable CS0162
         var profiles = _projects.LoadCharacterPromptProfiles(projectId);
         profiles.TryGetValue(charKey, out var prof);
 
@@ -181,7 +196,7 @@ public sealed class VoicePreviewService
 
         var fingerprint = ComputeFingerprint(charKey, profile, label, sample);
         var cache = GetCacheInfo(projectId, charKey, profile, label, sample);
-        if (!force && cache is { Exists: true, Matches: true, Mp3Path: { Length: > 0 } hit })
+        if (!force && cache is { Exists: true, Matches: true, MediaPath: { Length: > 0 } hit })
         {
             onProgress?.Invoke(100, 100, "Using cached voice sample");
             return hit;
@@ -272,60 +287,43 @@ public sealed class VoicePreviewService
         onProgress?.Invoke(88, 100, "Downloading sample…");
         var dir = GetPreviewDir(projectId);
         Directory.CreateDirectory(dir);
-        var safe = SafeFileName(charKey);
-        var tmpVideo = Path.Combine(dir, $"_{safe}_{Guid.NewGuid():N}.mp4");
-        var mp3Path = GetMp3Path(projectId, charKey);
+        var mp4Path = GetMp4Path(projectId, charKey);
         var metaPath = GetMetaPath(projectId, charKey);
 
+        await _video.DownloadToFileAsync(videoUrl, mp4Path, ct);
+
+        if (!File.Exists(mp4Path) || new FileInfo(mp4Path).Length < 512)
+            throw new InvalidOperationException("Voice sample download produced empty file.");
+
+        // Drop legacy MP3 if regenerating so cache resolution prefers the new MP4
         try
         {
-            await _video.DownloadToFileAsync(videoUrl, tmpVideo, ct);
-            onProgress?.Invoke(92, 100, "Extracting audio…");
-
-            await ExtractAudioMp3Async(tmpVideo, mp3Path, ct);
-
-            if (!File.Exists(mp3Path) || new FileInfo(mp3Path).Length < 64)
-                throw new InvalidOperationException("Audio extract produced empty file.");
-
-            var meta = new Dictionary<string, object?>
-            {
-                ["fingerprint"] = fingerprint,
-                ["charKey"] = charKey,
-                ["displayName"] = display,
-                ["voiceProfile"] = profile,
-                ["voiceLabel"] = label,
-                ["sampleText"] = sample,
-                ["durationSeconds"] = duration,
-                ["generatedAt"] = DateTimeOffset.UtcNow.ToString("O"),
-                ["source"] = "grok-video",
-            };
-            await File.WriteAllTextAsync(
-                metaPath,
-                JsonSerializer.Serialize(meta, new JsonSerializerOptions { WriteIndented = true }),
-                ct);
-
-            onProgress?.Invoke(100, 100, "Voice sample ready");
-            return mp3Path;
+            var legacyMp3 = GetMp3Path(projectId, charKey);
+            if (File.Exists(legacyMp3))
+                File.Delete(legacyMp3);
         }
-        finally
+        catch { /* best effort */ }
+
+        var meta = new Dictionary<string, object?>
         {
-            try
-            {
-                if (File.Exists(tmpVideo))
-                    File.Delete(tmpVideo);
-            }
-            catch { /* best effort */ }
-        }
-    }
+            ["fingerprint"] = fingerprint,
+            ["charKey"] = charKey,
+            ["displayName"] = display,
+            ["voiceProfile"] = profile,
+            ["voiceLabel"] = label,
+            ["sampleText"] = sample,
+            ["durationSeconds"] = duration,
+            ["generatedAt"] = DateTimeOffset.UtcNow.ToString("O"),
+            ["source"] = "video-gen",
+            ["format"] = "mp4",
+        };
+        await File.WriteAllTextAsync(
+            metaPath,
+            JsonSerializer.Serialize(meta, new JsonSerializerOptions { WriteIndented = true }),
+            ct);
 
-    private Task ExtractAudioMp3Async(string videoPath, string mp3Path, CancellationToken ct)
-    {
-        _ = videoPath;
-        _ = mp3Path;
-        _ = ct;
-        throw new InvalidOperationException(
-            "Voice preview audio extract used native ffmpeg, which was removed. " +
-            "Generate a short clip and play it instead.");
+        onProgress?.Invoke(100, 100, "Voice sample ready");
+        return mp4Path;
     }
 
     /// <summary>Test hook for progress percent parsing.</summary>
@@ -377,6 +375,9 @@ public sealed class VoicePreviewCacheInfo
     public string? Fingerprint { get; set; }
     public string? ExpectedFingerprint { get; set; }
     public DateTimeOffset? GeneratedAt { get; set; }
+    /// <summary>Absolute path to cached sample (MP4 or legacy MP3).</summary>
+    public string? MediaPath { get; set; }
+    public string? ContentType { get; set; }
     public string? Mp3Path { get; set; }
     public long ByteLength { get; set; }
 }

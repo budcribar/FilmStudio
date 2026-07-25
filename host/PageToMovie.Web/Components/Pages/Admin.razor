@@ -294,11 +294,10 @@
                         {
                             <div>MaxVideoInFlight: <strong>@c.MaxVideoInFlight</strong></div>
                             <div>MaxVideoInFlightPerUser: <strong>@c.MaxVideoInFlightPerUser</strong></div>
-                            <div>MaxFfmpegInFlight: <strong>@c.MaxFfmpegInFlight</strong></div>
                             <div>MaxQueuePerUser: <strong>@c.MaxQueuePerUser</strong></div>
                         }
                         <div class="mt-2">
-                            API in-flight: <strong>@_apiInFlight</strong> · FFmpeg: <strong>@_ffmpegInFlight</strong>
+                            API in-flight: <strong>@_apiInFlight</strong>
                         </div>
                         <div>Rejects: <strong>@_capacityRejects</strong> · Lock conflicts: <strong>@_lockConflicts</strong></div>
                         <a class="btn btn-sm btn-link px-0" href="/admin/config">Edit capacity…</a>
@@ -561,7 +560,6 @@
     private PeriodicTimer? _timer;
     private CancellationTokenSource? _pollCts;
     private int _apiInFlight;
-    private int _ffmpegInFlight;
     private int _capacityRejects;
     private int _lockConflicts;
     private List<AdminLockDto> _locks = new();
@@ -665,7 +663,6 @@
             if (_state is not null)
             {
                 _apiInFlight = _state.ApiInFlight;
-                _ffmpegInFlight = _state.FfmpegInFlight;
                 _capacityRejects = _state.CapacityRejects;
                 _lockConflicts = _state.LockConflicts;
                 _locks = _state.Locks ?? new();

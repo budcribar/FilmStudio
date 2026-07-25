@@ -644,7 +644,7 @@ else
                       disabled="@(_busy || _voicePreviewBusy || VoiceJobRunning)"
                       placeholder="Adult male; low soft presence — used in film video prompts (voice style)"></textarea>
             <div class="form-text">
-                Play uses the same film path as clips: short video with this description + dialogue, then audio only.
+                Play generates a short film clip with this voice description + dialogue (same path as scene clips).
             </div>
         </div>
         <div class="d-flex flex-wrap gap-2 align-items-center">
@@ -655,7 +655,7 @@ else
             <button type="button"
                     class="btn btn-sm btn-outline-secondary"
                     disabled="@(_busy || _voicePreviewBusy || VoiceJobRunning)"
-                    title="Play cached sample, or generate via film video if missing"
+                    title="Play cached sample, or generate a short film clip if missing"
                     @onclick="() => PlayVoicePreviewAsync(force: false)">
                 ▶ Play
             </button>
@@ -706,7 +706,9 @@ else
         }
         @if (!string.IsNullOrEmpty(_voicePreviewUrl) && !VoiceJobRunning)
         {
-            <audio class="mt-2 w-100" controls autoplay src="@_voicePreviewUrl" @key="_voicePreviewUrl"></audio>
+            @* Short film sample is MP4 (video+audio); legacy MP3 still works in &lt;video&gt; or &lt;audio&gt;. *@
+            <video class="mt-2 w-100 rounded border" style="max-height: 240px; background: #000;"
+                   controls autoplay playsinline src="@_voicePreviewUrl" @key="_voicePreviewUrl"></video>
         }
     };
 
@@ -877,7 +879,7 @@ else
                     _voicePreviewUrl = Engine.CharacterVoiceAudioUrl(
                         _projectId, snap.CharKey!, _voiceAudioBust);
                     _voicePreviewStale = false;
-                    _voicePreviewHint = "Film voice sample (audio only).";
+                    _voicePreviewHint = "Film voice sample ready.";
                     _message = null;
                 }
                 else if (snap.Status == "error")
@@ -1581,7 +1583,7 @@ else
             _voicePreviewUrl = null;
             _voicePreviewHint = force
                 ? "Regenerating film voice sample…"
-                : "Generating film voice sample (short video → audio)…";
+                : "Generating film voice sample (short clip)…";
             StateHasChanged();
 
             await Engine.StartVoicePreviewAsync(new StartVoicePreviewRequest

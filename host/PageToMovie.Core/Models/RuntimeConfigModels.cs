@@ -17,7 +17,6 @@ public sealed class CapacityRuntimeDto
 {
     public int MaxVideoInFlight { get; set; } = 4;
     public int MaxVideoInFlightPerUser { get; set; } = 2;
-    public int MaxFfmpegInFlight { get; set; } = 2;
     public int MaxQueuePerUser { get; set; } = 5;
 }
 

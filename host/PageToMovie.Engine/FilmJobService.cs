@@ -19,7 +19,7 @@ public interface IJobProgressSink
 /// <summary>
 /// Native C# film job orchestrator (no Python): Stage 1/2, book prepare,
 /// character design, multi-ref video, remux/WIP with SignalR progress.
-/// Phase C: multi-job concurrency via ApiWorkerPool/LocalWorkerPool, scene locks, metrics.
+/// Phase C: multi-job concurrency via ApiWorkerPool, scene locks, metrics.
 /// </summary>
 public sealed class FilmJobService
 {
@@ -47,7 +47,6 @@ public sealed class FilmJobService
     private readonly IJobStore _jobs;
     private readonly ILockService _locks;
     private readonly ApiWorkerPool _apiPool;
-    private readonly LocalWorkerPool _localPool;
     private readonly YouTubeAuthService _youTube;
     private readonly IServerMetricsService _metrics;
     private readonly MediaProxyTicketStore _mediaProxy;
@@ -82,7 +81,6 @@ public sealed class FilmJobService
         IJobStore jobs,
         ILockService locks,
         ApiWorkerPool apiPool,
-        LocalWorkerPool localPool,
         YouTubeAuthService youTube,
         IServerMetricsService metrics,
         MediaProxyTicketStore mediaProxy,
@@ -112,7 +110,6 @@ public sealed class FilmJobService
         _jobs = jobs;
         _locks = locks;
         _apiPool = apiPool;
-        _localPool = localPool;
         _youTube = youTube;
         _mediaProxy = mediaProxy;
         _metrics = metrics;
@@ -400,7 +397,6 @@ public sealed class FilmJobService
         JobEnqueueMeta meta,
         IReadOnlyList<string>? lockResources = null,
         string? lockReason = null,
-        bool useLocalPool = false,
         bool failIfLocked = false)
     {
         var userId = string.IsNullOrWhiteSpace(_user.UserId) ? "local" : _user.UserId.Trim();
@@ -455,7 +451,6 @@ public sealed class FilmJobService
             GeminiApiKey = geminiKey,
             AnthropicApiKey = anthropicKey,
             QueuedAt = queuedAt,
-            UseLocalPool = useLocalPool,
             Cts = cts,
             ActiveJobId = rec.JobId,
             HeldLocks = new List<string>(),
@@ -484,17 +479,14 @@ public sealed class FilmJobService
                     async Task RunWorkAsync(CancellationToken ct)
                     {
                         using var linked = CancellationTokenSource.CreateLinkedTokenSource(run.Cts.Token, ct);
-                        // Bind api_calls / ffmpeg.jsonl to this job's project for the async flow
+                        // Bind api_calls telemetry to this job's project for the async flow
                         using var tel = !string.IsNullOrWhiteSpace(meta.ProjectId)
                             ? _telemetry.UseProject(meta.ProjectId!)
                             : null;
                         await work(linked.Token);
                     }
 
-                    if (useLocalPool)
-                        await _localPool.RunAsync(RunWorkAsync, run.Cts.Token);
-                    else
-                        await _apiPool.RunAsync(userId, RunWorkAsync, run.Cts.Token);
+                    await _apiPool.RunAsync(userId, RunWorkAsync, run.Cts.Token);
 
                     var status = CurrentRun.Value?.Snapshot.Status;
                     success = string.Equals(status, "done", StringComparison.OrdinalIgnoreCase);
@@ -797,7 +789,6 @@ public sealed class FilmJobService
         public string? AnthropicApiKey { get; set; }
         public DateTimeOffset QueuedAt { get; set; } = DateTimeOffset.UtcNow;
         public DateTimeOffset? StartedAt { get; set; }
-        public bool UseLocalPool { get; set; }
         public List<string> HeldLocks { get; set; } = new();
         public List<string> PendingLockResources { get; set; } = new();
         public string? LockReason { get; set; }
@@ -1081,8 +1072,7 @@ public sealed class FilmJobService
                 Message = "Queued end-credits plate…",
             },
             lockResources: new[] { LockKeys.Wip(projectId) },
-            lockReason: "credits gen",
-            useLocalPool: false);
+            lockReason: "credits gen");
     }
 
     private async Task RunCreditsGenAsync(string projectId, string? resolution, CancellationToken ct)
@@ -1391,7 +1381,7 @@ public sealed class FilmJobService
         try
         {
             await AppendLogAsync(
-                "Voice sample = short film video (VOICE LOCK + dialogue) → audio only");
+                "Voice sample = short film video (voice style + dialogue), kept as MP4");
 
             var path = await _voicePreview.GenerateAsync(
                 projectId,

@@ -21,7 +21,6 @@
         "PageToMovie__UseFakes": "true",
         "PageToMovie__Capacity__MaxVideoInFlight": "4",
         "PageToMovie__Capacity__MaxVideoInFlightPerUser": "1",
-        "PageToMovie__Capacity__MaxFfmpegInFlight": "2",
         "PageToMovie__Fakes__VideoDelayMs": "50"
       }
     },

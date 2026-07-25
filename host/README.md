@@ -7,9 +7,9 @@ Visual Studio / `dotnet` solution: **Blazor WASM UI + C# API/engine**, with live
 host/
   PageToMovie.slnx          # open this in Visual Studio
   PageToMovie.Core/         # shared models + options
-  PageToMovie.Engine/       # project store + Grok jobs + remux
+  PageToMovie.Engine/       # project store + jobs (gen, review drafts, cast, book prepare)
   PageToMovie.Api/          # REST + SignalR hub (:5088); hosts WASM UI
-  PageToMovie.Web/          # Blazor WebAssembly UI
+  PageToMovie.Web/          # Blazor WebAssembly UI + ffmpeg.wasm media tools
   PageToMovie.Fakes/        # fake Grok clients + fixtures
   PageToMovie.LoadSim/      # concurrent virtual-user load client
   PageToMovie.Tests/        # unit tests
@@ -20,12 +20,12 @@ host/
 
 | Project | Role |
 |---------|------|
-| **PageToMovie.Web** | Blazor UI (projects, adaptation, scenes, characters, review, cost) |
-| **PageToMovie.Api** | Backend: REST + `/hubs/jobs` SignalR |
-| **PageToMovie.Engine** | Native C# job runner (Stage 1/2 adaptation, AI classifiers, video prompt builder, remux, book prepare) |
+| **PageToMovie.Web** | Blazor UI (projects, adaptation, scenes, characters, review, cost) + client stitch/trim/frames |
+| **PageToMovie.Api** | Backend: REST + `/hubs/jobs` SignalR (no native ffmpeg) |
+| **PageToMovie.Engine** | C# job runner (Stage 1/2 adaptation, classifiers, video prompts, vision review, book prepare) |
 | **PageToMovie.Core** | DTOs / options |
 
-> **AI Pipeline Overview**: See the root [README.md](../README.md#how-film-studio-converts-source-text-to-a-movie-step-by-step-ai-pipeline) for the complete 7-step guide detailing how LLMs, Vision Classifiers, Image/Video Generation APIs, and 6 specialized AI Classifiers transform raw text into a finished film.
+> **Pipeline overview**: See the root [README.md](../README.md#how-film-studio-converts-source-text-to-a-movie-step-by-step-ai-pipeline). Media compose/trim runs in the browser; vision/gen keys stay on the API.
 
 ## Run (two terminals)
 
@@ -42,8 +42,8 @@ dotnet run
 
 You need **two processes**: Api **and** Web. If only Web is running, health checks fail with connection refused.
 
-**All video stitch / trim is in the browser** (`ffmpeg.wasm` in PageToMovie.Web).  
-The API host never installs or spawns native `ffmpeg`.
+**All video stitch / silence-trim / auto-review frame sampling is in the browser** (`ffmpeg.wasm` in PageToMovie.Web).  
+The API host never installs or spawns native `ffmpeg`. Gen clips may live in a user media folder; the server keeps hashes/metadata.
 
 ### 2) Blazor UI
 
@@ -73,9 +73,10 @@ Open `host/PageToMovie.slnx`, set **multiple startup projects**: Api + Web.
 | POST | `/api/jobs/book-prepare` | PDF extract / vision OCR |
 | POST | `/api/jobs/stage1` | Stage 1 scene bible |
 | POST | `/api/jobs/stage2` | Stage 2 clip plan |
-| POST | `/api/jobs/gen-scene` | Generate scene clips |
-| POST | `/api/jobs/remux` | Scene remux / WIP (ffmpeg progress over SignalR) |
-| POST | `/api/jobs/youtube-upload` | Upload the WIP movie to YouTube (resumable upload, SignalR progress) |
+| POST | `/api/jobs/gen-scene` | Generate scene clips (client may save MP4 to media folder) |
+| POST | `/api/jobs/clip-auto-review` | Auto-review one clip (body includes browser-sampled frames) |
+| POST | `/api/jobs/voice-preview` | Short voice sample clip (MP4; no server audio extract) |
+| POST | `/api/jobs/youtube-upload` | Upload export/WIP to YouTube when configured |
 | POST | `/api/jobs/cancel` | Cancel all / active |
 | GET | `/api/stage2-status` | Blueprint present? |
 

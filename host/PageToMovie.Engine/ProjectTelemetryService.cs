@@ -10,9 +10,10 @@ namespace PageToMovie.Engine;
 /// Append-only project telemetry under <c>projects/{id}/telemetry/</c>:
 /// <list type="bullet">
 /// <item><c>api_calls.jsonl</c> — live model/API calls (full prompts)</item>
-/// <item><c>ffmpeg.jsonl</c> — condensed remux/trim/sample ops</item>
+/// <item><c>media_ops.jsonl</c> — optional condensed local media ops (legacy name was ffmpeg.jsonl)</item>
 /// </list>
 /// Project id from <see cref="UseProject"/> scope, else <see cref="ProjectStore.ActiveProjectId"/>.
+/// Native server ffmpeg is gone; media_ops is rarely written.
 /// </summary>
 public sealed class ProjectTelemetryService
 {
@@ -61,8 +62,13 @@ public sealed class ProjectTelemetryService
     public string ApiCallsPath(string projectId) =>
         Path.Combine(TelemetryDir(projectId), "api_calls.jsonl");
 
-    public string FfmpegPath(string projectId) =>
-        Path.Combine(TelemetryDir(projectId), "ffmpeg.jsonl");
+    /// <summary>Preferred path for local media-op telemetry (replaces ffmpeg.jsonl).</summary>
+    public string MediaOpsPath(string projectId) =>
+        Path.Combine(TelemetryDir(projectId), "media_ops.jsonl");
+
+    /// <summary>Legacy alias for <see cref="MediaOpsPath"/>.</summary>
+    [Obsolete("Use MediaOpsPath — server no longer runs native ffmpeg.")]
+    public string FfmpegPath(string projectId) => MediaOpsPath(projectId);
 
     public void LogApiCall(ApiCallTelemetry rec)
     {
@@ -87,12 +93,13 @@ public sealed class ProjectTelemetryService
         }
     }
 
-    public void LogFfmpeg(FfmpegOpTelemetry rec)
+    /// <summary>Append a condensed local media op (historical name: LogFfmpeg).</summary>
+    public void LogMediaOp(FfmpegOpTelemetry rec)
     {
         var projectId = rec.ProjectId ?? CurrentProjectId;
         if (string.IsNullOrWhiteSpace(projectId))
         {
-            _log.LogDebug("ffmpeg.jsonl skip — no project id (op={Op})", rec.Op);
+            _log.LogDebug("media_ops skip — no project id (op={Op})", rec.Op);
             return;
         }
 
@@ -102,19 +109,23 @@ public sealed class ProjectTelemetryService
 
         try
         {
-            AppendJsonl(FfmpegPath(projectId), rec);
+            AppendJsonl(MediaOpsPath(projectId), rec);
         }
         catch (Exception ex)
         {
-            _log.LogWarning(ex, "ffmpeg.jsonl append failed for {ProjectId}", projectId);
+            _log.LogWarning(ex, "media_ops append failed for {ProjectId}", projectId);
         }
     }
 
+    /// <summary>Legacy alias for <see cref="LogMediaOp"/>.</summary>
+    [Obsolete("Use LogMediaOp.")]
+    public void LogFfmpeg(FfmpegOpTelemetry rec) => LogMediaOp(rec);
+
     /// <summary>
-    /// Build condensed ffmpeg telemetry from raw stderr/stdout + args.
+    /// Build condensed media-op telemetry from raw process log + args.
     /// Drops frame/fps spam; keeps interesting lines + sparse progress samples.
     /// </summary>
-    public static FfmpegOpTelemetry CondenseFfmpegOp(
+    public static FfmpegOpTelemetry CondenseMediaOp(
         string op,
         string args,
         IReadOnlyList<string>? inputs,
@@ -201,6 +212,7 @@ public sealed class ProjectTelemetryService
             ExitCode = exitCode,
             TimedOut = timedOut,
             WallMs = wallMs,
+            ToolPath = ffmpegExe,
             FfmpegPath = ffmpegExe,
             Scene = scene,
             IncludedCount = includedCount,
@@ -217,6 +229,27 @@ public sealed class ProjectTelemetryService
                 : null,
         };
     }
+
+    /// <summary>Legacy alias for <see cref="CondenseMediaOp"/>.</summary>
+    [Obsolete("Use CondenseMediaOp.")]
+    public static FfmpegOpTelemetry CondenseFfmpegOp(
+        string op,
+        string args,
+        IReadOnlyList<string>? inputs,
+        string? output,
+        int exitCode,
+        bool timedOut,
+        long wallMs,
+        string? rawLog,
+        string? ffmpegExe = null,
+        int? scene = null,
+        int? includedCount = null,
+        int? excludedCount = null,
+        string? fallback = null,
+        string? projectId = null) =>
+        CondenseMediaOp(
+            op, args, inputs, output, exitCode, timedOut, wallMs, rawLog,
+            ffmpegExe, scene, includedCount, excludedCount, fallback, projectId);
 
     public static bool IsInterestingLogLine(string line)
     {
@@ -297,7 +330,7 @@ public sealed class ApiCallTelemetry
     public bool Ok { get; set; } = true;
 }
 
-/// <summary>One condensed ffmpeg operation.</summary>
+/// <summary>One condensed local media operation (historical name: ffmpeg op).</summary>
 public sealed class FfmpegOpTelemetry
 {
     public DateTimeOffset? Ts { get; set; }
@@ -309,6 +342,8 @@ public sealed class FfmpegOpTelemetry
     public int ExitCode { get; set; }
     public bool TimedOut { get; set; }
     public long WallMs { get; set; }
+    /// <summary>Tool binary path if any (legacy field name FfmpegPath).</summary>
+    public string? ToolPath { get; set; }
     public string? FfmpegPath { get; set; }
     public int? Scene { get; set; }
     public int? IncludedCount { get; set; }

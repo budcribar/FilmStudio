@@ -80,7 +80,6 @@ public sealed class AdminMetricsPushService : BackgroundService
             {
                 MaxVideoInFlight = cap.MaxVideoInFlight,
                 MaxVideoInFlightPerUser = cap.MaxVideoInFlightPerUser,
-                MaxFfmpegInFlight = cap.MaxFfmpegInFlight,
                 MaxQueuePerUser = cap.MaxQueuePerUser,
             },
             new ProcessMetricsSnapshot

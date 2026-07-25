@@ -2223,7 +2223,6 @@ public sealed class AdminStateDto
     public AdminCallerDto? Caller { get; set; }
     public List<AdminLockDto> Locks { get; set; } = new();
     public int ApiInFlight { get; set; }
-    public int FfmpegInFlight { get; set; }
     public int CapacityRejects { get; set; }
     public int LockConflicts { get; set; }
     public AdminHttpTrafficDto? Http { get; set; }

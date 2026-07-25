@@ -10,7 +10,6 @@ public sealed class ServerMetricsService : IServerMetricsService
     private long _lockConflicts;
     private long _rateLimits;
     private int _apiInFlight;
-    private int _ffmpegInFlight;
     private readonly ConcurrentDictionary<string, int> _apiInFlightByUser =
         new(StringComparer.OrdinalIgnoreCase);
 
@@ -47,9 +46,6 @@ public sealed class ServerMetricsService : IServerMetricsService
         DecrementFloor(ref _apiInFlight);
         _apiInFlightByUser.AddOrUpdate(userId, 0, (_, n) => Math.Max(0, n - 1));
     }
-
-    public void NoteFfmpegSlotAcquired() => Interlocked.Increment(ref _ffmpegInFlight);
-    public void NoteFfmpegSlotReleased() => DecrementFloor(ref _ffmpegInFlight);
 
     private static void DecrementFloor(ref int location)
     {
@@ -143,7 +139,6 @@ public sealed class ServerMetricsService : IServerMetricsService
             Process = process,
             Capacity = capacity,
             ApiInFlight = Math.Max(0, _apiInFlight),
-            FfmpegInFlight = Math.Max(0, _ffmpegInFlight),
             CapacityRejects = (int)Interlocked.Read(ref _capacityRejects),
             LockConflicts = (int)Interlocked.Read(ref _lockConflicts),
             RateLimits = (int)Interlocked.Read(ref _rateLimits),

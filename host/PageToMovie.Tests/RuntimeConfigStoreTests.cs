@@ -28,7 +28,6 @@ public class RuntimeConfigStoreTests
                 {
                     MaxVideoInFlight = 8,
                     MaxVideoInFlightPerUser = 2,
-                    MaxFfmpegInFlight = 3,
                     MaxQueuePerUser = 10,
                 },
             }, "admin");

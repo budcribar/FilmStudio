@@ -66,7 +66,6 @@ public sealed class RuntimeConfigStore : IRuntimeConfigStore
             {
                 MaxVideoInFlight = cap.MaxVideoInFlight,
                 MaxVideoInFlightPerUser = cap.MaxVideoInFlightPerUser,
-                MaxFfmpegInFlight = cap.MaxFfmpegInFlight,
                 MaxQueuePerUser = cap.MaxQueuePerUser,
             },
             Fakes = new FakesRuntimeDto
@@ -102,7 +101,6 @@ public sealed class RuntimeConfigStore : IRuntimeConfigStore
             {
                 o.Capacity.MaxVideoInFlight = Math.Clamp(c.MaxVideoInFlight, 1, 64);
                 o.Capacity.MaxVideoInFlightPerUser = Math.Clamp(c.MaxVideoInFlightPerUser, 1, 16);
-                o.Capacity.MaxFfmpegInFlight = Math.Clamp(c.MaxFfmpegInFlight, 1, 16);
                 o.Capacity.MaxQueuePerUser = Math.Clamp(c.MaxQueuePerUser, 1, 100);
             }
 
@@ -149,7 +147,6 @@ public sealed class RuntimeConfigStore : IRuntimeConfigStore
             {
                 o.Capacity.MaxVideoInFlight = Math.Clamp(c.MaxVideoInFlight, 1, 64);
                 o.Capacity.MaxVideoInFlightPerUser = Math.Clamp(c.MaxVideoInFlightPerUser, 1, 16);
-                o.Capacity.MaxFfmpegInFlight = Math.Clamp(c.MaxFfmpegInFlight, 1, 16);
                 o.Capacity.MaxQueuePerUser = Math.Clamp(c.MaxQueuePerUser, 1, 100);
             }
             if (dto.Fakes is { } f)
@@ -182,7 +179,6 @@ public sealed class RuntimeConfigStore : IRuntimeConfigStore
             {
                 MaxVideoInFlight = o.Capacity?.MaxVideoInFlight ?? 4,
                 MaxVideoInFlightPerUser = o.Capacity?.MaxVideoInFlightPerUser ?? 2,
-                MaxFfmpegInFlight = o.Capacity?.MaxFfmpegInFlight ?? 2,
                 MaxQueuePerUser = o.Capacity?.MaxQueuePerUser ?? 5,
             },
             Fakes = new FakesRuntimeDto

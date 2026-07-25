@@ -48,10 +48,6 @@
                             <InputNumber class="form-control" @bind-Value="_maxVideoPerUser" />
                         </div>
                         <div class="col-6">
-                            <label class="form-label">MaxFfmpegInFlight</label>
-                            <InputNumber class="form-control" @bind-Value="_maxFfmpeg" />
-                        </div>
-                        <div class="col-6">
                             <label class="form-label">MaxQueuePerUser</label>
                             <InputNumber class="form-control" @bind-Value="_maxQueue" />
                         </div>
@@ -114,7 +110,6 @@
 
     private int _maxVideo = 4;
     private int _maxVideoPerUser = 2;
-    private int _maxFfmpeg = 2;
     private int _maxQueue = 5;
     private bool _useFakes;
     private string _videoMode = "MergeRealistic";
@@ -151,7 +146,6 @@
             {
                 _maxVideo = _cfg.Capacity?.MaxVideoInFlight ?? 4;
                 _maxVideoPerUser = _cfg.Capacity?.MaxVideoInFlightPerUser ?? 2;
-                _maxFfmpeg = _cfg.Capacity?.MaxFfmpegInFlight ?? 2;
                 _maxQueue = _cfg.Capacity?.MaxQueuePerUser ?? 5;
                 _useFakes = _cfg.UseFakes;
                 _videoMode = _cfg.Fakes?.VideoMode ?? "MergeRealistic";
@@ -180,7 +174,6 @@
                 {
                     MaxVideoInFlight = _maxVideo,
                     MaxVideoInFlightPerUser = _maxVideoPerUser,
-                    MaxFfmpegInFlight = _maxFfmpeg,
                     MaxQueuePerUser = _maxQueue,
                 },
                 Fakes = new FakesRuntimeDto

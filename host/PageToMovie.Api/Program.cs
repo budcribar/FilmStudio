@@ -84,7 +84,6 @@ builder.Services.AddSingleton<ILockService, InMemoryLockService>();
 builder.Services.AddSingleton<IServerMetricsService, ServerMetricsService>();
 builder.Services.AddSingleton<IRuntimeConfigStore, RuntimeConfigStore>();
 builder.Services.AddSingleton<ApiWorkerPool>();
-builder.Services.AddSingleton<LocalWorkerPool>();
 builder.Services.AddSingleton<LoginRateLimiter>();
 builder.Services.AddSingleton<CreditService>();
 builder.Services.AddSingleton<ProjectArchiveService>();
@@ -550,7 +549,6 @@ app.MapGet("/api/admin/state", (
         queueByUser = snap.QueueByUser,
         timings = snap.TimingsByKind,
         apiInFlight = snap.ApiInFlight,
-        ffmpegInFlight = snap.FfmpegInFlight,
         capacityRejects = snap.CapacityRejects,
         lockConflicts = snap.LockConflicts,
         http = traffic,
@@ -1687,7 +1685,7 @@ app.MapPost("/api/projects/{id}/characters/{charKey}/voice",
 });
 
 /// <summary>
-/// Film-pipeline voice sample job: short Grok video (VOICE LOCK + dialogue) → MP3 only.
+/// Film-pipeline voice sample job: short video (voice style + dialogue) kept as MP4 (no ffmpeg extract).
 /// Use Force=true after editing the profile to regenerate.
 /// </summary>
 app.MapPost("/api/jobs/voice-preview", async (StartVoicePreviewRequest body, FilmJobService jobService) =>
@@ -1733,6 +1731,7 @@ app.MapGet("/api/projects/{id}/characters/{charKey}/voice/audio/status", (
             Matches = info.Matches,
             Fingerprint = info.Fingerprint,
             GeneratedAt = info.GeneratedAt,
+            ContentType = info.ContentType,
             AudioUrl = info.Exists
                 ? $"/api/projects/{Uri.EscapeDataString(id)}/characters/{Uri.EscapeDataString(charKey)}/voice/audio"
                 : null,
@@ -1744,7 +1743,7 @@ app.MapGet("/api/projects/{id}/characters/{charKey}/voice/audio/status", (
     }
 });
 
-/// <summary>Serve cached film voice sample MP3 (audio only — no video).</summary>
+/// <summary>Serve cached film voice sample (MP4 preferred; legacy MP3 still supported).</summary>
 app.MapGet("/api/projects/{id}/characters/{charKey}/voice/audio", (
     string id,
     string charKey,
@@ -1754,10 +1753,13 @@ app.MapGet("/api/projects/{id}/characters/{charKey}/voice/audio", (
     {
         if (string.IsNullOrWhiteSpace(charKey))
             return Results.BadRequest(new { ok = false, error = "charKey required" });
-        var path = voices.GetMp3Path(id, charKey);
-        if (!File.Exists(path) || new FileInfo(path).Length < 64)
+        var path = voices.GetSampleMediaPath(id, charKey);
+        if (path is null)
             return Results.NotFound(new { ok = false, error = "No voice sample yet — generate one first." });
-        return Results.File(path, "audio/mpeg", fileDownloadName: $"{charKey}_voice.mp3", enableRangeProcessing: true);
+        var isMp3 = path.EndsWith(".mp3", StringComparison.OrdinalIgnoreCase);
+        var contentType = isMp3 ? "audio/mpeg" : "video/mp4";
+        var fileName = isMp3 ? $"{charKey}_voice.mp3" : $"{charKey}_voice.mp4";
+        return Results.File(path, contentType, fileDownloadName: fileName, enableRangeProcessing: true);
     }
     catch (Exception ex)
     {

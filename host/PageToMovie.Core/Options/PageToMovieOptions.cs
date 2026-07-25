@@ -277,7 +277,6 @@ public sealed class CapacityOptions
     public int MaxVideoInFlight { get; set; } = 4;
     /// <summary>Max concurrent video jobs per user (fairness; default 1).</summary>
     public int MaxVideoInFlightPerUser { get; set; } = 1;
-    public int MaxFfmpegInFlight { get; set; } = 2;
     public int MaxQueuePerUser { get; set; } = 5;
 }
 

@@ -45,7 +45,6 @@ cd host
 $env:PageToMovie_USE_FAKES = "true"
 $env:PageToMovie__Capacity__MaxVideoInFlight = "4"
 $env:PageToMovie__Capacity__MaxVideoInFlightPerUser = "1"
-$env:PageToMovie__Capacity__MaxFfmpegInFlight = "2"
 $env:PageToMovie__Fakes__VideoDelayMs = "50"
 dotnet run --project PageToMovie.Api
 ```
@@ -100,7 +99,6 @@ Exit code **0** = gates pass. Results JSON is written to `--out`.
 $env:PageToMovie_USE_FAKES = "true"
 $env:PageToMovie__Capacity__MaxVideoInFlight = "4"
 $env:PageToMovie__Capacity__MaxVideoInFlightPerUser = "1"
-$env:PageToMovie__Capacity__MaxFfmpegInFlight = "2"
 dotnet run --project PageToMovie.Api
 
 # Terminal 2
