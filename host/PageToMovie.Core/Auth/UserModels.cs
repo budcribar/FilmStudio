@@ -24,6 +24,20 @@ public sealed class OperatorOverrideRequest
     public string? Secret { get; set; }
 }
 
+/// <summary>Body for POST /api/demos/{id}/report.</summary>
+public sealed class DemoReportRequest
+{
+    public string? Note { get; set; }
+}
+
+/// <summary>Body for POST /api/admin/demos/{id}/review.</summary>
+public sealed class DemoReviewRequest
+{
+    /// <summary>public | rejected | pending | removed</summary>
+    public string? Status { get; set; }
+    public string? Note { get; set; }
+}
+
 public sealed class LoginResponse
 {
     public bool Ok { get; set; }

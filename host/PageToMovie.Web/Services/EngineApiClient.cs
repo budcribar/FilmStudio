@@ -395,7 +395,7 @@ public sealed class EngineApiClient
         return await res.Content.ReadAsByteArrayAsync(ct);
     }
 
-    /// <summary>Public demo gallery list (no auth required on API).</summary>
+    /// <summary>Public demo gallery (approved only; no auth required).</summary>
     public async Task<List<DemoListItem>> ListDemosAsync(int take = 50, CancellationToken ct = default)
     {
         SyncIdentityHeaders();
@@ -404,14 +404,61 @@ public sealed class EngineApiClient
         return dto?.Demos ?? new List<DemoListItem>();
     }
 
-    /// <summary>
-    /// Publish demo from server WIP (projectId) or after client already uploaded via JS.
-    /// Prefer <see cref="PublishDemoFromUrlViaJsAsync"/> when only a browser blob/media URL exists.
-    /// </summary>
+    /// <summary>Admin moderation list (any status).</summary>
+    public async Task<DemoAdminListEnvelope?> ListAdminDemosAsync(
+        string? status = null,
+        int take = 100,
+        CancellationToken ct = default)
+    {
+        var q = $"/api/admin/demos?take={take}";
+        if (!string.IsNullOrWhiteSpace(status))
+            q += "&status=" + Uri.EscapeDataString(status.Trim());
+        using var req = new HttpRequestMessage(HttpMethod.Get, q);
+        return await SendJsonAsync<DemoAdminListEnvelope>(req, ct);
+    }
+
+    public async Task ReportDemoAsync(string demoId, string? note = null, CancellationToken ct = default)
+    {
+        using var req = new HttpRequestMessage(
+            HttpMethod.Post,
+            $"/api/demos/{Uri.EscapeDataString(demoId)}/report")
+        {
+            Content = JsonContent.Create(new { note }, options: JsonOpts),
+        };
+        using var resp = await _http.SendAsync(req, ct);
+        if (!resp.IsSuccessStatusCode)
+        {
+            var err = await resp.Content.ReadAsStringAsync(ct);
+            throw new InvalidOperationException(TryError(err) ?? resp.ReasonPhrase);
+        }
+    }
+
+    public async Task ReviewDemoAsync(
+        string demoId,
+        string status,
+        string? note = null,
+        CancellationToken ct = default)
+    {
+        using var req = new HttpRequestMessage(
+            HttpMethod.Post,
+            $"/api/admin/demos/{Uri.EscapeDataString(demoId)}/review")
+        {
+            Content = JsonContent.Create(new { status, note }, options: JsonOpts),
+        };
+        using var resp = await _http.SendAsync(req, ct);
+        if (!resp.IsSuccessStatusCode)
+        {
+            var err = await resp.Content.ReadAsStringAsync(ct);
+            throw new InvalidOperationException(TryError(err) ?? resp.ReasonPhrase);
+        }
+    }
+
+    /// <summary>Submit demo for human review (always pending until admin approves).</summary>
     public async Task<DemoPublishResult?> PublishDemoFromWipAsync(
         string projectId,
         string title,
         string? description = null,
+        bool acceptedGuidelines = true,
         CancellationToken ct = default)
     {
         using var req = new HttpRequestMessage(HttpMethod.Post, "/api/demos")
@@ -421,6 +468,7 @@ public sealed class EngineApiClient
                 projectId,
                 title,
                 description,
+                acceptedGuidelines,
             }, options: JsonOpts),
         };
         return await SendJsonAsync<DemoPublishResult>(req, ct);
@@ -439,12 +487,20 @@ public sealed class EngineApiClient
         }
     }
 
-    /// <summary>
-    /// Public demo stream URL — no access_token (gallery is open to everyone).
-    /// </summary>
+    /// <summary>Public demo stream URL (only works for approved demos unless admin/owner Bearer).</summary>
     public string DemoVideoUrl(string demoId)
     {
         var path = $"/api/demos/{Uri.EscapeDataString(demoId)}/video";
+        // Admin reviewing pending demos needs media token or session — attach short media token when available.
+        if (HasFreshMediaToken())
+        {
+            path += (path.Contains('?', StringComparison.Ordinal) ? "&" : "?")
+                    + "mt=" + Uri.EscapeDataString(_mediaToken!);
+        }
+        else
+        {
+            QueueMediaTokenRefreshIfNeeded();
+        }
         var origin = BrowserMediaOrigin;
         return string.IsNullOrEmpty(origin) ? path : origin + path;
     }
@@ -2394,6 +2450,14 @@ public sealed class DemoListEnvelope
     public List<DemoListItem> Demos { get; set; } = new();
 }
 
+public sealed class DemoAdminListEnvelope
+{
+    public bool Ok { get; set; }
+    public string? Status { get; set; }
+    public int PendingCount { get; set; }
+    public List<DemoListItem> Demos { get; set; } = new();
+}
+
 public sealed class DemoListItem
 {
     public string Id { get; set; } = "";
@@ -2403,6 +2467,12 @@ public sealed class DemoListItem
     public string? CreatedBy { get; set; }
     public DateTimeOffset CreatedAt { get; set; }
     public long SizeBytes { get; set; }
+    public string? Status { get; set; }
+    public int ReportCount { get; set; }
+    public List<string>? ReportNotes { get; set; }
+    public string? ReviewedBy { get; set; }
+    public DateTimeOffset? ReviewedAt { get; set; }
+    public string? ReviewNote { get; set; }
     public string? VideoPath { get; set; }
 }
 
@@ -2410,6 +2480,8 @@ public sealed class DemoPublishResult
 {
     public bool Ok { get; set; }
     public string? Error { get; set; }
+    public bool PendingReview { get; set; }
+    public string? Message { get; set; }
     public DemoPublishItem? Demo { get; set; }
 }
 
@@ -2422,6 +2494,7 @@ public sealed class DemoPublishItem
     public string? CreatedBy { get; set; }
     public DateTimeOffset CreatedAt { get; set; }
     public long SizeBytes { get; set; }
+    public string? Status { get; set; }
     public string? VideoPath { get; set; }
     public string? PagePath { get; set; }
 }

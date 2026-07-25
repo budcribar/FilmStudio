@@ -1,0 +1,261 @@
+@page "/admin/demos"
+@inject EngineApiClient Api
+@inject AdminSessionService Session
+@inject NavigationManager Nav
+
+<PageTitle>Demo moderation — Admin</PageTitle>
+
+<div class="container-fluid py-3">
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+        <div>
+            <h1 class="h3 mb-0">Demo moderation</h1>
+            <p class="text-muted small mb-0">
+                Human review only — no AI scanning. Approve films for the public wall or reject them.
+            </p>
+        </div>
+        <div class="d-flex gap-2 flex-wrap">
+            <a class="btn btn-sm btn-outline-secondary" href="/admin">Dashboard</a>
+            <a class="btn btn-sm btn-outline-primary" href="/demo" target="_blank">Public gallery</a>
+            <button class="btn btn-sm btn-outline-secondary" disabled="@_busy" @onclick="ReloadAsync">Refresh</button>
+        </div>
+    </div>
+
+    @if (!Session.IsAdmin)
+    {
+        <div class="alert alert-warning">
+            Admin session required. <a href="/admin/login">Sign in</a>
+        </div>
+    }
+    else
+    {
+        @if (!string.IsNullOrEmpty(_error))
+        {
+            <div class="alert alert-danger">@_error</div>
+        }
+        @if (!string.IsNullOrEmpty(_message))
+        {
+            <div class="alert alert-info py-2">@_message</div>
+        }
+
+        <div class="d-flex flex-wrap gap-2 mb-3 align-items-center">
+            <span class="small text-muted">Filter:</span>
+            @foreach (var f in _filters)
+            {
+                <button type="button"
+                        class="btn btn-sm @(_statusFilter == f.Key ? "btn-primary" : "btn-outline-secondary")"
+                        disabled="@_busy"
+                        @onclick="() => SetFilterAsync(f.Key)">
+                    @f.Label
+                    @if (f.Key == "pending" && _pendingCount > 0)
+                    {
+                        <span class="badge text-bg-warning ms-1">@_pendingCount</span>
+                    }
+                </button>
+            }
+        </div>
+
+        @if (_loading)
+        {
+            <p class="text-muted">Loading demos…</p>
+        }
+        else if (_demos.Count == 0)
+        {
+            <div class="alert alert-secondary">No demos in this filter.</div>
+        }
+        else
+        {
+            <div class="row g-3">
+                @foreach (var d in _demos)
+                {
+                    <div class="col-12 col-xl-6">
+                        <div class="card h-100 border-secondary">
+                            <div class="card-header py-2 d-flex flex-wrap justify-content-between gap-2">
+                                <div>
+                                    <strong>@d.Title</strong>
+                                    <span class="badge ms-1 @StatusBadgeClass(d.Status)">@(d.Status ?? "?")</span>
+                                    @if (d.ReportCount > 0)
+                                    {
+                                        <span class="badge text-bg-danger ms-1">@d.ReportCount reports</span>
+                                    }
+                                </div>
+                                <span class="small text-muted">@d.CreatedAt.ToLocalTime().ToString("g")</span>
+                            </div>
+                            <div class="card-body py-2">
+                                <p class="small mb-2">
+                                    <span class="text-muted">by</span> @(d.CreatedBy ?? "—")
+                                    @if (!string.IsNullOrWhiteSpace(d.ProjectId))
+                                    {
+                                        <span class="text-muted"> · project</span> <code>@d.ProjectId</code>
+                                    }
+                                </p>
+                                @if (!string.IsNullOrWhiteSpace(d.Description))
+                                {
+                                    <p class="small">@d.Description</p>
+                                }
+                                <video controls playsinline preload="metadata"
+                                       class="w-100 rounded mb-2"
+                                       style="max-height: 40vh; background: #000;"
+                                       src="@Api.DemoVideoUrl(d.Id)"
+                                       @key="@($"{d.Id}:{d.Status}")">
+                                </video>
+                                @if (d.ReportNotes is { Count: > 0 })
+                                {
+                                    <details class="small mb-2">
+                                        <summary>Reports (@d.ReportNotes.Count)</summary>
+                                        <ul class="mb-0 mt-1">
+                                            @foreach (var n in d.ReportNotes.TakeLast(8))
+                                            {
+                                                <li class="text-muted">@n</li>
+                                            }
+                                        </ul>
+                                    </details>
+                                }
+                                @if (!string.IsNullOrWhiteSpace(d.ReviewNote))
+                                {
+                                    <p class="small text-muted mb-2">Last review note: @d.ReviewNote</p>
+                                }
+                                <div class="d-flex flex-wrap gap-2">
+                                    <button type="button" class="btn btn-sm btn-success" disabled="@_busy"
+                                            @onclick="@(() => ReviewAsync(d.Id, "public"))">
+                                        Approve (public)
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-warning" disabled="@_busy"
+                                            @onclick="@(() => ReviewAsync(d.Id, "rejected"))">
+                                        Reject
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary" disabled="@_busy"
+                                            @onclick="@(() => ReviewAsync(d.Id, "pending"))">
+                                        Re-queue
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-outline-danger" disabled="@_busy"
+                                            @onclick="@(() => HardDeleteAsync(d.Id))">
+                                        Delete files
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+    }
+</div>
+
+@code {
+    private bool _loading = true;
+    private bool _busy;
+    private string? _error;
+    private string? _message;
+    private string? _statusFilter = "pending";
+    private int _pendingCount;
+    private List<DemoListItem> _demos = new();
+
+    private readonly (string Key, string Label)[] _filters =
+    {
+        ("pending", "Pending"),
+        ("public", "Public"),
+        ("rejected", "Rejected"),
+        ("removed", "Removed"),
+        ("", "All"),
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        try { await Session.EnsureHydratedAsync(); } catch { /* */ }
+        if (!Session.IsAdmin)
+        {
+            _loading = false;
+            return;
+        }
+        await Api.EnsureMediaAccessAsync();
+        await ReloadAsync();
+    }
+
+    private async Task SetFilterAsync(string key)
+    {
+        _statusFilter = key;
+        await ReloadAsync();
+    }
+
+    private async Task ReloadAsync()
+    {
+        if (!Session.IsAdmin) return;
+        _loading = true;
+        _error = null;
+        try
+        {
+            var st = string.IsNullOrEmpty(_statusFilter) ? null : _statusFilter;
+            var env = await Api.ListAdminDemosAsync(st, 100);
+            _demos = env?.Demos ?? new();
+            _pendingCount = env?.PendingCount ?? _demos.Count(d =>
+                string.Equals(d.Status, "pending", StringComparison.OrdinalIgnoreCase));
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+            _demos = new();
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task ReviewAsync(string id, string status)
+    {
+        if (_busy) return;
+        _busy = true;
+        _error = null;
+        try
+        {
+            await Api.ReviewDemoAsync(id, status);
+            _message = status switch
+            {
+                "public" => "Approved — now on the public Demo page.",
+                "rejected" => "Rejected — hidden from public gallery.",
+                "pending" => "Back in the review queue.",
+                _ => "Status updated.",
+            };
+            await ReloadAsync();
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task HardDeleteAsync(string id)
+    {
+        if (_busy) return;
+        _busy = true;
+        _error = null;
+        try
+        {
+            await Api.DeleteDemoAsync(id);
+            _message = "Demo files deleted.";
+            await ReloadAsync();
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private static string StatusBadgeClass(string? status) =>
+        (status ?? "").ToLowerInvariant() switch
+        {
+            "public" => "text-bg-success",
+            "pending" => "text-bg-warning",
+            "rejected" => "text-bg-secondary",
+            "removed" => "text-bg-dark",
+            _ => "text-bg-light",
+        };
+}

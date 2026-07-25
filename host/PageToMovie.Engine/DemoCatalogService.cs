@@ -5,8 +5,9 @@ using Microsoft.Extensions.Logging;
 namespace PageToMovie.Engine;
 
 /// <summary>
-/// Public demo gallery: uploaded movies under <c>{WorkspaceRoot}/_demos/{id}/</c>.
-/// Each demo has <c>meta.json</c> + <c>movie.mp4</c>.
+/// Demo gallery under <c>{WorkspaceRoot}/_demos/{id}/</c> (meta.json + movie.mp4).
+/// Public wall shows only <see cref="DemoStatuses.Public"/> entries after human review.
+/// No ML / API moderation — publish → pending → admin approve/reject.
 /// </summary>
 public sealed class DemoCatalogService
 {
@@ -16,6 +17,15 @@ public sealed class DemoCatalogService
         WriteIndented = true,
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
     };
+
+    public const long MaxUploadBytes = 512L * 1024 * 1024;
+    public const long MinUploadBytes = 1024;
+    /// <summary>Max demos a user may submit per rolling 24h window.</summary>
+    public const int MaxPublishesPerUserPerDay = 2;
+    /// <summary>Max simultaneous pending demos per user.</summary>
+    public const int MaxPendingPerUser = 5;
+    /// <summary>Max open report notes stored on one demo.</summary>
+    public const int MaxReportNotes = 20;
 
     private readonly ProjectStore _projects;
     private readonly ILogger<DemoCatalogService> _log;
@@ -29,6 +39,23 @@ public sealed class DemoCatalogService
 
     public string DemosDir => Path.Combine(_projects.WorkspaceRoot, "_demos");
 
+    public static class DemoStatuses
+    {
+        public const string Pending = "pending";
+        public const string Public = "public";
+        public const string Rejected = "rejected";
+        public const string Removed = "removed";
+
+        public static bool IsKnown(string? s) =>
+            string.Equals(s, Pending, StringComparison.OrdinalIgnoreCase)
+            || string.Equals(s, Public, StringComparison.OrdinalIgnoreCase)
+            || string.Equals(s, Rejected, StringComparison.OrdinalIgnoreCase)
+            || string.Equals(s, Removed, StringComparison.OrdinalIgnoreCase);
+
+        public static string Normalize(string? s) =>
+            IsKnown(s) ? s!.Trim().ToLowerInvariant() : Public; // legacy metas without status → public
+    }
+
     public sealed class DemoEntry
     {
         public string Id { get; set; } = "";
@@ -39,64 +66,39 @@ public sealed class DemoCatalogService
         public DateTimeOffset CreatedAt { get; set; }
         public long SizeBytes { get; set; }
         public string? ContentType { get; set; }
+        /// <summary>pending | public | rejected | removed</summary>
+        public string Status { get; set; } = DemoStatuses.Pending;
+        public bool AcceptedGuidelines { get; set; }
+        public int ReportCount { get; set; }
+        public List<string> ReportNotes { get; set; } = new();
+        public string? ReviewedBy { get; set; }
+        public DateTimeOffset? ReviewedAt { get; set; }
+        public string? ReviewNote { get; set; }
     }
 
-    public IReadOnlyList<DemoEntry> List(int take = 50)
+    public IReadOnlyList<DemoEntry> List(int take = 50, string? status = null)
     {
         take = Math.Clamp(take, 1, 200);
         lock (_lock)
         {
-            if (!Directory.Exists(DemosDir))
-                return Array.Empty<DemoEntry>();
-
-            var list = new List<DemoEntry>();
-            foreach (var dir in Directory.EnumerateDirectories(DemosDir))
-            {
-                try
-                {
-                    var metaPath = Path.Combine(dir, "meta.json");
-                    var moviePath = Path.Combine(dir, "movie.mp4");
-                    if (!File.Exists(metaPath) || !File.Exists(moviePath))
-                        continue;
-                    var entry = JsonSerializer.Deserialize<DemoEntry>(File.ReadAllText(metaPath), JsonOpts);
-                    if (entry is null || string.IsNullOrWhiteSpace(entry.Id))
-                        continue;
-                    if (entry.SizeBytes <= 0)
-                    {
-                        try { entry.SizeBytes = new FileInfo(moviePath).Length; }
-                        catch { /* ignore */ }
-                    }
-                    list.Add(entry);
-                }
-                catch (Exception ex)
-                {
-                    _log.LogDebug(ex, "Skip bad demo dir {Dir}", dir);
-                }
-            }
-
-            return list
+            return LoadAllUnlocked()
+                .Where(e => status is null
+                    || string.Equals(e.Status, status, StringComparison.OrdinalIgnoreCase))
                 .OrderByDescending(e => e.CreatedAt)
                 .Take(take)
                 .ToList();
         }
     }
 
+    /// <summary>Public gallery: only approved public demos.</summary>
+    public IReadOnlyList<DemoEntry> ListPublic(int take = 50) =>
+        List(take, DemoStatuses.Public);
+
     public DemoEntry? TryGet(string id)
     {
         if (!IsValidId(id)) return null;
         lock (_lock)
-        {
-            var metaPath = Path.Combine(DemosDir, id, "meta.json");
-            if (!File.Exists(metaPath)) return null;
-            try
-            {
-                return JsonSerializer.Deserialize<DemoEntry>(File.ReadAllText(metaPath), JsonOpts);
-            }
-            catch
-            {
-                return null;
-            }
-        }
+            return ReadUnlocked(id);
     }
 
     public string? ResolveMoviePath(string id)
@@ -106,30 +108,85 @@ public sealed class DemoCatalogService
         return File.Exists(path) ? path : null;
     }
 
-    /// <summary>Copy an existing on-disk WIP into a new demo entry.</summary>
-    public DemoEntry PublishFromWip(string projectId, string title, string? description, string? createdBy)
+    /// <summary>
+    /// Whether anonymous/public viewers may stream this demo.
+    /// Pending/rejected/removed are not world-readable.
+    /// </summary>
+    public bool IsPubliclyStreamable(DemoEntry? e) =>
+        e is not null
+        && string.Equals(e.Status, DemoStatuses.Public, StringComparison.OrdinalIgnoreCase);
+
+    public bool CanUserViewVideo(DemoEntry e, string? userId, bool isAdmin)
+    {
+        if (IsPubliclyStreamable(e))
+            return true;
+        if (isAdmin)
+            return true;
+        if (!string.IsNullOrWhiteSpace(userId)
+            && string.Equals(e.CreatedBy, userId, StringComparison.OrdinalIgnoreCase)
+            && !string.Equals(e.Status, DemoStatuses.Removed, StringComparison.OrdinalIgnoreCase))
+            return true;
+        return false;
+    }
+
+    /// <summary>Enforce publish rate / pending caps before accepting a new demo.</summary>
+    public void EnsureUserMayPublish(string? userId, bool isAdmin)
+    {
+        if (isAdmin)
+            return;
+        if (string.IsNullOrWhiteSpace(userId))
+            throw new InvalidOperationException("Sign in required to publish a demo.");
+
+        lock (_lock)
+        {
+            var mine = LoadAllUnlocked()
+                .Where(e => string.Equals(e.CreatedBy, userId, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+
+            var pending = mine.Count(e =>
+                string.Equals(e.Status, DemoStatuses.Pending, StringComparison.OrdinalIgnoreCase));
+            if (pending >= MaxPendingPerUser)
+            {
+                throw new InvalidOperationException(
+                    $"You already have {pending} demos waiting for review (max {MaxPendingPerUser}). " +
+                    "Wait for admin approval before submitting more.");
+            }
+
+            var since = DateTimeOffset.UtcNow.AddHours(-24);
+            var recent = mine.Count(e => e.CreatedAt >= since);
+            if (recent >= MaxPublishesPerUserPerDay)
+            {
+                throw new InvalidOperationException(
+                    $"Publish limit reached ({MaxPublishesPerUserPerDay} demos per 24 hours). Try again later.");
+            }
+        }
+    }
+
+    public DemoEntry PublishFromWip(
+        string projectId,
+        string title,
+        string? description,
+        string? createdBy,
+        bool acceptedGuidelines)
     {
         var wip = _projects.ResolveWipMoviePath(projectId)
                   ?? throw new InvalidOperationException("WIP movie not found — build the cut first.");
-        return PublishFromFile(wip, title, description, projectId, createdBy);
+        return PublishFromFile(wip, title, description, projectId, createdBy, acceptedGuidelines);
     }
 
-    /// <summary>Max accepted demo upload size (512 MB).</summary>
-    public const long MaxUploadBytes = 512L * 1024 * 1024;
-    /// <summary>Minimum plausible MP4 size.</summary>
-    public const long MinUploadBytes = 1024;
-
-    /// <summary>Store an uploaded stream as a new demo (must look like a real MP4).</summary>
     public async Task<DemoEntry> PublishFromStreamAsync(
         Stream content,
         string title,
         string? description,
         string? projectId,
         string? createdBy,
+        bool acceptedGuidelines,
         CancellationToken ct = default)
     {
         if (content is null || !content.CanRead)
             throw new InvalidOperationException("Empty upload");
+        if (!acceptedGuidelines)
+            throw new InvalidOperationException("You must accept the gallery guidelines to publish.");
 
         var id = GenerateId();
         var dir = Path.Combine(DemosDir, id);
@@ -147,30 +204,16 @@ public sealed class DemoCatalogService
             var fi = new FileInfo(moviePath);
             if (fi.Length < MinUploadBytes)
                 throw new InvalidOperationException("Uploaded video is too small");
-
             if (!LooksLikeMp4(moviePath))
                 throw new InvalidOperationException(
                     "Upload is not a valid MP4 (missing ftyp box). Only MP4 video is accepted.");
 
-            var entry = new DemoEntry
-            {
-                Id = id,
-                Title = string.IsNullOrWhiteSpace(title) ? (projectId ?? "Demo") : title.Trim(),
-                Description = string.IsNullOrWhiteSpace(description) ? null : description.Trim(),
-                ProjectId = string.IsNullOrWhiteSpace(projectId) ? null : projectId.Trim(),
-                CreatedBy = createdBy,
-                CreatedAt = DateTimeOffset.UtcNow,
-                SizeBytes = fi.Length,
-                ContentType = "video/mp4",
-            };
-            await File.WriteAllTextAsync(
-                    Path.Combine(dir, "meta.json"),
-                    JsonSerializer.Serialize(entry, JsonOpts) + "\n",
-                    ct)
-                .ConfigureAwait(false);
+            var entry = NewPendingEntry(
+                id, title, description, projectId, createdBy, fi.Length, acceptedGuidelines);
+            await WriteMetaAsync(dir, entry, ct).ConfigureAwait(false);
 
             _log.LogInformation(
-                "Demo {Id} published ({Bytes} bytes) project={Project} by={User}",
+                "Demo {Id} submitted pending review ({Bytes} bytes) project={Project} by={User}",
                 id, entry.SizeBytes, projectId, createdBy);
             return entry;
         }
@@ -186,10 +229,149 @@ public sealed class DemoCatalogService
         }
     }
 
-    /// <summary>
-    /// ISO BMFF: bytes 4–7 are 'ftyp' for MP4/MOV-family files.
-    /// Rejects arbitrary blobs that would otherwise be hosted as video/mp4.
-    /// </summary>
+    public DemoEntry PublishFromFile(
+        string sourceMp4Path,
+        string title,
+        string? description,
+        string? projectId,
+        string? createdBy,
+        bool acceptedGuidelines)
+    {
+        if (string.IsNullOrWhiteSpace(sourceMp4Path) || !File.Exists(sourceMp4Path))
+            throw new InvalidOperationException("Source movie not found");
+        if (!acceptedGuidelines)
+            throw new InvalidOperationException("You must accept the gallery guidelines to publish.");
+
+        var id = GenerateId();
+        var dir = Path.Combine(DemosDir, id);
+        Directory.CreateDirectory(dir);
+        var moviePath = Path.Combine(dir, "movie.mp4");
+        try
+        {
+            File.Copy(sourceMp4Path, moviePath, overwrite: false);
+            var fi = new FileInfo(moviePath);
+            if (fi.Length < MinUploadBytes)
+                throw new InvalidOperationException("Movie file is too small");
+            if (!LooksLikeMp4(moviePath))
+                throw new InvalidOperationException("Source file is not a valid MP4.");
+
+            var entry = NewPendingEntry(
+                id, title, description, projectId, createdBy, fi.Length, acceptedGuidelines);
+            File.WriteAllText(
+                Path.Combine(dir, "meta.json"),
+                JsonSerializer.Serialize(entry, JsonOpts) + "\n");
+
+            _log.LogInformation(
+                "Demo {Id} submitted pending review from file ({Bytes} bytes) project={Project} by={User}",
+                id, entry.SizeBytes, projectId, createdBy);
+            return entry;
+        }
+        catch
+        {
+            try
+            {
+                if (Directory.Exists(dir))
+                    Directory.Delete(dir, recursive: true);
+            }
+            catch { /* ignore */ }
+            throw;
+        }
+    }
+
+    public DemoEntry? Report(string id, string? note, string? reporterUserId)
+    {
+        lock (_lock)
+        {
+            var entry = ReadUnlocked(id);
+            if (entry is null)
+                return null;
+            if (!string.Equals(entry.Status, DemoStatuses.Public, StringComparison.OrdinalIgnoreCase))
+                return entry; // ignore reports on non-public
+
+            entry.ReportCount = Math.Max(0, entry.ReportCount) + 1;
+            var line = $"{DateTimeOffset.UtcNow:o} by {reporterUserId ?? "anon"}: "
+                       + (string.IsNullOrWhiteSpace(note) ? "(no note)" : note.Trim());
+            entry.ReportNotes ??= new List<string>();
+            entry.ReportNotes.Add(line);
+            while (entry.ReportNotes.Count > MaxReportNotes)
+                entry.ReportNotes.RemoveAt(0);
+
+            // Auto-hide after enough community reports until admin re-reviews.
+            if (entry.ReportCount >= 3
+                && string.Equals(entry.Status, DemoStatuses.Public, StringComparison.OrdinalIgnoreCase))
+            {
+                entry.Status = DemoStatuses.Pending;
+                entry.ReviewNote = $"Auto-queued after {entry.ReportCount} reports";
+                _log.LogWarning("Demo {Id} auto-pending after {N} reports", id, entry.ReportCount);
+            }
+
+            SaveUnlocked(entry);
+            return entry;
+        }
+    }
+
+    public DemoEntry? SetStatus(
+        string id,
+        string status,
+        string? reviewerUserId,
+        string? reviewNote)
+    {
+        if (!DemoStatuses.IsKnown(status))
+            throw new InvalidOperationException($"Unknown status: {status}");
+
+        lock (_lock)
+        {
+            var entry = ReadUnlocked(id);
+            if (entry is null)
+                return null;
+
+            entry.Status = status.Trim().ToLowerInvariant();
+            entry.ReviewedBy = reviewerUserId;
+            entry.ReviewedAt = DateTimeOffset.UtcNow;
+            if (!string.IsNullOrWhiteSpace(reviewNote))
+                entry.ReviewNote = reviewNote.Trim();
+
+            SaveUnlocked(entry);
+            _log.LogInformation(
+                "Demo {Id} → {Status} by {Reviewer}",
+                id, entry.Status, reviewerUserId);
+            return entry;
+        }
+    }
+
+    public bool Delete(string id, string? requesterUserId, bool isAdmin)
+    {
+        var entry = TryGet(id);
+        if (entry is null) return false;
+        if (!isAdmin &&
+            !string.Equals(entry.CreatedBy, requesterUserId, StringComparison.OrdinalIgnoreCase))
+            return false;
+
+        // Soft-delete for non-admin owner: mark removed so admin has audit trail optional.
+        // Hard-delete for admin always; owner can hard-delete their own pending/rejected.
+        if (isAdmin || !string.Equals(entry.Status, DemoStatuses.Public, StringComparison.OrdinalIgnoreCase))
+        {
+            lock (_lock)
+            {
+                var dir = Path.Combine(DemosDir, id);
+                if (!Directory.Exists(dir)) return false;
+                try
+                {
+                    Directory.Delete(dir, recursive: true);
+                    return true;
+                }
+                catch (Exception ex)
+                {
+                    _log.LogWarning(ex, "Failed to delete demo {Id}", id);
+                    return false;
+                }
+            }
+        }
+
+        // Public demos: owner request → removed (hidden), admin can hard-delete later.
+        return SetStatus(id, DemoStatuses.Removed, requesterUserId, "Removed by publisher") is not null;
+    }
+
     public static bool LooksLikeMp4(string path)
     {
         try
@@ -201,7 +383,6 @@ public sealed class DemoCatalogService
             var n = fs.Read(header);
             if (n < 12)
                 return false;
-            // size(4) + 'ftyp'(4) + brand(4)
             return header[4] == (byte)'f'
                    && header[5] == (byte)'t'
                    && header[6] == (byte)'y'
@@ -212,6 +393,95 @@ public sealed class DemoCatalogService
             return false;
         }
     }
+
+    private DemoEntry NewPendingEntry(
+        string id,
+        string title,
+        string? description,
+        string? projectId,
+        string? createdBy,
+        long sizeBytes,
+        bool acceptedGuidelines) =>
+        new()
+        {
+            Id = id,
+            Title = string.IsNullOrWhiteSpace(title) ? (projectId ?? "Demo") : title.Trim(),
+            Description = string.IsNullOrWhiteSpace(description) ? null : description.Trim(),
+            ProjectId = string.IsNullOrWhiteSpace(projectId) ? null : projectId.Trim(),
+            CreatedBy = createdBy,
+            CreatedAt = DateTimeOffset.UtcNow,
+            SizeBytes = sizeBytes,
+            ContentType = "video/mp4",
+            Status = DemoStatuses.Pending,
+            AcceptedGuidelines = acceptedGuidelines,
+        };
+
+    private List<DemoEntry> LoadAllUnlocked()
+    {
+        if (!Directory.Exists(DemosDir))
+            return new List<DemoEntry>();
+
+        var list = new List<DemoEntry>();
+        foreach (var dir in Directory.EnumerateDirectories(DemosDir))
+        {
+            try
+            {
+                var id = Path.GetFileName(dir);
+                var entry = ReadUnlocked(id);
+                if (entry is not null)
+                    list.Add(entry);
+            }
+            catch (Exception ex)
+            {
+                _log.LogDebug(ex, "Skip bad demo dir {Dir}", dir);
+            }
+        }
+        return list;
+    }
+
+    private DemoEntry? ReadUnlocked(string id)
+    {
+        if (!IsValidId(id)) return null;
+        var metaPath = Path.Combine(DemosDir, id, "meta.json");
+        var moviePath = Path.Combine(DemosDir, id, "movie.mp4");
+        if (!File.Exists(metaPath) || !File.Exists(moviePath))
+            return null;
+        try
+        {
+            var entry = JsonSerializer.Deserialize<DemoEntry>(File.ReadAllText(metaPath), JsonOpts);
+            if (entry is null || string.IsNullOrWhiteSpace(entry.Id))
+                return null;
+            entry.Status = DemoStatuses.Normalize(
+                string.IsNullOrWhiteSpace(entry.Status) ? null : entry.Status);
+            if (entry.SizeBytes <= 0)
+            {
+                try { entry.SizeBytes = new FileInfo(moviePath).Length; }
+                catch { /* ignore */ }
+            }
+            entry.ReportNotes ??= new List<string>();
+            return entry;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    private void SaveUnlocked(DemoEntry entry)
+    {
+        var dir = Path.Combine(DemosDir, entry.Id);
+        Directory.CreateDirectory(dir);
+        File.WriteAllText(
+            Path.Combine(dir, "meta.json"),
+            JsonSerializer.Serialize(entry, JsonOpts) + "\n");
+    }
+
+    private static async Task WriteMetaAsync(string dir, DemoEntry entry, CancellationToken ct) =>
+        await File.WriteAllTextAsync(
+                Path.Combine(dir, "meta.json"),
+                JsonSerializer.Serialize(entry, JsonOpts) + "\n",
+                ct)
+            .ConfigureAwait(false);
 
     private static async Task CopyWithSizeCapAsync(
         Stream source,
@@ -230,86 +500,6 @@ public sealed class DemoCatalogService
                 throw new InvalidOperationException(
                     $"Upload exceeds size limit ({maxBytes:N0} bytes).");
             await dest.WriteAsync(buffer.AsMemory(0, n), ct).ConfigureAwait(false);
-        }
-    }
-
-    public DemoEntry PublishFromFile(
-        string sourceMp4Path,
-        string title,
-        string? description,
-        string? projectId,
-        string? createdBy)
-    {
-        if (string.IsNullOrWhiteSpace(sourceMp4Path) || !File.Exists(sourceMp4Path))
-            throw new InvalidOperationException("Source movie not found");
-
-        var id = GenerateId();
-        var dir = Path.Combine(DemosDir, id);
-        Directory.CreateDirectory(dir);
-        var moviePath = Path.Combine(dir, "movie.mp4");
-        try
-        {
-            File.Copy(sourceMp4Path, moviePath, overwrite: false);
-            var fi = new FileInfo(moviePath);
-            if (fi.Length < MinUploadBytes)
-                throw new InvalidOperationException("Movie file is too small");
-            if (!LooksLikeMp4(moviePath))
-                throw new InvalidOperationException("Source file is not a valid MP4.");
-
-            var entry = new DemoEntry
-            {
-                Id = id,
-                Title = string.IsNullOrWhiteSpace(title) ? (projectId ?? "Demo") : title.Trim(),
-                Description = string.IsNullOrWhiteSpace(description) ? null : description.Trim(),
-                ProjectId = string.IsNullOrWhiteSpace(projectId) ? null : projectId.Trim(),
-                CreatedBy = createdBy,
-                CreatedAt = DateTimeOffset.UtcNow,
-                SizeBytes = fi.Length,
-                ContentType = "video/mp4",
-            };
-            File.WriteAllText(
-                Path.Combine(dir, "meta.json"),
-                JsonSerializer.Serialize(entry, JsonOpts) + "\n");
-
-            _log.LogInformation(
-                "Demo {Id} published from file ({Bytes} bytes) project={Project} by={User}",
-                id, entry.SizeBytes, projectId, createdBy);
-            return entry;
-        }
-        catch
-        {
-            try
-            {
-                if (Directory.Exists(dir))
-                    Directory.Delete(dir, recursive: true);
-            }
-            catch { /* ignore */ }
-            throw;
-        }
-    }
-
-    public bool Delete(string id, string? requesterUserId, bool isAdmin)
-    {
-        var entry = TryGet(id);
-        if (entry is null) return false;
-        if (!isAdmin &&
-            !string.Equals(entry.CreatedBy, requesterUserId, StringComparison.OrdinalIgnoreCase))
-            return false;
-
-        lock (_lock)
-        {
-            var dir = Path.Combine(DemosDir, id);
-            if (!Directory.Exists(dir)) return false;
-            try
-            {
-                Directory.Delete(dir, recursive: true);
-                return true;
-            }
-            catch (Exception ex)
-            {
-                _log.LogWarning(ex, "Failed to delete demo {Id}", id);
-                return false;
-            }
         }
     }
 

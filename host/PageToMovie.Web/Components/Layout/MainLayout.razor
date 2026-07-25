@@ -152,8 +152,9 @@
             || path.Equals("demo", StringComparison.OrdinalIgnoreCase)
             || path.StartsWith("admin/login", StringComparison.OrdinalIgnoreCase))
             return true;
-        // Future nested public demo routes e.g. demo/xyz
-        if (path.StartsWith("demo/", StringComparison.OrdinalIgnoreCase))
+        // Nested public demo routes e.g. demo/xyz — not admin
+        if (path.StartsWith("demo/", StringComparison.OrdinalIgnoreCase)
+            && !path.StartsWith("admin/", StringComparison.OrdinalIgnoreCase))
             return true;
         return false;
     }

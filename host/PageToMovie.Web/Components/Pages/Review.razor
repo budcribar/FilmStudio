@@ -138,18 +138,26 @@ else
                             <input class="form-control form-control-sm" @bind="_demoTitle" maxlength="120"
                                    placeholder="e.g. The Tell-Tale Heart — WIP cut" />
                         </div>
-                        <div class="mb-0">
+                        <div class="mb-2">
                             <label class="form-label small">About this film</label>
                             <textarea class="form-control form-control-sm" rows="4" @bind="_demoDescription"
                                       placeholder="A short pitch for the gallery: tone, story, what’s special about this cut…"
                                       maxlength="800"></textarea>
                             <div class="form-text">
-                                Shown on the public <a href="/demo" target="_blank">Demo</a> page under the video.
-                                A sentence or two is enough.
+                                Shown under the video after an admin approves it for the public wall.
                             </div>
                         </div>
-                        <div class="form-text mt-2">
-                            Uploads the cut to the server for anyone to watch.
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="checkbox" id="demoGuidelines"
+                                   @bind="_demoAcceptedGuidelines" />
+                            <label class="form-check-label small" for="demoGuidelines">
+                                I confirm this film is appropriate for a general audience:
+                                no NSFW, illegal, hateful, or exploitative content.
+                            </label>
+                        </div>
+                        <div class="form-text">
+                            Submits for <strong>human review</strong> (not published immediately).
+                            Limits: 2 submits / 24h, max 5 waiting for review.
                             @if (!string.IsNullOrEmpty(_clientWipUrl))
                             {
                                 <span> Uses your browser-stitched preview.</span>
@@ -183,9 +191,11 @@ else
                 <div class="modal-footer py-2">
                     <button type="button" class="btn btn-sm btn-secondary" @onclick="CloseSaveDialog">Cancel</button>
                     <button type="button" class="btn btn-sm btn-primary" data-testid="review-save-confirm"
-                            disabled="@(_busy || (_saveDestination == "youtube" && _youTubeStatus?.Connected != true))"
+                            disabled="@(_busy
+                                        || (_saveDestination == "youtube" && _youTubeStatus?.Connected != true)
+                                        || (_saveDestination == "demo" && !_demoAcceptedGuidelines))"
                             @onclick="ConfirmSaveAsync">
-                        @(_saveDestination == "youtube" ? "Upload to YouTube" : "Publish to Demo")
+                        @(_saveDestination == "youtube" ? "Upload to YouTube" : "Submit for review")
                     </button>
                 </div>
             </div>
@@ -762,6 +772,7 @@ else if (_showScenePlayer && _clientStitching)
     private string _youTubePrivacy = "unlisted";
     private string _demoTitle = "";
     private string _demoDescription = "";
+    private bool _demoAcceptedGuidelines;
 
     /// <summary>Can publish when browser stitch or fresh on-disk WIP is available, or scenes can be stitched.</summary>
     private bool CanShareMovie =>
@@ -1530,6 +1541,7 @@ else if (_showScenePlayer && _clientStitching)
             _demoTitle = $"{_projectId}";
         if (string.IsNullOrWhiteSpace(_demoDescription))
             _demoDescription = BuildDefaultDemoAbout();
+        _demoAcceptedGuidelines = false;
         _showSaveDialog = true;
     }
 
@@ -1563,10 +1575,16 @@ else if (_showScenePlayer && _clientStitching)
     }
 
     /// <summary>
-    /// Ensure a playable full-cut URL (client stitch blob or on-disk WIP), upload to /api/demos, open gallery.
+    /// Build cut + submit to /api/demos as pending (admin must approve for public /demo).
     /// </summary>
     private async Task PublishDemoAsync()
     {
+        if (!_demoAcceptedGuidelines)
+        {
+            _error = "Accept the gallery guidelines before submitting.";
+            return;
+        }
+
         _busy = true;
         _error = null;
         _message = null;
@@ -1579,7 +1597,6 @@ else if (_showScenePlayer && _clientStitching)
                 return;
             }
 
-            // Prefer client upload (works for blob: and for same-origin WIP with token).
             var uploadPath = "/api/demos";
             var token = Session.Token;
             var title = string.IsNullOrWhiteSpace(_demoTitle) ? _projectId : _demoTitle.Trim();
@@ -1596,25 +1613,26 @@ else if (_showScenePlayer && _clientStitching)
                     description,
                     projectId = _projectId,
                     fileName = $"{_projectId}_demo.mp4",
+                    acceptedGuidelines = true,
                 });
 
             if (!res.TryGetProperty("success", out var ok) || !ok.GetBoolean())
             {
-                // Fallback: server copies on-disk WIP when no client blob
                 if (_wipExists && !_wipStale && string.IsNullOrEmpty(_clientWipUrl))
                 {
                     var pub = await Engine.PublishDemoFromWipAsync(
                         _projectId,
-                        string.IsNullOrWhiteSpace(_demoTitle) ? _projectId : _demoTitle.Trim(),
-                        string.IsNullOrWhiteSpace(_demoDescription) ? null : _demoDescription.Trim());
-                    if (pub?.Ok == true && pub.Demo is not null)
+                        title,
+                        string.IsNullOrWhiteSpace(description) ? null : description,
+                        acceptedGuidelines: true);
+                    if (pub?.Ok == true)
                     {
                         _showSaveDialog = false;
-                        _message = $"Published “{pub.Demo.Title}” to Demo gallery.";
-                        Nav.NavigateTo(pub.Demo.PagePath ?? $"/demo#{pub.Demo.Id}");
+                        _message = pub.Message
+                                   ?? $"“{pub.Demo?.Title ?? title}” submitted for review. It will appear on Demo after admin approval.";
                         return;
                     }
-                    _error = pub?.Error ?? "Demo publish failed";
+                    _error = pub?.Error ?? "Demo submit failed";
                     return;
                 }
 
@@ -1623,19 +1641,17 @@ else if (_showScenePlayer && _clientStitching)
                 return;
             }
 
-            string? demoId = null;
             var publishedTitle = title;
-            if (res.TryGetProperty("demo", out var demoEl) && demoEl.ValueKind == System.Text.Json.JsonValueKind.Object)
+            if (res.TryGetProperty("demo", out var demoEl) && demoEl.ValueKind == System.Text.Json.JsonValueKind.Object
+                && demoEl.TryGetProperty("title", out var tEl))
             {
-                if (demoEl.TryGetProperty("id", out var idEl))
-                    demoId = idEl.GetString();
-                if (demoEl.TryGetProperty("title", out var tEl))
-                    publishedTitle = tEl.GetString() ?? publishedTitle;
+                publishedTitle = tEl.GetString() ?? publishedTitle;
             }
 
+            var msg = res.TryGetProperty("message", out var mEl) ? mEl.GetString() : null;
             _showSaveDialog = false;
-            _message = $"Published “{publishedTitle}” to Demo gallery.";
-            Nav.NavigateTo(string.IsNullOrWhiteSpace(demoId) ? "/demo" : $"/demo#{demoId}");
+            _message = msg
+                       ?? $"“{publishedTitle}” submitted for review. It will appear on Demo after admin approval.";
         }
         catch (Exception ex)
         {

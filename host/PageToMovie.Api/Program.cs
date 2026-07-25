@@ -2952,53 +2952,95 @@ app.MapGet("/api/share/{token}", (string token, MediaShareService shares, Projec
     }
 });
 
-/// <summary>Public demo gallery list (no login).</summary>
+static object DemoPublicDto(DemoCatalogService.DemoEntry d) => new
+{
+    d.Id,
+    d.Title,
+    d.Description,
+    d.ProjectId,
+    d.CreatedBy,
+    d.CreatedAt,
+    d.SizeBytes,
+    d.Status,
+    d.ReportCount,
+    videoPath = $"/api/demos/{Uri.EscapeDataString(d.Id)}/video",
+};
+
+static object DemoAdminDto(DemoCatalogService.DemoEntry d) => new
+{
+    d.Id,
+    d.Title,
+    d.Description,
+    d.ProjectId,
+    d.CreatedBy,
+    d.CreatedAt,
+    d.SizeBytes,
+    d.Status,
+    d.AcceptedGuidelines,
+    d.ReportCount,
+    d.ReportNotes,
+    d.ReviewedBy,
+    d.ReviewedAt,
+    d.ReviewNote,
+    videoPath = $"/api/demos/{Uri.EscapeDataString(d.Id)}/video",
+};
+
+/// <summary>Public gallery: only approved demos (no login).</summary>
 app.MapGet("/api/demos", (DemoCatalogService demos, int? take) =>
 {
-    var list = demos.List(take ?? 50);
+    var list = demos.ListPublic(take ?? 50);
+    return Results.Ok(new { ok = true, demos = list.Select(DemoPublicDto) });
+});
+
+/// <summary>Admin moderation list (pending / all statuses).</summary>
+app.MapGet("/api/admin/demos", (
+    DemoCatalogService demos,
+    IUserContext user,
+    IOptions<PageToMovieOptions> opts,
+    string? status,
+    int? take) =>
+{
+    if (AuthGate.RequireLogin(user, opts) is { } denied)
+        return denied;
+    if (!user.IsAdmin)
+        return Results.Json(new { ok = false, error = "Admin only" }, statusCode: StatusCodes.Status403Forbidden);
+
+    var st = string.IsNullOrWhiteSpace(status) ? null : status.Trim();
+    var list = demos.List(take ?? 100, st);
     return Results.Ok(new
     {
         ok = true,
-        demos = list.Select(d => new
-        {
-            d.Id,
-            d.Title,
-            d.Description,
-            d.ProjectId,
-            d.CreatedBy,
-            d.CreatedAt,
-            d.SizeBytes,
-            videoPath = $"/api/demos/{Uri.EscapeDataString(d.Id)}/video",
-        }),
+        status = st,
+        demos = list.Select(DemoAdminDto),
+        pendingCount = demos.List(200, DemoCatalogService.DemoStatuses.Pending).Count,
     });
 });
 
-/// <summary>Public demo metadata.</summary>
-app.MapGet("/api/demos/{demoId}", (string demoId, DemoCatalogService demos) =>
+/// <summary>Public metadata for a public demo; owner/admin can see pending.</summary>
+app.MapGet("/api/demos/{demoId}", (
+    string demoId,
+    DemoCatalogService demos,
+    IUserContext user) =>
 {
     var d = demos.TryGet(demoId);
     if (d is null)
         return Results.NotFound(new { ok = false, error = "Demo not found" });
-    return Results.Ok(new
-    {
-        ok = true,
-        demo = new
-        {
-            d.Id,
-            d.Title,
-            d.Description,
-            d.ProjectId,
-            d.CreatedBy,
-            d.CreatedAt,
-            d.SizeBytes,
-            videoPath = $"/api/demos/{Uri.EscapeDataString(d.Id)}/video",
-        },
-    });
+    if (!demos.CanUserViewVideo(d, user.UserId, user.IsAdmin))
+        return Results.NotFound(new { ok = false, error = "Demo not found" });
+    return Results.Ok(new { ok = true, demo = user.IsAdmin ? DemoAdminDto(d) : DemoPublicDto(d) });
 });
 
-/// <summary>Public demo video stream (no login).</summary>
-app.MapGet("/api/demos/{demoId}/video", (string demoId, DemoCatalogService demos) =>
+/// <summary>Stream demo video if public, or owner/admin for pending.</summary>
+app.MapGet("/api/demos/{demoId}/video", (
+    string demoId,
+    DemoCatalogService demos,
+    IUserContext user) =>
 {
+    var d = demos.TryGet(demoId);
+    if (d is null)
+        return Results.NotFound(new { ok = false, error = "Demo video not found" });
+    if (!demos.CanUserViewVideo(d, user.UserId, user.IsAdmin))
+        return Results.NotFound(new { ok = false, error = "Demo video not found" });
     var path = demos.ResolveMoviePath(demoId);
     if (path is null)
         return Results.NotFound(new { ok = false, error = "Demo video not found" });
@@ -3006,8 +3048,8 @@ app.MapGet("/api/demos/{demoId}/video", (string demoId, DemoCatalogService demos
 });
 
 /// <summary>
-/// Publish a demo: multipart MP4 upload and/or copy project WIP.
-/// Requires login + ownership of projectId (or admin). Listed on public /demo.
+/// Submit a demo for human review (always starts as pending — never auto-public).
+/// Login + project ownership + guidelines acceptance + rate limits.
 /// </summary>
 app.MapPost("/api/demos", async (
     HttpRequest request,
@@ -3024,6 +3066,7 @@ app.MapPost("/api/demos", async (
         string? title = null;
         string? description = null;
         string? projectId = null;
+        var acceptedGuidelines = false;
         IFormFile? file = null;
 
         if (request.HasFormContentType)
@@ -3032,6 +3075,9 @@ app.MapPost("/api/demos", async (
             title = form["title"].ToString();
             description = form["description"].ToString();
             projectId = form["projectId"].ToString();
+            acceptedGuidelines = string.Equals(form["acceptedGuidelines"].ToString(), "true", StringComparison.OrdinalIgnoreCase)
+                                 || form["acceptedGuidelines"] == "1"
+                                 || form["acceptedGuidelines"] == "on";
             file = form.Files.GetFile("file") ?? form.Files.FirstOrDefault();
         }
         else
@@ -3041,13 +3087,26 @@ app.MapPost("/api/demos", async (
             if (root.TryGetProperty("title", out var t)) title = t.GetString();
             if (root.TryGetProperty("description", out var d)) description = d.GetString();
             if (root.TryGetProperty("projectId", out var p)) projectId = p.GetString();
+            if (root.TryGetProperty("acceptedGuidelines", out var ag))
+                acceptedGuidelines = ag.ValueKind == JsonValueKind.True
+                                     || (ag.ValueKind == JsonValueKind.String
+                                         && bool.TryParse(ag.GetString(), out var b) && b);
         }
 
         title = string.IsNullOrWhiteSpace(title) ? null : title.Trim();
         description = string.IsNullOrWhiteSpace(description) ? null : description.Trim();
         projectId = string.IsNullOrWhiteSpace(projectId) ? null : projectId.Trim();
 
-        // projectId required so we can enforce ownership (no orphan anonymous uploads).
+        if (!acceptedGuidelines)
+        {
+            return Results.BadRequest(new
+            {
+                ok = false,
+                error = "Accept the gallery guidelines (no NSFW / illegal content) before publishing.",
+                code = "guidelines_required",
+            });
+        }
+
         if (string.IsNullOrWhiteSpace(projectId))
         {
             return Results.BadRequest(new
@@ -3071,10 +3130,11 @@ app.MapPost("/api/demos", async (
             }, statusCode: StatusCodes.Status403Forbidden);
         }
 
+        demos.EnsureUserMayPublish(user.UserId, user.IsAdmin);
+
         DemoCatalogService.DemoEntry entry;
         if (file is not null && file.Length > 0)
         {
-            // Reject non-video Content-Type early when the browser sets it.
             var ctHeader = file.ContentType ?? "";
             if (!string.IsNullOrWhiteSpace(ctHeader) &&
                 !ctHeader.Contains("video", StringComparison.OrdinalIgnoreCase) &&
@@ -3095,7 +3155,8 @@ app.MapPost("/api/demos", async (
                 title ?? projectId ?? file.FileName ?? "Demo",
                 description,
                 projectId,
-                user.UserId);
+                user.UserId,
+                acceptedGuidelines: true);
         }
         else
         {
@@ -3103,25 +3164,80 @@ app.MapPost("/api/demos", async (
                 projectId,
                 title ?? projectId,
                 description,
-                user.UserId);
+                user.UserId,
+                acceptedGuidelines: true);
         }
 
         return Results.Ok(new
         {
             ok = true,
-            demo = new
-            {
-                entry.Id,
-                entry.Title,
-                entry.Description,
-                entry.ProjectId,
-                entry.CreatedBy,
-                entry.CreatedAt,
-                entry.SizeBytes,
-                videoPath = $"/api/demos/{Uri.EscapeDataString(entry.Id)}/video",
-                pagePath = $"/demo#{Uri.EscapeDataString(entry.Id)}",
-            },
+            pendingReview = true,
+            message = "Submitted for review. An admin must approve before it appears on the public Demo page.",
+            demo = DemoPublicDto(entry),
+            pagePath = "/demo",
         });
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { ok = false, error = ex.Message });
+    }
+});
+
+/// <summary>Report a public demo (any viewer; optional login). Auto-pending after 3 reports.</summary>
+app.MapPost("/api/demos/{demoId}/report", (
+    string demoId,
+    DemoReportRequest? body,
+    DemoCatalogService demos,
+    IUserContext user) =>
+{
+    var note = body?.Note;
+    var d = demos.Report(demoId, note, user.IsAuthenticated ? user.UserId : null);
+    if (d is null)
+        return Results.NotFound(new { ok = false, error = "Demo not found" });
+    return Results.Ok(new
+    {
+        ok = true,
+        reportCount = d.ReportCount,
+        status = d.Status,
+        message = d.ReportCount >= 3
+            ? "Thanks — this film was queued for re-review."
+            : "Thanks — report recorded.",
+    });
+});
+
+/// <summary>Admin: approve / reject / re-queue a demo (no AI).</summary>
+app.MapPost("/api/admin/demos/{demoId}/review", (
+    string demoId,
+    DemoReviewRequest? body,
+    DemoCatalogService demos,
+    IUserContext user,
+    IOptions<PageToMovieOptions> opts) =>
+{
+    if (AuthGate.RequireLogin(user, opts) is { } denied)
+        return denied;
+    if (!user.IsAdmin)
+        return Results.Json(new { ok = false, error = "Admin only" }, statusCode: StatusCodes.Status403Forbidden);
+
+    var status = (body?.Status ?? "").Trim().ToLowerInvariant();
+    if (status is not (
+        DemoCatalogService.DemoStatuses.Public
+        or DemoCatalogService.DemoStatuses.Rejected
+        or DemoCatalogService.DemoStatuses.Pending
+        or DemoCatalogService.DemoStatuses.Removed))
+    {
+        return Results.BadRequest(new
+        {
+            ok = false,
+            error = "status must be public, rejected, pending, or removed",
+        });
+    }
+
+    try
+    {
+        var d = demos.SetStatus(demoId, status, user.UserId, body?.Note);
+        if (d is null)
+            return Results.NotFound(new { ok = false, error = "Demo not found" });
+        return Results.Ok(new { ok = true, demo = DemoAdminDto(d) });
     }
     catch (Exception ex)
     {

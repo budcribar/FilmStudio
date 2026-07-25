@@ -11,8 +11,9 @@
         <div class="demo-hero-badge">Public gallery</div>
         <h1 class="demo-hero-title">Demo films</h1>
         <p class="demo-hero-lead">
-            Short movies made with PageToMovie — open to everyone, no account needed.
-            Filmmakers publish from <strong>Review → Share…</strong>
+            Approved shorts made with PageToMovie — open to everyone.
+            New submissions wait for human review before they appear here
+            (no automatic AI scanning).
         </p>
         @if (!_loading && _demos.Count > 0)
         {
@@ -43,10 +44,10 @@
         <div class="demo-empty card">
             <div class="card-body text-center py-5">
                 <div class="demo-empty-icon" aria-hidden="true">🎬</div>
-                <h2 class="h4 mb-2">No films yet</h2>
+                <h2 class="h4 mb-2">No approved films yet</h2>
                 <p class="text-muted mb-0 mx-auto" style="max-width: 28rem;">
-                    When someone finishes a cut in the studio, they can share it here with a short synopsis.
-                    Check back soon — or <a href="/login">sign in</a> to make your own.
+                    Shared cuts go into a review queue first. Check back soon — or
+                    <a href="/login">sign in</a> to make your own (then wait for approval).
                 </p>
             </div>
         </div>
@@ -63,7 +64,6 @@
                          data-testid="demo-card">
                     <div class="demo-card-media">
                         <video controls playsinline preload="metadata"
-                               poster=""
                                src="@Engine.DemoVideoUrl(d.Id)"
                                @key="d.Id"
                                @onplay="() => _playingId = d.Id"
@@ -100,23 +100,23 @@
                                 }
                                 else
                                 {
-                                    <span class="text-muted">Anonymous share</span>
+                                    <span class="text-muted">Community share</span>
                                 }
                                 <span class="demo-card-date" title="@d.CreatedAt.ToLocalTime().ToString("f")">
                                     · @d.CreatedAt.ToLocalTime().ToString("MMM d, yyyy")
                                 </span>
                             </div>
                             <div class="demo-card-actions">
-                                <a class="btn btn-sm btn-outline-secondary"
-                                   href="@Engine.DemoVideoUrl(d.Id)"
-                                   target="_blank"
-                                   rel="noopener">
-                                    Open file
-                                </a>
-                                @if (CanRemove(d))
+                                <button type="button"
+                                        class="btn btn-sm btn-outline-warning"
+                                        disabled="@(_busy || _reported.Contains(d.Id))"
+                                        title="Report inappropriate content"
+                                        @onclick="() => ReportAsync(d)">
+                                    @(_reported.Contains(d.Id) ? "Reported" : "Report")
+                                </button>
+                                @if (Session.IsAdmin || string.Equals(Session.UserId, d.CreatedBy, StringComparison.OrdinalIgnoreCase))
                                 {
-                                    <button type="button"
-                                            class="btn btn-sm btn-outline-danger"
+                                    <button type="button" class="btn btn-sm btn-outline-danger"
                                             disabled="@_busy"
                                             @onclick="() => DeleteAsync(d.Id)">
                                         Remove
@@ -139,6 +139,7 @@
     private string? _message;
     private string? _highlightId;
     private string? _playingId;
+    private readonly HashSet<string> _reported = new(StringComparer.OrdinalIgnoreCase);
 
     protected override async Task OnInitializedAsync()
     {
@@ -173,32 +174,17 @@
         }
     }
 
-    private bool CanRemove(DemoListItem d) =>
-        Session.IsAdmin
-        || (!string.IsNullOrWhiteSpace(Session.UserId)
-            && string.Equals(Session.UserId, d.CreatedBy, StringComparison.OrdinalIgnoreCase));
-
-    /// <summary>Prefer publisher synopsis; otherwise a friendly default blurb.</summary>
-    private static string AboutText(DemoListItem d)
+    private async Task ReportAsync(DemoListItem d)
     {
-        if (!string.IsNullOrWhiteSpace(d.Description))
-            return d.Description.Trim();
-
-        var project = string.IsNullOrWhiteSpace(d.ProjectId) ? null : d.ProjectId.Trim();
-        if (project is not null)
-            return $"A short film produced in PageToMovie from the “{project}” project — an AI-assisted adaptation cut shared with the community.";
-        return "A short film produced in PageToMovie — an AI-assisted adaptation shared with the community.";
-    }
-
-    private async Task DeleteAsync(string id)
-    {
-        if (_busy) return;
+        if (_busy || _reported.Contains(d.Id)) return;
         _busy = true;
         _error = null;
         try
         {
-            await Engine.DeleteDemoAsync(id);
-            _message = "Film removed from the gallery.";
+            await Engine.ReportDemoAsync(d.Id, "Reported from public gallery");
+            _reported.Add(d.Id);
+            _message = "Thanks — report received. Moderators will review.";
+            // If auto-pending, it may disappear from public list.
             await ReloadAsync();
         }
         catch (Exception ex)
@@ -209,6 +195,37 @@
         {
             _busy = false;
         }
+    }
+
+    private async Task DeleteAsync(string id)
+    {
+        if (_busy) return;
+        _busy = true;
+        _error = null;
+        try
+        {
+            await Engine.DeleteDemoAsync(id);
+            _message = "Film removed.";
+            await ReloadAsync();
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private static string AboutText(DemoListItem d)
+    {
+        if (!string.IsNullOrWhiteSpace(d.Description))
+            return d.Description.Trim();
+        var project = string.IsNullOrWhiteSpace(d.ProjectId) ? null : d.ProjectId.Trim();
+        if (project is not null)
+            return $"A short film produced in PageToMovie from the “{project}” project.";
+        return "A short film produced in PageToMovie.";
     }
 
     private static string FormatBytes(long bytes)

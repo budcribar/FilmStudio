@@ -185,7 +185,7 @@ window.PageToMovieExport = {
      * @param {string} mediaUrl blob or same-origin media URL
      * @param {string} uploadUrl absolute or root-relative POST target (e.g. /api/demos)
      * @param {string|null} accessToken JWT for Authorization header
-     * @param {{ title?: string, description?: string, projectId?: string, fileName?: string }} meta
+     * @param {{ title?: string, description?: string, projectId?: string, fileName?: string, acceptedGuidelines?: boolean }} meta
      */
     uploadDemoMovieAsync: async function (mediaUrl, uploadUrl, accessToken, meta) {
         try {
@@ -204,6 +204,7 @@ window.PageToMovieExport = {
             if (meta.title) form.append("title", meta.title);
             if (meta.description) form.append("description", meta.description);
             if (meta.projectId) form.append("projectId", meta.projectId);
+            form.append("acceptedGuidelines", meta.acceptedGuidelines === false ? "false" : "true");
 
             const headers = {};
             if (accessToken) headers["Authorization"] = "Bearer " + accessToken;
@@ -221,7 +222,12 @@ window.PageToMovieExport = {
                 const err = (json && (json.error || json.message)) || text || ("HTTP " + up.status);
                 return { success: false, error: String(err) };
             }
-            return { success: true, demo: json && json.demo ? json.demo : json };
+            return {
+                success: true,
+                demo: json && json.demo ? json.demo : json,
+                pendingReview: !!(json && json.pendingReview),
+                message: json && json.message ? json.message : null,
+            };
         } catch (err) {
             console.error("uploadDemoMovieAsync failed:", err);
             return { success: false, error: err.message || String(err) };
