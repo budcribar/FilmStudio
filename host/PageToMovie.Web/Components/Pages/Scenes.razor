@@ -501,18 +501,6 @@ else
                         @onclick="() => PlaySceneCompositeAsync(_detail.SceneNumber)">
                     ▶ Play scene
                 </button>
-                <button class="btn btn-sm btn-primary"
-                        disabled="@(_busy || JobRunning || !CastReady || DetailLockedByOther)"
-                        title="@(!CastReady
-                            ? CastBlockedTitle
-                            : DetailLockedByOther
-                            ? $"Locked by {_detailLockOwner}"
-                            : EstimateSceneCostUsd(_detail.SceneNumber) is double dc
-                            ? $"Generate missing clips in order (C01 → C02 → …) (~${dc:0.00})"
-                            : "Generate missing clips in order (C01 → C02 → …)")"
-                        @onclick="() => GenOneSceneAsync(_detail.SceneNumber)">
-                    Generate scene
-                </button>
                 <button class="btn btn-sm btn-outline-secondary"
                         data-testid="clip-add-open"
                         disabled="@(_busy || JobRunning)"
@@ -630,10 +618,14 @@ else
                         </span>
                         <button type="button" class="btn btn-sm btn-warning"
                                 data-testid="clip-batch-regen"
-                                disabled="@(_busy || JobRunning || !CastReady)"
-                                title="@(!CastReady ? CastBlockedTitle : "Force re-generate every selected clip")"
+                                disabled="@(_busy || JobRunning || !CastReady || DetailLockedByOther)"
+                                title="@(!CastReady
+                                    ? CastBlockedTitle
+                                    : DetailLockedByOther
+                                    ? $"Locked by {_detailLockOwner}"
+                                    : "Generate (or re-generate) every selected clip")"
                                 @onclick="RegenSelectedClipsAsync">
-                            Regen selected
+                            Generate selected
                         </button>
                         <button type="button" class="btn btn-sm btn-outline-secondary" disabled="@_busy" @onclick="ClearClipSelection">
                             Clear
