@@ -125,6 +125,8 @@ builder.Services.AddSingleton<ClipAutoReviewService>();
 builder.Services.AddSingleton<ProjectArtifactIndexService>();
 builder.Services.AddSingleton<MediaShareService>();
 builder.Services.AddSingleton<DemoCatalogService>();
+builder.Services.AddSingleton<MediaRegistryService>();
+builder.Services.AddSingleton<MediaProxyTicketStore>();
 builder.Services.AddSingleton<YouTubeAuthService>();
 string dpKeysDir;
 try
@@ -3205,12 +3207,118 @@ app.MapGet("/api/demos/{demoId}/video", (
 /// Submit a demo for human review (always starts as pending — never auto-public).
 /// Login + project ownership + guidelines acceptance + rate limits.
 /// </summary>
+app.MapPost("/api/projects/{id}/media/register", async (
+    string id,
+    MediaRegisterRequest body,
+    IUserContext user,
+    IOptions<PageToMovieOptions> opts,
+    MediaRegistryService media,
+    ProjectStore store,
+    CancellationToken ct) =>
+{
+    if (AuthGate.RequireLogin(user, opts) is { } denied)
+        return denied;
+    try
+    {
+        await store.RequireProjectAsync(id, ct);
+        if (body is null || string.IsNullOrWhiteSpace(body.Sha256) || string.IsNullOrWhiteSpace(body.RelativePath))
+            return Results.BadRequest(new { ok = false, error = "relativePath and sha256 required" });
+
+        var dto = await media.UpsertAsync(
+            id,
+            body.RelativePath,
+            body.Sha256,
+            body.SizeBytes,
+            body.Kind ?? "clip",
+            body.Scene,
+            body.Clip,
+            user.UserId,
+            ct);
+
+        // Sidecar so scene lists treat clip as present without server MP4.
+        try
+        {
+            var dir = store.GetProjectDir(id);
+            var rel = dto.RelativePath.Replace('/', Path.DirectorySeparatorChar);
+            var full = Path.Combine(dir, rel);
+            Directory.CreateDirectory(Path.GetDirectoryName(full)!);
+            var marker = full + ".client.json";
+            await File.WriteAllTextAsync(marker, System.Text.Json.JsonSerializer.Serialize(new
+            {
+                storage = "client",
+                sha256 = dto.Sha256,
+                sizeBytes = dto.SizeBytes,
+                registeredAt = dto.CreatedAt,
+                userId = user.UserId,
+            }) + "\n", ct);
+            store.InvalidateSceneListCache(id);
+        }
+        catch { /* non-fatal */ }
+
+        return Results.Ok(new { ok = true, media = dto });
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { ok = false, error = ex.Message });
+    }
+});
+
+app.MapGet("/api/projects/{id}/media", async (
+    string id,
+    IUserContext user,
+    IOptions<PageToMovieOptions> opts,
+    MediaRegistryService media,
+    ProjectStore store,
+    CancellationToken ct) =>
+{
+    if (AuthGate.RequireLogin(user, opts) is { } denied)
+        return denied;
+    try
+    {
+        await store.RequireProjectAsync(id, ct);
+        var list = await media.ListProjectAsync(id, ct);
+        return Results.Ok(new { ok = true, media = list });
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { ok = false, error = ex.Message });
+    }
+});
+
+/// <summary>CORS-safe download of provider video URL (short-lived ticket from gen job).</summary>
+app.MapGet("/api/media/proxy/{token}", async (
+    string token,
+    MediaProxyTicketStore tickets,
+    CancellationToken ct) =>
+{
+    var url = tickets.TryTakeUrl(token);
+    if (string.IsNullOrWhiteSpace(url))
+        return Results.NotFound(new { ok = false, error = "Media ticket expired or invalid" });
+
+    try
+    {
+        using var http = new HttpClient { Timeout = TimeSpan.FromMinutes(10) };
+        using var resp = await http.GetAsync(url, HttpCompletionOption.ResponseHeadersRead, ct);
+        if (!resp.IsSuccessStatusCode)
+            return Results.Json(new { ok = false, error = $"Upstream HTTP {(int)resp.StatusCode}" },
+                statusCode: (int)resp.StatusCode);
+        var bytes = await resp.Content.ReadAsByteArrayAsync(ct);
+        var ctype = resp.Content.Headers.ContentType?.ToString() ?? "video/mp4";
+        return Results.File(bytes, ctype, fileDownloadName: "clip.mp4");
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { ok = false, error = ex.Message });
+    }
+});
+
 app.MapPost("/api/demos", async (
     HttpRequest request,
     IUserContext user,
     IOptions<PageToMovieOptions> opts,
     DemoCatalogService demos,
-    ProjectStore store) =>
+    ProjectStore store,
+    MediaRegistryService media) =>
 {
     if (AuthGate.RequireLogin(user, opts) is { } denied)
         return denied;
@@ -3287,6 +3395,7 @@ app.MapPost("/api/demos", async (
         demos.EnsureUserMayPublish(user.UserId, user.IsAdmin);
 
         DemoCatalogService.DemoEntry entry;
+        var autoPublic = false;
         if (file is not null && file.Length > 0)
         {
             var ctHeader = file.ContentType ?? "";
@@ -3303,7 +3412,13 @@ app.MapPost("/api/demos", async (
                 });
             }
 
-            await using var stream = file.OpenReadStream();
+            await using var ms = new MemoryStream();
+            await file.CopyToAsync(ms);
+            var bytes = ms.ToArray();
+            var sha = MediaRegistryService.HashBytes(bytes);
+            autoPublic = await media.IsTrustedShaAsync(projectId!, sha);
+
+            await using var stream = new MemoryStream(bytes);
             entry = await demos.PublishFromStreamAsync(
                 stream,
                 title ?? projectId ?? file.FileName ?? "Demo",
@@ -3311,6 +3426,27 @@ app.MapPost("/api/demos", async (
                 projectId,
                 user.UserId,
                 acceptedGuidelines: true);
+
+            if (autoPublic)
+            {
+                demos.SetStatus(entry.Id, DemoCatalogService.DemoStatuses.Public, user.UserId,
+                    "Auto-public: upload SHA-256 matches trusted gen/export registry");
+                entry = demos.TryGet(entry.Id) ?? entry;
+                // Also register demo hash as export for future re-uploads
+                try
+                {
+                    await media.UpsertAsync(
+                        projectId!,
+                        $"_demos/{entry.Id}/movie.mp4",
+                        sha,
+                        bytes.LongLength,
+                        "demo",
+                        scene: null,
+                        clip: null,
+                        user.UserId);
+                }
+                catch { /* non-fatal */ }
+            }
         }
         else
         {
@@ -3325,8 +3461,11 @@ app.MapPost("/api/demos", async (
         return Results.Ok(new
         {
             ok = true,
-            pendingReview = true,
-            message = "Submitted for review. An admin must approve before it appears on the public Demo page.",
+            pendingReview = !autoPublic,
+            autoPublic,
+            message = autoPublic
+                ? "Published — file hash matches trusted project media (gen provenance OK)."
+                : "Submitted for review. An admin must approve before it appears on the public Demo page.",
             demo = DemoPublicDto(entry),
             pagePath = "/demo",
         });

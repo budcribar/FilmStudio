@@ -3536,7 +3536,10 @@ public sealed class ProjectStore
     private static bool ClipOnDisk(Dictionary<string, long> videoIndex, int scene, int clip)
     {
         var name = $"scene_{scene:D2}_clip_{clip:D2}.mp4";
-        return videoIndex.TryGetValue(name, out var sz) && sz >= 1024;
+        if (videoIndex.TryGetValue(name, out var sz) && sz >= 1024)
+            return true;
+        // Client media folder: hash registered without server MP4 bytes
+        return videoIndex.ContainsKey(name + ".client.json");
     }
 
     private Dictionary<string, JsonElement> LoadCharacterSeeds(string projectId)

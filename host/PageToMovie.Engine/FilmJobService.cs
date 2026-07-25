@@ -49,6 +49,7 @@ public sealed class FilmJobService
     private readonly LocalWorkerPool _localPool;
     private readonly YouTubeAuthService _youTube;
     private readonly IServerMetricsService _metrics;
+    private readonly MediaProxyTicketStore _mediaProxy;
     private readonly PageToMovieOptions _opts;
     private readonly ILogger<FilmJobService> _log;
     private readonly ConcurrentQueue<string> _logLines = new();
@@ -82,6 +83,7 @@ public sealed class FilmJobService
         LocalWorkerPool localPool,
         YouTubeAuthService youTube,
         IServerMetricsService metrics,
+        MediaProxyTicketStore mediaProxy,
         IOptions<PageToMovieOptions> opts,
         ILogger<FilmJobService> log,
         IUserContext user,
@@ -109,6 +111,7 @@ public sealed class FilmJobService
         _apiPool = apiPool;
         _localPool = localPool;
         _youTube = youTube;
+        _mediaProxy = mediaProxy;
         _metrics = metrics;
         _opts = opts.Value;
         _log = log;
@@ -1965,7 +1968,7 @@ public sealed class FilmJobService
                         var cn = c.TryGetProperty("clip_number", out var n) && n.TryGetInt32(out var v) ? v : 0;
                         if (cn <= 0) continue;
                         var path = Path.Combine(projectDir, "assets", "video", $"scene_{sn:D2}_clip_{cn:D2}.mp4");
-                        var missing = !File.Exists(path) || new FileInfo(path).Length < 1024;
+                        var missing = !ClipPresentOnServerOrClient(path);
                         if (!req.OnlyMissing || missing)
                             work.Add((Scene: sn, Clip: cn, ClipEl: c.Clone()));
                     }
@@ -2119,7 +2122,7 @@ public sealed class FilmJobService
                 if (req.Clip is int onlyClip && onlyClip > 0 && cn != onlyClip)
                     continue;
                 var path = Path.Combine(videoDir, $"scene_{req.Scene:D2}_clip_{cn:D2}.mp4");
-                var missing = !File.Exists(path) || new FileInfo(path).Length < 1024;
+                var missing = !ClipPresentOnServerOrClient(path);
                 if (!req.OnlyMissing || missing)
                     todo.Add((cn, c.Clone()));
             }
@@ -2514,24 +2517,24 @@ public sealed class FilmJobService
                 msg => { _ = AppendLogAsync($"  [Grok] {msg}"); },
                 ct);
 
-            var outPath = Path.Combine(
-                projectDir, "assets", "video", $"scene_{scene:D2}_clip_{clip:D2}.mp4");
-
-            BackupExistingClipFile(outPath, scene, clip);
-
-            await _grok.DownloadToFileAsync(url, outPath, ct);
-
-            await AppendLogAsync($"  [Grok] saved {outPath}");
-
-            // Duration sidecar via pure MP4 parse (no native ffmpeg).
-            var probedSec = await EnsureClipDurationSidecarAsync(outPath, scene, clip, ct)
-                .ConfigureAwait(false);
-            var costDurationSec = probedSec is > 0.05 ? probedSec.Value : duration;
-            if (probedSec is > 0.05 && Math.Abs(probedSec.Value - duration) >= 0.25)
+            // Client media: do not store MP4 on server volume. Hand a same-origin proxy URL
+            // so the browser can write assets/video/scene_SS_clip_CC.mp4 into the user folder
+            // and register the SHA-256 with MediaRegistryService.
+            var relPath = MediaRegistryService.ClipRelativePath(scene, clip);
+            var ticket = _mediaProxy.Issue(url, TimeSpan.FromMinutes(45));
+            var clientUrl = $"/api/media/proxy/{ticket}";
+            await UpdateAsync(s =>
             {
-                await AppendLogAsync(
-                    $"  [Cost] using probed {probedSec.Value:F2}s (API request was {duration}s)");
-            }
+                s.ClientMediaUrl = clientUrl;
+                s.ClientRelativePath = relPath;
+                s.Scene = scene;
+                s.Clip = clip;
+            });
+            await AppendLogAsync(
+                $"  [Grok] video ready for client save → {relPath} (not stored on server disk)");
+
+            // Cost uses requested duration (no server file to probe until client registers).
+            var costDurationSec = (double)duration;
 
             try
             {
@@ -3191,6 +3194,8 @@ public sealed class FilmJobService
                     rec.Error = run.Snapshot.Error;
                     rec.StartedAt = run.Snapshot.StartedAt;
                     rec.FinishedAt = run.Snapshot.FinishedAt;
+                    rec.ClientMediaUrl = run.Snapshot.ClientMediaUrl;
+                    rec.ClientRelativePath = run.Snapshot.ClientRelativePath;
                     if (run.Snapshot.JobId is null)
                         run.Snapshot.JobId = rec.JobId;
                 });
@@ -3236,6 +3241,11 @@ public sealed class FilmJobService
             await TryRefreshArtifactIndexAsync(projectId!).ConfigureAwait(false);
         }
     }
+
+    /// <summary>Server MP4 bytes or client-folder marker (.client.json).</summary>
+    private static bool ClipPresentOnServerOrClient(string mp4Path) =>
+        (File.Exists(mp4Path) && new FileInfo(mp4Path).Length >= 1024) ||
+        File.Exists(mp4Path + ".client.json");
 
     private static bool ShouldRefreshArtifactIndex(string? kind)
     {

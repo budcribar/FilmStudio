@@ -2,6 +2,7 @@
 @inject ActiveProjectState ActiveProject
 @inject EngineApiClient Engine
 @inject ThemeState Theme
+@inject ClientMediaFolderService MediaFolder
 @inject IJSRuntime Js
 @inject NavigationManager Nav
 @implements IDisposable
@@ -167,6 +168,13 @@
                                 About
                             </a>
                             <button type="button"
+                                    class="nav-user-item"
+                                    role="menuitem"
+                                    title="@(MediaFolder.IsConnected ? MediaFolder.FolderName : "Store gen clips on your disk")"
+                                    @onclick="ConnectMediaFolderAsync">
+                                @(MediaFolder.IsConnected ? $"Media: {MediaFolder.FolderName}" : "Connect media folder…")
+                            </button>
+                            <button type="button"
                                     class="nav-user-item nav-user-item--danger"
                                     role="menuitem"
                                     data-testid="nav-sign-out"
@@ -292,6 +300,14 @@
         catch { /* prerender / no JS yet */ }
     }
 
+    private async Task ConnectMediaFolderAsync()
+    {
+        _userMenuOpen = false;
+        await MediaFolder.ConnectFolderAsync();
+        await MediaFolder.EnsureHubHookAsync();
+        StateHasChanged();
+    }
+
     private async Task LogoutAsync()
     {
         _userMenuOpen = false;
@@ -301,8 +317,16 @@
         Nav.NavigateTo("/login", forceLoad: true);
     }
 
+    protected override void OnInitialized()
+    {
+        MediaFolder.Changed += OnMediaFolderChanged;
+    }
+
+    private void OnMediaFolderChanged() => _ = InvokeAsync(StateHasChanged);
+
     public void Dispose()
     {
+        MediaFolder.Changed -= OnMediaFolderChanged;
         Session.Changed -= OnSessionChanged;
         ActiveProject.Changed -= OnProjectChanged;
     }

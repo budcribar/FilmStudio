@@ -7,6 +7,7 @@
 @inject NavigationManager Nav
 @inject IJSRuntime JS
 @inject ClientVideoStitchService Stitch
+@inject ClientMediaFolderService MediaFolder
 @using PageToMovie.Core.Models
 
 <PageTitle>Review</PageTitle>
@@ -1601,6 +1602,13 @@ else if (_showScenePlayer && _clientStitching)
             var token = Session.Token;
             var title = string.IsNullOrWhiteSpace(_demoTitle) ? _projectId : _demoTitle.Trim();
             var description = string.IsNullOrWhiteSpace(_demoDescription) ? "" : _demoDescription.Trim();
+
+            // Register stitched export hash so server can auto-public trusted demos
+            if (mediaUrl.StartsWith("blob:", StringComparison.OrdinalIgnoreCase))
+            {
+                var expPath = $"assets/exports/{_projectId}_demo.mp4";
+                await MediaFolder.RegisterBlobAsExportAsync(_projectId, mediaUrl, expPath);
+            }
 
             var res = await JS.InvokeAsync<System.Text.Json.JsonElement>(
                 "PageToMovieExport.uploadDemoMovieAsync",

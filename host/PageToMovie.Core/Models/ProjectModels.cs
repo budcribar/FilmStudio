@@ -37,6 +37,14 @@ public sealed class JobSnapshot
     public DateTimeOffset? QueuedAt { get; set; }
     public DateTimeOffset? StartedAt { get; set; }
     public DateTimeOffset? FinishedAt { get; set; }
+
+    /// <summary>
+    /// Same-origin proxy path for client to download gen output (e.g. /api/media/proxy/{token}).
+    /// Set when bytes should be saved to the user's media folder instead of server disk.
+    /// </summary>
+    public string? ClientMediaUrl { get; set; }
+    /// <summary>Project-relative path under the client media folder, e.g. assets/video/scene_01_clip_01.mp4.</summary>
+    public string? ClientRelativePath { get; set; }
 }
 
 /// <summary>Helpers for multi-job lists (Phase F).</summary>
@@ -84,6 +92,8 @@ public sealed class JobRecord
     public DateTimeOffset QueuedAt { get; set; } = DateTimeOffset.UtcNow;
     public DateTimeOffset? StartedAt { get; set; }
     public DateTimeOffset? FinishedAt { get; set; }
+    public string? ClientMediaUrl { get; set; }
+    public string? ClientRelativePath { get; set; }
 
     public JobSnapshot ToSnapshot() => new()
     {
@@ -103,6 +113,8 @@ public sealed class JobRecord
         QueuedAt = QueuedAt,
         StartedAt = StartedAt,
         FinishedAt = FinishedAt,
+        ClientMediaUrl = ClientMediaUrl,
+        ClientRelativePath = ClientRelativePath,
     };
 }
 
@@ -789,6 +801,17 @@ public sealed class SceneApproveRequest
     public string ProjectId { get; set; } = "";
     public int Scene { get; set; }
     public string Note { get; set; } = "";
+}
+
+/// <summary>Client reports a media file written to the local media folder (hash only on server).</summary>
+public sealed class MediaRegisterRequest
+{
+    public string RelativePath { get; set; } = "";
+    public string Sha256 { get; set; } = "";
+    public long SizeBytes { get; set; }
+    public string Kind { get; set; } = "clip";
+    public int? Scene { get; set; }
+    public int? Clip { get; set; }
 }
 
 public sealed class EditLogEntry

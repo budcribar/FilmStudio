@@ -11,11 +11,16 @@ public sealed class ClientVideoStitchService
 {
     private readonly IJSRuntime _js;
     private readonly EngineApiClient _engine;
+    private readonly ClientMediaFolderService? _media;
 
-    public ClientVideoStitchService(IJSRuntime js, EngineApiClient engine)
+    public ClientVideoStitchService(
+        IJSRuntime js,
+        EngineApiClient engine,
+        ClientMediaFolderService? media = null)
     {
         _js = js;
         _engine = engine;
+        _media = media;
     }
 
     /// <summary>
@@ -61,7 +66,13 @@ public sealed class ClientVideoStitchService
             if (clips is { Count: > 0 })
             {
                 foreach (var c in clips)
-                    urls.Add(_engine.ClipVideoUrl(projectId, sn, c.ClipNumber));
+                {
+                    var local = _media is null
+                        ? null
+                        : await _media.GetLocalBlobUrlAsync(
+                            $"assets/video/scene_{sn:D2}_clip_{c.ClipNumber:D2}.mp4");
+                    urls.Add(local ?? _engine.ClipVideoUrl(projectId, sn, c.ClipNumber));
+                }
                 continue;
             }
 
@@ -85,11 +96,16 @@ public sealed class ClientVideoStitchService
         if (detail?.Clips is null || detail.Clips.Count == 0)
             return Array.Empty<string>();
 
-        return detail.Clips
-            .Where(c => c.OnDisk)
-            .OrderBy(c => c.ClipNumber)
-            .Select(c => _engine.ClipVideoUrl(projectId, sceneNumber, c.ClipNumber))
-            .ToList();
+        var list = new List<string>();
+        foreach (var c in detail.Clips.Where(c => c.OnDisk).OrderBy(c => c.ClipNumber))
+        {
+            var local = _media is null
+                ? null
+                : await _media.GetLocalBlobUrlAsync(
+                    $"assets/video/scene_{sceneNumber:D2}_clip_{c.ClipNumber:D2}.mp4");
+            list.Add(local ?? _engine.ClipVideoUrl(projectId, sceneNumber, c.ClipNumber));
+        }
+        return list;
     }
 
     public async Task<ClientStitchResult> ConcatAsync(

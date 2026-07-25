@@ -1018,6 +1018,16 @@ public sealed class EngineApiClient
         }
     }
 
+    public async Task RegisterMediaAsync(string projectId, MediaRegisterRequest body, CancellationToken ct = default)
+    {
+        using var req = new HttpRequestMessage(HttpMethod.Post,
+            $"/api/projects/{Uri.EscapeDataString(projectId)}/media/register")
+        {
+            Content = JsonContent.Create(body, options: JsonOpts),
+        };
+        await SendJsonAsync<object>(req, ct);
+    }
+
     public async Task StartClipAutoReviewAsync(
         string projectId,
         int scene,
