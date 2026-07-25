@@ -3296,6 +3296,10 @@ app.MapGet("/api/projects/{id}/movie/wip/meta", (string id, ProjectStore store) 
     try
     {
         var f = store.AssessWipFreshness(id);
+        // url must be a string (or null) — never a bool (breaks System.Text.Json on the client).
+        string? wipUrl = f.Exists
+            ? $"/api/projects/{Uri.EscapeDataString(id)}/movie/wip"
+            : null;
         return Results.Ok(new
         {
             ok = true,
@@ -3308,7 +3312,7 @@ app.MapGet("/api/projects/{id}/movie/wip/meta", (string id, ProjectStore store) 
             bytes = f.Bytes,
             updatedAt = f.UpdatedAt,
             staleScenes = f.StaleScenes,
-            url = f.Exists
+            url = wipUrl,
         });
     }
     catch (Exception ex)

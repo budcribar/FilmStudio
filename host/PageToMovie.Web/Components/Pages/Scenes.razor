@@ -322,8 +322,12 @@ else if (Session.IsAdmin && _job is not null &&
                     <button type="button"
                             data-testid="scenes-play-selected"
                             class="btn btn-outline-primary btn-sm"
-                            disabled="@(_busy || _clientStitching || _selected.Count == 0)"
-                            title="Stitch selected scenes in the browser (composites or clips)"
+                            disabled="@(_busy || _clientStitching || !CanPlaySelected)"
+                            title="@(CanPlaySelected
+                                ? "Stitch selected scenes in the browser (composites or clips)"
+                                : _selected.Count == 0
+                                    ? "Select one or more scenes first"
+                                    : "Selected scenes have no clips or composites to play yet")"
                             @onclick="PlaySelectedAsync">
                         ▶ Play selected@(_selected.Count > 0 ? $" ({_selected.Count})" : "")
                     </button>
@@ -2124,10 +2128,23 @@ else
         await Stitch.RevokePreviewUrlAsync();
     }
 
+    /// <summary>True when selection has at least one scene with a composite or on-disk clip.</summary>
+    private bool CanPlaySelected
+    {
+        get
+        {
+            if (_selected.Count == 0 || _scenes is null)
+                return false;
+            return _scenes.Any(s =>
+                _selected.Contains(s.SceneNumber)
+                && (s.CompositeExists || s.ClipsOnDisk > 0));
+        }
+    }
+
     /// <summary>Stitch the current selection in the browser (composites preferred, else clips).</summary>
     private async Task PlaySelectedAsync()
     {
-        if (_selected.Count == 0 || _busy || _clientStitching)
+        if (!CanPlaySelected || _busy || _clientStitching)
             return;
 
         _busy = true;

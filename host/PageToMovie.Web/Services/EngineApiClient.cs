@@ -887,11 +887,44 @@ public sealed class EngineApiClient
 
     public async Task<WipMovieMetaDto?> GetWipMovieMetaAsync(
         string projectId,
-        CancellationToken ct = default) =>
-        await _http.GetFromJsonAsync<WipMovieMetaDto>(
-            $"/api/projects/{Uri.EscapeDataString(projectId)}/movie/wip/meta",
-            JsonOpts,
-            ct);
+        CancellationToken ct = default)
+    {
+        try
+        {
+            return await _http.GetFromJsonAsync<WipMovieMetaDto>(
+                $"/api/projects/{Uri.EscapeDataString(projectId)}/movie/wip/meta",
+                JsonOpts,
+                ct);
+        }
+        catch (JsonException)
+        {
+            // Tolerate older servers that returned url as bool, etc.
+            using var resp = await _http.GetAsync(
+                $"/api/projects/{Uri.EscapeDataString(projectId)}/movie/wip/meta", ct);
+            if (!resp.IsSuccessStatusCode) return null;
+            await using var stream = await resp.Content.ReadAsStreamAsync(ct);
+            using var doc = await JsonDocument.ParseAsync(stream, cancellationToken: ct);
+            var root = doc.RootElement;
+            return new WipMovieMetaDto
+            {
+                Ok = root.TryGetProperty("ok", out var ok) && ok.ValueKind == JsonValueKind.True,
+                Exists = root.TryGetProperty("exists", out var ex) && ex.ValueKind == JsonValueKind.True,
+                Stale = root.TryGetProperty("stale", out var st) && st.ValueKind == JsonValueKind.True,
+                CanBuild = root.TryGetProperty("canBuild", out var cb) && cb.ValueKind == JsonValueKind.True,
+                Reason = root.TryGetProperty("reason", out var r) ? r.GetString() : null,
+                ProjectId = root.TryGetProperty("projectId", out var p) ? p.GetString() : projectId,
+                Path = root.TryGetProperty("path", out var path) ? path.GetString() : null,
+                Bytes = root.TryGetProperty("bytes", out var b) && b.TryGetInt64(out var bv) ? bv : 0,
+                UpdatedAt = root.TryGetProperty("updatedAt", out var u) ? u.GetString() : null,
+                Url = root.TryGetProperty("url", out var urlEl) && urlEl.ValueKind == JsonValueKind.String
+                    ? urlEl.GetString()
+                    : null,
+                StaleScenes = root.TryGetProperty("staleScenes", out var ss) && ss.ValueKind == JsonValueKind.Array
+                    ? ss.EnumerateArray().Where(x => x.TryGetInt32(out _)).Select(x => x.GetInt32()).ToList()
+                    : new List<int>(),
+            };
+        }
+    }
 
     public async Task<YouTubeStatusDto?> GetYouTubeStatusAsync(CancellationToken ct = default) =>
         await _http.GetFromJsonAsync<YouTubeStatusDto>("/api/youtube/status", JsonOpts, ct);

@@ -16,7 +16,9 @@
                 <span class="logo-text fs-2 fw-bold mb-0">PageToMovie</span>
             </div>
             <p class="auth-subtitle">
-                @(_isSignup ? "Create your account to start generating films" : "Sign in to access your film studio projects")
+                @(_isSignup
+                    ? "Create your account to start generating films"
+                    : "Sign in with your username and password (operator override secret goes in the password field only)")
             </p>
         </div>
 
