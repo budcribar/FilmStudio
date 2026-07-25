@@ -99,6 +99,8 @@ article.content {
         top: 0;
         transition: width 0.15s ease, min-width 0.15s ease;
         overflow: hidden;
+        display: flex;
+        flex-direction: column;
     }
 
     .page.sidebar-collapsed .sidebar {

@@ -11,7 +11,8 @@
 
 <div class="nav-scrollable @(Collapsed ? "nav-collapsed" : null)"
      onclick="document.querySelector('.navbar-toggler')?.click()">
-    <nav class="nav flex-column" aria-label="Main">
+    <nav class="nav flex-column nav-main" aria-label="Main">
+        <div class="nav-main-links">
         <div class="nav-item px-3">
             <NavLink class="nav-link" href="/" Match="NavLinkMatch.All" title="Studio" data-testid="nav-studio">
                 <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span>
@@ -107,36 +108,83 @@
                 </NavLink>
             </div>
         }
+        </div>@* /nav-main-links *@
 
-        @if (Session.IsLoggedIn)
-        {
-            <div class="nav-item px-3 mt-3 pt-3 border-top border-secondary border-opacity-25">
-                @if (!Collapsed)
-                {
-                    <div class="nav-user-row text-muted small px-1 mb-1" title="@Session.UserId">
-                        <span class="nav-user-name text-truncate">@Session.UserId</span>
-                    </div>
-                }
-                <button type="button"
-                        class="nav-link nav-logout"
-                        data-testid="nav-sign-out"
-                        title="Sign out"
-                        @onclick="LogoutAsync"
-                        @onclick:stopPropagation="true">
-                    <span class="bi bi-box-arrow-right-nav-menu" aria-hidden="true"></span>
-                    @if (!Collapsed) { <span class="nav-label">Sign out</span> }
-                </button>
-            </div>
-        }
-        else
-        {
-            <div class="nav-item px-3">
-                <NavLink class="nav-link" href="/login" title="Sign In / Register">
-                    <span class="bi bi-person-nav-menu" aria-hidden="true"></span>
+        <div class="nav-user-footer"
+             @onclick:stopPropagation="true">
+            @if (Session.IsLoggedIn)
+            {
+                <div class="nav-user-menu @(_userMenuOpen ? "is-open" : null) @(Collapsed ? "is-collapsed" : null)">
+                    <button type="button"
+                            class="nav-user-trigger"
+                            data-testid="nav-user-menu"
+                            title="@Session.UserId — account menu"
+                            aria-expanded="@_userMenuOpen"
+                            aria-haspopup="menu"
+                            @onclick="ToggleUserMenu"
+                            @onclick:stopPropagation="true">
+                        <span class="nav-user-avatar" aria-hidden="true">@UserInitials</span>
+                        @if (!Collapsed)
+                        {
+                            <span class="nav-user-meta">
+                                <span class="nav-user-name text-truncate">@Session.UserId</span>
+                                <span class="nav-user-role">@(Session.IsAdmin ? "Admin" : "Account")</span>
+                            </span>
+                            <span class="nav-user-caret" aria-hidden="true">@(_userMenuOpen ? "▴" : "▾")</span>
+                        }
+                    </button>
+                    @if (_userMenuOpen)
+                    {
+                        <button type="button"
+                                class="nav-user-backdrop"
+                                aria-label="Close account menu"
+                                @onclick="CloseUserMenu"></button>
+                        <div class="nav-user-dropdown" role="menu" @onclick:stopPropagation="true">
+                            <div class="nav-user-dropdown-head">
+                                <span class="nav-user-avatar nav-user-avatar--lg" aria-hidden="true">@UserInitials</span>
+                                <div class="nav-user-dropdown-id">
+                                    <div class="nav-user-name text-truncate">@Session.UserId</div>
+                                    <div class="nav-user-role">@(Session.IsAdmin ? "Administrator" : "Signed in")</div>
+                                </div>
+                            </div>
+                            <a class="nav-user-item" role="menuitem" href="/configuration"
+                               @onclick="CloseUserMenu">
+                                Configuration
+                            </a>
+                            @if (Session.IsAdmin)
+                            {
+                                <a class="nav-user-item" role="menuitem" href="/admin"
+                                   @onclick="CloseUserMenu">
+                                    Admin dashboard
+                                </a>
+                                <a class="nav-user-item" role="menuitem" href="/admin/demos"
+                                   @onclick="CloseUserMenu">
+                                    Demo review
+                                </a>
+                            }
+                            <a class="nav-user-item" role="menuitem" href="/about"
+                               @onclick="CloseUserMenu">
+                                About
+                            </a>
+                            <button type="button"
+                                    class="nav-user-item nav-user-item--danger"
+                                    role="menuitem"
+                                    data-testid="nav-sign-out"
+                                    @onclick="LogoutAsync">
+                                Sign out
+                            </button>
+                        </div>
+                    }
+                </div>
+            }
+            else
+            {
+                <NavLink class="nav-link nav-user-signin" href="/login" title="Sign In / Register" data-testid="nav-sign-in">
+                    <span class="nav-user-avatar nav-user-avatar--ghost" aria-hidden="true">?</span>
                     @if (!Collapsed) { <span class="nav-label">Sign in</span> }
                 </NavLink>
-            </div>
-        }
+            }
+        </div>
     </nav>
 </div>
 
@@ -144,6 +192,26 @@
     [Parameter] public bool Collapsed { get; set; }
 
     private bool _started;
+    private bool _userMenuOpen;
+
+    private string UserInitials
+    {
+        get
+        {
+            var id = (Session.UserId ?? "").Trim();
+            if (id.Length == 0) return "?";
+            var parts = id.Split(new[] { ' ', '.', '_', '-' }, StringSplitOptions.RemoveEmptyEntries);
+            if (parts.Length >= 2)
+                return string.Concat(char.ToUpperInvariant(parts[0][0]), char.ToUpperInvariant(parts[1][0]));
+            return id.Length >= 2
+                ? id[..2].ToUpperInvariant()
+                : id.ToUpperInvariant();
+        }
+    }
+
+    private void ToggleUserMenu() => _userMenuOpen = !_userMenuOpen;
+
+    private void CloseUserMenu() => _userMenuOpen = false;
 
     private RenderFragment NavItem(bool enabled, string href, string title, string iconClass, string label, string? testId = null) => __builder =>
     {
@@ -182,7 +250,12 @@
         StateHasChanged();
     }
 
-    private void OnSessionChanged() => InvokeAsync(StateHasChanged);
+    private void OnSessionChanged() => InvokeAsync(() =>
+    {
+        if (!Session.IsLoggedIn)
+            _userMenuOpen = false;
+        StateHasChanged();
+    });
 
     // Readiness is refreshed by RefreshFromApiAsync / callers after Set — only re-render here
     // (RefreshReadinessAsync must not be invoked from Changed or it loops).
@@ -221,6 +294,7 @@
 
     private async Task LogoutAsync()
     {
+        _userMenuOpen = false;
         await Engine.LogoutAsync();
         Session.Clear();
         Nav.NavigateTo("/login", forceLoad: true);
