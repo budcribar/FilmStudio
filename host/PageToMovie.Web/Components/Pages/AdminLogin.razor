@@ -22,9 +22,23 @@
             <input class="form-control" @bind="_username" autocomplete="username" />
         </div>
         <div class="mb-3">
-            <label class="form-label">Password</label>
-            <input type="password" class="form-control" @bind="_password" autocomplete="current-password"
-                   @onkeydown="OnKeyDown" />
+            <label class="form-label" for="admin-password">Password</label>
+            <div class="input-group">
+                <input id="admin-password"
+                       type="@(_showPassword ? "text" : "password")"
+                       class="form-control"
+                       @bind="_password"
+                       autocomplete="current-password"
+                       @onkeydown="OnKeyDown" />
+                <button type="button"
+                        class="btn btn-outline-secondary"
+                        @onclick="ToggleShowPassword"
+                        title="@(_showPassword ? "Hide password" : "Show password")"
+                        aria-label="@(_showPassword ? "Hide password" : "Show password")"
+                        aria-pressed="@_showPassword">
+                    @(_showPassword ? "Hide" : "Show")
+                </button>
+            </div>
         </div>
         @if (!string.IsNullOrEmpty(_error))
         {
@@ -42,10 +56,13 @@
 @code {
     private string _username = "admin";
     private string _password = "admin";
+    private bool _showPassword;
     private string? _error;
     private string _status = "Checking session…";
     private bool _busy;
     private bool _started;
+
+    private void ToggleShowPassword() => _showPassword = !_showPassword;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {

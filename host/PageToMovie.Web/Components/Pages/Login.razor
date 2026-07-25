@@ -46,7 +46,7 @@
                 <div class="mb-3">
                     <label class="form-label" for="username-input">Username</label>
                     <div class="input-group">
-                        <span class="input-group-text"><i class="bi bi-person"></i></span>
+                        <span class="input-group-text" aria-hidden="true">👤</span>
                         <input id="username-input" class="form-control" @bind="_username" @bind:event="oninput" placeholder="Enter username" autocomplete="username" required />
                     </div>
                 </div>
@@ -54,10 +54,22 @@
                 <div class="mb-3">
                     <label class="form-label" for="password-input">Password</label>
                     <div class="input-group">
-                        <span class="input-group-text"><i class="bi bi-lock"></i></span>
-                        <input id="password-input" type="@(_showPassword ? "text" : "password")" class="form-control" @bind="_password" @bind:event="oninput" placeholder="Enter password" autocomplete="@(_isSignup ? "new-password" : "current-password")" required />
-                        <button type="button" class="btn btn-outline-secondary" @onclick="() => _showPassword = !_showPassword">
-                            <i class="bi @(_showPassword ? "bi-eye-slash" : "bi-eye")"></i>
+                        <span class="input-group-text" aria-hidden="true">🔒</span>
+                        <input id="password-input"
+                               type="@(_showPassword ? "text" : "password")"
+                               class="form-control"
+                               @bind="_password"
+                               @bind:event="oninput"
+                               placeholder="Enter password"
+                               autocomplete="@(_isSignup ? "new-password" : "current-password")"
+                               required />
+                        <button type="button"
+                                class="btn btn-outline-secondary password-toggle"
+                                @onclick="ToggleShowPassword"
+                                title="@(_showPassword ? "Hide password" : "Show password")"
+                                aria-label="@(_showPassword ? "Hide password" : "Show password")"
+                                aria-pressed="@_showPassword">
+                            @(_showPassword ? "Hide" : "Show")
                         </button>
                     </div>
                 </div>
@@ -67,8 +79,23 @@
                     <div class="mb-3">
                         <label class="form-label" for="confirm-password-input">Confirm Password</label>
                         <div class="input-group">
-                            <span class="input-group-text"><i class="bi bi-shield-check"></i></span>
-                            <input id="confirm-password-input" type="@(_showPassword ? "text" : "password")" class="form-control" @bind="_confirmPassword" @bind:event="oninput" placeholder="Confirm password" autocomplete="new-password" required />
+                            <span class="input-group-text" aria-hidden="true">✓</span>
+                            <input id="confirm-password-input"
+                                   type="@(_showPassword ? "text" : "password")"
+                                   class="form-control"
+                                   @bind="_confirmPassword"
+                                   @bind:event="oninput"
+                                   placeholder="Confirm password"
+                                   autocomplete="new-password"
+                                   required />
+                            <button type="button"
+                                    class="btn btn-outline-secondary password-toggle"
+                                    @onclick="ToggleShowPassword"
+                                    title="@(_showPassword ? "Hide password" : "Show password")"
+                                    aria-label="@(_showPassword ? "Hide password" : "Show password")"
+                                    aria-pressed="@_showPassword">
+                                @(_showPassword ? "Hide" : "Show")
+                            </button>
                         </div>
                     </div>
                 }
@@ -243,6 +270,21 @@
     .auth-footer {
         font-size: 0.875rem;
     }
+
+    .password-toggle {
+        min-width: 4.25rem;
+        font-size: 0.85rem;
+        font-weight: 500;
+        border-color: rgba(255, 255, 255, 0.15);
+        color: #d1d5db;
+        background: rgba(15, 23, 42, 0.6);
+    }
+
+    .password-toggle:hover {
+        background: rgba(99, 102, 241, 0.2);
+        border-color: rgba(99, 102, 241, 0.45);
+        color: #fff;
+    }
 </style>
 
 @code {
@@ -255,6 +297,11 @@
     private string _status = "Checking session…";
     private bool _busy;
     private bool _started;
+
+    private void ToggleShowPassword()
+    {
+        _showPassword = !_showPassword;
+    }
 
     protected override void OnInitialized()
     {
