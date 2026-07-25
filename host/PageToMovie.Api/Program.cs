@@ -269,10 +269,11 @@ app.UseStaticFiles();
 app.MapStaticAssets();
 app.UseAntiforgery();
 
-// Map Blazor UI (PageToMovie.Web WASM) — same origin as REST + SignalR
+// Map Blazor UI (PageToMovie.Web WASM) — same origin as REST + SignalR.
+// App lives in PageToMovie.Web; do not AddAdditionalAssemblies for that assembly
+// (duplicate registration → "Assembly already defined" at startup).
 app.MapRazorComponents<App>()
-    .AddInteractiveWebAssemblyRenderMode()
-    .AddAdditionalAssemblies(typeof(PageToMovie.Web.Services.EngineApiClient).Assembly);
+    .AddInteractiveWebAssemblyRenderMode();
 
 app.UseCors();
 
