@@ -1496,7 +1496,7 @@ else if (_showScenePlayer && _clientStitching)
         {
             await EnsureHubAsync();
             // Approve is review state only — Play stitches in the browser (no server remux).
-            await Engine.ApproveSceneAsync(_projectId, scene, _note, remux: false, rebuildWip: false);
+            await Engine.ApproveSceneAsync(_projectId, scene, _note);
             _message = $"Approved S{scene:D2}";
             await SoftLoadAsync();
             var jobs = await Engine.GetJobAsync();
@@ -1741,7 +1741,7 @@ else if (_showScenePlayer && _clientStitching)
             await RefreshWipMetaAsync();
             if (!_wipExists || _wipStale)
             {
-                _error = "YouTube upload needs an on-disk WIP — use server remux or publish Demo from a browser stitch first.";
+                _error = "YouTube upload needs an on-disk WIP movie — publish Demo from a browser stitch first, or copy a stitched file to assets/movie_wip.mp4.";
                 return;
             }
             await EnsureHubAsync();

@@ -739,43 +739,6 @@ public sealed class StartStage2Request
     public string Scenes { get; set; } = "all";
 }
 
-public sealed class StartRemuxRequest
-{
-    public string ProjectId { get; set; } = "";
-    public int? Scene { get; set; }
-    public bool RebuildWip { get; set; } = true;
-    /// <summary>
-    /// When true with <see cref="RebuildWip"/>, remux only <b>stale</b> scene composites
-    /// (clips newer than composite, or composite missing), then stitch WIP.
-    /// </summary>
-    public bool RefreshStaleScenes { get; set; }
-    /// <summary>When true, 409 if remux locks held by another user (default wait).</summary>
-    public bool FailIfLocked { get; set; }
-    /// <summary>
-    /// Emergency only: include human-fail / unresolved auto-fail clips in remux/WIP.
-    /// Requires <see cref="IgnoreAssemblyGateReason"/> (≥12 chars).
-    /// </summary>
-    public bool IgnoreAssemblyGate { get; set; }
-    /// <summary>Required when <see cref="IgnoreAssemblyGate"/> is true.</summary>
-    public string? IgnoreAssemblyGateReason { get; set; }
-}
-
-/// <summary>
-/// Build a temporary multi-scene preview (assets/movie_preview.mp4) by stitching an explicit,
-/// caller-ordered scene list — can skip scenes (e.g. 1,2,4) so a user can audition whether
-/// cutting a scene improves pacing before deleting it for real.
-/// </summary>
-public sealed class StartPreviewRequest
-{
-    public string ProjectId { get; set; } = "";
-    /// <summary>Scene numbers in playback order; duplicates/order preserved as given.</summary>
-    public List<int> Scenes { get; set; } = new();
-    /// <summary>When true, remux any selected scene whose composite is missing/stale before stitching.</summary>
-    public bool RefreshStaleScenes { get; set; } = true;
-    public bool IgnoreAssemblyGate { get; set; }
-    public string? IgnoreAssemblyGateReason { get; set; }
-}
-
 public sealed class StartYouTubeUploadRequest
 {
     public string ProjectId { get; set; } = "";
@@ -805,9 +768,9 @@ public sealed class WipFreshness
     public string? Path { get; set; }
     public long Bytes { get; set; }
     public string? UpdatedAt { get; set; }
-    /// <summary>Scenes whose composites need rebuild (clips newer / missing composite).</summary>
+    /// <summary>Scenes whose composites are dirty (clips newer / missing composite) — browser Play stitches clips instead.</summary>
     public List<int> StaleScenes { get; set; } = new();
-    /// <summary>All scenes that should be remuxed before WIP (Stage 2 order, with clips).</summary>
+    /// <summary>Scenes with on-disk clips (Stage 2 order) that can participate in a browser WIP stitch.</summary>
     public List<int> ScenesToRemux { get; set; } = new();
 }
 
@@ -826,8 +789,6 @@ public sealed class SceneApproveRequest
     public string ProjectId { get; set; } = "";
     public int Scene { get; set; }
     public string Note { get; set; } = "";
-    public bool Remux { get; set; }
-    public bool RebuildWip { get; set; }
 }
 
 public sealed class EditLogEntry

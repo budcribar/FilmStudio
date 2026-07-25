@@ -89,7 +89,7 @@ public sealed class VirtualUser
             "browse" => "browse",
             "play" => "play",
             "gen" => "gen",
-            "remux" => "remux",
+            "remux" => "play", // remux retired — browser stitch only
             "review" => "review",
             _ => WeightedPick(),
         };
@@ -100,10 +100,9 @@ public sealed class VirtualUser
         var items = new (string Name, double W)[]
         {
             ("browse", Math.Max(0, _opts.BrowseWeight)),
-            ("play", Math.Max(0, _opts.PlayWeight)),
+            ("play", Math.Max(0, _opts.PlayWeight) + Math.Max(0, _opts.RemuxWeight)),
             ("gen", Math.Max(0, _opts.GenWeight)),
             ("review", Math.Max(0, _opts.ReviewWeight)),
-            ("remux", Math.Max(0, _opts.RemuxWeight)),
         };
         var total = items.Sum(i => i.W);
         if (total <= 0) return "browse";
@@ -132,9 +131,6 @@ public sealed class VirtualUser
                 break;
             case "review":
                 await ReviewAsync(ct);
-                break;
-            case "remux":
-                await RemuxAsync(ct);
                 break;
             default:
                 await BrowseAsync(ct);
@@ -228,23 +224,6 @@ public sealed class VirtualUser
             using var resp = await _http.SendAsync(req, ct);
             return (int)resp.StatusCode;
         }, ct);
-    }
-
-    private async Task RemuxAsync(CancellationToken ct)
-    {
-        var sn = AssignedScene();
-        await TimedAsync("remux", async () =>
-        {
-            using var req = CreateRequest(HttpMethod.Post, "/api/jobs/remux");
-            req.Content = JsonContent.Create(new
-            {
-                projectId = _opts.ProjectId,
-                scene = sn,
-                rebuildWip = false,
-            });
-            using var resp = await _http.SendAsync(req, ct);
-            return (int)resp.StatusCode;
-        }, ct, intentionalConflictOn409: true);
     }
 
     private async Task SampleCapacityAsync(CancellationToken ct)

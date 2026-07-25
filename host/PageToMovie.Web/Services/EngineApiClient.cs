@@ -1018,59 +1018,6 @@ public sealed class EngineApiClient
         }
     }
 
-    public async Task StartRemuxAsync(
-        string projectId,
-        int? scene = null,
-        bool rebuildWip = true,
-        bool refreshStaleScenes = false,
-        CancellationToken ct = default)
-    {
-        using var resp = await _http.PostAsJsonAsync(
-            "/api/jobs/remux",
-            new StartRemuxRequest
-            {
-                ProjectId = projectId,
-                Scene = scene,
-                RebuildWip = rebuildWip,
-                RefreshStaleScenes = refreshStaleScenes,
-            },
-            JsonOpts,
-            ct);
-        if (!resp.IsSuccessStatusCode)
-        {
-            var err = await resp.Content.ReadAsStringAsync(ct);
-            throw new InvalidOperationException(TryError(err) ?? resp.ReasonPhrase);
-        }
-    }
-
-    /// <summary>Stream URL for the most recently built multi-scene preview (range requests enabled).</summary>
-    public string PreviewMovieUrl(string projectId) =>
-        BrowserMediaPath($"/api/projects/{Uri.EscapeDataString(projectId)}/movie/preview");
-
-    /// <summary>Stitch an explicit, ordered (possibly non-contiguous) scene selection into a temporary preview.</summary>
-    public async Task StartPreviewAsync(
-        string projectId,
-        IReadOnlyList<int> orderedScenes,
-        bool refreshStaleScenes = true,
-        CancellationToken ct = default)
-    {
-        using var resp = await _http.PostAsJsonAsync(
-            "/api/jobs/preview",
-            new StartPreviewRequest
-            {
-                ProjectId = projectId,
-                Scenes = orderedScenes.ToList(),
-                RefreshStaleScenes = refreshStaleScenes,
-            },
-            JsonOpts,
-            ct);
-        if (!resp.IsSuccessStatusCode)
-        {
-            var err = await resp.Content.ReadAsStringAsync(ct);
-            throw new InvalidOperationException(TryError(err) ?? resp.ReasonPhrase);
-        }
-    }
-
     public async Task StartClipAutoReviewAsync(
         string projectId,
         int scene,
@@ -1326,8 +1273,6 @@ public sealed class EngineApiClient
         string projectId,
         int scene,
         string note = "",
-        bool remux = false,
-        bool rebuildWip = false,
         CancellationToken ct = default)
     {
         using var resp = await _http.PostAsJsonAsync(
@@ -1337,8 +1282,6 @@ public sealed class EngineApiClient
                 ProjectId = projectId,
                 Scene = scene,
                 Note = note,
-                Remux = remux,
-                RebuildWip = rebuildWip,
             },
             JsonOpts,
             ct);

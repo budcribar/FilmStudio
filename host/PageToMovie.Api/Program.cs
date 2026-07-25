@@ -2581,49 +2581,6 @@ app.MapPost("/api/jobs/stage2", async (StartStage2Request body, FilmJobService j
     }
 });
 
-app.MapPost("/api/jobs/remux", async (StartRemuxRequest body, FilmJobService jobService) =>
-{
-    try
-    {
-        if (string.IsNullOrWhiteSpace(body.ProjectId))
-            return Results.BadRequest(new { ok = false, error = "projectId required" });
-        var job = await jobService.StartRemuxAsync(body);
-        return Results.Accepted($"/api/jobs/{job.JobId}", new
-        {
-            ok = true,
-            message = "Queued remux / WIP",
-            job,
-        });
-    }
-    catch (Exception ex)
-    {
-        return JobStartError(ex, jobService);
-    }
-});
-
-/// <summary>Stitch an explicit, ordered (possibly non-contiguous) scene selection into a temporary preview movie.</summary>
-app.MapPost("/api/jobs/preview", async (StartPreviewRequest body, FilmJobService jobService) =>
-{
-    try
-    {
-        if (string.IsNullOrWhiteSpace(body.ProjectId))
-            return Results.BadRequest(new { ok = false, error = "projectId required" });
-        if (body.Scenes is null || body.Scenes.Count == 0)
-            return Results.BadRequest(new { ok = false, error = "scenes required" });
-        var job = await jobService.StartPreviewAsync(body);
-        return Results.Accepted($"/api/jobs/{job.JobId}", new
-        {
-            ok = true,
-            message = "Queued preview",
-            job,
-        });
-    }
-    catch (Exception ex)
-    {
-        return JobStartError(ex, jobService);
-    }
-});
-
 app.MapPost("/api/jobs/youtube-upload", async (StartYouTubeUploadRequest body, FilmJobService jobService) =>
 {
     try
@@ -2733,21 +2690,12 @@ app.MapDelete("/api/projects/{id}/scenes/{scene:int}/clips/{clip:int}", async (
 });
 
 app.MapPost("/api/projects/{id}/scenes/{scene:int}/approve", async (
-    string id, int scene, SceneApproveRequest? body, EditLogService logs, FilmJobService jobs, CancellationToken ct) =>
+    string id, int scene, SceneApproveRequest? body, EditLogService logs, CancellationToken ct) =>
 {
     try
     {
         body ??= new SceneApproveRequest();
         await logs.MarkSceneApprovedAsync(id, scene, body.Note ?? "", ct);
-        if (body.Remux || body.RebuildWip)
-        {
-            await jobs.StartRemuxAsync(new StartRemuxRequest
-            {
-                ProjectId = id,
-                Scene = body.Remux ? scene : null,
-                RebuildWip = body.RebuildWip,
-            });
-        }
         return Results.Ok(new { ok = true, projectId = id, scene, message = "Scene approved" });
     }
     catch (Exception ex)
@@ -3465,24 +3413,6 @@ app.MapDelete("/api/demos/{demoId}", (
     if (!demos.Delete(demoId, user.UserId, user.IsAdmin))
         return Results.NotFound(new { ok = false, error = "Demo not found or not allowed" });
     return Results.Ok(new { ok = true });
-});
-
-/// <summary>Stream the most recently built multi-scene preview (assets/movie_preview.mp4).</summary>
-app.MapGet("/api/projects/{id}/movie/preview", (string id, ProjectStore store, IUserContext user, IOptions<PageToMovieOptions> opts) =>
-{
-    if (AuthGate.RequireLogin(user, opts) is { } denied)
-        return denied;
-    try
-    {
-        var path = store.ResolvePreviewMoviePath(id);
-        if (path is null)
-            return Results.NotFound(new { ok = false, error = "No preview built yet — select scenes and play." });
-        return Results.File(path, "video/mp4", enableRangeProcessing: true);
-    }
-    catch (Exception ex)
-    {
-        return Results.BadRequest(new { ok = false, error = ex.Message });
-    }
 });
 
 /// <summary>Most recent YouTube upload for this project's WIP movie, if any.</summary>

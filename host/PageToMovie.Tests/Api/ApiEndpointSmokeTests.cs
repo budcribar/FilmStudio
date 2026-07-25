@@ -195,7 +195,6 @@ public class ApiEndpointSmokeTests : IClassFixture<PageToMovieApiFactory>, IAsyn
                      "/api/jobs/gen-batch",
                      "/api/jobs/stage1",
                      "/api/jobs/stage2",
-                     "/api/jobs/remux",
                      "/api/jobs/character-variants",
                      "/api/jobs/voice-preview",
                      "/api/jobs/clip-auto-review",
