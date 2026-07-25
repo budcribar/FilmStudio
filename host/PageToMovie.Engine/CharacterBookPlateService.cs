@@ -225,6 +225,11 @@ public sealed class CharacterBookPlateService
 
         result.Method = method;
 
+        // Drop plates that clearly belong to another cast member (e.g. BUSTER cover on Daddy)
+        PurgeCrossCharacterNameCollisions(scores, seeds);
+        // Drop animal plates from human seeds and human-looking dumps from animal seeds
+        PurgeSpeciesMismatches(scores, seeds);
+
         // Exclusive assignment: each source image (and each page) to at most one character
         // → stops B0≈B2 duplicates and Mom/Dad sharing the same dog plate
         var assigned = AssignPlatesExclusively(scores, maxPerCharacter: 3);
@@ -684,27 +689,141 @@ public sealed class CharacterBookPlateService
             }
         }
 
-        // Last resort: cast members still empty after exclusivity may share a high-score page
-        // (e.g. two cast members on the same full-page plate) so we never leave someone blank.
-        foreach (var (key, list) in scores)
+        // No last-resort sharing of claimed plates across cast (that put the dog cover on Dad).
+        // Empty book refs are better than wrong species / wrong character.
+        return assigned;
+    }
+
+    /// <summary>
+    /// If a plate filename strongly matches another cast member's distinctive name
+    /// (e.g. BUSTER in the path) and not this cast member's name, drop it from scores.
+    /// </summary>
+    private static void PurgeCrossCharacterNameCollisions(
+        Dictionary<string, List<(BookImageRow Row, double Score)>> scores,
+        JsonObject seeds)
+    {
+        var tokensByKey = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
+        foreach (var (key, node) in seeds)
         {
-            if (!assigned.TryGetValue(key, out var picks))
-            {
-                picks = new List<BookImageRow>();
-                assigned[key] = picks;
-            }
-            if (picks.Count > 0) continue;
-            var best = list
-                .Where(x => !IsLikelyTextLayout(x.Row))
-                .OrderByDescending(x => x.Score)
-                .ThenBy(x => IllustrationScore(x.Row))
-                .Select(x => x.Row)
-                .FirstOrDefault();
-            if (best is not null)
-                picks.Add(best);
+            if (node is not JsonObject seed || IsVoiceOnly(key, seed)) continue;
+            var toks = new List<string>();
+            var suffix = key.Replace("Character_", "", StringComparison.OrdinalIgnoreCase);
+            if (suffix.Length >= 3 && !IsGenericRoleToken(suffix))
+                toks.Add(suffix);
+            var given = seed["canonical_given_name"]?.GetValue<string>() ?? "";
+            if (given.Length >= 3 && !IsGenericRoleToken(given))
+                toks.Add(given);
+            tokensByKey[key] = toks;
         }
 
-        return assigned;
+        foreach (var (key, list) in scores.ToList())
+        {
+            var own = tokensByKey.GetValueOrDefault(key) ?? new List<string>();
+            var kept = new List<(BookImageRow Row, double Score)>();
+            foreach (var (row, score) in list)
+            {
+                var name = row.Name + " " + (row.PathRel ?? "");
+                var hitsOther = false;
+                foreach (var (otherKey, otherToks) in tokensByKey)
+                {
+                    if (string.Equals(otherKey, key, StringComparison.OrdinalIgnoreCase)) continue;
+                    foreach (var t in otherToks)
+                    {
+                        if (t.Length < 3) continue;
+                        if (name.Contains(t, StringComparison.OrdinalIgnoreCase))
+                        {
+                            // Only purge if this plate does not also name *us*
+                            var hitsSelf = own.Any(o => o.Length >= 3 &&
+                                name.Contains(o, StringComparison.OrdinalIgnoreCase));
+                            if (!hitsSelf)
+                            {
+                                hitsOther = true;
+                                break;
+                            }
+                        }
+                    }
+                    if (hitsOther) break;
+                }
+                if (!hitsOther)
+                    kept.Add((row, score));
+            }
+            scores[key] = kept;
+        }
+    }
+
+    private static void PurgeSpeciesMismatches(
+        Dictionary<string, List<(BookImageRow Row, double Score)>> scores,
+        JsonObject seeds)
+    {
+        var animalKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var humanKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var (key, node) in seeds)
+        {
+            if (node is not JsonObject seed || IsVoiceOnly(key, seed)) continue;
+            var desc = seed["description"]?.GetValue<string>() ?? "";
+            var vlock = seed["visual_lock"]?.GetValue<string>() ?? "";
+            if (IsAnimalSeed(key, desc, vlock))
+                animalKeys.Add(key);
+            else if (CharacterVisualTextScrubber.IsHumanAdultCharacter(key, "", desc, vlock) ||
+                     IsHumanishSeed(key, desc))
+                humanKeys.Add(key);
+        }
+
+        if (animalKeys.Count == 0 || humanKeys.Count == 0) return;
+
+        // Animal name tokens from animal cast (Buster, dog, etc.)
+        var animalNameHits = new List<string>();
+        foreach (var ak in animalKeys)
+        {
+            var suffix = ak.Replace("Character_", "", StringComparison.OrdinalIgnoreCase);
+            if (suffix.Length >= 3) animalNameHits.Add(suffix);
+            if (seeds[ak] is JsonObject seed)
+            {
+                var given = seed["canonical_given_name"]?.GetValue<string>() ?? "";
+                if (given.Length >= 3) animalNameHits.Add(given);
+            }
+        }
+        animalNameHits.AddRange(new[] { "dog", "puppy", "cat", "kitten", "fox", "bear", "bunny", "rabbit" });
+
+        foreach (var hk in humanKeys)
+        {
+            if (!scores.TryGetValue(hk, out var list) || list.Count == 0) continue;
+            scores[hk] = list.Where(x =>
+            {
+                var n = x.Row.Name + " " + (x.Row.PathRel ?? "");
+                // Human seed must not take plates that name the animal hero in the filename
+                foreach (var t in animalNameHits)
+                {
+                    if (t.Length >= 3 && n.Contains(t, StringComparison.OrdinalIgnoreCase))
+                        return false;
+                }
+                return true;
+            }).ToList();
+        }
+    }
+
+    private static bool IsGenericRoleToken(string t)
+    {
+        t = (t ?? "").Trim().ToLowerInvariant();
+        return t is "mom" or "dad" or "daddy" or "mum" or "mother" or "father" or "parent"
+            or "narrator" or "boy" or "girl" or "man" or "woman" or "child" or "kid";
+    }
+
+    private static bool IsAnimalSeed(string key, string desc, string vlock) =>
+        CharacterVisualTextScrubber.IsPrimarilyAnimalCharacter(key, "", desc, vlock, "dog") ||
+        CharacterVisualTextScrubber.IsPrimarilyAnimalCharacter(key, "", desc, vlock, "cat") ||
+        CharacterVisualTextScrubber.IsPrimarilyAnimalCharacter(key, "", desc, vlock, "fox") ||
+        CharacterVisualTextScrubber.IsPrimarilyAnimalCharacter(key, "", desc, vlock, "bear") ||
+        CharacterVisualTextScrubber.IsPrimarilyAnimalCharacter(key, "", desc, vlock, "bunny") ||
+        CharacterVisualTextScrubber.IsPrimarilyAnimalCharacter(key, "", desc, vlock, "rabbit");
+
+    private static bool IsHumanishSeed(string key, string desc)
+    {
+        var blob = $"{key} {desc}";
+        return Regex.IsMatch(
+            blob,
+            @"\b(man|woman|mother|father|mom|dad|daddy|mum|parent|boy|girl|human|adult)\b",
+            RegexOptions.IgnoreCase);
     }
 
     private static string ContentFingerprint(BookImageRow row)

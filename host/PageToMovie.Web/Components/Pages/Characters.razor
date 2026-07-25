@@ -107,13 +107,8 @@ else if (Session.IsAdmin && HasCast && !JobRunning && !_extractingCast)
 {
     <div class="alert alert-secondary py-2 small mb-3">
         <strong>Admin · last cast extract</strong>
-        · @_lastCastExtractKeys.Count key(s):
+        · @_lastCastExtractKeys.Count:
         <code class="user-select-all">@string.Join(", ", _lastCastExtractKeys)</code>
-        <div class="text-muted mt-1 mb-0">
-            Built from the approved screenplay (not plate OCR). Missing leads like Buster usually means
-            the Fountain has no clear character cue / seed for them — rebuild cast after fixing the screenplay,
-            or check Railway logs for cast extract.
-        </div>
     </div>
 }
 else if (IsCastComplete && !JobRunning && !_extractingCast)
