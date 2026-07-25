@@ -149,7 +149,7 @@ public class ClipDeleteAndDialogueTests
     }
 
     [Fact]
-    public void UpdateClipFields_clears_speaker_when_request_omits_it()
+    public void UpdateClipFields_clears_dialogue_and_speaker_for_silent_clip()
     {
         const string blueprint = """
             {
@@ -157,7 +157,7 @@ public class ClipDeleteAndDialogueTests
                 {
                   "scene_number": 1,
                   "veo_clips": [
-                    { "clip_number": 1, "audio_payload": { "dialogue": "OLD LINE", "speaker": "Character_A" } }
+                    { "clip_number": 1, "audio_payload": { "dialogue": "OLD LINE", "speaker": "Character_A", "delivery": "spoken_on_camera" } }
                   ]
                 }
               ]
@@ -166,13 +166,103 @@ public class ClipDeleteAndDialogueTests
         var (root, proj, store) = SetUpProject("clipeditclear", blueprint);
         try
         {
-            // Full-form save with no speaker selected — matches the editor sending its current form state.
-            store.UpdateClipFields("Demo", scene: 1, clip: 1, new ClipEditRequest { Dialogue = "NEW LINE" });
+            // Silent clip: empty dialogue + no speaker.
+            store.UpdateClipFields("Demo", scene: 1, clip: 1, new ClipEditRequest
+            {
+                VisualPrompt = "Silent action beat",
+                Dialogue = "",
+                Speaker = "",
+                Delivery = "none",
+            });
             var json = File.ReadAllText(Path.Combine(proj, "blueprint.clips.grok.json"));
             using var doc = JsonDocument.Parse(json);
             var audio = doc.RootElement.GetProperty("scenes")[0].GetProperty("veo_clips")[0].GetProperty("audio_payload");
-            Assert.Equal("NEW LINE", audio.GetProperty("dialogue").GetString());
+            Assert.Equal("", audio.GetProperty("dialogue").GetString());
             Assert.True(audio.GetProperty("speaker").ValueKind is JsonValueKind.Null);
+        }
+        finally
+        {
+            try { Directory.Delete(root, recursive: true); } catch { /* */ }
+        }
+    }
+
+    [Fact]
+    public void UpdateClipFields_rejects_dialogue_without_speaker()
+    {
+        var (root, _, store) = SetUpProject("clipeditnospeaker", ThreeClipBlueprint);
+        try
+        {
+            var ex = Assert.Throws<InvalidOperationException>(() =>
+                store.UpdateClipFields("Demo", 1, 1, new ClipEditRequest
+                {
+                    VisualPrompt = "Action",
+                    Dialogue = "test 1 2 3",
+                    Speaker = "",
+                    Delivery = "none",
+                }));
+            Assert.Contains("speaker", ex.Message, StringComparison.OrdinalIgnoreCase);
+        }
+        finally
+        {
+            try { Directory.Delete(root, recursive: true); } catch { /* */ }
+        }
+    }
+
+    [Fact]
+    public void UpdateClipFields_rejects_dialogue_with_delivery_none()
+    {
+        var (root, _, store) = SetUpProject("clipeditnodelivery", ThreeClipBlueprint);
+        try
+        {
+            var ex = Assert.Throws<InvalidOperationException>(() =>
+                store.UpdateClipFields("Demo", 1, 1, new ClipEditRequest
+                {
+                    VisualPrompt = "Action",
+                    Dialogue = "Hello",
+                    Speaker = "Character_A",
+                    Delivery = "none",
+                }));
+            Assert.Contains("delivery", ex.Message, StringComparison.OrdinalIgnoreCase);
+        }
+        finally
+        {
+            try { Directory.Delete(root, recursive: true); } catch { /* */ }
+        }
+    }
+
+    [Fact]
+    public void UpdateClipFields_rejects_empty_visual_prompt()
+    {
+        var (root, _, store) = SetUpProject("clipeditnovisual", ThreeClipBlueprint);
+        try
+        {
+            var ex = Assert.Throws<InvalidOperationException>(() =>
+                store.UpdateClipFields("Demo", 1, 1, new ClipEditRequest
+                {
+                    VisualPrompt = "  ",
+                    Dialogue = "",
+                }));
+            Assert.Contains("Visual prompt", ex.Message, StringComparison.OrdinalIgnoreCase);
+        }
+        finally
+        {
+            try { Directory.Delete(root, recursive: true); } catch { /* */ }
+        }
+    }
+
+    [Fact]
+    public void UpdateClipFields_rejects_duration_out_of_range()
+    {
+        var (root, _, store) = SetUpProject("clipeditbaddur", ThreeClipBlueprint);
+        try
+        {
+            var ex = Assert.Throws<InvalidOperationException>(() =>
+                store.UpdateClipFields("Demo", 1, 1, new ClipEditRequest
+                {
+                    VisualPrompt = "Action",
+                    DurationSeconds = 99,
+                }));
+            Assert.Contains("Duration", ex.Message, StringComparison.OrdinalIgnoreCase);
         }
         finally
         {

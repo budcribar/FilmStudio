@@ -1358,28 +1358,206 @@ public sealed class ProjectStore
         return null;
     }
 
-    private static void ApplyClipFields(System.Text.Json.Nodes.JsonObject clipObj, ClipEditRequest fields)
+    public const int ClipEditVisualPromptMaxChars = 8_000;
+    public const int ClipEditNegativePromptMaxChars = 2_000;
+    public const int ClipEditDialogueMaxChars = 2_000;
+    public const int ClipEditFreeTextMaxChars = 500;
+    public const int ClipEditClipNumberMax = 200;
+
+    private static readonly HashSet<string> AllowedDeliveries = new(StringComparer.OrdinalIgnoreCase)
     {
-        clipObj["visual_prompt"] = (fields.VisualPrompt ?? "").Trim();
-        clipObj["negative_prompt"] = (fields.NegativePrompt ?? "").Trim();
-        clipObj["primary_subject"] = (fields.PrimarySubject ?? "").Trim();
-        clipObj["duration_seconds"] = Math.Max(0, fields.DurationSeconds);
+        "none",
+        "spoken_on_camera",
+        "on_camera",
+        "spoken",
+        "voiceover_internal",
+        "voiceover",
+        "voice_over",
+        "off_camera",
+        "offcamera",
+        "internal",
+        "narration",
+        "vo",
+    };
+
+    private static readonly Regex CharacterKeyRx = new(
+        @"^Character_[A-Za-z][A-Za-z0-9_]{0,80}$",
+        RegexOptions.CultureInvariant | RegexOptions.Compiled);
+
+    /// <summary>
+    /// Full validation + normalize for Scenes clip editor fields.
+    /// Throws <see cref="InvalidOperationException"/> with a short operator message.
+    /// Mutates <paramref name="fields"/> (trim, clamp duration, normalize delivery).
+    /// When <paramref name="knownCastKeys"/> is non-empty, speaker / primary / on-screen
+    /// must be keys from that cast (no free-text names).
+    /// </summary>
+    public static void ValidateClipEditRequest(
+        ClipEditRequest fields,
+        IReadOnlyCollection<string>? knownCastKeys = null)
+    {
+        ArgumentNullException.ThrowIfNull(fields);
+
+        fields.VisualPrompt = (fields.VisualPrompt ?? "").Trim();
+        fields.NegativePrompt = (fields.NegativePrompt ?? "").Trim();
+        fields.Dialogue = (fields.Dialogue ?? "").Trim();
+        fields.Speaker = string.IsNullOrWhiteSpace(fields.Speaker) ? "" : fields.Speaker.Trim();
+        fields.Delivery = string.IsNullOrWhiteSpace(fields.Delivery) ? "" : fields.Delivery.Trim();
+        fields.PrimarySubject = (fields.PrimarySubject ?? "").Trim();
+        fields.ColorPalette = string.IsNullOrWhiteSpace(fields.ColorPalette) ? null : fields.ColorPalette.Trim();
+        fields.FilmStock = string.IsNullOrWhiteSpace(fields.FilmStock) ? null : fields.FilmStock.Trim();
+        fields.CharactersOnScreen = (fields.CharactersOnScreen ?? new List<string>())
+            .Where(c => !string.IsNullOrWhiteSpace(c))
+            .Select(c => c.Trim())
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        // Clip number (add path uses this; edit path ignores change)
+        if (fields.Clip < 0 || fields.Clip > ClipEditClipNumberMax)
+            throw new InvalidOperationException(
+                $"Clip number must be between 1 and {ClipEditClipNumberMax}.");
+
+        // Duration: 0 = leave unset/auto; otherwise within provider band
+        if (fields.DurationSeconds < 0)
+            throw new InvalidOperationException("Duration cannot be negative.");
+        if (fields.DurationSeconds > ClipDurationEstimator.AbsMaxSeconds)
+            throw new InvalidOperationException(
+                $"Duration max is {ClipDurationEstimator.AbsMaxSeconds}s (video provider limit).");
+        if (fields.DurationSeconds is > 0 and < ClipDurationEstimator.MinSeconds)
+            throw new InvalidOperationException(
+                $"Duration must be at least {ClipDurationEstimator.MinSeconds}s (or 0 to leave unset).");
+
+        // Visual prompt — required for a usable plan
+        if (fields.VisualPrompt.Length == 0)
+            throw new InvalidOperationException("Visual prompt is required.");
+        if (fields.VisualPrompt.Length > ClipEditVisualPromptMaxChars)
+            throw new InvalidOperationException(
+                $"Visual prompt is too long (max {ClipEditVisualPromptMaxChars:N0} characters).");
+
+        if (fields.NegativePrompt.Length > ClipEditNegativePromptMaxChars)
+            throw new InvalidOperationException(
+                $"Negative prompt is too long (max {ClipEditNegativePromptMaxChars:N0} characters).");
+
+        if (fields.Dialogue.Length > ClipEditDialogueMaxChars)
+            throw new InvalidOperationException(
+                $"Dialogue is too long (max {ClipEditDialogueMaxChars:N0} characters).");
+
+        if ((fields.ColorPalette?.Length ?? 0) > ClipEditFreeTextMaxChars)
+            throw new InvalidOperationException(
+                $"Color palette is too long (max {ClipEditFreeTextMaxChars} characters).");
+        if ((fields.FilmStock?.Length ?? 0) > ClipEditFreeTextMaxChars)
+            throw new InvalidOperationException(
+                $"Film stock is too long (max {ClipEditFreeTextMaxChars} characters).");
+
+        // Delivery allowlist when set
+        if (fields.Delivery.Length > 0 && !AllowedDeliveries.Contains(fields.Delivery))
+            throw new InvalidOperationException(
+                "Delivery must be spoken_on_camera, voiceover_internal, off_camera, or none.");
+
+        var deliveryNone = fields.Delivery.Length == 0 ||
+                           string.Equals(fields.Delivery, "none", StringComparison.OrdinalIgnoreCase);
+
+        // Audio consistency
+        if (fields.Dialogue.Length > 0 && fields.Speaker.Length == 0)
+            throw new InvalidOperationException(
+                "Dialogue needs a speaker. Pick who says the line, or clear the dialogue text.");
+
+        if (fields.Dialogue.Length > 0 && deliveryNone)
+            throw new InvalidOperationException(
+                "Dialogue needs a delivery (spoken_on_camera, voiceover_internal, or off_camera) — not none.");
+
+        if (fields.Speaker.Length > 0 && fields.Dialogue.Length == 0)
+            throw new InvalidOperationException(
+                "Speaker is set but dialogue is empty. Add the line, or set speaker to none.");
+
+        // Cast identity: Character_* keys only (no free-text display names)
+        if (fields.Speaker.Length > 0)
+            RequireCharacterKey(fields.Speaker, "Speaker");
+        if (fields.PrimarySubject.Length > 0)
+            RequireCharacterKey(fields.PrimarySubject, "Primary subject");
+        foreach (var ck in fields.CharactersOnScreen)
+            RequireCharacterKey(ck, "On-screen character");
+
+        var cast = knownCastKeys?
+            .Where(k => !string.IsNullOrWhiteSpace(k))
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        if (cast is { Count: > 0 })
+        {
+            if (fields.Speaker.Length > 0 && !cast.Contains(fields.Speaker))
+                throw new InvalidOperationException(
+                    $"Speaker must be a cast member (unknown key: {fields.Speaker}).");
+            if (fields.PrimarySubject.Length > 0 && !cast.Contains(fields.PrimarySubject))
+                throw new InvalidOperationException(
+                    $"Primary subject must be a cast member (unknown key: {fields.PrimarySubject}).");
+            foreach (var ck in fields.CharactersOnScreen)
+            {
+                if (!cast.Contains(ck))
+                    throw new InvalidOperationException(
+                        $"On-screen list has unknown cast key: {ck}.");
+            }
+        }
+
+        // Auto-include primary + on-camera speaker in on-screen list
+        if (fields.PrimarySubject.Length > 0 &&
+            !fields.CharactersOnScreen.Any(c =>
+                string.Equals(c, fields.PrimarySubject, StringComparison.OrdinalIgnoreCase)))
+        {
+            fields.CharactersOnScreen.Add(fields.PrimarySubject);
+        }
+
+        var onCam = Stage2PlannerService.IsOnCameraDelivery(fields.Delivery);
+        if (onCam &&
+            fields.Speaker.Length > 0 &&
+            !fields.CharactersOnScreen.Any(c =>
+                string.Equals(c, fields.Speaker, StringComparison.OrdinalIgnoreCase)))
+        {
+            fields.CharactersOnScreen.Add(fields.Speaker);
+        }
+    }
+
+    private static void RequireCharacterKey(string value, string fieldLabel)
+    {
+        if (!CharacterKeyRx.IsMatch(value))
+            throw new InvalidOperationException(
+                $"{fieldLabel} must be a Character_* key from the cast (not a free-text name).");
+    }
+
+    /// <summary>Backward-compatible name for audio-only checks used by older tests.</summary>
+    public static void ValidateClipAudioFields(ClipEditRequest fields) =>
+        ValidateClipEditRequest(fields);
+
+    private void ApplyClipFields(System.Text.Json.Nodes.JsonObject clipObj, ClipEditRequest fields, string projectId)
+    {
+        IReadOnlyCollection<string>? castKeys = null;
+        try
+        {
+            castKeys = LoadCharacterSeeds(projectId).Keys.ToList();
+        }
+        catch
+        {
+            /* no cast file yet */
+        }
+
+        ValidateClipEditRequest(fields, castKeys);
+
+        clipObj["visual_prompt"] = fields.VisualPrompt;
+        clipObj["negative_prompt"] = fields.NegativePrompt;
+        clipObj["primary_subject"] = fields.PrimarySubject;
+        clipObj["duration_seconds"] = fields.DurationSeconds;
         clipObj["characters_on_screen"] = new System.Text.Json.Nodes.JsonArray(
-            (fields.CharactersOnScreen ?? new List<string>())
-                .Where(c => !string.IsNullOrWhiteSpace(c))
-                .Select(c => System.Text.Json.Nodes.JsonValue.Create(c.Trim()) as System.Text.Json.Nodes.JsonNode)
+            fields.CharactersOnScreen
+                .Select(c => System.Text.Json.Nodes.JsonValue.Create(c) as System.Text.Json.Nodes.JsonNode)
                 .ToArray());
-        clipObj["color_palette"] = string.IsNullOrWhiteSpace(fields.ColorPalette) ? null : fields.ColorPalette.Trim();
-        clipObj["film_stock"] = string.IsNullOrWhiteSpace(fields.FilmStock) ? null : fields.FilmStock.Trim();
+        clipObj["color_palette"] = fields.ColorPalette;
+        clipObj["film_stock"] = fields.FilmStock;
 
         if (clipObj["audio_payload"] is not System.Text.Json.Nodes.JsonObject audio)
         {
             audio = new System.Text.Json.Nodes.JsonObject();
             clipObj["audio_payload"] = audio;
         }
-        audio["dialogue"] = (fields.Dialogue ?? "").Trim();
-        audio["speaker"] = string.IsNullOrWhiteSpace(fields.Speaker) ? null : fields.Speaker.Trim();
-        audio["delivery"] = string.IsNullOrWhiteSpace(fields.Delivery) ? null : fields.Delivery.Trim();
+        audio["dialogue"] = fields.Dialogue;
+        audio["speaker"] = string.IsNullOrWhiteSpace(fields.Speaker) ? null : fields.Speaker;
+        audio["delivery"] = string.IsNullOrWhiteSpace(fields.Delivery) ? null : fields.Delivery;
     }
 
     /// <summary>
@@ -1405,7 +1583,7 @@ public sealed class ProjectStore
         var clipObj = FindClipNode(clips, clip)
                       ?? throw new InvalidOperationException($"Clip S{scene:D2}C{clip:D2} not found in shot plan.");
 
-        ApplyClipFields(clipObj, fields);
+        ApplyClipFields(clipObj, fields, projectId);
 
         File.WriteAllText(bpPath, root.ToJsonString(JsonDefaults.Indented) + "\n");
         InvalidateSceneListCache(projectId);
@@ -1443,7 +1621,7 @@ public sealed class ProjectStore
             ["timestamp"] = "",
             ["veo_continuation_source"] = "none",
         };
-        ApplyClipFields(clipObj, fields);
+        ApplyClipFields(clipObj, fields, projectId);
 
         var insertAt = 0;
         while (insertAt < clips.Count &&

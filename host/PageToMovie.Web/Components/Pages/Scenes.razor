@@ -33,18 +33,14 @@ else
 }
 @if (_castChecked && !CastReady)
 {
-    <div class="alert alert-warning" data-testid="scenes-cast-gate">
-        <strong>Cast not approved yet</strong> — video generation is blocked so you do not waste API spend.
-        Every character needs an approved <em>voice</em> and (for on-screen roles) a <em>locked image</em>.
+    <div class="alert alert-warning py-2" data-testid="scenes-cast-gate">
+        Cast incomplete
         @if (_castReadyCount is int cr && _castTotal is int ct)
         {
-            <span> Progress: @cr/@ct ready.</span>
+            <span>(@cr/@ct)</span>
         }
-        @if (_castMissing.Count > 0)
-        {
-            <span> Still missing: @string.Join(", ", _castMissing.Take(8))@(_castMissing.Count > 8 ? "…" : "").</span>
-        }
-        <a class="alert-link ms-1" href="characters">Open Characters →</a>
+        — finish voice + locks on
+        <a class="alert-link" href="characters">Characters →</a>
     </div>
 }
 
@@ -111,7 +107,6 @@ else
                 Your browser does not support HTML5 video.
             </video>
             <p class="small text-muted mb-0 mt-2">
-                If empty/404, use <strong>Rebuild scene</strong> (needs clips on disk).
                 <a href="@Engine.CompositeVideoUrl(_projectId, playSn)" target="_blank" rel="noopener">Open in new tab</a>
             </p>
         </div>
@@ -269,10 +264,16 @@ else if (Session.IsAdmin && _job is not null &&
                         }
                     </button>
 
-                    <label class="form-check-label d-flex align-items-center gap-1 small text-white ms-2" title="Skip clips already on disk">
-                        <input type="checkbox" class="form-check-input mt-0" @bind="_onlyMissing" disabled="@_busy" />
-                        <span>Only missing clips</span>
-                    </label>
+                    @if (_scenes is not null && VisibleScenes.Any(s => !s.ClipsComplete || s.ClipsOnDisk < s.ClipCount))
+                    {
+                        <button type="button"
+                                class="btn btn-sm btn-outline-light ms-2"
+                                disabled="@_busy"
+                                title="Select scenes that still need clips"
+                                @onclick="SelectMissingScenes">
+                            Select missing
+                        </button>
+                    }
 
                     <div class="d-flex align-items-center gap-1 ms-2">
                         <label class="small text-muted mb-0" for="genResBatch">Resolution</label>
@@ -450,10 +451,6 @@ else
                 — @(_detail.Setting is { Length: > 0 } st ? st : "—")
             </span>
             <div class="d-flex gap-2 align-items-center flex-wrap">
-                <div class="form-check mb-0">
-                    <input class="form-check-input" type="checkbox" id="onlyMissingDetail" @bind="_onlyMissing" disabled="@_busy" />
-                    <label class="form-check-label" for="onlyMissingDetail">Only missing</label>
-                </div>
                 <div class="d-flex align-items-center gap-1">
                     <label class="small text-muted mb-0" for="genResDetail">Res</label>
                     <select id="genResDetail"
@@ -477,12 +474,6 @@ else
                         title="Play scene (auto-remux if missing or clips newer)"
                         @onclick="() => PlaySceneCompositeAsync(_detail.SceneNumber)">
                     ▶ Play scene
-                </button>
-                <button class="btn btn-sm btn-outline-primary"
-                        disabled="@(_busy || JobRunning || _detail.ClipsOnDisk == 0)"
-                        title="FFmpeg: concat this scene’s clips → composite (does not rebuild WIP)"
-                        @onclick="() => RebuildSceneAsync(_detail.SceneNumber)">
-                    Rebuild scene
                 </button>
                 <button class="btn btn-sm btn-primary"
                         disabled="@(_busy || JobRunning || !CastReady || DetailLockedByOther)"
@@ -585,26 +576,43 @@ else
                 </p>
             }
 
-            @if (_selectedClips.Count > 0)
+            @{
+                var hasMissingClips = _detail.Clips.Any(c => !c.OnDisk);
+            }
+            @if (hasMissingClips || _selectedClips.Count > 0)
             {
-                <div class="d-flex align-items-center gap-2 mb-2 p-2 border rounded bg-light" data-testid="clip-batch-bar">
-                    <span class="small">
-                        <strong>@_selectedClips.Count</strong> clip@(_selectedClips.Count == 1 ? "" : "s") selected
-                        @if (EstimateSelectedClipsCostUsd() is { } scc)
-                        {
-                            <span class="text-muted">· ~$@(scc.ToString("0.00"))</span>
-                        }
-                    </span>
-                    <button type="button" class="btn btn-sm btn-warning"
-                            data-testid="clip-batch-regen"
-                            disabled="@(_busy || JobRunning || !CastReady)"
-                            title="@(!CastReady ? CastBlockedTitle : "Force re-generate every selected clip")"
-                            @onclick="RegenSelectedClipsAsync">
-                        Regen @_selectedClips.Count selected
-                    </button>
-                    <button type="button" class="btn btn-sm btn-outline-secondary" disabled="@_busy" @onclick="ClearClipSelection">
-                        Clear
-                    </button>
+                <div class="d-flex align-items-center flex-wrap gap-2 mb-2" data-testid="clip-select-bar">
+                    @if (hasMissingClips)
+                    {
+                        <button type="button"
+                                class="btn btn-sm btn-outline-secondary"
+                                data-testid="clip-select-missing"
+                                disabled="@_busy"
+                                title="Check clips not yet on disk"
+                                @onclick="SelectMissingClips">
+                            Select missing
+                        </button>
+                    }
+                    @if (_selectedClips.Count > 0)
+                    {
+                        <span class="small">
+                            <strong>@_selectedClips.Count</strong> selected
+                            @if (EstimateSelectedClipsCostUsd() is { } scc)
+                            {
+                                <span class="text-muted">· ~$@(scc.ToString("0.00"))</span>
+                            }
+                        </span>
+                        <button type="button" class="btn btn-sm btn-warning"
+                                data-testid="clip-batch-regen"
+                                disabled="@(_busy || JobRunning || !CastReady)"
+                                title="@(!CastReady ? CastBlockedTitle : "Force re-generate every selected clip")"
+                                @onclick="RegenSelectedClipsAsync">
+                            Regen selected
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary" disabled="@_busy" @onclick="ClearClipSelection">
+                            Clear
+                        </button>
+                    }
                 </div>
             }
 
@@ -620,14 +628,17 @@ else
                                        disabled="@(_busy || _detail is not { Clips.Count: > 0 })"
                                        @onchange="e => ToggleSelectAllClips((bool)(e.Value ?? false))" />
                             </th>
-                            <th style="width:6rem;">Clip</th>
-                            <th style="width:5rem;">Dur</th>
+                            <th style="width:7rem;">Clip</th>
+                            <th style="width:6rem; cursor:pointer; user-select:none;"
+                                @onclick="ToggleClipDurationSort"
+                                title="Click to sort by duration">
+                                Dur @(_clipSortByDuration ? (_clipSortAscending ? "▲" : "▼") : "⇅")
+                            </th>
                             <th>Dialogue</th>
-                            <th style="width:9rem;"></th>
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach (var c in _detail.Clips)
+                        @foreach (var c in SortedDetailClips)
                         {
                             var active = _selectedClip == c.ClipNumber;
                             var cn = c.ClipNumber;
@@ -641,24 +652,38 @@ else
                                            disabled="@_busy"
                                            @onchange="e => ToggleClipSelect(cn, (bool)(e.Value ?? false))" />
                                 </td>
-                                <td @onclick:stopPropagation="true">
+                                <td class="text-nowrap" @onclick:stopPropagation="true">
                                     @{
                                         var clipBusy = IsClipGenBusy(cn);
                                     }
                                     @if (clipBusy)
                                     {
-                                        <span class="badge bg-warning text-dark" title="Regenerating — file is about to change">C@(cn.ToString("D2"))</span>
+                                        <span class="badge bg-warning text-dark px-2 py-1 rounded-pill" style="font-weight:600;"
+                                              title="Generating — file is about to change">C@(cn.ToString("D2"))</span>
                                     }
                                     else if (c.OnDisk)
                                     {
-                                        <button class="btn btn-sm btn-success" title="Play clip" @onclick="() => SelectClip(cn)">
-                                            ▶ C@(cn.ToString("D2"))
+                                        <button type="button"
+                                                class="badge bg-success text-white border-0 px-2 py-1 rounded-pill"
+                                                style="font-weight:600;cursor:pointer;"
+                                                title="On disk — click to play"
+                                                @onclick="() => SelectClip(cn)">
+                                            C@(cn.ToString("D2"))
                                         </button>
                                     }
                                     else
                                     {
-                                        <span class="badge bg-secondary" title="Not generated yet">C@(cn.ToString("D2"))</span>
+                                        <span class="badge bg-warning text-dark px-2 py-1 rounded-pill" style="font-weight:600;"
+                                              title="Not on disk yet">C@(cn.ToString("D2"))</span>
                                     }
+                                    <button type="button"
+                                            class="btn btn-sm btn-link text-danger p-0 ms-2 text-decoration-none"
+                                            data-testid="@($"clip-delete-{cn}")"
+                                            disabled="@(_busy || JobRunning)"
+                                            title="Delete this clip (video + shot plan entry)"
+                                            @onclick="() => RequestDeleteClip(_detail.SceneNumber, cn)">
+                                        🗑️
+                                    </button>
                                 </td>
                                 <td class="small">
                                     @if (c.ActualDurationSeconds is double ca)
@@ -691,30 +716,6 @@ else
                                     {
                                         <span class="text-decoration-underline" style="text-decoration-style:dotted;">@Trunc(c.Dialogue, 90)</span>
                                     }
-                                </td>
-                                <td @onclick:stopPropagation="true">
-                                    @{
-                                        var needPrev = PreviousClipMissing(cn);
-                                    }
-                                    <div class="btn-group btn-group-sm">
-                                        <button class="btn btn-outline-warning"
-                                                disabled="@(_busy || JobRunning || !CastReady || needPrev)"
-                                                title="@(!CastReady
-                                                    ? CastBlockedTitle
-                                                    : needPrev
-                                                    ? $"Generate C{(cn - 1):D2} first — clips continue from the previous video"
-                                                    : "Force re-generate this clip")"
-                                                @onclick="() => RegenClipAsync(_detail.SceneNumber, cn)">
-                                            Regen
-                                        </button>
-                                        <button class="btn btn-outline-danger"
-                                                data-testid="@($"clip-delete-{cn}")"
-                                                disabled="@(_busy || JobRunning)"
-                                                title="Delete this clip (video + shot plan entry)"
-                                                @onclick="() => RequestDeleteClip(_detail.SceneNumber, cn)">
-                                            Delete
-                                        </button>
-                                    </div>
                                 </td>
                             </tr>
                         }
@@ -857,7 +858,7 @@ else
                 </div>
             </div>
             <div class="card-footer small text-muted">
-                After <strong>Regen</strong>, use <strong>Rebuild scene</strong> so the composite includes the new clip.
+                After regen, <strong>Play scene</strong> remuxes the composite automatically.
                 Pass/fail: <a href="review">Review</a>. Full movie: rebuild WIP on Review.
             </div>
         </div>
@@ -914,12 +915,20 @@ else
                         </div>
                         <div class="col-4">
                             <label class="form-label small mb-0">Duration (s)</label>
-                            <input type="number" class="form-control form-control-sm" min="0"
+                            <input type="number" class="form-control form-control-sm"
+                                   min="0" max="12"
                                    @bind="ed.DurationSeconds" />
+                            <div class="form-text small">0 = unset · 3–12s if set</div>
                         </div>
                         <div class="col-4">
                             <label class="form-label small mb-0">Primary subject</label>
-                            <input class="form-control form-control-sm" @bind="ed.PrimarySubject" />
+                            <select class="form-select form-select-sm" @bind="ed.PrimarySubject">
+                                <option value="">— none —</option>
+                                @foreach (var ck in CharacterOptions)
+                                {
+                                    <option value="@ck">@ShortChar(ck)</option>
+                                }
+                            </select>
                         </div>
                     </div>
 
@@ -942,8 +951,10 @@ else
                     </div>
 
                     <h6 class="mb-1">Visual</h6>
-                    <label class="form-label small mb-0">Prompt</label>
-                    <textarea class="form-control form-control-sm mb-2" rows="5" @bind="ed.VisualPrompt"></textarea>
+                    <label class="form-label small mb-0">Prompt <span class="text-danger">*</span></label>
+                    <textarea class="form-control form-control-sm mb-2" rows="5" required
+                              placeholder="Required — action / framing for this take"
+                              @bind="ed.VisualPrompt"></textarea>
 
                     <label class="form-label small mb-0">Negative prompt (clip extras)</label>
                     <textarea class="form-control form-control-sm mb-1" rows="2" @bind="ed.NegativePrompt"
@@ -978,10 +989,13 @@ else
                             </datalist>
                         </div>
                     </div>
-                    <textarea class="form-control form-control-sm mb-3" rows="3"
+                    <textarea class="form-control form-control-sm mb-1" rows="3"
                               data-testid="clip-editor-dialogue"
-                              placeholder="Dialogue / voiceover text…"
+                              placeholder="Dialogue / voiceover text (requires speaker + delivery)…"
                               @bind="ed.Dialogue"></textarea>
+                    <div class="form-text small mb-3">
+                        Silent clips: leave speaker none and dialogue empty. Spoken/VO lines need both a speaker and a delivery other than none.
+                    </div>
 
                     <h6 class="mb-1">Lighting &amp; color</h6>
                     <div class="row g-2">
@@ -1029,7 +1043,7 @@ else
     private string _pickCharacter = "";
     private string _pickLocation = "";
     private bool _showFilters;
-    private bool _onlyMissing = true;
+
     /// <summary>Video gen resolution (defaults from Configuration).</summary>
     private string _genResolution = "720p";
     /// <summary>Resolution already used by this project's on-disk clips, if consistent — null when unset.</summary>
@@ -1037,6 +1051,9 @@ else
     private bool ResolutionLocked => !string.IsNullOrWhiteSpace(_resolutionLock) || (_scenes is not null && _scenes.Sum(s => s.ClipsOnDisk) > 0);
     private string _sortBy = "number"; // "number" or "duration"
     private bool _sortAscending = true;
+    /// <summary>Clip table: when true, sort by duration; else keep plan order (clip number).</summary>
+    private bool _clipSortByDuration;
+    private bool _clipSortAscending = true;
 
     private void ToggleSort(string column)
     {
@@ -1048,6 +1065,17 @@ else
         {
             _sortBy = column;
             _sortAscending = true;
+        }
+    }
+
+    private void ToggleClipDurationSort()
+    {
+        if (_clipSortByDuration)
+            _clipSortAscending = !_clipSortAscending;
+        else
+        {
+            _clipSortByDuration = true;
+            _clipSortAscending = true;
         }
     }
 
@@ -1065,6 +1093,23 @@ else
                     ? scenes.OrderBy(s => s.SceneNumber)
                     : scenes.OrderByDescending(s => s.SceneNumber)
             };
+        }
+    }
+
+    /// <summary>Clips in open scene, optionally sorted by actual/plan duration.</summary>
+    private IEnumerable<ClipSummary> SortedDetailClips
+    {
+        get
+        {
+            if (_detail?.Clips is null)
+                return Array.Empty<ClipSummary>();
+            if (!_clipSortByDuration)
+                return _detail.Clips.OrderBy(c => c.ClipNumber);
+            static double Dur(ClipSummary c) =>
+                c.ActualDurationSeconds ?? (c.DurationSeconds > 0 ? c.DurationSeconds : 0);
+            return _clipSortAscending
+                ? _detail.Clips.OrderBy(Dur).ThenBy(c => c.ClipNumber)
+                : _detail.Clips.OrderByDescending(Dur).ThenBy(c => c.ClipNumber);
         }
     }
     /// <summary>Cost estimate at the current resolution, refreshed on load and resolution change.</summary>
@@ -1418,6 +1463,25 @@ else
         }
     }
 
+    /// <summary>Select scenes that still need clips (not fully on disk).</summary>
+    private void SelectMissingScenes()
+    {
+        if (_scenes is null) return;
+        _selected.Clear();
+        foreach (var s in VisibleScenes.Where(s => !s.ClipsComplete || s.ClipsOnDisk < s.ClipCount))
+            _selected.Add(s.SceneNumber);
+        _selectionMode = _selected.Count > 0 ? "missing" : "";
+    }
+
+    /// <summary>Select clips in the open scene that are not on disk yet.</summary>
+    private void SelectMissingClips()
+    {
+        if (_detail is null) return;
+        _selectedClips.Clear();
+        foreach (var c in _detail.Clips.Where(c => !c.OnDisk))
+            _selectedClips.Add(c.ClipNumber);
+    }
+
     private Task DeleteSceneAsync(int sn)
     {
         if (_scenes is not null)
@@ -1531,16 +1595,11 @@ else
 
                     if (_playSceneAfterRemux is int playSn)
                     {
-                        // Explicit Play scene (auto-remux) — open player once.
+                        // Play scene (auto-remux) — open player once remux finishes.
                         _playSceneAfterRemux = null;
                         _playingScene = playSn;
                         _showScenePlayer = true;
                         _message = $"Scene S{playSn:D2} ready — playing";
-                    }
-                    else if (snap.Scene is int sn && sn > 0)
-                    {
-                        // Rebuild scene: progress only — do not auto-open a second player.
-                        _message = $"Scene S{sn:D2} composite rebuilt";
                     }
                 }
                 else if (snap.Status == "done" &&
@@ -1557,7 +1616,7 @@ else
                          snap.Scene is int gsn)
                 {
                     _clipVideoKey = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-                    _message = $"Clip S{gsn:D2}C{cn:D2} finished — rebuild scene composite if you want it in the cut";
+                    _message = $"Clip S{gsn:D2}C{cn:D2} finished — Play scene when you want the updated composite";
                     if (_selectedClip == cn)
                         SelectClip(cn);
                 }
@@ -1724,15 +1783,14 @@ else
         if (_costReport is null) return 0;
         var sum = 0.0;
         foreach (var row in _costReport.Scenes.Where(r => _selected.Contains(r.Scene)))
-            sum += _onlyMissing ? row.RemainingDraftUsd : row.AllDraftUsd;
+            sum += row.RemainingDraftUsd;
         return sum;
     }
 
     private double? EstimateSceneCostUsd(int sceneNumber)
     {
         var row = _costReport?.Scenes.FirstOrDefault(r => r.Scene == sceneNumber);
-        if (row is null) return null;
-        return _onlyMissing ? row.RemainingDraftUsd : row.AllDraftUsd;
+        return row?.RemainingDraftUsd;
     }
 
     /// <summary>
@@ -2007,33 +2065,6 @@ else
         finally { _busy = false; }
     }
 
-    /// <summary>FFmpeg concat clips → scene composite only (not WIP). Progress only — no auto-play.</summary>
-    private async Task RebuildSceneAsync(int sn)
-    {
-        _busy = true;
-        _error = null;
-        _message = null;
-        _progressFloor = 0;
-        _progressFloorJobId = null;
-        // Hide any open scene player so rebuild shows progress, not dual/stale playback.
-        _playSceneAfterRemux = null;
-        if (_playingScene == sn || _showScenePlayer)
-        {
-            _showScenePlayer = false;
-            _playingScene = null;
-        }
-        try
-        {
-            await EnsureHubAsync();
-            await Engine.StartRemuxAsync(_projectId, sn, rebuildWip: false);
-            // Live progress card only — no duplicate banner under the bar.
-            var jobs = await Engine.GetJobAsync();
-            _job = jobs?.Job;
-        }
-        catch (Exception ex) { _error = ex.Message; }
-        finally { _busy = false; }
-    }
-
     /// <summary>Force re-generate a single clip (onlyMissing: false).</summary>
     private async Task RegenClipAsync(int sn, int cn)
     {
@@ -2108,6 +2139,48 @@ else
     private async Task SaveClipEditorAsync()
     {
         if (_clipEditor is null || _detail is null) return;
+
+        // Mirror server rules for fast feedback (server still authoritative).
+        if (string.IsNullOrWhiteSpace(_clipEditor.VisualPrompt))
+        {
+            _error = "Visual prompt is required.";
+            return;
+        }
+        if (_clipEditor.DurationSeconds < 0 || _clipEditor.DurationSeconds > 12)
+        {
+            _error = "Duration must be 0 (unset) or 3–12 seconds.";
+            return;
+        }
+        if (_clipEditor.DurationSeconds is > 0 and < 3)
+        {
+            _error = "Duration must be at least 3s (or 0 to leave unset).";
+            return;
+        }
+        var dlg = (_clipEditor.Dialogue ?? "").Trim();
+        var spk = (_clipEditor.Speaker ?? "").Trim();
+        var del = (_clipEditor.Delivery ?? "").Trim();
+        var delNone = del.Length == 0 || string.Equals(del, "none", StringComparison.OrdinalIgnoreCase);
+        if (dlg.Length > 0 && spk.Length == 0)
+        {
+            _error = "Dialogue needs a speaker. Pick who says the line, or clear the dialogue.";
+            return;
+        }
+        if (dlg.Length > 0 && delNone)
+        {
+            _error = "Dialogue needs a delivery (spoken_on_camera, voiceover_internal, or off_camera).";
+            return;
+        }
+        if (spk.Length > 0 && dlg.Length == 0)
+        {
+            _error = "Speaker is set but dialogue is empty. Add the line, or set speaker to none.";
+            return;
+        }
+        if (_clipEditorIsNew && (_clipEditor.Clip < 1 || _clipEditor.Clip > 200))
+        {
+            _error = "Clip number must be between 1 and 200.";
+            return;
+        }
+
         _busy = true;
         _error = null;
         try
@@ -2197,15 +2270,10 @@ else
     private int EstimateSelectedClips()
     {
         if (_scenes is null) return 0;
-        var sum = 0;
-        foreach (var s in _scenes.Where(x => _selected.Contains(x.SceneNumber)))
-        {
-            if (_onlyMissing)
-                sum += Math.Max(0, s.ClipCount - s.ClipsOnDisk);
-            else
-                sum += s.ClipCount;
-        }
-        return sum;
+        // Generate always fills missing only — estimate remaining work on selected scenes.
+        return _scenes
+            .Where(x => _selected.Contains(x.SceneNumber))
+            .Sum(s => Math.Max(0, s.ClipCount - s.ClipsOnDisk));
     }
 
     private async Task GenOneSceneAsync(int sn)
@@ -2228,7 +2296,7 @@ else
         _pendingRegenScene = sn;
         try
         {
-            await Engine.StartSceneGenAsync(_projectId, sn, _onlyMissing, resolution: _genResolution);
+            await Engine.StartSceneGenAsync(_projectId, sn, onlyMissing: true, resolution: _genResolution);
             // Live progress card only — no duplicate "started" banner.
             await EnsureHubAsync();
             var jobs = await Engine.GetJobAsync();
@@ -2259,7 +2327,7 @@ else
         try
         {
             var list = _selected.OrderBy(x => x).ToList();
-            await Engine.StartBatchGenAsync(_projectId, list, _onlyMissing, resolution: _genResolution);
+            await Engine.StartBatchGenAsync(_projectId, list, onlyMissing: true, resolution: _genResolution);
             // Live progress card only — no duplicate "started" banner.
             await EnsureHubAsync();
             var jobs = await Engine.GetJobAsync();
