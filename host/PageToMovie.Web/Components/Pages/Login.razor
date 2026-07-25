@@ -35,18 +35,6 @@
             </p>
         </div>
 
-        @if (!_forgotMode && !_resetTokenMode)
-        {
-            <div class="auth-tabs">
-                <button type="button" class="tab-btn @(!_isSignup ? "active" : "")" @onclick="() => SetMode(false)">
-                    Sign In
-                </button>
-                <button type="button" class="tab-btn @(_isSignup ? "active" : "")" @onclick="() => SetMode(true)">
-                    Create Account
-                </button>
-            </div>
-        }
-
         @if (_busy && string.IsNullOrEmpty(_error) && string.IsNullOrEmpty(_info))
         {
             <div class="auth-status text-center py-4">
@@ -367,32 +355,6 @@
         color: #9ca3af;
         font-size: 0.9rem;
         margin: 0;
-    }
-
-    .auth-tabs {
-        display: flex;
-        background: rgba(0, 0, 0, 0.25);
-        border-radius: 0.5rem;
-        padding: 0.25rem;
-        margin-bottom: 1.5rem;
-    }
-
-    .tab-btn {
-        flex: 1;
-        background: transparent;
-        border: none;
-        color: #9ca3af;
-        padding: 0.5rem 1rem;
-        font-size: 0.9rem;
-        font-weight: 500;
-        border-radius: 0.375rem;
-        transition: all 0.2s ease;
-    }
-
-    .tab-btn.active {
-        background: rgba(99, 102, 241, 0.2);
-        color: #ffffff;
-        border: 1px solid rgba(99, 102, 241, 0.4);
     }
 
     .form-label {
