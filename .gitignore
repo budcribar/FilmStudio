@@ -263,6 +263,22 @@ host/**/.vs/
 /projects/Buster/assets/video/_review_1fps
 /projects/Buster/assets/video/_review_5fps
 
+# ── Project video assets — live on Railway /data volume, NOT in git ──────────
+# Individual clip and scene MP4s are large generated outputs. Only the seed
+# WIP movie (projects/TellTaleHeart/assets/movie_wip.mp4) needs Docker image
+# access for the startup demo seeder; all others should stay local/on-volume.
+projects/*/assets/video/*.mp4
+projects/*/assets/video/**/*.mp4
+projects/*/assets/video/*.mp4.duration.json
+projects/*/assets/video/**/*.mp4.duration.json
+projects/*/assets/video/*.mp4.sources.json
+projects/*/assets/movie_wip.mp4.sources.json
+# Backup blueprint files (large, regenerable)
+projects/*/blueprint.clips.grok.json.bak_*
+# Telemetry logs (per-run, not for version control)
+projects/*/telemetry/api_calls.jsonl
+projects/*/telemetry/ffmpeg.jsonl
+
 # LoadSim local results (not the projects/LoadSimBuster sandbox)
 loadsim*.json
 host/loadsim*.json
