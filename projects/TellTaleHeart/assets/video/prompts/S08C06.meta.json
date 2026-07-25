@@ -1,0 +1,23 @@
+{
+  "projectId": "TellTaleHeartV7",
+  "scene": 8,
+  "clip": 6,
+  "mode": "video-extend",
+  "castCount": 1,
+  "onScreenKeys": [
+    "Character_The_Narrator"
+  ],
+  "characterKeys": [
+    "Character_The_Narrator"
+  ],
+  "refs": [],
+  "refsAttachedToApi": false,
+  "styleHead": "STYLE LOCK: Period gothic live-action, mid-19th-century interiors; candlelight and deep shadows; desaturated cool-gray palette; naturalistic skin and fabric texture; no illustration or stylized animation",
+  "castCountLine": "CAST COUNT: exactly 1 distinct on-screen character identity(ies) only \u2014 Character_The_Narrator. Do not invent extra people, duplicate faces, or crowd extras not listed.",
+  "actionText": "INT. HALL OUTSIDE BEDCHAMBER - NIGHT. THE NARRATOR at the door again. He pushes it by degrees. A soft chuckle escapes him. From within: a sudden shift of bedclothes. OFF-CAMERA VOICEOVER Character_The_Narrator says \u0022the opening of the door, and I kept pushing it on steadily, steadily.\u0022. Character_The_Narrator still wears loose white cotton nightshirt, barefoot Camera directive: Close-up on Narrator\u0027s determined hands and face, 85mm lens, relentless slow push as he eases the door steadily open. Performance: Acting intensity 7/10: Feverish intense wide-eyed focus with tight unnatural smile and jaw twitch Optics: f/1.4 shallow depth of field, creamy void bokeh beyond door Color grading: Kodak Vision3 500T 5219, deep charcoal shadows, cool blue hallway tones, warm amber door spill",
+  "prompt": "STYLE LOCK: Period gothic live-action, mid-19th-century interiors; candlelight and deep shadows; desaturated cool-gray palette; naturalistic skin and fabric texture; no illustration or stylized animation\r\n\r\nCHARACTER VARIABLES (use these identities consistently; do not redesign faces or wardrobe):\r\n- Character_The_Narrator [The Narrator]: Lean man of middle years (about 40\u201350), pale sallow skin, hollow cheeks, dark disordered medium-length hair, bright intense dark eyes, thin tense mouth; plain dark wool waistcoat over white shirtsleeves, dark trousers; period clothing. Visual lock: Same lean pale face, dark disordered hair, and bright intense dark eyes in every scene; always plain dark waistcoat and shirtsleeves as default; never elderly, never white-haired, never the filmed blue eye. Voice: Male, middle years; medium-high tense pitch; precise, controlled pace that sharpens into fevered urgency; intimate confessional energy, same voice on-camera and in V.O.\r\n\r\nCAST COUNT: exactly 1 distinct on-screen character identity(ies) only \u2014 Character_The_Narrator. Do not invent extra people, duplicate faces, or crowd extras not listed.\r\n\r\nAUDIO: REQUIRED native Grok off-camera voiceover. Character_The_Narrator narrates exactly: \u0022the opening of the door, and I kept pushing it on steadily, steadily.\u0022. Start speaking immediately with \u0022the\u0022 \u2014 do not skip, delay, or swallow the opening word. After the last word, hold a brief natural pause with a closed mouth (about half a second); do not freeze mid-syllable or trail into empty staring. Do not lip-sync on-screen cast to this VO. Ambient/Foley: bedclothes shift, soft chuckle. VOICE LOCK Character_The_Narrator: Male, middle years; medium-high tense pitch; precise, controlled pace that sharpens into fevered urgency; intimate confessional energy, same voice on-camera and in V.O.\r\n\r\nPREVIOUS CLIP (already provided as video input \u2014 continue from its last frame):\nINT. HALL OUTSIDE BEDCHAMBER - NIGHT. THE NARRATOR at the door again. He pushes it by degrees. A soft chuckle escapes him. From within: a sudden shift of bedclothes. OFF-CAMERA VOICEOVER Character_The_Narrator says \u0022close fastened, through fear of robbers, and so I knew that he could not see\u0022. Character_The_Narrator still wears loose white cotton nightshirt, barefoot Camera directive: Medium shot over Narrator\u0027s shoulder into blackness, 35mm lens, gradual push-in underscoring shutters sealed against robbers. Performance: Acting intensity 6/10: Gleaming confidant eyes with slow predatory smile and controlled breath Optics: f/2.8 moderate depth of field, controlled shadows Color grading: Kodak Vision3 500T 5219, deep charcoal shadows, cool blue hallway tones, warm amber door spill\n[prompt shortened after API length limit \u2014 retry]",
+  "promptLen": 2764,
+  "promptLogSummary": "mode=video-extend chars=1 onScreen=1 refs=0 startFrame=no promptLen=2764 prevVideo=_prev_extend_s08c06.mp4 \u00B7 learning-addenda \u00B7 pre-budget 5396\u21922764",
+  "startFrame": null,
+  "builtAtUtc": "2026-07-23T19:27:17.8546416\u002B00:00"
+}

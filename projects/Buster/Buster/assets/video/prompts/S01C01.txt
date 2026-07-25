@@ -1,0 +1,37 @@
+# S01C01  mode=fresh chars=1 onScreen=0 refs=0 startFrame=no promptLen=3119 · project-rules
+# projectId: Buster
+# mode: fresh
+# castCount: 0
+# onScreen: 
+# refs: 
+# refsAttachedToApi: False
+# startFrame: (none)
+# characters: Character_Narrator
+
+STYLE LOCK: Warm cinematic live-action children’s picture-book adaptation; soft practical lamp light and dusk exteriors; gentle shallow depth of field; consistent photoreal fur and fabric detail across all cast; no cartoon stretch or stylized proportions
+
+CHARACTER VARIABLES (use these identities consistently; do not redesign faces or wardrobe):
+- Character_Narrator [Narrator] VOICE ONLY — not on screen. Voice: Warm adult storyteller, medium pitch, clear rhyming cadence, playful affection without baby-talk; steady gentle energy and identical timbre every cue.
+
+AUDIO: REQUIRED native Grok off-camera voiceover. Character_Narrator narrates exactly: "He's Buster the Noodle Head Dog. He jumps around like a frog.". Start speaking immediately with "He's" — do not skip, delay, or swallow the opening word. After the last word, hold a brief natural pause with a closed mouth (about half a second); do not freeze mid-syllable or trail into empty staring. Do not lip-sync on-screen cast to this VO. Secondary layer = soft room tone / Foley. VOICE LOCK Character_Narrator: Warm adult storyteller, medium pitch, clear rhyming cadence, playful affection without baby-talk; steady gentle energy and identical timbre every cue.
+
+Follow the camera framing and location in this prompt exactly. Prioritize the PRIMARY subject and ONE clear action with visible motion; background characters may stay mostly still.
+
+THIS CLIP:
+End cleanly when the spoken line and primary action finish — do not hold a frozen pose or empty silence after dialogue.
+EXT. SUBURBAN BACKYARD - DAY. Narrator A small black-and-white dog BOUNDS across the grass, leaping like a frog. This is BUSTER. He skids, tumbles, pops up again, tail a blur. OFF-CAMERA VOICEOVER Character_Narrator says "He's Buster the Noodle Head Dog. He jumps around like a frog." Camera directive: Medium shot, 35mm lens, slow push-in as Narrator speaks / 480p, 24fps
+
+NEGATIVE: no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens, no name tags, no name badges, no embroidered names, no lower thirds, no personal names on clothing or props.
+
+HOUSE RULES:
+- Dialogue: audible speech + visible lip motion for the speaker; never silent mouths on dialogue.
+- Silent/ambient: no open-mouth shout, lip-sync, or speech-performance; restrained tension (tight jaw, fist, held stare) is OK.
+- Continuity: when extending from the previous clip, match wardrobe, place, and facing from the last frames.
+- Honor VOICE LOCK, character visual locks, and any CAST COUNT line exactly — no extra faces, crowds, or role swaps.
+- Performance: facial expression and gaze match the beat and project PERFORMANCE rules (confessional address vs objective). On dialogue, mouth and energy match the line; do not invent rage on a calm line. Keep eyes readable unless sleep/death/covered is planned. No beauty-blank or wrong-emotion default face.
+- Style: match locked character refs and project medium (picture-book CG, photoreal, etc.). Do not drift medium mid-film or merge Character_* faces.
+- Prefer tight action after speech; avoid long empty holds.
+
+PROJECT HOUSE RULES (approved):
+- [style] STYLE LOCK: Warm cinematic live-action children’s picture-book adaptation; soft practical lamp light and dusk exteriors; gentle shallow depth of field; consistent photoreal fur and fabric detail across all cast; no cartoon stretch or stylized proportions.
+- [performance] PERFORMANCE LOCK: Objective picture-book staging with rhyming off-screen narrator; on-screen characters look at each other and at scene action (leash, treat, bed, stairs), not the viewer; Buster plays physical comedy to Mom’s cues; Mom addresses Buster directly in gentle firm caregiver mode; Daddy is quiet present background in bed.
