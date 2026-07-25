@@ -321,6 +321,24 @@
     box-shadow: inset 3px 0 0 #6366f1;
 }
 
+/* Dialogue “link” in clip table — keep readable on warning/primary selection */
+::deep .clip-dialogue-link {
+    color: var(--fs-link);
+    text-decoration: underline;
+    text-decoration-style: dotted;
+    text-underline-offset: 2px;
+}
+
+::deep .clip-dialogue-link--empty {
+    color: var(--fs-text-muted);
+}
+
+::deep tr.table-warning .clip-dialogue-link,
+::deep tr.table-primary .clip-dialogue-link {
+    color: var(--fs-link);
+    font-weight: 500;
+}
+
 .batch-row-gen {
     border: 1px solid rgba(99, 102, 241, 0.4);
     color: #a5b4fc;
