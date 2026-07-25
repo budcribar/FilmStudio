@@ -51,7 +51,7 @@ More detail: **`host/README.md`**.
 | `host/` | **Film Studio** — Api, Web, Engine, Tests, LoadSim, Playwright pilot |
 | `projects/<id>/` | Per-film cast, blueprint, config, state, assets, WIP |
 | `projects/workspace.json` | Active project pointer |
-| `prompts/` | Stage 1/2, fountain/cast, gen pack, auto-review, shared rules |
+| `prompts/` | Stage 1/2, fountain/cast, clip gen/auto-review rules, shared rules |
 | `_learning/` | Host-level learning checklist (`proposal_checklist.json`) |
 | `docs/` | Learning loop, loadsim, two-stage notes |
 | `host/playwright/` | E2E pilot (Node + Playwright) against real or fakes API |
@@ -169,7 +169,7 @@ dotnet test PageToMovie.Tests --filter "Category=LiveApi"
 |-----|--------|
 | `host/README.md` | API routes, SignalR, LoadSim, capability matrix |
 | `host/docs/` | Multi-user / loadsim soak |
-| `prompts/README.md` | Prompt packs and schemas |
+| `prompts/README.md` | Product prompts and schemas |
 | `docs/learning_loop.md` | Feedback / dirty flags (concept) |
 
 ## Config notes

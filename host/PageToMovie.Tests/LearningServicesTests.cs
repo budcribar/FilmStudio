@@ -13,7 +13,6 @@ public class LearningServicesTests : IDisposable
     private readonly string _root;
     private readonly ProjectStore _projects;
     private readonly ReviewEventStore _events;
-    private readonly PromptPackService _packs;
     private readonly ProjectRulesService _rules;
     private readonly LearningProposalService _propose;
 
@@ -26,7 +25,6 @@ public class LearningServicesTests : IDisposable
         var opts = Options.Create(new PageToMovieOptions { WorkspaceRoot = _root, EnableReadCaches = false });
         _projects = new ProjectStore(opts);
         _events = new ReviewEventStore(_projects, NullLogger<ReviewEventStore>.Instance);
-        _packs = new PromptPackService(_projects, NullLogger<PromptPackService>.Instance);
         _rules = new ProjectRulesService(_projects, _events, NullLogger<ProjectRulesService>.Instance);
         _propose = new LearningProposalService(
             _events,
@@ -45,18 +43,15 @@ public class LearningServicesTests : IDisposable
     }
 
     [Fact]
-    public void P2_prompt_packs_default_and_activate()
+    public void Clip_gen_and_auto_review_prompts_are_embedded()
     {
-        var m = _packs.EnsureDefaults();
-        Assert.Contains(m.Packs, p => p.Id == "gen-v1");
-        Assert.Contains(m.Packs, p => p.Id == "auto_review-v1");
-        Assert.False(string.IsNullOrWhiteSpace(_packs.LoadActivePackText(PromptPackService.KindGen)));
-
-        var created = _packs.CreateVersion("gen", "v2", "- Never invent dialogue.", "test");
-        Assert.Equal("gen-v2", created.Id);
-        _packs.Activate("gen-v2");
-        var text = _packs.LoadActivePackText(PromptPackService.KindGen);
-        Assert.Contains("Never invent dialogue", text);
+        var gen = PromptFiles.TryReadEmbedded("prompts/clip_gen_rules.txt");
+        var ar = PromptFiles.TryReadEmbedded("prompts/clip_auto_review.txt");
+        Assert.False(string.IsNullOrWhiteSpace(gen));
+        Assert.Contains("HOUSE RULES", gen!, StringComparison.OrdinalIgnoreCase);
+        Assert.False(string.IsNullOrWhiteSpace(ar));
+        Assert.Contains("CHECKLIST", ar!, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("IDENTITY", ar!, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]

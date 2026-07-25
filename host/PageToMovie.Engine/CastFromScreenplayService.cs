@@ -157,26 +157,22 @@ public sealed class CastFromScreenplayService
         var normalized = NormalizeCastDoc(parsed, projectId);
         var seedsObj = GetSeedsDict(normalized);
 
-        // Deterministic backfill: book title / prose / action names (e.g. BUSTER) must become
-        // seeds even when the model only emitted speaking cues (Mom + Narrator).
-        var nameHints = CollectCastNameHints(fountain, book);
-        var added = EnsureSeedsForNameHints(seedsObj, nameHints, book, fountain);
-        if (added > 0)
-        {
-            onProgress?.Invoke(
-                $"Added {added} missing cast seed(s) from book/screenplay names " +
-                $"(silent leads, title heroes)…");
-            _log.LogInformation(
-                "Cast extract {Project}: backfilled {Count} seed(s) from name hints",
-                projectId, added);
-            normalized["character_seed_tokens"] = seedsObj;
-        }
-
         if (seedsObj.Count == 0)
             return new ExtractResult { Ok = false, Error = "Model returned no character_seed_tokens." };
 
+        // Looks only: for seeds the model already chose, pull book paragraphs that mention
+        // those names when description/visual_lock is empty or a stub. Never invents cast.
+        if (!string.IsNullOrWhiteSpace(book))
+        {
+            var filled = EnrichStubLooksFromSources(seedsObj, book, fountain);
+            if (filled > 0)
+            {
+                onProgress?.Invoke($"Filled looks for {filled} cast member(s) from book/screenplay text…");
+                normalized["character_seed_tokens"] = seedsObj;
+            }
+        }
+
         // Second AI pass: figurative / idiomatic visual language → literal filmable prose
-        // (no never-ending regex nickname lists)
         var literalSeeds = await _literalize.LiteralizeSeedsAsync(
             seedsObj, model, onProgress, ct).ConfigureAwait(false);
         normalized["character_seed_tokens"] = literalSeeds;
@@ -257,24 +253,20 @@ public sealed class CastFromScreenplayService
 
     private static string BuildUserPrompt(string fountain, string? book)
     {
-        var nameHints = CollectCastNameHints(fountain, book);
         var sb = new StringBuilder();
-        sb.AppendLine("Extract the closed cast for production pinning.");
-        sb.AppendLine("Include silent on-screen characters named only in action (e.g. BUSTER the dog).");
-        sb.AppendLine("BOOK mentions count: any named person or animal who appears in the story or title");
-        sb.AppendLine("(e.g. Buster, Momma, Daddy) MUST get a Character_* seed — dialogue is NOT required.");
+        sb.AppendLine("You are the closed-cast authority. Read the FOUNTAIN and BOOK below and decide the cast.");
+        sb.AppendLine("Do NOT invent people from scene headings, places, times of day, or action verbs");
+        sb.AppendLine("(Kitchen, Backyard, Day, Night, Climbs, Runs are NOT characters).");
+        sb.AppendLine("Include every person or animal who appears on screen or speaks — including silent leads");
+        sb.AppendLine("named only in action (e.g. BUSTER the dog with no dialogue cue).");
+        sb.AppendLine("BOOK / TITLE: if the book names a being in the title, cover, refrain, or story body");
+        sb.AppendLine("(e.g. Buster, Momma, Daddy), they MUST get a Character_* seed — dialogue is not required.");
+        sb.AppendLine("A speaking Mom + VO Narrator without a titled animal hero is incomplete cast.");
         sb.AppendLine("CRITICAL: Fill description + visual_lock with concrete filmable appearance for every");
         sb.AppendLine("on-screen role (age, build, face, hair, eyes, wardrobe, era). Mine BOOK text when present.");
-        sb.AppendLine("When BOOK is sampled, prefer LOOK EXCERPTS tagged by character name for description/visual_lock.");
         sb.AppendLine("Never use stubs like \"as described in the screenplay\".");
         sb.AppendLine("On-camera POV/confessor narrators = ok_anytime (not voice-only).");
         sb.AppendLine("Return JSON only (schema_version cast_seeds.v1, character_seed_tokens).");
-        if (nameHints.Count > 0)
-        {
-            sb.AppendLine();
-            sb.AppendLine("REQUIRED CAST NAMES (from screenplay + book — every name needs a seed unless pure noise):");
-            sb.AppendLine(string.Join(", ", nameHints.Take(40)));
-        }
         sb.AppendLine();
         sb.AppendLine("--- BEGIN FOUNTAIN ---");
         sb.AppendLine(SelectTextForPrompt(fountain, FountainPromptChars));
@@ -282,32 +274,17 @@ public sealed class CastFromScreenplayService
         if (!string.IsNullOrWhiteSpace(book))
         {
             sb.AppendLine();
-            sb.AppendLine("--- BEGIN BOOK (primary source for looks / likeness AND cast names) ---");
-            sb.AppendLine(SelectBookTextForCastPrompt(book, BookPromptChars, nameHints));
+            sb.AppendLine("--- BEGIN BOOK (cast membership + looks — read fully; no external name list) ---");
+            // No regex name list: full book when under budget, else evenly spaced spine samples.
+            sb.AppendLine(SelectBookTextForCastPrompt(book, BookPromptChars, nameHints: null));
             sb.AppendLine("--- END BOOK ---");
         }
         else
         {
             sb.AppendLine();
-            sb.AppendLine("(No book text attached — infer looks only from Fountain action/description.)");
+            sb.AppendLine("(No book text attached — infer cast + looks only from Fountain.)");
         }
         return sb.ToString();
-    }
-
-    /// <summary>
-    /// Union of Fountain dialogue/action names + book title/prose names (public for tests).
-    /// </summary>
-    public static IReadOnlyList<string> CollectCastNameHints(string? fountain, string? book)
-    {
-        var set = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        foreach (var n in ExtractNameHintsFromFountain(fountain))
-            set.Add(n);
-        foreach (var n in ExtractNameHintsFromBook(book))
-            set.Add(n);
-        return set
-            .OrderBy(n => n, StringComparer.OrdinalIgnoreCase)
-            .Take(64)
-            .ToList();
     }
 
     /// <summary>
@@ -326,9 +303,10 @@ public sealed class CastFromScreenplayService
     }
 
     /// <summary>
-    /// Book text for cast look extraction. Under budget → full book. Over budget →
-    /// (1) paragraphs that mention Fountain cast names (prioritize look/wardrobe language),
-    /// (2) remaining budget as multi-window spine samples across the novel.
+    /// Book text for the cast model. Under budget → full book. Over budget →
+    /// evenly spaced spine samples (no regex “name list” guessing).
+    /// Optional <paramref name="nameHints"/> only used after the model returns cast,
+    /// to prioritize look excerpts for known keys — never to invent cast membership.
     /// </summary>
     public static string SelectBookTextForCastPrompt(
         string bookText,
@@ -345,21 +323,20 @@ public sealed class CastFromScreenplayService
         var used = 0;
         const int markerReserve = 200;
 
-        // 1) Name-targeted look harvest from the full book (late descriptions, wardrobe changes)
+        // Optional: look excerpts for model-chosen names only (post-cast enrichment path).
         if (nameHints.Count > 0)
         {
             var nameBudget = Math.Max(2_000, (int)(maxChars * BookNameExcerptBudgetShare) - markerReserve);
             var excerpts = HarvestNameLookExcerpts(bookText, nameHints, nameBudget);
             if (!string.IsNullOrWhiteSpace(excerpts))
             {
-                sb.AppendLine("[[LOOK EXCERPTS — paragraphs mentioning cast names (full-book scan)]]");
+                sb.AppendLine("[[LOOK EXCERPTS — paragraphs mentioning known cast names]]");
                 sb.AppendLine(excerpts.TrimEnd());
                 sb.AppendLine();
                 used = sb.Length;
             }
         }
 
-        // 2) Spine windows so plot context / unnamed look prose still appears
         var spineBudget = maxChars - used - 160;
         if (spineBudget >= 2_000)
         {
@@ -368,7 +345,9 @@ public sealed class CastFromScreenplayService
             sb.AppendLine();
         }
 
-        sb.AppendLine("[[book sampled for length; name look-excerpts scan full source; remainder on disk]]");
+        sb.AppendLine(nameHints.Count > 0
+            ? "[[book sampled for length; look excerpts for known cast names; remainder on disk]]"
+            : "[[book sampled for length (spine only — cast membership is model-decided); remainder on disk]]");
         var result = sb.ToString();
         if (result.Length > maxChars + 500)
             result = result[..maxChars] + "\n\n[[truncated for length]]\n";
@@ -376,215 +355,57 @@ public sealed class CastFromScreenplayService
     }
 
     /// <summary>
-    /// Character-name tokens from Fountain (dialogue cues + action + title)
-    /// for full-book look harvest. Public for tests.
+    /// Fill empty/stub description + visual_lock using book/fountain paragraphs that
+    /// mention names the <b>model already chose</b>. Returns how many seeds were updated.
+    /// Does not add or remove cast members.
     /// </summary>
-    public static IReadOnlyList<string> ExtractNameHintsFromFountain(string? fountain)
-    {
-        fountain = NormalizeNewlines(fountain ?? "");
-        if (fountain.Length == 0) return Array.Empty<string>();
-
-        var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-
-        try
-        {
-            var parsed = FountainParser.Parse(fountain);
-            foreach (var el in parsed.Elements)
-            {
-                if (el.Type != FountainParser.ElementType.Character) continue;
-                var raw = (el.Text ?? "").Trim();
-                // Strip extensions: JANE (V.O.) / JANE (O.S.)
-                raw = Regex.Replace(raw, @"\s*\([^)]*\)\s*$", "").Trim();
-                raw = raw.TrimStart('@', '^', '*').Trim();
-                if (raw.Length < 2) continue;
-                if (IsNoiseCastToken(raw)) continue;
-                AddNameVariants(names, raw);
-            }
-        }
-        catch
-        {
-            // fall through to regex
-        }
-
-        // Title: BUSTER
-        foreach (Match m in Regex.Matches(fountain, @"(?im)^Title:\s*(.+)$"))
-            AddNameVariants(names, m.Groups[1].Value.Trim().Trim('"', '\''));
-
-        // Silent heroes often only in action: "BUSTER, a small dog," / "MOMMA smiles"
-        foreach (Match m in Regex.Matches(
-                     fountain,
-                     @"(?m)^[ \t]*([A-Z][A-Z0-9][A-Z0-9 \-']{0,40}?)(?=,|\s+(?:the|a|an|is|was|runs|walks|smiles|looks|stands|sits)\b)"))
-        {
-            var tok = m.Groups[1].Value.Trim();
-            if (tok.Length < 2 || IsNoiseCastToken(tok)) continue;
-            if (tok.Split(' ', StringSplitOptions.RemoveEmptyEntries).Length > 4) continue;
-            AddNameVariants(names, tok);
-        }
-
-        // Mid-line introductions: "This is BUSTER." / "BUSTER freezes" / "Meet Jane."
-        foreach (Match m in Regex.Matches(
-                     fountain,
-                     @"(?i)\b(?:this\s+is|meet|named|called)\s+([A-Z][A-Za-z0-9'\-]{1,32})\b"))
-            AddNameVariants(names, m.Groups[1].Value);
-
-        // Standalone ALL-CAPS tokens in action (BUSTER, MOMMA) — not scene headings
-        foreach (Match m in Regex.Matches(fountain, @"\b([A-Z]{2,}[A-Z0-9'\-]{0,20})\b"))
-        {
-            var tok = m.Groups[1].Value;
-            if (tok.Length < 2 || tok.Length > 24) continue;
-            if (IsNoiseCastToken(tok)) continue;
-            if (tok is "DAY" or "NIGHT" or "EVENING" or "MORNING" or "CONTINUOUS" or "LATER"
-                or "FADE" or "CUT" or "DISSOLVE" or "SMASH" or "FREEZE")
-                continue;
-            AddNameVariants(names, tok);
-        }
-
-        return names
-            .OrderBy(n => n, StringComparer.OrdinalIgnoreCase)
-            .Take(48)
-            .ToList();
-    }
-
-    /// <summary>
-    /// Names from book text: title/cover lines, "He's Buster…", frequent proper names.
-    /// Book mention is enough for cast status (silent animal leads). Public for tests.
-    /// </summary>
-    public static IReadOnlyList<string> ExtractNameHintsFromBook(string? book)
-    {
-        book = NormalizeNewlines(book ?? "");
-        if (book.Length == 0) return Array.Empty<string>();
-
-        var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        var head = book.Length > 2_500 ? book[..2_500] : book;
-
-        // Cover / title blocks often ALL CAPS short lines
-        foreach (var line in head.Split('\n'))
-        {
-            var t = line.Trim();
-            if (t.Length is < 2 or > 48) continue;
-            if (t.StartsWith("---", StringComparison.Ordinal)) continue;
-            if (t.Equals("(illustration only)", StringComparison.OrdinalIgnoreCase)) continue;
-            // Single-token ALL CAPS title: BUSTER
-            if (Regex.IsMatch(t, @"^[A-Z][A-Z0-9'\-]{1,24}$") && !IsNoiseCastToken(t))
-                AddNameVariants(names, t);
-            // "BUSTER THE NOODLE HEAD DOG" → first strong token only (not Dog/Noodle/Head)
-            if (Regex.IsMatch(t, @"^[A-Z][A-Z0-9 \-']{2,40}$") &&
-                !t.Contains("ILLUSTRATED", StringComparison.OrdinalIgnoreCase) &&
-                !t.Contains("PAGE", StringComparison.OrdinalIgnoreCase))
-            {
-                var parts = t.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-                var first = parts.FirstOrDefault(p =>
-                    p.Length >= 2 &&
-                    !IsNoiseCastToken(p) &&
-                    !IsBookNoiseProper(p) &&
-                    !p.Equals("THE", StringComparison.OrdinalIgnoreCase));
-                if (first is not null)
-                    AddNameVariants(names, first);
-            }
-        }
-
-        // "He's Buster the Noodle Head Dog" / "This is Buster"
-        foreach (Match m in Regex.Matches(
-                     book,
-                     @"(?i)\b(?:he'?s|she'?s|this\s+is|meet|named|called)\s+([A-Z][A-Za-z0-9'\-]{1,32})\b"))
-            AddNameVariants(names, m.Groups[1].Value);
-
-        // Frequent title-case proper names (Buster, Momma, Daddy) — need ≥2 hits unless early title
-        var freq = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
-        foreach (Match m in Regex.Matches(book, @"\b([A-Z][a-z]{1,24})\b"))
-        {
-            var w = m.Groups[1].Value;
-            if (IsBookNoiseProper(w)) continue;
-            freq[w] = freq.TryGetValue(w, out var c) ? c + 1 : 1;
-        }
-        foreach (var (w, c) in freq)
-        {
-            if (c >= 2 || names.Contains(w))
-                AddNameVariants(names, w);
-        }
-
-        // ALL-CAPS in body: BUSTER on illustration labels
-        foreach (Match m in Regex.Matches(book, @"(?m)^[ \t]*([A-Z]{2,}[A-Z0-9'\-]{0,20})[ \t]*$"))
-        {
-            var tok = m.Groups[1].Value;
-            if (!IsNoiseCastToken(tok) && tok.Length is >= 2 and <= 24)
-                AddNameVariants(names, tok);
-        }
-
-        return names
-            .OrderBy(n => n, StringComparer.OrdinalIgnoreCase)
-            .Take(48)
-            .ToList();
-    }
-
-    /// <summary>
-    /// Inject missing Character_* seeds for name hints not already covered.
-    /// Returns how many seeds were added. Public for tests.
-    /// </summary>
-    public static int EnsureSeedsForNameHints(
+    public static int EnrichStubLooksFromSources(
         Dictionary<string, object?> seeds,
-        IReadOnlyList<string> nameHints,
         string? bookText,
         string? fountainText)
     {
-        if (seeds is null || nameHints is null || nameHints.Count == 0)
-            return 0;
-
-        var added = 0;
-        foreach (var hint in nameHints)
+        if (seeds is null || seeds.Count == 0) return 0;
+        var updated = 0;
+        foreach (var (key, val) in seeds.ToList())
         {
-            if (string.IsNullOrWhiteSpace(hint) || IsNoiseCastToken(hint) || IsBookNoiseProper(hint))
-                continue;
-            if (SeedCoversName(seeds, hint))
-                continue;
+            if (val is not Dictionary<string, object?> seed) continue;
+            var desc = CoerceString(seed, "description") ?? "";
+            var vlock = CoerceString(seed, "visual_lock") ?? "";
+            var needsDesc = string.IsNullOrWhiteSpace(desc) || IsStubLook(desc);
+            var needsLock = string.IsNullOrWhiteSpace(vlock) || IsStubLook(vlock);
+            if (!needsDesc && !needsLock) continue;
 
-            var key = NameToCharacterKey(hint);
-            if (seeds.ContainsKey(key))
-                continue;
+            var display = CoerceString(seed, "canonical_given_name")
+                          ?? key.Replace("Character_", "", StringComparison.OrdinalIgnoreCase)
+                              .Replace('_', ' ');
+            var queryNames = new List<string> { display };
+            var keyCore = key.Replace("Character_", "", StringComparison.OrdinalIgnoreCase)
+                .Replace('_', ' ');
+            if (!string.IsNullOrWhiteSpace(keyCore) &&
+                !string.Equals(keyCore, display, StringComparison.OrdinalIgnoreCase))
+                queryNames.Add(keyCore);
 
-            // Skip pure VO noise already represented as narrator
-            if (IsNarratorLike(hint) && seeds.Keys.Any(k =>
-                    k.Contains("Narrator", StringComparison.OrdinalIgnoreCase)))
-                continue;
-
-            var display = ToTitleToken(hint);
             var look = "";
             if (!string.IsNullOrWhiteSpace(bookText))
             {
-                look = HarvestNameLookExcerpts(bookText, new[] { hint, display }, maxChars: 1_200);
+                look = HarvestNameLookExcerpts(bookText, queryNames, maxChars: 1_200);
                 look = CollapseLookExcerptToSentence(look, display);
             }
             if (string.IsNullOrWhiteSpace(look) && !string.IsNullOrWhiteSpace(fountainText))
             {
-                look = HarvestNameLookExcerpts(fountainText, new[] { hint, display }, maxChars: 800);
+                look = HarvestNameLookExcerpts(fountainText, queryNames, maxChars: 800);
                 look = CollapseLookExcerptToSentence(look, display);
             }
+            if (string.IsNullOrWhiteSpace(look)) continue;
 
-            var onScreen = !IsNarratorLike(hint);
-            var seed = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase)
-            {
-                ["description"] = !string.IsNullOrWhiteSpace(look)
-                    ? look
-                    : onScreen
-                        ? $"{display} — on-screen character named in the book/screenplay (look to refine)."
-                        : $"{display} (voice only; not on screen).",
-                ["canonical_given_name"] = display,
-                ["display_name_policy"] = onScreen ? "ok_anytime" : "never_on_screen",
-                ["voice_label"] = display.Replace(' ', '_'),
-                ["voice_profile"] = "Consistent character voice every scene.",
-                ["reference_image_placeholder"] = ProjectStore.CharacterRefFileName(key),
-                ["source_image_pages"] = new List<object?>(),
-            };
-            if (onScreen && !string.IsNullOrWhiteSpace(look))
+            if (needsDesc)
+                seed["description"] = look;
+            if (needsLock)
                 seed["visual_lock"] = look;
-            else if (onScreen)
-                seed["visual_lock"] = "";
-
             seeds[key] = seed;
-            added++;
+            updated++;
         }
-
-        return added;
+        return updated;
     }
 
     /// <summary>
@@ -793,100 +614,6 @@ public sealed class CastFromScreenplayService
     private static string NormalizeNewlines(string? text) =>
         (text ?? "").Replace("\r\n", "\n").Replace('\r', '\n').Trim();
 
-    private static bool IsNoiseCastToken(string raw)
-    {
-        if (string.IsNullOrWhiteSpace(raw)) return true;
-        if (Regex.IsMatch(raw, @"^(INT|EXT|EST|I/E|FADE|CUT|TITLE|THE END|OMITTED|CONTINUED)\b",
-                RegexOptions.IgnoreCase))
-            return true;
-        // Pure transitions / camera
-        if (raw is "V.O." or "O.S." or "O.C." or "CONT'D" or "CONTINUED") return true;
-        return false;
-    }
-
-    private static readonly HashSet<string> BookNoiseProper = new(StringComparer.OrdinalIgnoreCase)
-    {
-        "He", "She", "They", "We", "It", "His", "Her", "Their", "This", "That", "When", "Yet",
-        "Before", "After", "Going", "Another", "Tomorrow", "Today", "Once", "Then", "And", "But",
-        "For", "The", "A", "An", "Of", "To", "In", "On", "At", "From", "With", "As", "Or",
-        "Page", "Illustrated", "Author", "Credit", "Source", "Contact", "Title", "Draft",
-        "Home", "Sweet", "Pajamas", "Outside", "Inside", "Chapter", "Epilogue", "Debra",
-        "William", "Goes", "Bed", "Still", "Knows", "Will", "Have", "Dream", "How",
-        // Species / title fragments — not cast ids by themselves
-        "Dog", "Cat", "Frog", "Frogs", "Bunny", "Bunnies", "Noodle", "Head", "Heads",
-        "Bright", "Small", "Black", "White", "Fur", "Snow", "Yard", "Stairs",
-    };
-
-    private static bool IsBookNoiseProper(string word)
-    {
-        if (string.IsNullOrWhiteSpace(word) || word.Length < 2) return true;
-        return BookNoiseProper.Contains(word);
-    }
-
-    private static bool IsNarratorLike(string name) =>
-        Regex.IsMatch(name ?? "", @"^(narrator|voiceover|voice[\s_\-]?over|announcer)$",
-            RegexOptions.IgnoreCase);
-
-    private static void AddNameVariants(HashSet<string> names, string? raw)
-    {
-        if (string.IsNullOrWhiteSpace(raw)) return;
-        raw = raw.Trim().Trim('"', '\'', '.', ',', ';', '!', '?');
-        if (raw.Length < 2 || IsNoiseCastToken(raw)) return;
-        // Drop multi-word titles after first token for keying (keep first as primary)
-        names.Add(raw);
-        var title = ToTitleToken(raw);
-        if (title.Length >= 2) names.Add(title);
-        var first = raw.Split(new[] { ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries).FirstOrDefault();
-        if (first is { Length: >= 2 } && !string.Equals(first, raw, StringComparison.Ordinal))
-        {
-            names.Add(first);
-            var ft = ToTitleToken(first);
-            if (ft.Length >= 2) names.Add(ft);
-        }
-    }
-
-    private static bool SeedCoversName(Dictionary<string, object?> seeds, string name)
-    {
-        var want = NormalizeNameKey(name);
-        if (want.Length < 2) return true;
-        foreach (var (key, val) in seeds)
-        {
-            var keyNorm = NormalizeNameKey(key.Replace("Character_", "", StringComparison.OrdinalIgnoreCase));
-            if (NamesMatch(keyNorm, want)) return true;
-            if (val is Dictionary<string, object?> seed)
-            {
-                var given = CoerceString(seed, "canonical_given_name") ?? "";
-                if (NamesMatch(NormalizeNameKey(given), want)) return true;
-                var label = CoerceString(seed, "voice_label") ?? "";
-                if (NamesMatch(NormalizeNameKey(label), want)) return true;
-            }
-        }
-        return false;
-    }
-
-    private static string NormalizeNameKey(string s)
-    {
-        s = (s ?? "").Trim().ToLowerInvariant();
-        s = Regex.Replace(s, @"[^a-z0-9]+", "");
-        // Family aliases
-        return s switch
-        {
-            "momma" or "mommy" or "mama" or "mother" => "mom",
-            "daddy" or "dad" or "papa" or "father" => "dad",
-            _ => s,
-        };
-    }
-
-    private static bool NamesMatch(string a, string b)
-    {
-        if (a.Length == 0 || b.Length == 0) return false;
-        if (a == b) return true;
-        // "buster" covers "busterthenoodleheaddog" first-token only already
-        if (a.StartsWith(b, StringComparison.Ordinal) || b.StartsWith(a, StringComparison.Ordinal))
-            return Math.Min(a.Length, b.Length) >= 3;
-        return false;
-    }
-
     private static string CollapseLookExcerptToSentence(string excerpt, string displayName)
     {
         if (string.IsNullOrWhiteSpace(excerpt)) return "";
@@ -900,24 +627,6 @@ public sealed class CastFromScreenplayService
         // Prefer not to return pure label
         if (string.Equals(line, displayName, StringComparison.OrdinalIgnoreCase)) return "";
         return line;
-    }
-
-    private static string ToTitleToken(string raw)
-    {
-        raw = raw.Trim();
-        if (raw.Length == 0) return raw;
-        // "JANE DOE" / "JANE" → "Jane Doe" / "Jane"
-        var parts = raw.Split(new[] { ' ', '-' }, StringSplitOptions.RemoveEmptyEntries);
-        for (var i = 0; i < parts.Length; i++)
-        {
-            var p = parts[i];
-            if (p.Length == 0) continue;
-            parts[i] = char.ToUpperInvariant(p[0]) + (p.Length > 1 ? p[1..].ToLowerInvariant() : "");
-        }
-        // Preserve hyphenated form loosely
-        if (raw.Contains('-', StringComparison.Ordinal))
-            return string.Join('-', parts);
-        return string.Join(' ', parts);
     }
 
     /// <summary>Weak placeholder looks that must not be written as final seeds.</summary>

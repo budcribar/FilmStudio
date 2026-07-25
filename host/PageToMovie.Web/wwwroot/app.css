@@ -202,11 +202,24 @@ label,
 .text-body-secondary,
 .text-black-50,
 .text-white-50,
+.form-floating > label {
+    color: var(--fs-text-muted) !important;
+}
+
+/*
+ * Placeholders must look empty — not typed values. --fs-text-muted is intentionally
+ * bright for body help text; placeholders use a dimmer treatment so long examples
+ * (film stock, color palette) never read as filled-in data.
+ */
 .form-control::placeholder,
 .form-select::placeholder,
 .form-control::-webkit-input-placeholder,
-.form-floating > label {
-    color: var(--fs-text-muted) !important;
+.form-select::-webkit-input-placeholder,
+.form-control::-moz-placeholder,
+.form-select::-moz-placeholder {
+    color: var(--fs-text-subtle) !important;
+    opacity: 0.5 !important;
+    font-style: italic;
 }
 
 /* Bootstrap “secondary body” / opacity utilities that wash out on dark cards */
@@ -288,9 +301,7 @@ label,
     color: var(--fs-text-primary);
 }
 
-.form-control::placeholder {
-    color: var(--fs-text-muted);
-}
+/* (placeholder styles: see block above with opacity — keep single source of truth) */
 
 /*
  * File inputs (InputFile / type=file): Chromium paints the filename with OS colors that
@@ -583,6 +594,36 @@ code {
 .progress-bar {
     color: #fff;
     font-weight: 600;
+}
+
+/* Busy track: full-width shimmer (no fake fill % that looks finished or stuck). */
+.progress-busy {
+    position: relative;
+    overflow: hidden;
+    background-color: var(--fs-overlay-mid);
+    border: 1px solid var(--fs-border-color);
+    border-radius: 0.25rem;
+}
+
+.progress-busy__shine {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: -40%;
+    width: 40%;
+    background: linear-gradient(
+        90deg,
+        transparent 0%,
+        rgba(13, 110, 253, 0.15) 30%,
+        rgba(13, 110, 253, 0.85) 50%,
+        rgba(13, 110, 253, 0.15) 70%,
+        transparent 100%);
+    animation: fs-progress-shine 1.25s ease-in-out infinite;
+}
+
+@keyframes fs-progress-shine {
+    0% { left: -40%; }
+    100% { left: 100%; }
 }
 
 /* Disabled inputs still need readable labels/values */

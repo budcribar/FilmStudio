@@ -137,15 +137,25 @@ else if (IsCastComplete && !JobRunning && !_extractingCast)
     </div>
 }
 
-@* In-progress: progress only (errors land in the single alert above when the job ends) *@
+@* In-progress: busy shimmer (not a fake % bar that looks done at 100% or stuck at 30%). *@
 @if (_extractingCast)
 {
-    <div class="card mb-3 border-primary">
-        <div class="card-body py-2">
-            <div class="small">Building cast…</div>
-            <div class="progress mt-2" style="height: 0.5rem;">
-                <div class="progress-bar progress-bar-striped progress-bar-animated"
-                     role="progressbar" style="width: 100%" aria-label="Building cast"></div>
+    <div class="card mb-3 border-primary" data-testid="characters-building-cast">
+        <div class="card-body py-3">
+            <div class="d-flex align-items-center gap-2 mb-2">
+                <div class="spinner-border spinner-border-sm text-primary" role="status" aria-hidden="true"></div>
+                <div class="small fw-semibold">
+                    @(_rebuildCastHadExisting ? "Rebuilding cast…" : "Building cast…")
+                </div>
+            </div>
+            <div class="progress progress-busy" style="height: 0.35rem;"
+                 role="progressbar"
+                 aria-valuetext="in progress"
+                 aria-label="@(_rebuildCastHadExisting ? "Rebuilding cast" : "Building cast")">
+                <div class="progress-busy__shine" aria-hidden="true"></div>
+            </div>
+            <div class="form-text mt-2 mb-0">
+                Reading screenplay and book for names and looks. The cast list stays hidden until this finishes.
             </div>
         </div>
     </div>
@@ -210,6 +220,10 @@ else if (_job is not null &&
 @if (_chars is null)
 {
     <p class="text-muted">Loading…</p>
+}
+else if (_extractingCast)
+{
+    @* Hide stale cast while rebuild/build runs — avoids editing the old list mid-flight. *@
 }
 else if (_chars.Count == 0)
 {
@@ -702,6 +716,8 @@ else
     };
 
     private bool _extractingCast;
+    /// <summary>True when extract started with an existing cast (rebuild vs first build).</summary>
+    private bool _rebuildCastHadExisting;
 
     private bool JobRunning =>
         string.Equals(_job?.Status, "running", StringComparison.OrdinalIgnoreCase);
@@ -736,10 +752,14 @@ else
     private async Task ExtractCastAsync()
     {
         if (string.IsNullOrWhiteSpace(_projectId) || _extractingCast) return;
+        _rebuildCastHadExisting = _chars is { Count: > 0 };
         _extractingCast = true;
         _busy = true;
         _error = null;
         _message = null; // progress card owns in-progress UI (not the green success alert)
+        // Drop selection so we don't re-open a character that may disappear after rebuild.
+        _selectedKey = null;
+        _selected = null;
         StateHasChanged();
         try
         {
@@ -757,13 +777,13 @@ else
                 _lastCastExtractKeys = result.Characters?
                     .Where(k => !string.IsNullOrWhiteSpace(k))
                     .ToList();
-                var keysPart = _lastCastExtractKeys is { Count: > 0 }
-                    ? " · " + string.Join(", ", _lastCastExtractKeys)
-                    : "";
-                _message = result.Message
-                    ?? $"Cast ready · {result.CharacterCount} character(s){keysPart} — review looks, then lock portraits";
-                if (string.IsNullOrWhiteSpace(result.Message) == false && _lastCastExtractKeys is { Count: > 0 })
-                    _message = $"{result.Message}{keysPart}";
+                // Operators get a short outcome; full key dump lives in the admin panel only.
+                var n = result.CharacterCount > 0
+                    ? result.CharacterCount
+                    : _lastCastExtractKeys?.Count ?? 0;
+                _message = !string.IsNullOrWhiteSpace(result.Message)
+                    ? StripTrailingKeyDump(result.Message!)
+                    : $"Cast ready · {n} character(s) — review looks, then lock portraits";
                 await LoadAsync();
             }
         }
@@ -775,6 +795,7 @@ else
         finally
         {
             _extractingCast = false;
+            _rebuildCastHadExisting = false;
             _busy = false;
             StateHasChanged();
         }
@@ -1020,6 +1041,23 @@ else
                 Select(_selectedKey, resetMode: false);
         }
         catch { /* ignore */ }
+    }
+
+    /// <summary>
+    /// Server messages sometimes append " · Character_X, Character_Y…". Drop that list
+    /// from the green banner (admin panel still shows full keys).
+    /// </summary>
+    private static string StripTrailingKeyDump(string message)
+    {
+        if (string.IsNullOrWhiteSpace(message)) return message;
+        var idx = message.IndexOf(" · Character_", StringComparison.OrdinalIgnoreCase);
+        if (idx > 0) return message[..idx].TrimEnd();
+        idx = message.IndexOf(" · Character_", StringComparison.Ordinal);
+        if (idx > 0) return message[..idx].TrimEnd();
+        // Also " — Character_Foo, Character_Bar"
+        idx = message.IndexOf(" — Character_", StringComparison.OrdinalIgnoreCase);
+        if (idx > 0) return message[..idx].TrimEnd();
+        return message.Trim();
     }
 
     /// <summary>

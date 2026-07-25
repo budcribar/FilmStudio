@@ -12,6 +12,8 @@ Paths are relative to the **workspace root** (repo root with `host/`, `projects/
 | `book_to_fountain.txt` | **Product path:** book → editable Fountain screenplay |
 | `fountain_to_cast.txt` | **Product path:** Fountain (+ book) → `source/cast_seeds.json` closed cast |
 | `cast_visual_literalize.txt` | Cast post-pass: figurative/idiomatic looks → literal filmable prose |
+| `clip_gen_rules.txt` | **Product path:** house rules composed into clip video prompts |
+| `clip_auto_review.txt` | **Product path:** QC checklist + JSON schema for clip auto-review |
 | `adaptation_v16.txt` | Full-film adaptation rules (optional learning append) |
 | `shared_rules.txt` | Rules Stage 2 + verifier must all respect |
 | `stage1_scene_bible.schema.json` | Optional schema for internal materialised scene lists (not an operator prompt) |
@@ -20,6 +22,8 @@ Paths are relative to the **workspace root** (repo root with `host/`, `projects/
 | `compare_json_to_book.txt` | Fidelity audit against book text |
 | `examples/scene_bible_minimal.json` | Minimal scene-list sample |
 | `examples/clip_plan_minimal.json` | Minimal Stage 2 sample |
+
+Embedded at build (Engine): `book_to_fountain`, `fountain_to_cast`, `cast_visual_literalize`, `clip_gen_rules`, `clip_auto_review`. Edit in git → redeploy. Optional local override: `PAGETOMOVIE_PROMPTS_DIR`.
 
 **Operator flow:** book PDF → prepare text → **Fountain draft** (`book_to_fountain.txt`) → edit → approve → **shot plan (reads Fountain)** → clips.
 Long novels use **multi-chunk adapt → stitch → merge** in `BookToFountainConverter` (ordered book chunks, continuity brief, final merge pass).

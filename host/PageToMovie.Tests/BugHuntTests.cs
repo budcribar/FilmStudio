@@ -327,24 +327,17 @@ public class BugHuntTests
         Assert.Contains("AUDIO:", built.Prompt, StringComparison.Ordinal);
     }
 
-    // ── 12. PromptPack CreateVersion must reject null kind ──────────────
+    // ── 12. Clip gen / auto-review rules are embedded (no runtime packs) ──
 
     [Fact]
-    public void Bug12_PromptPack_CreateVersion_null_kind_throws_argument()
+    public void Bug12_clip_prompt_files_are_embedded()
     {
-        var root = Path.Combine(Path.GetTempPath(), "fs_bug12_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(Path.Combine(root, "projects"));
-        try
-        {
-            var opts = Options.Create(new PageToMovieOptions { WorkspaceRoot = root, EnableReadCaches = false });
-            var packs = new PromptPackService(new ProjectStore(opts), NullLogger<PromptPackService>.Instance);
-            var ex = Assert.ThrowsAny<Exception>(() => packs.CreateVersion(null!, "v1", "body"));
-            Assert.False(ex is NullReferenceException, "should be ArgumentException, not NRE");
-        }
-        finally
-        {
-            try { Directory.Delete(root, recursive: true); } catch { /* */ }
-        }
+        var gen = PromptFiles.TryReadEmbedded("prompts/clip_gen_rules.txt");
+        var ar = PromptFiles.TryReadEmbedded("prompts/clip_auto_review.txt");
+        Assert.False(string.IsNullOrWhiteSpace(gen));
+        Assert.StartsWith("HOUSE RULES:", gen!.TrimStart(), StringComparison.OrdinalIgnoreCase);
+        Assert.False(string.IsNullOrWhiteSpace(ar));
+        Assert.Contains("CHECKLIST", ar!, StringComparison.OrdinalIgnoreCase);
     }
 
     // ── 13. JobStore.Create must not silently overwrite an existing id ──
@@ -886,41 +879,14 @@ public class BugHuntTests
     }
 
     [Fact]
-    public void Bug47_PromptPack_LoadPackText_blocks_path_traversal()
+    public void Bug47_FitPromptToVideoBudget_keeps_core_when_house_rules_overflow()
     {
-        var root = Path.Combine(Path.GetTempPath(), "fs_bug47_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(Path.Combine(root, "projects"));
-        try
-        {
-            var opts = Options.Create(new PageToMovieOptions { WorkspaceRoot = root, EnableReadCaches = false });
-            var packs = new PromptPackService(new ProjectStore(opts), NullLogger<PromptPackService>.Instance);
-            packs.EnsureDefaults();
-            // Inject a malicious relative path into the manifest on disk
-            var manifestPath = Path.Combine(root, "prompts", "packs", "manifest.json");
-            var evilOutside = Path.Combine(root, "..", "evil.txt");
-            File.WriteAllText(Path.GetFullPath(Path.Combine(root, "evil_payload.txt")), "secret");
-            // Point pack at ../../ outside
-            var json = File.ReadAllText(manifestPath);
-            // Use CreateVersion then rewrite relative path
-            var info = packs.CreateVersion("gen", "evil", "body");
-            var man = JsonSerializer.Deserialize<PromptPackManifest>(File.ReadAllText(manifestPath),
-                new JsonSerializerOptions { PropertyNameCaseInsensitive = true })!;
-            var p = man.Packs.First(x => x.Id == info.Id);
-            p.RelativePath = "../evil_payload.txt";
-            File.WriteAllText(manifestPath, JsonSerializer.Serialize(man, new JsonSerializerOptions
-            {
-                WriteIndented = true,
-                PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-            }));
-            // Reload service reads manifest; traversal must yield null, not file contents
-            var packs2 = new PromptPackService(new ProjectStore(opts), NullLogger<PromptPackService>.Instance);
-            var text = packs2.LoadPackText(info.Id);
-            Assert.Null(text);
-        }
-        finally
-        {
-            try { Directory.Delete(root, recursive: true); } catch { /* */ }
-        }
+        var core = "CHARACTER VARIABLES\n- Character_Hero: pale man\n\nTHIS CLIP:\nHe walks.\n";
+        var overflow = "\nHOUSE RULES:\n" + new string('z', 5000) + "\nPROJECT HOUSE RULES (approved):\n- x\n";
+        var fitted = ClipVideoPromptBuilder.FitPromptToVideoBudget(core + overflow);
+        Assert.Contains("Character_Hero", fitted);
+        Assert.DoesNotContain("HOUSE RULES:", fitted, StringComparison.OrdinalIgnoreCase);
+        Assert.True(fitted.Length <= ClipVideoPromptBuilder.VideoPromptHardCapChars);
     }
 
     [Fact]
@@ -1230,41 +1196,21 @@ public class BugHuntTests
     }
 
     [Fact]
-    public void Bug74_PromptPack_CreateVersion_null_body_ok()
+    public void Bug74_LoadAutoReviewRulesBlock_has_checklist()
     {
-        var root = Path.Combine(Path.GetTempPath(), "fs_bug74_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(Path.Combine(root, "projects"));
-        try
-        {
-            var opts = Options.Create(new PageToMovieOptions { WorkspaceRoot = root, EnableReadCaches = false });
-            var packs = new PromptPackService(new ProjectStore(opts), NullLogger<PromptPackService>.Instance);
-            var info = packs.CreateVersion("gen", "emptybody", null!);
-            Assert.Equal("gen-emptybody", info.Id);
-            var text = packs.LoadPackText(info.Id);
-            Assert.NotNull(text);
-            Assert.Equal("", text);
-        }
-        finally
-        {
-            try { Directory.Delete(root, recursive: true); } catch { /* */ }
-        }
+        var block = ClipAutoReviewService.LoadAutoReviewRulesBlock();
+        Assert.Contains("CHECKLIST", block, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("IDENTITY", block, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("suggestion", block, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
-    public void Bug75_PromptPack_Activate_unknown_throws()
+    public void Bug75_TryLoadClipGenRules_has_house_rules_marker()
     {
-        var root = Path.Combine(Path.GetTempPath(), "fs_bug75_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(Path.Combine(root, "projects"));
-        try
-        {
-            var opts = Options.Create(new PageToMovieOptions { WorkspaceRoot = root, EnableReadCaches = false });
-            var packs = new PromptPackService(new ProjectStore(opts), NullLogger<PromptPackService>.Instance);
-            Assert.ThrowsAny<InvalidOperationException>(() => packs.Activate("no-such-pack"));
-        }
-        finally
-        {
-            try { Directory.Delete(root, recursive: true); } catch { /* */ }
-        }
+        var rules = ClipVideoPromptBuilder.TryLoadClipGenRules();
+        Assert.False(string.IsNullOrWhiteSpace(rules));
+        Assert.Contains("HOUSE RULES:", rules!, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Dialogue", rules!, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]

@@ -1,0 +1,34 @@
+CHECKLIST (fail when confidence is high; put the primary issue in category):
+1) IDENTITY — On-screen faces match intended Character_* / cast look descriptions. No swap or merge of roles (e.g. Narrator vs Old Man). Fail if the frame invents extra people or a larger crowd than CAST COUNT / listed cast.
+2) PROMPT COMPLETENESS — Planned visual_prompt should be usable (not truncated stubs). If the plan text is incomplete but the video still matches cast+style, note it; if the video is wrong and the plan is stubby, fail and suggest a full visual_prompt rewrite.
+3) SILENCE vs EXPRESSION — If the clip has no dialogue / is silent or ambient, fail mid-shout open-mouth or yelling performance. Restrained tension (tight jaw, fist) is OK.
+4) ADDRESS / GAZE — Follow PROJECT performance rules. If performance says confessional / addresses viewer when speaking, fail shut or averted eyes on those address beats. If objective/observational, do NOT require eyes-to-camera.
+5) STYLE + WARDROBE — Match project style (picture-book CG vs photoreal, etc.) and cast wardrobe/period cues. Fail plastic CGI beauty-filter skin on photoreal projects; fail photoreal stock on picture-book projects; fail clear wardrobe/period drift from cast locks.
+6) FACE READABILITY — Fail (high confidence) when the featured face is blank/beauty-blank or emotion clearly mismatches the planned line/energy. Fail shut eyes on dialogue address beats per PERFORMANCE rules (#4). Sleep/death/covered eyes when planned = OK.
+
+Also:
+- Always judge start of current clip against previous clip tail when provided.
+- Continuity jumps and silent dialogue (mouth quiet when dialogue is planned) are fails when confidence is high.
+- Prefer clip visual_prompt rewrites over character rewrites unless look/voice is wrong for the whole cast member.
+- Keep Character_* keys intact in suggestions.
+
+Respond with JSON ONLY (no markdown):
+{
+  "suggestion": "pass"|"fail"|"unclear",
+  "category": "continuity"|"wrong_look"|"wrong_style"|"wrong_voice"|"silent"|"framing"|"other",
+  "confidence": "high"|"medium"|"low",
+  "continuity": "ok"|"jump"|"unclear"|"n/a",
+  "note": "one short human-readable review note covering the main checklist hit",
+  "suggestions": [
+    {
+      "layer": "clip"|"character",
+      "field": "visual_prompt"|"voice_profile"|"description"|"visual_lock",
+      "char_key": "Character_... or null",
+      "label": "short UI label",
+      "suggested_value": "full replacement text for that field",
+      "include_by_default": true,
+      "rationale": "why"
+    }
+  ]
+}
+Rules: only suggest changes that would improve a re-gen. Prefer clip visual_prompt. Character changes only if look/voice is clearly wrong. Keep Character_* keys. Empty suggestions[] if pass/no edit needed. Use wrong_style for medium drift; wrong_look for identity/wardrobe; silent for dialogue-without-speech or shout-on-silent.

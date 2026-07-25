@@ -11,11 +11,15 @@ public class PromptFilesTests
         var cast = PromptFiles.TryReadEmbedded("prompts/fountain_to_cast.txt");
         var lit = PromptFiles.TryReadEmbedded("prompts/cast_visual_literalize.txt");
         var book = PromptFiles.TryReadEmbedded("prompts/book_to_fountain.txt");
+        var gen = PromptFiles.TryReadEmbedded("prompts/clip_gen_rules.txt");
+        var ar = PromptFiles.TryReadEmbedded("prompts/clip_auto_review.txt");
 
         Assert.False(string.IsNullOrWhiteSpace(cast), "fountain_to_cast should be embedded in Engine");
         Assert.Contains("Character_", cast!, StringComparison.OrdinalIgnoreCase);
         Assert.False(string.IsNullOrWhiteSpace(lit));
         Assert.False(string.IsNullOrWhiteSpace(book));
+        Assert.False(string.IsNullOrWhiteSpace(gen), "clip_gen_rules should be embedded");
+        Assert.False(string.IsNullOrWhiteSpace(ar), "clip_auto_review should be embedded");
     }
 
     [Fact]

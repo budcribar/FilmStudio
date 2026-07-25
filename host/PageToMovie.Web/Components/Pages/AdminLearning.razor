@@ -11,7 +11,7 @@
         <div>
             <h1 class="h3 mb-0">Learning</h1>
             <div class="text-muted small">
-                Review events · prompt packs · project rules (admin)
+                Review events · project rules (admin)
             </div>
         </div>
         <div class="d-flex gap-2">
@@ -107,65 +107,6 @@
                             }
                             </tbody>
                         </table>
-                    </div>
-                }
-            </div>
-        </div>
-
-        <div class="card mb-3">
-            <div class="card-header py-2">Prompt packs</div>
-            <div class="card-body small">
-                @if (_manifest is null)
-                {
-                    <p class="text-muted mb-0">No packs loaded.</p>
-                }
-                else
-                {
-                    <p class="text-muted">
-                        Active gen: <code>@_manifest.ActiveGenPackId</code>
-                        · Active auto-review: <code>@_manifest.ActiveAutoReviewPackId</code>
-                    </p>
-                    <ul class="list-group list-group-flush mb-2">
-                        @foreach (var p in _manifest.Packs)
-                        {
-                            <li class="list-group-item d-flex flex-wrap align-items-center gap-2 px-0">
-                                <code>@p.Id</code>
-                                <span class="badge bg-light text-dark">@p.Kind</span>
-                                @if (p.Active)
-                                {
-                                    <span class="badge bg-success">active</span>
-                                }
-                                <span class="text-muted">@p.Notes</span>
-                                <button class="btn btn-sm btn-outline-primary ms-auto"
-                                        disabled="@(_busy || p.Active)"
-                                        @onclick="() => ActivatePackAsync(p.Id)">
-                                    Activate
-                                </button>
-                            </li>
-                        }
-                    </ul>
-                    <div class="border rounded p-2">
-                        <div class="fw-semibold mb-1">Create pack version</div>
-                        <div class="row g-2">
-                            <div class="col-md-2">
-                                <select class="form-select form-select-sm" @bind="_newPackKind">
-                                    <option value="gen">gen</option>
-                                    <option value="auto_review">auto_review</option>
-                                </select>
-                            </div>
-                            <div class="col-md-2">
-                                <input class="form-control form-control-sm" @bind="_newPackVersion" placeholder="v2" />
-                            </div>
-                            <div class="col-md-8">
-                                <textarea class="form-control form-control-sm" rows="3" @bind="_newPackBody"
-                                          placeholder="Pack body text (house rules)…"></textarea>
-                            </div>
-                            <div class="col-12">
-                                <button class="btn btn-sm btn-outline-secondary" disabled="@_busy" @onclick="CreatePackAsync">
-                                    Save new pack
-                                </button>
-                            </div>
-                        </div>
                     </div>
                 }
             </div>
@@ -360,10 +301,6 @@
     private string _projectFilter = "";
     private LearningInsightsDto? _insights;
     private List<ReviewLearningEvent> _events = new();
-    private PromptPackManifest? _manifest;
-    private string _newPackKind = "gen";
-    private string _newPackVersion = "v2";
-    private string _newPackBody = "";
     private int _proposeN = 50;
     private string? _proposal;
     private ProposalChecklistDocument? _checklist;
@@ -399,7 +336,6 @@
             var pid = string.IsNullOrWhiteSpace(_projectFilter) ? null : _projectFilter.Trim();
             _insights = await Api.GetLearningInsightsAsync(pid);
             _events = (await Api.GetLearningEventsAsync(pid, take: 80)).ToList();
-            _manifest = await Api.GetLearningPacksAsync();
             _checklist = await Api.GetProposalChecklistAsync();
             if (!string.IsNullOrWhiteSpace(_rulesProject))
                 _rules = await Api.GetProjectRulesAsync(_rulesProject.Trim());
@@ -446,34 +382,6 @@
             var reviewed = item.Reviewed || !string.IsNullOrWhiteSpace(disposition);
             _checklist = await Api.ToggleProposalChecklistItemAsync(
                 item.Id, reviewed, disposition, item.Note);
-        }
-        catch (Exception ex) { _error = ex.Message; }
-        finally { _busy = false; }
-    }
-
-    private async Task ActivatePackAsync(string id)
-    {
-        _busy = true;
-        _error = null;
-        try
-        {
-            await Api.ActivateLearningPackAsync(id);
-            _message = $"Activated {id}";
-            _manifest = await Api.GetLearningPacksAsync();
-        }
-        catch (Exception ex) { _error = ex.Message; }
-        finally { _busy = false; }
-    }
-
-    private async Task CreatePackAsync()
-    {
-        _busy = true;
-        _error = null;
-        try
-        {
-            await Api.CreateLearningPackAsync(_newPackKind, _newPackVersion, _newPackBody);
-            _message = "Pack created";
-            _manifest = await Api.GetLearningPacksAsync();
         }
         catch (Exception ex) { _error = ex.Message; }
         finally { _busy = false; }

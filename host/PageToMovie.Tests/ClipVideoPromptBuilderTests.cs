@@ -237,14 +237,14 @@ public class ClipVideoPromptBuilderTests
     }
 
     [Fact]
-    public void ShortenPromptForRetry_strips_gen_pack_then_caps()
+    public void ShortenPromptForRetry_strips_house_rules_then_caps()
     {
         var core = "CHARACTER VARIABLES\n- Character_Hero: pale man in wool coat\n\nTHIS CLIP:\nAction beats go here.\n";
-        var pack = "\n# Film Studio gen pack (active addendum)\n\nApply these house rules when building clip video prompts:\n- rule one\n";
-        var full = core + pack + "\nPROJECT HOUSE RULES (approved):\n- period drama\n";
+        var rules = "\nHOUSE RULES:\n- rule one\n";
+        var full = core + rules + "\nPROJECT HOUSE RULES (approved):\n- period drama\n";
 
         var s1 = ClipVideoPromptBuilder.ShortenPromptForRetry(full, 1);
-        Assert.DoesNotContain("Film Studio gen pack", s1, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("HOUSE RULES:", s1, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("PROJECT HOUSE RULES", s1, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Character_Hero", s1);
         Assert.True(s1.Length < full.Length);
@@ -256,16 +256,16 @@ public class ClipVideoPromptBuilderTests
     }
 
     [Fact]
-    public void FitPromptToVideoBudget_strips_gen_pack_before_first_send()
+    public void FitPromptToVideoBudget_strips_house_rules_before_first_send()
     {
         var core = "CHARACTER VARIABLES\n- Character_Hero: pale man\n\nTHIS CLIP:\nHe walks.\n";
-        var pack = "\n# Film Studio gen pack (active addendum)\n\n" + new string('z', 4500);
-        var full = core + pack;
+        var rules = "\nHOUSE RULES:\n" + new string('z', 4500);
+        var full = core + rules;
         Assert.True(full.Length > ClipVideoPromptBuilder.VideoPromptHardCapChars);
 
         var fitted = ClipVideoPromptBuilder.FitPromptToVideoBudget(full);
         Assert.True(fitted.Length <= ClipVideoPromptBuilder.VideoPromptHardCapChars);
-        Assert.DoesNotContain("Film Studio gen pack", fitted, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("HOUSE RULES:", fitted, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Character_Hero", fitted);
     }
 

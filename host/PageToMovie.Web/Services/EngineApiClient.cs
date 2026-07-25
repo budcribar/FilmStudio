@@ -280,13 +280,6 @@ public sealed class EngineApiClient
         return env?.Events ?? (IReadOnlyList<ReviewLearningEvent>)Array.Empty<ReviewLearningEvent>();
     }
 
-    public async Task<PromptPackManifest?> GetLearningPacksAsync(CancellationToken ct = default)
-    {
-        using var req = new HttpRequestMessage(HttpMethod.Get, "/api/admin/learning/packs");
-        var env = await SendJsonAsync<LearningPacksEnvelope>(req, ct);
-        return env?.Manifest;
-    }
-
     public sealed record UserSettingsEnvelope(bool Ok, UserSettingsDto? Settings, string? Message, string? Error);
 
     public async Task<UserSettingsDto?> GetUserSettingsAsync(CancellationToken ct = default)
@@ -322,39 +315,6 @@ public sealed class EngineApiClient
         var res = await _http.SendAsync(req, ct);
         if (!res.IsSuccessStatusCode) return null;
         return await res.Content.ReadAsByteArrayAsync(ct);
-    }
-
-    public async Task<string?> GetLearningPackTextAsync(string packId, CancellationToken ct = default)
-    {
-        using var req = new HttpRequestMessage(HttpMethod.Get, $"/api/admin/learning/packs/{Uri.EscapeDataString(packId)}");
-        var env = await SendJsonAsync<LearningPackTextEnvelope>(req, ct);
-        return env?.Text;
-    }
-
-    public async Task ActivateLearningPackAsync(string packId, CancellationToken ct = default)
-    {
-        using var req = new HttpRequestMessage(HttpMethod.Post, "/api/admin/learning/packs/activate")
-        {
-            Content = JsonContent.Create(new ActivatePromptPackRequest { PackId = packId }, options: JsonOpts),
-        };
-        await SendJsonAsync<object>(req, ct);
-    }
-
-    public async Task<PromptPackInfo?> CreateLearningPackAsync(
-        string kind, string version, string body, string? notes = null, CancellationToken ct = default)
-    {
-        using var req = new HttpRequestMessage(HttpMethod.Post, "/api/admin/learning/packs")
-        {
-            Content = JsonContent.Create(new CreatePromptPackBody
-            {
-                Kind = kind,
-                Version = version,
-                Body = body,
-                Notes = notes,
-            }, options: JsonOpts),
-        };
-        var env = await SendJsonAsync<LearningPackCreateEnvelope>(req, ct);
-        return env?.Pack;
     }
 
     public async Task<ProposeLearningRulesResult?> ProposeLearningRulesAsync(
@@ -463,22 +423,6 @@ public sealed class EngineApiClient
         public bool Ok { get; set; }
         public List<ReviewLearningEvent>? Events { get; set; }
     }
-    private sealed class LearningPacksEnvelope
-    {
-        public bool Ok { get; set; }
-        public PromptPackManifest? Manifest { get; set; }
-    }
-    private sealed class LearningPackTextEnvelope
-    {
-        public bool Ok { get; set; }
-        public string? Text { get; set; }
-    }
-    private sealed class LearningPackCreateEnvelope
-    {
-        public bool Ok { get; set; }
-        public PromptPackInfo? Pack { get; set; }
-    }
-
     private sealed class ProposalChecklistEnvelope
     {
         public bool Ok { get; set; }

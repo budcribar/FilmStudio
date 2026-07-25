@@ -42,7 +42,6 @@ public sealed class FilmJobService
     private readonly ProjectArtifactIndexService _artifactIndex;
     private readonly ReviewEventStore _learning;
     private readonly EditLogService _editLogs;
-    private readonly PromptPackService _promptPacks;
     private readonly ProjectRulesService _projectRules;
     private readonly CostReportService _costs;
     private readonly IJobStore _jobs;
@@ -77,7 +76,6 @@ public sealed class FilmJobService
         ProjectArtifactIndexService artifactIndex,
         ReviewEventStore learning,
         EditLogService editLogs,
-        PromptPackService promptPacks,
         ProjectRulesService projectRules,
         CostReportService costs,
         IJobStore jobs,
@@ -107,7 +105,6 @@ public sealed class FilmJobService
         _artifactIndex = artifactIndex;
         _learning = learning;
         _editLogs = editLogs;
-        _promptPacks = promptPacks;
         _projectRules = projectRules;
         _costs = costs;
         _jobs = jobs;
@@ -2833,25 +2830,21 @@ public sealed class FilmJobService
                 EnsureOnScreenLocksExist(projectId, projectDir, built, profiles);
             }
 
-            // P2/P4: active gen pack + approved project rules
-            var addenda = new List<string>();
+            // Approved project-scoped house rules (learning). Global clip gen rules live in
+            // embedded prompts/clip_gen_rules.txt and are composed inside ClipVideoPromptBuilder.
             try
             {
-                var pack = _promptPacks.LoadActivePackText(PromptPackService.KindGen);
-                if (!string.IsNullOrWhiteSpace(pack))
-                    addenda.Add(pack.Trim());
                 var rules = _projectRules.GetActiveRulesBlock(projectId);
                 if (!string.IsNullOrWhiteSpace(rules))
-                    addenda.Add(rules.Trim());
+                {
+                    built = built.WithPrompt(
+                        built.Prompt.TrimEnd() + "\n\n" + rules.Trim(),
+                        " · project-rules");
+                }
             }
             catch { /* non-fatal */ }
 
-            if (addenda.Count > 0)
-            {
-                built = built.WithPrompt(built.Prompt.TrimEnd() + "\n\n" + string.Join("\n\n", addenda), " · learning-addenda");
-            }
-
-            // Pre-budget to xAI video ~4096 char hard cap (strip gen pack / house rules first).
+            // Pre-budget to xAI video ~4096 char hard cap (strip HOUSE RULES / project rules first).
             // Avoids a guaranteed first-attempt 400 on every clip.
             var preLen = built.Prompt.Length;
             var fitted = ClipVideoPromptBuilder.FitPromptToVideoBudget(built.Prompt);

@@ -80,105 +80,68 @@ public class CastFromScreenplayServiceTests
     }
 
     [Fact]
-    public void ExtractNameHintsFromFountain_includes_dialogue_cues()
+    public void EnrichStubLooksFromSources_fills_model_seed_only_does_not_add_cast()
     {
-        var fountain = """
-            Title: Test
-
-            INT. ROOM - DAY
-
-            ZARA
-            Hello.
-
-            OLD MAN (V.O.)
-            Listen.
-            """;
-        var names = CastFromScreenplayService.ExtractNameHintsFromFountain(fountain);
-        Assert.Contains(names, n => n.Equals("ZARA", StringComparison.OrdinalIgnoreCase)
-                                    || n.Equals("Zara", StringComparison.OrdinalIgnoreCase));
-        Assert.Contains(names, n => n.Contains("OLD", StringComparison.OrdinalIgnoreCase)
-                                    || n.Contains("Old", StringComparison.OrdinalIgnoreCase));
-    }
-
-    [Fact]
-    public void ExtractNameHintsFromBook_includes_title_hero_buster()
-    {
-        var book = """
-            --- PAGE 1 ---
-            BUSTER
-            THE NOODLE HEAD DOG
-            GOES TO BED
-
-            Debra McGuinty
-
-            --- PAGE 2 ---
-            He's Buster the Noodle Head Dog
-            He jumps around like a frog
-            He's small, black, and white
-            But not very bright!
-            He's Buster the Noodle Head Dog
-
-            --- PAGE 4 ---
-            When Momma says, "It's time for bed",
-            He wants to rest his furry head
-            """;
-        var names = CastFromScreenplayService.ExtractNameHintsFromBook(book);
-        Assert.Contains(names, n => n.Equals("Buster", StringComparison.OrdinalIgnoreCase)
-                                    || n.Equals("BUSTER", StringComparison.OrdinalIgnoreCase));
-        // "Momma" appears once as title-case — family role names still count via He's/When patterns
-        Assert.True(
-            names.Any(n => n.Contains("Mom", StringComparison.OrdinalIgnoreCase)
-                           || n.Contains("Buster", StringComparison.OrdinalIgnoreCase)),
-            "expected Buster (and ideally Momma); got " + string.Join(", ", names));
-        Assert.DoesNotContain(names, n => n.Equals("Dog", StringComparison.OrdinalIgnoreCase));
-        Assert.DoesNotContain(names, n => n.Equals("GOES", StringComparison.OrdinalIgnoreCase));
-    }
-
-    [Fact]
-    public void EnsureSeedsForNameHints_adds_buster_when_model_only_returned_mom()
-    {
+        // Model already chose Buster + Mom; Buster has a stub look — enrich from book.
         var seeds = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase)
         {
             ["Character_Mom"] = new Dictionary<string, object?>
             {
                 ["canonical_given_name"] = "Mom",
-                ["description"] = "Adult woman, gentle.",
+                ["description"] = "Adult woman, gentle smile, soft brown hair, cardigan.",
+                ["visual_lock"] = "Same soft brown hair and cardigan every scene.",
                 ["display_name_policy"] = "ok_anytime",
             },
-            ["Character_Narrator"] = new Dictionary<string, object?>
+            ["Character_Buster"] = new Dictionary<string, object?>
             {
-                ["canonical_given_name"] = "Narrator",
-                ["description"] = "Narrator (voice only).",
-                ["display_name_policy"] = "never_on_screen",
+                ["canonical_given_name"] = "Buster",
+                ["description"] = "as described in the screenplay",
+                ["visual_lock"] = "",
+                ["display_name_policy"] = "ok_anytime",
             },
         };
         var book = """
-            BUSTER
-            He's Buster the Noodle Head Dog
-            He's small, black, and white
-            When Momma says bed time
+            He's Buster the Noodle Head Dog.
+
+            He's small, black, and white with floppy ears and a soft rounded head.
+
+            When Momma says bed time he wants to rest his furry head.
             """;
-        var fountain = """
-            Title: BUSTER
-
-            EXT. YARD - DAY
-
-            This is BUSTER. A small dog.
-
-            MOM
-            Bed time.
-            """;
-        var hints = CastFromScreenplayService.CollectCastNameHints(fountain, book);
-        Assert.Contains(hints, n => n.Contains("Buster", StringComparison.OrdinalIgnoreCase));
-
-        var added = CastFromScreenplayService.EnsureSeedsForNameHints(seeds, hints, book, fountain);
-        Assert.True(added >= 1);
+        var beforeKeys = seeds.Keys.OrderBy(k => k).ToList();
+        var n = CastFromScreenplayService.EnrichStubLooksFromSources(seeds, book, fountainText: null);
+        Assert.True(n >= 1);
+        Assert.Equal(beforeKeys, seeds.Keys.OrderBy(k => k).ToList());
+        var buster = (Dictionary<string, object?>)seeds["Character_Buster"]!;
+        var desc = buster["description"]?.ToString() ?? "";
+        Assert.False(CastFromScreenplayService.IsStubLook(desc));
         Assert.True(
-            seeds.Keys.Any(k => k.Contains("Buster", StringComparison.OrdinalIgnoreCase)),
-            "expected Character_Buster (or similar) after backfill; keys=" + string.Join(",", seeds.Keys));
-        // Mom already present — do not duplicate as Momma
-        Assert.Single(seeds.Keys.Where(k =>
-            k.Contains("Mom", StringComparison.OrdinalIgnoreCase)));
+            desc.Contains("black", StringComparison.OrdinalIgnoreCase) ||
+            desc.Contains("Buster", StringComparison.OrdinalIgnoreCase) ||
+            desc.Contains("floppy", StringComparison.OrdinalIgnoreCase),
+            "expected look text from book; got: " + desc);
+        // Must not invent kitchen/backyard cast
+        Assert.DoesNotContain(seeds.Keys, k => k.Contains("Kitchen", StringComparison.OrdinalIgnoreCase));
+        Assert.DoesNotContain(seeds.Keys, k => k.Contains("Backyard", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public void EnrichStubLooksFromSources_does_not_add_missing_heroes()
+    {
+        // Model forgot Buster — we do NOT invent him via heuristics.
+        var seeds = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["Character_Mom"] = new Dictionary<string, object?>
+            {
+                ["canonical_given_name"] = "Mom",
+                ["description"] = "Adult woman.",
+                ["display_name_policy"] = "ok_anytime",
+            },
+        };
+        var book = "He's Buster the Noodle Head Dog. Small black and white dog.";
+        var n = CastFromScreenplayService.EnrichStubLooksFromSources(seeds, book, null);
+        Assert.Equal(0, n);
+        Assert.Single(seeds);
+        Assert.DoesNotContain(seeds.Keys, k => k.Contains("Buster", StringComparison.OrdinalIgnoreCase));
     }
 
     [Fact]
@@ -191,9 +154,8 @@ public class CastFromScreenplayServiceTests
     }
 
     [Fact]
-    public void SelectBookTextForCastPrompt_includes_late_name_look_when_over_budget()
+    public void SelectBookTextForCastPrompt_without_hints_uses_spine_only()
     {
-        // Novel-length padding so we must sample; unique look only appears late.
         var early = string.Join("\n\n", Enumerable.Range(0, 120).Select(i =>
             $"Chapter filler {i}. " + new string('x', 1_200)));
         var lateLook =
@@ -201,27 +163,34 @@ public class CastFromScreenplayServiceTests
         var after = string.Join("\n\n", Enumerable.Range(0, 40).Select(i =>
             $"Epilogue pad {i}. " + new string('y', 600)));
         var book = early + lateLook + after;
-        Assert.True(book.Length > CastFromScreenplayService.BookPromptChars,
-            $"book len={book.Length}");
+        Assert.True(book.Length > CastFromScreenplayService.BookPromptChars);
 
-        var fountain = """
-            Title: Late Reveal
+        // Production cast prompt path: no name-list guessing.
+        var selected = CastFromScreenplayService.SelectBookTextForCastPrompt(
+            book, maxChars: 40_000, nameHints: null);
+        Assert.Contains("NARRATIVE SPINE", selected, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("LOOK EXCERPTS", selected, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("spine only", selected, StringComparison.OrdinalIgnoreCase);
+    }
 
-            INT. HALL - NIGHT
-
-            ZARA
-            I am here.
-            """;
-        var names = CastFromScreenplayService.ExtractNameHintsFromFountain(fountain);
-        Assert.NotEmpty(names);
+    [Fact]
+    public void SelectBookTextForCastPrompt_with_model_names_can_pull_late_looks()
+    {
+        // After model chooses Zara, look harvest may use her name — not cast inventing.
+        var early = string.Join("\n\n", Enumerable.Range(0, 120).Select(i =>
+            $"Chapter filler {i}. " + new string('x', 1_200)));
+        var lateLook =
+            "\n\nZara stepped into the firelight. She had silver hair and a green velvet coat with brass buttons.\n\n";
+        var after = string.Join("\n\n", Enumerable.Range(0, 40).Select(i =>
+            $"Epilogue pad {i}. " + new string('y', 600)));
+        var book = early + lateLook + after;
 
         var selected = CastFromScreenplayService.SelectBookTextForCastPrompt(
-            book, maxChars: 40_000, nameHints: names);
+            book, maxChars: 40_000, nameHints: new[] { "Zara" });
 
         Assert.Contains("silver hair", selected, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("green velvet", selected, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("LOOK EXCERPTS", selected, StringComparison.OrdinalIgnoreCase);
-        // Must not be head-only truncation of the first 40k (late look would be absent)
         var headOnly = book[..40_000];
         Assert.DoesNotContain("silver hair", headOnly, StringComparison.OrdinalIgnoreCase);
     }

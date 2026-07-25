@@ -40,7 +40,7 @@ public static class ClipVideoPromptBuilder
 
     public sealed class PromptBuildResult
     {
-        /// <summary>Full flat prompt sent to the video API (may include learning addenda).</summary>
+        /// <summary>Full flat prompt sent to the video API (may include project house-rule addenda).</summary>
         public string Prompt { get; init; } = "";
         /// <summary>Ordered character ref images for reference_images / &lt;IMAGE_n&gt; tags.</summary>
         public IReadOnlyList<string> ReferenceImagePaths { get; init; } = Array.Empty<string>();
@@ -269,6 +269,16 @@ public static class ClipVideoPromptBuilder
             sb.AppendLine();
             sb.AppendLine();
             sb.Append(negBlock);
+        }
+
+        // Embedded house rules (git-owned). Placed after core action so budget strip can drop
+        // them first without cutting CHARACTER VARIABLES / THIS CLIP. Marker: HOUSE RULES:
+        var houseRules = TryLoadClipGenRules();
+        if (!string.IsNullOrWhiteSpace(houseRules))
+        {
+            sb.AppendLine();
+            sb.AppendLine();
+            sb.Append(houseRules.Trim());
         }
 
         var prompt = FitPromptToVideoBudget(sb.ToString().Trim());
@@ -593,7 +603,7 @@ public static class ClipVideoPromptBuilder
 
     /// <summary>
     /// Fit a finished prompt under the video API hard cap before the first request.
-    /// Drops gen-pack / house-rule addenda first, then head-caps if still over.
+    /// Drops HOUSE RULES / project-rule addenda first, then head-caps if still over.
     /// </summary>
     public static string FitPromptToVideoBudget(
         string prompt,
@@ -609,6 +619,19 @@ public static class ClipVideoPromptBuilder
             return p;
 
         return HeadCap(p, hardCapChars);
+    }
+
+    /// <summary>Clip gen house rules from <c>prompts/clip_gen_rules.txt</c> (embed or override dir).</summary>
+    public static string? TryLoadClipGenRules()
+    {
+        try
+        {
+            return PromptFiles.ReadAsync("prompts/clip_gen_rules.txt").GetAwaiter().GetResult();
+        }
+        catch
+        {
+            return null;
+        }
     }
 
     /// <summary>
@@ -1153,15 +1176,15 @@ public static class ClipVideoPromptBuilder
     }
 
     /// <summary>
-    /// Progressive shorten for API length retries. Prefer dropping house-rule addenda first,
-    /// then cap total length while keeping the head (character locks + framing).
+    /// Progressive shorten for API length retries. Prefer dropping HOUSE RULES / project
+    /// addenda first, then cap total length while keeping the head (character locks + framing).
     /// <paramref name="attempt"/> is 1-based (first retry = 1).
     /// </summary>
     public static string ShortenPromptForRetry(string prompt, int attempt)
     {
         if (string.IsNullOrEmpty(prompt)) return prompt;
         attempt = Math.Max(1, attempt);
-        // Retry always drops gen pack / house rules first (even if under cap)
+        // Retry always drops house-rule / project addenda first (even if under cap)
         var p = StripLearningAddenda(prompt);
         if (p.Length > VideoPromptHardCapChars)
             p = HeadCap(p, VideoPromptHardCapChars);
@@ -1177,13 +1200,18 @@ public static class ClipVideoPromptBuilder
         return HeadCap(p, cap);
     }
 
+    /// <summary>
+    /// Drop trailing house-rule / project-rule blocks so core action + locks fit the API cap.
+    /// </summary>
     private static string StripLearningAddenda(string prompt)
     {
         var markers = new[]
         {
+            "\nHOUSE RULES:",
+            "\nPROJECT HOUSE RULES",
+            // Legacy pack markers (old stored prompts / tests)
             "\n# Film Studio gen pack",
             "\n# Film Studio gen pack (active addendum)",
-            "\nPROJECT HOUSE RULES",
             "\nApply these house rules when building clip video prompts:",
         };
         var cut = -1;

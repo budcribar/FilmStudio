@@ -1,25 +1,24 @@
 # Cast extract gold corpus
 
-Release-gate fixtures for **closed cast membership** (who gets a `Character_*` seed).
+Offline fixtures for **cast source coverage** (not regex name inventing).
 
-## Failure mode we guard
+## Policy
 
-Picture-book / title heroes (e.g. **Buster**) appear in book text and action lines but never as dialogue cues. A dialogue-biased model returns only Mom + Narrator; plate sort then attaches dog art to Mom.
+**Cast membership is decided by the model** reading Fountain + book.  
+We do **not** guess Character_* keys with ALL-CAPS / proper-name heuristics (that created Kitchen/Backyard “cast”).
+
+Offline CI checks:
+
+1. Required heroes are **mentioned** in book and/or fountain (model can see them).
+2. Book prompt sampling uses full text or spine samples — **no** forced name-hint list.
+3. Look enrichment only fills stubs for keys the model already returned — never adds cast.
+
+Live Grok coverage: `LiveApi/CastExtractLiveApiTests` (real extract).
 
 ## What each case contains
 
 | File | Purpose |
 |------|---------|
-| `expected_keys.json` | Required `Character_*` keys after speaker-only model + deterministic backfill |
+| `expected_keys.json` | Required `Character_*` keys for source-mention checks; optional `forbidden_key_substrings` |
 | `book.txt` | Book excerpt (names + looks) |
 | `screenplay.fountain` | Optional local Fountain; else `fountain_from_package` points at BookToFountainPackage |
-
-## How tests use them
-
-For every case folder:
-
-1. Build **speaker-only** seeds from Fountain character cues (simulates a broken model).
-2. Run `CollectCastNameHints` + `EnsureSeedsForNameHints` (production backfill).
-3. Assert every `required_keys` entry is covered.
-
-No live Grok calls — free, deterministic CI.

@@ -46,38 +46,6 @@ public sealed class LearningInsightsDto
     public int RegenCount { get; set; }
 }
 
-public sealed class PromptPackInfo
-{
-    public string Id { get; set; } = "";
-    public string Kind { get; set; } = ""; // gen | auto_review | shared
-    public string Version { get; set; } = "";
-    public string RelativePath { get; set; } = "";
-    public bool Active { get; set; }
-    public DateTimeOffset? UpdatedAt { get; set; }
-    public string? Notes { get; set; }
-}
-
-public sealed class PromptPackManifest
-{
-    public int SchemaVersion { get; set; } = 1;
-    public string ActiveGenPackId { get; set; } = "gen-v1";
-    public string ActiveAutoReviewPackId { get; set; } = "auto_review-v1";
-    public List<PromptPackInfo> Packs { get; set; } = new();
-}
-
-public sealed class ActivatePromptPackRequest
-{
-    public string PackId { get; set; } = "";
-}
-
-public sealed class CreatePromptPackBody
-{
-    public string? Kind { get; set; }
-    public string? Version { get; set; }
-    public string? Body { get; set; }
-    public string? Notes { get; set; }
-}
-
 public sealed class ProposeLearningRulesRequest
 {
     public int LastNFails { get; set; } = 50;

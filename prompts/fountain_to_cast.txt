@@ -8,6 +8,9 @@ multi-ref video). Do NOT rewrite the screenplay.
 GOALS
 ================================================================
 1. List every character who appears ON SCREEN or SPEAKS (including silent leads).
+   You decide the closed cast by reading the FOUNTAIN and BOOK — there is no external
+   name list. Do NOT invent cast from scene headings, places, times of day, or verbs
+   (Kitchen, Backyard, Day, Night, Climbs, Runs are NOT characters).
 2. Include pure voice-only narrators when they have dialogue cues (NARRATOR, etc.).
 3. Infer filmable looks from action description + book text (species, size, colors,
    wardrobe, age). Do not invent major plot or people who never appear.

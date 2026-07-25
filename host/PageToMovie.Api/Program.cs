@@ -117,7 +117,6 @@ builder.Services.AddSingleton<FfmpegRemuxService>();
 builder.Services.AddSingleton<IFfmpegRemux>(sp => sp.GetRequiredService<FfmpegRemuxService>());
 builder.Services.AddSingleton<VoicePreviewService>();
 builder.Services.AddSingleton<ReviewEventStore>();
-builder.Services.AddSingleton<PromptPackService>();
 builder.Services.AddSingleton<ProjectRulesService>();
 builder.Services.AddSingleton<LearningProposalService>();
 builder.Services.AddSingleton<ProposalChecklistService>();
@@ -542,64 +541,6 @@ app.MapGet("/api/admin/learning/events", (
             statusCode: StatusCodes.Status403Forbidden);
     var events = learning.Query(projectId, type, category, take: take ?? 100);
     return Results.Ok(new { ok = true, events });
-});
-
-app.MapGet("/api/admin/learning/packs", (IUserContext user, PromptPackService packs) =>
-{
-    if (!user.IsAdmin)
-        return Results.Json(new { ok = false, error = "admin role required" },
-            statusCode: StatusCodes.Status403Forbidden);
-    var m = packs.GetManifest();
-    return Results.Ok(new { ok = true, manifest = m, packs = m.Packs });
-});
-
-app.MapGet("/api/admin/learning/packs/{packId}", (string packId, IUserContext user, PromptPackService packs) =>
-{
-    if (!user.IsAdmin)
-        return Results.Json(new { ok = false, error = "admin role required" },
-            statusCode: StatusCodes.Status403Forbidden);
-    var text = packs.LoadPackText(packId);
-    if (text is null)
-        return Results.NotFound(new { ok = false, error = "pack not found" });
-    return Results.Ok(new { ok = true, packId, text });
-});
-
-app.MapPost("/api/admin/learning/packs/activate", (
-    ActivatePromptPackRequest body,
-    IUserContext user,
-    PromptPackService packs) =>
-{
-    if (!user.IsAdmin)
-        return Results.Json(new { ok = false, error = "admin role required" },
-            statusCode: StatusCodes.Status403Forbidden);
-    try
-    {
-        var m = packs.Activate(body.PackId);
-        return Results.Ok(new { ok = true, manifest = m });
-    }
-    catch (Exception ex)
-    {
-        return Results.BadRequest(new { ok = false, error = ex.Message });
-    }
-});
-
-app.MapPost("/api/admin/learning/packs", (
-    CreatePromptPackBody body,
-    IUserContext user,
-    PromptPackService packs) =>
-{
-    if (!user.IsAdmin)
-        return Results.Json(new { ok = false, error = "admin role required" },
-            statusCode: StatusCodes.Status403Forbidden);
-    try
-    {
-        var info = packs.CreateVersion(body.Kind ?? "gen", body.Version ?? "next", body.Body ?? "", body.Notes);
-        return Results.Ok(new { ok = true, pack = info });
-    }
-    catch (Exception ex)
-    {
-        return Results.BadRequest(new { ok = false, error = ex.Message });
-    }
 });
 
 app.MapPost("/api/admin/learning/propose", async (

@@ -24,7 +24,6 @@ public sealed class ClipAutoReviewService
     private readonly IVisionClient _vision;
     private readonly FfmpegRemuxService _ffmpeg;
     private readonly EditLogService _logs;
-    private readonly PromptPackService _promptPacks;
     private readonly ProjectRulesService _projectRules;
     private readonly ReviewIndexService _reviewIndex;
     private readonly ProjectTelemetryService _telemetry;
@@ -35,7 +34,6 @@ public sealed class ClipAutoReviewService
         IVisionClient vision,
         FfmpegRemuxService ffmpeg,
         EditLogService logs,
-        PromptPackService promptPacks,
         ProjectRulesService projectRules,
         ReviewIndexService reviewIndex,
         ProjectTelemetryService telemetry,
@@ -45,7 +43,6 @@ public sealed class ClipAutoReviewService
         _vision = vision;
         _ffmpeg = ffmpeg;
         _logs = logs;
-        _promptPacks = promptPacks;
         _projectRules = projectRules;
         _reviewIndex = reviewIndex;
         _telemetry = telemetry;
@@ -169,11 +166,9 @@ public sealed class ClipAutoReviewService
 
             onProgress?.Invoke(55, 100, "AI reviewing continuity and quality…");
             var prompt = BuildReviewPrompt(scene, clip, plan, profiles, images, prevPath is not null);
+            // Project-scoped rules only (checklist lives in embedded clip_auto_review.txt).
             try
             {
-                var pack = _promptPacks.LoadActivePackText(PromptPackService.KindAutoReview);
-                if (!string.IsNullOrWhiteSpace(pack))
-                    prompt += "\n\n" + pack.Trim();
                 var rules = _projectRules.GetActiveRulesBlock(projectId);
                 if (!string.IsNullOrWhiteSpace(rules))
                     prompt += "\n\n" + rules.Trim();
@@ -455,36 +450,46 @@ public sealed class ClipAutoReviewService
             }
         }
         sb.AppendLine();
-        sb.AppendLine("CHECKLIST (fail when confidence high; put the primary issue in category):");
-        sb.AppendLine("1) IDENTITY — faces match cast Character_*; no role swap/merge.");
-        sb.AppendLine("2) PROMPT COMPLETENESS — flag stub/truncated plan text; rewrite visual_prompt if needed.");
-        sb.AppendLine("3) SILENCE vs EXPRESSION — no mid-shout / open-mouth yell when silent or no dialogue.");
-        sb.AppendLine("4) ADDRESS / GAZE — honor PROJECT performance rules (confessional vs observational); do not invent eyes-to-camera globally.");
-        sb.AppendLine("5) STYLE + WARDROBE — match project medium and cast period/wardrobe locks.");
-        sb.AppendLine("Also: continuity from prev tail, lip/speech vs dialogue, empty/dead frames, wrong action.");
-        sb.AppendLine("Respond with JSON ONLY (no markdown):");
-        sb.AppendLine("""
+        sb.Append(LoadAutoReviewRulesBlock());
+        return sb.ToString();
+    }
+
+    /// <summary>Checklist + JSON schema from <c>prompts/clip_auto_review.txt</c> (embed or override).</summary>
+    public static string LoadAutoReviewRulesBlock()
+    {
+        try
+        {
+            var text = PromptFiles.ReadAsync("prompts/clip_auto_review.txt").GetAwaiter().GetResult();
+            if (!string.IsNullOrWhiteSpace(text))
+                return text.Trim() + "\n";
+        }
+        catch
+        {
+            /* fall through to built-in fallback */
+        }
+
+        // Minimal fallback if embed/override missing (tests without resources).
+        return """
+            CHECKLIST (fail when confidence high; put the primary issue in category):
+            1) IDENTITY — faces match cast Character_*; no role swap/merge.
+            2) PROMPT COMPLETENESS — flag stub/truncated plan text; rewrite visual_prompt if needed.
+            3) SILENCE vs EXPRESSION — no mid-shout / open-mouth yell when silent or no dialogue.
+            4) ADDRESS / GAZE — honor PROJECT performance rules (confessional vs observational).
+            5) STYLE + WARDROBE — match project medium and cast period/wardrobe locks.
+            6) FACE READABILITY — fail beauty-blank or wrong-emotion face when confidence high.
+            Also: continuity from prev tail, lip/speech vs dialogue, empty/dead frames, wrong action.
+            Respond with JSON ONLY (no markdown):
             {
               "suggestion": "pass"|"fail"|"unclear",
               "category": "continuity"|"wrong_look"|"wrong_style"|"wrong_voice"|"silent"|"framing"|"other",
               "confidence": "high"|"medium"|"low",
               "continuity": "ok"|"jump"|"unclear"|"n/a",
               "note": "one short human-readable review note covering the main checklist hit",
-              "suggestions": [
-                {
-                  "layer": "clip"|"character",
-                  "field": "visual_prompt"|"voice_profile"|"description"|"visual_lock",
-                  "char_key": "Character_... or null",
-                  "label": "short UI label",
-                  "suggested_value": "full replacement text for that field",
-                  "include_by_default": true,
-                  "rationale": "why"
-                }
-              ]
+              "suggestions": []
             }
-            """);
-        sb.AppendLine("Rules: only suggest changes that would improve a re-gen. Prefer clip visual_prompt. Character changes only if look/voice is clearly wrong. Keep Character_* keys. Empty suggestions[] if pass/no edit needed. Use wrong_style for medium drift; wrong_look for identity/wardrobe; silent for dialogue-without-speech or shout-on-silent.");
-        return sb.ToString();
+            Rules: prefer clip visual_prompt rewrites. Keep Character_* keys. Empty suggestions[] if pass.
+
+            """;
     }
 
     private static ClipAutoReviewDraft ParseDraft(

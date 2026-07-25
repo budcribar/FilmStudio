@@ -5,8 +5,8 @@ using Xunit;
 namespace PageToMovie.Tests;
 
 /// <summary>
-/// Release-gate gold corpus: every book case must keep required Character_* keys
-/// even when the model only emits dialogue speakers (Buster-class failure).
+/// Offline fixtures: required heroes must appear in book/fountain text the model will read.
+/// Cast membership itself is decided by the model (LiveApi tests) — not regex name guessing.
 /// </summary>
 public class CastExtractGoldCorpusTests
 {
@@ -55,70 +55,94 @@ public class CastExtractGoldCorpusTests
     }
 
     /// <summary>
-    /// Core release gate: speaker-only model + production backfill must cover required keys.
-    /// This is the Buster regression (silent title hero dropped).
+    /// Source material must mention required heroes so the cast model can see them
+    /// (no offline regex inventing Character_* keys).
     /// </summary>
     [Theory]
     [MemberData(nameof(AllGoldCases))]
-    public void Gold_case_backfill_covers_required_keys_when_model_is_speaker_only(string caseId)
+    public void Gold_case_sources_mention_required_heroes(string caseId)
     {
         var c = LoadCase(caseId);
-        var speakerSeeds = BuildSpeakerOnlySeeds(c.Fountain);
-        var before = speakerSeeds.Keys.OrderBy(k => k).ToList();
-
-        var hints = CastFromScreenplayService.CollectCastNameHints(c.Fountain, c.Book);
-        var added = CastFromScreenplayService.EnsureSeedsForNameHints(
-            speakerSeeds, hints, c.Book, c.Fountain);
-
-        var have = speakerSeeds.Keys.OrderBy(k => k, StringComparer.OrdinalIgnoreCase).ToList();
-        var missing = c.RequiredKeys
-            .Where(req => !SeedSetCoversRequiredKey(speakerSeeds, req))
-            .ToList();
-
-        Assert.True(
-            missing.Count == 0,
-            $"[{caseId}] missing required cast after backfill (added={added}).\n" +
-            $"  Missing: {string.Join(", ", missing)}\n" +
-            $"  Speakers-only before: {string.Join(", ", before)}\n" +
-            $"  After backfill: {string.Join(", ", have)}\n" +
-            $"  Name hints ({hints.Count}): {string.Join(", ", hints.Take(24))}");
-
-        foreach (var bad in c.ForbiddenKeySubstrings)
-        {
-            var hit = have.FirstOrDefault(k =>
-                k.Contains(bad, StringComparison.OrdinalIgnoreCase));
-            Assert.True(
-                hit is null,
-                $"[{caseId}] forbidden key fragment '{bad}' present as '{hit}' in {string.Join(", ", have)}");
-        }
-    }
-
-    /// <summary>Each case is also listed as its own named fact surface for IDE discoverability.</summary>
-    [Theory]
-    [MemberData(nameof(AllGoldCases))]
-    public void Gold_case_name_hints_mention_required_heroes(string caseId)
-    {
-        var c = LoadCase(caseId);
-        var hints = CastFromScreenplayService.CollectCastNameHints(c.Fountain, c.Book);
-        var hintBlob = string.Join(" | ", hints);
+        var blob = c.Book + "\n" + c.Fountain;
 
         foreach (var req in c.RequiredKeys)
         {
             var core = req.Replace("Character_", "", StringComparison.OrdinalIgnoreCase)
                 .Replace('_', ' ');
-            // At least one token of the required key should appear in hints (Buster, Mowgli, …)
             var tokens = core.Split(' ', StringSplitOptions.RemoveEmptyEntries)
                 .Where(t => t.Length >= 3)
                 .Where(t => !t.Equals("the", StringComparison.OrdinalIgnoreCase)
                             && !t.Equals("of", StringComparison.OrdinalIgnoreCase))
                 .ToList();
             if (tokens.Count == 0) continue;
-            var hit = tokens.Any(t =>
-                hints.Any(h => h.Contains(t, StringComparison.OrdinalIgnoreCase)));
+            var hit = tokens.Any(t => blob.Contains(t, StringComparison.OrdinalIgnoreCase));
             Assert.True(
                 hit,
-                $"[{caseId}] name hints missing token for {req}. " +
-                $"Wanted one of [{string.Join(", ", tokens)}]. Hints: {hintBlob}");
+                $"[{caseId}] book/fountain never mention token for {req}. " +
+                $"Wanted one of [{string.Join(", ", tokens)}]. Model cannot cast what it never reads.");
+        }
+    }
+
+    /// <summary>
+    /// Short books go into the cast prompt in full (title heroes visible end-to-end).
+    /// Long books use spine samples only — not a guessed name list.
+    /// </summary>
+    [Theory]
+    [MemberData(nameof(AllGoldCases))]
+    public void Gold_case_book_prompt_has_no_name_list_guessing(string caseId)
+    {
+        var c = LoadCase(caseId);
+        var selected = CastFromScreenplayService.SelectBookTextForCastPrompt(
+            c.Book, CastFromScreenplayService.BookPromptChars, nameHints: null);
+
+        Assert.DoesNotContain("LOOK EXCERPTS", selected, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("REQUIRED CAST NAMES", selected, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("HIGH-CONFIDENCE CAST NAMES", selected, StringComparison.OrdinalIgnoreCase);
+
+        if (c.Book.Length <= CastFromScreenplayService.BookPromptChars)
+        {
+            // Full book present for the model (normalize newlines like SelectBookText does)
+            var sample = c.Book.Replace("\r\n", "\n").Replace('\r', '\n').Trim();
+            if (sample.Length > 60)
+                sample = sample[..60];
+            Assert.Contains(sample, selected, StringComparison.Ordinal);
+        }
+        else
+        {
+            Assert.Contains("spine", selected, StringComparison.OrdinalIgnoreCase);
+        }
+    }
+
+    /// <summary>
+    /// Look enrichment only fills stubs for keys the model already returned —
+    /// never invents new cast members from book words.
+    /// </summary>
+    [Theory]
+    [MemberData(nameof(AllGoldCases))]
+    public void Gold_case_enrich_looks_does_not_invent_cast(string caseId)
+    {
+        var c = LoadCase(caseId);
+        // Simulate model that only emitted first required key (or a placeholder).
+        var seeds = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase);
+        var first = c.RequiredKeys[0];
+        seeds[first] = new Dictionary<string, object?>
+        {
+            ["canonical_given_name"] = first.Replace("Character_", "").Replace('_', ' '),
+            ["description"] = "as described in the screenplay",
+            ["visual_lock"] = "",
+            ["display_name_policy"] = "ok_anytime",
+        };
+
+        var before = seeds.Keys.ToList();
+        CastFromScreenplayService.EnrichStubLooksFromSources(seeds, c.Book, c.Fountain);
+        Assert.Equal(before.Count, seeds.Count);
+        Assert.All(before, k => Assert.True(seeds.ContainsKey(k)));
+
+        foreach (var bad in c.ForbiddenKeySubstrings)
+        {
+            var hit = seeds.Keys.FirstOrDefault(k =>
+                k.Contains(bad, StringComparison.OrdinalIgnoreCase));
+            Assert.True(hit is null, $"[{caseId}] enrich invented forbidden fragment '{bad}' as '{hit}'");
         }
     }
 
@@ -185,100 +209,4 @@ public class CastExtractGoldCorpusTests
             ForbiddenKeySubstrings = forbidden,
         };
     }
-
-    /// <summary>
-    /// Simulates a dialogue-biased model: only Fountain character cues become seeds.
-    /// </summary>
-    private static Dictionary<string, object?> BuildSpeakerOnlySeeds(string fountain)
-    {
-        var seeds = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase);
-        try
-        {
-            var parsed = FountainParser.Parse(fountain);
-            foreach (var el in parsed.Elements)
-            {
-                if (el.Type != FountainParser.ElementType.Character) continue;
-                var raw = (el.Text ?? "").Trim();
-                raw = System.Text.RegularExpressions.Regex.Replace(raw, @"\s*\([^)]*\)\s*$", "").Trim();
-                raw = raw.TrimStart('@', '^', '*').Trim();
-                if (raw.Length < 2) continue;
-                var key = CastFromScreenplayService.NameToCharacterKey(raw);
-                if (seeds.ContainsKey(key)) continue;
-                var display = raw.Length <= 40 ? raw : raw[..40];
-                seeds[key] = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase)
-                {
-                    ["canonical_given_name"] = display,
-                    ["description"] = $"{display} (speaker cue only).",
-                    ["display_name_policy"] = "ok_anytime",
-                    ["voice_label"] = display.Replace(' ', '_'),
-                };
-            }
-        }
-        catch
-        {
-            // empty speaker set — backfill must still recover from book
-        }
-        return seeds;
-    }
-
-    /// <summary>
-    /// Flexible coverage: Character_Marley matches Character_Marley_Ghost;
-    /// Character_Mom matches Character_Momma; Character_Van_Helsing matches Character_Professor_Van_Helsing.
-    /// </summary>
-    private static bool SeedSetCoversRequiredKey(
-        Dictionary<string, object?> seeds,
-        string requiredKey)
-    {
-        if (seeds.ContainsKey(requiredKey))
-            return true;
-
-        var want = NormalizeKeyCore(requiredKey);
-        if (want.Length < 2) return false;
-
-        foreach (var (key, val) in seeds)
-        {
-            var have = NormalizeKeyCore(key);
-            if (have == want) return true;
-            if (have.Contains(want, StringComparison.Ordinal) || want.Contains(have, StringComparison.Ordinal))
-            {
-                if (Math.Min(have.Length, want.Length) >= 4)
-                    return true;
-            }
-            // token overlap: bobcratchit vs bob + cratchit
-            if (CoreTokens(want).All(t => have.Contains(t, StringComparison.Ordinal)))
-                return true;
-
-            if (val is Dictionary<string, object?> seed &&
-                seed.TryGetValue("canonical_given_name", out var gn) &&
-                gn?.ToString() is { Length: > 0 } given)
-            {
-                var g = NormalizeKeyCore(given);
-                if (g == want || g.Contains(want, StringComparison.Ordinal) || want.Contains(g, StringComparison.Ordinal))
-                    return true;
-            }
-        }
-        return false;
-    }
-
-    private static string NormalizeKeyCore(string key)
-    {
-        var s = (key ?? "").Trim();
-        if (s.StartsWith("Character_", StringComparison.OrdinalIgnoreCase))
-            s = s["Character_".Length..];
-        s = s.ToLowerInvariant();
-        s = System.Text.RegularExpressions.Regex.Replace(s, @"[^a-z0-9]+", "");
-        return s switch
-        {
-            "momma" or "mommy" or "mama" or "mother" => "mom",
-            "daddy" or "dad" or "papa" or "father" => "dad",
-            "marleysghost" or "ghostofmarley" => "marley",
-            _ => s,
-        };
-    }
-
-    private static IEnumerable<string> CoreTokens(string normalized) =>
-        // split camel/underscore remnants already stripped — use 4+ char chunks from original if needed
-        System.Text.RegularExpressions.Regex.Split(normalized, @"(?<=[a-z])(?=[A-Z])|_+")
-            .Select(t => t.ToLowerInvariant())
-            .Where(t => t.Length >= 4);
 }
