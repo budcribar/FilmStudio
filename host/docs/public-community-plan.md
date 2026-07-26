@@ -292,18 +292,31 @@ flowchart LR
 
 ---
 
-## Demo Gallery & YouTube Video Hosting
+## Demo Gallery & YouTube Auto-Upload Pipeline
 
 ### Intent
-Zero-server-disk public demo gallery powered by YouTube video embeds. Eliminates Railway disk usage and server streaming bandwidth for public demo videos while driving views and engagement to your YouTube Channel.
+Zero-server-disk public demo gallery powered by automated YouTube video uploads via YouTube Data API v3. Completely eliminates Railway disk usage and server streaming bandwidth for public demo videos while driving views and subscribers directly to your YouTube Channel.
 
-### Model: **YouTube Embeds + Upvotes**
-- **Public Video Stream**: Demos are published with a YouTube Video ID (`youtube_id`) or YouTube URL.
-- **Embedded Player**: The public `/demo` page renders an embedded, privacy-enhanced YouTube iframe player (`<iframe src="https://www.youtube-nocookie.com/embed/{youtubeId}"></iframe>`).
+### Architecture & Automated Workflow
+
+```mermaid
+flowchart TD
+    A["User submits Demo Movie / Scene"] --> B["Admin Approves in Admin UI"]
+    B --> C["YouTubeUploadService\n(YouTube Data API v3 Resumable Upload)"]
+    C --> D["YouTube Channel Video Created\n(Returns youtubeId, e.g. dQw4w9WgXcQ)"]
+    D --> E["Write youtubeId to demo.json / SQLite"]
+    E --> F["Delete temporary .mp4 from Railway Server Disk"]
+    F --> G["Public Gallery (/demo) renders YouTube Embed"]
+```
+
+- **API Auto-Upload (`YouTubeUploadService.cs`)**:
+  - Uses YouTube Data API v3 (`POST https://www.googleapis.com/upload/youtube/v3/videos?uploadType=resumable&part=snippet,status`).
+  - Configured via OAuth2 credentials in Railway environment (`YouTube__ClientId`, `YouTube__ClientSecret`, `YouTube__RefreshToken`).
+  - Upon demo approval, PageToMovie streams the MP4 video directly to your YouTube Channel as Public or Unlisted, sets the title, description, tags, and category, and retrieves the generated `youtubeId`.
+- **Immediate Local Purge**: As soon as the upload completes, PageToMovie deletes the temporary `.mp4` file from Railway disk.
+- **Embedded Playback**: The public `/demo` page renders an embedded, privacy-enhanced YouTube iframe player (`<iframe src="https://www.youtube-nocookie.com/embed/{youtubeId}"></iframe>`).
+- **Manual Fallback**: Admin UI allows manual YouTube URL/ID pasting if an offline video was uploaded out-of-band.
 - **Server Footprint**: **0 MB for video files**. `demo.json` / SQLite stores only metadata (title, author, screenplay snippet, upvote count, YouTube ID).
-- **Publishing Methods**:
-  1. *Manual URL*: Admin/user inputs YouTube link or ID upon demo approval.
-  2. *API Auto-Upload (Optional)*: Railway server uploads approved demo to YouTube Channel via YouTube Data API v3 (`videos.insert`) and immediately deletes the temporary local MP4 file.
 
 ---
 
@@ -323,6 +336,7 @@ Keep generated MP4 clips and scene previews on client devices while enforcing a 
 
 | Component | Target File | Responsibility |
 |-----------|-------------|----------------|
+| **YouTube API Auto-Uploader** | [YouTubeUploadService.cs](file:///C:/Users/budcr/source/repos/gemini/PageToMovie/host/PageToMovie.Engine/YouTubeUploadService.cs) | YouTube Data API v3 OAuth2 resumable upload & server disk auto-purge. |
 | **Privacy Search & Invite API** | [Program.cs](file:///C:/Users/budcr/source/repos/gemini/PageToMovie/host/PageToMovie.Api/Program.cs) | Gated `GET /api/users/search`, `POST /api/projects/{id}/invites`, and `/join` invite acceptance. |
 | **Invite UI Modal** | [ProjectCollaboratorsModal.razor](file:///C:/Users/budcr/source/repos/gemini/PageToMovie/host/PageToMovie.Web/Components/Modals/ProjectCollaboratorsModal.razor) | Modal with handle search (`@username`) and blind email invite input. |
 | **Lightweight Forking** | [ProjectArchiveService.cs](file:///C:/Users/budcr/source/repos/gemini/PageToMovie/host/PageToMovie.Engine/ProjectArchiveService.cs) | `ForkProjectAsync` creates < 5 MB text/metadata project forks excluding video binaries. |
