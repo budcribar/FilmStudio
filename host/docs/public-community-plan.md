@@ -261,14 +261,34 @@ Characters are **global** (high blast radius); scenes are a **timeline of clips*
 ### Intent
 Instead of forcing multiple users to edit the same live project files simultaneously (which risks file lock conflicts and overwritten edits), PageToMovie uses an **Invite-to-Fork & Async Diff-Merge** collaboration model.
 
-### Workflow
-1. **Invite & User Search**: Project Owner A opens the **Collaborate & Invite** modal in the UI.
-   - *Public Handle Search*: Owner A can type `@username` to search existing creator handles. The API queries SQLite `users` table (`username` column) and returns public handles only — **raw email addresses are never returned to the browser**.
+```mermaid
+flowchart LR
+    A["User A (Owner)\nMaster Project A"] -- "1. Invite via handle or email" --> B["User B (Collaborator)\nAccepts Invite"]
+    B -- "2. Instant Lightweight Fork\n(< 5 MB package)" --> C["User B Workspace\nProject B (Fork)"]
+    C -- "3. Edit & generate clips\n(Client B storage)" --> C
+    A -- "3. Edit & generate clips\n(Client A storage)" --> A
+    C -- "4. Submit Contribution\n(JSON diff)" --> D["Merge Proposal"]
+    D -- "5. Visual Diff Review & Accept" --> A
+```
+
+### Detailed Workflow & Security Model
+
+1. **Privacy-Preserving Invitation & Search**:
+   - Project Owner A opens the **Collaborate & Invite** modal in the UI.
+   - *Public Handle Search (`@username`)*: Owner A types `@username` to search existing creator handles. The API queries SQLite `users` table (`username` column) and returns public handles only — **raw email addresses are never returned to the browser**.
    - *Blind Email Delivery*: Owner A can type a recipient's direct email address (`partner@example.com`). The server dispatches the invite link via Resend API without revealing to the client whether an account exists for that email.
-2. **Instant Fork**: User B accepts the invite via in-app notification or email link (`/join?token=inv_...`). A lightweight fork (`Project A (Fork)`) is created in User B's project area (< 5 MB ZIP size, containing screenplay, cast seeds, reference images, and shot plan blueprint; excluding video binaries).
-3. **Independent Local Work**: User A and User B work independently on their own client storage (IndexedDB / OPFS / local PC folder). Neither user blocks or locks the other's workspace.
-4. **Contribution Submission**: User B completes edits (e.g. prompt tuning or beat timing changes) and clicks "Submit Contribution to Owner".
-5. **Diff Review & Merge**: Owner A receives a notification, views a side-by-side visual diff grouped by **Cast** and **Scenes/Clips**, and accepts/merges the changes into master `Project A`.
+   - *Zero DB Schema Changes*: SQLite `users` table already stores both `username TEXT NOT NULL UNIQUE` and `email TEXT`.
+2. **Invitation Tokens & Acceptance (`/join?token=inv_...`)**:
+   - The API generates a secure, 48-hour single-use token (`inv_...`).
+   - When User B clicks the link (or accepts via in-app dashboard badge), PageToMovie executes `ForkProjectAsync`.
+3. **Instant Lightweight Fork**:
+   - Creates `Project A (Fork)` under User B's account (< 5 MB package containing Fountain script, cast seeds, reference images, and shot plan blueprint; excluding video binaries).
+4. **Independent Local Work**:
+   - User A and User B work independently on their own client storage (IndexedDB / OPFS / local PC folder). Neither user blocks or locks the other's workspace.
+5. **Contribution Submission**:
+   - User B completes edits (e.g. prompt tuning or beat timing changes) and clicks "Submit Contribution to Owner".
+6. **Side-by-Side Visual Diff Review & Merge**:
+   - Owner A receives a notification, views a side-by-side visual diff grouped by **Cast** and **Scenes/Clips** in `ContributionReview.razor`, and accepts/merges the changes into master `Project A`.
 
 ---
 
@@ -287,30 +307,42 @@ Zero-server-disk public demo gallery powered by YouTube video embeds. Eliminates
 
 ---
 
-## Suggested ship order
+## Client Media Storage & Server Media Pruner
 
-1. **Demo upvotes + rank by most upvotes** — **done (basic)** on `/demo`.  
+### Intent
+Keep generated MP4 clips and scene previews on client devices while enforcing a strict capacity guard on Railway server disk space.
+
+### Architecture
+- **Client Storage**: Gen clips live in the browser media folder (IndexedDB / OPFS / Local PC Folder) via `ClientMediaFolderService.cs`.
+- **Browser Stitching**: `ClientVideoStitchService.cs` uses **ffmpeg.wasm** in the Blazor client to compile scene/screenplay movies locally.
+- **Server Media Pruner (`ServerMediaPruningService.cs`)**: Hosted background service on Railway that inspects `projects/{id}/assets/video/` and `demos/`. Automatically purges server-cached `.mp4` files older than 48 hours or whenever container disk usage > 80%. Server disk footprint remains **< 100 MB total**.
+
+---
+
+## Technical Component & File Map
+
+| Component | Target File | Responsibility |
+|-----------|-------------|----------------|
+| **Privacy Search & Invite API** | [Program.cs](file:///C:/Users/budcr/source/repos/gemini/PageToMovie/host/PageToMovie.Api/Program.cs) | Gated `GET /api/users/search`, `POST /api/projects/{id}/invites`, and `/join` invite acceptance. |
+| **Invite UI Modal** | [ProjectCollaboratorsModal.razor](file:///C:/Users/budcr/source/repos/gemini/PageToMovie/host/PageToMovie.Web/Components/Modals/ProjectCollaboratorsModal.razor) | Modal with handle search (`@username`) and blind email invite input. |
+| **Lightweight Forking** | [ProjectArchiveService.cs](file:///C:/Users/budcr/source/repos/gemini/PageToMovie/host/PageToMovie.Engine/ProjectArchiveService.cs) | `ForkProjectAsync` creates < 5 MB text/metadata project forks excluding video binaries. |
+| **Contribution & Merge Engine** | [ProjectContributionService.cs](file:///C:/Users/budcr/source/repos/gemini/PageToMovie/host/PageToMovie.Engine/ProjectContributionService.cs) | Generates structured JSON diffs and executes field-level merge into master project. |
+| **Diff Viewer UI** | [ContributionReview.razor](file:///C:/Users/budcr/source/repos/gemini/PageToMovie/host/PageToMovie.Web/Components/Pages/ContributionReview.razor) | Side-by-side visual diff viewer for cast and scene edits. |
+| **Server Media Pruner** | [ServerMediaPruningService.cs](file:///C:/Users/budcr/source/repos/gemini/PageToMovie/host/PageToMovie.Engine/ServerMediaPruningService.cs) | Railway 48h TTL & 80% disk capacity auto-pruner hosted service. |
+| **YouTube Demo Catalog** | [DemoCatalogService.cs](file:///C:/Users/budcr/source/repos/gemini/PageToMovie/host/PageToMovie.Engine/DemoCatalogService.cs) | Stores `YoutubeId` and `YoutubeUrl` in demo metadata. |
+| **YouTube Gallery UI** | [Demo.razor](file:///C:/Users/budcr/source/repos/gemini/PageToMovie/host/PageToMovie.Web/Components/Pages/Demo.razor) | Privacy-enhanced YouTube iframe player embed (`youtube-nocookie.com`). |
+
+---
+
+## Suggested Ship Order
+
+1. **Demo Upvotes + Ranking** — **done (basic)** on `/demo`.  
 2. **YouTube Demo Gallery Hosting** — store `youtube_id` in demo metadata, render YouTube iframe player in `/demo`, zero server video disk usage.
 3. **Client Media Storage & Server Media Pruner** — Railway background 48h TTL media pruner (`ServerMediaPruningService.cs`) + client-side IndexedDB/OPFS fallback.
 4. **Lightweight Project Export & Fork Packaging** — update `ProjectArchiveService` to export light ZIP packages (< 5 MB) excluding `.mp4` binaries.
-5. **Project collaborators** (owner + editors, invite by username, project list includes member-of).  
-6. **Wire private / public / open** (play/fork matrix) on publish/listing.  
-7. **Prompt/JSON contributions** + owner merge + conflict UX.
+5. **Invite-to-Fork & Privacy Search** — handle search (`@username`), blind email invites via Resend API, invite acceptance landing route (`/join`), lightweight fork creation.
+6. **Async Contribution & Visual Diff Review** — `ProjectContributionService` field-level diffs and `ContributionReview.razor` merge UI.
 
 ---
 
-## Related code today
-
-| Area | Location |
-|------|----------|
-| Project owner | `project.json` / `ownerUserId` via `ProjectStore` |
-| Publish demo permission | `CanUserPublishDemoAsync` (owner match) |
-| Users | SQLite `pagetomovie.db` / `UserDatabaseService` |
-| Demo catalog / moderate | `DemoCatalogService`, admin demos UI, YouTube embed in `Demo.razor` |
-| Server Media Pruner | `ServerMediaPruningService.cs` (Railway 48h TTL purge) |
-| Client media hashes | media registry (per project; per-browser folder / IndexedDB) |
-| Project export & import | `ProjectArchiveService.cs` (lightweight packaging) |
-
----
-
-*Last updated: 2026-07-26 — updated with Client MP4 Storage, Server Media Pruner, YouTube Demo Hosting, and Lightweight Project Export/Fork packaging.*
+*Last updated: 2026-07-26 — comprehensive single source of truth for Client MP4 Storage, Server Media Pruner, YouTube Demo Hosting, and Privacy-Preserving Invite-to-Fork Collaboration.*
