@@ -790,8 +790,11 @@ public sealed class EngineApiClient
         resp.EnsureSuccessStatusCode();
     }
 
-    public async Task<ProjectsDto?> GetProjectsAsync(CancellationToken ct = default) =>
-        await _http.GetFromJsonAsync<ProjectsDto>("/api/projects", JsonOpts, ct);
+    public async Task<ProjectsDto?> GetProjectsAsync(CancellationToken ct = default)
+    {
+        SyncIdentityHeaders();
+        return await _http.GetFromJsonAsync<ProjectsDto>("/api/projects", JsonOpts, ct);
+    }
 
     public async Task ActivateProjectAsync(string projectId, CancellationToken ct = default)
     {
