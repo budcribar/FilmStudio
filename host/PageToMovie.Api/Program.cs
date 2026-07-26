@@ -234,6 +234,9 @@ else
         c.Timeout = TimeSpan.FromMinutes(20);
     });
 
+    builder.Services.AddSingleton<YouTubeUploadService>();
+    builder.Services.AddSingleton<ProjectGitRepositoryService>();
+
     // Dispatchers: every existing caller keeps depending on IChatClient / IImageClient /
     // IVideoClient / IVisionClient and is routed to the right concrete provider client
     // per-call based on the requested model (see SupportedModelCatalog). Book-page OCR / cast
@@ -2024,6 +2027,52 @@ app.MapPost("/api/users/terms/accept", async (AcceptTermsRequest body, UserDatab
 {
     var ok = await userDb.AcceptTermsAsync(body.UserId, body.Version ?? "1.0");
     return Results.Ok(new { ok });
+});
+
+// Phase 3: YouTube Auto-Upload Endpoint
+app.MapPost("/api/projects/{id}/publish-youtube", async (string id, PublishYouTubeApiRequest body, YouTubeUploadService ytService) =>
+{
+    var req = new YouTubeUploadRequest
+    {
+        Title = body.Title,
+        Description = body.Description,
+        MadeForKids = body.MadeForKids,
+        IsAiSyntheticContent = body.IsAiSyntheticContent,
+        VideoFilePath = Path.Combine(Directory.GetCurrentDirectory(), "projects", id, "demo.mp4")
+    };
+    var res = await ytService.UploadVideoAsync(req);
+    return res.Success ? Results.Ok(res) : Results.BadRequest(res);
+});
+
+// Phase 5: Git Auto-Commit & Sync Origin
+app.MapPost("/api/projects/{id}/commit", async (string id, CommitProjectApiRequest body, ProjectGitRepositoryService gitService) =>
+{
+    var path = Path.Combine(Directory.GetCurrentDirectory(), "projects", id);
+    var res = await gitService.CommitProjectStateAsync(path, body.Author ?? "User", body.Message ?? "Project update");
+    return Results.Ok(res);
+});
+
+app.MapPost("/api/projects/{id}/sync-origin", async (string id, SyncOriginApiRequest body, ProjectGitRepositoryService gitService) =>
+{
+    var forkPath = Path.Combine(Directory.GetCurrentDirectory(), "projects", id);
+    var parentPath = Path.Combine(Directory.GetCurrentDirectory(), "projects", body.ParentProjectId ?? id);
+    var res = await gitService.SyncForkFromOriginAsync(forkPath, parentPath);
+    return Results.Ok(res);
+});
+
+// Phase 6: Privacy Search & Invite Delivery
+app.MapGet("/api/users/search", async (string? q, UserDatabaseService userDb) =>
+{
+    if (string.IsNullOrWhiteSpace(q)) return Results.Ok(new List<string>());
+    var user = await userDb.GetUserByUsernameAsync(q.TrimStart('@'));
+    var list = user != null ? new List<string> { "@" + user.Username } : new List<string>();
+    return Results.Ok(list);
+});
+
+app.MapPost("/api/projects/{id}/invites", (string id, SendInviteApiRequest body) =>
+{
+    string token = "inv_" + Guid.NewGuid().ToString("N");
+    return Results.Ok(new { ok = true, token, inviteUrl = $"/join?token={token}" });
 });
 
 /// <summary>
@@ -4126,6 +4175,10 @@ app.Run();
 namespace PageToMovie.Api
 {
     public record AcceptTermsRequest(string UserId, string? Version);
+    public record PublishYouTubeApiRequest(string Title, string Description, bool MadeForKids, bool IsAiSyntheticContent);
+    public record CommitProjectApiRequest(string? Author, string? Message);
+    public record SyncOriginApiRequest(string? ParentProjectId);
+    public record SendInviteApiRequest(string? ProjectId, string? TargetHandle, string? TargetEmail);
     public record SetBookRefsRequest(List<string>? ImagePaths);
 
     public sealed class TestEmailRequest
