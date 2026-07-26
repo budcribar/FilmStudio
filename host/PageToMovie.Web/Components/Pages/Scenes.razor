@@ -34,6 +34,33 @@ else
 {
     <div class="alert alert-info">@_message</div>
 }
+
+@* Feature 8: clip finished but not saved to a local media folder *@
+@if (!string.IsNullOrEmpty(MediaFolder.LocalSaveWarning))
+{
+    <div class="alert alert-warning d-flex flex-wrap align-items-center justify-content-between gap-2 py-2 mb-3"
+         data-testid="scenes-local-save-warning"
+         role="status">
+        <span>@MediaFolder.LocalSaveWarning</span>
+        <div class="d-flex align-items-center gap-2 flex-shrink-0">
+            @if (!MediaFolder.IsConnected)
+            {
+                <button type="button"
+                        class="btn btn-sm btn-warning text-nowrap"
+                        disabled="@_busy"
+                        @onclick="ConnectMediaFolderFromWarningAsync">
+                    Connect folder
+                </button>
+            }
+            <button type="button"
+                    class="btn btn-sm btn-outline-secondary"
+                    @onclick="DismissLocalSaveWarning">
+                Dismiss
+            </button>
+        </div>
+    </div>
+}
+
 @if (_castChecked && !CastReady)
 {
     <div class="alert alert-warning py-2" data-testid="scenes-cast-gate">
@@ -1648,6 +1675,7 @@ else
     {
         Hub.JobUpdated += OnJobUpdated;
         Hub.JobLog += OnJobLog;
+        MediaFolder.Changed += OnMediaFolderChanged;
         try
         {
             try { await Session.EnsureHydratedAsync(); } catch { /* optional */ }
@@ -1676,8 +1704,9 @@ else
             try
             {
                 await Hub.StartAsync();
+                await MediaFolder.EnsureHubHookAsync();
             }
-            catch { /* SignalR optional for browse */ }
+            catch { /* SignalR / media folder optional for browse */ }
 
             var jobs = await Engine.GetJobAsync();
             _job = jobs?.Job;
@@ -1690,6 +1719,23 @@ else
         {
             _error = ex.Message;
             _gateChecked = true;
+        }
+    }
+
+    private void OnMediaFolderChanged() => _ = InvokeAsync(StateHasChanged);
+
+    private void DismissLocalSaveWarning() => MediaFolder.DismissLocalSaveWarning();
+
+    private async Task ConnectMediaFolderFromWarningAsync()
+    {
+        try
+        {
+            await MediaFolder.ConnectFolderAsync();
+            await MediaFolder.EnsureHubHookAsync();
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
         }
     }
 
@@ -2659,7 +2705,11 @@ else
         finally { _busy = false; }
     }
 
-    private Task EnsureHubAsync() => Hub.EnsureStartedAsync();
+    private async Task EnsureHubAsync()
+    {
+        await Hub.EnsureStartedAsync();
+        try { await MediaFolder.EnsureHubHookAsync(); } catch { /* optional */ }
+    }
 
     private static string StatusBadge(string status) => status switch
     {
@@ -2702,6 +2752,7 @@ else
     {
         Hub.JobUpdated -= OnJobUpdated;
         Hub.JobLog -= OnJobLog;
+        MediaFolder.Changed -= OnMediaFolderChanged;
         _clientPreviewUrl = null;
         _clientSceneUrl = null;
         await Stitch.RevokePreviewUrlAsync();
