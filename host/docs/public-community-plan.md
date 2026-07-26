@@ -399,6 +399,21 @@ flowchart TD
    - The Railway server can automatically push project commits to GitHub (or any Git server) for off-site disaster recovery and backup.
    - `.gitignore` excludes `assets/video/*.mp4`, ensuring backup repos remain lightweight (< 5 MB).
 
+### Dedicated GitHub Organization Strategy (`github.com/PageToMovie`)
+
+To maintain professional branding, clean open-source packaging, and isolated API security, PageToMovie utilizes a **Dedicated GitHub Organization** (`PageToMovie` or `PageToMovie-App`):
+
+- **Repository Structure**:
+  - `github.com/PageToMovie/PageToMovie` — Primary Web App & Engine codebase repository.
+  - `github.com/PageToMovie/PageToMovie-Projects` — Dedicated film projects template & metadata repository.
+  - `github.com/PageToMovie/PageToMovie.GitUi` — Open-source Blazor Git UI Razor Class Library (NuGet package source).
+- **Security & Token Isolation**:
+  - Railway server uses a dedicated GitHub Personal Access Token (PAT) scoped strictly to the `PageToMovie` Organization.
+  - Prevents automated Railway backup scripts from having access to personal repositories on your primary GitHub account (`budcribar`).
+- **Owner Control**: Your personal GitHub account (`budcribar`) remains the primary administrator and owner of the `PageToMovie` GitHub Organization.
+
+---
+
 ### Modular Blazor Git UI Razor Class Library (`PageToMovie.GitUi` / NuGet Package)
 
 To benefit the broader .NET / Blazor developer community, all Git version-control UI components are architected as a **decoupled, reusable Razor Class Library (RCL)** designed for independent publication to **NuGet.org**:
