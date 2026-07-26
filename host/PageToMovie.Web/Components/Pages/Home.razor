@@ -140,6 +140,15 @@
                                 @if (active)
                                 {
                                     <a class="btn btn-sm btn-light flex-shrink-0" data-testid="home-open-adaptation" href="adaptation">Open</a>
+                                    @if (Session.IsAdmin || string.Equals(Session.UserId, p.OwnerUserId, StringComparison.OrdinalIgnoreCase))
+                                    {
+                                        <button type="button"
+                                                class="btn btn-sm btn-outline-light flex-shrink-0"
+                                                disabled="@_busy"
+                                                @onclick="() => OpenCollaboratorsModal(id)">
+                                            Collaborate
+                                        </button>
+                                    }
                                     <button type="button"
                                             class="btn btn-sm btn-outline-danger me-2 flex-shrink-0 @(active ? "border-light text-white" : null)"
                                             disabled="@_busy"
@@ -277,12 +286,24 @@
     </div>
 </div>
 
+<ProjectCollaboratorsModal IsOpen="_showCollaboratorsModal" ProjectId="_collaboratorsProjectId" OnClose="CloseCollaboratorsModal" />
+
 @code {
     private bool? _healthOk;
     private bool _busy;
     private string? _error;
     private string? _message;
     private ProjectsDto? _projects;
+    private bool _showCollaboratorsModal;
+    private string _collaboratorsProjectId = "";
+
+    private void OpenCollaboratorsModal(string projectId)
+    {
+        _collaboratorsProjectId = projectId;
+        _showCollaboratorsModal = true;
+    }
+
+    private void CloseCollaboratorsModal() => _showCollaboratorsModal = false;
     private JobSnapshot? _job;
     private List<JobSnapshot> _myJobs = new();
     private bool _showNew;

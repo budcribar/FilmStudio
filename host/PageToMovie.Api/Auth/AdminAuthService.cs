@@ -154,7 +154,8 @@ public sealed class AdminAuthService : IAdminAuthService
             await _email.SendAsync(user.Email!, subject, html, text);
     }
 
-    private string BuildAppLink(string pathAndQuery)
+    /// <summary>Public site URL for a path (Railway domain auto-detected; see fallback chain below).</summary>
+    public string BuildAppLink(string pathAndQuery)
     {
         var bas = (_mail.PublicBaseUrl ?? "").Trim().TrimEnd('/');
         if (string.IsNullOrWhiteSpace(bas))

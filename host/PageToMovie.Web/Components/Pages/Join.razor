@@ -1,0 +1,85 @@
+@page "/join"
+@inject EngineApiClient Engine
+@inject AdminSessionService Session
+@inject NavigationManager Nav
+@using Microsoft.AspNetCore.WebUtilities
+
+<PageTitle>Accept invite — PageToMovie</PageTitle>
+
+<div class="container py-5" style="max-width: 32rem;">
+    <div class="card">
+        <div class="card-body text-center py-5">
+            <h1 class="h4 mb-3">🤝 Project invite</h1>
+
+            @if (string.IsNullOrWhiteSpace(_token))
+            {
+                <p class="text-danger mb-0">This invite link is missing its token.</p>
+            }
+            else if (!Session.IsLoggedIn)
+            {
+                <p class="mb-3">Sign in or create an account, then open this same link again from your email to accept the invite.</p>
+                <a class="btn btn-primary" href="/login">Sign in</a>
+            }
+            else if (_busy)
+            {
+                <div class="spinner-border text-primary" role="status"><span class="visually-hidden">Working…</span></div>
+                <p class="text-muted mt-3 mb-0">Forking project…</p>
+            }
+            else if (_forkedProjectId is not null)
+            {
+                <p class="text-success mb-3">Forked as <strong>@_forkedTitle</strong> — it's ready in your project list.</p>
+                <a class="btn btn-primary" href="/">Go to your projects</a>
+            }
+            else if (_error is not null)
+            {
+                <p class="text-danger mb-0">@_error</p>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    private string? _token;
+    private bool _busy;
+    private string? _error;
+    private string? _forkedProjectId;
+    private string? _forkedTitle;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var uri = new Uri(Nav.Uri);
+        var query = QueryHelpers.ParseQuery(uri.Query);
+        _token = query.TryGetValue("token", out var t) ? t.ToString() : null;
+
+        await Session.EnsureHydratedAsync();
+        if (!string.IsNullOrWhiteSpace(_token) && Session.IsLoggedIn)
+            await AcceptAsync();
+    }
+
+    private async Task AcceptAsync()
+    {
+        _busy = true;
+        _error = null;
+        try
+        {
+            var res = await Engine.AcceptInviteAsync(_token!);
+            if (res is { Ok: true })
+            {
+                _forkedProjectId = res.ProjectId;
+                _forkedTitle = res.Title;
+            }
+            else
+            {
+                _error = res?.Error ?? "Could not accept this invite.";
+            }
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+}

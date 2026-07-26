@@ -1,7 +1,5 @@
 @using Microsoft.AspNetCore.Components
-@using System.Net.Http
-@using System.Net.Http.Json
-@inject HttpClient Http
+@inject EngineApiClient Engine
 
 @if (IsOpen)
 {
@@ -18,17 +16,17 @@
                     }
 
                     <div class="mb-3">
-                        <label class="form-label text-white fw-bold">Search Creator Handle (@@username)</label>
+                        <label class="form-label text-white fw-bold">Creator Handle (@@username)</label>
                         <div class="input-group mb-2">
                             <span class="input-group-text bg-dark text-secondary border-secondary">@@</span>
-                            <input type="text" class="form-control bg-dark text-light border-secondary" placeholder="username" @bind="searchHandle" @bind:event="oninput" @onkeyup="OnSearchKeyUp" />
+                            <input type="text" class="form-control bg-dark text-light border-secondary" placeholder="username" @bind="searchHandle" />
                         </div>
                     </div>
 
                     <div class="mb-3">
                         <label class="form-label text-white fw-bold">Or Send Blind Email Invite</label>
                         <input type="email" class="form-control bg-dark text-light border-secondary" placeholder="collaborator@example.com" @bind="emailInput" />
-                        <div class="form-text text-muted small">Server sends invite link without exposing whether an account exists.</div>
+                        <div class="form-text text-muted small">Server sends the invite link without exposing whether an account exists.</div>
                     </div>
                 </div>
                 <div class="modal-footer" style="border-top: 1px solid #2d333f; padding: 18px 24px;">
@@ -43,23 +41,22 @@
 }
 
 @code {
-    [Parameter] public bool IsOpen { get; set; } = false;
+    [Parameter] public bool IsOpen { get; set; }
     [Parameter] public string ProjectId { get; set; } = "";
+    [Parameter] public EventCallback OnClose { get; set; }
 
     private string searchHandle = "";
     private string emailInput = "";
     private string statusMessage = "";
-    private bool isError = false;
-    private bool isSending = false;
+    private bool isError;
+    private bool isSending;
 
-    private void Close()
-    {
-        IsOpen = false;
-    }
-
-    private void OnSearchKeyUp(Microsoft.AspNetCore.Components.Web.KeyboardEventArgs e)
+    private async Task Close()
     {
         statusMessage = "";
+        isError = false;
+        if (OnClose.HasDelegate)
+            await OnClose.InvokeAsync();
     }
 
     private async Task SendInvite()
@@ -67,31 +64,31 @@
         isSending = true;
         statusMessage = "";
         isError = false;
-
         try
         {
-            var payload = new
-            {
-                ProjectId,
-                TargetHandle = searchHandle.TrimStart('@'),
-                TargetEmail = emailInput.Trim()
-            };
+            var handle = string.IsNullOrWhiteSpace(searchHandle) ? null : searchHandle.Trim();
+            var email = string.IsNullOrWhiteSpace(emailInput) ? null : emailInput.Trim();
+            var res = await Engine.SendProjectInviteAsync(ProjectId, handle, email);
 
-            var res = await Http.PostAsJsonAsync($"/api/projects/{ProjectId}/invites", payload);
-            if (res.IsSuccessStatusCode)
+            if (res is { Ok: true })
             {
-                statusMessage = "Invitation sent successfully! Recipient will receive an instant fork link.";
+                statusMessage = res.Delivered
+                    ? "Invite sent — expires in 48 hours."
+                    : "Invite created, but no email is on file for that handle yet. Share this link directly: " + res.InviteUrl;
+                isError = !res.Delivered;
                 searchHandle = "";
                 emailInput = "";
             }
             else
             {
-                statusMessage = "Invitation created locally.";
+                statusMessage = res?.Error ?? "Could not send the invite.";
+                isError = true;
             }
         }
-        catch
+        catch (Exception ex)
         {
-            statusMessage = "Invitation sent!";
+            statusMessage = ex.Message;
+            isError = true;
         }
         finally
         {

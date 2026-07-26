@@ -672,6 +672,27 @@ public sealed class EngineApiClient
         return await SendJsonAsync<DemoPublishResult>(req, ct);
     }
 
+    /// <summary>Invite a collaborator to fork a project (by @handle or email). Owner/admin only.</summary>
+    public async Task<SendInviteResult?> SendProjectInviteAsync(
+        string projectId, string? targetHandle, string? targetEmail, CancellationToken ct = default)
+    {
+        using var req = new HttpRequestMessage(HttpMethod.Post, $"/api/projects/{Uri.EscapeDataString(projectId)}/invites")
+        {
+            Content = JsonContent.Create(new { ProjectId = projectId, TargetHandle = targetHandle, TargetEmail = targetEmail }, options: JsonOpts),
+        };
+        return await SendJsonAsync<SendInviteResult>(req, ct);
+    }
+
+    /// <summary>Accept an invite token (must be signed in) — forks the project under the caller.</summary>
+    public async Task<AcceptInviteResult?> AcceptInviteAsync(string token, CancellationToken ct = default)
+    {
+        using var req = new HttpRequestMessage(HttpMethod.Post, "/api/invites/accept")
+        {
+            Content = JsonContent.Create(new { Token = token }, options: JsonOpts),
+        };
+        return await SendJsonAsync<AcceptInviteResult>(req, ct);
+    }
+
     public async Task DeleteDemoAsync(string demoId, CancellationToken ct = default)
     {
         using var req = new HttpRequestMessage(
@@ -2850,6 +2871,23 @@ public sealed class ClipPromptVersionDto
     public DateTimeOffset? TimestampUtc { get; set; }
     public string? Prompt { get; set; }
     public string? VideoRelativePath { get; set; }
+}
+
+public sealed class SendInviteResult
+{
+    public bool Ok { get; set; }
+    public string? Error { get; set; }
+    public string? InviteUrl { get; set; }
+    public bool Delivered { get; set; }
+    public DateTimeOffset? ExpiresAt { get; set; }
+}
+
+public sealed class AcceptInviteResult
+{
+    public bool Ok { get; set; }
+    public string? Error { get; set; }
+    public string? ProjectId { get; set; }
+    public string? Title { get; set; }
 }
 
 public sealed class RankedBookCandidateDto

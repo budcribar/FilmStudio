@@ -132,6 +132,7 @@ builder.Services.AddSingleton<MediaProxyTicketStore>();
 builder.Services.AddSingleton<YouTubeAuthService>();
 builder.Services.AddSingleton<DemoYouTubePublisherService>();
 builder.Services.AddSingleton<ProjectGitRepositoryService>();
+builder.Services.AddSingleton<ProjectInviteService>();
 string dpKeysDir;
 try
 {
@@ -2122,10 +2123,106 @@ app.MapGet("/api/users/search", async (string? q, UserDatabaseService userDb) =>
     return Results.Ok(list);
 });
 
-app.MapPost("/api/projects/{id}/invites", (string id, SendInviteApiRequest body) =>
+/// <summary>
+/// Create a real, persisted, single-use invite (48h) for a project and email the recipient a
+/// /join link. Owner or admin only. Never reveals whether a target email has an account.
+/// </summary>
+app.MapPost("/api/projects/{id}/invites", async (
+    string id,
+    SendInviteApiRequest? body,
+    ProjectStore store,
+    ProjectInviteService invites,
+    UserDatabaseService userDb,
+    IEmailSender email,
+    IAdminAuthService auth,
+    IUserContext user,
+    IOptions<PageToMovieOptions> opts,
+    CancellationToken ct) =>
 {
-    string token = "inv_" + Guid.NewGuid().ToString("N");
-    return Results.Ok(new { ok = true, token, inviteUrl = $"/join?token={token}" });
+    if (AuthGate.RequireLogin(user, opts) is { } denied)
+        return denied;
+    try
+    {
+        await store.RequireProjectAsync(id, ct);
+        if (!await store.CanUserPublishDemoAsync(id, user.UserId, user.IsAdmin, ct))
+        {
+            return Results.Json(new { ok = false, error = "Only the project owner or an admin can invite collaborators." },
+                statusCode: StatusCodes.Status403Forbidden);
+        }
+
+        var targetHandle = string.IsNullOrWhiteSpace(body?.TargetHandle) ? null : body!.TargetHandle!.TrimStart('@').Trim();
+        var targetEmail = string.IsNullOrWhiteSpace(body?.TargetEmail) ? null : body!.TargetEmail!.Trim();
+        if (targetHandle is null && targetEmail is null)
+            return Results.BadRequest(new { ok = false, error = "A handle or email is required." });
+
+        // Resolve a handle to its email so we can actually deliver the invite — the client
+        // never sees this; the /api/users/search endpoint already keeps raw emails server-side.
+        if (targetHandle is not null && targetEmail is null)
+        {
+            var target = await userDb.GetUserByUsernameAsync(targetHandle);
+            targetEmail = target?.Email;
+        }
+
+        var invite = await invites.CreateAsync(id, user.UserId ?? "unknown", targetHandle, targetEmail, ct);
+        var link = auth is AdminAuthService concrete
+            ? concrete.BuildAppLink($"/join?token={Uri.EscapeDataString(invite.Token)}")
+            : $"/join?token={Uri.EscapeDataString(invite.Token)}";
+
+        if (!string.IsNullOrWhiteSpace(targetEmail))
+        {
+            var subject = "You're invited to fork a PageToMovie project";
+            var text = $"{user.UserId} invited you to fork \"{id}\" on PageToMovie.\n\n{link}\n\nThis link expires in 48 hours.";
+            var html = $"<p><strong>{System.Net.WebUtility.HtmlEncode(user.UserId)}</strong> invited you to fork " +
+                       $"\"{System.Net.WebUtility.HtmlEncode(id)}\" on PageToMovie.</p>" +
+                       $"<p><a href=\"{System.Net.WebUtility.HtmlEncode(link)}\">Accept invite</a></p>" +
+                       "<p>This link expires in 48 hours.</p>";
+            await email.SendAsync(targetEmail, subject, html, text, ct);
+        }
+
+        return Results.Ok(new
+        {
+            ok = true,
+            // Returned for the inviter's own "copy link" convenience — the recipient's copy
+            // comes via email above, not by exposing whether their account/email exists.
+            inviteUrl = link,
+            delivered = !string.IsNullOrWhiteSpace(targetEmail),
+            expiresAt = invite.ExpiresAt,
+        });
+    }
+    catch (InvalidOperationException ex)
+    {
+        return Results.BadRequest(new { ok = false, error = ex.Message });
+    }
+});
+
+/// <summary>Accept an invite (must be signed in): forks the project under the accepting user.</summary>
+app.MapPost("/api/invites/accept", async (
+    AcceptInviteApiRequest? body,
+    ProjectInviteService invites,
+    ProjectStore store,
+    IUserContext user,
+    IOptions<PageToMovieOptions> opts,
+    CancellationToken ct) =>
+{
+    if (AuthGate.RequireLogin(user, opts) is { } denied)
+        return denied;
+    var token = (body?.Token ?? "").Trim();
+    if (token.Length < 10)
+        return Results.BadRequest(new { ok = false, error = "Invalid or missing invite token." });
+
+    var outcome = await invites.ConsumeAsync(token, user.UserId ?? "", ct);
+    if (!outcome.Ok || outcome.ProjectId is null)
+        return Results.BadRequest(new { ok = false, error = outcome.Error ?? "Could not accept this invite." });
+
+    try
+    {
+        var fork = await store.ForkProjectAsync(outcome.ProjectId, user.UserId!, ct);
+        return Results.Ok(new { ok = true, projectId = fork.Id, title = fork.Title });
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { ok = false, error = ex.Message });
+    }
 });
 
 /// <summary>
@@ -4338,6 +4435,7 @@ namespace PageToMovie.Api
 {
     public record AcceptTermsRequest(string UserId, string? Version);
     public record SendInviteApiRequest(string? ProjectId, string? TargetHandle, string? TargetEmail);
+    public record AcceptInviteApiRequest(string? Token);
     public record CommitProjectApiRequest(string? Message);
     public record SyncOriginApiRequest(string? ParentProjectId);
     public record SetBookRefsRequest(List<string>? ImagePaths);

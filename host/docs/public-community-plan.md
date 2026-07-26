@@ -18,12 +18,12 @@ Nothing in this doc is required for current production unless explicitly schedul
 
 | # | Feature | Status | Notes |
 |---|---------|--------|--------|
-| 1 | **Invite-to-Fork Collaboration** | **not implemented** | `ProjectCollaboratorsModal.razor` exists but is not included in any page; zero `/api/users/search`, `/api/projects/{id}/invites`, or `/join` endpoints exist. |
+| 1 | **Invite-to-Fork Collaboration** | **done** | Real, persisted, single-use 48h invite tokens (`ProjectInviteService`, own SQLite table, SHA-256 hashed — token never stored in plaintext) emailed via the existing `IEmailSender`. `POST /api/projects/{id}/invites` (owner/admin gated) → `/join?token=…` (new `Join.razor` page) → `POST /api/invites/accept` → `ProjectStore.ForkProjectAsync`. `ProjectCollaboratorsModal.razor` fixed (it previously reported "Invitation sent!" even on HTTP errors/exceptions, and its Close button didn't propagate to the parent) and wired into `Home.razor` as a "Collaborate" button on the active project. Tests: `ProjectInviteServiceTests`, `InviteToForkApiTests` (full create→invite→accept→verify-fork round trip + ownership gating), plus `ProjectForkTests` below. |
 | 2 | **Demo ratings (upvotes only)** | **done** | ★ on `/demo`; sort top/new. `DemoUpvoteService` registered in DI and wired to `/api/demos/*/upvote` + `?sort=`. Verified. |
 | 3 | Repository Visibility Modes | **planned** | Standard Git modes: **Private**, **Public (Read-Only)**, **Public (Forkable)**. See § Repository Visibility Modes. |
 | 4 | Content hash of exportable package | **done** (correction) | Earlier audit pass missed this: `MediaRegistryService.IsTrustedShaAsync` + `/api/demos` POST already auto-approves a demo upload whose SHA-256 matches the project's own trusted gen/export registry, bypassing the admin queue. Predates this pass. |
-| 5 | **Fork** (plan-only package v1) | **planned** | Lightweight copy of script, cast, blueprint, config (< 5 MB); clip binaries stored in local client media storage. |
-| 6 | Fork banner + “forked from” metadata | **planned** | Tracks parent project origin (`parentProjectId`). |
+| 5 | **Fork** (plan-only package v1) | **done** | `ProjectStore.ForkProjectAsync` copies screenplay/cast/blueprint/rules/character-reference text and images into a new project directory under the new owner, excluding `.mp4/.webm/.mov/.wav/.avi` and any `.git` history — never touches the process-global active-project pointer (forking on someone's behalf must not steal another user's active project). Tests: `ProjectForkTests`. |
+| 6 | Fork banner + “forked from” metadata | **data done, banner planned** | `ProjectInfo.ParentProjectId` is now populated and returned by the projects API on every fork. No UI banner renders it yet on the project page/list — that's still to build. |
 | 7 | **Contribution & Git 3-Way Merge** | **engine done, review UI planned** | `ProjectGitRepositoryService` is now real: `LibGit2Sharp`-backed `Repository.Init`/stage/commit, and `SyncForkFromOriginAsync` does a genuine fetch + 3-way merge (real conflict detection, never auto-resolves). Reachable via `POST /api/projects/{id}/commit` and `/sync-origin` (owner/admin gated). Not yet wired into an automatic background hook (see issue-26 — nested-repo risk in the current dev layout). `ContributionReview.razor` (visual diff UI) still does not exist. Tests: `ProjectGitRepositoryServiceTests` (6 tests incl. real merge + real conflict detection). |
 | 8 | Contribution accept / reject + conflict review | **planned** | `ContributionReview.razor` does not exist. |
 | 9 | **Sync Fork from Origin** | **done** | See #7 — `SyncForkFromOriginAsync` performs a real merge via `POST /api/projects/{id}/sync-origin`. |
@@ -647,13 +647,18 @@ Keep generated MP4 clips and scene previews on client devices while enforcing a 
 
 ## Suggested Ship Order (Phased Roadmap)
 
-1. **Phase 1: Client MP4 Storage & Server Media Pruner (`ServerMediaPruningService.cs`)** — Railway background 48h TTL media pruner + client-side local PC folder / IndexedDB storage.
-2. **Phase 2: User Terms of Service & IP Licensing Agreement (`TermsAgreementModal.razor`)** — User IP warranty modal, indemnification, and SQLite `terms_accepted_at` gate.
-3. **Phase 3: YouTube API Auto-Upload & Required Metadata Form (`YouTubeUploadService.cs` & `PublishDemoModal.razor`)** — Automated YouTube channel uploads, COPPA & AI disclosures, and zero server video disk usage.
-4. **Phase 4: Multi-Version Local MP4 History & Side-by-Side Prompt Comparison (`ClipPromptCompareViewer.razor`)** — Archived local MP4 history and side-by-side prompt diff learning tool.
-5. **Phase 5: Git-Backed Server Engine & Modular Blazor Git UI NuGet Package (`LibGit2Sharp` & `PageToMovie.GitUi`)** — Server auto-commits, 3-way merging, and open-source NuGet package.
-6. **Phase 6: Privacy-Preserving User Invites & Invite-to-Fork Collaboration Model** — `@username` handle search, Resend email invites, `/join` landing route, lightweight forking, and Git 3-way merge review.
+All six phases below were re-verified and, where the original commits were unwired or stubbed,
+reimplemented for real (see the status table and `host/docs/issues/` for what's still deliberately
+out of scope, e.g. automatic Git auto-commit, `ContributionReview.razor`, and the public gallery
+"Fork Project" button).
+
+1. **Phase 1: Client MP4 Storage & Server Media Pruner (`ServerMediaPruningService.cs`)** — done for real: workspace-root-aware, sync-checked, off by default.
+2. **Phase 2: User Terms of Service & IP Licensing Agreement (`TermsAgreementModal.razor`)** — done for real: `AuthGate.RequireTermsAcceptedAsync` actually gates project create/gen/publish, not just a client-side modal.
+3. **Phase 3: YouTube API Auto-Upload & Required Metadata Form (`DemoYouTubePublisherService.cs`)** — done for real: demos migrate to YouTube automatically on approval, reusing the existing working OAuth connection.
+4. **Phase 4: Multi-Version Local MP4 History & Side-by-Side Prompt Comparison (`ClipPromptCompareViewer.razor`)** — done for real: built the clip-version history mechanism that didn't exist, then wired the viewer to it.
+5. **Phase 5: Git-Backed Server Engine (`LibGit2Sharp`)** — done for real: genuine commits and 3-way merge with real conflict detection, reachable via gated endpoints (not yet an automatic background hook — see issue-26). The `PageToMovie.GitUi` NuGet package extraction was not attempted.
+6. **Phase 6: Privacy-Preserving User Invites & Invite-to-Fork Collaboration Model** — done for real: persisted single-use email invites, `/join` acceptance, and lightweight forking, end-to-end tested.
 
 ---
 
-*Last updated: 2026-07-26 — status table corrected after code-vs-plan verification found most "Phase N" commits produce unwired or stubbed code (see audit note above the feature table). Real fixes tracked phase-by-phase below as they land.*
+*Last updated: 2026-07-26 — all 6 phases re-verified against running code; unwired/stubbed ones reimplemented for real, tested, and pushed. See `host/docs/issues/issue-26-*` for the one deliberately-deferred piece (automatic Git auto-commit) and the status table for UI pieces (ContributionReview, gallery fork button, visibility modes, creator badges) still marked planned.*

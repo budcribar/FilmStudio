@@ -117,6 +117,7 @@ public sealed class ProjectStore
             string? title = null;
             string? label = null;
             string? ownerUserId = null;
+            string? parentProjectId = null;
             if (File.Exists(metaPath))
             {
                 try
@@ -128,6 +129,8 @@ public sealed class ProjectStore
                         title = t.GetString();
                     if (doc.RootElement.TryGetProperty("label", out var l))
                         label = l.GetString();
+                    if (doc.RootElement.TryGetProperty("parentProjectId", out var pp))
+                        parentProjectId = pp.GetString();
                     foreach (var p in doc.RootElement.EnumerateObject())
                     {
                         if (string.Equals(p.Name, "ownerUserId", StringComparison.OrdinalIgnoreCase) ||
@@ -147,6 +150,7 @@ public sealed class ProjectStore
                 Label = label ?? title ?? id,
                 Path = dir,
                 OwnerUserId = string.IsNullOrWhiteSpace(ownerUserId) ? null : ownerUserId.Trim(),
+                ParentProjectId = string.IsNullOrWhiteSpace(parentProjectId) ? null : parentProjectId.Trim(),
             });
         }
         return list.OrderBy(p => p.Id, StringComparer.OrdinalIgnoreCase).ToList();
@@ -236,6 +240,73 @@ public sealed class ProjectStore
 
         InvalidateReadCaches(null); // projects list
         return await ActivateAsync(id, ct).ConfigureAwait(false);
+    }
+
+    /// <summary>Video/audio binaries never copy into a fork — the new owner regenerates or syncs media separately.</summary>
+    private static readonly string[] ForkSkipExtensions = { ".mp4", ".webm", ".mov", ".wav", ".avi" };
+
+    /// <summary>
+    /// Create a lightweight fork of <paramref name="sourceProjectId"/> under a new owner: copies
+    /// screenplay/cast/blueprint/rules/character-reference text and images, excluding video/audio
+    /// binaries (kept out of Git for the same reason — see <see cref="ProjectGitRepositoryService"/>).
+    /// Unlike <see cref="CreateProjectAsync"/>, does not touch the process-global active-project
+    /// pointer — forking on one user's behalf must never steal another user's active project.
+    /// </summary>
+    public async Task<ProjectInfo> ForkProjectAsync(
+        string sourceProjectId,
+        string newOwnerUserId,
+        CancellationToken ct = default)
+    {
+        var source = await RequireProjectAsync(sourceProjectId, ct).ConfigureAwait(false);
+        if (string.IsNullOrWhiteSpace(newOwnerUserId))
+            throw new InvalidOperationException("newOwnerUserId required");
+
+        var baseName = source.Title ?? source.Id;
+        var newId = SanitizeProjectId($"{baseName}-fork-{Guid.NewGuid().ToString("N")[..6]}");
+        if (newId.Length == 0)
+            throw new InvalidOperationException("Could not derive a fork id");
+
+        var newDir = Path.Combine(WorkspaceRoot, "projects", newId);
+        if (Directory.Exists(newDir))
+            throw new InvalidOperationException($"Project already exists: {newId}");
+
+        Directory.CreateDirectory(newDir);
+        foreach (var file in Directory.EnumerateFiles(source.Path, "*", SearchOption.AllDirectories))
+        {
+            ct.ThrowIfCancellationRequested();
+            if (ForkSkipExtensions.Contains(Path.GetExtension(file), StringComparer.OrdinalIgnoreCase))
+                continue;
+            var rel = Path.GetRelativePath(source.Path, file);
+            if (rel.Split(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)[0] == ".git")
+                continue; // never copy the source's own Git history into the fork
+
+            var destPath = Path.Combine(newDir, rel);
+            Directory.CreateDirectory(Path.GetDirectoryName(destPath)!);
+            File.Copy(file, destPath, overwrite: true);
+        }
+
+        // Rewrite project.json for the new owner/id/parent link rather than keeping the source's copy.
+        var metaPath = Path.Combine(newDir, "project.json");
+        Dictionary<string, object?> meta;
+        try
+        {
+            meta = JsonSerializer.Deserialize<Dictionary<string, object?>>(await File.ReadAllTextAsync(metaPath, ct).ConfigureAwait(false), JsonOpts)
+                    ?? new Dictionary<string, object?>();
+        }
+        catch
+        {
+            meta = new Dictionary<string, object?>();
+        }
+        meta["id"] = newId;
+        meta["title"] = $"{source.Title ?? source.Id} (fork)";
+        meta["ownerUserId"] = newOwnerUserId.Trim();
+        meta["parentProjectId"] = source.Id;
+        meta["createdAt"] = DateTimeOffset.UtcNow.ToString("o");
+        await File.WriteAllTextAsync(
+            metaPath, JsonSerializer.Serialize(meta, JsonOpts) + "\n", ct).ConfigureAwait(false);
+
+        InvalidateReadCaches(null);
+        return await RequireProjectAsync(newId, ct).ConfigureAwait(false);
     }
 
     /// <summary>

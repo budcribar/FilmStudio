@@ -11,6 +11,8 @@ public sealed class ProjectInfo
     /// (admin-only for public demo publish).
     /// </summary>
     public string? OwnerUserId { get; set; }
+    /// <summary>Set when this project was created via Invite-to-Fork — the project it was forked from.</summary>
+    public string? ParentProjectId { get; set; }
 }
 
 public sealed class WorkspaceState
