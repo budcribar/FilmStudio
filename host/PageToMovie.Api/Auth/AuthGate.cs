@@ -16,7 +16,7 @@ public static class AuthGate
         var auth = opts.Value.Auth ?? new AuthOptions();
         if (!auth.RequireLogin)
             return null;
-        if (user.IsAuthenticated)
+        if (user.IsAuthenticated || user.IsAdmin)
             return null;
         return Results.Json(
             new
