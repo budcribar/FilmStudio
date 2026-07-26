@@ -46,7 +46,13 @@ public sealed class YouTubeAuthService
         return new GoogleAuthorizationCodeFlow(new GoogleAuthorizationCodeFlow.Initializer
         {
             ClientSecrets = new ClientSecrets { ClientId = _opts.ClientId, ClientSecret = _opts.ClientSecret },
-            Scopes = new[] { YouTubeService.Scope.YoutubeUpload },
+            // youtube.upload — insert videos
+            // youtube.force-ssl — delete obsolete IDs after V2 replace (Item 11)
+            Scopes = new[]
+            {
+                YouTubeService.Scope.YoutubeUpload,
+                YouTubeService.Scope.YoutubeForceSsl,
+            },
             DataStore = new FileDataStore(tokenDir, fullPath: true),
         });
     }

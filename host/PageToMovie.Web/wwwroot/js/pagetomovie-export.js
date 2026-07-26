@@ -209,6 +209,8 @@ window.PageToMovieExport = {
             form.append("isAiSynthetic", meta.isAiSynthetic === false ? "false" : "true");
             if (meta.privacyStatus) form.append("privacyStatus", meta.privacyStatus);
             if (meta.tags) form.append("tags", meta.tags);
+            // Default true: re-publish updates existing public demo (YouTube V2 replace)
+            form.append("replaceExisting", meta.replaceExisting === false ? "false" : "true");
 
             const headers = {};
             if (accessToken) headers["Authorization"] = "Bearer " + accessToken;
@@ -230,6 +232,7 @@ window.PageToMovieExport = {
                 success: true,
                 demo: json && json.demo ? json.demo : json,
                 pendingReview: !!(json && json.pendingReview),
+                replacedExisting: !!(json && json.replacedExisting),
                 message: json && json.message ? json.message : null,
             };
         } catch (err) {

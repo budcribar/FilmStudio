@@ -681,4 +681,4 @@ out of scope, e.g. automatic Git auto-commit, `ContributionReview.razor`, and th
 
 ---
 
-*Last updated: 2026-07-26 — all 6 phases re-verified against running code; unwired/stubbed ones reimplemented for real, tested, and pushed. Client media: feature-8 fallback warning when a clip finishes without a connected folder (`6769a93`); remaining client-storage ship steps still tracked in `client-storage-implementation-plan.md`. See `host/docs/issues/issue-26-*` for the one deliberately-deferred piece (automatic Git auto-commit) and the status table for UI pieces (ContributionReview, gallery fork button, visibility modes, creator badges) still marked planned.*
+*Last updated: 2026-07-26 — all 6 phases re-verified against running code; unwired/stubbed ones reimplemented for real, tested, and pushed. Client media: feature-8 fallback warning (`6769a93`). Item 11 YouTube V2 replace (re-publish → new upload + pointer + delete old ID) shipped. Remaining client-storage ship steps still tracked in `client-storage-implementation-plan.md`. See `host/docs/issues/issue-26-*` for Git auto-commit deferral and the status table for UI pieces still marked planned.*

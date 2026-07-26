@@ -675,6 +675,7 @@ public sealed class EngineApiClient
         bool isAiSynthetic = true,
         string privacyStatus = "public",
         string? tags = null,
+        bool replaceExisting = true,
         CancellationToken ct = default)
     {
         using var req = new HttpRequestMessage(HttpMethod.Post, "/api/demos")
@@ -689,6 +690,7 @@ public sealed class EngineApiClient
                 isAiSynthetic,
                 privacyStatus,
                 tags,
+                replaceExisting,
             }, options: JsonOpts),
         };
         return await SendJsonAsync<DemoPublishResult>(req, ct);
@@ -2863,6 +2865,8 @@ public sealed class DemoPublishResult
     public bool Ok { get; set; }
     public string? Error { get; set; }
     public bool PendingReview { get; set; }
+    /// <summary>True when an existing public demo for the project was updated (YouTube V2 replace).</summary>
+    public bool ReplacedExisting { get; set; }
     public string? Message { get; set; }
     public DemoPublishItem? Demo { get; set; }
 }

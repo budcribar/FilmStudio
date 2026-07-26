@@ -136,14 +136,14 @@ Window 1 (<24h): direct AI CDN download. Window 2 (>24h): server proxy fallback,
 
 **Plan:** Verified submission → auto-approve → `YouTubeUploadService.cs` streams to YouTube. On re-publish: upload V2, update gallery pointer, delete old video ID.
 
-**Reality:** 🟡 **Partial — upload (incl. the auto-approve trigger) works; only V2 replacement is missing.** *(corrected 2026-07-26)*
+**Reality:** ✅ **Done (upload + V2 replace).** *(V2 replace shipped 2026-07-26)*
 - `YouTubeUploadService.cs` was built (hand-rolled HTTP, its own separately-configured/unset-up OAuth client duplicating the app's existing working one), then **deleted** and replaced by `DemoYouTubePublisherService.cs`, which reuses the already-working `YouTubeAuthService` + official `Google.Apis.YouTube.v3` SDK.
-- Upload to YouTube: ✅ **Done** via `DemoYouTubePublisherService.PublishAsync()`, fired automatically on both auto-approval and admin approval.
-- After upload, deletes local MP4 and updates demo record: ✅ **Done**.
-- Gallery streams via YouTube embed: ✅ **Done** in `Demo.razor`, with server-stream fallback if upload hasn't happened yet or failed.
-- ~~Hash-gated auto-approval trigger: Not implemented~~ — it is (see Item 10); this item's original claim was based on the auto-approval check itself being missing, which was incorrect.
-- **Video replacement (V2 upload + delete old ID) for edited/re-published demos:** ❌ still not implemented — genuine gap.
-- Upload currently runs fire-and-forget (`Task.Run`), not through the app's job/SignalR system — see `host/docs/issues/issue-25-demo-youtube-upload-not-a-job.md`.
+- Upload to YouTube: ✅ via `DemoYouTubePublisherService.PublishAsync()`, fired on auto-approval and admin approval.
+- After upload, deletes local MP4 and updates demo record: ✅.
+- Gallery streams via YouTube embed: ✅ in `Demo.razor`, with server-stream fallback if upload hasn't happened yet or failed.
+- Hash-gated auto-approval trigger: ✅ (Item 10).
+- **Video replacement (V2):** ✅ When a public demo for the project already has a `YoutubeId` and the user re-publishes (`replaceExisting` default true), the WIP/upload is attached to that demo, a new YouTube video is uploaded, the gallery pointer is updated, then the old video ID is deleted best-effort (`videos.delete`). Requires `youtube.force-ssl` scope (re-connect YouTube if tokens predate this). On V2 upload failure the old `YoutubeId` is kept so the gallery still works.
+- Upload still runs fire-and-forget (`Task.Run`), not through the app's job/SignalR system — see `host/docs/issues/issue-25-demo-youtube-upload-not-a-job.md`.
 
 ---
 
@@ -213,7 +213,7 @@ Window 1 (<24h): direct AI CDN download. Window 2 (>24h): server proxy fallback,
 | 8 | YouTube Metadata Modal | 🟡 Moved, not removed | COPPA/AI-disclosure fields live in `Review.razor`'s dialog now, not silently dropped |
 | 9 | Terms of Service Gate | ✅ Done | Fully wired (and, since 2026-07-26, actually server-enforced on gated endpoints, not just client-side) |
 | 10 | Cryptographic Auto-Approval | 🟡 Partial, corrected | Auto-approve-by-hash already existed pre-analysis; gap is whole-file vs. per-clip hash granularity |
-| 11 | YouTube Auto-Upload & Replace | 🟡 Partial | Upload + auto-approve trigger ✅ (both work); only V2 replacement is missing |
+| 11 | YouTube Auto-Upload & Replace | ✅ Done | Upload + auto-approve + V2 pointer replace (delete old ID best-effort) |
 | 12 | Git-Backed Server Engine | ✅ Done (2026-07-26) | Real commit/merge; auto-commit-on-save deliberately not wired (issue-26), no remote push |
 | 13 | Admin Export & Handoff | ✅ Done, confirmed | `targetUserId` re-assignment on import verified in code |
 | 14 | Client MP4 Storage (Primary) | 🟡 Partial | Infra ✅ + feature-8 fallback warning; server still primary; stream/marker/mode steps open |

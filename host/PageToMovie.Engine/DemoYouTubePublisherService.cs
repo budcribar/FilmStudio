@@ -6,11 +6,12 @@ namespace PageToMovie.Engine;
 
 /// <summary>
 /// Uploads an approved public demo's local movie.mp4 to YouTube (reusing the same authorized
-/// channel connection as the Review page's WIP-movie upload — <see cref="YouTubeAuthService"/> —
-/// rather than a second, separately-configured OAuth client). On success the demo's local file
-/// is deleted and the entry is repointed at the YouTube video, matching the "0 MB server disk
-/// for public demo video" goal. Never throws — failures are recorded on the entry and the local
-/// file is kept so the gallery keeps working via direct server streaming.
+/// channel connection as the Review page's WIP-movie upload — <see cref="YouTubeAuthService"/>).
+/// On first publish: upload, store YoutubeId, delete local movie.mp4.
+/// On re-publish (Item 11 / V2): when a local movie exists beside an existing YoutubeId,
+/// upload a new video, update the gallery pointer, then best-effort delete the old YouTube ID.
+/// Never throws — failures keep the previous YoutubeId (if any) and leave the local file so the
+/// gallery can still stream from the server.
 /// </summary>
 public sealed class DemoYouTubePublisherService
 {
@@ -36,16 +37,25 @@ public sealed class DemoYouTubePublisherService
         var entry = _demos.TryGet(demoId);
         if (entry is null)
             return;
-        if (!string.IsNullOrWhiteSpace(entry.YoutubeId))
-            return; // already migrated
 
         var path = _demos.ResolveMoviePath(demoId);
-        if (path is null)
+        var oldYoutubeId = string.IsNullOrWhiteSpace(entry.YoutubeId) ? null : entry.YoutubeId.Trim();
+
+        // Already on YouTube and no new local file → nothing to do.
+        if (oldYoutubeId is not null && path is null)
         {
-            _log.LogDebug("Demo {Id} has no local movie.mp4 to upload (already migrated or missing).", demoId);
+            _log.LogDebug("Demo {Id} already on YouTube ({Yt}) with no local movie — skip.", demoId, oldYoutubeId);
             return;
         }
 
+        // No local movie and never uploaded → nothing to publish.
+        if (path is null)
+        {
+            _log.LogDebug("Demo {Id} has no local movie.mp4 to upload.", demoId);
+            return;
+        }
+
+        var isReplace = oldYoutubeId is not null;
         _demos.SetYouTubeUploadStatus(demoId, "uploading");
 
         Google.Apis.YouTube.v3.YouTubeService? youtube;
@@ -62,13 +72,19 @@ public sealed class DemoYouTubePublisherService
 
         if (youtube is null)
         {
-            _demos.SetYouTubeUploadStatus(demoId, "failed", error: "YouTube channel not connected (admin: connect it from Review).");
+            _demos.SetYouTubeUploadStatus(
+                demoId, "failed",
+                error: "YouTube channel not connected (admin: connect it from Review).");
             return;
         }
 
         try
         {
-            var privacy = entry.PrivacyStatus is "private" or "unlisted" or "public" ? entry.PrivacyStatus : "public";
+            // Re-read entry for latest metadata (title/privacy) while uploading.
+            entry = _demos.TryGet(demoId) ?? entry;
+            var privacy = entry.PrivacyStatus is "private" or "unlisted" or "public"
+                ? entry.PrivacyStatus
+                : "public";
             var video = new Video
             {
                 Snippet = new VideoSnippet
@@ -96,18 +112,56 @@ public sealed class DemoYouTubePublisherService
             {
                 var err = result.Exception?.Message ?? $"Upload status: {result.Status}";
                 _log.LogWarning("YouTube upload incomplete for demo {Id}: {Error}", demoId, err);
+                // Keep previous YoutubeId on V2 failure so gallery still embeds the old video.
                 _demos.SetYouTubeUploadStatus(demoId, "failed", error: err);
                 return;
             }
 
             var url = $"https://youtu.be/{videoId}";
             _demos.SetYouTubeUploadStatus(demoId, "done", videoId, url);
-            _log.LogInformation("Demo {Id} published to YouTube: {Url}", demoId, url);
+            _log.LogInformation(
+                isReplace
+                    ? "Demo {Id} YouTube V2 published: {Url} (replaced {Old})"
+                    : "Demo {Id} published to YouTube: {Url}",
+                demoId, url, oldYoutubeId);
+
+            // Mode A: best-effort delete of the obsolete v1 video (requires youtube.force-ssl scope).
+            if (isReplace &&
+                !string.Equals(oldYoutubeId, videoId, StringComparison.Ordinal) &&
+                !string.IsNullOrWhiteSpace(oldYoutubeId))
+            {
+                await TryDeleteYouTubeVideoAsync(youtube, oldYoutubeId!, demoId, ct).ConfigureAwait(false);
+            }
         }
         catch (Exception ex)
         {
             _log.LogWarning(ex, "YouTube upload failed for demo {Id}", demoId);
             _demos.SetYouTubeUploadStatus(demoId, "failed", error: ex.Message);
+        }
+    }
+
+    private async Task TryDeleteYouTubeVideoAsync(
+        Google.Apis.YouTube.v3.YouTubeService youtube,
+        string oldVideoId,
+        string demoId,
+        CancellationToken ct)
+    {
+        try
+        {
+            await youtube.Videos.Delete(oldVideoId).ExecuteAsync(ct).ConfigureAwait(false);
+            _log.LogInformation(
+                "Deleted obsolete YouTube video {OldId} after V2 replace for demo {DemoId}",
+                oldVideoId, demoId);
+        }
+        catch (Exception ex)
+        {
+            // Common when the connected token only has youtube.upload (no force-ssl).
+            // Gallery already points at V2 — leave v1 on the channel for manual cleanup.
+            _log.LogWarning(
+                ex,
+                "Could not delete old YouTube video {OldId} for demo {DemoId} after V2 replace. " +
+                "Reconnect YouTube with full channel scopes if deletes should be automatic.",
+                oldVideoId, demoId);
         }
     }
 }
