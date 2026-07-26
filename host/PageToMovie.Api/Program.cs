@@ -2205,12 +2205,15 @@ app.MapPost("/api/projects/{id}/characters/extract-cast", async (
 {
     try
     {
+        using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        timeoutCts.CancelAfter(TimeSpan.FromSeconds(50));
+
         body ??= new ExtractCastRequest();
         var result = await castService.ExtractAsync(
             id,
             model: string.IsNullOrWhiteSpace(body.Model) ? "grok-4.5" : body.Model!,
             force: body.Force,
-            ct: ct);
+            ct: timeoutCts.Token);
         return result.Ok
             ? Results.Ok(new
             {
@@ -2232,10 +2235,15 @@ app.MapPost("/api/projects/{id}/characters/extract-cast", async (
                 rawPath = result.RawPath,
             });
     }
+    catch (OperationCanceledException) when (!ct.IsCancellationRequested)
+    {
+        return Results.BadRequest(new { ok = false, error = "Cast extraction timed out (exceeded 50s). Please try again." });
+    }
     catch (Exception ex)
     {
         return Results.BadRequest(new { ok = false, error = ex.Message });
     }
+
 });
 
 /// <summary>

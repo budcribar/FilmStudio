@@ -2327,15 +2327,29 @@ public sealed class EngineApiClient
 
     private static string? TryError(string json)
     {
+        if (string.IsNullOrWhiteSpace(json)) return null;
         try
         {
             using var doc = JsonDocument.Parse(json);
-            if (doc.RootElement.TryGetProperty("error", out var e))
-                return e.GetString();
+            if (doc.RootElement.ValueKind == JsonValueKind.Object)
+            {
+                if (doc.RootElement.TryGetProperty("error", out var e) && e.ValueKind == JsonValueKind.String)
+                    return e.GetString();
+                if (doc.RootElement.TryGetProperty("message", out var m) && m.ValueKind == JsonValueKind.String)
+                {
+                    var msg = m.GetString();
+                    if (msg?.Contains("Application failed to respond", StringComparison.OrdinalIgnoreCase) == true)
+                    {
+                        return "The server request timed out (502 Bad Gateway). The AI generation task took longer than 60 seconds on Railway. Please try again.";
+                    }
+                    return msg;
+                }
+            }
         }
         catch { /* ignore */ }
         return json.Length > 200 ? json[..200] : json;
     }
+
 }
 
 public sealed class ProjectsDto
