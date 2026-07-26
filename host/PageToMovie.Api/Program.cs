@@ -134,6 +134,7 @@ builder.Services.AddSingleton<DemoYouTubePublisherService>();
 builder.Services.AddSingleton<ProjectGitRepositoryService>();
 builder.Services.AddSingleton<ProjectInviteService>();
 builder.Services.AddSingleton<CreatorProfileService>();
+builder.Services.AddSingleton<ProjectContributionService>();
 string dpKeysDir;
 try
 {
@@ -2108,6 +2109,44 @@ app.MapPost("/api/projects/{id}/sync-origin", async (
 
         var res = await git.SyncForkFromOriginAsync(store.GetProjectDir(id), store.GetProjectDir(body.ParentProjectId));
         return Results.Ok(new { ok = res.Success, hasConflicts = res.HasConflicts, commitHash = res.CommitHash, message = res.Message });
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { ok = false, error = ex.Message });
+    }
+});
+
+/// <summary>
+/// Computes structured visual diffs between a project and its origin parent project.
+/// </summary>
+app.MapGet("/api/projects/{id}/contribution-diff", async (
+    string id,
+    string? originProjectId,
+    ProjectStore store,
+    ProjectContributionService contribService,
+    IUserContext user,
+    IOptions<PageToMovieOptions> opts,
+    CancellationToken ct) =>
+{
+    if (AuthGate.RequireLogin(user, opts) is { } denied)
+        return denied;
+
+    var parentId = originProjectId;
+    if (string.IsNullOrWhiteSpace(parentId))
+    {
+        var proj = await store.GetProjectAsync(id, ct);
+        parentId = proj?.ParentProjectId;
+    }
+
+    if (string.IsNullOrWhiteSpace(parentId))
+        return Results.BadRequest(new { ok = false, error = "originProjectId or parent project required for diff" });
+
+    try
+    {
+        var targetDir = store.GetProjectDir(id);
+        var originDir = store.GetProjectDir(parentId);
+        var diff = await contribService.ComputeDiffAsync(id, parentId, targetDir, originDir, ct);
+        return Results.Ok(diff);
     }
     catch (Exception ex)
     {

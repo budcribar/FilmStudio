@@ -1,0 +1,235 @@
+@page "/projects/{id}/review-contribution"
+@inject EngineApiClient Engine
+@inject NavigationManager Nav
+@using PageToMovie.Core.Models
+
+<PageTitle>Contribution Review - @Id</PageTitle>
+
+<div class="container py-4" data-testid="contribution-review-page">
+    <div class="d-flex align-items-center justify-content-between mb-4">
+        <div>
+            <h1 class="mb-1">Contribution &amp; Diff Review</h1>
+            <p class="text-muted mb-0">Review line-by-line changes and merge origin updates into <strong>@Id</strong></p>
+        </div>
+        <a href="home" class="btn btn-outline-secondary">← Back to Studio</a>
+    </div>
+
+    @if (_loading)
+    {
+        <div class="text-center py-5">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Computing contribution diff...</span>
+            </div>
+        </div>
+    }
+    else if (!string.IsNullOrEmpty(_error))
+    {
+        <div class="alert alert-danger">
+            <h5>Review Error</h5>
+            <p class="mb-0">@_error</p>
+        </div>
+    }
+    else if (_diff is not null)
+    {
+        @if (!string.IsNullOrEmpty(_message))
+        {
+            <div class="alert alert-success d-flex align-items-center justify-content-between py-3 mb-4">
+                <span>✅ @_message</span>
+                <a href="adaptation" class="btn btn-sm btn-success ms-3">Open Project →</a>
+            </div>
+        }
+
+        <div class="card bg-dark border-secondary text-white mb-4 p-3">
+            <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+                <div>
+                    <span class="badge bg-primary px-2 py-1 me-2">Fork Project: @Id</span>
+                    <span class="badge bg-info text-dark px-2 py-1">Origin Parent: @_diff.ParentProjectId</span>
+                </div>
+                <div>
+                    @if (_diff.HasConflicts)
+                    {
+                        <span class="badge bg-warning text-dark px-3 py-2 fs-6">⚠️ Conflicts Detected</span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-success px-3 py-2 fs-6">✅ Ready to Merge</span>
+                    }
+                </div>
+            </div>
+        </div>
+
+        @if (_diff.FileDiffs is null || _diff.FileDiffs.Count == 0)
+        {
+            <div class="alert alert-info">
+                No differences detected between @Id and @_diff.ParentProjectId — both project states are identical.
+            </div>
+        }
+        else
+        {
+            <ul class="nav nav-tabs mb-3 border-secondary" role="tablist">
+                @for (int i = 0; i < _diff.FileDiffs.Count; i++)
+                {
+                    var index = i;
+                    var file = _diff.FileDiffs[i];
+                    var isActive = index == _activeTabIndex;
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link @(isActive ? "active bg-dark text-white border-secondary" : "text-muted")"
+                                @onclick="() => _activeTabIndex = index">
+                            @file.Category (@file.FilePath)
+                            @if (file.Status == "modified")
+                            {
+                                <span class="badge bg-warning text-dark ms-1">mod</span>
+                            }
+                            else if (file.Status == "added")
+                            {
+                                <span class="badge bg-success ms-1">+add</span>
+                            }
+                            else if (file.Status == "deleted")
+                            {
+                                <span class="badge bg-danger ms-1">-del</span>
+                            }
+                        </button>
+                    </li>
+                }
+            </ul>
+
+            @if (_activeTabIndex >= 0 && _activeTabIndex < _diff.FileDiffs.Count)
+            {
+                var activeFile = _diff.FileDiffs[_activeTabIndex];
+                <div class="card bg-dark border-secondary text-white p-3 mb-4">
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                        <h5 class="mb-0">@activeFile.Category — <code>@activeFile.FilePath</code></h5>
+                        <span class="badge bg-secondary">@activeFile.Lines.Count lines</span>
+                    </div>
+
+                    <div class="border border-secondary rounded overflow-auto font-monospace p-2" style="max-height: 500px; background-color: #121212; font-size: 0.875rem;">
+                        @foreach (var line in activeFile.Lines)
+                        {
+                            var bgClass = line.Kind switch
+                            {
+                                "added" => "bg-success bg-opacity-25 text-success-emphasis",
+                                "deleted" => "bg-danger bg-opacity-25 text-danger-emphasis",
+                                "conflict" => "bg-warning bg-opacity-25 text-warning-emphasis",
+                                _ => ""
+                            };
+                            var prefix = line.Kind switch
+                            {
+                                "added" => "+",
+                                "deleted" => "-",
+                                "conflict" => "!",
+                                _ => " "
+                            };
+                            <div class="d-flex align-items-center py-1 px-2 border-bottom border-dark border-opacity-50 @bgClass">
+                                <span class="text-muted text-end me-3 select-none" style="width: 40px;">@(line.LineNumberOurs?.ToString() ?? " ")</span>
+                                <span class="text-muted text-end me-3 select-none" style="width: 40px;">@(line.LineNumberTheirs?.ToString() ?? " ")</span>
+                                <span class="fw-bold me-3 select-none" style="width: 15px;">@prefix</span>
+                                <span class="text-break">@line.Content</span>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+
+            <div class="d-flex align-items-center justify-content-between p-3 bg-dark border border-secondary rounded">
+                <div>
+                    <strong>Ready to accept contribution?</strong>
+                    <div class="text-muted small">Merges parent origin state into project <code>@Id</code>.</div>
+                </div>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-success px-4"
+                            disabled="@(_busy || string.IsNullOrEmpty(_diff.ParentProjectId))"
+                            @onclick="AcceptMergeAsync">
+                        @if (_busy)
+                        {
+                            <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                        }
+                        Accept &amp; Sync Merge
+                    </button>
+                    <a href="home" class="btn btn-outline-secondary">Reject / Cancel</a>
+                </div>
+            </div>
+        }
+    }
+</div>
+
+@code {
+    [Parameter]
+    public string Id { get; set; } = "";
+
+    [SupplyParameterFromQuery]
+    public string? OriginProjectId { get; set; }
+
+    private ContributionDiffDto? _diff;
+    private int _activeTabIndex = 0;
+    private bool _loading = true;
+    private bool _busy = false;
+    private string? _error;
+    private string? _message;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        _loading = true;
+        _error = null;
+
+        if (string.IsNullOrWhiteSpace(Id))
+        {
+            _error = "Project ID is required.";
+            _loading = false;
+            return;
+        }
+
+        try
+        {
+            _diff = await Engine.GetContributionDiffAsync(Id, OriginProjectId);
+            if (_diff is null)
+            {
+                _error = "Failed to load contribution diff.";
+            }
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task AcceptMergeAsync()
+    {
+        if (_diff is null || string.IsNullOrWhiteSpace(_diff.ParentProjectId)) return;
+
+        _busy = true;
+        _error = null;
+        _message = null;
+
+        try
+        {
+            var res = await Engine.SyncOriginAsync(Id, _diff.ParentProjectId);
+            if (res is { Ok: true } || res is { Success: true })
+            {
+                if (res.HasConflicts)
+                {
+                    _error = $"Sync merge resulted in conflicts: {res.Message}";
+                }
+                else
+                {
+                    _message = $"Successfully merged changes from parent project '{_diff.ParentProjectId}' into '{Id}'!";
+                }
+            }
+            else
+            {
+                _error = res?.Error ?? res?.Message ?? "Merge failed.";
+            }
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+}

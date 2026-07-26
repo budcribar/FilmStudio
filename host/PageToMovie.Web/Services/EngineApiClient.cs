@@ -448,6 +448,20 @@ public sealed class EngineApiClient
         return await SendJsonAsync<CreatorProfileDto>(req, ct);
     }
 
+    public async Task<ContributionDiffDto?> GetContributionDiffAsync(
+        string projectId,
+        string? originProjectId = null,
+        CancellationToken ct = default)
+    {
+        SyncIdentityHeaders();
+        var url = $"/api/projects/{Uri.EscapeDataString(projectId)}/contribution-diff";
+        if (!string.IsNullOrWhiteSpace(originProjectId))
+            url += $"?originProjectId={Uri.EscapeDataString(originProjectId)}";
+
+        using var req = new HttpRequestMessage(HttpMethod.Get, url);
+        return await SendJsonAsync<ContributionDiffDto>(req, ct);
+    }
+
     public async Task<SyncOriginResultDto?> SyncOriginAsync(
         string projectId,
         string parentProjectId,

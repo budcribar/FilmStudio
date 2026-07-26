@@ -178,6 +178,11 @@
                                     <a class="btn btn-sm btn-light flex-shrink-0" data-testid="home-open-adaptation" href="adaptation">Open</a>
                                     @if (!string.IsNullOrWhiteSpace(p.ParentProjectId) && (Session.IsAdmin || string.Equals(Session.UserId, p.OwnerUserId, StringComparison.OrdinalIgnoreCase)))
                                     {
+                                        <a class="btn btn-sm btn-outline-warning flex-shrink-0"
+                                           href="projects/@id/review-contribution?originProjectId=@p.ParentProjectId"
+                                           title="Review line-by-line diffs before syncing">
+                                            🔍 Review Diff
+                                        </a>
                                         <button type="button"
                                                 class="btn btn-sm btn-outline-info text-white flex-shrink-0"
                                                 disabled="@_busy"
