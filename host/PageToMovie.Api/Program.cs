@@ -2154,6 +2154,28 @@ app.MapGet("/api/projects/{id}/contribution-diff", async (
     }
 });
 
+app.MapPost("/api/projects/{id}/visibility", async (
+    string id,
+    ProjectVisibilityRequest req,
+    ProjectStore store,
+    IUserContext user,
+    IOptions<PageToMovieOptions> opts,
+    CancellationToken ct) =>
+{
+    if (AuthGate.RequireLogin(user, opts) is { } denied)
+        return denied;
+
+    await store.RequireProjectAsync(id, ct);
+    if (!await store.CanUserPublishDemoAsync(id, user.UserId, user.IsAdmin, ct))
+    {
+        return Results.Json(new { ok = false, error = "Only the project owner or an admin can change visibility mode." },
+            statusCode: StatusCodes.Status403Forbidden);
+    }
+
+    var proj = await store.SetProjectVisibilityModeAsync(id, req.VisibilityMode, ct);
+    return Results.Ok(new { ok = true, projectId = proj.Id, visibilityMode = proj.VisibilityMode });
+});
+
 app.MapGet("/api/creators/{handle}", async (
     string handle,
     CreatorProfileService creatorService,
@@ -2267,8 +2289,30 @@ app.MapPost("/api/invites/accept", async (
 
     try
     {
-        var fork = await store.ForkProjectAsync(outcome.ProjectId, user.UserId!, ct);
+        var fork = await store.ForkProjectAsync(outcome.ProjectId, user.UserId!, isInvite: true, ct);
         return Results.Ok(new { ok = true, projectId = fork.Id, title = fork.Title });
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { ok = false, error = ex.Message });
+    }
+});
+
+/// <summary>1-click community fork endpoint for Open (Public Forkable) projects.</summary>
+app.MapPost("/api/projects/{id}/fork", async (
+    string id,
+    ProjectStore store,
+    IUserContext user,
+    IOptions<PageToMovieOptions> opts,
+    CancellationToken ct) =>
+{
+    if (AuthGate.RequireLogin(user, opts) is { } denied)
+        return denied;
+
+    try
+    {
+        var fork = await store.ForkProjectAsync(id, user.UserId!, ct: ct);
+        return Results.Ok(new { ok = true, id = fork.Id, title = fork.Title, parentProjectId = fork.ParentProjectId, visibilityMode = fork.VisibilityMode });
     }
     catch (Exception ex)
     {
@@ -3801,7 +3845,8 @@ static object DemoPublicDto(
     DemoCatalogService.DemoEntry d,
     int upvoteCount = 0,
     bool upvotedByMe = false,
-    bool canFork = false) => new
+    bool canFork = false,
+    string visibilityMode = "Private") => new
 {
     d.Id,
     d.Title,
@@ -3819,6 +3864,7 @@ static object DemoPublicDto(
     videoPath = string.IsNullOrWhiteSpace(d.YoutubeId) ? $"/api/demos/{Uri.EscapeDataString(d.Id)}/video" : null,
     d.YoutubeId,
     d.YoutubeUrl,
+    visibilityMode,
 };
 
 static object DemoAdminDto(DemoCatalogService.DemoEntry d) => new
@@ -3861,6 +3907,26 @@ app.MapGet("/api/demos", async (
     var ids = list.Select(d => d.Id).ToList();
     var counts = upvotes.GetCounts(ids);
     var mine = upvotes.GetUpvotedSet(user.UserId, ids);
+
+    var visibilityMap = new Dictionary<string, string>();
+    var forkableProjectIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+    foreach (var d in list)
+    {
+        if (!string.IsNullOrWhiteSpace(d.ProjectId))
+        {
+            try
+            {
+                var proj = await store.GetProjectAsync(d.ProjectId, ct);
+                if (proj is not null)
+                {
+                    visibilityMap[d.Id] = proj.VisibilityMode;
+                    forkableProjectIds.Add(d.ProjectId);
+                }
+            }
+            catch { /* skip */ }
+        }
+    }
+
     var sortKey = (sort ?? "top").Trim().ToLowerInvariant();
     IEnumerable<DemoCatalogService.DemoEntry> ordered = sortKey switch
     {
@@ -3870,21 +3936,6 @@ app.MapGet("/api/demos", async (
             .ThenByDescending(d => d.CreatedAt),
     };
 
-    // Which demos still have a studio project to fork (Feature 11).
-    var forkableProjectIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-    foreach (var pid in ordered
-                 .Select(d => d.ProjectId)
-                 .Where(p => !string.IsNullOrWhiteSpace(p))
-                 .Distinct(StringComparer.OrdinalIgnoreCase)!)
-    {
-        try
-        {
-            if (await store.GetProjectAsync(pid!, ct) is not null)
-                forkableProjectIds.Add(pid!);
-        }
-        catch { /* skip */ }
-    }
-
     return Results.Ok(new
     {
         ok = true,
@@ -3893,7 +3944,8 @@ app.MapGet("/api/demos", async (
             d,
             counts.GetValueOrDefault(d.Id),
             mine.Contains(d.Id),
-            canFork: !string.IsNullOrWhiteSpace(d.ProjectId) && forkableProjectIds.Contains(d.ProjectId!))),
+            canFork: !string.IsNullOrWhiteSpace(d.ProjectId) && forkableProjectIds.Contains(d.ProjectId!),
+            visibilityMode: visibilityMap.GetValueOrDefault(d.Id, "Private"))),
     });
 });
 
@@ -4635,6 +4687,7 @@ namespace PageToMovie.Api
     public record AcceptInviteApiRequest(string? Token);
     public record CommitProjectApiRequest(string? Message);
     public record SyncOriginApiRequest(string? ParentProjectId);
+    public record ProjectVisibilityRequest(string VisibilityMode);
     public record SetBookRefsRequest(List<string>? ImagePaths);
 
     public sealed class TestEmailRequest

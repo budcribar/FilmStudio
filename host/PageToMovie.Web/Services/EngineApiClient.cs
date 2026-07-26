@@ -462,6 +462,27 @@ public sealed class EngineApiClient
         return await SendJsonAsync<ContributionDiffDto>(req, ct);
     }
 
+    public async Task<bool> SetProjectVisibilityModeAsync(
+        string projectId,
+        string visibilityMode,
+        CancellationToken ct = default)
+    {
+        SyncIdentityHeaders();
+        using var req = new HttpRequestMessage(HttpMethod.Post, $"/api/projects/{Uri.EscapeDataString(projectId)}/visibility");
+        req.Content = JsonContent.Create(new { visibilityMode }, options: JsonOpts);
+        var res = await _http.SendAsync(req, ct);
+        return res.IsSuccessStatusCode;
+    }
+
+    public async Task<ProjectInfo?> ForkProjectAsync(
+        string projectId,
+        CancellationToken ct = default)
+    {
+        SyncIdentityHeaders();
+        using var req = new HttpRequestMessage(HttpMethod.Post, $"/api/projects/{Uri.EscapeDataString(projectId)}/fork");
+        return await SendJsonAsync<ProjectInfo>(req, ct);
+    }
+
     public async Task<SyncOriginResultDto?> SyncOriginAsync(
         string projectId,
         string parentProjectId,
@@ -2880,6 +2901,8 @@ public sealed class DemoListItem
     public bool CanFork { get; set; }
     public string? YoutubeId { get; set; }
     public string? YoutubeUrl { get; set; }
+    public string? VisibilityMode { get; set; } = "Private";
+    public bool IsForkable => string.Equals(VisibilityMode, "Open", StringComparison.OrdinalIgnoreCase);
     public string? YoutubeUploadStatus { get; set; }
     public string? YoutubeUploadError { get; set; }
 }

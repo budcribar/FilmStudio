@@ -118,6 +118,7 @@ public sealed class ProjectStore
             string? label = null;
             string? ownerUserId = null;
             string? parentProjectId = null;
+            string? visibilityMode = null;
             if (File.Exists(metaPath))
             {
                 try
@@ -125,20 +126,21 @@ public sealed class ProjectStore
                     await using var stream = File.OpenRead(metaPath);
                     using var doc = await JsonDocument.ParseAsync(stream, cancellationToken: ct)
                         .ConfigureAwait(false);
-                    if (doc.RootElement.TryGetProperty("title", out var t))
-                        title = t.GetString();
-                    if (doc.RootElement.TryGetProperty("label", out var l))
-                        label = l.GetString();
-                    if (doc.RootElement.TryGetProperty("parentProjectId", out var pp))
-                        parentProjectId = pp.GetString();
                     foreach (var p in doc.RootElement.EnumerateObject())
                     {
-                        if (string.Equals(p.Name, "ownerUserId", StringComparison.OrdinalIgnoreCase) ||
-                            string.Equals(p.Name, "owner_user_id", StringComparison.OrdinalIgnoreCase))
-                        {
+                        if (string.Equals(p.Name, "title", StringComparison.OrdinalIgnoreCase))
+                            title = p.Value.GetString();
+                        else if (string.Equals(p.Name, "label", StringComparison.OrdinalIgnoreCase))
+                            label = p.Value.GetString();
+                        else if (string.Equals(p.Name, "parentProjectId", StringComparison.OrdinalIgnoreCase) ||
+                                 string.Equals(p.Name, "parent_project_id", StringComparison.OrdinalIgnoreCase))
+                            parentProjectId = p.Value.GetString();
+                        else if (string.Equals(p.Name, "visibilityMode", StringComparison.OrdinalIgnoreCase) ||
+                                 string.Equals(p.Name, "visibility_mode", StringComparison.OrdinalIgnoreCase))
+                            visibilityMode = p.Value.GetString();
+                        else if (string.Equals(p.Name, "ownerUserId", StringComparison.OrdinalIgnoreCase) ||
+                                 string.Equals(p.Name, "owner_user_id", StringComparison.OrdinalIgnoreCase))
                             ownerUserId = p.Value.GetString();
-                            break;
-                        }
                     }
                 }
                 catch { /* ignore */ }
@@ -151,6 +153,7 @@ public sealed class ProjectStore
                 Path = dir,
                 OwnerUserId = string.IsNullOrWhiteSpace(ownerUserId) ? null : ownerUserId.Trim(),
                 ParentProjectId = string.IsNullOrWhiteSpace(parentProjectId) ? null : parentProjectId.Trim(),
+                VisibilityMode = string.IsNullOrWhiteSpace(visibilityMode) ? "Private" : visibilityMode.Trim(),
             });
         }
         return list.OrderBy(p => p.Id, StringComparer.OrdinalIgnoreCase).ToList();
@@ -255,11 +258,20 @@ public sealed class ProjectStore
     public async Task<ProjectInfo> ForkProjectAsync(
         string sourceProjectId,
         string newOwnerUserId,
+        bool isInvite = false,
         CancellationToken ct = default)
     {
         var source = await RequireProjectAsync(sourceProjectId, ct).ConfigureAwait(false);
         if (string.IsNullOrWhiteSpace(newOwnerUserId))
             throw new InvalidOperationException("newOwnerUserId required");
+
+        // Allow forking if project is Open (Public Forkable), unowned/legacy, requested via explicit invite, or if caller is owner/admin
+        var isOwnerOrLegacy = string.IsNullOrWhiteSpace(source.OwnerUserId) || string.Equals(source.OwnerUserId, newOwnerUserId, StringComparison.OrdinalIgnoreCase);
+        var isForkable = string.Equals(source.VisibilityMode, "Open", StringComparison.OrdinalIgnoreCase) || string.Equals(source.VisibilityMode, "PublicForkable", StringComparison.OrdinalIgnoreCase);
+        if (!isInvite && !isOwnerOrLegacy && !isForkable)
+        {
+            throw new InvalidOperationException($"Forking disabled for this project (Visibility mode: {source.VisibilityMode}). Only 'Open' (Public Forkable) projects can be forked by community members.");
+        }
 
         var baseName = source.Title ?? source.Id;
         var newId = SanitizeProjectId($"{baseName}-fork-{Guid.NewGuid().ToString("N")[..6]}");
@@ -307,6 +319,52 @@ public sealed class ProjectStore
 
         InvalidateReadCaches(null);
         return await RequireProjectAsync(newId, ct).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Update project visibility mode ("Private", "Public", or "Open") in project.json.
+    /// </summary>
+    public async Task<ProjectInfo> SetProjectVisibilityModeAsync(
+        string projectId,
+        string visibilityMode,
+        CancellationToken ct = default)
+    {
+        var proj = await RequireProjectAsync(projectId, ct).ConfigureAwait(false);
+        var validModes = new[] { "Private", "Public", "Open" };
+        var mode = validModes.FirstOrDefault(m => string.Equals(m, visibilityMode, StringComparison.OrdinalIgnoreCase)) ?? "Private";
+
+        var metaPath = Path.Combine(proj.Path, "project.json");
+        Dictionary<string, object?> meta;
+        if (File.Exists(metaPath))
+        {
+            try
+            {
+                var json = await File.ReadAllTextAsync(metaPath, ct).ConfigureAwait(false);
+                meta = JsonSerializer.Deserialize<Dictionary<string, object?>>(json, JsonOpts)
+                       ?? new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase);
+            }
+            catch
+            {
+                meta = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase);
+            }
+        }
+        else
+        {
+            meta = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase);
+        }
+
+        meta["visibilityMode"] = mode;
+        meta["id"] = proj.Id;
+        if (!string.IsNullOrWhiteSpace(proj.Title)) meta["title"] = proj.Title;
+        if (!string.IsNullOrWhiteSpace(proj.OwnerUserId)) meta["ownerUserId"] = proj.OwnerUserId;
+        if (!string.IsNullOrWhiteSpace(proj.ParentProjectId)) meta["parentProjectId"] = proj.ParentProjectId;
+
+        var updatedJson = JsonSerializer.Serialize(meta, JsonOpts) + "\n";
+        await File.WriteAllTextAsync(metaPath, updatedJson, ct).ConfigureAwait(false);
+
+        proj.VisibilityMode = mode;
+        InvalidateReadCaches(null);
+        return proj;
     }
 
     /// <summary>

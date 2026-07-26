@@ -150,16 +150,16 @@
                                         💬 Comment on YouTube ↗
                                     </a>
                                 }
-                                @if (d.CanFork)
+                                @if (d.CanFork && (d.IsForkable || Session.IsAdmin))
                                 {
                                     <button type="button"
-                                            class="btn btn-sm btn-outline-info"
+                                            class="btn btn-sm btn-success"
                                             disabled="@_busy"
                                             title="@(Session.IsLoggedIn
-                                                ? "Create your own studio copy of this film’s project (screenplay, cast, shot plan — no video files)"
+                                                ? "Fork script, cast, and shot plan into your workspace"
                                                 : "Sign in to fork this project")"
                                             data-testid="demo-fork"
-                                            @onclick="() => ForkAsync(d)">
+                                            @onclick="() => ForkDemoAsync(d)">
                                         🍴 Fork project
                                     </button>
                                 }
@@ -251,6 +251,39 @@
         if (IsOwnDemo(d)) return "You can’t star your own demo";
         if (!Session.IsLoggedIn) return "Sign in to star this film";
         return d.UpvotedByMe ? "Remove star" : "Star this film";
+    }
+
+    private async Task ForkDemoAsync(DemoListItem d)
+    {
+        if (string.IsNullOrWhiteSpace(d.ProjectId)) return;
+        if (!Session.IsLoggedIn)
+        {
+            Nav.NavigateTo("/login?returnUrl=/demo");
+            return;
+        }
+
+        _busy = true;
+        _error = null;
+        try
+        {
+            var forked = await Engine.ForkProjectAsync(d.ProjectId);
+            if (forked is not null)
+            {
+                Nav.NavigateTo("adaptation");
+            }
+            else
+            {
+                _error = "Could not fork project.";
+            }
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            _busy = false;
+        }
     }
 
     private async Task ToggleStarAsync(DemoListItem d)
