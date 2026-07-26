@@ -98,10 +98,6 @@ else
         <div class="card-header d-flex justify-content-between align-items-center py-2">
             <span>
                 Scene <code class="small">S@(playSn.ToString("D2"))</code>
-                @if (!string.IsNullOrEmpty(_clientSceneUrl))
-                {
-                    <span class="badge bg-info text-dark ms-1">client stitch</span>
-                }
             </span>
             <button type="button" class="btn btn-sm btn-outline-secondary" @onclick="HideScenePlayer">Hide</button>
         </div>
@@ -113,16 +109,12 @@ else
                    onloadeddata="this.play().catch(function(){})">
                 Your browser does not support HTML5 video.
             </video>
-            <p class="small text-muted mb-0 mt-2">
-                @if (string.IsNullOrEmpty(_clientSceneUrl))
-                {
-                    <a href="@Engine.CompositeVideoUrl(_projectId, playSn)" target="_blank" rel="noopener">Open in new tab</a>
-                }
-                else
-                {
-                    <span>Stitched in browser from clips (not written to disk).</span>
-                }
-            </p>
+            @if (string.IsNullOrEmpty(_clientSceneUrl))
+            {
+                <div class="mt-2">
+                    <a href="@Engine.CompositeVideoUrl(_projectId, playSn)" target="_blank" rel="noopener" class="small text-muted">Open in new tab</a>
+                </div>
+            }
         </div>
     </div>
 }
@@ -150,7 +142,6 @@ else if (_showScenePlayer && _playingScene is int busySn && (IsSceneGenBusy(busy
             <span>
                 Preview — @_previewScenes.Count scene@(_previewScenes.Count == 1 ? "" : "s"):
                 <code class="small">@string.Join(", ", _previewScenes.Select(s => $"S{s:D2}"))</code>
-                <span class="badge bg-info text-dark ms-1">client stitch</span>
             </span>
             <button type="button" class="btn btn-sm btn-outline-secondary" @onclick="HidePreviewPlayerAsync">Hide</button>
         </div>
@@ -162,10 +153,6 @@ else if (_showScenePlayer && _playingScene is int busySn && (IsSceneGenBusy(busy
                    onloadeddata="this.play().catch(function(){})">
                 Your browser does not support HTML5 video.
             </video>
-            <p class="small text-muted mb-0 mt-2">
-                Combined in your browser — not saved on the server. Change the selection and click
-                <strong>Play selected</strong> again to audition a different cut.
-            </p>
         </div>
     </div>
 }
@@ -2221,9 +2208,7 @@ else
 
             _clientPreviewUrl = result.Url;
             _previewVideoKey = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-            _message =
-                $"Preview ready (browser) — {_previewScenes.Count} scene(s): " +
-                string.Join(", ", _previewScenes.Select(s => $"S{s:D2}"));
+            _message = null;
         }
         catch (Exception ex)
         {
