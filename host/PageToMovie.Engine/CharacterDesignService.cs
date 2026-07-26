@@ -979,16 +979,28 @@ public sealed class CharacterDesignService
     /// </summary>
     internal static string? ReadProjectRenderStyleLock(string projectDir)
     {
+        var sourceDir = Path.Combine(projectDir, "source");
+        var hasBook = File.Exists(Path.Combine(sourceDir, "book_full.txt")) ||
+                      Directory.Exists(Path.Combine(sourceDir, "book_images"));
+
         try
         {
-            var castPath = Path.Combine(projectDir, "source", ScreenplayService.CastSeedsFileName);
+            var castPath = Path.Combine(sourceDir, ScreenplayService.CastSeedsFileName);
             if (File.Exists(castPath))
             {
                 using var doc = JsonDocument.Parse(File.ReadAllText(castPath));
                 if (doc.RootElement.TryGetProperty("render_style_lock", out var rsl) &&
                     rsl.ValueKind == JsonValueKind.String &&
                     rsl.GetString() is { Length: > 0 } s)
-                    return s.Trim();
+                {
+                    var style = s.Trim();
+                    // If project has a book source but cast_seeds has a photoreal lock, override with picture-book lock
+                    if (hasBook && RegexContains(style, @"\b(photoreal|photo-?real|live[- ]?action)\b"))
+                    {
+                        return "STYLE LOCK: stylized animated children's picture-book look for ALL on-screen cast (animals and humans share the same medium) -- not photoreal, not live-action";
+                    }
+                    return style;
+                }
             }
         }
         catch
@@ -996,16 +1008,14 @@ public sealed class CharacterDesignService
             // ignore
         }
 
-        // If project source contains book_full.txt or book_images, default to picture-book style lock
-        var sourceDir = Path.Combine(projectDir, "source");
-        if (File.Exists(Path.Combine(sourceDir, "book_full.txt")) ||
-            Directory.Exists(Path.Combine(sourceDir, "book_images")))
+        if (hasBook)
         {
             return "STYLE LOCK: stylized animated children's picture-book look for ALL on-screen cast (animals and humans share the same medium) -- not photoreal, not live-action";
         }
 
         return null;
     }
+
 
     /// <summary>
     /// Illustrated / picture-book when project or book art needs that medium;

@@ -158,7 +158,8 @@ public sealed class CastFromScreenplayService
             };
         }
 
-        var normalized = NormalizeCastDoc(parsed, projectId);
+        var normalized = NormalizeCastDoc(parsed, projectId, book);
+
         var seedsObj = GetSeedsDict(normalized);
 
         // Ensure silent leads / titled beings found in book & action text (e.g. Buster, Daddy) are never omitted
@@ -794,8 +795,10 @@ public sealed class CastFromScreenplayService
 
     private static Dictionary<string, object?> NormalizeCastDoc(
         Dictionary<string, object?> parsed,
-        string projectId)
+        string projectId,
+        string? bookText = null)
     {
+
         var outDoc = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase)
         {
             ["schema_version"] = "cast_seeds.v1",
@@ -811,8 +814,23 @@ public sealed class CastFromScreenplayService
         else
             outDoc["movie_title"] = projectId;
 
-        if (parsed.TryGetValue("render_style_lock", out var rsl) && rsl is not null)
-            outDoc["render_style_lock"] = rsl.ToString();
+        if (parsed.TryGetValue("render_style_lock", out var rsl) && rsl is not null && !string.IsNullOrWhiteSpace(rsl.ToString()))
+        {
+            var style = rsl.ToString()!;
+            if (!string.IsNullOrWhiteSpace(bookText) && Regex.IsMatch(style, @"\b(photoreal|photo-?real|live[- ]?action)\b", RegexOptions.IgnoreCase))
+            {
+                outDoc["render_style_lock"] = "STYLE LOCK: stylized animated children's picture-book look for ALL on-screen cast (animals and humans share the same medium) -- not photoreal, not live-action";
+            }
+            else
+            {
+                outDoc["render_style_lock"] = style;
+            }
+        }
+        else if (!string.IsNullOrWhiteSpace(bookText))
+        {
+            outDoc["render_style_lock"] = "STYLE LOCK: stylized animated children's picture-book look for ALL on-screen cast (animals and humans share the same medium) -- not photoreal, not live-action";
+        }
+
         // Film-level audience/performance conventions inferred from book (not hardcoded gaze recipes)
         if (parsed.TryGetValue("performance_lock", out var pl) && pl is not null &&
             !string.IsNullOrWhiteSpace(pl.ToString()))
