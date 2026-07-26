@@ -432,6 +432,21 @@ flowchart TD
    - Creators use standard `git commit` and `git push` (or an optional **"Push to GitHub"** button in PageToMovie Studio) to track blueprint and screenplay revisions.
    - Other collaborators can clone the projects Git repo, connect their local media folder, and generate/preview clips on their own machines.
 
+### Git LFS (Large File Storage) Evaluation & Strategy
+
+We evaluated whether to use **Git LFS** (`git-lfs`) for `.mp4` video binary version control:
+
+- **Default Recommendation (Ignored `.mp4` Binaries — Recommended)**:
+  - **Strategy**: `.gitignore` ignores `assets/video/*.mp4`. Text, Fountain screenplays, character portraits, and blueprints are version-controlled in Git (< 5 MB per project). Video clips stay local on creator PC hard drives and stream publicly via YouTube embeds.
+  - **Advantage**: **$0 storage & bandwidth fees**, zero risk of GitHub LFS quota errors (GitHub caps free LFS at 2 GB total).
+- **Optional Opt-In (For Power Users / Studios with Custom LFS Servers)**:
+  - Advanced studios who wish to version-control raw `.mp4` video clips across multiple machines using Git LFS can add `.gitattributes` to their project repository:
+    ```gitattributes
+    assets/video/*.mp4 filter=lfs diff=lfs merge=lfs -text
+    assets/video/*.webm filter=lfs diff=lfs merge=lfs -text
+    ```
+  - PageToMovie's `ClientMediaFolderService.cs` supports Git LFS transparently because Git LFS operates at the local file system layer.
+
 ---
 
 ## Demo Gallery & YouTube Auto-Upload Pipeline
