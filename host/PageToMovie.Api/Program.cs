@@ -2014,6 +2014,18 @@ app.MapPost("/api/projects/{id}/characters/{charKey}/voice",
     }
 });
 
+app.MapGet("/api/users/{id}/terms", async (string id, UserDatabaseService userDb) =>
+{
+    var hasAccepted = await userDb.HasAcceptedTermsAsync(id);
+    return Results.Ok(new { hasAccepted });
+});
+
+app.MapPost("/api/users/terms/accept", async (AcceptTermsRequest body, UserDatabaseService userDb) =>
+{
+    var ok = await userDb.AcceptTermsAsync(body.UserId, body.Version ?? "1.0");
+    return Results.Ok(new { ok });
+});
+
 /// <summary>
 /// Film-pipeline voice sample job: short video (voice style + dialogue) kept as MP4 (no ffmpeg extract).
 /// Use Force=true after editing the profile to regenerate.
@@ -4113,6 +4125,7 @@ app.Run();
 
 namespace PageToMovie.Api
 {
+    public record AcceptTermsRequest(string UserId, string? Version);
     public record SetBookRefsRequest(List<string>? ImagePaths);
 
     public sealed class TestEmailRequest
