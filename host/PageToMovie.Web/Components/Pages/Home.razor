@@ -93,13 +93,16 @@
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <span>Projects</span>
-                <button class="btn btn-primary btn-sm"
-                        data-testid="home-new-project"
-                        disabled="@(_busy || !Session.IsLoggedIn)"
-                        title="@(Session.IsLoggedIn ? "Create a project" : "Sign in to create projects")"
-                        @onclick="() => _showNew = !_showNew">
-                    @(_showNew ? "Cancel" : "New project")
-                </button>
+                @if (!_showNew)
+                {
+                    <button class="btn btn-primary btn-sm"
+                            data-testid="home-new-project"
+                            disabled="@(_busy || !Session.IsLoggedIn)"
+                            title="@(Session.IsLoggedIn ? "Create a project" : "Sign in to create projects")"
+                            @onclick="ToggleNewProjectAsync">
+                        New project
+                    </button>
+                }
             </div>
             <div class="card-body">
                 @if (!Session.IsLoggedIn)
@@ -108,6 +111,46 @@
                         <strong>Sign in required.</strong>
                         <a href="login?returnUrl=/" class="alert-link">Sign in or create an account</a>
                         to create projects and save your Grok API key.
+                    </div>
+                }
+
+                @if (_showNew && Session.IsLoggedIn)
+                {
+                    <div class="border border-secondary border-opacity-50 rounded p-3 mb-3 bg-dark bg-opacity-75 text-white shadow-sm">
+                        <div class="fw-semibold small text-light mb-2">Create New Project</div>
+                        @if (ActiveProject.Status is not null && !ActiveProject.Status.XaiConfigured)
+                        {
+                            <div class="alert alert-warning py-1 px-2 small mb-2">
+                                ⚠️ <strong>Notice:</strong> No AI API key yet.
+                                <a href="configuration" class="alert-link">Add your Grok key →</a>
+                                before book import / OCR.
+                            </div>
+                        }
+                        <div class="d-flex flex-wrap align-items-center gap-2">
+                            <input @ref="_nameInputRef"
+                                   class="form-control form-control-sm flex-grow-1 bg-white text-dark border-secondary fw-medium"
+                                   style="min-width: 10rem; color: #111111 !important; background-color: #ffffff !important; caret-color: #000000 !important;"
+                                   data-testid="home-new-project-name"
+                                   value="@_newName"
+                                   @oninput="OnNewNameInput"
+                                   @onkeydown="OnNewNameKeyDown"
+                                   disabled="@_busy"
+                                   placeholder="Enter project name..."
+                                   maxlength="80"
+                                   autofocus
+                                   aria-label="New project name" />
+                            <button class="btn btn-success btn-sm flex-shrink-0 px-3"
+                                    data-testid="home-create-project"
+                                    disabled="@(_busy || string.IsNullOrWhiteSpace(_newName))"
+                                    @onclick="CreateProjectAsync">
+                                Create
+                            </button>
+                            <button class="btn btn-outline-secondary btn-sm flex-shrink-0 px-3 text-light border-secondary"
+                                    disabled="@_busy"
+                                    @onclick="ToggleNewProjectAsync">
+                                Cancel
+                            </button>
+                        </div>
                     </div>
                 }
 
@@ -153,39 +196,6 @@
                     </div>
                 }
 
-                @* New project form sits under the list so the list stays stable; Create is on the right. *@
-                @if (_showNew && Session.IsLoggedIn)
-                {
-                    <div class="border border-secondary border-opacity-50 rounded p-3 mt-3 bg-dark bg-opacity-75 text-white shadow-sm">
-                        @if (ActiveProject.Status is not null && !ActiveProject.Status.XaiConfigured)
-                        {
-                            <div class="alert alert-warning py-1 px-2 small mb-2">
-                                ⚠️ <strong>Notice:</strong> No AI API key yet.
-                                <a href="configuration" class="alert-link">Add your Grok key →</a>
-                                before book import / OCR.
-                            </div>
-                        }
-                        <div class="d-flex flex-wrap align-items-center gap-2">
-                            <input class="form-control form-control-sm flex-grow-1 bg-dark text-white border-secondary"
-                                   style="min-width: 10rem;"
-                                   data-testid="home-new-project-name"
-                                   value="@_newName"
-                                   @oninput="OnNewNameInput"
-                                   @onkeydown="OnNewNameKeyDown"
-                                   disabled="@_busy"
-                                   placeholder="Project name"
-                                   maxlength="80"
-                                   autofocus
-                                   aria-label="New project name" />
-                            <button class="btn btn-success btn-sm flex-shrink-0"
-                                    data-testid="home-create-project"
-                                    disabled="@(_busy || string.IsNullOrWhiteSpace(_newName))"
-                                    @onclick="CreateProjectAsync">
-                                Create
-                            </button>
-                        </div>
-                    </div>
-                }
 
                 @if (_deleteId is not null)
                 {
@@ -321,6 +331,7 @@
     private List<JobSnapshot> _myJobs = new();
     private bool _showNew;
     private string _newName = "";
+    private ElementReference _nameInputRef;
     private string? _deleteId;
     private string _deleteLabel = "";
     private string _deleteConfirm = "";
@@ -328,6 +339,19 @@
     private bool _jobsExpanded;
     /// <summary>Null = follow auto rules; otherwise honor last user click.</summary>
     private bool? _jobsUserPreference;
+
+    private async Task ToggleNewProjectAsync()
+    {
+        _showNew = !_showNew;
+        if (_showNew)
+        {
+            _newName = "";
+            StateHasChanged();
+            await Task.Yield();
+            try { await _nameInputRef.FocusAsync(); } catch { }
+        }
+    }
+
 
     private bool CanConfirmDelete =>
         _deleteId is not null &&
