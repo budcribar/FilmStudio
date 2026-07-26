@@ -1,0 +1,154 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## What this is
+
+**Film Studio** ("Nick and Me" / PageToMovie): an AI film pipeline that turns a book/PDF/Fountain screenplay into
+cast-locked, shot-planned, AI-generated video scenes, with browser-side review/stitch/export. Product runtime is
+**.NET only** (Blazor WASM UI + C# API/engine under `host/`) — **no Python runtime** is required for the product
+path. The `scripts/` Python files are one-off maintenance/debug helpers, not part of the shipped product.
+
+## Commands
+
+All commands run from `host/` unless noted.
+
+```powershell
+# Build
+dotnet build PageToMovie.slnx          # or open host/PageToMovie.slnx in Visual Studio
+
+# Run API (terminal 1) — must listen on 127.0.0.1:5088
+$env:PageToMovie__WorkspaceRoot = (Resolve-Path ..).Path
+$env:PageToMovie__UseFakes = "false"    # "true" to avoid xAI spend (uses PageToMovie.Fakes)
+$env:XAI_API_KEY = "your-key"           # required when UseFakes=false
+$env:ASPNETCORE_URLS = "http://127.0.0.1:5088"
+dotnet run --project PageToMovie.Api
+
+# Run Web UI (terminal 2) — needs the Api running too
+$env:EngineApi__BaseUrl = "http://127.0.0.1:5088"
+$env:ASPNETCORE_URLS = "http://localhost:5079"
+dotnet run --project PageToMovie.Web
+
+# Tests — free/default (excludes paid LiveApi tests via VSTestTestCaseFilter)
+dotnet test PageToMovie.Tests
+
+# Run a single test
+dotnet test PageToMovie.Tests --filter "FullyQualifiedName~ClassName.MethodName"
+
+# Paid provider tests (opt-in, costs API tokens) — see PageToMovie.Tests/LiveApi/README.md
+$env:PAGETOMOVIE_LIVE_API_TESTS = "1"
+$env:XAI_API_KEY = "xai-..."
+dotnet test PageToMovie.Tests --filter "Category=LiveApi"
+
+# LoadSim (concurrent virtual users against fakes)
+$env:PageToMovie_USE_FAKES = "true"
+dotnet run --project PageToMovie.Api          # terminal 1
+dotnet run --project PageToMovie.LoadSim -- --users 25 --duration 90 --scenario mixed --out loadsim-results.json
+
+# Playwright pilot (E2E against real or fake API)
+cd playwright && npm install
+$env:API_URL = "http://127.0.0.1:5088"; $env:WEB_URL = "http://localhost:5079"
+npm run pilot
+```
+
+Both `Api` and `Web` processes are required together — Web calls Api at `EngineApi:BaseUrl`; if only Web runs,
+API calls fail. Health check: `GET http://127.0.0.1:5088/health`.
+
+## Architecture
+
+### Solution layout (`host/`)
+
+| Project | Role |
+|---------|------|
+| `PageToMovie.Core` | Shared DTOs/models and `Options` (no logic) |
+| `PageToMovie.Engine` | All product logic: job runner, Stage 1/2 adaptation, ~20 AI classifiers, video prompt building, provider clients, stores |
+| `PageToMovie.Api` | Minimal-API REST + `/hubs/jobs` SignalR hub; hosts the WASM UI. **`Program.cs` is a large (~4k line) file holding essentially all route registrations** — search it by route path/verb rather than expecting a controller-per-resource layout |
+| `PageToMovie.Web` | Blazor WebAssembly UI (`Components/Pages`) + client-side media tools (ffmpeg.wasm: stitch, silence-trim, frame sampling) |
+| `PageToMovie.Fakes` | Fake `IChatClient`/`IImageClient`/`IVideoClient`/`IVisionClient` implementations + fixtures, swapped in via `PageToMovie:UseFakes` for spend-free dev/soak |
+| `PageToMovie.LoadSim` | Concurrent virtual-user load client (Phase E soak testing) |
+| `PageToMovie.Tests` | xUnit tests; `LiveApi/` subfolder is paid-provider tests gated by `[LiveApiFact]`/`[LiveApiTheory]` (skip cleanly unless both `PAGETOMOVIE_LIVE_API_TESTS` and the provider key are set) |
+| `host/tools/*` | Standalone eval CLIs (`ClassifierBenchmarks`, `BeatLabelEval`, `HeuristicAiEval`, `AmbientBlind`, `PlateOcrShortlist`, `CastBlind`) feeding `host/evals/` |
+
+**Key architectural rule:** the API host never spawns native `ffmpeg`. All video compose/trim/frame-sampling
+happens client-side in the browser via ffmpeg.wasm; the server only stores hashes/metadata for generated clips.
+
+### Multi-provider AI clients
+
+Each AI capability (chat, image, video, vision) has an interface in `PageToMovie.Engine/Abstractions/IModelClients.cs`
+and a `MultiProvider*Client` (e.g. `MultiProviderChatClient`) that routes to the concrete provider client
+(Grok/Anthropic/Gemini/etc.) based on the requested model id via `SupportedModelCatalog.ResolveOrDefault`.
+Callers depend only on the interface (`IChatClient`, `IImageClient`, `IVideoClient`, `IVisionClient`) — they never
+pick a provider directly. Unknown model ids fall back to Grok. When adding a new provider, add a concrete client
+implementing the relevant interface(s) and register it in the corresponding `MultiProvider*Client` and
+`SupportedModelCatalog`.
+
+### The pipeline (book → movie)
+
+Ingestion (`BookPrepareService`) → **Stage 1** screenplay adaptation to Fountain (`BookToFountainConverter`,
+prompt `book_to_fountain.txt`, with automated fixup retries for malformed scene headings/dialogue cues) → cast
+discovery + portrait generation + AI vision style-gate (`CastFromScreenplayService`, `CharacterDesignService`) →
+**Stage 2** shot planning (`Stage2PlannerService`), which runs the screenplay through ~15 specialized AI
+classifiers (see root `README.md` pipeline diagram for the full list: on-screen cast, silent-beat pacing, ambient
+SFX, species/body-type, extend-vs-cut, camera director, lighting, wardrobe continuity, emotion arc, sound design,
+depth of field, color grading, etc.) to produce a frame-accurate `blueprint.clips*.json` shot plan → video
+generation (`ClipVideoPromptBuilder` + `GrokVideoClient`/`GeminiVideoClient`, attaching locked reference images for
+identity consistency) → multi-frame auto-review (`ClipAutoReviewService`: browser samples frames, server runs
+vision QA, key never leaves the API host) → browser stitch/export (ffmpeg.wasm, no server remux).
+
+Long books are handled by **multi-chunk adapt → stitch → merge** in `BookToFountainConverter` (ordered chunks +
+continuity brief + final merge pass) rather than one giant prompt.
+
+### Jobs
+
+Long-running work (Stage 1/2, scene gen, book prepare, character variants, clip auto-review, YouTube upload, etc.)
+goes through `FilmJobService` → `JobStore`, tracked as `JobRecord`/`JobSnapshot` and pushed live to the UI over the
+`/hubs/jobs` SignalR hub (`JobUpdated`, `JobLog` events). REST endpoints under `/api/jobs/*` start jobs and poll
+status; `WorkerPools` bounds concurrency; `LockService` prevents conflicting concurrent jobs on the same project
+(e.g. can't run stage2 while stage1 is in flight).
+
+### Per-project data (`projects/<id>/`)
+
+Each film is a project directory: `project.json` (id/title/file pointers), `pipeline_config.json`,
+`pipeline_state.json` (includes `scene_dirty` flags for the learning-loop cascade), `source/` (imported text/cast
+seeds), `blueprint.clips*.json` (Stage 2 shot plan), `assets/` (portraits, generated clips), `telemetry/`.
+`projects/workspace.json` holds the single active project pointer (`ActiveProject`). Treat sample projects
+(Buster2, TellTaleHeartV7, etc.) as eval/demo fixtures, not product requirements — see "General solutions only"
+below.
+
+### Prompts (`prompts/`)
+
+Operator/product prompts are plain text files embedded at Engine build time (`book_to_fountain`,
+`fountain_to_cast`, `cast_visual_literalize`, `clip_gen_rules`, `clip_auto_review` — edit in git and redeploy;
+`PAGETOMOVIE_PROMPTS_DIR` overrides the directory locally). See `prompts/README.md` for the full file/role table
+and the feedback-routing model (clip/stage2/stage1/verifier/engine layers) used by the learning loop.
+
+## Product principles (from `AGENTS.md` — read that file for full detail)
+
+These apply to *product code* under `host/` (Engine/Api/Web), not to one-off scripts or sample project data:
+
+1. **Generalize, never hardcode.** No character names, book titles, page numbers, or story-specific
+   strings/regex in Engine/Web/API code. Sample project fixes (editing files under `projects/<id>/`) are fine;
+   the *code path* must work unmodified for the next book/cast. Ask before finishing a task: would this still
+   work for a different book with different cast names?
+2. **Prefer AI judgment over special-case lists.** Use prompts, cast metadata (`visual_lock`, `wardrobe_always`,
+   `source_image_pages`), manifest `relevance`, and style locks — not growing if-ladders of anti-patterns.
+3. **Deterministic guardrails stay hardcoded**: duration caps, model max clip length, prompt character budgets,
+   cast-from-plan-only, spend-prevention gates.
+4. **Don't build one-click full-movie automation yet.** The manual step-by-step path (approve screenplay → cast
+   → shot plan → gen scene → review) is the near-term working mode; each full run costs real API money.
+5. **Workflow UI copy is outcome-only, provider-neutral, and jargon-free.** Pages like Adaptation/Characters/
+   Scenes/Review/Home/Cost must never mention provider names (Grok/Veo/Gemini/xAI), implementation mechanism
+   (AI/vision/OCR/LLM/model/API), internal filenames (`blueprint.clips.json`, `scenes.json`), or pipeline jargon
+   (plates→"pictures", seeds→"reference images", stage 1→"screenplay", stage 2/blueprint→"shot plan"). One fact
+   in one place — never duplicate the same status/error in two UI surfaces. Provider names and model ids are only
+   OK on the **Configuration** page. Admin-only surfaces (job logs, "Details (admin)") may show technical detail.
+   See `AGENTS.md` for the full banned-phrase table and the outcome-language mapping.
+
+## Notable test/eval conventions
+
+- `PageToMovie.Tests` runs free by default; anything tagged `Category=LiveApi` calls real provider APIs and costs
+  money — never call paid APIs from a non-`LiveApi` unit test.
+- `host/evals/` + `host/tools/{ClassifierBenchmarks,BeatLabelEval,HeuristicAiEval,AmbientBlind}` hold AI-vs-baseline
+  classifier benchmark history for product classifiers — separate from story-project test fixtures.
+- Prefer Release build + fakes + a single Api/LoadSim process pair for perf soaks (see `host/docs/loadsim-soak.md`,
+  `host/docs/perf-findings-2026-07.md`).
