@@ -216,7 +216,7 @@ public sealed class EngineApiClient
         if (!resp.IsSuccessStatusCode)
             throw new InvalidOperationException(body?.Error ?? body?.Message ?? "Request failed");
         return body?.Message
-               ?? "If that account exists and has email, a reset link was sent. An admin can also set a password.";
+               ?? "If that account exists and has a confirmed email, a reset link was sent to your inbox.";
     }
 
     public async Task<(bool Ok, string Message)> ConfirmEmailAsync(string token, CancellationToken ct = default)
