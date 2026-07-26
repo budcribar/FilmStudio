@@ -23,7 +23,7 @@ Nothing in this doc is required for current production unless explicitly schedul
 | 10 | Media-aware fork / PR (hash upload) | idea | Later; storage + quotas. |
 | 11 | **Direct Gallery "Fork Project" Button** | **planned** | Integrates 🍴 **Fork Project** button directly onto `/demo` gallery cards & detail modals for **Public (Forkable)** projects. Eliminates need for a separate project page. |
 | 12 | ~~Project ratings~~ | **obsolete** | Superseded by Demo Upvotes on `/demo` gallery cards (Item #2). Upvoting a movie rates the project directly. |
-| 13 | Text reviews on ratings | idea | Moderation burden; not v1. |
+| 13 | **YouTube Direct Comment Link** | **planned** | Provides a `💬 Comment on YouTube ↗` button on `/demo` gallery cards, opening the video's YouTube page in a new tab for native commenting & subscriber growth (0 API quota cost). |
 | 14 | User reputation from ratings | idea | Derived later. |
 
 ---
@@ -138,17 +138,18 @@ Project owners select a Git-aligned visibility level controlling public access a
 Rather than requiring a separate navigation page, the **🍴 Fork Project** action is integrated directly into the existing `/demo` gallery cards and movie detail modals:
 
 ```text
-┌─────────────────────────────────────────────────────────────┐
-│  The Tell-Tale Heart                                        │
-│  By @edgar_allan_poe  •  Public Repo (Forkable)             │
-├─────────────────────────────────────────────────────────────┤
-│  [ YouTube Embedded Player ]                                │
-├─────────────────────────────────────────────────────────────┤
-│  👍 42 Upvotes   │  📜 View Screenplay  │  🍴 Fork Project  │
-└─────────────────────────────────────────────────────────────┘
+┌───────────────────────────────────────────────────────────────────────────┐
+│  The Tell-Tale Heart                                                      │
+│  By @edgar_allan_poe  •  Public Repo (Forkable)                           │
+├───────────────────────────────────────────────────────────────────────────┤
+│  [ YouTube Embedded Player ]                                              │
+├───────────────────────────────────────────────────────────────────────────┤
+│  👍 42 Upvotes  │  💬 Comment on YouTube ↗  │  📜 Script  │  🍴 Fork    │
+└───────────────────────────────────────────────────────────────────────────┘
 ```
 
 - **Zero Friction**: Viewers watch the movie and click **🍴 Fork Project** directly on the gallery card to immediately fork the Fountain script, cast seeds, and Stage 2 shot plan blueprint (< 5 MB package) into their workspace!
+- **YouTube Comment Referral (`💬 Comment on YouTube ↗`)**: Direct link opens `https://www.youtube.com/watch?v={youtubeId}` in a new tab, allowing viewers to comment and subscribe natively on YouTube with **0 API quota cost** and **0 moderation burden**.
 - **Eliminates Redundant Pages**: Keeps the application clean and fast without needing an additional "project listing page".
 
 ---
