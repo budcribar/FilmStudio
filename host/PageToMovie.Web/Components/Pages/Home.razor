@@ -18,14 +18,46 @@
         </div>
     </div>
 
-    <!-- Pages → AI → Movie pipeline -->
-    <img src="/images/hero-pages-ai-movie.gif?v=3"
-         alt="Pages into AI into movie"
-         class="home-hero-pipeline"
-         width="560"
-         height="160"
-         loading="eager"
-         decoding="async" />
+    <!-- Pages → AI → Movie (HTML labels + gentle CSS motion; fixed stage size so nothing jumps) -->
+    <div class="home-pipeline" role="img" aria-label="Pages into AI into movie">
+        <div class="home-pipeline__stage">
+            <div class="home-pipeline__icon home-pipeline__pages" aria-hidden="true">
+                <span class="home-pipeline__sheet s1"></span>
+                <span class="home-pipeline__sheet s2"></span>
+                <span class="home-pipeline__sheet s3"></span>
+            </div>
+            <span class="home-pipeline__label">PAGES</span>
+        </div>
+
+        <div class="home-pipeline__arrows" aria-hidden="true" title="Pages feeding into AI">
+            <span class="home-pipeline__chev c1">›</span>
+            <span class="home-pipeline__chev c2">›</span>
+            <span class="home-pipeline__chev c3">›</span>
+        </div>
+
+        <div class="home-pipeline__stage">
+            <div class="home-pipeline__icon home-pipeline__ai" aria-hidden="true">
+                <span class="home-pipeline__brain">🧠</span>
+            </div>
+            <span class="home-pipeline__label">AI</span>
+        </div>
+
+        <div class="home-pipeline__arrows" aria-hidden="true" title="AI generating movie">
+            <span class="home-pipeline__chev c1">›</span>
+            <span class="home-pipeline__chev c2">›</span>
+            <span class="home-pipeline__chev c3">›</span>
+        </div>
+
+        <div class="home-pipeline__stage">
+            <div class="home-pipeline__icon home-pipeline__movie" aria-hidden="true">
+                <span class="home-pipeline__clapper">
+                    <span class="home-pipeline__clapper-top"></span>
+                    <span class="home-pipeline__clapper-body"></span>
+                </span>
+            </div>
+            <span class="home-pipeline__label">MOVIE</span>
+        </div>
+    </div>
 </div>
 
 @if (!string.IsNullOrEmpty(_error))
