@@ -623,9 +623,29 @@ In your Railway Dashboard $\rightarrow$ **Variables** (or local `appsettings.jso
 Keep generated MP4 clips and scene previews on client devices while enforcing a strict capacity guard on Railway server disk space.
 
 ### Architecture
-- **Client Storage**: Gen clips live in the browser media folder (IndexedDB / OPFS / Local PC Folder) via `ClientMediaFolderService.cs`.
-- **Browser Stitching**: `ClientVideoStitchService.cs` uses **ffmpeg.wasm** in the Blazor client to compile scene/screenplay movies locally.
-- **Server Media Pruner (`ServerMediaPruningService.cs`)**: Hosted background service on Railway that inspects `projects/{id}/assets/video/` and `demos/`. Automatically purges server-cached `.mp4` files older than 48 hours or whenever container disk usage > 80%. Server disk footprint remains **< 100 MB total**.
+- **Client Storage**: Gen clips save into a user-picked local folder (File System Access API / Chrome–Edge) via `ClientMediaFolderService.cs` + `pagetomovie-media.js`. Index/OPFS remain future options; today the primary path is the local PC folder.
+- **Job handoff**: On clip gen, the engine can set `JobSnapshot.ClientMediaUrl` (short-lived `/api/media/proxy/{ticket}`) + `ClientRelativePath` so the browser downloads instead of relying only on server disk.
+- **Browser Stitching**: `ClientVideoStitchService.cs` uses **ffmpeg.wasm** in the Blazor client to compile scene/screenplay movies locally (prefers local blob when the folder is connected).
+- **Server Media Pruner (`ServerMediaPruningService.cs`)**: Hosted background service that can purge server-cached `.mp4` under workspace `projects/…/assets/video/` with sync-safe rules; **opt-in** via `PageToMovie:MediaPruning:Enabled` (defaults off).
+
+### Status (as of 2026-07-26)
+
+| Piece | Status | Notes |
+|-------|--------|--------|
+| Proxy ticket + client download path | ✅ | Grok/credits handoff sets `ClientMediaUrl` |
+| Folder picker + SHA-256 register | ✅ | `Connect media folder` (Nav + Scenes) |
+| Auto-save on job **done** | ✅ | Hub hook from `MainLayout` + Scenes; ignore `running` to avoid double-save |
+| **Fallback when folder not connected (feature 8)** | ✅ | One-shot Scenes warning + **Connect folder** / Dismiss; Chrome/Edge copy when API unsupported (`6769a93`) |
+| Silence trim before local write | ✅ | ffmpeg.wasm + `ClipSilenceTrimmer` |
+| Stream proxy (no full RAM buffer) | 🔲 planned | See `client-storage-implementation-plan.md` step 1 |
+| `.client.json` marker on register | 🔲 planned | Step 3 — UI “present” without server MP4 |
+| Proactive “connect folder” banner | 🔲 planned | Step 4 (distinct from feature-8 post-gen warning) |
+| Prune server MP4 when client marker exists | 🔲 planned | Step 5 |
+| Folder name persistence | 🔲 planned | Step 6 |
+| `ClientStorageMode` skip server write | 🔲 planned | Step 7 — only after 1–5 proven |
+
+**Detail plan:** [`host/docs/client-storage-implementation-plan.md`](client-storage-implementation-plan.md)  
+**Gap item:** Item 14 in [`host/docs/gap-analysis.md`](gap-analysis.md)
 
 ---
 
@@ -661,4 +681,4 @@ out of scope, e.g. automatic Git auto-commit, `ContributionReview.razor`, and th
 
 ---
 
-*Last updated: 2026-07-26 — all 6 phases re-verified against running code; unwired/stubbed ones reimplemented for real, tested, and pushed. See `host/docs/issues/issue-26-*` for the one deliberately-deferred piece (automatic Git auto-commit) and the status table for UI pieces (ContributionReview, gallery fork button, visibility modes, creator badges) still marked planned.*
+*Last updated: 2026-07-26 — all 6 phases re-verified against running code; unwired/stubbed ones reimplemented for real, tested, and pushed. Client media: feature-8 fallback warning when a clip finishes without a connected folder (`6769a93`); remaining client-storage ship steps still tracked in `client-storage-implementation-plan.md`. See `host/docs/issues/issue-26-*` for the one deliberately-deferred piece (automatic Git auto-commit) and the status table for UI pieces (ContributionReview, gallery fork button, visibility modes, creator badges) still marked planned.*

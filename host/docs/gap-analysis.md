@@ -176,11 +176,12 @@ Window 1 (<24h): direct AI CDN download. Window 2 (>24h): server proxy fallback,
 
 **Plan:** MP4s live in browser (IndexedDB/OPFS/local folder). Server only caches transiently. `ServerMediaPruningService.cs` prunes after 48h or at 80% disk.
 
-**Reality:** 🟡 **Partial — both paths exist but server is still primary; pruner is now correct but off by default.** *(pruner details updated 2026-07-26)*
+**Reality:** 🟡 **Partial — both paths exist but server is still primary; pruner is now correct but off by default.** *(pruner + feature 8 updated 2026-07-26)*
 - `ClientMediaFolderService.cs` ✅ fully implemented with ffmpeg.wasm silence trimming and SHA-256.
 - `pagetomovie-media.js` ✅ exists (File System Access API JS interop).
 - `ServerMediaPruningService.cs` — was previously buggy in a way this analysis hadn't caught: it resolved its root via `Directory.GetCurrentDirectory()` (wrong under the documented run command) and deleted files by age alone with no check that the client had actually synced a copy first (real data-loss risk). Now fixed: resolves via `ProjectStore.WorkspaceRoot`, only deletes a file `MediaRegistryService` confirms was synced, and **defaults off** (`PageToMovie:MediaPruning:Enabled`) until explicitly opted into per deployment.
 - **Still true:** server-side `assets/video/` remains the primary write path; the client folder is opt-in. Until a user connects a media folder, clips still accumulate on Railway disk (and now, correctly, are never auto-deleted until they do).
+- **Shipped 2026-07-26 (feature 8 / fallback UX):** When a job finishes with `ClientMediaUrl` but the local folder is not connected (picker cancelled or browser unsupported), Scenes shows a one-shot warning with **Connect folder** / Dismiss. Hub auto-save only runs on status **`done`**. Early `EnsureHubHookAsync` from `MainLayout` + Scenes so the warning can fire even if the user navigates. Commit `6769a93`. Remaining steps (stream proxy, `.client.json` markers, connect banner, aggressive prune, folder persistence, `ClientStorageMode`) still open — see `client-storage-implementation-plan.md`.
 
 ---
 
@@ -215,5 +216,5 @@ Window 1 (<24h): direct AI CDN download. Window 2 (>24h): server proxy fallback,
 | 11 | YouTube Auto-Upload & Replace | 🟡 Partial | Upload + auto-approve trigger ✅ (both work); only V2 replacement is missing |
 | 12 | Git-Backed Server Engine | ✅ Done (2026-07-26) | Real commit/merge; auto-commit-on-save deliberately not wired (issue-26), no remote push |
 | 13 | Admin Export & Handoff | ✅ Done, confirmed | `targetUserId` re-assignment on import verified in code |
-| 14 | Client MP4 Storage (Primary) | 🟡 Partial | Infrastructure ✅, server still primary path; pruner now correct + off by default |
+| 14 | Client MP4 Storage (Primary) | 🟡 Partial | Infra ✅ + feature-8 fallback warning; server still primary; stream/marker/mode steps open |
 | 15 | Invite-to-Fork Collaboration | ✅ Done (2026-07-26) | Real persisted invites, real email delivery, real fork creation, end-to-end tested |
