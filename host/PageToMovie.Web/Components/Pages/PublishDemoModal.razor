@@ -1,0 +1,114 @@
+@using Microsoft.AspNetCore.Components
+@using System.Net.Http
+@using System.Net.Http.Json
+@inject HttpClient Http
+
+@if (IsOpen)
+{
+    <div class="modal-backdrop show" style="display: block; background: rgba(0,0,0,0.85); position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 99999;">
+        <div class="modal-dialog modal-lg modal-dialog-centered" style="margin: 5% auto; max-width: 700px;">
+            <div class="modal-content text-light" style="background: #181b20; border: 1px solid #323842; border-radius: 12px; box-shadow: 0 12px 32px rgba(0,0,0,0.6);">
+                <div class="modal-header" style="border-bottom: 1px solid #2d333f; padding: 20px 24px;">
+                    <h5 class="modal-title fw-bold" style="color: #ff0000;">🎬 Publish Demo to YouTube Gallery</h5>
+                </div>
+                <div class="modal-body" style="padding: 24px; color: #cbd5e1; font-size: 0.95rem;">
+                    @if (!string.IsNullOrWhiteSpace(errorMessage))
+                    {
+                        <div class="alert alert-danger mb-3">@errorMessage</div>
+                    }
+
+                    <div class="mb-3">
+                        <label class="form-label text-white fw-bold">Movie Title (Required)</label>
+                        <input type="text" class="form-control bg-dark text-light border-secondary" @bind="title" maxlength="100" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label text-white fw-bold">Logline / Description (Required)</label>
+                        <textarea class="form-control bg-dark text-light border-secondary" rows="3" @bind="description"></textarea>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label text-white fw-bold">COPPA Made-for-Kids Declaration (Mandatory)</label>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="kidsRadio" id="notForKids" checked="@(!madeForKids)" @onchange="@(() => madeForKids = false)" />
+                            <label class="form-check-label text-light" for="notForKids">No, it's not made for kids</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="kidsRadio" id="forKids" checked="@madeForKids" @onchange="@(() => madeForKids = true)" />
+                            <label class="form-check-label text-light" for="forKids">Yes, it's made for kids</label>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label text-white fw-bold">YouTube AI Synthetic Content Disclosure</label>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="aiCheck" @bind="isAiSynthetic" />
+                            <label class="form-check-label text-light" for="aiCheck">Contains AI-generated or synthetic visuals/audio</label>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer" style="border-top: 1px solid #2d333f; padding: 20px 24px;">
+                    <button class="btn btn-secondary me-2" @onclick="Close" disabled="@isUploading">Cancel</button>
+                    <button class="btn btn-danger fw-bold" @onclick="SubmitUpload" disabled="@(isUploading || string.IsNullOrWhiteSpace(title))">
+                        @(isUploading ? "Uploading to YouTube..." : "🚀 Upload & Publish")
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public bool IsOpen { get; set; } = false;
+    [Parameter] public string ProjectId { get; set; } = "";
+    [Parameter] public EventCallback<string> OnPublished { get; set; }
+
+    private string title = "My PageToMovie Film";
+    private string description = "Created with PageToMovie Studio (https://pagetomovie-production.up.railway.app)";
+    private bool madeForKids = false;
+    private bool isAiSynthetic = true;
+    private bool isUploading = false;
+    private string errorMessage = "";
+
+    private void Close()
+    {
+        IsOpen = false;
+    }
+
+    private async Task SubmitUpload()
+    {
+        isUploading = true;
+        errorMessage = "";
+        try
+        {
+            var res = await Http.PostAsJsonAsync($"/api/projects/{ProjectId}/publish-youtube", new
+            {
+                Title = title,
+                Description = description,
+                MadeForKids = madeForKids,
+                IsAiSyntheticContent = isAiSynthetic
+            });
+
+            if (res.IsSuccessStatusCode)
+            {
+                IsOpen = false;
+                if (OnPublished.HasDelegate)
+                {
+                    await OnPublished.InvokeAsync(ProjectId);
+                }
+            }
+            else
+            {
+                errorMessage = "Upload request failed. Please verify YouTube credentials.";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = ex.Message;
+        }
+        finally
+        {
+            isUploading = false;
+        }
+    }
+}

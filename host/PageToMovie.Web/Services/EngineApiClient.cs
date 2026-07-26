@@ -42,6 +42,24 @@ public sealed class EngineApiClient
             _session.Changed += OnSessionChanged;
     }
 
+    public async Task<bool> HasAcceptedTermsAsync(string userId, CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(userId)) return false;
+        try
+        {
+            var res = await _http.GetFromJsonAsync<JsonElement>($"/api/users/{Uri.EscapeDataString(userId.Trim())}/terms", ct);
+            if (res.TryGetProperty("hasAccepted", out var accepted))
+            {
+                return accepted.GetBoolean();
+            }
+        }
+        catch
+        {
+            // fallback
+        }
+        return false;
+    }
+
     private void OnSessionChanged()
     {
         SyncIdentityHeaders();

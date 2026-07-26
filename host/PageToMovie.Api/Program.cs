@@ -126,6 +126,7 @@ builder.Services.AddSingleton<ProjectArtifactIndexService>();
 builder.Services.AddSingleton<MediaShareService>();
 builder.Services.AddSingleton<DemoCatalogService>();
 builder.Services.AddSingleton<DemoUpvoteService>();
+builder.Services.AddHostedService<ServerMediaPruningService>();
 builder.Services.AddSingleton<MediaRegistryService>();
 builder.Services.AddSingleton<MediaProxyTicketStore>();
 builder.Services.AddSingleton<YouTubeAuthService>();
@@ -2011,6 +2012,18 @@ app.MapPost("/api/projects/{id}/characters/{charKey}/voice",
     {
         return Results.BadRequest(new { ok = false, error = ex.Message });
     }
+});
+
+app.MapGet("/api/users/{id}/terms", async (string id, UserDatabaseService userDb) =>
+{
+    var hasAccepted = await userDb.HasAcceptedTermsAsync(id);
+    return Results.Ok(new { hasAccepted });
+});
+
+app.MapPost("/api/users/terms/accept", async (AcceptTermsRequest body, UserDatabaseService userDb) =>
+{
+    var ok = await userDb.AcceptTermsAsync(body.UserId, body.Version ?? "1.0");
+    return Results.Ok(new { ok });
 });
 
 /// <summary>
@@ -4112,6 +4125,7 @@ app.Run();
 
 namespace PageToMovie.Api
 {
+    public record AcceptTermsRequest(string UserId, string? Version);
     public record SetBookRefsRequest(List<string>? ImagePaths);
 
     public sealed class TestEmailRequest

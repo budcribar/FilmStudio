@@ -147,6 +147,10 @@ public class UserDatabaseService
                 EnsureColumn(conn, "users", "credits_lifetime_granted_usd", "REAL NOT NULL DEFAULT 0");
                 EnsureColumn(conn, "users", "credits_lifetime_used_usd", "REAL NOT NULL DEFAULT 0");
 
+                // User Terms of Service acceptance tracking
+                EnsureColumn(conn, "users", "terms_accepted_at", "TEXT");
+                EnsureColumn(conn, "users", "terms_version", "TEXT");
+
                 // Admin disable (soft ban) — blocks login / API without deleting ledger.
                 EnsureColumn(conn, "users", "is_disabled", "INTEGER NOT NULL DEFAULT 0");
 
@@ -1163,6 +1167,37 @@ public class UserDatabaseService
         cmd.Parameters.AddWithValue("@t", DateTimeOffset.UtcNow.ToString("o"));
         cmd.Parameters.AddWithValue("@id", userId.Trim());
         return await cmd.ExecuteNonQueryAsync(ct).ConfigureAwait(false) > 0;
+    }
+
+    public async Task<bool> AcceptTermsAsync(string userId, string termsVersion = "1.0", CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(userId)) return false;
+        var trimmed = userId.Trim();
+        using var conn = new SqliteConnection(ConnectionString);
+        await conn.OpenAsync(ct).ConfigureAwait(false);
+        
+        using var cmd = conn.CreateCommand();
+        cmd.CommandText = @"
+            INSERT INTO users (user_id, username, password_hash, created_at, terms_accepted_at, terms_version)
+            VALUES (@id, @name, '', @t, @t, @v)
+            ON CONFLICT(user_id) DO UPDATE SET terms_accepted_at = @t, terms_version = @v;";
+        cmd.Parameters.AddWithValue("@id", trimmed);
+        cmd.Parameters.AddWithValue("@name", trimmed);
+        cmd.Parameters.AddWithValue("@t", DateTimeOffset.UtcNow.ToString("o"));
+        cmd.Parameters.AddWithValue("@v", termsVersion);
+        return await cmd.ExecuteNonQueryAsync(ct).ConfigureAwait(false) > 0;
+    }
+
+    public async Task<bool> HasAcceptedTermsAsync(string userId, CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(userId)) return false;
+        using var conn = new SqliteConnection(ConnectionString);
+        await conn.OpenAsync(ct).ConfigureAwait(false);
+        using var cmd = conn.CreateCommand();
+        cmd.CommandText = "SELECT terms_accepted_at FROM users WHERE user_id = @id";
+        cmd.Parameters.AddWithValue("@id", userId.Trim());
+        var val = await cmd.ExecuteScalarAsync(ct).ConfigureAwait(false);
+        return val != null && val != DBNull.Value && !string.IsNullOrWhiteSpace(val.ToString());
     }
 
     public static string HashToken(string raw)

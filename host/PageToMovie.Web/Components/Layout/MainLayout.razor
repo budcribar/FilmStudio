@@ -38,6 +38,8 @@
     </main>
 </div>
 
+<TermsAgreementModal IsOpen="@_showTermsModal" UserId="@_currentUserId" OnAccepted="OnTermsAccepted" />
+
 <div id="blazor-error-ui" data-nosnippet>
     An unhandled error has occurred.
     <a href="." class="reload">Reload</a>
@@ -48,6 +50,8 @@
     private bool _sidebarCollapsed;
     private bool _hydrated;
     private bool _locationHooked;
+    private bool _showTermsModal;
+    private string _currentUserId = "";
 
     protected override void OnInitialized()
     {
@@ -97,6 +101,32 @@
         // Signed-in required for studio pages (projects, config keys, import/OCR).
         // Public: /demo, /about, /login, /signup — no account required.
         await EnforceLoginGateAsync();
+        await CheckTermsAcceptanceAsync();
+    }
+
+    private async Task CheckTermsAcceptanceAsync()
+    {
+        try
+        {
+            await Session.EnsureHydratedAsync();
+            if (Session.IsLoggedIn && !string.IsNullOrWhiteSpace(Session.UserId))
+            {
+                _currentUserId = Session.UserId;
+                var hasAccepted = await Engine.HasAcceptedTermsAsync(_currentUserId);
+                if (!hasAccepted)
+                {
+                    _showTermsModal = true;
+                    StateHasChanged();
+                }
+            }
+        }
+        catch { /* optional */ }
+    }
+
+    private void OnTermsAccepted()
+    {
+        _showTermsModal = false;
+        StateHasChanged();
     }
 
     private async Task EnforceLoginGateAsync()
