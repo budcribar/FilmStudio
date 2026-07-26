@@ -256,10 +256,17 @@ Community path for **strangers** on **open** projects. Prefer **collaborators** 
 
 Characters are **global** (high blast radius); scenes are a **timeline of clips**. Prefer character-level packages and clip-level fields; do not force atomic “whole scene” or “character + all clips” accepts in v1.
 
-### Client media folder & Server Media Pruner
-- Each collaborator uses **their** browser media folder (IndexedDB / OPFS / Local Folder); server registry is **per project** by SHA-256 hash.
-- **Server Media Pruner (`ServerMediaPruningService.cs`)**: Railway server automatically prunes server-cached `.mp4` files older than 48 hours or when container disk capacity exceeds 80%. Server disk footprint remains **< 100 MB** total.
-- **Lightweight Project Packaging & Forking**: Project export ZIPs, target user imports, and community forks package story text, Fountain screenplays, character reference images, shot plan blueprints, and rules (excluding heavy `.mp4` video binaries), keeping package sizes **< 5 MB** for instant cross-user sharing.
+## Project Collaborators & Invite-to-Fork Workflow
+
+### Intent
+Instead of forcing multiple users to edit the same live project files simultaneously (which risks file lock conflicts and overwritten edits), PageToMovie uses an **Invite-to-Fork & Async Diff-Merge** collaboration model.
+
+### Workflow
+1. **Invite**: Project Owner A clicks "Invite to Collaborate / Fork" and specifies User B's username (or shares an invite link).
+2. **Instant Fork**: User B accepts the invite. A lightweight fork (`Project A (Fork)`) is created in User B's project area (< 5 MB ZIP size, containing screenplay, cast seeds, reference images, and shot plan blueprint; excluding video binaries).
+3. **Independent Local Work**: User A and User B work independently on their own client storage (IndexedDB / OPFS / local PC folder). Neither user blocks or locks the other's workspace.
+4. **Contribution Submission**: User B completes edits (e.g. prompt tuning or beat timing changes) and clicks "Submit Contribution to Owner".
+5. **Diff Review & Merge**: Owner A receives a notification, views a side-by-side visual diff grouped by **Cast** and **Scenes/Clips**, and accepts/merges the changes into master `Project A`.
 
 ---
 
