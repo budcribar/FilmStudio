@@ -112,4 +112,29 @@ public class UserDatabaseServiceTests
 
         try { Directory.Delete(tmp, true); } catch { }
     }
+
+    [Fact]
+    public async Task AcceptTermsAsync_records_timestamp_and_version_in_user_database()
+    {
+        var tmp = Path.Combine(Path.GetTempPath(), "ptm-terms-test-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tmp);
+
+        var opts = Options.Create(new PageToMovieOptions { WorkspaceRoot = tmp });
+        var userDb = new UserDatabaseService(opts, null, NullLogger<UserDatabaseService>.Instance);
+
+        var userId = "user_terms_789";
+        Assert.False(await userDb.HasAcceptedTermsAsync(userId));
+
+        // Create user record via settings update
+        await userDb.UpdateUserSettingsAsync(userId, new UpdateUserSettingsRequest());
+
+        Assert.False(await userDb.HasAcceptedTermsAsync(userId));
+
+        bool accepted = await userDb.AcceptTermsAsync(userId, "1.0");
+        Assert.True(accepted);
+
+        Assert.True(await userDb.HasAcceptedTermsAsync(userId));
+
+        try { Directory.Delete(tmp, true); } catch { }
+    }
 }
