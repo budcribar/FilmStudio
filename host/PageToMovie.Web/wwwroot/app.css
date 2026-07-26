@@ -993,15 +993,17 @@ h1:focus {
     content: "An error has occurred."
 }
 
-/* Home hero — pipeline GIF + demo gallery chip */
+/* Home hero — pages → AI → movie pipeline GIF */
 .home-hero-pipeline {
-    max-width: min(100%, 22rem);
+    max-width: min(100%, 28rem);
     width: 100%;
     height: auto;
-    border-radius: 0.75rem;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
-    background: #0d1117;
+    object-fit: contain;
+    border-radius: 0.65rem;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+    background: #0a0e17;
+    flex-shrink: 0;
 }
 
 @media (max-width: 767.98px) {
@@ -1013,15 +1015,6 @@ h1:focus {
     .home-hero-pipeline {
         max-width: 100%;
     }
-}
-
-.hero-anim-film {
-    transition: transform 0.2s ease, border-color 0.2s ease;
-}
-
-.hero-anim-film:hover {
-    transform: scale(1.03);
-    border-color: #6366f1 !important;
 }
 
 .extra-small {
