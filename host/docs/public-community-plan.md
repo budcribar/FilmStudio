@@ -444,18 +444,34 @@ flowchart TD
     end
 ```
 
-### Architecture & Workflow
+### Standard Repository Naming Convention & Directory Layout (`PageToMovie-Projects`)
 
-1. **Dedicated Projects Repository**:
-   - Creators maintain a separate Git repository (e.g. `PageToMovie-Projects`) containing project folders (`Buster/`, `B7/`, `The Tell-Tale Heart/`).
-   - `.gitignore` specifies `assets/video/`, `*.mp4`, `*.mp3`, `*.webm`, `*.wav` so heavy video binaries are **never** committed to Git or the app repository.
-   - Git tracks all screenplay text, character reference images, shot plan blueprints, and rules.
-2. **Client Local Storage Binding (`ClientMediaFolderService.cs`)**:
-   - In PageToMovie Studio, the user connects their project folder from their local Git repository.
-   - Generated MP4 clips are written directly to `assets/video/` on their local PC hard drive (ignored by git).
-3. **Git Version Control & Collaboration**:
-   - Creators use standard `git commit` and `git push` (or an optional **"Push to GitHub"** button in PageToMovie Studio) to track blueprint and screenplay revisions.
-   - Other collaborators can clone the projects Git repo, connect their local media folder, and generate/preview clips on their own machines.
+- **Recommended Git Repository Name**: **`PageToMovie-Projects`**
+  - Alternative names: `PageToMovie-Studio` or `FilmStudio-Projects`.
+  - GitHub URL example: `https://github.com/budcribar/PageToMovie-Projects`
+- **Standard Folder & File Layout**:
+  ```text
+  PageToMovie-Projects/
+  ├── .gitignore                      # Ignores assets/video/*.mp4, *.mp3, *.webm
+  ├── README.md                       # Dedicated film projects repository guide
+  ├── Buster/                         # Film Project 1
+  │   ├── project.json                # Metadata & owner settings
+  │   ├── pipeline_config.json        # AI model & generation parameters
+  │   ├── project_rules.json          # Project rules & constraints
+  │   ├── cast_seeds.json             # Character definitions & prompt seeds
+  │   ├── blueprint.clips.grok.json   # Stage 2 shot plan blueprint
+  │   ├── source/
+  │   │   └── screenplay.fountain     # Fountain screenplay source
+  │   └── assets/
+  │       ├── characters/            # Tracked by Git (character reference images)
+  │       └── video/                 # Ignored by Git (local MP4 clips)
+  │           ├── S01C01.mp4
+  │           └── history/           # Local multi-version clip prompt history
+  ├── B7/                             # Film Project 2
+  └── The Tell-Tale Heart/            # Film Project 3
+  ```
+
+---
 
 ### Multi-Version Local MP4 History & Side-by-Side Prompt vs. Video Comparison
 
