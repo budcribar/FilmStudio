@@ -318,6 +318,56 @@ flowchart TD
 - **Manual Fallback**: Admin UI allows manual YouTube URL/ID pasting if an offline video was uploaded out-of-band.
 - **Server Footprint**: **0 MB for video files**. `demo.json` / SQLite stores only metadata (title, author, screenplay snippet, upvote count, YouTube ID).
 
+### Step-by-Step Setup Guide: Obtaining YouTube OAuth2 Credentials
+
+Follow these steps to obtain `YouTube__ClientId`, `YouTube__ClientSecret`, and `YouTube__RefreshToken` for your YouTube Channel:
+
+#### Step 1: Create Google Cloud Project & Enable YouTube Data API v3
+1. Open the [Google Cloud Console](https://console.cloud.google.com/).
+2. Click the project dropdown in the top bar and select **New Project**. Name it `PageToMovie Studio` and click **Create**.
+3. In the left navigation menu, go to **APIs & Services** $\rightarrow$ **Library**.
+4. Search for `YouTube Data API v3`, click it, and click **Enable**.
+
+#### Step 2: Configure OAuth Consent Screen
+1. Go to **APIs & Services** $\rightarrow$ **OAuth consent screen**.
+2. Select **External** (or Internal if using Google Workspace) and click **Create**.
+3. Enter App Name (`PageToMovie`), User support email, and Developer contact email. Click **Save and Continue**.
+4. In the **Scopes** tab, click **Add or Remove Scopes**, search for `youtube.upload`, check `https://www.googleapis.com/auth/youtube.upload`, and click **Update** $\rightarrow$ **Save and Continue**.
+5. In the **Test Users** tab, add your Google account email associated with your YouTube Channel. Click **Save and Continue**.
+
+#### Step 3: Create OAuth2 Client ID & Client Secret
+1. Go to **APIs & Services** $\rightarrow$ **Credentials**.
+2. Click **Create Credentials** $\rightarrow$ **OAuth client ID**.
+3. Set **Application type** to **Web application**.
+4. Set **Name** to `PageToMovie YouTube Uploader`.
+5. Under **Authorized redirect URIs**, click **Add URI** and enter:
+   - `https://developers.google.com/oauthplayground`
+6. Click **Create**.
+7. Copy your **Client ID** (`YouTube__ClientId`) and **Client Secret** (`YouTube__ClientSecret`).
+
+#### Step 4: Generate Refresh Token (via Google OAuth 2.0 Playground)
+1. Open [Google OAuth 2.0 Playground](https://developers.google.com/oauthplayground).
+2. Click the gear icon ⚙️ in the upper right corner:
+   - Check **Use your own OAuth credentials**.
+   - Paste your **OAuth Client ID** and **OAuth Client Secret**.
+3. In the left panel under **Step 1 Select & authorize APIs**:
+   - Scroll down to **YouTube Data API v3**.
+   - Expand it and check `https://www.googleapis.com/auth/youtube.upload`.
+   - Click the blue **Authorize APIs** button.
+4. Log in with the Google Account that owns your YouTube Channel and click **Continue / Allow**.
+5. In **Step 2 Exchange authorization code for tokens**:
+   - Click the blue **Exchange authorization code for tokens** button.
+6. Copy the generated **Refresh Token** (`YouTube__RefreshToken`).
+
+#### Step 5: Configure Railway Environment Variables
+In your Railway Dashboard $\rightarrow$ **Variables** (or local `appsettings.json` / environment):
+
+| Variable Name | Example Value |
+| :--- | :--- |
+| `YouTube__ClientId` | `123456789-abcdef.apps.googleusercontent.com` |
+| `YouTube__ClientSecret` | `GOCSPX-abc123xyz456...` |
+| `YouTube__RefreshToken` | `1//04abc123xyz...` |
+
 ---
 
 ## Client Media Storage & Server Media Pruner
