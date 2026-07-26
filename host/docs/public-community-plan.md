@@ -254,7 +254,44 @@ Community path for **strangers** on **open** projects. Prefer **collaborators** 
 | **Coupling** | Character and clip accepts are **independent**; optional “N clips in this PR use this character” hint | |
 | **Structure** | v1: edit existing `SxxCyy` / characters only — no silent add/delete/reorder in PR | |
 
-Characters are **global** (high blast radius); scenes are a **timeline of clips**. Prefer character-level packages and clip-level fields; do not force atomic “whole scene” or “character + all clips” accepts in v1.
+## User Terms of Service, IP Licensing Agreement & Copyright Protection
+
+### Intent
+Ensure that users explicitly warrant their ownership or public-domain licensing for all adapted screenplays, books, text, and imagery, protecting PageToMovie from third-party copyright or trademark infringement claims.
+
+```mermaid
+flowchart TD
+    A["User Signs Up / First Login"] --> B["Terms & IP Licensing Agreement Modal"]
+    B --> C{"User Accepts Terms?"}
+    C -- "No" --> D["Access Blocked / Studio Disabled"]
+    C -- "Yes (Check & Agree)" --> E["Write terms_accepted_at timestamp in SQLite users table"]
+    E --> F["Full Studio Access Granted\n(Create projects, generate clips, invite, publish)"]
+```
+
+### Key Legal & Terms Elements
+
+1. **User IP Warranty & Copyright Representation**:
+   - The user certifies that any screenplay, book text, dialogue, character portrait, or prompt uploaded or adapted within PageToMovie is either:
+     - **An original work** owned by the user,
+     - **In the Public Domain** (e.g. classic literature like *The Tell-Tale Heart*), or
+     - **Duly licensed** with explicit adaptation and AI generation rights from the copyright holder.
+2. **PageToMovie Non-Liability & Disclaimer**:
+   - PageToMovie operates solely as a creation platform and AI orchestration tool.
+   - PageToMovie explicitly disclaims all liability and responsibility for copyright, trademark, or intellectual property infringement committed by users.
+3. **User Indemnification Clause**:
+   - Users agree to indemnify, defend, and hold harmless PageToMovie, its creators, operators, and hosting providers against any third-party claims, legal actions, damages, or costs resulting from the user's content or adaptations.
+4. **Community Sharing & Public Gallery License**:
+   - When a user chooses to publish a demo to the public gallery or share/fork an **open** project, the user grants PageToMovie a non-exclusive license to display the video via YouTube embeds and allow community collaborators to view/fork the blueprint metadata within the platform.
+5. **DMCA Takedown & Enforcement Policy**:
+   - PageToMovie reserves the right to immediately remove any project, demo, or content upon receiving a valid DMCA takedown notice or copyright dispute.
+
+### Technical Enforcement in Code
+
+- **SQLite Database**: `users` table extended with `terms_accepted_at TEXT` and `terms_version TEXT` columns via `UserDatabaseService.cs`.
+- **UI Blocking Modal (`TermsAgreementModal.razor`)**: Displays on initial login or registration. Users must check the agreement box and click **"Agree & Continue"** before project creation or generation is allowed.
+- **API Middleware**: Gated endpoints (`POST /api/projects`, clip generation, publishing) verify `terms_accepted_at != null`.
+
+---
 
 ## Project Collaborators & Invite-to-Fork Workflow
 
