@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(dotnet build *)",
+      "Bash(dotnet test *)",
+      "mcp__claude-in-chrome__read_page",
+      "mcp__claude-in-chrome__tabs_context_mcp",
+      "Bash(tasklist *)",
+      "mcp__claude-in-chrome__read_console_messages",
+      "mcp__claude-in-chrome__get_page_text",
+      "Bash(git check-ignore *)",
+      "mcp__claude-in-chrome__find"
+    ]
+  }
+}
