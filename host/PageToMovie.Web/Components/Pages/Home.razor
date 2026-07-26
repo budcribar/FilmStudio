@@ -156,7 +156,7 @@
                 @* New project form sits under the list so the list stays stable; Create is on the right. *@
                 @if (_showNew && Session.IsLoggedIn)
                 {
-                    <div class="border rounded p-2 mt-3 bg-body-tertiary">
+                    <div class="border border-secondary border-opacity-50 rounded p-3 mt-3 bg-dark bg-opacity-75 text-white shadow-sm">
                         @if (ActiveProject.Status is not null && !ActiveProject.Status.XaiConfigured)
                         {
                             <div class="alert alert-warning py-1 px-2 small mb-2">
@@ -166,7 +166,7 @@
                             </div>
                         }
                         <div class="d-flex flex-wrap align-items-center gap-2">
-                            <input class="form-control form-control-sm flex-grow-1"
+                            <input class="form-control form-control-sm flex-grow-1 bg-dark text-white border-secondary"
                                    style="min-width: 10rem;"
                                    data-testid="home-new-project-name"
                                    value="@_newName"
@@ -189,26 +189,17 @@
 
                 @if (_deleteId is not null)
                 {
-                    <div class="border border-danger rounded p-2 mt-3 bg-light">
-                        <p class="small mb-2">
+                    <div class="border border-danger border-opacity-50 rounded p-3 mt-3 bg-dark bg-opacity-75 text-white shadow-sm">
+                        <p class="small mb-2 text-white">
                             Delete <strong>@_deleteLabel</strong>? This removes the project folder and all its files.
                         </p>
-                        <label class="form-label small mb-1">Type the project name to confirm</label>
-                        <input class="form-control form-control-sm mb-2"
-                               value="@_deleteConfirm"
-                               @oninput="OnDeleteConfirmInput"
-                               disabled="@_busy"
-                               placeholder="@_deleteLabel"
-                               autocomplete="off" />
-                        <div class="d-flex flex-wrap gap-2">
-                            <button type="button"
-                                    class="btn btn-danger btn-sm"
-                                    disabled="@(_busy || !CanConfirmDelete)"
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-danger btn-sm"
+                                    disabled="@_busy"
                                     @onclick="ConfirmDeleteAsync">
-                                Delete permanently
+                                Delete project
                             </button>
-                            <button type="button"
-                                    class="btn btn-outline-secondary btn-sm"
+                            <button class="btn btn-outline-secondary btn-sm"
                                     disabled="@_busy"
                                     @onclick="CancelDelete">
                                 Cancel
