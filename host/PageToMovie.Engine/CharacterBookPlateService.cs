@@ -1286,6 +1286,106 @@ public sealed class CharacterBookPlateService
         return rows;
     }
 
+    public async Task<List<RankedBookCandidate>> GetRankedBookCandidatesAsync(
+        string projectId,
+        string charKey,
+        CancellationToken ct = default)
+    {
+        var projectDir = _projects.GetProjectDir(projectId);
+        var inventoryAll = await LoadBookImageInventoryAsync(projectDir).ConfigureAwait(false);
+        var inventory = inventoryAll.Where(r => !IsLikelyTextLayout(r)).ToList();
+        if (inventory.Count == 0)
+            return new List<RankedBookCandidate>();
+
+        var seeds = _projects.GetAllCharacterSeeds(projectId);
+
+        JsonObject? seedObj = null;
+        if (seeds.TryGetValue(charKey, out var el))
+        {
+            try { seedObj = JsonNode.Parse(el.GetRawText()) as JsonObject; } catch { }
+        }
+
+        var charSeed = seedObj ?? new JsonObject();
+        var displayName = charSeed["display_name"]?.GetValue<string>()
+            ?? charSeed["canonical_given_name"]?.GetValue<string>()
+            ?? charKey.Replace("Character_", "").Replace('_', ' ');
+
+        var desc = charSeed["description"]?.GetValue<string>() ?? "";
+        var aliases = BookOcrPlateShortlist.AliasesForSeed(charKey, charSeed);
+        var ocrPages = await BookOcrPlateShortlist.TryLoadAsync(projectDir, ct).ConfigureAwait(false);
+        var textHits = BookOcrPlateShortlist.FindTextHitPages(ocrPages, aliases);
+        var textHitPages = new HashSet<int>(textHits);
+        var neighborPages = new HashSet<int>();
+        foreach (var p in textHits)
+        {
+            neighborPages.Add(p);
+            neighborPages.Add(p + 1);
+            neighborPages.Add(p - 1);
+        }
+
+        // Get currently selected reference image paths
+        var currentRefs = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        if (el.ValueKind != JsonValueKind.Undefined)
+        {
+            foreach (var prop in new[] { "design_reference_images", "book_reference_images" })
+            {
+                if (el.TryGetProperty(prop, out var arr) && arr.ValueKind == JsonValueKind.Array)
+                {
+                    foreach (var item in arr.EnumerateArray())
+                    {
+                        if (item.GetString() is { Length: > 0 } s)
+                            currentRefs.Add(s.Replace('\\', '/'));
+                    }
+                }
+            }
+        }
+
+        var list = new List<RankedBookCandidate>();
+        foreach (var r in inventory)
+        {
+            var baseScore = 50.0;
+
+            // OCR text hit proximity boost
+            if (r.Page > 0 && textHitPages.Contains(r.Page)) baseScore += 35.0;
+            else if (r.Page > 0 && neighborPages.Contains(r.Page)) baseScore += 25.0;
+
+            // Image type quality boost
+            var name = r.Name.ToLowerInvariant();
+            if (name.Contains("cover")) baseScore += 15.0;
+            else if (name.Contains("sparse") || name.Contains("figure") || name.Contains("embedded")) baseScore += 10.0;
+            else if (name.StartsWith("page_")) baseScore += 5.0;
+
+            // Alias / token match in filename
+            foreach (var a in aliases)
+            {
+                if (a.Length >= 3 && name.Contains(a, StringComparison.OrdinalIgnoreCase))
+                {
+                    baseScore += 20.0;
+                    break;
+                }
+            }
+
+            var rel = r.PathRel.Replace('\\', '/');
+            if (!rel.StartsWith("source/")) rel = "source/" + rel;
+
+            list.Add(new RankedBookCandidate
+            {
+                Name = r.Name,
+                PathRel = rel,
+                Url = $"/api/projects/{projectId}/book-images/{Uri.EscapeDataString(r.Name)}",
+                Page = r.Page,
+                Score = Math.Min(99.0, Math.Max(10.0, baseScore)),
+                Description = $"Page {(r.Page > 0 ? r.Page.ToString() : "Art")}",
+                IsSelected = currentRefs.Contains(rel) || currentRefs.Contains(r.Name),
+            });
+        }
+
+        return list.OrderByDescending(c => c.Score)
+                   .ThenBy(c => c.Page > 0 ? c.Page : 999)
+                   .ThenBy(c => c.Name)
+                   .ToList();
+    }
+
     private sealed record BookImageRow(
         string PathRel,
         string AbsPath,
@@ -1294,3 +1394,15 @@ public sealed class CharacterBookPlateService
         string Name,
         string Relevance = "");
 }
+
+public sealed class RankedBookCandidate
+{
+    public string Name { get; set; } = "";
+    public string PathRel { get; set; } = "";
+    public string Url { get; set; } = "";
+    public int Page { get; set; }
+    public double Score { get; set; }
+    public string Description { get; set; } = "";
+    public bool IsSelected { get; set; }
+}
+

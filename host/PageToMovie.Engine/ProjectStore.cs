@@ -1308,6 +1308,75 @@ public sealed class ProjectStore
         InvalidateReadCaches(projectId);
     }
 
+    /// <summary>
+    /// Update design_reference_images for charKey in cast_seeds.json (and blueprint / scenes when present).
+    /// Replaces reference image paths with up to 3 user-selected book image paths.
+    /// </summary>
+    public void SetCharacterBookRefs(string projectId, string charKey, IReadOnlyList<string> imagePaths)
+    {
+        var cleanPaths = imagePaths
+            .Where(p => !string.IsNullOrWhiteSpace(p))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .Take(3)
+            .ToList();
+
+        void PatchSeedsObject(System.Text.Json.Nodes.JsonObject seeds)
+        {
+            System.Text.Json.Nodes.JsonObject? seed = null;
+            string? foundKey = null;
+            foreach (var (k, v) in seeds)
+            {
+                if (string.Equals(k, charKey, StringComparison.OrdinalIgnoreCase) &&
+                    v is System.Text.Json.Nodes.JsonObject jo)
+                {
+                    seed = jo;
+                    foundKey = k;
+                    break;
+                }
+            }
+            if (seed is null || foundKey is null) return;
+
+            var arr = new System.Text.Json.Nodes.JsonArray();
+            foreach (var p in cleanPaths)
+            {
+                arr.Add(System.Text.Json.Nodes.JsonValue.Create(p));
+            }
+            seed["design_reference_images"] = arr;
+            seed["book_reference_images"] = arr.DeepClone();
+            seeds[foundKey] = seed;
+        }
+
+        void PatchFile(string path)
+        {
+            try
+            {
+                if (!File.Exists(path)) return;
+                var root = System.Text.Json.Nodes.JsonNode.Parse(File.ReadAllText(path))
+                           as System.Text.Json.Nodes.JsonObject;
+                if (root is null) return;
+                System.Text.Json.Nodes.JsonObject? seeds = null;
+                if (root["character_seed_tokens"] is System.Text.Json.Nodes.JsonObject direct)
+                    seeds = direct;
+                else if (root["global_production_variables"] is System.Text.Json.Nodes.JsonObject gpv &&
+                         gpv["character_seed_tokens"] is System.Text.Json.Nodes.JsonObject nested)
+                    seeds = nested;
+                if (seeds is null) return;
+                PatchSeedsObject(seeds);
+                File.WriteAllText(path, root.ToJsonString(JsonDefaults.Indented) + "\n");
+            }
+            catch { /* ignore */ }
+        }
+
+        var dir = GetProjectDir(projectId);
+        PatchFile(Path.Combine(dir, "source", ScreenplayService.CastSeedsFileName));
+        PatchFile(Path.Combine(dir, "scenes.json"));
+        if (FindBlueprintPathSync(projectId) is { } bpPath)
+            PatchFile(bpPath);
+        InvalidateSceneListCache(projectId);
+        InvalidateReadCaches(projectId);
+    }
+
+
     private static int ReadJsonNodeInt(System.Text.Json.Nodes.JsonNode? node)
     {
         if (node is null) return -1;

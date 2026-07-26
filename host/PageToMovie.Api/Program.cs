@@ -1908,6 +1908,55 @@ app.MapGet("/api/projects/{projectId}/characters/{charKey}/bookrefs/{index:int}"
     }
 });
 
+app.MapGet("/api/projects/{projectId}/book-images/{fileName}",
+    (string projectId, string fileName, ProjectStore store) =>
+{
+    try
+    {
+        var dir = Path.Combine(store.GetProjectDir(projectId), "source", "book_images");
+        var file = Path.GetFileName(fileName);
+        var path = Path.Combine(dir, file);
+        if (!File.Exists(path))
+            return Results.NotFound(new { ok = false, error = "book image not found" });
+        return Results.File(path, GuessImageContentType(path));
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { ok = false, error = ex.Message });
+    }
+});
+
+app.MapGet("/api/projects/{projectId}/characters/{charKey}/book-candidates",
+    async (string projectId, string charKey, CharacterBookPlateService service, CancellationToken ct) =>
+{
+    try
+    {
+        var candidates = await service.GetRankedBookCandidatesAsync(projectId, charKey, ct);
+        return Results.Ok(new { ok = true, candidates });
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { ok = false, error = ex.Message });
+    }
+});
+
+app.MapPost("/api/projects/{projectId}/characters/{charKey}/set-book-refs",
+    (string projectId, string charKey, SetBookRefsRequest body, ProjectStore store) =>
+
+{
+    try
+    {
+        var paths = body.ImagePaths ?? new List<string>();
+        store.SetCharacterBookRefs(projectId, charKey, paths);
+        return Results.Ok(new { ok = true, message = $"Saved {paths.Count} book reference picture(s) for {charKey}" });
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { ok = false, error = ex.Message });
+    }
+});
+
+
 app.MapPost("/api/jobs/character-variants", async (StartCharacterVariantsRequest body, FilmJobService jobService) =>
 {
     try
@@ -4047,6 +4096,8 @@ app.Run();
 
 namespace PageToMovie.Api
 {
+    public record SetBookRefsRequest(List<string>? ImagePaths);
+
     public sealed class TestEmailRequest
     {
         public string ToEmail { get; set; } = "";
@@ -4055,3 +4106,4 @@ namespace PageToMovie.Api
     // Expose entry assembly for WebApplicationFactory integration tests.
     public partial class Program { }
 }
+

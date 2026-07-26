@@ -550,7 +550,30 @@ public sealed class EngineApiClient
         return (dto.UpvoteCount, dto.UpvotedByMe);
     }
 
+    public async Task<List<RankedBookCandidateDto>> GetRankedBookCandidatesAsync(
+        string projectId, string charKey, CancellationToken ct = default)
+    {
+        SyncIdentityHeaders();
+        var url = $"/api/projects/{Uri.EscapeDataString(projectId)}/characters/{Uri.EscapeDataString(charKey)}/book-candidates";
+        var dto = await _http.GetFromJsonAsync<BookCandidateEnvelopeDto>(url, JsonOpts, ct);
+        return dto?.Candidates ?? new List<RankedBookCandidateDto>();
+    }
+
+    public async Task<bool> SetCharacterBookRefsAsync(
+        string projectId, string charKey, List<string> imagePaths, CancellationToken ct = default)
+    {
+        SyncIdentityHeaders();
+        var url = $"/api/projects/{Uri.EscapeDataString(projectId)}/characters/{Uri.EscapeDataString(charKey)}/set-book-refs";
+        using var req = new HttpRequestMessage(HttpMethod.Post, url)
+        {
+            Content = JsonContent.Create(new { ImagePaths = imagePaths }, options: JsonOpts),
+        };
+        using var resp = await _http.SendAsync(req, ct);
+        return resp.IsSuccessStatusCode;
+    }
+
     /// <summary>Admin moderation list (any status).</summary>
+
     public async Task<DemoAdminListEnvelope?> ListAdminDemosAsync(
         string? status = null,
         int take = 100,
@@ -2759,3 +2782,21 @@ public sealed class DemoPublishItem
     public string? VideoPath { get; set; }
     public string? PagePath { get; set; }
 }
+
+public sealed class RankedBookCandidateDto
+{
+    public string Name { get; set; } = "";
+    public string PathRel { get; set; } = "";
+    public string Url { get; set; } = "";
+    public int Page { get; set; }
+    public double Score { get; set; }
+    public string Description { get; set; } = "";
+    public bool IsSelected { get; set; }
+}
+
+public sealed class BookCandidateEnvelopeDto
+{
+    public bool Ok { get; set; }
+    public List<RankedBookCandidateDto>? Candidates { get; set; }
+}
+
