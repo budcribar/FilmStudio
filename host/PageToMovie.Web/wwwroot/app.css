@@ -235,9 +235,10 @@ label,
 .form-control::-moz-placeholder,
 .form-select::-moz-placeholder {
     color: var(--fs-text-subtle) !important;
-    opacity: 0.5 !important;
+    opacity: 0.8 !important;
     font-style: italic;
 }
+
 
 /* Bootstrap “secondary body” / opacity utilities that wash out on dark cards */
 .text-body {
