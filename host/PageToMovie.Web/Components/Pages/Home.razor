@@ -168,10 +168,23 @@
                                         @onclick="() => SelectProjectAsync(id)"
                                         @ondblclick="() => OpenProjectAsync(id)">
                                     <strong>@(p.Label ?? p.Title ?? id)</strong>
+                                    @if (!string.IsNullOrWhiteSpace(p.ParentProjectId))
+                                    {
+                                        <span class="badge bg-secondary ms-2 small fw-normal" title="Forked from @p.ParentProjectId">🍴 Fork of @p.ParentProjectId</span>
+                                    }
                                 </button>
                                 @if (active)
                                 {
                                     <a class="btn btn-sm btn-light flex-shrink-0" data-testid="home-open-adaptation" href="adaptation">Open</a>
+                                    @if (!string.IsNullOrWhiteSpace(p.ParentProjectId) && (Session.IsAdmin || string.Equals(Session.UserId, p.OwnerUserId, StringComparison.OrdinalIgnoreCase)))
+                                    {
+                                        <button type="button"
+                                                class="btn btn-sm btn-outline-info text-white flex-shrink-0"
+                                                disabled="@_busy"
+                                                @onclick="() => SyncOriginAsync(id, p.ParentProjectId!)">
+                                            🔄 Sync Origin
+                                        </button>
+                                    }
                                     @if (Session.IsAdmin || string.Equals(Session.UserId, p.OwnerUserId, StringComparison.OrdinalIgnoreCase))
                                     {
                                         <button type="button"
@@ -777,6 +790,40 @@
             s = s.Replace("  ", " ", StringComparison.Ordinal);
         if (s.Length > max) return s[..(max - 1)] + "…";
         return s;
+    }
+
+    private async Task SyncOriginAsync(string projectId, string parentProjectId)
+    {
+        _busy = true;
+        _error = null;
+        _message = null;
+        try
+        {
+            var res = await Engine.SyncOriginAsync(projectId, parentProjectId);
+            if (res is { Ok: true } || res is { Success: true })
+            {
+                if (res.HasConflicts)
+                {
+                    _error = $"Sync from origin returned conflicts: {res.Message}";
+                }
+                else
+                {
+                    _message = $"Successfully synced from parent project {parentProjectId}!";
+                }
+            }
+            else
+            {
+                _error = res?.Error ?? res?.Message ?? "Sync from origin failed";
+            }
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            _busy = false;
+        }
     }
 
     public async ValueTask DisposeAsync()

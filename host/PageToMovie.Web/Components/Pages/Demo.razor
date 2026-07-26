@@ -124,7 +124,7 @@
                             <div class="demo-card-byline">
                                 @if (!string.IsNullOrWhiteSpace(d.CreatedBy))
                                 {
-                                    <span>Shared by <strong>@d.CreatedBy</strong></span>
+                                    <span>Shared by <a href="creator/@d.CreatedBy" class="text-decoration-none text-info fw-bold">@@@d.CreatedBy</a></span>
                                 }
                                 else
                                 {

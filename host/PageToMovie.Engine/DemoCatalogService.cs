@@ -123,6 +123,141 @@ public sealed class DemoCatalogService
     }
 
     /// <summary>
+    /// Most recently created public demo for this project by this creator (if any).
+    /// Used for YouTube V2 replace when re-publishing an updated cut.
+    /// </summary>
+    public DemoEntry? FindPublicDemoForProject(string projectId, string? createdBy)
+    {
+        if (string.IsNullOrWhiteSpace(projectId)) return null;
+        lock (_lock)
+        {
+            return LoadAllUnlocked()
+                .Where(e =>
+                    string.Equals(e.Status, DemoStatuses.Public, StringComparison.OrdinalIgnoreCase)
+                    && string.Equals(e.ProjectId, projectId, StringComparison.OrdinalIgnoreCase)
+                    && (string.IsNullOrWhiteSpace(createdBy)
+                        || string.Equals(e.CreatedBy, createdBy, StringComparison.OrdinalIgnoreCase)))
+                .OrderByDescending(e => e.CreatedAt)
+                .FirstOrDefault();
+        }
+    }
+
+    /// <summary>
+    /// Copy the project's WIP movie onto an existing demo as movie.mp4 (for V2 YouTube replace).
+    /// Updates size/metadata; does not clear <see cref="DemoEntry.YoutubeId"/>.
+    /// </summary>
+    public DemoEntry AttachMovieFromWip(
+        string demoId,
+        string projectId,
+        string? title = null,
+        string? description = null,
+        bool? madeForKids = null,
+        bool? isAiSyntheticContent = null,
+        string? privacyStatus = null,
+        List<string>? tags = null)
+    {
+        var wip = _projects.ResolveWipMoviePath(projectId)
+                  ?? throw new InvalidOperationException("WIP movie not found — build the cut first.");
+        return AttachMovieFromFile(demoId, wip, title, description, madeForKids, isAiSyntheticContent, privacyStatus, tags);
+    }
+
+    /// <summary>Write a new movie.mp4 onto an existing demo (V2 replace source material).</summary>
+    public DemoEntry AttachMovieFromFile(
+        string demoId,
+        string sourceMp4Path,
+        string? title = null,
+        string? description = null,
+        bool? madeForKids = null,
+        bool? isAiSyntheticContent = null,
+        string? privacyStatus = null,
+        List<string>? tags = null)
+    {
+        if (string.IsNullOrWhiteSpace(sourceMp4Path) || !File.Exists(sourceMp4Path))
+            throw new InvalidOperationException("Source movie not found");
+        if (!LooksLikeMp4(sourceMp4Path))
+            throw new InvalidOperationException("Source file is not a valid MP4.");
+
+        lock (_lock)
+        {
+            var entry = ReadUnlocked(demoId)
+                        ?? throw new InvalidOperationException("Demo not found");
+            var dir = Path.Combine(DemosDir, entry.Id);
+            Directory.CreateDirectory(dir);
+            var moviePath = Path.Combine(dir, "movie.mp4");
+            File.Copy(sourceMp4Path, moviePath, overwrite: true);
+            var fi = new FileInfo(moviePath);
+            if (fi.Length < MinUploadBytes)
+                throw new InvalidOperationException("Movie file is too small");
+
+            entry.SizeBytes = fi.Length;
+            entry.ContentType = "video/mp4";
+            if (!string.IsNullOrWhiteSpace(title))
+                entry.Title = title.Trim();
+            if (description is not null)
+                entry.Description = string.IsNullOrWhiteSpace(description) ? null : description.Trim();
+            if (madeForKids is bool mfk)
+                entry.MadeForKids = mfk;
+            if (isAiSyntheticContent is bool ai)
+                entry.IsAiSyntheticContent = ai;
+            if (privacyStatus is "public" or "unlisted" or "private")
+                entry.PrivacyStatus = privacyStatus;
+            if (tags is not null)
+                entry.Tags = tags.Count > 0 ? tags : null;
+            // New bytes on disk — YouTube pointer is stale until V2 publish finishes.
+            entry.YoutubeUploadStatus = string.IsNullOrWhiteSpace(entry.YoutubeId) ? "none" : "pending_replace";
+            entry.YoutubeUploadError = null;
+
+            SaveUnlocked(entry);
+            _log.LogInformation(
+                "Demo {Id} attached new movie ({Bytes} bytes) for YouTube replace; prior YoutubeId={Yt}",
+                entry.Id, entry.SizeBytes, entry.YoutubeId);
+            return entry;
+        }
+    }
+
+    /// <summary>
+    /// Stream a new movie onto an existing demo (same as <see cref="AttachMovieFromFile"/> for uploads).
+    /// </summary>
+    public async Task<DemoEntry> AttachMovieFromStreamAsync(
+        string demoId,
+        Stream content,
+        string? title = null,
+        string? description = null,
+        bool? madeForKids = null,
+        bool? isAiSyntheticContent = null,
+        string? privacyStatus = null,
+        List<string>? tags = null,
+        CancellationToken ct = default)
+    {
+        if (content is null || !content.CanRead)
+            throw new InvalidOperationException("Empty upload");
+
+        var temp = Path.Combine(Path.GetTempPath(), "ptm_demo_replace_" + Guid.NewGuid().ToString("N") + ".mp4");
+        try
+        {
+            await using (var fs = new FileStream(
+                             temp, FileMode.Create, FileAccess.Write, FileShare.None,
+                             128 * 1024, FileOptions.Asynchronous | FileOptions.SequentialScan))
+            {
+                await CopyWithSizeCapAsync(content, fs, MaxUploadBytes, ct).ConfigureAwait(false);
+            }
+
+            var fi = new FileInfo(temp);
+            if (fi.Length < MinUploadBytes)
+                throw new InvalidOperationException("Uploaded video is too small");
+            if (!LooksLikeMp4(temp))
+                throw new InvalidOperationException(
+                    "Upload is not a valid MP4 (missing ftyp box). Only MP4 video is accepted.");
+
+            return AttachMovieFromFile(demoId, temp, title, description, madeForKids, isAiSyntheticContent, privacyStatus, tags);
+        }
+        finally
+        {
+            try { if (File.Exists(temp)) File.Delete(temp); } catch { /* ignore */ }
+        }
+    }
+
+    /// <summary>
     /// Whether anonymous/public viewers may stream this demo.
     /// Pending/rejected/removed are not world-readable.
     /// </summary>

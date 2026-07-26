@@ -1,0 +1,55 @@
+@using PageToMovie.Core.Models
+
+@if (Profile is not null)
+{
+    <div class="card bg-dark border-secondary text-white mb-4 p-4 shadow-sm" data-testid="creator-profile-header">
+        <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+            <div class="d-flex align-items-center gap-3">
+                <div class="rounded-circle bg-primary text-white fw-bold d-flex align-items-center justify-content-center"
+                     style="width: 56px; height: 56px; font-size: 1.5rem;">
+                    @(Profile.Username.Length > 0 ? Profile.Username[0].ToString().ToUpperInvariant() : "U")
+                </div>
+                <div>
+                    <h2 class="mb-0 fs-3">@@@Profile.Username</h2>
+                    <span class="text-muted small">Creator Profile</span>
+                </div>
+            </div>
+
+            <div class="d-flex gap-3 text-center">
+                <div class="bg-secondary bg-opacity-25 px-3 py-2 rounded border border-secondary border-opacity-50">
+                    <div class="fs-4 fw-bold text-primary">@Profile.MoviesPublished</div>
+                    <div class="small text-muted">Movies</div>
+                </div>
+                <div class="bg-secondary bg-opacity-25 px-3 py-2 rounded border border-secondary border-opacity-50">
+                    <div class="fs-4 fw-bold text-warning">★ @Profile.TotalUpvotes</div>
+                    <div class="small text-muted">Upvotes</div>
+                </div>
+                <div class="bg-secondary bg-opacity-25 px-3 py-2 rounded border border-secondary border-opacity-50">
+                    <div class="fs-4 fw-bold text-info">🍴 @Profile.ForksSpawned</div>
+                    <div class="small text-muted">Forks</div>
+                </div>
+            </div>
+        </div>
+
+        @if (Profile.Badges is { Count: > 0 })
+        {
+            <hr class="border-secondary my-3" />
+            <div class="d-flex flex-wrap gap-2 align-items-center">
+                <span class="small text-muted me-2">Badges:</span>
+                @foreach (var badge in Profile.Badges)
+                {
+                    <span class="badge bg-dark border border-warning text-warning px-3 py-2 fs-6 d-inline-flex align-items-center gap-1 shadow-sm"
+                          title="@badge.Description">
+                        <span>@badge.Icon</span>
+                        <span>@badge.Name</span>
+                    </span>
+                }
+            </div>
+        }
+    </div>
+}
+
+@code {
+    [Parameter]
+    public CreatorProfileDto? Profile { get; set; }
+}

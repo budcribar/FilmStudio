@@ -439,6 +439,28 @@ public sealed class EngineApiClient
         return wrap?.User;
     }
 
+    public async Task<CreatorProfileDto?> GetCreatorProfileAsync(
+        string handle,
+        CancellationToken ct = default)
+    {
+        SyncIdentityHeaders();
+        using var req = new HttpRequestMessage(HttpMethod.Get, $"/api/creators/{Uri.EscapeDataString(handle)}");
+        return await SendJsonAsync<CreatorProfileDto>(req, ct);
+    }
+
+    public async Task<SyncOriginResultDto?> SyncOriginAsync(
+        string projectId,
+        string parentProjectId,
+        CancellationToken ct = default)
+    {
+        SyncIdentityHeaders();
+        using var req = new HttpRequestMessage(HttpMethod.Post, $"/api/projects/{Uri.EscapeDataString(projectId)}/sync-origin")
+        {
+            Content = JsonContent.Create(new { ParentProjectId = parentProjectId }, options: JsonOpts)
+        };
+        return await SendJsonAsync<SyncOriginResultDto>(req, ct);
+    }
+
     public async Task<AdminUserActionResultDto?> SetAdminUserDisabledAsync(
         AdminSetUserDisabledRequest body,
         CancellationToken ct = default)
@@ -653,6 +675,7 @@ public sealed class EngineApiClient
         bool isAiSynthetic = true,
         string privacyStatus = "public",
         string? tags = null,
+        bool replaceExisting = true,
         CancellationToken ct = default)
     {
         using var req = new HttpRequestMessage(HttpMethod.Post, "/api/demos")
@@ -667,6 +690,7 @@ public sealed class EngineApiClient
                 isAiSynthetic,
                 privacyStatus,
                 tags,
+                replaceExisting,
             }, options: JsonOpts),
         };
         return await SendJsonAsync<DemoPublishResult>(req, ct);
@@ -2841,6 +2865,8 @@ public sealed class DemoPublishResult
     public bool Ok { get; set; }
     public string? Error { get; set; }
     public bool PendingReview { get; set; }
+    /// <summary>True when an existing public demo for the project was updated (YouTube V2 replace).</summary>
+    public bool ReplacedExisting { get; set; }
     public string? Message { get; set; }
     public DemoPublishItem? Demo { get; set; }
 }
@@ -2905,5 +2931,15 @@ public sealed class BookCandidateEnvelopeDto
 {
     public bool Ok { get; set; }
     public List<RankedBookCandidateDto>? Candidates { get; set; }
+}
+
+public sealed class SyncOriginResultDto
+{
+    public bool Ok { get; set; }
+    public bool Success { get; set; }
+    public bool HasConflicts { get; set; }
+    public string? CommitHash { get; set; }
+    public string? Message { get; set; }
+    public string? Error { get; set; }
 }
 

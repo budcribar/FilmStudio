@@ -247,14 +247,35 @@ When `ClientStorageMode` is enabled via environment variable (`PageToMovie__Clie
    - UI displays: *"Folder save requires Chrome or Edge."*
    - Generation falls back seamlessly to 48-hour server pruning + direct streaming.
 
+3. **Clip finished, no media folder (feature 8 — shipped 2026-07-26, `6769a93`):**
+   When a job reaches **`done`** with `ClientMediaUrl` + `ClientRelativePath` and the folder is not connected:
+   - Service attempts `ConnectFolderAsync` once (picker).
+   - If the user cancels or the browser is unsupported → sets `LocalSaveWarning` (outcome-only copy; Chrome/Edge wording when the API is missing).
+   - **Scenes** shows a dismissible warning with **Connect folder**.
+   - Warning clears on successful connect or Dismiss.
+   - Hub subscription is early/idempotent (`MainLayout` + Scenes) so this still works if the user is not on Scenes mid-gen.
+   - Auto-save **ignores `running`** and only acts on **`done`**.
+
 ---
 
 ## Approved Ship Sequence
 
+| Step | Item | Status |
+|------|------|--------|
+| **1** | Stream Proxy (`Program.cs`) | 🔲 Open |
+| **2** | Early hub hook + save only on `done` | ✅ Partial / done (`MainLayout`, Scenes, `ClientMediaFolderService` — `6769a93`) |
+| **3** | Write `.client.json` on verified register | 🔲 Open |
+| **4** | Proactive “Connect folder” banner (pre-gen) | 🔲 Open (post-gen warning is feature 8, already shipped) |
+| **5** | Prune server MP4 when client marker exists | 🔲 Open |
+| **6** | Folder name persistence (localStorage) | 🔲 Open |
+| **7** | `ClientStorageMode` skip server write | 🔲 Open — only after 1–5 proven in production |
+| **8** | Fallback UI when folder not connected | ✅ Done (`6769a93`) |
+
 1. **Step 1: Stream Proxy** (`Program.cs`) — pure server fix, zero UX risk, eliminates OOM.
-2. **Step 2: Early Idempotent Hub Hook & Status Guard** (`MainLayout.razor` & `ClientMediaFolderService.cs`).
+2. **Step 2: Early Idempotent Hub Hook & Status Guard** (`MainLayout.razor` & `ClientMediaFolderService.cs`) — **shipped**.
 3. **Step 3: Write `.client.json` Marker on Verified Register** (`MediaRegistryService.cs`).
-4. **Step 4: Connect Folder Banner** (`Scenes.razor`).
+4. **Step 4: Connect Folder Banner** (`Scenes.razor`) — pre-gen; distinct from feature-8 post-gen warning.
 5. **Step 5: Prune Redundant Server MP4s** (`ServerMediaPruningService.cs`).
 6. **Step 6: Folder Persistence** (`pagetomovie-media.js`).
 7. **Step 7: `ClientStorageMode` Flag** (`FilmJobService.cs`) — only after 1–5 are verified in production.
+8. **Feature 8: No-folder fallback warning** — **shipped** (`6769a93`).

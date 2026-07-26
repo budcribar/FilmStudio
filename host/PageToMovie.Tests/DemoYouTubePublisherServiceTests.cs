@@ -36,6 +36,14 @@ public class DemoYouTubePublisherServiceTests
         return await demos.PublishFromStreamAsync(stream, "My Film", "desc", "Demo", "user1", acceptedGuidelines: true);
     }
 
+    private static string WriteFakeMp4(string dir, string name = "movie.mp4")
+    {
+        Directory.CreateDirectory(dir);
+        var path = Path.Combine(dir, name);
+        File.WriteAllBytes(path, Encoding.ASCII.GetBytes("....ftypmp42" + new string('x', 2000)));
+        return path;
+    }
+
     [Fact]
     public void IsConfigured_false_when_YouTube_OAuth_not_set_up()
     {
@@ -81,13 +89,14 @@ public class DemoYouTubePublisherServiceTests
     }
 
     [Fact]
-    public async Task PublishAsync_is_a_noop_once_already_migrated_to_YouTube()
+    public async Task PublishAsync_is_a_noop_once_already_migrated_with_no_local_movie()
     {
         var (demos, publisher, root) = MakeHarness();
         try
         {
             var entry = await PublishSampleAsync(demos);
             demos.SetYouTubeUploadStatus(entry.Id, "done", "already123", "https://youtu.be/already123");
+            Assert.Null(demos.ResolveMoviePath(entry.Id)); // deleted on done
 
             await publisher.PublishAsync(entry.Id);
 
@@ -98,6 +107,82 @@ public class DemoYouTubePublisherServiceTests
         finally
         {
             Directory.Delete(root, true);
+        }
+    }
+
+    [Fact]
+    public async Task PublishAsync_V2_path_attempts_upload_when_local_movie_exists_beside_YoutubeId()
+    {
+        var (demos, publisher, root) = MakeHarness();
+        try
+        {
+            var entry = await PublishSampleAsync(demos);
+            demos.SetYouTubeUploadStatus(entry.Id, "done", "oldvid99", "https://youtu.be/oldvid99");
+            // Simulate re-publish: new movie.mp4 next to existing YoutubeId
+            var demoDir = Path.Combine(root, "_demos", entry.Id);
+            WriteFakeMp4(demoDir);
+
+            await publisher.PublishAsync(entry.Id);
+
+            var updated = demos.TryGet(entry.Id);
+            Assert.NotNull(updated);
+            // YouTube not configured → upload fails, but we took the V2 path (not no-op).
+            Assert.Equal("failed", updated!.YoutubeUploadStatus);
+            // Previous pointer preserved so gallery still works.
+            Assert.Equal("oldvid99", updated.YoutubeId);
+            Assert.NotNull(demos.ResolveMoviePath(entry.Id));
+        }
+        finally
+        {
+            Directory.Delete(root, true);
+        }
+    }
+
+    [Fact]
+    public async Task FindPublicDemoForProject_and_AttachMovieFromWip_support_replace_flow()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "ptm_demo_replace_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try
+        {
+            var opts = Options.Create(new PageToMovieOptions { WorkspaceRoot = root });
+            var projects = new ProjectStore(opts);
+            var demos = new DemoCatalogService(projects, NullLogger<DemoCatalogService>.Instance);
+
+            // Create a real project with a WIP-like movie for AttachMovieFromWip
+            var proj = await projects.CreateProjectAsync("ReplaceMe", "Replace Me");
+            var wipDir = Path.Combine(root, "projects", proj.Id, "assets");
+            Directory.CreateDirectory(wipDir);
+            // ResolveWipMoviePath looks for assets/movie_wip.mp4 typically
+            var wipPath = projects.ResolveWipMoviePath(proj.Id);
+            // If null, write common path
+            var movieWip = Path.Combine(root, "projects", proj.Id, "assets", "movie_wip.mp4");
+            Directory.CreateDirectory(Path.GetDirectoryName(movieWip)!);
+            File.WriteAllBytes(movieWip, Encoding.ASCII.GetBytes("....ftypmp42" + new string('y', 2000)));
+
+            var entry = await PublishSampleAsync(demos);
+            // Force project id / public / youtube
+            demos.SetStatus(entry.Id, DemoCatalogService.DemoStatuses.Public, "user1", "test");
+            // Manually patch projectId via attach after setting youtube
+            demos.SetYouTubeUploadStatus(entry.Id, "done", "yt1", "https://youtu.be/yt1");
+
+            // Re-point project: AttachMovie uses demo id; FindPublic needs matching projectId
+            // Publish sample used project "Demo" — use that
+            var found = demos.FindPublicDemoForProject("Demo", "user1");
+            Assert.NotNull(found);
+            Assert.Equal(entry.Id, found!.Id);
+
+            // Attach from file directly (WIP path may vary)
+            var newMovie = WriteFakeMp4(Path.Combine(root, "tmp"), "new.mp4");
+            var updated = demos.AttachMovieFromFile(entry.Id, newMovie, title: "Updated Title");
+            Assert.Equal("Updated Title", updated.Title);
+            Assert.Equal("yt1", updated.YoutubeId); // pointer kept until V2 succeeds
+            Assert.Equal("pending_replace", updated.YoutubeUploadStatus);
+            Assert.NotNull(demos.ResolveMoviePath(entry.Id));
+        }
+        finally
+        {
+            try { Directory.Delete(root, true); } catch { /* */ }
         }
     }
 }

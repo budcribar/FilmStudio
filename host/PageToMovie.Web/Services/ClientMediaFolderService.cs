@@ -27,6 +27,13 @@ public sealed class ClientMediaFolderService
     public string? FolderName { get; private set; }
     public bool IsConnected => !string.IsNullOrEmpty(FolderName);
     public string? LastStatus { get; private set; }
+
+    /// <summary>
+    /// One-shot operator message when a clip finished with a client proxy URL
+    /// but was not saved to a local media folder (feature 8 / fallback path).
+    /// </summary>
+    public string? LocalSaveWarning { get; private set; }
+
     public event Action? Changed;
 
     public async Task EnsureHubHookAsync()
@@ -40,8 +47,8 @@ public sealed class ClientMediaFolderService
     private void OnJobUpdated(JobSnapshot snap)
     {
         if (snap is null) return;
-        if (!string.Equals(snap.Status, "done", StringComparison.OrdinalIgnoreCase) &&
-            !string.Equals(snap.Status, "running", StringComparison.OrdinalIgnoreCase))
+        // Only save on terminal success — ignore "running" to avoid double-fetch.
+        if (!string.Equals(snap.Status, "done", StringComparison.OrdinalIgnoreCase))
             return;
         if (string.IsNullOrWhiteSpace(snap.ClientMediaUrl) ||
             string.IsNullOrWhiteSpace(snap.ClientRelativePath) ||
@@ -59,6 +66,7 @@ public sealed class ClientMediaFolderService
             {
                 FolderName = r.FolderName;
                 LastStatus = $"Media folder: {FolderName}";
+                LocalSaveWarning = null; // folder connected — clear fallback warning
                 Changed?.Invoke();
                 await EnsureHubHookAsync();
                 return true;
@@ -75,6 +83,35 @@ public sealed class ClientMediaFolderService
         }
     }
 
+    /// <summary>Dismiss the local-save fallback warning (operator closed the banner).</summary>
+    public void DismissLocalSaveWarning()
+    {
+        if (LocalSaveWarning is null) return;
+        LocalSaveWarning = null;
+        Changed?.Invoke();
+    }
+
+    private void NoteLocalSaveNeeded(string? connectError = null)
+    {
+        // Outcome-only copy (no server/provider jargon).
+        if (!string.IsNullOrWhiteSpace(connectError) &&
+            (connectError.Contains("Chrome", StringComparison.OrdinalIgnoreCase) ||
+             connectError.Contains("Edge", StringComparison.OrdinalIgnoreCase) ||
+             connectError.Contains("does not support", StringComparison.OrdinalIgnoreCase) ||
+             connectError.Contains("not support", StringComparison.OrdinalIgnoreCase)))
+        {
+            LocalSaveWarning =
+                "Folder save requires Chrome or Edge. This clip is available for a limited time — open it soon, or use Chrome/Edge and connect a folder next time.";
+        }
+        else
+        {
+            LocalSaveWarning =
+                "Your clip was generated but couldn’t be saved on this computer. Connect a folder to keep it permanently.";
+        }
+        LastStatus = LocalSaveWarning;
+        Changed?.Invoke();
+    }
+
     public async Task SaveJobMediaAsync(JobSnapshot snap)
     {
         var key = $"{snap.ProjectId}|{snap.ClientRelativePath}";
@@ -88,9 +125,13 @@ public sealed class ClientMediaFolderService
         {
             if (!IsConnected)
             {
-                // Prompt once when gen finishes
+                // Offer folder picker once; if declined / unsupported, surface feature-8 fallback.
                 var ok = await ConnectFolderAsync();
-                if (!ok) return;
+                if (!ok)
+                {
+                    NoteLocalSaveNeeded(LastStatus);
+                    return;
+                }
             }
 
             LastStatus = $"Saving {snap.ClientRelativePath}…";

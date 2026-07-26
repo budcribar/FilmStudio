@@ -23,7 +23,7 @@ Nothing in this doc is required for current production unless explicitly schedul
 | 3 | Repository Visibility Modes | **planned** | Standard Git modes: **Private**, **Public (Read-Only)**, **Public (Forkable)**. See § Repository Visibility Modes. |
 | 4 | Content hash of exportable package | **done** (correction) | Earlier audit pass missed this: `MediaRegistryService.IsTrustedShaAsync` + `/api/demos` POST already auto-approves a demo upload whose SHA-256 matches the project's own trusted gen/export registry, bypassing the admin queue. Predates this pass. |
 | 5 | **Fork** (plan-only package v1) | **done** | `ProjectStore.ForkProjectAsync` copies screenplay/cast/blueprint/rules/character-reference text and images into a new project directory under the new owner, excluding `.mp4/.webm/.mov/.wav/.avi` and any `.git` history — never touches the process-global active-project pointer (forking on someone's behalf must not steal another user's active project). Tests: `ProjectForkTests`. |
-| 6 | Fork banner + “forked from” metadata | **data done, banner planned** | `ProjectInfo.ParentProjectId` is now populated and returned by the projects API on every fork. No UI banner renders it yet on the project page/list — that's still to build. |
+| 6 | **Fork banner + “forked from” metadata** | **done** | `ProjectInfo.ParentProjectId` is populated on every fork. `Home.razor` renders a `🍴 Fork of {ParentProjectId}` badge in the project list and a `🔄 Sync Origin` button for forked projects. `AdaptationShell.razor` renders a `🍴 Fork of {ParentProjectId}` badge in the adaptation header. Verified. |
 | 7 | **Contribution & Git 3-Way Merge** | **engine done, review UI planned** | `ProjectGitRepositoryService` is now real: `LibGit2Sharp`-backed `Repository.Init`/stage/commit, and `SyncForkFromOriginAsync` does a genuine fetch + 3-way merge (real conflict detection, never auto-resolves). Reachable via `POST /api/projects/{id}/commit` and `/sync-origin` (owner/admin gated). Not yet wired into an automatic background hook (see issue-26 — nested-repo risk in the current dev layout). `ContributionReview.razor` (visual diff UI) still does not exist. Tests: `ProjectGitRepositoryServiceTests` (6 tests incl. real merge + real conflict detection). |
 | 8 | Contribution accept / reject + conflict review | **planned** | `ContributionReview.razor` does not exist. |
 | 9 | **Sync Fork from Origin** | **done** | See #7 — `SyncForkFromOriginAsync` performs a real merge via `POST /api/projects/{id}/sync-origin`. |
@@ -31,7 +31,7 @@ Nothing in this doc is required for current production unless explicitly schedul
 | 11 | **Direct Gallery "Fork Project" Button** | **planned** | Integrates 🍴 **Fork Project** button directly onto `/demo` gallery cards & detail modals for **Public (Forkable)** projects. Eliminates need for a separate project page. |
 | 12 | ~~Project ratings~~ | **obsolete** | Superseded by Demo Upvotes on `/demo` gallery cards (Item #2). Upvoting a movie rates the project directly. |
 | 13 | **YouTube Direct Comment Link** | **done** | `💬 Comment on YouTube ↗` button on `/demo` gallery cards, shown once a demo has a `YoutubeUrl`. |
-| 14 | **Creator Profile Badges & Stats** | **planned** | Derived creator stats on `@username` profile headers (Total Movies Published, Total Upvotes Received, Community Forks) + Badges (Debut Director, Featured Filmmaker). Computed dynamically from SQLite `demos` (0 DB schema migrations). |
+| 14 | **Creator Profile Badges & Stats** | **done** | `CreatorProfileService.cs` computes movies published, total upvotes, and forks spawned dynamically from SQLite `demos` and `projects`. `GET /api/creators/{handle}` endpoint. Reusable `CreatorProfileHeader.razor` component with badges (🌟 Debut Director, 🎬 Featured Filmmaker, 🍴 Open Source Pioneer) and `/creator/{handle}` page (`CreatorProfile.razor`). Gallery card handles link to profile pages. Tests: `CreatorProfileServiceTests`. |
 | 15 | Admin cross-user project export/import | **done** | `POST /api/admin/projects/import` (admin-gated) accepts `targetUserId` and threads it into `ProjectArchiveService.ImportAsync`. Verified. |
 | 16 | Server media pruner (48h TTL) | **done** | Fixed: `ServerMediaPruningService` now resolves its root via `ProjectStore.WorkspaceRoot` (matches the rest of the app), only ever deletes a file `MediaRegistryService` has confirmed the client already synced, and defaults **off** (`PageToMovie:MediaPruning:Enabled`, opt-in per deployment). Tests: `ServerMediaPruningServiceTests`. |
 | 17 | Terms of Service acceptance gate | **done** | `AuthGate.RequireTermsAcceptedAsync` (composes with `RequireLogin`, bypassed for admin and when `Auth:RequireLogin=false` for tests/LoadSim) now gates `POST /api/projects`, `/api/jobs/gen-scene`, `/api/jobs/gen-batch`, `/api/jobs/stage1`, `/api/jobs/stage2`, and `POST /api/demos` (publish). The four job-start endpoints had no auth context at all before this pass (see `host/docs/issues/issue-09-spoofable-user-spend-gates.md`) — adding the terms gate also closed that login gap for them. Tests: `AuthGateTests`. |
@@ -538,14 +538,13 @@ PageToMovie maintains a cryptographic SHA-256 media audit log for every clip gen
    - **Mode 2: Unverified / External Media (Manual Admin Review)**: If any clip hash is unknown (e.g. an externally uploaded video file that didn't originate from PageToMovie's AI pipeline), it is flagged as **Unverified Media** and routed to `/admin` for manual review.
 
 #### How Modifications & Re-Publishing (Version 2) Are Handled
-YouTube Data API does not allow swapping out the raw video bytes of an existing YouTube Video ID (to prevent video bait-and-switch). PageToMovie handles modified movie updates seamlessly via **Versioned Pointer Replacement & API Cleanup**:
+YouTube Data API does not allow swapping out the raw video bytes of an existing YouTube Video ID (to prevent video bait-and-switch). PageToMovie handles modified movie updates via **Versioned Pointer Replacement & API Cleanup** (**implemented** in `DemoYouTubePublisherService`):
 
-1. **Re-Publishing Trigger**: When a creator modifies scene clips or screenplay dialogue and clicks **"Publish Updated Version (v2)"**:
-2. **Upload Version 2**: `YouTubeUploadService.cs` uploads the new Version 2 video to YouTube and receives `newYoutubeId`.
-3. **Update Gallery Pointer**: PageToMovie updates `demo.json` / SQLite metadata with `youtubeId = newYoutubeId`. The public `/demo` page immediately streams the new Version 2 video!
-4. **Old Version Cleanup (API Delete or Archive)**:
-   - *Mode A (Default — API Delete)*: PageToMovie calls YouTube API `videos.delete(oldYoutubeId)` to automatically remove the obsolete v1 video from your channel.
-   - *Mode B (Archive)*: PageToMovie calls `videos.update` setting `privacyStatus: "unlisted"` and prepending `[Archived v1]` to the old video title.
+1. **Re-publish** (default `replaceExisting: true`): if the project already has a **public** demo by this user with a `YoutubeId`, attach the new movie to that demo (no second gallery row).
+2. **Upload Version 2**: `DemoYouTubePublisherService` uploads the new video and receives `newYoutubeId`.
+3. **Update Gallery Pointer**: demo meta is updated with `youtubeId` / `youtubeUrl`; `/demo` embeds the new ID immediately.
+4. **Mode A (API Delete)**: best-effort `videos.delete(oldYoutubeId)`. Requires channel OAuth with `youtube.force-ssl` (reconnect YouTube from Review if the token was issued with upload-only scope). If delete fails, V2 still wins in the gallery; v1 may remain on the channel for manual cleanup.
+   - *Mode B (Archive — not implemented)*: could unlisted + rename old title; Mode A is the default path today.
 
 ### YouTube Data API v3 Quotas & Quota Management Strategy
 
@@ -623,9 +622,29 @@ In your Railway Dashboard $\rightarrow$ **Variables** (or local `appsettings.jso
 Keep generated MP4 clips and scene previews on client devices while enforcing a strict capacity guard on Railway server disk space.
 
 ### Architecture
-- **Client Storage**: Gen clips live in the browser media folder (IndexedDB / OPFS / Local PC Folder) via `ClientMediaFolderService.cs`.
-- **Browser Stitching**: `ClientVideoStitchService.cs` uses **ffmpeg.wasm** in the Blazor client to compile scene/screenplay movies locally.
-- **Server Media Pruner (`ServerMediaPruningService.cs`)**: Hosted background service on Railway that inspects `projects/{id}/assets/video/` and `demos/`. Automatically purges server-cached `.mp4` files older than 48 hours or whenever container disk usage > 80%. Server disk footprint remains **< 100 MB total**.
+- **Client Storage**: Gen clips save into a user-picked local folder (File System Access API / Chrome–Edge) via `ClientMediaFolderService.cs` + `pagetomovie-media.js`. Index/OPFS remain future options; today the primary path is the local PC folder.
+- **Job handoff**: On clip gen, the engine can set `JobSnapshot.ClientMediaUrl` (short-lived `/api/media/proxy/{ticket}`) + `ClientRelativePath` so the browser downloads instead of relying only on server disk.
+- **Browser Stitching**: `ClientVideoStitchService.cs` uses **ffmpeg.wasm** in the Blazor client to compile scene/screenplay movies locally (prefers local blob when the folder is connected).
+- **Server Media Pruner (`ServerMediaPruningService.cs`)**: Hosted background service that can purge server-cached `.mp4` under workspace `projects/…/assets/video/` with sync-safe rules; **opt-in** via `PageToMovie:MediaPruning:Enabled` (defaults off).
+
+### Status (as of 2026-07-26)
+
+| Piece | Status | Notes |
+|-------|--------|--------|
+| Proxy ticket + client download path | ✅ | Grok/credits handoff sets `ClientMediaUrl` |
+| Folder picker + SHA-256 register | ✅ | `Connect media folder` (Nav + Scenes) |
+| Auto-save on job **done** | ✅ | Hub hook from `MainLayout` + Scenes; ignore `running` to avoid double-save |
+| **Fallback when folder not connected (feature 8)** | ✅ | One-shot Scenes warning + **Connect folder** / Dismiss; Chrome/Edge copy when API unsupported (`6769a93`) |
+| Silence trim before local write | ✅ | ffmpeg.wasm + `ClipSilenceTrimmer` |
+| Stream proxy (no full RAM buffer) | 🔲 planned | See `client-storage-implementation-plan.md` step 1 |
+| `.client.json` marker on register | 🔲 planned | Step 3 — UI “present” without server MP4 |
+| Proactive “connect folder” banner | 🔲 planned | Step 4 (distinct from feature-8 post-gen warning) |
+| Prune server MP4 when client marker exists | 🔲 planned | Step 5 |
+| Folder name persistence | 🔲 planned | Step 6 |
+| `ClientStorageMode` skip server write | 🔲 planned | Step 7 — only after 1–5 proven |
+
+**Detail plan:** [`host/docs/client-storage-implementation-plan.md`](client-storage-implementation-plan.md)  
+**Gap item:** Item 14 in [`host/docs/gap-analysis.md`](gap-analysis.md)
 
 ---
 
@@ -637,11 +656,9 @@ Keep generated MP4 clips and scene previews on client devices while enforcing a 
 | **Privacy Search & Invite API** | [Program.cs](file:///C:/Users/budcr/source/repos/gemini/PageToMovie/host/PageToMovie.Api/Program.cs) | Gated `GET /api/users/search`, `POST /api/projects/{id}/invites`, and `/join` invite acceptance. |
 | **Invite UI Modal** | [ProjectCollaboratorsModal.razor](file:///C:/Users/budcr/source/repos/gemini/PageToMovie/host/PageToMovie.Web/Components/Modals/ProjectCollaboratorsModal.razor) | Modal with handle search (`@username`) and blind email invite input. |
 | **Lightweight Forking** | [ProjectArchiveService.cs](file:///C:/Users/budcr/source/repos/gemini/PageToMovie/host/PageToMovie.Engine/ProjectArchiveService.cs) | `ForkProjectAsync` creates < 5 MB text/metadata project forks excluding video binaries. |
-| **Contribution & Merge Engine** | [ProjectContributionService.cs](file:///C:/Users/budcr/source/repos/gemini/PageToMovie/host/PageToMovie.Engine/ProjectContributionService.cs) | Generates structured JSON diffs and executes field-level merge into master project. |
-| **Diff Viewer UI** | [ContributionReview.razor](file:///C:/Users/budcr/source/repos/gemini/PageToMovie/host/PageToMovie.Web/Components/Pages/ContributionReview.razor) | Side-by-side visual diff viewer for cast and scene edits. |
-| **Server Media Pruner** | [ServerMediaPruningService.cs](file:///C:/Users/budcr/source/repos/gemini/PageToMovie/host/PageToMovie.Engine/ServerMediaPruningService.cs) | Railway 48h TTL & 80% disk capacity auto-pruner hosted service. |
-| **YouTube Demo Catalog** | [DemoCatalogService.cs](file:///C:/Users/budcr/source/repos/gemini/PageToMovie/host/PageToMovie.Engine/DemoCatalogService.cs) | Stores `YoutubeId` and `YoutubeUrl` in demo metadata. |
 | **YouTube Gallery UI** | [Demo.razor](file:///C:/Users/budcr/source/repos/gemini/PageToMovie/host/PageToMovie.Web/Components/Pages/Demo.razor) | Privacy-enhanced YouTube iframe player embed (`youtube-nocookie.com`). |
+| **Creator Profile Service** | [CreatorProfileService.cs](file:///C:/Users/budcr/source/repos/gemini/PageToMovie/host/PageToMovie.Engine/CreatorProfileService.cs) | Dynamically computes movies published, total upvotes, forks spawned, and badges. |
+| **Creator Profile Header UI** | [CreatorProfileHeader.razor](file:///C:/Users/budcr/source/repos/gemini/PageToMovie/host/PageToMovie.Web/Components/Pages/CreatorProfileHeader.razor) | Visual header component rendering user handle, stat pills, and badge chips. |
 
 ---
 
@@ -657,8 +674,8 @@ out of scope, e.g. automatic Git auto-commit, `ContributionReview.razor`, and th
 3. **Phase 3: YouTube API Auto-Upload & Required Metadata Form (`DemoYouTubePublisherService.cs`)** — done for real: demos migrate to YouTube automatically on approval, reusing the existing working OAuth connection.
 4. **Phase 4: Multi-Version Local MP4 History & Side-by-Side Prompt Comparison (`ClipPromptCompareViewer.razor`)** — done for real: built the clip-version history mechanism that didn't exist, then wired the viewer to it.
 5. **Phase 5: Git-Backed Server Engine (`LibGit2Sharp`)** — done for real: genuine commits and 3-way merge with real conflict detection, reachable via gated endpoints (not yet an automatic background hook — see issue-26). The `PageToMovie.GitUi` NuGet package extraction was not attempted.
-6. **Phase 6: Privacy-Preserving User Invites & Invite-to-Fork Collaboration Model** — done for real: persisted single-use email invites, `/join` acceptance, and lightweight forking, end-to-end tested.
+6. **Phase 6: Privacy-Preserving User Invites & Invite-to-Fork Collaboration Model** — done for real: persisted single-use email invites, `/join` acceptance, lightweight forking, and Creator Profile Badges & Stats (Feature 14), end-to-end tested.
 
 ---
 
-*Last updated: 2026-07-26 — all 6 phases re-verified against running code; unwired/stubbed ones reimplemented for real, tested, and pushed. See `host/docs/issues/issue-26-*` for the one deliberately-deferred piece (automatic Git auto-commit) and the status table for UI pieces (ContributionReview, gallery fork button, visibility modes, creator badges) still marked planned.*
+*Last updated: 2026-07-26 — all 6 phases re-verified against running code; unwired/stubbed ones reimplemented for real, tested, and pushed. Feature 6 (Fork banner & Sync Origin button), Feature 11 (YouTube V2 replace), and Feature 14 (Creator Profile Badges & Stats) are now fully implemented and verified.*

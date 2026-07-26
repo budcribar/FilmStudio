@@ -133,6 +133,7 @@ builder.Services.AddSingleton<YouTubeAuthService>();
 builder.Services.AddSingleton<DemoYouTubePublisherService>();
 builder.Services.AddSingleton<ProjectGitRepositoryService>();
 builder.Services.AddSingleton<ProjectInviteService>();
+builder.Services.AddSingleton<CreatorProfileService>();
 string dpKeysDir;
 try
 {
@@ -2114,6 +2115,17 @@ app.MapPost("/api/projects/{id}/sync-origin", async (
     }
 });
 
+app.MapGet("/api/creators/{handle}", async (
+    string handle,
+    CreatorProfileService creatorService,
+    CancellationToken ct) =>
+{
+    var profile = await creatorService.GetProfileAsync(handle, ct);
+    if (profile == null)
+        return Results.NotFound(new { ok = false, error = "Creator profile not found." });
+    return Results.Ok(profile);
+});
+
 // Phase 6: Privacy Search & Invite Delivery
 app.MapGet("/api/users/search", async (string? q, UserDatabaseService userDb) =>
 {
@@ -4080,6 +4092,9 @@ app.MapPost("/api/demos", async (
         var isAiSynthetic = true;
         string? privacyStatus = null;
         string? tagsRaw = null;
+        // When true and a public demo already exists for this project/user, replace its movie
+        // and re-upload to YouTube (V2 pointer replace) instead of creating a new demo entry.
+        var replaceExisting = true;
         IFormFile? file = null;
 
         if (request.HasFormContentType)
@@ -4095,6 +4110,11 @@ app.MapPost("/api/demos", async (
             if (bool.TryParse(form["isAiSynthetic"].ToString(), out var aiForm)) isAiSynthetic = aiForm;
             privacyStatus = form["privacyStatus"].ToString();
             tagsRaw = form["tags"].ToString();
+            if (bool.TryParse(form["replaceExisting"].ToString(), out var reForm))
+                replaceExisting = reForm;
+            else if (string.Equals(form["replaceExisting"].ToString(), "0", StringComparison.OrdinalIgnoreCase) ||
+                     string.Equals(form["replaceExisting"].ToString(), "false", StringComparison.OrdinalIgnoreCase))
+                replaceExisting = false;
             file = form.Files.GetFile("file") ?? form.Files.FirstOrDefault();
         }
         else
@@ -4115,6 +4135,8 @@ app.MapPost("/api/demos", async (
             if (root.TryGetProperty("privacyStatus", out var ps)) privacyStatus = ps.GetString();
             if (root.TryGetProperty("tags", out var tg) && tg.ValueKind == JsonValueKind.String)
                 tagsRaw = tg.GetString();
+            if (root.TryGetProperty("replaceExisting", out var re) && re.ValueKind == JsonValueKind.False)
+                replaceExisting = false;
         }
 
         title = string.IsNullOrWhiteSpace(title) ? null : title.Trim();
@@ -4162,6 +4184,15 @@ app.MapPost("/api/demos", async (
 
         DemoCatalogService.DemoEntry entry;
         var autoPublic = false;
+        var replacedExisting = false;
+
+        // Item 11: re-publish → attach new movie to existing public demo and V2 YouTube replace.
+        var existingPublic = replaceExisting
+            ? demos.FindPublicDemoForProject(projectId!, user.UserId)
+            : null;
+        var canReplace = existingPublic is not null
+                         && !string.IsNullOrWhiteSpace(existingPublic.YoutubeId);
+
         if (file is not null && file.Length > 0)
         {
             var ctHeader = file.ContentType ?? "";
@@ -4185,43 +4216,82 @@ app.MapPost("/api/demos", async (
             autoPublic = await media.IsTrustedShaAsync(projectId!, sha);
 
             await using var stream = new MemoryStream(bytes);
-            entry = await demos.PublishFromStreamAsync(
-                stream,
-                title ?? projectId ?? file.FileName ?? "Demo",
-                description,
-                projectId,
-                user.UserId,
-                acceptedGuidelines: true,
-                madeForKids: madeForKids,
-                isAiSyntheticContent: isAiSynthetic,
-                privacyStatus: privacyStatus,
-                tags: tags);
-
-            if (autoPublic)
+            if (canReplace)
             {
-                demos.SetStatus(entry.Id, DemoCatalogService.DemoStatuses.Public, user.UserId,
-                    "Auto-public: upload SHA-256 matches trusted gen/export registry");
+                entry = await demos.AttachMovieFromStreamAsync(
+                    existingPublic!.Id,
+                    stream,
+                    title ?? existingPublic.Title,
+                    description,
+                    madeForKids,
+                    isAiSynthetic,
+                    privacyStatus,
+                    tags);
+                replacedExisting = true;
+                // Keep public; re-upload to YouTube in background (V2 replace).
+                if (!string.Equals(entry.Status, DemoCatalogService.DemoStatuses.Public, StringComparison.OrdinalIgnoreCase))
+                    demos.SetStatus(entry.Id, DemoCatalogService.DemoStatuses.Public, user.UserId, "Re-publish: YouTube V2 replace");
                 entry = demos.TryGet(entry.Id) ?? entry;
-                // Also register demo hash as export for future re-uploads
-                try
-                {
-                    await media.UpsertAsync(
-                        projectId!,
-                        $"_demos/{entry.Id}/movie.mp4",
-                        sha,
-                        bytes.LongLength,
-                        "demo",
-                        scene: null,
-                        clip: null,
-                        user.UserId);
-                }
-                catch { /* non-fatal */ }
-
-                // Auto-approved → publish straight to YouTube in the background (best-effort;
-                // failures leave the file server-hosted so the gallery still works).
                 var demoIdForUpload = entry.Id;
                 _ = Task.Run(() => youTubePublisher.PublishAsync(demoIdForUpload, CancellationToken.None));
+                autoPublic = true; // already public / re-pointing gallery
             }
+            else
+            {
+                entry = await demos.PublishFromStreamAsync(
+                    stream,
+                    title ?? projectId ?? file.FileName ?? "Demo",
+                    description,
+                    projectId,
+                    user.UserId,
+                    acceptedGuidelines: true,
+                    madeForKids: madeForKids,
+                    isAiSyntheticContent: isAiSynthetic,
+                    privacyStatus: privacyStatus,
+                    tags: tags);
+
+                if (autoPublic)
+                {
+                    demos.SetStatus(entry.Id, DemoCatalogService.DemoStatuses.Public, user.UserId,
+                        "Auto-public: upload SHA-256 matches trusted gen/export registry");
+                    entry = demos.TryGet(entry.Id) ?? entry;
+                    try
+                    {
+                        await media.UpsertAsync(
+                            projectId!,
+                            $"_demos/{entry.Id}/movie.mp4",
+                            sha,
+                            bytes.LongLength,
+                            "demo",
+                            scene: null,
+                            clip: null,
+                            user.UserId);
+                    }
+                    catch { /* non-fatal */ }
+
+                    var demoIdForUpload = entry.Id;
+                    _ = Task.Run(() => youTubePublisher.PublishAsync(demoIdForUpload, CancellationToken.None));
+                }
+            }
+        }
+        else if (canReplace)
+        {
+            entry = demos.AttachMovieFromWip(
+                existingPublic!.Id,
+                projectId!,
+                title ?? existingPublic.Title,
+                description,
+                madeForKids,
+                isAiSynthetic,
+                privacyStatus,
+                tags);
+            replacedExisting = true;
+            if (!string.Equals(entry.Status, DemoCatalogService.DemoStatuses.Public, StringComparison.OrdinalIgnoreCase))
+                demos.SetStatus(entry.Id, DemoCatalogService.DemoStatuses.Public, user.UserId, "Re-publish: YouTube V2 replace");
+            entry = demos.TryGet(entry.Id) ?? entry;
+            var demoIdForUpload = entry.Id;
+            _ = Task.Run(() => youTubePublisher.PublishAsync(demoIdForUpload, CancellationToken.None));
+            autoPublic = true;
         }
         else
         {
@@ -4240,11 +4310,14 @@ app.MapPost("/api/demos", async (
         return Results.Ok(new
         {
             ok = true,
-            pendingReview = !autoPublic,
+            pendingReview = !autoPublic && !replacedExisting,
             autoPublic,
-            message = autoPublic
-                ? "Published — file hash matches trusted project media (gen provenance OK)."
-                : "Submitted for review. An admin must approve before it appears on the public Demo page.",
+            replacedExisting,
+            message = replacedExisting
+                ? "Updated published demo — uploading new YouTube version and switching the gallery pointer."
+                : autoPublic
+                    ? "Published — file hash matches trusted project media (gen provenance OK)."
+                    : "Submitted for review. An admin must approve before it appears on the public Demo page.",
             demo = DemoPublicDto(entry),
             pagePath = "/demo",
         });
@@ -4311,8 +4384,9 @@ app.MapPost("/api/admin/demos/{demoId}/review", (
         if (d is null)
             return Results.NotFound(new { ok = false, error = "Demo not found" });
 
-        // Newly approved (and not already on YouTube) → publish in the background.
-        if (status == DemoCatalogService.DemoStatuses.Public && string.IsNullOrWhiteSpace(d.YoutubeId))
+        // Newly approved, or re-approved with a new local movie (V2 replace) → publish in the background.
+        // Publisher no-ops when already on YouTube with no local movie.mp4.
+        if (status == DemoCatalogService.DemoStatuses.Public)
             _ = Task.Run(() => youTubePublisher.PublishAsync(demoId, CancellationToken.None));
 
         return Results.Ok(new { ok = true, demo = DemoAdminDto(d) });

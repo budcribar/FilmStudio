@@ -1,5 +1,6 @@
 @* Shared header + step strip + job log for Adaptation step pages *@
 @inject AdminSessionService Session
+@inject ActiveProjectState ActiveProject
 
 @if (Host is null)
 {
@@ -8,10 +9,16 @@
 
 <div class="d-flex flex-wrap align-items-baseline justify-content-between gap-2 mb-3">
     <h1 class="mb-0">Adaptation</h1>
-    @if (!string.IsNullOrEmpty(Host.ProjectLabel))
-    {
-        <span class="badge text-bg-secondary px-2 py-1 fs-6">@Host.ProjectLabel</span>
-    }
+    <div class="d-flex align-items-center gap-2">
+        @if (!string.IsNullOrEmpty(Host.ProjectLabel))
+        {
+            <span class="badge text-bg-secondary px-2 py-1 fs-6">@Host.ProjectLabel</span>
+        }
+        @if (!string.IsNullOrEmpty(ActiveProject.ParentProjectId))
+        {
+            <span class="badge text-bg-info px-2 py-1 fs-6" title="Forked from @ActiveProject.ParentProjectId">🍴 Fork of @ActiveProject.ParentProjectId</span>
+        }
+    </div>
 </div>
 
 @* ---- Step navigation bar ---- *@

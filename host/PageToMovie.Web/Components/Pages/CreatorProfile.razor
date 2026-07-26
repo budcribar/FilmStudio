@@ -1,0 +1,133 @@
+@page "/creator/{handle}"
+@inject EngineApiClient Engine
+@inject NavigationManager Nav
+@using PageToMovie.Core.Models
+
+<PageTitle>Creator Profile - @(Handle ?? "")</PageTitle>
+
+@if (_loading)
+{
+    <div class="text-center py-5">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading creator profile...</span>
+        </div>
+    </div>
+}
+else if (!string.IsNullOrEmpty(_error))
+{
+    <div class="alert alert-danger my-4">
+        <h4>Creator Not Found</h4>
+        <p>@_error</p>
+        <a href="demo" class="btn btn-outline-primary mt-2">← Back to Gallery</a>
+    </div>
+}
+else if (_profile is not null)
+{
+    <div class="container py-3">
+        <div class="mb-3">
+            <a href="demo" class="btn btn-sm btn-outline-secondary">← Public Gallery</a>
+        </div>
+
+        <CreatorProfileHeader Profile="_profile" />
+
+        <h3 class="mt-4 mb-3">Published Movies by @@@_profile.Username</h3>
+
+        @if (_demos is null || _demos.Count == 0)
+        {
+            <div class="text-muted p-4 border border-secondary rounded bg-dark">
+                No public movies published yet by @@@_profile.Username.
+            </div>
+        }
+        else
+        {
+            <div class="row row-cols-1 row-cols-md-2 g-4">
+                @foreach (var d in _demos)
+                {
+                    <div class="col">
+                        <div class="card h-100 bg-dark border-secondary text-white shadow-sm">
+                            <div class="card-body">
+                                <h5 class="card-title text-primary">@d.Title</h5>
+                                @if (!string.IsNullOrWhiteSpace(d.Description))
+                                {
+                                    <p class="card-text text-muted small mb-3">@d.Description</p>
+                                }
+
+                                @if (!string.IsNullOrWhiteSpace(d.YoutubeId))
+                                {
+                                    <div class="ratio ratio-16x9 mb-3">
+                                        <iframe src="https://www.youtube-nocookie.com/embed/@d.YoutubeId"
+                                                title="@d.Title"
+                                                allowfullscreen></iframe>
+                                    </div>
+                                }
+                                else if (!string.IsNullOrWhiteSpace(d.YoutubeUrl))
+                                {
+                                    <div class="mb-3">
+                                        <a href="@d.YoutubeUrl" target="_blank" class="btn btn-sm btn-outline-light">Watch on YouTube ↗</a>
+                                    </div>
+                                }
+                            </div>
+                            <div class="card-footer border-secondary d-flex justify-content-between align-items-center small text-muted">
+                                <span>Published @d.CreatedAt.ToLocalTime().ToString("MMM d, yyyy")</span>
+                                <span class="text-warning fw-bold">★ @d.UpvoteCount Upvotes</span>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+}
+
+@code {
+    [Parameter]
+    public string? Handle { get; set; }
+
+    private CreatorProfileDto? _profile;
+    private List<DemoListItem>? _demos;
+    private bool _loading = true;
+    private string? _error;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        _loading = true;
+        _error = null;
+
+        if (string.IsNullOrWhiteSpace(Handle))
+        {
+            _error = "Handle is required.";
+            _loading = false;
+            return;
+        }
+
+        try
+        {
+            var cleanHandle = Handle.Trim().TrimStart('@');
+            _profile = await Engine.GetCreatorProfileAsync(cleanHandle);
+
+            if (_profile is null)
+            {
+                _error = $"Could not find creator profile for '@{cleanHandle}'.";
+            }
+            else
+            {
+                var allDemos = await Engine.ListDemosAsync(take: 100);
+                if (allDemos is not null)
+                {
+                    _demos = allDemos
+                        .Where(d => string.Equals(d.CreatedBy, _profile.UserId, StringComparison.OrdinalIgnoreCase) ||
+                                    string.Equals(d.CreatedBy, _profile.Username, StringComparison.OrdinalIgnoreCase))
+                        .ToList();
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+}
