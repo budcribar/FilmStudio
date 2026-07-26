@@ -2,12 +2,14 @@
 
 Map of project-local artifacts for manual whole-project review (e.g. point Claude/Codex at this folder). Zip export deferred; data lives here.
 
-Built: **2026-07-24 23:53:43Z** · Ready for manual final review: **no**
+Built: **2026-07-26 00:41:39Z** · Ready for manual final review: **no**
 
 ## Stats
 
-- **clipMp4Count**: 0
+- **clipMp4Count**: 1
 - **sceneCompositeCount**: 0
+- **promptTxtCount**: 2
+- **promptMetaCount**: 2
 - **autoReviewDraftCount**: 0
 - **hasReviewIndex**: False
 - **reviewFrameCount**: 0
@@ -15,9 +17,7 @@ Built: **2026-07-24 23:53:43Z** · Ready for manual final review: **no**
 
 ## Missing (recommended for manual review)
 
-- `project_rules.json`
 - `assets/movie_wip.mp4`
-- `assets/video/prompts`
 - `assets/review/index.json`
 
 ## Map
@@ -30,7 +30,7 @@ Built: **2026-07-24 23:53:43Z** · Ready for manual final review: **no**
 | yes | `source/cast_seeds.json` | Cast seeds (looks, locks, voices) *(core)* |
 | no | `source/tell_tale_heart.fountain` | Imported Poe fountain (if used) |
 | yes | `project.json` | Project id/title |
-| no | `project_rules.json` | Approved house rules / style locks *(core)* |
+| yes | `project_rules.json` | Approved house rules / style locks *(core)* |
 | yes | `pipeline_state.json` | Clip reviews, auto-review state, cost_ledger *(core)* |
 | yes | `pipeline_config.json` | Per-project gen config (model, resolution) |
 | no | `edit_feedback_log.json` | Human edit / pass-fail log |
@@ -39,7 +39,7 @@ Built: **2026-07-24 23:53:43Z** · Ready for manual final review: **no**
 | no | `assets/movie_wip.mp4.sources.json` | WIP concat sources + assembly note |
 | yes | `assets/characters` | Locked character plates + variants *(core)* |
 | yes | `assets/video` | Clips + scene composites + duration sidecars *(core)* |
-| no | `assets/video/prompts` | Full prompt .txt + .meta.json per clip *(core)* |
+| yes | `assets/video/prompts` | Full prompt .txt + .meta.json per clip *(core)* |
 | yes | `assets/review` | Auto-review drafts, frames, index *(core)* |
 | no | `assets/review/index.json` | Per-clip review index (rebuild via batch review) *(core)* |
 | no | `assets/review/frames` | Durable auto-review sample frames |
@@ -48,7 +48,7 @@ Built: **2026-07-24 23:53:43Z** · Ready for manual final review: **no**
 | yes | `telemetry/cost_ledger.json` | Cost events snapshot (from pipeline_state) *(core)* |
 | yes | `telemetry/models.json` | Resolved models/options snapshot |
 | yes | `telemetry/api_calls.jsonl` | Live API call log (full prompts) |
-| no | `telemetry/ffmpeg.jsonl` | Condensed ffmpeg ops |
+| no | `telemetry/media_ops.jsonl` | Optional local media-op log (legacy: ffmpeg.jsonl) |
 | yes | `ARTIFACTS.md` | Human map of this project for Claude/manual review |
 | yes | `artifact_index.json` | Machine-readable artifact presence map |
 
@@ -60,7 +60,7 @@ Built: **2026-07-24 23:53:43Z** · Ready for manual final review: **no**
 4. Identity: `assets/characters/*_ref.png`, `assets/video/prompts/*.meta.json` (`prompt`, `castCount`, `refsAttachedToApi`).
 5. QC: `assets/review/*.auto_review.json`, `assets/review/index.json`, `assets/review/frames/`.
 6. Assembly: `assets/video/scene_*.mp4.sources.json` (`included` / `excluded`).
-7. Telemetry: `telemetry/api_calls.jsonl` (full prompts), `telemetry/ffmpeg.jsonl`, `telemetry/cost_ledger.json`.
+7. Telemetry: `telemetry/api_calls.jsonl` (full prompts), `telemetry/cost_ledger.json` (optional `media_ops.jsonl`).
 8. Scores: copy `assets/review/FINAL_REVIEW_TEMPLATE.json` → `final_review.json` and fill **human** (and optionally **ai** notes).
 9. Zip export is deferred — all durable data stays in this directory.
 

@@ -1,13 +1,11 @@
 {
   "projectId": "Buster",
-  "builtAtUtc": "2026-07-24T23:53:43.7948994+00:00",
+  "builtAtUtc": "2026-07-26T00:41:39.0351291+00:00",
   "schemaVersion": "1",
   "purpose": "Map of project-local artifacts for manual whole-project review (e.g. point Claude/Codex at this folder). Zip export deferred; data lives here.",
   "readyForManualFinalReview": false,
   "missingRequired": [
-    "project_rules.json",
     "assets/movie_wip.mp4",
-    "assets/video/prompts",
     "assets/review/index.json"
   ],
   "entries": [
@@ -39,7 +37,7 @@
       "path": "source/cast_seeds.json",
       "role": "Cast seeds (looks, locks, voices)",
       "exists": true,
-      "bytes": 1263,
+      "bytes": 5947,
       "fileCount": null,
       "requiredForManualReview": true
     },
@@ -62,8 +60,8 @@
     {
       "path": "project_rules.json",
       "role": "Approved house rules / style locks",
-      "exists": false,
-      "bytes": null,
+      "exists": true,
+      "bytes": 1089,
       "fileCount": null,
       "requiredForManualReview": true
     },
@@ -71,7 +69,7 @@
       "path": "pipeline_state.json",
       "role": "Clip reviews, auto-review state, cost_ledger",
       "exists": true,
-      "bytes": 373,
+      "bytes": 6012,
       "fileCount": null,
       "requiredForManualReview": true
     },
@@ -95,7 +93,7 @@
       "path": "blueprint.clips.grok.json",
       "role": "Stage 2 shot plan / clips",
       "exists": true,
-      "bytes": 45275,
+      "bytes": 98298,
       "fileCount": null,
       "requiredForManualReview": true
     },
@@ -119,24 +117,24 @@
       "path": "assets/characters",
       "role": "Locked character plates \u002B variants",
       "exists": true,
-      "bytes": 5634481,
-      "fileCount": 3,
+      "bytes": 15079296,
+      "fileCount": 20,
       "requiredForManualReview": true
     },
     {
       "path": "assets/video",
       "role": "Clips \u002B scene composites \u002B duration sidecars",
       "exists": true,
-      "bytes": 0,
-      "fileCount": 0,
+      "bytes": 4073988,
+      "fileCount": 5,
       "requiredForManualReview": true
     },
     {
       "path": "assets/video/prompts",
       "role": "Full prompt .txt \u002B .meta.json per clip",
-      "exists": false,
-      "bytes": null,
-      "fileCount": null,
+      "exists": true,
+      "bytes": 16234,
+      "fileCount": 4,
       "requiredForManualReview": true
     },
     {
@@ -183,7 +181,7 @@
       "path": "telemetry/cost_ledger.json",
       "role": "Cost events snapshot (from pipeline_state)",
       "exists": true,
-      "bytes": 216,
+      "bytes": 5835,
       "fileCount": null,
       "requiredForManualReview": true
     },
@@ -199,13 +197,13 @@
       "path": "telemetry/api_calls.jsonl",
       "role": "Live API call log (full prompts)",
       "exists": true,
-      "bytes": 22617,
+      "bytes": 635672,
       "fileCount": null,
       "requiredForManualReview": false
     },
     {
-      "path": "telemetry/ffmpeg.jsonl",
-      "role": "Condensed ffmpeg ops",
+      "path": "telemetry/media_ops.jsonl",
+      "role": "Optional local media-op log (legacy: ffmpeg.jsonl)",
       "exists": false,
       "bytes": null,
       "fileCount": null,
@@ -215,7 +213,7 @@
       "path": "ARTIFACTS.md",
       "role": "Human map of this project for Claude/manual review",
       "exists": true,
-      "bytes": 3610,
+      "bytes": 3719,
       "fileCount": null,
       "requiredForManualReview": false
     },
@@ -223,14 +221,16 @@
       "path": "artifact_index.json",
       "role": "Machine-readable artifact presence map",
       "exists": true,
-      "bytes": 6312,
+      "bytes": 6408,
       "fileCount": null,
       "requiredForManualReview": false
     }
   ],
   "stats": {
-    "clipMp4Count": 0,
+    "clipMp4Count": 1,
     "sceneCompositeCount": 0,
+    "promptTxtCount": 2,
+    "promptMetaCount": 2,
     "autoReviewDraftCount": 0,
     "hasReviewIndex": false,
     "reviewFrameCount": 0,

@@ -1494,7 +1494,13 @@ app.MapGet("/api/projects", async (
     // Project inventory is not public — requires sign-in (prevents anonymous enumeration).
     if (AuthGate.RequireLogin(user, opts) is { } denied)
         return denied;
-    var list = await store.ListProjectsAsync(ct);
+    var all = await store.ListProjectsAsync(ct);
+    var list = user.IsAdmin
+        ? all
+        : all.Where(p =>
+            string.IsNullOrWhiteSpace(p.OwnerUserId) ||
+            string.Equals(p.OwnerUserId, user.UserId, StringComparison.OrdinalIgnoreCase)).ToList();
+
     var activeId = store.ActiveProjectId;
     if (string.IsNullOrWhiteSpace(activeId) && list.Count > 0)
         activeId = list[0].Id;
