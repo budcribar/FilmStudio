@@ -5,7 +5,9 @@
 @inject ActiveProjectState ActiveProject
 @inject AdminSessionService Session
 @inject ClientVideoStitchService Stitch
+@inject ClientMediaFolderService MediaFolder
 @using PageToMovie.Core.Models
+@using PageToMovie.Web.Services
 
 <PageTitle>Scenes &amp; Clips</PageTitle>
 
@@ -816,6 +818,44 @@ else
                 <div class="col-md-7">
                     <h6>Visual prompt</h6>
                     <pre class="small bg-light border rounded p-2" style="max-height:200px; overflow:auto; white-space:pre-wrap;">@(_clip.VisualPrompt is { Length: > 0 } vp ? vp : "—")</pre>
+
+                    @if (_historyLoading)
+                    {
+                        <div class="small text-muted mb-2">Checking for earlier versions…</div>
+                    }
+                    else if (_historyVersions.Count > 0)
+                    {
+                        <button class="btn btn-sm btn-outline-secondary mb-2"
+                                @onclick="() => _showHistoryCompare = !_showHistoryCompare">
+                            @(_showHistoryCompare ? "Hide" : "🔍 Compare with previous version")
+                            (@_historyVersions.Count earlier)
+                        </button>
+                        @if (_showHistoryCompare)
+                        {
+                            @if (_historyVersions.Count > 1)
+                            {
+                                <div class="mb-2" style="max-width:22rem;">
+                                    <label class="form-label small">Comparing against</label>
+                                    <select class="form-select form-select-sm"
+                                            value="@_compareIndex"
+                                            @onchange="OnCompareIndexChangedAsync">
+                                        @for (var i = 0; i < _historyVersions.Count; i++)
+                                        {
+                                            var v = _historyVersions[i];
+                                            <option value="@i">@v.TimestampUtc?.ToLocalTime().ToString("MMM d, h:mm tt")</option>
+                                        }
+                                    </select>
+                                </div>
+                            }
+                            <ClipPromptCompareViewer
+                                VersionAHash="@(_historyVersions[_compareIndex].TimestampUtc?.ToLocalTime().ToString("MMM d, h:mm tt") ?? "Earlier version")"
+                                VersionAVideoUrl="@_compareAVideoUrl"
+                                VersionAPrompt="@(_historyVersions[_compareIndex].Prompt ?? "(no prompt recorded)")"
+                                VersionBHash="Current"
+                                VersionBVideoUrl="@Engine.ClipVideoUrl(_projectId, _detail.SceneNumber, _clip.ClipNumber)"
+                                VersionBPrompt="@(_clip.VisualPrompt is { Length: > 0 } curVp ? curVp : "—")" />
+                        }
+                    }
                     <h6 class="mt-2">Negative</h6>
                     @if (!string.IsNullOrWhiteSpace(_clip.NegativePrompt))
                     {
@@ -1162,6 +1202,11 @@ else
     private int? _selectedScene;
     private SceneDetail? _detail;
     private int? _selectedClip;
+    private bool _historyLoading;
+    private bool _showHistoryCompare;
+    private List<ClipPromptVersionDto> _historyVersions = new();
+    private int _compareIndex;
+    private string? _compareAVideoUrl;
     private ClipSummary? _clip;
     private (int Scene, int Clip)? _deleteClipTarget;
     private int? _deleteSceneTarget;
@@ -2062,7 +2107,11 @@ else
         _clip = cn is int n
             ? _detail?.Clips.FirstOrDefault(c => c.ClipNumber == n)
             : null;
-        if (cn is int)
+        _showHistoryCompare = false;
+        _historyVersions = new();
+        _compareIndex = 0;
+        _compareAVideoUrl = null;
+        if (cn is int cnv)
         {
             // Force new <video> mount so we never keep a previous composite/clip stream
             _clipVideoKey = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
@@ -2072,7 +2121,59 @@ else
                 _showScenePlayer = false;
                 _playingScene = null;
             }
+            if (_detail is not null)
+                _ = LoadClipHistoryAsync(_detail.SceneNumber, cnv);
         }
+    }
+
+    /// <summary>
+    /// Loads archived prompt versions (server, assets/video/history/*.meta.json) and the most
+    /// recently archived video for this clip (client media folder, assets/video/history/*.mp4).
+    /// The two are archived independently (different processes/moments), so we pair the
+    /// user-selected prompt with the single most-recent archived video rather than claiming an
+    /// exact 1:1 match — correct for the common case (one edit, one regen) without overclaiming
+    /// precision for repeated edits.
+    /// </summary>
+    private async Task LoadClipHistoryAsync(int scene, int clip)
+    {
+        _historyLoading = true;
+        StateHasChanged();
+        try
+        {
+            var resp = await Engine.GetClipPromptHistoryAsync(_projectId, scene, clip);
+            var prompts = resp?.History ?? new List<ClipPromptVersionDto>();
+            var videoPaths = await MediaFolder.ListClipHistoryRelativePathsAsync(scene, clip);
+
+            if (prompts.Count == 0 && videoPaths.Count == 0)
+            {
+                _historyVersions = new();
+                return;
+            }
+
+            _compareAVideoUrl = videoPaths.Count > 0
+                ? await MediaFolder.GetLocalBlobUrlAsync(videoPaths[0])
+                : null;
+
+            _historyVersions = prompts.Count > 0
+                ? prompts
+                : new List<ClipPromptVersionDto> { new() { Prompt = null, TimestampUtc = null } };
+            _compareIndex = 0;
+        }
+        catch
+        {
+            _historyVersions = new();
+        }
+        finally
+        {
+            _historyLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private void OnCompareIndexChangedAsync(ChangeEventArgs e)
+    {
+        if (int.TryParse(e.Value?.ToString(), out var idx) && idx >= 0 && idx < _historyVersions.Count)
+            _compareIndex = idx;
     }
 
     private async Task PlaySceneCompositeAsync(int sn)

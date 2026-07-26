@@ -155,6 +155,22 @@ public sealed class PageToMovieOptions
     public MailOptions Mail { get; set; } = new();
     public YouTubeOptions YouTube { get; set; } = new();
     public CreditsOptions Credits { get; set; } = new();
+    public MediaPruningOptions MediaPruning { get; set; } = new();
+}
+
+/// <summary>
+/// Server-side background pruner for cached MP4/media binaries (Railway disk guard). Deletes are
+/// permanent and the server never re-creates lost generated video, so this is <b>off by default</b> —
+/// opt in per-deployment via <c>PageToMovie__MediaPruning__Enabled=true</c>. Even when enabled, the
+/// pruner only ever deletes a file <see cref="MediaRegistryService"/> has confirmed a client already
+/// synced a copy of.
+/// </summary>
+public sealed class MediaPruningOptions
+{
+    public bool Enabled { get; set; }
+    public int CheckIntervalMinutes { get; set; } = 60;
+    public int MaxFileAgeHours { get; set; } = 48;
+    public double MaxDiskUsagePercent { get; set; } = 80.0;
 }
 
 /// <summary>

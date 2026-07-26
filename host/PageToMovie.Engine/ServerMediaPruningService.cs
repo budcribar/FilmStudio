@@ -1,150 +1,226 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+using PageToMovie.Core.Options;
 
 namespace PageToMovie.Engine
 {
     /// <summary>
-    /// Background hosted service that prunes server-cached MP4/media binaries older than 48 hours
-    /// or when disk usage threshold is exceeded, maintaining Railway container disk footprint &lt; 100 MB.
+    /// Background hosted service that prunes server-cached MP4/media binaries once the client has
+    /// confirmed a synced copy via <see cref="MediaRegistryService"/> and the file has aged past
+    /// <see cref="MediaPruningOptions.MaxFileAgeHours"/>, or on emergency disk-usage overflow.
+    /// Off by default (<see cref="MediaPruningOptions.Enabled"/>) — this deletes files, and the server
+    /// never re-creates lost generated video, so it must never touch a file the registry hasn't
+    /// confirmed the client already has a copy of.
     /// </summary>
-    public class ServerMediaPruningService : BackgroundService
+    public sealed class ServerMediaPruningService : BackgroundService
     {
+        private static readonly string[] MediaExtensions = { ".mp4", ".webm", ".mov", ".wav", ".avi" };
+
         private readonly ILogger<ServerMediaPruningService> _logger;
-        private readonly string _projectsRoot;
-        private readonly TimeSpan _checkInterval;
-        private readonly TimeSpan _maxFileAge;
-        private readonly double _maxDiskUsagePercent;
+        private readonly ProjectStore _projects;
+        private readonly MediaRegistryService _registry;
+        private readonly MediaPruningOptions _opts;
 
         public ServerMediaPruningService(
             ILogger<ServerMediaPruningService> logger,
-            string projectsRoot = null,
-            TimeSpan? checkInterval = null,
-            TimeSpan? maxFileAge = null,
-            double maxDiskUsagePercent = 80.0)
+            ProjectStore projects,
+            MediaRegistryService registry,
+            IOptions<PageToMovieOptions> opts)
         {
             _logger = logger;
-            _projectsRoot = projectsRoot ?? Path.Combine(Directory.GetCurrentDirectory(), "projects");
-            _checkInterval = checkInterval ?? TimeSpan.FromHours(1);
-            _maxFileAge = maxFileAge ?? TimeSpan.FromHours(48);
-            _maxDiskUsagePercent = maxDiskUsagePercent;
+            _projects = projects;
+            _registry = registry;
+            _opts = opts.Value.MediaPruning;
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            _logger?.LogInformation("ServerMediaPruningService started. Checking every {Interval}, max age {MaxAge}.", _checkInterval, _maxFileAge);
+            if (!_opts.Enabled)
+            {
+                _logger.LogInformation(
+                    "ServerMediaPruningService disabled (PageToMovie:MediaPruning:Enabled=false).");
+                return;
+            }
+
+            var checkInterval = TimeSpan.FromMinutes(Math.Max(1, _opts.CheckIntervalMinutes));
+            var maxAge = TimeSpan.FromHours(Math.Max(1, _opts.MaxFileAgeHours));
+            _logger.LogInformation(
+                "ServerMediaPruningService started. Checking every {Interval}, max age {MaxAge}.",
+                checkInterval, maxAge);
 
             while (!stoppingToken.IsCancellationRequested)
             {
                 try
                 {
-                    PerformPruning(_projectsRoot, _maxFileAge, _maxDiskUsagePercent);
+                    var deleted = await PerformPruningAsync(maxAge, _opts.MaxDiskUsagePercent, stoppingToken)
+                        .ConfigureAwait(false);
+                    if (deleted > 0)
+                        _logger.LogInformation("Server media pruning pass deleted {Count} synced file(s).", deleted);
+                }
+                catch (OperationCanceledException)
+                {
+                    // shutting down
                 }
                 catch (Exception ex)
                 {
-                    _logger?.LogError(ex, "Error occurred during server media pruning execution.");
+                    _logger.LogError(ex, "Error occurred during server media pruning execution.");
                 }
 
-                await Task.Delay(_checkInterval, stoppingToken);
+                try
+                {
+                    await Task.Delay(checkInterval, stoppingToken).ConfigureAwait(false);
+                }
+                catch (OperationCanceledException)
+                {
+                    // shutting down
+                }
             }
         }
 
         /// <summary>
-        /// Executes pruning pass over projects and demos media directories.
+        /// Prunes media files that are both (a) older than <paramref name="maxAge"/> and (b) already
+        /// confirmed synced to a client via <see cref="MediaRegistryService"/>, plus an emergency
+        /// disk-pressure pass (still synced-only, oldest first) if usage still exceeds
+        /// <paramref name="maxDiskPercent"/> afterward. Files with no registry record are never
+        /// touched — the registry not knowing about a file means it may be the only copy in existence.
         /// </summary>
-        public int PerformPruning(string rootPath, TimeSpan maxAge, double maxDiskPercent)
+        public async Task<int> PerformPruningAsync(
+            TimeSpan maxAge, double maxDiskPercent, CancellationToken ct = default)
         {
-            if (string.IsNullOrWhiteSpace(rootPath) || !Directory.Exists(rootPath))
-            {
+            var projectsRoot = Path.Combine(_projects.WorkspaceRoot, "projects");
+            if (!Directory.Exists(projectsRoot))
                 return 0;
-            }
 
-            int deletedCount = 0;
-            DateTime cutoff = DateTime.UtcNow - maxAge;
+            var candidates = await CollectSyncedMediaFilesAsync(projectsRoot, ct).ConfigureAwait(false);
+            var deletedCount = 0;
+            var cutoff = DateTime.UtcNow - maxAge;
 
-            string[] mediaExtensions = new[] { ".mp4", ".webm", ".mov", ".wav", ".avi" };
-
-            // 1. Prune files older than maxAge in projects and demos directories
-            var allDirectories = Directory.GetDirectories(rootPath, "*", SearchOption.AllDirectories)
-                .Concat(new[] { rootPath });
-
-            foreach (var dir in allDirectories)
+            // Pass 1: age-based prune (synced files only).
+            foreach (var c in candidates.Where(c => c.LastWriteTimeUtc < cutoff).ToList())
             {
-                try
+                if (TryDelete(c))
                 {
-                    var mediaFiles = Directory.GetFiles(dir)
-                        .Where(f => mediaExtensions.Contains(Path.GetExtension(f).ToLowerInvariant()))
-                        .ToList();
-
-                    foreach (var file in mediaFiles)
-                    {
-                        var fileInfo = new FileInfo(file);
-                        if (fileInfo.LastWriteTimeUtc < cutoff)
-                        {
-                            try
-                            {
-                                fileInfo.Delete();
-                                deletedCount++;
-                                _logger?.LogInformation("Pruned old server media file: {FilePath} (Age: {Age}h)", file, (DateTime.UtcNow - fileInfo.LastWriteTimeUtc).TotalHours);
-                            }
-                            catch (Exception ex)
-                            {
-                                _logger?.LogWarning(ex, "Failed to delete old media file {FilePath}", file);
-                            }
-                        }
-                    }
-                }
-                catch (Exception ex)
-                {
-                    _logger?.LogWarning(ex, "Failed to inspect directory {Dir} during pruning.", dir);
+                    deletedCount++;
+                    candidates.Remove(c);
                 }
             }
 
-            // 2. Check disk usage threshold if drive info is accessible
+            // Pass 2: emergency disk-pressure prune (synced files only), oldest first.
             try
             {
-                var drive = new DriveInfo(Path.GetPathRoot(Path.GetFullPath(rootPath)));
-                if (drive.IsReady && drive.TotalSize > 0)
+                var driveRoot = Path.GetPathRoot(Path.GetFullPath(projectsRoot));
+                if (!string.IsNullOrEmpty(driveRoot))
                 {
-                    double usedPercent = ((double)(drive.TotalSize - drive.AvailableFreeSpace) / drive.TotalSize) * 100.0;
-                    if (usedPercent > maxDiskPercent)
+                    var drive = new DriveInfo(driveRoot);
+                    if (drive.IsReady && drive.TotalSize > 0)
                     {
-                        _logger?.LogWarning("Disk usage ({UsedPercent:F1}%) exceeds max threshold ({MaxPercent:F1}%). Executing emergency media prune.", usedPercent, maxDiskPercent);
-                        
-                        // Delete remaining media files ordered by oldest first until disk usage is below threshold
-                        var remainingMedia = Directory.GetFiles(rootPath, "*.*", SearchOption.AllDirectories)
-                            .Where(f => mediaExtensions.Contains(Path.GetExtension(f).ToLowerInvariant()))
-                            .Select(f => new FileInfo(f))
-                            .OrderBy(fi => fi.LastWriteTimeUtc)
-                            .ToList();
+                        double UsedPercent() =>
+                            (double)(drive.TotalSize - drive.AvailableFreeSpace) / drive.TotalSize * 100.0;
 
-                        foreach (var fi in remainingMedia)
+                        if (UsedPercent() > maxDiskPercent)
                         {
-                            try
+                            _logger.LogWarning(
+                                "Disk usage ({UsedPercent:F1}%) exceeds max threshold ({MaxPercent:F1}%). " +
+                                "Emergency-pruning synced media oldest-first.",
+                                UsedPercent(), maxDiskPercent);
+
+                            foreach (var c in candidates.OrderBy(c => c.LastWriteTimeUtc).ToList())
                             {
-                                fi.Delete();
-                                deletedCount++;
-                                double currentUsed = ((double)(drive.TotalSize - drive.AvailableFreeSpace) / drive.TotalSize) * 100.0;
-                                if (currentUsed <= maxDiskPercent)
-                                {
-                                    break;
-                                }
+                                if (UsedPercent() <= maxDiskPercent) break;
+                                if (TryDelete(c)) deletedCount++;
                             }
-                            catch { }
                         }
                     }
                 }
             }
             catch (Exception ex)
             {
-                _logger?.LogDebug(ex, "DriveInfo inspection omitted during pruning.");
+                _logger.LogDebug(ex, "Disk usage check skipped during pruning.");
             }
 
             return deletedCount;
+        }
+
+        private sealed record MediaCandidate(string ProjectId, string RelativePath, string FullPath, DateTime LastWriteTimeUtc);
+
+        /// <summary>Only files the client has confirmed syncing (present in <see cref="MediaRegistryService"/>).</summary>
+        private async Task<List<MediaCandidate>> CollectSyncedMediaFilesAsync(string projectsRoot, CancellationToken ct)
+        {
+            var result = new List<MediaCandidate>();
+
+            foreach (var projectDir in Directory.GetDirectories(projectsRoot))
+            {
+                ct.ThrowIfCancellationRequested();
+                var projectId = Path.GetFileName(projectDir);
+                if (string.IsNullOrWhiteSpace(projectId)) continue;
+
+                string[] files;
+                try
+                {
+                    files = Directory.GetFiles(projectDir, "*", SearchOption.AllDirectories)
+                        .Where(f => MediaExtensions.Contains(Path.GetExtension(f).ToLowerInvariant()))
+                        .ToArray();
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Failed to enumerate project media under {Dir} during pruning.", projectDir);
+                    continue;
+                }
+
+                foreach (var file in files)
+                {
+                    ct.ThrowIfCancellationRequested();
+                    var relativePath = Path.GetRelativePath(projectDir, file).Replace('\\', '/');
+
+                    MediaObjectDto? registered;
+                    try
+                    {
+                        registered = await _registry.TryGetAsync(projectId, relativePath, ct).ConfigureAwait(false);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogDebug(
+                            ex, "Media registry lookup failed for {Project}/{Path}; treating as unsynced.",
+                            projectId, relativePath);
+                        continue; // fail closed: never delete when sync status can't be confirmed
+                    }
+
+                    if (registered is null)
+                        continue; // no client confirmation — may be the only surviving copy; keep it
+
+                    DateTime lastWrite;
+                    try { lastWrite = File.GetLastWriteTimeUtc(file); }
+                    catch { continue; }
+
+                    result.Add(new MediaCandidate(projectId, relativePath, file, lastWrite));
+                }
+            }
+
+            return result;
+        }
+
+        private bool TryDelete(MediaCandidate c)
+        {
+            try
+            {
+                File.Delete(c.FullPath);
+                _logger.LogInformation(
+                    "Pruned synced server media file: {Project}/{Path} (age {AgeHours:F1}h)",
+                    c.ProjectId, c.RelativePath, (DateTime.UtcNow - c.LastWriteTimeUtc).TotalHours);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to delete pruned media file {FilePath}", c.FullPath);
+                return false;
+            }
         }
     }
 }

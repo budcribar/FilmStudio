@@ -205,6 +205,10 @@ window.PageToMovieExport = {
             if (meta.description) form.append("description", meta.description);
             if (meta.projectId) form.append("projectId", meta.projectId);
             form.append("acceptedGuidelines", meta.acceptedGuidelines === false ? "false" : "true");
+            form.append("madeForKids", meta.madeForKids === true ? "true" : "false");
+            form.append("isAiSynthetic", meta.isAiSynthetic === false ? "false" : "true");
+            if (meta.privacyStatus) form.append("privacyStatus", meta.privacyStatus);
+            if (meta.tags) form.append("tags", meta.tags);
 
             const headers = {};
             if (accessToken) headers["Authorization"] = "Bearer " + accessToken;

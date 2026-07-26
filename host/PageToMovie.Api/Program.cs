@@ -130,6 +130,7 @@ builder.Services.AddHostedService<ServerMediaPruningService>();
 builder.Services.AddSingleton<MediaRegistryService>();
 builder.Services.AddSingleton<MediaProxyTicketStore>();
 builder.Services.AddSingleton<YouTubeAuthService>();
+builder.Services.AddSingleton<DemoYouTubePublisherService>();
 string dpKeysDir;
 try
 {
@@ -1544,9 +1545,10 @@ app.MapPost("/api/projects", async (
     ProjectStore store,
     IUserContext user,
     IOptions<PageToMovieOptions> opts,
+    UserDatabaseService userDb,
     CancellationToken ct) =>
 {
-    if (AuthGate.RequireLogin(user, opts) is { } denied)
+    if (await AuthGate.RequireTermsAcceptedAsync(user, userDb, opts) is { } denied)
         return denied;
     try
     {
@@ -1663,8 +1665,15 @@ static IResult JobStartError(Exception ex, FilmJobService jobService) => ex swit
     _ => Results.Conflict(new { ok = false, error = ex.Message, job = jobService.GetSnapshot() }),
 };
 
-app.MapPost("/api/jobs/gen-scene", async (StartSceneGenRequest body, FilmJobService jobService) =>
+app.MapPost("/api/jobs/gen-scene", async (
+    StartSceneGenRequest body,
+    FilmJobService jobService,
+    IUserContext user,
+    IOptions<PageToMovieOptions> opts,
+    UserDatabaseService userDb) =>
 {
+    if (await AuthGate.RequireTermsAcceptedAsync(user, userDb, opts) is { } denied)
+        return denied;
     try
     {
         if (body.Scene <= 0)
@@ -1685,8 +1694,15 @@ app.MapPost("/api/jobs/gen-scene", async (StartSceneGenRequest body, FilmJobServ
     }
 });
 
-app.MapPost("/api/jobs/gen-batch", async (StartBatchGenRequest body, FilmJobService jobService) =>
+app.MapPost("/api/jobs/gen-batch", async (
+    StartBatchGenRequest body,
+    FilmJobService jobService,
+    IUserContext user,
+    IOptions<PageToMovieOptions> opts,
+    UserDatabaseService userDb) =>
 {
+    if (await AuthGate.RequireTermsAcceptedAsync(user, userDb, opts) is { } denied)
+        return denied;
     try
     {
         var hasClips = body.Clips is { Count: > 0 };
@@ -2893,8 +2909,15 @@ app.MapMethods("/api/projects/{id}/screenplay/book-context", new[] { "GET", "POS
     }
 });
 
-app.MapPost("/api/jobs/stage1", async (StartStage1Request body, FilmJobService jobService) =>
+app.MapPost("/api/jobs/stage1", async (
+    StartStage1Request body,
+    FilmJobService jobService,
+    IUserContext user,
+    IOptions<PageToMovieOptions> opts,
+    UserDatabaseService userDb) =>
 {
+    if (await AuthGate.RequireTermsAcceptedAsync(user, userDb, opts) is { } denied)
+        return denied;
     try
     {
         if (string.IsNullOrWhiteSpace(body.ProjectId))
@@ -2913,8 +2936,15 @@ app.MapPost("/api/jobs/stage1", async (StartStage1Request body, FilmJobService j
     }
 });
 
-app.MapPost("/api/jobs/stage2", async (StartStage2Request body, FilmJobService jobService) =>
+app.MapPost("/api/jobs/stage2", async (
+    StartStage2Request body,
+    FilmJobService jobService,
+    IUserContext user,
+    IOptions<PageToMovieOptions> opts,
+    UserDatabaseService userDb) =>
 {
+    if (await AuthGate.RequireTermsAcceptedAsync(user, userDb, opts) is { } denied)
+        return denied;
     try
     {
         if (string.IsNullOrWhiteSpace(body.ProjectId))
@@ -3398,6 +3428,52 @@ app.MapGet("/api/projects/{id}/scenes/{sceneNumber:int}/clips/{clipNumber:int}/v
     }
 });
 
+/// <summary>Archived prompt (+ paired video, if the client's media folder still has it) versions for one clip.</summary>
+app.MapGet("/api/projects/{id}/scenes/{sceneNumber:int}/clips/{clipNumber:int}/prompt-history",
+    (string id, int sceneNumber, int clipNumber, ProjectStore store, IUserContext user, IOptions<PageToMovieOptions> opts) =>
+{
+    if (AuthGate.RequireLogin(user, opts) is { } denied)
+        return denied;
+    try
+    {
+        var projectDir = store.GetProjectDir(id);
+        string? currentPrompt = null;
+        var currentMetaPath = Path.Combine(
+            projectDir, "assets", "video", "prompts", $"S{sceneNumber:D2}C{clipNumber:D2}.meta.json");
+        if (File.Exists(currentMetaPath))
+        {
+            try
+            {
+                using var doc = JsonDocument.Parse(File.ReadAllText(currentMetaPath));
+                if (doc.RootElement.TryGetProperty("prompt", out var p))
+                    currentPrompt = p.GetString();
+            }
+            catch { /* ignore unreadable current meta */ }
+        }
+
+        var history = FilmJobService.ListClipPromptHistory(projectDir, sceneNumber, clipNumber);
+        return Results.Ok(new
+        {
+            ok = true,
+            current = new
+            {
+                prompt = currentPrompt,
+                videoRelativePath = MediaRegistryService.ClipRelativePath(sceneNumber, clipNumber),
+            },
+            history = history.Select(h => new
+            {
+                timestampUtc = h.TimestampUtc,
+                prompt = h.Prompt,
+                videoRelativePath = h.VideoRelativePath,
+            }),
+        });
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { ok = false, error = ex.Message });
+    }
+});
+
 app.MapGet("/api/projects/{id}/scenes/{sceneNumber:int}/composite",
     (string id, int sceneNumber, ProjectStore store, IUserContext user, IOptions<PageToMovieOptions> opts) =>
 {
@@ -3503,7 +3579,9 @@ static object DemoPublicDto(
     d.ReportCount,
     upvoteCount,
     upvotedByMe,
-    videoPath = $"/api/demos/{Uri.EscapeDataString(d.Id)}/video",
+    videoPath = string.IsNullOrWhiteSpace(d.YoutubeId) ? $"/api/demos/{Uri.EscapeDataString(d.Id)}/video" : null,
+    d.YoutubeId,
+    d.YoutubeUrl,
 };
 
 static object DemoAdminDto(DemoCatalogService.DemoEntry d) => new
@@ -3522,7 +3600,14 @@ static object DemoAdminDto(DemoCatalogService.DemoEntry d) => new
     d.ReviewedBy,
     d.ReviewedAt,
     d.ReviewNote,
-    videoPath = $"/api/demos/{Uri.EscapeDataString(d.Id)}/video",
+    videoPath = string.IsNullOrWhiteSpace(d.YoutubeId) ? $"/api/demos/{Uri.EscapeDataString(d.Id)}/video" : null,
+    d.YoutubeId,
+    d.YoutubeUrl,
+    d.YoutubeUploadStatus,
+    d.YoutubeUploadError,
+    d.MadeForKids,
+    d.IsAiSyntheticContent,
+    d.PrivacyStatus,
 };
 
 /// <summary>Public gallery: only approved demos (no login). sort=top|new (default top by upvotes).</summary>
@@ -3795,9 +3880,11 @@ app.MapPost("/api/demos", async (
     IOptions<PageToMovieOptions> opts,
     DemoCatalogService demos,
     ProjectStore store,
-    MediaRegistryService media) =>
+    MediaRegistryService media,
+    UserDatabaseService userDb,
+    DemoYouTubePublisherService youTubePublisher) =>
 {
-    if (AuthGate.RequireLogin(user, opts) is { } denied)
+    if (await AuthGate.RequireTermsAcceptedAsync(user, userDb, opts) is { } denied)
         return denied;
 
     try
@@ -3806,6 +3893,10 @@ app.MapPost("/api/demos", async (
         string? description = null;
         string? projectId = null;
         var acceptedGuidelines = false;
+        var madeForKids = false;
+        var isAiSynthetic = true;
+        string? privacyStatus = null;
+        string? tagsRaw = null;
         IFormFile? file = null;
 
         if (request.HasFormContentType)
@@ -3817,6 +3908,10 @@ app.MapPost("/api/demos", async (
             acceptedGuidelines = string.Equals(form["acceptedGuidelines"].ToString(), "true", StringComparison.OrdinalIgnoreCase)
                                  || form["acceptedGuidelines"] == "1"
                                  || form["acceptedGuidelines"] == "on";
+            madeForKids = string.Equals(form["madeForKids"].ToString(), "true", StringComparison.OrdinalIgnoreCase);
+            if (bool.TryParse(form["isAiSynthetic"].ToString(), out var aiForm)) isAiSynthetic = aiForm;
+            privacyStatus = form["privacyStatus"].ToString();
+            tagsRaw = form["tags"].ToString();
             file = form.Files.GetFile("file") ?? form.Files.FirstOrDefault();
         }
         else
@@ -3830,11 +3925,22 @@ app.MapPost("/api/demos", async (
                 acceptedGuidelines = ag.ValueKind == JsonValueKind.True
                                      || (ag.ValueKind == JsonValueKind.String
                                          && bool.TryParse(ag.GetString(), out var b) && b);
+            if (root.TryGetProperty("madeForKids", out var mfk))
+                madeForKids = mfk.ValueKind == JsonValueKind.True;
+            if (root.TryGetProperty("isAiSynthetic", out var ai))
+                isAiSynthetic = ai.ValueKind != JsonValueKind.False;
+            if (root.TryGetProperty("privacyStatus", out var ps)) privacyStatus = ps.GetString();
+            if (root.TryGetProperty("tags", out var tg) && tg.ValueKind == JsonValueKind.String)
+                tagsRaw = tg.GetString();
         }
 
         title = string.IsNullOrWhiteSpace(title) ? null : title.Trim();
         description = string.IsNullOrWhiteSpace(description) ? null : description.Trim();
         projectId = string.IsNullOrWhiteSpace(projectId) ? null : projectId.Trim();
+        privacyStatus = privacyStatus is "public" or "unlisted" or "private" ? privacyStatus : "public";
+        var tags = string.IsNullOrWhiteSpace(tagsRaw)
+            ? null
+            : tagsRaw.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
 
         if (!acceptedGuidelines)
         {
@@ -3902,7 +4008,11 @@ app.MapPost("/api/demos", async (
                 description,
                 projectId,
                 user.UserId,
-                acceptedGuidelines: true);
+                acceptedGuidelines: true,
+                madeForKids: madeForKids,
+                isAiSyntheticContent: isAiSynthetic,
+                privacyStatus: privacyStatus,
+                tags: tags);
 
             if (autoPublic)
             {
@@ -3923,6 +4033,11 @@ app.MapPost("/api/demos", async (
                         user.UserId);
                 }
                 catch { /* non-fatal */ }
+
+                // Auto-approved → publish straight to YouTube in the background (best-effort;
+                // failures leave the file server-hosted so the gallery still works).
+                var demoIdForUpload = entry.Id;
+                _ = Task.Run(() => youTubePublisher.PublishAsync(demoIdForUpload, CancellationToken.None));
             }
         }
         else
@@ -3932,7 +4047,11 @@ app.MapPost("/api/demos", async (
                 title ?? projectId,
                 description,
                 user.UserId,
-                acceptedGuidelines: true);
+                acceptedGuidelines: true,
+                madeForKids: madeForKids,
+                isAiSyntheticContent: isAiSynthetic,
+                privacyStatus: privacyStatus,
+                tags: tags);
         }
 
         return Results.Ok(new
@@ -3981,7 +4100,8 @@ app.MapPost("/api/admin/demos/{demoId}/review", (
     DemoReviewRequest? body,
     DemoCatalogService demos,
     IUserContext user,
-    IOptions<PageToMovieOptions> opts) =>
+    IOptions<PageToMovieOptions> opts,
+    DemoYouTubePublisherService youTubePublisher) =>
 {
     if (AuthGate.RequireLogin(user, opts) is { } denied)
         return denied;
@@ -4007,6 +4127,11 @@ app.MapPost("/api/admin/demos/{demoId}/review", (
         var d = demos.SetStatus(demoId, status, user.UserId, body?.Note);
         if (d is null)
             return Results.NotFound(new { ok = false, error = "Demo not found" });
+
+        // Newly approved (and not already on YouTube) → publish in the background.
+        if (status == DemoCatalogService.DemoStatuses.Public && string.IsNullOrWhiteSpace(d.YoutubeId))
+            _ = Task.Run(() => youTubePublisher.PublishAsync(demoId, CancellationToken.None));
+
         return Results.Ok(new { ok = true, demo = DemoAdminDto(d) });
     }
     catch (Exception ex)

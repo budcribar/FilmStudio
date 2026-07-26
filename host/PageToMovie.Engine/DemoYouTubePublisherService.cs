@@ -1,0 +1,113 @@
+using Google.Apis.Upload;
+using Google.Apis.YouTube.v3.Data;
+using Microsoft.Extensions.Logging;
+
+namespace PageToMovie.Engine;
+
+/// <summary>
+/// Uploads an approved public demo's local movie.mp4 to YouTube (reusing the same authorized
+/// channel connection as the Review page's WIP-movie upload — <see cref="YouTubeAuthService"/> —
+/// rather than a second, separately-configured OAuth client). On success the demo's local file
+/// is deleted and the entry is repointed at the YouTube video, matching the "0 MB server disk
+/// for public demo video" goal. Never throws — failures are recorded on the entry and the local
+/// file is kept so the gallery keeps working via direct server streaming.
+/// </summary>
+public sealed class DemoYouTubePublisherService
+{
+    private readonly DemoCatalogService _demos;
+    private readonly YouTubeAuthService _youTube;
+    private readonly ILogger<DemoYouTubePublisherService> _log;
+
+    public DemoYouTubePublisherService(
+        DemoCatalogService demos,
+        YouTubeAuthService youTube,
+        ILogger<DemoYouTubePublisherService> log)
+    {
+        _demos = demos;
+        _youTube = youTube;
+        _log = log;
+    }
+
+    /// <summary>True once ClientId/ClientSecret/RedirectUri are configured (still needs a connected channel).</summary>
+    public bool IsConfigured => _youTube.IsConfigured;
+
+    public async Task PublishAsync(string demoId, CancellationToken ct = default)
+    {
+        var entry = _demos.TryGet(demoId);
+        if (entry is null)
+            return;
+        if (!string.IsNullOrWhiteSpace(entry.YoutubeId))
+            return; // already migrated
+
+        var path = _demos.ResolveMoviePath(demoId);
+        if (path is null)
+        {
+            _log.LogDebug("Demo {Id} has no local movie.mp4 to upload (already migrated or missing).", demoId);
+            return;
+        }
+
+        _demos.SetYouTubeUploadStatus(demoId, "uploading");
+
+        Google.Apis.YouTube.v3.YouTubeService? youtube;
+        try
+        {
+            youtube = await _youTube.GetServiceAsync(ct).ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+            _log.LogWarning(ex, "YouTube auth failed publishing demo {Id}", demoId);
+            _demos.SetYouTubeUploadStatus(demoId, "failed", error: ex.Message);
+            return;
+        }
+
+        if (youtube is null)
+        {
+            _demos.SetYouTubeUploadStatus(demoId, "failed", error: "YouTube channel not connected (admin: connect it from Review).");
+            return;
+        }
+
+        try
+        {
+            var privacy = entry.PrivacyStatus is "private" or "unlisted" or "public" ? entry.PrivacyStatus : "public";
+            var video = new Video
+            {
+                Snippet = new VideoSnippet
+                {
+                    Title = string.IsNullOrWhiteSpace(entry.Title) ? demoId : entry.Title,
+                    Description = entry.Description ?? "",
+                    CategoryId = "1", // Film & Animation
+                    Tags = entry.Tags,
+                },
+                Status = new VideoStatus
+                {
+                    PrivacyStatus = privacy,
+                    MadeForKids = entry.MadeForKids,
+                    SelfDeclaredMadeForKids = entry.MadeForKids,
+                },
+            };
+
+            await using var stream = File.OpenRead(path);
+            var upload = youtube.Videos.Insert(video, "snippet,status", stream, "video/mp4");
+            string? videoId = null;
+            upload.ResponseReceived += v => videoId = v.Id;
+
+            var result = await upload.UploadAsync(ct).ConfigureAwait(false);
+            if (result.Status != UploadStatus.Completed || string.IsNullOrWhiteSpace(videoId))
+            {
+                var err = result.Exception?.Message ?? $"Upload status: {result.Status}";
+                _log.LogWarning("YouTube upload incomplete for demo {Id}: {Error}", demoId, err);
+                _demos.SetYouTubeUploadStatus(demoId, "failed", error: err);
+                return;
+            }
+
+            var url = $"https://youtu.be/{videoId}";
+            _demos.SetYouTubeUploadStatus(demoId, "done", videoId, url);
+            _log.LogInformation("Demo {Id} published to YouTube: {Url}", demoId, url);
+        }
+        catch (Exception ex)
+        {
+            _log.LogWarning(ex, "YouTube upload failed for demo {Id}", demoId);
+            _demos.SetYouTubeUploadStatus(demoId, "failed", error: ex.Message);
+        }
+    }
+}

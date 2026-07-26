@@ -78,13 +78,26 @@
                          id="@d.Id"
                          data-testid="demo-card">
                     <div class="demo-card-media">
-                        <video controls playsinline preload="metadata"
-                               src="@Engine.DemoVideoUrl(d.Id)"
-                               @key="d.Id"
-                               @onplay="() => _playingId = d.Id"
-                               @onpause="() => { if (_playingId == d.Id) _playingId = null; }">
-                            Your browser does not support HTML5 video.
-                        </video>
+                        @if (!string.IsNullOrWhiteSpace(d.YoutubeId))
+                        {
+                            <iframe src="@($"https://www.youtube-nocookie.com/embed/{d.YoutubeId}")"
+                                    @key="d.Id"
+                                    title="@d.Title"
+                                    frameborder="0"
+                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                    allowfullscreen
+                                    style="width:100%; aspect-ratio:16/9; border:0;"></iframe>
+                        }
+                        else
+                        {
+                            <video controls playsinline preload="metadata"
+                                   src="@Engine.DemoVideoUrl(d.Id)"
+                                   @key="d.Id"
+                                   @onplay="() => _playingId = d.Id"
+                                   @onpause="() => { if (_playingId == d.Id) _playingId = null; }">
+                                Your browser does not support HTML5 video.
+                            </video>
+                        }
                     </div>
                     <div class="demo-card-body">
                         <header class="demo-card-header">
@@ -131,6 +144,12 @@
                                     <span aria-hidden="true">★</span>
                                     <span class="demo-star-count">@d.UpvoteCount</span>
                                 </button>
+                                @if (!string.IsNullOrWhiteSpace(d.YoutubeUrl))
+                                {
+                                    <a class="btn btn-sm btn-outline-light" href="@d.YoutubeUrl" target="_blank" rel="noopener">
+                                        💬 Comment on YouTube ↗
+                                    </a>
+                                }
                                 <button type="button"
                                         class="btn btn-sm btn-outline-warning"
                                         disabled="@(_busy || _reported.Contains(d.Id))"

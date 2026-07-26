@@ -149,6 +149,26 @@ else
                                 Shown under the video after an admin approves it for the public wall.
                             </div>
                         </div>
+                        <div class="mb-2">
+                            <label class="form-label small d-block">Made for kids? (required by YouTube)</label>
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="radio" name="demoKidsRadio" id="demoNotForKids"
+                                       checked="@(!_demoMadeForKids)" @onchange="@(() => _demoMadeForKids = false)" />
+                                <label class="form-check-label small" for="demoNotForKids">No</label>
+                            </div>
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="radio" name="demoKidsRadio" id="demoForKids"
+                                       checked="@_demoMadeForKids" @onchange="@(() => _demoMadeForKids = true)" />
+                                <label class="form-check-label small" for="demoForKids">Yes</label>
+                            </div>
+                        </div>
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="checkbox" id="demoAiDisclosure"
+                                   @bind="_demoIsAiSynthetic" />
+                            <label class="form-check-label small" for="demoAiDisclosure">
+                                Contains AI-generated or synthetic visuals/audio (YouTube disclosure).
+                            </label>
+                        </div>
                         <div class="form-check mb-2">
                             <input class="form-check-input" type="checkbox" id="demoGuidelines"
                                    @bind="_demoAcceptedGuidelines" />
@@ -156,6 +176,10 @@ else
                                 I confirm this film is appropriate for a general audience:
                                 no NSFW, illegal, hateful, or exploitative content.
                             </label>
+                        </div>
+                        <div class="form-text">
+                            Approved demos are published to YouTube automatically (privacy: public) and embedded
+                            on the Demo gallery — no separate upload step.
                         </div>
                         <div class="form-text">
                             Submits for <strong>human review</strong> (not published immediately).
@@ -766,6 +790,8 @@ else if (_showScenePlayer && _clientStitching)
     private string _demoTitle = "";
     private string _demoDescription = "";
     private bool _demoAcceptedGuidelines;
+    private bool _demoMadeForKids;
+    private bool _demoIsAiSynthetic = true;
 
     /// <summary>Can publish when browser stitch or fresh on-disk WIP is available, or scenes can be stitched.</summary>
     private bool CanShareMovie =>
@@ -1677,6 +1703,8 @@ else if (_showScenePlayer && _clientStitching)
         if (string.IsNullOrWhiteSpace(_demoDescription))
             _demoDescription = BuildDefaultDemoAbout();
         _demoAcceptedGuidelines = false;
+        _demoMadeForKids = false;
+        _demoIsAiSynthetic = true;
         _showSaveDialog = true;
     }
 
@@ -1756,6 +1784,8 @@ else if (_showScenePlayer && _clientStitching)
                     projectId = _projectId,
                     fileName = $"{_projectId}_demo.mp4",
                     acceptedGuidelines = true,
+                    madeForKids = _demoMadeForKids,
+                    isAiSynthetic = _demoIsAiSynthetic,
                 });
 
             if (!res.TryGetProperty("success", out var ok) || !ok.GetBoolean())
@@ -1766,7 +1796,9 @@ else if (_showScenePlayer && _clientStitching)
                         _projectId,
                         title,
                         string.IsNullOrWhiteSpace(description) ? null : description,
-                        acceptedGuidelines: true);
+                        acceptedGuidelines: true,
+                        madeForKids: _demoMadeForKids,
+                        isAiSynthetic: _demoIsAiSynthetic);
                     if (pub?.Ok == true)
                     {
                         _showSaveDialog = false;

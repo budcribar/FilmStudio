@@ -1,6 +1,7 @@
 using Microsoft.JSInterop;
 using PageToMovie.Core.Models;
 using PageToMovie.Core.Utils;
+using System.Linq;
 
 namespace PageToMovie.Web.Services;
 
@@ -299,11 +300,42 @@ public sealed class ClientMediaFolderService
         }
     }
 
+    /// <summary>Archived previous versions of one clip's video, newest first (see ClipPromptCompareViewer).</summary>
+    public async Task<IReadOnlyList<string>> ListClipHistoryRelativePathsAsync(int scene, int clip)
+    {
+        if (!IsConnected) return Array.Empty<string>();
+        try
+        {
+            var r = await _js.InvokeAsync<JsHistoryResult>(
+                "PageToMovieMedia.listClipHistoryAsync", scene, clip);
+            return r is { Success: true, Entries: not null }
+                ? r.Entries.Select(e => e.RelativePath ?? "").Where(p => p.Length > 0).ToList()
+                : Array.Empty<string>();
+        }
+        catch
+        {
+            return Array.Empty<string>();
+        }
+    }
+
     private sealed class JsResult
     {
         public bool Success { get; set; }
         public string? FolderName { get; set; }
         public string? Error { get; set; }
+    }
+
+    private sealed class JsHistoryResult
+    {
+        public bool Success { get; set; }
+        public List<JsHistoryEntry>? Entries { get; set; }
+        public string? Error { get; set; }
+    }
+
+    private sealed class JsHistoryEntry
+    {
+        public string? RelativePath { get; set; }
+        public long TimestampMs { get; set; }
     }
 
     private sealed class JsSaveResult

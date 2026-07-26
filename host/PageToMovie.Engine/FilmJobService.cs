@@ -2659,6 +2659,7 @@ public sealed class FilmJobService
             await File.WriteAllTextAsync(path, header + built.Prompt, ct).ConfigureAwait(false);
 
             var metaPath = Path.Combine(dir, $"S{scene:D2}C{clip:D2}.meta.json");
+            ArchiveClipPromptHistory(projectDir, scene, clip, metaPath);
             var meta = new Dictionary<string, object?>
             {
                 ["projectId"] = projectId,
@@ -2704,6 +2705,74 @@ public sealed class FilmJobService
             await AppendLogAsync($"  [Prompt] log failed: {ex.Message}");
         }
     }
+
+    /// <summary>
+    /// Before a clip's prompt meta is overwritten by a fresh generation, copy the previous
+    /// version into assets/video/history/ so ClipPromptCompareViewer has a prior prompt to show
+    /// alongside whatever prior video pagetomovie-media.js archived client-side. Best-effort.
+    /// </summary>
+    private static void ArchiveClipPromptHistory(string projectDir, int scene, int clip, string metaPath)
+    {
+        try
+        {
+            if (!File.Exists(metaPath)) return;
+            var historyDir = Path.Combine(projectDir, "assets", "video", "history");
+            Directory.CreateDirectory(historyDir);
+            var dest = Path.Combine(
+                historyDir,
+                $"scene_{scene:D2}_clip_{clip:D2}_{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}.meta.json");
+            File.Copy(metaPath, dest, overwrite: false);
+        }
+        catch
+        {
+            // never block a regeneration on history archiving
+        }
+    }
+
+    /// <summary>Archived prompt versions for one clip (newest first), for ClipPromptCompareViewer.</summary>
+    public static List<ClipPromptHistoryEntry> ListClipPromptHistory(string projectDir, int scene, int clip)
+    {
+        var result = new List<ClipPromptHistoryEntry>();
+        var historyDir = Path.Combine(projectDir, "assets", "video", "history");
+        if (!Directory.Exists(historyDir)) return result;
+
+        var prefix = $"scene_{scene:D2}_clip_{clip:D2}_";
+        foreach (var file in Directory.GetFiles(historyDir, $"{prefix}*.meta.json"))
+        {
+            try
+            {
+                var name = Path.GetFileName(file);
+                var stamp = name[prefix.Length..^".meta.json".Length];
+                if (!long.TryParse(stamp, out var ms)) continue;
+
+                using var doc = System.Text.Json.JsonDocument.Parse(File.ReadAllText(file));
+                var root = doc.RootElement;
+                string? prompt = root.TryGetProperty("prompt", out var p) ? p.GetString() : null;
+                result.Add(new ClipPromptHistoryEntry
+                {
+                    TimestampUtc = DateTimeOffset.FromUnixTimeMilliseconds(ms),
+                    Prompt = prompt ?? "",
+                    VideoRelativePath = $"assets/video/history/scene_{scene:D2}_clip_{clip:D2}_{ms}.mp4",
+                });
+            }
+            catch
+            {
+                // skip unreadable/corrupt history entry
+            }
+        }
+
+        result.Sort((a, b) => b.TimestampUtc.CompareTo(a.TimestampUtc));
+        return result;
+    }
+
+    public sealed class ClipPromptHistoryEntry
+    {
+        public DateTimeOffset TimestampUtc { get; set; }
+        public string Prompt { get; set; } = "";
+        /// <summary>Relative path under the project dir — client checks its own media folder for this.</summary>
+        public string VideoRelativePath { get; set; } = "";
+    }
+
     /// <summary>
     /// Probe final clip length (MP4 box parse) and write duration sidecar for cost ledger.
     /// </summary>

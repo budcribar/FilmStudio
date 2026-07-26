@@ -74,6 +74,20 @@ public sealed class DemoCatalogService
         public string? ReviewedBy { get; set; }
         public DateTimeOffset? ReviewedAt { get; set; }
         public string? ReviewNote { get; set; }
+
+        // YouTube publish metadata (declared by the submitter; used at actual upload time,
+        // whether that's immediate auto-approval or a later admin approval).
+        public bool MadeForKids { get; set; }
+        public bool IsAiSyntheticContent { get; set; } = true;
+        public string PrivacyStatus { get; set; } = "public";
+        public List<string>? Tags { get; set; }
+
+        /// <summary>none | uploading | done | failed. "done" means the video now lives on YouTube
+        /// and <see cref="Id"/>'s local movie.mp4 has been deleted (server footprint goal).</summary>
+        public string YoutubeUploadStatus { get; set; } = "none";
+        public string? YoutubeId { get; set; }
+        public string? YoutubeUrl { get; set; }
+        public string? YoutubeUploadError { get; set; }
     }
 
     public IReadOnlyList<DemoEntry> List(int take = 50, string? status = null)
@@ -167,11 +181,17 @@ public sealed class DemoCatalogService
         string title,
         string? description,
         string? createdBy,
-        bool acceptedGuidelines)
+        bool acceptedGuidelines,
+        bool madeForKids = false,
+        bool isAiSyntheticContent = true,
+        string privacyStatus = "public",
+        List<string>? tags = null)
     {
         var wip = _projects.ResolveWipMoviePath(projectId)
                   ?? throw new InvalidOperationException("WIP movie not found — build the cut first.");
-        return PublishFromFile(wip, title, description, projectId, createdBy, acceptedGuidelines);
+        return PublishFromFile(
+            wip, title, description, projectId, createdBy, acceptedGuidelines,
+            madeForKids, isAiSyntheticContent, privacyStatus, tags);
     }
 
     public async Task<DemoEntry> PublishFromStreamAsync(
@@ -181,6 +201,10 @@ public sealed class DemoCatalogService
         string? projectId,
         string? createdBy,
         bool acceptedGuidelines,
+        bool madeForKids = false,
+        bool isAiSyntheticContent = true,
+        string privacyStatus = "public",
+        List<string>? tags = null,
         CancellationToken ct = default)
     {
         if (content is null || !content.CanRead)
@@ -209,7 +233,8 @@ public sealed class DemoCatalogService
                     "Upload is not a valid MP4 (missing ftyp box). Only MP4 video is accepted.");
 
             var entry = NewPendingEntry(
-                id, title, description, projectId, createdBy, fi.Length, acceptedGuidelines);
+                id, title, description, projectId, createdBy, fi.Length, acceptedGuidelines,
+                madeForKids, isAiSyntheticContent, privacyStatus, tags);
             await WriteMetaAsync(dir, entry, ct).ConfigureAwait(false);
 
             _log.LogInformation(
@@ -235,7 +260,11 @@ public sealed class DemoCatalogService
         string? description,
         string? projectId,
         string? createdBy,
-        bool acceptedGuidelines)
+        bool acceptedGuidelines,
+        bool madeForKids = false,
+        bool isAiSyntheticContent = true,
+        string privacyStatus = "public",
+        List<string>? tags = null)
     {
         if (string.IsNullOrWhiteSpace(sourceMp4Path) || !File.Exists(sourceMp4Path))
             throw new InvalidOperationException("Source movie not found");
@@ -256,7 +285,8 @@ public sealed class DemoCatalogService
                 throw new InvalidOperationException("Source file is not a valid MP4.");
 
             var entry = NewPendingEntry(
-                id, title, description, projectId, createdBy, fi.Length, acceptedGuidelines);
+                id, title, description, projectId, createdBy, fi.Length, acceptedGuidelines,
+                madeForKids, isAiSyntheticContent, privacyStatus, tags);
             File.WriteAllText(
                 Path.Combine(dir, "meta.json"),
                 JsonSerializer.Serialize(entry, JsonOpts) + "\n");
@@ -422,7 +452,11 @@ public sealed class DemoCatalogService
         string? projectId,
         string? createdBy,
         long sizeBytes,
-        bool acceptedGuidelines) =>
+        bool acceptedGuidelines,
+        bool madeForKids = false,
+        bool isAiSyntheticContent = true,
+        string privacyStatus = "public",
+        List<string>? tags = null) =>
         new()
         {
             Id = id,
@@ -435,7 +469,60 @@ public sealed class DemoCatalogService
             ContentType = "video/mp4",
             Status = DemoStatuses.Pending,
             AcceptedGuidelines = acceptedGuidelines,
+            MadeForKids = madeForKids,
+            IsAiSyntheticContent = isAiSyntheticContent,
+            PrivacyStatus = privacyStatus is "public" or "unlisted" or "private" ? privacyStatus : "public",
+            Tags = tags is { Count: > 0 } ? tags : null,
         };
+
+    /// <summary>
+    /// Record a YouTube upload attempt/result. On success, deletes the local movie.mp4 (server
+    /// footprint goal) — the entry stays valid without it once <see cref="DemoEntry.YoutubeId"/> is set.
+    /// </summary>
+    public DemoEntry? SetYouTubeUploadStatus(
+        string id,
+        string status,
+        string? youtubeId = null,
+        string? youtubeUrl = null,
+        string? error = null)
+    {
+        lock (_lock)
+        {
+            var entry = ReadUnlocked(id);
+            if (entry is null)
+                return null;
+
+            entry.YoutubeUploadStatus = status;
+            entry.YoutubeUploadError = error;
+            if (!string.IsNullOrWhiteSpace(youtubeId))
+                entry.YoutubeId = youtubeId;
+            if (!string.IsNullOrWhiteSpace(youtubeUrl))
+                entry.YoutubeUrl = youtubeUrl;
+
+            SaveUnlocked(entry);
+
+            if (string.Equals(status, "done", StringComparison.OrdinalIgnoreCase))
+            {
+                try
+                {
+                    var moviePath = Path.Combine(DemosDir, entry.Id, "movie.mp4");
+                    if (File.Exists(moviePath))
+                    {
+                        File.Delete(moviePath);
+                        _log.LogInformation(
+                            "Demo {Id} moved to YouTube ({YoutubeId}); deleted local movie.mp4.",
+                            entry.Id, youtubeId);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _log.LogWarning(ex, "Failed to delete local movie.mp4 for demo {Id} after YouTube upload.", entry.Id);
+                }
+            }
+
+            return entry;
+        }
+    }
 
     private List<DemoEntry> LoadAllUnlocked()
     {
@@ -465,7 +552,7 @@ public sealed class DemoCatalogService
         if (!IsValidId(id)) return null;
         var metaPath = Path.Combine(DemosDir, id, "meta.json");
         var moviePath = Path.Combine(DemosDir, id, "movie.mp4");
-        if (!File.Exists(metaPath) || !File.Exists(moviePath))
+        if (!File.Exists(metaPath))
             return null;
         try
         {
@@ -474,7 +561,12 @@ public sealed class DemoCatalogService
                 return null;
             entry.Status = DemoStatuses.Normalize(
                 string.IsNullOrWhiteSpace(entry.Status) ? null : entry.Status);
-            if (entry.SizeBytes <= 0)
+            var hasLocalMovie = File.Exists(moviePath);
+            // Valid without a local file only once it has moved to YouTube; otherwise the movie
+            // is genuinely missing (corrupt/partial write) and the entry should not surface.
+            if (!hasLocalMovie && string.IsNullOrWhiteSpace(entry.YoutubeId))
+                return null;
+            if (hasLocalMovie && entry.SizeBytes <= 0)
             {
                 try { entry.SizeBytes = new FileInfo(moviePath).Length; }
                 catch { /* ignore */ }

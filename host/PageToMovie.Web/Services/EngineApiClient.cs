@@ -649,6 +649,10 @@ public sealed class EngineApiClient
         string title,
         string? description = null,
         bool acceptedGuidelines = true,
+        bool madeForKids = false,
+        bool isAiSynthetic = true,
+        string privacyStatus = "public",
+        string? tags = null,
         CancellationToken ct = default)
     {
         using var req = new HttpRequestMessage(HttpMethod.Post, "/api/demos")
@@ -659,6 +663,10 @@ public sealed class EngineApiClient
                 title,
                 description,
                 acceptedGuidelines,
+                madeForKids,
+                isAiSynthetic,
+                privacyStatus,
+                tags,
             }, options: JsonOpts),
         };
         return await SendJsonAsync<DemoPublishResult>(req, ct);
@@ -1056,6 +1064,14 @@ public sealed class EngineApiClient
     public string ClipVideoUrl(string projectId, int sceneNumber, int clipNumber) =>
         BrowserMediaPath(
             $"/api/projects/{Uri.EscapeDataString(projectId)}/scenes/{sceneNumber}/clips/{clipNumber}/video");
+
+    /// <summary>Archived prompt versions for one clip (for ClipPromptCompareViewer).</summary>
+    public async Task<ClipPromptHistoryEnvelope?> GetClipPromptHistoryAsync(
+        string projectId, int sceneNumber, int clipNumber, CancellationToken ct = default) =>
+        await _http.GetFromJsonAsync<ClipPromptHistoryEnvelope>(
+            $"/api/projects/{Uri.EscapeDataString(projectId)}/scenes/{sceneNumber}/clips/{clipNumber}/prompt-history",
+            JsonOpts,
+            ct);
 
     public string CompositeVideoUrl(string projectId, int sceneNumber) =>
         BrowserMediaPath(
@@ -2785,6 +2801,10 @@ public sealed class DemoListItem
     public string? VideoPath { get; set; }
     public int UpvoteCount { get; set; }
     public bool UpvotedByMe { get; set; }
+    public string? YoutubeId { get; set; }
+    public string? YoutubeUrl { get; set; }
+    public string? YoutubeUploadStatus { get; set; }
+    public string? YoutubeUploadError { get; set; }
 }
 
 public sealed class DemoUpvoteResult
@@ -2816,6 +2836,20 @@ public sealed class DemoPublishItem
     public string? Status { get; set; }
     public string? VideoPath { get; set; }
     public string? PagePath { get; set; }
+}
+
+public sealed class ClipPromptHistoryEnvelope
+{
+    public bool Ok { get; set; }
+    public ClipPromptVersionDto? Current { get; set; }
+    public List<ClipPromptVersionDto> History { get; set; } = new();
+}
+
+public sealed class ClipPromptVersionDto
+{
+    public DateTimeOffset? TimestampUtc { get; set; }
+    public string? Prompt { get; set; }
+    public string? VideoRelativePath { get; set; }
 }
 
 public sealed class RankedBookCandidateDto
