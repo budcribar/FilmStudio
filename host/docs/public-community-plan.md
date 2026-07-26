@@ -20,7 +20,7 @@ Nothing in this doc is required for current production unless explicitly schedul
 | 7 | **Contribution & Git 3-Way Merge** | **planned** | Git 3-way merge engine (`LibGit2Sharp`) with visual diff review (`ContributionReview.razor`). |
 | 8 | Contribution accept / reject + conflict review | **planned** | Visual diff review UI (`ContributionReview.razor`) for owner accept/reject. |
 | 9 | **Sync Fork from Origin** | **planned** | `LibGit2Sharp` rebase/merge helper (`🔄 Sync from Origin`) allowing forked projects to pull latest screenplay updates and new characters from parent origin project. |
-| 10 | Media-aware fork / PR (hash upload) | idea | Later; storage + quotas. |
+| 10 | **Media-Aware Contribution PRs** | **planned** | Transfers shot plan diffs + SHA-256 clip provenance hashes (< 1 KB payload). Allows collaborators to propose new generated clips to project owners without transmitting heavy MP4 binaries through the server. |
 | 11 | **Direct Gallery "Fork Project" Button** | **planned** | Integrates 🍴 **Fork Project** button directly onto `/demo` gallery cards & detail modals for **Public (Forkable)** projects. Eliminates need for a separate project page. |
 | 12 | ~~Project ratings~~ | **obsolete** | Superseded by Demo Upvotes on `/demo` gallery cards (Item #2). Upvoting a movie rates the project directly. |
 | 13 | **YouTube Direct Comment Link** | **planned** | Provides a `💬 Comment on YouTube ↗` button on `/demo` gallery cards, opening the video's YouTube page in a new tab for native commenting & subscriber growth (0 API quota cost). |
