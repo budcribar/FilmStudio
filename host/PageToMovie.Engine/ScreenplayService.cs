@@ -248,8 +248,9 @@ public static class ScreenplayService
         {
             status.Signed = !string.IsNullOrEmpty(meta.SignedHash) &&
                             string.Equals(meta.SignedHash, status.DraftHash, StringComparison.OrdinalIgnoreCase);
-            status.Dirty = !string.IsNullOrEmpty(meta.SignedHash) && !status.Signed;
+            status.Dirty = !status.Signed;
         }
+
 
         else
         {
