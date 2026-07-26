@@ -439,6 +439,15 @@ public sealed class EngineApiClient
         return wrap?.User;
     }
 
+    public async Task<CreatorProfileDto?> GetCreatorProfileAsync(
+        string handle,
+        CancellationToken ct = default)
+    {
+        SyncIdentityHeaders();
+        using var req = new HttpRequestMessage(HttpMethod.Get, $"/api/creators/{Uri.EscapeDataString(handle)}");
+        return await SendJsonAsync<CreatorProfileDto>(req, ct);
+    }
+
     public async Task<SyncOriginResultDto?> SyncOriginAsync(
         string projectId,
         string parentProjectId,

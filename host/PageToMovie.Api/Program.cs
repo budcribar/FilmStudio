@@ -133,6 +133,7 @@ builder.Services.AddSingleton<YouTubeAuthService>();
 builder.Services.AddSingleton<DemoYouTubePublisherService>();
 builder.Services.AddSingleton<ProjectGitRepositoryService>();
 builder.Services.AddSingleton<ProjectInviteService>();
+builder.Services.AddSingleton<CreatorProfileService>();
 string dpKeysDir;
 try
 {
@@ -2112,6 +2113,17 @@ app.MapPost("/api/projects/{id}/sync-origin", async (
     {
         return Results.BadRequest(new { ok = false, error = ex.Message });
     }
+});
+
+app.MapGet("/api/creators/{handle}", async (
+    string handle,
+    CreatorProfileService creatorService,
+    CancellationToken ct) =>
+{
+    var profile = await creatorService.GetProfileAsync(handle, ct);
+    if (profile == null)
+        return Results.NotFound(new { ok = false, error = "Creator profile not found." });
+    return Results.Ok(profile);
 });
 
 // Phase 6: Privacy Search & Invite Delivery
