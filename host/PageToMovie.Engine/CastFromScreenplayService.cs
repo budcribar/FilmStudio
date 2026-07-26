@@ -366,8 +366,8 @@ public sealed class CastFromScreenplayService
                 (rawName.Equals("Mom", StringComparison.OrdinalIgnoreCase) && (k.Contains("Momma", StringComparison.OrdinalIgnoreCase) || k.Contains("Mommy", StringComparison.OrdinalIgnoreCase))));
             if (aliasFound) continue;
 
-            var isAnimal = rawName.Equals("Buster", StringComparison.OrdinalIgnoreCase) ||
-                           Regex.IsMatch(fullText, $@"\b{Regex.Escape(rawName)}\b[^\.\!\?]*\b(dog|cat|puppy|animal|pet)\b", RegexOptions.IgnoreCase);
+            var isAnimal = IsAnimalContext(fullText, rawName);
+
 
             var isVoiceOnly = rawName.Equals("Narrator", StringComparison.OrdinalIgnoreCase);
 
@@ -394,12 +394,35 @@ public sealed class CastFromScreenplayService
         return added;
     }
 
+    private static readonly Regex AnimalKeywordRx = new(
+        @"\b(dog|dogs|doggy|doggies|hound|puppy|puppies|mutt|cat|cats|kitten|kittens|feline|pet|pets|animal|animals|bear|bears|rabbit|rabbits|bunny|bunnies|mouse|mice|rat|rats|fox|foxes|owl|owls|bird|birds|lion|lions|tiger|tigers|wolf|wolves|pig|pigs|piglet|duck|ducks|frog|frogs|monkey|monkeys|elephant|elephants|horse|horses|pony|ponies|donkey|donkeys|deer)\b",
+        RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
+
+    public static bool IsAnimalContext(string fullText, string rawName)
+    {
+        if (string.IsNullOrWhiteSpace(fullText) || string.IsNullOrWhiteSpace(rawName))
+            return false;
+
+        var nameEscaped = Regex.Escape(rawName.Trim());
+        var sentenceRx = new Regex($@"[^\.\!\?\n]*\b{nameEscaped}\b[^\.\!\?\n]*", RegexOptions.IgnoreCase);
+
+        var matches = sentenceRx.Matches(fullText);
+        foreach (Match m in matches)
+        {
+            if (AnimalKeywordRx.IsMatch(m.Value))
+                return true;
+        }
+
+        return false;
+    }
+
     private static string CapitalizeName(string name)
     {
         name = name.Trim();
         if (name.Length == 0) return name;
         return char.ToUpperInvariant(name[0]) + name[1..].ToLowerInvariant();
     }
+
 
 
     /// <summary>
