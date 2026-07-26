@@ -300,6 +300,7 @@
       tabSize: 4,
       indentUnit: 4,
       readOnly: !!readOnly,
+      viewportMargin: Infinity,
       extraKeys: {
         Tab: function (cm) {
           cm.replaceSelection("    ", "end");
@@ -312,6 +313,16 @@
       scheduleRefresh(id);
     });
 
+    var ro = null;
+    if (typeof ResizeObserver !== "undefined") {
+      try {
+        ro = new ResizeObserver(function () {
+          cm.refresh();
+        });
+        ro.observe(hostEl);
+      } catch (e) { /* ignore */ }
+    }
+
     instances[id] = {
       cm: cm,
       hostEl: hostEl,
@@ -321,13 +332,20 @@
       _timer: null,
       _scenes: [],
       _warnings: [],
+      _ro: ro,
     };
 
-    // Initial paint after layout
+    // Initial paint after layout (render all lines immediately)
     setTimeout(function () {
       cm.refresh();
       refreshSidePanels(id);
     }, 50);
+    setTimeout(function () {
+      cm.refresh();
+    }, 200);
+    setTimeout(function () {
+      cm.refresh();
+    }, 600);
 
     return true;
   }
@@ -403,6 +421,9 @@
     var inst = instances[id];
     if (!inst) return;
     if (inst._timer) clearTimeout(inst._timer);
+    if (inst._ro) {
+      try { inst._ro.disconnect(); } catch (e) { /* ignore */ }
+    }
     try {
       inst.cm.toTextArea();
     } catch (e) {
@@ -480,6 +501,28 @@
     header.addEventListener("pointerup", onPointerUp);
     header.addEventListener("pointercancel", onPointerUp);
   }
+
+  // Auto-close open <details> popovers (like Advanced... or Jump to scene) when clicking outside or clicking an item inside
+  if (typeof document !== "undefined") {
+    document.addEventListener("click", function (e) {
+      var openDetails = document.querySelectorAll("details.fe-advanced-pop[open], details.fe-scenes-pop[open], details[open]");
+      if (!openDetails || !openDetails.length) return;
+      openDetails.forEach(function (det) {
+        var summary = det.querySelector("summary");
+        if (e.target && summary && summary.contains(e.target)) {
+          return;
+        }
+        if (!det.contains(e.target)) {
+          det.removeAttribute("open");
+          return;
+        }
+        if (e.target && (e.target.tagName === "BUTTON" || e.target.tagName === "A" || e.target.closest("button") || e.target.closest("a"))) {
+          det.removeAttribute("open");
+        }
+      });
+    }, true);
+  }
+
 
   global.fountainEditor = {
     init: init,

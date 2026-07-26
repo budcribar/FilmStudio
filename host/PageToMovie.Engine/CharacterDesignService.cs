@@ -979,23 +979,43 @@ public sealed class CharacterDesignService
     /// </summary>
     internal static string? ReadProjectRenderStyleLock(string projectDir)
     {
+        var sourceDir = Path.Combine(projectDir, "source");
+        var hasBook = File.Exists(Path.Combine(sourceDir, "book_full.txt")) ||
+                      Directory.Exists(Path.Combine(sourceDir, "book_images"));
+
         try
         {
-            var castPath = Path.Combine(projectDir, "source", ScreenplayService.CastSeedsFileName);
-            if (!File.Exists(castPath)) return null;
-            using var doc = JsonDocument.Parse(File.ReadAllText(castPath));
-            if (doc.RootElement.TryGetProperty("render_style_lock", out var rsl) &&
-                rsl.ValueKind == JsonValueKind.String &&
-                rsl.GetString() is { Length: > 0 } s)
-                return s.Trim();
+            var castPath = Path.Combine(sourceDir, ScreenplayService.CastSeedsFileName);
+            if (File.Exists(castPath))
+            {
+                using var doc = JsonDocument.Parse(File.ReadAllText(castPath));
+                if (doc.RootElement.TryGetProperty("render_style_lock", out var rsl) &&
+                    rsl.ValueKind == JsonValueKind.String &&
+                    rsl.GetString() is { Length: > 0 } s)
+                {
+                    var style = s.Trim();
+                    // If project has a book source but cast_seeds has a photoreal lock, override with picture-book lock
+                    if (hasBook && RegexContains(style, @"\b(photoreal|photo-?real|live[- ]?action)\b"))
+                    {
+                        return "STYLE LOCK: stylized animated children's picture-book look for ALL on-screen cast (animals and humans share the same medium) -- not photoreal, not live-action";
+                    }
+                    return style;
+                }
+            }
         }
         catch
         {
             // ignore
         }
 
+        if (hasBook)
+        {
+            return "STYLE LOCK: stylized animated children's picture-book look for ALL on-screen cast (animals and humans share the same medium) -- not photoreal, not live-action";
+        }
+
         return null;
     }
+
 
     /// <summary>
     /// Illustrated / picture-book when project or book art needs that medium;
@@ -1004,7 +1024,8 @@ public sealed class CharacterDesignService
     public static bool PrefersIllustratedPortraitStyle(
         string? projectRenderStyleLock,
         bool hasImageHints,
-        bool isAnimal)
+        bool isAnimal,
+        bool hasBookSource = false)
     {
         var style = projectRenderStyleLock ?? "";
         if (style.Length > 0)
@@ -1020,9 +1041,10 @@ public sealed class CharacterDesignService
                 return true;
         }
 
-        // No project style: book plates or animal heroes default to matching illustration medium.
-        return hasImageHints || isAnimal;
+        // No project style: book plates, book sources, or animal heroes default to matching illustration medium.
+        return hasBookSource || hasImageHints || isAnimal;
     }
+
 
     private static bool RegexContains(string text, string pattern) =>
         System.Text.RegularExpressions.Regex.IsMatch(
@@ -1101,10 +1123,11 @@ public sealed class CharacterDesignService
         {
             speciesClause = illustrated
                 ? "SPECIES: HUMAN adult — a person, not an animal. " +
-                  "Same illustrated picture-book medium as the film; not photoreal stock photography. "
+                  "All characters are rendered as in a children's picture book; not photoreal stock photography. "
                 : "SPECIES: HUMAN adult — a real person, not an animal, not a drawing. " +
                   "Photoreal skin texture and period wardrobe matching the project medium. ";
         }
+
 
         var familyClause = "";
         if (!string.IsNullOrWhiteSpace(variantOf))

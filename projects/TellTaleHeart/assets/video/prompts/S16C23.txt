@@ -1,0 +1,29 @@
+# S16C23  mode=fresh chars=1 onScreen=1 refs=1 startFrame=no promptLen=3837 · learning-addenda · pre-budget 6469→3837
+# projectId: TellTaleHeartV7
+# mode: fresh
+# castCount: 1
+# onScreen: Character_The_Narrator
+# refs: character_the_narrator_ref.png
+# refsAttachedToApi: True
+# startFrame: (none)
+# characters: Character_The_Narrator
+
+STYLE LOCK: Period gothic live-action, mid-19th-century interiors; candlelight and deep shadows; desaturated cool-gray palette; naturalistic skin and fabric texture; no illustration or stylized animation
+
+CHARACTER VARIABLES (use these identities consistently; do not redesign faces or wardrobe):
+- Character_The_Narrator <IMAGE_1> [The Narrator]: Lean man of middle years (about 40–50), pale sallow skin, hollow cheeks, dark disordered medium-length hair, bright intense dark eyes, thin tense mouth; plain dark wool waistcoat over white shirtsleeves, dark trousers; period clothing. Visual lock: Same lean pale face, dark disordered hair, and bright intense dark eyes in every scene; always plain dark waistcoat and shirtsleeves as default; never elderly, never white-haired, never the filmed blue eye. Voice: Male, middle years; medium-high tense pitch; precise, controlled pace that sharpens into fevered urgency; intimate confessional energy, same voice on-camera and in V.O. Match appearance of reference <IMAGE_1> exactly.
+
+CAST COUNT: exactly 1 distinct on-screen character identity(ies) only — Character_The_Narrator. Do not invent extra people, duplicate faces, or crowd extras not listed.
+
+AUDIO: ambient/Foley only — louder heartbeat. No dialogue.
+
+CONTEXT (prior clip in scene — new cast plate refs attached; match location/lighting if still valid; identity from CHARACTER VARIABLES + locked plates only):
+INT. OLD MAN'S BEDCHAMBER - NIGHT. also on screen: Character_OfficerHale, Character_OfficerBriggs. The noise steadily increases. He rises. Argues about trifles in a high key, violent gesticulations. OFFICER HALE exchanges a mild glance with OFFICER BRIGGS-still pleasant. THE NARRATOR paces with heavy strides. Foams. Raves. Swings his chair and grates it upon the boards-wood scream over wood. The heartbeat rises over all. OFF-CAMERA VOICEOVER Character_The_Narrator says "I thought, and this I think.". Character_The_Narrator still wears loose white cotton nightshirt, barefoot Camera directive: Intense close-up holding on Narrator's breaking conviction that the officers are mocking him. Performance: Acting intensity 9/10: Haunted fixed stare with trembling chin affirming the thought Optics: f/1.4 shallow depth of field, creamy bokeh Color grading: Kodak Vision3 500T 5219 film stock, deep charcoal shadows, sickly cool-blue undertones, dim warm amber highlights
+
+Follow the camera framing and location in this prompt exactly. Prioritize the PRIMARY subject and ONE clear action with visible motion; background characters may stay mostly still.
+
+THIS CLIP:
+Silent beat — no dialogue in this clip. Do not show any on-screen character speaking or mouthing words; keep mouths closed/neutral. End cleanly when the primary physical action finishes.
+INT. OLD MAN'S BEDCHAMBER - NIGHT. Louder. Louder. THE NARRATOR's face breaks. Character_The_Narrator <IMAGE_1> still wears loose white cotton nightshirt, barefoot Camera directive: Extreme close-up of Narrator's face cracking under the louder and louder relentless heartbeat. Performance: Acting intensity 10/10: Face collapsing in agony as noise grows louder louder Optics: f/1.2 extremely shallow depth of field Color grading: Kodak Vision3 500T 5219 film stock, deep charcoal shadows, sickly cool-blue undertones, dim warm amber highlights / 480p, 24fps
+
+NEGATIVE: no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens, no name tags, no name badges, no embroidered names, no lower thirds, no personal names on clothing or props, no extra unmentioned hats or jackets, no modern wristwatches, no electric light bulbs, no plastic, no zippers, no printed logos, no denim, no sneakers, no modern hair gel, no smartphones, no LED lights, no synthetic fabrics, no power outlets, no contemporary furniture.

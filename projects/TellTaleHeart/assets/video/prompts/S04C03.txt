@@ -1,0 +1,23 @@
+# S04C03  mode=fresh chars=2 onScreen=2 refs=2 startFrame=no promptLen=3037 · learning-addenda · pre-budget 5669→3037
+# projectId: TellTaleHeartV7
+# mode: fresh
+# castCount: 2
+# onScreen: Character_The_Narrator, Character_The_Old_Man
+# refs: character_the_narrator_ref.png, character_old_man_ref.png
+# refsAttachedToApi: True
+# startFrame: (none)
+# characters: Character_The_Narrator, Character_The_Old_Man
+
+STYLE LOCK: Period gothic live-action, mid-19th-century interiors; candlelight and deep shadows; desaturated cool-gray palette; naturalistic skin and fabric texture; no illustration or stylized animation
+
+CHARACTER VARIABLES (use these identities consistently; do not redesign faces or wardrobe):
+- Character_The_Narrator <IMAGE_1> [The Narrator]: Lean man of middle years (about 40–50), pale sallow skin, hollow cheeks, dark disordered medium-length hair, bright intense dark eyes, thin tense mouth; plain dark wool waistcoat over white shirtsleeves, dark trousers; period clothing. Visual lock: Same lean pale face, dark disordered hair, and bright intense dark eyes in every scene; always plain dark waistcoat and shirtsleeves as default; never elderly, never white-haired, never the filmed blue eye. Voice: Male, middle years; medium-high tense pitch; precise, controlled pace that sharpens into fevered urgency; intimate confessional energy, same voice on-camera and in V.O. Match appearance of reference <IMAGE_1> exactly.
+- Character_The_Old_Man <IMAGE_2> [The Old Man]: Also present (not shot focus); keep identity consistent: Frail elderly man, thin stooped build, sparse white hair,.... Match reference <IMAGE_2>.
+
+CAST COUNT: exactly 2 distinct on-screen character identity(ies) only — Character_The_Narrator, Character_The_Old_Man. Do not invent extra people, duplicate faces, or crowd extras not listed.
+
+AUDIO: REQUIRED native Grok off-camera voiceover. Character_The_Narrator narrates exactly: "Every morning, when the day broke, I went boldly into the chamber, and spoke courageously". Start speaking immediately with "Every" — do not skip, delay, or swallow the opening word. After the last word, hold a brief natural pause with a closed mouth (about half a second); do not freeze mid-syllable or trail into empty staring. Do not lip-sync on-screen cast to this VO. Secondary layer = soft room tone / Foley. VOICE LOCK Character_The_Narrator: Male, middle years; medium-high tense pitch; precise, controlled pace that sharpens into fevered urgency; intimate confessional energy, same voice on-camera and in V.O.
+
+CONTEXT (prior clip in scene — new cast plate refs attached; match location/lighting if still valid; identity from CHARACTER VARIABLES + locked plates only):
+INT. OLD MAN'S BEDCHAMBER - DAY. also on screen: Character_The_Old_Man. THE OLD MAN murmurs a thin reply. THE NARRATOR clasps his shoulder, all warmth. Character_The_Narrator still wears dark woolen waistcoat, plain white shirtsleeves, tailored trousers Camera directive: Medium two-shot, 35mm prime, Narrator clasps Old Man's shoulder with forced warmth after thin murmured reply. Performance: Acting intensity 4/10: Warm soft smile with gentle eye crinkle and faint possessive mouth tightness Optics: f/2.0 shallow depth of field, soft bokeh on bed linens Color grading: Kodak Vision3 250D 5207 film stock, soft warm golden morning light with muted dusty ochre and pale cool-gray shadows
+[prompt shortened after API length limit — retry]

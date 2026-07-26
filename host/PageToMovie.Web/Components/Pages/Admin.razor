@@ -29,10 +29,6 @@
             @if (Session.IsAuthenticated)
             {
                 <span class="badge text-bg-secondary">@Session.UserId</span>
-                <a class="btn btn-sm btn-outline-primary" href="/admin/users">Users &amp; credits</a>
-                <a class="btn btn-sm btn-outline-primary" href="/admin/demos">Demo review</a>
-                <a class="btn btn-sm btn-outline-primary" href="/admin/config">Config</a>
-                <a class="btn btn-sm btn-outline-primary" href="/admin/learning">Learning</a>
                 <button class="btn btn-sm btn-outline-secondary" @onclick="RefreshAsync" disabled="@_busy">Refresh</button>
                 <button class="btn btn-sm btn-outline-danger" @onclick="LogoutAsync">Log out</button>
             }
@@ -360,14 +356,24 @@
                         <InputFile OnChange="OnImportFileSelected" accept=".zip,application/zip"
                                    class="form-control form-control-sm mb-2"
                                    disabled="@_archiveBusy" />
-                        <div class="d-flex flex-wrap gap-2 align-items-center">
-                            <input class="form-control form-control-sm" style="max-width: 12rem;"
+                        <div class="d-flex flex-wrap gap-2 align-items-center mb-2">
+                            <input class="form-control form-control-sm" style="max-width: 11rem;"
                                    placeholder="Optional new id"
                                    @bind="_importPreferredId"
                                    disabled="@_archiveBusy" />
+                            <select class="form-select form-select-sm" style="max-width: 13rem;"
+                                    @bind="_importTargetUserId"
+                                    disabled="@_archiveBusy"
+                                    title="Select a target user to own the imported project area">
+                                <option value="">Target owner: (unassigned / admin)</option>
+                                @foreach (var u in _userList)
+                                {
+                                    <option value="@u">User: @u</option>
+                                }
+                            </select>
                             <div class="form-check mb-0">
                                 <InputCheckbox class="form-check-input" id="importOverwrite" @bind-Value="_importOverwrite" />
-                                <label class="form-check-label small" for="importOverwrite">Overwrite if exists</label>
+                                <label class="form-check-label small" for="importOverwrite">Overwrite</label>
                             </div>
                             <button type="button" class="btn btn-sm btn-success"
                                     disabled="@(_archiveBusy || _importFile is null)"
@@ -579,8 +585,10 @@
             : "(no log lines — job may have finished and been pruned, or never wrote logs)";
 
     private List<string> _projectOptions = new();
+    private List<string> _userList = new();
     private string _exportProjectId = "";
     private string _importPreferredId = "";
+    private string _importTargetUserId = "";
     private bool _importOverwrite;
     private IBrowserFile? _importFile;
     private bool _archiveBusy;
@@ -716,6 +724,22 @@
         {
             /* keep prior list */
         }
+
+        try
+        {
+            var usersOverview = await Api.GetAdminUsersCreditsAsync();
+            if (usersOverview?.Users is { Count: > 0 } ulist)
+            {
+                _userList = ulist.Select(u => u.UserId)
+                                 .Where(u => !string.IsNullOrWhiteSpace(u))
+                                 .OrderBy(u => u, StringComparer.OrdinalIgnoreCase)
+                                 .ToList();
+            }
+        }
+        catch
+        {
+            /* keep prior list */
+        }
     }
 
     private void OnImportFileSelected(InputFileChangeEventArgs e)
@@ -787,7 +811,8 @@
                 stream,
                 _importFile.Name,
                 preferredId: string.IsNullOrWhiteSpace(_importPreferredId) ? null : _importPreferredId.Trim(),
-                overwrite: _importOverwrite);
+                overwrite: _importOverwrite,
+                targetUserId: string.IsNullOrWhiteSpace(_importTargetUserId) ? null : _importTargetUserId.Trim());
             _archiveMsg = result?.Message
                           ?? $"Imported {result?.ProjectId ?? "project"}";
             _importFile = null;

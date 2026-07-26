@@ -98,10 +98,6 @@ else
         <div class="card-header d-flex justify-content-between align-items-center py-2">
             <span>
                 Scene <code class="small">S@(playSn.ToString("D2"))</code>
-                @if (!string.IsNullOrEmpty(_clientSceneUrl))
-                {
-                    <span class="badge bg-info text-dark ms-1">client stitch</span>
-                }
             </span>
             <button type="button" class="btn btn-sm btn-outline-secondary" @onclick="HideScenePlayer">Hide</button>
         </div>
@@ -113,16 +109,12 @@ else
                    onloadeddata="this.play().catch(function(){})">
                 Your browser does not support HTML5 video.
             </video>
-            <p class="small text-muted mb-0 mt-2">
-                @if (string.IsNullOrEmpty(_clientSceneUrl))
-                {
-                    <a href="@Engine.CompositeVideoUrl(_projectId, playSn)" target="_blank" rel="noopener">Open in new tab</a>
-                }
-                else
-                {
-                    <span>Stitched in browser from clips (not written to disk).</span>
-                }
-            </p>
+            @if (string.IsNullOrEmpty(_clientSceneUrl))
+            {
+                <div class="mt-2">
+                    <a href="@Engine.CompositeVideoUrl(_projectId, playSn)" target="_blank" rel="noopener" class="small text-muted">Open in new tab</a>
+                </div>
+            }
         </div>
     </div>
 }
@@ -150,7 +142,6 @@ else if (_showScenePlayer && _playingScene is int busySn && (IsSceneGenBusy(busy
             <span>
                 Preview — @_previewScenes.Count scene@(_previewScenes.Count == 1 ? "" : "s"):
                 <code class="small">@string.Join(", ", _previewScenes.Select(s => $"S{s:D2}"))</code>
-                <span class="badge bg-info text-dark ms-1">client stitch</span>
             </span>
             <button type="button" class="btn btn-sm btn-outline-secondary" @onclick="HidePreviewPlayerAsync">Hide</button>
         </div>
@@ -162,10 +153,6 @@ else if (_showScenePlayer && _playingScene is int busySn && (IsSceneGenBusy(busy
                    onloadeddata="this.play().catch(function(){})">
                 Your browser does not support HTML5 video.
             </video>
-            <p class="small text-muted mb-0 mt-2">
-                Combined in your browser — not saved on the server. Change the selection and click
-                <strong>Play selected</strong> again to audition a different cut.
-            </p>
         </div>
     </div>
 }
@@ -331,6 +318,13 @@ else if (Session.IsAdmin && _job is not null &&
                             @onclick="PlaySelectedAsync">
                         ▶ Play selected@(_selected.Count > 0 ? $" ({_selected.Count})" : "")
                     </button>
+                    <button type="button"
+                            class="btn btn-outline-secondary btn-sm"
+                            disabled="@(_busy || JobRunning)"
+                            title="Rebuild shot plan from the screenplay to restore missing scenes or clips"
+                            @onclick="RebuildShotPlanAsync">
+                        🔄 Rebuild shot plan
+                    </button>
                     <button class="btn btn-sm btn-outline-secondary" data-testid="scenes-select-toggle"
                             disabled="@_busy" @onclick="() => _showFilters = !_showFilters">
                         🔍 Filters @(HasActiveFilters ? " (Active)" : "")
@@ -395,7 +389,7 @@ else if (Session.IsAdmin && _job is not null &&
                                         class="btn btn-sm btn-link text-danger p-0 ms-2 text-decoration-none"
                                         title="Delete scene S@(sn.ToString("D2")) from plan"
                                         @onclick:stopPropagation="true"
-                                        @onclick="() => DeleteSceneAsync(sn)">
+                                        @onclick="() => RequestDeleteScene(sn)">
                                     🗑️
                                 </button>
                                 <button type="button"
@@ -529,14 +523,6 @@ else
                 {
                     <span>· plan ~@FormatClock(planOnly)</span>
                 }
-                @if (_detail.CompositeExists)
-                {
-                    <span class="badge bg-success ms-1">composite ready</span>
-                }
-                else if (_detail.ClipsOnDisk > 0)
-                {
-                    <span class="badge bg-warning text-dark ms-1">composite needs rebuild</span>
-                }
                 @if (_detail.CharactersOnScreen.Count > 0)
                 {
                     <span>· cast: @string.Join(", ", _detail.CharactersOnScreen.Select(ShortChar))</span>
@@ -626,9 +612,6 @@ else
                                     : "Generate (or re-generate) every selected clip")"
                                 @onclick="RegenSelectedClipsAsync">
                             Generate selected
-                        </button>
-                        <button type="button" class="btn btn-sm btn-outline-secondary" disabled="@_busy" @onclick="ClearClipSelection">
-                            Clear
                         </button>
                     }
                 </div>
@@ -876,13 +859,37 @@ else
                 </div>
             </div>
             <div class="card-footer small text-muted">
-                After regen, <strong>Play scene</strong> stitches clips in the browser.
-                Pass/fail: <a href="review">Review</a>. Full movie: rebuild WIP on Review.
+                Use <strong>Play scene</strong> to preview video or <a href="review">Review</a> to rate takes.
             </div>
         </div>
     }
 }
 } @* end CanScenes gate *@
+
+@if (_deleteSceneTarget is int deleteSn)
+{
+    <div class="modal fade show d-block" tabindex="-1" role="dialog" aria-modal="true"
+         style="background:rgba(0,0,0,.5);" @onclick="() => _deleteSceneTarget = null">
+        <div class="modal-dialog modal-dialog-centered" @onclick:stopPropagation="true">
+            <div class="modal-content">
+                <div class="modal-header py-2">
+                    <h5 class="modal-title">Delete Scene S@(deleteSn.ToString("D2"))?</h5>
+                    <button type="button" class="btn-close" aria-label="Close" @onclick="() => _deleteSceneTarget = null"></button>
+                </div>
+                <div class="modal-body py-3">
+                    Are you sure you want to delete <strong>Scene @deleteSn.ToString("D2")</strong> from the shot plan?
+                    <div class="text-muted small mt-2">
+                        Note: You can easily restore missing scenes anytime by clicking <strong>Rebuild shot plan</strong>.
+                    </div>
+                </div>
+                <div class="modal-footer py-2">
+                    <button type="button" class="btn btn-sm btn-secondary" disabled="@_busy" @onclick="() => _deleteSceneTarget = null">Cancel</button>
+                    <button type="button" class="btn btn-sm btn-danger" disabled="@_busy" @onclick="ConfirmDeleteSceneAsync">Delete Scene</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
 
 @if (_deleteClipTarget is { } delTarget)
 {
@@ -970,18 +977,9 @@ else
 
                     <h6 class="mb-1">Visual</h6>
                     <label class="form-label small mb-0">Prompt <span class="text-danger">*</span></label>
-                    <textarea class="form-control form-control-sm mb-2" rows="5" required
+                    <textarea class="form-control form-control-sm mb-3" rows="4" required
                               placeholder="Required — action / framing for this take"
                               @bind="ed.VisualPrompt"></textarea>
-
-                    <label class="form-label small mb-0">Negative prompt (clip extras)</label>
-                    <textarea class="form-control form-control-sm mb-1" rows="2" @bind="ed.NegativePrompt"
-                              placeholder="Optional — story-specific bans only"></textarea>
-                    <div class="form-text small mb-3">
-                        Empty is normal. Shared global bans (no legible text, watermarks, logos, extra limbs, name tags…)
-                        are always applied at video gen — not stored on each clip. Use this field only for
-                        this-clip extras (must-not, wardrobe bans, dual lip-sync, etc.).
-                    </div>
 
                     <h6 class="mb-1">Dialogue</h6>
                     <div class="row g-2 mb-2">
@@ -1007,7 +1005,7 @@ else
                             </datalist>
                         </div>
                     </div>
-                    <textarea class="form-control form-control-sm mb-1" rows="3"
+                    <textarea class="form-control form-control-sm mb-1" rows="2"
                               data-testid="clip-editor-dialogue"
                               placeholder="Dialogue / voiceover text (requires speaker + delivery)…"
                               @bind="ed.Dialogue"></textarea>
@@ -1015,22 +1013,42 @@ else
                         Silent clips: leave speaker none and dialogue empty. Spoken/VO lines need both a speaker and a delivery other than none.
                     </div>
 
-                    <h6 class="mb-1">Lighting &amp; color</h6>
-                    <div class="row g-2">
-                        <div class="col-6">
-                            <label class="form-label small mb-0">Color palette</label>
-                            <input class="form-control form-control-sm" @bind="ed.ColorPalette"
-                                   placeholder="Optional" />
-                        </div>
-                        <div class="col-6">
-                            <label class="form-label small mb-0">Film stock</label>
-                            <input class="form-control form-control-sm" @bind="ed.FilmStock"
-                                   placeholder="Optional" />
-                        </div>
-                    </div>
-                    <div class="form-text small mt-1 mb-0">
-                        Empty is fine — often unused. Shot plan may already bake grading into the visual prompt;
-                        fill these only to pin palette / stock for this clip.
+                    <!-- Collapsible Advanced Options -->
+                    <div class="mb-3">
+                        <button type="button" class="btn btn-sm btn-outline-secondary w-100 text-start d-flex justify-content-between align-items-center"
+                                @onclick="() => _showEditClipAdvanced = !_showEditClipAdvanced">
+                            <span>⚙️ Advanced options (Negative prompt, Lighting &amp; Color, Film stock)</span>
+                            <span>@(_showEditClipAdvanced ? "▲ Hide" : "▼ Expand")</span>
+                        </button>
+
+                        @if (_showEditClipAdvanced)
+                        {
+                            <div class="p-3 border border-top-0 rounded-bottom bg-dark bg-opacity-75 border-secondary border-opacity-50 text-white">
+                                <label class="form-label small mb-1 fw-medium text-light">Negative prompt (clip extras)</label>
+                                <textarea class="form-control form-control-sm mb-1 bg-dark text-white border-secondary" rows="2" @bind="ed.NegativePrompt"
+                                          placeholder="Optional — story-specific bans only"></textarea>
+                                <div class="form-text small mb-3 text-muted">
+                                    Empty is normal. Shared global bans (no watermarks, logos, extra limbs, name tags) are automatically applied at video gen.
+                                </div>
+
+                                <h6 class="mb-2 fw-semibold text-light">Lighting &amp; Color</h6>
+                                <div class="row g-2">
+                                    <div class="col-6">
+                                        <label class="form-label small mb-1 text-light">Color palette</label>
+                                        <input class="form-control form-control-sm bg-dark text-white border-secondary" @bind="ed.ColorPalette"
+                                               placeholder="e.g. Warm golden hour, Neon noir" />
+                                    </div>
+                                    <div class="col-6">
+                                        <label class="form-label small mb-1 text-light">Film stock / Lens</label>
+                                        <input class="form-control form-control-sm bg-dark text-white border-secondary" @bind="ed.FilmStock"
+                                               placeholder="e.g. 35mm anamorphic, Kodak Vision3" />
+                                    </div>
+                                </div>
+                                <div class="form-text small mt-2 mb-0 text-muted">
+                                    Empty is fine. Shot plan bakes grading into the visual prompt; fill these only to pin palette or stock for this clip.
+                                </div>
+                            </div>
+                        }
                     </div>
                 </div>
                 <div class="modal-footer py-2">
@@ -1146,8 +1164,10 @@ else
     private int? _selectedClip;
     private ClipSummary? _clip;
     private (int Scene, int Clip)? _deleteClipTarget;
+    private int? _deleteSceneTarget;
     private ClipEditRequest? _clipEditor;
     private bool _clipEditorIsNew;
+    private bool _showEditClipAdvanced;
     private HashSet<string> _clipEditorCast = new(StringComparer.OrdinalIgnoreCase);
     /// <summary>Multi-select clip numbers within the currently open scene's clip table, for batch regen.</summary>
     private readonly HashSet<int> _selectedClips = new();
@@ -1388,15 +1408,46 @@ else
     private int IncompleteCount =>
         VisibleScenes.Count(s => s.ClipsOnDisk < s.ClipCount);
 
-    private List<string> CharacterOptions =>
-        _scenes is null
-            ? new List<string>()
-            : _scenes
-                .SelectMany(s => s.CharactersOnScreen)
-                .Where(c => !string.IsNullOrWhiteSpace(c))
-                .Distinct(StringComparer.OrdinalIgnoreCase)
-                .OrderBy(c => ShortChar(c), StringComparer.OrdinalIgnoreCase)
-                .ToList();
+    private List<string> CharacterOptions
+    {
+        get
+        {
+            var set = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            if (_scenes is not null)
+            {
+                foreach (var s in _scenes)
+                {
+                    foreach (var c in s.CharactersOnScreen)
+                        if (!string.IsNullOrWhiteSpace(c)) set.Add(c);
+                }
+            }
+            if (_detail is not null)
+            {
+                foreach (var c in _detail.CharactersOnScreen)
+                    if (!string.IsNullOrWhiteSpace(c)) set.Add(c);
+
+                if (_detail.Clips is not null)
+                {
+                    foreach (var cl in _detail.Clips)
+                    {
+                        foreach (var c in cl.CharactersOnScreen)
+                            if (!string.IsNullOrWhiteSpace(c)) set.Add(c);
+                    }
+                }
+            }
+            if (_clipEditorCast is not null)
+            {
+                foreach (var c in _clipEditorCast)
+                    if (!string.IsNullOrWhiteSpace(c)) set.Add(c);
+            }
+            if (_castMissing is not null)
+            {
+                foreach (var c in _castMissing)
+                    if (!string.IsNullOrWhiteSpace(c)) set.Add(c);
+            }
+            return set.OrderBy(c => ShortChar(c), StringComparer.OrdinalIgnoreCase).ToList();
+        }
+    }
 
     private List<string> LocationOptions =>
         _scenes is null
@@ -1504,8 +1555,12 @@ else
             _selectedClips.Add(c.ClipNumber);
     }
 
-    private Task DeleteSceneAsync(int sn)
+    private void RequestDeleteScene(int sn) => _deleteSceneTarget = sn;
+
+    private Task ConfirmDeleteSceneAsync()
     {
+        if (_deleteSceneTarget is not int sn) return Task.CompletedTask;
+        _deleteSceneTarget = null;
         if (_scenes is not null)
         {
             _scenes.RemoveAll(s => s.SceneNumber == sn);
@@ -1513,6 +1568,28 @@ else
             StateHasChanged();
         }
         return Task.CompletedTask;
+    }
+
+    private async Task RebuildShotPlanAsync()
+    {
+        _busy = true;
+        _error = null;
+        _message = null;
+        try
+        {
+            await Engine.StartStage2Async(new StartStage2Request
+            {
+                ProjectId = _projectId,
+                Scenes = "all"
+            });
+            _message = "Rebuilding shot plan from screenplay…";
+            await SoftReloadAsync();
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+        finally { _busy = false; }
     }
 
     private void ResetPickers()
@@ -1970,11 +2047,10 @@ else
         {
             var targets = _selectedClips.OrderBy(c => c).Select(c => (Scene: sn, Clip: c)).ToList();
             await EnsureHubAsync();
-            await Engine.StartClipBatchGenAsync(_projectId, targets, resolution: _genResolution);
-            _message = $"Regenerating {targets.Count} clip(s) in S{sn:D2} @ {_genResolution}";
-            var jobs = await Engine.GetJobAsync();
-            _job = jobs?.Job;
+            _job = await Engine.StartClipBatchGenAsync(_projectId, targets, resolution: _genResolution);
+            _message = $"Regenerating {targets.Count} clip(s) in S{sn:D2} @ {_genResolution}…";
             _selectedClips.Clear();
+            StateHasChanged();
         }
         catch (Exception ex) { _error = ex.Message; }
         finally { _busy = false; _pendingRegenScene = null; }
@@ -2178,9 +2254,7 @@ else
 
             _clientPreviewUrl = result.Url;
             _previewVideoKey = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-            _message =
-                $"Preview ready (browser) — {_previewScenes.Count} scene(s): " +
-                string.Join(", ", _previewScenes.Select(s => $"S{s:D2}"));
+            _message = null;
         }
         catch (Exception ex)
         {
@@ -2224,6 +2298,7 @@ else
     private void OpenClipEditor(ClipSummary clip)
     {
         if (_detail is null) return;
+        _showEditClipAdvanced = false;
         _clipEditorIsNew = false;
         _clipEditor = new ClipEditRequest
         {
@@ -2247,6 +2322,7 @@ else
     private void OpenAddClipDialog()
     {
         if (_detail is null) return;
+        _showEditClipAdvanced = false;
         var nextClip = _detail.Clips.Count == 0 ? 1 : _detail.Clips.Max(c => c.ClipNumber) + 1;
         _clipEditorIsNew = true;
         _clipEditor = new ClipEditRequest

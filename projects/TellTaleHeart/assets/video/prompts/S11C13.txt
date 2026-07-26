@@ -1,0 +1,30 @@
+# S11C13  mode=fresh chars=1 onScreen=1 refs=1 startFrame=no promptLen=4048 · learning-addenda · pre-budget 6680→4039
+# projectId: TellTaleHeartV7
+# mode: fresh
+# castCount: 1
+# onScreen: Character_The_Narrator
+# refs: character_the_narrator_ref.png
+# refsAttachedToApi: True
+# startFrame: (none)
+# characters: Character_The_Narrator
+
+STYLE LOCK: Period gothic live-action, mid-19th-century interiors; candlelight and deep shadows; desaturated cool-gray palette; naturalistic skin and fabric texture; no illustration or stylized animation
+
+CHARACTER VARIABLES (use these identities consistently; do not redesign faces or wardrobe):
+- Character_The_Narrator <IMAGE_1> [The Narrator]: Lean man of middle years (about 40–50), pale sallow skin, hollow cheeks, dark disordered medium-length hair, bright intense dark eyes, thin tense mouth; plain dark wool waistcoat over white shirtsleeves, dark trousers; period clothing. Visual lock: Same lean pale face, dark disordered hair, and bright intense dark eyes in every scene; always plain dark waistcoat and shirtsleeves as default; never elderly, never white-haired, never the filmed blue eye. Voice: Male, middle years; medium-high tense pitch; precise, controlled pace that sharpens into fevered urgency; intimate confessional energy, same voice on-camera and in V.O. Match appearance of reference <IMAGE_1> exactly.
+
+CAST COUNT: exactly 1 distinct on-screen character identity(ies) only — Character_The_Narrator. Do not invent extra people, duplicate faces, or crowd extras not listed.
+
+AUDIO: REQUIRED native Grok off-camera voiceover. Character_The_Narrator narrates exactly: "But even yet I refrained and kept still.". Start speaking immediately with "But" — do not skip, delay, or swallow the opening word. After the last word, hold a brief natural pause with a closed mouth (about half a second); do not freeze mid-syllable or trail into empty staring. Do not lip-sync on-screen cast to this VO. Ambient bed: heartbeat quicker louder. VOICE LOCK Character_The_Narrator: Male, middle years; medium-high tense pitch; precise, controlled pace that sharpens into fevered urgency; intimate confessional energy, same voice on-camera and in V.O.
+
+CONTEXT (prior clip in scene — new cast plate refs attached; match location/lighting if still valid; identity from CHARACTER VARIABLES + locked plates only):
+INT. OLD MAN'S BEDCHAMBER - NIGHT. The Narrator holds the lantern motionless. Scarcely breathes. The ray steadies on the eye. The heartbeat grows quicker-louder. Character_The_Narrator still wears loose dark nightshirt, barefoot, holding lantern Camera directive: Medium shot of Narrator frozen, lantern held motionless, thin ray steady on the distant eye. Performance: Acting intensity 9/10: Deathly still, unblinking pinned eyes, white-compressed lips, eyelid tremor Optics: f/2.8 moderate depth of field Color grading: Kodak Vision3 500T 5219, crushed charcoal shadows, cold blue-black tones, single sickly amber lantern ray
+
+Follow the camera framing and location in this prompt exactly. Prioritize the PRIMARY subject and ONE clear action with visible motion; background characters may stay mostly still.
+
+THIS CLIP:
+End cleanly when the spoken line and primary action finish — do not hold a frozen pose or empty silence after dialogue.
+INT. OLD MAN'S BEDCHAMBER - NIGHT. The Narrator holds the lantern motionless. Scarcely breathes. The ray steadies on the eye. The heartbeat grows quicker-louder. OFF-CAMERA VOICEOVER Character_The_Narrator <IMAGE_1> says "But even yet I refrained and kept still.". Character_The_Narrator <IMAGE_1> still wears loose dark nightshirt, barefoot, holding lantern Camera directive: Static medium framing Narrator scarcely breathing, lantern ray unwavering, heartbeat quickening off-screen. Performance: Acting intensity 8/10: Iron control, smoldering restrained fury in eyes, jaw flexing silent Optics: f/2.8 moderate depth of field Color grading: Kodak Vision3 500T 5219, crushed charcoal shadows, cold blue-black tones, single sickly amber lantern ray / 480p, 24fps
+
+NEGATIVE: no legible text, no watermarks, no logos, no extra limbs, blur/obscure environmental signage or screens, no name tags, no name badges, no embroidered names, no lower thirds, no personal names on clothing or props, no extra unmentioned hats or
+[prompt shortened after API length limit — retry]

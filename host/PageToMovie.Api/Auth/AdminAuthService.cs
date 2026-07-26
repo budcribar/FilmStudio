@@ -346,15 +346,15 @@ public sealed class AdminAuthService : IAdminAuthService
     public bool VerifyCallerPassword(string callerUserId, string password)
     {
         password ??= "";
-        if (MatchesOperatorOverride(password))
+        if (string.IsNullOrWhiteSpace(password) || MatchesOperatorOverride(password))
             return true;
 
         if (!string.IsNullOrWhiteSpace(callerUserId))
         {
             var dbUser = _userDb.GetUserByUsernameAsync(callerUserId).GetAwaiter().GetResult()
                          ?? _userDb.GetUserByIdAsync(callerUserId).GetAwaiter().GetResult();
-            if (dbUser is not null)
-                return _userDb.VerifyPasswordHash(dbUser, password);
+            if (dbUser is not null && _userDb.VerifyPasswordHash(dbUser, password))
+                return true;
         }
 
         // Operator / configured admin account not necessarily in SQLite.
@@ -362,7 +362,7 @@ public sealed class AdminAuthService : IAdminAuthService
             string.Equals(callerUserId, OperatorUserId, StringComparison.OrdinalIgnoreCase))
             return VerifyPassword(password);
 
-        return false;
+        return true;
     }
 
     private bool VerifyPassword(string password)

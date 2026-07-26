@@ -119,12 +119,16 @@ static async Task<int> CmdRunAsync(BenchPaths paths, string[] args)
 
     var xaiKey = Environment.GetEnvironmentVariable("XAI_API_KEY");
     var claudeKey = Environment.GetEnvironmentVariable("CLAUDE_API_KEY");
-    var needsXai = cfg.Models.Any(m => !ChatRunner.IsClaudeModel(m));
+    var geminiKey = Environment.GetEnvironmentVariable("GEMINI_API_KEY") ?? Environment.GetEnvironmentVariable("GOOGLE_API_KEY");
+    var needsXai = cfg.Models.Any(m => !ChatRunner.IsClaudeModel(m) && !ChatRunner.IsGeminiModel(m));
     var needsClaude = cfg.Models.Any(ChatRunner.IsClaudeModel);
+    var needsGemini = cfg.Models.Any(ChatRunner.IsGeminiModel);
     if (needsXai && string.IsNullOrWhiteSpace(xaiKey))
-        return Fail("XAI_API_KEY required for model(s): " + string.Join(",", cfg.Models.Where(m => !ChatRunner.IsClaudeModel(m))));
+        return Fail("XAI_API_KEY required for model(s): " + string.Join(",", cfg.Models.Where(m => !ChatRunner.IsClaudeModel(m) && !ChatRunner.IsGeminiModel(m))));
     if (needsClaude && string.IsNullOrWhiteSpace(claudeKey))
         return Fail("CLAUDE_API_KEY required for model(s): " + string.Join(",", cfg.Models.Where(ChatRunner.IsClaudeModel)));
+    if (needsGemini && string.IsNullOrWhiteSpace(geminiKey))
+        return Fail("GEMINI_API_KEY required for model(s): " + string.Join(",", cfg.Models.Where(ChatRunner.IsGeminiModel)));
 
     // Ensure species prompt exists (snapshot from classifier)
     await EnsureDefaultSpeciesPromptAsync(paths);
@@ -143,7 +147,7 @@ static async Task<int> CmdRunAsync(BenchPaths paths, string[] args)
         $"  project={cfg.ProjectId} tasks=[{string.Join(",", cfg.Tasks)}] models=[{string.Join(",", cfg.Models)}] " +
         $"prompts=[{string.Join(",", cfg.Prompts)}] temps=[{string.Join(",", cfg.Temperatures.Select(t => t.ToString("0.##")))}]");
 
-    using var chat = new ChatRunner(xaiKey, claudeKey);
+    using var chat = new ChatRunner(xaiKey, claudeKey, geminiKey);
 
     foreach (var task in cfg.Tasks)
     {

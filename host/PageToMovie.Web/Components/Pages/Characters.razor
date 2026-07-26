@@ -441,7 +441,7 @@ else
                                     }
                                 </div>
 
-                                <div class="d-flex flex-wrap gap-2 align-items-center">
+                                <div class="d-flex flex-wrap gap-2 align-items-center mb-2">
                                     <button type="button" class="btn btn-primary"
                                             disabled="@(_busy || JobRunning || string.IsNullOrWhiteSpace(_editDescription) && SelectedSeedCount == 0)"
                                             @onclick="StartRegenerateAsync">
@@ -454,7 +454,63 @@ else
                                                    class="d-none"
                                                    disabled="@(_busy || JobRunning)" />
                                     </label>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary"
+                                            disabled="@(_busy || JobRunning)"
+                                            @onclick="ToggleBookCandidateGalleryAsync">
+                                        📖 Find images from book
+                                    </button>
                                 </div>
+
+                                @if (_showBookCandidateGallery)
+                                {
+                                    <div class="border border-secondary border-opacity-50 rounded p-3 mt-3 mb-3 bg-dark bg-opacity-75 text-white shadow-sm">
+                                        <div class="d-flex justify-content-between align-items-center mb-2">
+                                            <div>
+                                                <strong class="small text-light">Book Illustrations (Ranked for @_selected.DisplayName)</strong>
+                                                <div class="small text-muted">Select up to 3 candidate illustrations from the book:</div>
+                                            </div>
+                                            <button type="button" class="btn btn-sm btn-outline-secondary" @onclick="() => _showBookCandidateGallery = false">✕ Close</button>
+                                        </div>
+
+                                        @if (_loadingBookCandidates)
+                                        {
+                                            <div class="small text-muted py-2">Scanning and ranking book illustrations…</div>
+                                        }
+                                        else if (_rankedBookCandidates is null || _rankedBookCandidates.Count == 0)
+                                        {
+                                            <div class="small text-muted py-2">No book illustration candidates found.</div>
+                                        }
+                                        else
+                                        {
+                                            <div class="d-flex flex-wrap gap-2 py-2" style="max-height: 320px; overflow-y: auto;">
+                                                @foreach (var cand in _rankedBookCandidates)
+                                                {
+                                                    var isSel = _selectedBookCandidatePaths.Contains(cand.PathRel, StringComparer.OrdinalIgnoreCase);
+                                                    <div class="border rounded p-1 text-center bg-dark"
+                                                         style="width: 110px; cursor: pointer; border-color: @(isSel ? "#6366f1" : "#374151"); background: @(isSel ? "rgba(99, 102, 241, 0.25)" : "#151922");"
+                                                         @onclick="() => ToggleBookCandidateSelection(cand.PathRel)">
+                                                        <div class="position-relative mb-1" style="height: 100px; background: #000; overflow: hidden; border-radius: 4px;">
+                                                            <img src="@cand.Url" alt="@cand.Name" style="width: 100%; height: 100%; object-fit: contain;" />
+                                                            @if (isSel)
+                                                            {
+                                                                <span class="badge bg-primary position-absolute top-0 end-0 m-1">✓</span>
+                                                            }
+                                                        </div>
+                                                        <div class="small text-truncate text-light fw-semibold" style="font-size: 0.72rem;">@(cand.Page > 0 ? $"Page {cand.Page}" : cand.Name)</div>
+                                                        <div class="badge bg-secondary opacity-75" style="font-size: 0.65rem;">@Math.Round(cand.Score)% match</div>
+                                                    </div>
+                                                }
+                                            </div>
+                                            <div class="d-flex justify-content-between align-items-center mt-2 pt-2 border-top border-secondary border-opacity-50">
+                                                <span class="small text-muted">Selected @_selectedBookCandidatePaths.Count of 3 max</span>
+                                                <button type="button" class="btn btn-sm btn-success" disabled="@(_busy || _savingBookRefs)" @onclick="ApplySelectedBookCandidatesAsync">
+                                                    @(_savingBookRefs ? "Applying..." : "Apply selected pictures")
+                                                </button>
+                                            </div>
+                                        }
+                                    </div>
+                                }
+
                             }
                             else if (_mode == Mode.WaitingGenerate)
                             {
@@ -598,7 +654,104 @@ else
     private List<Candidate> _allCandidates = new();
     private PendingDelete? _deleteConfirm;
 
+    private bool _showBookCandidateGallery;
+    private bool _loadingBookCandidates;
+    private bool _savingBookRefs;
+    private List<RankedBookCandidateDto>? _rankedBookCandidates;
+    private readonly List<string> _selectedBookCandidatePaths = new();
+
+    private async Task ToggleBookCandidateGalleryAsync()
+    {
+        _showBookCandidateGallery = !_showBookCandidateGallery;
+        if (_showBookCandidateGallery && _selected is not null)
+        {
+            await LoadBookCandidatesAsync();
+        }
+    }
+
+    private async Task LoadBookCandidatesAsync()
+    {
+        if (_selected is null || string.IsNullOrWhiteSpace(_projectId)) return;
+        _loadingBookCandidates = true;
+        _error = null;
+        StateHasChanged();
+        try
+        {
+            _rankedBookCandidates = await Engine.GetRankedBookCandidatesAsync(_projectId, _selected.Key);
+            _selectedBookCandidatePaths.Clear();
+            if (_rankedBookCandidates is not null)
+            {
+                foreach (var c in _rankedBookCandidates)
+                {
+                    if (c.IsSelected)
+                        _selectedBookCandidatePaths.Add(c.PathRel);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _error = "Could not load book image candidates: " + ex.Message;
+        }
+        finally
+        {
+            _loadingBookCandidates = false;
+            StateHasChanged();
+        }
+    }
+
+    private void ToggleBookCandidateSelection(string pathRel)
+    {
+        var idx = _selectedBookCandidatePaths.FindIndex(p => string.Equals(p, pathRel, StringComparison.OrdinalIgnoreCase));
+        if (idx >= 0)
+        {
+            _selectedBookCandidatePaths.RemoveAt(idx);
+        }
+        else
+        {
+            if (_selectedBookCandidatePaths.Count >= 3)
+            {
+                _error = "Select up to 3 candidate pictures maximum.";
+                return;
+            }
+            _selectedBookCandidatePaths.Add(pathRel);
+        }
+        _error = null;
+    }
+
+    private async Task ApplySelectedBookCandidatesAsync()
+    {
+        if (_selected is null || string.IsNullOrWhiteSpace(_projectId)) return;
+        _savingBookRefs = true;
+        _error = null;
+        StateHasChanged();
+        try
+        {
+            var ok = await Engine.SetCharacterBookRefsAsync(_projectId, _selected.Key, _selectedBookCandidatePaths);
+            if (ok)
+            {
+                _message = $"Applied {_selectedBookCandidatePaths.Count} book reference picture(s) to {_selected.DisplayName}.";
+                await SoftReloadAsync();
+                ResetSeedSelection();
+                _showBookCandidateGallery = false;
+            }
+            else
+            {
+                _error = "Could not save selected book reference pictures.";
+            }
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            _savingBookRefs = false;
+            StateHasChanged();
+        }
+    }
+
     private int ApiMaxSeedRefs => Math.Max(1, _imageSeedLimits?.MaxReferenceImages ?? 3);
+
     private ImageSeedLimits? _imageSeedLimits;
     private readonly List<string> _seedOrder = new(); // "p", "v1", "b0"… click order = priority
     private string _editDescription = "";

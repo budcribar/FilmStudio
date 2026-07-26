@@ -320,6 +320,12 @@
 
     private bool CanEdit => _editorReady && !Busy && !JobRunning;
 
+    /// <summary>Has ever been signed off, or has an active Stage 1 plan.</summary>
+    private bool WasEverSigned =>
+        _screenplayStatus?.Signed == true
+        || !string.IsNullOrWhiteSpace(_screenplayStatus?.SignedHash)
+        || Status?.Stage1.Present == true;
+
     /// <summary>Approved and not edited since sign-off.</summary>
     private bool IsApprovedClean =>
         _screenplayStatus?.Signed == true
@@ -328,9 +334,10 @@
 
     /// <summary>Had an approval but draft changed (or local unsaved edits after sign-off).</summary>
     private bool NeedsReapprove =>
-        (_screenplayStatus?.Signed == true || Status?.Stage1.Present == true)
+        WasEverSigned
         && (_screenplayStatus?.Dirty == true || _dirtyLocal)
         && !string.IsNullOrWhiteSpace(_text);
+
 
     private string StatusTitle
     {

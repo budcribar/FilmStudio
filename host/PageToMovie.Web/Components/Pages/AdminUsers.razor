@@ -17,7 +17,6 @@
             @if (Session.IsAuthenticated)
             {
                 <span class="badge text-bg-secondary">@Session.UserId</span>
-                <a class="btn btn-sm btn-outline-secondary" href="/admin">← Dashboard</a>
                 <button class="btn btn-sm btn-outline-primary" @onclick="LoadAsync" disabled="@_busy">Refresh</button>
             }
         </div>
@@ -260,32 +259,59 @@
 
         @if (_resetUser is not null)
         {
-            <div class="card mb-4 border-warning">
-                <div class="card-header">Set password — @_resetUser.Username</div>
+            <div class="card mb-4 border-warning shadow-sm">
+                <div class="card-header bg-warning-subtle text-warning-emphasis d-flex align-items-center justify-content-between py-2">
+                    <span class="fw-semibold">🔑 Set password — @_resetUser.Username</span>
+                    <button class="btn-close" type="button" aria-label="Close" @onclick="CloseResetPassword"></button>
+                </div>
                 <div class="card-body">
                     @if (_resetUser.PasswordResetRequestedAt is not null)
                     {
-                        <p class="small text-warning mb-2">
-                            User requested help at @_resetUser.PasswordResetRequestedAt.Value.ToLocalTime().ToString("g").
-                        </p>
+                        <div class="alert alert-warning py-2 mb-3 small d-flex align-items-center gap-2">
+                            <span>⚠️ User requested password help at @_resetUser.PasswordResetRequestedAt.Value.ToLocalTime().ToString("g").</span>
+                        </div>
                     }
-                    <div class="row g-2 align-items-end">
-                        <div class="col-md-4">
-                            <label class="form-label">New password</label>
-                            <input type="password" class="form-control" @bind="_resetNewPassword"
-                                   autocomplete="new-password" />
-                            <div class="form-text">At least 4 characters. Tell the user out of band.</div>
+                    <div class="row g-3">
+                        <div class="col-md-5">
+                            <label class="form-label fw-medium mb-1">New password</label>
+                            <div class="input-group">
+                                <input type="@(_showResetNewPassword ? "text" : "password")"
+                                       class="form-control"
+                                       @bind="_resetNewPassword"
+                                       placeholder="Enter new password"
+                                       autocomplete="new-password" />
+                                <button class="btn btn-outline-secondary" type="button"
+                                        title="@(_showResetNewPassword ? "Hide password" : "Show password")"
+                                        @onclick="() => _showResetNewPassword = !_showResetNewPassword">
+                                    @(_showResetNewPassword ? "🙈 Hide" : "👁️ Show")
+                                </button>
+                            </div>
+                            <div class="form-text mt-1">At least 4 characters. Tell the user out of band.</div>
                         </div>
-                        <div class="col-md-4">
-                            <label class="form-label">Your admin password</label>
-                            <input type="password" class="form-control" @bind="_resetAdminPassword"
-                                   autocomplete="current-password" />
+                        <div class="col-md-5">
+                            <label class="form-label fw-medium mb-1">Your admin password (optional)</label>
+                            <div class="input-group">
+                                <input type="@(_showResetAdminPassword ? "text" : "password")"
+                                       class="form-control"
+                                       @bind="_resetAdminPassword"
+                                       placeholder="Optional — leave blank for override"
+                                       autocomplete="current-password" />
+                                <button class="btn btn-outline-secondary" type="button"
+                                        title="@(_showResetAdminPassword ? "Hide password" : "Show password")"
+                                        @onclick="() => _showResetAdminPassword = !_showResetAdminPassword">
+                                    @(_showResetAdminPassword ? "🙈 Hide" : "👁️ Show")
+                                </button>
+                            </div>
+                            <div class="form-text mt-1">Optional. Leave blank if using operator override bypass.</div>
                         </div>
-                        <div class="col-md-4 d-flex gap-2">
-                            <button class="btn btn-warning" disabled="@_busy" @onclick="SubmitResetPasswordAsync">
-                                @(_busy ? "…" : "Set password")
-                            </button>
-                            <button class="btn btn-outline-secondary" disabled="@_busy" @onclick="CloseResetPassword">Cancel</button>
+                        <div class="col-md-2 d-flex flex-column justify-content-start">
+                            <label class="form-label d-none d-md-block mb-1">&nbsp;</label>
+                            <div class="d-flex gap-2">
+                                <button class="btn btn-warning flex-grow-1 text-nowrap" disabled="@_busy" @onclick="SubmitResetPasswordAsync">
+                                    @(_busy ? "…" : "Set password")
+                                </button>
+                                <button class="btn btn-outline-secondary" disabled="@_busy" @onclick="CloseResetPassword">Cancel</button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -294,32 +320,42 @@
 
         @if (_deleteUser is not null)
         {
-            <div class="card mb-4 border-danger">
-                <div class="card-header text-danger">Hard-delete user — @_deleteUser.Username</div>
+            <div class="card mb-4 border-danger shadow-sm">
+                <div class="card-header bg-danger-subtle text-danger d-flex align-items-center justify-content-between py-2">
+                    <span class="fw-semibold">⚠️ Hard-delete user — @_deleteUser.Username</span>
+                    <button class="btn-close" type="button" aria-label="Close" @onclick="CloseDelete"></button>
+                </div>
                 <div class="card-body">
-                    <p class="small mb-3">
+                    <p class="small text-muted mb-3">
                         Permanently removes the account, credit ledger, demo submissions,
                         and (by default) projects owned by this user. This cannot be undone.
                     </p>
-                    <div class="row g-2 align-items-end">
+                    <div class="row g-3">
                         <div class="col-md-4">
-                            <label class="form-label">Type username to confirm</label>
+                            <label class="form-label fw-medium mb-1">Type username to confirm</label>
                             <InputText class="form-control" @bind-Value="_deleteConfirmUsername"
                                        placeholder="@_deleteUser.Username" autocomplete="off" />
                         </div>
                         <div class="col-md-4">
-                            <label class="form-label">Your admin password</label>
-                            <input type="password" class="form-control" @bind="_deleteAdminPassword"
-                                   autocomplete="current-password" />
-                            <div class="form-text">Your password (or operator override secret).</div>
+                            <label class="form-label fw-medium mb-1">Your admin password</label>
+                            <div class="input-group">
+                                <input type="@(_showDeleteAdminPassword ? "text" : "password")" class="form-control" @bind="_deleteAdminPassword"
+                                       placeholder="Confirm admin password" autocomplete="current-password" />
+                                <button class="btn btn-outline-secondary" type="button"
+                                        title="@(_showDeleteAdminPassword ? "Hide password" : "Show password")"
+                                        @onclick="() => _showDeleteAdminPassword = !_showDeleteAdminPassword">
+                                    @(_showDeleteAdminPassword ? "🙈 Hide" : "👁️ Show")
+                                </button>
+                            </div>
+                            <div class="form-text mt-1">Your password (or operator override secret).</div>
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-md-4 d-flex flex-column justify-content-start">
                             <div class="form-check mb-2">
                                 <InputCheckbox class="form-check-input" @bind-Value="_deleteOwnedProjects" id="delProjects" />
-                                <label class="form-check-label" for="delProjects">Delete owned projects</label>
+                                <label class="form-check-label small" for="delProjects">Delete owned projects</label>
                             </div>
                             <div class="d-flex gap-2">
-                                <button class="btn btn-danger" disabled="@_busy" @onclick="SubmitDeleteAsync">
+                                <button class="btn btn-danger text-nowrap" disabled="@_busy" @onclick="SubmitDeleteAsync">
                                     @(_busy ? "…" : "Delete permanently")
                                 </button>
                                 <button class="btn btn-outline-secondary" disabled="@_busy" @onclick="CloseDelete">Cancel</button>
@@ -399,10 +435,13 @@
     private string _deleteConfirmUsername = "";
     private string _deleteAdminPassword = "";
     private bool _deleteOwnedProjects = true;
+    private bool _showDeleteAdminPassword;
 
     private UserCreditSummaryDto? _resetUser;
     private string _resetNewPassword = "";
     private string _resetAdminPassword = "";
+    private bool _showResetNewPassword;
+    private bool _showResetAdminPassword;
 
     private bool IsSelf(UserCreditSummaryDto u) =>
         string.Equals(u.UserId, Session.UserId, StringComparison.OrdinalIgnoreCase) ||

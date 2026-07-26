@@ -977,10 +977,15 @@ public static class ClipVideoPromptBuilder
             audio.TryGetProperty("delivery", out var del) ? del.GetString() ?? "none" : "none");
         var sfx = audio.TryGetProperty("sfx", out var sx) ? sx.GetString() ?? "" : "";
         var ambient = audio.TryGetProperty("ambient", out var am) ? am.GetString() ?? "" : "";
+        var score = audio.TryGetProperty("score_layer", out var sc) ? sc.GetString() ?? "" :
+                    audio.TryGetProperty("score", out sc) ? sc.GetString() ?? "" :
+                    audio.TryGetProperty("music_layer", out sc) ? sc.GetString() ?? "" :
+                    audio.TryGetProperty("music", out sc) ? sc.GetString() ?? "" : "";
 
         if (string.IsNullOrWhiteSpace(dialogue) &&
             string.IsNullOrWhiteSpace(sfx) &&
-            string.IsNullOrWhiteSpace(ambient))
+            string.IsNullOrWhiteSpace(ambient) &&
+            string.IsNullOrWhiteSpace(score))
             return "";
 
         var voiceLock = "";
@@ -1003,11 +1008,16 @@ public static class ClipVideoPromptBuilder
             var openCue = open.Length > 0
                 ? $" Start speaking immediately with \"{open}\" — do not skip, delay, or swallow the opening word."
                 : " Start speaking immediately with the first word of the line — do not skip the opening.";
-            var bed = !string.IsNullOrWhiteSpace(ambient)
-                ? $" Ambient bed: {ambient.Trim()}."
-                : !string.IsNullOrWhiteSpace(sfx)
-                    ? $" Ambient/Foley: {sfx.Trim()}."
-                    : " Secondary layer = soft room tone / Foley.";
+            
+            var audioBedParts = new List<string>();
+            if (!string.IsNullOrWhiteSpace(score)) audioBedParts.Add($"Music score: {score.Trim()}");
+            if (!string.IsNullOrWhiteSpace(ambient)) audioBedParts.Add($"Ambient bed: {ambient.Trim()}");
+            if (!string.IsNullOrWhiteSpace(sfx)) audioBedParts.Add($"Foley: {sfx.Trim()}");
+
+            var bed = audioBedParts.Count > 0
+                ? " " + string.Join(". ", audioBedParts) + "."
+                : " Secondary layer = soft room tone / Foley.";
+
             // Leave a short closed-mouth breath at the end so the next monologue clip does not butt-join
             const string endPause =
                 " After the last word, hold a brief natural pause with a closed mouth (about half a second); do not freeze mid-syllable or trail into empty staring.";
@@ -1023,14 +1033,16 @@ public static class ClipVideoPromptBuilder
                 $"exactly: \"{quote}\".{openCue}{endPause} Other mouths closed. Speech intelligible; never silent.{bed}{voiceLock}";
         }
 
-        if (!string.IsNullOrWhiteSpace(ambient) || !string.IsNullOrWhiteSpace(sfx))
+        if (!string.IsNullOrWhiteSpace(ambient) || !string.IsNullOrWhiteSpace(sfx) || !string.IsNullOrWhiteSpace(score))
         {
             var layers = new List<string>();
-            if (!string.IsNullOrWhiteSpace(ambient)) layers.Add(ambient.Trim());
-            if (!string.IsNullOrWhiteSpace(sfx)) layers.Add(sfx.Trim());
-            return $"AUDIO: ambient/Foley only — {string.Join("; ", layers)}. No dialogue.";
+            if (!string.IsNullOrWhiteSpace(score)) layers.Add($"Music score: {score.Trim()}");
+            if (!string.IsNullOrWhiteSpace(ambient)) layers.Add($"Ambience: {ambient.Trim()}");
+            if (!string.IsNullOrWhiteSpace(sfx)) layers.Add($"Foley: {sfx.Trim()}");
+            return $"AUDIO: music/ambient/Foley only — {string.Join("; ", layers)}. No dialogue.";
         }
         return "";
+
     }
 
     /// <summary>

@@ -12,39 +12,25 @@
 <PageTitle>Configuration</PageTitle>
 
 <h1>Configuration</h1>
-<p class="text-muted">
-    Settings for this project.
+<p class="text-muted mb-3">
+    @if (!string.IsNullOrWhiteSpace(_projectId))
+    {
+        <span>Settings for active project: <strong class="text-primary">@_projectId</strong></span>
+    }
+    else
+    {
+        <span>Settings and provider options for your film projects.</span>
+    }
 </p>
 
 @if (!string.IsNullOrEmpty(_error))
 {
-    <div class="alert alert-danger">@_error</div>
+    <div class="alert alert-danger mb-3">@_error</div>
 }
 @if (!string.IsNullOrEmpty(_message))
 {
-    <div class="alert alert-success">@_message</div>
+    <div class="alert alert-success mb-3">@_message</div>
 }
-
-<div class="row mb-3">
-    <div class="col-md-4">
-        <label class="form-label">Project</label>
-        <select class="form-select" @bind="_projectId" @bind:after="LoadAsync"
-                disabled="@(_busy || _projectIds.Count == 0)">
-            @if (_projectIds.Count == 0)
-            {
-                <option value="">No projects</option>
-            }
-            @foreach (var p in _projectIds)
-            {
-                <option value="@p">@p</option>
-            }
-        </select>
-    </div>
-    <div class="col-md-4 d-flex align-items-end gap-2">
-        <button class="btn btn-outline-secondary" disabled="@(_busy || string.IsNullOrEmpty(_projectId))" @onclick="LoadAsync">Reload</button>
-        <button class="btn btn-primary" disabled="@(_busy || _cfg is null || string.IsNullOrEmpty(_projectId))" @onclick="SaveAsync">Save</button>
-    </div>
-</div>
 
 @if (_projectIds.Count == 0)
 {
@@ -52,10 +38,32 @@
 }
 else if (_cfg is null)
 {
-    <p class="text-muted">Choose a project to edit settings.</p>
+    <p class="text-muted">No active project loaded. Select a project on <a href="/">Home</a>.</p>
 }
-else
 {
+    <div class="card mb-3 border-secondary">
+        <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+            <span>📁 Project Working Directory &amp; Storage</span>
+            <span class="badge bg-info">Active Storage</span>
+        </div>
+        <div class="card-body py-3">
+            <div class="row align-items-center g-3">
+                <div class="col-md-9">
+                    <div class="fw-semibold mb-1">Active Project Working Path</div>
+                    <div class="font-monospace small bg-dark p-2 rounded border border-secondary text-info text-break">
+                        @(_projectDir ?? $"projects/{_projectId}")
+                    </div>
+                    <div class="small text-muted mt-1">
+                        All screenplays, video clips, character portraits, and cached LLM responses for <strong>@_projectId</strong> are persisted in this directory.
+                    </div>
+                </div>
+                <div class="col-md-3 text-md-end">
+                    <span class="badge bg-success p-2 fs-6">● Storage Ready</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="card mb-3">
         <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center flex-wrap gap-2">
             <span>🔑 Account &amp; API keys</span>
@@ -151,12 +159,18 @@ else
                                 @(p.HasPersonalKey ? "Replace personal key" : "Add personal key")
                             </label>
                             <div class="input-group input-group-sm mb-2">
-                                <input type="password"
-                                       class="form-control"
+                                <input type="@(IsKeyVisible(p.ProviderId) ? "text" : "password")"
+                                       class="form-control font-monospace"
                                        placeholder="@ProviderPlaceholder(p.ProviderId)"
                                        value="@GetKeyInput(p.ProviderId)"
                                        @oninput="e => SetKeyInput(p.ProviderId, e.Value?.ToString())"
                                        disabled="@(_busy || _apiKeySaving)" />
+                                <button class="btn btn-outline-secondary"
+                                        type="button"
+                                        title="@(IsKeyVisible(p.ProviderId) ? "Hide key" : "Show key")"
+                                        @onclick="() => ToggleKeyVisible(p.ProviderId)">
+                                    @(IsKeyVisible(p.ProviderId) ? "🙈" : "👁️")
+                                </button>
                                 <button class="btn btn-primary"
                                         type="button"
                                         disabled="@(_busy || _apiKeySaving || string.IsNullOrWhiteSpace(GetKeyInput(p.ProviderId)))"
@@ -421,8 +435,14 @@ else
                 </div>
             </div>
         </div>
-        <div class="card-footer small text-muted">
-            Source: model catalog list prices for the active vendor. Not invoices.
+        <div class="d-flex justify-content-between align-items-center mt-3 mb-4 p-3 border rounded card">
+            <span class="text-muted small">Configuring active project: <strong>@_projectId</strong></span>
+            <div class="d-flex gap-2">
+                <button class="btn btn-outline-secondary" disabled="@(_busy || string.IsNullOrEmpty(_projectId))" @onclick="LoadAsync">Reload settings</button>
+                <button class="btn btn-primary" disabled="@(_busy || _cfg is null || string.IsNullOrEmpty(_projectId))" @onclick="SaveAsync">
+                    @(_busy ? "Saving…" : $"Save settings for {_projectId}")
+                </button>
+            </div>
         </div>
     </div>
 }
@@ -434,6 +454,7 @@ else
     private string _projectId = "";
     private List<string> _projectIds = new();
     private Dictionary<string, JsonElement>? _cfg;
+    private string? _projectDir;
 
     private string _uiTheme = "dark";
     private string _blueprintFile = "blueprint.clips.grok.json";
@@ -475,7 +496,10 @@ else
             var projs = await Engine.GetProjectsAsync();
             _projectIds = projs?.Projects.Select(p => p.Id ?? "").Where(s => s.Length > 0).ToList()
                           ?? new List<string>();
-            if (projs?.Active?.Id is { Length: > 0 } aid &&
+            if (!string.IsNullOrWhiteSpace(ActiveProject.ProjectId) &&
+                _projectIds.Exists(id => string.Equals(id, ActiveProject.ProjectId, StringComparison.OrdinalIgnoreCase)))
+                _projectId = ActiveProject.ProjectId;
+            else if (projs?.Active?.Id is { Length: > 0 } aid &&
                 _projectIds.Exists(id => string.Equals(id, aid, StringComparison.OrdinalIgnoreCase)))
                 _projectId = aid;
             else if (_projectIds.Count > 0)
@@ -544,6 +568,16 @@ else
         ["gemini"] = null,
         ["anthropic"] = null,
     };
+    private readonly HashSet<string> _visibleKeyProviders = new(StringComparer.OrdinalIgnoreCase);
+
+    private bool IsKeyVisible(string providerId) => _visibleKeyProviders.Contains(providerId);
+
+    private void ToggleKeyVisible(string providerId)
+    {
+        if (!IsKeyVisible(providerId)) _visibleKeyProviders.Add(providerId);
+        else _visibleKeyProviders.Remove(providerId);
+    }
+
     private bool _apiKeySaving;
     private string? _savingProviderId;
     private string? _apiKeyFeedback;
@@ -764,6 +798,7 @@ else
 
             var dto = await Engine.GetConfigAsync(_projectId);
             _cfg = dto?.Config;
+            _projectDir = dto?.ProjectDir ?? $"projects/{_projectId}";
             if (_cfg is null) return;
             _uiTheme = ThemeState.Normalize(GetStr("ui_theme", _uiTheme));
             _blueprintFile = GetStr("blueprint_file", _blueprintFile);

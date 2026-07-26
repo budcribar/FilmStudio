@@ -304,6 +304,7 @@ public sealed class ProjectReadCache
                 Title = p.Title,
                 Label = p.Label,
                 Path = p.Path,
+                OwnerUserId = p.OwnerUserId,
             });
         }
         return list;

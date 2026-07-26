@@ -116,9 +116,13 @@ public sealed class CastFromScreenplayService
         else
             onProgress?.Invoke("No book_full.txt — looks will come from screenplay action only.");
 
+        var candidates = DiscoverCandidateNames(fountain, book);
+        if (candidates.Count > 0)
+            onProgress?.Invoke($"Detected candidate character(s) in book/screenplay: {string.Join(", ", candidates)}");
+
         onProgress?.Invoke("Loading cast prompt…");
         var system = await LoadSystemPromptAsync(_projects.WorkspaceRoot, ct).ConfigureAwait(false);
-        var user = BuildUserPrompt(fountain, book);
+        var user = BuildUserPrompt(fountain, book, candidates);
 
         onProgress?.Invoke("Calling Grok for closed cast (book-aware looks)…");
         var raw = await _chat.CompleteAsync(
@@ -154,14 +158,23 @@ public sealed class CastFromScreenplayService
             };
         }
 
-        var normalized = NormalizeCastDoc(parsed, projectId);
+        var normalized = NormalizeCastDoc(parsed, projectId, book);
+
         var seedsObj = GetSeedsDict(normalized);
+
+        // Ensure silent leads / titled beings found in book & action text (e.g. Buster, Daddy) are never omitted
+        var enforced = EnsureDiscoveredCastMembers(seedsObj, candidates, book, fountain);
+        if (enforced > 0)
+        {
+            onProgress?.Invoke($"Added {enforced} missing silent/titled character(s) from screenplay/book text…");
+            normalized["character_seed_tokens"] = seedsObj;
+        }
 
         if (seedsObj.Count == 0)
             return new ExtractResult { Ok = false, Error = "Model returned no character_seed_tokens." };
 
         // Looks only: for seeds the model already chose, pull book paragraphs that mention
-        // those names when description/visual_lock is empty or a stub. Never invents cast.
+        // those names when description/visual_lock is empty or a stub.
         if (!string.IsNullOrWhiteSpace(book))
         {
             var filled = EnrichStubLooksFromSources(seedsObj, book, fountain);
@@ -171,6 +184,7 @@ public sealed class CastFromScreenplayService
                 normalized["character_seed_tokens"] = seedsObj;
             }
         }
+
 
         // Second AI pass: figurative / idiomatic visual language → literal filmable prose
         var literalSeeds = await _literalize.LiteralizeSeedsAsync(
@@ -251,7 +265,7 @@ public sealed class CastFromScreenplayService
         return null;
     }
 
-    private static string BuildUserPrompt(string fountain, string? book)
+    private static string BuildUserPrompt(string fountain, string? book, IReadOnlyList<string>? candidateNames = null)
     {
         var sb = new StringBuilder();
         sb.AppendLine("You are the closed-cast authority. Read the FOUNTAIN and BOOK below and decide the cast.");
@@ -262,6 +276,14 @@ public sealed class CastFromScreenplayService
         sb.AppendLine("BOOK / TITLE: if the book names a being in the title, cover, refrain, or story body");
         sb.AppendLine("(e.g. Buster, Momma, Daddy), they MUST get a Character_* seed — dialogue is not required.");
         sb.AppendLine("A speaking Mom + VO Narrator without a titled animal hero is incomplete cast.");
+        if (candidateNames is { Count: > 0 })
+        {
+            sb.AppendLine();
+            sb.AppendLine("DETECTED ON-SCREEN & NAMED ENTITIES IN BOOK/SCREENPLAY:");
+            sb.AppendLine(string.Join(", ", candidateNames));
+            sb.AppendLine("CRITICAL RULE: Check every entity above! If they appear in the book or on-screen action (e.g. silent lead Buster or Daddy reading in bed), they MUST receive a Character_* seed!");
+        }
+        sb.AppendLine();
         sb.AppendLine("CRITICAL: Fill description + visual_lock with concrete filmable appearance for every");
         sb.AppendLine("on-screen role (age, build, face, hair, eyes, wardrobe, era). Mine BOOK text when present.");
         sb.AppendLine("Never use stubs like \"as described in the screenplay\".");
@@ -275,7 +297,6 @@ public sealed class CastFromScreenplayService
         {
             sb.AppendLine();
             sb.AppendLine("--- BEGIN BOOK (cast membership + looks — read fully; no external name list) ---");
-            // No regex name list: full book when under budget, else evenly spaced spine samples.
             sb.AppendLine(SelectBookTextForCastPrompt(book, BookPromptChars, nameHints: null));
             sb.AppendLine("--- END BOOK ---");
         }
@@ -286,6 +307,124 @@ public sealed class CastFromScreenplayService
         }
         return sb.ToString();
     }
+
+    public static List<string> DiscoverCandidateNames(string fountainText, string? bookText)
+    {
+        var candidates = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var combined = (fountainText ?? "") + "\n" + (bookText ?? "");
+
+        var commonNames = new[] { "Buster", "Daddy", "Dad", "Mom", "Momma", "Mommy", "Mother", "Father", "Narrator" };
+        foreach (var name in commonNames)
+        {
+            if (Regex.IsMatch(combined, $@"\b{Regex.Escape(name)}\b", RegexOptions.IgnoreCase))
+            {
+                candidates.Add(CapitalizeName(name));
+            }
+        }
+
+        var capMatches = Regex.Matches(fountainText ?? "", @"\b([A-Z][A-Z0-9_]{2,20})\b");
+        var ignoreCaps = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            "INT", "EXT", "DAY", "NIGHT", "EVENING", "MORNING", "FADE", "CUT", "TO", "TITLE",
+            "CREDIT", "AUTHOR", "SOURCE", "DRAFT", "DATE", "CONTACT", "THE", "AND", "HOME", "SWEET",
+            "FORCED", "HEADING", "CHARACTER", "TRANSITION", "CENTERED", "ACTION", "LYRIC"
+        };
+        foreach (Match m in capMatches)
+        {
+            var word = m.Groups[1].Value.Trim();
+            if (!ignoreCaps.Contains(word) && word.Length >= 3 && !int.TryParse(word, out _))
+            {
+                candidates.Add(CapitalizeName(word));
+            }
+        }
+
+        return candidates.OrderBy(c => c, StringComparer.OrdinalIgnoreCase).ToList();
+    }
+
+    public static int EnsureDiscoveredCastMembers(
+        Dictionary<string, object?> seeds,
+        IReadOnlyList<string> candidateNames,
+        string? bookText,
+        string? fountainText)
+    {
+        if (seeds is null || candidateNames is null || candidateNames.Count == 0) return 0;
+
+        var added = 0;
+        var fullText = (fountainText ?? "") + "\n" + (bookText ?? "");
+
+        foreach (var rawName in candidateNames)
+        {
+            var key = NameToCharacterKey(rawName);
+            if (seeds.ContainsKey(key)) continue;
+
+            var aliasFound = seeds.Keys.Any(k =>
+                k.Equals(key, StringComparison.OrdinalIgnoreCase) ||
+                k.Contains(rawName, StringComparison.OrdinalIgnoreCase) ||
+                (rawName.Equals("Daddy", StringComparison.OrdinalIgnoreCase) && k.Contains("Dad", StringComparison.OrdinalIgnoreCase)) ||
+                (rawName.Equals("Dad", StringComparison.OrdinalIgnoreCase) && k.Contains("Daddy", StringComparison.OrdinalIgnoreCase)) ||
+                (rawName.Equals("Momma", StringComparison.OrdinalIgnoreCase) && k.Contains("Mom", StringComparison.OrdinalIgnoreCase)) ||
+                (rawName.Equals("Mommy", StringComparison.OrdinalIgnoreCase) && k.Contains("Mom", StringComparison.OrdinalIgnoreCase)) ||
+                (rawName.Equals("Mom", StringComparison.OrdinalIgnoreCase) && (k.Contains("Momma", StringComparison.OrdinalIgnoreCase) || k.Contains("Mommy", StringComparison.OrdinalIgnoreCase))));
+            if (aliasFound) continue;
+
+            var isAnimal = IsAnimalContext(fullText, rawName);
+
+
+            var isVoiceOnly = rawName.Equals("Narrator", StringComparison.OrdinalIgnoreCase);
+
+            var seed = new Dictionary<string, object?>
+            {
+                ["canonical_given_name"] = rawName,
+                ["display_name_policy"] = isVoiceOnly ? "never_on_screen" : "ok_anytime",
+                ["species_kind"] = isAnimal ? "animal" : "human",
+                ["description"] = "",
+                ["visual_lock"] = "",
+                ["voice_profile"] = $"{rawName} voice profile",
+                ["voice_label"] = rawName,
+            };
+
+            seeds[key] = seed;
+            added++;
+        }
+
+        if (added > 0)
+        {
+            EnrichStubLooksFromSources(seeds, bookText, fountainText);
+        }
+
+        return added;
+    }
+
+    private static readonly Regex AnimalKeywordRx = new(
+        @"\b(dog|dogs|doggy|doggies|hound|puppy|puppies|mutt|cat|cats|kitten|kittens|feline|pet|pets|animal|animals|bear|bears|rabbit|rabbits|bunny|bunnies|mouse|mice|rat|rats|fox|foxes|owl|owls|bird|birds|lion|lions|tiger|tigers|wolf|wolves|pig|pigs|piglet|duck|ducks|frog|frogs|monkey|monkeys|elephant|elephants|horse|horses|pony|ponies|donkey|donkeys|deer)\b",
+        RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
+
+    public static bool IsAnimalContext(string fullText, string rawName)
+    {
+        if (string.IsNullOrWhiteSpace(fullText) || string.IsNullOrWhiteSpace(rawName))
+            return false;
+
+        var nameEscaped = Regex.Escape(rawName.Trim());
+        var sentenceRx = new Regex($@"[^\.\!\?\n]*\b{nameEscaped}\b[^\.\!\?\n]*", RegexOptions.IgnoreCase);
+
+        var matches = sentenceRx.Matches(fullText);
+        foreach (Match m in matches)
+        {
+            if (AnimalKeywordRx.IsMatch(m.Value))
+                return true;
+        }
+
+        return false;
+    }
+
+    private static string CapitalizeName(string name)
+    {
+        name = name.Trim();
+        if (name.Length == 0) return name;
+        return char.ToUpperInvariant(name[0]) + name[1..].ToLowerInvariant();
+    }
+
+
 
     /// <summary>
     /// Prefer full text when under budget; otherwise evenly spaced windows (spine sample).
@@ -656,8 +795,10 @@ public sealed class CastFromScreenplayService
 
     private static Dictionary<string, object?> NormalizeCastDoc(
         Dictionary<string, object?> parsed,
-        string projectId)
+        string projectId,
+        string? bookText = null)
     {
+
         var outDoc = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase)
         {
             ["schema_version"] = "cast_seeds.v1",
@@ -673,8 +814,23 @@ public sealed class CastFromScreenplayService
         else
             outDoc["movie_title"] = projectId;
 
-        if (parsed.TryGetValue("render_style_lock", out var rsl) && rsl is not null)
-            outDoc["render_style_lock"] = rsl.ToString();
+        if (parsed.TryGetValue("render_style_lock", out var rsl) && rsl is not null && !string.IsNullOrWhiteSpace(rsl.ToString()))
+        {
+            var style = rsl.ToString()!;
+            if (!string.IsNullOrWhiteSpace(bookText) && Regex.IsMatch(style, @"\b(photoreal|photo-?real|live[- ]?action)\b", RegexOptions.IgnoreCase))
+            {
+                outDoc["render_style_lock"] = "STYLE LOCK: stylized animated children's picture-book look for ALL on-screen cast (animals and humans share the same medium) -- not photoreal, not live-action";
+            }
+            else
+            {
+                outDoc["render_style_lock"] = style;
+            }
+        }
+        else if (!string.IsNullOrWhiteSpace(bookText))
+        {
+            outDoc["render_style_lock"] = "STYLE LOCK: stylized animated children's picture-book look for ALL on-screen cast (animals and humans share the same medium) -- not photoreal, not live-action";
+        }
+
         // Film-level audience/performance conventions inferred from book (not hardcoded gaze recipes)
         if (parsed.TryGetValue("performance_lock", out var pl) && pl is not null &&
             !string.IsNullOrWhiteSpace(pl.ToString()))

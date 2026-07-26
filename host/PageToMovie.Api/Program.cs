@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Text.Json;
+using PageToMovie.Api;
 using PageToMovie.Api.Auth;
 using PageToMovie.Api.Hubs;
 using PageToMovie.Api.Services;
@@ -966,12 +967,45 @@ app.MapGet("/api/admin/users", async (IUserContext user, CreditService credits) 
 app.MapGet("/api/admin/projects/{id}/export", async (
     string id,
     IUserContext user,
+    IOptions<PageToMovieOptions> opts,
+    HttpContext http,
     ProjectArchiveService archives,
     CancellationToken ct) =>
 {
-    if (!user.IsAdmin)
+    var secret = AuthOptions.ResolveOperatorOverrideSecret(opts.Value.Auth);
+    var isOperator = !string.IsNullOrWhiteSpace(secret) &&
+        (string.Equals(http.Request.Query["me"].ToString(), secret, StringComparison.Ordinal) ||
+         string.Equals(http.Request.Query["admin_key"].ToString(), secret, StringComparison.Ordinal) ||
+         string.Equals(http.Request.Headers["X-Admin-Key"].ToString(), secret, StringComparison.Ordinal));
+
+    if (!user.IsAdmin && !isOperator)
         return Results.Json(new { ok = false, error = "admin role required" },
             statusCode: StatusCodes.Status403Forbidden);
+    try
+    {
+        var exp = await archives.ExportAsync(id, ct);
+        return Results.File(
+            exp.Stream,
+            exp.ContentType,
+            exp.FileName,
+            enableRangeProcessing: false);
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { ok = false, error = ex.Message });
+    }
+});
+
+/// <summary>Download project folder as zip (logged in user / operator).</summary>
+app.MapGet("/api/projects/{id}/export", async (
+    string id,
+    IUserContext user,
+    IOptions<PageToMovieOptions> opts,
+    ProjectArchiveService archives,
+    CancellationToken ct) =>
+{
+    if (AuthGate.RequireLogin(user, opts) is { } denied)
+        return denied;
     try
     {
         var exp = await archives.ExportAsync(id, ct);
@@ -1012,6 +1046,13 @@ app.MapPost("/api/admin/projects/import", async (
     var preferredId = form["projectId"].ToString();
     if (string.IsNullOrWhiteSpace(preferredId))
         preferredId = form["id"].ToString();
+
+    var targetUserId = form["targetUserId"].ToString();
+    if (string.IsNullOrWhiteSpace(targetUserId))
+        targetUserId = form["userId"].ToString();
+    if (string.IsNullOrWhiteSpace(targetUserId))
+        targetUserId = form["ownerUserId"].ToString();
+
     var overwrite = string.Equals(form["overwrite"].ToString(), "true", StringComparison.OrdinalIgnoreCase)
                     || string.Equals(form["overwrite"].ToString(), "1", StringComparison.OrdinalIgnoreCase);
 
@@ -1022,6 +1063,7 @@ app.MapPost("/api/admin/projects/import", async (
             stream,
             preferredId: string.IsNullOrWhiteSpace(preferredId) ? null : preferredId.Trim(),
             overwrite: overwrite,
+            targetUserId: string.IsNullOrWhiteSpace(targetUserId) ? null : targetUserId.Trim(),
             ct: ct);
         return Results.Ok(new
         {
@@ -1280,6 +1322,63 @@ app.MapPost("/api/admin/chat-cache/clear", (IUserContext user, IServiceProvider 
     return Results.Ok(new { ok = true, filesRemoved = removed });
 });
 
+app.MapPost("/api/admin/test-email", async (
+    TestEmailRequest? body,
+    IUserContext user,
+    IEmailSender sender,
+    IOptions<PageToMovieOptions> opts) =>
+{
+    if (!user.IsAdmin)
+        return Results.Json(new { ok = false, error = "admin role required" }, statusCode: StatusCodes.Status403Forbidden);
+
+    var to = (body?.ToEmail ?? "").Trim();
+    if (string.IsNullOrWhiteSpace(to) || !to.Contains('@'))
+        return Results.BadRequest(new { ok = false, error = "Valid recipient email address (toEmail) is required." });
+
+    var senderType = sender.GetType().Name;
+    var resolvedKey = MailOptions.ResolveResendApiKey(opts.Value.Mail);
+    var resendKeyResolved = !string.IsNullOrWhiteSpace(resolvedKey);
+
+    var checkedEnvs = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
+    foreach (System.Collections.DictionaryEntry de in Environment.GetEnvironmentVariables())
+    {
+        var k = de.Key?.ToString();
+        if (!string.IsNullOrWhiteSpace(k) && (k.StartsWith("Resend", StringComparison.OrdinalIgnoreCase) || k.Contains("Mail", StringComparison.OrdinalIgnoreCase)))
+        {
+            checkedEnvs[k] = !string.IsNullOrWhiteSpace(de.Value?.ToString());
+        }
+    }
+
+    try
+    {
+        await sender.SendAsync(
+            to,
+            "PageToMovie Resend Test Email",
+            $"<h1>PageToMovie Email Test</h1><p>This email was successfully sent via <strong>{senderType}</strong> on Railway.</p>",
+            $"PageToMovie Email Test: Sent via {senderType} on Railway.");
+
+        return Results.Ok(new
+        {
+            ok = true,
+            message = $"Test email sent to {to} via {senderType}.",
+            senderType,
+            resendKeyResolved,
+            checkedEnvs,
+        });
+    }
+    catch (Exception ex)
+    {
+        return Results.Json(new
+        {
+            ok = false,
+            error = ex.Message,
+            senderType,
+            resendKeyResolved,
+            checkedEnvs,
+        }, statusCode: StatusCodes.Status500InternalServerError);
+    }
+});
+
 app.MapPost("/api/admin/jobs/{jobId}/cancel", async (string jobId, IUserContext user, FilmJobService jobService) =>
 {
     if (!user.IsAdmin)
@@ -1403,7 +1502,13 @@ app.MapGet("/api/projects", async (
     // Project inventory is not public — requires sign-in (prevents anonymous enumeration).
     if (AuthGate.RequireLogin(user, opts) is { } denied)
         return denied;
-    var list = await store.ListProjectsAsync(ct);
+    var all = await store.ListProjectsAsync(ct);
+    var list = user.IsAdmin
+        ? all
+        : all.Where(p =>
+            string.IsNullOrWhiteSpace(p.OwnerUserId) ||
+            string.Equals(p.OwnerUserId, user.UserId, StringComparison.OrdinalIgnoreCase)).ToList();
+
     var activeId = store.ActiveProjectId;
     if (string.IsNullOrWhiteSpace(activeId) && list.Count > 0)
         activeId = list[0].Id;
@@ -1709,7 +1814,8 @@ app.MapGet("/api/projects/{id}/config", async (string id, ProjectStore store, Ca
     try
     {
         var cfg = await store.GetConfigAsync(id, ct);
-        return Results.Ok(new { ok = true, projectId = id, config = cfg });
+        var projectDir = store.GetProjectDir(id);
+        return Results.Ok(new { ok = true, projectId = id, projectDir, config = cfg });
     }
     catch (Exception ex)
     {
@@ -1809,6 +1915,55 @@ app.MapGet("/api/projects/{projectId}/characters/{charKey}/bookrefs/{index:int}"
         return Results.BadRequest(new { ok = false, error = ex.Message });
     }
 });
+
+app.MapGet("/api/projects/{projectId}/book-images/{fileName}",
+    (string projectId, string fileName, ProjectStore store) =>
+{
+    try
+    {
+        var dir = Path.Combine(store.GetProjectDir(projectId), "source", "book_images");
+        var file = Path.GetFileName(fileName);
+        var path = Path.Combine(dir, file);
+        if (!File.Exists(path))
+            return Results.NotFound(new { ok = false, error = "book image not found" });
+        return Results.File(path, GuessImageContentType(path));
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { ok = false, error = ex.Message });
+    }
+});
+
+app.MapGet("/api/projects/{projectId}/characters/{charKey}/book-candidates",
+    async (string projectId, string charKey, CharacterBookPlateService service, CancellationToken ct) =>
+{
+    try
+    {
+        var candidates = await service.GetRankedBookCandidatesAsync(projectId, charKey, ct);
+        return Results.Ok(new { ok = true, candidates });
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { ok = false, error = ex.Message });
+    }
+});
+
+app.MapPost("/api/projects/{projectId}/characters/{charKey}/set-book-refs",
+    (string projectId, string charKey, SetBookRefsRequest body, ProjectStore store) =>
+
+{
+    try
+    {
+        var paths = body.ImagePaths ?? new List<string>();
+        store.SetCharacterBookRefs(projectId, charKey, paths);
+        return Results.Ok(new { ok = true, message = $"Saved {paths.Count} book reference picture(s) for {charKey}" });
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { ok = false, error = ex.Message });
+    }
+});
+
 
 app.MapPost("/api/jobs/character-variants", async (StartCharacterVariantsRequest body, FilmJobService jobService) =>
 {
@@ -2058,12 +2213,15 @@ app.MapPost("/api/projects/{id}/characters/extract-cast", async (
 {
     try
     {
+        using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        timeoutCts.CancelAfter(TimeSpan.FromSeconds(50));
+
         body ??= new ExtractCastRequest();
         var result = await castService.ExtractAsync(
             id,
             model: string.IsNullOrWhiteSpace(body.Model) ? "grok-4.5" : body.Model!,
             force: body.Force,
-            ct: ct);
+            ct: timeoutCts.Token);
         return result.Ok
             ? Results.Ok(new
             {
@@ -2085,10 +2243,15 @@ app.MapPost("/api/projects/{id}/characters/extract-cast", async (
                 rawPath = result.RawPath,
             });
     }
+    catch (OperationCanceledException) when (!ct.IsCancellationRequested)
+    {
+        return Results.BadRequest(new { ok = false, error = "Cast extraction timed out (exceeded 50s). Please try again." });
+    }
     catch (Exception ex)
     {
         return Results.BadRequest(new { ok = false, error = ex.Message });
     }
+
 });
 
 /// <summary>
@@ -3949,6 +4112,14 @@ app.Run();
 
 namespace PageToMovie.Api
 {
+    public record SetBookRefsRequest(List<string>? ImagePaths);
+
+    public sealed class TestEmailRequest
+    {
+        public string ToEmail { get; set; } = "";
+    }
+
     // Expose entry assembly for WebApplicationFactory integration tests.
     public partial class Program { }
 }
+

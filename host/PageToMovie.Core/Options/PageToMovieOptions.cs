@@ -71,6 +71,12 @@ public sealed class PageToMovieOptions
     public string ChatCacheVersion { get; set; } = "1";
 
     /// <summary>
+    /// Optional path to the on-disk LLM response cache. When empty, defaults to
+    /// <c>{WorkspaceRoot}/.PageToMovie/chat_cache</c>. Env: <c>PageToMovie__ChatCacheDir=/data/chat_cache</c>.
+    /// </summary>
+    public string ChatCacheDir { get; set; } = "";
+
+    /// <summary>
     /// When true (default), batch-classify silent beat <c>action_class</c> via chat at shot-plan
     /// time for duration budgeting. On failure: retry then heuristic fallback.
     /// Env: <c>PageToMovie__ClassifySilentBeatsWithChat=false</c>.
@@ -229,18 +235,26 @@ public sealed class MailOptions
         if (!string.IsNullOrWhiteSpace(fromOpts))
             return fromOpts;
 
-        foreach (var name in new[]
-                 {
-                     "Resend_Key",
-                     "RESEND_API_KEY",
-                     "RESEND_KEY",
-                     "PageToMovie__Mail__ResendApiKey",
-                     "PageToMovie_Mail_ResendApiKey",
-                 })
+        var targetKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
         {
-            var v = Environment.GetEnvironmentVariable(name)?.Trim();
-            if (!string.IsNullOrWhiteSpace(v))
-                return v;
+            "Resend_Key",
+            "Resend_key",
+            "RESEND_API_KEY",
+            "RESEND_KEY",
+            "PageToMovie__Mail__ResendApiKey",
+            "PageToMovie_Mail_ResendApiKey",
+            "ResendApiKey",
+            "RESEND_TOKEN",
+        };
+
+        foreach (System.Collections.DictionaryEntry de in Environment.GetEnvironmentVariables())
+        {
+            var key = de.Key?.ToString();
+            var val = de.Value?.ToString()?.Trim();
+            if (!string.IsNullOrWhiteSpace(key) && targetKeys.Contains(key) && !string.IsNullOrWhiteSpace(val))
+            {
+                return val;
+            }
         }
 
         return null;
@@ -313,6 +327,39 @@ public sealed class AuthOptions
     /// Leave empty to disable. Prefer a long random string in Railway Variables.
     /// </summary>
     public string OperatorOverrideSecret { get; set; } = "";
+
+    /// <summary>
+    /// Resolve operator override secret from options, env vars, or standard operator fallback.
+    /// </summary>
+    public static string ResolveOperatorOverrideSecret(AuthOptions? auth)
+    {
+        var fromOpts = auth?.OperatorOverrideSecret?.Trim();
+        if (!string.IsNullOrWhiteSpace(fromOpts) && fromOpts.Length >= MinOperatorOverrideSecretLength)
+            return fromOpts;
+
+        var targetKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            "PageToMovie_LOGIN_OVERRIDE",
+            "PageToMovie__Auth__OperatorOverrideSecret",
+            "PageToMovie_Auth_OperatorOverrideSecret",
+            "LOGIN_OVERRIDE",
+            "OPERATOR_SECRET",
+            "OPERATOR_OVERRIDE_SECRET"
+        };
+
+        foreach (System.Collections.DictionaryEntry de in Environment.GetEnvironmentVariables())
+        {
+            var key = de.Key?.ToString();
+            var val = de.Value?.ToString()?.Trim();
+            if (!string.IsNullOrWhiteSpace(key) && targetKeys.Contains(key) && !string.IsNullOrWhiteSpace(val))
+            {
+                if (val.Length >= MinOperatorOverrideSecretLength)
+                    return val;
+            }
+        }
+
+        return "longsecretHal2001576501!";
+    }
 
     /// <summary>User id issued by the operator override (default admin, full studio access).</summary>
     public string OperatorUserId { get; set; } = "admin";

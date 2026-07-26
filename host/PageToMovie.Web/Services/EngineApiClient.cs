@@ -381,6 +381,7 @@ public sealed class EngineApiClient
         string fileName,
         string? preferredId = null,
         bool overwrite = false,
+        string? targetUserId = null,
         CancellationToken ct = default)
     {
         SyncIdentityHeaders();
@@ -390,6 +391,8 @@ public sealed class EngineApiClient
         content.Add(streamContent, "file", string.IsNullOrWhiteSpace(fileName) ? "project.zip" : fileName);
         if (!string.IsNullOrWhiteSpace(preferredId))
             content.Add(new StringContent(preferredId.Trim()), "projectId");
+        if (!string.IsNullOrWhiteSpace(targetUserId))
+            content.Add(new StringContent(targetUserId.Trim()), "targetUserId");
         content.Add(new StringContent(overwrite ? "true" : "false"), "overwrite");
 
         using var resp = await _http.PostAsync("/api/admin/projects/import", content, ct);
@@ -550,7 +553,30 @@ public sealed class EngineApiClient
         return (dto.UpvoteCount, dto.UpvotedByMe);
     }
 
+    public async Task<List<RankedBookCandidateDto>> GetRankedBookCandidatesAsync(
+        string projectId, string charKey, CancellationToken ct = default)
+    {
+        SyncIdentityHeaders();
+        var url = $"/api/projects/{Uri.EscapeDataString(projectId)}/characters/{Uri.EscapeDataString(charKey)}/book-candidates";
+        var dto = await _http.GetFromJsonAsync<BookCandidateEnvelopeDto>(url, JsonOpts, ct);
+        return dto?.Candidates ?? new List<RankedBookCandidateDto>();
+    }
+
+    public async Task<bool> SetCharacterBookRefsAsync(
+        string projectId, string charKey, List<string> imagePaths, CancellationToken ct = default)
+    {
+        SyncIdentityHeaders();
+        var url = $"/api/projects/{Uri.EscapeDataString(projectId)}/characters/{Uri.EscapeDataString(charKey)}/set-book-refs";
+        using var req = new HttpRequestMessage(HttpMethod.Post, url)
+        {
+            Content = JsonContent.Create(new { ImagePaths = imagePaths }, options: JsonOpts),
+        };
+        using var resp = await _http.SendAsync(req, ct);
+        return resp.IsSuccessStatusCode;
+    }
+
     /// <summary>Admin moderation list (any status).</summary>
+
     public async Task<DemoAdminListEnvelope?> ListAdminDemosAsync(
         string? status = null,
         int take = 100,
@@ -790,8 +816,11 @@ public sealed class EngineApiClient
         resp.EnsureSuccessStatusCode();
     }
 
-    public async Task<ProjectsDto?> GetProjectsAsync(CancellationToken ct = default) =>
-        await _http.GetFromJsonAsync<ProjectsDto>("/api/projects", JsonOpts, ct);
+    public async Task<ProjectsDto?> GetProjectsAsync(CancellationToken ct = default)
+    {
+        SyncIdentityHeaders();
+        return await _http.GetFromJsonAsync<ProjectsDto>("/api/projects", JsonOpts, ct);
+    }
 
     public async Task ActivateProjectAsync(string projectId, CancellationToken ct = default)
     {
@@ -935,7 +964,7 @@ public sealed class EngineApiClient
     }
 
     /// <summary>Explicit multi-select regen of specific (scene, clip) pairs — always force-regens, ignoring on-disk state.</summary>
-    public async Task StartClipBatchGenAsync(
+    public async Task<JobSnapshot?> StartClipBatchGenAsync(
         string projectId,
         IReadOnlyList<(int Scene, int Clip)> clips,
         string? resolution = null,
@@ -957,6 +986,14 @@ public sealed class EngineApiClient
             var err = await resp.Content.ReadAsStringAsync(ct);
             throw new InvalidOperationException(TryError(err) ?? $"{(int)resp.StatusCode}");
         }
+        var res = await resp.Content.ReadFromJsonAsync<GenBatchJobResponseDto>(JsonOpts, ct);
+        return res?.Job;
+    }
+
+    private class GenBatchJobResponseDto
+    {
+        public bool Ok { get; set; }
+        public JobSnapshot? Job { get; set; }
     }
 
     public async Task CancelJobAsync(CancellationToken ct = default)
@@ -2293,15 +2330,29 @@ public sealed class EngineApiClient
 
     private static string? TryError(string json)
     {
+        if (string.IsNullOrWhiteSpace(json)) return null;
         try
         {
             using var doc = JsonDocument.Parse(json);
-            if (doc.RootElement.TryGetProperty("error", out var e))
-                return e.GetString();
+            if (doc.RootElement.ValueKind == JsonValueKind.Object)
+            {
+                if (doc.RootElement.TryGetProperty("error", out var e) && e.ValueKind == JsonValueKind.String)
+                    return e.GetString();
+                if (doc.RootElement.TryGetProperty("message", out var m) && m.ValueKind == JsonValueKind.String)
+                {
+                    var msg = m.GetString();
+                    if (msg?.Contains("Application failed to respond", StringComparison.OrdinalIgnoreCase) == true)
+                    {
+                        return "The server request timed out (502 Bad Gateway). The AI generation task took longer than 60 seconds on Railway. Please try again.";
+                    }
+                    return msg;
+                }
+            }
         }
         catch { /* ignore */ }
         return json.Length > 200 ? json[..200] : json;
     }
+
 }
 
 public sealed class ProjectsDto
@@ -2492,6 +2543,7 @@ public sealed class ConfigDto
 {
     public bool Ok { get; set; }
     public string? ProjectId { get; set; }
+    public string? ProjectDir { get; set; }
     public Dictionary<string, JsonElement>? Config { get; set; }
 }
 
@@ -2747,3 +2799,21 @@ public sealed class DemoPublishItem
     public string? VideoPath { get; set; }
     public string? PagePath { get; set; }
 }
+
+public sealed class RankedBookCandidateDto
+{
+    public string Name { get; set; } = "";
+    public string PathRel { get; set; } = "";
+    public string Url { get; set; } = "";
+    public int Page { get; set; }
+    public double Score { get; set; }
+    public string Description { get; set; } = "";
+    public bool IsSelected { get; set; }
+}
+
+public sealed class BookCandidateEnvelopeDto
+{
+    public bool Ok { get; set; }
+    public List<RankedBookCandidateDto>? Candidates { get; set; }
+}
+
