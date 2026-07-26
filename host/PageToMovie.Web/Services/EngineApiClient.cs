@@ -607,6 +607,22 @@ public sealed class EngineApiClient
         return (dto.UpvoteCount, dto.UpvotedByMe);
     }
 
+    /// <summary>
+    /// Feature 11: fork the studio project behind a public demo film (signed-in).
+    /// Returns the new project id under the current user.
+    /// </summary>
+    public async Task<DemoForkResult> ForkDemoProjectAsync(string demoId, CancellationToken ct = default)
+    {
+        using var req = new HttpRequestMessage(
+            HttpMethod.Post,
+            $"/api/demos/{Uri.EscapeDataString(demoId)}/fork");
+        var dto = await SendJsonAsync<DemoForkResult>(req, ct)
+                  ?? throw new InvalidOperationException("Fork failed");
+        if (!dto.Ok)
+            throw new InvalidOperationException(dto.Error ?? "Fork failed");
+        return dto;
+    }
+
     public async Task<List<RankedBookCandidateDto>> GetRankedBookCandidatesAsync(
         string projectId, string charKey, CancellationToken ct = default)
     {
@@ -2860,10 +2876,23 @@ public sealed class DemoListItem
     public string? VideoPath { get; set; }
     public int UpvoteCount { get; set; }
     public bool UpvotedByMe { get; set; }
+    /// <summary>Studio project still exists — gallery can offer Fork.</summary>
+    public bool CanFork { get; set; }
     public string? YoutubeId { get; set; }
     public string? YoutubeUrl { get; set; }
     public string? YoutubeUploadStatus { get; set; }
     public string? YoutubeUploadError { get; set; }
+}
+
+public sealed class DemoForkResult
+{
+    public bool Ok { get; set; }
+    public string? Error { get; set; }
+    public string? ProjectId { get; set; }
+    public string? Title { get; set; }
+    public string? ParentProjectId { get; set; }
+    public string? DemoId { get; set; }
+    public string? Message { get; set; }
 }
 
 public sealed class DemoUpvoteResult

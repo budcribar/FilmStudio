@@ -206,7 +206,7 @@ Window 1 (<24h): direct AI CDN download. Window 2 (>24h): server proxy fallback,
 | 1 | Media-Aware Contribution PRs | ❌ Not Done | `ProjectContributionService.cs` doesn't exist |
 | 2 | Sync Fork from Origin | ✅ Done (2026-07-26) | Real 3-way merge + conflict detection; only the conflict-review *UI* is missing |
 | 3 | Creator Profile Badges | ❌ Not Done | `CreatorProfileHeader.razor` doesn't exist |
-| 4 | Fork & YouTube Comment Buttons | 🟡 Half | Comment ✅; no self-service gallery Fork button (email-invite fork exists instead, item 15) |
+| 4 | Fork & YouTube Comment Buttons | ✅ Done | Comment ✅; gallery 🍴 Fork project via `POST /api/demos/{id}/fork` (Feature 11) |
 | 5 | GitHub Org Strategy | ❌ Not Done | Manual infra task, not set up |
 | 6 | `PageToMovie.GitUi` NuGet Package | ❌ Not Done | Project doesn't exist |
 | 7 | Git LFS Strategy | 🟡 Partial | No `.gitattributes`, no in-app opt-in |

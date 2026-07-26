@@ -3800,7 +3800,8 @@ app.MapGet("/api/share/{token}", (string token, MediaShareService shares, Projec
 static object DemoPublicDto(
     DemoCatalogService.DemoEntry d,
     int upvoteCount = 0,
-    bool upvotedByMe = false) => new
+    bool upvotedByMe = false,
+    bool canFork = false) => new
 {
     d.Id,
     d.Title,
@@ -3813,6 +3814,8 @@ static object DemoPublicDto(
     d.ReportCount,
     upvoteCount,
     upvotedByMe,
+    // True when this public film's studio project still exists (gallery Fork button).
+    canFork,
     videoPath = string.IsNullOrWhiteSpace(d.YoutubeId) ? $"/api/demos/{Uri.EscapeDataString(d.Id)}/video" : null,
     d.YoutubeId,
     d.YoutubeUrl,
@@ -3845,12 +3848,14 @@ static object DemoAdminDto(DemoCatalogService.DemoEntry d) => new
 };
 
 /// <summary>Public gallery: only approved demos (no login). sort=top|new (default top by upvotes).</summary>
-app.MapGet("/api/demos", (
+app.MapGet("/api/demos", async (
     DemoCatalogService demos,
     DemoUpvoteService upvotes,
+    ProjectStore store,
     IUserContext user,
     int? take,
-    string? sort) =>
+    string? sort,
+    CancellationToken ct) =>
 {
     var list = demos.ListPublic(take ?? 50).ToList();
     var ids = list.Select(d => d.Id).ToList();
@@ -3864,6 +3869,22 @@ app.MapGet("/api/demos", (
             .OrderByDescending(d => counts.GetValueOrDefault(d.Id))
             .ThenByDescending(d => d.CreatedAt),
     };
+
+    // Which demos still have a studio project to fork (Feature 11).
+    var forkableProjectIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+    foreach (var pid in ordered
+                 .Select(d => d.ProjectId)
+                 .Where(p => !string.IsNullOrWhiteSpace(p))
+                 .Distinct(StringComparer.OrdinalIgnoreCase)!)
+    {
+        try
+        {
+            if (await store.GetProjectAsync(pid!, ct) is not null)
+                forkableProjectIds.Add(pid!);
+        }
+        catch { /* skip */ }
+    }
+
     return Results.Ok(new
     {
         ok = true,
@@ -3871,7 +3892,8 @@ app.MapGet("/api/demos", (
         demos = ordered.Select(d => DemoPublicDto(
             d,
             counts.GetValueOrDefault(d.Id),
-            mine.Contains(d.Id))),
+            mine.Contains(d.Id),
+            canFork: !string.IsNullOrWhiteSpace(d.ProjectId) && forkableProjectIds.Contains(d.ProjectId!))),
     });
 });
 
@@ -3957,6 +3979,68 @@ app.MapPost("/api/demos/{demoId}/upvote", (
         upvoteCount = upvotes.GetCount(demoId),
         upvotedByMe = true,
     });
+});
+
+/// <summary>
+/// Feature 11: fork the studio project behind a public gallery film (lightweight package, no video).
+/// Requires sign-in. Visibility modes are not fully productized yet — any public demo with a
+/// still-existing source project is forkable from the gallery.
+/// </summary>
+app.MapPost("/api/demos/{demoId}/fork", async (
+    string demoId,
+    DemoCatalogService demos,
+    ProjectStore store,
+    IUserContext user,
+    UserDatabaseService userDb,
+    IOptions<PageToMovieOptions> opts,
+    CancellationToken ct) =>
+{
+    if (await AuthGate.RequireTermsAcceptedAsync(user, userDb, opts) is { } denied)
+        return denied;
+
+    var d = demos.TryGet(demoId);
+    if (d is null || !demos.IsPubliclyStreamable(d))
+        return Results.NotFound(new { ok = false, error = "Demo not found" });
+
+    var sourceId = (d.ProjectId ?? "").Trim();
+    if (sourceId.Length == 0)
+    {
+        return Results.BadRequest(new
+        {
+            ok = false,
+            error = "This film has no studio project to fork.",
+            code = "no_source_project",
+        });
+    }
+
+    try
+    {
+        var source = await store.GetProjectAsync(sourceId, ct);
+        if (source is null)
+        {
+            return Results.BadRequest(new
+            {
+                ok = false,
+                error = "The studio project for this film is no longer available.",
+                code = "source_missing",
+            });
+        }
+
+        var fork = await store.ForkProjectAsync(sourceId, user.UserId!, ct);
+        return Results.Ok(new
+        {
+            ok = true,
+            projectId = fork.Id,
+            title = fork.Title,
+            parentProjectId = sourceId,
+            demoId,
+            message = $"Created “{fork.Title ?? fork.Id}” from this film’s project.",
+        });
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { ok = false, error = ex.Message });
+    }
 });
 
 /// <summary>Remove star / upvote (signed-in).</summary>
