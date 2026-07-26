@@ -2155,6 +2155,41 @@ app.MapGet("/api/projects/{id}/contribution-diff", async (
     }
 });
 
+app.MapPost("/api/projects/{id}/contribution-sync-media", async (
+    string id,
+    SyncOriginApiRequest req,
+    ProjectStore store,
+    ProjectContributionService contribService,
+    IUserContext user,
+    IOptions<PageToMovieOptions> opts,
+    CancellationToken ct) =>
+{
+    if (AuthGate.RequireLogin(user, opts) is { } denied)
+        return denied;
+
+    var parentId = req?.ParentProjectId;
+    if (string.IsNullOrWhiteSpace(parentId))
+    {
+        var proj = await store.GetProjectAsync(id, ct);
+        parentId = proj?.ParentProjectId;
+    }
+
+    if (string.IsNullOrWhiteSpace(parentId))
+        return Results.BadRequest(new { ok = false, error = "parentProjectId required for media sync" });
+
+    try
+    {
+        var targetDir = store.GetProjectDir(id);
+        var originDir = store.GetProjectDir(parentId);
+        var result = await contribService.SyncContributionMediaAsync(targetDir, originDir, null, ct);
+        return Results.Ok(result);
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { ok = false, error = ex.Message });
+    }
+});
+
 app.MapPost("/api/projects/{id}/visibility", async (
     string id,
     ProjectVisibilityRequest req,

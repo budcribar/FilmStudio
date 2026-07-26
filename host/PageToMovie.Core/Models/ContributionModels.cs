@@ -6,6 +6,28 @@ public sealed class ContributionDiffDto
     public string ParentProjectId { get; set; } = "";
     public bool HasConflicts { get; set; }
     public List<ContributionDiffItemDto> FileDiffs { get; set; } = new();
+    public List<MediaClipContributionDto> MediaClips { get; set; } = new();
+}
+
+public sealed class MediaClipContributionDto
+{
+    public int SceneIndex { get; set; }
+    public int ClipIndex { get; set; }
+    public string RelativePath { get; set; } = "";
+    public string Sha256 { get; set; } = "";
+    public long SizeBytes { get; set; }
+    public string? ProviderCdnUrl { get; set; }
+    public string Status { get; set; } = "Present"; // "Present" | "CdnAvailable" | "ProxyNeeded" | "Missing"
+    public bool IsVerified { get; set; }
+}
+
+public sealed class MediaSyncResultDto
+{
+    public int SyncedCount { get; set; }
+    public int CdnDownloadCount { get; set; }
+    public int LocalCopyCount { get; set; }
+    public int VerifiedCount { get; set; }
+    public List<string> Errors { get; set; } = new();
 }
 
 public sealed class ContributionDiffItemDto

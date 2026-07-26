@@ -462,6 +462,17 @@ public sealed class EngineApiClient
         return await SendJsonAsync<ContributionDiffDto>(req, ct);
     }
 
+    public async Task<MediaSyncResultDto?> SyncContributionMediaAsync(
+        string projectId,
+        string? parentProjectId = null,
+        CancellationToken ct = default)
+    {
+        SyncIdentityHeaders();
+        using var req = new HttpRequestMessage(HttpMethod.Post, $"/api/projects/{Uri.EscapeDataString(projectId)}/contribution-sync-media");
+        req.Content = JsonContent.Create(new { ParentProjectId = parentProjectId }, options: JsonOpts);
+        return await SendJsonAsync<MediaSyncResultDto>(req, ct);
+    }
+
     public async Task<bool> SetProjectVisibilityModeAsync(
         string projectId,
         string visibilityMode,

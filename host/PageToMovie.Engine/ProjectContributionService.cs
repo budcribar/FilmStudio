@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Net.Http;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
@@ -12,10 +14,14 @@ namespace PageToMovie.Engine;
 public sealed class ProjectContributionService
 {
     private readonly ILogger<ProjectContributionService> _logger;
+    private readonly MediaRegistryService? _mediaRegistry;
 
-    public ProjectContributionService(ILogger<ProjectContributionService> logger)
+    public ProjectContributionService(
+        ILogger<ProjectContributionService> logger,
+        MediaRegistryService? mediaRegistry = null)
     {
         _logger = logger;
+        _mediaRegistry = mediaRegistry;
     }
 
     public Task<ContributionDiffDto> ComputeDiffAsync(
@@ -95,7 +101,289 @@ public sealed class ProjectContributionService
         }
 
         result.HasConflicts = overallHasConflicts;
+
+        // Compute media clip status across target vs origin
+        result.MediaClips = ComputeMediaClips(targetDir, originDir);
+
         return Task.FromResult(result);
+    }
+
+    public async Task<MediaSyncResultDto> SyncContributionMediaAsync(
+        string targetDir,
+        string originDir,
+        HttpClient? httpClient = null,
+        CancellationToken ct = default)
+    {
+        var result = new MediaSyncResultDto();
+        if (!Directory.Exists(targetDir) || !Directory.Exists(originDir))
+        {
+            result.Errors.Add("Target or origin directory missing.");
+            return result;
+        }
+
+        var targetBlueprint = Path.Combine(targetDir, "blueprint.clips.grok.json");
+        var targetClips = ExtractClipsFromBlueprint(targetBlueprint, targetDir);
+
+        using var clientOwned = httpClient is null ? new HttpClient() : null;
+        var http = httpClient ?? clientOwned!;
+
+        foreach (var clip in targetClips)
+        {
+            ct.ThrowIfCancellationRequested();
+            var originFilePath = Path.Combine(originDir, clip.RelativePath);
+            var originDirName = Path.GetDirectoryName(originFilePath);
+            if (!string.IsNullOrEmpty(originDirName))
+                Directory.CreateDirectory(originDirName);
+
+            bool originExists = File.Exists(originFilePath);
+            if (originExists)
+            {
+                if (!string.IsNullOrWhiteSpace(clip.Sha256))
+                {
+                    try
+                    {
+                        var existingHash = await MediaRegistryService.HashFileAsync(originFilePath, ct).ConfigureAwait(false);
+                        if (string.Equals(existingHash, clip.Sha256, StringComparison.OrdinalIgnoreCase))
+                        {
+                            result.VerifiedCount++;
+                            continue;
+                        }
+                    }
+                    catch { }
+                }
+                else
+                {
+                    result.VerifiedCount++;
+                    continue;
+                }
+            }
+
+            bool synced = false;
+
+            // Path A: Try Provider CDN
+            if (!string.IsNullOrWhiteSpace(clip.ProviderCdnUrl) &&
+                Uri.TryCreate(clip.ProviderCdnUrl, UriKind.Absolute, out var uri) &&
+                (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps))
+            {
+                try
+                {
+                    var bytes = await http.GetByteArrayAsync(uri, ct).ConfigureAwait(false);
+                    if (bytes.Length > 0)
+                    {
+                        if (!string.IsNullOrWhiteSpace(clip.Sha256))
+                        {
+                            var downloadedHash = MediaRegistryService.HashBytes(bytes);
+                            if (string.Equals(downloadedHash, clip.Sha256, StringComparison.OrdinalIgnoreCase))
+                            {
+                                await File.WriteAllBytesAsync(originFilePath, bytes, ct).ConfigureAwait(false);
+                                result.CdnDownloadCount++;
+                                result.SyncedCount++;
+                                result.VerifiedCount++;
+                                synced = true;
+                            }
+                        }
+                        else
+                        {
+                            await File.WriteAllBytesAsync(originFilePath, bytes, ct).ConfigureAwait(false);
+                            result.CdnDownloadCount++;
+                            result.SyncedCount++;
+                            synced = true;
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogInformation(ex, "CDN download failed for clip {Path}, falling back to local proxy", clip.RelativePath);
+                }
+            }
+
+            // Path B: Fallback to local target proxy copy
+            if (!synced)
+            {
+                var targetFilePath = Path.Combine(targetDir, clip.RelativePath);
+                if (File.Exists(targetFilePath))
+                {
+                    try
+                    {
+                        File.Copy(targetFilePath, originFilePath, overwrite: true);
+                        result.LocalCopyCount++;
+                        result.SyncedCount++;
+
+                        if (!string.IsNullOrWhiteSpace(clip.Sha256))
+                        {
+                            var copiedHash = await MediaRegistryService.HashFileAsync(originFilePath, ct).ConfigureAwait(false);
+                            if (string.Equals(copiedHash, clip.Sha256, StringComparison.OrdinalIgnoreCase))
+                            {
+                                result.VerifiedCount++;
+                            }
+                        }
+                        synced = true;
+                    }
+                    catch (Exception ex)
+                    {
+                        result.Errors.Add($"Failed to copy local clip {clip.RelativePath}: {ex.Message}");
+                    }
+                }
+                else
+                {
+                    result.Errors.Add($"Clip file {clip.RelativePath} not found in target or CDN.");
+                }
+            }
+
+            if (synced && _mediaRegistry is not null && !string.IsNullOrWhiteSpace(clip.Sha256))
+            {
+                try
+                {
+                    var fi = new FileInfo(originFilePath);
+                    var originProjId = Path.GetFileName(originDir);
+                    await _mediaRegistry.UpsertAsync(
+                        originProjId,
+                        clip.RelativePath,
+                        clip.Sha256,
+                        fi.Length,
+                        "clip",
+                        clip.SceneIndex,
+                        clip.ClipIndex,
+                        userId: null,
+                        ct: ct).ConfigureAwait(false);
+                }
+                catch { /* best effort */ }
+            }
+        }
+
+        return result;
+    }
+
+    private static List<MediaClipContributionDto> ComputeMediaClips(string targetDir, string originDir)
+    {
+        var targetBlueprint = Path.Combine(targetDir, "blueprint.clips.grok.json");
+        var clips = ExtractClipsFromBlueprint(targetBlueprint, targetDir);
+
+        foreach (var clip in clips)
+        {
+            var originPath = Path.Combine(originDir, clip.RelativePath);
+            var targetPath = Path.Combine(targetDir, clip.RelativePath);
+
+            bool inOrigin = File.Exists(originPath);
+            bool inTarget = File.Exists(targetPath);
+
+            if (inOrigin)
+            {
+                clip.Status = "Present";
+                clip.IsVerified = true;
+            }
+            else if (!string.IsNullOrWhiteSpace(clip.ProviderCdnUrl))
+            {
+                clip.Status = "CdnAvailable";
+            }
+            else if (inTarget)
+            {
+                clip.Status = "ProxyNeeded";
+            }
+            else
+            {
+                clip.Status = "Missing";
+            }
+        }
+
+        return clips;
+    }
+
+    private static List<MediaClipContributionDto> ExtractClipsFromBlueprint(string blueprintPath, string projectDir)
+    {
+        var clips = new List<MediaClipContributionDto>();
+        if (!File.Exists(blueprintPath)) return clips;
+
+        try
+        {
+            using var doc = JsonDocument.Parse(File.ReadAllText(blueprintPath));
+            var root = doc.RootElement;
+
+            if (root.TryGetProperty("scenes", out var scenes) && scenes.ValueKind == JsonValueKind.Array)
+            {
+                foreach (var scene in scenes.EnumerateArray())
+                {
+                    int sceneIdx = 1;
+                    if (scene.TryGetProperty("scene_index", out var sIdx)) sceneIdx = sIdx.GetInt32();
+                    else if (scene.TryGetProperty("scene", out var sIdx2)) sceneIdx = sIdx2.GetInt32();
+
+                    if (scene.TryGetProperty("veo_clips", out var vClips) && vClips.ValueKind == JsonValueKind.Array)
+                    {
+                        int cIndex = 1;
+                        foreach (var clip in vClips.EnumerateArray())
+                        {
+                            var dto = ParseClipElement(clip, sceneIdx, cIndex++, projectDir);
+                            if (dto is not null) clips.Add(dto);
+                        }
+                    }
+                    else if (scene.TryGetProperty("clips", out var sClips) && sClips.ValueKind == JsonValueKind.Array)
+                    {
+                        int cIndex = 1;
+                        foreach (var clip in sClips.EnumerateArray())
+                        {
+                            var dto = ParseClipElement(clip, sceneIdx, cIndex++, projectDir);
+                            if (dto is not null) clips.Add(dto);
+                        }
+                    }
+                }
+            }
+        }
+        catch { /* best effort */ }
+
+        return clips;
+    }
+
+    private static MediaClipContributionDto? ParseClipElement(JsonElement clip, int defaultScene, int defaultClip, string projectDir)
+    {
+        int scene = defaultScene;
+        if (clip.TryGetProperty("scene_index", out var s)) scene = s.GetInt32();
+        else if (clip.TryGetProperty("scene", out s)) scene = s.GetInt32();
+
+        int clipIdx = defaultClip;
+        if (clip.TryGetProperty("clip_index", out var c)) clipIdx = c.GetInt32();
+        else if (clip.TryGetProperty("clip", out c)) clipIdx = c.GetInt32();
+
+        string relPath = $"assets/video/scene_{scene:D2}_clip_{clipIdx:D2}.mp4";
+        if (clip.TryGetProperty("relative_path", out var rp) && !string.IsNullOrWhiteSpace(rp.GetString()))
+            relPath = rp.GetString()!.Replace('\\', '/');
+
+        string? cdnUrl = null;
+        if (clip.TryGetProperty("video_url", out var vu)) cdnUrl = vu.GetString();
+        else if (clip.TryGetProperty("source_video_url", out var svu)) cdnUrl = svu.GetString();
+        if (cdnUrl != null && !cdnUrl.StartsWith("http", StringComparison.OrdinalIgnoreCase))
+            cdnUrl = null;
+
+        string sha = "";
+        if (clip.TryGetProperty("sha256", out var sh)) sha = sh.GetString() ?? "";
+        else if (clip.TryGetProperty("sha", out sh)) sha = sh.GetString() ?? "";
+
+        long size = 0;
+        var fullPath = Path.Combine(projectDir, relPath);
+        if (File.Exists(fullPath))
+        {
+            var fi = new FileInfo(fullPath);
+            size = fi.Length;
+            if (string.IsNullOrWhiteSpace(sha))
+            {
+                try
+                {
+                    using var fs = File.OpenRead(fullPath);
+                    var hashBytes = System.Security.Cryptography.SHA256.HashData(fs);
+                    sha = Convert.ToHexString(hashBytes).ToLowerInvariant();
+                }
+                catch { }
+            }
+        }
+
+        return new MediaClipContributionDto
+        {
+            SceneIndex = scene,
+            ClipIndex = clipIdx,
+            RelativePath = relPath,
+            Sha256 = sha,
+            SizeBytes = size,
+            ProviderCdnUrl = cdnUrl,
+        };
     }
 
     private static List<DiffLineDto> ComputeLineDiff(string ours, string theirs, out bool hasConflicts)

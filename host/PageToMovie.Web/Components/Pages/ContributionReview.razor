@@ -91,6 +91,17 @@
                         </button>
                     </li>
                 }
+                @if (_diff.MediaClips is { Count: > 0 })
+                {
+                    var isMediaActive = _activeTabIndex == _diff.FileDiffs.Count;
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link @(isMediaActive ? "active bg-dark text-white border-secondary" : "text-muted")"
+                                @onclick="() => _activeTabIndex = _diff.FileDiffs.Count">
+                            🎬 Media Clips (@_diff.MediaClips.Count)
+                            <span class="badge bg-info text-dark ms-1">provenance</span>
+                        </button>
+                    </li>
+                }
             </ul>
 
             @if (_activeTabIndex >= 0 && _activeTabIndex < _diff.FileDiffs.Count)
@@ -129,6 +140,57 @@
                     </div>
                 </div>
             }
+            else if (_diff.MediaClips is { Count: > 0 } && _activeTabIndex == _diff.FileDiffs.Count)
+            {
+                <div class="card bg-dark border-secondary text-white p-3 mb-4">
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                        <h5 class="mb-0">🎬 Shot Plan Media Clips &amp; Provenance</h5>
+                        <button class="btn btn-sm btn-outline-info" disabled="@_busy" @onclick="SyncMediaAsync">
+                            📥 Sync &amp; Download Missing Clips
+                        </button>
+                    </div>
+
+                    <div class="row g-3">
+                        @foreach (var clip in _diff.MediaClips)
+                        {
+                            <div class="col-md-6 col-lg-4">
+                                <div class="card bg-black border-secondary h-100 p-3">
+                                    <div class="d-flex align-items-center justify-content-between mb-2">
+                                        <span class="fw-bold text-info">Scene @clip.SceneIndex, Clip @clip.ClipIndex</span>
+                                        @if (clip.Status == "Present")
+                                        {
+                                            <span class="badge bg-success">🔒 Verified Hash</span>
+                                        }
+                                        else if (clip.Status == "CdnAvailable")
+                                        {
+                                            <span class="badge bg-info text-dark">🌐 Provider CDN</span>
+                                        }
+                                        else if (clip.Status == "ProxyNeeded")
+                                        {
+                                            <span class="badge bg-warning text-dark">📁 Local Copy</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-danger">⚠️ Missing</span>
+                                        }
+                                    </div>
+                                    <div class="small text-muted mb-1"><code>@clip.RelativePath</code></div>
+                                    @if (clip.SizeBytes > 0)
+                                    {
+                                        <div class="small text-muted mb-1">Size: @(clip.SizeBytes / 1024 / 1024 > 0 ? $"{clip.SizeBytes / 1024.0 / 1024.0:F1} MB" : $"{clip.SizeBytes / 1024.0:F1} KB")</div>
+                                    }
+                                    @if (!string.IsNullOrWhiteSpace(clip.Sha256))
+                                    {
+                                        <div class="small text-truncate text-secondary" title="SHA-256: @clip.Sha256">
+                                            🔑 <code>sha256:@clip.Sha256[..Math.Min(12, clip.Sha256.Length)]…</code>
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
 
             <div class="d-flex align-items-center justify-content-between p-3 bg-dark border border-secondary rounded">
                 <div>
@@ -136,6 +198,12 @@
                     <div class="text-muted small">Merges parent origin state into project <code>@Id</code>.</div>
                 </div>
                 <div class="d-flex gap-2">
+                    @if (_diff.MediaClips is { Count: > 0 })
+                    {
+                        <button class="btn btn-outline-info px-3" disabled="@_busy" @onclick="SyncMediaAsync">
+                            📥 Sync Media
+                        </button>
+                    }
                     <button class="btn btn-success px-4"
                             disabled="@(_busy || string.IsNullOrEmpty(_diff.ParentProjectId))"
                             @onclick="AcceptMergeAsync">
@@ -221,6 +289,35 @@
             else
             {
                 _error = res?.Error ?? res?.Message ?? "Merge failed.";
+            }
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task SyncMediaAsync()
+    {
+        if (_diff is null) return;
+        _busy = true;
+        _error = null;
+        _message = null;
+        try
+        {
+            var res = await Engine.SyncContributionMediaAsync(Id, _diff.ParentProjectId);
+            if (res is not null)
+            {
+                _message = $"Media sync complete: {res.SyncedCount} clips synced ({res.CdnDownloadCount} CDN downloads, {res.LocalCopyCount} local copies, {res.VerifiedCount} verified).";
+                _diff = await Engine.GetContributionDiffAsync(Id, OriginProjectId);
+            }
+            else
+            {
+                _error = "Media sync returned no response.";
             }
         }
         catch (Exception ex)
