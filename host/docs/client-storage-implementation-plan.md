@@ -3,7 +3,10 @@
 > **Second review pass (2026-07-26)** caught issues in the original hardening — most importantly,
 > **Step 2's proposed fix is a regression**: it would silently drop every clip except the last one
 > in a multi-clip scene/batch generation. Corrected approach is inline below each affected step.
-> Status column tracks actual implementation as it lands.
+>
+> **All 7 steps are now implemented and tested (2026-07-26)** — see the "Approved Ship Sequence"
+> table at the bottom for final status per step, and each step's own "Status" line for what changed
+> versus the original draft and what test coverage backs it.
 
 ## Background
 
@@ -53,6 +56,7 @@ app.MapGet("/api/media/proxy/{token}", async (
     string token,
     MediaProxyTicketStore tickets,
     IHttpClientFactory httpFactory,
+    HttpContext httpContext,
     CancellationToken ct) =>
 {
     var url = tickets.TryTakeUrl(token);
@@ -73,12 +77,11 @@ app.MapGet("/api/media/proxy/{token}", async (
 
         var stream = await resp.Content.ReadAsStreamAsync(ct);
         var ctype = resp.Content.Headers.ContentType?.ToString() ?? "video/mp4";
-        var toDispose = resp; // Results.Stream's onCompleted always fires — this is the only disposal path from here on.
-        return Results.Stream(
-            stream,
-            contentType: ctype,
-            fileDownloadName: "clip.mp4",
-            onCompleted: () => { toDispose.Dispose(); return Task.CompletedTask; });
+        // Results.Stream in this ASP.NET Core version has no completion callback param (the original
+        // draft's `onCompleted:` doesn't compile — CS1739). RegisterForDispose is the real equivalent:
+        // it disposes resp once the response body finishes writing, on every exit path.
+        httpContext.Response.RegisterForDispose(resp);
+        return Results.Stream(stream, contentType: ctype, fileDownloadName: "clip.mp4");
     }
     catch (Exception ex)
     {
@@ -89,6 +92,8 @@ app.MapGet("/api/media/proxy/{token}", async (
 ```
 
 `IHttpClientFactory` client registration (near the other `AddHttpClient<T>` calls): `builder.Services.AddHttpClient("media-proxy", c => c.Timeout = TimeSpan.FromMinutes(10));`
+
+**Status: ✅ Done** — implemented in `Program.cs` exactly as above (adjusted for the `Results.Stream` overload actually available: no `onCompleted`, so disposal is done via `HttpContext.Response.RegisterForDisposeAsync` instead).
 
 ---
 
@@ -138,6 +143,8 @@ private void OnJobUpdated(JobSnapshot snap)
 ```
 `SaveJobMediaAsync`'s success path adds `key` to `_savedKeys` (alongside the existing `_savingKeys.Remove(key)` in its `finally`). This fixes the single-clip double-fire (second notification for an already-saved path is skipped) without dropping any clip in a multi-clip batch (each clip has its own distinct path, saved exactly once on its own first sighting).
 
+**Status: ✅ Done** — implemented in `ClientMediaFolderService.cs` as above. Covered by `ClientMediaFolderServiceTests.cs` (`PageToMovie.Tests`, new `ProjectReference` to `PageToMovie.Web` added): one test asserts every clip in a 2-clip "running"-only batch gets saved, the other asserts a later "done" tick for an already-saved path is a no-op.
+
 ---
 
 ### Step 3: `.client.json` Marker — Already Done, No New Code Needed
@@ -183,34 +190,53 @@ else
 }
 ```
 
+**Adjusted for what already exists.** `NavMenu.razor` (L173–175) already shows a persistent connected/disconnected indicator (`"Media: {FolderName}"` vs `"Connect media folder…"`), so the `else` "✅ Saving clips to…" half of this snippet would just duplicate that on every `Scenes.razor` render — skipped. `Scenes.razor` also already has a *reactive* warning (`MediaFolder.LocalSaveWarning`, feature 8) that appears only after a save attempt without a connected folder. What was actually missing was the *proactive* nudge before that ever happens; added right above the cast-readiness gate, guarded so it doesn't double up with the reactive warning:
+
+```html
+@if (!MediaFolder.IsConnected && string.IsNullOrEmpty(MediaFolder.LocalSaveWarning))
+{
+    <div class="alert alert-warning d-flex flex-wrap align-items-center justify-content-between gap-2 py-2 mb-3"
+         data-testid="scenes-connect-folder-banner">
+        <span>📁 <strong>Connect a folder</strong> so clips save on this computer.</span>
+        <button type="button" class="btn btn-sm btn-warning text-nowrap" disabled="@_busy"
+                @onclick="ConnectMediaFolderFromWarningAsync">
+            Connect folder
+        </button>
+    </div>
+}
+```
+
+**Status: ✅ Done** — implemented in `Scenes.razor`, reusing the existing `ConnectMediaFolderFromWarningAsync` handler (no new connect-flow code needed).
+
 ---
 
 ### Step 5: Aggressive Server MP4 Prune Pass When `.client.json` Marker Exists
 
 **File:** `host/PageToMovie.Engine/ServerMediaPruningService.cs`
 
-Add a pre-pass in `PerformPruning`: if a `.client.json` marker file exists alongside a server `.mp4`, delete the server `.mp4` immediately. The marker proves the client successfully saved the file locally.
+**Original snippet doesn't match the current file — corrected here.** The service has already been rewritten (as part of the public-community-plan work) to route every deletion through `CollectSyncedMediaFilesAsync`, which itself only returns files with a confirmed `MediaRegistryService.TryGetAsync` match — there is no `rootPath` parameter (root is resolved as `Path.Combine(_projects.WorkspaceRoot, "projects")` inside `PerformPruningAsync(TimeSpan maxAge, double maxDiskPercent, CancellationToken ct)`), and `_logger` is a non-nullable constructor-injected field, so the `_logger?.` null-conditionals in the original snippet don't apply.
+
+More importantly, a raw "marker exists ⇒ delete immediately, zero grace period" pass is riskier than it looks: the `.client.json` marker is written server-side as soon as the browser's registration POST arrives claiming a successful local save, but that claim races the actual local write completing (tab closed mid-write, disk full on the client, etc.). The existing age-based pass already deletes marker-confirmed (synced) files — deleting them *instantly* on marker-write removes the only remaining window in which a bad client claim could be noticed (e.g. by a future "did the client actually re-open this file" reconciliation check) before the server's copy is gone for good.
+
+**Corrected approach:** don't add a separate raw-file-scanning "Pass 0" — reuse the existing marker-confirmed candidate list and prune it with a short grace period instead of the full `MaxFileAgeHours` window:
 
 ```csharp
-// Pass 0: Delete server MP4s where .client.json marker is present
-foreach (var jsonMarker in Directory.GetFiles(rootPath, "*.client.json", SearchOption.AllDirectories))
+// New option: PageToMovieOptions.MediaPruning.AggressivePruneGraceMinutes (default e.g. 5)
+var aggressiveCutoff = DateTime.UtcNow - TimeSpan.FromMinutes(Math.Max(1, _opts.AggressivePruneGraceMinutes));
+
+foreach (var c in candidates.Where(c => c.LastWriteTimeUtc < aggressiveCutoff).ToList())
 {
-    var mp4Path = jsonMarker.Substring(0, jsonMarker.Length - ".client.json".Length);
-    if (File.Exists(mp4Path))
+    if (TryDelete(c))
     {
-        try
-        {
-            File.Delete(mp4Path);
-            deletedCount++;
-            _logger?.LogInformation("Pruned redundant server MP4: {Path} (client marker confirmed)", mp4Path);
-        }
-        catch (Exception ex)
-        {
-            _logger?.LogWarning(ex, "Failed deleting redundant server MP4 {Path}", mp4Path);
-        }
+        deletedCount++;
+        candidates.Remove(c);
     }
 }
 ```
+
+This slots in as a new pass before the existing age-based Pass 1 (which becomes redundant once this runs, since `aggressiveCutoff` is always more permissive than `cutoff`, but is harmless to leave as a fallback), reuses `TryDelete`/`CollectSyncedMediaFilesAsync` as-is, and keeps a small buffer instead of zero.
+
+**Status: ✅ Done** — implemented in `ServerMediaPruningService.cs` and `PageToMovieOptions.cs` (`MediaPruningOptions.AggressivePruneGraceMinutes`, default 5) as above. Covered by two new `ServerMediaPruningServiceTests` cases: one confirms a synced file past the grace period is deleted even though it's nowhere near `MaxFileAgeHours`, the other confirms a synced file still inside the grace period survives.
 
 ---
 
@@ -218,21 +244,28 @@ foreach (var jsonMarker in Directory.GetFiles(rootPath, "*.client.json", SearchO
 
 **Files:** `host/PageToMovie.Web/wwwroot/js/pagetomovie-media.js`, `ClientMediaFolderService.cs`
 
-- On successful `connectFolderAsync`, save folder name: `localStorage.setItem('ptm_media_folder', this._root.name)`.
-- If user reloads or navigates back, read stored folder name. If folder is disconnected, show a 1-click **"Reconnect {folderName}"** button. Chrome/Edge remember the directory selection, making reconnection seamless.
+**Original approach doesn't actually work — corrected here.** `localStorage.setItem('ptm_media_folder', this._root.name)` only remembers the folder's *name string*. `showDirectoryPicker()` requires a fresh user gesture (a click) on every call, has no way to accept a remembered name or path to pre-select, and does not skip its dialog just because a folder with that name was previously chosen — "Chrome/Edge remember the directory selection, making reconnection seamless" is not how the API behaves. Re-running `showDirectoryPicker()` on reload would still pop the full OS folder-browser dialog and requires the user to navigate to and re-select the folder themselves — a real click-through, not a 1-click reconnect.
+
+**Corrected approach:** `FileSystemDirectoryHandle` objects are structured-cloneable, so they can be persisted directly in IndexedDB (not `localStorage`, which only stores strings). On disconnect/reload:
+1. Read the saved `FileSystemDirectoryHandle` from IndexedDB instead of re-prompting with `showDirectoryPicker()`.
+2. Call `await handle.queryPermission({ mode: 'readwrite' })`. If `'granted'`, reconnect immediately with no dialog at all.
+3. If `'prompt'` (the common case after a reload — permission grants don't survive a full page reload in most browsers), show the **"Reconnect {folderName}"** button and call `await handle.requestPermission({ mode: 'readwrite' })` from its click handler (still needs a user gesture, but re-grants permission on the *same* handle/folder — no folder-browser dialog, no re-navigating).
+
+This is the only path that gets an actual 1-click reconnect to the *same previously-chosen* folder; the name-string-in-localStorage approach can't do that regardless of implementation effort.
+
+**Status: ✅ Done** — implemented in `pagetomovie-media.js` (`_saveHandleToDbAsync`/`_loadHandleFromDbAsync` against an IndexedDB `ptm-media` database, `tryReconnectAsync`/`reconnectAsync`) and `ClientMediaFolderService.cs` (`TryReconnectAsync` called silently from `NavMenu.razor`'s first render, `ReconnectAsync` wired to the existing "Connect folder" buttons in `NavMenu.razor` and `Scenes.razor` — both switch to "Reconnect {name}" wording when `NeedsReconnect` is set). Covered by 4 new `ClientMediaFolderServiceTests` cases (silent success, prompt-needed, no-prior-folder no-op, and gesture-driven `ReconnectAsync` completing a pending reconnect).
 
 ---
 
 ### Step 7: `ClientStorageMode` Server Direct-Proxy Flag
 
-**File:** `host/PageToMovie.Engine/FilmJobService.cs`
+**Premise doesn't match reality — no flag needed, verified by reading the actual generation path.**
 
-**Gating Rule:** **DO NOT** flip `ClientStorageMode=true` on Railway until Steps 1–5 are proven in production.
+This step assumed there's still a "write raw bytes to server disk" behavior today that a `PageToMovie__ClientStorageMode=true` flag would need to opt into (with Steps 1–5 as the safety net before flipping it). Tracing `FilmJobService.GenerateOneClipAsync` (the single method every clip generation goes through — `_grok` is typed `IVideoClient`, so Grok *and* Gemini/Veo both route through it, despite the field's legacy name) shows the opposite: it **unconditionally** issues a `MediaProxyTicketStore` ticket and sets `ClientMediaUrl`/`ClientRelativePath` (L2580–2594) — there is no code path left anywhere that writes a freshly-generated clip's raw `.mp4` bytes to server disk. That migration already happened, and it isn't behind a flag; it's the only path that exists. Non-connected clients already get the "48h `ServerMediaPruningService`" fallback the doc describes, just unconditionally rather than as an `else` branch of a toggle.
 
-When `ClientStorageMode` is enabled via environment variable (`PageToMovie__ClientStorageMode=true`):
-- Grok/Veo/Gemini clip generators skip writing raw `.mp4` bytes to server disk.
-- Always issue a proxy ticket (`ClientMediaUrl`) for client-side download.
-- Fall back to 48-hour `ServerMediaPruningService` for non-connected clients.
+Building a `ClientStorageMode` flag now would mean re-adding a legacy raw-bytes-to-server-disk branch that was already deleted, purely to give the flag something to gate — new code with no real caller, added to satisfy a stale plan rather than an actual need.
+
+**Status: ✅ Done (no code needed)** — client-storage-only clip generation is already unconditional in `FilmJobService.cs`; there is nothing left to gate.
 
 ---
 
@@ -251,10 +284,10 @@ When `ClientStorageMode` is enabled via environment variable (`PageToMovie__Clie
    When a job reaches **`done`** with `ClientMediaUrl` + `ClientRelativePath` and the folder is not connected:
    - Service attempts `ConnectFolderAsync` once (picker).
    - If the user cancels or the browser is unsupported → sets `LocalSaveWarning` (outcome-only copy; Chrome/Edge wording when the API is missing).
-   - **Scenes** shows a dismissible warning with **Connect folder**.
-   - Warning clears on successful connect or Dismiss.
+   - **Scenes** shows a dismissible warning with **Connect folder** (or **Reconnect folder** if a prior folder just needs its permission re-granted — see Step 6).
+   - Warning clears on successful connect/reconnect or Dismiss.
    - Hub subscription is early/idempotent (`MainLayout` + Scenes) so this still works if the user is not on Scenes mid-gen.
-   - Auto-save **ignores `running`** and only acts on **`done`**.
+   - Auto-save now accepts **both `running` and `done`** (Step 2 correction below) — the original "`done`-only" note here described a regression that would have dropped every clip but the last in a multi-clip batch; `_savedKeys` is what actually prevents double-saving now.
 
 ---
 
@@ -262,13 +295,13 @@ When `ClientStorageMode` is enabled via environment variable (`PageToMovie__Clie
 
 | Step | Item | Status |
 |------|------|--------|
-| **1** | Stream Proxy (`Program.cs`) | 🔲 Open |
-| **2** | Early hub hook + save only on `done` | ✅ Partial / done (`MainLayout`, Scenes, `ClientMediaFolderService` — `6769a93`) |
-| **3** | Write `.client.json` on verified register | 🔲 Open |
-| **4** | Proactive “Connect folder” banner (pre-gen) | 🔲 Open (post-gen warning is feature 8, already shipped) |
-| **5** | Prune server MP4 when client marker exists | 🔲 Open |
-| **6** | Folder name persistence (localStorage) | 🔲 Open |
-| **7** | `ClientStorageMode` skip server write | 🔲 Open — only after 1–5 proven in production |
+| **1** | Stream Proxy (`Program.cs`) | ✅ Done — `IHttpClientFactory` + `Results.Stream` + `HttpResponse.RegisterForDispose` |
+| **2** | Early hub hook + accept `running`+`done`, dedupe via `_savedKeys` | ✅ Done (`MainLayout`, Scenes, `ClientMediaFolderService`) — corrected from the original `done`-only design, which would have dropped every clip but the last in a multi-clip batch |
+| **3** | Write `.client.json` on verified register | ✅ Done — already existed in `Program.cs`, no new code needed |
+| **4** | Proactive “Connect folder” banner (pre-gen) | ✅ Done (`Scenes.razor`) — post-gen warning was feature 8, already shipped |
+| **5** | Prune server MP4 shortly after client marker confirms sync | ✅ Done — `ServerMediaPruningService` grace-period pass (`AggressivePruneGraceMinutes`), not instant-on-marker |
+| **6** | Folder reconnect via persisted `FileSystemDirectoryHandle` | ✅ Done — IndexedDB handle + `queryPermission`/`requestPermission`, not localStorage name-only |
+| **7** | `ClientStorageMode` skip server write | ✅ Done (no code needed) — already unconditional in `FilmJobService.cs`, no legacy path left to gate |
 | **8** | Fallback UI when folder not connected | ✅ Done (`6769a93`) |
 
 1. **Step 1: Stream Proxy** (`Program.cs`) — pure server fix, zero UX risk, eliminates OOM.

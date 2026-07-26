@@ -25,6 +25,7 @@
     <ProjectReference Include="..\PageToMovie.Engine\PageToMovie.Engine.csproj" />
     <ProjectReference Include="..\PageToMovie.Fakes\PageToMovie.Fakes.csproj" />
     <ProjectReference Include="..\PageToMovie.LoadSim\PageToMovie.LoadSim.csproj" />
+    <ProjectReference Include="..\PageToMovie.Web\PageToMovie.Web.csproj" />
     <ProjectReference Include="..\tools\ClassifierBenchmarks\ClassifierBenchmarks.csproj" />
   </ItemGroup>
 

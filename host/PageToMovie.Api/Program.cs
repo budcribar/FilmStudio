@@ -167,6 +167,7 @@ builder.Services.AddHttpClient("resend", c =>
     c.Timeout = TimeSpan.FromSeconds(30);
     c.DefaultRequestHeaders.TryAddWithoutValidation("User-Agent", "PageToMovie/1.0");
 });
+builder.Services.AddHttpClient("media-proxy", c => c.Timeout = TimeSpan.FromMinutes(10));
 builder.Services.AddSingleton<IEmailSender>(sp =>
 {
     var mail = sp.GetRequiredService<IOptions<PageToMovieOptions>>().Value.Mail;
@@ -4046,25 +4047,36 @@ app.MapGet("/api/projects/{id}/media", async (
 app.MapGet("/api/media/proxy/{token}", async (
     string token,
     MediaProxyTicketStore tickets,
+    IHttpClientFactory httpFactory,
+    HttpContext httpContext,
     CancellationToken ct) =>
 {
     var url = tickets.TryTakeUrl(token);
     if (string.IsNullOrWhiteSpace(url))
         return Results.NotFound(new { ok = false, error = "Media ticket expired or invalid" });
 
+    var http = httpFactory.CreateClient("media-proxy");
+    HttpResponseMessage? resp = null;
     try
     {
-        using var http = new HttpClient { Timeout = TimeSpan.FromMinutes(10) };
-        using var resp = await http.GetAsync(url, HttpCompletionOption.ResponseHeadersRead, ct);
+        resp = await http.GetAsync(url, HttpCompletionOption.ResponseHeadersRead, ct);
         if (!resp.IsSuccessStatusCode)
-            return Results.Json(new { ok = false, error = $"Upstream HTTP {(int)resp.StatusCode}" },
-                statusCode: (int)resp.StatusCode);
-        var bytes = await resp.Content.ReadAsByteArrayAsync(ct);
+        {
+            var code = (int)resp.StatusCode;
+            resp.Dispose();
+            return Results.Json(new { ok = false, error = $"Upstream HTTP {code}" }, statusCode: code);
+        }
+
+        var stream = await resp.Content.ReadAsStreamAsync(ct);
         var ctype = resp.Content.Headers.ContentType?.ToString() ?? "video/mp4";
-        return Results.File(bytes, ctype, fileDownloadName: "clip.mp4");
+        // Results.Stream has no completion callback — RegisterForDisposeAsync guarantees resp is
+        // disposed once the response body finishes writing, on every exit path (success or client abort).
+        httpContext.Response.RegisterForDispose(resp);
+        return Results.Stream(stream, contentType: ctype, fileDownloadName: "clip.mp4");
     }
     catch (Exception ex)
     {
+        resp?.Dispose();
         return Results.BadRequest(new { ok = false, error = ex.Message });
     }
 });

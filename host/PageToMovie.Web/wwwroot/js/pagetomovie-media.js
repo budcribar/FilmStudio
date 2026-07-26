@@ -35,9 +35,98 @@ window.PageToMovieMedia = {
                 if (window.PageToMovieExport)
                     window.PageToMovieExport._directoryHandle = this._root;
             }
+            await this._saveHandleToDbAsync(this._root);
             return { success: true, folderName: this._root.name };
         } catch (err) {
             return { success: false, error: err.message || "Folder selection cancelled" };
+        }
+    },
+
+    /**
+     * IndexedDB-backed persistence of the actual FileSystemDirectoryHandle (structured-cloneable,
+     * unlike localStorage which can only hold the folder's name string). This is what makes a real
+     * 1-click reconnect possible: showDirectoryPicker() always needs a fresh user gesture and has no
+     * way to pre-select a remembered folder, but re-requesting permission on an already-held handle
+     * does not re-open the OS folder-browser dialog.
+     */
+    _dbPromise: null,
+    _openDbAsync: function () {
+        if (this._dbPromise) return this._dbPromise;
+        this._dbPromise = new Promise((resolve, reject) => {
+            const req = indexedDB.open("ptm-media", 1);
+            req.onupgradeneeded = () => { req.result.createObjectStore("handles"); };
+            req.onsuccess = () => resolve(req.result);
+            req.onerror = () => reject(req.error);
+        });
+        return this._dbPromise;
+    },
+    _saveHandleToDbAsync: async function (handle) {
+        try {
+            const db = await this._openDbAsync();
+            await new Promise((resolve, reject) => {
+                const tx = db.transaction("handles", "readwrite");
+                tx.objectStore("handles").put(handle, "root");
+                tx.oncomplete = () => resolve();
+                tx.onerror = () => reject(tx.error);
+            });
+        } catch (err) {
+            console.warn("Could not persist media folder handle for reconnect:", err);
+        }
+    },
+    _loadHandleFromDbAsync: async function () {
+        try {
+            const db = await this._openDbAsync();
+            return await new Promise((resolve, reject) => {
+                const tx = db.transaction("handles", "readonly");
+                const req = tx.objectStore("handles").get("root");
+                req.onsuccess = () => resolve(req.result || null);
+                req.onerror = () => reject(req.error);
+            });
+        } catch (_) {
+            return null;
+        }
+    },
+
+    /**
+     * Silent reconnect attempt on page load: no dialog, no user gesture required. Succeeds only if
+     * a handle was previously persisted AND the browser still grants readwrite permission on it
+     * without asking (permission grants often do not survive a full page reload, in which case this
+     * returns reason:"prompt" so the caller can offer a 1-click "Reconnect" button that calls
+     * reconnectAsync() from a real click handler).
+     */
+    tryReconnectAsync: async function () {
+        if (this._root) return { success: true, folderName: this._root.name, silent: true };
+        const handle = await this._loadHandleFromDbAsync();
+        if (!handle) return { success: false, reason: "none" };
+        try {
+            const perm = await handle.queryPermission({ mode: "readwrite" });
+            if (perm === "granted") {
+                this._root = handle;
+                if (window.PageToMovieExport) window.PageToMovieExport._directoryHandle = handle;
+                return { success: true, folderName: handle.name, silent: true };
+            }
+            return { success: false, reason: perm === "denied" ? "denied" : "prompt", folderName: handle.name };
+        } catch (err) {
+            return { success: false, reason: "error", error: err.message || String(err) };
+        }
+    },
+
+    /**
+     * Re-grant permission on the previously-chosen folder from a real user gesture (button click).
+     * No folder-browser dialog — just a permission re-grant on the same handle.
+     */
+    reconnectAsync: async function () {
+        const handle = await this._loadHandleFromDbAsync();
+        if (!handle) return { success: false, error: "No remembered folder to reconnect to" };
+        try {
+            const perm = await handle.requestPermission({ mode: "readwrite" });
+            if (perm !== "granted")
+                return { success: false, error: "Permission was not granted" };
+            this._root = handle;
+            if (window.PageToMovieExport) window.PageToMovieExport._directoryHandle = handle;
+            return { success: true, folderName: handle.name };
+        } catch (err) {
+            return { success: false, error: err.message || "Reconnect failed" };
         }
     },
 

@@ -170,9 +170,11 @@
                             <button type="button"
                                     class="nav-user-item"
                                     role="menuitem"
-                                    title="@(MediaFolder.IsConnected ? MediaFolder.FolderName : "Store gen clips on your disk")"
+                                    title="@(MediaFolder.IsConnected ? MediaFolder.FolderName : (MediaFolder.NeedsReconnect ? $"Re-grant access to {MediaFolder.PendingReconnectFolderName}" : "Store gen clips on your disk"))"
                                     @onclick="ConnectMediaFolderAsync">
-                                @(MediaFolder.IsConnected ? $"Media: {MediaFolder.FolderName}" : "Connect media folder…")
+                                @(MediaFolder.IsConnected
+                                    ? $"Media: {MediaFolder.FolderName}"
+                                    : (MediaFolder.NeedsReconnect ? $"Reconnect {MediaFolder.PendingReconnectFolderName}…" : "Connect media folder…"))
                             </button>
                             <button type="button"
                                     class="nav-user-item nav-user-item--danger"
@@ -255,6 +257,7 @@
         ActiveProject.Changed += OnProjectChanged;
         await ActiveProject.RefreshFromApiAsync(Engine);
         await RefreshThemeAsync();
+        await MediaFolder.TryReconnectAsync();
         StateHasChanged();
     }
 
@@ -303,7 +306,10 @@
     private async Task ConnectMediaFolderAsync()
     {
         _userMenuOpen = false;
-        await MediaFolder.ConnectFolderAsync();
+        if (MediaFolder.NeedsReconnect)
+            await MediaFolder.ReconnectAsync();
+        else
+            await MediaFolder.ConnectFolderAsync();
         await MediaFolder.EnsureHubHookAsync();
         StateHasChanged();
     }

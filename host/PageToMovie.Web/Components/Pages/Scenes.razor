@@ -61,6 +61,28 @@ else
     </div>
 }
 
+@* Proactive nudge before the reactive warning above ever needs to fire. *@
+@if (!MediaFolder.IsConnected && string.IsNullOrEmpty(MediaFolder.LocalSaveWarning))
+{
+    <div class="alert alert-warning d-flex flex-wrap align-items-center justify-content-between gap-2 py-2 mb-3"
+         data-testid="scenes-connect-folder-banner">
+        @if (MediaFolder.NeedsReconnect)
+        {
+            <span>📁 Re-grant access to <strong>@MediaFolder.PendingReconnectFolderName</strong> so clips save on this computer.</span>
+        }
+        else
+        {
+            <span>📁 <strong>Connect a folder</strong> so clips save on this computer.</span>
+        }
+        <button type="button"
+                class="btn btn-sm btn-warning text-nowrap"
+                disabled="@_busy"
+                @onclick="ConnectMediaFolderFromWarningAsync">
+            @(MediaFolder.NeedsReconnect ? "Reconnect folder" : "Connect folder")
+        </button>
+    </div>
+}
+
 @if (_castChecked && !CastReady)
 {
     <div class="alert alert-warning py-2" data-testid="scenes-cast-gate">
@@ -1730,7 +1752,10 @@ else
     {
         try
         {
-            await MediaFolder.ConnectFolderAsync();
+            if (MediaFolder.NeedsReconnect)
+                await MediaFolder.ReconnectAsync();
+            else
+                await MediaFolder.ConnectFolderAsync();
             await MediaFolder.EnsureHubHookAsync();
         }
         catch (Exception ex)

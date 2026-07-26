@@ -100,9 +100,22 @@ namespace PageToMovie.Engine
 
             var candidates = await CollectSyncedMediaFilesAsync(projectsRoot, ct).ConfigureAwait(false);
             var deletedCount = 0;
-            var cutoff = DateTime.UtcNow - maxAge;
 
-            // Pass 1: age-based prune (synced files only).
+            // Pass 0: aggressive prune — synced files only, but past a short grace period rather
+            // than the full age window, since the client has already confirmed a local copy.
+            var aggressiveCutoff = DateTime.UtcNow - TimeSpan.FromMinutes(Math.Max(1, _opts.AggressivePruneGraceMinutes));
+            foreach (var c in candidates.Where(c => c.LastWriteTimeUtc < aggressiveCutoff).ToList())
+            {
+                if (TryDelete(c))
+                {
+                    deletedCount++;
+                    candidates.Remove(c);
+                }
+            }
+
+            // Pass 1: age-based prune (synced files only) — mostly redundant with Pass 0 above
+            // (aggressiveCutoff is always >= cutoff), kept as a harmless fallback.
+            var cutoff = DateTime.UtcNow - maxAge;
             foreach (var c in candidates.Where(c => c.LastWriteTimeUtc < cutoff).ToList())
             {
                 if (TryDelete(c))

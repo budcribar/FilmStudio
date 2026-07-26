@@ -16,6 +16,9 @@ public sealed class ClientMediaFolderService
     private bool _hubHooked;
     /// <summary>In-flight saves keyed by projectId|relativePath — avoids double JobUpdated.</summary>
     private readonly HashSet<string> _savingKeys = new(StringComparer.OrdinalIgnoreCase);
+    /// <summary>Completed saves keyed by projectId|relativePath — a later notification for the same
+    /// path (e.g. a single-clip job's "done" tick after its "running" tick already saved it) is a no-op.</summary>
+    private readonly HashSet<string> _savedKeys = new(StringComparer.OrdinalIgnoreCase);
 
     public ClientMediaFolderService(IJSRuntime js, EngineApiClient api, JobHubClient hub)
     {
@@ -27,6 +30,15 @@ public sealed class ClientMediaFolderService
     public string? FolderName { get; private set; }
     public bool IsConnected => !string.IsNullOrEmpty(FolderName);
     public string? LastStatus { get; private set; }
+
+    /// <summary>
+    /// A previously-connected folder was found (persisted via IndexedDB) but the browser needs a
+    /// user gesture to re-grant permission — call <see cref="ReconnectAsync"/> from a button click.
+    /// Set by <see cref="TryReconnectAsync"/>; distinct from "never connected" (<see cref="IsConnected"/> false,
+    /// this also false) so the UI can offer a 1-click "Reconnect {name}" instead of a fresh folder picker.
+    /// </summary>
+    public bool NeedsReconnect { get; private set; }
+    public string? PendingReconnectFolderName { get; private set; }
 
     /// <summary>
     /// One-shot operator message when a clip finished with a client proxy URL
@@ -47,13 +59,24 @@ public sealed class ClientMediaFolderService
     private void OnJobUpdated(JobSnapshot snap)
     {
         if (snap is null) return;
-        // Only save on terminal success — ignore "running" to avoid double-fetch.
-        if (!string.Equals(snap.Status, "done", StringComparison.OrdinalIgnoreCase))
+        // "done"-only would drop every clip but the last in a multi-clip batch: ClientMediaUrl/
+        // ClientRelativePath are set per-clip while Status stays "running" for the whole batch loop
+        // (FilmJobService.RunBatchGenAsync → GenerateOneClipAsync), only flipping to "done" once, at
+        // the very end. So both statuses must be accepted here; _savedKeys below is what prevents a
+        // path that already saved on its "running" tick from being re-saved on a later "done" tick.
+        if (!string.Equals(snap.Status, "done", StringComparison.OrdinalIgnoreCase) &&
+            !string.Equals(snap.Status, "running", StringComparison.OrdinalIgnoreCase))
             return;
         if (string.IsNullOrWhiteSpace(snap.ClientMediaUrl) ||
             string.IsNullOrWhiteSpace(snap.ClientRelativePath) ||
             string.IsNullOrWhiteSpace(snap.ProjectId))
             return;
+
+        var key = $"{snap.ProjectId}|{snap.ClientRelativePath}";
+        lock (_savingKeys)
+        {
+            if (_savedKeys.Contains(key)) return; // already completed
+        }
         _ = SaveJobMediaAsync(snap);
     }
 
@@ -72,6 +95,76 @@ public sealed class ClientMediaFolderService
                 return true;
             }
             LastStatus = r?.Error ?? "Could not connect folder";
+            Changed?.Invoke();
+            return false;
+        }
+        catch (Exception ex)
+        {
+            LastStatus = ex.Message;
+            Changed?.Invoke();
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Silent, no-gesture attempt to resume a previously-connected folder (the actual
+    /// FileSystemDirectoryHandle persisted to IndexedDB by a prior <see cref="ConnectFolderAsync"/>).
+    /// Call on app start (e.g. NavMenu's first render). If the browser still grants permission
+    /// without asking, reconnects immediately with no UI at all. Otherwise sets
+    /// <see cref="NeedsReconnect"/> so the UI can offer a 1-click "Reconnect" button wired to
+    /// <see cref="ReconnectAsync"/> (which needs an actual click to satisfy the permission prompt).
+    /// Never throws — a failed silent reconnect just leaves the folder disconnected, same as today.
+    /// </summary>
+    public async Task TryReconnectAsync()
+    {
+        if (IsConnected) return;
+        try
+        {
+            var r = await _js.InvokeAsync<JsReconnectResult>("PageToMovieMedia.tryReconnectAsync");
+            if (r is { Success: true })
+            {
+                FolderName = r.FolderName;
+                LastStatus = $"Media folder: {FolderName}";
+                NeedsReconnect = false;
+                PendingReconnectFolderName = null;
+                Changed?.Invoke();
+                await EnsureHubHookAsync();
+                return;
+            }
+            if (string.Equals(r?.Reason, "prompt", StringComparison.OrdinalIgnoreCase))
+            {
+                NeedsReconnect = true;
+                PendingReconnectFolderName = r!.FolderName;
+                Changed?.Invoke();
+            }
+        }
+        catch
+        {
+            // best-effort only — silent reconnect failures are not user-visible errors
+        }
+    }
+
+    /// <summary>
+    /// Re-grants permission on the remembered folder from a real user gesture (button click) — no
+    /// folder-browser dialog, just a permission re-prompt on the same previously-chosen handle.
+    /// </summary>
+    public async Task<bool> ReconnectAsync()
+    {
+        try
+        {
+            var r = await _js.InvokeAsync<JsReconnectResult>("PageToMovieMedia.reconnectAsync");
+            if (r is { Success: true })
+            {
+                FolderName = r.FolderName;
+                LastStatus = $"Media folder: {FolderName}";
+                NeedsReconnect = false;
+                PendingReconnectFolderName = null;
+                LocalSaveWarning = null;
+                Changed?.Invoke();
+                await EnsureHubHookAsync();
+                return true;
+            }
+            LastStatus = r?.Error ?? "Could not reconnect folder";
             Changed?.Invoke();
             return false;
         }
@@ -200,6 +293,9 @@ public sealed class ClientMediaFolderService
                 LastStatus =
                     $"Saved {Path.GetFileName(snap.ClientRelativePath)} ({saved.SizeBytes / 1024} KB){sil}";
                 Changed?.Invoke();
+
+                lock (_savingKeys)
+                    _savedKeys.Add(key);
             }
             finally
             {
@@ -363,6 +459,15 @@ public sealed class ClientMediaFolderService
     {
         public bool Success { get; set; }
         public string? FolderName { get; set; }
+        public string? Error { get; set; }
+    }
+
+    private sealed class JsReconnectResult
+    {
+        public bool Success { get; set; }
+        public string? FolderName { get; set; }
+        /// <summary>When !Success: "none" (never connected before), "prompt" (needs a user gesture), "denied", or "error".</summary>
+        public string? Reason { get; set; }
         public string? Error { get; set; }
     }
 

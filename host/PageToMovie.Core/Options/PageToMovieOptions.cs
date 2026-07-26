@@ -171,6 +171,15 @@ public sealed class MediaPruningOptions
     public int CheckIntervalMinutes { get; set; } = 60;
     public int MaxFileAgeHours { get; set; } = 48;
     public double MaxDiskUsagePercent { get; set; } = 80.0;
+
+    /// <summary>
+    /// Synced media files are eligible for pruning after this short grace period instead of waiting
+    /// the full <see cref="MaxFileAgeHours"/> window — the client already confirmed a local copy via
+    /// <see cref="MediaRegistryService"/>, so there's no reason to keep the server's copy around for
+    /// days. Kept nonzero (rather than instant deletion on marker-write) to leave a small buffer in
+    /// case a client's "saved successfully" registration call raced an incomplete local write.
+    /// </summary>
+    public int AggressivePruneGraceMinutes { get; set; } = 5;
 }
 
 /// <summary>
