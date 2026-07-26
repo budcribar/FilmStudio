@@ -58,7 +58,7 @@ public sealed class PageToMovieOptions
     /// nonzero temperature is normally requested precisely to get varied responses across calls,
     /// so caching it would silently defeat the caller's intent.
     /// </summary>
-    public bool ChatCacheNonZeroTemperature { get; set; }
+    public bool ChatCacheNonZeroTemperature { get; set; } = true;
 
     /// <summary>
     /// Cache key salt, folded into every cache key alongside model/temperature/prompts. The
