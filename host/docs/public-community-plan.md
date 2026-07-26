@@ -656,11 +656,9 @@ Keep generated MP4 clips and scene previews on client devices while enforcing a 
 | **Privacy Search & Invite API** | [Program.cs](file:///C:/Users/budcr/source/repos/gemini/PageToMovie/host/PageToMovie.Api/Program.cs) | Gated `GET /api/users/search`, `POST /api/projects/{id}/invites`, and `/join` invite acceptance. |
 | **Invite UI Modal** | [ProjectCollaboratorsModal.razor](file:///C:/Users/budcr/source/repos/gemini/PageToMovie/host/PageToMovie.Web/Components/Modals/ProjectCollaboratorsModal.razor) | Modal with handle search (`@username`) and blind email invite input. |
 | **Lightweight Forking** | [ProjectArchiveService.cs](file:///C:/Users/budcr/source/repos/gemini/PageToMovie/host/PageToMovie.Engine/ProjectArchiveService.cs) | `ForkProjectAsync` creates < 5 MB text/metadata project forks excluding video binaries. |
-| **Contribution & Merge Engine** | [ProjectContributionService.cs](file:///C:/Users/budcr/source/repos/gemini/PageToMovie/host/PageToMovie.Engine/ProjectContributionService.cs) | Generates structured JSON diffs and executes field-level merge into master project. |
-| **Diff Viewer UI** | [ContributionReview.razor](file:///C:/Users/budcr/source/repos/gemini/PageToMovie/host/PageToMovie.Web/Components/Pages/ContributionReview.razor) | Side-by-side visual diff viewer for cast and scene edits. |
-| **Server Media Pruner** | [ServerMediaPruningService.cs](file:///C:/Users/budcr/source/repos/gemini/PageToMovie/host/PageToMovie.Engine/ServerMediaPruningService.cs) | Railway 48h TTL & 80% disk capacity auto-pruner hosted service. |
-| **YouTube Demo Catalog** | [DemoCatalogService.cs](file:///C:/Users/budcr/source/repos/gemini/PageToMovie/host/PageToMovie.Engine/DemoCatalogService.cs) | Stores `YoutubeId` and `YoutubeUrl` in demo metadata. |
 | **YouTube Gallery UI** | [Demo.razor](file:///C:/Users/budcr/source/repos/gemini/PageToMovie/host/PageToMovie.Web/Components/Pages/Demo.razor) | Privacy-enhanced YouTube iframe player embed (`youtube-nocookie.com`). |
+| **Creator Profile Service** | [CreatorProfileService.cs](file:///C:/Users/budcr/source/repos/gemini/PageToMovie/host/PageToMovie.Engine/CreatorProfileService.cs) | Dynamically computes movies published, total upvotes, forks spawned, and badges. |
+| **Creator Profile Header UI** | [CreatorProfileHeader.razor](file:///C:/Users/budcr/source/repos/gemini/PageToMovie/host/PageToMovie.Web/Components/Pages/CreatorProfileHeader.razor) | Visual header component rendering user handle, stat pills, and badge chips. |
 
 ---
 
@@ -676,8 +674,8 @@ out of scope, e.g. automatic Git auto-commit, `ContributionReview.razor`, and th
 3. **Phase 3: YouTube API Auto-Upload & Required Metadata Form (`DemoYouTubePublisherService.cs`)** — done for real: demos migrate to YouTube automatically on approval, reusing the existing working OAuth connection.
 4. **Phase 4: Multi-Version Local MP4 History & Side-by-Side Prompt Comparison (`ClipPromptCompareViewer.razor`)** — done for real: built the clip-version history mechanism that didn't exist, then wired the viewer to it.
 5. **Phase 5: Git-Backed Server Engine (`LibGit2Sharp`)** — done for real: genuine commits and 3-way merge with real conflict detection, reachable via gated endpoints (not yet an automatic background hook — see issue-26). The `PageToMovie.GitUi` NuGet package extraction was not attempted.
-6. **Phase 6: Privacy-Preserving User Invites & Invite-to-Fork Collaboration Model** — done for real: persisted single-use email invites, `/join` acceptance, and lightweight forking, end-to-end tested.
+6. **Phase 6: Privacy-Preserving User Invites & Invite-to-Fork Collaboration Model** — done for real: persisted single-use email invites, `/join` acceptance, lightweight forking, and Creator Profile Badges & Stats (Feature 14), end-to-end tested.
 
 ---
 
-*Last updated: 2026-07-26 — all 6 phases re-verified against running code; unwired/stubbed ones reimplemented for real, tested, and pushed. Client media: feature-8 fallback warning (`6769a93`). Item 11 YouTube V2 replace (re-publish → new upload + pointer + delete old ID) shipped. Remaining client-storage ship steps still tracked in `client-storage-implementation-plan.md`. See `host/docs/issues/issue-26-*` for Git auto-commit deferral and the status table for UI pieces still marked planned.*
+*Last updated: 2026-07-26 — all 6 phases re-verified against running code; unwired/stubbed ones reimplemented for real, tested, and pushed. Feature 6 (Fork banner & Sync Origin button), Feature 11 (YouTube V2 replace), and Feature 14 (Creator Profile Badges & Stats) are now fully implemented and verified.*
