@@ -9,22 +9,34 @@ Nothing in this doc is required for current production unless explicitly schedul
 
 ## Feature list
 
+> **Status audit (2026-07-26):** a wave of `feat(phaseN): Implement X` commits landed claiming most of this
+> roadmap was built. Verification against the running app found most of them create a plausible-looking file
+> (service class or Razor component) with a passing unit test, but never wire it into the running app (no DI
+> registration, no API route, no page inclusion) — and one (`ProjectGitRepositoryService`) is a hardcoded fake
+> with no real Git operations at all. The table below reflects verified reality, not commit messages. See
+> `host/docs/issues/` for anything that needs a real fix before being trusted.
+
 | # | Feature | Status | Notes |
 |---|---------|--------|--------|
-| 1 | **Invite-to-Fork Collaboration** | **planned** | Unified collaboration model: Owner invites collaborators via `@username` or email to create lightweight forks (< 5 MB) merged via Git 3-way engine. |
-| 2 | **Demo ratings (upvotes only)** | **done** (basic) | ★ on `/demo`; sort top/new. See § Demo ratings. |
+| 1 | **Invite-to-Fork Collaboration** | **not implemented** | `ProjectCollaboratorsModal.razor` exists but is not included in any page; zero `/api/users/search`, `/api/projects/{id}/invites`, or `/join` endpoints exist. |
+| 2 | **Demo ratings (upvotes only)** | **done** | ★ on `/demo`; sort top/new. `DemoUpvoteService` registered in DI and wired to `/api/demos/*/upvote` + `?sort=`. Verified. |
 | 3 | Repository Visibility Modes | **planned** | Standard Git modes: **Private**, **Public (Read-Only)**, **Public (Forkable)**. See § Repository Visibility Modes. |
-| 4 | Content hash of exportable package | **planned** | SHA-256 clip provenance auto-approval & freshness check. |
+| 4 | Content hash of exportable package | **done** (correction) | Earlier audit pass missed this: `MediaRegistryService.IsTrustedShaAsync` + `/api/demos` POST already auto-approves a demo upload whose SHA-256 matches the project's own trusted gen/export registry, bypassing the admin queue. Predates this pass. |
 | 5 | **Fork** (plan-only package v1) | **planned** | Lightweight copy of script, cast, blueprint, config (< 5 MB); clip binaries stored in local client media storage. |
 | 6 | Fork banner + “forked from” metadata | **planned** | Tracks parent project origin (`parentProjectId`). |
-| 7 | **Contribution & Git 3-Way Merge** | **planned** | Git 3-way merge engine (`LibGit2Sharp`) with visual diff review (`ContributionReview.razor`). |
-| 8 | Contribution accept / reject + conflict review | **planned** | Visual diff review UI (`ContributionReview.razor`) for owner accept/reject. |
-| 9 | **Sync Fork from Origin** | **planned** | `LibGit2Sharp` rebase/merge helper (`🔄 Sync from Origin`) allowing forked projects to pull latest screenplay updates and new characters from parent origin project. |
+| 7 | **Contribution & Git 3-Way Merge** | **stubbed (fake)** | `ProjectGitRepositoryService` exists but does no real Git work: no `LibGit2Sharp` package reference, `CommitProjectStateAsync` returns a random GUID as a "commit hash" without touching disk, `SyncForkFromOriginAsync` always returns success/no-conflicts regardless of input. Not registered in DI or called from anywhere except its own unit test. `ContributionReview.razor` does not exist. |
+| 8 | Contribution accept / reject + conflict review | **planned** | `ContributionReview.razor` does not exist. |
+| 9 | **Sync Fork from Origin** | **stubbed (fake)** | See #7 — `SyncForkFromOriginAsync` is a no-op that always reports success. |
 | 10 | **Media-Aware Contribution PRs** | **planned** | Transfers shot plan diffs + SHA-256 hashes (< 1 KB). Downloads via direct AI provider CDN URL (< 24h) or automated fallback to transient server proxy (> 24h), guaranteeing zero clip loss. |
 | 11 | **Direct Gallery "Fork Project" Button** | **planned** | Integrates 🍴 **Fork Project** button directly onto `/demo` gallery cards & detail modals for **Public (Forkable)** projects. Eliminates need for a separate project page. |
 | 12 | ~~Project ratings~~ | **obsolete** | Superseded by Demo Upvotes on `/demo` gallery cards (Item #2). Upvoting a movie rates the project directly. |
-| 13 | **YouTube Direct Comment Link** | **planned** | Provides a `💬 Comment on YouTube ↗` button on `/demo` gallery cards, opening the video's YouTube page in a new tab for native commenting & subscriber growth (0 API quota cost). |
+| 13 | **YouTube Direct Comment Link** | **done** | `💬 Comment on YouTube ↗` button on `/demo` gallery cards, shown once a demo has a `YoutubeUrl`. |
 | 14 | **Creator Profile Badges & Stats** | **planned** | Derived creator stats on `@username` profile headers (Total Movies Published, Total Upvotes Received, Community Forks) + Badges (Debut Director, Featured Filmmaker). Computed dynamically from SQLite `demos` (0 DB schema migrations). |
+| 15 | Admin cross-user project export/import | **done** | `POST /api/admin/projects/import` (admin-gated) accepts `targetUserId` and threads it into `ProjectArchiveService.ImportAsync`. Verified. |
+| 16 | Server media pruner (48h TTL) | **done** | Fixed: `ServerMediaPruningService` now resolves its root via `ProjectStore.WorkspaceRoot` (matches the rest of the app), only ever deletes a file `MediaRegistryService` has confirmed the client already synced, and defaults **off** (`PageToMovie:MediaPruning:Enabled`, opt-in per deployment). Tests: `ServerMediaPruningServiceTests`. |
+| 17 | Terms of Service acceptance gate | **done** | `AuthGate.RequireTermsAcceptedAsync` (composes with `RequireLogin`, bypassed for admin and when `Auth:RequireLogin=false` for tests/LoadSim) now gates `POST /api/projects`, `/api/jobs/gen-scene`, `/api/jobs/gen-batch`, `/api/jobs/stage1`, `/api/jobs/stage2`, and `POST /api/demos` (publish). The four job-start endpoints had no auth context at all before this pass (see `host/docs/issues/issue-09-spoofable-user-spend-gates.md`) — adding the terms gate also closed that login gap for them. Tests: `AuthGateTests`. |
+| 18 | YouTube auto-upload + publish modal | **done** | Redesigned rather than wired as-is: the old `YouTubeUploadService.cs` reinvented OAuth with its own unconfigured env vars, duplicating the already-working `YouTubeAuthService` (used by Review's WIP-movie upload) — deleted in favor of `DemoYouTubePublisherService`, which reuses `YouTubeAuthService`'s real Google API client. Demos now migrate to YouTube automatically: on SHA-trust auto-approval or admin approval, upload runs in the background (fire-and-forget `Task.Run`, not yet a trackable job — see notes), then the local `movie.mp4` is deleted and the entry is repointed at `YoutubeId`/`YoutubeUrl`. `/demo` renders a `youtube-nocookie.com` embed once present, falling back to direct server streaming if upload hasn't happened yet or fails (video never deleted on failure). `PublishDemoModal.razor` (never wired, duplicated Review's own working save-dialog) was deleted; the real save-dialog in `Review.razor` was extended with the COPPA made-for-kids radio and AI-disclosure checkbox instead. Tests: `DemoCatalogServiceTests`, `DemoYouTubePublisherServiceTests`. |
+| 19 | Clip prompt/version compare viewer | **done** | This needed more than wiring — there was no clip-version history mechanism in the app at all (each regen overwrote its `.meta.json`/video in place). Added: server-side prompt-version archiving (`FilmJobService.ArchiveClipPromptHistory`/`ListClipPromptHistory`, `assets/video/history/*.meta.json`) triggered whenever a clip's prompt meta is about to be overwritten; client-side video archiving (`pagetomovie-media.js._archiveClipHistoryAsync`, `assets/video/history/*.mp4`) triggered whenever `saveFromUrlAsync` is about to overwrite an existing clip file. New endpoint `GET .../clips/{clip}/prompt-history`. `Scenes.razor`'s clip detail panel shows a "Compare with previous version" toggle backed by real archived data (prompt dropdown + most-recently-archived video — the two are archived independently by different processes, so they're paired by recency rather than an exact per-edit match). Tests: `ClipPromptHistoryTests`. |
 
 ---
 
@@ -644,4 +656,4 @@ Keep generated MP4 clips and scene previews on client devices while enforcing a 
 
 ---
 
-*Last updated: 2026-07-26 — comprehensive single source of truth for Client MP4 Storage, Server Media Pruner, YouTube Demo Hosting, User Terms Agreement, Git-Backed Engine, and Privacy-Preserving Invite-to-Fork Collaboration.*
+*Last updated: 2026-07-26 — status table corrected after code-vs-plan verification found most "Phase N" commits produce unwired or stubbed code (see audit note above the feature table). Real fixes tracked phase-by-phase below as they land.*
