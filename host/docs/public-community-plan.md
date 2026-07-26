@@ -22,7 +22,7 @@ Nothing in this doc is required for current production unless explicitly schedul
 | 9 | Sync fork from origin (rebase helper) | idea | |
 | 10 | Media-aware fork / PR (hash upload) | idea | Later; storage + quotas. |
 | 11 | **Direct Gallery "Fork Project" Button** | **planned** | Integrates 🍴 **Fork Project** button directly onto `/demo` gallery cards & detail modals for **Public (Forkable)** projects. Eliminates need for a separate project page. |
-| 12 | Project ratings (reuse upvote model) | idea | After public/open listings exist. |
+| 12 | ~~Project ratings~~ | **obsolete** | Superseded by Demo Upvotes on `/demo` gallery cards (Item #2). Upvoting a movie rates the project directly. |
 | 13 | Text reviews on ratings | idea | Moderation burden; not v1. |
 | 14 | User reputation from ratings | idea | Derived later. |
 
