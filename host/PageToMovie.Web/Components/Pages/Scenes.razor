@@ -1018,33 +1018,33 @@ else
                         <button type="button" class="btn btn-sm btn-outline-secondary w-100 text-start d-flex justify-content-between align-items-center"
                                 @onclick="() => _showEditClipAdvanced = !_showEditClipAdvanced">
                             <span>⚙️ Advanced options (Negative prompt, Lighting &amp; Color, Film stock)</span>
-                            <span>@(_showEditClipAdvanced || !string.IsNullOrWhiteSpace(ed.NegativePrompt) || !string.IsNullOrWhiteSpace(ed.ColorPalette) || !string.IsNullOrWhiteSpace(ed.FilmStock) ? "▲ Hide" : "▼ Expand")</span>
+                            <span>@(_showEditClipAdvanced ? "▲ Hide" : "▼ Expand")</span>
                         </button>
 
-                        @if (_showEditClipAdvanced || !string.IsNullOrWhiteSpace(ed.NegativePrompt) || !string.IsNullOrWhiteSpace(ed.ColorPalette) || !string.IsNullOrWhiteSpace(ed.FilmStock))
+                        @if (_showEditClipAdvanced)
                         {
-                            <div class="p-3 border border-top-0 rounded-bottom bg-body-tertiary">
-                                <label class="form-label small mb-1 fw-medium">Negative prompt (clip extras)</label>
-                                <textarea class="form-control form-control-sm mb-1" rows="2" @bind="ed.NegativePrompt"
+                            <div class="p-3 border border-top-0 rounded-bottom bg-dark bg-opacity-75 border-secondary border-opacity-50 text-white">
+                                <label class="form-label small mb-1 fw-medium text-light">Negative prompt (clip extras)</label>
+                                <textarea class="form-control form-control-sm mb-1 bg-dark text-white border-secondary" rows="2" @bind="ed.NegativePrompt"
                                           placeholder="Optional — story-specific bans only"></textarea>
-                                <div class="form-text small mb-3">
+                                <div class="form-text small mb-3 text-muted">
                                     Empty is normal. Shared global bans (no watermarks, logos, extra limbs, name tags) are automatically applied at video gen.
                                 </div>
 
-                                <h6 class="mb-1 fw-semibold">Lighting &amp; Color</h6>
+                                <h6 class="mb-2 fw-semibold text-light">Lighting &amp; Color</h6>
                                 <div class="row g-2">
                                     <div class="col-6">
-                                        <label class="form-label small mb-0">Color palette</label>
-                                        <input class="form-control form-control-sm" @bind="ed.ColorPalette"
+                                        <label class="form-label small mb-1 text-light">Color palette</label>
+                                        <input class="form-control form-control-sm bg-dark text-white border-secondary" @bind="ed.ColorPalette"
                                                placeholder="e.g. Warm golden hour, Neon noir" />
                                     </div>
                                     <div class="col-6">
-                                        <label class="form-label small mb-0">Film stock / Lens</label>
-                                        <input class="form-control form-control-sm" @bind="ed.FilmStock"
+                                        <label class="form-label small mb-1 text-light">Film stock / Lens</label>
+                                        <input class="form-control form-control-sm bg-dark text-white border-secondary" @bind="ed.FilmStock"
                                                placeholder="e.g. 35mm anamorphic, Kodak Vision3" />
                                     </div>
                                 </div>
-                                <div class="form-text small mt-1 mb-0">
+                                <div class="form-text small mt-2 mb-0 text-muted">
                                     Empty is fine. Shot plan bakes grading into the visual prompt; fill these only to pin palette or stock for this clip.
                                 </div>
                             </div>
@@ -2298,6 +2298,7 @@ else
     private void OpenClipEditor(ClipSummary clip)
     {
         if (_detail is null) return;
+        _showEditClipAdvanced = false;
         _clipEditorIsNew = false;
         _clipEditor = new ClipEditRequest
         {
@@ -2321,6 +2322,7 @@ else
     private void OpenAddClipDialog()
     {
         if (_detail is null) return;
+        _showEditClipAdvanced = false;
         var nextClip = _detail.Clips.Count == 0 ? 1 : _detail.Clips.Max(c => c.ClipNumber) + 1;
         _clipEditorIsNew = true;
         _clipEditor = new ClipEditRequest
