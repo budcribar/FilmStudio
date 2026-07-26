@@ -292,6 +292,38 @@ flowchart LR
 
 ---
 
+## Admin Cross-User Export & Client-Local Storage Handoff
+
+### Intent
+Enable Admin to transfer or export any project directly into any target user's project area, ensuring that video binaries end up stored locally on the target user's hard drive rather than eating up server disk space.
+
+```mermaid
+flowchart TD
+    A["Admin UI selects Project & Target User (user_B)"] --> B{"Export / Assignment Mode"}
+    B -- "Mode 1: Server Re-assignment" --> C["Update ownerUserId in project.json to user_B\n(Instant server ownership pointer update)"]
+    B -- "Mode 2: Export Light Package ZIP" --> D["Server packages text/script/blueprint/cast ZIP\n(< 5 MB, excl. .mp4 binaries)"]
+    D --> E["Admin or User B imports ZIP in Target User Workspace"]
+    C & E --> F["User B opens project on their Client Device"]
+    F --> G["ClientMediaFolderService binds User B's Local Hard Drive"]
+    G --> H["MP4 clips generated or cached directly in User B's Local Folder\n(Zero Railway server disk used)"]
+```
+
+### Technical Workflow
+
+1. **Lightweight Server Package / Re-assignment**:
+   - The server project archive (`ProjectArchiveService.cs`) contains screenplay text, `cast_seeds.json`, character reference portraits (`assets/characters/*.png`), Stage 2 shot plan (`blueprint.clips.grok.json`), `project_rules.json`, and `pipeline_config.json`.
+   - The server package is **100% lightweight (< 5 MB)** because heavy `.mp4` video binaries are excluded.
+   - Admin specifies `targetUserId` in `Admin.razor`.
+2. **Instant Ownership Transfer**:
+   - The server writes `ownerUserId: "user_B"` into `project.json`.
+   - The project immediately appears in User B's dashboard upon next login (`GET /api/projects` filtered by `ownerUserId == user_B`).
+3. **Client-Local Hard Drive Binding**:
+   - When User B logs in on their computer and opens the project in PageToMovie Studio, `ClientMediaFolderService.cs` binds User B's local hard drive directory (e.g. `C:\Users\UserB\PageToMovie\Projects\ProjectA\video\`).
+   - Any video clips generated or synced by User B are saved directly to User B's local hard drive.
+   - The Railway server remains at **0 MB video storage cost** for User B's project.
+
+---
+
 ## Demo Gallery & YouTube Auto-Upload Pipeline
 
 ### Intent
