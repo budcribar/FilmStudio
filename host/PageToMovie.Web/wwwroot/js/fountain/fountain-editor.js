@@ -502,6 +502,28 @@
     header.addEventListener("pointercancel", onPointerUp);
   }
 
+  // Auto-close open <details> popovers (like Advanced... or Jump to scene) when clicking outside or clicking an item inside
+  if (typeof document !== "undefined") {
+    document.addEventListener("click", function (e) {
+      var openDetails = document.querySelectorAll("details.fe-advanced-pop[open], details.fe-scenes-pop[open], details[open]");
+      if (!openDetails || !openDetails.length) return;
+      openDetails.forEach(function (det) {
+        var summary = det.querySelector("summary");
+        if (e.target && summary && summary.contains(e.target)) {
+          return;
+        }
+        if (!det.contains(e.target)) {
+          det.removeAttribute("open");
+          return;
+        }
+        if (e.target && (e.target.tagName === "BUTTON" || e.target.tagName === "A" || e.target.closest("button") || e.target.closest("a"))) {
+          det.removeAttribute("open");
+        }
+      });
+    }, true);
+  }
+
+
   global.fountainEditor = {
     init: init,
     getValue: getValue,
