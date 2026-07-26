@@ -262,8 +262,10 @@ Characters are **global** (high blast radius); scenes are a **timeline of clips*
 Instead of forcing multiple users to edit the same live project files simultaneously (which risks file lock conflicts and overwritten edits), PageToMovie uses an **Invite-to-Fork & Async Diff-Merge** collaboration model.
 
 ### Workflow
-1. **Invite**: Project Owner A clicks "Invite to Collaborate / Fork" and specifies User B's username (or shares an invite link).
-2. **Instant Fork**: User B accepts the invite. A lightweight fork (`Project A (Fork)`) is created in User B's project area (< 5 MB ZIP size, containing screenplay, cast seeds, reference images, and shot plan blueprint; excluding video binaries).
+1. **Invite & User Search**: Project Owner A opens the **Collaborate & Invite** modal in the UI.
+   - *Public Handle Search*: Owner A can type `@username` to search existing creator handles. The API queries SQLite `users` table (`username` column) and returns public handles only — **raw email addresses are never returned to the browser**.
+   - *Blind Email Delivery*: Owner A can type a recipient's direct email address (`partner@example.com`). The server dispatches the invite link via Resend API without revealing to the client whether an account exists for that email.
+2. **Instant Fork**: User B accepts the invite via in-app notification or email link (`/join?token=inv_...`). A lightweight fork (`Project A (Fork)`) is created in User B's project area (< 5 MB ZIP size, containing screenplay, cast seeds, reference images, and shot plan blueprint; excluding video binaries).
 3. **Independent Local Work**: User A and User B work independently on their own client storage (IndexedDB / OPFS / local PC folder). Neither user blocks or locks the other's workspace.
 4. **Contribution Submission**: User B completes edits (e.g. prompt tuning or beat timing changes) and clicks "Submit Contribution to Owner".
 5. **Diff Review & Merge**: Owner A receives a notification, views a side-by-side visual diff grouped by **Cast** and **Scenes/Clips**, and accepts/merges the changes into master `Project A`.
