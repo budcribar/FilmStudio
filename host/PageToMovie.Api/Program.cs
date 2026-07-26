@@ -472,10 +472,7 @@ app.MapPost("/api/auth/forgot-password", async (
     return Results.Ok(new
     {
         ok = true,
-        message =
-            "If that account exists and has a confirmed email, a reset link was sent. " +
-            "Also, an administrator can set a new password on the Users page. " +
-            "(In development without SMTP, check the API log for the link.)",
+        message = "If that account exists and has a confirmed email, a reset link was sent to your inbox.",
     });
 });
 
