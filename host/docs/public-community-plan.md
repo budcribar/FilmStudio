@@ -18,8 +18,8 @@ Nothing in this doc is required for current production unless explicitly schedul
 | 5 | **Fork** (plan-only package v1) | **planned** | Lightweight copy of script, cast, blueprint, config (< 5 MB); clip binaries stored in local client media storage. |
 | 6 | Fork banner + “forked from” metadata | **planned** | Tracks parent project origin (`parentProjectId`). |
 | 7 | **Contribution & Git 3-Way Merge** | **planned** | Git 3-way merge engine (`LibGit2Sharp`) with visual diff review (`ContributionReview.razor`). |
-| 8 | Contribution accept / reject + conflict if origin moved | idea | See conflict notes under fork. |
-| 9 | Sync fork from origin (rebase helper) | idea | |
+| 8 | Contribution accept / reject + conflict review | **planned** | Visual diff review UI (`ContributionReview.razor`) for owner accept/reject. |
+| 9 | **Sync Fork from Origin** | **planned** | `LibGit2Sharp` rebase/merge helper (`🔄 Sync from Origin`) allowing forked projects to pull latest screenplay updates and new characters from parent origin project. |
 | 10 | Media-aware fork / PR (hash upload) | idea | Later; storage + quotas. |
 | 11 | **Direct Gallery "Fork Project" Button** | **planned** | Integrates 🍴 **Fork Project** button directly onto `/demo` gallery cards & detail modals for **Public (Forkable)** projects. Eliminates need for a separate project page. |
 | 12 | ~~Project ratings~~ | **obsolete** | Superseded by Demo Upvotes on `/demo` gallery cards (Item #2). Upvoting a movie rates the project directly. |
