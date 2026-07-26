@@ -40,8 +40,30 @@ else if (_cfg is null)
 {
     <p class="text-muted">No active project loaded. Select a project on <a href="/">Home</a>.</p>
 }
-else
 {
+    <div class="card mb-3 border-secondary">
+        <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+            <span>📁 Project Working Directory &amp; Storage</span>
+            <span class="badge bg-info">Active Storage</span>
+        </div>
+        <div class="card-body py-3">
+            <div class="row align-items-center g-3">
+                <div class="col-md-9">
+                    <div class="fw-semibold mb-1">Active Project Working Path</div>
+                    <div class="font-monospace small bg-dark p-2 rounded border border-secondary text-info text-break">
+                        @(_projectDir ?? $"projects/{_projectId}")
+                    </div>
+                    <div class="small text-muted mt-1">
+                        All screenplays, video clips, character portraits, and cached LLM responses for <strong>@_projectId</strong> are persisted in this directory.
+                    </div>
+                </div>
+                <div class="col-md-3 text-md-end">
+                    <span class="badge bg-success p-2 fs-6">● Storage Ready</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="card mb-3">
         <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center flex-wrap gap-2">
             <span>🔑 Account &amp; API keys</span>
@@ -432,6 +454,7 @@ else
     private string _projectId = "";
     private List<string> _projectIds = new();
     private Dictionary<string, JsonElement>? _cfg;
+    private string? _projectDir;
 
     private string _uiTheme = "dark";
     private string _blueprintFile = "blueprint.clips.grok.json";
@@ -775,6 +798,7 @@ else
 
             var dto = await Engine.GetConfigAsync(_projectId);
             _cfg = dto?.Config;
+            _projectDir = dto?.ProjectDir ?? $"projects/{_projectId}";
             if (_cfg is null) return;
             _uiTheme = ThemeState.Normalize(GetStr("ui_theme", _uiTheme));
             _blueprintFile = GetStr("blueprint_file", _blueprintFile);

@@ -935,7 +935,7 @@ public sealed class EngineApiClient
     }
 
     /// <summary>Explicit multi-select regen of specific (scene, clip) pairs — always force-regens, ignoring on-disk state.</summary>
-    public async Task StartClipBatchGenAsync(
+    public async Task<JobSnapshot?> StartClipBatchGenAsync(
         string projectId,
         IReadOnlyList<(int Scene, int Clip)> clips,
         string? resolution = null,
@@ -957,6 +957,14 @@ public sealed class EngineApiClient
             var err = await resp.Content.ReadAsStringAsync(ct);
             throw new InvalidOperationException(TryError(err) ?? $"{(int)resp.StatusCode}");
         }
+        var res = await resp.Content.ReadFromJsonAsync<GenBatchJobResponseDto>(JsonOpts, ct);
+        return res?.Job;
+    }
+
+    private class GenBatchJobResponseDto
+    {
+        public bool Ok { get; set; }
+        public JobSnapshot? Job { get; set; }
     }
 
     public async Task CancelJobAsync(CancellationToken ct = default)
@@ -2492,6 +2500,7 @@ public sealed class ConfigDto
 {
     public bool Ok { get; set; }
     public string? ProjectId { get; set; }
+    public string? ProjectDir { get; set; }
     public Dictionary<string, JsonElement>? Config { get; set; }
 }
 

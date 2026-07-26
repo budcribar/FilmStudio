@@ -1767,7 +1767,8 @@ app.MapGet("/api/projects/{id}/config", async (string id, ProjectStore store, Ca
     try
     {
         var cfg = await store.GetConfigAsync(id, ct);
-        return Results.Ok(new { ok = true, projectId = id, config = cfg });
+        var projectDir = store.GetProjectDir(id);
+        return Results.Ok(new { ok = true, projectId = id, projectDir, config = cfg });
     }
     catch (Exception ex)
     {

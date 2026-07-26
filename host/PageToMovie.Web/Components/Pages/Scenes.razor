@@ -2047,11 +2047,10 @@ else
         {
             var targets = _selectedClips.OrderBy(c => c).Select(c => (Scene: sn, Clip: c)).ToList();
             await EnsureHubAsync();
-            await Engine.StartClipBatchGenAsync(_projectId, targets, resolution: _genResolution);
-            _message = $"Regenerating {targets.Count} clip(s) in S{sn:D2} @ {_genResolution}";
-            var jobs = await Engine.GetJobAsync();
-            _job = jobs?.Job;
+            _job = await Engine.StartClipBatchGenAsync(_projectId, targets, resolution: _genResolution);
+            _message = $"Regenerating {targets.Count} clip(s) in S{sn:D2} @ {_genResolution}…";
             _selectedClips.Clear();
+            StateHasChanged();
         }
         catch (Exception ex) { _error = ex.Message; }
         finally { _busy = false; _pendingRegenScene = null; }
