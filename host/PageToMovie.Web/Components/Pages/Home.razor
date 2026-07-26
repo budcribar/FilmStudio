@@ -168,16 +168,33 @@
                                         @onclick="() => SelectProjectAsync(id)"
                                         @ondblclick="() => OpenProjectAsync(id)">
                                     <strong>@(p.Label ?? p.Title ?? id)</strong>
-                                    @if (!string.IsNullOrWhiteSpace(p.ParentProjectId))
-                                    {
-                                        <span class="badge bg-secondary ms-2 small fw-normal" title="Forked from @p.ParentProjectId">🍴 Fork of @p.ParentProjectId</span>
-                                    }
-                                </button>
+                                     @if (!string.IsNullOrWhiteSpace(p.ParentProjectId))
+                                     {
+                                         <span class="badge bg-secondary ms-2 small fw-normal" title="Forked from @p.ParentProjectId">🍴 Fork of @p.ParentProjectId</span>
+                                     }
+                                     @if (string.Equals(p.VisibilityMode, "Open", StringComparison.OrdinalIgnoreCase))
+                                     {
+                                         <span class="badge bg-success ms-2 small fw-normal" title="Public Repository (Forkable)">🍴 Public (Forkable)</span>
+                                     }
+                                     else if (string.Equals(p.VisibilityMode, "Public", StringComparison.OrdinalIgnoreCase))
+                                     {
+                                         <span class="badge bg-info text-dark ms-2 small fw-normal" title="Public Repository (Read-Only)">👁️ Public (Read-Only)</span>
+                                     }
+                                     else
+                                     {
+                                         <span class="badge bg-dark border border-secondary text-muted ms-2 small fw-normal" title="Private Repository">🔒 Private</span>
+                                     }
+                                 </button>
                                 @if (active)
                                 {
                                     <a class="btn btn-sm btn-light flex-shrink-0" data-testid="home-open-adaptation" href="adaptation">Open</a>
                                     @if (!string.IsNullOrWhiteSpace(p.ParentProjectId) && (Session.IsAdmin || string.Equals(Session.UserId, p.OwnerUserId, StringComparison.OrdinalIgnoreCase)))
                                     {
+                                        <a class="btn btn-sm btn-outline-warning flex-shrink-0"
+                                           href="projects/@id/review-contribution?originProjectId=@p.ParentProjectId"
+                                           title="Review line-by-line diffs before syncing">
+                                            🔍 Review Diff
+                                        </a>
                                         <button type="button"
                                                 class="btn btn-sm btn-outline-info text-white flex-shrink-0"
                                                 disabled="@_busy"
@@ -187,6 +204,15 @@
                                     }
                                     @if (Session.IsAdmin || string.Equals(Session.UserId, p.OwnerUserId, StringComparison.OrdinalIgnoreCase))
                                     {
+                                        <select class="form-select form-select-sm bg-dark text-white border-secondary d-inline-block w-auto flex-shrink-0"
+                                                value="@p.VisibilityMode"
+                                                title="Repository Visibility Mode"
+                                                disabled="@_busy"
+                                                @onchange="(e) => ChangeVisibilityAsync(id, e.Value?.ToString())">
+                                            <option value="Private">🔒 Private</option>
+                                            <option value="Public">👁️ Public (Read-Only)</option>
+                                            <option value="Open">🍴 Public (Forkable)</option>
+                                        </select>
                                         <button type="button"
                                                 class="btn btn-sm btn-outline-light flex-shrink-0"
                                                 disabled="@_busy"
@@ -720,6 +746,26 @@
                 return p.Trim();
         }
         return null;
+    }
+
+    private async Task ChangeVisibilityAsync(string projectId, string? mode)
+    {
+        if (string.IsNullOrWhiteSpace(mode)) return;
+        _busy = true;
+        _error = null;
+        try
+        {
+            await Engine.SetProjectVisibilityModeAsync(projectId, mode);
+            await LoadAsync();
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            _busy = false;
+        }
     }
 
     /// <summary>Strip stack/path noise; keep the actionable sentence.</summary>

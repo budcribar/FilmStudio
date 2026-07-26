@@ -448,6 +448,41 @@ public sealed class EngineApiClient
         return await SendJsonAsync<CreatorProfileDto>(req, ct);
     }
 
+    public async Task<ContributionDiffDto?> GetContributionDiffAsync(
+        string projectId,
+        string? originProjectId = null,
+        CancellationToken ct = default)
+    {
+        SyncIdentityHeaders();
+        var url = $"/api/projects/{Uri.EscapeDataString(projectId)}/contribution-diff";
+        if (!string.IsNullOrWhiteSpace(originProjectId))
+            url += $"?originProjectId={Uri.EscapeDataString(originProjectId)}";
+
+        using var req = new HttpRequestMessage(HttpMethod.Get, url);
+        return await SendJsonAsync<ContributionDiffDto>(req, ct);
+    }
+
+    public async Task<bool> SetProjectVisibilityModeAsync(
+        string projectId,
+        string visibilityMode,
+        CancellationToken ct = default)
+    {
+        SyncIdentityHeaders();
+        using var req = new HttpRequestMessage(HttpMethod.Post, $"/api/projects/{Uri.EscapeDataString(projectId)}/visibility");
+        req.Content = JsonContent.Create(new { visibilityMode }, options: JsonOpts);
+        var res = await _http.SendAsync(req, ct);
+        return res.IsSuccessStatusCode;
+    }
+
+    public async Task<ProjectInfo?> ForkProjectAsync(
+        string projectId,
+        CancellationToken ct = default)
+    {
+        SyncIdentityHeaders();
+        using var req = new HttpRequestMessage(HttpMethod.Post, $"/api/projects/{Uri.EscapeDataString(projectId)}/fork");
+        return await SendJsonAsync<ProjectInfo>(req, ct);
+    }
+
     public async Task<SyncOriginResultDto?> SyncOriginAsync(
         string projectId,
         string parentProjectId,
@@ -591,6 +626,22 @@ public sealed class EngineApiClient
         if (!dto.Ok)
             throw new InvalidOperationException(dto.Error ?? "Remove star failed");
         return (dto.UpvoteCount, dto.UpvotedByMe);
+    }
+
+    /// <summary>
+    /// Feature 11: fork the studio project behind a public demo film (signed-in).
+    /// Returns the new project id under the current user.
+    /// </summary>
+    public async Task<DemoForkResult> ForkDemoProjectAsync(string demoId, CancellationToken ct = default)
+    {
+        using var req = new HttpRequestMessage(
+            HttpMethod.Post,
+            $"/api/demos/{Uri.EscapeDataString(demoId)}/fork");
+        var dto = await SendJsonAsync<DemoForkResult>(req, ct)
+                  ?? throw new InvalidOperationException("Fork failed");
+        if (!dto.Ok)
+            throw new InvalidOperationException(dto.Error ?? "Fork failed");
+        return dto;
     }
 
     public async Task<List<RankedBookCandidateDto>> GetRankedBookCandidatesAsync(
@@ -2846,10 +2897,25 @@ public sealed class DemoListItem
     public string? VideoPath { get; set; }
     public int UpvoteCount { get; set; }
     public bool UpvotedByMe { get; set; }
+    /// <summary>Studio project still exists — gallery can offer Fork.</summary>
+    public bool CanFork { get; set; }
     public string? YoutubeId { get; set; }
     public string? YoutubeUrl { get; set; }
+    public string? VisibilityMode { get; set; } = "Private";
+    public bool IsForkable => string.Equals(VisibilityMode, "Open", StringComparison.OrdinalIgnoreCase);
     public string? YoutubeUploadStatus { get; set; }
     public string? YoutubeUploadError { get; set; }
+}
+
+public sealed class DemoForkResult
+{
+    public bool Ok { get; set; }
+    public string? Error { get; set; }
+    public string? ProjectId { get; set; }
+    public string? Title { get; set; }
+    public string? ParentProjectId { get; set; }
+    public string? DemoId { get; set; }
+    public string? Message { get; set; }
 }
 
 public sealed class DemoUpvoteResult

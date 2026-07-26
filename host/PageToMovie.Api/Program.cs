@@ -134,6 +134,7 @@ builder.Services.AddSingleton<DemoYouTubePublisherService>();
 builder.Services.AddSingleton<ProjectGitRepositoryService>();
 builder.Services.AddSingleton<ProjectInviteService>();
 builder.Services.AddSingleton<CreatorProfileService>();
+builder.Services.AddSingleton<ProjectContributionService>();
 string dpKeysDir;
 try
 {
@@ -2116,6 +2117,66 @@ app.MapPost("/api/projects/{id}/sync-origin", async (
     }
 });
 
+/// <summary>
+/// Computes structured visual diffs between a project and its origin parent project.
+/// </summary>
+app.MapGet("/api/projects/{id}/contribution-diff", async (
+    string id,
+    string? originProjectId,
+    ProjectStore store,
+    ProjectContributionService contribService,
+    IUserContext user,
+    IOptions<PageToMovieOptions> opts,
+    CancellationToken ct) =>
+{
+    if (AuthGate.RequireLogin(user, opts) is { } denied)
+        return denied;
+
+    var parentId = originProjectId;
+    if (string.IsNullOrWhiteSpace(parentId))
+    {
+        var proj = await store.GetProjectAsync(id, ct);
+        parentId = proj?.ParentProjectId;
+    }
+
+    if (string.IsNullOrWhiteSpace(parentId))
+        return Results.BadRequest(new { ok = false, error = "originProjectId or parent project required for diff" });
+
+    try
+    {
+        var targetDir = store.GetProjectDir(id);
+        var originDir = store.GetProjectDir(parentId);
+        var diff = await contribService.ComputeDiffAsync(id, parentId, targetDir, originDir, ct);
+        return Results.Ok(diff);
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { ok = false, error = ex.Message });
+    }
+});
+
+app.MapPost("/api/projects/{id}/visibility", async (
+    string id,
+    ProjectVisibilityRequest req,
+    ProjectStore store,
+    IUserContext user,
+    IOptions<PageToMovieOptions> opts,
+    CancellationToken ct) =>
+{
+    if (AuthGate.RequireLogin(user, opts) is { } denied)
+        return denied;
+
+    await store.RequireProjectAsync(id, ct);
+    if (!await store.CanUserPublishDemoAsync(id, user.UserId, user.IsAdmin, ct))
+    {
+        return Results.Json(new { ok = false, error = "Only the project owner or an admin can change visibility mode." },
+            statusCode: StatusCodes.Status403Forbidden);
+    }
+
+    var proj = await store.SetProjectVisibilityModeAsync(id, req.VisibilityMode, ct);
+    return Results.Ok(new { ok = true, projectId = proj.Id, visibilityMode = proj.VisibilityMode });
+});
+
 app.MapGet("/api/creators/{handle}", async (
     string handle,
     CreatorProfileService creatorService,
@@ -2229,8 +2290,30 @@ app.MapPost("/api/invites/accept", async (
 
     try
     {
-        var fork = await store.ForkProjectAsync(outcome.ProjectId, user.UserId!, ct);
+        var fork = await store.ForkProjectAsync(outcome.ProjectId, user.UserId!, isInvite: true, ct);
         return Results.Ok(new { ok = true, projectId = fork.Id, title = fork.Title });
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { ok = false, error = ex.Message });
+    }
+});
+
+/// <summary>1-click community fork endpoint for Open (Public Forkable) projects.</summary>
+app.MapPost("/api/projects/{id}/fork", async (
+    string id,
+    ProjectStore store,
+    IUserContext user,
+    IOptions<PageToMovieOptions> opts,
+    CancellationToken ct) =>
+{
+    if (AuthGate.RequireLogin(user, opts) is { } denied)
+        return denied;
+
+    try
+    {
+        var fork = await store.ForkProjectAsync(id, user.UserId!, ct: ct);
+        return Results.Ok(new { ok = true, id = fork.Id, title = fork.Title, parentProjectId = fork.ParentProjectId, visibilityMode = fork.VisibilityMode });
     }
     catch (Exception ex)
     {
@@ -3762,7 +3845,9 @@ app.MapGet("/api/share/{token}", (string token, MediaShareService shares, Projec
 static object DemoPublicDto(
     DemoCatalogService.DemoEntry d,
     int upvoteCount = 0,
-    bool upvotedByMe = false) => new
+    bool upvotedByMe = false,
+    bool canFork = false,
+    string visibilityMode = "Private") => new
 {
     d.Id,
     d.Title,
@@ -3775,9 +3860,12 @@ static object DemoPublicDto(
     d.ReportCount,
     upvoteCount,
     upvotedByMe,
+    // True when this public film's studio project still exists (gallery Fork button).
+    canFork,
     videoPath = string.IsNullOrWhiteSpace(d.YoutubeId) ? $"/api/demos/{Uri.EscapeDataString(d.Id)}/video" : null,
     d.YoutubeId,
     d.YoutubeUrl,
+    visibilityMode,
 };
 
 static object DemoAdminDto(DemoCatalogService.DemoEntry d) => new
@@ -3807,17 +3895,39 @@ static object DemoAdminDto(DemoCatalogService.DemoEntry d) => new
 };
 
 /// <summary>Public gallery: only approved demos (no login). sort=top|new (default top by upvotes).</summary>
-app.MapGet("/api/demos", (
+app.MapGet("/api/demos", async (
     DemoCatalogService demos,
     DemoUpvoteService upvotes,
+    ProjectStore store,
     IUserContext user,
     int? take,
-    string? sort) =>
+    string? sort,
+    CancellationToken ct) =>
 {
     var list = demos.ListPublic(take ?? 50).ToList();
     var ids = list.Select(d => d.Id).ToList();
     var counts = upvotes.GetCounts(ids);
     var mine = upvotes.GetUpvotedSet(user.UserId, ids);
+
+    var visibilityMap = new Dictionary<string, string>();
+    var forkableProjectIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+    foreach (var d in list)
+    {
+        if (!string.IsNullOrWhiteSpace(d.ProjectId))
+        {
+            try
+            {
+                var proj = await store.GetProjectAsync(d.ProjectId, ct);
+                if (proj is not null)
+                {
+                    visibilityMap[d.Id] = proj.VisibilityMode;
+                    forkableProjectIds.Add(d.ProjectId);
+                }
+            }
+            catch { /* skip */ }
+        }
+    }
+
     var sortKey = (sort ?? "top").Trim().ToLowerInvariant();
     IEnumerable<DemoCatalogService.DemoEntry> ordered = sortKey switch
     {
@@ -3826,6 +3936,7 @@ app.MapGet("/api/demos", (
             .OrderByDescending(d => counts.GetValueOrDefault(d.Id))
             .ThenByDescending(d => d.CreatedAt),
     };
+
     return Results.Ok(new
     {
         ok = true,
@@ -3833,7 +3944,9 @@ app.MapGet("/api/demos", (
         demos = ordered.Select(d => DemoPublicDto(
             d,
             counts.GetValueOrDefault(d.Id),
-            mine.Contains(d.Id))),
+            mine.Contains(d.Id),
+            canFork: !string.IsNullOrWhiteSpace(d.ProjectId) && forkableProjectIds.Contains(d.ProjectId!),
+            visibilityMode: visibilityMap.GetValueOrDefault(d.Id, "Private"))),
     });
 });
 
@@ -3919,6 +4032,68 @@ app.MapPost("/api/demos/{demoId}/upvote", (
         upvoteCount = upvotes.GetCount(demoId),
         upvotedByMe = true,
     });
+});
+
+/// <summary>
+/// Feature 11: fork the studio project behind a public gallery film (lightweight package, no video).
+/// Requires sign-in. Visibility modes are not fully productized yet — any public demo with a
+/// still-existing source project is forkable from the gallery.
+/// </summary>
+app.MapPost("/api/demos/{demoId}/fork", async (
+    string demoId,
+    DemoCatalogService demos,
+    ProjectStore store,
+    IUserContext user,
+    UserDatabaseService userDb,
+    IOptions<PageToMovieOptions> opts,
+    CancellationToken ct) =>
+{
+    if (await AuthGate.RequireTermsAcceptedAsync(user, userDb, opts) is { } denied)
+        return denied;
+
+    var d = demos.TryGet(demoId);
+    if (d is null || !demos.IsPubliclyStreamable(d))
+        return Results.NotFound(new { ok = false, error = "Demo not found" });
+
+    var sourceId = (d.ProjectId ?? "").Trim();
+    if (sourceId.Length == 0)
+    {
+        return Results.BadRequest(new
+        {
+            ok = false,
+            error = "This film has no studio project to fork.",
+            code = "no_source_project",
+        });
+    }
+
+    try
+    {
+        var source = await store.GetProjectAsync(sourceId, ct);
+        if (source is null)
+        {
+            return Results.BadRequest(new
+            {
+                ok = false,
+                error = "The studio project for this film is no longer available.",
+                code = "source_missing",
+            });
+        }
+
+        var fork = await store.ForkProjectAsync(sourceId, user.UserId!, ct);
+        return Results.Ok(new
+        {
+            ok = true,
+            projectId = fork.Id,
+            title = fork.Title,
+            parentProjectId = sourceId,
+            demoId,
+            message = $"Created “{fork.Title ?? fork.Id}” from this film’s project.",
+        });
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { ok = false, error = ex.Message });
+    }
 });
 
 /// <summary>Remove star / upvote (signed-in).</summary>
@@ -4524,6 +4699,7 @@ namespace PageToMovie.Api
     public record AcceptInviteApiRequest(string? Token);
     public record CommitProjectApiRequest(string? Message);
     public record SyncOriginApiRequest(string? ParentProjectId);
+    public record ProjectVisibilityRequest(string VisibilityMode);
     public record SetBookRefsRequest(List<string>? ImagePaths);
 
     public sealed class TestEmailRequest

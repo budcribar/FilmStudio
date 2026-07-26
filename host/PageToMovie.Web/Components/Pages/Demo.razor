@@ -150,6 +150,19 @@
                                         💬 Comment on YouTube ↗
                                     </a>
                                 }
+                                @if (d.CanFork && (d.IsForkable || Session.IsAdmin))
+                                {
+                                    <button type="button"
+                                            class="btn btn-sm btn-success"
+                                            disabled="@_busy"
+                                            title="@(Session.IsLoggedIn
+                                                ? "Fork script, cast, and shot plan into your workspace"
+                                                : "Sign in to fork this project")"
+                                            data-testid="demo-fork"
+                                            @onclick="() => ForkDemoAsync(d)">
+                                        🍴 Fork project
+                                    </button>
+                                }
                                 <button type="button"
                                         class="btn btn-sm btn-outline-warning"
                                         disabled="@(_busy || _reported.Contains(d.Id))"
@@ -240,6 +253,39 @@
         return d.UpvotedByMe ? "Remove star" : "Star this film";
     }
 
+    private async Task ForkDemoAsync(DemoListItem d)
+    {
+        if (string.IsNullOrWhiteSpace(d.ProjectId)) return;
+        if (!Session.IsLoggedIn)
+        {
+            Nav.NavigateTo("/login?returnUrl=/demo");
+            return;
+        }
+
+        _busy = true;
+        _error = null;
+        try
+        {
+            var forked = await Engine.ForkProjectAsync(d.ProjectId);
+            if (forked is not null)
+            {
+                Nav.NavigateTo("adaptation");
+            }
+            else
+            {
+                _error = "Could not fork project.";
+            }
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
     private async Task ToggleStarAsync(DemoListItem d)
     {
         if (_busy || IsOwnDemo(d)) return;
@@ -286,6 +332,38 @@
             _message = "Thanks — report received. Moderators will review.";
             // If auto-pending, it may disappear from public list.
             await ReloadAsync();
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    /// <summary>Feature 11: fork the studio project behind this public film.</summary>
+    private async Task ForkAsync(DemoListItem d)
+    {
+        if (_busy || !d.CanFork) return;
+        if (!Session.IsLoggedIn)
+        {
+            Nav.NavigateTo("/login?returnUrl=" + Uri.EscapeDataString("/demo#" + d.Id));
+            return;
+        }
+
+        _busy = true;
+        _error = null;
+        _message = null;
+        try
+        {
+            var result = await Engine.ForkDemoProjectAsync(d.Id);
+            var label = result.Title ?? result.ProjectId ?? "your fork";
+            _message = result.Message
+                       ?? $"Created “{label}”. Open Home to select it and start adapting.";
+            // Land on Home so the user can pick the new fork (parent badge + Sync Origin).
+            Nav.NavigateTo("/");
         }
         catch (Exception ex)
         {

@@ -25,6 +25,7 @@ public class ProjectForkTests
         try
         {
             var source = await store.CreateProjectAsync("Original", ownerUserId: "owner1");
+            await store.SetProjectVisibilityModeAsync(source.Id, "Open");
             var sourceDir = source.Path;
             Directory.CreateDirectory(Path.Combine(sourceDir, "source"));
             await File.WriteAllTextAsync(Path.Combine(sourceDir, "source", "screenplay.fountain"), "INT. HOUSE - DAY");
@@ -53,6 +54,7 @@ public class ProjectForkTests
         try
         {
             var source = await store.CreateProjectAsync("Original", ownerUserId: "owner1");
+            await store.SetProjectVisibilityModeAsync(source.Id, "Open");
             var other = await store.CreateProjectAsync("StillActive", ownerUserId: "owner1");
             // CreateProjectAsync activates each project it makes — "StillActive" is now active.
 

@@ -13,6 +13,10 @@ public sealed class ProjectInfo
     public string? OwnerUserId { get; set; }
     /// <summary>Set when this project was created via Invite-to-Fork — the project it was forked from.</summary>
     public string? ParentProjectId { get; set; }
+    /// <summary>
+    /// Git-aligned visibility mode: "Private" (owner/collaborators only), "Public" (Read-Only / listed on gallery), or "Open" (Public Forkable). Default: "Private".
+    /// </summary>
+    public string VisibilityMode { get; set; } = "Private";
 }
 
 public sealed class WorkspaceState
