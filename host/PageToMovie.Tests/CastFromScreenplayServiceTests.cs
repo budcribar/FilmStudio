@@ -220,9 +220,10 @@ public class CastFromScreenplayServiceTests
             if (File.Exists(candidate))
                 return dir.FullName;
         }
-        var known = @"C:\Users\budcr\source\repos\NickAndMe";
+        var known = @"C:\Users\budcr\source\repos\gemini\PageToMovie";
         if (File.Exists(Path.Combine(known, "prompts", "fountain_to_cast.txt")))
             return known;
         return null;
     }
+
 }
