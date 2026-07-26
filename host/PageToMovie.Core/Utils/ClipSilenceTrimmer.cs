@@ -1,16 +1,20 @@
 using System.Globalization;
 using System.Text.RegularExpressions;
 
-namespace PageToMovie.Engine;
+namespace PageToMovie.Core.Utils;
 
 /// <summary>
-/// Pure helpers for silence cut-points (used by unit tests and optional client wasm port).
-/// Server never runs ffmpeg — gen skips silence-trim; browser may apply later.
+/// Pure helpers for silence cut-points. Lives in Core (not Engine) so both the
+/// server and the Blazor WASM client (ffmpeg.wasm) call the same implementation
+/// instead of keeping a hand-ported copy in JS.
 /// </summary>
 public static class ClipSilenceTrimmer
 {
     public const double DefaultKeepTailSeconds = 0.35;
     public const double SpeechBreathTailSeconds = 0.90;
+
+    /// <summary>Shortest a trimmed clip may end up — matches ClipDurationEstimator.MinSeconds.</summary>
+    public const double MinClipSeconds = 3;
 
     private static readonly Regex SilenceEndRe = new(
         @"silence_end:\s*([0-9]+(?:\.[0-9]+)?)",
@@ -46,7 +50,7 @@ public static class ClipSilenceTrimmer
                 (starts.Count == 0 || starts[0] > ends[0]))
             {
                 var cut = Math.Max(0, ends[0] - keepHeadSeconds);
-                if (cut >= 0.2 && totalDuration - cut >= ClipDurationEstimator.MinSeconds - 0.25)
+                if (cut >= 0.2 && totalDuration - cut >= MinClipSeconds - 0.25)
                     return cut;
             }
             return null;
@@ -64,7 +68,7 @@ public static class ClipSilenceTrimmer
         var startAt = Math.Max(0, end - keepHeadSeconds);
         if (startAt < 0.2)
             return null;
-        if (totalDuration - startAt < ClipDurationEstimator.MinSeconds - 0.25)
+        if (totalDuration - startAt < MinClipSeconds - 0.25)
             return null;
         return startAt;
     }
@@ -128,7 +132,7 @@ public static class ClipSilenceTrimmer
         cut = Math.Min(cut, totalDuration - 0.05);
         if (cut >= totalDuration - 0.2)
             return null;
-        if (cut < ClipDurationEstimator.MinSeconds - 0.25)
+        if (cut < MinClipSeconds - 0.25)
             return null;
         return cut;
     }

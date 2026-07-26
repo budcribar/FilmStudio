@@ -5,6 +5,10 @@ namespace PageToMovie.Engine;
 /// <summary>
 /// Read movie duration from MP4/ISO-BMFF <c>mvhd</c> without spawning ffmpeg.
 /// No native ffmpeg — pure ISO-BMFF parse.
+/// Assumes well-formed input (our own gen/re-encode output only, never a foreign
+/// upload): one malformed/oversized box anywhere before <c>mvhd</c> aborts the
+/// whole parse rather than skipping just that box — fine for that assumption,
+/// not a general-purpose MP4 reader.
 /// </summary>
 public static class Mp4DurationReader
 {

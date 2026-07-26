@@ -1,5 +1,6 @@
 using Microsoft.JSInterop;
 using PageToMovie.Core.Models;
+using PageToMovie.Core.Utils;
 
 namespace PageToMovie.Web.Services;
 
@@ -95,59 +96,77 @@ public sealed class ClientMediaFolderService
             Changed?.Invoke();
 
             var url = snap.ClientMediaUrl!;
-            if (url.StartsWith('/'))
-            {
-                // same-origin relative
-            }
 
-            // Silence-trim in browser (ffmpeg.wasm) before write — port of ClipSilenceTrimmer.
-            // Longer breath tail for speech-style clips; lead trim on clip 2+.
+            // Silence-trim in browser (ffmpeg.wasm) before write. Decision logic
+            // (where to cut) lives once in ClipSilenceTrimmer (Core) — JS only does
+            // the ffmpeg I/O. Longer breath tail for speech-style clips; lead trim on clip 2+.
             var clipNum = snap.Clip ?? 1;
             var isCredits = (snap.ClientRelativePath ?? "")
                 .Contains("credits.mp4", StringComparison.OrdinalIgnoreCase);
             var keepTail = isCredits
-                ? 0.35
-                : 0.90; // SpeechBreathTailSeconds — safe default without dialogue metadata
-            var silenceOpts = new
-            {
-                silenceTrim = !isCredits, // credits plate is title card; leave full length
-                keepTailSeconds = keepTail,
-                trimLeading = clipNum > 1,
-                keepHeadSeconds = 0.08,
-            };
+                ? ClipSilenceTrimmer.DefaultKeepTailSeconds
+                : ClipSilenceTrimmer.SpeechBreathTailSeconds; // safe default without dialogue metadata
 
-            var saved = await _js.InvokeAsync<JsSaveResult>(
-                "PageToMovieMedia.saveFromUrlAsync",
-                url,
-                snap.ClientRelativePath,
-                null,
-                silenceOpts);
-
-            if (saved is not { Success: true } || string.IsNullOrWhiteSpace(saved.Sha256))
+            string? silenceMessage = null;
+            string? trimmedBlobUrl = null;
+            var urlToSave = url;
+            if (!isCredits) // credits plate is a title card; leave full length
             {
-                LastStatus = saved?.Error ?? "Save failed";
-                Changed?.Invoke();
-                return;
+                var (trimmed, trimUrl, message) = await SilenceTrimAsync(
+                    url,
+                    keepTailSeconds: keepTail,
+                    trimLeading: clipNum > 1,
+                    keepHeadSeconds: 0.08);
+                silenceMessage = message;
+                if (trimmed && !string.IsNullOrWhiteSpace(trimUrl))
+                {
+                    trimmedBlobUrl = trimUrl;
+                    urlToSave = trimUrl!;
+                }
             }
 
-            var scene = snap.Scene;
-            var clip = snap.Clip;
-            await _api.RegisterMediaAsync(snap.ProjectId!, new MediaRegisterRequest
+            try
             {
-                RelativePath = saved.RelativePath ?? snap.ClientRelativePath!,
-                Sha256 = saved.Sha256,
-                SizeBytes = saved.SizeBytes,
-                Kind = isCredits ? "credits" : "clip",
-                Scene = scene,
-                Clip = clip,
-            });
+                var saved = await _js.InvokeAsync<JsSaveResult>(
+                    "PageToMovieMedia.saveFromUrlAsync",
+                    urlToSave,
+                    snap.ClientRelativePath,
+                    null);
 
-            var sil = string.IsNullOrWhiteSpace(saved.SilenceMessage)
-                ? ""
-                : $" · silence: {saved.SilenceMessage}";
-            LastStatus =
-                $"Saved {Path.GetFileName(snap.ClientRelativePath)} ({saved.SizeBytes / 1024} KB){sil}";
-            Changed?.Invoke();
+                if (saved is not { Success: true } || string.IsNullOrWhiteSpace(saved.Sha256))
+                {
+                    LastStatus = saved?.Error ?? "Save failed";
+                    Changed?.Invoke();
+                    return;
+                }
+
+                var scene = snap.Scene;
+                var clip = snap.Clip;
+                await _api.RegisterMediaAsync(snap.ProjectId!, new MediaRegisterRequest
+                {
+                    RelativePath = saved.RelativePath ?? snap.ClientRelativePath!,
+                    Sha256 = saved.Sha256,
+                    SizeBytes = saved.SizeBytes,
+                    Kind = isCredits ? "credits" : "clip",
+                    Scene = scene,
+                    Clip = clip,
+                });
+
+                var sil = string.IsNullOrWhiteSpace(silenceMessage)
+                    ? ""
+                    : $" · silence: {silenceMessage}";
+                LastStatus =
+                    $"Saved {Path.GetFileName(snap.ClientRelativePath)} ({saved.SizeBytes / 1024} KB){sil}";
+                Changed?.Invoke();
+            }
+            finally
+            {
+                if (trimmedBlobUrl is not null)
+                {
+                    try { await _js.InvokeVoidAsync("PageToMovieMedia.revokeUrl", trimmedBlobUrl); }
+                    catch { /* best effort */ }
+                }
+            }
         }
         catch (Exception ex)
         {
@@ -158,6 +177,81 @@ public sealed class ClientMediaFolderService
         {
             lock (_savingKeys)
                 _savingKeys.Remove(key);
+        }
+    }
+
+    /// <summary>
+    /// Analyze a clip's silence (browser ffmpeg.wasm), decide cut points with the real
+    /// <see cref="ClipSilenceTrimmer"/> math (no JS port to drift), and either encode the
+    /// trimmed slice or discard the analysis session. Never throws — failures degrade to
+    /// "not trimmed" so a save is never blocked by a browser/codec hiccup.
+    /// </summary>
+    private async Task<(bool Trimmed, string? Url, string? Message)> SilenceTrimAsync(
+        string url,
+        double keepTailSeconds,
+        bool trimLeading,
+        double keepHeadSeconds,
+        double minTrimSavings = 0.4)
+    {
+        string? token = null;
+        try
+        {
+            var analysis = await _js.InvokeAsync<JsSilenceAnalysis>(
+                "PageToMovieFfmpeg.analyzeSilenceAsync", url, new { });
+            if (analysis is not { Success: true })
+                return (false, null, "skip: " + (analysis?.Error ?? "analyze failed"));
+            if (analysis.Token is null)
+                return (false, null, analysis.Error ?? "skip: nothing to analyze");
+
+            token = analysis.Token;
+            var total = analysis.TotalSec;
+            double startSec = 0, endSec = total;
+            var notes = new List<string>();
+
+            var cutAt = ClipSilenceTrimmer.ComputeCutPoint(analysis.Log ?? "", total, keepTailSeconds);
+            if (cutAt is { } cut && (total - cut) >= minTrimSavings)
+            {
+                endSec = cut;
+                notes.Add($"tail −{(total - cut):F2}s");
+            }
+
+            if (trimLeading)
+            {
+                var lead = ClipSilenceTrimmer.ComputeLeadInPoint(analysis.Log ?? "", total, keepHeadSeconds);
+                if (lead is { } l && l >= 0.25 && endSec - l >= ClipSilenceTrimmer.MinClipSeconds - 0.25)
+                {
+                    startSec = l;
+                    notes.Add($"head −{l:F2}s");
+                }
+            }
+
+            if (startSec <= 0.001 && endSec >= total - 0.05)
+            {
+                await _js.InvokeVoidAsync("PageToMovieFfmpeg.discardSessionAsync", token);
+                token = null;
+                return (false, null, notes.Count > 0 ? string.Join("; ", notes) : "skip: no trailing/leading silence");
+            }
+
+            var durationSec = Math.Max(0.5, endSec - startSec);
+            var enc = await _js.InvokeAsync<JsSilenceEncode>(
+                "PageToMovieFfmpeg.encodeSliceAsync", token, startSec, durationSec);
+            token = null; // encodeSliceAsync always consumes/cleans up the session
+            if (enc is not { Success: true } || string.IsNullOrWhiteSpace(enc.Url))
+                return (false, null, "skip: re-encode failed — " + (enc?.Error ?? ""));
+
+            return (true, enc.Url, notes.Count > 0 ? string.Join("; ", notes) : "trimmed");
+        }
+        catch (Exception ex)
+        {
+            return (false, null, "skip: " + ex.Message);
+        }
+        finally
+        {
+            if (token is not null)
+            {
+                try { await _js.InvokeVoidAsync("PageToMovieFfmpeg.discardSessionAsync", token); }
+                catch { /* best effort */ }
+            }
         }
     }
 
@@ -219,7 +313,22 @@ public sealed class ClientMediaFolderService
         public long SizeBytes { get; set; }
         public string? RelativePath { get; set; }
         public string? Error { get; set; }
-        public string? SilenceMessage { get; set; }
+    }
+
+    private sealed class JsSilenceAnalysis
+    {
+        public bool Success { get; set; }
+        public string? Token { get; set; }
+        public double TotalSec { get; set; }
+        public string? Log { get; set; }
+        public string? Error { get; set; }
+    }
+
+    private sealed class JsSilenceEncode
+    {
+        public bool Success { get; set; }
+        public string? Url { get; set; }
+        public string? Error { get; set; }
     }
 
     private sealed class JsBlobResult

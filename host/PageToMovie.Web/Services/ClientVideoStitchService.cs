@@ -173,30 +173,6 @@ public sealed class ClientVideoStitchService
         }
     }
 
-    /// <summary>Browser re-encode slice (silence trim / extend-tail on the client).</summary>
-    public async Task<ClientStitchResult> TrimAsync(
-        string url,
-        double? startSec = null,
-        double? durationSec = null,
-        CancellationToken ct = default)
-    {
-        try
-        {
-            var raw = await _js.InvokeAsync<JsConcatResult>(
-                "PageToMovieFfmpeg.trimVideoAsync",
-                ct,
-                url,
-                new { startSec, durationSec });
-            if (raw is null || !raw.Success || string.IsNullOrWhiteSpace(raw.Url))
-                return ClientStitchResult.Fail(raw?.Error ?? "Browser trim failed");
-            return ClientStitchResult.Ok(raw.Url!, 1, single: true);
-        }
-        catch (Exception ex)
-        {
-            return ClientStitchResult.Fail(ex.Message);
-        }
-    }
-
     /// <summary>
     /// Sample JPEG frames for one clip (and previous tail when clip &gt; 1) for auto-review upload.
     /// Prefers local media-folder blobs, else authenticated clip proxy URLs.

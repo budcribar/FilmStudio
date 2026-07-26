@@ -2,6 +2,7 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using PageToMovie.Core.Models;
 using PageToMovie.Core.Options;
+using PageToMovie.Core.Utils;
 using PageToMovie.Engine;
 using PageToMovie.Engine.Abstractions;
 using Microsoft.Extensions.Logging.Abstractions;

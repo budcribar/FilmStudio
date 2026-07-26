@@ -56,16 +56,15 @@ window.PageToMovieMedia = {
     },
 
     /**
-     * Download from same-origin proxy (or any URL) and write under media folder.
-     * Optionally silence-trim via PageToMovieFfmpeg before write.
+     * Download from same-origin proxy (or any URL, incl. blob:) and write under media folder.
+     * Pure I/O — callers that want silence-trim run PageToMovieFfmpeg.analyzeSilenceAsync /
+     * encodeSliceAsync themselves first and pass the resulting blob: URL in as `url`.
      * Returns sha256 hex + size.
      * @param {string} url
      * @param {string} relativePath
      * @param {(p:number,msg:string)=>void} [onProgress]
-     * @param {{ silenceTrim?: boolean, keepTailSeconds?: number, trimLeading?: boolean }} [opts]
      */
-    saveFromUrlAsync: async function (url, relativePath, onProgress, opts) {
-        opts = opts || {};
+    saveFromUrlAsync: async function (url, relativePath, onProgress) {
         if (!this._root) {
             const c = await this.connectFolderAsync();
             if (!c.success) return c;
@@ -74,42 +73,9 @@ window.PageToMovieMedia = {
             onProgress && onProgress(5, "Downloading clip…");
             const res = await fetch(url, { credentials: "same-origin" });
             if (!res.ok) return { success: false, error: "Download failed HTTP " + res.status };
-            let buf = await res.arrayBuffer();
-            let silenceMessage = null;
-            let blobUrlForTrim = null;
+            const buf = await res.arrayBuffer();
 
-            if (opts.silenceTrim && window.PageToMovieFfmpeg && PageToMovieFfmpeg.silenceTrimClipAsync) {
-                onProgress && onProgress(25, "Silence trim…");
-                blobUrlForTrim = URL.createObjectURL(new Blob([buf], { type: "video/mp4" }));
-                let trimOutUrl = null;
-                try {
-                    const tr = await PageToMovieFfmpeg.silenceTrimClipAsync(blobUrlForTrim, {
-                        keepTailSeconds: opts.keepTailSeconds,
-                        trimLeading: !!opts.trimLeading,
-                        keepHeadSeconds: opts.keepHeadSeconds,
-                    }, function (p, msg) {
-                        onProgress && onProgress(25 + Math.round((p / 100) * 35), msg || "Silence trim…");
-                    });
-                    if (tr && tr.success && tr.trimmed && tr.url) {
-                        trimOutUrl = tr.url;
-                        const tRes = await fetch(tr.url);
-                        buf = await tRes.arrayBuffer();
-                        silenceMessage = tr.message || "trimmed";
-                    } else if (tr && tr.message) {
-                        silenceMessage = tr.message;
-                    }
-                } catch (trimErr) {
-                    console.warn("silence trim skipped:", trimErr);
-                    silenceMessage = "skip: " + (trimErr.message || String(trimErr));
-                } finally {
-                    try { URL.revokeObjectURL(blobUrlForTrim); } catch (_) { /* */ }
-                    if (trimOutUrl) {
-                        try { URL.revokeObjectURL(trimOutUrl); } catch (_) { /* */ }
-                    }
-                }
-            }
-
-            onProgress && onProgress(70, "Hashing…");
+            onProgress && onProgress(60, "Hashing…");
             const sha = await this._sha256Hex(buf);
             onProgress && onProgress(85, "Writing folder…");
             const { dir, fileName } = await this._ensurePathAsync(relativePath);
@@ -130,12 +96,16 @@ window.PageToMovieMedia = {
                 sizeBytes: buf.byteLength,
                 relativePath: relativePath.replace(/\\/g, "/"),
                 folderName: this._root.name,
-                silenceMessage: silenceMessage,
             };
         } catch (err) {
             console.error("saveFromUrlAsync", err);
             return { success: false, error: err.message || String(err) };
         }
+    },
+
+    /** Revoke an arbitrary blob: URL (e.g. one handed back by PageToMovieFfmpeg.encodeSliceAsync). */
+    revokeUrl: function (url) {
+        try { URL.revokeObjectURL(url); } catch (_) { /* */ }
     },
 
     /**
