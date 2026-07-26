@@ -148,70 +148,28 @@ Why this shape:
 
 No minimum vote threshold required for “Top” if the only signal is count (a single upvote legitimately ranks above zero). Optional: pin admin “featured” above organic Top.
 
-### Suggested API (future)
-```http
-POST   /api/demos/{id}/upvote      # idempotent: ensure my upvote exists
-DELETE /api/demos/{id}/upvote      # remove my upvote
-GET    /api/demos?sort=top|new     # include upvoteCount, upvotedByMe
-GET    /api/demos/{id}             # same
-```
+## Demo Ratings & Upvotes (Implemented & Active in Production)
 
-### Storage (future)
-```text
-demo_upvotes (
-  demo_id   TEXT NOT NULL,
-  user_id   TEXT NOT NULL,
-  created_at TEXT NOT NULL,
-  PRIMARY KEY (demo_id, user_id)
-)
-```
-- `upvoteCount` = `COUNT(*)` per demo (or denormalized counter on demo meta, updated on vote).
-
-### Out of scope for demo-ratings v1
-- 1–5 star scales  
-- Downvotes  
-- Clip-level votes  
-- Contribution/PR votes  
-- Fork inherits upvotes (no)  
-- Anon voting  
-- Text reviews  
-
-### Depends on
-- Existing public demo catalog + auth JWT (already present).
-
-### Does not depend on
-- Project fork/merge or collaborators.
+### API & Production Status
+- **Status**: **Done & Active in Production** on `/demo`.
+- **API Endpoints**:
+  - `POST /api/demos/{id}/upvote` — Idempotent toggle to record user upvote.
+  - `DELETE /api/demos/{id}/upvote` — Remove user upvote.
+  - `GET /api/demos?sort=top|new` — Retrieves demos with `upvoteCount` and `upvotedByMe`.
+- **Database Storage**: SQLite `demo_upvotes` table (`demo_id`, `user_id`, `created_at`).
+- **YouTube Direct Comment Button**: Includes `💬 Comment on YouTube ↗` linking to `https://www.youtube.com/watch?v={youtubeId}` in a new tab for native YouTube commenting (0 API quota cost & 0 moderation burden).
 
 ---
 
-## Fork → merge (summary — planned later)
+## Invite-to-Fork & Git 3-Way Merge Engine (Summary)
 
-Community path for **strangers** on **open** projects. Prefer **collaborators** for trusted co-production on one project.
+All project collaboration, forking, and contribution merging are unified under the **Git-Backed Server Engine (`LibGit2Sharp`)**:
 
-### When fork is allowed
-- Only if owner mode is **open** (play yes, fork yes).
-- **Public** (play only): no fork CTA.
-- **Private:** no play, no fork.
-- Demo page may show **Fork** when the listing is **open** and a forkable project package exists; play uses the demo movie snapshot either way.
+- **Lightweight Forking**: Copies screenplay text, character reference images, Stage 2 shot plan blueprints, and rules (< 5 MB package). Heavy video clips remain on client PC hard drives (`assets/video/`).
+- **Git 3-Way Merging**: `ProjectGitRepositoryService` uses Git's 3-way merge algorithm (`base`, `ours`, `theirs`) to merge screenplay beats and JSON shot plan fields with 1-click visual diff review (`ContributionReview.razor`).
+- **Rebase Helper**: `🔄 Sync from Origin` allows forked projects to pull the latest screenplay revisions and new characters from the parent origin project effortlessly.
 
-### v1 fork
-- Copy L0–L4: source/screenplay, cast, blueprint, rules, config (strip secrets).
-- Skip or reset: cost ledger, private review state, client-only MP4 bytes (plan-only).
-- New `projectId`, `ownerUserId` = forker; record `sourceProjectId` + hash at fork.
-
-### v1 contribution
-- Structured diff (blueprint clip fields, cast fields, optional screenplay).
-- Owner accepts selected paths; reject if upstream `contentHash` ≠ contribution base (rebase).
-- Field-level conflict resolution (3-way vs base): keep origin / take fork / skip — no silent text merge.
-
-### Merge atoms: characters vs scenes (locked direction)
-| Layer | Default merge / conflict unit | UI |
-|-------|-------------------------------|-----|
-| **Characters** | **Character package** (description, visual_lock, voice, optional ref); optional expand to fields | Group under Cast |
-| **Scenes / clips** | **Clip field** (e.g. `S02C03.visual_prompt`, dialogue bundle); not whole scene by default | Group by scene → clips |
-| **Whole scene** | Bulk “select all clips in Sxx” only — not a primitive blob replace | |
-| **Coupling** | Character and clip accepts are **independent**; optional “N clips in this PR use this character” hint | |
-| **Structure** | v1: edit existing `SxxCyy` / characters only — no silent add/delete/reorder in PR | |
+---
 
 ## User Terms of Service, IP Licensing Agreement & Copyright Protection
 
