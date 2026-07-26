@@ -67,10 +67,11 @@ public sealed class HttpUserContext : IUserContext
             var queryMe = ctx?.Request.Query["me"].ToString();
             var queryKey = ctx?.Request.Query["admin_key"].ToString();
             var headerKey = ctx?.Request.Headers["X-Admin-Key"].ToString();
-            if (!string.IsNullOrWhiteSpace(_auth.OperatorOverrideSecret) &&
-                (string.Equals(queryMe, _auth.OperatorOverrideSecret, StringComparison.Ordinal) ||
-                 string.Equals(queryKey, _auth.OperatorOverrideSecret, StringComparison.Ordinal) ||
-                 string.Equals(headerKey, _auth.OperatorOverrideSecret, StringComparison.Ordinal)))
+            var secret = AuthOptions.ResolveOperatorOverrideSecret(_auth);
+            if (!string.IsNullOrWhiteSpace(secret) &&
+                (string.Equals(queryMe, secret, StringComparison.Ordinal) ||
+                 string.Equals(queryKey, secret, StringComparison.Ordinal) ||
+                 string.Equals(headerKey, secret, StringComparison.Ordinal)))
             {
                 roles.Add(AppRoles.Admin);
             }
