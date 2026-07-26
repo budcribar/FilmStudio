@@ -970,18 +970,9 @@ else
 
                     <h6 class="mb-1">Visual</h6>
                     <label class="form-label small mb-0">Prompt <span class="text-danger">*</span></label>
-                    <textarea class="form-control form-control-sm mb-2" rows="5" required
+                    <textarea class="form-control form-control-sm mb-3" rows="4" required
                               placeholder="Required — action / framing for this take"
                               @bind="ed.VisualPrompt"></textarea>
-
-                    <label class="form-label small mb-0">Negative prompt (clip extras)</label>
-                    <textarea class="form-control form-control-sm mb-1" rows="2" @bind="ed.NegativePrompt"
-                              placeholder="Optional — story-specific bans only"></textarea>
-                    <div class="form-text small mb-3">
-                        Empty is normal. Shared global bans (no legible text, watermarks, logos, extra limbs, name tags…)
-                        are always applied at video gen — not stored on each clip. Use this field only for
-                        this-clip extras (must-not, wardrobe bans, dual lip-sync, etc.).
-                    </div>
 
                     <h6 class="mb-1">Dialogue</h6>
                     <div class="row g-2 mb-2">
@@ -1007,7 +998,7 @@ else
                             </datalist>
                         </div>
                     </div>
-                    <textarea class="form-control form-control-sm mb-1" rows="3"
+                    <textarea class="form-control form-control-sm mb-1" rows="2"
                               data-testid="clip-editor-dialogue"
                               placeholder="Dialogue / voiceover text (requires speaker + delivery)…"
                               @bind="ed.Dialogue"></textarea>
@@ -1015,22 +1006,42 @@ else
                         Silent clips: leave speaker none and dialogue empty. Spoken/VO lines need both a speaker and a delivery other than none.
                     </div>
 
-                    <h6 class="mb-1">Lighting &amp; color</h6>
-                    <div class="row g-2">
-                        <div class="col-6">
-                            <label class="form-label small mb-0">Color palette</label>
-                            <input class="form-control form-control-sm" @bind="ed.ColorPalette"
-                                   placeholder="Optional" />
-                        </div>
-                        <div class="col-6">
-                            <label class="form-label small mb-0">Film stock</label>
-                            <input class="form-control form-control-sm" @bind="ed.FilmStock"
-                                   placeholder="Optional" />
-                        </div>
-                    </div>
-                    <div class="form-text small mt-1 mb-0">
-                        Empty is fine — often unused. Shot plan may already bake grading into the visual prompt;
-                        fill these only to pin palette / stock for this clip.
+                    <!-- Collapsible Advanced Options -->
+                    <div class="mb-3">
+                        <button type="button" class="btn btn-sm btn-outline-secondary w-100 text-start d-flex justify-content-between align-items-center"
+                                @onclick="() => _showEditClipAdvanced = !_showEditClipAdvanced">
+                            <span>⚙️ Advanced options (Negative prompt, Lighting &amp; Color, Film stock)</span>
+                            <span>@(_showEditClipAdvanced || !string.IsNullOrWhiteSpace(ed.NegativePrompt) || !string.IsNullOrWhiteSpace(ed.ColorPalette) || !string.IsNullOrWhiteSpace(ed.FilmStock) ? "▲ Hide" : "▼ Expand")</span>
+                        </button>
+
+                        @if (_showEditClipAdvanced || !string.IsNullOrWhiteSpace(ed.NegativePrompt) || !string.IsNullOrWhiteSpace(ed.ColorPalette) || !string.IsNullOrWhiteSpace(ed.FilmStock))
+                        {
+                            <div class="p-3 border border-top-0 rounded-bottom bg-body-tertiary">
+                                <label class="form-label small mb-1 fw-medium">Negative prompt (clip extras)</label>
+                                <textarea class="form-control form-control-sm mb-1" rows="2" @bind="ed.NegativePrompt"
+                                          placeholder="Optional — story-specific bans only"></textarea>
+                                <div class="form-text small mb-3">
+                                    Empty is normal. Shared global bans (no watermarks, logos, extra limbs, name tags) are automatically applied at video gen.
+                                </div>
+
+                                <h6 class="mb-1 fw-semibold">Lighting &amp; Color</h6>
+                                <div class="row g-2">
+                                    <div class="col-6">
+                                        <label class="form-label small mb-0">Color palette</label>
+                                        <input class="form-control form-control-sm" @bind="ed.ColorPalette"
+                                               placeholder="e.g. Warm golden hour, Neon noir" />
+                                    </div>
+                                    <div class="col-6">
+                                        <label class="form-label small mb-0">Film stock / Lens</label>
+                                        <input class="form-control form-control-sm" @bind="ed.FilmStock"
+                                               placeholder="e.g. 35mm anamorphic, Kodak Vision3" />
+                                    </div>
+                                </div>
+                                <div class="form-text small mt-1 mb-0">
+                                    Empty is fine. Shot plan bakes grading into the visual prompt; fill these only to pin palette or stock for this clip.
+                                </div>
+                            </div>
+                        }
                     </div>
                 </div>
                 <div class="modal-footer py-2">
@@ -1148,6 +1159,7 @@ else
     private (int Scene, int Clip)? _deleteClipTarget;
     private ClipEditRequest? _clipEditor;
     private bool _clipEditorIsNew;
+    private bool _showEditClipAdvanced;
     private HashSet<string> _clipEditorCast = new(StringComparer.OrdinalIgnoreCase);
     /// <summary>Multi-select clip numbers within the currently open scene's clip table, for batch regen.</summary>
     private readonly HashSet<int> _selectedClips = new();
@@ -1388,15 +1400,46 @@ else
     private int IncompleteCount =>
         VisibleScenes.Count(s => s.ClipsOnDisk < s.ClipCount);
 
-    private List<string> CharacterOptions =>
-        _scenes is null
-            ? new List<string>()
-            : _scenes
-                .SelectMany(s => s.CharactersOnScreen)
-                .Where(c => !string.IsNullOrWhiteSpace(c))
-                .Distinct(StringComparer.OrdinalIgnoreCase)
-                .OrderBy(c => ShortChar(c), StringComparer.OrdinalIgnoreCase)
-                .ToList();
+    private List<string> CharacterOptions
+    {
+        get
+        {
+            var set = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            if (_scenes is not null)
+            {
+                foreach (var s in _scenes)
+                {
+                    foreach (var c in s.CharactersOnScreen)
+                        if (!string.IsNullOrWhiteSpace(c)) set.Add(c);
+                }
+            }
+            if (_detail is not null)
+            {
+                foreach (var c in _detail.CharactersOnScreen)
+                    if (!string.IsNullOrWhiteSpace(c)) set.Add(c);
+
+                if (_detail.Clips is not null)
+                {
+                    foreach (var cl in _detail.Clips)
+                    {
+                        foreach (var c in cl.CharactersOnScreen)
+                            if (!string.IsNullOrWhiteSpace(c)) set.Add(c);
+                    }
+                }
+            }
+            if (_clipEditorCast is not null)
+            {
+                foreach (var c in _clipEditorCast)
+                    if (!string.IsNullOrWhiteSpace(c)) set.Add(c);
+            }
+            if (_castMissing is not null)
+            {
+                foreach (var c in _castMissing)
+                    if (!string.IsNullOrWhiteSpace(c)) set.Add(c);
+            }
+            return set.OrderBy(c => ShortChar(c), StringComparer.OrdinalIgnoreCase).ToList();
+        }
+    }
 
     private List<string> LocationOptions =>
         _scenes is null
