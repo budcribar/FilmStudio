@@ -256,21 +256,37 @@ Community path for **strangers** on **open** projects. Prefer **collaborators** 
 
 Characters are **global** (high blast radius); scenes are a **timeline of clips**. Prefer character-level packages and clip-level fields; do not force atomic “whole scene” or “character + all clips” accepts in v1.
 
-### v1 non-goals
-- Git history  
-- Binary clip merge  
-- Real-time collab (use **collaborators** + locks instead)  
+### Client media folder & Server Media Pruner
+- Each collaborator uses **their** browser media folder (IndexedDB / OPFS / Local Folder); server registry is **per project** by SHA-256 hash.
+- **Server Media Pruner (`ServerMediaPruningService.cs`)**: Railway server automatically prunes server-cached `.mp4` files older than 48 hours or when container disk capacity exceeds 80%. Server disk footprint remains **< 100 MB** total.
+- **Lightweight Project Packaging & Forking**: Project export ZIPs, target user imports, and community forks package story text, Fountain screenplays, character reference images, shot plan blueprints, and rules (excluding heavy `.mp4` video binaries), keeping package sizes **< 5 MB** for instant cross-user sharing.
+
+---
+
+## Demo Gallery & YouTube Video Hosting
+
+### Intent
+Zero-server-disk public demo gallery powered by YouTube video embeds. Eliminates Railway disk usage and server streaming bandwidth for public demo videos while driving views and engagement to your YouTube Channel.
+
+### Model: **YouTube Embeds + Upvotes**
+- **Public Video Stream**: Demos are published with a YouTube Video ID (`youtube_id`) or YouTube URL.
+- **Embedded Player**: The public `/demo` page renders an embedded, privacy-enhanced YouTube iframe player (`<iframe src="https://www.youtube-nocookie.com/embed/{youtubeId}"></iframe>`).
+- **Server Footprint**: **0 MB for video files**. `demo.json` / SQLite stores only metadata (title, author, screenplay snippet, upvote count, YouTube ID).
+- **Publishing Methods**:
+  1. *Manual URL*: Admin/user inputs YouTube link or ID upon demo approval.
+  2. *API Auto-Upload (Optional)*: Railway server uploads approved demo to YouTube Channel via YouTube Data API v3 (`videos.insert`) and immediately deletes the temporary local MP4 file.
 
 ---
 
 ## Suggested ship order
 
 1. **Demo upvotes + rank by most upvotes** — **done (basic)** on `/demo`.  
-2. **Project collaborators** (owner + editors, invite by username, project list includes member-of).  
-3. Wire **private / public / open** (play/fork matrix) on publish/listing.  
-4. Plan-only **fork** for **open** only.  
-5. Prompt/JSON **contributions** + owner merge + conflict UX.  
-6. Media packages / open-project polish.
+2. **YouTube Demo Gallery Hosting** — store `youtube_id` in demo metadata, render YouTube iframe player in `/demo`, zero server video disk usage.
+3. **Client Media Storage & Server Media Pruner** — Railway background 48h TTL media pruner (`ServerMediaPruningService.cs`) + client-side IndexedDB/OPFS fallback.
+4. **Lightweight Project Export & Fork Packaging** — update `ProjectArchiveService` to export light ZIP packages (< 5 MB) excluding `.mp4` binaries.
+5. **Project collaborators** (owner + editors, invite by username, project list includes member-of).  
+6. **Wire private / public / open** (play/fork matrix) on publish/listing.  
+7. **Prompt/JSON contributions** + owner merge + conflict UX.
 
 ---
 
@@ -281,11 +297,11 @@ Characters are **global** (high blast radius); scenes are a **timeline of clips*
 | Project owner | `project.json` / `ownerUserId` via `ProjectStore` |
 | Publish demo permission | `CanUserPublishDemoAsync` (owner match) |
 | Users | SQLite `pagetomovie.db` / `UserDatabaseService` |
-| Demo catalog / moderate | `DemoCatalogService`, admin demos UI |
-| Publish caps | `MaxPublishesPerUserPerDay`, pending limits |
-| Scene locks | multi-user job locks (extend to members) |
-| Client media hashes | media registry (per project; per-browser folder) |
+| Demo catalog / moderate | `DemoCatalogService`, admin demos UI, YouTube embed in `Demo.razor` |
+| Server Media Pruner | `ServerMediaPruningService.cs` (Railway 48h TTL purge) |
+| Client media hashes | media registry (per project; per-browser folder / IndexedDB) |
+| Project export & import | `ProjectArchiveService.cs` (lightweight packaging) |
 
 ---
 
-*Last updated: 2026-07-25 — plan checked in for later; no implementation scheduled. Collaborators first; private/public/open; demo upvotes; fork/merge + character-vs-scene merge atoms later.*
+*Last updated: 2026-07-26 — updated with Client MP4 Storage, Server Media Pruner, YouTube Demo Hosting, and Lightweight Project Export/Fork packaging.*
