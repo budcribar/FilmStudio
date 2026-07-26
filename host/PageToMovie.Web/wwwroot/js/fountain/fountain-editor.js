@@ -300,6 +300,7 @@
       tabSize: 4,
       indentUnit: 4,
       readOnly: !!readOnly,
+      viewportMargin: Infinity,
       extraKeys: {
         Tab: function (cm) {
           cm.replaceSelection("    ", "end");
@@ -312,6 +313,16 @@
       scheduleRefresh(id);
     });
 
+    var ro = null;
+    if (typeof ResizeObserver !== "undefined") {
+      try {
+        ro = new ResizeObserver(function () {
+          cm.refresh();
+        });
+        ro.observe(hostEl);
+      } catch (e) { /* ignore */ }
+    }
+
     instances[id] = {
       cm: cm,
       hostEl: hostEl,
@@ -321,13 +332,20 @@
       _timer: null,
       _scenes: [],
       _warnings: [],
+      _ro: ro,
     };
 
-    // Initial paint after layout
+    // Initial paint after layout (render all lines immediately)
     setTimeout(function () {
       cm.refresh();
       refreshSidePanels(id);
     }, 50);
+    setTimeout(function () {
+      cm.refresh();
+    }, 200);
+    setTimeout(function () {
+      cm.refresh();
+    }, 600);
 
     return true;
   }
@@ -403,6 +421,9 @@
     var inst = instances[id];
     if (!inst) return;
     if (inst._timer) clearTimeout(inst._timer);
+    if (inst._ro) {
+      try { inst._ro.disconnect(); } catch (e) { /* ignore */ }
+    }
     try {
       inst.cm.toTextArea();
     } catch (e) {
