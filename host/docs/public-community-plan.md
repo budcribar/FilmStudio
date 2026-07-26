@@ -460,6 +460,30 @@ flowchart TD
 - **Manual Fallback**: Admin UI allows manual YouTube URL/ID pasting if an offline video was uploaded out-of-band.
 - **Server Footprint**: **0 MB for video files**. `demo.json` / SQLite stores only metadata (title, author, screenplay snippet, upvote count, YouTube ID).
 
+### Required YouTube Upload Metadata & Policy Declarations Form
+
+YouTube Data API v3 (`videos.insert`) mandates specific metadata and policy disclosures for every uploaded video. When a user clicks **"Publish Demo to Gallery / YouTube"**, PageToMovie presents a metadata form (`PublishDemoModal.razor`) collecting:
+
+| Field Name | Required / Policy | Description & Options | API Parameter (`videos.insert`) |
+| :--- | :--- | :--- | :--- |
+| **Movie Title** | Required | Max 100 characters. Defaults to project title + screenplay name. | `snippet.title` |
+| **Logline / Description** | Required | Synopsis, author credit, and PageToMovie app link. | `snippet.description` |
+| **Made for Kids Declaration** | **Mandatory (COPPA)** | `false` ("No, it's not made for kids") or `true`. Defaults to `false`. | `status.madeForKids` |
+| **AI Synthetic Content Disclosure** | **Mandatory (YouTube AI Policy)** | Radio declaration: *"Contains AI-generated or synthetic visuals/audio."* Defaults to `true`. | `status.selfDeclaredMadeForKids` / AI disclosure flag |
+| **Category ID** | Required | Default: `1` (Film & Animation) or `24` (Entertainment). | `snippet.categoryId` |
+| **Privacy Status** | Required | `public`, `unlisted`, or `private`. Default: `public`. | `status.privacyStatus` |
+| **Tags / Keywords** | Recommended | Comma-separated tags (e.g. `AI Movie, Fountain Screenplay, PageToMovie`). | `snippet.tags` |
+
+```mermaid
+flowchart TD
+    A["User clicks Publish Demo"] --> B["PublishDemoModal.razor Form"]
+    B --> C["Collect Title, Description, MadeForKids, AI Disclosure, Privacy"]
+    C --> D["Pass JSON metadata payload to YouTubeUploadService.cs"]
+    D --> E["YouTube Data API v3 videos.insert(snippet, status)"]
+```
+
+---
+
 #### How Publishing & Automated Approval Work (Cryptographic Video Provenance)
 
 PageToMovie maintains a cryptographic SHA-256 media audit log for every clip generated through the AI video pipeline (Grok / Veo / Luma). This allows **instant, trusted auto-approval** without manual admin waiting:
