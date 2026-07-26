@@ -211,6 +211,59 @@ public class CastFromScreenplayServiceTests
         Assert.Contains("blue wool coat", harvested, StringComparison.OrdinalIgnoreCase);
     }
 
+
+
+    [Fact]
+    public void DiscoverCandidateNames_finds_silent_and_titled_heroes()
+    {
+        const string fountain = """
+            Title: BUSTER THE NOODLE HEAD DOG
+            
+            EXT. BACKYARD - DAY
+            
+            BUSTER bounds across the grass.
+            
+            NARRATOR (V.O.)
+            He's Buster the Noodle Head Dog.
+            
+            INT. BEDROOM - NIGHT
+            
+            DADDY reading in bed. MOM enters.
+            """;
+
+        const string book = """
+            BUSTER THE NOODLE HEAD DOG
+            When Momma says it's time for bed,
+            To get to Mom and Daddy's room.
+            """;
+
+        var candidates = CastFromScreenplayService.DiscoverCandidateNames(fountain, book);
+        Assert.Contains("Buster", candidates, StringComparer.OrdinalIgnoreCase);
+        Assert.Contains("Daddy", candidates, StringComparer.OrdinalIgnoreCase);
+        Assert.Contains("Mom", candidates, StringComparer.OrdinalIgnoreCase);
+        Assert.Contains("Narrator", candidates, StringComparer.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void EnsureDiscoveredCastMembers_adds_missing_silent_hero_and_dad()
+    {
+        var seeds = new Dictionary<string, object?>
+        {
+            ["Character_Mom"] = new Dictionary<string, object?> { ["canonical_given_name"] = "Mom" },
+            ["Character_Narrator"] = new Dictionary<string, object?> { ["canonical_given_name"] = "Narrator" }
+        };
+
+        var candidates = new[] { "Buster", "Daddy", "Mom", "Narrator" };
+        const string book = "Buster the small black and white dog. Daddy reading in bed.";
+        const string fountain = "BUSTER bounds. DADDY reading.";
+
+        var added = CastFromScreenplayService.EnsureDiscoveredCastMembers(seeds, candidates, book, fountain);
+        Assert.Equal(2, added);
+        Assert.True(seeds.ContainsKey("Character_Buster"));
+        Assert.True(seeds.ContainsKey("Character_Daddy"));
+    }
+
+
     private static string? FindRepoWithPrompts()
     {
         var dir = new DirectoryInfo(AppContext.BaseDirectory);
