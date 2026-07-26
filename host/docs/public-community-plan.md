@@ -11,13 +11,13 @@ Nothing in this doc is required for current production unless explicitly schedul
 
 | # | Feature | Status | Notes |
 |---|---------|--------|--------|
-| 1 | **Project collaborators** | **planned** | Owner invites users to **same** project; see § Project collaborators. **Higher priority than fork/merge.** |
+| 1 | **Invite-to-Fork Collaboration** | **planned** | Unified collaboration model: Owner invites collaborators via `@username` or email to create lightweight forks (< 5 MB) merged via Git 3-way engine. |
 | 2 | **Demo ratings (upvotes only)** | **done** (basic) | ★ on `/demo`; sort top/new. See § Demo ratings. |
 | 3 | Project / listing mode: **private · public · open** | **planned** | Locked matrix: see § Visibility modes. |
-| 4 | Content hash of exportable package | idea | Freshness for contributions (fork PRs). |
-| 5 | **Fork** (plan-only package v1) | idea | Copy story/cast/blueprint; no clip binaries; **open** only. |
-| 6 | Fork banner + “forked from” metadata | idea | |
-| 7 | **Contribution** (prompt/JSON PR) | idea | Field-level accept by owner. |
+| 4 | Content hash of exportable package | **planned** | SHA-256 clip provenance auto-approval & freshness check. |
+| 5 | **Fork** (plan-only package v1) | **planned** | Lightweight copy of script, cast, blueprint, config (< 5 MB); clip binaries stored in local client media storage. |
+| 6 | Fork banner + “forked from” metadata | **planned** | Tracks parent project origin (`parentProjectId`). |
+| 7 | **Contribution & Git 3-Way Merge** | **planned** | Git 3-way merge engine (`LibGit2Sharp`) with visual diff review (`ContributionReview.razor`). |
 | 8 | Contribution accept / reject + conflict if origin moved | idea | See conflict notes under fork. |
 | 9 | Sync fork from origin (rebase helper) | idea | |
 | 10 | Media-aware fork / PR (hash upload) | idea | Later; storage + quotas. |
