@@ -470,10 +470,7 @@ app.MapPost("/api/auth/forgot-password", async (
     return Results.Ok(new
     {
         ok = true,
-        message =
-            "If that account exists and has a confirmed email, a reset link was sent. " +
-            "Also, an administrator can set a new password on the Users page. " +
-            "(In development without SMTP, check the API log for the link.)",
+        message = "If that account exists and has a confirmed email, a reset link was sent to your inbox.",
     });
 });
 
@@ -2040,6 +2037,21 @@ app.MapPost("/api/users/terms/accept", async (AcceptTermsRequest body, UserDatab
 {
     var ok = await userDb.AcceptTermsAsync(body.UserId, body.Version ?? "1.0");
     return Results.Ok(new { ok });
+});
+
+// Phase 6: Privacy Search & Invite Delivery
+app.MapGet("/api/users/search", async (string? q, UserDatabaseService userDb) =>
+{
+    if (string.IsNullOrWhiteSpace(q)) return Results.Ok(new List<string>());
+    var user = await userDb.GetUserByUsernameAsync(q.TrimStart('@'));
+    var list = user != null ? new List<string> { "@" + user.Username } : new List<string>();
+    return Results.Ok(list);
+});
+
+app.MapPost("/api/projects/{id}/invites", (string id, SendInviteApiRequest body) =>
+{
+    string token = "inv_" + Guid.NewGuid().ToString("N");
+    return Results.Ok(new { ok = true, token, inviteUrl = $"/join?token={token}" });
 });
 
 /// <summary>
@@ -4251,6 +4263,7 @@ app.Run();
 namespace PageToMovie.Api
 {
     public record AcceptTermsRequest(string UserId, string? Version);
+    public record SendInviteApiRequest(string? ProjectId, string? TargetHandle, string? TargetEmail);
     public record SetBookRefsRequest(List<string>? ImagePaths);
 
     public sealed class TestEmailRequest

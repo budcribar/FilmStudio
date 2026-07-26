@@ -158,8 +158,26 @@ public sealed class AdminAuthService : IAdminAuthService
     {
         var bas = (_mail.PublicBaseUrl ?? "").Trim().TrimEnd('/');
         if (string.IsNullOrWhiteSpace(bas))
+        {
             bas = Environment.GetEnvironmentVariable("PAGETOMOVIE_PUBLIC_BASE_URL")?.Trim().TrimEnd('/')
-                  ?? "http://localhost:5079";
+                  ?? Environment.GetEnvironmentVariable("PageToMovie_PUBLIC_BASE_URL")?.Trim().TrimEnd('/')
+                  ?? Environment.GetEnvironmentVariable("PUBLIC_BASE_URL")?.Trim().TrimEnd('/');
+        }
+        if (string.IsNullOrWhiteSpace(bas))
+        {
+            var railwayDomain = Environment.GetEnvironmentVariable("RAILWAY_PUBLIC_DOMAIN")?.Trim().TrimEnd('/')
+                                ?? Environment.GetEnvironmentVariable("RAILWAY_STATIC_URL")?.Trim().TrimEnd('/');
+            if (!string.IsNullOrWhiteSpace(railwayDomain))
+            {
+                bas = railwayDomain.StartsWith("http", StringComparison.OrdinalIgnoreCase)
+                    ? railwayDomain
+                    : "https://" + railwayDomain;
+            }
+        }
+        if (string.IsNullOrWhiteSpace(bas))
+        {
+            bas = "https://pagetomovie-production.up.railway.app";
+        }
         if (!pathAndQuery.StartsWith('/'))
             pathAndQuery = "/" + pathAndQuery;
         return bas + pathAndQuery;

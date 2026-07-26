@@ -9,7 +9,7 @@
 
 <PageTitle>PageToMovie</PageTitle>
 
-<div class="d-flex align-items-center justify-content-between flex-wrap gap-3 mb-4">
+<div class="home-hero d-flex align-items-center justify-content-between flex-wrap gap-3 mb-4">
     <div class="d-flex align-items-center gap-3">
         <img src="/favicon.png" alt="PageToMovie" width="68" height="68" class="rounded-3 shadow flex-shrink-0" />
         <div>
@@ -18,50 +18,26 @@
         </div>
     </div>
 
-    <!-- Inline Hero Banner: Shuffling Pages -> Mustang Arrows -> AI Brain -> Mustang Arrows -> Playing Buster Movie -->
-    <div class="d-flex align-items-center gap-2 p-2 rounded-3 text-white shadow-sm flex-shrink-0 hero-transformation-banner">
-        <!-- 1. Shuffling Manuscript Pages -->
-        <div class="hero-shuffling-pages d-flex flex-column align-items-center justify-content-center px-2 py-1 bg-dark bg-opacity-75 rounded border border-secondary border-opacity-25">
-            <div class="hero-pages-stack position-relative mb-1" style="width: 28px; height: 28px;">
-                <span class="hero-page-card page-1 position-absolute top-0 start-0">📄</span>
-                <span class="hero-page-card page-2 position-absolute top-0 start-0">📝</span>
-                <span class="hero-page-card page-3 position-absolute top-0 start-0">📄</span>
-            </div>
-            <span class="extra-small text-muted font-monospace fw-semibold" style="font-size: 0.65rem;">PAGES</span>
-        </div>
+    <div class="d-flex align-items-center gap-2 flex-wrap flex-shrink-0">
+        <!-- Pages → AI → Movie pipeline (replaces CSS widget strip) -->
+        <img src="/images/hero-pages-ai-movie.gif"
+             alt="Pages into AI into movie"
+             class="home-hero-pipeline"
+             width="480"
+             height="270"
+             loading="eager"
+             decoding="async" />
 
-        <!-- 2. Mustang Sequential Taillight Arrows (Pages into AI) -->
-        <div class="hero-mustang-arrow d-flex align-items-center px-1" title="Pages feeding into AI engine">
-            <span class="mustang-bar bar-1">›</span>
-            <span class="mustang-bar bar-2">›</span>
-            <span class="mustang-bar bar-3">›</span>
-        </div>
-
-        <!-- 3. AI Brain Box -->
-        <div class="hero-ai-brain-box d-flex flex-column align-items-center justify-content-center px-2.5 py-1.5 rounded-3 border border-info border-opacity-50">
-            <span class="fs-4 lh-1 mb-1 hero-brain-icon">🧠</span>
-            <span class="badge bg-info bg-opacity-25 text-info border border-info border-opacity-25 px-2 py-0.5 rounded-pill font-monospace fw-bold" style="font-size: 0.7rem;">
-                AI
-            </span>
-        </div>
-
-        <!-- 4. Mustang Sequential Taillight Arrows (AI into Movie) -->
-        <div class="hero-mustang-arrow d-flex align-items-center px-1" title="AI generating movie output">
-            <span class="mustang-bar bar-1">›</span>
-            <span class="mustang-bar bar-2">›</span>
-            <span class="mustang-bar bar-3">›</span>
-        </div>
-
-        <!-- 5. Buster Movie Playing Preview (Page to Movie) -->
+        <!-- Demo gallery entry (sample film still) -->
         <div class="d-flex align-items-center gap-2 p-1.5 rounded bg-black border border-secondary hero-anim-film"
              style="cursor: pointer;"
              title="Click to view interactive demo gallery"
              @onclick='() => Nav.NavigateTo("/demo")'>
             <div class="position-relative overflow-hidden rounded shadow-sm" style="width: 108px; height: 60px; background: #000;">
-                <img src="/buster_preview.gif?v=2" alt="Buster Movie Preview" loading="eager"
+                <img src="/buster_preview.gif?v=2" alt="Demo film preview" loading="eager"
                      style="width: 100%; height: 100%; object-fit: cover; display: block;" />
                 <div class="position-absolute bottom-0 start-0 end-0 bg-dark bg-opacity-75 text-center py-0.5 text-white" style="font-size: 0.6rem; font-weight: 700; letter-spacing: 0.5px;">
-                    BUSTER
+                    DEMO
                 </div>
             </div>
             <div class="pe-2">
@@ -353,10 +329,7 @@
     }
 
 
-    private bool CanConfirmDelete =>
-        _deleteId is not null &&
-        (string.Equals(_deleteConfirm.Trim(), _deleteId, StringComparison.OrdinalIgnoreCase) ||
-         string.Equals(_deleteConfirm.Trim(), _deleteLabel.Trim(), StringComparison.OrdinalIgnoreCase));
+    private bool CanConfirmDelete => _deleteId is not null;
 
     private bool HasActiveJob =>
         _job is not null &&
