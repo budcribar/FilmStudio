@@ -457,6 +457,34 @@ flowchart TD
    - Creators use standard `git commit` and `git push` (or an optional **"Push to GitHub"** button in PageToMovie Studio) to track blueprint and screenplay revisions.
    - Other collaborators can clone the projects Git repo, connect their local media folder, and generate/preview clips on their own machines.
 
+### Multi-Version Local MP4 History & Side-by-Side Prompt vs. Video Comparison
+
+#### Intent
+Enable creators to store multiple historical iterations of `.mp4` video clips on their local PC hard drive (indexed by Git Commit ID), allowing side-by-side visual comparison between prompt changes and video results. Teaches creators how specific prompt tweaks, dialogue parameters, and camera motion settings influence AI video generation.
+
+```mermaid
+flowchart TD
+    A["User edits Clip Prompt & Regenerates Clip"] --> B["Save active clip: assets/video/S01C02.mp4"]
+    A --> C["Save historical version: assets/video/history/S01C02_{gitHash}_{timestamp}.mp4"]
+    A --> D["Save prompt metadata: assets/video/history/S01C02_{gitHash}_{timestamp}.meta.json"]
+    
+    C & D --> E["Side-by-Side Prompt & Video Comparison Tool\n(ClipPromptCompareViewer.razor)"]
+    E --> F["Left: Version 1 Video + Prompt Text\nRight: Version 2 Video + Prompt Text + Highlighted Text Diff"]
+```
+
+#### Architecture & Key Features:
+
+1. **Local MP4 Version Storage (`assets/video/history/`)**:
+   - When a clip is regenerated with updated prompts, previous `.mp4` versions are archived locally in `assets/video/history/S01C02_{gitCommitHash}_{timestamp}.mp4`.
+   - Accompanied by a sidecar metadata JSON (`.meta.json`) recording the exact prompt text, visual prompt, seed, camera motion settings, AI model version, timestamp, and Git commit hash.
+   - Heavy video files stay strictly on the creator's PC hard drive (ignored by `.gitignore`), resulting in **0 MB Railway server storage cost**.
+2. **Side-by-Side Video & Prompt Comparison UI (`ClipPromptCompareViewer.razor`)**:
+   - Displays a dual-player side-by-side video playback screen comparing **Version 1 (Previous Git Commit)** vs. **Version 2 (Current)**.
+   - Includes a synchronized text diff highlighting exact prompt additions, deletions, and motion parameter changes.
+   - Allows creators to visually evaluate how changing adjectives, lighting terms, or motion parameters impacted the AI video generation.
+
+---
+
 ### Git LFS (Large File Storage) Evaluation & Strategy
 
 We evaluated whether to use **Git LFS** (`git-lfs`) for `.mp4` video binary version control:
