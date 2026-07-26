@@ -21,7 +21,7 @@ Nothing in this doc is required for current production unless explicitly schedul
 | 8 | Contribution accept / reject + conflict if origin moved | idea | See conflict notes under fork. |
 | 9 | Sync fork from origin (rebase helper) | idea | |
 | 10 | Media-aware fork / PR (hash upload) | idea | Later; storage + quotas. |
-| 11 | Public project gallery (forkable packs) | idea | Distinct from finished-movie demos. |
+| 11 | **Direct Gallery "Fork Project" Button** | **planned** | Integrates 🍴 **Fork Project** button directly onto `/demo` gallery cards & detail modals for **Public (Forkable)** projects. Eliminates need for a separate project page. |
 | 12 | Project ratings (reuse upvote model) | idea | After public/open listings exist. |
 | 13 | Text reviews on ratings | idea | Moderation burden; not v1. |
 | 14 | User reputation from ratings | idea | Derived later. |
@@ -133,10 +133,23 @@ Project owners select a Git-aligned visibility level controlling public access a
 | 👁️ **Public Repository (Read-Only)** | Yes | No | Listed in public gallery; watch-only; **Forking Disabled** |
 | 🍴 **Public Repository (Forkable)** | Yes | Yes | Listed in public gallery; **Open Community Forking & Pull-Requests Enabled** |
 
-### Visibility Rules
-- **Default (`Private Repo`)**: Invisible in public gallery; accessible only by project owner and invited collaborators.
-- **`Public Repo (Read-Only)`**: Playable on `/demo` gallery via YouTube embed; screenplay metadata is read-only; **no** Fork button.
-- **`Public Repo (Forkable)`**: Playable on `/demo` gallery **plus** includes **"Fork Project"** button allowing any community member to create a lightweight copy (< 5 MB) and submit contribution pull-requests.
+### Direct `/demo` Gallery "Fork Project" Integration
+
+Rather than requiring a separate navigation page, the **🍴 Fork Project** action is integrated directly into the existing `/demo` gallery cards and movie detail modals:
+
+```text
+┌─────────────────────────────────────────────────────────────┐
+│  The Tell-Tale Heart                                        │
+│  By @edgar_allan_poe  •  Public Repo (Forkable)             │
+├─────────────────────────────────────────────────────────────┤
+│  [ YouTube Embedded Player ]                                │
+├─────────────────────────────────────────────────────────────┤
+│  👍 42 Upvotes   │  📜 View Screenplay  │  🍴 Fork Project  │
+└─────────────────────────────────────────────────────────────┘
+```
+
+- **Zero Friction**: Viewers watch the movie and click **🍴 Fork Project** directly on the gallery card to immediately fork the Fountain script, cast seeds, and Stage 2 shot plan blueprint (< 5 MB package) into their workspace!
+- **Eliminates Redundant Pages**: Keeps the application clean and fast without needing an additional "project listing page".
 
 ---
 - Demo **publish** today still goes **pending → public** for the movie file; align product language so “make public” / “make open” sets this matrix (implementation later).
