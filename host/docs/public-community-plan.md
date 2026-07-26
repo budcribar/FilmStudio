@@ -99,16 +99,12 @@ Rather than requiring a separate navigation page, the **🍴 Fork Project** acti
 - **Eliminates Redundant Pages**: Keeps the application clean and fast without needing an additional "project listing page".
 
 ---
-- Demo **publish** today still goes **pending → public** for the movie file; align product language so “make public” / “make open” sets this matrix (implementation later).
-- Upvotes apply only when the demo is playable in the public gallery (**public** or **open** approved demos).
-- **Collaborators** can work on a project in any mode; membership is independent of public/open.
-
-### Naming
-| Internal | UI (examples) |
-|----------|----------------|
-| `private` | Private |
-| `public` | Public (watch only) |
-| `open` | Open (watch + fork) |
+### Naming & Visibility Mapping
+| Internal Matrix | UI Visibility Selection | Rights & Permissions |
+| :--- | :--- | :--- |
+| `Private` | 🔒 **Private Repository** | Visible only to owner & invited collaborators (`@username` / email) |
+| `Public` | 👁️ **Public Repository (Read-Only)** | Playable on `/demo` gallery via YouTube embed; **Forking Disabled** |
+| `Open` | 🍴 **Public Repository (Forkable)** | Playable on `/demo` gallery **plus** 1-click **Fork Project** enabled |
 
 ---
 
