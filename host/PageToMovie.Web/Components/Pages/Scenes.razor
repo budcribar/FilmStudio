@@ -318,6 +318,13 @@ else if (Session.IsAdmin && _job is not null &&
                             @onclick="PlaySelectedAsync">
                         ▶ Play selected@(_selected.Count > 0 ? $" ({_selected.Count})" : "")
                     </button>
+                    <button type="button"
+                            class="btn btn-outline-secondary btn-sm"
+                            disabled="@(_busy || JobRunning)"
+                            title="Rebuild shot plan from the screenplay to restore missing scenes or clips"
+                            @onclick="RebuildShotPlanAsync">
+                        🔄 Rebuild shot plan
+                    </button>
                     <button class="btn btn-sm btn-outline-secondary" data-testid="scenes-select-toggle"
                             disabled="@_busy" @onclick="() => _showFilters = !_showFilters">
                         🔍 Filters @(HasActiveFilters ? " (Active)" : "")
@@ -382,7 +389,7 @@ else if (Session.IsAdmin && _job is not null &&
                                         class="btn btn-sm btn-link text-danger p-0 ms-2 text-decoration-none"
                                         title="Delete scene S@(sn.ToString("D2")) from plan"
                                         @onclick:stopPropagation="true"
-                                        @onclick="() => DeleteSceneAsync(sn)">
+                                        @onclick="() => RequestDeleteScene(sn)">
                                     🗑️
                                 </button>
                                 <button type="button"
@@ -871,6 +878,31 @@ else
 }
 } @* end CanScenes gate *@
 
+@if (_deleteSceneTarget is int deleteSn)
+{
+    <div class="modal fade show d-block" tabindex="-1" role="dialog" aria-modal="true"
+         style="background:rgba(0,0,0,.5);" @onclick="() => _deleteSceneTarget = null">
+        <div class="modal-dialog modal-dialog-centered" @onclick:stopPropagation="true">
+            <div class="modal-content">
+                <div class="modal-header py-2">
+                    <h5 class="modal-title">Delete Scene S@(deleteSn.ToString("D2"))?</h5>
+                    <button type="button" class="btn-close" aria-label="Close" @onclick="() => _deleteSceneTarget = null"></button>
+                </div>
+                <div class="modal-body py-3">
+                    Are you sure you want to delete <strong>Scene @deleteSn.ToString("D2")</strong> from the shot plan?
+                    <div class="text-muted small mt-2">
+                        Note: You can easily restore missing scenes anytime by clicking <strong>Rebuild shot plan</strong>.
+                    </div>
+                </div>
+                <div class="modal-footer py-2">
+                    <button type="button" class="btn btn-sm btn-secondary" disabled="@_busy" @onclick="() => _deleteSceneTarget = null">Cancel</button>
+                    <button type="button" class="btn btn-sm btn-danger" disabled="@_busy" @onclick="ConfirmDeleteSceneAsync">Delete Scene</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
 @if (_deleteClipTarget is { } delTarget)
 {
     <div class="modal fade show d-block" tabindex="-1" role="dialog" aria-modal="true"
@@ -1144,6 +1176,7 @@ else
     private int? _selectedClip;
     private ClipSummary? _clip;
     private (int Scene, int Clip)? _deleteClipTarget;
+    private int? _deleteSceneTarget;
     private ClipEditRequest? _clipEditor;
     private bool _clipEditorIsNew;
     private bool _showEditClipAdvanced;
@@ -1534,8 +1567,12 @@ else
             _selectedClips.Add(c.ClipNumber);
     }
 
-    private Task DeleteSceneAsync(int sn)
+    private void RequestDeleteScene(int sn) => _deleteSceneTarget = sn;
+
+    private Task ConfirmDeleteSceneAsync()
     {
+        if (_deleteSceneTarget is not int sn) return Task.CompletedTask;
+        _deleteSceneTarget = null;
         if (_scenes is not null)
         {
             _scenes.RemoveAll(s => s.SceneNumber == sn);
@@ -1543,6 +1580,28 @@ else
             StateHasChanged();
         }
         return Task.CompletedTask;
+    }
+
+    private async Task RebuildShotPlanAsync()
+    {
+        _busy = true;
+        _error = null;
+        _message = null;
+        try
+        {
+            await Engine.StartStage2Async(new StartStage2Request
+            {
+                ProjectId = _projectId,
+                Scenes = "all"
+            });
+            _message = "Rebuilding shot plan from screenplay…";
+            await SoftReloadAsync();
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+        finally { _busy = false; }
     }
 
     private void ResetPickers()
