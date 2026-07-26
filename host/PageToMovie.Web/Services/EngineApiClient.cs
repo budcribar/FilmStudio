@@ -439,6 +439,19 @@ public sealed class EngineApiClient
         return wrap?.User;
     }
 
+    public async Task<SyncOriginResultDto?> SyncOriginAsync(
+        string projectId,
+        string parentProjectId,
+        CancellationToken ct = default)
+    {
+        SyncIdentityHeaders();
+        using var req = new HttpRequestMessage(HttpMethod.Post, $"/api/projects/{Uri.EscapeDataString(projectId)}/sync-origin")
+        {
+            Content = JsonContent.Create(new { ParentProjectId = parentProjectId }, options: JsonOpts)
+        };
+        return await SendJsonAsync<SyncOriginResultDto>(req, ct);
+    }
+
     public async Task<AdminUserActionResultDto?> SetAdminUserDisabledAsync(
         AdminSetUserDisabledRequest body,
         CancellationToken ct = default)
@@ -2905,5 +2918,15 @@ public sealed class BookCandidateEnvelopeDto
 {
     public bool Ok { get; set; }
     public List<RankedBookCandidateDto>? Candidates { get; set; }
+}
+
+public sealed class SyncOriginResultDto
+{
+    public bool Ok { get; set; }
+    public bool Success { get; set; }
+    public bool HasConflicts { get; set; }
+    public string? CommitHash { get; set; }
+    public string? Message { get; set; }
+    public string? Error { get; set; }
 }
 
