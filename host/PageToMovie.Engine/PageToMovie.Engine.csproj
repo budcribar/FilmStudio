@@ -21,6 +21,7 @@
 
   <ItemGroup>
     <PackageReference Include="Google.Apis.YouTube.v3" Version="1.75.0.4207" />
+    <PackageReference Include="LibGit2Sharp" Version="0.31.0" />
     <PackageReference Include="Microsoft.Bcl.Memory" Version="10.0.10" />
     <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.10" />
     <PackageReference Include="Microsoft.AspNetCore.DataProtection" Version="10.0.10" />

@@ -131,6 +131,7 @@ builder.Services.AddSingleton<MediaRegistryService>();
 builder.Services.AddSingleton<MediaProxyTicketStore>();
 builder.Services.AddSingleton<YouTubeAuthService>();
 builder.Services.AddSingleton<DemoYouTubePublisherService>();
+builder.Services.AddSingleton<ProjectGitRepositoryService>();
 string dpKeysDir;
 try
 {
@@ -2037,6 +2038,79 @@ app.MapPost("/api/users/terms/accept", async (AcceptTermsRequest body, UserDatab
 {
     var ok = await userDb.AcceptTermsAsync(body.UserId, body.Version ?? "1.0");
     return Results.Ok(new { ok });
+});
+
+/// <summary>
+/// Manually commit a project's current text/metadata state to its own Git repository
+/// (owner or admin only). Not called automatically on every edit — see host/docs/issues for
+/// why auto-commit-on-save needs a decision about where user projects live relative to any
+/// Git repo the app itself is checked out into before it's safe to wire in as a background hook.
+/// </summary>
+app.MapPost("/api/projects/{id}/commit", async (
+    string id,
+    CommitProjectApiRequest? body,
+    ProjectStore store,
+    ProjectGitRepositoryService git,
+    IUserContext user,
+    IOptions<PageToMovieOptions> opts,
+    CancellationToken ct) =>
+{
+    if (AuthGate.RequireLogin(user, opts) is { } denied)
+        return denied;
+    try
+    {
+        await store.RequireProjectAsync(id, ct);
+        if (!await store.CanUserPublishDemoAsync(id, user.UserId, user.IsAdmin, ct))
+        {
+            return Results.Json(new { ok = false, error = "Only the project owner or an admin can commit it." },
+                statusCode: StatusCodes.Status403Forbidden);
+        }
+
+        var info = await git.CommitProjectStateAsync(
+            store.GetProjectDir(id), user.UserId ?? "PageToMovie", body?.Message ?? "Project update");
+        return Results.Ok(new { ok = true, commit = info });
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { ok = false, error = ex.Message });
+    }
+});
+
+/// <summary>
+/// Merge another project's committed state into this one (owner or admin of the target project).
+/// Real LibGit2Sharp 3-way merge — reports <c>hasConflicts</c> rather than auto-resolving; the
+/// caller must inspect and commit manually when that happens (no conflict-resolution UI yet).
+/// </summary>
+app.MapPost("/api/projects/{id}/sync-origin", async (
+    string id,
+    SyncOriginApiRequest body,
+    ProjectStore store,
+    ProjectGitRepositoryService git,
+    IUserContext user,
+    IOptions<PageToMovieOptions> opts,
+    CancellationToken ct) =>
+{
+    if (AuthGate.RequireLogin(user, opts) is { } denied)
+        return denied;
+    if (string.IsNullOrWhiteSpace(body?.ParentProjectId))
+        return Results.BadRequest(new { ok = false, error = "parentProjectId required" });
+    try
+    {
+        await store.RequireProjectAsync(id, ct);
+        await store.RequireProjectAsync(body.ParentProjectId, ct);
+        if (!await store.CanUserPublishDemoAsync(id, user.UserId, user.IsAdmin, ct))
+        {
+            return Results.Json(new { ok = false, error = "Only the project owner or an admin can sync it." },
+                statusCode: StatusCodes.Status403Forbidden);
+        }
+
+        var res = await git.SyncForkFromOriginAsync(store.GetProjectDir(id), store.GetProjectDir(body.ParentProjectId));
+        return Results.Ok(new { ok = res.Success, hasConflicts = res.HasConflicts, commitHash = res.CommitHash, message = res.Message });
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { ok = false, error = ex.Message });
+    }
 });
 
 // Phase 6: Privacy Search & Invite Delivery
@@ -4264,6 +4338,8 @@ namespace PageToMovie.Api
 {
     public record AcceptTermsRequest(string UserId, string? Version);
     public record SendInviteApiRequest(string? ProjectId, string? TargetHandle, string? TargetEmail);
+    public record CommitProjectApiRequest(string? Message);
+    public record SyncOriginApiRequest(string? ParentProjectId);
     public record SetBookRefsRequest(List<string>? ImagePaths);
 
     public sealed class TestEmailRequest
