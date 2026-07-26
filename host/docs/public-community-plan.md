@@ -423,6 +423,23 @@ flowchart TD
 - **Manual Fallback**: Admin UI allows manual YouTube URL/ID pasting if an offline video was uploaded out-of-band.
 - **Server Footprint**: **0 MB for video files**. `demo.json` / SQLite stores only metadata (title, author, screenplay snippet, upvote count, YouTube ID).
 
+### Publishing Triggers & YouTube Video Versioning / Replacement
+
+#### How Publishing is Triggered
+1. **User Action**: In PageToMovie Studio, the user clicks **"Publish Demo to Gallery"** after compiling their screenplay movie.
+2. **Admin Approval**: In `/admin` UI, the Admin reviews and clicks **Approve & Upload**.
+3. **Automated API Upload**: `YouTubeUploadService.cs` streams the MP4 to your YouTube Channel, retrieves the generated `youtubeId`, updates `demo.json` / SQLite database, and immediately deletes the temporary local MP4 file from Railway disk.
+
+#### How Modifications & Re-Publishing (Version 2) Are Handled
+YouTube Data API does not allow swapping out the raw video bytes of an existing YouTube Video ID (to prevent video bait-and-switch). PageToMovie handles modified movie updates seamlessly via **Versioned Pointer Replacement & API Cleanup**:
+
+1. **Re-Publishing Trigger**: When a creator modifies scene clips or screenplay dialogue and clicks **"Publish Updated Version (v2)"**:
+2. **Upload Version 2**: `YouTubeUploadService.cs` uploads the new Version 2 video to YouTube and receives `newYoutubeId`.
+3. **Update Gallery Pointer**: PageToMovie updates `demo.json` / SQLite metadata with `youtubeId = newYoutubeId`. The public `/demo` page immediately streams the new Version 2 video!
+4. **Old Version Cleanup (API Delete or Archive)**:
+   - *Mode A (Default — API Delete)*: PageToMovie calls YouTube API `videos.delete(oldYoutubeId)` to automatically remove the obsolete v1 video from your channel.
+   - *Mode B (Archive)*: PageToMovie calls `videos.update` setting `privacyStatus: "unlisted"` and prepending `[Archived v1]` to the old video title.
+
 ### YouTube Data API v3 Quotas & Quota Management Strategy
 
 - **Default Free Quota Budget**:
