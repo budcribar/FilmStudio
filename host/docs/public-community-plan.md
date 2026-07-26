@@ -423,9 +423,14 @@ flowchart TD
 - **Manual Fallback**: Admin UI allows manual YouTube URL/ID pasting if an offline video was uploaded out-of-band.
 - **Server Footprint**: **0 MB for video files**. `demo.json` / SQLite stores only metadata (title, author, screenplay snippet, upvote count, YouTube ID).
 
-### Step-by-Step Setup Guide: Obtaining YouTube OAuth2 Credentials
+### Step-by-Step Setup Guide: Creating & Connecting Your PageToMovie YouTube Channel
 
-Follow these steps to obtain `YouTube__ClientId`, `YouTube__ClientSecret`, and `YouTube__RefreshToken` for your YouTube Channel:
+#### Step 0: Create Your Dedicated "PageToMovie" Brand YouTube Channel
+1. Open [YouTube.com](https://www.youtube.com) signed in with your Google account.
+2. Go to [youtube.com/channel_switcher](https://www.youtube.com/channel_switcher).
+3. Click **Create a channel**, name it **PageToMovie** (or **PageToMovie Studio**), check the agreement box, and click **Create**.
+4. In [YouTube Studio](https://studio.youtube.com) $\rightarrow$ **Customization**, set your handle (`@PageToMovie`), bio, logo avatar, and website link (`https://pagetomovie-production.up.railway.app`).
+5. In **Settings** $\rightarrow$ **Channel** $\rightarrow$ **Feature Eligibility**, complete **Phone Verification** to unlock custom thumbnails and long/unlisted video uploads for API integration.
 
 #### Step 1: Create Google Cloud Project & Enable YouTube Data API v3
 1. Open the [Google Cloud Console](https://console.cloud.google.com/).
