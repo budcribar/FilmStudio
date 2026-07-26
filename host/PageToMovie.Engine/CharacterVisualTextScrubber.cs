@@ -58,14 +58,15 @@ public static class CharacterVisualTextScrubber
     /// Use for animal-to-animal or unknown cast; do not force "human adult".
     /// </summary>
     public const string SharedFilmMediumPhrase =
-        "same stylized picture-book soft-3D medium as the film";
+        "same stylized picture-book soft-3D medium as the project";
 
     /// <summary>
     /// Medium phrase for known human cast when scrubbing "matching the animal's look"
     /// (keeps species from bleeding without rewriting animals as human).
     /// </summary>
     public const string SharedFilmMediumHumanDisambiguationPhrase =
-        "same stylized picture-book soft-3D medium as the film (human — not an animal)";
+        "same stylized picture-book soft-3D medium as the project (human — not an animal)";
+
 
     /// <summary>
     /// Scrub description / visual_lock prose for Stage 1 seeds and portrait prompts.

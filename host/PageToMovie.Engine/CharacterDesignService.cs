@@ -1113,8 +1113,9 @@ public sealed class CharacterDesignService
         {
             speciesClause = illustrated
                 ? "SPECIES: HUMAN adult — a person, not an animal. " +
-                  "Same illustrated picture-book medium as the film; not photoreal stock photography. "
+                  "Same illustrated picture-book medium as the project; not photoreal stock photography. "
                 : "SPECIES: HUMAN adult — a real person, not an animal, not a drawing. " +
+
                   "Photoreal skin texture and period wardrobe matching the project medium. ";
         }
 
