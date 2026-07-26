@@ -13,7 +13,7 @@ Nothing in this doc is required for current production unless explicitly schedul
 |---|---------|--------|--------|
 | 1 | **Invite-to-Fork Collaboration** | **planned** | Unified collaboration model: Owner invites collaborators via `@username` or email to create lightweight forks (< 5 MB) merged via Git 3-way engine. |
 | 2 | **Demo ratings (upvotes only)** | **done** (basic) | ★ on `/demo`; sort top/new. See § Demo ratings. |
-| 3 | Project / listing mode: **private · public · open** | **planned** | Locked matrix: see § Visibility modes. |
+| 3 | Repository Visibility Modes | **planned** | Standard Git modes: **Private**, **Public (Read-Only)**, **Public (Forkable)**. See § Repository Visibility Modes. |
 | 4 | Content hash of exportable package | **planned** | SHA-256 clip provenance auto-approval & freshness check. |
 | 5 | **Fork** (plan-only package v1) | **planned** | Lightweight copy of script, cast, blueprint, config (< 5 MB); clip binaries stored in local client media storage. |
 | 6 | Fork banner + “forked from” metadata | **planned** | Tracks parent project origin (`parentProjectId`). |
@@ -123,21 +123,22 @@ GET    /api/projects                        # include owned + member-of
 
 ---
 
-## Visibility modes (locked)
+## Repository Visibility Modes (Standard Git Terminology)
 
-Owner chooses one mode for the **public surface** of their work (demo listing and, when present, linked project package).
+Project owners select a Git-aligned visibility level controlling public access and community forking rights:
 
-| Mode | Others can **play** (demo stream / gallery) | Others can **fork** (studio package) |
-|------|-----------------------------------------------|--------------------------------------|
-| **Private** | No | No |
-| **Public** | Yes | No |
-| **Open** | Yes | Yes |
+| Git Visibility Mode | Public Play (YouTube Stream) | Community Forking (Studio Blueprint & Script Package) | Access Control |
+| :--- | :--- | :--- | :--- |
+| 🔒 **Private Repository** | No | No | Owner & invited collaborators (`@username` / email) only |
+| 👁️ **Public Repository (Read-Only)** | Yes | No | Listed in public gallery; watch-only; **Forking Disabled** |
+| 🍴 **Public Repository (Forkable)** | Yes | Yes | Listed in public gallery; **Open Community Forking & Pull-Requests Enabled** |
 
-### Rules
-- **Default:** **private** (not in gallery; no public play; no fork).
-- **Public:** listed (after any demo moderation); watch-only; **no** Fork button.
-- **Open:** same as public **plus** Fork (plan-only package v1 when implemented).
-- No separate “unlisted” mode in v1 (add later only if share-by-link without gallery is needed).
+### Visibility Rules
+- **Default (`Private Repo`)**: Invisible in public gallery; accessible only by project owner and invited collaborators.
+- **`Public Repo (Read-Only)`**: Playable on `/demo` gallery via YouTube embed; screenplay metadata is read-only; **no** Fork button.
+- **`Public Repo (Forkable)`**: Playable on `/demo` gallery **plus** includes **"Fork Project"** button allowing any community member to create a lightweight copy (< 5 MB) and submit contribution pull-requests.
+
+---
 - Demo **publish** today still goes **pending → public** for the movie file; align product language so “make public” / “make open” sets this matrix (implementation later).
 - Upvotes apply only when the demo is playable in the public gallery (**public** or **open** approved demos).
 - **Collaborators** can work on a project in any mode; membership is independent of public/open.
