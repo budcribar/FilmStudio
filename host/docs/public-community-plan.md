@@ -69,6 +69,25 @@ flowchart LR
 
 ---
 
+## Project Namespacing & User Slug Architecture
+
+### Intent
+Prevent folder overwrites, database key collisions, and URL conflicts when multiple users create projects with identical display titles (e.g., User `@alice` and User `@bob` both creating a project named `Buster`).
+
+```mermaid
+flowchart TD
+    A["User @alice creates 'Buster'"] --> B["Disk Storage: projects/alice/Buster/\nDatabase Key: alice/Buster\nURL Route: /projects/alice/Buster"]
+    C["User @bob creates 'Buster'"] --> D["Disk Storage: projects/bob/Buster/\nDatabase Key: bob/Buster\nURL Route: /projects/bob/Buster"]
+```
+
+### Key Technical Standards:
+1. **Per-User Directory Scoping**: Project folders on server disk and local client storage are nested under the owner's handle/ID (`projects/{username}/{projectSlug}/`).
+2. **Composite Primary Keys**: Database queries identify projects by composite key `(owner_user_id, project_slug)` or route string `alice/Buster`.
+3. **Clean URL Routing**: Public project pages and fork endpoints use human-readable routes (`/projects/@alice/Buster`).
+4. **Display Title vs. Folder Slug**: Display title can be changed freely by the owner (e.g. *"The Buster Movie (Cut 1)"*) without affecting the immutable storage slug.
+
+---
+
 ## Repository Visibility Modes (Standard Git Terminology)
 
 Project owners select a Git-aligned visibility level controlling public access and community forking rights:
