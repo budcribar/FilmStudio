@@ -17,7 +17,6 @@
             @if (Session.IsAuthenticated)
             {
                 <span class="badge text-bg-secondary">@Session.UserId</span>
-                <a class="btn btn-sm btn-outline-secondary" href="/admin">← Dashboard</a>
                 <button class="btn btn-sm btn-outline-primary" @onclick="LoadAsync" disabled="@_busy">Refresh</button>
             }
         </div>
