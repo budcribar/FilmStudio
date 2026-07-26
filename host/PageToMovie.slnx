@@ -4,6 +4,7 @@
     <File Path="docs/loadsim-soak.md" />
     <File Path="docs/multi-user-100-plan.md" />
     <File Path="docs/perf-findings-2026-07.md" />
+    <File Path="docs/public-community-plan.md" />
     <File Path="docs/supported-models.md" />
   </Folder>
   <Project Path="PageToMovie.Api/PageToMovie.Api.csproj" />

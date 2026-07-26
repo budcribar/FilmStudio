@@ -1,5 +1,10 @@
 # Implementation Plan — Client-Side MP4 Storage as Primary Path (Reviewed & Hardened)
 
+> **Second review pass (2026-07-26)** caught issues in the original hardening — most importantly,
+> **Step 2's proposed fix is a regression**: it would silently drop every clip except the last one
+> in a multi-clip scene/batch generation. Corrected approach is inline below each affected step.
+> Status column tracks actual implementation as it lands.
+
 ## Background
 
 The server is running out of disk and memory under load. **Most of the core infrastructure already exists** — the generation pipeline issues 45-minute proxy tickets (`ClientMediaUrl`) so the browser can download clips directly into user folders via the JS File System Access API. 
@@ -24,7 +29,8 @@ This document details the refined step-by-step implementation plan incorporating
 | Clip history archived to `assets/video/history/` before overwrite | `pagetomovie-media.js` `_archiveClipHistoryAsync` | ✅ Done |
 | `.client.json` marker file recognised as "clip present" | `FilmJobService.cs` `ClipPresentOnServerOrClient` | ✅ Done |
 | `MediaRegistryService` stores sha256 + path in SQLite | `MediaRegistryService.cs` | ✅ Done |
-| `ServerMediaPruningService` purges server media after 48h / 80% disk | `ServerMediaPruningService.cs` | ✅ Done |
+| `ServerMediaPruningService` purges server media after 48h / 80% disk (sync-confirmed via `MediaRegistryService`, off by default) | `ServerMediaPruningService.cs` | ✅ Done |
+| `.client.json` marker already written on verified registration | `Program.cs` ~L3990 inside `POST /api/projects/{id}/media/register` | ✅ Done — **missing from the original table**; Step 3 below was proposing to re-add this as new work |
 
 ---
 
@@ -32,55 +38,57 @@ This document details the refined step-by-step implementation plan incorporating
 
 ### Step 1: Stream Media Proxy Response Without Premature Disposal
 
-**File:** `host/PageToMovie.Api/Program.cs` L3863–3887
+**File:** `host/PageToMovie.Api/Program.cs` (`/api/media/proxy/{token}`)
 
-**Problem:** `ReadAsByteArrayAsync` buffers entire MP4 files (20–100 MB) into server RAM before returning `Results.File`. Under concurrent client downloads, this causes immediate server Memory (OOM) crashes.
+**Problem (confirmed real):** `ReadAsByteArrayAsync` buffers entire MP4 files (20–100 MB) into server RAM before returning `Results.File`. Under concurrent client downloads, this causes immediate server Memory (OOM) crashes.
 
-**Fix:** Use `Results.Stream` while keeping the upstream `HttpResponseMessage` alive for the duration of the stream.
+**Original fix had two bugs, both corrected here:**
+1. If `ReadAsStreamAsync` throws (between `GetAsync` succeeding and `Results.Stream` being returned), the original draft's `catch` block returned `Results.BadRequest` without ever disposing `resp`/`http` — a real leak on exactly the error path most likely to occur under load.
+2. `new HttpClient()` per request is the classic anti-pattern that causes socket exhaustion under concurrent load — the same failure mode this whole fix exists to prevent. Use `IHttpClientFactory` (already used elsewhere in this codebase, e.g. `AddHttpClient<GeminiChatClient>`), not a raw `new HttpClient()`.
+
+**Corrected fix:** stream via `Results.Stream`, wrap the whole thing in try/catch-with-cleanup so every exit path disposes `resp`, and get the client from `IHttpClientFactory`.
 
 ```csharp
 app.MapGet("/api/media/proxy/{token}", async (
     string token,
     MediaProxyTicketStore tickets,
+    IHttpClientFactory httpFactory,
     CancellationToken ct) =>
 {
     var url = tickets.TryTakeUrl(token);
     if (string.IsNullOrWhiteSpace(url))
         return Results.NotFound(new { ok = false, error = "Media ticket expired or invalid" });
 
+    var http = httpFactory.CreateClient("media-proxy");
+    HttpResponseMessage? resp = null;
     try
     {
-        var http = new HttpClient { Timeout = TimeSpan.FromMinutes(10) };
-        var resp = await http.GetAsync(url, HttpCompletionOption.ResponseHeadersRead, ct);
+        resp = await http.GetAsync(url, HttpCompletionOption.ResponseHeadersRead, ct);
         if (!resp.IsSuccessStatusCode)
         {
+            var code = (int)resp.StatusCode;
             resp.Dispose();
-            http.Dispose();
-            return Results.Json(new { ok = false, error = $"Upstream HTTP {(int)resp.StatusCode}" },
-                statusCode: (int)resp.StatusCode);
+            return Results.Json(new { ok = false, error = $"Upstream HTTP {code}" }, statusCode: code);
         }
 
         var stream = await resp.Content.ReadAsStreamAsync(ct);
         var ctype = resp.Content.Headers.ContentType?.ToString() ?? "video/mp4";
-
-        // Results.Stream disposes stream, resp, and http on completion
+        var toDispose = resp; // Results.Stream's onCompleted always fires — this is the only disposal path from here on.
         return Results.Stream(
             stream,
             contentType: ctype,
             fileDownloadName: "clip.mp4",
-            onCompleted: async () =>
-            {
-                resp.Dispose();
-                http.Dispose();
-                await Task.CompletedTask;
-            });
+            onCompleted: () => { toDispose.Dispose(); return Task.CompletedTask; });
     }
     catch (Exception ex)
     {
+        resp?.Dispose(); // covers the ReadAsStreamAsync-throws case the original draft missed
         return Results.BadRequest(new { ok = false, error = ex.Message });
     }
 });
 ```
+
+`IHttpClientFactory` client registration (near the other `AddHttpClient<T>` calls): `builder.Services.AddHttpClient("media-proxy", c => c.Timeout = TimeSpan.FromMinutes(10));`
 
 ---
 
@@ -88,7 +96,7 @@ app.MapGet("/api/media/proxy/{token}", async (
 
 **Files:** `host/PageToMovie.Web/Components/Layout/MainLayout.razor`, `host/PageToMovie.Web/Services/ClientMediaFolderService.cs`
 
-**1. Early Registration (Lifetime Safety):**
+**1. Early Registration (Lifetime Safety) — unchanged, this part is correct:**
 Instead of hooking `EnsureHubHookAsync()` only inside `Scenes.razor` (which disposes if the user navigates away mid-generation), invoke `EnsureHubHookAsync()` idempotently inside `MainLayout.razor` on session start:
 ```csharp
 // In MainLayout.razor OnAfterRenderAsync:
@@ -99,60 +107,56 @@ if (firstRender)
 ```
 `EnsureHubHookAsync()` is idempotent (`if (_hubHooked) return;`).
 
-**2. Double-Fire Prevention (Status Guard):**
-In `ClientMediaFolderService.cs`, restrict `OnJobUpdated` to save ONLY when `snap.Status == "done"`. Ignore `"running"` events even if `ClientMediaUrl` is present:
+**2. Double-Fire Prevention — original approach was a regression, corrected here.**
+
+The original draft proposed restricting `OnJobUpdated` to save only when `snap.Status == "done"`. **This breaks multi-clip generation.** Traced precisely: `ClientMediaUrl`/`ClientRelativePath` are set inside `FilmJobService.GenerateOneClipAsync`, which `RunBatchGenAsync` calls in a loop for every clip in a scene — the job's overall `Status` stays `"running"` for the entire loop and only flips to `"done"` once, after all clips finish. Since `ClientMediaUrl` gets overwritten on each clip, a `Status=="done"`-only guard would mean only the *last* clip of a multi-clip scene ever gets saved to the client's folder — every earlier clip's "running" tick (the only time its URL is live) would be silently ignored.
+
+The double-fetch this step is actually trying to prevent is real, but for a different reason: the existing `_savingKeys` lock only blocks *concurrent* duplicate saves for the same path — it doesn't stop a second, *sequential* notification for a path that already finished saving (e.g. a single-clip job's "running" tick saves the clip, then its "done" tick — carrying the same URL — triggers a second, wasted download+hash+write). The fix is to remember which paths have *already completed*, not to gate on job status:
+
 ```csharp
+// New field alongside _savingKeys:
+private readonly HashSet<string> _savedKeys = new(StringComparer.OrdinalIgnoreCase);
+
 private void OnJobUpdated(JobSnapshot snap)
 {
     if (snap is null) return;
-    // Guard: Only save on "done" — ignore "running" to prevent duplicate fetches
-    if (!string.Equals(snap.Status, "done", StringComparison.OrdinalIgnoreCase))
+    if (!string.Equals(snap.Status, "done", StringComparison.OrdinalIgnoreCase) &&
+        !string.Equals(snap.Status, "running", StringComparison.OrdinalIgnoreCase))
         return;
-
     if (string.IsNullOrWhiteSpace(snap.ClientMediaUrl) ||
         string.IsNullOrWhiteSpace(snap.ClientRelativePath) ||
         string.IsNullOrWhiteSpace(snap.ProjectId))
         return;
 
+    var key = $"{snap.ProjectId}|{snap.ClientRelativePath}";
+    lock (_savingKeys)
+    {
+        if (_savedKeys.Contains(key)) return; // already completed — the later "done" tick for this same path is a no-op
+    }
     _ = SaveJobMediaAsync(snap);
 }
 ```
+`SaveJobMediaAsync`'s success path adds `key` to `_savedKeys` (alongside the existing `_savingKeys.Remove(key)` in its `finally`). This fixes the single-clip double-fire (second notification for an already-saved path is skipped) without dropping any clip in a multi-clip batch (each clip has its own distinct path, saved exactly once on its own first sighting).
 
 ---
 
-### Step 3: Write Exact `.client.json` Marker on Verified Client Registration
+### Step 3: `.client.json` Marker — Already Done, No New Code Needed
 
-**Files:** `host/PageToMovie.Engine/MediaRegistryService.cs`, `host/PageToMovie.Web/Services/ClientMediaFolderService.cs`
-
-**Exact Path Shape:**
-`{WorkspaceRoot}/projects/{projectId}/assets/video/scene_{SS:D2}_clip_{CC:D2}.mp4.client.json`
-
-**Safety Guarantee:**
-The `.client.json` marker file is written ONLY AFTER the browser successfully completes:
-1. `fetch(url)` from media proxy
-2. `_sha256Hex` calculation
-3. Disk write to local user folder
-4. `POST /api/projects/{id}/media/register` with matching SHA-256 and byte length
-
-When `MediaRegistryService.RegisterAsync` processes a clip registration:
+**This already exists** — `Program.cs` (`POST /api/projects/{id}/media/register`) writes it today:
 ```csharp
-if (string.Equals(kind, "clip", StringComparison.OrdinalIgnoreCase))
+var marker = full + ".client.json";
+await File.WriteAllTextAsync(marker, System.Text.Json.JsonSerializer.Serialize(new
 {
-    var projectDir = Path.Combine(_workspaceRoot, "projects", projectId);
-    var markerPath = Path.Combine(projectDir, relativePath + ".client.json");
-    var dir = Path.GetDirectoryName(markerPath);
-    if (!string.IsNullOrEmpty(dir) && Directory.Exists(dir))
-    {
-        var json = JsonSerializer.Serialize(new
-        {
-            sha256 = sha256Norm,
-            sizeBytes,
-            registeredAt = DateTimeOffset.UtcNow
-        });
-        await File.WriteAllTextAsync(markerPath, json, ct).ConfigureAwait(false);
-    }
-}
+    storage = "client",
+    sha256 = dto.Sha256,
+    sizeBytes = dto.SizeBytes,
+    registeredAt = dto.CreatedAt,
+    userId = user.UserId,
+}) + "\n", ct);
 ```
+— guarded by `Directory.CreateDirectory(Path.GetDirectoryName(full)!);` right before it, so it never silently skips writing the marker for a brand-new scene folder (the original draft's proposed snippet used `if (Directory.Exists(dir))` instead of creating it, which would have been a real regression for exactly that case — several places, `CreditsGeneratorService` and `ReviewIndexService` among them, treat a missing marker as "clip not present").
+
+**Action:** none. Do not add a second copy of this logic to `MediaRegistryService` — it would either duplicate the write or, if it replaced the existing one, reintroduce the directory-creation gap above. If a later refactor wants this centralized in the service instead of the endpoint, that's a plain code-move, not new functionality.
 
 ---
 

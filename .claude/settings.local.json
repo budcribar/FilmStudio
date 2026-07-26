@@ -72,7 +72,11 @@
       "WebFetch(domain:x.ai)",
       "Bash(xargs grep -A1 \"| Status\")",
       "Bash(grep -v \"^--$\")",
-      "Bash(grep *)"
+      "Bash(grep *)",
+      "Bash(git -C \"/c/Users/budcr/source/repos/claude/PageToMovie\" show HEAD:host/PageToMovie.Web/wwwroot/buster_preview.mp4)",
+      "Bash(command -v git-lfs)",
+      "Bash(git -C \"/c/Users/budcr/source/repos/claude/PageToMovie\" add host/PageToMovie.Engine/ServerMediaPruningService.cs)",
+      "Bash(dotnet restore *)"
     ]
   }
 }
