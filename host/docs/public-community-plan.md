@@ -659,6 +659,8 @@ Keep generated MP4 clips and scene previews on client devices while enforcing a 
 | **YouTube Gallery UI** | [Demo.razor](file:///C:/Users/budcr/source/repos/gemini/PageToMovie/host/PageToMovie.Web/Components/Pages/Demo.razor) | Privacy-enhanced YouTube iframe player embed (`youtube-nocookie.com`). |
 | **Creator Profile Service** | [CreatorProfileService.cs](file:///C:/Users/budcr/source/repos/gemini/PageToMovie/host/PageToMovie.Engine/CreatorProfileService.cs) | Dynamically computes movies published, total upvotes, forks spawned, and badges. |
 | **Creator Profile Header UI** | [CreatorProfileHeader.razor](file:///C:/Users/budcr/source/repos/gemini/PageToMovie/host/PageToMovie.Web/Components/Pages/CreatorProfileHeader.razor) | Visual header component rendering user handle, stat pills, and badge chips. |
+| **Contribution & Diff Service** | [ProjectContributionService.cs](file:///C:/Users/budcr/source/repos/gemini/PageToMovie/host/PageToMovie.Engine/ProjectContributionService.cs) | Computes line-by-line diffs across screenplay, cast seeds, shot plan, and rules. |
+| **Contribution Review UI** | [ContributionReview.razor](file:///C:/Users/budcr/source/repos/gemini/PageToMovie/host/PageToMovie.Web/Components/Pages/ContributionReview.razor) | Visual diff review component (`/projects/{id}/review-contribution`) with Accept & Sync and Reject actions. |
 
 ---
 
@@ -666,16 +668,15 @@ Keep generated MP4 clips and scene previews on client devices while enforcing a 
 
 All six phases below were re-verified and, where the original commits were unwired or stubbed,
 reimplemented for real (see the status table and `host/docs/issues/` for what's still deliberately
-out of scope, e.g. automatic Git auto-commit, `ContributionReview.razor`, and the public gallery
-"Fork Project" button).
+out of scope, e.g. automatic Git auto-commit and the public gallery "Fork Project" button).
 
 1. **Phase 1: Client MP4 Storage & Server Media Pruner (`ServerMediaPruningService.cs`)** — done for real: workspace-root-aware, sync-checked, off by default.
 2. **Phase 2: User Terms of Service & IP Licensing Agreement (`TermsAgreementModal.razor`)** — done for real: `AuthGate.RequireTermsAcceptedAsync` actually gates project create/gen/publish, not just a client-side modal.
 3. **Phase 3: YouTube API Auto-Upload & Required Metadata Form (`DemoYouTubePublisherService.cs`)** — done for real: demos migrate to YouTube automatically on approval, reusing the existing working OAuth connection.
 4. **Phase 4: Multi-Version Local MP4 History & Side-by-Side Prompt Comparison (`ClipPromptCompareViewer.razor`)** — done for real: built the clip-version history mechanism that didn't exist, then wired the viewer to it.
 5. **Phase 5: Git-Backed Server Engine (`LibGit2Sharp`)** — done for real: genuine commits and 3-way merge with real conflict detection, reachable via gated endpoints (not yet an automatic background hook — see issue-26). The `PageToMovie.GitUi` NuGet package extraction was not attempted.
-6. **Phase 6: Privacy-Preserving User Invites & Invite-to-Fork Collaboration Model** — done for real: persisted single-use email invites, `/join` acceptance, lightweight forking, and Creator Profile Badges & Stats (Feature 14), end-to-end tested.
+6. **Phase 6: Privacy-Preserving User Invites, Invite-to-Fork Collaboration & Visual Diff Review** — done for real: persisted single-use email invites, `/join` acceptance, lightweight forking, Creator Profile Badges & Stats (Feature 14), and Contribution Accept/Reject & Conflict Review UI (`ContributionReview.razor` — Feature 8), end-to-end tested.
 
 ---
 
-*Last updated: 2026-07-26 — all 6 phases re-verified against running code; unwired/stubbed ones reimplemented for real, tested, and pushed. Feature 6 (Fork banner & Sync Origin button), Feature 11 (YouTube V2 replace), and Feature 14 (Creator Profile Badges & Stats) are now fully implemented and verified.*
+*Last updated: 2026-07-26 — all 6 phases re-verified against running code; unwired/stubbed ones reimplemented for real, tested, and pushed. Feature 6 (Fork banner & Sync Origin button), Feature 8 (Contribution Accept/Reject & Conflict Review UI), Feature 11 (YouTube V2 replace), and Feature 14 (Creator Profile Badges & Stats) are all fully implemented and verified.*
