@@ -993,17 +993,240 @@ h1:focus {
     content: "An error has occurred."
 }
 
-/* Home hero — pages → AI → movie pipeline GIF */
-.home-hero-pipeline {
-    max-width: min(100%, 28rem);
-    width: 100%;
-    height: auto;
-    object-fit: contain;
-    border-radius: 0.65rem;
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
-    background: #0a0e17;
+/* Home hero — pages → AI → movie (HTML labels; fixed icon boxes; gentle motion) */
+.home-pipeline {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
     flex-shrink: 0;
+    padding: 0.55rem 0.85rem;
+    border-radius: 0.75rem;
+    border: 1px solid rgba(99, 102, 241, 0.28);
+    background: linear-gradient(145deg, rgba(12, 16, 28, 0.96), rgba(22, 18, 48, 0.94));
+    box-shadow: 0 8px 22px rgba(0, 0, 0, 0.35);
+}
+
+.home-pipeline__stage {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.35rem;
+    width: 3.5rem;
+}
+
+/* Fixed stage box — every icon lives in the same footprint so nothing jumps */
+.home-pipeline__icon {
+    width: 2.75rem;
+    height: 2.75rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    flex-shrink: 0;
+    overflow: hidden;
+}
+
+.home-pipeline__label {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    line-height: 1;
+    color: #e2e8f0;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.55);
+}
+
+/* Pages — gentle flutter only, stay inside the fixed box */
+.home-pipeline__pages {
+    /* empty — sheets are absolute */
+}
+
+.home-pipeline__sheet {
+    position: absolute;
+    width: 1.45rem;
+    height: 1.85rem;
+    border-radius: 0.15rem;
+    background:
+        linear-gradient(180deg, #f8fafc 0%, #e2e8f0 100%);
+    border: 1px solid rgba(148, 163, 184, 0.55);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+    /* faint ruled lines */
+    background-image:
+        linear-gradient(180deg, #f8fafc 0%, #e8edf5 100%),
+        repeating-linear-gradient(
+            180deg,
+            transparent 0,
+            transparent 3px,
+            rgba(99, 102, 241, 0.12) 3px,
+            rgba(99, 102, 241, 0.12) 4px);
+    background-size: 100% 100%, 100% 100%;
+    transform-origin: 50% 85%;
+}
+
+.home-pipeline__sheet.s1 {
+    z-index: 3;
+    left: 50%;
+    top: 50%;
+    margin-left: -0.72rem;
+    margin-top: -0.92rem;
+    animation: pageFlutter1 3.2s ease-in-out infinite;
+}
+
+.home-pipeline__sheet.s2 {
+    z-index: 2;
+    left: 50%;
+    top: 50%;
+    margin-left: -0.62rem;
+    margin-top: -0.88rem;
+    opacity: 0.92;
+    animation: pageFlutter2 3.2s ease-in-out infinite;
+}
+
+.home-pipeline__sheet.s3 {
+    z-index: 1;
+    left: 50%;
+    top: 50%;
+    margin-left: -0.52rem;
+    margin-top: -0.84rem;
+    opacity: 0.8;
+    animation: pageFlutter3 3.2s ease-in-out infinite;
+}
+
+/* Tiny motion only — stay well inside the 2.75rem box */
+@keyframes pageFlutter1 {
+    0%, 100% { transform: rotate(-1.5deg) translateY(0); }
+    50% { transform: rotate(1.5deg) translateY(-1px); }
+}
+
+@keyframes pageFlutter2 {
+    0%, 100% { transform: rotate(3deg) translate(2px, 1px); }
+    50% { transform: rotate(5deg) translate(2px, 0); }
+}
+
+@keyframes pageFlutter3 {
+    0%, 100% { transform: rotate(6deg) translate(4px, 2px); }
+    50% { transform: rotate(4deg) translate(3px, 2px); }
+}
+
+/* Sequential chevrons */
+.home-pipeline__arrows {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    height: 2.75rem;
+    padding-bottom: 1.05rem; /* align with icons, not labels */
+}
+
+.home-pipeline__chev {
+    font-size: 1.15rem;
+    font-weight: 900;
+    line-height: 1;
+    color: rgba(99, 102, 241, 0.28);
+    animation: chevSeq 1.35s ease-in-out infinite;
+}
+
+.home-pipeline__chev.c1 { animation-delay: 0s; }
+.home-pipeline__chev.c2 { animation-delay: 0.22s; }
+.home-pipeline__chev.c3 { animation-delay: 0.44s; }
+
+@keyframes chevSeq {
+    0%, 100% {
+        color: rgba(99, 102, 241, 0.28);
+        text-shadow: none;
+        transform: scale(1);
+    }
+    40% {
+        color: #67e8f9;
+        text-shadow: 0 0 8px rgba(103, 232, 249, 0.85), 0 0 14px rgba(129, 140, 248, 0.55);
+        transform: scale(1.12);
+    }
+}
+
+/* AI node */
+.home-pipeline__ai {
+    border-radius: 0.55rem;
+    border: 1px solid rgba(56, 189, 248, 0.45);
+    background: radial-gradient(circle at 50% 40%, rgba(56, 189, 248, 0.22), rgba(15, 23, 42, 0.85) 70%);
+    box-shadow: 0 0 12px rgba(56, 189, 248, 0.2);
+    animation: aiPulse 2.4s ease-in-out infinite alternate;
+}
+
+.home-pipeline__brain {
+    font-size: 1.25rem;
+    line-height: 1;
+    filter: drop-shadow(0 0 4px rgba(103, 232, 249, 0.45));
+}
+
+@keyframes aiPulse {
+    0% {
+        box-shadow: 0 0 8px rgba(56, 189, 248, 0.18);
+        border-color: rgba(56, 189, 248, 0.4);
+    }
+    100% {
+        box-shadow: 0 0 16px rgba(129, 140, 248, 0.45);
+        border-color: rgba(129, 140, 248, 0.7);
+    }
+}
+
+/* Movie clapper — open / close */
+.home-pipeline__movie {
+    /* fixed box only */
+}
+
+.home-pipeline__clapper {
+    position: relative;
+    width: 1.7rem;
+    height: 1.45rem;
+    display: block;
+}
+
+.home-pipeline__clapper-body {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 1rem;
+    border-radius: 0.12rem;
+    background: linear-gradient(180deg, #1e293b, #0f172a);
+    border: 1px solid rgba(148, 163, 184, 0.45);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+}
+
+.home-pipeline__clapper-body::after {
+    content: "";
+    position: absolute;
+    left: 0.2rem;
+    right: 0.2rem;
+    top: 0.28rem;
+    height: 0.28rem;
+    border-radius: 0.05rem;
+    background: linear-gradient(90deg, #6366f1, #a855f7, #38bdf8);
+    opacity: 0.85;
+}
+
+.home-pipeline__clapper-top {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0.15rem;
+    height: 0.42rem;
+    border-radius: 0.1rem 0.1rem 0.05rem 0.05rem;
+    background:
+        repeating-linear-gradient(
+            90deg,
+            #f8fafc 0 0.18rem,
+            #0f172a 0.18rem 0.36rem);
+    border: 1px solid rgba(203, 213, 225, 0.55);
+    transform-origin: 8% 100%;
+    animation: clapperSnap 2.6s ease-in-out infinite;
+}
+
+@keyframes clapperSnap {
+    0%, 55%, 100% { transform: rotate(0deg); }
+    12% { transform: rotate(-28deg); }
+    22% { transform: rotate(0deg); }
+    30% { transform: rotate(-8deg); }
+    38% { transform: rotate(0deg); }
 }
 
 @media (max-width: 767.98px) {
@@ -1012,8 +1235,9 @@ h1:focus {
         text-align: center;
     }
 
-    .home-hero-pipeline {
-        max-width: 100%;
+    .home-pipeline {
+        width: 100%;
+        justify-content: center;
     }
 }
 
