@@ -58,14 +58,15 @@ public static class CharacterVisualTextScrubber
     /// Use for animal-to-animal or unknown cast; do not force "human adult".
     /// </summary>
     public const string SharedFilmMediumPhrase =
-        "same stylized picture-book soft-3D medium as the project";
+        "all characters are rendered as in a children's picture book";
 
     /// <summary>
     /// Medium phrase for known human cast when scrubbing "matching the animal's look"
     /// (keeps species from bleeding without rewriting animals as human).
     /// </summary>
     public const string SharedFilmMediumHumanDisambiguationPhrase =
-        "same stylized picture-book soft-3D medium as the project (human — not an animal)";
+        "all characters are rendered as in a children's picture book (human — not an animal)";
+
 
 
     /// <summary>

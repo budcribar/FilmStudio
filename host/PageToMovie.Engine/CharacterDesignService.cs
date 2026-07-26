@@ -1113,11 +1113,11 @@ public sealed class CharacterDesignService
         {
             speciesClause = illustrated
                 ? "SPECIES: HUMAN adult — a person, not an animal. " +
-                  "Same illustrated picture-book medium as the project; not photoreal stock photography. "
+                  "All characters are rendered as in a children's picture book; not photoreal stock photography. "
                 : "SPECIES: HUMAN adult — a real person, not an animal, not a drawing. " +
-
                   "Photoreal skin texture and period wardrobe matching the project medium. ";
         }
+
 
         var familyClause = "";
         if (!string.IsNullOrWhiteSpace(variantOf))
