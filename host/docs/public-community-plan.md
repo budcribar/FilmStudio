@@ -324,6 +324,39 @@ flowchart TD
 
 ---
 
+## Dedicated Projects Git Repository & Local Storage Architecture
+
+### Intent
+Separate the PageToMovie application codebase from user film project content. Enable creators to store and version-control their projects in a **dedicated Git repository** (e.g. `PageToMovie-Projects` or GitHub), keeping heavy `.mp4` video files stored locally on their PC hard drive (ignored by git).
+
+```mermaid
+flowchart TD
+    subgraph LocalPC ["User's Local Computer"]
+        A["Dedicated Projects Git Repo\n(e.g. PageToMovie-Projects)"] --> B["Tracked by Git:\n- source/*.fountain\n- cast_seeds.json\n- blueprint.clips.grok.json\n- project_rules.json\n- assets/characters/*.png"]
+        A --> C[".gitignore:\n- assets/video/*.mp4\n- *.mp3, *.webm\n(Kept local on hard drive)"]
+    end
+
+    subgraph Sync ["PageToMovie Sync Options"]
+        B -- "Local Folder Sync (FileSystem Access API)" --> D["PageToMovie Web App (Client)"]
+        B -- "Optional GitHub API Push/Pull" --> E["User's GitHub Repository"]
+    end
+```
+
+### Architecture & Workflow
+
+1. **Dedicated Projects Repository**:
+   - Creators maintain a separate Git repository (e.g. `PageToMovie-Projects`) containing project folders (`Buster/`, `B7/`, `The Tell-Tale Heart/`).
+   - `.gitignore` specifies `assets/video/`, `*.mp4`, `*.mp3`, `*.webm`, `*.wav` so heavy video binaries are **never** committed to Git or the app repository.
+   - Git tracks all screenplay text, character reference images, shot plan blueprints, and rules.
+2. **Client Local Storage Binding (`ClientMediaFolderService.cs`)**:
+   - In PageToMovie Studio, the user connects their project folder from their local Git repository.
+   - Generated MP4 clips are written directly to `assets/video/` on their local PC hard drive (ignored by git).
+3. **Git Version Control & Collaboration**:
+   - Creators use standard `git commit` and `git push` (or an optional **"Push to GitHub"** button in PageToMovie Studio) to track blueprint and screenplay revisions.
+   - Other collaborators can clone the projects Git repo, connect their local media folder, and generate/preview clips on their own machines.
+
+---
+
 ## Demo Gallery & YouTube Auto-Upload Pipeline
 
 ### Intent
