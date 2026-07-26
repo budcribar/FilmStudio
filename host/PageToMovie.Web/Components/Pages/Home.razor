@@ -353,10 +353,7 @@
     }
 
 
-    private bool CanConfirmDelete =>
-        _deleteId is not null &&
-        (string.Equals(_deleteConfirm.Trim(), _deleteId, StringComparison.OrdinalIgnoreCase) ||
-         string.Equals(_deleteConfirm.Trim(), _deleteLabel.Trim(), StringComparison.OrdinalIgnoreCase));
+    private bool CanConfirmDelete => _deleteId is not null;
 
     private bool HasActiveJob =>
         _job is not null &&
