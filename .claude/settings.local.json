@@ -69,7 +69,10 @@
       "WebFetch(domain:docs.x.ai)",
       "WebFetch(domain:ai.google.dev)",
       "WebFetch(domain:openrouter.ai)",
-      "WebFetch(domain:x.ai)"
+      "WebFetch(domain:x.ai)",
+      "Bash(xargs grep -A1 \"| Status\")",
+      "Bash(grep -v \"^--$\")",
+      "Bash(grep *)"
     ]
   }
 }
