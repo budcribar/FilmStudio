@@ -967,12 +967,45 @@ app.MapGet("/api/admin/users", async (IUserContext user, CreditService credits) 
 app.MapGet("/api/admin/projects/{id}/export", async (
     string id,
     IUserContext user,
+    IOptions<PageToMovieOptions> opts,
+    HttpContext http,
     ProjectArchiveService archives,
     CancellationToken ct) =>
 {
-    if (!user.IsAdmin)
+    var secret = AuthOptions.ResolveOperatorOverrideSecret(opts.Value.Auth);
+    var isOperator = !string.IsNullOrWhiteSpace(secret) &&
+        (string.Equals(http.Request.Query["me"].ToString(), secret, StringComparison.Ordinal) ||
+         string.Equals(http.Request.Query["admin_key"].ToString(), secret, StringComparison.Ordinal) ||
+         string.Equals(http.Request.Headers["X-Admin-Key"].ToString(), secret, StringComparison.Ordinal));
+
+    if (!user.IsAdmin && !isOperator)
         return Results.Json(new { ok = false, error = "admin role required" },
             statusCode: StatusCodes.Status403Forbidden);
+    try
+    {
+        var exp = await archives.ExportAsync(id, ct);
+        return Results.File(
+            exp.Stream,
+            exp.ContentType,
+            exp.FileName,
+            enableRangeProcessing: false);
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { ok = false, error = ex.Message });
+    }
+});
+
+/// <summary>Download project folder as zip (logged in user / operator).</summary>
+app.MapGet("/api/projects/{id}/export", async (
+    string id,
+    IUserContext user,
+    IOptions<PageToMovieOptions> opts,
+    ProjectArchiveService archives,
+    CancellationToken ct) =>
+{
+    if (AuthGate.RequireLogin(user, opts) is { } denied)
+        return denied;
     try
     {
         var exp = await archives.ExportAsync(id, ct);

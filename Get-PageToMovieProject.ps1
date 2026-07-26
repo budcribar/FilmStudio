@@ -18,7 +18,8 @@ param(
 $ErrorActionPreference = "Stop"
 
 $baseUrl = $ServerUrl.TrimEnd('/')
-$exportUrl = "$baseUrl/api/admin/projects/$ProjectId/export?me=$([Uri]::EscapeDataString($Secret))"
+$primaryUrl = "$baseUrl/api/projects/$ProjectId/export?me=$([Uri]::EscapeDataString($Secret))"
+$adminUrl = "$baseUrl/api/admin/projects/$ProjectId/export?me=$([Uri]::EscapeDataString($Secret))"
 
 Write-Host "==========================================" -ForegroundColor Cyan
 Write-Host " Downloading project '$ProjectId' from $baseUrl..." -ForegroundColor Yellow
@@ -27,7 +28,12 @@ Write-Host "==========================================" -ForegroundColor Cyan
 $zipPath = Join-Path -Path $PSScriptRoot -ChildPath "$ProjectId`_export.zip"
 
 try {
-    Invoke-WebRequest -Uri $exportUrl -OutFile $zipPath -UserAgent "PageToMovie-PowerShell-Client"
+    try {
+        Invoke-WebRequest -Uri $primaryUrl -OutFile $zipPath -UserAgent "PageToMovie-PowerShell-Client"
+    }
+    catch {
+        Invoke-WebRequest -Uri $adminUrl -OutFile $zipPath -UserAgent "PageToMovie-PowerShell-Client"
+    }
     $fileInfo = Get-Item $zipPath
     Write-Host "Successfully downloaded $ProjectId export zip ($([math]::Round($fileInfo.Length / 1MB, 2)) MB)." -ForegroundColor Green
 
