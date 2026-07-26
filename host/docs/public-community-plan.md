@@ -3,9 +3,7 @@
 Backlog for **project collaborators**, **public demos / modes**, **fork → contribution → owner merge**, and **upvotes**.  
 Nothing in this doc is required for current production unless explicitly scheduled.
 
-**Status key:** `idea` · `planned` · `in progress` · `done`
-
-**Priority note:** **Project collaborators** (same project, trusted invite) ship **before** open fork/merge. Upvotes can ship independently for the gallery.
+**Priority Note**: Collaboration is unified under the **Invite-to-Fork & Async Diff-Merge Model** powered by client-side media storage, Git-backed server engine (`LibGit2Sharp`), and privacy-preserving user invites.
 
 ---
 
@@ -701,15 +699,15 @@ Keep generated MP4 clips and scene previews on client devices while enforcing a 
 
 ---
 
-## Suggested Ship Order
+## Suggested Ship Order (Phased Roadmap)
 
-1. **Demo Upvotes + Ranking** — **done (basic)** on `/demo`.  
-2. **YouTube Demo Gallery Hosting** — store `youtube_id` in demo metadata, render YouTube iframe player in `/demo`, zero server video disk usage.
-3. **Client Media Storage & Server Media Pruner** — Railway background 48h TTL media pruner (`ServerMediaPruningService.cs`) + client-side IndexedDB/OPFS fallback.
-4. **Lightweight Project Export & Fork Packaging** — update `ProjectArchiveService` to export light ZIP packages (< 5 MB) excluding `.mp4` binaries.
-5. **Invite-to-Fork & Privacy Search** — handle search (`@username`), blind email invites via Resend API, invite acceptance landing route (`/join`), lightweight fork creation.
-6. **Async Contribution & Visual Diff Review** — `ProjectContributionService` field-level diffs and `ContributionReview.razor` merge UI.
+1. **Phase 1: Client MP4 Storage & Server Media Pruner (`ServerMediaPruningService.cs`)** — Railway background 48h TTL media pruner + client-side local PC folder / IndexedDB storage.
+2. **Phase 2: User Terms of Service & IP Licensing Agreement (`TermsAgreementModal.razor`)** — User IP warranty modal, indemnification, and SQLite `terms_accepted_at` gate.
+3. **Phase 3: YouTube API Auto-Upload & Required Metadata Form (`YouTubeUploadService.cs` & `PublishDemoModal.razor`)** — Automated YouTube channel uploads, COPPA & AI disclosures, and zero server video disk usage.
+4. **Phase 4: Multi-Version Local MP4 History & Side-by-Side Prompt Comparison (`ClipPromptCompareViewer.razor`)** — Archived local MP4 history and side-by-side prompt diff learning tool.
+5. **Phase 5: Git-Backed Server Engine & Modular Blazor Git UI NuGet Package (`LibGit2Sharp` & `PageToMovie.GitUi`)** — Server auto-commits, 3-way merging, and open-source NuGet package.
+6. **Phase 6: Privacy-Preserving User Invites & Invite-to-Fork Collaboration Model** — `@username` handle search, Resend email invites, `/join` landing route, lightweight forking, and Git 3-way merge review.
 
 ---
 
-*Last updated: 2026-07-26 — comprehensive single source of truth for Client MP4 Storage, Server Media Pruner, YouTube Demo Hosting, and Privacy-Preserving Invite-to-Fork Collaboration.*
+*Last updated: 2026-07-26 — comprehensive single source of truth for Client MP4 Storage, Server Media Pruner, YouTube Demo Hosting, User Terms Agreement, Git-Backed Engine, and Privacy-Preserving Invite-to-Fork Collaboration.*
