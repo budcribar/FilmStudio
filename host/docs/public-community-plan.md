@@ -423,12 +423,15 @@ flowchart TD
 - **Manual Fallback**: Admin UI allows manual YouTube URL/ID pasting if an offline video was uploaded out-of-band.
 - **Server Footprint**: **0 MB for video files**. `demo.json` / SQLite stores only metadata (title, author, screenplay snippet, upvote count, YouTube ID).
 
-### Publishing Triggers & YouTube Video Versioning / Replacement
+#### How Publishing & Automated Approval Work (Cryptographic Video Provenance)
 
-#### How Publishing is Triggered
-1. **User Action**: In PageToMovie Studio, the user clicks **"Publish Demo to Gallery"** after compiling their screenplay movie.
-2. **Admin Approval**: In `/admin` UI, the Admin reviews and clicks **Approve & Upload**.
-3. **Automated API Upload**: `YouTubeUploadService.cs` streams the MP4 to your YouTube Channel, retrieves the generated `youtubeId`, updates `demo.json` / SQLite database, and immediately deletes the temporary local MP4 file from Railway disk.
+PageToMovie maintains a cryptographic SHA-256 media audit log for every clip generated through the AI video pipeline (Grok / Veo / Luma). This allows **instant, trusted auto-approval** without manual admin waiting:
+
+1. **Clip Provenance Hash Logging**: When clips are generated, PageToMovie computes and records their SHA-256 content hashes (`sha256:...`) in the server audit ledger (`pagetomovie.db` / `media_registry.json`).
+2. **Automated Provenance Verification**:
+   - When a user submits a demo movie, PageToMovie checks the SHA-256 hashes of all constituent video clips.
+   - **Mode 1: Verified Trusted AI Provenance (Auto-Approved)**: If 100% of clip hashes match verified AI generation logs, the server marks the submission as **Trusted AI Content**, **bypasses the manual admin queue**, and **immediately triggers auto-upload to YouTube** via `YouTubeUploadService.cs`!
+   - **Mode 2: Unverified / External Media (Manual Admin Review)**: If any clip hash is unknown (e.g. an externally uploaded video file that didn't originate from PageToMovie's AI pipeline), it is flagged as **Unverified Media** and routed to `/admin` for manual review.
 
 #### How Modifications & Re-Publishing (Version 2) Are Handled
 YouTube Data API does not allow swapping out the raw video bytes of an existing YouTube Video ID (to prevent video bait-and-switch). PageToMovie handles modified movie updates seamlessly via **Versioned Pointer Replacement & API Cleanup**:
