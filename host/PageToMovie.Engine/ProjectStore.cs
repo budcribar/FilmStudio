@@ -128,9 +128,15 @@ public sealed class ProjectStore
                         title = t.GetString();
                     if (doc.RootElement.TryGetProperty("label", out var l))
                         label = l.GetString();
-                    if (doc.RootElement.TryGetProperty("ownerUserId", out var o) ||
-                        doc.RootElement.TryGetProperty("owner_user_id", out o))
-                        ownerUserId = o.GetString();
+                    foreach (var p in doc.RootElement.EnumerateObject())
+                    {
+                        if (string.Equals(p.Name, "ownerUserId", StringComparison.OrdinalIgnoreCase) ||
+                            string.Equals(p.Name, "owner_user_id", StringComparison.OrdinalIgnoreCase))
+                        {
+                            ownerUserId = p.Value.GetString();
+                            break;
+                        }
+                    }
                 }
                 catch { /* ignore */ }
             }

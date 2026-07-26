@@ -381,6 +381,7 @@ public sealed class EngineApiClient
         string fileName,
         string? preferredId = null,
         bool overwrite = false,
+        string? targetUserId = null,
         CancellationToken ct = default)
     {
         SyncIdentityHeaders();
@@ -390,6 +391,8 @@ public sealed class EngineApiClient
         content.Add(streamContent, "file", string.IsNullOrWhiteSpace(fileName) ? "project.zip" : fileName);
         if (!string.IsNullOrWhiteSpace(preferredId))
             content.Add(new StringContent(preferredId.Trim()), "projectId");
+        if (!string.IsNullOrWhiteSpace(targetUserId))
+            content.Add(new StringContent(targetUserId.Trim()), "targetUserId");
         content.Add(new StringContent(overwrite ? "true" : "false"), "overwrite");
 
         using var resp = await _http.PostAsync("/api/admin/projects/import", content, ct);

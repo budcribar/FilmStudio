@@ -1046,6 +1046,13 @@ app.MapPost("/api/admin/projects/import", async (
     var preferredId = form["projectId"].ToString();
     if (string.IsNullOrWhiteSpace(preferredId))
         preferredId = form["id"].ToString();
+
+    var targetUserId = form["targetUserId"].ToString();
+    if (string.IsNullOrWhiteSpace(targetUserId))
+        targetUserId = form["userId"].ToString();
+    if (string.IsNullOrWhiteSpace(targetUserId))
+        targetUserId = form["ownerUserId"].ToString();
+
     var overwrite = string.Equals(form["overwrite"].ToString(), "true", StringComparison.OrdinalIgnoreCase)
                     || string.Equals(form["overwrite"].ToString(), "1", StringComparison.OrdinalIgnoreCase);
 
@@ -1056,6 +1063,7 @@ app.MapPost("/api/admin/projects/import", async (
             stream,
             preferredId: string.IsNullOrWhiteSpace(preferredId) ? null : preferredId.Trim(),
             overwrite: overwrite,
+            targetUserId: string.IsNullOrWhiteSpace(targetUserId) ? null : targetUserId.Trim(),
             ct: ct);
         return Results.Ok(new
         {

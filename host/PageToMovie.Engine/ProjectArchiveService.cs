@@ -124,6 +124,7 @@ public sealed class ProjectArchiveService
         Stream zipStream,
         string? preferredId = null,
         bool overwrite = false,
+        string? targetUserId = null,
         CancellationToken ct = default)
     {
         if (zipStream is null || !zipStream.CanRead)
@@ -176,8 +177,8 @@ public sealed class ProjectArchiveService
             // Copy extracted content into projects/{id}
             CopyDirectory(contentRoot, dest);
 
-            // Ensure project.json id matches folder
-            await EnsureProjectJsonIdAsync(dest, id, ct).ConfigureAwait(false);
+            // Ensure project.json id and optional ownerUserId match
+            await EnsureProjectJsonIdAsync(dest, id, targetUserId, ct).ConfigureAwait(false);
 
             _projects.InvalidateReadCaches(null);
             var info = await _projects.ActivateAsync(id, ct).ConfigureAwait(false);
@@ -348,7 +349,7 @@ public sealed class ProjectArchiveService
         return null;
     }
 
-    private static async Task EnsureProjectJsonIdAsync(string dest, string id, CancellationToken ct)
+    private static async Task EnsureProjectJsonIdAsync(string dest, string id, string? targetUserId, CancellationToken ct)
     {
         var path = Path.Combine(dest, "project.json");
         Dictionary<string, object?> meta;
@@ -380,6 +381,12 @@ public sealed class ProjectArchiveService
         meta["id"] = id;
         if (!meta.ContainsKey("title") || meta["title"] is null || string.IsNullOrWhiteSpace(meta["title"]?.ToString()))
             meta["title"] = id;
+
+        if (!string.IsNullOrWhiteSpace(targetUserId))
+        {
+            meta["ownerUserId"] = targetUserId.Trim();
+            meta["owner_user_id"] = targetUserId.Trim();
+        }
 
         await File.WriteAllTextAsync(
             path,

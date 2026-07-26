@@ -86,4 +86,45 @@ public class ProjectArchiveServiceTests
             try { Directory.Delete(tmp, true); } catch { /* ignore */ }
         }
     }
+
+    [Fact]
+    public async Task Import_with_targetUserId_sets_ownerUserId_in_project_json()
+    {
+        var tmp = Path.Combine(Path.GetTempPath(), "ptm-archive-targetuser-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tmp);
+        var zipPath = Path.Combine(tmp, "targetuser.zip");
+        try
+        {
+            using (var zip = ZipFile.Open(zipPath, ZipArchiveMode.Create))
+            {
+                var e = zip.CreateEntry("project.json");
+                await using (var w = new StreamWriter(e.Open()))
+                    await w.WriteAsync("{\"id\":\"TargetUserProj\",\"title\":\"Target User Project\"}\n");
+            }
+
+            var opts = Options.Create(new PageToMovieOptions { WorkspaceRoot = tmp });
+            var store = new ProjectStore(opts);
+            var archives = new ProjectArchiveService(store, NullLogger<ProjectArchiveService>.Instance);
+
+            await using var fs = File.OpenRead(zipPath);
+            var imported = await archives.ImportAsync(fs, preferredId: null, overwrite: false, targetUserId: "user_alice");
+            Assert.True(imported.Ok);
+            Assert.Equal("TargetUserProj", imported.ProjectId);
+
+            var projDir = store.GetProjectDir("TargetUserProj");
+            var projJsonPath = Path.Combine(projDir, "project.json");
+            Assert.True(File.Exists(projJsonPath));
+
+            var content = await File.ReadAllTextAsync(projJsonPath);
+            Assert.Contains("\"ownerUserId\": \"user_alice\"", content);
+
+            var info = await store.GetProjectAsync("TargetUserProj");
+            Assert.NotNull(info);
+            Assert.Equal("user_alice", info.OwnerUserId);
+        }
+        finally
+        {
+            try { Directory.Delete(tmp, true); } catch { /* ignore */ }
+        }
+    }
 }
