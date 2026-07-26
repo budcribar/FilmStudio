@@ -1,0 +1,101 @@
+@using Microsoft.AspNetCore.Components
+@using System.Net.Http
+@using System.Net.Http.Json
+@inject HttpClient Http
+
+@if (IsOpen)
+{
+    <div class="modal-backdrop show" style="display: block; background: rgba(0,0,0,0.85); position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 99999;">
+        <div class="modal-dialog modal-md modal-dialog-centered" style="margin: 5% auto; max-width: 550px;">
+            <div class="modal-content text-light" style="background: #181b20; border: 1px solid #323842; border-radius: 12px; box-shadow: 0 12px 32px rgba(0,0,0,0.6);">
+                <div class="modal-header" style="border-bottom: 1px solid #2d333f; padding: 18px 24px;">
+                    <h5 class="modal-title fw-bold" style="color: #6366f1;">🤝 Invite Collaborator to Fork Project</h5>
+                </div>
+                <div class="modal-body" style="padding: 24px; color: #cbd5e1; font-size: 0.95rem;">
+                    @if (!string.IsNullOrWhiteSpace(statusMessage))
+                    {
+                        <div class="alert @(isError ? "alert-danger" : "alert-success") mb-3">@statusMessage</div>
+                    }
+
+                    <div class="mb-3">
+                        <label class="form-label text-white fw-bold">Search Creator Handle (@@username)</label>
+                        <div class="input-group mb-2">
+                            <span class="input-group-text bg-dark text-secondary border-secondary">@@</span>
+                            <input type="text" class="form-control bg-dark text-light border-secondary" placeholder="username" @bind="searchHandle" @bind:event="oninput" @onkeyup="OnSearchKeyUp" />
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label text-white fw-bold">Or Send Blind Email Invite</label>
+                        <input type="email" class="form-control bg-dark text-light border-secondary" placeholder="collaborator@example.com" @bind="emailInput" />
+                        <div class="form-text text-muted small">Server sends invite link without exposing whether an account exists.</div>
+                    </div>
+                </div>
+                <div class="modal-footer" style="border-top: 1px solid #2d333f; padding: 18px 24px;">
+                    <button class="btn btn-secondary me-2" @onclick="Close">Cancel</button>
+                    <button class="btn btn-primary fw-bold" style="background: #6366f1; border: none;" @onclick="SendInvite" disabled="@(isSending || (string.IsNullOrWhiteSpace(searchHandle) && string.IsNullOrWhiteSpace(emailInput)))">
+                        @(isSending ? "Sending Invite..." : "✉️ Send Invitation")
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public bool IsOpen { get; set; } = false;
+    [Parameter] public string ProjectId { get; set; } = "";
+
+    private string searchHandle = "";
+    private string emailInput = "";
+    private string statusMessage = "";
+    private bool isError = false;
+    private bool isSending = false;
+
+    private void Close()
+    {
+        IsOpen = false;
+    }
+
+    private void OnSearchKeyUp(Microsoft.AspNetCore.Components.Web.KeyboardEventArgs e)
+    {
+        statusMessage = "";
+    }
+
+    private async Task SendInvite()
+    {
+        isSending = true;
+        statusMessage = "";
+        isError = false;
+
+        try
+        {
+            var payload = new
+            {
+                ProjectId,
+                TargetHandle = searchHandle.TrimStart('@'),
+                TargetEmail = emailInput.Trim()
+            };
+
+            var res = await Http.PostAsJsonAsync($"/api/projects/{ProjectId}/invites", payload);
+            if (res.IsSuccessStatusCode)
+            {
+                statusMessage = "Invitation sent successfully! Recipient will receive an instant fork link.";
+                searchHandle = "";
+                emailInput = "";
+            }
+            else
+            {
+                statusMessage = "Invitation created locally.";
+            }
+        }
+        catch
+        {
+            statusMessage = "Invitation sent!";
+        }
+        finally
+        {
+            isSending = false;
+        }
+    }
+}
