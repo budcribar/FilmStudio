@@ -523,14 +523,6 @@ else
                 {
                     <span>· plan ~@FormatClock(planOnly)</span>
                 }
-                @if (_detail.CompositeExists)
-                {
-                    <span class="badge bg-success ms-1">composite ready</span>
-                }
-                else if (_detail.ClipsOnDisk > 0)
-                {
-                    <span class="badge bg-warning text-dark ms-1">composite needs rebuild</span>
-                }
                 @if (_detail.CharactersOnScreen.Count > 0)
                 {
                     <span>· cast: @string.Join(", ", _detail.CharactersOnScreen.Select(ShortChar))</span>
@@ -870,8 +862,7 @@ else
                 </div>
             </div>
             <div class="card-footer small text-muted">
-                After regen, <strong>Play scene</strong> stitches clips in the browser.
-                Pass/fail: <a href="review">Review</a>. Full movie: rebuild WIP on Review.
+                Use <strong>Play scene</strong> to preview video or <a href="review">Review</a> to rate takes.
             </div>
         </div>
     }
