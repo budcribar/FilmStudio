@@ -324,6 +324,46 @@ flowchart TD
 
 ---
 
+## Git-Backed Server Storage, Auto-Commit History & 3-Way Merge Engine
+
+### Intent
+Use **Git as the underlying storage and version control engine** for PageToMovie project state on the server (`LibGit2Sharp` / libgit2). Gives every project an automatic commit history, branch-based forking, and battle-tested **Git 3-way merge** for screenplays and blueprints.
+
+```mermaid
+flowchart TD
+    subgraph Storage ["Git-Backed Server Engine (LibGit2Sharp)"]
+        A["User edits Screenplay or Blueprint"] --> B["PageToMovie Server executes git commit\n(e.g. 'User A updated Scene 2 beat prompts')"]
+        B --> C["Complete Commit History & Rollback Timeline"]
+    end
+
+    subgraph ForkMerge ["Git Branching & 3-Way Merge"]
+        B -- "Fork Project" --> D["Create Git Branch / Clone\n(fork/user_B)"]
+        D -- "Submit Contribution" --> E["Git 3-Way Merge Engine\n(base, ours, theirs)"]
+        E -- "Screenplay & Blueprint Merge" --> F["Auto-Merge or Visual Conflict Resolver UI\n(ContributionReview.razor)"]
+        F --> G["Merged into Master Branch (User A)"]
+    end
+
+    subgraph Backup ["Off-Site Cloud Backup"]
+        B -- "Auto-Push" --> H["Remote GitHub / Git Server Backup"]
+    end
+```
+
+### Key Technical Capabilities
+
+1. **Auto-Commit History**:
+   - Every time a user updates a screenplay (`source/*.fountain`), modifies a shot prompt (`blueprint.clips.grok.json`), or edits cast seeds (`cast_seeds.json`), PageToMovie automatically creates a Git commit.
+   - Users can view a **Revision History Timeline** in the UI and instantly restore any previous commit.
+2. **Git 3-Way Screenplay & Blueprint Merging**:
+   - Leverages Git's 3-way merge algorithm (`ours`, `theirs`, `base`) to merge Fountain screenplay line changes and JSON blueprint field edits when a collaborator submits a contribution.
+   - Eliminates custom merge code by relying on battle-tested Git merge logic.
+3. **Visual Conflict Resolver UI (`ContributionReview.razor`)**:
+   - If User A and User B modified the exact same screenplay line or clip prompt, PageToMovie renders a visual 3-way diff editor showing **Original (Base)**, **Owner A (Ours)**, and **Collaborator B (Theirs)**.
+4. **Remote GitHub Cloud Backup**:
+   - The Railway server can automatically push project commits to GitHub (or any Git server) for off-site disaster recovery and backup.
+   - `.gitignore` excludes `assets/video/*.mp4`, ensuring backup repos remain lightweight (< 5 MB).
+
+---
+
 ## Dedicated Projects Git Repository & Local Storage Architecture
 
 ### Intent
