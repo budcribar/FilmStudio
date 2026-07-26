@@ -44,10 +44,17 @@ public sealed class CachingChatClient : IChatClient
         _enabled = o.ChatCacheEnabled;
         _cacheNonZeroTemperature = o.ChatCacheNonZeroTemperature;
         _cacheVersion = string.IsNullOrWhiteSpace(o.ChatCacheVersion) ? "1" : o.ChatCacheVersion;
-        var root = o.WorkspaceRoot;
-        if (string.IsNullOrWhiteSpace(root) || !Directory.Exists(root))
-            root = Directory.GetCurrentDirectory();
-        _cacheDir = Path.Combine(root, ".PageToMovie", "chat_cache");
+        if (!string.IsNullOrWhiteSpace(o.ChatCacheDir))
+        {
+            _cacheDir = o.ChatCacheDir;
+        }
+        else
+        {
+            var root = o.WorkspaceRoot;
+            if (string.IsNullOrWhiteSpace(root) || !Directory.Exists(root))
+                root = Directory.GetCurrentDirectory();
+            _cacheDir = Path.Combine(root, ".PageToMovie", "chat_cache");
+        }
     }
 
     public bool IsConfigured => _inner.IsConfigured;

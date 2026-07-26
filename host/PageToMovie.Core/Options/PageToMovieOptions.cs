@@ -71,6 +71,12 @@ public sealed class PageToMovieOptions
     public string ChatCacheVersion { get; set; } = "1";
 
     /// <summary>
+    /// Optional path to the on-disk LLM response cache. When empty, defaults to
+    /// <c>{WorkspaceRoot}/.PageToMovie/chat_cache</c>. Env: <c>PageToMovie__ChatCacheDir=/data/chat_cache</c>.
+    /// </summary>
+    public string ChatCacheDir { get; set; } = "";
+
+    /// <summary>
     /// When true (default), batch-classify silent beat <c>action_class</c> via chat at shot-plan
     /// time for duration budgeting. On failure: retry then heuristic fallback.
     /// Env: <c>PageToMovie__ClassifySilentBeatsWithChat=false</c>.
