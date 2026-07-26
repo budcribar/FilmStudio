@@ -126,6 +126,7 @@ builder.Services.AddSingleton<ProjectArtifactIndexService>();
 builder.Services.AddSingleton<MediaShareService>();
 builder.Services.AddSingleton<DemoCatalogService>();
 builder.Services.AddSingleton<DemoUpvoteService>();
+builder.Services.AddHostedService<ServerMediaPruningService>();
 builder.Services.AddSingleton<MediaRegistryService>();
 builder.Services.AddSingleton<MediaProxyTicketStore>();
 builder.Services.AddSingleton<YouTubeAuthService>();
