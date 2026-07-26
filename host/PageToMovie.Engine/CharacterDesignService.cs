@@ -982,16 +982,26 @@ public sealed class CharacterDesignService
         try
         {
             var castPath = Path.Combine(projectDir, "source", ScreenplayService.CastSeedsFileName);
-            if (!File.Exists(castPath)) return null;
-            using var doc = JsonDocument.Parse(File.ReadAllText(castPath));
-            if (doc.RootElement.TryGetProperty("render_style_lock", out var rsl) &&
-                rsl.ValueKind == JsonValueKind.String &&
-                rsl.GetString() is { Length: > 0 } s)
-                return s.Trim();
+            if (File.Exists(castPath))
+            {
+                using var doc = JsonDocument.Parse(File.ReadAllText(castPath));
+                if (doc.RootElement.TryGetProperty("render_style_lock", out var rsl) &&
+                    rsl.ValueKind == JsonValueKind.String &&
+                    rsl.GetString() is { Length: > 0 } s)
+                    return s.Trim();
+            }
         }
         catch
         {
             // ignore
+        }
+
+        // If project source contains book_full.txt or book_images, default to picture-book style lock
+        var sourceDir = Path.Combine(projectDir, "source");
+        if (File.Exists(Path.Combine(sourceDir, "book_full.txt")) ||
+            Directory.Exists(Path.Combine(sourceDir, "book_images")))
+        {
+            return "STYLE LOCK: stylized animated children's picture-book look for ALL on-screen cast (animals and humans share the same medium) -- not photoreal, not live-action";
         }
 
         return null;
@@ -1004,7 +1014,8 @@ public sealed class CharacterDesignService
     public static bool PrefersIllustratedPortraitStyle(
         string? projectRenderStyleLock,
         bool hasImageHints,
-        bool isAnimal)
+        bool isAnimal,
+        bool hasBookSource = false)
     {
         var style = projectRenderStyleLock ?? "";
         if (style.Length > 0)
@@ -1020,9 +1031,10 @@ public sealed class CharacterDesignService
                 return true;
         }
 
-        // No project style: book plates or animal heroes default to matching illustration medium.
-        return hasImageHints || isAnimal;
+        // No project style: book plates, book sources, or animal heroes default to matching illustration medium.
+        return hasBookSource || hasImageHints || isAnimal;
     }
+
 
     private static bool RegexContains(string text, string pattern) =>
         System.Text.RegularExpressions.Regex.IsMatch(
