@@ -399,6 +399,31 @@ flowchart TD
    - The Railway server can automatically push project commits to GitHub (or any Git server) for off-site disaster recovery and backup.
    - `.gitignore` excludes `assets/video/*.mp4`, ensuring backup repos remain lightweight (< 5 MB).
 
+### Modular Blazor Git UI Razor Class Library (`PageToMovie.GitUi` / NuGet Package)
+
+To benefit the broader .NET / Blazor developer community, all Git version-control UI components are architected as a **decoupled, reusable Razor Class Library (RCL)** designed for independent publication to **NuGet.org**:
+
+```mermaid
+flowchart TD
+    subgraph Package ["NuGet Package: PageToMovie.GitUi"]
+        A["GitCommitTimeline.razor\n(Visual commit history timeline)"]
+        B["GitDiffViewer.razor\n(Side-by-side / inline text & JSON diffs)"]
+        C["GitThreeWayMergeResolver.razor\n(Visual 3-way conflict editor: Base vs Ours vs Theirs)"]
+        D["GitBranchManager.razor\n(Branch switcher & fork management)"]
+    end
+
+    subgraph Consumption ["Applications"]
+        E["PageToMovie Blazor Web App"]
+        F["Third-Party Blazor Apps (NuGet Package)"]
+        Package --> E & F
+    end
+```
+
+#### Key Design Standards for the NuGet Library:
+1. **Generic Interfaces**: Bound to clean, abstracted interfaces (`IGitCommitProvider`, `IGitDiffModel`, `IGitMergeConflict`) rather than PageToMovie-specific entities.
+2. **Vanilla CSS Token System**: Styled using CSS variables (`var(--git-added)`, `var(--git-deleted)`, `var(--git-accent)`) for seamless theme customization in any Blazor Server or WebAssembly application.
+3. **Rich EventCallbacks**: Provides event hooks (`OnCommitSelected`, `OnConflictResolved`, `OnMergeAccepted`) allowing developers to extend behavior easily.
+
 ---
 
 ## Dedicated Projects Git Repository & Local Storage Architecture
