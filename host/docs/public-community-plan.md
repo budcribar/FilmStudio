@@ -423,6 +423,19 @@ flowchart TD
 - **Manual Fallback**: Admin UI allows manual YouTube URL/ID pasting if an offline video was uploaded out-of-band.
 - **Server Footprint**: **0 MB for video files**. `demo.json` / SQLite stores only metadata (title, author, screenplay snippet, upvote count, YouTube ID).
 
+### YouTube Data API v3 Quotas & Quota Management Strategy
+
+- **Default Free Quota Budget**:
+  - Google Cloud provides a default free quota of **10,000 units per day**.
+  - A video upload request (`videos.insert`) costs **~1,600 units**.
+  - This allows **~6 automated video uploads per day** on a new Google Cloud project.
+- **Handling & Mitigation Strategy**:
+  1. **Daily Upload Cap**: PageToMovie tracks daily upload count in `YouTubeUploadService.cs` and caps auto-uploads at 5 per day to prevent unexpected API quota errors.
+  2. **Manual Paste Fallback**: If the daily API quota limit is reached, the Admin UI displays an option for the Admin to paste a YouTube Video ID/URL directly for instant gallery embedding.
+  3. **Free Quota Increase Request**: As public channel publishing volume grows, a free quota extension request can be submitted in [Google Cloud Console Quotas](https://console.cloud.google.com/iam-admin/quotas) to raise the daily limit to **100,000+ units per day** (allowing 60+ automated uploads/day).
+
+---
+
 ### Step-by-Step Setup Guide: Creating & Connecting Your PageToMovie YouTube Channel
 
 #### Step 0: Create Your Dedicated "PageToMovie" Brand YouTube Channel
