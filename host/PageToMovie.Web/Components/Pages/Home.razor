@@ -9,11 +9,46 @@
 
 <PageTitle>PageToMovie</PageTitle>
 
-<div class="d-flex align-items-center gap-3 mb-4">
-    <img src="/favicon.png" alt="PageToMovie" width="68" height="68" class="rounded-3 shadow" />
-    <div>
-        <h1 class="display-6 fw-bold mb-0 lh-1">PageToMovie</h1>
-        <span class="text-muted fs-6">Turn books and screenplays into movies</span>
+<div class="d-flex align-items-center justify-content-between flex-wrap gap-3 mb-4">
+    <div class="d-flex align-items-center gap-3">
+        <img src="/favicon.png" alt="PageToMovie" width="68" height="68" class="rounded-3 shadow flex-shrink-0" />
+        <div>
+            <h1 class="display-6 fw-bold mb-0 lh-1">PageToMovie</h1>
+            <span class="text-muted fs-6">Turn books and screenplays into movies</span>
+        </div>
+    </div>
+
+    <!-- Inline Hero Banner: Manuscript Pages -> AI Engine -> Film Strip -->
+    <div class="d-flex align-items-center gap-3 p-2.5 rounded-3 text-white shadow-sm flex-shrink-0 hero-transformation-banner">
+        <div class="d-flex flex-column align-items-center px-2 py-1 bg-dark bg-opacity-50 rounded border border-secondary border-opacity-25 hero-anim-page">
+            <span class="fs-4">📄</span>
+            <span class="extra-small text-muted font-monospace fw-semibold">PAGES</span>
+        </div>
+
+        <div class="d-flex flex-column align-items-center px-1 hero-anim-flow">
+            <span class="badge bg-primary bg-gradient small mb-1 shadow-sm">⚡ GROK AI</span>
+            <div class="hero-flow-dots">
+                <span></span><span></span><span></span>
+            </div>
+        </div>
+
+        <div class="d-flex align-items-center gap-2 p-1.5 rounded bg-black border border-secondary hero-anim-film"
+             style="cursor: pointer;"
+             title="Click to view interactive demo gallery"
+             @onclick='() => Nav.NavigateTo("/demo")'>
+            <div class="position-relative overflow-hidden rounded" style="width: 104px; height: 58px; background: #000;">
+                <div class="w-100 h-100 d-flex align-items-center justify-content-center bg-gradient bg-dark">
+                    <span class="fs-4">🎬</span>
+                </div>
+                <div class="position-absolute top-50 start-50 translate-middle badge bg-primary rounded-circle p-2 shadow">
+                    ▶
+                </div>
+            </div>
+            <div class="pe-2">
+                <div class="fw-bold small text-white lh-1 mb-1">SCRIPT ➔ FILM</div>
+                <div class="extra-small text-success fw-semibold">● DEMO GALLERY</div>
+            </div>
+        </div>
     </div>
 </div>
 

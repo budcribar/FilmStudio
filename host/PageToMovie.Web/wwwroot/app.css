@@ -990,3 +990,59 @@ h1:focus {
 .blazor-error-boundary::after {
     content: "An error has occurred."
 }
+
+/* Page to Movie Header Hero Transformation Widget */
+.hero-transformation-banner {
+    background: linear-gradient(135deg, rgba(15, 23, 42, 0.95), rgba(30, 27, 75, 0.95)) !important;
+    border: 1px solid rgba(99, 102, 241, 0.35) !important;
+    box-shadow: 0 6px 20px rgba(99, 102, 241, 0.18);
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.hero-transformation-banner:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 28px rgba(99, 102, 241, 0.3);
+}
+
+.hero-anim-page {
+    animation: floatPage 3s ease-in-out infinite;
+}
+
+@keyframes floatPage {
+    0%, 100% { transform: translateY(0) rotate(0deg); }
+    50% { transform: translateY(-4px) rotate(-3deg); }
+}
+
+.hero-anim-flow .hero-flow-dots {
+    display: flex;
+    gap: 4px;
+}
+
+.hero-anim-flow .hero-flow-dots span {
+    width: 6px;
+    height: 6px;
+    background-color: var(--fs-accent-indigo, #6366f1);
+    border-radius: 50%;
+    animation: pulseDot 1.4s infinite ease-in-out both;
+}
+
+.hero-anim-flow .hero-flow-dots span:nth-child(1) { animation-delay: -0.32s; }
+.hero-anim-flow .hero-flow-dots span:nth-child(2) { animation-delay: -0.16s; }
+
+@keyframes pulseDot {
+    0%, 80%, 100% { transform: scale(0.6); opacity: 0.35; }
+    40% { transform: scale(1.25); opacity: 1; background-color: #818cf8; }
+}
+
+.hero-anim-film {
+    transition: transform 0.2s ease, border-color 0.2s ease;
+}
+
+.hero-anim-film:hover {
+    transform: scale(1.04);
+    border-color: #6366f1 !important;
+}
+
+.extra-small {
+    font-size: 0.7rem;
+}
