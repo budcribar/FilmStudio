@@ -4079,7 +4079,11 @@ app.MapPost("/api/demos/{demoId}/fork", async (
             });
         }
 
-        var fork = await store.ForkProjectAsync(sourceId, user.UserId!, ct);
+        // A demo already confirmed public via demos.IsPubliclyStreamable(d) above is exactly the
+        // "explicit authorization to fork" this endpoint's own doc comment promises — same bypass
+        // ForkProjectAsync gives real invite-accepts, regardless of the source project's own
+        // (possibly still-Private) VisibilityMode.
+        var fork = await store.ForkProjectAsync(sourceId, user.UserId!, isInvite: true, ct: ct);
         return Results.Ok(new
         {
             ok = true,
