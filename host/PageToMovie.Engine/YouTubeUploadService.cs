@@ -161,7 +161,19 @@ namespace PageToMovie.Engine
 
                 string responseJson = await uploadResponse.Content.ReadAsStringAsync(ct);
                 using var doc = JsonDocument.Parse(responseJson);
-                string newYoutubeId = doc.RootElement.GetProperty("id").GetString() ?? "";
+                string newYoutubeId = doc.RootElement.TryGetProperty("id", out var idProp)
+                    ? (idProp.GetString() ?? "")
+                    : "";
+
+                if (string.IsNullOrWhiteSpace(newYoutubeId))
+                {
+                    _logger?.LogError("YouTube API upload response did not contain a video id. Response: {Body}", responseJson);
+                    return new YouTubeUploadResult
+                    {
+                        Success = false,
+                        ErrorMessage = $"YouTube upload succeeded but returned no video id. Response: {responseJson}"
+                    };
+                }
 
                 _logger?.LogInformation("Successfully uploaded video to YouTube! Video ID: {YoutubeId}", newYoutubeId);
 
@@ -216,7 +228,9 @@ namespace PageToMovie.Engine
 
             string body = await response.Content.ReadAsStringAsync(ct);
             using var doc = JsonDocument.Parse(body);
-            return doc.RootElement.GetProperty("access_token").GetString();
+            return doc.RootElement.TryGetProperty("access_token", out var tokenProp)
+                ? tokenProp.GetString()
+                : null;
         }
 
         private async Task DeleteOldVideoAsync(string oldYoutubeId, string accessToken, CancellationToken ct)

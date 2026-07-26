@@ -22,7 +22,7 @@ namespace PageToMovie.Engine
 
         public ServerMediaPruningService(
             ILogger<ServerMediaPruningService> logger,
-            string projectsRoot = null,
+            string? projectsRoot = null,
             TimeSpan? checkInterval = null,
             TimeSpan? maxFileAge = null,
             double maxDiskUsagePercent = 80.0)
@@ -107,7 +107,11 @@ namespace PageToMovie.Engine
             // 2. Check disk usage threshold if drive info is accessible
             try
             {
-                var drive = new DriveInfo(Path.GetPathRoot(Path.GetFullPath(rootPath)));
+                var pathRoot = Path.GetPathRoot(Path.GetFullPath(rootPath));
+                if (string.IsNullOrWhiteSpace(pathRoot))
+                    return deletedCount;
+
+                var drive = new DriveInfo(pathRoot);
                 if (drive.IsReady && drive.TotalSize > 0)
                 {
                     double usedPercent = ((double)(drive.TotalSize - drive.AvailableFreeSpace) / drive.TotalSize) * 100.0;
