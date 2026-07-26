@@ -24,7 +24,7 @@ Nothing in this doc is required for current production unless explicitly schedul
 | 11 | **Direct Gallery "Fork Project" Button** | **planned** | Integrates 🍴 **Fork Project** button directly onto `/demo` gallery cards & detail modals for **Public (Forkable)** projects. Eliminates need for a separate project page. |
 | 12 | ~~Project ratings~~ | **obsolete** | Superseded by Demo Upvotes on `/demo` gallery cards (Item #2). Upvoting a movie rates the project directly. |
 | 13 | **YouTube Direct Comment Link** | **planned** | Provides a `💬 Comment on YouTube ↗` button on `/demo` gallery cards, opening the video's YouTube page in a new tab for native commenting & subscriber growth (0 API quota cost). |
-| 14 | User reputation from ratings | idea | Derived later. |
+| 14 | **Creator Profile Badges & Stats** | **idea** | Derived creator stats on `@username` profile headers (Total Movies Published, Total Upvotes Received, Community Forks). Computed dynamically from SQLite `demos` (0 DB schema migrations). |
 
 ---
 
