@@ -44,82 +44,28 @@ Nothing in this doc is required for current production unless explicitly schedul
 
 ---
 
-## Project collaborators (planned — high priority)
+## Project Collaborators & Invite-to-Fork Collaboration Architecture
 
 ### Intent
-Trusted multiplayer on **one** project (co-writer, editor). **Not** a fork: no copy, no merge UI for day-to-day work.
+Collaboration in PageToMovie is unified under the **Invite-to-Fork & Async Diff-Merge Model** powered by client-side media storage and Git 3-way merging (`LibGit2Sharp`). 
 
-### Why before fork/merge
-- Solves “add my partner” without public/open.
-- Works on **private** projects.
-- Smaller than content-hash PRs and gallery packaging.
-- Scene locks / jobs already partly multi-user; need **ACL** so non-owners can open the project.
+Instead of forcing collaborators to edit live files simultaneously on a shared server directory (which causes file locks, overwrite races, and high server storage load), collaborators receive a private invite to spawn an independent, lightweight fork (< 5 MB package containing Fountain screenplay, cast seeds, Stage 2 shot plan blueprint, and rules).
 
-### Model (v1)
-
-```text
-project.json (or SQLite project_members)
-  ownerUserId: "alice"
-  members: [
-    { "userId": "bob", "role": "editor", "addedAt": "..." }
-  ]
+```mermaid
+flowchart LR
+    A["Project Owner A\n(Master Project)"] -- "1. Invite via @username or email" --> B["Collaborator B\n(Accepts Invite)"]
+    B -- "2. Instant Lightweight Fork\n(< 5 MB package)" --> C["Collaborator B Workspace\n(Independent Fork)"]
+    C -- "3. Edit script & gen clips\n(Client B storage)" --> C
+    A -- "3. Edit script & gen clips\n(Client A storage)" --> A
+    C -- "4. Submit Contribution PR\n(JSON diff + SHA-256 hash)" --> D["Merge Proposal"]
+    D -- "5. LibGit2Sharp 3-Way Merge\n(ContributionReview.razor)" --> A
 ```
 
-| Role | Can |
-|------|-----|
-| **owner** | Full control: members, visibility/public/open, delete project, transfer (later), publish demo as owner |
-| **editor** | Use studio on this project: read/write blueprint, cast, gen jobs, review, play; **cannot** remove owner, delete project, or change membership/visibility |
-| **viewer** (optional v1.1) | Read-only play / view |
-
-- **One owner** (existing `ownerUserId`).
-- Invite by **username** / user id (users already in SQLite).
-- Owner **remove** member; member **leave**.
-- Project list: projects where user is **owner or member**.
-
-### AuthZ
-- Every project-scoped API: allow if `admin` **or** `userId == owner` **or** `userId` in members with sufficient role.
-- Demo publish: keep owner (or allow editor later — default **owner only** for v1).
-- Jobs/locks: members may acquire scene locks like owner.
-
-### Credits / API keys (v1 policy)
-- **Acting user** pays: gen uses **that user’s** provider keys and credits (Bob gens → Bob’s spend).
-- Document clearly in UI (“Your API keys and credits are used when you generate”).
-- Later option: “bill owner” with explicit consent.
-
-### Client media folder
-- Each collaborator uses **their** browser media folder; server registry is still **per project**.
-- Expect each editor to connect a folder; gen handoff unchanged.
-
-### Suggested API (future)
-```http
-GET    /api/projects/{id}/members
-POST   /api/projects/{id}/members      { "username" or "userId", "role": "editor" }
-DELETE /api/projects/{id}/members/{userId}
-POST   /api/projects/{id}/members/leave
-GET    /api/projects                        # include owned + member-of
-```
-
-### Out of scope for collaborators v1
-- Live cursors / presence avatars  
-- Per-scene or per-clip ACL  
-- Email magic-link invites (username invite is enough)  
-- Automatic fork from invite  
-- Split billing  
-
-### Depends on
-- Existing `ownerUserId` on project + user accounts.
-
-### Does not depend on
-- Public/open modes, fork, contributions, upvotes.
-
-### Collaborators vs fork
-
-| | Collaborator | Fork |
-|--|--------------|------|
-| Project | **Same** id | **New** id |
-| Trust | Invite-only | Open community |
-| Merge | N/A (same project) | Contribution accept |
-| Modes | Works on **private** | Requires **open** |
+### Key Architectural Standards:
+1. **Invite-to-Fork**: Project owners invite collaborators via public handle (`@username`) or blind email.
+2. **Lightweight Workspace (< 5 MB)**: Collaborators get an instant fork containing text, screenplay Fountain scripts, character seeds, shot plan blueprints, and rules.
+3. **Client-Side Media Storage**: Collaborators store generated MP4 clips locally on their own PC hard drives (`assets/video/`), keeping Railway server disk usage **< 100 MB**.
+4. **Git 3-Way Merging (`LibGit2Sharp`)**: Merging screenplay beats or blueprint fields uses Git's battle-tested 3-way merge algorithm (`ours`, `theirs`, `base`) with visual diff review (`ContributionReview.razor`).
 
 ---
 
