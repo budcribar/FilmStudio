@@ -993,7 +993,28 @@ h1:focus {
     content: "An error has occurred."
 }
 
-/* Home hero — demo gallery film chip (pipeline is /images/hero-pages-ai-movie.gif) */
+/* Home hero — pipeline GIF + demo gallery chip */
+.home-hero-pipeline {
+    max-width: min(100%, 22rem);
+    width: 100%;
+    height: auto;
+    border-radius: 0.75rem;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+    background: #0d1117;
+}
+
+@media (max-width: 767.98px) {
+    .home-hero {
+        justify-content: center;
+        text-align: center;
+    }
+
+    .home-hero-pipeline {
+        max-width: 100%;
+    }
+}
+
 .hero-anim-film {
     transition: transform 0.2s ease, border-color 0.2s ease;
 }
