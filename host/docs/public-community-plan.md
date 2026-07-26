@@ -538,14 +538,13 @@ PageToMovie maintains a cryptographic SHA-256 media audit log for every clip gen
    - **Mode 2: Unverified / External Media (Manual Admin Review)**: If any clip hash is unknown (e.g. an externally uploaded video file that didn't originate from PageToMovie's AI pipeline), it is flagged as **Unverified Media** and routed to `/admin` for manual review.
 
 #### How Modifications & Re-Publishing (Version 2) Are Handled
-YouTube Data API does not allow swapping out the raw video bytes of an existing YouTube Video ID (to prevent video bait-and-switch). PageToMovie handles modified movie updates seamlessly via **Versioned Pointer Replacement & API Cleanup**:
+YouTube Data API does not allow swapping out the raw video bytes of an existing YouTube Video ID (to prevent video bait-and-switch). PageToMovie handles modified movie updates via **Versioned Pointer Replacement & API Cleanup** (**implemented** in `DemoYouTubePublisherService`):
 
-1. **Re-Publishing Trigger**: When a creator modifies scene clips or screenplay dialogue and clicks **"Publish Updated Version (v2)"**:
-2. **Upload Version 2**: `YouTubeUploadService.cs` uploads the new Version 2 video to YouTube and receives `newYoutubeId`.
-3. **Update Gallery Pointer**: PageToMovie updates `demo.json` / SQLite metadata with `youtubeId = newYoutubeId`. The public `/demo` page immediately streams the new Version 2 video!
-4. **Old Version Cleanup (API Delete or Archive)**:
-   - *Mode A (Default — API Delete)*: PageToMovie calls YouTube API `videos.delete(oldYoutubeId)` to automatically remove the obsolete v1 video from your channel.
-   - *Mode B (Archive)*: PageToMovie calls `videos.update` setting `privacyStatus: "unlisted"` and prepending `[Archived v1]` to the old video title.
+1. **Re-publish** (default `replaceExisting: true`): if the project already has a **public** demo by this user with a `YoutubeId`, attach the new movie to that demo (no second gallery row).
+2. **Upload Version 2**: `DemoYouTubePublisherService` uploads the new video and receives `newYoutubeId`.
+3. **Update Gallery Pointer**: demo meta is updated with `youtubeId` / `youtubeUrl`; `/demo` embeds the new ID immediately.
+4. **Mode A (API Delete)**: best-effort `videos.delete(oldYoutubeId)`. Requires channel OAuth with `youtube.force-ssl` (reconnect YouTube from Review if the token was issued with upload-only scope). If delete fails, V2 still wins in the gallery; v1 may remain on the channel for manual cleanup.
+   - *Mode B (Archive — not implemented)*: could unlisted + rename old title; Mode A is the default path today.
 
 ### YouTube Data API v3 Quotas & Quota Management Strategy
 
