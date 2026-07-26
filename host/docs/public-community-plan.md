@@ -317,9 +317,9 @@ flowchart TD
 To maintain professional branding, clean open-source packaging, and isolated API security, PageToMovie utilizes a **Dedicated GitHub Organization** (`PageToMovie` or `PageToMovie-App`):
 
 - **Repository Structure**:
-  - `github.com/PageToMovie/PageToMovie` — Primary Web App & Engine codebase repository.
-  - `github.com/PageToMovie/PageToMovie-Projects` — Dedicated film projects template & metadata repository.
-  - `github.com/PageToMovie/PageToMovie.GitUi` — Open-source Blazor Git UI Razor Class Library (NuGet package source).
+  - `https://github.com/PageToMovie/WebSite` — Primary Web App & Engine codebase repository.
+  - `https://github.com/PageToMovie/Projects` — Dedicated film projects template & metadata repository.
+  - `https://github.com/PageToMovie/GitUI` — Open-source Blazor Git UI Razor Class Library (NuGet package source).
 - **Security & Token Isolation**:
   - Railway server uses a dedicated GitHub Personal Access Token (PAT) scoped strictly to the `PageToMovie` Organization.
   - Prevents automated Railway backup scripts from having access to personal repositories on your primary GitHub account (`budcribar`).
