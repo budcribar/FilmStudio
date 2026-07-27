@@ -37,6 +37,22 @@ public sealed class OpenFolderResponse
     public string? Error { get; set; }
 }
 
+public sealed class OpenEditorRequest
+{
+    public string? ProjectId { get; set; }
+    public int? SceneNumber { get; set; }
+    public int? ClipNumber { get; set; }
+    public string? EditorName { get; set; }
+}
+
+public sealed class OpenEditorResponse
+{
+    public bool Ok { get; set; }
+    public string? Opened { get; set; }
+    public string? Editor { get; set; }
+    public string? Error { get; set; }
+}
+
 public sealed class JobSnapshot
 {
     /// <summary>Multi-job id. Empty when idle / not yet assigned.</summary>

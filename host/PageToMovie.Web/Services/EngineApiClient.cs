@@ -1985,6 +1985,30 @@ public sealed class EngineApiClient
         return (true, body.Opened ?? path, null);
     }
 
+    public async Task<(bool Ok, string? Opened, string? Editor, string? Error)> OpenInExternalEditorAsync(
+        string projectId,
+        int? sceneNumber = null,
+        int? clipNumber = null,
+        string? editorName = null,
+        CancellationToken ct = default)
+    {
+        using var req = new HttpRequestMessage(HttpMethod.Post, "/api/system/open-editor")
+        {
+            Content = JsonContent.Create(new OpenEditorRequest
+            {
+                ProjectId = projectId,
+                SceneNumber = sceneNumber,
+                ClipNumber = clipNumber,
+                EditorName = editorName
+            }, options: JsonOpts),
+        };
+        using var resp = await _http.SendAsync(req, ct);
+        var body = await resp.Content.ReadFromJsonAsync<OpenEditorResponse>(JsonOpts, ct);
+        if (!resp.IsSuccessStatusCode || body is null || !body.Ok)
+            return (false, null, null, body?.Error ?? "Could not open external video editor.");
+        return (true, body.Opened, body.Editor, null);
+    }
+
     /// <summary>Master model catalog (id → endpoint + required keys).</summary>
     public async Task<IReadOnlyList<SupportedModelDto>> GetSupportedModelsAsync(
         string? capability = null,

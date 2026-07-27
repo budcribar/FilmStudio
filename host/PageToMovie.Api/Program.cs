@@ -1214,6 +1214,104 @@ app.MapPost("/api/system/open-folder", (OpenFolderRequest body, ProjectStore sto
     }
 });
 
+/// <summary>Open a scene composite or full cut in the user's preferred external video editor.</summary>
+app.MapPost("/api/system/open-editor", (OpenEditorRequest body, ProjectStore store) =>
+{
+    if (string.IsNullOrWhiteSpace(body?.ProjectId))
+        return Results.BadRequest(new { ok = false, error = "ProjectId is required." });
+
+    var projectDir = store.GetProjectDir(body.ProjectId);
+    var editorName = string.IsNullOrWhiteSpace(body.EditorName) ? "ClipChamp" : body.EditorName.Trim();
+
+    string? videoPath = null;
+    if (body.SceneNumber is int sn && sn > 0)
+    {
+        if (body.ClipNumber is int cn && cn > 0)
+        {
+            var cPath = Path.Combine(projectDir, "assets", "video", $"scene_{sn:D3}_clip_{cn:D2}.mp4");
+            if (File.Exists(cPath)) videoPath = cPath;
+        }
+        if (videoPath is null)
+        {
+            var compPath = Path.Combine(projectDir, "assets", "video", $"scene_{sn:D3}_composite.mp4");
+            if (File.Exists(compPath)) videoPath = compPath;
+        }
+    }
+
+    if (videoPath is null)
+    {
+        var wipMovie = Path.Combine(projectDir, "movie.mp4");
+        if (File.Exists(wipMovie)) videoPath = wipMovie;
+        else
+        {
+            var altWip = Path.Combine(projectDir, "assets", "video", "wip_movie.mp4");
+            if (File.Exists(altWip)) videoPath = altWip;
+        }
+    }
+
+    if (videoPath is null)
+    {
+        var videoDir = Path.Combine(projectDir, "assets", "video");
+        if (Directory.Exists(videoDir)) videoPath = videoDir;
+        else videoPath = projectDir;
+    }
+
+    try
+    {
+        var targetPath = videoPath.Trim();
+        if (OperatingSystem.IsWindows())
+        {
+            targetPath = targetPath.Replace('/', '\\');
+
+            if (string.Equals(editorName, "ClipChamp", StringComparison.OrdinalIgnoreCase))
+            {
+                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                {
+                    FileName = targetPath,
+                    UseShellExecute = true
+                });
+                return Results.Ok(new { ok = true, opened = targetPath, editor = "ClipChamp" });
+            }
+
+            try
+            {
+                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                {
+                    FileName = editorName,
+                    Arguments = $"\"{targetPath}\"",
+                    UseShellExecute = true
+                });
+                return Results.Ok(new { ok = true, opened = targetPath, editor = editorName });
+            }
+            catch
+            {
+                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                {
+                    FileName = targetPath,
+                    UseShellExecute = true
+                });
+                return Results.Ok(new { ok = true, opened = targetPath, editor = "Default OS Editor" });
+            }
+        }
+        else if (OperatingSystem.IsMacOS())
+        {
+            System.Diagnostics.Process.Start("open", $"\"{targetPath}\"");
+            return Results.Ok(new { ok = true, opened = targetPath, editor = editorName });
+        }
+        else if (OperatingSystem.IsLinux())
+        {
+            System.Diagnostics.Process.Start("xdg-open", $"\"{targetPath}\"");
+            return Results.Ok(new { ok = true, opened = targetPath, editor = editorName });
+        }
+
+        return Results.BadRequest(new { ok = false, error = "OS not supported for external editor launch." });
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { ok = false, error = ex.Message });
+    }
+});
+
 /// <summary>Download project folder as zip (logged in user / operator).</summary>
 app.MapGet("/api/projects/{id}/export", async (
     string id,

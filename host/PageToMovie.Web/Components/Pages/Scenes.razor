@@ -570,6 +570,17 @@ else
                         @onclick="OpenAddClipDialog">
                     + Add clip
                 </button>
+                @if (_detail.CompositeExists || _detail.ClipsOnDisk > 0)
+                {
+                    <button type="button"
+                            class="btn btn-sm btn-outline-info"
+                            data-testid="scene-open-external-editor"
+                            disabled="@(_busy || JobRunning)"
+                            title="Open scene video in @_preferredVideoEditor"
+                            @onclick="() => OpenInExternalEditorAsync(_detail.SceneNumber, _selectedClip)">
+                        🎬 Open in @_preferredVideoEditor
+                    </button>
+                }
                 @if (DetailLockedByOther)
                 {
                     <span class="badge bg-warning text-dark">🔒 @_detailLockOwner</span>
@@ -1788,26 +1799,63 @@ else
         }
     }
 
+    private string _preferredVideoEditor = "ClipChamp";
+
     private async Task LoadGenResolutionFromConfigAsync()
     {
         try
         {
             var dto = await Engine.GetConfigAsync(_projectId);
-            if (dto?.Config is { } cfg &&
-                cfg.TryGetValue("resolution", out var el) &&
-                el.ValueKind == JsonValueKind.String &&
-                el.GetString() is { Length: > 0 } res)
+            if (dto?.Config is { } cfg)
             {
-                _genResolution = res.Trim().ToLowerInvariant() switch
+                if (cfg.TryGetValue("resolution", out var el) &&
+                    el.ValueKind == JsonValueKind.String &&
+                    el.GetString() is { Length: > 0 } res)
                 {
-                    "480" or "480p" => "480p",
-                    "720" or "720p" => "720p",
-                    "1080" or "1080p" => "1080p",
-                    _ => res.Trim(),
-                };
+                    _genResolution = res.Trim().ToLowerInvariant() switch
+                    {
+                        "480" or "480p" => "480p",
+                        "720" or "720p" => "720p",
+                        "1080" or "1080p" => "1080p",
+                        _ => res.Trim(),
+                    };
+                }
+                if (cfg.TryGetValue("preferred_video_editor", out var edEl) &&
+                    edEl.ValueKind == JsonValueKind.String &&
+                    edEl.GetString() is { Length: > 0 } pve)
+                {
+                    _preferredVideoEditor = pve.Trim();
+                }
             }
         }
         catch { /* keep default */ }
+    }
+
+    private async Task OpenInExternalEditorAsync(int? sceneNumber = null, int? clipNumber = null)
+    {
+        _busy = true;
+        _error = null;
+        _message = null;
+        try
+        {
+            var res = await Engine.OpenInExternalEditorAsync(_projectId, sceneNumber, clipNumber, _preferredVideoEditor);
+            if (res.Ok)
+            {
+                _message = $"🎬 Opened video in {res.Editor ?? _preferredVideoEditor}.";
+            }
+            else
+            {
+                _error = res.Error ?? "Could not open external video editor.";
+            }
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            _busy = false;
+        }
     }
 
     private void OnJobUpdated(JobSnapshot snap)

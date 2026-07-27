@@ -74,6 +74,17 @@ else
                 @onclick='() => ToggleTabAsync("share")'>
             📤 Share &amp; Export
         </button>
+        @if (CanPlayMovie)
+        {
+            <button type="button" 
+                    class="btn btn-outline-info text-info px-3"
+                    data-testid="review-open-editor"
+                    disabled="@(_busy || JobRunning)"
+                    @onclick="OpenInExternalEditorAsync"
+                    title="Open full cut video in @_preferredVideoEditor">
+                🎬 Open in @_preferredVideoEditor
+            </button>
+        }
     </div>
 
     <div class="d-flex align-items-center gap-2">
@@ -1249,12 +1260,58 @@ else
         _ = InvokeAsync(StateHasChanged);
     }
 
+    private string _preferredVideoEditor = "ClipChamp";
+
+    private async Task LoadPreferredVideoEditorAsync()
+    {
+        try
+        {
+            var dto = await Engine.GetConfigAsync(_projectId);
+            if (dto?.Config is { } cfg &&
+                cfg.TryGetValue("preferred_video_editor", out var edEl) &&
+                edEl.ValueKind == JsonValueKind.String &&
+                edEl.GetString() is { Length: > 0 } pve)
+            {
+                _preferredVideoEditor = pve.Trim();
+            }
+        }
+        catch { /* keep default */ }
+    }
+
+    private async Task OpenInExternalEditorAsync()
+    {
+        _busy = true;
+        _error = null;
+        _message = null;
+        try
+        {
+            var res = await Engine.OpenInExternalEditorAsync(_projectId, sceneNumber: null, clipNumber: null, _preferredVideoEditor);
+            if (res.Ok)
+            {
+                _message = $"🎬 Opened full cut in {res.Editor ?? _preferredVideoEditor}.";
+            }
+            else
+            {
+                _error = res.Error ?? "Could not open external video editor.";
+            }
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
     private async Task LoadAsync()
     {
         _busy = true;
         _error = null;
         try
         {
+            await LoadPreferredVideoEditorAsync();
             var scenes = await Engine.GetScenesAsync(_projectId);
             _scenes = scenes?.Scenes ?? new();
             var log = await Engine.GetEditLogAsync(_projectId);
