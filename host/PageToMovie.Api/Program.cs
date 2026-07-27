@@ -1520,14 +1520,12 @@ app.MapGet("/api/projects", async (
     if (AuthGate.RequireLogin(user, opts) is { } denied)
         return denied;
     var all = await store.ListProjectsAsync(ct);
-    var userSeg = ProjectStore.SanitizeUserSegment(user.UserId);
     var list = user.IsAdmin
         ? all
         : all.Where(p =>
             string.IsNullOrWhiteSpace(p.OwnerUserId) ||
             string.Equals(p.OwnerUserId, "local", StringComparison.OrdinalIgnoreCase) ||
-            string.Equals(p.OwnerUserId, user.UserId, StringComparison.OrdinalIgnoreCase) ||
-            (!string.IsNullOrWhiteSpace(userSeg) && string.Equals(ProjectStore.SanitizeUserSegment(p.OwnerUserId), userSeg, StringComparison.OrdinalIgnoreCase))).ToList();
+            string.Equals(p.OwnerUserId, user.UserId, StringComparison.OrdinalIgnoreCase)).ToList();
 
     var activeId = store.ActiveProjectId;
     if (string.IsNullOrWhiteSpace(activeId) && list.Count > 0)
