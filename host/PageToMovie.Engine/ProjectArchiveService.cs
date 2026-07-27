@@ -61,13 +61,13 @@ public sealed class ProjectArchiveService
         {
             try
             {
-                var created = await _sidecars.EnsureAllSidecarsExistAsync(projectDir, ct).ConfigureAwait(false);
-                if (created > 0)
-                    _log.LogInformation("Export: created {Count} missing clip sidecar(s) for {ProjectId}", created, id);
+                var converted = await _sidecars.ConvertProjectClipsToNewFormatAsync(projectDir, ct).ConfigureAwait(false);
+                if (converted > 0)
+                    _log.LogInformation("Export: converted {Count} clip(s) to long-term format with sidecars for {ProjectId}", converted, id);
             }
             catch (Exception ex)
             {
-                _log.LogWarning(ex, "Export: sidecar backfill failed for {ProjectId}", id);
+                _log.LogWarning(ex, "Export: clip format conversion failed for {ProjectId}", id);
             }
         }
 

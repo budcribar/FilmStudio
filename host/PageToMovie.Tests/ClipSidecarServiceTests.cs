@@ -89,4 +89,32 @@ public class ClipSidecarServiceTests : IDisposable
         Assert.Equal(3, root.GetProperty("clip").GetInt32());
         Assert.Equal(2048, root.GetProperty("size_bytes").GetInt64());
     }
+
+    [Fact]
+    public async Task ConvertProjectClipsToNewFormatAsync_renames_clips_and_writes_take_sidecars()
+    {
+        var projects = new ProjectStore(Options.Create(new PageToMovieOptions { WorkspaceRoot = _tempWorkspace }));
+        var service = new ClipSidecarService(projects);
+
+        var projectDir = Path.Combine(_tempWorkspace, "projects", "TellTaleTest");
+        var videoDir = Path.Combine(projectDir, "assets", "video");
+        Directory.CreateDirectory(videoDir);
+
+        // Create legacy named MP4 file
+        var legacyMp4 = Path.Combine(videoDir, "scene_12.mp4");
+        await File.WriteAllBytesAsync(legacyMp4, new byte[1024]);
+
+        var count = await service.ConvertProjectClipsToNewFormatAsync(projectDir);
+        Assert.True(count >= 1);
+
+        var files = Directory.GetFiles(videoDir, "*.clip.json");
+        Assert.NotEmpty(files);
+
+        var sidecarText = await File.ReadAllTextAsync(files[0]);
+        using var doc = JsonDocument.Parse(sidecarText);
+        var root = doc.RootElement;
+
+        Assert.Equal(12, root.GetProperty("scene").GetInt32());
+        Assert.Equal(1, root.GetProperty("take").GetInt32());
+    }
 }
