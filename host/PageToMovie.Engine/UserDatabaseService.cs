@@ -460,33 +460,36 @@ public class UserDatabaseService
                 family: "Xai",
                 personal: xaiPersonal,
                 hasServer: xaiServer,
-                supportsVideo: true,
-                supportsImage: true,
-                supportsChat: true,
-                supportsVision: true,
-                notes: "Full pipeline: video (with clip continue + cast plates), portraits, planning, OCR, and frame review."),
+                supportsVideoGen: true,
+                supportsVideoReview: false,
+                supportsImageGen: true,
+                supportsScriptPlanning: true,
+                supportsImageVision: true,
+                notes: "Full generation & planning pipeline (Video Gen, Image Gen, Script Planning, Image Vision / OCR)."),
             BuildProviderStatus(
                 providerId: "gemini",
                 displayName: "Google Gemini",
                 family: "Google",
                 personal: geminiPersonal,
                 hasServer: geminiServer,
-                supportsVideo: true,
-                supportsImage: true,
-                supportsChat: true,
-                supportsVision: true,
-                notes: "Native video review (preferred when configured over Grok frame extraction). Video generation via Veo."),
+                supportsVideoGen: true,
+                supportsVideoReview: true,
+                supportsImageGen: true,
+                supportsScriptPlanning: true,
+                supportsImageVision: true,
+                notes: "Supports native Multimodal Video Review (inputs MP4 files directly for automated clip quality scoring) and Video Gen via Veo."),
             BuildProviderStatus(
                 providerId: "anthropic",
                 displayName: "Anthropic Claude",
                 family: "Anthropic",
                 personal: anthropicPersonal,
                 hasServer: anthropicServer,
-                supportsVideo: false,
-                supportsImage: false,
-                supportsChat: true,
-                supportsVision: true,
-                notes: "Chat + clip/frame review only. No video or image generation — use Grok or Gemini for those."),
+                supportsVideoGen: false,
+                supportsVideoReview: false,
+                supportsImageGen: false,
+                supportsScriptPlanning: true,
+                supportsImageVision: true,
+                notes: "Script & Shot Planning + Image Vision / OCR frame review."),
         };
 
         return new UserSettingsDto
@@ -972,18 +975,20 @@ public class UserDatabaseService
         string family,
         string? personal,
         bool hasServer,
-        bool supportsVideo,
-        bool supportsImage,
-        bool supportsChat,
-        bool supportsVision,
+        bool supportsVideoGen,
+        bool supportsVideoReview,
+        bool supportsImageGen,
+        bool supportsScriptPlanning,
+        bool supportsImageVision,
         string? notes)
     {
         var hasPersonal = !string.IsNullOrWhiteSpace(personal);
         var caps = new List<string>();
-        if (supportsVideo) caps.Add("Video");
-        if (supportsImage) caps.Add("Image");
-        if (supportsChat) caps.Add("Chat");
-        if (supportsVision) caps.Add("Vision");
+        if (supportsVideoGen) caps.Add("Video Gen");
+        if (supportsVideoReview) caps.Add("Video Review");
+        if (supportsImageGen) caps.Add("Image Gen");
+        if (supportsScriptPlanning) caps.Add("Script & Planning");
+        if (supportsImageVision) caps.Add("Image Vision / OCR");
         if (caps.Count == 0) caps.Add("—");
 
         return new ProviderKeyStatusDto
@@ -996,10 +1001,15 @@ public class UserDatabaseService
             HasServerKey = hasServer,
             ActiveSource = hasPersonal ? "personal" : hasServer ? "server" : "none",
             CapabilitiesSummary = string.Join(", ", caps),
-            SupportsVideo = supportsVideo,
-            SupportsImage = supportsImage,
-            SupportsChat = supportsChat,
-            SupportsVision = supportsVision,
+            SupportsVideo = supportsVideoGen || supportsVideoReview,
+            SupportsImage = supportsImageGen,
+            SupportsChat = supportsScriptPlanning,
+            SupportsVision = supportsImageVision,
+            SupportsVideoGen = supportsVideoGen,
+            SupportsVideoReview = supportsVideoReview,
+            SupportsImageGen = supportsImageGen,
+            SupportsScriptPlanning = supportsScriptPlanning,
+            SupportsImageVision = supportsImageVision,
             Notes = notes,
         };
     }

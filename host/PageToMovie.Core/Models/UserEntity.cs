@@ -72,6 +72,12 @@ public sealed class ProviderKeyStatusDto
     public bool SupportsChat { get; set; }
     public bool SupportsVision { get; set; }
 
+    public bool SupportsVideoGen { get; set; }
+    public bool SupportsVideoReview { get; set; }
+    public bool SupportsImageGen { get; set; }
+    public bool SupportsScriptPlanning { get; set; }
+    public bool SupportsImageVision { get; set; }
+
     /// <summary>Limitations users need before picking this provider (video continue, OCR, etc.).</summary>
     public string? Notes { get; set; }
 }

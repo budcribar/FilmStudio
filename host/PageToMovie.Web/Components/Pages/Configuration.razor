@@ -159,30 +159,26 @@ else
                                 }
                             </div>
 
-                            <div class="mb-2">
-                                @if (p.SupportsVideo)
+                            <div class="mb-2 d-flex flex-wrap gap-1">
+                                @if (p.SupportsVideoGen || (p.SupportsVideo && !p.SupportsVideoReview))
                                 {
-                                    <span class="badge text-bg-primary me-1">Video</span>
+                                    <span class="badge text-bg-primary">Video Gen (Output)</span>
                                 }
-                                else
+                                @if (p.SupportsVideoReview)
                                 {
-                                    <span class="badge text-bg-light border me-1 text-muted">No video</span>
+                                    <span class="badge text-bg-info text-dark fw-bold">Video Review (Multimodal Input)</span>
                                 }
-                                @if (p.SupportsImage)
+                                @if (p.SupportsImageGen || p.SupportsImage)
                                 {
-                                    <span class="badge text-bg-primary me-1">Image</span>
+                                    <span class="badge text-bg-primary">Image Gen (Output)</span>
                                 }
-                                else
+                                @if (p.SupportsScriptPlanning || p.SupportsChat)
                                 {
-                                    <span class="badge text-bg-light border me-1 text-muted">No image</span>
+                                    <span class="badge text-bg-secondary">Script &amp; Planning</span>
                                 }
-                                @if (p.SupportsChat)
+                                @if (p.SupportsImageVision || p.SupportsVision)
                                 {
-                                    <span class="badge text-bg-primary me-1">Chat</span>
-                                }
-                                @if (p.SupportsVision)
-                                {
-                                    <span class="badge text-bg-primary">Vision</span>
+                                    <span class="badge text-bg-secondary">Image Vision / OCR</span>
                                 }
                             </div>
 
@@ -294,13 +290,12 @@ else
         <div class="card-body row g-2">
             <div class="col-12">
                 <p class="small text-muted mb-2">
-                    Pick a model only. The app maps it to the right provider and key.
-                    Saving a <strong>Grok</strong> personal key defaults all model slots below to Grok (when a project is selected).
-                    Claude is chat/vision only — it cannot produce video or portraits.
+                    Select models for each stage of production. The app maps your choice to the appropriate provider API.
+                    <strong>Video Gen</strong> produces MP4 video clips, <strong>Image Gen</strong> creates character portraits, <strong>Script &amp; Planning</strong> powers screenplay reasoning, and <strong>Clip Review</strong> evaluates completed video cuts (Google Gemini natively analyzes MP4 files).
                 </p>
             </div>
             <div class="col-md-4">
-                <label class="form-label">Video model</label>
+                <label class="form-label fw-semibold">Video Generation Model (Output)</label>
                 <select class="form-select" @bind="_modelName" disabled="@_busy">
                     @foreach (var m in _videoModels)
                     {
@@ -317,7 +312,7 @@ else
                 }
             </div>
             <div class="col-md-4">
-                <label class="form-label">Portrait model</label>
+                <label class="form-label fw-semibold">Portrait / Image Model (Output)</label>
                 <select class="form-select" @bind="_imageModel" disabled="@_busy">
                     @foreach (var m in _imageModels)
                     {
@@ -334,7 +329,7 @@ else
                 }
             </div>
             <div class="col-md-4">
-                <label class="form-label">Planning model</label>
+                <label class="form-label fw-semibold">Script &amp; Planning Model</label>
                 <select class="form-select" @bind="_planningModel" disabled="@_busy">
                     @foreach (var m in _chatModels)
                     {
@@ -349,10 +344,10 @@ else
                 {
                     <div class="form-text">@ph</div>
                 }
-                <div class="form-text">Screenplay / shot-plan / cast-scrub reasoning.</div>
+                <div class="form-text">Screenplay, shot-plan, and cast reasoning.</div>
             </div>
             <div class="col-md-4">
-                <label class="form-label">Quality model</label>
+                <label class="form-label fw-semibold">Quality &amp; Clip Review Model</label>
                 <select class="form-select" @bind="_qualityModel" disabled="@_busy">
                     @foreach (var m in _chatModels)
                     {
@@ -367,7 +362,7 @@ else
                 {
                     <div class="form-text">@qh</div>
                 }
-                <div class="form-text">Clip / frame review scoring (vision-capable models preferred).</div>
+                <div class="form-text">Multimodal video/vision review (Google Gemini directly analyzes MP4 video files).</div>
             </div>
         </div>
     </div>
@@ -658,24 +653,27 @@ else
         {
             ProviderId = "grok", DisplayName = "xAI / Grok", Family = "Xai",
             SupportsVideo = true, SupportsImage = true, SupportsChat = true, SupportsVision = true,
-            CapabilitiesSummary = "Video, Image, Chat, Vision",
-            Notes = "Full pipeline including video continue and cast plates.",
+            SupportsVideoGen = true, SupportsVideoReview = false, SupportsImageGen = true, SupportsScriptPlanning = true, SupportsImageVision = true,
+            CapabilitiesSummary = "Video Gen, Image Gen, Script & Planning, Image Vision / OCR",
+            Notes = "Full generation & planning pipeline (Video Gen, Image Gen, Script Planning, Image Vision / OCR).",
             ActiveSource = "none",
         },
         new()
         {
             ProviderId = "gemini", DisplayName = "Google Gemini", Family = "Google",
             SupportsVideo = true, SupportsImage = true, SupportsChat = true, SupportsVision = true,
-            CapabilitiesSummary = "Video, Image, Chat, Vision (Video Review)",
-            Notes = "Native video review (preferred when configured over Grok frame extraction). Video generation via Veo.",
+            SupportsVideoGen = true, SupportsVideoReview = true, SupportsImageGen = true, SupportsScriptPlanning = true, SupportsImageVision = true,
+            CapabilitiesSummary = "Video Review (Multimodal MP4 Input), Video Gen (Veo), Image Gen, Script & Planning, Image Vision / OCR",
+            Notes = "Supports native Multimodal Video Review (inputs MP4 files directly for automated clip quality scoring) and Video Gen via Veo.",
             ActiveSource = "none",
         },
         new()
         {
             ProviderId = "anthropic", DisplayName = "Anthropic Claude", Family = "Anthropic",
             SupportsVideo = false, SupportsImage = false, SupportsChat = true, SupportsVision = true,
-            CapabilitiesSummary = "Chat, Vision",
-            Notes = "No video or image generation.",
+            SupportsVideoGen = false, SupportsVideoReview = false, SupportsImageGen = false, SupportsScriptPlanning = true, SupportsImageVision = true,
+            CapabilitiesSummary = "Script & Planning, Image Vision / OCR",
+            Notes = "Script & Shot Planning + Image Vision / OCR frame review.",
             ActiveSource = "none",
         },
     ];
