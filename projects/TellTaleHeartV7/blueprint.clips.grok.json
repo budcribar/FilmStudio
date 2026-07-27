@@ -7032,7 +7032,7 @@
     },
     {
       "scene_number": 18,
-      "setting": "INT. BLACK SCREEN - NIGHT",
+      "setting": "END CREDITS - THE TELL-TALE HEART",
       "location_ids": [],
       "primary_location_id": "Loc_Credits",
       "characters_on_screen": [],
@@ -7050,7 +7050,7 @@
           "timestamp": "00:00-00:10",
           "veo_continuation_source": "none",
           "location_id": "Loc_Credits",
-          "visual_prompt": "INT. BLACK SCREEN - NIGHT. Fading out to deep dark background. Elegant cinematic end credits font displaying 'THE TELL-TALE HEART'. Fading text card: 'A Film Studio Presentation'. Deep black backdrop with subtle ambient particle glow. Camera directive: Slow pull-back on elegant white text against pitch black background.",
+          "visual_prompt": "Cinematic end-credits title card, locked-off camera, no people, no faces, no logos of other brands. Solid deep black background with subtle film grain. Centered white sans-serif end-credit typography, high contrast, perfectly sharp and fully legible, classic theatrical end-title card, slow gentle fade-in of text. On-screen text only: THE TELL-TALE HEART. Based on the story by Edgar Allan Poe. Created with PageToMovie · pagetomovie.com. Photoreal film look.",
           "negative_prompt": "no extra unmentioned hats or jackets, no modern wristwatches, no electric light bulbs, no plastic, no zippers, no modern cars, no printed logos, no denim, no asphalt, no modern hair gel, no sneakers, no fluorescent lights, no power outlets, no synthetic fabrics",
           "audio_payload": {
             "delivery": "none",

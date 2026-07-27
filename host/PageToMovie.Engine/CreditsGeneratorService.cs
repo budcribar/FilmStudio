@@ -157,15 +157,10 @@ public class CreditsGeneratorService
         var (title, author) = ExtractStoryTitleAndAuthor(projectId);
         var opts = _options.Credits ?? new CreditsOptions();
         var softName = string.IsNullOrWhiteSpace(opts.SoftwareName) ? "PageToMovie" : opts.SoftwareName.Trim();
-        var softAuthor = string.IsNullOrWhiteSpace(opts.SoftwareAuthor) ? "Bud Cribar" : opts.SoftwareAuthor.Trim();
-        var fairUse = string.IsNullOrWhiteSpace(opts.FairUseNotice)
-            ? "Produced under Fair Use and Public Domain for Non-Commercial Creative Purposes."
-            : opts.FairUseNotice.Trim();
+        var siteUrl = "pagetomovie.com";
 
-        // Keep text sparse — models struggle with dense paragraphs on screen.
         var titleLine = SanitizeOnScreenText(title.ToUpperInvariant());
         var authorLine = SanitizeOnScreenText(author);
-        var softLine = SanitizeOnScreenText($"{softName} · {softAuthor}");
 
         return
             "Cinematic end-credits title card, locked-off camera, no people, no faces, no logos of other brands. " +
@@ -174,9 +169,8 @@ public class CreditsGeneratorService
             "classic theatrical end-title card, slow gentle fade-in of text, gentle hold, soft fade. " +
             "On-screen text only (exact wording, line breaks as separate centered lines):\n" +
             $"{titleLine}\n" +
-            $"Written by {authorLine}\n" +
-            $"{softLine}\n" +
-            $"{SanitizeOnScreenText(fairUse)}\n" +
+            $"Based on the story by {authorLine}\n" +
+            $"Created with {softName} · {siteUrl}\n" +
             "No other text, no watermarks, no UI, no subtitles, 16:9 landscape, photoreal film look.";
     }
 
