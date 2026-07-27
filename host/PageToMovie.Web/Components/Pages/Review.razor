@@ -809,6 +809,31 @@ else if (_activeTab == "share")
             <button type="button" class="btn btn-sm btn-outline-secondary" @onclick="SetTabReview">Back to Review</button>
         </div>
         <div class="card-body p-4 text-white">
+@if (_isPublishing)
+{
+    <div class="card p-4 my-2 text-center bg-dark text-white border-primary shadow" data-testid="review-publish-progress">
+        <div class="d-flex justify-content-center align-items-center gap-3 mb-3">
+            <div class="spinner-border text-primary" role="status" style="width: 2.2rem; height: 2.2rem;"></div>
+            <h5 class="fw-bold text-white mb-0">Publishing Film to Demo Gallery</h5>
+        </div>
+        <p class="text-light small mb-3">@_publishProgressStatus</p>
+        <div class="progress mb-3" style="height: 20px; background: rgba(255,255,255,0.15); border-radius: 8px;">
+            <div class="progress-bar progress-bar-striped progress-bar-animated bg-primary"
+                 role="progressbar"
+                 style="width: @(_publishProgressPct)%; font-weight: 700; font-size: 0.85rem;"
+                 aria-valuenow="@_publishProgressPct"
+                 aria-valuemin="0"
+                 aria-valuemax="100">
+                @_publishProgressPct%
+            </div>
+        </div>
+        <div class="alert alert-info py-2 px-3 mb-0 small text-start">
+            ℹ️ <strong>Upload in progress:</strong> Please keep this page open while the cut uploads to the server. Once uploaded to 100%, YouTube processing will continue automatically in the background.
+        </div>
+    </div>
+}
+else
+{
             <div class="mb-3">
                 <label class="form-label small fw-semibold">Film Title</label>
                 <input class="form-control bg-dark text-white border-secondary" @bind="_demoTitle" maxlength="120"
@@ -848,6 +873,7 @@ else if (_activeTab == "share")
                     Publish to Demo Gallery
                 </button>
             </div>
+}
         </div>
     </div>
 }
@@ -977,6 +1003,18 @@ else if (_activeTab == "share")
     private bool _demoAcceptedGuidelines;
     private bool _demoMadeForKids;
     private bool _demoIsAiSynthetic = true;
+    private bool _isPublishing;
+    private int _publishProgressPct;
+    private string _publishProgressStatus = "";
+    private DotNetObjectReference<Review>? _dotNetRef;
+
+    [JSInvokable]
+    public void ReportPublishProgress(int pct, string status)
+    {
+        _publishProgressPct = Math.Clamp(pct, 0, 100);
+        _publishProgressStatus = status;
+        StateHasChanged();
+    }
 
     /// <summary>Can publish when browser stitch or fresh on-disk movie is available, or scenes can be stitched.</summary>
     private bool CanShareMovie =>
@@ -1988,6 +2026,10 @@ else if (_activeTab == "share")
         }
 
         _busy = true;
+        _isPublishing = true;
+        _publishProgressPct = 5;
+        _publishProgressStatus = "Preparing movie cut for upload...";
+        _dotNetRef ??= DotNetObjectReference.Create(this);
         _error = null;
         _message = null;
         try
@@ -2025,7 +2067,8 @@ else if (_activeTab == "share")
                     acceptedGuidelines = true,
                     madeForKids = _demoMadeForKids,
                     isAiSynthetic = _demoIsAiSynthetic,
-                });
+                },
+                _dotNetRef);
 
             if (!res.TryGetProperty("success", out var ok) || !ok.GetBoolean())
             {
@@ -2073,6 +2116,7 @@ else if (_activeTab == "share")
         finally
         {
             _busy = false;
+            _isPublishing = false;
         }
     }
 
@@ -2183,5 +2227,6 @@ else if (_activeTab == "share")
         _clientWipUrl = null;
         _clientSceneUrl = null;
         await Stitch.RevokePreviewUrlAsync();
+        _dotNetRef?.Dispose();
     }
 }

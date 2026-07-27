@@ -187,57 +187,77 @@ window.PageToMovieExport = {
      * @param {string|null} accessToken JWT for Authorization header
      * @param {{ title?: string, description?: string, projectId?: string, fileName?: string, acceptedGuidelines?: boolean }} meta
      */
-    uploadDemoMovieAsync: async function (mediaUrl, uploadUrl, accessToken, meta) {
-        try {
-            if (!mediaUrl) return { success: false, error: "No media URL" };
-            meta = meta || {};
-            const res = await fetch(mediaUrl);
-            if (!res.ok) {
-                return { success: false, error: "Could not read video (" + res.status + ")" };
-            }
-            const blob = await res.blob();
-            if (!blob || blob.size < 1024) {
-                return { success: false, error: "Video is empty or too small" };
-            }
-            const form = new FormData();
-            form.append("file", blob, meta.fileName || "movie.mp4");
-            if (meta.title) form.append("title", meta.title);
-            if (meta.description) form.append("description", meta.description);
-            if (meta.projectId) form.append("projectId", meta.projectId);
-            form.append("acceptedGuidelines", meta.acceptedGuidelines === false ? "false" : "true");
-            form.append("madeForKids", meta.madeForKids === true ? "true" : "false");
-            form.append("isAiSynthetic", meta.isAiSynthetic === false ? "false" : "true");
-            if (meta.privacyStatus) form.append("privacyStatus", meta.privacyStatus);
-            if (meta.tags) form.append("tags", meta.tags);
-            // Default true: re-publish updates existing public demo (YouTube V2 replace)
-            form.append("replaceExisting", meta.replaceExisting === false ? "false" : "true");
+    uploadDemoMovieAsync: function (mediaUrl, uploadUrl, accessToken, meta, dotNetRef) {
+        return new Promise(async (resolve) => {
+            try {
+                if (!mediaUrl) return resolve({ success: false, error: "No media URL" });
+                meta = meta || {};
+                if (dotNetRef) {
+                    try { dotNetRef.invokeMethodAsync("ReportPublishProgress", 5, "Preparing movie cut for upload..."); } catch (_) {}
+                }
+                const res = await fetch(mediaUrl);
+                if (!res.ok) {
+                    return resolve({ success: false, error: "Could not read video (" + res.status + ")" });
+                }
+                const blob = await res.blob();
+                if (!blob || blob.size < 1024) {
+                    return resolve({ success: false, error: "Video is empty or too small" });
+                }
+                const form = new FormData();
+                form.append("file", blob, meta.fileName || "movie.mp4");
+                if (meta.title) form.append("title", meta.title);
+                if (meta.description) form.append("description", meta.description);
+                if (meta.projectId) form.append("projectId", meta.projectId);
+                form.append("acceptedGuidelines", meta.acceptedGuidelines === false ? "false" : "true");
+                form.append("madeForKids", meta.madeForKids === true ? "true" : "false");
+                form.append("isAiSynthetic", meta.isAiSynthetic === false ? "false" : "true");
+                if (meta.privacyStatus) form.append("privacyStatus", meta.privacyStatus);
+                if (meta.tags) form.append("tags", meta.tags);
+                form.append("replaceExisting", meta.replaceExisting === false ? "false" : "true");
 
-            const headers = {};
-            if (accessToken) headers["Authorization"] = "Bearer " + accessToken;
+                const xhr = new XMLHttpRequest();
+                xhr.open("POST", uploadUrl, true);
+                if (accessToken) xhr.setRequestHeader("Authorization", "Bearer " + accessToken);
 
-            const up = await fetch(uploadUrl, {
-                method: "POST",
-                headers: headers,
-                body: form,
-                credentials: "same-origin",
-            });
-            const text = await up.text();
-            let json = null;
-            try { json = text ? JSON.parse(text) : null; } catch (_) { /* */ }
-            if (!up.ok) {
-                const err = (json && (json.error || json.message)) || text || ("HTTP " + up.status);
-                return { success: false, error: String(err) };
+                if (xhr.upload && dotNetRef) {
+                    xhr.upload.onprogress = (e) => {
+                        if (e.lengthComputable && e.total > 0) {
+                            const pct = Math.round(10 + (e.loaded / e.total) * 85);
+                            const loadedMb = (e.loaded / (1024 * 1024)).toFixed(1);
+                            const totalMb = (e.total / (1024 * 1024)).toFixed(1);
+                            try {
+                                dotNetRef.invokeMethodAsync("ReportPublishProgress", pct, `Uploading cut to server (${loadedMb} MB / ${totalMb} MB)...`);
+                            } catch (_) {}
+                        }
+                    };
+                }
+
+                xhr.onload = () => {
+                    let json = null;
+                    try { json = xhr.responseText ? JSON.parse(xhr.responseText) : null; } catch (_) {}
+                    if (xhr.status < 200 || xhr.status >= 300) {
+                        const err = (json && (json.error || json.message)) || xhr.responseText || ("HTTP " + xhr.status);
+                        resolve({ success: false, error: String(err) });
+                    } else {
+                        if (dotNetRef) {
+                            try { dotNetRef.invokeMethodAsync("ReportPublishProgress", 100, "Upload complete! YouTube processing starting in background."); } catch (_) {}
+                        }
+                        resolve({
+                            success: true,
+                            demo: json && json.demo ? json.demo : json,
+                            pendingReview: !!(json && json.pendingReview),
+                            replacedExisting: !!(json && json.replacedExisting),
+                            message: json && json.message ? json.message : null,
+                        });
+                    }
+                };
+
+                xhr.onerror = () => resolve({ success: false, error: "Network connection lost during upload" });
+                xhr.send(form);
+            } catch (err) {
+                console.error("uploadDemoMovieAsync failed:", err);
+                resolve({ success: false, error: err.message || String(err) });
             }
-            return {
-                success: true,
-                demo: json && json.demo ? json.demo : json,
-                pendingReview: !!(json && json.pendingReview),
-                replacedExisting: !!(json && json.replacedExisting),
-                message: json && json.message ? json.message : null,
-            };
-        } catch (err) {
-            console.error("uploadDemoMovieAsync failed:", err);
-            return { success: false, error: err.message || String(err) };
-        }
+        });
     }
 };
