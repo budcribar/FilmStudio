@@ -1766,11 +1766,32 @@ app.MapGet("/api/youtube/connect-url", (IUserContext user, YouTubeAuthService yo
     return Results.Ok(new { ok = true, url = youTube.BuildAuthorizationUrl(state) });
 });
 
-app.MapGet("/api/youtube/oauth2callback", async (HttpContext http, YouTubeAuthService youTube, CancellationToken ct) =>
+async Task ProcessYouTubeOAuthCallbackAsync(HttpContext http, YouTubeAuthService youTube, CancellationToken ct)
 {
     var code = http.Request.Query["code"].FirstOrDefault();
     var state = http.Request.Query["state"].FirstOrDefault();
     var error = http.Request.Query["error"].FirstOrDefault();
+
+    // Fallback: If parameters were not bound from query (e.g. proxy path normalization), extract from raw request URL
+    var rawUrl = (http.Request.Path.Value ?? "") + (http.Request.QueryString.Value ?? "");
+    if (string.IsNullOrWhiteSpace(code))
+    {
+        var mCode = System.Text.RegularExpressions.Regex.Match(rawUrl, @"code=([^&]+)");
+        if (mCode.Success)
+            code = Uri.UnescapeDataString(mCode.Groups[1].Value);
+    }
+    if (string.IsNullOrWhiteSpace(state))
+    {
+        var mState = System.Text.RegularExpressions.Regex.Match(rawUrl, @"state=([^&]+)");
+        if (mState.Success)
+            state = Uri.UnescapeDataString(mState.Groups[1].Value);
+    }
+    if (string.IsNullOrWhiteSpace(error))
+    {
+        var mErr = System.Text.RegularExpressions.Regex.Match(rawUrl, @"error=([^&]+)");
+        if (mErr.Success)
+            error = Uri.UnescapeDataString(mErr.Groups[1].Value);
+    }
 
     if (!string.IsNullOrWhiteSpace(error))
     {
@@ -1799,42 +1820,10 @@ app.MapGet("/api/youtube/oauth2callback", async (HttpContext http, YouTubeAuthSe
     {
         http.Response.Redirect($"/review?youtube=error&message={Uri.EscapeDataString(ex.Message)}");
     }
-});
+}
 
-app.MapGet("/api/youtube/oauth2callback/", async (HttpContext http, YouTubeAuthService youTube, CancellationToken ct) =>
-{
-    var code = http.Request.Query["code"].FirstOrDefault();
-    var state = http.Request.Query["state"].FirstOrDefault();
-    var error = http.Request.Query["error"].FirstOrDefault();
-
-    if (!string.IsNullOrWhiteSpace(error))
-    {
-        http.Response.Redirect($"/review?youtube=error&message={Uri.EscapeDataString(error)}");
-        return;
-    }
-
-    if (string.IsNullOrWhiteSpace(code))
-    {
-        http.Response.Redirect("/review?youtube=error&message=" + Uri.EscapeDataString("Missing authorization code from Google."));
-        return;
-    }
-
-    if (string.IsNullOrWhiteSpace(state) || !youTube.ConsumeState(state))
-    {
-        http.Response.Redirect("/review?youtube=error&message=" + Uri.EscapeDataString("Invalid or expired request."));
-        return;
-    }
-
-    try
-    {
-        await youTube.ExchangeCodeAsync(code, ct);
-        http.Response.Redirect("/review?youtube=connected");
-    }
-    catch (Exception ex)
-    {
-        http.Response.Redirect($"/review?youtube=error&message={Uri.EscapeDataString(ex.Message)}");
-    }
-});
+app.MapGet("/api/youtube/oauth2callback/{*remainder}", ProcessYouTubeOAuthCallbackAsync);
+app.MapGet("/api/youtube/oauth2callback", ProcessYouTubeOAuthCallbackAsync);
 
 app.MapPost("/api/youtube/disconnect", async (IUserContext user, YouTubeAuthService youTube, CancellationToken ct) =>
 {
