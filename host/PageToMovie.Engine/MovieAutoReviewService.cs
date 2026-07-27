@@ -133,6 +133,7 @@ public sealed class MovieAutoReviewService
         var avgCharacter = (int)Math.Round(groupFeedbacks.Average(g => g.CharacterScore));
         var avgLighting = (int)Math.Round(groupFeedbacks.Average(g => g.LightingScore));
         var avgPacing = (int)Math.Round(groupFeedbacks.Average(g => g.PacingScore));
+        var avgDialogue = (int)Math.Round(groupFeedbacks.Average(g => g.DialogueScore));
 
         report.OverallScore = Math.Clamp(avgScore, 1, 10);
         report.Verdict = report.OverallScore >= 8 ? "Pass — Strong Continuity" : report.OverallScore >= 6 ? "Needs Polish" : "Continuity Fixes Needed";
@@ -143,6 +144,7 @@ public sealed class MovieAutoReviewService
             ["Character Consistency"] = Math.Clamp(avgCharacter, 1, 10),
             ["Lighting & Color Grade"] = Math.Clamp(avgLighting, 1, 10),
             ["Pacing & Editing"] = Math.Clamp(avgPacing, 1, 10),
+            ["Dialogue & Script Fidelity"] = Math.Clamp(avgDialogue, 1, 10),
         };
 
         var summarySb = new System.Text.StringBuilder();
@@ -151,6 +153,7 @@ public sealed class MovieAutoReviewService
         summarySb.AppendLine($"• Character Consistency: {avgCharacter}/10");
         summarySb.AppendLine($"• Lighting & Color Grade: {avgLighting}/10");
         summarySb.AppendLine($"• Pacing & Editing: {avgPacing}/10");
+        summarySb.AppendLine($"• Dialogue & Script Fidelity: {avgDialogue}/10");
         if (report.FlaggedScenes.Count > 0)
         {
             summarySb.AppendLine($"Recommend touching up Scene(s): {string.Join(", ", report.FlaggedScenes)}.");
@@ -176,6 +179,7 @@ public sealed class MovieAutoReviewService
             if (!string.IsNullOrWhiteSpace(gf.ContinuityNotes)) execSb.AppendLine($"* **Continuity**: {gf.ContinuityNotes}");
             if (!string.IsNullOrWhiteSpace(gf.VisualConsistencyNotes)) execSb.AppendLine($"* **Character Lock**: {gf.VisualConsistencyNotes}");
             if (!string.IsNullOrWhiteSpace(gf.LightingNotes)) execSb.AppendLine($"* **Lighting & Tone**: {gf.LightingNotes}");
+            if (!string.IsNullOrWhiteSpace(gf.DialogueNotes)) execSb.AppendLine($"* **Dialogue & Lip Sync**: {gf.DialogueNotes}");
         }
         report.ExecutiveSummary = execSb.ToString().Trim();
 
@@ -200,9 +204,11 @@ public sealed class MovieAutoReviewService
             CharacterScore = 8,
             LightingScore = 8,
             PacingScore = 8,
+            DialogueScore = 8,
             ContinuityNotes = "Visual flow matches screenplay setting.",
             VisualConsistencyNotes = "Character locks consistent across cuts.",
             LightingNotes = "Atmospheric exposure and palette match mood.",
+            DialogueNotes = "Character dialogue delivery and lip movement align with screenplay lines.",
             AudioNotes = "Pacing aligns with scene beat intensity.",
         };
 
@@ -234,11 +240,12 @@ public sealed class MovieAutoReviewService
             if (imageFiles.Count > 0 && _vision.IsConfigured)
             {
                 var prompt = $@"You are a professional film director reviewing visual keyframe sequence {rangeStr} of a movie cut.
-Critically evaluate these 4 key filmmaking categories and assign an independent score (1-10) for each:
+Critically evaluate these 5 key filmmaking categories and assign an independent score (1-10) for each:
 1. Continuity & Transitions (shot-to-shot spatial alignment, character position, camera movement flow)
 2. Character Consistency & Wardrobe (facial structure lock, outfit drift, visual identity retention)
 3. Lighting & Color Grading (exposure consistency, palette stability, shadow direction across cuts)
 4. Pacing & Editing (visual narrative rhythm, shot length variety, tone matching beat intensity)
+5. Dialogue & Script Fidelity (speaking posture, mouth/lip movement alignment, character line execution matching prompt beats)
 
 Return valid JSON with non-generic, specific observations:
 {{
@@ -247,9 +254,11 @@ Return valid JSON with non-generic, specific observations:
   ""characterScore"": 8,
   ""lightingScore"": 8,
   ""pacingScore"": 8,
+  ""dialogueScore"": 8,
   ""continuityNotes"": ""Specific observations on visual transitions and spatial alignment"",
   ""visualConsistencyNotes"": ""Specific observations on character lock and costume drift"",
   ""lightingNotes"": ""Specific observations on color palette and lighting continuity"",
+  ""dialogueNotes"": ""Specific observations on spoken dialogue delivery and lip movement alignment"",
   ""audioNotes"": ""Specific observations on visual pacing and tone alignment""
 }}";
                 var raw = await _vision.CompleteWithImagesAsync(prompt, imageFiles.Select(x => x.Path).ToList(), ct: ct).ConfigureAwait(false);
@@ -285,12 +294,18 @@ Return valid JSON with non-generic, specific observations:
                                 feedback.PacingScore = Math.Clamp(ps, 1, 10);
                             else feedback.PacingScore = feedback.Score;
 
+                            if (root.TryGetProperty("dialogueScore", out var dsEl) && dsEl.TryGetInt32(out var ds))
+                                feedback.DialogueScore = Math.Clamp(ds, 1, 10);
+                            else feedback.DialogueScore = feedback.Score;
+
                             if (root.TryGetProperty("continuityNotes", out var cn) && cn.ValueKind == JsonValueKind.String)
                                 feedback.ContinuityNotes = cn.GetString() ?? feedback.ContinuityNotes;
                             if (root.TryGetProperty("visualConsistencyNotes", out var vn) && vn.ValueKind == JsonValueKind.String)
                                 feedback.VisualConsistencyNotes = vn.GetString() ?? feedback.VisualConsistencyNotes;
                             if (root.TryGetProperty("lightingNotes", out var ln) && ln.ValueKind == JsonValueKind.String)
                                 feedback.LightingNotes = ln.GetString() ?? feedback.LightingNotes;
+                            if (root.TryGetProperty("dialogueNotes", out var dn) && dn.ValueKind == JsonValueKind.String)
+                                feedback.DialogueNotes = dn.GetString() ?? feedback.DialogueNotes;
                             if (root.TryGetProperty("audioNotes", out var an) && an.ValueKind == JsonValueKind.String)
                                 feedback.AudioNotes = an.GetString() ?? feedback.AudioNotes;
                         }
