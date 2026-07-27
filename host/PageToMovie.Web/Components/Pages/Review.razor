@@ -44,6 +44,9 @@ else
 {
     <div class="alert alert-info">@_message</div>
 }
+    <p class="text-muted mb-3">
+        Review scenes, rate clip takes, and play or share the movie.
+    </p>
 
 <div class="d-flex flex-wrap gap-2 mb-3">
         <button class="btn btn-outline-dark" data-testid="review-auto-all"
@@ -52,7 +55,8 @@ else
                 @onclick="StartBatchAutoReviewAsync">
             Auto-review all
         </button>
-        <button class="btn btn-success" data-testid="review-play-wip" disabled="@(_busy || JobRunning || (!_wipExists && !_wipCanBuild))"
+        <button class="btn btn-success" data-testid="review-play-wip"
+                disabled="@(_busy || JobRunning || (!_wipExists && !_wipCanBuild && !MediaFolder.IsConnected && !MediaFolder.IsSyncing))"
                 @onclick="PlayWipAsync"
                 title="@WipPlayTitle">
             @(_showWipPlayer && _wipExists && !_wipStale ? "Hide" : "▶ Play")
@@ -60,7 +64,7 @@ else
         <button class="btn btn-outline-primary" data-testid="review-save"
                 disabled="@(_busy || JobRunning || !CanShareMovie)"
                 @onclick="OpenSaveDialog"
-                title="@(CanShareMovie ? "Upload to Demo gallery or YouTube" : "Play WIP first so a cut exists (browser stitch or on-disk WIP)")">
+                title="@(CanShareMovie ? "Upload to Demo gallery or YouTube" : "Play movie first so a cut exists")">
             Share…
         </button>
         @if (JobRunning)
@@ -793,18 +797,20 @@ else if (_showScenePlayer && _clientStitching)
     private bool _demoMadeForKids;
     private bool _demoIsAiSynthetic = true;
 
-    /// <summary>Can publish when browser stitch or fresh on-disk WIP is available, or scenes can be stitched.</summary>
+    /// <summary>Can publish when browser stitch or fresh on-disk movie is available, or scenes can be stitched.</summary>
     private bool CanShareMovie =>
         !string.IsNullOrEmpty(_clientWipUrl)
         || (_wipExists && !_wipStale)
+        || MediaFolder.IsConnected
+        || MediaFolder.IsSyncing
         || _scenes.Any(s => s.CompositeExists || s.ClipsOnDisk > 0);
 
     private string WipPlayTitle =>
-        !_wipCanBuild && !_wipExists && string.IsNullOrEmpty(_clientWipUrl)
-            ? "No scene/clip videos to build WIP"
+        !_wipCanBuild && !_wipExists && string.IsNullOrEmpty(_clientWipUrl) && !MediaFolder.IsConnected && !MediaFolder.IsSyncing
+            ? "No scene videos were found"
             : _wipStale || !_wipExists
-                ? $"Stitch in browser: {_wipReason ?? "out of date"}"
-                : "Play streamed movie_wip.mp4 (up to date)";
+                ? "Play full movie (combine scenes in browser)"
+                : "Play full movie (up to date)";
     private string? _clientWipUrl;
     private string? _clientSceneUrl;
     private bool _clientStitching;
@@ -1136,13 +1142,13 @@ else if (_showScenePlayer && _clientStitching)
         }
 
         var sceneNums = _scenes
-            .Where(s => s.CompositeExists || s.ClipsOnDisk > 0)
+            .Where(s => s.CompositeExists || s.ClipsOnDisk > 0 || MediaFolder.IsConnected || MediaFolder.IsSyncing)
             .OrderBy(s => s.SceneNumber)
             .Select(s => s.SceneNumber)
             .ToList();
         if (sceneNums.Count == 0)
         {
-            _error = _wipReason ?? "Nothing on disk to build WIP";
+            _error = "No scene videos were found";
             return;
         }
 
@@ -1162,7 +1168,7 @@ else if (_showScenePlayer && _clientStitching)
             var urls = await Stitch.CollectSceneMediaUrlsAsync(_projectId, sceneNums, _scenes, stale);
             if (urls.Count == 0)
             {
-                _error = "No playable composites or clips for WIP";
+                _error = "No scene videos were found";
                 _showWipPlayer = false;
                 return;
             }
