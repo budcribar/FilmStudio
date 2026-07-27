@@ -36,23 +36,23 @@
     <main>
         @if (MediaFolder.IsSyncing)
         {
-            <div class="alert alert-primary py-2 px-3 mx-4 mt-3 mb-0 d-flex flex-wrap align-items-center justify-content-between gap-2 shadow-sm rounded-3">
-                <div class="d-flex align-items-center gap-2">
-                    <span class="spinner-border spinner-border-sm text-primary" role="status" aria-hidden="true"></span>
-                    <span class="fw-semibold">Downloading project media to local folder…</span>
+            <div class="py-2 px-3 mx-4 mt-3 mb-0 d-flex flex-wrap align-items-center justify-content-between gap-3 shadow rounded-3 border border-primary text-white" style="background-color: #0f172a !important; border-color: #3b82f6 !important;" role="status">
+                <div class="d-flex align-items-center gap-2 flex-grow-1 overflow-hidden">
+                    <span class="spinner-border spinner-border-sm text-info flex-shrink-0" role="status" aria-hidden="true"></span>
+                    <span class="fw-bold text-white text-nowrap">Downloading project media to local folder…</span>
                     @if (!string.IsNullOrEmpty(MediaFolder.SyncCurrentFile))
                     {
-                        <span class="badge text-bg-light font-monospace ms-1">@MediaFolder.SyncCurrentFile</span>
+                        <span class="badge font-monospace text-truncate ms-1" style="max-width: 320px; font-size: 0.75rem; background-color: #1e293b !important; color: #93c5fd !important; border: 1px solid #334155;" title="@MediaFolder.SyncCurrentFile">@MediaFolder.SyncCurrentFile</span>
                     }
                 </div>
-                <div class="d-flex align-items-center gap-2" style="min-width: 180px;">
-                    <div class="progress flex-grow-1" style="height: 8px;">
-                        <div class="progress-bar progress-bar-striped progress-bar-animated bg-primary"
+                <div class="d-flex align-items-center gap-3 flex-shrink-0" style="min-width: 220px;">
+                    <div class="progress flex-grow-1" style="height: 8px; background-color: #1e293b; border-radius: 4px;">
+                        <div class="progress-bar progress-bar-striped progress-bar-animated bg-info"
                              role="progressbar"
                              style="width: @(MediaFolder.SyncPercent)%"
                              aria-valuenow="@MediaFolder.SyncPercent" aria-valuemin="0" aria-valuemax="100"></div>
                     </div>
-                    <span class="small font-monospace fw-bold">@MediaFolder.SyncCurrent / @MediaFolder.SyncTotal (@(MediaFolder.SyncPercent)%)</span>
+                    <span class="small font-monospace fw-bold text-white text-nowrap" style="color: #ffffff !important;">@MediaFolder.SyncCurrent / @MediaFolder.SyncTotal (@(MediaFolder.SyncPercent)%)</span>
                 </div>
             </div>
         }
