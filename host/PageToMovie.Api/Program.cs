@@ -294,6 +294,15 @@ builder.WebHost.ConfigureKestrel(o =>
 
 var app = builder.Build();
 
+// Cross-Origin Isolation headers required for SharedArrayBuffer (ffmpeg.wasm, WebAssembly threads).
+// Must be applied to every response, including the Blazor index.html and all static assets.
+app.Use(async (ctx, next) =>
+{
+    ctx.Response.Headers["Cross-Origin-Opener-Policy"] = "same-origin";
+    ctx.Response.Headers["Cross-Origin-Embedder-Policy"] = "require-corp";
+    await next();
+});
+
 var staticFileProvider = new Microsoft.AspNetCore.StaticFiles.FileExtensionContentTypeProvider();
 staticFileProvider.Mappings[".wasm"] = "application/wasm";
 app.UseStaticFiles(new StaticFileOptions

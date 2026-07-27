@@ -68,29 +68,12 @@ window.PageToMovieFfmpeg = {
                 });
 
                 reportProgress(onProgress, 5, "Loading ffmpeg engine…");
-                const origin = window.location.origin;
-                const toBlob = (window.FFmpegUtil && window.FFmpegUtil.toBlobURL) || (async (url, mime) => {
-                    const res = await fetch(url);
-                    if (!res.ok) throw new Error("Failed to fetch " + url + " (" + res.status + ")");
-                    const buf = await res.arrayBuffer();
-                    return URL.createObjectURL(new Blob([buf], { type: mime }));
-                });
-
-                // Convert all three to blob URLs. The patched worker uses dynamic import() which supports blob: URLs.
-                // We pass the absolute coreURL so the worker can load ffmpeg-core.js without relying on relative paths.
-                const absoluteCoreUrl = origin + self._assets.coreJs;
-                const absoluteWasmUrl = origin + self._assets.wasmJs;
-
-                const [coreURL, wasmURL, classWorkerURL] = await Promise.all([
-                    toBlob(absoluteCoreUrl, "text/javascript"),
-                    toBlob(absoluteWasmUrl, "application/wasm"),
-                    toBlob(origin + self._assets.workerJs, "text/javascript")
-                ]);
-
+                // Simple local paths work because the server sends COOP/COEP headers,
+                // enabling crossOriginIsolated = true and SharedArrayBuffer support.
                 await ffmpeg.load({
-                    coreURL: absoluteCoreUrl,  // pass absolute URL so ffmpeg-core.js can locate .wasm via _scriptDir
-                    wasmURL: absoluteWasmUrl,
-                    classWorkerURL: classWorkerURL,
+                    coreURL: self._assets.coreJs,
+                    wasmURL: self._assets.wasmJs,
+                    classWorkerURL: self._assets.workerJs,
                 });
 
                 self._ffmpeg = ffmpeg;
