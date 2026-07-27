@@ -157,12 +157,14 @@ Slightly more technical language is OK on **About** or a collapsible “For deve
 
 ---
 
-## Perf / soak (short)
+## Ephemeral migration & cleanup lifecycle rule
 
-- Prefer **Release**, fakes on, **one** Api + LoadSim process for soaks (not three Visual Studios).
-- Canonical good mixed artifact: `host/loadsim-async-mixed-100x10m.json`.
-- Further file caches deferred; may be moot if storage moves to DB.
+When performing data/folder/schema migrations via temporary code blocks (such as startup migration hooks in `Program.cs` or one-time DB patches):
+
+1. **Temporary status**: Treat one-time migration code as temporary runtime scaffolding.
+2. **Verify & Remove**: Once the deployment completes and the user confirms/verifies the data state in production, **immediately remove the one-time cleanup code** in the next commit.
+3. **No Code Cruft**: Never leave one-time data fix-up scripts or legacy migration hooks running indefinitely in production codebase paths.
 
 ---
 
-*Last updated: 2026-07-21 — product north star (any story → excellent film); auto-run is long-term; near-term = manual path to good scene 1; general solutions only; UI outcome-only principles.*
+*Last updated: 2026-07-27 — product north star; auto-run long-term; general solutions; UI copy principles; ephemeral migration cleanup lifecycle rule.*
