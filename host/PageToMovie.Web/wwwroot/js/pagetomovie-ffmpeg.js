@@ -43,6 +43,22 @@ window.PageToMovieFfmpeg = {
         }
     },
 
+    _safeFetchFile: async function (url) {
+        if (typeof url === "string" && !url.startsWith("blob:") && !url.startsWith("data:")) {
+            const res = await fetch(url);
+            if (!res.ok) {
+                throw new Error("Clip video missing (" + res.status + " " + res.statusText + "). Please generate clip first.");
+            }
+            const buf = await res.arrayBuffer();
+            return new Uint8Array(buf);
+        }
+        const util = window.FFmpegUtil || {};
+        if (typeof util.fetchFile === "function") {
+            return await util.fetchFile(url);
+        }
+        throw new Error("ffmpeg util fetchFile missing");
+    },
+
     /** Load local ffmpeg assets from same-origin /js/ffmpeg/. */
     ensureLoadedAsync: async function (onProgress) {
         if (this._loaded && this._ffmpeg) return { success: true };
@@ -170,7 +186,7 @@ window.PageToMovieFfmpeg = {
                     reportProgress(onProgress,
                         12 + Math.round((i / list.length) * 40),
                         "Downloading " + (i + 1) + "/" + list.length + "…");
-                    const data = await fetchFile(list[i]);
+                    const data = await self._safeFetchFile(list[i]);
                     await ffmpeg.writeFile(name, data);
                     written.push(name);
                 }
@@ -232,11 +248,9 @@ window.PageToMovieFfmpeg = {
         return this._runExclusiveAsync(async function () {
             const load = await self.ensureLoadedAsync();
             if (!load.success) return { success: false, error: load.error };
-            const fetchFile = (window.FFmpegUtil || {}).fetchFile;
-            if (typeof fetchFile !== "function") return { success: false, error: "fetchFile missing" };
             const inName = "probe_tmp.mp4";
             try {
-                const data = await fetchFile(url);
+                const data = await self._safeFetchFile(url);
                 await self._ffmpeg.writeFile(inName, data);
                 const probe = await self._probeDurationMemfsAsync(inName);
                 try { await self._ffmpeg.deleteFile(inName); } catch (_) {}
@@ -284,16 +298,11 @@ window.PageToMovieFfmpeg = {
             }
 
             const ffmpeg = self._ffmpeg;
-            const fetchFile = (window.FFmpegUtil || {}).fetchFile;
-            if (typeof fetchFile !== "function") {
-                return { success: true, token: null, totalSec: 0, log: "", error: "skip: ffmpeg util missing" };
-            }
-
             const token = "sil" + (++self._silenceSessionSeq);
             const inName = token + "_in.mp4";
             try {
                 reportProgress(onProgress, 8, "Loading clip…");
-                const data = await fetchFile(url);
+                const data = await self._safeFetchFile(url);
                 await ffmpeg.writeFile(inName, data);
 
                 reportProgress(onProgress, 18, "Probing duration…");
@@ -387,15 +396,11 @@ window.PageToMovieFfmpeg = {
             if (!load.success) return { success: false, error: load.error || "ffmpeg load failed" };
 
             const ffmpeg = self._ffmpeg;
-            const fetchFile = (window.FFmpegUtil || {}).fetchFile;
-            if (typeof fetchFile !== "function")
-                return { success: false, error: "ffmpeg util fetchFile missing" };
-
             const inName = "frame_in.mp4";
             const written = [];
             try {
                 reportProgress(onProgress, 10, "Loading video for frames…");
-                const data = await fetchFile(url);
+                const data = await self._safeFetchFile(url);
                 await ffmpeg.writeFile(inName, data);
                 written.push(inName);
 
