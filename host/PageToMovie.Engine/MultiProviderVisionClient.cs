@@ -53,12 +53,18 @@ public sealed class MultiProviderVisionClient : IVisionClient
 
     private IVisionClient Resolve(string? model)
     {
+        // Prefer Gemini for vision review when configured, since Gemini has native multimodal video & frame understanding.
+        if (_gemini.IsConfigured && (string.IsNullOrWhiteSpace(model) || string.Equals(model, "grok-4.5", StringComparison.OrdinalIgnoreCase)))
+        {
+            return _gemini;
+        }
+
         var provider = SupportedModelCatalog.ResolveOrDefault(model, ModelCapability.Vision).Provider;
         return provider switch
         {
             ModelProviderFamily.Anthropic => _anthropic,
             ModelProviderFamily.Google => _gemini,
-            _ => _grok,
+            _ => _grok.IsConfigured ? _grok : _gemini.IsConfigured ? (IVisionClient)_gemini : _anthropic,
         };
     }
 }

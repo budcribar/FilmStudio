@@ -475,7 +475,7 @@ public class UserDatabaseService
                 supportsImage: true,
                 supportsChat: true,
                 supportsVision: true,
-                notes: "Video via Veo (text/image-to-video only — no clip continue or multi-ref cast plates). OCR/cast classify stay on Grok."),
+                notes: "Native video review (preferred when configured over Grok frame extraction). Video generation via Veo."),
             BuildProviderStatus(
                 providerId: "anthropic",
                 displayName: "Anthropic Claude",
