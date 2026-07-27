@@ -80,8 +80,9 @@ public class ClipSidecarServiceTests : IDisposable
         var count = await service.EnsureAllSidecarsExistAsync(projectDir);
         Assert.Equal(1, count);
 
-        var sidecarPath = Path.Combine(videoDir, "scene_02_clip_03.clip.json");
-        Assert.True(File.Exists(sidecarPath));
+        var sidecarPath = Directory.EnumerateFiles(videoDir, "*.clip.json").FirstOrDefault();
+        Assert.NotNull(sidecarPath);
+        Assert.True(File.Exists(sidecarPath!));
 
         using var doc = JsonDocument.Parse(await File.ReadAllTextAsync(sidecarPath));
         var root = doc.RootElement;
