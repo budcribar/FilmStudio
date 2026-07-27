@@ -2402,13 +2402,15 @@ else
         await Stitch.RevokePreviewUrlAsync();
     }
 
-    /// <summary>True when selection has at least one scene with a composite or on-disk clip.</summary>
+    /// <summary>True when selection has at least one scene to play (or local media folder connected).</summary>
     private bool CanPlaySelected
     {
         get
         {
             if (_selected.Count == 0 || _scenes is null)
                 return false;
+            if (MediaFolder.IsConnected || MediaFolder.IsSyncing)
+                return true;
             return _scenes.Any(s =>
                 _selected.Contains(s.SceneNumber)
                 && (s.CompositeExists || s.ClipsOnDisk > 0));
