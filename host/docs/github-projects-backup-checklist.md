@@ -43,7 +43,7 @@ Source of truth for product intent: `public-community-plan.md` (namespacing + `P
 - [x] `ProjectGitRepositoryService.PushProjectAsync` — push current branch tip to remote
 - [x] `POST /api/projects/{id}/push` (owner/admin); optional `commit` then push
 - [x] Response includes **GitHub history URL** (branch commits)
-- [ ] Wire “Save revision” + “View on GitHub” buttons in Studio UI
+- [x] Wire “Save revision” + “View on GitHub” buttons in Studio UI (Home, owner/admin)
 - [ ] CI test against local bare remote (optional)
 
 **Config (Railway):**
@@ -114,5 +114,6 @@ Branch naming: `proj/{username}/{slug}` (slashes → safe branch path) so each p
 |------|--------|
 | 2026-07-26 | Checklist created. **Step 1** (namespace + git package) and **Step 4** (GitHub push API) implemented in product code. |
 | 2026-07-26 | Wired `POST /api/projects/{id}/push` (optional `commitFirst`), tests for branch/history URL + disabled push, fork/visibility tests updated for `owner/slug` ids. |
+| 2026-07-26 | **Step 4 UI:** Home “Save revision” + “View on GitHub” (after successful push); short hash badge; friendly errors when backup not configured. |
 
 *Last updated: 2026-07-26*

@@ -507,6 +507,28 @@ public sealed class EngineApiClient
         return await SendJsonAsync<SyncOriginResultDto>(req, ct);
     }
 
+    /// <summary>
+    /// Commit (optional) + push the text project package to the configured remote.
+    /// Video is never included. Returns history URL when the host is GitHub.
+    /// </summary>
+    public async Task<ProjectPushResultDto?> PushProjectAsync(
+        string projectId,
+        bool commitFirst = true,
+        string? message = null,
+        CancellationToken ct = default)
+    {
+        SyncIdentityHeaders();
+        using var req = new HttpRequestMessage(HttpMethod.Post, $"/api/projects/{Uri.EscapeDataString(projectId)}/push")
+        {
+            Content = JsonContent.Create(new
+            {
+                CommitFirst = commitFirst,
+                Message = message,
+            }, options: JsonOpts),
+        };
+        return await SendJsonAsync<ProjectPushResultDto>(req, ct);
+    }
+
     public async Task<AdminUserActionResultDto?> SetAdminUserDisabledAsync(
         AdminSetUserDisabledRequest body,
         CancellationToken ct = default)
@@ -3016,6 +3038,16 @@ public sealed class SyncOriginResultDto
     public bool Success { get; set; }
     public bool HasConflicts { get; set; }
     public string? CommitHash { get; set; }
+    public string? Message { get; set; }
+    public string? Error { get; set; }
+}
+
+public sealed class ProjectPushResultDto
+{
+    public bool Ok { get; set; }
+    public string? Branch { get; set; }
+    public string? CommitHash { get; set; }
+    public string? HistoryUrl { get; set; }
     public string? Message { get; set; }
     public string? Error { get; set; }
 }

@@ -5,6 +5,7 @@
 @inject NavigationManager Nav
 @inject ActiveProjectState ActiveProject
 @inject AdminSessionService Session
+@inject IJSRuntime Js
 @using PageToMovie.Core.Models
 
 <PageTitle>PageToMovie</PageTitle>
@@ -219,6 +220,31 @@
                                                 @onclick="() => OpenCollaboratorsModal(id)">
                                             Collaborate
                                         </button>
+                                        <button type="button"
+                                                class="btn btn-sm btn-outline-success flex-shrink-0"
+                                                data-testid="home-save-revision"
+                                                title="Save a revision of this project package (screenplay, cast, shot plan — not video)"
+                                                disabled="@_busy"
+                                                @onclick="() => SaveRevisionAsync(id)">
+                                            Save revision
+                                        </button>
+                                        @if (_historyUrls.TryGetValue(id, out var historyUrl) && !string.IsNullOrWhiteSpace(historyUrl))
+                                        {
+                                            <button type="button"
+                                                    class="btn btn-sm btn-outline-info text-white flex-shrink-0"
+                                                    data-testid="home-view-history"
+                                                    title="Open package history"
+                                                    disabled="@_busy"
+                                                    @onclick="() => OpenHistoryAsync(historyUrl)">
+                                                View on GitHub
+                                            </button>
+                                        }
+                                        @if (_revisionHashes.TryGetValue(id, out var revHash) && !string.IsNullOrWhiteSpace(revHash))
+                                        {
+                                            <span class="badge bg-secondary flex-shrink-0 font-monospace"
+                                                  title="Last saved revision"
+                                                  style="font-size: 0.7rem;">@ShortHash(revHash)</span>
+                                        }
                                     }
                                     <button type="button"
                                             class="btn btn-sm btn-outline-danger me-2 flex-shrink-0 @(active ? "border-light text-white" : null)"
@@ -367,6 +393,12 @@
     private ProjectsDto? _projects;
     private bool _showCollaboratorsModal;
     private string _collaboratorsProjectId = "";
+    /// <summary>Last successful push history URL per project id (session-local).</summary>
+    private readonly Dictionary<string, string> _historyUrls =
+        new(StringComparer.OrdinalIgnoreCase);
+    /// <summary>Last saved revision hash per project id (session-local).</summary>
+    private readonly Dictionary<string, string> _revisionHashes =
+        new(StringComparer.OrdinalIgnoreCase);
 
     private void OpenCollaboratorsModal(string projectId)
     {
@@ -375,6 +407,13 @@
     }
 
     private void CloseCollaboratorsModal() => _showCollaboratorsModal = false;
+
+    private static string ShortHash(string? hash)
+    {
+        if (string.IsNullOrWhiteSpace(hash)) return "";
+        var h = hash.Trim();
+        return h.Length <= 7 ? h : h[..7];
+    }
     private JobSnapshot? _job;
     private List<JobSnapshot> _myJobs = new();
     private bool _showNew;
@@ -870,6 +909,72 @@
         {
             _busy = false;
         }
+    }
+
+    private async Task SaveRevisionAsync(string projectId)
+    {
+        if (string.IsNullOrWhiteSpace(projectId)) return;
+        _busy = true;
+        _error = null;
+        _message = null;
+        try
+        {
+            var res = await Engine.PushProjectAsync(projectId, commitFirst: true, message: "Project update");
+            if (res is null || res.Ok == false)
+            {
+                _error = FriendlyPushError(res?.Error ?? res?.Message ?? "Could not save revision.");
+                return;
+            }
+
+            if (!string.IsNullOrWhiteSpace(res.CommitHash))
+                _revisionHashes[projectId] = res.CommitHash!;
+            if (!string.IsNullOrWhiteSpace(res.HistoryUrl))
+                _historyUrls[projectId] = res.HistoryUrl!;
+
+            var shortHash = ShortHash(res.CommitHash);
+            _message = string.IsNullOrEmpty(shortHash)
+                ? "Revision saved."
+                : $"Revision saved ({shortHash}).";
+        }
+        catch (Exception ex)
+        {
+            _error = FriendlyPushError(ex.Message);
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task OpenHistoryAsync(string historyUrl)
+    {
+        if (string.IsNullOrWhiteSpace(historyUrl)) return;
+        try
+        {
+            await Js.InvokeVoidAsync("open", historyUrl, "_blank", "noopener,noreferrer");
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+    }
+
+    /// <summary>Operator-facing rewrite — avoid config key dumps on Home.</summary>
+    private static string FriendlyPushError(string raw)
+    {
+        var s = (raw ?? "").Trim();
+        if (s.Length == 0) return "Could not save revision.";
+        if (s.Contains("not enabled", StringComparison.OrdinalIgnoreCase) ||
+            s.Contains("ProjectsRepoUrl", StringComparison.OrdinalIgnoreCase) ||
+            s.Contains("Git:Token", StringComparison.OrdinalIgnoreCase) ||
+            s.Contains("must be configured", StringComparison.OrdinalIgnoreCase))
+            return "Package backup is not set up on this server yet.";
+        if (s.Contains("Nothing to push", StringComparison.OrdinalIgnoreCase))
+            return "Nothing new to save yet.";
+        // First line only
+        var nl = s.IndexOf('\n');
+        if (nl > 0) s = s[..nl].Trim();
+        return s.Length > 200 ? s[..200] + "…" : s;
     }
 
     public async ValueTask DisposeAsync()
