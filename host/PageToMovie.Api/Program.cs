@@ -3969,7 +3969,8 @@ app.MapGet("/api/projects/{id}/media/sync", async (
                 var fi = new FileInfo(file);
                 var isMp4 = file.EndsWith(".mp4", StringComparison.OrdinalIgnoreCase);
 
-                var streamUrl = $"/api/projects/{Uri.EscapeDataString(id)}/media/file?path={Uri.EscapeDataString(relPath)}";
+                var ticketToken = tickets.Issue($"{id}:{relPath}", TimeSpan.FromHours(2));
+                var streamUrl = $"/api/projects/{Uri.EscapeDataString(id)}/media/file?path={Uri.EscapeDataString(relPath)}&ticket={ticketToken}";
 
                 list.Add(new
                 {
@@ -3994,12 +3995,24 @@ app.MapGet("/api/projects/{id}/media/sync", async (
 app.MapGet("/api/projects/{id}/media/file", async (
     string id,
     string path,
+    string? ticket,
     ProjectStore store,
+    MediaProxyTicketStore tickets,
     IUserContext user,
     IOptions<PageToMovieOptions> opts,
     CancellationToken ct) =>
 {
-    if (AuthGate.RequireLogin(user, opts) is { } denied)
+    var ticketValid = false;
+    if (!string.IsNullOrWhiteSpace(ticket))
+    {
+        var target = tickets.TryTakeUrl(ticket);
+        if (target is not null && string.Equals(target, $"{id}:{path}", StringComparison.OrdinalIgnoreCase))
+        {
+            ticketValid = true;
+        }
+    }
+
+    if (!ticketValid && AuthGate.RequireLogin(user, opts) is { } denied)
         return denied;
     try
     {
