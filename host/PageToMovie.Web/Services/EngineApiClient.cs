@@ -1011,15 +1011,12 @@ public sealed class EngineApiClient
 
     public async Task ActivateProjectAsync(string projectId, CancellationToken ct = default)
     {
-        using var resp = await _http.PostAsJsonAsync(
-            $"/api/projects/{Uri.EscapeDataString(projectId)}/activate",
-            new { },
-            ct);
-        if (!resp.IsSuccessStatusCode)
+        SyncIdentityHeaders();
+        using var req = new HttpRequestMessage(HttpMethod.Post, $"/api/projects/{Uri.EscapeDataString(projectId)}/activate")
         {
-            var err = await resp.Content.ReadAsStringAsync(ct);
-            throw new InvalidOperationException(err);
-        }
+            Content = JsonContent.Create(new { }, options: JsonOpts)
+        };
+        await SendJsonAsync<object>(req, ct);
     }
 
     public async Task<ProjectsDto?> CreateProjectAsync(
@@ -1027,28 +1024,21 @@ public sealed class EngineApiClient
         string? title = null,
         CancellationToken ct = default)
     {
-        using var resp = await _http.PostAsJsonAsync(
-            "/api/projects",
-            new { name, title },
-            JsonOpts,
-            ct);
-        var body = await resp.Content.ReadAsStringAsync(ct);
-        if (!resp.IsSuccessStatusCode)
-            throw new InvalidOperationException(TryError(body) ?? resp.ReasonPhrase);
-        return JsonSerializer.Deserialize<ProjectsDto>(body, JsonOpts);
+        SyncIdentityHeaders();
+        using var req = new HttpRequestMessage(HttpMethod.Post, "/api/projects")
+        {
+            Content = JsonContent.Create(new { name, title }, options: JsonOpts)
+        };
+        return await SendJsonAsync<ProjectsDto>(req, ct);
     }
 
     public async Task<ProjectsDto?> DeleteProjectAsync(
         string projectId,
         CancellationToken ct = default)
     {
-        using var resp = await _http.DeleteAsync(
-            $"/api/projects/{Uri.EscapeDataString(projectId)}",
-            ct);
-        var body = await resp.Content.ReadAsStringAsync(ct);
-        if (!resp.IsSuccessStatusCode)
-            throw new InvalidOperationException(TryError(body) ?? resp.ReasonPhrase);
-        return JsonSerializer.Deserialize<ProjectsDto>(body, JsonOpts);
+        SyncIdentityHeaders();
+        using var req = new HttpRequestMessage(HttpMethod.Delete, $"/api/projects/{Uri.EscapeDataString(projectId)}");
+        return await SendJsonAsync<ProjectsDto>(req, ct);
     }
 
     /// <summary>

@@ -1524,6 +1524,7 @@ app.MapGet("/api/projects", async (
         ? all
         : all.Where(p =>
             string.IsNullOrWhiteSpace(p.OwnerUserId) ||
+            string.Equals(p.OwnerUserId, "local", StringComparison.OrdinalIgnoreCase) ||
             string.Equals(p.OwnerUserId, user.UserId, StringComparison.OrdinalIgnoreCase)).ToList();
 
     var activeId = store.ActiveProjectId;
