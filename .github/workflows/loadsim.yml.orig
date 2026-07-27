@@ -45,7 +45,7 @@ jobs:
 
       - name: Start API (fakes)
         run: |
-          export FILMSTUDIO_USE_FAKES=true
+          export PAGETOMOVIE_USE_FAKES=true
           export PageToMovie__UseFakes=true
           export PageToMovie__Capacity__MaxVideoInFlight=8
           export PageToMovie__Capacity__MaxVideoInFlightPerUser=2
@@ -67,7 +67,7 @@ jobs:
 
       - name: Run LoadSim (CI gates)
         run: |
-          export FILMSTUDIO_USE_FAKES=true
+          export PAGETOMOVIE_USE_FAKES=true
           # CI profile: 25 VUs × 90s, mixed with light gen against fakes
           dotnet run --project PageToMovie.LoadSim -c Release --no-build -- \
             --baseUrl http://127.0.0.1:5088 \
