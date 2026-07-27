@@ -3969,9 +3969,7 @@ app.MapGet("/api/projects/{id}/media/sync", async (
                 var fi = new FileInfo(file);
                 var isMp4 = file.EndsWith(".mp4", StringComparison.OrdinalIgnoreCase);
 
-                var streamUrl = isMp4
-                    ? $"/api/projects/{Uri.EscapeDataString(id)}/scenes/1/composite" // fallback media stream
-                    : null;
+                var streamUrl = $"/api/projects/{Uri.EscapeDataString(id)}/media/file?path={Uri.EscapeDataString(relPath)}";
 
                 list.Add(new
                 {
@@ -3985,6 +3983,52 @@ app.MapGet("/api/projects/{id}/media/sync", async (
         }
 
         return Results.Ok(new { ok = true, projectId = id, files = list });
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { ok = false, error = ex.Message });
+    }
+});
+
+/// <summary>Download a specific media file (MP4 clip or sidecar manifest) from a project.</summary>
+app.MapGet("/api/projects/{id}/media/file", async (
+    string id,
+    string path,
+    ProjectStore store,
+    IUserContext user,
+    IOptions<PageToMovieOptions> opts,
+    CancellationToken ct) =>
+{
+    if (AuthGate.RequireLogin(user, opts) is { } denied)
+        return denied;
+    try
+    {
+        await store.RequireProjectAsync(id, ct);
+        if (string.IsNullOrWhiteSpace(path))
+            return Results.BadRequest(new { ok = false, error = "path parameter required" });
+
+        var projectDir = store.GetProjectDir(id);
+        var cleanRelPath = path.TrimStart('/', '\\').Replace('\\', '/');
+
+        var fullPath = Path.GetFullPath(Path.Combine(projectDir, cleanRelPath.Replace('/', Path.DirectorySeparatorChar)));
+        var fullProjDir = Path.GetFullPath(projectDir);
+        if (!fullPath.StartsWith(fullProjDir, StringComparison.OrdinalIgnoreCase))
+            return Results.BadRequest(new { ok = false, error = "Invalid media path" });
+
+        if (!File.Exists(fullPath))
+            return Results.NotFound(new { ok = false, error = "File not found" });
+
+        var ext = Path.GetExtension(fullPath).ToLowerInvariant();
+        var contentType = ext switch
+        {
+            ".mp4" => "video/mp4",
+            ".json" => "application/json",
+            ".png" => "image/png",
+            ".jpg" or ".jpeg" => "image/jpeg",
+            _ => "application/octet-stream"
+        };
+
+        return Results.File(fullPath, contentType, Path.GetFileName(fullPath));
     }
     catch (Exception ex)
     {
