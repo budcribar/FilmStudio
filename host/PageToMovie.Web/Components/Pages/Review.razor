@@ -1153,6 +1153,8 @@ else
         try
         {
             try { await Session.EnsureHydratedAsync(); } catch { /* optional */ }
+            if (!ActiveProject.HasProject)
+                await ActiveProject.RefreshFromApiAsync(Engine);
             await ActiveProject.RefreshReadinessAsync(Engine);
             _projectId = ActiveProject.ProjectId ?? "";
             _gateChecked = true;

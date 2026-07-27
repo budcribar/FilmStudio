@@ -41,7 +41,8 @@ public sealed class YouTubeAuthService
     {
         if (!IsConfigured)
             return null;
-        var tokenDir = Path.Combine(_projects.WorkspaceRoot, ".PageToMovie", "youtube_token");
+        var dataDir = UserDatabaseService.ResolveDataDirectory(_projects.WorkspaceRoot);
+        var tokenDir = Path.Combine(dataDir, "youtube_token");
         Directory.CreateDirectory(tokenDir);
         return new GoogleAuthorizationCodeFlow(new GoogleAuthorizationCodeFlow.Initializer
         {
