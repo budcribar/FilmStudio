@@ -46,7 +46,7 @@ else
 {
     <div class="alert alert-danger">@_error</div>
 }
-@if (!string.IsNullOrEmpty(_message))
+@if (!string.IsNullOrEmpty(_message) && !_isReviewing)
 {
     <div class="alert alert-info">@_message</div>
 }
@@ -1792,7 +1792,7 @@ else
         _reviewProgressPct = 5;
         _reviewProgressStatus = "Initializing frame sampling across scenes…";
         _error = null;
-        _message = "Sampling scene keyframes for full movie AI review…";
+        _message = null;
         StateHasChanged();
         try
         {
@@ -1804,7 +1804,6 @@ else
                 var s = scenesToReview[i];
                 _reviewProgressPct = 5 + (int)(55.0 * (i + 1) / Math.Max(1, scenesToReview.Count));
                 _reviewProgressStatus = $"Sampling visual frames for Scene {s.SceneNumber} ({i + 1}/{scenesToReview.Count})…";
-                _message = _reviewProgressStatus;
                 StateHasChanged();
 
                 var urls = await ResolveSceneUrlsForReviewAsync(s.SceneNumber);
@@ -1843,7 +1842,6 @@ else
 
             _reviewProgressPct = 75;
             _reviewProgressStatus = $"Evaluating 6 categories (Continuity, Character, Lighting, Pacing, Dialogue, Music) across {keyframes.Count} sampled keyframes with Vision AI…";
-            _message = _reviewProgressStatus;
             StateHasChanged();
 
             var envelope = await Engine.ReviewMovieAsync(_projectId, keyframes);
