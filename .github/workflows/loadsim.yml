@@ -40,8 +40,7 @@ jobs:
 
       - name: Build
         run: |
-          dotnet build PageToMovie.Api/PageToMovie.Api.csproj -c Release
-          dotnet build PageToMovie.LoadSim/PageToMovie.LoadSim.csproj -c Release
+          dotnet build PageToMovie.slnx -c Release
 
       - name: Start API (fakes)
         run: |
@@ -51,11 +50,11 @@ jobs:
           export PageToMovie__Capacity__MaxVideoInFlightPerUser=2
           export PageToMovie__Fakes__VideoDelayMs=50
           export ASPNETCORE_ENVIRONMENT=Development
-          export ASPNETCORE_URLS=http://127.0.0.1:5088
+          export ASPNETCORE_URLS=http://127.0.0.1:5099
           nohup dotnet run --project PageToMovie.Api --no-build -c Release > /tmp/pagetomovie-api.log 2>&1 &
           echo $! > /tmp/pagetomovie-api.pid
           for i in $(seq 1 60); do
-            if curl -sf http://127.0.0.1:5088/health >/dev/null; then
+            if curl -sf http://127.0.0.1:5099/health >/dev/null; then
               echo "API up"
               exit 0
             fi
@@ -70,7 +69,7 @@ jobs:
           export FILMSTUDIO_USE_FAKES=true
           # CI profile: 25 VUs × 90s, mixed with light gen against fakes
           dotnet run --project PageToMovie.LoadSim -c Release --no-build -- \
-            --baseUrl http://127.0.0.1:5088 \
+            --baseUrl http://127.0.0.1:5099 \
             --users 25 \
             --duration 90 \
             --scenario mixed \

@@ -1,0 +1,19 @@
+--- CharacterBookPlateService.cs
++++ CharacterBookPlateService.cs
+@@ -1213,7 +1213,6 @@
+
+             int totalSamples = 0;
+-            int bgCount = 0;
+             int colorCount = 0;
+
+             for (int y = 0; y < bitmap.Height; y += stepY)
+--- host/PageToMovie.Engine/GrokImageClient.cs
++++ host/PageToMovie.Engine/GrokImageClient.cs
+@@ -486,7 +486,7 @@
+                 var nw = Math.Max(1, (int)Math.Round(w * scale));
+                 var nh = Math.Max(1, (int)Math.Round(h * scale));
+-                scaled = original.Resize(new SKImageInfo(nw, nh), SKFilterQuality.Medium);
++                scaled = original.Resize(new SKImageInfo(nw, nh), SKSamplingOptions.Default);
+                 if (scaled is not null)
+                     work = scaled;
+             }

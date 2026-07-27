@@ -1,0 +1,12 @@
+--- host/PageToMovie.Api/Program.cs
++++ host/PageToMovie.Api/Program.cs
+@@ -1332,6 +1332,6 @@
+             enableRangeProcessing: false);
+     }
+-    catch (Exception ex)
++    catch (Exception)
+     {
+-        return Results.BadRequest(new { ok = false, error = ex.Message });
++        return Results.BadRequest(new { ok = false, error = "Export failed" });
+     }
+ });
