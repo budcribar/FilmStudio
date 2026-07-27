@@ -6,6 +6,7 @@
 @inject AdminSessionService Session
 @inject ClientVideoStitchService Stitch
 @inject ClientMediaFolderService MediaFolder
+@inject NavigationManager Nav
 @using PageToMovie.Core.Models
 @using PageToMovie.Web.Services
 
@@ -1842,6 +1843,11 @@ else
             if (res.Ok)
             {
                 _message = $"🎬 Opened video in {res.Editor ?? _preferredVideoEditor}.";
+            }
+            else if (!string.IsNullOrWhiteSpace(res.VideoUrl))
+            {
+                _message = $"🎬 Cloud server active — opening video stream in browser. Save file to edit in {_preferredVideoEditor}.";
+                try { Nav.NavigateTo(res.VideoUrl, forceLoad: true); } catch { /* ignore */ }
             }
             else
             {

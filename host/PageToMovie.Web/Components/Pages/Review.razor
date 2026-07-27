@@ -1330,6 +1330,11 @@ else
             {
                 _message = $"🎬 Opened full cut in {res.Editor ?? _preferredVideoEditor}.";
             }
+            else if (!string.IsNullOrWhiteSpace(res.VideoUrl))
+            {
+                _message = $"🎬 Cloud server active — opening video stream in browser. Save file to edit in {_preferredVideoEditor}.";
+                try { Nav.NavigateTo(res.VideoUrl, forceLoad: true); } catch { /* ignore */ }
+            }
             else
             {
                 _error = res.Error ?? "Could not open external video editor.";

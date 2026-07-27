@@ -1985,7 +1985,7 @@ public sealed class EngineApiClient
         return (true, body.Opened ?? path, null);
     }
 
-    public async Task<(bool Ok, string? Opened, string? Editor, string? Error)> OpenInExternalEditorAsync(
+    public async Task<(bool Ok, bool IsRemote, string? Opened, string? Editor, string? VideoUrl, string? Error)> OpenInExternalEditorAsync(
         string projectId,
         int? sceneNumber = null,
         int? clipNumber = null,
@@ -2005,8 +2005,8 @@ public sealed class EngineApiClient
         using var resp = await _http.SendAsync(req, ct);
         var body = await resp.Content.ReadFromJsonAsync<OpenEditorResponse>(JsonOpts, ct);
         if (!resp.IsSuccessStatusCode || body is null || !body.Ok)
-            return (false, null, null, body?.Error ?? "Could not open external video editor.");
-        return (true, body.Opened, body.Editor, null);
+            return (false, body?.IsRemote ?? false, null, null, body?.VideoUrl, body?.Error ?? "Could not open external video editor.");
+        return (true, false, body.Opened, body.Editor, body.VideoUrl, null);
     }
 
     /// <summary>Master model catalog (id → endpoint + required keys).</summary>

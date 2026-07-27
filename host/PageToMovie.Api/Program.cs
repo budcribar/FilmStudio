@@ -1259,18 +1259,35 @@ app.MapPost("/api/system/open-editor", (OpenEditorRequest body, ProjectStore sto
     try
     {
         var targetPath = videoPath.Trim();
+        string? relativeVideoUrl = null;
+        if (body.SceneNumber is int targetSn && targetSn > 0)
+        {
+            if (body.ClipNumber is int targetCn && targetCn > 0)
+                relativeVideoUrl = $"/api/projects/{body.ProjectId}/scenes/{targetSn}/clips/{targetCn}/video";
+            else
+                relativeVideoUrl = $"/api/projects/{body.ProjectId}/scenes/{targetSn}/composite";
+        }
+        else
+        {
+            relativeVideoUrl = $"/api/projects/{body.ProjectId}/movie";
+        }
+
         if (OperatingSystem.IsWindows())
         {
             targetPath = targetPath.Replace('/', '\\');
 
             if (string.Equals(editorName, "ClipChamp", StringComparison.OrdinalIgnoreCase))
             {
-                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                try
                 {
-                    FileName = targetPath,
-                    UseShellExecute = true
-                });
-                return Results.Ok(new { ok = true, opened = targetPath, editor = "ClipChamp" });
+                    System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                    {
+                        FileName = targetPath,
+                        UseShellExecute = true
+                    });
+                    return Results.Ok(new OpenEditorResponse { Ok = true, Opened = targetPath, Editor = "ClipChamp", VideoUrl = relativeVideoUrl });
+                }
+                catch { /* fallback to default */ }
             }
 
             try
@@ -1281,7 +1298,7 @@ app.MapPost("/api/system/open-editor", (OpenEditorRequest body, ProjectStore sto
                     Arguments = $"\"{targetPath}\"",
                     UseShellExecute = true
                 });
-                return Results.Ok(new { ok = true, opened = targetPath, editor = editorName });
+                return Results.Ok(new OpenEditorResponse { Ok = true, Opened = targetPath, Editor = editorName, VideoUrl = relativeVideoUrl });
             }
             catch
             {
@@ -1290,25 +1307,36 @@ app.MapPost("/api/system/open-editor", (OpenEditorRequest body, ProjectStore sto
                     FileName = targetPath,
                     UseShellExecute = true
                 });
-                return Results.Ok(new { ok = true, opened = targetPath, editor = "Default OS Editor" });
+                return Results.Ok(new OpenEditorResponse { Ok = true, Opened = targetPath, Editor = "Default OS Editor", VideoUrl = relativeVideoUrl });
             }
         }
         else if (OperatingSystem.IsMacOS())
         {
-            System.Diagnostics.Process.Start("open", $"\"{targetPath}\"");
-            return Results.Ok(new { ok = true, opened = targetPath, editor = editorName });
+            try
+            {
+                System.Diagnostics.Process.Start("open", $"\"{targetPath}\"");
+                return Results.Ok(new OpenEditorResponse { Ok = true, Opened = targetPath, Editor = editorName, VideoUrl = relativeVideoUrl });
+            }
+            catch (Exception ex)
+            {
+                return Results.Ok(new OpenEditorResponse { Ok = false, IsRemote = true, VideoUrl = relativeVideoUrl, Error = $"Remote server cannot open desktop app. Stream video to open in {editorName}." });
+            }
         }
-        else if (OperatingSystem.IsLinux())
+        else
         {
-            System.Diagnostics.Process.Start("xdg-open", $"\"{targetPath}\"");
-            return Results.Ok(new { ok = true, opened = targetPath, editor = editorName });
+            // Linux / Cloud container (e.g. Railway)
+            return Results.Ok(new OpenEditorResponse
+            {
+                Ok = false,
+                IsRemote = true,
+                VideoUrl = relativeVideoUrl,
+                Error = $"Server is running in cloud. Streaming video file to open in {editorName} on your device."
+            });
         }
-
-        return Results.BadRequest(new { ok = false, error = "OS not supported for external editor launch." });
     }
     catch (Exception ex)
     {
-        return Results.BadRequest(new { ok = false, error = ex.Message });
+        return Results.Ok(new OpenEditorResponse { Ok = false, Error = ex.Message });
     }
 });
 

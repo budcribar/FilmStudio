@@ -48,8 +48,10 @@ public sealed class OpenEditorRequest
 public sealed class OpenEditorResponse
 {
     public bool Ok { get; set; }
+    public bool IsRemote { get; set; }
     public string? Opened { get; set; }
     public string? Editor { get; set; }
+    public string? VideoUrl { get; set; }
     public string? Error { get; set; }
 }
 
