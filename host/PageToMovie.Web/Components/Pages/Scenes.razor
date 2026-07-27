@@ -153,18 +153,35 @@ else
             <button type="button" class="btn btn-sm btn-outline-secondary" @onclick="HideScenePlayer">Hide</button>
         </div>
         <div class="card-body py-2">
-            <video controls playsinline autoplay
-                   style="width:100%;max-height:70vh;background:#000;border-radius:0.35rem;"
-                   src="@ScenePlayerSrc(playSn)"
-                   @key="_sceneVideoKey"
-                   onloadeddata="this.play().catch(function(){})">
-                Your browser does not support HTML5 video.
-            </video>
-            @if (string.IsNullOrEmpty(_clientSceneUrl))
+            @if (MediaFolder.IsSyncing && string.IsNullOrEmpty(_clientSceneUrl))
             {
-                <div class="mt-2">
-                    <a href="@Engine.CompositeVideoUrl(_projectId, playSn)" target="_blank" rel="noopener" class="small text-muted">Open in new tab</a>
+                <div class="py-4 text-center text-white bg-dark rounded border border-secondary" data-testid="scenes-downloading-player">
+                    <div class="spinner-border spinner-border-sm text-primary mb-2" role="status"></div>
+                    <div class="fw-semibold">Downloading video clips to local folder…</div>
+                    <div class="small text-muted mt-1 mb-2">
+                        Downloading <code>@(MediaFolder.SyncCurrentFile ?? "media files")</code> (@MediaFolder.SyncCurrent of @MediaFolder.SyncTotal)
+                    </div>
+                    <div class="progress mx-auto mb-1" style="max-width: 280px; height: 6px;">
+                        <div class="progress-bar progress-bar-striped progress-bar-animated bg-primary" style="width: @(MediaFolder.SyncPercent)%"></div>
+                    </div>
+                    <div class="small text-secondary">Playback will start automatically as soon as downloads complete.</div>
                 </div>
+            }
+            else
+            {
+                <video controls playsinline autoplay
+                       style="width:100%;max-height:70vh;background:#000;border-radius:0.35rem;"
+                       src="@ScenePlayerSrc(playSn)"
+                       @key="_sceneVideoKey"
+                       onloadeddata="this.play().catch(function(){})">
+                    Your browser does not support HTML5 video.
+                </video>
+                @if (string.IsNullOrEmpty(_clientSceneUrl))
+                {
+                    <div class="mt-2">
+                        <a href="@Engine.CompositeVideoUrl(_projectId, playSn)" target="_blank" rel="noopener" class="small text-muted">Open in new tab</a>
+                    </div>
+                }
             }
         </div>
     </div>
@@ -1744,7 +1761,14 @@ else
         }
     }
 
-    private void OnMediaFolderChanged() => _ = InvokeAsync(StateHasChanged);
+    private void OnMediaFolderChanged() => _ = InvokeAsync(async () =>
+    {
+        if (_showScenePlayer && _playingScene is int sn && !MediaFolder.IsSyncing && string.IsNullOrEmpty(_clientSceneUrl))
+        {
+            await PlaySceneCompositeAsync(sn);
+        }
+        StateHasChanged();
+    });
 
     private void DismissLocalSaveWarning() => MediaFolder.DismissLocalSaveWarning();
 
@@ -2274,7 +2298,17 @@ else
 
         if (clipsOnDisk <= 0 && !compositeOk)
         {
-            _error = $"No clips for S{sn:D2} — generate clips first";
+            if (MediaFolder.IsSyncing)
+            {
+                _showScenePlayer = true;
+                _playingScene = sn;
+                _clientSceneUrl = null;
+                _message = $"Downloading video clips for S{sn:D2} to local folder…";
+            }
+            else
+            {
+                _error = $"No clips for S{sn:D2} — connect local media folder or generate clips first";
+            }
             return;
         }
 
