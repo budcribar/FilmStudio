@@ -978,6 +978,13 @@
             return "Package backup is not set up on this server yet.";
         if (s.Contains("Nothing to push", StringComparison.OrdinalIgnoreCase))
             return "Nothing new to save yet.";
+        // LibGit2Sharp / GitHub auth failures
+        if (s.Contains("403", StringComparison.Ordinal) ||
+            s.Contains("401", StringComparison.Ordinal) ||
+            s.Contains("Unauthorized", StringComparison.OrdinalIgnoreCase) ||
+            s.Contains("Authentication", StringComparison.OrdinalIgnoreCase) ||
+            s.Contains("access denied", StringComparison.OrdinalIgnoreCase))
+            return "Backup remote refused the push (403). Check the GitHub token has Contents: Write on PageToMovie/Projects, the org allows fine-grained tokens, and the token is authorized for that org/repo.";
         // First line only
         var nl = s.IndexOf('\n');
         if (nl > 0) s = s[..nl].Trim();
