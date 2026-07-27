@@ -1969,6 +1969,22 @@ public sealed class EngineApiClient
         return await resp.Content.ReadFromJsonAsync<ConfigDto>(JsonOpts, ct);
     }
 
+    public async Task<(bool Ok, string? Opened, string? Error)> OpenFolderAsync(
+        string? path = null,
+        string? projectId = null,
+        CancellationToken ct = default)
+    {
+        using var req = new HttpRequestMessage(HttpMethod.Post, "/api/system/open-folder")
+        {
+            Content = JsonContent.Create(new OpenFolderRequest { Path = path, ProjectId = projectId }, options: JsonOpts),
+        };
+        using var resp = await _http.SendAsync(req, ct);
+        var body = await resp.Content.ReadFromJsonAsync<OpenFolderResponse>(JsonOpts, ct);
+        if (!resp.IsSuccessStatusCode || body is null || !body.Ok)
+            return (false, null, body?.Error ?? "Could not open folder on server.");
+        return (true, body.Opened ?? path, null);
+    }
+
     /// <summary>Master model catalog (id → endpoint + required keys).</summary>
     public async Task<IReadOnlyList<SupportedModelDto>> GetSupportedModelsAsync(
         string? capability = null,

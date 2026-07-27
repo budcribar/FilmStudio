@@ -1154,6 +1154,66 @@ app.MapGet("/api/admin/logs", async (
     });
 });
 
+/// <summary>Open a local folder on disk in Windows File Explorer (or OS file manager).</summary>
+app.MapPost("/api/system/open-folder", (OpenFolderRequest body, ProjectStore store) =>
+{
+    var path = body?.Path;
+    if (string.IsNullOrWhiteSpace(path) && !string.IsNullOrWhiteSpace(body?.ProjectId))
+    {
+        path = store.GetProjectDir(body.ProjectId);
+    }
+    if (string.IsNullOrWhiteSpace(path))
+    {
+        return Results.BadRequest(new { ok = false, error = "Path is required." });
+    }
+
+    try
+    {
+        var targetPath = path.Trim();
+        if (OperatingSystem.IsWindows())
+        {
+            targetPath = targetPath.Replace('/', '\\');
+            if (Directory.Exists(targetPath) || File.Exists(targetPath))
+            {
+                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                {
+                    FileName = "explorer.exe",
+                    Arguments = $"\"{targetPath}\"",
+                    UseShellExecute = true
+                });
+                return Results.Ok(new { ok = true, opened = targetPath });
+            }
+            var parent = Path.GetDirectoryName(targetPath);
+            if (!string.IsNullOrWhiteSpace(parent) && Directory.Exists(parent))
+            {
+                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                {
+                    FileName = "explorer.exe",
+                    Arguments = $"\"{parent}\"",
+                    UseShellExecute = true
+                });
+                return Results.Ok(new { ok = true, opened = parent });
+            }
+        }
+        else if (OperatingSystem.IsMacOS())
+        {
+            System.Diagnostics.Process.Start("open", $"\"{targetPath}\"");
+            return Results.Ok(new { ok = true, opened = targetPath });
+        }
+        else if (OperatingSystem.IsLinux())
+        {
+            System.Diagnostics.Process.Start("xdg-open", $"\"{targetPath}\"");
+            return Results.Ok(new { ok = true, opened = targetPath });
+        }
+
+        return Results.BadRequest(new { ok = false, error = $"Path '{targetPath}' does not exist on server disk." });
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { ok = false, error = ex.Message });
+    }
+});
+
 /// <summary>Download project folder as zip (logged in user / operator).</summary>
 app.MapGet("/api/projects/{id}/export", async (
     string id,

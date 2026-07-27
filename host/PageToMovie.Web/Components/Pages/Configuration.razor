@@ -52,18 +52,28 @@ else
             </span>
         </div>
         <div class="card-body py-3">
-            <div class="row align-items-center g-3">
-                <div class="col-md-8">
+            <div class="row align-items-stretch g-3">
+                <div class="col-md-7">
                     <div class="fw-semibold mb-1">Local Computer Media Folder</div>
                     @if (MediaFolder.IsConnected)
                     {
-                        <div class="d-flex align-items-center gap-2 mb-2">
-                            <div class="font-monospace small bg-dark p-2 rounded border border-secondary text-info flex-grow-1">
-                                📁 @(MediaFolder.FolderName ?? "Local Media Directory")
+                        <div class="d-flex flex-column gap-2 mb-2">
+                            <div class="d-flex align-items-center gap-2 flex-wrap">
+                                <div class="font-monospace small bg-dark p-2 rounded border border-secondary text-info flex-grow-1 text-break" data-testid="config-media-full-path">
+                                    📁 <strong>Full Path:</strong> @(MediaFolder.FullPath ?? MediaFolder.FolderName ?? "Local Media Directory")
+                                </div>
                             </div>
-                            <button type="button" class="btn btn-sm btn-outline-secondary" @onclick="ConnectMediaFolderAsync">
-                                Change folder…
-                            </button>
+                            <div class="d-flex align-items-center gap-2 flex-wrap">
+                                <button type="button" class="btn btn-sm btn-outline-info" @onclick="OpenFileExplorerForMediaFolderAsync" title="Open this folder in Windows File Explorer" data-testid="config-open-media-explorer">
+                                    📂 Open in File Explorer
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary" @onclick="PromptEditMediaFolderPathAsync">
+                                    ✏️ Edit Path
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary" @onclick="ConnectMediaFolderAsync">
+                                    Change folder…
+                                </button>
+                            </div>
                         </div>
                         <div class="small text-muted">
                             All video clips for <strong>@_projectId</strong> are saved directly to this folder on your computer.
@@ -88,9 +98,15 @@ else
                         </div>
                     }
                 </div>
-                <div class="col-md-4 border-start border-secondary ps-md-4">
+                <div class="col-md-5 border-start border-secondary ps-md-4">
                     <div class="fw-semibold small mb-1">Active Project</div>
                     <div class="h5 mb-1 text-primary">@_projectId</div>
+                    <div class="font-monospace small bg-dark p-2 rounded border border-secondary text-light text-break mb-2" style="font-size: 0.8rem;" data-testid="config-project-full-path">
+                        📁 <strong>Project Location:</strong> @_projectDir
+                    </div>
+                    <button type="button" class="btn btn-sm btn-outline-primary mb-2" @onclick="OpenFileExplorerForProjectFolderAsync" title="Open project storage in Windows File Explorer" data-testid="config-open-project-explorer">
+                        📂 Open Project Folder
+                    </button>
                     <div class="small text-muted">
                         Screenplays, shot plans, and project metadata for <strong>@_projectId</strong> are saved with this project.
                     </div>
@@ -1070,5 +1086,62 @@ else
         {
             _error = ex.Message;
         }
+    }
+
+    private async Task OpenFileExplorerForMediaFolderAsync()
+    {
+        var path = MediaFolder.FullPath ?? MediaFolder.FolderName;
+        if (string.IsNullOrWhiteSpace(path)) return;
+        try
+        {
+            var res = await Engine.OpenFolderAsync(path, _projectId);
+            if (res.Ok)
+            {
+                _message = $"📂 Opened “{res.Opened}” in File Explorer.";
+            }
+            else
+            {
+                _error = res.Error ?? "Could not open folder.";
+            }
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+    }
+
+    private async Task OpenFileExplorerForProjectFolderAsync()
+    {
+        try
+        {
+            var res = await Engine.OpenFolderAsync(_projectDir, _projectId);
+            if (res.Ok)
+            {
+                _message = $"📂 Opened project folder in File Explorer.";
+            }
+            else
+            {
+                _error = res.Error ?? "Could not open project folder.";
+            }
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+    }
+
+    private async Task PromptEditMediaFolderPathAsync()
+    {
+        try
+        {
+            var current = MediaFolder.FullPath ?? MediaFolder.FolderName ?? "";
+            var input = await Js.InvokeAsync<string?>("prompt", "Enter full computer path for your local media folder (e.g. C:\\Users\\Name\\Videos\\PageToMovie):", current);
+            if (input is not null)
+            {
+                await MediaFolder.SetFullPathAsync(input);
+                _message = "Local media folder full path updated.";
+            }
+        }
+        catch { /* prompt cancelled */ }
     }
 }

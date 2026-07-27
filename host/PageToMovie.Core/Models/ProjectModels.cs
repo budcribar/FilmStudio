@@ -24,6 +24,19 @@ public sealed class WorkspaceState
     public string? ActiveProject { get; set; }
 }
 
+public sealed class OpenFolderRequest
+{
+    public string? Path { get; set; }
+    public string? ProjectId { get; set; }
+}
+
+public sealed class OpenFolderResponse
+{
+    public bool Ok { get; set; }
+    public string? Opened { get; set; }
+    public string? Error { get; set; }
+}
+
 public sealed class JobSnapshot
 {
     /// <summary>Multi-job id. Empty when idle / not yet assigned.</summary>

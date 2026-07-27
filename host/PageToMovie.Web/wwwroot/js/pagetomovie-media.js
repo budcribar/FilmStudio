@@ -16,7 +16,19 @@ window.PageToMovieMedia = {
     },
 
     folderName: function () {
-        return this._root ? this._root.name : null;
+        return this.getFullPath() || (this._root ? this._root.name : null);
+    },
+
+    getFullPath: function () {
+        return localStorage.getItem("ptm-media-fullpath") || null;
+    },
+
+    setFullPath: function (path) {
+        if (path) {
+            localStorage.setItem("ptm-media-fullpath", path);
+        } else {
+            localStorage.removeItem("ptm-media-fullpath");
+        }
     },
 
     /**

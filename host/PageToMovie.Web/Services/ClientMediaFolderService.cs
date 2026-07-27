@@ -44,8 +44,31 @@ public sealed class ClientMediaFolderService
     }
 
     public string? FolderName { get; private set; }
-    public bool IsConnected => !string.IsNullOrEmpty(FolderName);
+    public string? FullPath { get; private set; }
+    public bool IsConnected => !string.IsNullOrEmpty(FolderName) || !string.IsNullOrEmpty(FullPath);
     public string? LastStatus { get; private set; }
+
+    public async Task SetFullPathAsync(string? path)
+    {
+        FullPath = string.IsNullOrWhiteSpace(path) ? null : path.Trim();
+        try
+        {
+            await _js.InvokeVoidAsync("PageToMovieMedia.setFullPath", FullPath);
+        }
+        catch { /* ignore */ }
+        Changed?.Invoke();
+    }
+
+    private async Task RefreshFullPathAsync()
+    {
+        try
+        {
+            var p = await _js.InvokeAsync<string?>("PageToMovieMedia.getFullPath");
+            if (!string.IsNullOrWhiteSpace(p))
+                FullPath = p.Trim();
+        }
+        catch { /* ignore */ }
+    }
 
     /// <summary>
     /// A previously-connected folder was found (persisted via IndexedDB) but the browser needs a
@@ -104,7 +127,8 @@ public sealed class ClientMediaFolderService
             if (r is { Success: true })
             {
                 FolderName = r.FolderName;
-                LastStatus = $"Media folder: {FolderName}";
+                await RefreshFullPathAsync();
+                LastStatus = $"Media folder: {FullPath ?? FolderName}";
                 LocalSaveWarning = null; // folder connected — clear fallback warning
                 Changed?.Invoke();
                 await EnsureHubHookAsync();
@@ -141,7 +165,8 @@ public sealed class ClientMediaFolderService
             if (r is { Success: true })
             {
                 FolderName = r.FolderName;
-                LastStatus = $"Media folder: {FolderName}";
+                await RefreshFullPathAsync();
+                LastStatus = $"Media folder: {FullPath ?? FolderName}";
                 NeedsReconnect = false;
                 PendingReconnectFolderName = null;
                 Changed?.Invoke();
