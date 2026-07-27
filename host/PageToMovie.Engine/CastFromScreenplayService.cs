@@ -35,6 +35,7 @@ public sealed class CastFromScreenplayService
     private readonly IChatClient _chat;
     private readonly CastVisualLiteralizeService _literalize;
     private readonly ProjectRulesService _projectRules;
+    private readonly CharacterBookPlateService? _plateService;
     private readonly ILogger<CastFromScreenplayService> _log;
 
     public CastFromScreenplayService(
@@ -42,13 +43,15 @@ public sealed class CastFromScreenplayService
         IChatClient chat,
         CastVisualLiteralizeService literalize,
         ProjectRulesService projectRules,
-        ILogger<CastFromScreenplayService> log)
+        ILogger<CastFromScreenplayService> log,
+        CharacterBookPlateService? plateService = null)
     {
         _projects = projects;
         _chat = chat;
         _literalize = literalize;
         _projectRules = projectRules;
         _log = log;
+        _plateService = plateService;
     }
 
     public sealed class ExtractResult
@@ -203,6 +206,19 @@ public sealed class CastFromScreenplayService
 
         var json = JsonSerializer.Serialize(normalized, JsonDefaults.Indented);
         await File.WriteAllTextAsync(outPath, json + "\n", ct).ConfigureAwait(false);
+
+        if (_plateService is not null)
+        {
+            try
+            {
+                onProgress?.Invoke("Automated book picture matching...");
+                await _plateService.AttachAsync(projectId, force: true, copyIntoAssets: true, onProgress: onProgress, ct: ct).ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                _log.LogWarning(ex, "Automated book picture matching failed for {Project}", projectId);
+            }
+        }
 
         // Project style + performance rules from book/screenplay (medium + audience address)
         try

@@ -89,10 +89,13 @@ public sealed class CharacterBookPlateService
             result.Reason = "no_illustrated_book_images";
             if (string.IsNullOrWhiteSpace(onlyCharKey))
             {
-                // Don't claim "sorted" when we had cast but zero plates — operator can re-run after book images exist
-                result.SortedByCharacter = false;
-                result.Method = "none";
+                _projects.MarkCharacterPlatesSorted(projectId, 0, method: "text_only");
+                var after = _projects.GetCharacterPlatesState(projectId);
+                result.SortedByCharacter = after.SortedByCharacter;
+                result.SortedAt = after.SortedAt;
+                result.Method = "text_only";
             }
+            result.Ok = true;
             return result;
         }
 
