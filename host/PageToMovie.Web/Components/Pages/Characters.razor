@@ -711,7 +711,7 @@ else
             _savingBookRefs = true;
             try
             {
-                await Engine.SetCharacterBookRefsAsync(_projectId, _selected.Key, Array.Empty<string>());
+                await Engine.SetCharacterBookRefsAsync(_projectId, _selected.Key, []);
                 await SoftReloadAsync();
                 _seedOrder.Clear();
                 _message = "Book pictures cleared.";
