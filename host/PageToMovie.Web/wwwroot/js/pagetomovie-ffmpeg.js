@@ -131,14 +131,23 @@ window.PageToMovieFfmpeg = {
      * @returns {{ success:boolean, url?:string, error?:string, count?:number }}
      */
     concatVideosAsync: async function (urls, onProgress) {
-        if (!urls || urls.length === 0) {
+        let list = [];
+        if (Array.isArray(urls)) {
+            list = urls;
+        } else if (typeof urls === "string") {
+            list = Array.from(arguments).filter(a => typeof a === "string" && a.length > 0 && typeof a !== "function");
+        } else if (arguments.length > 0) {
+            list = Array.from(arguments).filter(a => typeof a === "string" && a.length > 0 && typeof a !== "function");
+        }
+
+        if (!list || list.length === 0) {
             return { success: false, error: "No video URLs to combine" };
         }
 
         // Single file — no stitch needed
-        if (urls.length === 1) {
+        if (list.length === 1) {
             reportProgress(onProgress, 100, "Ready");
-            return { success: true, url: urls[0], count: 1, single: true };
+            return { success: true, url: list[0], count: 1, single: true };
         }
 
         const self = this;
@@ -156,12 +165,12 @@ window.PageToMovieFfmpeg = {
             const written = [];
             try {
                 reportProgress(onProgress, 12, "Downloading clips…");
-                for (let i = 0; i < urls.length; i++) {
+                for (let i = 0; i < list.length; i++) {
                     const name = "in" + String(i).padStart(3, "0") + ".mp4";
                     reportProgress(onProgress,
-                        12 + Math.round((i / urls.length) * 40),
-                        "Downloading " + (i + 1) + "/" + urls.length + "…");
-                    const data = await fetchFile(urls[i]);
+                        12 + Math.round((i / list.length) * 40),
+                        "Downloading " + (i + 1) + "/" + list.length + "…");
+                    const data = await fetchFile(list[i]);
                     await ffmpeg.writeFile(name, data);
                     written.push(name);
                 }
@@ -209,7 +218,7 @@ window.PageToMovieFfmpeg = {
                 try { await ffmpeg.deleteFile("out.mp4"); } catch (_) { /* */ }
 
                 reportProgress(onProgress, 100, "Ready");
-                return { success: true, url: self._blobUrl, count: urls.length };
+                return { success: true, url: self._blobUrl, count: list.length };
             } catch (err) {
                 console.error("concatVideosAsync failed:", err);
                 return { success: false, error: err.message || String(err) };

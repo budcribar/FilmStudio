@@ -123,7 +123,7 @@ public sealed class ClientVideoStitchService
             var raw = await _js.InvokeAsync<JsConcatResult>(
                 "PageToMovieFfmpeg.concatVideosAsync",
                 ct,
-                urls.ToArray());
+                (object)urls.ToArray());
 
             if (raw is null)
                 return ClientStitchResult.Fail("No response from browser stitch");
