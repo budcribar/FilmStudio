@@ -2355,6 +2355,7 @@ public sealed class FilmJobService
         JsonElement? blueprintRoot = null)
     {
         var profiles = _projects.LoadCharacterPromptProfiles(projectId);
+        var videoDir = Path.Combine(projectDir, "assets", "video");
 
         // Previous clip in this scene — Imagine /videos/extensions continues from that video.
         // Clip 2+ requires previous on disk (no gaps). Cast-set changes reseed fresh+refs (PR2).
@@ -2580,9 +2581,23 @@ public sealed class FilmJobService
                 msg => { _ = AppendLogAsync($"  [Grok] {msg}"); },
                 ct);
 
-            // Client media: do not store MP4 on server volume. Hand a same-origin proxy URL
-            // so the browser can write assets/video/scene_SS_clip_CC.mp4 into the user folder
-            // and register the SHA-256 with MediaRegistryService.
+            // Save MP4 file to server disk so browser video player plays full file
+            var mp4Path = Path.Combine(videoDir, $"scene_{scene:D2}_clip_{clip:D2}.mp4");
+            try
+            {
+                using var http = new HttpClient();
+                var bytes = await http.GetByteArrayAsync(url, ct).ConfigureAwait(false);
+                if (bytes.Length > 0)
+                {
+                    await File.WriteAllBytesAsync(mp4Path, bytes, ct).ConfigureAwait(false);
+                    await AppendLogAsync($"  [Disk] Saved {bytes.Length} bytes to {Path.GetFileName(mp4Path)}");
+                }
+            }
+            catch (Exception ex)
+            {
+                _log.LogWarning(ex, "Could not save MP4 bytes to server disk for S{Scene:D2}C{Clip:D2}", scene, clip);
+            }
+
             var relPath = MediaRegistryService.ClipRelativePath(scene, clip);
             var ticket = _mediaProxy.Issue(url, TimeSpan.FromMinutes(45));
             var clientUrl = $"/api/media/proxy/{ticket}";

@@ -244,6 +244,25 @@ public class CreditsGeneratorService
             msg => onProgress?.Invoke($"Credits: {msg}"),
             ct).ConfigureAwait(false);
 
+        // Save credits MP4 bytes to server disk for direct browser playback
+        try
+        {
+            var creditsMp4Path = Path.Combine(videoDir, "credits.mp4");
+            using var http = new HttpClient();
+            var bytes = await http.GetByteArrayAsync(url, ct).ConfigureAwait(false);
+            if (bytes.Length > 0)
+            {
+                await File.WriteAllBytesAsync(creditsMp4Path, bytes, ct).ConfigureAwait(false);
+                var sc18Path = Path.Combine(videoDir, "scene_18_clip_01.mp4");
+                await File.WriteAllBytesAsync(sc18Path, bytes, ct).ConfigureAwait(false);
+                onProgress?.Invoke($"  Saved credits ({bytes.Length} bytes) to disk.");
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Could not save credits MP4 bytes to server disk");
+        }
+
         var ticket = _mediaProxy.Issue(url, TimeSpan.FromMinutes(45));
         var clientUrl = $"/api/media/proxy/{ticket}";
         onProgress?.Invoke("Credits plate ready — save to media folder.");
