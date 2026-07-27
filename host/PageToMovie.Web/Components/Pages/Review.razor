@@ -954,86 +954,37 @@ else if (_activeTab == "share")
             <button type="button" class="btn btn-sm btn-outline-secondary" @onclick="SetTabReview">Back to Review</button>
         </div>
         <div class="card-body p-4 text-white">
-            <div class="mb-4">
-                <label class="form-label fw-semibold text-info mb-2">Publish Destination</label>
-                <div class="d-flex flex-column gap-2">
-                    <label class="form-check p-3 rounded border border-secondary bg-dark mb-0 cursor-pointer">
-                        <input class="form-check-input" type="radio" name="saveDest" value="demo"
-                               checked="@(_saveDestination == "demo")"
-                               @onchange="@(() => _saveDestination = "demo")" />
-                        <span class="form-check-label ms-2">
-                            <strong>Public Demo Gallery</strong> — Publish film to the public gallery
-                        </span>
+            <div class="mb-3">
+                <label class="form-label small fw-semibold">Film Title</label>
+                <input class="form-control bg-dark text-white border-secondary" @bind="_demoTitle" maxlength="120"
+                       placeholder="e.g. The Tell-Tale Heart" />
+            </div>
+            <div class="mb-3">
+                <label class="form-label small fw-semibold">About this film</label>
+                <textarea class="form-control bg-dark text-white border-secondary" rows="3" @bind="_demoDescription"
+                          placeholder="A short description for the gallery wall..." maxlength="800"></textarea>
+            </div>
+            <div class="mb-3">
+                <div class="form-check mb-2">
+                    <input class="form-check-input" type="checkbox" id="demoAiDisclosure" @bind="_demoIsAiSynthetic" />
+                    <label class="form-check-label small" for="demoAiDisclosure">
+                        Contains AI-generated visuals or audio.
                     </label>
-                    <label class="form-check p-3 rounded border border-secondary bg-dark mb-0 cursor-pointer">
-                        <input class="form-check-input" type="radio" name="saveDest" value="youtube"
-                               checked="@(_saveDestination == "youtube")"
-                               disabled="@(_youTubeStatus?.Connected != true)"
-                               @onchange="@(() => _saveDestination = "youtube")" />
-                        <span class="form-check-label ms-2">
-                            <strong>YouTube Channel</strong> — Upload directly to your YouTube account
-                            @if (_youTubeStatus?.Connected != true)
-                            {
-                                <span class="text-muted ms-1">(channel not connected)</span>
-                            }
-                        </span>
+                </div>
+                <div class="form-check mb-2">
+                    <input class="form-check-input" type="checkbox" id="demoGuidelines" @bind="_demoAcceptedGuidelines" />
+                    <label class="form-check-label small" for="demoGuidelines">
+                        I confirm this film is appropriate for a general audience.
                     </label>
                 </div>
             </div>
 
-            @if (_saveDestination == "demo")
-            {
-                <div class="mb-3">
-                    <label class="form-label small fw-semibold">Film Title</label>
-                    <input class="form-control bg-dark text-white border-secondary" @bind="_demoTitle" maxlength="120"
-                           placeholder="e.g. The Tell-Tale Heart" />
-                </div>
-                <div class="mb-3">
-                    <label class="form-label small fw-semibold">About this film</label>
-                    <textarea class="form-control bg-dark text-white border-secondary" rows="3" @bind="_demoDescription"
-                              placeholder="A short description for the gallery wall..." maxlength="800"></textarea>
-                </div>
-                <div class="mb-3">
-                    <div class="form-check mb-2">
-                        <input class="form-check-input" type="checkbox" id="demoAiDisclosure" @bind="_demoIsAiSynthetic" />
-                        <label class="form-check-label small" for="demoAiDisclosure">
-                            Contains AI-generated visuals or audio.
-                        </label>
-                    </div>
-                    <div class="form-check mb-2">
-                        <input class="form-check-input" type="checkbox" id="demoGuidelines" @bind="_demoAcceptedGuidelines" />
-                        <label class="form-check-label small" for="demoGuidelines">
-                            I confirm this film is appropriate for a general audience.
-                        </label>
-                    </div>
-                </div>
-            }
-            @if (_saveDestination == "youtube" && _youTubeStatus?.Connected == true)
-            {
-                <div class="mb-3">
-                    <label class="form-label small fw-semibold">YouTube Title</label>
-                    <input class="form-control bg-dark text-white border-secondary" @bind="_youTubeTitle" maxlength="100" />
-                </div>
-                <div class="mb-3">
-                    <label class="form-label small fw-semibold">YouTube Description</label>
-                    <textarea class="form-control bg-dark text-white border-secondary" rows="3" @bind="_youTubeDescription"></textarea>
-                </div>
-                <div class="mb-3">
-                    <label class="form-label small fw-semibold">Privacy Setting</label>
-                    <select class="form-select bg-dark text-white border-secondary" @bind="_youTubePrivacy">
-                        <option value="unlisted">Unlisted (link-only)</option>
-                        <option value="private">Private</option>
-                        <option value="public">Public</option>
-                    </select>
-                </div>
-            }
-
             <div class="d-flex justify-content-end gap-2 pt-3 border-top border-secondary">
                 <button type="button" class="btn btn-outline-secondary" @onclick="SetTabReview">Cancel</button>
                 <button type="button" class="btn btn-primary px-4" data-testid="review-save-confirm"
-                        disabled="@(_busy || (_saveDestination == "youtube" && _youTubeStatus?.Connected != true) || (_saveDestination == "demo" && !_demoAcceptedGuidelines))"
+                        disabled="@(_busy || !_demoAcceptedGuidelines)"
                         @onclick="ConfirmSaveAsync">
-                    @(_saveDestination == "youtube" ? "Upload to YouTube" : "Publish to Demo Gallery")
+                    Publish to Demo Gallery
                 </button>
             </div>
         </div>
@@ -2187,10 +2138,7 @@ else if (_activeTab == "share")
 
     private async Task ConfirmSaveAsync()
     {
-        if (_saveDestination == "youtube")
-            await StartYouTubeUploadAsync();
-        else
-            await PublishDemoAsync();
+        await PublishDemoAsync();
     }
 
     /// <summary>
