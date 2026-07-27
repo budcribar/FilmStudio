@@ -1188,7 +1188,7 @@ public sealed class CharacterBookPlateService
 
     private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, bool> TextOnlyCache = new();
 
-    internal static bool IsTextOnlyImageFile(string absPath)
+    public static bool IsTextOnlyImageFile(string absPath)
     {
         if (string.IsNullOrWhiteSpace(absPath) || !File.Exists(absPath))
             return false;
