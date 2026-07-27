@@ -144,6 +144,16 @@ public sealed class MovieAutoReviewService
         }
         report.SummaryNotes = summarySb.ToString().Trim();
 
+        report.CategoryScores = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["Continuity & Transitions"] = Math.Clamp(avgScore, 1, 10),
+            ["Character Consistency"] = Math.Clamp(avgScore, 1, 10),
+            ["Lighting & Color Grade"] = Math.Clamp(avgScore, 1, 10),
+            ["Pacing & Editing"] = Math.Clamp(avgScore, 1, 10),
+        };
+
+        report.ExecutiveSummary = report.SummaryNotes;
+
         SaveReport(report);
         onProgress?.Invoke(100, "Full movie review ready!");
         return report;
@@ -193,12 +203,19 @@ public sealed class MovieAutoReviewService
             if (imageFiles.Count > 0 && _vision.IsConfigured)
             {
                 var prompt = $@"You are a film director reviewing sequence {rangeStr} of a movie.
-Evaluate character visual consistency across cuts, lighting tone, and scene transitions.
+Evaluate key filmmaking categories:
+1. Continuity & Transitions (pacing, visual flow across cuts)
+2. Character Consistency & Wardrobe (facial structure lock, clothing drift)
+3. Lighting & Color Grading (exposure continuity, mood, shadows)
+4. Audio & Dialogue Alignment (mood suitability)
+
 Return JSON:
 {{
   ""score"": 8,
-  ""continuityNotes"": ""Notes on visual transitions"",
-  ""visualConsistencyNotes"": ""Notes on character look consistency""
+  ""continuityNotes"": ""Notes on visual transitions and pacing"",
+  ""visualConsistencyNotes"": ""Notes on character appearance lock across cuts"",
+  ""lightingNotes"": ""Notes on color grading and lighting continuity"",
+  ""audioNotes"": ""Notes on audio/mood alignment""
 }}";
                 var raw = await _vision.CompleteWithImagesAsync(prompt, imageFiles.Select(x => x.Path).ToList(), ct: ct).ConfigureAwait(false);
                 if (!string.IsNullOrWhiteSpace(raw))
@@ -218,6 +235,10 @@ Return JSON:
                                 feedback.ContinuityNotes = cn.GetString() ?? feedback.ContinuityNotes;
                             if (root.TryGetProperty("visualConsistencyNotes", out var vn) && vn.ValueKind == JsonValueKind.String)
                                 feedback.VisualConsistencyNotes = vn.GetString() ?? feedback.VisualConsistencyNotes;
+                            if (root.TryGetProperty("lightingNotes", out var ln) && ln.ValueKind == JsonValueKind.String)
+                                feedback.LightingNotes = ln.GetString() ?? feedback.LightingNotes;
+                            if (root.TryGetProperty("audioNotes", out var an) && an.ValueKind == JsonValueKind.String)
+                                feedback.AudioNotes = an.GetString() ?? feedback.AudioNotes;
                         }
                     }
                     catch { /* fallback to defaults */ }
