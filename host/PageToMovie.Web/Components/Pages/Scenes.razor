@@ -7,6 +7,7 @@
 @inject ClientVideoStitchService Stitch
 @inject ClientMediaFolderService MediaFolder
 @inject NavigationManager Nav
+@inject IJSRuntime JS
 @using PageToMovie.Core.Models
 @using PageToMovie.Web.Services
 
@@ -1846,8 +1847,12 @@ else
             }
             else if (!string.IsNullOrWhiteSpace(res.VideoUrl))
             {
-                _message = $"🎬 Cloud server active — opening video stream in browser. Save file to edit in {_preferredVideoEditor}.";
-                try { Nav.NavigateTo(res.VideoUrl, forceLoad: true); } catch { /* ignore */ }
+                _message = $"🎬 Downloaded video to your PC — open video file in {res.Editor ?? _preferredVideoEditor}.";
+                try
+                {
+                    await JS.InvokeVoidAsync("eval", $"const a=document.createElement('a');a.href='{res.VideoUrl}';a.download='{_projectId}_video.mp4';document.body.appendChild(a);a.click();document.body.removeChild(a);");
+                }
+                catch { /* ignore */ }
             }
             else
             {

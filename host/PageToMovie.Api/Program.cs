@@ -4271,6 +4271,30 @@ app.MapGet("/api/projects/{id}/scenes/{sceneNumber:int}/composite",
     }
 });
 
+/// <summary>Stream or download the WIP full movie for client external editor / playback.</summary>
+app.MapGet("/api/projects/{id}/movie", (string id, ProjectStore store, IUserContext user, IOptions<PageToMovieOptions> opts) =>
+{
+    if (AuthGate.RequireLogin(user, opts) is { } denied)
+        return denied;
+    try
+    {
+        var path = store.ResolveWipMoviePath(id);
+        if (path is null || !File.Exists(path))
+        {
+            var pDir = store.GetProjectDir(id);
+            var altWip = Path.Combine(pDir, "assets", "video", "wip_movie.mp4");
+            if (File.Exists(altWip)) path = altWip;
+        }
+        if (path is null || !File.Exists(path))
+            return Results.NotFound(new { ok = false, error = "Full movie file not found on server — build or play movie first." });
+        return Results.File(path, "video/mp4", fileDownloadName: $"{id}_full.mp4", enableRangeProcessing: true);
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { ok = false, error = ex.Message });
+    }
+});
+
 /// <summary>Stream the WIP full movie (authenticated). Public share uses /api/share/{{token}}.</summary>
 app.MapGet("/api/projects/{id}/movie/wip", (string id, ProjectStore store, IUserContext user, IOptions<PageToMovieOptions> opts) =>
 {
