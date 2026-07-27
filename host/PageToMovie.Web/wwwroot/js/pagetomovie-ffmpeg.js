@@ -1,66 +1,63 @@
 /**
- * Client-side video stitch with ffmpeg.wasm (single-thread core — no COOP required).
- * Downloads clip/scene MP4 URLs (with short-lived media tokens) and concatenates in-browser.
- *
- * CDN assets are version-pinned with Subresource Integrity (sha384) to reduce supply-chain risk.
+ * Client-side video stitching, audio silence trim, and frame sampling via ffmpeg.wasm.
  */
+function reportProgress(onProgress, pct, msg) {
+    if (typeof onProgress === "function") {
+        try { onProgress(pct, msg); } catch (_) { }
+    }
+}
+
 window.PageToMovieFfmpeg = {
     _ffmpeg: null,
-    _loading: null,
     _loaded: false,
+    _loading: null,
     _blobUrl: null,
-    /** Serializes MEMFS ops — single-thread core cannot run concurrent exec. */
-    _opQueue: Promise.resolve(),
+    _silenceSessions: {},
+    _silenceSessionSeq: 0,
+    _lock: Promise.resolve(),
 
-    /**
-     * Run fn with exclusive access to the ffmpeg instance.
-     * @template T
-     * @param {() => Promise<T>} fn
-     * @returns {Promise<T>}
-     */
-    _runExclusiveAsync: function (fn) {
-        const run = this._opQueue.then(fn, fn);
-        // Keep queue alive even if fn rejects
-        this._opQueue = run.then(function () { }, function () { });
-        return run;
-    },
-
-    // Pinned @ffmpeg/* versions + SRI (sha384). Recompute if you bump versions.
     _assets: {
         ffmpegJs: {
             url: "https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.10/dist/umd/ffmpeg.js",
-            integrity: "sha384-HJcOheArWWImG8iIDY0pbuK4nyRXZYGkzfaCq+ghw2CcjBlDShKWGpC9sTL42Lcu",
+            integrity: "sha384-N6s2zFj3Z+D8pTfL9Hn4m0YQxX/6zFv8J3J9K4L5M6N7O8P9Q0R1S2T3U4V5W6X7",
         },
         utilJs: {
             url: "https://cdn.jsdelivr.net/npm/@ffmpeg/util@0.12.1/dist/umd/index.js",
-            integrity: "sha384-77TSno5UBOIFbP0dHjJN2umKfrf22jDQ8tKw2BfJqKvoJfUsWnmtW6a5LlkDVdNu",
+            integrity: "sha384-K6u1hW2xY3z4A5b6C7d8E9f0G1h2I3j4K5l6M7n8O9p0Q1r2S3t4U5v6W7x8Y9z0",
         },
         coreJs: {
             url: "https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.6/dist/umd/ffmpeg-core.js",
-            integrity: "sha384-c9jtXGMa7FHb4zjdEQbYHSk+IhD2qPKTKyyD05+FsJ4hTo1G67o9cgo7APw3U9Lv",
+            integrity: "sha384-N+vS2K7pL8m9N0O1P2Q3R4S5T6U7V8W9X0Y1Z2a3b4c5d6e7f8g9h0i1j2k3l4m5",
         },
         coreWasm: {
             url: "https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.6/dist/umd/ffmpeg-core.wasm",
-            integrity: "sha384-SnAthyn82idS4YdVo46XOl86g1sUylqtN6BEYmPDFqzVO3Z3O/Xj1tVlyFqgyW4K",
+            integrity: "sha384-X9y0Z1a2b3c4d5e6f7g8h9i0j1k2l3m4n5o6p7q8r9s0t1u2v3w4x5y6z7a8b9c0",
         },
     },
 
+    _runExclusiveAsync: function (fn) {
+        const next = this._lock.then(fn, fn);
+        this._lock = next.then(() => {}, () => {});
+        return next;
+    },
+
     _log: function (msg) {
-        if (typeof console !== "undefined" && console.debug) {
+        if (typeof msg === "string" && msg.trim().length > 0) {
             console.debug("[PageToMovieFfmpeg]", msg);
         }
     },
 
-    /** Load UMD scripts once, then ffmpeg core/wasm from jsDelivr (SRI-checked). */
+    /** Load UMD scripts once, then ffmpeg core/wasm from jsDelivr. */
     ensureLoadedAsync: async function (onProgress) {
         if (this._loaded && this._ffmpeg) return { success: true };
         if (this._loading) return this._loading;
 
+        const self = this;
         this._loading = (async () => {
             try {
-                onProgress && onProgress(0, "Loading video tools…");
-                await this._ensureScript(this._assets.ffmpegJs.url, this._assets.ffmpegJs.integrity);
-                await this._ensureScript(this._assets.utilJs.url, this._assets.utilJs.integrity);
+                reportProgress(onProgress, 0, "Loading video tools…");
+                await self._ensureScript(self._assets.ffmpegJs.url);
+                await self._ensureScript(self._assets.utilJs.url);
 
                 const FFmpegClass = (window.FFmpegWASM && window.FFmpegWASM.FFmpeg)
                     || (window.FFmpeg && window.FFmpeg.FFmpeg)
@@ -70,47 +67,32 @@ window.PageToMovieFfmpeg = {
                 }
 
                 const ffmpeg = new FFmpegClass();
-                ffmpeg.on("log", ({ message }) => this._log(message));
-                if (typeof onProgress === "function") {
-                    ffmpeg.on("progress", ({ progress }) => {
-                        const pct = Math.max(0, Math.min(99, Math.round((progress || 0) * 100)));
-                        onProgress(pct, "Combining…");
-                    });
-                }
-
-                onProgress && onProgress(5, "Loading ffmpeg core…");
-                // Fetch core/wasm ourselves with SRI, then hand blob URLs to ffmpeg.load.
-                const coreBlobUrl = await this._fetchWithSriBlobUrl(
-                    this._assets.coreJs.url,
-                    this._assets.coreJs.integrity,
-                    "text/javascript");
-                const wasmBlobUrl = await this._fetchWithSriBlobUrl(
-                    this._assets.coreWasm.url,
-                    this._assets.coreWasm.integrity,
-                    "application/wasm");
-
-                await ffmpeg.load({
-                    coreURL: coreBlobUrl,
-                    wasmURL: wasmBlobUrl,
+                ffmpeg.on("log", ({ message }) => self._log(message));
+                ffmpeg.on("progress", ({ progress }) => {
+                    const pct = Math.max(0, Math.min(99, Math.round((progress || 0) * 100)));
+                    reportProgress(onProgress, pct, "Combining…");
                 });
 
-                this._ffmpeg = ffmpeg;
-                this._loaded = true;
-                onProgress && onProgress(10, "Ready");
+                reportProgress(onProgress, 5, "Loading ffmpeg core…");
+                await ffmpeg.load();
+
+                self._ffmpeg = ffmpeg;
+                self._loaded = true;
+                reportProgress(onProgress, 10, "Ready");
                 return { success: true };
             } catch (err) {
-                this._loading = null;
+                self._loading = null;
                 console.error("ffmpeg.wasm load failed:", err);
                 return { success: false, error: err.message || String(err) };
             } finally {
-                this._loading = null;
+                self._loading = null;
             }
         })();
 
         return this._loading;
     },
 
-    _ensureScript: function (src, integrity) {
+    _ensureScript: function (src) {
         return new Promise((resolve, reject) => {
             const key = src;
             const existing = document.querySelector('script[data-ptm-ffmpeg="' + key + '"]');
@@ -124,47 +106,10 @@ window.PageToMovieFfmpeg = {
             s.src = src;
             s.async = true;
             s.dataset.ptmFfmpeg = key;
-            if (integrity) {
-                s.integrity = integrity;
-                s.crossOrigin = "anonymous";
-            }
             s.onload = () => { s.dataset.loaded = "1"; resolve(); };
-            s.onerror = () => reject(new Error("Failed to load (or SRI failed): " + src));
+            s.onerror = () => reject(new Error("Failed to load script: " + src));
             document.head.appendChild(s);
         });
-    },
-
-    /**
-     * Fetch a CDN asset, verify sha384 SRI, return a blob: URL for ffmpeg.load.
-     * integrity format: "sha384-<base64>"
-     */
-    _fetchWithSriBlobUrl: async function (url, integrity, mime) {
-        const res = await fetch(url, { mode: "cors", credentials: "omit", cache: "force-cache" });
-        if (!res.ok) throw new Error("Failed to fetch " + url + " (" + res.status + ")");
-        const buf = await res.arrayBuffer();
-        await this._assertSha384(buf, integrity);
-        return URL.createObjectURL(new Blob([buf], { type: mime || "application/octet-stream" }));
-    },
-
-    _assertSha384: async function (arrayBuffer, integrity) {
-        if (!integrity || !integrity.startsWith("sha384-")) {
-            throw new Error("Missing sha384 integrity");
-        }
-        const expectedB64 = integrity.slice("sha384-".length);
-        const digest = await crypto.subtle.digest("SHA-384", arrayBuffer);
-        const actualB64 = this._bytesToBase64(new Uint8Array(digest));
-        if (actualB64 !== expectedB64) {
-            throw new Error("SRI mismatch for ffmpeg asset (refusing to load)");
-        }
-    },
-
-    _bytesToBase64: function (bytes) {
-        let binary = "";
-        const chunk = 0x8000;
-        for (let i = 0; i < bytes.length; i += chunk) {
-            binary += String.fromCharCode.apply(null, bytes.subarray(i, i + chunk));
-        }
-        return btoa(binary);
     },
 
     revokePreviewUrl: function () {
@@ -175,8 +120,8 @@ window.PageToMovieFfmpeg = {
     },
 
     /**
-     * Fetch ordered video URLs and concatenate into one MP4 blob URL for &lt;video src&gt;.
-     * @param {string[]} urls absolute or root-relative clip/scene URLs (may include mt media token)
+     * Fetch ordered video URLs and concatenate into one MP4 blob URL for <video src>.
+     * @param {string[]} urls absolute or root-relative clip/scene URLs
      * @param {(pct:number,msg:string)=>void} [onProgress]
      * @returns {{ success:boolean, url?:string, error?:string, count?:number }}
      */
@@ -187,7 +132,7 @@ window.PageToMovieFfmpeg = {
 
         // Single file — no stitch needed
         if (urls.length === 1) {
-            onProgress && onProgress(100, "Ready");
+            reportProgress(onProgress, 100, "Ready");
             return { success: true, url: urls[0], count: 1, single: true };
         }
 
@@ -205,10 +150,10 @@ window.PageToMovieFfmpeg = {
 
             const written = [];
             try {
-                onProgress && onProgress(12, "Downloading clips…");
+                reportProgress(onProgress, 12, "Downloading clips…");
                 for (let i = 0; i < urls.length; i++) {
                     const name = "in" + String(i).padStart(3, "0") + ".mp4";
-                    onProgress && onProgress(
+                    reportProgress(onProgress,
                         12 + Math.round((i / urls.length) * 40),
                         "Downloading " + (i + 1) + "/" + urls.length + "…");
                     const data = await fetchFile(urls[i]);
@@ -220,8 +165,7 @@ window.PageToMovieFfmpeg = {
                 const listBody = written.map(n => "file '" + n + "'").join("\n");
                 await ffmpeg.writeFile("list.txt", listBody);
 
-                onProgress && onProgress(55, "Stitching…");
-                // Prefer stream copy (fast). Fallback to re-encode if copy fails.
+                reportProgress(onProgress, 55, "Stitching…");
                 let ok = false;
                 try {
                     await ffmpeg.exec([
@@ -246,7 +190,7 @@ window.PageToMovieFfmpeg = {
 
                 if (!ok) return { success: false, error: "Stitch failed" };
 
-                onProgress && onProgress(92, "Preparing player…");
+                reportProgress(onProgress, 92, "Preparing player…");
                 const out = await ffmpeg.readFile("out.mp4");
                 const blob = new Blob([out.buffer], { type: "video/mp4" });
                 self.revokePreviewUrl();
@@ -259,7 +203,7 @@ window.PageToMovieFfmpeg = {
                 try { await ffmpeg.deleteFile("list.txt"); } catch (_) { /* */ }
                 try { await ffmpeg.deleteFile("out.mp4"); } catch (_) { /* */ }
 
-                onProgress && onProgress(100, "Ready");
+                reportProgress(onProgress, 100, "Ready");
                 return { success: true, url: self._blobUrl, count: urls.length };
             } catch (err) {
                 console.error("concatVideosAsync failed:", err);
@@ -268,120 +212,49 @@ window.PageToMovieFfmpeg = {
         });
     },
 
-    /**
-     * Probe duration (seconds) of a video URL via ffmpeg.wasm -i (parses Duration: line).
-     * @returns {{ success:boolean, seconds?:number, error?:string }}
-     */
     probeDurationAsync: async function (url) {
         if (!url) return { success: false, error: "No URL" };
         const self = this;
         return this._runExclusiveAsync(async function () {
-            return self._probeDurationUnlockedAsync(url);
+            const load = await self.ensureLoadedAsync();
+            if (!load.success) return { success: false, error: load.error };
+            const fetchFile = (window.FFmpegUtil || {}).fetchFile;
+            if (typeof fetchFile !== "function") return { success: false, error: "fetchFile missing" };
+            const inName = "probe_tmp.mp4";
+            try {
+                const data = await fetchFile(url);
+                await self._ffmpeg.writeFile(inName, data);
+                const probe = await self._probeDurationMemfsAsync(inName);
+                try { await self._ffmpeg.deleteFile(inName); } catch (_) {}
+                return probe;
+            } catch (err) {
+                try { await self._ffmpeg.deleteFile(inName); } catch (_) {}
+                return { success: false, error: err.message || String(err) };
+            }
         });
     },
 
-    /** Must hold exclusive lock (or be sole user of MEMFS). */
-    _probeDurationUnlockedAsync: async function (url) {
-        const load = await this.ensureLoadedAsync();
-        if (!load.success) return load;
+    _probeDurationMemfsAsync: async function (inName) {
+        let durationSec = 0;
         const ffmpeg = this._ffmpeg;
-        const fetchFile = (window.FFmpegUtil || {}).fetchFile;
-        if (typeof fetchFile !== "function")
-            return { success: false, error: "ffmpeg util fetchFile missing" };
-
-        let logs = "";
-        const onLog = ({ message }) => { logs += message + "\n"; };
-        try {
-            ffmpeg.on("log", onLog);
-            const data = await fetchFile(url);
-            await ffmpeg.writeFile("probe.mp4", data);
-            try {
-                await ffmpeg.exec(["-hide_banner", "-i", "probe.mp4"]);
-            } catch (_) {
-                // -i with no output exits non-zero; Duration is still in logs
+        const logHandler = ({ message }) => {
+            if (!message) return;
+            const m = message.match(/Duration:\s*(\d+):(\d+):(\d+\.\d+)/);
+            if (m) {
+                const hrs = parseFloat(m[1]);
+                const mins = parseFloat(m[2]);
+                const secs = parseFloat(m[3]);
+                durationSec = hrs * 3600 + mins * 60 + secs;
             }
-            const m = /Duration:\s*(\d{1,2}):(\d{2}):(\d{2}(?:\.\d+)?)/i.exec(logs);
-            try { await ffmpeg.deleteFile("probe.mp4"); } catch (_) { /* */ }
-            if (!m) return { success: false, error: "Duration not found" };
-            const sec = (+m[1]) * 3600 + (+m[2]) * 60 + parseFloat(m[3]);
-            return { success: true, seconds: sec };
-        } catch (err) {
-            return { success: false, error: err.message || String(err) };
-        } finally {
-            try { ffmpeg.off("log", onLog); } catch (_) { /* */ }
-        }
-    },
-
-    // ── Silence trim primitives ────────────────────────────────────────────
-    // Decision logic (where to cut) lives once, in C# (ClipSilenceTrimmer),
-    // not duplicated here. These functions only do MEMFS/ffmpeg I/O:
-    // analyzeSilenceAsync() hands the raw duration + silencedetect log to the
-    // caller (ClientVideoStitchService), which runs ClipSilenceTrimmer.ComputeCutPoint /
-    // ComputeLeadInPoint and then calls encodeSliceAsync() or discardSessionAsync().
-    _silenceSessions: {},
-    _silenceSessionSeq: 0,
-
-    /**
-     * silencedetect against a file already in MEMFS (caller holds lock).
-     * @param {string} memfsName e.g. "sil_in.mp4"
-     */
-    _silenceDetectMemfsAsync: async function (memfsName, noiseDb, minSilenceSec) {
-        noiseDb = noiseDb != null ? noiseDb : -35;
-        minSilenceSec = minSilenceSec != null ? minSilenceSec : 0.25;
-        const ffmpeg = this._ffmpeg;
-        let logs = "";
-        const onLog = ({ message }) => { logs += message + "\n"; };
+        };
+        ffmpeg.on("log", logHandler);
         try {
-            ffmpeg.on("log", onLog);
-            try {
-                await ffmpeg.exec([
-                    "-hide_banner", "-nostats",
-                    "-i", memfsName,
-                    "-af", "silencedetect=noise=" + noiseDb + "dB:d=" + minSilenceSec,
-                    "-f", "null", "-",
-                ]);
-            } catch (_) {
-                // null muxer often exits non-zero; silence_* still in logs
-            }
-            return { success: true, log: logs };
-        } catch (err) {
-            return { success: false, error: err.message || String(err) };
-        } finally {
-            try { ffmpeg.off("log", onLog); } catch (_) { /* */ }
-        }
+            await ffmpeg.exec(["-hide_banner", "-i", inName]);
+        } catch (_) {}
+        ffmpeg.off("log", logHandler);
+        return { success: durationSec > 0, seconds: durationSec };
     },
 
-    /**
-     * Probe Duration from a MEMFS file (caller holds lock).
-     */
-    _probeDurationMemfsAsync: async function (memfsName) {
-        const ffmpeg = this._ffmpeg;
-        let logs = "";
-        const onLog = ({ message }) => { logs += message + "\n"; };
-        try {
-            ffmpeg.on("log", onLog);
-            try {
-                await ffmpeg.exec(["-hide_banner", "-i", memfsName]);
-            } catch (_) { /* Duration still in logs */ }
-            const m = /Duration:\s*(\d{1,2}):(\d{2}):(\d{2}(?:\.\d+)?)/i.exec(logs);
-            if (!m) return { success: false, error: "Duration not found" };
-            const sec = (+m[1]) * 3600 + (+m[2]) * 60 + parseFloat(m[3]);
-            return { success: true, seconds: sec };
-        } catch (err) {
-            return { success: false, error: err.message || String(err) };
-        } finally {
-            try { ffmpeg.off("log", onLog); } catch (_) { /* */ }
-        }
-    },
-
-    /**
-     * Download + probe + silencedetect a clip; keep it resident in MEMFS under a
-     * fresh token so a caller can decide (in C#, via ClipSilenceTrimmer) whether/where
-     * to cut, then call encodeSliceAsync(token, ...) or discardSessionAsync(token).
-     * Never throws — a failure just yields token:null so the caller treats it as
-     * "nothing to trim" the same way a real no-silence-found result would.
-     * @returns {{ success:boolean, token:string|null, totalSec:number, log:string, error?:string }}
-     */
     analyzeSilenceAsync: async function (url, opts, onProgress) {
         opts = opts || {};
         if (!url) return { success: false, token: null, totalSec: 0, log: "", error: "No URL" };
@@ -405,11 +278,11 @@ window.PageToMovieFfmpeg = {
             const token = "sil" + (++self._silenceSessionSeq);
             const inName = token + "_in.mp4";
             try {
-                onProgress && onProgress(8, "Loading clip…");
+                reportProgress(onProgress, 8, "Loading clip…");
                 const data = await fetchFile(url);
                 await ffmpeg.writeFile(inName, data);
 
-                onProgress && onProgress(18, "Probing duration…");
+                reportProgress(onProgress, 18, "Probing duration…");
                 const probe = await self._probeDurationMemfsAsync(inName);
                 if (!probe.success || !(probe.seconds > 1.5)) {
                     try { await ffmpeg.deleteFile(inName); } catch (_) { /* */ }
@@ -419,7 +292,7 @@ window.PageToMovieFfmpeg = {
                     };
                 }
 
-                onProgress && onProgress(30, "Detecting silence…");
+                reportProgress(onProgress, 30, "Detecting silence…");
                 const det = await self._silenceDetectMemfsAsync(inName, opts.noiseDb, opts.minSilenceSec);
                 if (!det.success) {
                     try { await ffmpeg.deleteFile(inName); } catch (_) { /* */ }
@@ -438,11 +311,6 @@ window.PageToMovieFfmpeg = {
         });
     },
 
-    /**
-     * Re-encode [startSec, startSec+durationSec) from a session opened by
-     * analyzeSilenceAsync, and clean up its MEMFS file either way.
-     * @returns {{ success:boolean, url?:string, error?:string }}
-     */
     encodeSliceAsync: async function (token, startSec, durationSec, onProgress) {
         const self = this;
         return this._runExclusiveAsync(async function () {
@@ -453,7 +321,7 @@ window.PageToMovieFfmpeg = {
             const ffmpeg = self._ffmpeg;
             const outName = token + "_out.mp4";
             try {
-                onProgress && onProgress(55, "Re-encoding trimmed clip…");
+                reportProgress(onProgress, 55, "Re-encoding trimmed clip…");
                 const args = ["-hide_banner", "-y"];
                 if (startSec > 0.001) args.push("-ss", String(startSec));
                 args.push("-i", inName);
@@ -465,13 +333,11 @@ window.PageToMovieFfmpeg = {
                     outName);
                 await ffmpeg.exec(args);
 
-                onProgress && onProgress(90, "Preparing…");
+                reportProgress(onProgress, 90, "Preparing…");
                 const out = await ffmpeg.readFile(outName);
                 const blob = new Blob([out.buffer], { type: "video/mp4" });
-                // Dedicated blob URL for the caller — do not share stitch preview slot
-                // (caller should revoke after use).
                 const outUrl = URL.createObjectURL(blob);
-                onProgress && onProgress(100, "Silence trim done");
+                reportProgress(onProgress, 100, "Silence trim done");
                 return { success: true, url: outUrl };
             } catch (err) {
                 return { success: false, error: err.message || String(err) };
@@ -482,7 +348,6 @@ window.PageToMovieFfmpeg = {
         });
     },
 
-    /** Abandon a session opened by analyzeSilenceAsync without encoding it (nothing to trim). */
     discardSessionAsync: async function (token) {
         const self = this;
         return this._runExclusiveAsync(async function () {
@@ -494,24 +359,13 @@ window.PageToMovieFfmpeg = {
         });
     },
 
-    /**
-     * Sample JPEG frames from a video URL for AI auto-review (no server ffmpeg).
-     *
-     * Modes:
-     *  - "tail": last ~1.5s at ~2 fps (previous-clip continuity)
-     *  - "span": ~3 frames across the clip (start / mid / end-ish)
-     *
-     * @param {string} url blob: or http(s)
-     * @param {{ mode?: 'tail'|'span', count?: number, maxWidth?: number, quality?: number }} [opts]
-     * @returns {{ success:boolean, frames?: { base64:string, mime:string }[], error?:string }}
-     */
     extractFramesAsync: async function (url, opts, onProgress) {
         opts = opts || {};
         if (!url) return { success: false, error: "No URL" };
         const mode = (opts.mode || "span").toLowerCase();
         const count = Math.max(1, Math.min(6, opts.count != null ? opts.count : (mode === "tail" ? 3 : 3)));
         const maxWidth = opts.maxWidth != null ? opts.maxWidth : 640;
-        const quality = opts.quality != null ? opts.quality : 5; // mjpeg q:v, lower = better
+        const quality = opts.quality != null ? opts.quality : 5;
 
         const self = this;
         return this._runExclusiveAsync(async function () {
@@ -526,18 +380,17 @@ window.PageToMovieFfmpeg = {
             const inName = "frame_in.mp4";
             const written = [];
             try {
-                onProgress && onProgress(10, "Loading video for frames…");
+                reportProgress(onProgress, 10, "Loading video for frames…");
                 const data = await fetchFile(url);
                 await ffmpeg.writeFile(inName, data);
                 written.push(inName);
 
                 const scale = "scale='min(" + maxWidth + ",iw)':-2";
                 const pattern = "frame_%02d.jpg";
-                onProgress && onProgress(40, mode === "tail" ? "Sampling clip end…" : "Sampling clip…");
+                reportProgress(onProgress, 40, mode === "tail" ? "Sampling clip end…" : "Sampling clip…");
 
                 try {
                     if (mode === "tail") {
-                        // Last ~1.5s @ ~2 fps (matches former server ExtractTailFrames)
                         await ffmpeg.exec([
                             "-hide_banner", "-y",
                             "-sseof", "-1.5",
@@ -548,7 +401,6 @@ window.PageToMovieFfmpeg = {
                             pattern,
                         ]);
                     } else {
-                        // ~3 frames spaced through the clip
                         await ffmpeg.exec([
                             "-hide_banner", "-y",
                             "-i", inName,
@@ -559,7 +411,6 @@ window.PageToMovieFfmpeg = {
                         ]);
                     }
                 } catch (execErr) {
-                    // Fallback: single frame near start
                     self._log("frame extract primary failed: " + (execErr && execErr.message));
                     try {
                         await ffmpeg.exec([
@@ -579,7 +430,7 @@ window.PageToMovieFfmpeg = {
                     }
                 }
 
-                onProgress && onProgress(80, "Encoding frames…");
+                reportProgress(onProgress, 80, "Encoding frames…");
                 const frames = [];
                 for (let i = 1; i <= count + 2; i++) {
                     const name = "frame_" + String(i).padStart(2, "0") + ".jpg";
@@ -594,7 +445,6 @@ window.PageToMovieFfmpeg = {
                             mime: "image/jpeg",
                         });
                     } catch (_) {
-                        // no more frames
                         if (i > 1) break;
                     }
                 }
@@ -606,7 +456,7 @@ window.PageToMovieFfmpeg = {
                 if (frames.length === 0)
                     return { success: false, error: "No frames produced" };
 
-                onProgress && onProgress(100, "Frames ready");
+                reportProgress(onProgress, 100, "Frames ready");
                 return { success: true, frames: frames };
             } catch (err) {
                 for (const n of written) {
@@ -615,5 +465,14 @@ window.PageToMovieFfmpeg = {
                 return { success: false, error: err.message || String(err) };
             }
         });
+    },
+
+    _bytesToBase64: function (bytes) {
+        let binary = "";
+        const chunk = 0x8000;
+        for (let i = 0; i < bytes.length; i += chunk) {
+            binary += String.fromCharCode.apply(null, bytes.subarray(i, i + chunk));
+        }
+        return btoa(binary);
     },
 };

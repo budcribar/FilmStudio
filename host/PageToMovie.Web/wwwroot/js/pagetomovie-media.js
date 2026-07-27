@@ -189,14 +189,15 @@ window.PageToMovieMedia = {
         }
         try {
             await this._archiveClipHistoryAsync(relativePath);
-            onProgress && onProgress(5, "Downloading clip…");
+            const report = (p, m) => typeof onProgress === "function" && onProgress(p, m);
+            report(5, "Downloading clip…");
             const res = await fetch(url, { credentials: "same-origin" });
             if (!res.ok) return { success: false, error: "Download failed HTTP " + res.status };
             const buf = await res.arrayBuffer();
 
-            onProgress && onProgress(60, "Hashing…");
+            report(60, "Hashing…");
             const sha = await this._sha256Hex(buf);
-            onProgress && onProgress(85, "Writing folder…");
+            report(85, "Writing folder…");
             const { dir, fileName } = await this._ensurePathAsync(relativePath);
             const fh = await dir.getFileHandle(fileName, { create: true });
             const w = await fh.createWritable();
@@ -208,7 +209,7 @@ window.PageToMovieMedia = {
                 try { URL.revokeObjectURL(this._blobUrls[key]); } catch (_) { /* */ }
                 delete this._blobUrls[key];
             }
-            onProgress && onProgress(100, "Saved");
+            report(100, "Saved");
             return {
                 success: true,
                 sha256: sha,
