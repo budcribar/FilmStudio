@@ -354,7 +354,7 @@ try
             // Copy meta.json
             var srcMeta = Path.Combine(seedDir, "meta.json");
             if (File.Exists(srcMeta))
-                File.Copy(srcMeta, targetMeta, overwrite: false);
+                File.Copy(srcMeta, targetMeta, overwrite: true);
 
             // Copy movie.mp4 — may be bundled in image or referenced from project WIP
             var srcMovie = Path.Combine(seedDir, "movie.mp4");
@@ -376,8 +376,8 @@ try
                 catch { /* ignore — seed gracefully skipped if movie unavailable */ }
             }
 
-            if (File.Exists(srcMovie) && !File.Exists(targetMovie))
-                File.Copy(srcMovie, targetMovie, overwrite: false);
+            if (File.Exists(srcMovie))
+                File.Copy(srcMovie, targetMovie, overwrite: true);
 
             if (File.Exists(targetMeta) && File.Exists(targetMovie))
                 app.Logger.LogInformation("Seeded demo {Id} into {TargetDir}", id, targetDir);

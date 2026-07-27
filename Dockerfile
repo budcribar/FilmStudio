@@ -58,6 +58,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY --from=build /app/publish .
 # Seed demo catalog (meta.json stubs, pre-approved public) — resolved against WIP movie at startup
 COPY --from=build /src/seed_demos ./seed_demos/
+COPY --from=build /src/projects ./projects/
 
 # Environment defaults (set JWT / API secrets via Railway Variables — not baked into the image)
 ENV ASPNETCORE_URLS="http://0.0.0.0:5088"
