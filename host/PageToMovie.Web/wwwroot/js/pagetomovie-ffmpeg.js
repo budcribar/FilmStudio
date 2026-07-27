@@ -69,10 +69,21 @@ window.PageToMovieFfmpeg = {
 
                 reportProgress(onProgress, 5, "Loading ffmpeg engine…");
                 const origin = window.location.origin;
+                const toBlob = (window.FFmpegUtil && window.FFmpegUtil.toBlobURL) || (async (url, mime) => {
+                    const res = await fetch(url);
+                    if (!res.ok) throw new Error("Failed to fetch " + url + " (" + res.status + ")");
+                    const buf = await res.arrayBuffer();
+                    return URL.createObjectURL(new Blob([buf], { type: mime }));
+                });
+
+                const [coreURL, wasmURL] = await Promise.all([
+                    toBlob(origin + self._assets.coreJs, "text/javascript"),
+                    toBlob(origin + self._assets.wasmJs, "application/wasm")
+                ]);
 
                 await ffmpeg.load({
-                    coreURL: origin + self._assets.coreJs,
-                    wasmURL: origin + self._assets.wasmJs,
+                    coreURL: coreURL,
+                    wasmURL: wasmURL,
                     classWorkerURL: origin + self._assets.workerJs,
                 });
 
