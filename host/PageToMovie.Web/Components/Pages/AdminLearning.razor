@@ -71,6 +71,110 @@
             }
         }
 
+        <div class="card border-primary mb-3 shadow-sm">
+            <div class="card-header bg-primary text-white py-2 d-flex flex-wrap justify-content-between align-items-center gap-2">
+                <span><strong>Human vs. AI Review Calibration & Prompt Learning</strong></span>
+                <button class="btn btn-sm btn-light text-primary fw-bold" disabled="@_busy" @onclick="SynthesizePromptImprovementsAsync">
+                    ⚡ Synthesize Prompt Improvements
+                </button>
+            </div>
+            <div class="card-body small">
+                <p class="text-muted mb-2">
+                    Compare operator film reviews against AI auto-review verdicts to identify prompt gaps (where AI was too permissive or too strict) and calibrate AI system prompts.
+                </p>
+
+                @if (_comparison is not null)
+                {
+                    <div class="row g-2 mb-3 text-center">
+                        <div class="col-6 col-md-3">
+                            <div class="card card-body py-2 bg-light">
+                                <div class="text-muted small">Total Compared</div>
+                                <strong class="h6 mb-0">@_comparison.TotalCompared</strong>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <div class="card card-body py-2 bg-light">
+                                <div class="text-muted small">Agreement Rate</div>
+                                <strong class="h6 mb-0 text-success">@_comparison.AgreementPercentage% (@_comparison.AgreementCount)</strong>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <div class="card card-body py-2 bg-light">
+                                <div class="text-muted small">AI Too Permissive</div>
+                                <strong class="h6 mb-0 text-warning">@_comparison.AiTooPermissiveCount</strong>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <div class="card card-body py-2 bg-light">
+                                <div class="text-muted small">AI Too Strict</div>
+                                <strong class="h6 mb-0 text-info">@_comparison.AiTooStrictCount</strong>
+                            </div>
+                        </div>
+                    </div>
+
+                    @if (!string.IsNullOrWhiteSpace(_comparison.PromptImprovementProposal))
+                    {
+                        <div class="alert alert-success border-success mb-3">
+                            <div class="fw-bold mb-1">🎯 Proposed Auto-Review Prompt Improvements:</div>
+                            <pre class="mb-0 small" style="white-space: pre-wrap;">@_comparison.PromptImprovementProposal</pre>
+                        </div>
+                    }
+
+                    @if (_comparison.Discrepancies.Count > 0)
+                    {
+                        <div class="table-responsive" style="max-height: 250px; overflow: auto;">
+                            <table class="table table-sm table-striped border mb-0 small">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Project</th>
+                                        <th>Clip</th>
+                                        <th>Human Review</th>
+                                        <th>AI Auto-Review</th>
+                                        <th>Discrepancy Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var d in _comparison.Discrepancies)
+                                    {
+                                        <tr>
+                                            <td>@d.ProjectId</td>
+                                            <td><code>S@(d.SceneNumber.ToString("D2"))C@(d.ClipNumber.ToString("D2"))</code></td>
+                                            <td>
+                                                <span class="badge @(d.HumanVerdict == "pass" ? "bg-success" : "bg-danger") me-1">@d.HumanVerdict.ToUpper()</span>
+                                                <span class="text-muted" title="@d.Note">@(string.IsNullOrWhiteSpace(d.Note) ? "—" : d.Note)</span>
+                                            </td>
+                                            <td>
+                                                <span class="badge @(d.AiVerdict == "pass" ? "bg-success" : "bg-warning text-dark") me-1">@d.AiVerdict.ToUpper() (@d.AiScore/10)</span>
+                                                <span class="text-muted" title="@d.AiReasoning">@(string.IsNullOrWhiteSpace(d.AiReasoning) ? "—" : d.AiReasoning)</span>
+                                            </td>
+                                            <td>
+                                                @if (d.DiscrepancyType == "AI_TOO_PERMISSIVE")
+                                                {
+                                                    <span class="badge bg-warning text-dark">⚠️ AI Too Permissive (Human Fail)</span>
+                                                }
+                                                else if (d.DiscrepancyType == "AI_TOO_STRICT")
+                                                {
+                                                    <span class="badge bg-info text-dark">ℹ️ AI Too Strict (Human Pass)</span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="badge bg-secondary">✓ Agreement</span>
+                                                }
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <p class="text-muted mb-0 small">No paired reviews recorded yet. Use Review page to review clips to generate calibration data.</p>
+                    }
+                }
+            </div>
+        </div>
+
         <div class="card mb-3">
             <div class="card-header py-2 d-flex justify-content-between align-items-center">
                 <span>Recent events</span>
@@ -299,16 +403,15 @@
     private string? _message;
     private string _projectFilter = "";
     private LearningInsightsDto? _insights;
+    private ReviewComparisonInsightsDto? _comparison;
     private List<ReviewLearningEvent> _events = new();
     private int _proposeN = 50;
     private string? _proposal;
     private ProposalChecklistDocument? _checklist;
-    /// <summary>When false, hide items with disposition accepted (done).</summary>
     private bool _showDoneItems;
     private string _rulesProject = "";
     private ProjectRulesDocument? _rules;
 
-    /// <summary>Accepted/done or rejected/skip — hidden unless Show done.</summary>
     private static bool IsChecklistDone(ProposalChecklistItem item) =>
         string.Equals(item.Disposition, "accepted", StringComparison.OrdinalIgnoreCase) ||
         string.Equals(item.Disposition, "rejected", StringComparison.OrdinalIgnoreCase);
@@ -334,10 +437,25 @@
         {
             var pid = string.IsNullOrWhiteSpace(_projectFilter) ? null : _projectFilter.Trim();
             _insights = await Api.GetLearningInsightsAsync(pid);
+            _comparison = await Api.GetReviewComparisonAsync(pid);
             _events = (await Api.GetLearningEventsAsync(pid, take: 80)).ToList();
             _checklist = await Api.GetProposalChecklistAsync();
             if (!string.IsNullOrWhiteSpace(_rulesProject))
                 _rules = await Api.GetProjectRulesAsync(_rulesProject.Trim());
+        }
+        catch (Exception ex) { _error = ex.Message; }
+        finally { _busy = false; }
+    }
+
+    private async Task SynthesizePromptImprovementsAsync()
+    {
+        _busy = true;
+        _error = null;
+        try
+        {
+            var pid = string.IsNullOrWhiteSpace(_projectFilter) ? null : _projectFilter.Trim();
+            _comparison = await Api.SynthesizePromptImprovementsAsync(pid);
+            _message = "Prompt improvement recommendations synthesized from human vs AI review discrepancies.";
         }
         catch (Exception ex) { _error = ex.Message; }
         finally { _busy = false; }

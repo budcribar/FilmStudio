@@ -153,3 +153,30 @@ public sealed class RejectProjectRuleRequest
 {
     public string SuggestionId { get; set; } = "";
 }
+
+public sealed class HumanVsAiComparisonItem
+{
+    public string ProjectId { get; set; } = "";
+    public int SceneNumber { get; set; }
+    public int ClipNumber { get; set; }
+    public string HumanVerdict { get; set; } = ""; // "pass" | "fail"
+    public string Note { get; set; } = "";
+    public string AiVerdict { get; set; } = ""; // "pass" | "fail"
+    public int AiScore { get; set; }
+    public string AiReasoning { get; set; } = "";
+    public string DiscrepancyType { get; set; } = ""; // "AI_TOO_PERMISSIVE" | "AI_TOO_STRICT" | "AGREEMENT"
+    public DateTimeOffset Ts { get; set; } = DateTimeOffset.UtcNow;
+}
+
+public sealed class ReviewComparisonInsightsDto
+{
+    public bool Ok { get; set; } = true;
+    public int TotalCompared { get; set; }
+    public int AgreementCount { get; set; }
+    public int AiTooPermissiveCount { get; set; } // Human Fail, AI Pass
+    public int AiTooStrictCount { get; set; } // Human Pass, AI Fail
+    public double AgreementPercentage { get; set; }
+    public List<HumanVsAiComparisonItem> Discrepancies { get; set; } = new();
+    public string? PromptImprovementProposal { get; set; }
+    public string? Error { get; set; }
+}

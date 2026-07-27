@@ -875,6 +875,20 @@ public sealed class EngineApiClient
         return await SendJsonAsync<ProposeLearningRulesResult>(req, ct);
     }
 
+    public async Task<ReviewComparisonInsightsDto?> GetReviewComparisonAsync(string? projectId = null, CancellationToken ct = default)
+    {
+        var q = string.IsNullOrWhiteSpace(projectId) ? "" : $"?projectId={Uri.EscapeDataString(projectId)}";
+        using var req = new HttpRequestMessage(HttpMethod.Get, $"/api/admin/learning/review-comparison{q}");
+        return await SendJsonAsync<ReviewComparisonInsightsDto>(req, ct);
+    }
+
+    public async Task<ReviewComparisonInsightsDto?> SynthesizePromptImprovementsAsync(string? projectId = null, CancellationToken ct = default)
+    {
+        var q = string.IsNullOrWhiteSpace(projectId) ? "" : $"?projectId={Uri.EscapeDataString(projectId)}";
+        using var req = new HttpRequestMessage(HttpMethod.Post, $"/api/admin/learning/synthesize-prompt-improvements{q}");
+        return await SendJsonAsync<ReviewComparisonInsightsDto>(req, ct);
+    }
+
     public async Task<ProposalChecklistDocument?> GetProposalChecklistAsync(CancellationToken ct = default)
     {
         using var req = new HttpRequestMessage(HttpMethod.Get, "/api/admin/learning/proposal-checklist");

@@ -220,4 +220,74 @@ public sealed class ReviewEventStore
         map.TryGetValue(key, out var n);
         map[key] = n + 1;
     }
+
+    public ReviewComparisonInsightsDto GetReviewComparison(string? projectId = null)
+    {
+        var events = ReadAll();
+        if (!string.IsNullOrWhiteSpace(projectId))
+        {
+            events = events.Where(e => string.Equals(e.ProjectId, projectId, StringComparison.OrdinalIgnoreCase)).ToList();
+        }
+
+        var items = new List<HumanVsAiComparisonItem>();
+        var groups = events
+            .Where(e => e.Scene.HasValue && e.Clip.HasValue)
+            .GroupBy(e => (e.ProjectId, Scene: e.Scene!.Value, Clip: e.Clip!.Value));
+
+        foreach (var g in groups)
+        {
+            var humanEv = g.FirstOrDefault(e => string.Equals(e.Type, "clip_pass", StringComparison.OrdinalIgnoreCase) ||
+                                                 string.Equals(e.Type, "clip_fail", StringComparison.OrdinalIgnoreCase) ||
+                                                 string.Equals(e.Type, "scene_approve", StringComparison.OrdinalIgnoreCase));
+            var aiEv = g.FirstOrDefault(e => string.Equals(e.Type, "auto_review", StringComparison.OrdinalIgnoreCase) ||
+                                             string.Equals(e.Type, "auto_review_apply", StringComparison.OrdinalIgnoreCase));
+
+            if (humanEv is not null && aiEv is not null)
+            {
+                var humanPass = string.Equals(humanEv.Type, "clip_pass", StringComparison.OrdinalIgnoreCase) ||
+                                string.Equals(humanEv.Type, "scene_approve", StringComparison.OrdinalIgnoreCase);
+                var aiPass = string.Equals(aiEv.Suggestion, "pass", StringComparison.OrdinalIgnoreCase) ||
+                             string.Equals(aiEv.Outcome, "pass", StringComparison.OrdinalIgnoreCase) ||
+                             (!string.IsNullOrEmpty(aiEv.Note) && aiEv.Note.Contains("Pass", StringComparison.OrdinalIgnoreCase));
+
+                var discType = (humanPass, aiPass) switch
+                {
+                    (false, true) => "AI_TOO_PERMISSIVE", // Human Fail, AI Pass
+                    (true, false) => "AI_TOO_STRICT",     // Human Pass, AI Fail
+                    _ => "AGREEMENT"
+                };
+
+                items.Add(new HumanVsAiComparisonItem
+                {
+                    ProjectId = g.Key.ProjectId,
+                    SceneNumber = g.Key.Scene,
+                    ClipNumber = g.Key.Clip,
+                    HumanVerdict = humanPass ? "pass" : "fail",
+                    Note = humanEv.Note ?? "",
+                    AiVerdict = aiPass ? "pass" : "fail",
+                    AiScore = int.TryParse(aiEv.Confidence, out var sc) ? sc : (aiPass ? 8 : 4),
+                    AiReasoning = aiEv.Note ?? "",
+                    DiscrepancyType = discType,
+                    Ts = humanEv.Ts > aiEv.Ts ? humanEv.Ts : aiEv.Ts,
+                });
+            }
+        }
+
+        var total = items.Count;
+        var agree = items.Count(x => x.DiscrepancyType == "AGREEMENT");
+        var permissive = items.Count(x => x.DiscrepancyType == "AI_TOO_PERMISSIVE");
+        var strict = items.Count(x => x.DiscrepancyType == "AI_TOO_STRICT");
+        var pct = total > 0 ? Math.Round((agree * 100.0) / total, 1) : 100.0;
+
+        return new ReviewComparisonInsightsDto
+        {
+            Ok = true,
+            TotalCompared = total,
+            AgreementCount = agree,
+            AiTooPermissiveCount = permissive,
+            AiTooStrictCount = strict,
+            AgreementPercentage = pct,
+            Discrepancies = items.OrderByDescending(x => x.Ts).ToList(),
+        };
+    }
 }

@@ -772,6 +772,31 @@ app.MapGet("/api/admin/learning/events", (
     return Results.Ok(new { ok = true, events });
 });
 
+app.MapGet("/api/admin/learning/review-comparison", (
+    IUserContext user,
+    ReviewEventStore learning,
+    string? projectId) =>
+{
+    if (!user.IsAdmin)
+        return Results.Json(new { ok = false, error = "admin role required" },
+            statusCode: StatusCodes.Status403Forbidden);
+    var comparison = learning.GetReviewComparison(projectId);
+    return Results.Ok(comparison);
+});
+
+app.MapPost("/api/admin/learning/synthesize-prompt-improvements", async (
+    IUserContext user,
+    LearningProposalService proposals,
+    string? projectId,
+    CancellationToken ct) =>
+{
+    if (!user.IsAdmin)
+        return Results.Json(new { ok = false, error = "admin role required" },
+            statusCode: StatusCodes.Status403Forbidden);
+    var result = await proposals.SynthesizePromptImprovementsAsync(projectId, ct);
+    return Results.Ok(result);
+});
+
 app.MapPost("/api/admin/learning/propose", async (
     ProposeLearningRulesRequest body,
     IUserContext user,

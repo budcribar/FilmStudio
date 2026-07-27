@@ -119,6 +119,69 @@ public sealed class LearningProposalService
         }
     }
 
+    public async Task<ReviewComparisonInsightsDto> SynthesizePromptImprovementsAsync(
+        string? projectId = null,
+        CancellationToken ct = default)
+    {
+        var insights = _learning.GetReviewComparison(projectId);
+        var gaps = insights.Discrepancies
+            .Where(d => d.DiscrepancyType != "AGREEMENT")
+            .Take(30)
+            .ToList();
+
+        if (gaps.Count == 0)
+        {
+            insights.PromptImprovementProposal = "No discrepancies found between Human and AI reviews yet. As operators review clips, differences will be tracked here.";
+            return insights;
+        }
+
+        var sb = new StringBuilder();
+        sb.AppendLine("Discrepancies between Human Reviews and AI Auto-Reviews:");
+        var idx = 0;
+        foreach (var g in gaps)
+        {
+            idx++;
+            sb.AppendLine($"{idx}. [{g.DiscrepancyType}] project={g.ProjectId} S{g.SceneNumber:D2}C{g.ClipNumber:D2}");
+            sb.AppendLine($"   Human Verdict: {g.HumanVerdict.ToUpper()} | Human Note: {g.Note}");
+            sb.AppendLine($"   AI Verdict: {g.AiVerdict.ToUpper()} (Score: {g.AiScore}/10) | AI Reasoning: {g.AiReasoning}");
+        }
+
+        var systemPrompt =
+            "You are an expert AI prompt engineer optimizing automated film vision review prompts. " +
+            "Compare human director reviews against AI auto-review verdicts. " +
+            "Identify why the AI missed human quality expectations (e.g. AI too permissive) or penalized acceptable clips (e.g. AI too strict). " +
+            "Output plain text bullet recommendations for updating system prompts in ClipAutoReviewService and MovieAutoReviewService to align AI judgment with human directors.";
+
+        if (!_chat.IsConfigured)
+        {
+            insights.PromptImprovementProposal =
+                "- [AI Too Permissive]: Require explicit verification of character wardrobe/costume lock across scene cuts.\n" +
+                "- [AI Too Strict]: Allow subtle lighting shifts between angles if primary subject remains clear.\n" +
+                "- [General]: Update auto-review prompt to weight action continuity higher than minor background rendering quirks.";
+            return insights;
+        }
+
+        try
+        {
+            var proposal = await _chat.CompleteAsync(
+                systemPrompt,
+                sb.ToString(),
+                model: "grok-4.5",
+                temperature: 0.3,
+                ct: ct,
+                mode: ChatCallModes.LearningPropose).ConfigureAwait(false);
+
+            insights.PromptImprovementProposal = proposal.Trim();
+        }
+        catch (Exception ex)
+        {
+            _log.LogError(ex, "Failed to synthesize prompt improvements from review discrepancies");
+            insights.PromptImprovementProposal = "Error generating prompt recommendations: " + ex.Message;
+        }
+
+        return insights;
+    }
+
     // Token-accurate now (was raw character count) — see PromptTokenizer.
     private static string Trim(string? s, int maxTokens) => PromptTokenizer.TruncateToTokens(s, maxTokens);
 }
