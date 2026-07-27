@@ -36,7 +36,7 @@
             </p>
         </div>
 
-        @if (_busy && string.IsNullOrEmpty(_error) && string.IsNullOrEmpty(_info))
+        @if (!_checkedSession || (_busy && string.IsNullOrEmpty(_error) && string.IsNullOrEmpty(_info)))
         {
             <div class="auth-status text-center py-4">
                 <div class="spinner-border text-primary mb-3" role="status">
@@ -451,6 +451,7 @@
     private string _status = "Checking session…";
     private bool _busy;
     private bool _started;
+    private bool _checkedSession;
 
     private string PageTitleText =>
         _resetTokenMode ? "Reset password"
@@ -699,10 +700,17 @@
             await Session.EnsureHydratedAsync();
             if (Session.IsLoggedIn && !_resetTokenMode)
             {
-                Nav.NavigateTo(ResolveReturnUrl(), forceLoad: true);
+                Nav.NavigateTo(ResolveReturnUrl(), forceLoad: false);
+                return;
             }
+            _checkedSession = true;
+            StateHasChanged();
         }
-        catch { /* ignore hydration blip */ }
+        catch
+        {
+            _checkedSession = true;
+            StateHasChanged();
+        }
     }
 
     private string ResolveReturnUrl()

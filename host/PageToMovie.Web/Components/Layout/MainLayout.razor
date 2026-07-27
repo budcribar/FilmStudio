@@ -93,6 +93,7 @@
 
     private void OnLocationChanged(object? sender, Microsoft.AspNetCore.Components.Routing.LocationChangedEventArgs e)
     {
+        if (!_hydrated) return;
         _ = InvokeAsync(async () =>
         {
             try { await EnforceLoginGateAsync(); }
