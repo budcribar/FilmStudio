@@ -2482,6 +2482,32 @@ public sealed class ProjectStore
         var videoIndex = await GetDirIndexAsync(videoDir, ct).ConfigureAwait(false);
         var scenesIndex = await GetDirIndexAsync(scenesDir, ct).ConfigureAwait(false);
 
+        HashSet<string>? approvedScenes = null;
+        var stateFile = Path.Combine(projectDir, "pipeline_state.json");
+        if (File.Exists(stateFile))
+        {
+            try
+            {
+                var stateText = await File.ReadAllTextAsync(stateFile, ct).ConfigureAwait(false);
+                using var stateDoc = JsonDocument.Parse(stateText);
+                if (stateDoc.RootElement.TryGetProperty("scene_review", out var sr) &&
+                    sr.ValueKind == JsonValueKind.Object)
+                {
+                    approvedScenes = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                    foreach (var prop in sr.EnumerateObject())
+                    {
+                        if (prop.Value.ValueKind == JsonValueKind.Object &&
+                            prop.Value.TryGetProperty("status", out var stEl) &&
+                            string.Equals(stEl.GetString(), "approved", StringComparison.OrdinalIgnoreCase))
+                        {
+                            approvedScenes.Add(prop.Name);
+                        }
+                    }
+                }
+            }
+            catch { /* non-fatal */ }
+        }
+
         var rows = new List<SceneSummary>();
         foreach (var s in scenesEl.EnumerateArray())
         {
@@ -2561,6 +2587,7 @@ public sealed class ProjectStore
             var status = nClips == 0 || onDisk == 0
                 ? "empty"
                 : complete ? "complete" : "partial";
+            var isApproved = approvedScenes?.Contains($"S{sn:D2}") == true;
 
             rows.Add(new SceneSummary
             {
@@ -2577,6 +2604,7 @@ public sealed class ProjectStore
                 LocationIds = locs,
                 PrimaryLocationId = primaryLoc,
                 Status = status,
+                IsApproved = isApproved,
             });
         }
 

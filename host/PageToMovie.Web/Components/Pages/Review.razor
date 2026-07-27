@@ -25,16 +25,22 @@
 }
 else
 {
-<p class="text-muted mb-1">
-    Mark clips pass/fail, approve scenes, and rebuild the full movie draft.
-</p>
-<p class="small text-muted">
-    <strong>Assembly gate:</strong> auto-review <em>fail</em> and human <em>fail</em> clips are excluded from Play stitch / export
-    until you Pass with an override note.
-    <strong>Play scene</strong> / <strong>Play WIP</strong> stitch in your browser when composites are missing or stale
-    (no server ffmpeg for preview).
-    <strong>Auto-review</strong> samples frames in the browser (ffmpeg.wasm), then the server runs vision with the API key.
-</p>
+<div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+    <p class="text-muted mb-0">
+        Review your movie scenes, track approved content, and play or share the final film.
+    </p>
+    @if (_scenes.Count > 0)
+    {
+        var approvedCount = _scenes.Count(s => s.IsApproved);
+        var pct = Math.Round((approvedCount * 100.0) / Math.Max(1, _scenes.Count));
+        <div class="d-flex align-items-center gap-2 bg-dark border border-secondary px-3 py-1.5 rounded-pill text-white small shadow-sm">
+            <span><strong>Checklist:</strong> @approvedCount of @_scenes.Count scenes approved (@pct%)</span>
+            <div class="progress ms-1" style="width: 80px; height: 6px;">
+                <div class="progress-bar bg-success" role="progressbar" style="width: @pct%"></div>
+            </div>
+        </div>
+    }
+</div>
 
 @if (!string.IsNullOrEmpty(_error))
 {
@@ -44,9 +50,6 @@ else
 {
     <div class="alert alert-info">@_message</div>
 }
-    <p class="text-muted mb-3">
-        Review scenes, rate clip takes, and play or share the movie.
-    </p>
 
 <div class="d-flex flex-wrap gap-2 mb-3">
         <button class="btn btn-outline-light fw-semibold" data-testid="review-auto-all"
@@ -514,12 +517,24 @@ else if (_showScenePlayer && _clientStitching)
                                                         @onclick="() => PlaySceneAsync(sn)">
                                                     ▶ Play
                                                 </button>
-                                                <button class="btn btn-sm btn-outline-success"
-                                                        disabled="@(_busy || JobRunning)"
-                                                        title="Mark scene approved"
-                                                        @onclick="() => ApproveAsync(sn)">
-                                                    Approve
-                                                </button>
+                                                @if (s.IsApproved)
+                                                {
+                                                    <button class="btn btn-sm btn-success"
+                                                            disabled="@(_busy || JobRunning)"
+                                                            title="Scene is approved. Click to toggle."
+                                                            @onclick="() => ApproveAsync(sn)">
+                                                        ✓ Approved
+                                                    </button>
+                                                }
+                                                else
+                                                {
+                                                    <button class="btn btn-sm btn-outline-success"
+                                                            disabled="@(_busy || JobRunning)"
+                                                            title="Mark scene approved"
+                                                            @onclick="() => ApproveAsync(sn)">
+                                                        ☐ Approve
+                                                    </button>
+                                                }
                                                 <button class="btn btn-sm btn-link"
                                                         @onclick="() => SelectSceneAsync(sn)">
                                                     Clips
