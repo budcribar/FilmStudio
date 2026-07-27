@@ -21,8 +21,6 @@ COPY host/ host/
 COPY prompts/ prompts/
 # Seed demo bundles (meta.json only — movies resolved from project WIP at startup)
 COPY seed_demos/ seed_demos/
-# TellTaleHeart demo project (WIP movie used as seed source on first boot)
-COPY projects/TellTaleHeart/ projects/TellTaleHeart/
 
 # Re-restore after full source copy so Linux restore graph matches final csproj props
 # (avoids stale --no-restore when only .cs files changed but package needs differ).
@@ -60,9 +58,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY --from=build /app/publish .
 # Seed demo catalog (meta.json stubs, pre-approved public) — resolved against WIP movie at startup
 COPY --from=build /src/seed_demos ./seed_demos/
-# TellTaleHeart project: blueprints + WIP movie.mp4 available as demo source
-# The startup seeder copies movie_wip.mp4 → /data/_demos/telltale-heart-v1/movie.mp4 on first boot
-COPY --from=build /src/projects/TellTaleHeart ./projects/TellTaleHeart/
 
 # Environment defaults (set JWT / API secrets via Railway Variables — not baked into the image)
 ENV ASPNETCORE_URLS="http://0.0.0.0:5088"
