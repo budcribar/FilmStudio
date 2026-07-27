@@ -227,14 +227,6 @@
                                                 @onclick="() => OpenCollaboratorsModal(id)">
                                             Collaborate
                                         </button>
-                                        <button type="button"
-                                                class="btn btn-sm btn-light flex-shrink-0"
-                                                data-testid="home-save-revision"
-                                                title="Save a revision of this project package (screenplay, cast, shot plan — not video)"
-                                                disabled="@_busy"
-                                                @onclick="() => SaveRevisionAsync(id)">
-                                            Save revision
-                                        </button>
                                         @if (_historyUrls.TryGetValue(id, out var historyUrl) && !string.IsNullOrWhiteSpace(historyUrl))
                                         {
                                             <button type="button"
