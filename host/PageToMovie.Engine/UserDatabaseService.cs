@@ -204,6 +204,17 @@ public class UserDatabaseService
                     cmd.ExecuteNonQuery();
                 }
 
+                using (var cmd = conn.CreateCommand())
+                {
+                    cmd.CommandText = @"
+                        INSERT OR IGNORE INTO users (user_id, username, password_hash, role, created_at)
+                        VALUES ('admin', 'admin', @hash, 'Admin', @created);
+                    ";
+                    cmd.Parameters.AddWithValue("@hash", HashPassword("admin"));
+                    cmd.Parameters.AddWithValue("@created", DateTime.UtcNow.ToString("o"));
+                    cmd.ExecuteNonQuery();
+                }
+
                 _initialized = true;
                 _logger.LogInformation("SQLite database initialized at {DbPath} (WAL mode enabled)", _dbPath);
             }

@@ -413,8 +413,8 @@ public sealed class AdminAuthService : IAdminAuthService
         if (!string.IsNullOrEmpty(_auth.AdminPassword))
             return password == _auth.AdminPassword;
 
-        // No password configured: allow only in Development with empty password
-        return _env.IsDevelopment() && password.Length == 0;
+        // No password configured: allow in Development with empty or default "admin" password
+        return _env.IsDevelopment() && (password.Length == 0 || password == "admin");
     }
 
     private string IssueJwt(
