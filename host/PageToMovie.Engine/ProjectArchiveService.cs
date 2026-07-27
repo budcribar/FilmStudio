@@ -24,11 +24,16 @@ public sealed class ProjectArchiveService
     public const long MaxSingleEntryUncompressedBytes = 512L * 1024 * 1024;
 
     private readonly ProjectStore _projects;
+    private readonly ClipSidecarService? _sidecars;
     private readonly ILogger<ProjectArchiveService> _log;
 
-    public ProjectArchiveService(ProjectStore projects, ILogger<ProjectArchiveService>? log = null)
+    public ProjectArchiveService(
+        ProjectStore projects,
+        ILogger<ProjectArchiveService>? log = null,
+        ClipSidecarService? sidecars = null)
     {
         _projects = projects;
+        _sidecars = sidecars;
         _log = log ?? Microsoft.Extensions.Logging.Abstractions.NullLogger<ProjectArchiveService>.Instance;
     }
 
@@ -46,6 +51,20 @@ public sealed class ProjectArchiveService
         var stamp = DateTime.UtcNow.ToString("yyyyMMdd_HHmmss");
         var fileName = $"PageToMovie_{id}_{stamp}.zip";
         var tempPath = Path.Combine(Path.GetTempPath(), $"ptm-export-{Guid.NewGuid():N}.zip");
+
+        if (_sidecars is not null)
+        {
+            try
+            {
+                var created = await _sidecars.EnsureAllSidecarsExistAsync(projectDir, ct).ConfigureAwait(false);
+                if (created > 0)
+                    _log.LogInformation("Export: created {Count} missing clip sidecar(s) for {ProjectId}", created, id);
+            }
+            catch (Exception ex)
+            {
+                _log.LogWarning(ex, "Export: sidecar backfill failed for {ProjectId}", id);
+            }
+        }
 
         try
         {

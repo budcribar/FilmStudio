@@ -4,6 +4,7 @@
 @inject AdminSessionService Session
 @inject JobHubClient Hub
 @inject NavigationManager Nav
+@inject ClientMediaFolderService MediaFolder
 @inject IJSRuntime Js
 @using Microsoft.AspNetCore.Components.Forms
 
@@ -816,6 +817,10 @@
             _archiveMsg = result?.Message
                           ?? $"Imported {result?.ProjectId ?? "project"}";
             _importFile = null;
+            if (result is not null && !string.IsNullOrWhiteSpace(result.ProjectId))
+            {
+                await MediaFolder.SyncProjectMediaToClientAsync(result.ProjectId);
+            }
             await RefreshProjectOptionsAsync();
             await RefreshAsync();
         }

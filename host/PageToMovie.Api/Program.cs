@@ -129,6 +129,8 @@ builder.Services.AddSingleton<DemoUpvoteService>();
 builder.Services.AddHostedService<ServerMediaPruningService>();
 builder.Services.AddSingleton<MediaRegistryService>();
 builder.Services.AddSingleton<MediaProxyTicketStore>();
+builder.Services.AddSingleton<ClipSidecarService>();
+builder.Services.AddSingleton<ProjectArchiveService>();
 builder.Services.AddSingleton<YouTubeAuthService>();
 builder.Services.AddSingleton<DemoYouTubePublisherService>();
 builder.Services.AddSingleton<ProjectGitRepositoryService>();
@@ -3921,6 +3923,59 @@ app.MapPost("/api/projects/{id}/movie/wip/share", (
             projectId = rec.ProjectId,
             kind = rec.Kind,
         });
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { ok = false, error = ex.Message });
+    }
+});
+
+/// <summary>Client media sync: list available project MP4s and sidecars with proxy tickets.</summary>
+app.MapGet("/api/projects/{id}/media/sync", async (
+    string id,
+    ProjectStore store,
+    MediaProxyTicketStore tickets,
+    IUserContext user,
+    IOptions<PageToMovieOptions> opts,
+    CancellationToken ct) =>
+{
+    if (AuthGate.RequireLogin(user, opts) is { } denied)
+        return denied;
+    try
+    {
+        await store.RequireProjectAsync(id, ct);
+        var projectDir = store.GetProjectDir(id);
+        var videoDir = Path.Combine(projectDir, "assets", "video");
+        var list = new List<object>();
+
+        if (Directory.Exists(videoDir))
+        {
+            var files = Directory.GetFiles(videoDir, "*", SearchOption.TopDirectoryOnly)
+                .Where(f => f.EndsWith(".mp4", StringComparison.OrdinalIgnoreCase) ||
+                            f.EndsWith(".clip.json", StringComparison.OrdinalIgnoreCase));
+
+            foreach (var file in files)
+            {
+                var relPath = $"assets/video/{Path.GetFileName(file)}";
+                var fi = new FileInfo(file);
+                var isMp4 = file.EndsWith(".mp4", StringComparison.OrdinalIgnoreCase);
+
+                var streamUrl = isMp4
+                    ? $"/api/projects/{Uri.EscapeDataString(id)}/scenes/1/composite" // fallback media stream
+                    : null;
+
+                list.Add(new
+                {
+                    relativePath = relPath,
+                    fileName = Path.GetFileName(file),
+                    sizeBytes = fi.Length,
+                    isMp4,
+                    streamUrl,
+                });
+            }
+        }
+
+        return Results.Ok(new { ok = true, projectId = id, files = list });
     }
     catch (Exception ex)
     {

@@ -58,6 +58,7 @@ public sealed class FilmJobService
     private IJobProgressSink? _sink;
     private readonly IUserContext _user;
     private readonly IUserApiKeyProvider _keys;
+    private readonly ClipSidecarService? _sidecars;
 
     public FilmJobService(
         ProjectStore projects,
@@ -87,7 +88,8 @@ public sealed class FilmJobService
         IOptions<PageToMovieOptions> opts,
         ILogger<FilmJobService> log,
         IUserContext user,
-        IUserApiKeyProvider keys)
+        IUserApiKeyProvider keys,
+        ClipSidecarService? sidecars = null)
     {
         _projects = projects;
         _grok = grok;
@@ -117,6 +119,7 @@ public sealed class FilmJobService
         _log = log;
         _user = user;
         _keys = keys;
+        _sidecars = sidecars;
     }
 
     public void SetProgressSink(IJobProgressSink sink) => _sink = sink;
@@ -2592,6 +2595,30 @@ public sealed class FilmJobService
             });
             await AppendLogAsync(
                 $"  [Grok] video ready for client save → {relPath} (not stored on server disk)");
+
+            if (_sidecars is not null)
+            {
+                try
+                {
+                    var projDir = _projects.GetProjectDir(Snapshot.ProjectId ?? projectId ?? _projects.ActiveProjectId);
+                    await _sidecars.WriteSidecarAsync(
+                        projDir,
+                        scene,
+                        clip,
+                        prompt: built.Prompt,
+                        scriptText: "",
+                        model: model,
+                        resolution: resolution,
+                        durationSeconds: (double)duration,
+                        sha256: "",
+                        sizeBytes: 0,
+                        ct: ct).ConfigureAwait(false);
+                }
+                catch (Exception ex)
+                {
+                    _log.LogWarning(ex, "Could not write clip sidecar for S{Scene:D2}C{Clip:D2}", scene, clip);
+                }
+            }
 
             // Cost uses requested duration (no server file to probe until client registers).
             var costDurationSec = (double)duration;
