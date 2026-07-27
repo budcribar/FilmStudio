@@ -167,4 +167,26 @@ When performing data/folder/schema migrations via temporary code blocks (such as
 
 ---
 
-*Last updated: 2026-07-27 — product north star; auto-run long-term; general solutions; UI copy principles; ephemeral migration cleanup lifecycle rule.*
+## Server Diagnostics & Log Retrieval (Railway / Production Debugging)
+
+When debugging runtime behavior on the live Railway server across coding agent sessions:
+
+1. **Log Export Zip Endpoint**:
+   - URL: `/api/admin/logs/export` (also accessible via operator key query parameter `?me=<OPERATOR_SECRET>` or header `X-Admin-Key`).
+   - Downloads a `.zip` archive containing:
+     - `system_info.json` (machine name, OS, active project ID, timestamp)
+     - `job_logs.json` (active job snapshots & multi-line log histories)
+     - `edit_logs/` (`edit_log.json` for all projects)
+     - `artifact_index/` (`artifact_index.json` for all projects)
+     - `prompts/` (all generated `*.prompt.txt`, `*.meta.json`, and `*.clip.json` files)
+
+2. **Live JSON Log State**:
+   - URL: `/api/admin/logs`
+   - Returns active job state, system info, and project list.
+
+3. **Admin Dashboard Button**:
+   - The Admin page (`/admin`) includes a **📥 Download Server Logs** button in the header.
+
+---
+
+*Last updated: 2026-07-27 — product north star; auto-run long-term; general solutions; UI copy principles; ephemeral migration cleanup lifecycle rule; server diagnostics & log retrieval.*
