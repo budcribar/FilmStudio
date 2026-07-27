@@ -1766,23 +1766,43 @@ app.MapGet("/api/youtube/connect-url", (IUserContext user, YouTubeAuthService yo
     return Results.Ok(new { ok = true, url = youTube.BuildAuthorizationUrl(state) });
 });
 
-app.MapGet("/api/youtube/oauth2callback", async (
-    string? code, string? state, string? error, YouTubeAuthService youTube, CancellationToken ct) =>
+async Task HandleYouTubeCallbackAsync(HttpContext http, YouTubeAuthService youTube, CancellationToken ct)
 {
+    var code = http.Request.Query["code"].FirstOrDefault();
+    var state = http.Request.Query["state"].FirstOrDefault();
+    var error = http.Request.Query["error"].FirstOrDefault();
+
     if (!string.IsNullOrWhiteSpace(error))
-        return Results.Redirect($"/review?youtube=error&message={Uri.EscapeDataString(error)}");
-    if (string.IsNullOrWhiteSpace(code) || string.IsNullOrWhiteSpace(state) || !youTube.ConsumeState(state))
-        return Results.Redirect("/review?youtube=error&message=" + Uri.EscapeDataString("Invalid or expired request."));
+    {
+        http.Response.Redirect($"/review?youtube=error&message={Uri.EscapeDataString(error)}");
+        return;
+    }
+
+    if (string.IsNullOrWhiteSpace(code))
+    {
+        http.Response.Redirect("/review?youtube=error&message=" + Uri.EscapeDataString("Missing authorization code from Google."));
+        return;
+    }
+
+    if (string.IsNullOrWhiteSpace(state) || !youTube.ConsumeState(state))
+    {
+        http.Response.Redirect("/review?youtube=error&message=" + Uri.EscapeDataString("Invalid or expired request."));
+        return;
+    }
+
     try
     {
         await youTube.ExchangeCodeAsync(code, ct);
-        return Results.Redirect("/review?youtube=connected");
+        http.Response.Redirect("/review?youtube=connected");
     }
     catch (Exception ex)
     {
-        return Results.Redirect($"/review?youtube=error&message={Uri.EscapeDataString(ex.Message)}");
+        http.Response.Redirect($"/review?youtube=error&message={Uri.EscapeDataString(ex.Message)}");
     }
-});
+}
+
+app.MapGet("/api/youtube/oauth2callback", HandleYouTubeCallbackAsync);
+app.MapGet("/api/youtube/oauth2callback/", HandleYouTubeCallbackAsync);
 
 app.MapPost("/api/youtube/disconnect", async (IUserContext user, YouTubeAuthService youTube, CancellationToken ct) =>
 {
