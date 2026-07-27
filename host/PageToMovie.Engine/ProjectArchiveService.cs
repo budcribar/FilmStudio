@@ -29,12 +29,17 @@ public sealed class ProjectArchiveService
 
     public ProjectArchiveService(
         ProjectStore projects,
-        ILogger<ProjectArchiveService>? log = null,
-        ClipSidecarService? sidecars = null)
+        ClipSidecarService sidecars,
+        ILogger<ProjectArchiveService>? log = null)
     {
         _projects = projects;
         _sidecars = sidecars;
         _log = log ?? Microsoft.Extensions.Logging.Abstractions.NullLogger<ProjectArchiveService>.Instance;
+    }
+
+    public ProjectArchiveService(ProjectStore projects, ILogger<ProjectArchiveService>? log)
+        : this(projects, null!, log)
+    {
     }
 
     /// <summary>

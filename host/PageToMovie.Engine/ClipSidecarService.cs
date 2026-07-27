@@ -87,8 +87,14 @@ public sealed class ClipSidecarService
         if (!Directory.Exists(videoDir))
             return 0;
 
-        var mp4Files = Directory.GetFiles(videoDir, "*.mp4", SearchOption.TopDirectoryOnly);
-        if (mp4Files.Length == 0)
+        var videoFiles = Directory.EnumerateFiles(videoDir, "*", SearchOption.AllDirectories)
+            .Where(f => f.EndsWith(".mp4", StringComparison.OrdinalIgnoreCase) ||
+                        f.EndsWith(".mp4.client.json", StringComparison.OrdinalIgnoreCase) ||
+                        f.EndsWith(".webm", StringComparison.OrdinalIgnoreCase) ||
+                        f.EndsWith(".mov", StringComparison.OrdinalIgnoreCase))
+            .ToList();
+
+        if (videoFiles.Count == 0)
             return 0;
 
         var createdCount = 0;
@@ -105,17 +111,24 @@ public sealed class ClipSidecarService
 
         using (blueprintDoc)
         {
-            foreach (var mp4Path in mp4Files)
+            foreach (var file in videoFiles)
             {
                 ct.ThrowIfCancellationRequested();
+                var name = Path.GetFileName(file);
+
+                // Strip .client.json marker suffix if present
+                if (name.EndsWith(".client.json", StringComparison.OrdinalIgnoreCase))
+                    name = name[..^12];
+
+                var mp4Path = Path.Combine(Path.GetDirectoryName(file)!, name);
                 var sidecarPath = GetSidecarPathForMp4(mp4Path);
                 if (File.Exists(sidecarPath))
                     continue;
 
-                var name = Path.GetFileName(mp4Path);
-                var match = System.Text.RegularExpressions.Regex.Match(name, @"^scene_(\d{2})_clip_(\d{2})", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+                var match = System.Text.RegularExpressions.Regex.Match(
+                    name, @"scene_?(\d+)(?:_clip_?(\d+))?", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
                 var scene = match.Success && int.TryParse(match.Groups[1].Value, out var s) ? s : 1;
-                var clip = match.Success && int.TryParse(match.Groups[2].Value, out var c) ? c : 1;
+                var clip = match.Success && match.Groups[2].Success && int.TryParse(match.Groups[2].Value, out var c) ? c : 1;
 
                 // Load prompt text if exists
                 var promptPath = Path.Combine(videoDir, "prompts", $"S{scene:D2}C{clip:D2}.txt");
@@ -126,9 +139,9 @@ public sealed class ClipSidecarService
                     catch { /* ignore */ }
                 }
 
-                // Compute sha256 and size
-                var fi = new FileInfo(mp4Path);
-                var sha256 = await MediaRegistryService.HashFileAsync(mp4Path, ct).ConfigureAwait(false);
+                // Compute sha256 and size if local file exists
+                var fi = new FileInfo(file);
+                var sha256 = File.Exists(mp4Path) ? await MediaRegistryService.HashFileAsync(mp4Path, ct).ConfigureAwait(false) : "";
 
                 await WriteSidecarAsync(
                     projectDir,
