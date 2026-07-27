@@ -4359,6 +4359,17 @@ app.MapPost("/api/projects/{id}/media/register", async (
                 registeredAt = dto.CreatedAt,
                 userId = user.UserId,
             }) + "\n", ct);
+
+            // Reclaim server volume storage: if server MP4 exists and matches verified client registration size, delete server copy.
+            if (File.Exists(full))
+            {
+                var fi = new FileInfo(full);
+                if (dto.SizeBytes <= 0 || fi.Length == dto.SizeBytes)
+                {
+                    File.Delete(full);
+                }
+            }
+
             store.InvalidateSceneListCache(id);
         }
         catch { /* non-fatal */ }
