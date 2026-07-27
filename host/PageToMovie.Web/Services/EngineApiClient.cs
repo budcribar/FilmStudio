@@ -48,7 +48,11 @@ public sealed class EngineApiClient
         try
         {
             var res = await _http.GetFromJsonAsync<JsonElement>($"/api/users/{Uri.EscapeDataString(userId.Trim())}/terms", ct);
-            return res.TryGetProperty("accepted", out var a) && a.GetBoolean();
+            if (res.TryGetProperty("hasAccepted", out var ha) && ha.ValueKind is JsonValueKind.True)
+                return true;
+            if (res.TryGetProperty("accepted", out var a) && a.ValueKind is JsonValueKind.True)
+                return true;
+            return false;
         }
         catch { return false; }
     }

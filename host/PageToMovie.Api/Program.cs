@@ -2048,7 +2048,7 @@ app.MapPost("/api/projects/{id}/characters/{charKey}/voice",
 app.MapGet("/api/users/{id}/terms", async (string id, UserDatabaseService userDb) =>
 {
     var hasAccepted = await userDb.HasAcceptedTermsAsync(id);
-    return Results.Ok(new { hasAccepted });
+    return Results.Ok(new { hasAccepted, accepted = hasAccepted });
 });
 
 app.MapPost("/api/users/terms/accept", async (AcceptTermsRequest body, UserDatabaseService userDb) =>
