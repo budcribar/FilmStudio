@@ -168,10 +168,9 @@
                                         data-testid="@($"home-project-{id}")"
                                         data-project-id="@id"
                                         data-project-active="@(active ? "true" : "false")"
-                                        title="Click to select, double-click to open"
+                                        title="Click to open project"
                                         disabled="@_busy"
-                                        @onclick="() => SelectProjectAsync(id)"
-                                        @ondblclick="() => OpenProjectAsync(id)">
+                                        @onclick="() => OpenProjectAsync(id)">
                                     <strong>@(p.Label ?? p.Title ?? id)</strong>
                                      @if (!string.IsNullOrWhiteSpace(p.ParentProjectId))
                                      {
@@ -195,7 +194,6 @@
                                  </button>
                                 @if (active)
                                 {
-                                    <a class="btn btn-sm btn-light flex-shrink-0" data-testid="home-open-adaptation" href="adaptation">Open</a>
                                     @if (!string.IsNullOrWhiteSpace(p.ParentProjectId) && canManage)
                                     {
                                         <a class="btn btn-sm btn-outline-warning flex-shrink-0"
@@ -246,10 +244,11 @@
                                         }
                                     }
                                     <button type="button"
-                                            class="btn btn-sm btn-outline-light me-2 flex-shrink-0"
+                                            class="btn btn-sm btn-outline-danger me-2 flex-shrink-0"
+                                            title="Delete project"
                                             disabled="@_busy"
                                             @onclick="() => BeginDeleteAsync(id, p.Label ?? p.Title ?? id)">
-                                        Delete
+                                        🗑️
                                     </button>
                                 }
                             </div>
