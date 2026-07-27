@@ -1,30 +1,11 @@
 /**
  * Client-side video stitching, audio silence trim, and frame sampling via ffmpeg.wasm.
+ * All static ffmpeg assets are served same-origin from /js/ffmpeg/ for maximum speed & zero CORS issues.
  */
 function reportProgress(onProgress, pct, msg) {
     if (typeof onProgress === "function") {
         try { onProgress(pct, msg); } catch (_) { }
     }
-}
-
-// Cross-origin Web Worker Blob wrapper for CDN worker scripts (e.g. ffmpeg.wasm worker 814.ffmpeg.js)
-if (!window._ptmWorkerPatched && typeof window !== "undefined" && window.Worker) {
-    window._ptmWorkerPatched = true;
-    const NativeWorker = window.Worker;
-    window.Worker = function (scriptURL, options) {
-        try {
-            const urlStr = scriptURL ? String(scriptURL) : "";
-            if (urlStr.startsWith("http://") || urlStr.startsWith("https://")) {
-                const targetUrl = new URL(urlStr, window.location.href);
-                if (targetUrl.origin !== window.location.origin) {
-                    const blob = new Blob(["importScripts(" + JSON.stringify(targetUrl.href) + ");"], { type: "application/javascript" });
-                    const blobUrl = URL.createObjectURL(blob);
-                    return new NativeWorker(blobUrl, options);
-                }
-            }
-        } catch (_) { /* fallback to direct */ }
-        return new NativeWorker(scriptURL, options);
-    };
 }
 
 window.PageToMovieFfmpeg = {
@@ -38,13 +19,14 @@ window.PageToMovieFfmpeg = {
 
     _assets: {
         ffmpegJs: {
-            url: "https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.10/dist/umd/ffmpeg.js",
+            url: "/js/ffmpeg/ffmpeg.js",
         },
         utilJs: {
-            url: "https://cdn.jsdelivr.net/npm/@ffmpeg/util@0.12.1/dist/umd/index.js",
+            url: "/js/ffmpeg/util.js",
         },
-        workerJs: "https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.10/dist/umd/814.ffmpeg.js",
-        coreBase: "https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.6/dist/umd",
+        workerJs: "/js/ffmpeg/814.ffmpeg.js",
+        coreJs: "/js/ffmpeg/ffmpeg-core.js",
+        wasmJs: "/js/ffmpeg/ffmpeg-core.wasm",
     },
 
     _runExclusiveAsync: function (fn) {
@@ -59,7 +41,7 @@ window.PageToMovieFfmpeg = {
         }
     },
 
-    /** Load UMD scripts once, then ffmpeg core/wasm from jsDelivr via Blob URLs. */
+    /** Load local ffmpeg assets from same-origin /js/ffmpeg/. */
     ensureLoadedAsync: async function (onProgress) {
         if (this._loaded && this._ffmpeg) return { success: true };
         if (this._loading) return this._loading;
@@ -85,17 +67,12 @@ window.PageToMovieFfmpeg = {
                     reportProgress(onProgress, pct, "Combining…");
                 });
 
-                reportProgress(onProgress, 5, "Loading ffmpeg core…");
-                const util = window.FFmpegUtil || {};
-                if (typeof util.toBlobURL === "function") {
-                    const baseURL = self._assets.coreBase;
-                    const coreURL = await util.toBlobURL(baseURL + "/ffmpeg-core.js", "text/javascript");
-                    const wasmURL = await util.toBlobURL(baseURL + "/ffmpeg-core.wasm", "application/wasm");
-                    const classWorkerURL = await util.toBlobURL(self._assets.workerJs, "text/javascript");
-                    await ffmpeg.load({ coreURL, wasmURL, classWorkerURL });
-                } else {
-                    await ffmpeg.load();
-                }
+                reportProgress(onProgress, 5, "Loading ffmpeg engine…");
+                await ffmpeg.load({
+                    coreURL: self._assets.coreJs,
+                    wasmURL: self._assets.wasmJs,
+                    classWorkerURL: self._assets.workerJs,
+                });
 
                 self._ffmpeg = ffmpeg;
                 self._loaded = true;

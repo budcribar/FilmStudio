@@ -294,7 +294,12 @@ builder.WebHost.ConfigureKestrel(o =>
 
 var app = builder.Build();
 
-app.UseStaticFiles();
+var staticFileProvider = new Microsoft.AspNetCore.StaticFiles.FileExtensionContentTypeProvider();
+staticFileProvider.Mappings[".wasm"] = "application/wasm";
+app.UseStaticFiles(new StaticFileOptions
+{
+    ContentTypeProvider = staticFileProvider
+});
 app.MapStaticAssets();
 app.UseAntiforgery();
 
