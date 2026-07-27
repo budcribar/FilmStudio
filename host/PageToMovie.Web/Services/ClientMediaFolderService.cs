@@ -461,16 +461,57 @@ public sealed class ClientMediaFolderService
     /// </summary>
     public async Task<int> SyncProjectMediaToClientAsync(string projectId)
     {
-        if (string.IsNullOrWhiteSpace(projectId) || !IsConnected)
+        if (string.IsNullOrWhiteSpace(projectId))
             return 0;
+
+        if (!IsConnected)
+        {
+            await TryReconnectAsync();
+        }
+
+        if (!IsConnected)
+        {
+            LastStatus = "Connect local media folder to save project videos locally";
+            Changed?.Invoke();
+            return 0;
+        }
 
         try
         {
             LastStatus = $"Syncing project '{projectId}' media to local folder…";
             Changed?.Invoke();
 
+            var syncList = await _api.GetProjectMediaSyncListAsync(projectId);
             var count = 0;
-            LastStatus = $"Media folder synced for '{projectId}'";
+
+            if (syncList?.Files is not null)
+            {
+                foreach (var file in syncList.Files)
+                {
+                    if (string.IsNullOrWhiteSpace(file.StreamUrl))
+                        continue;
+
+                    var saved = await _js.InvokeAsync<JsSaveResult>(
+                        "PageToMovieMedia.saveFromUrlAsync",
+                        file.StreamUrl,
+                        file.RelativePath,
+                        null);
+
+                    if (saved is { Success: true } && !string.IsNullOrWhiteSpace(saved.Sha256))
+                    {
+                        count++;
+                        await _api.RegisterMediaAsync(projectId, new MediaRegisterRequest
+                        {
+                            RelativePath = saved.RelativePath ?? file.RelativePath,
+                            Sha256 = saved.Sha256,
+                            SizeBytes = saved.SizeBytes,
+                            Kind = file.IsMp4 ? "clip" : "sidecar",
+                        });
+                    }
+                }
+            }
+
+            LastStatus = $"Media folder synced: {count} file(s) for '{projectId}'";
             Changed?.Invoke();
             return count;
         }

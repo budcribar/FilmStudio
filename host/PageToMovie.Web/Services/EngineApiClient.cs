@@ -48,16 +48,9 @@ public sealed class EngineApiClient
         try
         {
             var res = await _http.GetFromJsonAsync<JsonElement>($"/api/users/{Uri.EscapeDataString(userId.Trim())}/terms", ct);
-            if (res.TryGetProperty("hasAccepted", out var accepted))
-            {
-                return accepted.GetBoolean();
-            }
+            return res.TryGetProperty("accepted", out var a) && a.GetBoolean();
         }
-        catch
-        {
-            // fallback
-        }
-        return false;
+        catch { return false; }
     }
 
     private void OnSessionChanged()
@@ -2551,6 +2544,18 @@ public sealed class EngineApiClient
         return json.Length > 200 ? json[..200] : json;
     }
 
+    public async Task<ProjectMediaSyncResult?> GetProjectMediaSyncListAsync(string projectId, CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(projectId)) return null;
+        try
+        {
+            return await _http.GetFromJsonAsync<ProjectMediaSyncResult>($"/api/projects/{Uri.EscapeDataString(projectId.Trim())}/media/sync", JsonOpts, ct).ConfigureAwait(false);
+        }
+        catch
+        {
+            return null;
+        }
+    }
 }
 
 public sealed class ProjectsDto
@@ -3085,5 +3090,21 @@ public sealed class ProjectPushResultDto
     public string? HistoryUrl { get; set; }
     public string? Message { get; set; }
     public string? Error { get; set; }
+}
+
+public sealed class ProjectMediaSyncResult
+{
+    public bool Ok { get; set; }
+    public string? ProjectId { get; set; }
+    public List<ProjectMediaSyncFile>? Files { get; set; }
+}
+
+public sealed class ProjectMediaSyncFile
+{
+    public string RelativePath { get; set; } = "";
+    public string FileName { get; set; } = "";
+    public long SizeBytes { get; set; }
+    public bool IsMp4 { get; set; }
+    public string? StreamUrl { get; set; }
 }
 
