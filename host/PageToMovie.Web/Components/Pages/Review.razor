@@ -56,22 +56,22 @@ else
         <button type="button" 
                 class="btn @(_activeTab == "review" ? "btn-primary fw-bold" : "btn-outline-secondary text-white-50") px-3"
                 data-testid="review-tab-review"
-                @onclick="SetTabReview">
+                @onclick='() => ToggleTab("review")'>
             🤖 Review &amp; Approve
         </button>
         <button type="button" 
                 class="btn @(_activeTab == "play" ? "btn-success fw-bold" : "btn-outline-secondary text-white-50") px-3"
                 data-testid="review-tab-play"
                 disabled="@(_busy || JobRunning || !CanPlayMovie)"
-                @onclick="SetTabPlayAsync"
+                @onclick='() => ToggleTab("play")'
                 title="@WipPlayTitle">
-            ▶ Play Movie
+            ▶ Play
         </button>
         <button type="button" 
                 class="btn @(_activeTab == "share" ? "btn-info text-white fw-bold" : "btn-outline-secondary text-white-50") px-3"
                 data-testid="review-tab-share"
                 disabled="@(_busy || JobRunning || !CanShareMovie)"
-                @onclick="SetTabShare">
+                @onclick='() => ToggleTab("share")'>
             📤 Share &amp; Export
         </button>
     </div>
@@ -1089,31 +1089,26 @@ else if (_activeTab == "share")
             : $"{t.Minutes}:{t.Seconds:D2}";
     }
 
-    private string _activeTab = "review"; // "review" | "play" | "share"
+    private string? _activeTab = "review"; // null | "review" | "play" | "share"
 
-    private void SetTabReview()
+    private void ToggleTab(string tab)
     {
-        _activeTab = "review";
-        _showWipPlayer = false;
-        _showSaveDialog = false;
-    }
-
-    private async Task SetTabPlayAsync()
-    {
-        _activeTab = "play";
-        _showSaveDialog = false;
-        if (!_showWipPlayer && !_clientStitching)
+        if (_activeTab == tab)
         {
-            await PlayWipAsync();
+            _activeTab = null; // Toggle off / collapse card
+        }
+        else
+        {
+            _activeTab = tab;
+            if (tab == "share")
+            {
+                _showSaveDialog = true;
+            }
         }
     }
 
-    private void SetTabShare()
-    {
-        _activeTab = "share";
-        _showWipPlayer = false;
-        _showSaveDialog = true;
-    }
+    private void SetTabReview() => ToggleTab("review");
+    private void SetTabShare() => ToggleTab("share");
 
     private bool CanPlayMovie =>
         _wipExists || _wipCanBuild || MediaFolder.IsConnected || MediaFolder.IsSyncing || _scenes.Any(s => s.CompositeExists || s.ClipsOnDisk > 0);
