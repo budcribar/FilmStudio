@@ -40,7 +40,8 @@ jobs:
 
       - name: Build
         run: |
-          dotnet build PageToMovie.slnx -c Release
+          dotnet build PageToMovie.Api/PageToMovie.Api.csproj -c Release
+          dotnet build PageToMovie.LoadSim/PageToMovie.LoadSim.csproj -c Release
 
       - name: Start API (fakes)
         run: |

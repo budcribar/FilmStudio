@@ -1212,6 +1212,7 @@ public sealed class CharacterBookPlateService
             int stepY = Math.Max(1, bitmap.Height / samplesY);
 
             int totalSamples = 0;
+            int bgCount = 0;
             int colorCount = 0;
 
             for (int y = 0; y < bitmap.Height; y += stepY)
@@ -1459,4 +1460,3 @@ public sealed class RankedBookCandidate
     public string Description { get; set; } = "";
     public bool IsSelected { get; set; }
 }
-

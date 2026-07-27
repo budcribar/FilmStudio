@@ -485,7 +485,7 @@ public sealed class GrokImageClient : IImageClient
                 var scale = maxEdge / (float)edge;
                 var nw = Math.Max(1, (int)Math.Round(w * scale));
                 var nh = Math.Max(1, (int)Math.Round(h * scale));
-                scaled = original.Resize(new SKImageInfo(nw, nh), SKFilterQuality.Medium);
+                scaled = original.Resize(new SKImageInfo(nw, nh), SKSamplingOptions.Default);
                 if (scaled is not null)
                     work = scaled;
             }
