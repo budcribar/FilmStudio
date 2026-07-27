@@ -12,16 +12,17 @@ if (!window._ptmWorkerPatched && typeof window !== "undefined" && window.Worker)
     window._ptmWorkerPatched = true;
     const NativeWorker = window.Worker;
     window.Worker = function (scriptURL, options) {
-        if (typeof scriptURL === "string" && (scriptURL.startsWith("http://") || scriptURL.startsWith("https://"))) {
-            try {
-                const targetUrl = new URL(scriptURL, window.location.href);
+        try {
+            const urlStr = scriptURL ? String(scriptURL) : "";
+            if (urlStr.startsWith("http://") || urlStr.startsWith("https://")) {
+                const targetUrl = new URL(urlStr, window.location.href);
                 if (targetUrl.origin !== window.location.origin) {
                     const blob = new Blob(["importScripts(" + JSON.stringify(targetUrl.href) + ");"], { type: "application/javascript" });
                     const blobUrl = URL.createObjectURL(blob);
                     return new NativeWorker(blobUrl, options);
                 }
-            } catch (_) { /* fallback to direct */ }
-        }
+            }
+        } catch (_) { /* fallback to direct */ }
         return new NativeWorker(scriptURL, options);
     };
 }
@@ -42,6 +43,7 @@ window.PageToMovieFfmpeg = {
         utilJs: {
             url: "https://cdn.jsdelivr.net/npm/@ffmpeg/util@0.12.1/dist/umd/index.js",
         },
+        workerJs: "https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.10/dist/umd/814.ffmpeg.js",
         coreBase: "https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.6/dist/umd",
     },
 
@@ -89,7 +91,8 @@ window.PageToMovieFfmpeg = {
                     const baseURL = self._assets.coreBase;
                     const coreURL = await util.toBlobURL(baseURL + "/ffmpeg-core.js", "text/javascript");
                     const wasmURL = await util.toBlobURL(baseURL + "/ffmpeg-core.wasm", "application/wasm");
-                    await ffmpeg.load({ coreURL, wasmURL });
+                    const classWorkerURL = await util.toBlobURL(self._assets.workerJs, "text/javascript");
+                    await ffmpeg.load({ coreURL, wasmURL, classWorkerURL });
                 } else {
                     await ffmpeg.load();
                 }
