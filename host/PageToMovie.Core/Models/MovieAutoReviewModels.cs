@@ -26,6 +26,7 @@ public sealed class MovieSceneGroupFeedback
     public int LightingScore { get; set; } = 8;
     public int PacingScore { get; set; } = 8;
     public int DialogueScore { get; set; } = 8;
+    public int MusicScore { get; set; } = 8;
     public string ContinuityNotes { get; set; } = "";
     public string VisualConsistencyNotes { get; set; } = "";
     public string LightingNotes { get; set; } = "";
