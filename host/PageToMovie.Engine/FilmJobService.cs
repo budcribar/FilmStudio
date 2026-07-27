@@ -2581,8 +2581,22 @@ public sealed class FilmJobService
                 msg => { _ = AppendLogAsync($"  [Grok] {msg}"); },
                 ct);
 
-            // Client media: hand a same-origin proxy URL so the browser writes
-            // assets/video/scene_SS_clip_CC.mp4 into user folder and registers with MediaRegistryService.
+            // Save MP4 file to server project directory so client media sync delivers MP4 files to client folder
+            var mp4Path = Path.Combine(videoDir, $"scene_{scene:D2}_clip_{clip:D2}.mp4");
+            try
+            {
+                using var http = new HttpClient();
+                var bytes = await http.GetByteArrayAsync(url, ct).ConfigureAwait(false);
+                if (bytes.Length > 0)
+                {
+                    await File.WriteAllBytesAsync(mp4Path, bytes, ct).ConfigureAwait(false);
+                    await AppendLogAsync($"  [Media] Saved {bytes.Length} bytes to {Path.GetFileName(mp4Path)}");
+                }
+            }
+            catch (Exception ex)
+            {
+                _log.LogWarning(ex, "Could not save MP4 bytes to server project directory for S{Scene:D2}C{Clip:D2}", scene, clip);
+            }
 
             var relPath = MediaRegistryService.ClipRelativePath(scene, clip);
             var ticket = _mediaProxy.Issue(url, TimeSpan.FromMinutes(45));
