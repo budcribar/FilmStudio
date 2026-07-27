@@ -338,8 +338,7 @@ else if (_activeTab == "play")
                             on the Demo gallery — no separate upload step.
                         </div>
                         <div class="form-text">
-                            Submits for <strong>human review</strong> (not published immediately).
-                            Limits: 2 submits / 24h, max 5 waiting for review.
+                            Publishing automatically displays your film in the public demo gallery.
                             @if (!string.IsNullOrEmpty(_clientWipUrl))
                             {
                                 <span> Uses your browser-stitched preview.</span>
@@ -377,7 +376,7 @@ else if (_activeTab == "play")
                                         || (_saveDestination == "youtube" && _youTubeStatus?.Connected != true)
                                         || (_saveDestination == "demo" && !_demoAcceptedGuidelines))"
                             @onclick="ConfirmSaveAsync">
-                        @(_saveDestination == "youtube" ? "Upload to YouTube" : "Submit for review")
+                        @(_saveDestination == "youtube" ? "Upload to YouTube" : "Publish to Demo Gallery")
                     </button>
                 </div>
             </div>
