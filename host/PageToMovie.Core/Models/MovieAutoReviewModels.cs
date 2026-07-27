@@ -21,6 +21,10 @@ public sealed class MovieSceneGroupFeedback
 {
     public string SceneRange { get; set; } = ""; // e.g. "Scenes 1-4"
     public int Score { get; set; } = 8;
+    public int ContinuityScore { get; set; } = 8;
+    public int CharacterScore { get; set; } = 8;
+    public int LightingScore { get; set; } = 8;
+    public int PacingScore { get; set; } = 8;
     public string ContinuityNotes { get; set; } = "";
     public string VisualConsistencyNotes { get; set; } = "";
     public string LightingNotes { get; set; } = "";

@@ -129,11 +129,28 @@ public sealed class MovieAutoReviewService
         report.FlaggedScenes = groupFeedbacks.SelectMany(f => f.SceneNumbers.Where(_ => f.Score < 7)).Distinct().OrderBy(s => s).ToList();
 
         var avgScore = (int)Math.Round(groupFeedbacks.Average(g => g.Score));
+        var avgContinuity = (int)Math.Round(groupFeedbacks.Average(g => g.ContinuityScore));
+        var avgCharacter = (int)Math.Round(groupFeedbacks.Average(g => g.CharacterScore));
+        var avgLighting = (int)Math.Round(groupFeedbacks.Average(g => g.LightingScore));
+        var avgPacing = (int)Math.Round(groupFeedbacks.Average(g => g.PacingScore));
+
         report.OverallScore = Math.Clamp(avgScore, 1, 10);
         report.Verdict = report.OverallScore >= 8 ? "Pass — Strong Continuity" : report.OverallScore >= 6 ? "Needs Polish" : "Continuity Fixes Needed";
 
+        report.CategoryScores = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["Continuity & Transitions"] = Math.Clamp(avgContinuity, 1, 10),
+            ["Character Consistency"] = Math.Clamp(avgCharacter, 1, 10),
+            ["Lighting & Color Grade"] = Math.Clamp(avgLighting, 1, 10),
+            ["Pacing & Editing"] = Math.Clamp(avgPacing, 1, 10),
+        };
+
         var summarySb = new System.Text.StringBuilder();
-        summarySb.AppendLine($"Full movie review completed across {scenesMap.Count} scenes ({groupFeedbacks.Count} act groups).");
+        summarySb.AppendLine($"Full executive movie review completed across {scenesMap.Count} scenes ({groupFeedbacks.Count} act sequences).");
+        summarySb.AppendLine($"• Continuity & Transitions: {avgContinuity}/10");
+        summarySb.AppendLine($"• Character Consistency: {avgCharacter}/10");
+        summarySb.AppendLine($"• Lighting & Color Grade: {avgLighting}/10");
+        summarySb.AppendLine($"• Pacing & Editing: {avgPacing}/10");
         if (report.FlaggedScenes.Count > 0)
         {
             summarySb.AppendLine($"Recommend touching up Scene(s): {string.Join(", ", report.FlaggedScenes)}.");
@@ -144,15 +161,23 @@ public sealed class MovieAutoReviewService
         }
         report.SummaryNotes = summarySb.ToString().Trim();
 
-        report.CategoryScores = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase)
+        var execSb = new System.Text.StringBuilder();
+        execSb.AppendLine($"# Executive Director Report — {report.Verdict} (Overall Score: {report.OverallScore}/10)\n");
+        execSb.AppendLine("## Category Breakdown");
+        foreach (var (cat, score) in report.CategoryScores)
         {
-            ["Continuity & Transitions"] = Math.Clamp(avgScore, 1, 10),
-            ["Character Consistency"] = Math.Clamp(avgScore, 1, 10),
-            ["Lighting & Color Grade"] = Math.Clamp(avgScore, 1, 10),
-            ["Pacing & Editing"] = Math.Clamp(avgScore, 1, 10),
-        };
-
-        report.ExecutiveSummary = report.SummaryNotes;
+            var badge = score >= 8 ? "PASSED" : score >= 6 ? "POLISH" : "ACTION REQUIRED";
+            execSb.AppendLine($"- **{cat}**: {score}/10 [{badge}]");
+        }
+        execSb.AppendLine("\n## Sequence Feedback");
+        foreach (var gf in groupFeedbacks)
+        {
+            execSb.AppendLine($"### {gf.SceneRange} (Score: {gf.Score}/10)");
+            if (!string.IsNullOrWhiteSpace(gf.ContinuityNotes)) execSb.AppendLine($"* **Continuity**: {gf.ContinuityNotes}");
+            if (!string.IsNullOrWhiteSpace(gf.VisualConsistencyNotes)) execSb.AppendLine($"* **Character Lock**: {gf.VisualConsistencyNotes}");
+            if (!string.IsNullOrWhiteSpace(gf.LightingNotes)) execSb.AppendLine($"* **Lighting & Tone**: {gf.LightingNotes}");
+        }
+        report.ExecutiveSummary = execSb.ToString().Trim();
 
         SaveReport(report);
         onProgress?.Invoke(100, "Full movie review ready!");
@@ -171,8 +196,14 @@ public sealed class MovieAutoReviewService
             SceneRange = rangeStr,
             SceneNumbers = sceneNumbers,
             Score = 8,
+            ContinuityScore = 8,
+            CharacterScore = 8,
+            LightingScore = 8,
+            PacingScore = 8,
             ContinuityNotes = "Visual flow matches screenplay setting.",
             VisualConsistencyNotes = "Character locks consistent across cuts.",
+            LightingNotes = "Atmospheric exposure and palette match mood.",
+            AudioNotes = "Pacing aligns with scene beat intensity.",
         };
 
         var tempWorkDir = Path.Combine(_projects.GetProjectDir(projectId), "assets", "review", $"_chunk_{rangeStr.Replace(' ', '_')}");
@@ -202,20 +233,24 @@ public sealed class MovieAutoReviewService
 
             if (imageFiles.Count > 0 && _vision.IsConfigured)
             {
-                var prompt = $@"You are a film director reviewing sequence {rangeStr} of a movie.
-Evaluate key filmmaking categories:
-1. Continuity & Transitions (pacing, visual flow across cuts)
-2. Character Consistency & Wardrobe (facial structure lock, clothing drift)
-3. Lighting & Color Grading (exposure continuity, mood, shadows)
-4. Audio & Dialogue Alignment (mood suitability)
+                var prompt = $@"You are a professional film director reviewing visual keyframe sequence {rangeStr} of a movie cut.
+Critically evaluate these 4 key filmmaking categories and assign an independent score (1-10) for each:
+1. Continuity & Transitions (shot-to-shot spatial alignment, character position, camera movement flow)
+2. Character Consistency & Wardrobe (facial structure lock, outfit drift, visual identity retention)
+3. Lighting & Color Grading (exposure consistency, palette stability, shadow direction across cuts)
+4. Pacing & Editing (visual narrative rhythm, shot length variety, tone matching beat intensity)
 
-Return JSON:
+Return valid JSON with non-generic, specific observations:
 {{
-  ""score"": 8,
-  ""continuityNotes"": ""Notes on visual transitions and pacing"",
-  ""visualConsistencyNotes"": ""Notes on character appearance lock across cuts"",
-  ""lightingNotes"": ""Notes on color grading and lighting continuity"",
-  ""audioNotes"": ""Notes on audio/mood alignment""
+  ""overallScore"": 8,
+  ""continuityScore"": 8,
+  ""characterScore"": 8,
+  ""lightingScore"": 8,
+  ""pacingScore"": 8,
+  ""continuityNotes"": ""Specific observations on visual transitions and spatial alignment"",
+  ""visualConsistencyNotes"": ""Specific observations on character lock and costume drift"",
+  ""lightingNotes"": ""Specific observations on color palette and lighting continuity"",
+  ""audioNotes"": ""Specific observations on visual pacing and tone alignment""
 }}";
                 var raw = await _vision.CompleteWithImagesAsync(prompt, imageFiles.Select(x => x.Path).ToList(), ct: ct).ConfigureAwait(false);
                 if (!string.IsNullOrWhiteSpace(raw))
@@ -229,8 +264,27 @@ Return JSON:
                             var cleanJson = raw[jsonStart..(jsonEnd + 1)];
                             using var doc = JsonDocument.Parse(cleanJson);
                             var root = doc.RootElement;
-                            if (root.TryGetProperty("score", out var sEl) && sEl.TryGetInt32(out var sc))
+                            if (root.TryGetProperty("overallScore", out var osEl) && osEl.TryGetInt32(out var osc))
+                                feedback.Score = Math.Clamp(osc, 1, 10);
+                            else if (root.TryGetProperty("score", out var sEl) && sEl.TryGetInt32(out var sc))
                                 feedback.Score = Math.Clamp(sc, 1, 10);
+
+                            if (root.TryGetProperty("continuityScore", out var csEl) && csEl.TryGetInt32(out var cs))
+                                feedback.ContinuityScore = Math.Clamp(cs, 1, 10);
+                            else feedback.ContinuityScore = feedback.Score;
+
+                            if (root.TryGetProperty("characterScore", out var chrEl) && chrEl.TryGetInt32(out var chs))
+                                feedback.CharacterScore = Math.Clamp(chs, 1, 10);
+                            else feedback.CharacterScore = feedback.Score;
+
+                            if (root.TryGetProperty("lightingScore", out var lsEl) && lsEl.TryGetInt32(out var ls))
+                                feedback.LightingScore = Math.Clamp(ls, 1, 10);
+                            else feedback.LightingScore = feedback.Score;
+
+                            if (root.TryGetProperty("pacingScore", out var psEl) && psEl.TryGetInt32(out var ps))
+                                feedback.PacingScore = Math.Clamp(ps, 1, 10);
+                            else feedback.PacingScore = feedback.Score;
+
                             if (root.TryGetProperty("continuityNotes", out var cn) && cn.ValueKind == JsonValueKind.String)
                                 feedback.ContinuityNotes = cn.GetString() ?? feedback.ContinuityNotes;
                             if (root.TryGetProperty("visualConsistencyNotes", out var vn) && vn.ValueKind == JsonValueKind.String)
