@@ -15,11 +15,13 @@ public sealed class ClipSidecarService
     private static readonly JsonSerializerOptions JsonOpts = JsonDefaults.IndentedCaseInsensitive;
 
     private readonly ProjectStore _projects;
+    private readonly ProjectAutoGitService? _autoGit;
     private readonly ILogger<ClipSidecarService> _log;
 
-    public ClipSidecarService(ProjectStore projects, ILogger<ClipSidecarService>? log = null)
+    public ClipSidecarService(ProjectStore projects, ProjectAutoGitService? autoGit = null, ILogger<ClipSidecarService>? log = null)
     {
         _projects = projects;
+        _autoGit = autoGit;
         _log = log ?? Microsoft.Extensions.Logging.Abstractions.NullLogger<ClipSidecarService>.Instance;
     }
 
@@ -74,6 +76,7 @@ public sealed class ClipSidecarService
         var json = JsonSerializer.Serialize(sidecar, JsonOpts);
         await File.WriteAllTextAsync(sidecarPath, json + "\n", ct).ConfigureAwait(false);
         _log.LogInformation("Written clip sidecar manifest → {Path}", sidecarPath);
+        _autoGit?.QueueCommitAndPush(projectDir, projectId, $"Generate S{scene:D2}C{clip:D2} clip sidecar");
         return sidecarPath;
     }
 

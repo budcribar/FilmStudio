@@ -17,6 +17,7 @@ public sealed class ProjectStore
     private readonly PageToMovieOptions _opts;
     private readonly MediaDurationProbe? _duration;
     private readonly SceneListCache? _sceneListCache;
+    private readonly ProjectAutoGitService? _autoGit;
     private readonly ProjectReadCache _readCache;
     private readonly IUserApiKeyProvider? _keyProvider;
     private readonly string _workspaceRoot;
@@ -27,11 +28,13 @@ public sealed class ProjectStore
         MediaDurationProbe? duration = null,
         SceneListCache? sceneListCache = null,
         ProjectReadCache? readCache = null,
-        IUserApiKeyProvider? keyProvider = null)
+        IUserApiKeyProvider? keyProvider = null,
+        ProjectAutoGitService? autoGit = null)
     {
         _opts = opts.Value;
         _duration = duration;
         _keyProvider = keyProvider;
+        _autoGit = autoGit;
         // A/B: PageToMovie__EnableReadCaches=false disables scene-list + project/blueprint/dir caches
         _sceneListCache = _opts.EnableReadCaches ? sceneListCache : null;
         _readCache = readCache ?? new ProjectReadCache();
@@ -47,6 +50,18 @@ public sealed class ProjectStore
             }
             catch { /* ignore */ }
         }
+    }
+
+    /// <summary>Trigger non-blocking background Git commit &amp; push for a project change.</summary>
+    public void TriggerAutoGitCommit(string projectId, string message, string? author = null)
+    {
+        if (_autoGit is null || string.IsNullOrWhiteSpace(projectId)) return;
+        try
+        {
+            var dir = GetProjectDir(projectId);
+            _autoGit.QueueCommitAndPush(dir, projectId, message, author);
+        }
+        catch { /* non-fatal background hook */ }
     }
 
     /// <summary>

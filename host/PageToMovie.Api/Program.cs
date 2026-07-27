@@ -136,6 +136,7 @@ builder.Services.AddSingleton<ProjectArchiveService>();
 builder.Services.AddSingleton<YouTubeAuthService>();
 builder.Services.AddSingleton<DemoYouTubePublisherService>();
 builder.Services.AddSingleton<ProjectGitRepositoryService>();
+builder.Services.AddSingleton<ProjectAutoGitService>();
 builder.Services.AddSingleton<ProjectInviteService>();
 builder.Services.AddSingleton<CreatorProfileService>();
 builder.Services.AddSingleton<ProjectContributionService>();
