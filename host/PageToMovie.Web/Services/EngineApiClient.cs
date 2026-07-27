@@ -3055,10 +3055,13 @@ public sealed class DemoListItem
     public bool CanFork { get; set; }
     public string? YoutubeId { get; set; }
     public string? YoutubeUrl { get; set; }
+    public ulong? YoutubeLikeCount { get; set; }
+    public ulong? YoutubeViewCount { get; set; }
     public string? VisibilityMode { get; set; } = "Private";
     public bool IsForkable => string.Equals(VisibilityMode, "Open", StringComparison.OrdinalIgnoreCase);
     public string? YoutubeUploadStatus { get; set; }
     public string? YoutubeUploadError { get; set; }
+    public ulong TotalStars => (ulong)Math.Max(0, UpvoteCount) + (YoutubeLikeCount ?? 0);
 }
 
 public sealed class DemoForkResult

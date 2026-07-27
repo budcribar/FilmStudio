@@ -130,4 +130,33 @@ public sealed class YouTubeAuthService
             ApplicationName = "PageToMovie",
         });
     }
+
+    public record YouTubeVideoStats(ulong? LikeCount, ulong? ViewCount);
+
+    /// <summary>Fetch video statistics (likeCount, viewCount) for a YouTube video ID.</summary>
+    public async Task<YouTubeVideoStats?> GetVideoStatsAsync(string videoId, CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(videoId))
+            return null;
+
+        var youtube = await GetServiceAsync(ct).ConfigureAwait(false);
+        if (youtube is null)
+            return null;
+
+        try
+        {
+            var req = youtube.Videos.List("statistics");
+            req.Id = videoId.Trim();
+            var res = await req.ExecuteAsync(ct).ConfigureAwait(false);
+            var item = res.Items?.FirstOrDefault();
+            if (item?.Statistics is null)
+                return null;
+
+            return new YouTubeVideoStats(item.Statistics.LikeCount, item.Statistics.ViewCount);
+        }
+        catch
+        {
+            return null;
+        }
+    }
 }

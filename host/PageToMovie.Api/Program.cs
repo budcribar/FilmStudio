@@ -4546,6 +4546,8 @@ static object DemoPublicDto(
     videoPath = string.IsNullOrWhiteSpace(d.YoutubeId) ? $"/api/demos/{Uri.EscapeDataString(d.Id)}/video" : null,
     d.YoutubeId,
     d.YoutubeUrl,
+    d.YoutubeLikeCount,
+    d.YoutubeViewCount,
     visibilityMode,
 };
 

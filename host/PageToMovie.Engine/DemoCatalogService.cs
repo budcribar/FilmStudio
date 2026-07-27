@@ -88,6 +88,23 @@ public sealed class DemoCatalogService
         public string? YoutubeId { get; set; }
         public string? YoutubeUrl { get; set; }
         public string? YoutubeUploadError { get; set; }
+        public ulong? YoutubeLikeCount { get; set; }
+        public ulong? YoutubeViewCount { get; set; }
+        public DateTimeOffset? YoutubeStatsRefreshedAt { get; set; }
+    }
+
+    public void SetYouTubeStats(string id, ulong? likeCount, ulong? viewCount)
+    {
+        if (!IsValidId(id)) return;
+        lock (_lock)
+        {
+            var e = ReadUnlocked(id);
+            if (e is null) return;
+            e.YoutubeLikeCount = likeCount;
+            e.YoutubeViewCount = viewCount;
+            e.YoutubeStatsRefreshedAt = DateTimeOffset.UtcNow;
+            SaveUnlocked(e);
+        }
     }
 
     public IReadOnlyList<DemoEntry> List(int take = 50, string? status = null)

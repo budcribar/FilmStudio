@@ -142,12 +142,12 @@
                                         aria-pressed="@(d.UpvotedByMe ? "true" : "false")"
                                         @onclick="() => ToggleStarAsync(d)">
                                     <span aria-hidden="true">★</span>
-                                    <span class="demo-star-count">@d.UpvoteCount</span>
+                                    <span class="demo-star-count">@d.TotalStars</span>
                                 </button>
                                 @if (!string.IsNullOrWhiteSpace(d.YoutubeUrl))
                                 {
-                                    <a class="btn btn-sm btn-outline-light" href="@d.YoutubeUrl" target="_blank" rel="noopener">
-                                        💬 Comment on YouTube ↗
+                                    <a class="btn btn-sm btn-outline-warning" href="@d.YoutubeUrl" target="_blank" rel="noopener" title="Like and comment on YouTube">
+                                        👍 Like on YouTube ↗
                                     </a>
                                 }
                                 @if (d.CanFork && (d.IsForkable || Session.IsAdmin))
