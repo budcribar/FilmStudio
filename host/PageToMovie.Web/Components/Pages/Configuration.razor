@@ -1,4 +1,5 @@
 @page "/configuration"
+@implements IDisposable
 @using System.Text.Json
 @using PageToMovie.Core.Models
 @inject EngineApiClient Engine
@@ -8,6 +9,7 @@
 @inject IJSRuntime Js
 @inject AdminSessionService Session
 @inject NavigationManager Nav
+@inject ClientMediaFolderService MediaFolder
 
 <PageTitle>Configuration</PageTitle>
 
@@ -42,23 +44,55 @@ else if (_cfg is null)
 }
 {
     <div class="card mb-3 border-secondary">
-        <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
-            <span>📁 Project Working Directory &amp; Storage</span>
-            <span class="badge bg-info">Active Storage</span>
+        <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <span>📁 Project Storage &amp; Local Media Folder</span>
+            <span class="badge @(MediaFolder.IsConnected ? "bg-success" : "bg-warning text-dark")">
+                @(MediaFolder.IsConnected ? "Local Folder Connected" : "Local Folder Not Connected")
+            </span>
         </div>
         <div class="card-body py-3">
             <div class="row align-items-center g-3">
-                <div class="col-md-9">
-                    <div class="fw-semibold mb-1">Active Project Working Path</div>
-                    <div class="font-monospace small bg-dark p-2 rounded border border-secondary text-info text-break">
-                        @(_projectDir ?? $"projects/{_projectId}")
-                    </div>
-                    <div class="small text-muted mt-1">
-                        All screenplays, video clips, character portraits, and cached LLM responses for <strong>@_projectId</strong> are persisted in this directory.
-                    </div>
+                <div class="col-md-8">
+                    <div class="fw-semibold mb-1">Local Computer Media Folder</div>
+                    @if (MediaFolder.IsConnected)
+                    {
+                        <div class="d-flex align-items-center gap-2 mb-2">
+                            <div class="font-monospace small bg-dark p-2 rounded border border-secondary text-info flex-grow-1">
+                                📁 @(MediaFolder.FolderName ?? "Local Media Directory")
+                            </div>
+                            <button type="button" class="btn btn-sm btn-outline-secondary" @onclick="ConnectMediaFolderAsync">
+                                Change folder…
+                            </button>
+                        </div>
+                        <div class="small text-muted">
+                            All generated MP4 video clips and sidecars for <strong>@_projectId</strong> are saved directly to this folder on your computer.
+                        </div>
+                    }
+                    else if (MediaFolder.NeedsReconnect)
+                    {
+                        <div class="alert alert-warning py-2 small mb-2 d-flex justify-content-between align-items-center gap-2">
+                            <span>Re-grant permission to reconnect <strong>@(MediaFolder.PendingReconnectFolderName ?? "local folder")</strong></span>
+                            <button type="button" class="btn btn-sm btn-warning" @onclick="ReconnectMediaFolderAsync">
+                                1-Click Reconnect
+                            </button>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="d-flex align-items-center gap-2 mb-2">
+                            <button type="button" class="btn btn-sm btn-primary" @onclick="ConnectMediaFolderAsync">
+                                📁 Connect Local Media Folder
+                            </button>
+                            <span class="small text-muted">Select a folder on your computer to save MP4 video clips directly to disk.</span>
+                        </div>
+                    }
                 </div>
-                <div class="col-md-3 text-md-end">
-                    <span class="badge bg-success p-2 fs-6">● Storage Ready</span>
+                <div class="col-md-4 border-start border-secondary ps-md-4">
+                    <div class="fw-semibold small mb-1">Active Project</div>
+                    <div class="h5 mb-1 text-primary">@_projectId</div>
+                    <div class="small text-muted">
+                        Screenplays, shot plans, and project metadata for <strong>@_projectId</strong> are saved with this project.
+                    </div>
                 </div>
             </div>
         </div>
@@ -973,4 +1007,51 @@ else if (_cfg is null)
         (el.ValueKind is JsonValueKind.True or JsonValueKind.False)
             ? el.GetBoolean()
             : fallback;
+
+    protected override void OnInitialized()
+    {
+        MediaFolder.Changed += OnMediaFolderChanged;
+    }
+
+    private void OnMediaFolderChanged()
+    {
+        _ = InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose()
+    {
+        MediaFolder.Changed -= OnMediaFolderChanged;
+    }
+
+    private async Task ConnectMediaFolderAsync()
+    {
+        try
+        {
+            await MediaFolder.ConnectFolderAsync();
+            if (MediaFolder.IsConnected && !string.IsNullOrWhiteSpace(_projectId))
+            {
+                await MediaFolder.SyncProjectMediaToClientAsync(_projectId);
+            }
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+    }
+
+    private async Task ReconnectMediaFolderAsync()
+    {
+        try
+        {
+            await MediaFolder.ReconnectAsync();
+            if (MediaFolder.IsConnected && !string.IsNullOrWhiteSpace(_projectId))
+            {
+                await MediaFolder.SyncProjectMediaToClientAsync(_projectId);
+            }
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+    }
 }
