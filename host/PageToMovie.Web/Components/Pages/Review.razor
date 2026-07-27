@@ -237,152 +237,7 @@ else if (_activeTab == "play")
     </p>
 }
 
-@if (_showSaveDialog)
-{
-    <div class="modal fade show d-block" tabindex="-1" role="dialog" aria-modal="true"
-         style="background:rgba(0,0,0,.45);" @onclick="CloseSaveDialog">
-        <div class="modal-dialog modal-dialog-centered" @onclick:stopPropagation="true">
-            <div class="modal-content">
-                <div class="modal-header py-2">
-                    <h5 class="modal-title">Share movie</h5>
-                    <button type="button" class="btn-close" aria-label="Close" @onclick="CloseSaveDialog"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label class="form-label small mb-1">Where</label>
-                        <div class="d-flex flex-column gap-2">
-                            <label class="form-check mb-0">
-                                <input class="form-check-input" type="radio" name="saveDest" value="demo"
-                                       checked="@(_saveDestination == "demo")"
-                                       @onchange="@(() => _saveDestination = "demo")" />
-                                <span class="form-check-label">
-                                    Upload to <strong>Demo</strong> gallery (public)
-                                </span>
-                            </label>
-                            <label class="form-check mb-0">
-                                <input class="form-check-input" type="radio" name="saveDest" value="youtube"
-                                       checked="@(_saveDestination == "youtube")"
-                                       disabled="@(_youTubeStatus?.Connected != true)"
-                                       @onchange="@(() => _saveDestination = "youtube")" />
-                                <span class="form-check-label">
-                                    Upload to YouTube
-                                    @if (_youTubeStatus?.Connected != true)
-                                    {
-                                        <span class="text-muted">(not connected)</span>
-                                    }
-                                </span>
-                            </label>
-                        </div>
-                        @if (_youTubeStatus?.Connected != true && Session.IsAdmin)
-                        {
-                            <div class="form-text">
-                                <button type="button" class="btn btn-link btn-sm p-0 align-baseline"
-                                        data-testid="review-connect-youtube"
-                                        disabled="@(_busy || _youTubeStatus?.Configured != true)"
-                                        @onclick="ConnectYouTubeAsync">
-                                    Connect YouTube channel
-                                </button>
-                                @if (_youTubeStatus?.Configured != true)
-                                {
-                                    <span class="text-muted"> — configure YouTube client id/secret first</span>
-                                }
-                            </div>
-                        }
-                    </div>
-                    @if (_saveDestination == "demo")
-                    {
-                        <div class="mb-2">
-                            <label class="form-label small">Film title</label>
-                            <input class="form-control form-control-sm" @bind="_demoTitle" maxlength="120"
-                                   placeholder="e.g. The Tell-Tale Heart — WIP cut" />
-                        </div>
-                        <div class="mb-2">
-                            <label class="form-label small">About this film</label>
-                            <textarea class="form-control form-control-sm" rows="4" @bind="_demoDescription"
-                                      placeholder="A short pitch for the gallery: tone, story, what’s special about this cut…"
-                                      maxlength="800"></textarea>
-                            <div class="form-text">
-                                Shown under the video after an admin approves it for the public wall.
-                            </div>
-                        </div>
-                        <div class="mb-2">
-                            <label class="form-label small d-block">Made for kids? (required by YouTube)</label>
-                            <div class="form-check form-check-inline">
-                                <input class="form-check-input" type="radio" name="demoKidsRadio" id="demoNotForKids"
-                                       checked="@(!_demoMadeForKids)" @onchange="@(() => _demoMadeForKids = false)" />
-                                <label class="form-check-label small" for="demoNotForKids">No</label>
-                            </div>
-                            <div class="form-check form-check-inline">
-                                <input class="form-check-input" type="radio" name="demoKidsRadio" id="demoForKids"
-                                       checked="@_demoMadeForKids" @onchange="@(() => _demoMadeForKids = true)" />
-                                <label class="form-check-label small" for="demoForKids">Yes</label>
-                            </div>
-                        </div>
-                        <div class="form-check mb-2">
-                            <input class="form-check-input" type="checkbox" id="demoAiDisclosure"
-                                   @bind="_demoIsAiSynthetic" />
-                            <label class="form-check-label small" for="demoAiDisclosure">
-                                Contains AI-generated or synthetic visuals/audio (YouTube disclosure).
-                            </label>
-                        </div>
-                        <div class="form-check mb-2">
-                            <input class="form-check-input" type="checkbox" id="demoGuidelines"
-                                   @bind="_demoAcceptedGuidelines" />
-                            <label class="form-check-label small" for="demoGuidelines">
-                                I confirm this film is appropriate for a general audience:
-                                no NSFW, illegal, hateful, or exploitative content.
-                            </label>
-                        </div>
-                        <div class="form-text">
-                            Approved demos are published to YouTube automatically (privacy: public) and embedded
-                            on the Demo gallery — no separate upload step.
-                        </div>
-                        <div class="form-text">
-                            Publishing automatically displays your film in the public demo gallery.
-                            @if (!string.IsNullOrEmpty(_clientWipUrl))
-                            {
-                                <span> Uses your browser-stitched preview.</span>
-                            }
-                            else if (_wipExists && !_wipStale)
-                            {
-                                <span> Uses the on-disk WIP.</span>
-                            }
-                        </div>
-                    }
-                    @if (_saveDestination == "youtube" && _youTubeStatus?.Connected == true)
-                    {
-                        <div class="mb-2">
-                            <label class="form-label small">Title</label>
-                            <input class="form-control form-control-sm" @bind="_youTubeTitle" maxlength="100" />
-                        </div>
-                        <div class="mb-2">
-                            <label class="form-label small">Description</label>
-                            <textarea class="form-control form-control-sm" rows="3" @bind="_youTubeDescription"></textarea>
-                        </div>
-                        <div class="mb-0">
-                            <label class="form-label small">Privacy</label>
-                            <select class="form-select form-select-sm" @bind="_youTubePrivacy">
-                                <option value="unlisted">Unlisted (link-only)</option>
-                                <option value="private">Private</option>
-                                <option value="public">Public</option>
-                            </select>
-                        </div>
-                    }
-                </div>
-                <div class="modal-footer py-2">
-                    <button type="button" class="btn btn-sm btn-secondary" @onclick="CloseSaveDialog">Cancel</button>
-                    <button type="button" class="btn btn-sm btn-primary" data-testid="review-save-confirm"
-                            disabled="@(_busy
-                                        || (_saveDestination == "youtube" && _youTubeStatus?.Connected != true)
-                                        || (_saveDestination == "demo" && !_demoAcceptedGuidelines))"
-                            @onclick="ConfirmSaveAsync">
-                        @(_saveDestination == "youtube" ? "Upload to YouTube" : "Publish to Demo Gallery")
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-}
+
 
 @if (_showWipPlayer && _clientStitching)
 {
@@ -1058,7 +913,6 @@ else if (_activeTab == "share")
             _activeTab = tab;
             if (tab == "share")
             {
-                _showSaveDialog = true;
                 PrepopulateDemoFields();
             }
         }
@@ -1115,8 +969,6 @@ else if (_activeTab == "share")
     private long _wipVideoKey;
     private YouTubeStatusDto? _youTubeStatus;
     private YouTubeUploadInfo? _youTubeUpload;
-    private bool _showSaveDialog;
-    private string _saveDestination = "demo"; // "demo" | "youtube"
     private string _youTubeTitle = "";
     private string _youTubeDescription = "";
     private string _youTubePrivacy = "unlisted";
@@ -2119,42 +1971,6 @@ else if (_activeTab == "share")
         Nav.NavigateTo(uri.GetLeftPart(UriPartial.Path), replace: true);
     }
 
-    private void OpenSaveDialog()
-    {
-        _saveDestination = "demo";
-        if (string.IsNullOrWhiteSpace(_youTubeTitle))
-            _youTubeTitle = $"{_projectId} — WIP";
-        if (string.IsNullOrWhiteSpace(_demoTitle))
-            _demoTitle = $"{_projectId}";
-        if (string.IsNullOrWhiteSpace(_demoDescription))
-            _demoDescription = BuildDefaultDemoAbout();
-        _demoAcceptedGuidelines = false;
-        _demoMadeForKids = false;
-        _demoIsAiSynthetic = true;
-        _showSaveDialog = true;
-    }
-
-    /// <summary>Starter blurb for the public gallery — user can edit before publish.</summary>
-    private string BuildDefaultDemoAbout()
-    {
-        var withMedia = _scenes.Count(s => s.CompositeExists || s.ClipsOnDisk > 0);
-        var clips = _scenes.Sum(s => s.ClipsOnDisk);
-        var bits = new List<string>();
-        bits.Add($"A PageToMovie short from “{_projectId}”.");
-        if (withMedia > 0)
-        {
-            bits.Add(withMedia == 1
-                ? "One scene with picture locked."
-                : $"{withMedia} scenes with picture on disk.");
-        }
-        if (clips > 0)
-            bits.Add(clips == 1 ? "1 clip assembled." : $"{clips} clips assembled.");
-        bits.Add("AI-assisted adaptation cut shared for feedback.");
-        return string.Join(" ", bits);
-    }
-
-    private void CloseSaveDialog() => _showSaveDialog = false;
-
     private async Task ConfirmSaveAsync()
     {
         await PublishDemoAsync();
@@ -2224,7 +2040,6 @@ else if (_activeTab == "share")
                         isAiSynthetic: _demoIsAiSynthetic);
                     if (pub?.Ok == true)
                     {
-                        _showSaveDialog = false;
                         _activeTab = "review";
                         _message = pub.Message
                                    ?? $"“{pub.Demo?.Title ?? title}” published to gallery.";
@@ -2247,7 +2062,6 @@ else if (_activeTab == "share")
             }
 
             var msg = res.TryGetProperty("message", out var mEl) ? mEl.GetString() : null;
-            _showSaveDialog = false;
             _activeTab = "review";
             _message = msg
                        ?? $"“{publishedTitle}” published to gallery.";
@@ -2351,7 +2165,7 @@ else if (_activeTab == "share")
                 Description = _youTubeDescription,
                 PrivacyStatus = _youTubePrivacy,
             });
-            _showSaveDialog = false;
+            _activeTab = "review";
             _message = "Uploading to YouTube…";
             var jobs = await Engine.GetJobAsync();
             _job = jobs?.Job;
