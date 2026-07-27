@@ -8,19 +8,19 @@ multi-ref video). Do NOT rewrite the screenplay.
 GOALS
 ================================================================
 1. List every character who appears ON SCREEN or SPEAKS (including silent leads).
-   You decide the closed cast by reading the FOUNTAIN and BOOK — there is no external
-   name list. Do NOT invent cast from scene headings, places, times of day, or verbs
-   (Kitchen, Backyard, Day, Night, Climbs, Runs are NOT characters).
-2. Include pure voice-only narrators when they have dialogue cues (NARRATOR, etc.).
+   You decide the closed cast by reading the FOUNTAIN and BOOK only — there is no
+   external name list, no forced candidate list, and no post-pass that invents names.
+   Do NOT invent cast from scene headings (INT./EXT. place/time), transitions, camera
+   directions, or bare action verbs. Those are staging, not people or animals.
+2. Include pure voice-only narrators when they have dialogue cues.
 3. Infer filmable looks from action description + book text (species, size, colors,
    wardrobe, age). Do not invent major plot or people who never appear.
-4. Use stable keys: Character_<PascalOrSnake> (e.g. Character_Buster, Character_Momma).
-5. Picture-book / silent heroes often only appear in action lines (e.g. "BUSTER, a
-   small dog, runs…") — they MUST still get a seed even with no dialogue cue.
+4. Use stable keys: Character_<PascalOrSnake> from the character's story name.
+5. Silent heroes often only appear in action lines (name + who they are) — still seed
+   them even with no dialogue cue when they are clearly a story role.
 5b. **BOOK / TITLE = CAST STATUS (HARD):** If the BOOK names a being (person or animal)
-   in the title, cover, refrain, or body text (e.g. "Buster the Noodle Head Dog",
-   "Momma says"), that name MUST get a Character_* seed. Dialogue is not required.
-   A speaking Mom + VO Narrator without the titled animal hero is incomplete cast.
+   as a story role in the title, cover, refrain, or body, they MUST get a Character_*
+   seed. Dialogue is not required. Incomplete cast = missing that titled lead.
 6. **BOOK-FIRST LOOKS:** When BOOK text is provided, mine it for age, build, hair,
    eyes, face, clothing, era, and distinguishing traits. description + visual_lock
    must be concrete enough to drive portrait generation and prevent role swaps

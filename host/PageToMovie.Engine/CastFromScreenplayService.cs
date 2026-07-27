@@ -116,13 +116,10 @@ public sealed class CastFromScreenplayService
         else
             onProgress?.Invoke("No book_full.txt — looks will come from screenplay action only.");
 
-        var candidates = DiscoverCandidateNames(fountain, book);
-        if (candidates.Count > 0)
-            onProgress?.Invoke($"Detected candidate character(s) in book/screenplay: {string.Join(", ", candidates)}");
-
+        // Closed cast is model-decided only (no name-discovery / verb / kinship heuristic lists).
         onProgress?.Invoke("Loading cast prompt…");
         var system = await LoadSystemPromptAsync(_projects.WorkspaceRoot, ct).ConfigureAwait(false);
-        var user = BuildUserPrompt(fountain, book, candidates);
+        var user = BuildUserPrompt(fountain, book);
 
         onProgress?.Invoke("Calling Grok for closed cast (book-aware looks)…");
         var raw = await _chat.CompleteAsync(
@@ -161,23 +158,6 @@ public sealed class CastFromScreenplayService
         var normalized = NormalizeCastDoc(parsed, projectId, book);
 
         var seedsObj = GetSeedsDict(normalized);
-
-        // Silent leads / titled beings (action-line CAPS names, kinship roles) — never omit real cast.
-        // Candidates are character cues + non-slugline CAPS names only (not Kitchen/Backyard/etc.).
-        var enforced = EnsureDiscoveredCastMembers(seedsObj, candidates, book, fountain);
-        if (enforced > 0)
-        {
-            onProgress?.Invoke($"Added {enforced} missing silent/titled character(s) from screenplay/book text…");
-            normalized["character_seed_tokens"] = seedsObj;
-        }
-
-        // Drop places / stage words the model may still invent from INT./EXT. sluglines
-        var scrubbed = ScrubFalseCastSeeds(seedsObj, fountain, book);
-        if (scrubbed > 0)
-        {
-            onProgress?.Invoke($"Removed {scrubbed} non-character seed(s) (places/stage words)…");
-            normalized["character_seed_tokens"] = seedsObj;
-        }
 
         if (seedsObj.Count == 0)
             return new ExtractResult { Ok = false, Error = "Model returned no character_seed_tokens." };
@@ -274,29 +254,22 @@ public sealed class CastFromScreenplayService
         return null;
     }
 
-    private static string BuildUserPrompt(string fountain, string? book, IReadOnlyList<string>? candidateNames = null)
+    private static string BuildUserPrompt(string fountain, string? book)
     {
         var sb = new StringBuilder();
-        sb.AppendLine("You are the closed-cast authority. Read the FOUNTAIN and BOOK below and decide the cast.");
-        sb.AppendLine("Do NOT invent people from scene headings, places, times of day, or action verbs");
-        sb.AppendLine("(Kitchen, Backyard, Day, Night, Climbs, Runs are NOT characters).");
-        sb.AppendLine("Include every person or animal who appears on screen or speaks — including silent leads");
-        sb.AppendLine("named only in action (e.g. BUSTER the dog with no dialogue cue).");
-        sb.AppendLine("BOOK / TITLE: if the book names a being in the title, cover, refrain, or story body");
-        sb.AppendLine("(e.g. Buster, Momma, Daddy), they MUST get a Character_* seed — dialogue is not required.");
-        sb.AppendLine("A speaking Mom + VO Narrator without a titled animal hero is incomplete cast.");
-        if (candidateNames is { Count: > 0 })
-        {
-            sb.AppendLine();
-            sb.AppendLine("DETECTED ON-SCREEN & NAMED ENTITIES IN BOOK/SCREENPLAY:");
-            sb.AppendLine(string.Join(", ", candidateNames));
-            sb.AppendLine("CRITICAL RULE: Check every entity above! If they appear in the book or on-screen action (e.g. silent lead Buster or Daddy reading in bed), they MUST receive a Character_* seed!");
-        }
+        sb.AppendLine("You are the closed-cast authority. Read the FOUNTAIN and BOOK and decide the cast.");
+        sb.AppendLine("There is NO external name list and NO forced candidate list — membership is your judgment only.");
+        sb.AppendLine("Include every person or animal who appears on screen or speaks (including silent leads");
+        sb.AppendLine("named only in action lines, and titled beings from the book/title when they are story roles).");
+        sb.AppendLine("Do NOT invent cast from Fountain scene headings (INT./EXT. lines), place names, times of day,");
+        sb.AppendLine("transitions, camera directions, or bare action verbs. Those are staging, not people.");
+        sb.AppendLine("Dialogue is not required for a silent lead who is clearly a character in action or book.");
         sb.AppendLine();
         sb.AppendLine("CRITICAL: Fill description + visual_lock with concrete filmable appearance for every");
         sb.AppendLine("on-screen role (age, build, face, hair, eyes, wardrobe, era). Mine BOOK text when present.");
         sb.AppendLine("Never use stubs like \"as described in the screenplay\".");
         sb.AppendLine("On-camera POV/confessor narrators = ok_anytime (not voice-only).");
+        sb.AppendLine("Set species_kind from the story (human/animal/etc.) — do not guess from word lists.");
         sb.AppendLine("Return JSON only (schema_version cast_seeds.v1, character_seed_tokens).");
         sb.AppendLine();
         sb.AppendLine("--- BEGIN FOUNTAIN ---");
@@ -316,374 +289,6 @@ public sealed class CastFromScreenplayService
         }
         return sb.ToString();
     }
-
-    /// <summary>
-    /// Candidate on-screen names for cast enforce — character cues, ALL-CAPS names in
-    /// action (silent leads), and general kinship/narrator roles. Never takes place/time
-    /// tokens from scene headings (Kitchen, Backyard, Day).
-    /// </summary>
-    public static List<string> DiscoverCandidateNames(string fountainText, string? bookText)
-    {
-        var candidates = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        var notCharacters = BuildStructuralNonCharacterTokens();
-        var fountain = NormalizeNewlines(fountainText ?? "");
-
-        foreach (var rawLine in fountain.Split('\n'))
-        {
-            var line = rawLine.Trim();
-            if (line.Length == 0) continue;
-
-            if (IsSceneHeadingLine(line))
-            {
-                foreach (var tok in TokenizeSceneHeadingPlacesAndTimes(line))
-                    notCharacters.Add(tok);
-                continue;
-            }
-
-            if (IsTransitionLine(line))
-                continue;
-
-            if (TryParseCharacterCue(line, out var cueName) && cueName.Length >= 2)
-            {
-                candidates.Add(CapitalizeName(cueName));
-                continue;
-            }
-
-            // Silent leads often appear as CAPS in action: "BUSTER bounds across the grass."
-            // Only take tokens that are not slugline places/times collected above.
-            foreach (Match m in CapsWordRx.Matches(line))
-            {
-                var word = NormalizeCapsToken(m.Groups[1].Value);
-                if (word.Length < 3 || notCharacters.Contains(word)) continue;
-                if (IsLikelyStageVerbOrFragment(word)) continue;
-                candidates.Add(CapitalizeName(word));
-            }
-        }
-
-        candidates.RemoveWhere(c => notCharacters.Contains(c) || IsLikelyStageVerbOrFragment(c));
-
-        // General English kinship / VO roles (not story-specific names)
-        var combined = fountain + "\n" + (bookText ?? "");
-        foreach (var role in KinshipAndNarratorRoles)
-        {
-            if (Regex.IsMatch(combined, $@"\b{Regex.Escape(role)}\b", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant))
-                candidates.Add(CapitalizeName(role));
-        }
-
-        return candidates.OrderBy(c => c, StringComparer.OrdinalIgnoreCase).ToList();
-    }
-
-    private static readonly string[] KinshipAndNarratorRoles =
-    {
-        "Narrator", "Daddy", "Dad", "Mom", "Momma", "Mommy", "Mother", "Father", "Papa", "Mama",
-    };
-
-    private static readonly Regex CapsWordRx = new(
-        @"\b([A-Z][A-Z0-9']{1,24})\b",
-        RegexOptions.CultureInvariant | RegexOptions.Compiled);
-
-    private static HashSet<string> BuildStructuralNonCharacterTokens() =>
-        new(StringComparer.OrdinalIgnoreCase)
-        {
-            "INT", "EXT", "EST", "I/E", "E/I",
-            "DAY", "NIGHT", "EVENING", "MORNING", "AFTERNOON", "DAWN", "DUSK", "SUNSET", "SUNRISE",
-            "CONTINUOUS", "LATER", "SAME", "MOMENTS", "HOURS", "YEARS",
-            "FADE", "CUT", "DISSOLVE", "SMASH", "MATCH", "JUMP", "FREEZE", "WIPE",
-            "TO", "TITLE", "CREDIT", "AUTHOR", "SOURCE", "DRAFT", "DATE", "CONTACT",
-            "THE", "AND", "FORCED", "HEADING", "CHARACTER", "TRANSITION", "CENTERED", "ACTION", "LYRIC",
-            "CLOSEUP", "CLOSE", "WIDE", "ANGLE", "SHOT", "INSERT", "MONTAGE", "INTERCUT",
-            "BACK", "BLACK", "WHITE", "SERIES", "SHOTS", "SUPER", "CARD", "TITLECARD",
-            "HOME", "SWEET", "END", "BEGIN", "START", "STOP", "CONTINUED", "MORE",
-            "POV", "OS", "OC", "VO", "CONT", "CONTD",
-        };
-
-    /// <summary>INT./EXT. lines — locations and times are never cast.</summary>
-    public static bool IsSceneHeadingLine(string line)
-    {
-        var t = (line ?? "").Trim();
-        if (t.Length == 0) return false;
-        // Fountain forced heading: leading '.'
-        if (t.StartsWith('.')) return true;
-        return Regex.IsMatch(t,
-            @"^(INT|EXT|EST|I/?E|E/?I)[\.\s]",
-            RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
-    }
-
-    public static bool IsTransitionLine(string line)
-    {
-        var t = (line ?? "").Trim();
-        if (t.Length == 0) return false;
-        if (t.EndsWith(" TO:", StringComparison.OrdinalIgnoreCase) ||
-            t.EndsWith(" TO", StringComparison.OrdinalIgnoreCase))
-            return true;
-        return Regex.IsMatch(t,
-            @"^(FADE\s+(IN|OUT)|CUT TO|DISSOLVE TO|SMASH CUT|MATCH CUT|JUMP CUT|WIPE TO)\b",
-            RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
-    }
-
-    /// <summary>Fountain character cue: mostly uppercase line, not a heading/transition.</summary>
-    public static bool TryParseCharacterCue(string line, out string name)
-    {
-        name = "";
-        var t = (line ?? "").Trim();
-        if (t.Length is < 2 or > 48) return false;
-        if (IsSceneHeadingLine(t) || IsTransitionLine(t)) return false;
-
-        // Strip parenthetical extensions: NARRATOR (V.O.) / BOB (CONT'D)
-        var bare = Regex.Replace(t, @"\s*\([^)]*\)\s*$", "").Trim();
-        if (bare.Length < 2) return false;
-
-        // Must be predominantly uppercase letters (character cues), allow spaces ' -
-        var letters = bare.Where(char.IsLetter).ToList();
-        if (letters.Count < 2) return false;
-        var upper = letters.Count(char.IsUpper);
-        if (upper < letters.Count * 0.85) return false;
-
-        // Reject lines that look like full sentences (too many lowercase connectors already filtered)
-        if (bare.Contains('.') && bare.IndexOf('.') < bare.Length - 1) return false;
-
-        name = NormalizeCapsToken(bare.Replace('_', ' '));
-        return name.Length >= 2;
-    }
-
-    /// <summary>Place/time tokens from a scene heading line.</summary>
-    public static IEnumerable<string> TokenizeSceneHeadingPlacesAndTimes(string headingLine)
-    {
-        var t = (headingLine ?? "").Trim().TrimStart('.');
-        // Drop INT./EXT. prefix
-        t = Regex.Replace(t, @"^(INT|EXT|EST|I/?E|E/?I)[\.\s]+", "", RegexOptions.IgnoreCase);
-        // Split on separators used in sluglines
-        foreach (var part in Regex.Split(t, @"[\s\-–—,/]+"))
-        {
-            var w = NormalizeCapsToken(part);
-            if (w.Length >= 2)
-                yield return w;
-        }
-    }
-
-    private static string NormalizeCapsToken(string raw)
-    {
-        var s = (raw ?? "").Trim().Trim('\'', '"', '.', ',', ';', ':');
-        // BUSTER'S → BUSTER
-        if (s.EndsWith("'S", StringComparison.OrdinalIgnoreCase) && s.Length > 3)
-            s = s[..^2];
-        if (s.EndsWith("S'", StringComparison.OrdinalIgnoreCase) && s.Length > 3)
-            s = s[..^2];
-        return s;
-    }
-
-    /// <summary>
-    /// Common ALL-CAPS stage/action fragments that are not names (language list, not story cast).
-    /// </summary>
-    public static bool IsLikelyStageVerbOrFragment(string word)
-    {
-        if (string.IsNullOrWhiteSpace(word)) return true;
-        return StageVerbFragments.Contains(word.Trim());
-    }
-
-    private static readonly HashSet<string> StageVerbFragments = new(StringComparer.OrdinalIgnoreCase)
-    {
-        "RUNS", "RUN", "WALKS", "WALK", "JUMPS", "JUMP", "LEAPS", "LEAP", "BOUNDS", "BOUND",
-        "CLIMBS", "CLIMB", "ENTERS", "ENTER", "EXITS", "EXIT", "EXITS", "LOOKS", "LOOK",
-        "SEES", "SEE", "TURNS", "TURN", "OPENS", "OPEN", "CLOSES", "CLOSE", "SITS", "SIT",
-        "STANDS", "STAND", "FALLS", "FALL", "FLIES", "FLY", "CHASES", "CHASE", "HIDES", "HIDE",
-        "SLEEP", "SLEEPS", "WAKES", "WAKE", "SMILES", "SMILE", "CRIES", "CRY", "LAUGHS", "LAUGH",
-        "SAYS", "SAY", "YELLS", "YELL", "WHISPERS", "WHISPER", "OUT", "IN", "UP", "DOWN",
-        "AWAY", "OVER", "UNDER", "THROUGH", "ACROSS", "INTO", "FROM", "WITH", "WITHOUT",
-        "THEN", "NOW", "HERE", "THERE", "AGAIN", "STILL", "JUST", "ONLY", "VERY", "MUCH",
-        "SUDDENLY", "QUICKLY", "SLOWLY", "FINALLY", "BEGIN", "BEGINS", "END", "ENDS", "ENDING",
-        "SERIES", "MONTAGE", "FLASHBACK", "DREAM", "NIGHTMARE", "MEMORY", "SEQUENCE",
-    };
-
-    /// <summary>
-    /// Remove seeds that are places/times from sluglines or stage verbs, unless they are
-    /// real character cues, kinship/narrator roles, or animals with context.
-    /// </summary>
-    public static int ScrubFalseCastSeeds(
-        Dictionary<string, object?> seeds,
-        string? fountainText,
-        string? bookText)
-    {
-        if (seeds is null || seeds.Count == 0) return 0;
-
-        var fountain = NormalizeNewlines(fountainText ?? "");
-        var notCharacters = BuildStructuralNonCharacterTokens();
-        var cueNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-
-        foreach (var rawLine in fountain.Split('\n'))
-        {
-            var line = rawLine.Trim();
-            if (line.Length == 0) continue;
-            if (IsSceneHeadingLine(line))
-            {
-                foreach (var tok in TokenizeSceneHeadingPlacesAndTimes(line))
-                    notCharacters.Add(tok);
-                continue;
-            }
-            if (TryParseCharacterCue(line, out var cue) && cue.Length >= 2)
-                cueNames.Add(CapitalizeName(cue));
-        }
-
-        var fullText = fountain + "\n" + (bookText ?? "");
-        var removed = 0;
-        foreach (var key in seeds.Keys.ToList())
-        {
-            if (seeds[key] is not Dictionary<string, object?> seed) continue;
-            var display = (CoerceString(seed, "canonical_given_name")
-                           ?? key.Replace("Character_", "", StringComparison.OrdinalIgnoreCase).Replace('_', ' '))
-                .Trim();
-            if (display.Length == 0) continue;
-
-            if (cueNames.Contains(display)) continue;
-            if (KinshipAndNarratorRoles.Any(r => r.Equals(display, StringComparison.OrdinalIgnoreCase)))
-                continue;
-            if (IsAnimalContext(fullText, display)) continue;
-
-            var token = NormalizeCapsToken(display.Replace(' ', '_'));
-            var isHeadingJunk = notCharacters.Contains(display) || notCharacters.Contains(token);
-            var isVerb = IsLikelyStageVerbOrFragment(display) || IsLikelyStageVerbOrFragment(token);
-            if (!isHeadingJunk && !isVerb) continue;
-
-            seeds.Remove(key);
-            removed++;
-        }
-
-        return removed;
-    }
-
-    public static int EnsureDiscoveredCastMembers(
-        Dictionary<string, object?> seeds,
-        IReadOnlyList<string> candidateNames,
-        string? bookText,
-        string? fountainText)
-    {
-        if (seeds is null || candidateNames is null || candidateNames.Count == 0) return 0;
-
-        var added = 0;
-        var fullText = (fountainText ?? "") + "\n" + (bookText ?? "");
-        var notCharacters = BuildStructuralNonCharacterTokens();
-        foreach (var rawLine in NormalizeNewlines(fountainText ?? "").Split('\n'))
-        {
-            var line = rawLine.Trim();
-            if (line.Length == 0) continue;
-            if (IsSceneHeadingLine(line))
-            {
-                foreach (var tok in TokenizeSceneHeadingPlacesAndTimes(line))
-                    notCharacters.Add(tok);
-            }
-        }
-
-        foreach (var rawName in candidateNames)
-        {
-            if (string.IsNullOrWhiteSpace(rawName)) continue;
-            // Never force places/stage verbs even if a stale candidate list includes them
-            if (IsLikelyStageVerbOrFragment(rawName)) continue;
-            if (notCharacters.Contains(rawName) || notCharacters.Contains(NormalizeCapsToken(rawName)))
-                continue;
-            // Only enforce names that look like real cast evidence in the text
-            if (!ShouldEnforceCandidate(rawName, fountainText, fullText))
-                continue;
-
-            var key = NameToCharacterKey(rawName);
-            if (seeds.ContainsKey(key)) continue;
-
-            var aliasFound = seeds.Keys.Any(k =>
-                k.Equals(key, StringComparison.OrdinalIgnoreCase) ||
-                k.Contains(rawName, StringComparison.OrdinalIgnoreCase) ||
-                (rawName.Equals("Daddy", StringComparison.OrdinalIgnoreCase) && k.Contains("Dad", StringComparison.OrdinalIgnoreCase)) ||
-                (rawName.Equals("Dad", StringComparison.OrdinalIgnoreCase) && k.Contains("Daddy", StringComparison.OrdinalIgnoreCase)) ||
-                (rawName.Equals("Momma", StringComparison.OrdinalIgnoreCase) && k.Contains("Mom", StringComparison.OrdinalIgnoreCase)) ||
-                (rawName.Equals("Mommy", StringComparison.OrdinalIgnoreCase) && k.Contains("Mom", StringComparison.OrdinalIgnoreCase)) ||
-                (rawName.Equals("Mom", StringComparison.OrdinalIgnoreCase) && (k.Contains("Momma", StringComparison.OrdinalIgnoreCase) || k.Contains("Mommy", StringComparison.OrdinalIgnoreCase))));
-            if (aliasFound) continue;
-
-            var isAnimal = IsAnimalContext(fullText, rawName);
-
-
-            var isVoiceOnly = rawName.Equals("Narrator", StringComparison.OrdinalIgnoreCase);
-
-            var seed = new Dictionary<string, object?>
-            {
-                ["canonical_given_name"] = rawName,
-                ["display_name_policy"] = isVoiceOnly ? "never_on_screen" : "ok_anytime",
-                ["species_kind"] = isAnimal ? "animal" : "human",
-                ["description"] = "",
-                ["visual_lock"] = "",
-                ["voice_profile"] = $"{rawName} voice profile",
-                ["voice_label"] = rawName,
-            };
-
-            seeds[key] = seed;
-            added++;
-        }
-
-        if (added > 0)
-        {
-            EnrichStubLooksFromSources(seeds, bookText, fountainText);
-        }
-
-        return added;
-    }
-
-    /// <summary>
-    /// True when there is real evidence the candidate is cast (cue, kinship role,
-    /// animal context, or CAPS name in action) — not a bare slugline place word.
-    /// </summary>
-    private static bool ShouldEnforceCandidate(string rawName, string? fountainText, string fullText)
-    {
-        if (KinshipAndNarratorRoles.Any(r => r.Equals(rawName, StringComparison.OrdinalIgnoreCase)))
-            return true;
-        if (IsAnimalContext(fullText, rawName))
-            return true;
-
-        var fountain = NormalizeNewlines(fountainText ?? "");
-        var nameEsc = Regex.Escape(rawName.Trim());
-        foreach (var rawLine in fountain.Split('\n'))
-        {
-            var line = rawLine.Trim();
-            if (line.Length == 0 || IsSceneHeadingLine(line) || IsTransitionLine(line))
-                continue;
-            if (TryParseCharacterCue(line, out var cue) &&
-                cue.Equals(rawName, StringComparison.OrdinalIgnoreCase))
-                return true;
-            // CAPS or title-case mention in action/dialogue (silent lead)
-            if (Regex.IsMatch(line, $@"\b{nameEsc}\b", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant))
-                return true;
-        }
-
-        return false;
-    }
-
-    private static readonly Regex AnimalKeywordRx = new(
-        @"\b(dog|dogs|doggy|doggies|hound|puppy|puppies|mutt|cat|cats|kitten|kittens|feline|pet|pets|animal|animals|bear|bears|rabbit|rabbits|bunny|bunnies|mouse|mice|rat|rats|fox|foxes|owl|owls|bird|birds|lion|lions|tiger|tigers|wolf|wolves|pig|pigs|piglet|duck|ducks|frog|frogs|monkey|monkeys|elephant|elephants|horse|horses|pony|ponies|donkey|donkeys|deer)\b",
-        RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
-
-    public static bool IsAnimalContext(string fullText, string rawName)
-    {
-        if (string.IsNullOrWhiteSpace(fullText) || string.IsNullOrWhiteSpace(rawName))
-            return false;
-
-        var nameEscaped = Regex.Escape(rawName.Trim());
-        var sentenceRx = new Regex($@"[^\.\!\?\n]*\b{nameEscaped}\b[^\.\!\?\n]*", RegexOptions.IgnoreCase);
-
-        var matches = sentenceRx.Matches(fullText);
-        foreach (Match m in matches)
-        {
-            if (AnimalKeywordRx.IsMatch(m.Value))
-                return true;
-        }
-
-        return false;
-    }
-
-    private static string CapitalizeName(string name)
-    {
-        name = name.Trim();
-        if (name.Length == 0) return name;
-        return char.ToUpperInvariant(name[0]) + name[1..].ToLowerInvariant();
-    }
-
-
 
     /// <summary>
     /// Prefer full text when under budget; otherwise evenly spaced windows (spine sample).

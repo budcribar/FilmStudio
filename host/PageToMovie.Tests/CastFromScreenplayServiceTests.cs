@@ -214,132 +214,22 @@ public class CastFromScreenplayServiceTests
 
 
     [Fact]
-    public void DiscoverCandidateNames_finds_silent_and_titled_heroes()
+    public async Task Cast_system_prompt_is_model_decided_without_forced_name_lists()
     {
-        const string fountain = """
-            Title: BUSTER THE NOODLE HEAD DOG
-            
-            EXT. BACKYARD - DAY
-            
-            BUSTER bounds across the grass.
-            
-            NARRATOR (V.O.)
-            He's Buster the Noodle Head Dog.
-            
-            INT. BEDROOM - NIGHT
-            
-            DADDY reading in bed. MOM enters.
-            """;
-
-        const string book = """
-            BUSTER THE NOODLE HEAD DOG
-            When Momma says it's time for bed,
-            To get to Mom and Daddy's room.
-            """;
-
-        var candidates = CastFromScreenplayService.DiscoverCandidateNames(fountain, book);
-        Assert.Contains("Buster", candidates, StringComparer.OrdinalIgnoreCase);
-        Assert.Contains("Daddy", candidates, StringComparer.OrdinalIgnoreCase);
-        Assert.Contains("Mom", candidates, StringComparer.OrdinalIgnoreCase);
-        Assert.Contains("Narrator", candidates, StringComparer.OrdinalIgnoreCase);
-        // Scene-heading places and stage verbs must never become cast candidates
-        Assert.DoesNotContain("Backyard", candidates, StringComparer.OrdinalIgnoreCase);
-        Assert.DoesNotContain("Bedroom", candidates, StringComparer.OrdinalIgnoreCase);
-        Assert.DoesNotContain("Day", candidates, StringComparer.OrdinalIgnoreCase);
-        Assert.DoesNotContain("Night", candidates, StringComparer.OrdinalIgnoreCase);
-        Assert.DoesNotContain("Bounds", candidates, StringComparer.OrdinalIgnoreCase);
-        Assert.DoesNotContain("Leaps", candidates, StringComparer.OrdinalIgnoreCase);
-    }
-
-    [Fact]
-    public void DiscoverCandidateNames_ignores_slugline_locations_and_action_verbs()
-    {
-        const string fountain = """
-            INT. KITCHEN - DAY
-
-            BUSTER LEAPS onto the table. BOUNDS OUT of the room.
-
-            EXT. HALL - NIGHT
-
-            MOMMA
-            Come back!
-            """;
-
-        var candidates = CastFromScreenplayService.DiscoverCandidateNames(fountain, bookText: null);
-        Assert.Contains("Buster", candidates, StringComparer.OrdinalIgnoreCase);
-        Assert.Contains("Momma", candidates, StringComparer.OrdinalIgnoreCase);
-        Assert.DoesNotContain("Kitchen", candidates, StringComparer.OrdinalIgnoreCase);
-        Assert.DoesNotContain("Hall", candidates, StringComparer.OrdinalIgnoreCase);
-        Assert.DoesNotContain("Leaps", candidates, StringComparer.OrdinalIgnoreCase);
-        Assert.DoesNotContain("Bounds", candidates, StringComparer.OrdinalIgnoreCase);
-        Assert.DoesNotContain("Out", candidates, StringComparer.OrdinalIgnoreCase);
-    }
-
-    [Fact]
-    public void ScrubFalseCastSeeds_removes_places_and_keeps_real_cast()
-    {
-        const string fountain = """
-            EXT. BACKYARD - DAY
-            BUSTER runs.
-            INT. KITCHEN - NIGHT
-            MOMMA
-            Dinner!
-            """;
-        var seeds = new Dictionary<string, object?>
+        var root = FindRepoWithPrompts();
+        if (root is null)
         {
-            ["Character_Buster"] = new Dictionary<string, object?> { ["canonical_given_name"] = "Buster" },
-            ["Character_Momma"] = new Dictionary<string, object?> { ["canonical_given_name"] = "Momma" },
-            ["Character_Backyard"] = new Dictionary<string, object?> { ["canonical_given_name"] = "Backyard" },
-            ["Character_Kitchen"] = new Dictionary<string, object?> { ["canonical_given_name"] = "Kitchen" },
-            ["Character_Leaps"] = new Dictionary<string, object?> { ["canonical_given_name"] = "Leaps" },
-        };
+            Assert.True(true);
+            return;
+        }
 
-        var removed = CastFromScreenplayService.ScrubFalseCastSeeds(seeds, fountain, "Buster the dog. Momma smiles.");
-        Assert.True(removed >= 3);
-        Assert.True(seeds.ContainsKey("Character_Buster"));
-        Assert.True(seeds.ContainsKey("Character_Momma"));
-        Assert.False(seeds.ContainsKey("Character_Backyard"));
-        Assert.False(seeds.ContainsKey("Character_Kitchen"));
-        Assert.False(seeds.ContainsKey("Character_Leaps"));
+        var text = await CastFromScreenplayService.LoadSystemPromptAsync(root);
+        Assert.Contains("external name list", text, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("forced candidate", text, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("scene headings", text, StringComparison.OrdinalIgnoreCase);
+        // Must not reintroduce product-code name discovery contract
+        Assert.DoesNotContain("DETECTED ON-SCREEN", text, StringComparison.OrdinalIgnoreCase);
     }
-
-    [Fact]
-    public void EnsureDiscoveredCastMembers_adds_missing_silent_hero_and_dad()
-    {
-        var seeds = new Dictionary<string, object?>
-        {
-            ["Character_Mom"] = new Dictionary<string, object?> { ["canonical_given_name"] = "Mom" },
-            ["Character_Narrator"] = new Dictionary<string, object?> { ["canonical_given_name"] = "Narrator" }
-        };
-
-        var candidates = new[] { "Buster", "Daddy", "Mom", "Narrator" };
-        const string book = "Buster the small black and white dog. Daddy reading in bed.";
-        const string fountain = "BUSTER bounds. DADDY reading.";
-
-        var added = CastFromScreenplayService.EnsureDiscoveredCastMembers(seeds, candidates, book, fountain);
-        Assert.Equal(2, added);
-        Assert.True(seeds.ContainsKey("Character_Buster"));
-        Assert.True(seeds.ContainsKey("Character_Daddy"));
-    }
-
-    [Fact]
-    public void EnsureDiscoveredCastMembers_does_not_force_locations()
-    {
-        var seeds = new Dictionary<string, object?>
-        {
-            ["Character_Buster"] = new Dictionary<string, object?> { ["canonical_given_name"] = "Buster" },
-        };
-        var added = CastFromScreenplayService.EnsureDiscoveredCastMembers(
-            seeds,
-            new[] { "Kitchen", "Backyard", "Leaps", "Buster" },
-            bookText: "Buster the dog",
-            fountainText: "INT. KITCHEN - DAY\nBUSTER runs.");
-        Assert.Equal(0, added);
-        Assert.False(seeds.ContainsKey("Character_Kitchen"));
-        Assert.False(seeds.ContainsKey("Character_Backyard"));
-        Assert.False(seeds.ContainsKey("Character_Leaps"));
-    }
-
 
     private static string? FindRepoWithPrompts()
     {
