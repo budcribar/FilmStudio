@@ -391,6 +391,33 @@ catch (Exception ex)
     app.Logger.LogWarning(ex, "Demo seeding failed (non-fatal)");
 }
 
+// ── Ephemeral Migration: Sync Scene 18 into TellTaleHeartV7 blueprints ──────
+// Temporary migration hook per AGENTS.md ephemeral lifecycle rule.
+// Will be removed after production verification.
+try
+{
+    var srcBp = Path.Combine(AppContext.BaseDirectory, "projects", "TellTaleHeartV7", "blueprint.clips.grok.json");
+    if (File.Exists(srcBp))
+    {
+        var projectsRoot = Path.Combine(app.Services.GetRequiredService<ProjectStore>().WorkspaceRoot, "projects");
+        if (Directory.Exists(projectsRoot))
+        {
+            foreach (var bpFile in Directory.EnumerateFiles(projectsRoot, "blueprint.clips.grok.json", SearchOption.AllDirectories))
+            {
+                if (bpFile.Contains("TellTaleHeartV7", StringComparison.OrdinalIgnoreCase))
+                {
+                    File.Copy(srcBp, bpFile, overwrite: true);
+                    app.Logger.LogInformation("Ephemeral Migration: Synced Scene 18 into {BpFile}", bpFile);
+                }
+            }
+        }
+    }
+}
+catch (Exception ex)
+{
+    app.Logger.LogWarning(ex, "Ephemeral migration skipped/failed");
+}
+
 app.UseMiddleware<HttpRequestMetricsMiddleware>();
 app.UseMiddleware<JwtHeaderMiddleware>();
 app.Use(async (context, next) =>
