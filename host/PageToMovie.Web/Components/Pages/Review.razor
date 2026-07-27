@@ -1894,7 +1894,7 @@ else if (_showScenePlayer && _clientStitching)
             if (!MediaFolder.IsConnected)
                 await MediaFolder.ConnectFolderAsync();
             await Engine.StartCreditsGenAsync(_projectId);
-            _message = "Credits plate queued — when done it saves to your media folder as assets/video/credits.mp4";
+            _message = "Creating end credits video — it will be saved to your connected media folder.";
             var jobs = await Engine.GetJobAsync();
             _job = jobs?.Job;
         }

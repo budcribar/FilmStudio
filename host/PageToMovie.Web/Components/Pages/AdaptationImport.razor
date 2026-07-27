@@ -13,9 +13,9 @@
         {
             <div class="alert alert-warning d-flex align-items-center justify-content-between flex-wrap gap-2 mb-4">
                 <div>
-                    <strong>⚠️ Service Connection Required:</strong> An AI API key (XAI/Grok or Gemini) is needed to convert books into screenplays.
+                    <strong>⚠️ Service Connection Required:</strong> Connect your AI provider to convert stories into screenplays.
                 </div>
-                <a class="btn btn-sm btn-warning fw-semibold" href="configuration">Connect Service →</a>
+                <a class="btn btn-sm btn-warning fw-semibold" href="configuration">Connect your AI provider →</a>
             </div>
         }
 
@@ -308,7 +308,7 @@
     private static string FriendlyError(string? raw)
     {
         if (string.IsNullOrWhiteSpace(raw))
-            return "Book import failed. Check Configuration for an xAI/Grok API key and re-upload the PDF.";
+            return "Story import failed. Check Configuration to ensure your AI provider is connected and try uploading again.";
         var s = raw.Replace("\r\n", "\n").Trim();
         var nl = s.IndexOf('\n');
         if (nl > 0) s = s[..nl].Trim();
@@ -320,12 +320,12 @@
         }
         if (s.Contains("XAI_API_KEY", StringComparison.OrdinalIgnoreCase) ||
             s.Contains("API key missing", StringComparison.OrdinalIgnoreCase))
-            return "No AI API key. Open Configuration and add your xAI / Grok key (picture books need Grok vision OCR).";
+            return "No AI provider connected. Open Configuration to connect your AI provider.";
         if (s.Contains("No page images", StringComparison.OrdinalIgnoreCase) ||
             s.Contains("Could not extract or render page images", StringComparison.OrdinalIgnoreCase) ||
             s.Contains("libpdfium", StringComparison.OrdinalIgnoreCase) ||
             s.Contains("DllNotFoundException", StringComparison.OrdinalIgnoreCase))
-            return "Could not render PDF pages for OCR. " + (s.Length > 220 ? s[..220] + "…" : s);
+            return "Could not process PDF pages. Please check the file format and try again.";
         if (s.Length > 280) s = s[..280] + "…";
         return s;
     }
