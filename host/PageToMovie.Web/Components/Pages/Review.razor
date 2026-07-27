@@ -56,14 +56,14 @@ else
         <button type="button" 
                 class="btn @(_activeTab == "review" ? "btn-primary fw-bold" : "btn-outline-secondary text-white-50") px-3"
                 data-testid="review-tab-review"
-                @onclick='() => ToggleTab("review")'>
+                @onclick='() => ToggleTabAsync("review")'>
             🤖 Review &amp; Approve
         </button>
         <button type="button" 
                 class="btn @(_activeTab == "play" ? "btn-success fw-bold" : "btn-outline-secondary text-white-50") px-3"
                 data-testid="review-tab-play"
                 disabled="@(_busy || JobRunning || !CanPlayMovie)"
-                @onclick='() => ToggleTab("play")'
+                @onclick='() => ToggleTabAsync("play")'
                 title="@WipPlayTitle">
             ▶ Play
         </button>
@@ -71,7 +71,7 @@ else
                 class="btn @(_activeTab == "share" ? "btn-info text-white fw-bold" : "btn-outline-secondary text-white-50") px-3"
                 data-testid="review-tab-share"
                 disabled="@(_busy || JobRunning || !CanShareMovie)"
-                @onclick='() => ToggleTab("share")'>
+                @onclick='() => ToggleTabAsync("share")'>
             📤 Share &amp; Export
         </button>
     </div>
@@ -809,6 +809,30 @@ else if (_activeTab == "share")
             <button type="button" class="btn btn-sm btn-outline-secondary" @onclick="SetTabReview">Back to Review</button>
         </div>
         <div class="card-body p-4 text-white">
+@if (_youTubeStatus is not null && _youTubeStatus.Configured)
+{
+    @if (!_youTubeStatus.Connected)
+    {
+        <div class="alert alert-warning d-flex align-items-center justify-content-between mb-3 py-2 px-3 shadow-sm" data-testid="review-youtube-connect-alert">
+            <div class="small">
+                <strong>⚠️ YouTube Channel Not Connected:</strong> Server credentials are set up, but your YouTube channel needs a one-time connection to upload demos automatically.
+            </div>
+            <button type="button" class="btn btn-sm btn-warning fw-bold text-dark ms-3 text-nowrap" @onclick="ConnectYouTubeAsync">
+                🔗 Connect YouTube Channel
+            </button>
+        </div>
+    }
+    else
+    {
+        <div class="alert alert-success py-2 px-3 mb-3 small d-flex align-items-center justify-content-between" data-testid="review-youtube-connected-alert">
+            <span>✅ Connected to <strong>PageToMovie YouTube Channel</strong>. Published films upload to YouTube automatically.</span>
+            @if (Session.IsAdmin)
+            {
+                <button type="button" class="btn btn-sm btn-link text-white-50 p-0 ms-2 text-decoration-none" @onclick="DisconnectYouTubeAsync">(disconnect)</button>
+            }
+        </div>
+    }
+}
 @if (_isPublishing)
 {
     <div class="card p-4 my-2 text-center bg-dark text-white border-primary shadow" data-testid="review-publish-progress">
@@ -928,7 +952,7 @@ else
 
     private string? _activeTab = "review"; // null | "review" | "play" | "share"
 
-    private void ToggleTab(string tab)
+    private async Task ToggleTabAsync(string tab)
     {
         if (_activeTab == tab)
         {
@@ -940,6 +964,7 @@ else
             if (tab == "share")
             {
                 PrepopulateDemoFields();
+                await RefreshYouTubeStatusAsync();
             }
         }
     }
@@ -956,8 +981,8 @@ else
         }
     }
 
-    private void SetTabReview() => ToggleTab("review");
-    private void SetTabShare() => ToggleTab("share");
+    private Task SetTabReview() => ToggleTabAsync("review");
+    private Task SetTabShare() => ToggleTabAsync("share");
 
     private bool CanPlayMovie =>
         _wipExists || _wipCanBuild || MediaFolder.IsConnected || MediaFolder.IsSyncing || _scenes.Any(s => s.CompositeExists || s.ClipsOnDisk > 0);
