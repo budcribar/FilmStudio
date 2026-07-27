@@ -1552,6 +1552,31 @@ public sealed class EngineApiClient
         return dto?.Draft;
     }
 
+    public async Task<MovieAutoReviewEnvelope?> GetMovieReviewReportAsync(string projectId, CancellationToken ct = default)
+    {
+        using var resp = await _http.GetAsync($"/api/projects/{Uri.EscapeDataString(projectId)}/review/movie", ct);
+        if (!resp.IsSuccessStatusCode) return null;
+        return await resp.Content.ReadFromJsonAsync<MovieAutoReviewEnvelope>(JsonOpts, ct);
+    }
+
+    public async Task<MovieAutoReviewEnvelope?> ReviewMovieAsync(
+        string projectId,
+        IReadOnlyList<MovieAutoReviewKeyframe> keyframes,
+        CancellationToken ct = default)
+    {
+        using var resp = await _http.PostAsJsonAsync(
+            $"/api/projects/{Uri.EscapeDataString(projectId)}/review/movie",
+            new { Keyframes = keyframes.ToList() },
+            JsonOpts,
+            ct);
+        if (!resp.IsSuccessStatusCode)
+        {
+            var err = await resp.Content.ReadAsStringAsync(ct);
+            throw new InvalidOperationException(TryError(err) ?? resp.ReasonPhrase ?? "Movie review failed");
+        }
+        return await resp.Content.ReadFromJsonAsync<MovieAutoReviewEnvelope>(JsonOpts, ct);
+    }
+
     public async Task ApplyClipAutoReviewAsync(
         string projectId,
         int scene,
@@ -2675,6 +2700,12 @@ public sealed class AdminJobItemDto
     public int Total { get; set; }
     public DateTimeOffset? StartedAt { get; set; }
     public long? AgeMs { get; set; }
+}
+
+public sealed class MovieAutoReviewEnvelope
+{
+    public bool Ok { get; set; }
+    public MovieAutoReviewReport? Report { get; set; }
 }
 
 public sealed class AdminProjectsDto

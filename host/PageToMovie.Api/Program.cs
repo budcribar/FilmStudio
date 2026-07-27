@@ -137,6 +137,7 @@ builder.Services.AddSingleton<YouTubeAuthService>();
 builder.Services.AddSingleton<DemoYouTubePublisherService>();
 builder.Services.AddSingleton<ProjectGitRepositoryService>();
 builder.Services.AddSingleton<ProjectAutoGitService>();
+builder.Services.AddSingleton<MovieAutoReviewService>();
 builder.Services.AddSingleton<ProjectInviteService>();
 builder.Services.AddSingleton<CreatorProfileService>();
 builder.Services.AddSingleton<ProjectContributionService>();
@@ -4352,6 +4353,54 @@ app.MapDelete("/api/demos/{demoId}/upvote", (
     });
 });
 
+/// <summary>Load full movie AI review report.</summary>
+app.MapGet("/api/projects/{id}/review/movie", async (
+    string id,
+    ProjectStore store,
+    MovieAutoReviewService movieReview,
+    IUserContext user,
+    IOptions<PageToMovieOptions> opts,
+    CancellationToken ct) =>
+{
+    if (AuthGate.RequireLogin(user, opts) is { } denied)
+        return denied;
+    try
+    {
+        await store.RequireProjectAsync(id, ct);
+        var report = movieReview.LoadReport(id);
+        return Results.Ok(new { ok = true, projectId = id, report });
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { ok = false, error = ex.Message });
+    }
+});
+
+/// <summary>Run full movie AI review with scene group chunking.</summary>
+app.MapPost("/api/projects/{id}/review/movie", async (
+    string id,
+    MovieReviewRequest? body,
+    ProjectStore store,
+    MovieAutoReviewService movieReview,
+    IUserContext user,
+    IOptions<PageToMovieOptions> opts,
+    CancellationToken ct) =>
+{
+    if (AuthGate.RequireLogin(user, opts) is { } denied)
+        return denied;
+    try
+    {
+        await store.RequireProjectAsync(id, ct);
+        var keyframes = body?.Keyframes ?? new List<MovieAutoReviewKeyframe>();
+        var report = await movieReview.ReviewMovieAsync(id, keyframes, null, ct);
+        return Results.Ok(new { ok = true, projectId = id, report });
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { ok = false, error = ex.Message });
+    }
+});
+
 /// <summary>Stream demo video if public, or owner/admin for pending.</summary>
 app.MapGet("/api/demos/{demoId}/video", (
     string demoId,
@@ -4946,6 +4995,7 @@ namespace PageToMovie.Api
     public record SyncOriginApiRequest(string? ParentProjectId);
     public record ProjectVisibilityRequest(string VisibilityMode);
     public record SetBookRefsRequest(List<string>? ImagePaths);
+    public record MovieReviewRequest(List<MovieAutoReviewKeyframe>? Keyframes);
 
     public sealed class TestEmailRequest
     {

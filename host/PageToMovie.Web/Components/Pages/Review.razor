@@ -49,11 +49,11 @@ else
     </p>
 
 <div class="d-flex flex-wrap gap-2 mb-3">
-        <button class="btn btn-outline-dark" data-testid="review-auto-all"
+        <button class="btn btn-outline-light fw-semibold" data-testid="review-auto-all"
                 disabled="@(_busy || JobRunning)"
-                title="Sample frames in the browser, then AI-review every on-disk clip that lacks a draft"
-                @onclick="StartBatchAutoReviewAsync">
-            Auto-review all
+                title="Run AI visual quality and continuity review on the full movie"
+                @onclick="StartFullMovieReviewAsync">
+            🤖 Review movie
         </button>
         <button class="btn btn-success" data-testid="review-play-wip"
                 disabled="@(_busy || JobRunning || (!_wipExists && !_wipCanBuild && !MediaFolder.IsConnected && !MediaFolder.IsSyncing))"
@@ -72,6 +72,43 @@ else
             <button class="btn btn-outline-danger" disabled="@_busy" @onclick="CancelAsync">Cancel job</button>
         }
 </div>
+
+@if (_movieReport is not null)
+{
+    <div class="card mb-3 border-info text-white shadow-sm" style="background-color: #0f172a !important; border-color: #3b82f6 !important;" data-testid="review-movie-report-card">
+        <div class="card-header border-secondary d-flex justify-content-between align-items-center py-2" style="background-color: #1e293b !important;">
+            <div class="d-flex align-items-center gap-2">
+                <span class="fs-5">🤖</span>
+                <span class="fw-bold">Full Movie AI Review Report</span>
+                <span class="badge @(_movieReport.OverallScore >= 8 ? "bg-success" : _movieReport.OverallScore >= 6 ? "bg-warning text-dark" : "bg-danger")">
+                    Score: @_movieReport.OverallScore / 10 — @_movieReport.Verdict
+                </span>
+            </div>
+            <button type="button" class="btn btn-sm btn-outline-secondary" @onclick="(() => _movieReport = null)">Dismiss</button>
+        </div>
+        <div class="card-body py-3">
+            <p class="mb-3 text-light">@_movieReport.SummaryNotes</p>
+            @if (_movieReport.GroupFeedback?.Count > 0)
+            {
+                <div class="row g-2">
+                    @foreach (var group in _movieReport.GroupFeedback)
+                    {
+                        <div class="col-md-6">
+                            <div class="p-2.5 rounded border border-secondary" style="background-color: #1e293b;">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <span class="fw-semibold text-info">@group.SceneRange</span>
+                                    <span class="badge bg-secondary">Score: @group.Score/10</span>
+                                </div>
+                                <div class="small text-white-50 mb-1"><strong>Continuity:</strong> @group.ContinuityNotes</div>
+                                <div class="small text-white-50"><strong>Visual Consistency:</strong> @group.VisualConsistencyNotes</div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+}
 
 @if (_youTubeUpload is not null)
 {
@@ -1021,6 +1058,8 @@ else if (_showScenePlayer && _clientStitching)
             _job = jobs?.Job;
             await RefreshWipMetaAsync();
             await RefreshYouTubeStatusAsync();
+            var movieRes = await Engine.GetMovieReviewReportAsync(_projectId);
+            _movieReport = movieRes?.Report;
             if (_selectedScene is int sn)
                 await LoadSelectedDetailAsync(sn);
         }
@@ -1427,6 +1466,50 @@ else if (_showScenePlayer && _clientStitching)
         }
         catch (Exception ex) { _error = ex.Message; }
         finally { _busy = false; }
+    }
+
+    private MovieAutoReviewReport? _movieReport;
+
+    private async Task StartFullMovieReviewAsync()
+    {
+        if (_busy || JobRunning) return;
+        _busy = true;
+        _error = null;
+        _message = "Analyzing scenes for full movie AI review…";
+        try
+        {
+            var keyframes = new List<MovieAutoReviewKeyframe>();
+            foreach (var s in _scenes.OrderBy(x => x.SceneNumber))
+            {
+                keyframes.Add(new MovieAutoReviewKeyframe
+                {
+                    SceneNumber = s.SceneNumber,
+                    Label = $"SCENE_{s.SceneNumber:D2}",
+                    Base64 = "",
+                });
+            }
+
+            _message = "Running AI scene-group continuity review…";
+            var envelope = await Engine.ReviewMovieAsync(_projectId, keyframes);
+            if (envelope?.Report is not null)
+            {
+                _movieReport = envelope.Report;
+                _message = $"Full movie AI review ready — Score: {_movieReport.OverallScore}/10 ({_movieReport.Verdict})";
+            }
+            else
+            {
+                _error = "Failed to generate full movie review report.";
+            }
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            _busy = false;
+            StateHasChanged();
+        }
     }
 
     private async Task StartBatchAutoReviewAsync()

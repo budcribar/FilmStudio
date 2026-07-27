@@ -5,5 +5,7 @@
   "scenes_file": "scenes.json",
   "config_file": "pipeline_config.json",
   "state_file": "pipeline_state.json",
-  "description": ""
+  "description": "",
+  "schema_version": "v1",
+  "migrated_at_utc": "2026-07-27T13:42:43.9121719Z"
 }
