@@ -92,12 +92,10 @@ public sealed class MovieAutoReviewService
             .OrderBy(g => g.Key)
             .ToList();
 
-        if (scenesMap.Count == 0)
+        var validFramesCount = keyframes.Count(k => !string.IsNullOrWhiteSpace(k.Base64));
+        if (scenesMap.Count == 0 || validFramesCount == 0)
         {
-            report.SummaryNotes = "No scene keyframes provided for movie review.";
-            report.OverallScore = 10;
-            SaveReport(report);
-            return report;
+            throw new InvalidOperationException("No valid visual keyframe images were provided for movie review. Generate scenes and sample keyframes first.");
         }
 
         const int scenesPerChunk = 4;

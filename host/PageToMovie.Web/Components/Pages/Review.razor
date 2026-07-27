@@ -1485,26 +1485,71 @@ else if (_showScenePlayer && _clientStitching)
 
     private MovieAutoReviewReport? _movieReport;
 
+    private async Task<IReadOnlyList<string>> ResolveSceneUrlsForReviewAsync(int scene)
+    {
+        var summary = _scenes.FirstOrDefault(s => s.SceneNumber == scene);
+        if (summary?.CompositeExists == true)
+        {
+            return new List<string> { Engine.CompositeVideoUrl(_projectId, scene) };
+        }
+        return await Stitch.CollectClipUrlsAsync(_projectId, scene);
+    }
+
     private async Task StartFullMovieReviewAsync()
     {
         if (_busy || JobRunning) return;
         _busy = true;
         _error = null;
-        _message = "Analyzing scenes for full movie AI review…";
+        _message = "Sampling scene keyframes for full movie AI review…";
+        StateHasChanged();
         try
         {
             var keyframes = new List<MovieAutoReviewKeyframe>();
-            foreach (var s in _scenes.OrderBy(x => x.SceneNumber))
+            var scenesToReview = _scenes.OrderBy(x => x.SceneNumber).ToList();
+
+            for (var i = 0; i < scenesToReview.Count; i++)
             {
-                keyframes.Add(new MovieAutoReviewKeyframe
+                var s = scenesToReview[i];
+                _message = $"Sampling visual frames for Scene {s.SceneNumber} ({i + 1}/{scenesToReview.Count})…";
+                StateHasChanged();
+
+                var urls = await ResolveSceneUrlsForReviewAsync(s.SceneNumber);
+                if (urls is { Count: > 0 })
                 {
-                    SceneNumber = s.SceneNumber,
-                    Label = $"SCENE_{s.SceneNumber:D2}",
-                    Base64 = "",
-                });
+                    foreach (var url in urls.Take(2))
+                    {
+                        try
+                        {
+                            var framesResult = await Stitch.ExtractFramesRawAsync(url, mode: "span", count: 2);
+                            if (framesResult.Success && framesResult.Frames is { Count: > 0 })
+                            {
+                                foreach (var f in framesResult.Frames)
+                                {
+                                    if (string.IsNullOrWhiteSpace(f.Base64)) continue;
+                                    keyframes.Add(new MovieAutoReviewKeyframe
+                                    {
+                                        SceneNumber = s.SceneNumber,
+                                        Label = $"SCENE_{s.SceneNumber:D2}",
+                                        Base64 = f.Base64,
+                                        Mime = string.IsNullOrWhiteSpace(f.Mime) ? "image/jpeg" : f.Mime
+                                    });
+                                }
+                            }
+                        }
+                        catch { /* fall through */ }
+                    }
+                }
             }
 
-            _message = "Running AI scene-group continuity review…";
+            if (keyframes.Count == 0)
+            {
+                _error = "No video clips available to sample for movie review. Generate scene clips first.";
+                return;
+            }
+
+            _message = $"Running AI visual continuity review across {keyframes.Count} sampled keyframes…";
+            StateHasChanged();
+
             var envelope = await Engine.ReviewMovieAsync(_projectId, keyframes);
             if (envelope?.Report is not null)
             {

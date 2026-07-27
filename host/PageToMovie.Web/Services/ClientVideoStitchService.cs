@@ -251,8 +251,8 @@ public sealed class ClientVideoStitchService
         return _engine.ClipVideoUrl(projectId, scene, clip);
     }
 
-    private async Task<JsFramesResult> ExtractFramesRawAsync(
-        string url, string mode, int count, CancellationToken ct)
+    public async Task<JsFramesResult> ExtractFramesRawAsync(
+        string url, string mode, int count, CancellationToken ct = default)
     {
         try
         {
@@ -285,14 +285,14 @@ public sealed class ClientVideoStitchService
         public string? Error { get; set; }
     }
 
-    private sealed class JsFramesResult
+    public sealed class JsFramesResult
     {
         public bool Success { get; set; }
         public string? Error { get; set; }
         public List<JsFrameItem>? Frames { get; set; }
     }
 
-    private sealed class JsFrameItem
+    public sealed class JsFrameItem
     {
         public string? Base64 { get; set; }
         public string? Mime { get; set; }
