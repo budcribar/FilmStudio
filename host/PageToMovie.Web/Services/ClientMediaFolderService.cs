@@ -13,6 +13,7 @@ public sealed class ClientMediaFolderService
     private readonly IJSRuntime _js;
     private readonly EngineApiClient _api;
     private readonly JobHubClient _hub;
+    private readonly ActiveProjectState _activeProject;
     private bool _hubHooked;
     /// <summary>In-flight saves keyed by projectId|relativePath — avoids double JobUpdated.</summary>
     private readonly HashSet<string> _savingKeys = new(StringComparer.OrdinalIgnoreCase);
@@ -20,11 +21,26 @@ public sealed class ClientMediaFolderService
     /// path (e.g. a single-clip job's "done" tick after its "running" tick already saved it) is a no-op.</summary>
     private readonly HashSet<string> _savedKeys = new(StringComparer.OrdinalIgnoreCase);
 
-    public ClientMediaFolderService(IJSRuntime js, EngineApiClient api, JobHubClient hub)
+    public ClientMediaFolderService(IJSRuntime js, EngineApiClient api, JobHubClient hub, ActiveProjectState activeProject)
     {
         _js = js;
         _api = api;
         _hub = hub;
+        _activeProject = activeProject;
+        _activeProject.Changed += OnActiveProjectChanged;
+    }
+
+    private void OnActiveProjectChanged()
+    {
+        TriggerAutoSyncIfConnected();
+    }
+
+    public void TriggerAutoSyncIfConnected()
+    {
+        if (IsConnected && !IsSyncing && !string.IsNullOrWhiteSpace(_activeProject.ProjectId))
+        {
+            _ = SyncProjectMediaToClientAsync(_activeProject.ProjectId);
+        }
     }
 
     public string? FolderName { get; private set; }
@@ -92,6 +108,7 @@ public sealed class ClientMediaFolderService
                 LocalSaveWarning = null; // folder connected — clear fallback warning
                 Changed?.Invoke();
                 await EnsureHubHookAsync();
+                TriggerAutoSyncIfConnected();
                 return true;
             }
             LastStatus = r?.Error ?? "Could not connect folder";
@@ -129,6 +146,7 @@ public sealed class ClientMediaFolderService
                 PendingReconnectFolderName = null;
                 Changed?.Invoke();
                 await EnsureHubHookAsync();
+                TriggerAutoSyncIfConnected();
                 return;
             }
             if (string.Equals(r?.Reason, "prompt", StringComparison.OrdinalIgnoreCase))
@@ -162,6 +180,7 @@ public sealed class ClientMediaFolderService
                 LocalSaveWarning = null;
                 Changed?.Invoke();
                 await EnsureHubHookAsync();
+                TriggerAutoSyncIfConnected();
                 return true;
             }
             LastStatus = r?.Error ?? "Could not reconnect folder";
