@@ -2338,22 +2338,54 @@ else
     {
         _busy = true;
         _error = null;
+        _message = "Preparing movie cut for YouTube upload…";
+        StateHasChanged();
         try
         {
-            await RefreshWipMetaAsync();
-            if (!_wipExists || _wipStale)
+            var mediaUrl = await EnsureShareableMovieUrlAsync();
+            if (string.IsNullOrWhiteSpace(mediaUrl))
             {
-                _error = "YouTube upload needs an on-disk WIP movie — publish Demo from a browser stitch first, or copy a stitched file to assets/movie_wip.mp4.";
+                _error = "Could not build a movie to upload — generate scene clips first.";
                 return;
             }
+
             await EnsureHubAsync();
-            await Engine.StartYouTubeUploadAsync(new StartYouTubeUploadRequest
+            _dotNetRef ??= DotNetObjectReference.Create(this);
+
+            if (mediaUrl.StartsWith("blob:", StringComparison.OrdinalIgnoreCase))
             {
-                ProjectId = _projectId,
-                Title = _youTubeTitle,
-                Description = _youTubeDescription,
-                PrivacyStatus = _youTubePrivacy,
-            });
+                var res = await JS.InvokeAsync<System.Text.Json.JsonElement>(
+                    "PageToMovieExport.uploadDemoMovieAsync",
+                    mediaUrl,
+                    "/api/jobs/youtube-upload",
+                    Session.Token,
+                    new
+                    {
+                        projectId = _projectId,
+                        title = _youTubeTitle,
+                        description = _youTubeDescription,
+                        privacyStatus = _youTubePrivacy,
+                        fileName = $"{_projectId}_wip.mp4",
+                    },
+                    _dotNetRef);
+
+                if (!res.TryGetProperty("success", out var ok) || !ok.GetBoolean())
+                {
+                    _error = res.TryGetProperty("error", out var err) ? err.GetString() : "Failed to upload movie cut to server";
+                    return;
+                }
+            }
+            else
+            {
+                await Engine.StartYouTubeUploadAsync(new StartYouTubeUploadRequest
+                {
+                    ProjectId = _projectId,
+                    Title = _youTubeTitle,
+                    Description = _youTubeDescription,
+                    PrivacyStatus = _youTubePrivacy,
+                });
+            }
+
             _activeTab = "review";
             _message = "Uploading to YouTube…";
             var jobs = await Engine.GetJobAsync();

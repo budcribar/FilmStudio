@@ -3766,13 +3766,63 @@ app.MapPost("/api/jobs/credits", async (
     }
 });
 
-app.MapPost("/api/jobs/youtube-upload", async (StartYouTubeUploadRequest body, FilmJobService jobService) =>
+app.MapPost("/api/jobs/youtube-upload", async (
+    HttpRequest request,
+    FilmJobService jobService,
+    ProjectStore store,
+    CancellationToken ct) =>
 {
     try
     {
-        if (string.IsNullOrWhiteSpace(body.ProjectId))
+        string? projectId = null;
+        string? title = null;
+        string? description = null;
+        string? privacyStatus = null;
+        IFormFile? file = null;
+
+        if (request.HasFormContentType)
+        {
+            var form = await request.ReadFormAsync(ct);
+            projectId = form["projectId"].ToString();
+            title = form["title"].ToString();
+            description = form["description"].ToString();
+            privacyStatus = form["privacyStatus"].ToString();
+            file = form.Files.GetFile("file") ?? form.Files.FirstOrDefault();
+        }
+        else
+        {
+            var body = await request.ReadFromJsonAsync<StartYouTubeUploadRequest>(cancellationToken: ct);
+            if (body is not null)
+            {
+                projectId = body.ProjectId;
+                title = body.Title;
+                description = body.Description;
+                privacyStatus = body.PrivacyStatus;
+            }
+        }
+
+        if (string.IsNullOrWhiteSpace(projectId))
             return Results.BadRequest(new { ok = false, error = "projectId required" });
-        var job = await jobService.StartYouTubeUploadAsync(body);
+
+        if (file is not null && file.Length > 0)
+        {
+            var pDir = store.GetProjectDir(projectId);
+            var videoDir = Path.Combine(pDir, "assets", "video");
+            Directory.CreateDirectory(videoDir);
+            var savePath = Path.Combine(videoDir, "wip_movie.mp4");
+            await using var stream = File.Create(savePath);
+            await file.CopyToAsync(stream, ct);
+        }
+
+        var req = new StartYouTubeUploadRequest
+        {
+            ProjectId = projectId,
+            Title = title,
+            Description = description,
+            PrivacyStatus = privacyStatus,
+        };
+
+        var job = await jobService.StartYouTubeUploadAsync(req);
         return Results.Accepted($"/api/jobs/{job.JobId}", new
         {
             ok = true,
