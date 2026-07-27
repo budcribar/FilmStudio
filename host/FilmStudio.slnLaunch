@@ -1,51 +1,36 @@
 [
   {
-    "Name": "Load Sim",
+    "Name": "PageToMovie Studio (Api + Web)",
     "Projects": [
       {
-        "Path": "FilmStudio.Api\\FilmStudio.Api.csproj",
-        "Action": "Start",
-        "DebugTarget": "http (fakes)"
-      },
-      {
-        "Path": "FilmStudio.Web\\FilmStudio.Web.csproj",
+        "Path": "PageToMovie.Api\\PageToMovie.Api.csproj",
         "Action": "Start",
         "DebugTarget": "http"
-      },
-      {
-        "Path": "FilmStudio.LoadSim\\FilmStudio.LoadSim.csproj",
-        "Action": "Start",
-        "DebugTarget": "Load Sim"
       }
     ]
   },
   {
-    "Name": "Load Sim (Api only + sim)",
+    "Name": "PageToMovie Studio (Fakes)",
     "Projects": [
       {
-        "Path": "FilmStudio.Api\\FilmStudio.Api.csproj",
+        "Path": "PageToMovie.Api\\PageToMovie.Api.csproj",
         "Action": "Start",
         "DebugTarget": "http (fakes)"
-      },
-      {
-        "Path": "FilmStudio.LoadSim\\FilmStudio.LoadSim.csproj",
-        "Action": "Start",
-        "DebugTarget": "Load Sim"
       }
     ]
   },
   {
-    "Name": "Api + Web",
+    "Name": "Load Sim (Api + LoadSim)",
     "Projects": [
       {
-        "Path": "FilmStudio.Api\\FilmStudio.Api.csproj",
+        "Path": "PageToMovie.Api\\PageToMovie.Api.csproj",
         "Action": "Start",
-        "DebugTarget": "http"
+        "DebugTarget": "http (fakes)"
       },
       {
-        "Path": "FilmStudio.Web\\FilmStudio.Web.csproj",
+        "Path": "PageToMovie.LoadSim\\PageToMovie.LoadSim.csproj",
         "Action": "Start",
-        "DebugTarget": "http"
+        "DebugTarget": "Load Sim"
       }
     ]
   }
