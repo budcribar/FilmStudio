@@ -1332,18 +1332,22 @@ else
             {
                 _message = $"🎬 Opened full cut in {res.Editor ?? _preferredVideoEditor}.";
             }
-            else if (!string.IsNullOrWhiteSpace(res.VideoUrl))
-            {
-                _message = $"🎬 Downloaded movie to your PC — open {_projectId}_full.mp4 in {res.Editor ?? _preferredVideoEditor}.";
-                try
-                {
-                    await JS.InvokeVoidAsync("eval", $"const a=document.createElement('a');a.href='{res.VideoUrl}';a.download='{_projectId}_full.mp4';document.body.appendChild(a);a.click();document.body.removeChild(a);");
-                }
-                catch { /* ignore */ }
-            }
             else
             {
-                _error = res.Error ?? "Could not open external video editor.";
+                _message = "Preparing movie for download…";
+                StateHasChanged();
+                var movieUrl = await EnsureShareableMovieUrlAsync();
+                if (!string.IsNullOrEmpty(movieUrl))
+                {
+                    var cleanPid = System.Text.RegularExpressions.Regex.Replace(_projectId, @"[^\w\.-]", "_");
+                    var fileName = $"{cleanPid}_full.mp4";
+                    _message = $"🎬 Downloaded movie to your PC — open {fileName} in {res.Editor ?? _preferredVideoEditor}.";
+                    await JS.InvokeVoidAsync("eval", $"const a=document.createElement('a');a.href='{movieUrl}';a.download='{fileName}';document.body.appendChild(a);a.click();document.body.removeChild(a);");
+                }
+                else
+                {
+                    _error = res.Error ?? "Could not prepare full movie. Ensure at least one scene clip exists.";
+                }
             }
         }
         catch (Exception ex)
