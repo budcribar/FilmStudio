@@ -24,8 +24,10 @@ window.PageToMovieFfmpeg = {
         utilJs: {
             url: "/js/ffmpeg/util.js",
         },
-        workerJs: "/js/ffmpeg/814.ffmpeg.js",
-        coreJs: "/js/ffmpeg/ffmpeg-core.js",
+        // ffmpeg-worker-bundle.js has ffmpeg-core.js inlined — no importScripts() or
+        // dynamic import() needed inside the worker, sidestepping all module/classic
+        // worker loader conflicts.
+        workerBundleJs: "/js/ffmpeg/ffmpeg-worker-bundle.js",
         wasmJs: "/js/ffmpeg/ffmpeg-core.wasm",
     },
 
@@ -68,15 +70,15 @@ window.PageToMovieFfmpeg = {
                 });
 
                 reportProgress(onProgress, 5, "Loading ffmpeg engine…");
-                // All three URLs must be absolute HTTPS — importScripts() inside the worker
-                // context requires absolute URLs. Relative paths resolve against blob: not https:.
-                // COOP/COEP headers (set in Program.cs) enable crossOriginIsolated=true which
-                // allows importScripts() from same-origin HTTPS URLs.
+                // ffmpeg-worker-bundle.js has ffmpeg-core.js inlined, so no coreURL import
+                // is needed inside the worker. wasmURL must be absolute so the inlined core
+                // can locate the .wasm binary. classWorkerURL must be absolute because
+                // relative paths resolve against blob: origin inside ffmpeg.load().
                 const origin = window.location.origin;
                 await ffmpeg.load({
-                    coreURL: origin + self._assets.coreJs,
+                    coreURL: origin + "/js/ffmpeg/ffmpeg-core.js", // used only to derive default wasmURL path
                     wasmURL: origin + self._assets.wasmJs,
-                    classWorkerURL: origin + self._assets.workerJs,
+                    classWorkerURL: origin + self._assets.workerBundleJs,
                 });
 
                 self._ffmpeg = ffmpeg;
