@@ -1186,6 +1186,77 @@ public sealed class CharacterBookPlateService
         return score;
     }
 
+    private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, bool> TextOnlyCache = new();
+
+    internal static bool IsTextOnlyImageFile(string absPath)
+    {
+        if (string.IsNullOrWhiteSpace(absPath) || !File.Exists(absPath))
+            return false;
+
+        try
+        {
+            var info = new FileInfo(absPath);
+            var cacheKey = $"{absPath}|{info.LastWriteTimeUtc.Ticks}|{info.Length}";
+            if (TextOnlyCache.TryGetValue(cacheKey, out var cached))
+                return cached;
+
+            using var bitmap = SkiaSharp.SKBitmap.Decode(absPath);
+            if (bitmap is null || bitmap.Width <= 0 || bitmap.Height <= 0)
+                return false;
+
+            int samplesX = Math.Min(40, bitmap.Width);
+            int samplesY = Math.Min(40, bitmap.Height);
+            int stepX = Math.Max(1, bitmap.Width / samplesX);
+            int stepY = Math.Max(1, bitmap.Height / samplesY);
+
+            int totalSamples = 0;
+            int bgCount = 0;
+            int colorCount = 0;
+
+            for (int y = 0; y < bitmap.Height; y += stepY)
+            {
+                for (int x = 0; x < bitmap.Width; x += stepX)
+                {
+                    totalSamples++;
+                    var pixel = bitmap.GetPixel(x, y);
+                    int r = pixel.Red;
+                    int g = pixel.Green;
+                    int b = pixel.Blue;
+
+                    // Background: white / light off-white (R, G, B > 230)
+                    if (r > 230 && g > 230 && b > 230)
+                    {
+                        bgCount++;
+                    }
+                    else
+                    {
+                        int maxC = Math.Max(r, Math.Max(g, b));
+                        int minC = Math.Min(r, Math.Min(g, b));
+                        if (maxC - minC > 20)
+                        {
+                            colorCount++;
+                        }
+                    }
+                }
+            }
+
+            if (totalSamples == 0) return false;
+
+            double bgRatio = (double)bgCount / totalSamples;
+            double colorRatio = (double)colorCount / totalSamples;
+
+            // Text-only page: > 80% light background AND < 0.8% color saturation pixels
+            bool isTextOnly = bgRatio > 0.80 && colorRatio < 0.008;
+
+            TextOnlyCache[cacheKey] = isTextOnly;
+            return isTextOnly;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
     private static bool IsLikelyTextLayout(BookImageRow r)
     {
         if (ProjectStore.IsTextOnlyPlatePath(r.Name) || ProjectStore.IsTextOnlyPlatePath(r.PathRel))
@@ -1202,31 +1273,19 @@ public sealed class CharacterBookPlateService
             string.Equals(r.Relevance, "text_heavy", StringComparison.OrdinalIgnoreCase))
             return true;
 
-        // Full-page PDF renders / embeds are illustrations even when compressed under 400KB.
-        if (r.Kind is "rendered_page" or "embedded" or "file")
-        {
-            if (r.Name.Contains("cover", StringComparison.OrdinalIgnoreCase) ||
-                r.Name.Contains("sparse", StringComparison.OrdinalIgnoreCase) ||
-                r.Name.Contains("bookref", StringComparison.OrdinalIgnoreCase) ||
-                r.Name.Contains("embedded", StringComparison.OrdinalIgnoreCase) ||
-                r.Name.StartsWith("page_", StringComparison.OrdinalIgnoreCase) ||
-                Regex.IsMatch(r.Name, @"^(page|p|embedded_p)\d", RegexOptions.IgnoreCase))
-                return false;
-        }
+        // Explicit cover or sparse visual tag override
+        if (r.Name.Contains("cover", StringComparison.OrdinalIgnoreCase) ||
+            r.Name.Contains("sparse", StringComparison.OrdinalIgnoreCase) ||
+            r.Name.Contains("bookref", StringComparison.OrdinalIgnoreCase))
+            return false;
 
-        try
+        // Pixel-level bitmap inspection for image files on disk
+        if (!string.IsNullOrWhiteSpace(r.AbsPath) && File.Exists(r.AbsPath))
         {
-            var len = new FileInfo(r.AbsPath).Length;
-            if (len is > 0 and < 400_000 &&
-                !r.Name.Contains("cover", StringComparison.OrdinalIgnoreCase) &&
-                !r.Name.Contains("sparse", StringComparison.OrdinalIgnoreCase) &&
-                !r.Name.Contains("bookref", StringComparison.OrdinalIgnoreCase) &&
-                !r.Name.StartsWith("page_", StringComparison.OrdinalIgnoreCase) &&
-                !r.Name.Contains("embedded", StringComparison.OrdinalIgnoreCase) &&
-                !Regex.IsMatch(r.Name, @"^(page|p|embedded_p)\d", RegexOptions.IgnoreCase))
+            if (IsTextOnlyImageFile(r.AbsPath))
                 return true;
         }
-        catch { /* ignore */ }
+
         return false;
     }
 
