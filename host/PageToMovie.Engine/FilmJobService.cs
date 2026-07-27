@@ -1869,8 +1869,15 @@ public sealed class FilmJobService
 
         try
         {
-            var path = _projects.ResolveWipMoviePath(projectId)
-                ?? throw new InvalidOperationException("No WIP movie to upload — rebuild WIP first.");
+            var path = _projects.ResolveWipMoviePath(projectId);
+            if (path is null || !File.Exists(path))
+            {
+                var pDir = _projects.GetProjectDir(projectId);
+                var altWip = Path.Combine(pDir, "assets", "video", "wip_movie.mp4");
+                if (File.Exists(altWip)) path = altWip;
+            }
+            if (path is null || !File.Exists(path))
+                throw new InvalidOperationException("No WIP movie file found on server — publish Demo from a browser stitch first.");
 
             var youtube = await _youTube.GetServiceAsync(ct)
                 ?? throw new InvalidOperationException("YouTube is not connected — connect it from Review first.");

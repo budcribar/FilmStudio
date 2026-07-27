@@ -1129,11 +1129,19 @@ app.MapGet("/api/admin/logs/export", async (
 /// <summary>Admin: Get JSON summary of server diagnostic state and active job logs.</summary>
 app.MapGet("/api/admin/logs", async (
     IUserContext user,
+    IOptions<PageToMovieOptions> opts,
+    HttpContext http,
     FilmJobService jobs,
     ProjectStore projects,
     CancellationToken ct) =>
 {
-    if (!user.IsAdmin)
+    var secret = AuthOptions.ResolveOperatorOverrideSecret(opts.Value.Auth);
+    var isOperator = !string.IsNullOrWhiteSpace(secret) &&
+        (string.Equals(http.Request.Query["me"].ToString(), secret, StringComparison.Ordinal) ||
+         string.Equals(http.Request.Query["admin_key"].ToString(), secret, StringComparison.Ordinal) ||
+         string.Equals(http.Request.Headers["X-Admin-Key"].ToString(), secret, StringComparison.Ordinal));
+
+    if (!user.IsAdmin && !isOperator)
         return Results.Json(new { ok = false, error = "admin role required" }, statusCode: StatusCodes.Status403Forbidden);
 
     var projectList = await projects.ListProjectsAsync(ct);
