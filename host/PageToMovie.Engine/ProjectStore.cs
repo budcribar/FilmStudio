@@ -280,7 +280,31 @@ public sealed class ProjectStore
             ? Path.Combine(WorkspaceRoot, "projects", slug)
             : Path.Combine(WorkspaceRoot, "projects", owner, slug);
         if (Directory.Exists(dir))
-            throw new InvalidOperationException($"Project already exists: {id}");
+        {
+            var metaFile = Path.Combine(dir, "project.json");
+            if (File.Exists(metaFile))
+            {
+                try
+                {
+                    var existing = await GetProjectAsync(id, ct).ConfigureAwait(false);
+                    if (existing is not null)
+                    {
+                        if (string.IsNullOrWhiteSpace(existing.OwnerUserId) && !string.IsNullOrWhiteSpace(ownerUserId))
+                        {
+                            var metaExisting = JsonSerializer.Deserialize<Dictionary<string, object?>>(
+                                await File.ReadAllTextAsync(metaFile, ct).ConfigureAwait(false), JsonOpts)
+                                ?? new Dictionary<string, object?>();
+                            metaExisting["ownerUserId"] = ownerUserId.Trim();
+                            await File.WriteAllTextAsync(metaFile, JsonSerializer.Serialize(metaExisting, JsonOpts) + "\n", ct).ConfigureAwait(false);
+                            InvalidateReadCaches(null);
+                        }
+                        return await ActivateAsync(existing.Id, ct).ConfigureAwait(false);
+                    }
+                }
+                catch { /* fall through to clean up leftover folder */ }
+            }
+            try { Directory.Delete(dir, recursive: true); } catch { /* non-fatal */ }
+        }
 
         Directory.CreateDirectory(dir);
         Directory.CreateDirectory(Path.Combine(dir, "source"));
@@ -298,7 +322,7 @@ public sealed class ProjectStore
             ["config_file"] = "pipeline_config.json",
             ["state_file"] = "pipeline_state.json",
             ["description"] = "",
-            ["ownerUserId"] = owner,
+            ["ownerUserId"] = string.IsNullOrWhiteSpace(ownerUserId) ? owner : ownerUserId.Trim(),
             ["createdAt"] = DateTimeOffset.UtcNow.ToString("o"),
         };
         await File.WriteAllTextAsync(
