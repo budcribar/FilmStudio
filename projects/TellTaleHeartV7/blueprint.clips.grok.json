@@ -7029,6 +7029,63 @@
       "video_provider_profile": "grok",
       "spoiler_constraints": [],
       "source_book_refs": []
+    },
+    {
+      "scene_number": 18,
+      "setting": "INT. BLACK SCREEN - NIGHT",
+      "location_ids": [],
+      "primary_location_id": "Loc_Credits",
+      "characters_on_screen": [],
+      "scene_filename": "sc18_end_credits",
+      "transition_type": "fade_out",
+      "lighting_continuity_token": "dark shadow contrast",
+      "total_estimated_duration_seconds": 10,
+      "music_bed": {
+        "style_description": "cinematic score resolution",
+        "duration_seconds": 10
+      },
+      "veo_clips": [
+        {
+          "clip_number": 1,
+          "timestamp": "00:00-00:10",
+          "veo_continuation_source": "none",
+          "location_id": "Loc_Credits",
+          "visual_prompt": "INT. BLACK SCREEN - NIGHT. Fading out to deep dark background. Elegant cinematic end credits font displaying 'THE TELL-TALE HEART'. Fading text card: 'A Film Studio Presentation'. Deep black backdrop with subtle ambient particle glow. Camera directive: Slow pull-back on elegant white text against pitch black background.",
+          "negative_prompt": "no extra unmentioned hats or jackets, no modern wristwatches, no electric light bulbs, no plastic, no zippers, no modern cars, no printed logos, no denim, no asphalt, no modern hair gel, no sneakers, no fluorescent lights, no power outlets, no synthetic fabrics",
+          "audio_payload": {
+            "delivery": "none",
+            "speaker": "",
+            "dialogue": "",
+            "sfx": "",
+            "ambient": "",
+            "ambient_layer": "Fading ambient room tone and soft wind",
+            "foley_layer": "Silence",
+            "score_layer": "Fading melancholic cinematic violin and cello chord"
+          },
+          "stage1_beat_id": "b_credits",
+          "primary_subject": null,
+          "action_class": "hold",
+          "characters_on_screen": [],
+          "focus_keys": [],
+          "duration_seconds": 10,
+          "film_stock": "Kodak Vision3 500T 5219 film stock, fine 35mm grain",
+          "color_palette": "Pitch black background with warm off-white typography",
+          "aperture": "f/2.8 sharp focus on title card",
+          "focal_plane": "Foreground text card",
+          "rack_focus": "Static focus on credits",
+          "acting_intensity": 0,
+          "micro_expression": "none",
+          "shot_scale_hint": "wide",
+          "camera_movement_token": "slow 5% dolly pull-back"
+        }
+      ],
+      "stage1_scene_number": 18,
+      "stage1_beat_map": [
+        "b_credits"
+      ],
+      "video_provider_profile": "grok",
+      "spoiler_constraints": [],
+      "source_book_refs": []
     }
   ],
   "stage2_meta": {
@@ -7042,8 +7099,8 @@
     "screenplay_fingerprint": "733e6f036cf38b8c",
     "stage1_fingerprint": "733e6f036cf38b8c",
     "planned_at": "2026-07-23T12:36:40",
-    "total_duration_seconds": 1010,
-    "total_clips": 167,
+    "total_duration_seconds": 1020,
+    "total_clips": 168,
     "silent_beat_classify": {
       "enabled": true,
       "prompt_version": "v2_pp",
