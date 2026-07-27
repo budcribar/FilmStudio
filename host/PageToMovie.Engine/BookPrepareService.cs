@@ -54,14 +54,31 @@ public sealed class BookPrepareService
         var hasXai = _vision.IsConfigured;
         result.HasXaiKey = hasXai;
 
-        onProgress?.Invoke("Looking for PDF / book_full.txt…");
+        onProgress?.Invoke("Looking for PDF / EPUB / book_full.txt…");
         var pdf = FindPdf(source);
-        result.PdfName = pdf is null ? null : Path.GetFileName(pdf);
+        var epub = pdf is null ? FindEpub(source) : null;
+        result.PdfName = pdf is not null ? Path.GetFileName(pdf) : (epub is not null ? Path.GetFileName(epub) : null);
 
         BookTextAnalysis analysis;
         string engine;
 
-        if (pdf is not null && (forceExtract || !File.Exists(bookTxt)))
+        if (epub is not null && (forceExtract || !File.Exists(bookTxt)))
+        {
+            onProgress?.Invoke($"Extracting text and images from {Path.GetFileName(epub)} (EPUB)…");
+            var (epubRawText, epubImgRows, epubPages) = await ExtractTextAndImagesEpubAsync(epub, imgDir, source, ct).ConfigureAwait(false);
+            var text = GutenbergCleaner.StripHeaderAndFooter(epubRawText);
+            engine = "epub";
+            analysis = BookTextAnalyzer.Analyze(text, epubPages);
+            analysis.TextEngine = engine;
+            result.ImagesExtracted = epubImgRows.Count;
+
+            await File.WriteAllTextAsync(bookTxt, text + "\n", ct).ConfigureAwait(false);
+            if (epubImgRows.Count > 0)
+                await WriteManifestAsync(source, imgDir, epubImgRows, epubPages, ct).ConfigureAwait(false);
+            else
+                await EnsureManifestFromDiskAsync(source, imgDir, epubPages, ct).ConfigureAwait(false);
+        }
+        else if (pdf is not null && (forceExtract || !File.Exists(bookTxt)))
         {
             onProgress?.Invoke($"Extracting text from {Path.GetFileName(pdf)} (PdfPig)…");
             var (rawExtractText, pageCount) = ExtractTextPdfPig(pdf);
@@ -351,10 +368,19 @@ public sealed class BookPrepareService
         };
     }
 
+    private static string? FindEpub(string sourceDir)
+    {
+        if (!Directory.Exists(sourceDir)) return null;
+        var cands = new DirectoryInfo(sourceDir).EnumerateFiles()
+            .Where(f => f.Extension.Equals(".epub", StringComparison.OrdinalIgnoreCase))
+            .ToList();
+        if (cands.Count == 0) return null;
+        return cands.OrderByDescending(p => p.Length).Select(p => p.FullName).First();
+    }
+
     private static string? FindPdf(string sourceDir)
     {
         if (!Directory.Exists(sourceDir)) return null;
-        // Case-insensitive filter once (Windows); Length from FileInfo avoids re-stat.
         var cands = new DirectoryInfo(sourceDir).EnumerateFiles()
             .Where(f => f.Extension.Equals(".pdf", StringComparison.OrdinalIgnoreCase))
             .ToList();
@@ -364,6 +390,84 @@ public sealed class BookPrepareService
             .ThenByDescending(p => p.Length)
             .Select(p => p.FullName)
             .First();
+    }
+
+    private static async Task<(string Text, List<Dictionary<string, object?>> ImageRows, int PageCount)> ExtractTextAndImagesEpubAsync(
+        string epubPath,
+        string imgDir,
+        string sourceDir,
+        CancellationToken ct = default)
+    {
+        var textParts = new List<string>();
+        var imageRows = new List<Dictionary<string, object?>>();
+        int pageIndex = 0;
+
+        using var archive = System.IO.Compression.ZipFile.OpenRead(epubPath);
+
+        // 1. Extract image files
+        var imageEntries = archive.Entries
+            .Where(e => Regex.IsMatch(e.FullName, @"\.(png|jpe?g|webp)$", RegexOptions.IgnoreCase))
+            .OrderBy(e => e.FullName, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        int imgIndex = 0;
+        foreach (var entry in imageEntries)
+        {
+            ct.ThrowIfCancellationRequested();
+            imgIndex++;
+            try
+            {
+                var ext = Path.GetExtension(entry.FullName).TrimStart('.').ToLowerInvariant();
+                var name = $"embedded_epub_x{imgIndex:D3}.{ext}";
+                var fullPath = Path.Combine(imgDir, name);
+
+                using (var stream = entry.Open())
+                using (var outStream = File.Create(fullPath))
+                {
+                    await stream.CopyToAsync(outStream, ct).ConfigureAwait(false);
+                }
+
+                var rel = Path.GetRelativePath(sourceDir, fullPath).Replace('\\', '/');
+                imageRows.Add(new Dictionary<string, object?>
+                {
+                    ["kind"] = "embedded",
+                    ["page"] = imgIndex,
+                    ["path"] = rel.StartsWith("book_images") ? rel : $"book_images/{name}",
+                    ["relevance"] = imgIndex == 1 ? "cover" : "embedded_figure",
+                });
+            }
+            catch { /* ignore bad images */ }
+        }
+
+        // 2. Extract story text from HTML/XHTML entries
+        var htmlEntries = archive.Entries
+            .Where(e => Regex.IsMatch(e.FullName, @"\.(xhtml|html|htm)$", RegexOptions.IgnoreCase) &&
+                        !e.Name.Contains("toc", StringComparison.OrdinalIgnoreCase) &&
+                        !e.Name.Contains("nav", StringComparison.OrdinalIgnoreCase))
+            .OrderBy(e => e.FullName, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        foreach (var entry in htmlEntries)
+        {
+            ct.ThrowIfCancellationRequested();
+            try
+            {
+                using var reader = new StreamReader(entry.Open(), Encoding.UTF8);
+                var html = await reader.ReadToEndAsync(ct).ConfigureAwait(false);
+                var rawText = Regex.Replace(html, @"<[^>]+>", " ");
+                var clean = System.Net.WebUtility.HtmlDecode(rawText);
+                clean = Regex.Replace(clean, @"\s+", " ").Trim();
+                if (clean.Length > 50)
+                {
+                    pageIndex++;
+                    textParts.Add($"--- PAGE {pageIndex} ---\n{clean}");
+                }
+            }
+            catch { /* ignore */ }
+        }
+
+        var fullText = string.Join("\n\n", textParts);
+        return (fullText, imageRows, Math.Max(1, pageIndex));
     }
 
     private static (string Text, int PageCount) ExtractTextPdfPig(string pdfPath)

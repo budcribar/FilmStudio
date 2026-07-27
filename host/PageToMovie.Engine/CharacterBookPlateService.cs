@@ -1188,6 +1188,8 @@ public sealed class CharacterBookPlateService
 
     private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, bool> TextOnlyCache = new();
 
+    public static void ClearTextOnlyCache() => TextOnlyCache.Clear();
+
     public static bool IsTextOnlyImageFile(string absPath)
     {
         if (string.IsNullOrWhiteSpace(absPath) || !File.Exists(absPath))
@@ -1223,30 +1225,21 @@ public sealed class CharacterBookPlateService
                     int g = pixel.Green;
                     int b = pixel.Blue;
 
-                    // Background: white / light off-white (R, G, B > 230)
-                    if (r > 230 && g > 230 && b > 230)
+                    int maxC = Math.Max(r, Math.Max(g, b));
+                    int minC = Math.Min(r, Math.Min(g, b));
+                    if (maxC - minC > 20)
                     {
-                        bgCount++;
-                    }
-                    else
-                    {
-                        int maxC = Math.Max(r, Math.Max(g, b));
-                        int minC = Math.Min(r, Math.Min(g, b));
-                        if (maxC - minC > 20)
-                        {
-                            colorCount++;
-                        }
+                        colorCount++;
                     }
                 }
             }
 
             if (totalSamples == 0) return false;
 
-            double bgRatio = (double)bgCount / totalSamples;
             double colorRatio = (double)colorCount / totalSamples;
 
-            // Text-only page: > 80% light background AND < 0.8% color saturation pixels
-            bool isTextOnly = bgRatio > 0.80 && colorRatio < 0.008;
+            // Text-only page: < 1.5% color saturation pixels (monochrome text on white/gray paper)
+            bool isTextOnly = colorRatio < 0.015;
 
             TextOnlyCache[cacheKey] = isTextOnly;
             return isTextOnly;

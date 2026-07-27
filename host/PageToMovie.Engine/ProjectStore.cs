@@ -2367,7 +2367,7 @@ public sealed class ProjectStore
     }
 
     /// <summary>True for sampled/OCR/text-page paths that must never be character plates.</summary>
-    internal static bool IsTextOnlyPlatePath(string pathOrName)
+    public static bool IsTextOnlyPlatePath(string pathOrName)
     {
         var n = Path.GetFileName(pathOrName);
         if (n.Contains("sampled", StringComparison.OrdinalIgnoreCase)) return true;
