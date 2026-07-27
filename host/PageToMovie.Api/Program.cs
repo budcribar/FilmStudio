@@ -4983,6 +4983,115 @@ app.MapPost("/api/user/settings", async (
         return Results.BadRequest(new { ok = false, error = ex.Message });
     }
 });
+// ── One-Time Startup Migration & Directory Cleanup ─────────────────────────
+try
+{
+    var opts = app.Services.GetRequiredService<IOptions<PageToMovieOptions>>().Value;
+    var workspaceRoot = opts.WorkspaceRoot ?? Directory.GetCurrentDirectory();
+    var projectsDir = Path.Combine(workspaceRoot, "projects");
+    var targetHandle = "budcribar";
+    var userDb = app.Services.GetRequiredService<UserDatabaseService>();
+
+    if (Directory.Exists(projectsDir))
+    {
+        var targetUserDir = Path.Combine(projectsDir, targetHandle);
+        Directory.CreateDirectory(targetUserDir);
+
+        var sourceParents = new[]
+        {
+            projectsDir,
+            Path.Combine(projectsDir, "budcribarmsn_com"),
+            Path.Combine(projectsDir, "budcribarmsn.com"),
+            Path.Combine(projectsDir, "local")
+        };
+
+        foreach (var srcParent in sourceParents)
+        {
+            if (!Directory.Exists(srcParent)) continue;
+            foreach (var sub in Directory.GetDirectories(srcParent))
+            {
+                var dirName = Path.GetFileName(sub);
+                if (string.IsNullOrWhiteSpace(dirName) || string.Equals(dirName, targetHandle, StringComparison.OrdinalIgnoreCase))
+                    continue;
+
+                // Delete test / test2 projects
+                if (string.Equals(dirName, "test", StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(dirName, "test2", StringComparison.OrdinalIgnoreCase))
+                {
+                    try { Directory.Delete(sub, recursive: true); } catch { /* ignore */ }
+                    continue;
+                }
+
+                // Move Buster / BusterNew / TellTaleHeart projects under projects/budcribar/
+                if (dirName.StartsWith("Buster", StringComparison.OrdinalIgnoreCase) ||
+                    dirName.StartsWith("TellTale", StringComparison.OrdinalIgnoreCase))
+                {
+                    var destDir = Path.Combine(targetUserDir, dirName);
+                    if (!string.Equals(sub, destDir, StringComparison.OrdinalIgnoreCase))
+                    {
+                        if (Directory.Exists(destDir))
+                        {
+                            try { Directory.Delete(destDir, recursive: true); } catch { /* ignore */ }
+                        }
+                        try { Directory.Move(sub, destDir); } catch { /* ignore */ }
+                    }
+
+                    // Ensure project.json is updated to ownerUserId = budcribar and id = budcribar/dirName
+                    var metaFile = Path.Combine(destDir, "project.json");
+                    if (File.Exists(metaFile))
+                    {
+                        try
+                        {
+                            var metaJson = File.ReadAllText(metaFile);
+                            var dict = JsonSerializer.Deserialize<Dictionary<string, object?>>(metaJson)
+                                ?? new Dictionary<string, object?>();
+                            dict["id"] = $"{targetHandle}/{dirName}";
+                            dict["ownerUserId"] = targetHandle;
+                            File.WriteAllText(metaFile, JsonSerializer.Serialize(dict, new JsonSerializerOptions { WriteIndented = true }) + "\n");
+                        }
+                        catch { /* ignore */ }
+                    }
+                }
+            }
+        }
+
+        // Remove legacy budcribarmsn_com directory if present
+        var legacyFolder = Path.Combine(projectsDir, "budcribarmsn_com");
+        if (Directory.Exists(legacyFolder))
+        {
+            try { Directory.Delete(legacyFolder, recursive: true); } catch { /* ignore */ }
+        }
+        var legacyFolderDot = Path.Combine(projectsDir, "budcribarmsn.com");
+        if (Directory.Exists(legacyFolderDot))
+        {
+            try { Directory.Delete(legacyFolderDot, recursive: true); } catch { /* ignore */ }
+        }
+    }
+
+    // Database user update: ensure budcribar exists with email & terms accepted
+    _ = Task.Run(async () =>
+    {
+        try
+        {
+            await userDb.InsertUserAsync(new UserEntity
+            {
+                UserId = targetHandle,
+                Username = targetHandle,
+                PasswordHash = "",
+                Email = "budcribarmsn@msn.com",
+                EmailConfirmedAt = DateTimeOffset.UtcNow,
+                Role = "Admin",
+                CreatedAt = DateTime.UtcNow,
+            });
+            await userDb.AcceptTermsAsync(targetHandle, "1.0");
+        }
+        catch { /* non-fatal */ }
+    });
+}
+catch (Exception ex)
+{
+    Console.WriteLine($"Startup migration error: {ex.Message}");
+}
 
 app.Run();
 
