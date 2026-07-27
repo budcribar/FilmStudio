@@ -21,6 +21,7 @@ COPY host/ host/
 COPY prompts/ prompts/
 # Seed demo bundles (meta.json only — movies resolved from project WIP at startup)
 COPY seed_demos/ seed_demos/
+COPY projects/ projects/
 
 # Re-restore after full source copy so Linux restore graph matches final csproj props
 # (avoids stale --no-restore when only .cs files changed but package needs differ).
