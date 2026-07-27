@@ -2286,13 +2286,22 @@ app.MapGet("/api/creators/{handle}", async (
     return Results.Ok(profile);
 });
 
-// Phase 6: Privacy Search & Invite Delivery
-app.MapGet("/api/users/search", async (string? q, UserDatabaseService userDb) =>
+// Phase 6: Privacy Search & Invite Delivery — handles only (never emails)
+app.MapGet("/api/users/search", async (
+    string? q,
+    UserDatabaseService userDb,
+    IUserContext user,
+    IOptions<PageToMovieOptions> opts,
+    CancellationToken ct) =>
 {
-    if (string.IsNullOrWhiteSpace(q)) return Results.Ok(new List<string>());
-    var user = await userDb.GetUserByUsernameAsync(q.TrimStart('@'));
-    var list = user != null ? new List<string> { "@" + user.Username } : new List<string>();
-    return Results.Ok(list);
+    if (AuthGate.RequireLogin(user, opts) is { } denied)
+        return denied;
+    if (string.IsNullOrWhiteSpace(q) || q.Trim().TrimStart('@').Length < 1)
+        return Results.Ok(new { ok = true, handles = Array.Empty<string>() });
+
+    var found = await userDb.SearchUsernamesAsync(q, take: 8, ct);
+    var handles = found.Select(u => u.StartsWith('@') ? u : "@" + u).ToList();
+    return Results.Ok(new { ok = true, handles });
 });
 
 /// <summary>

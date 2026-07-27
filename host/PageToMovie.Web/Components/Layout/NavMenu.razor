@@ -119,7 +119,7 @@
                     <button type="button"
                             class="nav-user-trigger"
                             data-testid="nav-user-menu"
-                            title="@Session.UserId — account menu"
+                            title="@Session.DisplayHandle — account menu"
                             aria-expanded="@_userMenuOpen"
                             aria-haspopup="menu"
                             @onclick="ToggleUserMenu"
@@ -128,7 +128,7 @@
                         @if (!Collapsed)
                         {
                             <span class="nav-user-meta">
-                                <span class="nav-user-name text-truncate">@Session.UserId</span>
+                                <span class="nav-user-name text-truncate">@Session.DisplayHandle</span>
                                 <span class="nav-user-role">@(Session.IsAdmin ? "Admin" : "Account")</span>
                             </span>
                             <span class="nav-user-caret" aria-hidden="true">@(_userMenuOpen ? "▴" : "▾")</span>
@@ -144,7 +144,7 @@
                             <div class="nav-user-dropdown-head">
                                 <span class="nav-user-avatar nav-user-avatar--lg" aria-hidden="true">@UserInitials</span>
                                 <div class="nav-user-dropdown-id">
-                                    <div class="nav-user-name text-truncate">@Session.UserId</div>
+                                    <div class="nav-user-name text-truncate">@Session.DisplayHandle</div>
                                     <div class="nav-user-role">@(Session.IsAdmin ? "Administrator" : "Signed in")</div>
                                 </div>
                             </div>
@@ -208,7 +208,8 @@
     {
         get
         {
-            var id = (Session.UserId ?? "").Trim();
+            // Initials from public handle, not email
+            var id = Session.DisplayHandle.TrimStart('@').Trim();
             if (id.Length == 0) return "?";
             var parts = id.Split(new[] { ' ', '.', '_', '-' }, StringSplitOptions.RemoveEmptyEntries);
             if (parts.Length >= 2)

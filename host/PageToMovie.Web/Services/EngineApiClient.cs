@@ -780,6 +780,41 @@ public sealed class EngineApiClient
         return await SendJsonAsync<DemoPublishResult>(req, ct);
     }
 
+    /// <summary>Privacy-safe handle search (never returns emails). Signed-in only.</summary>
+    public async Task<IReadOnlyList<string>> SearchUserHandlesAsync(string query, CancellationToken ct = default)
+    {
+        SyncIdentityHeaders();
+        var q = (query ?? "").Trim();
+        if (q.Length == 0) return Array.Empty<string>();
+        using var req = new HttpRequestMessage(
+            HttpMethod.Get,
+            $"/api/users/search?q={Uri.EscapeDataString(q)}");
+        ApplyAuth(req);
+        using var resp = await _http.SendAsync(req, ct);
+        if (!resp.IsSuccessStatusCode)
+            return Array.Empty<string>();
+        await using var stream = await resp.Content.ReadAsStreamAsync(ct);
+        using var doc = await JsonDocument.ParseAsync(stream, cancellationToken: ct);
+        var root = doc.RootElement;
+        // Support both { handles: [...] } and legacy bare array
+        JsonElement arr;
+        if (root.ValueKind == JsonValueKind.Array)
+            arr = root;
+        else if (root.TryGetProperty("handles", out var h) && h.ValueKind == JsonValueKind.Array)
+            arr = h;
+        else
+            return Array.Empty<string>();
+
+        var list = new List<string>();
+        foreach (var el in arr.EnumerateArray())
+        {
+            var s = el.GetString();
+            if (!string.IsNullOrWhiteSpace(s))
+                list.Add(s.Trim());
+        }
+        return list;
+    }
+
     /// <summary>Invite a collaborator to fork a project (by @handle or email). Owner/admin only.</summary>
     public async Task<SendInviteResult?> SendProjectInviteAsync(
         string projectId, string? targetHandle, string? targetEmail, CancellationToken ct = default)

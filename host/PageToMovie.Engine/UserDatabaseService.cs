@@ -275,6 +275,55 @@ public class UserDatabaseService
         return null;
     }
 
+    /// <summary>
+    /// Privacy-safe handle search: returns usernames only (never emails).
+    /// Exact match first, then prefix matches. Disabled accounts excluded.
+    /// </summary>
+    public async Task<IReadOnlyList<string>> SearchUsernamesAsync(
+        string query,
+        int take = 8,
+        CancellationToken ct = default)
+    {
+        var q = (query ?? "").Trim().TrimStart('@');
+        if (q.Length < 1) return Array.Empty<string>();
+        take = Math.Clamp(take, 1, 20);
+
+        using var conn = new SqliteConnection(ConnectionString);
+        await conn.OpenAsync(ct).ConfigureAwait(false);
+
+        using var cmd = conn.CreateCommand();
+        // Exact first (ORDER BY exact), then prefix; hide disabled; never return email
+        cmd.CommandText = """
+            SELECT username FROM users
+            WHERE COALESCE(is_disabled, 0) = 0
+              AND username IS NOT NULL
+              AND TRIM(username) != ''
+              AND (
+                    LOWER(username) = LOWER(@exact)
+                 OR LOWER(username) LIKE LOWER(@prefix)
+              )
+            ORDER BY CASE WHEN LOWER(username) = LOWER(@exact) THEN 0 ELSE 1 END,
+                     LENGTH(username),
+                     username COLLATE NOCASE
+            LIMIT @take
+            """;
+        cmd.Parameters.AddWithValue("@exact", q);
+        cmd.Parameters.AddWithValue("@prefix", q + "%");
+        cmd.Parameters.AddWithValue("@take", take);
+
+        var list = new List<string>();
+        using var reader = await cmd.ExecuteReaderAsync(ct).ConfigureAwait(false);
+        while (await reader.ReadAsync(ct).ConfigureAwait(false))
+        {
+            var name = reader.GetString(0).Trim();
+            if (name.Length == 0) continue;
+            // Prefer not listing pure email usernames as "handles" in search
+            if (name.Contains('@', StringComparison.Ordinal)) continue;
+            list.Add(name);
+        }
+        return list;
+    }
+
     /// <summary>Resolve by user_id, then username (case-insensitive).</summary>
     public async Task<UserEntity?> ResolveUserAsync(string userIdOrName, CancellationToken ct = default)
     {

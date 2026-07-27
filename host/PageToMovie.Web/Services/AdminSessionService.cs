@@ -29,6 +29,26 @@ public sealed class AdminSessionService
     public bool IsAdmin =>
         Roles.Any(r => string.Equals(r, "admin", StringComparison.OrdinalIgnoreCase));
 
+    /// <summary>
+    /// Public @handle for UI (never show raw email). If an old account used email as username,
+    /// shows the local-part only as a best-effort display handle.
+    /// </summary>
+    public string DisplayHandle
+    {
+        get
+        {
+            var id = (UserId ?? "").Trim();
+            if (id.Length == 0 || string.Equals(id, "local", StringComparison.OrdinalIgnoreCase))
+                return "@local";
+            if (id.Contains('@', StringComparison.Ordinal))
+            {
+                var at = id.IndexOf('@');
+                if (at > 0) id = id[..at];
+            }
+            return id.StartsWith('@') ? id : "@" + id;
+        }
+    }
+
     public event Action? Changed;
 
     public void SetUserId(string? userId)
