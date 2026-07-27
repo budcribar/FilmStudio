@@ -69,7 +69,7 @@ public class CastExtractLiveApiTests
 
     private static async Task RunLiveExtractAssertRequiredAsync(string caseId)
     {
-        var (fountain, book, required) = LoadCase(caseId);
+        var (fountain, book, required, forbidden) = LoadCase(caseId);
         var workspace = Path.Combine(Path.GetTempPath(), "ptm-live-cast-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(workspace);
         try
@@ -125,6 +125,17 @@ public class CastExtractLiveApiTests
                 missing.Count == 0,
                 $"[{caseId}] live extract missing keys: {string.Join(", ", missing)}. " +
                 $"Got: {string.Join(", ", have)}");
+
+            // Forbidden fragments (slugline places, title junk) must not appear as cast keys
+            foreach (var bad in forbidden)
+            {
+                var hit = have.FirstOrDefault(k =>
+                    k.Contains(bad, StringComparison.OrdinalIgnoreCase));
+                Assert.True(
+                    hit is null,
+                    $"[{caseId}] live extract produced forbidden cast key '{hit}' (fragment '{bad}'). " +
+                    $"Got: {string.Join(", ", have)}");
+            }
         }
         finally
         {
@@ -132,7 +143,7 @@ public class CastExtractLiveApiTests
         }
     }
 
-    private static (string Fountain, string Book, List<string> Required) LoadCase(string caseId)
+    private static (string Fountain, string Book, List<string> Required, List<string> Forbidden) LoadCase(string caseId)
     {
         var dir = Path.Combine(GoldRoot, caseId);
         using var doc = JsonDocument.Parse(File.ReadAllText(Path.Combine(dir, "expected_keys.json")));
@@ -142,6 +153,16 @@ public class CastExtractLiveApiTests
             .Where(s => s.Length > 0)
             .ToList();
 
+        var forbidden = new List<string>();
+        if (root.TryGetProperty("forbidden_key_substrings", out var forb) &&
+            forb.ValueKind == JsonValueKind.Array)
+        {
+            forbidden = forb.EnumerateArray()
+                .Select(e => e.GetString() ?? "")
+                .Where(s => s.Length > 0)
+                .ToList();
+        }
+
         string fountain;
         if (root.TryGetProperty("fountain_from_package", out var pkg) &&
             pkg.GetString() is { Length: > 0 } name)
@@ -150,7 +171,7 @@ public class CastExtractLiveApiTests
             fountain = File.ReadAllText(Path.Combine(dir, "screenplay.fountain"));
 
         var book = File.ReadAllText(Path.Combine(dir, "book.txt"));
-        return (fountain, book, required);
+        return (fountain, book, required, forbidden);
     }
 
     private static bool HaveCovers(IReadOnlyList<string> have, string required)

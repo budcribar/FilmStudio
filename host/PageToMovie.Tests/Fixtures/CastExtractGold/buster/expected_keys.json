@@ -1,7 +1,7 @@
 {
   "id": "buster",
   "title": "Buster the Noodle Head Dog Goes to Bed",
-  "notes": "Silent animal title hero MUST be cast; dialogue-only Mom+Narrator is a release blocker.",
+  "notes": "Silent animal title hero MUST be cast; dialogue-only Mom+Narrator is a release blocker. Fountain has many INT./EXT. places and CAPS verbs — those must never become cast keys.",
   "required_keys": [
     "Character_Buster",
     "Character_Mom",
@@ -10,6 +10,18 @@
   "forbidden_key_substrings": [
     "Character_Dog",
     "Character_Goes",
-    "Character_Noodle"
+    "Character_Noodle",
+    "Kitchen",
+    "Backyard",
+    "Hallway",
+    "Suburban",
+    "Living",
+    "Bounds",
+    "Leaps",
+    "Evening",
+    "Lapping",
+    "Spin",
+    "Grass",
+    "Fence"
   ]
 }

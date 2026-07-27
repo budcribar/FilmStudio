@@ -146,6 +146,19 @@ public class CastExtractGoldCorpusTests
         }
     }
 
+    /// <summary>
+    /// Gold meta must declare forbidden fragments when the fountain is full of sluglines
+    /// (otherwise CI never catches Kitchen/Backyard cast).
+    /// </summary>
+    [Fact]
+    public void Buster_gold_declares_slugline_forbiddens()
+    {
+        var c = LoadCase("buster");
+        Assert.Contains(c.ForbiddenKeySubstrings, f => f.Contains("Kitchen", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(c.ForbiddenKeySubstrings, f => f.Contains("Backyard", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(c.ForbiddenKeySubstrings, f => f.Contains("Bounds", StringComparison.OrdinalIgnoreCase));
+    }
+
     private sealed class GoldCase
     {
         public string Id { get; init; } = "";

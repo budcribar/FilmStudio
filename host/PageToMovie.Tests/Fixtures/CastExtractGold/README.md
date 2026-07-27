@@ -12,8 +12,10 @@ Offline CI checks:
 1. Required heroes are **mentioned** in book and/or fountain (model can see them).
 2. Book prompt sampling uses full text or spine samples — **no** forced name-hint list.
 3. Look enrichment only fills stubs for keys the model already returned — never adds cast.
+4. `CastExtractRegressionTests` — mock ExtractAsync: membership equals model JSON; **no** Kitchen/Backyard/Bounds injection from sluglines.
+5. `forbidden_key_substrings` in `expected_keys.json` must cover slugline places for messy fountains (see buster).
 
-Live Grok coverage: `LiveApi/CastExtractLiveApiTests` (real extract).
+Live Grok coverage: `LiveApi/CastExtractLiveApiTests` asserts **required present** and **forbidden absent**.
 
 ## What each case contains
 
