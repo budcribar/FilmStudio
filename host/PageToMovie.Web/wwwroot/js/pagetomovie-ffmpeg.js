@@ -7,6 +7,25 @@ function reportProgress(onProgress, pct, msg) {
     }
 }
 
+// Cross-origin Web Worker Blob wrapper for CDN worker scripts (e.g. ffmpeg.wasm worker 814.ffmpeg.js)
+if (!window._ptmWorkerPatched && typeof window !== "undefined" && window.Worker) {
+    window._ptmWorkerPatched = true;
+    const NativeWorker = window.Worker;
+    window.Worker = function (scriptURL, options) {
+        if (typeof scriptURL === "string" && (scriptURL.startsWith("http://") || scriptURL.startsWith("https://"))) {
+            try {
+                const targetUrl = new URL(scriptURL, window.location.href);
+                if (targetUrl.origin !== window.location.origin) {
+                    const blob = new Blob(["importScripts(" + JSON.stringify(targetUrl.href) + ");"], { type: "application/javascript" });
+                    const blobUrl = URL.createObjectURL(blob);
+                    return new NativeWorker(blobUrl, options);
+                }
+            } catch (_) { /* fallback to direct */ }
+        }
+        return new NativeWorker(scriptURL, options);
+    };
+}
+
 window.PageToMovieFfmpeg = {
     _ffmpeg: null,
     _loaded: false,
@@ -19,20 +38,11 @@ window.PageToMovieFfmpeg = {
     _assets: {
         ffmpegJs: {
             url: "https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.10/dist/umd/ffmpeg.js",
-            integrity: "sha384-N6s2zFj3Z+D8pTfL9Hn4m0YQxX/6zFv8J3J9K4L5M6N7O8P9Q0R1S2T3U4V5W6X7",
         },
         utilJs: {
             url: "https://cdn.jsdelivr.net/npm/@ffmpeg/util@0.12.1/dist/umd/index.js",
-            integrity: "sha384-K6u1hW2xY3z4A5b6C7d8E9f0G1h2I3j4K5l6M7n8O9p0Q1r2S3t4U5v6W7x8Y9z0",
         },
-        coreJs: {
-            url: "https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.6/dist/umd/ffmpeg-core.js",
-            integrity: "sha384-N+vS2K7pL8m9N0O1P2Q3R4S5T6U7V8W9X0Y1Z2a3b4c5d6e7f8g9h0i1j2k3l4m5",
-        },
-        coreWasm: {
-            url: "https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.6/dist/umd/ffmpeg-core.wasm",
-            integrity: "sha384-X9y0Z1a2b3c4d5e6f7g8h9i0j1k2l3m4n5o6p7q8r9s0t1u2v3w4x5y6z7a8b9c0",
-        },
+        coreBase: "https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.6/dist/umd",
     },
 
     _runExclusiveAsync: function (fn) {
@@ -47,7 +57,7 @@ window.PageToMovieFfmpeg = {
         }
     },
 
-    /** Load UMD scripts once, then ffmpeg core/wasm from jsDelivr. */
+    /** Load UMD scripts once, then ffmpeg core/wasm from jsDelivr via Blob URLs. */
     ensureLoadedAsync: async function (onProgress) {
         if (this._loaded && this._ffmpeg) return { success: true };
         if (this._loading) return this._loading;
@@ -74,7 +84,15 @@ window.PageToMovieFfmpeg = {
                 });
 
                 reportProgress(onProgress, 5, "Loading ffmpeg core…");
-                await ffmpeg.load();
+                const util = window.FFmpegUtil || {};
+                if (typeof util.toBlobURL === "function") {
+                    const baseURL = self._assets.coreBase;
+                    const coreURL = await util.toBlobURL(baseURL + "/ffmpeg-core.js", "text/javascript");
+                    const wasmURL = await util.toBlobURL(baseURL + "/ffmpeg-core.wasm", "application/wasm");
+                    await ffmpeg.load({ coreURL, wasmURL });
+                } else {
+                    await ffmpeg.load();
+                }
 
                 self._ffmpeg = ffmpeg;
                 self._loaded = true;
