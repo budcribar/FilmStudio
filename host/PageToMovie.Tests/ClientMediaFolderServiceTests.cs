@@ -24,7 +24,8 @@ public class ClientMediaFolderServiceTests
         var http = new HttpClient(handler ?? new StubHandler()) { BaseAddress = new Uri("http://localhost") };
         var api = new EngineApiClient(http);
         var hub = new JobHubClient(Options.Create(new EngineApiOptions()));
-        var svc = new ClientMediaFolderService(js, api, hub);
+        var activeProject = new ActiveProjectState();
+        var svc = new ClientMediaFolderService(js, api, hub, activeProject);
         return (svc, js);
     }
 
