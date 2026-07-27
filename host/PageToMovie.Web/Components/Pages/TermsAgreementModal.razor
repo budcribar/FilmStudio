@@ -6,51 +6,66 @@
 
 @if (IsOpen)
 {
-    <div class="modal-backdrop show" style="display: block; background: rgba(0,0,0,0.85); position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 99999;">
-        <div class="modal-dialog modal-lg modal-dialog-centered" style="margin: 5% auto; max-width: 750px;">
-            <div class="modal-content text-light" style="background: #181b20; border: 1px solid #323842; border-radius: 12px; box-shadow: 0 12px 32px rgba(0,0,0,0.6);">
-                <div class="modal-header" style="border-bottom: 1px solid #2d333f; padding: 20px 24px;">
-                    <h4 class="modal-title fw-bold" style="color: #4f46e5;">📜 Terms of Service & IP Licensing Agreement</h4>
+    @* Backdrop and panel are siblings — nesting under .modal-backdrop applies opacity to text. *@
+    <div class="modal-backdrop fade show" style="z-index: 1050;"></div>
+    <div class="modal fade show d-block"
+         tabindex="-1"
+         role="dialog"
+         aria-modal="true"
+         aria-labelledby="terms-title"
+         style="z-index: 1055;">
+        <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header py-3">
+                    <h5 class="modal-title fw-semibold" id="terms-title">Terms of Service</h5>
                 </div>
-                <div class="modal-body" style="padding: 24px; max-height: 55vh; overflow-y: auto; color: #cbd5e1; font-size: 0.95rem; line-height: 1.6;">
-                    <div class="alert alert-info" style="background: #1e293b; border-color: #3b82f6; color: #93c5fd;">
-                        <strong>Important Legal Notice:</strong> Please review and accept our Intellectual Property Rights & Adaptation Warranty before using PageToMovie Studio.
+                <div class="modal-body" style="max-height: 55vh;">
+                    <div class="alert alert-info py-2 small mb-3">
+                        Review and accept these terms before using the studio.
                     </div>
 
-                    <h6 class="text-white mt-3 fw-bold">1. Content & Adaptation Warranty</h6>
-                    <p>
-                        You certify that any screenplay, book text, dialogue, character portrait, or prompt uploaded or adapted within PageToMovie is either:
-                        <ul>
-                            <li><strong>An original work</strong> created and owned by you,</li>
-                            <li><strong>In the Public Domain</strong> (e.g. classic literature like <em>The Tell-Tale Heart</em>), or</li>
-                            <li><strong>Duly licensed</strong> with explicit adaptation and AI generation rights from the copyright holder.</li>
-                        </ul>
+                    <h6 class="fw-semibold mt-2">1. Content &amp; adaptation warranty</h6>
+                    <p class="small mb-2">
+                        You certify that any screenplay, book text, dialogue, character portrait, or prompt
+                        you use is either an original work you own, in the public domain, or duly licensed
+                        for adaptation and generation.
                     </p>
 
-                    <h6 class="text-white mt-3 fw-bold">2. Platform Non-Liability</h6>
-                    <p>
-                        PageToMovie operates solely as a creation platform and AI orchestration tool. PageToMovie explicitly disclaims all liability and responsibility for copyright, trademark, or intellectual property infringement committed by users.
+                    <h6 class="fw-semibold mt-3">2. Platform non-liability</h6>
+                    <p class="small mb-2">
+                        PageToMovie is a creation platform. You are responsible for the content you upload
+                        and generate; the platform disclaims liability for intellectual property claims
+                        arising from user content.
                     </p>
 
-                    <h6 class="text-white mt-3 fw-bold">3. User Indemnification</h6>
-                    <p>
-                        You agree to indemnify, defend, and hold harmless PageToMovie, its creators, operators, and hosting providers against any third-party claims, legal actions, damages, or costs resulting from your content or adaptations.
+                    <h6 class="fw-semibold mt-3">3. User indemnification</h6>
+                    <p class="small mb-2">
+                        You agree to indemnify PageToMovie and its operators against third-party claims
+                        resulting from your content or adaptations.
                     </p>
 
-                    <h6 class="text-white mt-3 fw-bold">4. Public Gallery & Forking License</h6>
-                    <p>
-                        When you choose to publish a demo to the public gallery or mark a project as <strong>Public (Forkable)</strong>, you grant PageToMovie a non-exclusive license to display the video via YouTube embeds and permit community collaborators to fork and build upon the blueprint metadata within the platform.
+                    <h6 class="fw-semibold mt-3">4. Public gallery &amp; forking</h6>
+                    <p class="small mb-0">
+                        If you publish a demo or mark a project public (forkable), you grant PageToMovie a
+                        non-exclusive license to display the film and let others fork the project package
+                        inside the product.
                     </p>
                 </div>
-                <div class="modal-footer" style="border-top: 1px solid #2d333f; padding: 20px 24px; display: flex; flex-direction: column; align-items: stretch; gap: 12px;">
-                    <div class="form-check d-flex align-items-center gap-3 p-3 rounded" style="cursor: pointer; background: rgba(99, 102, 241, 0.12); border: 1.5px solid #4f46e5;">
-                        <input class="form-check-input flex-shrink-0" type="checkbox" id="termsCheck" @bind="hasAgreed" style="cursor: pointer; width: 24px; height: 24px; background-color: #0f172a; border: 2.5px solid #818cf8; accent-color: #6366f1;" />
-                        <label class="form-check-label text-white fw-semibold mb-0" for="termsCheck" style="cursor: pointer; font-size: 1.05rem;">
-                            I have read, understood, and agree to the <strong>Terms of Service & IP Licensing Agreement</strong>.
+                <div class="modal-footer flex-column align-items-stretch gap-2 py-3">
+                    <div class="form-check d-flex align-items-start gap-2 p-3 rounded border">
+                        <input class="form-check-input mt-1 flex-shrink-0"
+                               type="checkbox"
+                               id="termsCheck"
+                               @bind="hasAgreed" />
+                        <label class="form-check-label" for="termsCheck">
+                            I have read and agree to the Terms of Service.
                         </label>
                     </div>
-                    <button class="btn btn-primary btn-lg w-100 fw-bold" disabled="@(!hasAgreed || isSubmitting)" @onclick="AcceptTerms" style="background: #4f46e5; border: none; border-radius: 8px;">
-                        @(isSubmitting ? "Saving..." : "Agree & Continue to Studio")
+                    <button type="button"
+                            class="btn btn-primary btn-lg w-100"
+                            disabled="@(!hasAgreed || isSubmitting)"
+                            @onclick="AcceptTerms">
+                        @(isSubmitting ? "Saving…" : "Agree & continue")
                     </button>
                 </div>
             </div>

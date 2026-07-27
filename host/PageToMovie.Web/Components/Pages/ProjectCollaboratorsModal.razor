@@ -3,36 +3,63 @@
 
 @if (IsOpen)
 {
-    <div class="modal-backdrop show" style="display: block; background: rgba(0,0,0,0.85); position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 99999;">
-        <div class="modal-dialog modal-md modal-dialog-centered" style="margin: 5% auto; max-width: 550px;">
-            <div class="modal-content text-light" style="background: #181b20; border: 1px solid #323842; border-radius: 12px; box-shadow: 0 12px 32px rgba(0,0,0,0.6);">
-                <div class="modal-header" style="border-bottom: 1px solid #2d333f; padding: 18px 24px;">
-                    <h5 class="modal-title fw-bold" style="color: #6366f1;">🤝 Invite Collaborator to Fork Project</h5>
+    @* Backdrop and panel are siblings — Bootstrap .modal-backdrop.show applies opacity
+       to the whole element, which would make child text unreadable if nested. *@
+    <div class="modal-backdrop fade show"
+         style="z-index: 1050;"
+         @onclick="Close"></div>
+    <div class="modal fade show d-block"
+         tabindex="-1"
+         role="dialog"
+         aria-modal="true"
+         aria-labelledby="invite-collab-title"
+         style="z-index: 1055;"
+         @onclick="Close">
+        <div class="modal-dialog modal-dialog-centered" @onclick:stopPropagation="true">
+            <div class="modal-content">
+                <div class="modal-header py-3">
+                    <h5 class="modal-title fw-semibold" id="invite-collab-title">Invite collaborator</h5>
+                    <button type="button" class="btn-close" aria-label="Close" @onclick="Close"></button>
                 </div>
-                <div class="modal-body" style="padding: 24px; color: #cbd5e1; font-size: 0.95rem;">
+                <div class="modal-body">
                     @if (!string.IsNullOrWhiteSpace(statusMessage))
                     {
-                        <div class="alert @(isError ? "alert-danger" : "alert-success") mb-3">@statusMessage</div>
+                        <div class="alert @(isError ? "alert-danger" : "alert-success") mb-3 py-2">@statusMessage</div>
                     }
 
                     <div class="mb-3">
-                        <label class="form-label text-white fw-bold">Creator Handle (@@username)</label>
-                        <div class="input-group mb-2">
-                            <span class="input-group-text bg-dark text-secondary border-secondary">@@</span>
-                            <input type="text" class="form-control bg-dark text-light border-secondary" placeholder="username" @bind="searchHandle" />
+                        <label class="form-label" for="invite-handle">Handle</label>
+                        <div class="input-group">
+                            <span class="input-group-text">@@</span>
+                            <input id="invite-handle"
+                                   type="text"
+                                   class="form-control"
+                                   placeholder="username"
+                                   autocomplete="off"
+                                   @bind="searchHandle"
+                                   @bind:event="oninput" />
                         </div>
                     </div>
 
-                    <div class="mb-3">
-                        <label class="form-label text-white fw-bold">Or Send Blind Email Invite</label>
-                        <input type="email" class="form-control bg-dark text-light border-secondary" placeholder="collaborator@example.com" @bind="emailInput" />
-                        <div class="form-text text-muted small">Server sends the invite link without exposing whether an account exists.</div>
+                    <div class="mb-0">
+                        <label class="form-label" for="invite-email">Email</label>
+                        <input id="invite-email"
+                               type="email"
+                               class="form-control"
+                               placeholder="collaborator@example.com"
+                               autocomplete="email"
+                               @bind="emailInput"
+                               @bind:event="oninput" />
+                        <div class="form-text">Either handle or email is enough.</div>
                     </div>
                 </div>
-                <div class="modal-footer" style="border-top: 1px solid #2d333f; padding: 18px 24px;">
-                    <button class="btn btn-secondary me-2" @onclick="Close">Cancel</button>
-                    <button class="btn btn-primary fw-bold" style="background: #6366f1; border: none;" @onclick="SendInvite" disabled="@(isSending || (string.IsNullOrWhiteSpace(searchHandle) && string.IsNullOrWhiteSpace(emailInput)))">
-                        @(isSending ? "Sending Invite..." : "✉️ Send Invitation")
+                <div class="modal-footer py-2">
+                    <button type="button" class="btn btn-outline-secondary" @onclick="Close" disabled="@isSending">Cancel</button>
+                    <button type="button"
+                            class="btn btn-primary"
+                            disabled="@(isSending || (string.IsNullOrWhiteSpace(searchHandle) && string.IsNullOrWhiteSpace(emailInput)))"
+                            @onclick="SendInvite">
+                        @(isSending ? "Sending…" : "Send invite")
                     </button>
                 </div>
             </div>
@@ -74,7 +101,7 @@
             {
                 statusMessage = res.Delivered
                     ? "Invite sent — expires in 48 hours."
-                    : "Invite created, but no email is on file for that handle yet. Share this link directly: " + res.InviteUrl;
+                    : "Invite created. Share this link: " + res.InviteUrl;
                 isError = !res.Delivered;
                 searchHandle = "";
                 emailInput = "";

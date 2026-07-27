@@ -512,20 +512,46 @@ input[type="file"]:disabled::file-selector-button {
 }
 
 /* Modals — Bootstrap defaults to a white modal-content background with
-   near-black text, same white-background gap as .card/.table above. */
+   near-black text, same white-background gap as .card/.table above.
+   Never nest .modal-dialog inside .modal-backdrop: backdrop.show uses opacity
+   which would make the entire dialog (including text) semi-transparent. */
 .modal-content {
-    background: var(--fs-bg-card);
+    background: var(--fs-bg-card) !important;
     border: 1px solid var(--fs-border-color);
-    color: var(--fs-text-primary);
+    color: var(--fs-text-primary) !important;
     box-shadow: var(--fs-shadow-card);
+    opacity: 1 !important;
 }
 
 .modal-header,
 .modal-footer {
     border-color: var(--fs-border-color);
+    background: transparent;
 }
 
 .modal-title {
+    color: var(--fs-text-primary) !important;
+}
+
+.modal-body {
+    color: var(--fs-text-primary);
+}
+
+.modal .form-label,
+.modal .form-check-label {
+    color: var(--fs-text-primary) !important;
+}
+
+.modal .input-group-text {
+    background-color: var(--fs-bg-input);
+    border-color: var(--fs-border-color);
+    color: var(--fs-text-muted);
+}
+
+.modal .form-control,
+.modal .form-select {
+    background-color: var(--fs-bg-input);
+    border-color: var(--fs-border-color);
     color: var(--fs-text-primary);
 }
 
