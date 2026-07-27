@@ -22,6 +22,7 @@ public sealed class MovieAutoReviewService
 
     private readonly ProjectStore _projects;
     private readonly IVisionClient _vision;
+    private readonly IChatClient? _chat;
     private readonly ProjectTelemetryService _telemetry;
     private readonly ILogger<MovieAutoReviewService> _log;
 
@@ -29,11 +30,13 @@ public sealed class MovieAutoReviewService
         ProjectStore projects,
         IVisionClient vision,
         ProjectTelemetryService telemetry,
+        IChatClient? chat = null,
         ILogger<MovieAutoReviewService>? log = null)
     {
         _projects = projects;
         _vision = vision;
         _telemetry = telemetry;
+        _chat = chat;
         _log = log ?? Microsoft.Extensions.Logging.Abstractions.NullLogger<MovieAutoReviewService>.Instance;
     }
 
@@ -167,25 +170,8 @@ public sealed class MovieAutoReviewService
         }
         report.SummaryNotes = summarySb.ToString().Trim();
 
-        var execSb = new System.Text.StringBuilder();
-        execSb.AppendLine($"# Executive Director Report — {report.Verdict} (Overall Score: {report.OverallScore}/10)\n");
-        execSb.AppendLine("## Category Breakdown");
-        foreach (var (cat, score) in report.CategoryScores)
-        {
-            var badge = score >= 8 ? "PASSED" : score >= 6 ? "POLISH" : "ACTION REQUIRED";
-            execSb.AppendLine($"- **{cat}**: {score}/10 [{badge}]");
-        }
-        execSb.AppendLine("\n## Sequence Feedback");
-        foreach (var gf in groupFeedbacks)
-        {
-            execSb.AppendLine($"### {gf.SceneRange} (Score: {gf.Score}/10)");
-            if (!string.IsNullOrWhiteSpace(gf.ContinuityNotes)) execSb.AppendLine($"* **Continuity**: {gf.ContinuityNotes}");
-            if (!string.IsNullOrWhiteSpace(gf.VisualConsistencyNotes)) execSb.AppendLine($"* **Character Lock**: {gf.VisualConsistencyNotes}");
-            if (!string.IsNullOrWhiteSpace(gf.LightingNotes)) execSb.AppendLine($"* **Lighting & Tone**: {gf.LightingNotes}");
-            if (!string.IsNullOrWhiteSpace(gf.DialogueNotes)) execSb.AppendLine($"* **Dialogue & Lip Sync**: {gf.DialogueNotes}");
-            if (!string.IsNullOrWhiteSpace(gf.AudioNotes)) execSb.AppendLine($"* **Music & Audio Transitions**: {gf.AudioNotes}");
-        }
-        report.ExecutiveSummary = execSb.ToString().Trim();
+        // Master AI Executive Director Synthesis Pass
+        report.ExecutiveSummary = await SynthesizeExecutiveSummaryAsync(report, groupFeedbacks, ct).ConfigureAwait(false);
 
         SaveReport(report);
         onProgress?.Invoke(100, "Full movie review ready!");
@@ -335,5 +321,82 @@ Return valid JSON with non-generic, specific observations:
         }
 
         return feedback;
+    }
+
+    private async Task<string> SynthesizeExecutiveSummaryAsync(
+        MovieAutoReviewReport report,
+        IReadOnlyList<MovieSceneGroupFeedback> groupFeedbacks,
+        CancellationToken ct)
+    {
+        var sysPrompt = "You are an Executive Film Director and Post-Production Supervisor writing a high-level Executive Director Summary Report for a complete movie. " +
+                        "Do NOT list or repeat each scene block-by-block. Instead, synthesize a unified, insightful executive overview (3-5 well-structured sections) evaluating overall visual narrative continuity, character lock consistency, lighting mood, dialogue & lip-sync delivery, background music transitions, and final recommendations.";
+
+        var promptSb = new System.Text.StringBuilder();
+        promptSb.AppendLine($"Project ID: {report.ProjectId}");
+        promptSb.AppendLine($"Overall Score: {report.OverallScore}/10 — Verdict: {report.Verdict}");
+        promptSb.AppendLine("\nCategory Scores:");
+        foreach (var (cat, score) in report.CategoryScores)
+        {
+            promptSb.AppendLine($"- {cat}: {score}/10");
+        }
+        promptSb.AppendLine("\nEvaluated Sequence Feedbacks (for synthesis input):");
+        foreach (var gf in groupFeedbacks)
+        {
+            promptSb.AppendLine($"[{gf.SceneRange} - Score {gf.Score}/10]");
+            if (!string.IsNullOrWhiteSpace(gf.ContinuityNotes)) promptSb.AppendLine($"  Continuity: {gf.ContinuityNotes}");
+            if (!string.IsNullOrWhiteSpace(gf.VisualConsistencyNotes)) promptSb.AppendLine($"  Character Lock: {gf.VisualConsistencyNotes}");
+            if (!string.IsNullOrWhiteSpace(gf.LightingNotes)) promptSb.AppendLine($"  Lighting/Tone: {gf.LightingNotes}");
+            if (!string.IsNullOrWhiteSpace(gf.DialogueNotes)) promptSb.AppendLine($"  Dialogue: {gf.DialogueNotes}");
+            if (!string.IsNullOrWhiteSpace(gf.AudioNotes)) promptSb.AppendLine($"  Audio/Music: {gf.AudioNotes}");
+        }
+
+        try
+        {
+            if (_chat is { IsConfigured: true })
+            {
+                var summary = await _chat.CompleteAsync(sysPrompt, promptSb.ToString(), ct: ct, mode: "movie_review_synthesis").ConfigureAwait(false);
+                if (!string.IsNullOrWhiteSpace(summary))
+                    return summary.Trim();
+            }
+
+            if (_vision is { IsConfigured: true })
+            {
+                var fullPrompt = $"{sysPrompt}\n\nReview Data:\n{promptSb}";
+                var summary = await _vision.CompleteWithImagesAsync(fullPrompt, Array.Empty<string>(), ct: ct).ConfigureAwait(false);
+                if (!string.IsNullOrWhiteSpace(summary))
+                    return summary.Trim();
+            }
+        }
+        catch (Exception ex)
+        {
+            _log.LogWarning(ex, "AI Executive Summary synthesis pass failed; falling back to structured summary.");
+        }
+
+        return BuildFallbackExecutiveSummary(report, groupFeedbacks);
+    }
+
+    private static string BuildFallbackExecutiveSummary(
+        MovieAutoReviewReport report,
+        IReadOnlyList<MovieSceneGroupFeedback> groupFeedbacks)
+    {
+        var sb = new System.Text.StringBuilder();
+        sb.AppendLine($"# Executive Director Report — {report.Verdict} (Overall Score: {report.OverallScore}/10)\n");
+        sb.AppendLine("## Category Scores");
+        foreach (var (cat, score) in report.CategoryScores)
+        {
+            var badge = score >= 8 ? "PASSED" : score >= 6 ? "POLISH" : "ACTION REQUIRED";
+            sb.AppendLine($"- **{cat}**: {score}/10 [{badge}]");
+        }
+        sb.AppendLine("\n## Synthesis & Key Notes");
+        var posNotes = groupFeedbacks.Select(g => g.ContinuityNotes).Where(n => !string.IsNullOrWhiteSpace(n)).Distinct().Take(3);
+        foreach (var note in posNotes)
+        {
+            sb.AppendLine($"- {note}");
+        }
+        if (report.FlaggedScenes.Count > 0)
+        {
+            sb.AppendLine($"\n**Recommended Priority Touch-ups**: Scene(s) {string.Join(", ", report.FlaggedScenes)}");
+        }
+        return sb.ToString().Trim();
     }
 }
