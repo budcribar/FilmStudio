@@ -30,6 +30,7 @@
             @if (Session.IsAuthenticated)
             {
                 <span class="badge text-bg-secondary">@Session.UserId</span>
+                <a href="/api/admin/logs/export" target="_blank" class="btn btn-sm btn-outline-info" title="Download zip archive of all server logs, prompts, edit history, and system state">📥 Download Server Logs</a>
                 <button class="btn btn-sm btn-outline-secondary" @onclick="RefreshAsync" disabled="@_busy">Refresh</button>
                 <button class="btn btn-sm btn-outline-danger" @onclick="LogoutAsync">Log out</button>
             }

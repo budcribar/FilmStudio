@@ -133,6 +133,7 @@ builder.Services.AddSingleton<ClipSidecarService>();
 builder.Services.AddSingleton<ProjectMigrationService>();
 builder.Services.AddSingleton<VolumeDiskTelemetryService>();
 builder.Services.AddSingleton<ProjectArchiveService>();
+builder.Services.AddSingleton<ServerLogExportService>();
 builder.Services.AddSingleton<YouTubeAuthService>();
 builder.Services.AddSingleton<DemoYouTubePublisherService>();
 builder.Services.AddSingleton<ProjectGitRepositoryService>();
@@ -1094,6 +1095,63 @@ app.MapGet("/api/admin/projects/{id}/export", async (
     {
         return Results.BadRequest(new { ok = false, error = ex.Message });
     }
+});
+
+/// <summary>Admin: Download all server diagnostic logs (jobs, edit logs, prompts, system info) as a zip archive.</summary>
+app.MapGet("/api/admin/logs/export", async (
+    IUserContext user,
+    IOptions<PageToMovieOptions> opts,
+    HttpContext http,
+    ServerLogExportService logExporter,
+    CancellationToken ct) =>
+{
+    var secret = AuthOptions.ResolveOperatorOverrideSecret(opts.Value.Auth);
+    var isOperator = !string.IsNullOrWhiteSpace(secret) &&
+        (string.Equals(http.Request.Query["me"].ToString(), secret, StringComparison.Ordinal) ||
+         string.Equals(http.Request.Query["admin_key"].ToString(), secret, StringComparison.Ordinal) ||
+         string.Equals(http.Request.Headers["X-Admin-Key"].ToString(), secret, StringComparison.Ordinal));
+
+    if (!user.IsAdmin && !isOperator)
+        return Results.Json(new { ok = false, error = "admin role required" }, statusCode: StatusCodes.Status403Forbidden);
+
+    try
+    {
+        var bytes = await logExporter.ExportLogsZipAsync(ct);
+        var fileName = $"pagetomovie-server-logs-{DateTime.UtcNow:yyyyMMdd-HHmmss}.zip";
+        return Results.File(bytes, "application/zip", fileName);
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { ok = false, error = ex.Message });
+    }
+});
+
+/// <summary>Admin: Get JSON summary of server diagnostic state and active job logs.</summary>
+app.MapGet("/api/admin/logs", async (
+    IUserContext user,
+    FilmJobService jobs,
+    ProjectStore projects,
+    CancellationToken ct) =>
+{
+    if (!user.IsAdmin)
+        return Results.Json(new { ok = false, error = "admin role required" }, statusCode: StatusCodes.Status403Forbidden);
+
+    var projectList = await projects.ListProjectsAsync(ct);
+
+    return Results.Ok(new
+    {
+        ok = true,
+        exportUrl = "/api/admin/logs/export",
+        system = new
+        {
+            machineName = Environment.MachineName,
+            osVersion = Environment.OSVersion.ToString(),
+            activeProject = projects.ActiveProjectId,
+            utcTime = DateTimeOffset.UtcNow,
+        },
+        jobs = jobs.ListJobs(take: 50),
+        projects = projectList.Select(p => p.Id),
+    });
 });
 
 /// <summary>Download project folder as zip (logged in user / operator).</summary>
