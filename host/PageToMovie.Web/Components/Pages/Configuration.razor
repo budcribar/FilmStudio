@@ -100,15 +100,9 @@ else
                 </div>
                 <div class="col-md-5 border-start border-secondary ps-md-4">
                     <div class="fw-semibold small mb-1">Active Project</div>
-                    <div class="h5 mb-1 text-primary">@_projectId</div>
-                    <div class="font-monospace small bg-dark p-2 rounded border border-secondary text-light text-break mb-2" style="font-size: 0.8rem;" data-testid="config-project-full-path">
-                        📁 <strong>Project Location:</strong> @_projectDir
-                    </div>
-                    <button type="button" class="btn btn-sm btn-outline-primary mb-2" @onclick="OpenFileExplorerForProjectFolderAsync" title="Open project storage in Windows File Explorer" data-testid="config-open-project-explorer">
-                        📂 Open Project Folder
-                    </button>
+                    <div class="h5 mb-2 text-primary">@_projectId</div>
                     <div class="small text-muted">
-                        Screenplays, shot plans, and project metadata for <strong>@_projectId</strong> are saved with this project.
+                        Screenplays, shot plans, and project metadata for <strong>@_projectId</strong> are safely stored on the server.
                     </div>
                 </div>
             </div>
@@ -1100,26 +1094,6 @@ else
             else
             {
                 _error = res.Error ?? "Could not open folder.";
-            }
-        }
-        catch (Exception ex)
-        {
-            _error = ex.Message;
-        }
-    }
-
-    private async Task OpenFileExplorerForProjectFolderAsync()
-    {
-        try
-        {
-            var res = await Engine.OpenFolderAsync(_projectDir, _projectId);
-            if (res.Ok)
-            {
-                _message = $"📂 Opened project folder in File Explorer.";
-            }
-            else
-            {
-                _error = res.Error ?? "Could not open project folder.";
             }
         }
         catch (Exception ex)
