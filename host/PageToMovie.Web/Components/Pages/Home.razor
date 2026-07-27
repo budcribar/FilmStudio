@@ -158,6 +158,10 @@
                         {
                             var id = p.Id ?? "";
                             var active = string.Equals(id, _projects.Active?.Id, StringComparison.OrdinalIgnoreCase);
+                            var canManage = Session.IsAdmin ||
+                                string.Equals(Session.UserId, p.OwnerUserId, StringComparison.OrdinalIgnoreCase);
+                            // One place for visibility: dropdown when owner can edit; badge only when they cannot.
+                            var showVisibilityBadge = !(active && canManage);
                             <div class="list-group-item list-group-item-action d-flex align-items-center gap-2 py-0 px-0 @(active ? "active" : null)">
                                 <button type="button"
                                         class="btn border-0 bg-transparent flex-grow-1 text-start py-2 px-3 project-list__pick @(active ? "text-white" : null)"
@@ -173,23 +177,26 @@
                                      {
                                          <span class="badge bg-secondary ms-2 small fw-normal" title="Forked from @p.ParentProjectId">🍴 Fork of @p.ParentProjectId</span>
                                      }
-                                     @if (string.Equals(p.VisibilityMode, "Open", StringComparison.OrdinalIgnoreCase))
+                                     @if (showVisibilityBadge)
                                      {
-                                         <span class="badge bg-success ms-2 small fw-normal" title="Public Repository (Forkable)">🍴 Public (Forkable)</span>
-                                     }
-                                     else if (string.Equals(p.VisibilityMode, "Public", StringComparison.OrdinalIgnoreCase))
-                                     {
-                                         <span class="badge bg-info text-dark ms-2 small fw-normal" title="Public Repository (Read-Only)">👁️ Public (Read-Only)</span>
-                                     }
-                                     else
-                                     {
-                                         <span class="badge bg-dark border border-secondary text-muted ms-2 small fw-normal" title="Private Repository">🔒 Private</span>
+                                         @if (string.Equals(p.VisibilityMode, "Open", StringComparison.OrdinalIgnoreCase))
+                                         {
+                                             <span class="badge bg-success ms-2 small fw-normal" title="Public (forkable)">🍴 Public (Forkable)</span>
+                                         }
+                                         else if (string.Equals(p.VisibilityMode, "Public", StringComparison.OrdinalIgnoreCase))
+                                         {
+                                             <span class="badge bg-info text-dark ms-2 small fw-normal" title="Public (read-only)">👁️ Public (Read-Only)</span>
+                                         }
+                                         else
+                                         {
+                                             <span class="badge bg-dark border border-secondary text-muted ms-2 small fw-normal" title="Private">🔒 Private</span>
+                                         }
                                      }
                                  </button>
                                 @if (active)
                                 {
                                     <a class="btn btn-sm btn-light flex-shrink-0" data-testid="home-open-adaptation" href="adaptation">Open</a>
-                                    @if (!string.IsNullOrWhiteSpace(p.ParentProjectId) && (Session.IsAdmin || string.Equals(Session.UserId, p.OwnerUserId, StringComparison.OrdinalIgnoreCase)))
+                                    @if (!string.IsNullOrWhiteSpace(p.ParentProjectId) && canManage)
                                     {
                                         <a class="btn btn-sm btn-outline-warning flex-shrink-0"
                                            href="projects/@id/review-contribution?originProjectId=@p.ParentProjectId"
@@ -203,11 +210,11 @@
                                             🔄 Sync Origin
                                         </button>
                                     }
-                                    @if (Session.IsAdmin || string.Equals(Session.UserId, p.OwnerUserId, StringComparison.OrdinalIgnoreCase))
+                                    @if (canManage)
                                     {
                                         <select class="form-select form-select-sm bg-dark text-white border-secondary d-inline-block w-auto flex-shrink-0"
                                                 value="@p.VisibilityMode"
-                                                title="Repository Visibility Mode"
+                                                title="Who can see or fork this project"
                                                 disabled="@_busy"
                                                 @onchange="(e) => ChangeVisibilityAsync(id, e.Value?.ToString())">
                                             <option value="Private">🔒 Private</option>
