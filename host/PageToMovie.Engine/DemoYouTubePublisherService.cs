@@ -125,6 +125,17 @@ public sealed class DemoYouTubePublisherService
                     : "Demo {Id} published to YouTube: {Url}",
                 demoId, url, oldYoutubeId);
 
+            // Best-effort cleanup of staged demo movie.mp4 to conserve server disk space
+            try
+            {
+                if (!string.IsNullOrWhiteSpace(path) && File.Exists(path))
+                    File.Delete(path);
+            }
+            catch (Exception ex)
+            {
+                _log.LogWarning(ex, "Failed to clean up demo movie file {Path} after YouTube publish", path);
+            }
+
             // Mode A: best-effort delete of the obsolete v1 video (requires youtube.force-ssl scope).
             if (isReplace &&
                 !string.Equals(oldYoutubeId, videoId, StringComparison.Ordinal) &&

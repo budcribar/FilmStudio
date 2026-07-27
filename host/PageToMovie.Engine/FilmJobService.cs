@@ -1940,6 +1940,17 @@ public sealed class FilmJobService
                 UploadedAt = DateTimeOffset.UtcNow,
             }, ct);
 
+            // Best-effort cleanup of temporary staged MP4 to conserve server disk space
+            try
+            {
+                if (File.Exists(path))
+                    File.Delete(path);
+            }
+            catch (Exception ex)
+            {
+                _log.LogWarning(ex, "Failed to clean up temporary staged movie file {Path} after YouTube upload", path);
+            }
+
             await FinishAsync("done", $"Uploaded to YouTube: {url}");
         }
         catch (OperationCanceledException)
