@@ -255,8 +255,10 @@ public sealed class ClientMediaFolderService
             // (where to cut) lives once in ClipSilenceTrimmer (Core) — JS only does
             // the ffmpeg I/O. Longer breath tail for speech-style clips; lead trim on clip 2+.
             var clipNum = snap.Clip ?? 1;
-            var isCredits = (snap.ClientRelativePath ?? "")
-                .Contains("credits.mp4", StringComparison.OrdinalIgnoreCase);
+            var isCredits = (snap.ClientRelativePath ?? "").Contains("credits", StringComparison.OrdinalIgnoreCase) ||
+                            (snap.ClientRelativePath ?? "").Contains("sc18", StringComparison.OrdinalIgnoreCase) ||
+                            snap.Scene == 18 ||
+                            string.Equals(snap.Kind, "credits", StringComparison.OrdinalIgnoreCase);
             var keepTail = isCredits
                 ? ClipSilenceTrimmer.DefaultKeepTailSeconds
                 : ClipSilenceTrimmer.SpeechBreathTailSeconds; // safe default without dialogue metadata

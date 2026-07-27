@@ -2581,22 +2581,8 @@ public sealed class FilmJobService
                 msg => { _ = AppendLogAsync($"  [Grok] {msg}"); },
                 ct);
 
-            // Save MP4 file to server disk so browser video player plays full file
-            var mp4Path = Path.Combine(videoDir, $"scene_{scene:D2}_clip_{clip:D2}.mp4");
-            try
-            {
-                using var http = new HttpClient();
-                var bytes = await http.GetByteArrayAsync(url, ct).ConfigureAwait(false);
-                if (bytes.Length > 0)
-                {
-                    await File.WriteAllBytesAsync(mp4Path, bytes, ct).ConfigureAwait(false);
-                    await AppendLogAsync($"  [Disk] Saved {bytes.Length} bytes to {Path.GetFileName(mp4Path)}");
-                }
-            }
-            catch (Exception ex)
-            {
-                _log.LogWarning(ex, "Could not save MP4 bytes to server disk for S{Scene:D2}C{Clip:D2}", scene, clip);
-            }
+            // Client media: hand a same-origin proxy URL so the browser writes
+            // assets/video/scene_SS_clip_CC.mp4 into user folder and registers with MediaRegistryService.
 
             var relPath = MediaRegistryService.ClipRelativePath(scene, clip);
             var ticket = _mediaProxy.Issue(url, TimeSpan.FromMinutes(45));
