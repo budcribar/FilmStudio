@@ -456,8 +456,9 @@ else
                                     </label>
                                     <button type="button" class="btn btn-sm btn-outline-secondary"
                                             disabled="@(_busy || JobRunning)"
-                                            @onclick="ToggleBookCandidateGalleryAsync">
-                                        📖 Find images from book
+                                            @onclick="ToggleBookCandidateGalleryAsync"
+                                            title="Choose book pictures that guide the next generate">
+                                        Pick book pictures
                                     </button>
                                 </div>
 
@@ -466,8 +467,8 @@ else
                                     <div class="border border-secondary border-opacity-50 rounded p-3 mt-3 mb-3 bg-dark bg-opacity-75 text-white shadow-sm">
                                         <div class="d-flex justify-content-between align-items-center mb-2">
                                             <div>
-                                                <strong class="small text-light">Book Illustrations (Ranked for @_selected.DisplayName)</strong>
-                                                <div class="small text-muted">Select up to 3 candidate illustrations from the book:</div>
+                                                <strong class="small text-light">Book pictures for @_selected.DisplayName</strong>
+                                                <div class="small text-muted">Select up to 3 to guide generation (used as reference pictures).</div>
                                             </div>
                                             <button type="button" class="btn btn-sm btn-outline-secondary" @onclick="() => _showBookCandidateGallery = false">✕ Close</button>
                                         </div>
@@ -502,9 +503,9 @@ else
                                                 }
                                             </div>
                                             <div class="d-flex justify-content-between align-items-center mt-2 pt-2 border-top border-secondary border-opacity-50">
-                                                <span class="small text-muted">Selected @_selectedBookCandidatePaths.Count of 3 max</span>
+                                                <span class="small text-muted">@_selectedBookCandidatePaths.Count of 3 selected</span>
                                                 <button type="button" class="btn btn-sm btn-success" disabled="@(_busy || _savingBookRefs)" @onclick="ApplySelectedBookCandidatesAsync">
-                                                    @(_savingBookRefs ? "Applying..." : "Apply selected pictures")
+                                                    @(_savingBookRefs ? "Saving…" : "Use for generation")
                                                 </button>
                                             </div>
                                         }
@@ -729,14 +730,18 @@ else
             var ok = await Engine.SetCharacterBookRefsAsync(_projectId, _selected.Key, _selectedBookCandidatePaths);
             if (ok)
             {
-                _message = $"Applied {_selectedBookCandidatePaths.Count} book reference picture(s) to {_selected.DisplayName}.";
+                var n = _selectedBookCandidatePaths.Count;
                 await SoftReloadAsync();
-                ResetSeedSelection();
+                // Prefer the plates the user just chose as generate seeds (not old options).
+                PreferBookRefsAsSeeds();
                 _showBookCandidateGallery = false;
+                _message = n == 0
+                    ? "Book pictures cleared."
+                    : $"Saved {n} book picture(s) for {_selected.DisplayName}. They are selected for the next Generate.";
             }
             else
             {
-                _error = "Could not save selected book reference pictures.";
+                _error = "Could not save selected book pictures.";
             }
         }
         catch (Exception ex)
@@ -1297,8 +1302,10 @@ else
     {
         _seedOrder.Clear();
         if (_selected is null) return;
-        // Default select: preferred, then recent generate options, then book pics (cap by API)
-        if (_selected.HasPreferred)
+        // Book plates first (identity from the book), then preferred lock, then gen options.
+        // Old order put preferred+variants first and often filled the 3-ref cap before any book pic.
+        AddBookRefsToSeedOrder();
+        if (_selected.HasPreferred && _seedOrder.Count < ApiMaxSeedRefs)
             _seedOrder.Add("p");
         foreach (var v in _selected.Variants.Where(x => x.Exists).OrderBy(x => x.Index))
         {
@@ -1307,15 +1314,29 @@ else
             if (!_seedOrder.Contains(key, StringComparer.OrdinalIgnoreCase))
                 _seedOrder.Add(key);
         }
-        foreach (var b in _selected.BookRefs.Where(x => x.Exists))
+    }
+
+    /// <summary>After the operator picks book pictures, those become the generate seeds.</summary>
+    private void PreferBookRefsAsSeeds()
+    {
+        _seedOrder.Clear();
+        if (_selected is null) return;
+        AddBookRefsToSeedOrder();
+        // Keep preferred only if there is room — never let old variants crowd out book plates
+        if (_selected.HasPreferred && _seedOrder.Count < ApiMaxSeedRefs)
+            _seedOrder.Add("p");
+    }
+
+    private void AddBookRefsToSeedOrder()
+    {
+        if (_selected is null) return;
+        foreach (var b in _selected.BookRefs.Where(x => x.Exists).OrderBy(x => x.Index ?? 0))
         {
             if (_seedOrder.Count >= ApiMaxSeedRefs) break;
-            if (b.Index is int i)
-            {
-                var key = $"b{i}";
-                if (!_seedOrder.Contains(key, StringComparer.OrdinalIgnoreCase))
-                    _seedOrder.Add(key);
-            }
+            if (b.Index is not int i) continue;
+            var key = $"b{i}";
+            if (!_seedOrder.Contains(key, StringComparer.OrdinalIgnoreCase))
+                _seedOrder.Add(key);
         }
     }
 
