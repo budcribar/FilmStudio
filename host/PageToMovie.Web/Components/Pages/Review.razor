@@ -2260,7 +2260,7 @@ else if (_activeTab == "share")
                     {
                         _showSaveDialog = false;
                         _message = pub.Message
-                                   ?? $"“{pub.Demo?.Title ?? title}” submitted for review. It will appear on Demo after admin approval.";
+                                   ?? $"“{pub.Demo?.Title ?? title}” published to gallery.";
                         return;
                     }
                     _error = pub?.Error ?? "Demo submit failed";
@@ -2282,7 +2282,7 @@ else if (_activeTab == "share")
             var msg = res.TryGetProperty("message", out var mEl) ? mEl.GetString() : null;
             _showSaveDialog = false;
             _message = msg
-                       ?? $"“{publishedTitle}” submitted for review. It will appear on Demo after admin approval.";
+                       ?? $"“{publishedTitle}” published to gallery.";
         }
         catch (Exception ex)
         {

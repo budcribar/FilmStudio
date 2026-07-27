@@ -4878,10 +4878,8 @@ app.MapPost("/api/demos", async (
             autoPublic,
             replacedExisting,
             message = replacedExisting
-                ? "Updated published demo — uploading new YouTube version and switching the gallery pointer."
-                : autoPublic
-                    ? "Published — file hash matches trusted project media (gen provenance OK)."
-                    : "Submitted for review. An admin must approve before it appears on the public Demo page.",
+                ? "Updated published demo."
+                : "Film published to gallery.",
             demo = DemoPublicDto(entry),
             pagePath = "/demo",
         });
