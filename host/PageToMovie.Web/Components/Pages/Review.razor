@@ -966,6 +966,12 @@ else if (_activeTab == "share")
             </div>
             <div class="mb-3">
                 <div class="form-check mb-2">
+                    <input class="form-check-input" type="checkbox" id="demoMadeForKids" @bind="_demoMadeForKids" />
+                    <label class="form-check-label small" for="demoMadeForKids">
+                        Made for kids (YouTube child-audience setting).
+                    </label>
+                </div>
+                <div class="form-check mb-2">
                     <input class="form-check-input" type="checkbox" id="demoAiDisclosure" @bind="_demoIsAiSynthetic" />
                     <label class="form-check-label small" for="demoAiDisclosure">
                         Contains AI-generated visuals or audio.
@@ -1053,7 +1059,20 @@ else if (_activeTab == "share")
             if (tab == "share")
             {
                 _showSaveDialog = true;
+                PrepopulateDemoFields();
             }
+        }
+    }
+
+    private void PrepopulateDemoFields()
+    {
+        if (string.IsNullOrWhiteSpace(_demoTitle))
+        {
+            _demoTitle = _projectId;
+        }
+        if (string.IsNullOrWhiteSpace(_demoDescription))
+        {
+            _demoDescription = $"A film adaptation of {_demoTitle} produced with PageToMovie.";
         }
     }
 
