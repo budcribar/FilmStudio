@@ -55,23 +55,6 @@ else
         <span class="small text-muted ms-2">Screenplay + book → names, voices, and portrait-ready looks</span>
     </div>
 }
-else if (NeedsFindCharacters)
-{
-    <div class="alert alert-warning d-flex flex-wrap align-items-center justify-content-between gap-2 py-2 mb-3">
-        <div>
-            <strong>Match book pictures to the cast</strong>
-        </div>
-        @if (!PlateSortRunning)
-        {
-            <button type="button" class="btn btn-warning"
-                    data-testid="characters-find-plates"
-                    disabled="@(_busy || JobRunning)"
-                    @onclick="() => StartSortCharacterPlatesAsync(useGrok: true)">
-                Find characters
-            </button>
-        }
-    </div>
-}
 else if (Session.IsAdmin && HasCast && !JobRunning && !_extractingCast)
 {
     @* Advanced re-run only for admin — operators are not offered redo of finished setup *@
@@ -887,12 +870,8 @@ else
     private bool NeedsCastBuild =>
         _chars is not null && _chars.Count == 0 && !_extractingCast;
 
-    /// <summary>Show Find characters only when cast exists but book pictures are not matched.</summary>
-    private bool NeedsFindCharacters =>
-        HasCast &&
-        _plates is not null &&
-        !_plates.SortedByCharacter &&
-        !PlateSortRunning;
+    /// <summary>Book picture matching is now automated on cast extract.</summary>
+    private bool NeedsFindCharacters => false;
 
     /// <summary>
     /// Single user step: closed cast + book-aware looks (description / visual_lock) for portraits.
