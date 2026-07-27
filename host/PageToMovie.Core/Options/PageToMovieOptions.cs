@@ -156,6 +156,33 @@ public sealed class PageToMovieOptions
     public YouTubeOptions YouTube { get; set; } = new();
     public CreditsOptions Credits { get; set; } = new();
     public MediaPruningOptions MediaPruning { get; set; } = new();
+    /// <summary>GitHub (or any Git host) remote for project package history — see host/docs/github-projects-backup-checklist.md.</summary>
+    public GitOptions Git { get; set; } = new();
+}
+
+/// <summary>
+/// Push text project packages (no video) to a shared Projects repo for version history.
+/// Env: <c>PageToMovie__Git__Enabled=true</c>, <c>ProjectsRepoUrl</c>, <c>Token</c>.
+/// </summary>
+public sealed class GitOptions
+{
+    /// <summary>When false, commit works locally but push is a no-op / clear error.</summary>
+    public bool Enabled { get; set; }
+
+    /// <summary>Remote clone URL, e.g. https://github.com/PageToMovie/Projects.git</summary>
+    public string ProjectsRepoUrl { get; set; } = "";
+
+    /// <summary>PAT or fine-grained token with contents:write on the projects repo.</summary>
+    public string Token { get; set; } = "";
+
+    /// <summary>
+    /// Branch name prefix. Full branch = prefix + composite id with '/' → safe segments,
+    /// e.g. <c>proj/alice/Buster</c>.
+    /// </summary>
+    public string DefaultBranchPrefix { get; set; } = "proj/";
+
+    /// <summary>HTTPS username for token auth (GitHub: x-access-token).</summary>
+    public string TokenUsername { get; set; } = "x-access-token";
 }
 
 /// <summary>

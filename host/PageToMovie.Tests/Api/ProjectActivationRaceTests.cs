@@ -28,15 +28,23 @@ public sealed class ProjectActivationRaceTests : IClassFixture<PageToMovieApiFac
     public async Task InitializeAsync()
     {
         var suffix = Guid.NewGuid().ToString("N")[..8];
-        _projectA = "RaceA_" + suffix;
-        _projectB = "RaceB_" + suffix;
+        var slugA = "RaceA_" + suffix;
+        var slugB = "RaceB_" + suffix;
 
         // CreateProjectAsync activates on create, so B ends up active first — then we
         // explicitly re-activate A so it is the UI's current selection going into the test.
-        await _client.PostAsJsonAsync("/api/projects", new { name = _projectA, title = "A" });
-        await _client.PostAsJsonAsync("/api/projects", new { name = _projectB, title = "B" });
+        var createA = await _client.PostAsJsonAsync("/api/projects", new { name = slugA, title = "A" });
+        Assert.True(createA.IsSuccessStatusCode, await createA.Content.ReadAsStringAsync());
+        var jsonA = await createA.Content.ReadFromJsonAsync<System.Text.Json.JsonElement>();
+        _projectA = jsonA.GetProperty("active").GetProperty("id").GetString()!;
+
+        var createB = await _client.PostAsJsonAsync("/api/projects", new { name = slugB, title = "B" });
+        Assert.True(createB.IsSuccessStatusCode, await createB.Content.ReadAsStringAsync());
+        var jsonB = await createB.Content.ReadFromJsonAsync<System.Text.Json.JsonElement>();
+        _projectB = jsonB.GetProperty("active").GetProperty("id").GetString()!;
+
         var act = await _client.PostAsync($"/api/projects/{Uri.EscapeDataString(_projectA)}/activate", null);
-        Assert.True(act.IsSuccessStatusCode);
+        Assert.True(act.IsSuccessStatusCode, await act.Content.ReadAsStringAsync());
     }
 
     public Task DisposeAsync() => Task.CompletedTask;

@@ -16,17 +16,26 @@ public class InviteToForkApiTests : IClassFixture<PageToMovieApiFactory>
         _factory = factory;
     }
 
+    private static async Task<string> CreateProjectIdAsync(HttpClient client, string name, string title)
+    {
+        var create = await client.PostAsJsonAsync("/api/projects", new { name, title });
+        Assert.True(create.IsSuccessStatusCode, await create.Content.ReadAsStringAsync());
+        using var doc = JsonDocument.Parse(await create.Content.ReadAsStringAsync());
+        var id = doc.RootElement.GetProperty("active").GetProperty("id").GetString();
+        Assert.False(string.IsNullOrWhiteSpace(id));
+        return id!;
+    }
+
     [Fact]
     public async Task Invite_then_accept_forks_the_project_under_the_new_user()
     {
         var owner = _factory.CreateUserClient("owner-user");
-        var projectId = "InviteSmoke_" + Guid.NewGuid().ToString("N")[..8];
-
-        var create = await owner.PostAsJsonAsync("/api/projects", new { name = projectId, title = "Invite Smoke" });
-        Assert.True(create.IsSuccessStatusCode, await create.Content.ReadAsStringAsync());
+        var slug = "InviteSmoke_" + Guid.NewGuid().ToString("N")[..8];
+        var projectId = await CreateProjectIdAsync(owner, slug, "Invite Smoke");
+        Assert.Contains("owner-user", projectId, StringComparison.OrdinalIgnoreCase);
 
         var inviteResp = await owner.PostAsJsonAsync(
-            $"/api/projects/{projectId}/invites",
+            $"/api/projects/{Uri.EscapeDataString(projectId)}/invites",
             new { ProjectId = projectId, TargetEmail = "collaborator@example.com" });
         Assert.Equal(HttpStatusCode.OK, inviteResp.StatusCode);
 
@@ -46,6 +55,7 @@ public class InviteToForkApiTests : IClassFixture<PageToMovieApiFactory>
         var forkedId = acceptDoc.RootElement.GetProperty("projectId").GetString();
         Assert.False(string.IsNullOrWhiteSpace(forkedId));
         Assert.NotEqual(projectId, forkedId);
+        Assert.StartsWith("collaborator-user/", forkedId, StringComparison.OrdinalIgnoreCase);
 
         // Same token cannot be used twice.
         var secondAccept = await collaborator.PostAsJsonAsync("/api/invites/accept", new { Token = token });
@@ -56,13 +66,12 @@ public class InviteToForkApiTests : IClassFixture<PageToMovieApiFactory>
     public async Task Only_the_owner_or_admin_can_send_an_invite()
     {
         var owner = _factory.CreateUserClient("owner-user-2");
-        var projectId = "InviteAuthSmoke_" + Guid.NewGuid().ToString("N")[..8];
-        var create = await owner.PostAsJsonAsync("/api/projects", new { name = projectId, title = "Invite Auth Smoke" });
-        Assert.True(create.IsSuccessStatusCode, await create.Content.ReadAsStringAsync());
+        var slug = "InviteAuthSmoke_" + Guid.NewGuid().ToString("N")[..8];
+        var projectId = await CreateProjectIdAsync(owner, slug, "Invite Auth Smoke");
 
         var stranger = _factory.CreateUserClient("stranger-user");
         var inviteResp = await stranger.PostAsJsonAsync(
-            $"/api/projects/{projectId}/invites",
+            $"/api/projects/{Uri.EscapeDataString(projectId)}/invites",
             new { ProjectId = projectId, TargetEmail = "someone@example.com" });
 
         Assert.Equal(HttpStatusCode.Forbidden, inviteResp.StatusCode);

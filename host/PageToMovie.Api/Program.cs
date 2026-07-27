@@ -2081,6 +2081,69 @@ app.MapPost("/api/projects/{id}/commit", async (
 });
 
 /// <summary>
+/// Push the project's text package (video excluded) to the configured Projects remote.
+/// Owner/admin only. Optional body.commitFirst + message creates a local commit first.
+/// Returns historyUrl when the remote is GitHub. See host/docs/github-projects-backup-checklist.md.
+/// </summary>
+app.MapPost("/api/projects/{id}/push", async (
+    string id,
+    PushProjectApiRequest? body,
+    ProjectStore store,
+    ProjectGitRepositoryService git,
+    IUserContext user,
+    IOptions<PageToMovieOptions> opts,
+    CancellationToken ct) =>
+{
+    if (AuthGate.RequireLogin(user, opts) is { } denied)
+        return denied;
+    try
+    {
+        var proj = await store.RequireProjectAsync(id, ct);
+        if (!await store.CanUserPublishDemoAsync(id, user.UserId, user.IsAdmin, ct))
+        {
+            return Results.Json(new { ok = false, error = "Only the project owner or an admin can push it." },
+                statusCode: StatusCodes.Status403Forbidden);
+        }
+
+        var dir = store.GetProjectDir(id);
+        GitCommitInfo? commit = null;
+        if (body?.CommitFirst == true)
+        {
+            commit = await git.CommitProjectStateAsync(
+                dir, user.UserId ?? "PageToMovie", body?.Message ?? "Project update");
+        }
+
+        var push = await git.PushProjectAsync(dir, proj.Id);
+        if (!push.Success)
+        {
+            return Results.BadRequest(new
+            {
+                ok = false,
+                error = push.Message,
+                branch = push.Branch,
+                commitHash = push.CommitHash ?? commit?.CommitHash,
+                historyUrl = push.HistoryUrl,
+                commit,
+            });
+        }
+
+        return Results.Ok(new
+        {
+            ok = true,
+            branch = push.Branch,
+            commitHash = push.CommitHash,
+            historyUrl = push.HistoryUrl,
+            message = push.Message,
+            commit,
+        });
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { ok = false, error = ex.Message });
+    }
+});
+
+/// <summary>
 /// Merge another project's committed state into this one (owner or admin of the target project).
 /// Real LibGit2Sharp 3-way merge — reports <c>hasConflicts</c> rather than auto-resolving; the
 /// caller must inspect and commit manually when that happens (no conflict-resolution UI yet).
@@ -4737,6 +4800,7 @@ namespace PageToMovie.Api
     public record SendInviteApiRequest(string? ProjectId, string? TargetHandle, string? TargetEmail);
     public record AcceptInviteApiRequest(string? Token);
     public record CommitProjectApiRequest(string? Message);
+    public record PushProjectApiRequest(bool CommitFirst = false, string? Message = null);
     public record SyncOriginApiRequest(string? ParentProjectId);
     public record ProjectVisibilityRequest(string VisibilityMode);
     public record SetBookRefsRequest(List<string>? ImagePaths);

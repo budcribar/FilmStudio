@@ -18,6 +18,21 @@ public class ProjectForkTests
         return (new ProjectStore(opts), root);
     }
 
+    /// <summary>Git objects are often read-only on Windows — clear attrs before delete.</summary>
+    private static void DeleteRoot(string root)
+    {
+        if (!Directory.Exists(root)) return;
+        try
+        {
+            foreach (var path in Directory.EnumerateFileSystemEntries(root, "*", SearchOption.AllDirectories))
+            {
+                try { File.SetAttributes(path, FileAttributes.Normal); } catch { /* best effort */ }
+            }
+            Directory.Delete(root, true);
+        }
+        catch { /* best effort on Windows file locks */ }
+    }
+
     [Fact]
     public async Task ForkProjectAsync_copies_text_and_excludes_video()
     {
@@ -25,6 +40,8 @@ public class ProjectForkTests
         try
         {
             var source = await store.CreateProjectAsync("Original", ownerUserId: "owner1");
+            Assert.Equal("owner1/Original", source.Id);
+            Assert.Contains(Path.Combine("projects", "owner1", "Original"), source.Path);
             await store.SetProjectVisibilityModeAsync(source.Id, "Open");
             var sourceDir = source.Path;
             Directory.CreateDirectory(Path.Combine(sourceDir, "source"));
@@ -37,13 +54,16 @@ public class ProjectForkTests
             Assert.Equal("collaborator1", fork.OwnerUserId);
             Assert.Equal(source.Id, fork.ParentProjectId);
             Assert.NotEqual(source.Id, fork.Id);
+            Assert.StartsWith("collaborator1/", fork.Id, StringComparison.OrdinalIgnoreCase);
 
             Assert.True(File.Exists(Path.Combine(fork.Path, "source", "screenplay.fountain")));
             Assert.False(File.Exists(Path.Combine(fork.Path, "assets", "video", "scene_01_clip_01.mp4")));
+            // Fork has its own Git package (text only) with an initial commit
+            Assert.True(Directory.Exists(Path.Combine(fork.Path, ".git")));
         }
         finally
         {
-            Directory.Delete(root, true);
+            DeleteRoot(root);
         }
     }
 
@@ -64,7 +84,7 @@ public class ProjectForkTests
         }
         finally
         {
-            Directory.Delete(root, true);
+            DeleteRoot(root);
         }
     }
 
@@ -79,7 +99,7 @@ public class ProjectForkTests
         }
         finally
         {
-            Directory.Delete(root, true);
+            DeleteRoot(root);
         }
     }
 }

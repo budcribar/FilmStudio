@@ -81,16 +81,23 @@ public sealed class ProjectStore
         {
             if (!string.IsNullOrWhiteSpace(_activeProjectId))
                 return _activeProjectId;
-            // Directory scan only — no ListProjects / GetAwaiter on property access
+            // Prefer flat project.json; else first namespaced project found
             var projectsDir = Path.Combine(WorkspaceRoot, "projects");
             if (!Directory.Exists(projectsDir))
                 return "";
             foreach (var dir in Directory.GetDirectories(projectsDir)
                          .OrderBy(d => d, StringComparer.OrdinalIgnoreCase))
             {
-                var id = Path.GetFileName(dir);
-                if (!string.Equals(id, "workspace.json", StringComparison.OrdinalIgnoreCase))
-                    return id;
+                var name = Path.GetFileName(dir);
+                if (string.Equals(name, "workspace.json", StringComparison.OrdinalIgnoreCase))
+                    continue;
+                if (File.Exists(Path.Combine(dir, "project.json")))
+                    return name;
+                foreach (var child in Directory.GetDirectories(dir).OrderBy(d => d, StringComparer.OrdinalIgnoreCase))
+                {
+                    if (File.Exists(Path.Combine(child, "project.json")))
+                        return $"{name}/{Path.GetFileName(child)}";
+                }
             }
             return "";
         }
@@ -106,64 +113,101 @@ public sealed class ProjectStore
             return Array.Empty<ProjectInfo>();
 
         var list = new List<ProjectInfo>();
-        // Directory.GetDirectories has no async API — metadata only
+        // Flat: projects/{id}/project.json  OR nested: projects/{user}/{slug}/project.json
         foreach (var dir in Directory.GetDirectories(projectsDir))
         {
             ct.ThrowIfCancellationRequested();
-            var id = Path.GetFileName(dir);
-            if (string.Equals(id, "workspace.json", StringComparison.OrdinalIgnoreCase))
+            var name = Path.GetFileName(dir);
+            if (string.Equals(name, "workspace.json", StringComparison.OrdinalIgnoreCase))
                 continue;
+
             var metaPath = Path.Combine(dir, "project.json");
-            string? title = null;
-            string? label = null;
-            string? ownerUserId = null;
-            string? parentProjectId = null;
-            string? visibilityMode = null;
             if (File.Exists(metaPath))
             {
-                try
-                {
-                    await using var stream = File.OpenRead(metaPath);
-                    using var doc = await JsonDocument.ParseAsync(stream, cancellationToken: ct)
-                        .ConfigureAwait(false);
-                    foreach (var p in doc.RootElement.EnumerateObject())
-                    {
-                        if (string.Equals(p.Name, "title", StringComparison.OrdinalIgnoreCase))
-                            title = p.Value.GetString();
-                        else if (string.Equals(p.Name, "label", StringComparison.OrdinalIgnoreCase))
-                            label = p.Value.GetString();
-                        else if (string.Equals(p.Name, "parentProjectId", StringComparison.OrdinalIgnoreCase) ||
-                                 string.Equals(p.Name, "parent_project_id", StringComparison.OrdinalIgnoreCase))
-                            parentProjectId = p.Value.GetString();
-                        else if (string.Equals(p.Name, "visibilityMode", StringComparison.OrdinalIgnoreCase) ||
-                                 string.Equals(p.Name, "visibility_mode", StringComparison.OrdinalIgnoreCase))
-                            visibilityMode = p.Value.GetString();
-                        else if (string.Equals(p.Name, "ownerUserId", StringComparison.OrdinalIgnoreCase) ||
-                                 string.Equals(p.Name, "owner_user_id", StringComparison.OrdinalIgnoreCase))
-                            ownerUserId = p.Value.GetString();
-                    }
-                }
-                catch { /* ignore */ }
+                var info = await ReadProjectInfoFromDirAsync(dir, idOverride: name, ct).ConfigureAwait(false);
+                if (info is not null)
+                    list.Add(info);
+                continue;
             }
-            list.Add(new ProjectInfo
+
+            // Owner namespace folder — scan children for project.json
+            foreach (var child in Directory.GetDirectories(dir))
             {
-                Id = id,
-                Title = title,
-                Label = label ?? title ?? id,
-                Path = dir,
-                OwnerUserId = string.IsNullOrWhiteSpace(ownerUserId) ? null : ownerUserId.Trim(),
-                ParentProjectId = string.IsNullOrWhiteSpace(parentProjectId) ? null : parentProjectId.Trim(),
-                VisibilityMode = string.IsNullOrWhiteSpace(visibilityMode) ? "Private" : visibilityMode.Trim(),
-            });
+                ct.ThrowIfCancellationRequested();
+                var slug = Path.GetFileName(child);
+                var childMeta = Path.Combine(child, "project.json");
+                if (!File.Exists(childMeta))
+                    continue;
+                var compositeId = $"{name}/{slug}";
+                var info = await ReadProjectInfoFromDirAsync(child, idOverride: compositeId, ct)
+                    .ConfigureAwait(false);
+                if (info is not null)
+                    list.Add(info);
+            }
         }
         return list.OrderBy(p => p.Id, StringComparer.OrdinalIgnoreCase).ToList();
     }
 
+    private static async Task<ProjectInfo?> ReadProjectInfoFromDirAsync(
+        string dir, string idOverride, CancellationToken ct)
+    {
+        var metaPath = Path.Combine(dir, "project.json");
+        if (!File.Exists(metaPath))
+            return null;
+        string? title = null;
+        string? label = null;
+        string? ownerUserId = null;
+        string? parentProjectId = null;
+        string? visibilityMode = null;
+        string? metaId = null;
+        try
+        {
+            await using var stream = File.OpenRead(metaPath);
+            using var doc = await JsonDocument.ParseAsync(stream, cancellationToken: ct)
+                .ConfigureAwait(false);
+            foreach (var p in doc.RootElement.EnumerateObject())
+            {
+                if (string.Equals(p.Name, "id", StringComparison.OrdinalIgnoreCase))
+                    metaId = p.Value.GetString();
+                else if (string.Equals(p.Name, "title", StringComparison.OrdinalIgnoreCase))
+                    title = p.Value.GetString();
+                else if (string.Equals(p.Name, "label", StringComparison.OrdinalIgnoreCase))
+                    label = p.Value.GetString();
+                else if (string.Equals(p.Name, "parentProjectId", StringComparison.OrdinalIgnoreCase) ||
+                         string.Equals(p.Name, "parent_project_id", StringComparison.OrdinalIgnoreCase))
+                    parentProjectId = p.Value.GetString();
+                else if (string.Equals(p.Name, "visibilityMode", StringComparison.OrdinalIgnoreCase) ||
+                         string.Equals(p.Name, "visibility_mode", StringComparison.OrdinalIgnoreCase))
+                    visibilityMode = p.Value.GetString();
+                else if (string.Equals(p.Name, "ownerUserId", StringComparison.OrdinalIgnoreCase) ||
+                         string.Equals(p.Name, "owner_user_id", StringComparison.OrdinalIgnoreCase))
+                    ownerUserId = p.Value.GetString();
+            }
+        }
+        catch
+        {
+            return null;
+        }
+
+        var id = !string.IsNullOrWhiteSpace(metaId) ? metaId.Trim() : idOverride;
+        return new ProjectInfo
+        {
+            Id = id,
+            Title = title,
+            Label = label ?? title ?? id,
+            Path = dir,
+            OwnerUserId = string.IsNullOrWhiteSpace(ownerUserId) ? null : ownerUserId.Trim(),
+            ParentProjectId = string.IsNullOrWhiteSpace(parentProjectId) ? null : parentProjectId.Trim(),
+            VisibilityMode = string.IsNullOrWhiteSpace(visibilityMode) ? "Private" : visibilityMode.Trim(),
+        };
+    }
+
     public async Task<ProjectInfo?> GetProjectAsync(string projectId, CancellationToken ct = default)
     {
+        var want = NormalizeProjectId(projectId);
         var list = await ListProjectsAsync(ct).ConfigureAwait(false);
         return list.FirstOrDefault(p =>
-            string.Equals(p.Id, projectId, StringComparison.OrdinalIgnoreCase));
+            string.Equals(NormalizeProjectId(p.Id), want, StringComparison.OrdinalIgnoreCase));
     }
 
     /// <summary>
@@ -195,8 +239,11 @@ public sealed class ProjectStore
     }
 
     /// <summary>
-    /// Create <c>projects/{id}/</c> with project.json + source/, then activate it.
-    /// Id is sanitized to a safe folder name.
+    /// Create project folder with project.json + source/, then activate it.
+    /// When <paramref name="ownerUserId"/> is set: <c>projects/{owner}/{slug}/</c> and id <c>owner/slug</c>
+    /// (plan namespacing). Legacy flat <c>projects/{slug}/</c> when owner is empty.
+    /// </summary>
+    /// <remarks>Id is sanitized; owner segment is sanitized separately.
     /// </summary>
     public async Task<ProjectInfo> CreateProjectAsync(
         string idOrTitle,
@@ -208,11 +255,15 @@ public sealed class ProjectStore
         if (raw.Length == 0)
             throw new InvalidOperationException("Project name required");
 
-        var id = SanitizeProjectId(raw);
-        if (id.Length == 0)
+        var slug = SanitizeProjectId(raw);
+        if (slug.Length == 0)
             throw new InvalidOperationException("Project name has no usable characters");
 
-        var dir = Path.Combine(WorkspaceRoot, "projects", id);
+        var owner = string.IsNullOrWhiteSpace(ownerUserId) ? null : SanitizeUserSegment(ownerUserId);
+        var id = string.IsNullOrEmpty(owner) ? slug : $"{owner}/{slug}";
+        var dir = string.IsNullOrEmpty(owner)
+            ? Path.Combine(WorkspaceRoot, "projects", slug)
+            : Path.Combine(WorkspaceRoot, "projects", owner, slug);
         if (Directory.Exists(dir))
             throw new InvalidOperationException($"Project already exists: {id}");
 
@@ -223,7 +274,6 @@ public sealed class ProjectStore
         Directory.CreateDirectory(Path.Combine(dir, "assets", "video"));
 
         var displayTitle = string.IsNullOrWhiteSpace(title) ? raw : title.Trim();
-        var owner = string.IsNullOrWhiteSpace(ownerUserId) ? null : ownerUserId.Trim();
         var meta = new Dictionary<string, object?>
         {
             ["id"] = id,
@@ -240,6 +290,19 @@ public sealed class ProjectStore
             Path.Combine(dir, "project.json"),
             JsonSerializer.Serialize(meta, JsonOpts) + "\n",
             ct).ConfigureAwait(false);
+
+        // Git package (text only) — initial commit for history foundation
+        try
+        {
+            ProjectGitRepositoryService.EnsureRepositoryAt(dir);
+            var git = new ProjectGitRepositoryService(
+                Microsoft.Extensions.Logging.Abstractions.NullLogger<ProjectGitRepositoryService>.Instance);
+            await git.CommitProjectStateAsync(dir, owner ?? "PageToMovie", "Initial project state").ConfigureAwait(false);
+        }
+        catch
+        {
+            // Non-fatal: nested-repo or git unavailable must not block create
+        }
 
         InvalidateReadCaches(null); // projects list
         return await ActivateAsync(id, ct).ConfigureAwait(false);
@@ -273,12 +336,16 @@ public sealed class ProjectStore
             throw new InvalidOperationException($"Forking disabled for this project (Visibility mode: {source.VisibilityMode}). Only 'Open' (Public Forkable) projects can be forked by community members.");
         }
 
-        var baseName = source.Title ?? source.Id;
-        var newId = SanitizeProjectId($"{baseName}-fork-{Guid.NewGuid().ToString("N")[..6]}");
-        if (newId.Length == 0)
+        var baseName = source.Title ?? source.Id.Split('/').LastOrDefault() ?? source.Id;
+        var slug = SanitizeProjectId($"{baseName}-fork-{Guid.NewGuid().ToString("N")[..6]}");
+        if (slug.Length == 0)
             throw new InvalidOperationException("Could not derive a fork id");
 
-        var newDir = Path.Combine(WorkspaceRoot, "projects", newId);
+        var ownerSeg = SanitizeUserSegment(newOwnerUserId);
+        var newId = string.IsNullOrEmpty(ownerSeg) ? slug : $"{ownerSeg}/{slug}";
+        var newDir = string.IsNullOrEmpty(ownerSeg)
+            ? Path.Combine(WorkspaceRoot, "projects", slug)
+            : Path.Combine(WorkspaceRoot, "projects", ownerSeg, slug);
         if (Directory.Exists(newDir))
             throw new InvalidOperationException($"Project already exists: {newId}");
 
@@ -316,6 +383,15 @@ public sealed class ProjectStore
         meta["createdAt"] = DateTimeOffset.UtcNow.ToString("o");
         await File.WriteAllTextAsync(
             metaPath, JsonSerializer.Serialize(meta, JsonOpts) + "\n", ct).ConfigureAwait(false);
+
+        try
+        {
+            ProjectGitRepositoryService.EnsureRepositoryAt(newDir);
+            var git = new ProjectGitRepositoryService(
+                Microsoft.Extensions.Logging.Abstractions.NullLogger<ProjectGitRepositoryService>.Instance);
+            await git.CommitProjectStateAsync(newDir, newOwnerUserId, "Initial fork state").ConfigureAwait(false);
+        }
+        catch { /* non-fatal */ }
 
         InvalidateReadCaches(null);
         return await RequireProjectAsync(newId, ct).ConfigureAwait(false);
@@ -420,16 +496,11 @@ public sealed class ProjectStore
         if (string.IsNullOrWhiteSpace(projectId))
             throw new InvalidOperationException("Project id required");
 
-        var id = projectId.Trim();
-        // Same guards as GetProjectDir — never allow path escape
-        if (id.Contains("..", StringComparison.Ordinal) ||
-            id.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0 ||
-            id.Contains('/') || id.Contains('\\') ||
-            string.Equals(id, "workspace.json", StringComparison.OrdinalIgnoreCase))
-            throw new InvalidOperationException($"Invalid project id: {projectId}");
+        var id = NormalizeProjectId(projectId);
+        ValidateProjectId(id);
 
         var projectsRoot = Path.GetFullPath(Path.Combine(WorkspaceRoot, "projects"));
-        var dir = Path.GetFullPath(Path.Combine(projectsRoot, id));
+        var dir = Path.GetFullPath(ResolveProjectDirPath(id));
         if (!dir.StartsWith(projectsRoot + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase) &&
             !string.Equals(dir, projectsRoot, StringComparison.OrdinalIgnoreCase))
             throw new InvalidOperationException($"Invalid project path: {projectId}");
@@ -494,21 +565,100 @@ public sealed class ProjectStore
 
     /// <summary>
     /// Project folder path without listing all projects (no cache / GetAwaiter).
-    /// Layout: <c>{WorkspaceRoot}/projects/{projectId}</c>.
+    /// Layout: legacy <c>projects/{id}/</c> or namespaced <c>projects/{user}/{slug}/</c>
+    /// when <paramref name="projectId"/> is <c>user/slug</c>.
     /// </summary>
     public string GetProjectDir(string projectId)
     {
         if (string.IsNullOrWhiteSpace(projectId))
             throw new InvalidOperationException("Unknown project: (empty)");
-        var id = projectId.Trim();
-        if (id.Contains("..", StringComparison.Ordinal) ||
-            id.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0 ||
-            id.Contains('/') || id.Contains('\\'))
-            throw new InvalidOperationException($"Unknown project: {projectId}");
-        var dir = Path.Combine(WorkspaceRoot, "projects", id);
+        var id = NormalizeProjectId(projectId);
+        ValidateProjectId(id);
+        var dir = ResolveProjectDirPath(id);
         if (!Directory.Exists(dir))
             throw new InvalidOperationException($"Unknown project: {projectId}");
         return dir;
+    }
+
+    /// <summary>Normalize composite ids: trim, unify slashes, strip leading @ on owner.</summary>
+    /// <remarks>
+    /// ASP.NET route params often keep a single-segment <c>%2F</c> encoded (so
+    /// <c>Uri.EscapeDataString("alice/Buster")</c> arrives as <c>alice%2FBuster</c>).
+    /// Decode that before path resolution.
+    /// </remarks>
+    public static string NormalizeProjectId(string projectId)
+    {
+        var id = (projectId ?? "").Trim();
+        if (id.Contains('%', StringComparison.Ordinal))
+        {
+            try { id = Uri.UnescapeDataString(id); }
+            catch { /* leave encoded if malformed */ }
+        }
+        id = id.Replace('\\', '/');
+        while (id.Contains("//", StringComparison.Ordinal))
+            id = id.Replace("//", "/", StringComparison.Ordinal);
+        if (id.StartsWith("@", StringComparison.Ordinal))
+            id = id[1..];
+        // /projects/@alice/Buster style → alice/Buster
+        if (id.StartsWith("projects/", StringComparison.OrdinalIgnoreCase))
+            id = id["projects/".Length..];
+        return id.Trim('/');
+    }
+
+    private static void ValidateProjectId(string id)
+    {
+        if (string.IsNullOrWhiteSpace(id) ||
+            string.Equals(id, "workspace.json", StringComparison.OrdinalIgnoreCase))
+            throw new InvalidOperationException($"Invalid project id: {id}");
+        if (id.Contains("..", StringComparison.Ordinal))
+            throw new InvalidOperationException($"Invalid project id: {id}");
+        var parts = id.Split('/');
+        if (parts.Length is < 1 or > 2)
+            throw new InvalidOperationException($"Invalid project id: {id}");
+        foreach (var part in parts)
+        {
+            if (string.IsNullOrWhiteSpace(part))
+                throw new InvalidOperationException($"Invalid project id: {id}");
+            // Allow normal slug chars only inside each segment
+            foreach (var ch in part)
+            {
+                if (!(char.IsAsciiLetterOrDigit(ch) || ch is '_' or '-' or '.'))
+                    throw new InvalidOperationException($"Invalid project id: {id}");
+            }
+        }
+    }
+
+    /// <summary>Map id → disk path (does not require directory to exist).</summary>
+    private string ResolveProjectDirPath(string normalizedId)
+    {
+        var projects = Path.Combine(WorkspaceRoot, "projects");
+        var parts = normalizedId.Split('/');
+        if (parts.Length == 2)
+            return Path.Combine(projects, parts[0], parts[1]);
+        // Legacy flat; also try nested scan if flat missing (caller checks Exists)
+        var flat = Path.Combine(projects, parts[0]);
+        if (Directory.Exists(flat))
+            return flat;
+        // Slow path: find projects/*/slug when id is bare slug stored under a user folder
+        if (Directory.Exists(projects))
+        {
+            foreach (var ownerDir in Directory.GetDirectories(projects))
+            {
+                var candidate = Path.Combine(ownerDir, parts[0]);
+                if (File.Exists(Path.Combine(candidate, "project.json")))
+                    return candidate;
+            }
+        }
+        return flat;
+    }
+
+    /// <summary>Sanitize owner handle for a single path segment (no slashes).</summary>
+    public static string SanitizeUserSegment(string? userId)
+    {
+        if (string.IsNullOrWhiteSpace(userId)) return "";
+        var s = userId.Trim();
+        if (s.StartsWith('@')) s = s[1..];
+        return SanitizeProjectIdPublic(s).ToLowerInvariant();
     }
 
     public Task<string> GetProjectDirAsync(string projectId, CancellationToken ct = default)

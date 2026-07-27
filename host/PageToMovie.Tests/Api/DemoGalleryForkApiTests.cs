@@ -22,9 +22,19 @@ public class DemoGalleryForkApiTests : IClassFixture<PageToMovieApiFactory>
     public async Task Fork_from_public_demo_creates_project_under_caller()
     {
         var owner = _factory.CreateUserClient("gallery-owner");
-        var projectId = "GalForkSrc_" + Guid.NewGuid().ToString("N")[..8];
-        var create = await owner.PostAsJsonAsync("/api/projects", new { name = projectId, title = "Gallery Fork Source" });
+        var slug = "GalForkSrc_" + Guid.NewGuid().ToString("N")[..8];
+        var create = await owner.PostAsJsonAsync("/api/projects", new { name = slug, title = "Gallery Fork Source" });
         Assert.True(create.IsSuccessStatusCode, await create.Content.ReadAsStringAsync());
+        using var createDoc = JsonDocument.Parse(await create.Content.ReadAsStringAsync());
+        var projectId = createDoc.RootElement.GetProperty("active").GetProperty("id").GetString()!;
+        Assert.Contains("gallery-owner", projectId, StringComparison.OrdinalIgnoreCase);
+
+        // Open so community can fork from the gallery (visibility gate).
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var store = scope.ServiceProvider.GetRequiredService<ProjectStore>();
+            await store.SetProjectVisibilityModeAsync(projectId, "Open");
+        }
 
         // Seed a public demo linked to that project (without needing WIP movie pipeline).
         string demoId;
@@ -74,6 +84,7 @@ public class DemoGalleryForkApiTests : IClassFixture<PageToMovieApiFactory>
         Assert.False(string.IsNullOrWhiteSpace(forkedId));
         Assert.NotEqual(projectId, forkedId);
         Assert.Equal(projectId, forkDoc.RootElement.GetProperty("parentProjectId").GetString());
+        Assert.StartsWith("gallery-forker/", forkedId, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]

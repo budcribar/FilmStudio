@@ -19,6 +19,20 @@ public class ProjectVisibilityModeTests
         return (store, root);
     }
 
+    private static void DeleteRoot(string root)
+    {
+        if (!Directory.Exists(root)) return;
+        try
+        {
+            foreach (var path in Directory.EnumerateFileSystemEntries(root, "*", SearchOption.AllDirectories))
+            {
+                try { File.SetAttributes(path, FileAttributes.Normal); } catch { /* best effort */ }
+            }
+            Directory.Delete(root, true);
+        }
+        catch { /* best effort */ }
+    }
+
     [Fact]
     public async Task Saves_And_Reads_VisibilityMode_Defaulting_To_Private()
     {
@@ -28,24 +42,25 @@ public class ProjectVisibilityModeTests
             var proj = await store.CreateProjectAsync("orig_proj", "Original Project", ownerUserId: "alice");
 
             Assert.Equal("Private", proj.VisibilityMode);
+            Assert.Equal("alice/orig_proj", proj.Id);
+            Assert.Contains(Path.Combine("projects", "alice", "orig_proj"), proj.Path);
 
             // Change to Public Read-Only
-            var updated = await store.SetProjectVisibilityModeAsync("orig_proj", "Public");
+            var updated = await store.SetProjectVisibilityModeAsync(proj.Id, "Public");
             Assert.Equal("Public", updated.VisibilityMode);
 
             // Re-read project
-            var reloaded = await store.GetProjectAsync("orig_proj");
+            var reloaded = await store.GetProjectAsync(proj.Id);
             Assert.NotNull(reloaded);
             Assert.Equal("Public", reloaded!.VisibilityMode);
 
             // Change to Open (Forkable)
-            var openProj = await store.SetProjectVisibilityModeAsync("orig_proj", "Open");
+            var openProj = await store.SetProjectVisibilityModeAsync(proj.Id, "Open");
             Assert.Equal("Open", openProj.VisibilityMode);
         }
         finally
         {
-            if (Directory.Exists(root))
-                try { Directory.Delete(root, true); } catch { }
+            DeleteRoot(root);
         }
     }
 
@@ -55,26 +70,28 @@ public class ProjectVisibilityModeTests
         var (store, root) = MakeHarness();
         try
         {
-            await store.CreateProjectAsync("private_proj", "Private Project", ownerUserId: "alice");
+            var source = await store.CreateProjectAsync("private_proj", "Private Project", ownerUserId: "alice");
+            Assert.Equal("alice/private_proj", source.Id);
 
             // Attempt to fork Private project by bob (should throw)
             var ex = await Assert.ThrowsAsync<InvalidOperationException>(
-                () => store.ForkProjectAsync("private_proj", "bob"));
+                () => store.ForkProjectAsync(source.Id, "bob"));
             Assert.Contains("Forking disabled", ex.Message);
 
             // Change visibility to Open
-            await store.SetProjectVisibilityModeAsync("private_proj", "Open");
+            await store.SetProjectVisibilityModeAsync(source.Id, "Open");
 
-            // Fork Open project by bob (should succeed)
-            var forked = await store.ForkProjectAsync("private_proj", "bob");
+            // Fork Open project by bob (should succeed under bob's namespace)
+            var forked = await store.ForkProjectAsync(source.Id, "bob");
             Assert.NotNull(forked);
             Assert.Equal("bob", forked.OwnerUserId);
-            Assert.Equal("private_proj", forked.ParentProjectId);
+            Assert.Equal(source.Id, forked.ParentProjectId);
+            Assert.StartsWith("bob/", forked.Id, StringComparison.OrdinalIgnoreCase);
+            Assert.Contains(Path.Combine("projects", "bob"), forked.Path);
         }
         finally
         {
-            if (Directory.Exists(root))
-                try { Directory.Delete(root, true); } catch { }
+            DeleteRoot(root);
         }
     }
 }

@@ -4,6 +4,8 @@ using System.Linq;
 using System.Threading.Tasks;
 using LibGit2Sharp;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+using PageToMovie.Core.Options;
 
 namespace PageToMovie.Engine
 {
@@ -23,18 +25,28 @@ namespace PageToMovie.Engine
         public string Message { get; set; } = "";
     }
 
+    public class GitPushResult
+    {
+        public bool Success { get; set; }
+        public string Message { get; set; } = "";
+        public string? Branch { get; set; }
+        /// <summary>Browser URL for commit history on the host (GitHub).</summary>
+        public string? HistoryUrl { get; set; }
+        public string? CommitHash { get; set; }
+    }
+
     /// <summary>
-    /// Real Git-backed project state: auto-commits (LibGit2Sharp) and a 3-way sync-from-origin
-    /// merge for a project directory. Each project directory becomes its own standalone Git
-    /// repository (not a submodule of the app's own repo) — see the doc comment on
-    /// <see cref="EnsureRepository"/> for why the caller must never point this at a project
-    /// directory that's itself already tracked inside another Git working tree.
+    /// Real Git-backed project state: commits (LibGit2Sharp), 3-way sync-from-origin merge,
+    /// and optional push to a shared Projects remote for version history.
+    /// Each project directory is its own Git repo (video ignored). See <see cref="EnsureRepository"/>.
     /// </summary>
     public class ProjectGitRepositoryService
     {
         private readonly ILogger<ProjectGitRepositoryService> _logger;
+        private readonly GitOptions _git;
 
         private const string SyncRemoteName = "sync-origin";
+        private const string GithubRemoteName = "github-projects";
 
         /// <summary>
         /// Video/audio binaries never belong in the project's own Git history — they live in the
@@ -51,9 +63,12 @@ namespace PageToMovie.Engine
             "*.avi",
         };
 
-        public ProjectGitRepositoryService(ILogger<ProjectGitRepositoryService> logger)
+        public ProjectGitRepositoryService(
+            ILogger<ProjectGitRepositoryService> logger,
+            IOptions<PageToMovieOptions>? opts = null)
         {
             _logger = logger;
+            _git = opts?.Value.Git ?? new GitOptions();
         }
 
         /// <summary>
@@ -198,6 +213,130 @@ namespace PageToMovie.Engine
                 try { repo.Network.Remotes.Remove(SyncRemoteName); } catch { /* best effort cleanup */ }
             }
         }
+
+        /// <summary>
+        /// Push the project's HEAD to the configured Projects remote on branch
+        /// <c>{DefaultBranchPrefix}{projectId}</c> (e.g. <c>proj/alice/Buster</c>).
+        /// Does not require GitHub for local commit/merge — only for remote history.
+        /// </summary>
+        public Task<GitPushResult> PushProjectAsync(string projectPath, string projectId)
+        {
+            if (!_git.Enabled)
+            {
+                return Task.FromResult(new GitPushResult
+                {
+                    Success = false,
+                    Message = "GitHub project backup is not enabled (PageToMovie:Git:Enabled).",
+                });
+            }
+
+            var url = (_git.ProjectsRepoUrl ?? "").Trim();
+            var token = (_git.Token ?? "").Trim();
+            if (url.Length == 0 || token.Length == 0)
+            {
+                return Task.FromResult(new GitPushResult
+                {
+                    Success = false,
+                    Message = "Git:ProjectsRepoUrl and Git:Token must be configured to push.",
+                });
+            }
+
+            if (string.IsNullOrWhiteSpace(projectPath) || !Directory.Exists(projectPath))
+                throw new DirectoryNotFoundException($"Project directory not found: {projectPath}");
+
+            EnsureRepository(projectPath);
+            var branch = BuildRemoteBranchName(projectId, _git.DefaultBranchPrefix);
+            using var repo = new Repository(projectPath);
+            if (repo.Head.Tip is null)
+            {
+                return Task.FromResult(new GitPushResult
+                {
+                    Success = false,
+                    Message = "Nothing to push — create a commit first.",
+                    Branch = branch,
+                });
+            }
+
+            var remote = repo.Network.Remotes[GithubRemoteName]
+                         ?? repo.Network.Remotes.Add(GithubRemoteName, url);
+            if (!string.Equals(remote.Url, url, StringComparison.OrdinalIgnoreCase))
+                repo.Network.Remotes.Update(GithubRemoteName, r => r.Url = url);
+
+            // Push current HEAD tip to remote branch proj/{user}/{slug} without force.
+            var pushRef = $"{repo.Head.Tip.Sha}:refs/heads/{branch}";
+            var options = new PushOptions
+            {
+                CredentialsProvider = (_, _, _) => new UsernamePasswordCredentials
+                {
+                    Username = string.IsNullOrWhiteSpace(_git.TokenUsername) ? "x-access-token" : _git.TokenUsername,
+                    Password = token,
+                },
+            };
+
+            try
+            {
+                repo.Network.Push(remote, pushRef, options);
+                var historyUrl = BuildGitHubHistoryUrl(url, branch);
+                _logger.LogInformation(
+                    "Pushed project {Id} to {Remote} branch {Branch} @ {Sha}",
+                    projectId, url, branch, repo.Head.Tip.Sha);
+                return Task.FromResult(new GitPushResult
+                {
+                    Success = true,
+                    Message = "Pushed project package to remote (video excluded).",
+                    Branch = branch,
+                    HistoryUrl = historyUrl,
+                    CommitHash = repo.Head.Tip.Sha,
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Push failed for project {Id}", projectId);
+                return Task.FromResult(new GitPushResult
+                {
+                    Success = false,
+                    Message = ex.Message,
+                    Branch = branch,
+                    CommitHash = repo.Head.Tip?.Sha,
+                });
+            }
+        }
+
+        public static string BuildRemoteBranchName(string projectId, string? prefix = null)
+        {
+            var p = string.IsNullOrWhiteSpace(prefix) ? "proj/" : prefix.Trim();
+            if (!p.EndsWith('/')) p += "/";
+            var id = (projectId ?? "").Trim().Trim('/').Replace('\\', '/');
+            // Branch names: allow slash for user/slug (Git supports hierarchical refs)
+            var safe = new string(id.Select(c =>
+                char.IsAsciiLetterOrDigit(c) || c is '/' or '_' or '-' or '.' ? c : '-').ToArray());
+            while (safe.Contains("//", StringComparison.Ordinal))
+                safe = safe.Replace("//", "/", StringComparison.Ordinal);
+            return p + safe.Trim('/');
+        }
+
+        /// <summary>Best-effort commits URL for github.com remotes.</summary>
+        public static string? BuildGitHubHistoryUrl(string repoUrl, string branch)
+        {
+            try
+            {
+                var u = repoUrl.Trim();
+                if (u.EndsWith(".git", StringComparison.OrdinalIgnoreCase))
+                    u = u[..^4];
+                if (u.StartsWith("git@github.com:", StringComparison.OrdinalIgnoreCase))
+                    u = "https://github.com/" + u["git@github.com:".Length..];
+                if (!u.Contains("github.com", StringComparison.OrdinalIgnoreCase))
+                    return null;
+                return $"{u.TrimEnd('/')}/commits/{branch}";
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        /// <summary>Public entry for create/fork — init repo + video gitignore.</summary>
+        public static void EnsureRepositoryAt(string projectPath) => EnsureRepository(projectPath);
 
         /// <summary>
         /// Initializes a standalone Git repository at <paramref name="projectPath"/> if one doesn't

@@ -4,6 +4,8 @@ using System.Linq;
 using System.Threading.Tasks;
 using LibGit2Sharp;
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Options;
+using PageToMovie.Core.Options;
 using PageToMovie.Engine;
 using Xunit;
 
@@ -23,6 +25,77 @@ namespace PageToMovie.Tests
             try { Directory.Delete(dir, true); } catch { /* best effort on Windows file locks */ }
         }
 
+        private static ProjectGitRepositoryService NewService(GitOptions? git = null)
+        {
+            if (git is null)
+                return new ProjectGitRepositoryService(NullLogger<ProjectGitRepositoryService>.Instance);
+            var opts = Options.Create(new PageToMovieOptions { Git = git });
+            return new ProjectGitRepositoryService(NullLogger<ProjectGitRepositoryService>.Instance, opts);
+        }
+
+        [Fact]
+        public void BuildRemoteBranchName_uses_prefix_and_composite_id()
+        {
+            Assert.Equal("proj/alice/Buster", ProjectGitRepositoryService.BuildRemoteBranchName("alice/Buster"));
+            Assert.Equal("proj/alice/Buster", ProjectGitRepositoryService.BuildRemoteBranchName("alice/Buster", "proj/"));
+            Assert.Equal("backup/flat", ProjectGitRepositoryService.BuildRemoteBranchName("flat", "backup"));
+        }
+
+        [Fact]
+        public void BuildGitHubHistoryUrl_builds_commits_link()
+        {
+            var url = ProjectGitRepositoryService.BuildGitHubHistoryUrl(
+                "https://github.com/PageToMovie/Projects.git", "proj/alice/Buster");
+            Assert.Equal("https://github.com/PageToMovie/Projects/commits/proj/alice/Buster", url);
+        }
+
+        [Fact]
+        public async Task PushProjectAsync_fails_clearly_when_git_backup_disabled()
+        {
+            var dir = NewTempDir("ptm_git_push");
+            try
+            {
+                File.WriteAllText(Path.Combine(dir, "project.json"), """{"id":"Demo"}""");
+                var service = NewService(new GitOptions { Enabled = false });
+                await service.CommitProjectStateAsync(dir, "Alice", "Initial");
+
+                var res = await service.PushProjectAsync(dir, "alice/Demo");
+
+                Assert.False(res.Success);
+                Assert.Contains("not enabled", res.Message, StringComparison.OrdinalIgnoreCase);
+            }
+            finally
+            {
+                DeleteDir(dir);
+            }
+        }
+
+        [Fact]
+        public async Task PushProjectAsync_fails_when_remote_not_configured()
+        {
+            var dir = NewTempDir("ptm_git_push2");
+            try
+            {
+                File.WriteAllText(Path.Combine(dir, "project.json"), """{"id":"Demo"}""");
+                var service = NewService(new GitOptions
+                {
+                    Enabled = true,
+                    ProjectsRepoUrl = "",
+                    Token = "",
+                });
+                await service.CommitProjectStateAsync(dir, "Alice", "Initial");
+
+                var res = await service.PushProjectAsync(dir, "alice/Demo");
+
+                Assert.False(res.Success);
+                Assert.Contains("ProjectsRepoUrl", res.Message, StringComparison.OrdinalIgnoreCase);
+            }
+            finally
+            {
+                DeleteDir(dir);
+            }
+        }
+
         [Fact]
         public async Task CommitProjectStateAsync_creates_a_real_commit()
         {
@@ -30,7 +103,7 @@ namespace PageToMovie.Tests
             try
             {
                 File.WriteAllText(Path.Combine(dir, "project.json"), """{"id":"Demo"}""");
-                var service = new ProjectGitRepositoryService(NullLogger<ProjectGitRepositoryService>.Instance);
+                var service = NewService();
 
                 var info = await service.CommitProjectStateAsync(dir, "Alice", "Initial project state");
 
@@ -57,7 +130,7 @@ namespace PageToMovie.Tests
             try
             {
                 File.WriteAllText(Path.Combine(dir, "project.json"), """{"id":"Demo"}""");
-                var service = new ProjectGitRepositoryService(NullLogger<ProjectGitRepositoryService>.Instance);
+                var service = NewService();
 
                 var first = await service.CommitProjectStateAsync(dir, "Alice", "Initial");
                 var second = await service.CommitProjectStateAsync(dir, "Alice", "Nothing changed");
@@ -82,7 +155,7 @@ namespace PageToMovie.Tests
                 File.WriteAllText(Path.Combine(dir, "project.json"), """{"id":"Demo"}""");
                 File.WriteAllText(Path.Combine(dir, "assets", "video", "scene_01_clip_01.mp4"), "fake video bytes");
 
-                var service = new ProjectGitRepositoryService(NullLogger<ProjectGitRepositoryService>.Instance);
+                var service = NewService();
                 await service.CommitProjectStateAsync(dir, "Alice", "Initial");
 
                 using var repo = new Repository(dir);
@@ -102,7 +175,7 @@ namespace PageToMovie.Tests
             var parent = NewTempDir("ptm_parent");
             try
             {
-                var service = new ProjectGitRepositoryService(NullLogger<ProjectGitRepositoryService>.Instance);
+                var service = NewService();
                 var res = await service.SyncForkFromOriginAsync(fork, parent);
 
                 Assert.False(res.Success);
@@ -122,7 +195,7 @@ namespace PageToMovie.Tests
             var parent = NewTempDir("ptm_parent");
             try
             {
-                var service = new ProjectGitRepositoryService(NullLogger<ProjectGitRepositoryService>.Instance);
+                var service = NewService();
 
                 File.WriteAllText(Path.Combine(parent, "parent_only.txt"), "from parent");
                 await service.CommitProjectStateAsync(parent, "Owner", "Parent update");
@@ -151,7 +224,7 @@ namespace PageToMovie.Tests
             var parent = NewTempDir("ptm_parent");
             try
             {
-                var service = new ProjectGitRepositoryService(NullLogger<ProjectGitRepositoryService>.Instance);
+                var service = NewService();
 
                 File.WriteAllText(Path.Combine(parent, "shared.txt"), "parent version");
                 await service.CommitProjectStateAsync(parent, "Owner", "Parent edit");

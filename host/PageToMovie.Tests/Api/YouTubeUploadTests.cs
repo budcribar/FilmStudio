@@ -24,9 +24,13 @@ public class YouTubeUploadTests : IClassFixture<PageToMovieApiFactory>, IAsyncLi
 
     public async Task InitializeAsync()
     {
-        _projectId = "YtSmoke_" + Guid.NewGuid().ToString("N")[..8];
-        await _client.PostAsJsonAsync("/api/projects", new { name = _projectId, title = "YT" });
-        await _client.PostAsync($"/api/projects/{Uri.EscapeDataString(_projectId)}/activate", null);
+        var slug = "YtSmoke_" + Guid.NewGuid().ToString("N")[..8];
+        var create = await _client.PostAsJsonAsync("/api/projects", new { name = slug, title = "YT" });
+        Assert.True(create.IsSuccessStatusCode, await create.Content.ReadAsStringAsync());
+        var json = await create.Content.ReadFromJsonAsync<System.Text.Json.JsonElement>();
+        _projectId = json.GetProperty("active").GetProperty("id").GetString() ?? slug;
+        var act = await _client.PostAsync($"/api/projects/{Uri.EscapeDataString(_projectId)}/activate", null);
+        Assert.True(act.IsSuccessStatusCode, await act.Content.ReadAsStringAsync());
     }
 
     public Task DisposeAsync() => Task.CompletedTask;

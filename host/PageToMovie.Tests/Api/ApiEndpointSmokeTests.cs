@@ -24,33 +24,15 @@ public class ApiEndpointSmokeTests : IClassFixture<PageToMovieApiFactory>, IAsyn
 
     public async Task InitializeAsync()
     {
-        _projectId = "ApiSmoke_" + Guid.NewGuid().ToString("N")[..8];
-        var create = await _client.PostAsJsonAsync("/api/projects", new { name = _projectId, title = "Smoke" });
-        // create may 200 or conflict if re-run
-        if (!create.IsSuccessStatusCode && create.StatusCode != HttpStatusCode.Conflict)
-        {
-            var body = await create.Content.ReadAsStringAsync();
-            // Some hosts require different body shape — try activate path after manual folder
-            if (!create.IsSuccessStatusCode)
-            {
-                // Ensure project dir exists via store by re-posting minimal
-                Assert.True(create.IsSuccessStatusCode,
-                    $"Create project failed {(int)create.StatusCode}: {body}");
-            }
-        }
+        var slug = "ApiSmoke_" + Guid.NewGuid().ToString("N")[..8];
+        var create = await _client.PostAsJsonAsync("/api/projects", new { name = slug, title = "Smoke" });
+        Assert.True(create.IsSuccessStatusCode, await create.Content.ReadAsStringAsync());
+        using var createDoc = JsonDocument.Parse(await create.Content.ReadAsStringAsync());
+        _projectId = createDoc.RootElement.GetProperty("active").GetProperty("id").GetString()
+                     ?? slug;
 
         var act = await _client.PostAsync($"/api/projects/{Uri.EscapeDataString(_projectId)}/activate", null);
-        // activate may fail if create failed — seed dir
-        if (!act.IsSuccessStatusCode)
-        {
-            var dir = Path.Combine(_factory.WorkspaceRoot, "projects", _projectId);
-            Directory.CreateDirectory(dir);
-            await File.WriteAllTextAsync(Path.Combine(dir, "project.json"),
-                $$"""{"id":"{{_projectId}}","label":"Smoke"}""");
-            await File.WriteAllTextAsync(Path.Combine(dir, "pipeline_config.json"),
-                """{"blueprint_file":"blueprint.clips.grok.json","model_name":"grok-imagine-video","resolution":"480p"}""");
-            act = await _client.PostAsync($"/api/projects/{Uri.EscapeDataString(_projectId)}/activate", null);
-        }
+        Assert.True(act.IsSuccessStatusCode, await act.Content.ReadAsStringAsync());
     }
 
     public Task DisposeAsync() => Task.CompletedTask;
