@@ -242,6 +242,65 @@ public class CastFromScreenplayServiceTests
         Assert.Contains("Daddy", candidates, StringComparer.OrdinalIgnoreCase);
         Assert.Contains("Mom", candidates, StringComparer.OrdinalIgnoreCase);
         Assert.Contains("Narrator", candidates, StringComparer.OrdinalIgnoreCase);
+        // Scene-heading places and stage verbs must never become cast candidates
+        Assert.DoesNotContain("Backyard", candidates, StringComparer.OrdinalIgnoreCase);
+        Assert.DoesNotContain("Bedroom", candidates, StringComparer.OrdinalIgnoreCase);
+        Assert.DoesNotContain("Day", candidates, StringComparer.OrdinalIgnoreCase);
+        Assert.DoesNotContain("Night", candidates, StringComparer.OrdinalIgnoreCase);
+        Assert.DoesNotContain("Bounds", candidates, StringComparer.OrdinalIgnoreCase);
+        Assert.DoesNotContain("Leaps", candidates, StringComparer.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void DiscoverCandidateNames_ignores_slugline_locations_and_action_verbs()
+    {
+        const string fountain = """
+            INT. KITCHEN - DAY
+
+            BUSTER LEAPS onto the table. BOUNDS OUT of the room.
+
+            EXT. HALL - NIGHT
+
+            MOMMA
+            Come back!
+            """;
+
+        var candidates = CastFromScreenplayService.DiscoverCandidateNames(fountain, bookText: null);
+        Assert.Contains("Buster", candidates, StringComparer.OrdinalIgnoreCase);
+        Assert.Contains("Momma", candidates, StringComparer.OrdinalIgnoreCase);
+        Assert.DoesNotContain("Kitchen", candidates, StringComparer.OrdinalIgnoreCase);
+        Assert.DoesNotContain("Hall", candidates, StringComparer.OrdinalIgnoreCase);
+        Assert.DoesNotContain("Leaps", candidates, StringComparer.OrdinalIgnoreCase);
+        Assert.DoesNotContain("Bounds", candidates, StringComparer.OrdinalIgnoreCase);
+        Assert.DoesNotContain("Out", candidates, StringComparer.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void ScrubFalseCastSeeds_removes_places_and_keeps_real_cast()
+    {
+        const string fountain = """
+            EXT. BACKYARD - DAY
+            BUSTER runs.
+            INT. KITCHEN - NIGHT
+            MOMMA
+            Dinner!
+            """;
+        var seeds = new Dictionary<string, object?>
+        {
+            ["Character_Buster"] = new Dictionary<string, object?> { ["canonical_given_name"] = "Buster" },
+            ["Character_Momma"] = new Dictionary<string, object?> { ["canonical_given_name"] = "Momma" },
+            ["Character_Backyard"] = new Dictionary<string, object?> { ["canonical_given_name"] = "Backyard" },
+            ["Character_Kitchen"] = new Dictionary<string, object?> { ["canonical_given_name"] = "Kitchen" },
+            ["Character_Leaps"] = new Dictionary<string, object?> { ["canonical_given_name"] = "Leaps" },
+        };
+
+        var removed = CastFromScreenplayService.ScrubFalseCastSeeds(seeds, fountain, "Buster the dog. Momma smiles.");
+        Assert.True(removed >= 3);
+        Assert.True(seeds.ContainsKey("Character_Buster"));
+        Assert.True(seeds.ContainsKey("Character_Momma"));
+        Assert.False(seeds.ContainsKey("Character_Backyard"));
+        Assert.False(seeds.ContainsKey("Character_Kitchen"));
+        Assert.False(seeds.ContainsKey("Character_Leaps"));
     }
 
     [Fact]
@@ -261,6 +320,24 @@ public class CastFromScreenplayServiceTests
         Assert.Equal(2, added);
         Assert.True(seeds.ContainsKey("Character_Buster"));
         Assert.True(seeds.ContainsKey("Character_Daddy"));
+    }
+
+    [Fact]
+    public void EnsureDiscoveredCastMembers_does_not_force_locations()
+    {
+        var seeds = new Dictionary<string, object?>
+        {
+            ["Character_Buster"] = new Dictionary<string, object?> { ["canonical_given_name"] = "Buster" },
+        };
+        var added = CastFromScreenplayService.EnsureDiscoveredCastMembers(
+            seeds,
+            new[] { "Kitchen", "Backyard", "Leaps", "Buster" },
+            bookText: "Buster the dog",
+            fountainText: "INT. KITCHEN - DAY\nBUSTER runs.");
+        Assert.Equal(0, added);
+        Assert.False(seeds.ContainsKey("Character_Kitchen"));
+        Assert.False(seeds.ContainsKey("Character_Backyard"));
+        Assert.False(seeds.ContainsKey("Character_Leaps"));
     }
 
 
