@@ -162,7 +162,7 @@ public sealed class Stage2PlannerAutomationTests
         Assert.Equal("extend_previous", updatedClips[2]["veo_continuation_source"]);
     }
 
-    [Fact]
+    [Fact(Skip = "Test relies on a local hardcoded path")]
     public void CoalesceSilentPreludeBeats_TellTaleHeartScene2_CoalescesClip1IntoFrame1VO()
     {
         var fountainPath = @"c:\Users\budcr\source\repos\PageToMovie\projects\TellTaleHeartV7\source\screenplay.fountain";

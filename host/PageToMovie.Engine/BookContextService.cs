@@ -26,10 +26,19 @@ public static class BookContextService
         @"\[\[\s*page\s+(\d+)\s*\]\]",
         RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
+    private static readonly Regex SceneStartRegex = new(
+        @"^(INT\.?\/EXT\.?|INT\/EXT|I\.?\/E\.?|INT\.?|EXT\.?|EST\.?)(\s|\.|$)",
+        RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
+    private static readonly Regex WordTokenRegex = new(
+        @"[a-z]{3,}",
+        RegexOptions.Compiled);
+
     public sealed class BookPage
     {
         public int PageNumber { get; init; }
         public string Text { get; init; } = "";
+        public List<string>? Tokens { get; set; }
     }
 
     public sealed class BookContextResult
@@ -210,9 +219,6 @@ public static class BookContextService
         var start = sceneStartLine1Based - 1;
         if (start >= lines.Length) return "";
 
-        var sceneStart = new Regex(
-            @"^(INT\.?\/EXT\.?|INT\/EXT|I\.?\/E\.?|INT\.?|EXT\.?|EST\.?)(\s|\.|$)",
-            RegexOptions.IgnoreCase);
         var sb = new StringBuilder();
         for (var i = start + 1; i < lines.Length; i++)
         {
@@ -223,7 +229,7 @@ public static class BookContextService
                 continue;
             }
             // Next scene heading
-            if (sceneStart.IsMatch(t) ||
+            if (SceneStartRegex.IsMatch(t) ||
                 (t.StartsWith('.') && t.Length > 1 && char.IsLetterOrDigit(t[1])))
                 break;
             if (t.StartsWith('#')) break;
@@ -248,7 +254,10 @@ public static class BookContextService
         foreach (var page in pages)
         {
             if (string.IsNullOrWhiteSpace(page.Text)) continue;
-            var pageTokens = Tokenize(page.Text);
+
+            page.Tokens ??= Tokenize(page.Text);
+            var pageTokens = page.Tokens;
+
             var set = new HashSet<string>(pageTokens, StringComparer.OrdinalIgnoreCase);
             var score = tokens.Count(t => set.Contains(t));
             // Bonus for longer shared words
@@ -261,7 +270,7 @@ public static class BookContextService
 
     private static List<string> Tokenize(string text)
     {
-        return Regex.Matches(text.ToLowerInvariant(), @"[a-z]{3,}")
+        return WordTokenRegex.Matches(text.ToLowerInvariant())
             .Select(m => m.Value)
             .Where(w => w is not ("the" or "and" or "for" or "with" or "that" or "this" or "from" or "have" or "was" or "are"))
             .Distinct()
