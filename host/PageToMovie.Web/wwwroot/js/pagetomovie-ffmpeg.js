@@ -68,12 +68,14 @@ window.PageToMovieFfmpeg = {
                 });
 
                 reportProgress(onProgress, 5, "Loading ffmpeg engine…");
-                // Simple local paths work because the server sends COOP/COEP headers,
-                // enabling crossOriginIsolated = true and SharedArrayBuffer support.
+                // coreURL and wasmURL resolve fine as root-relative paths.
+                // classWorkerURL MUST be an absolute URL: when ffmpeg.load() creates its internal
+                // blob worker, relative paths are resolved against blob: (not https:) and the
+                // browser then throws SecurityError: 'file:////js/...' cannot be accessed from https origin.
                 await ffmpeg.load({
                     coreURL: self._assets.coreJs,
                     wasmURL: self._assets.wasmJs,
-                    classWorkerURL: self._assets.workerJs,
+                    classWorkerURL: window.location.origin + self._assets.workerJs,
                 });
 
                 self._ffmpeg = ffmpeg;
