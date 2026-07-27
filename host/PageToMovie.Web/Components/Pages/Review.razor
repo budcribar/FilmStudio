@@ -1034,7 +1034,7 @@ else if (_activeTab == "share")
                 <button type="button" class="btn btn-primary px-4" data-testid="review-save-confirm"
                         disabled="@(_busy || (_saveDestination == "youtube" && _youTubeStatus?.Connected != true) || (_saveDestination == "demo" && !_demoAcceptedGuidelines))"
                         @onclick="ConfirmSaveAsync">
-                    @(_saveDestination == "youtube" ? "Upload to YouTube" : "Submit for review")
+                    @(_saveDestination == "youtube" ? "Upload to YouTube" : "Publish to Demo Gallery")
                 </button>
             </div>
         </div>
@@ -2259,6 +2259,7 @@ else if (_activeTab == "share")
                     if (pub?.Ok == true)
                     {
                         _showSaveDialog = false;
+                        _activeTab = "review";
                         _message = pub.Message
                                    ?? $"“{pub.Demo?.Title ?? title}” published to gallery.";
                         return;
@@ -2281,6 +2282,7 @@ else if (_activeTab == "share")
 
             var msg = res.TryGetProperty("message", out var mEl) ? mEl.GetString() : null;
             _showSaveDialog = false;
+            _activeTab = "review";
             _message = msg
                        ?? $"“{publishedTitle}” published to gallery.";
         }
