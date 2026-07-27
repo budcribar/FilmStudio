@@ -247,4 +247,10 @@ public sealed class ClipSidecarService
 
         return convertedCount;
     }
+
+    /// <summary>
+    /// Alias for ConvertProjectClipsToNewFormatAsync for backward compatibility.
+    /// </summary>
+    public Task<int> EnsureAllSidecarsExistAsync(string projectDir, CancellationToken ct = default) =>
+        ConvertProjectClipsToNewFormatAsync(projectDir, ct);
 }

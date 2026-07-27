@@ -130,6 +130,7 @@ builder.Services.AddHostedService<ServerMediaPruningService>();
 builder.Services.AddSingleton<MediaRegistryService>();
 builder.Services.AddSingleton<MediaProxyTicketStore>();
 builder.Services.AddSingleton<ClipSidecarService>();
+builder.Services.AddSingleton<ProjectMigrationService>();
 builder.Services.AddSingleton<ProjectArchiveService>();
 builder.Services.AddSingleton<YouTubeAuthService>();
 builder.Services.AddSingleton<DemoYouTubePublisherService>();

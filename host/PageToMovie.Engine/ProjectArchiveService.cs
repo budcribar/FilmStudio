@@ -25,20 +25,31 @@ public sealed class ProjectArchiveService
 
     private readonly ProjectStore _projects;
     private readonly ClipSidecarService? _sidecars;
+    private readonly ProjectMigrationService? _migrations;
     private readonly ILogger<ProjectArchiveService> _log;
 
     public ProjectArchiveService(
         ProjectStore projects,
         ClipSidecarService sidecars,
+        ProjectMigrationService migrations,
         ILogger<ProjectArchiveService>? log = null)
     {
         _projects = projects;
         _sidecars = sidecars;
+        _migrations = migrations;
         _log = log ?? Microsoft.Extensions.Logging.Abstractions.NullLogger<ProjectArchiveService>.Instance;
     }
 
+    public ProjectArchiveService(
+        ProjectStore projects,
+        ClipSidecarService sidecars,
+        ILogger<ProjectArchiveService>? log)
+        : this(projects, sidecars, null!, log)
+    {
+    }
+
     public ProjectArchiveService(ProjectStore projects, ILogger<ProjectArchiveService>? log)
-        : this(projects, null!, log)
+        : this(projects, null!, null!, log)
     {
     }
 
@@ -57,13 +68,22 @@ public sealed class ProjectArchiveService
         var fileName = $"PageToMovie_{id}_{stamp}.zip";
         var tempPath = Path.Combine(Path.GetTempPath(), $"ptm-export-{Guid.NewGuid():N}.zip");
 
-        if (_sidecars is not null)
+        if (_migrations is not null)
         {
             try
             {
-                var converted = await _sidecars.ConvertProjectClipsToNewFormatAsync(projectDir, ct).ConfigureAwait(false);
-                if (converted > 0)
-                    _log.LogInformation("Export: converted {Count} clip(s) to long-term format with sidecars for {ProjectId}", converted, id);
+                await _migrations.MigrateIfNeededAsync(projectDir, ct).ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                _log.LogWarning(ex, "Export: schema migration failed for {ProjectId}", id);
+            }
+        }
+        else if (_sidecars is not null)
+        {
+            try
+            {
+                await _sidecars.ConvertProjectClipsToNewFormatAsync(projectDir, ct).ConfigureAwait(false);
             }
             catch (Exception ex)
             {
@@ -203,6 +223,18 @@ public sealed class ProjectArchiveService
 
             // Ensure project.json id and optional ownerUserId match
             await EnsureProjectJsonIdAsync(dest, id, targetUserId, ct).ConfigureAwait(false);
+
+            if (_migrations is not null)
+            {
+                try
+                {
+                    await _migrations.MigrateIfNeededAsync(dest, ct).ConfigureAwait(false);
+                }
+                catch (Exception ex)
+                {
+                    _log.LogWarning(ex, "Import: schema migration failed for {ProjectId}", id);
+                }
+            }
 
             _projects.InvalidateReadCaches(null);
             var info = await _projects.ActivateAsync(id, ct).ConfigureAwait(false);
