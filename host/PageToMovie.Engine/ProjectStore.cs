@@ -2674,8 +2674,17 @@ public sealed class ProjectStore
                 var fileName = $"scene_{sceneNumber:D2}_clip_{cn:D2}.mp4";
                 var onDisk = ClipOnDisk(videoIndex, sceneNumber, cn);
                 long size = 0;
-                if (onDisk && videoIndex.TryGetValue(fileName, out var sz))
-                    size = sz;
+                if (onDisk)
+                {
+                    if (videoIndex.TryGetValue(fileName, out var sz))
+                        size = sz;
+                    else
+                    {
+                        var prefix = $"scene_{sceneNumber:D2}_clip_{cn:D2}_take_";
+                        var takeMatch = videoIndex.FirstOrDefault(kv => kv.Key.StartsWith(prefix, StringComparison.OrdinalIgnoreCase) && kv.Key.EndsWith(".mp4", StringComparison.OrdinalIgnoreCase));
+                        if (!string.IsNullOrEmpty(takeMatch.Key)) size = takeMatch.Value;
+                    }
+                }
 
                 var dialogue = "";
                 string? speaker = null;
@@ -2818,12 +2827,27 @@ public sealed class ProjectStore
 
     public string? ResolveClipVideoPath(string projectId, int sceneNumber, int clipNumber)
     {
-        var path = Path.Combine(
+        var videoDir = Path.Combine(
             GetProjectDir(projectId),
             "assets",
-            "video",
-            $"scene_{sceneNumber:D2}_clip_{clipNumber:D2}.mp4");
-        return File.Exists(path) && new FileInfo(path).Length >= 1024 ? path : null;
+            "video");
+
+        if (!Directory.Exists(videoDir)) return null;
+
+        // 1. Direct match: scene_01_clip_01.mp4
+        var direct = Path.Combine(videoDir, $"scene_{sceneNumber:D2}_clip_{clipNumber:D2}.mp4");
+        if (File.Exists(direct) && new FileInfo(direct).Length >= 1024)
+            return direct;
+
+        // 2. Take match: scene_01_clip_01_take_*.mp4 (newest valid take file)
+        var pattern = $"scene_{sceneNumber:D2}_clip_{clipNumber:D2}_take_*.mp4";
+        var latestTake = new DirectoryInfo(videoDir)
+            .EnumerateFiles(pattern)
+            .Where(fi => fi.Length >= 1024)
+            .OrderByDescending(fi => fi.LastWriteTimeUtc)
+            .FirstOrDefault();
+
+        return latestTake?.FullName;
     }
 
     /// <summary>
