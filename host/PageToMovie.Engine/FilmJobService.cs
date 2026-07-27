@@ -3030,7 +3030,7 @@ public sealed class FilmJobService
             }
 
             resolution ??= NormalizeResolution(
-                string.IsNullOrWhiteSpace(_opts.DefaultResolution) ? "720p" : _opts.DefaultResolution);
+                string.IsNullOrWhiteSpace(_opts.DefaultResolution) ? "480p" : _opts.DefaultResolution);
         }
 
         var locked = await GetLockedResolutionAsync(projectId, ct).ConfigureAwait(false);

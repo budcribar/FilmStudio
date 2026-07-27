@@ -1187,7 +1187,7 @@ else
     private bool _showFilters;
 
     /// <summary>Video gen resolution (defaults from Configuration).</summary>
-    private string _genResolution = "720p";
+    private string _genResolution = "480p";
     /// <summary>Resolution already used by this project's on-disk clips, if consistent — null when unset.</summary>
     private string? _resolutionLock;
     private bool ResolutionLocked => !string.IsNullOrWhiteSpace(_resolutionLock) || (_scenes is not null && _scenes.Sum(s => s.ClipsOnDisk) > 0);
