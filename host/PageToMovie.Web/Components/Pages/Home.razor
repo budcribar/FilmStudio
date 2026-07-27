@@ -204,7 +204,7 @@
                                             🔍 Review Diff
                                         </a>
                                         <button type="button"
-                                                class="btn btn-sm btn-outline-info text-white flex-shrink-0"
+                                                class="btn btn-sm btn-outline-light flex-shrink-0"
                                                 disabled="@_busy"
                                                 @onclick="() => SyncOriginAsync(id, p.ParentProjectId!)">
                                             🔄 Sync Origin
@@ -228,7 +228,7 @@
                                             Collaborate
                                         </button>
                                         <button type="button"
-                                                class="btn btn-sm btn-outline-success flex-shrink-0"
+                                                class="btn btn-sm btn-light flex-shrink-0"
                                                 data-testid="home-save-revision"
                                                 title="Save a revision of this project package (screenplay, cast, shot plan — not video)"
                                                 disabled="@_busy"
@@ -238,7 +238,7 @@
                                         @if (_historyUrls.TryGetValue(id, out var historyUrl) && !string.IsNullOrWhiteSpace(historyUrl))
                                         {
                                             <button type="button"
-                                                    class="btn btn-sm btn-outline-info text-white flex-shrink-0"
+                                                    class="btn btn-sm btn-light flex-shrink-0"
                                                     data-testid="home-view-history"
                                                     title="Open package history"
                                                     disabled="@_busy"
@@ -248,13 +248,13 @@
                                         }
                                         @if (_revisionHashes.TryGetValue(id, out var revHash) && !string.IsNullOrWhiteSpace(revHash))
                                         {
-                                            <span class="badge bg-secondary flex-shrink-0 font-monospace"
+                                            <span class="badge text-bg-light flex-shrink-0 font-monospace text-dark"
                                                   title="Last saved revision"
                                                   style="font-size: 0.7rem;">@ShortHash(revHash)</span>
                                         }
                                     }
                                     <button type="button"
-                                            class="btn btn-sm btn-outline-danger me-2 flex-shrink-0 @(active ? "border-light text-white" : null)"
+                                            class="btn btn-sm btn-outline-light me-2 flex-shrink-0"
                                             disabled="@_busy"
                                             @onclick="() => BeginDeleteAsync(id, p.Label ?? p.Title ?? id)">
                                         Delete

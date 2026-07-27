@@ -69,6 +69,8 @@ public sealed class AdminAuthService : IAdminAuthService
 
         if (username.Length < 3)
             return Fail("Username must be at least 3 characters long");
+        if (username.Contains('@', StringComparison.Ordinal))
+            return Fail("Choose a public handle (not an email). Use the email field for your address.");
         if (password.Length < 4)
             return Fail("Password must be at least 4 characters long");
         if (!UserDatabaseService.IsValidEmail(email))
@@ -196,8 +198,11 @@ public sealed class AdminAuthService : IAdminAuthService
         if (MatchesOperatorOverride(password))
             return IssueOperatorLogin();
 
-        // 1. Check SQLite database for user
-        var dbUser = _userDb.GetUserByUsernameAsync(username).GetAwaiter().GetResult();
+        // 1. Check SQLite database for user (username or email — session always stores public handle)
+        var dbUser = _userDb.GetUserByUsernameAsync(username).GetAwaiter().GetResult()
+                     ?? (username.Contains('@', StringComparison.Ordinal)
+                         ? _userDb.GetUserByEmailAsync(username).GetAwaiter().GetResult()
+                         : null);
         if (dbUser is not null)
         {
             if (dbUser.IsDisabled)
@@ -206,34 +211,37 @@ public sealed class AdminAuthService : IAdminAuthService
             var hash = UserDatabaseService.HashPassword(password);
             if (dbUser.PasswordHash == hash)
             {
+                // Public identity is always Username (handle), never email
+                var handle = string.IsNullOrWhiteSpace(dbUser.Username) ? dbUser.UserId : dbUser.Username.Trim();
+
                 if (!UserDatabaseService.IsEmailConfirmed(dbUser))
                 {
                     return new LoginResponse
                     {
                         Ok = false,
                         RequiresEmailConfirmation = true,
-                        UserId = dbUser.Username,
+                        UserId = handle,
                         Error = "Confirm your email before signing in. Check your inbox (or the API log in development).",
                     };
                 }
 
                 var userRoles = new List<string> { AppRoles.User };
                 if (string.Equals(dbUser.Role, "Admin", StringComparison.OrdinalIgnoreCase) ||
-                    string.Equals(username, _auth.AdminUsername, StringComparison.OrdinalIgnoreCase) ||
-                    string.Equals(username, OperatorUserId, StringComparison.OrdinalIgnoreCase))
+                    string.Equals(handle, _auth.AdminUsername, StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(handle, OperatorUserId, StringComparison.OrdinalIgnoreCase))
                 {
                     userRoles.Add(AppRoles.Admin);
                 }
 
                 var userHours = Math.Clamp(_auth.JwtHours, 1, 168);
                 var userExpires = DateTimeOffset.UtcNow.AddHours(userHours);
-                var userToken = IssueJwt(dbUser.Username, userRoles, userExpires);
+                var userToken = IssueJwt(handle, userRoles, userExpires);
 
                 return new LoginResponse
                 {
                     Ok = true,
                     Token = userToken,
-                    UserId = dbUser.Username,
+                    UserId = handle,
                     Roles = userRoles,
                     ExpiresAt = userExpires,
                 };

@@ -511,6 +511,41 @@ input[type="file"]:disabled::file-selector-button {
     color: #ffffff !important;
 }
 
+/*
+ * Active indigo row sets color:#fff !important on the whole item, which paints light
+ * buttons (btn-light / text-bg-light) as white-on-white. Restore readable contrast.
+ */
+.list-group-item.active .btn-light,
+.list-group-item.active .btn-light:hover:not(:disabled),
+.list-group-item.active .btn-light:focus,
+.list-group-item.active a.btn-light {
+    background-color: #ffffff !important;
+    border-color: #ffffff !important;
+    color: #1e1b4b !important; /* deep indigo text on white */
+}
+
+.list-group-item.active .btn-outline-light,
+.list-group-item.active .btn-outline-light:hover:not(:disabled) {
+    color: #ffffff !important;
+    border-color: rgba(255, 255, 255, 0.85) !important;
+    background-color: transparent !important;
+}
+
+.list-group-item.active .btn-outline-light:hover:not(:disabled) {
+    background-color: rgba(255, 255, 255, 0.15) !important;
+}
+
+.list-group-item.active .badge.text-bg-light,
+.list-group-item.active .badge.bg-light,
+.list-group-item.active .text-bg-light {
+    background-color: #ffffff !important;
+    color: #1e1b4b !important;
+}
+
+.list-group-item.active .form-select {
+    color: #ffffff !important;
+}
+
 /* Modals — Bootstrap defaults to a white modal-content background with
    near-black text, same white-background gap as .card/.table above.
    Never nest .modal-dialog inside .modal-backdrop: backdrop.show uses opacity

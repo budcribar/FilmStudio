@@ -154,21 +154,14 @@ public sealed class CharacterDesignService
                     "picture(s) from refs; using text description + shared costume plate only.");
         }
 
-        // Preferred / locked ref first so multi-image edit treats it as primary identity
-        if (preferredPath is not null && editRefs.Count > 0)
-        {
-            var prefInList = editRefs.FirstOrDefault(p =>
-                string.Equals(p, preferredPath, StringComparison.OrdinalIgnoreCase) ||
-                string.Equals(Path.GetFileName(p), preferredName, StringComparison.OrdinalIgnoreCase));
-            if (prefInList is not null)
-            {
-                editRefs.Remove(prefInList);
-                editRefs.Insert(0, prefInList);
-            }
-        }
+        // Keep operator-selected seed order. Do not promote preferred/locked over book plates
+        // when explicit SeedOrderKeys were sent (Characters UI ranks Book / Preferred / Option tiles).
 
         onProgress?.Invoke(
-            $"Seed mode={NormalizeSeedMode(opts.SeedMode)} · refs={editRefs.Count}/{maxRefs} · variants={n}");
+            $"Seed mode={NormalizeSeedMode(opts.SeedMode)} · refs={editRefs.Count}/{maxRefs} · variants={n}" +
+            (editRefs.Count > 0
+                ? $" · files={string.Join(",", editRefs.Select(Path.GetFileName))}"
+                : ""));
 
         // Resolve text for this generate, then AI-scrub (base look + literal) via prompt —
         // no special-case regex lists for pajamas / nicknames / etc.

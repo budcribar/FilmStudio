@@ -27,18 +27,41 @@
                         <div class="alert @(isError ? "alert-danger" : "alert-success") mb-3 py-2">@statusMessage</div>
                     }
 
-                    <div class="mb-3">
+                    <div class="mb-3 position-relative">
                         <label class="form-label" for="invite-handle">Handle</label>
                         <div class="input-group">
                             <span class="input-group-text">@@</span>
                             <input id="invite-handle"
                                    type="text"
                                    class="form-control"
-                                   placeholder="username"
+                                   placeholder="Start typing a handle…"
                                    autocomplete="off"
-                                   @bind="searchHandle"
-                                   @bind:event="oninput" />
+                                   value="@searchHandle"
+                                   @oninput="OnHandleInput" />
                         </div>
+                        @if (_searching)
+                        {
+                            <div class="form-text">Searching…</div>
+                        }
+                        else if (_suggestions.Count > 0)
+                        {
+                            <ul class="list-group position-absolute w-100 shadow mt-1"
+                                style="z-index: 20; max-height: 12rem; overflow-y: auto;">
+                                @foreach (var h in _suggestions)
+                                {
+                                    var bare = h.TrimStart('@');
+                                    <li class="list-group-item list-group-item-action py-2"
+                                        style="cursor: pointer;"
+                                        @onclick="() => PickHandle(bare)">
+                                        @h
+                                    </li>
+                                }
+                            </ul>
+                        }
+                        else if (_searchAttempted && searchHandle.Trim().Length >= 2 && !_searching)
+                        {
+                            <div class="form-text">No matching handles. You can still send by email.</div>
+                        }
                     </div>
 
                     <div class="mb-0">
@@ -50,7 +73,7 @@
                                autocomplete="email"
                                @bind="emailInput"
                                @bind:event="oninput" />
-                        <div class="form-text">Either handle or email is enough.</div>
+                        <div class="form-text">Use email if they don’t have a handle yet.</div>
                     </div>
                 </div>
                 <div class="modal-footer py-2">
@@ -77,13 +100,89 @@
     private string statusMessage = "";
     private bool isError;
     private bool isSending;
+    private bool _searching;
+    private bool _searchAttempted;
+    private List<string> _suggestions = new();
+    private int _searchSeq;
+    private CancellationTokenSource? _searchCts;
 
     private async Task Close()
     {
         statusMessage = "";
         isError = false;
+        searchHandle = "";
+        emailInput = "";
+        _suggestions.Clear();
+        _searchAttempted = false;
+        CancelSearch();
         if (OnClose.HasDelegate)
             await OnClose.InvokeAsync();
+    }
+
+    private void CancelSearch()
+    {
+        try { _searchCts?.Cancel(); } catch { /* */ }
+        _searchCts?.Dispose();
+        _searchCts = null;
+    }
+
+    private async Task OnHandleInput(ChangeEventArgs e)
+    {
+        searchHandle = e.Value?.ToString() ?? "";
+        _suggestions.Clear();
+        _searchAttempted = false;
+        await DebouncedSearchAsync();
+    }
+
+    private void PickHandle(string bare)
+    {
+        searchHandle = bare ?? "";
+        _suggestions.Clear();
+        _searchAttempted = false;
+        StateHasChanged();
+    }
+
+    private async Task DebouncedSearchAsync()
+    {
+        CancelSearch();
+        var q = searchHandle.Trim().TrimStart('@');
+        if (q.Length < 2)
+        {
+            _searching = false;
+            return;
+        }
+
+        var cts = new CancellationTokenSource();
+        _searchCts = cts;
+        var seq = ++_searchSeq;
+        _searching = true;
+        try
+        {
+            await Task.Delay(250, cts.Token);
+            if (seq != _searchSeq) return;
+            var found = await Engine.SearchUserHandlesAsync(q, cts.Token);
+            if (seq != _searchSeq) return;
+            _suggestions = found.ToList();
+            _searchAttempted = true;
+        }
+        catch (OperationCanceledException)
+        {
+            // newer keystroke
+        }
+        catch
+        {
+            if (seq == _searchSeq)
+            {
+                _suggestions.Clear();
+                _searchAttempted = true;
+            }
+        }
+        finally
+        {
+            if (seq == _searchSeq)
+                _searching = false;
+            await InvokeAsync(StateHasChanged);
+        }
     }
 
     private async Task SendInvite()
@@ -91,9 +190,10 @@
         isSending = true;
         statusMessage = "";
         isError = false;
+        _suggestions.Clear();
         try
         {
-            var handle = string.IsNullOrWhiteSpace(searchHandle) ? null : searchHandle.Trim();
+            var handle = string.IsNullOrWhiteSpace(searchHandle) ? null : searchHandle.Trim().TrimStart('@');
             var email = string.IsNullOrWhiteSpace(emailInput) ? null : emailInput.Trim();
             var res = await Engine.SendProjectInviteAsync(ProjectId, handle, email);
 
