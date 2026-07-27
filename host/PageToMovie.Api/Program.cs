@@ -131,6 +131,7 @@ builder.Services.AddSingleton<MediaRegistryService>();
 builder.Services.AddSingleton<MediaProxyTicketStore>();
 builder.Services.AddSingleton<ClipSidecarService>();
 builder.Services.AddSingleton<ProjectMigrationService>();
+builder.Services.AddSingleton<VolumeDiskTelemetryService>();
 builder.Services.AddSingleton<ProjectArchiveService>();
 builder.Services.AddSingleton<YouTubeAuthService>();
 builder.Services.AddSingleton<DemoYouTubePublisherService>();
@@ -643,11 +644,16 @@ app.MapGet("/api/admin/state", (
     AdminMetricsPushService metricsPush,
     HttpRequestMetrics httpMetrics,
     LoadSimLiveStore loadSimStore,
-    ProcessHistoryStore processHistory) =>
+    ProcessHistoryStore processHistory,
+    VolumeDiskTelemetryService diskTelemetry) =>
 {
     if (!user.IsAdmin)
         return Results.Json(new { ok = false, error = "admin role required" },
             statusCode: StatusCodes.Status403Forbidden);
+
+    diskTelemetry.RecordDailySnapshotIfNeeded();
+    var disk = diskTelemetry.GetDiskStatus();
+    var diskHistory = diskTelemetry.GetDiskHistory(30);
 
     var snap = metricsPush.BuildSnapshot();
     var traffic = httpMetrics.Snapshot();
@@ -664,6 +670,8 @@ app.MapGet("/api/admin/state", (
             workspace = store.WorkspaceRoot,
         },
         caller = new { userId = user.UserId, roles = user.Roles },
+        disk,
+        diskHistory,
         // Flatten common fields for Blazor DTO
         generatedAt = DateTimeOffset.UtcNow,
         process = snap.Process,

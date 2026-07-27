@@ -270,7 +270,7 @@
         </div>
 
         <div class="row g-3">
-            <div class="col-md-6 col-lg-4">
+            <div class="col-md-6 col-lg-3">
                 <div class="card h-100">
                     <div class="card-header">Process</div>
                     <div class="card-body small">
@@ -283,7 +283,7 @@
                     </div>
                 </div>
             </div>
-            <div class="col-md-6 col-lg-4">
+            <div class="col-md-6 col-lg-3">
                 <div class="card h-100">
                     <div class="card-header">Capacity</div>
                     <div class="card-body small">
@@ -301,7 +301,7 @@
                     </div>
                 </div>
             </div>
-            <div class="col-md-6 col-lg-4">
+            <div class="col-md-6 col-lg-3">
                 <div class="card h-100">
                     <div class="card-header">Projects</div>
                     <div class="card-body small">
@@ -315,7 +315,88 @@
                     </div>
                 </div>
             </div>
+            <div class="col-md-6 col-lg-3">
+                <div class="card h-100">
+                    <div class="card-header">Disk Space & Storage</div>
+                    <div class="card-body small">
+                        <div class="text-truncate" title="@(_state.Disk?.VolumePath ?? "/data")">
+                            Volume: <code class="small">@(_state.Disk?.VolumePath ?? "/data")</code>
+                        </div>
+                        <div>Total size: <strong>@(_state.Disk?.FormattedTotal ?? "—")</strong></div>
+                        <div>Used: <strong>@(_state.Disk?.FormattedUsed ?? "—")</strong> (@(_state.Disk?.UsedPercent ?? 0)%)</div>
+                        <div>Free left: <strong class="text-success">@(_state.Disk?.FormattedFree ?? "—")</strong></div>
+                        <div class="progress mt-2" style="height: 6px;">
+                            <div class="progress-bar @GetDiskProgressBarClass(_state.Disk?.UsedPercent ?? 0)"
+                                 role="progressbar"
+                                 style="width: @(Math.Min(100, Math.Max(0, _state.Disk?.UsedPercent ?? 0)))%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
+
+        @if (_state.DiskHistory is { Count: > 0 })
+        {
+            <div class="card mt-3">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span>Daily Storage Usage History (Railway Volume <code>@(_state.Disk?.VolumePath ?? "/data")</code>)</span>
+                    <span class="badge bg-secondary">@_state.DiskHistory.Count day(s) tracked</span>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover mb-0 small">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Used Space</th>
+                                    <th>Free Space</th>
+                                    <th>Total Capacity</th>
+                                    <th>Daily Usage Change</th>
+                                    <th>Usage %</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var snap in _state.DiskHistory)
+                                {
+                                    <tr>
+                                        <td><strong>@snap.SnapshotDate</strong></td>
+                                        <td>@snap.FormattedUsed</td>
+                                        <td><span class="text-muted">@snap.FormattedFree</span></td>
+                                        <td>@snap.FormattedTotal</td>
+                                        <td>
+                                            @if (string.IsNullOrWhiteSpace(snap.FormattedDailyChange))
+                                            {
+                                                <span class="text-muted">—</span>
+                                            }
+                                            else if (snap.DailyChangeBytes > 0)
+                                            {
+                                                <span class="text-danger fw-semibold">@snap.FormattedDailyChange</span>
+                                            }
+                                            else if (snap.DailyChangeBytes < 0)
+                                            {
+                                                <span class="text-success fw-semibold">@snap.FormattedDailyChange</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="text-muted">0 KB</span>
+                                            }
+                                        </td>
+                                        <td>
+                                            <div class="d-flex align-items-center gap-2">
+                                                <div class="progress flex-grow-1" style="height: 6px; min-width: 60px;">
+                                                    <div class="progress-bar @GetDiskProgressBarClass(snap.UsedPercent)" style="width: @(snap.UsedPercent)%"></div>
+                                                </div>
+                                                <span>@snap.UsedPercent%</span>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        }
 
         <div class="card mt-3">
             <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
@@ -965,6 +1046,13 @@
                 : null;
         }
     }
+
+    private static string GetDiskProgressBarClass(double pct) => pct switch
+    {
+        >= 90.0 => "bg-danger",
+        >= 75.0 => "bg-warning",
+        _ => "bg-success"
+    };
 
     private static string FormatUptime(long sec)
     {

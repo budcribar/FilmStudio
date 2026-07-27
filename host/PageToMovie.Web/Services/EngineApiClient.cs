@@ -2598,6 +2598,8 @@ public sealed class AdminStateDto
     public AdminJobsDto? Jobs { get; set; }
     public AdminProjectsDto? Projects { get; set; }
     public AdminCallerDto? Caller { get; set; }
+    public VolumeDiskStatusDto? Disk { get; set; }
+    public List<VolumeDiskSnapshotDto>? DiskHistory { get; set; }
     public List<AdminLockDto> Locks { get; set; } = new();
     public int ApiInFlight { get; set; }
     public int CapacityRejects { get; set; }
