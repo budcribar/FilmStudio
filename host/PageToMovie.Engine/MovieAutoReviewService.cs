@@ -60,6 +60,7 @@ public sealed class MovieAutoReviewService
         var path = ReportPath(report.ProjectId);
         Directory.CreateDirectory(Path.GetDirectoryName(path)!);
         File.WriteAllText(path, JsonSerializer.Serialize(report, JsonOpts) + "\n");
+        _projects.TriggerAutoGitCommit(report.ProjectId, $"Update full movie AI review report (Score: {report.OverallScore}/10)");
     }
 
     /// <summary>
