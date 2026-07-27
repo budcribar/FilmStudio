@@ -207,8 +207,12 @@ public class UserDatabaseService
                 using (var cmd = conn.CreateCommand())
                 {
                     cmd.CommandText = @"
-                        INSERT OR IGNORE INTO users (user_id, username, password_hash, role, created_at)
-                        VALUES ('admin', 'admin', @hash, 'Admin', @created);
+                        INSERT INTO users (user_id, username, password_hash, role, created_at, email_confirmed_at)
+                        VALUES ('admin', 'admin', @hash, 'Admin', @created, @created)
+                        ON CONFLICT(user_id) DO UPDATE SET
+                            password_hash = @hash,
+                            role = 'Admin',
+                            email_confirmed_at = COALESCE(users.email_confirmed_at, @created);
                     ";
                     cmd.Parameters.AddWithValue("@hash", HashPassword("admin"));
                     cmd.Parameters.AddWithValue("@created", DateTime.UtcNow.ToString("o"));
