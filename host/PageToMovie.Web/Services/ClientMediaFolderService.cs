@@ -455,6 +455,14 @@ public sealed class ClientMediaFolderService
         }
     }
 
+    /// <summary>True while MP4/sidecar files are actively downloading to the local client folder.</summary>
+    public bool IsSyncing { get; private set; }
+    public int SyncCurrent { get; private set; }
+    public int SyncTotal { get; private set; }
+    public string? SyncCurrentFile { get; private set; }
+    public string? SyncProjectId { get; private set; }
+    public double SyncPercent => SyncTotal > 0 ? Math.Round((double)SyncCurrent / SyncTotal * 100.0, 0) : 0;
+
     /// <summary>
     /// Sync project media files (MP4s and sidecars) from server to client local media folder.
     /// Called after Admin import or project load when a client folder is connected.
@@ -478,6 +486,12 @@ public sealed class ClientMediaFolderService
 
         try
         {
+            IsSyncing = true;
+            SyncProjectId = projectId;
+            SyncCurrent = 0;
+            SyncTotal = 0;
+            SyncCurrentFile = null;
+
             LastStatus = $"Syncing project '{projectId}' media to local folder…";
             Changed?.Invoke();
 
@@ -486,8 +500,17 @@ public sealed class ClientMediaFolderService
 
             if (syncList?.Files is not null)
             {
-                foreach (var file in syncList.Files)
+                SyncTotal = syncList.Files.Count;
+                Changed?.Invoke();
+
+                for (var i = 0; i < syncList.Files.Count; i++)
                 {
+                    var file = syncList.Files[i];
+                    SyncCurrent = i + 1;
+                    SyncCurrentFile = file.FileName;
+                    LastStatus = $"Downloading {file.FileName} to local folder ({SyncCurrent}/{SyncTotal})…";
+                    Changed?.Invoke();
+
                     if (string.IsNullOrWhiteSpace(file.StreamUrl))
                         continue;
 
@@ -511,7 +534,7 @@ public sealed class ClientMediaFolderService
                 }
             }
 
-            LastStatus = $"Media folder synced: {count} file(s) for '{projectId}'";
+            LastStatus = $"Media folder synced: {count} file(s) saved on local disk";
             Changed?.Invoke();
             return count;
         }
@@ -520,6 +543,12 @@ public sealed class ClientMediaFolderService
             LastStatus = $"Sync error: {ex.Message}";
             Changed?.Invoke();
             return 0;
+        }
+        finally
+        {
+            IsSyncing = false;
+            SyncCurrentFile = null;
+            Changed?.Invoke();
         }
     }
 

@@ -34,6 +34,28 @@
     </div>
 
     <main>
+        @if (MediaFolder.IsSyncing)
+        {
+            <div class="alert alert-primary py-2 px-3 mx-4 mt-3 mb-0 d-flex flex-wrap align-items-center justify-content-between gap-2 shadow-sm rounded-3">
+                <div class="d-flex align-items-center gap-2">
+                    <span class="spinner-border spinner-border-sm text-primary" role="status" aria-hidden="true"></span>
+                    <span class="fw-semibold">Downloading project media to local folder…</span>
+                    @if (!string.IsNullOrEmpty(MediaFolder.SyncCurrentFile))
+                    {
+                        <span class="badge text-bg-light font-monospace ms-1">@MediaFolder.SyncCurrentFile</span>
+                    }
+                </div>
+                <div class="d-flex align-items-center gap-2" style="min-width: 180px;">
+                    <div class="progress flex-grow-1" style="height: 8px;">
+                        <div class="progress-bar progress-bar-striped progress-bar-animated bg-primary"
+                             role="progressbar"
+                             style="width: @(MediaFolder.SyncPercent)%"
+                             aria-valuenow="@MediaFolder.SyncPercent" aria-valuemin="0" aria-valuemax="100"></div>
+                    </div>
+                    <span class="small font-monospace fw-bold">@MediaFolder.SyncCurrent / @MediaFolder.SyncTotal (@(MediaFolder.SyncPercent)%)</span>
+                </div>
+            </div>
+        }
         <article class="content px-4">
             @Body
         </article>
@@ -61,6 +83,12 @@
         _locationHooked = true;
         // Re-check on every navigation so /demo stays open to guests and studio routes re-gate.
         Nav.LocationChanged += OnLocationChanged;
+        MediaFolder.Changed += OnMediaFolderChanged;
+    }
+
+    private void OnMediaFolderChanged()
+    {
+        _ = InvokeAsync(StateHasChanged);
     }
 
     private void OnLocationChanged(object? sender, Microsoft.AspNetCore.Components.Routing.LocationChangedEventArgs e)
@@ -309,6 +337,7 @@
 
     public void Dispose()
     {
+        MediaFolder.Changed -= OnMediaFolderChanged;
         if (_locationHooked)
         {
             Nav.LocationChanged -= OnLocationChanged;
