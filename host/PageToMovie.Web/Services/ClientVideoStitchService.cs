@@ -34,20 +34,11 @@ public sealed class ClientVideoStitchService
         CancellationToken ct = default)
     {
         var urls = new List<string>();
-        foreach (var sn in sceneNumbers)
+        foreach (var sn in sceneNumbers.Distinct().OrderBy(x => x))
         {
             ct.ThrowIfCancellationRequested();
-            var summary = sceneList?.FirstOrDefault(s => s.SceneNumber == sn);
-            var compositeOk = summary?.CompositeExists == true
-                              && (staleScenes is null || !staleScenes.Contains(sn));
 
-            if (compositeOk)
-            {
-                urls.Add(_engine.CompositeVideoUrl(projectId, sn));
-                continue;
-            }
-
-            // Need clip list (summary alone has counts only)
+            // Prefer individual clip files for precision so updated clips are never overridden by old composites
             SceneDetail? detail = null;
             try
             {
@@ -76,9 +67,12 @@ public sealed class ClientVideoStitchService
                 continue;
             }
 
-            // Last resort: composite may exist but be marked stale — still playable for preview
+            // Fallback to scene composite only if no individual clips are found on disk
+            var summary = sceneList?.FirstOrDefault(s => s.SceneNumber == sn);
             if (summary?.CompositeExists == true || detail?.CompositeExists == true)
+            {
                 urls.Add(_engine.CompositeVideoUrl(projectId, sn));
+            }
         }
 
         return urls;

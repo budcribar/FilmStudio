@@ -2299,14 +2299,9 @@ else
     /// <summary>Return a browser-fetchable URL for the full cut (blob or authenticated WIP).</summary>
     private async Task<string?> EnsureShareableMovieUrlAsync()
     {
-        if (!string.IsNullOrEmpty(_clientWipUrl))
-            return _clientWipUrl;
-
         await RefreshWipMetaAsync();
-        if (_wipExists && !_wipStale)
-            return Engine.WipMovieUrl(_projectId);
 
-        // Stitch in browser like Play WIP
+        // Stitch fresh in browser to ensure all newly generated clips are included with zero duplicates
         var sceneNums = _scenes
             .Where(s => s.CompositeExists || s.ClipsOnDisk > 0)
             .OrderBy(s => s.SceneNumber)
