@@ -16,6 +16,8 @@ public sealed class ShotPlanRefiningClassifier
 {
     public const string PromptVersion = "v1_product";
 
+    private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, string> Cache = new(StringComparer.OrdinalIgnoreCase);
+
     private readonly IChatClient _chat;
     private readonly PageToMovieOptions _opts;
     private readonly ILogger<ShotPlanRefiningClassifier> _log;
@@ -94,14 +96,25 @@ public sealed class ShotPlanRefiningClassifier
         {
             var userPrompt = BuildUserPrompt(plannedScene, clips);
             var effectiveModel = !string.IsNullOrWhiteSpace(model) ? model : _opts.ShotPlanRefineClassifyModel;
-            var response = await _chat.CompleteAsync(
-                SystemPrompt(),
-                userPrompt,
-                effectiveModel,
-                // 0, not 0.2 — see BeatPacingClassifier for why (cacheable categorical labeling).
-                temperature: 0,
-                ct: ct,
-                mode: ChatCallModes.ShotPlanRefineClassify).ConfigureAwait(false);
+            var cacheKey = $"{userPrompt}|m:{effectiveModel}";
+            string response;
+            if (Cache.TryGetValue(cacheKey, out var cached))
+            {
+                response = cached;
+            }
+            else
+            {
+                response = await _chat.CompleteAsync(
+                    SystemPrompt(),
+                    userPrompt,
+                    effectiveModel,
+                    // 0, not 0.2 — see BeatPacingClassifier for why (cacheable categorical labeling).
+                    temperature: 0,
+                    ct: ct,
+                    mode: ChatCallModes.ShotPlanRefineClassify).ConfigureAwait(false);
+                if (!string.IsNullOrWhiteSpace(response))
+                    Cache[cacheKey] = response;
+            }
 
             return ApplyRefinements(plannedScene, clips, response);
         }

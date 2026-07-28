@@ -22,6 +22,8 @@ public sealed class ProjectReadCache
         new(StringComparer.OrdinalIgnoreCase);
     private readonly ConcurrentDictionary<string, string?> _blueprintPaths =
         new(StringComparer.OrdinalIgnoreCase);
+    private readonly ConcurrentDictionary<string, JsonFileEntry> _jsonFiles =
+        new(StringComparer.OrdinalIgnoreCase);
     private readonly ConcurrentDictionary<string, DirEntry> _dirs =
         new(StringComparer.OrdinalIgnoreCase);
     private readonly ConcurrentDictionary<string, SemaphoreSlim> _buildLocks =
@@ -279,6 +281,71 @@ public sealed class ProjectReadCache
         }
     }
 
+    /// <summary>
+    /// Parsed JSON document for state/config files — validated by mtime and file length.
+    /// </summary>
+    public async Task<JsonDocument?> GetOrLoadJsonDocumentAsync(
+        string? absolutePath,
+        CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(absolutePath) || !File.Exists(absolutePath))
+            return null;
+
+        if (!Enabled)
+        {
+            var bytes = await File.ReadAllBytesAsync(absolutePath, ct).ConfigureAwait(false);
+            return JsonDocument.Parse(bytes);
+        }
+
+        FileInfo fi;
+        try { fi = new FileInfo(absolutePath); }
+        catch { return null; }
+
+        var key = fi.FullName;
+        if (_jsonFiles.TryGetValue(key, out var hit) &&
+            hit.Ticks == fi.LastWriteTimeUtc.Ticks &&
+            hit.Length == fi.Length)
+        {
+            return CloneBlueprintDocument(hit.Doc);
+        }
+
+        var gate = _buildLocks.GetOrAdd("json:" + key, _ => new SemaphoreSlim(1, 1));
+        await gate.WaitAsync(ct).ConfigureAwait(false);
+        try
+        {
+            try { fi.Refresh(); }
+            catch { return null; }
+
+            if (_jsonFiles.TryGetValue(key, out hit) &&
+                hit.Ticks == fi.LastWriteTimeUtc.Ticks &&
+                hit.Length == fi.Length)
+            {
+                return CloneBlueprintDocument(hit.Doc);
+            }
+
+            var utf8 = await File.ReadAllBytesAsync(absolutePath, ct).ConfigureAwait(false);
+            var doc = JsonDocument.Parse(utf8);
+            var entry = new JsonFileEntry
+            {
+                Ticks = fi.LastWriteTimeUtc.Ticks,
+                Length = fi.Length,
+                Doc = doc,
+            };
+
+            if (_jsonFiles.TryRemove(key, out var old))
+            {
+                try { old.Doc.Dispose(); } catch { /* ignore */ }
+            }
+
+            _jsonFiles[key] = entry;
+            return CloneBlueprintDocument(doc);
+        }
+        finally
+        {
+            gate.Release();
+        }
+    }
+
     public void InvalidateAll()
     {
         InvalidateProjectsList();
@@ -286,6 +353,13 @@ public sealed class ProjectReadCache
         foreach (var key in _blueprints.Keys.ToArray())
         {
             if (_blueprints.TryRemove(key, out var old))
+            {
+                try { old.Doc.Dispose(); } catch { /* ignore */ }
+            }
+        }
+        foreach (var key in _jsonFiles.Keys.ToArray())
+        {
+            if (_jsonFiles.TryRemove(key, out var old))
             {
                 try { old.Doc.Dispose(); } catch { /* ignore */ }
             }
@@ -320,6 +394,13 @@ public sealed class ProjectReadCache
         public long Ticks { get; init; }
         public long Length { get; init; }
         public byte[] Utf8 { get; init; } = Array.Empty<byte>();
+        public JsonDocument Doc { get; init; } = null!;
+    }
+
+    private sealed class JsonFileEntry
+    {
+        public long Ticks { get; init; }
+        public long Length { get; init; }
         public JsonDocument Doc { get; init; } = null!;
     }
 

@@ -15,6 +15,8 @@ public sealed class PlateRankClassifier
 {
     public const string PromptVersion = "v1";
 
+    private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, (IReadOnlyList<string> Ranked, bool UsedAi)> Cache = new(StringComparer.OrdinalIgnoreCase);
+
     private readonly IChatClient _chat;
     private readonly PageToMovieOptions _opts;
     private readonly ILogger<PlateRankClassifier> _log;
@@ -47,6 +49,10 @@ public sealed class PlateRankClassifier
             return (baseline, false);
 
         var model = string.IsNullOrWhiteSpace(_opts.PlateRankClassifyModel) ? "grok-4.5" : _opts.PlateRankClassifyModel;
+        var cacheKey = $"{charKey}|{description}|{string.Join(",", candidateNames)}|{model}";
+        if (Cache.TryGetValue(cacheKey, out var cached))
+            return cached;
+
         var maxAttempts = Math.Clamp(_opts.SilentBeatClassifyMaxAttempts, 1, 3);
         for (var attempt = 1; attempt <= maxAttempts; attempt++)
         {
@@ -63,7 +69,11 @@ public sealed class PlateRankClassifier
                     .ConfigureAwait(false);
                 var ranked = ParseRank(raw, candidateNames);
                 if (ranked.Count > 0)
-                    return (ranked.Take(3).ToList(), true);
+                {
+                    var res = (ranked.Take(3).ToList(), true);
+                    Cache[cacheKey] = res;
+                    return res;
+                }
             }
             catch (OperationCanceledException) { throw; }
             catch (Exception ex)
