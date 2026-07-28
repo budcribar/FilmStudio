@@ -966,6 +966,27 @@ else
                     {
                         <p class="small text-muted" style="cursor:pointer;" @onclick="() => OpenClipEditor(_clip)" title="Click to add dialogue">— (click to add)</p>
                     }
+                    @if (_clip.DialogueVerification is { } ver)
+                    {
+                        @if (string.Equals(ver.Status, "verified", StringComparison.OrdinalIgnoreCase))
+                        {
+                            <div class="badge bg-success-subtle text-success border border-success-subtle rounded-pill mb-2 px-2 py-1 small" title="@ver.SummaryNote">
+                                ✓ Dialogue &amp; Speaker Verified (@($"{ver.DialogueAccuracyScore:P0}"))
+                            </div>
+                        }
+                        else if (string.Equals(ver.Status, "speaker_swap", StringComparison.OrdinalIgnoreCase))
+                        {
+                            <div class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill mb-2 px-2 py-1 small" title="@ver.SummaryNote">
+                                ⚠ Speaker Swap (Expected @ver.ExpectedSpeaker, Detected @(ver.DetectedSpeaker ?? "Other"))
+                            </div>
+                        }
+                        else if (string.Equals(ver.Status, "mismatch", StringComparison.OrdinalIgnoreCase))
+                        {
+                            <div class="badge bg-warning-subtle text-warning border border-warning-subtle rounded-pill mb-2 px-2 py-1 small" title="@ver.SummaryNote">
+                                ⚠ Dialogue Mismatch (@($"{ver.DialogueAccuracyScore:P0}"))
+                            </div>
+                        }
+                    }
                     @if (_clip.CharactersOnScreen.Count > 0)
                     {
                         <p class="small text-muted mb-1">on screen: @string.Join(", ", _clip.CharactersOnScreen.Select(ShortChar))</p>

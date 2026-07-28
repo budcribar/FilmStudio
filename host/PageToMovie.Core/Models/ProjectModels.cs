@@ -641,6 +641,7 @@ public sealed class ClipSummary
     public long SizeBytes { get; set; }
     public string? VideoUrl { get; set; }
     public string? FileName { get; set; }
+    public ClipDialogueVerificationResult? DialogueVerification { get; set; }
 }
 
 /// <summary>Create or fully edit a clip's shot-plan fields (Scenes clip editor).</summary>

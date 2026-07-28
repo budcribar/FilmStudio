@@ -59,6 +59,7 @@ public sealed class FilmJobService
     private readonly IUserContext _user;
     private readonly IUserApiKeyProvider _keys;
     private readonly ClipSidecarService? _sidecars;
+    private readonly ClipDialogueVerificationService? _dialogueVerification;
 
     public FilmJobService(
         ProjectStore projects,
@@ -89,7 +90,8 @@ public sealed class FilmJobService
         ILogger<FilmJobService> log,
         IUserContext user,
         IUserApiKeyProvider keys,
-        ClipSidecarService? sidecars = null)
+        ClipSidecarService? sidecars = null,
+        ClipDialogueVerificationService? dialogueVerification = null)
     {
         _projects = projects;
         _grok = grok;
@@ -120,6 +122,7 @@ public sealed class FilmJobService
         _user = user;
         _keys = keys;
         _sidecars = sidecars;
+        _dialogueVerification = dialogueVerification;
     }
 
     public void SetProgressSink(IJobProgressSink sink) => _sink = sink;
@@ -2617,6 +2620,23 @@ public sealed class FilmJobService
                 {
                     await File.WriteAllBytesAsync(mp4Path, bytes, ct).ConfigureAwait(false);
                     await AppendLogAsync($"  [Media] Saved {bytes.Length} bytes to {Path.GetFileName(mp4Path)}");
+
+                    // Trigger 100% automated background clip dialogue & speaker verification
+                    if (_dialogueVerification is not null && _dialogueVerification.IsConfigured)
+                    {
+                        var projId = Snapshot.ProjectId ?? projectId ?? _projects.ActiveProjectId;
+                        _ = Task.Run(async () =>
+                        {
+                            try
+                            {
+                                await _dialogueVerification.VerifyClipDialogueAsync(projId, scene, clip, ct: CancellationToken.None).ConfigureAwait(false);
+                            }
+                            catch (Exception ex)
+                            {
+                                _log.LogWarning(ex, "Background dialogue verification failed for S{Scene:D2}C{Clip:D2}", scene, clip);
+                            }
+                        });
+                    }
                 }
             }
             catch (Exception ex)

@@ -122,6 +122,7 @@ builder.Services.AddSingleton<EditLogService>();
 builder.Services.AddSingleton<ProjectTelemetryService>();
 builder.Services.AddSingleton<ReviewIndexService>();
 builder.Services.AddSingleton<ClipAutoReviewService>();
+builder.Services.AddSingleton<ClipDialogueVerificationService>();
 builder.Services.AddSingleton<ProjectArtifactIndexService>();
 builder.Services.AddSingleton<MediaShareService>();
 builder.Services.AddSingleton<DemoCatalogService>();
