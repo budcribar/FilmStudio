@@ -1,3 +1,4 @@
+using PageToMovie.Core.Models;
 using PageToMovie.Engine;
 using PageToMovie.Engine.Abstractions;
 using Xunit;
@@ -6,77 +7,56 @@ namespace PageToMovie.Tests;
 
 public class JitBenchmarkServiceTests
 {
-    private sealed class TestChatClient : IChatClient
-    {
-        public bool IsConfigured => true;
-        public string ResponseToReturn { get; set; } = "";
-
-        public Task<string> CompleteAsync(
-            string systemPrompt,
-            string userPrompt,
-            string model = "grok-4.5",
-            double temperature = 0.2,
-            CancellationToken ct = default,
-            string? mode = null)
-        {
-            return Task.FromResult(ResponseToReturn);
-        }
-    }
-
-    private sealed class TestVideoClient : IVideoClient
+    private sealed class TestVideoClient : IVideoGenerationClient
     {
         public bool IsConfigured => true;
         public bool GenerationSubmitted { get; private set; }
 
-        public Task<string> SubmitGenerationAsync(
-            string prompt,
-            int durationSeconds,
-            string resolution,
-            string model,
-            CancellationToken ct,
-            IReadOnlyList<string>? referenceImagePaths = null,
-            string? startFrameImagePath = null,
-            string? continueFromVideoPath = null)
+        public Task<VideoGenerationJobResult> SubmitGenerationAsync(VideoPromptPayload payload, CancellationToken ct = default)
         {
             GenerationSubmitted = true;
-            return Task.FromResult("jit_req_12345");
+            return Task.FromResult(new VideoGenerationJobResult("test_job_123", "queued", null));
         }
 
-        public Task<string> PollForVideoUrlAsync(
-            string requestId,
-            Action<string>? onProgress,
-            CancellationToken ct)
+        public Task<VideoGenerationJobResult> PollForVideoUrlAsync(string jobId, CancellationToken ct = default)
         {
-            return Task.FromResult("https://v3.fal.media/tokens/output.mp4");
-        }
-
-        public Task DownloadToFileAsync(string url, string destPath, CancellationToken ct)
-        {
-            return Task.CompletedTask;
+            return Task.FromResult(new VideoGenerationJobResult(jobId, "completed", "https://fal.media/test_clip.mp4"));
         }
     }
 
     private sealed class TestVisionClient : IVisionClient
     {
         public bool IsConfigured => true;
-        public bool VisionInvoked { get; private set; }
 
-        public Task<string> TranscribePageAsync(string imagePath, int page, string model = "grok-4.5", CancellationToken ct = default)
-            => Task.FromResult("");
-
-        public Task<CharacterPageClassification> ClassifyCharactersOnImageAsync(string imagePath, int page, IReadOnlyList<CharacterClassifyHint> cast, string model = "grok-4.5", CancellationToken ct = default)
-            => Task.FromResult(new CharacterPageClassification());
-
-        public Task<string> CompleteWithImagesAsync(string prompt, IReadOnlyList<string> imagePaths, string model = "grok-4.5", string detail = "low", CancellationToken ct = default)
+        public Task<string> CompleteWithImagesAsync(string systemPrompt, string userPrompt, IEnumerable<byte[]> imageBytesList, string model, double temperature = 0.2, CancellationToken ct = default)
         {
-            VisionInvoked = true;
             return Task.FromResult("""
             {
-              "actionCompletionSec": 2.15,
-              "confidence": 0.96,
-              "explanation": "Verified physical action completes at 2.15s."
+              "actionCompletionSec": 3.4,
+              "explanation": "Action completed at 3.4 seconds mark."
             }
             """);
+        }
+    }
+
+    private sealed class TestChatClient : IChatClient
+    {
+        public bool IsConfigured => true;
+        public string ResponseToReturn { get; set; } = "{}";
+
+        public Task<string> CompleteAsync(string systemPrompt, string userPrompt, string model, double temperature = 0.2, CancellationToken ct = default, string? mode = null)
+        {
+            return Task.FromResult(ResponseToReturn);
+        }
+
+        public Task<string> CompleteWithImageAsync(string systemPrompt, string userPrompt, byte[] imageBytes, string model, double temperature = 0.2, CancellationToken ct = default)
+        {
+            return Task.FromResult("{}");
+        }
+
+        public Task<string> CompleteWithImagesAsync(string systemPrompt, string userPrompt, IEnumerable<byte[]> imageBytesList, string model, double temperature = 0.2, CancellationToken ct = default)
+        {
+            return Task.FromResult("{}");
         }
     }
 
@@ -90,7 +70,7 @@ public class JitBenchmarkServiceTests
         var estimation = classifier.ClassifyNovelAction("Pulls out a rusty blade", "(clicks open)");
 
         Assert.Equal("act_knife_pull", estimation.MatchCategoryId);
-        Assert.Equal(1.9, estimation.EstimatedOverheadSec);
+        Assert.Equal(2.0, estimation.EstimatedOverheadSec);
         Assert.True(estimation.ConfidenceScore >= 0.85);
     }
 
@@ -117,6 +97,31 @@ public class JitBenchmarkServiceTests
         Assert.Equal("act_stabbing", estimation.MatchCategoryId);
         Assert.Equal(3.1, estimation.EstimatedOverheadSec);
         Assert.Equal(0.98, estimation.ConfidenceScore);
+    }
+
+    [Fact]
+    public async Task AiActionOverheadClassifierAsync_ValidatesLlmCategoryAgainstLedger()
+    {
+        var ledger = new ActionCameraOverheadLedger();
+        var router = new SmartClassifierModelRouter();
+        var testChat = new TestChatClient
+        {
+            ResponseToReturn = """
+            {
+              "matchCategoryId": "hallucinated_uncalibrated_category",
+              "estimatedOverheadSec": 9.9,
+              "confidenceScore": 0.99,
+              "explanation": "Uncalibrated category."
+            }
+            """
+        };
+
+        var classifier = new AiActionOverheadClassifier(router, ledger, testChat);
+        var estimation = await classifier.ClassifyNovelActionAsync("Creeping quietly through the dark hall", "(stealth)");
+
+        // Should reject hallucinated category and fall back to calibrated creeping category
+        Assert.Equal("act_creeping_step", estimation.MatchCategoryId);
+        Assert.Equal(2.8, estimation.EstimatedOverheadSec);
     }
 
     [Fact]
@@ -147,7 +152,7 @@ public class JitBenchmarkServiceTests
         var result = await jitService.EnsureBeatCalibratedAsync("Sorting pill bottles on the counter", "(while speaking)");
 
         Assert.Equal("act_pills_sorting", result.CategoryId);
-        Assert.Equal(2.9, result.MeasuredOverheadSec);
+        Assert.Equal(2.3, result.MeasuredOverheadSec);
         Assert.Equal(0.85, result.OverlapRatioGamma);
         Assert.False(result.IsLiveJitBenchmark);
     }
