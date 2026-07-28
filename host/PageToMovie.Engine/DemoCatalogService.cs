@@ -39,6 +39,32 @@ public sealed class DemoCatalogService
 
     public string DemosDir => Path.Combine(_projects.WorkspaceRoot, "_demos");
 
+    /// <summary>Clean up leftover staged temporary movie files under _demos to reclaim server volume space.</summary>
+    public void CleanupStagedDemoMovies()
+    {
+        lock (_lock)
+        {
+            if (!Directory.Exists(DemosDir)) return;
+            var subdirs = Directory.GetDirectories(DemosDir);
+            foreach (var dir in subdirs)
+            {
+                var movieFile = Path.Combine(dir, "movie.mp4");
+                if (File.Exists(movieFile))
+                {
+                    try
+                    {
+                        File.Delete(movieFile);
+                        _log.LogInformation("Cleaned up temporary staged demo file {Path}", movieFile);
+                    }
+                    catch (Exception ex)
+                    {
+                        _log.LogWarning(ex, "Failed to clean up demo movie {Path}", movieFile);
+                    }
+                }
+            }
+        }
+    }
+
     public static class DemoStatuses
     {
         public const string Pending = "pending";

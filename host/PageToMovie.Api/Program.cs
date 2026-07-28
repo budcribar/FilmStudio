@@ -5559,6 +5559,14 @@ catch (Exception ex)
     Console.WriteLine($"Startup migration error: {ex.Message}");
 }
 
+// Clean up any leftover staged demo movie files under _demos to reclaim server volume space
+try
+{
+    var demosService = app.Services.GetRequiredService<DemoCatalogService>();
+    demosService.CleanupStagedDemoMovies();
+}
+catch { /* non-fatal */ }
+
 app.Run();
 
 namespace PageToMovie.Api
