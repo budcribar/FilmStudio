@@ -347,26 +347,52 @@ public static class SupportedModelCatalog
 
     private static List<SupportedModelEntry>? _loadedEntries;
 
+    private static IReadOnlyList<ModelCapabilityDefinition>? _loadedCapabilities;
+
+    /// <summary>Dynamic list of capabilities registered in models_catalog.json (or defaults).</summary>
+    public static IReadOnlyList<ModelCapabilityDefinition> RegisteredCapabilities
+    {
+        get
+        {
+            if (_loadedCapabilities is null)
+            {
+                EnsureLoaded();
+            }
+            return _loadedCapabilities ?? DefaultCapabilityDefinitions;
+        }
+    }
+
+    public static readonly IReadOnlyList<ModelCapabilityDefinition> DefaultCapabilityDefinitions =
+    [
+        new() { Id = "video", DisplayName = "Video Generation", Description = "Generates MP4 video clips from prompts and character reference plates.", Order = 1 },
+        new() { Id = "image", DisplayName = "Portrait / Image Generation", Description = "Creates character reference portraits and book plate graphics.", Order = 2 },
+        new() { Id = "chat", DisplayName = "Script & Planning", Description = "Screenplay reasoning, shot planning, and cast analysis.", Order = 3 },
+        new() { Id = "vision", DisplayName = "Image Vision & OCR", Description = "Book page OCR, cast-on-image classification, and frame inspection.", Order = 4 },
+        new() { Id = "video-review", DisplayName = "Video & Clip Review (Multimodal)", Description = "Evaluates dialogue, lip sync, and scene rhythm (Google Gemini natively analyzes MP4 video files).", Order = 5 },
+        new() { Id = "audio", DisplayName = "Audio & Music Generation", Description = "Generates beat-aligned background music scores and sound effects.", Order = 6 },
+    ];
+
     /// <summary>All catalog rows (loaded dynamically from models_catalog.json or built-in defaults).</summary>
     public static IReadOnlyList<SupportedModelEntry> Entries
     {
         get
         {
-            if (_loadedEntries is null)
-            {
-                _loadedEntries = LoadFromDiskOrFallback();
-            }
-            return _loadedEntries;
+            EnsureLoaded();
+            return _loadedEntries ?? (IReadOnlyList<SupportedModelEntry>)BuiltInDefaults;
         }
     }
 
     public static void ReloadCatalog(string? overrideJsonPath = null)
     {
-        _loadedEntries = LoadFromDiskOrFallback(overrideJsonPath);
+        _loadedEntries = null;
+        _loadedCapabilities = null;
+        EnsureLoaded(overrideJsonPath);
     }
 
-    private static List<SupportedModelEntry> LoadFromDiskOrFallback(string? customPath = null)
+    private static void EnsureLoaded(string? customPath = null)
     {
+        if (_loadedEntries is not null && _loadedCapabilities is not null) return;
+
         var candidates = new List<string>();
         if (!string.IsNullOrWhiteSpace(customPath))
             candidates.Add(customPath);
@@ -382,12 +408,43 @@ public static class SupportedModelCatalog
             try
             {
                 var json = File.ReadAllText(path);
-                var dtos = System.Text.Json.JsonSerializer.Deserialize<List<SupportedModelDto>>(json, new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-                if (dtos is { Count: > 0 })
+                var opts = new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+                
+                // Parse object format or array format
+                using var doc = System.Text.Json.JsonDocument.Parse(json);
+                if (doc.RootElement.ValueKind == System.Text.Json.JsonValueKind.Object)
                 {
-                    var converted = dtos.Select(FromDto).ToList();
-                    if (converted.Count > 0)
-                        return converted;
+                    var container = System.Text.Json.JsonSerializer.Deserialize<ModelCatalogContainerDto>(json, opts);
+                    if (container?.Models is { Count: > 0 })
+                    {
+                        _loadedEntries = container.Models.Select(FromDto).ToList();
+                        if (container.Capabilities is { Count: > 0 })
+                        {
+                            _loadedCapabilities = container.Capabilities.Select(c => new ModelCapabilityDefinition
+                            {
+                                Id = c.Id,
+                                DisplayName = c.DisplayName,
+                                Description = c.Description,
+                                Order = c.Order,
+                                DefaultModelId = c.DefaultModelId,
+                            }).ToList();
+                        }
+                        else
+                        {
+                            _loadedCapabilities = DefaultCapabilityDefinitions;
+                        }
+                        return;
+                    }
+                }
+                else if (doc.RootElement.ValueKind == System.Text.Json.JsonValueKind.Array)
+                {
+                    var dtos = System.Text.Json.JsonSerializer.Deserialize<List<SupportedModelDto>>(json, opts);
+                    if (dtos is { Count: > 0 })
+                    {
+                        _loadedEntries = dtos.Select(FromDto).ToList();
+                        _loadedCapabilities = DefaultCapabilityDefinitions;
+                        return;
+                    }
                 }
             }
             catch
@@ -396,7 +453,8 @@ public static class SupportedModelCatalog
             }
         }
 
-        return BuiltInDefaults.ToList();
+        _loadedEntries = BuiltInDefaults.ToList();
+        _loadedCapabilities = DefaultCapabilityDefinitions;
     }
 
     public static IReadOnlyList<SupportedModelEntry> ForCapability(
@@ -561,4 +619,28 @@ public sealed class SupportedModelDto
     public bool SupportsVideoContinue { get; set; } = true;
     public bool SupportsReferenceImages { get; set; } = true;
     public bool SupportsVideoReview { get; set; }
+}
+
+public sealed class ModelCapabilityDefinition
+{
+    public required string Id { get; init; }
+    public required string DisplayName { get; init; }
+    public string Description { get; init; } = "";
+    public int Order { get; init; }
+    public string? DefaultModelId { get; init; }
+}
+
+public sealed class ModelCapabilityDto
+{
+    public string Id { get; set; } = "";
+    public string DisplayName { get; set; } = "";
+    public string Description { get; set; } = "";
+    public int Order { get; set; }
+    public string? DefaultModelId { get; set; }
+}
+
+public sealed class ModelCatalogContainerDto
+{
+    public List<ModelCapabilityDto>? Capabilities { get; set; }
+    public List<SupportedModelDto>? Models { get; set; }
 }

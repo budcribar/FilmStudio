@@ -381,6 +381,25 @@ else
                     }
                     <div class="form-text text-muted">Evaluates dialogue &amp; lip sync (Google Gemini natively analyzes MP4 video files).</div>
                 </div>
+
+                <div class="col-md-6 col-xl-4">
+                    <label class="form-label fw-semibold">Audio &amp; Music Generation</label>
+                    <select class="form-select" @bind="_audioModel" disabled="@_busy">
+                        @foreach (var m in _audioModels)
+                        {
+                            <option value="@m.Id">@ModelOptionLabel(m)</option>
+                        }
+                        @if (_audioModels.All(m => !string.Equals(m.Id, _audioModel, StringComparison.OrdinalIgnoreCase)))
+                        {
+                            <option value="@_audioModel">@_audioModel (not in list)</option>
+                        }
+                    </select>
+                    @if (ModelHint(_audioModel, "audio") is { } ah)
+                    {
+                        <div class="form-text">@ah</div>
+                    }
+                    <div class="form-text text-muted">Generates beat-aligned background music scores and audio soundscapes.</div>
+                </div>
             </div>
         </div>
     </div>
@@ -541,6 +560,7 @@ else
     private string _planningModel = "grok-4.5";
     private string _visionModel = "grok-4.5";
     private string _qualityModel = "gemini-2.5-pro";
+    private string _audioModel = "fal-ai/stable-audio";
     private string _aspect = "16:9";
     private string _resolution = "480p";
     private int _durationSeconds = 8;
@@ -561,6 +581,7 @@ else
     private List<SupportedModelDto> _planningModels = new();
     private List<SupportedModelDto> _visionModels = new();
     private List<SupportedModelDto> _videoReviewModels = new();
+    private List<SupportedModelDto> _audioModels = new();
 
     protected override async Task OnInitializedAsync()
     {
@@ -608,6 +629,7 @@ else
             _imageModels = _allModels.Where(m => m.Capability == "image").ToList();
             _planningModels = _allModels.Where(m => m.Capability == "chat").ToList();
             _visionModels = _allModels.Where(m => m.Capability == "vision").ToList();
+            _audioModels = _allModels.Where(m => m.Capability == "audio").ToList();
             _videoReviewModels = _allModels.Where(m => m.SupportsVideoReview || m.Capability is "chat" or "vision")
                 .GroupBy(m => m.Id)
                 .Select(g => g.First()).ToList();
@@ -622,6 +644,8 @@ else
                 _visionModels.Add(new SupportedModelDto { Id = "grok-4.5", DisplayName = "Grok 4.5 (vision)", Provider = "Xai" });
             if (_videoReviewModels.Count == 0)
                 _videoReviewModels.Add(new SupportedModelDto { Id = "gemini-2.5-pro", DisplayName = "Gemini 2.5 Pro", Provider = "Google", SupportsVideoReview = true });
+            if (_audioModels.Count == 0)
+                _audioModels.Add(new SupportedModelDto { Id = "fal-ai/stable-audio", DisplayName = "Stable Audio (Fal.ai)", Provider = "Fal" });
         }
         catch
         {
@@ -630,6 +654,7 @@ else
             _planningModels = [new SupportedModelDto { Id = "grok-4.5", DisplayName = "Grok 4.5", Provider = "Xai" }];
             _visionModels = [new SupportedModelDto { Id = "grok-4.5", DisplayName = "Grok 4.5 (vision)", Provider = "Xai" }];
             _videoReviewModels = [new SupportedModelDto { Id = "gemini-2.5-pro", DisplayName = "Gemini 2.5 Pro", Provider = "Google", SupportsVideoReview = true }];
+            _audioModels = [new SupportedModelDto { Id = "fal-ai/stable-audio", DisplayName = "Stable Audio (Fal.ai)", Provider = "Fal" }];
         }
     }
 
@@ -915,7 +940,9 @@ else
             _modelName = GetStr("model_name", _modelName);
             _imageModel = GetStr("image_model_name", _imageModel);
             _planningModel = GetStr("planning_model_name", _planningModel);
+            _visionModel = GetStr("vision_model_name", _visionModel);
             _qualityModel = GetStr("quality_model_name", _qualityModel);
+            _audioModel = GetStr("audio_model_name", _audioModel);
             _aspect = GetStr("aspect_ratio", _aspect);
             _resolution = GetStr("resolution", _resolution);
             _durationSeconds = GetInt("duration_seconds", _durationSeconds);
@@ -971,10 +998,12 @@ else
         var videoProvider = SupportedModelCatalog.ProviderIdFor(_modelName, ModelCapability.Video);
         var imageProvider = SupportedModelCatalog.ProviderIdFor(_imageModel, ModelCapability.Image);
         var planningProvider = SupportedModelCatalog.ProviderIdFor(_planningModel, ModelCapability.Chat);
+        var visionProvider = SupportedModelCatalog.ProviderIdFor(_visionModel, ModelCapability.Vision);
         var qualityProvider = SupportedModelCatalog.ProviderIdFor(_qualityModel, ModelCapability.Chat);
 
         var updates = new Dictionary<string, object?>
         {
+            ["version"] = 2,
             ["ui_theme"] = _uiTheme,
             ["preferred_video_editor"] = _preferredVideoEditor,
             ["blueprint_file"] = _blueprintFile,
@@ -982,11 +1011,23 @@ else
             ["character_design_provider"] = imageProvider,
             ["image_provider"] = imageProvider,
             ["planning_provider"] = planningProvider,
+            ["vision_provider"] = visionProvider,
             ["quality_provider"] = qualityProvider,
             ["model_name"] = _modelName,
             ["image_model_name"] = _imageModel,
             ["planning_model_name"] = _planningModel,
+            ["vision_model_name"] = _visionModel,
             ["quality_model_name"] = _qualityModel,
+            ["audio_model_name"] = _audioModel,
+            ["model_selections"] = new Dictionary<string, string>
+            {
+                ["video"] = _modelName,
+                ["image"] = _imageModel,
+                ["chat"] = _planningModel,
+                ["vision"] = _visionModel,
+                ["video-review"] = _qualityModel,
+                ["audio"] = _audioModel,
+            },
             ["aspect_ratio"] = _aspect,
             ["resolution"] = _resolution,
             ["duration_seconds"] = _durationSeconds,
