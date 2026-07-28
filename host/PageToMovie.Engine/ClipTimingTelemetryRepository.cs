@@ -270,6 +270,43 @@ public sealed class ClipTimingTelemetryRepository
             }
 
             list.Reverse();
+
+            // Fallback: If no explicit snapshots exist yet, aggregate live clip_timing_telemetry records by day
+            if (list.Count == 0)
+            {
+                using var groupCmd = conn.CreateCommand();
+                groupCmd.CommandText = """
+                    SELECT 
+                        SUBSTR(created_at, 1, 10) as day,
+                        COUNT(*) as total_count,
+                        AVG(ABS(
+                            CASE 
+                                WHEN estimated_duration_sec > 0 THEN estimated_duration_sec 
+                                ELSE (measured_cam_overhead_sec + measured_action_overhead_sec + (word_count / 2.6)) 
+                            END - clip_duration_sec
+                        )) as avg_mae
+                    FROM clip_timing_telemetry
+                    GROUP BY SUBSTR(created_at, 1, 10)
+                    ORDER BY day ASC
+                    LIMIT $limit;
+                    """;
+                groupCmd.Parameters.AddWithValue("$limit", maxPoints);
+
+                using var gReader = await groupCmd.ExecuteReaderAsync().ConfigureAwait(false);
+                while (await gReader.ReadAsync().ConfigureAwait(false))
+                {
+                    var dayStr = gReader.GetString(0);
+                    var cnt = gReader.GetInt32(1);
+                    var mae = gReader.IsDBNull(2) ? 0.0 : Math.Round(gReader.GetDouble(2), 2);
+
+                    list.Add(new TimingTrendPoint(
+                        Timestamp: dayStr,
+                        Hits: cnt,
+                        Misses: 0,
+                        HitRatePercent: 100.0,
+                        MeanAbsoluteErrorSec: mae));
+                }
+            }
         }
         catch (Exception ex)
         {
