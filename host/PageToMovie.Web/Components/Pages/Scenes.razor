@@ -389,6 +389,13 @@ else if (Session.IsAdmin && _job is not null &&
                         ▶ Play selected@(_selected.Count > 0 ? $" ({_selected.Count})" : "")
                     </button>
                     <button type="button"
+                            class="btn btn-outline-primary btn-sm"
+                            disabled="@(_busy || JobRunning || _verifyingClip)"
+                            title="Run dialogue &amp; speaker verification on all clips in selected scenes"
+                            @onclick="VerifySelectedScenesDialogueAsync">
+                        🔍 Verify Scene Dialogue@(_selected.Count > 0 ? $" ({_selected.Count})" : "")
+                    </button>
+                    <button type="button"
                             class="btn btn-outline-secondary btn-sm"
                             disabled="@(_busy || JobRunning)"
                             title="Rebuild shot plan from the screenplay to restore missing scenes or clips"
@@ -577,9 +584,9 @@ else
                     <button type="button"
                             class="btn btn-sm btn-outline-primary"
                             disabled="@(_busy || JobRunning || _verifyingClip)"
-                            title="Temporary button: run dialogue verification on all on-disk clips in this scene"
-                            @onclick="VerifyAllClipsInSceneManualAsync">
-                        🔍 Verify Scene Dialogue (Temp)
+                            title="Run dialogue &amp; speaker verification on all clips in selected scene(s)"
+                            @onclick="VerifySelectedScenesDialogueAsync">
+                        🔍 Verify Scene Dialogue
                     </button>
                 }
                 @if (_detail.CompositeExists || _detail.ClipsOnDisk > 0)
@@ -1002,8 +1009,8 @@ else
                         <button type="button" class="btn btn-outline-primary btn-sm rounded-pill mb-2 px-2 py-0 ms-1 small"
                                 disabled="@_verifyingClip"
                                 @onclick="() => VerifyClipDialogueManualAsync(_clip)"
-                                title="Temporary button: run automated dialogue verification on this existing clip">
-                            @(_verifyingClip && _verifyingClipNumber == _clip.ClipNumber ? "Verifying..." : "Verify Dialogue (Temp)")
+                                title="Run automated dialogue verification on this existing clip">
+                            @(_verifyingClip && _verifyingClipNumber == _clip.ClipNumber ? "Verifying..." : "Verify Dialogue")
                         </button>
                     }
                     @if (_clip.CharactersOnScreen.Count > 0)
@@ -2942,25 +2949,37 @@ else
         }
     }
 
-    private async Task VerifyAllClipsInSceneManualAsync()
+    private async Task VerifySelectedScenesDialogueAsync()
     {
-        if (_detail?.Clips is null || string.IsNullOrWhiteSpace(_projectId)) return;
-        var onDiskClips = _detail.Clips.Where(c => c.OnDisk).ToList();
-        if (onDiskClips.Count == 0) return;
+        if (string.IsNullOrWhiteSpace(_projectId)) return;
+        var scenesToVerify = _selected.Count > 0
+            ? _selected.OrderBy(s => s).ToList()
+            : (_detail is not null ? new List<int> { _detail.SceneNumber } : new List<int>());
+
+        if (scenesToVerify.Count == 0) return;
 
         try
         {
             _verifyingClip = true;
             StateHasChanged();
-            foreach (var c in onDiskClips)
+            foreach (var sn in scenesToVerify)
             {
-                _verifyingClipNumber = c.ClipNumber;
-                StateHasChanged();
-                var ver = await Engine.VerifyClipDialogueAsync(_projectId, _detail.SceneNumber, c.ClipNumber);
-                if (ver is not null)
+                var sceneDetail = (_detail is not null && _detail.SceneNumber == sn)
+                    ? _detail
+                    : (await Engine.GetSceneDetailAsync(_projectId, sn))?.Scene;
+
+                if (sceneDetail?.Clips is null) continue;
+                var onDisk = sceneDetail.Clips.Where(c => c.OnDisk).ToList();
+                foreach (var c in onDisk)
                 {
-                    c.DialogueVerification = ver;
+                    _verifyingClipNumber = c.ClipNumber;
                     StateHasChanged();
+                    var ver = await Engine.VerifyClipDialogueAsync(_projectId, sn, c.ClipNumber);
+                    if (ver is not null)
+                    {
+                        c.DialogueVerification = ver;
+                        StateHasChanged();
+                    }
                 }
             }
         }
