@@ -64,16 +64,6 @@ public static class ActionConcurrencyAnalyzer
         else if (MuscleDriveRegex.IsMatch(text)) actionId = "car_muscle_drive";
 
         // 3. Determine Concurrency Mode & Overlap Ratio Gamma
-        if (ConcurrentKeywordsRegex.IsMatch(text))
-        {
-            return new ActionConcurrencyResult(
-                CameraId: cameraId,
-                ActionId: actionId,
-                Mode: "concurrent",
-                OverlapRatioGamma: 0.85,
-                Reason: "Detected concurrent verb/action marker (e.g. 'while', 'as he', 'pacing').");
-        }
-
         if (SerialKeywordsRegex.IsMatch(text))
         {
             return new ActionConcurrencyResult(
@@ -82,6 +72,16 @@ public static class ActionConcurrencyAnalyzer
                 Mode: "serial",
                 OverlapRatioGamma: 0.0,
                 Reason: "Detected serial action marker (e.g. 'pauses', 'then', 'clicks open').");
+        }
+
+        if (ConcurrentKeywordsRegex.IsMatch(text))
+        {
+            return new ActionConcurrencyResult(
+                CameraId: cameraId,
+                ActionId: actionId,
+                Mode: "concurrent",
+                OverlapRatioGamma: 0.85,
+                Reason: "Detected concurrent verb/action marker (e.g. 'while', 'as he', 'pacing').");
         }
 
         if (!string.IsNullOrWhiteSpace(parenthetical) && parenthetical.Split(' ', StringSplitOptions.RemoveEmptyEntries).Length <= 4)
