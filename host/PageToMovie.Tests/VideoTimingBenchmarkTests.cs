@@ -18,7 +18,8 @@ public class VideoTimingBenchmarkTests
             ConcurrencyMode: "serial",
             ConcurrencyFactor: 0.0,
             ModelUsed: "fal-ai/hunyuan-video",
-            ProviderUsed: "Fal");
+            ProviderUsed: "Fal",
+            ExecutionSource: "Empirical Overhead Ledger");
 
         Assert.Equal("cam_push_in", row.Id);
         Assert.Equal(1.8, row.EstimatedDurationSec);
