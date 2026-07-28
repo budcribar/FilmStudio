@@ -24,11 +24,37 @@ public class ClientVideoStitchServiceTests
     }
 
     [Fact]
-    public async Task CollectSceneMediaUrlsAsync_PrefersFreshComposite_WhenCompositeIsNotStale()
+    public async Task CollectSceneMediaUrlsAsync_PrefersAtomicClips_PreventsStaleCompositeDuplication()
     {
-        // Arrange: scene 1 composite exists and is NOT stale (e.g. custom editor override)
+        // Arrange: scene 1 has both a composite AND individual clips on disk
         var projectId = "test-project";
-        var handler = new FakeHttpMessageHandler(req => new HttpResponseMessage(HttpStatusCode.NotFound));
+        var sceneDetailJson = JsonSerializer.Serialize(new
+        {
+            ok = true,
+            scene = new
+            {
+                sceneNumber = 1,
+                compositeExists = true,
+                clips = new[]
+                {
+                    new { clipNumber = 1, onDisk = true },
+                    new { clipNumber = 2, onDisk = true }
+                }
+            }
+        });
+
+        var handler = new FakeHttpMessageHandler(req =>
+        {
+            if (req.RequestUri?.AbsolutePath.Contains("/scenes/1") == true)
+            {
+                return new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = new StringContent(sceneDetailJson, System.Text.Encoding.UTF8, "application/json")
+                };
+            }
+            return new HttpResponseMessage(HttpStatusCode.NotFound);
+        });
+
         var httpClient = new HttpClient(handler) { BaseAddress = new Uri("http://localhost") };
         var engineClient = new EngineApiClient(httpClient);
         var stitchService = new ClientVideoStitchService(null!, engineClient);
@@ -38,12 +64,14 @@ public class ClientVideoStitchServiceTests
             new() { SceneNumber = 1, CompositeExists = true, ClipsOnDisk = 2 }
         };
 
-        // Act: staleScenes is empty -> composite is fresh
-        var urls = await stitchService.CollectSceneMediaUrlsAsync(projectId, new[] { 1 }, sceneSummaries, staleScenes: new HashSet<int>());
+        // Act
+        var urls = await stitchService.CollectSceneMediaUrlsAsync(projectId, new[] { 1 }, sceneSummaries, staleScenes: null);
 
-        // Assert: MUST return fresh composite URL (1 URL) to preserve editor scene overrides
-        Assert.Single(urls);
-        Assert.Contains("scenes/1/composite", urls[0]);
+        // Assert: MUST return individual clips ONLY (2 clip URLs), avoiding stale composite files
+        Assert.Equal(2, urls.Count);
+        Assert.Contains("scenes/1/clips/1/video", urls[0]);
+        Assert.Contains("scenes/1/clips/2/video", urls[1]);
+        Assert.DoesNotContain(urls, u => u.Contains("/composite"));
     }
 
     [Fact]

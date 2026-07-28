@@ -38,17 +38,7 @@ public sealed class ClientVideoStitchService
         {
             ct.ThrowIfCancellationRequested();
 
-            var summary = sceneList?.FirstOrDefault(s => s.SceneNumber == sn);
-            var isStale = staleScenes?.Contains(sn) ?? false;
-
-            // 1. If scene composite exists and is FRESH (not stale), prefer the composite (supports manual editor overrides)
-            if (summary?.CompositeExists == true && !isStale)
-            {
-                urls.Add(_engine.CompositeVideoUrl(projectId, sn));
-                continue;
-            }
-
-            // 2. Otherwise (composite is stale or missing), gather individual clip files
+            // Always strictly prefer atomic clip files per scene for full-movie assembly
             SceneDetail? detail = null;
             try
             {
@@ -57,13 +47,6 @@ public sealed class ClientVideoStitchService
             catch
             {
                 // fall through
-            }
-
-            // Check if composite is fresh according to scene detail
-            if (detail?.CompositeExists == true && !isStale)
-            {
-                urls.Add(_engine.CompositeVideoUrl(projectId, sn));
-                continue;
             }
 
             var clips = detail?.Clips?
@@ -84,7 +67,8 @@ public sealed class ClientVideoStitchService
                 continue;
             }
 
-            // 3. Fallback: if no individual clips on disk, use composite if available
+            // Fallback: if no atomic clips on disk for this scene, use composite if available
+            var summary = sceneList?.FirstOrDefault(s => s.SceneNumber == sn);
             if (summary?.CompositeExists == true || detail?.CompositeExists == true)
             {
                 urls.Add(_engine.CompositeVideoUrl(projectId, sn));
