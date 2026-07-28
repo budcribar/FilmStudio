@@ -1,4 +1,4 @@
-﻿using System.Text.Json;
+using System.Text.Json;
 using ClassifierBenchmarks;
 using PageToMovie.Core.Models;
 using Xunit;
@@ -39,9 +39,9 @@ public class ClassifierBenchmarkLiveTests
         yield return new object[] { "onscreen_cast",       "claude-sonnet-5", SupportedModelCatalog.AnthropicApiKeyEnv };
 
         // Gemini Google
-        yield return new object[] { "ambient_sfx",         "gemini-3-pro",    SupportedModelCatalog.GoogleApiKeyEnv };
-        yield return new object[] { "species_kind",        "gemini-3-pro",    SupportedModelCatalog.GoogleApiKeyEnv };
-        yield return new object[] { "onscreen_cast",       "gemini-3-pro",    SupportedModelCatalog.GoogleApiKeyEnv };
+        yield return new object[] { "ambient_sfx",         "gemini-2.5-pro",    SupportedModelCatalog.GoogleApiKeyEnv };
+        yield return new object[] { "species_kind",        "gemini-2.5-pro",    SupportedModelCatalog.GoogleApiKeyEnv };
+        yield return new object[] { "onscreen_cast",       "gemini-2.5-pro",    SupportedModelCatalog.GoogleApiKeyEnv };
     }
 
     [LiveApiTheory]

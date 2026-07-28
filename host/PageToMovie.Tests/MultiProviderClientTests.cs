@@ -151,7 +151,7 @@ public class MultiProviderClientTests
 
     [Theory]
     [InlineData("claude-sonnet-5", ModelProviderFamily.Anthropic)]
-    [InlineData("gemini-3-pro", ModelProviderFamily.Google)]
+    [InlineData("gemini-2.5-pro", ModelProviderFamily.Google)]
     [InlineData("grok-4.5", ModelProviderFamily.Xai)]
     [InlineData("grok-4", ModelProviderFamily.Xai)]
     [InlineData("some-unknown-future-model", ModelProviderFamily.Xai)] // forward-compat default
@@ -162,7 +162,7 @@ public class MultiProviderClientTests
     }
 
     [Theory]
-    [InlineData("gemini-3-pro-image", ModelProviderFamily.Google)]
+    [InlineData("gemini-2.5-pro-image", ModelProviderFamily.Google)]
     [InlineData("grok-imagine-image-quality", ModelProviderFamily.Xai)]
     public void Image_routing_resolves_expected_provider(string model, ModelProviderFamily expected)
     {

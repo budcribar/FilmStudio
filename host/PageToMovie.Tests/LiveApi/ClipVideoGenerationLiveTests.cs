@@ -40,7 +40,7 @@ public class ClipVideoGenerationLiveTests : IDisposable
         };
         yield return new object[]
         {
-            "Gemini_Veo", "veo-3.1", "gemini-3-pro-image",
+            "Gemini_Veo", "veo-3.1", "gemini-2.5-pro-image",
             SupportedModelCatalog.GoogleApiKeyEnv, false,
         };
     }
@@ -52,7 +52,7 @@ public class ClipVideoGenerationLiveTests : IDisposable
     {
         yield return new object[] { "Grok_xAI", "grok-4.5",        SupportedModelCatalog.XaiApiKeyEnv };
         yield return new object[] { "Claude",   "claude-sonnet-5", SupportedModelCatalog.AnthropicApiKeyEnv };
-        yield return new object[] { "Gemini",   "gemini-3-pro",    SupportedModelCatalog.GoogleApiKeyEnv };
+        yield return new object[] { "Gemini",   "gemini-2.5-pro",    SupportedModelCatalog.GoogleApiKeyEnv };
     }
 
     // ─── Setup / teardown ────────────────────────────────────────────────────
