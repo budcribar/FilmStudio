@@ -280,84 +280,107 @@ else
     </div>
 
     <div class="card mb-3">
-        <div class="card-header">Models</div>
-        <div class="card-body row g-2">
-            <div class="col-12">
-                <p class="small text-muted mb-2">
-                    Select models for each stage of production. The app maps your choice to the appropriate provider API.
-                    <strong>Video Gen</strong> produces MP4 video clips, <strong>Image Gen</strong> creates character portraits, <strong>Script &amp; Planning</strong> powers screenplay reasoning, and <strong>Clip Review</strong> evaluates completed video cuts (Google Gemini natively analyzes MP4 files).
-                </p>
-            </div>
-            <div class="col-md-4">
-                <label class="form-label fw-semibold">Video Generation Model (Output)</label>
-                <select class="form-select" @bind="_modelName" disabled="@_busy">
-                    @foreach (var m in _videoModels)
+        <div class="card-header fw-bold">Models</div>
+        <div class="card-body">
+            <p class="small text-muted mb-3">
+                Select models for each stage of production. These choices correspond directly to the 5 capabilities in <strong>Account &amp; API Keys</strong>.
+            </p>
+            <div class="row g-3">
+                <div class="col-md-6 col-xl-4">
+                    <label class="form-label fw-semibold">Video Generation</label>
+                    <select class="form-select" @bind="_modelName" disabled="@_busy">
+                        @foreach (var m in _videoModels)
+                        {
+                            <option value="@m.Id">@ModelOptionLabel(m)</option>
+                        }
+                        @if (_videoModels.All(m => !string.Equals(m.Id, _modelName, StringComparison.OrdinalIgnoreCase)))
+                        {
+                            <option value="@_modelName">@_modelName (not in list)</option>
+                        }
+                    </select>
+                    @if (ModelHint(_modelName, "video") is { } vh)
                     {
-                        <option value="@m.Id">@ModelOptionLabel(m)</option>
+                        <div class="form-text">@vh</div>
                     }
-                    @if (_videoModels.All(m => !string.Equals(m.Id, _modelName, StringComparison.OrdinalIgnoreCase)))
+                    <div class="form-text text-muted">Generates MP4 video clips from prompts and character plates.</div>
+                </div>
+
+                <div class="col-md-6 col-xl-4">
+                    <label class="form-label fw-semibold">Portrait / Image Generation</label>
+                    <select class="form-select" @bind="_imageModel" disabled="@_busy">
+                        @foreach (var m in _imageModels)
+                        {
+                            <option value="@m.Id">@ModelOptionLabel(m)</option>
+                        }
+                        @if (_imageModels.All(m => !string.Equals(m.Id, _imageModel, StringComparison.OrdinalIgnoreCase)))
+                        {
+                            <option value="@_imageModel">@_imageModel (not in list)</option>
+                        }
+                    </select>
+                    @if (ModelHint(_imageModel, "image") is { } ih)
                     {
-                        <option value="@_modelName">@_modelName (not in list)</option>
+                        <div class="form-text">@ih</div>
                     }
-                </select>
-                @if (ModelHint(_modelName, "video") is { } vh)
-                {
-                    <div class="form-text">@vh</div>
-                }
-            </div>
-            <div class="col-md-4">
-                <label class="form-label fw-semibold">Portrait / Image Model (Output)</label>
-                <select class="form-select" @bind="_imageModel" disabled="@_busy">
-                    @foreach (var m in _imageModels)
+                    <div class="form-text text-muted">Creates character reference portraits and book plate graphics.</div>
+                </div>
+
+                <div class="col-md-6 col-xl-4">
+                    <label class="form-label fw-semibold">Script &amp; Planning</label>
+                    <select class="form-select" @bind="_planningModel" disabled="@_busy">
+                        @foreach (var m in _planningModels)
+                        {
+                            <option value="@m.Id">@ModelOptionLabel(m)</option>
+                        }
+                        @if (_planningModels.All(m => !string.Equals(m.Id, _planningModel, StringComparison.OrdinalIgnoreCase)))
+                        {
+                            <option value="@_planningModel">@_planningModel (not in list)</option>
+                        }
+                    </select>
+                    @if (ModelHint(_planningModel, "chat") is { } ph)
                     {
-                        <option value="@m.Id">@ModelOptionLabel(m)</option>
+                        <div class="form-text">@ph</div>
                     }
-                    @if (_imageModels.All(m => !string.Equals(m.Id, _imageModel, StringComparison.OrdinalIgnoreCase)))
+                    <div class="form-text text-muted">Screenplay reasoning, shot planning, and cast analysis.</div>
+                </div>
+
+                <div class="col-md-6 col-xl-4">
+                    <label class="form-label fw-semibold">Image Vision &amp; OCR</label>
+                    <select class="form-select" @bind="_visionModel" disabled="@_busy">
+                        @foreach (var m in _visionModels)
+                        {
+                            <option value="@m.Id">@ModelOptionLabel(m)</option>
+                        }
+                        @if (_visionModels.All(m => !string.Equals(m.Id, _visionModel, StringComparison.OrdinalIgnoreCase)))
+                        {
+                            <option value="@_visionModel">@_visionModel (not in list)</option>
+                        }
+                    </select>
+                    @if (ModelHint(_visionModel, "vision") is { } vish)
                     {
-                        <option value="@_imageModel">@_imageModel (not in list)</option>
+                        <div class="form-text">@vish</div>
                     }
-                </select>
-                @if (ModelHint(_imageModel, "image") is { } ih)
-                {
-                    <div class="form-text">@ih</div>
-                }
-            </div>
-            <div class="col-md-4">
-                <label class="form-label fw-semibold">Script &amp; Planning Model</label>
-                <select class="form-select" @bind="_planningModel" disabled="@_busy">
-                    @foreach (var m in _chatModels)
+                    <div class="form-text text-muted">Book page OCR, cast-on-image classification, and frame inspection.</div>
+                </div>
+
+                <div class="col-md-6 col-xl-4">
+                    <label class="form-label fw-semibold">Video &amp; Clip Review (Multimodal)</label>
+                    <select class="form-select" @bind="_qualityModel" disabled="@_busy">
+                        @foreach (var m in _videoReviewModels)
+                        {
+                            var tag = m.SupportsVideoReview ? " [⭐ Native MP4 Video Review]" : " [Image Stills Only]";
+                            <option value="@m.Id">@ModelOptionLabel(m)@tag</option>
+                        }
+                        @if (_videoReviewModels.All(m => !string.Equals(m.Id, _qualityModel, StringComparison.OrdinalIgnoreCase)))
+                        {
+                            <option value="@_qualityModel">@_qualityModel (not in list)</option>
+                        }
+                    </select>
+                    @if (ModelHint(_qualityModel, "chat") is { } qh)
                     {
-                        <option value="@m.Id">@ModelOptionLabel(m)</option>
+                        <div class="form-text">@qh</div>
                     }
-                    @if (_chatModels.All(m => !string.Equals(m.Id, _planningModel, StringComparison.OrdinalIgnoreCase)))
-                    {
-                        <option value="@_planningModel">@_planningModel (not in list)</option>
-                    }
-                </select>
-                @if (ModelHint(_planningModel, "chat") is { } ph)
-                {
-                    <div class="form-text">@ph</div>
-                }
-                <div class="form-text">Screenplay, shot-plan, and cast reasoning.</div>
-            </div>
-            <div class="col-md-4">
-                <label class="form-label fw-semibold">Quality &amp; Clip Review Model</label>
-                <select class="form-select" @bind="_qualityModel" disabled="@_busy">
-                    @foreach (var m in _chatModels)
-                    {
-                        var tag = m.SupportsVideoReview ? " [⭐ Native MP4 Video Review]" : " [Image Stills Only]";
-                        <option value="@m.Id">@ModelOptionLabel(m)@tag</option>
-                    }
-                    @if (_chatModels.All(m => !string.Equals(m.Id, _qualityModel, StringComparison.OrdinalIgnoreCase)))
-                    {
-                        <option value="@_qualityModel">@_qualityModel (not in list)</option>
-                    }
-                </select>
-                @if (ModelHint(_qualityModel, "chat") is { } qh)
-                {
-                    <div class="form-text">@qh</div>
-                }
-                <div class="form-text">Multimodal video/vision review (Google Gemini directly analyzes MP4 video files).</div>
+                    <div class="form-text text-muted">Evaluates dialogue &amp; lip sync (Google Gemini natively analyzes MP4 video files).</div>
+                </div>
             </div>
         </div>
     </div>
@@ -516,7 +539,8 @@ else
     private string _modelName = "grok-imagine-video";
     private string _imageModel = "grok-imagine-image-quality";
     private string _planningModel = "grok-4.5";
-    private string _qualityModel = "grok-4.5";
+    private string _visionModel = "grok-4.5";
+    private string _qualityModel = "gemini-2.5-pro";
     private string _aspect = "16:9";
     private string _resolution = "480p";
     private int _durationSeconds = 8;
@@ -534,7 +558,9 @@ else
     private List<SupportedModelDto> _allModels = new();
     private List<SupportedModelDto> _videoModels = new();
     private List<SupportedModelDto> _imageModels = new();
-    private List<SupportedModelDto> _chatModels = new();
+    private List<SupportedModelDto> _planningModels = new();
+    private List<SupportedModelDto> _visionModels = new();
+    private List<SupportedModelDto> _videoReviewModels = new();
 
     protected override async Task OnInitializedAsync()
     {
@@ -580,20 +606,30 @@ else
             _allModels = list.ToList();
             _videoModels = _allModels.Where(m => m.Capability == "video").ToList();
             _imageModels = _allModels.Where(m => m.Capability == "image").ToList();
-            _chatModels = _allModels.Where(m => m.Capability is "chat" or "vision").GroupBy(m => m.Id)
+            _planningModels = _allModels.Where(m => m.Capability == "chat").ToList();
+            _visionModels = _allModels.Where(m => m.Capability == "vision").ToList();
+            _videoReviewModels = _allModels.Where(m => m.SupportsVideoReview || m.Capability is "chat" or "vision")
+                .GroupBy(m => m.Id)
                 .Select(g => g.First()).ToList();
+
             if (_videoModels.Count == 0)
-                _videoModels.Add(new SupportedModelDto { Id = "grok-imagine-video", DisplayName = "Grok Imagine Video" });
+                _videoModels.Add(new SupportedModelDto { Id = "grok-imagine-video", DisplayName = "Grok Imagine Video", Provider = "Xai" });
             if (_imageModels.Count == 0)
-                _imageModels.Add(new SupportedModelDto { Id = "grok-imagine-image-quality", DisplayName = "Grok Imagine Image" });
-            if (_chatModels.Count == 0)
-                _chatModels.Add(new SupportedModelDto { Id = "grok-4.5", DisplayName = "Grok 4.5" });
+                _imageModels.Add(new SupportedModelDto { Id = "grok-imagine-image-quality", DisplayName = "Grok Imagine Image", Provider = "Xai" });
+            if (_planningModels.Count == 0)
+                _planningModels.Add(new SupportedModelDto { Id = "grok-4.5", DisplayName = "Grok 4.5", Provider = "Xai" });
+            if (_visionModels.Count == 0)
+                _visionModels.Add(new SupportedModelDto { Id = "grok-4.5", DisplayName = "Grok 4.5 (vision)", Provider = "Xai" });
+            if (_videoReviewModels.Count == 0)
+                _videoReviewModels.Add(new SupportedModelDto { Id = "gemini-2.5-pro", DisplayName = "Gemini 2.5 Pro", Provider = "Google", SupportsVideoReview = true });
         }
         catch
         {
-            _videoModels = [new SupportedModelDto { Id = "grok-imagine-video", DisplayName = "Grok Imagine Video" }];
-            _imageModels = [new SupportedModelDto { Id = "grok-imagine-image-quality", DisplayName = "Grok Imagine Image" }];
-            _chatModels = [new SupportedModelDto { Id = "grok-4.5", DisplayName = "Grok 4.5" }];
+            _videoModels = [new SupportedModelDto { Id = "grok-imagine-video", DisplayName = "Grok Imagine Video", Provider = "Xai" }];
+            _imageModels = [new SupportedModelDto { Id = "grok-imagine-image-quality", DisplayName = "Grok Imagine Image", Provider = "Xai" }];
+            _planningModels = [new SupportedModelDto { Id = "grok-4.5", DisplayName = "Grok 4.5", Provider = "Xai" }];
+            _visionModels = [new SupportedModelDto { Id = "grok-4.5", DisplayName = "Grok 4.5 (vision)", Provider = "Xai" }];
+            _videoReviewModels = [new SupportedModelDto { Id = "gemini-2.5-pro", DisplayName = "Gemini 2.5 Pro", Provider = "Google", SupportsVideoReview = true }];
         }
     }
 
