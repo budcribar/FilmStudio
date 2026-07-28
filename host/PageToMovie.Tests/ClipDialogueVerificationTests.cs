@@ -29,7 +29,7 @@ public class ClipDialogueVerificationTests
     }
 
     [Fact]
-    public void SaveVerification_persists_json_report()
+    public async Task SaveVerification_persists_json_report()
     {
         var tempDir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
         var projDir = Path.Combine(tempDir, "projects", "test_proj");
@@ -53,7 +53,7 @@ public class ClipDialogueVerificationTests
                 Status = "verified",
             };
 
-            service.SaveVerification("test_proj", vo);
+            await service.SaveVerificationAsync("test_proj", vo);
 
             var loaded = service.LoadVerification("test_proj", 1, 1);
             Assert.NotNull(loaded);

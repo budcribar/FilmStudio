@@ -1393,22 +1393,22 @@ public class BugHuntTests
     }
 
     [Fact]
-    public void Bug93_MediaDuration_probe_missing_file()
+    public async Task Bug93_MediaDuration_probe_missing_file()
     {
         var opts = Options.Create(new PageToMovieOptions { WorkspaceRoot = Path.GetTempPath() });
         var probe = new MediaDurationProbe(opts, NullLogger<MediaDurationProbe>.Instance);
-        Assert.Null(probe.GetDurationSeconds(null));
-        Assert.Null(probe.GetDurationSeconds(""));
-        Assert.Null(probe.GetDurationSeconds(Path.Combine(Path.GetTempPath(), "nope_" + Guid.NewGuid() + ".mp4")));
+        Assert.Null(await probe.GetDurationSecondsAsync(null));
+        Assert.Null(await probe.GetDurationSecondsAsync(""));
+        Assert.Null(await probe.GetDurationSecondsAsync(Path.Combine(Path.GetTempPath(), "nope_" + Guid.NewGuid() + ".mp4")));
     }
 
     [Fact]
-    public void Bug94_SceneActualDuration_empty_paths()
+    public async Task Bug94_SceneActualDuration_empty_paths()
     {
         var opts = Options.Create(new PageToMovieOptions { WorkspaceRoot = Path.GetTempPath() });
         var probe = new MediaDurationProbe(opts, NullLogger<MediaDurationProbe>.Instance);
-        Assert.Null(probe.GetSceneActualDurationSeconds(null, Array.Empty<string>()));
-        Assert.Null(probe.GetSceneActualDurationSeconds("", new[] { Path.Combine(Path.GetTempPath(), "missing.mp4") }));
+        Assert.Null(await probe.GetSceneActualDurationSecondsAsync(null, Array.Empty<string>()));
+        Assert.Null(await probe.GetSceneActualDurationSecondsAsync("", new[] { Path.Combine(Path.GetTempPath(), "missing.mp4") }));
     }
 
     [Fact]

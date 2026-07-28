@@ -78,11 +78,6 @@ public sealed class ClipDialogueVerificationService
         }
     }
 
-    public void SaveVerification(string projectId, ClipDialogueVerificationResult result)
-    {
-        SaveVerificationAsync(projectId, result).GetAwaiter().GetResult();
-    }
-
     public async Task SaveVerificationAsync(string projectId, ClipDialogueVerificationResult result, CancellationToken ct = default)
     {
         var path = VerificationPath(projectId, result.SceneNumber, result.ClipNumber);
@@ -127,7 +122,7 @@ public sealed class ClipDialogueVerificationService
                 SummaryNote = "No dialogue planned for this clip.",
                 VerifiedAt = DateTime.UtcNow,
             };
-            SaveVerification(projectId, noSpeechResult);
+            await SaveVerificationAsync(projectId, noSpeechResult, ct).ConfigureAwait(false);
             return noSpeechResult;
         }
 
@@ -144,7 +139,7 @@ public sealed class ClipDialogueVerificationService
                 SummaryNote = "Google Gemini key (GEMINI_API_KEY) required for native MP4 video & audio dialogue verification. Please set key in Configuration.",
                 VerifiedAt = DateTime.UtcNow,
             };
-            SaveVerification(projectId, unverified);
+            await SaveVerificationAsync(projectId, unverified, ct).ConfigureAwait(false);
             return unverified;
         }
 
@@ -189,7 +184,7 @@ public sealed class ClipDialogueVerificationService
                 SummaryNote = "Clip video file (.mp4) not found on server disk. Please generate video clips for this scene first.",
                 VerifiedAt = DateTime.UtcNow,
             };
-            SaveVerification(projectId, result);
+            await SaveVerificationAsync(projectId, result, ct).ConfigureAwait(false);
             return result;
         }
 

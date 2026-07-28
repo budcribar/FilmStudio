@@ -21,52 +21,17 @@ public sealed class MediaDurationProbe
     }
 
     /// <summary>Duration in seconds, or null if unknown / missing file.</summary>
-    public double? GetDurationSeconds(string? mediaPath)
-    {
-        if (string.IsNullOrWhiteSpace(mediaPath) || !File.Exists(mediaPath))
-            return null;
+    public Task<double?> GetDurationSecondsAsync(string? mediaPath, CancellationToken ct = default) =>
+        TryProbeSecondsAsync(mediaPath, ct);
 
-        try
-        {
-            var fi = new FileInfo(mediaPath);
-            if (fi.Length < 1024) return null;
-
-            var key = fi.FullName;
-            if (_cache.TryGetValue(key, out var hit) &&
-                hit.Ticks == fi.LastWriteTimeUtc.Ticks &&
-                hit.Length == fi.Length)
-                return hit.Sec;
-
-            var fromManifest = TryReadManifestDuration(mediaPath);
-            if (fromManifest is > 0)
-            {
-                _cache[key] = (fi.LastWriteTimeUtc.Ticks, fi.Length, fromManifest.Value);
-                return fromManifest;
-            }
-
-            var fromMp4 = Mp4DurationReader.TryReadSeconds(fi.FullName);
-            if (fromMp4 is > 0)
-            {
-                _cache[key] = (fi.LastWriteTimeUtc.Ticks, fi.Length, fromMp4.Value);
-                return fromMp4;
-            }
-        }
-        catch (Exception ex)
-        {
-            if (_log.IsEnabled(LogLevel.Debug))
-                _log.LogDebug(ex, "Duration probe failed for {Path}", mediaPath);
-        }
-
-        return null;
-    }
-
-    public double? GetSceneActualDurationSeconds(
+    public async Task<double?> GetSceneActualDurationSecondsAsync(
         string? compositePath,
-        IEnumerable<string> exactClipPaths)
+        IEnumerable<string> exactClipPaths,
+        CancellationToken ct = default)
     {
         if (!string.IsNullOrWhiteSpace(compositePath) && File.Exists(compositePath))
         {
-            var d = GetDurationSeconds(compositePath);
+            var d = await GetDurationSecondsAsync(compositePath, ct).ConfigureAwait(false);
             if (d is > 0) return d;
         }
 
@@ -74,7 +39,7 @@ public sealed class MediaDurationProbe
         var any = false;
         foreach (var clip in exactClipPaths)
         {
-            var d = GetDurationSeconds(clip);
+            var d = await GetDurationSecondsAsync(clip, ct).ConfigureAwait(false);
             if (d is > 0)
             {
                 sum += d.Value;
@@ -103,11 +68,6 @@ public sealed class MediaDurationProbe
                 .ConfigureAwait(false);
         }
         catch { /* ignore */ }
-    }
-
-    private static double? TryReadManifestDuration(string mediaPath)
-    {
-        return TryReadManifestDurationAsync(mediaPath).GetAwaiter().GetResult();
     }
 
     public async Task<double?> TryProbeSecondsAsync(string? mediaPath, CancellationToken ct = default)

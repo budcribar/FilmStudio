@@ -2569,7 +2569,7 @@ public sealed class ProjectStore
                     var cp = ResolveClipVideoPath(projectId, sn, cn);
                     if (cp is not null) clipPaths.Add(cp);
                 }
-                actual = _duration.GetSceneActualDurationSeconds(compositePath, clipPaths);
+                actual = await _duration.GetSceneActualDurationSecondsAsync(compositePath, clipPaths, ct).ConfigureAwait(false);
             }
 
             var chars = new List<string>();
@@ -2731,7 +2731,7 @@ public sealed class ProjectStore
                 double? actualClip = null;
                 if (probeDurations && onDisk && _duration is not null && clipPath is not null)
                 {
-                    actualClip = _duration.GetDurationSeconds(clipPath);
+                    actualClip = await _duration.GetDurationSecondsAsync(clipPath, ct).ConfigureAwait(false);
                 }
 
                 var visualPrompt = c.TryGetProperty("visual_prompt", out var vp) ? vp.GetString() ?? "" : "";
@@ -2796,7 +2796,7 @@ public sealed class ProjectStore
                 .Select(c => ResolveClipVideoPath(projectId, sceneNumber, c.ClipNumber))
                 .Where(p => p is not null)
                 .Cast<string>();
-            actual = _duration.GetSceneActualDurationSeconds(compositePath, clipPaths);
+            actual = await _duration.GetSceneActualDurationSecondsAsync(compositePath, clipPaths, ct).ConfigureAwait(false);
         }
 
         var chars = new List<string>();
