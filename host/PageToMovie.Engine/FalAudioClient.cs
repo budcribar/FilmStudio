@@ -38,7 +38,8 @@ public sealed class FalAudioClient : IAudioClient
 
     private string? ResolveApiKey()
     {
-        var key = Environment.GetEnvironmentVariable(SupportedModelCatalog.FalApiKeyEnv);
+        var key = Environment.GetEnvironmentVariable(SupportedModelCatalog.FalApiKeyEnv)
+            ?? Environment.GetEnvironmentVariable(SupportedModelCatalog.FalApiKeyFallbackEnv);
         if (!string.IsNullOrWhiteSpace(key)) return key.Trim();
         return null;
     }

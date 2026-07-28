@@ -151,7 +151,8 @@ public static class SupportedModelCatalog
     public const string AnthropicApiBase = "https://api.anthropic.com/v1";
     public const string AnthropicApiKeyEnv = "ANTHROPIC_API_KEY";
     public const string FalApiBase = "https://queue.fal.run";
-    public const string FalApiKeyEnv = "FAL_KEY";
+    public const string FalApiKeyEnv = "FAL_API_KEY";
+    public const string FalApiKeyFallbackEnv = "FAL_KEY";
 
     private static readonly SupportedModelEntry[] BuiltInDefaults =
     [
