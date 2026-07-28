@@ -64,10 +64,11 @@ public sealed class ClientVideoStitchService
                             $"assets/video/scene_{sn:D2}_clip_{c.ClipNumber:D2}.mp4");
                     urls.Add(local ?? _engine.ClipVideoUrl(projectId, sn, c.ClipNumber));
                 }
+                // Individual clips gathered for this scene — skip composite completely!
                 continue;
             }
 
-            // Fallback to scene composite only if no individual clips are found on disk
+            // Fallback to scene composite strictly ONLY if zero individual clips were found for this scene
             var summary = sceneList?.FirstOrDefault(s => s.SceneNumber == sn);
             if (summary?.CompositeExists == true || detail?.CompositeExists == true)
             {
