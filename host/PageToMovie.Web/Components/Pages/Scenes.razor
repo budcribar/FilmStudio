@@ -473,11 +473,12 @@ else if (Session.IsAdmin && _job is not null &&
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach (var s in SortedVisibleScenes)
-                    {
-                        var sn = s.SceneNumber;
-                        var isSel = _selected.Contains(sn);
-                        <tr class="@(isSel ? "table-active" : "")" style="cursor:pointer;">
+                    <Virtualize TItem="SceneSummary" Items="SortedVisibleScenes.ToList()" Context="s">
+                        @{
+                            var sn = s.SceneNumber;
+                            var isSel = _selected.Contains(sn);
+                        }
+                        <tr class="@(isSel ? "table-active" : "")" style="cursor:pointer;" @key="sn">
                             <td @onclick:stopPropagation="true">
                                 <input class="form-check-input" type="checkbox"
                                        checked="@isSel"
@@ -554,7 +555,7 @@ else if (Session.IsAdmin && _job is not null &&
                                 }
                             </td>
                         </tr>
-                    }
+                    </Virtualize>
                 </tbody>
             </table>
         </div>
