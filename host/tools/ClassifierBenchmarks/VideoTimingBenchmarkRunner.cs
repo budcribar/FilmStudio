@@ -37,12 +37,22 @@ public static class VideoTimingBenchmarkRunner
         var flags = ParseFlags(args);
         int limit = flags.TryGetValue("limit", out var lStr) && int.TryParse(lStr, out var lVal) ? Math.Max(1, lVal) : 35;
         string model = flags.GetValueOrDefault("model") ?? "fal-ai/hunyuan-video";
+        bool verbose = flags.ContainsKey("verbose") || flags.ContainsKey("log");
+
+        if (verbose)
+        {
+            Console.Error.WriteLine($"[STDERR LOG] Verbose logging enabled (--verbose / --log).");
+            Console.Error.WriteLine($"[STDERR LOG] Model requested: '{model}'");
+            Console.Error.WriteLine($"[STDERR LOG] Working directory: '{paths.RepoRoot}'");
+            var falKey = Environment.GetEnvironmentVariable("FAL_API_KEY") ?? Environment.GetEnvironmentVariable("FAL_KEY");
+            Console.Error.WriteLine($"[STDERR LOG] FAL_API_KEY status: {(string.IsNullOrWhiteSpace(falKey) ? "MISSING (using empirical fallback model)" : "ACTIVE")}");
+        }
 
         var timingRoot = Path.Combine(paths.RepoRoot, "host", "evals", "video_timing_benchmarks");
         var jsonPath = Path.Combine(timingRoot, "timing_prompts.json");
         if (!File.Exists(jsonPath))
         {
-            Console.Error.WriteLine($"Timing prompts file not found at: {jsonPath}");
+            Console.Error.WriteLine($"[STDERR LOG] ERROR: Timing prompts file not found at: {jsonPath}");
             return 1;
         }
 
@@ -54,6 +64,7 @@ public static class VideoTimingBenchmarkRunner
         Console.WriteLine($" VIDEO TIMING BENCHMARK SUITE (Estimate vs. Actual)");
         Console.WriteLine($" Selected Model : {model}");
         Console.WriteLine($" Prompts Count  : {selectedPrompts.Count} (Limited to {limit})");
+        Console.WriteLine($" Logging Mode   : {(verbose ? "VERBOSE (STDERR Enabled)" : "Standard")}");
         Console.WriteLine($"=======================================================================\n");
 
         var results = new List<VideoTimingResultRow>();
@@ -63,6 +74,11 @@ public static class VideoTimingBenchmarkRunner
 
         foreach (var p in selectedPrompts)
         {
+            if (verbose)
+            {
+                Console.Error.WriteLine($"[STDERR LOG] Preparing benchmark entry [{p.Id}] category='{p.Category}' mode='{p.ConcurrencyMode ?? "serial"}' gamma={p.ConcurrencyFactor:F2}");
+            }
+
             Console.Write($"Running benchmark [{p.Id}] ({p.Category})... ");
             
             double mockActual = Math.Round(p.EstimatedDurationSec + (Random.Shared.NextDouble() * 0.6 - 0.3), 1);
