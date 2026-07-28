@@ -1007,8 +1007,15 @@ else
                         @if (!string.IsNullOrWhiteSpace(ver.TranscribedDialogue) || !string.IsNullOrWhiteSpace(ver.DetectedSpeaker))
                         {
                             <div class="p-2 mb-2 rounded bg-body-tertiary border border-secondary-subtle x-small text-start">
-                                <div><strong>Expected:</strong> <em>@(ver.ExpectedSpeaker ?? "None")</em> — &ldquo;@(ver.ExpectedDialogue ?? "")&rdquo;</div>
-                                <div><strong>Heard:</strong> <em>@(ver.DetectedSpeaker ?? "Unknown")</em> — &ldquo;@(ver.TranscribedDialogue ?? "")&rdquo;</div>
+                                <div class="mb-1">
+                                    <span class="fw-bold me-1">Speaker:</span>
+                                    <span>Expected <em>@(ver.ExpectedSpeaker ?? "None")</em></span>
+                                    @if (!string.IsNullOrWhiteSpace(ver.DetectedSpeaker))
+                                    {
+                                        <span class="ms-1">· Heard <em>@ver.DetectedSpeaker</em></span>
+                                    }
+                                </div>
+                                @RenderDiffHtml(ver.ExpectedDialogue, ver.TranscribedDialogue)
                             </div>
                         }
                     }
@@ -2925,6 +2932,61 @@ else
         var m = whole / 60;
         var s = whole % 60;
         return $"{m}:{s:D2}";
+    }
+
+    private static MarkupString RenderDiffHtml(string? expected, string? heard)
+    {
+        var expStr = expected ?? "";
+        var heardStr = heard ?? "";
+        if (string.IsNullOrWhiteSpace(expStr) && string.IsNullOrWhiteSpace(heardStr))
+            return new MarkupString("—");
+
+        var expWords = System.Text.RegularExpressions.Regex.Split(expStr.Trim(), @"\s+").Where(w => !string.IsNullOrWhiteSpace(w)).ToList();
+        var heardWords = System.Text.RegularExpressions.Regex.Split(heardStr.Trim(), @"\s+").Where(w => !string.IsNullOrWhiteSpace(w)).ToList();
+
+        static string Clean(string w) => System.Text.RegularExpressions.Regex.Replace(w.ToLowerInvariant(), @"[^\w]", "");
+
+        var expClean = expWords.Select(Clean).ToList();
+        var heardClean = heardWords.Select(Clean).ToList();
+
+        var sb = new System.Text.StringBuilder();
+        sb.Append("<div class=\"small\">");
+
+        // Expected line: missing words highlighted in strikethrough red
+        sb.Append("<div><strong>Expected:</strong> ");
+        for (int i = 0; i < expWords.Count; i++)
+        {
+            var word = System.Net.WebUtility.HtmlEncode(expWords[i]);
+            var c = expClean[i];
+            if (!string.IsNullOrEmpty(c) && !heardClean.Contains(c))
+            {
+                sb.Append($"<span class=\"badge bg-danger-subtle text-danger text-decoration-line-through me-1\" title=\"Missing from spoken clip audio\">{word}</span> ");
+            }
+            else
+            {
+                sb.Append($"{word} ");
+            }
+        }
+        sb.Append("</div>");
+
+        // Heard line: extra words highlighted in soft yellow
+        sb.Append("<div><strong>Heard:</strong> ");
+        for (int i = 0; i < heardWords.Count; i++)
+        {
+            var word = System.Net.WebUtility.HtmlEncode(heardWords[i]);
+            var c = heardClean[i];
+            if (!string.IsNullOrEmpty(c) && !expClean.Contains(c))
+            {
+                sb.Append($"<span class=\"badge bg-warning-subtle text-warning border border-warning-subtle me-1\" title=\"Extra/changed word heard in clip\">{word}</span> ");
+            }
+            else
+            {
+                sb.Append($"{word} ");
+            }
+        }
+        sb.Append("</div></div>");
+
+        return new MarkupString(sb.ToString());
     }
 
     private bool _verifyingClip;
