@@ -184,7 +184,11 @@ line was cut off mid-delivery rather than fully spoken with a few words misheard
 Verified with 4 new unit tests covering the truncated/matched/speaker-swap/no-dialogue cases, plus the full
 959-test suite passing.
 
-## 9. Phase 10 — Category consolidation: embedding + LLM merge pass (not yet started)
+## 9. Phase 10 — Category consolidation: embedding + LLM merge pass
+
+> **Status:** Backlog — deliberately deferred, not an oversight. Needs real production telemetry volume
+> (JIT-discovered `jit_*` categories) to accumulate before there's anything worth consolidating; starting it
+> earlier would mean designing the merge/clustering thresholds against synthetic or near-empty data.
 
 **Problem:** `JitBenchmarkService` mints `jit_{hash(actionDescription)}` per unique phrasing. Near-duplicate
 descriptions ("pulls out a rusty blade" vs. "draws a switchblade") never converge onto the same calibrated
@@ -225,8 +229,7 @@ prompt stay static, hand-maintained C# literals.
 | 7 | ✅ Done | Per-model `MaxClipDurationSeconds` in `SupportedModelCatalog`; every production caller (FilmJobService, Stage2PlannerService, FountainStage1Importer/ScreenplayService, ProjectStore) resolves and passes the project's actual model instead of defaulting |
 | 8 | ✅ Done | Next clip's requested duration reconciled against previous clip's measured overrun (continuation-chain scenes only, adjacency-gated, capped at 2.0s) |
 | 9 | ✅ Done | Real dialogue-verification result wired into `DialogueTruncated` (`ClipDialogueVerificationService.LooksTruncated`) |
-| 10 | Not started | `source_text` column → embedding cluster → LLM merge → admin-approved, DB-backed category registry |
+| 10 | 📋 Backlog | `source_text` column → embedding cluster → LLM merge → admin-approved, DB-backed category registry |
 
-Phases 6, 7, 8, and 9 are all done. Only **Phase 10** remains, and it depends on meaningful telemetry volume
-accumulating first — there's no rush to start it before real production usage generates JIT-discovered categories
-worth consolidating.
+Phases 6, 7, 8, and 9 are all done. **Phase 10 is backlog** (see status note above) — gated on meaningful
+telemetry volume accumulating first, not scheduled for the current work cycle.

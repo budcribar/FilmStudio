@@ -119,11 +119,13 @@ flowchart TD
   14. **`DepthOfFieldClassifier`**: Acts as a Focus Puller & Optical Cinematographer, assigning optical aperture settings ($f/1.4$ to $f/8$), primary focal planes, and dynamic rack-focus transitions per shot.
   15. **`ColorPaletteGradingClassifier`**: Acts as a Master Colorist & Film Stock Director, assigning film stock emulsion characteristics (*Kodak Vision3 500T 5219*, *Fuji Eterna*), color palettes, and color grading prompts per scene.
 - **Deterministic Pacing**: *Silent Prelude Coalescing* automatically folds 5s silent lead-in beats into Beat 2 so voiceover/dialogue begins on frame 1 of the scene.
+- **Action Timing & Concurrency Learning System** (`ClipDurationEstimator`, `ActionCameraOverheadLedger`, `AiActionOverheadClassifier`, `JitBenchmarkService`): deterministic word-count + calibrated camera/action overhead model (with a Concurrency Overlap Factor for serial vs. concurrent action/dialogue beats) decides how much dialogue fits a clip before it's split, model-aware per the project's selected video model's actual duration limits. Falls back to a confidence-gated AI classifier or a live 1-clip JIT benchmark for uncalibrated actions, and — for continuation-chain models — reconciles the next clip's duration against the previous clip's real measured result within a scene at no added cost. See `host/docs/action-timing-plan.md` for the full closed-loop design.
 
 ### 5. Video Generation (`ClipVideoPromptBuilder` & `GrokVideoClient` / `GeminiVideoClient`)
 - **AI Engine**: **Grok Imagine Video / Veo**
 - **Action**: Constructs 4,000-character prompts incorporating style locks, on-screen cast counts, visual action prose, and locked character reference images (`<IMAGE_1>`, `<IMAGE_2>`).
 - **Identity Attachment**: Attaches locked reference image plates directly to the video generation API call for 100% character face and wardrobe consistency across shots.
+- **Dialogue Verification & Timing Telemetry**: after each clip, `ClipDialogueVerificationService` automatically transcribes the rendered audio and compares it against the expected line; the result (including a truncation signal) and the clip's real measured duration feed back into the Action Timing system's SQLite telemetry so future estimates improve — see `host/docs/action-timing-plan.md`.
 
 ### 6. Multi-Frame Auto-Review (`ClipAutoReviewService`)
 - **Browser**: Samples previous-clip tail + current-clip frames with **ffmpeg.wasm**, uploads JPEGs over the authenticated job API.
@@ -169,6 +171,7 @@ dotnet test PageToMovie.Tests --filter "Category=LiveApi"
 | Doc | Topic |
 |-----|--------|
 | `host/README.md` | API routes, SignalR, LoadSim, capability matrix |
+| `host/docs/action-timing-plan.md` | Action Timing & Concurrency Learning System (clip duration, dialogue splitting, JIT calibration) |
 | `host/docs/` | Multi-user / loadsim soak |
 | `prompts/README.md` | Product prompts and schemas |
 | `docs/learning_loop.md` | Feedback / dirty flags (concept) |
