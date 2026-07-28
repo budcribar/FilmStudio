@@ -56,6 +56,30 @@ public class JitBenchmarkServiceTests
         }
     }
 
+    private sealed class TestVisionClient : IVisionClient
+    {
+        public bool IsConfigured => true;
+        public bool VisionInvoked { get; private set; }
+
+        public Task<string> TranscribePageAsync(string imagePath, int page, string model = "grok-4.5", CancellationToken ct = default)
+            => Task.FromResult("");
+
+        public Task<CharacterPageClassification> ClassifyCharactersOnImageAsync(string imagePath, int page, IReadOnlyList<CharacterClassifyHint> cast, string model = "grok-4.5", CancellationToken ct = default)
+            => Task.FromResult(new CharacterPageClassification());
+
+        public Task<string> CompleteWithImagesAsync(string prompt, IReadOnlyList<string> imagePaths, string model = "grok-4.5", string detail = "low", CancellationToken ct = default)
+        {
+            VisionInvoked = true;
+            return Task.FromResult("""
+            {
+              "actionCompletionSec": 2.15,
+              "confidence": 0.96,
+              "explanation": "Verified physical action completes at 2.15s."
+            }
+            """);
+        }
+    }
+
     [Fact]
     public void AiActionOverheadClassifier_ClassifiesWeaponActionCorrectly()
     {
@@ -96,19 +120,20 @@ public class JitBenchmarkServiceTests
     }
 
     [Fact]
-    public async Task EnsureBeatCalibratedAsync_ExecutesLiveJitWhenVideoClientIsConfigured()
+    public async Task EnsureBeatCalibratedAsync_ExecutesLiveJitAndVisionAnalysis()
     {
         var ledger = new ActionCameraOverheadLedger();
         var router = new SmartClassifierModelRouter();
         var classifier = new AiActionOverheadClassifier(router, ledger);
         var videoClient = new TestVideoClient();
-        var jitService = new JitBenchmarkService(ledger, classifier, videoClient);
+        var visionClient = new TestVisionClient();
+        var jitService = new JitBenchmarkService(ledger, classifier, videoClient, visionClient);
 
         var result = await jitService.EnsureBeatCalibratedAsync("Slashes with a machete", "(roaring)");
 
         Assert.True(result.IsLiveJitBenchmark);
         Assert.True(videoClient.GenerationSubmitted);
-        Assert.Contains("Live 1-clip JIT render execution", result.SourceDescription);
+        Assert.Contains("Live Video API", result.SourceDescription);
     }
 
     [Fact]
