@@ -434,7 +434,7 @@ public sealed class CastFromScreenplayService
     public static string NameToCharacterKey(string displayName)
     {
         var raw = (displayName ?? "").Trim();
-        var tokens = Regex.Split(raw, @"[^A-Za-z0-9]+")
+        var tokens = NonAlphaNumericRegex.Split(raw)
             .Where(t => t.Length > 0)
             .ToList();
         if (tokens.Count == 0)
@@ -475,7 +475,7 @@ public sealed class CastFromScreenplayService
         if (string.IsNullOrWhiteSpace(bookText) || nameHints.Count == 0 || maxChars < 200)
             return "";
 
-        var paras = Regex.Split(bookText.Trim(), @"\n\s*\n+")
+        var paras = ParagraphSplitRegex.Split(bookText.Trim())
             .Select(p => p.Trim())
             .Where(p => p.Length > 0)
             .ToList();
@@ -571,6 +571,14 @@ public sealed class CastFromScreenplayService
         + @"species|fur|mane|paw|tail|whisker|feather|scale)\b",
         RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
+    private static readonly Regex NonAlphaNumericRegex = new(@"[^A-Za-z0-9]+", RegexOptions.Compiled);
+    private static readonly Regex ParagraphSplitRegex = new(@"\n\s*\n+", RegexOptions.Compiled);
+    private static readonly Regex WhitespaceRegex = new(@"\s+", RegexOptions.Compiled);
+    private static readonly Regex MatchConsistentlyRegex = new(@"^Match\s+.+\s+consistently", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+    private static readonly Regex MarkdownCodePrefixRegex = new(@"^```(?:json|text)?\s*", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+    private static readonly Regex MarkdownCodeSuffixRegex = new(@"\s*```\s*$", RegexOptions.Compiled);
+    private static readonly Regex PhotorealMediumRegex = new(@"\b(photoreal|photo-?real|live[- ]?action)\b", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
     private static string SelectSpineWindows(string text, int maxChars, int windowCount)
     {
         text = NormalizeNewlines(text);
@@ -640,7 +648,7 @@ public sealed class CastFromScreenplayService
         var line = excerpt.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
             .FirstOrDefault(l => !l.StartsWith("[[", StringComparison.Ordinal) && l.Length > 20)
             ?? excerpt.Trim();
-        line = Regex.Replace(line, @"\s+", " ").Trim();
+        line = WhitespaceRegex.Replace(line, " ").Trim();
         if (line.Length > 280) line = line[..277].TrimEnd() + "…";
         if (IsStubLook(line)) return "";
         // Prefer not to return pure label
@@ -657,7 +665,7 @@ public sealed class CastFromScreenplayService
         if (t.Contains("as in the screenplay", StringComparison.OrdinalIgnoreCase)) return true;
         if (t.Contains("as described in the book", StringComparison.OrdinalIgnoreCase)) return true;
         if (t.Contains("see screenplay", StringComparison.OrdinalIgnoreCase)) return true;
-        if (Regex.IsMatch(t, @"^Match\s+.+\s+consistently", RegexOptions.IgnoreCase)) return true;
+        if (MatchConsistentlyRegex.IsMatch(t)) return true;
         if (t.Length < 12) return true;
         return false;
     }
@@ -667,8 +675,8 @@ public sealed class CastFromScreenplayService
         text = (text ?? "").Trim();
         if (text.StartsWith("```", StringComparison.Ordinal))
         {
-            text = Regex.Replace(text, @"^```(?:json|text)?\s*", "", RegexOptions.IgnoreCase);
-            text = Regex.Replace(text, @"\s*```\s*$", "");
+            text = MarkdownCodePrefixRegex.Replace(text, "");
+            text = MarkdownCodeSuffixRegex.Replace(text, "");
         }
         return text.Trim();
     }
@@ -697,7 +705,7 @@ public sealed class CastFromScreenplayService
         if (parsed.TryGetValue("render_style_lock", out var rsl) && rsl is not null && !string.IsNullOrWhiteSpace(rsl.ToString()))
         {
             var style = rsl.ToString()!;
-            if (!string.IsNullOrWhiteSpace(bookText) && Regex.IsMatch(style, @"\b(photoreal|photo-?real|live[- ]?action)\b", RegexOptions.IgnoreCase))
+            if (!string.IsNullOrWhiteSpace(bookText) && PhotorealMediumRegex.IsMatch(style))
             {
                 outDoc["render_style_lock"] = "STYLE LOCK: stylized animated children's picture-book look for ALL on-screen cast (animals and humans share the same medium) -- not photoreal, not live-action";
             }
@@ -723,7 +731,7 @@ public sealed class CastFromScreenplayService
             if (val is not Dictionary<string, object?> seed) continue;
             var k = key.StartsWith("Character_", StringComparison.OrdinalIgnoreCase)
                 ? key
-                : "Character_" + Regex.Replace(key, @"[^A-Za-z0-9]+", "_").Trim('_');
+                : "Character_" + NonAlphaNumericRegex.Replace(key, "_").Trim('_');
             if (string.IsNullOrWhiteSpace(k) || k == "Character_") continue;
 
             var name = seed.TryGetValue("canonical_given_name", out var cn) && cn is not null
@@ -817,7 +825,7 @@ public sealed class CastFromScreenplayService
     private static string NormalizeWardrobeKey(string raw) =>
         raw.StartsWith("Wardrobe_", StringComparison.OrdinalIgnoreCase)
             ? raw
-            : "Wardrobe_" + Regex.Replace(raw, @"[^A-Za-z0-9]+", "_").Trim('_');
+            : "Wardrobe_" + NonAlphaNumericRegex.Replace(raw, "_").Trim('_');
 
     private static Dictionary<string, object?> GetSeedsDict(Dictionary<string, object?> doc)
     {
