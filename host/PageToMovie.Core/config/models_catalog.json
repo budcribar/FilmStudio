@@ -31,6 +31,14 @@
       "description": "Generates beat-aligned background music scores and sound effects."
     }
   ],
+  "task_rankings": {
+    "script_import": ["claude-sonnet-5", "grok-4.5", "gemini-2.5-pro"],
+    "beat_pacing": ["grok-4.5", "gemini-2.0-flash", "claude-sonnet-5"],
+    "camera_director": ["grok-4.5", "claude-sonnet-5"],
+    "sound_design": ["grok-4.5", "gemini-2.5-pro"],
+    "cast_analysis": ["grok-4.5", "claude-sonnet-5", "gemini-2.5-pro"],
+    "video_review": ["gemini-2.5-pro", "grok-4.5"]
+  },
   "models": [
     {
       "id": "grok-imagine-video",

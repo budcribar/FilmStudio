@@ -378,6 +378,27 @@ public static class SupportedModelCatalog
         new() { Id = "audio", DisplayName = "Audio & Music Generation", Description = "Generates beat-aligned background music scores and sound effects.", Order = 6 },
     ];
 
+    private static Dictionary<string, List<string>>? _loadedTaskRankings;
+
+    public static IReadOnlyDictionary<string, List<string>> TaskRankings
+    {
+        get
+        {
+            EnsureLoaded();
+            return _loadedTaskRankings ?? DefaultTaskRankings;
+        }
+    }
+
+    public static readonly Dictionary<string, List<string>> DefaultTaskRankings = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ["script_import"] = new() { "claude-sonnet-5", "grok-4.5", "gemini-2.5-pro" },
+        ["beat_pacing"] = new() { "grok-4.5", "gemini-2.0-flash", "claude-sonnet-5" },
+        ["camera_director"] = new() { "grok-4.5", "claude-sonnet-5" },
+        ["sound_design"] = new() { "grok-4.5", "gemini-2.5-pro" },
+        ["cast_analysis"] = new() { "grok-4.5", "claude-sonnet-5", "gemini-2.5-pro" },
+        ["video_review"] = new() { "gemini-2.5-pro", "grok-4.5" },
+    };
+
     /// <summary>All catalog rows (loaded dynamically from models_catalog.json or built-in defaults).</summary>
     public static IReadOnlyList<SupportedModelEntry> Entries
     {
@@ -392,6 +413,7 @@ public static class SupportedModelCatalog
     {
         _loadedEntries = null;
         _loadedCapabilities = null;
+        _loadedTaskRankings = null;
         EnsureLoaded(overrideJsonPath);
     }
 
@@ -439,6 +461,11 @@ public static class SupportedModelCatalog
                         {
                             _loadedCapabilities = DefaultCapabilityDefinitions;
                         }
+
+                        _loadedTaskRankings = container.TaskRankings is { Count: > 0 }
+                            ? new Dictionary<string, List<string>>(container.TaskRankings, StringComparer.OrdinalIgnoreCase)
+                            : DefaultTaskRankings;
+
                         return;
                     }
                 }
@@ -648,5 +675,6 @@ public sealed class ModelCapabilityDto
 public sealed class ModelCatalogContainerDto
 {
     public List<ModelCapabilityDto>? Capabilities { get; set; }
+    public Dictionary<string, List<string>>? TaskRankings { get; set; }
     public List<SupportedModelDto>? Models { get; set; }
 }
