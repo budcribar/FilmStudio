@@ -170,13 +170,21 @@ builder.Services.AddAntiforgery(options =>
 });
 builder.Services.AddSingleton<IUserContext, HttpUserContext>();
 builder.Services.AddSingleton<IUserApiKeyProvider, DbUserApiKeyProvider>();
-// Mail: Resend (Railway Resend_Key / RESEND_API_KEY) → SMTP → log-only
-builder.Services.AddHttpClient("resend", c =>
+static IHttpClientBuilder ConfigurePooledSocketsHandler(IHttpClientBuilder b) =>
+    b.SetHandlerLifetime(TimeSpan.FromMinutes(15))
+     .ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler
+     {
+         PooledConnectionLifetime = TimeSpan.FromMinutes(15),
+         PooledConnectionIdleTimeout = TimeSpan.FromMinutes(2),
+         EnableMultipleHttp2Connections = true,
+     });
+
+ConfigurePooledSocketsHandler(builder.Services.AddHttpClient("resend", c =>
 {
     c.Timeout = TimeSpan.FromSeconds(30);
     c.DefaultRequestHeaders.TryAddWithoutValidation("User-Agent", "PageToMovie/1.0");
-});
-builder.Services.AddHttpClient("media-proxy", c => c.Timeout = TimeSpan.FromMinutes(10));
+}));
+ConfigurePooledSocketsHandler(builder.Services.AddHttpClient("media-proxy", c => c.Timeout = TimeSpan.FromMinutes(10)));
 builder.Services.AddSingleton<IEmailSender>(sp =>
 {
     var mail = sp.GetRequiredService<IOptions<PageToMovieOptions>>().Value.Mail;
@@ -206,62 +214,62 @@ if (useFakes)
 }
 else
 {
-    // Concrete provider clients — each gets its own named HttpClient + base address.
-    builder.Services.AddHttpClient<GrokVideoClient>(c =>
+    // Concrete provider clients — each gets its own named HttpClient + base address + connection pooling.
+    ConfigurePooledSocketsHandler(builder.Services.AddHttpClient<GrokVideoClient>(c =>
     {
         c.BaseAddress = new Uri(GrokVideoClient.ApiBase + "/");
         c.Timeout = TimeSpan.FromMinutes(15);
-    });
-    builder.Services.AddHttpClient<GeminiVideoClient>(c =>
+    }));
+    ConfigurePooledSocketsHandler(builder.Services.AddHttpClient<GeminiVideoClient>(c =>
     {
         c.BaseAddress = new Uri(GeminiVideoClient.ApiBase + "/");
         c.Timeout = TimeSpan.FromMinutes(15);
-    });
-    builder.Services.AddHttpClient<FalVideoClient>(c =>
+    }));
+    ConfigurePooledSocketsHandler(builder.Services.AddHttpClient<FalVideoClient>(c =>
     {
         c.BaseAddress = new Uri(FalVideoClient.ApiBase.TrimEnd('/') + "/");
         c.Timeout = TimeSpan.FromMinutes(15);
-    });
-    builder.Services.AddHttpClient<GrokImageClient>(c =>
+    }));
+    ConfigurePooledSocketsHandler(builder.Services.AddHttpClient<GrokImageClient>(c =>
     {
         c.BaseAddress = new Uri(GrokImageClient.ApiBase + "/");
         c.Timeout = TimeSpan.FromMinutes(5);
-    });
-    builder.Services.AddHttpClient<GeminiImageClient>(c =>
+    }));
+    ConfigurePooledSocketsHandler(builder.Services.AddHttpClient<GeminiImageClient>(c =>
     {
         c.BaseAddress = new Uri(GeminiImageClient.ApiBase + "/");
         c.Timeout = TimeSpan.FromMinutes(5);
-    });
-    builder.Services.AddHttpClient<FalImageClient>(c =>
+    }));
+    ConfigurePooledSocketsHandler(builder.Services.AddHttpClient<FalImageClient>(c =>
     {
         c.BaseAddress = new Uri(FalImageClient.ApiBase.TrimEnd('/') + "/");
         c.Timeout = TimeSpan.FromMinutes(5);
-    });
-    builder.Services.AddHttpClient<GrokVisionClient>(c =>
+    }));
+    ConfigurePooledSocketsHandler(builder.Services.AddHttpClient<GrokVisionClient>(c =>
     {
         c.BaseAddress = new Uri(GrokVisionClient.ApiBase + "/");
         c.Timeout = TimeSpan.FromMinutes(5);
-    });
-    builder.Services.AddHttpClient<GrokChatClient>(c =>
+    }));
+    ConfigurePooledSocketsHandler(builder.Services.AddHttpClient<GrokChatClient>(c =>
     {
         c.BaseAddress = new Uri(GrokChatClient.ApiBase + "/");
         c.Timeout = TimeSpan.FromMinutes(20);
-    });
-    builder.Services.AddHttpClient<AnthropicChatClient>(c =>
+    }));
+    ConfigurePooledSocketsHandler(builder.Services.AddHttpClient<AnthropicChatClient>(c =>
     {
         c.BaseAddress = new Uri(AnthropicChatClient.ApiBase + "/");
         c.Timeout = TimeSpan.FromMinutes(20);
-    });
-    builder.Services.AddHttpClient<GeminiChatClient>(c =>
+    }));
+    ConfigurePooledSocketsHandler(builder.Services.AddHttpClient<GeminiChatClient>(c =>
     {
         c.BaseAddress = new Uri(GeminiChatClient.ApiBase + "/");
         c.Timeout = TimeSpan.FromMinutes(20);
-    });
-    builder.Services.AddHttpClient<FalAudioClient>(c =>
+    }));
+    ConfigurePooledSocketsHandler(builder.Services.AddHttpClient<FalAudioClient>(c =>
     {
         c.BaseAddress = new Uri(FalAudioClient.ApiBase.TrimEnd('/') + "/");
         c.Timeout = TimeSpan.FromMinutes(5);
-    });
+    }));
     builder.Services.AddSingleton<IAudioClient>(sp => sp.GetRequiredService<FalAudioClient>());
     builder.Services.AddSingleton<SceneMusicScoringService>();
     builder.Services.AddSingleton<SmartClassifierModelRouter>();
