@@ -646,6 +646,9 @@ else
                 _videoReviewModels.Add(new SupportedModelDto { Id = "gemini-2.5-pro", DisplayName = "Gemini 2.5 Pro", Provider = "Google", SupportsVideoReview = true });
             if (_audioModels.Count == 0)
                 _audioModels.Add(new SupportedModelDto { Id = "fal-ai/stable-audio", DisplayName = "Stable Audio (Fal.ai)", Provider = "Fal" });
+
+            if (!_audioModels.Any(m => m.Id == "none"))
+                _audioModels.Insert(0, new SupportedModelDto { Id = "none", DisplayName = "None / Disabled (No Background Music)", Provider = "None" });
         }
         catch
         {
@@ -654,7 +657,10 @@ else
             _planningModels = [new SupportedModelDto { Id = "grok-4.5", DisplayName = "Grok 4.5", Provider = "Xai" }];
             _visionModels = [new SupportedModelDto { Id = "grok-4.5", DisplayName = "Grok 4.5 (vision)", Provider = "Xai" }];
             _videoReviewModels = [new SupportedModelDto { Id = "gemini-2.5-pro", DisplayName = "Gemini 2.5 Pro", Provider = "Google", SupportsVideoReview = true }];
-            _audioModels = [new SupportedModelDto { Id = "fal-ai/stable-audio", DisplayName = "Stable Audio (Fal.ai)", Provider = "Fal" }];
+            _audioModels = [
+                new SupportedModelDto { Id = "none", DisplayName = "None / Disabled (No Background Music)", Provider = "None" },
+                new SupportedModelDto { Id = "fal-ai/stable-audio", DisplayName = "Stable Audio (Fal.ai)", Provider = "Fal" }
+            ];
         }
     }
 
