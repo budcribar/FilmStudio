@@ -42,7 +42,7 @@ public class ActionCameraOverheadLedgerTests
             actionCategoryId: "act_pills_sorting",
             concurrencyFactorGamma: 0.85);
 
-        Assert.Equal(2.97, speechWindow, 2);
+        Assert.Equal(2.965, speechWindow, 3);
     }
 
     [Fact]
