@@ -370,7 +370,7 @@ public class UserDatabaseService
 
     private const string UserSelectSql = @"
             SELECT user_id, username, password_hash,
-                   encrypted_xai_api_key, encrypted_gemini_api_key, encrypted_anthropic_api_key,
+                   encrypted_xai_api_key, encrypted_gemini_api_key, encrypted_anthropic_api_key, encrypted_fal_api_key,
                    role, created_at, last_login_at,
                    COALESCE(credits_balance_usd, 0),
                    COALESCE(credits_lifetime_granted_usd, 0),
@@ -507,10 +507,10 @@ public class UserDatabaseService
                 hasServer: falServer,
                 supportsVideoGen: true,
                 supportsVideoReview: false,
-                supportsImageGen: false,
+                supportsImageGen: true,
                 supportsScriptPlanning: false,
                 supportsImageVision: false,
-                notes: "Serverless open-source HunyuanVideo generation (~$0.025 per 5s clip)."),
+                notes: "Serverless open-source video (HunyuanVideo ~$0.025/clip) and image (Flux.1 Dev / Schnell ~$0.003/img) generation."),
             BuildProviderStatus(
                 providerId: "anthropic",
                 displayName: "Anthropic Claude",
@@ -550,17 +550,18 @@ public class UserDatabaseService
         cmd.CommandText = @"
             INSERT INTO users (
                 user_id, username, password_hash,
-                encrypted_xai_api_key, encrypted_gemini_api_key, encrypted_anthropic_api_key,
+                encrypted_xai_api_key, encrypted_gemini_api_key, encrypted_anthropic_api_key, encrypted_fal_api_key,
                 role, created_at, last_login_at,
                 credits_balance_usd, credits_lifetime_granted_usd, credits_lifetime_used_usd,
                 is_disabled, email, email_confirmed_at)
-            VALUES (@id, @name, @hash, @xai, @gemini, @anthropic, @role, @created, @login,
+            VALUES (@id, @name, @hash, @xai, @gemini, @anthropic, @fal, @role, @created, @login,
                     @bal, @granted, @used, @disabled, @email, @email_confirmed)
             ON CONFLICT(user_id) DO UPDATE SET
                 username = excluded.username,
                 encrypted_xai_api_key = COALESCE(excluded.encrypted_xai_api_key, users.encrypted_xai_api_key),
                 encrypted_gemini_api_key = COALESCE(excluded.encrypted_gemini_api_key, users.encrypted_gemini_api_key),
-                encrypted_anthropic_api_key = COALESCE(excluded.encrypted_anthropic_api_key, users.encrypted_anthropic_api_key);
+                encrypted_anthropic_api_key = COALESCE(excluded.encrypted_anthropic_api_key, users.encrypted_anthropic_api_key),
+                encrypted_fal_api_key = COALESCE(excluded.encrypted_fal_api_key, users.encrypted_fal_api_key);
         ";
         cmd.Parameters.AddWithValue("@id", user.UserId);
         cmd.Parameters.AddWithValue("@name", user.Username);
@@ -568,6 +569,7 @@ public class UserDatabaseService
         cmd.Parameters.AddWithValue("@xai", (object?)user.EncryptedXaiApiKey ?? DBNull.Value);
         cmd.Parameters.AddWithValue("@gemini", (object?)user.EncryptedGeminiApiKey ?? DBNull.Value);
         cmd.Parameters.AddWithValue("@anthropic", (object?)user.EncryptedAnthropicApiKey ?? DBNull.Value);
+        cmd.Parameters.AddWithValue("@fal", (object?)user.EncryptedFalApiKey ?? DBNull.Value);
         cmd.Parameters.AddWithValue("@role", user.Role);
         cmd.Parameters.AddWithValue("@created", user.CreatedAt.ToString("o"));
         cmd.Parameters.AddWithValue("@login", (object?)user.LastLoginAt?.ToString("o") ?? DBNull.Value);
@@ -1321,12 +1323,12 @@ public class UserDatabaseService
 
     private static UserEntity ReadUserFromReader(SqliteDataReader reader)
     {
-        // 0 id, 1 name, 2 hash, 3 xai, 4 gemini, 5 anthropic, 6 role, 7 created, 8 login,
-        // 9 balance, 10 granted, 11 used, 12 is_disabled, 13 email, 14 email_confirmed_at
+        // 0 id, 1 name, 2 hash, 3 xai, 4 gemini, 5 anthropic, 6 fal, 7 role, 8 created, 9 login,
+        // 10 balance, 11 granted, 12 used, 13 is_disabled, 14 email, 15 email_confirmed_at
         DateTimeOffset? confirmed = null;
-        if (reader.FieldCount > 14 && !reader.IsDBNull(14))
+        if (reader.FieldCount > 15 && !reader.IsDBNull(15))
         {
-            var raw = reader.GetString(14);
+            var raw = reader.GetString(15);
             if (DateTimeOffset.TryParse(raw, out var c)) confirmed = c;
         }
         return new UserEntity
@@ -1337,14 +1339,15 @@ public class UserDatabaseService
             EncryptedXaiApiKey = reader.IsDBNull(3) ? null : reader.GetString(3),
             EncryptedGeminiApiKey = reader.IsDBNull(4) ? null : reader.GetString(4),
             EncryptedAnthropicApiKey = reader.IsDBNull(5) ? null : reader.GetString(5),
-            Role = reader.GetString(6),
-            CreatedAt = DateTime.TryParse(reader.GetString(7), out var dt) ? dt : DateTime.UtcNow,
-            LastLoginAt = reader.IsDBNull(8) ? null : (DateTime.TryParse(reader.GetString(8), out var ldt) ? ldt : null),
-            CreditsBalanceUsd = reader.FieldCount > 9 && !reader.IsDBNull(9) ? reader.GetDouble(9) : 0,
-            CreditsLifetimeGrantedUsd = reader.FieldCount > 10 && !reader.IsDBNull(10) ? reader.GetDouble(10) : 0,
-            CreditsLifetimeUsedUsd = reader.FieldCount > 11 && !reader.IsDBNull(11) ? reader.GetDouble(11) : 0,
-            IsDisabled = reader.FieldCount > 12 && !reader.IsDBNull(12) && reader.GetInt64(12) != 0,
-            Email = reader.FieldCount > 13 && !reader.IsDBNull(13) ? reader.GetString(13) : null,
+            EncryptedFalApiKey = reader.IsDBNull(6) ? null : reader.GetString(6),
+            Role = reader.GetString(7),
+            CreatedAt = DateTime.TryParse(reader.GetString(8), out var dt) ? dt : DateTime.UtcNow,
+            LastLoginAt = reader.IsDBNull(9) ? null : (DateTime.TryParse(reader.GetString(9), out var ldt) ? ldt : null),
+            CreditsBalanceUsd = reader.FieldCount > 10 && !reader.IsDBNull(10) ? reader.GetDouble(10) : 0,
+            CreditsLifetimeGrantedUsd = reader.FieldCount > 11 && !reader.IsDBNull(11) ? reader.GetDouble(11) : 0,
+            CreditsLifetimeUsedUsd = reader.FieldCount > 12 && !reader.IsDBNull(12) ? reader.GetDouble(12) : 0,
+            IsDisabled = reader.FieldCount > 13 && !reader.IsDBNull(13) && reader.GetInt64(13) != 0,
+            Email = reader.FieldCount > 14 && !reader.IsDBNull(14) ? reader.GetString(14) : null,
             EmailConfirmedAt = confirmed,
         };
     }

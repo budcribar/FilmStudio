@@ -665,10 +665,10 @@ else
         new()
         {
             ProviderId = "fal", DisplayName = "Fal.ai", Family = "Fal",
-            SupportsVideo = true, SupportsImage = false, SupportsChat = false, SupportsVision = false,
-            SupportsVideoGen = true, SupportsVideoReview = false, SupportsImageGen = false, SupportsScriptPlanning = false, SupportsImageVision = false,
-            CapabilitiesSummary = "Video Gen (HunyuanVideo)",
-            Notes = "Serverless open-source HunyuanVideo generation (~$0.025 per 5s clip).",
+            SupportsVideo = true, SupportsImage = true, SupportsChat = false, SupportsVision = false,
+            SupportsVideoGen = true, SupportsVideoReview = false, SupportsImageGen = true, SupportsScriptPlanning = false, SupportsImageVision = false,
+            CapabilitiesSummary = "Video Gen (HunyuanVideo), Image Gen (Flux.1)",
+            Notes = "Serverless open-source video (HunyuanVideo ~$0.025/clip) and image (Flux.1 Dev / Schnell ~$0.003/img) generation.",
             ActiveSource = "none",
         },
         new()
