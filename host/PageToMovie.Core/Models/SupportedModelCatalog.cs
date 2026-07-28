@@ -134,30 +134,15 @@ public static class SupportedModelCatalog
 {
     public const string XaiApiBase = "https://api.x.ai/v1";
     public const string XaiApiKeyEnv = "XAI_API_KEY";
-
-    /// <summary>
-    /// Google Gemini API base. Clients: GeminiChatClient, GeminiImageClient, GeminiVideoClient
-    /// (Veo long-running), MultiProvider* routing. Gaps: video extend / multi-ref plates; OCR/cast classify.
-    /// </summary>
     public const string GoogleApiBase = "https://generativelanguage.googleapis.com/v1beta";
     public const string GoogleApiKeyEnv = "GEMINI_API_KEY";
-
-    /// <summary>
-    /// Anthropic Messages API base. Clients: AnthropicChatClient; vision frame review via
-    /// MultiProviderVisionClient. No image-gen product; OCR/cast classify remain Grok-only.
-    /// </summary>
     public const string AnthropicApiBase = "https://api.anthropic.com/v1";
     public const string AnthropicApiKeyEnv = "ANTHROPIC_API_KEY";
-
-    /// <summary>
-    /// Fal.ai serverless GPU platform base URL.
-    /// </summary>
     public const string FalApiBase = "https://queue.fal.run";
     public const string FalApiKeyEnv = "FAL_KEY";
 
-    private static readonly SupportedModelEntry[] All =
+    private static readonly SupportedModelEntry[] BuiltInDefaults =
     [
-        // ── Video ──────────────────────────────────────────────────────────
         new()
         {
             Id = "hunyuan-video",
@@ -167,11 +152,7 @@ public static class SupportedModelCatalog
             ApiBase = FalApiBase,
             EndpointPath = "fal-ai/hunyuan-video",
             RequiredEnvKeys = [FalApiKeyEnv],
-            VideoCostPerSecondByResolution = new Dictionary<string, double>
-            {
-                ["720p"] = 0.005,
-                ["1080p"] = 0.005,
-            },
+            VideoCostPerSecondByResolution = new Dictionary<string, double> { ["720p"] = 0.005, ["1080p"] = 0.005 },
             SupportsVideoContinue = true,
             SupportsReferenceImages = true,
             Notes = "Open-weights 13B DiT video generation model hosted on Fal.ai serverless GPUs (~$0.025 per 5s clip).",
@@ -185,15 +166,7 @@ public static class SupportedModelCatalog
             ApiBase = XaiApiBase,
             EndpointPath = "videos/generations",
             RequiredEnvKeys = [XaiApiKeyEnv],
-            // xAI docs, 2026-07 — matches this project's own Configuration → Cost estimates
-            // defaults exactly.
-            VideoCostPerSecondByResolution = new Dictionary<string, double>
-            {
-                ["480p"] = 0.05,
-                ["720p"] = 0.07,
-                ["1080p"] = 0.25,
-            },
-            Notes = "Also uses videos/extensions for clip continue.",
+            VideoCostPerSecondByResolution = new Dictionary<string, double> { ["480p"] = 0.05, ["720p"] = 0.07, ["1080p"] = 0.25 },
             SupportsVideoContinue = true,
             SupportsReferenceImages = true,
         },
@@ -206,25 +179,10 @@ public static class SupportedModelCatalog
             ApiBase = GoogleApiBase,
             EndpointPath = "models/veo-3.1:predictLongRunning",
             RequiredEnvKeys = [GoogleApiKeyEnv],
-            // Google AI pricing, 2026-07: Standard quality — same $0.40/sec at both 720p and
-            // 1080p. Lite ($0.05/sec) and Fast ($0.10/sec) quality tiers exist but aren't
-            // separately selectable in this catalog (only one veo-3.1 entry).
-            VideoCostPerSecondByResolution = new Dictionary<string, double>
-            {
-                ["720p"] = 0.40,
-                ["1080p"] = 0.40,
-            },
-            // Fail-closed: multi-clip scenes and locked cast plates need these.
+            VideoCostPerSecondByResolution = new Dictionary<string, double> { ["720p"] = 0.40, ["1080p"] = 0.40 },
             SupportsVideoContinue = false,
             SupportsReferenceImages = false,
-            Notes = "Wired via GeminiVideoClient (text/image-to-video only). No clip-to-clip continue " +
-                    "and no locked character reference plates — multi-clip scenes and cast-gated gen " +
-                    "require Grok Imagine Video. Not smoke-tested against a live account yet. " +
-                    "$0.40/sec Standard (720p/1080p).",
-            FeatureRequestUrl = "https://github.com/budcribar/PageToMovie/issues",
         },
-
-        // ── Image / portraits ──────────────────────────────────────────────
         new()
         {
             Id = "grok-imagine-image-quality",
@@ -234,9 +192,7 @@ public static class SupportedModelCatalog
             ApiBase = XaiApiBase,
             EndpointPath = "images/generations",
             RequiredEnvKeys = [XaiApiKeyEnv],
-            ImageCostPerImage = 0.05, // xAI docs, 2026-07 (1K); 2K is $0.07
-            Notes = "Edits use the multi-image edit path on the same family. $0.05/image (1K), " +
-                    "$0.07/image (2K).",
+            ImageCostPerImage = 0.05,
         },
         new()
         {
@@ -247,7 +203,7 @@ public static class SupportedModelCatalog
             ApiBase = XaiApiBase,
             EndpointPath = "images/generations",
             RequiredEnvKeys = [XaiApiKeyEnv],
-            ImageCostPerImage = 0.02, // xAI docs, 2026-07 (1K and 2K both $0.02)
+            ImageCostPerImage = 0.02,
         },
         new()
         {
@@ -258,11 +214,7 @@ public static class SupportedModelCatalog
             ApiBase = GoogleApiBase,
             EndpointPath = "models/gemini-3-pro-image:generateContent",
             RequiredEnvKeys = [GoogleApiKeyEnv],
-            ImageCostPerImage = 0.134, // Google pricing, 2026-07 (1K/2K); 4K is $0.24
-            Notes = "Wired via GeminiImageClient. Supports up to 14 reference images (see " +
-                    "ImageApiLimits.cs), vs. Grok's 3. Response-shape parsing is not smoke-tested " +
-                    "against a live account yet. $0.134/image (1K/2K), $0.24/image (4K).",
-            FeatureRequestUrl = "https://github.com/budcribar/PageToMovie/issues",
+            ImageCostPerImage = 0.134,
         },
         new()
         {
@@ -274,7 +226,6 @@ public static class SupportedModelCatalog
             EndpointPath = "fal-ai/flux/dev",
             RequiredEnvKeys = [FalApiKeyEnv],
             ImageCostPerImage = 0.025,
-            Notes = "Open-source Flux.1 Dev model via Fal.ai serverless GPU (~$0.025/image). High quality character & scene rendering.",
         },
         new()
         {
@@ -286,13 +237,7 @@ public static class SupportedModelCatalog
             EndpointPath = "fal-ai/flux/schnell",
             RequiredEnvKeys = [FalApiKeyEnv],
             ImageCostPerImage = 0.003,
-            Notes = "Ultra-fast open-source Flux.1 Schnell model via Fal.ai (~$0.003/image). Great for rapid iterations.",
         },
-        // Note: no Claude/Anthropic entry here on purpose — Anthropic does not offer an image
-        // generation API, so there is no real backend this could ever call. Claude is added
-        // below under Chat instead, where it's a real, callable capability.
-
-        // ── Chat / planning / scrub ────────────────────────────────────────
         new()
         {
             Id = "grok-4.5",
@@ -302,13 +247,9 @@ public static class SupportedModelCatalog
             ApiBase = XaiApiBase,
             EndpointPath = "chat/completions",
             RequiredEnvKeys = [XaiApiKeyEnv],
-            MaxInputTokens = 500_000, // xAI docs, 2026-07: docs.x.ai/developers/models/grok-4.5
-            // xAI docs, 2026-07: base tier (<200k tokens in request). Tiered rate above 200k
-            // doubles to $4/$12 per docs.x.ai/developers/pricing.
+            MaxInputTokens = 500_000,
             InputCostPerMillionTokens = 2.00,
             OutputCostPerMillionTokens = 6.00,
-            Notes = "Stage planning, cast scrub, screenplay helpers. $2/$6 per 1M in/out tokens " +
-                    "under 200k-token requests; $4/$12 above that threshold.",
         },
         new()
         {
@@ -319,8 +260,8 @@ public static class SupportedModelCatalog
             ApiBase = XaiApiBase,
             EndpointPath = "chat/completions",
             RequiredEnvKeys = [XaiApiKeyEnv],
-            MaxInputTokens = 256_000, // OpenRouter x-ai/grok-4 listing, 2026-07
-            InputCostPerMillionTokens = 3.00, // OpenRouter x-ai/grok-4, 2026-07
+            MaxInputTokens = 256_000,
+            InputCostPerMillionTokens = 3.00,
             OutputCostPerMillionTokens = 15.00,
         },
         new()
@@ -332,17 +273,9 @@ public static class SupportedModelCatalog
             ApiBase = AnthropicApiBase,
             EndpointPath = "messages",
             RequiredEnvKeys = [AnthropicApiKeyEnv],
-            // Anthropic docs, 2026-07: platform.claude.com/docs — 1M is both default and max,
-            // no smaller context variant. (128k max output, separate from this input figure.)
             MaxInputTokens = 1_000_000,
-            // Introductory pricing, active through 2026-08-31 per Anthropic docs; standard
-            // pricing after that is $3/$15 per 1M in/out tokens (same page).
             InputCostPerMillionTokens = 2.00,
             OutputCostPerMillionTokens = 10.00,
-            Notes = "Wired via AnthropicChatClient, routed automatically through " +
-                    "MultiProviderChatClient for planning/QA calls. $2/$10 per 1M in/out tokens " +
-                    "(introductory, through 2026-08-31); $3/$15 standard after.",
-            FeatureRequestUrl = "https://github.com/budcribar/PageToMovie/issues",
         },
         new()
         {
@@ -353,19 +286,11 @@ public static class SupportedModelCatalog
             ApiBase = GoogleApiBase,
             EndpointPath = "models/gemini-3-pro:generateContent",
             RequiredEnvKeys = [GoogleApiKeyEnv],
-            MaxInputTokens = 1_000_000, // Google AI docs, 2026-07 (64k max output, separate)
-            // Google AI pricing, 2026-07: base tier (<200k tokens). Above 200k: $4/$18.
+            MaxInputTokens = 1_000_000,
             InputCostPerMillionTokens = 2.00,
             OutputCostPerMillionTokens = 12.00,
             SupportsVideoReview = true,
-            Notes = "Wired via GeminiChatClient, routed automatically through " +
-                    "MultiProviderChatClient for planning/QA calls. Response-shape parsing is not " +
-                    "smoke-tested against a live account yet. $2/$12 per 1M in/out tokens under " +
-                    "200k-token requests; $4/$18 above that threshold.",
-            FeatureRequestUrl = "https://github.com/budcribar/PageToMovie/issues",
         },
-
-        // ── Vision (same chat models with image input; listed for QA config) ─
         new()
         {
             Id = "grok-4.5",
@@ -376,9 +301,8 @@ public static class SupportedModelCatalog
             EndpointPath = "chat/completions",
             RequiredEnvKeys = [XaiApiKeyEnv],
             MaxInputTokens = 500_000,
-            InputCostPerMillionTokens = 2.00, // same rate as the chat entry — same underlying model
+            InputCostPerMillionTokens = 2.00,
             OutputCostPerMillionTokens = 6.00,
-            Notes = "GrokVisionClient: book-page OCR, cast-on-image classify, and multi-image frame review.",
         },
         new()
         {
@@ -390,12 +314,8 @@ public static class SupportedModelCatalog
             EndpointPath = "messages",
             RequiredEnvKeys = [AnthropicApiKeyEnv],
             MaxInputTokens = 1_000_000,
-            InputCostPerMillionTokens = 2.00, // same rate as the chat entry — same underlying model
+            InputCostPerMillionTokens = 2.00,
             OutputCostPerMillionTokens = 10.00,
-            Notes = "Wired for clip/frame review (CompleteWithImagesAsync) via " +
-                    "MultiProviderVisionClient. Book-page OCR and cast classify still run on Grok " +
-                    "only — those two methods are not implemented for Anthropic.",
-            FeatureRequestUrl = "https://github.com/budcribar/PageToMovie/issues",
         },
         new()
         {
@@ -407,31 +327,76 @@ public static class SupportedModelCatalog
             EndpointPath = "models/gemini-3-pro:generateContent",
             RequiredEnvKeys = [GoogleApiKeyEnv],
             MaxInputTokens = 1_000_000,
-            InputCostPerMillionTokens = 2.00, // same rate as the chat entry — same underlying model
+            InputCostPerMillionTokens = 2.00,
             OutputCostPerMillionTokens = 12.00,
-            Notes = "Wired for clip/frame review (CompleteWithImagesAsync) via " +
-                    "MultiProviderVisionClient. Book-page OCR and cast classify still run on Grok " +
-                    "only — those two methods are not implemented for Gemini. Response-shape " +
-                    "parsing is not smoke-tested against a live account yet.",
-            FeatureRequestUrl = "https://github.com/budcribar/PageToMovie/issues",
+            SupportsVideoReview = true,
         },
-
-        // Film character voice samples use video (VOICE LOCK), not a separate TTS model.
     ];
 
-    /// <summary>All catalog rows (enabled + disabled).</summary>
-    public static IReadOnlyList<SupportedModelEntry> Entries => All;
+    private static List<SupportedModelEntry>? _loadedEntries;
+
+    /// <summary>All catalog rows (loaded dynamically from models_catalog.json or built-in defaults).</summary>
+    public static IReadOnlyList<SupportedModelEntry> Entries
+    {
+        get
+        {
+            if (_loadedEntries is null)
+            {
+                _loadedEntries = LoadFromDiskOrFallback();
+            }
+            return _loadedEntries;
+        }
+    }
+
+    public static void ReloadCatalog(string? overrideJsonPath = null)
+    {
+        _loadedEntries = LoadFromDiskOrFallback(overrideJsonPath);
+    }
+
+    private static List<SupportedModelEntry> LoadFromDiskOrFallback(string? customPath = null)
+    {
+        var candidates = new List<string>();
+        if (!string.IsNullOrWhiteSpace(customPath))
+            candidates.Add(customPath);
+
+        candidates.Add("/data/models_catalog.json");
+        candidates.Add(Path.Combine(AppContext.BaseDirectory, "config", "models_catalog.json"));
+        candidates.Add(Path.Combine(AppContext.BaseDirectory, "models_catalog.json"));
+        candidates.Add(Path.Combine(Directory.GetCurrentDirectory(), "config", "models_catalog.json"));
+        candidates.Add(Path.Combine(Directory.GetCurrentDirectory(), "host", "PageToMovie.Core", "config", "models_catalog.json"));
+
+        foreach (var path in candidates.Where(p => !string.IsNullOrWhiteSpace(p) && File.Exists(p)))
+        {
+            try
+            {
+                var json = File.ReadAllText(path);
+                var dtos = System.Text.Json.JsonSerializer.Deserialize<List<SupportedModelDto>>(json, new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                if (dtos is { Count: > 0 })
+                {
+                    var converted = dtos.Select(FromDto).ToList();
+                    if (converted.Count > 0)
+                        return converted;
+                }
+            }
+            catch
+            {
+                // Ignore parse failures and try next candidate or fallback
+            }
+        }
+
+        return BuiltInDefaults.ToList();
+    }
 
     public static IReadOnlyList<SupportedModelEntry> ForCapability(
         ModelCapability capability,
         bool enabledOnly = true) =>
-        All.Where(e => e.Capability == capability && (!enabledOnly || e.Enabled)).ToList();
+        Entries.Where(e => e.Capability == capability && (!enabledOnly || e.Enabled)).ToList();
 
     public static SupportedModelEntry? Find(string? modelId, ModelCapability? capability = null)
     {
         if (string.IsNullOrWhiteSpace(modelId)) return null;
         var id = modelId.Trim();
-        var exact = All.Where(e => e.Id.Equals(id, StringComparison.OrdinalIgnoreCase)).ToList();
+        var exact = Entries.Where(e => e.Id.Equals(id, StringComparison.OrdinalIgnoreCase)).ToList();
         if (exact.Count == 0) return null;
 
         if (capability is not { } cap)
@@ -440,8 +405,6 @@ public static class SupportedModelCatalog
         var match = exact.FirstOrDefault(e => e.Capability == cap);
         if (match is not null) return match;
 
-        // Only share Chat ↔ Vision for the same model id (e.g. grok-4.5).
-        // Do not return a video model when the caller asked for chat/image/etc.
         if (cap is ModelCapability.Chat or ModelCapability.Vision)
         {
             return exact.FirstOrDefault(e =>
@@ -451,10 +414,6 @@ public static class SupportedModelCatalog
         return null;
     }
 
-    /// <summary>
-    /// Resolve a configured model id for a capability, or a safe default.
-    /// Unknown ids: keep the string (forward-compatible) but provider metadata falls back to Xai.
-    /// </summary>
     public static SupportedModelEntry ResolveOrDefault(
         string? modelId,
         ModelCapability capability,
@@ -463,8 +422,6 @@ public static class SupportedModelCatalog
         var hit = Find(modelId, capability);
         if (hit is not null) return hit;
 
-        // Known id under a different capability (e.g. video id for chat) → do not keep that id.
-        // Truly unknown id → keep the string (forward-compatible) with Xai defaults.
         var knownUnderAnyCap = !string.IsNullOrWhiteSpace(modelId) && Find(modelId) is not null;
         if (!string.IsNullOrWhiteSpace(modelId) && !knownUnderAnyCap)
         {
@@ -501,14 +458,12 @@ public static class SupportedModelCatalog
         },
         RequiredEnvKeys = [XaiApiKeyEnv],
         Enabled = false,
-        Notes = "Not in master catalog — add via PR or track as GitHub feature request.",
+        Notes = "Not in master catalog — add to models_catalog.json or track as feature request.",
     };
 
-    /// <summary>Provider string for project config / cost UI.</summary>
     public static string ProviderIdFor(string? modelId, ModelCapability capability) =>
         ResolveOrDefault(modelId, capability).ProviderId;
 
-    /// <summary>Missing env keys for this model (empty if ready).</summary>
     public static IReadOnlyList<string> MissingEnvKeys(SupportedModelEntry model)
     {
         var missing = new List<string>();
@@ -520,9 +475,8 @@ public static class SupportedModelCatalog
         return missing;
     }
 
-    /// <summary>DTO list for API / Configuration UI.</summary>
     public static IReadOnlyList<SupportedModelDto> ToDtoList(bool enabledOnly = true) =>
-        All.Where(e => !enabledOnly || e.Enabled)
+        Entries.Where(e => !enabledOnly || e.Enabled)
             .Select(ToDto)
             .ToList();
 
@@ -550,9 +504,30 @@ public static class SupportedModelCatalog
         SupportsReferenceImages = e.SupportsReferenceImages,
         SupportsVideoReview = e.SupportsVideoReview,
     };
+
+    public static SupportedModelEntry FromDto(SupportedModelDto d) => new()
+    {
+        Id = d.Id,
+        DisplayName = d.DisplayName,
+        Capability = Enum.TryParse<ModelCapability>(d.Capability, true, out var cap) ? cap : ModelCapability.Chat,
+        Provider = Enum.TryParse<ModelProviderFamily>(d.Provider, true, out var prov) ? prov : ModelProviderFamily.Xai,
+        ApiBase = string.IsNullOrWhiteSpace(d.ApiBase) ? XaiApiBase : d.ApiBase,
+        EndpointPath = d.EndpointPath ?? "",
+        RequiredEnvKeys = d.RequiredEnvKeys ?? new List<string>(),
+        Enabled = d.Enabled,
+        MaxInputTokens = d.MaxInputTokens,
+        InputCostPerMillionTokens = d.InputCostPerMillionTokens,
+        OutputCostPerMillionTokens = d.OutputCostPerMillionTokens,
+        VideoCostPerSecondByResolution = d.VideoCostPerSecondByResolution,
+        ImageCostPerImage = d.ImageCostPerImage,
+        Notes = d.Notes,
+        FeatureRequestUrl = d.FeatureRequestUrl,
+        SupportsVideoContinue = d.SupportsVideoContinue,
+        SupportsReferenceImages = d.SupportsReferenceImages,
+        SupportsVideoReview = d.SupportsVideoReview,
+    };
 }
 
-/// <summary>JSON-friendly model catalog row for the API and Web UI.</summary>
 public sealed class SupportedModelDto
 {
     public string Id { get; set; } = "";
