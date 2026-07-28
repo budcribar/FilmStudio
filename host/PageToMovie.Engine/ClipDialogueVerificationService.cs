@@ -163,7 +163,7 @@ public sealed class ClipDialogueVerificationService
                 ExpectedSpeaker = expectedSpeaker,
                 ExpectedDialogue = expectedDialogue,
                 Status = "unverified",
-                SummaryNote = "Clip video file not found on disk.",
+                SummaryNote = "Clip video file (.mp4) not found on server disk. Please generate video clips for this scene first.",
                 VerifiedAt = DateTime.UtcNow,
             };
             SaveVerification(projectId, result);
