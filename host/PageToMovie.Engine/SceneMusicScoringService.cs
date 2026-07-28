@@ -6,12 +6,6 @@ using Microsoft.Extensions.Logging;
 
 namespace PageToMovie.Engine;
 
-public sealed record SceneMusicResult(
-    string MusicFilePath,
-    string RemuxedScenePath,
-    string MusicPrompt,
-    double DurationSeconds);
-
 /// <summary>
 /// Scores continuous background music for full stitched scene MP4s using AI audio models (Fal.ai Stable Audio / MusicGen).
 /// Applies ffmpeg audio ducking so music plays under dialogue without drowning out character speech.

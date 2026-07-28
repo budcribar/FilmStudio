@@ -1,5 +1,11 @@
 namespace PageToMovie.Core.Models;
 
+public sealed record SceneMusicResult(
+    string MusicFilePath,
+    string RemuxedScenePath,
+    string MusicPrompt,
+    double DurationSeconds);
+
 /// <summary>
 /// What the model is used for in Film Studio (drives Configuration dropdowns).
 /// </summary>

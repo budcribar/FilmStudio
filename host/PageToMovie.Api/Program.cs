@@ -4102,6 +4102,101 @@ app.MapPost("/api/projects/{id}/scenes/{scene:int}/clips/{clip:int}/verify-dialo
     }
 });
 
+/// <summary>
+/// Combined single-upload two-phase scene cut processing endpoint.
+/// Accepts 1 uploaded MP4 scene stream and executes Phase 1 (Dialogue Verification) and Phase 2 (Music Scoring &amp; Ducking) back-to-back on server.
+/// Cleans up temp file in a single finally block.
+/// </summary>
+app.MapPost("/api/projects/{id}/scenes/{scene:int}/process-cut", async (
+    string id,
+    int scene,
+    HttpContext httpContext,
+    ProjectStore store,
+    ClipDialogueVerificationService verifier,
+    SceneMusicScoringService musicScorer,
+    CancellationToken ct) =>
+{
+    string? tempFilePath = null;
+    try
+    {
+        bool verifyDialogue = true;
+        bool scoreMusic = true;
+        int clip = 1;
+        string screenplayText = "";
+        int durationSeconds = 10;
+
+        if (httpContext.Request.HasFormContentType)
+        {
+            var form = await httpContext.Request.ReadFormAsync(ct);
+            var file = form.Files.GetFile("video");
+            if (file is { Length: > 0 })
+            {
+                tempFilePath = Path.Combine(Path.GetTempPath(), $"scene_cut_process_{Guid.NewGuid():N}.mp4");
+                using (var stream = File.Create(tempFilePath))
+                {
+                    await file.CopyToAsync(stream, ct).ConfigureAwait(false);
+                }
+            }
+
+            if (form.TryGetValue("verifyDialogue", out var vdVal) && bool.TryParse(vdVal, out var vd))
+                verifyDialogue = vd;
+            if (form.TryGetValue("scoreMusic", out var smVal) && bool.TryParse(smVal, out var sm))
+                scoreMusic = sm;
+            if (form.TryGetValue("clip", out var clipVal) && int.TryParse(clipVal, out var cNum))
+                clip = cNum;
+            if (form.TryGetValue("screenplayText", out var stVal))
+                screenplayText = stVal.ToString();
+            if (form.TryGetValue("durationSeconds", out var durVal) && int.TryParse(durVal, out var dSec))
+                durationSeconds = dSec;
+        }
+
+        ClipDialogueVerificationResult? dialogueResult = null;
+        if (verifyDialogue)
+        {
+            dialogueResult = await verifier.VerifyClipDialogueAsync(id, scene, clip, overrideVideoPath: tempFilePath, ct: ct);
+        }
+
+        SceneMusicResult? musicResult = null;
+        if (scoreMusic && !string.IsNullOrWhiteSpace(tempFilePath) && File.Exists(tempFilePath))
+        {
+            var pDir = store.GetProjectDir(id);
+            var cfg = await store.ReadConfigAsync(id, ct);
+            var finalSceneMp4Path = Path.Combine(pDir, "assets", "scenes", $"scene_{scene:D2}.mp4");
+            Directory.CreateDirectory(Path.GetDirectoryName(finalSceneMp4Path)!);
+
+            musicResult = await musicScorer.ProcessSceneMusicAsync(
+                projectDir: pDir,
+                sceneNumber: scene,
+                inputSceneMp4Path: tempFilePath,
+                outputSceneMp4Path: finalSceneMp4Path,
+                screenplayText: screenplayText,
+                durationSeconds: durationSeconds,
+                config: cfg,
+                ct: ct);
+        }
+
+        return Results.Ok(new
+        {
+            ok = true,
+            projectId = id,
+            scene,
+            dialogueResult,
+            musicResult,
+        });
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { ok = false, error = ex.Message });
+    }
+    finally
+    {
+        if (!string.IsNullOrWhiteSpace(tempFilePath) && File.Exists(tempFilePath))
+        {
+            try { File.Delete(tempFilePath); } catch { }
+        }
+    }
+});
+
 /// <summary>Write accepted suggestion fields (cast / clip prompt). Does not regen — client starts gen after.</summary>
 app.MapPost("/api/projects/{id}/scenes/{scene:int}/clips/{clip:int}/auto-review/apply", (
     string id, int scene, int clip, ApplyClipAutoReviewRequest? body, ClipAutoReviewService reviews) =>

@@ -1615,6 +1615,55 @@ public sealed class EngineApiClient
         return null;
     }
 
+    public sealed record ProcessSceneCutResponse(
+        ClipDialogueVerificationResult? DialogueResult,
+        SceneMusicResult? MusicResult);
+
+    public async Task<ProcessSceneCutResponse?> ProcessSceneCutAsync(
+        string projectId,
+        int scene,
+        int clip = 1,
+        byte[]? videoBytes = null,
+        bool verifyDialogue = true,
+        bool scoreMusic = true,
+        string screenplayText = "",
+        int durationSeconds = 10,
+        CancellationToken ct = default)
+    {
+        var form = new MultipartFormDataContent();
+        if (videoBytes is { Length: > 0 })
+        {
+            var byteContent = new ByteArrayContent(videoBytes);
+            byteContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("video/mp4");
+            form.Add(byteContent, "video", $"scene_{scene:D2}.mp4");
+        }
+
+        form.Add(new StringContent(verifyDialogue.ToString().ToLower()), "verifyDialogue");
+        form.Add(new StringContent(scoreMusic.ToString().ToLower()), "scoreMusic");
+        form.Add(new StringContent(clip.ToString()), "clip");
+        form.Add(new StringContent(screenplayText ?? ""), "screenplayText");
+        form.Add(new StringContent(durationSeconds.ToString()), "durationSeconds");
+
+        using var resp = await _http.PostAsync(
+            $"/api/projects/{Uri.EscapeDataString(projectId)}/scenes/{scene}/process-cut",
+            form,
+            ct);
+
+        if (!resp.IsSuccessStatusCode) return null;
+        var doc = await resp.Content.ReadFromJsonAsync<JsonElement>(JsonOpts, ct);
+
+        ClipDialogueVerificationResult? dialogueResult = null;
+        SceneMusicResult? musicResult = null;
+
+        if (doc.TryGetProperty("dialogueResult", out var dEl) && dEl.ValueKind == JsonValueKind.Object)
+            dialogueResult = JsonSerializer.Deserialize<ClipDialogueVerificationResult>(dEl.GetRawText(), JsonOpts);
+
+        if (doc.TryGetProperty("musicResult", out var mEl) && mEl.ValueKind == JsonValueKind.Object)
+            musicResult = JsonSerializer.Deserialize<SceneMusicResult>(mEl.GetRawText(), JsonOpts);
+
+        return new ProcessSceneCutResponse(dialogueResult, musicResult);
+    }
+
     public async Task ApplyClipAutoReviewAsync(
         string projectId,
         int scene,
