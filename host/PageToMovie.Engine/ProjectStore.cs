@@ -2705,10 +2705,12 @@ public sealed class ProjectStore
                 if (c.TryGetProperty("duration_seconds", out var dEl) && dEl.TryGetInt32(out var ds))
                     dur = ds;
 
+                var clipPath = onDisk ? ResolveClipVideoPath(projectId, sceneNumber, cn) : null;
+                var resolvedFileName = clipPath is not null ? Path.GetFileName(clipPath) : fileName;
+
                 double? actualClip = null;
-                if (probeDurations && onDisk && _duration is not null)
+                if (probeDurations && onDisk && _duration is not null && clipPath is not null)
                 {
-                    var clipPath = ResolveClipVideoPath(projectId, sceneNumber, cn);
                     actualClip = _duration.GetDurationSeconds(clipPath);
                 }
 
@@ -2744,7 +2746,7 @@ public sealed class ProjectStore
                     FilmStock = c.TryGetProperty("film_stock", out var fs) ? fs.GetString() : null,
                     OnDisk = onDisk,
                     SizeBytes = size,
-                    FileName = onDisk ? fileName : null,
+                    FileName = onDisk ? resolvedFileName : null,
                     VideoUrl = onDisk
                         ? $"/api/projects/{Uri.EscapeDataString(projectId)}/scenes/{sceneNumber}/clips/{cn}/video"
                         : null,
