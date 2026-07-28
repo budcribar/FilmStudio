@@ -2935,6 +2935,10 @@ else
             if (ver is not null)
             {
                 clip.DialogueVerification = ver;
+                if (string.Equals(ver.Status, "unverified", StringComparison.OrdinalIgnoreCase))
+                {
+                    _error = ver.SummaryNote ?? "Dialogue Verification requires an AI Vision key (xAI Grok, Gemini, or Claude). Please configure one on the Configuration page.";
+                }
             }
         }
         catch (Exception ex)
@@ -2978,6 +2982,10 @@ else
                     if (ver is not null)
                     {
                         c.DialogueVerification = ver;
+                        if (string.Equals(ver.Status, "unverified", StringComparison.OrdinalIgnoreCase))
+                        {
+                            _error = ver.SummaryNote ?? "Dialogue Verification requires an AI Vision key (xAI Grok, Gemini, or Claude). Please configure one on the Configuration page.";
+                        }
                         StateHasChanged();
                     }
                 }

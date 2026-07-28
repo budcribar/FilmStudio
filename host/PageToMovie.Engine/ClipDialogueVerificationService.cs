@@ -115,7 +115,7 @@ public sealed class ClipDialogueVerificationService
                 ExpectedSpeaker = expectedSpeaker,
                 ExpectedDialogue = expectedDialogue,
                 Status = "unverified",
-                SummaryNote = "AI vision key not configured.",
+                SummaryNote = "AI Vision API Key required (xAI Grok, Gemini, or Claude). Add a key in Configuration.",
                 VerifiedAt = DateTime.UtcNow,
             };
             SaveVerification(projectId, unverified);
