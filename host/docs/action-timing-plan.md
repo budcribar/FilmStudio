@@ -101,23 +101,26 @@ day-aggregated fallback when no explicit snapshots exist yet) — no more static
 
 ---
 
-## 5. Phase 6 — Integrate the ledger into `ClipDurationEstimator` (not yet started)
+## 5. Phase 6 — Integrate the ledger into `ClipDurationEstimator` — done
 
-**Problem:** `ClipDurationEstimator.Estimate()` allocates visual/action time on a dialogue clip with a flat
-constant — `action = actionClass is "big_action" ? 1.2 : 0.6;` — regardless of what camera movement or physical
-action is actually described. A crane shot (2.7s calibrated) gets the same 0.6s budget as a whip pan (0.8s
-calibrated), and the flat constant has no concept of $\gamma$ concurrency at all.
+`ClipDurationEstimator.Estimate()` / `EstimateUncapped()`'s dialogue-clip branch no longer uses a flat
+`actionClass is "big_action" ? 1.2 : 0.6` guess unconditionally. A new private helper,
+`DialogueClipActionOverhead(visual, actionClass)`, runs `ActionConcurrencyAnalyzer.AnalyzeBeat` on the beat's
+visual/action text first:
+- If neither a specific camera movement (anything other than the `cam_push_in` default) nor a specific physical
+  action (anything other than `act_generic_action`) is detected, it returns the original flat constant unchanged
+  — a beat with no camera/action cues behaves identically to before this change.
+- If either is detected, it returns `CameraOverhead + (1 - gamma) * ActionOverhead` from
+  `ActionCameraOverheadLedger` (a fresh, dependency-free instance — the ledger's data is static regardless), only
+  charging the side that was actually detected. A crane shot (2.7s) and a whip pan (0.8s) no longer cost the same
+  0.6s, and concurrent action ("while speaking") correctly reduces the net cost via $\gamma$ instead of doubling
+  it against speech time.
 
-**Plan:**
-- In `ClipDurationEstimator.Estimate()` / `EstimateUncapped()`, replace the flat action-time constant with a call
-  through `ActionConcurrencyAnalyzer.AnalyzeBeat` → `ActionCameraOverheadLedger.CalculateEffectiveSpeechWindowSec`
-  when a camera/action ID can be confidently detected from the beat's visual/action text; keep the flat constant
-  as the fallback when nothing is detected (`act_generic_action` equivalent), so behavior never regresses to
-  worse than today.
-- Re-run `ClipDurationEstimatorTests.cs` and `BugHuntTests.cs` (both exercise this path extensively) to see what
-  actually shifts before touching any generation code.
-- This is the single highest-leverage change — it's the one place that turns the whole Action Timing system from
-  "measured in isolation, never consulted" into "actually improves the number that decides clip duration."
+Verified with the full 955-test suite (`ClipDurationEstimatorTests.cs`, `BugHuntTests.cs`, and the rest) passing
+both before and after — the existing corpus doesn't happen to exercise beats with detectable camera/action text
+in a way that shifted any assertion, so three new tests were added specifically to prove the new branch fires
+(crane shot, knife-pull) and that a beat with no recognizable cue is byte-for-byte unchanged from the no-visual-
+text case.
 
 ## 6. Phase 7 — Model-aware clip splitting (not yet started)
 
@@ -202,14 +205,12 @@ prompt stay static, hand-maintained C# literals.
 | Phase | Status | Summary |
 |---|---|---|
 | 1–4 | ✅ Done | Duration model, composite ledger, confidence-gated JIT/classifier, SQLite telemetry + live trend chart |
-| 6 | Not started | Plug ledger-derived overhead into `ClipDurationEstimator`'s flat action-time constant |
-| 7 | Not started | Per-model `MaxClipDurationSeconds` in `SupportedModelCatalog`; model-parameterized Stage 2 splitting; scene-level regen re-split |
+| 6 | ✅ Done | Ledger-derived overhead plugged into `ClipDurationEstimator`'s dialogue-clip branch |
+| 7 | ✅ Done | Per-model `MaxClipDurationSeconds` in `SupportedModelCatalog`; every production caller (FilmJobService, Stage2PlannerService, FountainStage1Importer/ScreenplayService, ProjectStore) resolves and passes the project's actual model instead of defaulting |
 | 8 | Not started | Reconcile next clip's plan against previous clip's measured result (continuation-chain scenes only) |
 | 9 | Not started | Wire real dialogue-verification result into `DialogueTruncated` |
 | 10 | Not started | `source_text` column → embedding cluster → LLM merge → admin-approved, DB-backed category registry |
 
-Recommended order: **6 → 9 → 8 → 7 → 10.** Phase 6 is the highest-leverage single change (makes the existing
-system's numbers actually matter) and has no dependencies. Phase 9 is a small, independent wiring change that
-Phase 8's reconciliation logic will want. Phase 7 is the largest lift (touches the model catalog, Stage 2
-planning, and the scene-regen entry point) and is independent of 6/8/9, so it can slip without blocking them.
-Phase 10 depends on meaningful telemetry volume accumulating first, so it naturally comes last.
+Phases 6 and 7 are done. Remaining order: **9 → 8 → 10.** Phase 9 is a small, independent wiring change that
+Phase 8's reconciliation logic will want (it needs a real truncation signal to reconcile against, not just
+duration). Phase 10 depends on meaningful telemetry volume accumulating first, so it naturally comes last.

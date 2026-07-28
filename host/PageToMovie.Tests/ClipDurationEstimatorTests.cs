@@ -29,6 +29,61 @@ public class ClipDurationEstimatorTests
     }
 
     [Fact]
+    public void Estimate_UsesLedgerCalibratedOverheadForDetectedCameraMovement()
+    {
+        // "crane shot" matches the crane/canopy camera regex (2.7s calibrated overhead) — the flat
+        // 0.6s "short visual head" guess would badly underestimate a beat that actually describes this.
+        var withCrane = ClipDurationEstimator.Estimate(
+            dialogue: "I need you to listen to me.",
+            visualOrAction: "A slow crane shot descends toward her face.",
+            actionClass: "dialogue");
+
+        var plain = ClipDurationEstimator.Estimate(
+            dialogue: "I need you to listen to me.",
+            visualOrAction: "She looks at him.",
+            actionClass: "dialogue");
+
+        Assert.True(withCrane > plain,
+            $"expected crane-shot beat ({withCrane}s) to need more time than a plain beat ({plain}s)");
+    }
+
+    [Fact]
+    public void Estimate_UsesLedgerCalibratedOverheadForDetectedPhysicalAction()
+    {
+        // "pulls out a switchblade" matches the knife-pull action regex (2.0s calibrated overhead).
+        var withKnife = ClipDurationEstimator.Estimate(
+            dialogue: "Back off.",
+            visualOrAction: "He pulls out a switchblade.",
+            actionClass: "dialogue");
+
+        var plain = ClipDurationEstimator.Estimate(
+            dialogue: "Back off.",
+            visualOrAction: "He stands there.",
+            actionClass: "dialogue");
+
+        Assert.True(withKnife > plain,
+            $"expected knife-pull beat ({withKnife}s) to need more time than a plain beat ({plain}s)");
+    }
+
+    [Fact]
+    public void Estimate_NoRecognizableCameraOrActionCueKeepsUnchangedFlatFallback()
+    {
+        // A beat with no camera-move or physical-action keyword must behave exactly as before the
+        // ledger integration — identical to the case with no visual/action text at all.
+        var withGenericVisual = ClipDurationEstimator.Estimate(
+            dialogue: "Hello there.",
+            visualOrAction: "She looks at him.",
+            actionClass: "dialogue");
+
+        var withNoVisual = ClipDurationEstimator.Estimate(
+            dialogue: "Hello there.",
+            visualOrAction: "",
+            actionClass: "dialogue");
+
+        Assert.Equal(withNoVisual, withGenericVisual);
+    }
+
+    [Fact]
     public void Estimate_HonorsExplicitModelBounds_InsteadOfGlobalDefaults()
     {
         var line =

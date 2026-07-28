@@ -165,6 +165,34 @@ public static class ClipDurationEstimator
             _ => SilentActionMaxSeconds,
         };
 
+    /// <summary>
+    /// Extra non-speech time to add on top of dialogue for a spoken clip. When the beat's
+    /// visual/action text names a recognizable camera move or physical action (via
+    /// <see cref="ActionConcurrencyAnalyzer"/>), uses the calibrated camera/action overheads from
+    /// <see cref="ActionCameraOverheadLedger"/> — net of concurrency overlap (gamma) — instead of a
+    /// flat guess. A whip pan (0.8s) and a crane/canopy shot (2.7s) no longer cost the same 0.6s.
+    /// Falls back to the flat "short visual head" estimate (lip-sync / reaction buffer) when nothing
+    /// specific is described, so a beat with no camera/action cues behaves exactly as before.
+    /// </summary>
+    private static double DialogueClipActionOverhead(string visual, string actionClass)
+    {
+        var flatFallback = actionClass is "big_action" ? 1.2 : 0.6;
+        if (visual.Length == 0)
+            return flatFallback;
+
+        var concurrency = ActionConcurrencyAnalyzer.AnalyzeBeat(visual, null);
+        var cameraDetected = concurrency.CameraId != "cam_push_in";
+        var actionDetected = concurrency.ActionId != "act_generic_action";
+        if (!cameraDetected && !actionDetected)
+            return flatFallback;
+
+        var ledger = new ActionCameraOverheadLedger();
+        var camOverhead = cameraDetected ? ledger.GetOverheadSec(concurrency.CameraId, 0.0) : 0.0;
+        var actOverhead = actionDetected ? ledger.GetOverheadSec(concurrency.ActionId, 0.0) : 0.0;
+        var netActionOverhead = (1.0 - concurrency.OverlapRatioGamma) * actOverhead;
+        return camOverhead + netActionOverhead;
+    }
+
     public static int Estimate(
         string? dialogue,
         string? visualOrAction,
@@ -208,8 +236,9 @@ public static class ClipDurationEstimator
         }
         else
         {
-            // Dialogue clip: short visual head only (lip-sync / reaction under the line)
-            action = actionClass is "big_action" ? 1.2 : 0.6;
+            // Dialogue clip: calibrated camera/action overhead when the beat names something
+            // specific, else the flat "short visual head" buffer (lip-sync / reaction under the line)
+            action = DialogueClipActionOverhead(visual, actionClass);
         }
 
         var total = speech + action;
@@ -272,7 +301,7 @@ public static class ClipDurationEstimator
         }
         else
         {
-            action = actionClass is "big_action" ? 1.2 : 0.6;
+            action = DialogueClipActionOverhead(visual, actionClass);
         }
 
         var total = speech + action;
