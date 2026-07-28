@@ -299,7 +299,7 @@ public sealed class EditLogService
         {
             var dir = _projects.GetProjectDir(projectId);
             var statePath = Path.Combine(dir, "pipeline_state.json");
-            var state = LoadStateSync(statePath);
+            var state = LoadStateAsync(statePath, default).GetAwaiter().GetResult();
             var key = $"S{scene:D2}C{clip:D2}";
             var human = ReadHumanReviewRow(state, key);
             var auto = ReadAutoReviewRow(state, key);
@@ -452,18 +452,7 @@ public sealed class EditLogService
         return ("", "", "");
     }
 
-    private static Dictionary<string, object?> LoadStateSync(string path)
-    {
-        if (!File.Exists(path)) return new();
-        try
-        {
-            return GrokChatClient.ParseJsonObject(File.ReadAllText(path));
-        }
-        catch
-        {
-            return new();
-        }
-    }
+
 
     public async Task MarkSceneApprovedAsync(
         string projectId,

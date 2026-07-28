@@ -392,6 +392,34 @@ public static class BookToFountainConverter
             .ToList();
     }
 
+    private static readonly Regex RoleNounPrefixRegex = new(
+        @"^(FIRST|SECOND|THIRD|FOURTH|FIFTH|SIXTH|SEVENTH|EIGHTH|NINTH|TENTH|1ST|2ND|3RD|4TH|5TH)\s+\S+",
+        RegexOptions.IgnoreCase | RegexOptions.Compiled);
+    private static readonly Regex RoleNumberRegex = new(
+        @"^(OFFICER|POLICE|POLICEMAN|POLICE\s+OFFICER|GUARD|SOLDIER|DETECTIVE|AGENT|COP|DEPUTY|TROOPER|"
+        + @"BUSINESSMAN|BUSINESS\s*MAN|MERCHANT|GENTLEMAN|GENTLEMEN|LADY|GUEST|SERVANT|CLERK|PORTER|"
+        + @"WAITER|MAID|NURSE|DOCTOR|LAWYER|SAILOR|CREWMAN|SOLDIER|CITIZEN|MAN|WOMAN|BOY|GIRL|"
+        + @"ATTENDANT|MESSENGER|COURIER|DRIVER|COACHMAN|FOOTMAN|BUTLER|COOK|WORKMAN|LABORER|"
+        + @"VILLAGER|TOWNSMAN|SHOPKEEPER|CUSTOMER|PATIENT|PRISONER|INMATE|SOLDIER|SAILOR)\s*[#]?\s*\d+\b",
+        RegexOptions.IgnoreCase | RegexOptions.Compiled);
+    private static readonly Regex RoleWordNumberRegex = new(
+        @"^(OFFICER|POLICE|POLICE\s+OFFICER|GUARD|SOLDIER|DETECTIVE|AGENT|DEPUTY|BUSINESSMAN|"
+        + @"MERCHANT|GENTLEMAN|GUEST|SERVANT|CLERK|MAN|WOMAN)\s+"
+        + @"(ONE|TWO|THREE|FOUR|FIVE|SIX|SEVEN|EIGHT|NINE|TEN)\b",
+        RegexOptions.IgnoreCase | RegexOptions.Compiled);
+    private static readonly Regex TrailingDigitRegex = new(@"\b\d{1,2}$", RegexOptions.Compiled);
+    private static readonly Regex RoleNounMatchRegex = new(
+        @"\b(OFFICER|MERCHANT|BUSINESS|GENTLEMAN|GUEST|SERVANT|MAN|WOMAN|CLERK)\b",
+        RegexOptions.IgnoreCase | RegexOptions.Compiled);
+    private static readonly Regex ScenePrefixRegex = new(
+        @"^(INT\./EXT|INT/EXT|I\./E|I/E|INT\.?|EXT\.?|EST\.?)\s*",
+        RegexOptions.IgnoreCase | RegexOptions.Compiled);
+    private static readonly Regex DraftDateRegex = new(@"(?im)^(Draft date:)\s*.*$", RegexOptions.Compiled);
+    private static readonly Regex TruncatMarkerRegex = new(
+        @"\[\[.*(truncat|omitted for length|cut off|excerpted).*\]\]",
+        RegexOptions.IgnoreCase | RegexOptions.Compiled);
+    private static readonly Regex FadeOutEndingRegex = new(@"(?im)(FADE OUT|THE END)\b", RegexOptions.Compiled);
+
     /// <summary>
     /// True for ordinal/numbered role placeholders: FIRST BUSINESSMAN, SECOND MERCHANT,
     /// OFFICER 1, GUEST #2, MAN 3, etc. Named people (SCROOGE, OFFICER REYNOLDS) are false.
@@ -402,36 +430,19 @@ public static class BookToFountainConverter
         var n = Regex.Replace(characterName.Trim(), @"\s+", " ");
 
         // FIRST/SECOND/… + any role noun (OFFICER, BUSINESSMAN, MERCHANT, GUEST, …)
-        if (Regex.IsMatch(
-                n,
-                @"^(FIRST|SECOND|THIRD|FOURTH|FIFTH|SIXTH|SEVENTH|EIGHTH|NINTH|TENTH|1ST|2ND|3RD|4TH|5TH)\s+\S+",
-                RegexOptions.IgnoreCase))
+        if (RoleNounPrefixRegex.IsMatch(n))
             return true;
 
         // Role + number / #number (broad role list)
-        if (Regex.IsMatch(
-                n,
-                @"^(OFFICER|POLICE|POLICEMAN|POLICE\s+OFFICER|GUARD|SOLDIER|DETECTIVE|AGENT|COP|DEPUTY|TROOPER|"
-                + @"BUSINESSMAN|BUSINESS\s*MAN|MERCHANT|GENTLEMAN|GENTLEMEN|LADY|GUEST|SERVANT|CLERK|PORTER|"
-                + @"WAITER|MAID|NURSE|DOCTOR|LAWYER|SAILOR|CREWMAN|SOLDIER|CITIZEN|MAN|WOMAN|BOY|GIRL|"
-                + @"ATTENDANT|MESSENGER|COURIER|DRIVER|COACHMAN|FOOTMAN|BUTLER|COOK|WORKMAN|LABORER|"
-                + @"VILLAGER|TOWNSMAN|SHOPKEEPER|CUSTOMER|PATIENT|PRISONER|INMATE|SOLDIER|SAILOR)\s*[#]?\s*\d+\b",
-                RegexOptions.IgnoreCase))
+        if (RoleNumberRegex.IsMatch(n))
             return true;
 
         // Role + ONE/TWO/THREE…
-        if (Regex.IsMatch(
-                n,
-                @"^(OFFICER|POLICE|POLICE\s+OFFICER|GUARD|SOLDIER|DETECTIVE|AGENT|DEPUTY|BUSINESSMAN|"
-                + @"MERCHANT|GENTLEMAN|GUEST|SERVANT|CLERK|MAN|WOMAN)\s+"
-                + @"(ONE|TWO|THREE|FOUR|FIVE|SIX|SEVEN|EIGHT|NINE|TEN)\b",
-                RegexOptions.IgnoreCase))
+        if (RoleWordNumberRegex.IsMatch(n))
             return true;
 
         // Trailing digit on multi-word ALL-CAPS role: "STOCK EXCHANGE MAN 1"
-        if (Regex.IsMatch(n, @"\b\d{1,2}$") &&
-            Regex.IsMatch(n, @"\b(OFFICER|MERCHANT|BUSINESS|GENTLEMAN|GUEST|SERVANT|MAN|WOMAN|CLERK)\b",
-                RegexOptions.IgnoreCase))
+        if (TrailingDigitRegex.IsMatch(n) && RoleNounMatchRegex.IsMatch(n))
             return true;
 
         return false;
@@ -657,10 +668,7 @@ public static class BookToFountainConverter
     private static (string Prefix, string LocName, string Time) SplitSceneHeadingParts(string heading)
     {
         heading = (heading ?? "").Trim();
-        var m = Regex.Match(
-            heading,
-            @"^(INT\./EXT|INT/EXT|I\./E|I/E|INT\.?|EXT\.?|EST\.?)\s*",
-            RegexOptions.IgnoreCase);
+        var m = ScenePrefixRegex.Match(heading);
         var prefix = m.Success ? m.Value : "INT. ";
         if (!prefix.EndsWith(' ') && prefix.Length > 0)
             prefix += " ";
@@ -680,10 +688,7 @@ public static class BookToFountainConverter
     {
         if (string.IsNullOrEmpty(fountain)) return fountain ?? "";
         var today = DateTime.Now.ToString("M/d/yyyy");
-        return Regex.Replace(
-            fountain,
-            @"(?im)^(Draft date:)\s*.*$",
-            $"$1 {today}");
+        return DraftDateRegex.Replace(fountain, $"$1 {today}");
     }
 
     /// <summary>
@@ -797,17 +802,14 @@ public static class BookToFountainConverter
         if (!LooksLikeGoodFountain(fountain))
             fails.Add("structure");
 
-        if (Regex.IsMatch(
-                fountain,
-                @"\[\[.*(truncat|omitted for length|cut off|excerpted).*\]\]",
-                RegexOptions.IgnoreCase))
+        if (TruncatMarkerRegex.IsMatch(fountain))
             fails.Add("excerpt_marker");
 
         // Soft: long books should resolve
         if (bookText.Length > 40_000 &&
             path == AdaptPath.Single &&
             fountain.Length >= 80 &&
-            !Regex.IsMatch(fountain, @"(?im)(FADE OUT|THE END)\b"))
+            !FadeOutEndingRegex.IsMatch(fountain))
             fails.Add("missing_ending");
 
         var minScenes = Math.Clamp(totalRuntimeMinutes / 2, 3, 40);

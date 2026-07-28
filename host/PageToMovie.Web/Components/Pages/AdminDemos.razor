@@ -64,9 +64,8 @@
         else
         {
             <div class="row g-3">
-                @foreach (var d in _demos)
-                {
-                    <div class="col-12 col-xl-6">
+                <Virtualize TItem="DemoListItem" Items="_demos" Context="d">
+                    <div class="col-12 col-xl-6" @key="@($"{d.Id}:{d.Status}")">
                         <div class="card h-100 border-secondary">
                             <div class="card-header py-2 d-flex flex-wrap justify-content-between gap-2">
                                 <div>
@@ -94,8 +93,7 @@
                                 <video controls playsinline preload="metadata"
                                        class="w-100 rounded mb-2"
                                        style="max-height: 40vh; background: #000;"
-                                       src="@Api.DemoVideoUrl(d.Id)"
-                                       @key="@($"{d.Id}:{d.Status}")">
+                                       src="@Api.DemoVideoUrl(d.Id)">
                                 </video>
                                 @if (d.ReportNotes is { Count: > 0 })
                                 {
@@ -134,7 +132,7 @@
                             </div>
                         </div>
                     </div>
-                }
+                </Virtualize>
             </div>
         }
     }

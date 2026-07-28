@@ -20,11 +20,17 @@ public static class BookOcrPlateShortlist
         return File.Exists(b) ? b : null;
     }
 
+    private static readonly Regex PageHeaderRegex = new(@"---\s*PAGE\s+(\d+)\s*---", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+    private static readonly Regex AliasSplitRegex = new(@"[\s_\-]+", RegexOptions.Compiled);
+    private static readonly Regex SpeciesTokensRegex = new(@"\b(bunnies|bunny|rabbits?|mice|mouse|frogs?|owls?|kittens?|puppies?)\b", RegexOptions.Compiled);
+    private static readonly Regex ZzzPatternRegex = new(@"^z+\s*$", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+    private static readonly Regex WhitespaceSplitRegex = new(@"\s+", RegexOptions.Compiled);
+
     public static List<PageText> ParseBookFull(string raw)
     {
         var list = new List<PageText>();
         if (string.IsNullOrWhiteSpace(raw)) return list;
-        var parts = Regex.Split(raw, @"---\s*PAGE\s+(\d+)\s*---", RegexOptions.IgnoreCase);
+        var parts = PageHeaderRegex.Split(raw);
         for (var i = 1; i + 1 < parts.Length; i += 2)
         {
             if (!int.TryParse(parts[i], out var page)) continue;
@@ -58,7 +64,7 @@ public static class BookOcrPlateShortlist
             if (s.Length < 3) return;
             set.Add(s.ToLowerInvariant());
             // multi-word: also last token if long enough (e.g. "Head Dog" skip; "Buster" ok)
-            foreach (var part in Regex.Split(s, @"[\s_\-]+"))
+            foreach (var part in AliasSplitRegex.Split(s))
                 if (part.Length >= 4)
                     set.Add(part.ToLowerInvariant());
         }
@@ -71,8 +77,7 @@ public static class BookOcrPlateShortlist
             Add(seed["display_name"]?.GetValue<string>());
             // light species tokens from description for supporting animals
             var desc = seed["description"]?.GetValue<string>() ?? "";
-            foreach (Match m in Regex.Matches(desc.ToLowerInvariant(),
-                         @"\b(bunnies|bunny|rabbits?|mice|mouse|frogs?|owls?|kittens?|puppies?)\b"))
+            foreach (Match m in SpeciesTokensRegex.Matches(desc.ToLowerInvariant()))
                 set.Add(m.Value);
         }
 
@@ -160,8 +165,8 @@ public static class BookOcrPlateShortlist
         var t = (p.Text ?? "").Trim();
         if (t.Length == 0) return true;
         if (t.Contains("illustration only", StringComparison.OrdinalIgnoreCase)) return true;
-        if (Regex.IsMatch(t, @"^z+\s*$", RegexOptions.IgnoreCase)) return true;
-        var words = Regex.Split(t.ToLowerInvariant(), @"\s+").Where(w => w.Length > 0).ToArray();
+        if (ZzzPatternRegex.IsMatch(t)) return true;
+        var words = WhitespaceSplitRegex.Split(t.ToLowerInvariant()).Where(w => w.Length > 0).ToArray();
         if (p.Page == 1 && words.Length <= 25) return true;
         if (words.Length <= 8) return true;
         if (words.Length >= 12) return false;

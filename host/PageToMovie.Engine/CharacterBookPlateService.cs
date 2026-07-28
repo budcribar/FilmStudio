@@ -1215,12 +1215,15 @@ public sealed class CharacterBookPlateService
             int bgCount = 0;
             int colorCount = 0;
 
+            int width = bitmap.Width;
+            var pixels = bitmap.Pixels;
             for (int y = 0; y < bitmap.Height; y += stepY)
             {
-                for (int x = 0; x < bitmap.Width; x += stepX)
+                int rowOffset = y * width;
+                for (int x = 0; x < width; x += stepX)
                 {
                     totalSamples++;
-                    var pixel = bitmap.GetPixel(x, y);
+                    var pixel = pixels[rowOffset + x];
                     int r = pixel.Red;
                     int g = pixel.Green;
                     int b = pixel.Blue;
