@@ -193,73 +193,91 @@ public sealed class GrokImageClient : IImageClient
         var refNames = refs.Select(Path.GetFileName).Where(x => x is not null).Cast<string>().ToList();
         if (hasCostumeRef && Path.GetFileName(costumeRefPath) is { } costumeFileName)
             refNames.Add(costumeFileName);
-        var images = new List<byte[]>();
-        for (var i = 0; i < n; i++)
+        using var throttle = new SemaphoreSlim(3, 3);
+        var tasks = Enumerable.Range(0, n).Select(async i =>
         {
-            ct.ThrowIfCancellationRequested();
-            onProgress?.Invoke($"edit variant {i + 1}/{n}");
-
-            var orderHint = identityCount switch
-            {
-                > 1 => BuildMultiImageOrderHint(identityCount),
-                1 => costumeIndex >= 0
-                    // Explicit index (not "the attached reference") once a second, costume-only
-                    // image is also in play — an unindexed identity reference next to an
-                    // explicitly-indexed <IMAGE_1> costume ref is exactly the kind of ambiguity
-                    // that lets the model split the difference on wardrobe between the two.
-                    ? "<IMAGE_0> is the character identity AND art style reference (highest priority over text). "
-                    : "Match the attached reference identity AND illustration style (highest priority over text). ",
-                _ => "",
-            };
-            if (costumeIndex >= 0)
-            {
-                var identityLabel = identityCount switch
-                {
-                    0 => "",
-                    1 => "<IMAGE_0>",
-                    _ => $"<IMAGE_0>..<IMAGE_{identityCount - 1}>",
-                };
-                orderHint +=
-                    $"<IMAGE_{costumeIndex}> is a COSTUME REFERENCE ONLY (shared wardrobe design) — " +
-                    "copy its coat, hat/cap, badge, and garment details exactly. " +
-                    "COMPLETELY IGNORE any face, body, or person shown in that image — " +
-                    "this character's own face and identity must come from " +
-                    (identityCount > 0 ? "the other reference image(s) and " : "") +
-                    "the text description below, never from the costume reference. " +
-                    (identityCount > 0
-                        ? $"Conversely, IGNORE any hat/coat/badge visible in {identityLabel} — " +
-                          $"wardrobe comes ONLY from <IMAGE_{costumeIndex}>, even if {identityLabel} shows " +
-                          "different or older wardrobe. "
-                        : "");
-            }
-            var variantTail = illustratedMedium
-                ? (n > 1
-                    ? $" Variation {i + 1} of {n}: tiny pose/expression change only; " +
-                      "same identity, markings, and illustrated medium as the book references. "
-                    : " Single refined continuity portrait in the book’s illustration style. ")
-                : (n > 1
-                    ? $" Variation {i + 1} of {n}: tiny pose/expression change only; " +
-                      "same identity, markings, and photoreal medium as the reference(s). "
-                    : " Single refined photoreal continuity portrait matching the reference(s). ");
-            var mediumClause = illustratedMedium
-                ? "Keep the children's picture-book illustration style from the refs — not photoreal photography. "
-                : "Keep the photoreal live-action look from the refs — NOT illustration, NOT cartoon, NOT painted/drawn medium. ";
-            var variantPrompt =
-                orderHint +
-                prompt +
-                variantTail +
-                mediumClause +
-                "If refs show no clothing, do not invent costumes. " +
-                "No labels, no redesign, no model sheet.";
-
-            var sw = Stopwatch.StartNew();
+            await throttle.WaitAsync(ct).ConfigureAwait(false);
             try
             {
-                var body = await PostImageEditAsync(
-                    modelName, variantPrompt, aspectRatio, imageUris, onProgress, ct)
-                    .ConfigureAwait(false);
-                if (body is null)
+                ct.ThrowIfCancellationRequested();
+                onProgress?.Invoke($"edit variant {i + 1}/{n}");
+
+                var orderHint = identityCount switch
                 {
+                    > 1 => BuildMultiImageOrderHint(identityCount),
+                    1 => costumeIndex >= 0
+                        ? "<IMAGE_0> is the character identity AND art style reference (highest priority over text). "
+                        : "Match the attached reference identity AND illustration style (highest priority over text). ",
+                    _ => "",
+                };
+                if (costumeIndex >= 0)
+                {
+                    var identityLabel = identityCount switch
+                    {
+                        0 => "",
+                        1 => "<IMAGE_0>",
+                        _ => $"<IMAGE_0>..<IMAGE_{identityCount - 1}>",
+                    };
+                    orderHint +=
+                        $"<IMAGE_{costumeIndex}> is a COSTUME REFERENCE ONLY (shared wardrobe design) — " +
+                        "copy its coat, hat/cap, badge, and garment details exactly. " +
+                        "COMPLETELY IGNORE any face, body, or person shown in that image — " +
+                        "this character's own face and identity must come from " +
+                        (identityCount > 0 ? "the other reference image(s) and " : "") +
+                        "the text description below, never from the costume reference. " +
+                        (identityCount > 0
+                            ? $"Conversely, IGNORE any hat/coat/badge visible in {identityLabel} — " +
+                              $"wardrobe comes ONLY from <IMAGE_{costumeIndex}>, even if {identityLabel} shows " +
+                              "different or older wardrobe. "
+                            : "");
+                }
+                var variantTail = illustratedMedium
+                    ? (n > 1
+                        ? $" Variation {i + 1} of {n}: tiny pose/expression change only; " +
+                          "same identity, markings, and illustrated medium as the book references. "
+                        : " Single refined continuity portrait in the book’s illustration style. ")
+                    : (n > 1
+                        ? $" Variation {i + 1} of {n}: tiny pose/expression change only; " +
+                          "same identity, markings, and photoreal medium as the reference(s). "
+                        : " Single refined photoreal continuity portrait matching the reference(s). ");
+                var mediumClause = illustratedMedium
+                    ? "Keep the children's picture-book illustration style from the refs — not photoreal photography. "
+                    : "Keep the photoreal live-action look from the refs — NOT illustration, NOT cartoon, NOT painted/drawn medium. ";
+                var variantPrompt =
+                    orderHint +
+                    prompt +
+                    variantTail +
+                    mediumClause +
+                    "If refs show no clothing, do not invent costumes. " +
+                    "No labels, no redesign, no model sheet.";
+
+                var sw = Stopwatch.StartNew();
+                try
+                {
+                    var body = await PostImageEditAsync(
+                        modelName, variantPrompt, aspectRatio, imageUris, onProgress, ct)
+                        .ConfigureAwait(false);
+                    if (body is null)
+                    {
+                        _telemetry.LogApiCall(new ApiCallTelemetry
+                        {
+                            Kind = "image_edit",
+                            Endpoint = "images/edits",
+                            Model = modelName,
+                            DurationMs = sw.ElapsedMilliseconds,
+                            Prompt = variantPrompt,
+                            PromptChars = variantPrompt.Length,
+                            ReferenceImagePaths = refNames,
+                            RefsAttached = true,
+                            Attempt = i + 1,
+                            Error = "empty response",
+                            Ok = false,
+                        });
+                        throw new InvalidOperationException(
+                            $"Image edit failed (variant {i + 1}): empty response");
+                    }
+
+                    var batch = ParseImageResponse(body, 1, $"edits variant {i + 1}");
                     _telemetry.LogApiCall(new ApiCallTelemetry
                     {
                         Kind = "image_edit",
@@ -270,48 +288,37 @@ public sealed class GrokImageClient : IImageClient
                         PromptChars = variantPrompt.Length,
                         ReferenceImagePaths = refNames,
                         RefsAttached = true,
+                        ImageCount = batch.Count,
                         Attempt = i + 1,
-                        Error = "empty response",
+                        Ok = true,
+                    });
+                    return batch.FirstOrDefault() ?? Array.Empty<byte>();
+                }
+                catch (Exception ex) when (ex is not InvalidOperationException)
+                {
+                    _telemetry.LogApiCall(new ApiCallTelemetry
+                    {
+                        Kind = "image_edit",
+                        Endpoint = "images/edits",
+                        Model = modelName,
+                        DurationMs = sw.ElapsedMilliseconds,
+                        Prompt = variantPrompt,
+                        ReferenceImagePaths = refNames,
+                        Attempt = i + 1,
+                        Error = ex.Message,
                         Ok = false,
                     });
-                    throw new InvalidOperationException(
-                        $"Image edit failed (variant {i + 1}): empty response");
+                    throw;
                 }
-
-                var batch = ParseImageResponse(body, 1, $"edits variant {i + 1}");
-                images.AddRange(batch);
-                _telemetry.LogApiCall(new ApiCallTelemetry
-                {
-                    Kind = "image_edit",
-                    Endpoint = "images/edits",
-                    Model = modelName,
-                    DurationMs = sw.ElapsedMilliseconds,
-                    Prompt = variantPrompt,
-                    PromptChars = variantPrompt.Length,
-                    ReferenceImagePaths = refNames,
-                    RefsAttached = true,
-                    ImageCount = batch.Count,
-                    Attempt = i + 1,
-                    Ok = true,
-                });
             }
-            catch (Exception ex) when (ex is not InvalidOperationException)
+            finally
             {
-                _telemetry.LogApiCall(new ApiCallTelemetry
-                {
-                    Kind = "image_edit",
-                    Endpoint = "images/edits",
-                    Model = modelName,
-                    DurationMs = sw.ElapsedMilliseconds,
-                    Prompt = variantPrompt,
-                    ReferenceImagePaths = refNames,
-                    Attempt = i + 1,
-                    Error = ex.Message,
-                    Ok = false,
-                });
-                throw;
+                throttle.Release();
             }
-        }
+        });
+
+        var results = await Task.WhenAll(tasks).ConfigureAwait(false);
+        var images = results.Where(b => b is { Length: > 0 }).ToList();
 
         if (images.Count < 1)
             throw new InvalidOperationException("Image edit returned no variants.");
