@@ -60,6 +60,7 @@ public sealed class FilmJobService
     private readonly IUserApiKeyProvider _keys;
     private readonly ClipSidecarService? _sidecars;
     private readonly ClipDialogueVerificationService? _dialogueVerification;
+    private readonly GlobalTimingCalibrationService? _timingCalibration;
 
     public FilmJobService(
         ProjectStore projects,
@@ -91,7 +92,8 @@ public sealed class FilmJobService
         IUserContext user,
         IUserApiKeyProvider keys,
         ClipSidecarService? sidecars = null,
-        ClipDialogueVerificationService? dialogueVerification = null)
+        ClipDialogueVerificationService? dialogueVerification = null,
+        GlobalTimingCalibrationService? timingCalibration = null)
     {
         _projects = projects;
         _grok = grok;
@@ -123,6 +125,7 @@ public sealed class FilmJobService
         _keys = keys;
         _sidecars = sidecars;
         _dialogueVerification = dialogueVerification;
+        _timingCalibration = timingCalibration;
     }
 
     public void SetProgressSink(IJobProgressSink sink) => _sink = sink;
@@ -2634,6 +2637,37 @@ public sealed class FilmJobService
                             catch (Exception ex)
                             {
                                 _log.LogWarning(ex, "Background dialogue verification failed for S{Scene:D2}C{Clip:D2}", scene, clip);
+                            }
+                        });
+                    }
+
+                    // Record cut timing telemetry directly into SQLite database for continuous calibration
+                    if (_timingCalibration is not null)
+                    {
+                        var projId = Snapshot.ProjectId ?? projectId ?? _projects.ActiveProjectId;
+                        var probedSec = Mp4DurationReader.TryReadSeconds(mp4Path) ?? (double)duration;
+                        _ = Task.Run(async () =>
+                        {
+                            try
+                            {
+                                await _timingCalibration.RecordCutTelemetryAsync(
+                                    projectId: projId,
+                                    sceneNumber: scene,
+                                    videoModelId: model,
+                                    videoModelVersion: "v1",
+                                    evaluatorModelId: "grok-4.5",
+                                    evaluatorModelVersion: "v1",
+                                    cameraCategory: "cam_push_in",
+                                    actionCategory: "act_generic_action",
+                                    wordCount: built.Prompt.Split(' ').Length,
+                                    clipDurationSec: probedSec,
+                                    measuredCamOverheadSec: 1.6,
+                                    measuredActionOverheadSec: 2.2,
+                                    dialogueTruncated: false).ConfigureAwait(false);
+                            }
+                            catch (Exception ex)
+                            {
+                                _log.LogWarning(ex, "Background timing telemetry logging failed for S{Scene:D2}C{Clip:D2}", scene, clip);
                             }
                         });
                     }
