@@ -1927,7 +1927,11 @@ public sealed class FilmJobService
             {
                 if (ct.IsCancellationRequested)
                     throw new OperationCanceledException(ct);
-                throw result.Exception ?? new InvalidOperationException($"YouTube upload failed: {result.Status}");
+                var errDetail = result.Exception is Google.GoogleApiException gerr
+                    ? $"Google API {gerr.HttpStatusCode}: {gerr.Message} — {gerr.Error?.Message}"
+                    : result.Exception?.Message ?? $"YouTube upload status: {result.Status}";
+                await AppendLogAsync($"❌ YouTube upload failed: {errDetail}");
+                throw result.Exception ?? new InvalidOperationException($"YouTube upload failed: {errDetail}");
             }
 
             var url = $"https://youtu.be/{videoId}";
@@ -1960,7 +1964,11 @@ public sealed class FilmJobService
         catch (Exception ex)
         {
             _log.LogError(ex, "YouTube upload failed for {ProjectId}", projectId);
-            await FinishAsync("error", ex.Message, ex.Message);
+            var errMessage = ex is Google.GoogleApiException gex
+                ? $"Google API Error ({gex.HttpStatusCode}): {gex.Message} — {gex.Error?.Message}"
+                : ex.Message;
+            await AppendLogAsync($"❌ YouTube upload exception: {errMessage}");
+            await FinishAsync("error", errMessage, errMessage);
         }
     }
 

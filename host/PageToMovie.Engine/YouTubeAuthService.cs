@@ -42,8 +42,6 @@ public sealed class YouTubeAuthService
         if (!IsConfigured)
             return null;
         var dataDir = UserDatabaseService.ResolveDataDirectory(_projects.WorkspaceRoot);
-        var tokenDir = Path.Combine(dataDir, "youtube_token");
-        Directory.CreateDirectory(tokenDir);
         return new GoogleAuthorizationCodeFlow(new GoogleAuthorizationCodeFlow.Initializer
         {
             ClientSecrets = new ClientSecrets { ClientId = _opts.ClientId, ClientSecret = _opts.ClientSecret },
@@ -54,7 +52,7 @@ public sealed class YouTubeAuthService
                 YouTubeService.Scope.YoutubeUpload,
                 YouTubeService.Scope.YoutubeForceSsl,
             },
-            DataStore = new FileDataStore(tokenDir, fullPath: true),
+            DataStore = new SqliteDataStore(dataDir),
         });
     }
 
@@ -158,5 +156,119 @@ public sealed class YouTubeAuthService
         {
             return null;
         }
+    }
+}
+
+/// <summary>
+/// Persistent SQLite uploader/OAuth token storage backed by <c>pagetomovie.db</c> in persistent <c>/data</c>.
+/// Guarantees YouTube OAuth refresh tokens survive app restarts, container updates, and redeploys.
+/// </summary>
+public sealed class SqliteDataStore : IDataStore
+{
+    private readonly string _connectionString;
+
+    public SqliteDataStore(string dataDir)
+    {
+        Directory.CreateDirectory(dataDir);
+        var dbPath = Path.Combine(dataDir, "pagetomovie.db");
+        _connectionString = $"Data Source={dbPath}";
+        EnsureTableInitialized();
+    }
+
+    private void EnsureTableInitialized()
+    {
+        try
+        {
+            using var conn = new Microsoft.Data.Sqlite.SqliteConnection(_connectionString);
+            conn.Open();
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText = @"
+                CREATE TABLE IF NOT EXISTS oauth_data_store (
+                    key TEXT PRIMARY KEY,
+                    value_json TEXT NOT NULL,
+                    updated_at TEXT NOT NULL
+                );
+            ";
+            cmd.ExecuteNonQuery();
+        }
+        catch { /* best effort */ }
+    }
+
+    public Task StoreAsync<T>(string key, T value)
+    {
+        if (string.IsNullOrWhiteSpace(key)) return Task.CompletedTask;
+        try
+        {
+            var json = System.Text.Json.JsonSerializer.Serialize(value);
+            using var conn = new Microsoft.Data.Sqlite.SqliteConnection(_connectionString);
+            conn.Open();
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText = @"
+                INSERT INTO oauth_data_store (key, value_json, updated_at)
+                VALUES (@key, @value_json, @updated_at)
+                ON CONFLICT(key) DO UPDATE SET
+                    value_json = excluded.value_json,
+                    updated_at = excluded.updated_at;
+            ";
+            cmd.Parameters.AddWithValue("@key", key);
+            cmd.Parameters.AddWithValue("@value_json", json);
+            cmd.Parameters.AddWithValue("@updated_at", DateTimeOffset.UtcNow.ToString("o"));
+            cmd.ExecuteNonQuery();
+        }
+        catch { /* best effort */ }
+        return Task.CompletedTask;
+    }
+
+    public Task DeleteAsync<T>(string key)
+    {
+        if (string.IsNullOrWhiteSpace(key)) return Task.CompletedTask;
+        try
+        {
+            using var conn = new Microsoft.Data.Sqlite.SqliteConnection(_connectionString);
+            conn.Open();
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText = "DELETE FROM oauth_data_store WHERE key = @key";
+            cmd.Parameters.AddWithValue("@key", key);
+            cmd.ExecuteNonQuery();
+        }
+        catch { /* best effort */ }
+        return Task.CompletedTask;
+    }
+
+    public Task<T> GetAsync<T>(string key)
+    {
+        if (string.IsNullOrWhiteSpace(key)) return Task.FromResult(default(T)!);
+        try
+        {
+            using var conn = new Microsoft.Data.Sqlite.SqliteConnection(_connectionString);
+            conn.Open();
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText = "SELECT value_json FROM oauth_data_store WHERE key = @key";
+            cmd.Parameters.AddWithValue("@key", key);
+            var result = cmd.ExecuteScalar() as string;
+            if (string.IsNullOrWhiteSpace(result))
+                return Task.FromResult(default(T)!);
+
+            var val = System.Text.Json.JsonSerializer.Deserialize<T>(result);
+            return Task.FromResult(val!);
+        }
+        catch
+        {
+            return Task.FromResult(default(T)!);
+        }
+    }
+
+    public Task ClearAsync()
+    {
+        try
+        {
+            using var conn = new Microsoft.Data.Sqlite.SqliteConnection(_connectionString);
+            conn.Open();
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText = "DELETE FROM oauth_data_store";
+            cmd.ExecuteNonQuery();
+        }
+        catch { /* best effort */ }
+        return Task.CompletedTask;
     }
 }
