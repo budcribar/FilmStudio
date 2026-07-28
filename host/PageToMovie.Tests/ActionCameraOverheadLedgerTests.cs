@@ -11,7 +11,7 @@ public class ActionCameraOverheadLedgerTests
         var ledger = new ActionCameraOverheadLedger();
 
         Assert.Equal(1.6, ledger.GetOverheadSec("cam_push_in"));
-        Assert.Equal(2.0, ledger.GetOverheadSec("act_knife_pull"));
+        Assert.Equal(1.9, ledger.GetOverheadSec("act_knife_pull"));
         Assert.Equal(3.1, ledger.GetOverheadSec("act_stabbing"));
     }
 
@@ -20,9 +20,9 @@ public class ActionCameraOverheadLedgerTests
     {
         var ledger = new ActionCameraOverheadLedger();
 
-        // 5.0s clip - 1.6s push-in - 2.0s knife pull = 1.4s remaining for speech
+        // 5.0s clip - 1.6s push-in - 1.9s knife pull = 1.5s remaining for speech
         double speechWindow = ledger.CalculateEffectiveSpeechWindowSec(5.0, "cam_push_in", "act_knife_pull");
-        Assert.Equal(1.4, speechWindow, 1);
+        Assert.Equal(1.5, speechWindow, 1);
     }
 
     [Fact]
