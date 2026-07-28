@@ -2300,7 +2300,14 @@ app.MapGet("/api/projects/{id}/characters", (string id, ProjectStore store) =>
     }
 });
 
-static IResult ServeCachedFile(HttpContext ctx, string path, string? contentType = null, bool enableRangeProcessing = false)
+// immutable=true is only correct for files that can never change at the same URL (e.g. book
+// page images extracted once at import). Character ref/variant/book-ref images are overwritten
+// in place at the same path on regeneration — "public, max-age=31536000, immutable" would tell
+// the browser to never even ask the server again, silently showing a stale portrait for up to a
+// year after regeneration. Those use "no-cache" instead: still ETag/304-validated (saves the body
+// transfer when unchanged), but always revalidated so a regeneration is picked up immediately.
+static IResult ServeCachedFile(
+    HttpContext ctx, string path, string? contentType = null, bool enableRangeProcessing = false, bool immutable = false)
 {
     try
     {
@@ -2312,7 +2319,9 @@ static IResult ServeCachedFile(HttpContext ctx, string path, string? contentType
             return Results.StatusCode(StatusCodes.Status304NotModified);
 
         ctx.Response.Headers.ETag = etag;
-        ctx.Response.Headers.CacheControl = "public, max-age=31536000, immutable";
+        ctx.Response.Headers.CacheControl = immutable
+            ? "public, max-age=31536000, immutable"
+            : "no-cache";
         return Results.File(path, contentType ?? GuessImageContentType(path), enableRangeProcessing: enableRangeProcessing);
     }
     catch (Exception ex)
@@ -2347,7 +2356,7 @@ app.MapGet("/api/projects/{projectId}/book-images/{fileName}",
     var dir = Path.Combine(store.GetProjectDir(projectId), "source", "book_images");
     var file = Path.GetFileName(fileName);
     var path = Path.Combine(dir, file);
-    return ServeCachedFile(ctx, path);
+    return ServeCachedFile(ctx, path, immutable: true);
 });
 
 app.MapGet("/api/projects/{projectId}/characters/{charKey}/book-candidates",
