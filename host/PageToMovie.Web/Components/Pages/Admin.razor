@@ -856,9 +856,43 @@
         }
     }
 
-    private void OnAdminState(object? _)
+    private void OnAdminState(object? payload)
     {
         _hubLive = true;
+        if (payload is not null)
+        {
+            try
+            {
+                AdminStateDto? dto = null;
+                if (payload is System.Text.Json.JsonElement elem)
+                {
+                    dto = System.Text.Json.JsonSerializer.Deserialize<AdminStateDto>(elem.GetRawText(), EngineApiClient.JsonOpts);
+                }
+                else
+                {
+                    var json = System.Text.Json.JsonSerializer.Serialize(payload, EngineApiClient.JsonOpts);
+                    dto = System.Text.Json.JsonSerializer.Deserialize<AdminStateDto>(json, EngineApiClient.JsonOpts);
+                }
+
+                if (dto is not null)
+                {
+                    _state = dto;
+                    if (dto.ApiInFlight > 0) _apiInFlight = dto.ApiInFlight;
+                    if (dto.CapacityRejects > 0) _capacityRejects = dto.CapacityRejects;
+                    if (dto.LockConflicts > 0) _lockConflicts = dto.LockConflicts;
+                    if (dto.Locks is { Count: > 0 }) _locks = dto.Locks;
+                    if (dto.LoadSim is not null) _loadSim = dto.LoadSim;
+                    if (dto.ProcessHistory is { Count: > 0 }) _processHistory = dto.ProcessHistory;
+                    _ = InvokeAsync(async () =>
+                    {
+                        await UpdateChartsAsync();
+                        StateHasChanged();
+                    });
+                    return;
+                }
+            }
+            catch { /* fallback to HTTP refresh if payload shape differs */ }
+        }
         _ = InvokeAsync(RefreshAsync);
     }
 
@@ -870,8 +904,12 @@
             {
                 try
                 {
-                    await RefreshAsync();
-                    await InvokeAsync(StateHasChanged);
+                    // Only poll over HTTP when SignalR is disconnected
+                    if (!_hubLive)
+                    {
+                        await RefreshAsync();
+                        await InvokeAsync(StateHasChanged);
+                    }
                 }
                 catch { /* keep polling */ }
             }
