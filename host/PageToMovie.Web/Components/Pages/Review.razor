@@ -165,7 +165,7 @@ else
                     <div class="fw-semibold text-info mb-2 d-flex justify-content-between align-items-center">
                         <span>Executive Overview &amp; Category Scores</span>
                     </div>
-                    <p class="mb-3 text-light">@(!string.IsNullOrWhiteSpace(_movieReport.ExecutiveSummary) ? _movieReport.ExecutiveSummary : _movieReport.SummaryNotes)</p>
+                    <div class="markdown-body mb-3 text-light">@MarkdownHelper.Render(!string.IsNullOrWhiteSpace(_movieReport.ExecutiveSummary) ? _movieReport.ExecutiveSummary : _movieReport.SummaryNotes)</div>
                     
                     @if (_movieReport.CategoryScores is { Count: > 0 })
                     {
@@ -222,24 +222,24 @@ else
                                         <div class="row g-2">
                                             <div class="col-md-6">
                                                 <div class="small text-white-50"><strong>Continuity &amp; Transitions:</strong></div>
-                                                <div class="small text-light mb-2">@(string.IsNullOrWhiteSpace(group.ContinuityNotes) ? "—" : group.ContinuityNotes)</div>
+                                                <div class="markdown-body small text-light mb-2">@(string.IsNullOrWhiteSpace(group.ContinuityNotes) ? "—" : MarkdownHelper.Render(group.ContinuityNotes))</div>
                                             </div>
                                             <div class="col-md-6">
                                                 <div class="small text-white-50"><strong>Character Consistency &amp; Wardrobe:</strong></div>
-                                                <div class="small text-light mb-2">@(string.IsNullOrWhiteSpace(group.VisualConsistencyNotes) ? "—" : group.VisualConsistencyNotes)</div>
+                                                <div class="markdown-body small text-light mb-2">@(string.IsNullOrWhiteSpace(group.VisualConsistencyNotes) ? "—" : MarkdownHelper.Render(group.VisualConsistencyNotes))</div>
                                             </div>
                                             @if (!string.IsNullOrWhiteSpace(group.LightingNotes))
                                             {
                                                 <div class="col-md-6">
                                                     <div class="small text-white-50"><strong>Lighting &amp; Color Grade:</strong></div>
-                                                    <div class="small text-light mb-2">@group.LightingNotes</div>
+                                                    <div class="markdown-body small text-light mb-2">@MarkdownHelper.Render(group.LightingNotes)</div>
                                                 </div>
                                             }
                                             @if (!string.IsNullOrWhiteSpace(group.AudioNotes))
                                             {
                                                 <div class="col-md-6">
                                                     <div class="small text-white-50"><strong>Audio &amp; Dialogue Alignment:</strong></div>
-                                                    <div class="small text-light mb-2">@group.AudioNotes</div>
+                                                    <div class="markdown-body small text-light mb-2">@MarkdownHelper.Render(group.AudioNotes)</div>
                                                 </div>
                                             }
                                         </div>
