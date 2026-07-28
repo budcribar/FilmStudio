@@ -210,12 +210,12 @@ public static class SupportedModelCatalog
         },
         new()
         {
-            Id = "gemini-3-pro-image",
-            DisplayName = "Gemini 3 Pro Image",
+            Id = "gemini-2.5-pro-image",
+            DisplayName = "Gemini 2.5 Pro Image",
             Capability = ModelCapability.Image,
             Provider = ModelProviderFamily.Google,
             ApiBase = GoogleApiBase,
-            EndpointPath = "models/gemini-3-pro-image:generateContent",
+            EndpointPath = "models/gemini-2.5-pro:generateContent",
             RequiredEnvKeys = [GoogleApiKeyEnv],
             ImageCostPerImage = 0.134,
             Notes = "Wired via GeminiImageClient. Supports up to 14 reference images.",
@@ -287,12 +287,12 @@ public static class SupportedModelCatalog
         },
         new()
         {
-            Id = "gemini-3-pro",
-            DisplayName = "Gemini 3 Pro",
+            Id = "gemini-2.5-pro",
+            DisplayName = "Gemini 2.5 Pro",
             Capability = ModelCapability.Chat,
             Provider = ModelProviderFamily.Google,
             ApiBase = GoogleApiBase,
-            EndpointPath = "models/gemini-3-pro:generateContent",
+            EndpointPath = "models/gemini-2.5-pro:generateContent",
             RequiredEnvKeys = [GoogleApiKeyEnv],
             MaxInputTokens = 1_000_000,
             InputCostPerMillionTokens = 2.00,
@@ -330,12 +330,12 @@ public static class SupportedModelCatalog
         },
         new()
         {
-            Id = "gemini-3-pro",
-            DisplayName = "Gemini 3 Pro (vision)",
+            Id = "gemini-2.5-pro",
+            DisplayName = "Gemini 2.5 Pro (vision)",
             Capability = ModelCapability.Vision,
             Provider = ModelProviderFamily.Google,
             ApiBase = GoogleApiBase,
-            EndpointPath = "models/gemini-3-pro:generateContent",
+            EndpointPath = "models/gemini-2.5-pro:generateContent",
             RequiredEnvKeys = [GoogleApiKeyEnv],
             MaxInputTokens = 1_000_000,
             InputCostPerMillionTokens = 2.00,

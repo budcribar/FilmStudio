@@ -71,7 +71,7 @@ public class SupportedModelCatalogTests
     [Fact]
     public void Gemini_image_is_selectable_as_a_portrait_model()
     {
-        var m = SupportedModelCatalog.Find("gemini-3-pro-image", ModelCapability.Image);
+        var m = SupportedModelCatalog.Find("gemini-2.5-pro-image", ModelCapability.Image);
         Assert.NotNull(m);
         Assert.True(m!.Enabled);
         Assert.Equal("gemini", m.ProviderId);
@@ -81,7 +81,7 @@ public class SupportedModelCatalogTests
     public void Claude_and_gemini_are_selectable_as_chat_models()
     {
         var claude = SupportedModelCatalog.Find("claude-sonnet-5", ModelCapability.Chat);
-        var gemini = SupportedModelCatalog.Find("gemini-3-pro", ModelCapability.Chat);
+        var gemini = SupportedModelCatalog.Find("gemini-2.5-pro", ModelCapability.Chat);
         Assert.NotNull(claude);
         Assert.NotNull(gemini);
         Assert.True(claude!.Enabled);
@@ -108,9 +108,9 @@ public class SupportedModelCatalogTests
         foreach (var (id, cap) in new[]
         {
             ("veo-3.1", ModelCapability.Video),
-            ("gemini-3-pro-image", ModelCapability.Image),
+            ("gemini-2.5-pro-image", ModelCapability.Image),
             ("claude-sonnet-5", ModelCapability.Chat),
-            ("gemini-3-pro", ModelCapability.Chat),
+            ("gemini-2.5-pro", ModelCapability.Chat),
         })
         {
             var e = SupportedModelCatalog.Find(id, cap);
@@ -127,7 +127,7 @@ public class SupportedModelCatalogTests
     {
         // CompleteWithImagesAsync (clip/frame review) is wired for these; the OCR / cast-classify
         // vision methods are not — notes must not claim full parity with Grok's vision client.
-        foreach (var id in new[] { "claude-sonnet-5", "gemini-3-pro" })
+        foreach (var id in new[] { "claude-sonnet-5", "gemini-2.5-pro" })
         {
             var e = SupportedModelCatalog.Find(id, ModelCapability.Vision);
             Assert.NotNull(e);
@@ -141,7 +141,7 @@ public class SupportedModelCatalogTests
     [InlineData("grok-4.5", ModelCapability.Chat, 500_000)]
     [InlineData("grok-4", ModelCapability.Chat, 256_000)]
     [InlineData("claude-sonnet-5", ModelCapability.Chat, 1_000_000)]
-    [InlineData("gemini-3-pro", ModelCapability.Chat, 1_000_000)]
+    [InlineData("gemini-2.5-pro", ModelCapability.Chat, 1_000_000)]
     public void Chat_models_carry_real_context_window(string id, ModelCapability cap, int expectedMaxInputTokens)
     {
         // Provider-documented context windows (2026-07) — BookToFountainConverter.
@@ -166,7 +166,7 @@ public class SupportedModelCatalogTests
     [InlineData("grok-4.5", ModelCapability.Chat, 2.00, 6.00)]
     [InlineData("grok-4", ModelCapability.Chat, 3.00, 15.00)]
     [InlineData("claude-sonnet-5", ModelCapability.Chat, 2.00, 10.00)]
-    [InlineData("gemini-3-pro", ModelCapability.Chat, 2.00, 12.00)]
+    [InlineData("gemini-2.5-pro", ModelCapability.Chat, 2.00, 12.00)]
     public void Chat_models_carry_real_token_pricing(
         string id, ModelCapability cap, double expectedInput, double expectedOutput)
     {
@@ -200,7 +200,7 @@ public class SupportedModelCatalogTests
     {
         Assert.Equal(0.05, SupportedModelCatalog.Find("grok-imagine-image-quality", ModelCapability.Image)?.ImageCostPerImage);
         Assert.Equal(0.02, SupportedModelCatalog.Find("grok-imagine-image", ModelCapability.Image)?.ImageCostPerImage);
-        Assert.Equal(0.134, SupportedModelCatalog.Find("gemini-3-pro-image", ModelCapability.Image)?.ImageCostPerImage);
+        Assert.Equal(0.134, SupportedModelCatalog.Find("gemini-2.5-pro-image", ModelCapability.Image)?.ImageCostPerImage);
     }
 
     [Fact]

@@ -84,12 +84,12 @@
     "imageCostPerImage": 0.02
   },
   {
-    "id": "gemini-3-pro-image",
-    "displayName": "Gemini 3 Pro Image",
+    "id": "gemini-2.5-pro-image",
+    "displayName": "Gemini 2.5 Pro Image",
     "capability": "Image",
     "provider": "Google",
     "apiBase": "https://generativelanguage.googleapis.com/v1beta",
-    "endpointPath": "models/gemini-3-pro-image:generateContent",
+    "endpointPath": "models/gemini-2.5-pro:generateContent",
     "requiredEnvKeys": ["GEMINI_API_KEY"],
     "enabled": true,
     "supportsVideoContinue": false,
@@ -179,12 +179,12 @@
     "notes": "Wired via AnthropicChatClient."
   },
   {
-    "id": "gemini-3-pro",
-    "displayName": "Gemini 3 Pro",
+    "id": "gemini-2.5-pro",
+    "displayName": "Gemini 2.5 Pro",
     "capability": "Chat",
     "provider": "Google",
     "apiBase": "https://generativelanguage.googleapis.com/v1beta",
-    "endpointPath": "models/gemini-3-pro:generateContent",
+    "endpointPath": "models/gemini-2.5-pro:generateContent",
     "requiredEnvKeys": ["GEMINI_API_KEY"],
     "enabled": true,
     "maxInputTokens": 1000000,
@@ -230,12 +230,12 @@
     "notes": "Wired for clip/frame review via MultiProviderVisionClient (OCR/cast-classify stay Grok-only)."
   },
   {
-    "id": "gemini-3-pro",
-    "displayName": "Gemini 3 Pro (vision)",
+    "id": "gemini-2.5-pro",
+    "displayName": "Gemini 2.5 Pro (vision)",
     "capability": "Vision",
     "provider": "Google",
     "apiBase": "https://generativelanguage.googleapis.com/v1beta",
-    "endpointPath": "models/gemini-3-pro:generateContent",
+    "endpointPath": "models/gemini-2.5-pro:generateContent",
     "requiredEnvKeys": ["GEMINI_API_KEY"],
     "enabled": true,
     "maxInputTokens": 1000000,

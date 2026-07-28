@@ -120,6 +120,19 @@ public sealed class GeminiChatClient : IChatClient, IVisionClient
         throw new NotSupportedException(
             "Character-page classification is not implemented for Gemini yet — route this call to Grok.");
 
+    private static string NormalizeModelName(string? model)
+    {
+        if (string.IsNullOrWhiteSpace(model)) return "gemini-2.5-pro";
+        var trimmed = model.Trim();
+        if (trimmed.Equals("gemini-3-pro", StringComparison.OrdinalIgnoreCase) ||
+            trimmed.Equals("gemini-3.0-pro", StringComparison.OrdinalIgnoreCase) ||
+            trimmed.Equals("gemini-3-pro-image", StringComparison.OrdinalIgnoreCase))
+        {
+            return "gemini-2.5-pro";
+        }
+        return trimmed;
+    }
+
     private async Task<string> SendAsync(
         Dictionary<string, object?> payload,
         string model,
@@ -132,7 +145,8 @@ public sealed class GeminiChatClient : IChatClient, IVisionClient
     {
         var key = ResolveApiKey();
         var modeTag = string.IsNullOrWhiteSpace(mode) ? null : mode.Trim();
-        var endpoint = $"models/{Uri.EscapeDataString(model)}:generateContent";
+        var targetModel = NormalizeModelName(model);
+        var endpoint = $"models/{Uri.EscapeDataString(targetModel)}:generateContent";
         var sw = Stopwatch.StartNew();
         try
         {
@@ -149,12 +163,18 @@ public sealed class GeminiChatClient : IChatClient, IVisionClient
             var body = await resp.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
             if (!resp.IsSuccessStatusCode)
             {
+                if (resp.StatusCode == System.Net.HttpStatusCode.NotFound && targetModel != "gemini-1.5-pro")
+                {
+                    _log.LogWarning("Gemini model {Model} returned 404 — retrying with gemini-1.5-pro", targetModel);
+                    return await SendAsync(payload, "gemini-1.5-pro", kind, mode, promptForLog, userPromptForLog, promptChars, ct).ConfigureAwait(false);
+                }
+
                 _telemetry.LogApiCall(new ApiCallTelemetry
                 {
                     Kind = kind,
                     Mode = modeTag,
                     Endpoint = endpoint,
-                    Model = model,
+                    Model = targetModel,
                     HttpStatus = (int)resp.StatusCode,
                     DurationMs = sw.ElapsedMilliseconds,
                     SystemPrompt = promptForLog,
