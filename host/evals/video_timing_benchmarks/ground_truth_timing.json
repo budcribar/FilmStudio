@@ -20,64 +20,64 @@
     "category": "Physical Action",
     "prompt": "Strong man carrying six heavy grocery bags up a brick stairwell.",
     "estimatedDurationSec": 3.0,
-    "actualDurationSec": 2.9,
-    "deltaSec": -0.1
+    "actualDurationSec": 3.1,
+    "deltaSec": 0.1
   },
   {
     "id": "act_knife_pull",
     "category": "Aggression",
     "prompt": "Character pulls out a Swiss Army switchblade, clicking the blade open in front of someone's face.",
     "estimatedDurationSec": 2.1,
-    "actualDurationSec": 2.0,
-    "deltaSec": -0.1
+    "actualDurationSec": 1.9,
+    "deltaSec": -0.2
   },
   {
     "id": "car_broadside_crash",
     "category": "Vehicle",
     "prompt": "Broadside T-bone car crash at an intersection at night, glass and metal debris.",
     "estimatedDurationSec": 1.8,
-    "actualDurationSec": 2.1,
-    "deltaSec": 0.3
+    "actualDurationSec": 2.0,
+    "deltaSec": 0.2
   },
   {
     "id": "cam_whip_pan",
     "category": "Camera Movement",
     "prompt": "Fast whip-pan left to right revealing a wooden desk.",
     "estimatedDurationSec": 1.0,
-    "actualDurationSec": 1.0,
-    "deltaSec": 0.0
+    "actualDurationSec": 0.8,
+    "deltaSec": -0.2
   },
   {
     "id": "cam_tracking_dolly",
     "category": "Camera Movement",
     "prompt": "Tracking dolly shot following a character walking down a hallway.",
     "estimatedDurationSec": 2.5,
-    "actualDurationSec": 2.3,
-    "deltaSec": -0.2
+    "actualDurationSec": 2.4,
+    "deltaSec": -0.1
   },
   {
     "id": "react_confused_stare",
     "category": "Facial Reaction",
     "prompt": "Glassy empty-eyed confused stare of an elderly person with dementia.",
     "estimatedDurationSec": 2.0,
-    "actualDurationSec": 2.2,
-    "deltaSec": 0.2
+    "actualDurationSec": 1.7,
+    "deltaSec": -0.3
   },
   {
     "id": "act_weightlifting",
     "category": "Physical Action",
     "prompt": "Man doing preacher curls with a 50lb barbell, then dropping the bar to the ground.",
     "estimatedDurationSec": 2.5,
-    "actualDurationSec": 2.3,
-    "deltaSec": -0.2
+    "actualDurationSec": 2.8,
+    "deltaSec": 0.3
   },
   {
     "id": "act_choke_wall",
     "category": "Aggression",
     "prompt": "Aggressive man grabs character by the neck, pinning them against a hallway wall.",
     "estimatedDurationSec": 2.4,
-    "actualDurationSec": 2.6,
-    "deltaSec": 0.2
+    "actualDurationSec": 2.2,
+    "deltaSec": -0.2
   },
   {
     "id": "act_stabbing",
@@ -92,63 +92,143 @@
     "category": "Locomotion",
     "prompt": "Character sprinting down a city street frantically in cold weather.",
     "estimatedDurationSec": 3.0,
-    "actualDurationSec": 3.2,
-    "deltaSec": 0.2
+    "actualDurationSec": 2.8,
+    "deltaSec": -0.2
   },
   {
     "id": "act_pills_sorting",
     "category": "Elderly Care",
     "prompt": "Elderly woman sorting pill bottles on a kitchen counter into a 7-day pill box.",
     "estimatedDurationSec": 2.6,
-    "actualDurationSec": 2.3,
-    "deltaSec": -0.3
+    "actualDurationSec": 2.9,
+    "deltaSec": 0.3
   },
   {
     "id": "car_muscle_drive",
     "category": "Vehicle",
     "prompt": "1980 Pontiac Trans Am with yellow flames pulling up to a traffic light, revving engine.",
     "estimatedDurationSec": 2.5,
-    "actualDurationSec": 2.2,
-    "deltaSec": -0.3
+    "actualDurationSec": 2.3,
+    "deltaSec": -0.2
   },
   {
     "id": "car_ferry_ride",
     "category": "Vehicle",
     "prompt": "Standing at the railing of a Puget Sound ferry looking across gray water.",
     "estimatedDurationSec": 3.0,
-    "actualDurationSec": 3.0,
-    "deltaSec": 0.0
+    "actualDurationSec": 3.3,
+    "deltaSec": 0.3
   },
   {
     "id": "scene_visitation_room",
     "category": "Environment",
     "prompt": "Man talking through thick glass partition using a yellow telephone in a prison visiting room.",
     "estimatedDurationSec": 2.5,
-    "actualDurationSec": 2.5,
-    "deltaSec": 0.0
+    "actualDurationSec": 2.4,
+    "deltaSec": -0.1
   },
   {
     "id": "act_yoga_pose",
     "category": "Mindfulness",
     "prompt": "Person lying on a purple mat doing Savasana corpse pose in a quiet room.",
     "estimatedDurationSec": 2.5,
-    "actualDurationSec": 2.8,
-    "deltaSec": 0.3
+    "actualDurationSec": 2.4,
+    "deltaSec": -0.1
   },
   {
     "id": "dream_viking_battle",
     "category": "Dream/Surreal",
     "prompt": "Medieval Viking warrior battle with sword clashes in a misty forest.",
     "estimatedDurationSec": 3.5,
-    "actualDurationSec": 3.4,
-    "deltaSec": -0.1
+    "actualDurationSec": 3.6,
+    "deltaSec": 0.1
   },
   {
     "id": "dream_lake_goddess",
     "category": "Dream/Surreal",
     "prompt": "Angelic woman in a white gown rising out of a clear misty lake.",
     "estimatedDurationSec": 3.5,
-    "actualDurationSec": 3.5,
+    "actualDurationSec": 3.6,
+    "deltaSec": 0.1
+  },
+  {
+    "id": "act_creeping_step",
+    "category": "Psychological Horror",
+    "prompt": "Character creeping forward step-by-step in complete pitch darkness holding a lantern.",
+    "estimatedDurationSec": 2.8,
+    "actualDurationSec": 2.8,
     "deltaSec": 0.0
+  },
+  {
+    "id": "act_lantern_unshutter",
+    "category": "Psychological Horror",
+    "prompt": "Unshuttering a dark lantern ray by ray focusing light onto an old man's closed eye.",
+    "estimatedDurationSec": 2.2,
+    "actualDurationSec": 1.9,
+    "deltaSec": -0.3
+  },
+  {
+    "id": "react_heart_pounding",
+    "category": "Psychological Horror",
+    "prompt": "Character clutching chest as camera pulses in rhythm with a heavy muffled heartbeat sound.",
+    "estimatedDurationSec": 2.0,
+    "actualDurationSec": 1.7,
+    "deltaSec": -0.3
+  },
+  {
+    "id": "act_sudden_shriek",
+    "category": "Psychological Horror",
+    "prompt": "Character screaming in sudden terror and leaping out into frame.",
+    "estimatedDurationSec": 1.5,
+    "actualDurationSec": 1.4,
+    "deltaSec": -0.1
+  },
+  {
+    "id": "act_floorboard_dismantle",
+    "category": "Psychological Horror",
+    "prompt": "Character removing wooden floorboards from a bedroom floor to conceal an object beneath.",
+    "estimatedDurationSec": 3.0,
+    "actualDurationSec": 2.8,
+    "deltaSec": -0.2
+  },
+  {
+    "id": "act_creature_pounce",
+    "category": "Creature / Adventure",
+    "prompt": "Large wild tiger lurking on a tree branch and leaping gracefully down to the ground.",
+    "estimatedDurationSec": 2.4,
+    "actualDurationSec": 2.4,
+    "deltaSec": 0.0
+  },
+  {
+    "id": "act_creature_stalk",
+    "category": "Creature / Adventure",
+    "prompt": "Predator stalking silently through dense jungle foliage and tall elephant grass.",
+    "estimatedDurationSec": 2.6,
+    "actualDurationSec": 2.7,
+    "deltaSec": 0.1
+  },
+  {
+    "id": "act_vine_swing",
+    "category": "Creature / Adventure",
+    "prompt": "Character swinging across a jungle river canopy on a long rainforest vine.",
+    "estimatedDurationSec": 3.0,
+    "actualDurationSec": 3.2,
+    "deltaSec": 0.2
+  },
+  {
+    "id": "react_creature_roar",
+    "category": "Creature / Adventure",
+    "prompt": "Wild panther rearing back on a rock, opening its jaws in a fierce roar.",
+    "estimatedDurationSec": 1.8,
+    "actualDurationSec": 2.1,
+    "deltaSec": 0.3
+  },
+  {
+    "id": "cam_crane_canopy",
+    "category": "Camera Movement",
+    "prompt": "Cinematic high crane camera shot descending from high jungle canopy down to forest floor.",
+    "estimatedDurationSec": 2.8,
+    "actualDurationSec": 2.7,
+    "deltaSec": -0.1
   }
 ]

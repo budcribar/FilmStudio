@@ -112,5 +112,65 @@
     "category": "Dream/Surreal",
     "prompt": "Angelic woman in a white gown rising out of a clear misty lake.",
     "estimatedDurationSec": 3.5
+  },
+  {
+    "id": "act_creeping_step",
+    "category": "Psychological Horror",
+    "prompt": "Character creeping forward step-by-step in complete pitch darkness holding a lantern.",
+    "estimatedDurationSec": 2.8
+  },
+  {
+    "id": "act_lantern_unshutter",
+    "category": "Psychological Horror",
+    "prompt": "Unshuttering a dark lantern ray by ray focusing light onto an old man's closed eye.",
+    "estimatedDurationSec": 2.2
+  },
+  {
+    "id": "react_heart_pounding",
+    "category": "Psychological Horror",
+    "prompt": "Character clutching chest as camera pulses in rhythm with a heavy muffled heartbeat sound.",
+    "estimatedDurationSec": 2.0
+  },
+  {
+    "id": "act_sudden_shriek",
+    "category": "Psychological Horror",
+    "prompt": "Character screaming in sudden terror and leaping out into frame.",
+    "estimatedDurationSec": 1.5
+  },
+  {
+    "id": "act_floorboard_dismantle",
+    "category": "Psychological Horror",
+    "prompt": "Character removing wooden floorboards from a bedroom floor to conceal an object beneath.",
+    "estimatedDurationSec": 3.0
+  },
+  {
+    "id": "act_creature_pounce",
+    "category": "Creature / Adventure",
+    "prompt": "Large wild tiger lurking on a tree branch and leaping gracefully down to the ground.",
+    "estimatedDurationSec": 2.4
+  },
+  {
+    "id": "act_creature_stalk",
+    "category": "Creature / Adventure",
+    "prompt": "Predator stalking silently through dense jungle foliage and tall elephant grass.",
+    "estimatedDurationSec": 2.6
+  },
+  {
+    "id": "act_vine_swing",
+    "category": "Creature / Adventure",
+    "prompt": "Character swinging across a jungle river canopy on a long rainforest vine.",
+    "estimatedDurationSec": 3.0
+  },
+  {
+    "id": "react_creature_roar",
+    "category": "Creature / Adventure",
+    "prompt": "Wild panther rearing back on a rock, opening its jaws in a fierce roar.",
+    "estimatedDurationSec": 1.8
+  },
+  {
+    "id": "cam_crane_canopy",
+    "category": "Camera Movement",
+    "prompt": "Cinematic high crane camera shot descending from high jungle canopy down to forest floor.",
+    "estimatedDurationSec": 2.8
   }
 ]
