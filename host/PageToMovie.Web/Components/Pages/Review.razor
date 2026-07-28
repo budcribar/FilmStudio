@@ -208,7 +208,7 @@ else
                                         @if (!string.IsNullOrWhiteSpace(group.ContinuityNotes))
                                         {
                                             <span class="small text-muted text-truncate d-none d-md-inline ms-2" style="max-width: 400px;">
-                                                @group.ContinuityNotes
+                                                @MarkdownHelper.StripHtml(group.ContinuityNotes)
                                             </span>
                                         }
                                     </div>
