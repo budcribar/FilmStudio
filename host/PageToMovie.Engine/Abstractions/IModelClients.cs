@@ -144,3 +144,15 @@ public interface IVisionClient
         string detail = "low",
         CancellationToken ct = default);
 }
+
+/// <summary>Audio &amp; music generate / download (Fal.ai, ElevenLabs, or fake).</summary>
+public interface IAudioClient
+{
+    bool IsConfigured { get; }
+
+    Task<byte[]> GenerateMusicTrackAsync(
+        string prompt,
+        int durationSeconds,
+        string? model = null,
+        CancellationToken ct = default);
+}

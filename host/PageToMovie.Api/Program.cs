@@ -257,6 +257,13 @@ else
         c.BaseAddress = new Uri(GeminiChatClient.ApiBase + "/");
         c.Timeout = TimeSpan.FromMinutes(20);
     });
+    builder.Services.AddHttpClient<FalAudioClient>(c =>
+    {
+        c.BaseAddress = new Uri(FalAudioClient.ApiBase.TrimEnd('/') + "/");
+        c.Timeout = TimeSpan.FromMinutes(5);
+    });
+    builder.Services.AddSingleton<IAudioClient>(sp => sp.GetRequiredService<FalAudioClient>());
+    builder.Services.AddSingleton<SceneMusicScoringService>();
 
     // Dispatchers: every existing caller keeps depending on IChatClient / IImageClient /
     // IVideoClient / IVisionClient and is routed to the right concrete provider client
