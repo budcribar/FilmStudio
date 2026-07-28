@@ -14,15 +14,17 @@ public sealed class MultiProviderImageClient : IImageClient
 {
     private readonly GrokImageClient _grok;
     private readonly GeminiImageClient _gemini;
+    private readonly FalImageClient _fal;
 
-    public MultiProviderImageClient(GrokImageClient grok, GeminiImageClient gemini)
+    public MultiProviderImageClient(GrokImageClient grok, GeminiImageClient gemini, FalImageClient fal)
     {
         _grok = grok;
         _gemini = gemini;
+        _fal = fal;
     }
 
     /// <summary>True when at least one provider has an API key configured.</summary>
-    public bool IsConfigured => _grok.IsConfigured || _gemini.IsConfigured;
+    public bool IsConfigured => _grok.IsConfigured || _gemini.IsConfigured || _fal.IsConfigured;
 
     public Task<IReadOnlyList<byte[]>> GenerateVariantsAsync(
         string prompt,
@@ -52,6 +54,8 @@ public sealed class MultiProviderImageClient : IImageClient
         if (string.IsNullOrWhiteSpace(model))
             return _grok;
         var provider = SupportedModelCatalog.ResolveOrDefault(model, ModelCapability.Image).Provider;
-        return provider == ModelProviderFamily.Google ? _gemini : _grok;
+        if (provider == ModelProviderFamily.Google) return _gemini;
+        if (provider == ModelProviderFamily.Fal) return _fal;
+        return _grok;
     }
 }

@@ -259,6 +259,30 @@ public static class SupportedModelCatalog
                     "against a live account yet. $0.134/image (1K/2K), $0.24/image (4K).",
             FeatureRequestUrl = "https://github.com/budcribar/PageToMovie/issues",
         },
+        new()
+        {
+            Id = "fal-ai/flux/dev",
+            DisplayName = "Fal.ai Flux.1 Dev",
+            Capability = ModelCapability.Image,
+            Provider = ModelProviderFamily.Fal,
+            ApiBase = FalApiBase,
+            EndpointPath = "fal-ai/flux/dev",
+            RequiredEnvKeys = [FalApiKeyEnv],
+            ImageCostPerImage = 0.025,
+            Notes = "Open-source Flux.1 Dev model via Fal.ai serverless GPU (~$0.025/image). High quality character & scene rendering.",
+        },
+        new()
+        {
+            Id = "fal-ai/flux/schnell",
+            DisplayName = "Fal.ai Flux.1 Schnell (Fast)",
+            Capability = ModelCapability.Image,
+            Provider = ModelProviderFamily.Fal,
+            ApiBase = FalApiBase,
+            EndpointPath = "fal-ai/flux/schnell",
+            RequiredEnvKeys = [FalApiKeyEnv],
+            ImageCostPerImage = 0.003,
+            Notes = "Ultra-fast open-source Flux.1 Schnell model via Fal.ai (~$0.003/image). Great for rapid iterations.",
+        },
         // Note: no Claude/Anthropic entry here on purpose — Anthropic does not offer an image
         // generation API, so there is no real backend this could ever call. Claude is added
         // below under Chat instead, where it's a real, callable capability.

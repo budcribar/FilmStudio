@@ -232,6 +232,11 @@ else
         c.BaseAddress = new Uri(GeminiImageClient.ApiBase + "/");
         c.Timeout = TimeSpan.FromMinutes(5);
     });
+    builder.Services.AddHttpClient<FalImageClient>(c =>
+    {
+        c.BaseAddress = new Uri(FalImageClient.ApiBase.TrimEnd('/') + "/");
+        c.Timeout = TimeSpan.FromMinutes(5);
+    });
     builder.Services.AddHttpClient<GrokVisionClient>(c =>
     {
         c.BaseAddress = new Uri(GrokVisionClient.ApiBase + "/");
