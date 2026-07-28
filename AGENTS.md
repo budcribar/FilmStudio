@@ -189,4 +189,26 @@ When debugging runtime behavior on the live Railway server across coding agent s
 
 ---
 
-*Last updated: 2026-07-27 — product north star; auto-run long-term; general solutions; UI copy principles; ephemeral migration cleanup lifecycle rule; server diagnostics & log retrieval.*
+## Platform Architecture & Pipeline Integrity Rules
+
+### 1. Persistent OAuth & Credential Sanitization
+- **SQLite Token Store**: Never use ephemeral `FileDataStore` for Google/YouTube OAuth tokens. Use `SqliteDataStore` pointing to persistent volume storage (`/data/pagetomovie.db`) so OAuth refresh tokens survive app restarts, container updates, and Railway deploys.
+- **Strict Credential Trimming**: Always sanitize OAuth environment variables (`ClientId`, `ClientSecret`, `RedirectUri`) using `.Trim(' ', '"', '\'', '\r', '\n', '\t')` before passing them to Google API flows to prevent `invalid_client` HTTP 400 errors caused by surrounding quotes or trailing whitespace.
+- **YouTube 15-Minute Capping**: Unverified YouTube channels cap video uploads at 15 minutes (YouTube API accepts the upload initially, but background processing deletes the video with *"Video removed because it was too long"*). Channel operators can unlock uploads up to 12 hours via one-time phone verification in *YouTube Studio → Settings → Channel → Feature eligibility → Intermediate features*.
+
+### 2. Creator Auto-Public Publishing Workflow
+- **Minimal Steps for Creators**: When an authenticated project owner or admin publishes a film cut, automatically mark `status = "public"` and launch background YouTube publishing immediately. Do **not** force project creators to manually approve their own self-published films in the Admin moderation queue.
+
+### 3. Video Concat & Clip Disjointness
+- **Disjoint Media Gathering**: When collecting media for full-movie stitching, strictly prefer individual clip files (`scene_01_clip_01.mp4`, `scene_01_clip_02.mp4`) per scene over scene composites (`scene_01.mp4`). Never combine scene composites with individual clips for the same scene (prevents duplicated playback).
+- **Export Cache Invalidation**: Force a fresh, scratch assembly of all current scene clips on export/publish. Never re-use old in-memory browser Blob URLs (`_clientWipUrl`) when new clips or scene updates have occurred.
+
+### 4. AI Payload HTML Tag Sanitization
+- **Sanitize LLM HTML Wrappers**: LLMs (Grok/Gemini) generating structured JSON fields (such as review notes or executive summaries) occasionally output raw `<p>...</p>` or `<br/>` HTML tags. Always run AI string payloads through an HTML pre-pass (`MarkdownHelper.Render` / `MarkdownHelper.StripHtml`) to clean raw tags into Markdown before HTML rendering, preventing literal `&lt;p&gt;` text from displaying in the UI.
+
+### 5. Navigation & Public UI Boundaries
+- **Logged-Out Navigation Isolation**: Public gallery visitors (`/demo`) must never see operator configuration or administration controls. Keep `/configuration` and admin routes strictly wrapped inside `@if (Session.IsLoggedIn)` in navigation components (`NavMenu.razor`).
+
+---
+
+*Last updated: 2026-07-27 — product north star; auto-run long-term; general solutions; UI copy principles; ephemeral migration cleanup; server diagnostics; platform architecture & pipeline integrity rules.*
