@@ -123,14 +123,19 @@ public sealed class SupportedModelEntry
     /// </summary>
     public bool SupportsVideoReview { get; init; } = false;
 
-    /// <summary>Provider id for config / cost reports (<c>grok</c>, <c>gemini</c>, <c>anthropic</c>).</summary>
-    public string ProviderId => Provider switch
-    {
-        ModelProviderFamily.Google => "gemini",
-        ModelProviderFamily.Anthropic => "anthropic",
-        ModelProviderFamily.Fal => "fal",
-        _ => "grok",
-    };
+    /// <summary>Raw provider string from models_catalog.json (e.g. OpenAI, DeepSeek, Grok, Gemini).</summary>
+    public string ProviderName { get; init; } = "";
+
+    /// <summary>Provider id for config / cost reports (<c>grok</c>, <c>gemini</c>, <c>anthropic</c>, <c>openai</c>).</summary>
+    public string ProviderId => !string.IsNullOrWhiteSpace(ProviderName)
+        ? ProviderName.ToLowerInvariant()
+        : Provider switch
+        {
+            ModelProviderFamily.Google => "gemini",
+            ModelProviderFamily.Anthropic => "anthropic",
+            ModelProviderFamily.Fal => "fal",
+            _ => "grok",
+        };
 }
 
 /// <summary>
@@ -613,6 +618,7 @@ public static class SupportedModelCatalog
         Id = d.Id,
         DisplayName = d.DisplayName,
         Capability = Enum.TryParse<ModelCapability>(d.Capability, true, out var cap) ? cap : ModelCapability.Chat,
+        ProviderName = d.Provider ?? "",
         Provider = Enum.TryParse<ModelProviderFamily>(d.Provider, true, out var prov) ? prov : ModelProviderFamily.Xai,
         ApiBase = string.IsNullOrWhiteSpace(d.ApiBase) ? XaiApiBase : d.ApiBase,
         EndpointPath = d.EndpointPath ?? "",

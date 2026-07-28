@@ -41,6 +41,48 @@
   },
   "models": [
     {
+      "id": "gpt-4o",
+      "displayName": "OpenAI GPT-4o",
+      "capability": "Chat",
+      "provider": "OpenAI",
+      "apiBase": "https://api.openai.com/v1",
+      "endpointPath": "chat/completions",
+      "requiredEnvKeys": ["OPENAI_API_KEY"],
+      "enabled": true,
+      "maxInputTokens": 128000,
+      "inputCostPerMillionTokens": 2.50,
+      "outputCostPerMillionTokens": 10.00,
+      "notes": "OpenAI flagship multimodal reasoning model."
+    },
+    {
+      "id": "gpt-4o-mini",
+      "displayName": "OpenAI GPT-4o Mini",
+      "capability": "Chat",
+      "provider": "OpenAI",
+      "apiBase": "https://api.openai.com/v1",
+      "endpointPath": "chat/completions",
+      "requiredEnvKeys": ["OPENAI_API_KEY"],
+      "enabled": true,
+      "maxInputTokens": 128000,
+      "inputCostPerMillionTokens": 0.15,
+      "outputCostPerMillionTokens": 0.60,
+      "notes": "Ultra-fast low cost OpenAI classifier model."
+    },
+    {
+      "id": "o3-mini",
+      "displayName": "OpenAI o3-mini",
+      "capability": "Chat",
+      "provider": "OpenAI",
+      "apiBase": "https://api.openai.com/v1",
+      "endpointPath": "chat/completions",
+      "requiredEnvKeys": ["OPENAI_API_KEY"],
+      "enabled": true,
+      "maxInputTokens": 200000,
+      "inputCostPerMillionTokens": 1.10,
+      "outputCostPerMillionTokens": 4.40,
+      "notes": "OpenAI high-reasoning benchmark model."
+    },
+    {
       "id": "grok-imagine-video",
       "displayName": "Grok Imagine Video",
       "capability": "Video",
