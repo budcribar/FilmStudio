@@ -858,8 +858,9 @@ public sealed class ProjectStore
         var path = ConfigPath(projectId);
         if (!File.Exists(path))
             return new Dictionary<string, JsonElement>(StringComparer.OrdinalIgnoreCase);
-        await using var stream = File.OpenRead(path);
-        using var doc = await JsonDocument.ParseAsync(stream, cancellationToken: ct).ConfigureAwait(false);
+        using var doc = await _readCache.GetOrLoadJsonDocumentAsync(path, ct).ConfigureAwait(false);
+        if (doc is null)
+            return new Dictionary<string, JsonElement>(StringComparer.OrdinalIgnoreCase);
         var dict = new Dictionary<string, JsonElement>(StringComparer.OrdinalIgnoreCase);
         foreach (var p in doc.RootElement.EnumerateObject())
             dict[p.Name] = p.Value.Clone();
