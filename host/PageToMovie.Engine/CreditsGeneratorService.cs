@@ -21,19 +21,22 @@ public class CreditsGeneratorService
     private readonly IVideoClient _video;
     private readonly MediaProxyTicketStore _mediaProxy;
     private readonly ILogger<CreditsGeneratorService> _logger;
+    private readonly IHttpClientFactory? _httpFactory;
 
     public CreditsGeneratorService(
         ProjectStore projects,
         IOptions<PageToMovieOptions> options,
         IVideoClient video,
         MediaProxyTicketStore mediaProxy,
-        ILogger<CreditsGeneratorService> logger)
+        ILogger<CreditsGeneratorService> logger,
+        IHttpClientFactory? httpFactory = null)
     {
         _projects = projects ?? throw new ArgumentNullException(nameof(projects));
         _options = options?.Value ?? new PageToMovieOptions();
         _video = video ?? throw new ArgumentNullException(nameof(video));
         _mediaProxy = mediaProxy ?? throw new ArgumentNullException(nameof(mediaProxy));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        _httpFactory = httpFactory;
     }
 
     /// <summary>
@@ -249,7 +252,8 @@ public class CreditsGeneratorService
         {
             var creditsMp4Path = Path.Combine(videoDir, "credits.mp4");
             var sc18Path = Path.Combine(videoDir, "scene_18_clip_01.mp4");
-            using var http = new HttpClient();
+            using var ownedHttp = _httpFactory is null ? new HttpClient() : null;
+            var http = _httpFactory?.CreateClient("media-proxy") ?? ownedHttp!;
             var bytes = await http.GetByteArrayAsync(url, ct).ConfigureAwait(false);
             if (bytes.Length > 0)
             {

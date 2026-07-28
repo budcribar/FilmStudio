@@ -2637,6 +2637,7 @@ app.MapPost("/api/projects/{id}/contribution-sync-media", async (
     ProjectContributionService contribService,
     IUserContext user,
     IOptions<PageToMovieOptions> opts,
+    IHttpClientFactory httpFactory,
     CancellationToken ct) =>
 {
     if (AuthGate.RequireLogin(user, opts) is { } denied)
@@ -2656,7 +2657,8 @@ app.MapPost("/api/projects/{id}/contribution-sync-media", async (
     {
         var targetDir = store.GetProjectDir(id);
         var originDir = store.GetProjectDir(parentId);
-        var result = await contribService.SyncContributionMediaAsync(targetDir, originDir, null, ct);
+        var result = await contribService.SyncContributionMediaAsync(
+            targetDir, originDir, httpFactory.CreateClient("media-proxy"), ct);
         return Results.Ok(result);
     }
     catch (Exception ex)

@@ -48,6 +48,7 @@ public sealed class JitBenchmarkService
     private readonly IVisionClient? _visionClient;
     private readonly ClipTimingTelemetryRepository? _repository;
     private readonly ILogger<JitBenchmarkService>? _log;
+    private readonly IHttpClientFactory? _httpFactory;
 
     private static readonly JsonSerializerOptions JsonOpts = new()
     {
@@ -61,7 +62,8 @@ public sealed class JitBenchmarkService
         IVideoClient? videoClient = null,
         IVisionClient? visionClient = null,
         ClipTimingTelemetryRepository? repository = null,
-        ILogger<JitBenchmarkService>? log = null)
+        ILogger<JitBenchmarkService>? log = null,
+        IHttpClientFactory? httpFactory = null)
     {
         _ledger = ledger;
         _classifier = classifier;
@@ -69,6 +71,7 @@ public sealed class JitBenchmarkService
         _visionClient = visionClient;
         _repository = repository;
         _log = log;
+        _httpFactory = httpFactory;
     }
 
     public async Task<JitCalibrationResult> EnsureBeatCalibratedAsync(
@@ -158,7 +161,8 @@ public sealed class JitBenchmarkService
                     {
                         if (videoUrl.StartsWith("http", StringComparison.OrdinalIgnoreCase))
                         {
-                            using var http = new HttpClient();
+                            using var ownedHttp = _httpFactory is null ? new HttpClient() : null;
+                            var http = _httpFactory?.CreateClient("media-proxy") ?? ownedHttp!;
                             var mp4Bytes = await http.GetByteArrayAsync(videoUrl, ct).ConfigureAwait(false);
                             await File.WriteAllBytesAsync(tempMp4Path, mp4Bytes, ct).ConfigureAwait(false);
                         }

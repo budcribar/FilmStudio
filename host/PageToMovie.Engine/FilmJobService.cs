@@ -63,6 +63,7 @@ public sealed class FilmJobService
     private readonly GlobalTimingCalibrationService? _timingCalibration;
     private readonly ActionCameraOverheadLedger? _timingLedger;
     private readonly AiActionOverheadClassifier? _timingClassifier;
+    private readonly IHttpClientFactory _httpFactory;
 
     public FilmJobService(
         ProjectStore projects,
@@ -93,12 +94,14 @@ public sealed class FilmJobService
         ILogger<FilmJobService> log,
         IUserContext user,
         IUserApiKeyProvider keys,
+        IHttpClientFactory httpFactory,
         ClipSidecarService? sidecars = null,
         ClipDialogueVerificationService? dialogueVerification = null,
         GlobalTimingCalibrationService? timingCalibration = null,
         ActionCameraOverheadLedger? timingLedger = null,
         AiActionOverheadClassifier? timingClassifier = null)
     {
+        _httpFactory = httpFactory;
         _projects = projects;
         _grok = grok;
         _characters = characters;
@@ -2699,7 +2702,7 @@ public sealed class FilmJobService
             var mp4Path = Path.Combine(videoDir, $"scene_{scene:D2}_clip_{clip:D2}.mp4");
             try
             {
-                using var http = new HttpClient();
+                var http = _httpFactory.CreateClient("media-proxy");
                 var bytes = await http.GetByteArrayAsync(url, ct).ConfigureAwait(false);
                 if (bytes.Length > 0)
                 {
