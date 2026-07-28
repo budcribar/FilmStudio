@@ -1587,6 +1587,23 @@ public sealed class EngineApiClient
         return await resp.Content.ReadFromJsonAsync<MovieAutoReviewEnvelope>(JsonOpts, ct);
     }
 
+    public async Task<ClipDialogueVerificationResult?> VerifyClipDialogueAsync(
+        string projectId,
+        int scene,
+        int clip,
+        CancellationToken ct = default)
+    {
+        using var resp = await _http.PostAsync(
+            $"/api/projects/{Uri.EscapeDataString(projectId)}/scenes/{scene}/clips/{clip}/verify-dialogue",
+            null,
+            ct);
+        if (!resp.IsSuccessStatusCode) return null;
+        var doc = await resp.Content.ReadFromJsonAsync<JsonElement>(JsonOpts, ct);
+        if (doc.TryGetProperty("result", out var rEl))
+            return JsonSerializer.Deserialize<ClipDialogueVerificationResult>(rEl.GetRawText(), JsonOpts);
+        return null;
+    }
+
     public async Task ApplyClipAutoReviewAsync(
         string projectId,
         int scene,

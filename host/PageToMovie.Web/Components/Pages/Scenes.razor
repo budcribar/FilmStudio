@@ -987,6 +987,15 @@ else
                             </div>
                         }
                     }
+                    @if (_clip.OnDisk)
+                    {
+                        <button type="button" class="btn btn-outline-primary btn-sm rounded-pill mb-2 px-2 py-0 ms-1 small"
+                                disabled="@_verifyingClip"
+                                @onclick="() => VerifyClipDialogueManualAsync(_clip)"
+                                title="Temporary button: run automated dialogue verification on this existing clip">
+                            @(_verifyingClip && _verifyingClipNumber == _clip.ClipNumber ? "Verifying..." : "Verify Dialogue (Temp)")
+                        </button>
+                    }
                     @if (_clip.CharactersOnScreen.Count > 0)
                     {
                         <p class="small text-muted mb-1">on screen: @string.Join(", ", _clip.CharactersOnScreen.Select(ShortChar))</p>
@@ -2891,6 +2900,36 @@ else
         var m = whole / 60;
         var s = whole % 60;
         return $"{m}:{s:D2}";
+    }
+
+    private bool _verifyingClip;
+    private int _verifyingClipNumber;
+
+    private async Task VerifyClipDialogueManualAsync(ClipSummary clip)
+    {
+        if (string.IsNullOrWhiteSpace(_projectId) || _detail is null || clip is null) return;
+        try
+        {
+            _verifyingClip = true;
+            _verifyingClipNumber = clip.ClipNumber;
+            StateHasChanged();
+
+            var ver = await Engine.VerifyClipDialogueAsync(_projectId, _detail.SceneNumber, clip.ClipNumber);
+            if (ver is not null)
+            {
+                clip.DialogueVerification = ver;
+            }
+        }
+        catch (Exception ex)
+        {
+            _error = $"Dialogue verification failed: {ex.Message}";
+        }
+        finally
+        {
+            _verifyingClip = false;
+            _verifyingClipNumber = 0;
+            StateHasChanged();
+        }
     }
 
     public async ValueTask DisposeAsync()

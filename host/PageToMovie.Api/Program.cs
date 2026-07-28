@@ -4095,6 +4095,21 @@ app.MapGet("/api/projects/{id}/scenes/{scene:int}/clips/{clip:int}/auto-review",
     }
 });
 
+/// <summary>Trigger automated dialogue verification for a clip on demand.</summary>
+app.MapPost("/api/projects/{id}/scenes/{scene:int}/clips/{clip:int}/verify-dialogue", async (
+    string id, int scene, int clip, ClipDialogueVerificationService verifier, CancellationToken ct) =>
+{
+    try
+    {
+        var result = await verifier.VerifyClipDialogueAsync(id, scene, clip, ct: ct);
+        return Results.Ok(new { ok = true, result });
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { ok = false, error = ex.Message });
+    }
+});
+
 /// <summary>Write accepted suggestion fields (cast / clip prompt). Does not regen — client starts gen after.</summary>
 app.MapPost("/api/projects/{id}/scenes/{scene:int}/clips/{clip:int}/auto-review/apply", (
     string id, int scene, int clip, ApplyClipAutoReviewRequest? body, ClipAutoReviewService reviews) =>
