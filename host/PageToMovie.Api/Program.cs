@@ -5183,28 +5183,25 @@ app.MapPost("/api/demos", async (
                     privacyStatus: privacyStatus,
                     tags: tags);
 
-                if (autoPublic)
+                demos.SetStatus(entry.Id, DemoCatalogService.DemoStatuses.Public, user.UserId,
+                    "Auto-public: creator publish");
+                entry = demos.TryGet(entry.Id) ?? entry;
+                try
                 {
-                    demos.SetStatus(entry.Id, DemoCatalogService.DemoStatuses.Public, user.UserId,
-                        "Auto-public: upload SHA-256 matches trusted gen/export registry");
-                    entry = demos.TryGet(entry.Id) ?? entry;
-                    try
-                    {
-                        await media.UpsertAsync(
-                            projectId!,
-                            $"_demos/{entry.Id}/movie.mp4",
-                            sha,
-                            bytes.LongLength,
-                            "demo",
-                            scene: null,
-                            clip: null,
-                            user.UserId);
-                    }
-                    catch { /* non-fatal */ }
-
-                    var demoIdForUpload = entry.Id;
-                    _ = Task.Run(() => youTubePublisher.PublishAsync(demoIdForUpload, CancellationToken.None));
+                    await media.UpsertAsync(
+                        projectId!,
+                        $"_demos/{entry.Id}/movie.mp4",
+                        sha,
+                        bytes.LongLength,
+                        "demo",
+                        scene: null,
+                        clip: null,
+                        user.UserId);
                 }
+                catch { /* non-fatal */ }
+
+                var demoIdForUpload = entry.Id;
+                _ = Task.Run(() => youTubePublisher.PublishAsync(demoIdForUpload, CancellationToken.None));
             }
         }
         else if (canReplace)
