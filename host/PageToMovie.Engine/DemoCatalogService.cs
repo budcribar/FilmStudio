@@ -21,7 +21,7 @@ public sealed class DemoCatalogService
     public const long MaxUploadBytes = 512L * 1024 * 1024;
     public const long MinUploadBytes = 1024;
     /// <summary>Max demos a user may submit per rolling 24h window.</summary>
-    public const int MaxPublishesPerUserPerDay = 2;
+    public const int MaxPublishesPerUserPerDay = 20;
     /// <summary>Max simultaneous pending demos per user.</summary>
     public const int MaxPendingPerUser = 5;
     /// <summary>Max open report notes stored on one demo.</summary>
