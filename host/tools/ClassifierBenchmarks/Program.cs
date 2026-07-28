@@ -32,11 +32,12 @@ try
     return cmd switch
     {
         "run" => await CmdRunAsync(paths, rest),
+        "timing-benchmark" => await VideoTimingBenchmarkRunner.RunAsync(paths, rest),
         "throughput" => await CmdThroughputAsync(paths, rest),
         "report" => await CmdReportAsync(paths),
         "history" => await CmdHistoryAsync(paths),
         "list-prompts" => CmdListPrompts(paths, rest),
-        _ => Fail($"Unknown command '{cmd}'. Try: run | throughput | report | history | list-prompts"),
+        _ => Fail($"Unknown command '{cmd}'. Try: run | timing-benchmark | throughput | report | history | list-prompts"),
     };
 }
 catch (Exception ex)
