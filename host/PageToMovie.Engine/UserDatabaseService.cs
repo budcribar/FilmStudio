@@ -416,6 +416,8 @@ public class UserDatabaseService
             await SaveProviderApiKeyAsync(userId, "gemini", req.GeminiApiKey, ct).ConfigureAwait(false);
         if (req.AnthropicApiKey is not null)
             await SaveProviderApiKeyAsync(userId, "anthropic", req.AnthropicApiKey, ct).ConfigureAwait(false);
+        if (req.FalApiKey is not null)
+            await SaveProviderApiKeyAsync(userId, "fal", req.FalApiKey, ct).ConfigureAwait(false);
     }
 
     public async Task<string?> GetDecryptedXaiApiKeyAsync(string userId, CancellationToken ct = default) =>
@@ -516,6 +518,8 @@ public class UserDatabaseService
             MaskedGeminiApiKey = MaskKey(geminiPersonal),
             HasAnthropicApiKey = !string.IsNullOrWhiteSpace(anthropicPersonal),
             MaskedAnthropicApiKey = MaskKey(anthropicPersonal),
+            HasFalApiKey = !string.IsNullOrWhiteSpace(falPersonal),
+            MaskedFalApiKey = MaskKey(falPersonal),
             Providers = providers,
         };
     }

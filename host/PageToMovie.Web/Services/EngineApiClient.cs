@@ -591,6 +591,7 @@ public sealed class EngineApiClient
         string? xaiApiKey = null,
         string? geminiApiKey = null,
         string? anthropicApiKey = null,
+        string? falApiKey = null,
         CancellationToken ct = default)
     {
         using var req = new HttpRequestMessage(HttpMethod.Post, "/api/user/settings")
@@ -600,6 +601,7 @@ public sealed class EngineApiClient
                 XaiApiKey = xaiApiKey,
                 GeminiApiKey = geminiApiKey,
                 AnthropicApiKey = anthropicApiKey,
+                FalApiKey = falApiKey,
             }, options: JsonOpts),
         };
         var env = await SendJsonAsync<UserSettingsEnvelope>(req, ct);

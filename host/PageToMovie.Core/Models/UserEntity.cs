@@ -101,6 +101,9 @@ public class UserSettingsDto
     public bool HasAnthropicApiKey { get; set; }
     public string? MaskedAnthropicApiKey { get; set; }
 
+    public bool HasFalApiKey { get; set; }
+    public string? MaskedFalApiKey { get; set; }
+
     /// <summary>Per-provider status for the Configuration UI.</summary>
     public List<ProviderKeyStatusDto> Providers { get; set; } = new();
 }
@@ -114,4 +117,5 @@ public class UpdateUserSettingsRequest
     public string? XaiApiKey { get; set; }
     public string? GeminiApiKey { get; set; }
     public string? AnthropicApiKey { get; set; }
+    public string? FalApiKey { get; set; }
 }

@@ -776,7 +776,7 @@ else
             _apiKeyFeedback = null;
             _error = null;
 
-            string? xai = null, gemini = null, anthropic = null;
+            string? xai = null, gemini = null, anthropic = null, fal = null;
             switch (providerId.ToLowerInvariant())
             {
                 case "grok":
@@ -791,6 +791,9 @@ else
                 case "claude":
                     anthropic = keyValue;
                     break;
+                case "fal":
+                    fal = keyValue;
+                    break;
                 default:
                     _error = $"Unknown provider: {providerId}";
                     return;
@@ -799,7 +802,8 @@ else
             _userSettings = await Engine.UpdateUserSettingsAsync(
                 xaiApiKey: xai,
                 geminiApiKey: gemini,
-                anthropicApiKey: anthropic);
+                anthropicApiKey: anthropic,
+                falApiKey: fal);
 
             _keyInputs[providerId] = null;
 
