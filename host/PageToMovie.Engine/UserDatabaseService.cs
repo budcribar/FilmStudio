@@ -127,6 +127,7 @@ public class UserDatabaseService
                             encrypted_xai_api_key TEXT,
                             encrypted_gemini_api_key TEXT,
                             encrypted_anthropic_api_key TEXT,
+                            encrypted_fal_api_key TEXT,
                             role TEXT NOT NULL DEFAULT 'User',
                             created_at TEXT NOT NULL,
                             last_login_at TEXT,
@@ -138,9 +139,25 @@ public class UserDatabaseService
                     cmd.ExecuteNonQuery();
                 }
 
-                // Migrate older DBs that only had the xAI column.
-                EnsureColumn(conn, "users", "encrypted_gemini_api_key", "TEXT");
-                EnsureColumn(conn, "users", "encrypted_anthropic_api_key", "TEXT");
+                // Database Schema Migrations & Version Tracking (PRAGMA user_version)
+                using (var vCmd = conn.CreateCommand())
+                {
+                    vCmd.CommandText = "PRAGMA user_version;";
+                    var curVer = Convert.ToInt32(vCmd.ExecuteScalar() ?? 0);
+
+                    // Migration v1 -> v2: Ensure provider key columns including Fal.ai
+                    EnsureColumn(conn, "users", "encrypted_gemini_api_key", "TEXT");
+                    EnsureColumn(conn, "users", "encrypted_anthropic_api_key", "TEXT");
+                    EnsureColumn(conn, "users", "encrypted_fal_api_key", "TEXT");
+
+                    if (curVer < 2)
+                    {
+                        using var setVer = conn.CreateCommand();
+                        setVer.CommandText = "PRAGMA user_version = 2;";
+                        setVer.ExecuteNonQuery();
+                        _logger.LogInformation("Migrated SQLite schema to user_version 2 (added provider key columns)");
+                    }
+                }
 
                 // User billing credits (list-rate USD; 1 credit = $0.01).
                 EnsureColumn(conn, "users", "credits_balance_usd", "REAL NOT NULL DEFAULT 0");

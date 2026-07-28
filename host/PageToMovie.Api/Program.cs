@@ -398,49 +398,7 @@ catch (Exception ex)
     app.Logger.LogWarning(ex, "Demo seeding failed (non-fatal)");
 }
 
-// ── Ephemeral Migration: Sync Scene 18 into TellTaleHeart blueprints ─────────
-// Temporary migration hook per AGENTS.md ephemeral lifecycle rule.
-// Will be removed after production verification.
-try
-{
-    var candidates = new[]
-    {
-        Path.Combine(AppContext.BaseDirectory, "projects", "TellTaleHeartV7", "blueprint.clips.grok.json"),
-        Path.Combine(Directory.GetCurrentDirectory(), "projects", "TellTaleHeartV7", "blueprint.clips.grok.json"),
-        Path.Combine("/app", "projects", "TellTaleHeartV7", "blueprint.clips.grok.json"),
-    };
-    var srcBp = candidates.FirstOrDefault(File.Exists);
-    if (srcBp is not null)
-    {
-        var pStore = app.Services.GetRequiredService<ProjectStore>();
-        var projectsRoot = Path.Combine(pStore.WorkspaceRoot, "projects");
-        var searchRoots = new[] { projectsRoot, "/data/projects", Path.Combine(Directory.GetCurrentDirectory(), "projects") }
-            .Where(Directory.Exists)
-            .Distinct();
 
-        foreach (var rootDir in searchRoots)
-        {
-            foreach (var bpFile in Directory.EnumerateFiles(rootDir, "blueprint*.json", SearchOption.AllDirectories))
-            {
-                if (bpFile.Contains("TellTale", StringComparison.OrdinalIgnoreCase) ||
-                    bpFile.Contains("Heart", StringComparison.OrdinalIgnoreCase))
-                {
-                    File.Copy(srcBp, bpFile, overwrite: true);
-                    app.Logger.LogInformation("Ephemeral Migration: Synced Scene 18 into {BpFile}", bpFile);
-                }
-            }
-        }
-        pStore.InvalidateReadCaches(null);
-    }
-    else
-    {
-        app.Logger.LogWarning("Ephemeral Migration: Template source blueprint not found at candidate paths.");
-    }
-}
-catch (Exception ex)
-{
-    app.Logger.LogWarning(ex, "Ephemeral migration skipped/failed");
-}
 
 app.UseMiddleware<HttpRequestMetricsMiddleware>();
 app.UseMiddleware<JwtHeaderMiddleware>();
