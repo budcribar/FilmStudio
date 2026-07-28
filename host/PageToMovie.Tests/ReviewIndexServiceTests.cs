@@ -50,10 +50,10 @@ public class ReviewIndexServiceTests : IDisposable
     }
 
     [Fact]
-    public void Rebuild_lists_on_disk_clips()
+    public async Task Rebuild_lists_on_disk_clips()
     {
         CreateProjectWithClips("P1", (1, 1), (1, 2), (2, 1));
-        var doc = _index.Rebuild("P1");
+        var doc = await _index.RebuildAsync("P1");
         Assert.Equal("P1", doc.ProjectId);
         Assert.Equal(3, doc.Clips.Count);
         Assert.Equal("S01C01", doc.Clips[0].Key);
@@ -63,16 +63,16 @@ public class ReviewIndexServiceTests : IDisposable
     }
 
     [Fact]
-    public void Rebuild_scene_filter()
+    public async Task Rebuild_scene_filter()
     {
         CreateProjectWithClips("P2", (1, 1), (2, 1), (2, 2));
-        var doc = _index.Rebuild("P2", sceneFilter: 2);
+        var doc = await _index.RebuildAsync("P2", sceneFilter: 2);
         Assert.Equal(2, doc.Clips.Count);
         Assert.All(doc.Clips, c => Assert.Equal(2, c.Scene));
     }
 
     [Fact]
-    public void PersistDurableFrames_and_upsert_with_draft()
+    public async Task PersistDurableFrames_and_upsert_with_draft()
     {
         var dir = CreateProjectWithClips("P3", (1, 1));
         var tmpFrames = Path.Combine(dir, "tmp_frames");
@@ -101,7 +101,7 @@ public class ReviewIndexServiceTests : IDisposable
             Path.Combine(dir, "assets", "review", "S01C01.auto_review.json"),
             System.Text.Json.JsonSerializer.Serialize(draft));
 
-        var doc = _index.UpsertClip("P3", 1, 1, rel, draft);
+        var doc = await _index.UpsertClipAsync("P3", 1, 1, rel, draft);
         var row = Assert.Single(doc.Clips);
         Assert.Equal("fail", row.AutoSuggestion);
         Assert.Equal("wrong_style", row.AutoCategory);
@@ -128,10 +128,10 @@ public class ReviewIndexServiceTests : IDisposable
     }
 
     [Fact]
-    public void Load_round_trips_camelCase_index()
+    public async Task Load_round_trips_camelCase_index()
     {
         CreateProjectWithClips("P5", (1, 1));
-        _index.Rebuild("P5");
+        await _index.RebuildAsync("P5");
         var loaded = _index.Load("P5");
         Assert.NotNull(loaded);
         Assert.Equal("P5", loaded!.ProjectId);

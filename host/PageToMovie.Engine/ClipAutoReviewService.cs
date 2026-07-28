@@ -116,7 +116,7 @@ public sealed class ClipAutoReviewService
         var projectDir = _projects.GetProjectDir(projectId);
 
         onProgress?.Invoke(5, 100, "Loading clip plan…");
-        var plan = LoadClipPlan(projectId, scene, clip);
+        var plan = await LoadClipPlanAsync(projectId, scene, clip).ConfigureAwait(false);
         var profiles = _projects.LoadCharacterPromptProfiles(projectId);
 
         var workDir = Path.Combine(projectDir, "assets", "review", $"_frames_S{scene:D2}C{clip:D2}");
@@ -161,7 +161,7 @@ public sealed class ClipAutoReviewService
             }
 
             onProgress?.Invoke(55, 100, "AI reviewing continuity and quality…");
-            var prompt = BuildReviewPrompt(scene, clip, plan, profiles, images, hasPrev);
+            var prompt = await BuildReviewPromptAsync(scene, clip, plan, profiles, images, hasPrev).ConfigureAwait(false);
             // Project-scoped rules only (checklist lives in embedded clip_auto_review.txt).
             try
             {
@@ -198,7 +198,7 @@ public sealed class ClipAutoReviewService
 
             try
             {
-                _reviewIndex.UpsertClip(projectId, scene, clip, durableFrames, draft);
+                await _reviewIndex.UpsertClipAsync(projectId, scene, clip, durableFrames, draft, ct);
             }
             catch (Exception ex)
             {
@@ -220,16 +220,17 @@ public sealed class ClipAutoReviewService
     }
 
     /// <summary>Write accepted suggestion values into cast seeds / blueprint clip (with before/after log).</summary>
-    public void ApplySuggestions(
+    public async Task ApplySuggestionsAsync(
         string projectId,
         int scene,
         int clip,
-        IReadOnlyList<ClipAutoReviewApplyItem> items)
+        IReadOnlyList<ClipAutoReviewApplyItem> items,
+        CancellationToken ct = default)
     {
         if (items is null || items.Count == 0)
             throw new InvalidOperationException("No suggestions selected to apply.");
 
-        var plan = LoadClipPlan(projectId, scene, clip);
+        var plan = await LoadClipPlanAsync(projectId, scene, clip).ConfigureAwait(false);
         var profiles = _projects.LoadCharacterPromptProfiles(projectId);
         var beforeParts = new List<string>();
         var afterParts = new List<string>();
@@ -288,7 +289,7 @@ public sealed class ClipAutoReviewService
 
         try
         {
-            _logs.AddAsync(
+            await _logs.AddAsync(
                 projectId,
                 "auto_review_apply",
                 $"Applied {items.Count} suggestion(s) to S{scene:D2}C{clip:D2}",
@@ -298,7 +299,8 @@ public sealed class ClipAutoReviewService
                 before: string.Join("\n---\n", beforeParts),
                 after: string.Join("\n---\n", afterParts),
                 category: draft?.Category,
-                suggestionCount: items.Count).GetAwaiter().GetResult();
+                suggestionCount: items.Count,
+                ct: ct).ConfigureAwait(false);
         }
         catch { /* non-fatal */ }
     }
@@ -329,20 +331,20 @@ public sealed class ClipAutoReviewService
     }
 
     /// <summary>Test/helper: load planned clip fields from Stage 2 blueprint (<c>veo_clips</c>).</summary>
-    public static ClipPlanSnapshot LoadClipPlanForTests(
+    public static async Task<ClipPlanSnapshot> LoadClipPlanForTestsAsync(
         ProjectStore projects, string projectId, int scene, int clip)
     {
-        var plan = LoadClipPlanCore(projects, projectId, scene, clip, log: null);
+        var plan = await LoadClipPlanCoreAsync(projects, projectId, scene, clip, log: null).ConfigureAwait(false);
         return new ClipPlanSnapshot(plan.VisualPrompt, plan.Dialogue, plan.Speaker, plan.Delivery);
     }
 
     public readonly record struct ClipPlanSnapshot(
         string VisualPrompt, string Dialogue, string Speaker, string Delivery);
 
-    private ClipPlan LoadClipPlan(string projectId, int scene, int clip) =>
-        LoadClipPlanCore(_projects, projectId, scene, clip, _log);
+    private Task<ClipPlan> LoadClipPlanAsync(string projectId, int scene, int clip) =>
+        LoadClipPlanCoreAsync(_projects, projectId, scene, clip, _log);
 
-    private static ClipPlan LoadClipPlanCore(
+    private static async Task<ClipPlan> LoadClipPlanCoreAsync(
         ProjectStore projects,
         string projectId,
         int scene,
@@ -352,7 +354,7 @@ public sealed class ClipAutoReviewService
         var plan = new ClipPlan();
         try
         {
-            using var doc = projects.LoadBlueprintAsync(projectId).GetAwaiter().GetResult();
+            using var doc = await projects.LoadBlueprintAsync(projectId).ConfigureAwait(false);
             if (doc is null) return plan;
             var root = doc.RootElement;
             if (!root.TryGetProperty("scenes", out var scenes) || scenes.ValueKind != JsonValueKind.Array)
@@ -397,7 +399,7 @@ public sealed class ClipAutoReviewService
         return plan;
     }
 
-    private static string BuildReviewPrompt(
+    private static async Task<string> BuildReviewPromptAsync(
         int scene,
         int clip,
         ClipPlan plan,
@@ -446,16 +448,16 @@ public sealed class ClipAutoReviewService
             }
         }
         sb.AppendLine();
-        sb.Append(LoadAutoReviewRulesBlock());
+        sb.Append(await LoadAutoReviewRulesBlockAsync().ConfigureAwait(false));
         return sb.ToString();
     }
 
     /// <summary>Checklist + JSON schema from <c>prompts/clip_auto_review.txt</c> (embed or override).</summary>
-    public static string LoadAutoReviewRulesBlock()
+    public static async Task<string> LoadAutoReviewRulesBlockAsync()
     {
         try
         {
-            var text = PromptFiles.ReadAsync("prompts/clip_auto_review.txt").GetAwaiter().GetResult();
+            var text = await PromptFiles.ReadAsync("prompts/clip_auto_review.txt").ConfigureAwait(false);
             if (!string.IsNullOrWhiteSpace(text))
                 return text.Trim() + "\n";
         }

@@ -75,7 +75,8 @@ public sealed class ReviewIndexService
     }
 
     /// <summary>Scan on-disk clips and rebuild full index (drafts, human, assembly, frames).</summary>
-    public ReviewIndexDocument Rebuild(string projectId, int? sceneFilter = null)
+    public async Task<ReviewIndexDocument> RebuildAsync(
+        string projectId, int? sceneFilter = null, CancellationToken ct = default)
     {
         var projectDir = _projects.GetProjectDir(projectId);
         var clips = ListOnDiskClips(projectDir, sceneFilter);
@@ -88,7 +89,7 @@ public sealed class ReviewIndexService
 
         foreach (var (scene, clip) in clips)
         {
-            doc.Clips.Add(BuildRow(projectId, projectDir, scene, clip));
+            doc.Clips.Add(await BuildRowAsync(projectId, projectDir, scene, clip, ct: ct).ConfigureAwait(false));
         }
 
         Save(doc);
@@ -96,12 +97,13 @@ public sealed class ReviewIndexService
     }
 
     /// <summary>Upsert one clip after auto-review (or frame persist).</summary>
-    public ReviewIndexDocument UpsertClip(
+    public async Task<ReviewIndexDocument> UpsertClipAsync(
         string projectId,
         int scene,
         int clip,
         IReadOnlyList<string>? durableFrameRelPaths = null,
-        ClipAutoReviewDraft? draft = null)
+        ClipAutoReviewDraft? draft = null,
+        CancellationToken ct = default)
     {
         var projectDir = _projects.GetProjectDir(projectId);
         var doc = Load(projectId) ?? new ReviewIndexDocument
@@ -110,7 +112,7 @@ public sealed class ReviewIndexService
             SchemaVersion = "1",
         };
 
-        var row = BuildRow(projectId, projectDir, scene, clip, draft, durableFrameRelPaths);
+        var row = await BuildRowAsync(projectId, projectDir, scene, clip, draft, durableFrameRelPaths, ct).ConfigureAwait(false);
         var key = row.Key;
         var idx = doc.Clips.FindIndex(c =>
             string.Equals(c.Key, key, StringComparison.OrdinalIgnoreCase));
@@ -236,13 +238,14 @@ public sealed class ReviewIndexService
             .ToList();
     }
 
-    private ReviewIndexClipRow BuildRow(
+    private async Task<ReviewIndexClipRow> BuildRowAsync(
         string projectId,
         string projectDir,
         int scene,
         int clip,
         ClipAutoReviewDraft? draft = null,
-        IReadOnlyList<string>? durableFrameRelPaths = null)
+        IReadOnlyList<string>? durableFrameRelPaths = null,
+        CancellationToken ct = default)
     {
         var key = $"S{scene:D2}C{clip:D2}";
         var videoRel = $"assets/video/scene_{scene:D2}_clip_{clip:D2}.mp4";
@@ -256,7 +259,7 @@ public sealed class ReviewIndexService
         var hasDraft = draft is not null || File.Exists(draftAbs);
 
         var human = ReadHumanReview(projectDir, key);
-        var eligible = _editLogs.IsClipEligibleForAssembly(projectId, scene, clip, out var blockReason);
+        var (eligible, blockReason) = await _editLogs.IsClipEligibleForAssemblyAsync(projectId, scene, clip, ct).ConfigureAwait(false);
 
         var frames = durableFrameRelPaths is { Count: > 0 }
             ? durableFrameRelPaths.Select(p => p.Replace('\\', '/')).ToList()

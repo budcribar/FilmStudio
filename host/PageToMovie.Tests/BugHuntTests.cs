@@ -204,7 +204,7 @@ public class BugHuntTests
     // ── 8. Auto-review LoadClipPlan must read veo_clips ─────────────────
 
     [Fact]
-    public void Bug8_LoadClipPlan_reads_veo_clips_visual_prompt()
+    public async Task Bug8_LoadClipPlan_reads_veo_clips_visual_prompt()
     {
         var root = Path.Combine(Path.GetTempPath(), "fs_bug8_" + Guid.NewGuid().ToString("N"));
         var proj = Path.Combine(root, "projects", "Demo");
@@ -233,7 +233,7 @@ public class BugHuntTests
         {
             var opts = Options.Create(new PageToMovieOptions { WorkspaceRoot = root, EnableReadCaches = false });
             var store = new ProjectStore(opts);
-            var plan = ClipAutoReviewService.LoadClipPlanForTests(store, "Demo", 2, 3);
+            var plan = await ClipAutoReviewService.LoadClipPlanForTestsAsync(store, "Demo", 2, 3);
             Assert.Equal("CU of dog barking", plan.VisualPrompt);
             Assert.Equal("Woof", plan.Dialogue);
             Assert.Equal("Character_Dog", plan.Speaker);
@@ -1180,9 +1180,9 @@ public class BugHuntTests
     }
 
     [Fact]
-    public void Bug74_LoadAutoReviewRulesBlock_has_checklist()
+    public async Task Bug74_LoadAutoReviewRulesBlock_has_checklist()
     {
-        var block = ClipAutoReviewService.LoadAutoReviewRulesBlock();
+        var block = await ClipAutoReviewService.LoadAutoReviewRulesBlockAsync();
         Assert.Contains("CHECKLIST", block, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("IDENTITY", block, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("suggestion", block, StringComparison.OrdinalIgnoreCase);

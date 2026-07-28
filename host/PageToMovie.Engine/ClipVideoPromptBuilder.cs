@@ -641,7 +641,7 @@ public static class ClipVideoPromptBuilder
     {
         try
         {
-            return PromptFiles.ReadAsync("prompts/clip_gen_rules.txt").GetAwaiter().GetResult();
+            return PromptFiles.TryRead("prompts/clip_gen_rules.txt");
         }
         catch
         {

@@ -10,7 +10,7 @@ namespace PageToMovie.Tests;
 public class AssemblyManifestTests
 {
     [Fact]
-    public void IsClipEligibleForAssembly_excludes_auto_fail()
+    public async Task IsClipEligibleForAssembly_excludes_auto_fail()
     {
         var root = Path.Combine(Path.GetTempPath(), "fs-asm-" + Guid.NewGuid().ToString("N"));
         try
@@ -37,8 +37,9 @@ public class AssemblyManifestTests
             var learning = new ReviewEventStore(store, NullLogger<ReviewEventStore>.Instance);
             var logs = new EditLogService(store, learning, NullLogger<EditLogService>.Instance);
 
-            Assert.True(logs.IsClipEligibleForAssembly("P", 1, 1, out _));
-            Assert.False(logs.IsClipEligibleForAssembly("P", 1, 2, out var reason));
+            Assert.True((await logs.IsClipEligibleForAssemblyAsync("P", 1, 1)).Eligible);
+            var (eligible, reason) = await logs.IsClipEligibleForAssemblyAsync("P", 1, 2);
+            Assert.False(eligible);
             Assert.Contains("wrong_style", reason, StringComparison.OrdinalIgnoreCase);
         }
         finally

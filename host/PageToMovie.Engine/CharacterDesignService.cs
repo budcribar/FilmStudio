@@ -515,10 +515,6 @@ public sealed class CharacterDesignService
         return LockFromPathAsync(projectId, charKey, variantPath, ct);
     }
 
-    /// <summary>Sync wrapper for tests only — prefer <see cref="LockVariantAsync"/>.</summary>
-    public string LockVariant(string projectId, string charKey, int variantIndex) =>
-        LockVariantAsync(projectId, charKey, variantIndex).GetAwaiter().GetResult();
-
     public Task<string> LockBookRefAsync(
         string projectId,
         string charKey,
@@ -529,9 +525,6 @@ public sealed class CharacterDesignService
             ?? throw new InvalidOperationException($"Book ref {bookIndex} not found for {charKey}");
         return LockFromPathAsync(projectId, charKey, path, ct);
     }
-
-    public string LockBookRef(string projectId, string charKey, int bookIndex) =>
-        LockBookRefAsync(projectId, charKey, bookIndex).GetAwaiter().GetResult();
 
     public async Task<string> LockFromPathAsync(
         string projectId,
@@ -560,10 +553,6 @@ public sealed class CharacterDesignService
         FinalizeLock(projectId, charKey, dest, $"Locked reference from {Path.GetFileName(sourcePath)}");
         return dest;
     }
-
-    /// <summary>Sync wrapper for tests only — prefer <see cref="LockFromPathAsync"/>.</summary>
-    public string LockFromPath(string projectId, string charKey, string sourcePath) =>
-        LockFromPathAsync(projectId, charKey, sourcePath).GetAwaiter().GetResult();
 
     /// <summary>
     /// Operator upload: save image bytes as the locked character ref (preferred look for video).

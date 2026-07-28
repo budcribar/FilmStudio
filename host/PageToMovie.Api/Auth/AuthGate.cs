@@ -32,7 +32,7 @@ public static class AuthGate
     /// Login + personal xAI/Grok key in the user DB (not merely server env).
     /// OCR / book import must use the signed-in user's key.
     /// </summary>
-    public static IResult? RequirePersonalGrokKey(
+    public static async Task<IResult?> RequirePersonalGrokKeyAsync(
         IUserContext user,
         UserDatabaseService userDb,
         IOptions<PageToMovieOptions> opts,
@@ -49,7 +49,7 @@ public static class AuthGate
         string? personal = null;
         try
         {
-            personal = userDb.GetDecryptedXaiApiKeyAsync(user.UserId).GetAwaiter().GetResult();
+            personal = await userDb.GetDecryptedXaiApiKeyAsync(user.UserId).ConfigureAwait(false);
         }
         catch
         {

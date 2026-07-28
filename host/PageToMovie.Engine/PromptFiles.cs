@@ -30,6 +30,14 @@ public static class PromptFiles
     }
 
     /// <summary>
+    /// Read a prompt synchronously (no actual async I/O ever happens here — embedded-resource and
+    /// override-file reads are both synchronous under the hood). Callers that don't already need to
+    /// be async should use this directly instead of blocking on <see cref="ReadAsync"/>.
+    /// </summary>
+    public static string? TryRead(string relativePath) =>
+        TryReadOverrideFile(relativePath) ?? TryReadEmbedded(relativePath);
+
+    /// <summary>
     /// Read a prompt. Prefer optional override dir, then embedded resource.
     /// <paramref name="workspaceRoot"/> is ignored (kept for call-site compatibility).
     /// </summary>
@@ -39,7 +47,7 @@ public static class PromptFiles
         CancellationToken ct = default)
     {
         ct.ThrowIfCancellationRequested();
-        var text = TryReadOverrideFile(relativePath) ?? TryReadEmbedded(relativePath);
+        var text = TryRead(relativePath);
         if (!string.IsNullOrEmpty(text))
             return Task.FromResult(text);
 

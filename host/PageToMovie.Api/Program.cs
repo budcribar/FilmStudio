@@ -670,14 +670,14 @@ app.MapPost("/api/auth/operator-override", (OperatorOverrideRequest? body, IAdmi
     return Results.Ok(result);
 });
 
-app.MapGet("/api/auth/me", (IUserContext user, IUserApiKeyProvider keys, UserDatabaseService userDb) =>
+app.MapGet("/api/auth/me", async (IUserContext user, IUserApiKeyProvider keys, UserDatabaseService userDb) =>
 {
     var roles = user.Roles.ToList();
     var personal = false;
     try
     {
         personal = !string.IsNullOrWhiteSpace(
-            userDb.GetDecryptedXaiApiKeyAsync(user.UserId).GetAwaiter().GetResult());
+            await userDb.GetDecryptedXaiApiKeyAsync(user.UserId).ConfigureAwait(false));
     }
     catch { /* ignore */ }
 
@@ -3288,7 +3288,7 @@ app.MapPost("/api/jobs/book-prepare", async (
     UserDatabaseService userDb,
     IOptions<PageToMovieOptions> opts) =>
 {
-    if (AuthGate.RequirePersonalGrokKey(user, userDb, opts, useFakes) is { } denied)
+    if (await AuthGate.RequirePersonalGrokKeyAsync(user, userDb, opts, useFakes) is { } denied)
         return denied;
     try
     {
@@ -3316,7 +3316,7 @@ app.MapPost("/api/jobs/book-import", async (
     UserDatabaseService userDb,
     IOptions<PageToMovieOptions> opts) =>
 {
-    if (AuthGate.RequirePersonalGrokKey(user, userDb, opts, useFakes) is { } denied)
+    if (await AuthGate.RequirePersonalGrokKeyAsync(user, userDb, opts, useFakes) is { } denied)
         return denied;
     try
     {
@@ -3598,7 +3598,7 @@ app.MapPost("/api/projects/{id}/screenplay/from-book", async (
     IOptions<PageToMovieOptions> opts,
     CancellationToken ct) =>
 {
-    if (AuthGate.RequirePersonalGrokKey(user, userDb, opts, useFakes) is { } denied)
+    if (await AuthGate.RequirePersonalGrokKeyAsync(user, userDb, opts, useFakes) is { } denied)
         return denied;
     try
     {
@@ -4015,14 +4015,14 @@ app.MapPost("/api/jobs/clip-auto-review-batch", async (StartClipAutoReviewBatchR
 });
 
 /// <summary>Load or rebuild assets/review/index.json (one row per on-disk clip).</summary>
-app.MapGet("/api/projects/{id}/review/index", (
-    string id, bool? rebuild, ReviewIndexService reviewIndex) =>
+app.MapGet("/api/projects/{id}/review/index", async (
+    string id, bool? rebuild, ReviewIndexService reviewIndex, CancellationToken ct) =>
 {
     try
     {
         var doc = rebuild == true
-            ? reviewIndex.Rebuild(id)
-            : reviewIndex.Load(id) ?? reviewIndex.Rebuild(id);
+            ? await reviewIndex.RebuildAsync(id, ct: ct)
+            : reviewIndex.Load(id) ?? await reviewIndex.RebuildAsync(id, ct: ct);
         return Results.Ok(new { ok = true, index = doc });
     }
     catch (Exception ex)
@@ -4240,8 +4240,8 @@ app.MapPost("/api/projects/{id}/scenes/{scene:int}/process-cut", async (
 });
 
 /// <summary>Write accepted suggestion fields (cast / clip prompt). Does not regen — client starts gen after.</summary>
-app.MapPost("/api/projects/{id}/scenes/{scene:int}/clips/{clip:int}/auto-review/apply", (
-    string id, int scene, int clip, ApplyClipAutoReviewRequest? body, ClipAutoReviewService reviews) =>
+app.MapPost("/api/projects/{id}/scenes/{scene:int}/clips/{clip:int}/auto-review/apply", async (
+    string id, int scene, int clip, ApplyClipAutoReviewRequest? body, ClipAutoReviewService reviews, CancellationToken ct) =>
 {
     try
     {
@@ -4249,7 +4249,7 @@ app.MapPost("/api/projects/{id}/scenes/{scene:int}/clips/{clip:int}/auto-review/
         body.ProjectId = id;
         body.Scene = scene;
         body.Clip = clip;
-        reviews.ApplySuggestions(id, scene, clip, body.Items);
+        await reviews.ApplySuggestionsAsync(id, scene, clip, body.Items, ct);
         return Results.Ok(new
         {
             ok = true,

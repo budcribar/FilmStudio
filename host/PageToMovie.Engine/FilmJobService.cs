@@ -1299,7 +1299,7 @@ public sealed class FilmJobService
         {
             if (coords.Count == 0)
             {
-                try { _reviewIndex.Rebuild(projectId, req.Scene); } catch { /* non-fatal */ }
+                try { await _reviewIndex.RebuildAsync(projectId, req.Scene, ct); } catch { /* non-fatal */ }
                 await FinishAsync("done", "Batch auto-review: nothing to do (no missing drafts)");
                 return;
             }
@@ -1351,7 +1351,7 @@ public sealed class FilmJobService
 
             try
             {
-                var index = _reviewIndex.Rebuild(projectId, req.Scene);
+                var index = await _reviewIndex.RebuildAsync(projectId, req.Scene, ct: ct);
                 await AppendLogAsync(
                     $"Review index rebuilt: {index.Clips.Count} row(s) → assets/review/index.json");
             }

@@ -113,6 +113,16 @@ public sealed class DbUserApiKeyProvider : IUserApiKeyProvider
 
     public string? GetKey(string? userId) => GetKey(userId, "grok");
 
+    // Intentionally sync-over-async (.GetAwaiter().GetResult() below), not converted to async:
+    // GetKey implements IUserApiKeyProvider, which every provider client's IsConfigured property
+    // (GrokChatClient, GrokVideoClient, GeminiImageClient, etc. — 11 total) sits on top of, which in
+    // turn feeds 4 MultiProvider*Client wrappers, ~4 more derived service wrappers, and all ~15 Stage 2
+    // classifiers' IsEnabled properties — none of which do any I/O of their own, they're pure boolean
+    // AND/OR logic. Making GetKey async would force Task<bool> through all of those (~35 properties,
+    // 61 call sites, ~24 test fakes) even though this is the only method in the entire chain that
+    // touches real I/O. Safe from deadlock regardless of caller context: every await inside
+    // GetDecryptedProviderApiKeyAsync (and everything it calls) uses ConfigureAwait(false), so no
+    // continuation ever needs to resume on a captured SynchronizationContext.
     public string? GetKey(string? userId, string providerId)
     {
         var provider = ApiKeyScope.NormalizeProvider(providerId);

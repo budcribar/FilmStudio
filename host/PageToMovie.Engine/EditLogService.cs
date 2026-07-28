@@ -288,18 +288,17 @@ public sealed class EditLogService
     /// Whether a clip may enter scene remux / WIP. Fails and unresolved auto-fails are blocked;
     /// human pass (including override of auto-fail with note) is allowed.
     /// </summary>
-    public bool IsClipEligibleForAssembly(
+    public async Task<(bool Eligible, string BlockReason)> IsClipEligibleForAssemblyAsync(
         string projectId,
         int scene,
         int clip,
-        out string blockReason)
+        CancellationToken ct = default)
     {
-        blockReason = "";
         try
         {
             var dir = _projects.GetProjectDir(projectId);
             var statePath = Path.Combine(dir, "pipeline_state.json");
-            var state = LoadStateAsync(statePath, default).GetAwaiter().GetResult();
+            var state = await LoadStateAsync(statePath, ct).ConfigureAwait(false);
             var key = $"S{scene:D2}C{clip:D2}";
             var human = ReadHumanReviewRow(state, key);
             var auto = ReadAutoReviewRow(state, key);
@@ -309,9 +308,9 @@ public sealed class EditLogService
 
             if (string.Equals(human.Status, "fail", StringComparison.OrdinalIgnoreCase))
             {
-                blockReason = "human review = fail" +
+                var blockReason = "human review = fail" +
                     (string.IsNullOrWhiteSpace(human.Note) ? "" : $": {human.Note.Trim()}");
-                return false;
+                return (false, blockReason);
             }
 
             if (IsAutoFailSuggestion(auto.Suggestion))
@@ -319,27 +318,24 @@ public sealed class EditLogService
                 // Must have explicit human pass that overrode auto-fail (or pass with valid override note)
                 if (!string.Equals(human.Status, "pass", StringComparison.OrdinalIgnoreCase))
                 {
-                    blockReason =
-                        $"auto-review fail ({auto.Suggestion}/{auto.Category}) — not override-passed";
-                    return false;
+                    return (false,
+                        $"auto-review fail ({auto.Suggestion}/{auto.Category}) — not override-passed");
                 }
 
                 if (!human.OverrodeAutoFail && !IsValidAutoFailOverrideNote(human.Note))
                 {
-                    blockReason =
-                        $"auto-review fail ({auto.Suggestion}/{auto.Category}) — pass lacks override reason";
-                    return false;
+                    return (false,
+                        $"auto-review fail ({auto.Suggestion}/{auto.Category}) — pass lacks override reason");
                 }
             }
 
-            return true;
+            return (true, "");
         }
         catch (Exception ex)
         {
             _log.LogWarning(ex, "Assembly eligibility check failed S{Scene}C{Clip}", scene, clip);
             // Fail closed only when we cannot read state — safer for shipping cuts
-            blockReason = "could not read review state";
-            return false;
+            return (false, "could not read review state");
         }
     }
 
@@ -370,7 +366,8 @@ public sealed class EditLogService
     }
 
     /// <summary>List blocked clips that exist as files under assets/video for this project.</summary>
-    public IReadOnlyList<AssemblyBlockedClip> ListBlockedClipsOnDisk(string projectId)
+    public async Task<IReadOnlyList<AssemblyBlockedClip>> ListBlockedClipsOnDiskAsync(
+        string projectId, CancellationToken ct = default)
     {
         var list = new List<AssemblyBlockedClip>();
         try
@@ -386,7 +383,8 @@ public sealed class EditLogService
                 if (parts.Length < 4) continue;
                 if (!int.TryParse(parts[1], out var sn) || !int.TryParse(parts[3], out var cn))
                     continue;
-                if (!IsClipEligibleForAssembly(projectId, sn, cn, out var reason))
+                var (eligible, reason) = await IsClipEligibleForAssemblyAsync(projectId, sn, cn, ct).ConfigureAwait(false);
+                if (!eligible)
                     list.Add(new AssemblyBlockedClip(sn, cn, reason, fi.FullName));
             }
         }
