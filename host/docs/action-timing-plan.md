@@ -155,18 +155,23 @@ so using it to reconcile the next clip's plan against what was actually measured
 - Skip this entirely for models where `SupportsVideoContinue` is false, once Phase 7 makes that queryable —
   those clips may not need to be sequential at all.
 
-## 8. Phase 9 — Real `DialogueTruncated` signal (not yet started)
+## 8. Phase 9 — Real `DialogueTruncated` signal — done
 
-**Problem:** the schema anticipated this (`DialogueTruncated` column exists), but nothing has ever set it to
-`true` — `ClipDialogueVerificationService`'s Expected-vs-Heard comparison is a separate, human-reviewed-only
-signal that never reaches the telemetry table.
+`ClipDialogueVerificationService` already ran automatically in the background right after a clip finished
+generating (its own doc comment said so), but it fired as a separate, independent fire-and-forget task from
+telemetry recording — the two could complete in either order, so telemetry had nothing reliable to read and
+`DialogueTruncated` stayed hardcoded `false` everywhere.
 
-**Plan:**
-- Wire `ClipDialogueVerificationService`'s match result into the `DialogueTruncated` field when recording
-  telemetry for a real generated clip (`FilmJobService`'s telemetry write, not the JIT/classifier paths, which
-  don't have real dialogue to verify against).
-- This gives the ledger an empirical, ground-truth signal — "this category's word budget actually causes
-  truncation in practice" — independent of and more trustworthy than the wpm-based formula alone.
+`FilmJobService.GenerateOneClipAsync` now captures the dialogue-verification task's handle
+(`Task<ClipDialogueVerificationResult?>?`) instead of firing-and-forgetting it, and the telemetry-recording task
+awaits it (still fully in the background — this adds no latency to the user-facing job) before writing the row.
+A new `ClipDialogueVerificationService.LooksTruncated(result)` derives the signal from the Expected-vs-Heard
+comparison: `false` for `speaker_swap` (an identity problem, not a timing one) or when no dialogue was expected;
+otherwise `true` when the transcribed word count is meaningfully lower (<70%) than expected — a strong signal the
+line was cut off mid-delivery rather than fully spoken with a few words misheard.
+
+Verified with 4 new unit tests covering the truncated/matched/speaker-swap/no-dialogue cases, plus the full
+959-test suite passing.
 
 ## 9. Phase 10 — Category consolidation: embedding + LLM merge pass (not yet started)
 
@@ -208,9 +213,9 @@ prompt stay static, hand-maintained C# literals.
 | 6 | ✅ Done | Ledger-derived overhead plugged into `ClipDurationEstimator`'s dialogue-clip branch |
 | 7 | ✅ Done | Per-model `MaxClipDurationSeconds` in `SupportedModelCatalog`; every production caller (FilmJobService, Stage2PlannerService, FountainStage1Importer/ScreenplayService, ProjectStore) resolves and passes the project's actual model instead of defaulting |
 | 8 | Not started | Reconcile next clip's plan against previous clip's measured result (continuation-chain scenes only) |
-| 9 | Not started | Wire real dialogue-verification result into `DialogueTruncated` |
+| 9 | ✅ Done | Real dialogue-verification result wired into `DialogueTruncated` (`ClipDialogueVerificationService.LooksTruncated`) |
 | 10 | Not started | `source_text` column → embedding cluster → LLM merge → admin-approved, DB-backed category registry |
 
-Phases 6 and 7 are done. Remaining order: **9 → 8 → 10.** Phase 9 is a small, independent wiring change that
-Phase 8's reconciliation logic will want (it needs a real truncation signal to reconcile against, not just
-duration). Phase 10 depends on meaningful telemetry volume accumulating first, so it naturally comes last.
+Phases 6, 7, and 9 are done. Remaining order: **8 → 10.** Phase 8 can now reconcile against both a real duration
+measurement and a real truncation signal. Phase 10 depends on meaningful telemetry volume accumulating first, so
+it naturally comes last.

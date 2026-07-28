@@ -67,6 +67,55 @@ public class ClipDialogueVerificationTests
         }
     }
 
+    [Fact]
+    public void LooksTruncated_TrueWhenTranscribedIsMeaningfullyShorterThanExpected()
+    {
+        var result = new ClipDialogueVerificationResult
+        {
+            ExpectedDialogue = "I need you to listen to me very carefully right now.",
+            TranscribedDialogue = "I need you to listen",
+            Status = "mismatch",
+        };
+        Assert.True(ClipDialogueVerificationService.LooksTruncated(result));
+    }
+
+    [Fact]
+    public void LooksTruncated_FalseWhenFullyMatched()
+    {
+        var result = new ClipDialogueVerificationResult
+        {
+            ExpectedDialogue = "Hello world!",
+            TranscribedDialogue = "Hello world!",
+            Status = "verified",
+        };
+        Assert.False(ClipDialogueVerificationService.LooksTruncated(result));
+    }
+
+    [Fact]
+    public void LooksTruncated_FalseForSpeakerSwapEvenIfShorter()
+    {
+        // A speaker-identity mismatch is a different failure mode, not a timing/truncation problem.
+        var result = new ClipDialogueVerificationResult
+        {
+            ExpectedDialogue = "I need you to listen to me very carefully right now.",
+            TranscribedDialogue = "Get out",
+            Status = "speaker_swap",
+        };
+        Assert.False(ClipDialogueVerificationService.LooksTruncated(result));
+    }
+
+    [Fact]
+    public void LooksTruncated_FalseWhenNoDialogueWasExpected()
+    {
+        var result = new ClipDialogueVerificationResult
+        {
+            ExpectedDialogue = "",
+            TranscribedDialogue = "",
+            Status = "no_speech",
+        };
+        Assert.False(ClipDialogueVerificationService.LooksTruncated(result));
+    }
+
     private class MockVisionClient : PageToMovie.Engine.Abstractions.IVisionClient
     {
         public bool IsConfigured => true;

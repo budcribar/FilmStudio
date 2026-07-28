@@ -253,6 +253,28 @@ Status options: 'verified' (dialogue & speaker match), 'mismatch' (dialogue inco
         }
     }
 
+    /// <summary>
+    /// Best-effort signal that a clip's dialogue was likely cut off because the clip ran out of time
+    /// before the line finished, rather than misheard/substituted content or a speaker-identity
+    /// mismatch. Feeds <c>ClipTimingTelemetryRepository</c>'s <c>DialogueTruncated</c> column so the
+    /// timing ledger learns which categories/word-budgets actually cause truncation in practice,
+    /// instead of that column staying permanently false.
+    /// </summary>
+    public static bool LooksTruncated(ClipDialogueVerificationResult result)
+    {
+        if (string.Equals(result.Status, "speaker_swap", StringComparison.OrdinalIgnoreCase))
+            return false; // wrong speaker entirely — an identity problem, not a timing one
+
+        var expectedWords = ClipDurationEstimator.CountWords(result.ExpectedDialogue);
+        if (expectedWords == 0)
+            return false; // nothing was supposed to be said
+
+        var transcribedWords = ClipDurationEstimator.CountWords(result.TranscribedDialogue ?? "");
+        // Meaningfully fewer words heard than expected suggests the line was cut off mid-delivery
+        // rather than fully spoken with a few words misheard.
+        return transcribedWords < expectedWords * 0.7;
+    }
+
     private static double CalculateAccuracyScore(string expected, string actual)
     {
         if (string.IsNullOrWhiteSpace(expected) && string.IsNullOrWhiteSpace(actual)) return 1.0;

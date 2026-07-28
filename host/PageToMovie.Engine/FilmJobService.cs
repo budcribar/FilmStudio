@@ -2633,19 +2633,23 @@ public sealed class FilmJobService
                     await File.WriteAllBytesAsync(mp4Path, bytes, ct).ConfigureAwait(false);
                     await AppendLogAsync($"  [Media] Saved {bytes.Length} bytes to {Path.GetFileName(mp4Path)}");
 
-                    // Trigger 100% automated background clip dialogue & speaker verification
+                    // Trigger 100% automated background clip dialogue & speaker verification.
+                    // Telemetry recording below awaits this (if started) so DialogueTruncated
+                    // reflects the real Expected-vs-Heard result instead of staying hardcoded false.
+                    Task<ClipDialogueVerificationResult?>? dialogueVerificationTask = null;
                     if (_dialogueVerification is not null && _dialogueVerification.IsConfigured)
                     {
                         var projId = Snapshot.ProjectId ?? projectId ?? _projects.ActiveProjectId;
-                        _ = Task.Run(async () =>
+                        dialogueVerificationTask = Task.Run(async () =>
                         {
                             try
                             {
-                                await _dialogueVerification.VerifyClipDialogueAsync(projId, scene, clip, ct: CancellationToken.None).ConfigureAwait(false);
+                                return await _dialogueVerification.VerifyClipDialogueAsync(projId, scene, clip, ct: CancellationToken.None).ConfigureAwait(false);
                             }
                             catch (Exception ex)
                             {
                                 _log.LogWarning(ex, "Background dialogue verification failed for S{Scene:D2}C{Clip:D2}", scene, clip);
+                                return null;
                             }
                         });
                     }
@@ -2693,6 +2697,14 @@ public sealed class FilmJobService
                         {
                             try
                             {
+                                var dialogueTruncated = false;
+                                if (dialogueVerificationTask is not null)
+                                {
+                                    var verification = await dialogueVerificationTask.ConfigureAwait(false);
+                                    if (verification is not null)
+                                        dialogueTruncated = ClipDialogueVerificationService.LooksTruncated(verification);
+                                }
+
                                 await _timingCalibration.RecordCutTelemetryAsync(
                                     projectId: projId,
                                     sceneNumber: scene,
@@ -2707,7 +2719,7 @@ public sealed class FilmJobService
                                     clipDurationSec: probedSec,
                                     measuredCamOverheadSec: camOverhead,
                                     measuredActionOverheadSec: measuredActOverhead,
-                                    dialogueTruncated: false).ConfigureAwait(false);
+                                    dialogueTruncated: dialogueTruncated).ConfigureAwait(false);
                             }
                             catch (Exception ex)
                             {
