@@ -7,20 +7,33 @@ namespace PageToMovie.Tests;
 
 public class JitBenchmarkServiceTests
 {
-    private sealed class TestVideoClient : IVideoGenerationClient
+    private sealed class TestVideoClient : IVideoClient
     {
         public bool IsConfigured => true;
         public bool GenerationSubmitted { get; private set; }
 
-        public Task<VideoGenerationJobResult> SubmitGenerationAsync(VideoPromptPayload payload, CancellationToken ct = default)
+        public Task<string> SubmitGenerationAsync(
+            string prompt,
+            int durationSeconds,
+            string resolution,
+            string model,
+            CancellationToken ct,
+            IReadOnlyList<string>? referenceImagePaths = null,
+            string? startFrameImagePath = null,
+            string? continueFromVideoPath = null)
         {
             GenerationSubmitted = true;
-            return Task.FromResult(new VideoGenerationJobResult("test_job_123", "queued", null));
+            return Task.FromResult("test_job_123");
         }
 
-        public Task<VideoGenerationJobResult> PollForVideoUrlAsync(string jobId, CancellationToken ct = default)
+        public Task<string> PollForVideoUrlAsync(string requestId, Action<string>? onProgress, CancellationToken ct)
         {
-            return Task.FromResult(new VideoGenerationJobResult(jobId, "completed", "https://fal.media/test_clip.mp4"));
+            return Task.FromResult("https://fal.media/test_clip.mp4");
+        }
+
+        public Task DownloadToFileAsync(string url, string destPath, CancellationToken ct)
+        {
+            return Task.CompletedTask;
         }
     }
 
@@ -28,7 +41,7 @@ public class JitBenchmarkServiceTests
     {
         public bool IsConfigured => true;
 
-        public Task<string> CompleteWithImagesAsync(string systemPrompt, string userPrompt, IEnumerable<byte[]> imageBytesList, string model, double temperature = 0.2, CancellationToken ct = default)
+        public Task<string> CompleteWithImagesAsync(string prompt, IReadOnlyList<string> imagePaths, string model = "grok-4.5", string detail = "low", CancellationToken ct = default)
         {
             return Task.FromResult("""
             {
@@ -36,6 +49,16 @@ public class JitBenchmarkServiceTests
               "explanation": "Action completed at 3.4 seconds mark."
             }
             """);
+        }
+
+        public Task<string> TranscribePageAsync(string imagePath, int page, string model = "grok-4.5", CancellationToken ct = default)
+        {
+            return Task.FromResult("{}");
+        }
+
+        public Task<CharacterPageClassification> ClassifyCharactersOnImageAsync(string imagePath, int page, IReadOnlyList<CharacterClassifyHint> cast, string model = "grok-4.5", CancellationToken ct = default)
+        {
+            return Task.FromResult(new CharacterPageClassification(page, new List<CharacterPageMatch>()));
         }
     }
 
