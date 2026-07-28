@@ -29,6 +29,42 @@ public class ClipDurationEstimatorTests
     }
 
     [Fact]
+    public void Estimate_HonorsExplicitModelBounds_InsteadOfGlobalDefaults()
+    {
+        var line =
+            "If I could work my will, every idiot who goes about with Merry Christmas on his lips " +
+            "should be boiled with his own pudding and buried with a stake of holly through his heart.";
+
+        // Default bounds: clamps up to the global MaxSeconds (10).
+        var withDefaults = ClipDurationEstimator.Estimate(line, "Scrooge scowls.", "dialogue");
+        Assert.Equal(ClipDurationEstimator.MaxSeconds, withDefaults);
+
+        // A narrower model-specific max must win over the global default.
+        var withNarrowModel = ClipDurationEstimator.Estimate(
+            line, "Scrooge scowls.", "dialogue", maxSeconds: 6);
+        Assert.Equal(6, withNarrowModel);
+    }
+
+    [Fact]
+    public void ResolveBoundsForModel_FallsBackToGlobalDefaultsForUnknownModel()
+    {
+        var (min, max, absMax) = ClipDurationEstimator.ResolveBoundsForModel("totally-unknown-model-id");
+        Assert.Equal(ClipDurationEstimator.MinSeconds, min);
+        Assert.Equal(ClipDurationEstimator.MaxSeconds, max);
+        Assert.Equal(ClipDurationEstimator.AbsMaxSeconds, absMax);
+    }
+
+    [Fact]
+    public void ResolveBoundsForModel_ReturnsCatalogValuesForKnownVideoModel()
+    {
+        // grok-imagine-video is configured in SupportedModelCatalog with explicit clip-duration bounds.
+        var (min, max, absMax) = ClipDurationEstimator.ResolveBoundsForModel("grok-imagine-video");
+        Assert.Equal(3, min);
+        Assert.Equal(10, max);
+        Assert.Equal(12, absMax);
+    }
+
+    [Fact]
     public void Action_only_is_not_padded_to_ten()
     {
         var d = ClipDurationEstimator.Estimate(

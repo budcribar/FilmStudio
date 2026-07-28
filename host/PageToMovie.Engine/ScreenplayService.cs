@@ -67,13 +67,19 @@ public static class ScreenplayService
 
     /// <summary>
     /// Parse Fountain into the in-memory screenplay model used by Stage 2 / cast tooling
-    /// (same shape as the old stage1.v1 dict, never written to disk for planning).
+    /// (same shape as the old stage1.v1 dict, never written to disk for planning). Optional bounds
+    /// (typically from <see cref="ClipDurationEstimator.ResolveBoundsForModel"/>) clamp monologue
+    /// pre-splitting against the actually-selected video model's limits; omitted, unchanged behavior.
     /// </summary>
-    public static Dictionary<string, object?> BuildModelFromFountainText(string fountainText)
+    public static Dictionary<string, object?> BuildModelFromFountainText(
+        string fountainText,
+        int minSeconds = ClipDurationEstimator.MinSeconds,
+        int maxSeconds = ClipDurationEstimator.MaxSeconds,
+        int absMaxSeconds = ClipDurationEstimator.AbsMaxSeconds)
     {
         fountainText ??= "";
         var parsed = FountainParser.Parse(fountainText);
-        var doc = FountainStage1Importer.BuildStage1(parsed);
+        var doc = FountainStage1Importer.BuildStage1(parsed, minSeconds, maxSeconds, absMaxSeconds);
         return Stage1Normalizer.Normalize(doc);
     }
 

@@ -1814,11 +1814,15 @@ public sealed class ProjectStore
     /// Throws <see cref="InvalidOperationException"/> with a short operator message.
     /// Mutates <paramref name="fields"/> (trim, clamp duration, normalize delivery).
     /// When <paramref name="knownCastKeys"/> is non-empty, speaker / primary / on-screen
-    /// must be keys from that cast (no free-text names).
+    /// must be keys from that cast (no free-text names). Optional bounds (typically from
+    /// <see cref="ClipDurationEstimator.ResolveBoundsForModel"/>) validate the manual duration
+    /// override against the project's actually-selected video model instead of the global defaults.
     /// </summary>
     public static void ValidateClipEditRequest(
         ClipEditRequest fields,
-        IReadOnlyCollection<string>? knownCastKeys = null)
+        IReadOnlyCollection<string>? knownCastKeys = null,
+        int minSeconds = ClipDurationEstimator.MinSeconds,
+        int absMaxSeconds = ClipDurationEstimator.AbsMaxSeconds)
     {
         ArgumentNullException.ThrowIfNull(fields);
 
@@ -1844,12 +1848,12 @@ public sealed class ProjectStore
         // Duration: 0 = leave unset/auto; otherwise within provider band
         if (fields.DurationSeconds < 0)
             throw new InvalidOperationException("Duration cannot be negative.");
-        if (fields.DurationSeconds > ClipDurationEstimator.AbsMaxSeconds)
+        if (fields.DurationSeconds > absMaxSeconds)
             throw new InvalidOperationException(
-                $"Duration max is {ClipDurationEstimator.AbsMaxSeconds}s (video provider limit).");
-        if (fields.DurationSeconds is > 0 and < ClipDurationEstimator.MinSeconds)
+                $"Duration max is {absMaxSeconds}s (video provider limit).");
+        if (fields.DurationSeconds > 0 && fields.DurationSeconds < minSeconds)
             throw new InvalidOperationException(
-                $"Duration must be at least {ClipDurationEstimator.MinSeconds}s (or 0 to leave unset).");
+                $"Duration must be at least {minSeconds}s (or 0 to leave unset).");
 
         // Visual prompt — required for a usable plan
         if (fields.VisualPrompt.Length == 0)
@@ -1962,7 +1966,22 @@ public sealed class ProjectStore
             /* no cast file yet */
         }
 
-        ValidateClipEditRequest(fields, castKeys);
+        // Validate the manual duration override against the project's actually-selected video
+        // model, not a hardcoded provider assumption — same config key FilmJobService resolves.
+        string? modelId = null;
+        try
+        {
+            var cfg = GetConfigSync(projectId);
+            if (cfg.TryGetValue("model_name", out var el) && el.ValueKind == JsonValueKind.String)
+                modelId = el.GetString();
+        }
+        catch
+        {
+            /* use default */
+        }
+        var (durMinSeconds, _, durAbsMaxSeconds) = ClipDurationEstimator.ResolveBoundsForModel(modelId);
+
+        ValidateClipEditRequest(fields, castKeys, durMinSeconds, durAbsMaxSeconds);
 
         clipObj["visual_prompt"] = fields.VisualPrompt;
         clipObj["negative_prompt"] = fields.NegativePrompt;

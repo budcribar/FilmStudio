@@ -1,6 +1,7 @@
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using PageToMovie.Core.Models;
 
 namespace PageToMovie.Engine;
 
@@ -59,23 +60,50 @@ public static class ClipDurationEstimator
     public const int SilentVisualWordCap = 20;
 
     /// <summary>
-    /// Estimate duration for a planned beat (Stage 2).
+    /// Resolves effective clip-duration bounds for a specific video model from
+    /// <see cref="SupportedModelCatalog"/>, falling back to this class's own defaults for any field
+    /// the model hasn't overridden (or when the model isn't found in the catalog at all). Callers that
+    /// don't know the target model yet get identical behavior to today by simply not calling this.
     /// </summary>
-    public static int EstimateForBeat(Dictionary<string, object?> beat)
+    public static (int MinSeconds, int MaxSeconds, int AbsMaxSeconds) ResolveBoundsForModel(string? modelId)
+    {
+        var entry = SupportedModelCatalog.Find(modelId, ModelCapability.Video);
+        return (
+            entry?.MinClipDurationSeconds ?? MinSeconds,
+            entry?.MaxClipDurationSeconds ?? MaxSeconds,
+            entry?.AbsMaxClipDurationSeconds ?? AbsMaxSeconds);
+    }
+
+    /// <summary>
+    /// Estimate duration for a planned beat (Stage 2). Optional bounds (typically from
+    /// <see cref="ResolveBoundsForModel"/>) clamp against the actually-selected video model's
+    /// own limits instead of the global Grok-shaped defaults; omitted, behavior is unchanged.
+    /// </summary>
+    public static int EstimateForBeat(
+        Dictionary<string, object?> beat,
+        int minSeconds = MinSeconds,
+        int maxSeconds = MaxSeconds,
+        int absMaxSeconds = AbsMaxSeconds)
     {
         if (beat is null)
-            return MinSeconds;
+            return minSeconds;
         var dialogue = Coerce(beat, "dialogue");
         var visual = Coerce(beat, "visual_event");
         var actionClass = Coerce(beat, "action_class").ToLowerInvariant();
         var delivery = Coerce(beat, "delivery").ToLowerInvariant();
-        return Estimate(dialogue, visual, actionClass, delivery);
+        return Estimate(dialogue, visual, actionClass, delivery, minSeconds, maxSeconds, absMaxSeconds);
     }
 
     /// <summary>
-    /// Estimate from a blueprint clip element at gen time.
+    /// Estimate from a blueprint clip element at gen time. Optional bounds (typically from
+    /// <see cref="ResolveBoundsForModel"/>) let the caller clamp against the actually-selected video
+    /// model's own limits instead of the global Grok-shaped defaults; omitted, behavior is unchanged.
     /// </summary>
-    public static int EstimateForClip(JsonElement clipEl)
+    public static int EstimateForClip(
+        JsonElement clipEl,
+        int minSeconds = MinSeconds,
+        int maxSeconds = MaxSeconds,
+        int absMaxSeconds = AbsMaxSeconds)
     {
         if (clipEl.ValueKind is JsonValueKind.Undefined or JsonValueKind.Null)
             return MinSeconds;
@@ -111,27 +139,27 @@ public static class ClipDurationEstimator
             acEl.ValueKind == JsonValueKind.String)
             actionClass = (acEl.GetString() ?? "").Trim().ToLowerInvariant();
 
-        var est = Estimate(dialogue, visual, actionClass: actionClass, delivery);
+        var est = Estimate(dialogue, visual, actionClass: actionClass, delivery, minSeconds, maxSeconds, absMaxSeconds);
         // Silent: honor Stage 2 planned duration within the class-aware cap (not a flat 5s).
         if (planned > 0 && string.IsNullOrWhiteSpace(dialogue))
         {
-            var silentMax = SilentMaxForActionClass(actionClass);
+            var silentMax = SilentMaxForActionClass(actionClass, absMaxSeconds);
             return Math.Clamp(planned, ActionOnlyMinSeconds, silentMax);
         }
         if (!string.IsNullOrWhiteSpace(dialogue))
         {
             // Never under-run speech need — under-planned clips rush and clip the first word.
             // Cap only at model max (do not force plan seconds when shorter than est).
-            return Math.Clamp(Math.Max(est, MinSeconds), MinSeconds, MaxSeconds);
+            return Math.Clamp(Math.Max(est, minSeconds), minSeconds, maxSeconds);
         }
         return est;
     }
 
     /// <summary>Upper bound for dialogue-free clips at gen time (matches <see cref="Estimate"/> caps).</summary>
-    public static int SilentMaxForActionClass(string? actionClass) =>
+    public static int SilentMaxForActionClass(string? actionClass, int absMaxSeconds = AbsMaxSeconds) =>
         (actionClass ?? "").Trim().ToLowerInvariant() switch
         {
-            "big_action" => AbsMaxSeconds,
+            "big_action" => absMaxSeconds,
             "establishing" => EstablishingMaxSeconds,
             "hold" => ActionOnlyMinSeconds,
             _ => SilentActionMaxSeconds,
@@ -141,7 +169,10 @@ public static class ClipDurationEstimator
         string? dialogue,
         string? visualOrAction,
         string actionClass = "",
-        string delivery = "none")
+        string delivery = "none",
+        int minSeconds = MinSeconds,
+        int maxSeconds = MaxSeconds,
+        int absMaxSeconds = AbsMaxSeconds)
     {
         var dlg = (dialogue ?? "").Trim();
         var visual = (visualOrAction ?? "").Trim();
@@ -190,7 +221,7 @@ public static class ClipDurationEstimator
         {
             var silentMax = actionClass switch
             {
-                "big_action" => AbsMaxSeconds,
+                "big_action" => absMaxSeconds,
                 "establishing" => EstablishingMaxSeconds,
                 "hold" => ActionOnlyMinSeconds,
                 _ => SilentActionMaxSeconds,
@@ -198,7 +229,7 @@ public static class ClipDurationEstimator
             return Math.Clamp(rounded, ActionOnlyMinSeconds, silentMax);
         }
 
-        return Math.Clamp(rounded, MinSeconds, MaxSeconds);
+        return Math.Clamp(rounded, minSeconds, maxSeconds);
     }
 
     /// <summary>
@@ -380,15 +411,20 @@ public static class ClipDurationEstimator
     /// <summary>
     /// Allocate one duration per beat from content (not forced scene-budget padding).
     /// Optional scene target may add at most 1s to non-hold silent clips (never dialogue, never hold).
+    /// Optional bounds (typically from <see cref="ResolveBoundsForModel"/>) clamp against the
+    /// actually-selected video model's own limits instead of the global Grok-shaped defaults.
     /// </summary>
     public static List<int> AllocateForBeats(
         IReadOnlyList<Dictionary<string, object?>> beats,
-        int? sceneTargetSeconds = null)
+        int? sceneTargetSeconds = null,
+        int minSeconds = MinSeconds,
+        int maxSeconds = MaxSeconds,
+        int absMaxSeconds = AbsMaxSeconds)
     {
         if (beats is null || beats.Count == 0)
             return new List<int>();
         // Null list entries are treated as empty action beats (not skipped — preserve index alignment)
-        var durs = beats.Select(b => EstimateForBeat(b!)).ToList();
+        var durs = beats.Select(b => EstimateForBeat(b!, minSeconds, maxSeconds, absMaxSeconds)).ToList();
         if (durs.Count == 0) return durs;
 
         if (sceneTargetSeconds is int target && target > durs.Sum() + 2)
@@ -403,7 +439,7 @@ public static class ClipDurationEstimator
                 if (!string.IsNullOrWhiteSpace(dlg)) continue;
                 var ac = Coerce(beats[i]!, "action_class").ToLowerInvariant();
                 if (ac is "hold") continue; // never pad micro-beats
-                var maxFor = SilentPadCap(ac);
+                var maxFor = SilentPadCap(ac, absMaxSeconds);
                 if (durs[i] < maxFor)
                     actionIdx.Add(i);
             }
@@ -416,7 +452,7 @@ public static class ClipDurationEstimator
                 {
                     if (need <= 0) break;
                     var ac = beats[i] is null ? "" : Coerce(beats[i]!, "action_class").ToLowerInvariant();
-                    var maxFor = SilentPadCap(ac);
+                    var maxFor = SilentPadCap(ac, absMaxSeconds);
                     if (durs[i] >= maxFor) continue;
                     durs[i]++;
                     need--;
@@ -429,10 +465,10 @@ public static class ClipDurationEstimator
         return durs;
     }
 
-    private static int SilentPadCap(string actionClass) =>
+    private static int SilentPadCap(string actionClass, int absMaxSeconds = AbsMaxSeconds) =>
         actionClass switch
         {
-            "big_action" => AbsMaxSeconds,
+            "big_action" => absMaxSeconds,
             "establishing" => EstablishingMaxSeconds,
             "hold" => ActionOnlyMinSeconds,
             _ => SilentActionMaxSeconds,

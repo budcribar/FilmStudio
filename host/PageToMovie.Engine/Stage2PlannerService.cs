@@ -2,6 +2,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using PageToMovie.Core.Models;
 using PageToMovie.Core.Options;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -96,6 +97,26 @@ public sealed class Stage2PlannerService
         _colorGradingClassifier = colorGradingClassifier;
     }
 
+    /// <summary>
+    /// Reads the project's configured video model (same <c>model_name</c> config key
+    /// <see cref="FilmJobService"/> resolves at generation time) so planning clamps duration/dialogue
+    /// splits against that model's actual limits instead of assuming Grok's.
+    /// </summary>
+    private async Task<string?> ResolveVideoModelIdAsync(string projectId, CancellationToken ct)
+    {
+        try
+        {
+            var cfg = await _projects.GetConfigAsync(projectId, ct).ConfigureAwait(false);
+            if (cfg.TryGetValue("model_name", out var el) && el.ValueKind == JsonValueKind.String)
+                return el.GetString();
+        }
+        catch
+        {
+            /* use default */
+        }
+        return null;
+    }
+
     public async Task<Stage2PlanResult> PlanAsync(
         string projectId,
         string resolution = "720p",
@@ -104,6 +125,11 @@ public sealed class Stage2PlannerService
         CancellationToken ct = default)
     {
         var projectDir = await _projects.GetProjectDirAsync(projectId, ct).ConfigureAwait(false);
+
+        // Clip-duration bounds for whichever video model this project is actually configured to
+        // generate with — planning must not assume Grok's limits when a different model is selected.
+        var videoModelId = await ResolveVideoModelIdAsync(projectId, ct).ConfigureAwait(false);
+        var (durMinSeconds, durMaxSeconds, durAbsMaxSeconds) = ClipDurationEstimator.ResolveBoundsForModel(videoModelId);
 
         // Fountain is the only screenplay source of truth.
         ScreenplayService.EnsureCanonicalDraft(_projects, projectId);
@@ -118,7 +144,7 @@ public sealed class Stage2PlannerService
                 "Approve the screenplay before building a shot plan (draft has unapproved changes).");
 
         onProgress?.Invoke($"Loading screenplay: {Path.GetFileName(fountainPath)}");
-        var stage1 = ScreenplayService.BuildModelFromFountainText(screenplay.Text);
+        var stage1 = ScreenplayService.BuildModelFromFountainText(screenplay.Text, durMinSeconds, durMaxSeconds, durAbsMaxSeconds);
         var sourceLabel = Path.GetFileName(fountainPath);
 
         // Overlay plate/voice edits from cast_seeds.json when present
@@ -191,13 +217,13 @@ public sealed class Stage2PlannerService
             // sets auth per-request now (not on shared HttpClient.DefaultRequestHeaders), so
             // this fan-out is safe there too.
             var pacingTask = _beatPacingClassifier is not null
-                ? _beatPacingClassifier.ClassifyScenePacingAsync(s, BuildSceneBeats(s), onProgress, ct)
+                ? _beatPacingClassifier.ClassifyScenePacingAsync(s, BuildSceneBeats(s, durMinSeconds, durMaxSeconds, durAbsMaxSeconds), onProgress, ct)
                 : Task.FromResult<Dictionary<string, int>?>(null);
             var lightingTask = _lightingClassifier is not null
                 ? _lightingClassifier.ClassifySceneLightingAsync(s, onProgress, ct)
                 : Task.FromResult<string?>(null);
             var cameraTask = _cameraClassifier is not null
-                ? _cameraClassifier.ClassifySceneCameraAsync(s, BuildSceneBeats(s), onProgress, ct)
+                ? _cameraClassifier.ClassifySceneCameraAsync(s, BuildSceneBeats(s, durMinSeconds, durMaxSeconds, durAbsMaxSeconds), onProgress, ct)
                 : Task.FromResult<Dictionary<string, CameraDirective>?>(null);
             var negativeTask = _negativeClassifier is not null
                 ? _negativeClassifier.ClassifySceneNegativeAsync(s, onProgress, ct)
@@ -206,13 +232,13 @@ public sealed class Stage2PlannerService
                 ? _wardrobeClassifier.ClassifySceneWardrobeAsync(s, UnionCharactersOnScreen(s), onProgress, ct)
                 : Task.FromResult<Dictionary<string, string>?>(null);
             var emotionTask = _emotionClassifier is not null
-                ? _emotionClassifier.ClassifySceneEmotionAsync(s, BuildSceneBeats(s), onProgress, ct)
+                ? _emotionClassifier.ClassifySceneEmotionAsync(s, BuildSceneBeats(s, durMinSeconds, durMaxSeconds, durAbsMaxSeconds), onProgress, ct)
                 : Task.FromResult<Dictionary<string, EmotionDirective>?>(null);
             var soundTask = _soundComposerClassifier is not null
-                ? _soundComposerClassifier.ClassifySceneSoundDesignAsync(s, BuildSceneBeats(s), onProgress, ct)
+                ? _soundComposerClassifier.ClassifySceneSoundDesignAsync(s, BuildSceneBeats(s, durMinSeconds, durMaxSeconds, durAbsMaxSeconds), onProgress, ct)
                 : Task.FromResult<Dictionary<string, SoundDesignDirective>?>(null);
             var dofTask = _dofClassifier is not null
-                ? _dofClassifier.ClassifySceneDepthOfFieldAsync(s, BuildSceneBeats(s), onProgress, ct)
+                ? _dofClassifier.ClassifySceneDepthOfFieldAsync(s, BuildSceneBeats(s, durMinSeconds, durMaxSeconds, durAbsMaxSeconds), onProgress, ct)
                 : Task.FromResult<Dictionary<string, DepthOfFieldDirective>?>(null);
             var colorTask = _colorGradingClassifier is not null
                 ? _colorGradingClassifier.ClassifySceneColorGradingAsync(s, onProgress, ct)
@@ -231,7 +257,7 @@ public sealed class Stage2PlannerService
             var aiSound = soundTask.Result;
             var aiDof = dofTask.Result;
             var aiColor = colorTask.Result;
-            var plannedScene = PlanScene(s, resolution, locSeeds, charSeeds, styleLock, aiPacing, aiLighting, aiCamera, aiNegative, aiWardrobe, aiEmotion, aiSound, aiDof, aiColor);
+            var plannedScene = PlanScene(s, resolution, locSeeds, charSeeds, styleLock, aiPacing, aiLighting, aiCamera, aiNegative, aiWardrobe, aiEmotion, aiSound, aiDof, aiColor, durMinSeconds, durMaxSeconds, durAbsMaxSeconds);
             // Skip transition-only phantoms (e.g. FADE IN before first heading)
             if (plannedScene is null)
             {
@@ -509,7 +535,10 @@ public sealed class Stage2PlannerService
         Dictionary<string, EmotionDirective>? aiEmotion = null,
         Dictionary<string, SoundDesignDirective>? aiSound = null,
         Dictionary<string, DepthOfFieldDirective>? aiDof = null,
-        ColorGradingDirective? aiColor = null)
+        ColorGradingDirective? aiColor = null,
+        int minSeconds = ClipDurationEstimator.MinSeconds,
+        int maxSeconds = ClipDurationEstimator.MaxSeconds,
+        int absMaxSeconds = ClipDurationEstimator.AbsMaxSeconds)
     {
         var sceneInput = new Dictionary<string, object?>(scene);
         if (!string.IsNullOrWhiteSpace(aiLighting))
@@ -520,7 +549,7 @@ public sealed class Stage2PlannerService
             .Where(b => !IsNoopTransitionBeat(b))
             .ToList();
         // Idempotent: monologues already split at fountain import stay; legacy long cues expand here
-        beats = ClipDurationEstimator.ExpandLongDialogueBeats(beats);
+        beats = ClipDurationEstimator.ExpandLongDialogueBeats(beats, modelMaxSeconds: maxSeconds);
         beats = CoalesceSilentPreludeBeats(beats);
         beats = CoalesceShortMonologueBeats(beats);
         var lids = GetList(scene, "location_ids").Select(x => x?.ToString() ?? "").Where(x => x.Length > 0).ToList();
@@ -536,14 +565,17 @@ public sealed class Stage2PlannerService
 
         if (beats.Count == 0)
         {
-            return BaseSceneShell(sceneInput, lids, primary, cast, GrokSceneMin, new List<object?>(), new List<object?>());
+            return BaseSceneShell(sceneInput, lids, primary, cast, Math.Max(minSeconds, GrokSceneMin), new List<object?>(), new List<object?>());
         }
 
         // Prefer per-beat dialogue/action estimates over padding every clip to fill a scene budget
         var target = ToInt(sceneInput.TryGetValue("duration_target_seconds", out var dt) ? dt : 0);
         var durs = ClipDurationEstimator.AllocateForBeats(
             beats,
-            sceneTargetSeconds: target > 0 ? target : null);
+            sceneTargetSeconds: target > 0 ? target : null,
+            minSeconds: minSeconds,
+            maxSeconds: maxSeconds,
+            absMaxSeconds: absMaxSeconds);
 
         if (aiPacing is not null && aiPacing.Count > 0)
         {
@@ -775,12 +807,16 @@ public sealed class Stage2PlannerService
     /// concurrently for the same scene, and each gets its own independent clone so none can
     /// observe another's in-progress work even if a future classifier starts mutating beats.
     /// </summary>
-    private static List<Dictionary<string, object?>> BuildSceneBeats(Dictionary<string, object?> scene)
+    private static List<Dictionary<string, object?>> BuildSceneBeats(
+        Dictionary<string, object?> scene,
+        int minSeconds = ClipDurationEstimator.MinSeconds,
+        int maxSeconds = ClipDurationEstimator.MaxSeconds,
+        int absMaxSeconds = ClipDurationEstimator.AbsMaxSeconds)
     {
         var beats = GetList(scene, "story_beats").OfType<Dictionary<string, object?>>()
             .Where(b => !IsNoopTransitionBeat(b))
             .ToList();
-        beats = ClipDurationEstimator.ExpandLongDialogueBeats(beats);
+        beats = ClipDurationEstimator.ExpandLongDialogueBeats(beats, modelMaxSeconds: maxSeconds);
         return CoalesceSilentPreludeBeats(beats);
     }
 

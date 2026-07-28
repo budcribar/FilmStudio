@@ -79,7 +79,16 @@ public static class FountainStage1Importer
         };
     }
 
-    public static Dictionary<string, object?> BuildStage1(FountainParser.ParseResult parsed)
+    /// <summary>
+    /// Optional bounds (typically from <see cref="ClipDurationEstimator.ResolveBoundsForModel"/>) clamp
+    /// monologue pre-splitting against the actually-selected video model's own limits instead of the
+    /// global Grok-shaped defaults; omitted, behavior is unchanged.
+    /// </summary>
+    public static Dictionary<string, object?> BuildStage1(
+        FountainParser.ParseResult parsed,
+        int minSeconds = ClipDurationEstimator.MinSeconds,
+        int maxSeconds = ClipDurationEstimator.MaxSeconds,
+        int absMaxSeconds = ClipDurationEstimator.AbsMaxSeconds)
     {
         var title = FirstTitle(parsed, "Title") ?? FirstTitle(parsed, "title") ?? "Untitled";
         title = CleanEmphasis(title).Replace("\n", " ").Trim();
@@ -173,7 +182,7 @@ public static class FountainStage1Importer
             var (_, parenSfx) = InferAmbientAndSfx(pendingParen ?? "");
 
             // Long monologues → multiple beats so each clip fits the video model max
-            var parts = ClipDurationEstimator.SplitDialogueToFitModelMax(text, delivery);
+            var parts = ClipDurationEstimator.SplitDialogueToFitModelMax(text, delivery, modelMaxSeconds: maxSeconds);
             if (parts.Count == 0)
                 parts = new[] { text };
 

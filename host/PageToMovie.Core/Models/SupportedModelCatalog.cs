@@ -123,6 +123,26 @@ public sealed class SupportedModelEntry
     /// </summary>
     public bool SupportsVideoReview { get; init; } = false;
 
+    /// <summary>
+    /// Shortest clip this model should be asked to generate (Video only). Null falls back to
+    /// <see cref="PageToMovie.Engine.ClipDurationEstimator.MinSeconds"/> in <c>ClipDurationEstimator</c>.
+    /// </summary>
+    public int? MinClipDurationSeconds { get; init; }
+
+    /// <summary>
+    /// Soft cap for a single clip (Video only) — the duration/dialogue budget planner should split
+    /// rather than exceed this. Null falls back to <c>ClipDurationEstimator.MaxSeconds</c>.
+    /// </summary>
+    public int? MaxClipDurationSeconds { get; init; }
+
+    /// <summary>
+    /// Absolute ceiling for a single clip even for big-action beats (Video only). Null falls back to
+    /// <c>ClipDurationEstimator.AbsMaxSeconds</c>. Values below are today's known-safe defaults, not
+    /// necessarily each provider's real published limit — confirm against provider docs before relying
+    /// on a per-model number for a cost/quality-sensitive decision.
+    /// </summary>
+    public int? AbsMaxClipDurationSeconds { get; init; }
+
     /// <summary>Raw provider string from models_catalog.json (e.g. OpenAI, DeepSeek, Grok, Gemini).</summary>
     public string ProviderName { get; init; } = "";
 
@@ -168,7 +188,10 @@ public static class SupportedModelCatalog
             VideoCostPerSecondByResolution = new Dictionary<string, double> { ["480p"] = 0.05, ["720p"] = 0.07, ["1080p"] = 0.25 },
             SupportsVideoContinue = true,
             SupportsReferenceImages = true,
-            Notes = "Also uses videos/extensions for clip continue.",
+            MinClipDurationSeconds = 3,
+            MaxClipDurationSeconds = 10,
+            AbsMaxClipDurationSeconds = 12,
+            Notes = "Also uses videos/extensions for clip continue. Extension portion clamps to 10s (GrokVideoClient).",
         },
         new()
         {
@@ -182,7 +205,10 @@ public static class SupportedModelCatalog
             VideoCostPerSecondByResolution = new Dictionary<string, double> { ["720p"] = 0.005, ["1080p"] = 0.005 },
             SupportsVideoContinue = true,
             SupportsReferenceImages = true,
-            Notes = "Open-weights 13B DiT video generation model hosted on Fal.ai serverless GPUs (~$0.025 per 5s clip).",
+            MinClipDurationSeconds = 3,
+            MaxClipDurationSeconds = 10,
+            AbsMaxClipDurationSeconds = 12,
+            Notes = "Open-weights 13B DiT video generation model hosted on Fal.ai serverless GPUs (~$0.025 per 5s clip). Duration limits not yet confirmed against Fal docs — using today's known-safe defaults.",
         },
         new()
         {
@@ -196,7 +222,10 @@ public static class SupportedModelCatalog
             VideoCostPerSecondByResolution = new Dictionary<string, double> { ["720p"] = 0.40, ["1080p"] = 0.40 },
             SupportsVideoContinue = false,
             SupportsReferenceImages = false,
-            Notes = "Wired via GeminiVideoClient (text/image-to-video only).",
+            MinClipDurationSeconds = 3,
+            MaxClipDurationSeconds = 10,
+            AbsMaxClipDurationSeconds = 12,
+            Notes = "Wired via GeminiVideoClient (text/image-to-video only). No continuation, so clips in a scene are not forced sequential the way Grok's are. Duration limits not yet confirmed against Veo docs — using today's known-safe defaults.",
         },
         new()
         {
@@ -612,6 +641,9 @@ public static class SupportedModelCatalog
         SupportsVideoContinue = e.SupportsVideoContinue,
         SupportsReferenceImages = e.SupportsReferenceImages,
         SupportsVideoReview = e.SupportsVideoReview,
+        MinClipDurationSeconds = e.MinClipDurationSeconds,
+        MaxClipDurationSeconds = e.MaxClipDurationSeconds,
+        AbsMaxClipDurationSeconds = e.AbsMaxClipDurationSeconds,
     };
 
     public static SupportedModelEntry FromDto(SupportedModelDto d) => new()
@@ -635,6 +667,9 @@ public static class SupportedModelCatalog
         SupportsVideoContinue = d.SupportsVideoContinue,
         SupportsReferenceImages = d.SupportsReferenceImages,
         SupportsVideoReview = d.SupportsVideoReview,
+        MinClipDurationSeconds = d.MinClipDurationSeconds,
+        MaxClipDurationSeconds = d.MaxClipDurationSeconds,
+        AbsMaxClipDurationSeconds = d.AbsMaxClipDurationSeconds,
     };
 }
 
@@ -659,6 +694,9 @@ public sealed class SupportedModelDto
     public bool SupportsVideoContinue { get; set; } = true;
     public bool SupportsReferenceImages { get; set; } = true;
     public bool SupportsVideoReview { get; set; }
+    public int? MinClipDurationSeconds { get; set; }
+    public int? MaxClipDurationSeconds { get; set; }
+    public int? AbsMaxClipDurationSeconds { get; set; }
 }
 
 public sealed class ModelCapabilityDefinition

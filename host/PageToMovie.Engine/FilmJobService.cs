@@ -2584,16 +2584,19 @@ public sealed class FilmJobService
             else if (prevVideoPath is not null)
                 await AppendLogAsync("  [Refs] video-extend — locked plates not attached to API (IDENTITY text only)");
 
-            // Dialogue-aware duration (tight for short lines — billed per second)
-            var duration = ClipDurationEstimator.EstimateForClip(clipEl);
-            await AppendLogAsync($"  [Duration] estimated {duration}s (dialogue-aware, max {ClipDurationEstimator.MaxSeconds}s)");
-            // Extension / ref: new portion typically max 10s
-            if (prevVideoPath is not null || built.ReferenceImagePaths.Count > 0)
-                duration = Math.Min(duration, 10);
-
             var model = await ResolveVideoModelAsync(projectId, ct);
             if (string.IsNullOrWhiteSpace(resolution))
                 resolution = await ResolveVideoResolutionAsync(projectId, null, ct);
+
+            // Dialogue-aware duration (tight for short lines — billed per second), clamped to the
+            // actually-selected model's own duration caps (SupportedModelCatalog) instead of a
+            // hardcoded provider assumption.
+            var (durMin, durMax, durAbsMax) = ClipDurationEstimator.ResolveBoundsForModel(model);
+            var duration = ClipDurationEstimator.EstimateForClip(clipEl, durMin, durMax, durAbsMax);
+            await AppendLogAsync($"  [Duration] estimated {duration}s (dialogue-aware, max {durMax}s, model={model})");
+            // Extension / ref: new portion typically max 10s
+            if (prevVideoPath is not null || built.ReferenceImagePaths.Count > 0)
+                duration = Math.Min(duration, 10);
 
             var modeLabel = prevVideoPath is not null ? "video-extend" : built.Mode;
             await AppendLogAsync(
