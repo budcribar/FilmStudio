@@ -38,7 +38,16 @@ public sealed class ClientVideoStitchService
         {
             ct.ThrowIfCancellationRequested();
 
-            // Always strictly prefer atomic clip files per scene for full-movie assembly
+            var summary = sceneList?.FirstOrDefault(s => s.SceneNumber == sn);
+
+            // 1. If scene has an explicit user/editor custom override, strictly use the custom scene composite
+            if (summary?.IsUserOverride == true)
+            {
+                urls.Add(_engine.CompositeVideoUrl(projectId, sn));
+                continue;
+            }
+
+            // 2. Standard scene: fetch scene details and prefer atomic clip files for precision
             SceneDetail? detail = null;
             try
             {
@@ -47,6 +56,12 @@ public sealed class ClientVideoStitchService
             catch
             {
                 // fall through
+            }
+
+            if (detail?.IsUserOverride == true)
+            {
+                urls.Add(_engine.CompositeVideoUrl(projectId, sn));
+                continue;
             }
 
             var clips = detail?.Clips?
@@ -68,7 +83,6 @@ public sealed class ClientVideoStitchService
             }
 
             // Fallback: if no atomic clips on disk for this scene, use composite if available
-            var summary = sceneList?.FirstOrDefault(s => s.SceneNumber == sn);
             if (summary?.CompositeExists == true || detail?.CompositeExists == true)
             {
                 urls.Add(_engine.CompositeVideoUrl(projectId, sn));

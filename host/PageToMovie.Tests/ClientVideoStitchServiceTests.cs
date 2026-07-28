@@ -24,6 +24,29 @@ public class ClientVideoStitchServiceTests
     }
 
     [Fact]
+    public async Task CollectSceneMediaUrlsAsync_PreservesUserCustomSceneOverride_WhenIsUserOverrideIsTrue()
+    {
+        // Arrange: scene 1 has a custom user scene override
+        var projectId = "test-project";
+        var handler = new FakeHttpMessageHandler(req => new HttpResponseMessage(HttpStatusCode.NotFound));
+        var httpClient = new HttpClient(handler) { BaseAddress = new Uri("http://localhost") };
+        var engineClient = new EngineApiClient(httpClient);
+        var stitchService = new ClientVideoStitchService(null!, engineClient);
+
+        var sceneSummaries = new List<SceneSummary>
+        {
+            new() { SceneNumber = 1, CompositeExists = true, IsUserOverride = true, ClipsOnDisk = 2 }
+        };
+
+        // Act
+        var urls = await stitchService.CollectSceneMediaUrlsAsync(projectId, new[] { 1 }, sceneSummaries, staleScenes: null);
+
+        // Assert: MUST return custom user composite URL (1 URL) to preserve editor scene overrides
+        Assert.Single(urls);
+        Assert.Contains("scenes/1/composite", urls[0]);
+    }
+
+    [Fact]
     public async Task CollectSceneMediaUrlsAsync_PrefersAtomicClips_PreventsStaleCompositeDuplication()
     {
         // Arrange: scene 1 has both a composite AND individual clips on disk
