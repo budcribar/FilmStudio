@@ -179,4 +179,26 @@ public class JitBenchmarkServiceTests
         Assert.Equal(0.85, result.OverlapRatioGamma);
         Assert.False(result.IsLiveJitBenchmark);
     }
+
+    [Fact]
+    public async Task EnsureBeatCalibratedAsync_SkipsLiveMeasurementWhenIndexMatchIsConfident()
+    {
+        var ledger = new ActionCameraOverheadLedger();
+        var router = new SmartClassifierModelRouter();
+        var classifier = new AiActionOverheadClassifier(router, ledger);
+        var videoClient = new TestVideoClient();
+        var visionClient = new TestVisionClient();
+        var jitService = new JitBenchmarkService(ledger, classifier, videoClient, visionClient);
+
+        // "Sorting pill bottles" heuristically matches act_pills_sorting at 0.92 confidence —
+        // above the 0.80 threshold — so no video generation should be dispatched even though
+        // the video/vision clients are configured and available.
+        var result = await jitService.EnsureBeatCalibratedAsync("Sorting pill bottles on the counter", "(while speaking)");
+
+        Assert.Equal("act_pills_sorting", result.CategoryId);
+        Assert.Equal(2.3, result.MeasuredOverheadSec);
+        Assert.False(result.IsLiveJitBenchmark);
+        Assert.False(videoClient.GenerationSubmitted);
+        Assert.Contains("Confident index match", result.SourceDescription);
+    }
 }

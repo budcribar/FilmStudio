@@ -21,15 +21,27 @@ public sealed record VisionActionTimingAnalysis(
 
 /// <summary>
 /// Just-In-Time (JIT) Benchmark Engine.
-/// Scans Fountain scene beats for action and camera categories.
-/// If an action is uncalibrated:
-/// - Executes a real 1-clip JIT benchmark render via IVideoClient (Fal.ai/Veo).
-/// - Downloads the resulting MP4 clip to inspect ISO-BMFF duration & runs Gemini Vision frame analysis.
-/// - If live API keys are missing, invokes AiActionOverheadClassifier fallback.
-/// - Persists newly calibrated empirical metrics to SQLite database repository.
+/// Always classifies a beat against the calibrated index first (cheap, fast). Only pays for a
+/// live 1-clip JIT video benchmark when the index match is uncertain:
+/// - Confident index match (ConfidenceScore >= <see cref="ConfidentMatchThreshold"/>): use the
+///   ledger-calibrated value directly, no video generation spend.
+/// - Low-confidence match: executes a real 1-clip JIT benchmark render via IVideoClient (Fal.ai/Veo),
+///   downloads the resulting MP4 to inspect ISO-BMFF duration, and runs Gemini Vision frame analysis
+///   for a true empirical measurement. Falls back to the low-confidence estimate if live keys are
+///   missing or the benchmark fails.
+/// - Persists calibrated/measured metrics to the SQLite telemetry repository either way, so accuracy
+///   improves over time as more of the action space gets measured or confidently matched.
 /// </summary>
 public sealed class JitBenchmarkService
 {
+    /// <summary>
+    /// Minimum classifier confidence to trust an existing index match without paying for a live
+    /// measurement. Below this, the beat is treated as effectively uncalibrated. 0.80 sits just above
+    /// the heuristic classifier's generic-fallback confidence (0.75), so "we don't really know" always
+    /// triggers a real measurement instead of silently accepting a guess.
+    /// </summary>
+    private const double ConfidentMatchThreshold = 0.80;
+
     private readonly ActionCameraOverheadLedger _ledger;
     private readonly AiActionOverheadClassifier _classifier;
     private readonly IVideoClient? _videoClient;
@@ -69,12 +81,54 @@ public sealed class JitBenchmarkService
         double camOverhead = _ledger.GetOverheadSec(concurrency.CameraId, 1.6);
         string targetModel = modelId ?? "fal-ai/hunyuan-video";
 
+        // Always classify first — cheap and works with no video keys configured. A confident index
+        // match skips live measurement entirely; only an uncertain match pays for a real benchmark.
+        var estimation = await _classifier.ClassifyNovelActionAsync(actionDescription, parenthetical, ct).ConfigureAwait(false);
+        bool confidentMatch = estimation.ConfidenceScore >= ConfidentMatchThreshold;
+
+        if (confidentMatch)
+        {
+            _log?.LogInformation(
+                "[JitBenchmark] Confident index match for '{Action}' -> '{Category}' (Conf={Conf:F2}); skipping live measurement.",
+                actionDescription, estimation.MatchCategoryId, estimation.ConfidenceScore);
+
+            if (_repository is not null)
+            {
+                await _repository.RecordCacheLookupAsync(isHit: true, lookupKey: estimation.MatchCategoryId).ConfigureAwait(false);
+                await _repository.RecordTelemetryAsync(new TimingTelemetryRecord(
+                    Id: $"idx_{Guid.NewGuid():N}",
+                    ProjectId: "global",
+                    SceneNumber: 0,
+                    VideoModelId: targetModel,
+                    VideoModelVersion: "v1",
+                    EvaluatorModelId: "grok-4.5",
+                    EvaluatorModelVersion: "v1",
+                    CameraCategory: concurrency.CameraId,
+                    ActionCategory: estimation.MatchCategoryId,
+                    WordCount: 0,
+                    EstimatedDurationSec: camOverhead + estimation.EstimatedOverheadSec,
+                    ClipDurationSec: estimation.EstimatedOverheadSec + camOverhead,
+                    MeasuredCamOverheadSec: camOverhead,
+                    MeasuredActionOverheadSec: estimation.EstimatedOverheadSec,
+                    DialogueTruncated: false,
+                    CreatedAt: DateTime.UtcNow.ToString("o"))).ConfigureAwait(false);
+            }
+
+            return new JitCalibrationResult(
+                CategoryId: estimation.MatchCategoryId,
+                MeasuredOverheadSec: estimation.EstimatedOverheadSec,
+                OverlapRatioGamma: concurrency.OverlapRatioGamma,
+                IsLiveJitBenchmark: false,
+                SourceDescription: $"Confident index match ({estimation.Explanation}).");
+        }
+
         bool canRunLiveJit = _videoClient is not null && _videoClient.IsConfigured;
 
         if (canRunLiveJit)
         {
-            _log?.LogInformation("[JitBenchmark] Executing real 1-clip JIT benchmark for action: '{Action}' using model '{Model}'",
-                actionDescription, targetModel);
+            _log?.LogInformation(
+                "[JitBenchmark] Low-confidence index match (Conf={Conf:F2}) for action: '{Action}'; executing real 1-clip JIT benchmark using model '{Model}'",
+                estimation.ConfidenceScore, actionDescription, targetModel);
 
             string? tempMp4Path = null;
             try
@@ -217,8 +271,9 @@ public sealed class JitBenchmarkService
             }
         }
 
-        _log?.LogInformation("[JitBenchmark] Invoking AI Similarity Classifier for action: '{Action}'", actionDescription);
-        var estimation = await _classifier.ClassifyNovelActionAsync(actionDescription, parenthetical, ct).ConfigureAwait(false);
+        _log?.LogInformation(
+            "[JitBenchmark] Live measurement unavailable or failed; using low-confidence AI Similarity Classifier estimate for action: '{Action}' (Conf={Conf:F2})",
+            actionDescription, estimation.ConfidenceScore);
 
         if (_repository is not null)
         {
@@ -247,6 +302,6 @@ public sealed class JitBenchmarkService
             MeasuredOverheadSec: estimation.EstimatedOverheadSec,
             OverlapRatioGamma: concurrency.OverlapRatioGamma,
             IsLiveJitBenchmark: false,
-            SourceDescription: $"AI Similarity Classifier ({estimation.Explanation}).");
+            SourceDescription: $"Low-confidence AI Similarity Classifier estimate, no live measurement available ({estimation.Explanation}).");
     }
 }
