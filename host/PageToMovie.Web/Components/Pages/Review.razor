@@ -1021,12 +1021,40 @@ else
     {
         if (string.IsNullOrWhiteSpace(_demoTitle))
         {
-            _demoTitle = _projectId;
+            _demoTitle = FormatDisplayTitle(_projectId);
         }
         if (string.IsNullOrWhiteSpace(_demoDescription))
         {
-            _demoDescription = $"A film adaptation of {_demoTitle} produced with PageToMovie.";
+            _demoDescription = BuildSmartDescription(_projectId, _demoTitle);
         }
+    }
+
+    private static string FormatDisplayTitle(string? rawProjectId)
+    {
+        if (string.IsNullOrWhiteSpace(rawProjectId))
+            return "Untitled Short Film";
+
+        var parts = rawProjectId.Trim().Split('/', '\\');
+        var name = parts.Last().Trim();
+
+        if (name.StartsWith("TellTaleHeart", StringComparison.OrdinalIgnoreCase))
+            return "The Tell-Tale Heart";
+
+        name = System.Text.RegularExpressions.Regex.Replace(name, @"V\d+$", "", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+        if (!name.Contains(' '))
+            name = System.Text.RegularExpressions.Regex.Replace(name, @"(?<=[a-z])(?=[A-Z])", " ");
+
+        return name.Trim();
+    }
+
+    private static string BuildSmartDescription(string? rawProjectId, string title)
+    {
+        var clean = (rawProjectId ?? "").Trim();
+        if (clean.Contains("TellTaleHeart", StringComparison.OrdinalIgnoreCase))
+        {
+            return "A cinematic short film adaptation of Edgar Allan Poe’s classic Gothic horror story “The Tell-Tale Heart”. Produced with PageToMovie AI Film Studio.";
+        }
+        return $"A cinematic short film adaptation of “{title}”. Produced with PageToMovie AI Film Studio.";
     }
 
     private Task SetTabReview() => ToggleTabAsync("review");

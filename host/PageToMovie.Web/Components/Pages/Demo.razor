@@ -400,10 +400,10 @@
     {
         if (!string.IsNullOrWhiteSpace(d.Description))
             return d.Description.Trim();
-        var project = string.IsNullOrWhiteSpace(d.ProjectId) ? null : d.ProjectId.Trim();
-        if (project is not null)
-            return $"A short film produced in PageToMovie from the “{project}” project.";
-        return "A short film produced in PageToMovie.";
+        var title = !string.IsNullOrWhiteSpace(d.Title) ? d.Title.Trim() : d.ProjectId?.Trim();
+        if (!string.IsNullOrWhiteSpace(title))
+            return $"A cinematic short film adaptation of “{title}” produced with PageToMovie.";
+        return "A cinematic short film adaptation produced with PageToMovie.";
     }
 
     private static string FormatBytes(long bytes)
