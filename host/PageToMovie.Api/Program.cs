@@ -4160,7 +4160,7 @@ app.MapPost("/api/projects/{id}/scenes/{scene:int}/process-cut", async (
         if (scoreMusic && !string.IsNullOrWhiteSpace(tempFilePath) && File.Exists(tempFilePath))
         {
             var pDir = store.GetProjectDir(id);
-            var cfg = await store.ReadConfigAsync(id, ct);
+            var cfg = await store.GetConfigAsync(id, ct);
             var finalSceneMp4Path = Path.Combine(pDir, "assets", "scenes", $"scene_{scene:D2}.mp4");
             Directory.CreateDirectory(Path.GetDirectoryName(finalSceneMp4Path)!);
 
