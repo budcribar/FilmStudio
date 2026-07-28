@@ -235,6 +235,32 @@ else if (_showPreviewPlayer && _clientStitching)
     </div>
 }
 
+@if (_verifyingClip)
+{
+    <div class="card mb-3 border-info shadow-sm" data-testid="scenes-verify-progress">
+        <div class="card-body py-2">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <span class="small font-monospace">
+                    <span class="spinner-border spinner-border-sm me-2 text-info" role="status" aria-hidden="true"></span>
+                    @_verifyStatusLabel
+                </span>
+                <span class="badge bg-info-subtle text-info border border-info-subtle">
+                    @_verifyCurrent / @_verifyTotal clips
+                </span>
+            </div>
+            @{
+                var vPct = _verifyTotal > 0 ? Math.Min(100, Math.Max(5, (int)Math.Round((double)_verifyCurrent / _verifyTotal * 100.0))) : 0;
+            }
+            <div class="progress mt-2" style="height: 0.85rem;" role="progressbar"
+                 aria-valuenow="@vPct" aria-valuemin="0" aria-valuemax="100"
+                 aria-label="@_verifyStatusLabel">
+                <div class="progress-bar progress-bar-striped progress-bar-animated bg-info"
+                     style="width: @vPct%">@vPct%</div>
+            </div>
+        </div>
+    </div>
+}
+
 @* Live gen: one compact surface — status + bar + Cancel only (no badges, no Grok dump, no log). *@
 @if (ShowLiveGenProgress && _job is not null)
 {
@@ -2991,6 +3017,9 @@ else
 
     private bool _verifyingClip;
     private int _verifyingClipNumber;
+    private int _verifyCurrent;
+    private int _verifyTotal;
+    private string _verifyStatusLabel = "Verifying dialogue...";
 
     private async Task VerifyClipDialogueManualAsync(ClipSummary clip)
     {
@@ -2999,6 +3028,9 @@ else
         {
             _verifyingClip = true;
             _verifyingClipNumber = clip.ClipNumber;
+            _verifyCurrent = 1;
+            _verifyTotal = 1;
+            _verifyStatusLabel = $"Verifying dialogue for S{_detail.SceneNumber:D2} C{clip.ClipNumber:D2}...";
             StateHasChanged();
 
             var videoBytes = await MediaFolder.GetClipBytesAsync(_detail.SceneNumber, clip.ClipNumber);
@@ -3020,6 +3052,8 @@ else
         {
             _verifyingClip = false;
             _verifyingClipNumber = 0;
+            _verifyCurrent = 0;
+            _verifyTotal = 0;
             StateHasChanged();
         }
     }
@@ -3036,19 +3070,36 @@ else
         try
         {
             _verifyingClip = true;
+            _verifyCurrent = 0;
+            _verifyTotal = 0;
+            _verifyStatusLabel = "Preparing dialogue verification...";
             StateHasChanged();
+
+            var sceneDetails = new List<(int SceneNum, SceneDetail Detail)>();
             foreach (var sn in scenesToVerify)
             {
                 var sceneDetail = (_detail is not null && _detail.SceneNumber == sn)
                     ? _detail
                     : (await Engine.GetSceneDetailAsync(_projectId, sn))?.Scene;
+                if (sceneDetail?.Clips is not null)
+                {
+                    sceneDetails.Add((sn, sceneDetail));
+                    _verifyTotal += sceneDetail.Clips.Count(c => c.OnDisk);
+                }
+            }
 
-                if (sceneDetail?.Clips is null) continue;
+            if (_verifyTotal == 0) return;
+
+            foreach (var (sn, sceneDetail) in sceneDetails)
+            {
                 var onDisk = sceneDetail.Clips.Where(c => c.OnDisk).ToList();
                 foreach (var c in onDisk)
                 {
+                    _verifyCurrent++;
                     _verifyingClipNumber = c.ClipNumber;
+                    _verifyStatusLabel = $"Verifying dialogue for S{sn:D2} C{c.ClipNumber:D2} (Speaker: {c.Speaker ?? "Unknown"})...";
                     StateHasChanged();
+
                     var videoBytes = await MediaFolder.GetClipBytesAsync(sn, c.ClipNumber);
                     var ver = await Engine.VerifyClipDialogueAsync(_projectId, sn, c.ClipNumber, videoBytes: videoBytes);
                     if (ver is not null)
@@ -3071,6 +3122,8 @@ else
         {
             _verifyingClip = false;
             _verifyingClipNumber = 0;
+            _verifyCurrent = 0;
+            _verifyTotal = 0;
             StateHasChanged();
         }
     }
