@@ -75,24 +75,20 @@ public sealed class JitBenchmarkService
 
                 var videoUrl = await _videoClient.PollForVideoUrlAsync(reqId, msg => _log?.LogDebug("[JitBenchmark] {Msg}", msg), ct).ConfigureAwait(false);
 
-                double measuredOverhead = 2.8; // Default empirical video duration baseline
+                double measuredOverhead = 2.8;
 
-                if (!string.IsNullOrWhiteSpace(videoUrl) && _visionClient is not null && _visionClient.IsConfigured)
+                if (!string.IsNullOrWhiteSpace(videoUrl))
                 {
-                    _log?.LogInformation("[JitBenchmark] Inspecting JIT video clip at {Url} via Vision Client...", videoUrl);
-                    var visionPrompt = $"Analyze this video clip frame-by-frame. Estimate the duration in seconds of the physical action '{actionDescription}'. Return only JSON: {{\"measuredActionOverheadSec\": 2.8}}";
-                    
-                    var visionResp = await _visionClient.CompleteWithImagesAsync(
-                        prompt: visionPrompt,
-                        imagePaths: new[] { videoUrl },
-                        model: "grok-4.5",
-                        ct: ct).ConfigureAwait(false);
-
-                    if (!string.IsNullOrWhiteSpace(visionResp) && visionResp.Contains("measuredActionOverheadSec"))
+                    try
                     {
-                        // Parsed vision duration overhead
-                        measuredOverhead = 2.8;
+                        var probedSec = Mp4DurationReader.TryReadSeconds(videoUrl);
+                        if (probedSec is > 0)
+                        {
+                            measuredOverhead = Math.Round(probedSec.Value, 2);
+                            _log?.LogInformation("[JitBenchmark] Probed MP4 file duration for '{Action}': {Overhead:F2}s", actionDescription, measuredOverhead);
+                        }
                     }
+                    catch { /* fallback to default overhead */ }
                 }
 
                 var categoryId = $"jit_{Math.Abs(actionDescription.GetHashCode()):x8}";

@@ -210,8 +210,34 @@ public static class VideoTimingBenchmarkRunner
                         {
                             Console.Error.WriteLine($"[STDERR LOG] Live video generation complete! MP4 URL: {videoUrl}");
                         }
-                        // Empirical Hunyuan video output: 85 frames @ 24fps = 3.54s duration
-                        return (3.5, "Live Fal.ai Hunyuan API");
+
+                        if (!string.IsNullOrWhiteSpace(videoUrl))
+                        {
+                            try
+                            {
+                                var mp4Bytes = await http.GetByteArrayAsync(videoUrl).ConfigureAwait(false);
+                                using var ms = new MemoryStream(mp4Bytes);
+                                var probedDuration = PageToMovie.Engine.Mp4DurationReader.TryReadSeconds(ms);
+                                if (probedDuration is > 0)
+                                {
+                                    var probedSec = Math.Round(probedDuration.Value, 2);
+                                    if (verbose)
+                                    {
+                                        Console.Error.WriteLine($"[STDERR LOG] Probed MP4 stream duration: {probedSec:F2}s ({mp4Bytes.Length} bytes)");
+                                    }
+                                    return (probedSec, $"Live Fal.ai Hunyuan API (Probed {probedSec:F2}s)");
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+                                if (verbose)
+                                {
+                                    Console.Error.WriteLine($"[STDERR LOG] Failed to probe MP4 stream duration: {ex.Message}");
+                                }
+                            }
+                        }
+
+                        return (3.54, "Live Fal.ai Hunyuan API");
                     }
                 }
             }
