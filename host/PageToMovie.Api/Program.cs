@@ -5161,6 +5161,15 @@ app.MapPost("/api/demos", async (
                     privacyStatus,
                     tags);
                 replacedExisting = true;
+                // Always overwrite assets/movie_wip.mp4 on server disk so WIP movie matches the fresh cut!
+                try
+                {
+                    var wipPath = Path.Combine(store.GetProjectDir(projectId!), "assets", "movie_wip.mp4");
+                    Directory.CreateDirectory(Path.GetDirectoryName(wipPath)!);
+                    await File.WriteAllBytesAsync(wipPath, bytes);
+                }
+                catch { /* non-fatal */ }
+
                 // Keep public; re-upload to YouTube in background (V2 replace).
                 if (!string.Equals(entry.Status, DemoCatalogService.DemoStatuses.Public, StringComparison.OrdinalIgnoreCase))
                     demos.SetStatus(entry.Id, DemoCatalogService.DemoStatuses.Public, user.UserId, "Re-publish: YouTube V2 replace");
@@ -5186,6 +5195,16 @@ app.MapPost("/api/demos", async (
                 demos.SetStatus(entry.Id, DemoCatalogService.DemoStatuses.Public, user.UserId,
                     "Auto-public: creator publish");
                 entry = demos.TryGet(entry.Id) ?? entry;
+
+                // Always overwrite assets/movie_wip.mp4 on server disk so WIP movie matches the fresh cut!
+                try
+                {
+                    var wipPath = Path.Combine(store.GetProjectDir(projectId!), "assets", "movie_wip.mp4");
+                    Directory.CreateDirectory(Path.GetDirectoryName(wipPath)!);
+                    await File.WriteAllBytesAsync(wipPath, bytes);
+                }
+                catch { /* non-fatal */ }
+
                 try
                 {
                     await media.UpsertAsync(
