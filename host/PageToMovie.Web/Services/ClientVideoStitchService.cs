@@ -38,7 +38,17 @@ public sealed class ClientVideoStitchService
         {
             ct.ThrowIfCancellationRequested();
 
-            // Prefer individual clip files for precision so updated clips are never overridden by old composites
+            var summary = sceneList?.FirstOrDefault(s => s.SceneNumber == sn);
+            var isStale = staleScenes?.Contains(sn) ?? false;
+
+            // 1. If scene composite exists and is FRESH (not stale), prefer the composite (supports manual editor overrides)
+            if (summary?.CompositeExists == true && !isStale)
+            {
+                urls.Add(_engine.CompositeVideoUrl(projectId, sn));
+                continue;
+            }
+
+            // 2. Otherwise (composite is stale or missing), gather individual clip files
             SceneDetail? detail = null;
             try
             {
@@ -47,6 +57,13 @@ public sealed class ClientVideoStitchService
             catch
             {
                 // fall through
+            }
+
+            // Check if composite is fresh according to scene detail
+            if (detail?.CompositeExists == true && !isStale)
+            {
+                urls.Add(_engine.CompositeVideoUrl(projectId, sn));
+                continue;
             }
 
             var clips = detail?.Clips?
@@ -64,12 +81,10 @@ public sealed class ClientVideoStitchService
                             $"assets/video/scene_{sn:D2}_clip_{c.ClipNumber:D2}.mp4");
                     urls.Add(local ?? _engine.ClipVideoUrl(projectId, sn, c.ClipNumber));
                 }
-                // Individual clips gathered for this scene — skip composite completely!
                 continue;
             }
 
-            // Fallback to scene composite strictly ONLY if zero individual clips were found for this scene
-            var summary = sceneList?.FirstOrDefault(s => s.SceneNumber == sn);
+            // 3. Fallback: if no individual clips on disk, use composite if available
             if (summary?.CompositeExists == true || detail?.CompositeExists == true)
             {
                 urls.Add(_engine.CompositeVideoUrl(projectId, sn));
