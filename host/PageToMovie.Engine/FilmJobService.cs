@@ -61,6 +61,8 @@ public sealed class FilmJobService
     private readonly ClipSidecarService? _sidecars;
     private readonly ClipDialogueVerificationService? _dialogueVerification;
     private readonly GlobalTimingCalibrationService? _timingCalibration;
+    private readonly ActionCameraOverheadLedger? _timingLedger;
+    private readonly AiActionOverheadClassifier? _timingClassifier;
 
     public FilmJobService(
         ProjectStore projects,
@@ -93,7 +95,9 @@ public sealed class FilmJobService
         IUserApiKeyProvider keys,
         ClipSidecarService? sidecars = null,
         ClipDialogueVerificationService? dialogueVerification = null,
-        GlobalTimingCalibrationService? timingCalibration = null)
+        GlobalTimingCalibrationService? timingCalibration = null,
+        ActionCameraOverheadLedger? timingLedger = null,
+        AiActionOverheadClassifier? timingClassifier = null)
     {
         _projects = projects;
         _grok = grok;
@@ -126,6 +130,8 @@ public sealed class FilmJobService
         _sidecars = sidecars;
         _dialogueVerification = dialogueVerification;
         _timingCalibration = timingCalibration;
+        _timingLedger = timingLedger;
+        _timingClassifier = timingClassifier;
     }
 
     public void SetProgressSink(IJobProgressSink sink) => _sink = sink;
@@ -2641,11 +2647,45 @@ public sealed class FilmJobService
                         });
                     }
 
-                    // Record cut timing telemetry directly into SQLite database for continuous calibration
+                    // Record dynamic cut timing telemetry into SQLite database for continuous server learning
                     if (_timingCalibration is not null)
                     {
                         var projId = Snapshot.ProjectId ?? projectId ?? _projects.ActiveProjectId;
                         var probedSec = Mp4DurationReader.TryReadSeconds(mp4Path) ?? (double)duration;
+
+                        // 1. Extract dialogue text & word count from clip blueprint
+                        string dialogueText = "";
+                        if (clipEl.TryGetProperty("audio_payload", out var ap) && ap.ValueKind == JsonValueKind.Object &&
+                            ap.TryGetProperty("dialogue", out var dEl))
+                        {
+                            dialogueText = dEl.GetString() ?? "";
+                        }
+                        int wordCount = string.IsNullOrWhiteSpace(dialogueText)
+                            ? 0
+                            : dialogueText.Split(new[] { ' ', '\t', '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries).Length;
+
+                        // 2. Extract camera movement category from blueprint or visual prompt
+                        string camCat = "cam_push_in";
+                        if (clipEl.TryGetProperty("camera", out var camEl) && camEl.ValueKind == JsonValueKind.String && !string.IsNullOrWhiteSpace(camEl.GetString()))
+                            camCat = camEl.GetString()!;
+                        else if (clipEl.TryGetProperty("camera_category", out var ccEl) && ccEl.ValueKind == JsonValueKind.String && !string.IsNullOrWhiteSpace(ccEl.GetString()))
+                            camCat = ccEl.GetString()!;
+
+                        // 3. Dynamically classify scene action category via AiActionOverheadClassifier
+                        var promptToAnalyze = built.Prompt ?? "";
+                        string actCat = "act_generic_action";
+                        if (_timingClassifier is not null)
+                        {
+                            var estimation = _timingClassifier.ClassifyNovelAction(promptToAnalyze, null);
+                            if (!string.IsNullOrWhiteSpace(estimation.MatchCategoryId))
+                                actCat = estimation.MatchCategoryId;
+                        }
+
+                        // 4. Calculate measured camera and physical action overheads
+                        double camOverhead = _timingLedger?.GetOverheadSec(camCat, 1.6) ?? 1.6;
+                        double netSpeechSec = wordCount > 0 ? (wordCount / 2.6) : 0.0;
+                        double measuredActOverhead = Math.Max(0.5, Math.Round(probedSec - camOverhead - netSpeechSec, 2));
+
                         _ = Task.Run(async () =>
                         {
                             try
@@ -2657,12 +2697,12 @@ public sealed class FilmJobService
                                     videoModelVersion: "v1",
                                     evaluatorModelId: "grok-4.5",
                                     evaluatorModelVersion: "v1",
-                                    cameraCategory: "cam_push_in",
-                                    actionCategory: "act_generic_action",
-                                    wordCount: built.Prompt.Split(' ').Length,
+                                    cameraCategory: camCat,
+                                    actionCategory: actCat,
+                                    wordCount: wordCount,
                                     clipDurationSec: probedSec,
-                                    measuredCamOverheadSec: 1.6,
-                                    measuredActionOverheadSec: 2.2,
+                                    measuredCamOverheadSec: camOverhead,
+                                    measuredActionOverheadSec: measuredActOverhead,
                                     dialogueTruncated: false).ConfigureAwait(false);
                             }
                             catch (Exception ex)
