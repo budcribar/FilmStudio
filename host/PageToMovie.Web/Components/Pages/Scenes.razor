@@ -572,6 +572,16 @@ else
                         @onclick="OpenAddClipDialog">
                     + Add clip
                 </button>
+                @if (_detail.ClipsOnDisk > 0)
+                {
+                    <button type="button"
+                            class="btn btn-sm btn-outline-primary"
+                            disabled="@(_busy || JobRunning || _verifyingClip)"
+                            title="Temporary button: run dialogue verification on all on-disk clips in this scene"
+                            @onclick="VerifyAllClipsInSceneManualAsync">
+                        🔍 Verify Scene Dialogue (Temp)
+                    </button>
+                }
                 @if (_detail.CompositeExists || _detail.ClipsOnDisk > 0)
                 {
                     <button type="button"
@@ -2918,6 +2928,40 @@ else
             if (ver is not null)
             {
                 clip.DialogueVerification = ver;
+            }
+        }
+        catch (Exception ex)
+        {
+            _error = $"Dialogue verification failed: {ex.Message}";
+        }
+        finally
+        {
+            _verifyingClip = false;
+            _verifyingClipNumber = 0;
+            StateHasChanged();
+        }
+    }
+
+    private async Task VerifyAllClipsInSceneManualAsync()
+    {
+        if (_detail?.Clips is null || string.IsNullOrWhiteSpace(_projectId)) return;
+        var onDiskClips = _detail.Clips.Where(c => c.OnDisk).ToList();
+        if (onDiskClips.Count == 0) return;
+
+        try
+        {
+            _verifyingClip = true;
+            StateHasChanged();
+            foreach (var c in onDiskClips)
+            {
+                _verifyingClipNumber = c.ClipNumber;
+                StateHasChanged();
+                var ver = await Engine.VerifyClipDialogueAsync(_projectId, _detail.SceneNumber, c.ClipNumber);
+                if (ver is not null)
+                {
+                    c.DialogueVerification = ver;
+                    StateHasChanged();
+                }
             }
         }
         catch (Exception ex)

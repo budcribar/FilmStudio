@@ -5460,6 +5460,7 @@ app.MapPost("/api/user/settings", async (
         if (req.XaiApiKey is not null) saved.Add("xAI / Grok");
         if (req.GeminiApiKey is not null) saved.Add("Gemini");
         if (req.AnthropicApiKey is not null) saved.Add("Claude");
+        if (req.FalApiKey is not null) saved.Add("Fal.ai");
         var msg = saved.Count > 0
             ? $"Saved personal key(s): {string.Join(", ", saved)}."
             : "No key fields provided.";
