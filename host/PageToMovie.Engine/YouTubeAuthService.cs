@@ -31,11 +31,15 @@ public sealed class YouTubeAuthService
         _flow = new Lazy<GoogleAuthorizationCodeFlow?>(BuildFlow);
     }
 
+    public string CleanClientId => (_opts.ClientId ?? "").Trim(' ', '"', '\'', '\r', '\n', '\t');
+    public string CleanClientSecret => (_opts.ClientSecret ?? "").Trim(' ', '"', '\'', '\r', '\n', '\t');
+    public string CleanRedirectUri => (_opts.RedirectUri ?? "").Trim(' ', '"', '\'', '\r', '\n', '\t');
+
     /// <summary>Client id/secret/redirect are all set — OAuth can be attempted.</summary>
     public bool IsConfigured =>
-        !string.IsNullOrWhiteSpace(_opts.ClientId) &&
-        !string.IsNullOrWhiteSpace(_opts.ClientSecret) &&
-        !string.IsNullOrWhiteSpace(_opts.RedirectUri);
+        !string.IsNullOrWhiteSpace(CleanClientId) &&
+        !string.IsNullOrWhiteSpace(CleanClientSecret) &&
+        !string.IsNullOrWhiteSpace(CleanRedirectUri);
 
     private GoogleAuthorizationCodeFlow? BuildFlow()
     {
@@ -44,7 +48,7 @@ public sealed class YouTubeAuthService
         var dataDir = UserDatabaseService.ResolveDataDirectory(_projects.WorkspaceRoot);
         return new GoogleAuthorizationCodeFlow(new GoogleAuthorizationCodeFlow.Initializer
         {
-            ClientSecrets = new ClientSecrets { ClientId = _opts.ClientId, ClientSecret = _opts.ClientSecret },
+            ClientSecrets = new ClientSecrets { ClientId = CleanClientId, ClientSecret = CleanClientSecret },
             // youtube.upload — insert videos
             // youtube.force-ssl — delete obsolete IDs after V2 replace (Item 11)
             Scopes = new[]
@@ -64,7 +68,7 @@ public sealed class YouTubeAuthService
         _pendingStates[state] = DateTimeOffset.UtcNow.Add(StateTtl);
         PruneExpiredStates();
         var request = (Google.Apis.Auth.OAuth2.Requests.GoogleAuthorizationCodeRequestUrl)
-            flow.CreateAuthorizationCodeRequest(_opts.RedirectUri);
+            flow.CreateAuthorizationCodeRequest(CleanRedirectUri);
         request.State = state;
         // Force the consent screen so Google always reissues a refresh token, even on
         // a reconnect after a prior authorization — otherwise it's only granted once.
@@ -92,7 +96,7 @@ public sealed class YouTubeAuthService
     public async Task ExchangeCodeAsync(string code, CancellationToken ct = default)
     {
         var flow = _flow.Value ?? throw new InvalidOperationException("YouTube OAuth is not configured.");
-        await flow.ExchangeCodeForTokenAsync(UserId, code, _opts.RedirectUri, ct).ConfigureAwait(false);
+        await flow.ExchangeCodeForTokenAsync(UserId, code, CleanRedirectUri, ct).ConfigureAwait(false);
     }
 
     public async Task<bool> IsConnectedAsync(CancellationToken ct = default)

@@ -1149,7 +1149,6 @@ else
     {
         Hub.JobUpdated += OnJobUpdated;
         Hub.JobLog += OnJobLog;
-        HandleYouTubeOAuthRedirect();
         try
         {
             try { await Session.EnsureHydratedAsync(); } catch { /* optional */ }
@@ -1159,10 +1158,14 @@ else
             _projectId = ActiveProject.ProjectId ?? "";
             _gateChecked = true;
             if (string.IsNullOrEmpty(_projectId) || !ActiveProject.CanReview)
+            {
+                HandleYouTubeOAuthRedirect();
                 return;
+            }
 
             try { await Hub.StartAsync(); } catch { /* optional */ }
             await LoadAsync();
+            HandleYouTubeOAuthRedirect();
         }
         catch (Exception ex)
         {
