@@ -70,13 +70,15 @@
     else
     {
         <div class="demo-grid">
-            @foreach (var d in _demos)
-            {
-                var about = AboutText(d);
-                var isHighlight = _highlightId == d.Id;
+            <Virtualize TItem="DemoListItem" Items="_demos" Context="d">
+                @{
+                    var about = AboutText(d);
+                    var isHighlight = _highlightId == d.Id;
+                }
                 <article class="demo-card @(_playingId == d.Id ? "is-playing" : "") @(isHighlight ? "is-highlight" : "")"
                          id="@d.Id"
-                         data-testid="demo-card">
+                         data-testid="demo-card"
+                         @key="d.Id">
                     <div class="demo-card-media">
                         @if (!string.IsNullOrWhiteSpace(d.YoutubeId))
                         {
@@ -182,7 +184,7 @@
                         </footer>
                     </div>
                 </article>
-            }
+            </Virtualize>
         </div>
     }
 </div>
