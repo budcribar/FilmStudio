@@ -199,19 +199,30 @@ public sealed class ClipTimingTelemetryRepository
                 }
             }
 
+            double maeSec = 0.0;
+            using (var maeCmd = conn.CreateCommand())
+            {
+                maeCmd.CommandText = "SELECT AVG(ABS(measured_action_overhead_sec - clip_duration_sec)) FROM clip_timing_telemetry;";
+                var result = await maeCmd.ExecuteScalarAsync().ConfigureAwait(false);
+                if (result != DBNull.Value && result != null && double.TryParse(result.ToString(), out var parsedMae))
+                {
+                    maeSec = Math.Round(parsedMae, 2);
+                }
+            }
+
             int total = hits + misses;
-            double hitRate = total > 0 ? Math.Round((double)hits / total * 100.0, 1) : 100.0;
+            double hitRate = total > 0 ? Math.Round((double)hits / total * 100.0, 1) : 0.0;
 
             return new TimingCacheStats(
                 TotalHits: hits,
                 TotalMisses: misses,
                 HitRatePercent: hitRate,
-                MeanAbsoluteErrorSec: 0.18);
+                MeanAbsoluteErrorSec: maeSec);
         }
         catch (Exception ex)
         {
             _log?.LogError(ex, "Failed to query cache telemetry stats from {DbPath}", _dbPath);
-            return new TimingCacheStats(124, 21, 85.5, 0.18);
+            return new TimingCacheStats(0, 0, 0.0, 0.0);
         }
     }
 
@@ -248,16 +259,6 @@ public sealed class ClipTimingTelemetryRepository
         catch (Exception ex)
         {
             _log?.LogError(ex, "Failed to query trend history from {DbPath}", _dbPath);
-        }
-
-        if (list.Count == 0)
-        {
-            // Seed sample trend points for initial dashboard visualization
-            var now = DateTime.UtcNow;
-            list.Add(new TimingTrendPoint(now.AddDays(-7).ToString("MM-dd"), 45, 18, 71.4, 0.42));
-            list.Add(new TimingTrendPoint(now.AddDays(-5).ToString("MM-dd"), 68, 15, 81.9, 0.31));
-            list.Add(new TimingTrendPoint(now.AddDays(-3).ToString("MM-dd"), 92, 14, 86.8, 0.22));
-            list.Add(new TimingTrendPoint(now.AddDays(-1).ToString("MM-dd"), 124, 12, 91.2, 0.18));
         }
 
         return list;

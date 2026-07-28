@@ -98,9 +98,8 @@
                     <span class="badge bg-success ms-2">SQLite Active</span>
                 </div>
                 <div class="d-flex gap-2 align-items-center">
-                    <span class="badge bg-dark border border-secondary text-info">Hit Rate: 85.5% (124/145)</span>
-                    <span class="badge bg-dark border border-secondary text-success">MAE: 0.18s Error</span>
-                    <span class="badge bg-dark border border-secondary text-warning">35 Categories</span>
+                    <span class="badge bg-dark border border-secondary text-info">Hit Rate: @(_timingTelemetry?.Stats?.HitRatePercent.ToString("F1") ?? "0.0")% (@(_timingTelemetry?.Stats?.TotalHits ?? 0)/@((_timingTelemetry?.Stats?.TotalHits ?? 0) + (_timingTelemetry?.Stats?.TotalMisses ?? 0)))</span>
+                    <span class="badge bg-dark border border-secondary text-success">MAE: @(_timingTelemetry?.Stats?.MeanAbsoluteErrorSec.ToString("F2") ?? "0.00")s Error</span>
                     <button class="btn btn-sm btn-outline-success border border-success ms-2" @onclick="SeedTimingDatabaseAsync" disabled="@_seedingTiming">
                         🌱 Seed Database with Benchmarks
                     </button>
@@ -111,8 +110,8 @@
                 {
                     <div class="mb-3">
                         <div class="d-flex justify-content-between small mb-1">
-                            <span class="text-success fw-bold">🌱 Seeding Database with 35 Ground-Truth Benchmark Categories...</span>
-                            <span class="text-success">100%</span>
+                            <span class="text-success fw-bold">🌱 Seeding Database with Ground-Truth Benchmark Categories...</span>
+                            <span class="text-success">Executing</span>
                         </div>
                         <div class="progress" style="height: 8px; background: rgba(255,255,255,0.05);">
                             <div class="progress-bar progress-bar-striped progress-bar-animated bg-success" role="progressbar" style="width: 100%;"></div>
@@ -124,19 +123,19 @@
                     <div class="col-md-4 mb-3 mb-md-0">
                         <div class="p-3 rounded" style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05);">
                             <div class="text-muted small mb-1">DATABASE CACHE HIT RATE</div>
-                            <div class="h2 text-success mb-1">85.5%</div>
+                            <div class="h2 text-success mb-1">@(_timingTelemetry?.Stats?.HitRatePercent.ToString("F1") ?? "0.0")%</div>
                             <div class="progress mb-2" style="height: 6px; background: rgba(255,255,255,0.08);">
-                                <div class="progress-bar bg-success" style="width: 85.5%;"></div>
+                                <div class="progress-bar bg-success" style="width: @(Math.Clamp(_timingTelemetry?.Stats?.HitRatePercent ?? 0.0, 0.0, 100.0))%;"></div>
                             </div>
-                            <div class="small text-muted">124 Cache Hits · 21 Misses (JIT/AI Fallback)</div>
+                            <div class="small text-muted">@(_timingTelemetry?.Stats?.TotalHits ?? 0) Cache Hits · @(_timingTelemetry?.Stats?.TotalMisses ?? 0) Misses (JIT/AI Fallback)</div>
                         </div>
                         <div class="p-3 rounded mt-2" style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05);">
                             <div class="text-muted small mb-1">ESTIMATE vs ACTUAL ACCURACY</div>
-                            <div class="h2 text-info mb-1">0.18s</div>
+                            <div class="h2 text-info mb-1">@(_timingTelemetry?.Stats?.MeanAbsoluteErrorSec.ToString("F2") ?? "0.00")s</div>
                             <div class="progress mb-2" style="height: 6px; background: rgba(255,255,255,0.08);">
-                                <div class="progress-bar bg-info" style="width: 92%;"></div>
+                                <div class="progress-bar bg-info" style="width: 85%;"></div>
                             </div>
-                            <div class="small text-muted">Mean Absolute Error (down from 0.42s initial)</div>
+                            <div class="small text-muted">Mean Absolute Error (measured across scene cuts)</div>
                         </div>
                     </div>
                     <div class="col-md-8">
@@ -761,6 +760,7 @@
     private List<AdminLockDto> _locks = new();
     private LoadSimLiveStateDto? _loadSim;
     private List<ProcessSampleDto> _processHistory = new();
+    private EngineApiClient.TimingTelemetryTrendDto? _timingTelemetry;
     /// <summary>Set when a chart upsert throws after we had real data to draw — surfaced in the UI so failures aren't silent.</summary>
     private string? _chartWarning;
 
@@ -867,6 +867,7 @@
                 _loadSim = _state.LoadSim;
                 _processHistory = _state.ProcessHistory ?? new();
             }
+            _timingTelemetry = await Api.GetAdminTimingTelemetryTrendAsync();
             _error = null;
             await RefreshProjectOptionsAsync();
             await UpdateChartsAsync();

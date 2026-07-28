@@ -1012,11 +1012,41 @@ public sealed class EngineApiClient
         return await SendJsonAsync<TimingSeedResult>(req, ct);
     }
 
+    public async Task<TimingTelemetryTrendDto?> GetAdminTimingTelemetryTrendAsync(CancellationToken ct = default)
+    {
+        SyncIdentityHeaders();
+        return await _http.GetFromJsonAsync<TimingTelemetryTrendDto>("/api/admin/timing-telemetry/trend", JsonOpts, ct);
+    }
+
     public sealed class TimingSeedResult
     {
         public bool Ok { get; set; }
         public string? Message { get; set; }
         public int Count { get; set; }
+    }
+
+    public sealed class TimingTelemetryTrendDto
+    {
+        public bool Ok { get; set; }
+        public TimingCacheStatsDto? Stats { get; set; }
+        public List<TimingTrendPointDto>? Trend { get; set; }
+    }
+
+    public sealed class TimingCacheStatsDto
+    {
+        public int TotalHits { get; set; }
+        public int TotalMisses { get; set; }
+        public double HitRatePercent { get; set; }
+        public double MeanAbsoluteErrorSec { get; set; }
+    }
+
+    public sealed class TimingTrendPointDto
+    {
+        public string Timestamp { get; set; } = "";
+        public int Hits { get; set; }
+        public int Misses { get; set; }
+        public double HitRatePercent { get; set; }
+        public double MeanAbsoluteErrorSec { get; set; }
     }
 
     public async Task<LocksDto?> GetLocksAsync(CancellationToken ct = default)
