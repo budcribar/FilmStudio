@@ -251,6 +251,7 @@ public sealed class GeminiChatClient : IChatClient, IVisionClient
             ".webp" => "image/webp",
             ".gif" => "image/gif",
             ".jpg" or ".jpeg" => "image/jpeg",
+            ".mp4" => "video/mp4",
             _ => "image/jpeg",
         };
         return (mime, Convert.ToBase64String(bytes));

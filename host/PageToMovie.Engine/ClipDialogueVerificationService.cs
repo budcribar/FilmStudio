@@ -125,8 +125,15 @@ public sealed class ClipDialogueVerificationService
             return unverified;
         }
 
+        var mediaToPass = new List<string>();
+
+        // Attach actual MP4 clip file so Gemini can evaluate video lip sync + audio track
+        if (!string.IsNullOrWhiteSpace(clipPath) && File.Exists(clipPath))
+        {
+            mediaToPass.Add(clipPath);
+        }
+
         // Collect character reference portraits for characters in this scene
-        var imagesToPass = new List<string>();
         var charSummaryList = _projects.ListCharacters(projectId);
         var sceneChars = clip?.CharactersOnScreen is { Count: > 0 } ? clip.CharactersOnScreen : new List<string> { expectedSpeaker };
 
@@ -137,17 +144,17 @@ public sealed class ClipDialogueVerificationService
             {
                 var localRef = Path.Combine(_projects.GetProjectDir(projectId), url.TrimStart('/'));
                 if (File.Exists(localRef))
-                    imagesToPass.Add(localRef);
+                    mediaToPass.Add(localRef);
             }
         }
 
-        // Include passed keyframe images or sample stills from clip
+        // Include passed keyframe images as supplementary input
         if (keyframePaths is { Count: > 0 })
         {
-            imagesToPass.AddRange(keyframePaths.Where(File.Exists));
+            mediaToPass.AddRange(keyframePaths.Where(File.Exists));
         }
 
-        if (imagesToPass.Count == 0)
+        if (mediaToPass.Count == 0)
         {
             var result = new ClipDialogueVerificationResult
             {
@@ -156,7 +163,7 @@ public sealed class ClipDialogueVerificationService
                 ExpectedSpeaker = expectedSpeaker,
                 ExpectedDialogue = expectedDialogue,
                 Status = "unverified",
-                SummaryNote = "No video keyframes or character reference plates available.",
+                SummaryNote = "Clip video file not found on disk.",
                 VerifiedAt = DateTime.UtcNow,
             };
             SaveVerification(projectId, result);
@@ -165,29 +172,35 @@ public sealed class ClipDialogueVerificationService
 
         var prompt = $@"
 You are an automated film quality assurance inspector evaluating a generated movie clip.
-Expected Speaker: '{expectedSpeaker}'
-Expected Dialogue: '{expectedDialogue}'
 
-1. Compare character faces in the video frames against the attached reference portraits to identify which character is speaking.
-2. Transcribe any spoken or mouth-synced dialogue in the clip.
-3. Compare detected speaker and transcribed dialogue against expected values.
+EXPECTED SCRIPT:
+- Expected Speaker: '{expectedSpeaker}'
+- Expected Spoken Dialogue: '{expectedDialogue}'
+
+TASKS:
+1. Watch the attached MP4 video clip and LISTEN carefully to the audio track / spoken dialogue.
+2. Observe on-screen character faces and mouth sync; compare against the attached character reference portraits to identify who is speaking.
+3. Transcribe the EXACT spoken dialogue you hear in the video clip.
+4. Compare detected speaker vs expected speaker, and transcribed dialogue vs expected dialogue.
 
 Return ONLY a JSON object:
 {{
   ""detectedSpeaker"": ""Character Name"",
-  ""transcribedDialogue"": ""Spoken dialogue text"",
+  ""transcribedDialogue"": ""Spoken dialogue text heard in video audio track"",
   ""dialogueAccuracyScore"": 0.95,
   ""speakerMatch"": true,
   ""status"": ""verified"",
-  ""summaryNote"": ""Brief outcome summary""
+  ""summaryNote"": ""Expected: '{expectedDialogue}' | Heard: '...' (Match 95%)""
 }}
-Status values: 'verified' (matches), 'mismatch' (dialogue incorrect), 'speaker_swap' (wrong character speaking), 'no_speech'.
+Status options: 'verified' (dialogue & speaker match), 'mismatch' (dialogue incorrect), 'speaker_swap' (wrong character speaking), 'no_speech' (no spoken dialogue heard).
 ".Trim();
 
         try
         {
             var sw = Stopwatch.StartNew();
-            var responseJson = await _vision.CompleteWithImagesAsync(prompt, imagesToPass, ct: ct).ConfigureAwait(false);
+            var responseJson = (_gemini is not null && _gemini.IsConfigured)
+                ? await _gemini.CompleteWithImagesAsync(prompt, mediaToPass, ct: ct).ConfigureAwait(false)
+                : await _vision.CompleteWithImagesAsync(prompt, mediaToPass, ct: ct).ConfigureAwait(false);
             var cleanJson = ExtractJson(responseJson);
 
             using var doc = JsonDocument.Parse(cleanJson);

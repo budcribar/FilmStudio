@@ -1003,6 +1003,14 @@ else
                                 ⚠ Dialogue Mismatch (@($"{ver.DialogueAccuracyScore:P0}"))
                             </div>
                         }
+
+                        @if (!string.IsNullOrWhiteSpace(ver.TranscribedDialogue) || !string.IsNullOrWhiteSpace(ver.DetectedSpeaker))
+                        {
+                            <div class="p-2 mb-2 rounded bg-body-tertiary border border-secondary-subtle x-small text-start">
+                                <div><strong>Expected:</strong> <em>@(ver.ExpectedSpeaker ?? "None")</em> — &ldquo;@(ver.ExpectedDialogue ?? "")&rdquo;</div>
+                                <div><strong>Heard:</strong> <em>@(ver.DetectedSpeaker ?? "Unknown")</em> — &ldquo;@(ver.TranscribedDialogue ?? "")&rdquo;</div>
+                            </div>
+                        }
                     }
                     @if (_clip.OnDisk)
                     {
