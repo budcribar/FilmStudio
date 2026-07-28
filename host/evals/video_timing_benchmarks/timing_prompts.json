@@ -3,174 +3,280 @@
     "id": "cam_push_in",
     "category": "Camera Movement",
     "prompt": "Cinematic slow push-in zoom on a character standing in a dimly lit room.",
-    "estimatedDurationSec": 1.8
+    "estimatedDurationSec": 1.8,
+    "concurrencyMode": "serial",
+    "concurrencyFactor": 0.0
   },
   {
     "id": "react_gasp_shock",
     "category": "Facial Reaction",
     "prompt": "Character gasps in shock, eyes widening in sudden realization.",
-    "estimatedDurationSec": 1.5
+    "estimatedDurationSec": 1.5,
+    "concurrencyMode": "serial",
+    "concurrencyFactor": 0.0
   },
   {
     "id": "act_heavy_carry",
     "category": "Physical Action",
     "prompt": "Strong man carrying six heavy grocery bags up a brick stairwell.",
-    "estimatedDurationSec": 3.0
+    "estimatedDurationSec": 3.0,
+    "concurrencyMode": "serial",
+    "concurrencyFactor": 0.0
   },
   {
     "id": "act_knife_pull",
     "category": "Aggression",
     "prompt": "Character pulls out a Swiss Army switchblade, clicking the blade open in front of someone's face.",
-    "estimatedDurationSec": 2.1
+    "estimatedDurationSec": 2.1,
+    "concurrencyMode": "serial",
+    "concurrencyFactor": 0.0
   },
   {
     "id": "car_broadside_crash",
     "category": "Vehicle",
     "prompt": "Broadside T-bone car crash at an intersection at night, glass and metal debris.",
-    "estimatedDurationSec": 1.8
+    "estimatedDurationSec": 1.8,
+    "concurrencyMode": "serial",
+    "concurrencyFactor": 0.0
   },
   {
     "id": "cam_whip_pan",
     "category": "Camera Movement",
     "prompt": "Fast whip-pan left to right revealing a wooden desk.",
-    "estimatedDurationSec": 1.0
+    "estimatedDurationSec": 1.0,
+    "concurrencyMode": "serial",
+    "concurrencyFactor": 0.0
   },
   {
     "id": "cam_tracking_dolly",
     "category": "Camera Movement",
     "prompt": "Tracking dolly shot following a character walking down a hallway.",
-    "estimatedDurationSec": 2.5
+    "estimatedDurationSec": 2.5,
+    "concurrencyMode": "serial",
+    "concurrencyFactor": 0.0
   },
   {
     "id": "react_confused_stare",
     "category": "Facial Reaction",
     "prompt": "Glassy empty-eyed confused stare of an elderly person with dementia.",
-    "estimatedDurationSec": 2.0
+    "estimatedDurationSec": 2.0,
+    "concurrencyMode": "serial",
+    "concurrencyFactor": 0.0
   },
   {
     "id": "act_weightlifting",
     "category": "Physical Action",
     "prompt": "Man doing preacher curls with a 50lb barbell, then dropping the bar to the ground.",
-    "estimatedDurationSec": 2.5
+    "estimatedDurationSec": 2.5,
+    "concurrencyMode": "serial",
+    "concurrencyFactor": 0.0
   },
   {
     "id": "act_choke_wall",
     "category": "Aggression",
     "prompt": "Aggressive man grabs character by the neck, pinning them against a hallway wall.",
-    "estimatedDurationSec": 2.4
+    "estimatedDurationSec": 2.4,
+    "concurrencyMode": "serial",
+    "concurrencyFactor": 0.0
   },
   {
     "id": "act_stabbing",
     "category": "Aggression",
     "prompt": "Dramatic stabbing motion in a hallway, character sliding down against the wall.",
-    "estimatedDurationSec": 3.0
+    "estimatedDurationSec": 3.0,
+    "concurrencyMode": "serial",
+    "concurrencyFactor": 0.0
   },
   {
     "id": "act_running_panic",
     "category": "Locomotion",
     "prompt": "Character sprinting down a city street frantically in cold weather.",
-    "estimatedDurationSec": 3.0
+    "estimatedDurationSec": 3.0,
+    "concurrencyMode": "serial",
+    "concurrencyFactor": 0.0
   },
   {
     "id": "act_pills_sorting",
     "category": "Elderly Care",
     "prompt": "Elderly woman sorting pill bottles on a kitchen counter into a 7-day pill box.",
-    "estimatedDurationSec": 2.6
+    "estimatedDurationSec": 2.6,
+    "concurrencyMode": "serial",
+    "concurrencyFactor": 0.0
   },
   {
     "id": "car_muscle_drive",
     "category": "Vehicle",
     "prompt": "1980 Pontiac Trans Am with yellow flames pulling up to a traffic light, revving engine.",
-    "estimatedDurationSec": 2.5
+    "estimatedDurationSec": 2.5,
+    "concurrencyMode": "serial",
+    "concurrencyFactor": 0.0
   },
   {
     "id": "car_ferry_ride",
     "category": "Vehicle",
     "prompt": "Standing at the railing of a Puget Sound ferry looking across gray water.",
-    "estimatedDurationSec": 3.0
+    "estimatedDurationSec": 3.0,
+    "concurrencyMode": "serial",
+    "concurrencyFactor": 0.0
   },
   {
     "id": "scene_visitation_room",
     "category": "Environment",
     "prompt": "Man talking through thick glass partition using a yellow telephone in a prison visiting room.",
-    "estimatedDurationSec": 2.5
+    "estimatedDurationSec": 2.5,
+    "concurrencyMode": "serial",
+    "concurrencyFactor": 0.0
   },
   {
     "id": "act_yoga_pose",
     "category": "Mindfulness",
     "prompt": "Person lying on a purple mat doing Savasana corpse pose in a quiet room.",
-    "estimatedDurationSec": 2.5
+    "estimatedDurationSec": 2.5,
+    "concurrencyMode": "serial",
+    "concurrencyFactor": 0.0
   },
   {
     "id": "dream_viking_battle",
     "category": "Dream/Surreal",
     "prompt": "Medieval Viking warrior battle with sword clashes in a misty forest.",
-    "estimatedDurationSec": 3.5
+    "estimatedDurationSec": 3.5,
+    "concurrencyMode": "serial",
+    "concurrencyFactor": 0.0
   },
   {
     "id": "dream_lake_goddess",
     "category": "Dream/Surreal",
     "prompt": "Angelic woman in a white gown rising out of a clear misty lake.",
-    "estimatedDurationSec": 3.5
+    "estimatedDurationSec": 3.5,
+    "concurrencyMode": "serial",
+    "concurrencyFactor": 0.0
   },
   {
     "id": "act_creeping_step",
     "category": "Psychological Horror",
     "prompt": "Character creeping forward step-by-step in complete pitch darkness holding a lantern.",
-    "estimatedDurationSec": 2.8
+    "estimatedDurationSec": 2.8,
+    "concurrencyMode": "serial",
+    "concurrencyFactor": 0.0
   },
   {
     "id": "act_lantern_unshutter",
     "category": "Psychological Horror",
     "prompt": "Unshuttering a dark lantern ray by ray focusing light onto an old man's closed eye.",
-    "estimatedDurationSec": 2.2
+    "estimatedDurationSec": 2.2,
+    "concurrencyMode": "serial",
+    "concurrencyFactor": 0.0
   },
   {
     "id": "react_heart_pounding",
     "category": "Psychological Horror",
     "prompt": "Character clutching chest as camera pulses in rhythm with a heavy muffled heartbeat sound.",
-    "estimatedDurationSec": 2.0
+    "estimatedDurationSec": 2.0,
+    "concurrencyMode": "serial",
+    "concurrencyFactor": 0.0
   },
   {
     "id": "act_sudden_shriek",
     "category": "Psychological Horror",
     "prompt": "Character screaming in sudden terror and leaping out into frame.",
-    "estimatedDurationSec": 1.5
+    "estimatedDurationSec": 1.5,
+    "concurrencyMode": "serial",
+    "concurrencyFactor": 0.0
   },
   {
     "id": "act_floorboard_dismantle",
     "category": "Psychological Horror",
     "prompt": "Character removing wooden floorboards from a bedroom floor to conceal an object beneath.",
-    "estimatedDurationSec": 3.0
+    "estimatedDurationSec": 3.0,
+    "concurrencyMode": "serial",
+    "concurrencyFactor": 0.0
   },
   {
     "id": "act_creature_pounce",
     "category": "Creature / Adventure",
     "prompt": "Large wild tiger lurking on a tree branch and leaping gracefully down to the ground.",
-    "estimatedDurationSec": 2.4
+    "estimatedDurationSec": 2.4,
+    "concurrencyMode": "serial",
+    "concurrencyFactor": 0.0
   },
   {
     "id": "act_creature_stalk",
     "category": "Creature / Adventure",
     "prompt": "Predator stalking silently through dense jungle foliage and tall elephant grass.",
-    "estimatedDurationSec": 2.6
+    "estimatedDurationSec": 2.6,
+    "concurrencyMode": "serial",
+    "concurrencyFactor": 0.0
   },
   {
     "id": "act_vine_swing",
     "category": "Creature / Adventure",
     "prompt": "Character swinging across a jungle river canopy on a long rainforest vine.",
-    "estimatedDurationSec": 3.0
+    "estimatedDurationSec": 3.0,
+    "concurrencyMode": "serial",
+    "concurrencyFactor": 0.0
   },
   {
     "id": "react_creature_roar",
     "category": "Creature / Adventure",
     "prompt": "Wild panther rearing back on a rock, opening its jaws in a fierce roar.",
-    "estimatedDurationSec": 1.8
+    "estimatedDurationSec": 1.8,
+    "concurrencyMode": "serial",
+    "concurrencyFactor": 0.0
   },
   {
     "id": "cam_crane_canopy",
     "category": "Camera Movement",
     "prompt": "Cinematic high crane camera shot descending from high jungle canopy down to forest floor.",
-    "estimatedDurationSec": 2.8
+    "estimatedDurationSec": 2.8,
+    "concurrencyMode": "serial",
+    "concurrencyFactor": 0.0
+  },
+  {
+    "id": "combo_pills_and_snivel",
+    "category": "Composite Action + Dialogue",
+    "prompt": "Elderly woman sorting pill bottles on counter while sniveling and speaking to her son.",
+    "estimatedDurationSec": 2.6,
+    "concurrencyMode": "concurrent",
+    "concurrencyFactor": 0.85
+  },
+  {
+    "id": "combo_weights_and_taunt",
+    "category": "Composite Action + Dialogue",
+    "prompt": "Man doing preacher curls with a 50lb barbell, dropping it to the ground, then speaking a taunt.",
+    "estimatedDurationSec": 2.5,
+    "concurrencyMode": "serial",
+    "concurrencyFactor": 0.0
+  },
+  {
+    "id": "combo_knife_and_threat",
+    "category": "Composite Action + Dialogue",
+    "prompt": "Character pulling out a switchblade, clicking it open, then delivering a quiet threat.",
+    "estimatedDurationSec": 2.1,
+    "concurrencyMode": "serial",
+    "concurrencyFactor": 0.1
+  },
+  {
+    "id": "combo_drive_and_talk",
+    "category": "Composite Action + Dialogue",
+    "prompt": "Character driving a 1980 Trans Am while shouting dialogue out the open window.",
+    "estimatedDurationSec": 2.5,
+    "concurrencyMode": "concurrent",
+    "concurrencyFactor": 0.90
+  },
+  {
+    "id": "combo_bar_and_confront",
+    "category": "Composite Action + Dialogue",
+    "prompt": "Aggressive man grabbing someone by the neck, pinning them to a wall, then yelling in their face.",
+    "estimatedDurationSec": 2.4,
+    "concurrencyMode": "serial",
+    "concurrencyFactor": 0.0
+  },
+  {
+    "id": "combo_yoga_and_explain",
+    "category": "Composite Action + Dialogue",
+    "prompt": "Person lying on a purple mat in Savasana corpse pose while explaining mindfulness to a friend.",
+    "estimatedDurationSec": 2.5,
+    "concurrencyMode": "concurrent",
+    "concurrencyFactor": 0.80
   }
 ]

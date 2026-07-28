@@ -16,29 +16,44 @@ public class ActionCameraOverheadLedgerTests
     }
 
     [Fact]
-    public void CalculateEffectiveSpeechWindowSec_DeductsCameraAndActionOverheads()
+    public void CalculateEffectiveSpeechWindowSec_DeductsCameraAndActionOverheads_SerialMode()
     {
         var ledger = new ActionCameraOverheadLedger();
 
-        // 5.0s clip - 1.6s push-in - 1.9s knife pull = 1.5s remaining for speech
-        double speechWindow = ledger.CalculateEffectiveSpeechWindowSec(5.0, "cam_push_in", "act_knife_pull");
+        // 5.0s clip - 1.6s push-in - (1.0 * 1.9s knife pull) = 1.5s remaining for speech
+        double speechWindow = ledger.CalculateEffectiveSpeechWindowSec(
+            totalClipDurationSec: 5.0,
+            cameraCategoryId: "cam_push_in",
+            actionCategoryId: "act_knife_pull",
+            concurrencyFactorGamma: 0.0);
+
         Assert.Equal(1.5, speechWindow, 1);
     }
 
     [Fact]
-    public void ExceedsSpeechCapacity_DetectsOverloadedDialogue()
+    public void CalculateEffectiveSpeechWindowSec_AppliesConcurrencyFactor_ConcurrentMode()
     {
         var ledger = new ActionCameraOverheadLedger();
 
-        // 1.4s speech window @ 2.6 words/sec = max ~3 words allowed.
-        // 15 words exceeds capacity!
-        bool overloaded = ledger.ExceedsSpeechCapacity(
-            dialogueWordCount: 15,
+        // 5.0s clip - 1.6s push-in - ((1 - 0.85) * 2.9s pills sorting) = 5.0 - 1.6 - 0.435 = 2.965s
+        double speechWindow = ledger.CalculateEffectiveSpeechWindowSec(
             totalClipDurationSec: 5.0,
             cameraCategoryId: "cam_push_in",
-            actionCategoryId: "act_knife_pull",
-            wordsPerSecond: 2.6);
+            actionCategoryId: "act_pills_sorting",
+            concurrencyFactorGamma: 0.85);
 
-        Assert.True(overloaded);
+        Assert.Equal(2.97, speechWindow, 2);
+    }
+
+    [Fact]
+    public void ActionConcurrencyAnalyzer_DetectsConcurrentAndSerialVerbs()
+    {
+        var concurrentResult = ActionConcurrencyAnalyzer.AnalyzeBeat("Pacing nervously across the room", "(while sorting pills)");
+        Assert.Equal("concurrent", concurrentResult.Mode);
+        Assert.Equal(0.85, concurrentResult.OverlapRatioGamma);
+
+        var serialResult = ActionConcurrencyAnalyzer.AnalyzeBeat("Reaches into jacket and pulls out switchblade", "(pauses, then speaks)");
+        Assert.Equal("serial", serialResult.Mode);
+        Assert.Equal(0.0, serialResult.OverlapRatioGamma);
     }
 }

@@ -12,10 +12,17 @@ public sealed record MeasuredTimingEntry(
     [property: JsonPropertyName("actualDurationSec")] double ActualDurationSec,
     [property: JsonPropertyName("deltaSec")] double DeltaSec);
 
+public sealed record CompositeTimingEntry(
+    string CameraId,
+    string ActionId,
+    string ConcurrencyMode,
+    double BaseOverheadSec,
+    double OverlapRatioGamma);
+
 /// <summary>
 /// Empirical ledger of action and camera duration overheads measured from ground-truth video benchmarks.
-/// Covers Modern Urban Drama (Nick & Me), Psychological Horror (Tell-Tale Heart), and Action/Adventure (Jungle Book).
-/// Calculates the Effective Speech Window: Total Clip Duration - Camera Overhead - Action Overhead.
+/// Supports composite dual-key lookups (cameraId, actionId, mode) and the Concurrency Overlap Factor (gamma).
+/// Calculates Effective Speech Window = Total Clip Duration - CamOverhead - ((1 - gamma) * ActOverhead).
 /// Predictively splits shots when speech capacity is exceeded.
 /// </summary>
 public sealed class ActionCameraOverheadLedger
@@ -64,6 +71,14 @@ public sealed class ActionCameraOverheadLedger
         ["act_yoga_pose"] = 2.4,
         ["dream_viking_battle"] = 3.6,
         ["dream_lake_goddess"] = 3.6,
+
+        // Composite Action-Dialogue Beats (Nick & Me)
+        ["combo_pills_and_snivel"] = 2.8,
+        ["combo_weights_and_taunt"] = 2.8,
+        ["combo_knife_and_threat"] = 2.3,
+        ["combo_drive_and_talk"] = 2.5,
+        ["combo_bar_and_confront"] = 2.4,
+        ["combo_yoga_and_explain"] = 2.4,
     };
 
     private readonly ILogger<ActionCameraOverheadLedger>? _log;
@@ -81,18 +96,22 @@ public sealed class ActionCameraOverheadLedger
     }
 
     /// <summary>
-    /// Calculates remaining seconds for speech in a clip.
-    /// Effective Speech Window = Total Clip Duration - Camera Overhead - Action Overhead.
+    /// Calculates remaining seconds for speech in a clip taking into account the Concurrency Overlap Factor (gamma).
+    /// Effective Speech Window = Total Clip Duration - Camera Overhead - ((1 - gamma) * Action Overhead).
     /// </summary>
     public double CalculateEffectiveSpeechWindowSec(
         double totalClipDurationSec,
         string? cameraCategoryId = null,
-        string? actionCategoryId = null)
+        string? actionCategoryId = null,
+        double concurrencyFactorGamma = 0.0)
     {
         double camOverhead = !string.IsNullOrWhiteSpace(cameraCategoryId) ? GetOverheadSec(cameraCategoryId) : 0.0;
         double actOverhead = !string.IsNullOrWhiteSpace(actionCategoryId) ? GetOverheadSec(actionCategoryId) : 0.0;
 
-        double remaining = totalClipDurationSec - camOverhead - actOverhead;
+        double gamma = Math.Clamp(concurrencyFactorGamma, 0.0, 1.0);
+        double netActionOverhead = (1.0 - gamma) * actOverhead;
+
+        double remaining = totalClipDurationSec - camOverhead - netActionOverhead;
         return Math.Max(0.0, remaining);
     }
 
@@ -103,9 +122,10 @@ public sealed class ActionCameraOverheadLedger
         double totalClipDurationSec,
         string? cameraCategoryId = null,
         string? actionCategoryId = null,
+        double concurrencyFactorGamma = 0.0,
         double wordsPerSecond = 2.6)
     {
-        double speechWindow = CalculateEffectiveSpeechWindowSec(totalClipDurationSec, cameraCategoryId, actionCategoryId);
+        double speechWindow = CalculateEffectiveSpeechWindowSec(totalClipDurationSec, cameraCategoryId, actionCategoryId, concurrencyFactorGamma);
         return (int)Math.Floor(speechWindow * wordsPerSecond);
     }
 
@@ -117,9 +137,10 @@ public sealed class ActionCameraOverheadLedger
         double totalClipDurationSec,
         string? cameraCategoryId = null,
         string? actionCategoryId = null,
+        double concurrencyFactorGamma = 0.0,
         double wordsPerSecond = 2.6)
     {
-        int maxWords = CalculateMaxSpeechWords(totalClipDurationSec, cameraCategoryId, actionCategoryId, wordsPerSecond);
+        int maxWords = CalculateMaxSpeechWords(totalClipDurationSec, cameraCategoryId, actionCategoryId, concurrencyFactorGamma, wordsPerSecond);
         return dialogueWordCount > maxWords;
     }
 }
