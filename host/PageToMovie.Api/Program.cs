@@ -266,6 +266,15 @@ else
     builder.Services.AddSingleton<SceneMusicScoringService>();
     builder.Services.AddSingleton<SmartClassifierModelRouter>();
     builder.Services.AddSingleton<ActionCameraOverheadLedger>();
+    builder.Services.AddSingleton<AiActionOverheadClassifier>();
+    builder.Services.AddSingleton<JitBenchmarkService>();
+    builder.Services.AddSingleton<ClipTimingTelemetryRepository>(sp =>
+    {
+        var dbPath = Environment.GetEnvironmentVariable("PAGETOMOVIE_DB_PATH")
+            ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".gemini", "antigravity", "pagetomovie.db");
+        return new ClipTimingTelemetryRepository(dbPath, sp.GetService<ILogger<ClipTimingTelemetryRepository>>());
+    });
+    builder.Services.AddSingleton<GlobalTimingCalibrationService>();
 
     // Dispatchers: every existing caller keeps depending on IChatClient / IImageClient /
     // IVideoClient / IVisionClient and is routed to the right concrete provider client
@@ -1137,6 +1146,20 @@ app.MapGet("/api/admin/logs", async (
         },
         jobs = jobs.ListJobs(take: 50),
         projects = projectList.Select(p => p.Id),
+    });
+});
+
+app.MapGet("/api/admin/timing-telemetry/trend", async (
+    IUserContext user,
+    GlobalTimingCalibrationService calibration) =>
+{
+    var stats = await calibration.GetStatsAsync();
+    var trend = await calibration.GetTrendAsync(maxPoints: 30);
+    return Results.Ok(new
+    {
+        ok = true,
+        stats,
+        trend
     });
 });
 
