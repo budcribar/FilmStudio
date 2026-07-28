@@ -107,19 +107,40 @@ static async Task<int> CmdRunAsync(BenchPaths paths, string[] args)
 {
     var flags = ParseFlags(args);
     var temps = ParseTemps(flags);
+    var availableTasks = new[] { "ambient_sfx", "onscreen_cast", "silent_beat_action", "species_kind", "extend_cut", "plate_rank" };
+    var requestedTasks = SplitCsv(flags.GetValueOrDefault("tasks"));
+    if (requestedTasks.Count == 0 || (requestedTasks.Count == 1 && string.Equals(requestedTasks[0], "all", StringComparison.OrdinalIgnoreCase)))
+        requestedTasks = availableTasks.ToList();
+
+    var requestedModels = SplitCsv(flags.GetValueOrDefault("models"));
+    if (requestedModels.Count == 0 || (requestedModels.Count == 1 && string.Equals(requestedModels[0], "all", StringComparison.OrdinalIgnoreCase)))
+    {
+        // Auto-discover models from SupportedModelCatalog whose required keys are active in environment
+        requestedModels = PageToMovie.Core.Models.SupportedModelCatalog.Entries
+            .Where(e => e.Enabled && e.Capability == PageToMovie.Core.Models.ModelCapability.Chat)
+            .Where(e => e.RequiredEnvKeys.Count == 0 || e.RequiredEnvKeys.Any(k => !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable(k))))
+            .Select(e => e.Id)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        if (requestedModels.Count == 0)
+            requestedModels = new List<string> { "grok-4.5" };
+    }
+
     var cfg = new RunConfig
     {
         ProjectId = flags.GetValueOrDefault("project") ?? "The_Jungle_Book",
-        Tasks = SplitCsv(flags.GetValueOrDefault("tasks") ?? "ambient_sfx"),
-        Models = SplitCsv(flags.GetValueOrDefault("models") ?? "grok-4.5"),
+        Tasks = requestedTasks,
+        Models = requestedModels,
         Prompts = SplitCsv(flags.GetValueOrDefault("prompts")),
         Temperatures = temps,
-        Note = flags.GetValueOrDefault("note"),
+        Note = flags.GetValueOrDefault("note") ?? "Automated multi-model benchmark run",
     };
 
     var xaiKey = Environment.GetEnvironmentVariable("XAI_API_KEY");
-    var claudeKey = Environment.GetEnvironmentVariable("CLAUDE_API_KEY");
+    var claudeKey = Environment.GetEnvironmentVariable("ANTHROPIC_API_KEY") ?? Environment.GetEnvironmentVariable("CLAUDE_API_KEY");
     var geminiKey = Environment.GetEnvironmentVariable("GEMINI_API_KEY") ?? Environment.GetEnvironmentVariable("GOOGLE_API_KEY");
+    var openAiKey = Environment.GetEnvironmentVariable("OPENAI_API_KEY");
     var needsXai = cfg.Models.Any(m => !ChatRunner.IsClaudeModel(m) && !ChatRunner.IsGeminiModel(m));
     var needsClaude = cfg.Models.Any(ChatRunner.IsClaudeModel);
     var needsGemini = cfg.Models.Any(ChatRunner.IsGeminiModel);
