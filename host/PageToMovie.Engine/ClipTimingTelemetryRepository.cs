@@ -15,6 +15,7 @@ public sealed record TimingTelemetryRecord(
     string CameraCategory,
     string ActionCategory,
     int WordCount,
+    double EstimatedDurationSec,
     double ClipDurationSec,
     double MeasuredCamOverheadSec,
     double MeasuredActionOverheadSec,
@@ -74,6 +75,7 @@ public sealed class ClipTimingTelemetryRepository
                     camera_category TEXT,
                     action_category TEXT,
                     word_count INTEGER NOT NULL,
+                    estimated_duration_sec REAL NOT NULL DEFAULT 0.0,
                     clip_duration_sec REAL NOT NULL,
                     measured_cam_overhead_sec REAL NOT NULL,
                     measured_action_overhead_sec REAL NOT NULL,
@@ -98,6 +100,11 @@ public sealed class ClipTimingTelemetryRepository
                 );
                 """;
             cmd.ExecuteNonQuery();
+
+            // Migration: Add estimated_duration_sec column if missing on existing databases
+            using var alterCmd = conn.CreateCommand();
+            alterCmd.CommandText = "ALTER TABLE clip_timing_telemetry ADD COLUMN estimated_duration_sec REAL NOT NULL DEFAULT 0.0;";
+            try { alterCmd.ExecuteNonQuery(); } catch { /* column already exists */ }
         }
         catch (Exception ex)
         {
@@ -117,12 +124,12 @@ public sealed class ClipTimingTelemetryRepository
                 INSERT INTO clip_timing_telemetry (
                     id, project_id, scene_number, video_model_id, video_model_version,
                     evaluator_model_id, evaluator_model_version, camera_category, action_category,
-                    word_count, clip_duration_sec, measured_cam_overhead_sec, measured_action_overhead_sec,
+                    word_count, estimated_duration_sec, clip_duration_sec, measured_cam_overhead_sec, measured_action_overhead_sec,
                     dialogue_truncated, created_at
                 ) VALUES (
                     $id, $project_id, $scene_number, $video_model_id, $video_model_version,
                     $evaluator_model_id, $evaluator_model_version, $camera_category, $action_category,
-                    $word_count, $clip_duration_sec, $measured_cam_overhead_sec, $measured_action_overhead_sec,
+                    $word_count, $estimated_duration_sec, $clip_duration_sec, $measured_cam_overhead_sec, $measured_action_overhead_sec,
                     $dialogue_truncated, $created_at
                 );
                 """;
@@ -137,6 +144,7 @@ public sealed class ClipTimingTelemetryRepository
             cmd.Parameters.AddWithValue("$camera_category", (object?)record.CameraCategory ?? DBNull.Value);
             cmd.Parameters.AddWithValue("$action_category", (object?)record.ActionCategory ?? DBNull.Value);
             cmd.Parameters.AddWithValue("$word_count", record.WordCount);
+            cmd.Parameters.AddWithValue("$estimated_duration_sec", record.EstimatedDurationSec);
             cmd.Parameters.AddWithValue("$clip_duration_sec", record.ClipDurationSec);
             cmd.Parameters.AddWithValue("$measured_cam_overhead_sec", record.MeasuredCamOverheadSec);
             cmd.Parameters.AddWithValue("$measured_action_overhead_sec", record.MeasuredActionOverheadSec);
@@ -202,7 +210,14 @@ public sealed class ClipTimingTelemetryRepository
             double maeSec = 0.0;
             using (var maeCmd = conn.CreateCommand())
             {
-                maeCmd.CommandText = "SELECT AVG(ABS(measured_action_overhead_sec - clip_duration_sec)) FROM clip_timing_telemetry;";
+                maeCmd.CommandText = """
+                    SELECT AVG(ABS(
+                        CASE 
+                            WHEN estimated_duration_sec > 0 THEN estimated_duration_sec 
+                            ELSE (measured_cam_overhead_sec + measured_action_overhead_sec + (word_count / 2.6)) 
+                        END - clip_duration_sec
+                    )) FROM clip_timing_telemetry;
+                    """;
                 var result = await maeCmd.ExecuteScalarAsync().ConfigureAwait(false);
                 if (result != DBNull.Value && result != null && double.TryParse(result.ToString(), out var parsedMae))
                 {

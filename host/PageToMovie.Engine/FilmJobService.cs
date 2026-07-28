@@ -2700,6 +2700,7 @@ public sealed class FilmJobService
                                     cameraCategory: camCat,
                                     actionCategory: actCat,
                                     wordCount: wordCount,
+                                    estimatedDurationSec: (double)duration,
                                     clipDurationSec: probedSec,
                                     measuredCamOverheadSec: camOverhead,
                                     measuredActionOverheadSec: measuredActOverhead,
