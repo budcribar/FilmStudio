@@ -937,6 +937,30 @@ else
                 </div>
             </div>
 
+@if (_showIncompleteWarning)
+{
+    <div class="alert alert-warning border-warning my-3 p-3 shadow-sm" data-testid="review-incomplete-warning">
+        <div class="d-flex align-items-center gap-2 mb-2">
+            <span class="fs-4">⚠️</span>
+            <div>
+                <strong class="text-warning">Incomplete Movie Warning:</strong>
+                <span class="ms-1">@_incompleteScenesCount scene(s) (@_missingClipsCount clip(s) total) have not been generated yet.</span>
+            </div>
+        </div>
+        <p class="small mb-3 text-light">
+            Uploading now will build a partial cut using only the available clips. You can click <strong>Proceed &amp; Upload Partial Cut</strong> to publish anyway, or cancel to finish generating clips first.
+        </p>
+        <div class="d-flex gap-2">
+            <button type="button" class="btn btn-warning btn-sm fw-bold text-dark" @onclick="ConfirmIncompleteAndPublishAsync">
+                Proceed &amp; Upload Partial Cut
+            </button>
+            <button type="button" class="btn btn-outline-secondary btn-sm" @onclick="CancelIncompleteWarning">
+                Cancel
+            </button>
+        </div>
+    </div>
+}
+
             <div class="d-flex justify-content-end gap-2 pt-3 border-top border-secondary">
                 <button type="button" class="btn btn-outline-secondary" @onclick="SetTabReview">Cancel</button>
                 <button type="button" class="btn btn-primary px-4" data-testid="review-save-confirm"
@@ -2185,9 +2209,44 @@ else
         Nav.NavigateTo(uri.GetLeftPart(UriPartial.Path), replace: true);
     }
 
+    private bool _showIncompleteWarning;
+    private bool _confirmedIncompletePublish;
+    private int _incompleteScenesCount;
+    private int _missingClipsCount;
+
+    private void CheckIncompleteMovieState()
+    {
+        _missingClipsCount = _scenes
+            .Where(s => !s.CompositeExists)
+            .Sum(s => Math.Max(0, s.ClipCount - s.ClipsOnDisk));
+        _incompleteScenesCount = _scenes
+            .Count(s => !s.CompositeExists && s.ClipsOnDisk < s.ClipCount);
+    }
+
     private async Task ConfirmSaveAsync()
     {
+        CheckIncompleteMovieState();
+        if ((_incompleteScenesCount > 0 || _missingClipsCount > 0) && !_confirmedIncompletePublish)
+        {
+            _showIncompleteWarning = true;
+            StateHasChanged();
+            return;
+        }
+
+        _showIncompleteWarning = false;
         await PublishDemoAsync();
+    }
+
+    private async Task ConfirmIncompleteAndPublishAsync()
+    {
+        _confirmedIncompletePublish = true;
+        _showIncompleteWarning = false;
+        await PublishDemoAsync();
+    }
+
+    private void CancelIncompleteWarning()
+    {
+        _showIncompleteWarning = false;
     }
 
     /// <summary>
