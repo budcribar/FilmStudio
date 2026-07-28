@@ -9,9 +9,9 @@ namespace PageToMovie.Engine;
 /// </summary>
 public sealed class SmartClassifierModelRouter
 {
-    private readonly ILogger<SmartClassifierModelRouter> _log;
+    private readonly ILogger<SmartClassifierModelRouter>? _log;
 
-    public SmartClassifierModelRouter(ILogger<SmartClassifierModelRouter> log)
+    public SmartClassifierModelRouter(ILogger<SmartClassifierModelRouter>? log = null)
     {
         _log = log;
     }
@@ -58,7 +58,7 @@ public sealed class SmartClassifierModelRouter
             if (keysPresent)
             {
                 var msg = $"[SmartRouter] Task '{taskKey}' -> Assigned '{candidateId}' (Rank #{rankedModels.IndexOf(candidateId) + 1} for provider {entry.ProviderId}).";
-                _log.LogInformation("{Message}", msg);
+                _log?.LogInformation("{Message}", msg);
                 onLog?.Invoke(msg);
                 return candidateId;
             }
