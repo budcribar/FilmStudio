@@ -11,7 +11,7 @@ using PageToMovie.Engine.Abstractions;
 
 namespace PageToMovie.Engine;
 
-/// <summary>xAI chat/completions client for Stage 1 scene bible generation.</summary>
+/// <summary>Dynamic OpenAI-compatible chat/completions client (xAI Grok, OpenAI, Gemini OpenAI endpoint, etc.).</summary>
 public sealed class GrokChatClient : IChatClient
 {
     public const string ApiBase = "https://api.x.ai/v1";
@@ -32,8 +32,6 @@ public sealed class GrokChatClient : IChatClient
         _telemetry = telemetry;
         _keyProvider = keyProvider;
         _log = log;
-        if (_http.BaseAddress is null)
-            _http.BaseAddress = new Uri(ApiBase + "/");
     }
 
     public bool IsConfigured => !string.IsNullOrWhiteSpace(ResolveApiKey());
@@ -46,8 +44,14 @@ public sealed class GrokChatClient : IChatClient
         CancellationToken ct = default,
         string? mode = null)
     {
-        var key = ResolveApiKey();
+        var key = ResolveApiKey(model);
         var modeTag = string.IsNullOrWhiteSpace(mode) ? null : mode.Trim();
+
+        var entry = PageToMovie.Core.Models.SupportedModelCatalog.Find(model);
+        var targetUrl = entry is not null && !string.IsNullOrWhiteSpace(entry.ApiBase)
+            ? $"{entry.ApiBase.TrimEnd('/')}/{(string.IsNullOrWhiteSpace(entry.EndpointPath) ? "chat/completions" : entry.EndpointPath).TrimStart('/')}"
+            : "https://api.x.ai/v1/chat/completions";
+
         var payload = new Dictionary<string, object?>
         {
             ["model"] = model,
@@ -62,10 +66,7 @@ public sealed class GrokChatClient : IChatClient
         var sw = Stopwatch.StartNew();
         try
         {
-            // Auth on a per-request message, not _http.DefaultRequestHeaders: this client is a
-            // singleton shared by every concurrent classifier call, and mutating shared headers
-            // per-call is a race (one call's key can leak into or clobber another's in flight).
-            using var req = new HttpRequestMessage(HttpMethod.Post, "chat/completions")
+            using var req = new HttpRequestMessage(HttpMethod.Post, targetUrl)
             {
                 Content = JsonContent.Create(payload),
             };
@@ -90,7 +91,7 @@ public sealed class GrokChatClient : IChatClient
                     Ok = false,
                 });
                 throw new InvalidOperationException(
-                    $"Grok chat HTTP {(int)resp.StatusCode}: {Trim(body, 800)}");
+                    $"Chat HTTP {(int)resp.StatusCode}: {Trim(body, 800)}");
             }
 
             using var doc = JsonDocument.Parse(body);
@@ -220,10 +221,22 @@ public sealed class GrokChatClient : IChatClient
         return raw.Length <= 2000 ? raw : raw[..2000];
     }
 
-    private string? ResolveApiKey() =>
-        ApiKeyScope.Current ??
-        _keyProvider?.GetKey(null) ??
-        Environment.GetEnvironmentVariable("XAI_API_KEY");
+    private string? ResolveApiKey(string? model = null)
+    {
+        var envKey = "XAI_API_KEY";
+        if (!string.IsNullOrWhiteSpace(model))
+        {
+            var entry = PageToMovie.Core.Models.SupportedModelCatalog.Find(model);
+            if (entry is { RequiredEnvKeys: { Count: > 0 } keys })
+            {
+                envKey = keys[0];
+            }
+        }
+
+        return ApiKeyScope.Current ??
+            _keyProvider?.GetKey(envKey) ??
+            Environment.GetEnvironmentVariable(envKey);
+    }
 
     private static string Trim(string s, int n) => s.Length <= n ? s : s[..n];
 }

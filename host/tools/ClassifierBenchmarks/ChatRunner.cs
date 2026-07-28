@@ -36,8 +36,16 @@ public sealed class ChatRunner : IDisposable
 
     private async Task<string> CompleteXaiAsync(string model, double temperature, string system, string user, CancellationToken ct)
     {
-        if (string.IsNullOrWhiteSpace(_xaiApiKey))
-            throw new InvalidOperationException($"XAI_API_KEY required for model '{model}'");
+        var entry = PageToMovie.Core.Models.SupportedModelCatalog.Find(model);
+        var envKey = entry is { RequiredEnvKeys: { Count: > 0 } keys } ? keys[0] : "XAI_API_KEY";
+        var apiKey = Environment.GetEnvironmentVariable(envKey) ?? _xaiApiKey;
+
+        if (string.IsNullOrWhiteSpace(apiKey))
+            throw new InvalidOperationException($"{envKey} required for model '{model}'");
+
+        var targetUrl = entry is not null && !string.IsNullOrWhiteSpace(entry.ApiBase)
+            ? $"{entry.ApiBase.TrimEnd('/')}/{(string.IsNullOrWhiteSpace(entry.EndpointPath) ? "chat/completions" : entry.EndpointPath).TrimStart('/')}"
+            : "https://api.x.ai/v1/chat/completions";
 
         var body = new Dictionary<string, object?>
         {
@@ -49,16 +57,16 @@ public sealed class ChatRunner : IDisposable
                 new Dictionary<string, object?> { ["role"] = "user", ["content"] = user },
             },
         };
-        using var req = new HttpRequestMessage(HttpMethod.Post, "https://api.x.ai/v1/chat/completions")
+        using var req = new HttpRequestMessage(HttpMethod.Post, targetUrl)
         {
             Content = new StringContent(JsonSerializer.Serialize(body), Encoding.UTF8, "application/json"),
         };
-        req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _xaiApiKey);
+        req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", apiKey.Trim());
 
         using var resp = await _http.SendAsync(req, ct);
         var text = await resp.Content.ReadAsStringAsync(ct);
         if (!resp.IsSuccessStatusCode)
-            throw new InvalidOperationException($"xai chat {(int)resp.StatusCode}: {Trim(text, 400)}");
+            throw new InvalidOperationException($"chat {(int)resp.StatusCode}: {Trim(text, 400)}");
         using var doc = JsonDocument.Parse(text);
         return doc.RootElement.GetProperty("choices")[0].GetProperty("message").GetProperty("content").GetString() ?? "";
     }
