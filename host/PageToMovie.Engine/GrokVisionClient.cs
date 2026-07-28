@@ -26,6 +26,9 @@ public sealed class GrokVisionClient : IVisionClient
         "- If the page is illustration-only with no readable words, output exactly: (illustration only)\n" +
         "- Output plain text only — no markdown, no JSON, no preamble.\n";
 
+    private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, (long Ticks, long Length, CharacterPageClassification Result)> ClassifyCache = new(StringComparer.OrdinalIgnoreCase);
+    private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, (long Ticks, long Length, string Result)> TranscribeCache = new(StringComparer.OrdinalIgnoreCase);
+
     private readonly HttpClient _http;
     private readonly ProjectTelemetryService _telemetry;
     private readonly IUserApiKeyProvider? _keyProvider;
@@ -54,6 +57,17 @@ public sealed class GrokVisionClient : IVisionClient
         string model = "grok-4.5",
         CancellationToken ct = default)
     {
+        FileInfo? fi = null;
+        try { fi = new FileInfo(imagePath); } catch { }
+        var cacheKey = $"{imagePath}|p{page}|m:{model}";
+        if (fi is not null && fi.Exists &&
+            TranscribeCache.TryGetValue(cacheKey, out var hit) &&
+            hit.Ticks == fi.LastWriteTimeUtc.Ticks &&
+            hit.Length == fi.Length)
+        {
+            return hit.Result;
+        }
+
         var dataUri = await FileToDataUriAsync(imagePath, ct);
         var payload = BuildVisionPayload(
             model,
@@ -71,6 +85,11 @@ public sealed class GrokVisionClient : IVisionClient
         var text = ExtractResponseText(doc.RootElement);
         text = Regex.Replace(text.Trim(), @"^```(?:\w+)?\s*", "");
         text = Regex.Replace(text, @"\s*```$", "").Trim();
+
+        if (fi is not null && fi.Exists)
+        {
+            TranscribeCache[cacheKey] = (fi.LastWriteTimeUtc.Ticks, fi.Length, text);
+        }
         return text;
     }
 
@@ -87,6 +106,18 @@ public sealed class GrokVisionClient : IVisionClient
     {
         if (cast.Count == 0)
             return new CharacterPageClassification { Page = page, PageKind = "unknown" };
+
+        FileInfo? fi = null;
+        try { fi = new FileInfo(imagePath); } catch { }
+        var castKey = string.Join(";", cast.Select(c => $"{c.Key}:{c.DisplayName}:{c.Description}"));
+        var cacheKey = $"{imagePath}|p{page}|m:{model}|c:{castKey}";
+        if (fi is not null && fi.Exists &&
+            ClassifyCache.TryGetValue(cacheKey, out var hit) &&
+            hit.Ticks == fi.LastWriteTimeUtc.Ticks &&
+            hit.Length == fi.Length)
+        {
+            return hit.Result;
+        }
 
         var castLines = cast.Select(c =>
         {
@@ -139,7 +170,12 @@ public sealed class GrokVisionClient : IVisionClient
         text = Regex.Replace(text.Trim(), @"^```(?:json)?\s*", "", RegexOptions.IgnoreCase);
         text = Regex.Replace(text, @"\s*```$", "").Trim();
 
-        return ParseClassification(text, page, cast);
+        var res = ParseClassification(text, page, cast);
+        if (fi is not null && fi.Exists)
+        {
+            ClassifyCache[cacheKey] = (fi.LastWriteTimeUtc.Ticks, fi.Length, res);
+        }
+        return res;
     }
 
     private static Dictionary<string, object?> BuildVisionPayload(

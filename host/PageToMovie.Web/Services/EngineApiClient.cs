@@ -12,7 +12,7 @@ namespace PageToMovie.Web.Services;
 /// <summary>HTTP client for PageToMovie.Api (C# backend).</summary>
 public sealed class EngineApiClient
 {
-    private static readonly JsonSerializerOptions JsonOpts = new()
+    public static readonly JsonSerializerOptions JsonOpts = new()
     {
         PropertyNameCaseInsensitive = true,
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
