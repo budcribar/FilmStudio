@@ -80,9 +80,14 @@ public sealed class ClipDialogueVerificationService
 
     public void SaveVerification(string projectId, ClipDialogueVerificationResult result)
     {
+        SaveVerificationAsync(projectId, result).GetAwaiter().GetResult();
+    }
+
+    public async Task SaveVerificationAsync(string projectId, ClipDialogueVerificationResult result, CancellationToken ct = default)
+    {
         var path = VerificationPath(projectId, result.SceneNumber, result.ClipNumber);
         Directory.CreateDirectory(Path.GetDirectoryName(path)!);
-        File.WriteAllText(path, JsonSerializer.Serialize(result, JsonOpts) + "\n");
+        await File.WriteAllTextAsync(path, JsonSerializer.Serialize(result, JsonOpts) + "\n", ct).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -246,7 +251,7 @@ Status options: 'verified' (dialogue & speaker match), 'mismatch' (dialogue inco
                 VerifiedAt = DateTime.UtcNow,
             };
 
-            SaveVerification(projectId, result);
+            await SaveVerificationAsync(projectId, result, ct).ConfigureAwait(false);
             _log.LogInformation("Automated dialogue verification completed for {Project} S{Scene} C{Clip}: {Status} ({Score:P0})", projectId, sceneNumber, clipNumber, status, accuracy);
             return result;
         }
@@ -263,7 +268,7 @@ Status options: 'verified' (dialogue & speaker match), 'mismatch' (dialogue inco
                 SummaryNote = $"Verification error: {ex.Message}",
                 VerifiedAt = DateTime.UtcNow,
             };
-            SaveVerification(projectId, failedResult);
+            await SaveVerificationAsync(projectId, failedResult, ct).ConfigureAwait(false);
             return failedResult;
         }
     }

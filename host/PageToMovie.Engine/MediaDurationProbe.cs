@@ -107,6 +107,50 @@ public sealed class MediaDurationProbe
 
     private static double? TryReadManifestDuration(string mediaPath)
     {
+        return TryReadManifestDurationAsync(mediaPath).GetAwaiter().GetResult();
+    }
+
+    public async Task<double?> TryProbeSecondsAsync(string? mediaPath, CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(mediaPath) || !File.Exists(mediaPath))
+            return null;
+
+        try
+        {
+            var fi = new FileInfo(mediaPath);
+            if (fi.Length < 1024) return null;
+
+            var key = fi.FullName;
+            if (_cache.TryGetValue(key, out var hit) &&
+                hit.Ticks == fi.LastWriteTimeUtc.Ticks &&
+                hit.Length == fi.Length)
+                return hit.Sec;
+
+            var fromManifest = await TryReadManifestDurationAsync(mediaPath, ct).ConfigureAwait(false);
+            if (fromManifest is > 0)
+            {
+                _cache[key] = (fi.LastWriteTimeUtc.Ticks, fi.Length, fromManifest.Value);
+                return fromManifest;
+            }
+
+            var fromMp4 = await Mp4DurationReader.TryReadSecondsAsync(fi.FullName, ct).ConfigureAwait(false);
+            if (fromMp4 is > 0)
+            {
+                _cache[key] = (fi.LastWriteTimeUtc.Ticks, fi.Length, fromMp4.Value);
+                return fromMp4;
+            }
+        }
+        catch (Exception ex)
+        {
+            if (_log.IsEnabled(LogLevel.Debug))
+                _log.LogDebug(ex, "Duration probe failed for {Path}", mediaPath);
+        }
+
+        return null;
+    }
+
+    private static async Task<double?> TryReadManifestDurationAsync(string mediaPath, CancellationToken ct = default)
+    {
         foreach (var candidate in new[]
                  {
                      mediaPath + ".sources.json",
@@ -116,7 +160,8 @@ public sealed class MediaDurationProbe
             if (!File.Exists(candidate)) continue;
             try
             {
-                using var doc = JsonDocument.Parse(File.ReadAllBytes(candidate));
+                var bytes = await File.ReadAllBytesAsync(candidate, ct).ConfigureAwait(false);
+                using var doc = JsonDocument.Parse(bytes);
                 var root = doc.RootElement;
                 if (root.TryGetProperty("totalDurationSeconds", out var t) && t.TryGetDouble(out var td) && td > 0)
                     return td;

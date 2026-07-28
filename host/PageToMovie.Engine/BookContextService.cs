@@ -100,12 +100,13 @@ public static class BookContextService
     /// <param name="sceneIndex">1-based scene order in the draft (from scene list).</param>
     /// <param name="sceneHeading">Heading text without leading period.</param>
     /// <param name="sceneBody">Optional action/dialogue under the scene for fuzzy match.</param>
-    public static BookContextResult GetContext(
+    public static async Task<BookContextResult> GetContextAsync(
         ProjectStore store,
         string projectId,
         int sceneIndex,
         string? sceneHeading,
-        string? sceneBody = null)
+        string? sceneBody = null,
+        CancellationToken ct = default)
     {
         var bookPath = Path.Combine(store.GetProjectDir(projectId), "source", "book_full.txt");
         if (!File.Exists(bookPath))
@@ -122,7 +123,7 @@ public static class BookContextService
             };
         }
 
-        var book = File.ReadAllText(bookPath);
+        var book = await File.ReadAllTextAsync(bookPath, ct).ConfigureAwait(false);
         var pages = ParseBookPages(book);
         if (pages.Count == 0)
         {

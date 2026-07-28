@@ -148,7 +148,7 @@ public class ScreenplayServiceTests : IDisposable
     }
 
     [Fact]
-    public void Book_context_resolves_synopsis_and_note_page_tags()
+    public async Task Book_context_resolves_synopsis_and_note_page_tags()
     {
         const string projectId = "Demo";
         var source = Path.Combine(_store.GetProjectDir(projectId), "source");
@@ -156,7 +156,7 @@ public class ScreenplayServiceTests : IDisposable
         File.WriteAllText(Path.Combine(source, "book_full.txt"),
             "--- PAGE 1 ---\nAlpha page.\n\n--- PAGE 2 ---\nBeta bedtime page.\n");
 
-        var ctx = BookContextService.GetContext(
+        var ctx = await BookContextService.GetContextAsync(
             _store, projectId,
             sceneIndex: 1,
             sceneHeading: "INT. BEDROOM - NIGHT",
