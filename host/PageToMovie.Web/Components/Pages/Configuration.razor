@@ -345,8 +345,7 @@ else
                 <select class="form-select" @bind="_qualityModel" disabled="@_busy">
                     @foreach (var m in _chatModels)
                     {
-                        var isGemini = m.Provider.Equals("Google", StringComparison.OrdinalIgnoreCase) || m.Id.StartsWith("gemini", StringComparison.OrdinalIgnoreCase);
-                        var tag = isGemini ? " [⭐ Native MP4 Video Review]" : " [Image Stills Only]";
+                        var tag = m.SupportsVideoReview ? " [⭐ Native MP4 Video Review]" : " [Image Stills Only]";
                         <option value="@m.Id">@ModelOptionLabel(m)@tag</option>
                     }
                     @if (_chatModels.All(m => !string.Equals(m.Id, _qualityModel, StringComparison.OrdinalIgnoreCase)))

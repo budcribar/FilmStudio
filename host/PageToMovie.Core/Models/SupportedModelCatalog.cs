@@ -112,6 +112,11 @@ public sealed class SupportedModelEntry
     /// </summary>
     public bool SupportsReferenceImages { get; init; } = true;
 
+    /// <summary>
+    /// When true, accepts native MP4 video & audio files directly for clip/dialogue review (Google Gemini).
+    /// </summary>
+    public bool SupportsVideoReview { get; init; } = false;
+
     /// <summary>Provider id for config / cost reports (<c>grok</c>, <c>gemini</c>, <c>anthropic</c>).</summary>
     public string ProviderId => Provider switch
     {
@@ -352,6 +357,7 @@ public static class SupportedModelCatalog
             // Google AI pricing, 2026-07: base tier (<200k tokens). Above 200k: $4/$18.
             InputCostPerMillionTokens = 2.00,
             OutputCostPerMillionTokens = 12.00,
+            SupportsVideoReview = true,
             Notes = "Wired via GeminiChatClient, routed automatically through " +
                     "MultiProviderChatClient for planning/QA calls. Response-shape parsing is not " +
                     "smoke-tested against a live account yet. $2/$12 per 1M in/out tokens under " +
@@ -542,6 +548,7 @@ public static class SupportedModelCatalog
         ProviderId = e.ProviderId,
         SupportsVideoContinue = e.SupportsVideoContinue,
         SupportsReferenceImages = e.SupportsReferenceImages,
+        SupportsVideoReview = e.SupportsVideoReview,
     };
 }
 
@@ -566,4 +573,5 @@ public sealed class SupportedModelDto
     public string? ProviderId { get; set; }
     public bool SupportsVideoContinue { get; set; } = true;
     public bool SupportsReferenceImages { get; set; } = true;
+    public bool SupportsVideoReview { get; set; }
 }
