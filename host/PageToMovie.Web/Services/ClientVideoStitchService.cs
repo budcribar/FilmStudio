@@ -73,11 +73,14 @@ public sealed class ClientVideoStitchService
             {
                 foreach (var c in clips)
                 {
+                    var fileName = string.IsNullOrWhiteSpace(c.FileName)
+                        ? $"scene_{sn:D2}_clip_{c.ClipNumber:D2}.mp4"
+                        : c.FileName;
+
                     var local = _media is null
                         ? null
-                        : await _media.GetLocalBlobUrlAsync(
-                            $"assets/video/scene_{sn:D2}_clip_{c.ClipNumber:D2}.mp4");
-                    urls.Add(local ?? _engine.ClipVideoUrl(projectId, sn, c.ClipNumber));
+                        : await _media.GetLocalBlobUrlAsync($"assets/video/{fileName}");
+                    urls.Add(local ?? c.VideoUrl ?? _engine.ClipVideoUrl(projectId, sn, c.ClipNumber));
                 }
                 continue;
             }
