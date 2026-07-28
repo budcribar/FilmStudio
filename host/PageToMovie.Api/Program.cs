@@ -265,6 +265,7 @@ else
     builder.Services.AddSingleton<IAudioClient>(sp => sp.GetRequiredService<FalAudioClient>());
     builder.Services.AddSingleton<SceneMusicScoringService>();
     builder.Services.AddSingleton<SmartClassifierModelRouter>();
+    builder.Services.AddSingleton<ActionCameraOverheadLedger>();
 
     // Dispatchers: every existing caller keeps depending on IChatClient / IImageClient /
     // IVideoClient / IVisionClient and is routed to the right concrete provider client
