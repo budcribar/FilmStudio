@@ -2842,10 +2842,19 @@ public sealed class ProjectStore
             return direct;
 
         // 2. Take match: scene_01_clip_01_take_*.mp4 (newest valid take file)
+        // Guard: filter out bloated multi-clip concatenated take files (> 2.5MB) when normal 5s takes (100KB–2.5MB) exist.
         var pattern = $"scene_{sceneNumber:D2}_clip_{clipNumber:D2}_take_*.mp4";
-        var latestTake = new DirectoryInfo(videoDir)
+        var allTakes = new DirectoryInfo(videoDir)
             .EnumerateFiles(pattern)
-            .Where(fi => fi.Length >= 1024)
+            .Where(fi => fi.Length >= 100_000)
+            .ToList();
+
+        if (allTakes.Count == 0) return null;
+
+        var normalTakes = allTakes.Where(fi => fi.Length <= 2_500_000).ToList();
+        var candidates = normalTakes.Count > 0 ? normalTakes : allTakes;
+
+        var latestTake = candidates
             .OrderByDescending(fi => fi.LastWriteTimeUtc)
             .FirstOrDefault();
 
