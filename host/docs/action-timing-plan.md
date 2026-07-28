@@ -141,19 +141,30 @@ no duration-limit fields, so there's no way to plan differently per model today.
 - UX: the scene-regen entry point in `FilmJobService`/`Program.cs` must expose only scene-level actions — clip
   count/boundaries are recomputed internally per model and never surfaced as something the user approves.
 
-## 7. Phase 8 — Sequential within-scene reconciliation (not yet started)
+## 7. Phase 8 — Sequential within-scene reconciliation — done
 
-**Problem/opportunity:** for continuation-based models, clip N+1 already can't start until clip N is on disk
-(`FilmJobService.GenerateOneClipAsync` throws otherwise). That wait is unavoidable regardless of anything we do,
-so using it to reconcile the next clip's plan against what was actually measured is free.
+For continuation-based models, clip N+1 already can't start until clip N is on disk
+(`FilmJobService.GenerateOneClipAsync` throws otherwise). That wait was already unavoidable, so using it to
+reconcile the next clip's plan against what was actually measured is free — no added wall-clock cost.
 
-**Plan:**
-- After clip N finishes (and its actual duration is probed, as already happens for telemetry), use the measured
-  value to finalize clip N+1's word budget/duration plan **before** submitting clip N+1 — not to correct clip N,
-  which per Constraint 1 is not worth doing given tiered/quantized durations.
-- Only applies within a scene's continuation chain; scenes remain independent and parallel via `ApiWorkerPool`.
-- Skip this entirely for models where `SupportsVideoContinue` is false, once Phase 7 makes that queryable —
-  those clips may not need to be sequential at all.
+`GenerateOneClipAsync` now returns the seconds its own measured duration overran what was requested (0 when not
+applicable), and the caller loops in `RunSceneGenAsync`/`RunBatchGenAsync` feed that back in as
+`incomingDurationPaddingSec` for the next clip — **only** when the next clip is truly the immediately adjacent
+clip number (a gap from `only_missing` regen breaks the adjacency) and **only** for models where
+`SupportsVideoContinue` is true (queryable per Phase 7's catalog fields). Per Constraint 1, this never tries to
+correct the clip that just finished — duration is billed/quantized per provider, so padding the *next* request is
+the only cheap lever. The carried-forward padding is clamped to `MaxCarryoverDurationPaddingSec` (2.0s) so one
+anomalous measurement can't balloon every later clip's request.
+
+`RunBatchGenAsync` tracks this per scene number (`Dictionary<int, (LastClip, PaddingSec)>`) since batch work can
+interleave scenes — a padding nudge earned in one scene must never leak into an unrelated one.
+
+The three decision points (should padding carry forward, how much did the clip overrun, how to apply padding)
+are extracted into small `public static` helpers (`ResolveIncomingDurationPadding`,
+`ComputeCarryoverOverrunSec`, `ApplyIncomingDurationPadding`) specifically so they're unit-testable without
+standing up `FilmJobService`'s ~25-dependency DI graph (which has no existing test harness). Verified with 10 new
+tests covering the adjacency gate, the non-continuation/at-or-under-budget zero cases, the anomaly clamp, and
+the absolute-ceiling clamp on the padded result — plus the full 969-test suite passing.
 
 ## 8. Phase 9 — Real `DialogueTruncated` signal — done
 
@@ -212,10 +223,10 @@ prompt stay static, hand-maintained C# literals.
 | 1–4 | ✅ Done | Duration model, composite ledger, confidence-gated JIT/classifier, SQLite telemetry + live trend chart |
 | 6 | ✅ Done | Ledger-derived overhead plugged into `ClipDurationEstimator`'s dialogue-clip branch |
 | 7 | ✅ Done | Per-model `MaxClipDurationSeconds` in `SupportedModelCatalog`; every production caller (FilmJobService, Stage2PlannerService, FountainStage1Importer/ScreenplayService, ProjectStore) resolves and passes the project's actual model instead of defaulting |
-| 8 | Not started | Reconcile next clip's plan against previous clip's measured result (continuation-chain scenes only) |
+| 8 | ✅ Done | Next clip's requested duration reconciled against previous clip's measured overrun (continuation-chain scenes only, adjacency-gated, capped at 2.0s) |
 | 9 | ✅ Done | Real dialogue-verification result wired into `DialogueTruncated` (`ClipDialogueVerificationService.LooksTruncated`) |
 | 10 | Not started | `source_text` column → embedding cluster → LLM merge → admin-approved, DB-backed category registry |
 
-Phases 6, 7, and 9 are done. Remaining order: **8 → 10.** Phase 8 can now reconcile against both a real duration
-measurement and a real truncation signal. Phase 10 depends on meaningful telemetry volume accumulating first, so
-it naturally comes last.
+Phases 6, 7, 8, and 9 are all done. Only **Phase 10** remains, and it depends on meaningful telemetry volume
+accumulating first — there's no rush to start it before real production usage generates JIT-discovered categories
+worth consolidating.

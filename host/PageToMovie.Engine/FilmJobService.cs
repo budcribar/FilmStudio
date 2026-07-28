@@ -2102,6 +2102,9 @@ public sealed class FilmJobService
 
             var done = 0;
             var failed = 0;
+            // Per-scene (LastGeneratedClip, CarryoverPaddingSec) — batch work can interleave scenes,
+            // so the padding nudge from one scene's overrun must never leak into a different scene.
+            var sceneCarryover = new Dictionary<int, (int LastClip, double PaddingSec)>();
             for (var i = 0; i < work.Count; i++)
             {
                 ct.ThrowIfCancellationRequested();
@@ -2126,10 +2129,14 @@ public sealed class FilmJobService
                             prevClipEl = FindClipInScene(sceneEl.Value, cn - 1);
                     }
 
-                    await GenerateOneClipAsync(
+                    var prior = sceneCarryover.TryGetValue(sn, out var p) ? p : (LastClip: 0, PaddingSec: 0.0);
+                    var incomingPadding = ResolveIncomingDurationPadding(cn, prior.LastClip, prior.PaddingSec);
+                    var overrun = await GenerateOneClipAsync(
                         projectId, projectDir, sn, cn, clip, resolution, ct,
                         previousClipEl: prevClipEl,
-                        blueprintRoot: bp.RootElement);
+                        blueprintRoot: bp.RootElement,
+                        incomingDurationPaddingSec: incomingPadding);
+                    sceneCarryover[sn] = (cn, overrun);
                     done++;
                     // Fresh clips x/y + status pills while batch is still running.
                     _projects.InvalidateSceneListCache(projectId);
@@ -2255,6 +2262,8 @@ public sealed class FilmJobService
 
             var done = 0;
             var failed = 0;
+            var lastGeneratedClipNum = 0;
+            var carryoverPaddingSec = 0.0;
             for (var i = 0; i < todo.Count; i++)
             {
                 ct.ThrowIfCancellationRequested();
@@ -2281,10 +2290,13 @@ public sealed class FilmJobService
                             prevClipEl = FindClipInScene(sceneEl, cn - 1);
                     }
 
-                    await GenerateOneClipAsync(
+                    var incomingPadding = ResolveIncomingDurationPadding(cn, lastGeneratedClipNum, carryoverPaddingSec);
+                    carryoverPaddingSec = await GenerateOneClipAsync(
                         projectId, projectDir, req.Scene, cn, clip, resolution, ct,
                         previousClipEl: prevClipEl,
-                        blueprintRoot: bp.RootElement);
+                        blueprintRoot: bp.RootElement,
+                        incomingDurationPaddingSec: incomingPadding);
+                    lastGeneratedClipNum = cn;
                     done++;
                     // Fresh clips x/y + status pills while scene gen is still running.
                     _projects.InvalidateSceneListCache(projectId);
@@ -2381,7 +2393,54 @@ public sealed class FilmJobService
         }
     }
 
-    private async Task GenerateOneClipAsync(
+    /// <summary>
+    /// Ceiling on how much extra duration a measured overrun on the previous clip in the same
+    /// continuation chain can add to the next clip's request. Bounds a single anomalous measurement
+    /// from ballooning every subsequent clip's requested duration.
+    /// </summary>
+    private const double MaxCarryoverDurationPaddingSec = 2.0;
+
+    /// <summary>
+    /// How much of the previous clip's measured duration overrun should carry forward as padding for
+    /// <paramref name="clipNum"/>. Only non-zero when <paramref name="lastGeneratedClipNum"/> is truly
+    /// the immediately preceding clip number (no gap) — a gap (e.g. only-missing regen skipped one)
+    /// means there's no real adjacency to reconcile against, so start fresh at zero.
+    /// </summary>
+    public static double ResolveIncomingDurationPadding(
+        int clipNum, int lastGeneratedClipNum, double lastOverrunSec) =>
+        clipNum == lastGeneratedClipNum + 1 ? lastOverrunSec : 0.0;
+
+    /// <summary>
+    /// Seconds a just-finished clip's real measured duration overran what was requested, clamped to
+    /// <see cref="MaxCarryoverDurationPaddingSec"/>. Zero for non-continuation models (Constraint 3 —
+    /// only continuation chains get the free same-scene reconciliation) or when the clip ran at/under
+    /// its requested duration (never carry forward a negative "padding").
+    /// </summary>
+    public static double ComputeCarryoverOverrunSec(
+        bool supportsContinue, double probedDurationSec, int requestedDurationSec) =>
+        supportsContinue
+            ? Math.Clamp(probedDurationSec - requestedDurationSec, 0.0, MaxCarryoverDurationPaddingSec)
+            : 0.0;
+
+    /// <summary>
+    /// Applies carried-forward padding to a clip's requested duration, never exceeding the resolved
+    /// model's absolute ceiling (<paramref name="absMaxSeconds"/>).
+    /// </summary>
+    public static int ApplyIncomingDurationPadding(
+        int durationSeconds, double incomingDurationPaddingSec, int absMaxSeconds) =>
+        incomingDurationPaddingSec > 0
+            ? Math.Min(absMaxSeconds, durationSeconds + (int)Math.Ceiling(incomingDurationPaddingSec))
+            : durationSeconds;
+
+    /// <summary>
+    /// Generates one clip. Returns the seconds this clip's actual measured duration overran its
+    /// requested duration (0 when not applicable) — for continuation-chain models, the caller feeds
+    /// this back in as <paramref name="incomingDurationPaddingSec"/> for the next clip in the same
+    /// scene, since clip N+1 already can't start before clip N is on disk (free reconciliation,
+    /// no added wall-clock cost). Never used to retroactively correct this clip itself — duration is
+    /// billed/quantized per provider, so padding the next request is cheaper than any fix-up here.
+    /// </summary>
+    private async Task<double> GenerateOneClipAsync(
         string projectId,
         string projectDir,
         int scene,
@@ -2390,10 +2449,12 @@ public sealed class FilmJobService
         string resolution,
         CancellationToken ct,
         JsonElement? previousClipEl = null,
-        JsonElement? blueprintRoot = null)
+        JsonElement? blueprintRoot = null,
+        double incomingDurationPaddingSec = 0.0)
     {
         var profiles = _projects.LoadCharacterPromptProfiles(projectId);
         var videoDir = Path.Combine(projectDir, "assets", "video");
+        var overrunSec = 0.0;
 
         // Previous clip in this scene — Imagine /videos/extensions continues from that video.
         // Clip 2+ requires previous on disk (no gaps). Cast-set changes reseed fresh+refs (PR2).
@@ -2588,11 +2649,23 @@ public sealed class FilmJobService
             if (string.IsNullOrWhiteSpace(resolution))
                 resolution = await ResolveVideoResolutionAsync(projectId, null, ct);
 
+            // Only continuation-chain models get carried-forward padding: clip N+1 already can't
+            // start before clip N is on disk for these, so reconciling against N's real measurement
+            // costs nothing extra. Non-continuation models don't have that same-scene coupling.
+            var supportsContinue = SupportedModelCatalog.ResolveOrDefault(model, ModelCapability.Video).SupportsVideoContinue;
+
             // Dialogue-aware duration (tight for short lines — billed per second), clamped to the
             // actually-selected model's own duration caps (SupportedModelCatalog) instead of a
             // hardcoded provider assumption.
             var (durMin, durMax, durAbsMax) = ClipDurationEstimator.ResolveBoundsForModel(model);
             var duration = ClipDurationEstimator.EstimateForClip(clipEl, durMin, durMax, durAbsMax);
+            if (supportsContinue && incomingDurationPaddingSec > 0)
+            {
+                var padded = ApplyIncomingDurationPadding(duration, incomingDurationPaddingSec, durAbsMax);
+                await AppendLogAsync(
+                    $"  [Duration] +{incomingDurationPaddingSec:F1}s carried from previous clip's overrun -> {duration}s to {padded}s");
+                duration = padded;
+            }
             await AppendLogAsync($"  [Duration] estimated {duration}s (dialogue-aware, max {durMax}s, model={model})");
             // Extension / ref: new portion typically max 10s
             if (prevVideoPath is not null || built.ReferenceImagePaths.Count > 0)
@@ -2654,11 +2727,16 @@ public sealed class FilmJobService
                         });
                     }
 
+                    // Probe the real rendered duration once — used both to carry a same-scene
+                    // continuation-chain padding nudge into the next clip (below) and, if timing
+                    // calibration is configured, for telemetry.
+                    var probedSec = Mp4DurationReader.TryReadSeconds(mp4Path) ?? (double)duration;
+                    overrunSec = ComputeCarryoverOverrunSec(supportsContinue, probedSec, duration);
+
                     // Record dynamic cut timing telemetry into SQLite database for continuous server learning
                     if (_timingCalibration is not null)
                     {
                         var projId = Snapshot.ProjectId ?? projectId ?? _projects.ActiveProjectId;
-                        var probedSec = Mp4DurationReader.TryReadSeconds(mp4Path) ?? (double)duration;
 
                         // 1. Extract dialogue text & word count from clip blueprint
                         string dialogueText = "";
@@ -2809,6 +2887,8 @@ public sealed class FilmJobService
                 try { File.Delete(prevExtendWorkTemp); } catch { /* ignore */ }
             }
         }
+
+        return overrunSec;
     }
 
     private async Task WriteAndLogPromptAsync(
