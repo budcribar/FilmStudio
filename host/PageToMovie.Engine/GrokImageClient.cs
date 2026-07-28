@@ -485,7 +485,9 @@ public sealed class GrokImageClient : IImageClient
                 var scale = maxEdge / (float)edge;
                 var nw = Math.Max(1, (int)Math.Round(w * scale));
                 var nh = Math.Max(1, (int)Math.Round(h * scale));
-                scaled = original.Resize(new SKImageInfo(nw, nh), SKSamplingOptions.Default);
+                // Bilinear + mipmap (matches the old SKFilterQuality.Medium) — SKSamplingOptions.Default
+                // is nearest-neighbor with no mipmapping and visibly aliases downscaled reference photos.
+                scaled = original.Resize(new SKImageInfo(nw, nh), new SKSamplingOptions(SKFilterMode.Linear, SKMipmapMode.Linear));
                 if (scaled is not null)
                     work = scaled;
             }

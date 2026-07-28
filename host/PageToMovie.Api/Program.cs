@@ -4087,12 +4087,12 @@ app.MapGet("/api/projects/{id}/artifacts/index", async (
 });
 
 /// <summary>Load latest auto-review draft for a clip (if any).</summary>
-app.MapGet("/api/projects/{id}/scenes/{scene:int}/clips/{clip:int}/auto-review", (
-    string id, int scene, int clip, ClipAutoReviewService reviews) =>
+app.MapGet("/api/projects/{id}/scenes/{scene:int}/clips/{clip:int}/auto-review", async (
+    string id, int scene, int clip, ClipAutoReviewService reviews, CancellationToken ct) =>
 {
     try
     {
-        var draft = reviews.LoadDraft(id, scene, clip);
+        var draft = await reviews.LoadDraftAsync(id, scene, clip, ct);
         if (draft is null)
             return Results.NotFound(new { ok = false, error = "No auto-review draft yet." });
         return Results.Ok(new { ok = true, draft });
