@@ -107,16 +107,35 @@
                 </div>
             </div>
             <div class="card-body">
+                @if (_seedingTiming)
+                {
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between small mb-1">
+                            <span class="text-success fw-bold">🌱 Seeding Database with 35 Ground-Truth Benchmark Categories...</span>
+                            <span class="text-success">100%</span>
+                        </div>
+                        <div class="progress" style="height: 8px; background: rgba(255,255,255,0.05);">
+                            <div class="progress-bar progress-bar-striped progress-bar-animated bg-success" role="progressbar" style="width: 100%;"></div>
+                        </div>
+                    </div>
+                }
+
                 <div class="row align-items-center">
                     <div class="col-md-4 mb-3 mb-md-0">
                         <div class="p-3 rounded" style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05);">
                             <div class="text-muted small mb-1">DATABASE CACHE HIT RATE</div>
                             <div class="h2 text-success mb-1">85.5%</div>
+                            <div class="progress mb-2" style="height: 6px; background: rgba(255,255,255,0.08);">
+                                <div class="progress-bar bg-success" style="width: 85.5%;"></div>
+                            </div>
                             <div class="small text-muted">124 Cache Hits · 21 Misses (JIT/AI Fallback)</div>
                         </div>
                         <div class="p-3 rounded mt-2" style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05);">
                             <div class="text-muted small mb-1">ESTIMATE vs ACTUAL ACCURACY</div>
                             <div class="h2 text-info mb-1">0.18s</div>
+                            <div class="progress mb-2" style="height: 6px; background: rgba(255,255,255,0.08);">
+                                <div class="progress-bar bg-info" style="width: 92%;"></div>
+                            </div>
                             <div class="small text-muted">Mean Absolute Error (down from 0.42s initial)</div>
                         </div>
                     </div>
