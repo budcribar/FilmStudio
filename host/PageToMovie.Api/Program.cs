@@ -1163,6 +1163,19 @@ app.MapGet("/api/admin/timing-telemetry/trend", async (
     });
 });
 
+app.MapPost("/api/admin/timing-telemetry/seed", async (
+    IUserContext user,
+    GlobalTimingCalibrationService calibration) =>
+{
+    int count = await calibration.SeedDefaultBenchmarksAsync();
+    return Results.Ok(new
+    {
+        ok = true,
+        message = $"Seeded {count} empirical benchmark entries into SQLite database.",
+        count
+    });
+});
+
 /// <summary>Open a local folder on disk in Windows File Explorer (or OS file manager).</summary>
 app.MapPost("/api/system/open-folder", (OpenFolderRequest body, ProjectStore store) =>
 {

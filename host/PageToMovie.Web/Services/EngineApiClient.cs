@@ -1006,6 +1006,19 @@ public sealed class EngineApiClient
         await SendJsonAsync<object>(req, ct);
     }
 
+    public async Task<TimingSeedResult?> PostAdminTimingTelemetrySeedAsync(CancellationToken ct = default)
+    {
+        using var req = new HttpRequestMessage(HttpMethod.Post, "/api/admin/timing-telemetry/seed");
+        return await SendJsonAsync<TimingSeedResult>(req, ct);
+    }
+
+    public sealed class TimingSeedResult
+    {
+        public bool Ok { get; set; }
+        public string? Message { get; set; }
+        public int Count { get; set; }
+    }
+
     public async Task<LocksDto?> GetLocksAsync(CancellationToken ct = default)
     {
         SyncIdentityHeaders();

@@ -97,10 +97,13 @@
                     <strong class="text-info">⏱️ Action & Camera Timing Telemetry</strong>
                     <span class="badge bg-success ms-2">SQLite Active</span>
                 </div>
-                <div class="d-flex gap-2">
+                <div class="d-flex gap-2 align-items-center">
                     <span class="badge bg-dark border border-secondary text-info">Hit Rate: 85.5% (124/145)</span>
                     <span class="badge bg-dark border border-secondary text-success">MAE: 0.18s Error</span>
                     <span class="badge bg-dark border border-secondary text-warning">35 Categories</span>
+                    <button class="btn btn-sm btn-outline-success border border-success ms-2" @onclick="SeedTimingDatabaseAsync" disabled="@_seedingTiming">
+                        🌱 Seed Database with Benchmarks
+                    </button>
                 </div>
             </div>
             <div class="card-body">
@@ -1060,10 +1063,31 @@
         finally { _busy = false; }
     }
 
+    private bool _seedingTiming;
+
     private async Task LogoutAsync()
     {
         await Api.LogoutAsync();
         Nav.NavigateTo("/admin/login");
+    }
+
+    private async Task SeedTimingDatabaseAsync()
+    {
+        _seedingTiming = true;
+        _actionMsg = null;
+        try
+        {
+            var res = await Api.PostAdminTimingTelemetrySeedAsync();
+            _actionMsg = res?.Message ?? "Seeded empirical benchmark entries into database.";
+        }
+        catch (Exception ex)
+        {
+            _actionMsg = $"Failed to seed database: {ex.Message}";
+        }
+        finally
+        {
+            _seedingTiming = false;
+        }
     }
 
     private async Task UpdateChartsAsync()
