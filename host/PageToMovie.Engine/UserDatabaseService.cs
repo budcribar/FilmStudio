@@ -447,10 +447,12 @@ public class UserDatabaseService
         var xaiPersonal = DecryptOptional(user?.EncryptedXaiApiKey);
         var geminiPersonal = DecryptOptional(user?.EncryptedGeminiApiKey);
         var anthropicPersonal = DecryptOptional(user?.EncryptedAnthropicApiKey);
+        var falPersonal = DecryptOptional(user?.EncryptedFalApiKey);
 
         var xaiServer = EnvPresent(SupportedModelCatalog.XaiApiKeyEnv);
         var geminiServer = EnvPresent(SupportedModelCatalog.GoogleApiKeyEnv);
         var anthropicServer = EnvPresent(SupportedModelCatalog.AnthropicApiKeyEnv);
+        var falServer = EnvPresent(SupportedModelCatalog.FalApiKeyEnv);
 
         var providers = new List<ProviderKeyStatusDto>
         {
@@ -478,6 +480,18 @@ public class UserDatabaseService
                 supportsScriptPlanning: true,
                 supportsImageVision: true,
                 notes: "Supports native Multimodal Video Review (inputs MP4 files directly for automated clip quality scoring) and Video Gen via Veo."),
+            BuildProviderStatus(
+                providerId: "fal",
+                displayName: "Fal.ai",
+                family: "Fal",
+                personal: falPersonal,
+                hasServer: falServer,
+                supportsVideoGen: true,
+                supportsVideoReview: false,
+                supportsImageGen: false,
+                supportsScriptPlanning: false,
+                supportsImageVision: false,
+                notes: "Serverless open-source HunyuanVideo generation (~$0.025 per 5s clip)."),
             BuildProviderStatus(
                 providerId: "anthropic",
                 displayName: "Anthropic Claude",
@@ -1020,6 +1034,7 @@ public class UserDatabaseService
             "grok" => "encrypted_xai_api_key",
             "gemini" => "encrypted_gemini_api_key",
             "anthropic" => "encrypted_anthropic_api_key",
+            "fal" => "encrypted_fal_api_key",
             _ => null,
         };
 
@@ -1032,6 +1047,7 @@ public class UserDatabaseService
             "xai" or "grok" => "grok",
             "google" or "gemini" => "gemini",
             "claude" or "anthropic" => "anthropic",
+            "fal" => "fal",
             _ => p,
         };
     }
@@ -1042,6 +1058,7 @@ public class UserDatabaseService
             "grok" => user.EncryptedXaiApiKey,
             "gemini" => user.EncryptedGeminiApiKey,
             "anthropic" => user.EncryptedAnthropicApiKey,
+            "fal" => user.EncryptedFalApiKey,
             _ => null,
         };
 

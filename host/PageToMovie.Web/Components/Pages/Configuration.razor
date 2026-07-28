@@ -621,6 +621,7 @@ else
         ["grok"] = null,
         ["gemini"] = null,
         ["anthropic"] = null,
+        ["fal"] = null,
     };
     private readonly HashSet<string> _visibleKeyProviders = new(StringComparer.OrdinalIgnoreCase);
 
@@ -663,6 +664,15 @@ else
         },
         new()
         {
+            ProviderId = "fal", DisplayName = "Fal.ai", Family = "Fal",
+            SupportsVideo = true, SupportsImage = false, SupportsChat = false, SupportsVision = false,
+            SupportsVideoGen = true, SupportsVideoReview = false, SupportsImageGen = false, SupportsScriptPlanning = false, SupportsImageVision = false,
+            CapabilitiesSummary = "Video Gen (HunyuanVideo)",
+            Notes = "Serverless open-source HunyuanVideo generation (~$0.025 per 5s clip).",
+            ActiveSource = "none",
+        },
+        new()
+        {
             ProviderId = "anthropic", DisplayName = "Anthropic Claude", Family = "Anthropic",
             SupportsVideo = false, SupportsImage = false, SupportsChat = true, SupportsVision = true,
             SupportsVideoGen = false, SupportsVideoReview = false, SupportsImageGen = false, SupportsScriptPlanning = true, SupportsImageVision = true,
@@ -676,6 +686,7 @@ else
     {
         "grok" => "xai-...",
         "gemini" => "AIza...",
+        "fal" => "fal-...",
         "anthropic" => "sk-ant-...",
         _ => "api key",
     };

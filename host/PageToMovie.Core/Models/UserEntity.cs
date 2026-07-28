@@ -18,6 +18,7 @@ public class UserEntity
     public string? EncryptedXaiApiKey { get; set; }
     public string? EncryptedGeminiApiKey { get; set; }
     public string? EncryptedAnthropicApiKey { get; set; }
+    public string? EncryptedFalApiKey { get; set; }
     public string Role { get; set; } = "User";
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? LastLoginAt { get; set; }
