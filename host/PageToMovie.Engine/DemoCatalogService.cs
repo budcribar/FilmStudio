@@ -317,14 +317,6 @@ public sealed class DemoCatalogService
                     $"You already have {pending} demos waiting for review (max {MaxPendingPerUser}). " +
                     "Wait for admin approval before submitting more.");
             }
-
-            var since = DateTimeOffset.UtcNow.AddHours(-24);
-            var recent = mine.Count(e => e.CreatedAt >= since);
-            if (recent >= MaxPublishesPerUserPerDay)
-            {
-                throw new InvalidOperationException(
-                    $"Publish limit reached ({MaxPublishesPerUserPerDay} demos per 24 hours). Try again later.");
-            }
         }
     }
 
