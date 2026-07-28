@@ -23,6 +23,39 @@ public class JitBenchmarkServiceTests
         }
     }
 
+    private sealed class TestVideoClient : IVideoClient
+    {
+        public bool IsConfigured => true;
+        public bool GenerationSubmitted { get; private set; }
+
+        public Task<string> SubmitGenerationAsync(
+            string prompt,
+            int durationSeconds,
+            string resolution,
+            string model,
+            CancellationToken ct,
+            IReadOnlyList<string>? referenceImagePaths = null,
+            string? startFrameImagePath = null,
+            string? continueFromVideoPath = null)
+        {
+            GenerationSubmitted = true;
+            return Task.FromResult("jit_req_12345");
+        }
+
+        public Task<string> PollForVideoUrlAsync(
+            string requestId,
+            Action<string>? onProgress,
+            CancellationToken ct)
+        {
+            return Task.FromResult("https://v3.fal.media/tokens/output.mp4");
+        }
+
+        public Task DownloadToFileAsync(string url, string destPath, CancellationToken ct)
+        {
+            return Task.CompletedTask;
+        }
+    }
+
     [Fact]
     public void AiActionOverheadClassifier_ClassifiesWeaponActionCorrectly()
     {
@@ -63,6 +96,22 @@ public class JitBenchmarkServiceTests
     }
 
     [Fact]
+    public async Task EnsureBeatCalibratedAsync_ExecutesLiveJitWhenVideoClientIsConfigured()
+    {
+        var ledger = new ActionCameraOverheadLedger();
+        var router = new SmartClassifierModelRouter();
+        var classifier = new AiActionOverheadClassifier(router, ledger);
+        var videoClient = new TestVideoClient();
+        var jitService = new JitBenchmarkService(ledger, classifier, videoClient);
+
+        var result = await jitService.EnsureBeatCalibratedAsync("Slashes with a machete", "(roaring)");
+
+        Assert.True(result.IsLiveJitBenchmark);
+        Assert.True(videoClient.GenerationSubmitted);
+        Assert.Contains("Live 1-clip JIT render execution", result.SourceDescription);
+    }
+
+    [Fact]
     public async Task EnsureBeatCalibratedAsync_ReturnsJitResultWithFallbackWhenKeysMissing()
     {
         var ledger = new ActionCameraOverheadLedger();
@@ -75,5 +124,6 @@ public class JitBenchmarkServiceTests
         Assert.Equal("act_pills_sorting", result.CategoryId);
         Assert.Equal(2.9, result.MeasuredOverheadSec);
         Assert.Equal(0.85, result.OverlapRatioGamma);
+        Assert.False(result.IsLiveJitBenchmark);
     }
 }
