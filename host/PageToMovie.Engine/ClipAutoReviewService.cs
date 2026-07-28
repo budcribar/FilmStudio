@@ -79,6 +79,21 @@ public sealed class ClipAutoReviewService
         }
     }
 
+    public async Task<ClipAutoReviewDraft?> LoadDraftAsync(string projectId, int scene, int clip, CancellationToken ct = default)
+    {
+        var path = DraftPath(projectId, scene, clip);
+        if (!File.Exists(path)) return null;
+        try
+        {
+            var json = await File.ReadAllTextAsync(path, ct).ConfigureAwait(false);
+            return JsonSerializer.Deserialize<ClipAutoReviewDraft>(json, JsonOpts);
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
     public void SaveDraft(ClipAutoReviewDraft draft)
     {
         var path = DraftPath(draft.ProjectId, draft.Scene, draft.Clip);

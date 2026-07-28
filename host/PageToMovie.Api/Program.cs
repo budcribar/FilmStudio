@@ -4640,7 +4640,7 @@ app.MapGet("/api/projects/{id}/media/file", async (
             _ => "application/octet-stream"
         };
 
-        return Results.File(fullPath, contentType, Path.GetFileName(fullPath));
+        return Results.File(fullPath, contentType, Path.GetFileName(fullPath), enableRangeProcessing: true);
     }
     catch (Exception ex)
     {

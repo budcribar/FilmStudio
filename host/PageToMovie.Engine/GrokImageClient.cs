@@ -485,7 +485,7 @@ public sealed class GrokImageClient : IImageClient
                 var scale = maxEdge / (float)edge;
                 var nw = Math.Max(1, (int)Math.Round(w * scale));
                 var nh = Math.Max(1, (int)Math.Round(h * scale));
-                scaled = original.Resize(new SKImageInfo(nw, nh), SKFilterQuality.Medium);
+                scaled = original.Resize(new SKImageInfo(nw, nh), SKSamplingOptions.Default);
                 if (scaled is not null)
                     work = scaled;
             }
@@ -496,14 +496,13 @@ public sealed class GrokImageClient : IImageClient
             {
                 if (data is null)
                     return $"data:image/jpeg;base64,{Convert.ToBase64String(bytes)}";
-                var encoded = data.ToArray();
-                if (encoded.Length < bytes.Length || edge > maxEdge)
+                if ((long)data.Size < bytes.Length || edge > maxEdge)
                 {
                     _log.LogDebug(
                         "Ref {File}: {SrcKb:0} KB → {DstKb:0} KB (maxEdge={Edge})",
-                        Path.GetFileName(path), bytes.Length / 1024.0, encoded.Length / 1024.0, maxEdge);
+                        Path.GetFileName(path), bytes.Length / 1024.0, data.Size / 1024.0, maxEdge);
                 }
-                return $"data:image/jpeg;base64,{Convert.ToBase64String(encoded)}";
+                return $"data:image/jpeg;base64,{Convert.ToBase64String(data.Span)}";
             }
         }
         catch (Exception ex)

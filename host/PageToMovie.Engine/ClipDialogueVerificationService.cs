@@ -63,6 +63,21 @@ public sealed class ClipDialogueVerificationService
         }
     }
 
+    public async Task<ClipDialogueVerificationResult?> LoadVerificationAsync(string projectId, int scene, int clip, CancellationToken ct = default)
+    {
+        var path = VerificationPath(projectId, scene, clip);
+        if (!File.Exists(path)) return null;
+        try
+        {
+            var json = await File.ReadAllTextAsync(path, ct).ConfigureAwait(false);
+            return JsonSerializer.Deserialize<ClipDialogueVerificationResult>(json, JsonOpts);
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
     public void SaveVerification(string projectId, ClipDialogueVerificationResult result)
     {
         var path = VerificationPath(projectId, result.SceneNumber, result.ClipNumber);
