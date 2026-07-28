@@ -3678,7 +3678,7 @@ app.MapMethods("/api/projects/{id}/screenplay/book-context", new[] { "GET", "POS
             }
         }
 
-        var ctx = BookContextService.GetContext(store, id, sceneIndex, heading, body);
+        var ctx = await BookContextService.GetContextAsync(store, id, sceneIndex, heading, body, req.HttpContext.RequestAborted);
         return Results.Ok(new
         {
             ok = true,

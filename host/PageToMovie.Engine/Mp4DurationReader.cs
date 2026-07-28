@@ -29,6 +29,22 @@ public static class Mp4DurationReader
         }
     }
 
+    public static async Task<double?> TryReadSecondsAsync(string? path, CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(path) || !File.Exists(path))
+            return null;
+        try
+        {
+            await using var fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, 4096, useAsync: true);
+            if (fs.Length < 32) return null;
+            return TryReadSeconds(fs);
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
     public static double? TryReadSeconds(Stream stream)
     {
         if (!stream.CanSeek) return null;
