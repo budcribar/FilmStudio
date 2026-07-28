@@ -25,6 +25,7 @@ public sealed class ClipDialogueVerificationService
 
     private readonly ProjectStore _projects;
     private readonly IVisionClient _vision;
+    private readonly GeminiChatClient? _gemini;
     private readonly ProjectTelemetryService _telemetry;
     private readonly ILogger<ClipDialogueVerificationService> _log;
 
@@ -32,18 +33,20 @@ public sealed class ClipDialogueVerificationService
         ProjectStore projects,
         IVisionClient vision,
         ProjectTelemetryService telemetry,
+        GeminiChatClient? gemini = null,
         ILogger<ClipDialogueVerificationService>? log = null)
     {
         _projects = projects;
         _vision = vision;
+        _gemini = gemini;
         _telemetry = telemetry;
         _log = log ?? Microsoft.Extensions.Logging.Abstractions.NullLogger<ClipDialogueVerificationService>.Instance;
     }
 
-    public bool IsConfigured => _vision.IsConfigured;
+    public bool IsConfigured => _vision.IsConfigured || (_gemini?.IsConfigured ?? false);
 
     public string VerificationPath(string projectId, int scene, int clip) =>
-        Path.Combine(_projects.GetProjectDir(projectId), "assets", "review", $"scene_{scene:D2}_clip_{clip:D2}.verification.json");
+        Path.Combine(_projects.GetProjectDir(projectId), "assets", "qa", $"scene_{scene:D2}_clip_{clip:D2}_dialogue_verification.json");
 
     public ClipDialogueVerificationResult? LoadVerification(string projectId, int scene, int clip)
     {
@@ -105,9 +108,9 @@ public sealed class ClipDialogueVerificationService
             return noSpeechResult;
         }
 
-        if (!_vision.IsConfigured)
+        if (!IsConfigured)
         {
-            _log.LogWarning("Vision client not configured — skipping automated dialogue verification for {Project} S{Scene} C{Clip}", projectId, sceneNumber, clipNumber);
+            _log.LogWarning("Vision/Gemini client not configured — skipping dialogue verification for {Project} S{Scene} C{Clip}", projectId, sceneNumber, clipNumber);
             var unverified = new ClipDialogueVerificationResult
             {
                 SceneNumber = sceneNumber,
@@ -115,7 +118,7 @@ public sealed class ClipDialogueVerificationService
                 ExpectedSpeaker = expectedSpeaker,
                 ExpectedDialogue = expectedDialogue,
                 Status = "unverified",
-                SummaryNote = "AI Vision API Key required (xAI Grok, Gemini, or Claude). Add a key in Configuration.",
+                SummaryNote = "Google Gemini key (GEMINI_API_KEY) required for native MP4 video & audio dialogue verification. Please set key in Configuration.",
                 VerifiedAt = DateTime.UtcNow,
             };
             SaveVerification(projectId, unverified);

@@ -2937,7 +2937,7 @@ else
                 clip.DialogueVerification = ver;
                 if (string.Equals(ver.Status, "unverified", StringComparison.OrdinalIgnoreCase))
                 {
-                    _error = ver.SummaryNote ?? "Dialogue Verification requires an AI Vision key (xAI Grok, Gemini, or Claude). Please configure one on the Configuration page.";
+                    _error = ver.SummaryNote ?? "Clip Dialogue Verification requires Google Gemini (GEMINI_API_KEY). Gemini is the only provider that supports native video & audio dialogue analysis. Please add your Gemini key in Configuration.";
                 }
             }
         }
@@ -2984,7 +2984,7 @@ else
                         c.DialogueVerification = ver;
                         if (string.Equals(ver.Status, "unverified", StringComparison.OrdinalIgnoreCase))
                         {
-                            _error = ver.SummaryNote ?? "Dialogue Verification requires an AI Vision key (xAI Grok, Gemini, or Claude). Please configure one on the Configuration page.";
+                            _error = ver.SummaryNote ?? "Clip Dialogue Verification requires Google Gemini (GEMINI_API_KEY). Gemini is the only provider that supports native video & audio dialogue analysis. Please add your Gemini key in Configuration.";
                         }
                         StateHasChanged();
                     }
