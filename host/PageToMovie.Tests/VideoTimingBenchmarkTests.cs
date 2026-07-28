@@ -15,6 +15,8 @@ public class VideoTimingBenchmarkTests
             EstimatedDurationSec: 1.8,
             ActualDurationSec: 1.5,
             DeltaSec: -0.3,
+            ConcurrencyMode: "serial",
+            ConcurrencyFactor: 0.0,
             ModelUsed: "fal-ai/hunyuan-video",
             ProviderUsed: "Fal");
 
