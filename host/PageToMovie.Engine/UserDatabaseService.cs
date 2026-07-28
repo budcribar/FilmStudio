@@ -89,7 +89,7 @@ public class UserDatabaseService
         }
     }
 
-    private string ConnectionString => $"Data Source={_dbPath};Cache=Shared;";
+    private string ConnectionString => $"Data Source={_dbPath};Cache=Shared;Pooling=True;";
 
     /// <summary>
     /// Ensures SQLite database and users table exist with WAL mode pragmas enabled.

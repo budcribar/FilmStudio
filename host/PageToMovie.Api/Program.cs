@@ -2300,69 +2300,54 @@ app.MapGet("/api/projects/{id}/characters", (string id, ProjectStore store) =>
     }
 });
 
-app.MapGet("/api/projects/{projectId}/characters/{charKey}/ref", (string projectId, string charKey, ProjectStore store) =>
+static IResult ServeCachedFile(HttpContext ctx, string path, string? contentType = null, bool enableRangeProcessing = false)
 {
     try
     {
-        var path = store.ResolveCharacterRefPath(projectId, charKey);
-        if (path is null || !File.Exists(path))
-            return Results.NotFound(new { ok = false, error = "ref image not found" });
-        return Results.File(path, GuessImageContentType(path));
+        if (!File.Exists(path))
+            return Results.NotFound(new { ok = false, error = "File not found" });
+        var lastWrite = File.GetLastWriteTimeUtc(path);
+        var etag = $"\"{lastWrite.Ticks:x}\"";
+        if (ctx.Request.Headers.IfNoneMatch == etag)
+            return Results.StatusCode(StatusCodes.Status304NotModified);
+
+        ctx.Response.Headers.ETag = etag;
+        ctx.Response.Headers.CacheControl = "public, max-age=31536000, immutable";
+        return Results.File(path, contentType ?? GuessImageContentType(path), enableRangeProcessing: enableRangeProcessing);
     }
     catch (Exception ex)
     {
         return Results.BadRequest(new { ok = false, error = ex.Message });
     }
+}
+
+app.MapGet("/api/projects/{projectId}/characters/{charKey}/ref", (HttpContext ctx, string projectId, string charKey, ProjectStore store) =>
+{
+    var path = store.ResolveCharacterRefPath(projectId, charKey);
+    return path is null ? Results.NotFound(new { ok = false, error = "ref image not found" }) : ServeCachedFile(ctx, path);
 });
 
 app.MapGet("/api/projects/{projectId}/characters/{charKey}/variants/{index:int}",
-    (string projectId, string charKey, int index, ProjectStore store) =>
+    (HttpContext ctx, string projectId, string charKey, int index, ProjectStore store) =>
 {
-    try
-    {
-        var path = store.ResolveCharacterVariantPath(projectId, charKey, index);
-        if (path is null)
-            return Results.NotFound(new { ok = false, error = "variant not found" });
-        return Results.File(path, GuessImageContentType(path));
-    }
-    catch (Exception ex)
-    {
-        return Results.BadRequest(new { ok = false, error = ex.Message });
-    }
+    var path = store.ResolveCharacterVariantPath(projectId, charKey, index);
+    return path is null ? Results.NotFound(new { ok = false, error = "variant not found" }) : ServeCachedFile(ctx, path);
 });
 
 app.MapGet("/api/projects/{projectId}/characters/{charKey}/bookrefs/{index:int}",
-    (string projectId, string charKey, int index, ProjectStore store) =>
+    (HttpContext ctx, string projectId, string charKey, int index, ProjectStore store) =>
 {
-    try
-    {
-        var path = store.ResolveCharacterBookRefPath(projectId, charKey, index);
-        if (path is null)
-            return Results.NotFound(new { ok = false, error = "book ref not found" });
-        return Results.File(path, GuessImageContentType(path));
-    }
-    catch (Exception ex)
-    {
-        return Results.BadRequest(new { ok = false, error = ex.Message });
-    }
+    var path = store.ResolveCharacterBookRefPath(projectId, charKey, index);
+    return path is null ? Results.NotFound(new { ok = false, error = "book ref not found" }) : ServeCachedFile(ctx, path);
 });
 
 app.MapGet("/api/projects/{projectId}/book-images/{fileName}",
-    (string projectId, string fileName, ProjectStore store) =>
+    (HttpContext ctx, string projectId, string fileName, ProjectStore store) =>
 {
-    try
-    {
-        var dir = Path.Combine(store.GetProjectDir(projectId), "source", "book_images");
-        var file = Path.GetFileName(fileName);
-        var path = Path.Combine(dir, file);
-        if (!File.Exists(path))
-            return Results.NotFound(new { ok = false, error = "book image not found" });
-        return Results.File(path, GuessImageContentType(path));
-    }
-    catch (Exception ex)
-    {
-        return Results.BadRequest(new { ok = false, error = ex.Message });
-    }
+    var dir = Path.Combine(store.GetProjectDir(projectId), "source", "book_images");
+    var file = Path.GetFileName(fileName);
+    var path = Path.Combine(dir, file);
+    return ServeCachedFile(ctx, path);
 });
 
 app.MapGet("/api/projects/{projectId}/characters/{charKey}/book-candidates",
