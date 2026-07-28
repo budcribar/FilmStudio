@@ -306,7 +306,7 @@ public sealed class ProjectReadCache
             hit.Ticks == fi.LastWriteTimeUtc.Ticks &&
             hit.Length == fi.Length)
         {
-            return CloneBlueprintDocument(hit.Doc);
+            return hit.Doc;
         }
 
         var gate = _buildLocks.GetOrAdd("json:" + key, _ => new SemaphoreSlim(1, 1));
@@ -320,7 +320,7 @@ public sealed class ProjectReadCache
                 hit.Ticks == fi.LastWriteTimeUtc.Ticks &&
                 hit.Length == fi.Length)
             {
-                return CloneBlueprintDocument(hit.Doc);
+                return hit.Doc;
             }
 
             var utf8 = await File.ReadAllBytesAsync(absolutePath, ct).ConfigureAwait(false);
@@ -329,6 +329,7 @@ public sealed class ProjectReadCache
             {
                 Ticks = fi.LastWriteTimeUtc.Ticks,
                 Length = fi.Length,
+                Utf8 = utf8,
                 Doc = doc,
             };
 
@@ -338,7 +339,7 @@ public sealed class ProjectReadCache
             }
 
             _jsonFiles[key] = entry;
-            return CloneBlueprintDocument(doc);
+            return entry.Doc;
         }
         finally
         {
@@ -401,6 +402,7 @@ public sealed class ProjectReadCache
     {
         public long Ticks { get; init; }
         public long Length { get; init; }
+        public byte[] Utf8 { get; init; } = Array.Empty<byte>();
         public JsonDocument Doc { get; init; } = null!;
     }
 
