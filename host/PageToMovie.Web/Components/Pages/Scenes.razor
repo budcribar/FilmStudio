@@ -3001,7 +3001,8 @@ else
             _verifyingClipNumber = clip.ClipNumber;
             StateHasChanged();
 
-            var ver = await Engine.VerifyClipDialogueAsync(_projectId, _detail.SceneNumber, clip.ClipNumber);
+            var videoBytes = await MediaFolder.GetClipBytesAsync(_detail.SceneNumber, clip.ClipNumber);
+            var ver = await Engine.VerifyClipDialogueAsync(_projectId, _detail.SceneNumber, clip.ClipNumber, videoBytes: videoBytes);
             if (ver is not null)
             {
                 clip.DialogueVerification = ver;
@@ -3048,7 +3049,8 @@ else
                 {
                     _verifyingClipNumber = c.ClipNumber;
                     StateHasChanged();
-                    var ver = await Engine.VerifyClipDialogueAsync(_projectId, sn, c.ClipNumber);
+                    var videoBytes = await MediaFolder.GetClipBytesAsync(sn, c.ClipNumber);
+                    var ver = await Engine.VerifyClipDialogueAsync(_projectId, sn, c.ClipNumber, videoBytes: videoBytes);
                     if (ver is not null)
                     {
                         c.DialogueVerification = ver;

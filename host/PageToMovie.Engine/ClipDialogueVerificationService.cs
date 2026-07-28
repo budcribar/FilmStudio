@@ -78,9 +78,12 @@ public sealed class ClipDialogueVerificationService
         int sceneNumber,
         int clipNumber,
         IReadOnlyList<string>? keyframePaths = null,
+        string? overrideVideoPath = null,
         CancellationToken ct = default)
     {
-        var clipPath = _projects.ResolveClipVideoPath(projectId, sceneNumber, clipNumber);
+        var clipPath = (!string.IsNullOrWhiteSpace(overrideVideoPath) && File.Exists(overrideVideoPath))
+            ? overrideVideoPath
+            : _projects.ResolveClipVideoPath(projectId, sceneNumber, clipNumber);
         var detail = await _projects.GetSceneDetailAsync(projectId, sceneNumber, ct: ct).ConfigureAwait(false);
         var clip = detail?.Clips?.FirstOrDefault(c => c.ClipNumber == clipNumber);
 

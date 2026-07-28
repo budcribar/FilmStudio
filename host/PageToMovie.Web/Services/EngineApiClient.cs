@@ -1591,11 +1591,22 @@ public sealed class EngineApiClient
         string projectId,
         int scene,
         int clip,
+        byte[]? videoBytes = null,
         CancellationToken ct = default)
     {
+        HttpContent? content = null;
+        if (videoBytes is { Length: > 0 })
+        {
+            var form = new MultipartFormDataContent();
+            var byteContent = new ByteArrayContent(videoBytes);
+            byteContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("video/mp4");
+            form.Add(byteContent, "video", $"scene_{scene:D2}_clip_{clip:D2}.mp4");
+            content = form;
+        }
+
         using var resp = await _http.PostAsync(
             $"/api/projects/{Uri.EscapeDataString(projectId)}/scenes/{scene}/clips/{clip}/verify-dialogue",
-            null,
+            content,
             ct);
         if (!resp.IsSuccessStatusCode) return null;
         var doc = await resp.Content.ReadFromJsonAsync<JsonElement>(JsonOpts, ct);

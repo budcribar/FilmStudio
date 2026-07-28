@@ -288,6 +288,47 @@ window.PageToMovieMedia = {
     },
 
     /**
+     * Read a project-relative file (e.g. assets/video/scene_01_clip_01.mp4) as byte array.
+     */
+    getBytesAsync: async function (relativePath) {
+        if (!this._root) return { success: false, error: "Media folder not connected" };
+        try {
+            const { dir, fileName } = await this._ensurePathAsync(relativePath);
+            let fh;
+            try {
+                fh = await dir.getFileHandle(fileName, { create: false });
+            } catch (_) {
+                const m = fileName.match(/^(scene_\d+_clip_\d+)\.mp4$/i);
+                if (m) {
+                    const prefix = m[1].toLowerCase() + "_take_";
+                    let bestFh = null;
+                    let bestMtime = 0;
+                    for await (const entry of dir.values()) {
+                        if (entry.kind === "file" && entry.name.toLowerCase().startsWith(prefix) && entry.name.toLowerCase().endsWith(".mp4")) {
+                            try {
+                                const f = await entry.getFile();
+                                if (f && f.size >= 1024 && f.lastModified > bestMtime) {
+                                    bestMtime = f.lastModified;
+                                    bestFh = entry;
+                                }
+                            } catch (_) {}
+                        }
+                    }
+                    if (bestFh) fh = bestFh;
+                }
+            }
+            if (!fh) return { success: false, error: "Not found in media folder" };
+            const file = await fh.getFile();
+            if (!file || file.size < 1024)
+                return { success: false, error: "File missing or empty" };
+            const buf = await file.arrayBuffer();
+            return { success: true, bytes: new Uint8Array(buf), sizeBytes: file.size };
+        } catch (err) {
+            return { success: false, error: err.message || "Not found in media folder" };
+        }
+    },
+
+    /**
      * List archived previous versions of one clip (newest first), written by
      * _archiveClipHistoryAsync. Each entry's relativePath can be passed to getBlobUrlAsync.
      * @returns {{ success:boolean, entries?: { relativePath:string, timestampMs:number }[], error?:string }}

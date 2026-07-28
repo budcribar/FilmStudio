@@ -4058,18 +4058,40 @@ app.MapGet("/api/projects/{id}/scenes/{scene:int}/clips/{clip:int}/auto-review",
     }
 });
 
-/// <summary>Trigger automated dialogue verification for a clip on demand.</summary>
+/// <summary>Trigger automated dialogue verification for a clip on demand. Accepts optional uploaded video file which is deleted immediately after API call.</summary>
 app.MapPost("/api/projects/{id}/scenes/{scene:int}/clips/{clip:int}/verify-dialogue", async (
-    string id, int scene, int clip, ClipDialogueVerificationService verifier, CancellationToken ct) =>
+    string id, int scene, int clip, HttpContext httpContext, ClipDialogueVerificationService verifier, CancellationToken ct) =>
 {
+    string? tempFilePath = null;
     try
     {
-        var result = await verifier.VerifyClipDialogueAsync(id, scene, clip, ct: ct);
+        if (httpContext.Request.HasFormContentType)
+        {
+            var form = await httpContext.Request.ReadFormAsync(ct);
+            var file = form.Files.GetFile("video");
+            if (file is { Length: > 0 })
+            {
+                tempFilePath = Path.Combine(Path.GetTempPath(), $"dialogue_verify_{Guid.NewGuid():N}.mp4");
+                using (var stream = File.Create(tempFilePath))
+                {
+                    await file.CopyToAsync(stream, ct).ConfigureAwait(false);
+                }
+            }
+        }
+
+        var result = await verifier.VerifyClipDialogueAsync(id, scene, clip, overrideVideoPath: tempFilePath, ct: ct);
         return Results.Ok(new { ok = true, result });
     }
     catch (Exception ex)
     {
         return Results.BadRequest(new { ok = false, error = ex.Message });
+    }
+    finally
+    {
+        if (!string.IsNullOrWhiteSpace(tempFilePath) && File.Exists(tempFilePath))
+        {
+            try { File.Delete(tempFilePath); } catch { }
+        }
     }
 });
 

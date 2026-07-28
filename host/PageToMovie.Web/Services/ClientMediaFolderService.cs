@@ -652,6 +652,28 @@ public sealed class ClientMediaFolderService
         public string? Error { get; set; }
     }
 
+    public async Task<byte[]?> GetClipBytesAsync(int scene, int clip)
+    {
+        if (!IsConnected) return null;
+        try
+        {
+            var relPath = $"assets/video/scene_{scene:D2}_clip_{clip:D2}.mp4";
+            var res = await _js.InvokeAsync<JsBytesResult>("PageToMovieMedia.getBytesAsync", relPath);
+            return res is { Success: true, Bytes: not null } ? res.Bytes : null;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    private sealed class JsBytesResult
+    {
+        public bool Success { get; set; }
+        public byte[]? Bytes { get; set; }
+        public string? Error { get; set; }
+    }
+
     private sealed class JsBlobResult
     {
         public bool Success { get; set; }
