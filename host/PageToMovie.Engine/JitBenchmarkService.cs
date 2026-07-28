@@ -66,6 +66,7 @@ public sealed class JitBenchmarkService
         CancellationToken ct = default)
     {
         var concurrency = ActionConcurrencyAnalyzer.AnalyzeBeat(actionDescription, parenthetical);
+        double camOverhead = _ledger.GetOverheadSec(concurrency.CameraId, 1.6);
         string targetModel = modelId ?? "fal-ai/hunyuan-video";
 
         bool canRunLiveJit = _videoClient is not null && _videoClient.IsConfigured;
@@ -185,12 +186,12 @@ public sealed class JitBenchmarkService
                         VideoModelVersion: "v1",
                         EvaluatorModelId: "gemini-2.5-flash",
                         EvaluatorModelVersion: "v1",
-                        CameraCategory: "cam_push_in",
+                        CameraCategory: concurrency.CameraId,
                         ActionCategory: categoryId,
                         WordCount: 0,
-                        EstimatedDurationSec: 1.6 + measuredActionOverheadSec,
+                        EstimatedDurationSec: camOverhead + measuredActionOverheadSec,
                         ClipDurationSec: measuredTotalClipSec,
-                        MeasuredCamOverheadSec: 1.6,
+                        MeasuredCamOverheadSec: camOverhead,
                         MeasuredActionOverheadSec: measuredActionOverheadSec,
                         DialogueTruncated: false,
                         CreatedAt: DateTime.UtcNow.ToString("o"))).ConfigureAwait(false);
@@ -230,12 +231,12 @@ public sealed class JitBenchmarkService
                 VideoModelVersion: "v1",
                 EvaluatorModelId: "grok-4.5",
                 EvaluatorModelVersion: "v1",
-                CameraCategory: "cam_push_in",
+                CameraCategory: concurrency.CameraId,
                 ActionCategory: estimation.MatchCategoryId,
                 WordCount: 0,
-                EstimatedDurationSec: 1.6 + estimation.EstimatedOverheadSec,
-                ClipDurationSec: estimation.EstimatedOverheadSec + 1.0,
-                MeasuredCamOverheadSec: 1.6,
+                EstimatedDurationSec: camOverhead + estimation.EstimatedOverheadSec,
+                ClipDurationSec: estimation.EstimatedOverheadSec + camOverhead,
+                MeasuredCamOverheadSec: camOverhead,
                 MeasuredActionOverheadSec: estimation.EstimatedOverheadSec,
                 DialogueTruncated: false,
                 CreatedAt: DateTime.UtcNow.ToString("o"))).ConfigureAwait(false);
