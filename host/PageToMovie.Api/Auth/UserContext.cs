@@ -155,6 +155,7 @@ public sealed class DbUserApiKeyProvider : IUserApiKeyProvider
             "grok" => SupportedModelCatalog.XaiApiKeyEnv,
             "gemini" => SupportedModelCatalog.GoogleApiKeyEnv,
             "anthropic" => SupportedModelCatalog.AnthropicApiKeyEnv,
+            "fal" => SupportedModelCatalog.FalApiKeyEnv,
             _ => null,
         };
         if (processEnv is null) return null;

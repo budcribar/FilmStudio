@@ -216,6 +216,11 @@ else
         c.BaseAddress = new Uri(GeminiVideoClient.ApiBase + "/");
         c.Timeout = TimeSpan.FromMinutes(15);
     });
+    builder.Services.AddHttpClient<FalVideoClient>(c =>
+    {
+        c.BaseAddress = new Uri(FalVideoClient.ApiBase.TrimEnd('/') + "/");
+        c.Timeout = TimeSpan.FromMinutes(15);
+    });
     builder.Services.AddHttpClient<GrokImageClient>(c =>
     {
         c.BaseAddress = new Uri(GrokImageClient.ApiBase + "/");

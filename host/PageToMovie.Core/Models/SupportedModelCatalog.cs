@@ -32,6 +32,10 @@ public enum ModelProviderFamily
     /// MultiProviderVisionClient for frame review. No image generation API; OCR/cast classify stay Grok-only.
     /// </summary>
     Anthropic = 2,
+    /// <summary>
+    /// Fal.ai (<c>FAL_KEY</c>) — serverless open-source video/image models (HunyuanVideo).
+    /// </summary>
+    Fal = 3,
 }
 
 /// <summary>
@@ -140,9 +144,33 @@ public static class SupportedModelCatalog
     public const string AnthropicApiBase = "https://api.anthropic.com/v1";
     public const string AnthropicApiKeyEnv = "ANTHROPIC_API_KEY";
 
+    /// <summary>
+    /// Fal.ai serverless GPU platform base URL.
+    /// </summary>
+    public const string FalApiBase = "https://queue.fal.run";
+    public const string FalApiKeyEnv = "FAL_KEY";
+
     private static readonly SupportedModelEntry[] All =
     [
         // ── Video ──────────────────────────────────────────────────────────
+        new()
+        {
+            Id = "hunyuan-video",
+            DisplayName = "HunyuanVideo (Fal.ai)",
+            Capability = ModelCapability.Video,
+            Provider = ModelProviderFamily.Fal,
+            ApiBase = FalApiBase,
+            EndpointPath = "fal-ai/hunyuan-video",
+            RequiredEnvKeys = [FalApiKeyEnv],
+            VideoCostPerSecondByResolution = new Dictionary<string, double>
+            {
+                ["720p"] = 0.005,
+                ["1080p"] = 0.005,
+            },
+            SupportsVideoContinue = true,
+            SupportsReferenceImages = true,
+            Notes = "Open-weights 13B DiT video generation model hosted on Fal.ai serverless GPUs (~$0.025 per 5s clip).",
+        },
         new()
         {
             Id = "grok-imagine-video",

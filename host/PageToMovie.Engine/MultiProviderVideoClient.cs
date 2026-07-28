@@ -16,18 +16,21 @@ public sealed class MultiProviderVideoClient : IVideoClient
 {
     private const string GrokPrefix = "grok:";
     private const string GeminiPrefix = "gemini:";
+    private const string FalPrefix = "fal:";
 
     private readonly GrokVideoClient _grok;
     private readonly GeminiVideoClient _gemini;
+    private readonly FalVideoClient _fal;
 
-    public MultiProviderVideoClient(GrokVideoClient grok, GeminiVideoClient gemini)
+    public MultiProviderVideoClient(GrokVideoClient grok, GeminiVideoClient gemini, FalVideoClient fal)
     {
         _grok = grok;
         _gemini = gemini;
+        _fal = fal;
     }
 
     /// <summary>True when at least one provider has an API key configured.</summary>
-    public bool IsConfigured => _grok.IsConfigured || _gemini.IsConfigured;
+    public bool IsConfigured => _grok.IsConfigured || _gemini.IsConfigured || _fal.IsConfigured;
 
     public async Task<string> SubmitGenerationAsync(
         string prompt,
@@ -40,6 +43,14 @@ public sealed class MultiProviderVideoClient : IVideoClient
         string? continueFromVideoPath = null)
     {
         var provider = SupportedModelCatalog.ResolveOrDefault(model, ModelCapability.Video).Provider;
+        if (provider == ModelProviderFamily.Fal)
+        {
+            var falId = await _fal.SubmitGenerationAsync(
+                prompt, durationSeconds, resolution, model, ct,
+                referenceImagePaths, startFrameImagePath, continueFromVideoPath).ConfigureAwait(false);
+            return FalPrefix + falId;
+        }
+
         if (provider == ModelProviderFamily.Google)
         {
             var id = await _gemini.SubmitGenerationAsync(
@@ -62,26 +73,22 @@ public sealed class MultiProviderVideoClient : IVideoClient
 
     public Task DownloadToFileAsync(string url, string destPath, CancellationToken ct)
     {
-        // Route by URL host — never fall back to the other provider on download failure
-        // (wrong auth/host obscures the real error). Gemini downloads need the Google API key;
-        // Grok media URLs are typically signed GETs without swapping auth stacks.
         var client = ResolveDownloadClient(url);
         return client.DownloadToFileAsync(url, destPath, ct);
     }
 
-    /// <summary>
-    /// Pick download client from media URL host. Unknown hosts: Grok if configured, else Gemini.
-    /// No cross-provider retry.
-    /// </summary>
     public IVideoClient ResolveDownloadClient(string url)
     {
         var inferred = InferProviderFromDownloadUrl(url);
+        if (inferred == ModelProviderFamily.Fal)
+            return _fal;
         if (inferred == ModelProviderFamily.Google)
             return _gemini;
         if (inferred == ModelProviderFamily.Xai)
             return _grok;
 
-        // CDN / opaque URL: prefer whichever client is configured (single attempt).
+        if (_fal.IsConfigured)
+            return _fal;
         if (_grok.IsConfigured)
             return _grok;
         if (_gemini.IsConfigured)
@@ -89,10 +96,6 @@ public sealed class MultiProviderVideoClient : IVideoClient
         return _grok;
     }
 
-    /// <summary>
-    /// Map absolute media URL host → provider. Null when the host is not recognized
-    /// (public so tests can cover routing without a full HTTP stack).
-    /// </summary>
     public static ModelProviderFamily? InferProviderFromDownloadUrl(string? url)
     {
         if (string.IsNullOrWhiteSpace(url))
@@ -101,6 +104,11 @@ public sealed class MultiProviderVideoClient : IVideoClient
             return null;
 
         var host = uri.Host;
+        if (host.Contains("fal.ai", StringComparison.OrdinalIgnoreCase) ||
+            host.Contains("fal.run", StringComparison.OrdinalIgnoreCase) ||
+            host.Contains("fal.media", StringComparison.OrdinalIgnoreCase))
+            return ModelProviderFamily.Fal;
+
         if (host.Contains("googleapis", StringComparison.OrdinalIgnoreCase) ||
             host.Contains("googleusercontent", StringComparison.OrdinalIgnoreCase) ||
             host.Equals("generativelanguage.googleapis.com", StringComparison.OrdinalIgnoreCase) ||
@@ -120,17 +128,18 @@ public sealed class MultiProviderVideoClient : IVideoClient
     private (IVideoClient Client, string Id) Resolve(string requestId)
     {
         var (provider, id) = ParseTaggedRequestId(requestId);
-        return provider == ModelProviderFamily.Google ? (_gemini, id) : (_grok, id);
+        return provider switch
+        {
+            ModelProviderFamily.Fal => (_fal, id),
+            ModelProviderFamily.Google => (_gemini, id),
+            _ => (_grok, id),
+        };
     }
 
-    /// <summary>
-    /// Splits a dispatcher-tagged request id back into (provider, original id). Untagged ids
-    /// (e.g. held by a caller from before this dispatcher existed) are treated as Grok's, since
-    /// Grok ids never contained a colon prefix. Public so tests can exercise the tagging
-    /// round-trip without constructing the full client graph.
-    /// </summary>
     public static (ModelProviderFamily Provider, string Id) ParseTaggedRequestId(string requestId)
     {
+        if (requestId.StartsWith(FalPrefix, StringComparison.Ordinal))
+            return (ModelProviderFamily.Fal, requestId[FalPrefix.Length..]);
         if (requestId.StartsWith(GeminiPrefix, StringComparison.Ordinal))
             return (ModelProviderFamily.Google, requestId[GeminiPrefix.Length..]);
         if (requestId.StartsWith(GrokPrefix, StringComparison.Ordinal))
