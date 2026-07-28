@@ -122,6 +122,7 @@ public sealed class SupportedModelEntry
     {
         ModelProviderFamily.Google => "gemini",
         ModelProviderFamily.Anthropic => "anthropic",
+        ModelProviderFamily.Fal => "fal",
         _ => "grok",
     };
 }
@@ -145,6 +146,20 @@ public static class SupportedModelCatalog
     [
         new()
         {
+            Id = "grok-imagine-video",
+            DisplayName = "Grok Imagine Video",
+            Capability = ModelCapability.Video,
+            Provider = ModelProviderFamily.Xai,
+            ApiBase = XaiApiBase,
+            EndpointPath = "videos/generations",
+            RequiredEnvKeys = [XaiApiKeyEnv],
+            VideoCostPerSecondByResolution = new Dictionary<string, double> { ["480p"] = 0.05, ["720p"] = 0.07, ["1080p"] = 0.25 },
+            SupportsVideoContinue = true,
+            SupportsReferenceImages = true,
+            Notes = "Also uses videos/extensions for clip continue.",
+        },
+        new()
+        {
             Id = "hunyuan-video",
             DisplayName = "HunyuanVideo (Fal.ai)",
             Capability = ModelCapability.Video,
@@ -159,19 +174,6 @@ public static class SupportedModelCatalog
         },
         new()
         {
-            Id = "grok-imagine-video",
-            DisplayName = "Grok Imagine Video",
-            Capability = ModelCapability.Video,
-            Provider = ModelProviderFamily.Xai,
-            ApiBase = XaiApiBase,
-            EndpointPath = "videos/generations",
-            RequiredEnvKeys = [XaiApiKeyEnv],
-            VideoCostPerSecondByResolution = new Dictionary<string, double> { ["480p"] = 0.05, ["720p"] = 0.07, ["1080p"] = 0.25 },
-            SupportsVideoContinue = true,
-            SupportsReferenceImages = true,
-        },
-        new()
-        {
             Id = "veo-3.1",
             DisplayName = "Google Veo 3.1",
             Capability = ModelCapability.Video,
@@ -182,6 +184,7 @@ public static class SupportedModelCatalog
             VideoCostPerSecondByResolution = new Dictionary<string, double> { ["720p"] = 0.40, ["1080p"] = 0.40 },
             SupportsVideoContinue = false,
             SupportsReferenceImages = false,
+            Notes = "Wired via GeminiVideoClient (text/image-to-video only).",
         },
         new()
         {
@@ -215,6 +218,7 @@ public static class SupportedModelCatalog
             EndpointPath = "models/gemini-3-pro-image:generateContent",
             RequiredEnvKeys = [GoogleApiKeyEnv],
             ImageCostPerImage = 0.134,
+            Notes = "Wired via GeminiImageClient. Supports up to 14 reference images.",
         },
         new()
         {
@@ -226,6 +230,7 @@ public static class SupportedModelCatalog
             EndpointPath = "fal-ai/flux/dev",
             RequiredEnvKeys = [FalApiKeyEnv],
             ImageCostPerImage = 0.025,
+            Notes = "Open-source Flux.1 Dev model via Fal.ai serverless GPU (~$0.025/image).",
         },
         new()
         {
@@ -237,6 +242,7 @@ public static class SupportedModelCatalog
             EndpointPath = "fal-ai/flux/schnell",
             RequiredEnvKeys = [FalApiKeyEnv],
             ImageCostPerImage = 0.003,
+            Notes = "Ultra-fast open-source Flux.1 Schnell model via Fal.ai (~$0.003/image).",
         },
         new()
         {
@@ -250,6 +256,7 @@ public static class SupportedModelCatalog
             MaxInputTokens = 500_000,
             InputCostPerMillionTokens = 2.00,
             OutputCostPerMillionTokens = 6.00,
+            Notes = "Stage planning, cast scrub, screenplay helpers.",
         },
         new()
         {
@@ -276,6 +283,7 @@ public static class SupportedModelCatalog
             MaxInputTokens = 1_000_000,
             InputCostPerMillionTokens = 2.00,
             OutputCostPerMillionTokens = 10.00,
+            Notes = "Wired via AnthropicChatClient.",
         },
         new()
         {
@@ -290,6 +298,7 @@ public static class SupportedModelCatalog
             InputCostPerMillionTokens = 2.00,
             OutputCostPerMillionTokens = 12.00,
             SupportsVideoReview = true,
+            Notes = "Wired via GeminiChatClient. Supports Native Multimodal MP4 Video Review.",
         },
         new()
         {
@@ -303,6 +312,7 @@ public static class SupportedModelCatalog
             MaxInputTokens = 500_000,
             InputCostPerMillionTokens = 2.00,
             OutputCostPerMillionTokens = 6.00,
+            Notes = "GrokVisionClient: book-page OCR, cast-on-image classify, and multi-image frame review.",
         },
         new()
         {
@@ -316,6 +326,7 @@ public static class SupportedModelCatalog
             MaxInputTokens = 1_000_000,
             InputCostPerMillionTokens = 2.00,
             OutputCostPerMillionTokens = 10.00,
+            Notes = "Wired for clip/frame review via MultiProviderVisionClient (OCR/cast-classify stay Grok-only).",
         },
         new()
         {
@@ -330,6 +341,7 @@ public static class SupportedModelCatalog
             InputCostPerMillionTokens = 2.00,
             OutputCostPerMillionTokens = 12.00,
             SupportsVideoReview = true,
+            Notes = "Wired for clip/frame review (CompleteWithImagesAsync) via MultiProviderVisionClient (OCR/cast-classify stay Grok-only).",
         },
     ];
 

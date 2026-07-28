@@ -31,11 +31,11 @@ public class UserDatabaseServiceTests
         Assert.Equal(originalKey, decrypted);
 
         var settings = await service.GetUserSettingsDtoAsync(testUserId);
-        Assert.True(settings.HasXaiApiKey);
-        Assert.NotNull(settings.MaskedXaiApiKey);
-        Assert.Contains("...", settings.MaskedXaiApiKey);
-        Assert.DoesNotContain("998877665544332211", settings.MaskedXaiApiKey);
-        Assert.Contains(settings.Providers, p => p.ProviderId == "grok" && p.HasPersonalKey);
+        var grokStatus = Assert.Single(settings.Providers, p => p.ProviderId == "grok");
+        Assert.True(grokStatus.HasPersonalKey);
+        Assert.NotNull(grokStatus.MaskedPersonalKey);
+        Assert.Contains("...", grokStatus.MaskedPersonalKey);
+        Assert.DoesNotContain("998877665544332211", grokStatus.MaskedPersonalKey);
 
         try { Directory.Delete(tmp, true); } catch { }
     }
@@ -77,11 +77,10 @@ public class UserDatabaseServiceTests
         Assert.Equal("xai-key-aaaa1111bbbb", await service.GetDecryptedProviderApiKeyAsync(userId, "grok"));
 
         var settings = await service.GetUserSettingsDtoAsync(userId);
-        Assert.True(settings.HasXaiApiKey);
-        Assert.False(settings.HasGeminiApiKey);
-        Assert.True(settings.HasAnthropicApiKey);
-        Assert.Equal(3, settings.Providers.Count);
-        Assert.Contains(settings.Providers, p => p.ProviderId == "anthropic" && !p.SupportsVideo);
+        Assert.Contains(settings.Providers, p => p.ProviderId == "grok" && p.HasPersonalKey);
+        Assert.Contains(settings.Providers, p => p.ProviderId == "gemini" && !p.HasPersonalKey);
+        Assert.Contains(settings.Providers, p => p.ProviderId == "anthropic" && p.HasPersonalKey);
+        Assert.True(settings.Providers.Count >= 4);
 
         try { Directory.Delete(tmp, true); } catch { }
     }

@@ -5,6 +5,11 @@ namespace PageToMovie.Tests;
 
 public class SupportedModelCatalogTests
 {
+    public SupportedModelCatalogTests()
+    {
+        SupportedModelCatalog.ReloadCatalog();
+    }
+
     [Fact]
     public void Video_default_is_grok_imagine_video()
     {

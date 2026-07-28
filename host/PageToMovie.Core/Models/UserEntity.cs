@@ -41,16 +41,16 @@ public class UserEntity
 /// </summary>
 public sealed class ProviderKeyStatusDto
 {
-    /// <summary>Stable id: <c>grok</c>, <c>gemini</c>, <c>anthropic</c>.</summary>
+    /// <summary>Stable provider id: e.g. <c>grok</c>, <c>gemini</c>, <c>anthropic</c>, <c>fal</c>, <c>replicate</c>.</summary>
     public string ProviderId { get; set; } = "";
 
-    /// <summary>UI label, e.g. "xAI / Grok".</summary>
+    /// <summary>UI label, e.g. "xAI / Grok", "Fal.ai", "Replicate".</summary>
     public string DisplayName { get; set; } = "";
 
-    /// <summary>Family enum name for tooling (<c>Xai</c>, <c>Google</c>, <c>Anthropic</c>).</summary>
+    /// <summary>Family name for tooling (<c>Xai</c>, <c>Google</c>, <c>Anthropic</c>, <c>Fal</c>).</summary>
     public string Family { get; set; } = "";
 
-    /// <summary>Personal (per-user, encrypted) key is saved.</summary>
+    /// <summary>Personal (per-user, encrypted) key is saved in SQLite.</summary>
     public bool HasPersonalKey { get; set; }
 
     /// <summary>Masked personal key when present.</summary>
@@ -65,7 +65,7 @@ public sealed class ProviderKeyStatusDto
     /// <summary>Where the active key comes from: personal, server, or none.</summary>
     public string ActiveSource { get; set; } = "none";
 
-    /// <summary>Human-readable capabilities, e.g. "Video, Image, Chat, Vision".</summary>
+    /// <summary>Human-readable capabilities, e.g. "Video Gen, Image Gen, Script &amp; Planning".</summary>
     public string CapabilitiesSummary { get; set; } = "";
 
     public bool SupportsVideo { get; set; }
@@ -91,31 +91,37 @@ public class UserSettingsDto
     public string UserId { get; set; } = "";
     public string Username { get; set; } = "";
 
-    /// <summary>Back-compat: personal xAI / Grok key.</summary>
-    public bool HasXaiApiKey { get; set; }
-    public string? MaskedXaiApiKey { get; set; }
-
-    public bool HasGeminiApiKey { get; set; }
-    public string? MaskedGeminiApiKey { get; set; }
-
-    public bool HasAnthropicApiKey { get; set; }
-    public string? MaskedAnthropicApiKey { get; set; }
-
-    public bool HasFalApiKey { get; set; }
-    public string? MaskedFalApiKey { get; set; }
-
-    /// <summary>Per-provider status for the Configuration UI.</summary>
+    /// <summary>Per-provider status for the Configuration UI (dynamically built from catalog).</summary>
     public List<ProviderKeyStatusDto> Providers { get; set; } = new();
 }
 
 /// <summary>
-/// Request payload for updating user settings. Null fields leave existing keys unchanged;
-/// empty string clears that provider's personal key.
+/// Request payload for updating user settings. Supports dynamic provider API keys.
 /// </summary>
 public class UpdateUserSettingsRequest
 {
-    public string? XaiApiKey { get; set; }
-    public string? GeminiApiKey { get; set; }
-    public string? AnthropicApiKey { get; set; }
-    public string? FalApiKey { get; set; }
+    /// <summary>Dynamic map of provider ID to API key value (empty string to remove key, null to leave unchanged).</summary>
+    public System.Collections.Generic.Dictionary<string, string?> ProviderApiKeys { get; set; } = new(StringComparer.OrdinalIgnoreCase);
+
+    // Helpers for legacy callers
+    public string? XaiApiKey
+    {
+        get => ProviderApiKeys.TryGetValue("grok", out var v) ? v : null;
+        set { if (value is not null) ProviderApiKeys["grok"] = value; }
+    }
+    public string? GeminiApiKey
+    {
+        get => ProviderApiKeys.TryGetValue("gemini", out var v) ? v : null;
+        set { if (value is not null) ProviderApiKeys["gemini"] = value; }
+    }
+    public string? AnthropicApiKey
+    {
+        get => ProviderApiKeys.TryGetValue("anthropic", out var v) ? v : null;
+        set { if (value is not null) ProviderApiKeys["anthropic"] = value; }
+    }
+    public string? FalApiKey
+    {
+        get => ProviderApiKeys.TryGetValue("fal", out var v) ? v : null;
+        set { if (value is not null) ProviderApiKeys["fal"] = value; }
+    }
 }

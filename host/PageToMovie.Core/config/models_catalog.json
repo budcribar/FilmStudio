@@ -1,23 +1,5 @@
 [
   {
-    "id": "hunyuan-video",
-    "displayName": "HunyuanVideo (Fal.ai)",
-    "capability": "Video",
-    "provider": "Fal",
-    "apiBase": "https://queue.fal.run",
-    "endpointPath": "fal-ai/hunyuan-video",
-    "requiredEnvKeys": ["FAL_KEY"],
-    "enabled": true,
-    "supportsVideoContinue": true,
-    "supportsReferenceImages": true,
-    "supportsVideoReview": false,
-    "videoCostPerSecondByResolution": {
-      "720p": 0.005,
-      "1080p": 0.005
-    },
-    "notes": "Open-weights 13B DiT video generation model hosted on Fal.ai serverless GPUs (~$0.025 per 5s clip)."
-  },
-  {
     "id": "grok-imagine-video",
     "displayName": "Grok Imagine Video",
     "capability": "Video",
@@ -35,6 +17,24 @@
       "1080p": 0.25
     },
     "notes": "Also uses videos/extensions for clip continue."
+  },
+  {
+    "id": "hunyuan-video",
+    "displayName": "HunyuanVideo (Fal.ai)",
+    "capability": "Video",
+    "provider": "Fal",
+    "apiBase": "https://queue.fal.run",
+    "endpointPath": "fal-ai/hunyuan-video",
+    "requiredEnvKeys": ["FAL_KEY"],
+    "enabled": true,
+    "supportsVideoContinue": true,
+    "supportsReferenceImages": true,
+    "supportsVideoReview": false,
+    "videoCostPerSecondByResolution": {
+      "720p": 0.005,
+      "1080p": 0.005
+    },
+    "notes": "Open-weights 13B DiT video generation model hosted on Fal.ai serverless GPUs (~$0.025 per 5s clip)."
   },
   {
     "id": "veo-3.1",
@@ -96,7 +96,7 @@
     "supportsReferenceImages": true,
     "supportsVideoReview": false,
     "imageCostPerImage": 0.134,
-    "notes": "Supports up to 14 reference images."
+    "notes": "Wired via GeminiImageClient. Supports up to 14 reference images."
   },
   {
     "id": "fal-ai/flux/dev",
@@ -227,7 +227,7 @@
     "supportsVideoContinue": false,
     "supportsReferenceImages": false,
     "supportsVideoReview": false,
-    "notes": "Wired for clip/frame review via MultiProviderVisionClient."
+    "notes": "Wired for clip/frame review via MultiProviderVisionClient (OCR/cast-classify stay Grok-only)."
   },
   {
     "id": "gemini-3-pro",
@@ -244,6 +244,6 @@
     "supportsVideoContinue": false,
     "supportsReferenceImages": false,
     "supportsVideoReview": true,
-    "notes": "Wired for clip/frame review (CompleteWithImagesAsync) via MultiProviderVisionClient."
+    "notes": "Wired for clip/frame review (CompleteWithImagesAsync) via MultiProviderVisionClient (OCR/cast-classify stay Grok-only)."
   }
 ]

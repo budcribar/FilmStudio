@@ -139,6 +139,20 @@ public class UserDatabaseService
                     cmd.ExecuteNonQuery();
                 }
 
+                using (var cmd = conn.CreateCommand())
+                {
+                    cmd.CommandText = @"
+                        CREATE TABLE IF NOT EXISTS user_api_keys (
+                            user_id TEXT NOT NULL,
+                            provider_id TEXT NOT NULL,
+                            encrypted_api_key TEXT NOT NULL,
+                            updated_at TEXT NOT NULL,
+                            PRIMARY KEY (user_id, provider_id)
+                        );
+                    ";
+                    cmd.ExecuteNonQuery();
+                }
+
                 // Database Schema Migrations & Version Tracking (PRAGMA user_version)
                 using (var vCmd = conn.CreateCommand())
                 {
@@ -156,6 +170,33 @@ public class UserDatabaseService
                         setVer.CommandText = "PRAGMA user_version = 2;";
                         setVer.ExecuteNonQuery();
                         _logger.LogInformation("Migrated SQLite schema to user_version 2 (added provider key columns)");
+                    }
+
+                    if (curVer < 3)
+                    {
+                        // Migration v2 -> v3: Auto-copy legacy column keys into unified user_api_keys table
+                        using (var copyCmd = conn.CreateCommand())
+                        {
+                            copyCmd.CommandText = @"
+                                INSERT OR IGNORE INTO user_api_keys (user_id, provider_id, encrypted_api_key, updated_at)
+                                SELECT user_id, 'grok', encrypted_xai_api_key, datetime('now') FROM users WHERE encrypted_xai_api_key IS NOT NULL AND encrypted_xai_api_key != '';
+                                
+                                INSERT OR IGNORE INTO user_api_keys (user_id, provider_id, encrypted_api_key, updated_at)
+                                SELECT user_id, 'gemini', encrypted_gemini_api_key, datetime('now') FROM users WHERE encrypted_gemini_api_key IS NOT NULL AND encrypted_gemini_api_key != '';
+
+                                INSERT OR IGNORE INTO user_api_keys (user_id, provider_id, encrypted_api_key, updated_at)
+                                SELECT user_id, 'anthropic', encrypted_anthropic_api_key, datetime('now') FROM users WHERE encrypted_anthropic_api_key IS NOT NULL AND encrypted_anthropic_api_key != '';
+
+                                INSERT OR IGNORE INTO user_api_keys (user_id, provider_id, encrypted_api_key, updated_at)
+                                SELECT user_id, 'fal', encrypted_fal_api_key, datetime('now') FROM users WHERE encrypted_fal_api_key IS NOT NULL AND encrypted_fal_api_key != '';
+                            ";
+                            copyCmd.ExecuteNonQuery();
+                        }
+
+                        using var setVer3 = conn.CreateCommand();
+                        setVer3.CommandText = "PRAGMA user_version = 3;";
+                        setVer3.ExecuteNonQuery();
+                        _logger.LogInformation("Migrated SQLite schema to user_version 3 (unified dynamic user_api_keys table)");
                     }
                 }
 
@@ -385,56 +426,54 @@ public class UserDatabaseService
         SaveProviderApiKeyAsync(userId, "grok", apiKey, ct);
 
     /// <summary>
-    /// Saves a personal provider key. Empty/whitespace clears the stored key.
-    /// Provider: grok/xai, gemini/google, anthropic/claude.
+    /// Saves a personal provider key dynamically into user_api_keys. Empty/whitespace clears the stored key.
+    /// Provider: grok, gemini, anthropic, fal, replicate, or any arbitrary provider ID.
     /// </summary>
     public async Task SaveProviderApiKeyAsync(string userId, string providerId, string? apiKey, CancellationToken ct = default)
     {
-        if (string.IsNullOrWhiteSpace(userId)) return;
-
-        var column = ProviderColumn(providerId);
-        if (column is null) return;
-
-        var encrypted = string.IsNullOrWhiteSpace(apiKey) ? null : EncryptApiKey(apiKey.Trim());
+        if (string.IsNullOrWhiteSpace(userId) || string.IsNullOrWhiteSpace(providerId)) return;
+        var normId = NormalizeProvider(providerId);
 
         using var conn = new SqliteConnection(ConnectionString);
         await conn.OpenAsync(ct).ConfigureAwait(false);
 
-        using var cmd = conn.CreateCommand();
-        cmd.CommandText = $"UPDATE users SET {column} = @key WHERE user_id = @id";
-        cmd.Parameters.AddWithValue("@key", (object?)encrypted ?? DBNull.Value);
-        cmd.Parameters.AddWithValue("@id", userId.Trim());
-
-        var rows = await cmd.ExecuteNonQueryAsync(ct).ConfigureAwait(false);
-        if (rows == 0)
+        if (string.IsNullOrWhiteSpace(apiKey))
         {
-            var user = new UserEntity
-            {
-                UserId = userId.Trim(),
-                Username = userId.Trim(),
-                PasswordHash = HashPassword("dev-placeholder"),
-                Role = "User",
-                CreatedAt = DateTime.UtcNow,
-            };
-            SetEncryptedOnEntity(user, providerId, encrypted);
-            await InsertUserAsync(user, ct).ConfigureAwait(false);
+            using var delCmd = conn.CreateCommand();
+            delCmd.CommandText = "DELETE FROM user_api_keys WHERE user_id = @userId AND provider_id = @providerId";
+            delCmd.Parameters.AddWithValue("@userId", userId.Trim());
+            delCmd.Parameters.AddWithValue("@providerId", normId);
+            await delCmd.ExecuteNonQueryAsync(ct).ConfigureAwait(false);
+            return;
         }
+
+        var encrypted = EncryptApiKey(apiKey.Trim());
+        using var upsertCmd = conn.CreateCommand();
+        upsertCmd.CommandText = @"
+            INSERT INTO user_api_keys (user_id, provider_id, encrypted_api_key, updated_at)
+            VALUES (@userId, @providerId, @key, @updated)
+            ON CONFLICT(user_id, provider_id) DO UPDATE SET
+                encrypted_api_key = excluded.encrypted_api_key,
+                updated_at = excluded.updated_at;";
+        upsertCmd.Parameters.AddWithValue("@userId", userId.Trim());
+        upsertCmd.Parameters.AddWithValue("@providerId", normId);
+        upsertCmd.Parameters.AddWithValue("@key", encrypted);
+        upsertCmd.Parameters.AddWithValue("@updated", DateTime.UtcNow.ToString("o"));
+        await upsertCmd.ExecuteNonQueryAsync(ct).ConfigureAwait(false);
     }
 
     /// <summary>
-    /// Applies non-null fields from the request. Empty string clears that personal key;
-    /// null leaves the existing key unchanged.
+    /// Applies provider API key updates dynamically from the request.
     /// </summary>
     public async Task UpdateUserSettingsAsync(string userId, UpdateUserSettingsRequest req, CancellationToken ct = default)
     {
-        if (req.XaiApiKey is not null)
-            await SaveProviderApiKeyAsync(userId, "grok", req.XaiApiKey, ct).ConfigureAwait(false);
-        if (req.GeminiApiKey is not null)
-            await SaveProviderApiKeyAsync(userId, "gemini", req.GeminiApiKey, ct).ConfigureAwait(false);
-        if (req.AnthropicApiKey is not null)
-            await SaveProviderApiKeyAsync(userId, "anthropic", req.AnthropicApiKey, ct).ConfigureAwait(false);
-        if (req.FalApiKey is not null)
-            await SaveProviderApiKeyAsync(userId, "fal", req.FalApiKey, ct).ConfigureAwait(false);
+        if (req.ProviderApiKeys is { Count: > 0 })
+        {
+            foreach (var kvp in req.ProviderApiKeys)
+            {
+                await SaveProviderApiKeyAsync(userId, kvp.Key, kvp.Value, ct).ConfigureAwait(false);
+            }
+        }
     }
 
     public async Task<string?> GetDecryptedXaiApiKeyAsync(string userId, CancellationToken ct = default) =>
@@ -442,20 +481,42 @@ public class UserDatabaseService
 
     public async Task<string?> GetDecryptedProviderApiKeyAsync(string userId, string providerId, CancellationToken ct = default)
     {
-        var user = await GetUserByIdAsync(userId, ct).ConfigureAwait(false);
-        if (user is null) return null;
+        if (string.IsNullOrWhiteSpace(userId) || string.IsNullOrWhiteSpace(providerId)) return null;
+        var normId = NormalizeProvider(providerId);
 
-        var encrypted = GetEncryptedFromEntity(user, providerId);
-        if (string.IsNullOrWhiteSpace(encrypted)) return null;
-        try
+        using var conn = new SqliteConnection(ConnectionString);
+        await conn.OpenAsync(ct).ConfigureAwait(false);
+
+        using var cmd = conn.CreateCommand();
+        cmd.CommandText = "SELECT encrypted_api_key FROM user_api_keys WHERE user_id = @userId AND provider_id = @providerId";
+        cmd.Parameters.AddWithValue("@userId", userId.Trim());
+        cmd.Parameters.AddWithValue("@providerId", normId);
+
+        var result = await cmd.ExecuteScalarAsync(ct).ConfigureAwait(false);
+        if (result is string encrypted && !string.IsNullOrWhiteSpace(encrypted))
         {
-            return DecryptApiKey(encrypted);
+            try
+            {
+                return DecryptApiKey(encrypted);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "GetDecryptedProviderApiKeyAsync failed for {UserId}/{Provider}", userId, providerId);
+            }
         }
-        catch (Exception ex)
+
+        // Fallback check against legacy columns for backward compatibility if user_api_keys table row was deleted
+        var user = await GetUserByIdAsync(userId, ct).ConfigureAwait(false);
+        if (user is not null)
         {
-            _logger.LogWarning(ex, "GetDecryptedProviderApiKeyAsync failed for {UserId}/{Provider}", userId, providerId);
-            return null;
+            var legacyEncrypted = GetEncryptedFromEntity(user, providerId);
+            if (!string.IsNullOrWhiteSpace(legacyEncrypted))
+            {
+                try { return DecryptApiKey(legacyEncrypted); } catch { }
+            }
         }
+
+        return null;
     }
 
     public async Task<UserSettingsDto> GetUserSettingsDtoAsync(string userId, CancellationToken ct = default)
@@ -463,80 +524,82 @@ public class UserDatabaseService
         var user = await GetUserByIdAsync(userId, ct).ConfigureAwait(false);
         var username = user?.Username ?? userId;
 
-        var xaiPersonal = DecryptOptional(user?.EncryptedXaiApiKey);
-        var geminiPersonal = DecryptOptional(user?.EncryptedGeminiApiKey);
-        var anthropicPersonal = DecryptOptional(user?.EncryptedAnthropicApiKey);
-        var falPersonal = DecryptOptional(user?.EncryptedFalApiKey);
-
-        var xaiServer = EnvPresent(SupportedModelCatalog.XaiApiKeyEnv);
-        var geminiServer = EnvPresent(SupportedModelCatalog.GoogleApiKeyEnv);
-        var anthropicServer = EnvPresent(SupportedModelCatalog.AnthropicApiKeyEnv);
-        var falServer = EnvPresent(SupportedModelCatalog.FalApiKeyEnv);
-
-        var providers = new List<ProviderKeyStatusDto>
+        // Fetch all encrypted keys for this user from user_api_keys table
+        var personalKeys = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        using (var conn = new SqliteConnection(ConnectionString))
         {
-            BuildProviderStatus(
-                providerId: "grok",
-                displayName: "xAI / Grok",
-                family: "Xai",
-                personal: xaiPersonal,
-                hasServer: xaiServer,
-                supportsVideoGen: true,
-                supportsVideoReview: false,
-                supportsImageGen: true,
-                supportsScriptPlanning: true,
-                supportsImageVision: true,
-                notes: "Full generation & planning pipeline (Video Gen, Image Gen, Script Planning, Image Vision / OCR)."),
-            BuildProviderStatus(
-                providerId: "gemini",
-                displayName: "Google Gemini",
-                family: "Google",
-                personal: geminiPersonal,
-                hasServer: geminiServer,
-                supportsVideoGen: true,
-                supportsVideoReview: true,
-                supportsImageGen: true,
-                supportsScriptPlanning: true,
-                supportsImageVision: true,
-                notes: "Supports native Multimodal Video Review (inputs MP4 files directly for automated clip quality scoring) and Video Gen via Veo."),
-            BuildProviderStatus(
-                providerId: "fal",
-                displayName: "Fal.ai",
-                family: "Fal",
-                personal: falPersonal,
-                hasServer: falServer,
-                supportsVideoGen: true,
-                supportsVideoReview: false,
-                supportsImageGen: true,
-                supportsScriptPlanning: false,
-                supportsImageVision: false,
-                notes: "Serverless open-source video (HunyuanVideo ~$0.025/clip) and image (Flux.1 Dev / Schnell ~$0.003/img) generation."),
-            BuildProviderStatus(
-                providerId: "anthropic",
-                displayName: "Anthropic Claude",
-                family: "Anthropic",
-                personal: anthropicPersonal,
-                hasServer: anthropicServer,
-                supportsVideoGen: false,
-                supportsVideoReview: false,
-                supportsImageGen: false,
-                supportsScriptPlanning: true,
-                supportsImageVision: true,
-                notes: "Script & Shot Planning + Image Vision / OCR frame review."),
-        };
+            await conn.OpenAsync(ct).ConfigureAwait(false);
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText = "SELECT provider_id, encrypted_api_key FROM user_api_keys WHERE user_id = @userId";
+            cmd.Parameters.AddWithValue("@userId", userId.Trim());
+            using var reader = await cmd.ExecuteReaderAsync(ct).ConfigureAwait(false);
+            while (await reader.ReadAsync(ct).ConfigureAwait(false))
+            {
+                var pid = reader.GetString(0);
+                var enc = reader.GetString(1);
+                var plain = DecryptOptional(enc);
+                if (!string.IsNullOrWhiteSpace(plain))
+                {
+                    personalKeys[pid] = plain;
+                }
+            }
+        }
+
+        // Fallback for legacy columns if user_api_keys table hasn't populated them yet
+        if (!personalKeys.ContainsKey("grok") && DecryptOptional(user?.EncryptedXaiApiKey) is { } x) personalKeys["grok"] = x;
+        if (!personalKeys.ContainsKey("gemini") && DecryptOptional(user?.EncryptedGeminiApiKey) is { } g) personalKeys["gemini"] = g;
+        if (!personalKeys.ContainsKey("anthropic") && DecryptOptional(user?.EncryptedAnthropicApiKey) is { } a) personalKeys["anthropic"] = a;
+        if (!personalKeys.ContainsKey("fal") && DecryptOptional(user?.EncryptedFalApiKey) is { } f) personalKeys["fal"] = f;
+
+        // Dynamically discover all unique providers defined in SupportedModelCatalog (driven by models_catalog.json!)
+        var catalogEntries = SupportedModelCatalog.Entries;
+        var providerGroups = catalogEntries.GroupBy(e => NormalizeProvider(e.ProviderId));
+
+        var providers = new List<ProviderKeyStatusDto>();
+        foreach (var group in providerGroups)
+        {
+            var pId = group.Key;
+            var sample = group.First();
+            var familyName = sample.Provider.ToString();
+            var displayName = sample.Provider switch
+            {
+                ModelProviderFamily.Xai => "xAI / Grok",
+                ModelProviderFamily.Google => "Google Gemini",
+                ModelProviderFamily.Anthropic => "Anthropic Claude",
+                ModelProviderFamily.Fal => "Fal.ai",
+                _ => char.ToUpperInvariant(pId[0]) + pId[1..],
+            };
+
+            var requiredKeys = group.SelectMany(m => m.RequiredEnvKeys).Distinct().ToList();
+            var hasServer = requiredKeys.Any(EnvPresent);
+            personalKeys.TryGetValue(pId, out var personal);
+
+            var supportsVideoGen = group.Any(m => m.Capability == ModelCapability.Video && m.SupportsVideoContinue);
+            var supportsVideoReview = group.Any(m => m.SupportsVideoReview);
+            var supportsImageGen = group.Any(m => m.Capability == ModelCapability.Image);
+            var supportsScriptPlanning = group.Any(m => m.Capability == ModelCapability.Chat);
+            var supportsImageVision = group.Any(m => m.Capability == ModelCapability.Vision);
+
+            var notes = string.Join("; ", group.Select(m => m.Notes).Where(n => !string.IsNullOrWhiteSpace(n)).Distinct().Take(2));
+
+            providers.Add(BuildProviderStatus(
+                providerId: pId,
+                displayName: displayName,
+                family: familyName,
+                personal: personal,
+                hasServer: hasServer,
+                supportsVideoGen: supportsVideoGen,
+                supportsVideoReview: supportsVideoReview,
+                supportsImageGen: supportsImageGen,
+                supportsScriptPlanning: supportsScriptPlanning,
+                supportsImageVision: supportsImageVision,
+                notes: notes));
+        }
 
         return new UserSettingsDto
         {
             UserId = user?.UserId ?? userId,
             Username = username,
-            HasXaiApiKey = !string.IsNullOrWhiteSpace(xaiPersonal),
-            MaskedXaiApiKey = MaskKey(xaiPersonal),
-            HasGeminiApiKey = !string.IsNullOrWhiteSpace(geminiPersonal),
-            MaskedGeminiApiKey = MaskKey(geminiPersonal),
-            HasAnthropicApiKey = !string.IsNullOrWhiteSpace(anthropicPersonal),
-            MaskedAnthropicApiKey = MaskKey(anthropicPersonal),
-            HasFalApiKey = !string.IsNullOrWhiteSpace(falPersonal),
-            MaskedFalApiKey = MaskKey(falPersonal),
             Providers = providers,
         };
     }
