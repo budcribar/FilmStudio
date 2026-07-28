@@ -209,6 +209,9 @@ When debugging runtime behavior on the live Railway server across coding agent s
 ### 5. Navigation & Public UI Boundaries
 - **Logged-Out Navigation Isolation**: Public gallery visitors (`/demo`) must never see operator configuration or administration controls. Keep `/configuration` and admin routes strictly wrapped inside `@if (Session.IsLoggedIn)` in navigation components (`NavMenu.razor`).
 
+### 6. Unrestricted Creator Publishing & YouTube Quota Reliance
+- **Rely on YouTube Quota Management**: Do not block authenticated project owners or admins with artificial local daily publish limits (e.g. 2 demos per 24 hours). YouTube API quotas and Google platform rate limiters natively prevent video spamming. Server-side per-IP rate limiting is deferred to post-launch backlog.
+
 ---
 
 *Last updated: 2026-07-27 — product north star; auto-run long-term; general solutions; UI copy principles; ephemeral migration cleanup; server diagnostics; platform architecture & pipeline integrity rules.*
