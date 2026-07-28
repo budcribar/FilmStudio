@@ -58,7 +58,7 @@ public class JitBenchmarkServiceTests
 
         public Task<CharacterPageClassification> ClassifyCharactersOnImageAsync(string imagePath, int page, IReadOnlyList<CharacterClassifyHint> cast, string model = "grok-4.5", CancellationToken ct = default)
         {
-            return Task.FromResult(new CharacterPageClassification(page, new List<CharacterPageMatch>()));
+            return Task.FromResult(new CharacterPageClassification { Page = page });
         }
     }
 
