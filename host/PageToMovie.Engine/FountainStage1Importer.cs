@@ -510,6 +510,43 @@ public static class FountainStage1Importer
         return (string.Join(", ", ambient), string.Join(", ", sfx));
     }
 
+    private static readonly Regex HeadingPrefixRe = new(
+        @"^(INT\.?/EXT|INT/EXT|I/E|INT\.?|EXT\.?|EST\.?)\s*",
+        RegexOptions.IgnoreCase | RegexOptions.Compiled);
+    private static readonly Regex DashSplitRe = new(@"\s+[-–]\s+", RegexOptions.Compiled);
+    private static readonly Regex WhitespaceCollapseRe = new(@"\s+", RegexOptions.Compiled);
+    private static readonly Regex VagueLocationRe = new(
+        @"^(VARIOUS|MULTIPLE|SEVERAL|ELSEWHERE|DIFFERENT|AROUND|THROUGHOUT|"
+        + @"MULTIPLE\s+LOCATIONS?|VARIOUS\s+LOCATIONS?|DIFFERENT\s+ROOMS?|"
+        + @"DIFFERENT\s+PLACES?|SEVERAL\s+ROOMS?|VARIOUS\s+ROOMS?|"
+        + @"AROUND\s+THE\s+HOUSE|THROUGHOUT\s+THE\s+HOUSE)$",
+        RegexOptions.IgnoreCase | RegexOptions.Compiled);
+    private static readonly Regex VagueFillerWordsRe = new(
+        @"\b(VARIOUS|MULTIPLE|SEVERAL|ELSEWHERE|DIFFERENT|LOCATIONS?|ROOMS?|PLACES?|AREAS?)\b",
+        RegexOptions.IgnoreCase | RegexOptions.Compiled);
+    private static readonly Regex PunctuationCleanRe = new(@"[\s\-/&,]+", RegexOptions.Compiled);
+    private static readonly Regex TransitionEndingRe = new(
+        @"^(FADE\s+IN|FADE\s+OUT|FADE\s+TO\s+BLACK|FADE\s+TO\s+WHITE|CUT\s+TO(\s+BLACK)?|DISSOLVE\s+TO|SMASH\s+CUT\s+TO|BLACK\s+OUT|THE\s+END)[\s\.:]*$",
+        RegexOptions.IgnoreCase | RegexOptions.Compiled);
+    private static readonly Regex SlugNonAlphaNumericRe = new(@"[^A-Za-z0-9]+", RegexOptions.Compiled);
+    private static readonly Regex CharacterParenRe = new(@"\s*\([^)]*\)\s*", RegexOptions.Compiled);
+    private static readonly Regex BigActionWordsRe = new(
+        @"\b(chase|races?|sprints?|explodes?|crashes?|fights?|attacks?|leaps?|bounds?|lunges?|slams?)\b",
+        RegexOptions.Compiled);
+    private static readonly Regex HoldWordsRe = new(
+        @"\b(smile|smiles|smiling|nods?|turns?|looks?|gazes?|freezes?|waits?|steadies|thin smile|hands on|sits still|leans?|pauses?|watches?|listens?)\b",
+        RegexOptions.Compiled);
+    private static readonly Regex ContMatchRe = new(@"\bCONT", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+    private static readonly Regex ExtensionPureTokenRe = new(
+        @"^(CONT|CONTINUED|V\.?\s*O\.?|O\.?\s*S\.?|O\.?\s*C\.?)$",
+        RegexOptions.IgnoreCase | RegexOptions.Compiled);
+    private static readonly Regex VoTokenRe = new(@"\bV\s*\.?\s*O\s*\.?\b", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+    private static readonly Regex OsTokenRe = new(@"\bO\s*\.?\s*S\s*\.?\b", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+    private static readonly Regex OcTokenRe = new(@"\bO\s*\.?\s*C\s*\.?\b", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+    private static readonly Regex SlugLowerRe = new(@"[^a-z0-9]+", RegexOptions.Compiled);
+    private static readonly Regex AsterisksEmphasisRe = new(@"\*{1,3}([^*]+)\*{1,3}", RegexOptions.Compiled);
+    private static readonly Regex UnderscoreEmphasisRe = new(@"_([^_]+)_", RegexOptions.Compiled);
+
     /// <summary>
     /// Parse scene heading into type + filmable location name.
     /// Strips time-of-day after the last " - " and drops vague placeholder segments
@@ -526,8 +563,7 @@ public static class FountainStage1Importer
         else if (u.Contains("INT./EXT") || u.Contains("INT/EXT") || u.StartsWith("I/E"))
             locType = "mixed";
 
-        var rest = Regex.Replace(heading, @"^(INT\.?/EXT|INT/EXT|I/E|INT\.?|EXT\.?|EST\.?)\s*", "",
-            RegexOptions.IgnoreCase).Trim();
+        var rest = HeadingPrefixRe.Replace(heading, "").Trim();
         // strip time of day after last dash
         var locName = rest;
         var dash = rest.LastIndexOf(" - ", StringComparison.Ordinal);
@@ -550,7 +586,7 @@ public static class FountainStage1Importer
         if (locName.Length == 0) return "Unspecified";
 
         // Split compound headings: HOUSE - VARIOUS → keep solid segments only
-        var parts = Regex.Split(locName, @"\s+[-–]\s+")
+        var parts = DashSplitRe.Split(locName)
             .Select(p => p.Trim())
             .Where(p => p.Length > 0)
             .ToList();
@@ -570,24 +606,14 @@ public static class FountainStage1Importer
     public static bool IsVagueLocationSegment(string? segment)
     {
         if (string.IsNullOrWhiteSpace(segment)) return true;
-        var s = Regex.Replace(segment.Trim(), @"\s+", " ");
+        var s = WhitespaceCollapseRe.Replace(segment.Trim(), " ");
         // Whole-segment placeholders
-        if (Regex.IsMatch(
-                s,
-                @"^(VARIOUS|MULTIPLE|SEVERAL|ELSEWHERE|DIFFERENT|AROUND|THROUGHOUT|"
-                + @"MULTIPLE\s+LOCATIONS?|VARIOUS\s+LOCATIONS?|DIFFERENT\s+ROOMS?|"
-                + @"DIFFERENT\s+PLACES?|SEVERAL\s+ROOMS?|VARIOUS\s+ROOMS?|"
-                + @"AROUND\s+THE\s+HOUSE|THROUGHOUT\s+THE\s+HOUSE)$",
-                RegexOptions.IgnoreCase))
+        if (VagueLocationRe.IsMatch(s))
             return true;
 
         // Segment reduces to empty after stripping vague filler words only
-        var stripped = Regex.Replace(
-            s,
-            @"\b(VARIOUS|MULTIPLE|SEVERAL|ELSEWHERE|DIFFERENT|LOCATIONS?|ROOMS?|PLACES?|AREAS?)\b",
-            "",
-            RegexOptions.IgnoreCase);
-        stripped = Regex.Replace(stripped, @"[\s\-/&,]+", "").Trim();
+        var stripped = VagueFillerWordsRe.Replace(s, "");
+        stripped = PunctuationCleanRe.Replace(stripped, "").Trim();
         return stripped.Length == 0;
     }
 
@@ -596,11 +622,8 @@ public static class FountainStage1Importer
     {
         if (string.IsNullOrWhiteSpace(text)) return true;
         if (FountainParser.IsStandaloneTransitionLine(text)) return true;
-        var t = Regex.Replace(text.Trim(), @"\s+", " ");
-        return Regex.IsMatch(
-            t,
-            @"^(FADE\s+IN|FADE\s+OUT|FADE\s+TO\s+BLACK|FADE\s+TO\s+WHITE|CUT\s+TO(\s+BLACK)?|DISSOLVE\s+TO|SMASH\s+CUT\s+TO|BLACK\s+OUT|THE\s+END)[\s\.:]*$",
-            RegexOptions.IgnoreCase);
+        var t = WhitespaceCollapseRe.Replace(text.Trim(), " ");
+        return TransitionEndingRe.IsMatch(t);
     }
 
     private static bool IsNoopBeatDict(Dictionary<string, object?> beat)
@@ -687,14 +710,14 @@ public static class FountainStage1Importer
     private static string CharacterKey(string name)
     {
         var core = CleanCharacterName(name);
-        var slug = Regex.Replace(core, @"[^A-Za-z0-9]+", "_").Trim('_');
+        var slug = SlugNonAlphaNumericRe.Replace(core, "_").Trim('_');
         if (slug.Length == 0) slug = "Unknown";
         return "Character_" + slug;
     }
 
     private static string CleanCharacterName(string name)
     {
-        name = Regex.Replace(name, @"\s*\([^)]*\)\s*", " ").Trim();
+        name = CharacterParenRe.Replace(name, " ").Trim();
         name = name.TrimEnd('^').Trim();
         // Title case-ish from ALL CAPS
         if (name.Length > 0 && name.All(c => !char.IsLetter(c) || char.IsUpper(c)))
@@ -722,17 +745,14 @@ public static class FountainStage1Importer
         var lower = t.ToLowerInvariant();
         var words = ClipDurationEstimator.CountWords(t);
 
-        if (Regex.IsMatch(lower,
-                @"\b(chase|races?|sprints?|explodes?|crashes?|fights?|attacks?|leaps?|bounds?|lunges?|slams?)\b"))
+        if (BigActionWordsRe.IsMatch(lower))
             return "big_action";
 
         if (isFirstBeatInScene)
             return "establishing";
 
         // Micro performance / stillness — smile, hands, look, freeze
-        if (words <= 24 &&
-            Regex.IsMatch(lower,
-                @"\b(smile|smiles|smiling|nods?|turns?|looks?|gazes?|freezes?|waits?|steadies|thin smile|hands on|sits still|leans?|pauses?|watches?|listens?)\b"))
+        if (words <= 24 && HoldWordsRe.IsMatch(lower))
             return "hold";
 
         // Very short non-gesture lines only (avoid classifying "opens the door…" as hold)
@@ -757,16 +777,14 @@ public static class FountainStage1Importer
             name = "Speaker";
 
         // Continuation cues → "continues" reads better than "speaks" after a prior beat
-        var continued = rawCue is not null &&
-            Regex.IsMatch(rawCue, @"\bCONT", RegexOptions.IgnoreCase);
+        var continued = rawCue is not null && ContMatchRe.IsMatch(rawCue);
 
         if (!string.IsNullOrWhiteSpace(performanceParen))
         {
             var p = performanceParen.Trim().Trim('(', ')').Trim();
             // Strip pure extension tokens if a performance paren was polluted with Meta
             if (p.Length > 0 &&
-                !Regex.IsMatch(p, @"^(CONT|CONTINUED|V\.?\s*O\.?|O\.?\s*S\.?|O\.?\s*C\.?)$",
-                    RegexOptions.IgnoreCase) &&
+                !ExtensionPureTokenRe.IsMatch(p) &&
                 !IsOffScreenToken(p))
                 return $"{name} ({p}).";
         }
@@ -799,11 +817,11 @@ public static class FountainStage1Importer
     {
         if (string.IsNullOrWhiteSpace(text)) return false;
         // Optional dots/spaces/parens: (V.O.), V.O, VO, (O. S.), O.S., O.C.
-        if (Regex.IsMatch(text, @"\bV\s*\.?\s*O\s*\.?\b", RegexOptions.IgnoreCase))
+        if (VoTokenRe.IsMatch(text))
             return true;
-        if (Regex.IsMatch(text, @"\bO\s*\.?\s*S\s*\.?\b", RegexOptions.IgnoreCase))
+        if (OsTokenRe.IsMatch(text))
             return true;
-        if (Regex.IsMatch(text, @"\bO\s*\.?\s*C\s*\.?\b", RegexOptions.IgnoreCase))
+        if (OcTokenRe.IsMatch(text))
             return true;
         return false;
     }
@@ -840,11 +858,11 @@ public static class FountainStage1Importer
     }
 
     private static string Slug(string s) =>
-        Regex.Replace(s.ToLowerInvariant(), @"[^a-z0-9]+", "_").Trim('_');
+        SlugLowerRe.Replace(s.ToLowerInvariant(), "_").Trim('_');
 
     private static string SlugKey(string s)
     {
-        var parts = Regex.Split(s, @"[^A-Za-z0-9]+")
+        var parts = SlugNonAlphaNumericRe.Split(s)
             .Where(p => p.Length > 0)
             .Select(p => char.ToUpperInvariant(p[0]) + (p.Length > 1 ? p[1..].ToLowerInvariant() : ""));
         var joined = string.Join('_', parts);
@@ -853,8 +871,8 @@ public static class FountainStage1Importer
 
     private static string CleanEmphasis(string s)
     {
-        s = Regex.Replace(s, @"\*{1,3}([^*]+)\*{1,3}", "$1");
-        s = Regex.Replace(s, @"_([^_]+)_", "$1");
+        s = AsterisksEmphasisRe.Replace(s, "$1");
+        s = UnderscoreEmphasisRe.Replace(s, "$1");
         return s.Trim();
     }
 
