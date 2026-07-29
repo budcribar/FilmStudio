@@ -2114,6 +2114,7 @@ public sealed class FilmJobService
 
             var done = 0;
             var failed = 0;
+            string? firstClipError = null;
             // Per-scene (LastGeneratedClip, CarryoverPaddingSec) — batch work can interleave scenes,
             // so the padding nudge from one scene's overrun must never leak into a different scene.
             var sceneCarryover = new Dictionary<int, (int LastClip, double PaddingSec)>();
@@ -2162,6 +2163,7 @@ public sealed class FilmJobService
                 catch (Exception ex)
                 {
                     failed++;
+                    firstClipError ??= ex.Message;
                     _log.LogError(ex, "Clip S{Scene}C{Clip} failed", sn, cn);
                     await AppendLogAsync($"Failed S{sn:D2} C{cn}: {ex.Message}");
                 }
@@ -2172,8 +2174,12 @@ public sealed class FilmJobService
                 : "done";
             var msg = status switch
             {
-                "error" => $"Batch failed ({failed} clip(s) failed, none ok)",
-                "partial" => $"Batch partial ({done} ok, {failed} failed)",
+                "error" => !string.IsNullOrWhiteSpace(firstClipError)
+                    ? $"Batch failed: {firstClipError}"
+                    : $"Batch failed ({failed} clip(s) failed, none ok)",
+                "partial" => !string.IsNullOrWhiteSpace(firstClipError)
+                    ? $"Batch partial ({done} ok, {failed} failed): {firstClipError}"
+                    : $"Batch partial ({done} ok, {failed} failed)",
                 _ => $"Batch finished ({done} clip(s))",
             };
             await FinishAsync(status, msg, failed > 0 ? msg : null);

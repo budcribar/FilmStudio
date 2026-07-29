@@ -14,8 +14,8 @@ public class FalVideoClientTests
         Assert.Equal("HunyuanVideo (Fal.ai)", entry.DisplayName);
         Assert.Equal(ModelProviderFamily.Fal, entry.Provider);
         Assert.Contains(SupportedModelCatalog.FalApiKeyEnv, entry.RequiredEnvKeys);
-        Assert.True(entry.SupportsVideoContinue);
-        Assert.True(entry.SupportsReferenceImages);
+        Assert.False(entry.SupportsVideoContinue);
+        Assert.False(entry.SupportsReferenceImages);
     }
 
     [Fact]
