@@ -61,12 +61,14 @@ public sealed class FalVideoClient : IVideoClient
         var apiKey = ResolveApiKey()
             ?? throw new InvalidOperationException($"Fal.ai API key is missing. Set {SupportedModelCatalog.FalApiKeyEnv} in environment or Configuration.");
 
+        var numFrames = durationSeconds is > 0 and <= 4 ? 85 : 129;
+
         var payload = new Dictionary<string, object?>
         {
             ["prompt"] = prompt,
             ["aspect_ratio"] = "16:9",
-            ["num_frames"] = durationSeconds > 0 ? durationSeconds * 24 : 129,
-            ["resolution"] = string.Equals(resolution, "1080p", StringComparison.OrdinalIgnoreCase) ? "1080p" : "720p",
+            ["num_frames"] = numFrames,
+            ["num_inference_steps"] = 30,
         };
 
         using var req = new HttpRequestMessage(HttpMethod.Post, "fal-ai/hunyuan-video");
