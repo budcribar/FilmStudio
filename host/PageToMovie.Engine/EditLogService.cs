@@ -47,13 +47,18 @@ public sealed class EditLogService
         }
     }
 
+    private static readonly byte[] NewLineBytes = new byte[] { (byte)'\n' };
+
     public async Task SaveAsync(string projectId, EditLogDocument doc, CancellationToken ct = default)
     {
         var path = await LogPathAsync(projectId, ct).ConfigureAwait(false);
         Directory.CreateDirectory(Path.GetDirectoryName(path)!);
         var tmp = path + ".tmp";
-        var json = JsonSerializer.Serialize(doc, JsonOpts) + "\n";
-        await File.WriteAllTextAsync(tmp, json, ct).ConfigureAwait(false);
+        {
+            await using var stream = new FileStream(tmp, FileMode.Create, FileAccess.Write, FileShare.None, 4096, useAsync: true);
+            await JsonSerializer.SerializeAsync(stream, doc, JsonOpts, ct).ConfigureAwait(false);
+            await stream.WriteAsync(NewLineBytes, ct).ConfigureAwait(false);
+        }
         File.Move(tmp, path, overwrite: true);
     }
 

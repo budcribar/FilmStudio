@@ -97,6 +97,14 @@ public sealed class MediaDurationProbe
             if (fromMp4 is > 0)
             {
                 _cache[key] = (fi.LastWriteTimeUtc.Ticks, fi.Length, fromMp4.Value);
+                if (_cache.Count > 20000)
+                {
+                    foreach (var k in _cache.Keys)
+                    {
+                        if (!File.Exists(k))
+                            _cache.TryRemove(k, out _);
+                    }
+                }
                 return fromMp4;
             }
         }

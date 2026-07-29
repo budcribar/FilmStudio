@@ -877,11 +877,12 @@ public sealed class ProjectStore
         Dictionary<string, object?> merged = new(StringComparer.OrdinalIgnoreCase);
         if (File.Exists(path))
         {
-            await using var stream = File.OpenRead(path);
-            using var existing = await JsonDocument.ParseAsync(stream, cancellationToken: ct)
-                .ConfigureAwait(false);
-            foreach (var p in existing.RootElement.EnumerateObject())
-                merged[p.Name] = p.Value.Deserialize<object>();
+            using var existing = await _readCache.GetOrLoadJsonDocumentAsync(path, ct).ConfigureAwait(false);
+            if (existing is not null)
+            {
+                foreach (var p in existing.RootElement.EnumerateObject())
+                    merged[p.Name] = p.Value.Deserialize<object>();
+            }
         }
 
         if (updates.ValueKind == JsonValueKind.Object)

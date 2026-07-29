@@ -13,6 +13,14 @@ namespace PageToMovie.Engine;
 public sealed class ClipSidecarService
 {
     private static readonly JsonSerializerOptions JsonOpts = JsonDefaults.IndentedCaseInsensitive;
+    private static readonly byte[] NewLineBytes = new byte[] { (byte)'\n' };
+
+    private static async Task WriteSidecarStreamAsync(string sidecarPath, object sidecar, CancellationToken ct)
+    {
+        await using var stream = new FileStream(sidecarPath, FileMode.Create, FileAccess.Write, FileShare.None, 4096, useAsync: true);
+        await JsonSerializer.SerializeAsync(stream, sidecar, JsonOpts, ct).ConfigureAwait(false);
+        await stream.WriteAsync(NewLineBytes, ct).ConfigureAwait(false);
+    }
 
     private readonly ProjectStore _projects;
     private readonly ProjectAutoGitService? _autoGit;
@@ -73,8 +81,7 @@ public sealed class ClipSidecarService
             ["created_at_utc"] = DateTime.UtcNow.ToString("o"),
         };
 
-        var json = JsonSerializer.Serialize(sidecar, JsonOpts);
-        await File.WriteAllTextAsync(sidecarPath, json + "\n", ct).ConfigureAwait(false);
+        await WriteSidecarStreamAsync(sidecarPath, sidecar, ct).ConfigureAwait(false);
         _log.LogInformation("Written clip sidecar manifest → {Path}", sidecarPath);
         _autoGit?.QueueCommitAndPush(projectDir, projectId, $"Generate S{scene:D2}C{clip:D2} clip sidecar");
         return sidecarPath;
@@ -124,8 +131,7 @@ public sealed class ClipSidecarService
             ["created_at_utc"] = (createdUtc ?? DateTime.UtcNow).ToString("o"),
         };
 
-        var json = JsonSerializer.Serialize(sidecar, JsonOpts);
-        await File.WriteAllTextAsync(sidecarPath, json + "\n", ct).ConfigureAwait(false);
+        await WriteSidecarStreamAsync(sidecarPath, sidecar, ct).ConfigureAwait(false);
         _log.LogInformation("Written clip sidecar manifest → {Path}", sidecarPath);
         return sidecarPath;
     }

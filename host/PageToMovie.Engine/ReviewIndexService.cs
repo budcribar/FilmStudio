@@ -48,13 +48,13 @@ public sealed class ReviewIndexService
     public string FrameRelPath(int scene, int clip, int frameIndex) =>
         $"assets/review/frames/S{scene:D2}C{clip:D2}_{frameIndex:D2}.jpg";
 
-    public ReviewIndexDocument? Load(string projectId)
+    public async Task<ReviewIndexDocument?> LoadAsync(string projectId, CancellationToken ct = default)
     {
         var path = IndexPath(projectId);
         if (!File.Exists(path)) return null;
         try
         {
-            var json = File.ReadAllText(path);
+            var json = await File.ReadAllTextAsync(path, ct).ConfigureAwait(false);
             return JsonSerializer.Deserialize<ReviewIndexDocument>(json, JsonOpts);
         }
         catch (Exception ex)
@@ -64,15 +64,20 @@ public sealed class ReviewIndexService
         }
     }
 
-    public void Save(ReviewIndexDocument doc)
+    public ReviewIndexDocument? Load(string projectId) => LoadAsync(projectId).GetAwaiter().GetResult();
+
+    public async Task SaveAsync(ReviewIndexDocument doc, CancellationToken ct = default)
     {
         if (string.IsNullOrWhiteSpace(doc.ProjectId))
             throw new ArgumentException("projectId required", nameof(doc));
         var path = IndexPath(doc.ProjectId);
         Directory.CreateDirectory(Path.GetDirectoryName(path)!);
         doc.BuiltAtUtc = DateTimeOffset.UtcNow;
-        File.WriteAllText(path, JsonSerializer.Serialize(doc, JsonOpts) + "\n");
+        var json = JsonSerializer.Serialize(doc, JsonOpts) + "\n";
+        await File.WriteAllTextAsync(path, json, ct).ConfigureAwait(false);
     }
+
+    public void Save(ReviewIndexDocument doc) => SaveAsync(doc).GetAwaiter().GetResult();
 
     /// <summary>Scan on-disk clips and rebuild full index (drafts, human, assembly, frames).</summary>
     public async Task<ReviewIndexDocument> RebuildAsync(
