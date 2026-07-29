@@ -2882,8 +2882,12 @@ else
             var prevClipNum = cn - 1;
             if (targets.Any(t => t.Scene == sn && t.Clip == prevClipNum)) continue;
 
-            var serverHasClip = _detail?.Clips?.FirstOrDefault(c => c.ClipNumber == prevClipNum)?.OnDisk ?? false;
-            if (!serverHasClip)
+            // OnDisk alone isn't enough here: it's also true when only the .client.json marker
+            // exists (clip synced to the client, then pruned off server disk) — SizeBytes is 0 in
+            // that case since there are no real bytes for the video-extend gate to find and copy.
+            var prevSummary = _detail?.Clips?.FirstOrDefault(c => c.ClipNumber == prevClipNum);
+            var serverHasRealBytes = prevSummary?.OnDisk == true && prevSummary.SizeBytes >= 1024;
+            if (!serverHasRealBytes)
             {
                 var localBytes = await MediaFolder.GetClipBytesAsync(sn, prevClipNum);
                 if (localBytes is { Length: >= 1024 })
