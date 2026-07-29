@@ -139,8 +139,8 @@ public sealed class ClipDialogueVerificationService
             return noSpeechResult;
         }
 
-        // Cache Validation: If not forced, return existing saved verification if clip file & dialogue haven't changed
-        if (!force)
+        // Cache Validation: If not forced and no override video path provided, return existing saved verification if clip file & dialogue haven't changed
+        if (!force && string.IsNullOrWhiteSpace(overrideVideoPath))
         {
             var existing = await LoadVerificationAsync(projectId, sceneNumber, clipNumber, ct).ConfigureAwait(false);
             if (existing is not null && !string.Equals(existing.Status, "unverified", StringComparison.OrdinalIgnoreCase))
@@ -280,12 +280,14 @@ Status options: 'verified' (dialogue & speaker match), 'mismatch' (dialogue inco
             using var doc = JsonDocument.Parse(cleanJson);
             var root = doc.RootElement;
 
-            var detected = root.TryGetProperty("detectedSpeaker", out var dEl) ? dEl.GetString() ?? "" : "";
-            var transcribed = root.TryGetProperty("transcribedDialogue", out var tEl) ? tEl.GetString() ?? "" : "";
-            var accuracy = root.TryGetProperty("dialogueAccuracyScore", out var aEl) && aEl.TryGetDouble(out var acc) ? acc : CalculateAccuracyScore(expectedDialogue, transcribed);
-            var speakerMatch = root.TryGetProperty("speakerMatch", out var smEl) && smEl.GetBoolean();
-            var status = root.TryGetProperty("status", out var stEl) ? stEl.GetString() ?? "verified" : "verified";
-            var summary = root.TryGetProperty("summaryNote", out var snEl) ? snEl.GetString() ?? "" : "";
+            var detected = GetJsonString(root, "detectedSpeaker", "detected_speaker", "speaker");
+            var transcribed = GetJsonString(root, "transcribedDialogue", "transcribed_dialogue", "dialogue", "transcript", "spoken_dialogue");
+            var accuracyOpt = GetJsonDouble(root, "dialogueAccuracyScore", "dialogue_accuracy_score", "accuracy_score", "accuracy");
+            var accuracy = accuracyOpt ?? CalculateAccuracyScore(expectedDialogue, transcribed);
+            var speakerMatch = GetJsonBool(root, "speakerMatch", "speaker_match");
+            var status = GetJsonString(root, "status");
+            if (string.IsNullOrWhiteSpace(status)) status = "verified";
+            var summary = GetJsonString(root, "summaryNote", "summary_note", "summary", "notes");
 
             // Deterministic validation: if dialogue was expected but transcribed audio is empty, enforce mismatch (0%)
             if (!string.IsNullOrWhiteSpace(expectedDialogue) && string.IsNullOrWhiteSpace(transcribed))
@@ -393,5 +395,86 @@ Status options: 'verified' (dialogue & speaker match), 'mismatch' (dialogue inco
         if (string.IsNullOrWhiteSpace(input)) return "{}";
         var match = Regex.Match(input, @"\{[\s\S]*\}");
         return match.Success ? match.Value : input;
+    }
+
+    private static string GetJsonString(JsonElement root, params string[] names)
+    {
+        foreach (var name in names)
+        {
+            if (root.TryGetProperty(name, out var el) && el.ValueKind == JsonValueKind.String)
+            {
+                var val = el.GetString();
+                if (!string.IsNullOrWhiteSpace(val)) return val.Trim();
+            }
+        }
+        if (root.ValueKind == JsonValueKind.Object)
+        {
+            foreach (var prop in root.EnumerateObject())
+            {
+                foreach (var name in names)
+                {
+                    if (string.Equals(prop.Name.Replace("_", ""), name.Replace("_", ""), StringComparison.OrdinalIgnoreCase))
+                    {
+                        if (prop.Value.ValueKind == JsonValueKind.String)
+                        {
+                            var val = prop.Value.GetString();
+                            if (!string.IsNullOrWhiteSpace(val)) return val.Trim();
+                        }
+                    }
+                }
+            }
+        }
+        return "";
+    }
+
+    private static bool GetJsonBool(JsonElement root, params string[] names)
+    {
+        foreach (var name in names)
+        {
+            if (root.TryGetProperty(name, out var el))
+            {
+                if (el.ValueKind is JsonValueKind.True or JsonValueKind.False)
+                    return el.GetBoolean();
+            }
+        }
+        if (root.ValueKind == JsonValueKind.Object)
+        {
+            foreach (var prop in root.EnumerateObject())
+            {
+                foreach (var name in names)
+                {
+                    if (string.Equals(prop.Name.Replace("_", ""), name.Replace("_", ""), StringComparison.OrdinalIgnoreCase))
+                    {
+                        if (prop.Value.ValueKind is JsonValueKind.True or JsonValueKind.False)
+                            return prop.Value.GetBoolean();
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
+    private static double? GetJsonDouble(JsonElement root, params string[] names)
+    {
+        foreach (var name in names)
+        {
+            if (root.TryGetProperty(name, out var el) && el.ValueKind == JsonValueKind.Number && el.TryGetDouble(out var v))
+                return v;
+        }
+        if (root.ValueKind == JsonValueKind.Object)
+        {
+            foreach (var prop in root.EnumerateObject())
+            {
+                foreach (var name in names)
+                {
+                    if (string.Equals(prop.Name.Replace("_", ""), name.Replace("_", ""), StringComparison.OrdinalIgnoreCase))
+                    {
+                        if (prop.Value.ValueKind == JsonValueKind.Number && prop.Value.TryGetDouble(out var v))
+                            return v;
+                    }
+                }
+            }
+        }
+        return null;
     }
 }
