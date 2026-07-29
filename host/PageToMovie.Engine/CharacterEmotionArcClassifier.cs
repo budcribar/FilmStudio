@@ -1,6 +1,7 @@
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using PageToMovie.Core.Options;
+using PageToMovie.Core.Utils;
 using PageToMovie.Engine.Abstractions;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -135,17 +136,14 @@ public sealed class CharacterEmotionArcClassifier
             var result = new Dictionary<string, EmotionDirective>(StringComparer.OrdinalIgnoreCase);
             foreach (var item in emoArray.EnumerateArray())
             {
-                if (item.TryGetProperty("beat_id", out var bid))
-                {
-                    var id = bid.GetString() ?? "";
-                    var intensity = item.TryGetProperty("intensity", out var val) ? Math.Clamp(val.GetInt32(), 1, 10) : 5;
-                    var micro = item.TryGetProperty("micro_expression", out var me) ? me.GetString() ?? "" : "";
-                    var prompt = item.TryGetProperty("acting_prompt", out var ap) ? ap.GetString() ?? "" : "";
+                var id = item.GetStringProp("beat_id");
+                var intensity = Math.Clamp(item.GetIntProp("intensity", 5), 1, 10);
+                var micro = item.GetStringProp("micro_expression");
+                var prompt = item.GetStringProp("acting_prompt");
 
-                    if (!string.IsNullOrWhiteSpace(id))
-                    {
-                        result[id] = new EmotionDirective(intensity, micro, prompt);
-                    }
+                if (!string.IsNullOrWhiteSpace(id))
+                {
+                    result[id] = new EmotionDirective(intensity, micro, prompt);
                 }
             }
 

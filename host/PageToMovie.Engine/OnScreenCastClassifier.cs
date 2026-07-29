@@ -281,16 +281,7 @@ JSON only:
         return list;
     }
 
-    private static string Strip(string raw)
-    {
-        raw = (raw ?? "").Trim();
-        if (!raw.StartsWith("```")) return raw;
-        raw = Regex.Replace(raw, @"^```(?:json)?\s*", "", RegexOptions.IgnoreCase);
-        // Truncate at the closing fence wherever it falls — some models append prose
-        // (e.g. a "Reasoning:" section) after the fenced JSON instead of ending on it.
-        var fenceEnd = raw.IndexOf("```", StringComparison.Ordinal);
-        return (fenceEnd >= 0 ? raw[..fenceEnd] : raw).TrimEnd();
-    }
+    private static string Strip(string raw) => ClassifierJsonParser.StripFences(raw);
 
     // Token-accurate now (was raw character count) — see PromptTokenizer.
     private static string Trunc(string s, int maxTokens) => PromptTokenizer.TruncateToTokens(s, maxTokens);
