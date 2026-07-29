@@ -290,6 +290,18 @@ label,
     border-color: var(--fs-accent-indigo);
 }
 
+.btn-outline-warning {
+    color: var(--fs-accent-amber);
+    border-color: var(--fs-accent-amber);
+    background: transparent;
+}
+
+.btn-outline-warning:hover:not(:disabled) {
+    background: var(--fs-accent-amber);
+    color: #000;
+    border-color: var(--fs-accent-amber);
+}
+
 .btn-outline-secondary {
     color: var(--fs-text-primary);
     border-color: var(--fs-border-color);
