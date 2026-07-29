@@ -2651,6 +2651,16 @@ public sealed class ProjectStore
         audio["dialogue"] = fields.Dialogue;
         audio["speaker"] = string.IsNullOrWhiteSpace(fields.Speaker) ? null : fields.Speaker;
         audio["delivery"] = string.IsNullOrWhiteSpace(fields.Delivery) ? null : fields.Delivery;
+
+        // Keep root-level fields in sync if present in blueprint JSON
+        if (clipObj.ContainsKey("dialogue"))
+            clipObj["dialogue"] = fields.Dialogue;
+        if (clipObj.ContainsKey("speaker"))
+            clipObj["speaker"] = string.IsNullOrWhiteSpace(fields.Speaker) ? null : fields.Speaker;
+        if (clipObj.ContainsKey("delivery"))
+            clipObj["delivery"] = string.IsNullOrWhiteSpace(fields.Delivery) ? null : fields.Delivery;
+        if (clipObj.ContainsKey("audio_script"))
+            clipObj["audio_script"] = fields.Dialogue;
     }
 
     /// <summary>
@@ -3365,6 +3375,22 @@ public sealed class ProjectStore
                         speaker = sp.GetString();
                     if (ap.TryGetProperty("delivery", out var del))
                         delivery = del.GetString();
+                }
+                if (string.IsNullOrWhiteSpace(dialogue) && c.TryGetProperty("dialogue", out var rootD))
+                {
+                    dialogue = rootD.GetString() ?? "";
+                }
+                if (string.IsNullOrWhiteSpace(dialogue) && c.TryGetProperty("audio_script", out var rootAS))
+                {
+                    dialogue = rootAS.GetString() ?? "";
+                }
+                if (string.IsNullOrWhiteSpace(speaker) && c.TryGetProperty("speaker", out var rootSp))
+                {
+                    speaker = rootSp.GetString();
+                }
+                if (string.IsNullOrWhiteSpace(delivery) && c.TryGetProperty("delivery", out var rootDel))
+                {
+                    delivery = rootDel.GetString();
                 }
                 // Speech-safe form for operator UI (same helper as video gen payload)
                 dialogue = ClipVideoPromptBuilder.SanitizeSpokenDialogue(dialogue);

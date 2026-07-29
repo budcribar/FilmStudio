@@ -1195,6 +1195,10 @@ else
                     <button type="button" class="btn-close" aria-label="Close" @onclick="CloseClipEditor"></button>
                 </div>
                 <div class="modal-body">
+                    @if (!string.IsNullOrWhiteSpace(_error))
+                    {
+                        <div class="alert alert-danger p-2 small mb-3">@_error</div>
+                    }
                     <div class="row g-2 mb-3">
                         <div class="col-4">
                             <label class="form-label small mb-0">Clip number</label>
@@ -3346,6 +3350,11 @@ else
             await RefreshUncommittedStatusAsync();
             _clipEditor = null;
             await LoadDetailAsync(_detail.SceneNumber);
+            var scenesDto = await Engine.GetScenesAsync(_projectId);
+            if (scenesDto?.Scenes is not null)
+            {
+                _scenes = scenesDto.Scenes;
+            }
             if (_selectedClip is int sel)
                 _clip = _detail.Clips.FirstOrDefault(c => c.ClipNumber == sel);
         }
