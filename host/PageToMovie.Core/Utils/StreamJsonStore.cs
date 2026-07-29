@@ -1,0 +1,50 @@
+using System;
+using System.IO;
+using System.Text.Json;
+using System.Threading;
+using System.Threading.Tasks;
+
+namespace PageToMovie.Core.Utils;
+
+/// <summary>
+/// Stream-based generic JSON persistence template for non-blocking file loading and saving.
+/// Eliminates repeated FileStream creation, buffer allocation, and JsonSerializer calls.
+/// </summary>
+public static class StreamJsonStore
+{
+    private static readonly byte[] NewLineBytes = new byte[] { (byte)'\n' };
+
+    public static async Task SaveAsync<T>(
+        string path,
+        T data,
+        JsonSerializerOptions? opts = null,
+        bool appendNewLine = true,
+        CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(path)) return;
+        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+        await using var stream = new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.None, 4096, useAsync: true);
+        await JsonSerializer.SerializeAsync(stream, data, opts, ct).ConfigureAwait(false);
+        if (appendNewLine)
+        {
+            await stream.WriteAsync(NewLineBytes, ct).ConfigureAwait(false);
+        }
+    }
+
+    public static async Task<T?> LoadAsync<T>(
+        string path,
+        JsonSerializerOptions? opts = null,
+        CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(path) || !File.Exists(path)) return default;
+        try
+        {
+            await using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, 4096, useAsync: true);
+            return await JsonSerializer.DeserializeAsync<T>(stream, opts, ct).ConfigureAwait(false);
+        }
+        catch
+        {
+            return default;
+        }
+    }
+}

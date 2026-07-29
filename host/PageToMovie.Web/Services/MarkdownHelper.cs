@@ -1,5 +1,6 @@
 using Markdig;
 using Microsoft.AspNetCore.Components;
+using PageToMovie.Core.Utils;
 using System.Text.RegularExpressions;
 
 namespace PageToMovie.Web.Services;
@@ -17,7 +18,6 @@ public static class MarkdownHelper
     private static readonly Regex OpenTagRe = new(@"<(p|div)>\s*", RegexOptions.IgnoreCase | RegexOptions.Compiled);
     private static readonly Regex CloseTagRe = new(@"\s*</(p|div)>", RegexOptions.IgnoreCase | RegexOptions.Compiled);
     private static readonly Regex BrTagRe = new(@"<br\s*/?>", RegexOptions.IgnoreCase | RegexOptions.Compiled);
-    private static readonly Regex AllHtmlTagsRe = new(@"<[^>]+>", RegexOptions.Compiled);
 
     /// <summary>
     /// Render Markdown or AI text payload to MarkupString.
@@ -53,7 +53,7 @@ public static class MarkdownHelper
         if (string.IsNullOrWhiteSpace(input))
             return "";
 
-        var text = AllHtmlTagsRe.Replace(input, "");
+        var text = CommonRegex.HtmlTags.Replace(input, "");
         return System.Net.WebUtility.HtmlDecode(text).Trim();
     }
 }

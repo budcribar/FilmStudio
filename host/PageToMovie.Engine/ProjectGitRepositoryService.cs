@@ -6,6 +6,7 @@ using LibGit2Sharp;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using PageToMovie.Core.Options;
+using PageToMovie.Core.Utils;
 
 namespace PageToMovie.Engine
 {
@@ -68,7 +69,7 @@ namespace PageToMovie.Engine
             IOptions<PageToMovieOptions>? opts = null)
         {
             _logger = logger;
-            _git = opts?.Value.Git ?? new GitOptions();
+            _git = opts.GetOrDefault().Git ?? new GitOptions();
         }
 
         /// <summary>

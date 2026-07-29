@@ -4,6 +4,7 @@ using System.Text.Json;
 using System.Text.RegularExpressions;
 using PageToMovie.Core.Models;
 using PageToMovie.Core.Options;
+using PageToMovie.Core.Utils;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
@@ -1143,16 +1144,14 @@ public sealed class Stage2PlannerService
         return body.TrimEnd('.', ' ', '\t');
     }
 
-    private static readonly Regex WhitespaceCollapseRegex = new(@"\s+", RegexOptions.Compiled);
-    private static readonly Regex DotCollapseRegex = new(@"\s*\.\s*\.+", RegexOptions.Compiled);
     private static readonly Regex CharacterTokenRegex = new(@"Character_[A-Za-z0-9_]+", RegexOptions.Compiled);
 
     private static string NormalizeSentencePart(string? text)
     {
         if (string.IsNullOrWhiteSpace(text)) return "";
-        var t = WhitespaceCollapseRegex.Replace(text.Trim(), " ");
+        var t = CommonRegex.WhitespaceCollapse.Replace(text.Trim(), " ");
         // Collapse internal double punctuation / trailing junk
-        t = DotCollapseRegex.Replace(t, ".");
+        t = CommonRegex.DotCollapse.Replace(t, ".");
         t = t.TrimEnd('.', ',', ';', ' ', '\t');
         return t;
     }

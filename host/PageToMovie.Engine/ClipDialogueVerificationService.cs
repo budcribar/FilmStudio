@@ -9,6 +9,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using PageToMovie.Core.Models;
+using PageToMovie.Core.Utils;
 using PageToMovie.Engine.Abstractions;
 
 namespace PageToMovie.Engine;
@@ -75,16 +76,7 @@ public sealed class ClipDialogueVerificationService
     public async Task<ClipDialogueVerificationResult?> LoadVerificationAsync(string projectId, int scene, int clip, CancellationToken ct = default)
     {
         var path = VerificationPath(projectId, scene, clip);
-        if (!File.Exists(path)) return null;
-        try
-        {
-            await using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, 4096, useAsync: true);
-            return await JsonSerializer.DeserializeAsync<ClipDialogueVerificationResult>(stream, JsonOpts, ct).ConfigureAwait(false);
-        }
-        catch
-        {
-            return null;
-        }
+        return await StreamJsonStore.LoadAsync<ClipDialogueVerificationResult>(path, JsonOpts, ct).ConfigureAwait(false);
     }
 
     private static readonly byte[] NewLineBytes = new byte[] { (byte)'\n' };
