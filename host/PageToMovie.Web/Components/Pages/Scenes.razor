@@ -3623,7 +3623,7 @@ else
             StateHasChanged();
 
             var videoBytes = await MediaFolder.GetClipBytesAsync(_detail.SceneNumber, clip.ClipNumber);
-            var ver = await Engine.VerifyClipDialogueAsync(_projectId, _detail.SceneNumber, clip.ClipNumber, videoBytes: videoBytes);
+            var ver = await Engine.VerifyClipDialogueAsync(_projectId, _detail.SceneNumber, clip.ClipNumber, videoBytes: videoBytes, force: true);
             if (ver is not null)
             {
                 clip.DialogueVerification = ver;

@@ -139,8 +139,8 @@ public sealed class ClipDialogueVerificationService
             return noSpeechResult;
         }
 
-        // Cache Validation: If not forced, return existing saved verification if clip file & dialogue haven't changed
-        if (!force)
+        // Cache Validation: If not forced and no override video path provided, return existing saved verification if clip file & dialogue haven't changed
+        if (!force && string.IsNullOrWhiteSpace(overrideVideoPath))
         {
             var existing = await LoadVerificationAsync(projectId, sceneNumber, clipNumber, ct).ConfigureAwait(false);
             if (existing is not null && !string.Equals(existing.Status, "unverified", StringComparison.OrdinalIgnoreCase))
