@@ -57,6 +57,17 @@ public sealed class FakeGrokVisionClient : IVisionClient
                 $"{{\"pass\":true,\"medium\":\"{medium}\",\"reason\":\"Fake style gate pass.\"}}");
         }
 
+        if (!string.IsNullOrEmpty(prompt) &&
+            prompt.Contains("music supervisor", StringComparison.OrdinalIgnoreCase))
+        {
+            return Task.FromResult("""
+                {
+                  "1": { "prompt": "Dark orchestral theme with low cello and tense pulse.", "genre": "Thriller", "mood": "Tense", "tempo": "90 BPM" },
+                  "2": { "prompt": "Subtle atmospheric ambient drone with eerie strings.", "genre": "Ambient", "mood": "Unsettling", "tempo": "75 BPM" }
+                }
+                """);
+        }
+
         // Minimal valid auto-review JSON for UI/job testing without spend
         return Task.FromResult("""
             {

@@ -676,12 +676,21 @@ public sealed class SceneDetail
     public int ClipsOnDisk { get; set; }
     public bool CompositeExists { get; set; }
     public bool HasBackgroundMusic { get; set; }
+    public MusicScoreInfo? MusicScore { get; set; }
     public bool IsUserOverride { get; set; }
     public string? CompositeUrl { get; set; }
     public List<string> CharactersOnScreen { get; set; } = new();
     public List<string> LocationIds { get; set; } = new();
     public string? PrimaryLocationId { get; set; }
     public List<ClipSummary> Clips { get; set; } = new();
+}
+
+public sealed class MusicScoreInfo
+{
+    public string Prompt { get; set; } = "";
+    public string? Genre { get; set; }
+    public string? Mood { get; set; }
+    public string? Tempo { get; set; }
 }
 
 /// <summary>Book + Fountain screenplay + Stage 1 + Stage 2 readiness for the Adaptation page.</summary>

@@ -3425,6 +3425,25 @@ public sealed class ProjectStore
         var musicFile = Path.Combine(projectDir, "assets", $"scene_{sceneNumber:D2}_music.mp3");
         var hasMusic = File.Exists(musicFile) && new FileInfo(musicFile).Length >= 1024;
 
+        MusicScoreInfo? musicScore = null;
+        if (sEl.TryGetProperty("music_score", out var msEl) && msEl.ValueKind == JsonValueKind.Object)
+        {
+            musicScore = new MusicScoreInfo
+            {
+                Prompt = msEl.TryGetProperty("prompt", out var msp) ? msp.GetString() ?? "" : "",
+                Genre = msEl.TryGetProperty("genre", out var msg) ? msg.GetString() : null,
+                Mood = msEl.TryGetProperty("mood", out var msm) ? msm.GetString() : null,
+                Tempo = msEl.TryGetProperty("tempo", out var mst) ? mst.GetString() : null,
+            };
+        }
+        else if (sEl.TryGetProperty("music_prompt", out var mpEl) && mpEl.ValueKind == JsonValueKind.String)
+        {
+            musicScore = new MusicScoreInfo
+            {
+                Prompt = mpEl.GetString() ?? ""
+            };
+        }
+
         return new SceneDetail
         {
             SceneNumber = sceneNumber,
@@ -3436,6 +3455,7 @@ public sealed class ProjectStore
             ClipsOnDisk = onDiskCount,
             CompositeExists = compositeOk,
             HasBackgroundMusic = hasMusic,
+            MusicScore = musicScore,
             CompositeUrl = compositeOk
                 ? $"/api/projects/{Uri.EscapeDataString(projectId)}/scenes/{sceneNumber}/composite"
                 : null,
