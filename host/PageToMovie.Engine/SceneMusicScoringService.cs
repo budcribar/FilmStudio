@@ -14,16 +14,16 @@ namespace PageToMovie.Engine;
 public sealed class SceneMusicScoringService
 {
     private readonly IChatClient _chat;
-    private readonly IAudioClient _audioClient;
+    private readonly IMusicClient _musicClient;
     private readonly ILogger<SceneMusicScoringService> _log;
 
     public SceneMusicScoringService(
         IChatClient chat,
-        IAudioClient audioClient,
+        IMusicClient musicClient,
         ILogger<SceneMusicScoringService> log)
     {
         _chat = chat;
-        _audioClient = audioClient;
+        _musicClient = musicClient;
         _log = log;
     }
 
@@ -44,7 +44,14 @@ public sealed class SceneMusicScoringService
             return null;
         }
 
-        var audioModel = GetConfigStr(config, "audio_model_name", "none");
+        var enableMusic = GetConfigBool(config, "enable_background_music", true);
+        if (!enableMusic)
+        {
+            onProgress?.Invoke("Background music is disabled in settings. Skipping music pass.");
+            return null;
+        }
+
+        var audioModel = GetConfigStr(config, "audio_model_name", "fal-ai/stable-audio");
         if (string.Equals(audioModel, "none", StringComparison.OrdinalIgnoreCase) ||
             string.IsNullOrWhiteSpace(audioModel))
         {
@@ -52,10 +59,10 @@ public sealed class SceneMusicScoringService
             return null;
         }
 
-        if (!_audioClient.IsConfigured)
+        if (!_musicClient.IsConfigured)
         {
             onProgress?.Invoke("Audio synthesis API key missing. Skipping background music pass.");
-            _log.LogWarning("Skipping scene music for scene {Scene} because audio client is not configured.", sceneNumber);
+            _log.LogWarning("Skipping scene music for scene {Scene} because music client is not configured.", sceneNumber);
             return null;
         }
 
@@ -69,16 +76,22 @@ public sealed class SceneMusicScoringService
         _log.LogInformation("Generating scene {Scene} music score: {Prompt}", sceneNumber, musicPrompt);
 
         // Step 2: Synthesize stereo audio track via Fal.ai audio client
-        var audioBytes = await _audioClient.GenerateMusicTrackAsync(musicPrompt, durationSeconds, audioModel, ct).ConfigureAwait(false);
+        var audioBytes = await _musicClient.GenerateMusicTrackAsync(musicPrompt, durationSeconds, audioModel, ct).ConfigureAwait(false);
+        if (audioBytes is null || audioBytes.Length == 0)
+        {
+            onProgress?.Invoke("Background music synthesis produced 0 bytes. Keeping original scene video.");
+            return null;
+        }
 
         var audioDir = Path.Combine(projectDir, "assets");
         Directory.CreateDirectory(audioDir);
         var musicFilePath = Path.Combine(audioDir, $"scene_{sceneNumber:D2}_music.mp3");
         await File.WriteAllBytesAsync(musicFilePath, audioBytes, ct).ConfigureAwait(false);
 
-        // Step 3: Layer music track onto stitched scene MP4 via ffmpeg with auto-ducking
-        onProgress?.Invoke($"Audio Mixing: Layering music score into Scene {sceneNumber:D2} with auto-ducking…");
-        await LayerAudioWithFfmpegAsync(inputSceneMp4Path, musicFilePath, outputSceneMp4Path, ct).ConfigureAwait(false);
+        // Step 3: Layer music track onto stitched scene MP4 via ffmpeg with volume ducking & fade-out
+        var volumePercent = GetConfigInt(config, "background_music_volume_percent", 20);
+        onProgress?.Invoke($"Audio Mixing: Layering music score into Scene {sceneNumber:D2} at {volumePercent}% volume with auto-ducking…");
+        await LayerAudioWithFfmpegAsync(inputSceneMp4Path, musicFilePath, outputSceneMp4Path, durationSeconds, volumePercent, ct).ConfigureAwait(false);
 
         return new SceneMusicResult(musicFilePath, outputSceneMp4Path, musicPrompt, durationSeconds);
     }
@@ -110,13 +123,18 @@ public sealed class SceneMusicScoringService
         string videoPath,
         string audioPath,
         string outputPath,
+        int durationSeconds,
+        int volumePercent,
         CancellationToken ct)
     {
         var tempOut = outputPath + ".tmp_music.mp4";
         if (File.Exists(tempOut)) File.Delete(tempOut);
 
-        // ffmpeg filter_complex: mixes background music at 30% volume (-10dB) under original dialogue track
-        var args = $"-y -i \"{videoPath}\" -i \"{audioPath}\" -filter_complex \"[1:a]volume=0.30[bg];[0:a][bg]amix=inputs=2:duration=first[a]\" -map 0:v -map \"[a]\" -c:v copy -c:a aac -b:a 192k \"{tempOut}\"";
+        var volRatio = Math.Clamp(volumePercent / 100.0, 0.05, 1.0);
+        var fadeStart = Math.Max(0.0, durationSeconds - 1.5);
+
+        // ffmpeg filter_complex: mixes background music at configured volume ratio with 1.5s fade-out under dialogue
+        var args = $"-y -i \"{videoPath}\" -i \"{audioPath}\" -filter_complex \"[1:a]volume={volRatio:F2},afade=t=out:st={fadeStart:F1}:d=1.5[bg];[0:a][bg]amix=inputs=2:duration=first[a]\" -map 0:v -map \"[a]\" -c:v copy -c:a aac -b:a 192k \"{tempOut}\"";
 
         var psi = new ProcessStartInfo
         {
@@ -149,6 +167,25 @@ public sealed class SceneMusicScoringService
         {
             var val = el.GetString();
             if (!string.IsNullOrWhiteSpace(val)) return val.Trim();
+        }
+        return fallback;
+    }
+
+    private static bool GetConfigBool(Dictionary<string, JsonElement>? cfg, string key, bool fallback)
+    {
+        if (cfg is not null && cfg.TryGetValue(key, out var el))
+        {
+            if (el.ValueKind is JsonValueKind.True or JsonValueKind.False)
+                return el.GetBoolean();
+        }
+        return fallback;
+    }
+
+    private static int GetConfigInt(Dictionary<string, JsonElement>? cfg, string key, int fallback)
+    {
+        if (cfg is not null && cfg.TryGetValue(key, out var el) && el.TryGetInt32(out var v))
+        {
+            return v;
         }
         return fallback;
     }

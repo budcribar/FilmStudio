@@ -9,20 +9,20 @@ namespace PageToMovie.Tests;
 
 public class SceneMusicScoringTests
 {
-    private class FakeAudioClient : IAudioClient
+    private class FakeMusicClient : IMusicClient
     {
         public bool IsConfigured { get; set; } = true;
         public byte[] GeneratedBytes { get; set; } = new byte[] { 1, 2, 3, 4 };
         public string? LastPrompt { get; private set; }
 
-        public Task<byte[]> GenerateMusicTrackAsync(
+        public Task<byte[]?> GenerateMusicTrackAsync(
             string prompt,
-            int durationSeconds,
+            double durationSeconds,
             string? model = null,
             CancellationToken ct = default)
         {
             LastPrompt = prompt;
-            return Task.FromResult(GeneratedBytes);
+            return Task.FromResult<byte[]?>(GeneratedBytes);
         }
     }
 
@@ -45,7 +45,7 @@ public class SceneMusicScoringTests
     public async Task ProcessSceneMusicAsync_BypassesWhenAudioModelIsNone()
     {
         var chat = new FakeChatClient();
-        var audio = new FakeAudioClient();
+        var audio = new FakeMusicClient();
         var service = new SceneMusicScoringService(chat, audio, NullLogger<SceneMusicScoringService>.Instance);
 
         var cfg = new Dictionary<string, JsonElement>
@@ -77,7 +77,7 @@ public class SceneMusicScoringTests
     public async Task ProcessSceneMusicAsync_BypassesWhenAudioClientIsNotConfigured()
     {
         var chat = new FakeChatClient();
-        var audio = new FakeAudioClient { IsConfigured = false };
+        var audio = new FakeMusicClient { IsConfigured = false };
         var service = new SceneMusicScoringService(chat, audio, NullLogger<SceneMusicScoringService>.Instance);
 
         var cfg = new Dictionary<string, JsonElement>

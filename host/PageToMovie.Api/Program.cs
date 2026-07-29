@@ -269,12 +269,12 @@ else
         c.BaseAddress = new Uri(GeminiChatClient.ApiBase + "/");
         c.Timeout = TimeSpan.FromMinutes(20);
     }));
-    ConfigurePooledSocketsHandler(builder.Services.AddHttpClient<FalAudioClient>(c =>
+    ConfigurePooledSocketsHandler(builder.Services.AddHttpClient<FalMusicClient>(c =>
     {
-        c.BaseAddress = new Uri(FalAudioClient.ApiBase.TrimEnd('/') + "/");
+        c.BaseAddress = new Uri(FalMusicClient.ApiBase.TrimEnd('/') + "/");
         c.Timeout = TimeSpan.FromMinutes(5);
     }));
-    builder.Services.AddSingleton<IAudioClient>(sp => sp.GetRequiredService<FalAudioClient>());
+    builder.Services.AddSingleton<IMusicClient, MultiProviderMusicClient>();
     builder.Services.AddSingleton<SceneMusicScoringService>();
     builder.Services.AddSingleton<SmartClassifierModelRouter>();
     builder.Services.AddSingleton<ActionCameraOverheadLedger>();

@@ -15,6 +15,7 @@ public enum ModelCapability
     Image,
     Chat,
     Vision,
+    Audio,
 }
 
 /// <summary>

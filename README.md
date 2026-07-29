@@ -77,11 +77,12 @@ flowchart TD
     A["Raw Story Text / PDF / Fountain"] --> B["Step 1: Text Ingestion\n(BookPrepareService)"]
     B --> C["Step 2: Stage 1 Adaptation\n(Grok 4.5 LLM Screenwriter)"]
     C --> D["Step 3: Cast Discovery & Vision Gate\n(Grok 4.5 + Grok/Gemini Image + Vision Classifier)"]
-    D --> E["Step 4: Stage 2 Shot Planning\n(6 Grok 4.5 AI Classifiers)"]
+    D --> E["Step 4: Stage 2 Shot Planning\n(15 Grok 4.5 AI Classifiers)"]
     E --> F["Step 5: Video Generation\n(Grok Imagine Video / Veo + Reference Locks)"]
-    F --> G["Step 6: Multi-Frame Auto-Review\n(browser frames + server vision)"]
-    G --> H["Step 7: Browser Stitch / Export\n(ffmpeg.wasm in PageToMovie.Web)"]
-    H --> I["🎬 Playable draft / export (client media folder)"]
+    F --> G["Step 6: Multi-Frame Auto-Review & Action-Hit Detection\n(IVisionClient)"]
+    G --> H["Step 7: Background Music Scoring & Audio Ducking\n(IMusicClient / Fal.ai Stable Audio)"]
+    H --> I["Step 8: Browser Stitch / Master Export\n(ffmpeg / client media folder)"]
+    I --> J["🎬 Playable draft / master export"]
 ```
 
 ### 1. Source Text Ingestion (`BookPrepareService`)
