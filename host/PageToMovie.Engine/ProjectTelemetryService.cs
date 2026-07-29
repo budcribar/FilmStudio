@@ -2,6 +2,7 @@ using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using PageToMovie.Core.Utils;
 using Microsoft.Extensions.Logging;
 
 namespace PageToMovie.Engine;
@@ -264,22 +265,8 @@ public sealed class ProjectTelemetryService
     private readonly ConcurrentDictionary<string, SemaphoreSlim> _fileAsyncLocks =
         new(StringComparer.OrdinalIgnoreCase);
 
-    public async Task AppendJsonlAsync(string path, object rec, CancellationToken ct = default)
-    {
-        var dir = Path.GetDirectoryName(path)!;
-        Directory.CreateDirectory(dir);
-        var line = JsonSerializer.Serialize(rec, JsonOpts) + "\n";
-        var gate = _fileAsyncLocks.GetOrAdd(path, _ => new SemaphoreSlim(1, 1));
-        await gate.WaitAsync(ct).ConfigureAwait(false);
-        try
-        {
-            await File.AppendAllTextAsync(path, line, ct).ConfigureAwait(false);
-        }
-        finally
-        {
-            gate.Release();
-        }
-    }
+    public async Task AppendJsonlAsync(string path, object rec, CancellationToken ct = default) =>
+        await JsonlStore.AppendAsync(path, rec, JsonOpts, ct: ct).ConfigureAwait(false);
 
     private sealed class ScopePop : IDisposable
     {

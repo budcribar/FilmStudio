@@ -1,5 +1,6 @@
 using System.Text.Json;
 using PageToMovie.Core.Models;
+using PageToMovie.Core.Utils;
 using Microsoft.Extensions.Logging;
 
 namespace PageToMovie.Engine;
@@ -47,17 +48,7 @@ public sealed class ReviewEventStore
 
         try
         {
-            Directory.CreateDirectory(LearningDir);
-            var line = JsonSerializer.Serialize(ev, JsonOpts) + "\n";
-            await _writeGate.WaitAsync(ct).ConfigureAwait(false);
-            try
-            {
-                await File.AppendAllTextAsync(EventsPath, line, ct).ConfigureAwait(false);
-            }
-            finally
-            {
-                _writeGate.Release();
-            }
+            await JsonlStore.AppendAsync(EventsPath, ev, JsonOpts, _writeGate, ct).ConfigureAwait(false);
         }
         catch (Exception ex)
         {

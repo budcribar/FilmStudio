@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using PageToMovie.Core.Models;
+using PageToMovie.Core.Utils;
 
 namespace PageToMovie.Engine;
 
@@ -10,7 +11,7 @@ namespace PageToMovie.Engine;
 public sealed class SceneListCache
 {
     private readonly ConcurrentDictionary<string, CacheEntry> _entries = new(StringComparer.OrdinalIgnoreCase);
-    private readonly ConcurrentDictionary<string, SemaphoreSlim> _buildLocks = new(StringComparer.OrdinalIgnoreCase);
+    private readonly KeyedAsyncLock<string> _buildLocks = new(StringComparer.OrdinalIgnoreCase);
     private readonly TimeSpan _ttl;
 
     public SceneListCache(TimeSpan? ttl = null) =>
@@ -30,9 +31,7 @@ public sealed class SceneListCache
         if (TryGetFresh(key, out var hit))
             return CloneList(hit);
 
-        var gate = _buildLocks.GetOrAdd(key, _ => new SemaphoreSlim(1, 1));
-        await gate.WaitAsync(ct).ConfigureAwait(false);
-        try
+        using (await _buildLocks.LockAsync(key, ct).ConfigureAwait(false))
         {
             if (TryGetFresh(key, out hit))
                 return CloneList(hit);
@@ -46,10 +45,6 @@ public sealed class SceneListCache
                 Scenes = stored,
             };
             return CloneList(stored);
-        }
-        finally
-        {
-            gate.Release();
         }
     }
 
