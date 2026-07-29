@@ -262,11 +262,17 @@ public sealed class ProjectTelemetryService
         return false;
     }
 
+    // Per-path gate, kept on this instance (not JsonlStore's internal one) so a future reader of
+    // api_calls.jsonl/media_ops.jsonl can coordinate against the exact same lock instance a write
+    // is using (see MtimeValidatedFileCache<T, RealSemaphore>) instead of a read landing mid-append.
     private readonly ConcurrentDictionary<string, SemaphoreSlim> _fileAsyncLocks =
         new(StringComparer.OrdinalIgnoreCase);
 
-    public async Task AppendJsonlAsync(string path, object rec, CancellationToken ct = default) =>
-        await JsonlStore.AppendAsync(path, rec, JsonOpts, ct: ct).ConfigureAwait(false);
+    public async Task AppendJsonlAsync(string path, object rec, CancellationToken ct = default)
+    {
+        var gate = _fileAsyncLocks.GetOrAdd(path, _ => new SemaphoreSlim(1, 1));
+        await JsonlStore.AppendAsync(path, rec, JsonOpts, gate, ct).ConfigureAwait(false);
+    }
 
     private sealed class ScopePop : IDisposable
     {
