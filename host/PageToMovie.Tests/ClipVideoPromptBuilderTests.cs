@@ -256,22 +256,27 @@ public class ClipVideoPromptBuilderTests
     }
 
     [Fact]
-    public void CompressPromptText_maps_character_keys_to_compact_aliases()
+    public void CompressPromptText_maps_character_keys_and_image_tags_to_compact_aliases()
     {
         var input = "CHARACTER VARIABLES (use these identities consistently; do not redesign faces or wardrobe):\n" +
-                    " Character_The_Narrator <IMAGE_1>: Lean man of middle years.\n" +
+                    " Character_The_Narrator <IMAGE_1>: Lean man of middle years. Visual lock: dark coat.\n" +
                     " Character_Old_Man <IMAGE_2>: Elderly man with pale blue eye.\n" +
                     "THIS CLIP:\n" +
-                    "Character_The_Narrator speaks to Character_Old_Man. Character_The_Narrator gestures.";
+                    "Camera directive: Medium shot. Color grading: Dark. Character_The_Narrator ON CAMERA lip-syncs to Character_Old_Man <IMAGE_2>.";
 
         var compressed = ClipVideoPromptBuilder.CompressPromptText(input);
 
         Assert.Contains("CHARACTERS:", compressed);
         Assert.DoesNotContain("Character_The_Narrator", compressed);
         Assert.DoesNotContain("Character_Old_Man", compressed);
-        Assert.Contains("C1 <IMAGE_1>", compressed);
-        Assert.Contains("C2 <IMAGE_2>", compressed);
-        Assert.Contains("C1 speaks to C2. C1 gestures.", compressed);
+        Assert.DoesNotContain("<IMAGE_1>", compressed);
+        Assert.DoesNotContain("<IMAGE_2>", compressed);
+        Assert.Contains("C1 I1", compressed);
+        Assert.Contains("C2 I2", compressed);
+        Assert.Contains("Camera: Medium shot.", compressed);
+        Assert.Contains("Grade: Dark.", compressed);
+        Assert.Contains("Visual: dark coat.", compressed);
+        Assert.Contains("C1 lip-syncs to C2 I2.", compressed);
     }
 
     [Fact]

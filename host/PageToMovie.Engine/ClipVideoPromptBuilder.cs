@@ -640,14 +640,15 @@ public static class ClipVideoPromptBuilder
     /// <summary>
     /// Intelligently compresses prompt text without losing core visual action or character details.
     /// Maps long character keys (e.g. "Character_The_Narrator") to compact aliases ("C1", "C2"),
-    /// simplifies verbose section headers, and collapses duplicate blank lines / spaces.
+    /// image tags ("<IMAGE_1>") to ("I1"), simplifies verbose section headers/labels,
+    /// and collapses duplicate blank lines / spaces.
     /// </summary>
     public static string CompressPromptText(string prompt)
     {
         if (string.IsNullOrWhiteSpace(prompt)) return prompt ?? "";
         var p = prompt;
 
-        // 1. Simplify verbose section headers
+        // 1. Simplify verbose section headers & repetitive directives
         p = p.Replace("CHARACTER VARIABLES (use these identities consistently; do not redesign faces or wardrobe):", "CHARACTERS:");
         p = p.Replace("REQUIRED native Grok dialogue.", "");
         p = p.Replace("Do not invent extra people, duplicate faces, or crowd extras not listed.", "");
@@ -665,7 +666,17 @@ public static class ClipVideoPromptBuilder
             p = p.Replace(key, alias);
         }
 
-        // 3. Collapse multiple blank lines & consecutive spaces
+        // 3. Compress image reference tags (<IMAGE_1> -> I1, <IMAGE_2> -> I2)
+        p = Regex.Replace(p, @"<IMAGE_(\d+)>", "I$1");
+
+        // 4. Compress technical camera and styling labels
+        p = p.Replace("Camera directive:", "Camera:");
+        p = p.Replace("Color grading:", "Grade:");
+        p = p.Replace("Visual lock:", "Visual:");
+        p = p.Replace("Performance:", "Perf:");
+        p = p.Replace("ON CAMERA lip-syncs", "lip-syncs");
+
+        // 5. Collapse multiple blank lines & consecutive spaces
         p = Regex.Replace(p, @"\n\s*\n+", "\n");
         p = Regex.Replace(p, @"[ \t]+", " ");
 
