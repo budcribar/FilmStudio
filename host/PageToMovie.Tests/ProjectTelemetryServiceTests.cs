@@ -28,11 +28,11 @@ public class ProjectTelemetryServiceTests : IDisposable
     }
 
     [Fact]
-    public void LogApiCall_writes_full_prompt_jsonl()
+    public async Task LogApiCall_writes_full_prompt_jsonl()
     {
         using (_tel.UseProject("P"))
         {
-            _tel.LogApiCall(new ApiCallTelemetry
+            await _tel.LogApiCallAsync(new ApiCallTelemetry
             {
                 Kind = "video",
                 Endpoint = "videos/generations",
@@ -52,7 +52,7 @@ public class ProjectTelemetryServiceTests : IDisposable
     }
 
     [Fact]
-    public void LogMediaOp_condensed_drops_frame_spam()
+    public async Task LogMediaOp_condensed_drops_frame_spam()
     {
         var raw = string.Join('\n',
             "frame=  1 fps=0.0",
@@ -81,7 +81,7 @@ public class ProjectTelemetryServiceTests : IDisposable
         Assert.NotNull(rec.Progress);
 
         using (_tel.UseProject("P"))
-            _tel.LogMediaOp(rec);
+            await _tel.LogMediaOpAsync(rec);
 
         var path = _tel.MediaOpsPath("P");
         Assert.True(File.Exists(path));

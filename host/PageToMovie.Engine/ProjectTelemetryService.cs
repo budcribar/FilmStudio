@@ -32,8 +32,6 @@ public sealed class ProjectTelemetryService
 
     private readonly ProjectStore _projects;
     private readonly ILogger<ProjectTelemetryService> _log;
-    private readonly ConcurrentDictionary<string, object> _fileLocks =
-        new(StringComparer.OrdinalIgnoreCase);
 
     public ProjectTelemetryService(ProjectStore projects, ILogger<ProjectTelemetryService> log)
     {
@@ -70,7 +68,7 @@ public sealed class ProjectTelemetryService
     [Obsolete("Use MediaOpsPath — server no longer runs native ffmpeg.")]
     public string FfmpegPath(string projectId) => MediaOpsPath(projectId);
 
-    public void LogApiCall(ApiCallTelemetry rec)
+    public async Task LogApiCallAsync(ApiCallTelemetry rec, CancellationToken ct = default)
     {
         var projectId = rec.ProjectId ?? CurrentProjectId;
         if (string.IsNullOrWhiteSpace(projectId))
@@ -85,7 +83,7 @@ public sealed class ProjectTelemetryService
 
         try
         {
-            AppendJsonl(ApiCallsPath(projectId), rec);
+            await AppendJsonlAsync(ApiCallsPath(projectId), rec, ct).ConfigureAwait(false);
         }
         catch (Exception ex)
         {
@@ -93,8 +91,8 @@ public sealed class ProjectTelemetryService
         }
     }
 
-    /// <summary>Append a condensed local media op (historical name: LogFfmpeg).</summary>
-    public void LogMediaOp(FfmpegOpTelemetry rec)
+    /// <summary>Append a condensed local media op.</summary>
+    public async Task LogMediaOpAsync(FfmpegOpTelemetry rec, CancellationToken ct = default)
     {
         var projectId = rec.ProjectId ?? CurrentProjectId;
         if (string.IsNullOrWhiteSpace(projectId))
@@ -109,17 +107,13 @@ public sealed class ProjectTelemetryService
 
         try
         {
-            AppendJsonl(MediaOpsPath(projectId), rec);
+            await AppendJsonlAsync(MediaOpsPath(projectId), rec, ct).ConfigureAwait(false);
         }
         catch (Exception ex)
         {
             _log.LogWarning(ex, "media_ops append failed for {ProjectId}", projectId);
         }
     }
-
-    /// <summary>Legacy alias for <see cref="LogMediaOp"/>.</summary>
-    [Obsolete("Use LogMediaOp.")]
-    public void LogFfmpeg(FfmpegOpTelemetry rec) => LogMediaOp(rec);
 
     /// <summary>
     /// Build condensed media-op telemetry from raw process log + args.
@@ -286,8 +280,6 @@ public sealed class ProjectTelemetryService
             gate.Release();
         }
     }
-
-    private void AppendJsonl(string path, object rec) => AppendJsonlAsync(path, rec).GetAwaiter().GetResult();
 
     private sealed class ScopePop : IDisposable
     {

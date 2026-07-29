@@ -66,7 +66,7 @@ public sealed class GrokImageClient : IImageClient
             var body = await resp.Content.ReadAsStringAsync(ct);
             if (!resp.IsSuccessStatusCode)
             {
-                _telemetry.LogApiCall(new ApiCallTelemetry
+                await _telemetry.LogApiCallAsync(new ApiCallTelemetry
                 {
                     Kind = "image",
                     Endpoint = "images/generations",
@@ -86,7 +86,7 @@ public sealed class GrokImageClient : IImageClient
             var images = ParseImageResponse(body, n, "generations");
             if (images.Count < n)
             {
-                _telemetry.LogApiCall(new ApiCallTelemetry
+                await _telemetry.LogApiCallAsync(new ApiCallTelemetry
                 {
                     Kind = "image",
                     Endpoint = "images/generations",
@@ -103,7 +103,7 @@ public sealed class GrokImageClient : IImageClient
                     $"Grok image API returned {images.Count}/{n} usable images");
             }
 
-            _telemetry.LogApiCall(new ApiCallTelemetry
+            await _telemetry.LogApiCallAsync(new ApiCallTelemetry
             {
                 Kind = "image",
                 Endpoint = "images/generations",
@@ -119,7 +119,7 @@ public sealed class GrokImageClient : IImageClient
         }
         catch (Exception ex) when (ex is not InvalidOperationException)
         {
-            _telemetry.LogApiCall(new ApiCallTelemetry
+            await _telemetry.LogApiCallAsync(new ApiCallTelemetry
             {
                 Kind = "image",
                 Endpoint = "images/generations",
@@ -259,7 +259,7 @@ public sealed class GrokImageClient : IImageClient
                         .ConfigureAwait(false);
                     if (body is null)
                     {
-                        _telemetry.LogApiCall(new ApiCallTelemetry
+                        await _telemetry.LogApiCallAsync(new ApiCallTelemetry
                         {
                             Kind = "image_edit",
                             Endpoint = "images/edits",
@@ -278,7 +278,7 @@ public sealed class GrokImageClient : IImageClient
                     }
 
                     var batch = ParseImageResponse(body, 1, $"edits variant {i + 1}");
-                    _telemetry.LogApiCall(new ApiCallTelemetry
+                    await _telemetry.LogApiCallAsync(new ApiCallTelemetry
                     {
                         Kind = "image_edit",
                         Endpoint = "images/edits",
@@ -296,7 +296,7 @@ public sealed class GrokImageClient : IImageClient
                 }
                 catch (Exception ex) when (ex is not InvalidOperationException)
                 {
-                    _telemetry.LogApiCall(new ApiCallTelemetry
+                    await _telemetry.LogApiCallAsync(new ApiCallTelemetry
                     {
                         Kind = "image_edit",
                         Endpoint = "images/edits",

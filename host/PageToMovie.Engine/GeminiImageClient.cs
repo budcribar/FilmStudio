@@ -182,7 +182,7 @@ public sealed class GeminiImageClient : IImageClient
             var body = await resp.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
             if (!resp.IsSuccessStatusCode)
             {
-                _telemetry.LogApiCall(new ApiCallTelemetry
+                await _telemetry.LogApiCallAsync(new ApiCallTelemetry
                 {
                     Kind = referenceImagePaths is { Count: > 0 } ? "image_edit" : "image",
                     Endpoint = endpoint,
@@ -201,7 +201,7 @@ public sealed class GeminiImageClient : IImageClient
             }
 
             var image = ExtractInlineImage(body);
-            _telemetry.LogApiCall(new ApiCallTelemetry
+            await _telemetry.LogApiCallAsync(new ApiCallTelemetry
             {
                 Kind = referenceImagePaths is { Count: > 0 } ? "image_edit" : "image",
                 Endpoint = endpoint,
@@ -220,7 +220,7 @@ public sealed class GeminiImageClient : IImageClient
         }
         catch (Exception ex) when (ex is not InvalidOperationException)
         {
-            _telemetry.LogApiCall(new ApiCallTelemetry
+            await _telemetry.LogApiCallAsync(new ApiCallTelemetry
             {
                 Kind = referenceImagePaths is { Count: > 0 } ? "image_edit" : "image",
                 Endpoint = endpoint,

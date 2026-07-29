@@ -76,7 +76,7 @@ public sealed class GrokChatClient : IChatClient
             var body = await resp.Content.ReadAsStringAsync(ct);
             if (!resp.IsSuccessStatusCode)
             {
-                _telemetry.LogApiCall(new ApiCallTelemetry
+                await _telemetry.LogApiCallAsync(new ApiCallTelemetry
                 {
                     Kind = "chat",
                     Mode = modeTag,
@@ -96,7 +96,7 @@ public sealed class GrokChatClient : IChatClient
 
             using var doc = JsonDocument.Parse(body);
             var text = ExtractMessageText(doc.RootElement);
-            _telemetry.LogApiCall(new ApiCallTelemetry
+            await _telemetry.LogApiCallAsync(new ApiCallTelemetry
             {
                 Kind = "chat",
                 Mode = modeTag,
@@ -115,7 +115,7 @@ public sealed class GrokChatClient : IChatClient
         }
         catch (Exception ex) when (ex is not InvalidOperationException)
         {
-            _telemetry.LogApiCall(new ApiCallTelemetry
+            await _telemetry.LogApiCallAsync(new ApiCallTelemetry
             {
                 Kind = "chat",
                 Mode = modeTag,

@@ -107,7 +107,7 @@ public sealed class GeminiVideoClient : IVideoClient
             var body = await resp.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
             if (!resp.IsSuccessStatusCode)
             {
-                _telemetry.LogApiCall(new ApiCallTelemetry
+                await _telemetry.LogApiCallAsync(new ApiCallTelemetry
                 {
                     Kind = "video",
                     Mode = mode,
@@ -134,7 +134,7 @@ public sealed class GeminiVideoClient : IVideoClient
                     $"Gemini predictLongRunning response missing operation name: {Trim(body, 300)}");
             }
 
-            _telemetry.LogApiCall(new ApiCallTelemetry
+            await _telemetry.LogApiCallAsync(new ApiCallTelemetry
             {
                 Kind = "video",
                 Mode = mode,
@@ -153,7 +153,7 @@ public sealed class GeminiVideoClient : IVideoClient
         }
         catch (Exception ex) when (ex is not InvalidOperationException and not NotSupportedException)
         {
-            _telemetry.LogApiCall(new ApiCallTelemetry
+            await _telemetry.LogApiCallAsync(new ApiCallTelemetry
             {
                 Kind = "video",
                 Mode = mode,
@@ -189,7 +189,7 @@ public sealed class GeminiVideoClient : IVideoClient
             var body = await resp.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
             if (!resp.IsSuccessStatusCode)
             {
-                _telemetry.LogApiCall(new ApiCallTelemetry
+                await _telemetry.LogApiCallAsync(new ApiCallTelemetry
                 {
                     Kind = "video_poll",
                     Endpoint = opPath,
@@ -212,7 +212,7 @@ public sealed class GeminiVideoClient : IVideoClient
             if (root.TryGetProperty("error", out var errEl) && errEl.ValueKind == JsonValueKind.Object)
             {
                 var detail = errEl.ToString();
-                _telemetry.LogApiCall(new ApiCallTelemetry
+                await _telemetry.LogApiCallAsync(new ApiCallTelemetry
                 {
                     Kind = "video_poll",
                     Endpoint = opPath,
@@ -237,7 +237,7 @@ public sealed class GeminiVideoClient : IVideoClient
                         $"(schema may differ from expected — see class-level CONFIDENCE NOTE): " +
                         $"{Trim(body, 500)}");
                 }
-                _telemetry.LogApiCall(new ApiCallTelemetry
+                await _telemetry.LogApiCallAsync(new ApiCallTelemetry
                 {
                     Kind = "video_poll",
                     Endpoint = opPath,

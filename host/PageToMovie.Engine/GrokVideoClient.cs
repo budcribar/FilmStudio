@@ -135,7 +135,7 @@ public sealed class GrokVideoClient : IVideoClient
                         startUri, refObjs, startFrameImagePath, refs.Count, ct);
                 }
 
-                _telemetry.LogApiCall(new ApiCallTelemetry
+                await _telemetry.LogApiCallAsync(new ApiCallTelemetry
                 {
                     Kind = kind,
                     Endpoint = endpoint,
@@ -160,7 +160,7 @@ public sealed class GrokVideoClient : IVideoClient
                 ClipVideoPromptBuilder.IsPromptTooLongError(ex.Message))
             {
                 lastLengthError = ex;
-                _telemetry.LogApiCall(new ApiCallTelemetry
+                await _telemetry.LogApiCallAsync(new ApiCallTelemetry
                 {
                     Kind = kind,
                     Endpoint = hasContinue ? "videos/extensions" : "videos/generations",
@@ -181,7 +181,7 @@ public sealed class GrokVideoClient : IVideoClient
             }
             catch (Exception ex)
             {
-                _telemetry.LogApiCall(new ApiCallTelemetry
+                await _telemetry.LogApiCallAsync(new ApiCallTelemetry
                 {
                     Kind = kind,
                     Endpoint = hasContinue ? "videos/extensions" : "videos/generations",
@@ -341,7 +341,7 @@ public sealed class GrokVideoClient : IVideoClient
             var body = await resp.Content.ReadAsStringAsync(ct);
             if (!resp.IsSuccessStatusCode)
             {
-                _telemetry.LogApiCall(new ApiCallTelemetry
+                await _telemetry.LogApiCallAsync(new ApiCallTelemetry
                 {
                     Kind = "video_poll",
                     Endpoint = $"videos/{requestId}",
@@ -365,7 +365,7 @@ public sealed class GrokVideoClient : IVideoClient
                     video.TryGetProperty("url", out var urlEl) &&
                     urlEl.GetString() is { Length: > 0 } url)
                 {
-                    _telemetry.LogApiCall(new ApiCallTelemetry
+                    await _telemetry.LogApiCallAsync(new ApiCallTelemetry
                     {
                         Kind = "video_poll",
                         Endpoint = $"videos/{requestId}",
@@ -385,7 +385,7 @@ public sealed class GrokVideoClient : IVideoClient
                 string.Equals(status, "expired", StringComparison.OrdinalIgnoreCase))
             {
                 var detail = root.TryGetProperty("error", out var err) ? err.ToString() : body;
-                _telemetry.LogApiCall(new ApiCallTelemetry
+                await _telemetry.LogApiCallAsync(new ApiCallTelemetry
                 {
                     Kind = "video_poll",
                     Endpoint = $"videos/{requestId}",

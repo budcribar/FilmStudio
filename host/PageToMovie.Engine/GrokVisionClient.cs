@@ -398,7 +398,7 @@ public sealed class GrokVisionClient : IVisionClient
             var body = await resp.Content.ReadAsStringAsync(ct);
             if (!resp.IsSuccessStatusCode)
             {
-                _telemetry.LogApiCall(new ApiCallTelemetry
+                await _telemetry.LogApiCallAsync(new ApiCallTelemetry
                 {
                     Kind = "vision",
                     Endpoint = "responses",
@@ -420,7 +420,7 @@ public sealed class GrokVisionClient : IVisionClient
             var text = ExtractResponseText(doc.RootElement);
             text = Regex.Replace(text.Trim(), @"^```(?:\w+)?\s*", "", RegexOptions.IgnoreCase);
             text = Regex.Replace(text, @"\s*```$", "").Trim();
-            _telemetry.LogApiCall(new ApiCallTelemetry
+            await _telemetry.LogApiCallAsync(new ApiCallTelemetry
             {
                 Kind = "vision",
                 Endpoint = "responses",
@@ -439,7 +439,7 @@ public sealed class GrokVisionClient : IVisionClient
         }
         catch (Exception ex) when (ex is not InvalidOperationException && ex is not ArgumentException)
         {
-            _telemetry.LogApiCall(new ApiCallTelemetry
+            await _telemetry.LogApiCallAsync(new ApiCallTelemetry
             {
                 Kind = "vision",
                 Endpoint = "responses",
