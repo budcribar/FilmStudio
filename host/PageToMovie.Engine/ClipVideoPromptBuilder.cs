@@ -207,11 +207,8 @@ public static class ClipVideoPromptBuilder
         var actionTagged = actionText;
         foreach (var (key, tag) in imageTagByKey)
         {
-            actionTagged = Regex.Replace(
-                actionTagged,
-                Regex.Escape(key),
-                $"{key} {tag}",
-                RegexOptions.IgnoreCase);
+            if (!string.IsNullOrWhiteSpace(key))
+                actionTagged = actionTagged.Replace(key, $"{key} {tag}", StringComparison.OrdinalIgnoreCase);
         }
 
         var sb = new StringBuilder();

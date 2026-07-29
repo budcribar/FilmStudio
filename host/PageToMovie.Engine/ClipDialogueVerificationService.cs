@@ -78,11 +78,15 @@ public sealed class ClipDialogueVerificationService
         }
     }
 
+    private static readonly byte[] NewLineBytes = new byte[] { (byte)'\n' };
+
     public async Task SaveVerificationAsync(string projectId, ClipDialogueVerificationResult result, CancellationToken ct = default)
     {
         var path = VerificationPath(projectId, result.SceneNumber, result.ClipNumber);
         Directory.CreateDirectory(Path.GetDirectoryName(path)!);
-        await File.WriteAllTextAsync(path, JsonSerializer.Serialize(result, JsonOpts) + "\n", ct).ConfigureAwait(false);
+        await using var stream = new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.None, 4096, useAsync: true);
+        await JsonSerializer.SerializeAsync(stream, result, JsonOpts, ct).ConfigureAwait(false);
+        await stream.WriteAsync(NewLineBytes, ct).ConfigureAwait(false);
     }
 
     /// <summary>

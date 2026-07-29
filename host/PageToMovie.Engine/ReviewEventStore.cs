@@ -33,7 +33,9 @@ public sealed class ReviewEventStore
     public string EventsPath =>
         Path.Combine(LearningDir, "review_events.jsonl");
 
-    public ReviewLearningEvent Append(ReviewLearningEvent ev)
+    private readonly SemaphoreSlim _writeGate = new(1, 1);
+
+    public async Task<ReviewLearningEvent> AppendAsync(ReviewLearningEvent ev, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(ev);
         if (string.IsNullOrWhiteSpace(ev.Id))
@@ -47,10 +49,15 @@ public sealed class ReviewEventStore
         try
         {
             Directory.CreateDirectory(LearningDir);
-            var line = JsonSerializer.Serialize(ev, JsonOpts);
-            lock (_writeLock)
+            var line = JsonSerializer.Serialize(ev, JsonOpts) + "\n";
+            await _writeGate.WaitAsync(ct).ConfigureAwait(false);
+            try
             {
-                File.AppendAllText(EventsPath, line + "\n");
+                await File.AppendAllTextAsync(EventsPath, line, ct).ConfigureAwait(false);
+            }
+            finally
+            {
+                _writeGate.Release();
             }
         }
         catch (Exception ex)
@@ -61,6 +68,8 @@ public sealed class ReviewEventStore
 
         return ev;
     }
+
+    public ReviewLearningEvent Append(ReviewLearningEvent ev) => AppendAsync(ev).GetAwaiter().GetResult();
 
     public ReviewLearningEvent AppendFromEditLog(
         string projectId,

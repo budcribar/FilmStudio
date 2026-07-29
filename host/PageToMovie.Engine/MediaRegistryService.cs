@@ -76,13 +76,13 @@ public sealed class MediaRegistryService
     {
         await using var fs = File.OpenRead(path);
         var hash = await SHA256.HashDataAsync(fs, ct).ConfigureAwait(false);
-        return Convert.ToHexString(hash).ToLowerInvariant();
+        return Convert.ToHexStringLower(hash);
     }
 
     public static string HashBytes(ReadOnlySpan<byte> data)
     {
         var hash = SHA256.HashData(data);
-        return Convert.ToHexString(hash).ToLowerInvariant();
+        return Convert.ToHexStringLower(hash);
     }
 
     public async Task<MediaObjectDto> UpsertAsync(

@@ -72,9 +72,9 @@ public sealed class ProjectArtifactIndexService
             {
                 try
                 {
-                    var files = Directory.GetFiles(abs, "*", SearchOption.AllDirectories);
-                    fileCount = files.Length;
-                    bytes = files.Sum(f => { try { return new FileInfo(f).Length; } catch { return 0L; } });
+                    var fileInfos = new DirectoryInfo(abs).EnumerateFiles("*", SearchOption.AllDirectories).ToList();
+                    fileCount = fileInfos.Count;
+                    bytes = fileInfos.Sum(fi => { try { return fi.Length; } catch { return 0L; } });
                 }
                 catch { /* */ }
             }
