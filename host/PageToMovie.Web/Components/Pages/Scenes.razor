@@ -720,7 +720,7 @@ else
                     </div>
                     <video controls playsinline
                            style="max-width:100%; max-height:280px; background:#111; border-radius:0.35rem;"
-                           src="@CacheBust(Engine.CompositeVideoUrl(_projectId, _detail.SceneNumber))"
+                           src="@(_sceneCompositeVideoUrl ?? CacheBust(Engine.CompositeVideoUrl(_projectId, _detail.SceneNumber)))"
                            @key="_inlineCompositeKey"
                            poster=""></video>
                     <p class="small text-muted mb-0 mt-1">
@@ -984,7 +984,7 @@ else
                         </div>
                         <video controls playsinline autoplay
                                style="width:100%; max-height:320px; background:#111; border-radius:0.35rem;"
-                               src="@CacheBust(Engine.ClipVideoUrl(_projectId, _detail.SceneNumber, _clip.ClipNumber))"
+                               src="@(_clipVideoUrl ?? CacheBust(Engine.ClipVideoUrl(_projectId, _detail.SceneNumber, _clip.ClipNumber)))"
                                @key="@($"clip-{_detail.SceneNumber}-{_clip.ClipNumber}-{_clipVideoKey}")"
                                onloadeddata="this.play().catch(function(){})"></video>
                         <div class="small text-muted mt-1">
@@ -2641,6 +2641,18 @@ else
         var dto = await Engine.GetSceneDetailAsync(_projectId, sn);
         _detail = dto?.Scene
             ?? throw new InvalidOperationException($"Scene {sn} not found");
+
+        _sceneCompositeVideoUrl = null;
+        if (MediaFolder.IsConnected && _detail.CompositeExists)
+        {
+            try
+            {
+                var localBlob = await MediaFolder.GetLocalBlobUrlAsync($"assets/video/scene_{sn:D2}.mp4");
+                if (!string.IsNullOrWhiteSpace(localBlob))
+                    _sceneCompositeVideoUrl = localBlob;
+            }
+            catch { /* fallback */ }
+        }
     }
 
     private async Task BackToListAsync()
@@ -2708,6 +2720,9 @@ else
         finally { _busy = false; _pendingRegenScene = null; }
     }
 
+    private string? _clipVideoUrl;
+    private string? _sceneCompositeVideoUrl;
+
     private void SelectClip(int? cn)
     {
         _selectedClip = cn;
@@ -2718,6 +2733,7 @@ else
         _historyVersions = new();
         _compareIndex = 0;
         _compareAVideoUrl = null;
+        _clipVideoUrl = null;
         if (cn is int cnv)
         {
             // Force new <video> mount so we never keep a previous composite/clip stream
@@ -2729,8 +2745,27 @@ else
                 _playingScene = null;
             }
             if (_detail is not null)
-                _ = LoadClipHistoryAsync(_detail.SceneNumber, cnv);
+                _ = LoadClipVideoAndHistoryAsync(_detail.SceneNumber, cnv);
         }
+    }
+
+    private async Task LoadClipVideoAndHistoryAsync(int scene, int clip)
+    {
+        if (MediaFolder.IsConnected)
+        {
+            try
+            {
+                var relPath = $"assets/video/scene_{scene:D2}_clip_{clip:D2}.mp4";
+                var localBlob = await MediaFolder.GetLocalBlobUrlAsync(relPath);
+                if (!string.IsNullOrWhiteSpace(localBlob))
+                {
+                    _clipVideoUrl = localBlob;
+                    StateHasChanged();
+                }
+            }
+            catch { /* fallback to server URL */ }
+        }
+        await LoadClipHistoryAsync(scene, clip);
     }
 
     /// <summary>
