@@ -106,6 +106,7 @@ public sealed class ClipDialogueVerificationService
         int clipNumber,
         IReadOnlyList<string>? keyframePaths = null,
         string? overrideVideoPath = null,
+        bool force = false,
         CancellationToken ct = default)
     {
         var clipPath = (!string.IsNullOrWhiteSpace(overrideVideoPath) && File.Exists(overrideVideoPath))
@@ -136,6 +137,26 @@ public sealed class ClipDialogueVerificationService
             };
             await SaveVerificationAsync(projectId, noSpeechResult, ct).ConfigureAwait(false);
             return noSpeechResult;
+        }
+
+        // Cache Validation: If not forced, return existing saved verification if clip file & dialogue haven't changed
+        if (!force)
+        {
+            var existing = await LoadVerificationAsync(projectId, sceneNumber, clipNumber, ct).ConfigureAwait(false);
+            if (existing is not null && !string.Equals(existing.Status, "unverified", StringComparison.OrdinalIgnoreCase))
+            {
+                if (!string.IsNullOrWhiteSpace(clipPath) && File.Exists(clipPath))
+                {
+                    var videoMTime = File.GetLastWriteTimeUtc(clipPath);
+                    if (existing.VerifiedAt >= videoMTime &&
+                        string.Equals(existing.ExpectedDialogue, expectedDialogue, StringComparison.Ordinal) &&
+                        string.Equals(existing.ExpectedSpeaker, expectedSpeaker, StringComparison.OrdinalIgnoreCase))
+                    {
+                        _log.LogInformation("Dialogue verification for {Project} S{Scene} C{Clip} is up-to-date (cached)", projectId, sceneNumber, clipNumber);
+                        return existing;
+                    }
+                }
+            }
         }
 
         if (!IsConfigured)
