@@ -684,6 +684,14 @@ else
                 {
                     <span>· loc: <code>@_detail.PrimaryLocationId</code></span>
                 }
+                @{
+                    var verifiedCount = _detail.Clips.Count(c => c.DialogueVerification is { } v && (string.Equals(v.Status, "verified", StringComparison.OrdinalIgnoreCase) || string.Equals(v.Status, "no_speech", StringComparison.OrdinalIgnoreCase)));
+                    var totalWithDialogue = _detail.Clips.Count(c => !string.IsNullOrWhiteSpace(c.Dialogue));
+                }
+                @if (totalWithDialogue > 0 && verifiedCount > 0)
+                {
+                    <span>· <span class="text-success fw-semibold" title="Clips with dialogue verified via native video/audio QA">✓ @verifiedCount/@totalWithDialogue dialogue verified</span></span>
+                }
             </p>
 
             @* Full scene composite — hide while clip selected, remux/gen busy, or full player open *@
@@ -829,6 +837,27 @@ else
                                     {
                                         <span class="badge bg-warning text-dark px-2 py-1 rounded-pill" style="font-weight:600;"
                                               title="Not on disk yet">C@(cn.ToString("D2"))</span>
+                                    }
+                                    @if (c.DialogueVerification is { } ver)
+                                    {
+                                        @if (string.Equals(ver.Status, "verified", StringComparison.OrdinalIgnoreCase))
+                                        {
+                                            <span class="badge bg-success-subtle text-success border border-success-subtle ms-1" title="@(string.IsNullOrWhiteSpace(ver.SummaryNote) ? "Dialogue & speaker verified" : ver.SummaryNote)">
+                                                ✓ Verified (@($"{ver.DialogueAccuracyScore:P0}"))
+                                            </span>
+                                        }
+                                        else if (string.Equals(ver.Status, "speaker_swap", StringComparison.OrdinalIgnoreCase))
+                                        {
+                                            <span class="badge bg-danger-subtle text-danger border border-danger-subtle ms-1" title="@(string.IsNullOrWhiteSpace(ver.SummaryNote) ? $"Speaker swap: Expected {ver.ExpectedSpeaker}, Detected {ver.DetectedSpeaker}" : ver.SummaryNote)">
+                                                ⚠ Speaker Swap
+                                            </span>
+                                        }
+                                        else if (string.Equals(ver.Status, "mismatch", StringComparison.OrdinalIgnoreCase))
+                                        {
+                                            <span class="badge bg-warning-subtle text-warning border border-warning-subtle ms-1" title="@(string.IsNullOrWhiteSpace(ver.SummaryNote) ? $"Dialogue mismatch: {ver.DialogueAccuracyScore:P0}" : ver.SummaryNote)">
+                                                ⚠ Mismatch (@($"{ver.DialogueAccuracyScore:P0}"))
+                                            </span>
+                                        }
                                     }
                                     <button type="button"
                                             class="btn btn-sm btn-link text-danger p-0 ms-2 text-decoration-none"
@@ -3301,6 +3330,16 @@ else
                         StateHasChanged();
                     }
                 }
+            }
+
+            if (_detail is not null)
+            {
+                _detail = (await Engine.GetSceneDetailAsync(_projectId, _detail.SceneNumber))?.Scene;
+            }
+            var scenesDto = await Engine.GetScenesAsync(_projectId);
+            if (scenesDto?.Scenes is not null)
+            {
+                _scenes = scenesDto.Scenes;
             }
         }
         catch (Exception ex)
