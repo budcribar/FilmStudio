@@ -42,7 +42,13 @@ When debugging or implementing against a sample project (e.g. Buster / Buster2 /
    - Prefer AI prompt scrubbing, style locks, and image refs over one-off string rules.
 4. **Comments and examples** in code should say “hero animal”, “supporting cast”, “text-only page” —
    not a specific character name — unless documenting a unit-test fixture.
-5. **Before finishing a task**, ask: *Would this still work for a different book with different cast names?*
+5. **No hardcoded model metadata in C# code.**
+   - All models, capabilities, endpoints, pricing, and enablement flags must be dynamically driven by `models_catalog.json`.
+   - **Do not** hardcode model IDs, provider logic, or enablement toggles in C# source files (`SupportedModelCatalog.cs`, services, etc.). The backend must query the dynamic catalog.
+6. **Discussion-first workflow for questions.**
+   - When the user asks questions or proposes architectural concepts, **always discuss and answer the questions first** before making code edits or triggering test runs.
+   - Avoid running lengthy test suites or jumping straight to code modifications during exploratory discussions.
+7. **Before finishing a task**, ask: *Would this still work for a different book with different cast names?*
    If not, generalize.
 
 Buster (and other fixtures) are **eval / demo projects**, not product requirements.
