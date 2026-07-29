@@ -224,7 +224,6 @@ public static class SupportedModelCatalog
             AbsMaxClipDurationSeconds = 12,
             MaxPromptLength = 1000,
             MaxReferenceImageDimension = 1280,
-            Enabled = false,
             Notes = "Open-weights 13B DiT video generation model hosted on Fal.ai serverless GPUs (~$0.025 per 5s clip). Hard 1000-character prompt limit enforced by API.",
         },
         new()
