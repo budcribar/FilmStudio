@@ -452,7 +452,7 @@ app.Use(async (context, next) =>
 app.MapHub<JobHub>("/hubs/jobs");
 
 // ── Auth (Phase B + D rate limit) ───────────────────────────────────────────
-app.MapPost("/api/auth/signup", (LoginRequest body, IAdminAuthService auth, LoginRateLimiter limiter, HttpContext http) =>
+app.MapPost("/api/auth/signup", async (LoginRequest body, IAdminAuthService auth, LoginRateLimiter limiter, HttpContext http) =>
 {
     var key = $"{body.Username ?? ""}|{http.Connection.RemoteIpAddress}";
     if (limiter.IsBlocked(key, out var retryAfter))
@@ -462,7 +462,7 @@ app.MapPost("/api/auth/signup", (LoginRequest body, IAdminAuthService auth, Logi
             statusCode: StatusCodes.Status429TooManyRequests);
     }
 
-    var result = auth.Signup(body.Username ?? "", body.Password ?? "", body.Email);
+    var result = await auth.SignupAsync(body.Username ?? "", body.Password ?? "", body.Email, http.RequestAborted);
     if (!result.Ok)
     {
         limiter.RecordFailure(key);
@@ -472,7 +472,7 @@ app.MapPost("/api/auth/signup", (LoginRequest body, IAdminAuthService auth, Logi
     return Results.Ok(result);
 });
 
-app.MapPost("/api/auth/login", (LoginRequest body, IAdminAuthService auth, LoginRateLimiter limiter, HttpContext http) =>
+app.MapPost("/api/auth/login", async (LoginRequest body, IAdminAuthService auth, LoginRateLimiter limiter, HttpContext http) =>
 {
     var key = $"{body.Username ?? ""}|{http.Connection.RemoteIpAddress}";
     if (limiter.IsBlocked(key, out var retryAfter))
@@ -482,7 +482,7 @@ app.MapPost("/api/auth/login", (LoginRequest body, IAdminAuthService auth, Login
             statusCode: StatusCodes.Status429TooManyRequests);
     }
 
-    var result = auth.Login(body.Username ?? "", body.Password ?? "");
+    var result = await auth.LoginAsync(body.Username ?? "", body.Password ?? "", http.RequestAborted);
     if (!result.Ok)
     {
         limiter.RecordFailure(key);
@@ -1489,7 +1489,7 @@ app.MapPost("/api/admin/users/set-password", async (
         return Results.BadRequest(new { ok = false, error = "userId is required" });
     if (string.IsNullOrWhiteSpace(body.NewPassword) || body.NewPassword.Length < 4)
         return Results.BadRequest(new { ok = false, error = "New password must be at least 4 characters." });
-    if (!auth.VerifyCallerPassword(user.UserId, body.AdminPassword ?? ""))
+    if (!await auth.VerifyCallerPasswordAsync(user.UserId, body.AdminPassword ?? ""))
         return Results.Json(new { ok = false, error = "Admin password is incorrect." },
             statusCode: StatusCodes.Status403Forbidden);
 
@@ -1578,7 +1578,7 @@ app.MapPost("/api/admin/users/delete", async (
     if (string.IsNullOrEmpty(body.AdminPassword))
         return Results.BadRequest(new { ok = false, error = "adminPassword is required" });
 
-    if (!auth.VerifyCallerPassword(user.UserId, body.AdminPassword))
+    if (!await auth.VerifyCallerPasswordAsync(user.UserId, body.AdminPassword, ct))
         return Results.Json(new { ok = false, error = "Admin password is incorrect." },
             statusCode: StatusCodes.Status403Forbidden);
 

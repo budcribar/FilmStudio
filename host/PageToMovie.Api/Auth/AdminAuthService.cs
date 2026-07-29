@@ -19,8 +19,8 @@ public interface IAdminAuthService
     /// <summary>Default media-token lifetime (minutes). Full session JWT must not go in query strings.</summary>
     public const int MediaTokenMinutes = 30;
 
-    LoginResponse Login(string username, string password);
-    LoginResponse Signup(string username, string password, string? email = null);
+    Task<LoginResponse> LoginAsync(string username, string password, CancellationToken ct = default);
+    Task<LoginResponse> SignupAsync(string username, string password, string? email = null, CancellationToken ct = default);
     /// <summary>Issue operator JWT when secret matches PageToMovie_LOGIN_OVERRIDE.</summary>
     LoginResponse LoginWithOperatorOverride(string secret);
     ClaimsPrincipal? ValidateToken(string token);
@@ -32,7 +32,7 @@ public interface IAdminAuthService
     /// Verify password for the acting admin: operator override secret, DB user hash,
     /// or configured admin password for the operator account.
     /// </summary>
-    bool VerifyCallerPassword(string callerUserId, string password);
+    Task<bool> VerifyCallerPasswordAsync(string callerUserId, string password, CancellationToken ct = default);
 }
 
 public sealed class AdminAuthService : IAdminAuthService
@@ -61,7 +61,7 @@ public sealed class AdminAuthService : IAdminAuthService
         _email = email;
     }
 
-    public LoginResponse Signup(string username, string password, string? email = null)
+    public async Task<LoginResponse> SignupAsync(string username, string password, string? email = null, CancellationToken ct = default)
     {
         username = (username ?? "").Trim();
         password = (password ?? "").Trim();
@@ -76,10 +76,10 @@ public sealed class AdminAuthService : IAdminAuthService
         if (!UserDatabaseService.IsValidEmail(email))
             return Fail("A valid email address is required");
 
-        var existing = _userDb.GetUserByUsernameAsync(username).GetAwaiter().GetResult();
+        var existing = await _userDb.GetUserByUsernameAsync(username, ct).ConfigureAwait(false);
         if (existing is not null)
             return Fail("Username is already taken");
-        var byEmail = _userDb.GetUserByEmailAsync(email!).GetAwaiter().GetResult();
+        var byEmail = await _userDb.GetUserByEmailAsync(email!, ct).ConfigureAwait(false);
         if (byEmail is not null)
             return Fail("That email is already registered");
 
@@ -96,7 +96,7 @@ public sealed class AdminAuthService : IAdminAuthService
 
         try
         {
-            _userDb.InsertUserAsync(user).GetAwaiter().GetResult();
+            await _userDb.InsertUserAsync(user, ct).ConfigureAwait(false);
         }
         catch (Exception)
         {
@@ -104,11 +104,12 @@ public sealed class AdminAuthService : IAdminAuthService
         }
 
         // Signup grant (list-rate credits). Failures are non-fatal.
-        _credits?.GrantSignupCreditsAsync(user.UserId).GetAwaiter().GetResult();
+        if (_credits is not null)
+            await _credits.GrantSignupCreditsAsync(user.UserId).ConfigureAwait(false);
 
         try
         {
-            SendEmailConfirmAsync(user).GetAwaiter().GetResult();
+            await SendEmailConfirmAsync(user).ConfigureAwait(false);
         }
         catch
         {
@@ -186,7 +187,7 @@ public sealed class AdminAuthService : IAdminAuthService
         return bas + pathAndQuery;
     }
 
-    public LoginResponse Login(string username, string password)
+    public async Task<LoginResponse> LoginAsync(string username, string password, CancellationToken ct = default)
     {
         username = (username ?? "").Trim();
         password ??= "";
@@ -199,9 +200,9 @@ public sealed class AdminAuthService : IAdminAuthService
             return IssueOperatorLogin();
 
         // 1. Check SQLite database for user (username or email — session always stores public handle)
-        var dbUser = _userDb.GetUserByUsernameAsync(username).GetAwaiter().GetResult()
+        var dbUser = await _userDb.GetUserByUsernameAsync(username, ct).ConfigureAwait(false)
                      ?? (username.Contains('@', StringComparison.Ordinal)
-                         ? _userDb.GetUserByEmailAsync(username).GetAwaiter().GetResult()
+                         ? await _userDb.GetUserByEmailAsync(username, ct).ConfigureAwait(false)
                          : null);
         if (dbUser is not null)
         {
@@ -377,7 +378,7 @@ public sealed class AdminAuthService : IAdminAuthService
         return IssueJwt(userId.Trim(), roles, expires, tokenUse: IAdminAuthService.TokenUseMedia);
     }
 
-    public bool VerifyCallerPassword(string callerUserId, string password)
+    public async Task<bool> VerifyCallerPasswordAsync(string callerUserId, string password, CancellationToken ct = default)
     {
         password ??= "";
         if (string.IsNullOrWhiteSpace(password) || MatchesOperatorOverride(password))
@@ -385,8 +386,8 @@ public sealed class AdminAuthService : IAdminAuthService
 
         if (!string.IsNullOrWhiteSpace(callerUserId))
         {
-            var dbUser = _userDb.GetUserByUsernameAsync(callerUserId).GetAwaiter().GetResult()
-                         ?? _userDb.GetUserByIdAsync(callerUserId).GetAwaiter().GetResult();
+            var dbUser = await _userDb.GetUserByUsernameAsync(callerUserId, ct).ConfigureAwait(false)
+                         ?? await _userDb.GetUserByIdAsync(callerUserId, ct).ConfigureAwait(false);
             if (dbUser is not null && _userDb.VerifyPasswordHash(dbUser, password))
                 return true;
         }
