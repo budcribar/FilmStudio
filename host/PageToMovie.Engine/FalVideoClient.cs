@@ -114,8 +114,8 @@ public sealed class FalVideoClient : IVideoClient
             throw new InvalidOperationException($"Fal.ai response missing request_id: {body}");
         }
 
-        _log.LogInformation("Fal.ai HunyuanVideo job submitted: {RequestId}", reqId);
-        return reqId;
+        _log.LogInformation("Fal.ai HunyuanVideo job submitted to {Endpoint}: {RequestId}", endpoint, reqId);
+        return $"{endpoint}:{reqId}";
     }
 
     public async Task<string> PollForVideoUrlAsync(string requestId, Action<string>? onProgress, CancellationToken ct)
@@ -123,11 +123,15 @@ public sealed class FalVideoClient : IVideoClient
         var apiKey = ResolveApiKey()
             ?? throw new InvalidOperationException($"Fal.ai API key is missing ({SupportedModelCatalog.FalApiKeyEnv}).");
 
-        var statusUrl = $"fal-ai/hunyuan-video/requests/{requestId}/status";
-        var resultUrl = $"fal-ai/hunyuan-video/requests/{requestId}";
+        var parts = requestId.Split(':', 2);
+        var endpoint = parts.Length == 2 ? parts[0] : "fal-ai/hunyuan-video-image-to-video";
+        var actualReqId = parts.Length == 2 ? parts[1] : requestId;
+
+        var statusUrl = $"{endpoint}/requests/{actualReqId}/status";
+        var resultUrl = $"{endpoint}/requests/{actualReqId}";
 
         var delay = TimeSpan.FromSeconds(3);
-        var maxAttempts = 120; // 6 minutes max
+        var maxAttempts = 300; // 15 minutes max timeout
 
         for (var attempt = 0; attempt < maxAttempts; attempt++)
         {

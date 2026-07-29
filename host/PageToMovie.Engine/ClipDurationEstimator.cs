@@ -553,6 +553,7 @@ public static class ClipDurationEstimator
 
     private static readonly Regex WordCountRegex = new(@"[\p{L}\p{N}']+", RegexOptions.Compiled);
     private static readonly Regex VowelGroupRegex = new(@"[aeiouy]+", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+    private static readonly Regex TrailingERegex = new(@"(?:(?<!s)e|e[ds])$", RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
     public static int CountWords(string text)
     {
@@ -563,19 +564,49 @@ public static class ClipDurationEstimator
     public static int CountSyllables(string text)
     {
         if (string.IsNullOrWhiteSpace(text)) return 0;
-        var words = WordCountRegex.Matches(text).Select(m => m.Value.ToLowerInvariant()).ToList();
         var total = 0;
-        foreach (var w in words)
+        var len = text.Length;
+        var wordLen = 0;
+        var syllables = 0;
+        var inVowelGroup = false;
+
+        for (var i = 0; i < len; i++)
         {
-            if (w.Length <= 3)
+            var ch = text[i];
+            if (char.IsLetter(ch) || char.IsDigit(ch) || ch == '\'')
             {
-                total += 1;
-                continue;
+                wordLen++;
+                var lower = char.ToLowerInvariant(ch);
+                var isV = lower is 'a' or 'e' or 'i' or 'o' or 'u' or 'y';
+                if (isV && !inVowelGroup)
+                {
+                    syllables++;
+                    inVowelGroup = true;
+                }
+                else if (!isV)
+                {
+                    inVowelGroup = false;
+                }
             }
-            var clean = Regex.Replace(w, @"(?:(?<!s)e|e[ds])$", "");
-            var count = VowelGroupRegex.Matches(clean).Count;
-            total += Math.Max(1, count);
+            else
+            {
+                if (wordLen > 0)
+                {
+                    if (wordLen <= 3) total += 1;
+                    else total += Math.Max(1, syllables);
+                    wordLen = 0;
+                    syllables = 0;
+                    inVowelGroup = false;
+                }
+            }
         }
+
+        if (wordLen > 0)
+        {
+            if (wordLen <= 3) total += 1;
+            else total += Math.Max(1, syllables);
+        }
+
         return total;
     }
 
