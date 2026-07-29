@@ -678,6 +678,9 @@ public static class ClipVideoPromptBuilder
         p = p.Replace("ON CAMERA lip-syncs", "lip-syncs");
         p = p.Replace("AUDIO: ", "AUDIO:");
 
+        // Strip [Display Name] bracketed titles in character lines (C1/C2 alias is sufficient)
+        p = Regex.Replace(p, @"(-\s*C\d+(?:\s+I\d+)?)\s*\[[^\]]+\]:", "$1:");
+
         // Strip resolution/fps suffix (e.g. " / 480p, 24fps" -> "") since resolution/fps is configured via API payload
         p = Regex.Replace(p, @"\s*/\s*\d+p,\s*\d+fps$", "");
 
@@ -1330,6 +1333,6 @@ public static class ClipVideoPromptBuilder
             var sp = head.LastIndexOf(' ');
             if (sp > maxChars * 2 / 3) head = head[..sp];
         }
-        return head.TrimEnd() + "\n[prompt shortened after API length limit — retry]";
+        return head.TrimEnd();
     }
 }

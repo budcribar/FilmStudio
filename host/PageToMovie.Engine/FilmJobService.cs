@@ -1919,7 +1919,11 @@ public sealed class FilmJobService
                     Description = req.Description ?? "",
                     CategoryId = "1", // Film & Animation
                 },
-                Status = new VideoStatus { PrivacyStatus = privacy },
+                Status = new VideoStatus
+                {
+                    PrivacyStatus = privacy,
+                    Embeddable = true,
+                },
             };
 
             var bytes = new FileInfo(path).Length;

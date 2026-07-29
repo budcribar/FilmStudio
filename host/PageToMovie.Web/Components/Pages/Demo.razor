@@ -82,7 +82,7 @@
                     <div class="demo-card-media">
                         @if (!string.IsNullOrWhiteSpace(d.YoutubeId))
                         {
-                            <iframe src="@($"https://www.youtube.com/embed/{d.YoutubeId}")"
+                            <iframe src="@($"https://www.youtube-nocookie.com/embed/{d.YoutubeId}?enablejsapi=1")"
                                     @key="d.Id"
                                     title="@d.Title"
                                     frameborder="0"
@@ -146,10 +146,17 @@
                                     <span aria-hidden="true">★</span>
                                     <span class="demo-star-count">@d.TotalStars</span>
                                 </button>
-                                @if (!string.IsNullOrWhiteSpace(d.YoutubeUrl))
+                                @{
+                                    var ytUrl = !string.IsNullOrWhiteSpace(d.YoutubeUrl)
+                                        ? d.YoutubeUrl
+                                        : !string.IsNullOrWhiteSpace(d.YoutubeId)
+                                            ? $"https://www.youtube.com/watch?v={d.YoutubeId}"
+                                            : null;
+                                }
+                                @if (!string.IsNullOrWhiteSpace(ytUrl))
                                 {
-                                    <a class="btn btn-sm btn-outline-warning" href="@d.YoutubeUrl" target="_blank" rel="noopener" title="Like and comment on YouTube">
-                                        👍 Like on YouTube ↗
+                                    <a class="btn btn-sm btn-outline-danger" href="@ytUrl" target="_blank" rel="noopener" title="Watch, like, and comment on YouTube">
+                                        🔴 Watch on YouTube ↗
                                     </a>
                                 }
                                 @if (d.CanFork && (d.IsForkable || Session.IsAdmin))

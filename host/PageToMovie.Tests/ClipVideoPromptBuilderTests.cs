@@ -251,8 +251,7 @@ public class ClipVideoPromptBuilderTests
 
         var huge = new string('x', 12_000) + "\n" + full;
         var s2 = ClipVideoPromptBuilder.ShortenPromptForRetry(huge, 2);
-        Assert.True(s2.Length <= ClipVideoPromptBuilder.VideoPromptHardCapChars + 80);
-        Assert.Contains("shortened after API length limit", s2, StringComparison.OrdinalIgnoreCase);
+        Assert.True(s2.Length <= ClipVideoPromptBuilder.VideoPromptHardCapChars);
     }
 
     [Fact]
@@ -559,6 +558,14 @@ public class ClipVideoPromptBuilderTests
         Assert.DoesNotContain("CAST COUNT: exactly 1", built.Prompt);
         Assert.True(built.Prompt.IndexOf("CAST COUNT", StringComparison.OrdinalIgnoreCase) <
                     built.Prompt.IndexOf("THIS CLIP", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public void FitPromptToVideoBudget_strictly_enforces_1000_char_budget()
+    {
+        var longPrompt = new string('A', 1500);
+        var fitted = ClipVideoPromptBuilder.FitPromptToVideoBudget(longPrompt, 1000);
+        Assert.True(fitted.Length <= 1000, $"Expected fitted prompt length <= 1000, but got {fitted.Length}");
     }
 
     // --- PR2: identity continuity (fresh / extend / cast-change reseed) ---

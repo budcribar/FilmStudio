@@ -55,15 +55,30 @@ else if (_profile is not null)
                                 @if (!string.IsNullOrWhiteSpace(d.YoutubeId))
                                 {
                                     <div class="ratio ratio-16x9 mb-3">
-                                        <iframe src="https://www.youtube.com/embed/@d.YoutubeId"
+                                        <iframe src="https://www.youtube-nocookie.com/embed/@d.YoutubeId?enablejsapi=1"
                                                 title="@d.Title"
                                                 allowfullscreen></iframe>
                                     </div>
                                 }
-                                else if (!string.IsNullOrWhiteSpace(d.YoutubeUrl))
+                                else
+                                {
+                                    <div class="ratio ratio-16x9 mb-3">
+                                        <video controls playsinline preload="metadata" src="@Engine.DemoVideoUrl(d.Id)">
+                                            Your browser does not support HTML5 video.
+                                        </video>
+                                    </div>
+                                }
+                                @{
+                                    var ytUrl = !string.IsNullOrWhiteSpace(d.YoutubeUrl)
+                                        ? d.YoutubeUrl
+                                        : !string.IsNullOrWhiteSpace(d.YoutubeId)
+                                            ? $"https://www.youtube.com/watch?v={d.YoutubeId}"
+                                            : null;
+                                }
+                                @if (!string.IsNullOrWhiteSpace(ytUrl))
                                 {
                                     <div class="mb-3">
-                                        <a href="@d.YoutubeUrl" target="_blank" class="btn btn-sm btn-outline-light">Watch on YouTube ↗</a>
+                                        <a href="@ytUrl" target="_blank" rel="noopener" class="btn btn-sm btn-outline-danger">🔴 Watch on YouTube ↗</a>
                                     </div>
                                 }
                             </div>
