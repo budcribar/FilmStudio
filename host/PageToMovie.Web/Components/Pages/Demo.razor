@@ -82,11 +82,11 @@
                     <div class="demo-card-media">
                         @if (!string.IsNullOrWhiteSpace(d.YoutubeId))
                         {
-                            <iframe src="@($"https://www.youtube-nocookie.com/embed/{d.YoutubeId}")"
+                            <iframe src="@($"https://www.youtube.com/embed/{d.YoutubeId}")"
                                     @key="d.Id"
                                     title="@d.Title"
                                     frameborder="0"
-                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                                     allowfullscreen
                                     style="width:100%; aspect-ratio:16/9; border:0;"></iframe>
                         }
