@@ -240,7 +240,20 @@ Status options: 'verified' (dialogue & speaker match), 'mismatch' (dialogue inco
             catch { /* use fallback */ }
 
             var targetModel = !string.IsNullOrWhiteSpace(selectedModel) ? selectedModel : "gemini-2.5-pro";
-            var responseJson = await _vision.CompleteWithImagesAsync(prompt, mediaToPass, model: targetModel, ct: ct).ConfigureAwait(false);
+            var entry = SupportedModelCatalog.Find(targetModel, ModelCapability.Vision)
+                ?? SupportedModelCatalog.ResolveOrDefault(targetModel, ModelCapability.Vision);
+
+            var hasVideoFile = mediaToPass.Any(p => p.EndsWith(".mp4", StringComparison.OrdinalIgnoreCase) || p.EndsWith(".mov", StringComparison.OrdinalIgnoreCase));
+
+            string responseJson;
+            if (hasVideoFile && !entry.SupportsVideoReview && _gemini is not null && _gemini.IsConfigured)
+            {
+                responseJson = await _gemini.CompleteWithImagesAsync(prompt, mediaToPass, model: "gemini-2.5-pro", ct: ct).ConfigureAwait(false);
+            }
+            else
+            {
+                responseJson = await _vision.CompleteWithImagesAsync(prompt, mediaToPass, model: targetModel, ct: ct).ConfigureAwait(false);
+            }
             var cleanJson = ExtractJson(responseJson);
 
             using var doc = JsonDocument.Parse(cleanJson);
