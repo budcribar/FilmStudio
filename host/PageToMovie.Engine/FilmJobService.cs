@@ -2487,8 +2487,10 @@ public sealed class FilmJobService
             string.Equals(cont, "extend_previous", StringComparison.OrdinalIgnoreCase) ||
             clip > 1;
 
+        var model = await ResolveVideoModelAsync(projectId, ct).ConfigureAwait(false);
+        var modelEntry = SupportedModelCatalog.ResolveOrDefault(model, ModelCapability.Video);
         string? prevOnDisk = null;
-        if (clip > 1)
+        if (clip > 1 && modelEntry.SupportsVideoContinue)
         {
             prevOnDisk = Path.Combine(
                 projectDir, "assets", "video", $"scene_{scene:D2}_clip_{clip - 1:D2}.mp4");
@@ -2663,7 +2665,8 @@ public sealed class FilmJobService
             else if (prevVideoPath is not null)
                 await AppendLogAsync("  [Refs] video-extend — locked plates not attached to API (IDENTITY text only)");
 
-            var model = await ResolveVideoModelAsync(projectId, ct);
+            if (string.IsNullOrWhiteSpace(model))
+                model = await ResolveVideoModelAsync(projectId, ct).ConfigureAwait(false);
             if (string.IsNullOrWhiteSpace(resolution))
                 resolution = await ResolveVideoResolutionAsync(projectId, null, ct);
 
