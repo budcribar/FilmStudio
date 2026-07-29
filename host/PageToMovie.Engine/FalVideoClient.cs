@@ -87,16 +87,7 @@ public sealed class FalVideoClient : IVideoClient
         if (!string.IsNullOrWhiteSpace(imagePath))
         {
             endpoint = "fal-ai/hunyuan-video-image-to-video";
-            var bytes = await File.ReadAllBytesAsync(imagePath, ct).ConfigureAwait(false);
-            var b64 = Convert.ToBase64String(bytes);
-            var ext = Path.GetExtension(imagePath).ToLowerInvariant();
-            var mime = ext switch
-            {
-                ".png" => "image/png",
-                ".webp" => "image/webp",
-                _ => "image/jpeg",
-            };
-            payload["image_url"] = $"data:{mime};base64,{b64}";
+            payload["image_url"] = await PrepareOptimizedImageDataUriAsync(imagePath, ct).ConfigureAwait(false);
         }
 
         using var req = new HttpRequestMessage(HttpMethod.Post, endpoint);
@@ -214,5 +205,47 @@ public sealed class FalVideoClient : IVideoClient
         await using var stream = await resp.Content.ReadAsStreamAsync(ct).ConfigureAwait(false);
         await using var fs = new FileStream(destPath, FileMode.Create, FileAccess.Write, FileShare.None, 8192, useAsync: true);
         await stream.CopyToAsync(fs, ct).ConfigureAwait(false);
+    }
+
+    private static async Task<string> PrepareOptimizedImageDataUriAsync(string imagePath, CancellationToken ct)
+    {
+        try
+        {
+            var bytes = await Task.Run(() =>
+            {
+                using var original = SkiaSharp.SKBitmap.Decode(imagePath);
+                if (original is null) return File.ReadAllBytes(imagePath);
+
+                int maxDim = 1280;
+                int width = original.Width;
+                int height = original.Height;
+
+                if (width > maxDim || height > maxDim)
+                {
+                    float scale = Math.Min((float)maxDim / width, (float)maxDim / height);
+                    int newW = Math.Max(1, (int)(width * scale));
+                    int newH = Math.Max(1, (int)(height * scale));
+
+                    using var resized = original.Resize(new SkiaSharp.SKImageInfo(newW, newH), SkiaSharp.SKSamplingOptions.Default);
+                    if (resized is not null)
+                    {
+                        using var image = SkiaSharp.SKImage.FromBitmap(resized);
+                        using var data = image.Encode(SkiaSharp.SKEncodedImageFormat.Jpeg, 85);
+                        return data.ToArray();
+                    }
+                }
+
+                using var img = SkiaSharp.SKImage.FromBitmap(original);
+                using var enc = img.Encode(SkiaSharp.SKEncodedImageFormat.Jpeg, 85);
+                return enc.ToArray();
+            }, ct).ConfigureAwait(false);
+
+            return $"data:image/jpeg;base64,{Convert.ToBase64String(bytes)}";
+        }
+        catch
+        {
+            var rawBytes = await File.ReadAllBytesAsync(imagePath, ct).ConfigureAwait(false);
+            return $"data:image/jpeg;base64,{Convert.ToBase64String(rawBytes)}";
+        }
     }
 }
