@@ -37,20 +37,6 @@ else
     <div class="alert alert-info">@_message</div>
 }
 
-@if (_uncommittedStatus?.HasUncommittedChanges == true)
-{
-    <div class="alert alert-warning d-flex flex-wrap justify-content-between align-items-center gap-2 py-2 mb-3" data-testid="scenes-uncommitted-banner">
-        <span>
-            <strong>🟡 Modified:</strong> @_uncommittedStatus.Summary
-        </span>
-        <button type="button"
-                class="btn btn-sm btn-warning text-dark fw-semibold"
-                disabled="@_busy"
-                @onclick="CommitCurrentChangesAsync">
-            Commit changes
-        </button>
-    </div>
-}
 
 @* Feature 8: clip finished but not saved to a local media folder *@
 @if (!string.IsNullOrEmpty(MediaFolder.LocalSaveWarning))
@@ -2875,6 +2861,48 @@ else
         return row.AllDraftUsd / row.ClipsTotal * _selectedClips.Count;
     }
 
+    private async Task EnsurePredecessorsUploadedAsync(List<(int Scene, int Clip)> targets)
+    {
+        if (!MediaFolder.IsConnected || string.IsNullOrEmpty(_projectId)) return;
+
+        string? projDir = null;
+        try
+        {
+            var dto = await Engine.GetConfigAsync(_projectId);
+            projDir = dto?.ProjectDir;
+        }
+        catch { }
+
+        if (string.IsNullOrEmpty(projDir))
+        {
+            projDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".gemini", "antigravity", "projects", _projectId);
+        }
+
+        foreach (var (sn, cn) in targets)
+        {
+            if (cn <= 1) continue;
+            var prevClipNum = cn - 1;
+            if (targets.Any(t => t.Scene == sn && t.Clip == prevClipNum)) continue;
+
+            var prevClipRelPath = Path.Combine("assets", "video", $"scene_{sn:D2}_clip_{prevClipNum:D2}.mp4");
+            var serverDiskPath = Path.Combine(projDir, prevClipRelPath);
+
+            if (!File.Exists(serverDiskPath) || new FileInfo(serverDiskPath).Length < 1024)
+            {
+                var localBytes = await MediaFolder.GetClipBytesAsync(sn, prevClipNum);
+                if (localBytes is { Length: >= 1024 })
+                {
+                    _message = $"Uploading local predecessor S{sn:D2}C{prevClipNum:D2} to server…";
+                    StateHasChanged();
+
+                    var destDir = Path.GetDirectoryName(serverDiskPath);
+                    if (!string.IsNullOrEmpty(destDir)) Directory.CreateDirectory(destDir);
+                    await File.WriteAllBytesAsync(serverDiskPath, localBytes);
+                }
+            }
+        }
+    }
+
     private async Task RegenSelectedClipsAsync()
     {
         if (_detail is null || _selectedClips.Count == 0) return;
@@ -2887,6 +2915,7 @@ else
         {
             var targets = _selectedClips.OrderBy(c => c).Select(c => (Scene: sn, Clip: c)).ToList();
             await EnsureHubAsync();
+            await EnsurePredecessorsUploadedAsync(targets);
             _job = await Engine.StartClipBatchGenAsync(_projectId, targets, resolution: _genResolution);
             _message = $"Regenerating {targets.Count} clip(s) in S{sn:D2} @ {_genResolution}…";
             _selectedClips.Clear();
@@ -3217,6 +3246,7 @@ else
         try
         {
             await EnsureHubAsync();
+            await EnsurePredecessorsUploadedAsync(new List<(int Scene, int Clip)> { (sn, cn) });
             await Engine.StartSceneGenAsync(_projectId, sn, onlyMissing: false, clip: cn, resolution: _genResolution);
             _message = $"Regenerating S{sn:D2}C{cn:D2} @ {_genResolution}…";
             var jobs = await Engine.GetJobAsync();

@@ -2484,6 +2484,7 @@ public sealed class FilmJobService
         string? prevVideoPath = null;
         // Disposable working copy of prev for silence-trim / extend — never rewrite clip N-1 on disk.
         string? prevExtendWorkTemp = null;
+        var reseedFresh = false;
         var cont = clipEl.TryGetProperty("veo_continuation_source", out var ce)
             ? (ce.GetString() ?? "none")
             : "none";
@@ -2496,21 +2497,24 @@ public sealed class FilmJobService
         string? prevOnDisk = null;
         if (clip > 1 && modelEntry.SupportsVideoContinue)
         {
-            prevOnDisk = Path.Combine(
+            var prevFileCandidate = Path.Combine(
                 projectDir, "assets", "video", $"scene_{scene:D2}_clip_{clip - 1:D2}.mp4");
-            if (!File.Exists(prevOnDisk) || new FileInfo(prevOnDisk).Length < 1024)
+            if (File.Exists(prevFileCandidate) && new FileInfo(prevFileCandidate).Length >= 1024)
+            {
+                prevOnDisk = prevFileCandidate;
+                // Breath-tail silence trim for extend input only. Mutating prevOnDisk in place used to
+                // permanently shorten a finished clip when this job then failed/cancelled before C_N
+                // was written (no backup of N-1). Work on a throwaway copy instead.
+                prevExtendWorkTemp = Path.Combine(
+                    projectDir, "assets", "video", $"_prev_extend_s{scene:D2}c{clip:D2}.mp4");
+                File.Copy(prevOnDisk, prevExtendWorkTemp, overwrite: true);
+                prevVideoPath = prevExtendWorkTemp;
+            }
+            else
             {
                 throw new InvalidOperationException(
-                    $"Generate S{scene:D2}C{clip - 1:D2} first — later clips continue from the previous video.");
+                    $"Generate Scene {scene:D2}, Clip {clip - 1:D2} first — Clip {clip:D2} requires the previous clip for video extension.");
             }
-
-            // Breath-tail silence trim for extend input only. Mutating prevOnDisk in place used to
-            // permanently shorten a finished clip when this job then failed/cancelled before C_N
-            // was written (no backup of N-1). Work on a throwaway copy instead.
-            prevExtendWorkTemp = Path.Combine(
-                projectDir, "assets", "video", $"_prev_extend_s{scene:D2}c{clip:D2}.mp4");
-            File.Copy(prevOnDisk, prevExtendWorkTemp, overwrite: true);
-            prevVideoPath = prevExtendWorkTemp;
         }
 
         if (previousClipEl is { } prevEl &&
@@ -2521,7 +2525,6 @@ public sealed class FilmJobService
             prevVisual = FindClipVisualInBlueprint(root, scene, clip - 1);
 
         // PR2: reseed with locked refs when on-screen cast set changes (API drops refs on extend).
-        var reseedFresh = false;
         // Imagine /videos/extensions rejects input video longer than 15s.
         // Bad extension-tail trims (or re-extend chains) can leave a prev clip over that cap —
         // clamp to the last ≤15s so continuity still uses the ending frames.
