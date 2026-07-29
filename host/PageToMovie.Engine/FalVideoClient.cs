@@ -87,7 +87,8 @@ public sealed class FalVideoClient : IVideoClient
         if (!string.IsNullOrWhiteSpace(imagePath))
         {
             endpoint = "fal-ai/hunyuan-video-image-to-video";
-            payload["image_url"] = await PrepareOptimizedImageDataUriAsync(imagePath, ct).ConfigureAwait(false);
+            var maxDim = SupportedModelCatalog.ResolveOrDefault(model, ModelCapability.Video).MaxReferenceImageDimension ?? 1280;
+            payload["image_url"] = await PrepareOptimizedImageDataUriAsync(imagePath, maxDim, ct).ConfigureAwait(false);
         }
 
         using var req = new HttpRequestMessage(HttpMethod.Post, endpoint);
@@ -207,7 +208,7 @@ public sealed class FalVideoClient : IVideoClient
         await stream.CopyToAsync(fs, ct).ConfigureAwait(false);
     }
 
-    private static async Task<string> PrepareOptimizedImageDataUriAsync(string imagePath, CancellationToken ct)
+    private static async Task<string> PrepareOptimizedImageDataUriAsync(string imagePath, int maxDim, CancellationToken ct)
     {
         try
         {
@@ -216,7 +217,6 @@ public sealed class FalVideoClient : IVideoClient
                 using var original = SkiaSharp.SKBitmap.Decode(imagePath);
                 if (original is null) return File.ReadAllBytes(imagePath);
 
-                int maxDim = 1280;
                 int width = original.Width;
                 int height = original.Height;
 
