@@ -1218,7 +1218,9 @@
                 _archiveMsg = $"Checking background music for {_augmentProjectId} Scene S{sc.SceneNumber:D2} ({_synthesizeCurrent}/{_synthesizeTotal})…";
                 StateHasChanged();
 
-                var audioPath = $"assets/scene_{sc.SceneNumber:D2}_music.mp3";
+                // First music segment's relative path (see MediaRegistryService.MusicSegmentRelativePath) —
+                // segment 1 always exists once a scene has any background music synced locally.
+                var audioPath = $"assets/music/scene_{sc.SceneNumber:D2}_seg_01.wav";
                 var hasLocalAudio = MediaFolder.IsConnected && (await MediaFolder.StatLocalFileAsync(audioPath)).Found;
 
                 if (hasLocalAudio)
@@ -1230,8 +1232,24 @@
                 _archiveMsg = $"Queuing background music synthesis for Scene S{sc.SceneNumber:D2} ({_synthesizeCurrent}/{_synthesizeTotal})…";
                 StateHasChanged();
 
-                await Api.StartSceneMusicGenAsync(_augmentProjectId, sc.SceneNumber);
+                // One job at a time — FilmJobService caps queued jobs per user (MaxQueuePerUser),
+                // and this loop can easily exceed that firing every scene back-to-back.
+                var started = await Api.StartSceneMusicGenAsync(_augmentProjectId, sc.SceneNumber);
                 queuedCount++;
+
+                if (!string.IsNullOrWhiteSpace(started?.JobId))
+                {
+                    _archiveMsg = $"Generating background music for Scene S{sc.SceneNumber:D2} ({_synthesizeCurrent}/{_synthesizeTotal})…";
+                    StateHasChanged();
+                    try
+                    {
+                        await Api.WaitForJobTerminalAsync(started!.JobId, timeout: TimeSpan.FromMinutes(8));
+                    }
+                    catch (TimeoutException)
+                    {
+                        // Move on — the job keeps running server-side; this loop just stops waiting on it.
+                    }
+                }
             }
 
             _archiveMsg = $"Completed background music synthesis checks for {_augmentProjectId}. Queued: {queuedCount}, Skipped (Existing): {skippedCount}.";

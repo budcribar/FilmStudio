@@ -1881,8 +1881,11 @@ public sealed class EngineApiClient
     }
 
     /// <summary>Queues background-music generation for a scene (job-tracked, client saves the
-    /// resulting audio segment(s) — same pattern as clip/credits generation).</summary>
-    public async Task StartSceneMusicGenAsync(
+    /// resulting audio segment(s) — same pattern as clip/credits generation). Returns the queued
+    /// job snapshot (JobId) so a caller doing several of these in a row can wait for each to
+    /// finish via <see cref="WaitForJobTerminalAsync"/> instead of flooding the per-user job
+    /// queue (see MaxQueuePerUser in FilmJobService.EnsureCanStart).</summary>
+    public async Task<JobSnapshot?> StartSceneMusicGenAsync(
         string projectId,
         int scene,
         CancellationToken ct = default)
@@ -1895,7 +1898,7 @@ public sealed class EngineApiClient
                 Scene = scene,
             }, options: JsonOpts),
         };
-        await SendJsonAsync<object>(req, ct);
+        return await SendJsonAsync<JobStartEnvelope>(req, ct) is { } env ? env.Job : null;
     }
 
     public async Task ApplyClipAutoReviewAsync(
