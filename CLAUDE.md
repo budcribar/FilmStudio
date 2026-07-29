@@ -137,12 +137,13 @@ These apply to *product code* under `host/` (Engine/Api/Web), not to one-off scr
 4. **Don't build one-click full-movie automation yet.** The manual step-by-step path (approve screenplay → cast
    → shot plan → gen scene → review) is the near-term working mode; each full run costs real API money.
 5. **Workflow UI copy is outcome-only, provider-neutral, and jargon-free.** Pages like Adaptation/Characters/
-   Scenes/Review/Home/Cost must never mention provider names (Grok/Veo/Gemini/xAI), implementation mechanism
+   Scenes/Review/Home must never mention provider names (Grok/Veo/Gemini/xAI), implementation mechanism
    (AI/vision/OCR/LLM/model/API), internal filenames (`blueprint.clips.json`, `scenes.json`), or pipeline jargon
    (plates→"pictures", seeds→"reference images", stage 1→"screenplay", stage 2/blueprint→"shot plan"). One fact
    in one place — never duplicate the same status/error in two UI surfaces. Provider names and model ids are only
-   OK on the **Configuration** page. Admin-only surfaces (job logs, "Details (admin)") may show technical detail.
-   See `AGENTS.md` for the full banned-phrase table and the outcome-language mapping.
+   OK on the **Configuration** and **Cost** pages (Cost needs them to show per-model/per-vendor spend). Admin-only
+   surfaces (job logs, "Details (admin)") may show technical detail. See `AGENTS.md` for the full banned-phrase
+   table and the outcome-language mapping.
 
 ## Notable test/eval conventions
 

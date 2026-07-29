@@ -679,7 +679,7 @@ else
                 }
                 @if (!string.IsNullOrEmpty(_detail.PrimaryLocationId))
                 {
-                    <span>· loc: <code>@_detail.PrimaryLocationId</code></span>
+                    <span>· loc: <code>@ShortLoc(_detail.PrimaryLocationId)</code></span>
                 }
                 @{
                     var verifiedCount = _detail.Clips.Count(c => c.DialogueVerification is { } v && (string.Equals(v.Status, "verified", StringComparison.OrdinalIgnoreCase) || string.Equals(v.Status, "no_speech", StringComparison.OrdinalIgnoreCase)));
@@ -1066,10 +1066,10 @@ else
                     }
                     <h6>Audio</h6>
                     <p class="small mb-1">
-                        <strong>@(_clip.Speaker ?? "—")</strong>
+                        <strong>@(string.IsNullOrEmpty(_clip.Speaker) ? "—" : ShortChar(_clip.Speaker))</strong>
                         @if (!string.IsNullOrEmpty(_clip.Delivery))
                         {
-                            <span class="text-muted">· @_clip.Delivery</span>
+                            <span class="text-muted">· @ShortDelivery(_clip.Delivery)</span>
                         }
                     </p>
                     @if (_clip.Dialogue is { Length: > 0 } fullDlg)
@@ -1284,14 +1284,12 @@ else
                         </div>
                         <div class="col-6">
                             <label class="form-label small mb-0">Delivery</label>
-                            <input class="form-control form-control-sm" list="clip-editor-delivery-options"
-                                   @bind="ed.Delivery" placeholder="spoken_on_camera" />
-                            <datalist id="clip-editor-delivery-options">
-                                <option value="spoken_on_camera" />
-                                <option value="voiceover_internal" />
-                                <option value="off_camera" />
-                                <option value="none" />
-                            </datalist>
+                            <select class="form-select form-select-sm" @bind="ed.Delivery">
+                                <option value="">— none —</option>
+                                <option value="spoken_on_camera">Spoken (on camera)</option>
+                                <option value="voiceover_internal">Voiceover (internal)</option>
+                                <option value="off_camera">Off camera</option>
+                            </select>
                         </div>
                     </div>
                     <textarea class="form-control form-control-sm mb-1" rows="2"
@@ -3333,7 +3331,7 @@ else
         }
         if (dlg.Length > 0 && delNone)
         {
-            _error = "Dialogue needs a delivery (spoken_on_camera, voiceover_internal, or off_camera).";
+            _error = "Dialogue needs a delivery: Spoken (on camera), Voiceover (internal), or Off camera.";
             return;
         }
         if (spk.Length > 0 && dlg.Length == 0)
@@ -3541,6 +3539,8 @@ else
     private static string ShortChar(string key) => KeyFormatting.ShortChar(key);
 
     private static string ShortLoc(string key) => KeyFormatting.ShortLoc(key);
+
+    private static string ShortDelivery(string? key) => KeyFormatting.ShortDelivery(key);
 
     private static string FormatSize(long bytes)
     {

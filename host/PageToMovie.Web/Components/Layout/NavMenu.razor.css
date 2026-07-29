@@ -75,6 +75,10 @@
 .nav-main {
     display: flex;
     flex-direction: column;
+    /* Bootstrap's .nav sets flex-wrap: wrap for horizontal pill bars; this sidebar is a
+       vertical column, and without this reset an overflowing item list starts a second
+       flex "column" instead of scrolling, shoving nav-user-footer over the main content. */
+    flex-wrap: nowrap;
     min-height: 100%;
     flex: 1 1 auto;
     width: 100%;

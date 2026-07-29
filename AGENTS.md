@@ -61,8 +61,9 @@ Buster (and other fixtures) are **eval / demo projects**, not product requiremen
 
 ## UI copy principles (operator-facing Blazor / product UI)
 
-Apply to **workflow pages** users operate day to day: Adaptation, Characters, Scenes, Review, Home, Cost, and similar.  
-**Configuration** (and a dedicated connection/settings area) may name providers and models when the user is *choosing* them.
+Apply to **workflow pages** users operate day to day: Adaptation, Characters, Scenes, Review, Home, and similar.  
+**Configuration** (and a dedicated connection/settings area) may name providers and models when the user is *choosing* them.  
+**Cost** may also name providers and model ids — spend has to be attributable to what actually generated it.
 
 ### 0. No commentary or decision process on the UI
 
@@ -105,7 +106,8 @@ On **Scenes**: operators never see leftover Stage 2 / adaptation job cards. Show
 
 - Do **not** hardcode **Grok**, **Veo**, **Gemini**, **xAI** on workflow pages.
 - The user may have selected **VEO** (or another provider) in Configuration — UI must stay neutral.
-- Provider names belong on **Configuration** (or Settings) when selecting video/portrait services.
+- Provider names belong on **Configuration** (or Settings) when selecting video/portrait services, and on **Cost**
+  when breaking down spend by vendor/model.
 
 ### 3. No project filenames or paths
 
@@ -134,18 +136,23 @@ On **Scenes**: operators never see leftover Stage 2 / adaptation job cards. Show
 
 ### Phrases banned on workflow pages
 
-`Grok`, `Veo`, `Gemini`, `xAI` (except Configuration pickers),  
+`Grok`, `Veo`, `Gemini`, `xAI` (except Configuration pickers and Cost spend breakdowns),  
 `AI`, `vision`, `OCR`, `LLM`, `model`, `chat`, `API key`,  
 `plates`, `seeds`, `bible`, `blueprint`, `pipeline`, `VOICE LOCK`,  
 `*.json`, `book_full.txt`, `ffmpeg`, `PdfPig`, `C#`, service class names.
 
-### Configuration exception
+### Configuration and Cost exception
 
 On **Configuration** / admin runtime settings it is OK to:
 
 - Label providers (Grok / Veo / …) for selection.
 - Show model IDs as field *values*.
 - Still avoid dumping raw filenames in primary labels when a friendly name works (“Shot plan file” under Advanced is OK if needed).
+
+On **Cost** it is OK to:
+
+- Label providers and model ids next to the spend they generated (e.g. “grok-imagine-video: $70.44”).
+- Still avoid raw internal field/table names (e.g. say “tracked spend”, not `cost_ledger`) and other non-provider jargon.
 
 ### About / developer docs
 

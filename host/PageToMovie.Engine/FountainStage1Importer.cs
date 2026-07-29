@@ -862,7 +862,10 @@ public static class FountainStage1Importer
 
     private static string SlugKey(string s)
     {
-        var parts = SlugNonAlphaNumericRe.Split(s)
+        // Drop apostrophes before splitting so possessives ("Man's") merge into one token
+        // ("Mans") instead of the trailing "s" splitting off into its own capitalized part.
+        var withoutApostrophes = s.Replace("'", "").Replace("’", "");
+        var parts = SlugNonAlphaNumericRe.Split(withoutApostrophes)
             .Where(p => p.Length > 0)
             .Select(p => char.ToUpperInvariant(p[0]) + (p.Length > 1 ? p[1..].ToLowerInvariant() : ""));
         var joined = string.Join('_', parts);

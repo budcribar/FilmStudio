@@ -40,7 +40,7 @@ public sealed class ShotPlanRefiningClassifier
         Your task: Given a list of planned video clips for a scene, eliminate copy-pasted visual prompt stagnation across consecutive clips by generating progressive camera framings and micro-action beats.
 
         RULES (HARD):
-        1. Preserve exact character identity tokens (e.g. Character_The_Narrator, Character_The_Old_Man) and location tokens (e.g. Loc_Old_Man_S_Bedchamber).
+        1. Preserve exact character identity tokens (e.g. Character_The_Narrator, Character_The_Old_Man) and location tokens (e.g. Loc_Old_Mans_Bedchamber).
         2. Do NOT invent unscripted major plot events or add unmentioned characters.
         3. Evolve the visual framing logically across clips:
            - Clip 1: Establishing / medium shot setting up the scene.

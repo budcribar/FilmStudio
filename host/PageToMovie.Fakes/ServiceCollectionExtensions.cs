@@ -13,6 +13,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IImageClient, FakeGrokImageClient>();
         services.AddSingleton<IChatClient, FakeGrokChatClient>();
         services.AddSingleton<IVisionClient, FakeGrokVisionClient>();
+        services.AddSingleton<IAudioClient, FakeAudioClient>();
         return services;
     }
 }

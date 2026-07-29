@@ -36,11 +36,11 @@
     <a class="nav-link @(Step == "characters" ? "active" : "") @(!ShotsEnabled || stepsLocked ? "disabled" : "")"
        href="@(!ShotsEnabled || stepsLocked ? "javascript:void(0)" : "characters")"
        @onclick:preventDefault="@(!ShotsEnabled || stepsLocked)"
-       title="@(stepsLocked ? "Wait for the current job to finish" : ShotsEnabled ? "Pin cast likeness before clips" : "Approve a screenplay first")">Characters</a>
+       title="@(stepsLocked ? "Wait for the current job to finish" : ShotsEnabled ? "Pin cast likeness before clips" : NeedsReapprove ? "Re-approve the edited screenplay first" : "Approve a screenplay first")">Characters</a>
     <a class="nav-link @(Step == "shots" ? "active" : "") @(!ShotsEnabled || stepsLocked ? "disabled" : "")"
        href="@(!ShotsEnabled || stepsLocked ? "javascript:void(0)" : "adaptation/shots")"
        @onclick:preventDefault="@(!ShotsEnabled || stepsLocked)"
-       title="@(stepsLocked ? "Wait for the current job to finish" : ShotsEnabled ? null : "Approve a screenplay first")">Shot plan</a>
+       title="@(stepsLocked ? "Wait for the current job to finish" : ShotsEnabled ? null : NeedsReapprove ? "Re-approve the edited screenplay first" : "Approve a screenplay first")">Shot plan</a>
 </nav>
 
 @if (!string.IsNullOrEmpty(Host.Error))
@@ -162,6 +162,12 @@ else
     private bool OutlineEnabled => AdaptationPageBase.OutlineEnabled(Host.Status);
 
     private bool ShotsEnabled => AdaptationPageBase.ShotsEnabled(Host.Status);
+
+    /// <summary>There was a prior sign-off, but the draft has since changed (vs. never approved at all).</summary>
+    private bool NeedsReapprove =>
+        Host.Status?.Screenplay is { } s
+        && !s.ReadyForShots
+        && !string.IsNullOrWhiteSpace(s.SignedHash);
 
     private bool ShowJobPanel => AdaptationPageBase.ShowJobPanel(Session.IsAdmin, Host.Job, Step);
 

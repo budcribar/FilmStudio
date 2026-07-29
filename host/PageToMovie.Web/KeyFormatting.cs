@@ -18,6 +18,15 @@ public static class KeyFormatting
             .Replace('_', ' ');
     }
 
+    public static string ShortDelivery(string? key) => key switch
+    {
+        "spoken_on_camera" => "Spoken (on camera)",
+        "voiceover_internal" => "Voiceover (internal)",
+        "off_camera" => "Off camera",
+        null or "" or "none" => "—",
+        _ => key,
+    };
+
     /// <summary>Appends a timestamp query param so the browser doesn't serve a stale cached video.</summary>
     public static string CacheBust(string url) =>
         url + (url.Contains('?') ? "&" : "?") + "v=" + DateTimeOffset.UtcNow.ToUnixTimeSeconds();
