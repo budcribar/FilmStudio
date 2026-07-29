@@ -29,8 +29,17 @@ public sealed class ClipDialogueVerificationResult
     /// <summary>Estimated / planned clip duration (seconds).</summary>
     public double EstimatedDurationSeconds { get; set; }
 
+    /// <summary>Estimated speech dialogue time (seconds).</summary>
+    public double SpeechDurationSeconds { get; set; }
+
+    /// <summary>Estimated action & camera movement overhead time (seconds).</summary>
+    public double ActionDurationSeconds { get; set; }
+
     /// <summary>Actual measured clip MP4 duration (seconds).</summary>
     public double ActualDurationSeconds { get; set; }
+
+    /// <summary>True if spoken dialogue was cut off mid-delivery.</summary>
+    public bool SpeechTruncated { get; set; }
 
     public DateTime VerifiedAt { get; set; } = DateTime.UtcNow;
 }

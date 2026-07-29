@@ -288,6 +288,7 @@ Status options: 'verified' (dialogue & speaker match), 'mismatch' (dialogue inco
             var summary = root.TryGetProperty("summaryNote", out var snEl) ? snEl.GetString() ?? "" : "";
 
             var estSec = clip?.DurationSeconds > 0 ? (double)clip.DurationSeconds : ClipDurationEstimator.Estimate(expectedDialogue, "", "dialogue", "none");
+            var (speechSec, actionSec) = ClipDurationEstimator.EstimateBreakdown(expectedDialogue, clip?.VisualPrompt ?? "", "", clip?.Delivery ?? "none");
             var durationProbe = new MediaDurationProbe(Microsoft.Extensions.Options.Options.Create(new PageToMovie.Core.Options.PageToMovieOptions()), Microsoft.Extensions.Logging.Abstractions.NullLogger<MediaDurationProbe>.Instance);
             var actualSec = await durationProbe.TryProbeSecondsAsync(clipPath, ct).ConfigureAwait(false) ?? 0.0;
 
@@ -304,9 +305,12 @@ Status options: 'verified' (dialogue & speaker match), 'mismatch' (dialogue inco
                 Status = status,
                 SummaryNote = summary,
                 EstimatedDurationSeconds = Math.Round(estSec, 1),
+                SpeechDurationSeconds = speechSec,
+                ActionDurationSeconds = actionSec,
                 ActualDurationSeconds = Math.Round(actualSec, 1),
                 VerifiedAt = DateTime.UtcNow,
             };
+            result.SpeechTruncated = LooksTruncated(result);
 
             await SaveVerificationAsync(projectId, result, ct).ConfigureAwait(false);
             _log.LogInformation("Automated dialogue verification completed for {Project} S{Scene} C{Clip}: {Status} ({Score:P0})", projectId, sceneNumber, clipNumber, status, accuracy);

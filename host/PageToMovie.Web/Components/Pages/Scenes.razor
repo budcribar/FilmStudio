@@ -1555,13 +1555,17 @@ else
                     @if (verReport.EstimatedDurationSeconds > 0 || verReport.ActualDurationSeconds > 0)
                     {
                         <div class="card bg-dark border-secondary mb-3">
-                            <div class="card-header bg-secondary bg-opacity-20 border-secondary fw-semibold text-light">
-                                ⏱️ Clip Duration &amp; Pacing Analysis
+                            <div class="card-header bg-secondary bg-opacity-20 border-secondary fw-semibold text-light d-flex justify-content-between align-items-center">
+                                <span>⏱️ Clip Duration &amp; Pacing Analysis</span>
+                                @if (verReport.SpeechTruncated)
+                                {
+                                    <span class="badge bg-danger text-white">⚠ Speech Truncated</span>
+                                }
                             </div>
                             <div class="card-body">
-                                <div class="row g-3">
+                                <div class="row g-3 mb-2">
                                     <div class="col-4">
-                                        <div class="small text-secondary">Estimated / Planned</div>
+                                        <div class="small text-secondary">Planned Total Duration</div>
                                         <div class="fw-bold fs-6 text-light">@($"{verReport.EstimatedDurationSeconds:F1}s")</div>
                                     </div>
                                     <div class="col-4">
@@ -1578,6 +1582,25 @@ else
                                         <div class="fw-bold fs-6 @diffClass">@diffText</div>
                                     </div>
                                 </div>
+                                @if (verReport.SpeechDurationSeconds > 0 || verReport.ActionDurationSeconds > 0)
+                                {
+                                    <div class="row g-3 pt-2 border-top border-secondary-subtle">
+                                        <div class="col-6">
+                                            <div class="small text-secondary">🗣️ Dialogue Speech Length</div>
+                                            <div class="fw-semibold text-info">@($"{verReport.SpeechDurationSeconds:F1}s")</div>
+                                        </div>
+                                        <div class="col-6">
+                                            <div class="small text-secondary">🎬 Action &amp; Camera Movement</div>
+                                            <div class="fw-semibold text-light">@($"{verReport.ActionDurationSeconds:F1}s")</div>
+                                        </div>
+                                    </div>
+                                }
+                                @if (verReport.SpeechTruncated)
+                                {
+                                    <div class="alert alert-danger py-2 mt-3 mb-0 small d-flex align-items-center gap-2">
+                                        <span>⚠ <strong>Speech Truncation Warning:</strong> Transcribed speech was cut off mid-line because the video rendered shorter than required for the dialogue.</span>
+                                    </div>
+                                }
                             </div>
                         </div>
                     }

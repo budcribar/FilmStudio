@@ -193,6 +193,48 @@ public static class ClipDurationEstimator
         return camOverhead + netActionOverhead;
     }
 
+    public static (double SpeechSec, double ActionSec) EstimateBreakdown(
+        string? dialogue,
+        string? visualOrAction,
+        string actionClass = "",
+        string delivery = "none")
+    {
+        var dlg = (dialogue ?? "").Trim();
+        var visual = (visualOrAction ?? "").Trim();
+        actionClass = (actionClass ?? "").Trim().ToLowerInvariant();
+        delivery = (delivery ?? "none").Trim().ToLowerInvariant();
+        if (delivery.Length == 0) delivery = "none";
+
+        double speech = 0;
+        if (dlg.Length > 0)
+        {
+            var words = CountWords(dlg);
+            speech = SpeechHeadSeconds + words / DialogueWordsPerSecond + SpeechTailSeconds;
+            speech = Math.Max(1.8, speech);
+            if (delivery is "voiceover_internal" or "internal" or "narration" or "vo" or "thought")
+                speech *= 0.95;
+        }
+
+        double action = 0;
+        if (dlg.Length == 0)
+        {
+            var aw = Math.Min(CountWords(visual), SilentVisualWordCap);
+            action = actionClass switch
+            {
+                "big_action" => Math.Clamp(4.5 + aw / 8.0, 5, AbsMaxSeconds),
+                "establishing" => Math.Clamp(3.5 + aw / 10.0, ActionOnlyMinSeconds, EstablishingMaxSeconds),
+                "hold" => ActionOnlyMinSeconds,
+                _ => Math.Clamp(3.0 + aw / 12.0, ActionOnlyMinSeconds, SilentActionMaxSeconds),
+            };
+        }
+        else
+        {
+            action = DialogueClipActionOverhead(visual, actionClass);
+        }
+
+        return (Math.Round(speech, 1), Math.Round(action, 1));
+    }
+
     public static int Estimate(
         string? dialogue,
         string? visualOrAction,
