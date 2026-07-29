@@ -630,7 +630,38 @@ public static class ClipVideoPromptBuilder
         if (p.Length <= hardCapChars)
             return p;
 
+        p = CompressPromptText(p);
+        if (p.Length <= hardCapChars)
+            return p;
+
         return HeadCap(p, hardCapChars);
+    }
+
+    /// <summary>
+    /// Intelligently compresses prompt text without losing core visual action or character details.
+    /// Strips prefix noise (e.g. "Character_"), simplifies verbose section headers,
+    /// and collapses duplicate blank lines / spaces.
+    /// </summary>
+    public static string CompressPromptText(string prompt)
+    {
+        if (string.IsNullOrWhiteSpace(prompt)) return prompt ?? "";
+        var p = prompt;
+
+        // 1. Simplify verbose section headers
+        p = p.Replace("CHARACTER VARIABLES (use these identities consistently; do not redesign faces or wardrobe):", "CHARACTERS:");
+        p = p.Replace("REQUIRED native Grok dialogue.", "");
+        p = p.Replace("Do not invent extra people, duplicate faces, or crowd extras not listed.", "");
+        p = p.Replace("Follow the camera framing and location in this prompt exactly. Prioritize the PRIMARY subject and ONE clear action with visible motion; background characters may stay mostly still.", "");
+        p = p.Replace("CONTEXT (prior clip in scene — new cast plate refs attached; match location/lighting if still valid; identity from CHARACTER VARIABLES + locked plates only):", "CONTEXT:");
+
+        // 2. Strip "Character_" prefix in prose while keeping display name (e.g. Character_The_Narrator -> The_Narrator)
+        p = Regex.Replace(p, @"\bCharacter_([A-Za-z0-9_]+)\b", "$1");
+
+        // 3. Collapse multiple blank lines & consecutive spaces
+        p = Regex.Replace(p, @"\n\s*\n+", "\n");
+        p = Regex.Replace(p, @"[ \t]+", " ");
+
+        return p.Trim();
     }
 
     /// <summary>Clip gen house rules from <c>prompts/clip_gen_rules.txt</c> (embed or override dir).</summary>
