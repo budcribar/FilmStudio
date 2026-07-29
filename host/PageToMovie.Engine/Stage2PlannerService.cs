@@ -1143,12 +1143,15 @@ public sealed class Stage2PlannerService
         return body.TrimEnd('.', ' ', '\t');
     }
 
+    private static readonly Regex WhitespaceCollapseRegex = new(@"\s+", RegexOptions.Compiled);
+    private static readonly Regex DotCollapseRegex = new(@"\s*\.\s*\.+", RegexOptions.Compiled);
+
     private static string NormalizeSentencePart(string? text)
     {
         if (string.IsNullOrWhiteSpace(text)) return "";
-        var t = Regex.Replace(text.Trim(), @"\s+", " ");
+        var t = WhitespaceCollapseRegex.Replace(text.Trim(), " ");
         // Collapse internal double punctuation / trailing junk
-        t = Regex.Replace(t, @"\s*\.\s*\.+", ".");
+        t = DotCollapseRegex.Replace(t, ".");
         t = t.TrimEnd('.', ',', ';', ' ', '\t');
         return t;
     }

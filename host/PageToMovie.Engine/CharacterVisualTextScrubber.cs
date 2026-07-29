@@ -203,7 +203,6 @@ public static class CharacterVisualTextScrubber
         // Key is the animal name/token (Character_Buster is book-specific — only use explicit species tokens)
         if (charKey.Contains(animalWord, StringComparison.OrdinalIgnoreCase))
             return true;
-
         var blob = $"{description} {visualLock}";
         // Style-only mentions of the animal
         if (MatchingAnimalLook.IsMatch(blob) || SameLookAsAnimal.IsMatch(blob) || MatchingNamedHeroLook.IsMatch(blob))
@@ -219,6 +218,20 @@ public static class CharacterVisualTextScrubber
             $@"\b(small|medium|large)?\s*([\w-]+\s+){{0,3}}{animal}\b",
             RegexOptions.IgnoreCase);
     }
+
+    private static readonly Regex HumanKeywordsRegex = new(
+        @"\b(man|woman|human|mother|father|mom|dad|daddy|parent|adult|boy|girl)\b",
+        RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
+    private static readonly Regex RelationalCastKeysRegex = new(
+        @"Mom|Dad|Daddy|Mother|Father|Mum|Parent|Grandma|Grandpa|Uncle|Aunt|Sister|Brother",
+        RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
+    private static readonly Regex MultiWhitespaceRegex = new(@"\s{2,}", RegexOptions.Compiled);
+    private static readonly Regex SpaceBeforePunctuationRegex = new(@"\s+([,.;:])", RegexOptions.Compiled);
+    private static readonly Regex MultiPunctuationRegex = new(@"([,.;:]){2,}", RegexOptions.Compiled);
+    private static readonly Regex EmptyParensRegex = new(@"\(\s*\)", RegexOptions.Compiled);
+    private static readonly Regex MultiEmDashRegex = new(@"\s+—\s*—", RegexOptions.Compiled);
 
     public static bool IsHumanAdultCharacter(
         string charKey,
@@ -237,26 +250,20 @@ public static class CharacterVisualTextScrubber
             return false;
 
         var blob = $"{charKey} {ageBand} {description} {visualLock}";
-        if (Regex.IsMatch(
-                blob,
-                @"\b(man|woman|human|mother|father|mom|dad|daddy|parent|adult|boy|girl)\b",
-                RegexOptions.IgnoreCase))
+        if (HumanKeywordsRegex.IsMatch(blob))
             return true;
 
         // Relational cast keys (any book)
-        return Regex.IsMatch(
-            charKey,
-            @"Mom|Dad|Daddy|Mother|Father|Mum|Parent|Grandma|Grandpa|Uncle|Aunt|Sister|Brother",
-            RegexOptions.IgnoreCase);
+        return RelationalCastKeysRegex.IsMatch(charKey);
     }
 
     private static string CleanDebris(string t)
     {
-        t = Regex.Replace(t, @"\s{2,}", " ");
-        t = Regex.Replace(t, @"\s+([,.;:])", "$1");
-        t = Regex.Replace(t, @"([,.;:]){2,}", "$1");
-        t = Regex.Replace(t, @"\(\s*\)", "");
-        t = Regex.Replace(t, @"\s+—\s*—", " — ");
+        t = MultiWhitespaceRegex.Replace(t, " ");
+        t = SpaceBeforePunctuationRegex.Replace(t, "$1");
+        t = MultiPunctuationRegex.Replace(t, "$1");
+        t = EmptyParensRegex.Replace(t, "");
+        t = MultiEmDashRegex.Replace(t, " — ");
         return t.Trim(' ', ',', ';', '-', '—', ' ');
     }
 }

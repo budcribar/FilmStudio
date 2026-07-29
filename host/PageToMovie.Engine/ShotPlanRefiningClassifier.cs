@@ -151,6 +151,8 @@ public sealed class ShotPlanRefiningClassifier
         return sb.ToString();
     }
 
+    private static readonly Regex CodeFenceCleanerRegex = new(@"```json|```", RegexOptions.Compiled);
+
     private bool ApplyRefinements(
         Dictionary<string, object?> scene,
         List<Dictionary<string, object?>> clips,
@@ -158,7 +160,7 @@ public sealed class ShotPlanRefiningClassifier
     {
         try
         {
-            var cleaned = Regex.Replace(rawJson, @"```json|```", "").Trim();
+            var cleaned = CodeFenceCleanerRegex.Replace(rawJson, "").Trim();
             using var doc = JsonDocument.Parse(cleaned);
             if (!doc.RootElement.TryGetProperty("refinements", out var refArray) ||
                 refArray.ValueKind != JsonValueKind.Array)
