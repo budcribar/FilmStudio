@@ -639,9 +639,9 @@ else
                     <button type="button"
                             class="btn btn-sm btn-outline-primary"
                             disabled="@(_busy || JobRunning || _verifyingClip)"
-                            title="Run dialogue &amp; speaker verification on all clips in selected scene(s)"
+                            title="@(_selectedClips.Count > 0 ? $"Run dialogue & speaker verification on {_selectedClips.Count} selected clip(s)" : "Run dialogue & speaker verification on clips in scene")"
                             @onclick="VerifySelectedScenesDialogueAsync">
-                        🔍 Verify Scene Dialogue
+                        @(_selectedClips.Count > 0 ? $"🔍 Verify ({_selectedClips.Count}) Selected Clips" : "🔍 Verify Scene Dialogue")
                     </button>
                 }
                 @if (_detail.CompositeExists || _detail.ClipsOnDisk > 0)
@@ -820,22 +820,22 @@ else
                                     }
                                     @if (clipBusy)
                                     {
-                                        <span class="badge bg-warning text-dark px-2 py-1 rounded-pill" style="font-weight:600;"
-                                              title="Generating — file is about to change">C@(cn.ToString("D2"))</span>
+                                        <span class="badge bg-warning text-dark px-2 py-1 rounded-pill font-monospace me-1" style="font-size:0.8rem;"
+                                              title="Generating — file is about to change">⏳ C@(cn.ToString("D2"))</span>
                                     }
                                     else if (c.OnDisk)
                                     {
                                         <button type="button"
-                                                class="badge bg-success text-white border-0 px-2 py-1 rounded-pill"
-                                                style="font-weight:600;cursor:pointer;"
-                                                title="On disk — click to play"
+                                                class="btn btn-sm btn-success rounded-pill px-2 py-0 font-monospace fw-semibold align-baseline me-1 shadow-sm"
+                                                style="font-size:0.78rem; border-width:1px;"
+                                                title="Click to play clip C@(cn.ToString("D2")) video"
                                                 @onclick="() => SelectClip(cn)">
-                                            C@(cn.ToString("D2"))
+                                            ▶ Play C@(cn.ToString("D2"))
                                         </button>
                                     }
                                     else
                                     {
-                                        <span class="badge bg-warning text-dark px-2 py-1 rounded-pill" style="font-weight:600;"
+                                        <span class="badge bg-secondary text-light px-2 py-1 rounded-pill font-monospace me-1" style="font-size:0.8rem;"
                                               title="Not on disk yet">C@(cn.ToString("D2"))</span>
                                     }
                                     @if (c.DialogueVerification is { } ver)
@@ -867,6 +867,16 @@ else
                                                     @onclick="() => OpenVerificationModal(_detail.SceneNumber, cn, ver)">
                                                 <span class="badge bg-warning-subtle text-warning border border-warning-subtle ms-1" style="cursor:pointer;" title="Click to view verification failure report">
                                                     ⚠ Mismatch (@($"{ver.DialogueAccuracyScore:P0}")) 📋
+                                                </span>
+                                            </button>
+                                        }
+                                        else if (string.Equals(ver.Status, "no_speech", StringComparison.OrdinalIgnoreCase))
+                                        {
+                                            <button type="button" class="btn btn-sm p-0 border-0 align-baseline"
+                                                    @onclick:stopPropagation="true"
+                                                    @onclick="() => OpenVerificationModal(_detail.SceneNumber, cn, ver)">
+                                                <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle ms-1" style="cursor:pointer;" title="Click to view verification report details">
+                                                    ✓ No speech 📋
                                                 </span>
                                             </button>
                                         }
@@ -3412,6 +3422,10 @@ else
     private async Task VerifySelectedScenesDialogueAsync()
     {
         if (string.IsNullOrWhiteSpace(_projectId)) return;
+
+        // If specific clips are checked in the table, verify ONLY those selected clips.
+        // Otherwise, verify all on-disk clips for the selected scene(s).
+        var isClipSelection = _selectedClips.Count > 0;
         var scenesToVerify = _selected.Count > 0
             ? _selected.OrderBy(s => s).ToList()
             : (_detail is not null ? new List<int> { _detail.SceneNumber } : new List<int>());
@@ -3435,7 +3449,10 @@ else
                 if (sceneDetail?.Clips is not null)
                 {
                     sceneDetails.Add((sn, sceneDetail));
-                    _verifyTotal += sceneDetail.Clips.Count(c => c.OnDisk);
+                    var clipsToInclude = isClipSelection
+                        ? sceneDetail.Clips.Where(c => c.OnDisk && _selectedClips.Contains(c.ClipNumber)).ToList()
+                        : sceneDetail.Clips.Where(c => c.OnDisk).ToList();
+                    _verifyTotal += clipsToInclude.Count;
                 }
             }
 
@@ -3443,8 +3460,11 @@ else
 
             foreach (var (sn, sceneDetail) in sceneDetails)
             {
-                var onDisk = sceneDetail.Clips.Where(c => c.OnDisk).ToList();
-                foreach (var c in onDisk)
+                var clipsToRun = isClipSelection
+                    ? sceneDetail.Clips.Where(c => c.OnDisk && _selectedClips.Contains(c.ClipNumber)).ToList()
+                    : sceneDetail.Clips.Where(c => c.OnDisk).ToList();
+
+                foreach (var c in clipsToRun)
                 {
                     _verifyCurrent++;
                     _verifyingClipNumber = c.ClipNumber;

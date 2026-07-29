@@ -118,21 +118,21 @@ public sealed class ClipDialogueVerificationService
         var expectedSpeaker = clip?.Speaker ?? "Unknown";
         var expectedDialogue = clip?.Dialogue ?? "";
 
-        // If no speech planned for this clip, return verified no-speech status immediately
-        if (string.IsNullOrWhiteSpace(expectedDialogue) && string.IsNullOrWhiteSpace(expectedSpeaker))
+        // If no spoken dialogue planned for this clip, return verified no-speech status immediately
+        if (string.IsNullOrWhiteSpace(expectedDialogue))
         {
             var noSpeechResult = new ClipDialogueVerificationResult
             {
                 SceneNumber = sceneNumber,
                 ClipNumber = clipNumber,
-                ExpectedSpeaker = "None",
+                ExpectedSpeaker = string.IsNullOrWhiteSpace(expectedSpeaker) || string.Equals(expectedSpeaker, "Unknown", StringComparison.OrdinalIgnoreCase) ? "None" : expectedSpeaker,
                 ExpectedDialogue = "",
                 DetectedSpeaker = "None",
                 TranscribedDialogue = "",
                 DialogueAccuracyScore = 1.0,
                 SpeakerMatch = true,
                 Status = "no_speech",
-                SummaryNote = "No dialogue planned for this clip.",
+                SummaryNote = "No spoken dialogue planned for this clip.",
                 VerifiedAt = DateTime.UtcNow,
             };
             await SaveVerificationAsync(projectId, noSpeechResult, ct).ConfigureAwait(false);
