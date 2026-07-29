@@ -18,6 +18,12 @@ public sealed class FalAudioClient : IAudioClient
 {
     public const string ApiBase = "https://fal.run/";
 
+    /// <summary>fal-ai/stable-audio rejects seconds_total outside roughly this range — callers
+    /// generate multiple segments and concatenate client-side for anything longer.</summary>
+    public const int MaxSegmentDurationSecondsConst = 47;
+
+    public int MaxSegmentDurationSeconds => MaxSegmentDurationSecondsConst;
+
     private readonly HttpClient _http;
     private readonly PageToMovieOptions _opts;
     private readonly ILogger<FalAudioClient> _log;
@@ -45,17 +51,25 @@ public sealed class FalAudioClient : IAudioClient
         return null;
     }
 
-    public async Task<byte[]> GenerateMusicTrackAsync(
+    public async Task<string?> GenerateMusicTrackAsync(
         string prompt,
         int durationSeconds,
         string? model = null,
         CancellationToken ct = default)
     {
-        var apiKey = ResolveApiKey()
-            ?? throw new InvalidOperationException($"Fal.ai API key is missing. Set {SupportedModelCatalog.FalApiKeyEnv} in environment or Configuration.");
+        var apiKey = ResolveApiKey();
+        if (string.IsNullOrWhiteSpace(apiKey))
+        {
+            _log.LogWarning("Fal.ai API key is missing — skipping audio generation.");
+            return null;
+        }
 
         model = string.IsNullOrWhiteSpace(model) ? "fal-ai/stable-audio" : model;
-        durationSeconds = Math.Clamp(durationSeconds, 2, 90);
+        // Real fal-ai/stable-audio hard limit (not an arbitrary choice — see
+        // https://github.com/Stability-AI/stable-audio-tools/issues/154). Callers that need
+        // longer coverage generate MaxSegmentDurationSeconds-sized segments and concatenate
+        // client-side, same as video's per-clip duration limits.
+        durationSeconds = Math.Clamp(durationSeconds, 2, MaxSegmentDurationSecondsConst);
 
         var payload = new Dictionary<string, object?>
         {
@@ -75,13 +89,13 @@ public sealed class FalAudioClient : IAudioClient
         if (!resp.IsSuccessStatusCode)
         {
             _log.LogError("Fal.ai audio gen failed HTTP {Status} ({Elapsed}ms): {Body}", resp.StatusCode, sw.ElapsedMilliseconds, body);
-            throw new InvalidOperationException($"Fal.ai error {resp.StatusCode}: {body}");
+            return null;
         }
 
         using var doc = JsonDocument.Parse(body);
         string? audioUrl = null;
 
-        // Parse standard Fal audio response properties: audio_file.url OR audio.url
+        // Parse standard Fal audio response shapes: audio_file.url, audio.url, or a bare url.
         if (doc.RootElement.TryGetProperty("audio_file", out var audioFileEl) && audioFileEl.TryGetProperty("url", out var urlEl1))
         {
             audioUrl = urlEl1.GetString();
@@ -97,10 +111,13 @@ public sealed class FalAudioClient : IAudioClient
 
         if (string.IsNullOrWhiteSpace(audioUrl))
         {
-            throw new InvalidOperationException($"Fal.ai returned no audio URL: {body}");
+            _log.LogError("Fal.ai returned no audio URL: {Body}", body);
+            return null;
         }
 
         _log.LogInformation("Fal.ai audio generated successfully ({Elapsed}ms): {Url}", sw.ElapsedMilliseconds, audioUrl);
-        return await _http.GetByteArrayAsync(audioUrl, ct).ConfigureAwait(false);
+        // Return the provider URL directly — the caller proxies it to the client (same as
+        // video); the server never downloads generated media bytes into its own memory/disk.
+        return audioUrl;
     }
 }

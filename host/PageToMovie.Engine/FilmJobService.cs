@@ -64,6 +64,8 @@ public sealed class FilmJobService
     private readonly ActionCameraOverheadLedger? _timingLedger;
     private readonly AiActionOverheadClassifier? _timingClassifier;
     private readonly IHttpClientFactory _httpFactory;
+    private readonly IAudioClient _audio;
+    private readonly SceneMusicScoringService _musicScoring;
 
     public FilmJobService(
         ProjectStore projects,
@@ -95,6 +97,8 @@ public sealed class FilmJobService
         IUserContext user,
         IUserApiKeyProvider keys,
         IHttpClientFactory httpFactory,
+        IAudioClient audio,
+        SceneMusicScoringService musicScoring,
         ClipSidecarService? sidecars = null,
         ClipDialogueVerificationService? dialogueVerification = null,
         GlobalTimingCalibrationService? timingCalibration = null,
@@ -130,6 +134,8 @@ public sealed class FilmJobService
         _log = log;
         _user = user;
         _keys = keys;
+        _audio = audio;
+        _musicScoring = musicScoring;
         _sidecars = sidecars;
         _dialogueVerification = dialogueVerification;
         _timingCalibration = timingCalibration;
@@ -1149,6 +1155,122 @@ public sealed class FilmJobService
         catch (Exception ex)
         {
             _log.LogError(ex, "Credits gen failed");
+            await FinishAsync("error", ex.Message, ex.Message);
+        }
+    }
+
+    /// <summary>Background music for one scene via audio API (client saves the segment(s)).</summary>
+    public Task<JobSnapshot> StartSceneMusicGenAsync(string projectId, int scene)
+    {
+        if (string.IsNullOrWhiteSpace(projectId))
+            projectId = _projects.ActiveProjectId;
+        if (string.IsNullOrWhiteSpace(projectId))
+            throw new InvalidOperationException("projectId required");
+        return StartBackgroundJobAsync(
+            ct => RunSceneMusicGenAsync(projectId, scene, ct),
+            new JobEnqueueMeta
+            {
+                Kind = "music",
+                ProjectId = projectId,
+                Message = $"Queued background music for Scene {scene:D2}…",
+            },
+            lockResources: new[] { LockKeys.Wip(projectId) },
+            lockReason: $"scene {scene} music gen");
+    }
+
+    private async Task RunSceneMusicGenAsync(string projectId, int scene, CancellationToken ct)
+    {
+        await _projects.RequireProjectAsync(projectId, ct);
+        Snapshot = new JobSnapshot
+        {
+            Status = "running",
+            Kind = "music",
+            ProjectId = projectId,
+            Scene = scene,
+            Message = $"Generating background music for Scene {scene:D2}…",
+            Index = 0,
+            Total = 100,
+            StartedAt = DateTimeOffset.UtcNow,
+            Log = new List<string>(),
+        };
+        RegisterActiveJob();
+        await PublishAsync();
+        try
+        {
+            if (!_audio.IsConfigured)
+            {
+                await FinishAsync("error", "Audio synthesis API key missing.", "Audio synthesis API key missing.");
+                return;
+            }
+
+            var pDir = _projects.GetProjectDir(projectId);
+            var cfg = await _projects.GetConfigAsync(projectId, ct).ConfigureAwait(false);
+
+            var enableMusic = SceneMusicScoringService.GetConfigBool(cfg, "enable_background_music", true);
+            var audioModel = SceneMusicScoringService.GetConfigStr(cfg, "audio_model_name", "fal-ai/stable-audio");
+            if (!enableMusic || string.Equals(audioModel, "none", StringComparison.OrdinalIgnoreCase))
+            {
+                await FinishAsync("done", "Background music disabled in settings.");
+                return;
+            }
+
+            var detail = await _projects.GetSceneDetailAsync(projectId, scene, probeDurations: false, ct: ct).ConfigureAwait(false);
+            var totalDuration = Math.Max(1, (int)Math.Ceiling(detail?.DurationSeconds ?? 10));
+            var screenplay = detail?.Setting ?? "";
+            var planningModel = SceneMusicScoringService.GetConfigStr(cfg, "planning_model_name", "grok-4.5");
+
+            var prompt = await _musicScoring.GetOrComposeMusicPromptAsync(
+                pDir, scene, screenplay, totalDuration, planningModel, ct).ConfigureAwait(false);
+            await AppendLogAsync($"Music prompt: {prompt}");
+
+            var segLen = Math.Max(1, _audio.MaxSegmentDurationSeconds);
+            var segmentCount = (int)Math.Ceiling(totalDuration / (double)segLen);
+            var savedSegments = 0;
+
+            for (var seg = 1; seg <= segmentCount; seg++)
+            {
+                ct.ThrowIfCancellationRequested();
+                var remaining = totalDuration - (seg - 1) * segLen;
+                var segDuration = Math.Clamp(remaining, 1, segLen);
+
+                await AppendLogAsync($"  [Fal.ai] generating segment {seg}/{segmentCount} ({segDuration}s)…");
+                var url = await _audio.GenerateMusicTrackAsync(prompt, segDuration, audioModel, ct).ConfigureAwait(false);
+                if (string.IsNullOrWhiteSpace(url))
+                {
+                    await AppendLogAsync($"  [Fal.ai] segment {seg} failed — stopping.");
+                    break;
+                }
+
+                var relPath = MediaRegistryService.MusicSegmentRelativePath(scene, seg);
+                var ticket = _mediaProxy.Issue(url, TimeSpan.FromMinutes(45));
+                var clientUrl = $"/api/media/proxy/{ticket}";
+                await UpdateAsync(s =>
+                {
+                    s.ClientMediaUrl = clientUrl;
+                    s.ClientRelativePath = relPath;
+                    s.Scene = scene;
+                    s.Index = (int)Math.Round(seg * 100.0 / segmentCount);
+                });
+                await AppendLogAsync($"  segment {seg} ready for client save → {relPath}");
+                savedSegments++;
+            }
+
+            if (savedSegments == 0)
+            {
+                await FinishAsync("error", "Music synthesis failed.", "Music synthesis failed for all segments.");
+                return;
+            }
+
+            await UpdateAsync(s => s.Index = 100);
+            await FinishAsync("done", $"Background music ready ({savedSegments} segment(s)) — save to media folder");
+        }
+        catch (OperationCanceledException)
+        {
+            await FinishAsync("cancelled", "Cancelled by user");
+        }
+        catch (Exception ex)
+        {
+            _log.LogError(ex, "Scene music gen failed");
             await FinishAsync("error", ex.Message, ex.Message);
         }
     }

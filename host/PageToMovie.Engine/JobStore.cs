@@ -161,5 +161,7 @@ public sealed class JobStore : IJobStore
         QueuedAt = s.QueuedAt,
         StartedAt = s.StartedAt,
         FinishedAt = s.FinishedAt,
+        ClientMediaUrl = s.ClientMediaUrl,
+        ClientRelativePath = s.ClientRelativePath,
     };
 }

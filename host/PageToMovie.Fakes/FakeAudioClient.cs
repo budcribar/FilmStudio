@@ -11,13 +11,24 @@ public sealed class FakeAudioClient : IAudioClient
 
     public bool IsConfigured => true;
 
-    public Task<byte[]> GenerateMusicTrackAsync(
+    public int MaxSegmentDurationSeconds => 47;
+
+    public Task<string?> GenerateMusicTrackAsync(
         string prompt,
         int durationSeconds,
         string? model = null,
         CancellationToken ct = default)
     {
         _log.LogInformation("Fake audio generate duration={Duration}s", durationSeconds);
-        return Task.FromResult(Array.Empty<byte>());
+        var fixturePath = ResolveFixturePath();
+        return Task.FromResult<string?>("fixture:" + fixturePath);
+    }
+
+    private static string ResolveFixturePath()
+    {
+        var baseDir = AppContext.BaseDirectory;
+        var path = Path.Combine(baseDir, "Fixtures", "music_tiny_2s.wav");
+        if (File.Exists(path)) return path;
+        return path; // path for error message if genuinely missing
     }
 }

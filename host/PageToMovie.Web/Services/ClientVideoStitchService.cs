@@ -157,6 +157,51 @@ public sealed class ClientVideoStitchService
         }
     }
 
+    /// <summary>
+    /// Layers a scene's locally-synced background-music segments under a video URL (volume
+    /// ducking + fade-out), the client-side replacement for the old server ffmpeg mix. Returns
+    /// <paramref name="videoUrl"/> unchanged if no music segments are synced locally for the scene.
+    /// </summary>
+    public async Task<string> MixSceneMusicAsync(
+        string videoUrl,
+        int sceneNumber,
+        int volumePercent = 20,
+        CancellationToken ct = default)
+    {
+        _ = ct;
+        if (_media is null || string.IsNullOrWhiteSpace(videoUrl))
+            return videoUrl;
+
+        var segmentUrls = await _media.GetSceneMusicSegmentUrlsAsync(sceneNumber);
+        if (segmentUrls.Count == 0)
+            return videoUrl;
+
+        try
+        {
+            string musicUrl;
+            if (segmentUrls.Count == 1)
+            {
+                musicUrl = segmentUrls[0];
+            }
+            else
+            {
+                var concat = await _js.InvokeAsync<JsConcatResult>(
+                    "PageToMovieFfmpeg.concatAudioSegmentsAsync", (object)segmentUrls.ToArray());
+                if (concat is not { Success: true } || string.IsNullOrWhiteSpace(concat.Url))
+                    return videoUrl;
+                musicUrl = concat.Url!;
+            }
+
+            var mixed = await _js.InvokeAsync<JsConcatResult>(
+                "PageToMovieFfmpeg.mixSceneAudioAsync", videoUrl, musicUrl, volumePercent);
+            return mixed is { Success: true, Url: not null and not "" } ? mixed.Url! : videoUrl;
+        }
+        catch
+        {
+            return videoUrl; // mixing is best-effort — never block playback on a music failure
+        }
+    }
+
     public async Task RevokePreviewUrlAsync()
     {
         try

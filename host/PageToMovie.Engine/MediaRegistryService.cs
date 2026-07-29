@@ -67,6 +67,11 @@ public sealed class MediaRegistryService
     public static string ClipRelativePath(int scene, int clip) =>
         $"assets/video/scene_{scene:D2}_clip_{clip:D2}.mp4";
 
+    /// <summary>One background-music segment (IAudioClient.MaxSegmentDurationSeconds-sized) for a
+    /// scene — most scenes need only segment 1; longer scenes concatenate client-side.</summary>
+    public static string MusicSegmentRelativePath(int scene, int segment) =>
+        $"assets/music/scene_{scene:D2}_seg_{segment:D2}.wav";
+
     public static string NormalizeSha256(string? hex)
     {
         if (string.IsNullOrWhiteSpace(hex)) return "";
@@ -160,6 +165,23 @@ public sealed class MediaRegistryService
         var path = ClipRelativePath(scene, clip);
         var row = await TryGetAsync(projectId, path, ct).ConfigureAwait(false);
         return row is not null;
+    }
+
+    /// <summary>Any background-music segment registered for this scene (client-synced — the
+    /// server no longer keeps the audio bytes, only the registry row proving it was saved).</summary>
+    public async Task<bool> HasSceneMusicAsync(string projectId, int scene, CancellationToken ct = default)
+    {
+        EnsureInitialized();
+        using var conn = new SqliteConnection(ConnectionString);
+        await conn.OpenAsync(ct).ConfigureAwait(false);
+        using var cmd = conn.CreateCommand();
+        cmd.CommandText = @"
+            SELECT 1 FROM media_objects
+            WHERE project_id = @p AND scene = @sc AND kind = 'music' LIMIT 1";
+        cmd.Parameters.AddWithValue("@p", projectId);
+        cmd.Parameters.AddWithValue("@sc", scene);
+        var result = await cmd.ExecuteScalarAsync(ct).ConfigureAwait(false);
+        return result is not null;
     }
 
     public async Task<MediaObjectDto?> TryGetAsync(string projectId, string relativePath, CancellationToken ct = default)

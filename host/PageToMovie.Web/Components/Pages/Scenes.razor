@@ -3085,7 +3085,9 @@ else
                 return;
             }
 
-            _clientSceneUrl = result.Url;
+            // Layer locally-synced background music (if any) under the stitched video —
+            // client-side replacement for the old server-side ffmpeg mix; no-op if none synced.
+            _clientSceneUrl = await Stitch.MixSceneMusicAsync(result.Url, sn);
             _sceneVideoKey = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
             _inlineCompositeKey = _sceneVideoKey;
             _message = urls.Count == 1
@@ -3737,21 +3739,16 @@ else
         _busy = true;
         _scoringMusic = true;
         _error = null;
-        _message = $"AI Music Scoring: Generating continuous background music score for Scene {sceneNum:D2}…";
+        _message = $"Queuing background music for Scene {sceneNum:D2}…";
         StateHasChanged();
 
         try
         {
-            var res = await Engine.ScoreSceneMusicAsync(_projectId, sceneNum);
-            if (res is not null)
-            {
-                _message = $"Successfully scored background music for Scene {sceneNum:D2}.";
-                _detail = (await Engine.GetSceneDetailAsync(_projectId, sceneNum))?.Scene;
-            }
-            else
-            {
-                _error = "Background music scoring failed. Check your audio synthesis key in Configuration.";
-            }
+            await EnsureHubAsync();
+            await Engine.StartSceneMusicGenAsync(_projectId, sceneNum);
+            // Live progress card only — no duplicate "started" banner (same as scene gen).
+            var jobs = await Engine.GetJobAsync();
+            _job = jobs?.Job;
         }
         catch (Exception ex)
         {

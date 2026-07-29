@@ -140,6 +140,34 @@ window.PageToMovieFfmpeg = {
         }
     },
 
+    /** Fetch ordered URLs into MEMFS as sequentially-named files ("in000.<ext>", …). Shared by
+     * concatVideosAsync/concatAudioSegmentsAsync so the download/write loop lives once. */
+    _writeSequentialInputsAsync: async function (ffmpeg, urls, ext, onProgress, startPct, endPct) {
+        const written = [];
+        for (let i = 0; i < urls.length; i++) {
+            const name = "in" + String(i).padStart(3, "0") + "." + ext;
+            reportProgress(onProgress,
+                startPct + Math.round((i / urls.length) * (endPct - startPct)),
+                "Downloading " + (i + 1) + "/" + urls.length + "…");
+            const data = await this._safeFetchFile(urls[i]);
+            await ffmpeg.writeFile(name, data);
+            written.push(name);
+        }
+        return written;
+    },
+
+    /** Read an output file as a blob URL and clean up its MEMFS inputs + itself. */
+    _readAndCleanupAsync: async function (ffmpeg, outName, mimeType, cleanupNames) {
+        const out = await ffmpeg.readFile(outName);
+        const blob = new Blob([out.buffer], { type: mimeType });
+        const url = URL.createObjectURL(blob);
+        for (const n of cleanupNames) {
+            try { await ffmpeg.deleteFile(n); } catch (_) { /* */ }
+        }
+        try { await ffmpeg.deleteFile(outName); } catch (_) { /* */ }
+        return url;
+    },
+
     /**
      * Fetch ordered video URLs and concatenate into one MP4 blob URL for <video src>.
      * @param {string[]} urls absolute or root-relative clip/scene URLs
@@ -178,18 +206,10 @@ window.PageToMovieFfmpeg = {
                 return { success: false, error: "ffmpeg util fetchFile missing" };
             }
 
-            const written = [];
+            let written = [];
             try {
                 reportProgress(onProgress, 12, "Downloading clips…");
-                for (let i = 0; i < list.length; i++) {
-                    const name = "in" + String(i).padStart(3, "0") + ".mp4";
-                    reportProgress(onProgress,
-                        12 + Math.round((i / list.length) * 40),
-                        "Downloading " + (i + 1) + "/" + list.length + "…");
-                    const data = await self._safeFetchFile(list[i]);
-                    await ffmpeg.writeFile(name, data);
-                    written.push(name);
-                }
+                written = await self._writeSequentialInputsAsync(ffmpeg, list, "mp4", onProgress, 12, 52);
 
                 // concat demuxer list
                 const listBody = written.map(n => "file '" + n + "'").join("\n");
@@ -493,5 +513,116 @@ window.PageToMovieFfmpeg = {
             binary += String.fromCharCode.apply(null, bytes.subarray(i, i + chunk));
         }
         return btoa(binary);
+    },
+
+    /**
+     * Concatenate ordered background-music segment URLs (WAV) into one continuous AAC track.
+     * Segments come from IAudioClient.MaxSegmentDurationSeconds-sized provider calls (see
+     * FilmJobService's music job) — most scenes produce just one segment, handled as a no-op.
+     * @param {string[]} urls
+     * @returns {{ success:boolean, url?:string, error?:string }}
+     */
+    concatAudioSegmentsAsync: async function (urls, onProgress) {
+        const list = Array.isArray(urls) ? urls.filter(u => typeof u === "string" && u.length > 0) : [];
+        if (list.length === 0) return { success: false, error: "No audio URLs to combine" };
+        if (list.length === 1) {
+            reportProgress(onProgress, 100, "Ready");
+            return { success: true, url: list[0], single: true };
+        }
+
+        const self = this;
+        return this._runExclusiveAsync(async function () {
+            const load = await self.ensureLoadedAsync(onProgress);
+            if (!load.success) return load;
+
+            const ffmpeg = self._ffmpeg;
+            let written = [];
+            try {
+                reportProgress(onProgress, 12, "Downloading music segments…");
+                written = await self._writeSequentialInputsAsync(ffmpeg, list, "wav", onProgress, 12, 55);
+
+                const listBody = written.map(n => "file '" + n + "'").join("\n");
+                await ffmpeg.writeFile("music_list.txt", listBody);
+
+                reportProgress(onProgress, 60, "Combining music…");
+                await ffmpeg.exec([
+                    "-f", "concat", "-safe", "0", "-i", "music_list.txt",
+                    "-c:a", "aac", "-b:a", "192k",
+                    "out_music.m4a",
+                ]);
+
+                reportProgress(onProgress, 90, "Preparing…");
+                const url = await self._readAndCleanupAsync(
+                    ffmpeg, "out_music.m4a", "audio/mp4", written.concat(["music_list.txt"]));
+                reportProgress(onProgress, 100, "Ready");
+                return { success: true, url: url };
+            } catch (err) {
+                console.error("concatAudioSegmentsAsync failed:", err);
+                for (const n of written) { try { await ffmpeg.deleteFile(n); } catch (_) { /* */ } }
+                try { await ffmpeg.deleteFile("music_list.txt"); } catch (_) { /* */ }
+                return { success: false, error: err.message || String(err) };
+            }
+        });
+    },
+
+    /**
+     * Layer a background-music track under a scene video with volume ducking + a 1.5s fade-out,
+     * replacing the server-side ffmpeg filter_complex this feature used to run — the API host
+     * never spawns native ffmpeg, so this composite step happens entirely in the browser now,
+     * the same as clip/scene stitching.
+     * @param {string} videoUrl
+     * @param {string} musicUrl single (already-concatenated) music track URL
+     * @param {number} volumePercent 0-100
+     * @returns {{ success:boolean, url?:string, error?:string }}
+     */
+    mixSceneAudioAsync: async function (videoUrl, musicUrl, volumePercent, onProgress) {
+        if (!videoUrl) return { success: false, error: "No video URL" };
+        if (!musicUrl) return { success: true, url: videoUrl }; // nothing to mix — pass through
+
+        const volRatio = Math.max(0.05, Math.min(1.0, (volumePercent != null ? volumePercent : 20) / 100));
+
+        const self = this;
+        return this._runExclusiveAsync(async function () {
+            const load = await self.ensureLoadedAsync(onProgress);
+            if (!load.success) return load;
+
+            const ffmpeg = self._ffmpeg;
+            const inVideo = "mix_in_video.mp4";
+            const inMusic = "mix_in_music.m4a";
+            const outName = "mix_out.mp4";
+            try {
+                reportProgress(onProgress, 10, "Loading video…");
+                await ffmpeg.writeFile(inVideo, await self._safeFetchFile(videoUrl));
+                reportProgress(onProgress, 30, "Loading music…");
+                await ffmpeg.writeFile(inMusic, await self._safeFetchFile(musicUrl));
+
+                const probe = await self._probeDurationMemfsAsync(inVideo);
+                const durationSec = probe.success && probe.seconds > 0 ? probe.seconds : 0;
+                const fadeStart = Math.max(0, durationSec - 1.5);
+                const musicFilter = "[1:a]volume=" + volRatio.toFixed(2) +
+                    (durationSec > 0 ? ",afade=t=out:st=" + fadeStart.toFixed(1) + ":d=1.5" : "") +
+                    "[bg]";
+
+                reportProgress(onProgress, 50, "Mixing audio…");
+                await ffmpeg.exec([
+                    "-hide_banner", "-y",
+                    "-i", inVideo, "-i", inMusic,
+                    "-filter_complex", musicFilter + ";[0:a][bg]amix=inputs=2:duration=first[a]",
+                    "-map", "0:v", "-map", "[a]",
+                    "-c:v", "copy", "-c:a", "aac", "-b:a", "192k",
+                    "-shortest",
+                    outName,
+                ]);
+
+                reportProgress(onProgress, 90, "Preparing player…");
+                const url = await self._readAndCleanupAsync(ffmpeg, outName, "video/mp4", [inVideo, inMusic]);
+                reportProgress(onProgress, 100, "Ready");
+                return { success: true, url: url };
+            } catch (err) {
+                console.error("mixSceneAudioAsync failed:", err);
+                for (const n of [inVideo, inMusic, outName]) { try { await ffmpeg.deleteFile(n); } catch (_) { /* */ } }
+                return { success: false, error: err.message || String(err) };
+            }
+        });
     },
 };

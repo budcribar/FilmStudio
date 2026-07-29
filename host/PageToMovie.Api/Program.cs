@@ -271,12 +271,14 @@ else
         c.BaseAddress = new Uri(GeminiChatClient.ApiBase + "/");
         c.Timeout = TimeSpan.FromMinutes(20);
     }));
-    ConfigurePooledSocketsHandler(builder.Services.AddHttpClient<FalMusicClient>(c =>
+    ConfigurePooledSocketsHandler(builder.Services.AddHttpClient<FalAudioClient>(c =>
     {
-        c.BaseAddress = new Uri(FalMusicClient.ApiBase.TrimEnd('/') + "/");
+        c.BaseAddress = new Uri(FalAudioClient.ApiBase.TrimEnd('/') + "/");
         c.Timeout = TimeSpan.FromMinutes(5);
     }));
-    builder.Services.AddSingleton<IMusicClient, MultiProviderMusicClient>();
+    // Only one real audio provider today, so IAudioClient resolves straight to it — no
+    // MultiProviderAudioClient wrapper (that pattern is for >1 concrete provider; see IVideoClient).
+    builder.Services.AddSingleton<IAudioClient>(sp => sp.GetRequiredService<FalAudioClient>());
 
     // Dispatchers: every existing caller keeps depending on IChatClient / IImageClient /
     // IVideoClient / IVisionClient and is routed to the right concrete provider client
@@ -4536,48 +4538,37 @@ app.MapPost("/api/projects/{id}/scenes/{scene:int}/clips/{clip:int}/upload", asy
     return Results.Ok(new { ok = true, projectId = id, scene, clip, path = destPath });
 });
 
-/// <summary>Generate AI background music score and apply dialogue ducking for a scene.</summary>
-app.MapPost("/api/projects/{id}/scenes/{scene:int}/score-music", async (
-    string id,
-    int scene,
-    ProjectStore store,
-    SceneMusicScoringService musicScorer,
-    CancellationToken ct) =>
+/// <summary>
+/// Queue background-music generation for a scene (client-side job: mirrors clip gen — the
+/// server never spawns ffmpeg or persists audio bytes; segments proxy straight to the client).
+/// </summary>
+app.MapPost("/api/jobs/scene-music", async (
+    StartSceneMusicGenRequest? body,
+    FilmJobService jobService,
+    IUserContext user,
+    IOptions<PageToMovieOptions> opts) =>
 {
-    var pDir = store.GetProjectDir(id);
-    var sceneMp4Path = Path.Combine(pDir, "assets", "video", $"scene_{scene:D2}.mp4");
-    if (!File.Exists(sceneMp4Path))
+    if (AuthGate.RequireLogin(user, opts) is { } denied)
+        return denied;
+    try
     {
-        sceneMp4Path = Path.Combine(pDir, "assets", "scenes", $"scene_{scene:D2}.mp4");
+        var projectId = body?.ProjectId;
+        if (string.IsNullOrWhiteSpace(projectId))
+            return Results.BadRequest(new { ok = false, error = "projectId required" });
+        if (body is null || body.Scene <= 0)
+            return Results.BadRequest(new { ok = false, error = "scene required" });
+        var job = await jobService.StartSceneMusicGenAsync(projectId.Trim(), body.Scene);
+        return Results.Accepted($"/api/jobs/{job.JobId}", new
+        {
+            ok = true,
+            message = $"Queued background music for Scene {body.Scene:D2}",
+            job,
+        });
     }
-    if (!File.Exists(sceneMp4Path))
+    catch (Exception ex)
     {
-        // Try clip 01
-        sceneMp4Path = Path.Combine(pDir, "assets", "video", $"scene_{scene:D2}_clip_01.mp4");
+        return JobStartError(ex, jobService);
     }
-
-    if (!File.Exists(sceneMp4Path))
-        return Results.BadRequest(new { ok = false, error = $"No video file found on server for Scene {scene:D2} to score music." });
-
-    var cfg = await store.GetConfigAsync(id, ct);
-    var detail = await store.GetSceneDetailAsync(id, scene, probeDurations: false, ct: ct);
-    var duration = (int)Math.Ceiling(detail?.DurationSeconds ?? 10);
-    var screenplay = detail?.Setting ?? "";
-
-    var outputSceneMp4Path = Path.Combine(pDir, "assets", "scenes", $"scene_{scene:D2}.mp4");
-    Directory.CreateDirectory(Path.GetDirectoryName(outputSceneMp4Path)!);
-
-    var result = await musicScorer.ProcessSceneMusicAsync(
-        projectDir: pDir,
-        sceneNumber: scene,
-        inputSceneMp4Path: sceneMp4Path,
-        outputSceneMp4Path: outputSceneMp4Path,
-        screenplayText: screenplay,
-        durationSeconds: duration,
-        config: cfg,
-        ct: ct);
-
-    return Results.Ok(new { ok = result is not null, result });
 });
 
 /// <summary>
@@ -4605,127 +4596,6 @@ app.MapPost("/api/projects/{id}/augment-music", async (
 
     store.TriggerAutoGitCommit(id, "Augment blueprint with AI music score prompts");
     return Results.Ok(new { ok = true, message = "Successfully augmented blueprint with AI background music scores." });
-});
-
-/// <summary>
-/// Batch synthesizes background music audio tracks (assets/scene_XX_music.mp3) for all scenes in a project.
-/// Skips scenes that already have audio tracks present on disk.
-/// </summary>
-app.MapPost("/api/projects/{id}/generate-scene-music", async (
-    string id,
-    ProjectStore store,
-    SceneMusicScoringService scorer,
-    IUserContext user,
-    IOptions<PageToMovieOptions> opts,
-    CancellationToken ct = default) =>
-{
-    if (AuthGate.RequireLogin(user, opts) is { } denied)
-        return denied;
-
-    var pDir = await store.GetProjectDirAsync(id, ct);
-    if (string.IsNullOrWhiteSpace(pDir) || !Directory.Exists(pDir))
-        return Results.NotFound(new { ok = false, error = "Project not found." });
-
-    var cfg = await store.GetConfigAsync(id, ct);
-    var generatedCount = await scorer.GenerateProjectSceneAudioAsync(pDir, cfg, null, ct);
-
-    store.TriggerAutoGitCommit(id, $"Synthesize background music audio for {generatedCount} scenes");
-    return Results.Ok(new { ok = true, generatedCount, message = $"Synthesized background music audio for {generatedCount} scenes." });
-});
-
-/// <summary>
-/// Combined single-upload two-phase scene cut processing endpoint.
-/// Accepts 1 uploaded MP4 scene stream and executes Phase 1 (Dialogue Verification) and Phase 2 (Music Scoring &amp; Ducking) back-to-back on server.
-/// Cleans up temp file in a single finally block.
-/// </summary>
-app.MapPost("/api/projects/{id}/scenes/{scene:int}/process-cut", async (
-    string id,
-    int scene,
-    HttpContext httpContext,
-    ProjectStore store,
-    ClipDialogueVerificationService verifier,
-    SceneMusicScoringService musicScorer,
-    CancellationToken ct) =>
-{
-    string? tempFilePath = null;
-    try
-    {
-        bool verifyDialogue = true;
-        bool scoreMusic = true;
-        int clip = 1;
-        string screenplayText = "";
-        int durationSeconds = 10;
-
-        if (httpContext.Request.HasFormContentType)
-        {
-            var form = await httpContext.Request.ReadFormAsync(ct);
-            var file = form.Files.GetFile("video");
-            if (file is { Length: > 0 })
-            {
-                tempFilePath = Path.Combine(Path.GetTempPath(), $"scene_cut_process_{Guid.NewGuid():N}.mp4");
-                using (var stream = File.Create(tempFilePath))
-                {
-                    await file.CopyToAsync(stream, ct).ConfigureAwait(false);
-                }
-            }
-
-            if (form.TryGetValue("verifyDialogue", out var vdVal) && bool.TryParse(vdVal, out var vd))
-                verifyDialogue = vd;
-            if (form.TryGetValue("scoreMusic", out var smVal) && bool.TryParse(smVal, out var sm))
-                scoreMusic = sm;
-            if (form.TryGetValue("clip", out var clipVal) && int.TryParse(clipVal, out var cNum))
-                clip = cNum;
-            if (form.TryGetValue("screenplayText", out var stVal))
-                screenplayText = stVal.ToString();
-            if (form.TryGetValue("durationSeconds", out var durVal) && int.TryParse(durVal, out var dSec))
-                durationSeconds = dSec;
-        }
-
-        ClipDialogueVerificationResult? dialogueResult = null;
-        if (verifyDialogue)
-        {
-            dialogueResult = await verifier.VerifyClipDialogueAsync(id, scene, clip, overrideVideoPath: tempFilePath, ct: ct);
-        }
-
-        SceneMusicResult? musicResult = null;
-        if (scoreMusic && !string.IsNullOrWhiteSpace(tempFilePath) && File.Exists(tempFilePath))
-        {
-            var pDir = store.GetProjectDir(id);
-            var cfg = await store.GetConfigAsync(id, ct);
-            var finalSceneMp4Path = Path.Combine(pDir, "assets", "scenes", $"scene_{scene:D2}.mp4");
-            Directory.CreateDirectory(Path.GetDirectoryName(finalSceneMp4Path)!);
-
-            musicResult = await musicScorer.ProcessSceneMusicAsync(
-                projectDir: pDir,
-                sceneNumber: scene,
-                inputSceneMp4Path: tempFilePath,
-                outputSceneMp4Path: finalSceneMp4Path,
-                screenplayText: screenplayText,
-                durationSeconds: durationSeconds,
-                config: cfg,
-                ct: ct);
-        }
-
-        return Results.Ok(new
-        {
-            ok = true,
-            projectId = id,
-            scene,
-            dialogueResult,
-            musicResult,
-        });
-    }
-    catch (Exception ex)
-    {
-        return Results.BadRequest(new { ok = false, error = ex.Message });
-    }
-    finally
-    {
-        if (!string.IsNullOrWhiteSpace(tempFilePath) && File.Exists(tempFilePath))
-        {
-            try { File.Delete(tempFilePath); } catch { }
-        }
-    }
 });
 
 /// <summary>Write accepted suggestion fields (cast / clip prompt). Does not regen — client starts gen after.</summary>
@@ -5619,6 +5489,24 @@ app.MapGet("/api/media/proxy/{token}", async (
     var url = tickets.TryTakeUrl(token);
     if (string.IsNullOrWhiteSpace(url))
         return Results.NotFound(new { ok = false, error = "Media ticket expired or invalid" });
+
+    // Fakes-mode local fixture (no upstream provider to fetch from) — same ticket
+    // mechanism as a real provider URL, just served from disk instead of proxied over HTTP.
+    if (url.StartsWith("fixture:", StringComparison.OrdinalIgnoreCase))
+    {
+        var fixturePath = url["fixture:".Length..];
+        if (!File.Exists(fixturePath))
+            return Results.NotFound(new { ok = false, error = "Fixture file not found" });
+        var fixtureCtype = Path.GetExtension(fixturePath).ToLowerInvariant() switch
+        {
+            ".wav" => "audio/wav",
+            ".mp3" => "audio/mpeg",
+            ".mp4" => "video/mp4",
+            _ => "application/octet-stream",
+        };
+        var fixtureStream = File.OpenRead(fixturePath);
+        return Results.Stream(fixtureStream, contentType: fixtureCtype, fileDownloadName: Path.GetFileName(fixturePath));
+    }
 
     var http = httpFactory.CreateClient("media-proxy");
     HttpResponseMessage? resp = null;

@@ -150,7 +150,18 @@ public interface IAudioClient
 {
     bool IsConfigured { get; }
 
-    Task<byte[]> GenerateMusicTrackAsync(
+    /// <summary>Longest single-call duration the provider will accept — callers generate this
+    /// many seconds per segment and concatenate client-side for anything longer, the same way
+    /// video handles per-provider clip-length limits.</summary>
+    int MaxSegmentDurationSeconds { get; }
+
+    /// <summary>
+    /// Returns the provider's audio URL, not downloaded bytes — mirrors
+    /// IVideoClient.PollForVideoUrlAsync so the caller can hand it straight to
+    /// MediaProxyTicketStore/ClientMediaUrl for client-side download, the same as video. The key
+    /// never leaves the API host; only the short-lived provider URL does.
+    /// </summary>
+    Task<string?> GenerateMusicTrackAsync(
         string prompt,
         int durationSeconds,
         string? model = null,

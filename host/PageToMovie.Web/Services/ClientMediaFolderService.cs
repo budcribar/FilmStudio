@@ -284,6 +284,7 @@ public sealed class ClientMediaFolderService
                             (snap.ClientRelativePath ?? "").Contains("sc18", StringComparison.OrdinalIgnoreCase) ||
                             snap.Scene == 18 ||
                             string.Equals(snap.Kind, "credits", StringComparison.OrdinalIgnoreCase);
+            var isMusic = string.Equals(snap.Kind, "music", StringComparison.OrdinalIgnoreCase);
             var keepTail = isCredits
                 ? ClipSilenceTrimmer.DefaultKeepTailSeconds
                 : ClipSilenceTrimmer.SpeechBreathTailSeconds; // safe default without dialogue metadata
@@ -291,7 +292,7 @@ public sealed class ClientMediaFolderService
             string? silenceMessage = null;
             string? trimmedBlobUrl = null;
             var urlToSave = url;
-            if (!isCredits) // credits plate is a title card; leave full length
+            if (!isCredits && !isMusic) // credits plate and music tracks have no dialogue to trim silence around
             {
                 var (trimmed, trimUrl, message) = await SilenceTrimAsync(
                     url,
@@ -328,7 +329,7 @@ public sealed class ClientMediaFolderService
                     RelativePath = saved.RelativePath ?? snap.ClientRelativePath!,
                     Sha256 = saved.Sha256,
                     SizeBytes = saved.SizeBytes,
-                    Kind = isCredits ? "credits" : "clip",
+                    Kind = isCredits ? "credits" : isMusic ? "music" : "clip",
                     Scene = scene,
                     Clip = clip,
                 });
@@ -686,6 +687,24 @@ public sealed class ClientMediaFolderService
         public bool Success { get; set; }
         public string? Url { get; set; }
         public string? Error { get; set; }
+    }
+
+    /// <summary>Local blob URLs for a scene's background-music segments (in order), stopping at
+    /// the first missing segment. Segment relative paths mirror
+    /// MediaRegistryService.MusicSegmentRelativePath in PageToMovie.Engine (Web doesn't reference
+    /// Engine, so the format is kept in sync here — same convention as the clip path below).</summary>
+    public async Task<IReadOnlyList<string>> GetSceneMusicSegmentUrlsAsync(int scene, int maxSegments = 20)
+    {
+        var urls = new List<string>();
+        if (!IsConnected) return urls;
+        for (var seg = 1; seg <= maxSegments; seg++)
+        {
+            var relPath = $"assets/music/scene_{scene:D2}_seg_{seg:D2}.wav";
+            var url = await GetLocalBlobUrlAsync(relPath);
+            if (string.IsNullOrWhiteSpace(url)) break;
+            urls.Add(url);
+        }
+        return urls;
     }
 
     public async Task<byte[]?> GetClipBytesAsync(int scene, int clip)

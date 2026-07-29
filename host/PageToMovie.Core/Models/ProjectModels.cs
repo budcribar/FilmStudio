@@ -840,6 +840,13 @@ public sealed class StartCreditsGenRequest
     public string? Resolution { get; set; }
 }
 
+/// <summary>Generate background music for a scene via audio API (client saves the audio segment(s)).</summary>
+public sealed class StartSceneMusicGenRequest
+{
+    public string ProjectId { get; set; } = "";
+    public int Scene { get; set; }
+}
+
 /// <summary>Last successful YouTube upload for a project (sidecar assets/youtube_upload.json).</summary>
 public sealed class YouTubeUploadInfo
 {

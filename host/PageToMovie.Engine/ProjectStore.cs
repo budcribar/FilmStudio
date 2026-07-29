@@ -3469,8 +3469,10 @@ public sealed class ProjectStore
             }
         }
 
-        var musicFile = Path.Combine(projectDir, "assets", $"scene_{sceneNumber:D2}_music.mp3");
-        var hasMusic = File.Exists(musicFile) && new FileInfo(musicFile).Length >= 1024;
+        // Music now lives client-side only (see MediaSyncLocator note on ClipOnDisk) — the
+        // registry row is the source of truth, not a server-side file that no longer exists.
+        var hasMusic = _mediaRegistry is not null &&
+            await _mediaRegistry.HasSceneMusicAsync(projectId, sceneNumber, ct).ConfigureAwait(false);
 
         MusicScoreInfo? musicScore = null;
         if (sEl.TryGetProperty("music_score", out var msEl) && msEl.ValueKind == JsonValueKind.Object)
