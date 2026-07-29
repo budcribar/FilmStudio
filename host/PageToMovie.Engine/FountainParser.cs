@@ -67,21 +67,37 @@ public static class FountainParser
         @"^([A-Za-z][A-Za-z0-9 ]*):\s*(.*)$",
         RegexOptions.Compiled);
 
+    private static readonly Regex BoneyardRegex = new(
+        @"/\*.*?\*/",
+        RegexOptions.Singleline | RegexOptions.Compiled);
+
+    private static readonly Regex NoteRegex = new(
+        @"\[\[(.*?)\]\]",
+        RegexOptions.Singleline | RegexOptions.Compiled);
+
+    private static readonly Regex PageTagRegex = new(
+        @"^\[\[\s*pages?\s+\d+",
+        RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
+    private static readonly Regex VoExtensionRegex = new(
+        @"\(?\s*V\s*\.?\s*O\s*\.?\s*\)?",
+        RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
     public static ParseResult Parse(string text)
     {
         text ??= "";
         // Normalize typographic punctuation so CONT'D / MARLEY'S match ASCII rules
         text = NormalizeTypographicPunctuation(text);
         // Boneyard /* ... */ may span lines — remove entirely
-        text = Regex.Replace(text, @"/\*.*?\*/", "\n", RegexOptions.Singleline);
+        text = BoneyardRegex.Replace(text, "\n");
 
         // Extract and remove notes [[...]] (may span lines; empty line inside needs two spaces per spec)
         var notes = new List<string>();
-        text = Regex.Replace(text, @"\[\[(.*?)\]\]", m =>
+        text = NoteRegex.Replace(text, m =>
         {
             notes.Add(m.Groups[1].Value.Trim());
             return "";
-        }, RegexOptions.Singleline);
+        });
 
         var lines = text.Replace("\r\n", "\n").Replace('\r', '\n').Split('\n');
         // Tabs → 4 spaces (Fountain: tabs converted to four spaces in Action)
@@ -594,7 +610,7 @@ public static class FountainParser
         if (next.StartsWith('=') && !next.StartsWith("===", StringComparison.Ordinal))
             return true;
         // Page notes if not yet stripped: [[page N]]
-        if (Regex.IsMatch(next, @"^\[\[\s*pages?\s+\d+", RegexOptions.IgnoreCase))
+        if (PageTagRegex.IsMatch(next))
             return true;
         return false;
     }
@@ -665,7 +681,7 @@ public static class FountainParser
         var meta = e.Meta ?? "";
         // Meta holds extension e.g. "(V.O.)", "(V.O.) (CONT'D)", "(V.O.)|dual"
         if (meta.Contains("V.O.", StringComparison.OrdinalIgnoreCase)) return true;
-        if (Regex.IsMatch(meta, @"\(?\s*V\s*\.?\s*O\s*\.?\s*\)?", RegexOptions.IgnoreCase)) return true;
+        if (VoExtensionRegex.IsMatch(meta)) return true;
         // Rare: extension left in Text if parser edge case
         var text = e.Text ?? "";
         if (text.Contains("V.O.", StringComparison.OrdinalIgnoreCase)) return true;
