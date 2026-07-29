@@ -581,6 +581,34 @@
                             Max ~512&nbsp;MB. Zip should contain <code>project.json</code> (optionally under a top folder).
                         </p>
                     </div>
+                    <div class="col-md-12 mt-3 pt-3 border-top">
+                        <div class="fw-semibold small mb-2">🎵 Augment Project Music Scores</div>
+                        <div class="d-flex flex-wrap gap-2 align-items-center">
+                            <select class="form-select form-select-sm" style="max-width: 16rem;"
+                                    @bind="_augmentProjectId"
+                                    disabled="@(_archiveBusy || _projectOptions.Count == 0)">
+                                @if (_projectOptions.Count == 0)
+                                {
+                                    <option value="">No projects</option>
+                                }
+                                else
+                                {
+                                    @foreach (var p in _projectOptions)
+                                    {
+                                        <option value="@p">@p</option>
+                                    }
+                                }
+                            </select>
+                            <button type="button" class="btn btn-sm btn-outline-primary"
+                                    disabled="@(_archiveBusy || string.IsNullOrWhiteSpace(_augmentProjectId))"
+                                    @onclick="AugmentMusicAsync">
+                                @(_archiveBusy && _archiveAction == "augment" ? "Composing Scores…" : "Augment Music Scores")
+                            </button>
+                        </div>
+                        <p class="form-text mb-0 mt-1">
+                            Non-destructively enriches <code>blueprint.clips.grok.json</code> with AI background music score prompts across all scenes using full story context.
+                        </p>
+                    </div>
                 </div>
                 @if (!string.IsNullOrEmpty(_archiveMsg))
                 {
@@ -805,6 +833,7 @@
     private List<string> _projectOptions = new();
     private List<string> _userList = new();
     private string _exportProjectId = "";
+    private string _augmentProjectId = "";
     private string _importPreferredId = "";
     private string _importTargetUserId = "";
     private bool _importOverwrite;
@@ -976,6 +1005,13 @@
                                    ?? _projectOptions.FirstOrDefault()
                                    ?? "";
             }
+            if (string.IsNullOrWhiteSpace(_augmentProjectId) ||
+                !_projectOptions.Contains(_augmentProjectId, StringComparer.OrdinalIgnoreCase))
+            {
+                _augmentProjectId = projs?.Active?.Id
+                                    ?? _projectOptions.FirstOrDefault()
+                                    ?? "";
+            }
         }
         catch
         {
@@ -1078,6 +1114,40 @@
                 await MediaFolder.SyncProjectMediaToClientAsync(result.ProjectId);
             }
             await RefreshProjectOptionsAsync();
+            await RefreshAsync();
+        }
+        catch (Exception ex)
+        {
+            _archiveError = ex.Message;
+            _archiveMsg = null;
+        }
+        finally
+        {
+            _archiveBusy = false;
+            _archiveAction = null;
+        }
+    }
+
+    private async Task AugmentMusicAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_augmentProjectId)) return;
+
+        _archiveBusy = true;
+        _archiveAction = "augment";
+        _archiveError = null;
+        _archiveMsg = $"Composing AI background music scores for {_augmentProjectId}...";
+        try
+        {
+            var ok = await Api.AugmentProjectMusicAsync(_augmentProjectId);
+            if (ok)
+            {
+                _archiveMsg = $"Successfully augmented blueprint.clips.grok.json for {_augmentProjectId} with AI background music scores.";
+            }
+            else
+            {
+                _archiveError = $"Failed to augment background music scores for {_augmentProjectId}. Ensure blueprint.clips.grok.json exists.";
+                _archiveMsg = null;
+            }
             await RefreshAsync();
         }
         catch (Exception ex)
