@@ -50,6 +50,9 @@ When debugging or implementing against a sample project (e.g. Buster / Buster2 /
    - Avoid running lengthy test suites or jumping straight to code modifications during exploratory discussions.
 7. **Before finishing a task**, ask: *Would this still work for a different book with different cast names?*
    If not, generalize.
+8. **Single source of truth for constants and patterns.**
+   - All regular expressions, magic strings, file path patterns, and configuration keys must be defined in **exactly one location** (e.g. `ClipFileNaming`, `SupportedModelCatalog`, constants classes).
+   - **Do not** duplicate regexes, model defaults, or path format strings across multiple classes.
 
 Buster (and other fixtures) are **eval / demo projects**, not product requirements.
 
