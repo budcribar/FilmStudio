@@ -24,7 +24,7 @@ public static class BookTextAnalyzer
 
     private static readonly Regex IllustrationParenRegex = new(@"\(\s*illustration only\s*\)", RegexOptions.IgnoreCase | RegexOptions.Compiled);
     private static readonly Regex WhitespaceSplitRegex = new(@"\s+", RegexOptions.Compiled);
-    private static readonly Regex IllustrationExactMatchRegex = new(@"^\(.*illustration.*\)$", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+    private static readonly Regex IllustrationExactMatchRegex = new(@"^\(.*illustration.*\)$", RegexOptions.Compiled);
 
     public static BookTextAnalysis Analyze(string text, int? pagesHint = null)
     {
