@@ -305,6 +305,8 @@ Status options: 'verified' (dialogue & speaker match), 'mismatch' (dialogue inco
                 Status = status,
                 SummaryNote = summary,
                 EstimatedDurationSeconds = Math.Round(estSec, 1),
+                WordCount = ClipDurationEstimator.CountWords(expectedDialogue),
+                SyllableCount = ClipDurationEstimator.CountSyllables(expectedDialogue),
                 SpeechDurationSeconds = speechSec,
                 ActionDurationSeconds = actionSec,
                 ActualDurationSeconds = Math.Round(actualSec, 1),

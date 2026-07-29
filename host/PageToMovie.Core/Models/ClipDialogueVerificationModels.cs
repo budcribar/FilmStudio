@@ -29,6 +29,12 @@ public sealed class ClipDialogueVerificationResult
     /// <summary>Estimated / planned clip duration (seconds).</summary>
     public double EstimatedDurationSeconds { get; set; }
 
+    /// <summary>Number of words in expected dialogue.</summary>
+    public int WordCount { get; set; }
+
+    /// <summary>Number of syllables in expected dialogue.</summary>
+    public int SyllableCount { get; set; }
+
     /// <summary>Estimated speech dialogue time (seconds).</summary>
     public double SpeechDurationSeconds { get; set; }
 
