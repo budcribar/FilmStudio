@@ -46,7 +46,16 @@ public sealed class ClipDialogueVerificationService
     public bool IsConfigured => _vision.IsConfigured || (_gemini?.IsConfigured ?? false);
 
     public string VerificationPath(string projectId, int scene, int clip) =>
-        Path.Combine(_projects.GetProjectDir(projectId), "assets", "qa", $"scene_{scene:D2}_clip_{clip:D2}_dialogue_verification.json");
+        BuildVerificationPath(_projects.GetProjectDir(projectId), scene, clip);
+
+    /// <summary>
+    /// Static so callers that already have projectDir (e.g. ProjectStore, which this service
+    /// itself depends on and so can't take an instance dependency on) can build the exact same
+    /// path without duplicating the naming convention — a prior duplication of this path drifted
+    /// out of sync and left dialogue verification results permanently unreadable.
+    /// </summary>
+    public static string BuildVerificationPath(string projectDir, int scene, int clip) =>
+        Path.Combine(projectDir, "assets", "qa", $"scene_{scene:D2}_clip_{clip:D2}_dialogue_verification.json");
 
     public ClipDialogueVerificationResult? LoadVerification(string projectId, int scene, int clip)
     {
@@ -84,9 +93,16 @@ public sealed class ClipDialogueVerificationService
     {
         var path = VerificationPath(projectId, result.SceneNumber, result.ClipNumber);
         Directory.CreateDirectory(Path.GetDirectoryName(path)!);
-        await using var stream = new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.None, 4096, useAsync: true);
-        await JsonSerializer.SerializeAsync(stream, result, JsonOpts, ct).ConfigureAwait(false);
-        await stream.WriteAsync(NewLineBytes, ct).ConfigureAwait(false);
+        // Write to a temp file then atomically rename — a crash/cancellation mid-write must never
+        // leave the verification file truncated. Readers (ProjectStore's mtime-validated cache)
+        // rely on this atomicity to treat "file exists" as "file is a complete, valid write."
+        var tmp = path + ".tmp";
+        await using (var stream = new FileStream(tmp, FileMode.Create, FileAccess.Write, FileShare.None, 4096, useAsync: true))
+        {
+            await JsonSerializer.SerializeAsync(stream, result, JsonOpts, ct).ConfigureAwait(false);
+            await stream.WriteAsync(NewLineBytes, ct).ConfigureAwait(false);
+        }
+        File.Move(tmp, path, overwrite: true);
     }
 
     /// <summary>

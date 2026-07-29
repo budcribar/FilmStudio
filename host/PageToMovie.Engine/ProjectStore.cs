@@ -19,6 +19,10 @@ public sealed class ProjectStore
     private readonly SceneListCache? _sceneListCache;
     private readonly ProjectAutoGitService? _autoGit;
     private readonly ProjectReadCache _readCache;
+    // Written only via ClipDialogueVerificationService.SaveVerificationAsync's atomic
+    // write-then-rename — mtime/length alone is self-correcting, no external writer to
+    // coordinate a read against.
+    private readonly MtimeValidatedFileCache<ClipDialogueVerificationResult, NoOpSemaphore> _dialogueVerificationCache = new();
     private readonly IUserApiKeyProvider? _keyProvider;
     private readonly string _workspaceRoot;
     private string _activeProjectId = "";
@@ -2772,7 +2776,7 @@ public sealed class ProjectStore
                     VideoUrl = onDisk
                         ? $"/api/projects/{Uri.EscapeDataString(projectId)}/scenes/{sceneNumber}/clips/{cn}/video"
                         : null,
-                    DialogueVerification = LoadClipDialogueVerification(projectDir, sceneNumber, cn),
+                    DialogueVerification = await LoadClipDialogueVerificationAsync(projectDir, sceneNumber, cn, ct).ConfigureAwait(false),
                 });
             }
         }
@@ -2850,19 +2854,30 @@ public sealed class ProjectStore
         }
     }
 
-    private static ClipDialogueVerificationResult? LoadClipDialogueVerification(string projectDir, int sceneNumber, int clipNumber)
+    private Task<ClipDialogueVerificationResult?> LoadClipDialogueVerificationAsync(
+        string projectDir, int sceneNumber, int clipNumber, CancellationToken ct)
     {
-        var verPath = Path.Combine(projectDir, "assets", "review", $"scene_{sceneNumber:D2}_clip_{clipNumber:D2}.verification.json");
-        if (!File.Exists(verPath)) return null;
-        try
-        {
-            var json = File.ReadAllText(verPath);
-            return JsonSerializer.Deserialize<ClipDialogueVerificationResult>(json, JsonDefaults.IndentedCaseInsensitive);
-        }
-        catch
-        {
-            return null;
-        }
+        // Used to point at assets/review/*.verification.json, a path nothing ever wrote to (the
+        // real writer, ClipDialogueVerificationService.SaveVerificationAsync, writes
+        // assets/qa/*_dialogue_verification.json) — this field was always null in production
+        // regardless of whether verification had actually run. Uses the service's own path
+        // builder now instead of a second inline copy of the naming convention.
+        var verPath = ClipDialogueVerificationService.BuildVerificationPath(projectDir, sceneNumber, clipNumber);
+        return _dialogueVerificationCache.GetOrLoadAsync(
+            verPath,
+            (bytes, _) =>
+            {
+                try
+                {
+                    return Task.FromResult(
+                        JsonSerializer.Deserialize<ClipDialogueVerificationResult>(bytes, JsonDefaults.IndentedCaseInsensitive));
+                }
+                catch
+                {
+                    return Task.FromResult<ClipDialogueVerificationResult?>(null);
+                }
+            },
+            ct);
     }
 
     public string? ResolveClipVideoPath(string projectId, int sceneNumber, int clipNumber)

@@ -391,4 +391,62 @@ public class ClipDeleteAndDialogueTests
             try { Directory.Delete(root, recursive: true); } catch { /* */ }
         }
     }
+
+    /// <summary>
+    /// Regression: GetSceneDetailAsync's DialogueVerification field used to read from
+    /// assets/review/*.verification.json, a path ClipDialogueVerificationService.SaveVerificationAsync
+    /// never wrote to (it writes assets/qa/*_dialogue_verification.json) — so this field was always
+    /// null in production. Both paths now come from ClipDialogueVerificationService.BuildVerificationPath,
+    /// the single source of truth for the naming convention.
+    /// </summary>
+    [Fact]
+    public async Task GetSceneDetailAsync_surfaces_a_saved_dialogue_verification_result()
+    {
+        var (root, _, store) = SetUpProject("dialogueverify", ThreeClipBlueprint);
+        try
+        {
+            var verifier = new ClipDialogueVerificationService(store, new NullVisionClient(), null);
+            await verifier.SaveVerificationAsync("Demo", new ClipDialogueVerificationResult
+            {
+                SceneNumber = 1,
+                ClipNumber = 1,
+                ExpectedSpeaker = "Buster",
+                ExpectedDialogue = "Hello world!",
+                DetectedSpeaker = "Buster",
+                TranscribedDialogue = "Hello world!",
+                DialogueAccuracyScore = 1.0,
+                SpeakerMatch = true,
+                Status = "verified",
+            });
+
+            var detail = await store.GetSceneDetailAsync("Demo", 1, probeDurations: false);
+            Assert.NotNull(detail);
+            var clip1 = detail!.Clips.Single(c => c.ClipNumber == 1);
+            Assert.NotNull(clip1.DialogueVerification);
+            Assert.Equal("verified", clip1.DialogueVerification!.Status);
+            Assert.Equal("Buster", clip1.DialogueVerification.ExpectedSpeaker);
+
+            // Second read must hit the mtime-validated cache and still see the same result.
+            var detailAgain = await store.GetSceneDetailAsync("Demo", 1, probeDurations: false);
+            Assert.Equal("verified", detailAgain!.Clips.Single(c => c.ClipNumber == 1).DialogueVerification!.Status);
+        }
+        finally
+        {
+            try { Directory.Delete(root, recursive: true); } catch { /* */ }
+        }
+    }
+
+    private sealed class NullVisionClient : PageToMovie.Engine.Abstractions.IVisionClient
+    {
+        public bool IsConfigured => false;
+
+        public Task<string> TranscribePageAsync(string imagePath, int page, string model = "grok-4.5", CancellationToken ct = default) =>
+            Task.FromResult("");
+
+        public Task<CharacterPageClassification> ClassifyCharactersOnImageAsync(string imagePath, int page, IReadOnlyList<CharacterClassifyHint> cast, string model = "grok-4.5", CancellationToken ct = default) =>
+            Task.FromResult(new CharacterPageClassification());
+
+        public Task<string> CompleteWithImagesAsync(string prompt, IReadOnlyList<string> imagePaths, string model = "grok-4.5", string detail = "low", CancellationToken ct = default) =>
+            Task.FromResult("");
+    }
 }
