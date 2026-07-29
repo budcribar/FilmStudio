@@ -297,7 +297,7 @@ public sealed class CharacterBookPlateService
             else if (priorPages.Count > 0)
                 seed["source_image_pages"] = new JsonArray(priorPages.Select(p => (JsonNode)p).ToArray());
 
-            var relPaths = CopyPlates(projectDir, charsDir, key, picks, copyIntoAssets);
+            var relPaths = await CopyPlatesAsync(projectDir, charsDir, key, picks, copyIntoAssets, ct).ConfigureAwait(false);
             CleanupStaleBookrefs(charsDir, key, keepCount: relPaths.Count);
 
             if (relPaths.Count == 0)
@@ -849,12 +849,13 @@ public sealed class CharacterBookPlateService
         }
     }
 
-    private static List<string> CopyPlates(
+    private static async Task<List<string>> CopyPlatesAsync(
         string projectDir,
         string charsDir,
         string key,
         List<BookImageRow> picks,
-        bool copyIntoAssets)
+        bool copyIntoAssets,
+        CancellationToken ct = default)
     {
         var relPaths = new List<string>();
         var usedDest = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -875,7 +876,8 @@ public sealed class CharacterBookPlateService
                     continue;
                 try
                 {
-                    File.Copy(row.AbsPath, dest, overwrite: true);
+                    var bytes = await File.ReadAllBytesAsync(row.AbsPath, ct).ConfigureAwait(false);
+                    await File.WriteAllBytesAsync(dest, bytes, ct).ConfigureAwait(false);
                     relPaths.Add(Path.GetRelativePath(projectDir, dest).Replace('\\', '/'));
                     if (srcFp.Length > 0) usedDest.Add(srcFp);
                 }

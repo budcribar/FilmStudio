@@ -12,6 +12,13 @@ public static class MarkdownHelper
         .UseListExtras()
         .Build();
 
+    private static readonly Regex LeadingTagRe = new(@"^<(p|div)>\s*", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+    private static readonly Regex TrailingTagRe = new(@"\s*</(p|div)>$", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+    private static readonly Regex OpenTagRe = new(@"<(p|div)>\s*", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+    private static readonly Regex CloseTagRe = new(@"\s*</(p|div)>", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+    private static readonly Regex BrTagRe = new(@"<br\s*/?>", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+    private static readonly Regex AllHtmlTagsRe = new(@"<[^>]+>", RegexOptions.Compiled);
+
     /// <summary>
     /// Render Markdown or AI text payload to MarkupString.
     /// Automatically strips raw HTML paragraph tags (<p>, </p>, <br>) emitted by LLMs so they render as clean HTML.
@@ -25,11 +32,11 @@ public static class MarkdownHelper
 
         // If the AI model returned raw HTML tags (e.g. <p>...</p> or <br/>), clean raw paragraph tags
         // so Markdig doesn't double-escape them into literal &lt;p&gt; text.
-        text = Regex.Replace(text, @"^<(p|div)>\s*", "", RegexOptions.IgnoreCase);
-        text = Regex.Replace(text, @"\s*</(p|div)>$", "", RegexOptions.IgnoreCase);
-        text = Regex.Replace(text, @"<(p|div)>\s*", "\n\n", RegexOptions.IgnoreCase);
-        text = Regex.Replace(text, @"\s*</(p|div)>", "", RegexOptions.IgnoreCase);
-        text = Regex.Replace(text, @"<br\s*/?>", "\n", RegexOptions.IgnoreCase);
+        text = LeadingTagRe.Replace(text, "");
+        text = TrailingTagRe.Replace(text, "");
+        text = OpenTagRe.Replace(text, "\n\n");
+        text = CloseTagRe.Replace(text, "");
+        text = BrTagRe.Replace(text, "\n");
 
         var html = Markdown.ToHtml(text, Pipeline);
         return new MarkupString(html);
@@ -43,7 +50,7 @@ public static class MarkdownHelper
         if (string.IsNullOrWhiteSpace(input))
             return "";
 
-        var text = Regex.Replace(input, @"<[^>]+>", "");
+        var text = AllHtmlTagsRe.Replace(input, "");
         return System.Net.WebUtility.HtmlDecode(text).Trim();
     }
 }

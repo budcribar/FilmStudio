@@ -133,11 +133,13 @@ JSON: {"ranked":["page_03.png","cover.png","embedded_p02.jpg"]}
         return (double)hits / gold.Count;
     }
 
+    private static readonly Regex CodeFencePrefixRegex = new(@"^```(?:json)?\s*", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
     private static string Strip(string raw)
     {
         raw = (raw ?? "").Trim();
         if (!raw.StartsWith("```")) return raw;
-        raw = Regex.Replace(raw, @"^```(?:json)?\s*", "", RegexOptions.IgnoreCase);
+        raw = CodeFencePrefixRegex.Replace(raw, "");
         // Truncate at the closing fence wherever it falls — some models append prose
         // (e.g. a "Reasoning:" section) after the fenced JSON instead of ending on it.
         var fenceEnd = raw.IndexOf("```", StringComparison.Ordinal);

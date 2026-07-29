@@ -267,17 +267,27 @@ public sealed class ProjectTelemetryService
         return false;
     }
 
-    private void AppendJsonl(string path, object rec)
+    private readonly ConcurrentDictionary<string, SemaphoreSlim> _fileAsyncLocks =
+        new(StringComparer.OrdinalIgnoreCase);
+
+    public async Task AppendJsonlAsync(string path, object rec, CancellationToken ct = default)
     {
         var dir = Path.GetDirectoryName(path)!;
         Directory.CreateDirectory(dir);
         var line = JsonSerializer.Serialize(rec, JsonOpts) + "\n";
-        var gate = _fileLocks.GetOrAdd(path, _ => new object());
-        lock (gate)
+        var gate = _fileAsyncLocks.GetOrAdd(path, _ => new SemaphoreSlim(1, 1));
+        await gate.WaitAsync(ct).ConfigureAwait(false);
+        try
         {
-            File.AppendAllText(path, line);
+            await File.AppendAllTextAsync(path, line, ct).ConfigureAwait(false);
+        }
+        finally
+        {
+            gate.Release();
         }
     }
+
+    private void AppendJsonl(string path, object rec) => AppendJsonlAsync(path, rec).GetAwaiter().GetResult();
 
     private sealed class ScopePop : IDisposable
     {

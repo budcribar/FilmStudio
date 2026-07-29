@@ -57,6 +57,7 @@ public sealed class MediaRegistryService
                 );
                 CREATE INDEX IF NOT EXISTS idx_media_sha ON media_objects(sha256);
                 CREATE INDEX IF NOT EXISTS idx_media_project ON media_objects(project_id);
+                CREATE INDEX IF NOT EXISTS idx_media_project_path ON media_objects(project_id, relative_path);
             ";
             cmd.ExecuteNonQuery();
             _initialized = true;
