@@ -11,21 +11,21 @@ using Microsoft.Extensions.Options;
 namespace PageToMovie.Engine;
 
 /// <summary>
-/// Fal.ai serverless GPU audio &amp; background music generation client (Stable Audio / MusicGen).
-/// Direct endpoint: https://fal.run/fal-ai/stable-audio
+/// Fal.ai serverless audio / music client (fal-ai/stable-audio, fal-ai/minimax-music, etc.).
+/// Endpoint: https://fal.run/fal-ai/stable-audio
 /// </summary>
-public sealed class FalAudioClient : IAudioClient
+public sealed class FalMusicClient : IMusicClient
 {
     public const string ApiBase = "https://fal.run/";
 
     private readonly HttpClient _http;
     private readonly PageToMovieOptions _opts;
-    private readonly ILogger<FalAudioClient> _log;
+    private readonly ILogger<FalMusicClient> _log;
 
-    public FalAudioClient(
+    public FalMusicClient(
         HttpClient http,
         IOptions<PageToMovieOptions> opts,
-        ILogger<FalAudioClient> log)
+        ILogger<FalMusicClient> log)
     {
         _http = http;
         _opts = opts.Value;
@@ -45,23 +45,26 @@ public sealed class FalAudioClient : IAudioClient
         return null;
     }
 
-    public async Task<byte[]> GenerateMusicTrackAsync(
+    public async Task<byte[]?> GenerateMusicTrackAsync(
         string prompt,
-        int durationSeconds,
+        double durationSeconds,
         string? model = null,
         CancellationToken ct = default)
     {
-        var apiKey = ResolveApiKey()
-            ?? throw new InvalidOperationException($"Fal.ai API key is missing. Set {SupportedModelCatalog.FalApiKeyEnv} in environment or Configuration.");
+        var apiKey = ResolveApiKey();
+        if (string.IsNullOrWhiteSpace(apiKey))
+        {
+            _log.LogWarning("Fal.ai API key is missing — skipping background music generation.");
+            return null;
+        }
 
         model = string.IsNullOrWhiteSpace(model) ? "fal-ai/stable-audio" : model;
-        durationSeconds = Math.Clamp(durationSeconds, 2, 90);
+        var dur = Math.Clamp((int)Math.Round(durationSeconds), 5, 47);
 
         var payload = new Dictionary<string, object?>
         {
             ["prompt"] = prompt,
-            ["seconds_total"] = durationSeconds,
-            ["seconds_start"] = 0,
+            ["seconds_total"] = dur,
         };
 
         using var req = new HttpRequestMessage(HttpMethod.Post, model.TrimStart('/'));
@@ -74,33 +77,19 @@ public sealed class FalAudioClient : IAudioClient
 
         if (!resp.IsSuccessStatusCode)
         {
-            _log.LogError("Fal.ai audio gen failed HTTP {Status} ({Elapsed}ms): {Body}", resp.StatusCode, sw.ElapsedMilliseconds, body);
-            throw new InvalidOperationException($"Fal.ai error {resp.StatusCode}: {body}");
+            _log.LogError("Fal.ai music gen failed HTTP {Status} ({Elapsed}ms): {Body}", resp.StatusCode, sw.ElapsedMilliseconds, body);
+            return null;
         }
 
         using var doc = JsonDocument.Parse(body);
-        string? audioUrl = null;
-
-        // Parse standard Fal audio response properties: audio_file.url OR audio.url
-        if (doc.RootElement.TryGetProperty("audio_file", out var audioFileEl) && audioFileEl.TryGetProperty("url", out var urlEl1))
+        if (doc.RootElement.TryGetProperty("audio_file", out var audioEl) && audioEl.ValueKind == JsonValueKind.Object)
         {
-            audioUrl = urlEl1.GetString();
-        }
-        else if (doc.RootElement.TryGetProperty("audio", out var audioEl) && audioEl.TryGetProperty("url", out var urlEl2))
-        {
-            audioUrl = urlEl2.GetString();
-        }
-        else if (doc.RootElement.TryGetProperty("url", out var urlEl3))
-        {
-            audioUrl = urlEl3.GetString();
+            if (audioEl.TryGetProperty("url", out var urlEl) && urlEl.GetString() is { Length: > 0 } url)
+            {
+                return await _http.GetByteArrayAsync(url, ct).ConfigureAwait(false);
+            }
         }
 
-        if (string.IsNullOrWhiteSpace(audioUrl))
-        {
-            throw new InvalidOperationException($"Fal.ai returned no audio URL: {body}");
-        }
-
-        _log.LogInformation("Fal.ai audio generated successfully ({Elapsed}ms): {Url}", sw.ElapsedMilliseconds, audioUrl);
-        return await _http.GetByteArrayAsync(audioUrl, ct).ConfigureAwait(false);
+        return null;
     }
 }

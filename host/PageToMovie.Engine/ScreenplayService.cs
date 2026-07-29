@@ -454,6 +454,17 @@ public static class ScreenplayService
         if (string.IsNullOrWhiteSpace(book))
             return new SaveResult { Ok = false, Error = "Book text is empty" };
 
+        if (string.IsNullOrWhiteSpace(model) || string.Equals(model, "grok-4.5", StringComparison.OrdinalIgnoreCase))
+        {
+            try
+            {
+                var cfg = await store.GetConfigAsync(projectId, ct).ConfigureAwait(false);
+                if (cfg.TryGetValue("planning_model_name", out var pEl) && pEl.ValueKind == JsonValueKind.String && !string.IsNullOrWhiteSpace(pEl.GetString()))
+                    model = pEl.GetString()!.Trim();
+            }
+            catch { }
+        }
+
         var (title, author) = ReadProjectTitleAuthor(projectDir, projectId);
         var analysis = BookTextAnalyzer.Analyze(book);
         var minutes = Math.Clamp(analysis.SuggestedTotalMinutes, 3, 180);

@@ -675,6 +675,7 @@ public sealed class SceneDetail
     public int ClipCount { get; set; }
     public int ClipsOnDisk { get; set; }
     public bool CompositeExists { get; set; }
+    public bool HasBackgroundMusic { get; set; }
     public bool IsUserOverride { get; set; }
     public string? CompositeUrl { get; set; }
     public List<string> CharactersOnScreen { get; set; } = new();

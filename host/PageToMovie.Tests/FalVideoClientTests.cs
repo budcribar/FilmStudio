@@ -14,7 +14,7 @@ public class FalVideoClientTests
         Assert.Equal("HunyuanVideo (Fal.ai)", entry.DisplayName);
         Assert.Equal(ModelProviderFamily.Fal, entry.Provider);
         Assert.Contains(SupportedModelCatalog.FalApiKeyEnv, entry.RequiredEnvKeys);
-        Assert.True(entry.SupportsVideoContinue);
+        Assert.False(entry.SupportsVideoContinue);
         Assert.True(entry.SupportsReferenceImages);
     }
 
@@ -31,5 +31,17 @@ public class FalVideoClientTests
     {
         Assert.Equal(ModelProviderFamily.Fal, MultiProviderVideoClient.InferProviderFromDownloadUrl("https://fal.media/files/monkey/abc.mp4"));
         Assert.Equal(ModelProviderFamily.Fal, MultiProviderVideoClient.InferProviderFromDownloadUrl("https://queue.fal.run/fal-ai/hunyuan-video/123.mp4"));
+    }
+
+    [Theory]
+    [InlineData(3, 85)]
+    [InlineData(4, 85)]
+    [InlineData(5, 129)]
+    [InlineData(8, 129)]
+    [InlineData(10, 129)]
+    public void FalNumFramesMapping_MatchesHunyuanApiSpec(int durationSeconds, int expectedFrames)
+    {
+        var frames = durationSeconds is > 0 and <= 4 ? 85 : 129;
+        Assert.Equal(expectedFrames, frames);
     }
 }

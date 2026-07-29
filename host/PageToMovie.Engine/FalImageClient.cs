@@ -36,10 +36,12 @@ public sealed class FalImageClient : IImageClient
 
     public bool IsConfigured => !string.IsNullOrWhiteSpace(ResolveApiKey());
 
-    private string? ResolveApiKey()
+    private static string? ResolveApiKey()
     {
-        var key = Environment.GetEnvironmentVariable(SupportedModelCatalog.FalApiKeyEnv);
-        if (!string.IsNullOrWhiteSpace(key)) return key.Trim();
+        var key = ApiKeyScope.CurrentFal
+            ?? Environment.GetEnvironmentVariable(SupportedModelCatalog.FalApiKeyEnv)
+            ?? Environment.GetEnvironmentVariable(SupportedModelCatalog.FalApiKeyFallbackEnv);
+        if (!string.IsNullOrWhiteSpace(key)) return key.Trim(' ', '"', '\'', '\r', '\n', '\t');
         return null;
     }
 

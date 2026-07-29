@@ -26,5 +26,26 @@ public sealed class ClipDialogueVerificationResult
     /// <summary>Summary notes from multimodal AI evaluation.</summary>
     public string SummaryNote { get; set; } = "";
 
+    /// <summary>Estimated / planned clip duration (seconds).</summary>
+    public double EstimatedDurationSeconds { get; set; }
+
+    /// <summary>Number of words in expected dialogue.</summary>
+    public int WordCount { get; set; }
+
+    /// <summary>Number of syllables in expected dialogue.</summary>
+    public int SyllableCount { get; set; }
+
+    /// <summary>Estimated speech dialogue time (seconds).</summary>
+    public double SpeechDurationSeconds { get; set; }
+
+    /// <summary>Estimated action & camera movement overhead time (seconds).</summary>
+    public double ActionDurationSeconds { get; set; }
+
+    /// <summary>Actual measured clip MP4 duration (seconds).</summary>
+    public double ActualDurationSeconds { get; set; }
+
+    /// <summary>True if spoken dialogue was cut off mid-delivery.</summary>
+    public bool SpeechTruncated { get; set; }
+
     public DateTime VerifiedAt { get; set; } = DateTime.UtcNow;
 }

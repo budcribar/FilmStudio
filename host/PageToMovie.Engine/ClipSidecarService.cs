@@ -57,7 +57,7 @@ public sealed class ClipSidecarService
         Directory.CreateDirectory(videoDir);
 
         var fileName = string.IsNullOrWhiteSpace(mp4FileName)
-            ? $"scene_{scene:D2}_clip_{clip:D2}.mp4"
+            ? $"scene_{scene:D2}_clip_{clip:D2}_take_01.mp4"
             : mp4FileName.Trim();
 
         var mp4Path = Path.Combine(videoDir, fileName);

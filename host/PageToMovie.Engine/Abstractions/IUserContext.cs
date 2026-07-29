@@ -44,6 +44,8 @@ public static class ApiKeyScope
 
     public static string? CurrentAnthropic => CurrentKeys.Value?.Anthropic;
 
+    public static string? CurrentFal => CurrentKeys.Value?.Fal;
+
     public static string? Get(string providerId)
     {
         var k = CurrentKeys.Value;
@@ -53,18 +55,22 @@ public static class ApiKeyScope
             "grok" => k.Xai,
             "gemini" => k.Gemini,
             "anthropic" => k.Anthropic,
+            "fal" => k.Fal,
             _ => null,
         };
     }
 
     /// <summary>Push xAI-only key (legacy). Other provider slots stay null.</summary>
     public static IDisposable Push(string? xaiApiKey) =>
-        Push(xaiApiKey, geminiApiKey: null, anthropicApiKey: null);
+        Push(xaiApiKey, geminiApiKey: null, anthropicApiKey: null, falApiKey: null);
 
-    public static IDisposable Push(string? xaiApiKey, string? geminiApiKey, string? anthropicApiKey)
+    public static IDisposable Push(string? xaiApiKey, string? geminiApiKey, string? anthropicApiKey) =>
+        Push(xaiApiKey, geminiApiKey, anthropicApiKey, falApiKey: null);
+
+    public static IDisposable Push(string? xaiApiKey, string? geminiApiKey, string? anthropicApiKey, string? falApiKey)
     {
         var prev = CurrentKeys.Value;
-        CurrentKeys.Value = new ProviderKeys(xaiApiKey, geminiApiKey, anthropicApiKey);
+        CurrentKeys.Value = new ProviderKeys(xaiApiKey, geminiApiKey, anthropicApiKey, falApiKey);
         return new Pop(prev);
     }
 
@@ -77,11 +83,12 @@ public static class ApiKeyScope
             "xai" or "grok" => "grok",
             "google" or "gemini" => "gemini",
             "claude" or "anthropic" => "anthropic",
+            "fal" => "fal",
             _ => p,
         };
     }
 
-    private sealed record ProviderKeys(string? Xai, string? Gemini, string? Anthropic);
+    private sealed record ProviderKeys(string? Xai, string? Gemini, string? Anthropic, string? Fal);
 
     private sealed class Pop : IDisposable
     {

@@ -79,26 +79,28 @@
                          id="@d.Id"
                          data-testid="demo-card"
                          @key="d.Id">
-                    <div class="demo-card-media">
+                    <div class="demo-card-media position-relative">
                         @if (!string.IsNullOrWhiteSpace(d.YoutubeId))
                         {
-                            <iframe src="@($"https://www.youtube-nocookie.com/embed/{d.YoutubeId}")"
-                                    @key="d.Id"
-                                    title="@d.Title"
-                                    frameborder="0"
-                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                                    allowfullscreen
-                                    style="width:100%; aspect-ratio:16/9; border:0;"></iframe>
+                            var ytWatchUrl = !string.IsNullOrWhiteSpace(d.YoutubeUrl)
+                                ? d.YoutubeUrl
+                                : $"https://www.youtube.com/watch?v={d.YoutubeId}";
+                            var thumbUrl = $"https://img.youtube.com/vi/{d.YoutubeId}/hqdefault.jpg";
+
+                            <a href="@ytWatchUrl" target="_blank" rel="noopener" class="d-block position-relative text-decoration-none overflow-hidden" style="border-radius:0.35rem 0.35rem 0 0;" title="Watch '@d.Title' on YouTube">
+                                <img src="@thumbUrl" alt="@d.Title" style="width:100%; aspect-ratio:16/9; object-fit:cover; display:block;" />
+                                <div class="position-absolute top-50 start-50 translate-middle text-center">
+                                    <div class="btn btn-danger btn-lg rounded-circle shadow px-3 py-2" style="background:#ff0000; border:none; box-shadow:0 4px 15px rgba(255,0,0,0.5);">
+                                        <span class="fs-4">▶</span>
+                                    </div>
+                                </div>
+                            </a>
                         }
                         else
                         {
-                            <video controls playsinline preload="metadata"
-                                   src="@Engine.DemoVideoUrl(d.Id)"
-                                   @key="d.Id"
-                                   @onplay="() => _playingId = d.Id"
-                                   @onpause="() => { if (_playingId == d.Id) _playingId = null; }">
-                                Your browser does not support HTML5 video.
-                            </video>
+                            <div class="bg-dark text-secondary d-flex align-items-center justify-content-center" style="width:100%; aspect-ratio:16/9; border-radius:0.35rem 0.35rem 0 0;">
+                                <span class="small">🎬 Video processing on YouTube…</span>
+                            </div>
                         }
                     </div>
                     <div class="demo-card-body">
@@ -146,12 +148,7 @@
                                     <span aria-hidden="true">★</span>
                                     <span class="demo-star-count">@d.TotalStars</span>
                                 </button>
-                                @if (!string.IsNullOrWhiteSpace(d.YoutubeUrl))
-                                {
-                                    <a class="btn btn-sm btn-outline-warning" href="@d.YoutubeUrl" target="_blank" rel="noopener" title="Like and comment on YouTube">
-                                        👍 Like on YouTube ↗
-                                    </a>
-                                }
+
                                 @if (d.CanFork && (d.IsForkable || Session.IsAdmin))
                                 {
                                     <button type="button"

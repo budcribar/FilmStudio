@@ -99,6 +99,7 @@ public sealed class DemoYouTubePublisherService
                     PrivacyStatus = privacy,
                     MadeForKids = entry.MadeForKids,
                     SelfDeclaredMadeForKids = entry.MadeForKids,
+                    Embeddable = true,
                 },
             };
 

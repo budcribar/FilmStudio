@@ -123,6 +123,131 @@ namespace PageToMovie.Engine
         }
 
         /// <summary>
+        /// Reads the text content of a file at a specific Git commit hash.
+        /// </summary>
+        public string? GetFileContentAtCommit(string projectPath, string commitHash, string relativeFilePath)
+        {
+            if (string.IsNullOrWhiteSpace(projectPath) || !Directory.Exists(projectPath) || !Repository.IsValid(projectPath))
+                return null;
+
+            using var repo = new Repository(projectPath);
+            var commit = repo.Lookup<Commit>(commitHash);
+            if (commit is null) return null;
+
+            var relPath = relativeFilePath.Replace('\\', '/');
+            var treeEntry = commit[relPath];
+            if (treeEntry?.Target is not Blob blob)
+                return null;
+
+            return blob.GetContentText();
+        }
+
+        /// <summary>
+        /// Retrieves uncommitted file changes in the project's working directory.
+        /// </summary>
+        public (bool HasChanges, List<string> ModifiedFiles) GetUncommittedStatus(string projectPath)
+        {
+            if (string.IsNullOrWhiteSpace(projectPath) || !Directory.Exists(projectPath) || !Repository.IsValid(projectPath))
+                return (false, new List<string>());
+
+            using var repo = new Repository(projectPath);
+            var status = repo.RetrieveStatus();
+            var modified = status
+                .Where(s => s.State != FileStatus.Ignored && s.State != FileStatus.Unaltered)
+                .Select(s => s.FilePath.Replace('\\', '/'))
+                .ToList();
+
+            return (modified.Count > 0, modified);
+        }
+
+        /// <summary>
+        /// Retrieves the recent Git commit history for a project repository.
+        /// </summary>
+        public Task<IReadOnlyList<GitCommitInfo>> GetCommitHistoryAsync(string projectPath, int maxCount = 20)
+        {
+            if (string.IsNullOrWhiteSpace(projectPath) || !Directory.Exists(projectPath) || !Repository.IsValid(projectPath))
+                return Task.FromResult<IReadOnlyList<GitCommitInfo>>(Array.Empty<GitCommitInfo>());
+
+            using var repo = new Repository(projectPath);
+            if (repo.Head.Tip is null)
+                return Task.FromResult<IReadOnlyList<GitCommitInfo>>(Array.Empty<GitCommitInfo>());
+
+            var list = repo.Commits
+                .Take(Math.Clamp(maxCount, 1, 100))
+                .Select(c => new GitCommitInfo
+                {
+                    CommitHash = c.Sha,
+                    Author = c.Author.Name,
+                    Message = c.Message.TrimEnd('\n'),
+                    CommittedAt = c.Author.When.UtcDateTime,
+                })
+                .ToList();
+
+            return Task.FromResult<IReadOnlyList<GitCommitInfo>>(list);
+        }
+
+        /// <summary>
+        /// Reverts all project files to the exact state at <paramref name="commitHash"/>, creating a new commit.
+        /// Preserves full Git history while restoring project files to the prior commit state.
+        /// </summary>
+        public Task<GitCommitInfo> RevertToCommitAsync(string projectPath, string commitHash, string author)
+        {
+            if (string.IsNullOrWhiteSpace(projectPath) || !Directory.Exists(projectPath))
+                throw new DirectoryNotFoundException($"Project directory not found: {projectPath}");
+
+            EnsureRepository(projectPath);
+
+            using var repo = new Repository(projectPath);
+            var targetCommit = repo.Lookup<Commit>(commitHash);
+            if (targetCommit is null)
+                throw new ArgumentException($"Commit {commitHash} not found in repository.", nameof(commitHash));
+
+            var checkoutOpts = new CheckoutOptions { CheckoutModifiers = CheckoutModifiers.Force };
+            repo.CheckoutPaths(targetCommit.Sha, new[] { "*" }, checkoutOpts);
+            Commands.Stage(repo, "*");
+
+            var who = string.IsNullOrWhiteSpace(author) ? "PageToMovie" : author.Trim();
+            var signature = new Signature(who, EmailFor(who), DateTimeOffset.UtcNow);
+            var shortHash = targetCommit.Sha.Length >= 8 ? targetCommit.Sha[..8] : targetCommit.Sha;
+            var shortMsg = targetCommit.MessageShort;
+            var msg = $"Undo: Revert project state to commit {shortHash} ({shortMsg})";
+
+            var newCommit = repo.Commit(msg, signature, signature, new CommitOptions { AllowEmptyCommit = true });
+
+            _logger.LogInformation("Reverted project {Path} to commit {Hash}. New commit: {NewSha}", projectPath, commitHash, newCommit.Sha);
+
+            return Task.FromResult(new GitCommitInfo
+            {
+                CommitHash = newCommit.Sha,
+                Author = who,
+                Message = msg,
+                CommittedAt = DateTime.UtcNow,
+            });
+        }
+
+        /// <summary>
+        /// Undoes the last project change by reverting to HEAD~1 (parent of current HEAD).
+        /// Returns null if there is no parent commit to revert to.
+        /// </summary>
+        public async Task<GitCommitInfo?> UndoLastCommitAsync(string projectPath, string author)
+        {
+            if (string.IsNullOrWhiteSpace(projectPath) || !Directory.Exists(projectPath) || !Repository.IsValid(projectPath))
+                return null;
+
+            string parentSha;
+            using (var repo = new Repository(projectPath))
+            {
+                var head = repo.Head.Tip;
+                if (head is null || !head.Parents.Any())
+                    return null;
+
+                parentSha = head.Parents.First().Sha;
+            }
+
+            return await RevertToCommitAsync(projectPath, parentSha, author).ConfigureAwait(false);
+        }
+
+        /// <summary>
         /// Fetches the parent project's repository and merges it into the fork's current branch
         /// (LibGit2Sharp's real 3-way merge — computes a common ancestor when the fork and parent
         /// share history, or a base-less merge otherwise). Never auto-resolves conflicts: if the

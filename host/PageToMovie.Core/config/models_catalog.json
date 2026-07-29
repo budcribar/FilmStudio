@@ -109,7 +109,7 @@
       "apiBase": "https://queue.fal.run",
       "endpointPath": "fal-ai/hunyuan-video",
       "requiredEnvKeys": ["FAL_API_KEY", "FAL_KEY"],
-      "enabled": true,
+      "enabled": false,
       "supportsVideoContinue": true,
       "supportsReferenceImages": true,
       "supportsVideoReview": false,

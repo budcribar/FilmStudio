@@ -171,7 +171,10 @@ public sealed class ClipAutoReviewService
             }
             catch { /* non-fatal */ }
             var imagePaths = images.Select(i => i.Path).ToList();
-            var qualityModel = await GetConfigStringAsync(projectId, "quality_model_name", "grok-4.5", ct);
+            var qualityModel = await GetConfigStringAsync(projectId, "quality_model_name", "", ct);
+            if (string.IsNullOrWhiteSpace(qualityModel))
+                qualityModel = await GetConfigStringAsync(projectId, "vision_model_name", "grok-4.5", ct);
+
             var raw = await _vision.CompleteWithImagesAsync(
                 prompt,
                 imagePaths,

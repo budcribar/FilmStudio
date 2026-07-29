@@ -42,6 +42,23 @@ public sealed class GeminiImageClient : IImageClient
 
     public bool IsConfigured => !string.IsNullOrWhiteSpace(ResolveApiKey());
 
+    private static string NormalizeModelName(string? model)
+    {
+        if (string.IsNullOrWhiteSpace(model)) return "gemini-2.5-pro-image";
+        var trimmed = model.Trim();
+        if (trimmed.StartsWith("models/", StringComparison.OrdinalIgnoreCase))
+        {
+            trimmed = trimmed["models/".Length..];
+        }
+        if (trimmed.Equals("gemini-3-pro-image", StringComparison.OrdinalIgnoreCase) ||
+            trimmed.Equals("gemini-3-pro", StringComparison.OrdinalIgnoreCase) ||
+            trimmed.Equals("gemini-1.5-pro", StringComparison.OrdinalIgnoreCase))
+        {
+            return "gemini-2.5-pro-image";
+        }
+        return trimmed;
+    }
+
     /// <summary>Text-only portrait generation → n image blobs (one call per variant).</summary>
     public async Task<IReadOnlyList<byte[]>> GenerateVariantsAsync(
         string prompt,
@@ -50,7 +67,7 @@ public sealed class GeminiImageClient : IImageClient
         string? model = null,
         CancellationToken ct = default)
     {
-        var modelName = string.IsNullOrWhiteSpace(model) ? "gemini-3-pro-image" : model;
+        var modelName = NormalizeModelName(model);
         var images = new List<byte[]>();
         for (var i = 0; i < n; i++)
         {
@@ -82,7 +99,7 @@ public sealed class GeminiImageClient : IImageClient
         Action<string>? onProgress = null,
         CancellationToken ct = default)
     {
-        var modelName = string.IsNullOrWhiteSpace(model) ? "gemini-3-pro-image" : model;
+        var modelName = NormalizeModelName(model);
         var cap = maxRefs > 0
             ? Math.Clamp(maxRefs, 1, ImageApiLimits.GeminiMaxReferenceImages)
             : ImageApiLimits.GeminiMaxReferenceImages;

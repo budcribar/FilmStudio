@@ -269,12 +269,12 @@ else
         c.BaseAddress = new Uri(GeminiChatClient.ApiBase + "/");
         c.Timeout = TimeSpan.FromMinutes(20);
     }));
-    ConfigurePooledSocketsHandler(builder.Services.AddHttpClient<FalAudioClient>(c =>
+    ConfigurePooledSocketsHandler(builder.Services.AddHttpClient<FalMusicClient>(c =>
     {
-        c.BaseAddress = new Uri(FalAudioClient.ApiBase.TrimEnd('/') + "/");
+        c.BaseAddress = new Uri(FalMusicClient.ApiBase.TrimEnd('/') + "/");
         c.Timeout = TimeSpan.FromMinutes(5);
     }));
-    builder.Services.AddSingleton<IAudioClient>(sp => sp.GetRequiredService<FalAudioClient>());
+    builder.Services.AddSingleton<IMusicClient, MultiProviderMusicClient>();
     builder.Services.AddSingleton<SceneMusicScoringService>();
     builder.Services.AddSingleton<SmartClassifierModelRouter>();
     builder.Services.AddSingleton<ActionCameraOverheadLedger>();
@@ -448,7 +448,8 @@ app.Use(async (context, next) =>
         : keyProvider?.GetKey(uid, "grok");
     var gemini = keyProvider?.GetKey(uid, "gemini");
     var anthropic = keyProvider?.GetKey(uid, "anthropic");
-    using (ApiKeyScope.Push(xai, gemini, anthropic))
+    var fal = keyProvider?.GetKey(uid, "fal");
+    using (ApiKeyScope.Push(xai, gemini, anthropic, fal))
     {
         await next();
     }
@@ -2490,6 +2491,324 @@ app.MapPost("/api/projects/{id}/commit", async (
     }
 });
 
+app.MapGet("/api/projects/{id}/git/history", async (
+    string id,
+    int? limit,
+    ProjectStore store,
+    CancellationToken ct) =>
+{
+    try
+    {
+        await store.RequireProjectAsync(id, ct);
+        var history = await store.GetProjectGitHistoryAsync(id, limit ?? 20);
+        return Results.Ok(new { ok = true, history });
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { ok = false, error = ex.Message });
+    }
+});
+
+app.MapPost("/api/projects/{id}/git/undo", async (
+    string id,
+    ProjectStore store,
+    IUserContext user,
+    IOptions<PageToMovieOptions> opts,
+    CancellationToken ct) =>
+{
+    if (AuthGate.RequireLogin(user, opts) is { } denied)
+        return denied;
+    try
+    {
+        await store.RequireProjectAsync(id, ct);
+        if (!await store.CanUserPublishDemoAsync(id, user.UserId, user.IsAdmin, ct))
+        {
+            return Results.Json(new { ok = false, error = "Only the project owner or an admin can undo project changes." },
+                statusCode: StatusCodes.Status403Forbidden);
+        }
+
+        var result = await store.UndoLastProjectChangeAsync(id, user.UserId);
+        if (result is null)
+        {
+            return Results.BadRequest(new { ok = false, error = "No prior commit to undo to." });
+        }
+        return Results.Ok(new { ok = true, commit = result, message = "Successfully reverted project to previous commit state." });
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { ok = false, error = ex.Message });
+    }
+});
+
+app.MapPost("/api/projects/{id}/git/revert/{commitHash}", async (
+    string id,
+    string commitHash,
+    ProjectStore store,
+    IUserContext user,
+    IOptions<PageToMovieOptions> opts,
+    CancellationToken ct) =>
+{
+    if (AuthGate.RequireLogin(user, opts) is { } denied)
+        return denied;
+    try
+    {
+        await store.RequireProjectAsync(id, ct);
+        if (!await store.CanUserPublishDemoAsync(id, user.UserId, user.IsAdmin, ct))
+        {
+            return Results.Json(new { ok = false, error = "Only the project owner or an admin can revert project state." },
+                statusCode: StatusCodes.Status403Forbidden);
+        }
+
+        var result = await store.RevertProjectToCommitAsync(id, commitHash, user.UserId);
+        if (result is null)
+        {
+            return Results.BadRequest(new { ok = false, error = $"Failed to revert to commit {commitHash}." });
+        }
+        return Results.Ok(new { ok = true, commit = result, message = $"Successfully reverted project to commit {commitHash[..Math.Min(8, commitHash.Length)]}." });
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { ok = false, error = ex.Message });
+    }
+});
+
+app.MapGet("/api/projects/{id}/scenes/{scene:int}/history", async (
+    string id,
+    int scene,
+    int? limit,
+    ProjectStore store,
+    CancellationToken ct) =>
+{
+    try
+    {
+        await store.RequireProjectAsync(id, ct);
+        var history = await store.GetSceneGitHistoryAsync(id, scene, limit ?? 20);
+        return Results.Ok(new { ok = true, history });
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { ok = false, error = ex.Message });
+    }
+});
+
+app.MapPost("/api/projects/{id}/scenes/{scene:int}/revert/{commitHash}", async (
+    string id,
+    int scene,
+    string commitHash,
+    ProjectStore store,
+    IUserContext user,
+    IOptions<PageToMovieOptions> opts,
+    CancellationToken ct) =>
+{
+    if (AuthGate.RequireLogin(user, opts) is { } denied)
+        return denied;
+    try
+    {
+        await store.RequireProjectAsync(id, ct);
+        if (!await store.CanUserPublishDemoAsync(id, user.UserId, user.IsAdmin, ct))
+        {
+            return Results.Json(new { ok = false, error = "Only the project owner or an admin can revert scene changes." },
+                statusCode: StatusCodes.Status403Forbidden);
+        }
+
+        var success = await store.RevertSceneToCommitAsync(id, scene, commitHash, user.UserId);
+        if (!success)
+        {
+            return Results.BadRequest(new { ok = false, error = $"Failed to revert Scene {scene} to commit {commitHash[..Math.Min(8, commitHash.Length)]}." });
+        }
+        return Results.Ok(new { ok = true, message = $"Successfully reverted Scene {scene} to commit {commitHash[..Math.Min(8, commitHash.Length)]}." });
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { ok = false, error = ex.Message });
+    }
+});
+
+app.MapGet("/api/projects/{id}/git/status", async (
+    string id,
+    ProjectStore store,
+    CancellationToken ct) =>
+{
+    try
+    {
+        await store.RequireProjectAsync(id, ct);
+        var status = await store.GetProjectUncommittedStatusAsync(id);
+        return Results.Ok(new { ok = true, status });
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { ok = false, error = ex.Message });
+    }
+});
+
+app.MapPost("/api/projects/{id}/git/commit", async (
+    string id,
+    CommitProjectApiRequest? body,
+    ProjectStore store,
+    IUserContext user,
+    IOptions<PageToMovieOptions> opts,
+    CancellationToken ct) =>
+{
+    if (AuthGate.RequireLogin(user, opts) is { } denied)
+        return denied;
+    try
+    {
+        await store.RequireProjectAsync(id, ct);
+        var msg = body?.Message ?? "Manual scene/clip updates";
+        var result = await store.CommitProjectChangesAsync(id, msg, user.UserId);
+        return Results.Ok(new { ok = true, commit = result, message = "Successfully committed project changes." });
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { ok = false, error = ex.Message });
+    }
+});
+
+app.MapGet("/api/projects/{id}/scenes/{scene:int}/clips/{clip:int}/versions", async (
+    string id,
+    int scene,
+    int clip,
+    ProjectStore store,
+    CancellationToken ct) =>
+{
+    try
+    {
+        await store.RequireProjectAsync(id, ct);
+        var versions = await store.GetClipVersionsAsync(id, scene, clip);
+        return Results.Ok(new { ok = true, versions });
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { ok = false, error = ex.Message });
+    }
+});
+
+app.MapPost("/api/projects/{id}/scenes/{scene:int}/clips/{clip:int}/versions/{versionId}/promote", async (
+    string id,
+    int scene,
+    int clip,
+    string versionId,
+    ProjectStore store,
+    IUserContext user,
+    IOptions<PageToMovieOptions> opts,
+    CancellationToken ct) =>
+{
+    if (AuthGate.RequireLogin(user, opts) is { } denied)
+        return denied;
+    try
+    {
+        await store.RequireProjectAsync(id, ct);
+        var success = await store.PromoteClipVersionAsync(id, scene, clip, versionId, user.UserId);
+        if (!success)
+        {
+            return Results.BadRequest(new { ok = false, error = "Failed to promote clip version." });
+        }
+        return Results.Ok(new { ok = true, message = $"Promoted clip version {versionId} to active clip." });
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { ok = false, error = ex.Message });
+    }
+});
+
+app.MapDelete("/api/projects/{id}/scenes/{scene:int}/clips/{clip:int}/versions/{versionId}", async (
+    string id,
+    int scene,
+    int clip,
+    string versionId,
+    ProjectStore store,
+    IUserContext user,
+    IOptions<PageToMovieOptions> opts,
+    CancellationToken ct) =>
+{
+    if (AuthGate.RequireLogin(user, opts) is { } denied)
+        return denied;
+    try
+    {
+        await store.RequireProjectAsync(id, ct);
+        var success = await store.SoftDeleteClipVersionAsync(id, scene, clip, versionId);
+        if (!success)
+        {
+            return Results.BadRequest(new { ok = false, error = "Failed to delete clip version." });
+        }
+        return Results.Ok(new { ok = true, message = $"Soft-deleted clip version {versionId}." });
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { ok = false, error = ex.Message });
+    }
+});
+
+app.MapGet("/api/projects/{id}/scenes/{scene:int}/clips/{clip:int}/versions/trash", async (
+    string id,
+    int scene,
+    int clip,
+    ProjectStore store,
+    CancellationToken ct) =>
+{
+    try
+    {
+        await store.RequireProjectAsync(id, ct);
+        var versions = await store.GetTrashClipVersionsAsync(id, scene, clip);
+        return Results.Ok(new { ok = true, versions });
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { ok = false, error = ex.Message });
+    }
+});
+
+app.MapPost("/api/projects/{id}/scenes/{scene:int}/clips/{clip:int}/versions/{versionId}/restore", async (
+    string id,
+    int scene,
+    int clip,
+    string versionId,
+    ProjectStore store,
+    IUserContext user,
+    IOptions<PageToMovieOptions> opts,
+    CancellationToken ct) =>
+{
+    if (AuthGate.RequireLogin(user, opts) is { } denied)
+        return denied;
+    try
+    {
+        await store.RequireProjectAsync(id, ct);
+        var success = await store.RestoreSoftDeletedClipVersionAsync(id, scene, clip, versionId);
+        if (!success)
+        {
+            return Results.BadRequest(new { ok = false, error = "Failed to restore clip version from trash." });
+        }
+        return Results.Ok(new { ok = true, message = $"Restored clip version {versionId} from trash." });
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { ok = false, error = ex.Message });
+    }
+});
+
+app.MapPost("/api/projects/{id}/scenes/{scene:int}/clips/{clip:int}/versions/trash/empty", async (
+    string id,
+    int scene,
+    int clip,
+    ProjectStore store,
+    IUserContext user,
+    IOptions<PageToMovieOptions> opts,
+    CancellationToken ct) =>
+{
+    if (AuthGate.RequireLogin(user, opts) is { } denied)
+        return denied;
+    try
+    {
+        await store.RequireProjectAsync(id, ct);
+        var count = await store.EmptyClipTrashAsync(id, scene, clip);
+        return Results.Ok(new { ok = true, purgedCount = count, message = $"Permanently purged {count} take(s)." });
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { ok = false, error = ex.Message });
+    }
+});
+
 /// <summary>
 /// Push the project's text package (video excluded) to the configured Projects remote.
 /// Owner/admin only. Optional body.commitFirst + message creates a local commit first.
@@ -4113,7 +4432,7 @@ app.MapGet("/api/projects/{id}/scenes/{scene:int}/clips/{clip:int}/auto-review",
 
 /// <summary>Trigger automated dialogue verification for a clip on demand. Accepts optional uploaded video file which is deleted immediately after API call.</summary>
 app.MapPost("/api/projects/{id}/scenes/{scene:int}/clips/{clip:int}/verify-dialogue", async (
-    string id, int scene, int clip, HttpContext httpContext, ClipDialogueVerificationService verifier, CancellationToken ct) =>
+    string id, int scene, int clip, HttpContext httpContext, ClipDialogueVerificationService verifier, bool force = false, CancellationToken ct = default) =>
 {
     string? tempFilePath = null;
     try
@@ -4132,7 +4451,7 @@ app.MapPost("/api/projects/{id}/scenes/{scene:int}/clips/{clip:int}/verify-dialo
             }
         }
 
-        var result = await verifier.VerifyClipDialogueAsync(id, scene, clip, overrideVideoPath: tempFilePath, ct: ct);
+        var result = await verifier.VerifyClipDialogueAsync(id, scene, clip, overrideVideoPath: tempFilePath, force: force, ct: ct);
         return Results.Ok(new { ok = true, result });
     }
     catch (Exception ex)
@@ -4146,6 +4465,78 @@ app.MapPost("/api/projects/{id}/scenes/{scene:int}/clips/{clip:int}/verify-dialo
             try { File.Delete(tempFilePath); } catch { }
         }
     }
+});
+
+/// <summary>Upload local client clip MP4 file to server assets/video directory.</summary>
+app.MapPost("/api/projects/{id}/scenes/{scene:int}/clips/{clip:int}/upload", async (
+    string id, int scene, int clip, HttpContext httpContext, ProjectStore store, CancellationToken ct) =>
+{
+    if (!httpContext.Request.HasFormContentType)
+        return Results.BadRequest(new { ok = false, error = "Form data expected." });
+
+    var form = await httpContext.Request.ReadFormAsync(ct);
+    var file = form.Files.GetFile("video");
+    if (file is null || file.Length < 1024)
+        return Results.BadRequest(new { ok = false, error = "Valid MP4 file expected." });
+
+    var projectDir = store.GetProjectDir(id);
+    var destDir = Path.Combine(projectDir, "assets", "video");
+    Directory.CreateDirectory(destDir);
+    var fileName = !string.IsNullOrWhiteSpace(file.FileName) && file.FileName.EndsWith(".mp4", StringComparison.OrdinalIgnoreCase)
+        ? Path.GetFileName(file.FileName)
+        : $"scene_{scene:D2}_clip_{clip:D2}_take_01.mp4";
+    var destPath = Path.Combine(destDir, fileName);
+
+    using (var stream = File.Create(destPath))
+    {
+        await file.CopyToAsync(stream, ct).ConfigureAwait(false);
+    }
+
+    return Results.Ok(new { ok = true, projectId = id, scene, clip, path = destPath });
+});
+
+/// <summary>Generate AI background music score and apply dialogue ducking for a scene.</summary>
+app.MapPost("/api/projects/{id}/scenes/{scene:int}/score-music", async (
+    string id,
+    int scene,
+    ProjectStore store,
+    SceneMusicScoringService musicScorer,
+    CancellationToken ct) =>
+{
+    var pDir = store.GetProjectDir(id);
+    var sceneMp4Path = Path.Combine(pDir, "assets", "video", $"scene_{scene:D2}.mp4");
+    if (!File.Exists(sceneMp4Path))
+    {
+        sceneMp4Path = Path.Combine(pDir, "assets", "scenes", $"scene_{scene:D2}.mp4");
+    }
+    if (!File.Exists(sceneMp4Path))
+    {
+        // Try clip 01
+        sceneMp4Path = Path.Combine(pDir, "assets", "video", $"scene_{scene:D2}_clip_01.mp4");
+    }
+
+    if (!File.Exists(sceneMp4Path))
+        return Results.BadRequest(new { ok = false, error = $"No video file found on server for Scene {scene:D2} to score music." });
+
+    var cfg = await store.GetConfigAsync(id, ct);
+    var detail = await store.GetSceneDetailAsync(id, scene, probeDurations: false, ct: ct);
+    var duration = (int)Math.Ceiling(detail?.DurationSeconds ?? 10);
+    var screenplay = detail?.Setting ?? "";
+
+    var outputSceneMp4Path = Path.Combine(pDir, "assets", "scenes", $"scene_{scene:D2}.mp4");
+    Directory.CreateDirectory(Path.GetDirectoryName(outputSceneMp4Path)!);
+
+    var result = await musicScorer.ProcessSceneMusicAsync(
+        projectDir: pDir,
+        sceneNumber: scene,
+        inputSceneMp4Path: sceneMp4Path,
+        outputSceneMp4Path: outputSceneMp4Path,
+        screenplayText: screenplay,
+        durationSeconds: duration,
+        config: cfg,
+        ct: ct);
+
+    return Results.Ok(new { ok = result is not null, result });
 });
 
 /// <summary>
@@ -4697,7 +5088,7 @@ static object DemoPublicDto(
     upvotedByMe,
     // True when this public film's studio project still exists (gallery Fork button).
     canFork,
-    videoPath = string.IsNullOrWhiteSpace(d.YoutubeId) ? $"/api/demos/{Uri.EscapeDataString(d.Id)}/video" : null,
+    videoPath = $"/api/demos/{Uri.EscapeDataString(d.Id)}/video",
     d.YoutubeId,
     d.YoutubeUrl,
     d.YoutubeLikeCount,
@@ -4721,7 +5112,7 @@ static object DemoAdminDto(DemoCatalogService.DemoEntry d) => new
     d.ReviewedBy,
     d.ReviewedAt,
     d.ReviewNote,
-    videoPath = string.IsNullOrWhiteSpace(d.YoutubeId) ? $"/api/demos/{Uri.EscapeDataString(d.Id)}/video" : null,
+    videoPath = $"/api/demos/{Uri.EscapeDataString(d.Id)}/video",
     d.YoutubeId,
     d.YoutubeUrl,
     d.YoutubeUploadStatus,

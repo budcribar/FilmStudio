@@ -450,6 +450,7 @@ public sealed class FilmJobService
             : _keys.GetKey(userId, "grok");
         var geminiKey = _keys.GetKey(userId, "gemini");
         var anthropicKey = _keys.GetKey(userId, "anthropic");
+        var falKey = _keys.GetKey(userId, "fal");
 
         var queuedAt = DateTimeOffset.UtcNow;
         var cts = new CancellationTokenSource();
@@ -474,6 +475,7 @@ public sealed class FilmJobService
             ApiKey = apiKey,
             GeminiApiKey = geminiKey,
             AnthropicApiKey = anthropicKey,
+            FalApiKey = falKey,
             QueuedAt = queuedAt,
             Cts = cts,
             ActiveJobId = rec.JobId,
@@ -489,7 +491,7 @@ public sealed class FilmJobService
         _ = Task.Run(async () =>
         {
             CurrentRun.Value = run;
-            using (ApiKeyScope.Push(run.ApiKey, run.GeminiApiKey, run.AnthropicApiKey))
+            using (ApiKeyScope.Push(run.ApiKey, run.GeminiApiKey, run.AnthropicApiKey, run.FalApiKey))
             {
                 var startedAt = DateTimeOffset.UtcNow;
                 var success = false;
@@ -811,6 +813,7 @@ public sealed class FilmJobService
         public string? ApiKey { get; set; }
         public string? GeminiApiKey { get; set; }
         public string? AnthropicApiKey { get; set; }
+        public string? FalApiKey { get; set; }
         public DateTimeOffset QueuedAt { get; set; } = DateTimeOffset.UtcNow;
         public DateTimeOffset? StartedAt { get; set; }
         public List<string> HeldLocks { get; set; } = new();
@@ -845,7 +848,7 @@ public sealed class FilmJobService
                 forceExtract: req.ForceExtract,
                 forceVision: req.ForceVision,
                 autoVision: req.AutoVision,
-                visionModel: string.IsNullOrWhiteSpace(req.VisionModel) ? "grok-4.5" : req.VisionModel,
+                visionModel: await ResolveVisionModelAsync(projectId, req.VisionModel, ct).ConfigureAwait(false),
                 onProgress: line =>
                 {
                     _ = AppendLogAsync(line);
@@ -943,7 +946,7 @@ public sealed class FilmJobService
                     forceExtract: req.ForceExtract,
                     forceVision: req.ForceVision,
                     autoVision: req.AutoVision,
-                    visionModel: string.IsNullOrWhiteSpace(req.VisionModel) ? "grok-4.5" : req.VisionModel,
+                    visionModel: await ResolveVisionModelAsync(projectId, req.VisionModel, ct).ConfigureAwait(false),
                     onProgress: line =>
                     {
                         _ = AppendLogAsync(line);
@@ -997,7 +1000,7 @@ public sealed class FilmJobService
                 return;
             }
 
-            var model = string.IsNullOrWhiteSpace(req.Model) ? "grok-4.5" : req.Model.Trim();
+            var model = await ResolvePlanningModelAsync(projectId, req.Model, ct).ConfigureAwait(false);
             var save = await ScreenplayService.CreateDraftFromBookAsync(
                 _projects,
                 projectId,
@@ -1495,7 +1498,7 @@ public sealed class FilmJobService
                 copyIntoAssets: req.CopyIntoAssets,
                 onlyCharKey: req.CharKey,
                 useGrok: req.UseGrok,
-                visionModel: string.IsNullOrWhiteSpace(req.VisionModel) ? "grok-4.5" : req.VisionModel,
+                visionModel: await ResolveVisionModelAsync(projectId, req.VisionModel, ct).ConfigureAwait(false),
                 maxImages: req.MaxImages > 0 ? req.MaxImages : 32,
                 onProgress: line =>
                 {
@@ -1743,7 +1746,7 @@ public sealed class FilmJobService
                     projectId,
                     chunkPages: Math.Clamp(req.ChunkPages, 5, 30),
                     totalMinutes: req.TotalMinutes,
-                    model: string.IsNullOrWhiteSpace(req.Model) ? "grok-4.5" : req.Model,
+                    model: await ResolvePlanningModelAsync(projectId, req.Model, ct).ConfigureAwait(false),
                     resume: req.Resume,
                     maxChunks: req.MaxChunks,
                     onProgress: line => progress.Writer.TryWrite(line),
@@ -1916,7 +1919,11 @@ public sealed class FilmJobService
                     Description = req.Description ?? "",
                     CategoryId = "1", // Film & Animation
                 },
-                Status = new VideoStatus { PrivacyStatus = privacy },
+                Status = new VideoStatus
+                {
+                    PrivacyStatus = privacy,
+                    Embeddable = true,
+                },
             };
 
             var bytes = new FileInfo(path).Length;
@@ -2111,6 +2118,7 @@ public sealed class FilmJobService
 
             var done = 0;
             var failed = 0;
+            string? firstClipError = null;
             // Per-scene (LastGeneratedClip, CarryoverPaddingSec) — batch work can interleave scenes,
             // so the padding nudge from one scene's overrun must never leak into a different scene.
             var sceneCarryover = new Dictionary<int, (int LastClip, double PaddingSec)>();
@@ -2159,6 +2167,7 @@ public sealed class FilmJobService
                 catch (Exception ex)
                 {
                     failed++;
+                    firstClipError ??= ex.Message;
                     _log.LogError(ex, "Clip S{Scene}C{Clip} failed", sn, cn);
                     await AppendLogAsync($"Failed S{sn:D2} C{cn}: {ex.Message}");
                 }
@@ -2169,8 +2178,12 @@ public sealed class FilmJobService
                 : "done";
             var msg = status switch
             {
-                "error" => $"Batch failed ({failed} clip(s) failed, none ok)",
-                "partial" => $"Batch partial ({done} ok, {failed} failed)",
+                "error" => !string.IsNullOrWhiteSpace(firstClipError)
+                    ? $"Batch failed: {firstClipError}"
+                    : $"Batch failed ({failed} clip(s) failed, none ok)",
+                "partial" => !string.IsNullOrWhiteSpace(firstClipError)
+                    ? $"Batch partial ({done} ok, {failed} failed): {firstClipError}"
+                    : $"Batch partial ({done} ok, {failed} failed)",
                 _ => $"Batch finished ({done} clip(s))",
             };
             await FinishAsync(status, msg, failed > 0 ? msg : null);
@@ -2471,6 +2484,7 @@ public sealed class FilmJobService
         string? prevVideoPath = null;
         // Disposable working copy of prev for silence-trim / extend — never rewrite clip N-1 on disk.
         string? prevExtendWorkTemp = null;
+        var reseedFresh = false;
         var cont = clipEl.TryGetProperty("veo_continuation_source", out var ce)
             ? (ce.GetString() ?? "none")
             : "none";
@@ -2478,23 +2492,15 @@ public sealed class FilmJobService
             string.Equals(cont, "extend_previous", StringComparison.OrdinalIgnoreCase) ||
             clip > 1;
 
+        var model = await ResolveVideoModelAsync(projectId, ct).ConfigureAwait(false);
+        var modelEntry = SupportedModelCatalog.ResolveOrDefault(model, ModelCapability.Video);
         string? prevOnDisk = null;
-        if (clip > 1)
+        if (clip > 1 && modelEntry.SupportsVideoContinue)
         {
-            prevOnDisk = Path.Combine(
-                projectDir, "assets", "video", $"scene_{scene:D2}_clip_{clip - 1:D2}.mp4");
-            var prevBytesOnServer = File.Exists(prevOnDisk) && new FileInfo(prevOnDisk).Length >= 1024;
-            // Client-storage is the primary path now (server MP4s get pruned within minutes of the
-            // browser confirming a synced save — see ServerMediaPruningService), so "previous clip
-            // exists" must also accept its .client.json marker, not just raw bytes still on server disk.
-            if (!prevBytesOnServer && !ClipPresentOnServerOrClient(prevOnDisk))
+            var resolvedPrevPath = _projects.ResolveClipVideoPath(projectId, scene, clip - 1);
+            if (!string.IsNullOrEmpty(resolvedPrevPath) && File.Exists(resolvedPrevPath) && new FileInfo(resolvedPrevPath).Length >= 1024)
             {
-                throw new InvalidOperationException(
-                    $"Generate S{scene:D2}C{clip - 1:D2} first — later clips continue from the previous video.");
-            }
-
-            if (prevBytesOnServer)
-            {
+                prevOnDisk = resolvedPrevPath;
                 // Breath-tail silence trim for extend input only. Mutating prevOnDisk in place used to
                 // permanently shorten a finished clip when this job then failed/cancelled before C_N
                 // was written (no backup of N-1). Work on a throwaway copy instead.
@@ -2503,9 +2509,11 @@ public sealed class FilmJobService
                 File.Copy(prevOnDisk, prevExtendWorkTemp, overwrite: true);
                 prevVideoPath = prevExtendWorkTemp;
             }
-            // else: previous clip already synced to the client and was pruned server-side. That's
-            // fine — prevVideoPath stays null, and generation below always does a fresh gen with
-            // locked reference images regardless (no server-side video-extend since ffmpeg left).
+            else
+            {
+                throw new InvalidOperationException(
+                    $"Generate Scene {scene:D2}, Clip {clip - 1:D2} first — Clip {clip:D2} requires the previous clip for video extension.");
+            }
         }
 
         if (previousClipEl is { } prevEl &&
@@ -2516,7 +2524,6 @@ public sealed class FilmJobService
             prevVisual = FindClipVisualInBlueprint(root, scene, clip - 1);
 
         // PR2: reseed with locked refs when on-screen cast set changes (API drops refs on extend).
-        var reseedFresh = false;
         // Imagine /videos/extensions rejects input video longer than 15s.
         // Bad extension-tail trims (or re-extend chains) can leave a prev clip over that cap —
         // clamp to the last ≤15s so continuity still uses the ending frames.
@@ -2524,10 +2531,7 @@ public sealed class FilmJobService
         try
         {
             // No native ffmpeg: never video-extend (cannot split prev+new). Fresh gen + locked plates.
-            // Gated on `clip > 1` (not `prevVideoPath is not null`): the previous clip may only exist
-            // via its .client.json marker now (synced to the client, pruned server-side), in which case
-            // prevVideoPath is already null above — this is still a continuation clip either way.
-            if (clip > 1)
+            if (prevVideoPath is not null)
             {
                 reseedFresh = true;
                 prevVideoPath = null;
@@ -2644,15 +2648,20 @@ public sealed class FilmJobService
             }
             catch { /* non-fatal */ }
 
-            // Pre-budget to xAI video ~4096 char hard cap (strip HOUSE RULES / project rules first).
+            if (string.IsNullOrWhiteSpace(resolution))
+                resolution = await ResolveVideoResolutionAsync(projectId, null, ct);
+
+            var modelMaxPromptLen = modelEntry.MaxPromptLength ?? ClipVideoPromptBuilder.VideoPromptHardCapChars;
+
+            // Pre-budget to model-specific prompt limit (e.g. 1000 for Fal.ai, 4096 for Grok).
             // Avoids a guaranteed first-attempt 400 on every clip.
             var preLen = built.Prompt.Length;
-            var fitted = ClipVideoPromptBuilder.FitPromptToVideoBudget(built.Prompt);
+            var fitted = ClipVideoPromptBuilder.FitPromptToVideoBudget(built.Prompt, modelMaxPromptLen);
             if (fitted.Length < preLen)
             {
                 built = built.WithPrompt(fitted, $" · pre-budget {preLen}→{fitted.Length}");
                 await AppendLogAsync(
-                    $"  [Prompt] pre-budget {preLen}→{fitted.Length} chars (video hard cap {ClipVideoPromptBuilder.VideoPromptHardCapChars})");
+                    $"  [Prompt] pre-budget {preLen}→{fitted.Length} chars (model {modelEntry.Id} hard cap {modelMaxPromptLen})");
             }
 
             // Persist + log full prompt for evaluation (admin logs surface this)
@@ -2666,10 +2675,6 @@ public sealed class FilmJobService
                     string.Join(", ", built.ReferenceImagePaths.Select(Path.GetFileName)));
             else if (prevVideoPath is not null)
                 await AppendLogAsync("  [Refs] video-extend — locked plates not attached to API (IDENTITY text only)");
-
-            var model = await ResolveVideoModelAsync(projectId, ct);
-            if (string.IsNullOrWhiteSpace(resolution))
-                resolution = await ResolveVideoResolutionAsync(projectId, null, ct);
 
             // Only continuation-chain models get carried-forward padding: clip N+1 already can't
             // start before clip N is on disk for these, so reconciling against N's real measurement
@@ -2739,7 +2744,7 @@ public sealed class FilmJobService
                         {
                             try
                             {
-                                return await _dialogueVerification.VerifyClipDialogueAsync(projId, scene, clip, ct: CancellationToken.None).ConfigureAwait(false);
+                                return await _dialogueVerification.VerifyClipDialogueAsync(projId, scene, clip, force: true, ct: CancellationToken.None).ConfigureAwait(false);
                             }
                             catch (Exception ex)
                             {
@@ -3352,19 +3357,11 @@ public sealed class FilmJobService
         bool needReferenceImages,
         CancellationToken ct)
     {
-        if (!needContinue && !needReferenceImages)
+        if (!needReferenceImages)
             return;
 
         var modelId = await ResolveVideoModelAsync(projectId, ct).ConfigureAwait(false);
         var entry = SupportedModelCatalog.ResolveOrDefault(modelId, ModelCapability.Video);
-        if (needContinue && !entry.SupportsVideoContinue)
-        {
-            throw new InvalidOperationException(
-                $"Video model '{entry.Id}' does not support clip-to-clip continue " +
-                "(required for clip 2+). Switch project video model to grok-imagine-video " +
-                "(or another model with video-extend). " +
-                (string.IsNullOrWhiteSpace(entry.Notes) ? "" : entry.Notes));
-        }
 
         if (needReferenceImages && !entry.SupportsReferenceImages)
         {
@@ -3400,6 +3397,32 @@ public sealed class FilmJobService
         return resolved.Id;
     }
 
+    private async Task<string> ResolvePlanningModelAsync(string projectId, string? requestedModel, CancellationToken ct)
+    {
+        if (!string.IsNullOrWhiteSpace(requestedModel)) return requestedModel.Trim();
+        try
+        {
+            var cfg = await _projects.GetConfigAsync(projectId, ct).ConfigureAwait(false);
+            if (cfg.TryGetValue("planning_model_name", out var el) && el.ValueKind == JsonValueKind.String && !string.IsNullOrWhiteSpace(el.GetString()))
+                return el.GetString()!.Trim();
+        }
+        catch { }
+        return "grok-4.5";
+    }
+
+    private async Task<string> ResolveVisionModelAsync(string projectId, string? requestedModel, CancellationToken ct)
+    {
+        if (!string.IsNullOrWhiteSpace(requestedModel)) return requestedModel.Trim();
+        try
+        {
+            var cfg = await _projects.GetConfigAsync(projectId, ct).ConfigureAwait(false);
+            if (cfg.TryGetValue("vision_model_name", out var el) && el.ValueKind == JsonValueKind.String && !string.IsNullOrWhiteSpace(el.GetString()))
+                return el.GetString()!.Trim();
+        }
+        catch { }
+        return "grok-4.5";
+    }
+
     private static string NormalizeResolution(string? value)
     {
         var v = (value ?? "720p").Trim().ToLowerInvariant();
@@ -3427,6 +3450,7 @@ public sealed class FilmJobService
             ModelProviderFamily.Xai => ApiKeyScope.Current,
             ModelProviderFamily.Google => ApiKeyScope.CurrentGemini,
             ModelProviderFamily.Anthropic => ApiKeyScope.CurrentAnthropic,
+            ModelProviderFamily.Fal => ApiKeyScope.CurrentFal,
             _ => null,
         };
         if (!string.IsNullOrWhiteSpace(ambient))

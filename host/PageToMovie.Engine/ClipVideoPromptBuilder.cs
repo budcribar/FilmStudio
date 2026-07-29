@@ -630,7 +630,73 @@ public static class ClipVideoPromptBuilder
         if (p.Length <= hardCapChars)
             return p;
 
+        p = CompressPromptText(p);
+        if (p.Length <= hardCapChars)
+            return p;
+
         return HeadCap(p, hardCapChars);
+    }
+
+    /// <summary>
+    /// Intelligently compresses prompt text without losing core visual action or character details.
+    /// Maps long character keys (e.g. "Character_The_Narrator") to compact aliases ("C1", "C2"),
+    /// image tags ("<IMAGE_1>") to ("I1"), simplifies verbose section headers/labels,
+    /// and collapses duplicate blank lines / spaces.
+    /// </summary>
+    public static string CompressPromptText(string prompt)
+    {
+        if (string.IsNullOrWhiteSpace(prompt)) return prompt ?? "";
+        var p = prompt;
+
+        // 1. Simplify verbose section headers & repetitive directives
+        p = p.Replace("CHARACTER VARIABLES (use these identities consistently; do not redesign faces or wardrobe):", "CHARACTERS:");
+        p = p.Replace("REQUIRED native Grok dialogue.", "");
+        p = p.Replace("Do not invent extra people, duplicate faces, or crowd extras not listed.", "");
+        p = p.Replace("Follow the camera framing and location in this prompt exactly. Prioritize the PRIMARY subject and ONE clear action with visible motion; background characters may stay mostly still.", "");
+        p = p.Replace("CONTEXT (prior clip in scene — new cast plate refs attached; match location/lighting if still valid; identity from CHARACTER VARIABLES + locked plates only):", "CONTEXT:");
+
+        // 2. Map all distinct Character_* keys to compact aliases C1, C2, C3...
+        var matches = Regex.Matches(p, @"\bCharacter_([A-Za-z0-9_]+)\b");
+        var distinctKeys = matches.Select(m => m.Value).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+
+        for (var i = 0; i < distinctKeys.Count; i++)
+        {
+            var key = distinctKeys[i]; // e.g. "Character_The_Narrator"
+            var alias = $"C{i + 1}";    // e.g. "C1"
+            p = p.Replace(key, alias);
+        }
+
+        // 3. Compress image reference tags (<IMAGE_1> -> I1, <IMAGE_2> -> I2)
+        p = Regex.Replace(p, @"<IMAGE_(\d+)>", "I$1");
+
+        // 4. Compress technical camera, stock, resolution/fps tails, and styling labels
+        p = p.Replace("Kodak Vision3 500T 5219 film stock", "Kodak 500T film");
+        p = p.Replace("Camera directive:", "Camera:");
+        p = p.Replace("Color grading:", "Grade:");
+        p = p.Replace("Visual lock:", "Visual:");
+        p = p.Replace("Performance:", "Perf:");
+        p = p.Replace("ON CAMERA lip-syncs", "lip-syncs");
+        p = p.Replace("AUDIO: ", "AUDIO:");
+
+        // Strip [Display Name] bracketed titles in character lines (C1/C2 alias is sufficient)
+        p = Regex.Replace(p, @"(-\s*C\d+(?:\s+I\d+)?)\s*\[[^\]]+\]:", "$1:");
+
+        // Strip resolution/fps suffix (e.g. " / 480p, 24fps" -> "") since resolution/fps is configured via API payload
+        p = Regex.Replace(p, @"\s*/\s*\d+p,\s*\d+fps$", "");
+
+        // Simplify audio/voice directives & strip voice descriptions/locks (visual video models do not use voice tuning text)
+        p = Regex.Replace(p, @"\s*Voice:\s*[^;.\n]+(?:;[^;.\n]+)*[;.]?", "");
+        p = Regex.Replace(p, @"\s*VOICE LOCK\s+[^:\n]+:[^\n]+", "");
+        p = Regex.Replace(p, @"\s*Match appearance of reference\s+I\d+\s+exactly\.?", "");
+        p = p.Replace("Start speaking immediately with ", "Start speaking: ");
+        p = p.Replace(" — do not skip, delay, or swallow the opening word. After the last word, hold a brief natural pause with a closed mouth (about half a second); do not freeze mid-syllable or trail into empty staring. Other mouths closed. Speech intelligible; never silent.", ".");
+        p = p.Replace("End cleanly when the spoken line and primary action finish — do not hold a frozen pose or empty silence after dialogue.", "");
+
+        // 5. Collapse multiple blank lines & consecutive spaces
+        p = Regex.Replace(p, @"\n\s*\n+", "\n");
+        p = Regex.Replace(p, @"[ \t]+", " ");
+
+        return p.Trim();
     }
 
     /// <summary>Clip gen house rules from <c>prompts/clip_gen_rules.txt</c> (embed or override dir).</summary>
@@ -1204,21 +1270,26 @@ public static class ClipVideoPromptBuilder
     /// addenda first, then cap total length while keeping the head (character locks + framing).
     /// <paramref name="attempt"/> is 1-based (first retry = 1).
     /// </summary>
-    public static string ShortenPromptForRetry(string prompt, int attempt)
+    public static string ShortenPromptForRetry(string prompt, int attempt, int hardCapChars = VideoPromptHardCapChars)
     {
         if (string.IsNullOrEmpty(prompt)) return prompt;
         attempt = Math.Max(1, attempt);
         // Retry always drops house-rule / project addenda first (even if under cap)
         var p = StripLearningAddenda(prompt);
-        if (p.Length > VideoPromptHardCapChars)
-            p = HeadCap(p, VideoPromptHardCapChars);
+        if (p.Length > hardCapChars)
+            p = HeadCap(p, hardCapChars);
 
         if (attempt == 1)
             return p;
 
         // Later attempts: tighter caps (chars), keep head where identity/action live
-        var caps = new[] { 0, 0, VideoPromptHardCapChars, 3200, 2400, 1800, 1200 };
-        var cap = attempt < caps.Length ? caps[attempt] : 1000;
+        var cap = Math.Min(hardCapChars, attempt switch
+        {
+            2 => (int)(hardCapChars * 0.8),
+            3 => (int)(hardCapChars * 0.6),
+            4 => (int)(hardCapChars * 0.4),
+            _ => (int)(hardCapChars * 0.3)
+        });
         if (p.Length <= cap)
             return p;
         return HeadCap(p, cap);
@@ -1262,6 +1333,6 @@ public static class ClipVideoPromptBuilder
             var sp = head.LastIndexOf(' ');
             if (sp > maxChars * 2 / 3) head = head[..sp];
         }
-        return head.TrimEnd() + "\n[prompt shortened after API length limit — retry]";
+        return head.TrimEnd();
     }
 }

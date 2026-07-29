@@ -27,15 +27,8 @@
 else
 {
 
-@if (!string.IsNullOrEmpty(_error))
-{
-    <div class="alert alert-danger">@_error</div>
-}
-@* Don't stack a success banner under the live progress card *@
-@if (!string.IsNullOrEmpty(_message) && !JobRunning)
-{
-    <div class="alert alert-info">@_message</div>
-}
+
+
 
 @* Feature 8: clip finished but not saved to a local media folder *@
 @if (!string.IsNullOrEmpty(MediaFolder.LocalSaveWarning))
@@ -261,71 +254,6 @@ else if (_showPreviewPlayer && _clientStitching)
     </div>
 }
 
-@* Live gen: one compact surface — status + bar + Cancel only (no badges, no Grok dump, no log). *@
-@if (ShowLiveGenProgress && _job is not null)
-{
-    <div class="card mb-3 border-primary" data-testid="scenes-gen-progress">
-        <div class="card-body py-2">
-            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
-                <span class="small">@LiveGenStatusLabel(_job)</span>
-                <button type="button"
-                        class="btn btn-sm btn-outline-danger"
-                        data-testid="scenes-gen-cancel"
-                        disabled="@_busy"
-                        @onclick="CancelAsync">Cancel</button>
-            </div>
-            @{
-                var pct = LiveGenProgressPercent(_job);
-            }
-            <div class="progress mt-2" style="height: 0.85rem;" role="progressbar"
-                 aria-valuenow="@pct" aria-valuemin="0" aria-valuemax="100"
-                 aria-label="@LiveGenStatusLabel(_job)">
-                <div class="progress-bar progress-bar-striped progress-bar-animated bg-primary"
-                     style="width: @pct%"></div>
-            </div>
-        </div>
-    </div>
-}
-else if (ShowOperatorGenPartial && _job is not null)
-{
-    <div class="alert alert-warning py-2 d-flex justify-content-between align-items-center flex-wrap gap-2">
-        <span class="small">Some clips finished; others failed. Refresh and retry the missing ones.</span>
-        <button class="btn btn-sm btn-outline-secondary" disabled="@_busy" @onclick="ReloadListAsync">Refresh</button>
-    </div>
-}
-else if (ShowOperatorGenError && _job is not null)
-{
-    <div class="alert alert-danger py-2 d-flex justify-content-between align-items-center flex-wrap gap-2">
-        <span class="small">Generation failed. Try again.</span>
-        <button class="btn btn-sm btn-outline-secondary" disabled="@_busy" @onclick="ReloadListAsync">Refresh</button>
-    </div>
-}
-else if (Session.IsAdmin && _job is not null &&
-         (_job.Status is "done" or "partial" or "error" or "cancelled"))
-{
-    @* Admin: finished-job summary only — no live log dump (that belonged under generating). *@
-    <div class="card mb-3 border-@(_job.Status == "error" ? "danger" : _job.Status == "partial" ? "warning" : "secondary")">
-        <div class="card-body py-2">
-            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
-                <span class="small">@(_job.Message ?? _job.Status)</span>
-                <button class="btn btn-sm btn-outline-secondary" disabled="@_busy" @onclick="ReloadListAsync">Refresh list</button>
-            </div>
-            @if (_job.Log.Count > 0)
-            {
-                <button type="button"
-                        class="btn btn-sm btn-link text-muted p-0 mt-1 text-decoration-none"
-                        @onclick="() => _showAdminJobLog = !_showAdminJobLog">
-                    @(_showAdminJobLog ? "Hide details" : "Details (admin)")
-                </button>
-                @if (_showAdminJobLog)
-                {
-                    <pre class="small mb-0 mt-1" style="max-height: 120px; overflow: auto;">@string.Join("\n", _job.Log.TakeLast(20))</pre>
-                }
-            }
-        </div>
-    </div>
-}
-
 @if (_selectedScene is null)
 {
     @* ---- Scene list ---- *@
@@ -503,6 +431,13 @@ else if (Session.IsAdmin && _job is not null &&
                                         @onclick="() => OpenSceneAsync(sn)">
                                     ✏️
                                 </button>
+                                <button type="button"
+                                        class="btn btn-sm btn-link text-secondary p-0 ms-1 text-decoration-none"
+                                        title="View changes & history for scene S@(sn.ToString("D2"))"
+                                        @onclick:stopPropagation="true"
+                                        @onclick="() => OpenSceneHistoryAsync(sn)">
+                                    📜
+                                </button>
                                 @if (s.LockedByOther)
                                 {
                                     <span class="badge bg-warning text-dark ms-1" title="Locked by @s.LockOwnerUserId">🔒 @s.LockOwnerUserId</span>
@@ -567,6 +502,80 @@ else if (_detail is null)
 }
 else
 {
+    @if (!string.IsNullOrEmpty(_error))
+    {
+        <div class="alert alert-danger mb-3">@_error</div>
+    }
+    @if (!string.IsNullOrEmpty(_message) && !JobRunning)
+    {
+        <div class="alert alert-info mb-3">@_message</div>
+    }
+
+    @* Live gen: one compact surface — status + bar + Cancel only (no badges, no Grok dump, no log). *@
+    @if (ShowLiveGenProgress && _job is not null)
+    {
+        <div class="card mb-3 border-primary" data-testid="scenes-gen-progress">
+            <div class="card-body py-2">
+                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                    <span class="small">@LiveGenStatusLabel(_job)</span>
+                    <button type="button"
+                            class="btn btn-sm btn-outline-danger"
+                            data-testid="scenes-gen-cancel"
+                            disabled="@_busy"
+                            @onclick="CancelAsync">Cancel</button>
+                </div>
+                @{
+                    var pct = LiveGenProgressPercent(_job);
+                }
+                <div class="progress mt-2" style="height: 0.85rem;" role="progressbar"
+                     aria-valuenow="@pct" aria-valuemin="0" aria-valuemax="100"
+                     aria-label="@LiveGenStatusLabel(_job)">
+                    <div class="progress-bar progress-bar-striped progress-bar-animated bg-primary"
+                         style="width: @pct%"></div>
+                </div>
+            </div>
+        </div>
+    }
+    else if (ShowOperatorGenPartial && _job is not null)
+    {
+        <div class="alert alert-warning py-2 d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+            <span class="small">Some clips finished; others failed. Refresh and retry the missing ones.</span>
+            <button class="btn btn-sm btn-outline-secondary" disabled="@_busy" @onclick="ReloadListAsync">Refresh</button>
+        </div>
+    }
+    else if (ShowOperatorGenError && _job is not null)
+    {
+        <div class="alert alert-danger py-2 d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+            <span class="small">@(!string.IsNullOrWhiteSpace(_job.Message) ? $"Generation failed: {_job.Message}" : "Generation failed. Try again.")</span>
+            <button class="btn btn-sm btn-outline-secondary" disabled="@_busy" @onclick="ReloadListAsync">Refresh</button>
+        </div>
+    }
+    else if (Session.IsAdmin && _job is not null &&
+             (_job.Status is "done" or "partial" or "error" or "cancelled"))
+    {
+        @* Admin: finished-job summary only — no live log dump (that belonged under generating). *@
+        <div class="card mb-3 border-@(_job.Status == "error" ? "danger" : _job.Status == "partial" ? "warning" : "secondary")">
+            <div class="card-body py-2">
+                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                    <span class="small">@(_job.Message ?? _job.Status)</span>
+                    <button class="btn btn-sm btn-outline-secondary" disabled="@_busy" @onclick="ReloadListAsync">Refresh list</button>
+                </div>
+                @if (_job.Log.Count > 0)
+                {
+                    <button type="button"
+                            class="btn btn-sm btn-link text-muted p-0 mt-1 text-decoration-none"
+                            @onclick="() => _showAdminJobLog = !_showAdminJobLog">
+                        @(_showAdminJobLog ? "Hide details" : "Details (admin)")
+                    </button>
+                    @if (_showAdminJobLog)
+                    {
+                        <pre class="small mb-0 mt-1" style="max-height: 120px; overflow: auto;">@string.Join("\n", _job.Log.TakeLast(20))</pre>
+                    }
+                }
+            </div>
+        </div>
+    }
+
     @* ---- Scene detail ---- *@
     <div class="card mb-3">
         <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
@@ -575,6 +584,12 @@ else
                 — @(_detail.Setting is { Length: > 0 } st ? st : "—")
             </span>
             <div class="d-flex gap-2 align-items-center flex-wrap">
+                <button type="button"
+                        class="btn btn-sm btn-outline-info"
+                        title="View history & changes for this scene"
+                        @onclick="() => OpenSceneHistoryAsync(_detail.SceneNumber)">
+                    📜 History
+                </button>
                 <div class="d-flex align-items-center gap-1">
                     <label class="small text-muted mb-0" for="genResDetail">Res</label>
                     <select id="genResDetail"
@@ -611,9 +626,19 @@ else
                     <button type="button"
                             class="btn btn-sm btn-outline-primary"
                             disabled="@(_busy || JobRunning || _verifyingClip)"
-                            title="Run dialogue &amp; speaker verification on all clips in selected scene(s)"
+                            title="@(_selectedClips.Count > 0 ? $"Run dialogue & speaker verification on {_selectedClips.Count} selected clip(s)" : "Run dialogue & speaker verification on selected clips in the first column")"
                             @onclick="VerifySelectedScenesDialogueAsync">
-                        🔍 Verify Scene Dialogue
+                        @(_selectedClips.Count > 0 ? $"🔍 Verify ({_selectedClips.Count}) Selected Clips" : "🔍 Verify Clip Dialogue")
+                    </button>
+                }
+                @if (!_detail.HasBackgroundMusic && (_detail.CompositeExists || _detail.ClipsOnDisk > 0))
+                {
+                    <button type="button"
+                            class="btn btn-sm btn-outline-warning text-dark fw-semibold"
+                            disabled="@(_busy || JobRunning || _scoringMusic)"
+                            title="Generate AI background music score with automatic dialogue ducking"
+                            @onclick="() => ScoreSceneBackgroundMusicAsync(_detail.SceneNumber)">
+                        🎵 Score Background Music
                     </button>
                 }
                 @if (_detail.CompositeExists || _detail.ClipsOnDisk > 0)
@@ -656,6 +681,14 @@ else
                 {
                     <span>· loc: <code>@_detail.PrimaryLocationId</code></span>
                 }
+                @{
+                    var verifiedCount = _detail.Clips.Count(c => c.DialogueVerification is { } v && (string.Equals(v.Status, "verified", StringComparison.OrdinalIgnoreCase) || string.Equals(v.Status, "no_speech", StringComparison.OrdinalIgnoreCase)));
+                    var totalWithDialogue = _detail.Clips.Count(c => !string.IsNullOrWhiteSpace(c.Dialogue));
+                }
+                @if (totalWithDialogue > 0 && verifiedCount > 0)
+                {
+                    <span>· <span class="text-success fw-semibold" title="Clips with dialogue verified via native video/audio QA">✓ @verifiedCount/@totalWithDialogue dialogue verified</span></span>
+                }
             </p>
 
             @* Full scene composite — hide while clip selected, remux/gen busy, or full player open *@
@@ -684,7 +717,7 @@ else
                     </div>
                     <video controls playsinline
                            style="max-width:100%; max-height:280px; background:#111; border-radius:0.35rem;"
-                           src="@CacheBust(Engine.CompositeVideoUrl(_projectId, _detail.SceneNumber))"
+                           src="@(_sceneCompositeVideoUrl ?? CacheBust(Engine.CompositeVideoUrl(_projectId, _detail.SceneNumber)))"
                            @key="_inlineCompositeKey"
                            poster=""></video>
                     <p class="small text-muted mb-0 mt-1">
@@ -716,6 +749,17 @@ else
                                 title="Check clips not yet on disk"
                                 @onclick="SelectMissingClips">
                             Select missing
+                        </button>
+                    }
+                    @if (_detail.Clips.Any(c => c.DialogueVerification is { Status: "mismatch" } or { Status: "speaker_swap" }))
+                    {
+                        <button type="button"
+                                class="btn btn-sm btn-outline-warning text-dark"
+                                data-testid="clip-select-mismatched"
+                                disabled="@_busy"
+                                title="Check all clips in this scene with dialogue mismatches or speaker swaps"
+                                @onclick="SelectMismatchedClips">
+                            Select mismatched (@_detail.Clips.Count(c => c.DialogueVerification is { Status: "mismatch" } or { Status: "speaker_swap" }))
                         </button>
                     }
                     @if (_selectedClips.Count > 0)
@@ -784,29 +828,58 @@ else
                                     }
                                     @if (clipBusy)
                                     {
-                                        <span class="badge bg-warning text-dark px-2 py-1 rounded-pill" style="font-weight:600;"
-                                              title="Generating — file is about to change">C@(cn.ToString("D2"))</span>
+                                        <span class="badge bg-warning text-dark px-2 py-1 rounded-pill font-monospace me-1" style="font-size:0.8rem;"
+                                              title="Generating — file is about to change">⏳ C@(cn.ToString("D2"))</span>
                                     }
                                     else if (c.OnDisk)
                                     {
                                         <button type="button"
-                                                class="badge bg-success text-white border-0 px-2 py-1 rounded-pill"
-                                                style="font-weight:600;cursor:pointer;"
-                                                title="On disk — click to play"
+                                                class="btn btn-sm btn-success rounded-pill px-2 py-0 font-monospace fw-semibold align-baseline me-1 shadow-sm"
+                                                style="font-size:0.78rem; border-width:1px;"
+                                                title="Click to play clip C@(cn.ToString("D2")) video"
                                                 @onclick="() => SelectClip(cn)">
-                                            C@(cn.ToString("D2"))
+                                            ▶ Play C@(cn.ToString("D2"))
                                         </button>
                                     }
                                     else
                                     {
-                                        <span class="badge bg-warning text-dark px-2 py-1 rounded-pill" style="font-weight:600;"
+                                        <span class="badge bg-secondary text-light px-2 py-1 rounded-pill font-monospace me-1" style="font-size:0.8rem;"
                                               title="Not on disk yet">C@(cn.ToString("D2"))</span>
                                     }
+                                    @if (c.DialogueVerification is { } ver)
+                                    {
+                                        var isNoSpeechFail = string.Equals(ver.Status, "no_speech", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrWhiteSpace(ver.ExpectedDialogue);
+                                        var (badgeClass, badgeText) = ver.Status?.ToLowerInvariant() switch
+                                        {
+                                            "verified" => ("bg-success-subtle text-success border border-success-subtle", $"✓ Verified ({ver.DialogueAccuracyScore:P0})"),
+                                            "speaker_swap" => ("bg-danger-subtle text-danger border border-danger-subtle", "⚠ Speaker Swap"),
+                                            "mismatch" => ("bg-warning-subtle text-warning border border-warning-subtle", $"⚠ Mismatch ({ver.DialogueAccuracyScore:P0})"),
+                                            "no_speech" when isNoSpeechFail => ("bg-danger-subtle text-danger border border-danger-subtle", "⚠ No speech (0%)"),
+                                            "no_speech" => ("bg-secondary-subtle text-secondary border border-secondary-subtle", "✓ No speech"),
+                                            _ => ("bg-secondary-subtle text-secondary border border-secondary-subtle", ver.Status ?? "unverified"),
+                                        };
+                                        <button type="button" class="btn btn-sm p-0 border-0 align-baseline"
+                                                @onclick:stopPropagation="true"
+                                                @onclick="() => OpenVerificationModal(_detail.SceneNumber, cn, ver)">
+                                            <span class="badge @badgeClass ms-1 d-inline-block text-center" style="min-width: 140px; cursor:pointer; padding: 0.35em 0.6em; font-size: 0.75rem;" title="Click to view verification report details">
+                                                @badgeText 📋
+                                            </span>
+                                        </button>
+                                    }
+                                    <button type="button"
+                                            class="btn btn-sm btn-outline-info py-0 px-1 ms-2 text-decoration-none small"
+                                            disabled="@(_busy || JobRunning)"
+                                            title="View past takes & version comparison grid for this clip"
+                                            @onclick:stopPropagation="true"
+                                            @onclick="() => OpenClipCompareAsync(_detail.SceneNumber, cn)">
+                                        🎬 Takes
+                                    </button>
                                     <button type="button"
                                             class="btn btn-sm btn-link text-danger p-0 ms-2 text-decoration-none"
                                             data-testid="@($"clip-delete-{cn}")"
                                             disabled="@(_busy || JobRunning)"
                                             title="Delete this clip (video + shot plan entry)"
+                                            @onclick:stopPropagation="true"
                                             @onclick="() => RequestDeleteClip(_detail.SceneNumber, cn)">
                                         🗑️
                                     </button>
@@ -876,6 +949,12 @@ else
                             @onclick="() => RegenClipAsync(_detail.SceneNumber, _clip.ClipNumber)">
                         Regen clip
                     </button>
+                    <button class="btn btn-sm btn-outline-info"
+                            disabled="@(_busy || JobRunning)"
+                            title="View past takes & version comparison grid for this clip"
+                            @onclick="() => OpenClipCompareAsync(_detail.SceneNumber, _clip.ClipNumber)">
+                        🎬 Takes (@(_historyVersions.Count + 1))
+                    </button>
                     <button class="btn btn-sm btn-outline-secondary"
                             disabled="@(_busy || JobRunning)"
                             title="Edit clip fields (dialogue, prompt, characters, lighting…)"
@@ -905,7 +984,7 @@ else
                         </div>
                         <video controls playsinline autoplay
                                style="width:100%; max-height:320px; background:#111; border-radius:0.35rem;"
-                               src="@CacheBust(Engine.ClipVideoUrl(_projectId, _detail.SceneNumber, _clip.ClipNumber))"
+                               src="@(_clipVideoUrl ?? CacheBust(Engine.ClipVideoUrl(_projectId, _detail.SceneNumber, _clip.ClipNumber)))"
                                @key="@($"clip-{_detail.SceneNumber}-{_clip.ClipNumber}-{_clipVideoKey}")"
                                onloadeddata="this.play().catch(function(){})"></video>
                         <div class="small text-muted mt-1">
@@ -942,17 +1021,10 @@ else
                     <h6>Visual prompt</h6>
                     <pre class="small bg-light border rounded p-2" style="max-height:200px; overflow:auto; white-space:pre-wrap;">@(_clip.VisualPrompt is { Length: > 0 } vp ? vp : "—")</pre>
 
-                    @if (_historyLoading)
-                    {
-                        <div class="small text-muted mb-2">Checking for earlier versions…</div>
-                    }
-                    else if (_historyVersions.Count > 0)
-                    {
-                        <button class="btn btn-sm btn-outline-secondary mb-2"
-                                @onclick="() => _showHistoryCompare = !_showHistoryCompare">
-                            @(_showHistoryCompare ? "Hide" : "🔍 Compare with previous version")
-                            (@_historyVersions.Count earlier)
-                        </button>
+                    <button class="btn btn-sm btn-outline-secondary mb-2"
+                            @onclick="() => OpenClipCompareAsync(_detail.SceneNumber, _clip.ClipNumber)">
+                        🎬 Takes (@(_historyVersions.Count + 1))
+                    </button>
                         @if (_showHistoryCompare)
                         {
                             @if (_historyVersions.Count > 1)
@@ -1014,21 +1086,30 @@ else
                     {
                         @if (string.Equals(ver.Status, "verified", StringComparison.OrdinalIgnoreCase))
                         {
-                            <div class="badge bg-success-subtle text-success border border-success-subtle rounded-pill mb-2 px-2 py-1 small" title="@ver.SummaryNote">
-                                ✓ Dialogue &amp; Speaker Verified (@($"{ver.DialogueAccuracyScore:P0}"))
-                            </div>
+                            <button type="button" class="btn btn-sm p-0 border-0 text-start align-baseline"
+                                    @onclick="() => OpenVerificationModal(_detail.SceneNumber, _clip.ClipNumber, ver)">
+                                <div class="badge bg-success-subtle text-success border border-success-subtle rounded-pill mb-2 px-2 py-1 small" style="cursor:pointer;" title="Click to view complete verification report">
+                                    ✓ Dialogue &amp; Speaker Verified (@($"{ver.DialogueAccuracyScore:P0}")) 📋
+                                </div>
+                            </button>
                         }
                         else if (string.Equals(ver.Status, "speaker_swap", StringComparison.OrdinalIgnoreCase))
                         {
-                            <div class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill mb-2 px-2 py-1 small" title="@ver.SummaryNote">
-                                ⚠ Speaker Swap (Expected @ver.ExpectedSpeaker, Detected @(ver.DetectedSpeaker ?? "Other"))
-                            </div>
+                            <button type="button" class="btn btn-sm p-0 border-0 text-start align-baseline"
+                                    @onclick="() => OpenVerificationModal(_detail.SceneNumber, _clip.ClipNumber, ver)">
+                                <div class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill mb-2 px-2 py-1 small" style="cursor:pointer;" title="Click to view complete verification report">
+                                    ⚠ Speaker Swap (Expected @ver.ExpectedSpeaker, Detected @(ver.DetectedSpeaker ?? "Other")) 📋
+                                </div>
+                            </button>
                         }
                         else if (string.Equals(ver.Status, "mismatch", StringComparison.OrdinalIgnoreCase))
                         {
-                            <div class="badge bg-warning-subtle text-warning border border-warning-subtle rounded-pill mb-2 px-2 py-1 small" title="@ver.SummaryNote">
-                                ⚠ Dialogue Mismatch (@($"{ver.DialogueAccuracyScore:P0}"))
-                            </div>
+                            <button type="button" class="btn btn-sm p-0 border-0 text-start align-baseline"
+                                    @onclick="() => OpenVerificationModal(_detail.SceneNumber, _clip.ClipNumber, ver)">
+                                <div class="badge bg-warning-subtle text-warning border border-warning-subtle rounded-pill mb-2 px-2 py-1 small" style="cursor:pointer;" title="Click to view complete verification report">
+                                    ⚠ Dialogue Mismatch (@($"{ver.DialogueAccuracyScore:P0}")) 📋
+                                </div>
+                            </button>
                         }
 
                         @if (!string.IsNullOrWhiteSpace(ver.TranscribedDialogue) || !string.IsNullOrWhiteSpace(ver.DetectedSpeaker))
@@ -1270,6 +1351,448 @@ else
                             disabled="@_busy" @onclick="SaveClipEditorAsync">
                         @(_clipEditorIsNew ? "Add clip" : "Save clip")
                     </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@* Scene History & Revert Modal *@
+@if (_showSceneHistory)
+{
+    <div class="modal fade show d-block" tabindex="-1" style="background:rgba(0,0,0,0.6);" role="dialog">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable">
+            <div class="modal-content bg-dark text-white border-secondary">
+                <div class="modal-header border-secondary">
+                    <h5 class="modal-title">Scene S@(_historySceneNumber.ToString("D2")) History &amp; Changes</h5>
+                    <button type="button" class="btn-close btn-close-white" @onclick="CloseSceneHistory"></button>
+                </div>
+                <div class="modal-body">
+                    @if (!string.IsNullOrEmpty(_sceneRevertMessage))
+                    {
+                        <div class="alert alert-info py-2 mb-3">@_sceneRevertMessage</div>
+                    }
+
+                    @if (_loadingHistory)
+                    {
+                        <p class="text-muted">Loading scene changes…</p>
+                    }
+                    else if (_sceneHistory is null || _sceneHistory.Count == 0)
+                    {
+                        <p class="text-muted">No change history recorded for this scene yet.</p>
+                    }
+                    else
+                    {
+                        <div class="list-group list-group-flush">
+                            @foreach (var item in _sceneHistory)
+                            {
+                                <div class="list-group-item bg-dark text-white border-secondary py-3">
+                                    <div class="d-flex justify-content-between align-items-start mb-2">
+                                        <div>
+                                            <strong>@item.Message</strong>
+                                            <div class="small text-muted">
+                                                <code>@item.ShortHash</code> · by @item.Author · @item.CommittedAt.ToLocalTime().ToString("MMM d, yyyy h:mm tt")
+                                            </div>
+                                        </div>
+                                        <button type="button"
+                                                class="btn btn-sm btn-outline-warning"
+                                                disabled="@_revertingScene"
+                                                @onclick="() => RevertSceneToVersionAsync(_historySceneNumber, item.CommitHash)">
+                                            Revert to version
+                                        </button>
+                                    </div>
+                                    @if (item.Changes.Count > 0)
+                                    {
+                                        <ul class="small text-secondary mb-0 ps-3">
+                                            @foreach (var change in item.Changes)
+                                            {
+                                                <li>@change</li>
+                                            }
+                                        </ul>
+                                    }
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
+                <div class="modal-footer border-secondary">
+                    <button type="button" class="btn btn-secondary" @onclick="CloseSceneHistory">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@* Clip Version Take Comparison Grid & Trash Bin Modal *@
+@if (_showClipCompare)
+{
+    <div class="modal fade show d-block" tabindex="-1" style="background:rgba(0,0,0,0.6);" role="dialog">
+        <div class="modal-dialog modal-xl modal-dialog-scrollable">
+            <div class="modal-content bg-dark text-white border-secondary">
+                <div class="modal-header border-secondary d-flex justify-content-between align-items-center">
+                    <h5 class="modal-title m-0">Takes &amp; Versions — Scene S@(_compareSceneNumber.ToString("D2")) Clip C@(_compareClipNumber.ToString("D2"))</h5>
+                    <div class="d-flex align-items-center gap-2">
+                        <div class="btn-group btn-group-sm" role="group">
+                            <button type="button" class="btn @(_compareGridView ? "btn-secondary active" : "btn-outline-secondary")" @onclick="() => _compareGridView = true">
+                                Grid View
+                            </button>
+                            <button type="button" class="btn @(!_compareGridView ? "btn-secondary active" : "btn-outline-secondary")" @onclick="() => _compareGridView = false">
+                                Split View
+                            </button>
+                        </div>
+                        <button type="button" class="btn-close btn-close-white" @onclick="CloseClipCompare"></button>
+                    </div>
+                </div>
+                <div class="modal-body">
+                    @if (!string.IsNullOrEmpty(_clipCompareMessage))
+                    {
+                        <div class="alert alert-info py-2 mb-3">@_clipCompareMessage</div>
+                    }
+
+                    @if (_loadingClipVersions)
+                    {
+                        <p class="text-muted">Loading clip take history…</p>
+                    }
+                    else if (_clipVersions is null || _clipVersions.Count == 0)
+                    {
+                        <p class="text-muted">No takes recorded yet for this clip.</p>
+                    }
+                    else if (_compareGridView)
+                    {
+                        @* Multi-Card Take Comparison Grid *@
+                        <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-3">
+                            @foreach (var v in _clipVersions)
+                            {
+                                var isCurrent = v.IsCurrent;
+                                var videoUrl = isCurrent
+                                    ? Engine.ClipVideoUrl(_projectId, _compareSceneNumber, _compareClipNumber)
+                                    : Engine.BrowserMediaPath($"/api/projects/{Uri.EscapeDataString(_projectId)}/assets/video/history/{v.Mp4FileName}");
+
+                                <div class="col">
+                                    <div class="card bg-dark border-secondary h-100 p-2 @(isCurrent ? "border-success shadow-sm" : "")">
+                                        <div class="d-flex justify-content-between align-items-center mb-2">
+                                            <span class="badge @(isCurrent ? "bg-success" : "bg-primary")">
+                                                @(isCurrent ? "★ Active Take" : $"Take {v.Take}")
+                                            </span>
+                                            <span class="small text-muted">@v.CreatedAtUtc.ToLocalTime().ToString("MMM d, h:mm tt")</span>
+                                        </div>
+
+                                        <video controls playsinline style="width:100%;max-height:220px;background:#000;border-radius:0.35rem;" src="@videoUrl">
+                                            Your browser does not support HTML5 video.
+                                        </video>
+
+                                        <div class="mt-2 small text-secondary flex-grow-1">
+                                            @if (!string.IsNullOrWhiteSpace(v.VisualPrompt))
+                                            {
+                                                <div class="text-truncate" title="@v.VisualPrompt"><strong>Prompt:</strong> @v.VisualPrompt</div>
+                                            }
+                                            <div><strong>Model / Res:</strong> @(!string.IsNullOrEmpty(v.Model) ? v.Model : "Default") (@(!string.IsNullOrEmpty(v.Resolution) ? v.Resolution : "480p")) · @(v.DurationSeconds > 0 ? v.DurationSeconds.ToString("F1") + "s" : "")</div>
+                                        </div>
+
+                                        <div class="d-flex gap-2 mt-3">
+                                            @if (isCurrent)
+                                            {
+                                                <button type="button" class="btn btn-sm btn-outline-success w-100" disabled>
+                                                    ✓ Active Take
+                                                </button>
+                                            }
+                                            else
+                                            {
+                                                <button type="button"
+                                                        class="btn btn-sm btn-warning text-dark fw-semibold flex-grow-1"
+                                                        disabled="@_promotingVersion"
+                                                        @onclick="() => PromoteClipVersionAsync(_compareSceneNumber, _compareClipNumber, v.VersionId)">
+                                                    ★ Select &amp; Keep
+                                                </button>
+                                                <button type="button"
+                                                        class="btn btn-sm btn-outline-danger"
+                                                        disabled="@_promotingVersion"
+                                                        title="Delete this take"
+                                                        @onclick="() => SoftDeleteClipVersionAsync(_compareSceneNumber, _compareClipNumber, v.VersionId)">
+                                                    🗑️
+                                                </button>
+                                            }
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        @* Split View: Current vs Selected *@
+                        var activeVersion = _clipVersions.FirstOrDefault(v => v.IsCurrent) ?? _clipVersions.First();
+                        var comparedVersion = _selectedCompareVersion ?? _clipVersions.FirstOrDefault(v => !v.IsCurrent) ?? activeVersion;
+
+                        <div class="row g-3">
+                            <div class="col-md-6 border-end border-secondary">
+                                <div class="card bg-dark border-secondary h-100 p-2">
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <span class="badge bg-success">★ Active Take</span>
+                                        <span class="small text-muted">Take @activeVersion.Take · @activeVersion.CreatedAtUtc.ToLocalTime().ToString("MMM d, h:mm tt")</span>
+                                    </div>
+                                    <video controls playsinline style="width:100%;max-height:40vh;background:#000;border-radius:0.35rem;" src="@Engine.ClipVideoUrl(_projectId, _compareSceneNumber, _compareClipNumber)">
+                                        Your browser does not support HTML5 video.
+                                    </video>
+                                    <div class="mt-2 small text-secondary">
+                                        <div><strong>Prompt:</strong> @(activeVersion.VisualPrompt.Length > 0 ? activeVersion.VisualPrompt : "—")</div>
+                                        <div><strong>Model / Res:</strong> @activeVersion.Model (@activeVersion.Resolution) · @activeVersion.DurationSeconds.ToString("F1")s</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="card bg-dark border-secondary h-100 p-2">
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <span class="badge bg-info text-dark">Selected Take</span>
+                                        @if (_clipVersions.Count(v => !v.IsCurrent) > 0)
+                                        {
+                                            <select class="form-select form-select-sm bg-dark text-white border-secondary w-auto" @bind="_selectedCompareVersionId">
+                                                @foreach (var v in _clipVersions.Where(v => !v.IsCurrent))
+                                                {
+                                                    <option value="@v.VersionId">Take @v.Take (@v.CreatedAtUtc.ToLocalTime().ToString("MMM d, h:mm tt"))</option>
+                                                }
+                                            </select>
+                                        }
+                                    </div>
+                                    <video controls playsinline style="width:100%;max-height:40vh;background:#000;border-radius:0.35rem;" src="@Engine.BrowserMediaPath($"/api/projects/{Uri.EscapeDataString(_projectId)}/assets/video/history/{comparedVersion.Mp4FileName}")">
+                                        Your browser does not support HTML5 video.
+                                    </video>
+                                    <div class="mt-2 small text-secondary">
+                                        <div><strong>Prompt:</strong> @(comparedVersion.VisualPrompt.Length > 0 ? comparedVersion.VisualPrompt : "—")</div>
+                                        <div><strong>Model / Res:</strong> @comparedVersion.Model (@comparedVersion.Resolution) · @comparedVersion.DurationSeconds.ToString("F1")s</div>
+                                    </div>
+                                    <button type="button"
+                                            class="btn btn-sm btn-warning text-dark fw-semibold w-100 mt-2"
+                                            disabled="@(_promotingVersion || comparedVersion.IsCurrent)"
+                                            @onclick="() => PromoteClipVersionAsync(_compareSceneNumber, _compareClipNumber, comparedVersion.VersionId)">
+                                        ★ Select &amp; Keep (Take @comparedVersion.Take)
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    }
+
+                    @* Collapsible Trash Bin Section *@
+                    @if (_trashVersions is { Count: > 0 })
+                    {
+                        <hr class="border-secondary my-4" />
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <button type="button" class="btn btn-sm btn-outline-secondary text-white" @onclick="() => _showTrashBin = !_showTrashBin">
+                                🗑️ Trash Bin (@_trashVersions.Count) @(_showTrashBin ? "▲ Hide" : "▼ Show")
+                            </button>
+                            @if (_showTrashBin)
+                            {
+                                <button type="button" class="btn btn-sm btn-outline-danger" @onclick="() => _showEmptyTrashConfirm = true">
+                                    Empty Trash
+                                </button>
+                            }
+                        </div>
+
+                        @if (_showEmptyTrashConfirm)
+                        {
+                            <div class="alert alert-warning py-2 mb-3 d-flex justify-content-between align-items-center">
+                                <span>Permanently delete @_trashVersions.Count take(s)? Note: Once purged, these video files cannot be recovered.</span>
+                                <div class="d-flex gap-2">
+                                    <button type="button" class="btn btn-sm btn-danger" @onclick="() => EmptyClipTrashAsync(_compareSceneNumber, _compareClipNumber)">Confirm Purge</button>
+                                    <button type="button" class="btn btn-sm btn-secondary" @onclick="() => _showEmptyTrashConfirm = false">Cancel</button>
+                                </div>
+                            </div>
+                        }
+
+                        @if (_showTrashBin)
+                        {
+                            <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-3 mt-1">
+                                @foreach (var tv in _trashVersions)
+                                {
+                                    <div class="col">
+                                        <div class="card bg-dark border-secondary p-2 opacity-75">
+                                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                                <span class="badge bg-secondary">Deleted Take</span>
+                                                <span class="small text-muted">@tv.CreatedAtUtc.ToLocalTime().ToString("MMM d, h:mm tt")</span>
+                                            </div>
+                                            <div class="small text-secondary mb-2">@tv.Mp4FileName</div>
+                                            <button type="button"
+                                                    class="btn btn-sm btn-outline-info w-100"
+                                                    disabled="@_promotingVersion"
+                                                    @onclick="() => RestoreClipVersionAsync(_compareSceneNumber, _compareClipNumber, tv.VersionId)">
+                                                ↩️ Restore Take
+                                            </button>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        }
+                    }
+                </div>
+                <div class="modal-footer border-secondary">
+                    <button type="button" class="btn btn-secondary" @onclick="CloseClipCompare">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@* Clip Dialogue Verification Report Modal *@
+@if (_showVerificationModal && _verifModalResult is { } verReport)
+{
+    <div class="modal fade show d-block" tabindex="-1" style="background:rgba(0,0,0,0.6);" role="dialog">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable">
+            <div class="modal-content bg-dark text-white border-secondary">
+                <div class="modal-header border-secondary">
+                    <h5 class="modal-title">
+                        📋 Verification Report — Scene S@(_verifModalSceneNumber.ToString("D2")) Clip C@(_verifModalClipNumber.ToString("D2"))
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" @onclick="CloseVerificationModal"></button>
+                </div>
+                <div class="modal-body">
+                    @* Header Status Badge *@
+                    <div class="d-flex justify-content-between align-items-center mb-3 p-3 rounded border border-secondary bg-black bg-opacity-40">
+                        <div>
+                            <div class="text-secondary small">Verification Status</div>
+                            @if (string.Equals(verReport.Status, "verified", StringComparison.OrdinalIgnoreCase))
+                            {
+                                <span class="badge bg-success fs-6 px-3 py-1">✓ Verified Match (@($"{verReport.DialogueAccuracyScore:P0}"))</span>
+                            }
+                            else if (string.Equals(verReport.Status, "speaker_swap", StringComparison.OrdinalIgnoreCase))
+                            {
+                                <span class="badge bg-danger fs-6 px-3 py-1">⚠ Speaker Swap Detected</span>
+                            }
+                            else if (string.Equals(verReport.Status, "mismatch", StringComparison.OrdinalIgnoreCase))
+                            {
+                                <span class="badge bg-warning text-dark fs-6 px-3 py-1">⚠ Spoken Dialogue Mismatch (@($"{verReport.DialogueAccuracyScore:P0}"))</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-secondary fs-6 px-3 py-1">@verReport.Status</span>
+                            }
+                        </div>
+                        <div class="text-end small text-secondary">
+                            <div>Verified: @verReport.VerifiedAt.ToLocalTime().ToString("MMM d, yyyy h:mm tt")</div>
+                            <div>Engine: Multimodal Video &amp; Audio QA</div>
+                        </div>
+                    </div>
+
+                    @* Clip Duration & Pacing Telemetry *@
+                    @if (verReport.EstimatedDurationSeconds > 0 || verReport.ActualDurationSeconds > 0)
+                    {
+                        <div class="card bg-dark border-secondary mb-3">
+                            <div class="card-header bg-secondary bg-opacity-20 border-secondary fw-semibold text-light d-flex justify-content-between align-items-center">
+                                <span>⏱️ Clip Duration &amp; Pacing Analysis</span>
+                                @if (verReport.SpeechTruncated)
+                                {
+                                    <span class="badge bg-danger text-white">⚠ Speech Truncated</span>
+                                }
+                            </div>
+                            <div class="card-body">
+                                <div class="row g-3 mb-2">
+                                    <div class="col-4">
+                                        <div class="small text-secondary">Planned Total Duration</div>
+                                        <div class="fw-bold fs-6 text-light">@($"{verReport.EstimatedDurationSeconds:F1}s")</div>
+                                    </div>
+                                    <div class="col-4">
+                                        <div class="small text-secondary">Actual Measured MP4</div>
+                                        <div class="fw-bold fs-6 text-light">@($"{verReport.ActualDurationSeconds:F1}s")</div>
+                                    </div>
+                                    <div class="col-4">
+                                        <div class="small text-secondary">Pacing Variance</div>
+                                        @{
+                                            var diff = verReport.ActualDurationSeconds - verReport.EstimatedDurationSeconds;
+                                            var diffText = diff >= 0 ? $"+{diff:F1}s" : $"{diff:F1}s";
+                                            var diffClass = Math.Abs(diff) <= 1.0 ? "text-success" : "text-warning";
+                                        }
+                                        <div class="fw-bold fs-6 @diffClass">@diffText</div>
+                                    </div>
+                                </div>
+                                @if (verReport.SpeechDurationSeconds > 0 || verReport.ActionDurationSeconds > 0)
+                                {
+                                    <div class="row g-3 pt-2 border-top border-secondary-subtle">
+                                        <div class="col-6">
+                                            <div class="small text-secondary">🗣️ Dialogue Speech Length</div>
+                                            <div class="fw-semibold text-info">@($"{verReport.SpeechDurationSeconds:F1}s")</div>
+                                        </div>
+                                        <div class="col-6">
+                                            <div class="small text-secondary">🎬 Action &amp; Camera Movement</div>
+                                            <div class="fw-semibold text-light">@($"{verReport.ActionDurationSeconds:F1}s")</div>
+                                        </div>
+                                    </div>
+                                }
+                                @if (verReport.SpeechTruncated)
+                                {
+                                    <div class="alert alert-danger py-2 mt-3 mb-0 small d-flex align-items-center gap-2">
+                                        <span>⚠ <strong>Speech Truncation Warning:</strong> Transcribed speech was cut off mid-line because the video rendered shorter than required for the dialogue.</span>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    }
+
+                    @* Speaker Match Breakdown *@
+                    <div class="card bg-dark border-secondary mb-3">
+                        <div class="card-header bg-secondary bg-opacity-20 border-secondary fw-semibold text-light">
+                            🗣️ Character &amp; Speaker Verification
+                        </div>
+                        <div class="card-body">
+                            <div class="row g-3">
+                                <div class="col-6">
+                                    <div class="small text-secondary">Expected Speaker (Script)</div>
+                                    <div class="fw-bold fs-6 text-light">@(string.IsNullOrWhiteSpace(verReport.ExpectedSpeaker) ? "None" : verReport.ExpectedSpeaker)</div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="small text-secondary">Heard / Observed Speaker</div>
+                                    <div class="fw-bold fs-6 @(verReport.SpeakerMatch ? "text-success" : "text-danger")">
+                                        @(string.IsNullOrWhiteSpace(verReport.DetectedSpeaker) ? "Unknown" : verReport.DetectedSpeaker)
+                                        @(verReport.SpeakerMatch ? " ✓" : " ⚠ (Swap)")
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    @* Spoken Dialogue Breakdown *@
+                    <div class="card bg-dark border-secondary mb-3">
+                        <div class="card-header bg-secondary bg-opacity-20 border-secondary fw-semibold d-flex justify-content-between align-items-center text-light">
+                            <span>🎙️ Spoken Dialogue &amp; Audio Track Transcription</span>
+                            <span class="badge bg-info text-dark">Accuracy: @($"{verReport.DialogueAccuracyScore:P0}")</span>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <div class="small text-secondary mb-1">Expected Script Dialogue</div>
+                                <div class="p-2 rounded bg-black border border-secondary text-light font-monospace small">
+                                    @(string.IsNullOrWhiteSpace(verReport.ExpectedDialogue) ? "(No dialogue planned)" : verReport.ExpectedDialogue)
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <div class="small text-secondary mb-1">Transcribed Audio Dialogue (Heard on MP4 Track)</div>
+                                <div class="p-2 rounded bg-black border border-secondary text-light font-monospace small">
+                                    @(string.IsNullOrWhiteSpace(verReport.TranscribedDialogue) ? "(No speech detected in audio)" : verReport.TranscribedDialogue)
+                                </div>
+                            </div>
+                            @if (!string.IsNullOrWhiteSpace(verReport.ExpectedDialogue) && !string.IsNullOrWhiteSpace(verReport.TranscribedDialogue))
+                            {
+                                <div class="mb-1">
+                                    <div class="small text-secondary mb-1">Visual Script Diff</div>
+                                    @RenderDiffHtml(verReport.ExpectedDialogue, verReport.TranscribedDialogue)
+                                </div>
+                            }
+                        </div>
+                    </div>
+
+                    @* AI Inspector Notes *@
+                    @if (!string.IsNullOrWhiteSpace(verReport.SummaryNote))
+                    {
+                        <div class="card bg-dark border-secondary">
+                            <div class="card-header bg-secondary bg-opacity-20 border-secondary fw-semibold text-light">
+                                📝 QA Inspector Summary Notes
+                            </div>
+                            <div class="card-body">
+                                <div class="small text-light" style="white-space:pre-wrap;">@verReport.SummaryNote</div>
+                            </div>
+                        </div>
+                    }
+                </div>
+                <div class="modal-footer border-secondary">
+                    <button type="button" class="btn btn-secondary" @onclick="CloseVerificationModal">Close Report</button>
                 </div>
             </div>
         </div>
@@ -1768,6 +2291,15 @@ else
             _selectedClips.Add(c.ClipNumber);
     }
 
+    /// <summary>Select clips in the open scene that have dialogue mismatches or speaker swaps.</summary>
+    private void SelectMismatchedClips()
+    {
+        if (_detail is null) return;
+        _selectedClips.Clear();
+        foreach (var c in _detail.Clips.Where(c => c.DialogueVerification is { Status: "mismatch" } or { Status: "speaker_swap" }))
+            _selectedClips.Add(c.ClipNumber);
+    }
+
     private void RequestDeleteScene(int sn) => _deleteSceneTarget = sn;
 
     private Task ConfirmDeleteSceneAsync()
@@ -2076,6 +2608,7 @@ else
         {
             var dto = await Engine.GetScenesAsync(_projectId);
             _scenes = dto?.Scenes ?? new List<SceneSummary>();
+            await RefreshUncommittedStatusAsync();
             if (_selectedScene is int sn)
             {
                 var detail = await Engine.GetSceneDetailAsync(_projectId, sn);
@@ -2281,6 +2814,18 @@ else
         var dto = await Engine.GetSceneDetailAsync(_projectId, sn);
         _detail = dto?.Scene
             ?? throw new InvalidOperationException($"Scene {sn} not found");
+
+        _sceneCompositeVideoUrl = null;
+        if (MediaFolder.IsConnected && _detail.CompositeExists)
+        {
+            try
+            {
+                var localBlob = await MediaFolder.GetLocalBlobUrlAsync($"assets/video/scene_{sn:D2}.mp4");
+                if (!string.IsNullOrWhiteSpace(localBlob))
+                    _sceneCompositeVideoUrl = localBlob;
+            }
+            catch { /* fallback */ }
+        }
     }
 
     private async Task BackToListAsync()
@@ -2327,6 +2872,31 @@ else
         return row.AllDraftUsd / row.ClipsTotal * _selectedClips.Count;
     }
 
+    private async Task EnsurePredecessorsUploadedAsync(List<(int Scene, int Clip)> targets)
+    {
+        if (!MediaFolder.IsConnected || string.IsNullOrEmpty(_projectId)) return;
+
+        foreach (var (sn, cn) in targets)
+        {
+            if (cn <= 1) continue;
+            var prevClipNum = cn - 1;
+            if (targets.Any(t => t.Scene == sn && t.Clip == prevClipNum)) continue;
+
+            var serverHasClip = _detail?.Clips?.FirstOrDefault(c => c.ClipNumber == prevClipNum)?.OnDisk ?? false;
+            if (!serverHasClip)
+            {
+                var localBytes = await MediaFolder.GetClipBytesAsync(sn, prevClipNum);
+                if (localBytes is { Length: >= 1024 })
+                {
+                    _message = $"Uploading local predecessor S{sn:D2}C{prevClipNum:D2} to server…";
+                    StateHasChanged();
+
+                    await Engine.UploadClipAsync(_projectId, sn, prevClipNum, localBytes);
+                }
+            }
+        }
+    }
+
     private async Task RegenSelectedClipsAsync()
     {
         if (_detail is null || _selectedClips.Count == 0) return;
@@ -2339,6 +2909,7 @@ else
         {
             var targets = _selectedClips.OrderBy(c => c).Select(c => (Scene: sn, Clip: c)).ToList();
             await EnsureHubAsync();
+            await EnsurePredecessorsUploadedAsync(targets);
             _job = await Engine.StartClipBatchGenAsync(_projectId, targets, resolution: _genResolution);
             _message = $"Regenerating {targets.Count} clip(s) in S{sn:D2} @ {_genResolution}…";
             _selectedClips.Clear();
@@ -2347,6 +2918,9 @@ else
         catch (Exception ex) { _error = ex.Message; }
         finally { _busy = false; _pendingRegenScene = null; }
     }
+
+    private string? _clipVideoUrl;
+    private string? _sceneCompositeVideoUrl;
 
     private void SelectClip(int? cn)
     {
@@ -2358,6 +2932,7 @@ else
         _historyVersions = new();
         _compareIndex = 0;
         _compareAVideoUrl = null;
+        _clipVideoUrl = null;
         if (cn is int cnv)
         {
             // Force new <video> mount so we never keep a previous composite/clip stream
@@ -2369,8 +2944,27 @@ else
                 _playingScene = null;
             }
             if (_detail is not null)
-                _ = LoadClipHistoryAsync(_detail.SceneNumber, cnv);
+                _ = LoadClipVideoAndHistoryAsync(_detail.SceneNumber, cnv);
         }
+    }
+
+    private async Task LoadClipVideoAndHistoryAsync(int scene, int clip)
+    {
+        if (MediaFolder.IsConnected)
+        {
+            try
+            {
+                var relPath = $"assets/video/scene_{scene:D2}_clip_{clip:D2}.mp4";
+                var localBlob = await MediaFolder.GetLocalBlobUrlAsync(relPath);
+                if (!string.IsNullOrWhiteSpace(localBlob))
+                {
+                    _clipVideoUrl = localBlob;
+                    StateHasChanged();
+                }
+            }
+            catch { /* fallback to server URL */ }
+        }
+        await LoadClipHistoryAsync(scene, clip);
     }
 
     /// <summary>
@@ -2646,6 +3240,7 @@ else
         try
         {
             await EnsureHubAsync();
+            await EnsurePredecessorsUploadedAsync(new List<(int Scene, int Clip)> { (sn, cn) });
             await Engine.StartSceneGenAsync(_projectId, sn, onlyMissing: false, clip: cn, resolution: _genResolution);
             _message = $"Regenerating S{sn:D2}C{cn:D2} @ {_genResolution}…";
             var jobs = await Engine.GetJobAsync();
@@ -2763,6 +3358,8 @@ else
                 await Engine.UpdateClipAsync(_projectId, _detail.SceneNumber, _clipEditor.Clip, _clipEditor);
                 _message = $"Saved S{_detail.SceneNumber:D2}C{_clipEditor.Clip:D2} — Regen the clip to re-render video/audio with the new fields";
             }
+            try { await Engine.CommitProjectChangesAsync(_projectId, $"Saved clip S{_detail.SceneNumber:D2}C{_clipEditor.Clip:D2}"); } catch { }
+            await RefreshUncommittedStatusAsync();
             _clipEditor = null;
             await LoadDetailAsync(_detail.SceneNumber);
             if (_selectedClip is int sel)
@@ -3062,57 +3659,70 @@ else
     private async Task VerifySelectedScenesDialogueAsync()
     {
         if (string.IsNullOrWhiteSpace(_projectId)) return;
-        var scenesToVerify = _selected.Count > 0
-            ? _selected.OrderBy(s => s).ToList()
-            : (_detail is not null ? new List<int> { _detail.SceneNumber } : new List<int>());
 
-        if (scenesToVerify.Count == 0) return;
+        // Strictly verify clips checked in the first column selection box (_selectedClips).
+        // If no individual clips are checked, check clips in current scene that are unverified or mismatched.
+        List<int> clipNumbersToVerify;
+        int sceneNum;
+
+        if (_selectedClips.Count > 0)
+        {
+            clipNumbersToVerify = _selectedClips.OrderBy(c => c).ToList();
+            sceneNum = _detail?.SceneNumber ?? 1;
+        }
+        else if (_detail is not null)
+        {
+            sceneNum = _detail.SceneNumber;
+            clipNumbersToVerify = _detail.Clips
+                .Where(c => c.OnDisk && (c.DialogueVerification is null || !string.Equals(c.DialogueVerification.Status, "verified", StringComparison.OrdinalIgnoreCase)))
+                .Select(c => c.ClipNumber)
+                .ToList();
+        }
+        else return;
+
+        if (clipNumbersToVerify.Count == 0)
+        {
+            _message = "All clips verified. Check specific clip boxes in the first column to force re-verification.";
+            return;
+        }
 
         try
         {
             _verifyingClip = true;
             _verifyCurrent = 0;
-            _verifyTotal = 0;
-            _verifyStatusLabel = "Preparing dialogue verification...";
+            _verifyTotal = clipNumbersToVerify.Count;
+            _verifyStatusLabel = $"Verifying dialogue for {clipNumbersToVerify.Count} clip(s)...";
             StateHasChanged();
 
-            var sceneDetails = new List<(int SceneNum, SceneDetail Detail)>();
-            foreach (var sn in scenesToVerify)
+            foreach (var cn in clipNumbersToVerify)
             {
-                var sceneDetail = (_detail is not null && _detail.SceneNumber == sn)
-                    ? _detail
-                    : (await Engine.GetSceneDetailAsync(_projectId, sn))?.Scene;
-                if (sceneDetail?.Clips is not null)
+                _verifyCurrent++;
+                _verifyingClipNumber = cn;
+                var clip = _detail?.Clips?.FirstOrDefault(c => c.ClipNumber == cn);
+                _verifyStatusLabel = $"Verifying dialogue for S{sceneNum:D2} C{cn:D2} (Speaker: {clip?.Speaker ?? "Unknown"})...";
+                StateHasChanged();
+
+                var videoBytes = await MediaFolder.GetClipBytesAsync(sceneNum, cn);
+                var ver = await Engine.VerifyClipDialogueAsync(_projectId, sceneNum, cn, videoBytes: videoBytes, force: true);
+                if (ver is not null && clip is not null)
                 {
-                    sceneDetails.Add((sn, sceneDetail));
-                    _verifyTotal += sceneDetail.Clips.Count(c => c.OnDisk);
+                    clip.DialogueVerification = ver;
+                    if (string.Equals(ver.Status, "unverified", StringComparison.OrdinalIgnoreCase))
+                    {
+                        _error = ver.SummaryNote ?? "Clip Dialogue Verification requires Google Gemini (GEMINI_API_KEY). Gemini is the only provider that supports native video & audio dialogue analysis. Please add your Gemini key in Configuration.";
+                    }
+                    StateHasChanged();
                 }
             }
 
-            if (_verifyTotal == 0) return;
-
-            foreach (var (sn, sceneDetail) in sceneDetails)
+            if (_detail is not null)
             {
-                var onDisk = sceneDetail.Clips.Where(c => c.OnDisk).ToList();
-                foreach (var c in onDisk)
-                {
-                    _verifyCurrent++;
-                    _verifyingClipNumber = c.ClipNumber;
-                    _verifyStatusLabel = $"Verifying dialogue for S{sn:D2} C{c.ClipNumber:D2} (Speaker: {c.Speaker ?? "Unknown"})...";
-                    StateHasChanged();
-
-                    var videoBytes = await MediaFolder.GetClipBytesAsync(sn, c.ClipNumber);
-                    var ver = await Engine.VerifyClipDialogueAsync(_projectId, sn, c.ClipNumber, videoBytes: videoBytes);
-                    if (ver is not null)
-                    {
-                        c.DialogueVerification = ver;
-                        if (string.Equals(ver.Status, "unverified", StringComparison.OrdinalIgnoreCase))
-                        {
-                            _error = ver.SummaryNote ?? "Clip Dialogue Verification requires Google Gemini (GEMINI_API_KEY). Gemini is the only provider that supports native video & audio dialogue analysis. Please add your Gemini key in Configuration.";
-                        }
-                        StateHasChanged();
-                    }
-                }
+                _detail = (await Engine.GetSceneDetailAsync(_projectId, _detail.SceneNumber))?.Scene;
+            }
+            var scenesDto = await Engine.GetScenesAsync(_projectId);
+            if (scenesDto?.Scenes is not null)
+            {
+                _scenes = scenesDto.Scenes;
             }
         }
         catch (Exception ex)
@@ -3127,6 +3737,371 @@ else
             _verifyTotal = 0;
             StateHasChanged();
         }
+    }
+
+    private bool _scoringMusic;
+
+    private async Task ScoreSceneBackgroundMusicAsync(int sceneNum)
+    {
+        if (string.IsNullOrWhiteSpace(_projectId)) return;
+
+        _busy = true;
+        _scoringMusic = true;
+        _error = null;
+        _message = $"AI Music Scoring: Generating continuous background music score for Scene {sceneNum:D2}…";
+        StateHasChanged();
+
+        try
+        {
+            var res = await Engine.ScoreSceneMusicAsync(_projectId, sceneNum);
+            if (res is not null)
+            {
+                _message = $"Successfully scored background music for Scene {sceneNum:D2}.";
+                _detail = (await Engine.GetSceneDetailAsync(_projectId, sceneNum))?.Scene;
+            }
+            else
+            {
+                _error = "Background music scoring failed. Check your audio synthesis key in Configuration.";
+            }
+        }
+        catch (Exception ex)
+        {
+            _error = $"Music scoring failed: {ex.Message}";
+        }
+        finally
+        {
+            _busy = false;
+            _scoringMusic = false;
+            StateHasChanged();
+        }
+    }
+
+    private bool _showSceneHistory;
+    private int _historySceneNumber;
+    private bool _loadingHistory;
+    private bool _revertingScene;
+    private string? _sceneRevertMessage;
+    private List<SceneCommitHistoryItem>? _sceneHistory;
+
+    private async Task OpenSceneHistoryAsync(int sceneNumber)
+    {
+        _historySceneNumber = sceneNumber;
+        _showSceneHistory = true;
+        _loadingHistory = true;
+        _sceneRevertMessage = null;
+        StateHasChanged();
+
+        try
+        {
+            var res = await Engine.GetSceneGitHistoryAsync(_projectId, sceneNumber);
+            _sceneHistory = res?.History;
+        }
+        catch (Exception ex)
+        {
+            _error = $"Failed to load scene history: {ex.Message}";
+        }
+        finally
+        {
+            _loadingHistory = false;
+            StateHasChanged();
+        }
+    }
+
+    private void CloseSceneHistory()
+    {
+        _showSceneHistory = false;
+        _sceneHistory = null;
+        _sceneRevertMessage = null;
+    }
+
+    private async Task RevertSceneToVersionAsync(int sceneNumber, string commitHash)
+    {
+        _revertingScene = true;
+        _sceneRevertMessage = null;
+        StateHasChanged();
+
+        try
+        {
+            var res = await Engine.RevertSceneToCommitAsync(_projectId, sceneNumber, commitHash);
+            if (res.Ok)
+            {
+                _sceneRevertMessage = $"Successfully reverted Scene {sceneNumber:D2} to version {commitHash[..Math.Min(8, commitHash.Length)]}.";
+                if (_detail is not null && _detail.SceneNumber == sceneNumber)
+                {
+                    _detail = (await Engine.GetSceneDetailAsync(_projectId, sceneNumber))?.Scene;
+                }
+                var scenesDto = await Engine.GetScenesAsync(_projectId);
+                if (scenesDto?.Scenes is not null)
+                {
+                    _scenes = scenesDto.Scenes;
+                }
+            }
+            else
+            {
+                _sceneRevertMessage = res.Error ?? "Failed to revert scene.";
+            }
+        }
+        catch (Exception ex)
+        {
+            _sceneRevertMessage = $"Revert failed: {ex.Message}";
+        }
+        finally
+        {
+            _revertingScene = false;
+            StateHasChanged();
+        }
+    }
+
+    private UncommittedStatusDto? _uncommittedStatus;
+    private bool _showClipCompare;
+    private int _compareSceneNumber;
+    private int _compareClipNumber;
+    private bool _loadingClipVersions;
+    private bool _promotingVersion;
+    private string? _clipCompareMessage;
+    private List<ClipVersionItem>? _clipVersions;
+    private List<ClipVersionItem>? _trashVersions;
+    private string? _selectedCompareVersionId;
+    private bool _compareGridView = true;
+    private bool _showTrashBin;
+    private bool _showEmptyTrashConfirm;
+
+    private ClipVersionItem? _selectedCompareVersion =>
+        _clipVersions?.FirstOrDefault(v => string.Equals(v.VersionId, _selectedCompareVersionId, StringComparison.OrdinalIgnoreCase));
+
+    private async Task RefreshUncommittedStatusAsync()
+    {
+        try
+        {
+            var res = await Engine.GetProjectUncommittedStatusAsync(_projectId);
+            _uncommittedStatus = res?.Status;
+        }
+        catch { /* best effort */ }
+    }
+
+    private async Task CommitCurrentChangesAsync()
+    {
+        _busy = true;
+        _message = null;
+        _error = null;
+        StateHasChanged();
+
+        try
+        {
+            var res = await Engine.CommitProjectChangesAsync(_projectId, "Manual scene/clip commit");
+            if (res.Ok)
+            {
+                _message = "Successfully committed project changes.";
+                await RefreshUncommittedStatusAsync();
+            }
+            else
+            {
+                _error = res.Error ?? "Failed to commit changes.";
+            }
+        }
+        catch (Exception ex)
+        {
+            _error = $"Commit failed: {ex.Message}";
+        }
+        finally
+        {
+            _busy = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task OpenClipCompareAsync(int sceneNumber, int clipNumber)
+    {
+        _compareSceneNumber = sceneNumber;
+        _compareClipNumber = clipNumber;
+        _showClipCompare = true;
+        _loadingClipVersions = true;
+        _clipCompareMessage = null;
+        _selectedCompareVersionId = null;
+        _showTrashBin = false;
+        _showEmptyTrashConfirm = false;
+        StateHasChanged();
+
+        try
+        {
+            var res = await Engine.GetClipVersionsAsync(_projectId, sceneNumber, clipNumber);
+            _clipVersions = res?.Versions;
+            _selectedCompareVersionId = _clipVersions?.FirstOrDefault(v => !v.IsCurrent)?.VersionId ?? _clipVersions?.FirstOrDefault()?.VersionId;
+
+            var trashRes = await Engine.GetTrashClipVersionsAsync(_projectId, sceneNumber, clipNumber);
+            _trashVersions = trashRes?.Versions;
+        }
+        catch (Exception ex)
+        {
+            _error = $"Failed to load clip versions: {ex.Message}";
+        }
+        finally
+        {
+            _loadingClipVersions = false;
+            StateHasChanged();
+        }
+    }
+
+    private void CloseClipCompare()
+    {
+        _showClipCompare = false;
+        _clipVersions = null;
+        _trashVersions = null;
+        _clipCompareMessage = null;
+        _showEmptyTrashConfirm = false;
+    }
+
+    private async Task PromoteClipVersionAsync(int sceneNumber, int clipNumber, string versionId)
+    {
+        _promotingVersion = true;
+        _clipCompareMessage = null;
+        StateHasChanged();
+
+        try
+        {
+            var res = await Engine.PromoteClipVersionAsync(_projectId, sceneNumber, clipNumber, versionId);
+            if (res.Ok)
+            {
+                _clipCompareMessage = $"Successfully promoted version {versionId} to active clip.";
+                var resV = await Engine.GetClipVersionsAsync(_projectId, sceneNumber, clipNumber);
+                _clipVersions = resV?.Versions;
+                if (_detail is not null && _detail.SceneNumber == sceneNumber)
+                {
+                    _detail = (await Engine.GetSceneDetailAsync(_projectId, sceneNumber))?.Scene;
+                }
+                await RefreshUncommittedStatusAsync();
+            }
+            else
+            {
+                _clipCompareMessage = res.Error ?? "Failed to promote clip version.";
+            }
+        }
+        catch (Exception ex)
+        {
+            _clipCompareMessage = $"Promote failed: {ex.Message}";
+        }
+        finally
+        {
+            _promotingVersion = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task SoftDeleteClipVersionAsync(int sceneNumber, int clipNumber, string versionId)
+    {
+        _promotingVersion = true;
+        _clipCompareMessage = null;
+        StateHasChanged();
+
+        try
+        {
+            var res = await Engine.SoftDeleteClipVersionAsync(_projectId, sceneNumber, clipNumber, versionId);
+            if (res.Ok)
+            {
+                _clipCompareMessage = "Take deleted. You can restore it from the Trash Bin below.";
+                var resV = await Engine.GetClipVersionsAsync(_projectId, sceneNumber, clipNumber);
+                _clipVersions = resV?.Versions;
+                var resT = await Engine.GetTrashClipVersionsAsync(_projectId, sceneNumber, clipNumber);
+                _trashVersions = resT?.Versions;
+            }
+            else
+            {
+                _clipCompareMessage = res.Error ?? "Failed to delete take.";
+            }
+        }
+        catch (Exception ex)
+        {
+            _clipCompareMessage = $"Delete failed: {ex.Message}";
+        }
+        finally
+        {
+            _promotingVersion = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task RestoreClipVersionAsync(int sceneNumber, int clipNumber, string versionId)
+    {
+        _promotingVersion = true;
+        _clipCompareMessage = null;
+        StateHasChanged();
+
+        try
+        {
+            var res = await Engine.RestoreClipVersionAsync(_projectId, sceneNumber, clipNumber, versionId);
+            if (res.Ok)
+            {
+                _clipCompareMessage = "Take restored from Trash Bin.";
+                var resV = await Engine.GetClipVersionsAsync(_projectId, sceneNumber, clipNumber);
+                _clipVersions = resV?.Versions;
+                var resT = await Engine.GetTrashClipVersionsAsync(_projectId, sceneNumber, clipNumber);
+                _trashVersions = resT?.Versions;
+            }
+            else
+            {
+                _clipCompareMessage = res.Error ?? "Failed to restore take.";
+            }
+        }
+        catch (Exception ex)
+        {
+            _clipCompareMessage = $"Restore failed: {ex.Message}";
+        }
+        finally
+        {
+            _promotingVersion = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task EmptyClipTrashAsync(int sceneNumber, int clipNumber)
+    {
+        _promotingVersion = true;
+        _showEmptyTrashConfirm = false;
+        _clipCompareMessage = null;
+        StateHasChanged();
+
+        try
+        {
+            var res = await Engine.EmptyClipTrashAsync(_projectId, sceneNumber, clipNumber);
+            if (res.Ok)
+            {
+                _clipCompareMessage = "Purged deleted take(s).";
+                var resT = await Engine.GetTrashClipVersionsAsync(_projectId, sceneNumber, clipNumber);
+                _trashVersions = resT?.Versions;
+            }
+            else
+            {
+                _clipCompareMessage = res.Error ?? "Failed to empty trash.";
+            }
+        }
+        catch (Exception ex)
+        {
+            _clipCompareMessage = $"Empty trash failed: {ex.Message}";
+        }
+        finally
+        {
+            _promotingVersion = false;
+            StateHasChanged();
+        }
+    }
+
+    private bool _showVerificationModal;
+    private int _verifModalSceneNumber;
+    private int _verifModalClipNumber;
+    private ClipDialogueVerificationResult? _verifModalResult;
+
+    private void OpenVerificationModal(int sceneNumber, int clipNumber, ClipDialogueVerificationResult ver)
+    {
+        _verifModalSceneNumber = sceneNumber;
+        _verifModalClipNumber = clipNumber;
+        _verifModalResult = ver;
+        _showVerificationModal = true;
+    }
+
+    private void CloseVerificationModal()
+    {
+        _showVerificationModal = false;
+        _verifModalResult = null;
     }
 
     public async ValueTask DisposeAsync()

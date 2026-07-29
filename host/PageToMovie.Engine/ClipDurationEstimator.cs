@@ -193,6 +193,51 @@ public static class ClipDurationEstimator
         return camOverhead + netActionOverhead;
     }
 
+    public static (double SpeechSec, double ActionSec) EstimateBreakdown(
+        string? dialogue,
+        string? visualOrAction,
+        string actionClass = "",
+        string delivery = "none")
+    {
+        var dlg = (dialogue ?? "").Trim();
+        var visual = (visualOrAction ?? "").Trim();
+        actionClass = (actionClass ?? "").Trim().ToLowerInvariant();
+        delivery = (delivery ?? "none").Trim().ToLowerInvariant();
+        if (delivery.Length == 0) delivery = "none";
+
+        double speech = 0;
+        if (dlg.Length > 0)
+        {
+            var words = CountWords(dlg);
+            var syllables = CountSyllables(dlg);
+            var speechFromWords = SpeechHeadSeconds + words / DialogueWordsPerSecond + SpeechTailSeconds;
+            var speechFromSyllables = SpeechHeadSeconds + syllables / 3.8 + SpeechTailSeconds;
+            speech = Math.Max(speechFromWords, speechFromSyllables);
+            speech = Math.Max(1.8, speech);
+            if (delivery is "voiceover_internal" or "internal" or "narration" or "vo" or "thought")
+                speech *= 0.95;
+        }
+
+        double action = 0;
+        if (dlg.Length == 0)
+        {
+            var aw = Math.Min(CountWords(visual), SilentVisualWordCap);
+            action = actionClass switch
+            {
+                "big_action" => Math.Clamp(4.5 + aw / 8.0, 5, AbsMaxSeconds),
+                "establishing" => Math.Clamp(3.5 + aw / 10.0, ActionOnlyMinSeconds, EstablishingMaxSeconds),
+                "hold" => ActionOnlyMinSeconds,
+                _ => Math.Clamp(3.0 + aw / 12.0, ActionOnlyMinSeconds, SilentActionMaxSeconds),
+            };
+        }
+        else
+        {
+            action = DialogueClipActionOverhead(visual, actionClass);
+        }
+
+        return (Math.Round(speech, 1), Math.Round(action, 1));
+    }
+
     public static int Estimate(
         string? dialogue,
         string? visualOrAction,
@@ -213,7 +258,10 @@ public static class ClipDurationEstimator
         if (dlg.Length > 0)
         {
             var words = CountWords(dlg);
-            speech = SpeechHeadSeconds + words / DialogueWordsPerSecond + SpeechTailSeconds;
+            var syllables = CountSyllables(dlg);
+            var speechFromWords = SpeechHeadSeconds + words / DialogueWordsPerSecond + SpeechTailSeconds;
+            var speechFromSyllables = SpeechHeadSeconds + syllables / 3.8 + SpeechTailSeconds;
+            speech = Math.Max(speechFromWords, speechFromSyllables);
             // Very short lines still need a beat
             speech = Math.Max(1.8, speech);
             // VO can be slightly snappier
@@ -504,11 +552,62 @@ public static class ClipDurationEstimator
         };
 
     private static readonly Regex WordCountRegex = new(@"[\p{L}\p{N}']+", RegexOptions.Compiled);
+    private static readonly Regex VowelGroupRegex = new(@"[aeiouy]+", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+    private static readonly Regex TrailingERegex = new(@"(?:(?<!s)e|e[ds])$", RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
     public static int CountWords(string text)
     {
         if (string.IsNullOrWhiteSpace(text)) return 0;
         return WordCountRegex.Matches(text).Count;
+    }
+
+    public static int CountSyllables(string text)
+    {
+        if (string.IsNullOrWhiteSpace(text)) return 0;
+        var total = 0;
+        var len = text.Length;
+        var wordLen = 0;
+        var syllables = 0;
+        var inVowelGroup = false;
+
+        for (var i = 0; i < len; i++)
+        {
+            var ch = text[i];
+            if (char.IsLetter(ch) || char.IsDigit(ch) || ch == '\'')
+            {
+                wordLen++;
+                var lower = char.ToLowerInvariant(ch);
+                var isV = lower is 'a' or 'e' or 'i' or 'o' or 'u' or 'y';
+                if (isV && !inVowelGroup)
+                {
+                    syllables++;
+                    inVowelGroup = true;
+                }
+                else if (!isV)
+                {
+                    inVowelGroup = false;
+                }
+            }
+            else
+            {
+                if (wordLen > 0)
+                {
+                    if (wordLen <= 3) total += 1;
+                    else total += Math.Max(1, syllables);
+                    wordLen = 0;
+                    syllables = 0;
+                    inVowelGroup = false;
+                }
+            }
+        }
+
+        if (wordLen > 0)
+        {
+            if (wordLen <= 3) total += 1;
+            else total += Math.Max(1, syllables);
+        }
+
+        return total;
     }
 
     /// <summary>
@@ -577,6 +676,18 @@ public static class ClipDurationEstimator
 
         if (current.Count > 0)
             chunks.Add(Join(current));
+
+        // Merge orphan trailing words (<= 2 words, e.g. "it") into preceding chunk if budget allows
+        if (chunks.Count > 1 && CountWords(chunks[^1]) <= 2)
+        {
+            var combined = $"{chunks[^2]} {chunks[^1]}";
+            if (EstimateUncapped(combined, "", "dialogue", delivery) <= budgetSeconds + 1.5)
+            {
+                chunks[^2] = combined;
+                chunks.RemoveAt(chunks.Count - 1);
+            }
+        }
+
         return chunks;
     }
 

@@ -43,7 +43,7 @@ public sealed class GeminiChatClient : IChatClient, IVisionClient
     public async Task<string> CompleteAsync(
         string systemPrompt,
         string userPrompt,
-        string model = "gemini-3-pro",
+        string model = "gemini-2.5-pro",
         double temperature = 0.2,
         CancellationToken ct = default,
         string? mode = null)
@@ -75,7 +75,7 @@ public sealed class GeminiChatClient : IChatClient, IVisionClient
     public async Task<string> CompleteWithImagesAsync(
         string prompt,
         IReadOnlyList<string> imagePaths,
-        string model = "gemini-3-pro",
+        string model = "gemini-2.5-pro",
         string detail = "low",
         CancellationToken ct = default)
     {
@@ -109,14 +109,14 @@ public sealed class GeminiChatClient : IChatClient, IVisionClient
     /// returning a wrong answer if ever routed here.
     /// </summary>
     public Task<string> TranscribePageAsync(
-        string imagePath, int page, string model = "gemini-3-pro", CancellationToken ct = default) =>
+        string imagePath, int page, string model = "gemini-2.5-pro", CancellationToken ct = default) =>
         throw new NotSupportedException(
             "Book-page transcription is not implemented for Gemini yet — route this call to Grok.");
 
     /// <inheritdoc cref="TranscribePageAsync"/>
     public Task<CharacterPageClassification> ClassifyCharactersOnImageAsync(
         string imagePath, int page, IReadOnlyList<CharacterClassifyHint> cast,
-        string model = "gemini-3-pro", CancellationToken ct = default) =>
+        string model = "gemini-2.5-pro", CancellationToken ct = default) =>
         throw new NotSupportedException(
             "Character-page classification is not implemented for Gemini yet — route this call to Grok.");
 
@@ -124,9 +124,18 @@ public sealed class GeminiChatClient : IChatClient, IVisionClient
     {
         if (string.IsNullOrWhiteSpace(model)) return "gemini-2.5-pro";
         var trimmed = model.Trim();
+        if (trimmed.StartsWith("models/", StringComparison.OrdinalIgnoreCase))
+        {
+            trimmed = trimmed["models/".Length..];
+        }
         if (trimmed.Equals("gemini-3-pro", StringComparison.OrdinalIgnoreCase) ||
             trimmed.Equals("gemini-3.0-pro", StringComparison.OrdinalIgnoreCase) ||
-            trimmed.Equals("gemini-3-pro-image", StringComparison.OrdinalIgnoreCase))
+            trimmed.Equals("gemini-3-pro-image", StringComparison.OrdinalIgnoreCase) ||
+            trimmed.Equals("gemini-1.5-pro", StringComparison.OrdinalIgnoreCase) ||
+            trimmed.Equals("gemini-1.5-flash", StringComparison.OrdinalIgnoreCase) ||
+            trimmed.Equals("grok-4.5", StringComparison.OrdinalIgnoreCase) ||
+            trimmed.Equals("grok-4", StringComparison.OrdinalIgnoreCase) ||
+            trimmed.Equals("claude-sonnet-5", StringComparison.OrdinalIgnoreCase))
         {
             return "gemini-2.5-pro";
         }
@@ -163,10 +172,10 @@ public sealed class GeminiChatClient : IChatClient, IVisionClient
             var body = await resp.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
             if (!resp.IsSuccessStatusCode)
             {
-                if (resp.StatusCode == System.Net.HttpStatusCode.NotFound && targetModel != "gemini-1.5-pro")
+                if (resp.StatusCode == System.Net.HttpStatusCode.NotFound && targetModel != "gemini-2.5-flash")
                 {
-                    _log.LogWarning("Gemini model {Model} returned 404 — retrying with gemini-1.5-pro", targetModel);
-                    return await SendAsync(payload, "gemini-1.5-pro", kind, mode, promptForLog, userPromptForLog, promptChars, ct).ConfigureAwait(false);
+                    _log.LogWarning("Gemini model {Model} returned 404 — retrying with gemini-2.5-flash", targetModel);
+                    return await SendAsync(payload, "gemini-2.5-flash", kind, mode, promptForLog, userPromptForLog, promptChars, ct).ConfigureAwait(false);
                 }
 
                 await _telemetry.LogApiCallAsync(new ApiCallTelemetry

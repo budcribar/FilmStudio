@@ -106,6 +106,7 @@ public sealed class ClipDialogueVerificationService
         int clipNumber,
         IReadOnlyList<string>? keyframePaths = null,
         string? overrideVideoPath = null,
+        bool force = false,
         CancellationToken ct = default)
     {
         var clipPath = (!string.IsNullOrWhiteSpace(overrideVideoPath) && File.Exists(overrideVideoPath))
@@ -117,25 +118,45 @@ public sealed class ClipDialogueVerificationService
         var expectedSpeaker = clip?.Speaker ?? "Unknown";
         var expectedDialogue = clip?.Dialogue ?? "";
 
-        // If no speech planned for this clip, return verified no-speech status immediately
-        if (string.IsNullOrWhiteSpace(expectedDialogue) && string.IsNullOrWhiteSpace(expectedSpeaker))
+        // If no spoken dialogue planned for this clip, return verified no-speech status immediately
+        if (string.IsNullOrWhiteSpace(expectedDialogue))
         {
             var noSpeechResult = new ClipDialogueVerificationResult
             {
                 SceneNumber = sceneNumber,
                 ClipNumber = clipNumber,
-                ExpectedSpeaker = "None",
+                ExpectedSpeaker = string.IsNullOrWhiteSpace(expectedSpeaker) || string.Equals(expectedSpeaker, "Unknown", StringComparison.OrdinalIgnoreCase) ? "None" : expectedSpeaker,
                 ExpectedDialogue = "",
                 DetectedSpeaker = "None",
                 TranscribedDialogue = "",
                 DialogueAccuracyScore = 1.0,
                 SpeakerMatch = true,
                 Status = "no_speech",
-                SummaryNote = "No dialogue planned for this clip.",
+                SummaryNote = "No spoken dialogue planned for this clip.",
                 VerifiedAt = DateTime.UtcNow,
             };
             await SaveVerificationAsync(projectId, noSpeechResult, ct).ConfigureAwait(false);
             return noSpeechResult;
+        }
+
+        // Cache Validation: If not forced, return existing saved verification if clip file & dialogue haven't changed
+        if (!force)
+        {
+            var existing = await LoadVerificationAsync(projectId, sceneNumber, clipNumber, ct).ConfigureAwait(false);
+            if (existing is not null && !string.Equals(existing.Status, "unverified", StringComparison.OrdinalIgnoreCase))
+            {
+                if (!string.IsNullOrWhiteSpace(clipPath) && File.Exists(clipPath))
+                {
+                    var videoMTime = File.GetLastWriteTimeUtc(clipPath);
+                    if (existing.VerifiedAt >= videoMTime &&
+                        string.Equals(existing.ExpectedDialogue, expectedDialogue, StringComparison.Ordinal) &&
+                        string.Equals(existing.ExpectedSpeaker, expectedSpeaker, StringComparison.OrdinalIgnoreCase))
+                    {
+                        _log.LogInformation("Dialogue verification for {Project} S{Scene} C{Clip} is up-to-date (cached)", projectId, sceneNumber, clipNumber);
+                        return existing;
+                    }
+                }
+            }
         }
 
         if (!IsConfigured)
@@ -228,9 +249,32 @@ Status options: 'verified' (dialogue & speaker match), 'mismatch' (dialogue inco
         try
         {
             var sw = Stopwatch.StartNew();
-            var responseJson = (_gemini is not null && _gemini.IsConfigured)
-                ? await _gemini.CompleteWithImagesAsync(prompt, mediaToPass, ct: ct).ConfigureAwait(false)
-                : await _vision.CompleteWithImagesAsync(prompt, mediaToPass, ct: ct).ConfigureAwait(false);
+            string? selectedModel = null;
+            try
+            {
+                var cfg = await _projects.GetConfigAsync(projectId, ct).ConfigureAwait(false);
+                if (cfg.TryGetValue("quality_model_name", out var qEl) && qEl.ValueKind == JsonValueKind.String)
+                    selectedModel = qEl.GetString();
+                else if (cfg.TryGetValue("vision_model_name", out var vEl) && vEl.ValueKind == JsonValueKind.String)
+                    selectedModel = vEl.GetString();
+            }
+            catch { /* use fallback */ }
+
+            var targetModel = !string.IsNullOrWhiteSpace(selectedModel) ? selectedModel : "gemini-2.5-pro";
+            var entry = SupportedModelCatalog.Find(targetModel, ModelCapability.Vision)
+                ?? SupportedModelCatalog.ResolveOrDefault(targetModel, ModelCapability.Vision);
+
+            var hasVideoFile = mediaToPass.Any(p => p.EndsWith(".mp4", StringComparison.OrdinalIgnoreCase) || p.EndsWith(".mov", StringComparison.OrdinalIgnoreCase));
+
+            string responseJson;
+            if (hasVideoFile && !entry.SupportsVideoReview && _gemini is not null && _gemini.IsConfigured)
+            {
+                responseJson = await _gemini.CompleteWithImagesAsync(prompt, mediaToPass, model: "gemini-2.5-pro", ct: ct).ConfigureAwait(false);
+            }
+            else
+            {
+                responseJson = await _vision.CompleteWithImagesAsync(prompt, mediaToPass, model: targetModel, ct: ct).ConfigureAwait(false);
+            }
             var cleanJson = ExtractJson(responseJson);
 
             using var doc = JsonDocument.Parse(cleanJson);
@@ -242,6 +286,28 @@ Status options: 'verified' (dialogue & speaker match), 'mismatch' (dialogue inco
             var speakerMatch = root.TryGetProperty("speakerMatch", out var smEl) && smEl.GetBoolean();
             var status = root.TryGetProperty("status", out var stEl) ? stEl.GetString() ?? "verified" : "verified";
             var summary = root.TryGetProperty("summaryNote", out var snEl) ? snEl.GetString() ?? "" : "";
+
+            // Deterministic validation: if dialogue was expected but transcribed audio is empty, enforce mismatch (0%)
+            if (!string.IsNullOrWhiteSpace(expectedDialogue) && string.IsNullOrWhiteSpace(transcribed))
+            {
+                accuracy = 0.0;
+                status = "mismatch";
+                summary = $"Expected: '{expectedDialogue}' | Heard: (no audio/speech detected) (0% match)";
+            }
+            else if (!string.IsNullOrWhiteSpace(expectedDialogue))
+            {
+                var computedAcc = CalculateAccuracyScore(expectedDialogue, transcribed);
+                if (computedAcc < accuracy) accuracy = computedAcc;
+                if (accuracy < 0.5 && string.Equals(status, "verified", StringComparison.OrdinalIgnoreCase))
+                {
+                    status = "mismatch";
+                }
+            }
+
+            var estSec = clip?.DurationSeconds > 0 ? (double)clip.DurationSeconds : ClipDurationEstimator.Estimate(expectedDialogue, "", "dialogue", "none");
+            var (speechSec, actionSec) = ClipDurationEstimator.EstimateBreakdown(expectedDialogue, clip?.VisualPrompt ?? "", "", clip?.Delivery ?? "none");
+            var durationProbe = new MediaDurationProbe(Microsoft.Extensions.Options.Options.Create(new PageToMovie.Core.Options.PageToMovieOptions()), Microsoft.Extensions.Logging.Abstractions.NullLogger<MediaDurationProbe>.Instance);
+            var actualSec = await durationProbe.TryProbeSecondsAsync(clipPath, ct).ConfigureAwait(false) ?? 0.0;
 
             var result = new ClipDialogueVerificationResult
             {
@@ -255,8 +321,15 @@ Status options: 'verified' (dialogue & speaker match), 'mismatch' (dialogue inco
                 SpeakerMatch = speakerMatch,
                 Status = status,
                 SummaryNote = summary,
+                EstimatedDurationSeconds = Math.Round(estSec, 1),
+                WordCount = ClipDurationEstimator.CountWords(expectedDialogue),
+                SyllableCount = ClipDurationEstimator.CountSyllables(expectedDialogue),
+                SpeechDurationSeconds = speechSec,
+                ActionDurationSeconds = actionSec,
+                ActualDurationSeconds = Math.Round(actualSec, 1),
                 VerifiedAt = DateTime.UtcNow,
             };
+            result.SpeechTruncated = LooksTruncated(result);
 
             await SaveVerificationAsync(projectId, result, ct).ConfigureAwait(false);
             _log.LogInformation("Automated dialogue verification completed for {Project} S{Scene} C{Clip}: {Status} ({Score:P0})", projectId, sceneNumber, clipNumber, status, accuracy);

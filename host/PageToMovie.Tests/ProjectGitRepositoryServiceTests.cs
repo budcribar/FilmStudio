@@ -250,5 +250,68 @@ namespace PageToMovie.Tests
                 DeleteDir(parent);
             }
         }
+
+        [Fact]
+        public async Task UndoLastCommitAsync_reverts_project_to_previous_state()
+        {
+            var dir = NewTempDir("ptm_git_undo");
+            try
+            {
+                var service = NewService();
+
+                // Commit 1: Initial state
+                File.WriteAllText(Path.Combine(dir, "scene_1.txt"), "Original scene content");
+                var commit1 = await service.CommitProjectStateAsync(dir, "Operator", "Initial scene 1");
+
+                // Commit 2: Accidental edit
+                File.WriteAllText(Path.Combine(dir, "scene_1.txt"), "Accidental broken content");
+                var commit2 = await service.CommitProjectStateAsync(dir, "Operator", "Accidental edit");
+                Assert.Equal("Accidental broken content", File.ReadAllText(Path.Combine(dir, "scene_1.txt")));
+
+                // Undo
+                var undoCommit = await service.UndoLastCommitAsync(dir, "Operator");
+
+                Assert.NotNull(undoCommit);
+                Assert.Equal("Original scene content", File.ReadAllText(Path.Combine(dir, "scene_1.txt")));
+                Assert.Contains("Undo: Revert", undoCommit.Message);
+
+                // Check history
+                var history = await service.GetCommitHistoryAsync(dir);
+                Assert.Equal(3, history.Count);
+            }
+            finally
+            {
+                DeleteDir(dir);
+            }
+        }
+
+        [Fact]
+        public async Task RevertToCommitAsync_reverts_project_to_specific_hash()
+        {
+            var dir = NewTempDir("ptm_git_revert");
+            try
+            {
+                var service = NewService();
+
+                File.WriteAllText(Path.Combine(dir, "scene_1.txt"), "Version 1");
+                var c1 = await service.CommitProjectStateAsync(dir, "Operator", "Version 1");
+
+                File.WriteAllText(Path.Combine(dir, "scene_1.txt"), "Version 2");
+                await service.CommitProjectStateAsync(dir, "Operator", "Version 2");
+
+                File.WriteAllText(Path.Combine(dir, "scene_1.txt"), "Version 3");
+                await service.CommitProjectStateAsync(dir, "Operator", "Version 3");
+
+                // Revert to Version 1
+                var revertCommit = await service.RevertToCommitAsync(dir, c1.CommitHash, "Operator");
+
+                Assert.NotNull(revertCommit);
+                Assert.Equal("Version 1", File.ReadAllText(Path.Combine(dir, "scene_1.txt")));
+            }
+            finally
+            {
+                DeleteDir(dir);
+            }
+        }
     }
 }

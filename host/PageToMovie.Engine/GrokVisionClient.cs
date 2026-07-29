@@ -344,6 +344,11 @@ public sealed class GrokVisionClient : IVisionClient
         return result.GetRawText()[..Math.Min(500, result.GetRawText().Length)];
     }
 
+    private static readonly HashSet<string> AllowedImageExtensions = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ".jpg", ".jpeg", ".png", ".webp", ".ico"
+    };
+
     /// <inheritdoc />
     public async Task<string> CompleteWithImagesAsync(
         string prompt,
@@ -355,7 +360,7 @@ public sealed class GrokVisionClient : IVisionClient
         if (string.IsNullOrWhiteSpace(prompt))
             throw new ArgumentException("prompt required", nameof(prompt));
         var paths = (imagePaths ?? Array.Empty<string>())
-            .Where(p => !string.IsNullOrWhiteSpace(p) && File.Exists(p))
+            .Where(p => !string.IsNullOrWhiteSpace(p) && File.Exists(p) && AllowedImageExtensions.Contains(Path.GetExtension(p)))
             .Take(8)
             .ToList();
         if (paths.Count == 0)

@@ -78,6 +78,17 @@ public sealed class CastFromScreenplayService
         if (!_chat.IsConfigured)
             throw new InvalidOperationException("Connect service (API key) to build cast from the screenplay.");
 
+        if (string.IsNullOrWhiteSpace(model) || string.Equals(model, "grok-4.5", StringComparison.OrdinalIgnoreCase))
+        {
+            try
+            {
+                var cfg = await _projects.GetConfigAsync(projectId, ct).ConfigureAwait(false);
+                if (cfg.TryGetValue("planning_model_name", out var pEl) && pEl.ValueKind == JsonValueKind.String && !string.IsNullOrWhiteSpace(pEl.GetString()))
+                    model = pEl.GetString()!.Trim();
+            }
+            catch { }
+        }
+
         ScreenplayService.EnsureCanonicalDraft(_projects, projectId);
         var draftPath = ScreenplayService.GetDraftPath(_projects, projectId);
         if (!File.Exists(draftPath))

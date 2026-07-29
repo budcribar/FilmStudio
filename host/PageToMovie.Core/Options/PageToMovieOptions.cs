@@ -142,6 +142,10 @@ public sealed class PageToMovieOptions
     public bool ClassifyColorPaletteGradingWithChat { get; set; } = true;
     public string ColorPaletteGradingClassifyModel { get; set; } = "grok-4.5";
 
+    public bool EnableBackgroundMusic { get; set; } = true;
+    public string BackgroundMusicModel { get; set; } = "fal-ai/stable-audio";
+    public int BackgroundMusicVolumePercent { get; set; } = 20;
+
     /// <summary>
     /// Optional ThreadPool min-thread ramp for multi-user / LoadSim ready-barrier.
     /// Leave defaults (0) unless soaks show global latency floors under concurrent clients.

@@ -15,6 +15,7 @@ public enum ModelCapability
     Image,
     Chat,
     Vision,
+    Audio,
 }
 
 /// <summary>
@@ -143,6 +144,19 @@ public sealed class SupportedModelEntry
     /// </summary>
     public int? AbsMaxClipDurationSeconds { get; init; }
 
+    /// <summary>
+    /// Maximum character length for visual prompts passed to the API (Video/Image models).
+    /// Null defaults to 4096 (Grok's budget). Models with tighter limits (e.g. Fal.ai / HunyuanVideo max 1000)
+    /// specify their limit here so prompt builders automatically trim to fit without API 400 errors.
+    /// </summary>
+    public int? MaxPromptLength { get; init; }
+
+    /// <summary>
+    /// Maximum bounding dimension (in pixels) for reference images sent to the API.
+    /// Null defaults to 1280px (optimal for HunyuanVideo / Veo 720p latent dimensions).
+    /// </summary>
+    public int? MaxReferenceImageDimension { get; init; }
+
     /// <summary>Raw provider string from models_catalog.json (e.g. OpenAI, DeepSeek, Grok, Gemini).</summary>
     public string ProviderName { get; init; } = "";
 
@@ -191,6 +205,7 @@ public static class SupportedModelCatalog
             MinClipDurationSeconds = 3,
             MaxClipDurationSeconds = 10,
             AbsMaxClipDurationSeconds = 12,
+            MaxPromptLength = 4096,
             Notes = "Also uses videos/extensions for clip continue. Extension portion clamps to 10s (GrokVideoClient).",
         },
         new()
@@ -203,12 +218,14 @@ public static class SupportedModelCatalog
             EndpointPath = "fal-ai/hunyuan-video",
             RequiredEnvKeys = [FalApiKeyEnv],
             VideoCostPerSecondByResolution = new Dictionary<string, double> { ["720p"] = 0.005, ["1080p"] = 0.005 },
-            SupportsVideoContinue = true,
+            SupportsVideoContinue = false,
             SupportsReferenceImages = true,
             MinClipDurationSeconds = 3,
             MaxClipDurationSeconds = 10,
             AbsMaxClipDurationSeconds = 12,
-            Notes = "Open-weights 13B DiT video generation model hosted on Fal.ai serverless GPUs (~$0.025 per 5s clip). Duration limits not yet confirmed against Fal docs — using today's known-safe defaults.",
+            MaxPromptLength = 1000,
+            MaxReferenceImageDimension = 1280,
+            Notes = "Open-weights 13B DiT video generation model hosted on Fal.ai serverless GPUs (~$0.025 per 5s clip). Hard 1000-character prompt limit enforced by API.",
         },
         new()
         {
@@ -225,6 +242,8 @@ public static class SupportedModelCatalog
             MinClipDurationSeconds = 3,
             MaxClipDurationSeconds = 10,
             AbsMaxClipDurationSeconds = 12,
+            MaxPromptLength = 2048,
+            MaxReferenceImageDimension = 1280,
             Notes = "Wired via GeminiVideoClient (text/image-to-video only). No continuation, so clips in a scene are not forced sequential the way Grok's are. Duration limits not yet confirmed against Veo docs — using today's known-safe defaults.",
         },
         new()

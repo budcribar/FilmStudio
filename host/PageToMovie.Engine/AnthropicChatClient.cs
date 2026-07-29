@@ -69,6 +69,11 @@ public sealed class AnthropicChatClient : IChatClient, IVisionClient
             ct).ConfigureAwait(false);
     }
 
+    private static readonly HashSet<string> AllowedImageExtensions = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ".jpg", ".jpeg", ".png", ".webp", ".gif"
+    };
+
     /// <summary>Multi-image completion for clip auto-review (prev tail + current frames).</summary>
     public async Task<string> CompleteWithImagesAsync(
         string prompt,
@@ -78,7 +83,7 @@ public sealed class AnthropicChatClient : IChatClient, IVisionClient
         CancellationToken ct = default)
     {
         var content = new List<object?>();
-        foreach (var path in imagePaths.Where(p => !string.IsNullOrWhiteSpace(p) && File.Exists(p)))
+        foreach (var path in imagePaths.Where(p => !string.IsNullOrWhiteSpace(p) && File.Exists(p) && AllowedImageExtensions.Contains(Path.GetExtension(p))))
         {
             var (mime, b64) = await FileToBase64Async(path, ct).ConfigureAwait(false);
             content.Add(new Dictionary<string, object?>
