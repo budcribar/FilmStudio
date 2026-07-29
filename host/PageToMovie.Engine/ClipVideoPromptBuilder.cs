@@ -639,8 +639,8 @@ public static class ClipVideoPromptBuilder
 
     /// <summary>
     /// Intelligently compresses prompt text without losing core visual action or character details.
-    /// Strips prefix noise (e.g. "Character_"), simplifies verbose section headers,
-    /// and collapses duplicate blank lines / spaces.
+    /// Maps long character keys (e.g. "Character_The_Narrator") to compact aliases ("C1", "C2"),
+    /// simplifies verbose section headers, and collapses duplicate blank lines / spaces.
     /// </summary>
     public static string CompressPromptText(string prompt)
     {
@@ -654,8 +654,16 @@ public static class ClipVideoPromptBuilder
         p = p.Replace("Follow the camera framing and location in this prompt exactly. Prioritize the PRIMARY subject and ONE clear action with visible motion; background characters may stay mostly still.", "");
         p = p.Replace("CONTEXT (prior clip in scene — new cast plate refs attached; match location/lighting if still valid; identity from CHARACTER VARIABLES + locked plates only):", "CONTEXT:");
 
-        // 2. Strip "Character_" prefix in prose while keeping display name (e.g. Character_The_Narrator -> The_Narrator)
-        p = Regex.Replace(p, @"\bCharacter_([A-Za-z0-9_]+)\b", "$1");
+        // 2. Map all distinct Character_* keys to compact aliases C1, C2, C3...
+        var matches = Regex.Matches(p, @"\bCharacter_([A-Za-z0-9_]+)\b");
+        var distinctKeys = matches.Select(m => m.Value).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+
+        for (var i = 0; i < distinctKeys.Count; i++)
+        {
+            var key = distinctKeys[i]; // e.g. "Character_The_Narrator"
+            var alias = $"C{i + 1}";    // e.g. "C1"
+            p = p.Replace(key, alias);
+        }
 
         // 3. Collapse multiple blank lines & consecutive spaces
         p = Regex.Replace(p, @"\n\s*\n+", "\n");
