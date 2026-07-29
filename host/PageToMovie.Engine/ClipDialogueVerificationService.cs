@@ -287,6 +287,10 @@ Status options: 'verified' (dialogue & speaker match), 'mismatch' (dialogue inco
             var status = root.TryGetProperty("status", out var stEl) ? stEl.GetString() ?? "verified" : "verified";
             var summary = root.TryGetProperty("summaryNote", out var snEl) ? snEl.GetString() ?? "" : "";
 
+            var estSec = clip?.DurationSeconds > 0 ? (double)clip.DurationSeconds : ClipDurationEstimator.Estimate(expectedDialogue, "", "dialogue", "none");
+            var durationProbe = new MediaDurationProbe(Microsoft.Extensions.Options.Options.Create(new PageToMovie.Core.Options.PageToMovieOptions()), Microsoft.Extensions.Logging.Abstractions.NullLogger<MediaDurationProbe>.Instance);
+            var actualSec = await durationProbe.TryProbeSecondsAsync(clipPath, ct).ConfigureAwait(false) ?? 0.0;
+
             var result = new ClipDialogueVerificationResult
             {
                 SceneNumber = sceneNumber,
@@ -299,6 +303,8 @@ Status options: 'verified' (dialogue & speaker match), 'mismatch' (dialogue inco
                 SpeakerMatch = speakerMatch,
                 Status = status,
                 SummaryNote = summary,
+                EstimatedDurationSeconds = Math.Round(estSec, 1),
+                ActualDurationSeconds = Math.Round(actualSec, 1),
                 VerifiedAt = DateTime.UtcNow,
             };
 

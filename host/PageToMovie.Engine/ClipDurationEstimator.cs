@@ -577,6 +577,18 @@ public static class ClipDurationEstimator
 
         if (current.Count > 0)
             chunks.Add(Join(current));
+
+        // Merge orphan trailing words (<= 2 words, e.g. "it") into preceding chunk if budget allows
+        if (chunks.Count > 1 && CountWords(chunks[^1]) <= 2)
+        {
+            var combined = $"{chunks[^2]} {chunks[^1]}";
+            if (EstimateUncapped(combined, "", "dialogue", delivery) <= budgetSeconds + 1.5)
+            {
+                chunks[^2] = combined;
+                chunks.RemoveAt(chunks.Count - 1);
+            }
+        }
+
         return chunks;
     }
 

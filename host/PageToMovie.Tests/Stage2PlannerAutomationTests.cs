@@ -181,8 +181,8 @@ public sealed class Stage2PlannerAutomationTests
         var coalesced = Stage2PlannerService.CoalesceSilentPreludeBeats(beats);
 
         // Before coalescing: Beat 1 was silent action, Beats 2-6 were VO dialogue (6 beats total).
-        // After coalescing: Beat 1 is merged into Beat 2, yielding 5 beats total with VO dialogue on frame 1.
-        Assert.Equal(5, coalesced.Count);
+        // After coalescing + orphan word merging ("it"): Yields 4 beats total with VO dialogue on frame 1.
+        Assert.Equal(4, coalesced.Count);
         Assert.Contains("He had the eye of a vulture", coalesced[0]["dialogue"]?.ToString());
         Assert.Contains("THE OLD MAN turns in a shaft of gray light", coalesced[0]["visual_event"]?.ToString());
     }

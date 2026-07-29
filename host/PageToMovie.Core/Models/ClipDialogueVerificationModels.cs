@@ -26,5 +26,11 @@ public sealed class ClipDialogueVerificationResult
     /// <summary>Summary notes from multimodal AI evaluation.</summary>
     public string SummaryNote { get; set; } = "";
 
+    /// <summary>Estimated / planned clip duration (seconds).</summary>
+    public double EstimatedDurationSeconds { get; set; }
+
+    /// <summary>Actual measured clip MP4 duration (seconds).</summary>
+    public double ActualDurationSeconds { get; set; }
+
     public DateTime VerifiedAt { get; set; } = DateTime.UtcNow;
 }

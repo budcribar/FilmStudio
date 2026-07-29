@@ -851,46 +851,23 @@ else
                                     }
                                     @if (c.DialogueVerification is { } ver)
                                     {
-                                        @if (string.Equals(ver.Status, "verified", StringComparison.OrdinalIgnoreCase))
+                                        var isNoSpeechFail = string.Equals(ver.Status, "no_speech", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrWhiteSpace(ver.ExpectedDialogue);
+                                        var (badgeClass, badgeText) = ver.Status?.ToLowerInvariant() switch
                                         {
-                                            <button type="button" class="btn btn-sm p-0 border-0 align-baseline"
-                                                    @onclick:stopPropagation="true"
-                                                    @onclick="() => OpenVerificationModal(_detail.SceneNumber, cn, ver)">
-                                                <span class="badge bg-success-subtle text-success border border-success-subtle ms-1" style="cursor:pointer;" title="Click to view verification report details">
-                                                    ✓ Verified (@($"{ver.DialogueAccuracyScore:P0}")) 📋
-                                                </span>
-                                            </button>
-                                        }
-                                        else if (string.Equals(ver.Status, "speaker_swap", StringComparison.OrdinalIgnoreCase))
-                                        {
-                                            <button type="button" class="btn btn-sm p-0 border-0 align-baseline"
-                                                    @onclick:stopPropagation="true"
-                                                    @onclick="() => OpenVerificationModal(_detail.SceneNumber, cn, ver)">
-                                                <span class="badge bg-danger-subtle text-danger border border-danger-subtle ms-1" style="cursor:pointer;" title="Click to view verification failure report">
-                                                    ⚠ Speaker Swap 📋
-                                                </span>
-                                            </button>
-                                        }
-                                        else if (string.Equals(ver.Status, "mismatch", StringComparison.OrdinalIgnoreCase))
-                                        {
-                                            <button type="button" class="btn btn-sm p-0 border-0 align-baseline"
-                                                    @onclick:stopPropagation="true"
-                                                    @onclick="() => OpenVerificationModal(_detail.SceneNumber, cn, ver)">
-                                                <span class="badge bg-warning-subtle text-warning border border-warning-subtle ms-1" style="cursor:pointer;" title="Click to view verification failure report">
-                                                    ⚠ Mismatch (@($"{ver.DialogueAccuracyScore:P0}")) 📋
-                                                </span>
-                                            </button>
-                                        }
-                                        else if (string.Equals(ver.Status, "no_speech", StringComparison.OrdinalIgnoreCase))
-                                        {
-                                            <button type="button" class="btn btn-sm p-0 border-0 align-baseline"
-                                                    @onclick:stopPropagation="true"
-                                                    @onclick="() => OpenVerificationModal(_detail.SceneNumber, cn, ver)">
-                                                <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle ms-1" style="cursor:pointer;" title="Click to view verification report details">
-                                                    ✓ No speech 📋
-                                                </span>
-                                            </button>
-                                        }
+                                            "verified" => ("bg-success-subtle text-success border border-success-subtle", $"✓ Verified ({ver.DialogueAccuracyScore:P0})"),
+                                            "speaker_swap" => ("bg-danger-subtle text-danger border border-danger-subtle", "⚠ Speaker Swap"),
+                                            "mismatch" => ("bg-warning-subtle text-warning border border-warning-subtle", $"⚠ Mismatch ({ver.DialogueAccuracyScore:P0})"),
+                                            "no_speech" when isNoSpeechFail => ("bg-danger-subtle text-danger border border-danger-subtle", "⚠ No speech (0%)"),
+                                            "no_speech" => ("bg-secondary-subtle text-secondary border border-secondary-subtle", "✓ No speech"),
+                                            _ => ("bg-secondary-subtle text-secondary border border-secondary-subtle", ver.Status ?? "unverified"),
+                                        };
+                                        <button type="button" class="btn btn-sm p-0 border-0 align-baseline"
+                                                @onclick:stopPropagation="true"
+                                                @onclick="() => OpenVerificationModal(_detail.SceneNumber, cn, ver)">
+                                            <span class="badge @badgeClass ms-1 d-inline-block text-center" style="min-width: 140px; cursor:pointer; padding: 0.35em 0.6em; font-size: 0.75rem;" title="Click to view verification report details">
+                                                @badgeText 📋
+                                            </span>
+                                        </button>
                                     }
                                     <button type="button"
                                             class="btn btn-sm btn-link text-danger p-0 ms-2 text-decoration-none"
@@ -1573,6 +1550,37 @@ else
                             <div>Engine: Multimodal Video &amp; Audio QA</div>
                         </div>
                     </div>
+
+                    @* Clip Duration & Pacing Telemetry *@
+                    @if (verReport.EstimatedDurationSeconds > 0 || verReport.ActualDurationSeconds > 0)
+                    {
+                        <div class="card bg-dark border-secondary mb-3">
+                            <div class="card-header bg-secondary bg-opacity-20 border-secondary fw-semibold text-light">
+                                ⏱️ Clip Duration &amp; Pacing Analysis
+                            </div>
+                            <div class="card-body">
+                                <div class="row g-3">
+                                    <div class="col-4">
+                                        <div class="small text-secondary">Estimated / Planned</div>
+                                        <div class="fw-bold fs-6 text-light">@($"{verReport.EstimatedDurationSeconds:F1}s")</div>
+                                    </div>
+                                    <div class="col-4">
+                                        <div class="small text-secondary">Actual Measured MP4</div>
+                                        <div class="fw-bold fs-6 text-light">@($"{verReport.ActualDurationSeconds:F1}s")</div>
+                                    </div>
+                                    <div class="col-4">
+                                        <div class="small text-secondary">Pacing Variance</div>
+                                        @{
+                                            var diff = verReport.ActualDurationSeconds - verReport.EstimatedDurationSeconds;
+                                            var diffText = diff >= 0 ? $"+{diff:F1}s" : $"{diff:F1}s";
+                                            var diffClass = Math.Abs(diff) <= 1.0 ? "text-success" : "text-warning";
+                                        }
+                                        <div class="fw-bold fs-6 @diffClass">@diffText</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
 
                     @* Speaker Match Breakdown *@
                     <div class="card bg-dark border-secondary mb-3">
