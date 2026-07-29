@@ -669,13 +669,25 @@ public static class ClipVideoPromptBuilder
         // 3. Compress image reference tags (<IMAGE_1> -> I1, <IMAGE_2> -> I2)
         p = Regex.Replace(p, @"<IMAGE_(\d+)>", "I$1");
 
-        // 4. Compress technical camera, stock, and styling labels
+        // 4. Compress technical camera, stock, resolution/fps tails, and styling labels
         p = p.Replace("Kodak Vision3 500T 5219 film stock", "Kodak 500T film");
         p = p.Replace("Camera directive:", "Camera:");
         p = p.Replace("Color grading:", "Grade:");
         p = p.Replace("Visual lock:", "Visual:");
         p = p.Replace("Performance:", "Perf:");
         p = p.Replace("ON CAMERA lip-syncs", "lip-syncs");
+        p = p.Replace("AUDIO: ", "AUDIO:");
+
+        // Strip resolution/fps suffix (e.g. " / 480p, 24fps" -> "") since resolution/fps is configured via API payload
+        p = Regex.Replace(p, @"\s*/\s*\d+p,\s*\d+fps$", "");
+
+        // Simplify audio/voice directives & strip voice descriptions/locks (visual video models do not use voice tuning text)
+        p = Regex.Replace(p, @"\s*Voice:\s*[^;.\n]+(?:;[^;.\n]+)*[;.]?", "");
+        p = Regex.Replace(p, @"\s*VOICE LOCK\s+[^:\n]+:[^\n]+", "");
+        p = Regex.Replace(p, @"\s*Match appearance of reference\s+I\d+\s+exactly\.?", "");
+        p = p.Replace("Start speaking immediately with ", "Start speaking: ");
+        p = p.Replace(" — do not skip, delay, or swallow the opening word. After the last word, hold a brief natural pause with a closed mouth (about half a second); do not freeze mid-syllable or trail into empty staring. Other mouths closed. Speech intelligible; never silent.", ".");
+        p = p.Replace("End cleanly when the spoken line and primary action finish — do not hold a frozen pose or empty silence after dialogue.", "");
 
         // 5. Collapse multiple blank lines & consecutive spaces
         p = Regex.Replace(p, @"\n\s*\n+", "\n");

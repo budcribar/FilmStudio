@@ -296,10 +296,11 @@ public class ClipVideoPromptBuilderTests
 
         var compressed = ClipVideoPromptBuilder.CompressPromptText(original);
 
-        Assert.True(compressed.Length < original.Length * 0.80, $"Compressed {compressed.Length} vs Original {original.Length}");
+        Assert.True(compressed.Length < 2500, $"Compressed {compressed.Length} vs Original {original.Length}");
         Assert.DoesNotContain("Character_The_Narrator", compressed);
         Assert.DoesNotContain("<IMAGE_1>", compressed);
         Assert.DoesNotContain("Kodak Vision3 500T 5219 film stock", compressed);
+        Assert.DoesNotContain("/ 480p, 24fps", compressed);
         Assert.Contains("Kodak 500T film", compressed);
         Assert.Contains("C1 I1", compressed);
     }
