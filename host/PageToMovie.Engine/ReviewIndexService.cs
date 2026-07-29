@@ -18,9 +18,7 @@ public sealed class ReviewIndexService
         WriteIndented = true,
     };
 
-    private static readonly Regex ExactClipNameRe = new(
-        @"^scene_(\d{2})_clip_(\d{2})(?:_take_\d+.*)?\.mp4$",
-        RegexOptions.IgnoreCase | RegexOptions.Compiled);
+    private static Regex ExactClipNameRe => ClipFileNaming.ExactClipNameRe;
 
     private readonly ProjectStore _projects;
     private readonly EditLogService _editLogs;

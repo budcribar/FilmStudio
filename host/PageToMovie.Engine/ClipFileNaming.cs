@@ -8,7 +8,7 @@ namespace PageToMovie.Engine;
 public static class ClipFileNaming
 {
     /// <summary>Matches clip video files formatted with scene, clip, and take numbers (rejecting .native.mp4).</summary>
-    private static readonly Regex ExactClipNameRe = new(
+    public static readonly Regex ExactClipNameRe = new(
         @"^scene_(\d{2})_clip_(\d{2})(?:_take_\d+.*)?\.mp4$",
         RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
