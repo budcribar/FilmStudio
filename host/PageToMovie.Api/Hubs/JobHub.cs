@@ -49,11 +49,10 @@ public sealed class JobHub : Hub
 
     private string ResolveUserId()
     {
-        var http = Context.GetHttpContext();
-        if (http?.Request.Query.TryGetValue("userId", out var q) == true &&
-            !string.IsNullOrWhiteSpace(q))
-            return q.ToString().Trim();
-
+        // Authenticated JWT identity always wins — a client-supplied userId (query string or
+        // header) must never override it, or any client could join another user's SignalR
+        // group by passing ?userId=<victim> and receive their job-progress broadcasts.
+        // Same priority order as HttpUserContext.UserId.
         if (Context.User?.Identity?.IsAuthenticated == true)
         {
             var sub = Context.User.FindFirstValue(ClaimTypes.NameIdentifier)
@@ -63,9 +62,17 @@ public sealed class JobHub : Hub
                 return sub.Trim();
         }
 
+        var http = Context.GetHttpContext();
         if (http?.Request.Headers.TryGetValue(AuthHeaders.UserId, out var h) == true &&
             !string.IsNullOrWhiteSpace(h))
             return h.ToString().Trim();
+
+        // Query-string fallback: some SignalR browser transports (long-polling reconnects,
+        // certain fallback negotiations) don't reliably carry custom headers, so the client also
+        // sends userId on the URL. Unauthenticated-only — never trusted over a real JWT above.
+        if (http?.Request.Query.TryGetValue("userId", out var q) == true &&
+            !string.IsNullOrWhiteSpace(q))
+            return q.ToString().Trim();
 
         try { return _user.UserId; }
         catch { return "local"; }
