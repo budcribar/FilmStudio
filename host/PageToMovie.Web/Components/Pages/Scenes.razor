@@ -870,10 +870,19 @@ else
                                         </button>
                                     }
                                     <button type="button"
+                                            class="btn btn-sm btn-outline-info py-0 px-1 ms-2 text-decoration-none small"
+                                            disabled="@(_busy || JobRunning)"
+                                            title="View past takes & version comparison grid for this clip"
+                                            @onclick:stopPropagation="true"
+                                            @onclick="() => OpenClipCompareAsync(_detail.SceneNumber, cn)">
+                                        🎬 Takes
+                                    </button>
+                                    <button type="button"
                                             class="btn btn-sm btn-link text-danger p-0 ms-2 text-decoration-none"
                                             data-testid="@($"clip-delete-{cn}")"
                                             disabled="@(_busy || JobRunning)"
                                             title="Delete this clip (video + shot plan entry)"
+                                            @onclick:stopPropagation="true"
                                             @onclick="() => RequestDeleteClip(_detail.SceneNumber, cn)">
                                         🗑️
                                     </button>

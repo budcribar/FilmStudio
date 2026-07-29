@@ -2742,7 +2742,7 @@ public sealed class FilmJobService
                         {
                             try
                             {
-                                return await _dialogueVerification.VerifyClipDialogueAsync(projId, scene, clip, ct: CancellationToken.None).ConfigureAwait(false);
+                                return await _dialogueVerification.VerifyClipDialogueAsync(projId, scene, clip, force: true, ct: CancellationToken.None).ConfigureAwait(false);
                             }
                             catch (Exception ex)
                             {

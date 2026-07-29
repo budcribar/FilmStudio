@@ -287,6 +287,23 @@ Status options: 'verified' (dialogue & speaker match), 'mismatch' (dialogue inco
             var status = root.TryGetProperty("status", out var stEl) ? stEl.GetString() ?? "verified" : "verified";
             var summary = root.TryGetProperty("summaryNote", out var snEl) ? snEl.GetString() ?? "" : "";
 
+            // Deterministic validation: if dialogue was expected but transcribed audio is empty, enforce mismatch (0%)
+            if (!string.IsNullOrWhiteSpace(expectedDialogue) && string.IsNullOrWhiteSpace(transcribed))
+            {
+                accuracy = 0.0;
+                status = "mismatch";
+                summary = $"Expected: '{expectedDialogue}' | Heard: (no audio/speech detected) (0% match)";
+            }
+            else if (!string.IsNullOrWhiteSpace(expectedDialogue))
+            {
+                var computedAcc = CalculateAccuracyScore(expectedDialogue, transcribed);
+                if (computedAcc < accuracy) accuracy = computedAcc;
+                if (accuracy < 0.5 && string.Equals(status, "verified", StringComparison.OrdinalIgnoreCase))
+                {
+                    status = "mismatch";
+                }
+            }
+
             var estSec = clip?.DurationSeconds > 0 ? (double)clip.DurationSeconds : ClipDurationEstimator.Estimate(expectedDialogue, "", "dialogue", "none");
             var (speechSec, actionSec) = ClipDurationEstimator.EstimateBreakdown(expectedDialogue, clip?.VisualPrompt ?? "", "", clip?.Delivery ?? "none");
             var durationProbe = new MediaDurationProbe(Microsoft.Extensions.Options.Options.Create(new PageToMovie.Core.Options.PageToMovieOptions()), Microsoft.Extensions.Logging.Abstractions.NullLogger<MediaDurationProbe>.Instance);
