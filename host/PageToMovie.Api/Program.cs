@@ -2571,6 +2571,58 @@ app.MapPost("/api/projects/{id}/git/revert/{commitHash}", async (
     }
 });
 
+app.MapGet("/api/projects/{id}/scenes/{scene:int}/history", async (
+    string id,
+    int scene,
+    int? limit,
+    ProjectStore store,
+    CancellationToken ct) =>
+{
+    try
+    {
+        await store.RequireProjectAsync(id, ct);
+        var history = await store.GetSceneGitHistoryAsync(id, scene, limit ?? 20);
+        return Results.Ok(new { ok = true, history });
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { ok = false, error = ex.Message });
+    }
+});
+
+app.MapPost("/api/projects/{id}/scenes/{scene:int}/revert/{commitHash}", async (
+    string id,
+    int scene,
+    string commitHash,
+    ProjectStore store,
+    IUserContext user,
+    IOptions<PageToMovieOptions> opts,
+    CancellationToken ct) =>
+{
+    if (AuthGate.RequireLogin(user, opts) is { } denied)
+        return denied;
+    try
+    {
+        await store.RequireProjectAsync(id, ct);
+        if (!await store.CanUserPublishDemoAsync(id, user.UserId, user.IsAdmin, ct))
+        {
+            return Results.Json(new { ok = false, error = "Only the project owner or an admin can revert scene changes." },
+                statusCode: StatusCodes.Status403Forbidden);
+        }
+
+        var success = await store.RevertSceneToCommitAsync(id, scene, commitHash, user.UserId);
+        if (!success)
+        {
+            return Results.BadRequest(new { ok = false, error = $"Failed to revert Scene {scene} to commit {commitHash[..Math.Min(8, commitHash.Length)]}." });
+        }
+        return Results.Ok(new { ok = true, message = $"Successfully reverted Scene {scene} to commit {commitHash[..Math.Min(8, commitHash.Length)]}." });
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { ok = false, error = ex.Message });
+    }
+});
+
 /// <summary>
 /// Push the project's text package (video excluded) to the configured Projects remote.
 /// Owner/admin only. Optional body.commitFirst + message creates a local commit first.

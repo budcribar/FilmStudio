@@ -123,6 +123,26 @@ namespace PageToMovie.Engine
         }
 
         /// <summary>
+        /// Reads the text content of a file at a specific Git commit hash.
+        /// </summary>
+        public string? GetFileContentAtCommit(string projectPath, string commitHash, string relativeFilePath)
+        {
+            if (string.IsNullOrWhiteSpace(projectPath) || !Directory.Exists(projectPath) || !Repository.IsValid(projectPath))
+                return null;
+
+            using var repo = new Repository(projectPath);
+            var commit = repo.Lookup<Commit>(commitHash);
+            if (commit is null) return null;
+
+            var relPath = relativeFilePath.Replace('\\', '/');
+            var treeEntry = commit[relPath];
+            if (treeEntry?.Target is not Blob blob)
+                return null;
+
+            return blob.GetContentText();
+        }
+
+        /// <summary>
         /// Retrieves the recent Git commit history for a project repository.
         /// </summary>
         public Task<IReadOnlyList<GitCommitInfo>> GetCommitHistoryAsync(string projectPath, int maxCount = 20)

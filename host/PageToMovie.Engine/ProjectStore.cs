@@ -114,6 +114,241 @@ public sealed class ProjectStore
     }
 
     /// <summary>
+    /// Gets scene-specific Git commit history and change diff details for a scene.
+    /// </summary>
+    public async Task<IReadOnlyList<SceneCommitHistoryItem>> GetSceneGitHistoryAsync(
+        string projectId,
+        int sceneNumber,
+        int limit = 20,
+        ProjectGitRepositoryService? gitRepo = null)
+    {
+        if (string.IsNullOrWhiteSpace(projectId)) return Array.Empty<SceneCommitHistoryItem>();
+        var dir = GetProjectDir(projectId);
+        if (!Directory.Exists(dir)) return Array.Empty<SceneCommitHistoryItem>();
+
+        var git = gitRepo ?? new ProjectGitRepositoryService(Microsoft.Extensions.Logging.Abstractions.NullLogger<ProjectGitRepositoryService>.Instance);
+        var commits = await git.GetCommitHistoryAsync(dir, limit).ConfigureAwait(false);
+        if (commits.Count == 0) return Array.Empty<SceneCommitHistoryItem>();
+
+        var bpName = "blueprint.clips.grok.json";
+        var result = new List<SceneCommitHistoryItem>();
+
+        for (int i = 0; i < commits.Count; i++)
+        {
+            var c = commits[i];
+            var historicalBp = git.GetFileContentAtCommit(dir, c.CommitHash, bpName);
+            if (string.IsNullOrWhiteSpace(historicalBp)) continue;
+
+            string? parentBp = null;
+            if (i + 1 < commits.Count)
+            {
+                parentBp = git.GetFileContentAtCommit(dir, commits[i + 1].CommitHash, bpName);
+            }
+
+            var changes = CompareSceneInBlueprints(historicalBp, parentBp, sceneNumber);
+            if (changes.Count > 0 || i == 0)
+            {
+                result.Add(new SceneCommitHistoryItem
+                {
+                    CommitHash = c.CommitHash,
+                    Author = c.Author,
+                    Message = c.Message,
+                    CommittedAt = c.CommittedAt,
+                    Changes = changes.Count > 0 ? changes : new List<string> { "Initial scene snapshot" },
+                });
+            }
+        }
+
+        return result;
+    }
+
+    /// <summary>
+    /// Reverts only the specified scene (and its clips) back to how it was in target commit.
+    /// </summary>
+    public async Task<bool> RevertSceneToCommitAsync(
+        string projectId,
+        int sceneNumber,
+        string commitHash,
+        string? author = null,
+        ProjectGitRepositoryService? gitRepo = null)
+    {
+        if (string.IsNullOrWhiteSpace(projectId) || string.IsNullOrWhiteSpace(commitHash)) return false;
+        var dir = GetProjectDir(projectId);
+        if (!Directory.Exists(dir)) return false;
+
+        var bpPath = FindBlueprintPathSync(projectId);
+        if (bpPath is null || !File.Exists(bpPath)) return false;
+
+        var bpName = Path.GetFileName(bpPath);
+        var git = gitRepo ?? new ProjectGitRepositoryService(Microsoft.Extensions.Logging.Abstractions.NullLogger<ProjectGitRepositoryService>.Instance);
+
+        var historicalBpStr = git.GetFileContentAtCommit(dir, commitHash, bpName);
+        if (string.IsNullOrWhiteSpace(historicalBpStr)) return false;
+
+        try
+        {
+            var currentRoot = System.Text.Json.Nodes.JsonNode.Parse(File.ReadAllText(bpPath)) as System.Text.Json.Nodes.JsonObject;
+            var historicalRoot = System.Text.Json.Nodes.JsonNode.Parse(historicalBpStr) as System.Text.Json.Nodes.JsonObject;
+            if (currentRoot is null || historicalRoot is null) return false;
+
+            var currentScenes = currentRoot["scenes"] as System.Text.Json.Nodes.JsonArray;
+            var historicalScenes = historicalRoot["scenes"] as System.Text.Json.Nodes.JsonArray;
+            if (currentScenes is null || historicalScenes is null) return false;
+
+            System.Text.Json.Nodes.JsonObject? targetHistSceneNode = null;
+            foreach (var hNode in historicalScenes)
+            {
+                if (hNode is System.Text.Json.Nodes.JsonObject hObj && ReadJsonNodeInt(hObj["scene_number"]) == sceneNumber)
+                {
+                    targetHistSceneNode = hObj.DeepClone() as System.Text.Json.Nodes.JsonObject;
+                    break;
+                }
+            }
+
+            if (targetHistSceneNode is null) return false;
+
+            int targetIndex = -1;
+            for (int i = 0; i < currentScenes.Count; i++)
+            {
+                if (currentScenes[i] is System.Text.Json.Nodes.JsonObject cObj && ReadJsonNodeInt(cObj["scene_number"]) == sceneNumber)
+                {
+                    targetIndex = i;
+                    break;
+                }
+            }
+
+            if (targetIndex >= 0)
+            {
+                currentScenes[targetIndex] = targetHistSceneNode;
+            }
+            else
+            {
+                currentScenes.Add(targetHistSceneNode);
+            }
+
+            File.WriteAllText(bpPath, currentRoot.ToJsonString(JsonOpts));
+            InvalidateSceneListCache(projectId);
+
+            var who = string.IsNullOrWhiteSpace(author) ? "Operator" : author;
+            TriggerAutoGitCommit(projectId, $"Reverted Scene {sceneNumber} to commit {commitHash[..Math.Min(8, commitHash.Length)]}", who);
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    private static List<string> CompareSceneInBlueprints(string currentBpJson, string? parentBpJson, int sceneNumber)
+    {
+        var changes = new List<string>();
+        try
+        {
+            var curRoot = System.Text.Json.Nodes.JsonNode.Parse(currentBpJson) as System.Text.Json.Nodes.JsonObject;
+            if (curRoot is null) return changes;
+            var curScenes = curRoot["scenes"] as System.Text.Json.Nodes.JsonArray;
+            if (curScenes is null) return changes;
+
+            System.Text.Json.Nodes.JsonObject? curScene = null;
+            foreach (var s in curScenes)
+            {
+                if (s is System.Text.Json.Nodes.JsonObject sObj && ReadJsonNodeInt(sObj["scene_number"]) == sceneNumber)
+                {
+                    curScene = sObj;
+                    break;
+                }
+            }
+
+            if (curScene is null) return changes;
+
+            if (string.IsNullOrWhiteSpace(parentBpJson))
+            {
+                changes.Add("Scene created");
+                return changes;
+            }
+
+            var parRoot = System.Text.Json.Nodes.JsonNode.Parse(parentBpJson) as System.Text.Json.Nodes.JsonObject;
+            var parScenes = parRoot?["scenes"] as System.Text.Json.Nodes.JsonArray;
+            System.Text.Json.Nodes.JsonObject? parScene = null;
+            if (parScenes is not null)
+            {
+                foreach (var s in parScenes)
+                {
+                    if (s is System.Text.Json.Nodes.JsonObject sObj && ReadJsonNodeInt(sObj["scene_number"]) == sceneNumber)
+                    {
+                        parScene = sObj;
+                        break;
+                    }
+                }
+            }
+
+            if (parScene is null)
+            {
+                changes.Add("Scene created");
+                return changes;
+            }
+
+            var curHeading = curScene["heading"]?.ToString() ?? "";
+            var parHeading = parScene["heading"]?.ToString() ?? "";
+            if (!string.Equals(curHeading, parHeading, StringComparison.OrdinalIgnoreCase))
+            {
+                changes.Add($"Heading updated: \"{curHeading}\"");
+            }
+
+            var curClips = curScene["veo_clips"] as System.Text.Json.Nodes.JsonArray ?? curScene["clips"] as System.Text.Json.Nodes.JsonArray;
+            var parClips = parScene["veo_clips"] as System.Text.Json.Nodes.JsonArray ?? parScene["clips"] as System.Text.Json.Nodes.JsonArray;
+
+            var curClipDict = (curClips ?? new System.Text.Json.Nodes.JsonArray())
+                .OfType<System.Text.Json.Nodes.JsonObject>()
+                .ToDictionary(c => ReadJsonNodeInt(c["clip_number"]));
+            var parClipDict = (parClips ?? new System.Text.Json.Nodes.JsonArray())
+                .OfType<System.Text.Json.Nodes.JsonObject>()
+                .ToDictionary(c => ReadJsonNodeInt(c["clip_number"]));
+
+            foreach (var (cNum, curC) in curClipDict)
+            {
+                if (!parClipDict.TryGetValue(cNum, out var parC))
+                {
+                    changes.Add($"Clip {cNum} added");
+                    continue;
+                }
+
+                var curPrompt = curC["visual_prompt"]?.ToString() ?? "";
+                var parPrompt = parC["visual_prompt"]?.ToString() ?? "";
+                if (!string.Equals(curPrompt, parPrompt, StringComparison.Ordinal))
+                {
+                    changes.Add($"Clip {cNum} prompt modified");
+                }
+
+                var curAudio = curC["audio_script"]?.ToString() ?? curC["dialogue"]?.ToString() ?? "";
+                var parAudio = parC["audio_script"]?.ToString() ?? parC["dialogue"]?.ToString() ?? "";
+                if (!string.Equals(curAudio, parAudio, StringComparison.Ordinal))
+                {
+                    changes.Add($"Clip {cNum} dialogue modified");
+                }
+
+                var curDur = curC["duration_seconds"]?.ToString() ?? "";
+                var parDur = parC["duration_seconds"]?.ToString() ?? "";
+                if (!string.Equals(curDur, parDur, StringComparison.Ordinal))
+                {
+                    changes.Add($"Clip {cNum} duration changed to {curDur}s");
+                }
+            }
+
+            foreach (var (cNum, _) in parClipDict)
+            {
+                if (!curClipDict.ContainsKey(cNum))
+                {
+                    changes.Add($"Clip {cNum} removed");
+                }
+            }
+        }
+        catch { /* best effort diff */ }
+
+        return changes;
+    }
+
+    /// <summary>
     /// Drop scene-list + blueprint/dir read caches for a project (call after gen/remux/stage2).
     /// </summary>
     public void InvalidateSceneListCache(string? projectId)

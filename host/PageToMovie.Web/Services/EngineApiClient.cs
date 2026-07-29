@@ -1283,6 +1283,47 @@ public sealed class EngineApiClient
             JsonOpts,
             ct);
 
+    public sealed class SceneGitHistoryEnvelope
+    {
+        public bool Ok { get; set; }
+        public List<SceneCommitHistoryItem>? History { get; set; }
+        public string? Error { get; set; }
+    }
+
+    public async Task<SceneGitHistoryEnvelope?> GetSceneGitHistoryAsync(
+        string projectId, int sceneNumber, CancellationToken ct = default)
+    {
+        SyncIdentityHeaders();
+        return await _http.GetFromJsonAsync<SceneGitHistoryEnvelope>(
+            $"/api/projects/{Uri.EscapeDataString(projectId)}/scenes/{sceneNumber}/history",
+            JsonOpts,
+            ct);
+    }
+
+    public sealed class SceneRevertEnvelope
+    {
+        public bool Ok { get; set; }
+        public string? Message { get; set; }
+        public string? Error { get; set; }
+    }
+
+    public async Task<SceneRevertEnvelope> RevertSceneToCommitAsync(
+        string projectId, int sceneNumber, string commitHash, CancellationToken ct = default)
+    {
+        SyncIdentityHeaders();
+        using var resp = await _http.PostAsync(
+            $"/api/projects/{Uri.EscapeDataString(projectId)}/scenes/{sceneNumber}/revert/{Uri.EscapeDataString(commitHash)}",
+            null,
+            ct);
+        if (resp.IsSuccessStatusCode)
+        {
+            var res = await resp.Content.ReadFromJsonAsync<SceneRevertEnvelope>(JsonOpts, ct);
+            return res ?? new SceneRevertEnvelope { Ok = true };
+        }
+        var err = await resp.Content.ReadAsStringAsync(ct);
+        return new SceneRevertEnvelope { Ok = false, Error = TryError(err) ?? resp.ReasonPhrase };
+    }
+
     public string CompositeVideoUrl(string projectId, int sceneNumber) =>
         BrowserMediaPath(
             $"/api/projects/{Uri.EscapeDataString(projectId)}/scenes/{sceneNumber}/composite");
