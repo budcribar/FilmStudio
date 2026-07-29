@@ -19,7 +19,6 @@ public sealed class ReviewEventStore
 
     private readonly ProjectStore _projects;
     private readonly ILogger<ReviewEventStore> _log;
-    private readonly object _writeLock = new();
 
     public ReviewEventStore(ProjectStore projects, ILogger<ReviewEventStore> log)
     {
@@ -197,7 +196,16 @@ public sealed class ReviewEventStore
         var list = new List<ReviewLearningEvent>();
         try
         {
-            var lines = await File.ReadAllLinesAsync(path, ct).ConfigureAwait(false);
+            string[] lines;
+            await _writeGate.WaitAsync(ct).ConfigureAwait(false);
+            try
+            {
+                lines = await File.ReadAllLinesAsync(path, ct).ConfigureAwait(false);
+            }
+            finally
+            {
+                _writeGate.Release();
+            }
             foreach (var line in lines)
             {
                 if (string.IsNullOrWhiteSpace(line)) continue;
@@ -255,8 +263,15 @@ public sealed class ReviewEventStore
         try
         {
             string[] lines;
-            lock (_writeLock)
+            _writeGate.Wait();
+            try
+            {
                 lines = File.ReadAllLines(path);
+            }
+            finally
+            {
+                _writeGate.Release();
+            }
             foreach (var line in lines)
             {
                 if (string.IsNullOrWhiteSpace(line)) continue;
