@@ -113,36 +113,53 @@ public sealed class FalVideoClient : IVideoClient
             req.Headers.Authorization = new AuthenticationHeaderValue("Key", apiKey);
 
             using var resp = await _http.SendAsync(req, ct).ConfigureAwait(false);
-            if (resp.IsSuccessStatusCode)
+            var statusBody = await resp.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
+
+            if (!resp.IsSuccessStatusCode)
             {
-                var statusBody = await resp.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
-                using var doc = JsonDocument.Parse(statusBody);
-                var status = doc.RootElement.TryGetProperty("status", out var stEl) ? stEl.GetString() ?? "" : "";
-                onProgress?.Invoke($"Fal.ai status: {status}");
-
-                if (string.Equals(status, "COMPLETED", StringComparison.OrdinalIgnoreCase))
+                if (resp.StatusCode == System.Net.HttpStatusCode.TooManyRequests)
                 {
-                    // Fetch completed result payload
-                    using var resultReq = new HttpRequestMessage(HttpMethod.Get, resultUrl);
-                    resultReq.Headers.Authorization = new AuthenticationHeaderValue("Key", apiKey);
-                    using var resultResp = await _http.SendAsync(resultReq, ct).ConfigureAwait(false);
-                    var resultBody = await resultResp.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
-
-                    using var resultDoc = JsonDocument.Parse(resultBody);
-                    if (resultDoc.RootElement.TryGetProperty("video", out var vEl) &&
-                        vEl.TryGetProperty("url", out var urlEl) &&
-                        urlEl.GetString() is { Length: > 0 } videoUrl)
-                    {
-                        return videoUrl;
-                    }
-                    throw new InvalidOperationException($"Fal.ai result missing video.url: {resultBody}");
+                    onProgress?.Invoke("Fal.ai rate limited (HTTP 429) — retrying in 5s…");
+                    await Task.Delay(TimeSpan.FromSeconds(5), ct).ConfigureAwait(false);
+                    continue;
                 }
 
-                if (string.Equals(status, "FAILED", StringComparison.OrdinalIgnoreCase))
+                _log.LogError("Fal.ai status query failed HTTP {Status} for request {RequestId}: {Body}", resp.StatusCode, requestId, statusBody);
+                throw new InvalidOperationException($"Fal.ai status query error HTTP {resp.StatusCode}: {statusBody}");
+            }
+
+            using var doc = JsonDocument.Parse(statusBody);
+            var status = doc.RootElement.TryGetProperty("status", out var stEl) ? stEl.GetString() ?? "" : "";
+            var queuePos = doc.RootElement.TryGetProperty("queue_position", out var qEl) ? qEl.GetInt32().ToString() : null;
+
+            onProgress?.Invoke(queuePos is not null ? $"Fal.ai status: {status} (queue position: {queuePos})" : $"Fal.ai status: {status}");
+
+            if (string.Equals(status, "COMPLETED", StringComparison.OrdinalIgnoreCase))
+            {
+                using var resultReq = new HttpRequestMessage(HttpMethod.Get, resultUrl);
+                resultReq.Headers.Authorization = new AuthenticationHeaderValue("Key", apiKey);
+                using var resultResp = await _http.SendAsync(resultReq, ct).ConfigureAwait(false);
+                var resultBody = await resultResp.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
+
+                if (!resultResp.IsSuccessStatusCode)
                 {
-                    var err = doc.RootElement.TryGetProperty("error", out var eEl) ? eEl.GetString() : "Job failed";
-                    throw new InvalidOperationException($"Fal.ai generation failed: {err}");
+                    throw new InvalidOperationException($"Fal.ai result fetch failed HTTP {resultResp.StatusCode}: {resultBody}");
                 }
+
+                using var resultDoc = JsonDocument.Parse(resultBody);
+                if (resultDoc.RootElement.TryGetProperty("video", out var vEl) &&
+                    vEl.TryGetProperty("url", out var urlEl) &&
+                    urlEl.GetString() is { Length: > 0 } videoUrl)
+                {
+                    return videoUrl;
+                }
+                throw new InvalidOperationException($"Fal.ai result payload missing video.url: {resultBody}");
+            }
+
+            if (string.Equals(status, "FAILED", StringComparison.OrdinalIgnoreCase))
+            {
+                var err = doc.RootElement.TryGetProperty("error", out var eEl) ? eEl.GetString() : "Job failed";
+                throw new InvalidOperationException($"Fal.ai generation failed on GPU: {err}");
             }
 
             await Task.Delay(delay, ct).ConfigureAwait(false);
