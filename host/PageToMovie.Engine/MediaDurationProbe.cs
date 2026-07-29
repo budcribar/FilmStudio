@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.Linq;
 using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -11,6 +12,9 @@ namespace PageToMovie.Engine;
 /// </summary>
 public sealed class MediaDurationProbe
 {
+    private const int MaxCacheEntries = 20_000;
+    private const int TrimToEntries = 15_000;
+
     private readonly ConcurrentDictionary<string, (long Ticks, long Length, double Sec)> _cache = new();
     private readonly ILogger<MediaDurationProbe> _log;
 
@@ -89,22 +93,14 @@ public sealed class MediaDurationProbe
             var fromManifest = await TryReadManifestDurationAsync(mediaPath, ct).ConfigureAwait(false);
             if (fromManifest is > 0)
             {
-                _cache[key] = (fi.LastWriteTimeUtc.Ticks, fi.Length, fromManifest.Value);
+                SetCache(key, fi.LastWriteTimeUtc.Ticks, fi.Length, fromManifest.Value);
                 return fromManifest;
             }
 
             var fromMp4 = await Mp4DurationReader.TryReadSecondsAsync(fi.FullName, ct).ConfigureAwait(false);
             if (fromMp4 is > 0)
             {
-                _cache[key] = (fi.LastWriteTimeUtc.Ticks, fi.Length, fromMp4.Value);
-                if (_cache.Count > 20000)
-                {
-                    foreach (var k in _cache.Keys)
-                    {
-                        if (!File.Exists(k))
-                            _cache.TryRemove(k, out _);
-                    }
-                }
+                SetCache(key, fi.LastWriteTimeUtc.Ticks, fi.Length, fromMp4.Value);
                 return fromMp4;
             }
         }
@@ -115,6 +111,33 @@ public sealed class MediaDurationProbe
         }
 
         return null;
+    }
+
+    private void SetCache(string key, long ticks, long length, double sec)
+    {
+        _cache[key] = (ticks, length, sec);
+        if (_cache.Count <= MaxCacheEntries) return;
+
+        // First: drop entries whose backing file is gone — free and always safe.
+        foreach (var k in _cache.Keys)
+        {
+            if (!File.Exists(k))
+                _cache.TryRemove(k, out _);
+        }
+
+        // Files that stay on disk (the common case) never get evicted by the pass above, so the
+        // cache would otherwise grow unbounded despite the size check. Trim the oldest-by-mtime
+        // entries so MaxCacheEntries is an actual bound, not just a "delete stale" sweep.
+        if (_cache.Count > MaxCacheEntries)
+        {
+            var toRemove = _cache
+                .OrderBy(kv => kv.Value.Ticks)
+                .Take(_cache.Count - TrimToEntries)
+                .Select(kv => kv.Key)
+                .ToList();
+            foreach (var k in toRemove)
+                _cache.TryRemove(k, out _);
+        }
     }
 
     private static async Task<double?> TryReadManifestDurationAsync(string mediaPath, CancellationToken ct = default)
