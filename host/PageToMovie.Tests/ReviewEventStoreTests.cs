@@ -33,9 +33,9 @@ public class ReviewEventStoreTests : IDisposable
     }
 
     [Fact]
-    public void Append_and_query_roundtrip()
+    public async Task Append_and_query_roundtrip()
     {
-        _store.Append(new ReviewLearningEvent
+        await _store.AppendAsync(new ReviewLearningEvent
         {
             ProjectId = "Buster",
             Type = "clip_fail",
@@ -44,7 +44,7 @@ public class ReviewEventStoreTests : IDisposable
             Note = "Wrong voice",
             Category = "wrong_voice",
         });
-        _store.Append(new ReviewLearningEvent
+        await _store.AppendAsync(new ReviewLearningEvent
         {
             ProjectId = "Buster",
             Type = "auto_review",
@@ -69,10 +69,10 @@ public class ReviewEventStoreTests : IDisposable
     }
 
     [Fact]
-    public void Insights_counts_apply_and_regen()
+    public async Task Insights_counts_apply_and_regen()
     {
-        _store.Append(new ReviewLearningEvent { ProjectId = "P", Type = "auto_review_apply", SuggestionCount = 2 });
-        _store.Append(new ReviewLearningEvent { ProjectId = "P", Type = "regen_after_review", Scene = 1, Clip = 1, Outcome = "done" });
+        await _store.AppendAsync(new ReviewLearningEvent { ProjectId = "P", Type = "auto_review_apply", SuggestionCount = 2 });
+        await _store.AppendAsync(new ReviewLearningEvent { ProjectId = "P", Type = "regen_after_review", Scene = 1, Clip = 1, Outcome = "done" });
         var i = _store.BuildInsights("P");
         Assert.Equal(1, i.ApplyCount);
         Assert.Equal(1, i.RegenCount);

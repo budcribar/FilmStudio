@@ -59,7 +59,7 @@ public class LearningServicesTests : IDisposable
     {
         for (var i = 0; i < 5; i++)
         {
-            _events.Append(new ReviewLearningEvent
+            await _events.AppendAsync(new ReviewLearningEvent
             {
                 ProjectId = "Demo",
                 Type = "clip_fail",
@@ -78,11 +78,11 @@ public class LearningServicesTests : IDisposable
     }
 
     [Fact]
-    public void P4_project_rules_suggest_approve()
+    public async Task P4_project_rules_suggest_approve()
     {
         for (var i = 0; i < 4; i++)
         {
-            _events.Append(new ReviewLearningEvent
+            await _events.AppendAsync(new ReviewLearningEvent
             {
                 ProjectId = "Demo",
                 Type = "clip_fail",

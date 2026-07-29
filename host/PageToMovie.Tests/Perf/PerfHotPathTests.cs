@@ -80,7 +80,7 @@ public class PerfHotPathTests
     }
 
     [Fact]
-    public void ReviewEventStore_append_throughput()
+    public async Task ReviewEventStore_append_throughput()
     {
         var root = Path.Combine(Path.GetTempPath(), "fs_perf_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(Path.Combine(root, "projects"));
@@ -94,7 +94,7 @@ public class PerfHotPathTests
             var sw = Stopwatch.StartNew();
             for (var i = 0; i < n; i++)
             {
-                events.Append(new ReviewLearningEvent
+                await events.AppendAsync(new ReviewLearningEvent
                 {
                     ProjectId = "P",
                     Type = "clip_fail",

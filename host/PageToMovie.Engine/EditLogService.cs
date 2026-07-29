@@ -123,7 +123,7 @@ public sealed class EditLogService
                 }
             }
 
-            _learning.AppendFromEditLog(
+            await _learning.AppendFromEditLogAsync(
                 projectId,
                 entry,
                 userId: userId,
@@ -134,7 +134,8 @@ public sealed class EditLogService
                 suggestionCount: suggestionCount,
                 field: field,
                 jobId: jobId,
-                outcome: outcome);
+                outcome: outcome,
+                ct: ct).ConfigureAwait(false);
         }
         catch (Exception ex)
         {

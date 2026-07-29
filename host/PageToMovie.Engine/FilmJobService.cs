@@ -2344,7 +2344,7 @@ public sealed class FilmJobService
             {
                 try
                 {
-                    _learning.Append(new ReviewLearningEvent
+                    await _learning.AppendAsync(new ReviewLearningEvent
                     {
                         ProjectId = projectId,
                         Type = "regen_after_review",
@@ -2354,7 +2354,7 @@ public sealed class FilmJobService
                         Outcome = status,
                         JobId = Snapshot.JobId,
                         ActionTaken = $"gen clip force only_missing={req.OnlyMissing}",
-                    });
+                    }).ConfigureAwait(false);
                 }
                 catch { /* non-fatal */ }
             }

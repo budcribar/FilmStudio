@@ -69,9 +69,7 @@ public sealed class ReviewEventStore
         return ev;
     }
 
-    public ReviewLearningEvent Append(ReviewLearningEvent ev) => AppendAsync(ev).GetAwaiter().GetResult();
-
-    public ReviewLearningEvent AppendFromEditLog(
+    public Task<ReviewLearningEvent> AppendFromEditLogAsync(
         string projectId,
         EditLogEntry entry,
         string? userId = null,
@@ -82,14 +80,15 @@ public sealed class ReviewEventStore
         int? suggestionCount = null,
         string? field = null,
         string? jobId = null,
-        string? outcome = null)
+        string? outcome = null,
+        CancellationToken ct = default)
     {
         DateTimeOffset ts = DateTimeOffset.UtcNow;
         if (!string.IsNullOrWhiteSpace(entry.Ts) &&
             DateTimeOffset.TryParse(entry.Ts, out var parsed))
             ts = parsed.ToUniversalTime();
 
-        return Append(new ReviewLearningEvent
+        return AppendAsync(new ReviewLearningEvent
         {
             Id = entry.Id,
             Ts = ts,
@@ -112,7 +111,7 @@ public sealed class ReviewEventStore
             Field = field,
             JobId = jobId,
             Outcome = outcome,
-        });
+        }, ct);
     }
 
     /// <summary>Read recent events (newest first). Optional filters.</summary>

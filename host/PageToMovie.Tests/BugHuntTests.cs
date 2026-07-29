@@ -69,7 +69,7 @@ public class BugHuntTests
     // ── 3. Project rules: do not re-suggest category already active ─────
 
     [Fact]
-    public void Bug3_ProjectRules_skips_category_already_active()
+    public async Task Bug3_ProjectRules_skips_category_already_active()
     {
         var root = Path.Combine(Path.GetTempPath(), "fs_bug3_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(Path.Combine(root, "projects", "Demo"));
@@ -84,7 +84,7 @@ public class BugHuntTests
 
             for (var i = 0; i < 4; i++)
             {
-                events.Append(new ReviewLearningEvent
+                await events.AppendAsync(new ReviewLearningEvent
                 {
                     ProjectId = "Demo",
                     Type = "clip_fail",
@@ -104,7 +104,7 @@ public class BugHuntTests
             // More fails same category — must NOT add another pending for continuity
             for (var i = 0; i < 4; i++)
             {
-                events.Append(new ReviewLearningEvent
+                await events.AppendAsync(new ReviewLearningEvent
                 {
                     ProjectId = "Demo",
                     Type = "clip_fail",
@@ -555,7 +555,7 @@ public class BugHuntTests
             // 80 recent passes
             for (var i = 0; i < 80; i++)
             {
-                events.Append(new ReviewLearningEvent
+                await events.AppendAsync(new ReviewLearningEvent
                 {
                     ProjectId = "Demo",
                     Type = "clip_pass",
@@ -565,7 +565,7 @@ public class BugHuntTests
             // 6 older fails
             for (var i = 0; i < 6; i++)
             {
-                events.Append(new ReviewLearningEvent
+                await events.AppendAsync(new ReviewLearningEvent
                 {
                     ProjectId = "Demo",
                     Type = "clip_fail",
@@ -606,7 +606,7 @@ public class BugHuntTests
     // ── 29. BuildInsights recentTake=1 must not force 5 rows when fewer ─
 
     [Fact]
-    public void Bug29_BuildInsights_honors_small_recentTake()
+    public async Task Bug29_BuildInsights_honors_small_recentTake()
     {
         var root = Path.Combine(Path.GetTempPath(), "fs_bug29_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(Path.Combine(root, "projects"));
@@ -615,7 +615,7 @@ public class BugHuntTests
             var opts = Options.Create(new PageToMovieOptions { WorkspaceRoot = root, EnableReadCaches = false });
             var events = new ReviewEventStore(new ProjectStore(opts), NullLogger<ReviewEventStore>.Instance);
             for (var i = 0; i < 3; i++)
-                events.Append(new ReviewLearningEvent { ProjectId = "P", Type = "clip_pass", Note = "n" + i });
+                await events.AppendAsync(new ReviewLearningEvent { ProjectId = "P", Type = "clip_pass", Note = "n" + i });
 
             var insights = events.BuildInsights("P", recentTake: 1);
             Assert.Single(insights.Recent);
@@ -697,7 +697,7 @@ public class BugHuntTests
     }
 
     [Fact]
-    public void Bug36_ProjectRules_null_Note_on_fails_does_not_throw()
+    public async Task Bug36_ProjectRules_null_Note_on_fails_does_not_throw()
     {
         var root = Path.Combine(Path.GetTempPath(), "fs_bug36_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(Path.Combine(root, "projects", "Demo"));
@@ -711,7 +711,7 @@ public class BugHuntTests
 
             for (var i = 0; i < 4; i++)
             {
-                events.Append(new ReviewLearningEvent
+                await events.AppendAsync(new ReviewLearningEvent
                 {
                     ProjectId = "Demo",
                     Type = "clip_fail",
@@ -799,7 +799,7 @@ public class BugHuntTests
     // ═══════════════════════════════════════════════════════════════════════
 
     [Fact]
-    public void Bug41_ReviewEventStore_Append_null_throws()
+    public async Task Bug41_ReviewEventStore_Append_null_throws()
     {
         var root = Path.Combine(Path.GetTempPath(), "fs_bug41_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(Path.Combine(root, "projects"));
@@ -807,7 +807,7 @@ public class BugHuntTests
         {
             var opts = Options.Create(new PageToMovieOptions { WorkspaceRoot = root, EnableReadCaches = false });
             var store = new ReviewEventStore(new ProjectStore(opts), NullLogger<ReviewEventStore>.Instance);
-            Assert.Throws<ArgumentNullException>(() => store.Append(null!));
+            await Assert.ThrowsAsync<ArgumentNullException>(() => store.AppendAsync(null!));
         }
         finally
         {
@@ -1266,7 +1266,7 @@ public class BugHuntTests
     }
 
     [Fact]
-    public void Bug82_ReviewEventStore_Query_take_clamped()
+    public async Task Bug82_ReviewEventStore_Query_take_clamped()
     {
         var root = Path.Combine(Path.GetTempPath(), "fs_bug82_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(Path.Combine(root, "projects"));
@@ -1275,7 +1275,7 @@ public class BugHuntTests
             var opts = Options.Create(new PageToMovieOptions { WorkspaceRoot = root, EnableReadCaches = false });
             var events = new ReviewEventStore(new ProjectStore(opts), NullLogger<ReviewEventStore>.Instance);
             for (var i = 0; i < 5; i++)
-                events.Append(new ReviewLearningEvent { ProjectId = "P", Type = "clip_pass" });
+                await events.AppendAsync(new ReviewLearningEvent { ProjectId = "P", Type = "clip_pass" });
             // take=0 must not throw; clamp to at least 1
             var q = events.Query(take: 0);
             Assert.NotNull(q);
@@ -1288,7 +1288,7 @@ public class BugHuntTests
     }
 
     [Fact]
-    public void Bug83_BuildInsights_null_type_events()
+    public async Task Bug83_BuildInsights_null_type_events()
     {
         var root = Path.Combine(Path.GetTempPath(), "fs_bug83_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(Path.Combine(root, "projects"));
@@ -1296,7 +1296,7 @@ public class BugHuntTests
         {
             var opts = Options.Create(new PageToMovieOptions { WorkspaceRoot = root, EnableReadCaches = false });
             var events = new ReviewEventStore(new ProjectStore(opts), NullLogger<ReviewEventStore>.Instance);
-            events.Append(new ReviewLearningEvent { ProjectId = "P", Type = null! });
+            await events.AppendAsync(new ReviewLearningEvent { ProjectId = "P", Type = null! });
             var insights = events.BuildInsights("P");
             Assert.True(insights.EventCount >= 1);
         }
