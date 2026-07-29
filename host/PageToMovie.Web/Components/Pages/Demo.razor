@@ -148,19 +148,7 @@
                                     <span aria-hidden="true">★</span>
                                     <span class="demo-star-count">@d.TotalStars</span>
                                 </button>
-                                @{
-                                    var ytUrl = !string.IsNullOrWhiteSpace(d.YoutubeUrl)
-                                        ? d.YoutubeUrl
-                                        : !string.IsNullOrWhiteSpace(d.YoutubeId)
-                                            ? $"https://www.youtube.com/watch?v={d.YoutubeId}"
-                                            : null;
-                                }
-                                @if (!string.IsNullOrWhiteSpace(ytUrl))
-                                {
-                                    <a class="btn btn-sm btn-outline-danger" href="@ytUrl" target="_blank" rel="noopener" title="Watch, like, and comment on YouTube">
-                                        🔴 Watch on YouTube ↗
-                                    </a>
-                                }
+
                                 @if (d.CanFork && (d.IsForkable || Session.IsAdmin))
                                 {
                                     <button type="button"

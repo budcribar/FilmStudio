@@ -70,19 +70,7 @@ else if (_profile is not null)
                                         </a>
                                     </div>
                                 }
-                                @{
-                                    var ytUrl = !string.IsNullOrWhiteSpace(d.YoutubeUrl)
-                                        ? d.YoutubeUrl
-                                        : !string.IsNullOrWhiteSpace(d.YoutubeId)
-                                            ? $"https://www.youtube.com/watch?v={d.YoutubeId}"
-                                            : null;
-                                }
-                                @if (!string.IsNullOrWhiteSpace(ytUrl))
-                                {
-                                    <div class="mb-3">
-                                        <a href="@ytUrl" target="_blank" rel="noopener" class="btn btn-sm btn-outline-danger">🔴 Watch on YouTube ↗</a>
-                                    </div>
-                                }
+
                             </div>
                             <div class="card-footer border-secondary d-flex justify-content-between align-items-center small text-muted">
                                 <span>Published @d.CreatedAt.ToLocalTime().ToString("MMM d, yyyy")</span>

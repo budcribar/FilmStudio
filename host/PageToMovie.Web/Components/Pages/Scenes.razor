@@ -943,6 +943,12 @@ else
                             @onclick="() => RegenClipAsync(_detail.SceneNumber, _clip.ClipNumber)">
                         Regen clip
                     </button>
+                    <button class="btn btn-sm btn-outline-info"
+                            disabled="@(_busy || JobRunning)"
+                            title="View past takes & version comparison grid for this clip"
+                            @onclick="() => OpenClipCompareAsync(_detail.SceneNumber, _clip.ClipNumber)">
+                        🎬 Takes (@(_historyVersions.Count + 1))
+                    </button>
                     <button class="btn btn-sm btn-outline-secondary"
                             disabled="@(_busy || JobRunning)"
                             title="Edit clip fields (dialogue, prompt, characters, lighting…)"
