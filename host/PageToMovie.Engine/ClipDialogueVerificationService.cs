@@ -228,9 +228,19 @@ Status options: 'verified' (dialogue & speaker match), 'mismatch' (dialogue inco
         try
         {
             var sw = Stopwatch.StartNew();
-            var responseJson = (_gemini is not null && _gemini.IsConfigured)
-                ? await _gemini.CompleteWithImagesAsync(prompt, mediaToPass, ct: ct).ConfigureAwait(false)
-                : await _vision.CompleteWithImagesAsync(prompt, mediaToPass, ct: ct).ConfigureAwait(false);
+            string? selectedModel = null;
+            try
+            {
+                var cfg = await _projects.GetConfigAsync(projectId, ct).ConfigureAwait(false);
+                if (cfg.TryGetValue("quality_model_name", out var qEl) && qEl.ValueKind == JsonValueKind.String)
+                    selectedModel = qEl.GetString();
+                else if (cfg.TryGetValue("vision_model_name", out var vEl) && vEl.ValueKind == JsonValueKind.String)
+                    selectedModel = vEl.GetString();
+            }
+            catch { /* use fallback */ }
+
+            var targetModel = !string.IsNullOrWhiteSpace(selectedModel) ? selectedModel : "gemini-2.5-pro";
+            var responseJson = await _vision.CompleteWithImagesAsync(prompt, mediaToPass, model: targetModel, ct: ct).ConfigureAwait(false);
             var cleanJson = ExtractJson(responseJson);
 
             using var doc = JsonDocument.Parse(cleanJson);
