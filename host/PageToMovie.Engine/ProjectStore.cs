@@ -877,7 +877,7 @@ public sealed class ProjectStore
         Dictionary<string, object?> merged = new(StringComparer.OrdinalIgnoreCase);
         if (File.Exists(path))
         {
-            using var existing = await _readCache.GetOrLoadJsonDocumentAsync(path, ct).ConfigureAwait(false);
+            var existing = await _readCache.GetOrLoadJsonDocumentAsync(path, ct).ConfigureAwait(false);
             if (existing is not null)
             {
                 foreach (var p in existing.RootElement.EnumerateObject())

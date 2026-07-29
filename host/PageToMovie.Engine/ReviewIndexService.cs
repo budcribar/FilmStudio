@@ -64,8 +64,6 @@ public sealed class ReviewIndexService
         }
     }
 
-    public ReviewIndexDocument? Load(string projectId) => LoadAsync(projectId).GetAwaiter().GetResult();
-
     public async Task SaveAsync(ReviewIndexDocument doc, CancellationToken ct = default)
     {
         if (string.IsNullOrWhiteSpace(doc.ProjectId))
@@ -76,8 +74,6 @@ public sealed class ReviewIndexService
         var json = JsonSerializer.Serialize(doc, JsonOpts) + "\n";
         await File.WriteAllTextAsync(path, json, ct).ConfigureAwait(false);
     }
-
-    public void Save(ReviewIndexDocument doc) => SaveAsync(doc).GetAwaiter().GetResult();
 
     /// <summary>Scan on-disk clips and rebuild full index (drafts, human, assembly, frames).</summary>
     public async Task<ReviewIndexDocument> RebuildAsync(
@@ -97,7 +93,7 @@ public sealed class ReviewIndexService
             doc.Clips.Add(await BuildRowAsync(projectId, projectDir, scene, clip, ct: ct).ConfigureAwait(false));
         }
 
-        Save(doc);
+        await SaveAsync(doc, ct).ConfigureAwait(false);
         return doc;
     }
 
@@ -111,7 +107,7 @@ public sealed class ReviewIndexService
         CancellationToken ct = default)
     {
         var projectDir = _projects.GetProjectDir(projectId);
-        var doc = Load(projectId) ?? new ReviewIndexDocument
+        var doc = await LoadAsync(projectId, ct).ConfigureAwait(false) ?? new ReviewIndexDocument
         {
             ProjectId = projectId,
             SchemaVersion = "1",
@@ -130,7 +126,7 @@ public sealed class ReviewIndexService
             .OrderBy(c => c.Scene)
             .ThenBy(c => c.Clip)
             .ToList();
-        Save(doc);
+        await SaveAsync(doc, ct).ConfigureAwait(false);
         return doc;
     }
 
@@ -139,15 +135,15 @@ public sealed class ReviewIndexService
     /// Unlike <see cref="Rebuild"/>, this only touches the one row — other scenes/clips in
     /// the index are left untouched.
     /// </summary>
-    public void RemoveClip(string projectId, int scene, int clip)
+    public async Task RemoveClipAsync(string projectId, int scene, int clip, CancellationToken ct = default)
     {
         var key = $"S{scene:D2}C{clip:D2}";
-        var doc = Load(projectId);
+        var doc = await LoadAsync(projectId, ct).ConfigureAwait(false);
         if (doc is not null)
         {
             var removed = doc.Clips.RemoveAll(c => string.Equals(c.Key, key, StringComparison.OrdinalIgnoreCase));
             if (removed > 0)
-                Save(doc);
+                await SaveAsync(doc, ct).ConfigureAwait(false);
         }
 
         var draftAbs = Path.Combine(_projects.GetProjectDir(projectId),

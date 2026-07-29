@@ -132,7 +132,7 @@ public class ReviewIndexServiceTests : IDisposable
     {
         CreateProjectWithClips("P5", (1, 1));
         await _index.RebuildAsync("P5");
-        var loaded = _index.Load("P5");
+        var loaded = await _index.LoadAsync("P5");
         Assert.NotNull(loaded);
         Assert.Equal("P5", loaded!.ProjectId);
         Assert.Single(loaded.Clips);

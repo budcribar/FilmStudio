@@ -326,7 +326,7 @@ public class ClipDeleteAndDialogueTests
     }
 
     [Fact]
-    public void ReviewIndexService_RemoveClip_only_drops_the_target_row()
+    public async Task ReviewIndexService_RemoveClip_only_drops_the_target_row()
     {
         var root = Path.Combine(Path.GetTempPath(), "fs_reviewrm_" + Guid.NewGuid().ToString("N"));
         var proj = Path.Combine(root, "projects", "Demo");
@@ -343,11 +343,11 @@ public class ClipDeleteAndDialogueTests
             var doc = new ReviewIndexDocument { ProjectId = "Demo", SchemaVersion = "1" };
             doc.Clips.Add(new ReviewIndexClipRow { Key = "S01C01", Scene = 1, Clip = 1 });
             doc.Clips.Add(new ReviewIndexClipRow { Key = "S01C02", Scene = 1, Clip = 2 });
-            reviewIndex.Save(doc);
+            await reviewIndex.SaveAsync(doc);
 
-            reviewIndex.RemoveClip("Demo", scene: 1, clip: 1);
+            await reviewIndex.RemoveClipAsync("Demo", scene: 1, clip: 1);
 
-            var reloaded = reviewIndex.Load("Demo");
+            var reloaded = await reviewIndex.LoadAsync("Demo");
             Assert.NotNull(reloaded);
             Assert.Single(reloaded!.Clips);
             Assert.Equal("S01C02", reloaded.Clips[0].Key);

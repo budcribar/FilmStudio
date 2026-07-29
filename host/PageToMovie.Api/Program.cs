@@ -3927,7 +3927,7 @@ app.MapDelete("/api/projects/{id}/scenes/{scene:int}/clips/{clip:int}", async (
     try
     {
         var wasInBlueprint = store.DeleteClip(id, scene, clip);
-        reviewIndex.RemoveClip(id, scene, clip);
+        await reviewIndex.RemoveClipAsync(id, scene, clip, ct);
         await logs.RemoveClipReviewStateAsync(id, scene, clip, ct);
         return Results.Ok(new
         {
@@ -4026,7 +4026,7 @@ app.MapGet("/api/projects/{id}/review/index", async (
     {
         var doc = rebuild == true
             ? await reviewIndex.RebuildAsync(id, ct: ct)
-            : reviewIndex.Load(id) ?? await reviewIndex.RebuildAsync(id, ct: ct);
+            : await reviewIndex.LoadAsync(id, ct) ?? await reviewIndex.RebuildAsync(id, ct: ct);
         return Results.Ok(new { ok = true, index = doc });
     }
     catch (Exception ex)
