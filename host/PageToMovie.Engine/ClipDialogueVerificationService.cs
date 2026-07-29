@@ -69,8 +69,8 @@ public sealed class ClipDialogueVerificationService
         if (!File.Exists(path)) return null;
         try
         {
-            var json = await File.ReadAllTextAsync(path, ct).ConfigureAwait(false);
-            return JsonSerializer.Deserialize<ClipDialogueVerificationResult>(json, JsonOpts);
+            await using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, 4096, useAsync: true);
+            return await JsonSerializer.DeserializeAsync<ClipDialogueVerificationResult>(stream, JsonOpts, ct).ConfigureAwait(false);
         }
         catch
         {

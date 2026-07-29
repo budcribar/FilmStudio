@@ -503,10 +503,12 @@ public static class ClipDurationEstimator
             _ => SilentActionMaxSeconds,
         };
 
+    private static readonly Regex WordCountRegex = new(@"[\p{L}\p{N}']+", RegexOptions.Compiled);
+
     public static int CountWords(string text)
     {
         if (string.IsNullOrWhiteSpace(text)) return 0;
-        return Regex.Matches(text, @"[\p{L}\p{N}']+").Count;
+        return WordCountRegex.Matches(text).Count;
     }
 
     /// <summary>

@@ -45,7 +45,7 @@ public sealed class JobHub : Hub
     }
 
     public Task<PageToMovie.Core.Models.JobSnapshot> GetSnapshot() =>
-        Task.FromResult(_jobs.GetSnapshot());
+        _jobs.GetSnapshotAsync(Context.ConnectionAborted);
 
     private string ResolveUserId()
     {

@@ -156,6 +156,12 @@ public sealed class FilmJobService
         return new JobSnapshot { Status = "idle", UserId = userId };
     }
 
+    public Task<JobSnapshot> GetSnapshotAsync(CancellationToken ct = default)
+    {
+        ct.ThrowIfCancellationRequested();
+        return Task.FromResult(GetSnapshot());
+    }
+
     public JobSnapshot? GetJob(string jobId) => _jobs.Get(jobId)?.ToSnapshot();
 
     public IReadOnlyList<JobSnapshot> ListJobs(string? userId = null, string? projectId = null, int take = 50) =>

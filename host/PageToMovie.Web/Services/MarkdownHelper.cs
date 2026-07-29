@@ -32,11 +32,14 @@ public static class MarkdownHelper
 
         // If the AI model returned raw HTML tags (e.g. <p>...</p> or <br/>), clean raw paragraph tags
         // so Markdig doesn't double-escape them into literal &lt;p&gt; text.
-        text = LeadingTagRe.Replace(text, "");
-        text = TrailingTagRe.Replace(text, "");
-        text = OpenTagRe.Replace(text, "\n\n");
-        text = CloseTagRe.Replace(text, "");
-        text = BrTagRe.Replace(text, "\n");
+        if (text.Contains('<'))
+        {
+            text = LeadingTagRe.Replace(text, "");
+            text = TrailingTagRe.Replace(text, "");
+            text = OpenTagRe.Replace(text, "\n\n");
+            text = CloseTagRe.Replace(text, "");
+            text = BrTagRe.Replace(text, "\n");
+        }
 
         var html = Markdown.ToHtml(text, Pipeline);
         return new MarkupString(html);

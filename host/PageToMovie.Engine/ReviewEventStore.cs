@@ -188,6 +188,63 @@ public sealed class ReviewEventStore
         return dto;
     }
 
+    public async Task<IReadOnlyList<ReviewLearningEvent>> ReadAllAsync(CancellationToken ct = default)
+    {
+        var path = EventsPath;
+        if (!File.Exists(path))
+            return Array.Empty<ReviewLearningEvent>();
+
+        var list = new List<ReviewLearningEvent>();
+        try
+        {
+            var lines = await File.ReadAllLinesAsync(path, ct).ConfigureAwait(false);
+            foreach (var line in lines)
+            {
+                if (string.IsNullOrWhiteSpace(line)) continue;
+                try
+                {
+                    var ev = JsonSerializer.Deserialize<ReviewLearningEvent>(line, JsonOpts);
+                    if (ev is not null) list.Add(ev);
+                }
+                catch
+                {
+                    /* skip bad line */
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _log.LogWarning(ex, "Failed reading learning events");
+        }
+
+        return list;
+    }
+
+    public async Task<IReadOnlyList<ReviewLearningEvent>> QueryAsync(
+        string? projectId = null,
+        string? type = null,
+        string? category = null,
+        DateTimeOffset? from = null,
+        DateTimeOffset? to = null,
+        int take = 200,
+        CancellationToken ct = default)
+    {
+        take = Math.Clamp(take, 1, 5000);
+        var all = await ReadAllAsync(ct).ConfigureAwait(false);
+        IEnumerable<ReviewLearningEvent> q = all;
+        if (!string.IsNullOrWhiteSpace(projectId))
+            q = q.Where(e => string.Equals(e.ProjectId, projectId, StringComparison.OrdinalIgnoreCase));
+        if (!string.IsNullOrWhiteSpace(type))
+            q = q.Where(e => string.Equals(e.Type, type, StringComparison.OrdinalIgnoreCase));
+        if (!string.IsNullOrWhiteSpace(category))
+            q = q.Where(e => string.Equals(e.Category, category, StringComparison.OrdinalIgnoreCase));
+        if (from is { } f)
+            q = q.Where(e => e.Ts >= f);
+        if (to is { } t)
+            q = q.Where(e => e.Ts <= t);
+        return q.OrderByDescending(e => e.Ts).Take(take).ToList();
+    }
+
     public IReadOnlyList<ReviewLearningEvent> ReadAll()
     {
         var path = EventsPath;
