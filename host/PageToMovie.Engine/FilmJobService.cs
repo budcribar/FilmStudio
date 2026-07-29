@@ -3348,19 +3348,11 @@ public sealed class FilmJobService
         bool needReferenceImages,
         CancellationToken ct)
     {
-        if (!needContinue && !needReferenceImages)
+        if (!needReferenceImages)
             return;
 
         var modelId = await ResolveVideoModelAsync(projectId, ct).ConfigureAwait(false);
         var entry = SupportedModelCatalog.ResolveOrDefault(modelId, ModelCapability.Video);
-        if (needContinue && !entry.SupportsVideoContinue)
-        {
-            throw new InvalidOperationException(
-                $"Video model '{entry.Id}' does not support clip-to-clip continue " +
-                "(required for clip 2+). Switch project video model to grok-imagine-video " +
-                "(or another model with video-extend). " +
-                (string.IsNullOrWhiteSpace(entry.Notes) ? "" : entry.Notes));
-        }
 
         if (needReferenceImages && !entry.SupportsReferenceImages)
         {
