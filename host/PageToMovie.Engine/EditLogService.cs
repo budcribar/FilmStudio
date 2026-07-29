@@ -53,9 +53,16 @@ public sealed class EditLogService
     {
         var path = await LogPathAsync(projectId, ct).ConfigureAwait(false);
         Directory.CreateDirectory(Path.GetDirectoryName(path)!);
-        await using var stream = new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.None, 4096, useAsync: true);
-        await JsonSerializer.SerializeAsync(stream, doc, JsonOpts, ct).ConfigureAwait(false);
-        await stream.WriteAsync(NewLineBytes, ct).ConfigureAwait(false);
+        // Write to a temp file then atomically rename — a crash/cancellation mid-write must never
+        // leave edit_feedback_log.json truncated, since LoadAsync silently returns an empty
+        // document on any parse failure (losing the whole project's edit history with no error).
+        var tmp = path + ".tmp";
+        await using (var stream = new FileStream(tmp, FileMode.Create, FileAccess.Write, FileShare.None, 4096, useAsync: true))
+        {
+            await JsonSerializer.SerializeAsync(stream, doc, JsonOpts, ct).ConfigureAwait(false);
+            await stream.WriteAsync(NewLineBytes, ct).ConfigureAwait(false);
+        }
+        File.Move(tmp, path, overwrite: true);
     }
 
     public async Task<EditLogEntry> AddAsync(

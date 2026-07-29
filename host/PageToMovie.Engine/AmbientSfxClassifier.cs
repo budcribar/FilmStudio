@@ -231,7 +231,11 @@ JSON only:
     {
         var set = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         if (string.IsNullOrWhiteSpace(s)) return set;
-        foreach (var part in TokenSplitRegex.Split(s))
+        // Lowercase before splitting: NormalizeList() below relies on this to produce a
+        // deterministic tag casing regardless of how the AI model happened to capitalize its
+        // response (models are inconsistent call-to-call — "Rain" vs "RAIN" vs "rain").
+        var lower = s.ToLowerInvariant();
+        foreach (var part in TokenSplitRegex.Split(lower))
         {
             var t = part.Trim().Trim('.', ' ');
             if (t.Length < 2) continue;
@@ -240,7 +244,7 @@ JSON only:
         }
         if (set.Count == 0)
         {
-            foreach (var w in s.Split(new[] { ' ', ',', ';' }, StringSplitOptions.RemoveEmptyEntries))
+            foreach (var w in lower.Split(new[] { ' ', ',', ';' }, StringSplitOptions.RemoveEmptyEntries))
                 if (w.Length >= 3) set.Add(w.Trim());
         }
         return set;
