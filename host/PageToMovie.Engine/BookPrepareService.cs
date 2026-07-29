@@ -22,6 +22,13 @@ public sealed class BookPrepareService
     private readonly PageToMovieOptions _opts;
     private readonly ILogger<BookPrepareService> _log;
 
+    private static readonly Regex HtmlEntryExtRegex = new(@"\.(xhtml|html|htm)$", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+    private static readonly Regex HtmlTagsRegex = new(@"<[^>]+>", RegexOptions.Compiled);
+    private static readonly Regex WhitespaceNormalizeRegex = new(@"\s+", RegexOptions.Compiled);
+    private static readonly Regex ImageFileExtRegex = new(@"\.(png|jpe?g|webp)$", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+    private static readonly Regex EmbeddedPageNumRegex = new(@"embedded_p(\d+)", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+    private static readonly Regex RenderedPageNumRegex = new(@"page_(\d+)", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
     public BookPrepareService(
         ProjectStore projects,
         IVisionClient vision,
@@ -441,7 +448,7 @@ public sealed class BookPrepareService
 
         // 2. Extract story text from HTML/XHTML entries
         var htmlEntries = archive.Entries
-            .Where(e => Regex.IsMatch(e.FullName, @"\.(xhtml|html|htm)$", RegexOptions.IgnoreCase) &&
+            .Where(e => HtmlEntryExtRegex.IsMatch(e.FullName) &&
                         !e.Name.Contains("toc", StringComparison.OrdinalIgnoreCase) &&
                         !e.Name.Contains("nav", StringComparison.OrdinalIgnoreCase))
             .OrderBy(e => e.FullName, StringComparer.OrdinalIgnoreCase)
@@ -454,9 +461,9 @@ public sealed class BookPrepareService
             {
                 using var reader = new StreamReader(entry.Open(), Encoding.UTF8);
                 var html = await reader.ReadToEndAsync(ct).ConfigureAwait(false);
-                var rawText = Regex.Replace(html, @"<[^>]+>", " ");
+                var rawText = HtmlTagsRegex.Replace(html, " ");
                 var clean = System.Net.WebUtility.HtmlDecode(rawText);
-                clean = Regex.Replace(clean, @"\s+", " ").Trim();
+                clean = WhitespaceNormalizeRegex.Replace(clean, " ").Trim();
                 if (clean.Length > 50)
                 {
                     pageIndex++;
@@ -688,19 +695,19 @@ public sealed class BookPrepareService
         if (!Directory.Exists(imgDir)) return;
         var rows = new List<Dictionary<string, object?>>();
         foreach (var fi in new DirectoryInfo(imgDir).EnumerateFiles()
-                     .Where(f => Regex.IsMatch(f.Name, @"\.(png|jpe?g|webp)$", RegexOptions.IgnoreCase))
+                     .Where(f => ImageFileExtRegex.IsMatch(f.Name))
                      .OrderBy(f => f.Name, StringComparer.OrdinalIgnoreCase))
         {
             var name = fi.Name;
             var f = fi.FullName;
-            var m = Regex.Match(name, @"embedded_p(\d+)", RegexOptions.IgnoreCase);
+            var m = EmbeddedPageNumRegex.Match(name);
             var kind = "embedded";
             int page = 0;
             if (m.Success)
                 int.TryParse(m.Groups[1].Value, out page);
             else
             {
-                m = Regex.Match(name, @"page_(\d+)", RegexOptions.IgnoreCase);
+                m = RenderedPageNumRegex.Match(name);
                 if (m.Success)
                 {
                     kind = "rendered_page";

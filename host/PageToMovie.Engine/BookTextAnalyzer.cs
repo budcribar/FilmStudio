@@ -22,6 +22,10 @@ public static class BookTextAnalyzer
         @"\b(?:[A-Za-z]*[0-9][A-Za-z0-9]*|[A-Za-z]{1,2}[;:][A-Za-z]{2,})\b",
         RegexOptions.Compiled);
 
+    private static readonly Regex IllustrationParenRegex = new(@"\(\s*illustration only\s*\)", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+    private static readonly Regex WhitespaceSplitRegex = new(@"\s+", RegexOptions.Compiled);
+    private static readonly Regex IllustrationExactMatchRegex = new(@"^\(.*illustration.*\)$", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
     public static BookTextAnalysis Analyze(string text, int? pagesHint = null)
     {
         text = GutenbergCleaner.StripHeaderAndFooter(text ?? "");
@@ -32,8 +36,8 @@ public static class BookTextAnalyzer
 
         var contentBodies = bodies.Where(b => !IsIllustrationOnly(b)).ToList();
         var plain = PageMarker.Replace(text ?? "", " ");
-        plain = Regex.Replace(plain, @"\(\s*illustration only\s*\)", " ", RegexOptions.IgnoreCase);
-        plain = Regex.Replace(plain, @"\s+", " ").Trim();
+        plain = IllustrationParenRegex.Replace(plain, " ");
+        plain = WhitespaceSplitRegex.Replace(plain, " ").Trim();
         var chars = plain.Length;
         var words = string.IsNullOrEmpty(plain) ? 0 : plain.Split(' ', StringSplitOptions.RemoveEmptyEntries).Length;
         var letters = plain.Count(char.IsLetter);
@@ -154,7 +158,7 @@ public static class BookTextAnalyzer
         if (b.Length == 0) return true;
         if (b is "(illustration only)" or "illustration only" or "[illustration only]")
             return true;
-        return Regex.IsMatch(b, @"^\(.*illustration.*\)$");
+        return IllustrationExactMatchRegex.IsMatch(b);
     }
 }
 

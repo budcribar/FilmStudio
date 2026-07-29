@@ -22,6 +22,9 @@ public sealed class AmbientSfxClassifier
     private readonly PageToMovieOptions _opts;
     private readonly ILogger<AmbientSfxClassifier> _log;
 
+    private static readonly Regex TokenSplitRegex = new(@"[,;/|]+|\s{2,}", RegexOptions.Compiled);
+    private static readonly Regex FencePrefixRegex = new(@"^```(?:json)?\s*", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
     public AmbientSfxClassifier(
         IChatClient chat,
         IOptions<PageToMovieOptions> opts,
@@ -228,7 +231,7 @@ JSON only:
     {
         var set = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         if (string.IsNullOrWhiteSpace(s)) return set;
-        foreach (var part in Regex.Split(s.ToLowerInvariant(), @"[,;/|]+|\s{2,}"))
+        foreach (var part in TokenSplitRegex.Split(s.ToLowerInvariant()))
         {
             var t = part.Trim().Trim('.', ' ');
             if (t.Length < 2) continue;
@@ -291,7 +294,7 @@ JSON only:
     {
         raw = (raw ?? "").Trim();
         if (!raw.StartsWith("```")) return raw;
-        raw = Regex.Replace(raw, @"^```(?:json)?\s*", "", RegexOptions.IgnoreCase);
+        raw = FencePrefixRegex.Replace(raw, "");
         // Truncate at the closing fence wherever it falls — some models append prose
         // (e.g. a "Reasoning:" section) after the fenced JSON instead of ending on it.
         var fenceEnd = raw.IndexOf("```", StringComparison.Ordinal);
