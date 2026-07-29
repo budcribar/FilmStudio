@@ -61,6 +61,12 @@ public sealed class FalVideoClient : IVideoClient
         var apiKey = ResolveApiKey()
             ?? throw new InvalidOperationException($"Fal.ai API key is missing. Set {SupportedModelCatalog.FalApiKeyEnv} in environment or Configuration.");
 
+        var maxLen = SupportedModelCatalog.ResolveOrDefault(model, ModelCapability.Video).MaxPromptLength ?? 1000;
+        if (prompt.Length > maxLen)
+        {
+            prompt = ClipVideoPromptBuilder.FitPromptToVideoBudget(prompt, maxLen);
+        }
+
         var numFrames = durationSeconds is > 0 and <= 4 ? 85 : 129;
 
         var payload = new Dictionary<string, object?>

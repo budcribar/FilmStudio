@@ -1204,21 +1204,26 @@ public static class ClipVideoPromptBuilder
     /// addenda first, then cap total length while keeping the head (character locks + framing).
     /// <paramref name="attempt"/> is 1-based (first retry = 1).
     /// </summary>
-    public static string ShortenPromptForRetry(string prompt, int attempt)
+    public static string ShortenPromptForRetry(string prompt, int attempt, int hardCapChars = VideoPromptHardCapChars)
     {
         if (string.IsNullOrEmpty(prompt)) return prompt;
         attempt = Math.Max(1, attempt);
         // Retry always drops house-rule / project addenda first (even if under cap)
         var p = StripLearningAddenda(prompt);
-        if (p.Length > VideoPromptHardCapChars)
-            p = HeadCap(p, VideoPromptHardCapChars);
+        if (p.Length > hardCapChars)
+            p = HeadCap(p, hardCapChars);
 
         if (attempt == 1)
             return p;
 
         // Later attempts: tighter caps (chars), keep head where identity/action live
-        var caps = new[] { 0, 0, VideoPromptHardCapChars, 3200, 2400, 1800, 1200 };
-        var cap = attempt < caps.Length ? caps[attempt] : 1000;
+        var cap = Math.Min(hardCapChars, attempt switch
+        {
+            2 => (int)(hardCapChars * 0.8),
+            3 => (int)(hardCapChars * 0.6),
+            4 => (int)(hardCapChars * 0.4),
+            _ => (int)(hardCapChars * 0.3)
+        });
         if (p.Length <= cap)
             return p;
         return HeadCap(p, cap);

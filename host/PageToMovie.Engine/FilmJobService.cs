@@ -2642,15 +2642,20 @@ public sealed class FilmJobService
             }
             catch { /* non-fatal */ }
 
-            // Pre-budget to xAI video ~4096 char hard cap (strip HOUSE RULES / project rules first).
+            if (string.IsNullOrWhiteSpace(resolution))
+                resolution = await ResolveVideoResolutionAsync(projectId, null, ct);
+
+            var modelMaxPromptLen = modelEntry.MaxPromptLength ?? ClipVideoPromptBuilder.VideoPromptHardCapChars;
+
+            // Pre-budget to model-specific prompt limit (e.g. 1000 for Fal.ai, 4096 for Grok).
             // Avoids a guaranteed first-attempt 400 on every clip.
             var preLen = built.Prompt.Length;
-            var fitted = ClipVideoPromptBuilder.FitPromptToVideoBudget(built.Prompt);
+            var fitted = ClipVideoPromptBuilder.FitPromptToVideoBudget(built.Prompt, modelMaxPromptLen);
             if (fitted.Length < preLen)
             {
                 built = built.WithPrompt(fitted, $" · pre-budget {preLen}→{fitted.Length}");
                 await AppendLogAsync(
-                    $"  [Prompt] pre-budget {preLen}→{fitted.Length} chars (video hard cap {ClipVideoPromptBuilder.VideoPromptHardCapChars})");
+                    $"  [Prompt] pre-budget {preLen}→{fitted.Length} chars (model {modelEntry.Id} hard cap {modelMaxPromptLen})");
             }
 
             // Persist + log full prompt for evaluation (admin logs surface this)
@@ -2664,11 +2669,6 @@ public sealed class FilmJobService
                     string.Join(", ", built.ReferenceImagePaths.Select(Path.GetFileName)));
             else if (prevVideoPath is not null)
                 await AppendLogAsync("  [Refs] video-extend — locked plates not attached to API (IDENTITY text only)");
-
-            if (string.IsNullOrWhiteSpace(model))
-                model = await ResolveVideoModelAsync(projectId, ct).ConfigureAwait(false);
-            if (string.IsNullOrWhiteSpace(resolution))
-                resolution = await ResolveVideoResolutionAsync(projectId, null, ct);
 
             // Only continuation-chain models get carried-forward padding: clip N+1 already can't
             // start before clip N is on disk for these, so reconciling against N's real measurement
