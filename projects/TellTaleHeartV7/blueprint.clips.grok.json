@@ -683,7 +683,14 @@
       ],
       "video_provider_profile": "grok",
       "spoiler_constraints": [],
-      "source_book_refs": []
+      "source_book_refs": [],
+      "music_score": {
+        "prompt": "Sparse cinematic ambient opening with a fragile solo piano leitmotif playing a descending four-note phrase in a minor key, soft felted piano tones, subtle low string drones underneath, distant airy pads, extremely sparse texture, gentle reverb tails, establishing quiet unease and empty space",
+        "genre": "Ambient Cinematic Piano",
+        "mood": "Empty, Reflective, Quiet Dread",
+        "tempo": "60 BPM, free rubato"
+      },
+      "music_prompt": "Sparse cinematic ambient opening with a fragile solo piano leitmotif playing a descending four-note phrase in a minor key, soft felted piano tones, subtle low string drones underneath, distant airy pads, extremely sparse texture, gentle reverb tails, establishing quiet unease and empty space"
     },
     {
       "scene_number": 2,
@@ -864,7 +871,14 @@
       ],
       "video_provider_profile": "grok",
       "spoiler_constraints": [],
-      "source_book_refs": []
+      "source_book_refs": [],
+      "music_score": {
+        "prompt": "The same fragile piano leitmotif returns slightly more defined, joined by soft sustained cello harmonics and faint heartbeat-like low tom pulses, still sparse but with growing internal tension, cold reverb, minimal percussion, evolving the theme into subtle anxiety",
+        "genre": "Psychological Ambient",
+        "mood": "Uneasy, Watchful, Introspective",
+        "tempo": "66 BPM, slow pulse"
+      },
+      "music_prompt": "The same fragile piano leitmotif returns slightly more defined, joined by soft sustained cello harmonics and faint heartbeat-like low tom pulses, still sparse but with growing internal tension, cold reverb, minimal percussion, evolving the theme into subtle anxiety"
     },
     {
       "scene_number": 3,
@@ -1117,7 +1131,14 @@
       ],
       "video_provider_profile": "grok",
       "spoiler_constraints": [],
-      "source_book_refs": []
+      "source_book_refs": [],
+      "music_score": {
+        "prompt": "Leitmotif now carried by muted strings in canon, low brass swells entering under the piano motif, dry ticking clock-like percussion, tightening harmony, darker mid-range texture, building quiet paranoia while keeping the core four-note theme recognizable",
+        "genre": "Dark Orchestral Underscore",
+        "mood": "Tense, Suspicious, Controlled",
+        "tempo": "72 BPM, steady"
+      },
+      "music_prompt": "Leitmotif now carried by muted strings in canon, low brass swells entering under the piano motif, dry ticking clock-like percussion, tightening harmony, darker mid-range texture, building quiet paranoia while keeping the core four-note theme recognizable"
     },
     {
       "scene_number": 4,
@@ -1375,7 +1396,14 @@
       ],
       "video_provider_profile": "grok",
       "spoiler_constraints": [],
-      "source_book_refs": []
+      "source_book_refs": [],
+      "music_score": {
+        "prompt": "Orchestral tension cue: piano leitmotif fragmented and echoed by staccato violas, deep contrabass pulses, subtle dissonant cluster chords, restrained metallic percussion, atmosphere of growing obsession and confinement",
+        "genre": "Psychological Thriller Orchestral",
+        "mood": "Paranoid, Obsessive, Claustrophobic",
+        "tempo": "78 BPM, insistent pulse"
+      },
+      "music_prompt": "Orchestral tension cue: piano leitmotif fragmented and echoed by staccato violas, deep contrabass pulses, subtle dissonant cluster chords, restrained metallic percussion, atmosphere of growing obsession and confinement"
     },
     {
       "scene_number": 5,
@@ -1742,7 +1770,14 @@
       ],
       "video_provider_profile": "grok",
       "spoiler_constraints": [],
-      "source_book_refs": []
+      "source_book_refs": [],
+      "music_score": {
+        "prompt": "Darker evolution: the leitmotif inverted and played on low piano and bass clarinet, layered with grinding low strings and irregular heartbeat percussion, heavy reverb, sense of something hidden surfacing, denser mid-low texture",
+        "genre": "Dark Cinematic Drone-Orchestral",
+        "mood": "Ominous, Foreboding, Heavy",
+        "tempo": "70 BPM, lumbering"
+      },
+      "music_prompt": "Darker evolution: the leitmotif inverted and played on low piano and bass clarinet, layered with grinding low strings and irregular heartbeat percussion, heavy reverb, sense of something hidden surfacing, denser mid-low texture"
     },
     {
       "scene_number": 6,
@@ -2039,7 +2074,14 @@
       ],
       "video_provider_profile": "grok",
       "spoiler_constraints": [],
-      "source_book_refs": []
+      "source_book_refs": [],
+      "music_score": {
+        "prompt": "Sudden drop to near-silence then the leitmotif reappears distorted through prepared piano and reversed string textures, sparse high harmonics, unsettling metallic scrapes, high tension minimalism, emotional isolation",
+        "genre": "Experimental Ambient Thriller",
+        "mood": "Disoriented, Isolated, Brittle",
+        "tempo": "64 BPM, irregular"
+      },
+      "music_prompt": "Sudden drop to near-silence then the leitmotif reappears distorted through prepared piano and reversed string textures, sparse high harmonics, unsettling metallic scrapes, high tension minimalism, emotional isolation"
     },
     {
       "scene_number": 7,
@@ -2216,7 +2258,14 @@
       ],
       "video_provider_profile": "grok",
       "spoiler_constraints": [],
-      "source_book_refs": []
+      "source_book_refs": [],
+      "music_score": {
+        "prompt": "Building momentum: full string section takes the leitmotif in urgent ostinato, driving low toms and muted brass hits, rising harmonic tension, cinematic thriller energy, the theme now aggressive and relentless",
+        "genre": "Cinematic Thriller Orchestral",
+        "mood": "Urgent, Determined, Escalating",
+        "tempo": "96 BPM, driving"
+      },
+      "music_prompt": "Building momentum: full string section takes the leitmotif in urgent ostinato, driving low toms and muted brass hits, rising harmonic tension, cinematic thriller energy, the theme now aggressive and relentless"
     },
     {
       "scene_number": 8,
@@ -2469,7 +2518,14 @@
       ],
       "video_provider_profile": "grok",
       "spoiler_constraints": [],
-      "source_book_refs": []
+      "source_book_refs": [],
+      "music_score": {
+        "prompt": "High-stakes chase-like underscore: accelerated version of the four-note leitmotif in strings and piano, aggressive percussion battery, brass stabs, swirling woodwind runs, maximum kinetic energy while keeping thematic identity",
+        "genre": "Action Thriller Orchestral",
+        "mood": "Frantic, Desperate, Propulsive",
+        "tempo": "128 BPM, accelerating"
+      },
+      "music_prompt": "High-stakes chase-like underscore: accelerated version of the four-note leitmotif in strings and piano, aggressive percussion battery, brass stabs, swirling woodwind runs, maximum kinetic energy while keeping thematic identity"
     },
     {
       "scene_number": 9,
@@ -3354,7 +3410,14 @@
       ],
       "video_provider_profile": "grok",
       "spoiler_constraints": [],
-      "source_book_refs": []
+      "source_book_refs": [],
+      "music_score": {
+        "prompt": "Abrupt collapse into dark ambient after climax: stretched and pitch-shifted remnants of the leitmotif in deep drones, sub-bass pressure, distant distorted piano echoes, vast empty reverb, aftermath desolation",
+        "genre": "Dark Ambient Drone",
+        "mood": "Devastated, Hollow, Shocked",
+        "tempo": "50 BPM, almost static"
+      },
+      "music_prompt": "Abrupt collapse into dark ambient after climax: stretched and pitch-shifted remnants of the leitmotif in deep drones, sub-bass pressure, distant distorted piano echoes, vast empty reverb, aftermath desolation"
     },
     {
       "scene_number": 10,
@@ -3455,7 +3518,14 @@
       ],
       "video_provider_profile": "grok",
       "spoiler_constraints": [],
-      "source_book_refs": []
+      "source_book_refs": [],
+      "music_score": {
+        "prompt": "Slow mournful return of the original piano leitmotif, now accompanied by solo cello in counter-melody, sparse harp accents, warm yet sad string pads, reflective sorrow and fragile humanity",
+        "genre": "Emotional Cinematic Orchestral",
+        "mood": "Melancholic, Vulnerable, Tender",
+        "tempo": "68 BPM, gentle"
+      },
+      "music_prompt": "Slow mournful return of the original piano leitmotif, now accompanied by solo cello in counter-melody, sparse harp accents, warm yet sad string pads, reflective sorrow and fragile humanity"
     },
     {
       "scene_number": 11,
@@ -4777,7 +4847,14 @@
       ],
       "video_provider_profile": "grok",
       "spoiler_constraints": [],
-      "source_book_refs": []
+      "source_book_refs": [],
+      "music_score": {
+        "prompt": "Growing resolve: leitmotif strengthened in mid-register strings and soft horns, steady authentic cadence, subtle positive harmonic shift toward major inflection, quiet determination building",
+        "genre": "Dramatic Orchestral",
+        "mood": "Resolute, Hopeful Undercurrent, Focused",
+        "tempo": "80 BPM, steady march-like"
+      },
+      "music_prompt": "Growing resolve: leitmotif strengthened in mid-register strings and soft horns, steady authentic cadence, subtle positive harmonic shift toward major inflection, quiet determination building"
     },
     {
       "scene_number": 12,
@@ -4916,7 +4993,14 @@
       ],
       "video_provider_profile": "grok",
       "spoiler_constraints": [],
-      "source_book_refs": []
+      "source_book_refs": [],
+      "music_score": {
+        "prompt": "Confrontational intensity: bold brass statement of the leitmotif against aggressive string ostinatos, powerful timpani and taiko hits, dense orchestral tuttis, high dramatic conflict energy",
+        "genre": "Epic Thriller Orchestral",
+        "mood": "Confrontational, Powerful, Defiant",
+        "tempo": "110 BPM, forceful"
+      },
+      "music_prompt": "Confrontational intensity: bold brass statement of the leitmotif against aggressive string ostinatos, powerful timpani and taiko hits, dense orchestral tuttis, high dramatic conflict energy"
     },
     {
       "scene_number": 13,
@@ -5283,7 +5367,14 @@
       ],
       "video_provider_profile": "grok",
       "spoiler_constraints": [],
-      "source_book_refs": []
+      "source_book_refs": [],
+      "music_score": {
+        "prompt": "Twisting uncertainty: fragmented leitmotif passed between dissonant woodwinds and muted trumpet, irregular rhythms, uneasy harmonic suspensions, sense of moral ambiguity and shifting ground",
+        "genre": "Psychological Suspense",
+        "mood": "Ambiguous, Unsettled, Questioning",
+        "tempo": "88 BPM, unstable"
+      },
+      "music_prompt": "Twisting uncertainty: fragmented leitmotif passed between dissonant woodwinds and muted trumpet, irregular rhythms, uneasy harmonic suspensions, sense of moral ambiguity and shifting ground"
     },
     {
       "scene_number": 14,
@@ -5502,7 +5593,14 @@
       ],
       "video_provider_profile": "grok",
       "spoiler_constraints": [],
-      "source_book_refs": []
+      "source_book_refs": [],
+      "music_score": {
+        "prompt": "Peak emotional revelation: soaring full orchestra carrying an expanded lyrical version of the leitmotif, rich harmonic resolution moments, sweeping strings and noble horns, cathartic release mixed with lingering pain",
+        "genre": "Cinematic Emotional Orchestral",
+        "mood": "Cathartic, Bittersweet, Revealing",
+        "tempo": "76 BPM, expansive"
+      },
+      "music_prompt": "Peak emotional revelation: soaring full orchestra carrying an expanded lyrical version of the leitmotif, rich harmonic resolution moments, sweeping strings and noble horns, cathartic release mixed with lingering pain"
     },
     {
       "scene_number": 15,
@@ -5608,7 +5706,14 @@
       ],
       "video_provider_profile": "grok",
       "spoiler_constraints": [],
-      "source_book_refs": []
+      "source_book_refs": [],
+      "music_score": {
+        "prompt": "Aftermath quiet: intimate solo piano restatement of the original four-note leitmotif, very soft, long silences between phrases, delicate high-register harmonics, profound stillness and acceptance",
+        "genre": "Minimal Solo Piano",
+        "mood": "Quiet Acceptance, Somber Peace, Reflective",
+        "tempo": "58 BPM, spacious rubato"
+      },
+      "music_prompt": "Aftermath quiet: intimate solo piano restatement of the original four-note leitmotif, very soft, long silences between phrases, delicate high-register harmonics, profound stillness and acceptance"
     },
     {
       "scene_number": 16,
@@ -6889,7 +6994,14 @@
       ],
       "video_provider_profile": "grok",
       "spoiler_constraints": [],
-      "source_book_refs": []
+      "source_book_refs": [],
+      "music_score": {
+        "prompt": "Gentle rebuilding texture: piano leitmotif joined by soft acoustic guitar and warm string quartet, light hopeful counter-melodies, open major-minor hybrid harmony, sense of fragile new beginning",
+        "genre": "Indie Cinematic Hybrid",
+        "mood": "Tentative Hope, Healing, Soft",
+        "tempo": "74 BPM, flowing"
+      },
+      "music_prompt": "Gentle rebuilding texture: piano leitmotif joined by soft acoustic guitar and warm string quartet, light hopeful counter-melodies, open major-minor hybrid harmony, sense of fragile new beginning"
     },
     {
       "scene_number": 17,
@@ -7028,7 +7140,14 @@
       ],
       "video_provider_profile": "grok",
       "spoiler_constraints": [],
-      "source_book_refs": []
+      "source_book_refs": [],
+      "music_score": {
+        "prompt": "Broad emotional resolution: full warm orchestra and subtle choir pads carrying a transformed major-key version of the leitmotif, gentle rising lines, golden harmonic glow, earned peace and closure",
+        "genre": "Emotional Orchestral Finale",
+        "mood": "Resolved, Warm, Poignant Closure",
+        "tempo": "70 BPM, dignified"
+      },
+      "music_prompt": "Broad emotional resolution: full warm orchestra and subtle choir pads carrying a transformed major-key version of the leitmotif, gentle rising lines, golden harmonic glow, earned peace and closure"
     },
     {
       "scene_number": 18,
@@ -7050,7 +7169,7 @@
           "timestamp": "00:00-00:10",
           "veo_continuation_source": "none",
           "location_id": "Loc_Credits",
-          "visual_prompt": "Cinematic end-credits title card, locked-off camera, no people, no faces, no logos of other brands. Solid deep black background with subtle film grain. Centered white sans-serif end-credit typography, high contrast, perfectly sharp and fully legible, classic theatrical end-title card, slow gentle fade-in of text. On-screen text only: THE TELL-TALE HEART. Based on the story by Edgar Allan Poe. Created with PageToMovie · pagetomovie.com. Photoreal film look.",
+          "visual_prompt": "Cinematic end-credits title card, locked-off camera, no people, no faces, no logos of other brands. Solid deep black background with subtle film grain. Centered white sans-serif end-credit typography, high contrast, perfectly sharp and fully legible, classic theatrical end-title card, slow gentle fade-in of text. On-screen text only: THE TELL-TALE HEART. Based on the story by Edgar Allan Poe. Created with PageToMovie \u00B7 pagetomovie.com. Photoreal film look.",
           "negative_prompt": "no extra unmentioned hats or jackets, no modern wristwatches, no electric light bulbs, no plastic, no zippers, no modern cars, no printed logos, no denim, no asphalt, no modern hair gel, no sneakers, no fluorescent lights, no power outlets, no synthetic fabrics",
           "audio_payload": {
             "delivery": "none",
@@ -7085,7 +7204,14 @@
       ],
       "video_provider_profile": "grok",
       "spoiler_constraints": [],
-      "source_book_refs": []
+      "source_book_refs": [],
+      "music_score": {
+        "prompt": "Final end-credit evolution: the complete leitmotif journey recalled in a single elegant piano and string arrangement, starting sparse then blooming into full warm orchestra before fading to solo piano again, thematic unity and quiet transcendence, long reverb decay into silence",
+        "genre": "Cinematic Orchestral Theme",
+        "mood": "Transcendent, Complete, Serene",
+        "tempo": "65 BPM, final ritardando"
+      },
+      "music_prompt": "Final end-credit evolution: the complete leitmotif journey recalled in a single elegant piano and string arrangement, starting sparse then blooming into full warm orchestra before fading to solo piano again, thematic unity and quiet transcendence, long reverb decay into silence"
     }
   ],
   "stage2_meta": {

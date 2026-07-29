@@ -113,6 +113,7 @@ builder.Services.AddSingleton<NegativePromptClassifier>();
 builder.Services.AddSingleton<WardrobeContinuityClassifier>();
 builder.Services.AddSingleton<CharacterEmotionArcClassifier>();
 builder.Services.AddSingleton<SoundDesignComposerClassifier>();
+builder.Services.AddSingleton<SceneMusicCompositionService>();
 builder.Services.AddSingleton<DepthOfFieldClassifier>();
 builder.Services.AddSingleton<ColorPaletteGradingClassifier>();
 builder.Services.AddSingleton<Stage2PlannerService>();
@@ -4541,6 +4542,33 @@ app.MapPost("/api/projects/{id}/scenes/{scene:int}/score-music", async (
         ct: ct);
 
     return Results.Ok(new { ok = result is not null, result });
+});
+
+/// <summary>
+/// Non-destructively augments blueprint.clips.grok.json with AI-composed scene music prompts across all scenes.
+/// </summary>
+app.MapPost("/api/projects/{id}/augment-music", async (
+    string id,
+    ProjectStore store,
+    SceneMusicCompositionService composer,
+    IUserContext user,
+    IOptions<PageToMovieOptions> opts,
+    string? model = null,
+    CancellationToken ct = default) =>
+{
+    if (AuthGate.RequireLogin(user, opts) is { } denied)
+        return denied;
+
+    var pDir = await store.GetProjectDirAsync(id, ct);
+    if (string.IsNullOrWhiteSpace(pDir) || !Directory.Exists(pDir))
+        return Results.NotFound(new { ok = false, error = "Project not found." });
+
+    var success = await composer.AugmentProjectMusicAsync(pDir, model, ct);
+    if (!success)
+        return Results.BadRequest(new { ok = false, error = "Music score augmentation failed. Ensure blueprint.clips.grok.json exists." });
+
+    store.TriggerAutoGitCommit(id, "Augment blueprint with AI music score prompts");
+    return Results.Ok(new { ok = true, message = "Successfully augmented blueprint with AI background music scores." });
 });
 
 /// <summary>

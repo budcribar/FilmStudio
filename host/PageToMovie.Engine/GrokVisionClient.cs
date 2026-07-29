@@ -363,8 +363,6 @@ public sealed class GrokVisionClient : IVisionClient
             .Where(p => !string.IsNullOrWhiteSpace(p) && File.Exists(p) && AllowedImageExtensions.Contains(Path.GetExtension(p)))
             .Take(8)
             .ToList();
-        if (paths.Count == 0)
-            throw new InvalidOperationException("At least one image path required for vision review.");
 
         var content = new List<object?>();
         foreach (var path in paths)
