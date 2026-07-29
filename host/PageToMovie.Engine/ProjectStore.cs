@@ -421,6 +421,139 @@ public sealed class ProjectStore
         return item;
     }
 
+    /// <summary>
+    /// Soft-deletes a take version by moving its .mp4 and sidecar files into assets/video/.trash/
+    /// </summary>
+    public async Task<bool> SoftDeleteClipVersionAsync(string projectId, int scene, int clip, string versionId)
+    {
+        if (string.IsNullOrWhiteSpace(projectId) || string.IsNullOrWhiteSpace(versionId)) return false;
+        var dir = GetProjectDir(projectId);
+        if (!Directory.Exists(dir)) return false;
+
+        var videoDir = Path.Combine(dir, "assets", "video");
+        var versions = await GetClipVersionsAsync(projectId, scene, clip).ConfigureAwait(false);
+        var target = versions.FirstOrDefault(v => string.Equals(v.VersionId, versionId, StringComparison.OrdinalIgnoreCase));
+        if (target is null || target.IsCurrent) return false;
+
+        var targetMp4 = Path.Combine(videoDir, target.Mp4FileName);
+        if (!File.Exists(targetMp4))
+        {
+            targetMp4 = Path.Combine(videoDir, "history", target.Mp4FileName);
+        }
+        if (!File.Exists(targetMp4)) return false;
+
+        var trashDir = Path.Combine(videoDir, ".trash");
+        Directory.CreateDirectory(trashDir);
+
+        var trashMp4 = Path.Combine(trashDir, target.Mp4FileName);
+        File.Move(targetMp4, trashMp4, overwrite: true);
+
+        var sidecar = Path.ChangeExtension(targetMp4, ".clip.json");
+        if (File.Exists(sidecar))
+        {
+            var trashSidecar = Path.Combine(trashDir, Path.GetFileName(sidecar));
+            try { File.Move(sidecar, trashSidecar, overwrite: true); } catch { }
+        }
+
+        var meta = Path.ChangeExtension(targetMp4, ".meta.json");
+        if (File.Exists(meta))
+        {
+            var trashMeta = Path.Combine(trashDir, Path.GetFileName(meta));
+            try { File.Move(meta, trashMeta, overwrite: true); } catch { }
+        }
+
+        InvalidateSceneListCache(projectId);
+        return true;
+    }
+
+    /// <summary>
+    /// Lists soft-deleted clip versions sitting inside assets/video/.trash/
+    /// </summary>
+    public async Task<IReadOnlyList<ClipVersionItem>> GetTrashClipVersionsAsync(string projectId, int scene, int clip)
+    {
+        if (string.IsNullOrWhiteSpace(projectId)) return Array.Empty<ClipVersionItem>();
+        var dir = GetProjectDir(projectId);
+        if (!Directory.Exists(dir)) return Array.Empty<ClipVersionItem>();
+
+        var trashDir = Path.Combine(dir, "assets", "video", ".trash");
+        if (!Directory.Exists(trashDir)) return Array.Empty<ClipVersionItem>();
+
+        var result = new List<ClipVersionItem>();
+        var prefix = $"scene_{scene:D2}_clip_{clip:D2}";
+
+        foreach (var mp4 in Directory.EnumerateFiles(trashDir, $"{prefix}*.mp4"))
+        {
+            var sidecar = Path.ChangeExtension(mp4, ".clip.json");
+            if (!File.Exists(sidecar)) sidecar = Path.ChangeExtension(mp4, ".meta.json");
+            var fi = new FileInfo(mp4);
+            var item = ParseClipSidecarOrMeta(sidecar, mp4, scene, clip, take: 0, isCurrent: false, fi.LastWriteTimeUtc);
+            result.Add(item);
+        }
+
+        return await Task.FromResult(result.OrderByDescending(x => x.CreatedAtUtc).ToList()).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Restores a soft-deleted take version from assets/video/.trash/ back to assets/video/history/
+    /// </summary>
+    public async Task<bool> RestoreSoftDeletedClipVersionAsync(string projectId, int scene, int clip, string versionId)
+    {
+        if (string.IsNullOrWhiteSpace(projectId) || string.IsNullOrWhiteSpace(versionId)) return false;
+        var dir = GetProjectDir(projectId);
+        if (!Directory.Exists(dir)) return false;
+
+        var videoDir = Path.Combine(dir, "assets", "video");
+        var trashDir = Path.Combine(videoDir, ".trash");
+        var trashMp4 = Path.Combine(trashDir, versionId);
+        if (!File.Exists(trashMp4)) return false;
+
+        var historyDir = Path.Combine(videoDir, "history");
+        Directory.CreateDirectory(historyDir);
+
+        var restoredMp4 = Path.Combine(historyDir, versionId);
+        File.Move(trashMp4, restoredMp4, overwrite: true);
+
+        var trashSidecar = Path.ChangeExtension(trashMp4, ".clip.json");
+        if (File.Exists(trashSidecar))
+        {
+            var restoredSidecar = Path.Combine(historyDir, Path.GetFileName(trashSidecar));
+            try { File.Move(trashSidecar, restoredSidecar, overwrite: true); } catch { }
+        }
+
+        InvalidateSceneListCache(projectId);
+        return true;
+    }
+
+    /// <summary>
+    /// Permanently deletes all soft-deleted files in assets/video/.trash/ for a clip.
+    /// </summary>
+    public async Task<int> EmptyClipTrashAsync(string projectId, int scene, int clip)
+    {
+        if (string.IsNullOrWhiteSpace(projectId)) return 0;
+        var dir = GetProjectDir(projectId);
+        if (!Directory.Exists(dir)) return 0;
+
+        var trashDir = Path.Combine(dir, "assets", "video", ".trash");
+        if (!Directory.Exists(trashDir)) return 0;
+
+        var prefix = $"scene_{scene:D2}_clip_{clip:D2}";
+        var purgedCount = 0;
+
+        foreach (var file in Directory.EnumerateFiles(trashDir, $"{prefix}*"))
+        {
+            try
+            {
+                File.Delete(file);
+                if (file.EndsWith(".mp4", StringComparison.OrdinalIgnoreCase))
+                    purgedCount++;
+            }
+            catch { }
+        }
+
+        InvalidateSceneListCache(projectId);
+        return await Task.FromResult(purgedCount).ConfigureAwait(false);
+    }
+
     private static List<string> CompareSceneInBlueprints(string currentBpJson, string? parentBpJson, int sceneNumber)
     {
         var changes = new List<string>();

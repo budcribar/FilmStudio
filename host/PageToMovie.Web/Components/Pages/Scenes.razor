@@ -1009,17 +1009,10 @@ else
                     <h6>Visual prompt</h6>
                     <pre class="small bg-light border rounded p-2" style="max-height:200px; overflow:auto; white-space:pre-wrap;">@(_clip.VisualPrompt is { Length: > 0 } vp ? vp : "—")</pre>
 
-                    @if (_historyLoading)
-                    {
-                        <div class="small text-muted mb-2">Checking for earlier versions…</div>
-                    }
-                    else if (_historyVersions.Count > 0)
-                    {
-                        <button class="btn btn-sm btn-outline-secondary mb-2"
-                                @onclick="() => _showHistoryCompare = !_showHistoryCompare">
-                            @(_showHistoryCompare ? "Hide" : "🔍 Compare with previous version")
-                            (@_historyVersions.Count earlier)
-                        </button>
+                    <button class="btn btn-sm btn-outline-secondary mb-2"
+                            @onclick="() => OpenClipCompareAsync(_detail.SceneNumber, _clip.ClipNumber)">
+                        🎬 Takes (@(_historyVersions.Count + 1))
+                    </button>
                         @if (_showHistoryCompare)
                         {
                             @if (_historyVersions.Count > 1)
@@ -1418,15 +1411,25 @@ else
     </div>
 }
 
-@* Clip Version Comparison & Side-by-Side Dual Player Modal *@
+@* Clip Version Take Comparison Grid & Trash Bin Modal *@
 @if (_showClipCompare)
 {
     <div class="modal fade show d-block" tabindex="-1" style="background:rgba(0,0,0,0.6);" role="dialog">
         <div class="modal-dialog modal-xl modal-dialog-scrollable">
             <div class="modal-content bg-dark text-white border-secondary">
-                <div class="modal-header border-secondary">
-                    <h5 class="modal-title">Compare Clips — Scene S@(_compareSceneNumber.ToString("D2")) Clip C@(_compareClipNumber.ToString("D2"))</h5>
-                    <button type="button" class="btn-close btn-close-white" @onclick="CloseClipCompare"></button>
+                <div class="modal-header border-secondary d-flex justify-content-between align-items-center">
+                    <h5 class="modal-title m-0">Takes &amp; Versions — Scene S@(_compareSceneNumber.ToString("D2")) Clip C@(_compareClipNumber.ToString("D2"))</h5>
+                    <div class="d-flex align-items-center gap-2">
+                        <div class="btn-group btn-group-sm" role="group">
+                            <button type="button" class="btn @(_compareGridView ? "btn-secondary active" : "btn-outline-secondary")" @onclick="() => _compareGridView = true">
+                                Grid View
+                            </button>
+                            <button type="button" class="btn @(!_compareGridView ? "btn-secondary active" : "btn-outline-secondary")" @onclick="() => _compareGridView = false">
+                                Split View
+                            </button>
+                        </div>
+                        <button type="button" class="btn-close btn-close-white" @onclick="CloseClipCompare"></button>
+                    </div>
                 </div>
                 <div class="modal-body">
                     @if (!string.IsNullOrEmpty(_clipCompareMessage))
@@ -1436,23 +1439,84 @@ else
 
                     @if (_loadingClipVersions)
                     {
-                        <p class="text-muted">Loading clip version history…</p>
+                        <p class="text-muted">Loading clip take history…</p>
                     }
                     else if (_clipVersions is null || _clipVersions.Count == 0)
                     {
-                        <p class="text-muted">No historical versions available for this clip.</p>
+                        <p class="text-muted">No takes recorded yet for this clip.</p>
+                    }
+                    else if (_compareGridView)
+                    {
+                        @* Multi-Card Take Comparison Grid *@
+                        <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-3">
+                            @foreach (var v in _clipVersions)
+                            {
+                                var isCurrent = v.IsCurrent;
+                                var videoUrl = isCurrent
+                                    ? Engine.ClipVideoUrl(_projectId, _compareSceneNumber, _compareClipNumber)
+                                    : Engine.BrowserMediaPath($"/api/projects/{Uri.EscapeDataString(_projectId)}/assets/video/history/{v.Mp4FileName}");
+
+                                <div class="col">
+                                    <div class="card bg-dark border-secondary h-100 p-2 @(isCurrent ? "border-success shadow-sm" : "")">
+                                        <div class="d-flex justify-content-between align-items-center mb-2">
+                                            <span class="badge @(isCurrent ? "bg-success" : "bg-primary")">
+                                                @(isCurrent ? "★ Active Take" : $"Take {v.Take}")
+                                            </span>
+                                            <span class="small text-muted">@v.CreatedAtUtc.ToLocalTime().ToString("MMM d, h:mm tt")</span>
+                                        </div>
+
+                                        <video controls playsinline style="width:100%;max-height:220px;background:#000;border-radius:0.35rem;" src="@videoUrl">
+                                            Your browser does not support HTML5 video.
+                                        </video>
+
+                                        <div class="mt-2 small text-secondary flex-grow-1">
+                                            @if (!string.IsNullOrWhiteSpace(v.VisualPrompt))
+                                            {
+                                                <div class="text-truncate" title="@v.VisualPrompt"><strong>Prompt:</strong> @v.VisualPrompt</div>
+                                            }
+                                            <div><strong>Model / Res:</strong> @(!string.IsNullOrEmpty(v.Model) ? v.Model : "Default") (@(!string.IsNullOrEmpty(v.Resolution) ? v.Resolution : "480p")) · @(v.DurationSeconds > 0 ? v.DurationSeconds.ToString("F1") + "s" : "")</div>
+                                        </div>
+
+                                        <div class="d-flex gap-2 mt-3">
+                                            @if (isCurrent)
+                                            {
+                                                <button type="button" class="btn btn-sm btn-outline-success w-100" disabled>
+                                                    ✓ Active Take
+                                                </button>
+                                            }
+                                            else
+                                            {
+                                                <button type="button"
+                                                        class="btn btn-sm btn-warning text-dark fw-semibold flex-grow-1"
+                                                        disabled="@_promotingVersion"
+                                                        @onclick="() => PromoteClipVersionAsync(_compareSceneNumber, _compareClipNumber, v.VersionId)">
+                                                    ★ Select &amp; Keep
+                                                </button>
+                                                <button type="button"
+                                                        class="btn btn-sm btn-outline-danger"
+                                                        disabled="@_promotingVersion"
+                                                        title="Delete this take"
+                                                        @onclick="() => SoftDeleteClipVersionAsync(_compareSceneNumber, _compareClipNumber, v.VersionId)">
+                                                    🗑️
+                                                </button>
+                                            }
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
                     }
                     else
                     {
+                        @* Split View: Current vs Selected *@
                         var activeVersion = _clipVersions.FirstOrDefault(v => v.IsCurrent) ?? _clipVersions.First();
                         var comparedVersion = _selectedCompareVersion ?? _clipVersions.FirstOrDefault(v => !v.IsCurrent) ?? activeVersion;
 
                         <div class="row g-3">
-                            @* Left Player: Current Active Version *@
                             <div class="col-md-6 border-end border-secondary">
                                 <div class="card bg-dark border-secondary h-100 p-2">
                                     <div class="d-flex justify-content-between align-items-center mb-2">
-                                        <span class="badge bg-success">Current Active Version</span>
+                                        <span class="badge bg-success">★ Active Take</span>
                                         <span class="small text-muted">Take @activeVersion.Take · @activeVersion.CreatedAtUtc.ToLocalTime().ToString("MMM d, h:mm tt")</span>
                                     </div>
                                     <video controls playsinline style="width:100%;max-height:40vh;background:#000;border-radius:0.35rem;" src="@Engine.ClipVideoUrl(_projectId, _compareSceneNumber, _compareClipNumber)">
@@ -1460,20 +1524,15 @@ else
                                     </video>
                                     <div class="mt-2 small text-secondary">
                                         <div><strong>Prompt:</strong> @(activeVersion.VisualPrompt.Length > 0 ? activeVersion.VisualPrompt : "—")</div>
-                                        <div><strong>Script:</strong> @(activeVersion.ScriptText.Length > 0 ? activeVersion.ScriptText : "—")</div>
                                         <div><strong>Model / Res:</strong> @activeVersion.Model (@activeVersion.Resolution) · @activeVersion.DurationSeconds.ToString("F1")s</div>
                                     </div>
-                                    <button type="button" class="btn btn-sm btn-outline-success w-100 mt-2" disabled>
-                                        ✓ Currently Active
-                                    </button>
                                 </div>
                             </div>
 
-                            @* Right Player: Historical Take / Selected Version *@
                             <div class="col-md-6">
                                 <div class="card bg-dark border-secondary h-100 p-2">
                                     <div class="d-flex justify-content-between align-items-center mb-2">
-                                        <span class="badge bg-info text-dark">Historical Take</span>
+                                        <span class="badge bg-info text-dark">Selected Take</span>
                                         @if (_clipVersions.Count(v => !v.IsCurrent) > 0)
                                         {
                                             <select class="form-select form-select-sm bg-dark text-white border-secondary w-auto" @bind="_selectedCompareVersionId">
@@ -1489,18 +1548,69 @@ else
                                     </video>
                                     <div class="mt-2 small text-secondary">
                                         <div><strong>Prompt:</strong> @(comparedVersion.VisualPrompt.Length > 0 ? comparedVersion.VisualPrompt : "—")</div>
-                                        <div><strong>Script:</strong> @(comparedVersion.ScriptText.Length > 0 ? comparedVersion.ScriptText : "—")</div>
                                         <div><strong>Model / Res:</strong> @comparedVersion.Model (@comparedVersion.Resolution) · @comparedVersion.DurationSeconds.ToString("F1")s</div>
                                     </div>
                                     <button type="button"
                                             class="btn btn-sm btn-warning text-dark fw-semibold w-100 mt-2"
                                             disabled="@(_promotingVersion || comparedVersion.IsCurrent)"
                                             @onclick="() => PromoteClipVersionAsync(_compareSceneNumber, _compareClipNumber, comparedVersion.VersionId)">
-                                        Keep This Version (Restore Take @comparedVersion.Take)
+                                        ★ Select &amp; Keep (Take @comparedVersion.Take)
                                     </button>
                                 </div>
                             </div>
                         </div>
+                    }
+
+                    @* Collapsible Trash Bin Section *@
+                    @if (_trashVersions is { Count: > 0 })
+                    {
+                        <hr class="border-secondary my-4" />
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <button type="button" class="btn btn-sm btn-outline-secondary text-white" @onclick="() => _showTrashBin = !_showTrashBin">
+                                🗑️ Trash Bin (@_trashVersions.Count) @(_showTrashBin ? "▲ Hide" : "▼ Show")
+                            </button>
+                            @if (_showTrashBin)
+                            {
+                                <button type="button" class="btn btn-sm btn-outline-danger" @onclick="() => _showEmptyTrashConfirm = true">
+                                    Empty Trash
+                                </button>
+                            }
+                        </div>
+
+                        @if (_showEmptyTrashConfirm)
+                        {
+                            <div class="alert alert-warning py-2 mb-3 d-flex justify-content-between align-items-center">
+                                <span>Permanently delete @_trashVersions.Count take(s)? Note: Once purged, these video files cannot be recovered.</span>
+                                <div class="d-flex gap-2">
+                                    <button type="button" class="btn btn-sm btn-danger" @onclick="() => EmptyClipTrashAsync(_compareSceneNumber, _compareClipNumber)">Confirm Purge</button>
+                                    <button type="button" class="btn btn-sm btn-secondary" @onclick="() => _showEmptyTrashConfirm = false">Cancel</button>
+                                </div>
+                            </div>
+                        }
+
+                        @if (_showTrashBin)
+                        {
+                            <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-3 mt-1">
+                                @foreach (var tv in _trashVersions)
+                                {
+                                    <div class="col">
+                                        <div class="card bg-dark border-secondary p-2 opacity-75">
+                                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                                <span class="badge bg-secondary">Deleted Take</span>
+                                                <span class="small text-muted">@tv.CreatedAtUtc.ToLocalTime().ToString("MMM d, h:mm tt")</span>
+                                            </div>
+                                            <div class="small text-secondary mb-2">@tv.Mp4FileName</div>
+                                            <button type="button"
+                                                    class="btn btn-sm btn-outline-info w-100"
+                                                    disabled="@_promotingVersion"
+                                                    @onclick="() => RestoreClipVersionAsync(_compareSceneNumber, _compareClipNumber, tv.VersionId)">
+                                                ↩️ Restore Take
+                                            </button>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        }
                     }
                 </div>
                 <div class="modal-footer border-secondary">
@@ -3209,6 +3319,8 @@ else
                 await Engine.UpdateClipAsync(_projectId, _detail.SceneNumber, _clipEditor.Clip, _clipEditor);
                 _message = $"Saved S{_detail.SceneNumber:D2}C{_clipEditor.Clip:D2} — Regen the clip to re-render video/audio with the new fields";
             }
+            try { await Engine.CommitProjectChangesAsync(_projectId, $"Saved clip S{_detail.SceneNumber:D2}C{_clipEditor.Clip:D2}"); } catch { }
+            await RefreshUncommittedStatusAsync();
             _clipEditor = null;
             await LoadDetailAsync(_detail.SceneNumber);
             if (_selectedClip is int sel)
@@ -3672,7 +3784,11 @@ else
     private bool _promotingVersion;
     private string? _clipCompareMessage;
     private List<ClipVersionItem>? _clipVersions;
+    private List<ClipVersionItem>? _trashVersions;
     private string? _selectedCompareVersionId;
+    private bool _compareGridView = true;
+    private bool _showTrashBin;
+    private bool _showEmptyTrashConfirm;
 
     private ClipVersionItem? _selectedCompareVersion =>
         _clipVersions?.FirstOrDefault(v => string.Equals(v.VersionId, _selectedCompareVersionId, StringComparison.OrdinalIgnoreCase));
@@ -3726,6 +3842,8 @@ else
         _loadingClipVersions = true;
         _clipCompareMessage = null;
         _selectedCompareVersionId = null;
+        _showTrashBin = false;
+        _showEmptyTrashConfirm = false;
         StateHasChanged();
 
         try
@@ -3733,6 +3851,9 @@ else
             var res = await Engine.GetClipVersionsAsync(_projectId, sceneNumber, clipNumber);
             _clipVersions = res?.Versions;
             _selectedCompareVersionId = _clipVersions?.FirstOrDefault(v => !v.IsCurrent)?.VersionId ?? _clipVersions?.FirstOrDefault()?.VersionId;
+
+            var trashRes = await Engine.GetTrashClipVersionsAsync(_projectId, sceneNumber, clipNumber);
+            _trashVersions = trashRes?.Versions;
         }
         catch (Exception ex)
         {
@@ -3749,7 +3870,9 @@ else
     {
         _showClipCompare = false;
         _clipVersions = null;
+        _trashVersions = null;
         _clipCompareMessage = null;
+        _showEmptyTrashConfirm = false;
     }
 
     private async Task PromoteClipVersionAsync(int sceneNumber, int clipNumber, string versionId)
@@ -3780,6 +3903,104 @@ else
         catch (Exception ex)
         {
             _clipCompareMessage = $"Promote failed: {ex.Message}";
+        }
+        finally
+        {
+            _promotingVersion = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task SoftDeleteClipVersionAsync(int sceneNumber, int clipNumber, string versionId)
+    {
+        _promotingVersion = true;
+        _clipCompareMessage = null;
+        StateHasChanged();
+
+        try
+        {
+            var res = await Engine.SoftDeleteClipVersionAsync(_projectId, sceneNumber, clipNumber, versionId);
+            if (res.Ok)
+            {
+                _clipCompareMessage = "Take deleted. You can restore it from the Trash Bin below.";
+                var resV = await Engine.GetClipVersionsAsync(_projectId, sceneNumber, clipNumber);
+                _clipVersions = resV?.Versions;
+                var resT = await Engine.GetTrashClipVersionsAsync(_projectId, sceneNumber, clipNumber);
+                _trashVersions = resT?.Versions;
+            }
+            else
+            {
+                _clipCompareMessage = res.Error ?? "Failed to delete take.";
+            }
+        }
+        catch (Exception ex)
+        {
+            _clipCompareMessage = $"Delete failed: {ex.Message}";
+        }
+        finally
+        {
+            _promotingVersion = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task RestoreClipVersionAsync(int sceneNumber, int clipNumber, string versionId)
+    {
+        _promotingVersion = true;
+        _clipCompareMessage = null;
+        StateHasChanged();
+
+        try
+        {
+            var res = await Engine.RestoreClipVersionAsync(_projectId, sceneNumber, clipNumber, versionId);
+            if (res.Ok)
+            {
+                _clipCompareMessage = "Take restored from Trash Bin.";
+                var resV = await Engine.GetClipVersionsAsync(_projectId, sceneNumber, clipNumber);
+                _clipVersions = resV?.Versions;
+                var resT = await Engine.GetTrashClipVersionsAsync(_projectId, sceneNumber, clipNumber);
+                _trashVersions = resT?.Versions;
+            }
+            else
+            {
+                _clipCompareMessage = res.Error ?? "Failed to restore take.";
+            }
+        }
+        catch (Exception ex)
+        {
+            _clipCompareMessage = $"Restore failed: {ex.Message}";
+        }
+        finally
+        {
+            _promotingVersion = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task EmptyClipTrashAsync(int sceneNumber, int clipNumber)
+    {
+        _promotingVersion = true;
+        _showEmptyTrashConfirm = false;
+        _clipCompareMessage = null;
+        StateHasChanged();
+
+        try
+        {
+            var res = await Engine.EmptyClipTrashAsync(_projectId, sceneNumber, clipNumber);
+            if (res.Ok)
+            {
+                _clipCompareMessage = "Purged deleted take(s).";
+                var resT = await Engine.GetTrashClipVersionsAsync(_projectId, sceneNumber, clipNumber);
+                _trashVersions = resT?.Versions;
+            }
+            else
+            {
+                _clipCompareMessage = res.Error ?? "Failed to empty trash.";
+            }
+        }
+        catch (Exception ex)
+        {
+            _clipCompareMessage = $"Empty trash failed: {ex.Message}";
         }
         finally
         {

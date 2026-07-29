@@ -2711,6 +2711,104 @@ app.MapPost("/api/projects/{id}/scenes/{scene:int}/clips/{clip:int}/versions/{ve
     }
 });
 
+app.MapDelete("/api/projects/{id}/scenes/{scene:int}/clips/{clip:int}/versions/{versionId}", async (
+    string id,
+    int scene,
+    int clip,
+    string versionId,
+    ProjectStore store,
+    IUserContext user,
+    IOptions<PageToMovieOptions> opts,
+    CancellationToken ct) =>
+{
+    if (AuthGate.RequireLogin(user, opts) is { } denied)
+        return denied;
+    try
+    {
+        await store.RequireProjectAsync(id, ct);
+        var success = await store.SoftDeleteClipVersionAsync(id, scene, clip, versionId);
+        if (!success)
+        {
+            return Results.BadRequest(new { ok = false, error = "Failed to delete clip version." });
+        }
+        return Results.Ok(new { ok = true, message = $"Soft-deleted clip version {versionId}." });
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { ok = false, error = ex.Message });
+    }
+});
+
+app.MapGet("/api/projects/{id}/scenes/{scene:int}/clips/{clip:int}/versions/trash", async (
+    string id,
+    int scene,
+    int clip,
+    ProjectStore store,
+    CancellationToken ct) =>
+{
+    try
+    {
+        await store.RequireProjectAsync(id, ct);
+        var versions = await store.GetTrashClipVersionsAsync(id, scene, clip);
+        return Results.Ok(new { ok = true, versions });
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { ok = false, error = ex.Message });
+    }
+});
+
+app.MapPost("/api/projects/{id}/scenes/{scene:int}/clips/{clip:int}/versions/{versionId}/restore", async (
+    string id,
+    int scene,
+    int clip,
+    string versionId,
+    ProjectStore store,
+    IUserContext user,
+    IOptions<PageToMovieOptions> opts,
+    CancellationToken ct) =>
+{
+    if (AuthGate.RequireLogin(user, opts) is { } denied)
+        return denied;
+    try
+    {
+        await store.RequireProjectAsync(id, ct);
+        var success = await store.RestoreSoftDeletedClipVersionAsync(id, scene, clip, versionId);
+        if (!success)
+        {
+            return Results.BadRequest(new { ok = false, error = "Failed to restore clip version from trash." });
+        }
+        return Results.Ok(new { ok = true, message = $"Restored clip version {versionId} from trash." });
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { ok = false, error = ex.Message });
+    }
+});
+
+app.MapPost("/api/projects/{id}/scenes/{scene:int}/clips/{clip:int}/versions/trash/empty", async (
+    string id,
+    int scene,
+    int clip,
+    ProjectStore store,
+    IUserContext user,
+    IOptions<PageToMovieOptions> opts,
+    CancellationToken ct) =>
+{
+    if (AuthGate.RequireLogin(user, opts) is { } denied)
+        return denied;
+    try
+    {
+        await store.RequireProjectAsync(id, ct);
+        var count = await store.EmptyClipTrashAsync(id, scene, clip);
+        return Results.Ok(new { ok = true, purgedCount = count, message = $"Permanently purged {count} take(s)." });
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { ok = false, error = ex.Message });
+    }
+});
+
 /// <summary>
 /// Push the project's text package (video excluded) to the configured Projects remote.
 /// Owner/admin only. Optional body.commitFirst + message creates a local commit first.
