@@ -602,7 +602,12 @@
                             <button type="button" class="btn btn-sm btn-outline-primary"
                                     disabled="@(_archiveBusy || string.IsNullOrWhiteSpace(_augmentProjectId))"
                                     @onclick="AugmentMusicAsync">
-                                @(_archiveBusy && _archiveAction == "augment" ? "Composing Scores…" : "Augment Music Scores")
+                                @(_archiveBusy && _archiveAction == "augment" ? "Composing Scores…" : "1. Compose Score Prompts")
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-success"
+                                    disabled="@(_archiveBusy || string.IsNullOrWhiteSpace(_augmentProjectId))"
+                                    @onclick="SynthesizeMusicAudioAsync">
+                                @(_archiveBusy && _archiveAction == "synthesize" ? "Synthesizing Audio…" : "2. Synthesize Audio Tracks (Skip Existing)")
                             </button>
                         </div>
                         <p class="form-text mb-0 mt-1">
@@ -1146,6 +1151,40 @@
             else
             {
                 _archiveError = $"Failed to augment background music scores for {_augmentProjectId}. Ensure blueprint.clips.grok.json exists.";
+                _archiveMsg = null;
+            }
+            await RefreshAsync();
+        }
+        catch (Exception ex)
+        {
+            _archiveError = ex.Message;
+            _archiveMsg = null;
+        }
+        finally
+        {
+            _archiveBusy = false;
+            _archiveAction = null;
+        }
+    }
+
+    private async Task SynthesizeMusicAudioAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_augmentProjectId)) return;
+
+        _archiveBusy = true;
+        _archiveAction = "synthesize";
+        _archiveError = null;
+        _archiveMsg = $"Synthesizing background music audio tracks for {_augmentProjectId} (skipping scenes with existing audio)...";
+        try
+        {
+            var ok = await Api.GenerateProjectSceneMusicAsync(_augmentProjectId);
+            if (ok)
+            {
+                _archiveMsg = $"Successfully synthesized background music audio tracks for {_augmentProjectId}.";
+            }
+            else
+            {
+                _archiveError = $"Failed to synthesize background music audio for {_augmentProjectId}. Check Fal.ai audio API key configuration.";
                 _archiveMsg = null;
             }
             await RefreshAsync();

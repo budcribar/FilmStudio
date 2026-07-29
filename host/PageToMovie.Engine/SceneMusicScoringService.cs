@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using PageToMovie.Core.Models;
 using PageToMovie.Engine.Abstractions;
 using Microsoft.Extensions.Logging;
@@ -68,9 +69,13 @@ public sealed class SceneMusicScoringService
 
         onProgress?.Invoke($"AI Music Scoring: Analyzing Scene {sceneNumber:D2} for continuous background score…");
 
-        // Step 1: AI Prompting pass to generate rich music description
-        var scoringModel = GetConfigStr(config, "planning_model_name", "grok-4.5");
-        var musicPrompt = await ComposeSceneMusicPromptAsync(screenplayText, durationSeconds, scoringModel, ct).ConfigureAwait(false);
+        // Step 1: AI Prompting pass — prefer pre-planned score prompt from blueprint.clips.grok.json if present
+        var musicPrompt = GetPreplannedMusicPrompt(projectDir, sceneNumber);
+        if (string.IsNullOrWhiteSpace(musicPrompt))
+        {
+            var scoringModel = GetConfigStr(config, "planning_model_name", "grok-4.5");
+            musicPrompt = await ComposeSceneMusicPromptAsync(screenplayText, durationSeconds, scoringModel, ct).ConfigureAwait(false);
+        }
 
         onProgress?.Invoke($"AI Audio Synthesis: Generating {durationSeconds}s music score via {audioModel}…");
         _log.LogInformation("Generating scene {Scene} music score: {Prompt}", sceneNumber, musicPrompt);
@@ -94,6 +99,168 @@ public sealed class SceneMusicScoringService
         await LayerAudioWithFfmpegAsync(inputSceneMp4Path, musicFilePath, outputSceneMp4Path, durationSeconds, volumePercent, ct).ConfigureAwait(false);
 
         return new SceneMusicResult(musicFilePath, outputSceneMp4Path, musicPrompt, durationSeconds);
+    }
+
+    /// <summary>
+    /// Batch synthesizes AI background music audio tracks (assets/scene_XX_music.mp3) for all scenes in a project.
+    /// Skips any scene that already has an audio track file present on disk.
+    /// </summary>
+    public async Task<int> GenerateProjectSceneAudioAsync(
+        string projectDir,
+        Dictionary<string, JsonElement>? config = null,
+        Action<string>? onProgress = null,
+        CancellationToken ct = default)
+    {
+        var blueprintPath = Path.Combine(projectDir, "blueprint.clips.grok.json");
+        if (!File.Exists(blueprintPath))
+        {
+            _log.LogWarning("blueprint.clips.grok.json not found in {ProjectDir}", projectDir);
+            onProgress?.Invoke("No blueprint file found. Cannot generate scene music.");
+            return 0;
+        }
+
+        var audioModel = GetConfigStr(config, "audio_model_name", "fal-ai/stable-audio");
+        if (string.Equals(audioModel, "none", StringComparison.OrdinalIgnoreCase) ||
+            string.IsNullOrWhiteSpace(audioModel))
+        {
+            onProgress?.Invoke("Background music is disabled ('none'). Skipping audio pass.");
+            return 0;
+        }
+
+        if (!_musicClient.IsConfigured)
+        {
+            onProgress?.Invoke("Audio synthesis API key missing. Skipping background music pass.");
+            return 0;
+        }
+
+        JsonNode? doc;
+        try
+        {
+            var json = await File.ReadAllTextAsync(blueprintPath, ct).ConfigureAwait(false);
+            doc = JsonNode.Parse(json);
+        }
+        catch (Exception ex)
+        {
+            _log.LogError(ex, "Failed to parse blueprint JSON at {Path}", blueprintPath);
+            onProgress?.Invoke("Failed to read blueprint JSON.");
+            return 0;
+        }
+
+        var scenesArray = doc?["scenes"]?.AsArray();
+        if (scenesArray is null || scenesArray.Count == 0)
+        {
+            onProgress?.Invoke("No scenes found in blueprint.");
+            return 0;
+        }
+
+        var assetsDir = Path.Combine(projectDir, "assets");
+        Directory.CreateDirectory(assetsDir);
+        var generatedCount = 0;
+
+        foreach (var scNode in scenesArray)
+        {
+            if (ct.IsCancellationRequested) break;
+
+            if (scNode is null) continue;
+            var sceneNum = scNode["scene_number"]?.GetValue<int>() ?? 0;
+            if (sceneNum <= 0) continue;
+
+            var mp3Path = Path.Combine(assetsDir, $"scene_{sceneNum:D2}_music.mp3");
+            var wavPath = Path.Combine(assetsDir, $"scene_{sceneNum:D2}_music.wav");
+
+            if (File.Exists(mp3Path) || File.Exists(wavPath))
+            {
+                onProgress?.Invoke($"Scene {sceneNum:D2}: Music track already exists. Skipping synthesis.");
+                continue;
+            }
+
+            // Obtain prompt from pre-planned score or fallback
+            var prompt = scNode["music_prompt"]?.GetValue<string>()
+                ?? scNode["music_score"]?["prompt"]?.GetValue<string>();
+
+            var duration = scNode["total_estimated_duration_seconds"]?.GetValue<int>() ?? 0;
+            if (duration <= 0 && scNode["veo_clips"]?.AsArray() is { } clips)
+            {
+                duration = clips.Sum(c => c?["duration_seconds"]?.GetValue<int>() ?? 0);
+            }
+            if (duration <= 0) duration = 10;
+
+            if (string.IsNullOrWhiteSpace(prompt))
+            {
+                var setting = scNode["setting"]?.GetValue<string>() ?? "";
+                var scoringModel = GetConfigStr(config, "planning_model_name", "grok-4.5");
+                prompt = await ComposeSceneMusicPromptAsync(setting, duration, scoringModel, ct).ConfigureAwait(false);
+            }
+
+            onProgress?.Invoke($"Scene {sceneNum:D2}: Synthesizing {duration}s music score via {audioModel}…");
+            _log.LogInformation("Synthesizing music for scene {Scene} ({Duration}s): {Prompt}", sceneNum, duration, prompt);
+
+            var bytes = await _musicClient.GenerateMusicTrackAsync(prompt, duration, audioModel, ct).ConfigureAwait(false);
+            if (bytes is null || bytes.Length == 0)
+            {
+                onProgress?.Invoke($"Scene {sceneNum:D2}: Synthesis returned 0 bytes.");
+                continue;
+            }
+
+            await File.WriteAllBytesAsync(mp3Path, bytes, ct).ConfigureAwait(false);
+            generatedCount++;
+            onProgress?.Invoke($"Scene {sceneNum:D2}: Successfully saved music track ({bytes.Length / 1024} KB).");
+
+            // If scene composite video exists, mix background audio with volume ducking
+            var inputVideo = Path.Combine(assetsDir, "scenes", $"scene_{sceneNum:D2}.mp4");
+            if (!File.Exists(inputVideo))
+            {
+                inputVideo = Path.Combine(assetsDir, "video", $"scene_{sceneNum:D2}.mp4");
+            }
+
+            if (File.Exists(inputVideo))
+            {
+                var outputVideo = Path.Combine(assetsDir, "scenes", $"scene_{sceneNum:D2}.mp4");
+                var volPercent = GetConfigInt(config, "background_music_volume_percent", 20);
+                onProgress?.Invoke($"Scene {sceneNum:D2}: Layering audio into scene composite MP4…");
+                try
+                {
+                    await LayerAudioWithFfmpegAsync(inputVideo, mp3Path, outputVideo, duration, volPercent, ct).ConfigureAwait(false);
+                }
+                catch (Exception ex)
+                {
+                    _log.LogWarning(ex, "Failed to layer audio into video for scene {Scene}", sceneNum);
+                }
+            }
+        }
+
+        onProgress?.Invoke($"Batch music synthesis complete. Generated audio for {generatedCount} scene(s).");
+        return generatedCount;
+    }
+
+    public static string? GetPreplannedMusicPrompt(string projectDir, int sceneNumber)
+    {
+        var blueprintPath = Path.Combine(projectDir, "blueprint.clips.grok.json");
+        if (!File.Exists(blueprintPath)) return null;
+
+        try
+        {
+            var json = File.ReadAllText(blueprintPath);
+            var doc = JsonNode.Parse(json);
+            if (doc?["scenes"]?.AsArray() is { } scenes)
+            {
+                foreach (var sc in scenes)
+                {
+                    if (sc?["scene_number"]?.GetValue<int>() == sceneNumber)
+                    {
+                        var prompt = sc["music_prompt"]?.GetValue<string>()
+                            ?? sc["music_score"]?["prompt"]?.GetValue<string>();
+                        if (!string.IsNullOrWhiteSpace(prompt))
+                            return prompt.Trim();
+                    }
+                }
+            }
+        }
+        catch
+        {
+            /* fallback to null */
+        }
+        return null;
     }
 
     private async Task<string> ComposeSceneMusicPromptAsync(
