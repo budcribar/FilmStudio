@@ -24,7 +24,9 @@ public static class BookTextAnalyzer
 
     private static readonly Regex IllustrationParenRegex = new(@"\(\s*illustration only\s*\)", RegexOptions.IgnoreCase | RegexOptions.Compiled);
     private static readonly Regex WhitespaceSplitRegex = new(@"\s+", RegexOptions.Compiled);
-    private static readonly Regex IllustrationExactMatchRegex = new(@"^\(.*illustration.*\)$", RegexOptions.Compiled);
+    // IgnoreCase to match IllustrationParenRegex above — OCR/Gutenberg captions like
+    // "(Illustration)" or "(ILLUSTRATION ONLY)" should be caught the same way "(illustration only)" is.
+    private static readonly Regex IllustrationExactMatchRegex = new(@"^\(.*illustration.*\)$", RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
     public static BookTextAnalysis Analyze(string text, int? pagesHint = null)
     {
