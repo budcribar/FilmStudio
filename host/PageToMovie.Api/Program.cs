@@ -4482,7 +4482,10 @@ app.MapPost("/api/projects/{id}/scenes/{scene:int}/clips/{clip:int}/upload", asy
     var projectDir = store.GetProjectDir(id);
     var destDir = Path.Combine(projectDir, "assets", "video");
     Directory.CreateDirectory(destDir);
-    var destPath = Path.Combine(destDir, $"scene_{scene:D2}_clip_{clip:D2}.mp4");
+    var fileName = !string.IsNullOrWhiteSpace(file.FileName) && file.FileName.EndsWith(".mp4", StringComparison.OrdinalIgnoreCase)
+        ? Path.GetFileName(file.FileName)
+        : $"scene_{scene:D2}_clip_{clip:D2}_take_01.mp4";
+    var destPath = Path.Combine(destDir, fileName);
 
     using (var stream = File.Create(destPath))
     {
