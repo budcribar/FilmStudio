@@ -169,8 +169,9 @@ public sealed class DbUserApiKeyProvider : IUserApiKeyProvider
             _ => null,
         };
         if (processEnv is null) return null;
-        var process = Environment.GetEnvironmentVariable(processEnv);
-        return string.IsNullOrWhiteSpace(process) ? null : process.Trim();
+        var process = Environment.GetEnvironmentVariable(processEnv)
+            ?? (provider == "fal" ? Environment.GetEnvironmentVariable(SupportedModelCatalog.FalApiKeyFallbackEnv) : null);
+        return string.IsNullOrWhiteSpace(process) ? null : process.Trim(' ', '"', '\'', '\r', '\n', '\t');
     }
 
     public bool HasKey(string? userId) => !string.IsNullOrWhiteSpace(GetKey(userId));

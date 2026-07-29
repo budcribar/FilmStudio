@@ -450,6 +450,7 @@ public sealed class FilmJobService
             : _keys.GetKey(userId, "grok");
         var geminiKey = _keys.GetKey(userId, "gemini");
         var anthropicKey = _keys.GetKey(userId, "anthropic");
+        var falKey = _keys.GetKey(userId, "fal");
 
         var queuedAt = DateTimeOffset.UtcNow;
         var cts = new CancellationTokenSource();
@@ -474,6 +475,7 @@ public sealed class FilmJobService
             ApiKey = apiKey,
             GeminiApiKey = geminiKey,
             AnthropicApiKey = anthropicKey,
+            FalApiKey = falKey,
             QueuedAt = queuedAt,
             Cts = cts,
             ActiveJobId = rec.JobId,
@@ -489,7 +491,7 @@ public sealed class FilmJobService
         _ = Task.Run(async () =>
         {
             CurrentRun.Value = run;
-            using (ApiKeyScope.Push(run.ApiKey, run.GeminiApiKey, run.AnthropicApiKey))
+            using (ApiKeyScope.Push(run.ApiKey, run.GeminiApiKey, run.AnthropicApiKey, run.FalApiKey))
             {
                 var startedAt = DateTimeOffset.UtcNow;
                 var success = false;
@@ -811,6 +813,7 @@ public sealed class FilmJobService
         public string? ApiKey { get; set; }
         public string? GeminiApiKey { get; set; }
         public string? AnthropicApiKey { get; set; }
+        public string? FalApiKey { get; set; }
         public DateTimeOffset QueuedAt { get; set; } = DateTimeOffset.UtcNow;
         public DateTimeOffset? StartedAt { get; set; }
         public List<string> HeldLocks { get; set; } = new();
@@ -3440,6 +3443,7 @@ public sealed class FilmJobService
             ModelProviderFamily.Xai => ApiKeyScope.Current,
             ModelProviderFamily.Google => ApiKeyScope.CurrentGemini,
             ModelProviderFamily.Anthropic => ApiKeyScope.CurrentAnthropic,
+            ModelProviderFamily.Fal => ApiKeyScope.CurrentFal,
             _ => null,
         };
         if (!string.IsNullOrWhiteSpace(ambient))
