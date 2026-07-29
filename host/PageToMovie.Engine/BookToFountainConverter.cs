@@ -91,6 +91,15 @@ public static class BookToFountainConverter
         into generic modern dialogue (classics, verse, first-person monologues especially).
         """;
 
+    private static readonly Regex VagueHeadingRegex = new(
+        @"\b(VARIOUS|MULTIPLE|SEVERAL|ELSEWHERE)\b"
+        + @"|\bDIFFERENT\s+(ROOMS?|PLACES?|LOCATIONS?)\b"
+        + @"|\b(AROUND|THROUGHOUT)\s+THE\s+(HOUSE|HOME|BUILDING)\b"
+        + @"|\b(VARIOUS|MULTIPLE|SEVERAL)\s+(ROOMS?|PLACES?|LOCATIONS?|AREAS?)\b",
+        RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
+    private static readonly Regex CharacterNameSpaceRegex = new(@"\s+", RegexOptions.Compiled);
+
     /// <summary>
     /// Generate Fountain from prepared book text.
     /// Single-shot first when the book fits the model budget; multi-chunk on budget miss or quality fail.
@@ -245,13 +254,7 @@ public static class BookToFountainConverter
     public static bool HeadingContainsVagueLocationLanguage(string? heading)
     {
         if (string.IsNullOrWhiteSpace(heading)) return false;
-        return Regex.IsMatch(
-            heading,
-            @"\b(VARIOUS|MULTIPLE|SEVERAL|ELSEWHERE)\b"
-            + @"|\bDIFFERENT\s+(ROOMS?|PLACES?|LOCATIONS?)\b"
-            + @"|\b(AROUND|THROUGHOUT)\s+THE\s+(HOUSE|HOME|BUILDING)\b"
-            + @"|\b(VARIOUS|MULTIPLE|SEVERAL)\s+(ROOMS?|PLACES?|LOCATIONS?|AREAS?)\b",
-            RegexOptions.IgnoreCase);
+        return VagueHeadingRegex.IsMatch(heading);
     }
 
     /// <summary>
@@ -427,7 +430,7 @@ public static class BookToFountainConverter
     public static bool IsGenericNumberedSpeaker(string? characterName)
     {
         if (string.IsNullOrWhiteSpace(characterName)) return false;
-        var n = Regex.Replace(characterName.Trim(), @"\s+", " ");
+        var n = CharacterNameSpaceRegex.Replace(characterName.Trim(), " ");
 
         // FIRST/SECOND/… + any role noun (OFFICER, BUSINESSMAN, MERCHANT, GUEST, …)
         if (RoleNounPrefixRegex.IsMatch(n))

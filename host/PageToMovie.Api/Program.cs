@@ -19,6 +19,10 @@ using Microsoft.Extensions.Options;
 var builder = WebApplication.CreateBuilder(args);
 var processStartedUtc = DateTimeOffset.UtcNow;
 
+var OAuthCodeParamRegex = new System.Text.RegularExpressions.Regex(@"code=([^&]+)", System.Text.RegularExpressions.RegexOptions.Compiled);
+var OAuthStateParamRegex = new System.Text.RegularExpressions.Regex(@"state=([^&]+)", System.Text.RegularExpressions.RegexOptions.Compiled);
+var OAuthErrorParamRegex = new System.Text.RegularExpressions.Regex(@"error=([^&]+)", System.Text.RegularExpressions.RegexOptions.Compiled);
+
 var listenPorts = new HashSet<string> { "5088", "8080", "80" };
 var railwayEnvPort = Environment.GetEnvironmentVariable("PORT");
 if (!string.IsNullOrWhiteSpace(railwayEnvPort))
@@ -1806,19 +1810,19 @@ async Task ProcessYouTubeOAuthCallbackAsync(HttpContext http, YouTubeAuthService
     var rawUrl = (http.Request.Path.Value ?? "") + (http.Request.QueryString.Value ?? "");
     if (string.IsNullOrWhiteSpace(code))
     {
-        var mCode = System.Text.RegularExpressions.Regex.Match(rawUrl, @"code=([^&]+)");
+        var mCode = OAuthCodeParamRegex.Match(rawUrl);
         if (mCode.Success)
             code = Uri.UnescapeDataString(mCode.Groups[1].Value);
     }
     if (string.IsNullOrWhiteSpace(state))
     {
-        var mState = System.Text.RegularExpressions.Regex.Match(rawUrl, @"state=([^&]+)");
+        var mState = OAuthStateParamRegex.Match(rawUrl);
         if (mState.Success)
             state = Uri.UnescapeDataString(mState.Groups[1].Value);
     }
     if (string.IsNullOrWhiteSpace(error))
     {
-        var mErr = System.Text.RegularExpressions.Regex.Match(rawUrl, @"error=([^&]+)");
+        var mErr = OAuthErrorParamRegex.Match(rawUrl);
         if (mErr.Success)
             error = Uri.UnescapeDataString(mErr.Groups[1].Value);
     }

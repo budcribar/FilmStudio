@@ -779,7 +779,7 @@ public sealed class BookPrepareService
             {
                 var name = fi.Name;
                 var f = fi.FullName;
-                var m = Regex.Match(name, @"embedded_p(\d+)", RegexOptions.IgnoreCase);
+                var m = EmbeddedPageNumRegex.Match(name);
                 if (m.Success && int.TryParse(m.Groups[1].Value, out var page))
                 {
                     byPage.TryGetValue(page, out var slot);
@@ -787,7 +787,7 @@ public sealed class BookPrepareService
                     byPage[page] = slot;
                     continue;
                 }
-                m = Regex.Match(name, @"page_(\d+)", RegexOptions.IgnoreCase);
+                m = RenderedPageNumRegex.Match(name);
                 if (m.Success && int.TryParse(m.Groups[1].Value, out page))
                 {
                     byPage.TryGetValue(page, out var slot);
