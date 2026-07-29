@@ -832,6 +832,7 @@ public sealed class ProjectStore
 
     /// <summary>Whether scene-list + project/blueprint/dir caches are active.</summary>
     public bool ReadCachesEnabled => _opts.EnableReadCaches;
+    public ProjectReadCache ReadCache => _readCache;
 
     public string ConfigPath(string projectId) =>
         Path.Combine(GetProjectDir(projectId), "pipeline_config.json");

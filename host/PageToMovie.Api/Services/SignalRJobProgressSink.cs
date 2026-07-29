@@ -32,6 +32,13 @@ public sealed class SignalRJobProgressSink : IJobProgressSink
                 return;
             }
             _lastBroadcast[snapshot.JobId] = now;
+            if (_lastBroadcast.Count > 1000)
+            {
+                var cutoff = now.AddMinutes(-30);
+                foreach (var kvp in _lastBroadcast)
+                    if (kvp.Value < cutoff)
+                        _lastBroadcast.TryRemove(kvp.Key, out _);
+            }
         }
         else
         {

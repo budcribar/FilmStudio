@@ -199,7 +199,9 @@ public sealed class CastFromScreenplayService
         {
             try
             {
-                File.Copy(outPath, outPath + $".bak_{DateTime.Now:yyyyMMdd_HHmmss}", overwrite: true);
+                var bakPath = outPath + $".bak_{DateTime.Now:yyyyMMdd_HHmmss}";
+                var bytes = await File.ReadAllBytesAsync(outPath, ct).ConfigureAwait(false);
+                await File.WriteAllBytesAsync(bakPath, bytes, ct).ConfigureAwait(false);
             }
             catch { /* ignore */ }
         }

@@ -294,10 +294,7 @@ public sealed class ReviewIndexService
         try
         {
             var json = File.ReadAllText(path);
-            return JsonSerializer.Deserialize<ClipAutoReviewDraft>(json, new JsonSerializerOptions
-            {
-                PropertyNameCaseInsensitive = true,
-            });
+            return JsonSerializer.Deserialize<ClipAutoReviewDraft>(json, JsonOpts);
         }
         catch
         {
