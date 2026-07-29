@@ -7,9 +7,9 @@ namespace PageToMovie.Engine;
 /// </summary>
 public static class ClipFileNaming
 {
-    /// <summary>Strict: scene_01_clip_02.mp4 only — not .native sidecars.</summary>
+    /// <summary>Matches clip video files formatted with scene, clip, and take numbers (rejecting .native.mp4).</summary>
     private static readonly Regex ExactClipNameRe = new(
-        @"^scene_(\d{2})_clip_(\d{2})\.mp4$",
+        @"^scene_(\d{2})_clip_(\d{2})(?:_take_\d+.*)?\.mp4$",
         RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
     public static string SceneSourcesManifestPath(string compositePath) =>

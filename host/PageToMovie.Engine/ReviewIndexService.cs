@@ -19,7 +19,7 @@ public sealed class ReviewIndexService
     };
 
     private static readonly Regex ExactClipNameRe = new(
-        @"^scene_(\d{2})_clip_(\d{2})\.mp4$",
+        @"^scene_(\d{2})_clip_(\d{2})(?:_take_\d+.*)?\.mp4$",
         RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
     private readonly ProjectStore _projects;

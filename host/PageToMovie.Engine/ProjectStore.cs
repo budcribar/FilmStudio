@@ -3488,16 +3488,11 @@ public sealed class ProjectStore
 
         if (!Directory.Exists(videoDir)) return null;
 
-        // 1. Direct match: scene_01_clip_01.mp4
-        var direct = Path.Combine(videoDir, $"scene_{sceneNumber:D2}_clip_{clipNumber:D2}.mp4");
-        if (File.Exists(direct) && new FileInfo(direct).Length >= 1024)
-            return direct;
-
-        // 2. Take match: scene_01_clip_01_take_*.mp4 (newest valid take file)
-        var pattern = $"scene_{sceneNumber:D2}_clip_{clipNumber:D2}_take_*.mp4";
+        // Match any take file starting with scene_XX_clip_YY (newest valid take file)
+        var pattern = $"scene_{sceneNumber:D2}_clip_{clipNumber:D2}*.mp4";
         var latestTake = new DirectoryInfo(videoDir)
             .EnumerateFiles(pattern)
-            .Where(fi => fi.Length >= 1024)
+            .Where(fi => fi.Length >= 1024 && !fi.Name.StartsWith("_"))
             .OrderByDescending(fi => fi.LastWriteTimeUtc)
             .FirstOrDefault();
 

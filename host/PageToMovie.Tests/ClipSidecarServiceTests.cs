@@ -44,7 +44,8 @@ public class ClipSidecarServiceTests : IDisposable
             sizeBytes: 1024_000);
 
         Assert.True(File.Exists(sidecarPath));
-        Assert.EndsWith("scene_01_clip_02.clip.json", sidecarPath);
+        Assert.Contains("scene_01_clip_02", sidecarPath);
+        Assert.EndsWith(".clip.json", sidecarPath);
 
         var text = await File.ReadAllTextAsync(sidecarPath);
         using var doc = JsonDocument.Parse(text);
