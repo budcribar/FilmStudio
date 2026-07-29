@@ -15,7 +15,7 @@ public class FalVideoClientTests
         Assert.Equal(ModelProviderFamily.Fal, entry.Provider);
         Assert.Contains(SupportedModelCatalog.FalApiKeyEnv, entry.RequiredEnvKeys);
         Assert.False(entry.SupportsVideoContinue);
-        Assert.False(entry.SupportsReferenceImages);
+        Assert.True(entry.SupportsReferenceImages);
     }
 
     [Fact]

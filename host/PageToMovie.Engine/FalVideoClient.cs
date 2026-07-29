@@ -71,7 +71,29 @@ public sealed class FalVideoClient : IVideoClient
             ["num_inference_steps"] = 30,
         };
 
-        using var req = new HttpRequestMessage(HttpMethod.Post, "fal-ai/hunyuan-video");
+        var imagePath = !string.IsNullOrWhiteSpace(startFrameImagePath) && File.Exists(startFrameImagePath)
+            ? startFrameImagePath
+            : referenceImagePaths is { Count: > 0 } && File.Exists(referenceImagePaths[0])
+                ? referenceImagePaths[0]
+                : null;
+
+        var endpoint = "fal-ai/hunyuan-video";
+        if (!string.IsNullOrWhiteSpace(imagePath))
+        {
+            endpoint = "fal-ai/hunyuan-video/image-to-video";
+            var bytes = await File.ReadAllBytesAsync(imagePath, ct).ConfigureAwait(false);
+            var b64 = Convert.ToBase64String(bytes);
+            var ext = Path.GetExtension(imagePath).ToLowerInvariant();
+            var mime = ext switch
+            {
+                ".png" => "image/png",
+                ".webp" => "image/webp",
+                _ => "image/jpeg",
+            };
+            payload["image_url"] = $"data:{mime};base64,{b64}";
+        }
+
+        using var req = new HttpRequestMessage(HttpMethod.Post, endpoint);
         req.Headers.Authorization = new AuthenticationHeaderValue("Key", apiKey);
         req.Content = JsonContent.Create(payload);
 

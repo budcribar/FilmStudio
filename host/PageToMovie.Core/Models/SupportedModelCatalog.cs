@@ -204,7 +204,7 @@ public static class SupportedModelCatalog
             RequiredEnvKeys = [FalApiKeyEnv],
             VideoCostPerSecondByResolution = new Dictionary<string, double> { ["720p"] = 0.005, ["1080p"] = 0.005 },
             SupportsVideoContinue = false,
-            SupportsReferenceImages = false,
+            SupportsReferenceImages = true,
             MinClipDurationSeconds = 3,
             MaxClipDurationSeconds = 10,
             AbsMaxClipDurationSeconds = 12,
