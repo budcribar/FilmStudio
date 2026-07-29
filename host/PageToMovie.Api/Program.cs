@@ -4467,6 +4467,75 @@ app.MapPost("/api/projects/{id}/scenes/{scene:int}/clips/{clip:int}/verify-dialo
     }
 });
 
+/// <summary>Upload local client clip MP4 file to server assets/video directory.</summary>
+app.MapPost("/api/projects/{id}/scenes/{scene:int}/clips/{clip:int}/upload", async (
+    string id, int scene, int clip, HttpContext httpContext, ProjectStore store, CancellationToken ct) =>
+{
+    if (!httpContext.Request.HasFormContentType)
+        return Results.BadRequest(new { ok = false, error = "Form data expected." });
+
+    var form = await httpContext.Request.ReadFormAsync(ct);
+    var file = form.Files.GetFile("video");
+    if (file is null || file.Length < 1024)
+        return Results.BadRequest(new { ok = false, error = "Valid MP4 file expected." });
+
+    var projectDir = store.GetProjectDir(id);
+    var destDir = Path.Combine(projectDir, "assets", "video");
+    Directory.CreateDirectory(destDir);
+    var destPath = Path.Combine(destDir, $"scene_{scene:D2}_clip_{clip:D2}.mp4");
+
+    using (var stream = File.Create(destPath))
+    {
+        await file.CopyToAsync(stream, ct).ConfigureAwait(false);
+    }
+
+    return Results.Ok(new { ok = true, projectId = id, scene, clip, path = destPath });
+});
+
+/// <summary>Generate AI background music score and apply dialogue ducking for a scene.</summary>
+app.MapPost("/api/projects/{id}/scenes/{scene:int}/score-music", async (
+    string id,
+    int scene,
+    ProjectStore store,
+    SceneMusicScoringService musicScorer,
+    CancellationToken ct) =>
+{
+    var pDir = store.GetProjectDir(id);
+    var sceneMp4Path = Path.Combine(pDir, "assets", "video", $"scene_{scene:D2}.mp4");
+    if (!File.Exists(sceneMp4Path))
+    {
+        sceneMp4Path = Path.Combine(pDir, "assets", "scenes", $"scene_{scene:D2}.mp4");
+    }
+    if (!File.Exists(sceneMp4Path))
+    {
+        // Try clip 01
+        sceneMp4Path = Path.Combine(pDir, "assets", "video", $"scene_{scene:D2}_clip_01.mp4");
+    }
+
+    if (!File.Exists(sceneMp4Path))
+        return Results.BadRequest(new { ok = false, error = $"No video file found on server for Scene {scene:D2} to score music." });
+
+    var cfg = await store.GetConfigAsync(id, ct);
+    var detail = await store.GetSceneDetailAsync(id, scene, probeDurations: false, ct: ct);
+    var duration = (int)Math.Ceiling(detail?.DurationSeconds ?? 10);
+    var screenplay = detail?.Setting ?? "";
+
+    var outputSceneMp4Path = Path.Combine(pDir, "assets", "scenes", $"scene_{scene:D2}.mp4");
+    Directory.CreateDirectory(Path.GetDirectoryName(outputSceneMp4Path)!);
+
+    var result = await musicScorer.ProcessSceneMusicAsync(
+        projectDir: pDir,
+        sceneNumber: scene,
+        inputSceneMp4Path: sceneMp4Path,
+        outputSceneMp4Path: outputSceneMp4Path,
+        screenplayText: screenplay,
+        durationSeconds: duration,
+        config: cfg,
+        ct: ct);
+
+    return Results.Ok(new { ok = result is not null, result });
+});
+
 /// <summary>
 /// Combined single-upload two-phase scene cut processing endpoint.
 /// Accepts 1 uploaded MP4 scene stream and executes Phase 1 (Dialogue Verification) and Phase 2 (Music Scoring &amp; Ducking) back-to-back on server.

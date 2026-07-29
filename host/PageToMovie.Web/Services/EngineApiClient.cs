@@ -1832,6 +1832,52 @@ public sealed class EngineApiClient
         return null;
     }
 
+    public async Task<bool> UploadClipAsync(
+        string projectId,
+        int scene,
+        int clip,
+        byte[] videoBytes,
+        CancellationToken ct = default)
+    {
+        if (videoBytes is not { Length: > 0 }) return false;
+        try
+        {
+            using var form = new MultipartFormDataContent();
+            using var byteContent = new ByteArrayContent(videoBytes);
+            byteContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("video/mp4");
+            form.Add(byteContent, "video", $"scene_{scene:D2}_clip_{clip:D2}.mp4");
+
+            var url = $"/api/projects/{Uri.EscapeDataString(projectId)}/scenes/{scene}/clips/{clip}/upload";
+            using var resp = await _http.PostAsync(url, form, ct);
+            return resp.IsSuccessStatusCode;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    public async Task<SceneMusicResult?> ScoreSceneMusicAsync(
+        string projectId,
+        int scene,
+        CancellationToken ct = default)
+    {
+        try
+        {
+            var url = $"/api/projects/{Uri.EscapeDataString(projectId)}/scenes/{scene}/score-music";
+            using var resp = await _http.PostAsync(url, null, ct);
+            if (!resp.IsSuccessStatusCode) return null;
+            var doc = await resp.Content.ReadFromJsonAsync<JsonElement>(JsonOpts, ct);
+            if (doc.TryGetProperty("result", out var rEl) && rEl.ValueKind == JsonValueKind.Object)
+                return JsonSerializer.Deserialize<SceneMusicResult>(rEl.GetRawText(), JsonOpts);
+            return null;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
     public sealed record ProcessSceneCutResponse(
         ClipDialogueVerificationResult? DialogueResult,
         SceneMusicResult? MusicResult);

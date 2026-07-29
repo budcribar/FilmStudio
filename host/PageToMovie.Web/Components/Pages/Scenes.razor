@@ -27,15 +27,7 @@
 else
 {
 
-@if (!string.IsNullOrEmpty(_error))
-{
-    <div class="alert alert-danger">@_error</div>
-}
-@* Don't stack a success banner under the live progress card *@
-@if (!string.IsNullOrEmpty(_message) && !JobRunning)
-{
-    <div class="alert alert-info">@_message</div>
-}
+
 
 
 @* Feature 8: clip finished but not saved to a local media folder *@
@@ -258,71 +250,6 @@ else if (_showPreviewPlayer && _clientStitching)
                 <div class="progress-bar progress-bar-striped progress-bar-animated bg-info"
                      style="width: @vPct%">@vPct%</div>
             </div>
-        </div>
-    </div>
-}
-
-@* Live gen: one compact surface — status + bar + Cancel only (no badges, no Grok dump, no log). *@
-@if (ShowLiveGenProgress && _job is not null)
-{
-    <div class="card mb-3 border-primary" data-testid="scenes-gen-progress">
-        <div class="card-body py-2">
-            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
-                <span class="small">@LiveGenStatusLabel(_job)</span>
-                <button type="button"
-                        class="btn btn-sm btn-outline-danger"
-                        data-testid="scenes-gen-cancel"
-                        disabled="@_busy"
-                        @onclick="CancelAsync">Cancel</button>
-            </div>
-            @{
-                var pct = LiveGenProgressPercent(_job);
-            }
-            <div class="progress mt-2" style="height: 0.85rem;" role="progressbar"
-                 aria-valuenow="@pct" aria-valuemin="0" aria-valuemax="100"
-                 aria-label="@LiveGenStatusLabel(_job)">
-                <div class="progress-bar progress-bar-striped progress-bar-animated bg-primary"
-                     style="width: @pct%"></div>
-            </div>
-        </div>
-    </div>
-}
-else if (ShowOperatorGenPartial && _job is not null)
-{
-    <div class="alert alert-warning py-2 d-flex justify-content-between align-items-center flex-wrap gap-2">
-        <span class="small">Some clips finished; others failed. Refresh and retry the missing ones.</span>
-        <button class="btn btn-sm btn-outline-secondary" disabled="@_busy" @onclick="ReloadListAsync">Refresh</button>
-    </div>
-}
-else if (ShowOperatorGenError && _job is not null)
-{
-    <div class="alert alert-danger py-2 d-flex justify-content-between align-items-center flex-wrap gap-2">
-        <span class="small">@(!string.IsNullOrWhiteSpace(_job.Message) ? $"Generation failed: {_job.Message}" : "Generation failed. Try again.")</span>
-        <button class="btn btn-sm btn-outline-secondary" disabled="@_busy" @onclick="ReloadListAsync">Refresh</button>
-    </div>
-}
-else if (Session.IsAdmin && _job is not null &&
-         (_job.Status is "done" or "partial" or "error" or "cancelled"))
-{
-    @* Admin: finished-job summary only — no live log dump (that belonged under generating). *@
-    <div class="card mb-3 border-@(_job.Status == "error" ? "danger" : _job.Status == "partial" ? "warning" : "secondary")">
-        <div class="card-body py-2">
-            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
-                <span class="small">@(_job.Message ?? _job.Status)</span>
-                <button class="btn btn-sm btn-outline-secondary" disabled="@_busy" @onclick="ReloadListAsync">Refresh list</button>
-            </div>
-            @if (_job.Log.Count > 0)
-            {
-                <button type="button"
-                        class="btn btn-sm btn-link text-muted p-0 mt-1 text-decoration-none"
-                        @onclick="() => _showAdminJobLog = !_showAdminJobLog">
-                    @(_showAdminJobLog ? "Hide details" : "Details (admin)")
-                </button>
-                @if (_showAdminJobLog)
-                {
-                    <pre class="small mb-0 mt-1" style="max-height: 120px; overflow: auto;">@string.Join("\n", _job.Log.TakeLast(20))</pre>
-                }
-            }
         </div>
     </div>
 }
@@ -575,6 +502,80 @@ else if (_detail is null)
 }
 else
 {
+    @if (!string.IsNullOrEmpty(_error))
+    {
+        <div class="alert alert-danger mb-3">@_error</div>
+    }
+    @if (!string.IsNullOrEmpty(_message) && !JobRunning)
+    {
+        <div class="alert alert-info mb-3">@_message</div>
+    }
+
+    @* Live gen: one compact surface — status + bar + Cancel only (no badges, no Grok dump, no log). *@
+    @if (ShowLiveGenProgress && _job is not null)
+    {
+        <div class="card mb-3 border-primary" data-testid="scenes-gen-progress">
+            <div class="card-body py-2">
+                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                    <span class="small">@LiveGenStatusLabel(_job)</span>
+                    <button type="button"
+                            class="btn btn-sm btn-outline-danger"
+                            data-testid="scenes-gen-cancel"
+                            disabled="@_busy"
+                            @onclick="CancelAsync">Cancel</button>
+                </div>
+                @{
+                    var pct = LiveGenProgressPercent(_job);
+                }
+                <div class="progress mt-2" style="height: 0.85rem;" role="progressbar"
+                     aria-valuenow="@pct" aria-valuemin="0" aria-valuemax="100"
+                     aria-label="@LiveGenStatusLabel(_job)">
+                    <div class="progress-bar progress-bar-striped progress-bar-animated bg-primary"
+                         style="width: @pct%"></div>
+                </div>
+            </div>
+        </div>
+    }
+    else if (ShowOperatorGenPartial && _job is not null)
+    {
+        <div class="alert alert-warning py-2 d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+            <span class="small">Some clips finished; others failed. Refresh and retry the missing ones.</span>
+            <button class="btn btn-sm btn-outline-secondary" disabled="@_busy" @onclick="ReloadListAsync">Refresh</button>
+        </div>
+    }
+    else if (ShowOperatorGenError && _job is not null)
+    {
+        <div class="alert alert-danger py-2 d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+            <span class="small">@(!string.IsNullOrWhiteSpace(_job.Message) ? $"Generation failed: {_job.Message}" : "Generation failed. Try again.")</span>
+            <button class="btn btn-sm btn-outline-secondary" disabled="@_busy" @onclick="ReloadListAsync">Refresh</button>
+        </div>
+    }
+    else if (Session.IsAdmin && _job is not null &&
+             (_job.Status is "done" or "partial" or "error" or "cancelled"))
+    {
+        @* Admin: finished-job summary only — no live log dump (that belonged under generating). *@
+        <div class="card mb-3 border-@(_job.Status == "error" ? "danger" : _job.Status == "partial" ? "warning" : "secondary")">
+            <div class="card-body py-2">
+                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                    <span class="small">@(_job.Message ?? _job.Status)</span>
+                    <button class="btn btn-sm btn-outline-secondary" disabled="@_busy" @onclick="ReloadListAsync">Refresh list</button>
+                </div>
+                @if (_job.Log.Count > 0)
+                {
+                    <button type="button"
+                            class="btn btn-sm btn-link text-muted p-0 mt-1 text-decoration-none"
+                            @onclick="() => _showAdminJobLog = !_showAdminJobLog">
+                        @(_showAdminJobLog ? "Hide details" : "Details (admin)")
+                    </button>
+                    @if (_showAdminJobLog)
+                    {
+                        <pre class="small mb-0 mt-1" style="max-height: 120px; overflow: auto;">@string.Join("\n", _job.Log.TakeLast(20))</pre>
+                    }
+                }
+            </div>
+        </div>
+    }
+
     @* ---- Scene detail ---- *@
     <div class="card mb-3">
         <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
@@ -628,6 +629,16 @@ else
                             title="@(_selectedClips.Count > 0 ? $"Run dialogue & speaker verification on {_selectedClips.Count} selected clip(s)" : "Run dialogue & speaker verification on selected clips in the first column")"
                             @onclick="VerifySelectedScenesDialogueAsync">
                         @(_selectedClips.Count > 0 ? $"🔍 Verify ({_selectedClips.Count}) Selected Clips" : "🔍 Verify Clip Dialogue")
+                    </button>
+                }
+                @if (!_detail.HasBackgroundMusic && (_detail.CompositeExists || _detail.ClipsOnDisk > 0))
+                {
+                    <button type="button"
+                            class="btn btn-sm btn-outline-warning text-dark fw-semibold"
+                            disabled="@(_busy || JobRunning || _scoringMusic)"
+                            title="Generate AI background music score with automatic dialogue ducking"
+                            @onclick="() => ScoreSceneBackgroundMusicAsync(_detail.SceneNumber)">
+                        🎵 Score Background Music
                     </button>
                 }
                 @if (_detail.CompositeExists || _detail.ClipsOnDisk > 0)
@@ -1387,7 +1398,7 @@ else
                                                 class="btn btn-sm btn-outline-warning"
                                                 disabled="@_revertingScene"
                                                 @onclick="() => RevertSceneToVersionAsync(_historySceneNumber, item.CommitHash)">
-                                            Revert scene
+                                            Revert to version
                                         </button>
                                     </div>
                                     @if (item.Changes.Count > 0)
@@ -2865,29 +2876,14 @@ else
     {
         if (!MediaFolder.IsConnected || string.IsNullOrEmpty(_projectId)) return;
 
-        string? projDir = null;
-        try
-        {
-            var dto = await Engine.GetConfigAsync(_projectId);
-            projDir = dto?.ProjectDir;
-        }
-        catch { }
-
-        if (string.IsNullOrEmpty(projDir))
-        {
-            projDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".gemini", "antigravity", "projects", _projectId);
-        }
-
         foreach (var (sn, cn) in targets)
         {
             if (cn <= 1) continue;
             var prevClipNum = cn - 1;
             if (targets.Any(t => t.Scene == sn && t.Clip == prevClipNum)) continue;
 
-            var prevClipRelPath = Path.Combine("assets", "video", $"scene_{sn:D2}_clip_{prevClipNum:D2}.mp4");
-            var serverDiskPath = Path.Combine(projDir, prevClipRelPath);
-
-            if (!File.Exists(serverDiskPath) || new FileInfo(serverDiskPath).Length < 1024)
+            var serverHasClip = _detail?.Clips?.FirstOrDefault(c => c.ClipNumber == prevClipNum)?.OnDisk ?? false;
+            if (!serverHasClip)
             {
                 var localBytes = await MediaFolder.GetClipBytesAsync(sn, prevClipNum);
                 if (localBytes is { Length: >= 1024 })
@@ -2895,9 +2891,7 @@ else
                     _message = $"Uploading local predecessor S{sn:D2}C{prevClipNum:D2} to server…";
                     StateHasChanged();
 
-                    var destDir = Path.GetDirectoryName(serverDiskPath);
-                    if (!string.IsNullOrEmpty(destDir)) Directory.CreateDirectory(destDir);
-                    await File.WriteAllBytesAsync(serverDiskPath, localBytes);
+                    await Engine.UploadClipAsync(_projectId, sn, prevClipNum, localBytes);
                 }
             }
         }
@@ -3741,6 +3735,43 @@ else
             _verifyingClipNumber = 0;
             _verifyCurrent = 0;
             _verifyTotal = 0;
+            StateHasChanged();
+        }
+    }
+
+    private bool _scoringMusic;
+
+    private async Task ScoreSceneBackgroundMusicAsync(int sceneNum)
+    {
+        if (string.IsNullOrWhiteSpace(_projectId)) return;
+
+        _busy = true;
+        _scoringMusic = true;
+        _error = null;
+        _message = $"AI Music Scoring: Generating continuous background music score for Scene {sceneNum:D2}…";
+        StateHasChanged();
+
+        try
+        {
+            var res = await Engine.ScoreSceneMusicAsync(_projectId, sceneNum);
+            if (res is not null)
+            {
+                _message = $"Successfully scored background music for Scene {sceneNum:D2}.";
+                _detail = (await Engine.GetSceneDetailAsync(_projectId, sceneNum))?.Scene;
+            }
+            else
+            {
+                _error = "Background music scoring failed. Check your audio synthesis key in Configuration.";
+            }
+        }
+        catch (Exception ex)
+        {
+            _error = $"Music scoring failed: {ex.Message}";
+        }
+        finally
+        {
+            _busy = false;
+            _scoringMusic = false;
             StateHasChanged();
         }
     }

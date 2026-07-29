@@ -3422,6 +3422,9 @@ public sealed class ProjectStore
             }
         }
 
+        var musicFile = Path.Combine(projectDir, "assets", $"scene_{sceneNumber:D2}_music.mp3");
+        var hasMusic = File.Exists(musicFile) && new FileInfo(musicFile).Length >= 1024;
+
         return new SceneDetail
         {
             SceneNumber = sceneNumber,
@@ -3432,6 +3435,7 @@ public sealed class ProjectStore
             ClipCount = clips.Count,
             ClipsOnDisk = onDiskCount,
             CompositeExists = compositeOk,
+            HasBackgroundMusic = hasMusic,
             CompositeUrl = compositeOk
                 ? $"/api/projects/{Uri.EscapeDataString(projectId)}/scenes/{sceneNumber}/composite"
                 : null,
