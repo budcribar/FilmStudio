@@ -1745,6 +1745,7 @@ public sealed class EngineApiClient
         int scene,
         int clip,
         byte[]? videoBytes = null,
+        bool force = false,
         CancellationToken ct = default)
     {
         HttpContent? content = null;
@@ -1757,8 +1758,11 @@ public sealed class EngineApiClient
             content = form;
         }
 
+        var url = $"/api/projects/{Uri.EscapeDataString(projectId)}/scenes/{scene}/clips/{clip}/verify-dialogue";
+        if (force) url += "?force=true";
+
         using var resp = await _http.PostAsync(
-            $"/api/projects/{Uri.EscapeDataString(projectId)}/scenes/{scene}/clips/{clip}/verify-dialogue",
+            url,
             content,
             ct);
         if (!resp.IsSuccessStatusCode) return null;

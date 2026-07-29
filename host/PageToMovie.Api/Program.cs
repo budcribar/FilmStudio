@@ -4333,7 +4333,7 @@ app.MapGet("/api/projects/{id}/scenes/{scene:int}/clips/{clip:int}/auto-review",
 
 /// <summary>Trigger automated dialogue verification for a clip on demand. Accepts optional uploaded video file which is deleted immediately after API call.</summary>
 app.MapPost("/api/projects/{id}/scenes/{scene:int}/clips/{clip:int}/verify-dialogue", async (
-    string id, int scene, int clip, HttpContext httpContext, ClipDialogueVerificationService verifier, CancellationToken ct) =>
+    string id, int scene, int clip, HttpContext httpContext, ClipDialogueVerificationService verifier, bool force = false, CancellationToken ct = default) =>
 {
     string? tempFilePath = null;
     try
@@ -4352,7 +4352,7 @@ app.MapPost("/api/projects/{id}/scenes/{scene:int}/clips/{clip:int}/verify-dialo
             }
         }
 
-        var result = await verifier.VerifyClipDialogueAsync(id, scene, clip, overrideVideoPath: tempFilePath, ct: ct);
+        var result = await verifier.VerifyClipDialogueAsync(id, scene, clip, overrideVideoPath: tempFilePath, force: force, ct: ct);
         return Results.Ok(new { ok = true, result });
     }
     catch (Exception ex)

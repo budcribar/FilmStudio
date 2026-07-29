@@ -639,9 +639,9 @@ else
                     <button type="button"
                             class="btn btn-sm btn-outline-primary"
                             disabled="@(_busy || JobRunning || _verifyingClip)"
-                            title="@(_selectedClips.Count > 0 ? $"Run dialogue & speaker verification on {_selectedClips.Count} selected clip(s)" : "Run dialogue & speaker verification on clips in scene")"
+                            title="@(_selectedClips.Count > 0 ? $"Run dialogue & speaker verification on {_selectedClips.Count} selected clip(s)" : "Run dialogue & speaker verification on selected clips in the first column")"
                             @onclick="VerifySelectedScenesDialogueAsync">
-                        @(_selectedClips.Count > 0 ? $"🔍 Verify ({_selectedClips.Count}) Selected Clips" : "🔍 Verify Scene Dialogue")
+                        @(_selectedClips.Count > 0 ? $"🔍 Verify ({_selectedClips.Count}) Selected Clips" : "🔍 Verify Clip Dialogue")
                     </button>
                 }
                 @if (_detail.CompositeExists || _detail.ClipsOnDisk > 0)
@@ -752,6 +752,17 @@ else
                                 title="Check clips not yet on disk"
                                 @onclick="SelectMissingClips">
                             Select missing
+                        </button>
+                    }
+                    @if (_detail.Clips.Any(c => c.DialogueVerification is { Status: "mismatch" } or { Status: "speaker_swap" }))
+                    {
+                        <button type="button"
+                                class="btn btn-sm btn-outline-warning text-dark"
+                                data-testid="clip-select-mismatched"
+                                disabled="@_busy"
+                                title="Check all clips in this scene with dialogue mismatches or speaker swaps"
+                                @onclick="SelectMismatchedClips">
+                            Select mismatched (@_detail.Clips.Count(c => c.DialogueVerification is { Status: "mismatch" } or { Status: "speaker_swap" }))
                         </button>
                     }
                     @if (_selectedClips.Count > 0)
@@ -2127,6 +2138,15 @@ else
             _selectedClips.Add(c.ClipNumber);
     }
 
+    /// <summary>Select clips in the open scene that have dialogue mismatches or speaker swaps.</summary>
+    private void SelectMismatchedClips()
+    {
+        if (_detail is null) return;
+        _selectedClips.Clear();
+        foreach (var c in _detail.Clips.Where(c => c.DialogueVerification is { Status: "mismatch" } or { Status: "speaker_swap" }))
+            _selectedClips.Add(c.ClipNumber);
+    }
+
     private void RequestDeleteScene(int sn) => _deleteSceneTarget = sn;
 
     private Task ConfirmDeleteSceneAsync()
@@ -3458,65 +3478,58 @@ else
     {
         if (string.IsNullOrWhiteSpace(_projectId)) return;
 
-        // If specific clips are checked in the table, verify ONLY those selected clips.
-        // Otherwise, verify all on-disk clips for the selected scene(s).
-        var isClipSelection = _selectedClips.Count > 0;
-        var scenesToVerify = _selected.Count > 0
-            ? _selected.OrderBy(s => s).ToList()
-            : (_detail is not null ? new List<int> { _detail.SceneNumber } : new List<int>());
+        // Strictly verify clips checked in the first column selection box (_selectedClips).
+        // If no individual clips are checked, check clips in current scene that are unverified or mismatched.
+        List<int> clipNumbersToVerify;
+        int sceneNum;
 
-        if (scenesToVerify.Count == 0) return;
+        if (_selectedClips.Count > 0)
+        {
+            clipNumbersToVerify = _selectedClips.OrderBy(c => c).ToList();
+            sceneNum = _detail?.SceneNumber ?? 1;
+        }
+        else if (_detail is not null)
+        {
+            sceneNum = _detail.SceneNumber;
+            clipNumbersToVerify = _detail.Clips
+                .Where(c => c.OnDisk && (c.DialogueVerification is null || !string.Equals(c.DialogueVerification.Status, "verified", StringComparison.OrdinalIgnoreCase)))
+                .Select(c => c.ClipNumber)
+                .ToList();
+        }
+        else return;
+
+        if (clipNumbersToVerify.Count == 0)
+        {
+            _message = "All clips verified. Check specific clip boxes in the first column to force re-verification.";
+            return;
+        }
 
         try
         {
             _verifyingClip = true;
             _verifyCurrent = 0;
-            _verifyTotal = 0;
-            _verifyStatusLabel = "Preparing dialogue verification...";
+            _verifyTotal = clipNumbersToVerify.Count;
+            _verifyStatusLabel = $"Verifying dialogue for {clipNumbersToVerify.Count} clip(s)...";
             StateHasChanged();
 
-            var sceneDetails = new List<(int SceneNum, SceneDetail Detail)>();
-            foreach (var sn in scenesToVerify)
+            foreach (var cn in clipNumbersToVerify)
             {
-                var sceneDetail = (_detail is not null && _detail.SceneNumber == sn)
-                    ? _detail
-                    : (await Engine.GetSceneDetailAsync(_projectId, sn))?.Scene;
-                if (sceneDetail?.Clips is not null)
+                _verifyCurrent++;
+                _verifyingClipNumber = cn;
+                var clip = _detail?.Clips?.FirstOrDefault(c => c.ClipNumber == cn);
+                _verifyStatusLabel = $"Verifying dialogue for S{sceneNum:D2} C{cn:D2} (Speaker: {clip?.Speaker ?? "Unknown"})...";
+                StateHasChanged();
+
+                var videoBytes = await MediaFolder.GetClipBytesAsync(sceneNum, cn);
+                var ver = await Engine.VerifyClipDialogueAsync(_projectId, sceneNum, cn, videoBytes: videoBytes, force: true);
+                if (ver is not null && clip is not null)
                 {
-                    sceneDetails.Add((sn, sceneDetail));
-                    var clipsToInclude = isClipSelection
-                        ? sceneDetail.Clips.Where(c => c.OnDisk && _selectedClips.Contains(c.ClipNumber)).ToList()
-                        : sceneDetail.Clips.Where(c => c.OnDisk).ToList();
-                    _verifyTotal += clipsToInclude.Count;
-                }
-            }
-
-            if (_verifyTotal == 0) return;
-
-            foreach (var (sn, sceneDetail) in sceneDetails)
-            {
-                var clipsToRun = isClipSelection
-                    ? sceneDetail.Clips.Where(c => c.OnDisk && _selectedClips.Contains(c.ClipNumber)).ToList()
-                    : sceneDetail.Clips.Where(c => c.OnDisk).ToList();
-
-                foreach (var c in clipsToRun)
-                {
-                    _verifyCurrent++;
-                    _verifyingClipNumber = c.ClipNumber;
-                    _verifyStatusLabel = $"Verifying dialogue for S{sn:D2} C{c.ClipNumber:D2} (Speaker: {c.Speaker ?? "Unknown"})...";
-                    StateHasChanged();
-
-                    var videoBytes = await MediaFolder.GetClipBytesAsync(sn, c.ClipNumber);
-                    var ver = await Engine.VerifyClipDialogueAsync(_projectId, sn, c.ClipNumber, videoBytes: videoBytes);
-                    if (ver is not null)
+                    clip.DialogueVerification = ver;
+                    if (string.Equals(ver.Status, "unverified", StringComparison.OrdinalIgnoreCase))
                     {
-                        c.DialogueVerification = ver;
-                        if (string.Equals(ver.Status, "unverified", StringComparison.OrdinalIgnoreCase))
-                        {
-                            _error = ver.SummaryNote ?? "Clip Dialogue Verification requires Google Gemini (GEMINI_API_KEY). Gemini is the only provider that supports native video & audio dialogue analysis. Please add your Gemini key in Configuration.";
-                        }
-                        StateHasChanged();
+                        _error = ver.SummaryNote ?? "Clip Dialogue Verification requires Google Gemini (GEMINI_API_KEY). Gemini is the only provider that supports native video & audio dialogue analysis. Please add your Gemini key in Configuration.";
                     }
+                    StateHasChanged();
                 }
             }
 
