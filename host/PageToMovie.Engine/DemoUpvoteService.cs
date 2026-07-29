@@ -54,6 +54,26 @@ public sealed class DemoUpvoteService
     }
 
     /// <summary>Idempotent add. Returns true if a new row was inserted.</summary>
+    public async Task<bool> TryAddAsync(string demoId, string userId, CancellationToken ct = default)
+    {
+        EnsureReady();
+        demoId = (demoId ?? "").Trim();
+        userId = (userId ?? "").Trim();
+        if (demoId.Length == 0 || userId.Length == 0)
+            return false;
+
+        using var conn = new SqliteConnection(ConnectionString);
+        await conn.OpenAsync(ct).ConfigureAwait(false);
+        using var cmd = conn.CreateCommand();
+        cmd.CommandText = @"
+            INSERT OR IGNORE INTO demo_upvotes (demo_id, user_id, created_at)
+            VALUES ($d, $u, $t);";
+        cmd.Parameters.AddWithValue("$d", demoId);
+        cmd.Parameters.AddWithValue("$u", userId);
+        cmd.Parameters.AddWithValue("$t", DateTimeOffset.UtcNow.ToString("O"));
+        return await cmd.ExecuteNonQueryAsync(ct).ConfigureAwait(false) > 0;
+    }
+
     public bool TryAdd(string demoId, string userId)
     {
         EnsureReady();
@@ -75,6 +95,23 @@ public sealed class DemoUpvoteService
     }
 
     /// <summary>Remove upvote. Returns true if a row was deleted.</summary>
+    public async Task<bool> TryRemoveAsync(string demoId, string userId, CancellationToken ct = default)
+    {
+        EnsureReady();
+        demoId = (demoId ?? "").Trim();
+        userId = (userId ?? "").Trim();
+        if (demoId.Length == 0 || userId.Length == 0)
+            return false;
+
+        using var conn = new SqliteConnection(ConnectionString);
+        await conn.OpenAsync(ct).ConfigureAwait(false);
+        using var cmd = conn.CreateCommand();
+        cmd.CommandText = "DELETE FROM demo_upvotes WHERE demo_id = $d AND user_id = $u;";
+        cmd.Parameters.AddWithValue("$d", demoId);
+        cmd.Parameters.AddWithValue("$u", userId);
+        return await cmd.ExecuteNonQueryAsync(ct).ConfigureAwait(false) > 0;
+    }
+
     public bool TryRemove(string demoId, string userId)
     {
         EnsureReady();
@@ -92,6 +129,21 @@ public sealed class DemoUpvoteService
         return cmd.ExecuteNonQuery() > 0;
     }
 
+    public async Task<int> GetCountAsync(string demoId, CancellationToken ct = default)
+    {
+        EnsureReady();
+        demoId = (demoId ?? "").Trim();
+        if (demoId.Length == 0) return 0;
+
+        using var conn = new SqliteConnection(ConnectionString);
+        await conn.OpenAsync(ct).ConfigureAwait(false);
+        using var cmd = conn.CreateCommand();
+        cmd.CommandText = "SELECT COUNT(*) FROM demo_upvotes WHERE demo_id = $d;";
+        cmd.Parameters.AddWithValue("$d", demoId);
+        var o = await cmd.ExecuteScalarAsync(ct).ConfigureAwait(false);
+        return o is long l ? (int)l : Convert.ToInt32(o ?? 0);
+    }
+
     public int GetCount(string demoId)
     {
         EnsureReady();
@@ -105,6 +157,23 @@ public sealed class DemoUpvoteService
         cmd.Parameters.AddWithValue("$d", demoId);
         var o = cmd.ExecuteScalar();
         return o is long l ? (int)l : Convert.ToInt32(o ?? 0);
+    }
+
+    public async Task<bool> HasUpvotedAsync(string demoId, string? userId, CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(userId)) return false;
+        EnsureReady();
+        demoId = (demoId ?? "").Trim();
+        userId = userId.Trim();
+        if (demoId.Length == 0) return false;
+
+        using var conn = new SqliteConnection(ConnectionString);
+        await conn.OpenAsync(ct).ConfigureAwait(false);
+        using var cmd = conn.CreateCommand();
+        cmd.CommandText = "SELECT 1 FROM demo_upvotes WHERE demo_id = $d AND user_id = $u LIMIT 1;";
+        cmd.Parameters.AddWithValue("$d", demoId);
+        cmd.Parameters.AddWithValue("$u", userId);
+        return await cmd.ExecuteScalarAsync(ct).ConfigureAwait(false) is not null;
     }
 
     public bool HasUpvoted(string demoId, string? userId)
@@ -125,6 +194,46 @@ public sealed class DemoUpvoteService
     }
 
     /// <summary>Counts for many demos (missing ids → 0).</summary>
+    public async Task<Dictionary<string, int>> GetCountsAsync(IEnumerable<string> demoIds, CancellationToken ct = default)
+    {
+        EnsureReady();
+        var ids = demoIds
+            .Where(id => !string.IsNullOrWhiteSpace(id))
+            .Select(id => id.Trim())
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+        var map = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+        foreach (var id in ids)
+            map[id] = 0;
+        if (ids.Count == 0) return map;
+
+        using var conn = new SqliteConnection(ConnectionString);
+        await conn.OpenAsync(ct).ConfigureAwait(false);
+        const int chunk = 80;
+        for (var i = 0; i < ids.Count; i += chunk)
+        {
+            var slice = ids.Skip(i).Take(chunk).ToList();
+            var names = new List<string>();
+            using var cmd = conn.CreateCommand();
+            for (var j = 0; j < slice.Count; j++)
+            {
+                var p = "$id" + j;
+                names.Add(p);
+                cmd.Parameters.AddWithValue(p, slice[j]);
+            }
+            cmd.CommandText =
+                $"SELECT demo_id, COUNT(*) FROM demo_upvotes WHERE demo_id IN ({string.Join(",", names)}) GROUP BY demo_id;";
+            using var r = await cmd.ExecuteReaderAsync(ct).ConfigureAwait(false);
+            while (await r.ReadAsync(ct).ConfigureAwait(false))
+            {
+                var id = r.GetString(0);
+                var n = r.GetInt32(1);
+                map[id] = n;
+            }
+        }
+        return map;
+    }
+
     public Dictionary<string, int> GetCounts(IEnumerable<string> demoIds)
     {
         EnsureReady();
@@ -140,7 +249,6 @@ public sealed class DemoUpvoteService
 
         using var conn = new SqliteConnection(ConnectionString);
         conn.Open();
-        // SQLite has a param limit; chunk if needed
         const int chunk = 80;
         for (var i = 0; i < ids.Count; i += chunk)
         {
@@ -167,6 +275,42 @@ public sealed class DemoUpvoteService
     }
 
     /// <summary>Demo ids the user has upvoted (among the given set).</summary>
+    public async Task<HashSet<string>> GetUpvotedSetAsync(string? userId, IEnumerable<string> demoIds, CancellationToken ct = default)
+    {
+        var set = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        if (string.IsNullOrWhiteSpace(userId)) return set;
+        EnsureReady();
+        var ids = demoIds
+            .Where(id => !string.IsNullOrWhiteSpace(id))
+            .Select(id => id.Trim())
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+        if (ids.Count == 0) return set;
+
+        using var conn = new SqliteConnection(ConnectionString);
+        await conn.OpenAsync(ct).ConfigureAwait(false);
+        const int chunk = 80;
+        for (var i = 0; i < ids.Count; i += chunk)
+        {
+            var slice = ids.Skip(i).Take(chunk).ToList();
+            using var cmd = conn.CreateCommand();
+            cmd.Parameters.AddWithValue("$u", userId.Trim());
+            var names = new List<string>();
+            for (var j = 0; j < slice.Count; j++)
+            {
+                var p = "$id" + j;
+                names.Add(p);
+                cmd.Parameters.AddWithValue(p, slice[j]);
+            }
+            cmd.CommandText =
+                $"SELECT demo_id FROM demo_upvotes WHERE user_id = $u AND demo_id IN ({string.Join(",", names)});";
+            using var r = await cmd.ExecuteReaderAsync(ct).ConfigureAwait(false);
+            while (await r.ReadAsync(ct).ConfigureAwait(false))
+                set.Add(r.GetString(0));
+        }
+        return set;
+    }
+
     public HashSet<string> GetUpvotedSet(string? userId, IEnumerable<string> demoIds)
     {
         var set = new HashSet<string>(StringComparer.OrdinalIgnoreCase);

@@ -231,7 +231,7 @@ JSON only:
     {
         var set = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         if (string.IsNullOrWhiteSpace(s)) return set;
-        foreach (var part in TokenSplitRegex.Split(s.ToLowerInvariant()))
+        foreach (var part in TokenSplitRegex.Split(s))
         {
             var t = part.Trim().Trim('.', ' ');
             if (t.Length < 2) continue;
@@ -240,8 +240,8 @@ JSON only:
         }
         if (set.Count == 0)
         {
-            foreach (var w in s!.ToLowerInvariant().Split(new[] { ' ', ',', ';' }, StringSplitOptions.RemoveEmptyEntries))
-                if (w.Length >= 3) set.Add(w);
+            foreach (var w in s.Split(new[] { ' ', ',', ';' }, StringSplitOptions.RemoveEmptyEntries))
+                if (w.Length >= 3) set.Add(w.Trim());
         }
         return set;
     }
