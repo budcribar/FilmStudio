@@ -121,13 +121,11 @@ public sealed class BeatPacingClassifier
         return sb.ToString();
     }
 
-    private static readonly Regex CodeFenceRegex = new(@"```json|```", RegexOptions.Compiled);
-
     private Dictionary<string, int>? ParsePacingResponse(string rawJson)
     {
         try
         {
-            var cleaned = CodeFenceRegex.Replace(rawJson, "").Trim();
+            var cleaned = ClassifierJsonParser.StripFences(rawJson);
             using var doc = JsonDocument.Parse(cleaned);
             if (!doc.RootElement.TryGetProperty("pacing", out var paceArray) ||
                 paceArray.ValueKind != JsonValueKind.Array)

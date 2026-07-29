@@ -1,6 +1,7 @@
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using PageToMovie.Core.Options;
+using PageToMovie.Core.Utils;
 using PageToMovie.Engine.Abstractions;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -138,18 +139,15 @@ public sealed class CameraDirectorClassifier
             var result = new Dictionary<string, CameraDirective>(StringComparer.OrdinalIgnoreCase);
             foreach (var item in dirArray.EnumerateArray())
             {
-                if (item.TryGetProperty("beat_id", out var bid))
-                {
-                    var id = bid.GetString() ?? "";
-                    var scale = item.TryGetProperty("shot_scale", out var ss) ? ss.GetString() ?? "medium" : "medium";
-                    var lens = item.TryGetProperty("lens_spec", out var ls) ? ls.GetString() ?? "35mm lens" : "35mm lens";
-                    var move = item.TryGetProperty("camera_movement", out var cm) ? cm.GetString() ?? "locked tripod" : "locked tripod";
-                    var framing = item.TryGetProperty("framing_prompt", out var fp) ? fp.GetString() ?? "" : "";
+                var id = item.GetStringProp("beat_id");
+                var scale = item.GetStringProp("shot_scale", "medium");
+                var lens = item.GetStringProp("lens_spec", "35mm lens");
+                var move = item.GetStringProp("camera_movement", "locked tripod");
+                var framing = item.GetStringProp("framing_prompt");
 
-                    if (!string.IsNullOrWhiteSpace(id))
-                    {
-                        result[id] = new CameraDirective(scale, lens, move, framing);
-                    }
+                if (!string.IsNullOrWhiteSpace(id))
+                {
+                    result[id] = new CameraDirective(scale, lens, move, framing);
                 }
             }
 

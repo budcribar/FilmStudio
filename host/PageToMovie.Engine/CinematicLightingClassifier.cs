@@ -1,6 +1,7 @@
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using PageToMovie.Core.Options;
+using PageToMovie.Core.Utils;
 using PageToMovie.Engine.Abstractions;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -112,14 +113,11 @@ public sealed class CinematicLightingClassifier
     {
         try
         {
-            var cleaned = Regex.Replace(rawJson, @"```json|```", "").Trim();
+            var cleaned = ClassifierJsonParser.StripFences(rawJson);
             using var doc = JsonDocument.Parse(cleaned);
-            if (doc.RootElement.TryGetProperty("lighting_token", out var lt))
-            {
-                var token = lt.GetString()?.Trim();
-                if (!string.IsNullOrWhiteSpace(token))
-                    return token;
-            }
+            var token = doc.RootElement.GetStringProp("lighting_token").Trim();
+            if (!string.IsNullOrWhiteSpace(token))
+                return token;
             return null;
         }
         catch (Exception ex)
