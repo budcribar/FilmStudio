@@ -270,7 +270,7 @@ else if (_showPreviewPlayer && _clientStitching)
     }
     else
     {
-        <div class="card mb-3 p-3 bg-dark border-secondary">
+        <div class="card mb-3 p-3">
             <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
                 <div class="d-flex align-items-center gap-2 flex-wrap">
                     <button type="button"
@@ -300,7 +300,7 @@ else if (_showPreviewPlayer && _clientStitching)
                     @if (_scenes is not null && VisibleScenes.Any(s => !s.ClipsComplete || s.ClipsOnDisk < s.ClipCount))
                     {
                         <button type="button"
-                                class="btn btn-sm btn-outline-light ms-2"
+                                class="btn btn-sm btn-outline-secondary ms-2"
                                 disabled="@_busy"
                                 title="Select scenes that still need clips"
                                 @onclick="SelectMissingScenes">
