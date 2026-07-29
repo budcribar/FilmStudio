@@ -2483,19 +2483,29 @@ public sealed class FilmJobService
         {
             prevOnDisk = Path.Combine(
                 projectDir, "assets", "video", $"scene_{scene:D2}_clip_{clip - 1:D2}.mp4");
-            if (!File.Exists(prevOnDisk) || new FileInfo(prevOnDisk).Length < 1024)
+            var prevBytesOnServer = File.Exists(prevOnDisk) && new FileInfo(prevOnDisk).Length >= 1024;
+            // Client-storage is the primary path now (server MP4s get pruned within minutes of the
+            // browser confirming a synced save — see ServerMediaPruningService), so "previous clip
+            // exists" must also accept its .client.json marker, not just raw bytes still on server disk.
+            if (!prevBytesOnServer && !ClipPresentOnServerOrClient(prevOnDisk))
             {
                 throw new InvalidOperationException(
                     $"Generate S{scene:D2}C{clip - 1:D2} first — later clips continue from the previous video.");
             }
 
-            // Breath-tail silence trim for extend input only. Mutating prevOnDisk in place used to
-            // permanently shorten a finished clip when this job then failed/cancelled before C_N
-            // was written (no backup of N-1). Work on a throwaway copy instead.
-            prevExtendWorkTemp = Path.Combine(
-                projectDir, "assets", "video", $"_prev_extend_s{scene:D2}c{clip:D2}.mp4");
-            File.Copy(prevOnDisk, prevExtendWorkTemp, overwrite: true);
-            prevVideoPath = prevExtendWorkTemp;
+            if (prevBytesOnServer)
+            {
+                // Breath-tail silence trim for extend input only. Mutating prevOnDisk in place used to
+                // permanently shorten a finished clip when this job then failed/cancelled before C_N
+                // was written (no backup of N-1). Work on a throwaway copy instead.
+                prevExtendWorkTemp = Path.Combine(
+                    projectDir, "assets", "video", $"_prev_extend_s{scene:D2}c{clip:D2}.mp4");
+                File.Copy(prevOnDisk, prevExtendWorkTemp, overwrite: true);
+                prevVideoPath = prevExtendWorkTemp;
+            }
+            // else: previous clip already synced to the client and was pruned server-side. That's
+            // fine — prevVideoPath stays null, and generation below always does a fresh gen with
+            // locked reference images regardless (no server-side video-extend since ffmpeg left).
         }
 
         if (previousClipEl is { } prevEl &&
@@ -2514,7 +2524,10 @@ public sealed class FilmJobService
         try
         {
             // No native ffmpeg: never video-extend (cannot split prev+new). Fresh gen + locked plates.
-            if (prevVideoPath is not null)
+            // Gated on `clip > 1` (not `prevVideoPath is not null`): the previous clip may only exist
+            // via its .client.json marker now (synced to the client, pruned server-side), in which case
+            // prevVideoPath is already null above — this is still a continuation clip either way.
+            if (clip > 1)
             {
                 reseedFresh = true;
                 prevVideoPath = null;
