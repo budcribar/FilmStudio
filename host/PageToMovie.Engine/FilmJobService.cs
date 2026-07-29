@@ -845,7 +845,7 @@ public sealed class FilmJobService
                 forceExtract: req.ForceExtract,
                 forceVision: req.ForceVision,
                 autoVision: req.AutoVision,
-                visionModel: string.IsNullOrWhiteSpace(req.VisionModel) ? "grok-4.5" : req.VisionModel,
+                visionModel: await ResolveVisionModelAsync(projectId, req.VisionModel, ct).ConfigureAwait(false),
                 onProgress: line =>
                 {
                     _ = AppendLogAsync(line);
@@ -943,7 +943,7 @@ public sealed class FilmJobService
                     forceExtract: req.ForceExtract,
                     forceVision: req.ForceVision,
                     autoVision: req.AutoVision,
-                    visionModel: string.IsNullOrWhiteSpace(req.VisionModel) ? "grok-4.5" : req.VisionModel,
+                    visionModel: await ResolveVisionModelAsync(projectId, req.VisionModel, ct).ConfigureAwait(false),
                     onProgress: line =>
                     {
                         _ = AppendLogAsync(line);
@@ -997,7 +997,7 @@ public sealed class FilmJobService
                 return;
             }
 
-            var model = string.IsNullOrWhiteSpace(req.Model) ? "grok-4.5" : req.Model.Trim();
+            var model = await ResolvePlanningModelAsync(projectId, req.Model, ct).ConfigureAwait(false);
             var save = await ScreenplayService.CreateDraftFromBookAsync(
                 _projects,
                 projectId,
@@ -1495,7 +1495,7 @@ public sealed class FilmJobService
                 copyIntoAssets: req.CopyIntoAssets,
                 onlyCharKey: req.CharKey,
                 useGrok: req.UseGrok,
-                visionModel: string.IsNullOrWhiteSpace(req.VisionModel) ? "grok-4.5" : req.VisionModel,
+                visionModel: await ResolveVisionModelAsync(projectId, req.VisionModel, ct).ConfigureAwait(false),
                 maxImages: req.MaxImages > 0 ? req.MaxImages : 32,
                 onProgress: line =>
                 {
@@ -1743,7 +1743,7 @@ public sealed class FilmJobService
                     projectId,
                     chunkPages: Math.Clamp(req.ChunkPages, 5, 30),
                     totalMinutes: req.TotalMinutes,
-                    model: string.IsNullOrWhiteSpace(req.Model) ? "grok-4.5" : req.Model,
+                    model: await ResolvePlanningModelAsync(projectId, req.Model, ct).ConfigureAwait(false),
                     resume: req.Resume,
                     maxChunks: req.MaxChunks,
                     onProgress: line => progress.Writer.TryWrite(line),
@@ -3385,6 +3385,32 @@ public sealed class FilmJobService
             ModelCapability.Video,
             fallbackId: _opts.DefaultModel);
         return resolved.Id;
+    }
+
+    private async Task<string> ResolvePlanningModelAsync(string projectId, string? requestedModel, CancellationToken ct)
+    {
+        if (!string.IsNullOrWhiteSpace(requestedModel)) return requestedModel.Trim();
+        try
+        {
+            var cfg = await _projects.GetConfigAsync(projectId, ct).ConfigureAwait(false);
+            if (cfg.TryGetValue("planning_model_name", out var el) && el.ValueKind == JsonValueKind.String && !string.IsNullOrWhiteSpace(el.GetString()))
+                return el.GetString()!.Trim();
+        }
+        catch { }
+        return "grok-4.5";
+    }
+
+    private async Task<string> ResolveVisionModelAsync(string projectId, string? requestedModel, CancellationToken ct)
+    {
+        if (!string.IsNullOrWhiteSpace(requestedModel)) return requestedModel.Trim();
+        try
+        {
+            var cfg = await _projects.GetConfigAsync(projectId, ct).ConfigureAwait(false);
+            if (cfg.TryGetValue("vision_model_name", out var el) && el.ValueKind == JsonValueKind.String && !string.IsNullOrWhiteSpace(el.GetString()))
+                return el.GetString()!.Trim();
+        }
+        catch { }
+        return "grok-4.5";
     }
 
     private static string NormalizeResolution(string? value)

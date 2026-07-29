@@ -172,13 +172,22 @@ public sealed class CharacterDesignService
         if (visForGen is null && seeds.TryGetProperty("visual_lock", out var v0))
             visForGen = v0.GetString();
 
+        string? planningModel = null;
+        try
+        {
+            var cfg = await _projects.GetConfigAsync(projectId, ct).ConfigureAwait(false);
+            if (cfg.TryGetValue("planning_model_name", out var pEl) && pEl.ValueKind == System.Text.Json.JsonValueKind.String)
+                planningModel = pEl.GetString();
+        }
+        catch { }
+
         try
         {
             var (dScrub, vScrub, usedAi) = await _literalize.ScrubLookFieldsAsync(
                 charKey,
                 description: descForGen,
                 visualLock: visForGen,
-                model: "grok-4.5",
+                model: !string.IsNullOrWhiteSpace(planningModel) ? planningModel : "grok-4.5",
                 onProgress: onProgress,
                 ct: ct).ConfigureAwait(false);
             if (usedAi)
@@ -665,13 +674,22 @@ public sealed class CharacterDesignService
             "JSON ONLY (no markdown):\n" +
             "{\"pass\":true|false,\"medium\":\"photoreal|illustration|sketch|other\",\"reason\":\"short\"}\n";
 
+        string? visionModel = null;
+        try
+        {
+            var cfg = await _projects.GetConfigAsync(projectId, ct).ConfigureAwait(false);
+            if (cfg.TryGetValue("vision_model_name", out var vEl) && vEl.ValueKind == System.Text.Json.JsonValueKind.String)
+                visionModel = vEl.GetString();
+        }
+        catch { }
+
         string raw;
         try
         {
             raw = await _vision.CompleteWithImagesAsync(
                 prompt,
                 new[] { imagePath },
-                model: "grok-4.5",
+                model: !string.IsNullOrWhiteSpace(visionModel) ? visionModel : "grok-4.5",
                 detail: "low",
                 ct: ct).ConfigureAwait(false);
         }
