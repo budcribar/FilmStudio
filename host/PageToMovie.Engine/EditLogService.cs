@@ -53,13 +53,9 @@ public sealed class EditLogService
     {
         var path = await LogPathAsync(projectId, ct).ConfigureAwait(false);
         Directory.CreateDirectory(Path.GetDirectoryName(path)!);
-        var tmp = path + ".tmp";
-        {
-            await using var stream = new FileStream(tmp, FileMode.Create, FileAccess.Write, FileShare.None, 4096, useAsync: true);
-            await JsonSerializer.SerializeAsync(stream, doc, JsonOpts, ct).ConfigureAwait(false);
-            await stream.WriteAsync(NewLineBytes, ct).ConfigureAwait(false);
-        }
-        File.Move(tmp, path, overwrite: true);
+        await using var stream = new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.None, 4096, useAsync: true);
+        await JsonSerializer.SerializeAsync(stream, doc, JsonOpts, ct).ConfigureAwait(false);
+        await stream.WriteAsync(NewLineBytes, ct).ConfigureAwait(false);
     }
 
     public async Task<EditLogEntry> AddAsync(

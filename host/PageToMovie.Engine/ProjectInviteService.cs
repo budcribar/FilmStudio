@@ -64,7 +64,7 @@ public sealed class ProjectInviteService
     private static string HashToken(string raw)
     {
         var bytes = SHA256.HashData(System.Text.Encoding.UTF8.GetBytes("ptm-invite:" + raw));
-        return Convert.ToHexString(bytes).ToLowerInvariant();
+        return Convert.ToHexStringLower(bytes);
     }
 
     public sealed record CreatedInvite(string Token, DateTimeOffset ExpiresAt);

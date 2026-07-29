@@ -1145,6 +1145,7 @@ public sealed class Stage2PlannerService
 
     private static readonly Regex WhitespaceCollapseRegex = new(@"\s+", RegexOptions.Compiled);
     private static readonly Regex DotCollapseRegex = new(@"\s*\.\s*\.+", RegexOptions.Compiled);
+    private static readonly Regex CharacterTokenRegex = new(@"Character_[A-Za-z0-9_]+", RegexOptions.Compiled);
 
     private static string NormalizeSentencePart(string? text)
     {
@@ -1367,10 +1368,11 @@ public sealed class Stage2PlannerService
             if (!key.StartsWith("Character_", StringComparison.Ordinal)) return;
             if (!found.Contains(key)) found.Add(key);
         }
+
         void AddFrom(string? text)
         {
             if (string.IsNullOrEmpty(text)) return;
-            foreach (Match m in Regex.Matches(text, @"Character_[A-Za-z0-9_]+"))
+            foreach (Match m in CharacterTokenRegex.Matches(text))
                 Add(m.Value);
         }
         // AI / enricher closed-set list preferred when present.

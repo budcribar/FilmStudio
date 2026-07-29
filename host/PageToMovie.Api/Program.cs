@@ -4743,8 +4743,8 @@ app.MapGet("/api/demos", async (
 {
     var list = demos.ListPublic(take ?? 50).ToList();
     var ids = list.Select(d => d.Id).ToList();
-    var counts = upvotes.GetCounts(ids);
-    var mine = upvotes.GetUpvotedSet(user.UserId, ids);
+    var counts = await upvotes.GetCountsAsync(ids, ct);
+    var mine = await upvotes.GetUpvotedSetAsync(user.UserId, ids, ct);
 
     var visibilityMap = new Dictionary<string, string>();
     var forkableProjectIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -4812,19 +4812,20 @@ app.MapGet("/api/admin/demos", (
 });
 
 /// <summary>Public metadata for a public demo; owner/admin can see pending.</summary>
-app.MapGet("/api/demos/{demoId}", (
+app.MapGet("/api/demos/{demoId}", async (
     string demoId,
     DemoCatalogService demos,
     DemoUpvoteService upvotes,
-    IUserContext user) =>
+    IUserContext user,
+    CancellationToken ct) =>
 {
     var d = demos.TryGet(demoId);
     if (d is null)
         return Results.NotFound(new { ok = false, error = "Demo not found" });
     if (!demos.CanUserViewVideo(d, user.UserId, user.IsAdmin))
         return Results.NotFound(new { ok = false, error = "Demo not found" });
-    var count = upvotes.GetCount(demoId);
-    var me = upvotes.HasUpvoted(demoId, user.UserId);
+    var count = await upvotes.GetCountAsync(demoId, ct);
+    var me = await upvotes.HasUpvotedAsync(demoId, user.UserId, ct);
     if (user.IsAdmin)
     {
         return Results.Ok(new
@@ -4839,12 +4840,13 @@ app.MapGet("/api/demos/{demoId}", (
 });
 
 /// <summary>Star / upvote a public demo (signed-in). Idempotent. No self-upvote.</summary>
-app.MapPost("/api/demos/{demoId}/upvote", (
+app.MapPost("/api/demos/{demoId}/upvote", async (
     string demoId,
     DemoCatalogService demos,
     DemoUpvoteService upvotes,
     IUserContext user,
-    IOptions<PageToMovieOptions> opts) =>
+    IOptions<PageToMovieOptions> opts,
+    CancellationToken ct) =>
 {
     if (AuthGate.RequireLogin(user, opts) is { } denied)
         return denied;
@@ -4862,11 +4864,12 @@ app.MapPost("/api/demos/{demoId}/upvote", (
         }, statusCode: StatusCodes.Status403Forbidden);
     }
 
-    upvotes.TryAdd(demoId, user.UserId!);
+    await upvotes.TryAddAsync(demoId, user.UserId!, ct);
+    var newCount = await upvotes.GetCountAsync(demoId, ct);
     return Results.Ok(new
     {
         ok = true,
-        upvoteCount = upvotes.GetCount(demoId),
+        upvoteCount = newCount,
         upvotedByMe = true,
     });
 });
@@ -4938,12 +4941,13 @@ app.MapPost("/api/demos/{demoId}/fork", async (
 });
 
 /// <summary>Remove star / upvote (signed-in).</summary>
-app.MapDelete("/api/demos/{demoId}/upvote", (
+app.MapDelete("/api/demos/{demoId}/upvote", async (
     string demoId,
     DemoCatalogService demos,
     DemoUpvoteService upvotes,
     IUserContext user,
-    IOptions<PageToMovieOptions> opts) =>
+    IOptions<PageToMovieOptions> opts,
+    CancellationToken ct) =>
 {
     if (AuthGate.RequireLogin(user, opts) is { } denied)
         return denied;
@@ -4951,11 +4955,12 @@ app.MapDelete("/api/demos/{demoId}/upvote", (
     if (d is null || !demos.IsPubliclyStreamable(d))
         return Results.NotFound(new { ok = false, error = "Demo not found" });
 
-    upvotes.TryRemove(demoId, user.UserId!);
+    await upvotes.TryRemoveAsync(demoId, user.UserId!, ct);
+    var newCount = await upvotes.GetCountAsync(demoId, ct);
     return Results.Ok(new
     {
         ok = true,
-        upvoteCount = upvotes.GetCount(demoId),
+        upvoteCount = newCount,
         upvotedByMe = false,
     });
 });
