@@ -80,7 +80,7 @@ public sealed class FalVideoClient : IVideoClient
         var endpoint = "fal-ai/hunyuan-video";
         if (!string.IsNullOrWhiteSpace(imagePath))
         {
-            endpoint = "fal-ai/hunyuan-video/image-to-video";
+            endpoint = "fal-ai/hunyuan-video-image-to-video";
             var bytes = await File.ReadAllBytesAsync(imagePath, ct).ConfigureAwait(false);
             var b64 = Convert.ToBase64String(bytes);
             var ext = Path.GetExtension(imagePath).ToLowerInvariant();
