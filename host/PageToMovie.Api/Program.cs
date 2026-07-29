@@ -2623,6 +2623,93 @@ app.MapPost("/api/projects/{id}/scenes/{scene:int}/revert/{commitHash}", async (
     }
 });
 
+app.MapGet("/api/projects/{id}/git/status", async (
+    string id,
+    ProjectStore store,
+    CancellationToken ct) =>
+{
+    try
+    {
+        await store.RequireProjectAsync(id, ct);
+        var status = await store.GetProjectUncommittedStatusAsync(id);
+        return Results.Ok(new { ok = true, status });
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { ok = false, error = ex.Message });
+    }
+});
+
+app.MapPost("/api/projects/{id}/git/commit", async (
+    string id,
+    CommitProjectApiRequest? body,
+    ProjectStore store,
+    IUserContext user,
+    IOptions<PageToMovieOptions> opts,
+    CancellationToken ct) =>
+{
+    if (AuthGate.RequireLogin(user, opts) is { } denied)
+        return denied;
+    try
+    {
+        await store.RequireProjectAsync(id, ct);
+        var msg = body?.Message ?? "Manual scene/clip updates";
+        var result = await store.CommitProjectChangesAsync(id, msg, user.UserId);
+        return Results.Ok(new { ok = true, commit = result, message = "Successfully committed project changes." });
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { ok = false, error = ex.Message });
+    }
+});
+
+app.MapGet("/api/projects/{id}/scenes/{scene:int}/clips/{clip:int}/versions", async (
+    string id,
+    int scene,
+    int clip,
+    ProjectStore store,
+    CancellationToken ct) =>
+{
+    try
+    {
+        await store.RequireProjectAsync(id, ct);
+        var versions = await store.GetClipVersionsAsync(id, scene, clip);
+        return Results.Ok(new { ok = true, versions });
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { ok = false, error = ex.Message });
+    }
+});
+
+app.MapPost("/api/projects/{id}/scenes/{scene:int}/clips/{clip:int}/versions/{versionId}/promote", async (
+    string id,
+    int scene,
+    int clip,
+    string versionId,
+    ProjectStore store,
+    IUserContext user,
+    IOptions<PageToMovieOptions> opts,
+    CancellationToken ct) =>
+{
+    if (AuthGate.RequireLogin(user, opts) is { } denied)
+        return denied;
+    try
+    {
+        await store.RequireProjectAsync(id, ct);
+        var success = await store.PromoteClipVersionAsync(id, scene, clip, versionId, user.UserId);
+        if (!success)
+        {
+            return Results.BadRequest(new { ok = false, error = "Failed to promote clip version." });
+        }
+        return Results.Ok(new { ok = true, message = $"Promoted clip version {versionId} to active clip." });
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { ok = false, error = ex.Message });
+    }
+});
+
 /// <summary>
 /// Push the project's text package (video excluded) to the configured Projects remote.
 /// Owner/admin only. Optional body.commitFirst + message creates a local commit first.

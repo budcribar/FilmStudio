@@ -239,6 +239,188 @@ public sealed class ProjectStore
         }
     }
 
+    /// <summary>
+    /// Gets uncommitted file modification status across scenes and clips.
+    /// </summary>
+    public Task<UncommittedStatusDto> GetProjectUncommittedStatusAsync(string projectId, ProjectGitRepositoryService? gitRepo = null)
+    {
+        if (string.IsNullOrWhiteSpace(projectId)) return Task.FromResult(new UncommittedStatusDto());
+        var dir = GetProjectDir(projectId);
+        if (!Directory.Exists(dir)) return Task.FromResult(new UncommittedStatusDto());
+
+        var git = gitRepo ?? new ProjectGitRepositoryService(Microsoft.Extensions.Logging.Abstractions.NullLogger<ProjectGitRepositoryService>.Instance);
+        var (hasChanges, files) = git.GetUncommittedStatus(dir);
+        if (!hasChanges) return Task.FromResult(new UncommittedStatusDto());
+
+        var dto = new UncommittedStatusDto
+        {
+            HasUncommittedChanges = true,
+        };
+
+        var modScenes = new HashSet<int>();
+        var modClips = new HashSet<string>();
+
+        foreach (var f in files)
+        {
+            var m = System.Text.RegularExpressions.Regex.Match(f, @"scene_?(\d+)(?:_clip_?(\d+))?", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+            if (m.Success && int.TryParse(m.Groups[1].Value, out var s))
+            {
+                modScenes.Add(s);
+                if (m.Groups[2].Success && int.TryParse(m.Groups[2].Value, out var c))
+                {
+                    modClips.Add($"{s}-{c}");
+                }
+            }
+            else if (f.EndsWith("blueprint.clips.grok.json", StringComparison.OrdinalIgnoreCase) || f.EndsWith("scenes.json", StringComparison.OrdinalIgnoreCase))
+            {
+                var bpScenes = GetBlueprintSceneNumbers(projectId);
+                foreach (var sn in bpScenes) modScenes.Add(sn);
+            }
+        }
+
+        dto.ModifiedScenes = modScenes.OrderBy(n => n).ToList();
+        dto.ModifiedClipKeys = modClips.ToList();
+        dto.Summary = $"{dto.ModifiedScenes.Count} scene(s) modified since last commit.";
+        return Task.FromResult(dto);
+    }
+
+    /// <summary>
+    /// Manually commits uncommitted working directory changes.
+    /// </summary>
+    public async Task<GitCommitInfo?> CommitProjectChangesAsync(string projectId, string message, string? author = null, ProjectGitRepositoryService? gitRepo = null)
+    {
+        if (string.IsNullOrWhiteSpace(projectId)) return null;
+        var dir = GetProjectDir(projectId);
+        if (!Directory.Exists(dir)) return null;
+
+        var git = gitRepo ?? new ProjectGitRepositoryService(Microsoft.Extensions.Logging.Abstractions.NullLogger<ProjectGitRepositoryService>.Instance);
+        var who = string.IsNullOrWhiteSpace(author) ? "Operator" : author;
+        var msg = string.IsNullOrWhiteSpace(message) ? "Manual scene/clip updates" : message.Trim();
+        var result = await git.CommitProjectStateAsync(dir, who, msg).ConfigureAwait(false);
+        InvalidateSceneListCache(projectId);
+        return result;
+    }
+
+    /// <summary>
+    /// Lists all historical video versions/takes for a clip for comparison.
+    /// </summary>
+    public async Task<IReadOnlyList<ClipVersionItem>> GetClipVersionsAsync(string projectId, int scene, int clip)
+    {
+        if (string.IsNullOrWhiteSpace(projectId)) return Array.Empty<ClipVersionItem>();
+        var dir = GetProjectDir(projectId);
+        if (!Directory.Exists(dir)) return Array.Empty<ClipVersionItem>();
+
+        var videoDir = Path.Combine(dir, "assets", "video");
+        if (!Directory.Exists(videoDir)) return Array.Empty<ClipVersionItem>();
+
+        var result = new List<ClipVersionItem>();
+        var prefix = $"scene_{scene:D2}_clip_{clip:D2}";
+
+        var activeMp4 = Path.Combine(videoDir, $"{prefix}.mp4");
+        var activeSidecar = Path.Combine(videoDir, $"{prefix}.clip.json");
+        if (File.Exists(activeMp4))
+        {
+            var fi = new FileInfo(activeMp4);
+            var item = ParseClipSidecarOrMeta(activeSidecar, activeMp4, scene, clip, take: 1, isCurrent: true, fi.LastWriteTimeUtc);
+            result.Add(item);
+        }
+
+        var searchDirs = new[] { videoDir, Path.Combine(videoDir, "history") };
+        foreach (var sDir in searchDirs)
+        {
+            if (!Directory.Exists(sDir)) continue;
+            foreach (var mp4 in Directory.EnumerateFiles(sDir, $"{prefix}*.mp4"))
+            {
+                if (string.Equals(mp4, activeMp4, StringComparison.OrdinalIgnoreCase)) continue;
+                var sidecar = Path.ChangeExtension(mp4, ".clip.json");
+                if (!File.Exists(sidecar)) sidecar = Path.ChangeExtension(mp4, ".meta.json");
+                var fi = new FileInfo(mp4);
+                var item = ParseClipSidecarOrMeta(sidecar, mp4, scene, clip, take: result.Count + 1, isCurrent: false, fi.LastWriteTimeUtc);
+                result.Add(item);
+            }
+        }
+
+        return await Task.FromResult(result.OrderByDescending(x => x.CreatedAtUtc).ToList()).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Promotes a historical clip version/take to be the active clip for that scene.
+    /// </summary>
+    public async Task<bool> PromoteClipVersionAsync(string projectId, int scene, int clip, string versionId, string? author = null)
+    {
+        if (string.IsNullOrWhiteSpace(projectId) || string.IsNullOrWhiteSpace(versionId)) return false;
+        var dir = GetProjectDir(projectId);
+        if (!Directory.Exists(dir)) return false;
+
+        var versions = await GetClipVersionsAsync(projectId, scene, clip).ConfigureAwait(false);
+        var target = versions.FirstOrDefault(v => string.Equals(v.VersionId, versionId, StringComparison.OrdinalIgnoreCase));
+        if (target is null || target.IsCurrent) return false;
+
+        var videoDir = Path.Combine(dir, "assets", "video");
+        var targetMp4Path = Path.Combine(videoDir, target.Mp4FileName);
+        if (!File.Exists(targetMp4Path))
+        {
+            targetMp4Path = Path.Combine(videoDir, "history", target.Mp4FileName);
+        }
+
+        if (!File.Exists(targetMp4Path)) return false;
+
+        var activeMp4Path = Path.Combine(videoDir, $"scene_{scene:D2}_clip_{clip:D2}.mp4");
+
+        if (File.Exists(activeMp4Path))
+        {
+            var historyDir = Path.Combine(videoDir, "history");
+            Directory.CreateDirectory(historyDir);
+            var archiveStamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+            var archiveMp4 = Path.Combine(historyDir, $"scene_{scene:D2}_clip_{clip:D2}_{archiveStamp}.mp4");
+            try { File.Copy(activeMp4Path, archiveMp4, overwrite: true); } catch { }
+        }
+
+        File.Copy(targetMp4Path, activeMp4Path, overwrite: true);
+
+        if (!string.IsNullOrWhiteSpace(target.VisualPrompt))
+        {
+            try { UpdateClipVisualPrompt(projectId, scene, clip, target.VisualPrompt); } catch { }
+        }
+
+        InvalidateSceneListCache(projectId);
+        var who = string.IsNullOrWhiteSpace(author) ? "Operator" : author;
+        TriggerAutoGitCommit(projectId, $"Restored clip S{scene:D2}C{clip:D2} to version {target.Mp4FileName}", who);
+        return true;
+    }
+
+    private static ClipVersionItem ParseClipSidecarOrMeta(string sidecarPath, string mp4Path, int scene, int clip, int take, bool isCurrent, DateTime lastWriteUtc)
+    {
+        var item = new ClipVersionItem
+        {
+            VersionId = Path.GetFileName(mp4Path),
+            Scene = scene,
+            Clip = clip,
+            Take = take,
+            IsCurrent = isCurrent,
+            CreatedAtUtc = lastWriteUtc,
+            Mp4FileName = Path.GetFileName(mp4Path),
+        };
+
+        if (File.Exists(sidecarPath))
+        {
+            try
+            {
+                using var doc = System.Text.Json.JsonDocument.Parse(File.ReadAllText(sidecarPath));
+                var root = doc.RootElement;
+                item.VisualPrompt = root.TryGetProperty("visual_prompt", out var vp) ? vp.GetString() ?? "" : root.TryGetProperty("prompt", out var p) ? p.GetString() ?? "" : "";
+                item.ScriptText = root.TryGetProperty("script_text", out var st) ? st.GetString() ?? "" : "";
+                item.Model = root.TryGetProperty("model", out var m) ? m.GetString() ?? "" : "";
+                item.Resolution = root.TryGetProperty("resolution", out var r) ? r.GetString() ?? "" : "";
+                if (root.TryGetProperty("duration_seconds", out var d) && d.TryGetDouble(out var dur)) item.DurationSeconds = dur;
+                if (root.TryGetProperty("sha256", out var sha)) item.Sha256 = sha.GetString() ?? "";
+            }
+            catch { /* best effort sidecar parse */ }
+        }
+
+        return item;
+    }
+
     private static List<string> CompareSceneInBlueprints(string currentBpJson, string? parentBpJson, int sceneNumber)
     {
         var changes = new List<string>();

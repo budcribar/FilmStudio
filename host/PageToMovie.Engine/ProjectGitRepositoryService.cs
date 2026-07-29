@@ -143,6 +143,24 @@ namespace PageToMovie.Engine
         }
 
         /// <summary>
+        /// Retrieves uncommitted file changes in the project's working directory.
+        /// </summary>
+        public (bool HasChanges, List<string> ModifiedFiles) GetUncommittedStatus(string projectPath)
+        {
+            if (string.IsNullOrWhiteSpace(projectPath) || !Directory.Exists(projectPath) || !Repository.IsValid(projectPath))
+                return (false, new List<string>());
+
+            using var repo = new Repository(projectPath);
+            var status = repo.RetrieveStatus();
+            var modified = status
+                .Where(s => s.State != FileStatus.Ignored && s.State != FileStatus.Unaltered)
+                .Select(s => s.FilePath.Replace('\\', '/'))
+                .ToList();
+
+            return (modified.Count > 0, modified);
+        }
+
+        /// <summary>
         /// Retrieves the recent Git commit history for a project repository.
         /// </summary>
         public Task<IReadOnlyList<GitCommitInfo>> GetCommitHistoryAsync(string projectPath, int maxCount = 20)

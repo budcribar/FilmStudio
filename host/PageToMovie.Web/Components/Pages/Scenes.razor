@@ -37,6 +37,21 @@ else
     <div class="alert alert-info">@_message</div>
 }
 
+@if (_uncommittedStatus?.HasUncommittedChanges == true)
+{
+    <div class="alert alert-warning d-flex flex-wrap justify-content-between align-items-center gap-2 py-2 mb-3" data-testid="scenes-uncommitted-banner">
+        <span>
+            <strong>🟡 Modified:</strong> @_uncommittedStatus.Summary
+        </span>
+        <button type="button"
+                class="btn btn-sm btn-warning text-dark fw-semibold"
+                disabled="@_busy"
+                @onclick="CommitCurrentChangesAsync">
+            Commit changes
+        </button>
+    </div>
+}
+
 @* Feature 8: clip finished but not saved to a local media folder *@
 @if (!string.IsNullOrEmpty(MediaFolder.LocalSaveWarning))
 {
@@ -1355,6 +1370,99 @@ else
     </div>
 }
 
+@* Clip Version Comparison & Side-by-Side Dual Player Modal *@
+@if (_showClipCompare)
+{
+    <div class="modal fade show d-block" tabindex="-1" style="background:rgba(0,0,0,0.6);" role="dialog">
+        <div class="modal-dialog modal-xl modal-dialog-scrollable">
+            <div class="modal-content bg-dark text-white border-secondary">
+                <div class="modal-header border-secondary">
+                    <h5 class="modal-title">Compare Clips — Scene S@(_compareSceneNumber.ToString("D2")) Clip C@(_compareClipNumber.ToString("D2"))</h5>
+                    <button type="button" class="btn-close btn-close-white" @onclick="CloseClipCompare"></button>
+                </div>
+                <div class="modal-body">
+                    @if (!string.IsNullOrEmpty(_clipCompareMessage))
+                    {
+                        <div class="alert alert-info py-2 mb-3">@_clipCompareMessage</div>
+                    }
+
+                    @if (_loadingClipVersions)
+                    {
+                        <p class="text-muted">Loading clip version history…</p>
+                    }
+                    else if (_clipVersions is null || _clipVersions.Count == 0)
+                    {
+                        <p class="text-muted">No historical versions available for this clip.</p>
+                    }
+                    else
+                    {
+                        var activeVersion = _clipVersions.FirstOrDefault(v => v.IsCurrent) ?? _clipVersions.First();
+                        var comparedVersion = _selectedCompareVersion ?? _clipVersions.FirstOrDefault(v => !v.IsCurrent) ?? activeVersion;
+
+                        <div class="row g-3">
+                            @* Left Player: Current Active Version *@
+                            <div class="col-md-6 border-end border-secondary">
+                                <div class="card bg-dark border-secondary h-100 p-2">
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <span class="badge bg-success">Current Active Version</span>
+                                        <span class="small text-muted">Take @activeVersion.Take · @activeVersion.CreatedAtUtc.ToLocalTime().ToString("MMM d, h:mm tt")</span>
+                                    </div>
+                                    <video controls playsinline style="width:100%;max-height:40vh;background:#000;border-radius:0.35rem;" src="@Engine.ClipVideoUrl(_projectId, _compareSceneNumber, _compareClipNumber)">
+                                        Your browser does not support HTML5 video.
+                                    </video>
+                                    <div class="mt-2 small text-secondary">
+                                        <div><strong>Prompt:</strong> @(activeVersion.VisualPrompt.Length > 0 ? activeVersion.VisualPrompt : "—")</div>
+                                        <div><strong>Script:</strong> @(activeVersion.ScriptText.Length > 0 ? activeVersion.ScriptText : "—")</div>
+                                        <div><strong>Model / Res:</strong> @activeVersion.Model (@activeVersion.Resolution) · @activeVersion.DurationSeconds.ToString("F1")s</div>
+                                    </div>
+                                    <button type="button" class="btn btn-sm btn-outline-success w-100 mt-2" disabled>
+                                        ✓ Currently Active
+                                    </button>
+                                </div>
+                            </div>
+
+                            @* Right Player: Historical Take / Selected Version *@
+                            <div class="col-md-6">
+                                <div class="card bg-dark border-secondary h-100 p-2">
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <span class="badge bg-info text-dark">Historical Take</span>
+                                        @if (_clipVersions.Count(v => !v.IsCurrent) > 0)
+                                        {
+                                            <select class="form-select form-select-sm bg-dark text-white border-secondary w-auto" @bind="_selectedCompareVersionId">
+                                                @foreach (var v in _clipVersions.Where(v => !v.IsCurrent))
+                                                {
+                                                    <option value="@v.VersionId">Take @v.Take (@v.CreatedAtUtc.ToLocalTime().ToString("MMM d, h:mm tt"))</option>
+                                                }
+                                            </select>
+                                        }
+                                    </div>
+                                    <video controls playsinline style="width:100%;max-height:40vh;background:#000;border-radius:0.35rem;" src="@Engine.BrowserMediaPath($"/api/projects/{Uri.EscapeDataString(_projectId)}/assets/video/history/{comparedVersion.Mp4FileName}")">
+                                        Your browser does not support HTML5 video.
+                                    </video>
+                                    <div class="mt-2 small text-secondary">
+                                        <div><strong>Prompt:</strong> @(comparedVersion.VisualPrompt.Length > 0 ? comparedVersion.VisualPrompt : "—")</div>
+                                        <div><strong>Script:</strong> @(comparedVersion.ScriptText.Length > 0 ? comparedVersion.ScriptText : "—")</div>
+                                        <div><strong>Model / Res:</strong> @comparedVersion.Model (@comparedVersion.Resolution) · @comparedVersion.DurationSeconds.ToString("F1")s</div>
+                                    </div>
+                                    <button type="button"
+                                            class="btn btn-sm btn-warning text-dark fw-semibold w-100 mt-2"
+                                            disabled="@(_promotingVersion || comparedVersion.IsCurrent)"
+                                            @onclick="() => PromoteClipVersionAsync(_compareSceneNumber, _compareClipNumber, comparedVersion.VersionId)">
+                                        Keep This Version (Restore Take @comparedVersion.Take)
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+                <div class="modal-footer border-secondary">
+                    <button type="button" class="btn btn-secondary" @onclick="CloseClipCompare">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
 @code {
     private bool _busy;
     private bool _gateChecked;
@@ -2155,6 +2263,7 @@ else
         {
             var dto = await Engine.GetScenesAsync(_projectId);
             _scenes = dto?.Scenes ?? new List<SceneSummary>();
+            await RefreshUncommittedStatusAsync();
             if (_selectedScene is int sn)
             {
                 var detail = await Engine.GetSceneDetailAsync(_projectId, sn);
@@ -3280,6 +3389,130 @@ else
         finally
         {
             _revertingScene = false;
+            StateHasChanged();
+        }
+    }
+
+    private UncommittedStatusDto? _uncommittedStatus;
+    private bool _showClipCompare;
+    private int _compareSceneNumber;
+    private int _compareClipNumber;
+    private bool _loadingClipVersions;
+    private bool _promotingVersion;
+    private string? _clipCompareMessage;
+    private List<ClipVersionItem>? _clipVersions;
+    private string? _selectedCompareVersionId;
+
+    private ClipVersionItem? _selectedCompareVersion =>
+        _clipVersions?.FirstOrDefault(v => string.Equals(v.VersionId, _selectedCompareVersionId, StringComparison.OrdinalIgnoreCase));
+
+    private async Task RefreshUncommittedStatusAsync()
+    {
+        try
+        {
+            var res = await Engine.GetProjectUncommittedStatusAsync(_projectId);
+            _uncommittedStatus = res?.Status;
+        }
+        catch { /* best effort */ }
+    }
+
+    private async Task CommitCurrentChangesAsync()
+    {
+        _busy = true;
+        _message = null;
+        _error = null;
+        StateHasChanged();
+
+        try
+        {
+            var res = await Engine.CommitProjectChangesAsync(_projectId, "Manual scene/clip commit");
+            if (res.Ok)
+            {
+                _message = "Successfully committed project changes.";
+                await RefreshUncommittedStatusAsync();
+            }
+            else
+            {
+                _error = res.Error ?? "Failed to commit changes.";
+            }
+        }
+        catch (Exception ex)
+        {
+            _error = $"Commit failed: {ex.Message}";
+        }
+        finally
+        {
+            _busy = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task OpenClipCompareAsync(int sceneNumber, int clipNumber)
+    {
+        _compareSceneNumber = sceneNumber;
+        _compareClipNumber = clipNumber;
+        _showClipCompare = true;
+        _loadingClipVersions = true;
+        _clipCompareMessage = null;
+        _selectedCompareVersionId = null;
+        StateHasChanged();
+
+        try
+        {
+            var res = await Engine.GetClipVersionsAsync(_projectId, sceneNumber, clipNumber);
+            _clipVersions = res?.Versions;
+            _selectedCompareVersionId = _clipVersions?.FirstOrDefault(v => !v.IsCurrent)?.VersionId ?? _clipVersions?.FirstOrDefault()?.VersionId;
+        }
+        catch (Exception ex)
+        {
+            _error = $"Failed to load clip versions: {ex.Message}";
+        }
+        finally
+        {
+            _loadingClipVersions = false;
+            StateHasChanged();
+        }
+    }
+
+    private void CloseClipCompare()
+    {
+        _showClipCompare = false;
+        _clipVersions = null;
+        _clipCompareMessage = null;
+    }
+
+    private async Task PromoteClipVersionAsync(int sceneNumber, int clipNumber, string versionId)
+    {
+        _promotingVersion = true;
+        _clipCompareMessage = null;
+        StateHasChanged();
+
+        try
+        {
+            var res = await Engine.PromoteClipVersionAsync(_projectId, sceneNumber, clipNumber, versionId);
+            if (res.Ok)
+            {
+                _clipCompareMessage = $"Successfully promoted version {versionId} to active clip.";
+                var resV = await Engine.GetClipVersionsAsync(_projectId, sceneNumber, clipNumber);
+                _clipVersions = resV?.Versions;
+                if (_detail is not null && _detail.SceneNumber == sceneNumber)
+                {
+                    _detail = (await Engine.GetSceneDetailAsync(_projectId, sceneNumber))?.Scene;
+                }
+                await RefreshUncommittedStatusAsync();
+            }
+            else
+            {
+                _clipCompareMessage = res.Error ?? "Failed to promote clip version.";
+            }
+        }
+        catch (Exception ex)
+        {
+            _clipCompareMessage = $"Promote failed: {ex.Message}";
+        }
+        finally
+        {
+            _promotingVersion = false;
             StateHasChanged();
         }
     }

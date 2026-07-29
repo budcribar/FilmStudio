@@ -1324,6 +1324,75 @@ public sealed class EngineApiClient
         return new SceneRevertEnvelope { Ok = false, Error = TryError(err) ?? resp.ReasonPhrase };
     }
 
+    public sealed class UncommittedStatusEnvelope
+    {
+        public bool Ok { get; set; }
+        public UncommittedStatusDto? Status { get; set; }
+        public string? Error { get; set; }
+    }
+
+    public async Task<UncommittedStatusEnvelope?> GetProjectUncommittedStatusAsync(
+        string projectId, CancellationToken ct = default)
+    {
+        SyncIdentityHeaders();
+        return await _http.GetFromJsonAsync<UncommittedStatusEnvelope>(
+            $"/api/projects/{Uri.EscapeDataString(projectId)}/git/status",
+            JsonOpts,
+            ct);
+    }
+
+    public async Task<SceneRevertEnvelope> CommitProjectChangesAsync(
+        string projectId, string message, CancellationToken ct = default)
+    {
+        SyncIdentityHeaders();
+        using var resp = await _http.PostAsJsonAsync(
+            $"/api/projects/{Uri.EscapeDataString(projectId)}/git/commit",
+            new { message },
+            JsonOpts,
+            ct);
+        if (resp.IsSuccessStatusCode)
+        {
+            var res = await resp.Content.ReadFromJsonAsync<SceneRevertEnvelope>(JsonOpts, ct);
+            return res ?? new SceneRevertEnvelope { Ok = true };
+        }
+        var err = await resp.Content.ReadAsStringAsync(ct);
+        return new SceneRevertEnvelope { Ok = false, Error = TryError(err) ?? resp.ReasonPhrase };
+    }
+
+    public sealed class ClipVersionsEnvelope
+    {
+        public bool Ok { get; set; }
+        public List<ClipVersionItem>? Versions { get; set; }
+        public string? Error { get; set; }
+    }
+
+    public async Task<ClipVersionsEnvelope?> GetClipVersionsAsync(
+        string projectId, int sceneNumber, int clipNumber, CancellationToken ct = default)
+    {
+        SyncIdentityHeaders();
+        return await _http.GetFromJsonAsync<ClipVersionsEnvelope>(
+            $"/api/projects/{Uri.EscapeDataString(projectId)}/scenes/{sceneNumber}/clips/{clipNumber}/versions",
+            JsonOpts,
+            ct);
+    }
+
+    public async Task<SceneRevertEnvelope> PromoteClipVersionAsync(
+        string projectId, int sceneNumber, int clipNumber, string versionId, CancellationToken ct = default)
+    {
+        SyncIdentityHeaders();
+        using var resp = await _http.PostAsync(
+            $"/api/projects/{Uri.EscapeDataString(projectId)}/scenes/{sceneNumber}/clips/{clipNumber}/versions/{Uri.EscapeDataString(versionId)}/promote",
+            null,
+            ct);
+        if (resp.IsSuccessStatusCode)
+        {
+            var res = await resp.Content.ReadFromJsonAsync<SceneRevertEnvelope>(JsonOpts, ct);
+            return res ?? new SceneRevertEnvelope { Ok = true };
+        }
+        var err = await resp.Content.ReadAsStringAsync(ct);
+        return new SceneRevertEnvelope { Ok = false, Error = TryError(err) ?? resp.ReasonPhrase };
+    }
+
     public string CompositeVideoUrl(string projectId, int sceneNumber) =>
         BrowserMediaPath(
             $"/api/projects/{Uri.EscapeDataString(projectId)}/scenes/{sceneNumber}/composite");
