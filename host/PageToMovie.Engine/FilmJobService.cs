@@ -2497,11 +2497,10 @@ public sealed class FilmJobService
         string? prevOnDisk = null;
         if (clip > 1 && modelEntry.SupportsVideoContinue)
         {
-            var prevFileCandidate = Path.Combine(
-                projectDir, "assets", "video", $"scene_{scene:D2}_clip_{clip - 1:D2}.mp4");
-            if (File.Exists(prevFileCandidate) && new FileInfo(prevFileCandidate).Length >= 1024)
+            var resolvedPrevPath = _projects.ResolveClipVideoPath(projectId, scene, clip - 1);
+            if (!string.IsNullOrEmpty(resolvedPrevPath) && File.Exists(resolvedPrevPath) && new FileInfo(resolvedPrevPath).Length >= 1024)
             {
-                prevOnDisk = prevFileCandidate;
+                prevOnDisk = resolvedPrevPath;
                 // Breath-tail silence trim for extend input only. Mutating prevOnDisk in place used to
                 // permanently shorten a finished clip when this job then failed/cancelled before C_N
                 // was written (no backup of N-1). Work on a throwaway copy instead.
