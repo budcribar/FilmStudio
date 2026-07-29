@@ -4572,6 +4572,32 @@ app.MapPost("/api/projects/{id}/augment-music", async (
 });
 
 /// <summary>
+/// Batch synthesizes background music audio tracks (assets/scene_XX_music.mp3) for all scenes in a project.
+/// Skips scenes that already have audio tracks present on disk.
+/// </summary>
+app.MapPost("/api/projects/{id}/generate-scene-music", async (
+    string id,
+    ProjectStore store,
+    SceneMusicScoringService scorer,
+    IUserContext user,
+    IOptions<PageToMovieOptions> opts,
+    CancellationToken ct = default) =>
+{
+    if (AuthGate.RequireLogin(user, opts) is { } denied)
+        return denied;
+
+    var pDir = await store.GetProjectDirAsync(id, ct);
+    if (string.IsNullOrWhiteSpace(pDir) || !Directory.Exists(pDir))
+        return Results.NotFound(new { ok = false, error = "Project not found." });
+
+    var cfg = await store.GetConfigAsync(id, ct);
+    var generatedCount = await scorer.GenerateProjectSceneAudioAsync(pDir, cfg, null, ct);
+
+    store.TriggerAutoGitCommit(id, $"Synthesize background music audio for {generatedCount} scenes");
+    return Results.Ok(new { ok = true, generatedCount, message = $"Synthesized background music audio for {generatedCount} scenes." });
+});
+
+/// <summary>
 /// Combined single-upload two-phase scene cut processing endpoint.
 /// Accepts 1 uploaded MP4 scene stream and executes Phase 1 (Dialogue Verification) and Phase 2 (Music Scoring &amp; Ducking) back-to-back on server.
 /// Cleans up temp file in a single finally block.

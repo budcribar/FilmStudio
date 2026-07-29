@@ -2746,6 +2746,13 @@ public sealed class EngineApiClient
         return resp.IsSuccessStatusCode;
     }
 
+    public async Task<bool> GenerateProjectSceneMusicAsync(string projectId, CancellationToken ct = default)
+    {
+        var url = $"/api/projects/{Uri.EscapeDataString(projectId)}/generate-scene-music";
+        using var resp = await _http.PostAsync(url, null, ct).ConfigureAwait(false);
+        return resp.IsSuccessStatusCode;
+    }
+
     /// <summary>Sync heuristic-only attach (no Grok). Prefer <see cref="StartSortCharacterPlatesAsync"/>.</summary>
     public async Task<AttachCharacterPlatesResult?> AttachBookPlatesAsync(
         string projectId,

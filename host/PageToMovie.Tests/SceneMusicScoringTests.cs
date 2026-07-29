@@ -104,4 +104,54 @@ public class SceneMusicScoringTests
             if (File.Exists(tempVideoPath)) File.Delete(tempVideoPath);
         }
     }
+
+    [Fact]
+    public async Task GenerateProjectSceneAudioAsync_SynthesizesAudioFromBlueprint_AndSkipsExisting()
+    {
+        var tempDir = Path.Combine(Path.GetTempPath(), "SceneMusicBatch_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempDir);
+
+        try
+        {
+            var blueprintPath = Path.Combine(tempDir, "blueprint.clips.grok.json");
+            var json = """
+            {
+              "scenes": [
+                {
+                  "scene_number": 1,
+                  "total_estimated_duration_seconds": 12,
+                  "music_prompt": "Fragile solo piano leitmotif in a minor key"
+                },
+                {
+                  "scene_number": 2,
+                  "total_estimated_duration_seconds": 8,
+                  "music_prompt": "Tense creeping string pulse"
+                }
+              ]
+            }
+            """;
+            await File.WriteAllTextAsync(blueprintPath, json);
+
+            var chat = new FakeChatClient();
+            var audio = new FakeMusicClient();
+            var service = new SceneMusicScoringService(chat, audio, NullLogger<SceneMusicScoringService>.Instance);
+
+            // Pre-create scene 1 audio to verify skip logic
+            var assetsDir = Path.Combine(tempDir, "assets");
+            Directory.CreateDirectory(assetsDir);
+            var existingMp3 = Path.Combine(assetsDir, "scene_01_music.mp3");
+            await File.WriteAllBytesAsync(existingMp3, new byte[] { 99, 99 });
+
+            var generatedCount = await service.GenerateProjectSceneAudioAsync(tempDir);
+
+            // Scene 1 should be skipped, Scene 2 should be generated -> total 1 new
+            Assert.Equal(1, generatedCount);
+            Assert.True(File.Exists(Path.Combine(assetsDir, "scene_02_music.mp3")));
+            Assert.Equal("Tense creeping string pulse", audio.LastPrompt);
+        }
+        finally
+        {
+            if (Directory.Exists(tempDir)) Directory.Delete(tempDir, recursive: true);
+        }
+    }
 }
