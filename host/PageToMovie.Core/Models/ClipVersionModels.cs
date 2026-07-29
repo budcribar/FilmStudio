@@ -21,6 +21,13 @@ public sealed class ClipVersionItem
     public double DurationSeconds { get; set; }
     public string Mp4FileName { get; set; } = "";
     public string Sha256 { get; set; } = "";
+    /// <summary>True when this version's bytes live only on the client (synced + pruned server-side) —
+    /// the UI must resolve video playback via the local media folder, not a server URL.</summary>
+    public bool ClientOnly { get; set; }
+    /// <summary>Project-relative path (e.g. "assets/video/scene_01_clip_02.mp4") for ClientOnly
+    /// versions — the exact key the media registry has, so the client can look up its local
+    /// blob without re-deriving the folder convention (active vs. history vs. take-named).</summary>
+    public string? RelativePath { get; set; }
 }
 
 /// <summary>

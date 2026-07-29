@@ -953,7 +953,7 @@ else
                             disabled="@(_busy || JobRunning)"
                             title="View past takes & version comparison grid for this clip"
                             @onclick="() => OpenClipCompareAsync(_detail.SceneNumber, _clip.ClipNumber)">
-                        🎬 Takes (@(_historyVersions.Count + 1))
+                        🎬 Takes (@(_clipVersions?.Count ?? 1))
                     </button>
                     <button class="btn btn-sm btn-outline-secondary"
                             disabled="@(_busy || JobRunning)"
@@ -1023,33 +1023,8 @@ else
 
                     <button class="btn btn-sm btn-outline-secondary mb-2"
                             @onclick="() => OpenClipCompareAsync(_detail.SceneNumber, _clip.ClipNumber)">
-                        🎬 Takes (@(_historyVersions.Count + 1))
+                        🎬 Takes (@(_clipVersions?.Count ?? 1))
                     </button>
-                        @if (_showHistoryCompare)
-                        {
-                            @if (_historyVersions.Count > 1)
-                            {
-                                <div class="mb-2" style="max-width:22rem;">
-                                    <label class="form-label small">Comparing against</label>
-                                    <select class="form-select form-select-sm"
-                                            value="@_compareIndex"
-                                            @onchange="OnCompareIndexChangedAsync">
-                                        @for (var i = 0; i < _historyVersions.Count; i++)
-                                        {
-                                            var v = _historyVersions[i];
-                                            <option value="@i">@v.TimestampUtc?.ToLocalTime().ToString("MMM d, h:mm tt")</option>
-                                        }
-                                    </select>
-                                </div>
-                            }
-                            <ClipPromptCompareViewer
-                                VersionAHash="@(_historyVersions[_compareIndex].TimestampUtc?.ToLocalTime().ToString("MMM d, h:mm tt") ?? "Earlier version")"
-                                VersionAVideoUrl="@_compareAVideoUrl"
-                                VersionAPrompt="@(_historyVersions[_compareIndex].Prompt ?? "(no prompt recorded)")"
-                                VersionBHash="Current"
-                                VersionBVideoUrl="@Engine.ClipVideoUrl(_projectId, _detail.SceneNumber, _clip.ClipNumber)"
-                                VersionBPrompt="@(_clip.VisualPrompt is { Length: > 0 } curVp ? curVp : "—")" />
-                        }
                     }
                     <h6 class="mt-2">Negative</h6>
                     @if (!string.IsNullOrWhiteSpace(_clip.NegativePrompt))
@@ -1462,9 +1437,7 @@ else
                             @foreach (var v in _clipVersions)
                             {
                                 var isCurrent = v.IsCurrent;
-                                var videoUrl = isCurrent
-                                    ? Engine.ClipVideoUrl(_projectId, _compareSceneNumber, _compareClipNumber)
-                                    : Engine.BrowserMediaPath($"/api/projects/{Uri.EscapeDataString(_projectId)}/assets/video/history/{v.Mp4FileName}");
+                                var videoUrl = CompareVideoUrl(v);
 
                                 <div class="col">
                                     <div class="card bg-dark border-secondary h-100 p-2 @(isCurrent ? "border-success shadow-sm" : "")">
@@ -1485,6 +1458,10 @@ else
                                                 <div class="text-truncate" title="@v.VisualPrompt"><strong>Prompt:</strong> @v.VisualPrompt</div>
                                             }
                                             <div><strong>Model / Res:</strong> @(!string.IsNullOrEmpty(v.Model) ? v.Model : "Default") (@(!string.IsNullOrEmpty(v.Resolution) ? v.Resolution : "480p")) · @(v.DurationSeconds > 0 ? v.DurationSeconds.ToString("F1") + "s" : "")</div>
+                                            @if (v.ClientOnly)
+                                            {
+                                                <div class="text-info">📱 Stored on your device</div>
+                                            }
                                         </div>
 
                                         <div class="d-flex gap-2 mt-3">
@@ -1498,14 +1475,15 @@ else
                                             {
                                                 <button type="button"
                                                         class="btn btn-sm btn-warning text-dark fw-semibold flex-grow-1"
-                                                        disabled="@_promotingVersion"
+                                                        disabled="@(_promotingVersion || v.ClientOnly)"
+                                                        title="@(v.ClientOnly ? "This take is stored on your device only — reconnect your folder to sync it back before selecting it" : null)"
                                                         @onclick="() => PromoteClipVersionAsync(_compareSceneNumber, _compareClipNumber, v.VersionId)">
                                                     ★ Select &amp; Keep
                                                 </button>
                                                 <button type="button"
                                                         class="btn btn-sm btn-outline-danger"
-                                                        disabled="@_promotingVersion"
-                                                        title="Delete this take"
+                                                        disabled="@(_promotingVersion || v.ClientOnly)"
+                                                        title="@(v.ClientOnly ? "This take is stored on your device only — reconnect your folder to sync it back before deleting it" : "Delete this take")"
                                                         @onclick="() => SoftDeleteClipVersionAsync(_compareSceneNumber, _compareClipNumber, v.VersionId)">
                                                     🗑️
                                                 </button>
@@ -1529,12 +1507,16 @@ else
                                         <span class="badge bg-success">★ Active Take</span>
                                         <span class="small text-muted">Take @activeVersion.Take · @activeVersion.CreatedAtUtc.ToLocalTime().ToString("MMM d, h:mm tt")</span>
                                     </div>
-                                    <video controls playsinline style="width:100%;max-height:40vh;background:#000;border-radius:0.35rem;" src="@Engine.ClipVideoUrl(_projectId, _compareSceneNumber, _compareClipNumber)">
+                                    <video controls playsinline style="width:100%;max-height:40vh;background:#000;border-radius:0.35rem;" src="@CompareVideoUrl(activeVersion)">
                                         Your browser does not support HTML5 video.
                                     </video>
                                     <div class="mt-2 small text-secondary">
                                         <div><strong>Prompt:</strong> @(activeVersion.VisualPrompt.Length > 0 ? activeVersion.VisualPrompt : "—")</div>
                                         <div><strong>Model / Res:</strong> @activeVersion.Model (@activeVersion.Resolution) · @activeVersion.DurationSeconds.ToString("F1")s</div>
+                                        @if (activeVersion.ClientOnly)
+                                        {
+                                            <div class="text-info">📱 Stored on your device</div>
+                                        }
                                     </div>
                                 </div>
                             </div>
@@ -1545,7 +1527,7 @@ else
                                         <span class="badge bg-info text-dark">Selected Take</span>
                                         @if (_clipVersions.Count(v => !v.IsCurrent) > 0)
                                         {
-                                            <select class="form-select form-select-sm bg-dark text-white border-secondary w-auto" @bind="_selectedCompareVersionId">
+                                            <select class="form-select form-select-sm w-auto" @bind="_selectedCompareVersionId">
                                                 @foreach (var v in _clipVersions.Where(v => !v.IsCurrent))
                                                 {
                                                     <option value="@v.VersionId">Take @v.Take (@v.CreatedAtUtc.ToLocalTime().ToString("MMM d, h:mm tt"))</option>
@@ -1553,16 +1535,21 @@ else
                                             </select>
                                         }
                                     </div>
-                                    <video controls playsinline style="width:100%;max-height:40vh;background:#000;border-radius:0.35rem;" src="@Engine.BrowserMediaPath($"/api/projects/{Uri.EscapeDataString(_projectId)}/assets/video/history/{comparedVersion.Mp4FileName}")">
+                                    <video controls playsinline style="width:100%;max-height:40vh;background:#000;border-radius:0.35rem;" src="@CompareVideoUrl(comparedVersion)">
                                         Your browser does not support HTML5 video.
                                     </video>
                                     <div class="mt-2 small text-secondary">
                                         <div><strong>Prompt:</strong> @(comparedVersion.VisualPrompt.Length > 0 ? comparedVersion.VisualPrompt : "—")</div>
                                         <div><strong>Model / Res:</strong> @comparedVersion.Model (@comparedVersion.Resolution) · @comparedVersion.DurationSeconds.ToString("F1")s</div>
+                                        @if (comparedVersion.ClientOnly)
+                                        {
+                                            <div class="text-info">📱 Stored on your device</div>
+                                        }
                                     </div>
                                     <button type="button"
                                             class="btn btn-sm btn-warning text-dark fw-semibold w-100 mt-2"
-                                            disabled="@(_promotingVersion || comparedVersion.IsCurrent)"
+                                            disabled="@(_promotingVersion || comparedVersion.IsCurrent || comparedVersion.ClientOnly)"
+                                            title="@(comparedVersion.ClientOnly ? "This take is stored on your device only — reconnect your folder to sync it back before selecting it" : null)"
                                             @onclick="() => PromoteClipVersionAsync(_compareSceneNumber, _compareClipNumber, comparedVersion.VersionId)">
                                         ★ Select &amp; Keep (Take @comparedVersion.Take)
                                     </button>
@@ -1891,11 +1878,6 @@ else
     private int? _selectedScene;
     private SceneDetail? _detail;
     private int? _selectedClip;
-    private bool _historyLoading;
-    private bool _showHistoryCompare;
-    private List<ClipPromptVersionDto> _historyVersions = new();
-    private int _compareIndex;
-    private string? _compareAVideoUrl;
     private ClipSummary? _clip;
     private (int Scene, int Clip)? _deleteClipTarget;
     private int? _deleteSceneTarget;
@@ -2872,7 +2854,19 @@ else
 
     private async Task EnsurePredecessorsUploadedAsync(List<(int Scene, int Clip)> targets)
     {
-        if (!MediaFolder.IsConnected || string.IsNullOrEmpty(_projectId)) return;
+        if (!MediaFolder.IsConnected || string.IsNullOrEmpty(_projectId) || targets.Count == 0) return;
+
+        // Cache scene detail per scene number — targets can span scenes (multi-scene batch),
+        // and _detail may be loaded for a different scene than the one we're checking (or null,
+        // when this runs from the scene-list page rather than a scene-detail view).
+        var detailCache = new Dictionary<int, SceneDetail?>();
+        async Task<SceneDetail?> GetSceneAsync(int sn)
+        {
+            if (detailCache.TryGetValue(sn, out var cached)) return cached;
+            var d = _detail?.SceneNumber == sn ? _detail : (await Engine.GetSceneDetailAsync(_projectId, sn))?.Scene;
+            detailCache[sn] = d;
+            return d;
+        }
 
         foreach (var (sn, cn) in targets)
         {
@@ -2883,7 +2877,8 @@ else
             // OnDisk alone isn't enough here: it's also true when only the .client.json marker
             // exists (clip synced to the client, then pruned off server disk) — SizeBytes is 0 in
             // that case since there are no real bytes for the video-extend gate to find and copy.
-            var prevSummary = _detail?.Clips?.FirstOrDefault(c => c.ClipNumber == prevClipNum);
+            var sceneDetail = await GetSceneAsync(sn);
+            var prevSummary = sceneDetail?.Clips?.FirstOrDefault(c => c.ClipNumber == prevClipNum);
             var serverHasRealBytes = prevSummary?.OnDisk == true && prevSummary.SizeBytes >= 1024;
             if (!serverHasRealBytes)
             {
@@ -2897,6 +2892,15 @@ else
                 }
             }
         }
+    }
+
+    /// <summary>Clip numbers in scene <paramref name="sn"/> not yet on server disk (or synced-only) —
+    /// used to pre-check predecessors before an "only missing" generation batch.</summary>
+    private async Task<List<(int Scene, int Clip)>> MissingClipTargetsAsync(int sn)
+    {
+        var detail = _detail?.SceneNumber == sn ? _detail : (await Engine.GetSceneDetailAsync(_projectId, sn))?.Scene;
+        return detail?.Clips?.Where(c => !c.OnDisk).Select(c => (Scene: sn, Clip: c.ClipNumber)).ToList()
+            ?? new List<(int Scene, int Clip)>();
     }
 
     private async Task RegenSelectedClipsAsync()
@@ -2930,10 +2934,7 @@ else
         _clip = cn is int n
             ? _detail?.Clips.FirstOrDefault(c => c.ClipNumber == n)
             : null;
-        _showHistoryCompare = false;
-        _historyVersions = new();
-        _compareIndex = 0;
-        _compareAVideoUrl = null;
+        _clipVersions = null;
         _clipVideoUrl = null;
         if (cn is int cnv)
         {
@@ -2946,18 +2947,37 @@ else
                 _playingScene = null;
             }
             if (_detail is not null)
-                _ = LoadClipVideoAndHistoryAsync(_detail.SceneNumber, cnv);
+                _ = LoadClipVideoAndTakesCountAsync(_detail.SceneNumber, cnv);
         }
     }
 
-    private async Task LoadClipVideoAndHistoryAsync(int scene, int clip)
+    private async Task LoadClipVideoAndTakesCountAsync(int scene, int clip)
     {
         if (MediaFolder.IsConnected)
         {
             try
             {
                 var relPath = $"assets/video/scene_{scene:D2}_clip_{clip:D2}.mp4";
-                var localBlob = await MediaFolder.GetLocalBlobUrlAsync(relPath);
+
+                // A local file at this path is not necessarily the *current* version — a later
+                // regen/promote may have happened without this browser open to catch the
+                // auto-save. Check its size against what the server currently has registered as
+                // active before trusting it for playback; on mismatch (or no signal either way),
+                // fall through to null so the <video> element streams from the server instead.
+                long? expectedSize = null;
+                try
+                {
+                    var status = await Engine.GetClipMediaStatusAsync(_projectId, scene, clip);
+                    if (status is { Ok: true })
+                        expectedSize = status.OnServer ? status.ServerSizeBytes
+                            : status.OnClient ? status.ClientSizeBytes
+                            : null;
+                }
+                catch { /* best effort — falls back to unconditional local trust below */ }
+
+                var localBlob = expectedSize is long exp
+                    ? await MediaFolder.GetCurrentBlobUrlAsync(relPath, exp)
+                    : await MediaFolder.GetLocalBlobUrlAsync(relPath);
                 if (!string.IsNullOrWhiteSpace(localBlob))
                 {
                     _clipVideoUrl = localBlob;
@@ -2966,57 +2986,17 @@ else
             }
             catch { /* fallback to server URL */ }
         }
-        await LoadClipHistoryAsync(scene, clip);
-    }
 
-    /// <summary>
-    /// Loads archived prompt versions (server, assets/video/history/*.meta.json) and the most
-    /// recently archived video for this clip (client media folder, assets/video/history/*.mp4).
-    /// The two are archived independently (different processes/moments), so we pair the
-    /// user-selected prompt with the single most-recent archived video rather than claiming an
-    /// exact 1:1 match — correct for the common case (one edit, one regen) without overclaiming
-    /// precision for repeated edits.
-    /// </summary>
-    private async Task LoadClipHistoryAsync(int scene, int clip)
-    {
-        _historyLoading = true;
-        StateHasChanged();
+        // Proactive, lightweight fetch so the "Takes (N)" button shows a real count without
+        // requiring a click first. OpenClipCompareAsync re-fetches the authoritative list (plus
+        // trash) when the modal actually opens — this is just for the label.
         try
         {
-            var resp = await Engine.GetClipPromptHistoryAsync(_projectId, scene, clip);
-            var prompts = resp?.History ?? new List<ClipPromptVersionDto>();
-            var videoPaths = await MediaFolder.ListClipHistoryRelativePathsAsync(scene, clip);
-
-            if (prompts.Count == 0 && videoPaths.Count == 0)
-            {
-                _historyVersions = new();
-                return;
-            }
-
-            _compareAVideoUrl = videoPaths.Count > 0
-                ? await MediaFolder.GetLocalBlobUrlAsync(videoPaths[0])
-                : null;
-
-            _historyVersions = prompts.Count > 0
-                ? prompts
-                : new List<ClipPromptVersionDto> { new() { Prompt = null, TimestampUtc = null } };
-            _compareIndex = 0;
-        }
-        catch
-        {
-            _historyVersions = new();
-        }
-        finally
-        {
-            _historyLoading = false;
+            var res = await Engine.GetClipVersionsAsync(_projectId, scene, clip);
+            _clipVersions = res?.Versions;
             StateHasChanged();
         }
-    }
-
-    private void OnCompareIndexChangedAsync(ChangeEventArgs e)
-    {
-        if (int.TryParse(e.Value?.ToString(), out var idx) && idx >= 0 && idx < _historyVersions.Count)
-            _compareIndex = idx;
+        catch { /* label falls back to "1" */ }
     }
 
     private async Task PlaySceneCompositeAsync(int sn)
@@ -3462,9 +3442,10 @@ else
         _pendingRegenScene = sn;
         try
         {
+            await EnsureHubAsync();
+            await EnsurePredecessorsUploadedAsync(await MissingClipTargetsAsync(sn));
             await Engine.StartSceneGenAsync(_projectId, sn, onlyMissing: true, resolution: _genResolution);
             // Live progress card only — no duplicate "started" banner.
-            await EnsureHubAsync();
             var jobs = await Engine.GetJobAsync();
             _job = jobs?.Job;
         }
@@ -3493,9 +3474,13 @@ else
         try
         {
             var list = _selected.OrderBy(x => x).ToList();
+            await EnsureHubAsync();
+            foreach (var sn in list)
+            {
+                await EnsurePredecessorsUploadedAsync(await MissingClipTargetsAsync(sn));
+            }
             await Engine.StartBatchGenAsync(_projectId, list, onlyMissing: true, resolution: _genResolution);
             // Live progress card only — no duplicate "started" banner.
-            await EnsureHubAsync();
             var jobs = await Engine.GetJobAsync();
             _job = jobs?.Job;
         }
@@ -3873,6 +3858,34 @@ else
     private ClipVersionItem? _selectedCompareVersion =>
         _clipVersions?.FirstOrDefault(v => string.Equals(v.VersionId, _selectedCompareVersionId, StringComparison.OrdinalIgnoreCase));
 
+    private Dictionary<string, string?> _compareVideoUrls = new(StringComparer.OrdinalIgnoreCase);
+
+    private string? CompareVideoUrl(ClipVersionItem v) => _compareVideoUrls.GetValueOrDefault(v.VersionId);
+
+    /// <summary>
+    /// Resolves a playable URL for every take in _clipVersions, once, instead of computing it
+    /// inline per-render (both the grid and split-view markup need this, and a take flagged
+    /// ClientOnly has no server bytes to stream — it has to go through the local media folder
+    /// instead of the server URL the "normal" server-backed case uses).
+    /// </summary>
+    private async Task RefreshCompareVideoUrlsAsync()
+    {
+        var map = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
+        if (_clipVersions is { Count: > 0 })
+        {
+            foreach (var v in _clipVersions)
+            {
+                map[v.VersionId] = v.ClientOnly && !string.IsNullOrEmpty(v.RelativePath)
+                    ? await MediaFolder.GetLocalBlobUrlAsync(v.RelativePath)
+                    : v.IsCurrent
+                        ? Engine.ClipVideoUrl(_projectId, _compareSceneNumber, _compareClipNumber)
+                        : Engine.BrowserMediaPath($"/api/projects/{Uri.EscapeDataString(_projectId)}/assets/video/history/{v.Mp4FileName}");
+            }
+        }
+        _compareVideoUrls = map;
+        StateHasChanged();
+    }
+
     private async Task RefreshUncommittedStatusAsync()
     {
         try
@@ -3931,6 +3944,7 @@ else
             var res = await Engine.GetClipVersionsAsync(_projectId, sceneNumber, clipNumber);
             _clipVersions = res?.Versions;
             _selectedCompareVersionId = _clipVersions?.FirstOrDefault(v => !v.IsCurrent)?.VersionId ?? _clipVersions?.FirstOrDefault()?.VersionId;
+            await RefreshCompareVideoUrlsAsync();
 
             var trashRes = await Engine.GetTrashClipVersionsAsync(_projectId, sceneNumber, clipNumber);
             _trashVersions = trashRes?.Versions;
@@ -3969,6 +3983,8 @@ else
                 _clipCompareMessage = $"Successfully promoted version {versionId} to active clip.";
                 var resV = await Engine.GetClipVersionsAsync(_projectId, sceneNumber, clipNumber);
                 _clipVersions = resV?.Versions;
+                _selectedCompareVersionId = _clipVersions?.FirstOrDefault(v => !v.IsCurrent)?.VersionId ?? _clipVersions?.FirstOrDefault()?.VersionId;
+                await RefreshCompareVideoUrlsAsync();
                 if (_detail is not null && _detail.SceneNumber == sceneNumber)
                 {
                     _detail = (await Engine.GetSceneDetailAsync(_projectId, sceneNumber))?.Scene;

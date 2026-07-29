@@ -134,6 +134,7 @@ builder.Services.AddSingleton<DemoCatalogService>();
 builder.Services.AddSingleton<DemoUpvoteService>();
 builder.Services.AddHostedService<ServerMediaPruningService>();
 builder.Services.AddSingleton<MediaRegistryService>();
+builder.Services.AddSingleton<MediaSyncLocator>();
 builder.Services.AddSingleton<MediaProxyTicketStore>();
 builder.Services.AddSingleton<ClipSidecarService>();
 builder.Services.AddSingleton<ProjectMigrationService>();
@@ -2681,6 +2682,41 @@ app.MapGet("/api/projects/{id}/scenes/{scene:int}/clips/{clip:int}/versions", as
         await store.RequireProjectAsync(id, ct);
         var versions = await store.GetClipVersionsAsync(id, scene, clip);
         return Results.Ok(new { ok = true, versions });
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { ok = false, error = ex.Message });
+    }
+});
+
+/// <summary>
+/// Whether the *active* clip file's bytes currently live on server disk, are only registered as
+/// synced to the client, or both — with the registered sha256/size. Lets the client decide
+/// whether a local blob it already has is still current before trusting it for playback, instead
+/// of assuming "file exists locally" means "file is current" (it may be an older take that was
+/// never overwritten locally after a later regen/promote).
+/// </summary>
+app.MapGet("/api/projects/{id}/scenes/{scene:int}/clips/{clip:int}/media-status", async (
+    string id,
+    int scene,
+    int clip,
+    ProjectStore store,
+    MediaSyncLocator locator,
+    CancellationToken ct) =>
+{
+    try
+    {
+        await store.RequireProjectAsync(id, ct);
+        var status = await locator.GetClipStatusAsync(id, store.GetProjectDir(id), scene, clip, ct);
+        return Results.Ok(new
+        {
+            ok = true,
+            onServer = status.OnServer,
+            onClient = status.OnClient,
+            sha256 = status.Sha256,
+            clientSizeBytes = status.ClientSizeBytes,
+            serverSizeBytes = status.ServerSizeBytes,
+        });
     }
     catch (Exception ex)
     {

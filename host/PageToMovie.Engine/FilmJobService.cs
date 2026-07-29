@@ -3675,7 +3675,15 @@ public sealed class FilmJobService
         }
     }
 
-    /// <summary>Server MP4 bytes or client-folder marker (.client.json).</summary>
+    /// <summary>
+    /// Server MP4 bytes or client-folder marker (.client.json). Called per-clip inside bulk
+    /// "what's missing" loops, so this stays a cheap sync file check rather than routing through
+    /// MediaSyncLocator (SQL-backed, async) — that would turn a directory scan into an N+1 query
+    /// per clip for no correctness gain, since a marker file and its registry row are written
+    /// together atomically (see /api/projects/{id}/media/register) and this already checks it.
+    /// MediaSyncLocator is for new, single-clip call sites that also need sha256/size (Takes
+    /// list, playback staleness) — see its doc comment for the fuller "why".
+    /// </summary>
     private static bool ClipPresentOnServerOrClient(string mp4Path) =>
         (File.Exists(mp4Path) && new FileInfo(mp4Path).Length >= 1024) ||
         File.Exists(mp4Path + ".client.json");

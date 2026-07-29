@@ -1376,6 +1376,29 @@ public sealed class EngineApiClient
             ct);
     }
 
+    public sealed class ClipMediaStatusEnvelope
+    {
+        public bool Ok { get; set; }
+        public bool OnServer { get; set; }
+        public bool OnClient { get; set; }
+        public string? Sha256 { get; set; }
+        public long ClientSizeBytes { get; set; }
+        public long ServerSizeBytes { get; set; }
+        public string? Error { get; set; }
+    }
+
+    /// <summary>Where the *active* clip's bytes currently live (server/client/both) and their
+    /// registered size/hash — used to check a local blob is still current before playing it.</summary>
+    public async Task<ClipMediaStatusEnvelope?> GetClipMediaStatusAsync(
+        string projectId, int sceneNumber, int clipNumber, CancellationToken ct = default)
+    {
+        SyncIdentityHeaders();
+        return await _http.GetFromJsonAsync<ClipMediaStatusEnvelope>(
+            $"/api/projects/{Uri.EscapeDataString(projectId)}/scenes/{sceneNumber}/clips/{clipNumber}/media-status",
+            JsonOpts,
+            ct);
+    }
+
     public async Task<SceneRevertEnvelope> PromoteClipVersionAsync(
         string projectId, int sceneNumber, int clipNumber, string versionId, CancellationToken ct = default)
     {

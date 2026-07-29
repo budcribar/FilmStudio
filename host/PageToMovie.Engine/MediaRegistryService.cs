@@ -196,6 +196,27 @@ public sealed class MediaRegistryService
         return o is not null && o is not DBNull;
     }
 
+    /// <summary>All registered takes (client and/or server) for one scene/clip, newest first.</summary>
+    public async Task<List<MediaObjectDto>> ListForClipAsync(string projectId, int scene, int clip, CancellationToken ct = default)
+    {
+        EnsureInitialized();
+        using var conn = new SqliteConnection(ConnectionString);
+        await conn.OpenAsync(ct).ConfigureAwait(false);
+        using var cmd = conn.CreateCommand();
+        cmd.CommandText = @"
+            SELECT project_id, relative_path, sha256, size_bytes, kind, scene, clip, user_id, created_at
+            FROM media_objects WHERE project_id = @p AND scene = @sc AND clip = @cl
+            ORDER BY created_at DESC";
+        cmd.Parameters.AddWithValue("@p", projectId.Trim());
+        cmd.Parameters.AddWithValue("@sc", scene);
+        cmd.Parameters.AddWithValue("@cl", clip);
+        var list = new List<MediaObjectDto>();
+        using var r = await cmd.ExecuteReaderAsync(ct).ConfigureAwait(false);
+        while (await r.ReadAsync(ct).ConfigureAwait(false))
+            list.Add(Read(r));
+        return list;
+    }
+
     public async Task<List<MediaObjectDto>> ListProjectAsync(string projectId, CancellationToken ct = default)
     {
         EnsureInitialized();

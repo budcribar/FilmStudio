@@ -444,13 +444,49 @@ public sealed class ClientMediaFolderService
         if (!IsConnected) return null;
         try
         {
-            var r = await _js.InvokeAsync<JsBlobResult>("PageToMovieMedia.getBlobUrlAsync", relativePath);
+            var r = await _js.InvokeAsync<JsBlobResult>("PageToMovieMedia.getBlobUrlAsync", relativePath, false);
             return r is { Success: true } ? r.Url : null;
         }
         catch
         {
             return null;
         }
+    }
+
+    /// <summary>Cheap metadata-only check of a local file — no blob URL created, no bytes read.</summary>
+    public async Task<(bool Found, long SizeBytes)> StatLocalFileAsync(string relativePath)
+    {
+        if (!IsConnected) return (false, 0);
+        try
+        {
+            var r = await _js.InvokeAsync<JsStatResult>("PageToMovieMedia.statLocalFileAsync", relativePath);
+            return r is { Success: true } ? (true, r.SizeBytes) : (false, 0);
+        }
+        catch
+        {
+            return (false, 0);
+        }
+    }
+
+    /// <summary>
+    /// The generalized "is my local copy of this file still current" check every media-playback
+    /// call site should use instead of trusting whatever happens to be at that path — a local
+    /// file at the expected filename is not guaranteed to be the *current* version (a later
+    /// regen/promote may never have re-synced it to this browser). Works for any media kind
+    /// (video clip today, audio track once that syncs the same way) since it's driven entirely
+    /// by size comparison against the server's registered value, not clip-specific fields.
+    /// Returns the local blob URL only when the local file's size matches what the server has
+    /// registered as current; otherwise null, so the caller falls back to streaming from server.
+    /// </summary>
+    public async Task<string?> GetCurrentBlobUrlAsync(string relativePath, long? expectedSizeBytes)
+    {
+        if (!IsConnected) return null;
+        if (expectedSizeBytes is not (null or <= 0))
+        {
+            var (found, localSize) = await StatLocalFileAsync(relativePath);
+            if (!found || localSize != expectedSizeBytes) return null;
+        }
+        return await GetLocalBlobUrlAsync(relativePath);
     }
 
     public async Task<(bool Ok, string? Sha, long Size, string? Error)> RegisterBlobAsExportAsync(
@@ -678,6 +714,15 @@ public sealed class ClientMediaFolderService
     {
         public bool Success { get; set; }
         public string? Url { get; set; }
+        public long SizeBytes { get; set; }
+        public string? Error { get; set; }
+    }
+
+    private sealed class JsStatResult
+    {
+        public bool Success { get; set; }
+        public long SizeBytes { get; set; }
+        public long LastModifiedMs { get; set; }
         public string? Error { get; set; }
     }
 }

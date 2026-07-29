@@ -24,6 +24,7 @@ public sealed class ProjectStore
     // coordinate a read against.
     private readonly MtimeValidatedFileCache<ClipDialogueVerificationResult, NoOpSemaphore> _dialogueVerificationCache = new();
     private readonly IUserApiKeyProvider? _keyProvider;
+    private readonly MediaRegistryService? _mediaRegistry;
     private readonly string _workspaceRoot;
     private string _activeProjectId = "";
 
@@ -33,12 +34,14 @@ public sealed class ProjectStore
         SceneListCache? sceneListCache = null,
         ProjectReadCache? readCache = null,
         IUserApiKeyProvider? keyProvider = null,
-        ProjectAutoGitService? autoGit = null)
+        ProjectAutoGitService? autoGit = null,
+        MediaRegistryService? mediaRegistry = null)
     {
         _opts = opts.Value;
         _duration = duration;
         _keyProvider = keyProvider;
         _autoGit = autoGit;
+        _mediaRegistry = mediaRegistry;
         // A/B: PageToMovie__EnableReadCaches=false disables scene-list + project/blueprint/dir caches
         _sceneListCache = _opts.EnableReadCaches ? sceneListCache : null;
         _readCache = readCache ?? new ProjectReadCache();
@@ -337,6 +340,50 @@ public sealed class ProjectStore
                 var fi = new FileInfo(mp4);
                 var item = ParseClipSidecarOrMeta(sidecar, mp4, scene, clip, take: result.Count + 1, isCurrent: false, fi.LastWriteTimeUtc);
                 result.Add(item);
+            }
+        }
+
+        // Takes that synced to the client and were pruned server-side (client-storage is the primary
+        // path — see ServerMediaPruningService) have no bytes left to scan for above, only a
+        // MediaRegistryService row. Without this, a clip the UI correctly shows as "on disk" (via
+        // ClipOnDisk's marker check) would list zero versions here — "Takes (2)" but an empty compare
+        // modal. Merge in registry rows the physical scan didn't already find.
+        if (_mediaRegistry is not null)
+        {
+            var registered = await _mediaRegistry.ListForClipAsync(projectId, scene, clip).ConfigureAwait(false);
+            if (registered.Count > 0)
+            {
+                var activeRelPath = MediaRegistryService.ClipRelativePath(scene, clip);
+                var hasPhysicalActive = File.Exists(activeMp4);
+                var knownFileNames = new HashSet<string>(result.Select(r => r.Mp4FileName), StringComparer.OrdinalIgnoreCase);
+
+                foreach (var reg in registered)
+                {
+                    var fileName = Path.GetFileName(reg.RelativePath);
+                    if (knownFileNames.Contains(fileName)) continue;
+
+                    var isActive = !hasPhysicalActive &&
+                        string.Equals(reg.RelativePath, activeRelPath, StringComparison.OrdinalIgnoreCase);
+                    var createdUtc = DateTimeOffset.TryParse(
+                        reg.CreatedAt, System.Globalization.CultureInfo.InvariantCulture,
+                        System.Globalization.DateTimeStyles.RoundtripKind, out var dto)
+                        ? dto.UtcDateTime
+                        : DateTime.UtcNow;
+
+                    result.Add(new ClipVersionItem
+                    {
+                        VersionId = fileName,
+                        Scene = scene,
+                        Clip = clip,
+                        Take = isActive ? 1 : result.Count + 1,
+                        IsCurrent = isActive,
+                        CreatedAtUtc = createdUtc,
+                        Mp4FileName = fileName,
+                        Sha256 = reg.Sha256,
+                        ClientOnly = true,
+                    });
+                    knownFileNames.Add(fileName);
+                }
             }
         }
 
@@ -4650,6 +4697,14 @@ public sealed class ProjectStore
         return map;
     }
 
+    /// <summary>
+    /// Bulk variant of "is this clip present" for scene-list rendering — takes a directory scan
+    /// preloaded once per request (videoIndex) rather than a per-clip check, so it stays sync and
+    /// dictionary-based instead of routing through MediaSyncLocator (SQL-backed, async): that
+    /// would mean one registry query per clip instead of one directory scan per scene. See
+    /// MediaSyncLocator's doc comment and FilmJobService.ClipPresentOnServerOrClient for the
+    /// single-clip sibling of this same "why not just unify them" call.
+    /// </summary>
     private static bool ClipOnDisk(Dictionary<string, long> videoIndex, int scene, int clip)
     {
         var basePrefix = $"scene_{scene:D2}_clip_{clip:D2}";

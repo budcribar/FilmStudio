@@ -241,45 +241,25 @@ window.PageToMovieMedia = {
     },
 
     /**
-     * Read a project-relative file as a blob: URL for &lt;video&gt; / stitch.
+     * Read a project-relative file as a blob: URL for &lt;video&gt; / stitch. Cached per path for
+     * the session; pass forceRefresh=true (after a staleness check via statLocalFileAsync
+     * decides the cached URL no longer matches what's on disk) to revoke and recreate it.
      */
-    getBlobUrlAsync: async function (relativePath) {
+    getBlobUrlAsync: async function (relativePath, forceRefresh) {
         if (!this._root) return { success: false, error: "Media folder not connected" };
         try {
             const key = relativePath.replace(/\\/g, "/");
-            if (this._blobUrls[key]) {
+            if (!forceRefresh && this._blobUrls[key]) {
                 return { success: true, url: this._blobUrls[key] };
             }
-            const { dir, fileName } = await this._ensurePathAsync(relativePath);
-            let fh;
-            try {
-                fh = await dir.getFileHandle(fileName, { create: false });
-            } catch (_) {
-                // Fallback: search for take pattern scene_XX_clip_YY*.mp4 in local media folder
-                const m = fileName.match(/^(scene_\d+_clip_\d+)/i);
-                if (m) {
-                    const prefix = m[1].toLowerCase();
-                    let bestFh = null;
-                    let bestMtime = 0;
-                    for await (const entry of dir.values()) {
-                        const nameLower = entry.name.toLowerCase();
-                        if (entry.kind === "file" && nameLower.startsWith(prefix) && nameLower.endsWith(".mp4")) {
-                            try {
-                                const f = await entry.getFile();
-                                if (f && f.size >= 1024 && f.lastModified > bestMtime) {
-                                    bestMtime = f.lastModified;
-                                    bestFh = entry;
-                                }
-                            } catch (_) {}
-                        }
-                    }
-                    if (bestFh) fh = bestFh;
-                }
-            }
+            const fh = await this._resolveFileHandleAsync(relativePath);
             if (!fh) return { success: false, error: "Not found in media folder" };
             const file = await fh.getFile();
             if (!file || file.size < 1024)
                 return { success: false, error: "File missing or empty" };
+            if (this._blobUrls[key]) {
+                try { URL.revokeObjectURL(this._blobUrls[key]); } catch (_) { /* */ }
+            }
             const url = URL.createObjectURL(file);
             this._blobUrls[key] = url;
             return { success: true, url: url, sizeBytes: file.size };
@@ -289,42 +269,71 @@ window.PageToMovieMedia = {
     },
 
     /**
+     * Shared file-handle resolution for getBytesAsync/getBlobUrlAsync/statLocalFileAsync:
+     * exact relative-path match first, falling back to a "scene_XX_clip_YY*" prefix search
+     * (newest by mtime) for take-suffixed filenames the caller doesn't know the exact name of.
+     * Was duplicated verbatim in two places; centralized so future kinds (audio tracks, etc.)
+     * get the same fallback for free instead of a third copy-paste.
+     */
+    _resolveFileHandleAsync: async function (relativePath) {
+        const { dir, fileName } = await this._ensurePathAsync(relativePath);
+        try {
+            return await dir.getFileHandle(fileName, { create: false });
+        } catch (_) {
+            const m = fileName.match(/^(scene_\d+_clip_\d+)/i);
+            if (!m) return null;
+            const prefix = m[1].toLowerCase();
+            const ext = (fileName.match(/\.[a-z0-9]+$/i) || [".mp4"])[0].toLowerCase();
+            let bestFh = null;
+            let bestMtime = 0;
+            for await (const entry of dir.values()) {
+                const nameLower = entry.name.toLowerCase();
+                if (entry.kind === "file" && nameLower.startsWith(prefix) && nameLower.endsWith(ext)) {
+                    try {
+                        const f = await entry.getFile();
+                        if (f && f.size >= 1024 && f.lastModified > bestMtime) {
+                            bestMtime = f.lastModified;
+                            bestFh = entry;
+                        }
+                    } catch (_) { /* skip unreadable entry */ }
+                }
+            }
+            return bestFh;
+        }
+    },
+
+    /**
      * Read a project-relative file (e.g. assets/video/scene_01_clip_01.mp4) as byte array.
      */
     getBytesAsync: async function (relativePath) {
         if (!this._root) return { success: false, error: "Media folder not connected" };
         try {
-            const { dir, fileName } = await this._ensurePathAsync(relativePath);
-            let fh;
-            try {
-                fh = await dir.getFileHandle(fileName, { create: false });
-            } catch (_) {
-                const m = fileName.match(/^(scene_\d+_clip_\d+)/i);
-                if (m) {
-                    const prefix = m[1].toLowerCase();
-                    let bestFh = null;
-                    let bestMtime = 0;
-                    for await (const entry of dir.values()) {
-                        const nameLower = entry.name.toLowerCase();
-                        if (entry.kind === "file" && nameLower.startsWith(prefix) && nameLower.endsWith(".mp4")) {
-                            try {
-                                const f = await entry.getFile();
-                                if (f && f.size >= 1024 && f.lastModified > bestMtime) {
-                                    bestMtime = f.lastModified;
-                                    bestFh = entry;
-                                }
-                            } catch (_) {}
-                        }
-                    }
-                    if (bestFh) fh = bestFh;
-                }
-            }
+            const fh = await this._resolveFileHandleAsync(relativePath);
             if (!fh) return { success: false, error: "Not found in media folder" };
             const file = await fh.getFile();
             if (!file || file.size < 1024)
                 return { success: false, error: "File missing or empty" };
             const buf = await file.arrayBuffer();
             return { success: true, bytes: new Uint8Array(buf), sizeBytes: file.size };
+        } catch (err) {
+            return { success: false, error: err.message || "Not found in media folder" };
+        }
+    },
+
+    /**
+     * Cheap metadata-only check — no blob URL created, no bytes read. Callers (C#) use this to
+     * decide whether a local file is still current before trusting it, without the cost/side
+     * effects of getBlobUrlAsync.
+     */
+    statLocalFileAsync: async function (relativePath) {
+        if (!this._root) return { success: false, error: "Media folder not connected" };
+        try {
+            const fh = await this._resolveFileHandleAsync(relativePath);
+            if (!fh) return { success: false, error: "Not found in media folder" };
+            const file = await fh.getFile();
+            if (!file || file.size < 1024)
+                return { success: false, error: "File missing or empty" };
+            return { success: true, sizeBytes: file.size, lastModifiedMs: file.lastModified };
         } catch (err) {
             return { success: false, error: err.message || "Not found in media folder" };
         }
