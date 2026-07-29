@@ -209,7 +209,10 @@ public static class ClipDurationEstimator
         if (dlg.Length > 0)
         {
             var words = CountWords(dlg);
-            speech = SpeechHeadSeconds + words / DialogueWordsPerSecond + SpeechTailSeconds;
+            var syllables = CountSyllables(dlg);
+            var speechFromWords = SpeechHeadSeconds + words / DialogueWordsPerSecond + SpeechTailSeconds;
+            var speechFromSyllables = SpeechHeadSeconds + syllables / 3.8 + SpeechTailSeconds;
+            speech = Math.Max(speechFromWords, speechFromSyllables);
             speech = Math.Max(1.8, speech);
             if (delivery is "voiceover_internal" or "internal" or "narration" or "vo" or "thought")
                 speech *= 0.95;
@@ -255,7 +258,10 @@ public static class ClipDurationEstimator
         if (dlg.Length > 0)
         {
             var words = CountWords(dlg);
-            speech = SpeechHeadSeconds + words / DialogueWordsPerSecond + SpeechTailSeconds;
+            var syllables = CountSyllables(dlg);
+            var speechFromWords = SpeechHeadSeconds + words / DialogueWordsPerSecond + SpeechTailSeconds;
+            var speechFromSyllables = SpeechHeadSeconds + syllables / 3.8 + SpeechTailSeconds;
+            speech = Math.Max(speechFromWords, speechFromSyllables);
             // Very short lines still need a beat
             speech = Math.Max(1.8, speech);
             // VO can be slightly snappier
@@ -546,11 +552,31 @@ public static class ClipDurationEstimator
         };
 
     private static readonly Regex WordCountRegex = new(@"[\p{L}\p{N}']+", RegexOptions.Compiled);
+    private static readonly Regex VowelGroupRegex = new(@"[aeiouy]+", RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
     public static int CountWords(string text)
     {
         if (string.IsNullOrWhiteSpace(text)) return 0;
         return WordCountRegex.Matches(text).Count;
+    }
+
+    public static int CountSyllables(string text)
+    {
+        if (string.IsNullOrWhiteSpace(text)) return 0;
+        var words = WordCountRegex.Matches(text).Select(m => m.Value.ToLowerInvariant()).ToList();
+        var total = 0;
+        foreach (var w in words)
+        {
+            if (w.Length <= 3)
+            {
+                total += 1;
+                continue;
+            }
+            var clean = Regex.Replace(w, @"(?:(?<!s)e|e[ds])$", "");
+            var count = VowelGroupRegex.Matches(clean).Count;
+            total += Math.Max(1, count);
+        }
+        return total;
     }
 
     /// <summary>
