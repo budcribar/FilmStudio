@@ -582,7 +582,7 @@
                         </p>
                     </div>
                     <div class="col-md-12 mt-3 pt-3 border-top">
-                        <div class="fw-semibold small mb-2">🎵 Augment Project Music Scores</div>
+                        <div class="fw-semibold small mb-2">🎵 Augment &amp; Synthesize Project Music Scores</div>
                         <div class="d-flex flex-wrap gap-2 align-items-center">
                             <select class="form-select form-select-sm" style="max-width: 16rem;"
                                     @bind="_augmentProjectId"
@@ -602,12 +602,31 @@
                             <button type="button" class="btn btn-sm btn-outline-primary"
                                     disabled="@(_archiveBusy || string.IsNullOrWhiteSpace(_augmentProjectId))"
                                     @onclick="AugmentMusicAsync">
-                                @(_archiveBusy && _archiveAction == "augment" ? "Composing Scores…" : "Compose Score Prompts")
+                                @(_archiveBusy && _archiveAction == "augment" ? "Composing Scores…" : "1. Compose Score Prompts")
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-success ms-1"
+                                    disabled="@(_archiveBusy || string.IsNullOrWhiteSpace(_augmentProjectId))"
+                                    @onclick="SynthesizeAudioAsync">
+                                @(_archiveBusy && _archiveAction == "synthesize" ? $"Synthesizing Audio ({_synthesizeCurrent}/{_synthesizeTotal})…" : "🎼 Synthesize Scene Audio Tracks (Skip Existing)")
                             </button>
                         </div>
-                        <p class="form-text mb-0 mt-1">
-                            Non-destructively enriches <code>blueprint.clips.grok.json</code> with AI background music score prompts across all scenes using full story context.
-                            Generate the audio itself per scene from the Scenes page ("Score Background Music").
+                        @if (_archiveBusy && _archiveAction == "synthesize" && _synthesizeTotal > 0)
+                        {
+                            var pct = Math.Min(100, Math.Max(5, (int)Math.Round((double)_synthesizeCurrent / _synthesizeTotal * 100.0)));
+                            <div class="progress mt-2 mb-1" style="height: 20px;">
+                                <div class="progress-bar progress-bar-striped progress-bar-animated bg-success"
+                                     role="progressbar"
+                                     style="width: @pct%"
+                                     aria-valuenow="@pct"
+                                     aria-valuemin="0"
+                                     aria-valuemax="100">
+                                    @_synthesizeCurrent / @_synthesizeTotal scenes (@pct%)
+                                </div>
+                            </div>
+                        }
+                        <p class="form-text mb-0 mt-2">
+                            1. <strong>Compose Score Prompts</strong> non-destructively enriches <code>blueprint.clips.grok.json</code> with AI background music score prompts across all scenes.<br/>
+                            2. <strong>Synthesize Scene Audio Tracks</strong> checks each scene and queues AI stereo background music generation for any scene missing audio.
                         </p>
                     </div>
                 </div>
@@ -1160,6 +1179,74 @@
         {
             _archiveBusy = false;
             _archiveAction = null;
+        }
+    }
+
+    private int _synthesizeCurrent;
+    private int _synthesizeTotal;
+
+    private async Task SynthesizeAudioAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_augmentProjectId)) return;
+
+        _archiveBusy = true;
+        _archiveAction = "synthesize";
+        _archiveError = null;
+        _synthesizeCurrent = 0;
+        _synthesizeTotal = 0;
+        _archiveMsg = $"Fetching scene list for {_augmentProjectId}…";
+        StateHasChanged();
+
+        try
+        {
+            var scenesDto = await Api.GetScenesAsync(_augmentProjectId);
+            var scenes = scenesDto?.Scenes;
+            if (scenes is null || scenes.Count == 0)
+            {
+                _archiveError = $"No scenes found for project {_augmentProjectId}. Build shot plan first.";
+                _archiveMsg = null;
+                return;
+            }
+
+            _synthesizeTotal = scenes.Count;
+            int queuedCount = 0;
+            int skippedCount = 0;
+
+            foreach (var sc in scenes)
+            {
+                _synthesizeCurrent++;
+                _archiveMsg = $"Checking background music for {_augmentProjectId} Scene S{sc.SceneNumber:D2} ({_synthesizeCurrent}/{_synthesizeTotal})…";
+                StateHasChanged();
+
+                var audioPath = $"assets/scene_{sc.SceneNumber:D2}_music.mp3";
+                var hasLocalAudio = MediaFolder.IsConnected && (await MediaFolder.StatLocalFileAsync(audioPath)).Found;
+
+                if (hasLocalAudio)
+                {
+                    skippedCount++;
+                    continue;
+                }
+
+                _archiveMsg = $"Queuing background music synthesis for Scene S{sc.SceneNumber:D2} ({_synthesizeCurrent}/{_synthesizeTotal})…";
+                StateHasChanged();
+
+                await Api.StartSceneMusicGenAsync(_augmentProjectId, sc.SceneNumber);
+                queuedCount++;
+            }
+
+            _archiveMsg = $"Completed background music synthesis checks for {_augmentProjectId}. Queued: {queuedCount}, Skipped (Existing): {skippedCount}.";
+            await RefreshAsync();
+        }
+        catch (Exception ex)
+        {
+            _archiveError = $"Failed to synthesize scene audio tracks: {ex.Message}";
+            _archiveMsg = null;
+        }
+        finally
+        {
+            _archiveBusy = false;
+            _archiveAction = null;
+            StateHasChanged();
         }
     }
 
