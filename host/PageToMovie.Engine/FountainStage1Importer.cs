@@ -532,10 +532,10 @@ public static class FountainStage1Importer
     private static readonly Regex CharacterParenRe = new(@"\s*\([^)]*\)\s*", RegexOptions.Compiled);
     private static readonly Regex BigActionWordsRe = new(
         @"\b(chase|races?|sprints?|explodes?|crashes?|fights?|attacks?|leaps?|bounds?|lunges?|slams?)\b",
-        RegexOptions.Compiled);
+        RegexOptions.IgnoreCase | RegexOptions.Compiled);
     private static readonly Regex HoldWordsRe = new(
         @"\b(smile|smiles|smiling|nods?|turns?|looks?|gazes?|freezes?|waits?|steadies|thin smile|hands on|sits still|leans?|pauses?|watches?|listens?)\b",
-        RegexOptions.Compiled);
+        RegexOptions.IgnoreCase | RegexOptions.Compiled);
     private static readonly Regex ContMatchRe = new(@"\bCONT", RegexOptions.IgnoreCase | RegexOptions.Compiled);
     private static readonly Regex ExtensionPureTokenRe = new(
         @"^(CONT|CONTINUED|V\.?\s*O\.?|O\.?\s*S\.?|O\.?\s*C\.?)$",

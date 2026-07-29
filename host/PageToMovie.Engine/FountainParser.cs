@@ -582,8 +582,20 @@ public static class FountainParser
             .Replace('\u00A0', ' '); // nbsp
     }
 
-    private static bool IsAllCapsLine(string s) =>
-        s.Any(char.IsLetter) && s.Where(char.IsLetter).All(char.IsUpper);
+    private static bool IsAllCapsLine(string s)
+    {
+        var hasLetter = false;
+        for (var i = 0; i < s.Length; i++)
+        {
+            var ch = s[i];
+            if (char.IsLetter(ch))
+            {
+                hasLetter = true;
+                if (!char.IsUpper(ch)) return false;
+            }
+        }
+        return hasLetter;
+    }
 
     private static bool PrevBlank(string[] lines, int i)
     {
