@@ -68,6 +68,51 @@ public sealed class ProjectStore
         catch { /* non-fatal background hook */ }
     }
 
+    /// <summary>Undoes the last committed change in a project repository (reverts to HEAD~1).</summary>
+    public async Task<GitCommitInfo?> UndoLastProjectChangeAsync(string projectId, string? author = null, ProjectGitRepositoryService? gitRepo = null)
+    {
+        if (string.IsNullOrWhiteSpace(projectId)) return null;
+        var dir = GetProjectDir(projectId);
+        if (!Directory.Exists(dir)) return null;
+
+        var git = gitRepo ?? new ProjectGitRepositoryService(Microsoft.Extensions.Logging.Abstractions.NullLogger<ProjectGitRepositoryService>.Instance);
+        var who = string.IsNullOrWhiteSpace(author) ? "Operator" : author;
+        var result = await git.UndoLastCommitAsync(dir, who).ConfigureAwait(false);
+        if (result is not null)
+        {
+            InvalidateSceneListCache(projectId);
+        }
+        return result;
+    }
+
+    /// <summary>Reverts project state to a specific Git commit hash.</summary>
+    public async Task<GitCommitInfo?> RevertProjectToCommitAsync(string projectId, string commitHash, string? author = null, ProjectGitRepositoryService? gitRepo = null)
+    {
+        if (string.IsNullOrWhiteSpace(projectId) || string.IsNullOrWhiteSpace(commitHash)) return null;
+        var dir = GetProjectDir(projectId);
+        if (!Directory.Exists(dir)) return null;
+
+        var git = gitRepo ?? new ProjectGitRepositoryService(Microsoft.Extensions.Logging.Abstractions.NullLogger<ProjectGitRepositoryService>.Instance);
+        var who = string.IsNullOrWhiteSpace(author) ? "Operator" : author;
+        var result = await git.RevertToCommitAsync(dir, commitHash, who).ConfigureAwait(false);
+        if (result is not null)
+        {
+            InvalidateSceneListCache(projectId);
+        }
+        return result;
+    }
+
+    /// <summary>Gets recent Git history for a project.</summary>
+    public async Task<IReadOnlyList<GitCommitInfo>> GetProjectGitHistoryAsync(string projectId, int limit = 20, ProjectGitRepositoryService? gitRepo = null)
+    {
+        if (string.IsNullOrWhiteSpace(projectId)) return Array.Empty<GitCommitInfo>();
+        var dir = GetProjectDir(projectId);
+        if (!Directory.Exists(dir)) return Array.Empty<GitCommitInfo>();
+
+        var git = gitRepo ?? new ProjectGitRepositoryService(Microsoft.Extensions.Logging.Abstractions.NullLogger<ProjectGitRepositoryService>.Instance);
+        return await git.GetCommitHistoryAsync(dir, limit).ConfigureAwait(false);
+    }
+
     /// <summary>
     /// Drop scene-list + blueprint/dir read caches for a project (call after gen/remux/stage2).
     /// </summary>

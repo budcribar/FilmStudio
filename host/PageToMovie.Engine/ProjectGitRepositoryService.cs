@@ -123,6 +123,93 @@ namespace PageToMovie.Engine
         }
 
         /// <summary>
+        /// Retrieves the recent Git commit history for a project repository.
+        /// </summary>
+        public Task<IReadOnlyList<GitCommitInfo>> GetCommitHistoryAsync(string projectPath, int maxCount = 20)
+        {
+            if (string.IsNullOrWhiteSpace(projectPath) || !Directory.Exists(projectPath) || !Repository.IsValid(projectPath))
+                return Task.FromResult<IReadOnlyList<GitCommitInfo>>(Array.Empty<GitCommitInfo>());
+
+            using var repo = new Repository(projectPath);
+            if (repo.Head.Tip is null)
+                return Task.FromResult<IReadOnlyList<GitCommitInfo>>(Array.Empty<GitCommitInfo>());
+
+            var list = repo.Commits
+                .Take(Math.Clamp(maxCount, 1, 100))
+                .Select(c => new GitCommitInfo
+                {
+                    CommitHash = c.Sha,
+                    Author = c.Author.Name,
+                    Message = c.Message.TrimEnd('\n'),
+                    CommittedAt = c.Author.When.UtcDateTime,
+                })
+                .ToList();
+
+            return Task.FromResult<IReadOnlyList<GitCommitInfo>>(list);
+        }
+
+        /// <summary>
+        /// Reverts all project files to the exact state at <paramref name="commitHash"/>, creating a new commit.
+        /// Preserves full Git history while restoring project files to the prior commit state.
+        /// </summary>
+        public Task<GitCommitInfo> RevertToCommitAsync(string projectPath, string commitHash, string author)
+        {
+            if (string.IsNullOrWhiteSpace(projectPath) || !Directory.Exists(projectPath))
+                throw new DirectoryNotFoundException($"Project directory not found: {projectPath}");
+
+            EnsureRepository(projectPath);
+
+            using var repo = new Repository(projectPath);
+            var targetCommit = repo.Lookup<Commit>(commitHash);
+            if (targetCommit is null)
+                throw new ArgumentException($"Commit {commitHash} not found in repository.", nameof(commitHash));
+
+            var checkoutOpts = new CheckoutOptions { CheckoutModifiers = CheckoutModifiers.Force };
+            repo.CheckoutPaths(targetCommit.Sha, new[] { "*" }, checkoutOpts);
+            Commands.Stage(repo, "*");
+
+            var who = string.IsNullOrWhiteSpace(author) ? "PageToMovie" : author.Trim();
+            var signature = new Signature(who, EmailFor(who), DateTimeOffset.UtcNow);
+            var shortHash = targetCommit.Sha.Length >= 8 ? targetCommit.Sha[..8] : targetCommit.Sha;
+            var shortMsg = targetCommit.MessageShort;
+            var msg = $"Undo: Revert project state to commit {shortHash} ({shortMsg})";
+
+            var newCommit = repo.Commit(msg, signature, signature, new CommitOptions { AllowEmptyCommit = true });
+
+            _logger.LogInformation("Reverted project {Path} to commit {Hash}. New commit: {NewSha}", projectPath, commitHash, newCommit.Sha);
+
+            return Task.FromResult(new GitCommitInfo
+            {
+                CommitHash = newCommit.Sha,
+                Author = who,
+                Message = msg,
+                CommittedAt = DateTime.UtcNow,
+            });
+        }
+
+        /// <summary>
+        /// Undoes the last project change by reverting to HEAD~1 (parent of current HEAD).
+        /// Returns null if there is no parent commit to revert to.
+        /// </summary>
+        public async Task<GitCommitInfo?> UndoLastCommitAsync(string projectPath, string author)
+        {
+            if (string.IsNullOrWhiteSpace(projectPath) || !Directory.Exists(projectPath) || !Repository.IsValid(projectPath))
+                return null;
+
+            string parentSha;
+            using (var repo = new Repository(projectPath))
+            {
+                var head = repo.Head.Tip;
+                if (head is null || !head.Parents.Any())
+                    return null;
+
+                parentSha = head.Parents.First().Sha;
+            }
+
+            return await RevertToCommitAsync(projectPath, parentSha, author).ConfigureAwait(false);
+        }
+
+        /// <summary>
         /// Fetches the parent project's repository and merges it into the fork's current branch
         /// (LibGit2Sharp's real 3-way merge — computes a common ancestor when the fork and parent
         /// share history, or a base-less merge otherwise). Never auto-resolves conflicts: if the

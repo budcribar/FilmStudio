@@ -2490,6 +2490,87 @@ app.MapPost("/api/projects/{id}/commit", async (
     }
 });
 
+app.MapGet("/api/projects/{id}/git/history", async (
+    string id,
+    int? limit,
+    ProjectStore store,
+    CancellationToken ct) =>
+{
+    try
+    {
+        await store.RequireProjectAsync(id, ct);
+        var history = await store.GetProjectGitHistoryAsync(id, limit ?? 20);
+        return Results.Ok(new { ok = true, history });
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { ok = false, error = ex.Message });
+    }
+});
+
+app.MapPost("/api/projects/{id}/git/undo", async (
+    string id,
+    ProjectStore store,
+    IUserContext user,
+    IOptions<PageToMovieOptions> opts,
+    CancellationToken ct) =>
+{
+    if (AuthGate.RequireLogin(user, opts) is { } denied)
+        return denied;
+    try
+    {
+        await store.RequireProjectAsync(id, ct);
+        if (!await store.CanUserPublishDemoAsync(id, user.UserId, user.IsAdmin, ct))
+        {
+            return Results.Json(new { ok = false, error = "Only the project owner or an admin can undo project changes." },
+                statusCode: StatusCodes.Status403Forbidden);
+        }
+
+        var result = await store.UndoLastProjectChangeAsync(id, user.UserId);
+        if (result is null)
+        {
+            return Results.BadRequest(new { ok = false, error = "No prior commit to undo to." });
+        }
+        return Results.Ok(new { ok = true, commit = result, message = "Successfully reverted project to previous commit state." });
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { ok = false, error = ex.Message });
+    }
+});
+
+app.MapPost("/api/projects/{id}/git/revert/{commitHash}", async (
+    string id,
+    string commitHash,
+    ProjectStore store,
+    IUserContext user,
+    IOptions<PageToMovieOptions> opts,
+    CancellationToken ct) =>
+{
+    if (AuthGate.RequireLogin(user, opts) is { } denied)
+        return denied;
+    try
+    {
+        await store.RequireProjectAsync(id, ct);
+        if (!await store.CanUserPublishDemoAsync(id, user.UserId, user.IsAdmin, ct))
+        {
+            return Results.Json(new { ok = false, error = "Only the project owner or an admin can revert project state." },
+                statusCode: StatusCodes.Status403Forbidden);
+        }
+
+        var result = await store.RevertProjectToCommitAsync(id, commitHash, user.UserId);
+        if (result is null)
+        {
+            return Results.BadRequest(new { ok = false, error = $"Failed to revert to commit {commitHash}." });
+        }
+        return Results.Ok(new { ok = true, commit = result, message = $"Successfully reverted project to commit {commitHash[..Math.Min(8, commitHash.Length)]}." });
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { ok = false, error = ex.Message });
+    }
+});
+
 /// <summary>
 /// Push the project's text package (video excluded) to the configured Projects remote.
 /// Owner/admin only. Optional body.commitFirst + message creates a local commit first.
