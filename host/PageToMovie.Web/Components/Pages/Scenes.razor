@@ -3627,9 +3627,20 @@ else
             if (ver is not null)
             {
                 clip.DialogueVerification = ver;
+                if (_showVerificationModal && _verifModalClipNumber == clip.ClipNumber && _verifModalSceneNumber == _detail.SceneNumber)
+                {
+                    _verifModalResult = ver;
+                }
                 if (string.Equals(ver.Status, "unverified", StringComparison.OrdinalIgnoreCase))
                 {
                     _error = ver.SummaryNote ?? "Clip Dialogue Verification requires Google Gemini (GEMINI_API_KEY). Gemini is the only provider that supports native video & audio dialogue analysis. Please add your Gemini key in Configuration.";
+                }
+
+                _detail = (await Engine.GetSceneDetailAsync(_projectId, _detail.SceneNumber))?.Scene;
+                var scenesDto = await Engine.GetScenesAsync(_projectId);
+                if (scenesDto?.Scenes is not null)
+                {
+                    _scenes = scenesDto.Scenes;
                 }
             }
         }
@@ -3698,6 +3709,10 @@ else
                 if (ver is not null && clip is not null)
                 {
                     clip.DialogueVerification = ver;
+                    if (_showVerificationModal && _verifModalClipNumber == cn && _verifModalSceneNumber == sceneNum)
+                    {
+                        _verifModalResult = ver;
+                    }
                     if (string.Equals(ver.Status, "unverified", StringComparison.OrdinalIgnoreCase))
                     {
                         _error = ver.SummaryNote ?? "Clip Dialogue Verification requires Google Gemini (GEMINI_API_KEY). Gemini is the only provider that supports native video & audio dialogue analysis. Please add your Gemini key in Configuration.";
