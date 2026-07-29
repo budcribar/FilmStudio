@@ -5016,7 +5016,7 @@ static object DemoPublicDto(
     upvotedByMe,
     // True when this public film's studio project still exists (gallery Fork button).
     canFork,
-    videoPath = string.IsNullOrWhiteSpace(d.YoutubeId) ? $"/api/demos/{Uri.EscapeDataString(d.Id)}/video" : null,
+    videoPath = $"/api/demos/{Uri.EscapeDataString(d.Id)}/video",
     d.YoutubeId,
     d.YoutubeUrl,
     d.YoutubeLikeCount,
@@ -5040,7 +5040,7 @@ static object DemoAdminDto(DemoCatalogService.DemoEntry d) => new
     d.ReviewedBy,
     d.ReviewedAt,
     d.ReviewNote,
-    videoPath = string.IsNullOrWhiteSpace(d.YoutubeId) ? $"/api/demos/{Uri.EscapeDataString(d.Id)}/video" : null,
+    videoPath = $"/api/demos/{Uri.EscapeDataString(d.Id)}/video",
     d.YoutubeId,
     d.YoutubeUrl,
     d.YoutubeUploadStatus,
