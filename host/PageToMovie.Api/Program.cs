@@ -275,18 +275,6 @@ else
         c.Timeout = TimeSpan.FromMinutes(5);
     }));
     builder.Services.AddSingleton<IMusicClient, MultiProviderMusicClient>();
-    builder.Services.AddSingleton<SceneMusicScoringService>();
-    builder.Services.AddSingleton<SmartClassifierModelRouter>();
-    builder.Services.AddSingleton<ActionCameraOverheadLedger>();
-    builder.Services.AddSingleton<AiActionOverheadClassifier>();
-    builder.Services.AddSingleton<JitBenchmarkService>();
-    builder.Services.AddSingleton<ClipTimingTelemetryRepository>(sp =>
-    {
-        var dbPath = Environment.GetEnvironmentVariable("PAGETOMOVIE_DB_PATH")
-            ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".gemini", "antigravity", "pagetomovie.db");
-        return new ClipTimingTelemetryRepository(dbPath, sp.GetService<ILogger<ClipTimingTelemetryRepository>>());
-    });
-    builder.Services.AddSingleton<GlobalTimingCalibrationService>();
 
     // Dispatchers: every existing caller keeps depending on IChatClient / IImageClient /
     // IVideoClient / IVisionClient and is routed to the right concrete provider client
@@ -310,6 +298,22 @@ else
     builder.Services.AddSingleton<IChatClient>(sp => sp.GetRequiredService<CachingChatClient>());
     builder.Services.AddSingleton<IVisionClient, MultiProviderVisionClient>();
 }
+
+// Provider-agnostic telemetry/scoring services — registered regardless of PageToMovie:UseFakes
+// so admin route handlers that take them as parameters resolve as DI services rather than
+// being misinferred as request-body parameters, and so they're available at all in fakes mode.
+builder.Services.AddSingleton<SceneMusicScoringService>();
+builder.Services.AddSingleton<SmartClassifierModelRouter>();
+builder.Services.AddSingleton<ActionCameraOverheadLedger>();
+builder.Services.AddSingleton<AiActionOverheadClassifier>();
+builder.Services.AddSingleton<JitBenchmarkService>();
+builder.Services.AddSingleton<ClipTimingTelemetryRepository>(sp =>
+{
+    var dbPath = Environment.GetEnvironmentVariable("PAGETOMOVIE_DB_PATH")
+        ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".gemini", "antigravity", "pagetomovie.db");
+    return new ClipTimingTelemetryRepository(dbPath, sp.GetService<ILogger<ClipTimingTelemetryRepository>>());
+});
+builder.Services.AddSingleton<GlobalTimingCalibrationService>();
 
 builder.Services.AddSignalR();
 builder.Services.AddCors(o =>
