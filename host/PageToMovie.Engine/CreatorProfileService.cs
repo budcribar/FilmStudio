@@ -50,11 +50,9 @@ public sealed class CreatorProfileService
         int moviesPublished = userDemos.Count;
 
         // 2. Total upvotes received across user's demos
-        int totalUpvotes = 0;
-        foreach (var demo in userDemos)
-        {
-            totalUpvotes += _upvotes.GetCount(demo.Id);
-        }
+        var demoIds = userDemos.Select(d => d.Id).ToList();
+        var counts = await _upvotes.GetCountsAsync(demoIds, ct).ConfigureAwait(false);
+        int totalUpvotes = counts.Values.Sum();
 
         // 3. Community forks spawned from user's projects
         var allProjects = await _projects.ListProjectsAsync(ct).ConfigureAwait(false) ?? (IReadOnlyList<ProjectInfo>)Array.Empty<ProjectInfo>();

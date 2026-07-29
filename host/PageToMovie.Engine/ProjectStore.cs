@@ -3661,10 +3661,10 @@ public sealed class ProjectStore
         {
             var path = Path.Combine(videoDir, name);
             if (!File.Exists(path)) continue;
-            var mt = new FileInfo(path).LastWriteTimeUtc;
+            var mt = File.GetLastWriteTimeUtc(path);
             if (mt > maxClipMtime) maxClipMtime = mt;
         }
-        if (maxClipMtime > new FileInfo(composite).LastWriteTimeUtc.AddSeconds(1))
+        if (maxClipMtime > File.GetLastWriteTimeUtc(composite).AddSeconds(1))
             return true;
 
         var manifestPath = ClipFileNaming.SceneSourcesManifestPath(composite);

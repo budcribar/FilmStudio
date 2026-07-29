@@ -206,11 +206,11 @@ public sealed class ClipSidecarService
                         {
                             var targetMarker = Path.Combine(dir, $"{newMp4Name}.client.json");
                             if (!File.Exists(targetMarker))
-                                File.Move(item.FullPath, targetMarker);
+                                await Task.Run(() => File.Move(item.FullPath, targetMarker), ct).ConfigureAwait(false);
                         }
                         else if (!File.Exists(newMp4Path))
                         {
-                            File.Move(item.FullPath, newMp4Path);
+                            await Task.Run(() => File.Move(item.FullPath, newMp4Path), ct).ConfigureAwait(false);
                         }
                     }
                     catch (Exception ex)
