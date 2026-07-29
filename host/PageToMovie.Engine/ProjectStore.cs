@@ -3479,13 +3479,16 @@ public sealed class ProjectStore
         var xai = !string.IsNullOrWhiteSpace(ApiKeyScope.Current)
                   || !string.IsNullOrWhiteSpace(ApiKeyScope.CurrentGemini)
                   || !string.IsNullOrWhiteSpace(ApiKeyScope.CurrentAnthropic)
+                  || !string.IsNullOrWhiteSpace(ApiKeyScope.CurrentFal)
                   || (_keyProvider is not null && (
                       _keyProvider.HasKey(null)
                       || _keyProvider.HasKey("local")
                       || _keyProvider.HasKey("grok")))
                   || !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("XAI_API_KEY"))
                   || !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("GEMINI_API_KEY"))
-                  || !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("ANTHROPIC_API_KEY"));
+                  || !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("ANTHROPIC_API_KEY"))
+                  || !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("FAL_API_KEY"))
+                  || !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("FAL_KEY"));
 
         var cfg = GetConfigSync(projectId);
         var planningModel = cfg.TryGetValue("planning_model_name", out var pmEl) &&

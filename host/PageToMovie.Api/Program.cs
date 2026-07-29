@@ -448,7 +448,8 @@ app.Use(async (context, next) =>
         : keyProvider?.GetKey(uid, "grok");
     var gemini = keyProvider?.GetKey(uid, "gemini");
     var anthropic = keyProvider?.GetKey(uid, "anthropic");
-    using (ApiKeyScope.Push(xai, gemini, anthropic))
+    var fal = keyProvider?.GetKey(uid, "fal");
+    using (ApiKeyScope.Push(xai, gemini, anthropic, fal))
     {
         await next();
     }
