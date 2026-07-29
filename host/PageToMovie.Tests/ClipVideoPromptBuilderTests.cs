@@ -280,6 +280,31 @@ public class ClipVideoPromptBuilderTests
     }
 
     [Fact]
+    public void CompressPromptText_reduces_tell_tale_heart_prompt_significantly()
+    {
+        var original = "STYLE LOCK: Period gothic live-action, mid-19th-century interiors; candlelight and deep shadows; desaturated cool-gray palette; naturalistic skin and fabric texture; no illustration or stylized animation\n" +
+                       "CHARACTER VARIABLES (use these identities consistently; do not redesign faces or wardrobe):\n" +
+                       " Character_The_Narrator <IMAGE_1> [The Narrator]: Lean man of middle years (about 40–50), pale sallow skin, hollow cheeks, dark disordered medium-length hair, bright intense dark eyes, thin tense mouth; plain dark wool waistcoat over white shirtsleeves, dark trousers; period clothing. Visual lock: Same lean pale face, dark disordered hair, and bright intense dark eyes in every scene; always plain dark waistcoat and shirtsleeves as default; never elderly, never white-haired, never the filmed blue eye. Voice: Male, middle years; medium-high tense pitch; precise, controlled pace that sharpens into fevered urgency; intimate confessional energy, same voice on-camera and in V.O. Match appearance of reference <IMAGE_1> exactly.\n" +
+                       "NCAST COUNT: exactly 1 distinct on-screen character identity(ies) only — Character_The_Narrator. Do not invent extra people, duplicate faces, or crowd extras not listed.\n" +
+                       "AUDIO: REQUIRED native Grok dialogue. Character_The_Narrator ON CAMERA lip-syncs EXACTLY: \"Passion there was none. I loved the old man. He had never wronged me.\". Start speaking immediately with \"Passion\" — do not skip, delay, or swallow the opening word. After the last word, hold a brief natural pause with a closed mouth (about half a second); do not freeze mid-syllable or trail into empty staring. Other mouths closed. Speech intelligible; never silent. Music score: Melancholy warm strings undercut by unease. VOICE LOCK Character_The_Narrator: Male, middle years; medium-high tense pitch; precise, controlled pace that sharpens into fevered urgency; intimate confessional energy, same voice on-camera and in V.O.\n" +
+                       "CONTEXT (prior clip in scene — new cast plate refs attached; match location/lighting if still valid; identity from CHARACTER VARIABLES + locked plates only):\n" +
+                       "INT. BARE ROOM - NIGHT. The Narrator speaks. Character_The_Narrator ON CAMERA lip-syncs \"but once conceived, it haunted me day and night. Object there was none.\". Character_The_Narrator still wears plain dark waistcoat, rolled cuffs Camera directive: Steady close-up, 50mm lens, face half-shadowed while haunted obsession is described. Performance: Acting intensity 6/10: Haunted stare, jaw clench, restless micro-twitch under eye Optics: f/1.8 shallow depth of field, intimate facial isolation Color grading: Kodak Vision3 500T 5219 film stock, desaturated cool-teal shadows and warm amber candle highlights\n" +
+                       "Follow the camera framing and location in this prompt exactly. Prioritize the PRIMARY subject and ONE clear action with visible motion; background characters may stay mostly still.\n" +
+                       "THIS CLIP:\n" +
+                       "End cleanly when the spoken line and primary action finish — do not hold a frozen pose or empty silence after dialogue.\n" +
+                       "INT. BARE ROOM - NIGHT. The Narrator speaks. Character_The_Narrator <IMAGE_1> ON CAMERA lip-syncs \"Passion there was none. I loved the old man. He had never wronged me.\". Character_The_Narrator <IMAGE_1> still wears plain dark waistcoat, white shirtsleeves, rolled cuffs Camera directive: Medium shot drifting slightly, 35mm lens, calm delivery of love for the old man. Performance: Acting intensity 4/10: Softened sincere eyes, gentle brow raise, open earnest expression Optics: f/2.0 shallow depth of field, soft background separation Color grading: Kodak Vision3 500T 5219 film stock, desaturated cool-teal shadows and warm amber candle highlights / 480p, 24fps";
+
+        var compressed = ClipVideoPromptBuilder.CompressPromptText(original);
+
+        Assert.True(compressed.Length < original.Length * 0.80, $"Compressed {compressed.Length} vs Original {original.Length}");
+        Assert.DoesNotContain("Character_The_Narrator", compressed);
+        Assert.DoesNotContain("<IMAGE_1>", compressed);
+        Assert.DoesNotContain("Kodak Vision3 500T 5219 film stock", compressed);
+        Assert.Contains("Kodak 500T film", compressed);
+        Assert.Contains("C1 I1", compressed);
+    }
+
+    [Fact]
     public void FitPromptToVideoBudget_strips_house_rules_before_first_send()
     {
         var core = "CHARACTER VARIABLES\n- Character_Hero: pale man\n\nTHIS CLIP:\nHe walks.\n";

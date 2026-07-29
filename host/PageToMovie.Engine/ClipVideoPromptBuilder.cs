@@ -669,7 +669,8 @@ public static class ClipVideoPromptBuilder
         // 3. Compress image reference tags (<IMAGE_1> -> I1, <IMAGE_2> -> I2)
         p = Regex.Replace(p, @"<IMAGE_(\d+)>", "I$1");
 
-        // 4. Compress technical camera and styling labels
+        // 4. Compress technical camera, stock, and styling labels
+        p = p.Replace("Kodak Vision3 500T 5219 film stock", "Kodak 500T film");
         p = p.Replace("Camera directive:", "Camera:");
         p = p.Replace("Color grading:", "Grade:");
         p = p.Replace("Visual lock:", "Visual:");
