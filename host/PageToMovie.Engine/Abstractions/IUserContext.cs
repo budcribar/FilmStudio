@@ -31,46 +31,48 @@ public interface IUserApiKeyProvider
 
 /// <summary>
 /// Ambient multi-provider API keys for HTTP clients (flows with AsyncLocal across job Task.Run).
-/// <see cref="Current"/> remains the xAI/Grok key for existing Grok clients.
+/// <see cref="Current"/> remains the xAI/Grok key for existing Grok clients. Backed by a
+/// provider-id-keyed dictionary rather than one positional param per provider — that shape
+/// stopped scaling once a 5th/6th provider (Suno, AIMusicAPI) showed up; named <c>Current*</c>
+/// properties below stay as the ergonomic per-client accessor, just backed by the dictionary.
 /// </summary>
 public static class ApiKeyScope
 {
-    private static readonly AsyncLocal<ProviderKeys?> CurrentKeys = new();
+    private static readonly AsyncLocal<IReadOnlyDictionary<string, string?>?> CurrentKeys = new();
 
     /// <summary>xAI / Grok ambient key (same as <see cref="Get"/>("grok")).</summary>
-    public static string? Current => CurrentKeys.Value?.Xai;
+    public static string? Current => Get("grok");
 
-    public static string? CurrentGemini => CurrentKeys.Value?.Gemini;
+    public static string? CurrentGemini => Get("gemini");
 
-    public static string? CurrentAnthropic => CurrentKeys.Value?.Anthropic;
+    public static string? CurrentAnthropic => Get("anthropic");
 
-    public static string? CurrentFal => CurrentKeys.Value?.Fal;
+    public static string? CurrentFal => Get("fal");
+
+    public static string? CurrentSuno => Get("suno");
+
+    public static string? CurrentAiMusicApi => Get("aimusicapi");
 
     public static string? Get(string providerId)
     {
         var k = CurrentKeys.Value;
         if (k is null) return null;
-        return NormalizeProvider(providerId) switch
-        {
-            "grok" => k.Xai,
-            "gemini" => k.Gemini,
-            "anthropic" => k.Anthropic,
-            "fal" => k.Fal,
-            _ => null,
-        };
+        var norm = NormalizeProvider(providerId);
+        return k.TryGetValue(norm, out var v) ? v : null;
     }
 
     /// <summary>Push xAI-only key (legacy). Other provider slots stay null.</summary>
     public static IDisposable Push(string? xaiApiKey) =>
-        Push(xaiApiKey, geminiApiKey: null, anthropicApiKey: null, falApiKey: null);
+        Push(new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase) { ["grok"] = xaiApiKey });
 
-    public static IDisposable Push(string? xaiApiKey, string? geminiApiKey, string? anthropicApiKey) =>
-        Push(xaiApiKey, geminiApiKey, anthropicApiKey, falApiKey: null);
-
-    public static IDisposable Push(string? xaiApiKey, string? geminiApiKey, string? anthropicApiKey, string? falApiKey)
+    public static IDisposable Push(IReadOnlyDictionary<string, string?> keysByProviderId)
     {
+        var normalized = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
+        foreach (var (k, v) in keysByProviderId)
+            normalized[NormalizeProvider(k)] = v;
+
         var prev = CurrentKeys.Value;
-        CurrentKeys.Value = new ProviderKeys(xaiApiKey, geminiApiKey, anthropicApiKey, falApiKey);
+        CurrentKeys.Value = normalized;
         return new Pop(prev);
     }
 
@@ -84,17 +86,17 @@ public static class ApiKeyScope
             "google" or "gemini" => "gemini",
             "claude" or "anthropic" => "anthropic",
             "fal" => "fal",
+            "suno" => "suno",
+            "aimusicapi" or "aimusicapi.ai" => "aimusicapi",
             _ => p,
         };
     }
 
-    private sealed record ProviderKeys(string? Xai, string? Gemini, string? Anthropic, string? Fal);
-
     private sealed class Pop : IDisposable
     {
-        private readonly ProviderKeys? _prev;
+        private readonly IReadOnlyDictionary<string, string?>? _prev;
         private bool _done;
-        public Pop(ProviderKeys? prev) => _prev = prev;
+        public Pop(IReadOnlyDictionary<string, string?>? prev) => _prev = prev;
         public void Dispose()
         {
             if (_done) return;

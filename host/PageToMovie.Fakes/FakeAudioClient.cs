@@ -11,13 +11,12 @@ public sealed class FakeAudioClient : IAudioClient
 
     public bool IsConfigured => true;
 
-    public int MaxSegmentDurationSeconds => 47;
-
     public Task<string?> GenerateMusicTrackAsync(
         string prompt,
         int durationSeconds,
         string? model = null,
-        CancellationToken ct = default)
+        CancellationToken ct = default,
+        Action<string>? onProgress = null)
     {
         _log.LogInformation("Fake audio generate duration={Duration}s", durationSeconds);
         var fixturePath = ResolveFixturePath();

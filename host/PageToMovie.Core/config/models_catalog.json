@@ -341,7 +341,37 @@
       "supportsVideoContinue": false,
       "supportsReferenceImages": false,
       "supportsVideoReview": false,
-      "notes": "Generates beat-aligned background music scores and audio soundscapes."
+      "maxAudioDurationSeconds": 47,
+      "notes": "Generates beat-aligned background music scores and audio soundscapes. Real fal-ai/stable-audio hard limit — see github.com/Stability-AI/stable-audio-tools/issues/154."
+    },
+    {
+      "id": "suno-v5-5",
+      "displayName": "Suno v5.5 (sunoapi.org)",
+      "capability": "Audio",
+      "provider": "Suno",
+      "apiBase": "https://api.sunoapi.org/api/v1",
+      "endpointPath": "generate",
+      "requiredEnvKeys": ["SUNO_API_KEY"],
+      "enabled": true,
+      "supportsVideoContinue": false,
+      "supportsReferenceImages": false,
+      "supportsVideoReview": false,
+      "maxAudioDurationSeconds": 360,
+      "notes": "Unofficial third-party Suno reseller (docs.sunoapi.org). Documented duration param is 10-360s on model V5_5 custom mode — the only audio provider here with real duration control."
+    },
+    {
+      "id": "aimusicapi-suno",
+      "displayName": "Suno (aimusicapi.ai)",
+      "capability": "Audio",
+      "provider": "AiMusicApi",
+      "apiBase": "https://api.aimusicapi.ai/api/v1",
+      "endpointPath": "suno/create",
+      "requiredEnvKeys": ["AIMUSICAPI_API_KEY"],
+      "enabled": true,
+      "supportsVideoContinue": false,
+      "supportsReferenceImages": false,
+      "supportsVideoReview": false,
+      "notes": "A different unofficial Suno reseller (docs.aimusicapi.ai). No documented duration control — generates a full track at whatever length Suno produces (typically ~2-4 min); the client-side mix step trims to scene length."
     }
   ]
 }

@@ -166,6 +166,8 @@ public sealed class DbUserApiKeyProvider : IUserApiKeyProvider
             "gemini" => SupportedModelCatalog.GoogleApiKeyEnv,
             "anthropic" => SupportedModelCatalog.AnthropicApiKeyEnv,
             "fal" => SupportedModelCatalog.FalApiKeyEnv,
+            "suno" => SupportedModelCatalog.SunoApiKeyEnv,
+            "aimusicapi" => SupportedModelCatalog.AiMusicApiKeyEnv,
             _ => null,
         };
         if (processEnv is null) return null;

@@ -457,6 +457,8 @@ public sealed class FilmJobService
         var geminiKey = _keys.GetKey(userId, "gemini");
         var anthropicKey = _keys.GetKey(userId, "anthropic");
         var falKey = _keys.GetKey(userId, "fal");
+        var sunoKey = _keys.GetKey(userId, "suno");
+        var aiMusicApiKey = _keys.GetKey(userId, "aimusicapi");
 
         var queuedAt = DateTimeOffset.UtcNow;
         var cts = new CancellationTokenSource();
@@ -482,6 +484,8 @@ public sealed class FilmJobService
             GeminiApiKey = geminiKey,
             AnthropicApiKey = anthropicKey,
             FalApiKey = falKey,
+            SunoApiKey = sunoKey,
+            AiMusicApiKey = aiMusicApiKey,
             QueuedAt = queuedAt,
             Cts = cts,
             ActiveJobId = rec.JobId,
@@ -497,7 +501,15 @@ public sealed class FilmJobService
         _ = Task.Run(async () =>
         {
             CurrentRun.Value = run;
-            using (ApiKeyScope.Push(run.ApiKey, run.GeminiApiKey, run.AnthropicApiKey, run.FalApiKey))
+            using (ApiKeyScope.Push(new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase)
+            {
+                ["grok"] = run.ApiKey,
+                ["gemini"] = run.GeminiApiKey,
+                ["anthropic"] = run.AnthropicApiKey,
+                ["fal"] = run.FalApiKey,
+                ["suno"] = run.SunoApiKey,
+                ["aimusicapi"] = run.AiMusicApiKey,
+            }))
             {
                 var startedAt = DateTimeOffset.UtcNow;
                 var success = false;
@@ -820,6 +832,8 @@ public sealed class FilmJobService
         public string? GeminiApiKey { get; set; }
         public string? AnthropicApiKey { get; set; }
         public string? FalApiKey { get; set; }
+        public string? SunoApiKey { get; set; }
+        public string? AiMusicApiKey { get; set; }
         public DateTimeOffset QueuedAt { get; set; } = DateTimeOffset.UtcNow;
         public DateTimeOffset? StartedAt { get; set; }
         public List<string> HeldLocks { get; set; } = new();
@@ -1223,7 +1237,11 @@ public sealed class FilmJobService
                 pDir, scene, screenplay, totalDuration, planningModel, ct).ConfigureAwait(false);
             await AppendLogAsync($"Music prompt: {prompt}");
 
-            var segLen = Math.Max(1, _audio.MaxSegmentDurationSeconds);
+            var entry = SupportedModelCatalog.ResolveOrDefault(audioModel, ModelCapability.Audio, "fal-ai/stable-audio");
+            // Providers without a documented duration control (MaxAudioDurationSeconds null, e.g.
+            // AIMusicAPI) collapse this to one call requesting the full scene length — the
+            // provider decides the actual length, no client-side stitching to do.
+            var segLen = Math.Max(1, entry.MaxAudioDurationSeconds ?? totalDuration);
             var segmentCount = (int)Math.Ceiling(totalDuration / (double)segLen);
             var savedSegments = 0;
 
@@ -1233,11 +1251,13 @@ public sealed class FilmJobService
                 var remaining = totalDuration - (seg - 1) * segLen;
                 var segDuration = Math.Clamp(remaining, 1, segLen);
 
-                await AppendLogAsync($"  [Fal.ai] generating segment {seg}/{segmentCount} ({segDuration}s)…");
-                var url = await _audio.GenerateMusicTrackAsync(prompt, segDuration, audioModel, ct).ConfigureAwait(false);
+                await AppendLogAsync($"  [{entry.DisplayName}] generating segment {seg}/{segmentCount} ({segDuration}s)…");
+                var url = await _audio.GenerateMusicTrackAsync(
+                    prompt, segDuration, entry.Id, ct,
+                    onProgress: msg => { _ = AppendLogAsync("  " + msg); }).ConfigureAwait(false);
                 if (string.IsNullOrWhiteSpace(url))
                 {
-                    await AppendLogAsync($"  [Fal.ai] segment {seg} failed — stopping.");
+                    await AppendLogAsync($"  [{entry.DisplayName}] segment {seg} failed — stopping.");
                     break;
                 }
 

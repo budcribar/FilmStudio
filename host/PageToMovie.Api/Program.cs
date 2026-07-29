@@ -276,9 +276,17 @@ else
         c.BaseAddress = new Uri(FalAudioClient.ApiBase.TrimEnd('/') + "/");
         c.Timeout = TimeSpan.FromMinutes(5);
     }));
-    // Only one real audio provider today, so IAudioClient resolves straight to it — no
-    // MultiProviderAudioClient wrapper (that pattern is for >1 concrete provider; see IVideoClient).
-    builder.Services.AddSingleton<IAudioClient>(sp => sp.GetRequiredService<FalAudioClient>());
+    ConfigurePooledSocketsHandler(builder.Services.AddHttpClient<SunoClient>(c =>
+    {
+        c.BaseAddress = new Uri(SunoClient.ApiBase);
+        c.Timeout = TimeSpan.FromMinutes(2); // each submit/poll call is short; overall wait spans many such calls
+    }));
+    ConfigurePooledSocketsHandler(builder.Services.AddHttpClient<AiMusicApiClient>(c =>
+    {
+        c.BaseAddress = new Uri(AiMusicApiClient.ApiBase);
+        c.Timeout = TimeSpan.FromMinutes(2);
+    }));
+    builder.Services.AddSingleton<IAudioClient, MultiProviderAudioClient>();
 
     // Dispatchers: every existing caller keeps depending on IChatClient / IImageClient /
     // IVideoClient / IVisionClient and is routed to the right concrete provider client
@@ -457,7 +465,17 @@ app.Use(async (context, next) =>
     var gemini = keyProvider?.GetKey(uid, "gemini");
     var anthropic = keyProvider?.GetKey(uid, "anthropic");
     var fal = keyProvider?.GetKey(uid, "fal");
-    using (ApiKeyScope.Push(xai, gemini, anthropic, fal))
+    var suno = keyProvider?.GetKey(uid, "suno");
+    var aimusicapi = keyProvider?.GetKey(uid, "aimusicapi");
+    using (ApiKeyScope.Push(new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase)
+    {
+        ["grok"] = xai,
+        ["gemini"] = gemini,
+        ["anthropic"] = anthropic,
+        ["fal"] = fal,
+        ["suno"] = suno,
+        ["aimusicapi"] = aimusicapi,
+    }))
     {
         await next();
     }

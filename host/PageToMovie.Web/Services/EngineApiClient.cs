@@ -587,21 +587,21 @@ public sealed class EngineApiClient
         return env?.Settings;
     }
 
+    /// <summary>
+    /// Save/clear one or more personal provider keys. Provider ids are whatever
+    /// SupportedModelCatalog + GetUserSettingsDtoAsync surface (grok/gemini/anthropic/fal/suno/
+    /// aimusicapi/…) — this stays a plain dictionary pass-through rather than a named param per
+    /// provider so a new catalog provider never needs a client-side signature change again.
+    /// </summary>
     public async Task<UserSettingsDto?> UpdateUserSettingsAsync(
-        string? xaiApiKey = null,
-        string? geminiApiKey = null,
-        string? anthropicApiKey = null,
-        string? falApiKey = null,
+        IReadOnlyDictionary<string, string?> providerApiKeys,
         CancellationToken ct = default)
     {
         using var req = new HttpRequestMessage(HttpMethod.Post, "/api/user/settings")
         {
             Content = JsonContent.Create(new UpdateUserSettingsRequest
             {
-                XaiApiKey = xaiApiKey,
-                GeminiApiKey = geminiApiKey,
-                AnthropicApiKey = anthropicApiKey,
-                FalApiKey = falApiKey,
+                ProviderApiKeys = new Dictionary<string, string?>(providerApiKeys, StringComparer.OrdinalIgnoreCase),
             }, options: JsonOpts),
         };
         var env = await SendJsonAsync<UserSettingsEnvelope>(req, ct);

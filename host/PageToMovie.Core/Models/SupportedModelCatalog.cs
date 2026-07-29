@@ -37,6 +37,10 @@ public enum ModelProviderFamily
     /// Fal.ai (<c>FAL_KEY</c>) — serverless open-source video/image models (HunyuanVideo).
     /// </summary>
     Fal = 3,
+    /// <summary>Suno via sunoapi.org (<c>SUNO_API_KEY</c>) — unofficial third-party Suno reseller.</summary>
+    Suno = 4,
+    /// <summary>Suno via aimusicapi.ai (<c>AIMUSICAPI_API_KEY</c>) — a different unofficial Suno reseller.</summary>
+    AiMusicApi = 5,
 }
 
 /// <summary>
@@ -139,6 +143,15 @@ public sealed class SupportedModelEntry
     public int? AbsMaxClipDurationSeconds { get; init; }
 
     /// <summary>
+    /// Longest single-call duration this audio model will accept, in seconds (Audio only) — the
+    /// generation-side counterpart to <see cref="MaxClipDurationSeconds"/> for video. Callers
+    /// (FilmJobService's music job) generate this many seconds per segment and concatenate
+    /// client-side for anything longer. Null when the provider doesn't document/enforce a duration
+    /// control at all (the caller then treats one call as "whatever length comes back").
+    /// </summary>
+    public int? MaxAudioDurationSeconds { get; init; }
+
+    /// <summary>
     /// Maximum character length for visual prompts passed to the API (Video/Image models).
     /// Null defaults to 4096 (Grok's budget). Models with tighter limits (e.g. Fal.ai / HunyuanVideo max 1000)
     /// specify their limit here so prompt builders automatically trim to fit without API 400 errors.
@@ -162,6 +175,8 @@ public sealed class SupportedModelEntry
             ModelProviderFamily.Google => "gemini",
             ModelProviderFamily.Anthropic => "anthropic",
             ModelProviderFamily.Fal => "fal",
+            ModelProviderFamily.Suno => "suno",
+            ModelProviderFamily.AiMusicApi => "aimusicapi",
             _ => "grok",
         };
 }
@@ -181,6 +196,12 @@ public static class SupportedModelCatalog
     public const string FalApiBase = "https://queue.fal.run";
     public const string FalApiKeyEnv = "FAL_API_KEY";
     public const string FalApiKeyFallbackEnv = "FAL_KEY";
+    /// <summary>Unofficial Suno reseller — no official public Suno API exists as of 2026-07.</summary>
+    public const string SunoApiBase = "https://api.sunoapi.org/api/v1";
+    public const string SunoApiKeyEnv = "SUNO_API_KEY";
+    /// <summary>A different unofficial Suno reseller (formerly reached via the sunoapi.com redirect).</summary>
+    public const string AiMusicApiBase = "https://api.aimusicapi.ai/api/v1";
+    public const string AiMusicApiKeyEnv = "AIMUSICAPI_API_KEY";
 
     private static readonly SupportedModelEntry[] BuiltInDefaults =
     [
@@ -396,6 +417,42 @@ public static class SupportedModelCatalog
             OutputCostPerMillionTokens = 12.00,
             SupportsVideoReview = true,
             Notes = "Wired for clip/frame review (CompleteWithImagesAsync) via MultiProviderVisionClient (OCR/cast-classify stay Grok-only).",
+        },
+        new()
+        {
+            Id = "fal-ai/stable-audio",
+            DisplayName = "Fal.ai Stable Audio",
+            Capability = ModelCapability.Audio,
+            Provider = ModelProviderFamily.Fal,
+            ApiBase = FalApiBase,
+            EndpointPath = "fal-ai/stable-audio",
+            RequiredEnvKeys = [FalApiKeyEnv],
+            MaxAudioDurationSeconds = 47,
+            Notes = "Real fal-ai/stable-audio hard limit — see github.com/Stability-AI/stable-audio-tools/issues/154. Wired via FalAudioClient.",
+        },
+        new()
+        {
+            Id = "suno-v5-5",
+            DisplayName = "Suno v5.5 (sunoapi.org)",
+            Capability = ModelCapability.Audio,
+            Provider = ModelProviderFamily.Suno,
+            ApiBase = SunoApiBase,
+            EndpointPath = "generate",
+            RequiredEnvKeys = [SunoApiKeyEnv],
+            MaxAudioDurationSeconds = 360,
+            Notes = "Unofficial third-party Suno reseller (docs.sunoapi.org). Documented duration param is 10-360s on model V5_5 custom mode — the only audio provider here with real duration control, useful for longer scenes without segmenting.",
+        },
+        new()
+        {
+            Id = "aimusicapi-suno",
+            DisplayName = "Suno (aimusicapi.ai)",
+            Capability = ModelCapability.Audio,
+            Provider = ModelProviderFamily.AiMusicApi,
+            ApiBase = AiMusicApiBase,
+            EndpointPath = "suno/create",
+            RequiredEnvKeys = [AiMusicApiKeyEnv],
+            MaxAudioDurationSeconds = null,
+            Notes = "A different unofficial Suno reseller (docs.aimusicapi.ai). No documented duration control — generates a full track at whatever length Suno produces (typically ~2-4 min); the client-side mix step trims to scene length.",
         },
     ];
 
@@ -657,6 +714,7 @@ public static class SupportedModelCatalog
         MinClipDurationSeconds = e.MinClipDurationSeconds,
         MaxClipDurationSeconds = e.MaxClipDurationSeconds,
         AbsMaxClipDurationSeconds = e.AbsMaxClipDurationSeconds,
+        MaxAudioDurationSeconds = e.MaxAudioDurationSeconds,
     };
 
     public static SupportedModelEntry FromDto(SupportedModelDto d) => new()
@@ -683,6 +741,7 @@ public static class SupportedModelCatalog
         MinClipDurationSeconds = d.MinClipDurationSeconds,
         MaxClipDurationSeconds = d.MaxClipDurationSeconds,
         AbsMaxClipDurationSeconds = d.AbsMaxClipDurationSeconds,
+        MaxAudioDurationSeconds = d.MaxAudioDurationSeconds,
     };
 }
 
@@ -710,6 +769,7 @@ public sealed class SupportedModelDto
     public int? MinClipDurationSeconds { get; set; }
     public int? MaxClipDurationSeconds { get; set; }
     public int? AbsMaxClipDurationSeconds { get; set; }
+    public int? MaxAudioDurationSeconds { get; set; }
 }
 
 public sealed class ModelCapabilityDefinition

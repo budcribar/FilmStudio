@@ -145,25 +145,29 @@ public interface IVisionClient
         CancellationToken ct = default);
 }
 
-/// <summary>Audio &amp; music generate / download (Fal.ai, ElevenLabs, or fake).</summary>
+/// <summary>Audio &amp; music generate / download (Fal.ai, Suno resellers, or fake).</summary>
 public interface IAudioClient
 {
     bool IsConfigured { get; }
-
-    /// <summary>Longest single-call duration the provider will accept — callers generate this
-    /// many seconds per segment and concatenate client-side for anything longer, the same way
-    /// video handles per-provider clip-length limits.</summary>
-    int MaxSegmentDurationSeconds { get; }
 
     /// <summary>
     /// Returns the provider's audio URL, not downloaded bytes — mirrors
     /// IVideoClient.PollForVideoUrlAsync so the caller can hand it straight to
     /// MediaProxyTicketStore/ClientMediaUrl for client-side download, the same as video. The key
-    /// never leaves the API host; only the short-lived provider URL does.
+    /// never leaves the API host; only the short-lived provider URL does. Duration limits live on
+    /// SupportedModelEntry.MaxAudioDurationSeconds (per-model, resolved by the caller via
+    /// SupportedModelCatalog) rather than on this interface — a fixed per-client value doesn't
+    /// generalize once <paramref name="model"/> selects the provider per call.
     /// </summary>
+    /// <param name="onProgress">
+    /// Optional status callback for slow providers (Suno-family generation runs 1-3+ minutes via
+    /// internal polling) so the caller can surface progress in a job log. Fast providers (Fal.ai)
+    /// may ignore it.
+    /// </param>
     Task<string?> GenerateMusicTrackAsync(
         string prompt,
         int durationSeconds,
         string? model = null,
-        CancellationToken ct = default);
+        CancellationToken ct = default,
+        Action<string>? onProgress = null);
 }

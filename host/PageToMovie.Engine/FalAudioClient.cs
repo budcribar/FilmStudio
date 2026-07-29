@@ -18,11 +18,10 @@ public sealed class FalAudioClient : IAudioClient
 {
     public const string ApiBase = "https://fal.run/";
 
-    /// <summary>fal-ai/stable-audio rejects seconds_total outside roughly this range — callers
-    /// generate multiple segments and concatenate client-side for anything longer.</summary>
+    /// <summary>fal-ai/stable-audio's real hard limit — see SupportedModelCatalog's
+    /// fal-ai/stable-audio entry (MaxAudioDurationSeconds), the source of truth callers resolve
+    /// against. Kept here too since the clamp below needs it regardless of what a caller passes.</summary>
     public const int MaxSegmentDurationSecondsConst = 47;
-
-    public int MaxSegmentDurationSeconds => MaxSegmentDurationSecondsConst;
 
     private readonly HttpClient _http;
     private readonly PageToMovieOptions _opts;
@@ -55,7 +54,8 @@ public sealed class FalAudioClient : IAudioClient
         string prompt,
         int durationSeconds,
         string? model = null,
-        CancellationToken ct = default)
+        CancellationToken ct = default,
+        Action<string>? onProgress = null)
     {
         var apiKey = ResolveApiKey();
         if (string.IsNullOrWhiteSpace(apiKey))

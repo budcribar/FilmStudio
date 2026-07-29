@@ -863,34 +863,8 @@ else
             _apiKeyFeedback = null;
             _error = null;
 
-            string? xai = null, gemini = null, anthropic = null, fal = null;
-            switch (providerId.ToLowerInvariant())
-            {
-                case "grok":
-                case "xai":
-                    xai = keyValue;
-                    break;
-                case "gemini":
-                case "google":
-                    gemini = keyValue;
-                    break;
-                case "anthropic":
-                case "claude":
-                    anthropic = keyValue;
-                    break;
-                case "fal":
-                    fal = keyValue;
-                    break;
-                default:
-                    _error = $"Unknown provider: {providerId}";
-                    return;
-            }
-
             _userSettings = await Engine.UpdateUserSettingsAsync(
-                xaiApiKey: xai,
-                geminiApiKey: gemini,
-                anthropicApiKey: anthropic,
-                falApiKey: fal);
+                new Dictionary<string, string?> { [providerId] = keyValue });
 
             _keyInputs[providerId] = null;
 
