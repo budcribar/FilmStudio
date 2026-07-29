@@ -884,7 +884,7 @@ public sealed class CostReportService
         if (!File.Exists(path)) return map;
         try
         {
-            using var doc = await _projects.ReadCache.GetOrLoadJsonDocumentAsync(path, ct).ConfigureAwait(false);
+            var doc = await _projects.ReadCache.GetOrLoadJsonDocumentAsync(path, ct).ConfigureAwait(false);
             if (doc is null || !doc.RootElement.TryGetProperty("scene_hero", out var hero) ||
                 hero.ValueKind != JsonValueKind.Object)
                 return map;
@@ -912,7 +912,7 @@ public sealed class CostReportService
         if (!File.Exists(path)) return map;
         try
         {
-            using var doc = await _projects.ReadCache.GetOrLoadJsonDocumentAsync(path, ct).ConfigureAwait(false);
+            var doc = await _projects.ReadCache.GetOrLoadJsonDocumentAsync(path, ct).ConfigureAwait(false);
             if (doc is null || !doc.RootElement.TryGetProperty("clip_jobs", out var jobs) ||
                 jobs.ValueKind != JsonValueKind.Object)
                 return map;

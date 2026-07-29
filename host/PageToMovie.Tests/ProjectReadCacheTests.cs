@@ -69,6 +69,38 @@ public class ProjectReadCacheTests
     }
 
     [Fact]
+    public async Task Json_document_cached_by_mtime_shared_and_not_disposed_by_caller()
+    {
+        var dir = Path.Combine(Path.GetTempPath(), "fs-json-cache-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(dir);
+        try
+        {
+            var path = Path.Combine(dir, "pipeline_config.json");
+            await File.WriteAllTextAsync(path, """{"a":1}""");
+            var cache = new ProjectReadCache();
+            var a = await cache.GetOrLoadJsonDocumentAsync(path);
+            Assert.NotNull(a);
+            Assert.Equal(1, a!.RootElement.GetProperty("a").GetInt32());
+
+            // Same cached instance on a second call — must remain usable (not disposed by a
+            // caller that misused `using` around a shared cache entry).
+            var b = await cache.GetOrLoadJsonDocumentAsync(path);
+            Assert.Same(a, b);
+            Assert.Equal(1, b!.RootElement.GetProperty("a").GetInt32());
+
+            await Task.Delay(20);
+            await File.WriteAllTextAsync(path, """{"a":2}""");
+            var c = await cache.GetOrLoadJsonDocumentAsync(path);
+            Assert.NotSame(a, c);
+            Assert.Equal(2, c!.RootElement.GetProperty("a").GetInt32());
+        }
+        finally
+        {
+            try { Directory.Delete(dir, recursive: true); } catch { /* ignore */ }
+        }
+    }
+
+    [Fact]
     public async Task Dir_index_cached_until_dir_mtime_or_invalidate()
     {
         var dir = Path.Combine(Path.GetTempPath(), "fs-dir-cache-" + Guid.NewGuid().ToString("N"));

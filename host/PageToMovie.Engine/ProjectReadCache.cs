@@ -282,7 +282,8 @@ public sealed class ProjectReadCache
     }
 
     /// <summary>
-    /// Parsed JSON document for state/config files — validated by mtime and file length.
+    /// Shared parsed JSON document for state/config files — <b>do not dispose</b>. Validated by
+    /// mtime and file length; reloaded (and the stale instance disposed by the cache) on change.
     /// </summary>
     public async Task<JsonDocument?> GetOrLoadJsonDocumentAsync(
         string? absolutePath,

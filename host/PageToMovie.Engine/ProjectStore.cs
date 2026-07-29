@@ -859,7 +859,7 @@ public sealed class ProjectStore
         var path = ConfigPath(projectId);
         if (!File.Exists(path))
             return new Dictionary<string, JsonElement>(StringComparer.OrdinalIgnoreCase);
-        using var doc = await _readCache.GetOrLoadJsonDocumentAsync(path, ct).ConfigureAwait(false);
+        var doc = await _readCache.GetOrLoadJsonDocumentAsync(path, ct).ConfigureAwait(false);
         if (doc is null)
             return new Dictionary<string, JsonElement>(StringComparer.OrdinalIgnoreCase);
         var dict = new Dictionary<string, JsonElement>(StringComparer.OrdinalIgnoreCase);
