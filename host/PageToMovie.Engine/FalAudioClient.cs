@@ -66,14 +66,15 @@ public sealed class FalAudioClient : IAudioClient
             return null;
         }
 
-        // Stable Audio has no vocal capability at all — this provider always generates
-        // instrumental regardless of what the caller asked for (isVocal/lyrics are ignored, not
-        // silently misreported: FilmJobService gates model selection so a vocal request should never
-        // route here, but if it somehow does, generating instrumental beats failing the whole take).
+        // None of Fal.ai's instrumental music models have vocal capability — this provider always
+        // generates instrumental regardless of what the caller asked for (isVocal/lyrics are
+        // ignored, not silently misreported: FilmJobService gates model selection so a vocal
+        // request should never route here, but if it somehow does, generating instrumental beats
+        // failing the whole take).
         if (isVocal)
-            _log.LogWarning("Vocal generation requested but Fal.ai Stable Audio has no vocal capability — generating instrumental.");
+            _log.LogWarning("Vocal generation requested but this Fal.ai model has no vocal capability — generating instrumental.");
 
-        model = string.IsNullOrWhiteSpace(model) ? "fal-ai/stable-audio" : model;
+        model = string.IsNullOrWhiteSpace(model) ? SupportedModelCatalog.ResolveOrDefault(null, ModelCapability.Audio).Id : model;
         // Real fal-ai/stable-audio hard limit (not an arbitrary choice — see
         // https://github.com/Stability-AI/stable-audio-tools/issues/154). Callers that need
         // longer coverage generate MaxSegmentDurationSeconds-sized segments and concatenate

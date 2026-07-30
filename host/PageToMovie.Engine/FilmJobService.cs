@@ -1228,9 +1228,11 @@ public sealed class FilmJobService
             var cfg = await _projects.GetConfigAsync(projectId, ct).ConfigureAwait(false);
 
             var enableMusic = SceneMusicScoringService.GetConfigBool(cfg, "enable_background_music", true);
-            var configuredModel = SceneMusicScoringService.GetConfigStr(cfg, "audio_model_name", "fal-ai/stable-audio");
+            var configuredModel = SceneMusicScoringService.GetConfigStr(cfg, "audio_model_name", "");
             // Per-run override wins when given; otherwise fall back to the project's configured
-            // default — the Configuration page's global picker is unaffected either way.
+            // default (itself blank-safe — SupportedModelCatalog.ResolveOrDefault below resolves an
+            // empty/unset model to the catalog's own dynamic default) — the Configuration page's
+            // global picker is unaffected either way.
             var audioModel = string.IsNullOrWhiteSpace(modelOverride) ? configuredModel : modelOverride;
             if (!enableMusic || string.Equals(audioModel, "none", StringComparison.OrdinalIgnoreCase))
             {
@@ -1247,7 +1249,7 @@ public sealed class FilmJobService
                 pDir, scene, screenplay, totalDuration, planningModel, ct).ConfigureAwait(false);
             await AppendLogAsync($"Music prompt: {prompt}");
 
-            var entry = SupportedModelCatalog.ResolveOrDefault(audioModel, ModelCapability.Audio, "fal-ai/stable-audio");
+            var entry = SupportedModelCatalog.ResolveOrDefault(audioModel, ModelCapability.Audio);
 
             // Only Suno-family providers can sing — downgrade to instrumental rather than fail the
             // whole take if a vocal request somehow reaches a non-vocal-capable model (the UI is

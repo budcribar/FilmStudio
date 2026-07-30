@@ -3,32 +3,38 @@
     {
       "id": "video",
       "displayName": "Video Generation",
-      "description": "Generates MP4 video clips from prompts and character reference plates."
+      "description": "Generates MP4 video clips from prompts and character reference plates.",
+      "defaultModelId": "grok-imagine-video"
     },
     {
       "id": "image",
       "displayName": "Portrait / Image Generation",
-      "description": "Creates character reference portraits and book plate graphics."
+      "description": "Creates character reference portraits and book plate graphics.",
+      "defaultModelId": "grok-imagine-image-quality"
     },
     {
       "id": "chat",
       "displayName": "Script & Planning",
-      "description": "Screenplay reasoning, shot planning, and cast analysis."
+      "description": "Screenplay reasoning, shot planning, and cast analysis.",
+      "defaultModelId": "grok-4.5"
     },
     {
       "id": "vision",
       "displayName": "Image Vision & OCR",
-      "description": "Book page OCR, cast-on-image classification, and frame inspection."
+      "description": "Book page OCR, cast-on-image classification, and frame inspection.",
+      "defaultModelId": "grok-4.5"
     },
     {
       "id": "video-review",
       "displayName": "Video & Clip Review (Multimodal)",
-      "description": "Evaluates dialogue, lip sync, and scene rhythm (Google Gemini natively analyzes MP4 video files)."
+      "description": "Evaluates dialogue, lip sync, and scene rhythm (Google Gemini natively analyzes MP4 video files).",
+      "defaultModelId": "gemini-2.5-pro"
     },
     {
       "id": "audio",
       "displayName": "Audio & Music Generation",
-      "description": "Generates beat-aligned background music scores and sound effects."
+      "description": "Generates beat-aligned background music scores and sound effects.",
+      "defaultModelId": "fal-ai/musicgen"
     }
   ],
   "task_rankings": {
@@ -330,19 +336,64 @@
       "notes": "Wired for clip/frame review (CompleteWithImagesAsync) via MultiProviderVisionClient (OCR/cast-classify stay Grok-only)."
     },
     {
-      "id": "fal-ai/stable-audio",
-      "displayName": "Stable Audio (Fal.ai)",
+      "id": "fal-ai/musicgen",
+      "displayName": "MusicGen (Fal.ai)",
       "capability": "Audio",
       "provider": "Fal",
       "apiBase": "https://queue.fal.run",
-      "endpointPath": "fal-ai/stable-audio",
+      "endpointPath": "fal-ai/musicgen",
       "requiredEnvKeys": ["FAL_API_KEY", "FAL_KEY"],
       "enabled": true,
       "supportsVideoContinue": false,
       "supportsReferenceImages": false,
       "supportsVideoReview": false,
-      "maxAudioDurationSeconds": 47,
-      "notes": "Generates beat-aligned background music scores and audio soundscapes. Real fal-ai/stable-audio hard limit — see github.com/Stability-AI/stable-audio-tools/issues/154."
+      "maxAudioDurationSeconds": 30,
+      "notes": "Meta MusicGen model hosted on Fal.ai. Pure instrumental background scoring with zero vocal hallucination."
+    },
+    {
+      "id": "fal-ai/udio",
+      "displayName": "Udio (Fal.ai)",
+      "capability": "Audio",
+      "provider": "Fal",
+      "apiBase": "https://queue.fal.run",
+      "endpointPath": "fal-ai/udio",
+      "requiredEnvKeys": ["FAL_API_KEY", "FAL_KEY"],
+      "enabled": true,
+      "supportsVideoContinue": false,
+      "supportsReferenceImages": false,
+      "supportsVideoReview": false,
+      "maxAudioDurationSeconds": 60,
+      "notes": "Udio model hosted on Fal.ai. High-fidelity 44.1kHz studio music scoring with rich dynamic range."
+    },
+    {
+      "id": "fal-ai/minimax/music",
+      "displayName": "MiniMax Music (Fal.ai)",
+      "capability": "Audio",
+      "provider": "Fal",
+      "apiBase": "https://queue.fal.run",
+      "endpointPath": "fal-ai/minimax/music",
+      "requiredEnvKeys": ["FAL_API_KEY", "FAL_KEY"],
+      "enabled": true,
+      "supportsVideoContinue": false,
+      "supportsReferenceImages": false,
+      "supportsVideoReview": false,
+      "maxAudioDurationSeconds": 60,
+      "notes": "MiniMax Music model hosted on Fal.ai for cinematic themes and dynamic background scores."
+    },
+    {
+      "id": "fal-ai/stable-audio-2.0",
+      "displayName": "Stable Audio 2.0 (Fal.ai)",
+      "capability": "Audio",
+      "provider": "Fal",
+      "apiBase": "https://queue.fal.run",
+      "endpointPath": "fal-ai/stable-audio-2.0",
+      "requiredEnvKeys": ["FAL_API_KEY", "FAL_KEY"],
+      "enabled": true,
+      "supportsVideoContinue": false,
+      "supportsReferenceImages": false,
+      "supportsVideoReview": false,
+      "maxAudioDurationSeconds": 180,
+      "notes": "Stability AI Stable Audio 2.0 hosted on Fal.ai with improved stereo width and multi-minute structural coherence."
     },
     {
       "id": "suno-v5-5",

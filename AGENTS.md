@@ -42,9 +42,9 @@ When debugging or implementing against a sample project (e.g. Buster / Buster2 /
    - Prefer AI prompt scrubbing, style locks, and image refs over one-off string rules.
 4. **Comments and examples** in code should say “hero animal”, “supporting cast”, “text-only page” —
    not a specific character name — unless documenting a unit-test fixture.
-5. **No hardcoded model metadata in C# code.**
-   - All models, capabilities, endpoints, pricing, and enablement flags must be dynamically driven by `models_catalog.json`.
-   - **Do not** hardcode model IDs, provider logic, or enablement toggles in C# source files (`SupportedModelCatalog.cs`, services, etc.). The backend must query the dynamic catalog.
+5. **No hardcoded model metadata or model lists in C# code.**
+   - All models, capabilities, endpoints, pricing, default model selections, and enablement flags must be **100% dynamically driven by `models_catalog.json`**.
+   - **Do not** modify C# source files (`SupportedModelCatalog.cs`, service classes, or default options strings) when adding, removing, or updating models. Adding or modifying models must be strictly 100% data-driven through `models_catalog.json` without requiring any C# code changes.
 6. **Discussion-first workflow for questions.**
    - When the user asks questions or proposes architectural concepts, **always discuss and answer the questions first** before making code edits or triggering test runs.
    - Avoid running lengthy test suites or jumping straight to code modifications during exploratory discussions.
@@ -169,6 +169,7 @@ Slightly more technical language is OK on **About** or a collapsible “For deve
 | Doc | Purpose |
 |-----|---------|
 | `host/evals/README.md` | App eval root (not story projects) |
+| `host/evals/screenplay_benchmark/README.md` | 8-dimension screenplay adaptation & peer-evaluation benchmark guide |
 | `host/evals/classifier_benchmarks/README.md` | Classifier AI vs baseline suite; history, model/prompt matrix, charts |
 | `host/evals/beat_label_eval/README.md` | Silent-beat action_class ground truth + model comparison |
 | `host/evals/heuristic_ai_eval/` | Legacy holdout / ambient blind dumps |
