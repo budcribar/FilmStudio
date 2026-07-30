@@ -87,7 +87,15 @@ public static class BenchmarkReportGenerator
                     if (ratings.TryGetValue(cand, out var score))
                     {
                         var isSelf = string.Equals(judgeModel, cand, StringComparison.OrdinalIgnoreCase);
-                        var tag = isSelf ? $" **{score:F1}** *(self)*" : $" {score:F1}";
+                        string tag;
+                        if (score < 0.0)
+                        {
+                            tag = " ⚠️ **-1.0** *(Mock/Failed)*";
+                        }
+                        else
+                        {
+                            tag = isSelf ? $" **{score:F1}** *(self)*" : $" {score:F1}";
+                        }
                         sb.Append($"{tag} |");
                     }
                     else

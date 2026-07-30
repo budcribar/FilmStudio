@@ -36,6 +36,8 @@ public sealed class GeminiChatClient : IChatClient, IVisionClient, IGeminiVideoA
         _log = log;
         if (_http.BaseAddress is null)
             _http.BaseAddress = new Uri(ApiBase + "/");
+        if (_http.Timeout < TimeSpan.FromSeconds(180))
+            _http.Timeout = TimeSpan.FromSeconds(180);
     }
 
     public bool IsConfigured => !string.IsNullOrWhiteSpace(ResolveApiKey());

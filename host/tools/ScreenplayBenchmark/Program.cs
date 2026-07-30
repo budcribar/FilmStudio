@@ -31,6 +31,7 @@ public static class Program
         List<string>? requestedModels = null;
         bool dryRun = false;
         bool showLeaderboardOnly = false;
+        bool retryFailed = false;
 
         for (int i = 0; i < args.Length; i++)
         {
@@ -62,6 +63,10 @@ public static class Program
             else if (arg.Equals("--leaderboard", StringComparison.OrdinalIgnoreCase))
             {
                 showLeaderboardOnly = true;
+            }
+            else if (arg.Equals("--retry-failed", StringComparison.OrdinalIgnoreCase) || arg.Equals("--resume", StringComparison.OrdinalIgnoreCase))
+            {
+                retryFailed = true;
             }
         }
 
@@ -101,7 +106,7 @@ public static class Program
             foreach (var file in bookSuiteFiles)
             {
                 var slug = Path.GetFileNameWithoutExtension(file).ToLowerInvariant();
-                await RunSingleBookBenchmarkAsync(file, slug, outDir, requestedModels, dryRun, historyFilePath, chat);
+                await RunSingleBookBenchmarkAsync(file, slug, outDir, requestedModels, dryRun, retryFailed, historyFilePath, chat);
             }
 
             // Generate updated HTML Dashboard after suite execution
@@ -123,7 +128,7 @@ public static class Program
         }
 
         bookSlug ??= Path.GetFileNameWithoutExtension(bookPath).ToLowerInvariant();
-        await RunSingleBookBenchmarkAsync(bookPath, bookSlug, outDir, requestedModels, dryRun, historyFilePath, chat);
+        await RunSingleBookBenchmarkAsync(bookPath, bookSlug, outDir, requestedModels, dryRun, retryFailed, historyFilePath, chat);
 
         // Generate updated HTML Dashboard
         historyStore = BenchmarkHistoryStore.LoadHistory(historyFilePath);
@@ -141,6 +146,7 @@ public static class Program
         string outDir,
         List<string>? requestedModels,
         bool dryRun,
+        bool retryFailed,
         string historyFilePath,
         IChatClient chat)
     {
@@ -244,8 +250,30 @@ public static class Program
                 anonScreenplays[label] = generatedScreenplays[keys[i]];
             }
 
+            var judgeCacheFile = Path.Combine("evals", "cache", bookSlug, $"judge_{judgeModelId}.json");
+            JudgeEvaluationPayload? cachedJudge = null;
+
+            if (File.Exists(judgeCacheFile))
+            {
+                try
+                {
+                    var json = await File.ReadAllTextAsync(judgeCacheFile);
+                    var loaded = JsonSerializer.Deserialize<JudgeEvaluationPayload>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                    if (loaded is not null && !loaded.IsMock && loaded.Evaluations.Count > 0 && loaded.Evaluations.All(e => e.OverallQualitativeScore >= 0.0))
+                    {
+                        cachedJudge = loaded;
+                    }
+                }
+                catch { /* Corrupt cache — re-evaluate */ }
+            }
+
             JudgeEvaluationPayload evalPayload;
-            if (dryRun)
+            if (cachedJudge is not null && (!retryFailed || !cachedJudge.IsMock))
+            {
+                evalPayload = cachedJudge;
+                Console.WriteLine("DONE (cached live evaluation)");
+            }
+            else if (dryRun)
             {
                 evalPayload = GenerateMockJudgePayload(anonMapping, judgeModelId);
                 Console.WriteLine("(mock evaluated)");
@@ -267,11 +295,16 @@ public static class Program
                         temperature: 0.2,
                         mode: "screenplay_benchmark_judge");
                     evalPayload = ParseJudgePayload(raw, anonMapping.Keys);
+                    evalPayload.IsMock = false;
                     Console.WriteLine("DONE");
+
+                    // Save valid live evaluation to cache
+                    Directory.CreateDirectory(Path.Combine("evals", "cache", bookSlug));
+                    await File.WriteAllTextAsync(judgeCacheFile, JsonSerializer.Serialize(evalPayload, new JsonSerializerOptions { WriteIndented = true }));
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"FAILED ({ex.Message}) — falling back to mock evaluation");
+                    Console.WriteLine($"FAILED ({ex.Message}) — falling back to mock evaluation (-1.0)");
                     evalPayload = GenerateMockJudgePayload(anonMapping, judgeModelId);
                 }
             }
@@ -493,6 +526,16 @@ Uncle Nick turned, offering a small, reassuring nod. ""She always holds when the
             runData.JudgeMatrix[judgeId] = new Dictionary<string, double>();
             runData.JudgeRankMatrix[judgeId] = new Dictionary<string, int>();
 
+            if (payload.IsMock)
+            {
+                foreach (var key in payload.ForcedRanking)
+                {
+                    runData.JudgeRankMatrix[judgeId][key] = -1;
+                    runData.JudgeMatrix[judgeId][key] = -1.0;
+                }
+                continue; // Do NOT count points or ranks for mock judges
+            }
+
             for (int r = 0; r < payload.ForcedRanking.Count; r++)
             {
                 var authorId = payload.ForcedRanking[r];
@@ -511,7 +554,7 @@ Uncle Nick turned, offering a small, reassuring nod. ""She always holds when the
 
             foreach (var eval in payload.Evaluations)
             {
-                runData.JudgeMatrix[judgeId][eval.ScreenplayId] = eval.OverallQualitativeScore;
+                runData.JudgeMatrix[judgeId][eval.ScreenplayId] = eval.OverallQualitativeScore >= 0.0 ? eval.OverallQualitativeScore : -1.0;
             }
         }
 
@@ -520,17 +563,18 @@ Uncle Nick turned, offering a small, reassuring nod. ""She always holds when the
             var syntax = deterministicResults[modelId];
 
             var modelEvals = judgeEvaluations.Values
+                .Where(p => !p.IsMock)
                 .SelectMany(p => p.Evaluations)
-                .Where(e => string.Equals(e.ScreenplayId, modelId, StringComparison.OrdinalIgnoreCase))
+                .Where(e => string.Equals(e.ScreenplayId, modelId, StringComparison.OrdinalIgnoreCase) && e.OverallQualitativeScore >= 0.0)
                 .ToList();
 
-            var avgFidelity = modelEvals.Count > 0 ? modelEvals.Average(e => e.AdaptationFidelity) : 7.0;
-            var avgCharSplit = modelEvals.Count > 0 ? modelEvals.Average(e => e.CharacterDisambiguation) : 7.0;
-            var avgDirect = modelEvals.Count > 0 ? modelEvals.Average(e => e.AiVideoDirectibility) : 7.0;
-            var avgPacing = modelEvals.Count > 0 ? modelEvals.Average(e => e.DramaticPacing) : 7.0;
-            var avgDialogue = modelEvals.Count > 0 ? modelEvals.Average(e => e.DialogueAuthenticity) : 7.0;
-            var avgMusic = modelEvals.Count > 0 ? modelEvals.Average(e => e.SoundDesignMusic) : 7.0;
-            var avgQual = modelEvals.Count > 0 ? modelEvals.Average(e => e.OverallQualitativeScore) : 7.0;
+            var avgFidelity = modelEvals.Count > 0 ? modelEvals.Average(e => e.AdaptationFidelity) : 0.0;
+            var avgCharSplit = modelEvals.Count > 0 ? modelEvals.Average(e => e.CharacterDisambiguation) : 0.0;
+            var avgDirect = modelEvals.Count > 0 ? modelEvals.Average(e => e.AiVideoDirectibility) : 0.0;
+            var avgPacing = modelEvals.Count > 0 ? modelEvals.Average(e => e.DramaticPacing) : 0.0;
+            var avgDialogue = modelEvals.Count > 0 ? modelEvals.Average(e => e.DialogueAuthenticity) : 0.0;
+            var avgMusic = modelEvals.Count > 0 ? modelEvals.Average(e => e.SoundDesignMusic) : 0.0;
+            var avgQual = modelEvals.Count > 0 ? modelEvals.Average(e => e.OverallQualitativeScore) : 0.0;
 
             var avgRank = RankCounts[modelId] > 0 ? RankSums[modelId] / RankCounts[modelId] : candidateModels.Count / 2.0;
             var composite = Math.Round((syntax.OverallSyntaxScore * 0.40) + (avgQual * 10.0 * 0.60), 1);
@@ -586,7 +630,10 @@ FADE OUT.";
 
     private static JudgeEvaluationPayload GenerateMockJudgePayload(Dictionary<string, string> anonMapping, string judgeId)
     {
-        var payload = new JudgeEvaluationPayload();
+        var payload = new JudgeEvaluationPayload
+        {
+            IsMock = true
+        };
         var keys = anonMapping.Keys.ToList();
         payload.ForcedRanking = keys;
 
@@ -595,17 +642,17 @@ FADE OUT.";
             payload.Evaluations.Add(new ScreenplayEvaluationEntry
             {
                 ScreenplayId = key,
-                AdaptationFidelity = 8.5,
-                CharacterDisambiguation = 9.0,
-                AiVideoDirectibility = 8.2,
-                DramaticPacing = 8.0,
-                DialogueAuthenticity = 8.4,
-                SoundDesignMusic = 8.1,
-                OverallQualitativeScore = 8.3,
-                Rationale = $"Mock evaluation rationale from {judgeId} for {key}.",
+                AdaptationFidelity = -1.0,
+                CharacterDisambiguation = -1.0,
+                AiVideoDirectibility = -1.0,
+                DramaticPacing = -1.0,
+                DialogueAuthenticity = -1.0,
+                SoundDesignMusic = -1.0,
+                OverallQualitativeScore = -1.0,
+                Rationale = $"[MOCK / FAILED JUDGE] Model '{judgeId}' failed or was skipped for candidate '{key}'.",
             });
         }
-        payload.JudgeSummaryNotes = $"Mock judge summary notes from {judgeId}.";
+        payload.JudgeSummaryNotes = $"⚠️ Mock judge evaluation returned for {judgeId}.";
         return payload;
     }
 

@@ -47,6 +47,9 @@ public sealed class JudgeEvaluationPayload
 
     [JsonPropertyName("judgeSummaryNotes")]
     public string JudgeSummaryNotes { get; set; } = "";
+
+    [JsonPropertyName("isMock")]
+    public bool IsMock { get; set; }
 }
 
 public static class ScreenplayJudgmentRubric
