@@ -239,7 +239,8 @@ public static class Program
                         author: "Author",
                         chat: chat,
                         model: modelId,
-                        onHeuristicFallback: reason => generationFallbacks[modelId] = reason);
+                        onHeuristicFallback: reason => generationFallbacks[modelId] = reason,
+                        budgetOverride: ResolveRateLimitSafeBudgetOverride(modelId));
 
                     if (generationFallbacks.TryGetValue(modelId, out var fallbackReason))
                     {
@@ -546,6 +547,30 @@ Uncle Nick turned, offering a small, reassuring nod. ""She always holds when the
 
     private static string SanitizeFileName(string name) =>
         string.Concat(name.Split(Path.GetInvalidFileNameChars())).Replace(' ', '_').Replace('/', '_');
+
+    /// <summary>
+    /// Per-model TPM caps confirmed live (e.g. gpt-4o: HTTP 429 "Limit 30000... tokens per min" on
+    /// this account/org). These are account-tier rate limits, not the model's real context window —
+    /// deliberately kept out of <c>models_catalog.json</c> (which drives the real product's book
+    /// adaptation for all users) and scoped to this benchmark only. Forces
+    /// <see cref="BookToFountainConverter.ConvertAsync"/> onto the multi-chunk path so each
+    /// individual adapt call stays comfortably under the cap instead of one big one-shot request
+    /// that blows through it regardless of what the model can actually hold.
+    /// </summary>
+    private static BookToFountainConverter.PromptBudget? ResolveRateLimitSafeBudgetOverride(string modelId)
+    {
+        if (!string.Equals(modelId, "gpt-4o", StringComparison.OrdinalIgnoreCase))
+            return null;
+
+        return new BookToFountainConverter.PromptBudget
+        {
+            ModelId = modelId,
+            SingleShotBookMaxChars = 50_000,
+            ChunkSoftMaxChars = 25_000,
+            MaxChunks = BookToFountainConverter.MaxAdaptChunks,
+            ReservedOverheadChars = BookToFountainConverter.ReservedOverheadChars,
+        };
+    }
 
     private static JudgeEvaluationPayload DeAnonymizePayload(JudgeEvaluationPayload raw, Dictionary<string, string> anonMapping)
     {

@@ -55,13 +55,18 @@ public sealed class GrokChatClient : IChatClient
         var payload = new Dictionary<string, object?>
         {
             ["model"] = model,
-            ["temperature"] = temperature,
             ["messages"] = new object[]
             {
                 new Dictionary<string, object?> { ["role"] = "system", ["content"] = systemPrompt },
                 new Dictionary<string, object?> { ["role"] = "user", ["content"] = userPrompt },
             },
         };
+        // OpenAI's o-series reasoning models (o1, o3-mini, o4-mini, ...) reject `temperature`
+        // outright — "Unsupported parameter: 'temperature' is not supported with this model" —
+        // they only run at the implicit default. This client is shared OpenAI-compatible plumbing
+        // for xAI/OpenAI/Gemini-OpenAI-compat models, so omit the key only for that id pattern.
+        if (!IsOpenAiReasoningModel(model))
+            payload["temperature"] = temperature;
 
         var sw = Stopwatch.StartNew();
         try
@@ -220,6 +225,12 @@ public sealed class GrokChatClient : IChatClient
         var raw = result.GetRawText();
         return raw.Length <= 2000 ? raw : raw[..2000];
     }
+
+    private static readonly Regex OpenAiReasoningModelRegex = new(@"^o\d", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
+    /// <summary>True for OpenAI o-series reasoning model ids (o1, o1-mini, o3-mini, o4-mini, ...).</summary>
+    private static bool IsOpenAiReasoningModel(string model) =>
+        !string.IsNullOrWhiteSpace(model) && OpenAiReasoningModelRegex.IsMatch(model.Trim());
 
     private string? ResolveApiKey(string? model = null)
     {

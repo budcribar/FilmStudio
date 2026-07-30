@@ -163,6 +163,22 @@ public sealed class AnthropicChatClient : IChatClient, IVisionClient
             var body = await resp.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
             if (!resp.IsSuccessStatusCode)
             {
+                // Some Anthropic models (e.g. claude-sonnet-5) have deprecated `temperature`
+                // entirely and 400 if it's present at all. Retry once without it rather than
+                // hardcoding a model-id list that would drift as Anthropic adds/retires models —
+                // the API itself is telling us definitively when this applies.
+                if (resp.StatusCode == System.Net.HttpStatusCode.BadRequest
+                    && payload.ContainsKey("temperature")
+                    && body.Contains("temperature", StringComparison.OrdinalIgnoreCase)
+                    && body.Contains("deprecated", StringComparison.OrdinalIgnoreCase))
+                {
+                    var retryPayload = new Dictionary<string, object?>(payload);
+                    retryPayload.Remove("temperature");
+                    return await SendAsync(
+                        retryPayload, model, kind, endpoint, mode,
+                        promptForLog, userPromptForLog, promptChars, ct).ConfigureAwait(false);
+                }
+
                 await _telemetry.LogApiCallAsync(new ApiCallTelemetry
                 {
                     Kind = kind,
