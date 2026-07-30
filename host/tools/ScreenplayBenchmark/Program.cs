@@ -71,17 +71,21 @@ public static class Program
         outDir ??= Path.Combine("evals", "results", $"screenplay_benchmark_{DateTime.Now:yyyyMMdd_HHmmss}");
         Directory.CreateDirectory(outDir);
 
+        List<string> bookSuiteFiles = new();
         if (!string.IsNullOrWhiteSpace(suiteDir) && Directory.Exists(suiteDir))
         {
-            var bookFiles = Directory.GetFiles(suiteDir, "*.txt", SearchOption.TopDirectoryOnly).ToList();
-            if (bookFiles.Count == 0)
-            {
-                Console.WriteLine($"❌ Error: No .txt files found in suite directory '{suiteDir}'.");
-                return 1;
-            }
+            bookSuiteFiles = Directory.GetFiles(suiteDir, "*.txt", SearchOption.TopDirectoryOnly).ToList();
+        }
+        else if (string.IsNullOrWhiteSpace(bookPath))
+        {
+            // Default to curated 5-book benchmark suite
+            bookSuiteFiles = LocateDefaultSuiteBooks();
+        }
 
-            Console.WriteLine($"📚 Running Multi-Book Evaluation Suite across {bookFiles.Count} stories from '{suiteDir}'...");
-            foreach (var file in bookFiles)
+        if (bookSuiteFiles.Count > 0)
+        {
+            Console.WriteLine($"📚 Running Default 5-Book Evaluation Suite across {bookSuiteFiles.Count} stories...");
+            foreach (var file in bookSuiteFiles)
             {
                 var slug = Path.GetFileNameWithoutExtension(file).ToLowerInvariant();
                 await RunSingleBookBenchmarkAsync(file, slug, outDir, requestedModels, dryRun, historyFilePath);
@@ -99,7 +103,6 @@ public static class Program
             return 0;
         }
 
-        bookPath ??= LocateSampleBookFile();
         if (string.IsNullOrWhiteSpace(bookPath) || !File.Exists(bookPath))
         {
             Console.WriteLine("❌ Error: Book file not found. Provide --book <path/to/book.txt> or --suite <dir>.");
@@ -279,6 +282,38 @@ public static class Program
             Console.WriteLine(string.Format("{0,-6} | {1,-20} | {2,-15:F1} | {3,-12:F1}% | {4,-12:F1}% | {5,-10}", rank, m.ModelId, m.MultiBookCompositeScore, m.AvgSyntaxScore, m.AvgQualitativeScore, m.FirstPlaceWins));
         }
         Console.WriteLine();
+    }
+
+    private static List<string> LocateDefaultSuiteBooks()
+    {
+        var suite = new List<string>();
+
+        // 1. Nick and Me (Contemporary memoir / coastal setting)
+        var nickFile = new[] { Path.Combine("books", "Nick_and_Me.txt"), Path.Combine("projects", "NickAndMe", "book_full.txt") }.FirstOrDefault(File.Exists);
+        if (nickFile != null) suite.Add(nickFile);
+
+        // 2. The Tell-Tale Heart (Gothic suspense monologue)
+        var heartFile = new[] { Path.Combine("books", "The_Tell-Tale_Heart.txt"), Path.Combine("projects", "TellTaleHeartV7", "book_full.txt") }.FirstOrDefault(File.Exists);
+        if (heartFile != null) suite.Add(heartFile);
+
+        // 3. Buster (Children's picture book / hero animal)
+        var busterFile = new[] { Path.Combine("projects", "Buster", "book_full.txt"), Path.Combine("books", "The_Velveteen_Rabbit.txt") }.FirstOrDefault(File.Exists);
+        if (busterFile != null) suite.Add(busterFile);
+
+        // 4. A Christmas Carol (Time-jumps & multi-age character age-splits)
+        var carolFile = Path.Combine("books", "A_Christmas_Carol.txt");
+        if (File.Exists(carolFile)) suite.Add(carolFile);
+
+        // 5. The Call of the Wild (Hero animal wilderness action directibility)
+        var callFile = Path.Combine("books", "The_Call_of_the_Wild.txt");
+        if (File.Exists(callFile)) suite.Add(callFile);
+
+        if (suite.Count == 0)
+        {
+            suite.Add(LocateSampleBookFile());
+        }
+
+        return suite;
     }
 
     private static string LocateSampleBookFile()
