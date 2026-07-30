@@ -321,6 +321,7 @@ public static class Program
             BookSlug = bookSlug,
             BookTitle = Path.GetFileNameWithoutExtension(bookPath),
             BookPath = bookPath,
+            IsMockRun = dryRun || judgeEvaluations.Values.All(v => v.IsMock),
             ModelScores = runData.Leaderboard,
             JudgeMatrix = runData.JudgeMatrix,
             SelfBiasNotes = runData.SelfBiasNotes,

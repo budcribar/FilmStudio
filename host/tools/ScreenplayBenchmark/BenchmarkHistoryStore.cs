@@ -13,6 +13,7 @@ public sealed class HistoricalBenchmarkRun
     public string BookSlug { get; set; } = "default";
     public string BookTitle { get; set; } = "";
     public string BookPath { get; set; } = "";
+    public bool IsMockRun { get; set; }
     public List<ModelScoreSummary> ModelScores { get; set; } = new();
     public Dictionary<string, Dictionary<string, double>> JudgeMatrix { get; set; } = new();
     public List<string> SelfBiasNotes { get; set; } = new();
@@ -70,18 +71,35 @@ public static class BenchmarkHistoryStore
         File.WriteAllText(historyFilePath, JsonSerializer.Serialize(container, opts));
     }
 
+    public static bool IsLiveRun(HistoricalBenchmarkRun run)
+    {
+        if (run.IsMockRun) return false;
+        if (run.ModelScores == null || run.ModelScores.Count == 0) return false;
+
+        // Check if all composite scores are identical mock ties or all negative
+        var validScores = run.ModelScores.Select(m => m.CompositeScore).Where(s => s >= 0).ToList();
+        if (validScores.Count == 0 || (validScores.Distinct().Count() <= 1 && validScores.Count > 1))
+            return false;
+
+        // Check if judge matrix has at least one real non-mock rating (> 0)
+        if (run.JudgeMatrix == null || run.JudgeMatrix.Count == 0) return false;
+        var hasRealJudgeRating = run.JudgeMatrix.Values.Any(dict => dict.Values.Any(v => v > 0));
+        return hasRealJudgeRating;
+    }
+
     public static List<CompositeModelSummary> ComputeGlobalCompositeLeaderboard(HistoricalStoreContainer container)
     {
-        if (container.Runs.Count == 0)
+        var liveRuns = container.Runs.Where(IsLiveRun).ToList();
+        if (liveRuns.Count == 0)
             return new List<CompositeModelSummary>();
 
-        // Group by model across all runs
-        var allModelIds = container.Runs.SelectMany(r => r.ModelScores.Select(m => m.ModelId)).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+        // Group by model across live runs only
+        var allModelIds = liveRuns.SelectMany(r => r.ModelScores.Select(m => m.ModelId)).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
         var result = new List<CompositeModelSummary>();
 
         foreach (var modelId in allModelIds)
         {
-            var modelRuns = container.Runs
+            var modelRuns = liveRuns
                 .Where(r => r.ModelScores.Any(m => string.Equals(m.ModelId, modelId, StringComparison.OrdinalIgnoreCase)))
                 .ToList();
 
@@ -89,10 +107,13 @@ public static class BenchmarkHistoryStore
 
             var modelScoresList = modelRuns
                 .Select(r => r.ModelScores.First(m => string.Equals(m.ModelId, modelId, StringComparison.OrdinalIgnoreCase)))
+                .Where(s => s.CompositeScore >= 0)
                 .ToList();
 
+            if (modelScoresList.Count == 0) continue;
+
             int wins = 0;
-            foreach (var run in container.Runs)
+            foreach (var run in liveRuns)
             {
                 var validScores = run.ModelScores.Where(m => m.CompositeScore >= 0).OrderByDescending(m => m.CompositeScore).ToList();
                 if (validScores.Count > 0)
