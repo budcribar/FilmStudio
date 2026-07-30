@@ -204,20 +204,24 @@ public sealed class VoicePreviewService
 
         onProgress?.Invoke(2, 100, "Building film-style voice prompt…");
 
+        // Cast profile fields are free-form (admin/AI-authored) — sanitize each leaf value at the
+        // source; "look" itself is a structural block (nests VisualLock), so it's wrapped in
+        // <Look> as-is below, not re-sanitized (see PromptTags class doc).
         var look = "";
         if (prof is not null)
         {
             if (!string.IsNullOrWhiteSpace(prof.Description))
-                look += prof.Description.Trim();
+                look += PromptTags.SanitizeValue(prof.Description.Trim());
             if (!string.IsNullOrWhiteSpace(prof.VisualLock))
-                look += (look.Length > 0 ? " " : "") + "<VisualLock>" + prof.VisualLock.Trim() + "</VisualLock>";
+                look += (look.Length > 0 ? " " : "") +
+                    PromptTags.Wrap("VisualLock", PromptTags.SanitizeValue(prof.VisualLock.Trim()));
         }
 
         var voiceLock = !string.IsNullOrWhiteSpace(profile)
-            ? $" <VoiceLock>{charKey}: {profile}</VoiceLock>"
+            ? " " + PromptTags.Wrap("VoiceLock", $"{charKey}: {PromptTags.SanitizeValue(profile)}")
             : !string.IsNullOrWhiteSpace(label)
-                ? $" <VoiceLock>{charKey}: {label}</VoiceLock>"
-                : $" <VoiceLock>{charKey}: natural speaking voice for {display}</VoiceLock>";
+                ? " " + PromptTags.Wrap("VoiceLock", $"{charKey}: {PromptTags.SanitizeValue(label)}")
+                : " " + PromptTags.Wrap("VoiceLock", $"{charKey}: natural speaking voice for {display}");
 
         // Optional locked portrait for lip-sync consistency (reference_images)
         string? refPath = null;
@@ -237,10 +241,10 @@ public sealed class VoicePreviewService
         }
 
         if (look.Length > 0)
-            sb.AppendLine($"<Look>{look}</Look>");
-        sb.AppendLine(
-            $"<Audio>REQUIRED native Grok dialogue. {charKey} ON CAMERA lip-syncs " +
-            $"exactly: \"{sample}\". Other mouths closed. Speech intelligible; never silent.{voiceLock}</Audio>");
+            sb.AppendLine(PromptTags.Wrap("Look", look));
+        sb.AppendLine(PromptTags.Wrap("Audio",
+            $"REQUIRED native Grok dialogue. {charKey} ON CAMERA lip-syncs " +
+            $"exactly: \"{PromptTags.SanitizeValue(sample)}\". Other mouths closed. Speech intelligible; never silent.{voiceLock}"));
         sb.AppendLine(
             "Single continuous take, natural performance, no music, no captions, no on-screen text.");
 

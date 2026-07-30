@@ -159,14 +159,14 @@ public static class ClipVideoPromptBuilder
 
         var continuityBlock = mode switch
         {
-            "video-extend" =>
-                "<Continuity>This is a seamless EXTENSION of the provided previous video. " +
+            "video-extend" => PromptTags.Wrap("Continuity",
+                "This is a seamless EXTENSION of the provided previous video. " +
                 "Pick up from its last frame. Same character identity, wardrobe, lighting, and location. " +
-                "Natural progressive motion only — do not invent a new establishing shot or redesign faces/outfits.</Continuity>",
-            "continue" =>
-                "<Continuity>Continue seamlessly from the provided starting frame (end of previous clip). " +
+                "Natural progressive motion only — do not invent a new establishing shot or redesign faces/outfits."),
+            "continue" => PromptTags.Wrap("Continuity",
+                "Continue seamlessly from the provided starting frame (end of previous clip). " +
                 "Same character identity, wardrobe, lighting, and location. Natural progressive motion only — " +
-                "do not invent a new establishing shot or redesign faces/outfits.</Continuity>",
+                "do not invent a new establishing shot or redesign faces/outfits."),
             _ =>
                 "Follow the camera framing and location in this prompt exactly. " +
                 "Prioritize the PRIMARY subject and ONE clear action with visible motion; " +
@@ -185,23 +185,27 @@ public static class ClipVideoPromptBuilder
             var note = mode == "video-extend"
                 ? "already provided as video input — continue from its last frame"
                 : "context — match look and continue motion from its end";
+            // prevClean is a re-embedded previous clip's own action text — it may itself already
+            // contain Camera/Performance/Optics tags from that clip's construction, so this is a
+            // structural wrap (no additional SanitizeValue here; see PromptTags' class doc).
             continuityBlock =
-                $"<PreviousClip note=\"{note}\">\n{prevClean}\n</PreviousClip>\n\n" + continuityBlock;
+                PromptTags.WrapWithNote("PreviousClip", note, "\n" + prevClean + "\n") + "\n\n" + continuityBlock;
         }
         else if (!string.IsNullOrWhiteSpace(previousClipVisualPrompt) && mode == "fresh")
         {
             // Cast-change reseed: no video input, but keep prior clip prose for location/lighting only.
             var prevClean = SanitizeActionText(previousClipVisualPrompt!, onScreenKeys);
-            continuityBlock =
-                "<Context note=\"prior clip in scene — new cast plate refs attached; match location/lighting if " +
-                "still valid; identity from Characters + locked plates only\">\n" +
-                prevClean + "\n</Context>\n\n" + continuityBlock;
+            continuityBlock = PromptTags.WrapWithNote("Context",
+                "prior clip in scene — new cast plate refs attached; match location/lighting if still " +
+                "valid; identity from Characters + locked plates only",
+                "\n" + prevClean + "\n") + "\n\n" + continuityBlock;
         }
 
         var castCountLine = onScreenKeys.Count > 0
-            ? $"<CastCount>exactly {onScreenKeys.Count} distinct on-screen character identity(ies) only — " +
-              string.Join(", ", onScreenKeys) +
-              ". Do not invent extra people, duplicate faces, or crowd extras not listed.</CastCount>"
+            ? PromptTags.Wrap("CastCount",
+                $"exactly {onScreenKeys.Count} distinct on-screen character identity(ies) only — " +
+                string.Join(", ", onScreenKeys) +
+                ". Do not invent extra people, duplicate faces, or crowd extras not listed.")
             : "";
 
         var actionTagged = actionText;
@@ -240,7 +244,7 @@ public static class ClipVideoPromptBuilder
 
         sb.AppendLine(continuityBlock);
         sb.AppendLine();
-        sb.AppendLine("<Clip>");
+        sb.AppendLine(PromptTags.Open("Clip"));
         // This line used to be unconditional — telling the model to "end when the spoken line
         // finishes" even on silent beats with empty audio_payload.dialogue. With no line ever
         // specified, and CHARACTER VARIABLES listing every on-screen character's Voice profile
@@ -652,7 +656,7 @@ public static class ClipVideoPromptBuilder
         // (<Characters>, <Context>, <PreviousClip>) carry a "note" attribute with the full
         // instructional wording for the uncompressed prompt — drop it here, the bare tag name is
         // enough once the prompt is already tight on budget.
-        p = Regex.Replace(p, @"\s+note=""[^""]*""", "");
+        p = PromptTags.StripNotes(p);
         p = p.Replace("REQUIRED native Grok dialogue.", "");
         p = p.Replace("Do not invent extra people, duplicate faces, or crowd extras not listed.", "");
         p = p.Replace("Follow the camera framing and location in this prompt exactly. Prioritize the PRIMARY subject and ONE clear action with visible motion; background characters may stay mostly still.", "");
@@ -699,8 +703,8 @@ public static class ClipVideoPromptBuilder
         // label — a plain-text label match risked eating part of a dialogue line if it ever
         // happened to contain that literal substring (e.g. spoken text like "a voice: faint and
         // pleading"); an explicit tag can't collide with prose.
-        p = Regex.Replace(p, @"\s*<Voice>.*?</Voice>", "", RegexOptions.Singleline);
-        p = Regex.Replace(p, @"\s*<VoiceLock>.*?</VoiceLock>", "", RegexOptions.Singleline);
+        p = PromptTags.Strip(p, "Voice");
+        p = PromptTags.Strip(p, "VoiceLock");
         // Shorten, don't delete — this is the only explicit instruction to lock the focus
         // character's face to its attached reference image; dropping it entirely (as opposed to
         // just shortening the wording) left only the bare "I1" tag with no instruction attached,
@@ -1004,7 +1008,8 @@ public static class ClipVideoPromptBuilder
     {
         if (keys.Count == 0) return "";
         var sb = new StringBuilder();
-        sb.AppendLine("<Characters note=\"use these identities consistently; do not redesign faces or wardrobe\">");
+        sb.AppendLine(PromptTags.OpenWithNote("Characters",
+            "use these identities consistently; do not redesign faces or wardrobe"));
         var any = false;
         foreach (var key in keys)
         {
@@ -1013,14 +1018,16 @@ public static class ClipVideoPromptBuilder
                 ? p!.DisplayName
                 : key.Replace("Character_", "").Replace('_', ' ');
             var tag = useImageTags && imageTagByKey.TryGetValue(key, out var t) ? $" {t}" : "";
-            var desc = p?.Description?.Trim() ?? "";
-            var vlock = p?.VisualLock?.Trim() ?? "";
-            var voice = p?.VoiceProfile?.Trim() ?? "";
+            // Cast profile fields are free-form (admin/AI-authored) — sanitize once here at the
+            // source rather than at each tag-wrap call site below.
+            var desc = PromptTags.SanitizeValue(p?.Description?.Trim());
+            var vlock = PromptTags.SanitizeValue(p?.VisualLock?.Trim());
+            var voice = PromptTags.SanitizeValue(p?.VoiceProfile?.Trim());
             if (p?.VoiceOnly == true || IsVoiceOnlyKey(key, characters))
             {
                 sb.AppendLine(
                     $"- {key}{tag} [{display}] VOICE ONLY — not on screen." +
-                    (voice.Length > 0 ? $" <Voice>{voice}</Voice>" : ""));
+                    (voice.Length > 0 ? $" {PromptTags.Wrap("Voice", voice)}" : ""));
                 any = true;
                 continue;
             }
@@ -1047,8 +1054,8 @@ public static class ClipVideoPromptBuilder
 
             var line = $"- {key}{tag} [{display}]:";
             if (desc.Length > 0) line += $" {desc}";
-            if (vlock.Length > 0) line += $" <VisualLock>{vlock}</VisualLock>";
-            if (voice.Length > 0) line += $" <Voice>{voice}</Voice>";
+            if (vlock.Length > 0) line += $" {PromptTags.Wrap("VisualLock", vlock)}";
+            if (voice.Length > 0) line += $" {PromptTags.Wrap("Voice", voice)}";
             if (useImageTags && tag.Length > 0)
                 line += $" Match appearance of reference {tag.Trim()} exactly.";
             sb.AppendLine(line);
@@ -1079,12 +1086,14 @@ public static class ClipVideoPromptBuilder
         var dialogue = audio.TryGetProperty("dialogue", out var dlg) ? dlg.GetString() ?? "" : "";
         var delivery = Stage2PlannerService.NormalizeDelivery(
             audio.TryGetProperty("delivery", out var del) ? del.GetString() ?? "none" : "none");
-        var sfx = audio.TryGetProperty("sfx", out var sx) ? sx.GetString() ?? "" : "";
-        var ambient = audio.TryGetProperty("ambient", out var am) ? am.GetString() ?? "" : "";
-        var score = audio.TryGetProperty("score_layer", out var sc) ? sc.GetString() ?? "" :
-                    audio.TryGetProperty("score", out sc) ? sc.GetString() ?? "" :
-                    audio.TryGetProperty("music_layer", out sc) ? sc.GetString() ?? "" :
-                    audio.TryGetProperty("music", out sc) ? sc.GetString() ?? "" : "";
+        // Stage2/AI-classifier free text — sanitize at the source (see PromptTags class doc).
+        var sfx = PromptTags.SanitizeValue(audio.TryGetProperty("sfx", out var sx) ? sx.GetString() : null).Trim();
+        var ambient = PromptTags.SanitizeValue(audio.TryGetProperty("ambient", out var am) ? am.GetString() : null).Trim();
+        var score = PromptTags.SanitizeValue(
+            audio.TryGetProperty("score_layer", out var sc) ? sc.GetString() :
+            audio.TryGetProperty("score", out sc) ? sc.GetString() :
+            audio.TryGetProperty("music_layer", out sc) ? sc.GetString() :
+            audio.TryGetProperty("music", out sc) ? sc.GetString() : null).Trim();
 
         if (string.IsNullOrWhiteSpace(dialogue) &&
             string.IsNullOrWhiteSpace(sfx) &&
@@ -1098,7 +1107,8 @@ public static class ClipVideoPromptBuilder
             prof is not null &&
             !string.IsNullOrWhiteSpace(prof.VoiceProfile))
         {
-            voiceLock = $" <VoiceLock>{speaker}: {prof.VoiceProfile}</VoiceLock>";
+            voiceLock = " " + PromptTags.Wrap("VoiceLock",
+                $"{speaker}: {PromptTags.SanitizeValue(prof.VoiceProfile)}");
         }
 
         if (!string.IsNullOrWhiteSpace(dialogue))
@@ -1106,17 +1116,18 @@ public static class ClipVideoPromptBuilder
             var who = string.IsNullOrWhiteSpace(speaker) ? "SPEAKER" : speaker.Trim();
             var isVoiceover = delivery is "voiceover_internal" or "internal" or "narration" or "vo" or "thought" ||
                               (delivery is not "spoken_on_camera" and not "on_camera" && who.Contains("narrator", StringComparison.OrdinalIgnoreCase));
-            // Full line, speech-safe punctuation (em-dash normalize, !- glue) — same words
-            var quote = SanitizeSpokenDialogue(dialogue);
+            // Full line, speech-safe punctuation (em-dash normalize, !- glue) — same words. Story
+            // dialogue text, sanitized like every other leaf value before it can reach a tag.
+            var quote = PromptTags.SanitizeValue(SanitizeSpokenDialogue(dialogue));
             var open = FirstSpokenToken(quote);
             var openCue = open.Length > 0
                 ? $" Start speaking immediately with \"{open}\" — do not skip, delay, or swallow the opening word."
                 : " Start speaking immediately with the first word of the line — do not skip the opening.";
-            
+
             var audioBedParts = new List<string>();
-            if (!string.IsNullOrWhiteSpace(score)) audioBedParts.Add($"<Score>{score.Trim()}</Score>");
-            if (!string.IsNullOrWhiteSpace(ambient)) audioBedParts.Add($"<Ambient>{ambient.Trim()}</Ambient>");
-            if (!string.IsNullOrWhiteSpace(sfx)) audioBedParts.Add($"<Foley>{sfx.Trim()}</Foley>");
+            if (!string.IsNullOrWhiteSpace(score)) audioBedParts.Add(PromptTags.Wrap("Score", score));
+            if (!string.IsNullOrWhiteSpace(ambient)) audioBedParts.Add(PromptTags.Wrap("Ambient", ambient));
+            if (!string.IsNullOrWhiteSpace(sfx)) audioBedParts.Add(PromptTags.Wrap("Foley", sfx));
 
             var bed = audioBedParts.Count > 0
                 ? " " + string.Join(" ", audioBedParts)
@@ -1124,30 +1135,31 @@ public static class ClipVideoPromptBuilder
 
             const string endPause =
                 " After the last word, hold a brief natural pause with a closed mouth (about half a second); do not freeze mid-syllable or trail into empty staring.";
-            var pronHintInPayload = audio.TryGetProperty("pronunciation_hint", out var ph) ? ph.GetString() ?? "" : "";
+            var pronHintInPayload = PromptTags.SanitizeValue(
+                audio.TryGetProperty("pronunciation_hint", out var ph) ? ph.GetString() : null);
             var pronHint = !string.IsNullOrWhiteSpace(pronHintInPayload)
-                ? (pronHintInPayload.StartsWith(" ") ? pronHintInPayload : $" <Pronunciation>{pronHintInPayload}</Pronunciation>")
+                ? (pronHintInPayload.StartsWith(" ") ? pronHintInPayload : $" {PromptTags.Wrap("Pronunciation", pronHintInPayload)}")
                 : DetectPronunciationHints(quote);
 
             if (isVoiceover)
             {
-                return
-                    $"<Audio>REQUIRED native Grok off-camera voiceover. {who} narrates " +
-                    $"exactly: \"{quote}\".{openCue}{endPause}{pronHint} Do not lip-sync on-screen cast to this VO.{bed}{voiceLock}</Audio>";
+                return PromptTags.Wrap("Audio",
+                    $"REQUIRED native Grok off-camera voiceover. {who} narrates " +
+                    $"exactly: \"{quote}\".{openCue}{endPause}{pronHint} Do not lip-sync on-screen cast to this VO.{bed}{voiceLock}");
             }
             // spoken_on_camera / on_camera (normalized)
-            return
-                $"<Audio>REQUIRED native Grok dialogue. {who} ON CAMERA lip-syncs " +
-                $"exactly: \"{quote}\".{openCue}{endPause}{pronHint} Other mouths closed. Speech intelligible; never silent.{bed}{voiceLock}</Audio>";
+            return PromptTags.Wrap("Audio",
+                $"REQUIRED native Grok dialogue. {who} ON CAMERA lip-syncs " +
+                $"exactly: \"{quote}\".{openCue}{endPause}{pronHint} Other mouths closed. Speech intelligible; never silent.{bed}{voiceLock}");
         }
 
         if (!string.IsNullOrWhiteSpace(ambient) || !string.IsNullOrWhiteSpace(sfx) || !string.IsNullOrWhiteSpace(score))
         {
             var layers = new List<string>();
-            if (!string.IsNullOrWhiteSpace(score)) layers.Add($"<Score>{score.Trim()}</Score>");
-            if (!string.IsNullOrWhiteSpace(ambient)) layers.Add($"<Ambient>{ambient.Trim()}</Ambient>");
-            if (!string.IsNullOrWhiteSpace(sfx)) layers.Add($"<Foley>{sfx.Trim()}</Foley>");
-            return $"<Audio>music/ambient/Foley only — {string.Join("; ", layers)}. No dialogue.</Audio>";
+            if (!string.IsNullOrWhiteSpace(score)) layers.Add(PromptTags.Wrap("Score", score));
+            if (!string.IsNullOrWhiteSpace(ambient)) layers.Add(PromptTags.Wrap("Ambient", ambient));
+            if (!string.IsNullOrWhiteSpace(sfx)) layers.Add(PromptTags.Wrap("Foley", sfx));
+            return PromptTags.Wrap("Audio", $"music/ambient/Foley only — {string.Join("; ", layers)}. No dialogue.");
         }
         return "";
     }
@@ -1198,7 +1210,7 @@ public static class ClipVideoPromptBuilder
         }
 
         if (hints.Count == 0) return "";
-        return " <Pronunciation>" + string.Join("; ", hints) + "</Pronunciation>";
+        return " " + PromptTags.Wrap("Pronunciation", string.Join("; ", hints));
     }
 
     /// <summary>
@@ -1207,7 +1219,7 @@ public static class ClipVideoPromptBuilder
     private static string BuildNegativeBlock(JsonElement clipEl)
     {
         var story = clipEl.TryGetProperty("negative_prompt", out var np)
-            ? (np.GetString() ?? "").Trim()
+            ? PromptTags.SanitizeValue(np.GetString()).Trim()
             : "";
         var global = (GlobalNegativePrompt ?? "").Trim();
         if (global.Length == 0 && story.Length == 0)
@@ -1227,7 +1239,7 @@ public static class ClipVideoPromptBuilder
         if (global.Length > 0) AddCsv(global);
         if (story.Length > 0) AddCsv(story);
         if (items.Count == 0) return "";
-        return "<Negative>" + string.Join(", ", items) + "</Negative>";
+        return PromptTags.Wrap("Negative", string.Join(", ", items));
     }
 
     private static string SimplifyVisual(string visual)
@@ -1295,9 +1307,10 @@ public static class ClipVideoPromptBuilder
     private static string IdentityReinforceBlock(IReadOnlyList<string> onScreenKeys, bool refsAttached)
     {
         if (refsAttached || onScreenKeys.Count == 0) return "";
-        return " <Identity>Match locked plate descriptions in Characters exactly — " +
-               "do not drift to illustration, anime, cartoon, or a different face/wardrobe. " +
-               "On-screen: " + string.Join(", ", onScreenKeys) + ".</Identity>";
+        return " " + PromptTags.Wrap("Identity",
+            "Match locked plate descriptions in Characters exactly — " +
+            "do not drift to illustration, anime, cartoon, or a different face/wardrobe. " +
+            "On-screen: " + string.Join(", ", onScreenKeys) + ".");
     }
 
     private static bool IsVoiceOnlyKey(string key, IReadOnlyDictionary<string, CharacterProfile>? characters)

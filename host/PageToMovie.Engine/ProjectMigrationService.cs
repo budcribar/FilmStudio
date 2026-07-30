@@ -183,13 +183,13 @@ public sealed class ProjectMigrationService
     {
         text = Regex.Replace(
             text, @"Camera directive:\s*(.+?)(?=\s+Performance:|\s+Optics:|\s+Color grading:|$)",
-            "<Camera>$1</Camera>", RegexOptions.Singleline);
+            m => PromptTags.Wrap("Camera", m.Groups[1].Value), RegexOptions.Singleline);
         text = Regex.Replace(
             text, @"Performance:\s*(.+?)(?=\s+Optics:|\s+Color grading:|$)",
-            "<Performance>$1</Performance>", RegexOptions.Singleline);
+            m => PromptTags.Wrap("Performance", m.Groups[1].Value), RegexOptions.Singleline);
         text = Regex.Replace(
             text, @"Optics:\s*(.+?)(?=\s+Color grading:|$)",
-            "<Optics>$1</Optics>", RegexOptions.Singleline);
+            m => PromptTags.Wrap("Optics", m.Groups[1].Value), RegexOptions.Singleline);
         return text;
     }
 }

@@ -675,7 +675,7 @@ public sealed class Stage2PlannerService
             if (aiCamera is not null && aiCamera.TryGetValue(beatIdStr, out var camDir))
             {
                 if (!string.IsNullOrWhiteSpace(camDir.FramingPrompt))
-                    vp = $"{vp} <Camera>{camDir.FramingPrompt}</Camera>";
+                    vp = $"{vp} {PromptTags.Wrap("Camera", PromptTags.SanitizeValue(camDir.FramingPrompt))}";
                 cameraMoveToken = $"{camDir.LensSpec}, {camDir.CameraMovement}";
             }
             else if (!string.IsNullOrWhiteSpace(dlg))
@@ -683,19 +683,19 @@ public sealed class Stage2PlannerService
                 var spkDisplay = !string.IsNullOrWhiteSpace(spk) ? DisplayNameForKey(spk, charSeeds) : "speaker";
                 // OTS only when ≥2 on-screen — solo monologue must not invent a listener.
                 var framing = GetMonologueCameraFraming(monologueStep, spkDisplay, clipCast.Count);
-                vp = $"{vp} <Camera>{framing}</Camera>";
+                vp = $"{vp} {PromptTags.Wrap("Camera", PromptTags.SanitizeValue(framing))}";
             }
 
             if (aiEmotion is not null && aiEmotion.TryGetValue(beatIdStr, out var emoDir))
             {
                 if (!string.IsNullOrWhiteSpace(emoDir.ActingPrompt))
-                    vp = $"{vp} <Performance>{emoDir.ActingPrompt}</Performance>";
+                    vp = $"{vp} {PromptTags.Wrap("Performance", PromptTags.SanitizeValue(emoDir.ActingPrompt))}";
             }
 
             if (aiDof is not null && aiDof.TryGetValue(beatIdStr, out var dofDir))
             {
                 if (!string.IsNullOrWhiteSpace(dofDir.Aperture))
-                    vp = $"{vp} <Optics>{dofDir.Aperture}</Optics>";
+                    vp = $"{vp} {PromptTags.Wrap("Optics", PromptTags.SanitizeValue(dofDir.Aperture))}";
             }
 
             if (aiColor is not null && !string.IsNullOrWhiteSpace(aiColor.GradingPrompt))
