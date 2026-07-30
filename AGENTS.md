@@ -234,12 +234,14 @@ When debugging runtime behavior on the live Railway server across coding agent s
 ### 6. Unrestricted Creator Publishing & YouTube Quota Reliance
 - **Rely on YouTube Quota Management**: Do not block authenticated project owners or admins with artificial local daily publish limits (e.g. 2 demos per 24 hours). YouTube API quotas and Google platform rate limiters natively prevent video spamming. Server-side per-IP rate limiting is deferred to post-launch backlog.
 
-### 7. Client-Side Media Ownership & Minimal Server Transfer
-- **Client Storage Priority**: All generated `.mp4` video files and media assets are stored on the **client side** (browser Cache API / IndexedDB / local storage). They are **not** kept on the server.
-- **On-Demand Server Transfer Only**: `.mp4` files are only uploaded to the server on-demand when strictly required:
+### 7. Client-Side Media Ownership & Minimal Server Transfer (CRITICAL PRINCIPLE)
+- **Client Storage Priority**: All generated `.mp4` video files and media assets live on the **CLIENT SIDE** (browser Cache API / IndexedDB / local storage directory). They are **NOT** kept on the server.
+- **Never Assume Server Disk Has MP4 Files**: Agents must **NEVER** diagnose 404 errors as "file missing on server" or tell the user to regenerate clips on the server when media lives on the client side. Always resolve client local storage / browser Cache API handles (`GetLocalBlobUrlAsync`) first.
+- **UI & API Control Rule**: Never block UI features (such as background music scoring, scene playback, or export) based on server-side `ClipsOnDisk == 0` or missing server MP4 files. The client owns its media assets.
+- **On-Demand Server Transfer Only**: `.mp4` files are uploaded to the server strictly on-demand:
   1. When publishing/uploading a full film to YouTube.
   2. When generating a scene continuation (`extend_previous`) that requires the previous scene's video file on the server for AI continuation.
 
 ---
 
-*Last updated: 2026-07-29 — product north star; auto-run long-term; general solutions; UI copy principles; ephemeral migration cleanup; server diagnostics; platform architecture & pipeline integrity rules; client-side media ownership; strict operator control for paid AI tests.*
+*Last updated: 2026-07-30 — product north star; auto-run long-term; general solutions; UI copy principles; ephemeral migration cleanup; server diagnostics; platform architecture & pipeline integrity rules; strict client-side media ownership enforcement; strict operator control for paid AI tests.*
