@@ -361,7 +361,7 @@ public static class ClipVideoPromptBuilder
         // ASCII double-hyphen pause
         t = DoubleHyphenRegex.Replace(t, " — ");
         // Parser glue after ! ? . ; :  e.g. True!-nervous → True! nervous
-        t = PunctuationDashRegex.Replace(t, "$1 $2");
+        t = PunctuationDashRegex.Replace(t, "$1 ");
 
         // Letter-letter ASCII hyphen may be (a) crushed em-dash pause or (b) a real compound.
         // Mask known/safe compounds, expand remaining mid-word hyphens as pauses, unmask.
@@ -456,7 +456,7 @@ public static class ClipVideoPromptBuilder
     private static readonly Regex NoExtraPeopleRegex = new(@"\bNo extra people\.\s*", RegexOptions.IgnoreCase | RegexOptions.Compiled);
     private static readonly Regex UnicodeDashesRegex = new(@"\s*[\u2012\u2013\u2014\u2015]\s*", RegexOptions.Compiled);
     private static readonly Regex DoubleHyphenRegex = new(@"\s*--\s*", RegexOptions.Compiled);
-    private static readonly Regex PunctuationDashRegex = new(@"([!?.;:])-(\S)", RegexOptions.Compiled);
+    private static readonly Regex PunctuationDashRegex = new(@"([!?.;:])\s*-+\s*", RegexOptions.Compiled);
     private static readonly Regex WhitespaceSingleRegex = new(@"\s+", RegexOptions.Compiled);
     private static readonly Regex DashCapitalizationRegex = new(@"([.!?])\s+—\s+(\p{L})", RegexOptions.Compiled);
     private static readonly Regex PunctuationCapitalizationRegex = new(@"([.!?])\s+(\p{Ll})", RegexOptions.Compiled);
