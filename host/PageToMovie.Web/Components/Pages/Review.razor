@@ -1429,7 +1429,8 @@ else
                 {
                     var cleanPid = System.Text.RegularExpressions.Regex.Replace(_projectId, @"[^\w\.-]", "_");
                     var fileName = $"{cleanPid}_full.mp4";
-                    _message = $"🎬 Downloaded movie to your PC — open {fileName} in {res.Editor ?? _preferredVideoEditor}.";
+                    _message = $"🎬 Downloaded movie to your PC — open {fileName} in {res.Editor ?? _preferredVideoEditor}." +
+                        (_lastExportMissingMusic ? " (No local media folder connected — background music not included.)" : "");
                     await JS.InvokeVoidAsync("eval", $"const a=document.createElement('a');a.href='{movieUrl}';a.download='{fileName}';document.body.appendChild(a);a.click();document.body.removeChild(a);");
                 }
                 else
@@ -2425,8 +2426,8 @@ else
                     if (pub?.Ok == true)
                     {
                         _activeTab = "review";
-                        _message = pub.Message
-                                   ?? $"“{pub.Demo?.Title ?? title}” published to gallery.";
+                        _message = (pub.Message ?? $"“{pub.Demo?.Title ?? title}” published to gallery.") +
+                            (_lastExportMissingMusic ? " (No local media folder connected — background music not included.)" : "");
                         return;
                     }
                     _error = pub?.Error ?? "Demo submit failed";
@@ -2447,8 +2448,8 @@ else
 
             var msg = res.TryGetProperty("message", out var mEl) ? mEl.GetString() : null;
             _activeTab = "review";
-            _message = msg
-                       ?? $"“{publishedTitle}” published to gallery.";
+            _message = (msg ?? $"“{publishedTitle}” published to gallery.") +
+                (_lastExportMissingMusic ? " (No local media folder connected — background music not included.)" : "");
         }
         catch (Exception ex)
         {
@@ -2461,10 +2462,27 @@ else
         }
     }
 
+    /// <summary>True after EnsureShareableMovieUrlAsync if the last built cut has no background
+    /// music because the local media folder wasn't connected on this tab — MixSceneMusicAsync has
+    /// no server fallback for music (unlike clips) and is deliberately best-effort/never-blocking,
+    /// so without this flag a tab that never connected its folder silently exports/uploads a
+    /// musicless movie with no indication anything was skipped. Callers append a note using it.</summary>
+    private bool _lastExportMissingMusic;
+
     /// <summary>Return a browser-fetchable URL for the full cut (blob or authenticated WIP).</summary>
     private async Task<string?> EnsureShareableMovieUrlAsync()
     {
         await RefreshWipMetaAsync();
+
+        // Best-effort, no dialog: the common case is the folder was already connected on another
+        // tab and this one just never got the silent no-gesture reconnect — try once before
+        // building, so music generated elsewhere still gets picked up here instead of being
+        // silently dropped. TryReconnectAsync only succeeds if the browser already has persisted
+        // permission (no folder picker popup); it's a no-op otherwise, unlike ConnectFolderAsync
+        // which would intrusively prompt every export for users who never connected a folder.
+        if (!MediaFolder.IsConnected)
+            await MediaFolder.TryReconnectAsync();
+        _lastExportMissingMusic = !MediaFolder.IsConnected;
 
         // Stitch fresh in browser to ensure all newly generated clips are included with zero duplicates
         var sceneNums = _scenes
@@ -2586,7 +2604,8 @@ else
             }
 
             _activeTab = "review";
-            _message = "Uploading to YouTube…";
+            _message = "Uploading to YouTube…" +
+                (_lastExportMissingMusic ? " (No local media folder connected — background music not included.)" : "");
             var jobs = await Engine.GetJobAsync();
             _job = jobs?.Job;
         }
