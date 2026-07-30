@@ -126,6 +126,24 @@
       "notes": "Open-weights 13B DiT video generation model hosted on Fal.ai serverless GPUs (~$0.025 per 5s clip)."
     },
     {
+      "id": "fal-ai/wan-2.1",
+      "displayName": "Wan 2.1 / 2.7 (Fal.ai)",
+      "capability": "Video",
+      "provider": "Fal",
+      "apiBase": "https://queue.fal.run",
+      "endpointPath": "fal-ai/wan-2.1/image-to-video",
+      "requiredEnvKeys": ["FAL_API_KEY", "FAL_KEY"],
+      "enabled": true,
+      "supportsVideoContinue": false,
+      "supportsReferenceImages": true,
+      "supportsVideoReview": false,
+      "videoCostPerSecondByResolution": {
+        "720p": 0.025,
+        "1080p": 0.025
+      },
+      "notes": "Alibaba Wan 2.1 open-weights 1080p image-to-video model hosted on Fal.ai serverless GPUs (~$0.12 per 5s clip)."
+    },
+    {
       "id": "veo-3.1",
       "displayName": "Google Veo 3.1",
       "capability": "Video",
