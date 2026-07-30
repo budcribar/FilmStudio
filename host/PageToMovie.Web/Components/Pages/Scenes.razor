@@ -717,7 +717,7 @@ else
                     </div>
                     <video controls playsinline
                            style="max-width:100%; max-height:280px; background:#111; border-radius:0.35rem;"
-                           src="@(_sceneCompositeVideoUrl ?? CacheBust(Engine.CompositeVideoUrl(_projectId, _detail.SceneNumber)))"
+                           src="@(_sceneCompositeVideoUrl ?? _sceneCompositeServerUrl)"
                            @key="_inlineCompositeKey"
                            poster=""></video>
                     <p class="small text-muted mb-0 mt-1">
@@ -993,7 +993,7 @@ else
                         {
                             <video controls playsinline autoplay
                                    style="width:100%; max-height:320px; background:#111; border-radius:0.35rem;"
-                                   src="@(_clipVideoUrl ?? CacheBust(Engine.ClipVideoUrl(_projectId, _detail.SceneNumber, _clip.ClipNumber)))"
+                                   src="@(_clipVideoUrl ?? _clipServerVideoUrl)"
                                    @key="@($"clip-{_detail.SceneNumber}-{_clip.ClipNumber}-{_clipVideoKey}")"
                                    onloadeddata="this.play().catch(function(){})"></video>
                         }
@@ -2811,6 +2811,11 @@ else
             ?? throw new InvalidOperationException($"Scene {sn} not found");
 
         _sceneCompositeVideoUrl = null;
+        // Resolved once per scene load, not inline in markup — CacheBust() stamps the current
+        // second, so calling it inline re-evaluates on every render (any SignalR/job-poll
+        // re-render elsewhere on the page) and gives the <video> a new src each time, which
+        // makes the browser reload the resource and restart playback — looks like looping.
+        _sceneCompositeServerUrl = CacheBust(Engine.CompositeVideoUrl(_projectId, sn));
         if (MediaFolder.IsConnected && _detail.CompositeExists)
         {
             try
@@ -2942,8 +2947,10 @@ else
     }
 
     private string? _clipVideoUrl;
+    private string? _clipServerVideoUrl;
     private bool _clipVideoLoading;
     private string? _sceneCompositeVideoUrl;
+    private string? _sceneCompositeServerUrl;
 
     private void SelectClip(int? cn)
     {
@@ -2958,6 +2965,13 @@ else
         {
             // Force new <video> mount so we never keep a previous composite/clip stream
             _clipVideoKey = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+            // Resolved once, not inline in markup — CacheBust() stamps the current second, so
+            // calling it inline re-evaluates on every render (any SignalR/job-poll re-render
+            // elsewhere on the page) and gives the <video> a new src each time, which makes the
+            // browser reload the resource and restart playback — looks like looping.
+            _clipServerVideoUrl = _detail is not null
+                ? CacheBust(Engine.ClipVideoUrl(_projectId, _detail.SceneNumber, cnv))
+                : null;
             // Gate the <video> behind a loading spinner while we check for a newer local copy —
             // otherwise it renders immediately with the (possibly stale) server fallback src and
             // autoplays that before swapping to the fresh one once the check resolves.
@@ -3153,10 +3167,27 @@ else
         }
     }
 
-    private string? ScenePlayerSrc(int sn) =>
-        !string.IsNullOrEmpty(_clientSceneUrl) && _playingScene == sn
-            ? _clientSceneUrl
-            : CacheBust(Engine.CompositeVideoUrl(_projectId, sn));
+    private int? _scenePlayerServerSrcScene;
+    private string? _scenePlayerServerSrcCached;
+
+    /// <summary>
+    /// Cache-busted server URL is memoized per scene number rather than recomputed on every call
+    /// — CacheBust() stamps the current second, so recomputing on every render (any SignalR/
+    /// job-poll re-render elsewhere on the page) gives the &lt;video&gt; a new src each time,
+    /// which makes the browser reload the resource and restart playback — looks like looping.
+    /// </summary>
+    private string? ScenePlayerSrc(int sn)
+    {
+        if (!string.IsNullOrEmpty(_clientSceneUrl) && _playingScene == sn)
+            return _clientSceneUrl;
+
+        if (_scenePlayerServerSrcScene != sn)
+        {
+            _scenePlayerServerSrcScene = sn;
+            _scenePlayerServerSrcCached = CacheBust(Engine.CompositeVideoUrl(_projectId, sn));
+        }
+        return _scenePlayerServerSrcCached;
+    }
 
     private async Task HidePreviewPlayerAsync()
     {

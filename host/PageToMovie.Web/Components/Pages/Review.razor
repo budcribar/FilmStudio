@@ -330,7 +330,7 @@ else if (_showWipPlayer && (!string.IsNullOrEmpty(_clientWipUrl) || _wipExists))
             }
             <video controls playsinline autoplay
                    style="width:100%;max-height:70vh;background:#000;border-radius:0.35rem;"
-                   src="@(string.IsNullOrEmpty(_clientWipUrl) ? CacheBust(Engine.WipMovieUrl(_projectId)) : _clientWipUrl)"
+                   src="@(string.IsNullOrEmpty(_clientWipUrl) ? WipServerSrc() : _clientWipUrl)"
                    @key="_wipVideoKey"
                    onloadeddata="this.play().catch(function(){})">
                 Your browser does not support HTML5 video.
@@ -362,7 +362,7 @@ else if (_showWipPlayer && (!string.IsNullOrEmpty(_clientWipUrl) || _wipExists))
         <div class="card-body py-2">
             <video controls playsinline autoplay
                    style="width:100%;max-height:70vh;background:#000;border-radius:0.35rem;"
-                   src="@(string.IsNullOrEmpty(_clientSceneUrl) ? CacheBust(Engine.CompositeVideoUrl(_projectId, playSn)) : _clientSceneUrl)"
+                   src="@(string.IsNullOrEmpty(_clientSceneUrl) ? SceneServerSrc(playSn) : _clientSceneUrl)"
                    @key="_sceneVideoKey"
                    onloadeddata="this.play().catch(function(){})">
                 Your browser does not support HTML5 video.
@@ -402,7 +402,7 @@ else if (_showScenePlayer && _clientStitching)
         <div class="card-body py-2">
             <video controls playsinline autoplay
                    style="width:100%;max-height:50vh;background:#000;border-radius:0.35rem;"
-                   src="@CacheBust(Engine.ClipVideoUrl(_projectId, clipSn, clipCn))"
+                   src="@ClipServerSrc(clipSn, clipCn)"
                    @key="_clipVideoKey"
                    onloadeddata="this.play().catch(function(){})">
                 Your browser does not support HTML5 video.
@@ -817,7 +817,7 @@ else if (_activeTab == "play")
             {
                 <video controls playsinline autoplay
                        style="width:100%;max-height:75vh;background:#000;border-radius:0.5rem;"
-                       src="@(string.IsNullOrEmpty(_clientWipUrl) ? CacheBust(Engine.WipMovieUrl(_projectId)) : _clientWipUrl)"
+                       src="@(string.IsNullOrEmpty(_clientWipUrl) ? WipServerSrc() : _clientWipUrl)"
                        @key="_wipVideoKey">
                     Your browser does not support HTML5 video.
                 </video>
@@ -1747,6 +1747,49 @@ else
     }
 
     private static string CacheBust(string url) => KeyFormatting.CacheBust(url);
+
+    // CacheBust() stamps the current second, so calling it inline in markup re-evaluates on
+    // every render (any SignalR/job-poll re-render elsewhere on the page) and gives the <video>
+    // a new src each time, which makes the browser reload the resource and restart playback —
+    // looks like looping. Memoized per key below instead of recomputed per call.
+    private string? _wipServerSrcForProject;
+    private string? _wipServerSrcCached;
+
+    private string? WipServerSrc()
+    {
+        if (_wipServerSrcForProject != _projectId)
+        {
+            _wipServerSrcForProject = _projectId;
+            _wipServerSrcCached = CacheBust(Engine.WipMovieUrl(_projectId));
+        }
+        return _wipServerSrcCached;
+    }
+
+    private int? _sceneServerSrcScene;
+    private string? _sceneServerSrcCached;
+
+    private string? SceneServerSrc(int sn)
+    {
+        if (_sceneServerSrcScene != sn)
+        {
+            _sceneServerSrcScene = sn;
+            _sceneServerSrcCached = CacheBust(Engine.CompositeVideoUrl(_projectId, sn));
+        }
+        return _sceneServerSrcCached;
+    }
+
+    private (int Scene, int Clip)? _clipServerSrcKey;
+    private string? _clipServerSrcCached;
+
+    private string? ClipServerSrc(int scene, int clip)
+    {
+        if (_clipServerSrcKey != (scene, clip))
+        {
+            _clipServerSrcKey = (scene, clip);
+            _clipServerSrcCached = CacheBust(Engine.ClipVideoUrl(_projectId, scene, clip));
+        }
+        return _clipServerSrcCached;
+    }
 
     private static string FormatBytes(long n) =>
         n >= 1_000_000 ? $"{n / 1_000_000.0:0.#} MB" :
