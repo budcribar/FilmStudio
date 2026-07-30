@@ -655,6 +655,7 @@ public sealed class ClipEditRequest
     public string Dialogue { get; set; } = "";
     public string? Speaker { get; set; }
     public string? Delivery { get; set; }
+    public string? PronunciationHint { get; set; }
     public string PrimarySubject { get; set; } = "";
     public List<string> CharactersOnScreen { get; set; } = new();
     public string? ColorPalette { get; set; }

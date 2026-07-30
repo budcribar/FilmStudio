@@ -255,6 +255,7 @@ TASKS:
 2. Observe on-screen character faces and lip movements. Compare the face of the character who is speaking against the attached character reference portraits listed above to determine who is speaking.
 3. Transcribe the EXACT spoken dialogue you hear in the video clip.
 4. Compare detected speaker vs expected speaker ('{expectedSpeakerDisplayName}'), and transcribed dialogue vs expected dialogue.
+   NOTE: Ignore minor US/UK spelling differences (e.g. 'neighbour' vs 'neighbor', 'colour' vs 'color'). If the spoken words match the script, score dialogue accuracy as 1.0 (100% match).
 
 Return ONLY a JSON object:
 {{
@@ -424,17 +425,81 @@ Status options: 'verified' (dialogue & speaker match), 'mismatch' (dialogue inco
         return transcribedWords < expectedWords * 0.7;
     }
 
-    private static double CalculateAccuracyScore(string expected, string actual)
+    public static double CalculateAccuracyScore(string expected, string actual)
     {
         if (string.IsNullOrWhiteSpace(expected) && string.IsNullOrWhiteSpace(actual)) return 1.0;
         if (string.IsNullOrWhiteSpace(expected) || string.IsNullOrWhiteSpace(actual)) return 0.0;
 
-        var expWords = Regex.Matches(expected.ToLowerInvariant(), @"\w+").Select(m => m.Value).ToHashSet();
-        var actWords = Regex.Matches(actual.ToLowerInvariant(), @"\w+").Select(m => m.Value).ToHashSet();
+        var expWords = Regex.Matches(expected.ToLowerInvariant(), @"\w+").Select(m => m.Value).ToList();
+        var actWords = Regex.Matches(actual.ToLowerInvariant(), @"\w+").Select(m => m.Value).ToList();
 
         if (expWords.Count == 0) return 1.0;
-        var matches = expWords.Count(w => actWords.Contains(w));
+
+        var normActWords = actWords.Select(NormalizeSpellingWord).ToList();
+
+        int matches = 0;
+        foreach (var ew in expWords)
+        {
+            var normEw = NormalizeSpellingWord(ew);
+            if (normActWords.Any(aw => IsWordEquivalent(ew, normEw, aw)))
+            {
+                matches++;
+            }
+        }
+
         return (double)matches / expWords.Count;
+    }
+
+    private static string NormalizeSpellingWord(string w)
+    {
+        if (string.IsNullOrWhiteSpace(w)) return "";
+        var s = w.ToLowerInvariant();
+        if (s.EndsWith("our") && s.Length > 4) s = s[..^3] + "or";
+        if (s.EndsWith("ours") && s.Length > 5) s = s[..^4] + "ors";
+        if (s.EndsWith("ise") && s.Length > 4) s = s[..^3] + "ize";
+        if (s.EndsWith("ises") && s.Length > 5) s = s[..^4] + "izes";
+        if (s.EndsWith("ised") && s.Length > 5) s = s[..^4] + "ized";
+        if (s.EndsWith("ising") && s.Length > 6) s = s[..^5] + "izing";
+        if (s.EndsWith("re") && s.Length > 4 && !s.EndsWith("here") && !s.EndsWith("there") && !s.EndsWith("where")) s = s[..^2] + "er";
+        if (s.EndsWith("lling") && s.Length > 6) s = s[..^5] + "ling";
+        if (s.EndsWith("lled") && s.Length > 5) s = s[..^4] + "led";
+        if (s.EndsWith("ence") && s.Length > 5) s = s[..^4] + "ense";
+        return s;
+    }
+
+    private static bool IsWordEquivalent(string rawExp, string normExp, string normAct)
+    {
+        if (string.Equals(normExp, normAct, StringComparison.OrdinalIgnoreCase)) return true;
+
+        // Levenshtein edit distance fallback for minor single-character typos (e.g. 1 char diff in 5+ char word)
+        if (normExp.Length >= 4 && Math.Abs(normExp.Length - normAct.Length) <= 1)
+        {
+            var dist = LevenshteinDistance(normExp, normAct);
+            if (dist <= 1) return true;
+        }
+        return false;
+    }
+
+    private static int LevenshteinDistance(string s, string t)
+    {
+        if (string.IsNullOrEmpty(s)) return t?.Length ?? 0;
+        if (string.IsNullOrEmpty(t)) return s.Length;
+
+        var d = new int[s.Length + 1, t.Length + 1];
+        for (int i = 0; i <= s.Length; i++) d[i, 0] = i;
+        for (int j = 0; j <= t.Length; j++) d[0, j] = j;
+
+        for (int i = 1; i <= s.Length; i++)
+        {
+            for (int j = 1; j <= t.Length; j++)
+            {
+                int cost = (s[i - 1] == t[j - 1]) ? 0 : 1;
+                d[i, j] = Math.Min(
+                    Math.Min(d[i - 1, j] + 1, d[i, j - 1] + 1),
+                    d[i - 1, j - 1] + cost);
+            }
+        }
+        return d[s.Length, t.Length];
     }
 
     private static string ExtractJson(string input)

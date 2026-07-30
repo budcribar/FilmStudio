@@ -2678,6 +2678,8 @@ public sealed class ProjectStore
         audio["dialogue"] = fields.Dialogue;
         audio["speaker"] = string.IsNullOrWhiteSpace(fields.Speaker) ? null : fields.Speaker;
         audio["delivery"] = string.IsNullOrWhiteSpace(fields.Delivery) ? null : fields.Delivery;
+        if (!string.IsNullOrWhiteSpace(fields.PronunciationHint))
+            audio["pronunciation_hint"] = fields.PronunciationHint;
 
         // Keep root-level fields in sync if present in blueprint JSON
         if (clipObj.ContainsKey("dialogue"))

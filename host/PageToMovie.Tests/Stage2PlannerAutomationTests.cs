@@ -186,4 +186,50 @@ public sealed class Stage2PlannerAutomationTests
         Assert.Contains("He had the eye of a vulture", coalesced[0]["dialogue"]?.ToString());
         Assert.Contains("THE OLD MAN turns in a shaft of gray light", coalesced[0]["visual_event"]?.ToString());
     }
+
+    [Fact]
+    public async Task TellTaleHeart_Stage2Plan_GeneratesPronunciationHint_ForTearUpThePlanks()
+    {
+        var fountainPath = @"c:\Users\budcr\source\repos\gemini\PageToMovie\projects\TellTaleHeartV7\source\screenplay.fountain";
+        if (!System.IO.File.Exists(fountainPath))
+        {
+            fountainPath = @"c:\Users\budcr\source\repos\PageToMovie\projects\TellTaleHeartV7\source\screenplay.fountain";
+        }
+        if (!System.IO.File.Exists(fountainPath)) return;
+
+        var tempWorkspace = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "telltale-pron-test-" + System.Guid.NewGuid().ToString("N"));
+        var opts = Microsoft.Extensions.Options.Options.Create(new PageToMovieOptions { WorkspaceRoot = tempWorkspace });
+        var store = new ProjectStore(opts);
+        const string projectId = "TellTaleHeartPronTest";
+        System.IO.Directory.CreateDirectory(System.IO.Path.Combine(tempWorkspace, "projects", projectId));
+
+        var text = await System.IO.File.ReadAllTextAsync(fountainPath);
+        ScreenplayService.SaveDraft(store, projectId, text);
+        Assert.True(ScreenplayService.SignOff(store, projectId).Ok);
+
+        var planner = new Stage2PlannerService(store, Microsoft.Extensions.Logging.Abstractions.NullLogger<Stage2PlannerService>.Instance);
+        var result = await planner.PlanAsync(projectId, resolution: "480p", scenes: "16");
+        Assert.True(result.Ok);
+
+        var bpText = await System.IO.File.ReadAllTextAsync(result.OutPath!);
+        using var doc = JsonDocument.Parse(bpText);
+
+        bool foundPronunciationHint = false;
+        foreach (var sc in doc.RootElement.GetProperty("scenes").EnumerateArray())
+        {
+            if (!sc.TryGetProperty("veo_clips", out var clips) && !sc.TryGetProperty("clips", out clips)) continue;
+            foreach (var clip in clips.EnumerateArray())
+            {
+                var built = ClipVideoPromptBuilder.Build(clip, store.GetProjectDir(projectId), new Dictionary<string, ClipVideoPromptBuilder.CharacterProfile>());
+                if (built.Prompt.Contains("tear up the planks", StringComparison.OrdinalIgnoreCase))
+                {
+                    Assert.Contains("Pronunciation guide: Pronounce 'tear' as verb", built.Prompt);
+                    Assert.Contains("tare", built.Prompt);
+                    foundPronunciationHint = true;
+                }
+            }
+        }
+
+        Assert.True(foundPronunciationHint, "Expected to find clip containing 'tear up the planks' with explicit pronunciation guide hint.");
+    }
 }

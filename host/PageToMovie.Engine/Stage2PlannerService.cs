@@ -1310,6 +1310,8 @@ public sealed class Stage2PlannerService
             : beat.TryGetValue("ambient", out var am2) ? am2 : null) ?? "";
         var sfx = CoerceString(nested?.TryGetValue("sfx", out var sx) == true ? sx
             : beat.TryGetValue("sfx", out var sx2) ? sx2 : null) ?? "";
+        var pronHint = CoerceString(nested?.TryGetValue("pronunciation_hint", out var ph) == true ? ph
+            : beat.TryGetValue("pronunciation_hint", out var ph2) ? ph2 : null) ?? "";
 
         var payload = new Dictionary<string, object?>
         {
@@ -1319,6 +1321,11 @@ public sealed class Stage2PlannerService
             ["sfx"] = sfx,
             ["ambient"] = ambient,
         };
+
+        if (!string.IsNullOrWhiteSpace(pronHint))
+        {
+            payload["pronunciation_hint"] = pronHint;
+        }
 
         if (sd is not null)
         {
