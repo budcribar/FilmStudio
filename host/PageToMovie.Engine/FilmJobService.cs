@@ -2815,7 +2815,7 @@ public sealed class FilmJobService
             // Persist + log full prompt for evaluation (admin logs surface this)
             await WriteAndLogPromptAsync(projectId, projectDir, scene, clip, built, ct).ConfigureAwait(false);
 
-            if (built.Prompt.Contains("VOICE LOCK", StringComparison.OrdinalIgnoreCase))
+            if (built.Prompt.Contains("<VoiceLock>", StringComparison.OrdinalIgnoreCase))
                 await AppendLogAsync("  [Voice] VOICE LOCK from character profile");
             if (built.ReferenceImagePaths.Count > 0)
                 await AppendLogAsync(

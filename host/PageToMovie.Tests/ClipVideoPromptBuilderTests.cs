@@ -92,7 +92,7 @@ public class ClipVideoPromptBuilderTests
         Assert.Contains("Character_Buster", built.Prompt);
         Assert.Contains("Small black-and-white dog", built.Prompt);
         Assert.Contains("<IMAGE_1>", built.Prompt);
-        Assert.Contains("VOICE LOCK", built.Prompt);
+        Assert.Contains("<VoiceLock>", built.Prompt);
         Assert.Contains("He's Buster the Noodle Head Dog.", built.Prompt);
         Assert.True(built.ReferenceImagePaths.Count >= 1);
         Assert.Null(built.StartFrameImagePath);
@@ -313,9 +313,9 @@ public class ClipVideoPromptBuilderTests
     {
         var original = "STYLE LOCK: Period gothic live-action, mid-19th-century interiors; candlelight and deep shadows; desaturated cool-gray palette; naturalistic skin and fabric texture; no illustration or stylized animation\n" +
                        "CHARACTER VARIABLES (use these identities consistently; do not redesign faces or wardrobe):\n" +
-                       " Character_The_Narrator <IMAGE_1> [The Narrator]: Lean man of middle years (about 40–50), pale sallow skin, hollow cheeks, dark disordered medium-length hair, bright intense dark eyes, thin tense mouth; plain dark wool waistcoat over white shirtsleeves, dark trousers; period clothing. Visual lock: Same lean pale face, dark disordered hair, and bright intense dark eyes in every scene; always plain dark waistcoat and shirtsleeves as default; never elderly, never white-haired, never the filmed blue eye. Voice: Male, middle years; medium-high tense pitch; precise, controlled pace that sharpens into fevered urgency; intimate confessional energy, same voice on-camera and in V.O. Match appearance of reference <IMAGE_1> exactly.\n" +
+                       " Character_The_Narrator <IMAGE_1> [The Narrator]: Lean man of middle years (about 40–50), pale sallow skin, hollow cheeks, dark disordered medium-length hair, bright intense dark eyes, thin tense mouth; plain dark wool waistcoat over white shirtsleeves, dark trousers; period clothing. Visual lock: Same lean pale face, dark disordered hair, and bright intense dark eyes in every scene; always plain dark waistcoat and shirtsleeves as default; never elderly, never white-haired, never the filmed blue eye. <Voice>Male, middle years; medium-high tense pitch; precise, controlled pace that sharpens into fevered urgency; intimate confessional energy, same voice on-camera and in V.O.</Voice> Match appearance of reference <IMAGE_1> exactly.\n" +
                        "NCAST COUNT: exactly 1 distinct on-screen character identity(ies) only — Character_The_Narrator. Do not invent extra people, duplicate faces, or crowd extras not listed.\n" +
-                       "AUDIO: REQUIRED native Grok dialogue. Character_The_Narrator ON CAMERA lip-syncs EXACTLY: \"Passion there was none. I loved the old man. He had never wronged me.\". Start speaking immediately with \"Passion\" — do not skip, delay, or swallow the opening word. After the last word, hold a brief natural pause with a closed mouth (about half a second); do not freeze mid-syllable or trail into empty staring. Other mouths closed. Speech intelligible; never silent. Music score: Melancholy warm strings undercut by unease. VOICE LOCK Character_The_Narrator: Male, middle years; medium-high tense pitch; precise, controlled pace that sharpens into fevered urgency; intimate confessional energy, same voice on-camera and in V.O.\n" +
+                       "AUDIO: REQUIRED native Grok dialogue. Character_The_Narrator ON CAMERA lip-syncs EXACTLY: \"Passion there was none. I loved the old man. He had never wronged me.\". Start speaking immediately with \"Passion\" — do not skip, delay, or swallow the opening word. After the last word, hold a brief natural pause with a closed mouth (about half a second); do not freeze mid-syllable or trail into empty staring. Other mouths closed. Speech intelligible; never silent. Music score: Melancholy warm strings undercut by unease. <VoiceLock>Character_The_Narrator: Male, middle years; medium-high tense pitch; precise, controlled pace that sharpens into fevered urgency; intimate confessional energy, same voice on-camera and in V.O.</VoiceLock>\n" +
                        "CONTEXT (prior clip in scene — new cast plate refs attached; match location/lighting if still valid; identity from CHARACTER VARIABLES + locked plates only):\n" +
                        "INT. BARE ROOM - NIGHT. The Narrator speaks. Character_The_Narrator ON CAMERA lip-syncs \"but once conceived, it haunted me day and night. Object there was none.\". Character_The_Narrator still wears plain dark waistcoat, rolled cuffs Camera directive: Steady close-up, 50mm lens, face half-shadowed while haunted obsession is described. Performance: Acting intensity 6/10: Haunted stare, jaw clench, restless micro-twitch under eye Optics: f/1.8 shallow depth of field, intimate facial isolation Color grading: Kodak Vision3 500T 5219 film stock, desaturated cool-teal shadows and warm amber candle highlights\n" +
                        "Follow the camera framing and location in this prompt exactly. Prioritize the PRIMARY subject and ONE clear action with visible motion; background characters may stay mostly still.\n" +
@@ -335,6 +335,26 @@ public class ClipVideoPromptBuilderTests
         // Regression: this instruction used to be deleted outright rather than shortened, leaving
         // the focus character's reference image attached (I1) with no instruction to match it.
         Assert.Contains("Match I1 exactly.", compressed);
+        // Voice descriptions/locks are dropped (visual video models don't use voice tuning text).
+        Assert.DoesNotContain("<Voice>", compressed);
+        Assert.DoesNotContain("<VoiceLock>", compressed);
+        Assert.DoesNotContain("medium-high tense pitch", compressed);
+    }
+
+    [Fact]
+    public void CompressPromptText_voice_tag_strip_does_not_eat_dialogue_mentioning_voice()
+    {
+        // Regression: the old bare "Voice:" label match risked eating part of a dialogue line if
+        // it ever happened to contain that literal substring. <Voice>/<VoiceLock> tags are
+        // unambiguous — text outside the tags survives even if it says "voice:" verbatim.
+        var input = "Character_Narrator <IMAGE_1>: Lean pale man. <Voice>Calm, measured tone.</Voice>\n" +
+                    "AUDIO: Character_Narrator ON CAMERA lip-syncs EXACTLY: \"I heard a voice: faint and pleading, calling my name.\".";
+
+        var compressed = ClipVideoPromptBuilder.CompressPromptText(input);
+
+        Assert.DoesNotContain("<Voice>", compressed);
+        Assert.DoesNotContain("Calm, measured tone", compressed);
+        Assert.Contains("I heard a voice: faint and pleading, calling my name.", compressed);
     }
 
     [Fact]

@@ -688,9 +688,13 @@ public static class ClipVideoPromptBuilder
         // Strip resolution/fps suffix (e.g. " / 480p, 24fps" -> "") since resolution/fps is configured via API payload
         p = Regex.Replace(p, @"\s*/\s*\d+p,\s*\d+fps$", "");
 
-        // Simplify audio/voice directives & strip voice descriptions/locks (visual video models do not use voice tuning text)
-        p = Regex.Replace(p, @"\s*Voice:\s*[^;.\n]+(?:;[^;.\n]+)*[;.]?", "");
-        p = Regex.Replace(p, @"\s*VOICE LOCK\s+[^:\n]+:[^\n]+", "");
+        // Strip voice descriptions/locks (visual video models do not use voice tuning text).
+        // Delimited by explicit <Voice>/<VoiceLock> tags rather than a bare "Voice:"/"VOICE LOCK"
+        // label — a plain-text label match risked eating part of a dialogue line if it ever
+        // happened to contain that literal substring (e.g. spoken text like "a voice: faint and
+        // pleading"); an explicit tag can't collide with prose.
+        p = Regex.Replace(p, @"\s*<Voice>.*?</Voice>", "", RegexOptions.Singleline);
+        p = Regex.Replace(p, @"\s*<VoiceLock>.*?</VoiceLock>", "", RegexOptions.Singleline);
         // Shorten, don't delete — this is the only explicit instruction to lock the focus
         // character's face to its attached reference image; dropping it entirely (as opposed to
         // just shortening the wording) left only the bare "I1" tag with no instruction attached,
@@ -1010,7 +1014,7 @@ public static class ClipVideoPromptBuilder
             {
                 sb.AppendLine(
                     $"- {key}{tag} [{display}] VOICE ONLY — not on screen." +
-                    (voice.Length > 0 ? $" Voice: {voice}" : ""));
+                    (voice.Length > 0 ? $" <Voice>{voice}</Voice>" : ""));
                 any = true;
                 continue;
             }
@@ -1038,7 +1042,7 @@ public static class ClipVideoPromptBuilder
             var line = $"- {key}{tag} [{display}]:";
             if (desc.Length > 0) line += $" {desc}";
             if (vlock.Length > 0) line += $" Visual lock: {vlock}";
-            if (voice.Length > 0) line += $" Voice: {voice}";
+            if (voice.Length > 0) line += $" <Voice>{voice}</Voice>";
             if (useImageTags && tag.Length > 0)
                 line += $" Match appearance of reference {tag.Trim()} exactly.";
             sb.AppendLine(line);
@@ -1088,7 +1092,7 @@ public static class ClipVideoPromptBuilder
             prof is not null &&
             !string.IsNullOrWhiteSpace(prof.VoiceProfile))
         {
-            voiceLock = $" VOICE LOCK {speaker}: {prof.VoiceProfile}";
+            voiceLock = $" <VoiceLock>{speaker}: {prof.VoiceProfile}</VoiceLock>";
         }
 
         if (!string.IsNullOrWhiteSpace(dialogue))
