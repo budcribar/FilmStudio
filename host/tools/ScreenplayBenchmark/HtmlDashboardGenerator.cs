@@ -183,10 +183,13 @@ public static class HtmlDashboardGenerator
   <div id=""tab-global"" class=""tab-content active"">
     <div class=""card"">
       <div style=""display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;"">
-        <h3>🏆 Multi-Book Composite Model Rankings</h3>
+        <div style=""display: flex; align-items: center; gap: 1rem;"">
+          <h3>🏆 Multi-Book Composite Model Rankings</h3>
+          <button class=""tab-btn"" onclick=""toggleSyntaxExpand()"" id=""syntax-toggle-btn"" style=""padding: 0.35rem 0.85rem; font-size: 0.8rem; border-radius: 4px; border: 1px solid var(--accent-cyan); color: var(--accent-cyan);"">🔍 Expand Syntax Breakdown</button>
+        </div>
         <span style=""font-size: 0.85rem; color: var(--text-muted);"">Date Run: <strong id=""global-date-subtitle"" style=""color: var(--text-main);"">—</strong></span>
       </div>
-      <p style=""color: var(--text-muted); font-size: 0.85rem;"">Aggregated average composite scores (40% C# Syntax + 60% LLM Peer Ratings) across all benchmarked books in the evaluation suite.</p>
+      <p style=""color: var(--text-muted); font-size: 0.85rem;"">Aggregated average composite scores (40% C# Syntax + 60% LLM Peer Ratings) across all benchmarked books in the evaluation suite. Click any column header to sort.</p>
       
       <table id=""global-table"">
         <thead>
@@ -258,6 +261,29 @@ public static class HtmlDashboardGenerator
         sb.AppendLine(";");
 
         sb.AppendLine(@"
+    let isSyntaxExpanded = false;
+    let globalSortKey = 'composite';
+    let globalSortAsc = false;
+
+    function toggleSyntaxExpand() {
+      isSyntaxExpanded = !isSyntaxExpanded;
+      const btn = document.getElementById('syntax-toggle-btn');
+      if (btn) {
+        btn.textContent = isSyntaxExpanded ? '◀ Collapse Syntax Breakdown' : '🔍 Expand Syntax Breakdown';
+      }
+      renderGlobalTable();
+    }
+
+    function sortGlobal(key) {
+      if (globalSortKey === key) {
+        globalSortAsc = !globalSortAsc;
+      } else {
+        globalSortKey = key;
+        globalSortAsc = false; // default descending for scores
+      }
+      renderGlobalTable();
+    }
+
     function switchTab(tabId) {
       document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
       document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
@@ -283,35 +309,108 @@ public static class HtmlDashboardGenerator
       }
     }
 
-    function renderGlobalTable() {
-      const tbody = document.getElementById('global-tbody');
-      tbody.innerHTML = '';
+    function getSortVal(m, key) {
+      switch(key) {
+        case 'modelId': return (m.modelId || m.ModelId || '').toLowerCase();
+        case 'composite': return (m.multiBookCompositeScore !== undefined ? m.multiBookCompositeScore : m.MultiBookCompositeScore) || 0;
+        case 'syntax': return (m.avgSyntaxScore !== undefined ? m.avgSyntaxScore : m.AvgSyntaxScore) || 0;
+        case 'format': return (m.avgFormatCompliance !== undefined ? m.avgFormatCompliance : m.AvgFormatCompliance) || 0;
+        case 'budget': return (m.avgSceneBudget !== undefined ? m.avgSceneBudget : m.AvgSceneBudget) || 0;
+        case 'pacing': return (m.avgDialoguePacing !== undefined ? m.avgDialoguePacing : m.AvgDialoguePacing) || 0;
+        case 'charsplit': return (m.avgCharDisambiguationSyntax !== undefined ? m.avgCharDisambiguationSyntax : m.AvgCharDisambiguationSyntax) || 0;
+        case 'music': return (m.avgMusicSpec !== undefined ? m.avgMusicSpec : m.AvgMusicSpec) || 0;
+        case 'qual': return (m.avgQualitativeScore !== undefined ? m.avgQualitativeScore : m.AvgQualitativeScore) || 0;
+        case 'wins': return (m.firstPlaceWins !== undefined ? m.firstPlaceWins : m.FirstPlaceWins) || 0;
+        case 'books': return (m.totalBooksEvaluated !== undefined ? m.totalBooksEvaluated : m.TotalBooksEvaluated) || 0;
+        default: return 0;
+      }
+    }
 
-      const leaderboard = window.GLOBAL_LEADERBOARD || [];
+    function renderGlobalTable() {
+      const thead = document.querySelector('#global-table thead');
+      const tbody = document.getElementById('global-tbody');
+      const leaderboard = (window.GLOBAL_LEADERBOARD || []).slice();
+
+      leaderboard.sort((a, b) => {
+        const valA = getSortVal(a, globalSortKey);
+        const valB = getSortVal(b, globalSortKey);
+        if (valA < valB) return globalSortAsc ? -1 : 1;
+        if (valA > valB) return globalSortAsc ? 1 : -1;
+        return 0;
+      });
+
+      const arrow = (key) => globalSortKey === key ? (globalSortAsc ? ' ▲' : ' ▼') : '';
+      const colStyle = ""cursor: pointer; user-select: none;"";
+
+      if (isSyntaxExpanded) {
+        thead.innerHTML = `<tr>
+          <th style=""${colStyle}"" onclick=""sortGlobal('rank')"">Rank${arrow('rank')}</th>
+          <th style=""${colStyle}"" onclick=""sortGlobal('modelId')"">Model ID${arrow('modelId')}</th>
+          <th style=""${colStyle}"" onclick=""sortGlobal('composite')"">Composite${arrow('composite')}</th>
+          <th style=""${colStyle}"" onclick=""sortGlobal('syntax')"">C# Syntax Avg${arrow('syntax')}</th>
+          <th style=""${colStyle}; color: var(--accent-cyan);"" onclick=""sortGlobal('format')"">Format %${arrow('format')}</th>
+          <th style=""${colStyle}; color: var(--accent-cyan);"" onclick=""sortGlobal('budget')"">Budget %${arrow('budget')}</th>
+          <th style=""${colStyle}; color: var(--accent-cyan);"" onclick=""sortGlobal('pacing')"">Pacing %${arrow('pacing')}</th>
+          <th style=""${colStyle}; color: var(--accent-cyan);"" onclick=""sortGlobal('charsplit')"">Char Split %${arrow('charsplit')}</th>
+          <th style=""${colStyle}; color: var(--accent-cyan);"" onclick=""sortGlobal('music')"">Music Spec %${arrow('music')}</th>
+          <th style=""${colStyle}"" onclick=""sortGlobal('qual')"">LLM Peer Avg${arrow('qual')}</th>
+          <th style=""${colStyle}"" onclick=""sortGlobal('wins')"">1st Place Wins${arrow('wins')}</th>
+          <th style=""${colStyle}"" onclick=""sortGlobal('books')"">Books Evaluated (Live)${arrow('books')}</th>
+        </tr>`;
+      } else {
+        thead.innerHTML = `<tr>
+          <th style=""${colStyle}"" onclick=""sortGlobal('rank')"">Rank${arrow('rank')}</th>
+          <th style=""${colStyle}"" onclick=""sortGlobal('modelId')"">Model ID${arrow('modelId')}</th>
+          <th style=""${colStyle}"" onclick=""sortGlobal('composite')"">Multi-Book Composite${arrow('composite')}</th>
+          <th style=""${colStyle}"" onclick=""sortGlobal('syntax')"">C# Syntax Avg${arrow('syntax')}</th>
+          <th style=""${colStyle}"" onclick=""sortGlobal('qual')"">LLM Peer Avg${arrow('qual')}</th>
+          <th style=""${colStyle}"" onclick=""sortGlobal('wins')"">1st Place Wins${arrow('wins')}</th>
+          <th style=""${colStyle}"" onclick=""sortGlobal('books')"">Books Evaluated (Live)${arrow('books')}</th>
+        </tr>`;
+      }
+
+      tbody.innerHTML = '';
       if (leaderboard.length === 0) {
-        tbody.innerHTML = '<tr><td colspan=""7"" style=""text-align: center; color: var(--text-muted);"">No live benchmark history runs recorded yet. Run a benchmark to populate the leaderboard.</td></tr>';
+        const colSpan = isSyntaxExpanded ? 12 : 7;
+        tbody.innerHTML = `<tr><td colspan=""${colSpan}"" style=""text-align: center; color: var(--text-muted);"">No live benchmark history runs recorded yet. Run a benchmark to populate the leaderboard.</td></tr>`;
         return;
       }
 
       leaderboard.forEach((m, idx) => {
         const medal = idx === 0 ? '🥇 ' : idx === 1 ? '🥈 ' : idx === 2 ? '🥉 ' : (idx + 1) + '. ';
         const modelId = m.modelId || m.ModelId || 'Unknown';
-        const composite = (m.multiBookCompositeScore !== undefined ? m.multiBookCompositeScore : m.MultiBookCompositeScore) || 0;
-        const syntax = (m.avgSyntaxScore !== undefined ? m.avgSyntaxScore : m.AvgSyntaxScore) || 0;
-        const qual = (m.avgQualitativeScore !== undefined ? m.avgQualitativeScore : m.AvgQualitativeScore) || 0;
-        const wins = (m.firstPlaceWins !== undefined ? m.firstPlaceWins : m.FirstPlaceWins) || 0;
-        const books = (m.totalBooksEvaluated !== undefined ? m.totalBooksEvaluated : m.TotalBooksEvaluated) || 0;
+        const composite = getSortVal(m, 'composite');
+        const syntax = getSortVal(m, 'syntax');
+        const fmt = getSortVal(m, 'format');
+        const bdg = getSortVal(m, 'budget');
+        const pac = getSortVal(m, 'pacing');
+        const chr = getSortVal(m, 'charsplit');
+        const mus = getSortVal(m, 'music');
+        const qual = getSortVal(m, 'qual');
+        const wins = getSortVal(m, 'wins');
+        const books = getSortVal(m, 'books');
         const titles = m.evaluatedBookTitles || m.EvaluatedBookTitles || [];
         const formattedTitles = titles.map(t => formatTitle(t)).join(', ');
         const booksCell = formattedTitles.length > 0 
           ? `<strong style=""color: var(--accent-cyan);"">${books}</strong> <span style=""font-size: 0.82rem; color: var(--text-muted); margin-left: 0.3rem;"">(${formattedTitles})</span>`
           : `<strong>${books}</strong>`;
 
-        const row = `<tr>
+        let row = `<tr>
           <td><strong>${medal}</strong></td>
           <td><strong>${modelId}</strong></td>
           <td><span class=""score-badge score-high"">${composite.toFixed(1)}</span></td>
-          <td>${syntax.toFixed(1)}%</td>
+          <td>${syntax.toFixed(1)}%</td>`;
+
+        if (isSyntaxExpanded) {
+          row += `
+            <td style=""color: var(--accent-cyan);"">${fmt.toFixed(0)}%</td>
+            <td style=""color: var(--accent-cyan);"">${bdg.toFixed(0)}%</td>
+            <td style=""color: var(--accent-cyan);"">${pac.toFixed(0)}%</td>
+            <td style=""color: var(--accent-cyan);"">${chr.toFixed(0)}%</td>
+            <td style=""color: var(--accent-cyan);"">${mus.toFixed(0)}%</td>`;
+        }
+
+        row += `
           <td>${qual.toFixed(1)}%</td>
           <td>🏆 ${wins}</td>
           <td>${booksCell}</td>

@@ -29,6 +29,11 @@ public sealed class CompositeModelSummary
     public string ModelId { get; set; } = "";
     public double MultiBookCompositeScore { get; set; }
     public double AvgSyntaxScore { get; set; }
+    public double AvgFormatCompliance { get; set; }
+    public double AvgSceneBudget { get; set; }
+    public double AvgDialoguePacing { get; set; }
+    public double AvgCharDisambiguationSyntax { get; set; }
+    public double AvgMusicSpec { get; set; }
     public double AvgQualitativeScore { get; set; }
     public double AvgFidelity { get; set; }
     public double AvgCharSplit { get; set; }
@@ -134,6 +139,11 @@ public static class BenchmarkHistoryStore
                 ModelId = modelId,
                 MultiBookCompositeScore = Math.Round(modelScoresList.Average(s => s.CompositeScore), 1),
                 AvgSyntaxScore = Math.Round(modelScoresList.Average(s => s.SyntaxAudit.OverallSyntaxScore), 1),
+                AvgFormatCompliance = Math.Round(modelScoresList.Average(s => s.SyntaxAudit.FormatComplianceScore), 1),
+                AvgSceneBudget = Math.Round(modelScoresList.Average(s => s.SyntaxAudit.SceneBudgetScore), 1),
+                AvgDialoguePacing = Math.Round(modelScoresList.Average(s => s.SyntaxAudit.DialoguePacingScore), 1),
+                AvgCharDisambiguationSyntax = Math.Round(modelScoresList.Average(s => s.SyntaxAudit.CharacterDisambiguationScore), 1),
+                AvgMusicSpec = Math.Round(modelScoresList.Average(s => s.SyntaxAudit.MusicSpecScore), 1),
                 AvgQualitativeScore = Math.Round(modelScoresList.Average(s => s.AvgOverallQualitative * 10.0), 1),
                 AvgFidelity = Math.Round(modelScoresList.Average(s => s.AvgAdaptationFidelity), 1),
                 AvgCharSplit = Math.Round(modelScoresList.Average(s => s.AvgCharacterDisambiguation), 1),
