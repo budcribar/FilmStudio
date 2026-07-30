@@ -161,7 +161,20 @@ public static class Program
             Console.Write($"  [Adaptation] Model '{modelId}'... ");
             string screenplayText;
 
-            if (dryRun)
+            var screenplayFile = Path.Combine(screenplaysDir, $"{SanitizeFileName(modelId)}.fountain");
+            var cacheFile = Path.Combine("evals", "cache", bookSlug, $"{SanitizeFileName(modelId)}.fountain");
+
+            if (File.Exists(cacheFile))
+            {
+                screenplayText = await File.ReadAllTextAsync(cacheFile);
+                Console.WriteLine("(reused from disk cache)");
+            }
+            else if (File.Exists(screenplayFile))
+            {
+                screenplayText = await File.ReadAllTextAsync(screenplayFile);
+                Console.WriteLine("(reused from local run folder)");
+            }
+            else if (dryRun)
             {
                 screenplayText = GenerateMockScreenplay(modelId);
                 Console.WriteLine("(mock generated)");
@@ -177,6 +190,10 @@ public static class Program
                         author: "Author",
                         model: modelId);
                     Console.WriteLine("DONE");
+
+                    // Save to persistent cache
+                    Directory.CreateDirectory(Path.Combine("evals", "cache", bookSlug));
+                    await File.WriteAllTextAsync(cacheFile, screenplayText);
                 }
                 catch (Exception ex)
                 {
@@ -185,8 +202,8 @@ public static class Program
                 }
             }
 
-            var screenplayFile = Path.Combine(screenplaysDir, $"{SanitizeFileName(modelId)}.fountain");
-            await File.WriteAllTextAsync(screenplayFile, screenplayText);
+            if (!File.Exists(screenplayFile))
+                await File.WriteAllTextAsync(screenplayFile, screenplayText);
             generatedScreenplays[modelId] = screenplayText;
 
             var syntaxAudit = DeterministicSyntaxScorer.Evaluate(screenplayText);
