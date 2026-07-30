@@ -167,44 +167,56 @@ public static class DeterministicSyntaxScorer
 
         // 5. Music Specification Audit Score
         double musicScore = 100.0;
-        if (musicBedPrompts is not null && musicBedPrompts.Count > 0)
+        var musicRegex = new Regex(@"\[\[(MUSIC|SOUND):\s*(.*?)\]\]|\((MUSIC|SOUND):\s*(.*?)\)|\b(MUSIC|SOUND):\s*(.*)", RegexOptions.IgnoreCase);
+        var matches = musicRegex.Matches(fountainText);
+
+        var instrumentalRegex = new Regex(@"\b(instrumental|no vocals|piano|orchestral|strings|acoustic|synth|percussion|ambient|melancholic|tempo|score|soundtrack|waltz|lullaby|cello|violin|horn|drums)\b", RegexOptions.IgnoreCase);
+
+        if (matches.Count > 0)
         {
-            int emptyPrompts = 0;
-            int genericPlaceholders = 0;
-            int instrumentalTagged = 0;
+            int genericMusicCount = 0;
+            int instrumentalCount = 0;
 
-            foreach (var prompt in musicBedPrompts)
+            foreach (Match m in matches)
             {
-                if (string.IsNullOrWhiteSpace(prompt))
-                {
-                    emptyPrompts++;
-                }
-                else
-                {
-                    if (GenericMusicPlaceholderRegex.IsMatch(prompt))
-                        genericPlaceholders++;
-                    if (prompt.Contains("instrumental", StringComparison.OrdinalIgnoreCase) || prompt.Contains("no vocals", StringComparison.OrdinalIgnoreCase))
-                        instrumentalTagged++;
-                }
+                var txt = m.Value;
+                if (GenericMusicPlaceholderRegex.IsMatch(txt))
+                    genericMusicCount++;
+                if (instrumentalRegex.IsMatch(txt))
+                    instrumentalCount++;
             }
 
-            if (emptyPrompts > 0)
+            if (genericMusicCount > 0)
             {
-                musicScore -= Math.Min(40.0, (emptyPrompts / (double)musicBedPrompts.Count) * 100.0);
-                result.DiagnosticWarnings.Add($"{emptyPrompts}/{musicBedPrompts.Count} scene(s) missing music bed prompts.");
+                musicScore -= Math.Min(30.0, genericMusicCount * 10.0);
+                result.DiagnosticWarnings.Add($"{genericMusicCount} generic music placeholder cue(s) found.");
             }
 
-            if (genericPlaceholders > 0)
+            if (instrumentalCount > 0)
             {
-                musicScore -= Math.Min(30.0, genericPlaceholders * 10.0);
-                result.DiagnosticWarnings.Add($"{genericPlaceholders} generic music placeholder prompt(s) found.");
+                result.DiagnosticWarnings.Add($"Detected {instrumentalCount} descriptive instrumental music/sound cue(s).");
             }
-            result.MusicSpecScore = Math.Max(0.0, musicScore);
         }
         else
         {
-            result.MusicSpecScore = 90.0; // Default when music beds evaluated separately
+            // Check if action lines mention sound/music atmosphere
+            var atmosphericMatches = instrumentalRegex.Matches(fountainText);
+            if (atmosphericMatches.Count >= 3)
+            {
+                musicScore = 95.0; // Good atmospheric sound/music description in action lines
+            }
+            else if (atmosphericMatches.Count > 0)
+            {
+                musicScore = 80.0;
+            }
+            else
+            {
+                musicScore = 70.0; // Minimal or missing music/sound specification
+                result.DiagnosticWarnings.Add("No explicit music/sound design cues detected in screenplay.");
+            }
         }
+
+        result.MusicSpecScore = Math.Max(0.0, musicScore);
 
         // Composite C# Syntax Score
         result.OverallSyntaxScore = Math.Round(
