@@ -95,6 +95,48 @@ public sealed class ClientVideoStitchService
         return urls;
     }
 
+    /// <summary>
+    /// Multi-scene collection variant of <see cref="CollectSceneMediaUrlsAsync"/> that mixes each
+    /// scene's own locally-synced background music into that scene's segment before returning —
+    /// callers then concat the returned per-scene URLs into the final multi-scene video via
+    /// <see cref="ConcatAsync"/>. Mixing per scene (not on the final concatenated result) is
+    /// required since different scenes have different music; a scene whose stitch or mix step
+    /// fails is skipped rather than aborting the whole collection.
+    /// </summary>
+    public async Task<IReadOnlyList<string>> CollectAndMixSceneSegmentsAsync(
+        string projectId,
+        IReadOnlyList<int> sceneNumbers,
+        IReadOnlyList<SceneSummary>? sceneList,
+        IReadOnlySet<int>? staleScenes,
+        CancellationToken ct = default)
+    {
+        var segments = new List<string>();
+        foreach (var sn in sceneNumbers.Distinct().OrderBy(x => x))
+        {
+            ct.ThrowIfCancellationRequested();
+
+            var sceneUrls = await CollectSceneMediaUrlsAsync(projectId, new[] { sn }, sceneList, staleScenes, ct);
+            if (sceneUrls.Count == 0)
+                continue;
+
+            string sceneUrl;
+            if (sceneUrls.Count == 1)
+            {
+                sceneUrl = sceneUrls[0];
+            }
+            else
+            {
+                var concat = await ConcatAsync(sceneUrls, ct);
+                if (!concat.Success || string.IsNullOrWhiteSpace(concat.Url))
+                    continue;
+                sceneUrl = concat.Url!;
+            }
+
+            segments.Add(await MixSceneMusicAsync(sceneUrl, sn, ct: ct));
+        }
+        return segments;
+    }
+
     /// <summary>On-disk clip URLs for one scene (ordered).</summary>
     public async Task<IReadOnlyList<string>> CollectClipUrlsAsync(
         string projectId,

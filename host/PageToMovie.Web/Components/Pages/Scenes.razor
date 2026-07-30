@@ -982,11 +982,21 @@ else
                             }
                             · not the full scene
                         </div>
-                        <video controls playsinline autoplay
-                               style="width:100%; max-height:320px; background:#111; border-radius:0.35rem;"
-                               src="@(_clipVideoUrl ?? CacheBust(Engine.ClipVideoUrl(_projectId, _detail.SceneNumber, _clip.ClipNumber)))"
-                               @key="@($"clip-{_detail.SceneNumber}-{_clip.ClipNumber}-{_clipVideoKey}")"
-                               onloadeddata="this.play().catch(function(){})"></video>
+                        @if (_clipVideoLoading)
+                        {
+                            <div class="py-4 text-center text-white bg-dark rounded border border-secondary">
+                                <div class="spinner-border spinner-border-sm text-primary mb-2" role="status"></div>
+                                <div class="fw-semibold">Checking for a newer local copy…</div>
+                            </div>
+                        }
+                        else
+                        {
+                            <video controls playsinline autoplay
+                                   style="width:100%; max-height:320px; background:#111; border-radius:0.35rem;"
+                                   src="@(_clipVideoUrl ?? CacheBust(Engine.ClipVideoUrl(_projectId, _detail.SceneNumber, _clip.ClipNumber)))"
+                                   @key="@($"clip-{_detail.SceneNumber}-{_clip.ClipNumber}-{_clipVideoKey}")"
+                                   onloadeddata="this.play().catch(function(){})"></video>
+                        }
                         <div class="small text-muted mt-1">
                             @_clip.FileName · @FormatSize(_clip.SizeBytes)
                             · <a href="@Engine.ClipVideoUrl(_projectId, _detail.SceneNumber, _clip.ClipNumber)" target="_blank" rel="noopener">open clip URL</a>
@@ -2781,6 +2791,7 @@ else
     {
         _busy = true;
         _error = null;
+        _message = null; // clear any leftover completion message from a previous scene/action
         try
         {
             await LoadDetailAsync(sn);
@@ -2819,6 +2830,7 @@ else
         _selectedClip = null;
         _clip = null;
         _selectedClips.Clear();
+        _message = null; // clear any leftover completion message from a previous scene/action
         await ReloadListAsync();
     }
 
@@ -2930,10 +2942,12 @@ else
     }
 
     private string? _clipVideoUrl;
+    private bool _clipVideoLoading;
     private string? _sceneCompositeVideoUrl;
 
     private void SelectClip(int? cn)
     {
+        _message = null; // clear any leftover completion message from a previous scene/action
         _selectedClip = cn;
         _clip = cn is int n
             ? _detail?.Clips.FirstOrDefault(c => c.ClipNumber == n)
@@ -2944,6 +2958,10 @@ else
         {
             // Force new <video> mount so we never keep a previous composite/clip stream
             _clipVideoKey = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+            // Gate the <video> behind a loading spinner while we check for a newer local copy —
+            // otherwise it renders immediately with the (possibly stale) server fallback src and
+            // autoplays that before swapping to the fresh one once the check resolves.
+            _clipVideoLoading = MediaFolder.IsConnected;
             // Stop full-scene autoplay panel if open
             if (_showScenePlayer && _playingScene == _detail?.SceneNumber)
             {
@@ -2985,10 +3003,14 @@ else
                 if (!string.IsNullOrWhiteSpace(localBlob))
                 {
                     _clipVideoUrl = localBlob;
-                    StateHasChanged();
                 }
             }
             catch { /* fallback to server URL */ }
+            finally
+            {
+                _clipVideoLoading = false;
+                StateHasChanged();
+            }
         }
 
         // Proactive, lightweight fetch so the "Takes (N)" button shows a real count without
@@ -3173,7 +3195,7 @@ else
             var meta = await Engine.GetWipMovieMetaAsync(_projectId);
             var stale = meta?.StaleScenes?.ToHashSet() ?? new HashSet<int>();
             _clientStitchStatus = "Collecting media…";
-            var urls = await Stitch.CollectSceneMediaUrlsAsync(
+            var urls = await Stitch.CollectAndMixSceneSegmentsAsync(
                 _projectId, _previewScenes, _scenes, stale);
             if (urls.Count == 0)
             {

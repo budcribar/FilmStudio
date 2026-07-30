@@ -1189,6 +1189,21 @@
     {
         if (string.IsNullOrWhiteSpace(_augmentProjectId)) return;
 
+        // Generated music can only reach disk via the connected local media folder (the browser's
+        // File System Access picker needs a real click, which this early-in-the-handler call still
+        // has). Without it, jobs would run (and cost real API spend) but the audio could never be
+        // saved — the only visible sign was a warning banner that only renders on the Scenes page,
+        // so from here it looked like nothing happened at all.
+        if (!MediaFolder.IsConnected)
+        {
+            var connected = await MediaFolder.ConnectFolderAsync();
+            if (!connected)
+            {
+                _archiveError = "Connect a local media folder first (Scenes page → Connect folder) — background music can't be saved without one.";
+                return;
+            }
+        }
+
         _archiveBusy = true;
         _archiveAction = "synthesize";
         _archiveError = null;

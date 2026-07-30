@@ -1582,7 +1582,7 @@ else
         {
             var meta = await Engine.GetWipMovieMetaAsync(_projectId);
             var stale = meta?.StaleScenes?.ToHashSet() ?? new HashSet<int>();
-            var urls = await Stitch.CollectSceneMediaUrlsAsync(_projectId, sceneNums, _scenes, stale);
+            var urls = await Stitch.CollectAndMixSceneSegmentsAsync(_projectId, sceneNums, _scenes, stale);
             if (urls.Count == 0)
             {
                 _error = "No scene videos were found";
@@ -2379,7 +2379,7 @@ else
         {
             var meta = await Engine.GetWipMovieMetaAsync(_projectId);
             var stale = meta?.StaleScenes?.ToHashSet() ?? new HashSet<int>();
-            var urls = await Stitch.CollectSceneMediaUrlsAsync(_projectId, sceneNums, _scenes, stale);
+            var urls = await Stitch.CollectAndMixSceneSegmentsAsync(_projectId, sceneNums, _scenes, stale);
             if (urls.Count == 0) return null;
             await Stitch.RevokePreviewUrlAsync();
             var result = await Stitch.ConcatAsync(urls);

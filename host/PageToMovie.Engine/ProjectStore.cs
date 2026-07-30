@@ -2630,6 +2630,33 @@ public sealed class ProjectStore
         }
         var (durMinSeconds, _, durAbsMaxSeconds) = ClipDurationEstimator.ResolveBoundsForModel(modelId);
 
+        // Stage2 classifiers sometimes emit article/placeholder key variants (e.g.
+        // Character_The_Narrator) that differ from the real cast_seeds.json key
+        // (Character_Narrator) but normalize to the same identity. Canonicalize before
+        // validating/saving so a clip the user never touched doesn't fail to save with
+        // "unknown cast key", and so what's persisted matches the real cast key going forward.
+        if (castKeys is { Count: > 0 })
+        {
+            var byNormalizedKey = castKeys
+                .Where(k => !string.IsNullOrWhiteSpace(k))
+                .GroupBy(Stage2PlannerService.NormalizeCharacterKey)
+                .ToDictionary(g => g.Key, g => g.First(), StringComparer.Ordinal);
+
+            string Canonicalize(string key) =>
+                byNormalizedKey.TryGetValue(Stage2PlannerService.NormalizeCharacterKey(key), out var real)
+                    ? real
+                    : key;
+
+            if (fields.Speaker.Length > 0)
+                fields.Speaker = Canonicalize(fields.Speaker);
+            if (fields.PrimarySubject.Length > 0)
+                fields.PrimarySubject = Canonicalize(fields.PrimarySubject);
+            fields.CharactersOnScreen = fields.CharactersOnScreen
+                .Select(Canonicalize)
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+        }
+
         ValidateClipEditRequest(fields, castKeys, durMinSeconds, durAbsMaxSeconds);
 
         clipObj["visual_prompt"] = fields.VisualPrompt;
@@ -2794,6 +2821,13 @@ public sealed class ProjectStore
         var nativePath = videoPath + ".native";
         if (File.Exists(nativePath))
             File.Delete(nativePath);
+
+        // A later Add-clip reuses this clip number (max(existing) + 1) once it's the highest —
+        // leaving this file behind would leak the deleted clip's verification status onto
+        // whatever brand-new clip happens to land on the same number next.
+        var verificationPath = ClipDialogueVerificationService.BuildVerificationPath(projectDir, scene, clip);
+        if (File.Exists(verificationPath))
+            File.Delete(verificationPath);
 
         if (!removedFromBlueprint && !deletedVideo)
             throw new InvalidOperationException($"Clip S{scene:D2}C{clip:D2} not found.");
