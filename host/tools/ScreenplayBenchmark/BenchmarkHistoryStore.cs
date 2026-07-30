@@ -37,6 +37,7 @@ public sealed class CompositeModelSummary
     public double AvgDialogue { get; set; }
     public double AvgMusic { get; set; }
     public int TotalBooksEvaluated { get; set; }
+    public List<string> EvaluatedBookTitles { get; set; } = new();
     public int FirstPlaceWins { get; set; }
 }
 
@@ -141,6 +142,10 @@ public static class BenchmarkHistoryStore
                 AvgDialogue = Math.Round(modelScoresList.Average(s => s.AvgDialogueAuthenticity), 1),
                 AvgMusic = Math.Round(modelScoresList.Average(s => s.AvgSoundDesignMusic), 1),
                 TotalBooksEvaluated = modelRuns.Select(r => r.BookSlug).Distinct(StringComparer.OrdinalIgnoreCase).Count(),
+                EvaluatedBookTitles = modelRuns
+                    .Select(r => !string.IsNullOrWhiteSpace(r.BookTitle) ? r.BookTitle : r.BookSlug)
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .ToList(),
                 FirstPlaceWins = wins,
             });
         }

@@ -301,6 +301,11 @@ public static class HtmlDashboardGenerator
         const qual = (m.avgQualitativeScore !== undefined ? m.avgQualitativeScore : m.AvgQualitativeScore) || 0;
         const wins = (m.firstPlaceWins !== undefined ? m.firstPlaceWins : m.FirstPlaceWins) || 0;
         const books = (m.totalBooksEvaluated !== undefined ? m.totalBooksEvaluated : m.TotalBooksEvaluated) || 0;
+        const titles = m.evaluatedBookTitles || m.EvaluatedBookTitles || [];
+        const formattedTitles = titles.map(t => formatTitle(t)).join(', ');
+        const booksCell = formattedTitles.length > 0 
+          ? `<strong style=""color: var(--accent-cyan);"">${books}</strong> <span style=""font-size: 0.82rem; color: var(--text-muted); margin-left: 0.3rem;"">(${formattedTitles})</span>`
+          : `<strong>${books}</strong>`;
 
         const row = `<tr>
           <td><strong>${medal}</strong></td>
@@ -309,7 +314,7 @@ public static class HtmlDashboardGenerator
           <td>${syntax.toFixed(1)}%</td>
           <td>${qual.toFixed(1)}%</td>
           <td>🏆 ${wins}</td>
-          <td>${books}</td>
+          <td>${booksCell}</td>
         </tr>`;
         tbody.innerHTML += row;
       });
