@@ -243,7 +243,15 @@ window.PageToMovieFfmpeg = {
                 reportProgress(onProgress, 92, "Preparing player…");
                 const out = await ffmpeg.readFile("out.mp4");
                 const blob = new Blob([out.buffer], { type: "video/mp4" });
-                self.revokePreviewUrl();
+                // Do NOT auto-revoke the previous _blobUrl here — CollectAndMixSceneSegmentsAsync
+                // (C#) calls this function once per scene to build several *simultaneous*
+                // intermediate segments before combining them in one final call. Auto-revoking on
+                // every call was yanking the URL out from under an earlier scene's still-in-use
+                // blob the moment a later scene's concat ran, so the final combine's fetch() on
+                // that now-revoked blob: URL failed with a bare "Failed to fetch". Explicit
+                // top-level preview replacement already calls revokePreviewUrl() itself (see
+                // RevokePreviewUrlAsync callers) before requesting a new preview, so nothing here
+                // relied on this implicit revoke for correctness — only for eager cleanup.
                 self._blobUrl = URL.createObjectURL(blob);
 
                 // Cleanup MEMFS
