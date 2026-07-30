@@ -98,6 +98,18 @@ public sealed class ClientMediaFolderService
     private void OnJobUpdated(JobSnapshot snap)
     {
         if (snap is null) return;
+
+        // TEMP diagnostic (see memory/session notes): music-generated audio was never reaching
+        // the local folder despite generation succeeding server-side, with no JS console errors —
+        // meaning SaveJobMediaAsync was seemingly never even being invoked. This makes every
+        // JobUpdated tick visible via LastStatus (already surfaced on the Admin page) regardless
+        // of which gate below returns early, so the next run pinpoints exactly which check is
+        // swallowing music updates instead of guessing blind. Remove once root-caused.
+        LastStatus = $"[diag] JobUpdated: kind={snap.Kind} status={snap.Status} " +
+                     $"clientUrl={(string.IsNullOrEmpty(snap.ClientMediaUrl) ? "(null)" : "set")} " +
+                     $"relPath={snap.ClientRelativePath ?? "(null)"} project={snap.ProjectId ?? "(null)"}";
+        Changed?.Invoke();
+
         // "done"-only would drop every clip but the last in a multi-clip batch: ClientMediaUrl/
         // ClientRelativePath are set per-clip while Status stays "running" for the whole batch loop
         // (FilmJobService.RunBatchGenAsync → GenerateOneClipAsync), only flipping to "done" once, at
@@ -116,6 +128,8 @@ public sealed class ClientMediaFolderService
         {
             if (_savedKeys.Contains(key)) return; // already completed
         }
+        LastStatus = $"[diag] Starting save: {snap.ClientRelativePath}";
+        Changed?.Invoke();
         _ = SaveJobMediaAsync(snap);
     }
 
