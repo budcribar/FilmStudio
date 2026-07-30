@@ -210,14 +210,14 @@ public sealed class VoicePreviewService
             if (!string.IsNullOrWhiteSpace(prof.Description))
                 look += prof.Description.Trim();
             if (!string.IsNullOrWhiteSpace(prof.VisualLock))
-                look += (look.Length > 0 ? " " : "") + "Visual lock: " + prof.VisualLock.Trim();
+                look += (look.Length > 0 ? " " : "") + "<VisualLock>" + prof.VisualLock.Trim() + "</VisualLock>";
         }
 
         var voiceLock = !string.IsNullOrWhiteSpace(profile)
-            ? $" VOICE LOCK {charKey}: {profile}"
+            ? $" <VoiceLock>{charKey}: {profile}</VoiceLock>"
             : !string.IsNullOrWhiteSpace(label)
-                ? $" VOICE LOCK {charKey}: {label}"
-                : $" VOICE LOCK {charKey}: natural speaking voice for {display}";
+                ? $" <VoiceLock>{charKey}: {label}</VoiceLock>"
+                : $" <VoiceLock>{charKey}: natural speaking voice for {display}</VoiceLock>";
 
         // Optional locked portrait for lip-sync consistency (reference_images)
         string? refPath = null;
@@ -237,10 +237,10 @@ public sealed class VoicePreviewService
         }
 
         if (look.Length > 0)
-            sb.AppendLine($"LOOK: {look}");
+            sb.AppendLine($"<Look>{look}</Look>");
         sb.AppendLine(
-            $"AUDIO: REQUIRED native Grok dialogue. {charKey} ON CAMERA lip-syncs " +
-            $"exactly: \"{sample}\". Other mouths closed. Speech intelligible; never silent.{voiceLock}");
+            $"<Audio>REQUIRED native Grok dialogue. {charKey} ON CAMERA lip-syncs " +
+            $"exactly: \"{sample}\". Other mouths closed. Speech intelligible; never silent.{voiceLock}</Audio>");
         sb.AppendLine(
             "Single continuous take, natural performance, no music, no captions, no on-screen text.");
 
