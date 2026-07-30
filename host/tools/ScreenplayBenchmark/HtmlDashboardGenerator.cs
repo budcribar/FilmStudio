@@ -11,8 +11,9 @@ public static class HtmlDashboardGenerator
     public static string GenerateHtmlDashboard(HistoricalStoreContainer historyContainer)
     {
         var globalLeaderboard = BenchmarkHistoryStore.ComputeGlobalCompositeLeaderboard(historyContainer);
-        var historyJson = JsonSerializer.Serialize(historyContainer, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-        var globalJson = JsonSerializer.Serialize(globalLeaderboard, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+        var jsonOpts = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase, WriteIndented = false };
+        var historyJson = JsonSerializer.Serialize(historyContainer, jsonOpts);
+        var globalJson = JsonSerializer.Serialize(globalLeaderboard, jsonOpts);
 
         var sb = new StringBuilder();
         sb.AppendLine(@"<!DOCTYPE html>
@@ -68,6 +69,18 @@ public static class HtmlDashboardGenerator
     }
     .title-group p { color: var(--text-muted); font-size: 0.875rem; margin-top: 0.25rem; }
 
+    .date-badge {
+      display: inline-block;
+      background: rgba(56, 189, 248, 0.1);
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      color: var(--accent-cyan);
+      padding: 0.25rem 0.75rem;
+      border-radius: 9999px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      margin-left: 0.75rem;
+    }
+
     .nav-tabs {
       display: flex;
       gap: 0.75rem;
@@ -95,13 +108,6 @@ public static class HtmlDashboardGenerator
 
     .tab-content { display: none; }
     .tab-content.active { display: block; }
-
-    .card-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-      gap: 1.25rem;
-      margin-bottom: 2rem;
-    }
 
     .card {
       background: var(--bg-card);
@@ -144,20 +150,7 @@ public static class HtmlDashboardGenerator
     }
     .score-high { background: rgba(34, 197, 94, 0.15); color: #4ade80; border: 1px solid rgba(34, 197, 94, 0.3); }
     .score-mid { background: rgba(234, 179, 8, 0.15); color: #facc15; border: 1px solid rgba(234, 179, 8, 0.3); }
-
-    .progress-bar-bg {
-      background: rgba(255, 255, 255, 0.1);
-      border-radius: 0.25rem;
-      height: 6px;
-      width: 100%;
-      overflow: hidden;
-      margin-top: 0.25rem;
-    }
-    .progress-bar-fill {
-      height: 100%;
-      background: linear-gradient(90deg, #38bdf8, #a855f7);
-      border-radius: 0.25rem;
-    }
+    .score-mock { background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); }
 
     select {
       background: var(--bg-card);
@@ -176,7 +169,7 @@ public static class HtmlDashboardGenerator
   <header>
     <div class=""title-group"">
       <h1>🎬 Film Studio — Model Benchmark Dashboard</h1>
-      <p>Screenplay Adaptation & Peer-Evaluation Leaderboard over Time</p>
+      <p>Screenplay Adaptation & Peer-Evaluation Leaderboard over Time <span class=""date-badge"">📅 Last Run: <strong id=""last-run-header"">Loading...</strong></span></p>
     </div>
   </header>
 
@@ -189,7 +182,10 @@ public static class HtmlDashboardGenerator
   <!-- TAB 1: GLOBAL MULTI-BOOK LEADERBOARD -->
   <div id=""tab-global"" class=""tab-content active"">
     <div class=""card"">
-      <h3>🏆 Multi-Book Composite Model Rankings</h3>
+      <div style=""display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;"">
+        <h3>🏆 Multi-Book Composite Model Rankings</h3>
+        <span style=""font-size: 0.85rem; color: var(--text-muted);"">Date Run: <strong id=""global-date-subtitle"" style=""color: var(--text-main);"">—</strong></span>
+      </div>
       <p style=""color: var(--text-muted); font-size: 0.85rem;"">Aggregated average composite scores (40% C# Syntax + 60% LLM Peer Ratings) across all benchmarked books in the evaluation suite.</p>
       
       <table id=""global-table"">
@@ -224,7 +220,7 @@ public static class HtmlDashboardGenerator
       <table id=""perbook-table"">
         <thead>
           <tr>
-            <th>Date</th>
+            <th>Date Run</th>
             <th>Model ID</th>
             <th>Composite Score</th>
             <th>Syntax Score</th>
@@ -241,7 +237,10 @@ public static class HtmlDashboardGenerator
   <!-- TAB 3: PEER JUDGE HEATMAP -->
   <div id=""tab-heatmap"" class=""tab-content"">
     <div class=""card"">
-      <h3>⚖️ Peer Judge Cross-Evaluation Matrix</h3>
+      <div style=""display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;"">
+        <h3>⚖️ Peer Judge Cross-Evaluation Matrix</h3>
+        <span style=""font-size: 0.85rem; color: var(--text-muted);"">Date Run: <strong id=""heatmap-date"" style=""color: var(--text-main);"">—</strong></span>
+      </div>
       <p style=""color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1rem;"">Cross-tabulation showing how peer judge models evaluated candidate screenplays in the latest run.</p>
       <div id=""heatmap-container""></div>
     </div>
@@ -260,29 +259,55 @@ public static class HtmlDashboardGenerator
       document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
       document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
       
-      event.target.classList.add('active');
+      const btn = Array.from(document.querySelectorAll('.tab-btn')).find(b => b.getAttribute('onclick').includes(tabId));
+      if (btn) btn.classList.add('active');
       document.getElementById('tab-' + tabId).classList.add('active');
+    }
+
+    function updateHeaderDates() {
+      const runs = (window.BENCHMARK_HISTORY && window.BENCHMARK_HISTORY.runs) || [];
+      const headerElem = document.getElementById('last-run-header');
+      const globalDateElem = document.getElementById('global-date-subtitle');
+      const heatmapDateElem = document.getElementById('heatmap-date');
+
+      if (runs.length > 0) {
+        const latestRun = runs[runs.length - 1];
+        const lastDate = latestRun.timestamp || latestRun.Timestamp || 'Unknown';
+        if (headerElem) headerElem.textContent = lastDate;
+        if (globalDateElem) globalDateElem.textContent = lastDate;
+        if (heatmapDateElem) heatmapDateElem.textContent = lastDate;
+      } else {
+        if (headerElem) headerElem.textContent = 'No runs recorded';
+      }
     }
 
     function renderGlobalTable() {
       const tbody = document.getElementById('global-tbody');
       tbody.innerHTML = '';
 
-      if (!window.GLOBAL_LEADERBOARD || window.GLOBAL_LEADERBOARD.length === 0) {
-        tbody.innerHTML = '<tr><td colspan=""7"" style=""text-align: center;"">No history runs recorded yet.</td></tr>';
+      const leaderboard = window.GLOBAL_LEADERBOARD || [];
+      if (leaderboard.length === 0) {
+        tbody.innerHTML = '<tr><td colspan=""7"" style=""text-align: center; color: var(--text-muted);"">No benchmark history runs recorded yet. Run a benchmark to populate the leaderboard.</td></tr>';
         return;
       }
 
-      window.GLOBAL_LEADERBOARD.forEach((m, idx) => {
+      leaderboard.forEach((m, idx) => {
         const medal = idx === 0 ? '🥇 ' : idx === 1 ? '🥈 ' : idx === 2 ? '🥉 ' : (idx + 1) + '. ';
+        const modelId = m.modelId || m.ModelId || 'Unknown';
+        const composite = (m.multiBookCompositeScore !== undefined ? m.multiBookCompositeScore : m.MultiBookCompositeScore) || 0;
+        const syntax = (m.avgSyntaxScore !== undefined ? m.avgSyntaxScore : m.AvgSyntaxScore) || 0;
+        const qual = (m.avgQualitativeScore !== undefined ? m.avgQualitativeScore : m.AvgQualitativeScore) || 0;
+        const wins = (m.firstPlaceWins !== undefined ? m.firstPlaceWins : m.FirstPlaceWins) || 0;
+        const books = (m.totalBooksEvaluated !== undefined ? m.totalBooksEvaluated : m.TotalBooksEvaluated) || 0;
+
         const row = `<tr>
           <td><strong>${medal}</strong></td>
-          <td><strong>${m.modelId}</strong></td>
-          <td><span class=""score-badge score-high"">${m.multiBookCompositeScore.toFixed(1)}</span></td>
-          <td>${m.avgSyntaxScore.toFixed(1)}%</td>
-          <td>${m.avgQualitativeScore.toFixed(1)}%</td>
-          <td>🏆 ${m.firstPlaceWins}</td>
-          <td>${m.totalBooksEvaluated}</td>
+          <td><strong>${modelId}</strong></td>
+          <td><span class=""score-badge score-high"">${composite.toFixed(1)}</span></td>
+          <td>${syntax.toFixed(1)}%</td>
+          <td>${qual.toFixed(1)}%</td>
+          <td>🏆 ${wins}</td>
+          <td>${books}</td>
         </tr>`;
         tbody.innerHTML += row;
       });
@@ -292,8 +317,10 @@ public static class HtmlDashboardGenerator
       const select = document.getElementById('book-select');
       select.innerHTML = '';
 
-      if (!window.BENCHMARK_HISTORY || !window.BENCHMARK_HISTORY.runs) return;
-      const slugs = [...new Set(window.BENCHMARK_HISTORY.runs.map(r => r.bookSlug))];
+      const runs = (window.BENCHMARK_HISTORY && window.BENCHMARK_HISTORY.runs) || [];
+      if (runs.length === 0) return;
+
+      const slugs = [...new Set(runs.map(r => r.bookSlug || r.BookSlug))].filter(Boolean);
 
       slugs.forEach(slug => {
         const opt = document.createElement('option');
@@ -302,7 +329,10 @@ public static class HtmlDashboardGenerator
         select.appendChild(opt);
       });
 
-      renderPerBookTable();
+      if (slugs.length > 0) {
+        select.value = slugs[0];
+        renderPerBookTable();
+      }
     }
 
     function renderPerBookTable() {
@@ -311,18 +341,34 @@ public static class HtmlDashboardGenerator
       const tbody = document.getElementById('perbook-tbody');
       tbody.innerHTML = '';
 
-      if (!slug || !window.BENCHMARK_HISTORY) return;
+      const runs = (window.BENCHMARK_HISTORY && window.BENCHMARK_HISTORY.runs) || [];
+      if (!slug || runs.length === 0) {
+        tbody.innerHTML = '<tr><td colspan=""6"" style=""text-align: center; color: var(--text-muted);"">No book history found.</td></tr>';
+        return;
+      }
 
-      const runs = window.BENCHMARK_HISTORY.runs.filter(r => r.bookSlug === slug);
-      runs.forEach(r => {
-        r.modelScores.forEach(m => {
+      const matchingRuns = runs.filter(r => (r.bookSlug || r.BookSlug) === slug);
+      matchingRuns.forEach(r => {
+        const date = r.timestamp || r.Timestamp || '—';
+        const scores = r.modelScores || r.ModelScores || [];
+        scores.forEach(m => {
+          const modelId = m.modelId || m.ModelId || 'Unknown';
+          const composite = (m.compositeScore !== undefined ? m.compositeScore : m.CompositeScore) || 0;
+          const syntaxAudit = m.syntaxAudit || m.SyntaxAudit || {};
+          const syntaxScore = (syntaxAudit.overallSyntaxScore !== undefined ? syntaxAudit.overallSyntaxScore : syntaxAudit.OverallSyntaxScore) || 0;
+          const avgQual = (m.avgOverallQualitative !== undefined ? m.avgOverallQualitative : m.AvgOverallQualitative) || 0;
+          const borda = (m.bordaPoints !== undefined ? m.bordaPoints : m.BordaPoints) || 0;
+
+          const badgeClass = composite < 0 ? 'score-mock' : 'score-mid';
+          const compositeLabel = composite < 0 ? '⚠️ -1.0 (Failed)' : composite.toFixed(1);
+
           const row = `<tr>
-            <td>${r.timestamp}</td>
-            <td><strong>${m.modelId}</strong></td>
-            <td><span class=""score-badge score-mid"">${m.compositeScore.toFixed(1)}</span></td>
-            <td>${m.syntaxAudit.overallSyntaxScore.toFixed(1)}%</td>
-            <td>${(m.avgOverallQualitative * 10).toFixed(1)}%</td>
-            <td>${m.bordaPoints} pts</td>
+            <td><strong style=""color: var(--accent-cyan);"">${date}</strong></td>
+            <td><strong>${modelId}</strong></td>
+            <td><span class=""score-badge ${badgeClass}"">${compositeLabel}</span></td>
+            <td>${syntaxScore.toFixed(1)}%</td>
+            <td>${(avgQual * 10).toFixed(1)}%</td>
+            <td>${borda} pts</td>
           </tr>`;
           tbody.innerHTML += row;
         });
@@ -331,24 +377,31 @@ public static class HtmlDashboardGenerator
 
     function renderHeatmap() {
       const container = document.getElementById('heatmap-container');
-      if (!window.BENCHMARK_HISTORY || window.BENCHMARK_HISTORY.runs.length === 0) {
+      const runs = (window.BENCHMARK_HISTORY && window.BENCHMARK_HISTORY.runs) || [];
+      if (runs.length === 0) {
         container.innerHTML = '<p style=""color: var(--text-muted);"">No run data available for heatmap.</p>';
         return;
       }
 
-      const latestRun = window.BENCHMARK_HISTORY.runs[window.BENCHMARK_HISTORY.runs.length - 1];
-      if (!latestRun || !latestRun.judgeMatrix) return;
+      const latestRun = runs[runs.length - 1];
+      const matrix = latestRun.judgeMatrix || latestRun.JudgeMatrix;
+      const modelScores = latestRun.modelScores || latestRun.ModelScores || [];
+      if (!latestRun || !matrix) return;
 
       let html = '<table><thead><tr><th>Judge \\ Candidate</th>';
-      const models = latestRun.modelScores.map(m => m.modelId);
+      const models = modelScores.map(m => m.modelId || m.ModelId);
       models.forEach(m => html += `<th>${m}</th>`);
       html += '</tr></thead><tbody>';
 
-      Object.entries(latestRun.judgeMatrix).forEach(([judge, ratings]) => {
+      Object.entries(matrix).forEach(([judge, ratings]) => {
         html += `<tr><td><strong>${judge}</strong></td>`;
         models.forEach(m => {
-          const val = ratings[m] !== undefined ? ratings[m].toFixed(1) : 'N/A';
-          html += `<td>${val}</td>`;
+          const val = ratings[m] !== undefined ? ratings[m] : ratings[m.toLowerCase()];
+          let label = 'N/A';
+          if (val !== undefined) {
+            label = val < 0 ? '⚠️ -1.0 (Mock)' : val.toFixed(1);
+          }
+          html += `<td>${label}</td>`;
         });
         html += '</tr>';
       });
@@ -357,6 +410,7 @@ public static class HtmlDashboardGenerator
     }
 
     window.addEventListener('DOMContentLoaded', () => {
+      updateHeaderDates();
       renderGlobalTable();
       initBookSelect();
       renderHeatmap();
