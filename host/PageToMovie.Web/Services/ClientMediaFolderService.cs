@@ -31,11 +31,10 @@ public sealed class ClientMediaFolderService
     }
 
     /// <summary>
-    /// When true, connecting a local folder or logging in will automatically start downloading
-    /// project media in the background. Defaults to false so logging in does not automatically
-    /// download media to the local folder.
+    /// When true, connecting a local folder or logging in will check if any local media files are missing or out of date,
+    /// syncing only missing/updated files. Defaults to true.
     /// </summary>
-    public bool AutoSyncOnLogin { get; set; } = false;
+    public bool AutoSyncOnLogin { get; set; } = true;
 
     private void OnActiveProjectChanged()
     {
@@ -653,59 +652,77 @@ public sealed class ClientMediaFolderService
 
         try
         {
-            IsSyncing = true;
-            SyncProjectId = projectId;
-            SyncCurrent = 0;
-            SyncTotal = 0;
-            SyncCurrentFile = null;
-
-            LastStatus = $"Syncing project '{projectId}' media to local folder…";
-            Changed?.Invoke();
-
             var syncList = await _api.GetProjectMediaSyncListAsync(projectId);
-            var count = 0;
-
-            if (syncList?.Files is not null)
+            if (syncList?.Files is null || syncList.Files.Count == 0)
             {
-                SyncTotal = syncList.Files.Count;
+                LastStatus = "No media files to sync.";
                 Changed?.Invoke();
+                return 0;
+            }
 
-                for (var i = 0; i < syncList.Files.Count; i++)
+            // Smart Pre-Check: Filter out files that already exist locally with matching size
+            var outOfDateFiles = new List<ProjectMediaSyncFile>();
+            foreach (var file in syncList.Files)
+            {
+                var (found, localSize) = await StatLocalFileAsync(projectId, file.RelativePath);
+                if (!found || file.SizeBytes <= 0 || localSize != file.SizeBytes)
                 {
-                    var file = syncList.Files[i];
-                    SyncCurrent = i + 1;
-                    SyncCurrentFile = file.FileName;
-                    LastStatus = $"Downloading {file.FileName} to local folder ({SyncCurrent}/{SyncTotal})…";
-                    Changed?.Invoke();
-
-                    if (string.IsNullOrWhiteSpace(file.StreamUrl))
-                        continue;
-
-                    // Client-only prefixed path for the shared local folder; the manifest's bare
-                    // file.RelativePath (not saved.RelativePath, echoed back prefixed) is what the
-                    // server expects in RegisterMediaAsync below.
-                    var clientPath = $"{projectId}/{file.RelativePath}";
-                    var saved = await _js.InvokeAsync<JsSaveResult>(
-                        "PageToMovieMedia.saveFromUrlAsync",
-                        file.StreamUrl,
-                        clientPath,
-                        null);
-
-                    if (saved is { Success: true } && !string.IsNullOrWhiteSpace(saved.Sha256))
-                    {
-                        count++;
-                        await _api.RegisterMediaAsync(projectId, new MediaRegisterRequest
-                        {
-                            RelativePath = file.RelativePath,
-                            Sha256 = saved.Sha256,
-                            SizeBytes = saved.SizeBytes,
-                            Kind = file.IsMp4 ? "clip" : "sidecar",
-                        });
-                    }
+                    outOfDateFiles.Add(file);
                 }
             }
 
-            LastStatus = $"Media folder synced: {count} file(s) saved on local disk";
+            if (outOfDateFiles.Count == 0)
+            {
+                LastStatus = "All project media files are already up-to-date on local disk.";
+                Changed?.Invoke();
+                return 0;
+            }
+
+            IsSyncing = true;
+            SyncProjectId = projectId;
+            SyncCurrent = 0;
+            SyncTotal = outOfDateFiles.Count;
+            SyncCurrentFile = null;
+
+            LastStatus = $"Syncing {outOfDateFiles.Count} out-of-date media file(s) to local folder…";
+            Changed?.Invoke();
+
+            var count = 0;
+            for (var i = 0; i < outOfDateFiles.Count; i++)
+            {
+                var file = outOfDateFiles[i];
+                SyncCurrent = i + 1;
+                SyncCurrentFile = file.FileName;
+                LastStatus = $"Downloading {file.FileName} to local folder ({SyncCurrent}/{SyncTotal})…";
+                Changed?.Invoke();
+
+                if (string.IsNullOrWhiteSpace(file.StreamUrl))
+                    continue;
+
+                // Client-only prefixed path for the shared local folder; the manifest's bare
+                // file.RelativePath (not saved.RelativePath, echoed back prefixed) is what the
+                // server expects in RegisterMediaAsync below.
+                var clientPath = $"{projectId}/{file.RelativePath}";
+                var saved = await _js.InvokeAsync<JsSaveResult>(
+                    "PageToMovieMedia.saveFromUrlAsync",
+                    file.StreamUrl,
+                    clientPath,
+                    null);
+
+                if (saved is { Success: true } && !string.IsNullOrWhiteSpace(saved.Sha256))
+                {
+                    count++;
+                    await _api.RegisterMediaAsync(projectId, new MediaRegisterRequest
+                    {
+                        RelativePath = file.RelativePath,
+                        Sha256 = saved.Sha256,
+                        SizeBytes = saved.SizeBytes,
+                        Kind = file.IsMp4 ? "clip" : "sidecar",
+                    });
+                }
+            }
+
+            LastStatus = $"Media folder synced: {count} missing/updated file(s) saved on local disk";
             Changed?.Invoke();
             return count;
         }
