@@ -650,7 +650,7 @@ else
                         <label class="form-check-label small" for="wantVocalSwitch">Sing</label>
                     </div>
                     <button type="button"
-                            class="btn btn-sm btn-outline-warning text-dark fw-semibold"
+                            class="btn btn-sm btn-warning text-black fw-bold px-3 shadow-sm"
                             disabled="@(_busy || JobRunning || _scoringMusic)"
                             title="@(_wantVocal && SelectedAudioModelCanSing ? "Generate sung vocals for this scene (auto-composed lyrics)" : "Generate AI background music score with automatic dialogue ducking")"
                             @onclick="() => ScoreSceneBackgroundMusicAsync(_detail.SceneNumber)">
@@ -780,7 +780,7 @@ else
                     @if (_detail.Clips.Any(c => c.DialogueVerification is { Status: "mismatch" } or { Status: "speaker_swap" }))
                     {
                         <button type="button"
-                                class="btn btn-sm btn-outline-warning text-dark"
+                                class="btn btn-sm btn-warning text-black fw-semibold"
                                 data-testid="clip-select-mismatched"
                                 disabled="@_busy"
                                 title="Check all clips in this scene with dialogue mismatches or speaker swaps"
