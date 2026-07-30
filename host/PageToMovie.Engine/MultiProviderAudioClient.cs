@@ -33,7 +33,7 @@ public sealed class MultiProviderAudioClient : IAudioClient
         CancellationToken ct = default,
         Action<string>? onProgress = null)
     {
-        var provider = SupportedModelCatalog.ResolveOrDefault(model, ModelCapability.Audio, "fal-ai/stable-audio").Provider;
+        var provider = SupportedModelCatalog.ResolveOrDefault(model, ModelCapability.Audio).Provider;
         IAudioClient client = provider switch
         {
             ModelProviderFamily.Suno => _suno,

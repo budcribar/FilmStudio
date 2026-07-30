@@ -420,15 +420,51 @@ public static class SupportedModelCatalog
         },
         new()
         {
-            Id = "fal-ai/stable-audio",
-            DisplayName = "Fal.ai Stable Audio",
+            Id = "fal-ai/musicgen",
+            DisplayName = "MusicGen (Fal.ai)",
             Capability = ModelCapability.Audio,
             Provider = ModelProviderFamily.Fal,
             ApiBase = FalApiBase,
-            EndpointPath = "fal-ai/stable-audio",
+            EndpointPath = "fal-ai/musicgen",
             RequiredEnvKeys = [FalApiKeyEnv],
-            MaxAudioDurationSeconds = 47,
-            Notes = "Real fal-ai/stable-audio hard limit — see github.com/Stability-AI/stable-audio-tools/issues/154. Wired via FalAudioClient.",
+            MaxAudioDurationSeconds = 30,
+            Notes = "Meta MusicGen model hosted on Fal.ai. Pure instrumental background scoring with zero vocal hallucination.",
+        },
+        new()
+        {
+            Id = "fal-ai/udio",
+            DisplayName = "Udio (Fal.ai)",
+            Capability = ModelCapability.Audio,
+            Provider = ModelProviderFamily.Fal,
+            ApiBase = FalApiBase,
+            EndpointPath = "fal-ai/udio",
+            RequiredEnvKeys = [FalApiKeyEnv],
+            MaxAudioDurationSeconds = 60,
+            Notes = "Udio model hosted on Fal.ai. High-fidelity 44.1kHz studio music scoring with rich dynamic range.",
+        },
+        new()
+        {
+            Id = "fal-ai/minimax/music",
+            DisplayName = "MiniMax Music (Fal.ai)",
+            Capability = ModelCapability.Audio,
+            Provider = ModelProviderFamily.Fal,
+            ApiBase = FalApiBase,
+            EndpointPath = "fal-ai/minimax/music",
+            RequiredEnvKeys = [FalApiKeyEnv],
+            MaxAudioDurationSeconds = 60,
+            Notes = "MiniMax Music model hosted on Fal.ai for cinematic themes and dynamic background scores.",
+        },
+        new()
+        {
+            Id = "fal-ai/stable-audio-2.0",
+            DisplayName = "Stable Audio 2.0 (Fal.ai)",
+            Capability = ModelCapability.Audio,
+            Provider = ModelProviderFamily.Fal,
+            ApiBase = FalApiBase,
+            EndpointPath = "fal-ai/stable-audio-2.0",
+            RequiredEnvKeys = [FalApiKeyEnv],
+            MaxAudioDurationSeconds = 180,
+            Notes = "Stability AI Stable Audio 2.0 hosted on Fal.ai with improved stereo width and multi-minute structural coherence.",
         },
         new()
         {
@@ -640,6 +676,13 @@ public static class SupportedModelCatalog
         if (!string.IsNullOrWhiteSpace(fallbackId))
         {
             hit = Find(fallbackId, capability);
+            if (hit is not null) return hit;
+        }
+
+        var capDef = RegisteredCapabilities.FirstOrDefault(c => string.Equals(c.Id, capability.ToString(), StringComparison.OrdinalIgnoreCase));
+        if (!string.IsNullOrWhiteSpace(capDef?.DefaultModelId))
+        {
+            hit = Find(capDef.DefaultModelId, capability);
             if (hit is not null) return hit;
         }
 

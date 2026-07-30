@@ -1221,7 +1221,7 @@ public sealed class FilmJobService
             var cfg = await _projects.GetConfigAsync(projectId, ct).ConfigureAwait(false);
 
             var enableMusic = SceneMusicScoringService.GetConfigBool(cfg, "enable_background_music", true);
-            var audioModel = SceneMusicScoringService.GetConfigStr(cfg, "audio_model_name", "fal-ai/stable-audio");
+            var audioModel = SceneMusicScoringService.GetConfigStr(cfg, "audio_model_name", "");
             if (!enableMusic || string.Equals(audioModel, "none", StringComparison.OrdinalIgnoreCase))
             {
                 await FinishAsync("done", "Background music disabled in settings.");
@@ -1237,7 +1237,7 @@ public sealed class FilmJobService
                 pDir, scene, screenplay, totalDuration, planningModel, ct).ConfigureAwait(false);
             await AppendLogAsync($"Music prompt: {prompt}");
 
-            var entry = SupportedModelCatalog.ResolveOrDefault(audioModel, ModelCapability.Audio, "fal-ai/stable-audio");
+            var entry = SupportedModelCatalog.ResolveOrDefault(audioModel, ModelCapability.Audio);
             // Providers without a documented duration control (MaxAudioDurationSeconds null, e.g.
             // AIMusicAPI) collapse this to one call requesting the full scene length — the
             // provider decides the actual length, no client-side stitching to do.

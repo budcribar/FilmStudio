@@ -143,7 +143,7 @@ public sealed class PageToMovieOptions
     public string ColorPaletteGradingClassifyModel { get; set; } = "grok-4.5";
 
     public bool EnableBackgroundMusic { get; set; } = true;
-    public string BackgroundMusicModel { get; set; } = "fal-ai/stable-audio";
+    public string BackgroundMusicModel { get; set; } = "";
     public int BackgroundMusicVolumePercent { get; set; } = 20;
 
     /// <summary>
