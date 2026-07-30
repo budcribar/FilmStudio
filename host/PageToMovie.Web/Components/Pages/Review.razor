@@ -1028,12 +1028,21 @@ else
     {
         if (_activeTab == tab)
         {
+            if (tab == "play")
+            {
+                await PlayWipAsync();
+                return;
+            }
             _activeTab = null; // Toggle off / collapse card
         }
         else
         {
             _activeTab = tab;
-            if (tab == "share")
+            if (tab == "play")
+            {
+                await PlayWipAsync();
+            }
+            else if (tab == "share")
             {
                 PrepopulateDemoFields();
                 await RefreshYouTubeStatusAsync();
@@ -1528,19 +1537,14 @@ else
     {
         if (_busy || _clientStitching) return;
 
-        if (_showWipPlayer && (_wipExists && !_wipStale || !string.IsNullOrEmpty(_clientWipUrl)))
+        _activeTab = "play";
+        _showWipPlayer = true;
+        await RefreshWipMetaAsync();
+
+        if (!string.IsNullOrEmpty(_clientWipUrl) && !_wipStale)
         {
-            await RefreshWipMetaAsync();
-            if (_wipExists && !_wipStale && string.IsNullOrEmpty(_clientWipUrl))
-            {
-                await HideWipPlayerAsync();
-                return;
-            }
-            if (!string.IsNullOrEmpty(_clientWipUrl))
-            {
-                await HideWipPlayerAsync();
-                return;
-            }
+            _message = "Playing WIP";
+            return;
         }
 
         await RefreshWipMetaAsync();
