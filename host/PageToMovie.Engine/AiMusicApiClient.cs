@@ -51,7 +51,9 @@ public sealed class AiMusicApiClient : IAudioClient
         int durationSeconds,
         string? model = null,
         CancellationToken ct = default,
-        Action<string>? onProgress = null)
+        Action<string>? onProgress = null,
+        bool isVocal = false,
+        string? lyrics = null)
     {
         var apiKey = ResolveApiKey();
         if (string.IsNullOrWhiteSpace(apiKey))
@@ -64,9 +66,11 @@ public sealed class AiMusicApiClient : IAudioClient
         {
             ["task_type"] = "create_music",
             ["custom_mode"] = true,
-            ["make_instrumental"] = true,
+            ["make_instrumental"] = !isVocal,
+            // "tags" carries genre/mood tags either way; when singing, "prompt" carries the actual
+            // lyrics to sing.
             ["tags"] = prompt,
-            ["prompt"] = "",
+            ["prompt"] = isVocal ? (lyrics ?? "") : "",
             ["title"] = "Scene Score",
             ["mv"] = DefaultModel,
         };

@@ -16,9 +16,11 @@ public sealed class FakeAudioClient : IAudioClient
         int durationSeconds,
         string? model = null,
         CancellationToken ct = default,
-        Action<string>? onProgress = null)
+        Action<string>? onProgress = null,
+        bool isVocal = false,
+        string? lyrics = null)
     {
-        _log.LogInformation("Fake audio generate duration={Duration}s", durationSeconds);
+        _log.LogInformation("Fake audio generate duration={Duration}s vocal={IsVocal}", durationSeconds, isVocal);
         var fixturePath = ResolveFixturePath();
         return Task.FromResult<string?>("fixture:" + fixturePath);
     }

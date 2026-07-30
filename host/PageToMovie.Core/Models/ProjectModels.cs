@@ -82,6 +82,11 @@ public sealed class JobSnapshot
     public string? ClientMediaUrl { get; set; }
     /// <summary>Project-relative path under the client media folder, e.g. assets/video/scene_01_clip_01.mp4.</summary>
     public string? ClientRelativePath { get; set; }
+    /// <summary>For Kind="music": one id shared by every segment of the same generation run, so the
+    /// client archives all of a take's segments under the same take-history timestamp instead of each
+    /// segment computing its own independently (they can be minutes apart — real provider polling
+    /// happens between segments). Minted once in FilmJobService.RunSceneMusicGenAsync.</summary>
+    public string? MusicTakeId { get; set; }
 }
 
 /// <summary>Helpers for multi-job lists (Phase F).</summary>
@@ -847,6 +852,12 @@ public sealed class StartSceneMusicGenRequest
 {
     public string ProjectId { get; set; } = "";
     public int Scene { get; set; }
+    /// <summary>Overrides the project's configured audio_model_name for this run only; falls back to
+    /// that config default when null/blank.</summary>
+    public string? Model { get; set; }
+    /// <summary>Request sung vocals instead of instrumental. Only Suno-family models can honor this —
+    /// see IAudioClient.GenerateMusicTrackAsync.</summary>
+    public bool IsVocal { get; set; }
 }
 
 /// <summary>Last successful YouTube upload for a project (sidecar assets/youtube_upload.json).</summary>

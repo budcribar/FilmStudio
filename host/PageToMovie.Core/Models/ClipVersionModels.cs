@@ -31,6 +31,27 @@ public sealed class ClipVersionItem
 }
 
 /// <summary>
+/// One scene-audio generation run ("take") for side-by-side comparison and rollback — the audio
+/// equivalent of <see cref="ClipVersionItem"/>. A take is one or more segment files produced
+/// together (see <c>MediaRegistryService.MusicSegmentRelativePath</c>), identified by
+/// <see cref="TakeId"/> rather than by a single filename.
+/// </summary>
+public sealed class MusicVersionItem
+{
+    public string TakeId { get; set; } = "";
+    public int Scene { get; set; }
+    public bool IsCurrent { get; set; }
+    public DateTime CreatedAtUtc { get; set; }
+    public string Model { get; set; } = "";
+    public bool IsVocal { get; set; }
+    public string Prompt { get; set; } = "";
+    public string? Lyrics { get; set; }
+    public List<string> SegmentFileNames { get; set; } = new();
+    public bool ClientOnly { get; set; }
+    public List<string> RelativePaths { get; set; } = new();
+}
+
+/// <summary>
 /// Status of uncommitted changes across scenes and clips.
 /// </summary>
 public sealed class UncommittedStatusDto

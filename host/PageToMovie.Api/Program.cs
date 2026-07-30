@@ -137,6 +137,7 @@ builder.Services.AddSingleton<MediaRegistryService>();
 builder.Services.AddSingleton<MediaSyncLocator>();
 builder.Services.AddSingleton<MediaProxyTicketStore>();
 builder.Services.AddSingleton<ClipSidecarService>();
+builder.Services.AddSingleton<MusicSidecarService>();
 builder.Services.AddSingleton<ProjectMigrationService>();
 builder.Services.AddSingleton<VolumeDiskTelemetryService>();
 builder.Services.AddSingleton<ProjectArchiveService>();
@@ -2873,6 +2874,125 @@ app.MapPost("/api/projects/{id}/scenes/{scene:int}/clips/{clip:int}/versions/tra
     }
 });
 
+// Scene audio takes — mirrors the clip-versions endpoints above (GetMusicVersionsAsync etc.),
+// keyed by scene + takeId instead of scene/clip + versionId since one take is a group of segments.
+app.MapGet("/api/projects/{id}/scenes/{scene:int}/music-versions", async (
+    string id,
+    int scene,
+    ProjectStore store,
+    CancellationToken ct) =>
+{
+    try
+    {
+        await store.RequireProjectAsync(id, ct);
+        var versions = await store.GetMusicVersionsAsync(id, scene);
+        return Results.Ok(new { ok = true, versions });
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { ok = false, error = ex.Message });
+    }
+});
+
+app.MapPost("/api/projects/{id}/scenes/{scene:int}/music-versions/{takeId}/promote", async (
+    string id,
+    int scene,
+    string takeId,
+    ProjectStore store,
+    IUserContext user,
+    IOptions<PageToMovieOptions> opts,
+    CancellationToken ct) =>
+{
+    if (AuthGate.RequireLogin(user, opts) is { } denied)
+        return denied;
+    try
+    {
+        await store.RequireProjectAsync(id, ct);
+        var success = await store.PromoteMusicVersionAsync(id, scene, takeId);
+        if (!success)
+        {
+            return Results.BadRequest(new { ok = false, error = "Failed to promote audio take." });
+        }
+        return Results.Ok(new { ok = true, message = $"Promoted audio take {takeId} to active." });
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { ok = false, error = ex.Message });
+    }
+});
+
+app.MapDelete("/api/projects/{id}/scenes/{scene:int}/music-versions/{takeId}", async (
+    string id,
+    int scene,
+    string takeId,
+    ProjectStore store,
+    IUserContext user,
+    IOptions<PageToMovieOptions> opts,
+    CancellationToken ct) =>
+{
+    if (AuthGate.RequireLogin(user, opts) is { } denied)
+        return denied;
+    try
+    {
+        await store.RequireProjectAsync(id, ct);
+        var success = await store.SoftDeleteMusicVersionAsync(id, scene, takeId);
+        if (!success)
+        {
+            return Results.BadRequest(new { ok = false, error = "Failed to delete audio take." });
+        }
+        return Results.Ok(new { ok = true, message = $"Soft-deleted audio take {takeId}." });
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { ok = false, error = ex.Message });
+    }
+});
+
+app.MapGet("/api/projects/{id}/scenes/{scene:int}/music-versions/trash", async (
+    string id,
+    int scene,
+    ProjectStore store,
+    CancellationToken ct) =>
+{
+    try
+    {
+        await store.RequireProjectAsync(id, ct);
+        var versions = await store.GetTrashMusicVersionsAsync(id, scene);
+        return Results.Ok(new { ok = true, versions });
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { ok = false, error = ex.Message });
+    }
+});
+
+app.MapPost("/api/projects/{id}/scenes/{scene:int}/music-versions/{takeId}/restore", async (
+    string id,
+    int scene,
+    string takeId,
+    ProjectStore store,
+    IUserContext user,
+    IOptions<PageToMovieOptions> opts,
+    CancellationToken ct) =>
+{
+    if (AuthGate.RequireLogin(user, opts) is { } denied)
+        return denied;
+    try
+    {
+        await store.RequireProjectAsync(id, ct);
+        var success = await store.RestoreSoftDeletedMusicVersionAsync(id, scene, takeId);
+        if (!success)
+        {
+            return Results.BadRequest(new { ok = false, error = "Failed to restore audio take from trash." });
+        }
+        return Results.Ok(new { ok = true, message = $"Restored audio take {takeId} from trash." });
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { ok = false, error = ex.Message });
+    }
+});
+
 /// <summary>
 /// Push the project's text package (video excluded) to the configured Projects remote.
 /// Owner/admin only. Optional body.commitFirst + message creates a local commit first.
@@ -4578,7 +4698,7 @@ app.MapPost("/api/jobs/scene-music", async (
             return Results.BadRequest(new { ok = false, error = "projectId required" });
         if (body is null || body.Scene <= 0)
             return Results.BadRequest(new { ok = false, error = "scene required" });
-        var job = await jobService.StartSceneMusicGenAsync(projectId.Trim(), body.Scene);
+        var job = await jobService.StartSceneMusicGenAsync(projectId.Trim(), body.Scene, body.Model, body.IsVocal);
         return Results.Accepted($"/api/jobs/{job.JobId}", new
         {
             ok = true,

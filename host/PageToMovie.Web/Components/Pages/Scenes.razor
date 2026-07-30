@@ -631,15 +631,44 @@ else
                         @(_selectedClips.Count > 0 ? $"🔍 Verify ({_selectedClips.Count}) Selected Clips" : "🔍 Verify Clip Dialogue")
                     </button>
                 }
-                @if (!_detail.HasBackgroundMusic && (_detail.CompositeExists || _detail.ClipsOnDisk > 0))
+                @if (_detail.CompositeExists || _detail.ClipsOnDisk > 0)
                 {
-                    <button type="button"
-                            class="btn btn-sm btn-outline-warning text-dark fw-semibold"
-                            disabled="@(_busy || JobRunning || _scoringMusic)"
-                            title="Generate AI background music score with automatic dialogue ducking"
-                            @onclick="() => ScoreSceneBackgroundMusicAsync(_detail.SceneNumber)">
-                        🎵 Score Background Music
-                    </button>
+                    <div class="d-inline-flex align-items-center gap-1 border rounded px-2 py-1">
+                        <select class="form-select form-select-sm" style="width:auto"
+                                disabled="@(_busy || JobRunning || _scoringMusic)"
+                                value="@_selectedAudioModel"
+                                @onchange="@(e => _selectedAudioModel = e.Value?.ToString() ?? _selectedAudioModel)"
+                                title="Audio model for this generation only — doesn't change the project's default">
+                            @foreach (var m in _audioModels)
+                            {
+                                <option value="@m.Id">@m.DisplayName</option>
+                            }
+                        </select>
+                        <div class="form-check form-switch m-0" title="@(SelectedAudioModelCanSing ? "Generate sung vocals instead of instrumental" : "The selected model has no vocal capability")">
+                            <input class="form-check-input" type="checkbox" id="wantVocalSwitch"
+                                   disabled="@(_busy || JobRunning || _scoringMusic || !SelectedAudioModelCanSing)"
+                                   checked="@(_wantVocal && SelectedAudioModelCanSing)"
+                                   @onchange="@(e => _wantVocal = (bool)(e.Value ?? false))" />
+                            <label class="form-check-label small" for="wantVocalSwitch">Sing</label>
+                        </div>
+                        <button type="button"
+                                class="btn btn-sm btn-outline-warning text-dark fw-semibold"
+                                disabled="@(_busy || JobRunning || _scoringMusic)"
+                                title="@(_wantVocal && SelectedAudioModelCanSing ? "Generate sung vocals for this scene (auto-composed lyrics)" : "Generate AI background music score with automatic dialogue ducking")"
+                                @onclick="() => ScoreSceneBackgroundMusicAsync(_detail.SceneNumber)">
+                            @(_wantVocal && SelectedAudioModelCanSing ? "🎤 Generate Singing" : "🎵 Score Background Music")
+                        </button>
+                        @if (_detail.HasBackgroundMusic)
+                        {
+                            <button type="button"
+                                    class="btn btn-sm btn-outline-info"
+                                    disabled="@(_busy || JobRunning)"
+                                    title="View past audio takes & compare against the current one"
+                                    @onclick="() => OpenMusicCompareAsync(_detail.SceneNumber)">
+                                🎧 Audio Takes
+                            </button>
+                        }
+                    </div>
                 }
                 @if (_detail.CompositeExists || _detail.ClipsOnDisk > 0)
                 {
@@ -1640,6 +1669,105 @@ else
     </div>
 }
 
+@* Audio Takes Modal — compares scene background-audio generation runs (model, vocal/instrumental,
+   prompt/lyrics), listen-based rather than the clip modal's dual video player since comparing audio
+   just means playing one take, then another. *@
+@if (_showMusicCompare)
+{
+    <div class="modal fade show d-block" tabindex="-1" style="background:rgba(0,0,0,0.6);" role="dialog">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable">
+            <div class="modal-content bg-dark text-white border-secondary">
+                <div class="modal-header border-secondary d-flex justify-content-between align-items-center">
+                    <h5 class="modal-title m-0">Audio Takes — Scene S@(_compareMusicSceneNumber.ToString("D2"))</h5>
+                    <button type="button" class="btn-close btn-close-white" @onclick="CloseMusicCompare"></button>
+                </div>
+                <div class="modal-body">
+                    @if (!string.IsNullOrEmpty(_musicCompareMessage))
+                    {
+                        <div class="alert alert-info py-2 mb-3">@_musicCompareMessage</div>
+                    }
+
+                    @if (_loadingMusicVersions)
+                    {
+                        <p class="text-muted">Loading audio take history…</p>
+                    }
+                    else if (_musicVersions is null || _musicVersions.Count == 0)
+                    {
+                        <p class="text-muted">No audio takes recorded yet for this scene.</p>
+                    }
+                    else
+                    {
+                        @foreach (var v in _musicVersions.OrderByDescending(x => x.IsCurrent).ThenByDescending(x => x.CreatedAtUtc))
+                        {
+                            <div class="card bg-secondary bg-opacity-10 border-secondary mb-3">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-2">
+                                        <div>
+                                            @if (v.IsCurrent)
+                                            {
+                                                <span class="badge bg-success me-1">Current</span>
+                                            }
+                                            @if (v.IsVocal)
+                                            {
+                                                <span class="badge bg-info text-dark me-1">🎤 Singing</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge bg-secondary me-1">🎵 Instrumental</span>
+                                            }
+                                            <span class="text-muted small">@(string.IsNullOrEmpty(v.Model) ? "unknown model" : v.Model) · @v.CreatedAtUtc.ToLocalTime().ToString("g")</span>
+                                        </div>
+                                        <div class="d-flex gap-1">
+                                            <button type="button" class="btn btn-sm btn-outline-primary"
+                                                    disabled="@(_promotingMusicVersion || v.IsCurrent)"
+                                                    @onclick="() => PromoteMusicVersionAsync(_compareMusicSceneNumber, v.TakeId)">
+                                                Make Active
+                                            </button>
+                                            <button type="button" class="btn btn-sm btn-outline-danger"
+                                                    disabled="@(_promotingMusicVersion || v.IsCurrent)"
+                                                    @onclick="() => SoftDeleteMusicVersionAsync(_compareMusicSceneNumber, v.TakeId)">
+                                                Delete
+                                            </button>
+                                        </div>
+                                    </div>
+                                    @if (!string.IsNullOrWhiteSpace(v.Prompt))
+                                    {
+                                        <div class="small text-muted mb-1"><strong>Style:</strong> @v.Prompt</div>
+                                    }
+                                    @if (!string.IsNullOrWhiteSpace(v.Lyrics))
+                                    {
+                                        <div class="small text-muted mb-2"><strong>Lyrics:</strong> @v.Lyrics</div>
+                                    }
+                                    <div class="d-flex flex-column gap-1">
+                                        @if (_musicCompareUrls.TryGetValue(v.TakeId, out var urls) && urls.Count > 0)
+                                        {
+                                            @for (var i = 0; i < urls.Count; i++)
+                                            {
+                                                var segLabel = urls.Count > 1 ? $"Segment {i + 1}" : "Audio";
+                                                <div class="d-flex align-items-center gap-2">
+                                                    <span class="small text-muted" style="min-width:5.5rem">@segLabel</span>
+                                                    <audio controls preload="none" src="@urls[i]" style="height:32px;flex:1"></audio>
+                                                </div>
+                                            }
+                                        }
+                                        else
+                                        {
+                                            <span class="small text-muted">Not available locally — reconnect your media folder to sync it back.</span>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    }
+                </div>
+                <div class="modal-footer border-secondary">
+                    <button type="button" class="btn btn-secondary" @onclick="CloseMusicCompare">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
 @* Clip Dialogue Verification Report Modal *@
 @if (_showVerificationModal && _verifModalResult is { } verReport)
 {
@@ -2375,6 +2503,7 @@ else
                 return;
 
             await LoadGenResolutionFromConfigAsync();
+            await LoadAudioModelsAsync();
 
             try
             {
@@ -2450,6 +2579,13 @@ else
                     edEl.GetString() is { Length: > 0 } pve)
                 {
                     _preferredVideoEditor = pve.Trim();
+                }
+                if (cfg.TryGetValue("audio_model_name", out var amEl) &&
+                    amEl.ValueKind == JsonValueKind.String &&
+                    amEl.GetString() is { Length: > 0 } am &&
+                    !string.Equals(am, "none", StringComparison.OrdinalIgnoreCase))
+                {
+                    _selectedAudioModel = am.Trim();
                 }
             }
         }
@@ -3837,21 +3973,46 @@ else
     }
 
     private bool _scoringMusic;
+    private List<SupportedModelDto> _audioModels = new();
+    private string _selectedAudioModel = "fal-ai/stable-audio";
+    private bool _wantVocal;
+
+    /// <summary>Only Suno-family providers can sing — the vocal toggle is disabled/forced off for
+    /// any other selected model (e.g. Fal.ai Stable Audio has no vocal capability at all).</summary>
+    private bool SelectedAudioModelCanSing =>
+        _audioModels.FirstOrDefault(m => string.Equals(m.Id, _selectedAudioModel, StringComparison.OrdinalIgnoreCase))
+            ?.Provider is "suno" or "aimusicapi";
+
+    private async Task LoadAudioModelsAsync()
+    {
+        try
+        {
+            var models = await Engine.GetSupportedModelsAsync();
+            _audioModels = models.Where(m => m.Capability == "audio" &&
+                !string.Equals(m.Id, "none", StringComparison.OrdinalIgnoreCase)).ToList();
+            if (_audioModels.Count == 0)
+                _audioModels.Add(new SupportedModelDto { Id = "fal-ai/stable-audio", DisplayName = "Stable Audio (Fal.ai)", Provider = "fal", Capability = "audio" });
+        }
+        catch { /* keep default single-entry list */ }
+    }
 
     private async Task ScoreSceneBackgroundMusicAsync(int sceneNum)
     {
         if (string.IsNullOrWhiteSpace(_projectId)) return;
 
+        var isVocal = _wantVocal && SelectedAudioModelCanSing;
         _busy = true;
         _scoringMusic = true;
         _error = null;
-        _message = $"Queuing background music for Scene {sceneNum:D2}…";
+        _message = isVocal
+            ? $"Queuing singing for Scene {sceneNum:D2}…"
+            : $"Queuing background music for Scene {sceneNum:D2}…";
         StateHasChanged();
 
         try
         {
             await EnsureHubAsync();
-            await Engine.StartSceneMusicGenAsync(_projectId, sceneNum);
+            await Engine.StartSceneMusicGenAsync(_projectId, sceneNum, _selectedAudioModel, isVocal);
             // Live progress card only — no duplicate "started" banner (same as scene gen).
             var jobs = await Engine.GetJobAsync();
             _job = jobs?.Job;
@@ -3864,6 +4025,153 @@ else
         {
             _busy = false;
             _scoringMusic = false;
+            StateHasChanged();
+        }
+    }
+
+    private bool _showMusicCompare;
+    private int _compareMusicSceneNumber;
+    private List<MusicVersionItem>? _musicVersions;
+    private bool _loadingMusicVersions;
+    private string? _musicCompareMessage;
+    private bool _promotingMusicVersion;
+    private Dictionary<string, List<string>> _musicCompareUrls = new(StringComparer.OrdinalIgnoreCase);
+
+    private async Task OpenMusicCompareAsync(int sceneNumber)
+    {
+        _compareMusicSceneNumber = sceneNumber;
+        _showMusicCompare = true;
+        _loadingMusicVersions = true;
+        _musicCompareMessage = null;
+        StateHasChanged();
+
+        try
+        {
+            var res = await Engine.GetMusicVersionsAsync(_projectId, sceneNumber);
+            _musicVersions = res?.Versions;
+            await RefreshMusicCompareUrlsAsync();
+        }
+        catch (Exception ex)
+        {
+            _error = $"Failed to load audio takes: {ex.Message}";
+        }
+        finally
+        {
+            _loadingMusicVersions = false;
+            StateHasChanged();
+        }
+    }
+
+    private void CloseMusicCompare()
+    {
+        _showMusicCompare = false;
+        _musicVersions = null;
+        _musicCompareUrls.Clear();
+        _musicCompareMessage = null;
+    }
+
+    private async Task RefreshMusicCompareUrlsAsync()
+    {
+        var map = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
+        if (_musicVersions is { Count: > 0 })
+        {
+            foreach (var v in _musicVersions)
+            {
+                var urls = new List<string>();
+                foreach (var relPath in v.RelativePaths)
+                {
+                    var url = await MediaFolder.GetLocalBlobUrlAsync(_projectId, relPath);
+                    if (!string.IsNullOrWhiteSpace(url)) urls.Add(url);
+                }
+                map[v.TakeId] = urls;
+            }
+        }
+        _musicCompareUrls = map;
+        StateHasChanged();
+    }
+
+    private async Task PromoteMusicVersionAsync(int sceneNumber, string takeId)
+    {
+        _promotingMusicVersion = true;
+        _musicCompareMessage = null;
+        StateHasChanged();
+
+        try
+        {
+            var target = _musicVersions?.FirstOrDefault(v => string.Equals(v.TakeId, takeId, StringComparison.OrdinalIgnoreCase));
+            if (target is null)
+            {
+                _musicCompareMessage = "Take not found.";
+                return;
+            }
+
+            // Copy the chosen take's bytes to the active path first (archives whatever's currently
+            // active under its own take id in the process — same mechanism a fresh generation uses),
+            // then flip which sidecar the server considers active.
+            var current = _musicVersions?.FirstOrDefault(v => v.IsCurrent);
+            var archiveTakeId = current?.TakeId is { Length: > 0 } cid ? cid : DateTimeOffset.UtcNow.ToUnixTimeMilliseconds().ToString();
+
+            var copied = await MediaFolder.PromoteMusicTakeAsync(_projectId, target, archiveTakeId);
+            if (!copied)
+            {
+                _musicCompareMessage = "Failed to copy audio locally — is your media folder connected?";
+                return;
+            }
+
+            var res = await Engine.PromoteMusicVersionAsync(_projectId, sceneNumber, takeId);
+            if (res.Ok)
+            {
+                _musicCompareMessage = $"Promoted take {takeId} to active.";
+                var resV = await Engine.GetMusicVersionsAsync(_projectId, sceneNumber);
+                _musicVersions = resV?.Versions;
+                await RefreshMusicCompareUrlsAsync();
+                if (_detail is not null && _detail.SceneNumber == sceneNumber)
+                {
+                    _detail = (await Engine.GetSceneDetailAsync(_projectId, sceneNumber))?.Scene;
+                }
+            }
+            else
+            {
+                _musicCompareMessage = res.Error ?? "Failed to promote audio take.";
+            }
+        }
+        catch (Exception ex)
+        {
+            _musicCompareMessage = $"Promote failed: {ex.Message}";
+        }
+        finally
+        {
+            _promotingMusicVersion = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task SoftDeleteMusicVersionAsync(int sceneNumber, string takeId)
+    {
+        _musicCompareMessage = null;
+        StateHasChanged();
+
+        try
+        {
+            var res = await Engine.SoftDeleteMusicVersionAsync(_projectId, sceneNumber, takeId);
+            if (res.Ok)
+            {
+                _musicCompareMessage = $"Deleted take {takeId}.";
+                var resV = await Engine.GetMusicVersionsAsync(_projectId, sceneNumber);
+                _musicVersions = resV?.Versions;
+                await RefreshMusicCompareUrlsAsync();
+            }
+            else
+            {
+                _musicCompareMessage = res.Error ?? "Failed to delete audio take.";
+            }
+        }
+        catch (Exception ex)
+        {
+            _musicCompareMessage = $"Delete failed: {ex.Message}";
+        }
+        finally
+        {
             StateHasChanged();
         }
     }

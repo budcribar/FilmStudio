@@ -48,7 +48,9 @@ public sealed class SunoClient : IAudioClient
         int durationSeconds,
         string? model = null,
         CancellationToken ct = default,
-        Action<string>? onProgress = null)
+        Action<string>? onProgress = null,
+        bool isVocal = false,
+        string? lyrics = null)
     {
         var apiKey = ResolveApiKey();
         if (string.IsNullOrWhiteSpace(apiKey))
@@ -61,8 +63,11 @@ public sealed class SunoClient : IAudioClient
         var payload = new Dictionary<string, object?>
         {
             ["customMode"] = true,
-            ["instrumental"] = true,
+            ["instrumental"] = !isVocal,
+            // "style" carries genre/mood tags either way; when singing, "prompt" carries the actual
+            // lyrics to sing — Suno's customMode API keeps these as two separate fields.
             ["style"] = prompt,
+            ["prompt"] = isVocal ? (lyrics ?? "") : "",
             ["title"] = "Scene Score",
             ["model"] = DefaultModel,
             ["duration"] = clampedDuration,

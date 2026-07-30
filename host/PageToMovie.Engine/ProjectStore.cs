@@ -602,6 +602,232 @@ public sealed class ProjectStore
         return await Task.FromResult(purgedCount).ConfigureAwait(false);
     }
 
+    /// <summary>
+    /// Lists all historical generation runs ("takes") of a scene's background audio for comparison —
+    /// the audio equivalent of <see cref="GetClipVersionsAsync"/>. Unlike clips, the audio bytes
+    /// themselves are never stored server-side (client-storage-primary — see
+    /// <c>ClientMediaFolderService</c>); this scans the small take-metadata sidecars this server does
+    /// keep (<c>assets/music/scene_XX.meta.json</c> active, <c>assets/music/history/*.meta.json</c>
+    /// archived) and every take is therefore always <see cref="MusicVersionItem.ClientOnly"/>.
+    /// </summary>
+    public async Task<IReadOnlyList<MusicVersionItem>> GetMusicVersionsAsync(string projectId, int scene)
+    {
+        if (string.IsNullOrWhiteSpace(projectId)) return Array.Empty<MusicVersionItem>();
+        var dir = GetProjectDir(projectId);
+        if (!Directory.Exists(dir)) return Array.Empty<MusicVersionItem>();
+
+        var musicDir = Path.Combine(dir, "assets", "music");
+        var result = new List<MusicVersionItem>();
+        var activeSidecar = Path.Combine(musicDir, $"scene_{scene:D2}.meta.json");
+        var hasActiveSidecar = File.Exists(activeSidecar);
+        if (hasActiveSidecar)
+        {
+            var item = ParseMusicSidecar(activeSidecar, scene, isCurrent: true);
+            if (item is not null) result.Add(item);
+        }
+
+        var historyDir = Path.Combine(musicDir, "history");
+        if (Directory.Exists(historyDir))
+        {
+            foreach (var sidecar in Directory.EnumerateFiles(historyDir, $"scene_{scene:D2}_take_*.meta.json"))
+            {
+                var item = ParseMusicSidecar(sidecar, scene, isCurrent: false);
+                if (item is not null) result.Add(item);
+            }
+        }
+
+        // Music generated before this take-history feature existed has no sidecar at all — without
+        // this, a scene whose audio was clearly generated (HasSceneMusicAsync true) would show zero
+        // takes. Bucket any registry rows the sidecars above didn't already cover into one synthetic
+        // "legacy" current entry — there is no prior take to compare it against, which is honest:
+        // regenerating before this feature existed destroyed whatever came before it.
+        if (!hasActiveSidecar && _mediaRegistry is not null)
+        {
+            var registered = await _mediaRegistry.ListForSceneMusicAsync(projectId, scene).ConfigureAwait(false);
+            if (registered.Count > 0)
+            {
+                var activeNames = registered
+                    .Where(r => !r.RelativePath.Contains("/history/", StringComparison.OrdinalIgnoreCase))
+                    .Select(r => Path.GetFileName(r.RelativePath))
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .OrderBy(n => n, StringComparer.OrdinalIgnoreCase)
+                    .ToList();
+                if (activeNames.Count > 0)
+                {
+                    var earliest = registered
+                        .Where(r => activeNames.Contains(Path.GetFileName(r.RelativePath), StringComparer.OrdinalIgnoreCase))
+                        .Select(r => DateTimeOffset.TryParse(r.CreatedAt, System.Globalization.CultureInfo.InvariantCulture,
+                            System.Globalization.DateTimeStyles.RoundtripKind, out var dto) ? dto.UtcDateTime : DateTime.UtcNow)
+                        .DefaultIfEmpty(DateTime.UtcNow)
+                        .Min();
+                    result.Add(new MusicVersionItem
+                    {
+                        TakeId = "legacy",
+                        Scene = scene,
+                        IsCurrent = true,
+                        CreatedAtUtc = earliest,
+                        Model = "",
+                        IsVocal = false,
+                        Prompt = "(generated before take history was added)",
+                        SegmentFileNames = activeNames,
+                        ClientOnly = true,
+                        RelativePaths = activeNames.Select(n => $"assets/music/{n}").ToList(),
+                    });
+                }
+            }
+        }
+
+        return result.OrderByDescending(x => x.CreatedAtUtc).ToList();
+    }
+
+    private static MusicVersionItem? ParseMusicSidecar(string sidecarPath, int scene, bool isCurrent)
+    {
+        try
+        {
+            using var doc = System.Text.Json.JsonDocument.Parse(File.ReadAllText(sidecarPath));
+            var root = doc.RootElement;
+            var item = new MusicVersionItem
+            {
+                TakeId = root.TryGetProperty("take_id", out var tid) ? tid.GetString() ?? "" : "",
+                Scene = scene,
+                IsCurrent = isCurrent,
+                Model = root.TryGetProperty("model", out var m) ? m.GetString() ?? "" : "",
+                IsVocal = root.TryGetProperty("is_vocal", out var iv) && iv.ValueKind == JsonValueKind.True,
+                Prompt = root.TryGetProperty("prompt", out var p) ? p.GetString() ?? "" : "",
+                Lyrics = root.TryGetProperty("lyrics", out var ly) ? ly.GetString() : null,
+                ClientOnly = true,
+            };
+            if (root.TryGetProperty("segment_file_names", out var segs) && segs.ValueKind == JsonValueKind.Array)
+            {
+                foreach (var s in segs.EnumerateArray())
+                {
+                    var name = s.GetString();
+                    if (string.IsNullOrWhiteSpace(name)) continue;
+                    item.SegmentFileNames.Add(name);
+                    item.RelativePaths.Add(isCurrent ? $"assets/music/{name}" : $"assets/music/history/{name}");
+                }
+            }
+            item.CreatedAtUtc = root.TryGetProperty("created_at_utc", out var ca) &&
+                DateTime.TryParse(ca.GetString(), System.Globalization.CultureInfo.InvariantCulture,
+                    System.Globalization.DateTimeStyles.RoundtripKind, out var dt)
+                ? dt.ToUniversalTime()
+                : File.GetLastWriteTimeUtc(sidecarPath);
+            if (string.IsNullOrWhiteSpace(item.TakeId))
+                item.TakeId = Path.GetFileNameWithoutExtension(sidecarPath);
+            return item;
+        }
+        catch
+        {
+            return null; // best-effort sidecar parse, same tolerance as ParseClipSidecarOrMeta
+        }
+    }
+
+    /// <summary>
+    /// Marks a historical audio take as the active one for a scene — metadata only (rewriting which
+    /// sidecar is "active"). Unlike <see cref="PromoteClipVersionAsync"/>, this cannot copy the
+    /// actual .wav bytes itself (they live only in the browser's local media folder, never on this
+    /// server) — the caller must also re-save each of the returned segment file names to its active
+    /// path via <c>ClientMediaFolderService</c> (which archives whatever's currently active into
+    /// history first, same as any other regeneration) before calling this.
+    /// </summary>
+    public async Task<bool> PromoteMusicVersionAsync(string projectId, int scene, string takeId)
+    {
+        if (string.IsNullOrWhiteSpace(projectId) || string.IsNullOrWhiteSpace(takeId)) return false;
+        var dir = GetProjectDir(projectId);
+        if (!Directory.Exists(dir)) return false;
+
+        var versions = await GetMusicVersionsAsync(projectId, scene).ConfigureAwait(false);
+        var target = versions.FirstOrDefault(v => string.Equals(v.TakeId, takeId, StringComparison.OrdinalIgnoreCase));
+        if (target is null || target.IsCurrent) return false;
+
+        var musicDir = Path.Combine(dir, "assets", "music");
+        var historyDir = Path.Combine(musicDir, "history");
+        var activeSidecar = Path.Combine(musicDir, $"scene_{scene:D2}.meta.json");
+
+        if (File.Exists(activeSidecar))
+        {
+            var current = ParseMusicSidecar(activeSidecar, scene, isCurrent: true);
+            if (current is not null && !string.Equals(current.TakeId, "legacy", StringComparison.OrdinalIgnoreCase))
+            {
+                Directory.CreateDirectory(historyDir);
+                var archivePath = Path.Combine(historyDir, $"scene_{scene:D2}_take_{current.TakeId}.meta.json");
+                try { File.Copy(activeSidecar, archivePath, overwrite: true); } catch { }
+            }
+        }
+
+        var targetSidecar = Path.Combine(historyDir, $"scene_{scene:D2}_take_{takeId}.meta.json");
+        if (!File.Exists(targetSidecar)) return false;
+        Directory.CreateDirectory(musicDir);
+        File.Copy(targetSidecar, activeSidecar, overwrite: true);
+
+        InvalidateSceneListCache(projectId);
+        return true;
+    }
+
+    /// <summary>
+    /// Soft-deletes a historical audio take's sidecar by moving it into assets/music/.trash/ — mirrors
+    /// <see cref="SoftDeleteClipVersionAsync"/>. As with promote, this only touches the server-side
+    /// metadata; any actual local segment bytes are left for the browser's own storage to manage.
+    /// </summary>
+    public async Task<bool> SoftDeleteMusicVersionAsync(string projectId, int scene, string takeId)
+    {
+        if (string.IsNullOrWhiteSpace(projectId) || string.IsNullOrWhiteSpace(takeId)) return false;
+        var dir = GetProjectDir(projectId);
+        if (!Directory.Exists(dir)) return false;
+
+        var versions = await GetMusicVersionsAsync(projectId, scene).ConfigureAwait(false);
+        var target = versions.FirstOrDefault(v => string.Equals(v.TakeId, takeId, StringComparison.OrdinalIgnoreCase));
+        if (target is null || target.IsCurrent) return false;
+
+        var musicDir = Path.Combine(dir, "assets", "music");
+        var historySidecar = Path.Combine(musicDir, "history", $"scene_{scene:D2}_take_{takeId}.meta.json");
+        if (!File.Exists(historySidecar)) return false;
+
+        var trashDir = Path.Combine(musicDir, ".trash");
+        Directory.CreateDirectory(trashDir);
+        var trashSidecar = Path.Combine(trashDir, $"scene_{scene:D2}_take_{takeId}.meta.json");
+        File.Move(historySidecar, trashSidecar, overwrite: true);
+
+        InvalidateSceneListCache(projectId);
+        return true;
+    }
+
+    /// <summary>Soft-deleted audio takes for one scene — mirrors <see cref="GetTrashClipVersionsAsync"/>.</summary>
+    public Task<IReadOnlyList<MusicVersionItem>> GetTrashMusicVersionsAsync(string projectId, int scene)
+    {
+        if (string.IsNullOrWhiteSpace(projectId)) return Task.FromResult<IReadOnlyList<MusicVersionItem>>(Array.Empty<MusicVersionItem>());
+        var dir = GetProjectDir(projectId);
+        var trashDir = Path.Combine(dir, "assets", "music", ".trash");
+        if (!Directory.Exists(trashDir)) return Task.FromResult<IReadOnlyList<MusicVersionItem>>(Array.Empty<MusicVersionItem>());
+
+        var result = new List<MusicVersionItem>();
+        foreach (var sidecar in Directory.EnumerateFiles(trashDir, $"scene_{scene:D2}_take_*.meta.json"))
+        {
+            var item = ParseMusicSidecar(sidecar, scene, isCurrent: false);
+            if (item is not null) result.Add(item);
+        }
+        return Task.FromResult<IReadOnlyList<MusicVersionItem>>(result.OrderByDescending(x => x.CreatedAtUtc).ToList());
+    }
+
+    /// <summary>Restores a soft-deleted audio take's sidecar back to assets/music/history/ — mirrors
+    /// <see cref="RestoreSoftDeletedClipVersionAsync"/>.</summary>
+    public Task<bool> RestoreSoftDeletedMusicVersionAsync(string projectId, int scene, string takeId)
+    {
+        if (string.IsNullOrWhiteSpace(projectId) || string.IsNullOrWhiteSpace(takeId)) return Task.FromResult(false);
+        var dir = GetProjectDir(projectId);
+        var musicDir = Path.Combine(dir, "assets", "music");
+        var trashSidecar = Path.Combine(musicDir, ".trash", $"scene_{scene:D2}_take_{takeId}.meta.json");
+        if (!File.Exists(trashSidecar)) return Task.FromResult(false);
+
+        var historyDir = Path.Combine(musicDir, "history");
+        Directory.CreateDirectory(historyDir);
+        var restoredSidecar = Path.Combine(historyDir, Path.GetFileName(trashSidecar));
+        File.Move(trashSidecar, restoredSidecar, overwrite: true);
+
+        InvalidateSceneListCache(projectId);
+        return Task.FromResult(true);
+    }
+
     private static List<string> CompareSceneInBlueprints(string currentBpJson, string? parentBpJson, int sceneNumber)
     {
         var changes = new List<string>();

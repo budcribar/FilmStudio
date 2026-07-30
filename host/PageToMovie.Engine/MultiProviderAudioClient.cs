@@ -31,7 +31,9 @@ public sealed class MultiProviderAudioClient : IAudioClient
         int durationSeconds,
         string? model = null,
         CancellationToken ct = default,
-        Action<string>? onProgress = null)
+        Action<string>? onProgress = null,
+        bool isVocal = false,
+        string? lyrics = null)
     {
         var provider = SupportedModelCatalog.ResolveOrDefault(model, ModelCapability.Audio, "fal-ai/stable-audio").Provider;
         IAudioClient client = provider switch
@@ -40,6 +42,6 @@ public sealed class MultiProviderAudioClient : IAudioClient
             ModelProviderFamily.AiMusicApi => _aiMusicApi,
             _ => _fal,
         };
-        return client.GenerateMusicTrackAsync(prompt, durationSeconds, model, ct, onProgress);
+        return client.GenerateMusicTrackAsync(prompt, durationSeconds, model, ct, onProgress, isVocal, lyrics);
     }
 }

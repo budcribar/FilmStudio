@@ -39,6 +39,41 @@ public sealed class SceneMusicScoringService
         return await ComposeSceneMusicPromptAsync(screenplayText, durationSeconds, scoringModel, ct).ConfigureAwait(false);
     }
 
+    /// <summary>
+    /// AI-composed singable lyrics for a scene, for the vocal/singing generation path — a sibling to
+    /// <see cref="GetOrComposeMusicPromptAsync"/> rather than a flag on it, since the instrumental
+    /// prompt's system prompt explicitly forbids vocals (see <see cref="ComposeSceneMusicPromptAsync"/>)
+    /// and needs a genuinely different instruction, not a toggle. The scene's existing music
+    /// prompt/style (from <see cref="GetOrComposeMusicPromptAsync"/>) is still used for genre/mood —
+    /// this only supplies the words to sing.
+    /// </summary>
+    public async Task<string> ComposeSceneLyricsAsync(
+        string screenplayText,
+        int durationSeconds,
+        string model,
+        CancellationToken ct = default)
+    {
+        var sysPrompt = "You are a Hollywood Film Score Composer writing SUNG LYRICS for a scene's " +
+            "background song. Write concise, singable lyrics (verse/chorus structure is fine for " +
+            "longer scenes, a single short verse for brief ones) that capture the scene's mood and " +
+            "story beat — do not describe the music or instrumentation, and do not include stage " +
+            "directions. Output ONLY the lyrics text.";
+        var userPrompt = $"Scene Duration: {durationSeconds} seconds.\n\nScreenplay Content:\n{screenplayText}";
+
+        try
+        {
+            var res = await _chat.CompleteAsync(sysPrompt, userPrompt, model, temperature: 0.5, ct: ct).ConfigureAwait(false);
+            if (!string.IsNullOrWhiteSpace(res))
+                return res.Trim().Trim('"');
+        }
+        catch (Exception ex)
+        {
+            _log.LogWarning(ex, "Failed to generate AI scene lyrics; using fallback lyrics.");
+        }
+
+        return "Somewhere between the shadows and the light, we find our way tonight.";
+    }
+
     public static string? GetPreplannedMusicPrompt(string projectDir, int sceneNumber)
     {
         var blueprintPath = Path.Combine(projectDir, "blueprint.clips.grok.json");

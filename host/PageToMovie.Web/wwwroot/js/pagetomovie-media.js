@@ -192,6 +192,40 @@ window.PageToMovieMedia = {
     },
 
     /**
+     * If relativePath is a scene music segment (assets/music/scene_SS_seg_NN.wav) and a file already
+     * exists there, move it to assets/music/history/scene_SS_seg_NN_{takeId}.wav before it gets
+     * overwritten. Unlike _archiveClipHistoryAsync, the archive stamp is the caller-supplied takeId
+     * (one id shared by every segment of the same generation run — see JobSnapshot.MusicTakeId) rather
+     * than a fresh Date.now() per call, so a multi-segment take's files archive together under one
+     * comparable id instead of scattering across whatever moment each segment happened to finish.
+     * Falls back to Date.now() if no takeId is given. Best-effort: failure never blocks the save.
+     */
+    _archiveMusicSegmentAsync: async function (relativePath, takeId) {
+        try {
+            const m = /^(.+\/)?assets\/music\/(scene_\d+_seg_\d+)\.wav$/i.exec(relativePath.replace(/\\/g, "/"));
+            if (!m) return;
+            const { dir, fileName } = await this._ensurePathAsync(relativePath);
+            let existing;
+            try { existing = await dir.getFileHandle(fileName, { create: false }); }
+            catch (_) { return; } // nothing to archive yet
+            const file = await existing.getFile();
+            if (!file || file.size < 1024) return;
+
+            const prefix = m[1] || "";
+            const stamp = takeId || Date.now();
+            const historyPath = `${prefix}assets/music/history/${m[2]}_${stamp}.wav`;
+            const { dir: histDir, fileName: histName } = await this._ensurePathAsync(historyPath);
+            const buf = await file.arrayBuffer();
+            const wh = await histDir.getFileHandle(histName, { create: true });
+            const w = await wh.createWritable();
+            await w.write(buf);
+            await w.close();
+        } catch (err) {
+            console.warn("music segment archive skipped:", err);
+        }
+    },
+
+    /**
      * Download from same-origin proxy (or any URL, incl. blob:) and write under media folder.
      * Pure I/O — callers that want silence-trim run PageToMovieFfmpeg.analyzeSilenceAsync /
      * encodeSliceAsync themselves first and pass the resulting blob: URL in as `url`.
@@ -199,14 +233,16 @@ window.PageToMovieMedia = {
      * @param {string} url
      * @param {string} relativePath
      * @param {(p:number,msg:string)=>void} [onProgress]
+     * @param {string} [takeId] for scene music segments — see _archiveMusicSegmentAsync.
      */
-    saveFromUrlAsync: async function (url, relativePath, onProgress) {
+    saveFromUrlAsync: async function (url, relativePath, onProgress, takeId) {
         if (!this._root) {
             const c = await this.connectFolderAsync();
             if (!c.success) return c;
         }
         try {
             await this._archiveClipHistoryAsync(relativePath);
+            await this._archiveMusicSegmentAsync(relativePath, takeId);
             const report = (p, m) => typeof onProgress === "function" && onProgress(p, m);
             report(5, "Downloading clip…");
             const res = await fetch(url, { credentials: "same-origin" });
@@ -419,6 +455,41 @@ window.PageToMovieMedia = {
                 sizeBytes: buf.byteLength,
                 relativePath: relativePath.replace(/\\/g, "/"),
             };
+        } catch (err) {
+            return { success: false, error: err.message || String(err) };
+        }
+    },
+
+    /**
+     * Copy a file already in the media folder to another path within it — used to promote an
+     * archived audio take back to active (the bytes never leave the browser, unlike
+     * saveFromUrlAsync which downloads from a server proxy URL). Archives whatever's currently at
+     * toRelativePath first, same as any other write to that path.
+     */
+    copyLocalFileAsync: async function (fromRelativePath, toRelativePath, takeId) {
+        if (!this._root) return { success: false, error: "Media folder not connected" };
+        try {
+            const fh = await this._resolveFileHandleAsync(fromRelativePath);
+            if (!fh) return { success: false, error: "Source file not found in media folder" };
+            const file = await fh.getFile();
+            const buf = await file.arrayBuffer();
+
+            await this._archiveClipHistoryAsync(toRelativePath);
+            await this._archiveMusicSegmentAsync(toRelativePath, takeId);
+
+            const sha = await this._sha256Hex(buf);
+            const { dir, fileName } = await this._ensurePathAsync(toRelativePath);
+            const wfh = await dir.getFileHandle(fileName, { create: true });
+            const w = await wfh.createWritable();
+            await w.write(buf);
+            await w.close();
+
+            const key = toRelativePath.replace(/\\/g, "/");
+            if (this._blobUrls[key]) {
+                try { URL.revokeObjectURL(this._blobUrls[key]); } catch (_) { /* */ }
+                delete this._blobUrls[key];
+            }
+            return { success: true, sha256: sha, sizeBytes: buf.byteLength };
         } catch (err) {
             return { success: false, error: err.message || String(err) };
         }

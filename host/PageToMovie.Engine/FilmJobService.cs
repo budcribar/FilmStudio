@@ -66,6 +66,7 @@ public sealed class FilmJobService
     private readonly IHttpClientFactory _httpFactory;
     private readonly IAudioClient _audio;
     private readonly SceneMusicScoringService _musicScoring;
+    private readonly MusicSidecarService? _musicSidecars;
 
     public FilmJobService(
         ProjectStore projects,
@@ -103,7 +104,8 @@ public sealed class FilmJobService
         ClipDialogueVerificationService? dialogueVerification = null,
         GlobalTimingCalibrationService? timingCalibration = null,
         ActionCameraOverheadLedger? timingLedger = null,
-        AiActionOverheadClassifier? timingClassifier = null)
+        AiActionOverheadClassifier? timingClassifier = null,
+        MusicSidecarService? musicSidecars = null)
     {
         _httpFactory = httpFactory;
         _projects = projects;
@@ -141,6 +143,7 @@ public sealed class FilmJobService
         _timingCalibration = timingCalibration;
         _timingLedger = timingLedger;
         _timingClassifier = timingClassifier;
+        _musicSidecars = musicSidecars;
     }
 
     public void SetProgressSink(IJobProgressSink sink) => _sink = sink;
@@ -1173,26 +1176,30 @@ public sealed class FilmJobService
         }
     }
 
-    /// <summary>Background music for one scene via audio API (client saves the segment(s)).</summary>
-    public Task<JobSnapshot> StartSceneMusicGenAsync(string projectId, int scene)
+    /// <summary>Background music (or singing) for one scene via audio API (client saves the
+    /// segment(s)). <paramref name="model"/> overrides the project's configured audio_model_name for
+    /// this run only; <paramref name="isVocal"/> requests sung vocals (Suno-family models only).</summary>
+    public Task<JobSnapshot> StartSceneMusicGenAsync(string projectId, int scene, string? model = null, bool isVocal = false)
     {
         if (string.IsNullOrWhiteSpace(projectId))
             projectId = _projects.ActiveProjectId;
         if (string.IsNullOrWhiteSpace(projectId))
             throw new InvalidOperationException("projectId required");
         return StartBackgroundJobAsync(
-            ct => RunSceneMusicGenAsync(projectId, scene, ct),
+            ct => RunSceneMusicGenAsync(projectId, scene, model, isVocal, ct),
             new JobEnqueueMeta
             {
                 Kind = "music",
                 ProjectId = projectId,
-                Message = $"Queued background music for Scene {scene:D2}…",
+                Message = isVocal
+                    ? $"Queued singing for Scene {scene:D2}…"
+                    : $"Queued background music for Scene {scene:D2}…",
             },
             lockResources: new[] { LockKeys.Wip(projectId) },
             lockReason: $"scene {scene} music gen");
     }
 
-    private async Task RunSceneMusicGenAsync(string projectId, int scene, CancellationToken ct)
+    private async Task RunSceneMusicGenAsync(string projectId, int scene, string? modelOverride, bool isVocal, CancellationToken ct)
     {
         await _projects.RequireProjectAsync(projectId, ct);
         Snapshot = new JobSnapshot
@@ -1221,7 +1228,10 @@ public sealed class FilmJobService
             var cfg = await _projects.GetConfigAsync(projectId, ct).ConfigureAwait(false);
 
             var enableMusic = SceneMusicScoringService.GetConfigBool(cfg, "enable_background_music", true);
-            var audioModel = SceneMusicScoringService.GetConfigStr(cfg, "audio_model_name", "fal-ai/stable-audio");
+            var configuredModel = SceneMusicScoringService.GetConfigStr(cfg, "audio_model_name", "fal-ai/stable-audio");
+            // Per-run override wins when given; otherwise fall back to the project's configured
+            // default — the Configuration page's global picker is unaffected either way.
+            var audioModel = string.IsNullOrWhiteSpace(modelOverride) ? configuredModel : modelOverride;
             if (!enableMusic || string.Equals(audioModel, "none", StringComparison.OrdinalIgnoreCase))
             {
                 await FinishAsync("done", "Background music disabled in settings.");
@@ -1238,12 +1248,34 @@ public sealed class FilmJobService
             await AppendLogAsync($"Music prompt: {prompt}");
 
             var entry = SupportedModelCatalog.ResolveOrDefault(audioModel, ModelCapability.Audio, "fal-ai/stable-audio");
+
+            // Only Suno-family providers can sing — downgrade to instrumental rather than fail the
+            // whole take if a vocal request somehow reaches a non-vocal-capable model (the UI is
+            // expected to disable the vocal toggle for those models, this is the defensive backstop).
+            var canSing = entry.Provider is ModelProviderFamily.Suno or ModelProviderFamily.AiMusicApi;
+            var effectiveIsVocal = isVocal && canSing;
+            if (isVocal && !canSing)
+                await AppendLogAsync($"  [{entry.DisplayName}] has no vocal capability — generating instrumental instead.");
+
+            string? lyrics = null;
+            if (effectiveIsVocal)
+            {
+                lyrics = await _musicScoring.ComposeSceneLyricsAsync(screenplay, totalDuration, planningModel, ct).ConfigureAwait(false);
+                await AppendLogAsync($"Lyrics: {lyrics}");
+            }
+
+            // Ties every segment of this run together in take history — minted once, not per segment
+            // (segments are generated minutes apart via real provider polling, so each computing its
+            // own timestamp would scatter one take's files across unrelated-looking history entries).
+            var takeId = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds().ToString();
+
             // Providers without a documented duration control (MaxAudioDurationSeconds null, e.g.
             // AIMusicAPI) collapse this to one call requesting the full scene length — the
             // provider decides the actual length, no client-side stitching to do.
             var segLen = Math.Max(1, entry.MaxAudioDurationSeconds ?? totalDuration);
             var segmentCount = (int)Math.Ceiling(totalDuration / (double)segLen);
             var savedSegments = 0;
+            var segmentFileNames = new List<string>();
 
             for (var seg = 1; seg <= segmentCount; seg++)
             {
@@ -1254,7 +1286,8 @@ public sealed class FilmJobService
                 await AppendLogAsync($"  [{entry.DisplayName}] generating segment {seg}/{segmentCount} ({segDuration}s)…");
                 var url = await _audio.GenerateMusicTrackAsync(
                     prompt, segDuration, entry.Id, ct,
-                    onProgress: msg => { _ = AppendLogAsync("  " + msg); }).ConfigureAwait(false);
+                    onProgress: msg => { _ = AppendLogAsync("  " + msg); },
+                    isVocal: effectiveIsVocal, lyrics: lyrics).ConfigureAwait(false);
                 if (string.IsNullOrWhiteSpace(url))
                 {
                     await AppendLogAsync($"  [{entry.DisplayName}] segment {seg} failed — stopping.");
@@ -1268,10 +1301,12 @@ public sealed class FilmJobService
                 {
                     s.ClientMediaUrl = clientUrl;
                     s.ClientRelativePath = relPath;
+                    s.MusicTakeId = takeId;
                     s.Scene = scene;
                     s.Index = (int)Math.Round(seg * 100.0 / segmentCount);
                 });
                 await AppendLogAsync($"  segment {seg} ready for client save → {relPath}");
+                segmentFileNames.Add(Path.GetFileName(relPath));
                 savedSegments++;
             }
 
@@ -1287,8 +1322,21 @@ public sealed class FilmJobService
                 return;
             }
 
+            if (_musicSidecars is not null)
+            {
+                try
+                {
+                    await _musicSidecars.WriteActiveSidecarAsync(
+                        pDir, scene, takeId, entry.Id, effectiveIsVocal, prompt, lyrics, segmentFileNames, ct).ConfigureAwait(false);
+                }
+                catch (Exception ex)
+                {
+                    _log.LogWarning(ex, "Failed writing music take sidecar for scene {Scene}", scene);
+                }
+            }
+
             await UpdateAsync(s => s.Index = 100);
-            await FinishAsync("done", $"Background music ready ({savedSegments} segment(s)) — save to media folder");
+            await FinishAsync("done", $"{(effectiveIsVocal ? "Singing" : "Background music")} ready ({savedSegments} segment(s)) — save to media folder");
         }
         catch (OperationCanceledException)
         {

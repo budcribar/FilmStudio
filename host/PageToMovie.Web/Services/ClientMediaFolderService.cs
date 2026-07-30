@@ -332,7 +332,8 @@ public sealed class ClientMediaFolderService
                     "PageToMovieMedia.saveFromUrlAsync",
                     urlToSave,
                     clientPath,
-                    null);
+                    null,
+                    snap.MusicTakeId);
 
                 if (saved is not { Success: true } || string.IsNullOrWhiteSpace(saved.Sha256))
                 {
@@ -553,6 +554,39 @@ public sealed class ClientMediaFolderService
         catch (Exception ex)
         {
             return (false, null, 0, ex.Message);
+        }
+    }
+
+    /// <summary>
+    /// Copies an archived audio take's segment bytes back to their active paths within the local
+    /// media folder — the client-side half of promoting a take (see ProjectStore.PromoteMusicVersionAsync
+    /// for the server-side sidecar-metadata half, which must also be called). The bytes never leave
+    /// the browser: unlike a fresh generation, there's no server proxy URL to download from, only a
+    /// copy from one local path to another. <paramref name="archiveTakeId"/> should be the currently
+    /// active take's own id (so whatever's being displaced archives under a real, identifiable id,
+    /// same as a fresh regeneration would).
+    /// </summary>
+    public async Task<bool> PromoteMusicTakeAsync(string projectId, MusicVersionItem target, string archiveTakeId)
+    {
+        if (!IsConnected) return false;
+        try
+        {
+            for (var i = 0; i < target.SegmentFileNames.Count; i++)
+            {
+                var fileName = target.SegmentFileNames[i];
+                var fromRel = i < target.RelativePaths.Count ? target.RelativePaths[i] : $"assets/music/history/{fileName}";
+                var toRel = $"assets/music/{fileName}";
+                var fromClientPath = $"{projectId}/{fromRel}";
+                var toClientPath = $"{projectId}/{toRel}";
+                var res = await _js.InvokeAsync<JsSaveResult>(
+                    "PageToMovieMedia.copyLocalFileAsync", fromClientPath, toClientPath, archiveTakeId);
+                if (res is not { Success: true }) return false;
+            }
+            return true;
+        }
+        catch
+        {
+            return false;
         }
     }
 

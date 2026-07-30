@@ -1476,6 +1476,84 @@ public sealed class EngineApiClient
         return new SceneRevertEnvelope { Ok = false, Error = TryError(err) ?? resp.ReasonPhrase };
     }
 
+    public sealed class MusicVersionsEnvelope
+    {
+        public bool Ok { get; set; }
+        public List<MusicVersionItem>? Versions { get; set; }
+        public string? Error { get; set; }
+    }
+
+    /// <summary>Audio take history for a scene — the audio equivalent of GetClipVersionsAsync.</summary>
+    public async Task<MusicVersionsEnvelope?> GetMusicVersionsAsync(
+        string projectId, int sceneNumber, CancellationToken ct = default)
+    {
+        SyncIdentityHeaders();
+        return await _http.GetFromJsonAsync<MusicVersionsEnvelope>(
+            $"/api/projects/{Uri.EscapeDataString(projectId)}/scenes/{sceneNumber}/music-versions",
+            JsonOpts,
+            ct);
+    }
+
+    public async Task<SceneRevertEnvelope> PromoteMusicVersionAsync(
+        string projectId, int sceneNumber, string takeId, CancellationToken ct = default)
+    {
+        SyncIdentityHeaders();
+        using var resp = await _http.PostAsync(
+            $"/api/projects/{Uri.EscapeDataString(projectId)}/scenes/{sceneNumber}/music-versions/{Uri.EscapeDataString(takeId)}/promote",
+            null,
+            ct);
+        if (resp.IsSuccessStatusCode)
+        {
+            var res = await resp.Content.ReadFromJsonAsync<SceneRevertEnvelope>(JsonOpts, ct);
+            return res ?? new SceneRevertEnvelope { Ok = true };
+        }
+        var err = await resp.Content.ReadAsStringAsync(ct);
+        return new SceneRevertEnvelope { Ok = false, Error = TryError(err) ?? resp.ReasonPhrase };
+    }
+
+    public async Task<SceneRevertEnvelope> SoftDeleteMusicVersionAsync(
+        string projectId, int sceneNumber, string takeId, CancellationToken ct = default)
+    {
+        SyncIdentityHeaders();
+        using var resp = await _http.DeleteAsync(
+            $"/api/projects/{Uri.EscapeDataString(projectId)}/scenes/{sceneNumber}/music-versions/{Uri.EscapeDataString(takeId)}",
+            ct);
+        if (resp.IsSuccessStatusCode)
+        {
+            var res = await resp.Content.ReadFromJsonAsync<SceneRevertEnvelope>(JsonOpts, ct);
+            return res ?? new SceneRevertEnvelope { Ok = true };
+        }
+        var err = await resp.Content.ReadAsStringAsync(ct);
+        return new SceneRevertEnvelope { Ok = false, Error = TryError(err) ?? resp.ReasonPhrase };
+    }
+
+    public async Task<MusicVersionsEnvelope?> GetTrashMusicVersionsAsync(
+        string projectId, int sceneNumber, CancellationToken ct = default)
+    {
+        SyncIdentityHeaders();
+        return await _http.GetFromJsonAsync<MusicVersionsEnvelope>(
+            $"/api/projects/{Uri.EscapeDataString(projectId)}/scenes/{sceneNumber}/music-versions/trash",
+            JsonOpts,
+            ct);
+    }
+
+    public async Task<SceneRevertEnvelope> RestoreMusicVersionAsync(
+        string projectId, int sceneNumber, string takeId, CancellationToken ct = default)
+    {
+        SyncIdentityHeaders();
+        using var resp = await _http.PostAsync(
+            $"/api/projects/{Uri.EscapeDataString(projectId)}/scenes/{sceneNumber}/music-versions/{Uri.EscapeDataString(takeId)}/restore",
+            null,
+            ct);
+        if (resp.IsSuccessStatusCode)
+        {
+            var res = await resp.Content.ReadFromJsonAsync<SceneRevertEnvelope>(JsonOpts, ct);
+            return res ?? new SceneRevertEnvelope { Ok = true };
+        }
+        var err = await resp.Content.ReadAsStringAsync(ct);
+        return new SceneRevertEnvelope { Ok = false, Error = TryError(err) ?? resp.ReasonPhrase };
+    }
+
     public string CompositeVideoUrl(string projectId, int sceneNumber) =>
         BrowserMediaPath(
             $"/api/projects/{Uri.EscapeDataString(projectId)}/scenes/{sceneNumber}/composite");
@@ -1888,6 +1966,8 @@ public sealed class EngineApiClient
     public async Task<JobSnapshot?> StartSceneMusicGenAsync(
         string projectId,
         int scene,
+        string? model = null,
+        bool isVocal = false,
         CancellationToken ct = default)
     {
         using var req = new HttpRequestMessage(HttpMethod.Post, "/api/jobs/scene-music")
@@ -1896,6 +1976,8 @@ public sealed class EngineApiClient
             {
                 ProjectId = projectId,
                 Scene = scene,
+                Model = model,
+                IsVocal = isVocal,
             }, options: JsonOpts),
         };
         return await SendJsonAsync<JobStartEnvelope>(req, ct) is { } env ? env.Job : null;

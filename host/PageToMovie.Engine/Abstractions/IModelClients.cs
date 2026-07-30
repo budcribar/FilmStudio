@@ -186,10 +186,18 @@ public interface IAudioClient
     /// internal polling) so the caller can surface progress in a job log. Fast providers (Fal.ai)
     /// may ignore it.
     /// </param>
+    /// <param name="isVocal">
+    /// True to request sung vocals instead of an instrumental track. Only the Suno-family providers
+    /// (SunoClient, AiMusicApiClient) can honor this — Fal.ai Stable Audio has no vocal capability and
+    /// always generates instrumental regardless of this flag.
+    /// </param>
+    /// <param name="lyrics">Lyrics text to sing, required by Suno-family providers when <paramref name="isVocal"/> is true; ignored otherwise.</param>
     Task<string?> GenerateMusicTrackAsync(
         string prompt,
         int durationSeconds,
         string? model = null,
         CancellationToken ct = default,
-        Action<string>? onProgress = null);
+        Action<string>? onProgress = null,
+        bool isVocal = false,
+        string? lyrics = null);
 }

@@ -55,7 +55,9 @@ public sealed class FalAudioClient : IAudioClient
         int durationSeconds,
         string? model = null,
         CancellationToken ct = default,
-        Action<string>? onProgress = null)
+        Action<string>? onProgress = null,
+        bool isVocal = false,
+        string? lyrics = null)
     {
         var apiKey = ResolveApiKey();
         if (string.IsNullOrWhiteSpace(apiKey))
@@ -63,6 +65,13 @@ public sealed class FalAudioClient : IAudioClient
             _log.LogWarning("Fal.ai API key is missing — skipping audio generation.");
             return null;
         }
+
+        // Stable Audio has no vocal capability at all — this provider always generates
+        // instrumental regardless of what the caller asked for (isVocal/lyrics are ignored, not
+        // silently misreported: FilmJobService gates model selection so a vocal request should never
+        // route here, but if it somehow does, generating instrumental beats failing the whole take).
+        if (isVocal)
+            _log.LogWarning("Vocal generation requested but Fal.ai Stable Audio has no vocal capability — generating instrumental.");
 
         model = string.IsNullOrWhiteSpace(model) ? "fal-ai/stable-audio" : model;
         // Real fal-ai/stable-audio hard limit (not an arbitrary choice — see
