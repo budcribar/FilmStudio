@@ -160,13 +160,13 @@ public static class ClipVideoPromptBuilder
         var continuityBlock = mode switch
         {
             "video-extend" =>
-                "CONTINUITY: This is a seamless EXTENSION of the provided previous video. " +
+                "<Continuity>This is a seamless EXTENSION of the provided previous video. " +
                 "Pick up from its last frame. Same character identity, wardrobe, lighting, and location. " +
-                "Natural progressive motion only — do not invent a new establishing shot or redesign faces/outfits.",
+                "Natural progressive motion only — do not invent a new establishing shot or redesign faces/outfits.</Continuity>",
             "continue" =>
-                "CONTINUITY: Continue seamlessly from the provided starting frame (end of previous clip). " +
+                "<Continuity>Continue seamlessly from the provided starting frame (end of previous clip). " +
                 "Same character identity, wardrobe, lighting, and location. Natural progressive motion only — " +
-                "do not invent a new establishing shot or redesign faces/outfits.",
+                "do not invent a new establishing shot or redesign faces/outfits.</Continuity>",
             _ =>
                 "Follow the camera framing and location in this prompt exactly. " +
                 "Prioritize the PRIMARY subject and ONE clear action with visible motion; " +
@@ -182,26 +182,26 @@ public static class ClipVideoPromptBuilder
             mode is "continue" or "video-extend")
         {
             var prevClean = SanitizeActionText(previousClipVisualPrompt!, onScreenKeys);
+            var note = mode == "video-extend"
+                ? "already provided as video input — continue from its last frame"
+                : "context — match look and continue motion from its end";
             continuityBlock =
-                (mode == "video-extend"
-                    ? "PREVIOUS CLIP (already provided as video input — continue from its last frame):\n"
-                    : "PREVIOUS CLIP (context — match look & continue motion from its end):\n") +
-                prevClean + "\n\n" + continuityBlock;
+                $"<PreviousClip note=\"{note}\">\n{prevClean}\n</PreviousClip>\n\n" + continuityBlock;
         }
         else if (!string.IsNullOrWhiteSpace(previousClipVisualPrompt) && mode == "fresh")
         {
             // Cast-change reseed: no video input, but keep prior clip prose for location/lighting only.
             var prevClean = SanitizeActionText(previousClipVisualPrompt!, onScreenKeys);
             continuityBlock =
-                "CONTEXT (prior clip in scene — new cast plate refs attached; match location/lighting if still valid; " +
-                "identity from CHARACTER VARIABLES + locked plates only):\n" +
-                prevClean + "\n\n" + continuityBlock;
+                "<Context note=\"prior clip in scene — new cast plate refs attached; match location/lighting if " +
+                "still valid; identity from Characters + locked plates only\">\n" +
+                prevClean + "\n</Context>\n\n" + continuityBlock;
         }
 
         var castCountLine = onScreenKeys.Count > 0
-            ? $"CAST COUNT: exactly {onScreenKeys.Count} distinct on-screen character identity(ies) only — " +
+            ? $"<CastCount>exactly {onScreenKeys.Count} distinct on-screen character identity(ies) only — " +
               string.Join(", ", onScreenKeys) +
-              ". Do not invent extra people, duplicate faces, or crowd extras not listed."
+              ". Do not invent extra people, duplicate faces, or crowd extras not listed.</CastCount>"
             : "";
 
         var actionTagged = actionText;
@@ -240,7 +240,7 @@ public static class ClipVideoPromptBuilder
 
         sb.AppendLine(continuityBlock);
         sb.AppendLine();
-        sb.AppendLine("THIS CLIP:");
+        sb.AppendLine("<Clip>");
         // This line used to be unconditional — telling the model to "end when the spoken line
         // finishes" even on silent beats with empty audio_payload.dialogue. With no line ever
         // specified, and CHARACTER VARIABLES listing every on-screen character's Voice profile
@@ -648,12 +648,14 @@ public static class ClipVideoPromptBuilder
         if (string.IsNullOrWhiteSpace(prompt)) return prompt ?? "";
         var p = prompt;
 
-        // 1. Simplify verbose section headers & repetitive directives
-        p = p.Replace("CHARACTER VARIABLES (use these identities consistently; do not redesign faces or wardrobe):", "CHARACTERS:");
+        // 1. Simplify verbose section headers & repetitive directives. Section tags
+        // (<Characters>, <Context>, <PreviousClip>) carry a "note" attribute with the full
+        // instructional wording for the uncompressed prompt — drop it here, the bare tag name is
+        // enough once the prompt is already tight on budget.
+        p = Regex.Replace(p, @"\s+note=""[^""]*""", "");
         p = p.Replace("REQUIRED native Grok dialogue.", "");
         p = p.Replace("Do not invent extra people, duplicate faces, or crowd extras not listed.", "");
         p = p.Replace("Follow the camera framing and location in this prompt exactly. Prioritize the PRIMARY subject and ONE clear action with visible motion; background characters may stay mostly still.", "");
-        p = p.Replace("CONTEXT (prior clip in scene — new cast plate refs attached; match location/lighting if still valid; identity from CHARACTER VARIABLES + locked plates only):", "CONTEXT:");
 
         // 2. Map all distinct Character_* keys to compact aliases C1, C2, C3... — numbered in
         // first-appearance order (readable, matches existing behavior), but REPLACED longest-key-
@@ -673,14 +675,18 @@ public static class ClipVideoPromptBuilder
         // 3. Compress image reference tags (<IMAGE_1> -> I1, <IMAGE_2> -> I2)
         p = Regex.Replace(p, @"<IMAGE_(\d+)>", "I$1");
 
-        // 4. Compress technical camera, stock, resolution/fps tails, and styling labels
+        // 4. Compress technical camera/stock text. Camera/Performance/Optics/VisualLock/Audio/
+        // Score/Ambient/Foley/Pronunciation/Negative/CastCount are already emitted as
+        // <Tag>...</Tag> at build time (see the "note" attribute strip above and the Voice/
+        // VoiceLock strip below) — no label rename needed for those anymore. "Color grading:" is
+        // the one holdout: it's partly embedded in ColorPaletteGradingClassifier's own AI prompt
+        // template (an example output format shown to the model), not purely deterministic C#
+        // string building like the others — converting it means editing what the model is shown,
+        // a different/riskier kind of change than a label rename, so it's left as plain text and
+        // still needs the rename here.
         p = p.Replace("Kodak Vision3 500T 5219 film stock", "Kodak 500T film");
-        p = p.Replace("Camera directive:", "Camera:");
         p = p.Replace("Color grading:", "Grade:");
-        p = p.Replace("Visual lock:", "Visual:");
-        p = p.Replace("Performance:", "Perf:");
         p = p.Replace("ON CAMERA lip-syncs", "lip-syncs");
-        p = p.Replace("AUDIO: ", "AUDIO:");
 
         // Strip [Display Name] bracketed titles in character lines (C1/C2 alias is sufficient)
         p = Regex.Replace(p, @"(-\s*C\d+(?:\s+I\d+)?)\s*\[[^\]]+\]:", "$1:");
@@ -998,7 +1004,7 @@ public static class ClipVideoPromptBuilder
     {
         if (keys.Count == 0) return "";
         var sb = new StringBuilder();
-        sb.AppendLine("CHARACTER VARIABLES (use these identities consistently; do not redesign faces or wardrobe):");
+        sb.AppendLine("<Characters note=\"use these identities consistently; do not redesign faces or wardrobe\">");
         var any = false;
         foreach (var key in keys)
         {
@@ -1041,7 +1047,7 @@ public static class ClipVideoPromptBuilder
 
             var line = $"- {key}{tag} [{display}]:";
             if (desc.Length > 0) line += $" {desc}";
-            if (vlock.Length > 0) line += $" Visual lock: {vlock}";
+            if (vlock.Length > 0) line += $" <VisualLock>{vlock}</VisualLock>";
             if (voice.Length > 0) line += $" <Voice>{voice}</Voice>";
             if (useImageTags && tag.Length > 0)
                 line += $" Match appearance of reference {tag.Trim()} exactly.";
@@ -1108,40 +1114,40 @@ public static class ClipVideoPromptBuilder
                 : " Start speaking immediately with the first word of the line — do not skip the opening.";
             
             var audioBedParts = new List<string>();
-            if (!string.IsNullOrWhiteSpace(score)) audioBedParts.Add($"Music score: {score.Trim()}");
-            if (!string.IsNullOrWhiteSpace(ambient)) audioBedParts.Add($"Ambient bed: {ambient.Trim()}");
-            if (!string.IsNullOrWhiteSpace(sfx)) audioBedParts.Add($"Foley: {sfx.Trim()}");
+            if (!string.IsNullOrWhiteSpace(score)) audioBedParts.Add($"<Score>{score.Trim()}</Score>");
+            if (!string.IsNullOrWhiteSpace(ambient)) audioBedParts.Add($"<Ambient>{ambient.Trim()}</Ambient>");
+            if (!string.IsNullOrWhiteSpace(sfx)) audioBedParts.Add($"<Foley>{sfx.Trim()}</Foley>");
 
             var bed = audioBedParts.Count > 0
-                ? " " + string.Join(". ", audioBedParts) + "."
+                ? " " + string.Join(" ", audioBedParts)
                 : " Secondary layer = soft room tone / Foley.";
 
             const string endPause =
                 " After the last word, hold a brief natural pause with a closed mouth (about half a second); do not freeze mid-syllable or trail into empty staring.";
             var pronHintInPayload = audio.TryGetProperty("pronunciation_hint", out var ph) ? ph.GetString() ?? "" : "";
             var pronHint = !string.IsNullOrWhiteSpace(pronHintInPayload)
-                ? (pronHintInPayload.StartsWith(" ") ? pronHintInPayload : " Pronunciation guide: " + pronHintInPayload)
+                ? (pronHintInPayload.StartsWith(" ") ? pronHintInPayload : $" <Pronunciation>{pronHintInPayload}</Pronunciation>")
                 : DetectPronunciationHints(quote);
 
             if (isVoiceover)
             {
                 return
-                    $"AUDIO: REQUIRED native Grok off-camera voiceover. {who} narrates " +
-                    $"exactly: \"{quote}\".{openCue}{endPause}{pronHint} Do not lip-sync on-screen cast to this VO.{bed}{voiceLock}";
+                    $"<Audio>REQUIRED native Grok off-camera voiceover. {who} narrates " +
+                    $"exactly: \"{quote}\".{openCue}{endPause}{pronHint} Do not lip-sync on-screen cast to this VO.{bed}{voiceLock}</Audio>";
             }
             // spoken_on_camera / on_camera (normalized)
             return
-                $"AUDIO: REQUIRED native Grok dialogue. {who} ON CAMERA lip-syncs " +
-                $"exactly: \"{quote}\".{openCue}{endPause}{pronHint} Other mouths closed. Speech intelligible; never silent.{bed}{voiceLock}";
+                $"<Audio>REQUIRED native Grok dialogue. {who} ON CAMERA lip-syncs " +
+                $"exactly: \"{quote}\".{openCue}{endPause}{pronHint} Other mouths closed. Speech intelligible; never silent.{bed}{voiceLock}</Audio>";
         }
 
         if (!string.IsNullOrWhiteSpace(ambient) || !string.IsNullOrWhiteSpace(sfx) || !string.IsNullOrWhiteSpace(score))
         {
             var layers = new List<string>();
-            if (!string.IsNullOrWhiteSpace(score)) layers.Add($"Music score: {score.Trim()}");
-            if (!string.IsNullOrWhiteSpace(ambient)) layers.Add($"Ambience: {ambient.Trim()}");
-            if (!string.IsNullOrWhiteSpace(sfx)) layers.Add($"Foley: {sfx.Trim()}");
-            return $"AUDIO: music/ambient/Foley only — {string.Join("; ", layers)}. No dialogue.";
+            if (!string.IsNullOrWhiteSpace(score)) layers.Add($"<Score>{score.Trim()}</Score>");
+            if (!string.IsNullOrWhiteSpace(ambient)) layers.Add($"<Ambient>{ambient.Trim()}</Ambient>");
+            if (!string.IsNullOrWhiteSpace(sfx)) layers.Add($"<Foley>{sfx.Trim()}</Foley>");
+            return $"<Audio>music/ambient/Foley only — {string.Join("; ", layers)}. No dialogue.</Audio>";
         }
         return "";
     }
@@ -1192,7 +1198,7 @@ public static class ClipVideoPromptBuilder
         }
 
         if (hints.Count == 0) return "";
-        return " Pronunciation guide: " + string.Join("; ", hints) + ".";
+        return " <Pronunciation>" + string.Join("; ", hints) + "</Pronunciation>";
     }
 
     /// <summary>
@@ -1221,7 +1227,7 @@ public static class ClipVideoPromptBuilder
         if (global.Length > 0) AddCsv(global);
         if (story.Length > 0) AddCsv(story);
         if (items.Count == 0) return "";
-        return "NEGATIVE: " + string.Join(", ", items) + ".";
+        return "<Negative>" + string.Join(", ", items) + "</Negative>";
     }
 
     private static string SimplifyVisual(string visual)
@@ -1289,9 +1295,9 @@ public static class ClipVideoPromptBuilder
     private static string IdentityReinforceBlock(IReadOnlyList<string> onScreenKeys, bool refsAttached)
     {
         if (refsAttached || onScreenKeys.Count == 0) return "";
-        return " IDENTITY: Match locked plate descriptions in CHARACTER VARIABLES exactly — " +
+        return " <Identity>Match locked plate descriptions in Characters exactly — " +
                "do not drift to illustration, anime, cartoon, or a different face/wardrobe. " +
-               "On-screen: " + string.Join(", ", onScreenKeys) + ".";
+               "On-screen: " + string.Join(", ", onScreenKeys) + ".</Identity>";
     }
 
     private static bool IsVoiceOnlyKey(string key, IReadOnlyDictionary<string, CharacterProfile>? characters)

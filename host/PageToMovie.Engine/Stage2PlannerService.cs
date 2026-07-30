@@ -675,7 +675,7 @@ public sealed class Stage2PlannerService
             if (aiCamera is not null && aiCamera.TryGetValue(beatIdStr, out var camDir))
             {
                 if (!string.IsNullOrWhiteSpace(camDir.FramingPrompt))
-                    vp = $"{vp} Camera directive: {camDir.FramingPrompt}";
+                    vp = $"{vp} <Camera>{camDir.FramingPrompt}</Camera>";
                 cameraMoveToken = $"{camDir.LensSpec}, {camDir.CameraMovement}";
             }
             else if (!string.IsNullOrWhiteSpace(dlg))
@@ -683,19 +683,19 @@ public sealed class Stage2PlannerService
                 var spkDisplay = !string.IsNullOrWhiteSpace(spk) ? DisplayNameForKey(spk, charSeeds) : "speaker";
                 // OTS only when ≥2 on-screen — solo monologue must not invent a listener.
                 var framing = GetMonologueCameraFraming(monologueStep, spkDisplay, clipCast.Count);
-                vp = $"{vp} Camera directive: {framing}";
+                vp = $"{vp} <Camera>{framing}</Camera>";
             }
 
             if (aiEmotion is not null && aiEmotion.TryGetValue(beatIdStr, out var emoDir))
             {
                 if (!string.IsNullOrWhiteSpace(emoDir.ActingPrompt))
-                    vp = $"{vp} Performance: {emoDir.ActingPrompt}";
+                    vp = $"{vp} <Performance>{emoDir.ActingPrompt}</Performance>";
             }
 
             if (aiDof is not null && aiDof.TryGetValue(beatIdStr, out var dofDir))
             {
                 if (!string.IsNullOrWhiteSpace(dofDir.Aperture))
-                    vp = $"{vp} Optics: {dofDir.Aperture}";
+                    vp = $"{vp} <Optics>{dofDir.Aperture}</Optics>";
             }
 
             if (aiColor is not null && !string.IsNullOrWhiteSpace(aiColor.GradingPrompt))

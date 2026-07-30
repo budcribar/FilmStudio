@@ -6113,6 +6113,47 @@ catch (Exception ex)
     Console.WriteLine($"Startup migration error: {ex.Message}");
 }
 
+// ── One-Time Startup Migration: catch up every project's schema_version ───────────────────
+// ProjectMigrationService already versions each project via a "schema_version" field in
+// project.json (mirrors UserDatabaseService's PRAGMA user_version approach for the SQL DB) —
+// today it's only invoked from ProjectArchiveService's export/import paths, so a project that's
+// never been exported/imported could sit on an old schema indefinitely. Running it for every
+// project at startup closes that gap and is how the v1 -> v2 visual_prompt tag migration
+// (Camera directive:/Performance:/Optics: -> <Camera>/<Performance>/<Optics>) actually reaches
+// existing projects. Idempotent — MigrateIfNeededAsync no-ops once a project is already current.
+try
+{
+    var opts = app.Services.GetRequiredService<IOptions<PageToMovieOptions>>().Value;
+    var workspaceRoot = opts.WorkspaceRoot ?? Directory.GetCurrentDirectory();
+    var projectsDir = Path.Combine(workspaceRoot, "projects");
+    var projectMigrations = app.Services.GetRequiredService<ProjectMigrationService>();
+
+    if (Directory.Exists(projectsDir))
+    {
+        var migratedCount = 0;
+        foreach (var projectJsonPath in Directory.EnumerateFiles(projectsDir, "project.json", SearchOption.AllDirectories))
+        {
+            var projectDir = Path.GetDirectoryName(projectJsonPath);
+            if (string.IsNullOrWhiteSpace(projectDir)) continue;
+            try
+            {
+                if (await projectMigrations.MigrateIfNeededAsync(projectDir))
+                    migratedCount++;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Project migration skipped for {projectDir}: {ex.Message}");
+            }
+        }
+        if (migratedCount > 0)
+            Console.WriteLine($"Startup schema migration: upgraded {migratedCount} project(s) to {ProjectMigrationService.CurrentSchemaVersion}.");
+    }
+}
+catch (Exception ex)
+{
+    Console.WriteLine($"Project schema migration error: {ex.Message}");
+}
+
 // Clean up any leftover staged demo movie files under _demos to reclaim server volume space
 try
 {

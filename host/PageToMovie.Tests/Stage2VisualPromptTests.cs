@@ -181,7 +181,7 @@ public class Stage2VisualPromptTests : IDisposable
         };
         var built = ClipVideoPromptBuilder.Build(
             clip, Path.GetTempPath(), profiles, resolution: "720p");
-        Assert.Contains("NEGATIVE:", built.Prompt, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("<Negative>", built.Prompt, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("no legible text", built.Prompt, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("no crowd extras", built.Prompt, StringComparison.OrdinalIgnoreCase);
         // Gen builder owns technical suffix (stripped from action if present, then re-appended)

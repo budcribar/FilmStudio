@@ -275,7 +275,7 @@ public class ClipVideoGenerationLiveTests : IDisposable
                 var built = ClipVideoPromptBuilder.Build(clip, store.GetProjectDir(projectId), new Dictionary<string, ClipVideoPromptBuilder.CharacterProfile>());
                 if (built.Prompt.Contains("tear up the planks", StringComparison.OrdinalIgnoreCase))
                 {
-                    Assert.Contains("Pronunciation guide: Pronounce 'tear' as verb", built.Prompt);
+                    Assert.Contains("<Pronunciation>Pronounce 'tear' as verb", built.Prompt);
                     Assert.Contains("tare", built.Prompt);
                     foundPronunciationHint = true;
                 }

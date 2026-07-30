@@ -33,7 +33,7 @@ public class ClipVideoPromptBuilderTests
             """).RootElement;
 
         var built = ClipVideoPromptBuilder.Build(clip, "proj", new Dictionary<string, ClipVideoPromptBuilder.CharacterProfile>());
-        Assert.Contains("Pronunciation guide: Pronounce 'Tear' as /tɛər/ (rip apart)", built.Prompt);
+        Assert.Contains("<Pronunciation>Pronounce 'Tear' as /tɛər/ (rip apart)</Pronunciation>", built.Prompt);
     }
 
     [Fact]
@@ -88,7 +88,7 @@ public class ClipVideoPromptBuilderTests
         };
 
         var built = ClipVideoPromptBuilder.Build(clip, tmp, profiles, maxRefs: 5);
-        Assert.Contains("CHARACTER VARIABLES", built.Prompt, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("<Characters", built.Prompt, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Character_Buster", built.Prompt);
         Assert.Contains("Small black-and-white dog", built.Prompt);
         Assert.Contains("<IMAGE_1>", built.Prompt);
@@ -249,7 +249,7 @@ public class ClipVideoPromptBuilderTests
                 ["Character_Hero"] = new() { Key = "Character_Hero", DisplayName = "Hero", Description = "tall hero" },
                 ["Character_Villain"] = new() { Key = "Character_Villain", DisplayName = "Villain", Description = "scarred villain" },
             });
-        Assert.Contains("CAST COUNT: exactly 2", built.Prompt, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("<CastCount>exactly 2", built.Prompt, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Character_Hero", built.Prompt);
         Assert.Contains("Character_Villain", built.Prompt);
     }
@@ -287,24 +287,24 @@ public class ClipVideoPromptBuilderTests
     [Fact]
     public void CompressPromptText_maps_character_keys_and_image_tags_to_compact_aliases()
     {
-        var input = "CHARACTER VARIABLES (use these identities consistently; do not redesign faces or wardrobe):\n" +
-                    " Character_The_Narrator <IMAGE_1>: Lean man of middle years. Visual lock: dark coat.\n" +
+        var input = "<Characters note=\"use these identities consistently; do not redesign faces or wardrobe\">\n" +
+                    " Character_The_Narrator <IMAGE_1>: Lean man of middle years. <VisualLock>dark coat</VisualLock>.\n" +
                     " Character_Old_Man <IMAGE_2>: Elderly man with pale blue eye.\n" +
-                    "THIS CLIP:\n" +
-                    "Camera directive: Medium shot. Color grading: Dark. Character_The_Narrator ON CAMERA lip-syncs to Character_Old_Man <IMAGE_2>.";
+                    "<Clip>\n" +
+                    "<Camera>Medium shot</Camera>. Color grading: Dark. Character_The_Narrator ON CAMERA lip-syncs to Character_Old_Man <IMAGE_2>.";
 
         var compressed = ClipVideoPromptBuilder.CompressPromptText(input);
 
-        Assert.Contains("CHARACTERS:", compressed);
+        Assert.Contains("<Characters>", compressed);
         Assert.DoesNotContain("Character_The_Narrator", compressed);
         Assert.DoesNotContain("Character_Old_Man", compressed);
         Assert.DoesNotContain("<IMAGE_1>", compressed);
         Assert.DoesNotContain("<IMAGE_2>", compressed);
         Assert.Contains("C1 I1", compressed);
         Assert.Contains("C2 I2", compressed);
-        Assert.Contains("Camera: Medium shot.", compressed);
+        Assert.Contains("<Camera>Medium shot</Camera>", compressed);
         Assert.Contains("Grade: Dark.", compressed);
-        Assert.Contains("Visual: dark coat.", compressed);
+        Assert.Contains("<VisualLock>dark coat</VisualLock>", compressed);
         Assert.Contains("C1 lip-syncs to C2 I2.", compressed);
     }
 
@@ -312,16 +312,16 @@ public class ClipVideoPromptBuilderTests
     public void CompressPromptText_reduces_tell_tale_heart_prompt_significantly()
     {
         var original = "STYLE LOCK: Period gothic live-action, mid-19th-century interiors; candlelight and deep shadows; desaturated cool-gray palette; naturalistic skin and fabric texture; no illustration or stylized animation\n" +
-                       "CHARACTER VARIABLES (use these identities consistently; do not redesign faces or wardrobe):\n" +
-                       " Character_The_Narrator <IMAGE_1> [The Narrator]: Lean man of middle years (about 40–50), pale sallow skin, hollow cheeks, dark disordered medium-length hair, bright intense dark eyes, thin tense mouth; plain dark wool waistcoat over white shirtsleeves, dark trousers; period clothing. Visual lock: Same lean pale face, dark disordered hair, and bright intense dark eyes in every scene; always plain dark waistcoat and shirtsleeves as default; never elderly, never white-haired, never the filmed blue eye. <Voice>Male, middle years; medium-high tense pitch; precise, controlled pace that sharpens into fevered urgency; intimate confessional energy, same voice on-camera and in V.O.</Voice> Match appearance of reference <IMAGE_1> exactly.\n" +
-                       "NCAST COUNT: exactly 1 distinct on-screen character identity(ies) only — Character_The_Narrator. Do not invent extra people, duplicate faces, or crowd extras not listed.\n" +
-                       "AUDIO: REQUIRED native Grok dialogue. Character_The_Narrator ON CAMERA lip-syncs EXACTLY: \"Passion there was none. I loved the old man. He had never wronged me.\". Start speaking immediately with \"Passion\" — do not skip, delay, or swallow the opening word. After the last word, hold a brief natural pause with a closed mouth (about half a second); do not freeze mid-syllable or trail into empty staring. Other mouths closed. Speech intelligible; never silent. Music score: Melancholy warm strings undercut by unease. <VoiceLock>Character_The_Narrator: Male, middle years; medium-high tense pitch; precise, controlled pace that sharpens into fevered urgency; intimate confessional energy, same voice on-camera and in V.O.</VoiceLock>\n" +
-                       "CONTEXT (prior clip in scene — new cast plate refs attached; match location/lighting if still valid; identity from CHARACTER VARIABLES + locked plates only):\n" +
-                       "INT. BARE ROOM - NIGHT. The Narrator speaks. Character_The_Narrator ON CAMERA lip-syncs \"but once conceived, it haunted me day and night. Object there was none.\". Character_The_Narrator still wears plain dark waistcoat, rolled cuffs Camera directive: Steady close-up, 50mm lens, face half-shadowed while haunted obsession is described. Performance: Acting intensity 6/10: Haunted stare, jaw clench, restless micro-twitch under eye Optics: f/1.8 shallow depth of field, intimate facial isolation Color grading: Kodak Vision3 500T 5219 film stock, desaturated cool-teal shadows and warm amber candle highlights\n" +
+                       "<Characters note=\"use these identities consistently; do not redesign faces or wardrobe\">\n" +
+                       " Character_The_Narrator <IMAGE_1> [The Narrator]: Lean man of middle years (about 40–50), pale sallow skin, hollow cheeks, dark disordered medium-length hair, bright intense dark eyes, thin tense mouth; plain dark wool waistcoat over white shirtsleeves, dark trousers; period clothing. <VisualLock>Same lean pale face, dark disordered hair, and bright intense dark eyes in every scene; always plain dark waistcoat and shirtsleeves as default; never elderly, never white-haired, never the filmed blue eye.</VisualLock> <Voice>Male, middle years; medium-high tense pitch; precise, controlled pace that sharpens into fevered urgency; intimate confessional energy, same voice on-camera and in V.O.</Voice> Match appearance of reference <IMAGE_1> exactly.\n" +
+                       "<CastCount>exactly 1 distinct on-screen character identity(ies) only — Character_The_Narrator. Do not invent extra people, duplicate faces, or crowd extras not listed.</CastCount>\n" +
+                       "<Audio>REQUIRED native Grok dialogue. Character_The_Narrator ON CAMERA lip-syncs EXACTLY: \"Passion there was none. I loved the old man. He had never wronged me.\". Start speaking immediately with \"Passion\" — do not skip, delay, or swallow the opening word. After the last word, hold a brief natural pause with a closed mouth (about half a second); do not freeze mid-syllable or trail into empty staring. Other mouths closed. Speech intelligible; never silent. <Score>Melancholy warm strings undercut by unease</Score> <VoiceLock>Character_The_Narrator: Male, middle years; medium-high tense pitch; precise, controlled pace that sharpens into fevered urgency; intimate confessional energy, same voice on-camera and in V.O.</VoiceLock></Audio>\n" +
+                       "<Context note=\"prior clip in scene — new cast plate refs attached; match location/lighting if still valid; identity from Characters + locked plates only\">\n" +
+                       "INT. BARE ROOM - NIGHT. The Narrator speaks. Character_The_Narrator ON CAMERA lip-syncs \"but once conceived, it haunted me day and night. Object there was none.\". Character_The_Narrator still wears plain dark waistcoat, rolled cuffs <Camera>Steady close-up, 50mm lens, face half-shadowed while haunted obsession is described</Camera> <Performance>Acting intensity 6/10: Haunted stare, jaw clench, restless micro-twitch under eye</Performance> <Optics>f/1.8 shallow depth of field, intimate facial isolation</Optics> Color grading: Kodak Vision3 500T 5219 film stock, desaturated cool-teal shadows and warm amber candle highlights\n" +
                        "Follow the camera framing and location in this prompt exactly. Prioritize the PRIMARY subject and ONE clear action with visible motion; background characters may stay mostly still.\n" +
-                       "THIS CLIP:\n" +
+                       "<Clip>\n" +
                        "End cleanly when the spoken line and primary action finish — do not hold a frozen pose or empty silence after dialogue.\n" +
-                       "INT. BARE ROOM - NIGHT. The Narrator speaks. Character_The_Narrator <IMAGE_1> ON CAMERA lip-syncs \"Passion there was none. I loved the old man. He had never wronged me.\". Character_The_Narrator <IMAGE_1> still wears plain dark waistcoat, white shirtsleeves, rolled cuffs Camera directive: Medium shot drifting slightly, 35mm lens, calm delivery of love for the old man. Performance: Acting intensity 4/10: Softened sincere eyes, gentle brow raise, open earnest expression Optics: f/2.0 shallow depth of field, soft background separation Color grading: Kodak Vision3 500T 5219 film stock, desaturated cool-teal shadows and warm amber candle highlights / 480p, 24fps";
+                       "INT. BARE ROOM - NIGHT. The Narrator speaks. Character_The_Narrator <IMAGE_1> ON CAMERA lip-syncs \"Passion there was none. I loved the old man. He had never wronged me.\". Character_The_Narrator <IMAGE_1> still wears plain dark waistcoat, white shirtsleeves, rolled cuffs <Camera>Medium shot drifting slightly, 35mm lens, calm delivery of love for the old man</Camera> <Performance>Acting intensity 4/10: Softened sincere eyes, gentle brow raise, open earnest expression</Performance> <Optics>f/2.0 shallow depth of field, soft background separation</Optics> Color grading: Kodak Vision3 500T 5219 film stock, desaturated cool-teal shadows and warm amber candle highlights / 480p, 24fps";
 
         var compressed = ClipVideoPromptBuilder.CompressPromptText(original);
 
@@ -438,7 +438,7 @@ public class ClipVideoPromptBuilderTests
         var built = ClipVideoPromptBuilder.Build(clip, tmp, profiles, maxRefs: 5);
         Assert.Equal(1, built.CastCount);
         Assert.DoesNotContain("Character_Old_Man", built.OnScreenKeys, StringComparer.OrdinalIgnoreCase);
-        Assert.Contains("CAST COUNT: exactly 1", built.Prompt, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("<CastCount>exactly 1", built.Prompt, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("Character_Old_Man", built.Prompt, StringComparison.OrdinalIgnoreCase);
         Assert.Single(built.ReferenceImagePaths);
         Assert.Contains("narrator", Path.GetFileName(built.ReferenceImagePaths[0]), StringComparison.OrdinalIgnoreCase);
@@ -629,11 +629,11 @@ public class ClipVideoPromptBuilderTests
         var built = ClipVideoPromptBuilder.Build(clip, Path.GetTempPath(), profiles);
         Assert.Equal(2, built.CastCount);
         Assert.Equal(2, built.OnScreenKeys.Count);
-        Assert.Contains("CAST COUNT: exactly 2", built.Prompt);
-        Assert.Equal(1, System.Text.RegularExpressions.Regex.Matches(built.Prompt, "CAST COUNT:").Count);
+        Assert.Contains("<CastCount>exactly 2", built.Prompt);
+        Assert.Equal(1, System.Text.RegularExpressions.Regex.Matches(built.Prompt, "<CastCount>").Count);
         Assert.DoesNotContain("CAST COUNT: exactly 1", built.Prompt);
-        Assert.True(built.Prompt.IndexOf("CAST COUNT", StringComparison.OrdinalIgnoreCase) <
-                    built.Prompt.IndexOf("THIS CLIP", StringComparison.OrdinalIgnoreCase));
+        Assert.True(built.Prompt.IndexOf("<CastCount", StringComparison.OrdinalIgnoreCase) <
+                    built.Prompt.IndexOf("<Clip", StringComparison.OrdinalIgnoreCase));
     }
 
     [Fact]
@@ -679,7 +679,7 @@ public class ClipVideoPromptBuilderTests
         Assert.Equal("fresh", built.Mode);
         Assert.True(built.RefsAttachedToApi);
         Assert.NotEmpty(built.ReferenceImagePaths);
-        Assert.DoesNotContain("IDENTITY: Match locked plate", built.Prompt, StringComparison.Ordinal);
+        Assert.DoesNotContain("<Identity>Match locked plate", built.Prompt, StringComparison.Ordinal);
 
         try { Directory.Delete(tmp, true); } catch { /* ignore */ }
     }
@@ -726,7 +726,7 @@ public class ClipVideoPromptBuilderTests
         Assert.Equal("video-extend", built.Mode);
         Assert.False(built.RefsAttachedToApi);
         Assert.Empty(built.ReferenceImagePaths);
-        Assert.Contains("IDENTITY: Match locked plate", built.Prompt, StringComparison.Ordinal);
+        Assert.Contains("<Identity>Match locked plate", built.Prompt, StringComparison.Ordinal);
         Assert.Contains("Character_Old_Man", built.Prompt);
         Assert.Contains("EXTENSION", built.Prompt, StringComparison.OrdinalIgnoreCase);
 
@@ -777,7 +777,7 @@ public class ClipVideoPromptBuilderTests
         Assert.True(built.RefsAttachedToApi);
         Assert.True(built.ReferenceImagePaths.Count >= 1);
         Assert.Equal(3, built.CastCount);
-        Assert.DoesNotContain("IDENTITY: Match locked plate", built.Prompt, StringComparison.Ordinal);
+        Assert.DoesNotContain("<Identity>Match locked plate", built.Prompt, StringComparison.Ordinal);
         Assert.Contains("<IMAGE_1>", built.Prompt);
         Assert.Contains("new cast plate refs attached", built.Prompt, StringComparison.OrdinalIgnoreCase);
 
@@ -828,7 +828,7 @@ public class ClipVideoPromptBuilderTests
         Assert.Contains("Also present (not shot focus)", built.Prompt, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("Passive background", built.Prompt, StringComparison.OrdinalIgnoreCase);
         // Narrator should keep full visual lock prose
-        Assert.Contains("Visual lock:", built.Prompt, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("<VisualLock>", built.Prompt, StringComparison.OrdinalIgnoreCase);
 
         try { Directory.Delete(tmp, true); } catch { /* ignore */ }
     }

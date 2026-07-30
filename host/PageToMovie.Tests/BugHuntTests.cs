@@ -325,7 +325,7 @@ public class BugHuntTests
             """);
         var built = ClipVideoPromptBuilder.Build(doc.RootElement, projectDir: Path.GetTempPath());
         Assert.Contains("Hello there!", built.Prompt, StringComparison.Ordinal);
-        Assert.Contains("AUDIO:", built.Prompt, StringComparison.Ordinal);
+        Assert.Contains("<Audio>", built.Prompt, StringComparison.Ordinal);
     }
 
     // ── 12. Clip gen / auto-review rules are embedded (no runtime packs) ──
