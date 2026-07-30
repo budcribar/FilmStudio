@@ -162,14 +162,27 @@ public sealed class Stage2PlannerAutomationTests
         Assert.Equal("extend_previous", updatedClips[2]["veo_continuation_source"]);
     }
 
+    private static string ResolveTellTaleHeartFountainPath()
+    {
+        var paths = new[]
+        {
+            @"c:\Users\budcr\source\repos\gemini\PageToMovie\projects\TellTaleHeartV7\source\screenplay.fountain",
+            @"c:\Users\budcr\source\repos\PageToMovie\projects\TellTaleHeartV7\source\screenplay.fountain",
+            Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "projects", "TellTaleHeartV7", "source", "screenplay.fountain"),
+            Path.Combine(Directory.GetCurrentDirectory(), "projects", "TellTaleHeartV7", "source", "screenplay.fountain")
+        };
+        foreach (var p in paths)
+        {
+            var full = Path.GetFullPath(p);
+            if (File.Exists(full)) return full;
+        }
+        return paths[0];
+    }
+
     [Fact]
     public void CoalesceSilentPreludeBeats_TellTaleHeartScene2_CoalescesClip1IntoFrame1VO()
     {
-        var fountainPath = @"c:\Users\budcr\source\repos\PageToMovie\projects\TellTaleHeartV7\source\screenplay.fountain";
-        if (!System.IO.File.Exists(fountainPath))
-        {
-            fountainPath = @"c:\Users\budcr\source\repos\gemini\PageToMovie\projects\TellTaleHeartV7\source\screenplay.fountain";
-        }
+        var fountainPath = ResolveTellTaleHeartFountainPath();
         var text = System.IO.File.ReadAllText(fountainPath);
         var model = ScreenplayService.BuildModelFromFountainText(text);
 
@@ -190,11 +203,7 @@ public sealed class Stage2PlannerAutomationTests
     [Fact]
     public async Task TellTaleHeart_Stage2Plan_GeneratesPronunciationHint_ForTearUpThePlanks()
     {
-        var fountainPath = @"c:\Users\budcr\source\repos\gemini\PageToMovie\projects\TellTaleHeartV7\source\screenplay.fountain";
-        if (!System.IO.File.Exists(fountainPath))
-        {
-            fountainPath = @"c:\Users\budcr\source\repos\PageToMovie\projects\TellTaleHeartV7\source\screenplay.fountain";
-        }
+        var fountainPath = ResolveTellTaleHeartFountainPath();
         if (!System.IO.File.Exists(fountainPath)) return;
 
         var tempWorkspace = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "telltale-pron-test-" + System.Guid.NewGuid().ToString("N"));
