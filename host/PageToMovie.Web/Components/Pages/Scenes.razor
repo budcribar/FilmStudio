@@ -631,45 +631,42 @@ else
                         @(_selectedClips.Count > 0 ? $"🔍 Verify ({_selectedClips.Count}) Selected Clips" : "🔍 Verify Clip Dialogue")
                     </button>
                 }
-                @if (_detail.CompositeExists || _detail.ClipsOnDisk > 0)
-                {
-                    <div class="d-inline-flex align-items-center gap-1 border rounded px-2 py-1">
-                        <select class="form-select form-select-sm" style="width:auto"
-                                disabled="@(_busy || JobRunning || _scoringMusic)"
-                                value="@_selectedAudioModel"
-                                @onchange="@(e => _selectedAudioModel = e.Value?.ToString() ?? _selectedAudioModel)"
-                                title="Audio model for this generation only — doesn't change the project's default">
-                            @foreach (var m in _audioModels)
-                            {
-                                <option value="@m.Id">@m.DisplayName</option>
-                            }
-                        </select>
-                        <div class="form-check form-switch m-0" title="@(SelectedAudioModelCanSing ? "Generate sung vocals instead of instrumental" : "The selected model has no vocal capability")">
-                            <input class="form-check-input" type="checkbox" id="wantVocalSwitch"
-                                   disabled="@(_busy || JobRunning || _scoringMusic || !SelectedAudioModelCanSing)"
-                                   checked="@(_wantVocal && SelectedAudioModelCanSing)"
-                                   @onchange="@(e => _wantVocal = (bool)(e.Value ?? false))" />
-                            <label class="form-check-label small" for="wantVocalSwitch">Sing</label>
-                        </div>
-                        <button type="button"
-                                class="btn btn-sm btn-outline-warning text-dark fw-semibold"
-                                disabled="@(_busy || JobRunning || _scoringMusic)"
-                                title="@(_wantVocal && SelectedAudioModelCanSing ? "Generate sung vocals for this scene (auto-composed lyrics)" : "Generate AI background music score with automatic dialogue ducking")"
-                                @onclick="() => ScoreSceneBackgroundMusicAsync(_detail.SceneNumber)">
-                            @(_wantVocal && SelectedAudioModelCanSing ? "🎤 Generate Singing" : "🎵 Score Background Music")
-                        </button>
-                        @if (_detail.HasBackgroundMusic)
+                <div class="d-inline-flex align-items-center gap-1 border rounded px-2 py-1">
+                    <select class="form-select form-select-sm" style="width:auto"
+                            disabled="@(_busy || JobRunning || _scoringMusic || (!_detail.CompositeExists && _detail.ClipsOnDisk == 0))"
+                            value="@_selectedAudioModel"
+                            @onchange="@(e => _selectedAudioModel = e.Value?.ToString() ?? _selectedAudioModel)"
+                            title="Audio model for music generation">
+                        @foreach (var m in _audioModels)
                         {
-                            <button type="button"
-                                    class="btn btn-sm btn-outline-info"
-                                    disabled="@(_busy || JobRunning)"
-                                    title="View past audio takes & compare against the current one"
-                                    @onclick="() => OpenMusicCompareAsync(_detail.SceneNumber)">
-                                🎧 Audio Takes
-                            </button>
+                            <option value="@m.Id">@m.DisplayName</option>
                         }
+                    </select>
+                    <div class="form-check form-switch m-0" title="@(SelectedAudioModelCanSing ? "Generate sung vocals instead of instrumental" : "The selected model has no vocal capability")">
+                        <input class="form-check-input" type="checkbox" id="wantVocalSwitch"
+                               disabled="@(_busy || JobRunning || _scoringMusic || !SelectedAudioModelCanSing || (!_detail.CompositeExists && _detail.ClipsOnDisk == 0))"
+                               checked="@(_wantVocal && SelectedAudioModelCanSing)"
+                               @onchange="@(e => _wantVocal = (bool)(e.Value ?? false))" />
+                        <label class="form-check-label small" for="wantVocalSwitch">Sing</label>
                     </div>
-                }
+                    <button type="button"
+                            class="btn btn-sm btn-outline-warning text-dark fw-semibold"
+                            disabled="@(_busy || JobRunning || _scoringMusic || (!_detail.CompositeExists && _detail.ClipsOnDisk == 0))"
+                            title="@(!_detail.CompositeExists && _detail.ClipsOnDisk == 0 ? "Generate at least one video clip for this scene first to score background music" : (_wantVocal && SelectedAudioModelCanSing ? "Generate sung vocals for this scene (auto-composed lyrics)" : "Generate AI background music score with automatic dialogue ducking"))"
+                            @onclick="() => ScoreSceneBackgroundMusicAsync(_detail.SceneNumber)">
+                        @(_wantVocal && SelectedAudioModelCanSing ? "🎤 Generate Singing" : "🎵 Score Background Music")
+                    </button>
+                    @if (_detail.HasBackgroundMusic)
+                    {
+                        <button type="button"
+                                class="btn btn-sm btn-outline-info"
+                                disabled="@(_busy || JobRunning)"
+                                title="View past audio takes & compare against the current one"
+                                @onclick="() => OpenMusicCompareAsync(_detail.SceneNumber)">
+                            🎧 Audio Takes
+                        </button>
+                    }
+                </div>
                 @if (_detail.CompositeExists || _detail.ClipsOnDisk > 0)
                 {
                     <button type="button"
