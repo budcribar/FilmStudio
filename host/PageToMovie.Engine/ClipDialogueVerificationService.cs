@@ -187,6 +187,13 @@ public sealed class ClipDialogueVerificationService
         // Collect character reference portraits for characters in this scene
         var charSummaryList = _projects.ListCharacters(projectId);
         var sceneChars = clip?.CharactersOnScreen is { Count: > 0 } ? clip.CharactersOnScreen : new List<string> { expectedSpeaker };
+        if (!sceneChars.Any(c => string.Equals(c, expectedSpeaker, StringComparison.OrdinalIgnoreCase)))
+        {
+            sceneChars = sceneChars.Concat(new[] { expectedSpeaker }).ToList();
+        }
+
+        var charGuides = new List<string>();
+        int mediaIndex = 1; // Index 1 is the MP4 video clip
 
         foreach (var cName in sceneChars)
         {
@@ -195,7 +202,13 @@ public sealed class ClipDialogueVerificationService
             {
                 var localRef = Path.Combine(_projects.GetProjectDir(projectId), url.TrimStart('/'));
                 if (File.Exists(localRef))
+                {
                     mediaToPass.Add(localRef);
+                    mediaIndex++;
+                    var desc = !string.IsNullOrWhiteSpace(charObj.Description) ? $" ({charObj.Description})" : "";
+                    var nameLabel = charObj.DisplayName ?? charObj.Key;
+                    charGuides.Add($"- Attached Image #{mediaIndex}: Character '{nameLabel}' (Key: '{charObj.Key}'){desc}");
+                }
             }
         }
 
@@ -221,22 +234,31 @@ public sealed class ClipDialogueVerificationService
             return result;
         }
 
+        var guideText = charGuides.Count > 0
+            ? "CHARACTER REFERENCE PORTRAITS (MATCH FACES IN VIDEO TO THESE ATTACHED IMAGES):\n" + string.Join("\n", charGuides)
+            : "No character reference portraits attached.";
+
+        var expectedCharObj = charSummaryList.FirstOrDefault(c => string.Equals(c.Key, expectedSpeaker, StringComparison.OrdinalIgnoreCase) || string.Equals(c.DisplayName, expectedSpeaker, StringComparison.OrdinalIgnoreCase));
+        var expectedSpeakerDisplayName = expectedCharObj?.DisplayName ?? expectedSpeaker;
+
         var prompt = $@"
 You are an automated film quality assurance inspector evaluating a generated movie clip.
 
 EXPECTED SCRIPT:
-- Expected Speaker: '{expectedSpeaker}'
+- Expected Speaker: '{expectedSpeakerDisplayName}' (Character Key: '{expectedSpeaker}')
 - Expected Spoken Dialogue: '{expectedDialogue}'
 
+{guideText}
+
 TASKS:
-1. Watch the attached MP4 video clip and LISTEN carefully to the audio track / spoken dialogue.
-2. Observe on-screen character faces and mouth sync; compare against the attached character reference portraits to identify who is speaking.
+1. Watch the attached MP4 video clip (Attached File #1) and LISTEN carefully to the audio track / spoken dialogue.
+2. Observe on-screen character faces and lip movements. Compare the face of the character who is speaking against the attached character reference portraits listed above to determine who is speaking.
 3. Transcribe the EXACT spoken dialogue you hear in the video clip.
-4. Compare detected speaker vs expected speaker, and transcribed dialogue vs expected dialogue.
+4. Compare detected speaker vs expected speaker ('{expectedSpeakerDisplayName}'), and transcribed dialogue vs expected dialogue.
 
 Return ONLY a JSON object:
 {{
-  ""detectedSpeaker"": ""Character Name"",
+  ""detectedSpeaker"": ""Character Name or Key"",
   ""transcribedDialogue"": ""Spoken dialogue text heard in video audio track"",
   ""dialogueAccuracyScore"": 0.95,
   ""speakerMatch"": true,
@@ -288,6 +310,31 @@ Status options: 'verified' (dialogue & speaker match), 'mismatch' (dialogue inco
             var status = GetJsonString(root, "status");
             if (string.IsNullOrWhiteSpace(status)) status = "verified";
             var summary = GetJsonString(root, "summaryNote", "summary_note", "summary", "notes");
+
+            // Normalize speaker names to prevent false speaker_swap when Key vs DisplayName differ
+            static string CleanSpkName(string? s)
+            {
+                if (string.IsNullOrWhiteSpace(s)) return "";
+                var clean = s.Trim().ToLowerInvariant()
+                    .Replace("character_", "")
+                    .Replace("character", "")
+                    .Replace("_", " ")
+                    .Replace("the ", "");
+                return System.Text.RegularExpressions.Regex.Replace(clean, @"\s+", " ").Trim();
+            }
+
+            var cleanDetected = CleanSpkName(detected);
+            var cleanExpectedKey = CleanSpkName(expectedSpeaker);
+            var cleanExpectedDisp = CleanSpkName(expectedSpeakerDisplayName);
+
+            if (!string.IsNullOrWhiteSpace(cleanDetected) && (cleanDetected == cleanExpectedKey || cleanDetected == cleanExpectedDisp))
+            {
+                speakerMatch = true;
+                if (string.Equals(status, "speaker_swap", StringComparison.OrdinalIgnoreCase))
+                {
+                    status = accuracy >= 0.5 ? "verified" : "mismatch";
+                }
+            }
 
             // Deterministic validation: if dialogue was expected but transcribed audio is empty, enforce mismatch (0%)
             if (!string.IsNullOrWhiteSpace(expectedDialogue) && string.IsNullOrWhiteSpace(transcribed))
