@@ -94,9 +94,17 @@ public static class BenchmarkHistoryStore
             int wins = 0;
             foreach (var run in container.Runs)
             {
-                var topModel = run.ModelScores.OrderByDescending(m => m.CompositeScore).FirstOrDefault();
-                if (topModel != null && string.Equals(topModel.ModelId, modelId, StringComparison.OrdinalIgnoreCase))
-                    wins++;
+                var validScores = run.ModelScores.Where(m => m.CompositeScore >= 0).OrderByDescending(m => m.CompositeScore).ToList();
+                if (validScores.Count > 0)
+                {
+                    var topScore = validScores[0].CompositeScore;
+                    var topTies = validScores.Where(m => Math.Abs(m.CompositeScore - topScore) < 0.01).ToList();
+                    // Award a win only if topScore > 0 and it's not a universal tie across all candidates
+                    if (topScore > 0 && topTies.Count < validScores.Count && topTies.Any(m => string.Equals(m.ModelId, modelId, StringComparison.OrdinalIgnoreCase)))
+                    {
+                        wins++;
+                    }
+                }
             }
 
             result.Add(new CompositeModelSummary
