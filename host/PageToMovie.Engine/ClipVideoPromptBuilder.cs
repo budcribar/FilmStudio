@@ -944,25 +944,34 @@ public static class ClipVideoPromptBuilder
             primary = psEl.GetString();
 
         string? speaker = null;
-        if (clipEl.TryGetProperty("audio_payload", out var ap) && ap.ValueKind == JsonValueKind.Object &&
-            ap.TryGetProperty("speaker", out var spEl) && spEl.ValueKind == JsonValueKind.String)
-            speaker = spEl.GetString();
+        string? secondarySpeaker = null;
+        if (clipEl.TryGetProperty("audio_payload", out var ap) && ap.ValueKind == JsonValueKind.Object)
+        {
+            if (ap.TryGetProperty("speaker", out var spEl) && spEl.ValueKind == JsonValueKind.String)
+                speaker = spEl.GetString();
+            if (ap.TryGetProperty("secondary_speaker", out var ssEl) && ssEl.ValueKind == JsonValueKind.String)
+                secondarySpeaker = ssEl.GetString();
+        }
 
         string? actionClass = null;
         if (clipEl.TryGetProperty("action_class", out var acEl) && acEl.ValueKind == JsonValueKind.String)
             actionClass = acEl.GetString();
 
-        return ResolveFocusKeys(onScreen, primary, speaker, actionClass);
+        return ResolveFocusKeys(onScreen, primary, speaker, actionClass, secondarySpeaker);
     }
 
     /// <summary>
     /// Deterministic focus set from plan fields (shared by Stage 2 writer and gen-time builder).
     /// </summary>
+    /// <param name="secondarySpeaker">Second speaker on a cross-speaker two-hander clip (see
+    /// <see cref="Stage2PlannerService.CoalesceCrossSpeakerDialogueBeats"/>) — locked to full
+    /// identity alongside <paramref name="speaker"/> so both faces render correctly.</param>
     public static HashSet<string> ResolveFocusKeys(
         IReadOnlyList<string> onScreenKeys,
         string? primarySubject,
         string? speaker,
-        string? actionClass)
+        string? actionClass,
+        string? secondarySpeaker = null)
     {
         var onScreen = onScreenKeys
             .Where(k => !string.IsNullOrWhiteSpace(k))
@@ -992,6 +1001,7 @@ public static class ClipVideoPromptBuilder
 
         TryAdd(primarySubject);
         TryAdd(speaker);
+        TryAdd(secondarySpeaker);
 
         if (set.Count == 0)
             set.Add(onScreen[0]);
@@ -1084,6 +1094,10 @@ public static class ClipVideoPromptBuilder
 
         var speaker = audio.TryGetProperty("speaker", out var sp) ? sp.GetString() ?? "" : "";
         var dialogue = audio.TryGetProperty("dialogue", out var dlg) ? dlg.GetString() ?? "" : "";
+        // Cross-speaker two-hander clips (Stage2PlannerService.CoalesceCrossSpeakerDialogueBeats)
+        // carry a second speaker's line here — camera pans from speaker to speaker mid-clip.
+        var secondarySpeaker = audio.TryGetProperty("secondary_speaker", out var ssp) ? ssp.GetString() ?? "" : "";
+        var secondaryDialogue = audio.TryGetProperty("secondary_dialogue", out var sdlg) ? sdlg.GetString() ?? "" : "";
         var delivery = Stage2PlannerService.NormalizeDelivery(
             audio.TryGetProperty("delivery", out var del) ? del.GetString() ?? "none" : "none");
         // Stage2/AI-classifier free text — sanitize at the source (see PromptTags class doc).
@@ -1147,6 +1161,20 @@ public static class ClipVideoPromptBuilder
                     $"REQUIRED native Grok off-camera voiceover. {who} narrates " +
                     $"exactly: \"{quote}\".{openCue}{endPause}{pronHint} Do not lip-sync on-screen cast to this VO.{bed}{voiceLock}");
             }
+
+            // Two-hander: camera pans from {who} to {who2} mid-clip instead of cutting. Only
+            // applies to the on-camera case — voiceover has no second on-screen mouth to sync.
+            if (!string.IsNullOrWhiteSpace(secondarySpeaker) && !string.IsNullOrWhiteSpace(secondaryDialogue))
+            {
+                var who2 = secondarySpeaker.Trim();
+                var quote2 = PromptTags.SanitizeValue(SanitizeSpokenDialogue(secondaryDialogue));
+                var pronHint2 = DetectPronunciationHints(quote2);
+                return PromptTags.Wrap("Audio",
+                    $"REQUIRED native Grok dialogue. {who} ON CAMERA lip-syncs " +
+                    $"exactly: \"{quote}\".{openCue} Then {who2} ON CAMERA lip-syncs " +
+                    $"exactly: \"{quote2}\".{endPause}{pronHint}{pronHint2} Speech intelligible; never silent.{bed}{voiceLock}");
+            }
+
             // spoken_on_camera / on_camera (normalized)
             return PromptTags.Wrap("Audio",
                 $"REQUIRED native Grok dialogue. {who} ON CAMERA lip-syncs " +

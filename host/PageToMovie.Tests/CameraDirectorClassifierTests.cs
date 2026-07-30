@@ -14,6 +14,7 @@ public sealed class CameraDirectorClassifierTests
     {
         public bool IsConfigured => true;
         public string ResponseToReturn { get; set; } = "";
+        public string? LastUserPrompt { get; private set; }
 
         public Task<string> CompleteAsync(
             string systemPrompt,
@@ -23,6 +24,7 @@ public sealed class CameraDirectorClassifierTests
             CancellationToken ct = default,
             string? mode = null)
         {
+            LastUserPrompt = userPrompt;
             return Task.FromResult(ResponseToReturn);
         }
     }
@@ -91,5 +93,46 @@ public sealed class CameraDirectorClassifierTests
         var directives = await classifier.ClassifySceneCameraAsync(scene, beats);
 
         Assert.Null(directives);
+    }
+
+    [Fact]
+    public async Task ClassifySceneCameraAsync_RendersSecondSpeakerLineForCrossSpeakerBeat()
+    {
+        var mockChat = new MockChatClient
+        {
+            ResponseToReturn = """
+            {
+              "directives": [
+                { "beat_id": "b1", "shot_scale": "medium", "lens_spec": "35mm lens",
+                  "camera_movement": "pan left from Character_Nick to Character_Sionna",
+                  "framing_prompt": "Two-shot pan across the porch" }
+              ]
+            }
+            """
+        };
+
+        var opts = Options.Create(new PageToMovieOptions { ClassifyCameraDirectorWithChat = true });
+        var classifier = new CameraDirectorClassifier(mockChat, opts, NullLogger<CameraDirectorClassifier>.Instance);
+
+        var scene = new Dictionary<string, object?> { ["scene_number"] = 1, ["setting"] = "EXT. PORCH - NIGHT" };
+        var beats = new List<Dictionary<string, object?>>
+        {
+            new()
+            {
+                ["beat_id"] = "b1",
+                ["speaker"] = "Character_Nick",
+                ["dialogue"] = "You coming or not?",
+                ["secondary_speaker"] = "Character_Sionna",
+                ["secondary_dialogue"] = "Give me a second.",
+            }
+        };
+
+        var directives = await classifier.ClassifySceneCameraAsync(scene, beats);
+
+        Assert.NotNull(directives);
+        Assert.Contains("pan left from Character_Nick to Character_Sionna", directives!["b1"].CameraMovement);
+        Assert.NotNull(mockChat.LastUserPrompt);
+        Assert.Contains("Spoken (Character_Nick): \"You coming or not?\"", mockChat.LastUserPrompt);
+        Assert.Contains("Then spoken (Character_Sionna): \"Give me a second.\"", mockChat.LastUserPrompt);
     }
 }

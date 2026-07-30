@@ -199,4 +199,108 @@ public sealed class Stage2PlannerAutomationTests
         Assert.Contains("He had the eye of a vulture", coalesced[0]["dialogue"]?.ToString());
         Assert.Contains("THE OLD MAN turns in a shaft of gray light", coalesced[0]["visual_event"]?.ToString());
     }
+
+    [Fact]
+    public void CoalesceCrossSpeakerDialogueBeats_MergesShortDifferentSpeakerBeats()
+    {
+        var b1 = new Dictionary<string, object?>
+        {
+            ["beat_id"] = "b1",
+            ["speaker"] = "Character_Nick",
+            ["dialogue"] = "You coming or not?",
+            ["location_id"] = "Loc_Porch",
+        };
+        var b2 = new Dictionary<string, object?>
+        {
+            ["beat_id"] = "b2",
+            ["speaker"] = "Character_Sionna",
+            ["dialogue"] = "Give me a second.",
+            ["location_id"] = "Loc_Porch",
+        };
+        var beats = new List<Dictionary<string, object?>> { b1, b2 };
+
+        var coalesced = Stage2PlannerService.CoalesceCrossSpeakerDialogueBeats(beats, maxSeconds: 10);
+
+        Assert.Single(coalesced);
+        Assert.Equal("Character_Nick", coalesced[0]["speaker"]);
+        Assert.Equal("You coming or not?", coalesced[0]["dialogue"]);
+        Assert.Equal("Character_Sionna", coalesced[0]["secondary_speaker"]);
+        Assert.Equal("Give me a second.", coalesced[0]["secondary_dialogue"]);
+    }
+
+    [Fact]
+    public void CoalesceCrossSpeakerDialogueBeats_LeavesSameSpeakerBeatsUnmerged()
+    {
+        var b1 = new Dictionary<string, object?>
+        {
+            ["beat_id"] = "b1",
+            ["speaker"] = "Character_Nick",
+            ["dialogue"] = "You coming or not?",
+            ["location_id"] = "Loc_Porch",
+        };
+        var b2 = new Dictionary<string, object?>
+        {
+            ["beat_id"] = "b2",
+            ["speaker"] = "Character_Nick",
+            ["dialogue"] = "Well?",
+            ["location_id"] = "Loc_Porch",
+        };
+        var beats = new List<Dictionary<string, object?>> { b1, b2 };
+
+        var coalesced = Stage2PlannerService.CoalesceCrossSpeakerDialogueBeats(beats, maxSeconds: 10);
+
+        Assert.Equal(2, coalesced.Count);
+        Assert.False(coalesced[0].ContainsKey("secondary_speaker"));
+    }
+
+    [Fact]
+    public void CoalesceCrossSpeakerDialogueBeats_DoesNotMergeWhenEitherLineExceedsPerLineCap()
+    {
+        var longLine = string.Join(" ", Enumerable.Repeat("word", 20)); // well over half of a 10s model max
+        var b1 = new Dictionary<string, object?>
+        {
+            ["beat_id"] = "b1",
+            ["speaker"] = "Character_Nick",
+            ["dialogue"] = longLine,
+            ["location_id"] = "Loc_Porch",
+        };
+        var b2 = new Dictionary<string, object?>
+        {
+            ["beat_id"] = "b2",
+            ["speaker"] = "Character_Sionna",
+            ["dialogue"] = "Give me a second.",
+            ["location_id"] = "Loc_Porch",
+        };
+        var beats = new List<Dictionary<string, object?>> { b1, b2 };
+
+        var coalesced = Stage2PlannerService.CoalesceCrossSpeakerDialogueBeats(beats, maxSeconds: 10);
+
+        Assert.Equal(2, coalesced.Count);
+        Assert.False(coalesced[0].ContainsKey("secondary_speaker"));
+    }
+
+    [Fact]
+    public void CoalesceCrossSpeakerDialogueBeats_DoesNotMergeAcrossDifferentLocations()
+    {
+        var b1 = new Dictionary<string, object?>
+        {
+            ["beat_id"] = "b1",
+            ["speaker"] = "Character_Nick",
+            ["dialogue"] = "You coming or not?",
+            ["location_id"] = "Loc_Porch",
+        };
+        var b2 = new Dictionary<string, object?>
+        {
+            ["beat_id"] = "b2",
+            ["speaker"] = "Character_Sionna",
+            ["dialogue"] = "Give me a second.",
+            ["location_id"] = "Loc_Kitchen",
+        };
+        var beats = new List<Dictionary<string, object?>> { b1, b2 };
+
+        var coalesced = Stage2PlannerService.CoalesceCrossSpeakerDialogueBeats(beats, maxSeconds: 10);
+
+        Assert.Equal(2, coalesced.Count);
+        Assert.False(coalesced[0].ContainsKey("secondary_speaker"));
+    }
 }

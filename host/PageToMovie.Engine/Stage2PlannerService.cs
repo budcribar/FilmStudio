@@ -552,7 +552,8 @@ public sealed class Stage2PlannerService
         // Idempotent: monologues already split at fountain import stay; legacy long cues expand here
         beats = ClipDurationEstimator.ExpandLongDialogueBeats(beats, modelMaxSeconds: maxSeconds);
         beats = CoalesceSilentPreludeBeats(beats);
-        beats = CoalesceShortMonologueBeats(beats);
+        beats = CoalesceShortMonologueBeats(beats, maxSeconds);
+        beats = CoalesceCrossSpeakerDialogueBeats(beats, maxSeconds);
         var lids = GetList(scene, "location_ids").Select(x => x?.ToString() ?? "").Where(x => x.Length > 0).ToList();
         var primary = CoerceString(scene.TryGetValue("primary_location_id", out var pl) ? pl : null)
                       ?? (lids.Count > 0 ? lids[0] : null);
@@ -707,11 +708,13 @@ public sealed class Stage2PlannerService
             var primaryVal = beat.TryGetValue("primary_subject", out var psub) ? psub : null;
             var audioPayload = BuildAudioPayload(beat, aiSound is not null && aiSound.TryGetValue(beatIdStr, out var sd) ? sd : null);
             var speakerForFocus = CoerceString(beat.TryGetValue("speaker", out var spkFocus) ? spkFocus : null);
+            var secondarySpeakerForFocus = CoerceString(beat.TryGetValue("secondary_speaker", out var spkFocus2) ? spkFocus2 : null);
             var focusKeys = ClipVideoPromptBuilder.ResolveFocusKeys(
                     clipCast,
                     CoerceString(primaryVal),
                     speakerForFocus,
-                    CoerceString(actionClassVal))
+                    CoerceString(actionClassVal),
+                    secondarySpeakerForFocus)
                 .OrderBy(k => k, StringComparer.OrdinalIgnoreCase)
                 .ToList();
 
@@ -875,7 +878,12 @@ public sealed class Stage2PlannerService
     /// aiming for 6–8 second target durations per clip rather than 3–4 second micro-cuts.
     /// Reduces clip transitions and lowers API costs per scene by ~30–40%.
     /// </summary>
-    public static List<Dictionary<string, object?>> CoalesceShortMonologueBeats(List<Dictionary<string, object?>> beats)
+    /// <param name="maxSeconds">Resolved per-model clip duration max (see
+    /// <see cref="ClipDurationEstimator.ResolveBoundsForModel"/>) — the merge ceiling, so a tighter
+    /// or looser model doesn't get a merge limit disconnected from what it can actually generate.</param>
+    public static List<Dictionary<string, object?>> CoalesceShortMonologueBeats(
+        List<Dictionary<string, object?>> beats,
+        int maxSeconds = ClipDurationEstimator.MaxSeconds)
     {
         if (beats is null || beats.Count < 2) return beats ?? new List<Dictionary<string, object?>>();
 
@@ -914,7 +922,7 @@ public sealed class Stage2PlannerService
 
                     var combinedDlg = $"{d1.Trim()} {d2.Trim()}";
                     var estCombined = ClipDurationEstimator.EstimateUncapped(combinedDlg, "", "dialogue", del1);
-                    if (estCombined > 8.5)
+                    if (estCombined > maxSeconds)
                     {
                         break;
                     }
@@ -930,6 +938,84 @@ public sealed class Stage2PlannerService
                     }
 
                     i++;
+                }
+            }
+
+            result.Add(cur);
+            i++;
+        }
+
+        return result;
+    }
+
+    /// <summary>
+    /// Coalesce an adjacent pair of short dialogue beats from two <em>different</em> speakers into
+    /// one clip, with the second speaker's line carried as <c>secondary_speaker</c>/
+    /// <c>secondary_dialogue</c> rather than merged into <c>dialogue</c> — so the clip becomes a
+    /// two-line exchange (camera pans from speaker A to speaker B) instead of a same-speaker
+    /// monologue. Runs after <see cref="CoalesceShortMonologueBeats"/> so same-speaker runs are
+    /// already consolidated; only ever merges exactly two beats (no 3+ speaker chains — see the
+    /// "3+ speakers in one clip" backlog item).
+    /// </summary>
+    /// <param name="maxSeconds">Resolved per-model clip duration max — combined estimated speech
+    /// time for both lines (each with its own head/tail pause) must fit within this.</param>
+    public static List<Dictionary<string, object?>> CoalesceCrossSpeakerDialogueBeats(
+        List<Dictionary<string, object?>> beats,
+        int maxSeconds = ClipDurationEstimator.MaxSeconds)
+    {
+        if (beats is null || beats.Count < 2) return beats ?? new List<Dictionary<string, object?>>();
+
+        var perLineCap = maxSeconds / 2.0;
+
+        var result = new List<Dictionary<string, object?>>();
+        var i = 0;
+        while (i < beats.Count)
+        {
+            var cur = new Dictionary<string, object?>(beats[i]);
+            var d1 = CoerceString(cur.TryGetValue("dialogue", out var v1) ? v1 : null);
+            var sp1 = CoerceString(cur.TryGetValue("speaker", out var s1) ? s1 : null);
+            var loc1 = CoerceString(cur.TryGetValue("location_id", out var l1) ? l1 : null);
+            var ac1 = CoerceString(cur.TryGetValue("action_class", out var acv1) ? acv1 : null);
+
+            if (i + 1 < beats.Count &&
+                !string.IsNullOrWhiteSpace(d1) &&
+                !string.IsNullOrWhiteSpace(sp1) &&
+                !string.Equals(ac1, "big_action", StringComparison.OrdinalIgnoreCase))
+            {
+                var next = beats[i + 1];
+                var d2 = CoerceString(next.TryGetValue("dialogue", out var v2) ? v2 : null);
+                var sp2 = CoerceString(next.TryGetValue("speaker", out var s2) ? s2 : null);
+                var loc2 = CoerceString(next.TryGetValue("location_id", out var l2) ? l2 : null);
+                var ac2 = CoerceString(next.TryGetValue("action_class", out var acv2) ? acv2 : null);
+
+                var sameLocationOrEmpty = string.IsNullOrEmpty(loc1) || string.IsNullOrEmpty(loc2) ||
+                    string.Equals(loc1, loc2, StringComparison.OrdinalIgnoreCase);
+
+                if (!string.IsNullOrWhiteSpace(d2) &&
+                    !string.IsNullOrWhiteSpace(sp2) &&
+                    !string.Equals(sp1, sp2, StringComparison.OrdinalIgnoreCase) &&
+                    sameLocationOrEmpty &&
+                    !string.Equals(ac2, "big_action", StringComparison.OrdinalIgnoreCase))
+                {
+                    var del1 = CoerceString(cur.TryGetValue("delivery", out var delv1) ? delv1 : null) ?? "spoken_on_camera";
+                    var del2 = CoerceString(next.TryGetValue("delivery", out var delv2) ? delv2 : null) ?? "spoken_on_camera";
+                    var est1 = ClipDurationEstimator.EstimateUncapped(d1, "", "dialogue", del1);
+                    var est2 = ClipDurationEstimator.EstimateUncapped(d2, "", "dialogue", del2);
+
+                    if (est1 <= perLineCap && est2 <= perLineCap && (est1 + est2) <= maxSeconds)
+                    {
+                        cur["secondary_speaker"] = sp2;
+                        cur["secondary_dialogue"] = d2;
+
+                        var ve1 = CoerceString(cur.TryGetValue("visual_event", out var vev1) ? vev1 : null) ?? "";
+                        var ve2 = CoerceString(next.TryGetValue("visual_event", out var vev2) ? vev2 : null) ?? "";
+                        if (!string.IsNullOrWhiteSpace(ve2) && !ve1.Contains(ve2, StringComparison.OrdinalIgnoreCase))
+                        {
+                            cur["visual_event"] = string.IsNullOrWhiteSpace(ve1) ? ve2 : $"{ve1} {ve2}";
+                        }
+
+                        i++;
+                    }
                 }
             }
 
@@ -1325,6 +1411,17 @@ public sealed class Stage2PlannerService
         if (!string.IsNullOrWhiteSpace(pronHint))
         {
             payload["pronunciation_hint"] = pronHint;
+        }
+
+        // Cross-speaker two-hander clips (CoalesceCrossSpeakerDialogueBeats) carry a second
+        // speaker's line here. Additive only — existing single-speaker readers keep working
+        // unmodified since the flat speaker/dialogue keys above are untouched.
+        var secondarySpeaker = CoerceString(beat.TryGetValue("secondary_speaker", out var ss) ? ss : null);
+        var secondaryDialogue = CoerceString(beat.TryGetValue("secondary_dialogue", out var sd2) ? sd2 : null);
+        if (!string.IsNullOrWhiteSpace(secondarySpeaker) && !string.IsNullOrWhiteSpace(secondaryDialogue))
+        {
+            payload["secondary_speaker"] = secondarySpeaker;
+            payload["secondary_dialogue"] = ClipVideoPromptBuilder.SanitizeSpokenDialogue(secondaryDialogue);
         }
 
         if (sd is not null)

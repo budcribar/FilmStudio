@@ -50,6 +50,13 @@ public sealed class CameraDirectorClassifier
         3. camera_movement: Specific cinematic movement (e.g. "slow 10% dolly push-in", "locked tripod hold", "low-angle slow tracking shot", "steady handheld tilt").
         4. framing_prompt: A 10–25 word description of the camera shot composition (e.g. "Low-angle medium shot, 35mm lens, camera slowly pushes in as character speaks").
 
+        TWO-SPEAKER BEATS: some beats show a "Then spoken (...)" second line — the clip holds one
+        continuous take covering both speakers, not a cut between them. For these, camera_movement
+        must describe a pan/reframe move from the first speaker to the second, timed to land on the
+        second speaker as they begin their line (e.g. "pan left from Character_A to Character_B,
+        settling as B begins speaking"), and framing_prompt must describe a composition that reads
+        naturally as it starts on speaker one and ends on speaker two.
+
         OUTPUT FORMAT:
         Return ONLY valid JSON matching this schema:
         {
@@ -113,10 +120,14 @@ public sealed class CameraDirectorClassifier
             var spk = b.GetValueOrDefault("speaker") ?? "";
             var dlg = b.GetValueOrDefault("dialogue") ?? "";
             var ac = b.GetValueOrDefault("action_class") ?? "";
+            var spk2 = b.GetValueOrDefault("secondary_speaker") ?? "";
+            var dlg2 = b.GetValueOrDefault("secondary_dialogue") ?? "";
 
             sb.AppendLine($"Beat '{id}' (class: {ac}):");
             if (!string.IsNullOrWhiteSpace(spk?.ToString()) || !string.IsNullOrWhiteSpace(dlg?.ToString()))
                 sb.AppendLine($"  Spoken ({spk}): \"{dlg}\"");
+            if (!string.IsNullOrWhiteSpace(spk2?.ToString()) || !string.IsNullOrWhiteSpace(dlg2?.ToString()))
+                sb.AppendLine($"  Then spoken ({spk2}): \"{dlg2}\"");
             if (!string.IsNullOrWhiteSpace(action?.ToString()))
                 sb.AppendLine($"  Action prose: {action}");
         }

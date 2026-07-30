@@ -37,6 +37,52 @@ public class ClipVideoPromptBuilderTests
     }
 
     [Fact]
+    public void Build_TwoSpeakerBeat_EmitsBothLipSyncLinesAndAllowsSecondMouth()
+    {
+        var clip = JsonDocument.Parse("""
+            {
+              "clip_number": 1,
+              "visual_prompt": "Character_Nick and Character_Sionna talk on the porch.",
+              "characters_on_screen": ["Character_Nick", "Character_Sionna"],
+              "audio_payload": {
+                "speaker": "Character_Nick",
+                "dialogue": "You coming or not?",
+                "secondary_speaker": "Character_Sionna",
+                "secondary_dialogue": "Give me a second.",
+                "delivery": "spoken_on_camera"
+              }
+            }
+            """).RootElement;
+
+        var built = ClipVideoPromptBuilder.Build(clip, "proj", new Dictionary<string, ClipVideoPromptBuilder.CharacterProfile>());
+
+        Assert.Contains("Character_Nick ON CAMERA lip-syncs exactly: \"You coming or not?\"", built.Prompt);
+        Assert.Contains("Then Character_Sionna ON CAMERA lip-syncs exactly: \"Give me a second.\"", built.Prompt);
+        Assert.DoesNotContain("Other mouths closed", built.Prompt);
+    }
+
+    [Fact]
+    public void Build_SingleSpeakerBeat_StillKeepsOtherMouthsClosed()
+    {
+        var clip = JsonDocument.Parse("""
+            {
+              "clip_number": 1,
+              "visual_prompt": "Character_Nick speaks on the porch.",
+              "characters_on_screen": ["Character_Nick"],
+              "audio_payload": {
+                "speaker": "Character_Nick",
+                "dialogue": "You coming or not?",
+                "delivery": "spoken_on_camera"
+              }
+            }
+            """).RootElement;
+
+        var built = ClipVideoPromptBuilder.Build(clip, "proj", new Dictionary<string, ClipVideoPromptBuilder.CharacterProfile>());
+
+        Assert.Contains("Other mouths closed", built.Prompt);
+    }
+
+    [Fact]
     public void Build_includes_character_variables_and_image_tags()
     {
         var clip = JsonDocument.Parse("""
@@ -894,6 +940,45 @@ public class ClipVideoPromptBuilderTests
         Assert.Equal(2, keys.Count);
         Assert.Contains("Character_A", keys);
         Assert.Contains("Character_B", keys);
+    }
+
+    [Fact]
+    public void ResolveFocusKeys_locks_both_speakers_on_a_cross_speaker_beat()
+    {
+        var keys = ClipVideoPromptBuilder.ResolveFocusKeys(
+            new[] { "Character_Nick", "Character_Sionna", "Character_Ma" },
+            primarySubject: null,
+            speaker: "Character_Nick",
+            actionClass: "dialogue",
+            secondarySpeaker: "Character_Sionna");
+
+        Assert.Equal(2, keys.Count);
+        Assert.Contains("Character_Nick", keys);
+        Assert.Contains("Character_Sionna", keys);
+        Assert.DoesNotContain("Character_Ma", keys);
+    }
+
+    [Fact]
+    public void ResolveFocusKeysForClip_includes_secondary_speaker_from_audio_payload()
+    {
+        var clip = JsonDocument.Parse("""
+            {
+              "characters_on_screen": ["Character_Nick", "Character_Sionna", "Character_Ma"],
+              "action_class": "dialogue",
+              "audio_payload": {
+                "speaker": "Character_Nick",
+                "dialogue": "You coming or not?",
+                "secondary_speaker": "Character_Sionna",
+                "secondary_dialogue": "Give me a second.",
+                "delivery": "spoken_on_camera"
+              }
+            }
+            """).RootElement;
+        var keys = ClipVideoPromptBuilder.ResolveFocusKeysForClip(
+            new[] { "Character_Nick", "Character_Sionna", "Character_Ma" }, clip);
+        Assert.Equal(2, keys.Count);
+        Assert.Contains("Character_Nick", keys);
+        Assert.Contains("Character_Sionna", keys);
     }
 
     [Fact]
