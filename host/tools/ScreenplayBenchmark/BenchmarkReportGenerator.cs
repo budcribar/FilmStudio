@@ -8,6 +8,16 @@ public sealed class ModelScoreSummary
     public string ModelId { get; set; } = "";
     public string AnonymousLabel { get; set; } = "";
     public double CompositeScore { get; set; } // 0 - 100
+
+    /// <summary>
+    /// True when the "screenplay" scored here is not this model's real output — generation
+    /// silently fell back to <c>BookToFountainConverter.ConvertHeuristic</c> (a deterministic,
+    /// model-agnostic narrator-per-paragraph draft) after the live API call failed. Every model
+    /// that hits this path for the same book produces byte-identical text, so their scores must
+    /// never be compared to each other or averaged into multi-book history as if they were real.
+    /// </summary>
+    public bool IsGenerationFallback { get; set; }
+    public string? GenerationFallbackReason { get; set; }
     public int BordaPoints { get; set; }
     public double AvgJudgeRank { get; set; }
     public DeterministicSyntaxResult SyntaxAudit { get; set; } = new();
@@ -47,6 +57,17 @@ public static class BenchmarkReportGenerator
         }
         sb.AppendLine();
 
+        var fallbackModels = data.Leaderboard.Where(m => m.IsGenerationFallback).ToList();
+        if (fallbackModels.Count > 0)
+        {
+            sb.AppendLine("> ⚠️ **GENERATION FALLBACK DETECTED:** The following models' live API generation failed, and the tool " +
+                "silently substituted a non-AI, book-text-only draft (identical for every failing model). Their rows below do NOT " +
+                "reflect that model's real output and are excluded from multi-book history:");
+            foreach (var m in fallbackModels)
+                sb.AppendLine($"> - **{m.ModelId}**: {m.GenerationFallbackReason}");
+            sb.AppendLine();
+        }
+
         sb.AppendLine("## 📊 Overall Model Leaderboard");
         sb.AppendLine();
         sb.AppendLine("| Rank | Model ID | Composite Score (0-100) | C# Syntax/Budget Score | LLM Peer Consensus | Borda Points | Avg Rank |");
@@ -56,7 +77,8 @@ public static class BenchmarkReportGenerator
         {
             var m = data.Leaderboard[i];
             var medal = i switch { 0 => "🥇 ", 1 => "🥈 ", 2 => "🥉 ", _ => $"{i + 1}. " };
-            sb.AppendLine($"| {medal} | **{m.ModelId}** | **{m.CompositeScore:F1}** | {m.SyntaxAudit.OverallSyntaxScore:F1}% | {m.AvgOverallQualitative * 10:F1}% | {m.BordaPoints} pts | {m.AvgJudgeRank:F1} |");
+            var modelLabel = m.IsGenerationFallback ? $"{m.ModelId} ⚠️ *(fallback draft, not real output)*" : m.ModelId;
+            sb.AppendLine($"| {medal} | **{modelLabel}** | **{m.CompositeScore:F1}** | {m.SyntaxAudit.OverallSyntaxScore:F1}% | {m.AvgOverallQualitative * 10:F1}% | {m.BordaPoints} pts | {m.AvgJudgeRank:F1} |");
         }
         sb.AppendLine();
 

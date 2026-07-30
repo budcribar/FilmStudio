@@ -87,7 +87,9 @@ public static class BenchmarkHistoryStore
         if (run.ModelScores == null || run.ModelScores.Count == 0) return false;
 
         // Check if all composite scores are identical mock ties or all negative
-        var validScores = run.ModelScores.Select(m => m.CompositeScore).Where(s => s >= 0).ToList();
+        // (fallback-drafted models are excluded — their "score" reflects a shared, model-agnostic
+        // heuristic draft, not that model's real generation, so it can't anchor liveness either)
+        var validScores = run.ModelScores.Where(m => !m.IsGenerationFallback).Select(m => m.CompositeScore).Where(s => s >= 0).ToList();
         if (validScores.Count == 0 || (validScores.Distinct().Count() <= 1 && validScores.Count > 1))
             return false;
 
@@ -117,7 +119,7 @@ public static class BenchmarkHistoryStore
 
             var modelScoresList = modelRuns
                 .Select(r => r.ModelScores.First(m => string.Equals(m.ModelId, modelId, StringComparison.OrdinalIgnoreCase)))
-                .Where(s => s.CompositeScore >= 0)
+                .Where(s => s.CompositeScore >= 0 && !s.IsGenerationFallback)
                 .ToList();
 
             if (modelScoresList.Count == 0) continue;
@@ -125,7 +127,7 @@ public static class BenchmarkHistoryStore
             int wins = 0;
             foreach (var run in liveRuns)
             {
-                var validScores = run.ModelScores.Where(m => m.CompositeScore >= 0).OrderByDescending(m => m.CompositeScore).ToList();
+                var validScores = run.ModelScores.Where(m => m.CompositeScore >= 0 && !m.IsGenerationFallback).OrderByDescending(m => m.CompositeScore).ToList();
                 if (validScores.Count > 0)
                 {
                     var topScore = validScores[0].CompositeScore;

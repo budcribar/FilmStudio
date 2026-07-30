@@ -483,13 +483,15 @@ public static class HtmlDashboardGenerator
           const syntaxScore = (syntaxAudit.overallSyntaxScore !== undefined ? syntaxAudit.overallSyntaxScore : syntaxAudit.OverallSyntaxScore) || 0;
           const avgQual = (m.avgOverallQualitative !== undefined ? m.avgOverallQualitative : m.AvgOverallQualitative) || 0;
           const borda = (m.bordaPoints !== undefined ? m.bordaPoints : m.BordaPoints) || 0;
+          const isFallback = !!(m.isGenerationFallback !== undefined ? m.isGenerationFallback : m.IsGenerationFallback);
 
-          const badgeClass = composite < 0 ? 'score-mock' : 'score-mid';
-          const compositeLabel = composite < 0 ? '⚠️ -1.0 (Failed)' : composite.toFixed(1);
+          const badgeClass = (composite < 0 || isFallback) ? 'score-mock' : 'score-mid';
+          const compositeLabel = isFallback ? '⚠️ FALLBACK DRAFT' : (composite < 0 ? '⚠️ -1.0 (Failed)' : composite.toFixed(1));
+          const modelLabel = isFallback ? `${modelId} <span title=""Live generation failed; this is a non-AI heuristic draft, not this model's real output"">⚠️</span>` : modelId;
 
           const row = `<tr>
             <td><strong style=""color: var(--accent-cyan);"">${date}</strong></td>
-            <td><strong>${modelId}</strong></td>
+            <td><strong>${modelLabel}</strong></td>
             <td><span class=""score-badge ${badgeClass}"">${compositeLabel}</span></td>
             <td>${syntaxScore.toFixed(1)}%</td>
             <td>${(avgQual * 10).toFixed(1)}%</td>

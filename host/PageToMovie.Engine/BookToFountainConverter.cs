@@ -114,7 +114,8 @@ public static class BookToFountainConverter
         string model = "grok-4.5",
         Action<string>? onProgress = null,
         CancellationToken ct = default,
-        PromptBudget? budgetOverride = null)
+        PromptBudget? budgetOverride = null,
+        Action<string>? onHeuristicFallback = null)
     {
         if (string.IsNullOrWhiteSpace(bookText))
             throw new InvalidOperationException("Book text is empty");
@@ -175,10 +176,11 @@ public static class BookToFountainConverter
                 throw new InvalidOperationException(
                     "Could not build a usable screenplay from the book. Try again or import a .fountain file.");
         }
-        catch (InvalidOperationException) when (LooksLikeGoodFountain(ConvertHeuristic(title, bookText, author)))
+        catch (InvalidOperationException ex) when (LooksLikeGoodFountain(ConvertHeuristic(title, bookText, author)))
         {
             // Chat output failed structural gates — still give a usable draft from book text
             onProgress?.Invoke("Model draft unusable — building structured draft from book text…");
+            onHeuristicFallback?.Invoke(ex.Message);
             text = ConvertHeuristic(title, bookText, author);
         }
 
@@ -1515,7 +1517,12 @@ public static class BookToFountainConverter
         }
     }
 
-    private static string NormalizeBookText(string bookText)
+    /// <summary>
+    /// Exposed (not just <c>ConvertAsync</c>-internal) so callers that need to predict the exact
+    /// text <see cref="ConvertHeuristic"/> will fall back to — e.g. detecting a poisoned cache —
+    /// normalize the book text identically before calling it.
+    /// </summary>
+    public static string NormalizeBookText(string bookText)
     {
         var cleaned = PageToMovie.Core.Utils.GutenbergCleaner.StripHeaderAndFooter(bookText ?? "");
         return cleaned.Replace("\r\n", "\n").Replace('\r', '\n').Trim();
