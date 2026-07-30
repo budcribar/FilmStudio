@@ -1077,7 +1077,14 @@ public sealed class ProjectStore
             return null;
         }
 
-        var id = !string.IsNullOrWhiteSpace(metaId) ? metaId.Trim() : idOverride;
+        // idOverride (derived from the actual folder path) always wins over project.json's own
+        // embedded "id" field — GetProjectDir resolves purely from the folder-path string and
+        // never consults project.json, so if the two ever disagree (e.g. a project folder copied
+        // or renamed on disk without updating its project.json), trusting metaId here would report
+        // an id whose GetProjectDir/GetProjectAsync round-trip lands back on a DIFFERENT physical
+        // folder — the one the stale metaId happens to name — silently misdirecting reads/writes
+        // for "this" project into whatever unrelated project already owns that folder.
+        var id = idOverride;
         return new ProjectInfo
         {
             Id = id,
@@ -1562,6 +1569,29 @@ public sealed class ProjectStore
             }
         }
         return flat;
+    }
+
+    /// <summary>
+    /// Sanitize a project id for import while preserving an "owner/slug" split, unlike
+    /// <see cref="SanitizeProjectIdPublic"/> — which collapses any "/" into "_", flattening a
+    /// namespaced id into a single segment that no longer matches the
+    /// <c>projects/{owner}/{slug}/</c> layout <see cref="GetProjectDir"/>, <see cref="ListProjectsAsync"/>,
+    /// etc. all expect. Also runs the id through <see cref="NormalizeProjectId"/> first, so an
+    /// unnormalized "%2F"-encoded id (e.g. from an export filename/zip entry produced before that
+    /// was fixed) round-trips to the correct two-segment id instead of "%"/"2F" being mangled.
+    /// </summary>
+    public static string SanitizeComposeProjectIdPublic(string raw)
+    {
+        var normalized = NormalizeProjectId(raw ?? "");
+        var parts = normalized.Split('/', StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length == 2)
+        {
+            var owner = SanitizeUserSegment(parts[0]);
+            var slug = SanitizeProjectIdPublic(parts[1]);
+            if (owner.Length > 0 && slug.Length > 0)
+                return $"{owner}/{slug}";
+        }
+        return SanitizeProjectIdPublic(normalized);
     }
 
     /// <summary>Sanitize owner handle for a single path segment (no slashes).</summary>

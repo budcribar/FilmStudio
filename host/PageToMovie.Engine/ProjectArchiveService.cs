@@ -59,13 +59,22 @@ public sealed class ProjectArchiveService
     /// </summary>
     public async Task<ProjectExportResult> ExportAsync(string projectId, CancellationToken ct = default)
     {
-        var id = (projectId ?? "").Trim();
+        // ASP.NET keeps a single route segment's %2F encoded rather than decoding it (see
+        // ProjectStore.NormalizeProjectId's own doc comment) — a composite "owner/slug" id
+        // arrives here as e.g. "budcribar%2FTellTaleHeartV7" unless normalized. Without this,
+        // both the download filename and every entry path inside the zip end up with a literal
+        // "%2F" baked into them as text instead of the intended nested owner/slug structure.
+        var id = ProjectStore.NormalizeProjectId((projectId ?? "").Trim());
         if (string.IsNullOrEmpty(id))
             throw new InvalidOperationException("Project id required");
 
         var projectDir = _projects.GetProjectDir(id);
         var stamp = DateTime.UtcNow.ToString("yyyyMMdd_HHmmss");
-        var fileName = $"PageToMovie_{id}_{stamp}.zip";
+        // Filesystem-safe download filename — id may contain a real "/" (owner/slug), which
+        // can't appear in an actual filename, so it's replaced here only; the zip's internal
+        // entry paths below use the real id with its "/" intact to form genuine subfolders.
+        var fileNameSafeId = id.Replace('/', '_');
+        var fileName = $"PageToMovie_{fileNameSafeId}_{stamp}.zip";
         var tempPath = Path.Combine(Path.GetTempPath(), $"ptm-export-{Guid.NewGuid():N}.zip");
 
         if (_migrations is not null)
@@ -199,7 +208,10 @@ public sealed class ProjectArchiveService
                     ? idFromMeta!
                     : idFromFolder;
 
-            var id = ProjectStore.SanitizeProjectIdPublic(rawId);
+            // Preserves an "owner/slug" split (SanitizeProjectIdPublic alone would collapse the "/"
+            // into "_", landing the import at a flat projects/{owner}_{slug}/ instead of the
+            // namespaced projects/{owner}/{slug}/ layout the rest of the app expects).
+            var id = ProjectStore.SanitizeComposeProjectIdPublic(rawId);
             if (string.IsNullOrEmpty(id))
                 throw new InvalidOperationException("Could not derive a safe project id from the zip.");
 

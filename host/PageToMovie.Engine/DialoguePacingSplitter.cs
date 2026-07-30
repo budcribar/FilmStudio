@@ -16,29 +16,40 @@ public static class DialoguePacingSplitter
     private static readonly Regex AnyCommaRegex = new(@",(?=\s)", RegexOptions.Compiled);
 
     /// <summary>
-    /// Splits a dialogue turn into optimal 5s-9s speech beats (12-22 words) based on natural prosodic punctuation pauses.
+    /// Splits a dialogue turn into speech beats sized to fit the target video model's real clip-
+    /// duration bounds, based on natural prosodic punctuation pauses.
     /// </summary>
+    /// <param name="targetMaxSeconds">Soft cap — the splitter prefers to cut here. Defaults to
+    /// <see cref="ClipDurationEstimator.MaxSeconds"/>; pass the resolved value from
+    /// <see cref="ClipDurationEstimator.ResolveBoundsForModel"/> for the actual active video model
+    /// instead of relying on the generic default, since providers' real limits vary (e.g. Grok's
+    /// catalog entry doesn't override these, so it uses the generic bounds; another provider might).</param>
+    /// <param name="hardMaxSeconds">Absolute ceiling — never exceeded, even by a single delimiter-free
+    /// run-on clause. Defaults to <see cref="ClipDurationEstimator.AbsMaxSeconds"/>, same caveat as
+    /// <paramref name="targetMaxSeconds"/>.</param>
+    /// <param name="wordsPerSecond">Defaults to <see cref="ClipDurationEstimator.DialogueWordsPerSecond"/> —
+    /// the same speech-rate constant the rest of the pipeline's duration estimates are built on, so
+    /// this splitter's numbers are directly comparable to <see cref="ClipDurationEstimator"/>'s.</param>
     public static List<DialogueSpeechBeat> SplitDialogue(
         string dialogueText,
-        int minWords = 12,
-        int targetMaxWords = 22,
-        int hardMaxWords = 25,
-        double wordsPerSecond = 2.6)
+        int targetMaxSeconds = ClipDurationEstimator.MaxSeconds,
+        int hardMaxSeconds = ClipDurationEstimator.AbsMaxSeconds,
+        double wordsPerSecond = ClipDurationEstimator.DialogueWordsPerSecond)
     {
         if (string.IsNullOrWhiteSpace(dialogueText))
             return new List<DialogueSpeechBeat>();
 
+        var targetMaxWords = WordsForSeconds(targetMaxSeconds, wordsPerSecond);
+        var hardMaxWords = Math.Max(targetMaxWords, WordsForSeconds(hardMaxSeconds, wordsPerSecond));
+
         var cleaned = dialogueText.Trim();
         var words = cleaned.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries);
         if (words.Length <= targetMaxWords)
-        {
-            var dur = Math.Max(2.0, Math.Round(words.Length / wordsPerSecond, 1));
-            return new List<DialogueSpeechBeat> { new DialogueSpeechBeat(cleaned, words.Length, dur) };
-        }
+            return new List<DialogueSpeechBeat> { new DialogueSpeechBeat(cleaned, words.Length, EstimateSeconds(words.Length, wordsPerSecond)) };
 
         // Split into candidate clause chunks using natural punctuation hierarchy
         var rawChunks = SplitIntoClauseChunks(cleaned, hardMaxWords);
-        
+
         // Merge tiny orphan chunks (< 4 words) with adjacent beats
         var mergedBeats = MergeOrphanChunks(rawChunks, targetMaxWords);
 
@@ -48,131 +59,99 @@ public static class DialoguePacingSplitter
         {
             var chunkWords = chunk.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries).Length;
             if (chunkWords > 0)
-            {
-                var duration = Math.Max(2.5, Math.Round(chunkWords / wordsPerSecond, 1));
-                results.Add(new DialogueSpeechBeat(chunk, chunkWords, duration));
-            }
+                results.Add(new DialogueSpeechBeat(chunk, chunkWords, EstimateSeconds(chunkWords, wordsPerSecond)));
         }
 
         return results;
     }
 
+    /// <summary>Same head/tail-padded speech duration model as <see cref="ClipDurationEstimator"/>'s
+    /// word-count formula, so a beat's estimate here means the same thing it would mean there.</summary>
+    private static double EstimateSeconds(int wordCount, double wordsPerSecond) =>
+        Math.Round(ClipDurationEstimator.SpeechHeadSeconds + wordCount / wordsPerSecond + ClipDurationEstimator.SpeechTailSeconds, 1);
+
+    /// <summary>Inverse of <see cref="EstimateSeconds"/> — the most words that fit in
+    /// <paramref name="seconds"/> once head/tail padding is subtracted. Always at least 1, so a
+    /// caller passing an unreasonably small seconds bound still gets a usable (if aggressive)
+    /// split instead of a division producing zero/negative words.</summary>
+    private static int WordsForSeconds(int seconds, double wordsPerSecond) =>
+        Math.Max(1, (int)Math.Floor((seconds - ClipDurationEstimator.SpeechHeadSeconds - ClipDurationEstimator.SpeechTailSeconds) * wordsPerSecond));
+
     private static List<string> SplitIntoClauseChunks(string text, int maxWords)
     {
-        var chunks = new List<string>();
         var currentWords = text.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries);
         if (currentWords.Length <= maxWords)
+            return new List<string> { text };
+
+        // Try each punctuation tier in turn; a tier that doesn't actually split the text
+        // (Count <= 1, i.e. no matches, or one trailing match with nothing after it) falls
+        // through to the next. PackPieces recursively re-splits any individual piece that's
+        // STILL over maxWords on its own — e.g. one very long clause between two semicolons —
+        // instead of letting it through unbounded (which the single-shot version of each tier
+        // used to do).
+        foreach (var regex in PunctuationTiers)
         {
-            chunks.Add(text);
-            return chunks;
+            var pieces = SplitByRegexMatches(text, regex);
+            if (pieces.Count > 1)
+                return PackPieces(pieces, maxWords);
         }
 
-        // Tier 1: Try splitting by terminal punctuation (. ! ?)
-        var sentences = SplitByRegexMatches(text, TerminalPunctuationRegex);
-        if (sentences.Count > 1)
-        {
-            var accum = "";
-            foreach (var s in sentences)
-            {
-                var combined = string.IsNullOrEmpty(accum) ? s : accum + " " + s;
-                var wordCount = combined.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries).Length;
-                if (wordCount <= maxWords)
-                {
-                    accum = combined;
-                }
-                else
-                {
-                    if (!string.IsNullOrEmpty(accum))
-                        chunks.AddRange(SplitIntoClauseChunks(accum, maxWords));
-                    accum = s;
-                }
-            }
-            if (!string.IsNullOrEmpty(accum))
-                chunks.AddRange(SplitIntoClauseChunks(accum, maxWords));
+        // No punctuation delimiter of any kind was found — the previous "hard fallback" here
+        // just returned the whole text as one unsplit chunk despite being named a "word window
+        // split"; this now actually is one, so maxWords is honored even for a long run-on
+        // clause with no internal punctuation at all.
+        return PackByWordWindow(text, maxWords);
+    }
 
-            return chunks;
-        }
+    private static readonly Regex[] PunctuationTiers =
+    {
+        TerminalPunctuationRegex, ProsodicPunctuationRegex, ConjunctionCommaRegex, AnyCommaRegex,
+    };
 
-        // Tier 2: Try splitting by prosodic punctuation (— ; :)
-        var prosodicChunks = SplitByRegexMatches(text, ProsodicPunctuationRegex);
-        if (prosodicChunks.Count > 1)
+    /// <summary>Greedily combines consecutive delimited pieces up to maxWords per chunk. A single
+    /// piece that's already over maxWords on its own gets recursively re-split (falls through to
+    /// the next punctuation tier, or ultimately <see cref="PackByWordWindow"/>) rather than being
+    /// emitted whole.</summary>
+    private static List<string> PackPieces(List<string> pieces, int maxWords)
+    {
+        var chunks = new List<string>();
+        var accum = "";
+        foreach (var piece in pieces)
         {
-            var accum = "";
-            foreach (var pc in prosodicChunks)
+            var pieceWords = piece.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries).Length;
+            if (pieceWords > maxWords)
             {
-                var combined = string.IsNullOrEmpty(accum) ? pc : accum + " " + pc;
-                var wordCount = combined.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries).Length;
-                if (wordCount <= maxWords)
-                {
-                    accum = combined;
-                }
-                else
-                {
-                    if (!string.IsNullOrEmpty(accum))
-                        chunks.Add(accum);
-                    accum = pc;
-                }
+                if (!string.IsNullOrEmpty(accum)) { chunks.Add(accum); accum = ""; }
+                chunks.AddRange(SplitIntoClauseChunks(piece, maxWords));
+                continue;
             }
-            if (!string.IsNullOrEmpty(accum))
+
+            var combined = string.IsNullOrEmpty(accum) ? piece : accum + " " + piece;
+            var combinedWords = combined.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries).Length;
+            if (combinedWords <= maxWords)
+            {
+                accum = combined;
+            }
+            else
+            {
                 chunks.Add(accum);
-
-            return chunks;
-        }
-
-        // Tier 3: Try splitting by conjunction commas (, and / , but / , as)
-        var conjChunks = SplitByRegexMatches(text, ConjunctionCommaRegex);
-        if (conjChunks.Count > 1)
-        {
-            var accum = "";
-            foreach (var cc in conjChunks)
-            {
-                var combined = string.IsNullOrEmpty(accum) ? cc : accum + " " + cc;
-                var wordCount = combined.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries).Length;
-                if (wordCount <= maxWords)
-                {
-                    accum = combined;
-                }
-                else
-                {
-                    if (!string.IsNullOrEmpty(accum))
-                        chunks.Add(accum);
-                    accum = cc;
-                }
+                accum = piece;
             }
-            if (!string.IsNullOrEmpty(accum))
-                chunks.Add(accum);
-
-            return chunks;
         }
+        if (!string.IsNullOrEmpty(accum))
+            chunks.Add(accum);
 
-        // Tier 4: Fallback to any comma or whitespace split
-        var commaChunks = SplitByRegexMatches(text, AnyCommaRegex);
-        if (commaChunks.Count > 1)
-        {
-            var accum = "";
-            foreach (var cc in commaChunks)
-            {
-                var combined = string.IsNullOrEmpty(accum) ? cc : accum + " " + cc;
-                var wordCount = combined.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries).Length;
-                if (wordCount <= maxWords)
-                {
-                    accum = combined;
-                }
-                else
-                {
-                    if (!string.IsNullOrEmpty(accum))
-                        chunks.Add(accum);
-                    accum = cc;
-                }
-            }
-            if (!string.IsNullOrEmpty(accum))
-                chunks.Add(accum);
+        return chunks;
+    }
 
-            return chunks;
-        }
-
-        // Hard Fallback: Word window split
-        chunks.Add(text);
+    /// <summary>Last-resort split for text with no usable punctuation anywhere — fixed-size word
+    /// windows so maxWords is still a real ceiling, not just an aspiration.</summary>
+    private static List<string> PackByWordWindow(string text, int maxWords)
+    {
+        var words = text.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries);
+        var chunks = new List<string>();
+        for (var i = 0; i < words.Length; i += maxWords)
+            chunks.Add(string.Join(' ', words.Skip(i).Take(maxWords)));
         return chunks;
     }
 

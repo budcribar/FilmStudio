@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.IO.Compression;
+using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
@@ -12,6 +13,76 @@ namespace PageToMovie.Tests;
 
 public class ProjectArchiveServiceTests
 {
+    [Fact]
+    public async Task Export_of_namespaced_project_id_produces_safe_filename_and_real_nested_zip_entries()
+    {
+        var tmp = Path.Combine(Path.GetTempPath(), "ptm-archive-ns-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tmp);
+        try
+        {
+            var opts = Options.Create(new PageToMovieOptions { WorkspaceRoot = tmp });
+            var store = new ProjectStore(opts);
+            var archives = new ProjectArchiveService(store, NullLogger<ProjectArchiveService>.Instance);
+
+            var created = await store.CreateProjectAsync("MyBook", ownerUserId: "alice");
+            Assert.Equal("alice/mybook", created.Id, ignoreCase: true);
+
+            // Simulate exactly what ASP.NET route-model binding hands the endpoint for a
+            // composite id in a single {id} segment: the "/" arrives percent-encoded.
+            var routeStyleId = created.Id!.Replace("/", "%2F");
+
+            await using var exp = await archives.ExportAsync(routeStyleId);
+
+            Assert.DoesNotContain("%2F", exp.FileName);
+            Assert.DoesNotContain('/', exp.FileName);
+
+            using var zip = new ZipArchive(exp.Stream, ZipArchiveMode.Read, leaveOpen: true);
+            Assert.DoesNotContain(zip.Entries, e => e.FullName.Contains("%2F"));
+            Assert.Contains(zip.Entries, e => e.FullName.StartsWith("alice/mybook/", StringComparison.OrdinalIgnoreCase));
+        }
+        finally
+        {
+            try { Directory.Delete(tmp, true); } catch { /* ignore */ }
+        }
+    }
+
+    [Fact]
+    public async Task Import_of_namespaced_project_id_preserves_owner_slug_split()
+    {
+        var tmp = Path.Combine(Path.GetTempPath(), "ptm-archive-ns-import-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tmp);
+        var zipPath = Path.Combine(tmp, "namespaced.zip");
+        try
+        {
+            using (var zip = ZipFile.Open(zipPath, ZipArchiveMode.Create))
+            {
+                var e = zip.CreateEntry("alice/mybook/project.json");
+                await using var w = new StreamWriter(e.Open());
+                await w.WriteAsync("{\"id\":\"alice/MyBook\",\"title\":\"My Book\"}\n");
+            }
+
+            var opts = Options.Create(new PageToMovieOptions { WorkspaceRoot = tmp });
+            var store = new ProjectStore(opts);
+            var archives = new ProjectArchiveService(store, NullLogger<ProjectArchiveService>.Instance);
+
+            await using var fs = File.OpenRead(zipPath);
+            var imported = await archives.ImportAsync(fs, preferredId: null, overwrite: false);
+
+            Assert.True(imported.Ok);
+            // Preserved as two segments, not flattened to "alice_MyBook".
+            Assert.Contains('/', imported.ProjectId);
+            Assert.DoesNotContain('_', imported.ProjectId!.Split('/')[0] + imported.ProjectId.Split('/')[1]);
+
+            var dir = store.GetProjectDir(imported.ProjectId!);
+            Assert.Equal(Path.Combine(tmp, "projects", "alice", "mybook"), dir, ignoreCase: true);
+            Assert.True(File.Exists(Path.Combine(dir, "project.json")));
+        }
+        finally
+        {
+            try { Directory.Delete(tmp, true); } catch { /* ignore */ }
+        }
+    }
+
     [Fact]
     public async Task Export_then_import_round_trips_project_files()
     {

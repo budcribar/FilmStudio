@@ -279,6 +279,10 @@ projects/*/blueprint.clips.grok.json.bak_*
 projects/*/telemetry/api_calls.jsonl
 projects/*/telemetry/ffmpeg.jsonl
 
+# Project export zips (ephemeral, regenerable from the project folder)
+projects/*/PageToMovie_*.zip
+projects/*/*/PageToMovie_*.zip
+
 # LoadSim local results (not the projects/LoadSimBuster sandbox)
 loadsim*.json
 host/loadsim*.json

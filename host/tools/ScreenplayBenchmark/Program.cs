@@ -4,8 +4,12 @@ using System.IO;
 using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using PageToMovie.Core.Models;
+using PageToMovie.Core.Options;
 using PageToMovie.Engine;
+using PageToMovie.Engine.Abstractions;
 
 namespace ScreenplayBenchmark;
 
@@ -71,6 +75,13 @@ public static class Program
         outDir ??= Path.Combine("evals", "results", $"screenplay_benchmark_{DateTime.Now:yyyyMMdd_HHmmss}");
         Directory.CreateDirectory(outDir);
 
+        var chat = BuildChatClient();
+        if (!dryRun && !chat.IsConfigured)
+        {
+            Console.WriteLine("⚠️  No provider API key found in the environment (XAI_API_KEY / ANTHROPIC_API_KEY / GEMINI_API_KEY).");
+            Console.WriteLine("   Generation and peer-judging will fall back to mock data. Pass --dry-run to silence this warning.");
+        }
+
         List<string> bookSuiteFiles = new();
         if (!string.IsNullOrWhiteSpace(suiteDir) && Directory.Exists(suiteDir))
         {
@@ -88,7 +99,7 @@ public static class Program
             foreach (var file in bookSuiteFiles)
             {
                 var slug = Path.GetFileNameWithoutExtension(file).ToLowerInvariant();
-                await RunSingleBookBenchmarkAsync(file, slug, outDir, requestedModels, dryRun, historyFilePath);
+                await RunSingleBookBenchmarkAsync(file, slug, outDir, requestedModels, dryRun, historyFilePath, chat);
             }
 
             // Generate updated HTML Dashboard after suite execution
@@ -110,7 +121,7 @@ public static class Program
         }
 
         bookSlug ??= Path.GetFileNameWithoutExtension(bookPath).ToLowerInvariant();
-        await RunSingleBookBenchmarkAsync(bookPath, bookSlug, outDir, requestedModels, dryRun, historyFilePath);
+        await RunSingleBookBenchmarkAsync(bookPath, bookSlug, outDir, requestedModels, dryRun, historyFilePath, chat);
 
         // Generate updated HTML Dashboard
         historyStore = BenchmarkHistoryStore.LoadHistory(historyFilePath);
@@ -128,13 +139,14 @@ public static class Program
         string outDir,
         List<string>? requestedModels,
         bool dryRun,
-        string historyFilePath)
+        string historyFilePath,
+        IChatClient chat)
     {
         var screenplaysDir = Path.Combine(outDir, bookSlug, "screenplays");
         Directory.CreateDirectory(screenplaysDir);
 
         Console.WriteLine($"📖 Source Book: {bookPath} (Slug: {bookSlug})");
-        Console.WriteLine($"🧪 Mode: {(dryRun ? "DRY-RUN (Mock Data)" : "LIVE API CALLS")}");
+        Console.WriteLine($"🧪 Mode: {(dryRun ? "DRY-RUN (Mock Data)" : chat.IsConfigured ? "LIVE API CALLS" : "NO API KEY (Mock Data)")}");
 
         var availableChatModels = SupportedModelCatalog.ForCapability(ModelCapability.Chat, enabledOnly: true);
         var candidateModels = availableChatModels.Select(m => m.Id).ToList();
@@ -188,6 +200,7 @@ public static class Program
                         title: Path.GetFileNameWithoutExtension(bookPath),
                         bookText: bookText,
                         author: "Author",
+                        chat: chat,
                         model: modelId);
                     Console.WriteLine("DONE");
 
@@ -235,15 +248,28 @@ public static class Program
                 evalPayload = GenerateMockJudgePayload(anonMapping, judgeModelId);
                 Console.WriteLine("(mock evaluated)");
             }
+            else if (!chat.IsConfigured)
+            {
+                evalPayload = GenerateMockJudgePayload(anonMapping, judgeModelId);
+                Console.WriteLine("(no provider API key configured — mock evaluated)");
+            }
             else
             {
                 try
                 {
-                    evalPayload = GenerateMockJudgePayload(anonMapping, judgeModelId);
+                    var userPrompt = ScreenplayJudgmentRubric.BuildPrompt(bookText, anonScreenplays);
+                    var raw = await chat.CompleteAsync(
+                        systemPrompt: "Respond with ONLY the JSON object described in the instructions. No prose, no markdown code fences.",
+                        userPrompt: userPrompt,
+                        model: judgeModelId,
+                        temperature: 0.2,
+                        mode: "screenplay_benchmark_judge");
+                    evalPayload = ParseJudgePayload(raw, anonMapping.Keys);
                     Console.WriteLine("DONE");
                 }
-                catch
+                catch (Exception ex)
                 {
+                    Console.WriteLine($"FAILED ({ex.Message}) — falling back to mock evaluation");
                     evalPayload = GenerateMockJudgePayload(anonMapping, judgeModelId);
                 }
             }
@@ -366,6 +392,45 @@ Uncle Nick turned, offering a small, reassuring nod. ""She always holds when the
             File.WriteAllText(samplePath, sampleText);
         }
         return samplePath;
+    }
+
+    private static IChatClient BuildChatClient()
+    {
+        var services = new ServiceCollection();
+        services.AddLogging(builder =>
+        {
+            builder.AddConsole();
+            builder.SetMinimumLevel(LogLevel.Warning);
+        });
+
+        services.Configure<PageToMovieOptions>(opts => { });
+        services.AddSingleton<ProjectReadCache>();
+        services.AddSingleton<ProjectStore>();
+        services.AddSingleton<ProjectTelemetryService>();
+        services.AddHttpClient<GrokChatClient>();
+        services.AddHttpClient<AnthropicChatClient>();
+        services.AddHttpClient<GeminiChatClient>();
+        services.AddSingleton<MultiProviderChatClient>();
+
+        var provider = services.BuildServiceProvider();
+        return provider.GetRequiredService<MultiProviderChatClient>();
+    }
+
+    /// <summary>Parses a judge model's raw completion into a <see cref="JudgeEvaluationPayload"/>, tolerating markdown code fences.</summary>
+    private static JudgeEvaluationPayload ParseJudgePayload(string raw, IEnumerable<string> expectedLabels)
+    {
+        var stripped = ClassifierJsonParser.StripFences(raw);
+        var opts = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+        var payload = JsonSerializer.Deserialize<JudgeEvaluationPayload>(stripped, opts);
+
+        if (payload is null || payload.Evaluations.Count == 0 || payload.ForcedRanking.Count == 0)
+            throw new InvalidOperationException("Judge response was missing evaluations or a forced ranking.");
+
+        var labelSet = new HashSet<string>(expectedLabels, StringComparer.OrdinalIgnoreCase);
+        if (!payload.ForcedRanking.All(labelSet.Contains))
+            throw new InvalidOperationException("Judge response ranked labels outside the anonymized candidate set.");
+
+        return payload;
     }
 
     private static string SanitizeFileName(string name) =>
