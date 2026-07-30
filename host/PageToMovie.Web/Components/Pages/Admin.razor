@@ -1226,6 +1226,8 @@
             _synthesizeTotal = scenes.Count;
             int queuedCount = 0;
             int skippedCount = 0;
+            int failedCount = 0;
+            var failureMessages = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
             foreach (var sc in scenes)
             {
@@ -1258,7 +1260,20 @@
                     StateHasChanged();
                     try
                     {
-                        await Api.WaitForJobTerminalAsync(started!.JobId, timeout: TimeSpan.FromMinutes(8));
+                        var final = await Api.WaitForJobTerminalAsync(started!.JobId, timeout: TimeSpan.FromMinutes(8));
+                        // The job "succeeding" server-side only means audio bytes were fetched from the
+                        // provider — it says nothing about whether this browser tab actually wrote them
+                        // to the local media folder (SaveJobMediaAsync runs off a SignalR JobUpdated
+                        // event this loop doesn't observe). Without this check, a wrong/unconfigured
+                        // audio provider (e.g. only an AI Music API key set while audio_model_name is
+                        // still the fal-ai/stable-audio default) fails every scene silently — the loop
+                        // would report a false "Completed" with no sign anything went wrong.
+                        if (!string.Equals(final?.Status, "done", StringComparison.OrdinalIgnoreCase))
+                        {
+                            failedCount++;
+                            var msg = string.IsNullOrWhiteSpace(final?.Error) ? (final?.Message ?? "Unknown error") : final!.Error!;
+                            failureMessages.Add(msg);
+                        }
                     }
                     catch (TimeoutException)
                     {
@@ -1267,7 +1282,11 @@
                 }
             }
 
-            _archiveMsg = $"Completed background music synthesis checks for {_augmentProjectId}. Queued: {queuedCount}, Skipped (Existing): {skippedCount}.";
+            _archiveMsg = $"Completed background music synthesis checks for {_augmentProjectId}. Queued: {queuedCount}, Skipped (Existing): {skippedCount}, Failed: {failedCount}.";
+            if (failedCount > 0)
+            {
+                _archiveError = $"{failedCount} scene(s) failed to synthesize: {string.Join(" | ", failureMessages)}";
+            }
             await RefreshAsync();
         }
         catch (Exception ex)

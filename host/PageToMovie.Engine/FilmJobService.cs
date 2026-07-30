@@ -1277,7 +1277,13 @@ public sealed class FilmJobService
 
             if (savedSegments == 0)
             {
-                await FinishAsync("error", "Music synthesis failed.", "Music synthesis failed for all segments.");
+                // Name the resolved provider — the top-level _audio.IsConfigured gate only checks
+                // that *some* audio provider has a key, not that the one audio_model_name actually
+                // routes to (MultiProviderAudioClient) does. A key set for a different provider than
+                // the configured audio_model_name fails every scene this way, silently otherwise.
+                await FinishAsync("error", "Music synthesis failed.",
+                    $"Music synthesis failed for all segments via {entry.DisplayName} ({entry.Id}). " +
+                    "Check that its API key is configured, or change the audio model in Configuration.");
                 return;
             }
 
