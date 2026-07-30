@@ -30,14 +30,24 @@ public sealed class ClientMediaFolderService
         _activeProject.Changed += OnActiveProjectChanged;
     }
 
+    /// <summary>
+    /// When true, connecting a local folder or logging in will automatically start downloading
+    /// project media in the background. Defaults to false so logging in does not automatically
+    /// download media to the local folder.
+    /// </summary>
+    public bool AutoSyncOnLogin { get; set; } = false;
+
     private void OnActiveProjectChanged()
     {
-        TriggerAutoSyncIfConnected();
+        if (AutoSyncOnLogin)
+        {
+            TriggerAutoSyncIfConnected();
+        }
     }
 
     public void TriggerAutoSyncIfConnected()
     {
-        if (IsConnected && !IsSyncing && !string.IsNullOrWhiteSpace(_activeProject.ProjectId))
+        if (AutoSyncOnLogin && IsConnected && !IsSyncing && !string.IsNullOrWhiteSpace(_activeProject.ProjectId))
         {
             _ = SyncProjectMediaToClientAsync(_activeProject.ProjectId);
         }
