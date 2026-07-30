@@ -271,6 +271,9 @@ else
         c.BaseAddress = new Uri(GeminiChatClient.ApiBase + "/");
         c.Timeout = TimeSpan.FromMinutes(20);
     }));
+    // ClipDialogueVerificationService needs Gemini's real native-video capability specifically
+    // (not whatever IVisionClient's routing config points at) — see IGeminiVideoAnalysisClient.
+    builder.Services.AddSingleton<IGeminiVideoAnalysisClient>(sp => sp.GetRequiredService<GeminiChatClient>());
     ConfigurePooledSocketsHandler(builder.Services.AddHttpClient<FalAudioClient>(c =>
     {
         c.BaseAddress = new Uri(FalAudioClient.ApiBase.TrimEnd('/') + "/");

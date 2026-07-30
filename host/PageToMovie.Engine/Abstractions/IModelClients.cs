@@ -145,6 +145,28 @@ public interface IVisionClient
         CancellationToken ct = default);
 }
 
+/// <summary>
+/// Native multimodal video+audio analysis — Gemini specifically can inline a raw video file
+/// (with its audio track) for the model to watch/listen to, unlike other vision providers which
+/// only accept still images (see ClipDialogueVerificationService, the only caller: it needs
+/// Gemini's real video capability specifically, not whatever <see cref="IVisionClient"/>'s
+/// routing config currently points at). Kept as its own interface rather than reusing
+/// <see cref="IVisionClient"/> so a caller that specifically needs Gemini can depend on a
+/// distinct DI seam (GeminiChatClient implements both) — and so fakes mode has something to
+/// fake instead of this silently resolving to null.
+/// </summary>
+public interface IGeminiVideoAnalysisClient
+{
+    bool IsConfigured { get; }
+
+    Task<string> CompleteWithImagesAsync(
+        string prompt,
+        IReadOnlyList<string> imagePaths,
+        string model = "gemini-2.5-pro",
+        string detail = "low",
+        CancellationToken ct = default);
+}
+
 /// <summary>Audio &amp; music generate / download (Fal.ai, Suno resellers, or fake).</summary>
 public interface IAudioClient
 {

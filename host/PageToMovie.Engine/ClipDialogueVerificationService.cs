@@ -26,7 +26,7 @@ public sealed class ClipDialogueVerificationService
 
     private readonly ProjectStore _projects;
     private readonly IVisionClient _vision;
-    private readonly GeminiChatClient? _gemini;
+    private readonly IGeminiVideoAnalysisClient? _gemini;
     private readonly ProjectTelemetryService _telemetry;
     private readonly ILogger<ClipDialogueVerificationService> _log;
 
@@ -34,7 +34,7 @@ public sealed class ClipDialogueVerificationService
         ProjectStore projects,
         IVisionClient vision,
         ProjectTelemetryService telemetry,
-        GeminiChatClient? gemini = null,
+        IGeminiVideoAnalysisClient? gemini = null,
         ILogger<ClipDialogueVerificationService>? log = null)
     {
         _projects = projects;

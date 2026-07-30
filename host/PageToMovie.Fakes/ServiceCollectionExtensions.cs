@@ -14,6 +14,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IChatClient, FakeGrokChatClient>();
         services.AddSingleton<IVisionClient, FakeGrokVisionClient>();
         services.AddSingleton<IAudioClient, FakeAudioClient>();
+        services.AddSingleton<IGeminiVideoAnalysisClient, FakeGeminiChatClient>();
         return services;
     }
 }

@@ -2,12 +2,88 @@ using System.IO;
 using System.Threading.Tasks;
 using Xunit;
 using PageToMovie.Core.Models;
+using PageToMovie.Core.Options;
 using PageToMovie.Engine;
+using PageToMovie.Engine.Abstractions;
+using Microsoft.Extensions.Options;
 
 namespace PageToMovie.Tests;
 
 public class ClipDialogueVerificationTests
 {
+    /// <summary>
+    /// Regression: ClipDialogueVerificationService used to take a concrete GeminiChatClient?
+    /// dependency, which fakes mode couldn't provide (only registered in Program.cs's non-fakes
+    /// branch) — it silently resolved to null, so fakes-mode dialogue verification always took
+    /// the still-image IVisionClient fallback and never exercised the native-video branch
+    /// production actually uses when the configured vision model can't watch video itself.
+    /// IGeminiVideoAnalysisClient (fakeable) fixed that; this proves the branch is really taken.
+    /// </summary>
+    [Fact]
+    public async Task VerifyClipDialogueAsync_prefers_gemini_video_analysis_when_vision_model_cannot_review_video()
+    {
+        var tempDir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+        var projDir = Path.Combine(tempDir, "projects", "test_proj");
+        Directory.CreateDirectory(Path.Combine(projDir, "assets", "video"));
+        try
+        {
+            File.WriteAllText(Path.Combine(projDir, "project.json"), """{"id":"test_proj"}""");
+            // grok-4.5 (Vision) has SupportsVideoReview=false — forces the Gemini escape hatch.
+            File.WriteAllText(Path.Combine(projDir, "pipeline_config.json"),
+                """{"blueprint_file":"blueprint.clips.grok.json","vision_model_name":"grok-4.5"}""");
+            File.WriteAllText(Path.Combine(projDir, "blueprint.clips.grok.json"), """
+                {
+                  "scenes": [
+                    {
+                      "scene_number": 1,
+                      "veo_clips": [
+                        { "clip_number": 1, "visual_prompt": "clip one", "dialogue": "Hello world!", "speaker": "Character_Buster" }
+                      ]
+                    }
+                  ]
+                }
+                """);
+            File.WriteAllBytes(Path.Combine(projDir, "assets", "video", "scene_01_clip_01.mp4"), new byte[2048]);
+
+            var opts = Options.Create(new PageToMovieOptions { WorkspaceRoot = tempDir });
+            var store = new ProjectStore(opts);
+            var service = new ClipDialogueVerificationService(
+                store, new StillImageOnlyVisionClient(), telemetry: null!, gemini: new FakeVideoAnalysisClient());
+
+            var result = await service.VerifyClipDialogueAsync("test_proj", sceneNumber: 1, clipNumber: 1);
+
+            Assert.Equal("gemini-native-video", result.DetectedSpeaker);
+        }
+        finally
+        {
+            Directory.Delete(tempDir, true);
+        }
+    }
+
+    private sealed class FakeVideoAnalysisClient : IGeminiVideoAnalysisClient
+    {
+        public bool IsConfigured => true;
+
+        public Task<string> CompleteWithImagesAsync(string prompt, System.Collections.Generic.IReadOnlyList<string> imagePaths, string model = "gemini-2.5-pro", string detail = "low", System.Threading.CancellationToken ct = default) =>
+            Task.FromResult(@"{ ""detectedSpeaker"": ""gemini-native-video"", ""transcribedDialogue"": ""Hello world!"", ""dialogueAccuracyScore"": 1.0, ""speakerMatch"": true, ""status"": ""verified"" }");
+    }
+
+    /// <summary>Distinguishable from FakeVideoAnalysisClient's response so the test can tell which
+    /// branch actually ran — if this response leaks through, the Gemini escape hatch was skipped.</summary>
+    private sealed class StillImageOnlyVisionClient : IVisionClient
+    {
+        public bool IsConfigured => true;
+
+        public Task<string> TranscribePageAsync(string imagePath, int page, string model = "grok-4.5", System.Threading.CancellationToken ct = default) =>
+            Task.FromResult("");
+
+        public Task<CharacterPageClassification> ClassifyCharactersOnImageAsync(string imagePath, int page, System.Collections.Generic.IReadOnlyList<CharacterClassifyHint> cast, string model = "grok-4.5", System.Threading.CancellationToken ct = default) =>
+            Task.FromResult(new CharacterPageClassification());
+
+        public Task<string> CompleteWithImagesAsync(string prompt, System.Collections.Generic.IReadOnlyList<string> imagePaths, string model = "grok-4.5", string detail = "low", System.Threading.CancellationToken ct = default) =>
+            Task.FromResult(@"{ ""detectedSpeaker"": ""still-image-fallback"", ""transcribedDialogue"": ""Hello world!"", ""dialogueAccuracyScore"": 1.0, ""speakerMatch"": true, ""status"": ""verified"" }");
+    }
+
     [Fact]
     public void LoadVerification_returns_null_when_file_does_not_exist()
     {

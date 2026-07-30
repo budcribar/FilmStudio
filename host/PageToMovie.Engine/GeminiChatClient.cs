@@ -16,7 +16,7 @@ namespace PageToMovie.Engine;
 /// built from Gemini's public documented format; verify against a live call before relying on
 /// this in production, same as any provider added without an account to test against.
 /// </summary>
-public sealed class GeminiChatClient : IChatClient, IVisionClient
+public sealed class GeminiChatClient : IChatClient, IVisionClient, IGeminiVideoAnalysisClient
 {
     public const string ApiBase = SupportedModelCatalog.GoogleApiBase;
 
