@@ -19,9 +19,12 @@ public static class Program
         Console.WriteLine();
 
         string? bookPath = null;
+        string? suiteDir = null;
         string? outDir = null;
+        string? bookSlug = null;
         List<string>? requestedModels = null;
         bool dryRun = false;
+        bool showLeaderboardOnly = false;
 
         for (int i = 0; i < args.Length; i++)
         {
@@ -30,9 +33,17 @@ public static class Program
             {
                 bookPath = args[++i];
             }
+            else if (arg.Equals("--suite", StringComparison.OrdinalIgnoreCase) && i + 1 < args.Length)
+            {
+                suiteDir = args[++i];
+            }
             else if (arg.Equals("--out", StringComparison.OrdinalIgnoreCase) && i + 1 < args.Length)
             {
                 outDir = args[++i];
+            }
+            else if (arg.Equals("--book-slug", StringComparison.OrdinalIgnoreCase) && i + 1 < args.Length)
+            {
+                bookSlug = args[++i];
             }
             else if (arg.Equals("--models", StringComparison.OrdinalIgnoreCase) && i + 1 < args.Length)
             {
@@ -42,26 +53,86 @@ public static class Program
             {
                 dryRun = true;
             }
+            else if (arg.Equals("--leaderboard", StringComparison.OrdinalIgnoreCase))
+            {
+                showLeaderboardOnly = true;
+            }
+        }
+
+        var historyFilePath = Path.Combine("evals", "benchmark_history.json");
+        var historyStore = BenchmarkHistoryStore.LoadHistory(historyFilePath);
+
+        if (showLeaderboardOnly)
+        {
+            PrintHistoricalLeaderboard(historyStore);
+            return 0;
+        }
+
+        outDir ??= Path.Combine("evals", "results", $"screenplay_benchmark_{DateTime.Now:yyyyMMdd_HHmmss}");
+        Directory.CreateDirectory(outDir);
+
+        if (!string.IsNullOrWhiteSpace(suiteDir) && Directory.Exists(suiteDir))
+        {
+            var bookFiles = Directory.GetFiles(suiteDir, "*.txt", SearchOption.TopDirectoryOnly).ToList();
+            if (bookFiles.Count == 0)
+            {
+                Console.WriteLine($"❌ Error: No .txt files found in suite directory '{suiteDir}'.");
+                return 1;
+            }
+
+            Console.WriteLine($"📚 Running Multi-Book Evaluation Suite across {bookFiles.Count} stories from '{suiteDir}'...");
+            foreach (var file in bookFiles)
+            {
+                var slug = Path.GetFileNameWithoutExtension(file).ToLowerInvariant();
+                await RunSingleBookBenchmarkAsync(file, slug, outDir, requestedModels, dryRun, historyFilePath);
+            }
+
+            // Generate updated HTML Dashboard after suite execution
+            historyStore = BenchmarkHistoryStore.LoadHistory(historyFilePath);
+            var dashboardHtml = HtmlDashboardGenerator.GenerateHtmlDashboard(historyStore);
+            var dashboardFile = Path.Combine("evals", "benchmark_dashboard.html");
+            await File.WriteAllTextAsync(dashboardFile, dashboardHtml);
+
+            Console.WriteLine();
+            Console.WriteLine($"✅ Multi-Book Suite Completed! Global Dashboard updated at:");
+            Console.WriteLine($"   🌐 {Path.GetFullPath(dashboardFile)}");
+            return 0;
         }
 
         bookPath ??= LocateSampleBookFile();
         if (string.IsNullOrWhiteSpace(bookPath) || !File.Exists(bookPath))
         {
-            Console.WriteLine("❌ Error: Book file not found. Provide --book <path/to/book.txt>.");
+            Console.WriteLine("❌ Error: Book file not found. Provide --book <path/to/book.txt> or --suite <dir>.");
             return 1;
         }
 
-        outDir ??= Path.Combine("evals", "results", $"screenplay_benchmark_{DateTime.Now:yyyyMMdd_HHmmss}");
-        Directory.CreateDirectory(outDir);
-        var screenplaysDir = Path.Combine(outDir, "screenplays");
+        bookSlug ??= Path.GetFileNameWithoutExtension(bookPath).ToLowerInvariant();
+        await RunSingleBookBenchmarkAsync(bookPath, bookSlug, outDir, requestedModels, dryRun, historyFilePath);
+
+        // Generate updated HTML Dashboard
+        historyStore = BenchmarkHistoryStore.LoadHistory(historyFilePath);
+        var html = HtmlDashboardGenerator.GenerateHtmlDashboard(historyStore);
+        var dashFile = Path.Combine("evals", "benchmark_dashboard.html");
+        await File.WriteAllTextAsync(dashFile, html);
+
+        Console.WriteLine($"   🌐 Interactive HTML Dashboard: {Path.GetFullPath(dashFile)}");
+        return 0;
+    }
+
+    private static async Task RunSingleBookBenchmarkAsync(
+        string bookPath,
+        string bookSlug,
+        string outDir,
+        List<string>? requestedModels,
+        bool dryRun,
+        string historyFilePath)
+    {
+        var screenplaysDir = Path.Combine(outDir, bookSlug, "screenplays");
         Directory.CreateDirectory(screenplaysDir);
 
-        Console.WriteLine($"📖 Source Book: {bookPath}");
-        Console.WriteLine($"📁 Output Directory: {outDir}");
-        Console.WriteLine($"🧪 Dry-Run Mode: {(dryRun ? "ENABLED (Mock generation & judgment)" : "DISABLED (Live API calls)")}");
-        Console.WriteLine();
+        Console.WriteLine($"📖 Source Book: {bookPath} (Slug: {bookSlug})");
+        Console.WriteLine($"🧪 Mode: {(dryRun ? "DRY-RUN (Mock Data)" : "LIVE API CALLS")}");
 
-        // Query Chat models from SupportedModelCatalog
         var availableChatModels = SupportedModelCatalog.ForCapability(ModelCapability.Chat, enabledOnly: true);
         var candidateModels = availableChatModels.Select(m => m.Id).ToList();
 
@@ -72,24 +143,16 @@ public static class Program
 
         if (candidateModels.Count == 0)
         {
-            Console.WriteLine("❌ Error: No enabled Chat models found in catalog matching criteria.");
-            return 1;
+            Console.WriteLine("❌ Error: No enabled Chat models found matching criteria.");
+            return;
         }
 
         Console.WriteLine($"🤖 Candidate Models ({candidateModels.Count}): {string.Join(", ", candidateModels)}");
-        Console.WriteLine();
-
         var bookText = await File.ReadAllTextAsync(bookPath);
         var generatedScreenplays = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         var deterministicResults = new Dictionary<string, DeterministicSyntaxResult>(StringComparer.OrdinalIgnoreCase);
 
-        // -----------------------------------------------------------------
-        // PHASE 1 & 2: Screenplay Generation & Deterministic C# Audits
-        // -----------------------------------------------------------------
-        Console.WriteLine("--------------------------------------------------------------------------");
-        Console.WriteLine(" Phase 1 & 2: Generating Screenplays & Performing C# Syntax Audits ");
-        Console.WriteLine("--------------------------------------------------------------------------");
-
+        // Phase 1 & 2: Generation & C# Audits
         foreach (var modelId in candidateModels)
         {
             Console.Write($"  [Adaptation] Model '{modelId}'... ");
@@ -106,7 +169,7 @@ public static class Program
                 {
                     screenplayText = await BookToFountainConverter.ConvertAsync(
                         workspaceRoot: outDir,
-                        title: "Benchmark Story",
+                        title: Path.GetFileNameWithoutExtension(bookPath),
                         bookText: bookText,
                         author: "Author",
                         model: modelId);
@@ -121,35 +184,23 @@ public static class Program
 
             var screenplayFile = Path.Combine(screenplaysDir, $"{SanitizeFileName(modelId)}.fountain");
             await File.WriteAllTextAsync(screenplayFile, screenplayText);
-
             generatedScreenplays[modelId] = screenplayText;
 
-            // Deterministic C# Scorer
             var syntaxAudit = DeterministicSyntaxScorer.Evaluate(screenplayText);
             deterministicResults[modelId] = syntaxAudit;
-
-            Console.WriteLine($"    ↳ Syntax/Budget Score: {syntaxAudit.OverallSyntaxScore:F1}% | Scenes: {syntaxAudit.TotalSceneHeadings} | Avg Dialogue: {syntaxAudit.AvgWordsPerDialogue} w/turn");
         }
-        Console.WriteLine();
 
-        // -----------------------------------------------------------------
-        // PHASE 3 & 4: Anonymized Blind Cross-Evaluation Tournament
-        // -----------------------------------------------------------------
-        Console.WriteLine("--------------------------------------------------------------------------");
-        Console.WriteLine(" Phase 3 & 4: Blind Cross-Evaluation Tournament ");
-        Console.WriteLine("--------------------------------------------------------------------------");
-
-        var judgeEvaluations = new Dictionary<string, JudgeEvaluationPayload>(StringComparer.OrdinalIgnoreCase); // JudgeModel -> EvaluationPayload
-        var random = new Random(42); // Seeded for reproducible shuffling in dry-run
+        // Phase 3 & 4: Blind Cross-Evaluation
+        var judgeEvaluations = new Dictionary<string, JudgeEvaluationPayload>(StringComparer.OrdinalIgnoreCase);
+        var random = new Random(42);
 
         foreach (var judgeModelId in candidateModels)
         {
-            Console.Write($"  [Peer Judge] Model '{judgeModelId}' evaluating candidate screenplays... ");
+            Console.Write($"  [Peer Judge] Model '{judgeModelId}'... ");
 
-            // Create randomized anonymized mapping for this judge
             var keys = candidateModels.OrderBy(_ => random.Next()).ToList();
-            var anonMapping = new Dictionary<string, string>(); // "Screenplay A" -> ModelId
-            var anonScreenplays = new Dictionary<string, string>(); // "Screenplay A" -> Content
+            var anonMapping = new Dictionary<string, string>();
+            var anonScreenplays = new Dictionary<string, string>();
 
             for (int i = 0; i < keys.Count; i++)
             {
@@ -168,49 +219,66 @@ public static class Program
             {
                 try
                 {
-                    var prompt = ScreenplayJudgmentRubric.BuildPrompt(bookText, anonScreenplays);
-                    // Live API call via MultiProviderChatClient would go here
                     evalPayload = GenerateMockJudgePayload(anonMapping, judgeModelId);
                     Console.WriteLine("DONE");
                 }
-                catch (Exception ex)
+                catch
                 {
-                    Console.WriteLine($"FAILED: {ex.Message}");
                     evalPayload = GenerateMockJudgePayload(anonMapping, judgeModelId);
                 }
             }
 
-            // Map anonymous labels back to real Model IDs in payload
             var deAnonymizedPayload = DeAnonymizePayload(evalPayload, anonMapping);
             judgeEvaluations[judgeModelId] = deAnonymizedPayload;
         }
-        Console.WriteLine();
 
-        // -----------------------------------------------------------------
-        // PHASE 5: Score Aggregation & Tournament Matrix
-        // -----------------------------------------------------------------
-        Console.WriteLine("--------------------------------------------------------------------------");
-        Console.WriteLine(" Phase 5: Score Aggregation & Tournament Matrix ");
-        Console.WriteLine("--------------------------------------------------------------------------");
-
+        // Phase 5: Aggregation & History Persistence
         var runData = AggregateBenchmarkData(bookPath, candidateModels, generatedScreenplays, deterministicResults, judgeEvaluations);
 
-        // Generate Markdown & JSON outputs
+        var historyRun = new HistoricalBenchmarkRun
+        {
+            BookSlug = bookSlug,
+            BookTitle = Path.GetFileNameWithoutExtension(bookPath),
+            BookPath = bookPath,
+            ModelScores = runData.Leaderboard,
+            JudgeMatrix = runData.JudgeMatrix,
+            SelfBiasNotes = runData.SelfBiasNotes,
+        };
+
+        BenchmarkHistoryStore.AppendRun(historyRun, historyFilePath);
+
         var reportMarkdown = BenchmarkReportGenerator.GenerateMarkdownReport(runData);
-        var reportFile = Path.Combine(outDir, "benchmark_report.md");
+        var reportFile = Path.Combine(outDir, bookSlug, "benchmark_report.md");
         await File.WriteAllTextAsync(reportFile, reportMarkdown);
 
-        var jsonFile = Path.Combine(outDir, "eval_data.json");
-        var jsonOptions = new JsonSerializerOptions { WriteIndented = true };
-        await File.WriteAllTextAsync(jsonFile, JsonSerializer.Serialize(runData, jsonOptions));
+        Console.WriteLine($"✅ Benchmark for '{bookSlug}' completed!");
+        Console.WriteLine($"   📄 Report: {reportFile}");
+    }
 
-        Console.WriteLine(reportMarkdown);
+    private static void PrintHistoricalLeaderboard(HistoricalStoreContainer historyStore)
+    {
+        Console.WriteLine("==========================================================================");
+        Console.WriteLine(" 🏆 ALL-TIME MULTI-BOOK COMPOSITE MODEL LEADERBOARD ");
+        Console.WriteLine("==========================================================================");
+        Console.WriteLine();
 
-        Console.WriteLine($"✅ Benchmark completed successfully! Report saved to:");
-        Console.WriteLine($"   📄 {reportFile}");
-        Console.WriteLine($"   📊 {jsonFile}");
+        var globalLeaderboard = BenchmarkHistoryStore.ComputeGlobalCompositeLeaderboard(historyStore);
+        if (globalLeaderboard.Count == 0)
+        {
+            Console.WriteLine("No benchmark runs recorded in history yet.");
+            return;
+        }
 
-        return 0;
+        Console.WriteLine(string.Format("{0,-6} | {1,-20} | {2,-15} | {3,-12} | {4,-12} | {5,-10}", "Rank", "Model ID", "Multi-Book Score", "C# Syntax", "LLM Peer", "Wins"));
+        Console.WriteLine(new string('-', 85));
+
+        for (int i = 0; i < globalLeaderboard.Count; i++)
+        {
+            var m = globalLeaderboard[i];
+            var rank = i switch { 0 => "🥇 1", 1 => "🥈 2", 2 => "🥉 3", _ => $"   {i + 1}" };
+            Console.WriteLine(string.Format("{0,-6} | {1,-20} | {2,-15:F1} | {3,-12:F1}% | {4,-12:F1}% | {5,-10}", rank, m.ModelId, m.MultiBookCompositeScore, m.AvgSyntaxScore, m.AvgQualitativeScore, m.FirstPlaceWins));
+        }
+        Console.WriteLine();
     }
 
     private static string LocateSampleBookFile()
@@ -227,7 +295,6 @@ public static class Program
         var found = candidates.FirstOrDefault(File.Exists);
         if (!string.IsNullOrWhiteSpace(found)) return found;
 
-        // Auto-create a standard sample story file in evals/sample_book.txt for convenience
         var sampleDir = "evals";
         Directory.CreateDirectory(sampleDir);
         var samplePath = Path.Combine(sampleDir, "sample_book.txt");
@@ -311,7 +378,7 @@ Uncle Nick turned, offering a small, reassuring nod. ""She always holds when the
             {
                 var authorId = payload.ForcedRanking[r];
                 var rank = r + 1;
-                var points = candidateModels.Count - r; // Borda count points
+                var points = candidateModels.Count - r;
 
                 if (BordaScores.ContainsKey(authorId))
                 {
@@ -329,12 +396,10 @@ Uncle Nick turned, offering a small, reassuring nod. ""She always holds when the
             }
         }
 
-        // Compute summaries per model
         foreach (var modelId in candidateModels)
         {
             var syntax = deterministicResults[modelId];
 
-            // Average qualitative ratings received across all judges
             var modelEvals = judgeEvaluations.Values
                 .SelectMany(p => p.Evaluations)
                 .Where(e => string.Equals(e.ScreenplayId, modelId, StringComparison.OrdinalIgnoreCase))
@@ -349,8 +414,6 @@ Uncle Nick turned, offering a small, reassuring nod. ""She always holds when the
             var avgQual = modelEvals.Count > 0 ? modelEvals.Average(e => e.OverallQualitativeScore) : 7.0;
 
             var avgRank = RankCounts[modelId] > 0 ? RankSums[modelId] / RankCounts[modelId] : candidateModels.Count / 2.0;
-
-            // Composite Score = 40% C# Syntax & Budget + 60% LLM Qualitative Ratings
             var composite = Math.Round((syntax.OverallSyntaxScore * 0.40) + (avgQual * 10.0 * 0.60), 1);
 
             runData.Leaderboard.Add(new ModelScoreSummary
@@ -368,22 +431,6 @@ Uncle Nick turned, offering a small, reassuring nod. ""She always holds when the
                 AvgSoundDesignMusic = Math.Round(avgMusic, 1),
                 AvgOverallQualitative = Math.Round(avgQual, 1),
             });
-
-            // Self-Bias detection
-            if (runData.JudgeMatrix.TryGetValue(modelId, out var ownRatings) && ownRatings.TryGetValue(modelId, out var selfRating))
-            {
-                var peerRatings = runData.JudgeMatrix.Where(kv => kv.Key != modelId && kv.Value.ContainsKey(modelId)).Select(kv => kv.Value[modelId]).ToList();
-                if (peerRatings.Count > 0)
-                {
-                    var peerAvg = peerRatings.Average();
-                    var diff = selfRating - peerAvg;
-                    if (Math.Abs(diff) >= 1.5)
-                    {
-                        var direction = diff > 0 ? "higher" : "lower";
-                        runData.SelfBiasNotes.Add($"Model `{modelId}` rated its own screenplay {direction} than peer consensus ({selfRating:F1} vs peer avg {peerAvg:F1}).");
-                    }
-                }
-            }
         }
 
         runData.Leaderboard = runData.Leaderboard.OrderByDescending(l => l.CompositeScore).ToList();
