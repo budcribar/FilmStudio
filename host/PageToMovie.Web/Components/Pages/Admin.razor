@@ -30,7 +30,9 @@
             @if (Session.IsAuthenticated)
             {
                 <span class="badge text-bg-secondary">@Session.UserId</span>
-                <a href="/api/admin/logs/export" target="_blank" class="btn btn-sm btn-outline-info" title="Download zip archive of all server logs, prompts, edit history, and system state">📥 Download Server Logs</a>
+                <button class="btn btn-sm btn-outline-info" @onclick="ExportLogsAsync" disabled="@(_archiveBusy && _archiveAction == "export_logs")" title="Download zip archive of all server logs, prompts, edit history, and system state">
+                    @(_archiveBusy && _archiveAction == "export_logs" ? "Exporting logs…" : "📥 Download Server Logs")
+                </button>
                 <a href="/admin/models-catalog" class="btn btn-sm btn-outline-primary" title="Manage model catalog entries and enablement toggles">🤖 Models Catalog</a>
                 <button class="btn btn-sm btn-outline-secondary" @onclick="RefreshAsync" disabled="@_busy">Refresh</button>
                 <button class="btn btn-sm btn-outline-danger" @onclick="LogoutAsync">Log out</button>
@@ -1100,6 +1102,45 @@
         try
         {
             var (resp, fileName) = await Api.ExportProjectZipAsync(_exportProjectId);
+            using (resp)
+            {
+                await using var stream = await resp.Content.ReadAsStreamAsync();
+                using var streamRef = new DotNetStreamReference(stream);
+                var result = await Js.InvokeAsync<JsonElement>(
+                    "PageToMovieExport.downloadStreamAsync",
+                    fileName,
+                    streamRef);
+                if (result.TryGetProperty("success", out var ok) && ok.GetBoolean())
+                    _archiveMsg = $"Downloaded {fileName}";
+                else
+                {
+                    var err = result.TryGetProperty("error", out var e) ? e.GetString() : "download failed";
+                    _archiveError = err;
+                    _archiveMsg = null;
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _archiveError = ex.Message;
+            _archiveMsg = null;
+        }
+        finally
+        {
+            _archiveBusy = false;
+            _archiveAction = null;
+        }
+    }
+
+    private async Task ExportLogsAsync()
+    {
+        _archiveBusy = true;
+        _archiveAction = "export_logs";
+        _archiveError = null;
+        _archiveMsg = "Building server log archive zip…";
+        try
+        {
+            var (resp, fileName) = await Api.ExportServerLogsZipAsync();
             using (resp)
             {
                 await using var stream = await resp.Content.ReadAsStreamAsync();

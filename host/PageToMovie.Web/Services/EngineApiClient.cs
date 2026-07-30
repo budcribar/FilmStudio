@@ -413,6 +413,29 @@ public sealed class EngineApiClient
         return (resp, fileName);
     }
 
+    /// <summary>
+    /// Admin server diagnostic logs zip. Returns open response stream + suggested filename.
+    /// Caller must dispose the response/stream.
+    /// </summary>
+    public async Task<(HttpResponseMessage Response, string FileName)> ExportServerLogsZipAsync(
+        CancellationToken ct = default)
+    {
+        SyncIdentityHeaders();
+        var req = new HttpRequestMessage(HttpMethod.Get, "/api/admin/logs/export");
+        var resp = await _http.SendAsync(req, HttpCompletionOption.ResponseHeadersRead, ct);
+        if (!resp.IsSuccessStatusCode)
+        {
+            var err = await resp.Content.ReadAsStringAsync(ct);
+            resp.Dispose();
+            throw new InvalidOperationException(TryError(err) ?? resp.ReasonPhrase ?? "Server logs export failed");
+        }
+
+        var fileName = resp.Content.Headers.ContentDisposition?.FileName?.Trim('"')
+                       ?? resp.Content.Headers.ContentDisposition?.FileNameStar?.Trim('"')
+                       ?? $"pagetomovie-server-logs-{DateTime.UtcNow:yyyyMMdd-HHmmss}.zip";
+        return (resp, fileName);
+    }
+
     /// <summary>Admin import project zip (multipart field name: file).</summary>
     public async Task<AdminProjectImportResultDto?> ImportProjectZipAsync(
         Stream zipStream,
