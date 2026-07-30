@@ -324,22 +324,46 @@ else if (_showWipPlayer && (!string.IsNullOrEmpty(_clientWipUrl) || _wipExists))
             <button type="button" class="btn btn-sm btn-outline-secondary" @onclick="HideWipPlayerAsync">Hide</button>
         </div>
         <div class="card-body py-2">
-            @if (!string.IsNullOrEmpty(_wipReason) && _wipStale && string.IsNullOrEmpty(_clientWipUrl))
+            @{ var wipNeedsRebuild = _wipStale && string.IsNullOrEmpty(_clientWipUrl); }
+            @if (wipNeedsRebuild && MediaFolder.IsSyncing)
             {
-                <p class="small text-warning mb-2">@_wipReason</p>
-            }
-            <video controls playsinline autoplay
-                   style="width:100%;max-height:70vh;background:#000;border-radius:0.35rem;"
-                   src="@(string.IsNullOrEmpty(_clientWipUrl) ? WipServerSrc() : _clientWipUrl)"
-                   @key="_wipVideoKey"
-                   onloadeddata="this.play().catch(function(){})">
-                Your browser does not support HTML5 video.
-            </video>
-            @if (string.IsNullOrEmpty(_clientWipUrl))
-            {
-                <div class="mt-2">
-                    <a href="@Engine.WipMovieUrl(_projectId)" target="_blank" rel="noopener" class="small text-muted">Open in new tab</a>
+                <div class="py-4 text-center text-white bg-dark rounded border border-secondary">
+                    <div class="spinner-border spinner-border-sm text-primary mb-2" role="status"></div>
+                    <div class="fw-semibold">Downloading media to rebuild the movie…</div>
+                    <div class="small text-muted mt-1">
+                        Downloading <code>@(MediaFolder.SyncCurrentFile ?? "media files")</code> (@MediaFolder.SyncCurrent of @MediaFolder.SyncTotal)
+                    </div>
+                    <div class="progress mx-auto mt-2" style="max-width: 280px; height: 6px;">
+                        <div class="progress-bar progress-bar-striped progress-bar-animated bg-primary" style="width: @(MediaFolder.SyncPercent)%"></div>
+                    </div>
                 </div>
+            }
+            else if (wipNeedsRebuild && !MediaFolder.IsConnected)
+            {
+                <div class="py-3 text-center text-muted">
+                    <p class="mb-2">@_wipReason — connect your local media folder to rebuild this movie from your synced clips.</p>
+                    <button type="button" class="btn btn-sm btn-outline-primary" @onclick="ConnectFolderForWipAsync">Connect folder</button>
+                </div>
+            }
+            else
+            {
+                @if (wipNeedsRebuild && !string.IsNullOrEmpty(_wipReason))
+                {
+                    <p class="small text-warning mb-2">@_wipReason — showing the last built copy, not current.</p>
+                }
+                <video controls playsinline autoplay="@(!wipNeedsRebuild)"
+                       style="width:100%;max-height:70vh;background:#000;border-radius:0.35rem;"
+                       src="@(string.IsNullOrEmpty(_clientWipUrl) ? WipServerSrc() : _clientWipUrl)"
+                       @key="_wipVideoKey"
+                       onloadeddata="this.play().catch(function(){})">
+                    Your browser does not support HTML5 video.
+                </video>
+                @if (string.IsNullOrEmpty(_clientWipUrl))
+                {
+                    <div class="mt-2">
+                        <a href="@Engine.WipMovieUrl(_projectId)" target="_blank" rel="noopener" class="small text-muted">Open in new tab</a>
+                    </div>
+                }
             }
         </div>
     </div>
@@ -1565,7 +1589,9 @@ else
             .ToList();
         if (sceneNums.Count == 0)
         {
-            _error = "No scene videos were found";
+            _error = MediaFolder.IsConnected
+                ? "No scene videos were found in your local media folder or on the server."
+                : "Connect your local media folder to rebuild this movie from your synced clips.";
             return;
         }
 
@@ -1618,6 +1644,16 @@ else
             _clientStitching = false;
             _clientStitchStatus = null;
         }
+    }
+
+    /// <summary>Connect a local media folder from the WIP player's "needs rebuild" prompt, then
+    /// immediately retry the rebuild — a single click instead of connect-then-hunt-for-play-again.</summary>
+    private async Task ConnectFolderForWipAsync()
+    {
+        await MediaFolder.EnsureHubHookAsync();
+        var connected = await MediaFolder.ConnectFolderAsync();
+        if (connected)
+            await PlayWipAsync();
     }
 
     private async Task PlaySceneAsync(int scene)
