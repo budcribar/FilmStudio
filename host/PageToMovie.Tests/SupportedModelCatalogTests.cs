@@ -10,6 +10,37 @@ public class SupportedModelCatalogTests
         SupportedModelCatalog.ReloadCatalog();
     }
 
+    [Theory]
+    [InlineData("""{"models":[{"id":"x","capability":"Chat"}]}""")]
+    [InlineData("""[{"id":"x","capability":"Chat"}]""")]
+    public void IsUsableCatalogJson_accepts_object_or_array_with_entries(string json)
+    {
+        Assert.True(SupportedModelCatalog.IsUsableCatalogJson(json));
+    }
+
+    [Theory]
+    [InlineData("{}")]
+    [InlineData("""{"models":[]}""")]
+    [InlineData("[]")]
+    [InlineData("""{"models":"not an array"}""")]
+    [InlineData("null")]
+    [InlineData("not json at all")]
+    [InlineData("")]
+    public void IsUsableCatalogJson_rejects_empty_or_structurally_invalid(string json)
+    {
+        Assert.False(SupportedModelCatalog.IsUsableCatalogJson(json));
+    }
+
+    [Fact]
+    public void SaveCatalogJson_throws_and_does_not_touch_disk_on_invalid_structure()
+    {
+        var before = SupportedModelCatalog.Entries.Count;
+        Assert.Throws<ArgumentException>(() => SupportedModelCatalog.SaveCatalogJson("""{"models":[]}"""));
+        // Reload from whatever's still on disk — must be exactly what was there before the failed save.
+        SupportedModelCatalog.ReloadCatalog();
+        Assert.Equal(before, SupportedModelCatalog.Entries.Count);
+    }
+
     [Fact]
     public void Video_default_is_grok_imagine_video()
     {

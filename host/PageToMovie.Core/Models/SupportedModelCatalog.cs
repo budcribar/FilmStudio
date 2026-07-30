@@ -167,8 +167,14 @@ public sealed class SupportedModelEntry
     /// <summary>Raw provider string from models_catalog.json (e.g. OpenAI, DeepSeek, Grok, Gemini).</summary>
     public string ProviderName { get; init; } = "";
 
-    /// <summary>Provider id for config / cost reports (<c>grok</c>, <c>gemini</c>, <c>anthropic</c>, <c>openai</c>).</summary>
-    public string ProviderId => !string.IsNullOrWhiteSpace(ProviderName)
+    /// <summary>Provider id for config / cost reports (<c>grok</c>, <c>gemini</c>, <c>anthropic</c>, <c>openai</c>).
+    /// Prefers <see cref="ProviderName"/> only when it doesn't match a known <see cref="ModelProviderFamily"/>
+    /// member (a genuinely custom/unrecognized provider, e.g. one hand-added via the catalog admin UI before a
+    /// matching enum value exists) — models_catalog.json's "provider" field is normally just the literal enum
+    /// name (e.g. "Xai", "Google"), which must still resolve to the friendly id below ("grok", "gemini") rather
+    /// than being echoed back verbatim.</summary>
+    public string ProviderId => !string.IsNullOrWhiteSpace(ProviderName) &&
+        !Enum.TryParse<ModelProviderFamily>(ProviderName, true, out _)
         ? ProviderName.ToLowerInvariant()
         : Provider switch
         {
@@ -202,295 +208,6 @@ public static class SupportedModelCatalog
     /// <summary>A different unofficial Suno reseller (formerly reached via the sunoapi.com redirect).</summary>
     public const string AiMusicApiBase = "https://api.aimusicapi.ai/api/v1";
     public const string AiMusicApiKeyEnv = "AIMUSICAPI_API_KEY";
-
-    private static readonly SupportedModelEntry[] BuiltInDefaults =
-    [
-        new()
-        {
-            Id = "grok-imagine-video",
-            DisplayName = "Grok Imagine Video",
-            Capability = ModelCapability.Video,
-            Provider = ModelProviderFamily.Xai,
-            ApiBase = XaiApiBase,
-            EndpointPath = "videos/generations",
-            RequiredEnvKeys = [XaiApiKeyEnv],
-            VideoCostPerSecondByResolution = new Dictionary<string, double> { ["480p"] = 0.05, ["720p"] = 0.07, ["1080p"] = 0.25 },
-            SupportsVideoContinue = true,
-            SupportsReferenceImages = true,
-            MinClipDurationSeconds = 3,
-            MaxClipDurationSeconds = 10,
-            AbsMaxClipDurationSeconds = 12,
-            MaxPromptLength = 4096,
-            Notes = "Also uses videos/extensions for clip continue. Extension portion clamps to 10s (GrokVideoClient).",
-        },
-        new()
-        {
-            Id = "hunyuan-video",
-            DisplayName = "HunyuanVideo (Fal.ai)",
-            Capability = ModelCapability.Video,
-            Provider = ModelProviderFamily.Fal,
-            ApiBase = FalApiBase,
-            EndpointPath = "fal-ai/hunyuan-video",
-            RequiredEnvKeys = [FalApiKeyEnv],
-            VideoCostPerSecondByResolution = new Dictionary<string, double> { ["720p"] = 0.005, ["1080p"] = 0.005 },
-            SupportsVideoContinue = false,
-            SupportsReferenceImages = true,
-            MinClipDurationSeconds = 3,
-            MaxClipDurationSeconds = 10,
-            AbsMaxClipDurationSeconds = 12,
-            MaxPromptLength = 1000,
-            MaxReferenceImageDimension = 1280,
-            Notes = "Open-weights 13B DiT video generation model hosted on Fal.ai serverless GPUs (~$0.025 per 5s clip). Hard 1000-character prompt limit enforced by API.",
-        },
-        new()
-        {
-            Id = "veo-3.1",
-            DisplayName = "Google Veo 3.1",
-            Capability = ModelCapability.Video,
-            Provider = ModelProviderFamily.Google,
-            ApiBase = GoogleApiBase,
-            EndpointPath = "models/veo-3.1:predictLongRunning",
-            RequiredEnvKeys = [GoogleApiKeyEnv],
-            VideoCostPerSecondByResolution = new Dictionary<string, double> { ["720p"] = 0.40, ["1080p"] = 0.40 },
-            SupportsVideoContinue = false,
-            SupportsReferenceImages = false,
-            MinClipDurationSeconds = 3,
-            MaxClipDurationSeconds = 10,
-            AbsMaxClipDurationSeconds = 12,
-            MaxPromptLength = 2048,
-            MaxReferenceImageDimension = 1280,
-            Notes = "Wired via GeminiVideoClient (text/image-to-video only). No continuation, so clips in a scene are not forced sequential the way Grok's are. Duration limits not yet confirmed against Veo docs — using today's known-safe defaults.",
-        },
-        new()
-        {
-            Id = "grok-imagine-image-quality",
-            DisplayName = "Grok Imagine Image (quality)",
-            Capability = ModelCapability.Image,
-            Provider = ModelProviderFamily.Xai,
-            ApiBase = XaiApiBase,
-            EndpointPath = "images/generations",
-            RequiredEnvKeys = [XaiApiKeyEnv],
-            ImageCostPerImage = 0.05,
-        },
-        new()
-        {
-            Id = "grok-imagine-image",
-            DisplayName = "Grok Imagine Image",
-            Capability = ModelCapability.Image,
-            Provider = ModelProviderFamily.Xai,
-            ApiBase = XaiApiBase,
-            EndpointPath = "images/generations",
-            RequiredEnvKeys = [XaiApiKeyEnv],
-            ImageCostPerImage = 0.02,
-        },
-        new()
-        {
-            Id = "gemini-2.5-pro-image",
-            DisplayName = "Gemini 2.5 Pro Image",
-            Capability = ModelCapability.Image,
-            Provider = ModelProviderFamily.Google,
-            ApiBase = GoogleApiBase,
-            EndpointPath = "models/gemini-2.5-pro:generateContent",
-            RequiredEnvKeys = [GoogleApiKeyEnv],
-            ImageCostPerImage = 0.134,
-            Notes = "Wired via GeminiImageClient. Supports up to 14 reference images.",
-        },
-        new()
-        {
-            Id = "fal-ai/flux/dev",
-            DisplayName = "Fal.ai Flux.1 Dev",
-            Capability = ModelCapability.Image,
-            Provider = ModelProviderFamily.Fal,
-            ApiBase = FalApiBase,
-            EndpointPath = "fal-ai/flux/dev",
-            RequiredEnvKeys = [FalApiKeyEnv],
-            ImageCostPerImage = 0.025,
-            Notes = "Open-source Flux.1 Dev model via Fal.ai serverless GPU (~$0.025/image).",
-        },
-        new()
-        {
-            Id = "fal-ai/flux/schnell",
-            DisplayName = "Fal.ai Flux.1 Schnell (Fast)",
-            Capability = ModelCapability.Image,
-            Provider = ModelProviderFamily.Fal,
-            ApiBase = FalApiBase,
-            EndpointPath = "fal-ai/flux/schnell",
-            RequiredEnvKeys = [FalApiKeyEnv],
-            ImageCostPerImage = 0.003,
-            Notes = "Ultra-fast open-source Flux.1 Schnell model via Fal.ai (~$0.003/image).",
-        },
-        new()
-        {
-            Id = "grok-4.5",
-            DisplayName = "Grok 4.5",
-            Capability = ModelCapability.Chat,
-            Provider = ModelProviderFamily.Xai,
-            ApiBase = XaiApiBase,
-            EndpointPath = "chat/completions",
-            RequiredEnvKeys = [XaiApiKeyEnv],
-            MaxInputTokens = 500_000,
-            InputCostPerMillionTokens = 2.00,
-            OutputCostPerMillionTokens = 6.00,
-            Notes = "Stage planning, cast scrub, screenplay helpers.",
-        },
-        new()
-        {
-            Id = "grok-4",
-            DisplayName = "Grok 4",
-            Capability = ModelCapability.Chat,
-            Provider = ModelProviderFamily.Xai,
-            ApiBase = XaiApiBase,
-            EndpointPath = "chat/completions",
-            RequiredEnvKeys = [XaiApiKeyEnv],
-            MaxInputTokens = 256_000,
-            InputCostPerMillionTokens = 3.00,
-            OutputCostPerMillionTokens = 15.00,
-        },
-        new()
-        {
-            Id = "claude-sonnet-5",
-            DisplayName = "Claude Sonnet 5",
-            Capability = ModelCapability.Chat,
-            Provider = ModelProviderFamily.Anthropic,
-            ApiBase = AnthropicApiBase,
-            EndpointPath = "messages",
-            RequiredEnvKeys = [AnthropicApiKeyEnv],
-            MaxInputTokens = 1_000_000,
-            InputCostPerMillionTokens = 2.00,
-            OutputCostPerMillionTokens = 10.00,
-            Notes = "Wired via AnthropicChatClient.",
-        },
-        new()
-        {
-            Id = "gemini-2.5-pro",
-            DisplayName = "Gemini 2.5 Pro",
-            Capability = ModelCapability.Chat,
-            Provider = ModelProviderFamily.Google,
-            ApiBase = GoogleApiBase,
-            EndpointPath = "models/gemini-2.5-pro:generateContent",
-            RequiredEnvKeys = [GoogleApiKeyEnv],
-            MaxInputTokens = 1_000_000,
-            InputCostPerMillionTokens = 2.00,
-            OutputCostPerMillionTokens = 12.00,
-            SupportsVideoReview = true,
-            Notes = "Wired via GeminiChatClient. Supports Native Multimodal MP4 Video Review.",
-        },
-        new()
-        {
-            Id = "grok-4.5",
-            DisplayName = "Grok 4.5 (vision)",
-            Capability = ModelCapability.Vision,
-            Provider = ModelProviderFamily.Xai,
-            ApiBase = XaiApiBase,
-            EndpointPath = "chat/completions",
-            RequiredEnvKeys = [XaiApiKeyEnv],
-            MaxInputTokens = 500_000,
-            InputCostPerMillionTokens = 2.00,
-            OutputCostPerMillionTokens = 6.00,
-            Notes = "GrokVisionClient: book-page OCR, cast-on-image classify, and multi-image frame review.",
-        },
-        new()
-        {
-            Id = "claude-sonnet-5",
-            DisplayName = "Claude Sonnet 5 (vision)",
-            Capability = ModelCapability.Vision,
-            Provider = ModelProviderFamily.Anthropic,
-            ApiBase = AnthropicApiBase,
-            EndpointPath = "messages",
-            RequiredEnvKeys = [AnthropicApiKeyEnv],
-            MaxInputTokens = 1_000_000,
-            InputCostPerMillionTokens = 2.00,
-            OutputCostPerMillionTokens = 10.00,
-            Notes = "Wired for clip/frame review via MultiProviderVisionClient (OCR/cast-classify stay Grok-only).",
-        },
-        new()
-        {
-            Id = "gemini-2.5-pro",
-            DisplayName = "Gemini 2.5 Pro (vision)",
-            Capability = ModelCapability.Vision,
-            Provider = ModelProviderFamily.Google,
-            ApiBase = GoogleApiBase,
-            EndpointPath = "models/gemini-2.5-pro:generateContent",
-            RequiredEnvKeys = [GoogleApiKeyEnv],
-            MaxInputTokens = 1_000_000,
-            InputCostPerMillionTokens = 2.00,
-            OutputCostPerMillionTokens = 12.00,
-            SupportsVideoReview = true,
-            Notes = "Wired for clip/frame review (CompleteWithImagesAsync) via MultiProviderVisionClient (OCR/cast-classify stay Grok-only).",
-        },
-        new()
-        {
-            Id = "fal-ai/musicgen",
-            DisplayName = "MusicGen (Fal.ai)",
-            Capability = ModelCapability.Audio,
-            Provider = ModelProviderFamily.Fal,
-            ApiBase = FalApiBase,
-            EndpointPath = "fal-ai/musicgen",
-            RequiredEnvKeys = [FalApiKeyEnv],
-            MaxAudioDurationSeconds = 30,
-            Notes = "Meta MusicGen model hosted on Fal.ai. Pure instrumental background scoring with zero vocal hallucination.",
-        },
-        new()
-        {
-            Id = "fal-ai/udio",
-            DisplayName = "Udio (Fal.ai)",
-            Capability = ModelCapability.Audio,
-            Provider = ModelProviderFamily.Fal,
-            ApiBase = FalApiBase,
-            EndpointPath = "fal-ai/udio",
-            RequiredEnvKeys = [FalApiKeyEnv],
-            MaxAudioDurationSeconds = 60,
-            Notes = "Udio model hosted on Fal.ai. High-fidelity 44.1kHz studio music scoring with rich dynamic range.",
-        },
-        new()
-        {
-            Id = "fal-ai/minimax/music",
-            DisplayName = "MiniMax Music (Fal.ai)",
-            Capability = ModelCapability.Audio,
-            Provider = ModelProviderFamily.Fal,
-            ApiBase = FalApiBase,
-            EndpointPath = "fal-ai/minimax/music",
-            RequiredEnvKeys = [FalApiKeyEnv],
-            MaxAudioDurationSeconds = 60,
-            Notes = "MiniMax Music model hosted on Fal.ai for cinematic themes and dynamic background scores.",
-        },
-        new()
-        {
-            Id = "fal-ai/stable-audio-2.0",
-            DisplayName = "Stable Audio 2.0 (Fal.ai)",
-            Capability = ModelCapability.Audio,
-            Provider = ModelProviderFamily.Fal,
-            ApiBase = FalApiBase,
-            EndpointPath = "fal-ai/stable-audio-2.0",
-            RequiredEnvKeys = [FalApiKeyEnv],
-            MaxAudioDurationSeconds = 180,
-            Notes = "Stability AI Stable Audio 2.0 hosted on Fal.ai with improved stereo width and multi-minute structural coherence.",
-        },
-        new()
-        {
-            Id = "suno-v5-5",
-            DisplayName = "Suno v5.5 (sunoapi.org)",
-            Capability = ModelCapability.Audio,
-            Provider = ModelProviderFamily.Suno,
-            ApiBase = SunoApiBase,
-            EndpointPath = "generate",
-            RequiredEnvKeys = [SunoApiKeyEnv],
-            MaxAudioDurationSeconds = 360,
-            Notes = "Unofficial third-party Suno reseller (docs.sunoapi.org). Documented duration param is 10-360s on model V5_5 custom mode — the only audio provider here with real duration control, useful for longer scenes without segmenting.",
-        },
-        new()
-        {
-            Id = "aimusicapi-suno",
-            DisplayName = "Suno (aimusicapi.ai)",
-            Capability = ModelCapability.Audio,
-            Provider = ModelProviderFamily.AiMusicApi,
-            ApiBase = AiMusicApiBase,
-            EndpointPath = "suno/create",
-            RequiredEnvKeys = [AiMusicApiKeyEnv],
-            MaxAudioDurationSeconds = null,
-            Notes = "A different unofficial Suno reseller (docs.aimusicapi.ai). No documented duration control — generates a full track at whatever length Suno produces (typically ~2-4 min); the client-side mix step trims to scene length.",
-        },
-    ];
 
     private static List<SupportedModelEntry>? _loadedEntries;
 
@@ -540,27 +257,64 @@ public static class SupportedModelCatalog
         ["video_review"] = new() { "gemini-2.5-pro", "grok-4.5" },
     };
 
-    /// <summary>All catalog rows (loaded dynamically from models_catalog.json or built-in defaults).</summary>
+    /// <summary>All catalog rows, loaded from models_catalog.json (shipped copy or /data override —
+    /// see GetCandidateCatalogPaths). Throws via EnsureLoaded if no usable catalog file exists.</summary>
     public static IReadOnlyList<SupportedModelEntry> Entries
     {
         get
         {
             EnsureLoaded();
-            return _loadedEntries ?? (IReadOnlyList<SupportedModelEntry>)BuiltInDefaults;
+            return _loadedEntries!;
         }
+    }
+
+    /// <summary>
+    /// Where a catalog JSON file could live, checked in priority order — a persistent-volume
+    /// runtime override (Railway's <c>/data</c> mount) first, then the copy shipped alongside the
+    /// app's own binaries (see PageToMovie.Core.csproj's CopyToOutputDirectory item), then a couple
+    /// of dev-time working-directory fallbacks. Shared by <see cref="GetCatalogFilePath"/> and
+    /// <see cref="EnsureLoaded"/> so there's exactly one list to keep correct, not two.
+    /// </summary>
+    private static IEnumerable<string> GetCandidateCatalogPaths(string? customPath = null)
+    {
+        if (!string.IsNullOrWhiteSpace(customPath))
+            yield return customPath;
+        yield return "/data/models_catalog.json";
+        yield return Path.Combine(AppContext.BaseDirectory, "config", "models_catalog.json");
+        yield return Path.Combine(AppContext.BaseDirectory, "models_catalog.json");
+        yield return Path.Combine(Directory.GetCurrentDirectory(), "config", "models_catalog.json");
+        yield return Path.Combine(Directory.GetCurrentDirectory(), "host", "PageToMovie.Core", "config", "models_catalog.json");
     }
 
     public static string GetCatalogFilePath()
     {
-        var candidates = new[]
+        var candidates = GetCandidateCatalogPaths().ToList();
+        return candidates.FirstOrDefault(File.Exists) ?? candidates[^1];
+    }
+
+    /// <summary>
+    /// True when <paramref name="rawJson"/> is structurally usable by <see cref="EnsureLoaded"/> —
+    /// either an object with a non-empty "models" array, or a bare non-empty array of model entries.
+    /// Pulled out of <see cref="SaveCatalogJson"/> so it's testable without touching the filesystem.
+    /// </summary>
+    public static bool IsUsableCatalogJson(string rawJson)
+    {
+        try
         {
-            "/data/models_catalog.json",
-            Path.Combine(AppContext.BaseDirectory, "config", "models_catalog.json"),
-            Path.Combine(AppContext.BaseDirectory, "models_catalog.json"),
-            Path.Combine(Directory.GetCurrentDirectory(), "config", "models_catalog.json"),
-            Path.Combine(Directory.GetCurrentDirectory(), "host", "PageToMovie.Core", "config", "models_catalog.json"),
-        };
-        return candidates.FirstOrDefault(File.Exists) ?? candidates.Last();
+            using var doc = System.Text.Json.JsonDocument.Parse(rawJson);
+            var root = doc.RootElement;
+            return root.ValueKind switch
+            {
+                System.Text.Json.JsonValueKind.Object => root.TryGetProperty("models", out var modelsEl) &&
+                    modelsEl.ValueKind == System.Text.Json.JsonValueKind.Array && modelsEl.GetArrayLength() > 0,
+                System.Text.Json.JsonValueKind.Array => root.GetArrayLength() > 0,
+                _ => false,
+            };
+        }
+        catch (System.Text.Json.JsonException)
+        {
+            return false;
+        }
     }
 
     public static void SaveCatalogJson(string rawJson)
@@ -568,7 +322,19 @@ public static class SupportedModelCatalog
         if (string.IsNullOrWhiteSpace(rawJson))
             throw new ArgumentException("Catalog JSON payload cannot be empty", nameof(rawJson));
 
-        using var doc = System.Text.Json.JsonDocument.Parse(rawJson);
+        // Reject anything EnsureLoaded wouldn't actually accept — without this, a structurally
+        // invalid save (e.g. a top-level object with no "models" array) still overwrote the
+        // previous good catalog file, and the next reload silently fell through every candidate
+        // path to BuiltInDefaults with no indication the save had any effect. Better to leave the
+        // existing catalog completely untouched and fail loudly than to lose it silently.
+        if (!IsUsableCatalogJson(rawJson))
+        {
+            throw new ArgumentException(
+                "Catalog JSON must be either an object with a non-empty \"models\" array, or a " +
+                "non-empty array of model entries. Nothing was saved — the existing catalog is unchanged.",
+                nameof(rawJson));
+        }
+
         var targetPath = GetCatalogFilePath();
 
         var dir = Path.GetDirectoryName(targetPath);
@@ -590,15 +356,7 @@ public static class SupportedModelCatalog
     {
         if (_loadedEntries is not null && _loadedCapabilities is not null) return;
 
-        var candidates = new List<string>();
-        if (!string.IsNullOrWhiteSpace(customPath))
-            candidates.Add(customPath);
-
-        candidates.Add("/data/models_catalog.json");
-        candidates.Add(Path.Combine(AppContext.BaseDirectory, "config", "models_catalog.json"));
-        candidates.Add(Path.Combine(AppContext.BaseDirectory, "models_catalog.json"));
-        candidates.Add(Path.Combine(Directory.GetCurrentDirectory(), "config", "models_catalog.json"));
-        candidates.Add(Path.Combine(Directory.GetCurrentDirectory(), "host", "PageToMovie.Core", "config", "models_catalog.json"));
+        var candidates = GetCandidateCatalogPaths(customPath).ToList();
 
         foreach (var path in candidates.Where(p => !string.IsNullOrWhiteSpace(p) && File.Exists(p)))
         {
@@ -651,12 +409,20 @@ public static class SupportedModelCatalog
             }
             catch
             {
-                // Ignore parse failures and try next candidate or fallback
+                // Ignore parse failures and try the next candidate.
             }
         }
 
-        _loadedEntries = BuiltInDefaults.ToList();
-        _loadedCapabilities = DefaultCapabilityDefinitions;
+        // No hardcoded fallback list here on purpose — a second, hand-maintained copy of the
+        // catalog is worse than failing loudly: it silently drifts from models_catalog.json (it
+        // already had at least once) and, if it were ever actually hit, would mean production is
+        // quietly running on a stale/wrong model list instead of surfacing the real problem, which
+        // is that the shipped catalog file (see PageToMovie.Core.csproj) or a /data override is
+        // missing or unparseable. _loadedEntries stays null, so this throws again on every access
+        // until fixed — nothing gets cached as "working" when it isn't.
+        throw new InvalidOperationException(
+            "No usable models catalog found. Checked: " + string.Join(", ", candidates) +
+            ". Expected an object with a non-empty \"models\" array, or a non-empty array of model entries.");
     }
 
     public static IReadOnlyList<SupportedModelEntry> ForCapability(

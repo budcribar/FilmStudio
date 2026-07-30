@@ -6,4 +6,17 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <!-- SupportedModelCatalog.EnsureLoaded resolves this next to the app's own binaries
+         (AppContext.BaseDirectory/config/models_catalog.json) as the always-present shipped
+         default, below /data/models_catalog.json (persistent-volume runtime override) in
+         priority. Without this, no build/publish/test output ever contains a copy of the file
+         at any of the candidate paths — the "shipped defaults" story silently depended on a
+         hardcoded C# fallback list instead of the JSON file it claims to be sourced from. -->
+    <None Include="config\models_catalog.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </None>
+  </ItemGroup>
+
 </Project>

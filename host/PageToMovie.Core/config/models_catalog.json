@@ -116,7 +116,7 @@
       "endpointPath": "fal-ai/hunyuan-video",
       "requiredEnvKeys": ["FAL_API_KEY", "FAL_KEY"],
       "enabled": false,
-      "supportsVideoContinue": true,
+      "supportsVideoContinue": false,
       "supportsReferenceImages": true,
       "supportsVideoReview": false,
       "videoCostPerSecondByResolution": {
