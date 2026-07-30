@@ -3643,6 +3643,7 @@ public sealed class ProjectMediaSyncFile
     public string RelativePath { get; set; } = "";
     public string FileName { get; set; } = "";
     public long SizeBytes { get; set; }
+    public string? Sha256 { get; set; }
     public bool IsMp4 { get; set; }
     public string? StreamUrl { get; set; }
 }

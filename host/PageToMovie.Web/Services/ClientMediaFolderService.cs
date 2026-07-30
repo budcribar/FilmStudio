@@ -503,6 +503,22 @@ public sealed class ClientMediaFolderService
         }
     }
 
+    /// <summary>Compute SHA-256 content hash of a local file in the media folder.</summary>
+    public async Task<(bool Found, string? Sha256, long SizeBytes)> Sha256LocalFileAsync(string projectId, string relativePath)
+    {
+        if (!IsConnected) return (false, null, 0);
+        try
+        {
+            var clientPath = $"{projectId}/{relativePath}";
+            var r = await _js.InvokeAsync<JsStatResult>("PageToMovieMedia.sha256LocalFileAsync", clientPath);
+            return r is { Success: true } ? (true, r.Sha256, r.SizeBytes) : (false, null, 0);
+        }
+        catch
+        {
+            return (false, null, 0);
+        }
+    }
+
     /// <summary>
     /// The generalized "is my local copy of this file still current" check every media-playback
     /// call site should use instead of trusting whatever happens to be at that path — a local
@@ -660,7 +676,7 @@ public sealed class ClientMediaFolderService
                 return 0;
             }
 
-            // Smart Pre-Check: Filter out files that already exist locally with matching size
+            // Smart Double-Lock Pre-Check: Filter out files that already exist locally with matching size AND content hash
             var outOfDateFiles = new List<ProjectMediaSyncFile>();
             foreach (var file in syncList.Files)
             {
@@ -668,6 +684,15 @@ public sealed class ClientMediaFolderService
                 if (!found || file.SizeBytes <= 0 || localSize != file.SizeBytes)
                 {
                     outOfDateFiles.Add(file);
+                }
+                else if (!string.IsNullOrWhiteSpace(file.Sha256))
+                {
+                    // Size matched! Double-check SHA-256 hash to catch byte-level content changes
+                    var (hasSha, localSha, _) = await Sha256LocalFileAsync(projectId, file.RelativePath);
+                    if (!hasSha || !string.Equals(localSha, file.Sha256, StringComparison.OrdinalIgnoreCase))
+                    {
+                        outOfDateFiles.Add(file);
+                    }
                 }
             }
 
@@ -856,6 +881,7 @@ public sealed class ClientMediaFolderService
     {
         public bool Success { get; set; }
         public long SizeBytes { get; set; }
+        public string? Sha256 { get; set; }
         public long LastModifiedMs { get; set; }
         public string? Error { get; set; }
     }

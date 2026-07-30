@@ -381,6 +381,22 @@ window.PageToMovieMedia = {
         }
     },
 
+    sha256LocalFileAsync: async function (relativePath) {
+        if (!this._root) return { success: false, error: "Media folder not connected" };
+        try {
+            const fh = await this._resolveFileHandleAsync(relativePath);
+            if (!fh) return { success: false, error: "Not found in media folder" };
+            const file = await fh.getFile();
+            if (!file || file.size < 1024)
+                return { success: false, error: "File missing or empty" };
+            const buf = await file.arrayBuffer();
+            const sha = await this._sha256Hex(buf);
+            return { success: true, sha256: sha, sizeBytes: file.size };
+        } catch (err) {
+            return { success: false, error: err.message || "Not found in media folder" };
+        }
+    },
+
     /**
      * List archived previous versions of one clip (newest first), written by
      * _archiveClipHistoryAsync. Each entry's relativePath already includes dirPrefix and can be

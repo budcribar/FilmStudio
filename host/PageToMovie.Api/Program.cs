@@ -5127,6 +5127,15 @@ app.MapGet("/api/projects/{id}/media/sync", async (
                 var fi = new FileInfo(file);
                 var isMp4 = file.EndsWith(".mp4", StringComparison.OrdinalIgnoreCase);
 
+                string? sha256 = null;
+                try
+                {
+                    using var fs = File.OpenRead(file);
+                    var hashBytes = System.Security.Cryptography.SHA256.HashData(fs);
+                    sha256 = Convert.ToHexString(hashBytes).ToLowerInvariant();
+                }
+                catch { /* best-effort sha256 */ }
+
                 var ticketToken = tickets.Issue($"{id}:{relPath}", TimeSpan.FromHours(2));
                 var streamUrl = $"/api/projects/{Uri.EscapeDataString(id)}/media/file?path={Uri.EscapeDataString(relPath)}&ticket={ticketToken}";
 
@@ -5135,6 +5144,7 @@ app.MapGet("/api/projects/{id}/media/sync", async (
                     relativePath = relPath,
                     fileName = Path.GetFileName(file),
                     sizeBytes = fi.Length,
+                    sha256,
                     isMp4,
                     streamUrl,
                 });
