@@ -54,6 +54,10 @@ When debugging or implementing against a sample project (e.g. Buster / Buster2 /
    - All regular expressions, magic strings, file path patterns, and configuration keys must be defined in **exactly one location** (e.g. `ClipFileNaming`, `SupportedModelCatalog`, constants classes).
    - **Do not** duplicate code logic, helper methods, UI components, regexes, model defaults, or path format strings across multiple files.
    - Prefer shared utilities, general methods, reusable Blazor/C# components, and centralized templates so that any behavior is defined and maintained in only one place.
+9. **Strict Operator Control for Paid AI Endpoint Tests.**
+   - Coding agents must **never** run test suites, scripts, or benchmarks that hit live paid AI model endpoints (Grok, Gemini, Veo, Claude) under automated agent control.
+   - All tests that make live network calls to AI model APIs must be placed in `PageToMovie.Tests.LiveApi` and decorated with `[LiveApiFact]` / `[LiveApiTheory]` so they are excluded from default `dotnet test` runs.
+   - Live API tests run **only** under explicit human operator command with `PAGETOMOVIE_LIVE_API_TESTS=1`.
 
 Buster (and other fixtures) are **eval / demo projects**, not product requirements.
 
@@ -237,4 +241,4 @@ When debugging runtime behavior on the live Railway server across coding agent s
 
 ---
 
-*Last updated: 2026-07-29 — product north star; auto-run long-term; general solutions; UI copy principles; ephemeral migration cleanup; server diagnostics; platform architecture & pipeline integrity rules; client-side media ownership.*
+*Last updated: 2026-07-29 — product north star; auto-run long-term; general solutions; UI copy principles; ephemeral migration cleanup; server diagnostics; platform architecture & pipeline integrity rules; client-side media ownership; strict operator control for paid AI tests.*
