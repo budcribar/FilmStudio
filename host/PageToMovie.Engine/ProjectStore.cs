@@ -381,6 +381,7 @@ public sealed class ProjectStore
                         Mp4FileName = fileName,
                         Sha256 = reg.Sha256,
                         ClientOnly = true,
+                        RelativePath = reg.RelativePath,
                     });
                     knownFileNames.Add(fileName);
                 }
