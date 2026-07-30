@@ -1299,6 +1299,36 @@
                             var msg = string.IsNullOrWhiteSpace(final?.Error) ? (final?.Message ?? "Unknown error") : final!.Error!;
                             failureMessages.Add(msg);
                         }
+                        else
+                        {
+                            // Generation succeeding server-side says nothing about whether the local
+                            // save actually landed — that's a separate, unawaited SignalR-triggered
+                            // step (SaveJobMediaAsync). Confirm the file is really on disk before this
+                            // loop fires the next scene's paid generation request; a few seconds is
+                            // normally plenty since the save (fetch + hash + write) starts the moment
+                            // the "done" snapshot's SignalR frame reaches this tab.
+                            _archiveMsg = $"Confirming local save for Scene S{sc.SceneNumber:D2} ({_synthesizeCurrent}/{_synthesizeTotal})…";
+                            StateHasChanged();
+                            var confirmed = false;
+                            for (var attempt = 0; attempt < 10; attempt++)
+                            {
+                                if ((await MediaFolder.StatLocalFileAsync(audioPath)).Found)
+                                {
+                                    confirmed = true;
+                                    break;
+                                }
+                                await Task.Delay(1000);
+                            }
+                            if (!confirmed)
+                            {
+                                failedCount++;
+                                failureMessages.Add(
+                                    $"Generated but never saved locally for Scene S{sc.SceneNumber:D2} — " +
+                                    (MediaFolder.IsConnected
+                                        ? $"check media folder connection ({MediaFolder.LastStatus})"
+                                        : "media folder disconnected"));
+                            }
+                        }
                     }
                     catch (TimeoutException)
                     {
