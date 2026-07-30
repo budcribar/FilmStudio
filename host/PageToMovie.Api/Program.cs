@@ -1341,16 +1341,29 @@ app.MapPost("/api/system/open-editor", (OpenEditorRequest body, ProjectStore sto
         {
             targetPath = targetPath.Replace('/', '\\');
 
-            if (string.Equals(editorName, "ClipChamp", StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(editorName, "ClipChamp", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(editorName, "Clipchamp", StringComparison.OrdinalIgnoreCase))
             {
                 try
                 {
+                    // Launch Microsoft Clipchamp via registered Windows protocol ms-clipchamp:
                     System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
                     {
-                        FileName = targetPath,
+                        FileName = "ms-clipchamp:",
                         UseShellExecute = true
                     });
-                    return Results.Ok(new OpenEditorResponse { Ok = true, Opened = targetPath, Editor = "ClipChamp", VideoUrl = relativeVideoUrl });
+
+                    // Reveal/select the target video file in Explorer so user can easily drag into Clipchamp
+                    if (File.Exists(targetPath))
+                    {
+                        try
+                        {
+                            System.Diagnostics.Process.Start("explorer.exe", $"/select,\"{targetPath}\"");
+                        }
+                        catch { /* best-effort explorer reveal */ }
+                    }
+
+                    return Results.Ok(new OpenEditorResponse { Ok = true, Opened = targetPath, Editor = "Clipchamp", VideoUrl = relativeVideoUrl });
                 }
                 catch { /* fallback to default */ }
             }

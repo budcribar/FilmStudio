@@ -1416,9 +1416,22 @@ else
         try
         {
             var res = await Engine.OpenInExternalEditorAsync(_projectId, sceneNumber: null, clipNumber: null, _preferredVideoEditor);
+            
+            bool isClipchamp = string.Equals(_preferredVideoEditor, "ClipChamp", StringComparison.OrdinalIgnoreCase) ||
+                               string.Equals(_preferredVideoEditor, "Clipchamp", StringComparison.OrdinalIgnoreCase);
+
+            if (isClipchamp)
+            {
+                try
+                {
+                    await JS.InvokeVoidAsync("eval", "try { window.location.href = 'ms-clipchamp:'; } catch(_) {}");
+                }
+                catch { /* best-effort client protocol trigger */ }
+            }
+
             if (res.Ok)
             {
-                _message = $"🎬 Opened full cut in {res.Editor ?? _preferredVideoEditor}.";
+                _message = $"🎬 Opened full cut in {res.Editor ?? "Clipchamp"}.";
             }
             else
             {
@@ -1429,7 +1442,7 @@ else
                 {
                     var cleanPid = System.Text.RegularExpressions.Regex.Replace(_projectId, @"[^\w\.-]", "_");
                     var fileName = $"{cleanPid}_full.mp4";
-                    _message = $"🎬 Downloaded movie to your PC — open {fileName} in {res.Editor ?? _preferredVideoEditor}." +
+                    _message = $"🎬 Downloaded movie to your PC — opening in {res.Editor ?? _preferredVideoEditor}." +
                         (_lastExportMissingMusic ? " (No local media folder connected — background music not included.)" : "");
                     await JS.InvokeVoidAsync("eval", $"const a=document.createElement('a');a.href='{movieUrl}';a.download='{fileName}';document.body.appendChild(a);a.click();document.body.removeChild(a);");
                 }
