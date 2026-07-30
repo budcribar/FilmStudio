@@ -315,6 +315,14 @@ public static class HtmlDashboardGenerator
       });
     }
 
+    function formatTitle(slug) {
+      if (!slug) return '';
+      return slug
+        .replace(/_/g, ' ')
+        .replace(/-/g, ' - ')
+        .replace(/\b\w/g, c => c.toUpperCase());
+    }
+
     function initBookSelects() {
       const select = document.getElementById('book-select');
       const heatmapSelect = document.getElementById('heatmap-book-select');
@@ -327,22 +335,16 @@ public static class HtmlDashboardGenerator
       const slugs = [...new Set(runs.map(r => r.bookSlug || r.BookSlug))].filter(Boolean);
 
       slugs.forEach(slug => {
-        const matching = runs.filter(r => (r.bookSlug || r.BookSlug) === slug);
-        const liveCount = matching.filter(r => !r.isMockRun && !r.IsMockRun).length;
-        const mockCount = matching.filter(r => r.isMockRun || r.IsMockRun).length;
-
-        const statusLabel = liveCount > 0 
-          ? ` (✅ ${liveCount} Live Benchmark Run${liveCount > 1 ? 's' : ''})`
-          : ` (⚠️ ${mockCount} Mock Run${mockCount > 1 ? 's' : ''})`;
+        const title = formatTitle(slug);
 
         const opt1 = document.createElement('option');
         opt1.value = slug;
-        opt1.textContent = slug + statusLabel;
+        opt1.textContent = title;
         select.appendChild(opt1);
 
         const opt2 = document.createElement('option');
         opt2.value = slug;
-        opt2.textContent = slug + statusLabel;
+        opt2.textContent = title;
         heatmapSelect.appendChild(opt2);
       });
 
@@ -425,7 +427,7 @@ public static class HtmlDashboardGenerator
           const val = ratings[m] !== undefined ? ratings[m] : ratings[m.toLowerCase()];
           let label = 'N/A';
           if (val !== undefined) {
-            label = val < 0 ? '⚠️ -1.0 (Mock)' : val.toFixed(1);
+            label = val < 0 ? '⚠️ -1.0 (Failed)' : val.toFixed(1);
           }
           html += `<td>${label}</td>`;
         });
