@@ -239,9 +239,12 @@ public static class HtmlDashboardGenerator
     <div class=""card"">
       <div style=""display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;"">
         <h3>⚖️ Peer Judge Cross-Evaluation Matrix</h3>
-        <span style=""font-size: 0.85rem; color: var(--text-muted);"">Date Run: <strong id=""heatmap-date"" style=""color: var(--text-main);"">—</strong></span>
+        <div>
+          <label style=""font-size: 0.85rem; color: var(--text-muted); margin-right: 0.5rem;"">Select Book:</label>
+          <select id=""heatmap-book-select"" onchange=""renderHeatmap()""></select>
+        </div>
       </div>
-      <p style=""color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1rem;"">Cross-tabulation showing how peer judge models evaluated candidate screenplays in the latest run.</p>
+      <p style=""color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1rem;"">Cross-tabulation showing how peer judge models evaluated candidate screenplays for the selected book.</p>
       <div id=""heatmap-container""></div>
     </div>
   </div>
@@ -268,14 +271,13 @@ public static class HtmlDashboardGenerator
       const runs = (window.BENCHMARK_HISTORY && window.BENCHMARK_HISTORY.runs) || [];
       const headerElem = document.getElementById('last-run-header');
       const globalDateElem = document.getElementById('global-date-subtitle');
-      const heatmapDateElem = document.getElementById('heatmap-date');
 
       if (runs.length > 0) {
-        const latestRun = runs[runs.length - 1];
+        const liveRuns = runs.filter(r => !r.isMockRun && !r.IsMockRun);
+        const latestRun = liveRuns.length > 0 ? liveRuns[liveRuns.length - 1] : runs[runs.length - 1];
         const lastDate = latestRun.timestamp || latestRun.Timestamp || 'Unknown';
         if (headerElem) headerElem.textContent = lastDate;
         if (globalDateElem) globalDateElem.textContent = lastDate;
-        if (heatmapDateElem) heatmapDateElem.textContent = lastDate;
       } else {
         if (headerElem) headerElem.textContent = 'No runs recorded';
       }
@@ -287,7 +289,7 @@ public static class HtmlDashboardGenerator
 
       const leaderboard = window.GLOBAL_LEADERBOARD || [];
       if (leaderboard.length === 0) {
-        tbody.innerHTML = '<tr><td colspan=""7"" style=""text-align: center; color: var(--text-muted);"">No benchmark history runs recorded yet. Run a benchmark to populate the leaderboard.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan=""7"" style=""text-align: center; color: var(--text-muted);"">No live benchmark history runs recorded yet. Run a benchmark to populate the leaderboard.</td></tr>';
         return;
       }
 
@@ -313,9 +315,11 @@ public static class HtmlDashboardGenerator
       });
     }
 
-    function initBookSelect() {
+    function initBookSelects() {
       const select = document.getElementById('book-select');
+      const heatmapSelect = document.getElementById('heatmap-book-select');
       select.innerHTML = '';
+      heatmapSelect.innerHTML = '';
 
       const runs = (window.BENCHMARK_HISTORY && window.BENCHMARK_HISTORY.runs) || [];
       if (runs.length === 0) return;
@@ -323,15 +327,30 @@ public static class HtmlDashboardGenerator
       const slugs = [...new Set(runs.map(r => r.bookSlug || r.BookSlug))].filter(Boolean);
 
       slugs.forEach(slug => {
-        const opt = document.createElement('option');
-        opt.value = slug;
-        opt.textContent = slug;
-        select.appendChild(opt);
+        const matching = runs.filter(r => (r.bookSlug || r.BookSlug) === slug);
+        const liveCount = matching.filter(r => !r.isMockRun && !r.IsMockRun).length;
+        const mockCount = matching.filter(r => r.isMockRun || r.IsMockRun).length;
+
+        const statusLabel = liveCount > 0 
+          ? ` (✅ ${liveCount} Live Benchmark Run${liveCount > 1 ? 's' : ''})`
+          : ` (⚠️ ${mockCount} Mock Run${mockCount > 1 ? 's' : ''})`;
+
+        const opt1 = document.createElement('option');
+        opt1.value = slug;
+        opt1.textContent = slug + statusLabel;
+        select.appendChild(opt1);
+
+        const opt2 = document.createElement('option');
+        opt2.value = slug;
+        opt2.textContent = slug + statusLabel;
+        heatmapSelect.appendChild(opt2);
       });
 
       if (slugs.length > 0) {
         select.value = slugs[0];
+        heatmapSelect.value = slugs[0];
         renderPerBookTable();
+        renderHeatmap();
       }
     }
 
@@ -377,16 +396,23 @@ public static class HtmlDashboardGenerator
 
     function renderHeatmap() {
       const container = document.getElementById('heatmap-container');
+      const select = document.getElementById('heatmap-book-select');
+      const slug = select ? select.value : null;
       const runs = (window.BENCHMARK_HISTORY && window.BENCHMARK_HISTORY.runs) || [];
       if (runs.length === 0) {
         container.innerHTML = '<p style=""color: var(--text-muted);"">No run data available for heatmap.</p>';
         return;
       }
 
-      const latestRun = runs[runs.length - 1];
-      const matrix = latestRun.judgeMatrix || latestRun.JudgeMatrix;
-      const modelScores = latestRun.modelScores || latestRun.ModelScores || [];
-      if (!latestRun || !matrix) return;
+      const matching = slug ? runs.filter(r => (r.bookSlug || r.BookSlug) === slug) : runs;
+      const targetRun = matching.length > 0 ? matching[matching.length - 1] : runs[runs.length - 1];
+      const matrix = targetRun ? (targetRun.judgeMatrix || targetRun.JudgeMatrix) : null;
+      const modelScores = targetRun ? (targetRun.modelScores || targetRun.ModelScores || []) : [];
+
+      if (!targetRun || !matrix || Object.keys(matrix).length === 0) {
+        container.innerHTML = '<p style=""color: var(--text-muted);"">No heatmap matrix recorded for this book.</p>';
+        return;
+      }
 
       let html = '<table><thead><tr><th>Judge \\ Candidate</th>';
       const models = modelScores.map(m => m.modelId || m.ModelId);
@@ -412,8 +438,7 @@ public static class HtmlDashboardGenerator
     window.addEventListener('DOMContentLoaded', () => {
       updateHeaderDates();
       renderGlobalTable();
-      initBookSelect();
-      renderHeatmap();
+      initBookSelects();
     });
   </script>
 </body>
