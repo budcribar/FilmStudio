@@ -1006,11 +1006,18 @@ public static class ClipVideoPromptBuilder
                 continue;
             }
 
-            // Multi-character compaction: non-focus on-screen cast get a short identity line
+            // Multi-character compaction: non-focus on-screen cast get a short identity line.
+            // Lead with visual_lock (not the general description) when present — it's the field
+            // specifically curated to hold the one identity-critical, must-never-drift trait (e.g.
+            // a distinguishing eye, scar, tattoo). A plain description truncated to 60 chars was
+            // dropping that trait whenever it fell later in the sentence, and visual_lock was
+            // skipped entirely on this path — so a non-focus character's signature feature could
+            // silently disappear from every clip where they're present but not the shot's subject.
             var isActive = activeKeys is null || activeKeys.Contains(key);
             if (!isActive && keys.Count > 1)
             {
-                var shortDesc = desc.Length > 60 ? desc.Substring(0, 57) + "..." : desc;
+                var compactSource = vlock.Length > 0 ? vlock : desc;
+                var shortDesc = compactSource.Length > 140 ? compactSource.Substring(0, 137) + "..." : compactSource;
                 var compact =
                     $"- {key}{tag} [{display}]: Also present (not shot focus); keep identity consistent: {shortDesc}.";
                 if (useImageTags && tag.Length > 0) compact += $" Match reference {tag.Trim()}.";

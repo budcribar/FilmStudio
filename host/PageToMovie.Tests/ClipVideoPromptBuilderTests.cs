@@ -788,6 +788,56 @@ public class ClipVideoPromptBuilderTests
     }
 
     [Fact]
+    public void Build_non_focus_compaction_preserves_visual_lock_not_truncated_description()
+    {
+        // Regression: the non-focus "compact" identity line used to build from a 60-char-truncated
+        // Description and never included VisualLock at all — a distinguishing trait (e.g. the Old
+        // Man's filmy pale eye) that fell after character 57 in the description, or that only lived
+        // in VisualLock, silently vanished from every clip where that character was present but not
+        // the shot's focus. VisualLock must now be what the compact line is built from when present.
+        var clip = JsonDocument.Parse("""
+            {
+              "clip_number": 1,
+              "visual_prompt": "INT. BEDCHAMBER. Character_Narrator at the door. Character_Old_Man in the bed.",
+              "characters_on_screen": ["Character_Narrator", "Character_Old_Man"],
+              "primary_subject": "Character_Narrator",
+              "audio_payload": { "speaker": "Character_Narrator", "dialogue": "I opened it gently.", "delivery": "spoken_on_camera" }
+            }
+            """).RootElement;
+
+        var tmp = Path.Combine(Path.GetTempPath(), "fs-multi-compact-vlock-" + Guid.NewGuid().ToString("N"));
+        var charDir = Path.Combine(tmp, "assets", "characters");
+        Directory.CreateDirectory(charDir);
+        File.WriteAllBytes(Path.Combine(charDir, "character_narrator_ref.png"), new byte[512]);
+        File.WriteAllBytes(Path.Combine(charDir, "character_old_man_ref.png"), new byte[512]);
+
+        var profiles = new Dictionary<string, ClipVideoPromptBuilder.CharacterProfile>(
+            StringComparer.OrdinalIgnoreCase)
+        {
+            ["Character_Narrator"] = new()
+            {
+                Key = "Character_Narrator",
+                DisplayName = "Narrator",
+                Description = "Lean pale man in waistcoat",
+                VisualLock = "Same lean pale face",
+            },
+            ["Character_Old_Man"] = new()
+            {
+                Key = "Character_Old_Man",
+                DisplayName = "Old Man",
+                Description = "Frail elderly man, thin stooped build, sparse white hair, deeply lined pale face; one pale blue eye with a dull filmy veil, the other eye ordinary; wears a plain white period nightshirt.",
+                VisualLock = "Always elderly, white-haired, frail; signature constant is the single pale blue eye with dull filmy veil that must not drift to clear blue.",
+            },
+        };
+
+        var built = ClipVideoPromptBuilder.Build(clip, tmp, profiles, maxRefs: 5);
+        Assert.Contains("Also present (not shot focus)", built.Prompt, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("pale blue eye", built.Prompt, StringComparison.OrdinalIgnoreCase);
+
+        try { Directory.Delete(tmp, true); } catch { /* ignore */ }
+    }
+
+    [Fact]
     public void ResolveFocusKeys_big_action_keeps_all_on_screen()
     {
         var keys = ClipVideoPromptBuilder.ResolveFocusKeys(
