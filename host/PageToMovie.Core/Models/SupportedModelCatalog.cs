@@ -550,6 +550,34 @@ public static class SupportedModelCatalog
         }
     }
 
+    public static string GetCatalogFilePath()
+    {
+        var candidates = new[]
+        {
+            "/data/models_catalog.json",
+            Path.Combine(AppContext.BaseDirectory, "config", "models_catalog.json"),
+            Path.Combine(AppContext.BaseDirectory, "models_catalog.json"),
+            Path.Combine(Directory.GetCurrentDirectory(), "config", "models_catalog.json"),
+            Path.Combine(Directory.GetCurrentDirectory(), "host", "PageToMovie.Core", "config", "models_catalog.json"),
+        };
+        return candidates.FirstOrDefault(File.Exists) ?? candidates.Last();
+    }
+
+    public static void SaveCatalogJson(string rawJson)
+    {
+        if (string.IsNullOrWhiteSpace(rawJson))
+            throw new ArgumentException("Catalog JSON payload cannot be empty", nameof(rawJson));
+
+        using var doc = System.Text.Json.JsonDocument.Parse(rawJson);
+        var targetPath = GetCatalogFilePath();
+
+        var dir = Path.GetDirectoryName(targetPath);
+        if (!string.IsNullOrWhiteSpace(dir)) Directory.CreateDirectory(dir);
+
+        File.WriteAllText(targetPath, rawJson);
+        ReloadCatalog(targetPath);
+    }
+
     public static void ReloadCatalog(string? overrideJsonPath = null)
     {
         _loadedEntries = null;

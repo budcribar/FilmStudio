@@ -29,6 +29,29 @@ public sealed class EngineApiClient
     private readonly SemaphoreSlim _mediaTokenLock = new(1, 1);
     private int _mediaRefreshQueued;
 
+    public async Task<ModelsCatalogResponse> GetModelsCatalogAsync(CancellationToken ct = default)
+    {
+        using var req = new HttpRequestMessage(HttpMethod.Get, "/api/admin/models-catalog");
+        using var resp = await _http.SendAsync(req, ct);
+        var body = await resp.Content.ReadFromJsonAsync<ModelsCatalogResponse>(JsonOpts, ct);
+        if (!resp.IsSuccessStatusCode)
+            throw new InvalidOperationException(body?.Error ?? "Failed to load models catalog");
+        return body ?? new ModelsCatalogResponse();
+    }
+
+    public async Task<string> SaveModelsCatalogRawAsync(string rawJson, CancellationToken ct = default)
+    {
+        using var req = new HttpRequestMessage(HttpMethod.Put, "/api/admin/models-catalog")
+        {
+            Content = new StringContent(rawJson, System.Text.Encoding.UTF8, "application/json"),
+        };
+        using var resp = await _http.SendAsync(req, ct);
+        var body = await resp.Content.ReadFromJsonAsync<ModelsCatalogSaveResponse>(JsonOpts, ct);
+        if (!resp.IsSuccessStatusCode)
+            throw new InvalidOperationException(body?.Error ?? "Failed to save models catalog");
+        return body?.Message ?? "Models catalog saved successfully.";
+    }
+
     public EngineApiClient(
         HttpClient http,
         AdminSessionService? session = null,
@@ -3599,5 +3622,21 @@ public sealed class ProjectMediaSyncFile
     public long SizeBytes { get; set; }
     public bool IsMp4 { get; set; }
     public string? StreamUrl { get; set; }
+}
+
+public sealed class ModelsCatalogResponse
+{
+    public bool Ok { get; set; }
+    public string CatalogPath { get; set; } = "";
+    public string RawJson { get; set; } = "";
+    public string Error { get; set; } = "";
+}
+
+public sealed class ModelsCatalogSaveResponse
+{
+    public bool Ok { get; set; }
+    public string Message { get; set; } = "";
+    public string Error { get; set; } = "";
+    public int ModelsCount { get; set; }
 }
 

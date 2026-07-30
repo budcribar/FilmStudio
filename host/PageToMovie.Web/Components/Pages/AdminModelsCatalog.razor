@@ -1,0 +1,354 @@
+@page "/admin/models-catalog"
+@using System.Text.Json
+@using System.Text.Json.Nodes
+@inject EngineApiClient Api
+@inject AdminSessionService Session
+@inject NavigationManager Nav
+@inject IJSRuntime JS
+
+<PageTitle>Models catalog manager — PageToMovie</PageTitle>
+
+<div class="container py-3" style="max-width: 64rem;">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <h1 class="h3 mb-0">Models catalog manager</h1>
+            <div class="text-muted small">Manage model entries, enablement flags, and dynamic capabilities · Hot-applies to <code>models_catalog.json</code></div>
+        </div>
+        <div>
+            <a href="/admin" class="btn btn-outline-secondary btn-sm me-2">← Back to Admin</a>
+            <button class="btn btn-outline-primary btn-sm me-2" @onclick="ToggleRawJsonEditor">
+                @(_showRawJson ? "📋 Table View" : "📝 Raw JSON Editor")
+            </button>
+            <button class="btn btn-primary btn-sm" disabled="@_busy" @onclick="SaveCatalogAsync">
+                @(_busy ? "Saving…" : "💾 Save & Hot-Apply Catalog")
+            </button>
+        </div>
+    </div>
+
+    @if (!Session.IsAdmin)
+    {
+        <div class="alert alert-warning">Admin session required. <a href="/admin/login">Sign in</a></div>
+    }
+    else if (_loading)
+    {
+        <p class="text-muted">Loading models catalog…</p>
+    }
+    else
+    {
+        @if (!string.IsNullOrEmpty(_error))
+        {
+            <div class="alert alert-danger alert-dismissible fade show mb-3" role="alert">
+                @_error
+                <button type="button" class="btn-close" @onclick="() => _error = null"></button>
+            </div>
+        }
+        @if (!string.IsNullOrEmpty(_message))
+        {
+            <div class="alert alert-success alert-dismissible fade show mb-3" role="alert">
+                @_message
+                <button type="button" class="btn-close" @onclick="() => _message = null"></button>
+            </div>
+        }
+
+        @if (_showRawJson)
+        {
+            <div class="card mb-3">
+                <div class="card-header font-monospace small">Raw models_catalog.json</div>
+                <div class="card-body p-2">
+                    <textarea class="form-control font-monospace text-light bg-dark" rows="22" style="font-size: 0.85rem;" @bind="_rawJsonText"></textarea>
+                </div>
+            </div>
+        }
+        else
+        {
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span class="fw-bold">Registered Model Catalog (@_modelList.Count models)</span>
+                    <button class="btn btn-success btn-sm" @onclick="() => _showAddForm = !_showAddForm">
+                        + Add Model to Catalog
+                    </button>
+                </div>
+
+                @if (_showAddForm)
+                {
+                    <div class="card-body bg-light border-bottom">
+                        <h6 class="fw-bold mb-3">➕ Add New Model Entry</h6>
+                        <div class="row g-2 mb-3">
+                            <div class="col-md-3">
+                                <label class="form-label small">Model ID</label>
+                                <input class="form-control form-control-sm" placeholder="e.g. grok-5" @bind="_newId" />
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label small">Display Name</label>
+                                <input class="form-control form-control-sm" placeholder="e.g. xAI Grok 5" @bind="_newDisplayName" />
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label small">Capability</label>
+                                <select class="form-select form-select-sm" @bind="_newCapability">
+                                    <option value="Chat">Chat / Screenplay</option>
+                                    <option value="Video">Video Generation</option>
+                                    <option value="Image">Portrait / Image</option>
+                                    <option value="Vision">Vision &amp; OCR</option>
+                                    <option value="VideoReview">Video Review</option>
+                                    <option value="Audio">Audio &amp; Music</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label small">Provider</label>
+                                <select class="form-select form-select-sm" @bind="_newProvider">
+                                    <option value="Xai">xAI</option>
+                                    <option value="Anthropic">Anthropic</option>
+                                    <option value="Gemini">Google Gemini</option>
+                                    <option value="OpenAi">OpenAI</option>
+                                    <option value="Fal">Fal.ai</option>
+                                    <option value="Suno">Suno</option>
+                                    <option value="AIMusicApi">AIMusicAPI</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="row g-2 mb-3">
+                            <div class="col-md-4">
+                                <label class="form-label small">Endpoint Path (optional)</label>
+                                <input class="form-control form-control-sm" placeholder="e.g. chat/completions" @bind="_newEndpointPath" />
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label small">Max Audio Duration (s)</label>
+                                <input type="number" class="form-control form-control-sm" placeholder="e.g. 60" @bind="_newMaxAudioDuration" />
+                            </div>
+                            <div class="col-md-4 d-flex align-items-end">
+                                <button class="btn btn-primary btn-sm w-100" @onclick="AddModelToList">Add to Catalog</button>
+                            </div>
+                        </div>
+                    </div>
+                }
+
+                <div class="table-responsive">
+                    <table class="table table-hover table-striped mb-0 align-middle small">
+                        <thead class="table-dark">
+                            <tr>
+                                <th style="width: 50px;">Status</th>
+                                <th>Model ID</th>
+                                <th>Display Name</th>
+                                <th>Capability</th>
+                                <th>Provider</th>
+                                <th>Limits</th>
+                                <th style="width: 80px;">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var m in _modelList)
+                            {
+                                var isEnabled = m.TryGetPropertyValue("enabled", out var en) && en?.GetValue<bool>() == true;
+                                var modelId = m["id"]?.ToString() ?? "";
+                                var displayName = m["displayName"]?.ToString() ?? "";
+                                var cap = m["capability"]?.ToString() ?? "";
+                                var prov = m["provider"]?.ToString() ?? "";
+
+                                <tr>
+                                    <td>
+                                        <div class="form-check form-switch mb-0">
+                                            <input class="form-check-input" type="checkbox" checked="@isEnabled" @onchange="() => ToggleModelEnabled(m)" />
+                                        </div>
+                                    </td>
+                                    <td class="fw-bold font-monospace">@modelId</td>
+                                    <td>@displayName</td>
+                                    <td>
+                                        <span class="badge @GetCapBadgeClass(cap)">@cap</span>
+                                    </td>
+                                    <td><span class="text-muted">@prov</span></td>
+                                    <td class="text-muted small">
+                                        @if (m.TryGetPropertyValue("maxAudioDurationSeconds", out var audioDur) && audioDur != null)
+                                        {
+                                            <span>🎵 @(audioDur.ToString())s</span>
+                                        }
+                                        else if (m.TryGetPropertyValue("maxInputTokens", out var tokens) && tokens != null)
+                                        {
+                                            <span>🔤 @(tokens.ToString()) tokens</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        <button class="btn btn-outline-danger btn-sm p-1 px-2" title="Remove model" @onclick="() => RemoveModel(m)">
+                                            🗑️
+                                        </button>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        }
+    }
+</div>
+
+@code {
+    private bool _loading = true;
+    private bool _busy;
+    private bool _showRawJson;
+    private bool _showAddForm;
+    private string? _error;
+    private string? _message;
+    private string _rawJsonText = "";
+    private JsonObject? _rootObj;
+    private List<JsonObject> _modelList = new();
+
+    // New Model Form State
+    private string _newId = "";
+    private string _newDisplayName = "";
+    private string _newCapability = "Chat";
+    private string _newProvider = "Xai";
+    private string _newEndpointPath = "";
+    private int? _newMaxAudioDuration;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadCatalogAsync();
+    }
+
+    private async Task LoadCatalogAsync()
+    {
+        _loading = true;
+        _error = null;
+        try
+        {
+            var res = await Api.GetModelsCatalogAsync();
+            _rawJsonText = res.RawJson;
+
+            ParseRawJson();
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private void ParseRawJson()
+    {
+        try
+        {
+            var node = JsonNode.Parse(_rawJsonText);
+            if (node is JsonObject obj && obj.TryGetPropertyValue("models", out var arrNode) && arrNode is JsonArray arr)
+            {
+                _rootObj = obj;
+                _modelList = arr.OfType<JsonObject>().ToList();
+            }
+        }
+        catch (Exception ex)
+        {
+            _error = $"JSON parse error: {ex.Message}";
+        }
+    }
+
+    private void SyncModelListToRawJson()
+    {
+        if (_rootObj is not null)
+        {
+            var arr = new JsonArray();
+            foreach (var m in _modelList)
+            {
+                arr.Add(JsonNode.Parse(m.ToJsonString()));
+            }
+            _rootObj["models"] = arr;
+            _rawJsonText = _rootObj.ToJsonString(new JsonSerializerOptions { WriteIndented = true });
+        }
+    }
+
+    private void ToggleModelEnabled(JsonObject m)
+    {
+        var isEnabled = m.TryGetPropertyValue("enabled", out var en) && en?.GetValue<bool>() == true;
+        m["enabled"] = !isEnabled;
+        SyncModelListToRawJson();
+    }
+
+    private void RemoveModel(JsonObject m)
+    {
+        _modelList.Remove(m);
+        SyncModelListToRawJson();
+    }
+
+    private void AddModelToList()
+    {
+        if (string.IsNullOrWhiteSpace(_newId))
+        {
+            _error = "Model ID is required.";
+            return;
+        }
+
+        var obj = new JsonObject
+        {
+            ["id"] = _newId.Trim(),
+            ["displayName"] = string.IsNullOrWhiteSpace(_newDisplayName) ? _newId.Trim() : _newDisplayName.Trim(),
+            ["capability"] = _newCapability,
+            ["provider"] = _newProvider,
+            ["enabled"] = true,
+            ["supportsVideoContinue"] = false,
+            ["supportsReferenceImages"] = false,
+            ["supportsVideoReview"] = false,
+        };
+
+        if (!string.IsNullOrWhiteSpace(_newEndpointPath))
+            obj["endpointPath"] = _newEndpointPath.Trim();
+
+        if (_newMaxAudioDuration > 0)
+            obj["maxAudioDurationSeconds"] = _newMaxAudioDuration.Value;
+
+        _modelList.Add(obj);
+        SyncModelListToRawJson();
+
+        _newId = "";
+        _newDisplayName = "";
+        _newEndpointPath = "";
+        _newMaxAudioDuration = null;
+        _showAddForm = false;
+        _message = "New model added to table. Click 'Save & Hot-Apply Catalog' to persist changes.";
+    }
+
+    private void ToggleRawJsonEditor()
+    {
+        _showRawJson = !_showRawJson;
+        if (!_showRawJson)
+        {
+            ParseRawJson();
+        }
+    }
+
+    private async Task SaveCatalogAsync()
+    {
+        _busy = true;
+        _error = null;
+        _message = null;
+        try
+        {
+            if (!_showRawJson)
+            {
+                SyncModelListToRawJson();
+            }
+
+            var msg = await Api.SaveModelsCatalogRawAsync(_rawJsonText);
+            _message = msg;
+            await LoadCatalogAsync();
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private string GetCapBadgeClass(string cap) => cap switch
+    {
+        "Chat" => "bg-primary",
+        "Video" => "bg-purple",
+        "Image" => "bg-info text-dark",
+        "Vision" => "bg-warning text-dark",
+        "Audio" => "bg-success",
+        _ => "bg-secondary"
+    };
+}

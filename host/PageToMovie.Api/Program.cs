@@ -1716,6 +1716,61 @@ app.MapPut("/api/admin/config", async (
         return Results.BadRequest(new { ok = false, error = ex.Message });
     }
 });
+app.MapGet("/api/admin/models-catalog", (IUserContext user) =>
+{
+    if (!user.IsAdmin)
+        return Results.Json(new { ok = false, error = "admin role required" }, statusCode: StatusCodes.Status403Forbidden);
+
+    var path = SupportedModelCatalog.GetCatalogFilePath();
+    var rawJson = File.Exists(path) ? File.ReadAllText(path) : "{}";
+    return Results.Ok(new
+    {
+        ok = true,
+        catalogPath = path,
+        rawJson,
+        models = SupportedModelCatalog.Entries,
+        capabilities = SupportedModelCatalog.RegisteredCapabilities,
+        taskRankings = SupportedModelCatalog.TaskRankings,
+    });
+});
+
+app.MapPut("/api/admin/models-catalog", async (HttpContext http, IUserContext user) =>
+{
+    if (!user.IsAdmin)
+        return Results.Json(new { ok = false, error = "admin role required" }, statusCode: StatusCodes.Status403Forbidden);
+
+    using var reader = new StreamReader(http.Request.Body);
+    var rawJson = await reader.ReadToEndAsync();
+    try
+    {
+        SupportedModelCatalog.SaveCatalogJson(rawJson);
+        return Results.Ok(new
+        {
+            ok = true,
+            message = "Models catalog saved and hot-reloaded successfully.",
+            catalogPath = SupportedModelCatalog.GetCatalogFilePath(),
+            modelsCount = SupportedModelCatalog.Entries.Count,
+        });
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { ok = false, error = ex.Message });
+    }
+});
+
+app.MapPost("/api/admin/models-catalog/reload", (IUserContext user) =>
+{
+    if (!user.IsAdmin)
+        return Results.Json(new { ok = false, error = "admin role required" }, statusCode: StatusCodes.Status403Forbidden);
+
+    SupportedModelCatalog.ReloadCatalog();
+    return Results.Ok(new
+    {
+        ok = true,
+        message = "Models catalog reloaded successfully.",
+        modelsCount = SupportedModelCatalog.Entries.Count,
+    });
+});
 
 app.MapPost("/api/admin/chat-cache/clear", (IUserContext user, IServiceProvider sp) =>
 {
