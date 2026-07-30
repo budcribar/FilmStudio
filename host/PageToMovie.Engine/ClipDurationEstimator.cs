@@ -20,20 +20,20 @@ public static class ClipDurationEstimator
     /// <summary>Absolute max if action is huge.</summary>
     public const int AbsMaxSeconds = 12;
 
-    /// <summary>Words per second for spoken dialogue (~140 wpm — slightly under natural so models do not rush).</summary>
-    public const double DialogueWordsPerSecond = 2.3;
+    /// <summary>Words per second for spoken dialogue (~156 wpm — natural narration pace).</summary>
+    public const double DialogueWordsPerSecond = 2.6;
 
     /// <summary>
     /// Lead-in before speech so lip-sync / video-extend does not clip the first word
     /// (common on the first spoken clip after a silent establish).
     /// </summary>
-    public const double SpeechHeadSeconds = 0.55;
+    public const double SpeechHeadSeconds = 0.40;
 
     /// <summary>
     /// Pad after speech so the line can land and leave a short breath before the next clip
     /// (matches silence-trim speech breath tail; not multi-second dead air).
     /// </summary>
-    public const double SpeechTailSeconds = 0.90;
+    public const double SpeechTailSeconds = 0.50;
 
     /// <summary>
     /// Extra headroom under <see cref="MaxSeconds"/> when packing monologue splits so lip-sync
@@ -211,7 +211,7 @@ public static class ClipDurationEstimator
             var words = CountWords(dlg);
             var syllables = CountSyllables(dlg);
             var speechFromWords = SpeechHeadSeconds + words / DialogueWordsPerSecond + SpeechTailSeconds;
-            var speechFromSyllables = SpeechHeadSeconds + syllables / 3.8 + SpeechTailSeconds;
+            var speechFromSyllables = SpeechHeadSeconds + syllables / 4.2 + SpeechTailSeconds;
             speech = Math.Max(speechFromWords, speechFromSyllables);
             speech = Math.Max(1.8, speech);
             if (delivery is "voiceover_internal" or "internal" or "narration" or "vo" or "thought")
@@ -260,7 +260,7 @@ public static class ClipDurationEstimator
             var words = CountWords(dlg);
             var syllables = CountSyllables(dlg);
             var speechFromWords = SpeechHeadSeconds + words / DialogueWordsPerSecond + SpeechTailSeconds;
-            var speechFromSyllables = SpeechHeadSeconds + syllables / 3.8 + SpeechTailSeconds;
+            var speechFromSyllables = SpeechHeadSeconds + syllables / 4.2 + SpeechTailSeconds;
             speech = Math.Max(speechFromWords, speechFromSyllables);
             // Very short lines still need a beat
             speech = Math.Max(1.8, speech);
