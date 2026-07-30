@@ -374,12 +374,12 @@
         {
           "ModelId": "gpt-4o",
           "AnonymousLabel": "",
-          "CompositeScore": 79,
+          "CompositeScore": 78,
           "BordaPoints": 28,
           "AvgJudgeRank": 4,
           "SyntaxAudit": {
-            "OverallSyntaxScore": 73,
-            "FormatComplianceScore": 90,
+            "OverallSyntaxScore": 70.5,
+            "FormatComplianceScore": 80,
             "SceneBudgetScore": 50,
             "DialoguePacingScore": 50,
             "CharacterDisambiguationScore": 100,
@@ -395,7 +395,8 @@
             ],
             "AgeDisambiguatedCharacters": [],
             "DiagnosticWarnings": [
-              "Missing \u0027FADE IN:\u0027 starting transition.",
+              "Non-Fountain colon dialogue format (4 instances like \u0027Character:\u0027) detected.",
+              "Missing \u0027FADE OUT.\u0027 or \u0027THE END\u0027 closing transition.",
               "Excessive scene count (566 scenes); high micro-scene density inflates video gen budget.",
               "High average dialogue length (56.9 words/turn); speech beats risk clip overrun.",
               "415 monologue turn(s) exceed 35 words without action line splits.",
@@ -413,12 +414,12 @@
         {
           "ModelId": "gpt-4o-mini",
           "AnonymousLabel": "",
-          "CompositeScore": 84.1,
+          "CompositeScore": 83.1,
           "BordaPoints": 34,
           "AvgJudgeRank": 3.1,
           "SyntaxAudit": {
-            "OverallSyntaxScore": 85.8,
-            "FormatComplianceScore": 90,
+            "OverallSyntaxScore": 83.3,
+            "FormatComplianceScore": 80,
             "SceneBudgetScore": 64,
             "DialoguePacingScore": 100,
             "CharacterDisambiguationScore": 100,
@@ -446,7 +447,8 @@
             ],
             "AgeDisambiguatedCharacters": [],
             "DiagnosticWarnings": [
-              "Missing \u0027FADE IN:\u0027 starting transition.",
+              "Non-Fountain colon dialogue format (4 instances like \u0027Character:\u0027) detected.",
+              "Missing \u0027FADE OUT.\u0027 or \u0027THE END\u0027 closing transition.",
               "Excessive scene count (63 scenes); high micro-scene density inflates video gen budget.",
               "No explicit music/sound design cues detected in screenplay."
             ]
@@ -462,12 +464,12 @@
         {
           "ModelId": "o3-mini",
           "AnonymousLabel": "",
-          "CompositeScore": 79,
+          "CompositeScore": 78,
           "BordaPoints": 29,
           "AvgJudgeRank": 3.9,
           "SyntaxAudit": {
-            "OverallSyntaxScore": 73,
-            "FormatComplianceScore": 90,
+            "OverallSyntaxScore": 70.5,
+            "FormatComplianceScore": 80,
             "SceneBudgetScore": 50,
             "DialoguePacingScore": 50,
             "CharacterDisambiguationScore": 100,
@@ -483,7 +485,8 @@
             ],
             "AgeDisambiguatedCharacters": [],
             "DiagnosticWarnings": [
-              "Missing \u0027FADE IN:\u0027 starting transition.",
+              "Non-Fountain colon dialogue format (4 instances like \u0027Character:\u0027) detected.",
+              "Missing \u0027FADE OUT.\u0027 or \u0027THE END\u0027 closing transition.",
               "Excessive scene count (566 scenes); high micro-scene density inflates video gen budget.",
               "High average dialogue length (56.9 words/turn); speech beats risk clip overrun.",
               "415 monologue turn(s) exceed 35 words without action line splits.",
@@ -501,12 +504,12 @@
         {
           "ModelId": "grok-4.5",
           "AnonymousLabel": "",
-          "CompositeScore": 84.6,
+          "CompositeScore": 84.1,
           "BordaPoints": 26,
           "AvgJudgeRank": 4.3,
           "SyntaxAudit": {
-            "OverallSyntaxScore": 87,
-            "FormatComplianceScore": 90,
+            "OverallSyntaxScore": 85.8,
+            "FormatComplianceScore": 85,
             "SceneBudgetScore": 100,
             "DialoguePacingScore": 70,
             "CharacterDisambiguationScore": 100,
@@ -531,7 +534,7 @@
               "YOUNG PETER"
             ],
             "DiagnosticWarnings": [
-              "Missing \u0027FADE IN:\u0027 starting transition.",
+              "Non-Fountain colon dialogue format (5 instances like \u0027Character:\u0027) detected.",
               "8 monologue turn(s) exceed 35 words without action line splits.",
               "Detected 1 age-qualified character header(s) (e.g. YOUNG PETER).",
               "No explicit music/sound design cues detected in screenplay."
@@ -548,12 +551,12 @@
         {
           "ModelId": "grok-4",
           "AnonymousLabel": "",
-          "CompositeScore": 80.6,
+          "CompositeScore": 80.1,
           "BordaPoints": 24,
           "AvgJudgeRank": 4.6,
           "SyntaxAudit": {
-            "OverallSyntaxScore": 77,
-            "FormatComplianceScore": 90,
+            "OverallSyntaxScore": 75.8,
+            "FormatComplianceScore": 85,
             "SceneBudgetScore": 50,
             "DialoguePacingScore": 70,
             "CharacterDisambiguationScore": 100,
@@ -590,7 +593,7 @@
             ],
             "AgeDisambiguatedCharacters": [],
             "DiagnosticWarnings": [
-              "Missing \u0027FADE IN:\u0027 starting transition.",
+              "Non-Fountain colon dialogue format (4 instances like \u0027Character:\u0027) detected.",
               "Excessive scene count (71 scenes); high micro-scene density inflates video gen budget.",
               "11 monologue turn(s) exceed 35 words without action line splits.",
               "No explicit music/sound design cues detected in screenplay."
@@ -607,12 +610,12 @@
         {
           "ModelId": "claude-sonnet-5",
           "AnonymousLabel": "",
-          "CompositeScore": 79,
+          "CompositeScore": 78,
           "BordaPoints": 31,
           "AvgJudgeRank": 3.6,
           "SyntaxAudit": {
-            "OverallSyntaxScore": 73,
-            "FormatComplianceScore": 90,
+            "OverallSyntaxScore": 70.5,
+            "FormatComplianceScore": 80,
             "SceneBudgetScore": 50,
             "DialoguePacingScore": 50,
             "CharacterDisambiguationScore": 100,
@@ -628,7 +631,8 @@
             ],
             "AgeDisambiguatedCharacters": [],
             "DiagnosticWarnings": [
-              "Missing \u0027FADE IN:\u0027 starting transition.",
+              "Non-Fountain colon dialogue format (4 instances like \u0027Character:\u0027) detected.",
+              "Missing \u0027FADE OUT.\u0027 or \u0027THE END\u0027 closing transition.",
               "Excessive scene count (566 scenes); high micro-scene density inflates video gen budget.",
               "High average dialogue length (56.9 words/turn); speech beats risk clip overrun.",
               "415 monologue turn(s) exceed 35 words without action line splits.",
@@ -646,12 +650,12 @@
         {
           "ModelId": "gemini-2.5-pro",
           "AnonymousLabel": "",
-          "CompositeScore": 84.6,
+          "CompositeScore": 84.1,
           "BordaPoints": 24,
           "AvgJudgeRank": 4.6,
           "SyntaxAudit": {
-            "OverallSyntaxScore": 87,
-            "FormatComplianceScore": 90,
+            "OverallSyntaxScore": 85.8,
+            "FormatComplianceScore": 85,
             "SceneBudgetScore": 100,
             "DialoguePacingScore": 70,
             "CharacterDisambiguationScore": 100,
@@ -688,7 +692,7 @@
               "YOUNG PETER"
             ],
             "DiagnosticWarnings": [
-              "Missing \u0027FADE IN:\u0027 starting transition.",
+              "Non-Fountain colon dialogue format (4 instances like \u0027Character:\u0027) detected.",
               "6 monologue turn(s) exceed 35 words without action line splits.",
               "Detected 3 age-qualified character header(s) (e.g. YOUNG BOBBY, YOUNG NICK, YOUNG PETER).",
               "No explicit music/sound design cues detected in screenplay."
@@ -1870,12 +1874,12 @@
         {
           "ModelId": "gpt-4o",
           "AnonymousLabel": "",
-          "CompositeScore": 79,
+          "CompositeScore": 78,
           "BordaPoints": 28,
           "AvgJudgeRank": 4,
           "SyntaxAudit": {
-            "OverallSyntaxScore": 73,
-            "FormatComplianceScore": 90,
+            "OverallSyntaxScore": 70.5,
+            "FormatComplianceScore": 80,
             "SceneBudgetScore": 50,
             "DialoguePacingScore": 50,
             "CharacterDisambiguationScore": 100,
@@ -1891,7 +1895,8 @@
             ],
             "AgeDisambiguatedCharacters": [],
             "DiagnosticWarnings": [
-              "Missing \u0027FADE IN:\u0027 starting transition.",
+              "Non-Fountain colon dialogue format (4 instances like \u0027Character:\u0027) detected.",
+              "Missing \u0027FADE OUT.\u0027 or \u0027THE END\u0027 closing transition.",
               "Excessive scene count (566 scenes); high micro-scene density inflates video gen budget.",
               "High average dialogue length (56.9 words/turn); speech beats risk clip overrun.",
               "415 monologue turn(s) exceed 35 words without action line splits.",
@@ -1909,12 +1914,12 @@
         {
           "ModelId": "gpt-4o-mini",
           "AnonymousLabel": "",
-          "CompositeScore": 84.1,
+          "CompositeScore": 83.1,
           "BordaPoints": 34,
           "AvgJudgeRank": 3.1,
           "SyntaxAudit": {
-            "OverallSyntaxScore": 85.8,
-            "FormatComplianceScore": 90,
+            "OverallSyntaxScore": 83.3,
+            "FormatComplianceScore": 80,
             "SceneBudgetScore": 64,
             "DialoguePacingScore": 100,
             "CharacterDisambiguationScore": 100,
@@ -1942,7 +1947,8 @@
             ],
             "AgeDisambiguatedCharacters": [],
             "DiagnosticWarnings": [
-              "Missing \u0027FADE IN:\u0027 starting transition.",
+              "Non-Fountain colon dialogue format (4 instances like \u0027Character:\u0027) detected.",
+              "Missing \u0027FADE OUT.\u0027 or \u0027THE END\u0027 closing transition.",
               "Excessive scene count (63 scenes); high micro-scene density inflates video gen budget.",
               "No explicit music/sound design cues detected in screenplay."
             ]
@@ -1958,12 +1964,12 @@
         {
           "ModelId": "o3-mini",
           "AnonymousLabel": "",
-          "CompositeScore": 79,
+          "CompositeScore": 78,
           "BordaPoints": 29,
           "AvgJudgeRank": 3.9,
           "SyntaxAudit": {
-            "OverallSyntaxScore": 73,
-            "FormatComplianceScore": 90,
+            "OverallSyntaxScore": 70.5,
+            "FormatComplianceScore": 80,
             "SceneBudgetScore": 50,
             "DialoguePacingScore": 50,
             "CharacterDisambiguationScore": 100,
@@ -1979,7 +1985,8 @@
             ],
             "AgeDisambiguatedCharacters": [],
             "DiagnosticWarnings": [
-              "Missing \u0027FADE IN:\u0027 starting transition.",
+              "Non-Fountain colon dialogue format (4 instances like \u0027Character:\u0027) detected.",
+              "Missing \u0027FADE OUT.\u0027 or \u0027THE END\u0027 closing transition.",
               "Excessive scene count (566 scenes); high micro-scene density inflates video gen budget.",
               "High average dialogue length (56.9 words/turn); speech beats risk clip overrun.",
               "415 monologue turn(s) exceed 35 words without action line splits.",
@@ -1997,12 +2004,12 @@
         {
           "ModelId": "grok-4.5",
           "AnonymousLabel": "",
-          "CompositeScore": 84.6,
+          "CompositeScore": 84.1,
           "BordaPoints": 26,
           "AvgJudgeRank": 4.3,
           "SyntaxAudit": {
-            "OverallSyntaxScore": 87,
-            "FormatComplianceScore": 90,
+            "OverallSyntaxScore": 85.8,
+            "FormatComplianceScore": 85,
             "SceneBudgetScore": 100,
             "DialoguePacingScore": 70,
             "CharacterDisambiguationScore": 100,
@@ -2027,7 +2034,7 @@
               "YOUNG PETER"
             ],
             "DiagnosticWarnings": [
-              "Missing \u0027FADE IN:\u0027 starting transition.",
+              "Non-Fountain colon dialogue format (5 instances like \u0027Character:\u0027) detected.",
               "8 monologue turn(s) exceed 35 words without action line splits.",
               "Detected 1 age-qualified character header(s) (e.g. YOUNG PETER).",
               "No explicit music/sound design cues detected in screenplay."
@@ -2044,12 +2051,12 @@
         {
           "ModelId": "grok-4",
           "AnonymousLabel": "",
-          "CompositeScore": 80.6,
+          "CompositeScore": 80.1,
           "BordaPoints": 24,
           "AvgJudgeRank": 4.6,
           "SyntaxAudit": {
-            "OverallSyntaxScore": 77,
-            "FormatComplianceScore": 90,
+            "OverallSyntaxScore": 75.8,
+            "FormatComplianceScore": 85,
             "SceneBudgetScore": 50,
             "DialoguePacingScore": 70,
             "CharacterDisambiguationScore": 100,
@@ -2086,7 +2093,7 @@
             ],
             "AgeDisambiguatedCharacters": [],
             "DiagnosticWarnings": [
-              "Missing \u0027FADE IN:\u0027 starting transition.",
+              "Non-Fountain colon dialogue format (4 instances like \u0027Character:\u0027) detected.",
               "Excessive scene count (71 scenes); high micro-scene density inflates video gen budget.",
               "11 monologue turn(s) exceed 35 words without action line splits.",
               "No explicit music/sound design cues detected in screenplay."
@@ -2103,12 +2110,12 @@
         {
           "ModelId": "claude-sonnet-5",
           "AnonymousLabel": "",
-          "CompositeScore": 79,
+          "CompositeScore": 78,
           "BordaPoints": 31,
           "AvgJudgeRank": 3.6,
           "SyntaxAudit": {
-            "OverallSyntaxScore": 73,
-            "FormatComplianceScore": 90,
+            "OverallSyntaxScore": 70.5,
+            "FormatComplianceScore": 80,
             "SceneBudgetScore": 50,
             "DialoguePacingScore": 50,
             "CharacterDisambiguationScore": 100,
@@ -2124,7 +2131,8 @@
             ],
             "AgeDisambiguatedCharacters": [],
             "DiagnosticWarnings": [
-              "Missing \u0027FADE IN:\u0027 starting transition.",
+              "Non-Fountain colon dialogue format (4 instances like \u0027Character:\u0027) detected.",
+              "Missing \u0027FADE OUT.\u0027 or \u0027THE END\u0027 closing transition.",
               "Excessive scene count (566 scenes); high micro-scene density inflates video gen budget.",
               "High average dialogue length (56.9 words/turn); speech beats risk clip overrun.",
               "415 monologue turn(s) exceed 35 words without action line splits.",
@@ -2142,12 +2150,12 @@
         {
           "ModelId": "gemini-2.5-pro",
           "AnonymousLabel": "",
-          "CompositeScore": 84.6,
+          "CompositeScore": 84.1,
           "BordaPoints": 24,
           "AvgJudgeRank": 4.6,
           "SyntaxAudit": {
-            "OverallSyntaxScore": 87,
-            "FormatComplianceScore": 90,
+            "OverallSyntaxScore": 85.8,
+            "FormatComplianceScore": 85,
             "SceneBudgetScore": 100,
             "DialoguePacingScore": 70,
             "CharacterDisambiguationScore": 100,
@@ -2184,7 +2192,7 @@
               "YOUNG PETER"
             ],
             "DiagnosticWarnings": [
-              "Missing \u0027FADE IN:\u0027 starting transition.",
+              "Non-Fountain colon dialogue format (4 instances like \u0027Character:\u0027) detected.",
               "6 monologue turn(s) exceed 35 words without action line splits.",
               "Detected 3 age-qualified character header(s) (e.g. YOUNG BOBBY, YOUNG NICK, YOUNG PETER).",
               "No explicit music/sound design cues detected in screenplay."
@@ -3198,12 +3206,12 @@
         {
           "ModelId": "grok-4.5",
           "AnonymousLabel": "",
-          "CompositeScore": 84,
+          "CompositeScore": 83.5,
           "BordaPoints": 36,
           "AvgJudgeRank": 2.9,
           "SyntaxAudit": {
-            "OverallSyntaxScore": 87,
-            "FormatComplianceScore": 90,
+            "OverallSyntaxScore": 85.8,
+            "FormatComplianceScore": 85,
             "SceneBudgetScore": 100,
             "DialoguePacingScore": 70,
             "CharacterDisambiguationScore": 100,
@@ -3228,7 +3236,7 @@
               "YOUNG PETER"
             ],
             "DiagnosticWarnings": [
-              "Missing \u0027FADE IN:\u0027 starting transition.",
+              "Non-Fountain colon dialogue format (5 instances like \u0027Character:\u0027) detected.",
               "8 monologue turn(s) exceed 35 words without action line splits.",
               "Detected 1 age-qualified character header(s) (e.g. YOUNG PETER).",
               "No explicit music/sound design cues detected in screenplay."
@@ -3245,12 +3253,12 @@
         {
           "ModelId": "gemini-2.5-pro",
           "AnonymousLabel": "",
-          "CompositeScore": 82.2,
+          "CompositeScore": 81.7,
           "BordaPoints": 29,
           "AvgJudgeRank": 3.9,
           "SyntaxAudit": {
-            "OverallSyntaxScore": 87,
-            "FormatComplianceScore": 90,
+            "OverallSyntaxScore": 85.8,
+            "FormatComplianceScore": 85,
             "SceneBudgetScore": 100,
             "DialoguePacingScore": 70,
             "CharacterDisambiguationScore": 100,
@@ -3287,7 +3295,7 @@
               "YOUNG PETER"
             ],
             "DiagnosticWarnings": [
-              "Missing \u0027FADE IN:\u0027 starting transition.",
+              "Non-Fountain colon dialogue format (4 instances like \u0027Character:\u0027) detected.",
               "6 monologue turn(s) exceed 35 words without action line splits.",
               "Detected 3 age-qualified character header(s) (e.g. YOUNG BOBBY, YOUNG NICK, YOUNG PETER).",
               "No explicit music/sound design cues detected in screenplay."
@@ -3304,12 +3312,12 @@
         {
           "ModelId": "grok-4",
           "AnonymousLabel": "",
-          "CompositeScore": 77.6,
+          "CompositeScore": 77.1,
           "BordaPoints": 26,
           "AvgJudgeRank": 4.3,
           "SyntaxAudit": {
-            "OverallSyntaxScore": 77,
-            "FormatComplianceScore": 90,
+            "OverallSyntaxScore": 75.8,
+            "FormatComplianceScore": 85,
             "SceneBudgetScore": 50,
             "DialoguePacingScore": 70,
             "CharacterDisambiguationScore": 100,
@@ -3346,7 +3354,7 @@
             ],
             "AgeDisambiguatedCharacters": [],
             "DiagnosticWarnings": [
-              "Missing \u0027FADE IN:\u0027 starting transition.",
+              "Non-Fountain colon dialogue format (4 instances like \u0027Character:\u0027) detected.",
               "Excessive scene count (71 scenes); high micro-scene density inflates video gen budget.",
               "11 monologue turn(s) exceed 35 words without action line splits.",
               "No explicit music/sound design cues detected in screenplay."
@@ -3363,12 +3371,12 @@
         {
           "ModelId": "gpt-4o-mini",
           "AnonymousLabel": "",
-          "CompositeScore": 75.7,
+          "CompositeScore": 74.7,
           "BordaPoints": 32,
           "AvgJudgeRank": 3.4,
           "SyntaxAudit": {
-            "OverallSyntaxScore": 85.8,
-            "FormatComplianceScore": 90,
+            "OverallSyntaxScore": 83.3,
+            "FormatComplianceScore": 80,
             "SceneBudgetScore": 64,
             "DialoguePacingScore": 100,
             "CharacterDisambiguationScore": 100,
@@ -3396,7 +3404,8 @@
             ],
             "AgeDisambiguatedCharacters": [],
             "DiagnosticWarnings": [
-              "Missing \u0027FADE IN:\u0027 starting transition.",
+              "Non-Fountain colon dialogue format (4 instances like \u0027Character:\u0027) detected.",
+              "Missing \u0027FADE OUT.\u0027 or \u0027THE END\u0027 closing transition.",
               "Excessive scene count (63 scenes); high micro-scene density inflates video gen budget.",
               "No explicit music/sound design cues detected in screenplay."
             ]
@@ -3412,12 +3421,12 @@
         {
           "ModelId": "gpt-4o",
           "AnonymousLabel": "",
-          "CompositeScore": 70,
+          "CompositeScore": 69,
           "BordaPoints": 22,
           "AvgJudgeRank": 4.9,
           "SyntaxAudit": {
-            "OverallSyntaxScore": 73,
-            "FormatComplianceScore": 90,
+            "OverallSyntaxScore": 70.5,
+            "FormatComplianceScore": 80,
             "SceneBudgetScore": 50,
             "DialoguePacingScore": 50,
             "CharacterDisambiguationScore": 100,
@@ -3433,7 +3442,8 @@
             ],
             "AgeDisambiguatedCharacters": [],
             "DiagnosticWarnings": [
-              "Missing \u0027FADE IN:\u0027 starting transition.",
+              "Non-Fountain colon dialogue format (4 instances like \u0027Character:\u0027) detected.",
+              "Missing \u0027FADE OUT.\u0027 or \u0027THE END\u0027 closing transition.",
               "Excessive scene count (566 scenes); high micro-scene density inflates video gen budget.",
               "High average dialogue length (56.9 words/turn); speech beats risk clip overrun.",
               "415 monologue turn(s) exceed 35 words without action line splits.",
@@ -3451,12 +3461,12 @@
         {
           "ModelId": "o3-mini",
           "AnonymousLabel": "",
-          "CompositeScore": 70,
+          "CompositeScore": 69,
           "BordaPoints": 27,
           "AvgJudgeRank": 4.1,
           "SyntaxAudit": {
-            "OverallSyntaxScore": 73,
-            "FormatComplianceScore": 90,
+            "OverallSyntaxScore": 70.5,
+            "FormatComplianceScore": 80,
             "SceneBudgetScore": 50,
             "DialoguePacingScore": 50,
             "CharacterDisambiguationScore": 100,
@@ -3472,7 +3482,8 @@
             ],
             "AgeDisambiguatedCharacters": [],
             "DiagnosticWarnings": [
-              "Missing \u0027FADE IN:\u0027 starting transition.",
+              "Non-Fountain colon dialogue format (4 instances like \u0027Character:\u0027) detected.",
+              "Missing \u0027FADE OUT.\u0027 or \u0027THE END\u0027 closing transition.",
               "Excessive scene count (566 scenes); high micro-scene density inflates video gen budget.",
               "High average dialogue length (56.9 words/turn); speech beats risk clip overrun.",
               "415 monologue turn(s) exceed 35 words without action line splits.",
@@ -3490,12 +3501,12 @@
         {
           "ModelId": "claude-sonnet-5",
           "AnonymousLabel": "",
-          "CompositeScore": 70,
+          "CompositeScore": 69,
           "BordaPoints": 24,
           "AvgJudgeRank": 4.6,
           "SyntaxAudit": {
-            "OverallSyntaxScore": 73,
-            "FormatComplianceScore": 90,
+            "OverallSyntaxScore": 70.5,
+            "FormatComplianceScore": 80,
             "SceneBudgetScore": 50,
             "DialoguePacingScore": 50,
             "CharacterDisambiguationScore": 100,
@@ -3511,7 +3522,8 @@
             ],
             "AgeDisambiguatedCharacters": [],
             "DiagnosticWarnings": [
-              "Missing \u0027FADE IN:\u0027 starting transition.",
+              "Non-Fountain colon dialogue format (4 instances like \u0027Character:\u0027) detected.",
+              "Missing \u0027FADE OUT.\u0027 or \u0027THE END\u0027 closing transition.",
               "Excessive scene count (566 scenes); high micro-scene density inflates video gen budget.",
               "High average dialogue length (56.9 words/turn); speech beats risk clip overrun.",
               "415 monologue turn(s) exceed 35 words without action line splits.",
@@ -3605,12 +3617,12 @@
         {
           "ModelId": "grok-4.5",
           "AnonymousLabel": "",
-          "CompositeScore": 34.8,
+          "CompositeScore": 34.3,
           "BordaPoints": 26,
           "AvgJudgeRank": 4.3,
           "SyntaxAudit": {
-            "OverallSyntaxScore": 87,
-            "FormatComplianceScore": 90,
+            "OverallSyntaxScore": 85.8,
+            "FormatComplianceScore": 85,
             "SceneBudgetScore": 100,
             "DialoguePacingScore": 70,
             "CharacterDisambiguationScore": 100,
@@ -3635,7 +3647,7 @@
               "YOUNG PETER"
             ],
             "DiagnosticWarnings": [
-              "Missing \u0027FADE IN:\u0027 starting transition.",
+              "Non-Fountain colon dialogue format (5 instances like \u0027Character:\u0027) detected.",
               "8 monologue turn(s) exceed 35 words without action line splits.",
               "Detected 1 age-qualified character header(s) (e.g. YOUNG PETER).",
               "No explicit music/sound design cues detected in screenplay."
@@ -3652,12 +3664,12 @@
         {
           "ModelId": "gemini-2.5-pro",
           "AnonymousLabel": "",
-          "CompositeScore": 34.8,
+          "CompositeScore": 34.3,
           "BordaPoints": 24,
           "AvgJudgeRank": 4.6,
           "SyntaxAudit": {
-            "OverallSyntaxScore": 87,
-            "FormatComplianceScore": 90,
+            "OverallSyntaxScore": 85.8,
+            "FormatComplianceScore": 85,
             "SceneBudgetScore": 100,
             "DialoguePacingScore": 70,
             "CharacterDisambiguationScore": 100,
@@ -3694,7 +3706,7 @@
               "YOUNG PETER"
             ],
             "DiagnosticWarnings": [
-              "Missing \u0027FADE IN:\u0027 starting transition.",
+              "Non-Fountain colon dialogue format (4 instances like \u0027Character:\u0027) detected.",
               "6 monologue turn(s) exceed 35 words without action line splits.",
               "Detected 3 age-qualified character header(s) (e.g. YOUNG BOBBY, YOUNG NICK, YOUNG PETER).",
               "No explicit music/sound design cues detected in screenplay."
@@ -3711,12 +3723,12 @@
         {
           "ModelId": "gpt-4o-mini",
           "AnonymousLabel": "",
-          "CompositeScore": 34.3,
+          "CompositeScore": 33.3,
           "BordaPoints": 34,
           "AvgJudgeRank": 3.1,
           "SyntaxAudit": {
-            "OverallSyntaxScore": 85.8,
-            "FormatComplianceScore": 90,
+            "OverallSyntaxScore": 83.3,
+            "FormatComplianceScore": 80,
             "SceneBudgetScore": 64,
             "DialoguePacingScore": 100,
             "CharacterDisambiguationScore": 100,
@@ -3744,7 +3756,8 @@
             ],
             "AgeDisambiguatedCharacters": [],
             "DiagnosticWarnings": [
-              "Missing \u0027FADE IN:\u0027 starting transition.",
+              "Non-Fountain colon dialogue format (4 instances like \u0027Character:\u0027) detected.",
+              "Missing \u0027FADE OUT.\u0027 or \u0027THE END\u0027 closing transition.",
               "Excessive scene count (63 scenes); high micro-scene density inflates video gen budget.",
               "No explicit music/sound design cues detected in screenplay."
             ]
@@ -3760,12 +3773,12 @@
         {
           "ModelId": "grok-4",
           "AnonymousLabel": "",
-          "CompositeScore": 30.8,
+          "CompositeScore": 30.3,
           "BordaPoints": 24,
           "AvgJudgeRank": 4.6,
           "SyntaxAudit": {
-            "OverallSyntaxScore": 77,
-            "FormatComplianceScore": 90,
+            "OverallSyntaxScore": 75.8,
+            "FormatComplianceScore": 85,
             "SceneBudgetScore": 50,
             "DialoguePacingScore": 70,
             "CharacterDisambiguationScore": 100,
@@ -3802,7 +3815,7 @@
             ],
             "AgeDisambiguatedCharacters": [],
             "DiagnosticWarnings": [
-              "Missing \u0027FADE IN:\u0027 starting transition.",
+              "Non-Fountain colon dialogue format (4 instances like \u0027Character:\u0027) detected.",
               "Excessive scene count (71 scenes); high micro-scene density inflates video gen budget.",
               "11 monologue turn(s) exceed 35 words without action line splits.",
               "No explicit music/sound design cues detected in screenplay."
@@ -3819,12 +3832,12 @@
         {
           "ModelId": "gpt-4o",
           "AnonymousLabel": "",
-          "CompositeScore": 29.2,
+          "CompositeScore": 28.2,
           "BordaPoints": 28,
           "AvgJudgeRank": 4,
           "SyntaxAudit": {
-            "OverallSyntaxScore": 73,
-            "FormatComplianceScore": 90,
+            "OverallSyntaxScore": 70.5,
+            "FormatComplianceScore": 80,
             "SceneBudgetScore": 50,
             "DialoguePacingScore": 50,
             "CharacterDisambiguationScore": 100,
@@ -3840,7 +3853,8 @@
             ],
             "AgeDisambiguatedCharacters": [],
             "DiagnosticWarnings": [
-              "Missing \u0027FADE IN:\u0027 starting transition.",
+              "Non-Fountain colon dialogue format (4 instances like \u0027Character:\u0027) detected.",
+              "Missing \u0027FADE OUT.\u0027 or \u0027THE END\u0027 closing transition.",
               "Excessive scene count (566 scenes); high micro-scene density inflates video gen budget.",
               "High average dialogue length (56.9 words/turn); speech beats risk clip overrun.",
               "415 monologue turn(s) exceed 35 words without action line splits.",
@@ -3858,12 +3872,12 @@
         {
           "ModelId": "o3-mini",
           "AnonymousLabel": "",
-          "CompositeScore": 29.2,
+          "CompositeScore": 28.2,
           "BordaPoints": 29,
           "AvgJudgeRank": 3.9,
           "SyntaxAudit": {
-            "OverallSyntaxScore": 73,
-            "FormatComplianceScore": 90,
+            "OverallSyntaxScore": 70.5,
+            "FormatComplianceScore": 80,
             "SceneBudgetScore": 50,
             "DialoguePacingScore": 50,
             "CharacterDisambiguationScore": 100,
@@ -3879,7 +3893,8 @@
             ],
             "AgeDisambiguatedCharacters": [],
             "DiagnosticWarnings": [
-              "Missing \u0027FADE IN:\u0027 starting transition.",
+              "Non-Fountain colon dialogue format (4 instances like \u0027Character:\u0027) detected.",
+              "Missing \u0027FADE OUT.\u0027 or \u0027THE END\u0027 closing transition.",
               "Excessive scene count (566 scenes); high micro-scene density inflates video gen budget.",
               "High average dialogue length (56.9 words/turn); speech beats risk clip overrun.",
               "415 monologue turn(s) exceed 35 words without action line splits.",
@@ -3897,12 +3912,12 @@
         {
           "ModelId": "claude-sonnet-5",
           "AnonymousLabel": "",
-          "CompositeScore": 29.2,
+          "CompositeScore": 28.2,
           "BordaPoints": 31,
           "AvgJudgeRank": 3.6,
           "SyntaxAudit": {
-            "OverallSyntaxScore": 73,
-            "FormatComplianceScore": 90,
+            "OverallSyntaxScore": 70.5,
+            "FormatComplianceScore": 80,
             "SceneBudgetScore": 50,
             "DialoguePacingScore": 50,
             "CharacterDisambiguationScore": 100,
@@ -3918,7 +3933,8 @@
             ],
             "AgeDisambiguatedCharacters": [],
             "DiagnosticWarnings": [
-              "Missing \u0027FADE IN:\u0027 starting transition.",
+              "Non-Fountain colon dialogue format (4 instances like \u0027Character:\u0027) detected.",
+              "Missing \u0027FADE OUT.\u0027 or \u0027THE END\u0027 closing transition.",
               "Excessive scene count (566 scenes); high micro-scene density inflates video gen budget.",
               "High average dialogue length (56.9 words/turn); speech beats risk clip overrun.",
               "415 monologue turn(s) exceed 35 words without action line splits.",
@@ -5101,12 +5117,12 @@
         {
           "ModelId": "grok-4.5",
           "AnonymousLabel": "",
-          "CompositeScore": 34.8,
+          "CompositeScore": 34.3,
           "BordaPoints": 26,
           "AvgJudgeRank": 4.3,
           "SyntaxAudit": {
-            "OverallSyntaxScore": 87,
-            "FormatComplianceScore": 90,
+            "OverallSyntaxScore": 85.8,
+            "FormatComplianceScore": 85,
             "SceneBudgetScore": 100,
             "DialoguePacingScore": 70,
             "CharacterDisambiguationScore": 100,
@@ -5131,7 +5147,7 @@
               "YOUNG PETER"
             ],
             "DiagnosticWarnings": [
-              "Missing \u0027FADE IN:\u0027 starting transition.",
+              "Non-Fountain colon dialogue format (5 instances like \u0027Character:\u0027) detected.",
               "8 monologue turn(s) exceed 35 words without action line splits.",
               "Detected 1 age-qualified character header(s) (e.g. YOUNG PETER).",
               "No explicit music/sound design cues detected in screenplay."
@@ -5148,12 +5164,12 @@
         {
           "ModelId": "gemini-2.5-pro",
           "AnonymousLabel": "",
-          "CompositeScore": 34.8,
+          "CompositeScore": 34.3,
           "BordaPoints": 24,
           "AvgJudgeRank": 4.6,
           "SyntaxAudit": {
-            "OverallSyntaxScore": 87,
-            "FormatComplianceScore": 90,
+            "OverallSyntaxScore": 85.8,
+            "FormatComplianceScore": 85,
             "SceneBudgetScore": 100,
             "DialoguePacingScore": 70,
             "CharacterDisambiguationScore": 100,
@@ -5190,7 +5206,7 @@
               "YOUNG PETER"
             ],
             "DiagnosticWarnings": [
-              "Missing \u0027FADE IN:\u0027 starting transition.",
+              "Non-Fountain colon dialogue format (4 instances like \u0027Character:\u0027) detected.",
               "6 monologue turn(s) exceed 35 words without action line splits.",
               "Detected 3 age-qualified character header(s) (e.g. YOUNG BOBBY, YOUNG NICK, YOUNG PETER).",
               "No explicit music/sound design cues detected in screenplay."
@@ -5207,12 +5223,12 @@
         {
           "ModelId": "gpt-4o-mini",
           "AnonymousLabel": "",
-          "CompositeScore": 34.3,
+          "CompositeScore": 33.3,
           "BordaPoints": 34,
           "AvgJudgeRank": 3.1,
           "SyntaxAudit": {
-            "OverallSyntaxScore": 85.8,
-            "FormatComplianceScore": 90,
+            "OverallSyntaxScore": 83.3,
+            "FormatComplianceScore": 80,
             "SceneBudgetScore": 64,
             "DialoguePacingScore": 100,
             "CharacterDisambiguationScore": 100,
@@ -5240,7 +5256,8 @@
             ],
             "AgeDisambiguatedCharacters": [],
             "DiagnosticWarnings": [
-              "Missing \u0027FADE IN:\u0027 starting transition.",
+              "Non-Fountain colon dialogue format (4 instances like \u0027Character:\u0027) detected.",
+              "Missing \u0027FADE OUT.\u0027 or \u0027THE END\u0027 closing transition.",
               "Excessive scene count (63 scenes); high micro-scene density inflates video gen budget.",
               "No explicit music/sound design cues detected in screenplay."
             ]
@@ -5256,12 +5273,12 @@
         {
           "ModelId": "grok-4",
           "AnonymousLabel": "",
-          "CompositeScore": 30.8,
+          "CompositeScore": 30.3,
           "BordaPoints": 24,
           "AvgJudgeRank": 4.6,
           "SyntaxAudit": {
-            "OverallSyntaxScore": 77,
-            "FormatComplianceScore": 90,
+            "OverallSyntaxScore": 75.8,
+            "FormatComplianceScore": 85,
             "SceneBudgetScore": 50,
             "DialoguePacingScore": 70,
             "CharacterDisambiguationScore": 100,
@@ -5298,7 +5315,7 @@
             ],
             "AgeDisambiguatedCharacters": [],
             "DiagnosticWarnings": [
-              "Missing \u0027FADE IN:\u0027 starting transition.",
+              "Non-Fountain colon dialogue format (4 instances like \u0027Character:\u0027) detected.",
               "Excessive scene count (71 scenes); high micro-scene density inflates video gen budget.",
               "11 monologue turn(s) exceed 35 words without action line splits.",
               "No explicit music/sound design cues detected in screenplay."
@@ -5315,12 +5332,12 @@
         {
           "ModelId": "gpt-4o",
           "AnonymousLabel": "",
-          "CompositeScore": 29.2,
+          "CompositeScore": 28.2,
           "BordaPoints": 28,
           "AvgJudgeRank": 4,
           "SyntaxAudit": {
-            "OverallSyntaxScore": 73,
-            "FormatComplianceScore": 90,
+            "OverallSyntaxScore": 70.5,
+            "FormatComplianceScore": 80,
             "SceneBudgetScore": 50,
             "DialoguePacingScore": 50,
             "CharacterDisambiguationScore": 100,
@@ -5336,7 +5353,8 @@
             ],
             "AgeDisambiguatedCharacters": [],
             "DiagnosticWarnings": [
-              "Missing \u0027FADE IN:\u0027 starting transition.",
+              "Non-Fountain colon dialogue format (4 instances like \u0027Character:\u0027) detected.",
+              "Missing \u0027FADE OUT.\u0027 or \u0027THE END\u0027 closing transition.",
               "Excessive scene count (566 scenes); high micro-scene density inflates video gen budget.",
               "High average dialogue length (56.9 words/turn); speech beats risk clip overrun.",
               "415 monologue turn(s) exceed 35 words without action line splits.",
@@ -5354,12 +5372,12 @@
         {
           "ModelId": "o3-mini",
           "AnonymousLabel": "",
-          "CompositeScore": 29.2,
+          "CompositeScore": 28.2,
           "BordaPoints": 29,
           "AvgJudgeRank": 3.9,
           "SyntaxAudit": {
-            "OverallSyntaxScore": 73,
-            "FormatComplianceScore": 90,
+            "OverallSyntaxScore": 70.5,
+            "FormatComplianceScore": 80,
             "SceneBudgetScore": 50,
             "DialoguePacingScore": 50,
             "CharacterDisambiguationScore": 100,
@@ -5375,7 +5393,8 @@
             ],
             "AgeDisambiguatedCharacters": [],
             "DiagnosticWarnings": [
-              "Missing \u0027FADE IN:\u0027 starting transition.",
+              "Non-Fountain colon dialogue format (4 instances like \u0027Character:\u0027) detected.",
+              "Missing \u0027FADE OUT.\u0027 or \u0027THE END\u0027 closing transition.",
               "Excessive scene count (566 scenes); high micro-scene density inflates video gen budget.",
               "High average dialogue length (56.9 words/turn); speech beats risk clip overrun.",
               "415 monologue turn(s) exceed 35 words without action line splits.",
@@ -5393,12 +5412,12 @@
         {
           "ModelId": "claude-sonnet-5",
           "AnonymousLabel": "",
-          "CompositeScore": 29.2,
+          "CompositeScore": 28.2,
           "BordaPoints": 31,
           "AvgJudgeRank": 3.6,
           "SyntaxAudit": {
-            "OverallSyntaxScore": 73,
-            "FormatComplianceScore": 90,
+            "OverallSyntaxScore": 70.5,
+            "FormatComplianceScore": 80,
             "SceneBudgetScore": 50,
             "DialoguePacingScore": 50,
             "CharacterDisambiguationScore": 100,
@@ -5414,7 +5433,8 @@
             ],
             "AgeDisambiguatedCharacters": [],
             "DiagnosticWarnings": [
-              "Missing \u0027FADE IN:\u0027 starting transition.",
+              "Non-Fountain colon dialogue format (4 instances like \u0027Character:\u0027) detected.",
+              "Missing \u0027FADE OUT.\u0027 or \u0027THE END\u0027 closing transition.",
               "Excessive scene count (566 scenes); high micro-scene density inflates video gen budget.",
               "High average dialogue length (56.9 words/turn); speech beats risk clip overrun.",
               "415 monologue turn(s) exceed 35 words without action line splits.",
@@ -6597,12 +6617,12 @@
         {
           "ModelId": "grok-4.5",
           "AnonymousLabel": "",
-          "CompositeScore": 34.8,
+          "CompositeScore": 34.3,
           "BordaPoints": 26,
           "AvgJudgeRank": 4.3,
           "SyntaxAudit": {
-            "OverallSyntaxScore": 87,
-            "FormatComplianceScore": 90,
+            "OverallSyntaxScore": 85.8,
+            "FormatComplianceScore": 85,
             "SceneBudgetScore": 100,
             "DialoguePacingScore": 70,
             "CharacterDisambiguationScore": 100,
@@ -6627,7 +6647,7 @@
               "YOUNG PETER"
             ],
             "DiagnosticWarnings": [
-              "Missing \u0027FADE IN:\u0027 starting transition.",
+              "Non-Fountain colon dialogue format (5 instances like \u0027Character:\u0027) detected.",
               "8 monologue turn(s) exceed 35 words without action line splits.",
               "Detected 1 age-qualified character header(s) (e.g. YOUNG PETER).",
               "No explicit music/sound design cues detected in screenplay."
@@ -6644,12 +6664,12 @@
         {
           "ModelId": "gemini-2.5-pro",
           "AnonymousLabel": "",
-          "CompositeScore": 34.8,
+          "CompositeScore": 34.3,
           "BordaPoints": 24,
           "AvgJudgeRank": 4.6,
           "SyntaxAudit": {
-            "OverallSyntaxScore": 87,
-            "FormatComplianceScore": 90,
+            "OverallSyntaxScore": 85.8,
+            "FormatComplianceScore": 85,
             "SceneBudgetScore": 100,
             "DialoguePacingScore": 70,
             "CharacterDisambiguationScore": 100,
@@ -6686,7 +6706,7 @@
               "YOUNG PETER"
             ],
             "DiagnosticWarnings": [
-              "Missing \u0027FADE IN:\u0027 starting transition.",
+              "Non-Fountain colon dialogue format (4 instances like \u0027Character:\u0027) detected.",
               "6 monologue turn(s) exceed 35 words without action line splits.",
               "Detected 3 age-qualified character header(s) (e.g. YOUNG BOBBY, YOUNG NICK, YOUNG PETER).",
               "No explicit music/sound design cues detected in screenplay."
@@ -6703,12 +6723,12 @@
         {
           "ModelId": "gpt-4o-mini",
           "AnonymousLabel": "",
-          "CompositeScore": 34.3,
+          "CompositeScore": 33.3,
           "BordaPoints": 34,
           "AvgJudgeRank": 3.1,
           "SyntaxAudit": {
-            "OverallSyntaxScore": 85.8,
-            "FormatComplianceScore": 90,
+            "OverallSyntaxScore": 83.3,
+            "FormatComplianceScore": 80,
             "SceneBudgetScore": 64,
             "DialoguePacingScore": 100,
             "CharacterDisambiguationScore": 100,
@@ -6736,7 +6756,8 @@
             ],
             "AgeDisambiguatedCharacters": [],
             "DiagnosticWarnings": [
-              "Missing \u0027FADE IN:\u0027 starting transition.",
+              "Non-Fountain colon dialogue format (4 instances like \u0027Character:\u0027) detected.",
+              "Missing \u0027FADE OUT.\u0027 or \u0027THE END\u0027 closing transition.",
               "Excessive scene count (63 scenes); high micro-scene density inflates video gen budget.",
               "No explicit music/sound design cues detected in screenplay."
             ]
@@ -6752,12 +6773,12 @@
         {
           "ModelId": "grok-4",
           "AnonymousLabel": "",
-          "CompositeScore": 30.8,
+          "CompositeScore": 30.3,
           "BordaPoints": 24,
           "AvgJudgeRank": 4.6,
           "SyntaxAudit": {
-            "OverallSyntaxScore": 77,
-            "FormatComplianceScore": 90,
+            "OverallSyntaxScore": 75.8,
+            "FormatComplianceScore": 85,
             "SceneBudgetScore": 50,
             "DialoguePacingScore": 70,
             "CharacterDisambiguationScore": 100,
@@ -6794,7 +6815,7 @@
             ],
             "AgeDisambiguatedCharacters": [],
             "DiagnosticWarnings": [
-              "Missing \u0027FADE IN:\u0027 starting transition.",
+              "Non-Fountain colon dialogue format (4 instances like \u0027Character:\u0027) detected.",
               "Excessive scene count (71 scenes); high micro-scene density inflates video gen budget.",
               "11 monologue turn(s) exceed 35 words without action line splits.",
               "No explicit music/sound design cues detected in screenplay."
@@ -6811,12 +6832,12 @@
         {
           "ModelId": "gpt-4o",
           "AnonymousLabel": "",
-          "CompositeScore": 29.2,
+          "CompositeScore": 28.2,
           "BordaPoints": 28,
           "AvgJudgeRank": 4,
           "SyntaxAudit": {
-            "OverallSyntaxScore": 73,
-            "FormatComplianceScore": 90,
+            "OverallSyntaxScore": 70.5,
+            "FormatComplianceScore": 80,
             "SceneBudgetScore": 50,
             "DialoguePacingScore": 50,
             "CharacterDisambiguationScore": 100,
@@ -6832,7 +6853,8 @@
             ],
             "AgeDisambiguatedCharacters": [],
             "DiagnosticWarnings": [
-              "Missing \u0027FADE IN:\u0027 starting transition.",
+              "Non-Fountain colon dialogue format (4 instances like \u0027Character:\u0027) detected.",
+              "Missing \u0027FADE OUT.\u0027 or \u0027THE END\u0027 closing transition.",
               "Excessive scene count (566 scenes); high micro-scene density inflates video gen budget.",
               "High average dialogue length (56.9 words/turn); speech beats risk clip overrun.",
               "415 monologue turn(s) exceed 35 words without action line splits.",
@@ -6850,12 +6872,12 @@
         {
           "ModelId": "o3-mini",
           "AnonymousLabel": "",
-          "CompositeScore": 29.2,
+          "CompositeScore": 28.2,
           "BordaPoints": 29,
           "AvgJudgeRank": 3.9,
           "SyntaxAudit": {
-            "OverallSyntaxScore": 73,
-            "FormatComplianceScore": 90,
+            "OverallSyntaxScore": 70.5,
+            "FormatComplianceScore": 80,
             "SceneBudgetScore": 50,
             "DialoguePacingScore": 50,
             "CharacterDisambiguationScore": 100,
@@ -6871,7 +6893,8 @@
             ],
             "AgeDisambiguatedCharacters": [],
             "DiagnosticWarnings": [
-              "Missing \u0027FADE IN:\u0027 starting transition.",
+              "Non-Fountain colon dialogue format (4 instances like \u0027Character:\u0027) detected.",
+              "Missing \u0027FADE OUT.\u0027 or \u0027THE END\u0027 closing transition.",
               "Excessive scene count (566 scenes); high micro-scene density inflates video gen budget.",
               "High average dialogue length (56.9 words/turn); speech beats risk clip overrun.",
               "415 monologue turn(s) exceed 35 words without action line splits.",
@@ -6889,12 +6912,12 @@
         {
           "ModelId": "claude-sonnet-5",
           "AnonymousLabel": "",
-          "CompositeScore": 29.2,
+          "CompositeScore": 28.2,
           "BordaPoints": 31,
           "AvgJudgeRank": 3.6,
           "SyntaxAudit": {
-            "OverallSyntaxScore": 73,
-            "FormatComplianceScore": 90,
+            "OverallSyntaxScore": 70.5,
+            "FormatComplianceScore": 80,
             "SceneBudgetScore": 50,
             "DialoguePacingScore": 50,
             "CharacterDisambiguationScore": 100,
@@ -6910,7 +6933,8 @@
             ],
             "AgeDisambiguatedCharacters": [],
             "DiagnosticWarnings": [
-              "Missing \u0027FADE IN:\u0027 starting transition.",
+              "Non-Fountain colon dialogue format (4 instances like \u0027Character:\u0027) detected.",
+              "Missing \u0027FADE OUT.\u0027 or \u0027THE END\u0027 closing transition.",
               "Excessive scene count (566 scenes); high micro-scene density inflates video gen budget.",
               "High average dialogue length (56.9 words/turn); speech beats risk clip overrun.",
               "415 monologue turn(s) exceed 35 words without action line splits.",
@@ -8093,12 +8117,12 @@
         {
           "ModelId": "grok-4.5",
           "AnonymousLabel": "",
-          "CompositeScore": 34.8,
+          "CompositeScore": 34.3,
           "BordaPoints": 26,
           "AvgJudgeRank": 4.3,
           "SyntaxAudit": {
-            "OverallSyntaxScore": 87,
-            "FormatComplianceScore": 90,
+            "OverallSyntaxScore": 85.8,
+            "FormatComplianceScore": 85,
             "SceneBudgetScore": 100,
             "DialoguePacingScore": 70,
             "CharacterDisambiguationScore": 100,
@@ -8123,7 +8147,7 @@
               "YOUNG PETER"
             ],
             "DiagnosticWarnings": [
-              "Missing \u0027FADE IN:\u0027 starting transition.",
+              "Non-Fountain colon dialogue format (5 instances like \u0027Character:\u0027) detected.",
               "8 monologue turn(s) exceed 35 words without action line splits.",
               "Detected 1 age-qualified character header(s) (e.g. YOUNG PETER).",
               "No explicit music/sound design cues detected in screenplay."
@@ -8140,12 +8164,12 @@
         {
           "ModelId": "gemini-2.5-pro",
           "AnonymousLabel": "",
-          "CompositeScore": 34.8,
+          "CompositeScore": 34.3,
           "BordaPoints": 24,
           "AvgJudgeRank": 4.6,
           "SyntaxAudit": {
-            "OverallSyntaxScore": 87,
-            "FormatComplianceScore": 90,
+            "OverallSyntaxScore": 85.8,
+            "FormatComplianceScore": 85,
             "SceneBudgetScore": 100,
             "DialoguePacingScore": 70,
             "CharacterDisambiguationScore": 100,
@@ -8182,7 +8206,7 @@
               "YOUNG PETER"
             ],
             "DiagnosticWarnings": [
-              "Missing \u0027FADE IN:\u0027 starting transition.",
+              "Non-Fountain colon dialogue format (4 instances like \u0027Character:\u0027) detected.",
               "6 monologue turn(s) exceed 35 words without action line splits.",
               "Detected 3 age-qualified character header(s) (e.g. YOUNG BOBBY, YOUNG NICK, YOUNG PETER).",
               "No explicit music/sound design cues detected in screenplay."
@@ -8199,12 +8223,12 @@
         {
           "ModelId": "gpt-4o-mini",
           "AnonymousLabel": "",
-          "CompositeScore": 34.3,
+          "CompositeScore": 33.3,
           "BordaPoints": 34,
           "AvgJudgeRank": 3.1,
           "SyntaxAudit": {
-            "OverallSyntaxScore": 85.8,
-            "FormatComplianceScore": 90,
+            "OverallSyntaxScore": 83.3,
+            "FormatComplianceScore": 80,
             "SceneBudgetScore": 64,
             "DialoguePacingScore": 100,
             "CharacterDisambiguationScore": 100,
@@ -8232,7 +8256,8 @@
             ],
             "AgeDisambiguatedCharacters": [],
             "DiagnosticWarnings": [
-              "Missing \u0027FADE IN:\u0027 starting transition.",
+              "Non-Fountain colon dialogue format (4 instances like \u0027Character:\u0027) detected.",
+              "Missing \u0027FADE OUT.\u0027 or \u0027THE END\u0027 closing transition.",
               "Excessive scene count (63 scenes); high micro-scene density inflates video gen budget.",
               "No explicit music/sound design cues detected in screenplay."
             ]
@@ -8248,12 +8273,12 @@
         {
           "ModelId": "grok-4",
           "AnonymousLabel": "",
-          "CompositeScore": 30.8,
+          "CompositeScore": 30.3,
           "BordaPoints": 24,
           "AvgJudgeRank": 4.6,
           "SyntaxAudit": {
-            "OverallSyntaxScore": 77,
-            "FormatComplianceScore": 90,
+            "OverallSyntaxScore": 75.8,
+            "FormatComplianceScore": 85,
             "SceneBudgetScore": 50,
             "DialoguePacingScore": 70,
             "CharacterDisambiguationScore": 100,
@@ -8290,7 +8315,7 @@
             ],
             "AgeDisambiguatedCharacters": [],
             "DiagnosticWarnings": [
-              "Missing \u0027FADE IN:\u0027 starting transition.",
+              "Non-Fountain colon dialogue format (4 instances like \u0027Character:\u0027) detected.",
               "Excessive scene count (71 scenes); high micro-scene density inflates video gen budget.",
               "11 monologue turn(s) exceed 35 words without action line splits.",
               "No explicit music/sound design cues detected in screenplay."
@@ -8307,12 +8332,12 @@
         {
           "ModelId": "gpt-4o",
           "AnonymousLabel": "",
-          "CompositeScore": 29.2,
+          "CompositeScore": 28.2,
           "BordaPoints": 28,
           "AvgJudgeRank": 4,
           "SyntaxAudit": {
-            "OverallSyntaxScore": 73,
-            "FormatComplianceScore": 90,
+            "OverallSyntaxScore": 70.5,
+            "FormatComplianceScore": 80,
             "SceneBudgetScore": 50,
             "DialoguePacingScore": 50,
             "CharacterDisambiguationScore": 100,
@@ -8328,7 +8353,8 @@
             ],
             "AgeDisambiguatedCharacters": [],
             "DiagnosticWarnings": [
-              "Missing \u0027FADE IN:\u0027 starting transition.",
+              "Non-Fountain colon dialogue format (4 instances like \u0027Character:\u0027) detected.",
+              "Missing \u0027FADE OUT.\u0027 or \u0027THE END\u0027 closing transition.",
               "Excessive scene count (566 scenes); high micro-scene density inflates video gen budget.",
               "High average dialogue length (56.9 words/turn); speech beats risk clip overrun.",
               "415 monologue turn(s) exceed 35 words without action line splits.",
@@ -8346,12 +8372,12 @@
         {
           "ModelId": "o3-mini",
           "AnonymousLabel": "",
-          "CompositeScore": 29.2,
+          "CompositeScore": 28.2,
           "BordaPoints": 29,
           "AvgJudgeRank": 3.9,
           "SyntaxAudit": {
-            "OverallSyntaxScore": 73,
-            "FormatComplianceScore": 90,
+            "OverallSyntaxScore": 70.5,
+            "FormatComplianceScore": 80,
             "SceneBudgetScore": 50,
             "DialoguePacingScore": 50,
             "CharacterDisambiguationScore": 100,
@@ -8367,7 +8393,8 @@
             ],
             "AgeDisambiguatedCharacters": [],
             "DiagnosticWarnings": [
-              "Missing \u0027FADE IN:\u0027 starting transition.",
+              "Non-Fountain colon dialogue format (4 instances like \u0027Character:\u0027) detected.",
+              "Missing \u0027FADE OUT.\u0027 or \u0027THE END\u0027 closing transition.",
               "Excessive scene count (566 scenes); high micro-scene density inflates video gen budget.",
               "High average dialogue length (56.9 words/turn); speech beats risk clip overrun.",
               "415 monologue turn(s) exceed 35 words without action line splits.",
@@ -8385,12 +8412,12 @@
         {
           "ModelId": "claude-sonnet-5",
           "AnonymousLabel": "",
-          "CompositeScore": 29.2,
+          "CompositeScore": 28.2,
           "BordaPoints": 31,
           "AvgJudgeRank": 3.6,
           "SyntaxAudit": {
-            "OverallSyntaxScore": 73,
-            "FormatComplianceScore": 90,
+            "OverallSyntaxScore": 70.5,
+            "FormatComplianceScore": 80,
             "SceneBudgetScore": 50,
             "DialoguePacingScore": 50,
             "CharacterDisambiguationScore": 100,
@@ -8406,7 +8433,8 @@
             ],
             "AgeDisambiguatedCharacters": [],
             "DiagnosticWarnings": [
-              "Missing \u0027FADE IN:\u0027 starting transition.",
+              "Non-Fountain colon dialogue format (4 instances like \u0027Character:\u0027) detected.",
+              "Missing \u0027FADE OUT.\u0027 or \u0027THE END\u0027 closing transition.",
               "Excessive scene count (566 scenes); high micro-scene density inflates video gen budget.",
               "High average dialogue length (56.9 words/turn); speech beats risk clip overrun.",
               "415 monologue turn(s) exceed 35 words without action line splits.",
@@ -9589,12 +9617,12 @@
         {
           "ModelId": "grok-4.5",
           "AnonymousLabel": "",
-          "CompositeScore": 34.8,
+          "CompositeScore": 34.3,
           "BordaPoints": 26,
           "AvgJudgeRank": 4.3,
           "SyntaxAudit": {
-            "OverallSyntaxScore": 87,
-            "FormatComplianceScore": 90,
+            "OverallSyntaxScore": 85.8,
+            "FormatComplianceScore": 85,
             "SceneBudgetScore": 100,
             "DialoguePacingScore": 70,
             "CharacterDisambiguationScore": 100,
@@ -9619,7 +9647,7 @@
               "YOUNG PETER"
             ],
             "DiagnosticWarnings": [
-              "Missing \u0027FADE IN:\u0027 starting transition.",
+              "Non-Fountain colon dialogue format (5 instances like \u0027Character:\u0027) detected.",
               "8 monologue turn(s) exceed 35 words without action line splits.",
               "Detected 1 age-qualified character header(s) (e.g. YOUNG PETER).",
               "No explicit music/sound design cues detected in screenplay."
@@ -9636,12 +9664,12 @@
         {
           "ModelId": "gemini-2.5-pro",
           "AnonymousLabel": "",
-          "CompositeScore": 34.8,
+          "CompositeScore": 34.3,
           "BordaPoints": 24,
           "AvgJudgeRank": 4.6,
           "SyntaxAudit": {
-            "OverallSyntaxScore": 87,
-            "FormatComplianceScore": 90,
+            "OverallSyntaxScore": 85.8,
+            "FormatComplianceScore": 85,
             "SceneBudgetScore": 100,
             "DialoguePacingScore": 70,
             "CharacterDisambiguationScore": 100,
@@ -9678,7 +9706,7 @@
               "YOUNG PETER"
             ],
             "DiagnosticWarnings": [
-              "Missing \u0027FADE IN:\u0027 starting transition.",
+              "Non-Fountain colon dialogue format (4 instances like \u0027Character:\u0027) detected.",
               "6 monologue turn(s) exceed 35 words without action line splits.",
               "Detected 3 age-qualified character header(s) (e.g. YOUNG BOBBY, YOUNG NICK, YOUNG PETER).",
               "No explicit music/sound design cues detected in screenplay."
@@ -9695,12 +9723,12 @@
         {
           "ModelId": "gpt-4o-mini",
           "AnonymousLabel": "",
-          "CompositeScore": 34.3,
+          "CompositeScore": 33.3,
           "BordaPoints": 34,
           "AvgJudgeRank": 3.1,
           "SyntaxAudit": {
-            "OverallSyntaxScore": 85.8,
-            "FormatComplianceScore": 90,
+            "OverallSyntaxScore": 83.3,
+            "FormatComplianceScore": 80,
             "SceneBudgetScore": 64,
             "DialoguePacingScore": 100,
             "CharacterDisambiguationScore": 100,
@@ -9728,7 +9756,8 @@
             ],
             "AgeDisambiguatedCharacters": [],
             "DiagnosticWarnings": [
-              "Missing \u0027FADE IN:\u0027 starting transition.",
+              "Non-Fountain colon dialogue format (4 instances like \u0027Character:\u0027) detected.",
+              "Missing \u0027FADE OUT.\u0027 or \u0027THE END\u0027 closing transition.",
               "Excessive scene count (63 scenes); high micro-scene density inflates video gen budget.",
               "No explicit music/sound design cues detected in screenplay."
             ]
@@ -9744,12 +9773,12 @@
         {
           "ModelId": "grok-4",
           "AnonymousLabel": "",
-          "CompositeScore": 30.8,
+          "CompositeScore": 30.3,
           "BordaPoints": 24,
           "AvgJudgeRank": 4.6,
           "SyntaxAudit": {
-            "OverallSyntaxScore": 77,
-            "FormatComplianceScore": 90,
+            "OverallSyntaxScore": 75.8,
+            "FormatComplianceScore": 85,
             "SceneBudgetScore": 50,
             "DialoguePacingScore": 70,
             "CharacterDisambiguationScore": 100,
@@ -9786,7 +9815,7 @@
             ],
             "AgeDisambiguatedCharacters": [],
             "DiagnosticWarnings": [
-              "Missing \u0027FADE IN:\u0027 starting transition.",
+              "Non-Fountain colon dialogue format (4 instances like \u0027Character:\u0027) detected.",
               "Excessive scene count (71 scenes); high micro-scene density inflates video gen budget.",
               "11 monologue turn(s) exceed 35 words without action line splits.",
               "No explicit music/sound design cues detected in screenplay."
@@ -9803,12 +9832,12 @@
         {
           "ModelId": "gpt-4o",
           "AnonymousLabel": "",
-          "CompositeScore": 29.2,
+          "CompositeScore": 28.2,
           "BordaPoints": 28,
           "AvgJudgeRank": 4,
           "SyntaxAudit": {
-            "OverallSyntaxScore": 73,
-            "FormatComplianceScore": 90,
+            "OverallSyntaxScore": 70.5,
+            "FormatComplianceScore": 80,
             "SceneBudgetScore": 50,
             "DialoguePacingScore": 50,
             "CharacterDisambiguationScore": 100,
@@ -9824,7 +9853,8 @@
             ],
             "AgeDisambiguatedCharacters": [],
             "DiagnosticWarnings": [
-              "Missing \u0027FADE IN:\u0027 starting transition.",
+              "Non-Fountain colon dialogue format (4 instances like \u0027Character:\u0027) detected.",
+              "Missing \u0027FADE OUT.\u0027 or \u0027THE END\u0027 closing transition.",
               "Excessive scene count (566 scenes); high micro-scene density inflates video gen budget.",
               "High average dialogue length (56.9 words/turn); speech beats risk clip overrun.",
               "415 monologue turn(s) exceed 35 words without action line splits.",
@@ -9842,12 +9872,12 @@
         {
           "ModelId": "o3-mini",
           "AnonymousLabel": "",
-          "CompositeScore": 29.2,
+          "CompositeScore": 28.2,
           "BordaPoints": 29,
           "AvgJudgeRank": 3.9,
           "SyntaxAudit": {
-            "OverallSyntaxScore": 73,
-            "FormatComplianceScore": 90,
+            "OverallSyntaxScore": 70.5,
+            "FormatComplianceScore": 80,
             "SceneBudgetScore": 50,
             "DialoguePacingScore": 50,
             "CharacterDisambiguationScore": 100,
@@ -9863,7 +9893,8 @@
             ],
             "AgeDisambiguatedCharacters": [],
             "DiagnosticWarnings": [
-              "Missing \u0027FADE IN:\u0027 starting transition.",
+              "Non-Fountain colon dialogue format (4 instances like \u0027Character:\u0027) detected.",
+              "Missing \u0027FADE OUT.\u0027 or \u0027THE END\u0027 closing transition.",
               "Excessive scene count (566 scenes); high micro-scene density inflates video gen budget.",
               "High average dialogue length (56.9 words/turn); speech beats risk clip overrun.",
               "415 monologue turn(s) exceed 35 words without action line splits.",
@@ -9881,12 +9912,12 @@
         {
           "ModelId": "claude-sonnet-5",
           "AnonymousLabel": "",
-          "CompositeScore": 29.2,
+          "CompositeScore": 28.2,
           "BordaPoints": 31,
           "AvgJudgeRank": 3.6,
           "SyntaxAudit": {
-            "OverallSyntaxScore": 73,
-            "FormatComplianceScore": 90,
+            "OverallSyntaxScore": 70.5,
+            "FormatComplianceScore": 80,
             "SceneBudgetScore": 50,
             "DialoguePacingScore": 50,
             "CharacterDisambiguationScore": 100,
@@ -9902,7 +9933,8 @@
             ],
             "AgeDisambiguatedCharacters": [],
             "DiagnosticWarnings": [
-              "Missing \u0027FADE IN:\u0027 starting transition.",
+              "Non-Fountain colon dialogue format (4 instances like \u0027Character:\u0027) detected.",
+              "Missing \u0027FADE OUT.\u0027 or \u0027THE END\u0027 closing transition.",
               "Excessive scene count (566 scenes); high micro-scene density inflates video gen budget.",
               "High average dialogue length (56.9 words/turn); speech beats risk clip overrun.",
               "415 monologue turn(s) exceed 35 words without action line splits.",
@@ -11085,12 +11117,12 @@
         {
           "ModelId": "grok-4.5",
           "AnonymousLabel": "",
-          "CompositeScore": 34.8,
+          "CompositeScore": 34.3,
           "BordaPoints": 26,
           "AvgJudgeRank": 4.3,
           "SyntaxAudit": {
-            "OverallSyntaxScore": 87,
-            "FormatComplianceScore": 90,
+            "OverallSyntaxScore": 85.8,
+            "FormatComplianceScore": 85,
             "SceneBudgetScore": 100,
             "DialoguePacingScore": 70,
             "CharacterDisambiguationScore": 100,
@@ -11115,7 +11147,7 @@
               "YOUNG PETER"
             ],
             "DiagnosticWarnings": [
-              "Missing \u0027FADE IN:\u0027 starting transition.",
+              "Non-Fountain colon dialogue format (5 instances like \u0027Character:\u0027) detected.",
               "8 monologue turn(s) exceed 35 words without action line splits.",
               "Detected 1 age-qualified character header(s) (e.g. YOUNG PETER).",
               "No explicit music/sound design cues detected in screenplay."
@@ -11132,12 +11164,12 @@
         {
           "ModelId": "gemini-2.5-pro",
           "AnonymousLabel": "",
-          "CompositeScore": 34.8,
+          "CompositeScore": 34.3,
           "BordaPoints": 24,
           "AvgJudgeRank": 4.6,
           "SyntaxAudit": {
-            "OverallSyntaxScore": 87,
-            "FormatComplianceScore": 90,
+            "OverallSyntaxScore": 85.8,
+            "FormatComplianceScore": 85,
             "SceneBudgetScore": 100,
             "DialoguePacingScore": 70,
             "CharacterDisambiguationScore": 100,
@@ -11174,7 +11206,7 @@
               "YOUNG PETER"
             ],
             "DiagnosticWarnings": [
-              "Missing \u0027FADE IN:\u0027 starting transition.",
+              "Non-Fountain colon dialogue format (4 instances like \u0027Character:\u0027) detected.",
               "6 monologue turn(s) exceed 35 words without action line splits.",
               "Detected 3 age-qualified character header(s) (e.g. YOUNG BOBBY, YOUNG NICK, YOUNG PETER).",
               "No explicit music/sound design cues detected in screenplay."
@@ -11191,12 +11223,12 @@
         {
           "ModelId": "gpt-4o-mini",
           "AnonymousLabel": "",
-          "CompositeScore": 34.3,
+          "CompositeScore": 33.3,
           "BordaPoints": 34,
           "AvgJudgeRank": 3.1,
           "SyntaxAudit": {
-            "OverallSyntaxScore": 85.8,
-            "FormatComplianceScore": 90,
+            "OverallSyntaxScore": 83.3,
+            "FormatComplianceScore": 80,
             "SceneBudgetScore": 64,
             "DialoguePacingScore": 100,
             "CharacterDisambiguationScore": 100,
@@ -11224,7 +11256,8 @@
             ],
             "AgeDisambiguatedCharacters": [],
             "DiagnosticWarnings": [
-              "Missing \u0027FADE IN:\u0027 starting transition.",
+              "Non-Fountain colon dialogue format (4 instances like \u0027Character:\u0027) detected.",
+              "Missing \u0027FADE OUT.\u0027 or \u0027THE END\u0027 closing transition.",
               "Excessive scene count (63 scenes); high micro-scene density inflates video gen budget.",
               "No explicit music/sound design cues detected in screenplay."
             ]
@@ -11240,12 +11273,12 @@
         {
           "ModelId": "grok-4",
           "AnonymousLabel": "",
-          "CompositeScore": 30.8,
+          "CompositeScore": 30.3,
           "BordaPoints": 24,
           "AvgJudgeRank": 4.6,
           "SyntaxAudit": {
-            "OverallSyntaxScore": 77,
-            "FormatComplianceScore": 90,
+            "OverallSyntaxScore": 75.8,
+            "FormatComplianceScore": 85,
             "SceneBudgetScore": 50,
             "DialoguePacingScore": 70,
             "CharacterDisambiguationScore": 100,
@@ -11282,7 +11315,7 @@
             ],
             "AgeDisambiguatedCharacters": [],
             "DiagnosticWarnings": [
-              "Missing \u0027FADE IN:\u0027 starting transition.",
+              "Non-Fountain colon dialogue format (4 instances like \u0027Character:\u0027) detected.",
               "Excessive scene count (71 scenes); high micro-scene density inflates video gen budget.",
               "11 monologue turn(s) exceed 35 words without action line splits.",
               "No explicit music/sound design cues detected in screenplay."
@@ -11299,12 +11332,12 @@
         {
           "ModelId": "gpt-4o",
           "AnonymousLabel": "",
-          "CompositeScore": 29.2,
+          "CompositeScore": 28.2,
           "BordaPoints": 28,
           "AvgJudgeRank": 4,
           "SyntaxAudit": {
-            "OverallSyntaxScore": 73,
-            "FormatComplianceScore": 90,
+            "OverallSyntaxScore": 70.5,
+            "FormatComplianceScore": 80,
             "SceneBudgetScore": 50,
             "DialoguePacingScore": 50,
             "CharacterDisambiguationScore": 100,
@@ -11320,7 +11353,8 @@
             ],
             "AgeDisambiguatedCharacters": [],
             "DiagnosticWarnings": [
-              "Missing \u0027FADE IN:\u0027 starting transition.",
+              "Non-Fountain colon dialogue format (4 instances like \u0027Character:\u0027) detected.",
+              "Missing \u0027FADE OUT.\u0027 or \u0027THE END\u0027 closing transition.",
               "Excessive scene count (566 scenes); high micro-scene density inflates video gen budget.",
               "High average dialogue length (56.9 words/turn); speech beats risk clip overrun.",
               "415 monologue turn(s) exceed 35 words without action line splits.",
@@ -11338,12 +11372,12 @@
         {
           "ModelId": "o3-mini",
           "AnonymousLabel": "",
-          "CompositeScore": 29.2,
+          "CompositeScore": 28.2,
           "BordaPoints": 29,
           "AvgJudgeRank": 3.9,
           "SyntaxAudit": {
-            "OverallSyntaxScore": 73,
-            "FormatComplianceScore": 90,
+            "OverallSyntaxScore": 70.5,
+            "FormatComplianceScore": 80,
             "SceneBudgetScore": 50,
             "DialoguePacingScore": 50,
             "CharacterDisambiguationScore": 100,
@@ -11359,7 +11393,8 @@
             ],
             "AgeDisambiguatedCharacters": [],
             "DiagnosticWarnings": [
-              "Missing \u0027FADE IN:\u0027 starting transition.",
+              "Non-Fountain colon dialogue format (4 instances like \u0027Character:\u0027) detected.",
+              "Missing \u0027FADE OUT.\u0027 or \u0027THE END\u0027 closing transition.",
               "Excessive scene count (566 scenes); high micro-scene density inflates video gen budget.",
               "High average dialogue length (56.9 words/turn); speech beats risk clip overrun.",
               "415 monologue turn(s) exceed 35 words without action line splits.",
@@ -11377,12 +11412,12 @@
         {
           "ModelId": "claude-sonnet-5",
           "AnonymousLabel": "",
-          "CompositeScore": 29.2,
+          "CompositeScore": 28.2,
           "BordaPoints": 31,
           "AvgJudgeRank": 3.6,
           "SyntaxAudit": {
-            "OverallSyntaxScore": 73,
-            "FormatComplianceScore": 90,
+            "OverallSyntaxScore": 70.5,
+            "FormatComplianceScore": 80,
             "SceneBudgetScore": 50,
             "DialoguePacingScore": 50,
             "CharacterDisambiguationScore": 100,
@@ -11398,7 +11433,8 @@
             ],
             "AgeDisambiguatedCharacters": [],
             "DiagnosticWarnings": [
-              "Missing \u0027FADE IN:\u0027 starting transition.",
+              "Non-Fountain colon dialogue format (4 instances like \u0027Character:\u0027) detected.",
+              "Missing \u0027FADE OUT.\u0027 or \u0027THE END\u0027 closing transition.",
               "Excessive scene count (566 scenes); high micro-scene density inflates video gen budget.",
               "High average dialogue length (56.9 words/turn); speech beats risk clip overrun.",
               "415 monologue turn(s) exceed 35 words without action line splits.",
@@ -12581,12 +12617,12 @@
         {
           "ModelId": "grok-4.5",
           "AnonymousLabel": "",
-          "CompositeScore": 34.8,
+          "CompositeScore": 34.3,
           "BordaPoints": 26,
           "AvgJudgeRank": 4.3,
           "SyntaxAudit": {
-            "OverallSyntaxScore": 87,
-            "FormatComplianceScore": 90,
+            "OverallSyntaxScore": 85.8,
+            "FormatComplianceScore": 85,
             "SceneBudgetScore": 100,
             "DialoguePacingScore": 70,
             "CharacterDisambiguationScore": 100,
@@ -12611,7 +12647,7 @@
               "YOUNG PETER"
             ],
             "DiagnosticWarnings": [
-              "Missing \u0027FADE IN:\u0027 starting transition.",
+              "Non-Fountain colon dialogue format (5 instances like \u0027Character:\u0027) detected.",
               "8 monologue turn(s) exceed 35 words without action line splits.",
               "Detected 1 age-qualified character header(s) (e.g. YOUNG PETER).",
               "No explicit music/sound design cues detected in screenplay."
@@ -12628,12 +12664,12 @@
         {
           "ModelId": "gemini-2.5-pro",
           "AnonymousLabel": "",
-          "CompositeScore": 34.8,
+          "CompositeScore": 34.3,
           "BordaPoints": 24,
           "AvgJudgeRank": 4.6,
           "SyntaxAudit": {
-            "OverallSyntaxScore": 87,
-            "FormatComplianceScore": 90,
+            "OverallSyntaxScore": 85.8,
+            "FormatComplianceScore": 85,
             "SceneBudgetScore": 100,
             "DialoguePacingScore": 70,
             "CharacterDisambiguationScore": 100,
@@ -12670,7 +12706,7 @@
               "YOUNG PETER"
             ],
             "DiagnosticWarnings": [
-              "Missing \u0027FADE IN:\u0027 starting transition.",
+              "Non-Fountain colon dialogue format (4 instances like \u0027Character:\u0027) detected.",
               "6 monologue turn(s) exceed 35 words without action line splits.",
               "Detected 3 age-qualified character header(s) (e.g. YOUNG BOBBY, YOUNG NICK, YOUNG PETER).",
               "No explicit music/sound design cues detected in screenplay."
@@ -12687,12 +12723,12 @@
         {
           "ModelId": "gpt-4o-mini",
           "AnonymousLabel": "",
-          "CompositeScore": 34.3,
+          "CompositeScore": 33.3,
           "BordaPoints": 34,
           "AvgJudgeRank": 3.1,
           "SyntaxAudit": {
-            "OverallSyntaxScore": 85.8,
-            "FormatComplianceScore": 90,
+            "OverallSyntaxScore": 83.3,
+            "FormatComplianceScore": 80,
             "SceneBudgetScore": 64,
             "DialoguePacingScore": 100,
             "CharacterDisambiguationScore": 100,
@@ -12720,7 +12756,8 @@
             ],
             "AgeDisambiguatedCharacters": [],
             "DiagnosticWarnings": [
-              "Missing \u0027FADE IN:\u0027 starting transition.",
+              "Non-Fountain colon dialogue format (4 instances like \u0027Character:\u0027) detected.",
+              "Missing \u0027FADE OUT.\u0027 or \u0027THE END\u0027 closing transition.",
               "Excessive scene count (63 scenes); high micro-scene density inflates video gen budget.",
               "No explicit music/sound design cues detected in screenplay."
             ]
@@ -12736,12 +12773,12 @@
         {
           "ModelId": "grok-4",
           "AnonymousLabel": "",
-          "CompositeScore": 30.8,
+          "CompositeScore": 30.3,
           "BordaPoints": 24,
           "AvgJudgeRank": 4.6,
           "SyntaxAudit": {
-            "OverallSyntaxScore": 77,
-            "FormatComplianceScore": 90,
+            "OverallSyntaxScore": 75.8,
+            "FormatComplianceScore": 85,
             "SceneBudgetScore": 50,
             "DialoguePacingScore": 70,
             "CharacterDisambiguationScore": 100,
@@ -12778,7 +12815,7 @@
             ],
             "AgeDisambiguatedCharacters": [],
             "DiagnosticWarnings": [
-              "Missing \u0027FADE IN:\u0027 starting transition.",
+              "Non-Fountain colon dialogue format (4 instances like \u0027Character:\u0027) detected.",
               "Excessive scene count (71 scenes); high micro-scene density inflates video gen budget.",
               "11 monologue turn(s) exceed 35 words without action line splits.",
               "No explicit music/sound design cues detected in screenplay."
@@ -12795,12 +12832,12 @@
         {
           "ModelId": "gpt-4o",
           "AnonymousLabel": "",
-          "CompositeScore": 29.2,
+          "CompositeScore": 28.2,
           "BordaPoints": 28,
           "AvgJudgeRank": 4,
           "SyntaxAudit": {
-            "OverallSyntaxScore": 73,
-            "FormatComplianceScore": 90,
+            "OverallSyntaxScore": 70.5,
+            "FormatComplianceScore": 80,
             "SceneBudgetScore": 50,
             "DialoguePacingScore": 50,
             "CharacterDisambiguationScore": 100,
@@ -12816,7 +12853,8 @@
             ],
             "AgeDisambiguatedCharacters": [],
             "DiagnosticWarnings": [
-              "Missing \u0027FADE IN:\u0027 starting transition.",
+              "Non-Fountain colon dialogue format (4 instances like \u0027Character:\u0027) detected.",
+              "Missing \u0027FADE OUT.\u0027 or \u0027THE END\u0027 closing transition.",
               "Excessive scene count (566 scenes); high micro-scene density inflates video gen budget.",
               "High average dialogue length (56.9 words/turn); speech beats risk clip overrun.",
               "415 monologue turn(s) exceed 35 words without action line splits.",
@@ -12834,12 +12872,12 @@
         {
           "ModelId": "o3-mini",
           "AnonymousLabel": "",
-          "CompositeScore": 29.2,
+          "CompositeScore": 28.2,
           "BordaPoints": 29,
           "AvgJudgeRank": 3.9,
           "SyntaxAudit": {
-            "OverallSyntaxScore": 73,
-            "FormatComplianceScore": 90,
+            "OverallSyntaxScore": 70.5,
+            "FormatComplianceScore": 80,
             "SceneBudgetScore": 50,
             "DialoguePacingScore": 50,
             "CharacterDisambiguationScore": 100,
@@ -12855,7 +12893,8 @@
             ],
             "AgeDisambiguatedCharacters": [],
             "DiagnosticWarnings": [
-              "Missing \u0027FADE IN:\u0027 starting transition.",
+              "Non-Fountain colon dialogue format (4 instances like \u0027Character:\u0027) detected.",
+              "Missing \u0027FADE OUT.\u0027 or \u0027THE END\u0027 closing transition.",
               "Excessive scene count (566 scenes); high micro-scene density inflates video gen budget.",
               "High average dialogue length (56.9 words/turn); speech beats risk clip overrun.",
               "415 monologue turn(s) exceed 35 words without action line splits.",
@@ -12873,12 +12912,12 @@
         {
           "ModelId": "claude-sonnet-5",
           "AnonymousLabel": "",
-          "CompositeScore": 29.2,
+          "CompositeScore": 28.2,
           "BordaPoints": 31,
           "AvgJudgeRank": 3.6,
           "SyntaxAudit": {
-            "OverallSyntaxScore": 73,
-            "FormatComplianceScore": 90,
+            "OverallSyntaxScore": 70.5,
+            "FormatComplianceScore": 80,
             "SceneBudgetScore": 50,
             "DialoguePacingScore": 50,
             "CharacterDisambiguationScore": 100,
@@ -12894,7 +12933,8 @@
             ],
             "AgeDisambiguatedCharacters": [],
             "DiagnosticWarnings": [
-              "Missing \u0027FADE IN:\u0027 starting transition.",
+              "Non-Fountain colon dialogue format (4 instances like \u0027Character:\u0027) detected.",
+              "Missing \u0027FADE OUT.\u0027 or \u0027THE END\u0027 closing transition.",
               "Excessive scene count (566 scenes); high micro-scene density inflates video gen budget.",
               "High average dialogue length (56.9 words/turn); speech beats risk clip overrun.",
               "415 monologue turn(s) exceed 35 words without action line splits.",
@@ -14077,12 +14117,12 @@
         {
           "ModelId": "grok-4.5",
           "AnonymousLabel": "",
-          "CompositeScore": 34.8,
+          "CompositeScore": 34.3,
           "BordaPoints": 26,
           "AvgJudgeRank": 4.3,
           "SyntaxAudit": {
-            "OverallSyntaxScore": 87,
-            "FormatComplianceScore": 90,
+            "OverallSyntaxScore": 85.8,
+            "FormatComplianceScore": 85,
             "SceneBudgetScore": 100,
             "DialoguePacingScore": 70,
             "CharacterDisambiguationScore": 100,
@@ -14107,7 +14147,7 @@
               "YOUNG PETER"
             ],
             "DiagnosticWarnings": [
-              "Missing \u0027FADE IN:\u0027 starting transition.",
+              "Non-Fountain colon dialogue format (5 instances like \u0027Character:\u0027) detected.",
               "8 monologue turn(s) exceed 35 words without action line splits.",
               "Detected 1 age-qualified character header(s) (e.g. YOUNG PETER).",
               "No explicit music/sound design cues detected in screenplay."
@@ -14124,12 +14164,12 @@
         {
           "ModelId": "gemini-2.5-pro",
           "AnonymousLabel": "",
-          "CompositeScore": 34.8,
+          "CompositeScore": 34.3,
           "BordaPoints": 24,
           "AvgJudgeRank": 4.6,
           "SyntaxAudit": {
-            "OverallSyntaxScore": 87,
-            "FormatComplianceScore": 90,
+            "OverallSyntaxScore": 85.8,
+            "FormatComplianceScore": 85,
             "SceneBudgetScore": 100,
             "DialoguePacingScore": 70,
             "CharacterDisambiguationScore": 100,
@@ -14166,7 +14206,7 @@
               "YOUNG PETER"
             ],
             "DiagnosticWarnings": [
-              "Missing \u0027FADE IN:\u0027 starting transition.",
+              "Non-Fountain colon dialogue format (4 instances like \u0027Character:\u0027) detected.",
               "6 monologue turn(s) exceed 35 words without action line splits.",
               "Detected 3 age-qualified character header(s) (e.g. YOUNG BOBBY, YOUNG NICK, YOUNG PETER).",
               "No explicit music/sound design cues detected in screenplay."
@@ -14183,12 +14223,12 @@
         {
           "ModelId": "gpt-4o-mini",
           "AnonymousLabel": "",
-          "CompositeScore": 34.3,
+          "CompositeScore": 33.3,
           "BordaPoints": 34,
           "AvgJudgeRank": 3.1,
           "SyntaxAudit": {
-            "OverallSyntaxScore": 85.8,
-            "FormatComplianceScore": 90,
+            "OverallSyntaxScore": 83.3,
+            "FormatComplianceScore": 80,
             "SceneBudgetScore": 64,
             "DialoguePacingScore": 100,
             "CharacterDisambiguationScore": 100,
@@ -14216,7 +14256,8 @@
             ],
             "AgeDisambiguatedCharacters": [],
             "DiagnosticWarnings": [
-              "Missing \u0027FADE IN:\u0027 starting transition.",
+              "Non-Fountain colon dialogue format (4 instances like \u0027Character:\u0027) detected.",
+              "Missing \u0027FADE OUT.\u0027 or \u0027THE END\u0027 closing transition.",
               "Excessive scene count (63 scenes); high micro-scene density inflates video gen budget.",
               "No explicit music/sound design cues detected in screenplay."
             ]
@@ -14232,12 +14273,12 @@
         {
           "ModelId": "grok-4",
           "AnonymousLabel": "",
-          "CompositeScore": 30.8,
+          "CompositeScore": 30.3,
           "BordaPoints": 24,
           "AvgJudgeRank": 4.6,
           "SyntaxAudit": {
-            "OverallSyntaxScore": 77,
-            "FormatComplianceScore": 90,
+            "OverallSyntaxScore": 75.8,
+            "FormatComplianceScore": 85,
             "SceneBudgetScore": 50,
             "DialoguePacingScore": 70,
             "CharacterDisambiguationScore": 100,
@@ -14274,7 +14315,7 @@
             ],
             "AgeDisambiguatedCharacters": [],
             "DiagnosticWarnings": [
-              "Missing \u0027FADE IN:\u0027 starting transition.",
+              "Non-Fountain colon dialogue format (4 instances like \u0027Character:\u0027) detected.",
               "Excessive scene count (71 scenes); high micro-scene density inflates video gen budget.",
               "11 monologue turn(s) exceed 35 words without action line splits.",
               "No explicit music/sound design cues detected in screenplay."
@@ -14291,12 +14332,12 @@
         {
           "ModelId": "gpt-4o",
           "AnonymousLabel": "",
-          "CompositeScore": 29.2,
+          "CompositeScore": 28.2,
           "BordaPoints": 28,
           "AvgJudgeRank": 4,
           "SyntaxAudit": {
-            "OverallSyntaxScore": 73,
-            "FormatComplianceScore": 90,
+            "OverallSyntaxScore": 70.5,
+            "FormatComplianceScore": 80,
             "SceneBudgetScore": 50,
             "DialoguePacingScore": 50,
             "CharacterDisambiguationScore": 100,
@@ -14312,7 +14353,8 @@
             ],
             "AgeDisambiguatedCharacters": [],
             "DiagnosticWarnings": [
-              "Missing \u0027FADE IN:\u0027 starting transition.",
+              "Non-Fountain colon dialogue format (4 instances like \u0027Character:\u0027) detected.",
+              "Missing \u0027FADE OUT.\u0027 or \u0027THE END\u0027 closing transition.",
               "Excessive scene count (566 scenes); high micro-scene density inflates video gen budget.",
               "High average dialogue length (56.9 words/turn); speech beats risk clip overrun.",
               "415 monologue turn(s) exceed 35 words without action line splits.",
@@ -14330,12 +14372,12 @@
         {
           "ModelId": "o3-mini",
           "AnonymousLabel": "",
-          "CompositeScore": 29.2,
+          "CompositeScore": 28.2,
           "BordaPoints": 29,
           "AvgJudgeRank": 3.9,
           "SyntaxAudit": {
-            "OverallSyntaxScore": 73,
-            "FormatComplianceScore": 90,
+            "OverallSyntaxScore": 70.5,
+            "FormatComplianceScore": 80,
             "SceneBudgetScore": 50,
             "DialoguePacingScore": 50,
             "CharacterDisambiguationScore": 100,
@@ -14351,7 +14393,8 @@
             ],
             "AgeDisambiguatedCharacters": [],
             "DiagnosticWarnings": [
-              "Missing \u0027FADE IN:\u0027 starting transition.",
+              "Non-Fountain colon dialogue format (4 instances like \u0027Character:\u0027) detected.",
+              "Missing \u0027FADE OUT.\u0027 or \u0027THE END\u0027 closing transition.",
               "Excessive scene count (566 scenes); high micro-scene density inflates video gen budget.",
               "High average dialogue length (56.9 words/turn); speech beats risk clip overrun.",
               "415 monologue turn(s) exceed 35 words without action line splits.",
@@ -14369,12 +14412,12 @@
         {
           "ModelId": "claude-sonnet-5",
           "AnonymousLabel": "",
-          "CompositeScore": 29.2,
+          "CompositeScore": 28.2,
           "BordaPoints": 31,
           "AvgJudgeRank": 3.6,
           "SyntaxAudit": {
-            "OverallSyntaxScore": 73,
-            "FormatComplianceScore": 90,
+            "OverallSyntaxScore": 70.5,
+            "FormatComplianceScore": 80,
             "SceneBudgetScore": 50,
             "DialoguePacingScore": 50,
             "CharacterDisambiguationScore": 100,
@@ -14390,7 +14433,8 @@
             ],
             "AgeDisambiguatedCharacters": [],
             "DiagnosticWarnings": [
-              "Missing \u0027FADE IN:\u0027 starting transition.",
+              "Non-Fountain colon dialogue format (4 instances like \u0027Character:\u0027) detected.",
+              "Missing \u0027FADE OUT.\u0027 or \u0027THE END\u0027 closing transition.",
               "Excessive scene count (566 scenes); high micro-scene density inflates video gen budget.",
               "High average dialogue length (56.9 words/turn); speech beats risk clip overrun.",
               "415 monologue turn(s) exceed 35 words without action line splits.",
@@ -15573,12 +15617,12 @@
         {
           "ModelId": "grok-4.5",
           "AnonymousLabel": "",
-          "CompositeScore": 34.8,
+          "CompositeScore": 34.3,
           "BordaPoints": 26,
           "AvgJudgeRank": 4.3,
           "SyntaxAudit": {
-            "OverallSyntaxScore": 87,
-            "FormatComplianceScore": 90,
+            "OverallSyntaxScore": 85.8,
+            "FormatComplianceScore": 85,
             "SceneBudgetScore": 100,
             "DialoguePacingScore": 70,
             "CharacterDisambiguationScore": 100,
@@ -15603,7 +15647,7 @@
               "YOUNG PETER"
             ],
             "DiagnosticWarnings": [
-              "Missing \u0027FADE IN:\u0027 starting transition.",
+              "Non-Fountain colon dialogue format (5 instances like \u0027Character:\u0027) detected.",
               "8 monologue turn(s) exceed 35 words without action line splits.",
               "Detected 1 age-qualified character header(s) (e.g. YOUNG PETER).",
               "No explicit music/sound design cues detected in screenplay."
@@ -15620,12 +15664,12 @@
         {
           "ModelId": "gemini-2.5-pro",
           "AnonymousLabel": "",
-          "CompositeScore": 34.8,
+          "CompositeScore": 34.3,
           "BordaPoints": 24,
           "AvgJudgeRank": 4.6,
           "SyntaxAudit": {
-            "OverallSyntaxScore": 87,
-            "FormatComplianceScore": 90,
+            "OverallSyntaxScore": 85.8,
+            "FormatComplianceScore": 85,
             "SceneBudgetScore": 100,
             "DialoguePacingScore": 70,
             "CharacterDisambiguationScore": 100,
@@ -15662,7 +15706,7 @@
               "YOUNG PETER"
             ],
             "DiagnosticWarnings": [
-              "Missing \u0027FADE IN:\u0027 starting transition.",
+              "Non-Fountain colon dialogue format (4 instances like \u0027Character:\u0027) detected.",
               "6 monologue turn(s) exceed 35 words without action line splits.",
               "Detected 3 age-qualified character header(s) (e.g. YOUNG BOBBY, YOUNG NICK, YOUNG PETER).",
               "No explicit music/sound design cues detected in screenplay."
@@ -15679,12 +15723,12 @@
         {
           "ModelId": "gpt-4o-mini",
           "AnonymousLabel": "",
-          "CompositeScore": 34.3,
+          "CompositeScore": 33.3,
           "BordaPoints": 34,
           "AvgJudgeRank": 3.1,
           "SyntaxAudit": {
-            "OverallSyntaxScore": 85.8,
-            "FormatComplianceScore": 90,
+            "OverallSyntaxScore": 83.3,
+            "FormatComplianceScore": 80,
             "SceneBudgetScore": 64,
             "DialoguePacingScore": 100,
             "CharacterDisambiguationScore": 100,
@@ -15712,7 +15756,8 @@
             ],
             "AgeDisambiguatedCharacters": [],
             "DiagnosticWarnings": [
-              "Missing \u0027FADE IN:\u0027 starting transition.",
+              "Non-Fountain colon dialogue format (4 instances like \u0027Character:\u0027) detected.",
+              "Missing \u0027FADE OUT.\u0027 or \u0027THE END\u0027 closing transition.",
               "Excessive scene count (63 scenes); high micro-scene density inflates video gen budget.",
               "No explicit music/sound design cues detected in screenplay."
             ]
@@ -15728,12 +15773,12 @@
         {
           "ModelId": "grok-4",
           "AnonymousLabel": "",
-          "CompositeScore": 30.8,
+          "CompositeScore": 30.3,
           "BordaPoints": 24,
           "AvgJudgeRank": 4.6,
           "SyntaxAudit": {
-            "OverallSyntaxScore": 77,
-            "FormatComplianceScore": 90,
+            "OverallSyntaxScore": 75.8,
+            "FormatComplianceScore": 85,
             "SceneBudgetScore": 50,
             "DialoguePacingScore": 70,
             "CharacterDisambiguationScore": 100,
@@ -15770,7 +15815,7 @@
             ],
             "AgeDisambiguatedCharacters": [],
             "DiagnosticWarnings": [
-              "Missing \u0027FADE IN:\u0027 starting transition.",
+              "Non-Fountain colon dialogue format (4 instances like \u0027Character:\u0027) detected.",
               "Excessive scene count (71 scenes); high micro-scene density inflates video gen budget.",
               "11 monologue turn(s) exceed 35 words without action line splits.",
               "No explicit music/sound design cues detected in screenplay."
@@ -15787,12 +15832,12 @@
         {
           "ModelId": "gpt-4o",
           "AnonymousLabel": "",
-          "CompositeScore": 29.2,
+          "CompositeScore": 28.2,
           "BordaPoints": 28,
           "AvgJudgeRank": 4,
           "SyntaxAudit": {
-            "OverallSyntaxScore": 73,
-            "FormatComplianceScore": 90,
+            "OverallSyntaxScore": 70.5,
+            "FormatComplianceScore": 80,
             "SceneBudgetScore": 50,
             "DialoguePacingScore": 50,
             "CharacterDisambiguationScore": 100,
@@ -15808,7 +15853,8 @@
             ],
             "AgeDisambiguatedCharacters": [],
             "DiagnosticWarnings": [
-              "Missing \u0027FADE IN:\u0027 starting transition.",
+              "Non-Fountain colon dialogue format (4 instances like \u0027Character:\u0027) detected.",
+              "Missing \u0027FADE OUT.\u0027 or \u0027THE END\u0027 closing transition.",
               "Excessive scene count (566 scenes); high micro-scene density inflates video gen budget.",
               "High average dialogue length (56.9 words/turn); speech beats risk clip overrun.",
               "415 monologue turn(s) exceed 35 words without action line splits.",
@@ -15826,12 +15872,12 @@
         {
           "ModelId": "o3-mini",
           "AnonymousLabel": "",
-          "CompositeScore": 29.2,
+          "CompositeScore": 28.2,
           "BordaPoints": 29,
           "AvgJudgeRank": 3.9,
           "SyntaxAudit": {
-            "OverallSyntaxScore": 73,
-            "FormatComplianceScore": 90,
+            "OverallSyntaxScore": 70.5,
+            "FormatComplianceScore": 80,
             "SceneBudgetScore": 50,
             "DialoguePacingScore": 50,
             "CharacterDisambiguationScore": 100,
@@ -15847,7 +15893,8 @@
             ],
             "AgeDisambiguatedCharacters": [],
             "DiagnosticWarnings": [
-              "Missing \u0027FADE IN:\u0027 starting transition.",
+              "Non-Fountain colon dialogue format (4 instances like \u0027Character:\u0027) detected.",
+              "Missing \u0027FADE OUT.\u0027 or \u0027THE END\u0027 closing transition.",
               "Excessive scene count (566 scenes); high micro-scene density inflates video gen budget.",
               "High average dialogue length (56.9 words/turn); speech beats risk clip overrun.",
               "415 monologue turn(s) exceed 35 words without action line splits.",
@@ -15865,12 +15912,12 @@
         {
           "ModelId": "claude-sonnet-5",
           "AnonymousLabel": "",
-          "CompositeScore": 29.2,
+          "CompositeScore": 28.2,
           "BordaPoints": 31,
           "AvgJudgeRank": 3.6,
           "SyntaxAudit": {
-            "OverallSyntaxScore": 73,
-            "FormatComplianceScore": 90,
+            "OverallSyntaxScore": 70.5,
+            "FormatComplianceScore": 80,
             "SceneBudgetScore": 50,
             "DialoguePacingScore": 50,
             "CharacterDisambiguationScore": 100,
@@ -15886,7 +15933,8 @@
             ],
             "AgeDisambiguatedCharacters": [],
             "DiagnosticWarnings": [
-              "Missing \u0027FADE IN:\u0027 starting transition.",
+              "Non-Fountain colon dialogue format (4 instances like \u0027Character:\u0027) detected.",
+              "Missing \u0027FADE OUT.\u0027 or \u0027THE END\u0027 closing transition.",
               "Excessive scene count (566 scenes); high micro-scene density inflates video gen budget.",
               "High average dialogue length (56.9 words/turn); speech beats risk clip overrun.",
               "415 monologue turn(s) exceed 35 words without action line splits.",
@@ -17069,12 +17117,12 @@
         {
           "ModelId": "grok-4.5",
           "AnonymousLabel": "",
-          "CompositeScore": 34.8,
+          "CompositeScore": 34.3,
           "BordaPoints": 26,
           "AvgJudgeRank": 4.3,
           "SyntaxAudit": {
-            "OverallSyntaxScore": 87,
-            "FormatComplianceScore": 90,
+            "OverallSyntaxScore": 85.8,
+            "FormatComplianceScore": 85,
             "SceneBudgetScore": 100,
             "DialoguePacingScore": 70,
             "CharacterDisambiguationScore": 100,
@@ -17099,7 +17147,7 @@
               "YOUNG PETER"
             ],
             "DiagnosticWarnings": [
-              "Missing \u0027FADE IN:\u0027 starting transition.",
+              "Non-Fountain colon dialogue format (5 instances like \u0027Character:\u0027) detected.",
               "8 monologue turn(s) exceed 35 words without action line splits.",
               "Detected 1 age-qualified character header(s) (e.g. YOUNG PETER).",
               "No explicit music/sound design cues detected in screenplay."
@@ -17116,12 +17164,12 @@
         {
           "ModelId": "gemini-2.5-pro",
           "AnonymousLabel": "",
-          "CompositeScore": 34.8,
+          "CompositeScore": 34.3,
           "BordaPoints": 24,
           "AvgJudgeRank": 4.6,
           "SyntaxAudit": {
-            "OverallSyntaxScore": 87,
-            "FormatComplianceScore": 90,
+            "OverallSyntaxScore": 85.8,
+            "FormatComplianceScore": 85,
             "SceneBudgetScore": 100,
             "DialoguePacingScore": 70,
             "CharacterDisambiguationScore": 100,
@@ -17158,7 +17206,7 @@
               "YOUNG PETER"
             ],
             "DiagnosticWarnings": [
-              "Missing \u0027FADE IN:\u0027 starting transition.",
+              "Non-Fountain colon dialogue format (4 instances like \u0027Character:\u0027) detected.",
               "6 monologue turn(s) exceed 35 words without action line splits.",
               "Detected 3 age-qualified character header(s) (e.g. YOUNG BOBBY, YOUNG NICK, YOUNG PETER).",
               "No explicit music/sound design cues detected in screenplay."
@@ -17175,12 +17223,12 @@
         {
           "ModelId": "gpt-4o-mini",
           "AnonymousLabel": "",
-          "CompositeScore": 34.3,
+          "CompositeScore": 33.3,
           "BordaPoints": 34,
           "AvgJudgeRank": 3.1,
           "SyntaxAudit": {
-            "OverallSyntaxScore": 85.8,
-            "FormatComplianceScore": 90,
+            "OverallSyntaxScore": 83.3,
+            "FormatComplianceScore": 80,
             "SceneBudgetScore": 64,
             "DialoguePacingScore": 100,
             "CharacterDisambiguationScore": 100,
@@ -17208,7 +17256,8 @@
             ],
             "AgeDisambiguatedCharacters": [],
             "DiagnosticWarnings": [
-              "Missing \u0027FADE IN:\u0027 starting transition.",
+              "Non-Fountain colon dialogue format (4 instances like \u0027Character:\u0027) detected.",
+              "Missing \u0027FADE OUT.\u0027 or \u0027THE END\u0027 closing transition.",
               "Excessive scene count (63 scenes); high micro-scene density inflates video gen budget.",
               "No explicit music/sound design cues detected in screenplay."
             ]
@@ -17224,12 +17273,12 @@
         {
           "ModelId": "grok-4",
           "AnonymousLabel": "",
-          "CompositeScore": 30.8,
+          "CompositeScore": 30.3,
           "BordaPoints": 24,
           "AvgJudgeRank": 4.6,
           "SyntaxAudit": {
-            "OverallSyntaxScore": 77,
-            "FormatComplianceScore": 90,
+            "OverallSyntaxScore": 75.8,
+            "FormatComplianceScore": 85,
             "SceneBudgetScore": 50,
             "DialoguePacingScore": 70,
             "CharacterDisambiguationScore": 100,
@@ -17266,7 +17315,7 @@
             ],
             "AgeDisambiguatedCharacters": [],
             "DiagnosticWarnings": [
-              "Missing \u0027FADE IN:\u0027 starting transition.",
+              "Non-Fountain colon dialogue format (4 instances like \u0027Character:\u0027) detected.",
               "Excessive scene count (71 scenes); high micro-scene density inflates video gen budget.",
               "11 monologue turn(s) exceed 35 words without action line splits.",
               "No explicit music/sound design cues detected in screenplay."
@@ -17283,12 +17332,12 @@
         {
           "ModelId": "gpt-4o",
           "AnonymousLabel": "",
-          "CompositeScore": 29.2,
+          "CompositeScore": 28.2,
           "BordaPoints": 28,
           "AvgJudgeRank": 4,
           "SyntaxAudit": {
-            "OverallSyntaxScore": 73,
-            "FormatComplianceScore": 90,
+            "OverallSyntaxScore": 70.5,
+            "FormatComplianceScore": 80,
             "SceneBudgetScore": 50,
             "DialoguePacingScore": 50,
             "CharacterDisambiguationScore": 100,
@@ -17304,7 +17353,8 @@
             ],
             "AgeDisambiguatedCharacters": [],
             "DiagnosticWarnings": [
-              "Missing \u0027FADE IN:\u0027 starting transition.",
+              "Non-Fountain colon dialogue format (4 instances like \u0027Character:\u0027) detected.",
+              "Missing \u0027FADE OUT.\u0027 or \u0027THE END\u0027 closing transition.",
               "Excessive scene count (566 scenes); high micro-scene density inflates video gen budget.",
               "High average dialogue length (56.9 words/turn); speech beats risk clip overrun.",
               "415 monologue turn(s) exceed 35 words without action line splits.",
@@ -17322,12 +17372,12 @@
         {
           "ModelId": "o3-mini",
           "AnonymousLabel": "",
-          "CompositeScore": 29.2,
+          "CompositeScore": 28.2,
           "BordaPoints": 29,
           "AvgJudgeRank": 3.9,
           "SyntaxAudit": {
-            "OverallSyntaxScore": 73,
-            "FormatComplianceScore": 90,
+            "OverallSyntaxScore": 70.5,
+            "FormatComplianceScore": 80,
             "SceneBudgetScore": 50,
             "DialoguePacingScore": 50,
             "CharacterDisambiguationScore": 100,
@@ -17343,7 +17393,8 @@
             ],
             "AgeDisambiguatedCharacters": [],
             "DiagnosticWarnings": [
-              "Missing \u0027FADE IN:\u0027 starting transition.",
+              "Non-Fountain colon dialogue format (4 instances like \u0027Character:\u0027) detected.",
+              "Missing \u0027FADE OUT.\u0027 or \u0027THE END\u0027 closing transition.",
               "Excessive scene count (566 scenes); high micro-scene density inflates video gen budget.",
               "High average dialogue length (56.9 words/turn); speech beats risk clip overrun.",
               "415 monologue turn(s) exceed 35 words without action line splits.",
@@ -17361,12 +17412,12 @@
         {
           "ModelId": "claude-sonnet-5",
           "AnonymousLabel": "",
-          "CompositeScore": 29.2,
+          "CompositeScore": 28.2,
           "BordaPoints": 31,
           "AvgJudgeRank": 3.6,
           "SyntaxAudit": {
-            "OverallSyntaxScore": 73,
-            "FormatComplianceScore": 90,
+            "OverallSyntaxScore": 70.5,
+            "FormatComplianceScore": 80,
             "SceneBudgetScore": 50,
             "DialoguePacingScore": 50,
             "CharacterDisambiguationScore": 100,
@@ -17382,7 +17433,8 @@
             ],
             "AgeDisambiguatedCharacters": [],
             "DiagnosticWarnings": [
-              "Missing \u0027FADE IN:\u0027 starting transition.",
+              "Non-Fountain colon dialogue format (4 instances like \u0027Character:\u0027) detected.",
+              "Missing \u0027FADE OUT.\u0027 or \u0027THE END\u0027 closing transition.",
               "Excessive scene count (566 scenes); high micro-scene density inflates video gen budget.",
               "High average dialogue length (56.9 words/turn); speech beats risk clip overrun.",
               "415 monologue turn(s) exceed 35 words without action line splits.",
@@ -18565,12 +18617,12 @@
         {
           "ModelId": "grok-4.5",
           "AnonymousLabel": "",
-          "CompositeScore": 34.8,
+          "CompositeScore": 34.3,
           "BordaPoints": 26,
           "AvgJudgeRank": 4.3,
           "SyntaxAudit": {
-            "OverallSyntaxScore": 87,
-            "FormatComplianceScore": 90,
+            "OverallSyntaxScore": 85.8,
+            "FormatComplianceScore": 85,
             "SceneBudgetScore": 100,
             "DialoguePacingScore": 70,
             "CharacterDisambiguationScore": 100,
@@ -18595,7 +18647,7 @@
               "YOUNG PETER"
             ],
             "DiagnosticWarnings": [
-              "Missing \u0027FADE IN:\u0027 starting transition.",
+              "Non-Fountain colon dialogue format (5 instances like \u0027Character:\u0027) detected.",
               "8 monologue turn(s) exceed 35 words without action line splits.",
               "Detected 1 age-qualified character header(s) (e.g. YOUNG PETER).",
               "No explicit music/sound design cues detected in screenplay."
@@ -18612,12 +18664,12 @@
         {
           "ModelId": "gemini-2.5-pro",
           "AnonymousLabel": "",
-          "CompositeScore": 34.8,
+          "CompositeScore": 34.3,
           "BordaPoints": 24,
           "AvgJudgeRank": 4.6,
           "SyntaxAudit": {
-            "OverallSyntaxScore": 87,
-            "FormatComplianceScore": 90,
+            "OverallSyntaxScore": 85.8,
+            "FormatComplianceScore": 85,
             "SceneBudgetScore": 100,
             "DialoguePacingScore": 70,
             "CharacterDisambiguationScore": 100,
@@ -18654,7 +18706,7 @@
               "YOUNG PETER"
             ],
             "DiagnosticWarnings": [
-              "Missing \u0027FADE IN:\u0027 starting transition.",
+              "Non-Fountain colon dialogue format (4 instances like \u0027Character:\u0027) detected.",
               "6 monologue turn(s) exceed 35 words without action line splits.",
               "Detected 3 age-qualified character header(s) (e.g. YOUNG BOBBY, YOUNG NICK, YOUNG PETER).",
               "No explicit music/sound design cues detected in screenplay."
@@ -18671,12 +18723,12 @@
         {
           "ModelId": "gpt-4o-mini",
           "AnonymousLabel": "",
-          "CompositeScore": 34.3,
+          "CompositeScore": 33.3,
           "BordaPoints": 34,
           "AvgJudgeRank": 3.1,
           "SyntaxAudit": {
-            "OverallSyntaxScore": 85.8,
-            "FormatComplianceScore": 90,
+            "OverallSyntaxScore": 83.3,
+            "FormatComplianceScore": 80,
             "SceneBudgetScore": 64,
             "DialoguePacingScore": 100,
             "CharacterDisambiguationScore": 100,
@@ -18704,7 +18756,8 @@
             ],
             "AgeDisambiguatedCharacters": [],
             "DiagnosticWarnings": [
-              "Missing \u0027FADE IN:\u0027 starting transition.",
+              "Non-Fountain colon dialogue format (4 instances like \u0027Character:\u0027) detected.",
+              "Missing \u0027FADE OUT.\u0027 or \u0027THE END\u0027 closing transition.",
               "Excessive scene count (63 scenes); high micro-scene density inflates video gen budget.",
               "No explicit music/sound design cues detected in screenplay."
             ]
@@ -18720,12 +18773,12 @@
         {
           "ModelId": "grok-4",
           "AnonymousLabel": "",
-          "CompositeScore": 30.8,
+          "CompositeScore": 30.3,
           "BordaPoints": 24,
           "AvgJudgeRank": 4.6,
           "SyntaxAudit": {
-            "OverallSyntaxScore": 77,
-            "FormatComplianceScore": 90,
+            "OverallSyntaxScore": 75.8,
+            "FormatComplianceScore": 85,
             "SceneBudgetScore": 50,
             "DialoguePacingScore": 70,
             "CharacterDisambiguationScore": 100,
@@ -18762,7 +18815,7 @@
             ],
             "AgeDisambiguatedCharacters": [],
             "DiagnosticWarnings": [
-              "Missing \u0027FADE IN:\u0027 starting transition.",
+              "Non-Fountain colon dialogue format (4 instances like \u0027Character:\u0027) detected.",
               "Excessive scene count (71 scenes); high micro-scene density inflates video gen budget.",
               "11 monologue turn(s) exceed 35 words without action line splits.",
               "No explicit music/sound design cues detected in screenplay."
@@ -18779,12 +18832,12 @@
         {
           "ModelId": "gpt-4o",
           "AnonymousLabel": "",
-          "CompositeScore": 29.2,
+          "CompositeScore": 28.2,
           "BordaPoints": 28,
           "AvgJudgeRank": 4,
           "SyntaxAudit": {
-            "OverallSyntaxScore": 73,
-            "FormatComplianceScore": 90,
+            "OverallSyntaxScore": 70.5,
+            "FormatComplianceScore": 80,
             "SceneBudgetScore": 50,
             "DialoguePacingScore": 50,
             "CharacterDisambiguationScore": 100,
@@ -18800,7 +18853,8 @@
             ],
             "AgeDisambiguatedCharacters": [],
             "DiagnosticWarnings": [
-              "Missing \u0027FADE IN:\u0027 starting transition.",
+              "Non-Fountain colon dialogue format (4 instances like \u0027Character:\u0027) detected.",
+              "Missing \u0027FADE OUT.\u0027 or \u0027THE END\u0027 closing transition.",
               "Excessive scene count (566 scenes); high micro-scene density inflates video gen budget.",
               "High average dialogue length (56.9 words/turn); speech beats risk clip overrun.",
               "415 monologue turn(s) exceed 35 words without action line splits.",
@@ -18818,12 +18872,12 @@
         {
           "ModelId": "o3-mini",
           "AnonymousLabel": "",
-          "CompositeScore": 29.2,
+          "CompositeScore": 28.2,
           "BordaPoints": 29,
           "AvgJudgeRank": 3.9,
           "SyntaxAudit": {
-            "OverallSyntaxScore": 73,
-            "FormatComplianceScore": 90,
+            "OverallSyntaxScore": 70.5,
+            "FormatComplianceScore": 80,
             "SceneBudgetScore": 50,
             "DialoguePacingScore": 50,
             "CharacterDisambiguationScore": 100,
@@ -18839,7 +18893,8 @@
             ],
             "AgeDisambiguatedCharacters": [],
             "DiagnosticWarnings": [
-              "Missing \u0027FADE IN:\u0027 starting transition.",
+              "Non-Fountain colon dialogue format (4 instances like \u0027Character:\u0027) detected.",
+              "Missing \u0027FADE OUT.\u0027 or \u0027THE END\u0027 closing transition.",
               "Excessive scene count (566 scenes); high micro-scene density inflates video gen budget.",
               "High average dialogue length (56.9 words/turn); speech beats risk clip overrun.",
               "415 monologue turn(s) exceed 35 words without action line splits.",
@@ -18857,12 +18912,12 @@
         {
           "ModelId": "claude-sonnet-5",
           "AnonymousLabel": "",
-          "CompositeScore": 29.2,
+          "CompositeScore": 28.2,
           "BordaPoints": 31,
           "AvgJudgeRank": 3.6,
           "SyntaxAudit": {
-            "OverallSyntaxScore": 73,
-            "FormatComplianceScore": 90,
+            "OverallSyntaxScore": 70.5,
+            "FormatComplianceScore": 80,
             "SceneBudgetScore": 50,
             "DialoguePacingScore": 50,
             "CharacterDisambiguationScore": 100,
@@ -18878,7 +18933,8 @@
             ],
             "AgeDisambiguatedCharacters": [],
             "DiagnosticWarnings": [
-              "Missing \u0027FADE IN:\u0027 starting transition.",
+              "Non-Fountain colon dialogue format (4 instances like \u0027Character:\u0027) detected.",
+              "Missing \u0027FADE OUT.\u0027 or \u0027THE END\u0027 closing transition.",
               "Excessive scene count (566 scenes); high micro-scene density inflates video gen budget.",
               "High average dialogue length (56.9 words/turn); speech beats risk clip overrun.",
               "415 monologue turn(s) exceed 35 words without action line splits.",
@@ -20061,12 +20117,12 @@
         {
           "ModelId": "grok-4.5",
           "AnonymousLabel": "",
-          "CompositeScore": 84,
+          "CompositeScore": 83.5,
           "BordaPoints": 39,
           "AvgJudgeRank": 2.4,
           "SyntaxAudit": {
-            "OverallSyntaxScore": 87,
-            "FormatComplianceScore": 90,
+            "OverallSyntaxScore": 85.8,
+            "FormatComplianceScore": 85,
             "SceneBudgetScore": 100,
             "DialoguePacingScore": 70,
             "CharacterDisambiguationScore": 100,
@@ -20091,7 +20147,7 @@
               "YOUNG PETER"
             ],
             "DiagnosticWarnings": [
-              "Missing \u0027FADE IN:\u0027 starting transition.",
+              "Non-Fountain colon dialogue format (5 instances like \u0027Character:\u0027) detected.",
               "8 monologue turn(s) exceed 35 words without action line splits.",
               "Detected 1 age-qualified character header(s) (e.g. YOUNG PETER).",
               "No explicit music/sound design cues detected in screenplay."
@@ -20108,12 +20164,12 @@
         {
           "ModelId": "gemini-2.5-pro",
           "AnonymousLabel": "",
-          "CompositeScore": 82.8,
+          "CompositeScore": 82.3,
           "BordaPoints": 31,
           "AvgJudgeRank": 3.6,
           "SyntaxAudit": {
-            "OverallSyntaxScore": 87,
-            "FormatComplianceScore": 90,
+            "OverallSyntaxScore": 85.8,
+            "FormatComplianceScore": 85,
             "SceneBudgetScore": 100,
             "DialoguePacingScore": 70,
             "CharacterDisambiguationScore": 100,
@@ -20150,7 +20206,7 @@
               "YOUNG PETER"
             ],
             "DiagnosticWarnings": [
-              "Missing \u0027FADE IN:\u0027 starting transition.",
+              "Non-Fountain colon dialogue format (4 instances like \u0027Character:\u0027) detected.",
               "6 monologue turn(s) exceed 35 words without action line splits.",
               "Detected 3 age-qualified character header(s) (e.g. YOUNG BOBBY, YOUNG NICK, YOUNG PETER).",
               "No explicit music/sound design cues detected in screenplay."
@@ -20167,12 +20223,12 @@
         {
           "ModelId": "grok-4",
           "AnonymousLabel": "",
-          "CompositeScore": 78.2,
+          "CompositeScore": 77.7,
           "BordaPoints": 30,
           "AvgJudgeRank": 3.7,
           "SyntaxAudit": {
-            "OverallSyntaxScore": 77,
-            "FormatComplianceScore": 90,
+            "OverallSyntaxScore": 75.8,
+            "FormatComplianceScore": 85,
             "SceneBudgetScore": 50,
             "DialoguePacingScore": 70,
             "CharacterDisambiguationScore": 100,
@@ -20209,7 +20265,7 @@
             ],
             "AgeDisambiguatedCharacters": [],
             "DiagnosticWarnings": [
-              "Missing \u0027FADE IN:\u0027 starting transition.",
+              "Non-Fountain colon dialogue format (4 instances like \u0027Character:\u0027) detected.",
               "Excessive scene count (71 scenes); high micro-scene density inflates video gen budget.",
               "11 monologue turn(s) exceed 35 words without action line splits.",
               "No explicit music/sound design cues detected in screenplay."
@@ -20226,12 +20282,12 @@
         {
           "ModelId": "gpt-4o-mini",
           "AnonymousLabel": "",
-          "CompositeScore": 76.3,
+          "CompositeScore": 75.3,
           "BordaPoints": 35,
           "AvgJudgeRank": 3,
           "SyntaxAudit": {
-            "OverallSyntaxScore": 85.8,
-            "FormatComplianceScore": 90,
+            "OverallSyntaxScore": 83.3,
+            "FormatComplianceScore": 80,
             "SceneBudgetScore": 64,
             "DialoguePacingScore": 100,
             "CharacterDisambiguationScore": 100,
@@ -20259,7 +20315,8 @@
             ],
             "AgeDisambiguatedCharacters": [],
             "DiagnosticWarnings": [
-              "Missing \u0027FADE IN:\u0027 starting transition.",
+              "Non-Fountain colon dialogue format (4 instances like \u0027Character:\u0027) detected.",
+              "Missing \u0027FADE OUT.\u0027 or \u0027THE END\u0027 closing transition.",
               "Excessive scene count (63 scenes); high micro-scene density inflates video gen budget.",
               "No explicit music/sound design cues detected in screenplay."
             ]
@@ -20275,12 +20332,12 @@
         {
           "ModelId": "o3-mini",
           "AnonymousLabel": "",
-          "CompositeScore": 41.8,
+          "CompositeScore": 40.8,
           "BordaPoints": 23,
           "AvgJudgeRank": 4.7,
           "SyntaxAudit": {
-            "OverallSyntaxScore": 73,
-            "FormatComplianceScore": 90,
+            "OverallSyntaxScore": 70.5,
+            "FormatComplianceScore": 80,
             "SceneBudgetScore": 50,
             "DialoguePacingScore": 50,
             "CharacterDisambiguationScore": 100,
@@ -20296,7 +20353,8 @@
             ],
             "AgeDisambiguatedCharacters": [],
             "DiagnosticWarnings": [
-              "Missing \u0027FADE IN:\u0027 starting transition.",
+              "Non-Fountain colon dialogue format (4 instances like \u0027Character:\u0027) detected.",
+              "Missing \u0027FADE OUT.\u0027 or \u0027THE END\u0027 closing transition.",
               "Excessive scene count (566 scenes); high micro-scene density inflates video gen budget.",
               "High average dialogue length (56.9 words/turn); speech beats risk clip overrun.",
               "415 monologue turn(s) exceed 35 words without action line splits.",
@@ -20314,12 +20372,12 @@
         {
           "ModelId": "gpt-4o",
           "AnonymousLabel": "",
-          "CompositeScore": 40.6,
+          "CompositeScore": 39.6,
           "BordaPoints": 18,
           "AvgJudgeRank": 5.4,
           "SyntaxAudit": {
-            "OverallSyntaxScore": 73,
-            "FormatComplianceScore": 90,
+            "OverallSyntaxScore": 70.5,
+            "FormatComplianceScore": 80,
             "SceneBudgetScore": 50,
             "DialoguePacingScore": 50,
             "CharacterDisambiguationScore": 100,
@@ -20335,7 +20393,8 @@
             ],
             "AgeDisambiguatedCharacters": [],
             "DiagnosticWarnings": [
-              "Missing \u0027FADE IN:\u0027 starting transition.",
+              "Non-Fountain colon dialogue format (4 instances like \u0027Character:\u0027) detected.",
+              "Missing \u0027FADE OUT.\u0027 or \u0027THE END\u0027 closing transition.",
               "Excessive scene count (566 scenes); high micro-scene density inflates video gen budget.",
               "High average dialogue length (56.9 words/turn); speech beats risk clip overrun.",
               "415 monologue turn(s) exceed 35 words without action line splits.",
@@ -20353,12 +20412,12 @@
         {
           "ModelId": "claude-sonnet-5",
           "AnonymousLabel": "",
-          "CompositeScore": 40.6,
+          "CompositeScore": 39.6,
           "BordaPoints": 20,
           "AvgJudgeRank": 5.1,
           "SyntaxAudit": {
-            "OverallSyntaxScore": 73,
-            "FormatComplianceScore": 90,
+            "OverallSyntaxScore": 70.5,
+            "FormatComplianceScore": 80,
             "SceneBudgetScore": 50,
             "DialoguePacingScore": 50,
             "CharacterDisambiguationScore": 100,
@@ -20374,7 +20433,8 @@
             ],
             "AgeDisambiguatedCharacters": [],
             "DiagnosticWarnings": [
-              "Missing \u0027FADE IN:\u0027 starting transition.",
+              "Non-Fountain colon dialogue format (4 instances like \u0027Character:\u0027) detected.",
+              "Missing \u0027FADE OUT.\u0027 or \u0027THE END\u0027 closing transition.",
               "Excessive scene count (566 scenes); high micro-scene density inflates video gen budget.",
               "High average dialogue length (56.9 words/turn); speech beats risk clip overrun.",
               "415 monologue turn(s) exceed 35 words without action line splits.",

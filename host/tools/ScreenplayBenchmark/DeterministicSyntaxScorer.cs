@@ -50,10 +50,40 @@ public static class DeterministicSyntaxScorer
 
         // 1. Format Compliance Score
         double formatScore = 100.0;
-        if (!fountainText.TrimStart().StartsWith("FADE IN:", StringComparison.OrdinalIgnoreCase))
+        var trimmedStart = fountainText.TrimStart();
+
+        // Title Page Audit
+        bool hasTitleHeader = Regex.IsMatch(fountainText, @"^(Title|Title:|Credit:|Author:|Draft date:)", RegexOptions.IgnoreCase | RegexOptions.Multiline);
+        bool hasFadeIn = trimmedStart.StartsWith("FADE IN:", StringComparison.OrdinalIgnoreCase);
+
+        if (!hasFadeIn && !hasTitleHeader)
         {
             formatScore -= 10.0;
-            result.DiagnosticWarnings.Add("Missing 'FADE IN:' starting transition.");
+            result.DiagnosticWarnings.Add("Missing 'FADE IN:' starting transition or Fountain Title Page header.");
+        }
+        else if (hasTitleHeader)
+        {
+            // Title Page present
+        }
+
+        // Markdown Pollution Audit
+        if (Regex.IsMatch(fountainText, @"^\s*#{1,3}\s+", RegexOptions.Multiline))
+        {
+            formatScore -= 15.0;
+            result.DiagnosticWarnings.Add("Markdown header syntax (# Scene) detected instead of clean Fountain headings.");
+        }
+        if (Regex.IsMatch(fountainText, @"\*\*(INT\.|EXT\.)", RegexOptions.IgnoreCase))
+        {
+            formatScore -= 10.0;
+            result.DiagnosticWarnings.Add("Bolded markdown scene headings (**INT...**) detected.");
+        }
+
+        // Script Colon Character Pattern Audit (e.g. Buster: "Hello" instead of Fountain CHARACTER block)
+        var colonCharacterMatches = Regex.Matches(fountainText, @"^[A-Z][a-z0-9_]{1,15}:\s*\S+", RegexOptions.Multiline);
+        if (colonCharacterMatches.Count > 2)
+        {
+            formatScore -= 15.0;
+            result.DiagnosticWarnings.Add($"Non-Fountain colon dialogue format ({colonCharacterMatches.Count} instances like 'Character:') detected.");
         }
 
         if (fountainText.Contains("[Page ", StringComparison.OrdinalIgnoreCase))
@@ -83,7 +113,16 @@ public static class DeterministicSyntaxScorer
             formatScore -= Math.Min(20.0, vagueLocations.Count * 5.0);
             result.DiagnosticWarnings.Add($"Vague location heading(s) found: {string.Join("; ", vagueLocations.Take(3))}");
         }
-        result.FormatComplianceScore = Math.Max(0.0, formatScore);
+
+        // Closing Transition Audit
+        bool hasClosingTransition = Regex.IsMatch(fountainText, @"\b(FADE OUT\.|THE END|> THE END <)\s*$", RegexOptions.IgnoreCase);
+        if (!hasClosingTransition)
+        {
+            formatScore -= 5.0;
+            result.DiagnosticWarnings.Add("Missing 'FADE OUT.' or 'THE END' closing transition.");
+        }
+
+        result.FormatComplianceScore = Math.Max(0.0, Math.Min(100.0, formatScore));
 
         // 2. Scene Budget & Granularity Score
         // Soft target: 15 - 30 scenes for a standard adaptation.
