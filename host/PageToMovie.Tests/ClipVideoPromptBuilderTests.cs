@@ -332,6 +332,32 @@ public class ClipVideoPromptBuilderTests
         Assert.DoesNotContain("/ 480p, 24fps", compressed);
         Assert.Contains("Kodak 500T film", compressed);
         Assert.Contains("C1 I1", compressed);
+        // Regression: this instruction used to be deleted outright rather than shortened, leaving
+        // the focus character's reference image attached (I1) with no instruction to match it.
+        Assert.Contains("Match I1 exactly.", compressed);
+    }
+
+    [Fact]
+    public void CompressPromptText_alias_substitution_does_not_corrupt_prefix_keys()
+    {
+        // Regression: plain string Replace() in first-appearance order corrupted a key that is a
+        // prefix of another (e.g. Character_Mom vs Character_Mom_Assistant) — replacing the
+        // shorter one first mangled the longer one's occurrences into "C1_Assistant" before it
+        // ever got its own alias, silently breaking that character's identity references.
+        var input = "CHARACTER VARIABLES:\n" +
+                    " Character_Mom <IMAGE_1>: Middle-aged woman.\n" +
+                    " Character_Mom_Assistant <IMAGE_2>: Younger woman, Mom's assistant.\n" +
+                    "THIS CLIP:\n" +
+                    "Character_Mom ON CAMERA lip-syncs to Character_Mom_Assistant <IMAGE_2>.";
+
+        var compressed = ClipVideoPromptBuilder.CompressPromptText(input);
+
+        Assert.DoesNotContain("Character_Mom", compressed);
+        Assert.DoesNotContain("_Assistant", compressed);
+        // Both characters must end up with their own clean, distinct alias.
+        var aliases = System.Text.RegularExpressions.Regex.Matches(compressed, @"\bC\d+\b")
+            .Select(m => m.Value).Distinct().ToList();
+        Assert.Equal(2, aliases.Count);
     }
 
     [Fact]

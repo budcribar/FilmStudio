@@ -655,16 +655,20 @@ public static class ClipVideoPromptBuilder
         p = p.Replace("Follow the camera framing and location in this prompt exactly. Prioritize the PRIMARY subject and ONE clear action with visible motion; background characters may stay mostly still.", "");
         p = p.Replace("CONTEXT (prior clip in scene — new cast plate refs attached; match location/lighting if still valid; identity from CHARACTER VARIABLES + locked plates only):", "CONTEXT:");
 
-        // 2. Map all distinct Character_* keys to compact aliases C1, C2, C3...
+        // 2. Map all distinct Character_* keys to compact aliases C1, C2, C3... — numbered in
+        // first-appearance order (readable, matches existing behavior), but REPLACED longest-key-
+        // first: a plain string Replace of a key that happens to be a prefix of another (e.g.
+        // "Character_Mom" vs "Character_Mom_Assistant") would otherwise mangle the longer key's
+        // occurrences into "C1_Assistant" before it ever got its own turn to alias, silently
+        // corrupting that character's identity references for the rest of the prompt.
         var matches = Regex.Matches(p, @"\bCharacter_([A-Za-z0-9_]+)\b");
         var distinctKeys = matches.Select(m => m.Value).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+        var aliasByKey = distinctKeys
+            .Select((key, i) => (key, alias: $"C{i + 1}"))
+            .ToDictionary(x => x.key, x => x.alias, StringComparer.OrdinalIgnoreCase);
 
-        for (var i = 0; i < distinctKeys.Count; i++)
-        {
-            var key = distinctKeys[i]; // e.g. "Character_The_Narrator"
-            var alias = $"C{i + 1}";    // e.g. "C1"
-            p = p.Replace(key, alias);
-        }
+        foreach (var key in distinctKeys.OrderByDescending(k => k.Length))
+            p = p.Replace(key, aliasByKey[key]);
 
         // 3. Compress image reference tags (<IMAGE_1> -> I1, <IMAGE_2> -> I2)
         p = Regex.Replace(p, @"<IMAGE_(\d+)>", "I$1");
@@ -687,7 +691,12 @@ public static class ClipVideoPromptBuilder
         // Simplify audio/voice directives & strip voice descriptions/locks (visual video models do not use voice tuning text)
         p = Regex.Replace(p, @"\s*Voice:\s*[^;.\n]+(?:;[^;.\n]+)*[;.]?", "");
         p = Regex.Replace(p, @"\s*VOICE LOCK\s+[^:\n]+:[^\n]+", "");
-        p = Regex.Replace(p, @"\s*Match appearance of reference\s+I\d+\s+exactly\.?", "");
+        // Shorten, don't delete — this is the only explicit instruction to lock the focus
+        // character's face to its attached reference image; dropping it entirely (as opposed to
+        // just shortening the wording) left only the bare "I1" tag with no instruction attached,
+        // exactly the failure mode most likely on busy multi-character prompts (the ones long
+        // enough to trigger compression in the first place).
+        p = Regex.Replace(p, @"\s*Match appearance of reference\s+(I\d+)\s+exactly\.?", " Match $1 exactly.");
         p = p.Replace("Start speaking immediately with ", "Start speaking: ");
         p = p.Replace(" — do not skip, delay, or swallow the opening word. After the last word, hold a brief natural pause with a closed mouth (about half a second); do not freeze mid-syllable or trail into empty staring. Other mouths closed. Speech intelligible; never silent.", ".");
         p = p.Replace("End cleanly when the spoken line and primary action finish — do not hold a frozen pose or empty silence after dialogue.", "");
