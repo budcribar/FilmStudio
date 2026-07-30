@@ -181,15 +181,13 @@ public class ClipDialogueVerificationTests
     }
 
     [Fact]
-    public void LooksTruncated_FalseWhenNoDialogueWasExpected()
+    public void CalculateAccuracyScore_IgnoresUSUKSpellingDifferences()
     {
-        var result = new ClipDialogueVerificationResult
-        {
-            ExpectedDialogue = "",
-            TranscribedDialogue = "",
-            Status = "no_speech",
-        };
-        Assert.False(ClipDialogueVerificationService.LooksTruncated(result));
+        var exp = "A shriek was heard by a neighbour during the night. Suspicion of foul play.";
+        var act = "A shriek was heard by a neighbor during the night. Suspicion of foul play.";
+
+        var score = ClipDialogueVerificationService.CalculateAccuracyScore(exp, act);
+        Assert.Equal(1.0, score);
     }
 
     private class MockVisionClient : PageToMovie.Engine.Abstractions.IVisionClient

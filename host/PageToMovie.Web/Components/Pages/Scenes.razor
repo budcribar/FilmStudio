@@ -1285,8 +1285,16 @@ else
                               data-testid="clip-editor-dialogue"
                               placeholder="Dialogue / voiceover text (requires speaker + delivery)…"
                               @bind="ed.Dialogue"></textarea>
-                    <div class="form-text small mb-3">
+                    <div class="form-text small mb-2">
                         Silent clips: leave speaker none and dialogue empty. Spoken/VO lines need both a speaker and a delivery other than none.
+                    </div>
+                    <label class="form-label small mb-0 mt-1">Pronunciation hint</label>
+                    <input type="text" class="form-control form-control-sm mb-1"
+                           data-testid="clip-editor-pronunciation-hint"
+                           placeholder="Optional — e.g. Pronounce 'tear' as verb /tɛər/ ('tare' / rip apart)"
+                           @bind="ed.PronunciationHint" />
+                    <div class="form-text small mb-3">
+                        Phonetic guidance for homographs or unusual names (e.g. tear, lead, wind, bow).
                     </div>
 
                     <!-- Collapsible Advanced Options -->
@@ -3313,6 +3321,7 @@ else
             Dialogue = clip.Dialogue,
             Speaker = clip.Speaker,
             Delivery = clip.Delivery,
+            PronunciationHint = clip.PronunciationHint,
             PrimarySubject = clip.PrimarySubject,
             CharactersOnScreen = new List<string>(clip.CharactersOnScreen),
             ColorPalette = clip.ColorPalette,

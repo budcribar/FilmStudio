@@ -187,6 +187,13 @@ public sealed class ClipDialogueVerificationService
         // Collect character reference portraits for characters in this scene
         var charSummaryList = _projects.ListCharacters(projectId);
         var sceneChars = clip?.CharactersOnScreen is { Count: > 0 } ? clip.CharactersOnScreen : new List<string> { expectedSpeaker };
+        if (!sceneChars.Any(c => string.Equals(c, expectedSpeaker, StringComparison.OrdinalIgnoreCase)))
+        {
+            sceneChars = sceneChars.Concat(new[] { expectedSpeaker }).ToList();
+        }
+
+        var charGuides = new List<string>();
+        int mediaIndex = 1; // Index 1 is the MP4 video clip
 
         foreach (var cName in sceneChars)
         {
@@ -195,7 +202,13 @@ public sealed class ClipDialogueVerificationService
             {
                 var localRef = Path.Combine(_projects.GetProjectDir(projectId), url.TrimStart('/'));
                 if (File.Exists(localRef))
+                {
                     mediaToPass.Add(localRef);
+                    mediaIndex++;
+                    var desc = !string.IsNullOrWhiteSpace(charObj.Description) ? $" ({charObj.Description})" : "";
+                    var nameLabel = charObj.DisplayName ?? charObj.Key;
+                    charGuides.Add($"- Attached Image #{mediaIndex}: Character '{nameLabel}' (Key: '{charObj.Key}'){desc}");
+                }
             }
         }
 
@@ -221,22 +234,32 @@ public sealed class ClipDialogueVerificationService
             return result;
         }
 
+        var guideText = charGuides.Count > 0
+            ? "CHARACTER REFERENCE PORTRAITS (MATCH FACES IN VIDEO TO THESE ATTACHED IMAGES):\n" + string.Join("\n", charGuides)
+            : "No character reference portraits attached.";
+
+        var expectedCharObj = charSummaryList.FirstOrDefault(c => string.Equals(c.Key, expectedSpeaker, StringComparison.OrdinalIgnoreCase) || string.Equals(c.DisplayName, expectedSpeaker, StringComparison.OrdinalIgnoreCase));
+        var expectedSpeakerDisplayName = expectedCharObj?.DisplayName ?? expectedSpeaker;
+
         var prompt = $@"
 You are an automated film quality assurance inspector evaluating a generated movie clip.
 
 EXPECTED SCRIPT:
-- Expected Speaker: '{expectedSpeaker}'
+- Expected Speaker: '{expectedSpeakerDisplayName}' (Character Key: '{expectedSpeaker}')
 - Expected Spoken Dialogue: '{expectedDialogue}'
 
+{guideText}
+
 TASKS:
-1. Watch the attached MP4 video clip and LISTEN carefully to the audio track / spoken dialogue.
-2. Observe on-screen character faces and mouth sync; compare against the attached character reference portraits to identify who is speaking.
+1. Watch the attached MP4 video clip (Attached File #1) and LISTEN carefully to the audio track / spoken dialogue.
+2. Observe on-screen character faces and lip movements. Compare the face of the character who is speaking against the attached character reference portraits listed above to determine who is speaking.
 3. Transcribe the EXACT spoken dialogue you hear in the video clip.
-4. Compare detected speaker vs expected speaker, and transcribed dialogue vs expected dialogue.
+4. Compare detected speaker vs expected speaker ('{expectedSpeakerDisplayName}'), and transcribed dialogue vs expected dialogue.
+   NOTE: Ignore minor US/UK spelling differences (e.g. 'neighbour' vs 'neighbor', 'colour' vs 'color'). If the spoken words match the script, score dialogue accuracy as 1.0 (100% match).
 
 Return ONLY a JSON object:
 {{
-  ""detectedSpeaker"": ""Character Name"",
+  ""detectedSpeaker"": ""Character Name or Key"",
   ""transcribedDialogue"": ""Spoken dialogue text heard in video audio track"",
   ""dialogueAccuracyScore"": 0.95,
   ""speakerMatch"": true,
@@ -288,6 +311,31 @@ Status options: 'verified' (dialogue & speaker match), 'mismatch' (dialogue inco
             var status = GetJsonString(root, "status");
             if (string.IsNullOrWhiteSpace(status)) status = "verified";
             var summary = GetJsonString(root, "summaryNote", "summary_note", "summary", "notes");
+
+            // Normalize speaker names to prevent false speaker_swap when Key vs DisplayName differ
+            static string CleanSpkName(string? s)
+            {
+                if (string.IsNullOrWhiteSpace(s)) return "";
+                var clean = s.Trim().ToLowerInvariant()
+                    .Replace("character_", "")
+                    .Replace("character", "")
+                    .Replace("_", " ")
+                    .Replace("the ", "");
+                return System.Text.RegularExpressions.Regex.Replace(clean, @"\s+", " ").Trim();
+            }
+
+            var cleanDetected = CleanSpkName(detected);
+            var cleanExpectedKey = CleanSpkName(expectedSpeaker);
+            var cleanExpectedDisp = CleanSpkName(expectedSpeakerDisplayName);
+
+            if (!string.IsNullOrWhiteSpace(cleanDetected) && (cleanDetected == cleanExpectedKey || cleanDetected == cleanExpectedDisp))
+            {
+                speakerMatch = true;
+                if (string.Equals(status, "speaker_swap", StringComparison.OrdinalIgnoreCase))
+                {
+                    status = accuracy >= 0.5 ? "verified" : "mismatch";
+                }
+            }
 
             // Deterministic validation: if dialogue was expected but transcribed audio is empty, enforce mismatch (0%)
             if (!string.IsNullOrWhiteSpace(expectedDialogue) && string.IsNullOrWhiteSpace(transcribed))
@@ -377,17 +425,81 @@ Status options: 'verified' (dialogue & speaker match), 'mismatch' (dialogue inco
         return transcribedWords < expectedWords * 0.7;
     }
 
-    private static double CalculateAccuracyScore(string expected, string actual)
+    public static double CalculateAccuracyScore(string expected, string actual)
     {
         if (string.IsNullOrWhiteSpace(expected) && string.IsNullOrWhiteSpace(actual)) return 1.0;
         if (string.IsNullOrWhiteSpace(expected) || string.IsNullOrWhiteSpace(actual)) return 0.0;
 
-        var expWords = Regex.Matches(expected.ToLowerInvariant(), @"\w+").Select(m => m.Value).ToHashSet();
-        var actWords = Regex.Matches(actual.ToLowerInvariant(), @"\w+").Select(m => m.Value).ToHashSet();
+        var expWords = Regex.Matches(expected.ToLowerInvariant(), @"\w+").Select(m => m.Value).ToList();
+        var actWords = Regex.Matches(actual.ToLowerInvariant(), @"\w+").Select(m => m.Value).ToList();
 
         if (expWords.Count == 0) return 1.0;
-        var matches = expWords.Count(w => actWords.Contains(w));
+
+        var normActWords = actWords.Select(NormalizeSpellingWord).ToList();
+
+        int matches = 0;
+        foreach (var ew in expWords)
+        {
+            var normEw = NormalizeSpellingWord(ew);
+            if (normActWords.Any(aw => IsWordEquivalent(ew, normEw, aw)))
+            {
+                matches++;
+            }
+        }
+
         return (double)matches / expWords.Count;
+    }
+
+    private static string NormalizeSpellingWord(string w)
+    {
+        if (string.IsNullOrWhiteSpace(w)) return "";
+        var s = w.ToLowerInvariant();
+        if (s.EndsWith("our") && s.Length > 4) s = s[..^3] + "or";
+        if (s.EndsWith("ours") && s.Length > 5) s = s[..^4] + "ors";
+        if (s.EndsWith("ise") && s.Length > 4) s = s[..^3] + "ize";
+        if (s.EndsWith("ises") && s.Length > 5) s = s[..^4] + "izes";
+        if (s.EndsWith("ised") && s.Length > 5) s = s[..^4] + "ized";
+        if (s.EndsWith("ising") && s.Length > 6) s = s[..^5] + "izing";
+        if (s.EndsWith("re") && s.Length > 4 && !s.EndsWith("here") && !s.EndsWith("there") && !s.EndsWith("where")) s = s[..^2] + "er";
+        if (s.EndsWith("lling") && s.Length > 6) s = s[..^5] + "ling";
+        if (s.EndsWith("lled") && s.Length > 5) s = s[..^4] + "led";
+        if (s.EndsWith("ence") && s.Length > 5) s = s[..^4] + "ense";
+        return s;
+    }
+
+    private static bool IsWordEquivalent(string rawExp, string normExp, string normAct)
+    {
+        if (string.Equals(normExp, normAct, StringComparison.OrdinalIgnoreCase)) return true;
+
+        // Levenshtein edit distance fallback for minor single-character typos (e.g. 1 char diff in 5+ char word)
+        if (normExp.Length >= 4 && Math.Abs(normExp.Length - normAct.Length) <= 1)
+        {
+            var dist = LevenshteinDistance(normExp, normAct);
+            if (dist <= 1) return true;
+        }
+        return false;
+    }
+
+    private static int LevenshteinDistance(string s, string t)
+    {
+        if (string.IsNullOrEmpty(s)) return t?.Length ?? 0;
+        if (string.IsNullOrEmpty(t)) return s.Length;
+
+        var d = new int[s.Length + 1, t.Length + 1];
+        for (int i = 0; i <= s.Length; i++) d[i, 0] = i;
+        for (int j = 0; j <= t.Length; j++) d[0, j] = j;
+
+        for (int i = 1; i <= s.Length; i++)
+        {
+            for (int j = 1; j <= t.Length; j++)
+            {
+                int cost = (s[i - 1] == t[j - 1]) ? 0 : 1;
+                d[i, j] = Math.Min(
+                    Math.Min(d[i - 1, j] + 1, d[i, j - 1] + 1),
+                    d[i - 1, j - 1] + cost);
+            }
+        }
+        return d[s.Length, t.Length];
     }
 
     private static string ExtractJson(string input)

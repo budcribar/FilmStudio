@@ -1096,19 +1096,23 @@ public static class ClipVideoPromptBuilder
                 ? " " + string.Join(". ", audioBedParts) + "."
                 : " Secondary layer = soft room tone / Foley.";
 
-            // Leave a short closed-mouth breath at the end so the next monologue clip does not butt-join
             const string endPause =
                 " After the last word, hold a brief natural pause with a closed mouth (about half a second); do not freeze mid-syllable or trail into empty staring.";
+            var pronHintInPayload = audio.TryGetProperty("pronunciation_hint", out var ph) ? ph.GetString() ?? "" : "";
+            var pronHint = !string.IsNullOrWhiteSpace(pronHintInPayload)
+                ? (pronHintInPayload.StartsWith(" ") ? pronHintInPayload : " Pronunciation guide: " + pronHintInPayload)
+                : DetectPronunciationHints(quote);
+
             if (isVoiceover)
             {
                 return
                     $"AUDIO: REQUIRED native Grok off-camera voiceover. {who} narrates " +
-                    $"exactly: \"{quote}\".{openCue}{endPause} Do not lip-sync on-screen cast to this VO.{bed}{voiceLock}";
+                    $"exactly: \"{quote}\".{openCue}{endPause}{pronHint} Do not lip-sync on-screen cast to this VO.{bed}{voiceLock}";
             }
             // spoken_on_camera / on_camera (normalized)
             return
                 $"AUDIO: REQUIRED native Grok dialogue. {who} ON CAMERA lip-syncs " +
-                $"exactly: \"{quote}\".{openCue}{endPause} Other mouths closed. Speech intelligible; never silent.{bed}{voiceLock}";
+                $"exactly: \"{quote}\".{openCue}{endPause}{pronHint} Other mouths closed. Speech intelligible; never silent.{bed}{voiceLock}";
         }
 
         if (!string.IsNullOrWhiteSpace(ambient) || !string.IsNullOrWhiteSpace(sfx) || !string.IsNullOrWhiteSpace(score))
@@ -1120,7 +1124,55 @@ public static class ClipVideoPromptBuilder
             return $"AUDIO: music/ambient/Foley only — {string.Join("; ", layers)}. No dialogue.";
         }
         return "";
+    }
 
+    /// <summary>
+    /// Detect common English heteronyms/homographs (e.g. 'tear' rip vs crying) in spoken dialogue
+    /// and generate an explicit pronunciation directive for AI video/audio generation.
+    /// </summary>
+    public static string DetectPronunciationHints(string text)
+    {
+        if (string.IsNullOrWhiteSpace(text)) return "";
+        var hints = new List<string>();
+
+        // Heteronym: "tear" (rip / rend vs eye drop)
+        if (Regex.IsMatch(text, @"\btear\s+(up|down|open|off|the|a|out|away|apart|into|floorboards?|planks?|up\s+the)\b|\bto\s+tear\b|\bshall\s+tear\b", RegexOptions.IgnoreCase))
+        {
+            hints.Add("Pronounce 'tear' as verb /tɛər/ ('tare' / rip apart), NOT eye tear");
+        }
+        else if (Regex.IsMatch(text, @"\b(a|the|single|salty|in)\s+tears?\b|\btears?\s+(of|on|down|rolled|fell)\b", RegexOptions.IgnoreCase))
+        {
+            hints.Add("Pronounce 'tear' as noun /tɪər/ ('teer' / crying drop)");
+        }
+
+        // Heteronym: "lead" (metal vs guide)
+        if (Regex.IsMatch(text, @"\blead\s+(pipe|bullet|weights?|shield|heavy|gray|poisoning)\b|\bmade\s+of\s+lead\b", RegexOptions.IgnoreCase))
+        {
+            hints.Add("Pronounce 'lead' as heavy metal /lɛd/ ('led')");
+        }
+        else if (Regex.IsMatch(text, @"\blead\s+(us|me|him|her|them|the\s+way|to|on)\b|\bto\s+lead\b", RegexOptions.IgnoreCase))
+        {
+            hints.Add("Pronounce 'lead' as verb /liːd/ ('leed' / guide)");
+        }
+
+        // Heteronym: "bow" (gesture vs ribbon/weapon)
+        if (Regex.IsMatch(text, @"\bbow\s+(down|to|before|your|head|low)\b|\btake\s+a\s+bow\b", RegexOptions.IgnoreCase))
+        {
+            hints.Add("Pronounce 'bow' as verb /baʊ/ ('bough' / bend)");
+        }
+        else if (Regex.IsMatch(text, @"\bbow\s+(and\s+arrow|tie|tied)\b", RegexOptions.IgnoreCase))
+        {
+            hints.Add("Pronounce 'bow' as noun /boʊ/ ('boh' / ribbon or weapon)");
+        }
+
+        // Heteronym: "wind" (breeze vs turn/coil)
+        if (Regex.IsMatch(text, @"\bwind\s+(up|down|the\s+clock|around)\b|\bto\s+wind\b", RegexOptions.IgnoreCase))
+        {
+            hints.Add("Pronounce 'wind' as verb /waɪnd/ ('wynd' / turn or coil)");
+        }
+
+        if (hints.Count == 0) return "";
+        return " Pronunciation guide: " + string.Join("; ", hints) + ".";
     }
 
     /// <summary>

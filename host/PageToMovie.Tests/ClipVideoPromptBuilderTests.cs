@@ -7,6 +7,36 @@ namespace PageToMovie.Tests;
 public class ClipVideoPromptBuilderTests
 {
     [Fact]
+    public void DetectPronunciationHints_GeneratesVerbHintForTearUp()
+    {
+        var line = "Tear up the floorboards! Here, here! — it is the beating of his hideous heart!";
+        var hint = ClipVideoPromptBuilder.DetectPronunciationHints(line);
+        Assert.Contains("Pronounce 'tear' as verb", hint);
+        Assert.Contains("tare", hint);
+    }
+
+    [Fact]
+    public void Build_UsesPronunciationHintFromAudioPayload()
+    {
+        var clip = JsonDocument.Parse("""
+            {
+              "clip_number": 1,
+              "visual_prompt": "The narrator speaks.",
+              "characters_on_screen": ["Character_The_Narrator"],
+              "audio_payload": {
+                "speaker": "Character_The_Narrator",
+                "dialogue": "Tear up the planks!",
+                "delivery": "spoken_on_camera",
+                "pronunciation_hint": "Pronounce 'Tear' as /tɛər/ (rip apart)"
+              }
+            }
+            """).RootElement;
+
+        var built = ClipVideoPromptBuilder.Build(clip, "proj", new Dictionary<string, ClipVideoPromptBuilder.CharacterProfile>());
+        Assert.Contains("Pronunciation guide: Pronounce 'Tear' as /tɛər/ (rip apart)", built.Prompt);
+    }
+
+    [Fact]
     public void Build_includes_character_variables_and_image_tags()
     {
         var clip = JsonDocument.Parse("""

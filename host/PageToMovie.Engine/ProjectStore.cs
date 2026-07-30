@@ -2678,6 +2678,8 @@ public sealed class ProjectStore
         audio["dialogue"] = fields.Dialogue;
         audio["speaker"] = string.IsNullOrWhiteSpace(fields.Speaker) ? null : fields.Speaker;
         audio["delivery"] = string.IsNullOrWhiteSpace(fields.Delivery) ? null : fields.Delivery;
+        if (!string.IsNullOrWhiteSpace(fields.PronunciationHint))
+            audio["pronunciation_hint"] = fields.PronunciationHint;
 
         // Keep root-level fields in sync if present in blueprint JSON
         if (clipObj.ContainsKey("dialogue"))
@@ -3401,7 +3403,9 @@ public sealed class ProjectStore
                 var dialogue = "";
                 string? speaker = null;
                 string? delivery = null;
-                if (c.TryGetProperty("audio_payload", out var ap) && ap.ValueKind == JsonValueKind.Object)
+                string? pronunciationHint = null;
+                var hasAp = c.TryGetProperty("audio_payload", out var ap) && ap.ValueKind == JsonValueKind.Object;
+                if (hasAp)
                 {
                     if (ap.TryGetProperty("dialogue", out var d))
                         dialogue = d.GetString() ?? "";
@@ -3409,6 +3413,8 @@ public sealed class ProjectStore
                         speaker = sp.GetString();
                     if (ap.TryGetProperty("delivery", out var del))
                         delivery = del.GetString();
+                    if (ap.TryGetProperty("pronunciation_hint", out var ph))
+                        pronunciationHint = ph.GetString();
                 }
                 if (string.IsNullOrWhiteSpace(dialogue) && c.TryGetProperty("dialogue", out var rootD))
                 {
@@ -3425,6 +3431,10 @@ public sealed class ProjectStore
                 if (string.IsNullOrWhiteSpace(delivery) && c.TryGetProperty("delivery", out var rootDel))
                 {
                     delivery = rootDel.GetString();
+                }
+                if (string.IsNullOrWhiteSpace(pronunciationHint) && c.TryGetProperty("pronunciation_hint", out var rootPh))
+                {
+                    pronunciationHint = rootPh.GetString();
                 }
                 // Speech-safe form for operator UI (same helper as video gen payload)
                 dialogue = ClipVideoPromptBuilder.SanitizeSpokenDialogue(dialogue);
@@ -3462,6 +3472,7 @@ public sealed class ProjectStore
                     Dialogue = dialogue,
                     Speaker = speaker,
                     Delivery = delivery,
+                    PronunciationHint = pronunciationHint,
                     CharactersOnScreen = c.TryGetProperty("characters_on_screen", out var clipCos) &&
                                          clipCos.ValueKind == JsonValueKind.Array
                         ? clipCos.EnumerateArray()

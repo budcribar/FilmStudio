@@ -231,6 +231,60 @@ public class ClipVideoGenerationLiveTests : IDisposable
             $"[{providerLabel}] Character_Buster not found in any clip's characters_on_screen.");
     }
 
+    [LiveApiTheory]
+    [MemberData(nameof(ChatProviders))]
+    public async Task Live_TellTaleHeart_plan_includes_dialogue_pronunciation_hints(
+        string providerLabel, string planningModel, string envKey)
+    {
+        _ = planningModel;
+        if (string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable(envKey)))
+            return;
+
+        var fountainPath = @"c:\Users\budcr\source\repos\gemini\PageToMovie\projects\TellTaleHeartV7\source\screenplay.fountain";
+        if (!File.Exists(fountainPath))
+        {
+            fountainPath = @"c:\Users\budcr\source\repos\PageToMovie\projects\TellTaleHeartV7\source\screenplay.fountain";
+        }
+        if (!File.Exists(fountainPath)) return;
+
+        var workspace = Path.Combine(_tmpDir, $"stage2-telltale-{providerLabel}");
+        Directory.CreateDirectory(workspace);
+        const string projectId = "TellTaleHeartLivePronTest";
+        Directory.CreateDirectory(Path.Combine(workspace, "projects", projectId));
+
+        var opts = Options.Create(new PageToMovieOptions { WorkspaceRoot = workspace, UseFakes = false });
+        var store = new ProjectStore(opts);
+
+        var text = await File.ReadAllTextAsync(fountainPath);
+        ScreenplayService.SaveDraft(store, projectId, text);
+        Assert.True(ScreenplayService.SignOff(store, projectId).Ok);
+
+        var planner = new Stage2PlannerService(store, NullLogger<Stage2PlannerService>.Instance);
+        var result = await planner.PlanAsync(projectId, resolution: "480p", scenes: "16");
+        Assert.True(result.Ok, $"[{providerLabel}] PlanAsync failed");
+
+        var bpText = await File.ReadAllTextAsync(result.OutPath!);
+        using var doc = JsonDocument.Parse(bpText);
+
+        bool foundPronunciationHint = false;
+        foreach (var sc in doc.RootElement.GetProperty("scenes").EnumerateArray())
+        {
+            if (!sc.TryGetProperty("veo_clips", out var clips) && !sc.TryGetProperty("clips", out clips)) continue;
+            foreach (var clip in clips.EnumerateArray())
+            {
+                var built = ClipVideoPromptBuilder.Build(clip, store.GetProjectDir(projectId), new Dictionary<string, ClipVideoPromptBuilder.CharacterProfile>());
+                if (built.Prompt.Contains("tear up the planks", StringComparison.OrdinalIgnoreCase))
+                {
+                    Assert.Contains("Pronunciation guide: Pronounce 'tear' as verb", built.Prompt);
+                    Assert.Contains("tare", built.Prompt);
+                    foundPronunciationHint = true;
+                }
+            }
+        }
+
+        Assert.True(foundPronunciationHint, $"[{providerLabel}] Expected clip containing 'tear up the planks' with explicit pronunciation guide hint.");
+    }
+
     // ─── Full video generation smoke tests ────────────────────────────────────
 
     /// <summary>
