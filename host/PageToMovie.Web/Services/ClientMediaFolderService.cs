@@ -482,12 +482,21 @@ public sealed class ClientMediaFolderService
     public async Task<string?> GetCurrentBlobUrlAsync(string relativePath, long? expectedSizeBytes)
     {
         if (!IsConnected) return null;
-        if (expectedSizeBytes is not (null or <= 0))
-        {
-            var (found, localSize) = await StatLocalFileAsync(relativePath);
-            if (!found || localSize != expectedSizeBytes) return null;
-        }
+        if (!await IsLocalCopyCurrentAsync(relativePath, expectedSizeBytes)) return null;
         return await GetLocalBlobUrlAsync(relativePath);
+    }
+
+    /// <summary>
+    /// Shared freshness check behind <see cref="GetCurrentBlobUrlAsync"/> and
+    /// <see cref="GetClipBytesAsync"/> — true when no expected size was given (nothing to compare
+    /// against) or the local file's size matches it. Caller must have already confirmed
+    /// <see cref="IsConnected"/>.
+    /// </summary>
+    private async Task<bool> IsLocalCopyCurrentAsync(string relativePath, long? expectedSizeBytes)
+    {
+        if (expectedSizeBytes is null or <= 0) return true;
+        var (found, localSize) = await StatLocalFileAsync(relativePath);
+        return found && localSize == expectedSizeBytes;
     }
 
     public async Task<(bool Ok, string? Sha, long Size, string? Error)> RegisterBlobAsExportAsync(
@@ -707,12 +716,21 @@ public sealed class ClientMediaFolderService
         return urls;
     }
 
-    public async Task<byte[]?> GetClipBytesAsync(int scene, int clip)
+    /// <summary>
+    /// Local clip bytes for upload (e.g. dialogue re-verification). Same staleness guard as
+    /// <see cref="GetCurrentBlobUrlAsync"/> — without it, a stale local copy (an older take that
+    /// hasn't been overwritten by a since-promoted regeneration) gets silently uploaded and
+    /// verified as if it were current, making re-verification look like it never picked up the
+    /// new clip. Pass the server's currently-registered size (GetClipMediaStatusAsync) to enable
+    /// the check; omit it to keep the old unconditional-trust behavior for other callers.
+    /// </summary>
+    public async Task<byte[]?> GetClipBytesAsync(int scene, int clip, long? expectedSizeBytes = null)
     {
         if (!IsConnected) return null;
         try
         {
             var relPath = $"assets/video/scene_{scene:D2}_clip_{clip:D2}.mp4";
+            if (!await IsLocalCopyCurrentAsync(relPath, expectedSizeBytes)) return null;
             var res = await _js.InvokeAsync<JsBytesResult>("PageToMovieMedia.getBytesAsync", relPath);
             return res is { Success: true, Bytes: not null } ? res.Bytes : null;
         }

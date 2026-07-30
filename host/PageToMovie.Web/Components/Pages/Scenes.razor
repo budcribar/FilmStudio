@@ -2973,6 +2973,28 @@ else
         }
     }
 
+    /// <summary>
+    /// A local file at a clip's canonical relative path is not necessarily the *current* version
+    /// — a later regen/promote may have happened without this browser open to catch the
+    /// auto-save. Every call site that trusts a local clip copy (playback, dialogue
+    /// re-verification upload) should gate on this against the server's currently-registered
+    /// size rather than assuming presence means current. Returns null on any lookup failure —
+    /// callers then fall back to their own "trust local unconditionally" or "use server" default.
+    /// </summary>
+    private async Task<long?> ResolveExpectedClipSizeAsync(int scene, int clip)
+    {
+        try
+        {
+            var status = await Engine.GetClipMediaStatusAsync(_projectId, scene, clip);
+            if (status is { Ok: true })
+                return status.OnServer ? status.ServerSizeBytes
+                    : status.OnClient ? status.ClientSizeBytes
+                    : null;
+        }
+        catch { /* best effort — falls back to unconditional local trust */ }
+        return null;
+    }
+
     private async Task LoadClipVideoAndTakesCountAsync(int scene, int clip)
     {
         if (MediaFolder.IsConnected)
@@ -2980,22 +3002,7 @@ else
             try
             {
                 var relPath = $"assets/video/scene_{scene:D2}_clip_{clip:D2}.mp4";
-
-                // A local file at this path is not necessarily the *current* version — a later
-                // regen/promote may have happened without this browser open to catch the
-                // auto-save. Check its size against what the server currently has registered as
-                // active before trusting it for playback; on mismatch (or no signal either way),
-                // fall through to null so the <video> element streams from the server instead.
-                long? expectedSize = null;
-                try
-                {
-                    var status = await Engine.GetClipMediaStatusAsync(_projectId, scene, clip);
-                    if (status is { Ok: true })
-                        expectedSize = status.OnServer ? status.ServerSizeBytes
-                            : status.OnClient ? status.ClientSizeBytes
-                            : null;
-                }
-                catch { /* best effort — falls back to unconditional local trust below */ }
+                var expectedSize = await ResolveExpectedClipSizeAsync(scene, clip);
 
                 var localBlob = expectedSize is long exp
                     ? await MediaFolder.GetCurrentBlobUrlAsync(relPath, exp)
@@ -3653,7 +3660,8 @@ else
             _verifyStatusLabel = $"Verifying dialogue for S{_detail.SceneNumber:D2} C{clip.ClipNumber:D2}...";
             StateHasChanged();
 
-            var videoBytes = await MediaFolder.GetClipBytesAsync(_detail.SceneNumber, clip.ClipNumber);
+            var expectedSize = await ResolveExpectedClipSizeAsync(_detail.SceneNumber, clip.ClipNumber);
+            var videoBytes = await MediaFolder.GetClipBytesAsync(_detail.SceneNumber, clip.ClipNumber, expectedSize);
             var ver = await Engine.VerifyClipDialogueAsync(_projectId, _detail.SceneNumber, clip.ClipNumber, videoBytes: videoBytes, force: true);
             if (ver is not null)
             {
@@ -3735,7 +3743,8 @@ else
                 _verifyStatusLabel = $"Verifying dialogue for S{sceneNum:D2} C{cn:D2} (Speaker: {clip?.Speaker ?? "Unknown"})...";
                 StateHasChanged();
 
-                var videoBytes = await MediaFolder.GetClipBytesAsync(sceneNum, cn);
+                var expectedSize = await ResolveExpectedClipSizeAsync(sceneNum, cn);
+                var videoBytes = await MediaFolder.GetClipBytesAsync(sceneNum, cn, expectedSize);
                 var ver = await Engine.VerifyClipDialogueAsync(_projectId, sceneNum, cn, videoBytes: videoBytes, force: true);
                 if (ver is not null && clip is not null)
                 {
