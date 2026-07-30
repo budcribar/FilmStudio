@@ -3268,13 +3268,24 @@ public sealed class ProjectStore
             }
 
             var chars = new List<string>();
+            void AddChar(string? name)
+            {
+                if (!string.IsNullOrWhiteSpace(name) && !chars.Contains(name, StringComparer.OrdinalIgnoreCase))
+                    chars.Add(name!);
+            }
             if (s.TryGetProperty("characters_on_screen", out var cos) && cos.ValueKind == JsonValueKind.Array)
             {
                 foreach (var x in cos.EnumerateArray())
+                    AddChar(x.GetString());
+            }
+            // Scene-level characters_on_screen can lag clip-level casts (e.g. a character who
+            // only appears mid-scene in specific clips) — union in each clip's own list too.
+            foreach (var c in clips)
+            {
+                if (c.TryGetProperty("characters_on_screen", out var clipCos) && clipCos.ValueKind == JsonValueKind.Array)
                 {
-                    var name = x.GetString();
-                    if (!string.IsNullOrWhiteSpace(name))
-                        chars.Add(name!);
+                    foreach (var x in clipCos.EnumerateArray())
+                        AddChar(x.GetString());
                 }
             }
 
