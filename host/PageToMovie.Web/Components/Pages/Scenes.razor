@@ -3246,6 +3246,10 @@ else
         _clientPreviewUrl = null;
         try
         {
+            // Revoke the OLD preview before collecting new segments — see the comment in
+            // Review.razor's EnsureShareableMovieUrlAsync for why revoking after collection can
+            // destroy a blob the segments list still needs.
+            await Stitch.RevokePreviewUrlAsync();
             var meta = await Engine.GetWipMovieMetaAsync(_projectId);
             var stale = meta?.StaleScenes?.ToHashSet() ?? new HashSet<int>();
             _clientStitchStatus = "Collecting media…";
@@ -3261,7 +3265,6 @@ else
             _clientStitchStatus = urls.Count == 1
                 ? "Loading…"
                 : $"Combining {urls.Count} clip/scene file(s)…";
-            await Stitch.RevokePreviewUrlAsync();
             var result = await Stitch.ConcatAsync(urls);
             if (!result.Success || string.IsNullOrWhiteSpace(result.Url))
             {

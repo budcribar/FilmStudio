@@ -1610,6 +1610,10 @@ else
             _clientWipUrl = null;
             try
             {
+                // Revoke the OLD preview before collecting new segments — see the comment in
+                // EnsureShareableMovieUrlAsync for why revoking after collection can destroy a
+                // blob the segments list still needs.
+                await Stitch.RevokePreviewUrlAsync();
                 var meta = await Engine.GetWipMovieMetaAsync(_projectId);
                 var stale = meta?.StaleScenes?.ToHashSet() ?? new HashSet<int>();
                 var urls = await Stitch.CollectAndMixSceneSegmentsAsync(_projectId, sceneNums, _scenes, stale);
@@ -1623,7 +1627,6 @@ else
                 _clientStitchStatus = urls.Count == 1
                     ? "Loading…"
                     : $"Combining {urls.Count} file(s)…";
-                await Stitch.RevokePreviewUrlAsync();
                 var result = await Stitch.ConcatAsync(urls);
                 if (!result.Success || string.IsNullOrWhiteSpace(result.Url))
                 {
@@ -2476,11 +2479,19 @@ else
         _clientStitchStatus = "Preparing cut for upload…";
         try
         {
+            // Revoke the OLD preview before collecting new segments, not after — CollectAndMix-
+            // SceneSegmentsAsync's internal per-scene concatVideosAsync calls reuse the JS side's
+            // single shared blob-tracking slot, so a scene segment with no music to mix can end up
+            // being exactly the URL RevokePreviewUrlAsync() would revoke; calling it here (before
+            // any new segment exists) means it can only ever revoke a blob from a prior, separate
+            // operation, never one this call just built. Revoking after collection blew up the
+            // final combine's fetch of that segment with "Failed to fetch" the moment that
+            // coincidence happened — reproducible on a single, non-double-clicked Share & Export.
+            await Stitch.RevokePreviewUrlAsync();
             var meta = await Engine.GetWipMovieMetaAsync(_projectId);
             var stale = meta?.StaleScenes?.ToHashSet() ?? new HashSet<int>();
             var urls = await Stitch.CollectAndMixSceneSegmentsAsync(_projectId, sceneNums, _scenes, stale);
             if (urls.Count == 0) return null;
-            await Stitch.RevokePreviewUrlAsync();
             var result = await Stitch.ConcatAsync(urls);
             if (!result.Success || string.IsNullOrWhiteSpace(result.Url))
                 throw new InvalidOperationException(result.Error ?? "Browser stitch failed");
