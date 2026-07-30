@@ -15,4 +15,5 @@
   <Project Path="PageToMovie.Tests/PageToMovie.Tests.csproj" />
   <Project Path="PageToMovie.Web/PageToMovie.Web.csproj" />
   <Project Path="tools/ClassifierBenchmarks/ClassifierBenchmarks.csproj" />
+  <Project Path="tools/ScreenplayBenchmark/ScreenplayBenchmark.csproj" />
 </Solution>
