@@ -32,6 +32,7 @@ public static class Program
         bool dryRun = false;
         bool showLeaderboardOnly = false;
         bool retryFailed = false;
+        bool syntaxOnly = false;
 
         for (int i = 0; i < args.Length; i++)
         {
@@ -68,6 +69,10 @@ public static class Program
             {
                 retryFailed = true;
             }
+            else if (arg.Equals("--syntax-only", StringComparison.OrdinalIgnoreCase) || arg.Equals("--regrade", StringComparison.OrdinalIgnoreCase))
+            {
+                syntaxOnly = true;
+            }
         }
 
         var historyFilePath = Path.Combine("evals", "benchmark_history.json");
@@ -76,6 +81,12 @@ public static class Program
         if (showLeaderboardOnly)
         {
             PrintHistoricalLeaderboard(historyStore);
+            return 0;
+        }
+
+        if (syntaxOnly)
+        {
+            await RegradeSyntaxOnlyAsync(historyFilePath);
             return 0;
         }
 
@@ -697,5 +708,58 @@ FADE OUT.";
                 }
             }
         }
+    }
+
+    private static async Task RegradeSyntaxOnlyAsync(string historyFilePath)
+    {
+        Console.WriteLine("==========================================================================");
+        Console.WriteLine(" 🎬 Film Studio — Syntax-Only Re-Grading (0 API Calls)");
+        Console.WriteLine("==========================================================================");
+
+        var historyStore = BenchmarkHistoryStore.LoadHistory(historyFilePath);
+        if (historyStore.Runs.Count == 0)
+        {
+            Console.WriteLine("No history runs found to re-grade.");
+            return;
+        }
+
+        foreach (var run in historyStore.Runs)
+        {
+            var bookSlug = run.BookSlug;
+            Console.WriteLine($"\n📖 Story: '{run.BookTitle}' ({bookSlug}) — Date: {run.Timestamp}");
+
+            foreach (var m in run.ModelScores)
+            {
+                var modelId = m.ModelId;
+                var cacheFile = Path.Combine("evals", "cache", bookSlug, $"{SanitizeFileName(modelId)}.fountain");
+                if (File.Exists(cacheFile))
+                {
+                    var screenplayText = await File.ReadAllTextAsync(cacheFile);
+                    var newSyntax = DeterministicSyntaxScorer.Evaluate(screenplayText);
+                    m.SyntaxAudit = newSyntax;
+
+                    // Recompute composite score if live qual score is valid (>= 0)
+                    if (m.AvgOverallQualitative >= 0)
+                    {
+                        m.CompositeScore = Math.Round((newSyntax.OverallSyntaxScore * 0.40) + (m.AvgOverallQualitative * 10.0 * 0.60), 1);
+                    }
+
+                    Console.WriteLine($"  Model '{modelId,-15}' -> Syntax: {newSyntax.OverallSyntaxScore,5:F1}% (Format: {newSyntax.FormatComplianceScore,3:F0}%, Budget: {newSyntax.SceneBudgetScore,3:F0}%, Pacing: {newSyntax.DialoguePacingScore,3:F0}%, Char: {newSyntax.CharacterDisambiguationScore,3:F0}%, Music: {newSyntax.MusicSpecScore,3:F0}%) | Composite: {m.CompositeScore:F1}");
+                }
+                else
+                {
+                    Console.WriteLine($"  Model '{modelId,-15}' -> Screenplay cache file not found on disk.");
+                }
+            }
+        }
+
+        BenchmarkHistoryStore.SaveHistory(historyStore, historyFilePath);
+
+        var dashboardHtml = HtmlDashboardGenerator.GenerateHtmlDashboard(historyStore);
+        var dashboardFile = Path.Combine("evals", "benchmark_dashboard.html");
+        await File.WriteAllTextAsync(dashboardFile, dashboardHtml);
+
+        Console.WriteLine("\n✅ Syntax re-grading completed! Global Dashboard updated at:");
+        Console.WriteLine($"   🌐 {Path.GetFullPath(dashboardFile)}");
     }
 }

@@ -65,16 +65,20 @@ public static class BenchmarkHistoryStore
         }
     }
 
-    public static void AppendRun(HistoricalBenchmarkRun newRun, string historyFilePath)
+    public static void SaveHistory(HistoricalStoreContainer container, string historyFilePath)
     {
-        var container = LoadHistory(historyFilePath);
-        container.Runs.Add(newRun);
-
         var dir = Path.GetDirectoryName(historyFilePath);
         if (!string.IsNullOrWhiteSpace(dir)) Directory.CreateDirectory(dir);
 
         var opts = new JsonSerializerOptions { WriteIndented = true };
         File.WriteAllText(historyFilePath, JsonSerializer.Serialize(container, opts));
+    }
+
+    public static void AppendRun(HistoricalBenchmarkRun newRun, string historyFilePath)
+    {
+        var container = LoadHistory(historyFilePath);
+        container.Runs.Add(newRun);
+        SaveHistory(container, historyFilePath);
     }
 
     public static bool IsLiveRun(HistoricalBenchmarkRun run)
