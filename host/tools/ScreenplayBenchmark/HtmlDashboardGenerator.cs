@@ -197,7 +197,7 @@ public static class HtmlDashboardGenerator
             <th>C# Syntax Avg</th>
             <th>LLM Peer Avg</th>
             <th>1st Place Wins</th>
-            <th>Books Evaluated</th>
+            <th>Books Evaluated (Live)</th>
           </tr>
         </thead>
         <tbody id=""global-tbody"">
