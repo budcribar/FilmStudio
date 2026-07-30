@@ -1301,12 +1301,18 @@
                         }
                         else
                         {
-                            // Generation succeeding server-side says nothing about whether the local
-                            // save actually landed — that's a separate, unawaited SignalR-triggered
-                            // step (SaveJobMediaAsync). Confirm the file is really on disk before this
-                            // loop fires the next scene's paid generation request; a few seconds is
-                            // normally plenty since the save (fetch + hash + write) starts the moment
-                            // the "done" snapshot's SignalR frame reaches this tab.
+                            // Don't rely solely on the passive SignalR-triggered auto-save (OnJobUpdated
+                            // → SaveJobMediaAsync) — its reliability here is unconfirmed. `final` already
+                            // carries the same ClientMediaUrl/ClientRelativePath that path would react to
+                            // (the last-generated segment's proxy ticket), so call the save directly, the
+                            // same way SyncProjectMediaToClientAsync explicitly pulls each file rather
+                            // than waiting on an event. SaveJobMediaAsync's own in-flight/dedup guard
+                            // makes this a safe no-op if the passive path already grabbed it.
+                            _archiveMsg = $"Saving audio for Scene S{sc.SceneNumber:D2} ({_synthesizeCurrent}/{_synthesizeTotal})…";
+                            StateHasChanged();
+                            if (final is not null)
+                                await MediaFolder.SaveJobMediaAsync(final);
+
                             _archiveMsg = $"Confirming local save for Scene S{sc.SceneNumber:D2} ({_synthesizeCurrent}/{_synthesizeTotal})…";
                             StateHasChanged();
                             var confirmed = false;
