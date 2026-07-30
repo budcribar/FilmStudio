@@ -79,7 +79,7 @@ public sealed class ClientVideoStitchService
 
                     var local = _media is null
                         ? null
-                        : await _media.GetLocalBlobUrlAsync($"assets/video/{fileName}");
+                        : await _media.GetLocalBlobUrlAsync(projectId, $"assets/video/{fileName}");
                     urls.Add(local ?? c.VideoUrl ?? _engine.ClipVideoUrl(projectId, sn, c.ClipNumber));
                 }
                 continue;
@@ -132,7 +132,7 @@ public sealed class ClientVideoStitchService
                 sceneUrl = concat.Url!;
             }
 
-            segments.Add(await MixSceneMusicAsync(sceneUrl, sn, ct: ct));
+            segments.Add(await MixSceneMusicAsync(projectId, sceneUrl, sn, ct: ct));
         }
         return segments;
     }
@@ -155,7 +155,7 @@ public sealed class ClientVideoStitchService
             var local = _media is null
                 ? null
                 : await _media.GetLocalBlobUrlAsync(
-                    $"assets/video/scene_{sceneNumber:D2}_clip_{c.ClipNumber:D2}.mp4");
+                    projectId, $"assets/video/scene_{sceneNumber:D2}_clip_{c.ClipNumber:D2}.mp4");
             list.Add(local ?? _engine.ClipVideoUrl(projectId, sceneNumber, c.ClipNumber));
         }
         return list;
@@ -205,6 +205,7 @@ public sealed class ClientVideoStitchService
     /// <paramref name="videoUrl"/> unchanged if no music segments are synced locally for the scene.
     /// </summary>
     public async Task<string> MixSceneMusicAsync(
+        string projectId,
         string videoUrl,
         int sceneNumber,
         int volumePercent = 20,
@@ -214,7 +215,7 @@ public sealed class ClientVideoStitchService
         if (_media is null || string.IsNullOrWhiteSpace(videoUrl))
             return videoUrl;
 
-        var segmentUrls = await _media.GetSceneMusicSegmentUrlsAsync(sceneNumber);
+        var segmentUrls = await _media.GetSceneMusicSegmentUrlsAsync(projectId, sceneNumber);
         if (segmentUrls.Count == 0)
             return videoUrl;
 
@@ -342,7 +343,7 @@ public sealed class ClientVideoStitchService
         var rel = $"assets/video/scene_{scene:D2}_clip_{clip:D2}.mp4";
         if (_media is not null)
         {
-            var local = await _media.GetLocalBlobUrlAsync(rel);
+            var local = await _media.GetLocalBlobUrlAsync(projectId, rel);
             if (!string.IsNullOrWhiteSpace(local))
                 return local;
         }

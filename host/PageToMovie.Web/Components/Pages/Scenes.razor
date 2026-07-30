@@ -2828,7 +2828,7 @@ else
         {
             try
             {
-                var localBlob = await MediaFolder.GetLocalBlobUrlAsync($"assets/video/scene_{sn:D2}.mp4");
+                var localBlob = await MediaFolder.GetLocalBlobUrlAsync(_projectId, $"assets/video/scene_{sn:D2}.mp4");
                 if (!string.IsNullOrWhiteSpace(localBlob))
                     _sceneCompositeVideoUrl = localBlob;
             }
@@ -2911,7 +2911,7 @@ else
             var serverHasRealBytes = prevSummary?.OnDisk == true && prevSummary.SizeBytes >= 1024;
             if (!serverHasRealBytes)
             {
-                var localBytes = await MediaFolder.GetClipBytesAsync(sn, prevClipNum);
+                var localBytes = await MediaFolder.GetClipBytesAsync(_projectId, sn, prevClipNum);
                 if (localBytes is { Length: >= 1024 })
                 {
                     _message = $"Uploading local predecessor S{sn:D2}C{prevClipNum:D2} to server…";
@@ -3027,8 +3027,8 @@ else
                 var expectedSize = await ResolveExpectedClipSizeAsync(scene, clip);
 
                 var localBlob = expectedSize is long exp
-                    ? await MediaFolder.GetCurrentBlobUrlAsync(relPath, exp)
-                    : await MediaFolder.GetLocalBlobUrlAsync(relPath);
+                    ? await MediaFolder.GetCurrentBlobUrlAsync(_projectId, relPath, exp)
+                    : await MediaFolder.GetLocalBlobUrlAsync(_projectId, relPath);
                 if (!string.IsNullOrWhiteSpace(localBlob))
                 {
                     _clipVideoUrl = localBlob;
@@ -3146,7 +3146,7 @@ else
 
                 // Layer locally-synced background music (if any) under the stitched video —
                 // client-side replacement for the old server-side ffmpeg mix; no-op if none synced.
-                _clientSceneUrl = await Stitch.MixSceneMusicAsync(result.Url, sn);
+                _clientSceneUrl = await Stitch.MixSceneMusicAsync(_projectId, result.Url, sn);
                 _sceneVideoKey = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
                 _inlineCompositeKey = _sceneVideoKey;
                 _message = urls.Count == 1
@@ -3712,7 +3712,7 @@ else
             StateHasChanged();
 
             var expectedSize = await ResolveExpectedClipSizeAsync(_detail.SceneNumber, clip.ClipNumber);
-            var videoBytes = await MediaFolder.GetClipBytesAsync(_detail.SceneNumber, clip.ClipNumber, expectedSize);
+            var videoBytes = await MediaFolder.GetClipBytesAsync(_projectId, _detail.SceneNumber, clip.ClipNumber, expectedSize);
             var ver = await Engine.VerifyClipDialogueAsync(_projectId, _detail.SceneNumber, clip.ClipNumber, videoBytes: videoBytes, force: true);
             if (ver is not null)
             {
@@ -3795,7 +3795,7 @@ else
                 StateHasChanged();
 
                 var expectedSize = await ResolveExpectedClipSizeAsync(sceneNum, cn);
-                var videoBytes = await MediaFolder.GetClipBytesAsync(sceneNum, cn, expectedSize);
+                var videoBytes = await MediaFolder.GetClipBytesAsync(_projectId, sceneNum, cn, expectedSize);
                 var ver = await Engine.VerifyClipDialogueAsync(_projectId, sceneNum, cn, videoBytes: videoBytes, force: true);
                 if (ver is not null && clip is not null)
                 {
@@ -3979,7 +3979,7 @@ else
             foreach (var v in _clipVersions)
             {
                 map[v.VersionId] = v.ClientOnly && !string.IsNullOrEmpty(v.RelativePath)
-                    ? await MediaFolder.GetLocalBlobUrlAsync(v.RelativePath)
+                    ? await MediaFolder.GetLocalBlobUrlAsync(_projectId, v.RelativePath)
                     : v.IsCurrent
                         ? Engine.ClipVideoUrl(_projectId, _compareSceneNumber, _compareClipNumber)
                         : Engine.BrowserMediaPath($"/api/projects/{Uri.EscapeDataString(_projectId)}/assets/video/history/{v.Mp4FileName}");

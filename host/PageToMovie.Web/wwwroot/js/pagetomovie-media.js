@@ -4,7 +4,6 @@
  */
 window.PageToMovieMedia = {
     _root: null, // FileSystemDirectoryHandle
-    _projectId: null,
     _blobUrls: {},
 
     supportsDirectoryPicker: function () {
@@ -143,7 +142,10 @@ window.PageToMovieMedia = {
     },
 
     /**
-     * Ensure project subfolder: {root}/{projectId}/assets/video/...
+     * Split relativePath on "/" and create/resolve each directory segment under this._root, e.g.
+     * {root}/{projectId}/assets/video/... — the project-id segment is just part of the string the
+     * caller (ClientMediaFolderService) already built; this function has no project-id concept of
+     * its own, it just walks whatever path it's given.
      */
     _ensurePathAsync: async function (relativePath) {
         if (!this._root) throw new Error("Media folder not connected");
@@ -164,7 +166,10 @@ window.PageToMovieMedia = {
      */
     _archiveClipHistoryAsync: async function (relativePath) {
         try {
-            const m = /^assets\/video\/(scene_\d+_clip_\d+)\.mp4$/i.exec(relativePath.replace(/\\/g, "/"));
+            // Leading group tolerates a project-id prefix (e.g. "alice/Buster/assets/video/...")
+            // ahead of the clip filename — preserved below so the archived copy lands under the
+            // same project's history folder instead of the shared root's.
+            const m = /^(.+\/)?assets\/video\/(scene_\d+_clip_\d+)\.mp4$/i.exec(relativePath.replace(/\\/g, "/"));
             if (!m) return;
             const { dir, fileName } = await this._ensurePathAsync(relativePath);
             let existing;
@@ -173,7 +178,8 @@ window.PageToMovieMedia = {
             const file = await existing.getFile();
             if (!file || file.size < 1024) return;
 
-            const historyPath = `assets/video/history/${m[1]}_${Date.now()}.mp4`;
+            const prefix = m[1] || "";
+            const historyPath = `${prefix}assets/video/history/${m[2]}_${Date.now()}.mp4`;
             const { dir: histDir, fileName: histName } = await this._ensurePathAsync(historyPath);
             const buf = await file.arrayBuffer();
             const wh = await histDir.getFileHandle(histName, { create: true });
@@ -341,27 +347,29 @@ window.PageToMovieMedia = {
 
     /**
      * List archived previous versions of one clip (newest first), written by
-     * _archiveClipHistoryAsync. Each entry's relativePath can be passed to getBlobUrlAsync.
+     * _archiveClipHistoryAsync. Each entry's relativePath already includes dirPrefix and can be
+     * passed straight to getBlobUrlAsync as-is.
+     * @param {string} dirPrefix literal path up to and including "assets/video/history", e.g.
+     *   "alice/Buster/assets/video/history" — built by the caller, not assembled in here.
      * @returns {{ success:boolean, entries?: { relativePath:string, timestampMs:number }[], error?:string }}
      */
-    listClipHistoryAsync: async function (scene, clip) {
+    listClipHistoryAsync: async function (dirPrefix, scene, clip) {
         if (!this._root) return { success: false, error: "Media folder not connected" };
         try {
             const prefix = `scene_${String(scene).padStart(2, "0")}_clip_${String(clip).padStart(2, "0")}_`;
-            let histDir;
-            try { histDir = await this._root.getDirectoryHandle("assets", { create: false }); }
-            catch (_) { return { success: true, entries: [] }; }
-            try { histDir = await histDir.getDirectoryHandle("video", { create: false }); }
-            catch (_) { return { success: true, entries: [] }; }
-            try { histDir = await histDir.getDirectoryHandle("history", { create: false }); }
-            catch (_) { return { success: true, entries: [] }; }
+            const parts = dirPrefix.replace(/\\/g, "/").split("/").filter(Boolean);
+            let histDir = this._root;
+            for (const part of parts) {
+                try { histDir = await histDir.getDirectoryHandle(part, { create: false }); }
+                catch (_) { return { success: true, entries: [] }; }
+            }
 
             const entries = [];
             for await (const [name, handle] of histDir.entries()) {
                 if (handle.kind !== "file" || !name.startsWith(prefix) || !name.endsWith(".mp4")) continue;
                 const ts = parseInt(name.slice(prefix.length, -4), 10);
                 if (!Number.isFinite(ts)) continue;
-                entries.push({ relativePath: `assets/video/history/${name}`, timestampMs: ts });
+                entries.push({ relativePath: `${dirPrefix}/${name}`, timestampMs: ts });
             }
             entries.sort((a, b) => b.timestampMs - a.timestampMs);
             return { success: true, entries };

@@ -323,10 +323,15 @@ public sealed class ClientMediaFolderService
 
             try
             {
+                // Project-scoped path on the shared local folder — the server-facing bare path
+                // (snap.ClientRelativePath) is kept separately below for RegisterMediaAsync, since
+                // the server resolves that string under its own already-project-scoped directory
+                // and would double-nest if it also carried this prefix.
+                var clientPath = $"{snap.ProjectId}/{snap.ClientRelativePath}";
                 var saved = await _js.InvokeAsync<JsSaveResult>(
                     "PageToMovieMedia.saveFromUrlAsync",
                     urlToSave,
-                    snap.ClientRelativePath,
+                    clientPath,
                     null);
 
                 if (saved is not { Success: true } || string.IsNullOrWhiteSpace(saved.Sha256))
@@ -340,7 +345,10 @@ public sealed class ClientMediaFolderService
                 var clip = snap.Clip;
                 await _api.RegisterMediaAsync(snap.ProjectId!, new MediaRegisterRequest
                 {
-                    RelativePath = saved.RelativePath ?? snap.ClientRelativePath!,
+                    // Bare server-side path, NOT saved.RelativePath (which JS echoes back with the
+                    // client-only project prefix baked in) — the server keys media_objects on the
+                    // bare path within its own already-project-scoped directory.
+                    RelativePath = snap.ClientRelativePath!,
                     Sha256 = saved.Sha256,
                     SizeBytes = saved.SizeBytes,
                     Kind = isCredits ? "credits" : isMusic ? "music" : "clip",
@@ -454,12 +462,13 @@ public sealed class ClientMediaFolderService
         }
     }
 
-    public async Task<string?> GetLocalBlobUrlAsync(string relativePath)
+    public async Task<string?> GetLocalBlobUrlAsync(string projectId, string relativePath)
     {
         if (!IsConnected) return null;
         try
         {
-            var r = await _js.InvokeAsync<JsBlobResult>("PageToMovieMedia.getBlobUrlAsync", relativePath, false);
+            var clientPath = $"{projectId}/{relativePath}";
+            var r = await _js.InvokeAsync<JsBlobResult>("PageToMovieMedia.getBlobUrlAsync", clientPath, false);
             return r is { Success: true } ? r.Url : null;
         }
         catch
@@ -469,12 +478,13 @@ public sealed class ClientMediaFolderService
     }
 
     /// <summary>Cheap metadata-only check of a local file — no blob URL created, no bytes read.</summary>
-    public async Task<(bool Found, long SizeBytes)> StatLocalFileAsync(string relativePath)
+    public async Task<(bool Found, long SizeBytes)> StatLocalFileAsync(string projectId, string relativePath)
     {
         if (!IsConnected) return (false, 0);
         try
         {
-            var r = await _js.InvokeAsync<JsStatResult>("PageToMovieMedia.statLocalFileAsync", relativePath);
+            var clientPath = $"{projectId}/{relativePath}";
+            var r = await _js.InvokeAsync<JsStatResult>("PageToMovieMedia.statLocalFileAsync", clientPath);
             return r is { Success: true } ? (true, r.SizeBytes) : (false, 0);
         }
         catch
@@ -493,11 +503,11 @@ public sealed class ClientMediaFolderService
     /// Returns the local blob URL only when the local file's size matches what the server has
     /// registered as current; otherwise null, so the caller falls back to streaming from server.
     /// </summary>
-    public async Task<string?> GetCurrentBlobUrlAsync(string relativePath, long? expectedSizeBytes)
+    public async Task<string?> GetCurrentBlobUrlAsync(string projectId, string relativePath, long? expectedSizeBytes)
     {
         if (!IsConnected) return null;
-        if (!await IsLocalCopyCurrentAsync(relativePath, expectedSizeBytes)) return null;
-        return await GetLocalBlobUrlAsync(relativePath);
+        if (!await IsLocalCopyCurrentAsync(projectId, relativePath, expectedSizeBytes)) return null;
+        return await GetLocalBlobUrlAsync(projectId, relativePath);
     }
 
     /// <summary>
@@ -506,10 +516,10 @@ public sealed class ClientMediaFolderService
     /// against) or the local file's size matches it. Caller must have already confirmed
     /// <see cref="IsConnected"/>.
     /// </summary>
-    private async Task<bool> IsLocalCopyCurrentAsync(string relativePath, long? expectedSizeBytes)
+    private async Task<bool> IsLocalCopyCurrentAsync(string projectId, string relativePath, long? expectedSizeBytes)
     {
         if (expectedSizeBytes is null or <= 0) return true;
-        var (found, localSize) = await StatLocalFileAsync(relativePath);
+        var (found, localSize) = await StatLocalFileAsync(projectId, relativePath);
         return found && localSize == expectedSizeBytes;
     }
 
@@ -523,8 +533,11 @@ public sealed class ClientMediaFolderService
             if (!IsConnected && !await ConnectFolderAsync())
                 return (false, null, 0, "Media folder required");
 
+            // Client-only prefixed path for the shared local folder; the bare relativePath (not
+            // saved.RelativePath, which JS echoes back prefixed) is what the server expects below.
+            var clientPath = $"{projectId}/{relativePath}";
             var saved = await _js.InvokeAsync<JsSaveResult>(
-                "PageToMovieMedia.saveBlobUrlAsync", blobUrl, relativePath);
+                "PageToMovieMedia.saveBlobUrlAsync", blobUrl, clientPath);
             if (saved is not { Success: true } || string.IsNullOrWhiteSpace(saved.Sha256))
                 return (false, null, 0, saved?.Error ?? "Save failed");
 
@@ -543,14 +556,18 @@ public sealed class ClientMediaFolderService
         }
     }
 
-    /// <summary>Archived previous versions of one clip's video, newest first (see ClipPromptCompareViewer).</summary>
-    public async Task<IReadOnlyList<string>> ListClipHistoryRelativePathsAsync(int scene, int clip)
+    /// <summary>Archived previous versions of one clip's video, newest first (see ClipPromptCompareViewer).
+    /// Unlike every other method here, the returned paths already include the project prefix (JS
+    /// builds them from the dirPrefix passed in) — pass them straight to GetLocalBlobUrlAsync's
+    /// relativePath without adding projectId again.</summary>
+    public async Task<IReadOnlyList<string>> ListClipHistoryRelativePathsAsync(string projectId, int scene, int clip)
     {
         if (!IsConnected) return Array.Empty<string>();
         try
         {
+            var dirPrefix = $"{projectId}/assets/video/history";
             var r = await _js.InvokeAsync<JsHistoryResult>(
-                "PageToMovieMedia.listClipHistoryAsync", scene, clip);
+                "PageToMovieMedia.listClipHistoryAsync", dirPrefix, scene, clip);
             return r is { Success: true, Entries: not null }
                 ? r.Entries.Select(e => e.RelativePath ?? "").Where(p => p.Length > 0).ToList()
                 : Array.Empty<string>();
@@ -620,10 +637,14 @@ public sealed class ClientMediaFolderService
                     if (string.IsNullOrWhiteSpace(file.StreamUrl))
                         continue;
 
+                    // Client-only prefixed path for the shared local folder; the manifest's bare
+                    // file.RelativePath (not saved.RelativePath, echoed back prefixed) is what the
+                    // server expects in RegisterMediaAsync below.
+                    var clientPath = $"{projectId}/{file.RelativePath}";
                     var saved = await _js.InvokeAsync<JsSaveResult>(
                         "PageToMovieMedia.saveFromUrlAsync",
                         file.StreamUrl,
-                        file.RelativePath,
+                        clientPath,
                         null);
 
                     if (saved is { Success: true } && !string.IsNullOrWhiteSpace(saved.Sha256))
@@ -631,7 +652,7 @@ public sealed class ClientMediaFolderService
                         count++;
                         await _api.RegisterMediaAsync(projectId, new MediaRegisterRequest
                         {
-                            RelativePath = saved.RelativePath ?? file.RelativePath,
+                            RelativePath = file.RelativePath,
                             Sha256 = saved.Sha256,
                             SizeBytes = saved.SizeBytes,
                             Kind = file.IsMp4 ? "clip" : "sidecar",
@@ -716,14 +737,14 @@ public sealed class ClientMediaFolderService
     /// the first missing segment. Segment relative paths mirror
     /// MediaRegistryService.MusicSegmentRelativePath in PageToMovie.Engine (Web doesn't reference
     /// Engine, so the format is kept in sync here — same convention as the clip path below).</summary>
-    public async Task<IReadOnlyList<string>> GetSceneMusicSegmentUrlsAsync(int scene, int maxSegments = 20)
+    public async Task<IReadOnlyList<string>> GetSceneMusicSegmentUrlsAsync(string projectId, int scene, int maxSegments = 20)
     {
         var urls = new List<string>();
         if (!IsConnected) return urls;
         for (var seg = 1; seg <= maxSegments; seg++)
         {
             var relPath = $"assets/music/scene_{scene:D2}_seg_{seg:D2}.wav";
-            var url = await GetLocalBlobUrlAsync(relPath);
+            var url = await GetLocalBlobUrlAsync(projectId, relPath);
             if (string.IsNullOrWhiteSpace(url)) break;
             urls.Add(url);
         }
@@ -738,14 +759,15 @@ public sealed class ClientMediaFolderService
     /// new clip. Pass the server's currently-registered size (GetClipMediaStatusAsync) to enable
     /// the check; omit it to keep the old unconditional-trust behavior for other callers.
     /// </summary>
-    public async Task<byte[]?> GetClipBytesAsync(int scene, int clip, long? expectedSizeBytes = null)
+    public async Task<byte[]?> GetClipBytesAsync(string projectId, int scene, int clip, long? expectedSizeBytes = null)
     {
         if (!IsConnected) return null;
         try
         {
             var relPath = $"assets/video/scene_{scene:D2}_clip_{clip:D2}.mp4";
-            if (!await IsLocalCopyCurrentAsync(relPath, expectedSizeBytes)) return null;
-            var res = await _js.InvokeAsync<JsBytesResult>("PageToMovieMedia.getBytesAsync", relPath);
+            if (!await IsLocalCopyCurrentAsync(projectId, relPath, expectedSizeBytes)) return null;
+            var clientPath = $"{projectId}/{relPath}";
+            var res = await _js.InvokeAsync<JsBytesResult>("PageToMovieMedia.getBytesAsync", clientPath);
             return res is { Success: true, Bytes: not null } ? res.Bytes : null;
         }
         catch

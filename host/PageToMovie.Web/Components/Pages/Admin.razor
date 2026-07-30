@@ -1263,7 +1263,7 @@
                 // First music segment's relative path (see MediaRegistryService.MusicSegmentRelativePath) —
                 // segment 1 always exists once a scene has any background music synced locally.
                 var audioPath = $"assets/music/scene_{sc.SceneNumber:D2}_seg_01.wav";
-                var hasLocalAudio = MediaFolder.IsConnected && (await MediaFolder.StatLocalFileAsync(audioPath)).Found;
+                var hasLocalAudio = MediaFolder.IsConnected && (await MediaFolder.StatLocalFileAsync(_augmentProjectId, audioPath)).Found;
 
                 if (hasLocalAudio)
                 {
@@ -1318,7 +1318,7 @@
                             var confirmed = false;
                             for (var attempt = 0; attempt < 10; attempt++)
                             {
-                                if ((await MediaFolder.StatLocalFileAsync(audioPath)).Found)
+                                if ((await MediaFolder.StatLocalFileAsync(_augmentProjectId, audioPath)).Found)
                                 {
                                     confirmed = true;
                                     break;
