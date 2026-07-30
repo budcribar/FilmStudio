@@ -186,6 +186,7 @@ public static class HtmlDashboardGenerator
         <div style=""display: flex; align-items: center; gap: 1rem;"">
           <h3>🏆 Multi-Book Composite Model Rankings</h3>
           <button class=""tab-btn"" onclick=""toggleSyntaxExpand()"" id=""syntax-toggle-btn"" style=""padding: 0.35rem 0.85rem; font-size: 0.8rem; border-radius: 4px; border: 1px solid var(--accent-cyan); color: var(--accent-cyan);"">🔍 Expand Syntax Breakdown</button>
+          <button class=""tab-btn"" onclick=""togglePeerExpand()"" id=""peer-toggle-btn"" style=""padding: 0.35rem 0.85rem; font-size: 0.8rem; border-radius: 4px; border: 1px solid var(--accent-purple); color: var(--accent-purple);"">🔍 Expand LLM Peer Breakdown</button>
         </div>
         <span style=""font-size: 0.85rem; color: var(--text-muted);"">Date Run: <strong id=""global-date-subtitle"" style=""color: var(--text-main);"">—</strong></span>
       </div>
@@ -262,6 +263,7 @@ public static class HtmlDashboardGenerator
 
         sb.AppendLine(@"
     let isSyntaxExpanded = false;
+    let isPeerExpanded = false;
     let globalSortKey = 'composite';
     let globalSortAsc = false;
 
@@ -270,6 +272,15 @@ public static class HtmlDashboardGenerator
       const btn = document.getElementById('syntax-toggle-btn');
       if (btn) {
         btn.textContent = isSyntaxExpanded ? '◀ Collapse Syntax Breakdown' : '🔍 Expand Syntax Breakdown';
+      }
+      renderGlobalTable();
+    }
+
+    function togglePeerExpand() {
+      isPeerExpanded = !isPeerExpanded;
+      const btn = document.getElementById('peer-toggle-btn');
+      if (btn) {
+        btn.textContent = isPeerExpanded ? '◀ Collapse LLM Peer Breakdown' : '🔍 Expand LLM Peer Breakdown';
       }
       renderGlobalTable();
     }
@@ -320,6 +331,12 @@ public static class HtmlDashboardGenerator
         case 'charsplit': return (m.avgCharDisambiguationSyntax !== undefined ? m.avgCharDisambiguationSyntax : m.AvgCharDisambiguationSyntax) || 0;
         case 'music': return (m.avgMusicSpec !== undefined ? m.avgMusicSpec : m.AvgMusicSpec) || 0;
         case 'qual': return (m.avgQualitativeScore !== undefined ? m.avgQualitativeScore : m.AvgQualitativeScore) || 0;
+        case 'jfidelity': return (m.avgFidelity !== undefined ? m.avgFidelity : m.AvgFidelity) || 0;
+        case 'jcharsplit': return (m.avgCharSplit !== undefined ? m.avgCharSplit : m.AvgCharSplit) || 0;
+        case 'jvideodirect': return (m.avgVideoDirect !== undefined ? m.avgVideoDirect : m.AvgVideoDirect) || 0;
+        case 'jpacing': return (m.avgPacing !== undefined ? m.avgPacing : m.AvgPacing) || 0;
+        case 'jdialogue': return (m.avgDialogue !== undefined ? m.avgDialogue : m.AvgDialogue) || 0;
+        case 'jmusic': return (m.avgMusic !== undefined ? m.avgMusic : m.AvgMusic) || 0;
         case 'wins': return (m.firstPlaceWins !== undefined ? m.firstPlaceWins : m.FirstPlaceWins) || 0;
         case 'books': return (m.totalBooksEvaluated !== undefined ? m.totalBooksEvaluated : m.TotalBooksEvaluated) || 0;
         default: return 0;
@@ -341,37 +358,47 @@ public static class HtmlDashboardGenerator
 
       const arrow = (key) => globalSortKey === key ? (globalSortAsc ? ' ▲' : ' ▼') : '';
       const colStyle = ""cursor: pointer; user-select: none;"";
+      const compositeLabel = (isSyntaxExpanded || isPeerExpanded) ? 'Composite' : 'Multi-Book Composite';
 
-      if (isSyntaxExpanded) {
-        thead.innerHTML = `<tr>
+      let headerHtml = `<tr>
           <th style=""${colStyle}"" onclick=""sortGlobal('rank')"">Rank${arrow('rank')}</th>
           <th style=""${colStyle}"" onclick=""sortGlobal('modelId')"">Model ID${arrow('modelId')}</th>
-          <th style=""${colStyle}"" onclick=""sortGlobal('composite')"">Composite${arrow('composite')}</th>
-          <th style=""${colStyle}"" onclick=""sortGlobal('syntax')"">C# Syntax Avg${arrow('syntax')}</th>
+          <th style=""${colStyle}"" onclick=""sortGlobal('composite')"">${compositeLabel}${arrow('composite')}</th>
+          <th style=""${colStyle}"" onclick=""sortGlobal('syntax')"">C# Syntax Avg${arrow('syntax')}</th>`;
+
+      if (isSyntaxExpanded) {
+        headerHtml += `
           <th style=""${colStyle}; color: var(--accent-cyan);"" onclick=""sortGlobal('format')"">Format %${arrow('format')}</th>
           <th style=""${colStyle}; color: var(--accent-cyan);"" onclick=""sortGlobal('budget')"">Budget %${arrow('budget')}</th>
           <th style=""${colStyle}; color: var(--accent-cyan);"" onclick=""sortGlobal('pacing')"">Pacing %${arrow('pacing')}</th>
           <th style=""${colStyle}; color: var(--accent-cyan);"" onclick=""sortGlobal('charsplit')"">Char Split %${arrow('charsplit')}</th>
-          <th style=""${colStyle}; color: var(--accent-cyan);"" onclick=""sortGlobal('music')"">Music Spec %${arrow('music')}</th>
-          <th style=""${colStyle}"" onclick=""sortGlobal('qual')"">LLM Peer Avg${arrow('qual')}</th>
-          <th style=""${colStyle}"" onclick=""sortGlobal('wins')"">1st Place Wins${arrow('wins')}</th>
-          <th style=""${colStyle}"" onclick=""sortGlobal('books')"">Books Evaluated (Live)${arrow('books')}</th>
-        </tr>`;
-      } else {
-        thead.innerHTML = `<tr>
-          <th style=""${colStyle}"" onclick=""sortGlobal('rank')"">Rank${arrow('rank')}</th>
-          <th style=""${colStyle}"" onclick=""sortGlobal('modelId')"">Model ID${arrow('modelId')}</th>
-          <th style=""${colStyle}"" onclick=""sortGlobal('composite')"">Multi-Book Composite${arrow('composite')}</th>
-          <th style=""${colStyle}"" onclick=""sortGlobal('syntax')"">C# Syntax Avg${arrow('syntax')}</th>
-          <th style=""${colStyle}"" onclick=""sortGlobal('qual')"">LLM Peer Avg${arrow('qual')}</th>
-          <th style=""${colStyle}"" onclick=""sortGlobal('wins')"">1st Place Wins${arrow('wins')}</th>
-          <th style=""${colStyle}"" onclick=""sortGlobal('books')"">Books Evaluated (Live)${arrow('books')}</th>
-        </tr>`;
+          <th style=""${colStyle}; color: var(--accent-cyan);"" onclick=""sortGlobal('music')"">Music Spec %${arrow('music')}</th>`;
       }
+
+      headerHtml += `
+          <th style=""${colStyle}"" onclick=""sortGlobal('qual')"">LLM Peer Avg${arrow('qual')}</th>`;
+
+      if (isPeerExpanded) {
+        headerHtml += `
+          <th style=""${colStyle}; color: var(--accent-purple);"" onclick=""sortGlobal('jfidelity')"">Fidelity${arrow('jfidelity')}</th>
+          <th style=""${colStyle}; color: var(--accent-purple);"" onclick=""sortGlobal('jcharsplit')"">Char Clarity${arrow('jcharsplit')}</th>
+          <th style=""${colStyle}; color: var(--accent-purple);"" onclick=""sortGlobal('jvideodirect')"">Video Direct${arrow('jvideodirect')}</th>
+          <th style=""${colStyle}; color: var(--accent-purple);"" onclick=""sortGlobal('jpacing')"">Dramatic Pacing${arrow('jpacing')}</th>
+          <th style=""${colStyle}; color: var(--accent-purple);"" onclick=""sortGlobal('jdialogue')"">Dialogue${arrow('jdialogue')}</th>
+          <th style=""${colStyle}; color: var(--accent-purple);"" onclick=""sortGlobal('jmusic')"">Sound/Music${arrow('jmusic')}</th>`;
+      }
+
+      headerHtml += `
+          <th style=""${colStyle}"" onclick=""sortGlobal('wins')"">1st Place Wins${arrow('wins')}</th>
+          <th style=""${colStyle}"" onclick=""sortGlobal('books')"">Books Evaluated (Live)${arrow('books')}</th>
+        </tr>`;
+      thead.innerHTML = headerHtml;
 
       tbody.innerHTML = '';
       if (leaderboard.length === 0) {
-        const colSpan = isSyntaxExpanded ? 12 : 7;
+        let colSpan = 7;
+        if (isSyntaxExpanded) colSpan += 5;
+        if (isPeerExpanded) colSpan += 6;
         tbody.innerHTML = `<tr><td colspan=""${colSpan}"" style=""text-align: center; color: var(--text-muted);"">No live benchmark history runs recorded yet. Run a benchmark to populate the leaderboard.</td></tr>`;
         return;
       }
@@ -387,11 +414,17 @@ public static class HtmlDashboardGenerator
         const chr = getSortVal(m, 'charsplit');
         const mus = getSortVal(m, 'music');
         const qual = getSortVal(m, 'qual');
+        const jfid = getSortVal(m, 'jfidelity');
+        const jchr = getSortVal(m, 'jcharsplit');
+        const jvid = getSortVal(m, 'jvideodirect');
+        const jpac = getSortVal(m, 'jpacing');
+        const jdlg = getSortVal(m, 'jdialogue');
+        const jmus = getSortVal(m, 'jmusic');
         const wins = getSortVal(m, 'wins');
         const books = getSortVal(m, 'books');
         const titles = m.evaluatedBookTitles || m.EvaluatedBookTitles || [];
         const formattedTitles = titles.map(t => formatTitle(t)).join(', ');
-        const booksCell = formattedTitles.length > 0 
+        const booksCell = formattedTitles.length > 0
           ? `<strong style=""color: var(--accent-cyan);"">${books}</strong> <span style=""font-size: 0.82rem; color: var(--text-muted); margin-left: 0.3rem;"">(${formattedTitles})</span>`
           : `<strong>${books}</strong>`;
 
@@ -411,7 +444,19 @@ public static class HtmlDashboardGenerator
         }
 
         row += `
-          <td>${qual.toFixed(1)}%</td>
+          <td>${qual.toFixed(1)}%</td>`;
+
+        if (isPeerExpanded) {
+          row += `
+            <td style=""color: var(--accent-purple);"">${jfid.toFixed(1)}/10</td>
+            <td style=""color: var(--accent-purple);"">${jchr.toFixed(1)}/10</td>
+            <td style=""color: var(--accent-purple);"">${jvid.toFixed(1)}/10</td>
+            <td style=""color: var(--accent-purple);"">${jpac.toFixed(1)}/10</td>
+            <td style=""color: var(--accent-purple);"">${jdlg.toFixed(1)}/10</td>
+            <td style=""color: var(--accent-purple);"">${jmus.toFixed(1)}/10</td>`;
+        }
+
+        row += `
           <td>🏆 ${wins}</td>
           <td>${booksCell}</td>
         </tr>`;

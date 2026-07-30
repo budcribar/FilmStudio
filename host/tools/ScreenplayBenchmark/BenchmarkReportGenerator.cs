@@ -28,6 +28,9 @@ public sealed class ModelScoreSummary
     public double AvgDialogueAuthenticity { get; set; }
     public double AvgSoundDesignMusic { get; set; }
     public double AvgOverallQualitative { get; set; }
+
+    /// <summary>"{judgeId}: {issue}" entries from any judge that marked this candidate not production-ready.</summary>
+    public List<string> DisqualifyingFlags { get; set; } = new();
 }
 
 public sealed class BenchmarkRunData
@@ -39,6 +42,12 @@ public sealed class BenchmarkRunData
     public Dictionary<string, Dictionary<string, double>> JudgeMatrix { get; set; } = new(); // JudgeModel -> (ScreenplayModel -> Score)
     public Dictionary<string, Dictionary<string, int>> JudgeRankMatrix { get; set; } = new(); // JudgeModel -> (ScreenplayModel -> Rank)
     public List<string> SelfBiasNotes { get; set; } = new();
+
+    /// <summary>JudgeModel -> (ScreenplayModel -> that judge's written rationale for that candidate).</summary>
+    public Dictionary<string, Dictionary<string, string>> JudgeRationale { get; set; } = new();
+
+    /// <summary>JudgeModel -> that judge's free-text overall comparison summary.</summary>
+    public Dictionary<string, string> JudgeSummaries { get; set; } = new();
 }
 
 public static class BenchmarkReportGenerator
@@ -82,16 +91,31 @@ public static class BenchmarkReportGenerator
         }
         sb.AppendLine();
 
-        sb.AppendLine("## 📐 8-Dimension Category Breakdown Matrix");
+        sb.AppendLine("## 📐 Dimension Breakdown Matrix");
         sb.AppendLine();
-        sb.AppendLine("| Model ID | Fountain Syntax | Scene Budget | Dialogue Pacing | Fidelity | Character Age Split | Video Directibility | Dramatic Pacing | Sound/Music Design |");
-        sb.AppendLine("| :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |");
+        sb.AppendLine("| Model ID | Fountain Syntax | Scene Budget | Dialogue Pacing | Fidelity | Character Age Split | Video Directibility | Dramatic Pacing | Dialogue Authenticity | Sound/Music Design |");
+        sb.AppendLine("| :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |");
 
         foreach (var m in data.Leaderboard)
         {
-            sb.AppendLine($"| **{m.ModelId}** | {m.SyntaxAudit.FormatComplianceScore:F0}% | {m.SyntaxAudit.SceneBudgetScore:F0}% | {m.SyntaxAudit.DialoguePacingScore:F0}% | {m.AvgAdaptationFidelity:F1}/10 | {m.AvgCharacterDisambiguation:F1}/10 | {m.AvgAiVideoDirectibility:F1}/10 | {m.AvgDramaticPacing:F1}/10 | {m.AvgSoundDesignMusic:F1}/10 |");
+            sb.AppendLine($"| **{m.ModelId}** | {m.SyntaxAudit.FormatComplianceScore:F0}% | {m.SyntaxAudit.SceneBudgetScore:F0}% | {m.SyntaxAudit.DialoguePacingScore:F0}% | {m.AvgAdaptationFidelity:F1}/10 | {m.AvgCharacterDisambiguation:F1}/10 | {m.AvgAiVideoDirectibility:F1}/10 | {m.AvgDramaticPacing:F1}/10 | {m.AvgDialogueAuthenticity:F1}/10 | {m.AvgSoundDesignMusic:F1}/10 |");
         }
         sb.AppendLine();
+
+        var disqualified = data.Leaderboard.Where(m => m.DisqualifyingFlags.Count > 0).ToList();
+        if (disqualified.Count > 0)
+        {
+            sb.AppendLine("## 🚫 Production-Readiness Flags");
+            sb.AppendLine("Deal-breaker issues judges called out independent of the averaged scores above:");
+            sb.AppendLine();
+            foreach (var m in disqualified)
+            {
+                sb.AppendLine($"- **{m.ModelId}**:");
+                foreach (var flag in m.DisqualifyingFlags)
+                    sb.AppendLine($"  - {flag}");
+            }
+            sb.AppendLine();
+        }
 
         sb.AppendLine("## ⚖️ Peer Judge Matrix (Heatmap)");
         sb.AppendLine("Shows how each judge model evaluated candidate screenplays (scored out of 10):");
@@ -146,6 +170,17 @@ public static class BenchmarkReportGenerator
             sb.AppendLine();
         }
 
+        if (data.JudgeSummaries.Count(kv => !string.IsNullOrWhiteSpace(kv.Value)) > 0)
+        {
+            sb.AppendLine("### 🗣️ Judge Summary Notes");
+            foreach (var (judgeId, summary) in data.JudgeSummaries)
+            {
+                if (string.IsNullOrWhiteSpace(summary)) continue;
+                sb.AppendLine($"- **{judgeId}:** {summary}");
+            }
+            sb.AppendLine();
+        }
+
         sb.AppendLine("## 🔍 Character & Music Structural Diagnostics (C# Audit)");
         sb.AppendLine();
         foreach (var m in data.Leaderboard)
@@ -161,6 +196,20 @@ public static class BenchmarkReportGenerator
                 sb.AppendLine("- **Diagnostics & Warnings:**");
                 foreach (var w in m.SyntaxAudit.DiagnosticWarnings)
                     sb.AppendLine($"  - ⚠️ {w}");
+            }
+
+            var rationaleForModel = data.JudgeRationale
+                .Where(kv => kv.Value.TryGetValue(m.ModelId, out var text) && !string.IsNullOrWhiteSpace(text))
+                .Select(kv => (JudgeId: kv.Key, Text: kv.Value[m.ModelId]))
+                .ToList();
+            if (rationaleForModel.Count > 0)
+            {
+                sb.AppendLine("- **Judge Rationale:**");
+                foreach (var (judgeId, text) in rationaleForModel)
+                {
+                    var isSelf = string.Equals(judgeId, m.ModelId, StringComparison.OrdinalIgnoreCase);
+                    sb.AppendLine($"  - *{judgeId}{(isSelf ? " (self)" : "")}:* {text}");
+                }
             }
             sb.AppendLine();
         }

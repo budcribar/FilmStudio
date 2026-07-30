@@ -297,7 +297,8 @@ public static class Program
                 {
                     var json = await File.ReadAllTextAsync(judgeCacheFile);
                     var loaded = JsonSerializer.Deserialize<JudgeEvaluationPayload>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-                    if (loaded is not null && !loaded.IsMock && loaded.Evaluations.Count > 0 && loaded.Evaluations.All(e => e.OverallQualitativeScore >= 0.0))
+                    if (loaded is not null && !loaded.IsMock && loaded.Evaluations.Count > 0 && loaded.Evaluations.All(e => e.OverallQualitativeScore >= 0.0)
+                        && loaded.RubricVersion == ScreenplayJudgmentRubric.RubricVersion)
                     {
                         cachedJudge = loaded;
                     }
@@ -334,6 +335,7 @@ public static class Program
                         mode: "screenplay_benchmark_judge");
                     evalPayload = ParseJudgePayload(raw, anonMapping.Keys);
                     evalPayload.IsMock = false;
+                    evalPayload.RubricVersion = ScreenplayJudgmentRubric.RubricVersion;
                     Console.WriteLine("DONE");
 
                     // Save valid live evaluation to cache
@@ -550,6 +552,9 @@ Uncle Nick turned, offering a small, reassuring nod. ""She always holds when the
         var result = new JudgeEvaluationPayload
         {
             JudgeSummaryNotes = raw.JudgeSummaryNotes,
+            // Must carry through: AggregateBenchmarkData relies on this to exclude a failed judge's
+            // fabricated (alphabetical-label-order) ForcedRanking from Borda points / rank sums.
+            IsMock = raw.IsMock,
         };
 
         foreach (var rankLabel in raw.ForcedRanking)
@@ -573,6 +578,8 @@ Uncle Nick turned, offering a small, reassuring nod. ""She always holds when the
                 DialogueAuthenticity = entry.DialogueAuthenticity,
                 SoundDesignMusic = entry.SoundDesignMusic,
                 OverallQualitativeScore = entry.OverallQualitativeScore,
+                ProductionReady = entry.ProductionReady,
+                DisqualifyingIssues = entry.DisqualifyingIssues,
                 Rationale = entry.Rationale,
             });
         }
@@ -600,6 +607,13 @@ Uncle Nick turned, offering a small, reassuring nod. ""She always holds when the
         {
             runData.JudgeMatrix[judgeId] = new Dictionary<string, double>();
             runData.JudgeRankMatrix[judgeId] = new Dictionary<string, int>();
+            runData.JudgeSummaries[judgeId] = payload.JudgeSummaryNotes;
+            runData.JudgeRationale[judgeId] = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var eval in payload.Evaluations)
+            {
+                if (!string.IsNullOrWhiteSpace(eval.Rationale))
+                    runData.JudgeRationale[judgeId][eval.ScreenplayId] = eval.Rationale; // last-wins if a malformed judge response repeats a screenplayId
+            }
 
             if (payload.IsMock)
             {
@@ -633,6 +647,41 @@ Uncle Nick turned, offering a small, reassuring nod. ""She always holds when the
             }
         }
 
+        // Self-bias check: every judge is also a candidate here, so compare each judge's score for
+        // its OWN screenplay against the average score OTHER (non-mock) judges gave that same
+        // candidate. A judge rating itself well above its peers' consensus is the exact failure mode
+        // blind anonymized review is meant to catch.
+        const double SelfBiasThreshold = 1.0;
+        foreach (var judgeId in candidateModels)
+        {
+            if (!judgeEvaluations.TryGetValue(judgeId, out var judgePayload) || judgePayload.IsMock) continue;
+
+            var selfEval = judgePayload.Evaluations.FirstOrDefault(e =>
+                string.Equals(e.ScreenplayId, judgeId, StringComparison.OrdinalIgnoreCase) && e.OverallQualitativeScore >= 0.0);
+            if (selfEval is null) continue;
+
+            var peerScores = judgeEvaluations
+                .Where(kv => !string.Equals(kv.Key, judgeId, StringComparison.OrdinalIgnoreCase) && !kv.Value.IsMock)
+                .SelectMany(kv => kv.Value.Evaluations)
+                .Where(e => string.Equals(e.ScreenplayId, judgeId, StringComparison.OrdinalIgnoreCase) && e.OverallQualitativeScore >= 0.0)
+                .Select(e => e.OverallQualitativeScore)
+                .ToList();
+            if (peerScores.Count == 0) continue;
+
+            var peerAvg = peerScores.Average();
+            var delta = selfEval.OverallQualitativeScore - peerAvg;
+            if (delta >= SelfBiasThreshold)
+            {
+                runData.SelfBiasNotes.Add(
+                    $"⚠️ {judgeId} rated its own screenplay {selfEval.OverallQualitativeScore:F1}/10 vs. a {peerAvg:F1}/10 average from {peerScores.Count} other judge(s) (+{delta:F1}) — possible self-preference bias.");
+            }
+            else if (delta <= -SelfBiasThreshold)
+            {
+                runData.SelfBiasNotes.Add(
+                    $"ℹ️ {judgeId} rated its own screenplay {selfEval.OverallQualitativeScore:F1}/10 vs. a {peerAvg:F1}/10 average from {peerScores.Count} other judge(s) ({delta:F1}) — notably harsher on itself than peers were.");
+            }
+        }
+
         foreach (var modelId in candidateModels)
         {
             var syntax = deterministicResults[modelId];
@@ -641,6 +690,15 @@ Uncle Nick turned, offering a small, reassuring nod. ""She always holds when the
                 .Where(p => !p.IsMock)
                 .SelectMany(p => p.Evaluations)
                 .Where(e => string.Equals(e.ScreenplayId, modelId, StringComparison.OrdinalIgnoreCase) && e.OverallQualitativeScore >= 0.0)
+                .ToList();
+
+            var disqualifyingFlags = judgeEvaluations
+                .Where(kv => !kv.Value.IsMock)
+                .SelectMany(kv => kv.Value.Evaluations
+                    .Where(e => string.Equals(e.ScreenplayId, modelId, StringComparison.OrdinalIgnoreCase) && !e.ProductionReady)
+                    .SelectMany(e => e.DisqualifyingIssues.Count > 0
+                        ? e.DisqualifyingIssues.Select(issue => $"{kv.Key}: {issue}")
+                        : new[] { $"{kv.Key}: flagged not production-ready (no specific issue given)" }))
                 .ToList();
 
             var avgFidelity = modelEvals.Count > 0 ? modelEvals.Average(e => e.AdaptationFidelity) : 0.0;
@@ -672,6 +730,7 @@ Uncle Nick turned, offering a small, reassuring nod. ""She always holds when the
                 AvgOverallQualitative = Math.Round(avgQual, 1),
                 IsGenerationFallback = isFallback,
                 GenerationFallbackReason = fallbackReason,
+                DisqualifyingFlags = disqualifyingFlags,
             });
         }
 
@@ -728,6 +787,8 @@ FADE OUT.";
                 DialogueAuthenticity = -1.0,
                 SoundDesignMusic = -1.0,
                 OverallQualitativeScore = -1.0,
+                ProductionReady = false,
+                DisqualifyingIssues = new List<string> { "Not a real assessment — judge call failed or was skipped." },
                 Rationale = $"[MOCK / FAILED JUDGE] Model '{judgeId}' failed or was skipped for candidate '{key}'.",
             });
         }
