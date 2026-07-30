@@ -325,18 +325,10 @@ public static class SupportedModelCatalog
         // Reject anything EnsureLoaded wouldn't actually accept — without this, a structurally
         // invalid save (e.g. a top-level object with no "models" array) still overwrote the
         // previous good catalog file, and the next reload silently fell through every candidate
-        // path to BuiltInDefaults with no indication the save had any effect. Better to leave the
-        // existing catalog completely untouched and fail loudly than to lose it silently.
         if (!IsUsableCatalogJson(rawJson))
-        {
-            throw new ArgumentException(
-                "Catalog JSON must be either an object with a non-empty \"models\" array, or a " +
-                "non-empty array of model entries. Nothing was saved — the existing catalog is unchanged.",
-                nameof(rawJson));
-        }
+            throw new ArgumentException("Catalog JSON payload must be non-empty valid JSON with a non-empty 'models' array.", nameof(rawJson));
 
         var targetPath = GetCatalogFilePath();
-
         var dir = Path.GetDirectoryName(targetPath);
         if (!string.IsNullOrWhiteSpace(dir)) Directory.CreateDirectory(dir);
 
