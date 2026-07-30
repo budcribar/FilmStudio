@@ -24,6 +24,7 @@ public sealed class BenchmarkRunData
 {
     public string BookPath { get; set; } = "";
     public string Timestamp { get; set; } = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss UTC");
+    public bool IsMockRun { get; set; }
     public List<ModelScoreSummary> Leaderboard { get; set; } = new();
     public Dictionary<string, Dictionary<string, double>> JudgeMatrix { get; set; } = new(); // JudgeModel -> (ScreenplayModel -> Score)
     public Dictionary<string, Dictionary<string, int>> JudgeRankMatrix { get; set; } = new(); // JudgeModel -> (ScreenplayModel -> Rank)
@@ -39,6 +40,11 @@ public static class BenchmarkReportGenerator
         sb.AppendLine("# 🏆 Screenplay Benchmark & Peer-Evaluation Report");
         sb.AppendLine($"*Generated at: {data.Timestamp}*  ");
         sb.AppendLine($"*Source Story File: `{Path.GetFileName(data.BookPath)}`*");
+        if (data.IsMockRun)
+        {
+            sb.AppendLine();
+            sb.AppendLine("> ⚠️ **NOTE:** This report was generated in **DRY-RUN / MOCK** mode. Scores are for testing purposes and excluded from global leaderboards.");
+        }
         sb.AppendLine();
 
         sb.AppendLine("## 📊 Overall Model Leaderboard");

@@ -315,19 +315,25 @@ public static class Program
 
         // Phase 5: Aggregation & History Persistence
         var runData = AggregateBenchmarkData(bookPath, candidateModels, generatedScreenplays, deterministicResults, judgeEvaluations);
+        var isMockRun = dryRun || judgeEvaluations.Values.All(v => v.IsMock);
+        runData.IsMockRun = isMockRun;
 
         var historyRun = new HistoricalBenchmarkRun
         {
             BookSlug = bookSlug,
             BookTitle = Path.GetFileNameWithoutExtension(bookPath),
             BookPath = bookPath,
-            IsMockRun = dryRun || judgeEvaluations.Values.All(v => v.IsMock),
+            IsMockRun = isMockRun,
             ModelScores = runData.Leaderboard,
             JudgeMatrix = runData.JudgeMatrix,
             SelfBiasNotes = runData.SelfBiasNotes,
         };
 
         BenchmarkHistoryStore.AppendRun(historyRun, historyFilePath);
+
+        var jsonOpts = new JsonSerializerOptions { WriteIndented = true };
+        var jsonFile = Path.Combine(outDir, bookSlug, "run_data.json");
+        await File.WriteAllTextAsync(jsonFile, JsonSerializer.Serialize(runData, jsonOpts));
 
         var reportMarkdown = BenchmarkReportGenerator.GenerateMarkdownReport(runData);
         var reportFile = Path.Combine(outDir, bookSlug, "benchmark_report.md");
