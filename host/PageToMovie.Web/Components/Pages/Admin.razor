@@ -628,6 +628,24 @@
                             1. <strong>Compose Score Prompts</strong> non-destructively enriches <code>blueprint.clips.grok.json</code> with AI background music score prompts across all scenes.<br/>
                             2. <strong>Synthesize Scene Audio Tracks</strong> checks each scene and queues AI stereo background music generation for any scene missing audio.
                         </p>
+                        @if (_archiveBusy && _archiveAction == "synthesize")
+                        {
+                            <p class="form-text mb-0 mt-1">
+                                Local media folder:
+                                @if (MediaFolder.IsConnected)
+                                {
+                                    <span class="text-success">connected (@MediaFolder.FolderName)</span>
+                                }
+                                else
+                                {
+                                    <span class="text-danger">not connected — generated audio cannot be saved</span>
+                                }
+                                @if (!string.IsNullOrEmpty(MediaFolder.LastStatus))
+                                {
+                                    <text> · </text><code>@MediaFolder.LastStatus</code>
+                                }
+                            </p>
+                        }
                     </div>
                 </div>
                 @if (!string.IsNullOrEmpty(_archiveMsg))
@@ -881,6 +899,11 @@
         StateHasChanged();
 
         Hub.AdminState += OnAdminState;
+        MediaFolder.Changed += OnMediaFolderChanged;
+        // Explicit, not just relying on MainLayout's app-wide hook — makes the local-save pipeline
+        // (auto-save-on-generate) definitely live before this page starts queuing gen jobs, and
+        // surfaces its status/errors here (see OnMediaFolderChanged) instead of nowhere.
+        await MediaFolder.EnsureHubHookAsync();
         // Do not block UI on SignalR
         _ = ConnectHubAsync();
         await RefreshAsync();
@@ -904,6 +927,8 @@
             _hubLive = false;
         }
     }
+
+    private void OnMediaFolderChanged() => InvokeAsync(StateHasChanged);
 
     private void OnAdminState(object? payload)
     {
@@ -1533,12 +1558,21 @@
         return id.Length <= 10 ? id : id[..8] + "…";
     }
 
-    public async ValueTask DisposeAsync()
+    public ValueTask DisposeAsync()
     {
         Hub.AdminState -= OnAdminState;
+        MediaFolder.Changed -= OnMediaFolderChanged;
         _pollCts?.Cancel();
         _timer?.Dispose();
         _pollCts?.Dispose();
-        await Hub.DisposeAsync();
+        // Do NOT Hub.DisposeAsync() here — JobHubClient is a shared, app-wide singleton (every
+        // page's SignalR subscriptions, including ClientMediaFolderService's auto-save-on-
+        // generate hook, ride the same connection). Disposing it on navigating away from /admin
+        // killed that connection for the rest of the session: ClientMediaFolderService.
+        // EnsureHubHookAsync() latches "_hubHooked" true on first call and never retries, so once
+        // the underlying connection was torn down here it never came back — every job's generated
+        // media (music, clips, anything) would stop reaching the local media folder app-wide,
+        // silently, until a full page reload. This page merely stops listening to it.
+        return ValueTask.CompletedTask;
     }
 }
