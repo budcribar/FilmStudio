@@ -225,9 +225,12 @@ public sealed class AnthropicChatClient : IChatClient, IVisionClient
     /// Anthropic Messages API response shape: <c>{ content: [{ type: "text", text: "..." }, ...] }</c>.
     /// Concatenates all text blocks (tool_use / other block types are skipped).
     /// </summary>
-    private static string? ResolveApiKey() =>
-        Abstractions.ApiKeyScope.CurrentAnthropic
-        ?? Environment.GetEnvironmentVariable(SupportedModelCatalog.AnthropicApiKeyEnv);
+    private static string? ResolveApiKey()
+    {
+        var raw = Abstractions.ApiKeyScope.CurrentAnthropic
+            ?? Environment.GetEnvironmentVariable(SupportedModelCatalog.AnthropicApiKeyEnv);
+        return string.IsNullOrWhiteSpace(raw) ? null : raw.Trim(' ', '"', '\'', '\r', '\n', '\t');
+    }
 
     private static string ExtractMessageText(JsonElement result)
     {

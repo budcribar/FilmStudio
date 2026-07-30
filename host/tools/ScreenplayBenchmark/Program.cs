@@ -17,6 +17,8 @@ public static class Program
 {
     public static async Task<int> Main(string[] args)
     {
+        TryLoadDotEnv();
+
         Console.WriteLine("==========================================================================");
         Console.WriteLine(" 🎬 Film Studio — Screenplay Generation & Blind Peer-Evaluation Benchmark ");
         Console.WriteLine("==========================================================================");
@@ -605,5 +607,41 @@ FADE OUT.";
         }
         payload.JudgeSummaryNotes = $"Mock judge summary notes from {judgeId}.";
         return payload;
+    }
+
+    private static void TryLoadDotEnv()
+    {
+        var dirs = new[]
+        {
+            Directory.GetCurrentDirectory(),
+            AppContext.BaseDirectory,
+            Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", ".."))
+        };
+
+        foreach (var dir in dirs.Distinct())
+        {
+            var envFiles = new[] { Path.Combine(dir, ".env"), Path.Combine(dir, ".env.local") };
+            foreach (var envPath in envFiles)
+            {
+                if (File.Exists(envPath))
+                {
+                    foreach (var line in File.ReadAllLines(envPath))
+                    {
+                        var trimmed = line.Trim();
+                        if (string.IsNullOrWhiteSpace(trimmed) || trimmed.StartsWith('#')) continue;
+                        var idx = trimmed.IndexOf('=');
+                        if (idx > 0)
+                        {
+                            var k = trimmed.Substring(0, idx).Trim();
+                            var v = trimmed.Substring(idx + 1).Trim(' ', '"', '\'', '\r', '\n', '\t');
+                            if (!string.IsNullOrWhiteSpace(k) && string.IsNullOrEmpty(Environment.GetEnvironmentVariable(k)))
+                            {
+                                Environment.SetEnvironmentVariable(k, v);
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 }
