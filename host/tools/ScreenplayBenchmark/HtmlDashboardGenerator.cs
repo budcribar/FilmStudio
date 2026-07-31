@@ -11,9 +11,11 @@ public static class HtmlDashboardGenerator
     public static string GenerateHtmlDashboard(HistoricalStoreContainer historyContainer)
     {
         var globalLeaderboard = BenchmarkHistoryStore.ComputeGlobalCompositeLeaderboard(historyContainer);
+        var judgeLeaderboard = BenchmarkHistoryStore.ComputeJudgeLeaderboard(historyContainer);
         var jsonOpts = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase, WriteIndented = false };
         var historyJson = JsonSerializer.Serialize(historyContainer, jsonOpts);
         var globalJson = JsonSerializer.Serialize(globalLeaderboard, jsonOpts);
+        var judgeJson = JsonSerializer.Serialize(judgeLeaderboard, jsonOpts);
 
         var sb = new StringBuilder();
         sb.AppendLine(@"<!DOCTYPE html>
@@ -177,6 +179,7 @@ public static class HtmlDashboardGenerator
     <button class=""tab-btn active"" onclick=""switchTab('global')"">🏆 Multi-Book Global Leaderboard</button>
     <button class=""tab-btn"" onclick=""switchTab('perbook')"">📚 Per-Book History</button>
     <button class=""tab-btn"" onclick=""switchTab('heatmap')"">⚖️ Peer Judge Heatmap</button>
+    <button class=""tab-btn"" onclick=""switchTab('judges')"">🧑‍⚖️ Judge Leaderboard</button>
   </nav>
 
   <!-- TAB 1: GLOBAL MULTI-BOOK LEADERBOARD -->
@@ -253,12 +256,39 @@ public static class HtmlDashboardGenerator
     </div>
   </div>
 
+  <!-- TAB 4: JUDGE LEADERBOARD -->
+  <div id=""tab-judges"" class=""tab-content"">
+    <div class=""card"">
+      <h3>🧑‍⚖️ Judge Reliability & Self-Bias Leaderboard</h3>
+      <p style=""color: var(--text-muted); font-size: 0.85rem;"">Ranks models by how trustworthy they are AS JUDGES (not as candidates): reliability = fraction of books judged without falling back to mock data; self-bias = how a judge's score of its own screenplay compares to peer judges' scores of that same screenplay (near zero is best).</p>
+
+      <table id=""judges-table"">
+        <thead>
+          <tr>
+            <th>Rank</th>
+            <th>Model ID</th>
+            <th>Reliability</th>
+            <th>Net Self-Bias</th>
+            <th>Abs Self-Bias</th>
+            <th>Books Judged</th>
+            <th>Self-Bias Samples</th>
+          </tr>
+        </thead>
+        <tbody id=""judges-tbody"">
+        </tbody>
+      </table>
+    </div>
+  </div>
+
   <script>
     window.BENCHMARK_HISTORY = ");
         sb.AppendLine(historyJson);
         sb.AppendLine(";");
         sb.AppendLine("    window.GLOBAL_LEADERBOARD = ");
         sb.AppendLine(globalJson);
+        sb.AppendLine(";");
+        sb.AppendLine("    window.JUDGE_LEADERBOARD = ");
+        sb.AppendLine(judgeJson);
         sb.AppendLine(";");
 
         sb.AppendLine(@"
@@ -588,10 +618,46 @@ public static class HtmlDashboardGenerator
       container.innerHTML = html;
     }
 
+    function renderJudgeLeaderboard() {
+      const tbody = document.getElementById('judges-tbody');
+      const leaderboard = (window.JUDGE_LEADERBOARD || []);
+      tbody.innerHTML = '';
+
+      if (leaderboard.length === 0) {
+        tbody.innerHTML = '<tr><td colspan=""7"" style=""text-align: center; color: var(--text-muted);"">No live benchmark history runs recorded yet. Run a benchmark to populate the judge leaderboard.</td></tr>';
+        return;
+      }
+
+      leaderboard.forEach((j, idx) => {
+        const medal = idx === 0 ? '🥇 ' : idx === 1 ? '🥈 ' : idx === 2 ? '🥉 ' : (idx + 1) + '. ';
+        const modelId = j.modelId || j.ModelId || 'Unknown';
+        const reliability = (j.reliabilityRate !== undefined ? j.reliabilityRate : j.ReliabilityRate) || 0;
+        const netBias = (j.avgNetSelfBias !== undefined ? j.avgNetSelfBias : j.AvgNetSelfBias) || 0;
+        const absBias = (j.avgAbsSelfBias !== undefined ? j.avgAbsSelfBias : j.AvgAbsSelfBias) || 0;
+        const booksJudged = (j.booksJudged !== undefined ? j.booksJudged : j.BooksJudged) || 0;
+        const biasSamples = (j.selfBiasSampleCount !== undefined ? j.selfBiasSampleCount : j.SelfBiasSampleCount) || 0;
+
+        const relClass = reliability >= 0.9 ? 'score-high' : reliability >= 0.6 ? 'score-mid' : 'score-mock';
+        const biasSign = netBias > 0 ? '+' : '';
+
+        const row = `<tr>
+          <td><strong>${medal}</strong></td>
+          <td><strong>${modelId}</strong></td>
+          <td><span class=""score-badge ${relClass}"">${(reliability * 100).toFixed(0)}%</span></td>
+          <td>${biasSign}${netBias.toFixed(2)}</td>
+          <td>${absBias.toFixed(2)}</td>
+          <td>${booksJudged}</td>
+          <td>${biasSamples}</td>
+        </tr>`;
+        tbody.innerHTML += row;
+      });
+    }
+
     window.addEventListener('DOMContentLoaded', () => {
       updateHeaderDates();
       renderGlobalTable();
       initBookSelects();
+      renderJudgeLeaderboard();
     });
   </script>
 </body>

@@ -31,8 +31,10 @@ public static class Program
         string? outDir = null;
         string? bookSlug = null;
         List<string>? requestedModels = null;
+        List<string>? requestedJudges = null;
         bool dryRun = false;
         bool showLeaderboardOnly = false;
+        bool showJudgeLeaderboardOnly = false;
         bool retryFailed = false;
         bool syntaxOnly = false;
 
@@ -59,6 +61,10 @@ public static class Program
             {
                 requestedModels = args[++i].Split(',').Select(m => m.Trim()).Where(m => m.Length > 0).ToList();
             }
+            else if (arg.Equals("--judges", StringComparison.OrdinalIgnoreCase) && i + 1 < args.Length)
+            {
+                requestedJudges = args[++i].Split(',').Select(m => m.Trim()).Where(m => m.Length > 0).ToList();
+            }
             else if (arg.Equals("--dry-run", StringComparison.OrdinalIgnoreCase))
             {
                 dryRun = true;
@@ -66,6 +72,10 @@ public static class Program
             else if (arg.Equals("--leaderboard", StringComparison.OrdinalIgnoreCase))
             {
                 showLeaderboardOnly = true;
+            }
+            else if (arg.Equals("--judge-leaderboard", StringComparison.OrdinalIgnoreCase))
+            {
+                showJudgeLeaderboardOnly = true;
             }
             else if (arg.Equals("--retry-failed", StringComparison.OrdinalIgnoreCase) || arg.Equals("--resume", StringComparison.OrdinalIgnoreCase))
             {
@@ -86,6 +96,12 @@ public static class Program
         if (showLeaderboardOnly)
         {
             PrintHistoricalLeaderboard(historyStore);
+            return 0;
+        }
+
+        if (showJudgeLeaderboardOnly)
+        {
+            PrintJudgeLeaderboard(historyStore);
             return 0;
         }
 
@@ -121,7 +137,7 @@ public static class Program
             foreach (var file in bookSuiteFiles)
             {
                 var slug = Path.GetFileNameWithoutExtension(file).ToLowerInvariant();
-                await RunSingleBookBenchmarkAsync(file, slug, outDir, requestedModels, dryRun, retryFailed, historyFilePath, chat, workspaceRoot);
+                await RunSingleBookBenchmarkAsync(file, slug, outDir, requestedModels, requestedJudges, dryRun, retryFailed, historyFilePath, chat, workspaceRoot);
             }
 
             // Generate updated HTML Dashboard after suite execution
@@ -143,7 +159,7 @@ public static class Program
         }
 
         bookSlug ??= Path.GetFileNameWithoutExtension(bookPath).ToLowerInvariant();
-        await RunSingleBookBenchmarkAsync(bookPath, bookSlug, outDir, requestedModels, dryRun, retryFailed, historyFilePath, chat, workspaceRoot);
+        await RunSingleBookBenchmarkAsync(bookPath, bookSlug, outDir, requestedModels, requestedJudges, dryRun, retryFailed, historyFilePath, chat, workspaceRoot);
 
         // Generate updated HTML Dashboard
         historyStore = BenchmarkHistoryStore.LoadHistory(historyFilePath);
@@ -160,6 +176,7 @@ public static class Program
         string bookSlug,
         string outDir,
         List<string>? requestedModels,
+        List<string>? requestedJudges,
         bool dryRun,
         bool retryFailed,
         string historyFilePath,
@@ -186,7 +203,22 @@ public static class Program
             return;
         }
 
+        // Judges default to the candidate set itself (every candidate also judges its peers), but
+        // --judges lets the panel be a smaller, independently-vetted set (e.g. the top-2 most
+        // reliable/least self-biased judges per BenchmarkHistoryStore.ComputeJudgeLeaderboard)
+        // so a new/unproven candidate model doesn't have to also serve as a judge of its peers.
+        var judgeModels = requestedJudges is { Count: > 0 }
+            ? availableChatModels.Select(m => m.Id).Where(m => requestedJudges.Contains(m, StringComparer.OrdinalIgnoreCase)).ToList()
+            : candidateModels;
+
+        if (judgeModels.Count == 0)
+        {
+            Console.WriteLine("⚠️  No enabled Chat models matched --judges; falling back to the candidate set as judges.");
+            judgeModels = candidateModels;
+        }
+
         Console.WriteLine($"🤖 Candidate Models ({candidateModels.Count}): {string.Join(", ", candidateModels)}");
+        Console.WriteLine($"⚖️  Judge Models ({judgeModels.Count}): {string.Join(", ", judgeModels)}");
         var bookText = await File.ReadAllTextAsync(bookPath);
         var generatedScreenplays = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         var deterministicResults = new Dictionary<string, DeterministicSyntaxResult>(StringComparer.OrdinalIgnoreCase);
@@ -290,7 +322,7 @@ public static class Program
         var screenplaysHash = ComputeScreenplaysHash(
             realCandidates.ToDictionary(m => m, m => generatedScreenplays[m], StringComparer.OrdinalIgnoreCase));
 
-        foreach (var judgeModelId in candidateModels)
+        foreach (var judgeModelId in judgeModels)
         {
             Console.Write($"  [Peer Judge] Model '{judgeModelId}'... ");
 
@@ -432,6 +464,35 @@ public static class Program
             var rank = i switch { 0 => "🥇 1", 1 => "🥈 2", 2 => "🥉 3", _ => $"   {i + 1}" };
             Console.WriteLine(string.Format("{0,-6} | {1,-20} | {2,-15:F1} | {3,-12:F1}% | {4,-12:F1}% | {5,-10}", rank, m.ModelId, m.MultiBookCompositeScore, m.AvgSyntaxScore, m.AvgQualitativeScore, m.FirstPlaceWins));
         }
+        Console.WriteLine();
+    }
+
+    private static void PrintJudgeLeaderboard(HistoricalStoreContainer historyStore)
+    {
+        Console.WriteLine("==========================================================================");
+        Console.WriteLine(" ⚖️  ALL-TIME JUDGE RELIABILITY & SELF-BIAS LEADERBOARD ");
+        Console.WriteLine("==========================================================================");
+        Console.WriteLine();
+
+        var judgeLeaderboard = BenchmarkHistoryStore.ComputeJudgeLeaderboard(historyStore);
+        if (judgeLeaderboard.Count == 0)
+        {
+            Console.WriteLine("No benchmark runs recorded in history yet.");
+            return;
+        }
+
+        Console.WriteLine(string.Format("{0,-6} | {1,-20} | {2,-14} | {3,-14} | {4,-14} | {5,-10}", "Rank", "Model ID", "Reliability", "Net SelfBias", "Abs SelfBias", "Books"));
+        Console.WriteLine(new string('-', 90));
+
+        for (int i = 0; i < judgeLeaderboard.Count; i++)
+        {
+            var j = judgeLeaderboard[i];
+            var rank = i switch { 0 => "🥇 1", 1 => "🥈 2", 2 => "🥉 3", _ => $"   {i + 1}" };
+            Console.WriteLine(string.Format("{0,-6} | {1,-20} | {2,-14:P0} | {3,-14:+0.00;-0.00;0.00} | {4,-14:F2} | {5,-10}", rank, j.ModelId, j.ReliabilityRate, j.AvgNetSelfBias, j.AvgAbsSelfBias, j.BooksJudged));
+        }
+        Console.WriteLine();
+        Console.WriteLine("Reliability = fraction of books where judging completed without falling back to mock data.");
+        Console.WriteLine("Net SelfBias = avg(selfScore - peerAverage); near zero is best. Abs SelfBias = avg magnitude of that gap.");
         Console.WriteLine();
     }
 

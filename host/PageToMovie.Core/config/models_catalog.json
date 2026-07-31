@@ -54,11 +54,39 @@
       "apiBase": "https://api.openai.com/v1",
       "endpointPath": "chat/completions",
       "requiredEnvKeys": ["OPENAI_API_KEY"],
+      "enabled": false,
+      "maxInputTokens": 128000,
+      "inputCostPerMillionTokens": 2.50,
+      "outputCostPerMillionTokens": 10.00,
+      "notes": "Superseded by gpt-5.6-sol/gpt-5.6-terra. Disabled rather than deleted so past benchmark history referencing this id still resolves. Its 30K TPM cap made it unreliable for large-book adaptation (see issue-27)."
+    },
+    {
+      "id": "gpt-5.6-sol",
+      "displayName": "OpenAI GPT-5.6 (Sol)",
+      "capability": "Chat",
+      "provider": "OpenAI",
+      "apiBase": "https://api.openai.com/v1",
+      "endpointPath": "chat/completions",
+      "requiredEnvKeys": ["OPENAI_API_KEY"],
+      "enabled": true,
+      "maxInputTokens": 400000,
+      "inputCostPerMillionTokens": 2.50,
+      "outputCostPerMillionTokens": 10.00,
+      "notes": "Replaces gpt-4o. Confirmed live via direct OpenAI API call: reasoning-family model, rejects non-default temperature (GrokChatClient self-heals by retrying without it). maxInputTokens=400,000 and max output=128,000 per published spec. Pricing is still an unverified placeholder copied from gpt-4o — update when a real source is available. One of three gpt-5.6 variants (sol/terra/luna) in this account; no plain gpt-5.6 exists."
+    },
+    {
+      "id": "gpt-5.6-terra",
+      "displayName": "OpenAI GPT-5.6 (Terra)",
+      "capability": "Chat",
+      "provider": "OpenAI",
+      "apiBase": "https://api.openai.com/v1",
+      "endpointPath": "chat/completions",
+      "requiredEnvKeys": ["OPENAI_API_KEY"],
       "enabled": true,
       "maxInputTokens": 128000,
       "inputCostPerMillionTokens": 2.50,
       "outputCostPerMillionTokens": 10.00,
-      "notes": "OpenAI flagship multimodal reasoning model."
+      "notes": "Replaces gpt-4o alongside gpt-5.6-sol. Confirmed live via direct OpenAI API call: reasoning-family model, rejects non-default temperature (GrokChatClient self-heals by retrying without it). maxInputTokens is officially unpublished by OpenAI (unlike Sol's 400,000 and Luna's 1,050,000) — 128,000 kept here as a deliberately conservative placeholder floor, not a real spec; raise it if a real source turns up. Pricing is also an unverified placeholder copied from gpt-4o. One of three gpt-5.6 variants (sol/terra/luna) in this account; no plain gpt-5.6 exists."
     },
     {
       "id": "gpt-4o-mini",
@@ -301,6 +329,23 @@
       "supportsReferenceImages": false,
       "supportsVideoReview": true,
       "notes": "Wired via GeminiChatClient. Supports Native Multimodal MP4 Video Review. Was gemini-2.5-pro, which Google retired for new API keys (404 \"no longer available to new users\") — GeminiChatClient was already silently falling back to gemini-2.5-flash on that 404, so this just makes the catalog match what was actually running."
+    },
+    {
+      "id": "gemini-3.6-flash",
+      "displayName": "Gemini 3.6 Flash",
+      "capability": "Chat",
+      "provider": "Google",
+      "apiBase": "https://generativelanguage.googleapis.com/v1beta",
+      "endpointPath": "models/gemini-3.6-flash:generateContent",
+      "requiredEnvKeys": ["GEMINI_API_KEY"],
+      "enabled": true,
+      "maxInputTokens": 1048576,
+      "inputCostPerMillionTokens": 2.00,
+      "outputCostPerMillionTokens": 12.00,
+      "supportsVideoContinue": false,
+      "supportsReferenceImages": false,
+      "supportsVideoReview": true,
+      "notes": "Wired via GeminiChatClient. Reasoning/\"thinking\" model per Google's own model metadata (thinking: true) — same class as OpenAI's o-series; watch for similar quirks (temperature/param rejection, thinking tokens counting toward output budget). Pricing copied from gemini-2.5-flash as a placeholder — not verified against a real source, update when known."
     },
     {
       "id": "grok-4.5",

@@ -45,22 +45,32 @@ Do not emit Fountain page-break markers (a line of === or ===N===) anywhere,
 including right after the title page. Just the title page, a blank line, then scenes.
 
 BLANK-LINE SEPARATION (HARD): every element — scene heading, action line, character cue,
-dialogue, transition — is separated from the one before and after it by exactly one blank
-line. Never run a scene heading straight into the action line below it, and never run a
-character cue straight into its dialogue. This is not optional style: a screenplay without
-blank lines between elements does not parse as Fountain and its scenes will not be found.
+dialogue, transition — is separated from the one before it by exactly one blank line, with
+ONE exception: a character cue is NEVER separated from its own dialogue by a blank line —
+the dialogue text starts on the very next line, immediately below the cue. Never run a
+scene heading straight into the action line below it, and never leave out the blank line
+before a new character cue. This is not optional style: a screenplay without blank lines
+between elements does not parse as Fountain and its scenes will not be found — and a blank
+line wrongly inserted between a character cue and its dialogue also breaks parsing (the
+dialogue silently becomes unrecognized action text instead).
 Do not use markdown-style line breaks (a trailing double space at end of line) in place of
 a real blank line — Fountain has no equivalent to that convention.
 
 CHARACTER CUES (HARD): the character name is always on its own line, in ALL CAPS, with no
-dialogue on that same line.
+dialogue on that same line, and with NO blank line between the cue and the dialogue that
+follows it.
   Good:
     NICK
     Get in the car.
   Bad: NICK: Get in the car.
   Bad: NICK - Get in the car.
+  Bad (blank line breaks the dialogue block — do not do this):
+    NICK
+
+    Get in the car.
 Never write "CHARACTER: dialogue" or "CHARACTER - dialogue" as one line. The name goes on
-its own line; the spoken words go on the line(s) below it.
+its own line; the spoken words go on the line(s) immediately below it, with no blank line
+in between.
 
 ACTION LINES (HARD): action lines are plain description text with NO label prefix.
   Good: A modest fifth-floor apartment. NARRATOR stands in the doorway.

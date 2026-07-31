@@ -46,6 +46,30 @@ public sealed class CompositeModelSummary
     public int FirstPlaceWins { get; set; }
 }
 
+public sealed class JudgeQualitySummary
+{
+    public string ModelId { get; set; } = "";
+
+    /// <summary>Books where this model appeared as a judge (regardless of outcome).</summary>
+    public int BooksJudged { get; set; }
+
+    /// <summary>Books where it actually completed judging (not fully mock/failed).</summary>
+    public int BooksReliable { get; set; }
+    public double ReliabilityRate { get; set; }
+
+    /// <summary>Books where both a self-score and at least one peer score were available.</summary>
+    public int SelfBiasSampleCount { get; set; }
+
+    /// <summary>Average (selfScore - peerAverage) across sampled books — positive means the judge
+    /// rates its own screenplay above what other judges give it; near zero across several books is
+    /// the best signal of an objective judge (a single large swing either direction is noisier).</summary>
+    public double AvgNetSelfBias { get; set; }
+
+    /// <summary>Average |selfScore - peerAverage| — how far off self-scoring runs on average,
+    /// regardless of direction. A judge can have a low net bias but still be noisy/inconsistent.</summary>
+    public double AvgAbsSelfBias { get; set; }
+}
+
 public static class BenchmarkHistoryStore
 {
     public static HistoricalStoreContainer LoadHistory(string historyFilePath)
@@ -167,5 +191,71 @@ public static class BenchmarkHistoryStore
         }
 
         return result.OrderByDescending(c => c.MultiBookCompositeScore).ToList();
+    }
+
+    /// <summary>
+    /// Ranks models by how trustworthy they are AS JUDGES (not as candidates): did they reliably
+    /// complete judging, and were they objective when judging their own screenplay. Recomputed
+    /// directly from each run's JudgeMatrix rather than parsing the free-text SelfBiasNotes, so it
+    /// stays robust to that text's wording changing over time.
+    /// </summary>
+    public static List<JudgeQualitySummary> ComputeJudgeLeaderboard(HistoricalStoreContainer container)
+    {
+        var liveRuns = container.Runs.Where(IsLiveRun).ToList();
+        if (liveRuns.Count == 0)
+            return new List<JudgeQualitySummary>();
+
+        var allJudgeIds = liveRuns
+            .SelectMany(r => r.JudgeMatrix.Keys)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        var result = new List<JudgeQualitySummary>();
+        foreach (var judgeId in allJudgeIds)
+        {
+            int booksJudged = 0, booksReliable = 0;
+            var netBiasSamples = new List<double>();
+
+            foreach (var run in liveRuns)
+            {
+                if (!run.JudgeMatrix.TryGetValue(judgeId, out var ownRow)) continue;
+                booksJudged++;
+
+                // A fully mock/failed judge attempt has every entry in its own row at -1.0.
+                if (!ownRow.Values.Any(v => v >= 0.0)) continue;
+                booksReliable++;
+
+                if (!ownRow.TryGetValue(judgeId, out var selfScore) || selfScore < 0.0) continue;
+
+                var peerScores = run.JudgeMatrix
+                    .Where(kv => !string.Equals(kv.Key, judgeId, StringComparison.OrdinalIgnoreCase))
+                    .Select(kv => kv.Value.TryGetValue(judgeId, out var s) ? s : (double?)null)
+                    .Where(s => s.HasValue && s.Value >= 0.0)
+                    .Select(s => s!.Value)
+                    .ToList();
+                if (peerScores.Count == 0) continue;
+
+                netBiasSamples.Add(selfScore - peerScores.Average());
+            }
+
+            if (booksJudged == 0) continue;
+
+            result.Add(new JudgeQualitySummary
+            {
+                ModelId = judgeId,
+                BooksJudged = booksJudged,
+                BooksReliable = booksReliable,
+                ReliabilityRate = Math.Round((double)booksReliable / booksJudged, 2),
+                SelfBiasSampleCount = netBiasSamples.Count,
+                AvgNetSelfBias = netBiasSamples.Count > 0 ? Math.Round(netBiasSamples.Average(), 2) : 0.0,
+                AvgAbsSelfBias = netBiasSamples.Count > 0 ? Math.Round(netBiasSamples.Select(Math.Abs).Average(), 2) : 0.0,
+            });
+        }
+
+        // Most reliable first, then least (absolute) self-bias among equally-reliable judges.
+        return result
+            .OrderByDescending(j => j.ReliabilityRate)
+            .ThenBy(j => j.AvgAbsSelfBias)
+            .ToList();
     }
 }

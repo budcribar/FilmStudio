@@ -52,21 +52,28 @@ public sealed class GrokChatClient : IChatClient
             ? $"{entry.ApiBase.TrimEnd('/')}/{(string.IsNullOrWhiteSpace(entry.EndpointPath) ? "chat/completions" : entry.EndpointPath).TrimStart('/')}"
             : "https://api.x.ai/v1/chat/completions";
 
-        var payload = new Dictionary<string, object?>
+        Dictionary<string, object?> BuildPayload(bool includeTemperature)
         {
-            ["model"] = model,
-            ["messages"] = new object[]
+            var p = new Dictionary<string, object?>
             {
-                new Dictionary<string, object?> { ["role"] = "system", ["content"] = systemPrompt },
-                new Dictionary<string, object?> { ["role"] = "user", ["content"] = userPrompt },
-            },
-        };
+                ["model"] = model,
+                ["messages"] = new object[]
+                {
+                    new Dictionary<string, object?> { ["role"] = "system", ["content"] = systemPrompt },
+                    new Dictionary<string, object?> { ["role"] = "user", ["content"] = userPrompt },
+                },
+            };
+            if (includeTemperature)
+                p["temperature"] = temperature;
+            return p;
+        }
+
         // OpenAI's o-series reasoning models (o1, o3-mini, o4-mini, ...) reject `temperature`
         // outright — "Unsupported parameter: 'temperature' is not supported with this model" —
         // they only run at the implicit default. This client is shared OpenAI-compatible plumbing
         // for xAI/OpenAI/Gemini-OpenAI-compat models, so omit the key only for that id pattern.
-        if (!IsOpenAiReasoningModel(model))
-            payload["temperature"] = temperature;
+        var includeTemperature = !IsOpenAiReasoningModel(model);
+        var payload = BuildPayload(includeTemperature);
 
         var sw = Stopwatch.StartNew();
         try
@@ -79,6 +86,48 @@ public sealed class GrokChatClient : IChatClient
                 req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", key.Trim());
             using var resp = await _http.SendAsync(req, ct);
             var body = await resp.Content.ReadAsStringAsync(ct);
+
+            // Newer reasoning-family models beyond the o-series (e.g. gpt-5.6-sol/-terra) also
+            // reject a non-default temperature, but with different naming each release cycle —
+            // rather than growing the regex forever, self-heal: on this specific 400, retry once
+            // with temperature omitted, mirroring AnthropicChatClient's deprecated-param retry.
+            if (!resp.IsSuccessStatusCode && includeTemperature
+                && (int)resp.StatusCode == 400 && body.Contains("temperature", StringComparison.OrdinalIgnoreCase))
+            {
+                var retryPayload = BuildPayload(includeTemperature: false);
+                using var retryReq = new HttpRequestMessage(HttpMethod.Post, targetUrl)
+                {
+                    Content = JsonContent.Create(retryPayload),
+                };
+                if (!string.IsNullOrWhiteSpace(key))
+                    retryReq.Headers.Authorization = new AuthenticationHeaderValue("Bearer", key.Trim());
+                using var retryResp = await _http.SendAsync(retryReq, ct);
+                var retryBody = await retryResp.Content.ReadAsStringAsync(ct);
+                resp.Dispose();
+                return await FinishAsync(retryResp, retryBody);
+            }
+
+            return await FinishAsync(resp, body);
+        }
+        catch (Exception ex) when (ex is not InvalidOperationException)
+        {
+            await _telemetry.LogApiCallAsync(new ApiCallTelemetry
+            {
+                Kind = "chat",
+                Mode = modeTag,
+                Endpoint = "chat/completions",
+                Model = model,
+                DurationMs = sw.ElapsedMilliseconds,
+                SystemPrompt = systemPrompt,
+                UserPrompt = userPrompt,
+                Error = ex.Message,
+                Ok = false,
+            });
+            throw;
+        }
+
+        async Task<string> FinishAsync(HttpResponseMessage resp, string body)
+        {
             if (!resp.IsSuccessStatusCode)
             {
                 await _telemetry.LogApiCallAsync(new ApiCallTelemetry
@@ -117,22 +166,6 @@ public sealed class GrokChatClient : IChatClient
                 Ok = true,
             });
             return text;
-        }
-        catch (Exception ex) when (ex is not InvalidOperationException)
-        {
-            await _telemetry.LogApiCallAsync(new ApiCallTelemetry
-            {
-                Kind = "chat",
-                Mode = modeTag,
-                Endpoint = "chat/completions",
-                Model = model,
-                DurationMs = sw.ElapsedMilliseconds,
-                SystemPrompt = systemPrompt,
-                UserPrompt = userPrompt,
-                Error = ex.Message,
-                Ok = false,
-            });
-            throw;
         }
     }
 
