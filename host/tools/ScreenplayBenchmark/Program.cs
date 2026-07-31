@@ -276,13 +276,32 @@ public static class Program
         // Phase 3 & 4: Blind Cross-Evaluation
         var judgeEvaluations = new Dictionary<string, JudgeEvaluationPayload>(StringComparer.OrdinalIgnoreCase);
         var random = new Random(42);
-        var screenplaysHash = ComputeScreenplaysHash(generatedScreenplays);
+
+        // Fallback-poisoned screenplays are already excluded from scoring (IsGenerationFallback) —
+        // don't also make every judge read them. They're near-duplicates of the raw book text, so
+        // including them inflates the judge prompt by a large multiple for no signal (this is what
+        // pushed gpt-4o/gpt-4o-mini/o3-mini's judge calls for Nick and Me over their TPM limits:
+        // 3 of 7 "candidates" were ~184K-char copies of the same fallback draft).
+        var realCandidates = candidateModels.Where(m => !generationFallbacks.ContainsKey(m)).ToList();
+
+        // Hashed over the real candidates only — a fallback draft's error text can vary run to run
+        // (e.g. a rate-limit message's exact numbers) even though judges never see it, and that
+        // must not spuriously invalidate an otherwise-still-valid judge cache.
+        var screenplaysHash = ComputeScreenplaysHash(
+            realCandidates.ToDictionary(m => m, m => generatedScreenplays[m], StringComparer.OrdinalIgnoreCase));
 
         foreach (var judgeModelId in candidateModels)
         {
             Console.Write($"  [Peer Judge] Model '{judgeModelId}'... ");
 
-            var keys = candidateModels.OrderBy(_ => random.Next()).ToList();
+            if (realCandidates.Count == 0)
+            {
+                Console.WriteLine("(no real candidates to judge — all generations fell back)");
+                judgeEvaluations[judgeModelId] = GenerateMockJudgePayload(new Dictionary<string, string>(), judgeModelId);
+                continue;
+            }
+
+            var keys = realCandidates.OrderBy(_ => random.Next()).ToList();
             var anonMapping = new Dictionary<string, string>();
             var anonScreenplays = new Dictionary<string, string>();
 

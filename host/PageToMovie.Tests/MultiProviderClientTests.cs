@@ -151,7 +151,7 @@ public class MultiProviderClientTests
 
     [Theory]
     [InlineData("claude-sonnet-5", ModelProviderFamily.Anthropic)]
-    [InlineData("gemini-2.5-pro", ModelProviderFamily.Google)]
+    [InlineData("gemini-2.5-flash", ModelProviderFamily.Google)]
     [InlineData("grok-4.5", ModelProviderFamily.Xai)]
     [InlineData("grok-4", ModelProviderFamily.Xai)]
     [InlineData("some-unknown-future-model", ModelProviderFamily.Xai)] // forward-compat default

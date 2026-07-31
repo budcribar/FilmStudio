@@ -52,7 +52,7 @@ public class ClipVideoGenerationLiveTests : IDisposable
     {
         yield return new object[] { "Grok_xAI", "grok-4.5",        SupportedModelCatalog.XaiApiKeyEnv };
         yield return new object[] { "Claude",   "claude-sonnet-5", SupportedModelCatalog.AnthropicApiKeyEnv };
-        yield return new object[] { "Gemini",   "gemini-2.5-pro",    SupportedModelCatalog.GoogleApiKeyEnv };
+        yield return new object[] { "Gemini",   "gemini-2.5-flash",    SupportedModelCatalog.GoogleApiKeyEnv };
     }
 
     // ─── Setup / teardown ────────────────────────────────────────────────────

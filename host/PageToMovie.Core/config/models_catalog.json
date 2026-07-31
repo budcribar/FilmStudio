@@ -28,7 +28,7 @@
       "id": "video-review",
       "displayName": "Video & Clip Review (Multimodal)",
       "description": "Evaluates dialogue, lip sync, and scene rhythm (Google Gemini natively analyzes MP4 video files).",
-      "defaultModelId": "gemini-2.5-pro"
+      "defaultModelId": "gemini-2.5-flash"
     },
     {
       "id": "audio",
@@ -38,12 +38,12 @@
     }
   ],
   "task_rankings": {
-    "script_import": ["claude-sonnet-5", "grok-4.5", "gemini-2.5-pro"],
+    "script_import": ["claude-sonnet-5", "grok-4.5", "gemini-2.5-flash"],
     "beat_pacing": ["grok-4.5", "gemini-2.0-flash", "claude-sonnet-5"],
     "camera_director": ["grok-4.5", "claude-sonnet-5"],
-    "sound_design": ["grok-4.5", "gemini-2.5-pro"],
-    "cast_analysis": ["grok-4.5", "claude-sonnet-5", "gemini-2.5-pro"],
-    "video_review": ["gemini-2.5-pro", "grok-4.5"]
+    "sound_design": ["grok-4.5", "gemini-2.5-flash"],
+    "cast_analysis": ["grok-4.5", "claude-sonnet-5", "gemini-2.5-flash"],
+    "video_review": ["gemini-2.5-flash", "grok-4.5"]
   },
   "models": [
     {
@@ -286,12 +286,12 @@
       "notes": "Wired via AnthropicChatClient."
     },
     {
-      "id": "gemini-2.5-pro",
-      "displayName": "Gemini 2.5 Pro",
+      "id": "gemini-2.5-flash",
+      "displayName": "Gemini 2.5 Flash",
       "capability": "Chat",
       "provider": "Google",
       "apiBase": "https://generativelanguage.googleapis.com/v1beta",
-      "endpointPath": "models/gemini-2.5-pro:generateContent",
+      "endpointPath": "models/gemini-2.5-flash:generateContent",
       "requiredEnvKeys": ["GEMINI_API_KEY"],
       "enabled": true,
       "maxInputTokens": 1000000,
@@ -300,7 +300,7 @@
       "supportsVideoContinue": false,
       "supportsReferenceImages": false,
       "supportsVideoReview": true,
-      "notes": "Wired via GeminiChatClient. Supports Native Multimodal MP4 Video Review."
+      "notes": "Wired via GeminiChatClient. Supports Native Multimodal MP4 Video Review. Was gemini-2.5-pro, which Google retired for new API keys (404 \"no longer available to new users\") — GeminiChatClient was already silently falling back to gemini-2.5-flash on that 404, so this just makes the catalog match what was actually running."
     },
     {
       "id": "grok-4.5",
@@ -337,12 +337,12 @@
       "notes": "Wired for clip/frame review via MultiProviderVisionClient (OCR/cast-classify stay Grok-only)."
     },
     {
-      "id": "gemini-2.5-pro",
-      "displayName": "Gemini 2.5 Pro (vision)",
+      "id": "gemini-2.5-flash",
+      "displayName": "Gemini 2.5 Flash (vision)",
       "capability": "Vision",
       "provider": "Google",
       "apiBase": "https://generativelanguage.googleapis.com/v1beta",
-      "endpointPath": "models/gemini-2.5-pro:generateContent",
+      "endpointPath": "models/gemini-2.5-flash:generateContent",
       "requiredEnvKeys": ["GEMINI_API_KEY"],
       "enabled": true,
       "maxInputTokens": 1000000,
@@ -351,7 +351,7 @@
       "supportsVideoContinue": false,
       "supportsReferenceImages": false,
       "supportsVideoReview": true,
-      "notes": "Wired for clip/frame review (CompleteWithImagesAsync) via MultiProviderVisionClient (OCR/cast-classify stay Grok-only)."
+      "notes": "Wired for clip/frame review (CompleteWithImagesAsync) via MultiProviderVisionClient (OCR/cast-classify stay Grok-only). Was gemini-2.5-pro, retired by Google for new API keys — see the Chat entry's note."
     },
     {
       "id": "fal-ai/musicgen",

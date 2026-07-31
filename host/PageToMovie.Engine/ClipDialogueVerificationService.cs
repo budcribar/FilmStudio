@@ -283,7 +283,7 @@ Status options: 'verified' (dialogue & speaker match), 'mismatch' (dialogue inco
             }
             catch { /* use fallback */ }
 
-            var targetModel = !string.IsNullOrWhiteSpace(selectedModel) ? selectedModel : "gemini-2.5-pro";
+            var targetModel = !string.IsNullOrWhiteSpace(selectedModel) ? selectedModel : "gemini-2.5-flash";
             var entry = SupportedModelCatalog.Find(targetModel, ModelCapability.Vision)
                 ?? SupportedModelCatalog.ResolveOrDefault(targetModel, ModelCapability.Vision);
 
@@ -292,7 +292,7 @@ Status options: 'verified' (dialogue & speaker match), 'mismatch' (dialogue inco
             string responseJson;
             if (hasVideoFile && !entry.SupportsVideoReview && _gemini is not null && _gemini.IsConfigured)
             {
-                responseJson = await _gemini.CompleteWithImagesAsync(prompt, mediaToPass, model: "gemini-2.5-pro", ct: ct).ConfigureAwait(false);
+                responseJson = await _gemini.CompleteWithImagesAsync(prompt, mediaToPass, model: "gemini-2.5-flash", ct: ct).ConfigureAwait(false);
             }
             else
             {

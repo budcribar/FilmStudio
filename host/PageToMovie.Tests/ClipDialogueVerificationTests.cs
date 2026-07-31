@@ -64,7 +64,7 @@ public class ClipDialogueVerificationTests
     {
         public bool IsConfigured => true;
 
-        public Task<string> CompleteWithImagesAsync(string prompt, System.Collections.Generic.IReadOnlyList<string> imagePaths, string model = "gemini-2.5-pro", string detail = "low", System.Threading.CancellationToken ct = default) =>
+        public Task<string> CompleteWithImagesAsync(string prompt, System.Collections.Generic.IReadOnlyList<string> imagePaths, string model = "gemini-2.5-flash", string detail = "low", System.Threading.CancellationToken ct = default) =>
             Task.FromResult(@"{ ""detectedSpeaker"": ""gemini-native-video"", ""transcribedDialogue"": ""Hello world!"", ""dialogueAccuracyScore"": 1.0, ""speakerMatch"": true, ""status"": ""verified"" }");
     }
 

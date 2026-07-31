@@ -249,12 +249,12 @@ public static class SupportedModelCatalog
 
     public static readonly Dictionary<string, List<string>> DefaultTaskRankings = new(StringComparer.OrdinalIgnoreCase)
     {
-        ["script_import"] = new() { "claude-sonnet-5", "grok-4.5", "gemini-2.5-pro" },
+        ["script_import"] = new() { "claude-sonnet-5", "grok-4.5", "gemini-2.5-flash" },
         ["beat_pacing"] = new() { "grok-4.5", "gemini-2.0-flash", "claude-sonnet-5" },
         ["camera_director"] = new() { "grok-4.5", "claude-sonnet-5" },
-        ["sound_design"] = new() { "grok-4.5", "gemini-2.5-pro" },
-        ["cast_analysis"] = new() { "grok-4.5", "claude-sonnet-5", "gemini-2.5-pro" },
-        ["video_review"] = new() { "gemini-2.5-pro", "grok-4.5" },
+        ["sound_design"] = new() { "grok-4.5", "gemini-2.5-flash" },
+        ["cast_analysis"] = new() { "grok-4.5", "claude-sonnet-5", "gemini-2.5-flash" },
+        ["video_review"] = new() { "gemini-2.5-flash", "grok-4.5" },
     };
 
     /// <summary>All catalog rows, loaded from models_catalog.json (shipped copy or /data override —

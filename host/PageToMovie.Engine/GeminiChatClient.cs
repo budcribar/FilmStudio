@@ -42,10 +42,21 @@ public sealed class GeminiChatClient : IChatClient, IVisionClient, IGeminiVideoA
 
     public bool IsConfigured => !string.IsNullOrWhiteSpace(ResolveApiKey());
 
+    private static readonly AsyncLocal<string?> _lastResolvedModel = new();
+
+    /// <summary>
+    /// The model id that actually served the most recently completed call on this async flow —
+    /// differs from the requested model when a 404 (e.g. a deprecated/retired model like
+    /// gemini-2.5-pro) triggered the gemini-2.5-flash fallback below. Callers that need to report
+    /// or attribute results by model (benchmarks, telemetry dashboards) should check this rather
+    /// than assume the requested id is what generated the response.
+    /// </summary>
+    public static string? LastResolvedModel => _lastResolvedModel.Value;
+
     public async Task<string> CompleteAsync(
         string systemPrompt,
         string userPrompt,
-        string model = "gemini-2.5-pro",
+        string model = "gemini-2.5-flash",
         double temperature = 0.2,
         CancellationToken ct = default,
         string? mode = null)
@@ -77,7 +88,7 @@ public sealed class GeminiChatClient : IChatClient, IVisionClient, IGeminiVideoA
     public async Task<string> CompleteWithImagesAsync(
         string prompt,
         IReadOnlyList<string> imagePaths,
-        string model = "gemini-2.5-pro",
+        string model = "gemini-2.5-flash",
         string detail = "low",
         CancellationToken ct = default)
     {
@@ -111,20 +122,20 @@ public sealed class GeminiChatClient : IChatClient, IVisionClient, IGeminiVideoA
     /// returning a wrong answer if ever routed here.
     /// </summary>
     public Task<string> TranscribePageAsync(
-        string imagePath, int page, string model = "gemini-2.5-pro", CancellationToken ct = default) =>
+        string imagePath, int page, string model = "gemini-2.5-flash", CancellationToken ct = default) =>
         throw new NotSupportedException(
             "Book-page transcription is not implemented for Gemini yet — route this call to Grok.");
 
     /// <inheritdoc cref="TranscribePageAsync"/>
     public Task<CharacterPageClassification> ClassifyCharactersOnImageAsync(
         string imagePath, int page, IReadOnlyList<CharacterClassifyHint> cast,
-        string model = "gemini-2.5-pro", CancellationToken ct = default) =>
+        string model = "gemini-2.5-flash", CancellationToken ct = default) =>
         throw new NotSupportedException(
             "Character-page classification is not implemented for Gemini yet — route this call to Grok.");
 
     private static string NormalizeModelName(string? model)
     {
-        if (string.IsNullOrWhiteSpace(model)) return "gemini-2.5-pro";
+        if (string.IsNullOrWhiteSpace(model)) return "gemini-2.5-flash";
         var trimmed = model.Trim();
         if (trimmed.StartsWith("models/", StringComparison.OrdinalIgnoreCase))
         {
@@ -139,7 +150,7 @@ public sealed class GeminiChatClient : IChatClient, IVisionClient, IGeminiVideoA
             trimmed.Equals("grok-4", StringComparison.OrdinalIgnoreCase) ||
             trimmed.Equals("claude-sonnet-5", StringComparison.OrdinalIgnoreCase))
         {
-            return "gemini-2.5-pro";
+            return "gemini-2.5-flash";
         }
         return trimmed;
     }
@@ -215,6 +226,7 @@ public sealed class GeminiChatClient : IChatClient, IVisionClient, IGeminiVideoA
                 ResponseChars = text.Length,
                 Ok = true,
             });
+            _lastResolvedModel.Value = targetModel;
             return text;
         }
         catch (Exception ex) when (ex is not InvalidOperationException)

@@ -162,7 +162,7 @@ public interface IGeminiVideoAnalysisClient
     Task<string> CompleteWithImagesAsync(
         string prompt,
         IReadOnlyList<string> imagePaths,
-        string model = "gemini-2.5-pro",
+        string model = "gemini-2.5-flash",
         string detail = "low",
         CancellationToken ct = default);
 }
