@@ -10,12 +10,16 @@
 
 <PageTitle>PageToMovie</PageTitle>
 
-<div class="home-hero d-flex align-items-center justify-content-between flex-wrap gap-3 mb-4">
+<div class="home-hero home-hero--cinema d-flex align-items-center justify-content-between flex-wrap gap-3 mb-4">
     <div class="d-flex align-items-center gap-3">
         <img src="/favicon.png" alt="PageToMovie" width="68" height="68" class="rounded-3 shadow flex-shrink-0" />
         <div>
-            <h1 class="display-6 fw-bold mb-0 lh-1">PageToMovie</h1>
-            <span class="text-muted fs-6">Turn books and screenplays into movies</span>
+            <span class="home-hero__badge">AI Film Studio</span>
+            <h1 class="display-6 fw-bold mb-0 lh-1">Book, cast, optional voice — then the movie.</h1>
+            <p class="home-hero__lede">
+                Drop a PDF or pick a classic. Personalize cast (and voice if you want), see the estimate, then generate.
+                Media stays on your device where possible — the studio pipeline does the rest.
+            </p>
         </div>
     </div>
 
@@ -58,6 +62,29 @@
             </div>
             <span class="home-pipeline__label">MOVIE</span>
         </div>
+    </div>
+</div>
+
+<div class="ptm-path-steps" aria-label="How a film is made">
+    <div class="ptm-path-step">
+        <div class="ptm-path-step__kicker">Step 1</div>
+        <h2 class="ptm-path-step__title">Book</h2>
+        <p class="ptm-path-step__body">Classic (cached, cheaper) or your own PDF/text from scratch.</p>
+    </div>
+    <div class="ptm-path-step">
+        <div class="ptm-path-step__kicker">Step 2</div>
+        <h2 class="ptm-path-step__title">Cast</h2>
+        <p class="ptm-path-step__body">Put your child, spouse, or yourself into one or more roles.</p>
+    </div>
+    <div class="ptm-path-step">
+        <div class="ptm-path-step__kicker">Step 3</div>
+        <h2 class="ptm-path-step__title">Voice (optional)</h2>
+        <p class="ptm-path-step__body">Stock voices free — or clone a short personal sample as an add-on.</p>
+    </div>
+    <div class="ptm-path-step">
+        <div class="ptm-path-step__kicker">Step 4</div>
+        <h2 class="ptm-path-step__title">Estimate · film</h2>
+        <p class="ptm-path-step__body">See the quote, sample if you want, then generate and edit.</p>
     </div>
 </div>
 
@@ -349,21 +376,21 @@
                         <div class="col-6 col-md-3">
                             <a href="adaptation" class="btn btn-outline-primary w-100 py-3 text-center text-decoration-none rounded-3 h-100 d-flex flex-column align-items-center justify-content-center">
                                 <span class="fs-2 mb-1">📜</span>
-                                <strong class="small">1. Adaptation</strong>
+                                <strong class="small">1. Book</strong>
                                 <span class="badge bg-secondary mt-1" style="font-size:0.65rem;">Screenplay &amp; Shots</span>
                             </a>
                         </div>
                         <div class="col-6 col-md-3">
                             <a href="characters" class="btn btn-outline-primary w-100 py-3 text-center text-decoration-none rounded-3 h-100 d-flex flex-column align-items-center justify-content-center @(ActiveProject.CanCharacters ? "" : "disabled opacity-50")">
                                 <span class="fs-2 mb-1">👥</span>
-                                <strong class="small">2. Characters</strong>
+                                <strong class="small">2. Cast</strong>
                                 <span class="badge bg-secondary mt-1" style="font-size:0.65rem;">Cast &amp; Portraits</span>
                             </a>
                         </div>
                         <div class="col-6 col-md-3">
                             <a href="scenes" class="btn btn-outline-primary w-100 py-3 text-center text-decoration-none rounded-3 h-100 d-flex flex-column align-items-center justify-content-center @(ActiveProject.CanScenes ? "" : "disabled opacity-50")">
                                 <span class="fs-2 mb-1">🎬</span>
-                                <strong class="small">3. Scenes</strong>
+                                <strong class="small">3. Film</strong>
                                 <span class="badge bg-secondary mt-1" style="font-size:0.65rem;">Clips &amp; Music</span>
                             </a>
                         </div>

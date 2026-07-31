@@ -1,59 +1,60 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Outfit:wght@400;500;600;700&display=swap');
 
-/* Master Executive Theme — PageToMovie UI (dark default, light variant via [data-theme]) */
+/* Master Executive Theme — PageToMovie UI (dark default, light via [data-theme]).
+   feature/prototype-look-feel: cinema steel accents (prototype-inspired). */
 :root,
 :root[data-theme="dark"] {
     color-scheme: dark;
-    --fs-bg-main: #0c0e12;
-    --fs-bg-card: #151922;
-    --fs-bg-card-hover: #1c212d;
-    --fs-bg-input: #1a1f2c;
-    --fs-bg-input-focus: #1e2434;
+    /* prototype-look-feel: cinema steel (TanStack prototype palette) */
+    --fs-bg-main: #0a0b0d;
+    --fs-bg-card: #12141a;
+    --fs-bg-card-hover: #1a1d26;
+    --fs-bg-input: #161920;
+    --fs-bg-input-focus: #1c202a;
     --fs-border-color: rgba(255, 255, 255, 0.08);
-    --fs-border-hover: rgba(99, 102, 241, 0.4);
-    --fs-text-primary: #f1f5f9;
-    /* Muted must stay ≥ ~4.5:1 on card (#151922) — #94a3b8 is borderline; prefer brighter. */
-    --fs-text-muted: #b6c2d1;
-    --fs-text-subtle: #9aa8ba;
-    --fs-accent-indigo: #6366f1;
-    --fs-accent-indigo-hover: #4f46e5;
-    --fs-accent-amber: #e2b342;
-    --fs-shadow-card: 0 10px 30px -5px rgba(0, 0, 0, 0.5);
-    --fs-link: #818cf8;
-    --fs-link-hover: #a5b4fc;
-    --fs-code-color: #d63384;
+    --fs-border-hover: rgba(107, 140, 174, 0.45);
+    --fs-text-primary: #f1f3f7;
+    --fs-text-muted: #9aa3b5;
+    --fs-text-subtle: #6b7385;
+    --fs-accent-indigo: #6b8cae;
+    --fs-accent-indigo-hover: #5a7a9a;
+    --fs-accent-amber: #c4a35a;
+    --fs-shadow-card: 0 8px 32px rgba(0, 0, 0, 0.35);
+    --fs-link: #8b9bb8;
+    --fs-link-hover: #a8b4cc;
+    --fs-code-color: #c07a9a;
     --fs-overlay-soft: rgba(255, 255, 255, 0.03);
     --fs-overlay-mid: rgba(255, 255, 255, 0.06);
 
-    --fs-alert-info-bg: rgba(56, 189, 248, 0.1);
-    --fs-alert-info-border: rgba(56, 189, 248, 0.25);
-    --fs-alert-info-text: #7dd3fc;
-    --fs-alert-warning-bg: rgba(245, 158, 11, 0.1);
-    --fs-alert-warning-border: rgba(245, 158, 11, 0.25);
-    --fs-alert-warning-text: #fde68a;
-    --fs-alert-danger-bg: rgba(239, 68, 68, 0.1);
-    --fs-alert-danger-border: rgba(239, 68, 68, 0.25);
-    --fs-alert-danger-text: #fca5a5;
-    --fs-alert-success-bg: rgba(34, 197, 94, 0.1);
-    --fs-alert-success-border: rgba(34, 197, 94, 0.25);
-    --fs-alert-success-text: #86efac;
+    --fs-alert-info-bg: rgba(107, 140, 174, 0.12);
+    --fs-alert-info-border: rgba(107, 140, 174, 0.28);
+    --fs-alert-info-text: #a8c0d8;
+    --fs-alert-warning-bg: rgba(196, 163, 90, 0.12);
+    --fs-alert-warning-border: rgba(196, 163, 90, 0.28);
+    --fs-alert-warning-text: #e8d5a3;
+    --fs-alert-danger-bg: rgba(192, 122, 122, 0.12);
+    --fs-alert-danger-border: rgba(192, 122, 122, 0.28);
+    --fs-alert-danger-text: #e0a8a8;
+    --fs-alert-success-bg: rgba(107, 155, 122, 0.12);
+    --fs-alert-success-border: rgba(107, 155, 122, 0.28);
+    --fs-alert-success-text: #a8d0b4;
     --fs-alert-secondary-bg: rgba(255, 255, 255, 0.04);
-    --fs-alert-secondary-text: #cbd5e1;
+    --fs-alert-secondary-text: #c8cdd8;
 
     /* Fountain screenplay editor (scenes list / CodeMirror / page preview) */
     --fe-editor-fg: var(--fs-text-primary);
     --fe-editor-gutter-fg: var(--fs-text-muted);
     --fe-editor-cursor: var(--fs-text-primary);
-    --fe-editor-selection: rgba(99, 102, 241, 0.28);
-    --fe-token-keyword: #7dd3fc;
-    --fe-token-def: #c4b5fd;
-    --fe-token-atom: #e2b342;
-    --fe-token-header: #86efac;
-    --fe-row-active-bg: rgba(99, 102, 241, 0.16);
-    --fe-link-hover-bg: rgba(99, 102, 241, 0.15);
-    --fe-note-bg: rgba(226, 179, 66, 0.1);
-    --fe-note-border: rgba(226, 179, 66, 0.4);
-    --fe-note-fg: #e2b342;
+    --fe-editor-selection: rgba(107, 140, 174, 0.28);
+    --fe-token-keyword: #8bb8d4;
+    --fe-token-def: #a8b4cc;
+    --fe-token-atom: #c4a35a;
+    --fe-token-header: #8bc4a0;
+    --fe-row-active-bg: rgba(107, 140, 174, 0.16);
+    --fe-link-hover-bg: rgba(107, 140, 174, 0.15);
+    --fe-note-bg: rgba(196, 163, 90, 0.1);
+    --fe-note-border: rgba(196, 163, 90, 0.4);
+    --fe-note-fg: #c4a35a;
     --fe-chrome-bg: var(--fs-bg-main);
     --fe-page-bg: var(--fs-bg-card);
     --fe-page-fg: #d7dce3;
@@ -1393,4 +1394,76 @@ h1:focus {
     background: rgba(56, 189, 248, 0.05);
     color: #cbd5e1;
     border-radius: 0 4px 4px 0;
+}
+
+
+/* —— Prototype look-feel: path steps + hero (Home) —— */
+.ptm-path-steps {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+    gap: 0.75rem;
+    margin: 0 0 1.5rem;
+}
+.ptm-path-step {
+    border: 1px solid var(--fs-border-color);
+    background: var(--fs-bg-card);
+    border-radius: 12px;
+    padding: 0.9rem 1rem;
+    box-shadow: var(--fs-shadow-card);
+    min-height: 100%;
+}
+.ptm-path-step__kicker {
+    font-size: 0.65rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--fs-accent-indigo);
+    font-weight: 600;
+    margin-bottom: 0.35rem;
+}
+.ptm-path-step__title {
+    font-family: 'Outfit', sans-serif;
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: var(--fs-text-primary);
+    margin: 0 0 0.25rem;
+}
+.ptm-path-step__body {
+    font-size: 0.8rem;
+    color: var(--fs-text-muted);
+    margin: 0;
+    line-height: 1.45;
+}
+.home-hero--cinema {
+    position: relative;
+    border-radius: 16px;
+    border: 1px solid var(--fs-border-color);
+    background:
+        radial-gradient(ellipse 80% 70% at 85% -20%, rgba(107, 140, 174, 0.18), transparent 55%),
+        var(--fs-bg-card);
+    padding: 1.25rem 1.35rem;
+    box-shadow: var(--fs-shadow-card);
+}
+.home-hero--cinema .display-6 {
+    font-family: 'Outfit', sans-serif;
+    letter-spacing: -0.03em;
+}
+.home-hero__badge {
+    display: inline-block;
+    font-size: 0.65rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    font-weight: 600;
+    color: var(--fs-accent-indigo);
+    border: 1px solid rgba(107, 140, 174, 0.35);
+    background: rgba(107, 140, 174, 0.1);
+    border-radius: 999px;
+    padding: 0.2rem 0.65rem;
+    margin-bottom: 0.5rem;
+}
+.home-hero__lede {
+    max-width: 32rem;
+    color: var(--fs-text-muted);
+    font-size: 0.95rem;
+    line-height: 1.5;
+    margin: 0.35rem 0 0;
 }
