@@ -10,7 +10,7 @@ import {
   Users,
   Wand2,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -67,13 +67,8 @@ function statusVariant(p: FilmProject): "success" | "cinema" | "default" | "acce
 
 function HomePage() {
   const projects = useProjects((s) => s.projects);
-  const [hydrated, setHydrated] = useState(false);
-
-  useEffect(() => {
-    const unsub = useProjects.persist.onFinishHydration(() => setHydrated(true));
-    if (useProjects.persist.hasHydrated()) setHydrated(true);
-    return unsub;
-  }, []);
+  const hydrated = useProjects((s) => s.hydrated);
+  const hydrating = useProjects((s) => s.hydrating);
 
   const recent = useMemo(
     () => [...projects].sort((a, b) => +new Date(b.updatedAt) - +new Date(a.updatedAt)),
@@ -101,8 +96,8 @@ function HomePage() {
             Book, cast, optional voice — then the movie.
           </h1>
           <p className="mt-5 max-w-xl text-base sm:text-lg text-fg-muted leading-relaxed">
-            Classics are pre-built and cheaper. Swap in your people, add a personal voice if
-            you want (paid add-on), see a clear estimate, generate, edit.
+            Projects and scenes live on the server. MP3/MP4 and captures stay on your device
+            for local stitch — no media warehouse cost.
           </p>
           <div className="mt-8 flex flex-col sm:flex-row gap-3">
             <Button asChild size="lg">
@@ -120,6 +115,9 @@ function HomePage() {
               </Button>
             )}
           </div>
+          {hydrating && (
+            <p className="mt-4 text-xs text-fg-subtle">Loading your projects…</p>
+          )}
         </div>
       </section>
 
@@ -133,9 +131,7 @@ function HomePage() {
                     {statusLabel(last)}
                   </Badge>
                   <p className="font-display text-lg font-semibold">{last.title}</p>
-                  <p className="text-sm text-fg-muted">
-                    {formatRelativeTime(last.updatedAt)}
-                  </p>
+                  <p className="text-sm text-fg-muted">{formatRelativeTime(last.updatedAt)}</p>
                 </div>
                 <Button asChild>
                   <Link to="/studio/$projectId" params={{ projectId: last.id }}>

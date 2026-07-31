@@ -1,8 +1,9 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import { Clapperboard, Film, FolderOpen, Home, Menu, X } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { CreditsButton } from "@/components/credits-dialog";
 import { Button } from "@/components/ui/button";
+import { useProjects } from "@/lib/ptm/store";
 import { cn } from "@/lib/utils";
 
 const nav = [
@@ -15,6 +16,13 @@ const nav = [
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const [open, setOpen] = useState(false);
+  const hydrateFromServer = useProjects((s) => s.hydrateFromServer);
+  const hydrated = useProjects((s) => s.hydrated);
+  const saveError = useProjects((s) => s.saveError);
+
+  useEffect(() => {
+    if (!hydrated) void hydrateFromServer();
+  }, [hydrated, hydrateFromServer]);
 
   return (
     <div className="min-h-dvh flex flex-col bg-bg text-fg">
@@ -97,12 +105,18 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         )}
       </header>
 
+      {saveError && (
+        <div className="border-b border-danger/30 bg-danger/10 px-4 py-2 text-center text-xs text-danger">
+          Couldn’t sync project to server: {saveError}
+        </div>
+      )}
+
       <main className="flex-1">{children}</main>
 
       <footer className="border-t border-border/80 py-8 mt-auto">
         <div className="mx-auto max-w-6xl px-4 sm:px-6 flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between text-sm text-fg-subtle">
           <p className="font-display text-fg-muted">Page to Movie — AI Film Studio</p>
-          <p>Drop a page · estimate · free sample or full cut with credits.</p>
+          <p>Projects on server · media on your device.</p>
         </div>
       </footer>
     </div>

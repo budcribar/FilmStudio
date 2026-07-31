@@ -1,5 +1,8 @@
+/**
+ * Client project store — SERVER is source of truth for project/scene/cast/voice metadata.
+ * Client only holds media blobs (MP3/MP4/capture) in IndexedDB.
+ */
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
 import { classics, type StoryboardShot } from "@/data/classics";
 import {
   castFromClassicCharacters,
@@ -8,8 +11,14 @@ import {
   type CastMember,
 } from "./characters";
 import { estimateProduction } from "./estimate";
+import {
+  deleteMyProject,
+  getMyProject,
+  listMyProjects,
+  saveMyProject,
+} from "./server/api";
 import { runMockVoicePipeline } from "./providers/voice-clone";
-import type { FilmProject, ProjectStage, ProjectStatus, WizardStep } from "./types";
+import type { FilmProject, ProjectStage, WizardStep } from "./types";
 import { resumeStage } from "./types";
 import {
   emptyVoiceAddon,
@@ -20,9 +29,6 @@ import {
   type VoiceAddon,
 } from "./voice";
 import { useWallet } from "./wallet";
-
-/** v4: mediaIds in client IDB; no data URLs in project JSON */
-export const PROJECT_STORE_VERSION = 4;
 
 function uid() {
   return `p_${Math.random().toString(36).slice(2, 10)}`;
@@ -75,9 +81,6 @@ The page becomes a picture. The picture becomes a cut.
 FADE OUT.`;
 }
 
-const VALID_STATUS: ProjectStatus[] = ["setup", "sample", "generating", "ready"];
-const VALID_WIZARD: WizardStep[] = ["cast", "voice", "estimate", "confirm", "done"];
-
 function buildEstimate(project: FilmProject) {
   const voice = project.voice ?? emptyVoiceAddon();
   return estimateProduction({
@@ -90,69 +93,47 @@ function buildEstimate(project: FilmProject) {
   });
 }
 
-function normalize(project: FilmProject): FilmProject {
-  let status: ProjectStatus = VALID_STATUS.includes(project.status)
-    ? project.status
-    : "setup";
-  if ((project.status as string) === "estimate") status = "setup";
-  if ((project.status as string) === "draft") status = "setup";
-
-  let wizardStep: WizardStep = VALID_WIZARD.includes(project.wizardStep)
-    ? project.wizardStep
-    : status === "setup"
-      ? "cast"
-      : "done";
-
-  const cast =
-    project.cast?.length > 0
-      ? project.cast.map((c) => ({
-          ...c,
-          selected: c.selected ?? !!(c.displayName || c.photoDataUrl),
-        }))
-      : suggestCastFromSource(project.sourceText || "", project.title);
-
-  const voice = syncVoiceFromCast(cast, project.voice ?? emptyVoiceAddon());
-
-  // Drop legacy dataUrl fields if rehydrated from older clients
-  voice.samples = voice.samples.map((s) => {
-    if (s.asset && "dataUrl" in s.asset) {
-      const { dataUrl: _d, ...rest } = s.asset as typeof s.asset & {
-        dataUrl?: string;
-      };
-      return { ...s, asset: rest.mediaId ? rest : undefined, hasSample: !!rest.mediaId };
-    }
-    return s;
-  });
-
-  const base: FilmProject = {
-    ...project,
-    status,
-    wizardStep,
-    sourceKind: project.sourceKind ?? (project.classicId ? "classic" : "custom"),
-    screenplayLocked: project.screenplayLocked ?? true,
-    castingConfirmed: project.castingConfirmed ?? false,
-    unlockedShots: project.unlockedShots ?? 0,
-    cast,
-    voice,
-  };
+/** Strip transient client-only fields before server save */
+function forServer(p: FilmProject): FilmProject {
   return {
-    ...base,
-    estimate: project.estimate ?? buildEstimate(base),
+    ...p,
+    cast: p.cast.map(({ photoDataUrl: _x, ...c }) => c),
+    voice: {
+      ...p.voice,
+      samples: p.voice.samples.map((s) => ({
+        ...s,
+        asset: s.asset
+          ? {
+              mediaId: s.asset.mediaId,
+              mimeType: s.asset.mimeType,
+              kind: s.asset.kind,
+              fileName: s.asset.fileName,
+              durationSec: s.asset.durationSec,
+              byteLength: s.asset.byteLength,
+            }
+          : undefined,
+      })),
+    },
   };
 }
 
 type Store = {
   projects: FilmProject[];
-  createFromClassicBook: (classicId: string) => string;
-  createFromCustomBook: (title: string, text: string) => string;
+  hydrated: boolean;
+  hydrating: boolean;
+  saveError: string | null;
+  hydrateFromServer: () => Promise<void>;
+  createFromClassicBook: (classicId: string) => Promise<string>;
+  createFromCustomBook: (title: string, text: string) => Promise<string>;
   updateProject: (id: string, patch: Partial<FilmProject>) => void;
+  flushProject: (id: string) => Promise<void>;
   setCast: (id: string, cast: CastMember[]) => void;
   setVoice: (id: string, voice: VoiceAddon) => void;
   setWizardStep: (id: string, step: WizardStep) => void;
   confirmCasting: (id: string) => void;
   skipVoice: (id: string) => void;
   continueFromVoice: (id: string) => void;
-  deleteProject: (id: string) => void;
+  deleteProject: (id: string) => Promise<void>;
   setStage: (id: string, stage: ProjectStage) => void;
   lockScreenplay: (id: string) => void;
   unlockScreenplay: (id: string) => void;
@@ -164,6 +145,45 @@ type Store = {
   runRerender: (id: string) => Promise<{ ok: true } | { ok: false; reason: string }>;
   toggleStar: (id: string) => void;
 };
+
+const saveTimers = new Map<string, ReturnType<typeof setTimeout>>();
+
+async function persistProject(project: FilmProject) {
+  const saved = await saveMyProject({ data: { project: forServer(project) } });
+  useProjects.setState((s) => ({
+    projects: s.projects.map((p) =>
+      p.id === saved.id ? { ...saved, cast: mergeCastPreview(p.cast, saved.cast) } : p,
+    ),
+    saveError: null,
+  }));
+  return saved;
+}
+
+function mergeCastPreview(local: CastMember[], server: CastMember[]): CastMember[] {
+  const preview = new Map(local.map((c) => [c.id, c.photoDataUrl]));
+  return server.map((c) => ({
+    ...c,
+    photoDataUrl: preview.get(c.id),
+  }));
+}
+
+function scheduleSave(id: string) {
+  const prev = saveTimers.get(id);
+  if (prev) clearTimeout(prev);
+  saveTimers.set(
+    id,
+    setTimeout(() => {
+      saveTimers.delete(id);
+      const project = useProjects.getState().projects.find((p) => p.id === id);
+      if (!project) return;
+      void persistProject(project).catch((err) => {
+        useProjects.setState({
+          saveError: err instanceof Error ? err.message : "Failed to save project",
+        });
+      });
+    }, 400),
+  );
+}
 
 async function simulatePipeline(
   update: (patch: Partial<FilmProject>) => void,
@@ -189,7 +209,7 @@ async function simulatePipeline(
 
 function castLine(project: FilmProject) {
   const named = project.cast.filter(
-    (c) => c.selected && (c.displayName.trim() || c.photoDataUrl),
+    (c) => c.selected && (c.displayName.trim() || c.photoMediaId || c.photoDataUrl),
   );
   if (!named.length) {
     return project.sourceKind === "classic"
@@ -205,10 +225,6 @@ function voiceLine(project: FilmProject) {
   return `Client VO · cloning ${n} voice${n === 1 ? "" : "s"} + mock MP3…`;
 }
 
-/**
- * Capture stays on client; mock API writes MP3s into IndexedDB;
- * stitch concatenates locally (ffmpeg-ready seam).
- */
 async function prepareVoiceClones(project: FilmProject) {
   const samples = voiceAssetsForClone(project.voice);
   if (!samples.length) return;
@@ -221,7 +237,6 @@ async function prepareVoiceClones(project: FilmProject) {
       text: s.dialogue!,
     }));
 
-  // Always speak at least one line so stitch has audio
   if (lines.length === 0) {
     lines.push({
       castMemberId: samples[0]!.castMemberId,
@@ -235,7 +250,7 @@ async function prepareVoiceClones(project: FilmProject) {
     projectId: project.id,
   });
 
-  const sampleMap = new Map(samples.map((s) => [s.castMemberId, s]));
+  const sampleMap = new Map(samples.map((s) => [s.castMemberId, { ...s }]));
   for (const job of result.jobs) {
     const s = sampleMap.get(job.castMemberId);
     if (s && job.outputMediaId) s.cloneOutputMediaId = job.outputMediaId;
@@ -256,355 +271,376 @@ async function prepareVoiceClones(project: FilmProject) {
       : s;
   });
 
-  useProjects.getState().updateProject(project.id, {
+  const next: FilmProject = {
+    ...project,
     voice: {
       ...project.voice,
       samples: nextSamples,
       stitchedVoMediaId: result.stitched?.mediaId,
       modelId: project.voice.modelId ?? "mock-instant-clone",
     },
-  });
+  };
+  useProjects.setState((s) => ({
+    projects: s.projects.map((p) => (p.id === project.id ? next : p)),
+  }));
+  await persistProject(next);
 }
 
-export const useProjects = create<Store>()(
-  persist(
-    (set, get) => ({
-      projects: [],
+export const useProjects = create<Store>((set, get) => ({
+  projects: [],
+  hydrated: false,
+  hydrating: false,
+  saveError: null,
 
-      createFromClassicBook: (classicId) => {
-        const classic = classics.find((c) => c.id === classicId);
-        if (!classic) throw new Error("Unknown classic");
-        const id = uid();
-        const cast = castFromClassicCharacters(classic.characters);
-        const voice = syncVoiceFromCast(cast, emptyVoiceAddon());
-        const project: FilmProject = {
-          id,
-          title: classic.title,
-          author: classic.author,
-          genre: classic.genre,
-          sourceText: classic.excerpt,
-          screenplay: classic.screenplay,
-          shots: classic.shots,
-          stage: "film",
-          screenplayLocked: true,
-          status: "setup",
-          wizardStep: "cast",
-          sourceKind: "classic",
-          progress: 0,
-          progressLabel: "",
-          cast,
-          castingConfirmed: false,
-          voice,
-          unlockedShots: 0,
-          classicId: classic.id,
-          createdAt: now(),
-          updatedAt: now(),
-          stars: 0,
-        };
-        project.estimate = buildEstimate(project);
-        set((s) => ({ projects: [project, ...s.projects] }));
-        return id;
-      },
+  hydrateFromServer: async () => {
+    if (get().hydrating) return;
+    set({ hydrating: true, saveError: null });
+    try {
+      const projects = await listMyProjects();
+      set({ projects, hydrated: true, hydrating: false });
+    } catch (err) {
+      set({
+        hydrating: false,
+        hydrated: true,
+        saveError: err instanceof Error ? err.message : "Failed to load projects",
+      });
+    }
+  },
 
-      createFromCustomBook: (title, text) => {
-        const id = uid();
-        const cleanTitle = title.trim() || "Untitled Adaptation";
-        const source = text.trim();
-        const cast = suggestCastFromSource(source, cleanTitle);
-        const voice = syncVoiceFromCast(cast, emptyVoiceAddon());
-        const shots = shotsFromCustom(cleanTitle, source);
-        const project: FilmProject = {
-          id,
-          title: cleanTitle,
-          author: "You",
-          genre: "Original",
-          sourceText: source,
-          screenplay: screenplayFromCustom(cleanTitle, source),
-          shots,
-          stage: "film",
-          screenplayLocked: true,
-          status: "setup",
-          wizardStep: "cast",
-          sourceKind: "custom",
-          progress: 0,
-          progressLabel: "",
-          cast,
-          castingConfirmed: false,
-          voice,
-          unlockedShots: 0,
-          createdAt: now(),
-          updatedAt: now(),
-          stars: 0,
-        };
-        project.estimate = buildEstimate(project);
-        set((s) => ({ projects: [project, ...s.projects] }));
-        return id;
-      },
+  createFromClassicBook: async (classicId) => {
+    const classic = classics.find((c) => c.id === classicId);
+    if (!classic) throw new Error("Unknown classic");
+    const id = uid();
+    const cast = castFromClassicCharacters(classic.characters);
+    const voice = syncVoiceFromCast(cast, emptyVoiceAddon());
+    const project: FilmProject = {
+      id,
+      title: classic.title,
+      author: classic.author,
+      genre: classic.genre,
+      sourceText: classic.excerpt,
+      screenplay: classic.screenplay,
+      shots: classic.shots,
+      stage: "film",
+      screenplayLocked: true,
+      status: "setup",
+      wizardStep: "cast",
+      sourceKind: "classic",
+      progress: 0,
+      progressLabel: "",
+      cast,
+      castingConfirmed: false,
+      voice,
+      unlockedShots: 0,
+      classicId: classic.id,
+      createdAt: now(),
+      updatedAt: now(),
+      stars: 0,
+    };
+    project.estimate = buildEstimate(project);
+    set((s) => ({ projects: [project, ...s.projects] }));
+    await persistProject(project);
+    return id;
+  },
 
-      updateProject: (id, patch) => {
-        set((s) => ({
-          projects: s.projects.map((p) =>
-            p.id === id ? normalize({ ...p, ...patch, updatedAt: now() }) : normalize(p),
-          ),
-        }));
-      },
+  createFromCustomBook: async (title, text) => {
+    const id = uid();
+    const cleanTitle = title.trim() || "Untitled Adaptation";
+    const source = text.trim();
+    const cast = suggestCastFromSource(source, cleanTitle);
+    const voice = syncVoiceFromCast(cast, emptyVoiceAddon());
+    const shots = shotsFromCustom(cleanTitle, source);
+    const project: FilmProject = {
+      id,
+      title: cleanTitle,
+      author: "You",
+      genre: "Original",
+      sourceText: source,
+      screenplay: screenplayFromCustom(cleanTitle, source),
+      shots,
+      stage: "film",
+      screenplayLocked: true,
+      status: "setup",
+      wizardStep: "cast",
+      sourceKind: "custom",
+      progress: 0,
+      progressLabel: "",
+      cast,
+      castingConfirmed: false,
+      voice,
+      unlockedShots: 0,
+      createdAt: now(),
+      updatedAt: now(),
+      stars: 0,
+    };
+    project.estimate = buildEstimate(project);
+    set((s) => ({ projects: [project, ...s.projects] }));
+    await persistProject(project);
+    return id;
+  },
 
-      setCast: (id, cast) => {
-        const project = get().projects.find((p) => p.id === id);
-        if (!project) return;
-        const voice = syncVoiceFromCast(cast, project.voice);
-        const next = { ...project, cast, voice, castingConfirmed: false };
-        get().updateProject(id, {
-          cast,
-          voice,
-          castingConfirmed: false,
-          estimate: buildEstimate(next),
-        });
-      },
+  updateProject: (id, patch) => {
+    set((s) => ({
+      projects: s.projects.map((p) =>
+        p.id === id ? { ...p, ...patch, updatedAt: now() } : p,
+      ),
+    }));
+    scheduleSave(id);
+  },
 
-      setVoice: (id, voice) => {
-        const project = get().projects.find((p) => p.id === id);
-        if (!project) return;
-        // Never persist embedded binaries — serializeCapture runs in syncVoice
-        const safe = syncVoiceFromCast(project.cast, voice);
-        const next = { ...project, voice: safe };
-        get().updateProject(id, {
-          voice: safe,
-          estimate: buildEstimate(next),
-        });
-      },
+  flushProject: async (id) => {
+    const t = saveTimers.get(id);
+    if (t) {
+      clearTimeout(t);
+      saveTimers.delete(id);
+    }
+    const project = get().projects.find((p) => p.id === id);
+    if (!project) return;
+    await persistProject(project);
+  },
 
-      setWizardStep: (id, step) => {
-        const project = get().projects.find((p) => p.id === id);
-        if (!project) return;
-        if (step === "done") {
-          get().updateProject(id, { wizardStep: "done" });
-          return;
-        }
-        get().updateProject(id, {
-          wizardStep: step,
-          status: "setup",
-        });
-      },
+  setCast: (id, cast) => {
+    const project = get().projects.find((p) => p.id === id);
+    if (!project) return;
+    const voice = syncVoiceFromCast(cast, project.voice);
+    const next = {
+      ...project,
+      cast,
+      voice,
+      castingConfirmed: false,
+      estimate: buildEstimate({ ...project, cast, voice }),
+      updatedAt: now(),
+    };
+    set((s) => ({
+      projects: s.projects.map((p) => (p.id === id ? next : p)),
+    }));
+    scheduleSave(id);
+  },
 
-      confirmCasting: (id) => {
-        const project = get().projects.find((p) => p.id === id);
-        if (!project) return;
-        const voice = syncVoiceFromCast(project.cast, project.voice);
-        get().updateProject(id, {
-          castingConfirmed: true,
-          voice,
-          estimate: buildEstimate({ ...project, castingConfirmed: true, voice }),
-          wizardStep: "voice",
-          status: "setup",
-        });
-      },
+  setVoice: (id, voice) => {
+    const project = get().projects.find((p) => p.id === id);
+    if (!project) return;
+    const safe = syncVoiceFromCast(project.cast, voice);
+    const next = {
+      ...project,
+      voice: safe,
+      estimate: buildEstimate({ ...project, voice: safe }),
+      updatedAt: now(),
+    };
+    set((s) => ({
+      projects: s.projects.map((p) => (p.id === id ? next : p)),
+    }));
+    scheduleSave(id);
+  },
 
-      skipVoice: (id) => {
-        const project = get().projects.find((p) => p.id === id);
-        if (!project) return;
-        const voice: VoiceAddon = {
-          enabled: false,
-          samples: project.voice.samples.map((s) => ({
-            ...s,
-            enabled: false,
-            hasSample: false,
-            source: null,
-            asset: undefined,
-            consent: false,
-            cloneOutputMediaId: undefined,
-            lineMediaId: undefined,
-          })),
-          stitchedVoMediaId: undefined,
-          modelId: project.voice.modelId ?? "mock-instant-clone",
-        };
-        get().updateProject(id, {
-          voice,
-          estimate: buildEstimate({ ...project, voice }),
-          wizardStep: "estimate",
-          status: "setup",
-        });
-      },
+  setWizardStep: (id, step) => {
+    if (step === "done") {
+      get().updateProject(id, { wizardStep: "done" });
+      return;
+    }
+    get().updateProject(id, { wizardStep: step, status: "setup" });
+  },
 
-      continueFromVoice: (id) => {
-        const project = get().projects.find((p) => p.id === id);
-        if (!project) return;
-        get().updateProject(id, {
-          estimate: buildEstimate(project),
-          wizardStep: "estimate",
-          status: "setup",
-        });
-      },
+  confirmCasting: (id) => {
+    const project = get().projects.find((p) => p.id === id);
+    if (!project) return;
+    const voice = syncVoiceFromCast(project.cast, project.voice);
+    get().updateProject(id, {
+      castingConfirmed: true,
+      voice,
+      estimate: buildEstimate({ ...project, castingConfirmed: true, voice }),
+      wizardStep: "voice",
+      status: "setup",
+    });
+  },
 
-      deleteProject: (id) => {
-        set((s) => ({ projects: s.projects.filter((p) => p.id !== id) }));
-      },
+  skipVoice: (id) => {
+    const project = get().projects.find((p) => p.id === id);
+    if (!project) return;
+    const voice: VoiceAddon = {
+      enabled: false,
+      samples: project.voice.samples.map((s) => ({
+        ...s,
+        enabled: false,
+        hasSample: false,
+        source: null,
+        asset: undefined,
+        consent: false,
+        cloneOutputMediaId: undefined,
+        lineMediaId: undefined,
+      })),
+      stitchedVoMediaId: undefined,
+      modelId: project.voice.modelId ?? "mock-instant-clone",
+    };
+    get().updateProject(id, {
+      voice,
+      estimate: buildEstimate({ ...project, voice }),
+      wizardStep: "estimate",
+      status: "setup",
+    });
+  },
 
-      setStage: (id, stage) => {
-        get().updateProject(id, { stage });
-      },
+  continueFromVoice: (id) => {
+    const project = get().projects.find((p) => p.id === id);
+    if (!project) return;
+    get().updateProject(id, {
+      estimate: buildEstimate(project),
+      wizardStep: "estimate",
+      status: "setup",
+    });
+  },
 
-      lockScreenplay: (id) => {
-        get().updateProject(id, { screenplayLocked: true, stage: "storyboard" });
-      },
+  deleteProject: async (id) => {
+    await deleteMyProject({ data: { projectId: id } });
+    set((s) => ({ projects: s.projects.filter((p) => p.id !== id) }));
+  },
 
-      unlockScreenplay: (id) => {
-        get().updateProject(id, { screenplayLocked: false, stage: "screenplay" });
-      },
+  setStage: (id, stage) => {
+    get().updateProject(id, { stage });
+  },
 
-      openForResume: (id) => {
-        const project = get().projects.find((p) => p.id === id);
-        if (!project) return "source";
-        const stage = resumeStage(normalize(project));
-        if (stage !== project.stage) get().updateProject(id, { stage });
-        return stage;
-      },
+  lockScreenplay: (id) => {
+    get().updateProject(id, { screenplayLocked: true, stage: "storyboard" });
+  },
 
-      runFreeSample: async (id) => {
-        const project = get().projects.find((p) => p.id === id);
-        if (!project) return { ok: false, reason: "Project not found" };
-        if (project.wizardStep !== "confirm" && project.wizardStep !== "done") {
-          return { ok: false, reason: "Finish cast → voice → estimate → confirm first." };
-        }
-        if (project.status === "sample" || project.unlockedShots >= 1) {
-          return { ok: false, reason: "Free sample already generated" };
-        }
+  unlockScreenplay: (id) => {
+    get().updateProject(id, { screenplayLocked: false, stage: "screenplay" });
+  },
 
-        const update = (patch: Partial<FilmProject>) => get().updateProject(id, patch);
-        await prepareVoiceClones(project);
-        const labels = [
-          project.sourceKind === "classic"
-            ? "Loading cached screenplay…"
-            : "Writing opening scene…",
-          castLine(project),
-          voiceLine(get().projects.find((p) => p.id === id) ?? project),
-          "Rendering free sample scene…",
-          "Sample ready",
-        ];
-        await simulatePipeline(update, labels);
-        useWallet.getState().markFreeSample(id);
-        get().updateProject(id, {
-          status: "sample",
-          progress: 100,
-          progressLabel: "Free sample ready",
-          unlockedShots: 1,
-          wizardStep: "done",
-        });
-        return { ok: true };
-      },
+  openForResume: (id) => {
+    const project = get().projects.find((p) => p.id === id);
+    if (!project) return "source";
+    void getMyProject({ data: { projectId: id } }).then((remote) => {
+      if (!remote) return;
+      set((s) => ({
+        projects: s.projects.map((p) =>
+          p.id === id ? { ...remote, cast: mergeCastPreview(p.cast, remote.cast) } : p,
+        ),
+      }));
+    });
+    return resumeStage(project);
+  },
 
-      runFullGenerate: async (id) => {
-        const project = get().projects.find((p) => p.id === id);
-        if (!project) return { ok: false, reason: "Project not found" };
-        if (project.wizardStep !== "confirm" && project.wizardStep !== "done") {
-          return { ok: false, reason: "Finish cast → voice → estimate → confirm first." };
-        }
-        const cost = project.estimate?.creditsFull ?? 15;
-        const wallet = useWallet.getState();
-        if (!wallet.spend(cost)) {
-          return {
-            ok: false,
-            reason: "Not enough credits",
-            needCredits: Math.max(0, cost - wallet.credits),
-          };
-        }
+  runFreeSample: async (id) => {
+    await get().flushProject(id);
+    const project = get().projects.find((p) => p.id === id);
+    if (!project) return { ok: false, reason: "Project not found" };
+    if (project.wizardStep !== "confirm" && project.wizardStep !== "done") {
+      return { ok: false, reason: "Finish cast → voice → estimate → confirm first." };
+    }
+    if (project.status === "sample" || project.unlockedShots >= 1) {
+      return { ok: false, reason: "Free sample already generated" };
+    }
 
-        await prepareVoiceClones(project);
-        const update = (patch: Partial<FilmProject>) => get().updateProject(id, patch);
-        const labels =
-          project.sourceKind === "classic"
-            ? [
-                "Loading cached screenplay…",
-                "Loading cached storyboard…",
-                castLine(project),
-                voiceLine(get().projects.find((p) => p.id === id) ?? project),
-                "Compositing personalized characters…",
-                "Assembling picture lock…",
-                "Movie ready",
-              ]
-            : [
-                "Writing screenplay from scratch…",
-                "Building storyboard…",
-                castLine(project),
-                voiceLine(get().projects.find((p) => p.id === id) ?? project),
-                "Compositing frames…",
-                "Mixing picture lock…",
-                "Movie ready",
-              ];
-        await simulatePipeline(update, labels);
-        get().updateProject(id, {
-          status: "ready",
-          progress: 100,
-          progressLabel: "Movie ready",
-          unlockedShots: project.shots.length,
-          wizardStep: "done",
-        });
-        return { ok: true };
-      },
+    const update = (patch: Partial<FilmProject>) => get().updateProject(id, patch);
+    await prepareVoiceClones(project);
+    const labels = [
+      project.sourceKind === "classic"
+        ? "Loading cached screenplay…"
+        : "Writing opening scene…",
+      castLine(project),
+      voiceLine(get().projects.find((p) => p.id === id) ?? project),
+      "Rendering free sample scene…",
+      "Sample ready",
+    ];
+    await simulatePipeline(update, labels);
+    useWallet.getState().markFreeSample(id);
+    get().updateProject(id, {
+      status: "sample",
+      progress: 100,
+      progressLabel: "Free sample ready",
+      unlockedShots: 1,
+      wizardStep: "done",
+    });
+    await get().flushProject(id);
+    return { ok: true };
+  },
 
-      runRerender: async (id) => {
-        const project = get().projects.find((p) => p.id === id);
-        if (!project) return { ok: false, reason: "Project not found" };
-        const fullCost = project.estimate?.creditsFull ?? 15;
-        const owned =
-          project.status === "ready" && project.unlockedShots >= project.shots.length;
-        const cost = owned ? Math.max(4, Math.round(fullCost / 2)) : fullCost;
-        if (!useWallet.getState().spend(cost)) {
-          return { ok: false, reason: "Not enough credits" };
-        }
-        await prepareVoiceClones(project);
-        const update = (patch: Partial<FilmProject>) => get().updateProject(id, patch);
-        await simulatePipeline(update, [
-          "Applying cast updates…",
-          castLine(project),
-          voiceLine(get().projects.find((p) => p.id === id) ?? project),
-          "Re-mixing cut…",
-          "Movie ready",
-        ]);
-        get().updateProject(id, {
-          status: "ready",
-          progress: 100,
-          progressLabel: "Movie ready",
-          unlockedShots: project.shots.length,
-          wizardStep: "done",
-        });
-        return { ok: true };
-      },
+  runFullGenerate: async (id) => {
+    await get().flushProject(id);
+    const project = get().projects.find((p) => p.id === id);
+    if (!project) return { ok: false, reason: "Project not found" };
+    if (project.wizardStep !== "confirm" && project.wizardStep !== "done") {
+      return { ok: false, reason: "Finish cast → voice → estimate → confirm first." };
+    }
+    const cost = project.estimate?.creditsFull ?? 15;
+    const wallet = useWallet.getState();
+    if (!wallet.spend(cost)) {
+      return {
+        ok: false,
+        reason: "Not enough credits",
+        needCredits: Math.max(0, cost - wallet.credits),
+      };
+    }
 
-      toggleStar: (id) => {
-        set((s) => ({
-          projects: s.projects.map((p) =>
-            p.id === id
-              ? { ...normalize(p), stars: p.stars > 0 ? 0 : 1, updatedAt: now() }
-              : normalize(p),
-          ),
-        }));
-      },
-    }),
-    {
-      name: "page-to-movie-projects",
-      version: PROJECT_STORE_VERSION,
-      migrate: (persisted, fromVersion) => {
-        const p = persisted as { projects?: FilmProject[] };
-        if (!p?.projects) return persisted as never;
-        if (fromVersion < 4) {
-          return {
-            ...p,
-            projects: p.projects.map((proj) => normalize(proj as FilmProject)),
-          };
-        }
-        return persisted as never;
-      },
-      merge: (persisted, current) => {
-        const p = persisted as { projects?: FilmProject[] } | undefined;
-        return {
-          ...current,
-          ...p,
-          projects: (p?.projects ?? current.projects).map((proj) =>
-            normalize(proj as FilmProject),
-          ),
-        };
-      },
-    },
-  ),
-);
+    await prepareVoiceClones(project);
+    const update = (patch: Partial<FilmProject>) => get().updateProject(id, patch);
+    const labels =
+      project.sourceKind === "classic"
+        ? [
+            "Loading cached screenplay…",
+            "Loading cached storyboard…",
+            castLine(project),
+            voiceLine(get().projects.find((p) => p.id === id) ?? project),
+            "Compositing personalized characters…",
+            "Assembling picture lock…",
+            "Movie ready",
+          ]
+        : [
+            "Writing screenplay from scratch…",
+            "Building storyboard…",
+            castLine(project),
+            voiceLine(get().projects.find((p) => p.id === id) ?? project),
+            "Compositing frames…",
+            "Mixing picture lock…",
+            "Movie ready",
+          ];
+    await simulatePipeline(update, labels);
+    get().updateProject(id, {
+      status: "ready",
+      progress: 100,
+      progressLabel: "Movie ready",
+      unlockedShots: project.shots.length,
+      wizardStep: "done",
+    });
+    await get().flushProject(id);
+    return { ok: true };
+  },
+
+  runRerender: async (id) => {
+    await get().flushProject(id);
+    const project = get().projects.find((p) => p.id === id);
+    if (!project) return { ok: false, reason: "Project not found" };
+    const fullCost = project.estimate?.creditsFull ?? 15;
+    const owned =
+      project.status === "ready" && project.unlockedShots >= project.shots.length;
+    const cost = owned ? Math.max(4, Math.round(fullCost / 2)) : fullCost;
+    if (!useWallet.getState().spend(cost)) {
+      return { ok: false, reason: "Not enough credits" };
+    }
+    await prepareVoiceClones(project);
+    const update = (patch: Partial<FilmProject>) => get().updateProject(id, patch);
+    await simulatePipeline(update, [
+      "Applying cast updates…",
+      castLine(project),
+      voiceLine(get().projects.find((p) => p.id === id) ?? project),
+      "Re-mixing cut…",
+      "Movie ready",
+    ]);
+    get().updateProject(id, {
+      status: "ready",
+      progress: 100,
+      progressLabel: "Movie ready",
+      unlockedShots: project.shots.length,
+      wizardStep: "done",
+    });
+    await get().flushProject(id);
+    return { ok: true };
+  },
+
+  toggleStar: (id) => {
+    const project = get().projects.find((p) => p.id === id);
+    if (!project) return;
+    get().updateProject(id, { stars: project.stars > 0 ? 0 : 1 });
+  },
+}));

@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 /**
  * Regression smoke: book → cast → skip voice → estimate → confirm → free sample.
+ * Projects persist on server; media on client.
  * Usage: node scripts/smoke-wizard.mjs [baseUrl]
  */
 import { chromium } from "playwright";
@@ -18,7 +19,7 @@ try {
   await page.goto(`${base}/studio`, { waitUntil: "networkidle" });
 
   await page.getByRole("button", { name: /Choose this book/i }).nth(1).click();
-  await page.waitForURL(/\/studio\/p_/, { timeout: 15000 });
+  await page.waitForURL(/\/studio\/p_/, { timeout: 30000 });
   await page.waitForSelector("text=Step 2", { timeout: 15000 });
 
   await page.locator('input[placeholder*="child"]').first().fill("Milo");
@@ -33,27 +34,19 @@ try {
 
   await page.getByRole("button", { name: /Free: generate 1 sample scene/i }).click();
   await page.waitForFunction(
-    () => /Free sample|Sample unlocked|Play/i.test(document.body.innerText),
+    () => {
+      const t = document.body.innerText;
+      return /Free sample/i.test(t) && !/Generating…/i.test(t);
+    },
     null,
-    { timeout: 25000 },
+    { timeout: 45000 },
   );
 
   const text = await page.evaluate(() => document.body.innerText);
-  const ok =
-    /sample/i.test(text) &&
-    errors.length === 0 &&
-    !/not found/i.test(text);
+  const ok = /sample/i.test(text) && errors.length === 0 && !/not found/i.test(text);
 
   console.log(
-    JSON.stringify(
-      {
-        ok,
-        errors,
-        reachedSample: /sample/i.test(text),
-      },
-      null,
-      2,
-    ),
+    JSON.stringify({ ok, errors, reachedSample: /sample/i.test(text) }, null, 2),
   );
   await browser.close();
   process.exit(ok ? 0 : 1);

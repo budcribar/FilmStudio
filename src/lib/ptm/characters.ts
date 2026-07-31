@@ -17,8 +17,13 @@ export type CastMember = {
   displayName: string;
   relation: CharacterRelation;
   notes?: string;
+  /**
+   * Transient client preview only — never persisted to server.
+   * Prefer photoMediaId (client media store) for durable local photos.
+   */
   photoDataUrl?: string;
-  /** User opted to personalize this role (name/photo swap) */
+  /** Client media store id for portrait (binary stays on device) */
+  photoMediaId?: string;
   selected: boolean;
   classicCharacterId?: string;
 };
@@ -42,7 +47,6 @@ function uid() {
 export function castFromClassicCharacters(chars: ClassicCharacter[]): CastMember[] {
   let primaryPicked = false;
   return chars.map((c) => {
-    // Pre-check the first personalizable role (e.g. Alice) so “kid as lead” is one click away
     const selected = c.personalizable && !primaryPicked;
     if (selected) primaryPicked = true;
     const isChildLead =
@@ -78,58 +82,51 @@ export function suggestCastFromSource(text: string, title?: string): CastMember[
       roleInStory: "Child character",
       displayName: "",
       relation: "child",
-      notes: "Swap in a photo of your kid for a personal children's-book feel.",
+      notes: "Optional second role.",
       selected: false,
     });
   }
-  if (/\b(wife|husband|spouse|juliet|romeo)\b/i.test(lower)) {
+
+  if (/\b(wife|husband|spouse|partner|love)\b/i.test(lower)) {
     cast.push({
       id: uid(),
-      roleInStory: "Partner in story",
+      roleInStory: "Partner",
       displayName: "",
       relation: "spouse",
       selected: false,
     });
   }
-  if (cast.length < 2) {
-    cast.push({
-      id: uid(),
-      roleInStory: "Supporting character",
-      displayName: "",
-      relation: "original",
-      selected: false,
-      notes: "Optional personalization.",
-    });
-  }
+
   return cast.slice(0, 6);
 }
 
-export function personalizedCount(cast: CastMember[]) {
-  return cast.filter(
-    (c) => c.selected && (c.displayName.trim().length > 0 || !!c.photoDataUrl),
-  ).length;
-}
-
-/** Ready when every *selected* role has a name or photo. Zero selected = generate as written. */
-export function castIsReady(cast: CastMember[]): boolean {
-  const selected = cast.filter((c) => c.selected);
-  if (selected.length === 0) return true;
-  return selected.every((c) => c.displayName.trim().length >= 1 || !!c.photoDataUrl);
-}
-
-export function emptyCastMember(partial?: Partial<CastMember>): CastMember {
+export function emptyCastMember(
+  partial?: Partial<CastMember>,
+): CastMember {
   return {
     id: uid(),
-    roleInStory: partial?.roleInStory ?? "New character",
-    displayName: partial?.displayName ?? "",
-    relation: partial?.relation ?? "child",
-    notes: partial?.notes,
-    photoDataUrl: partial?.photoDataUrl,
-    selected: partial?.selected ?? true,
-    classicCharacterId: partial?.classicCharacterId,
+    roleInStory: "Supporting role",
+    displayName: "",
+    relation: "other",
+    selected: true,
+    ...partial,
   };
 }
 
-export function relationLabel(r: CharacterRelation) {
+export function personalizedCount(cast: CastMember[]): number {
+  return cast.filter(
+    (c) => c.selected && (c.displayName.trim() || c.photoDataUrl || c.photoMediaId),
+  ).length;
+}
+
+export function castIsReady(cast: CastMember[]): boolean {
+  const selected = cast.filter((c) => c.selected);
+  if (selected.length === 0) return true;
+  return selected.every(
+    (c) => c.displayName.trim() !== "" || !!c.photoDataUrl || !!c.photoMediaId,
+  );
+}
+
+export function relationLabel(r: CharacterRelation): string {
   return RELATION_OPTIONS.find((o) => o.id === r)?.label ?? r;
 }

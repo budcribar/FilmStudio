@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Clapperboard, FolderOpen, Trash2 } from "lucide-react";
+import { Clapperboard, FolderOpen, Loader2, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -17,6 +17,7 @@ function projectBadge(p: FilmProject) {
   if (p.status === "generating") return { label: "Rendering", variant: "cinema" as const };
   if (p.status === "sample") return { label: "Free sample", variant: "accent" as const };
   if (p.wizardStep === "cast") return { label: "Casting", variant: "default" as const };
+  if (p.wizardStep === "voice") return { label: "Voice", variant: "default" as const };
   if (p.wizardStep === "estimate") return { label: "Estimate", variant: "cinema" as const };
   if (p.wizardStep === "confirm") return { label: "Confirm", variant: "cinema" as const };
   return { label: "Setup", variant: "default" as const };
@@ -25,6 +26,8 @@ function projectBadge(p: FilmProject) {
 function ProjectsPage() {
   const projects = useProjects((s) => s.projects);
   const deleteProject = useProjects((s) => s.deleteProject);
+  const hydrated = useProjects((s) => s.hydrated);
+  const hydrating = useProjects((s) => s.hydrating);
 
   return (
     <div className="mx-auto max-w-6xl px-4 sm:px-6 py-10 sm:py-14">
@@ -37,7 +40,7 @@ function ProjectsPage() {
             Projects
           </h1>
           <p className="mt-2 text-sm text-fg-muted">
-            Book → cast → estimate → confirm → generate. Local to this browser.
+            Stored on the server. Media (MP3/MP4) stays on this device.
           </p>
         </div>
         <Button asChild>
@@ -45,7 +48,14 @@ function ProjectsPage() {
         </Button>
       </div>
 
-      {projects.length === 0 ? (
+      {hydrating && (
+        <div className="flex items-center gap-2 text-sm text-fg-muted mb-6">
+          <Loader2 className="h-4 w-4 animate-spin text-cinema" />
+          Loading projects…
+        </div>
+      )}
+
+      {hydrated && projects.length === 0 ? (
         <Card>
           <CardContent className="py-16 flex flex-col items-center text-center px-6">
             <span className="flex h-12 w-12 items-center justify-center rounded-[var(--radius-md)] border border-border bg-bg-subtle text-fg-muted mb-4">
@@ -77,22 +87,20 @@ function ProjectsPage() {
                       type="button"
                       aria-label={`Delete ${p.title}`}
                       className="text-fg-subtle hover:text-danger p-1"
-                      onClick={() => deleteProject(p.id)}
+                      onClick={() => void deleteProject(p.id)}
                     >
                       <Trash2 className="h-4 w-4" />
                     </button>
                   </div>
-                  <h2 className="font-display text-lg font-semibold tracking-tight line-clamp-1">
-                    {p.title}
-                  </h2>
-                  <p className="text-xs text-fg-muted mt-1">
-                    {p.sourceKind === "classic" ? "Cached classic" : "Custom"} · {p.genre}
-                    {p.estimate ? ` · ${p.estimate.creditsFull} cr` : ""}
+                  <h2 className="font-display text-lg font-semibold">{p.title}</h2>
+                  <p className="text-sm text-fg-muted mt-1">
+                    {p.author} · {formatRelativeTime(p.updatedAt)}
                   </p>
-                  <p className="text-xs text-fg-subtle mt-3">
-                    Updated {formatRelativeTime(p.updatedAt)}
+                  <p className="text-xs text-fg-subtle mt-2">
+                    {p.sourceKind === "classic" ? "Cached classic" : "Custom"} ·{" "}
+                    {p.shots.length} scenes
                   </p>
-                  <Button asChild variant="secondary" className="mt-4 w-full">
+                  <Button asChild className="mt-4 w-full">
                     <Link to="/studio/$projectId" params={{ projectId: p.id }}>
                       {resumeActionLabel(p)}
                     </Link>
