@@ -2150,7 +2150,7 @@ else
 
     /// <summary>Jobs that belong on Scenes (not leftover stage2 / character jobs).</summary>
     private static bool IsScenesWorkflowJob(string? kind) =>
-        kind is "scene" or "batch" or "remux";
+        kind is "scene" or "batch" or "remux" or "music" or "lip_sync";
 
     /// <summary>
     /// One compact progress card while video work runs — operators and admin.
@@ -2179,6 +2179,11 @@ else
         var kind = job.Kind ?? "";
         if (string.Equals(job.Status, "queued", StringComparison.OrdinalIgnoreCase))
             return "Waiting…";
+
+        if (string.Equals(kind, "music", StringComparison.OrdinalIgnoreCase))
+            return !string.IsNullOrWhiteSpace(job.Message) ? job.Message : "Scoring background music…";
+        if (string.Equals(kind, "lip_sync", StringComparison.OrdinalIgnoreCase))
+            return !string.IsNullOrWhiteSpace(job.Message) ? job.Message : "Lip-syncing dialogue…";
 
         if (string.Equals(kind, "remux", StringComparison.OrdinalIgnoreCase))
         {
