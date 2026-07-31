@@ -19,6 +19,9 @@ import {
 } from "./voice";
 import { useWallet } from "./wallet";
 
+/** Bump when FilmProject shape changes; normalize() migrates older localStorage. */
+export const PROJECT_STORE_VERSION = 2;
+
 function uid() {
   return `p_${Math.random().toString(36).slice(2, 10)}`;
 }
@@ -90,12 +93,23 @@ function normalize(project: FilmProject): FilmProject {
     ? project.status
     : "setup";
   if ((project.status as string) === "estimate") status = "setup";
+  if ((project.status as string) === "draft") status = "setup";
 
   let wizardStep: WizardStep = VALID_WIZARD.includes(project.wizardStep)
     ? project.wizardStep
     : status === "setup"
       ? "cast"
       : "done";
+
+  // Legacy: projects that jumped cast → estimate without voice
+  if (
+    status === "setup" &&
+    wizardStep === "estimate" &&
+    project.castingConfirmed &&
+    !(project as { voice?: VoiceAddon }).voice
+  ) {
+    // leave on estimate; voice will default to stock via emptyVoiceAddon
+  }
 
   const cast =
     project.cast?.length > 0
@@ -105,7 +119,10 @@ function normalize(project: FilmProject): FilmProject {
         }))
       : suggestCastFromSource(project.sourceText || "", project.title);
 
-  const voice = syncVoiceFromCast(cast, project.voice ?? emptyVoiceAddon());
+  const voice = syncVoiceFromCast(
+    cast,
+    project.voice ?? emptyVoiceAddon(),
+  );
 
   const base: FilmProject = {
     ...project,
@@ -133,9 +150,7 @@ type Store = {
   setVoice: (id: string, voice: VoiceAddon) => void;
   setWizardStep: (id: string, step: WizardStep) => void;
   confirmCasting: (id: string) => void;
-  /** Skip voice add-on and go to estimate */
   skipVoice: (id: string) => void;
-  /** Accept voice choices (or stock) → estimate */
   continueFromVoice: (id: string) => void;
   deleteProject: (id: string) => void;
   setStage: (id: string, stage: ProjectStage) => void;
@@ -297,9 +312,20 @@ export const useProjects = create<Store>()(
       },
 
       setWizardStep: (id, step) => {
+        // Editing cast/voice from a finished project returns to setup without wiping unlocks
+        const project = get().projects.find((p) => p.id === id);
+        if (!project) return;
+        if (step === "done") {
+          get().updateProject(id, { wizardStep: "done" });
+          return;
+        }
+        const keepStatus =
+          project.status === "ready" || project.status === "sample"
+            ? project.status
+            : "setup";
         get().updateProject(id, {
           wizardStep: step,
-          status: step === "done" ? "ready" : "setup",
+          status: keepStatus === "ready" || keepStatus === "sample" ? "setup" : "setup",
         });
       },
 
@@ -325,6 +351,7 @@ export const useProjects = create<Store>()(
             ...s,
             enabled: false,
             hasSample: false,
+            source: null,
           })),
         };
         get().updateProject(id, {
@@ -489,6 +516,19 @@ export const useProjects = create<Store>()(
     }),
     {
       name: "page-to-movie-projects",
+      version: PROJECT_STORE_VERSION,
+      migrate: (persisted, fromVersion) => {
+        const p = persisted as { projects?: FilmProject[] };
+        if (!p?.projects) return persisted as never;
+        // v0/v1 → v2: ensure voice + wizardStep
+        if (fromVersion < 2) {
+          return {
+            ...p,
+            projects: p.projects.map((proj) => normalize(proj as FilmProject)),
+          };
+        }
+        return persisted as never;
+      },
       merge: (persisted, current) => {
         const p = persisted as { projects?: FilmProject[] } | undefined;
         return {
