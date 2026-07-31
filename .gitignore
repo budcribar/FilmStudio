@@ -1,0 +1,15 @@
+node_modules/
+.DS_Store
+dist/
+.output/
+.vinxi/
+.tanstack/
+.vercel/
+.tmp/
+*.log
+/tmp/
+.env
+.env.*
+!.env.example
+screenshots/*.png
+.grok/
