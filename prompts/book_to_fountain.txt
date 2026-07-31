@@ -123,6 +123,12 @@ BODY:
 - Spoken book lines → CHARACTER (ALL CAPS) + dialogue under them
 - Parentheticals sparingly when delivery matters
 - Dual dialogue: caret ^ on the second speaker only when simultaneous
+- SOURCE-ONLY NARRATION FRAME (HARD): never invent an interrogation room, study, chair,
+  courtroom, cell, stage, or other narration-frame location unless the source explicitly
+  places the narrator there. If first-person reflection needs narration but the book supplies
+  no frame setting, use NARRATOR V.O. over concrete locations already present in the book.
+  Do not invent spoken exchanges for officers, searchers, servants, or bystanders unless the
+  book quotes or clearly records audible speech; prefer Action when it can carry the beat.
 - Recurring address / commentary speakers (first-person confessor, storybook NARRATOR,
   diarist, guide, chorus): do NOT default every reflective line to V.O. over the action.
   If you establish an on-camera "frame" early (a room, chair, desk, or stage position where
@@ -294,6 +300,17 @@ When the source is long and truncated in the prompt, cover only what is provided
   visual/sound beats across that span, not one summary sentence under a paragraph of V.O.
   That peak density buys more of the book’s intended effect per second than the same beat
   spent on connective tissue. Cut runtime from setup or aftermath before you cut the peak.
+
+================================================================
+FINAL COMPLIANCE CHECK (HARD)
+================================================================
+Before returning the screenplay, perform this check silently and fix every failure:
+- Every scene heading must have at least one literal standalone `(SOUND: concrete diegetic
+  description)` or `(MUSIC: specific description)` cue. Put a missing cue directly after
+  the Action it belongs to; sound implied only in prose does not satisfy this requirement.
+- No dialogue turn may exceed 35 words. Preserve the book's wording by splitting a long
+  turn with a concrete Action or `(SOUND: ...)` micro-beat; do not paraphrase it into modern
+  wording just to shorten it.
 
 ================================================================
 MULTI-CHUNK ADAPT (when BOOK_CHUNK n/m is in the user message)
