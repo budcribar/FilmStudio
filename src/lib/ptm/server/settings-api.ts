@@ -1,9 +1,15 @@
 /**
  * Settings server functions — same auth + repo pattern as projects-api.
- * Secrets stay server-side; client only sees masked status + prefs.
+ * Model catalog: single src/data/models/models.json (all capabilities).
  */
 import { createServerFn } from "@tanstack/react-start";
-import catalog from "@/data/models/voice-models.json";
+import {
+  getApiKeyEnv,
+  getDefaultModelId,
+  getFullCatalog,
+  getModel,
+  listModels,
+} from "@/lib/ptm/models/catalog";
 import { ptmAuthMiddleware } from "./ptm-auth";
 import {
   deleteSecret,
@@ -43,8 +49,11 @@ export type VoiceCatalogDto = {
     outputFormat: string;
     outputExtension: string;
   };
+  /** All capabilities in one catalog; UI may filter by capability */
+  capabilities: string[];
   models: Array<{
     id: string;
+    capability: string;
     providerId: string;
     displayName: string;
     description: string;
@@ -56,22 +65,35 @@ export type VoiceCatalogDto = {
   }>;
 };
 
-/** Public catalog for the Settings UI (no secrets). */
+/** Public catalog for Settings UI (no secrets). */
 export const getVoiceCatalog = createServerFn({ method: "GET" }).handler(
   async (): Promise<VoiceCatalogDto> => {
+    const full = getFullCatalog();
+    const voiceDefault = getDefaultModelId("voice") ?? "mock-instant-clone";
+    const defaultModel = getModel(voiceDefault);
+    const capabilities = [
+      ...new Set(listModels().map((m) => m.capability)),
+    ].sort();
+
     return {
-      defaults: catalog.defaults,
-      models: catalog.models.map((m) => ({
+      defaults: {
+        cloneProvider: defaultModel?.providerId ?? "mock",
+        sampleMinSec: full.sampleDefaults.sampleMinSec,
+        sampleTargetSec: full.sampleDefaults.sampleTargetSec,
+        sampleMaxSec: full.sampleDefaults.sampleMaxSec,
+        outputFormat: full.sampleDefaults.outputFormat,
+        outputExtension: full.sampleDefaults.outputExtension,
+      },
+      capabilities,
+      models: listModels().map((m) => ({
         id: m.id,
+        capability: m.capability,
         providerId: m.providerId,
         displayName: m.displayName,
         description: m.description,
         kind: m.kind,
         requiresApiKey: m.requiresApiKey,
-        apiKeyEnv:
-          "apiKeyEnv" in m
-            ? ((m as { apiKeyEnv?: string }).apiKeyEnv ?? null)
-            : null,
+        apiKeyEnv: getApiKeyEnv(m),
         enabled: m.enabled,
         clientSideOnly: m.clientSideOnly,
       })),
@@ -86,12 +108,10 @@ export const getMySettings = createServerFn({ method: "GET" })
     const secrets = await listSecretsMeta(context.userId);
 
     const envHints: SettingsSecretMeta[] = [];
-    for (const m of catalog.models) {
-      const envName =
-        "apiKeyEnv" in m ? (m as { apiKeyEnv?: string }).apiKeyEnv : undefined;
+    for (const m of listModels()) {
+      const envName = getApiKeyEnv(m);
       if (!envName) continue;
-      const already = secrets.some((s) => s.keyName === envName);
-      if (already) continue;
+      if (secrets.some((s) => s.keyName === envName)) continue;
       const resolved = await resolveSecret(context.userId, envName);
       if (resolved.source === "env" && resolved.value) {
         envHints.push({
@@ -106,9 +126,8 @@ export const getMySettings = createServerFn({ method: "GET" })
       }
     }
 
-    const defaultModel =
-      catalog.models.find((m) => m.providerId === catalog.defaults.cloneProvider)
-        ?.id ?? "mock-instant-clone";
+    const defaultModelId = getDefaultModelId("voice") ?? "mock-instant-clone";
+    const defaultModel = getModel(defaultModelId);
 
     return {
       prefs: prefs
@@ -117,8 +136,8 @@ export const getMySettings = createServerFn({ method: "GET" })
             voiceModelId: prefs.voice_model_id,
           }
         : {
-            voiceProviderId: catalog.defaults.cloneProvider,
-            voiceModelId: defaultModel,
+            voiceProviderId: defaultModel?.providerId ?? "mock",
+            voiceModelId: defaultModelId,
           },
       secrets: [
         ...secrets.map(
@@ -143,8 +162,10 @@ export const saveVoicePrefs = createServerFn({ method: "POST" })
     (data: { voiceProviderId: string; voiceModelId: string }) => data,
   )
   .handler(async ({ context, data }): Promise<SettingsPrefsDto> => {
-    const model = catalog.models.find((m) => m.id === data.voiceModelId);
-    if (!model) throw new Error("Unknown voice model");
+    const model = getModel(data.voiceModelId);
+    if (!model || model.capability !== "voice") {
+      throw new Error("Unknown voice model");
+    }
     const row = await upsertProviderPrefs({
       userId: context.userId,
       voiceProviderId: data.voiceProviderId || model.providerId,
@@ -189,7 +210,7 @@ export const removeProviderSecret = createServerFn({ method: "POST" })
     return { ok };
   });
 
-/** Server-only helper for voice providers (not a createServerFn). */
+/** Server-only helper for voice providers. */
 export async function resolveVoiceRuntime(userId: string): Promise<{
   providerId: string;
   modelId: string;
@@ -198,13 +219,11 @@ export async function resolveVoiceRuntime(userId: string): Promise<{
   apiKeyEnv: string | null;
 }> {
   const prefs = await getProviderPrefs(userId);
-  const modelId = prefs?.voice_model_id ?? "mock-instant-clone";
-  const model = catalog.models.find((m) => m.id === modelId) ?? catalog.models[0]!;
+  const modelId =
+    prefs?.voice_model_id ?? getDefaultModelId("voice") ?? "mock-instant-clone";
+  const model = getModel(modelId) ?? listModels("voice")[0]!;
   const providerId = prefs?.voice_provider_id ?? model.providerId;
-  const apiKeyEnv =
-    "apiKeyEnv" in model
-      ? ((model as { apiKeyEnv?: string }).apiKeyEnv ?? null)
-      : null;
+  const apiKeyEnv = getApiKeyEnv(model);
   if (!apiKeyEnv) {
     return {
       providerId,

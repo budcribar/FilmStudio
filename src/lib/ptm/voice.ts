@@ -1,6 +1,7 @@
 import type { CastMember } from "./characters";
 import type { VoiceCaptureAsset } from "./capture/audio-capture";
 import { serializeCaptureForPersist } from "./capture/audio-capture";
+import { getDefaultModelId } from "./models/catalog";
 
 export type VoiceSampleSource = "mic" | "upload" | null;
 
@@ -27,7 +28,7 @@ export type VoiceAddon = {
   samples: VoiceSample[];
   /** Client media id of stitched VO track after generate */
   stitchedVoMediaId?: string;
-  /** Model id from voice-models.json */
+  /** Model id from models.json (capability: voice) */
   modelId?: string;
 };
 
@@ -35,13 +36,17 @@ export const VOICE_ADDON_BASE_CREDITS = 5;
 export const VOICE_PER_ROLE_CREDITS = 4;
 
 export function emptyVoiceAddon(): VoiceAddon {
-  return { enabled: false, samples: [], modelId: "mock-instant-clone" };
+  return {
+    enabled: false,
+    samples: [],
+    modelId: getDefaultModelId("voice") ?? "mock-instant-clone",
+  };
 }
 
 export function syncVoiceFromCast(cast: CastMember[], prev?: VoiceAddon): VoiceAddon {
   const prevMap = new Map((prev?.samples ?? []).map((s) => [s.castMemberId, s]));
   const candidates = cast.filter(
-    (c) => c.selected && (c.displayName.trim() || c.photoDataUrl),
+    (c) => c.selected && (c.displayName.trim() || c.photoDataUrl || c.photoMediaId),
   );
 
   const samples: VoiceSample[] = candidates.map((c) => {
@@ -65,7 +70,7 @@ export function syncVoiceFromCast(cast: CastMember[], prev?: VoiceAddon): VoiceA
     enabled: prev?.enabled ?? false,
     samples,
     stitchedVoMediaId: prev?.stitchedVoMediaId,
-    modelId: prev?.modelId ?? "mock-instant-clone",
+    modelId: prev?.modelId ?? getDefaultModelId("voice") ?? "mock-instant-clone",
   };
 }
 

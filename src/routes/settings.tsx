@@ -27,6 +27,7 @@ function SettingsPage() {
   const [error, setError] = useState("");
   const [okMsg, setOkMsg] = useState("");
   const [catalog, setCatalog] = useState<VoiceCatalogDto | null>(null);
+  const [capability, setCapability] = useState("voice");
   const [providerId, setProviderId] = useState("mock");
   const [modelId, setModelId] = useState("mock-instant-clone");
   const [secrets, setSecrets] = useState<SettingsSecretMeta[]>([]);
@@ -39,7 +40,10 @@ function SettingsPage() {
     modelId: string;
   } | null>(null);
 
-  const models = catalog?.models ?? [];
+  const models = useMemo(() => {
+    const all = catalog?.models ?? [];
+    return all.filter((m) => m.capability === capability);
+  }, [catalog, capability]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -90,6 +94,10 @@ function SettingsPage() {
   }, [models]);
 
   async function onSavePrefs() {
+    if (capability !== "voice") {
+      setError("Only voice prefs are wired to generate yet — video/chat next.");
+      return;
+    }
     setSaving(true);
     setError("");
     setOkMsg("");
@@ -156,8 +164,8 @@ function SettingsPage() {
           Settings
         </h1>
         <p className="mt-2 text-sm text-fg-muted max-w-xl leading-relaxed">
-          Pick a voice provider and model from the catalog. API keys are stored on the
-          server — never in browser project JSON. Add more providers in the models JSON.
+          One model catalog for the whole app (voice, video, chat…). Keys on the server;
+          generate currently uses the voice selection.
         </p>
       </div>
 
@@ -180,12 +188,12 @@ function SettingsPage() {
             </div>
           )}
 
-          {runtime && (
+          {runtime && capability === "voice" && (
             <Card>
               <CardContent className="p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
                   <p className="text-xs uppercase tracking-wide text-fg-subtle mb-1">
-                    Runtime
+                    Voice runtime
                   </p>
                   <p className="font-display font-semibold text-sm">
                     {runtime.providerId} · {runtime.modelId}
@@ -206,37 +214,77 @@ function SettingsPage() {
           <Card className="border-border-strong">
             <CardContent className="p-5 sm:p-6 space-y-5">
               <div>
-                <h2 className="font-display font-semibold text-lg">Voice provider</h2>
+                <h2 className="font-display font-semibold text-lg">Models</h2>
                 <p className="text-sm text-fg-muted mt-1">
-                  Catalog-driven — extend{" "}
-                  <code className="text-fg-subtle">src/data/models/voice-models.json</code>.
+                  Single source:{" "}
+                  <code className="text-fg-subtle">src/data/models/models.json</code>
                 </p>
               </div>
+
+              {(catalog?.capabilities?.length ?? 0) > 0 && (
+                <div className="space-y-2">
+                  <p className="text-[11px] uppercase tracking-wide text-fg-subtle">
+                    Capability
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {(catalog?.capabilities ?? ["voice"]).map((c) => (
+                      <button
+                        key={c}
+                        type="button"
+                        onClick={() => {
+                          setCapability(c);
+                          const first = (catalog?.models ?? []).find(
+                            (m) => m.capability === c,
+                          );
+                          if (first) {
+                            setProviderId(first.providerId);
+                            setModelId(first.id);
+                          }
+                        }}
+                        className={cn(
+                          "rounded-[var(--radius-md)] border px-3 py-2 text-sm font-medium capitalize transition-colors",
+                          capability === c
+                            ? "border-cinema/50 bg-cinema/10 text-fg"
+                            : "border-border bg-bg hover:border-border-strong text-fg-muted",
+                        )}
+                      >
+                        {c.replace("_", " ")}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               <div className="space-y-2">
                 <p className="text-[11px] uppercase tracking-wide text-fg-subtle">
                   Provider
                 </p>
                 <div className="flex flex-wrap gap-2">
-                  {providers.map((p) => (
-                    <button
-                      key={p.id}
-                      type="button"
-                      onClick={() => {
-                        setProviderId(p.id);
-                        const first = models.find((m) => m.providerId === p.id);
-                        if (first) setModelId(first.id);
-                      }}
-                      className={cn(
-                        "rounded-[var(--radius-md)] border px-3 py-2 text-sm font-medium transition-colors",
-                        providerId === p.id
-                          ? "border-cinema/50 bg-cinema/10 text-fg"
-                          : "border-border bg-bg hover:border-border-strong text-fg-muted",
-                      )}
-                    >
-                      {p.label}
-                    </button>
-                  ))}
+                  {providers.length === 0 ? (
+                    <p className="text-sm text-fg-muted">
+                      No models for this capability yet — add them in models.json.
+                    </p>
+                  ) : (
+                    providers.map((p) => (
+                      <button
+                        key={p.id}
+                        type="button"
+                        onClick={() => {
+                          setProviderId(p.id);
+                          const first = models.find((m) => m.providerId === p.id);
+                          if (first) setModelId(first.id);
+                        }}
+                        className={cn(
+                          "rounded-[var(--radius-md)] border px-3 py-2 text-sm font-medium transition-colors",
+                          providerId === p.id
+                            ? "border-cinema/50 bg-cinema/10 text-fg"
+                            : "border-border bg-bg hover:border-border-strong text-fg-muted",
+                        )}
+                      >
+                        {p.label}
+                      </button>
+                    ))
+                  )}
                 </div>
               </div>
 
@@ -271,9 +319,9 @@ function SettingsPage() {
                 </div>
               </div>
 
-              <Button disabled={saving} onClick={() => void onSavePrefs()}>
+              <Button disabled={saving || models.length === 0} onClick={() => void onSavePrefs()}>
                 {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-                Save provider & model
+                Save {capability} provider & model
               </Button>
             </CardContent>
           </Card>
@@ -290,8 +338,8 @@ function SettingsPage() {
                     <p className="text-sm text-fg-muted mt-1 leading-relaxed">
                       Stored as{" "}
                       <code className="text-fg-subtle">{selectedModel.apiKeyEnv}</code> for{" "}
-                      <strong className="text-fg">{selectedModel.providerId}</strong>. Env
-                      inject wins if present; otherwise this database value is used.
+                      <strong className="text-fg">{selectedModel.providerId}</strong>. Same
+                      key store for every capability.
                     </p>
                   </div>
                 </div>

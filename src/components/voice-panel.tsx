@@ -488,7 +488,7 @@ export function VoicePanel({
               );
             })}
             <p className="text-xs text-fg-subtle leading-relaxed">
-              Models: see <code className="text-fg-muted">src/data/models/voice-models.json</code>
+              Models: see <code className="text-fg-muted">src/data/models/models.json</code>
               . Mock clone → fake MP3 → client stitch. ElevenLabs entry is disabled until
               keyed.
             </p>

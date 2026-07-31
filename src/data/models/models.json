@@ -1,8 +1,14 @@
 {
   "version": 1,
-  "description": "Voice model catalog. Add providers here; Settings UI and server prefs pick among them. API keys live in ptm_secrets / env — never in this file.",
+  "description": "Single model catalog for the app — voice, video, chat, image, etc. Settings + server prefs select by capability. API keys live in ptm_secrets / env, never here.",
   "defaults": {
-    "cloneProvider": "mock",
+    "voice": "mock-instant-clone",
+    "video": null,
+    "chat": null,
+    "image": null,
+    "face_swap": null
+  },
+  "sampleDefaults": {
     "sampleMinSec": 2,
     "sampleTargetSec": 12,
     "sampleMaxSec": 20,
@@ -12,6 +18,7 @@
   "models": [
     {
       "id": "mock-instant-clone",
+      "capability": "voice",
       "providerId": "mock",
       "displayName": "Mock Instant Clone",
       "description": "Synthetic MP3 on the client — no API key. Always available for demos.",
@@ -39,9 +46,10 @@
     },
     {
       "id": "elevenlabs-instant-ivc",
+      "capability": "voice",
       "providerId": "elevenlabs",
       "displayName": "ElevenLabs Instant Voice Clone",
-      "description": "Clone from a short sample, then TTS lines. Store key in Settings (or ELEVENLABS_API_KEY env). Audio returns to client media store for stitch.",
+      "description": "Clone from a short sample, then TTS lines. Key in Settings or ELEVENLABS_API_KEY. Audio returns to client media store for stitch.",
       "kind": "instant_clone",
       "apiModelId": "eleven_multilingual_v2",
       "cloneEndpoint": "https://api.elevenlabs.io/v1/voices/add",

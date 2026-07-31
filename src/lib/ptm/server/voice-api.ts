@@ -1,10 +1,9 @@
 /**
  * Voice clone / TTS server functions.
- * Client sends capture bytes; server calls the configured provider; MP3 returns
- * to the client for IndexedDB storage + stitch (same media architecture).
+ * Models come from the single models.json catalog (capability: voice).
  */
 import { createServerFn } from "@tanstack/react-start";
-import catalog from "@/data/models/voice-models.json";
+import { getModel } from "@/lib/ptm/models/catalog";
 import { elevenLabsCreateVoice, elevenLabsSpeak } from "./elevenlabs";
 import { ptmAuthMiddleware } from "./ptm-auth";
 import { resolveVoiceRuntime } from "./settings-api";
@@ -31,10 +30,6 @@ export const getVoiceRuntimeStatus = createServerFn({ method: "GET" })
     };
   });
 
-/**
- * Instant clone from a client capture (base64).
- * Returns provider voice id for later TTS — does not store audio on server.
- */
 export const cloneVoiceOnServer = createServerFn({ method: "POST" })
   .middleware([ptmAuthMiddleware])
   .validator(
@@ -84,9 +79,6 @@ export const cloneVoiceOnServer = createServerFn({ method: "POST" })
     };
   });
 
-/**
- * Speak a line with a provider voice id; returns MP3 base64 for client store.
- */
 export const speakLineOnServer = createServerFn({ method: "POST" })
   .middleware([ptmAuthMiddleware])
   .validator(
@@ -98,14 +90,13 @@ export const speakLineOnServer = createServerFn({ method: "POST" })
   )
   .handler(async ({ context, data }) => {
     const rt = await resolveVoiceRuntime(context.userId);
-    const model = catalog.models.find((m) => m.id === rt.modelId);
+    const model = getModel(rt.modelId);
     const apiModelId =
       model && "apiModelId" in model
         ? ((model as { apiModelId?: string | null }).apiModelId ?? undefined)
         : undefined;
 
     if (rt.providerId === "mock" || !rt.apiKey) {
-      // Client will fall back to local mock MP3
       return {
         status: "demo" as const,
         castMemberId: data.castMemberId,

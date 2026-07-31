@@ -1,24 +1,32 @@
-import catalog from "@/data/models/voice-models.json";
+/**
+ * Voice-facing helpers over the single models.json catalog.
+ * Prefer @/lib/ptm/models/catalog for multi-capability code.
+ */
+import {
+  getDefaultModel,
+  getModel,
+  listModels,
+  sampleDefaults,
+  type CatalogModel,
+} from "./catalog";
 
-export type VoiceModelDef = (typeof catalog.models)[number];
+export type VoiceModelDef = CatalogModel;
 
 export function listVoiceModels(): VoiceModelDef[] {
-  return catalog.models as VoiceModelDef[];
+  return listModels("voice");
 }
 
 export function getDefaultVoiceModel(): VoiceModelDef {
-  const id = catalog.defaults.cloneProvider;
-  const byProvider = catalog.models.find(
-    (m) => m.providerId === id && m.enabled,
-  );
-  if (byProvider) return byProvider as VoiceModelDef;
-  const enabled = catalog.models.find((m) => m.enabled);
-  if (!enabled) throw new Error("No voice models enabled");
-  return enabled as VoiceModelDef;
+  return getDefaultModel("voice");
 }
 
 export function getVoiceModel(modelId: string): VoiceModelDef | undefined {
-  return catalog.models.find((m) => m.id === modelId) as VoiceModelDef | undefined;
+  const m = getModel(modelId);
+  if (!m || m.capability !== "voice") return undefined;
+  return m;
 }
 
-export const voiceModelDefaults = catalog.defaults;
+export const voiceModelDefaults = {
+  cloneProvider: getDefaultVoiceModel().providerId,
+  ...sampleDefaults,
+};
