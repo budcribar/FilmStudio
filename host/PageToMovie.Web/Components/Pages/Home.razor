@@ -286,101 +286,85 @@
     </div>
 
     <div class="col-md-7">
-        <div class="card">
-            <button type="button"
-                    class="card-header d-flex justify-content-between align-items-center w-100 border-0 text-start home-jobs-toggle"
-                    data-testid="home-jobs-toggle"
-                    aria-expanded="@(_jobsExpanded ? "true" : "false")"
-                    @onclick="ToggleJobsExpanded">
-                <span class="d-flex align-items-center gap-2">
-                    <span class="home-jobs-chevron @(_jobsExpanded ? "home-jobs-chevron--open" : null)" aria-hidden="true">▾</span>
-                    <span>My jobs</span>
-                    @if (HasActiveJob)
-                    {
-                        <span class="badge text-bg-primary">@FriendlyStatus(_job!.Status)</span>
-                    }
-                </span>
-                <span class="badge text-bg-secondary">@_myJobs.Count</span>
-            </button>
-            @if (_jobsExpanded)
-            {
-                <div class="card-body">
-                    @if (_myJobs.Count == 0 && _job is null)
-                    {
-                        <p class="text-muted mb-0">No recent jobs. Generation and adaptation work will show up here.</p>
-                    }
-                    else
-                    {
-                        <ul class="list-group list-group-flush mb-3">
-                            @foreach (var j in _myJobs.Take(8))
-                            {
-                                <li class="list-group-item px-0 py-2 small">
-                                    <span class="badge bg-secondary">@FriendlyStatus(j.Status)</span>
-                                    <span>@FriendlyKind(j.Kind)</span>
-                                    @if (j.Total > 0) { <span class="text-muted">@j.Index/@j.Total</span> }
-                                    <div class="text-muted">@FriendlyJobLine(j)</div>
-                                </li>
-                            }
-                        </ul>
-                    }
-                    @if (_job is not null)
-                    {
-                        var jobLine = FriendlyJobLine(_job);
-                        var showError = string.Equals(_job.Status, "error", StringComparison.OrdinalIgnoreCase)
-                                        && !string.IsNullOrWhiteSpace(_job.Error);
-                        <p class="mb-1">
-                            <strong>Current:</strong>
-                            <span class="badge bg-secondary">@FriendlyStatus(_job.Status)</span>
-                            @if (_job.Total > 0)
-                            {
-                                <span class="ms-1">@_job.Index / @_job.Total</span>
-                            }
-                        </p>
-                        @if (showError || string.Equals(_job.Status, "error", StringComparison.OrdinalIgnoreCase))
-                        {
-                            <div class="alert alert-danger py-2 small mb-2">
-                                <div class="fw-semibold mb-1">@FriendlyKind(_job.Kind) failed</div>
-                                <div>@FriendlyOperatorError(_job)</div>
-                                @if (Session.IsAdmin &&
-                                     !string.IsNullOrWhiteSpace(_job.Error) &&
-                                     !string.Equals(_job.Error.Trim(), FriendlyOperatorError(_job), StringComparison.Ordinal))
-                                {
-                                    <div class="text-muted mt-1" style="word-break: break-word;">
-                                        <code class="small">@_job.Error</code>
-                                    </div>
-                                }
-                            </div>
-                        }
-                        else if (!string.IsNullOrWhiteSpace(jobLine))
-                        {
-                            <p class="small mb-2">@jobLine</p>
-                        }
-                        @if (Session.IsAdmin && _job.Log.Count > 0)
-                        {
-                            <details class="mb-2" open="@JobLogHasVideoPayload(_job)">
-                                <summary class="small text-muted" style="cursor:pointer">
-                                    Details (admin)
-                                    @if (JobLogHasVideoPayload(_job))
-                                    {
-                                        <span class="badge text-bg-dark ms-1">video API</span>
-                                    }
-                                </summary>
-                                <pre class="small mb-0 mt-1" style="max-height: 420px; overflow: auto; white-space: pre-wrap;">@string.Join("\n", _job.Log.TakeLast(400))</pre>
-                                <p class="form-text mb-0 mt-1">
-                                    Full prompts also under <code>projects/…/assets/video/prompts/SxxCyy.txt</code>
-                                </p>
-                            </details>
-                        }
-                        @if (string.Equals(_job.Status, "running", StringComparison.OrdinalIgnoreCase) ||
-                             string.Equals(_job.Status, "queued", StringComparison.OrdinalIgnoreCase))
-                        {
-                            <button class="btn btn-outline-danger btn-sm mt-2" disabled="@_busy" @onclick="CancelAsync">
-                                Cancel
-                            </button>
-                        }
-                    }
+        @if (ActiveProject.HasProject)
+        {
+            <div class="card mb-3 border-primary shadow-sm">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <span class="fw-bold fs-6">🎬 Active Project: @ActiveProject.ProjectId</span>
+                    <a href="configuration" class="btn btn-sm btn-light fw-semibold">⚙️ Configuration &amp; Services</a>
                 </div>
-            }
+                <div class="card-body">
+                    <p class="text-muted small mb-3">
+                        Work through the film production workflow steps below or switch projects in the list to the left.
+                    </p>
+
+                    <div class="row g-2">
+                        <div class="col-6 col-md-3">
+                            <a href="adaptation" class="btn btn-outline-primary w-100 py-3 text-center text-decoration-none rounded-3 h-100 d-flex flex-column align-items-center justify-content-center">
+                                <span class="fs-2 mb-1">📜</span>
+                                <strong class="small">1. Adaptation</strong>
+                                <span class="badge bg-secondary mt-1" style="font-size:0.65rem;">Screenplay &amp; Shots</span>
+                            </a>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <a href="characters" class="btn btn-outline-primary w-100 py-3 text-center text-decoration-none rounded-3 h-100 d-flex flex-column align-items-center justify-content-center @(ActiveProject.CanCharacters ? "" : "disabled opacity-50")">
+                                <span class="fs-2 mb-1">👥</span>
+                                <strong class="small">2. Characters</strong>
+                                <span class="badge bg-secondary mt-1" style="font-size:0.65rem;">Cast &amp; Portraits</span>
+                            </a>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <a href="scenes" class="btn btn-outline-primary w-100 py-3 text-center text-decoration-none rounded-3 h-100 d-flex flex-column align-items-center justify-content-center @(ActiveProject.CanScenes ? "" : "disabled opacity-50")">
+                                <span class="fs-2 mb-1">🎬</span>
+                                <strong class="small">3. Scenes</strong>
+                                <span class="badge bg-secondary mt-1" style="font-size:0.65rem;">Clips &amp; Music</span>
+                            </a>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <a href="review" class="btn btn-outline-primary w-100 py-3 text-center text-decoration-none rounded-3 h-100 d-flex flex-column align-items-center justify-content-center @(ActiveProject.CanReview ? "" : "disabled opacity-50")">
+                                <span class="fs-2 mb-1">✅</span>
+                                <strong class="small">4. Review</strong>
+                                <span class="badge bg-secondary mt-1" style="font-size:0.65rem;">Full Cut &amp; Publish</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+
+        <div class="card shadow-sm">
+            <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+                <span>🌟 Studio Showcase &amp; Film Gallery</span>
+                <a href="/demo" class="btn btn-sm btn-outline-info">View All Demos →</a>
+            </div>
+            <div class="card-body">
+                <p class="small text-muted mb-3">
+                    Explore film adaptations produced with PageToMovie. Select any story from the project menu to start editing, or create a new project.
+                </p>
+
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <div class="border border-secondary rounded p-3 bg-dark bg-opacity-50 h-100 d-flex flex-column justify-content-between">
+                            <div>
+                                <div class="badge bg-danger mb-2">Gothic Drama</div>
+                                <h6 class="fw-bold text-white mb-1">The Tell-Tale Heart</h6>
+                                <p class="small text-muted mb-2">Edgar Allan Poe's chilling masterpiece adapted into cinematic video with orchestrations by Suno AI.</p>
+                            </div>
+                            <a href="/demo" class="btn btn-sm btn-outline-light w-100 mt-2">Watch Demo Film</a>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="border border-secondary rounded p-3 bg-dark bg-opacity-50 h-100 d-flex flex-column justify-content-between">
+                            <div>
+                                <div class="badge bg-primary mb-2">Animation / Storybook</div>
+                                <h6 class="fw-bold text-white mb-1">Buster &amp; Nick</h6>
+                                <p class="small text-muted mb-2">Character-locked visual story featuring hero animals and stylized continuous video clips.</p>
+                            </div>
+                            <a href="/demo" class="btn btn-sm btn-outline-light w-100 mt-2">Watch Demo Film</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </div>

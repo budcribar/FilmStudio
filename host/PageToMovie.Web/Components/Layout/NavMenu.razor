@@ -15,11 +15,21 @@
     <nav class="nav flex-column nav-main" aria-label="Main">
         <div class="nav-main-links">
         <div class="nav-item px-3">
-            <NavLink class="nav-link" href="/" Match="NavLinkMatch.All" title="Studio" data-testid="nav-studio">
+            <NavLink class="nav-link" href="/" Match="NavLinkMatch.All" title="Home & Studio Overview" data-testid="nav-studio">
                 <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span>
-                @if (!Collapsed) { <span class="nav-label">Studio</span> }
+                @if (!Collapsed) { <span class="nav-label">Home</span> }
             </NavLink>
         </div>
+
+        @if (Session.IsLoggedIn)
+        {
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="/configuration" title="Configuration & Projects" data-testid="nav-configuration">
+                    <span class="bi bi-gear-fill-nav-menu" aria-hidden="true"></span>
+                    @if (!Collapsed) { <span class="nav-label">Configuration</span> }
+                </NavLink>
+            </div>
+        }
 
         <div class="nav-item px-3">
             <NavLink class="nav-link" href="/demo" title="Public demo gallery — no sign-in required" data-testid="nav-demo">
@@ -69,15 +79,7 @@
             </div>
         }
 
-        @if (Session.IsLoggedIn)
-        {
-            <div class="nav-item px-3">
-                <NavLink class="nav-link" href="/configuration" title="Configuration">
-                    <span class="bi bi-gear-fill-nav-menu" aria-hidden="true"></span>
-                    @if (!Collapsed) { <span class="nav-label">Configuration</span> }
-                </NavLink>
-            </div>
-        }
+
 
         @if (Session.IsAdmin)
         {
