@@ -906,7 +906,7 @@ hr {
     opacity: 1;
 }
 
-/* Nav Pills (Step navigation) */
+/* Nav Pills (legacy step nav — keep for other pages) */
 .nav-pills .nav-link {
     color: var(--fs-text-muted);
     background: var(--fs-overlay-soft);
@@ -918,10 +918,10 @@ hr {
 }
 
 .nav-pills .nav-link.active {
-    background: linear-gradient(135deg, rgba(99, 102, 241, 0.2) 0%, rgba(79, 70, 229, 0.2) 100%);
+    background: linear-gradient(135deg, rgba(107, 140, 174, 0.22) 0%, rgba(90, 122, 154, 0.18) 100%);
     border-color: var(--fs-accent-indigo);
-    color: var(--fs-accent-indigo-hover);
-    box-shadow: 0 2px 8px rgba(99, 102, 241, 0.2);
+    color: var(--fs-link-hover);
+    box-shadow: 0 2px 8px rgba(107, 140, 174, 0.2);
 }
 
 .nav-pills .nav-link:hover:not(.active):not(.disabled) {
@@ -932,6 +932,117 @@ hr {
 .nav-pills .nav-link.disabled {
     opacity: 0.4;
     cursor: not-allowed;
+}
+
+/* —— Prototype book pipeline step strip —— */
+.ptm-adapt-kicker {
+    display: block;
+    font-size: 0.65rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    font-weight: 600;
+    color: var(--fs-accent-indigo);
+    margin-bottom: 0.35rem;
+}
+.ptm-adapt-title {
+    font-family: 'Outfit', sans-serif;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    font-size: clamp(1.5rem, 2.5vw, 1.85rem);
+}
+.ptm-adapt-lede {
+    margin-top: 0.35rem;
+    max-width: 36rem;
+    font-size: 0.9rem;
+    color: var(--fs-text-muted);
+    line-height: 1.45;
+}
+.ptm-step-strip {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0.65rem;
+    margin: 0 0 1.35rem;
+}
+@media (max-width: 900px) {
+    .ptm-step-strip {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+@media (max-width: 420px) {
+    .ptm-step-strip {
+        grid-template-columns: 1fr;
+    }
+}
+.ptm-step {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.65rem;
+    text-decoration: none;
+    color: var(--fs-text-primary);
+    background: var(--fs-bg-card);
+    border: 1px solid var(--fs-border-color);
+    border-radius: 12px;
+    padding: 0.75rem 0.85rem;
+    box-shadow: var(--fs-shadow-card);
+    transition: border-color 0.15s ease, background 0.15s ease, transform 0.15s ease;
+    min-height: 4.25rem;
+}
+.ptm-step:hover:not(.is-disabled) {
+    border-color: var(--fs-border-hover);
+    background: var(--fs-bg-card-hover);
+    color: var(--fs-text-primary);
+}
+.ptm-step.is-active {
+    border-color: var(--fs-accent-indigo);
+    background:
+        radial-gradient(ellipse 90% 80% at 0% 0%, rgba(107, 140, 174, 0.18), transparent 60%),
+        var(--fs-bg-card);
+    box-shadow: 0 0 0 1px rgba(107, 140, 174, 0.25), var(--fs-shadow-card);
+}
+.ptm-step.is-disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+.ptm-step__num {
+    flex: 0 0 1.6rem;
+    width: 1.6rem;
+    height: 1.6rem;
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    font-weight: 700;
+    font-family: 'Outfit', sans-serif;
+    background: rgba(107, 140, 174, 0.15);
+    color: var(--fs-accent-indigo);
+    border: 1px solid rgba(107, 140, 174, 0.35);
+}
+.ptm-step.is-active .ptm-step__num {
+    background: var(--fs-accent-indigo);
+    color: #0a0b0d;
+    border-color: transparent;
+}
+.ptm-step__body {
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+    min-width: 0;
+}
+.ptm-step__label {
+    font-family: 'Outfit', sans-serif;
+    font-weight: 600;
+    font-size: 0.92rem;
+    letter-spacing: -0.01em;
+}
+.ptm-step__hint {
+    font-size: 0.72rem;
+    color: var(--fs-text-muted);
+    line-height: 1.3;
+}
+.ptm-hub-wait {
+    color: var(--fs-text-muted);
 }
 
 /* Badges */

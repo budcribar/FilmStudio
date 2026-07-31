@@ -47,3 +47,13 @@ dotnet run --project PageToMovie.Api
 ```
 
 Open the UI on port 8080 (or your usual `5088` if preferred).
+
+
+## Pass 2 (this update)
+
+- **Adaptation step strip** restyled as numbered cinema cards: Book → Screenplay → Cast & voice → Shot plan  
+- Unlock rules unchanged (`OutlineEnabled` / `ShotsEnabled` / job lock)  
+- Hub `/adaptation` wait copy  
+- Import north-star drop copy  
+- Settings / Estimate & cost labels  
+- Characters page title → Cast & voice  

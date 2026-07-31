@@ -4,7 +4,7 @@
 @using Microsoft.AspNetCore.Components.Forms
 @inject AdminSessionService Session
 
-<PageTitle>Adaptation · Import</PageTitle>
+<PageTitle>Book · Import</PageTitle>
 
 <AdaptationShell Host="this" Step="import">
     @if (Status is not null)
@@ -15,13 +15,14 @@
                 <div>
                     <strong>⚠️ Service Connection Required:</strong> Connect your AI provider to convert stories into screenplays.
                 </div>
-                <a class="btn btn-sm btn-warning fw-semibold" href="configuration">Connect your AI provider →</a>
+                <a class="btn btn-sm btn-warning fw-semibold" href="configuration">Open Settings →</a>
             </div>
         }
 
         <div class="card mb-4">
             <div class="card-body p-4">
-                <h5 class="card-title mb-3">Upload Source File</h5>
+                <h5 class="card-title mb-1">Drop in a book or screenplay</h5>
+                <p class="text-muted small mb-3">North star: upload PDF, text, or fountain — then the pipeline does the rest. You can edit after.</p>
                 <div class="mb-3">
                     <InputFile OnChange="OnSourceSelectedAsync"
                                class="form-control"
