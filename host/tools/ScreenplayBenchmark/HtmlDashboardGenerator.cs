@@ -194,7 +194,14 @@ public static class HtmlDashboardGenerator
         <span style=""font-size: 0.85rem; color: var(--text-muted);"">Date Run: <strong id=""global-date-subtitle"" style=""color: var(--text-main);"">—</strong></span>
       </div>
       <p style=""color: var(--text-muted); font-size: 0.85rem;"">Aggregated average composite scores (40% C# Syntax + 60% LLM Peer Ratings) across all benchmarked books in the evaluation suite. Click any column header to sort.</p>
-      
+
+      <div style=""display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; margin-bottom: 1rem; padding: 0.75rem; background: rgba(255,255,255,0.02); border: 1px solid var(--border-card); border-radius: 0.5rem;"">
+        <span style=""font-size: 0.8rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;"">Books:</span>
+        <div id=""global-book-filter"" style=""display: flex; gap: 1rem; flex-wrap: wrap; flex: 1;""></div>
+        <button class=""tab-btn"" onclick=""setAllGlobalBooks(true)"" style=""padding: 0.3rem 0.75rem; font-size: 0.78rem;"">Select All</button>
+        <button class=""tab-btn"" onclick=""setAllGlobalBooks(false)"" style=""padding: 0.3rem 0.75rem; font-size: 0.78rem;"">Clear</button>
+      </div>
+
       <table id=""global-table"">
         <thead>
           <tr>
@@ -373,10 +380,137 @@ public static class HtmlDashboardGenerator
       }
     }
 
+    // Client-side port of BenchmarkHistoryStore.IsLiveRun / ComputeGlobalCompositeLeaderboard,
+    // so the Global Leaderboard can be recomputed on demand for an arbitrary book subset without
+    // a server round-trip. Field access mirrors the server's PascalCase/camelCase dual-fallback
+    // convention already used elsewhere in this file (see getSortVal, renderPerBookTable).
+    function isLiveRunJs(run) {
+      if (run.isMockRun || run.IsMockRun) return false;
+      const scores = run.modelScores || run.ModelScores || [];
+      if (scores.length === 0) return false;
+
+      const validScores = scores
+        .filter(m => !(m.isGenerationFallback !== undefined ? m.isGenerationFallback : m.IsGenerationFallback))
+        .map(m => (m.compositeScore !== undefined ? m.compositeScore : m.CompositeScore) || 0)
+        .filter(s => s >= 0);
+      const distinctCount = new Set(validScores).size;
+      if (validScores.length === 0 || (distinctCount <= 1 && validScores.length > 1)) return false;
+
+      const matrix = run.judgeMatrix || run.JudgeMatrix;
+      if (!matrix || Object.keys(matrix).length === 0) return false;
+      return Object.values(matrix).some(row => Object.values(row).some(v => v > 0));
+    }
+
+    function computeGlobalLeaderboardJs(selectedSlugs) {
+      const allRuns = (window.BENCHMARK_HISTORY && window.BENCHMARK_HISTORY.runs) || [];
+      const liveRuns = allRuns
+        .filter(isLiveRunJs)
+        .filter(r => selectedSlugs.has(r.bookSlug || r.BookSlug));
+      if (liveRuns.length === 0) return [];
+
+      const avg = arr => arr.reduce((a, b) => a + b, 0) / arr.length;
+      const round1 = n => Math.round(n * 10) / 10;
+
+      const modelId = m => m.modelId || m.ModelId || 'Unknown';
+      const composite = m => (m.compositeScore !== undefined ? m.compositeScore : m.CompositeScore) || 0;
+      const isFallback = m => !!(m.isGenerationFallback !== undefined ? m.isGenerationFallback : m.IsGenerationFallback);
+      const syntaxAudit = m => m.syntaxAudit || m.SyntaxAudit || {};
+      const sa = (m, key, pkey) => { const s = syntaxAudit(m); return (s[key] !== undefined ? s[key] : s[pkey]) || 0; };
+      const num = (m, key, pkey) => (m[key] !== undefined ? m[key] : m[pkey]) || 0;
+
+      const allModelIds = [...new Set(liveRuns.flatMap(r => (r.modelScores || r.ModelScores || []).map(modelId)))];
+      const result = [];
+
+      allModelIds.forEach(id => {
+        const modelRuns = liveRuns.filter(r => (r.modelScores || r.ModelScores || []).some(m => modelId(m) === id));
+        if (modelRuns.length === 0) return;
+
+        const modelScoresList = modelRuns
+          .map(r => (r.modelScores || r.ModelScores || []).find(m => modelId(m) === id))
+          .filter(m => composite(m) >= 0 && !isFallback(m));
+        if (modelScoresList.length === 0) return;
+
+        let wins = 0;
+        liveRuns.forEach(run => {
+          const validScores = (run.modelScores || run.ModelScores || [])
+            .filter(m => composite(m) >= 0 && !isFallback(m))
+            .sort((a, b) => composite(b) - composite(a));
+          if (validScores.length > 0) {
+            const topScore = composite(validScores[0]);
+            const topTies = validScores.filter(m => Math.abs(composite(m) - topScore) < 0.01);
+            if (topScore > 0 && topTies.length < validScores.length && topTies.some(m => modelId(m) === id)) wins++;
+          }
+        });
+
+        const titles = [...new Set(modelRuns.map(r => {
+          const t = r.bookTitle || r.BookTitle;
+          return (t && t.trim().length > 0) ? t : (r.bookSlug || r.BookSlug);
+        }))];
+
+        result.push({
+          modelId: id,
+          multiBookCompositeScore: round1(avg(modelScoresList.map(composite))),
+          avgSyntaxScore: round1(avg(modelScoresList.map(m => sa(m, 'overallSyntaxScore', 'OverallSyntaxScore')))),
+          avgFormatCompliance: round1(avg(modelScoresList.map(m => sa(m, 'formatComplianceScore', 'FormatComplianceScore')))),
+          avgSceneBudget: round1(avg(modelScoresList.map(m => sa(m, 'sceneBudgetScore', 'SceneBudgetScore')))),
+          avgDialoguePacing: round1(avg(modelScoresList.map(m => sa(m, 'dialoguePacingScore', 'DialoguePacingScore')))),
+          avgCharDisambiguationSyntax: round1(avg(modelScoresList.map(m => sa(m, 'characterDisambiguationScore', 'CharacterDisambiguationScore')))),
+          avgMusicSpec: round1(avg(modelScoresList.map(m => sa(m, 'musicSpecScore', 'MusicSpecScore')))),
+          avgQualitativeScore: round1(avg(modelScoresList.map(m => num(m, 'avgOverallQualitative', 'AvgOverallQualitative') * 10.0))),
+          avgFidelity: round1(avg(modelScoresList.map(m => num(m, 'avgAdaptationFidelity', 'AvgAdaptationFidelity')))),
+          avgCharSplit: round1(avg(modelScoresList.map(m => num(m, 'avgCharacterDisambiguation', 'AvgCharacterDisambiguation')))),
+          avgVideoDirect: round1(avg(modelScoresList.map(m => num(m, 'avgAiVideoDirectibility', 'AvgAiVideoDirectibility')))),
+          avgPacing: round1(avg(modelScoresList.map(m => num(m, 'avgDramaticPacing', 'AvgDramaticPacing')))),
+          avgDialogue: round1(avg(modelScoresList.map(m => num(m, 'avgDialogueAuthenticity', 'AvgDialogueAuthenticity')))),
+          avgMusic: round1(avg(modelScoresList.map(m => num(m, 'avgSoundDesignMusic', 'AvgSoundDesignMusic')))),
+          totalBooksEvaluated: new Set(modelRuns.map(r => (r.bookSlug || r.BookSlug || '').toLowerCase())).size,
+          evaluatedBookTitles: titles,
+          firstPlaceWins: wins,
+        });
+      });
+
+      result.sort((a, b) => b.multiBookCompositeScore - a.multiBookCompositeScore);
+      return result;
+    }
+
+    function getAllGlobalBookSlugs() {
+      const runs = (window.BENCHMARK_HISTORY && window.BENCHMARK_HISTORY.runs) || [];
+      return [...new Set(runs.map(r => r.bookSlug || r.BookSlug))].filter(Boolean);
+    }
+
+    function getSelectedGlobalBookSlugs() {
+      const checked = Array.from(document.querySelectorAll('#global-book-filter input[type=checkbox]:checked'));
+      return new Set(checked.map(c => c.value));
+    }
+
+    function initGlobalBookFilter() {
+      const container = document.getElementById('global-book-filter');
+      if (!container) return;
+      container.innerHTML = '';
+      getAllGlobalBookSlugs().forEach(slug => {
+        const label = document.createElement('label');
+        label.style.cssText = 'display: flex; align-items: center; gap: 0.4rem; font-size: 0.85rem; cursor: pointer;';
+        const cb = document.createElement('input');
+        cb.type = 'checkbox';
+        cb.value = slug;
+        cb.checked = true;
+        cb.onchange = renderGlobalTable;
+        label.appendChild(cb);
+        label.appendChild(document.createTextNode(formatTitle(slug)));
+        container.appendChild(label);
+      });
+    }
+
+    function setAllGlobalBooks(checked) {
+      document.querySelectorAll('#global-book-filter input[type=checkbox]').forEach(cb => { cb.checked = checked; });
+      renderGlobalTable();
+    }
+
     function renderGlobalTable() {
       const thead = document.querySelector('#global-table thead');
       const tbody = document.getElementById('global-tbody');
-      const leaderboard = (window.GLOBAL_LEADERBOARD || []).slice();
+      const selectedSlugs = getSelectedGlobalBookSlugs();
+      const leaderboard = (selectedSlugs.size > 0 ? computeGlobalLeaderboardJs(selectedSlugs) : []);
 
       leaderboard.sort((a, b) => {
         const valA = getSortVal(a, globalSortKey);
@@ -429,7 +563,10 @@ public static class HtmlDashboardGenerator
         let colSpan = 7;
         if (isSyntaxExpanded) colSpan += 5;
         if (isPeerExpanded) colSpan += 6;
-        tbody.innerHTML = `<tr><td colspan=""${colSpan}"" style=""text-align: center; color: var(--text-muted);"">No live benchmark history runs recorded yet. Run a benchmark to populate the leaderboard.</td></tr>`;
+        const msg = selectedSlugs.size === 0
+          ? 'No books selected — check at least one book above to compute a leaderboard.'
+          : 'No live benchmark history runs recorded yet for the selected book(s).';
+        tbody.innerHTML = `<tr><td colspan=""${colSpan}"" style=""text-align: center; color: var(--text-muted);"">${msg}</td></tr>`;
         return;
       }
 
@@ -655,6 +792,7 @@ public static class HtmlDashboardGenerator
 
     window.addEventListener('DOMContentLoaded', () => {
       updateHeaderDates();
+      initGlobalBookFilter();
       renderGlobalTable();
       initBookSelects();
       renderJudgeLeaderboard();

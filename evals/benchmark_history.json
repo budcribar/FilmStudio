@@ -3344,7 +3344,7 @@
         {
           "ModelId": "grok-4.5",
           "AnonymousLabel": "",
-          "CompositeScore": 89.7,
+          "CompositeScore": 89.8,
           "IsGenerationFallback": false,
           "GenerationFallbackReason": null,
           "BordaPoints": 15,
@@ -3391,7 +3391,7 @@
         {
           "ModelId": "gemini-2.5-flash",
           "AnonymousLabel": "",
-          "CompositeScore": 81.1,
+          "CompositeScore": 80.8,
           "IsGenerationFallback": false,
           "GenerationFallbackReason": null,
           "BordaPoints": 9,
@@ -3450,7 +3450,7 @@
         {
           "ModelId": "gemini-3.6-flash",
           "AnonymousLabel": "",
-          "CompositeScore": 78.6,
+          "CompositeScore": 78.8,
           "IsGenerationFallback": false,
           "GenerationFallbackReason": null,
           "BordaPoints": 10,
@@ -3499,7 +3499,7 @@
         {
           "ModelId": "grok-4",
           "AnonymousLabel": "",
-          "CompositeScore": 74.8,
+          "CompositeScore": 74.6,
           "IsGenerationFallback": false,
           "GenerationFallbackReason": null,
           "BordaPoints": 10,
@@ -3561,7 +3561,7 @@
         {
           "ModelId": "o3-mini",
           "AnonymousLabel": "",
-          "CompositeScore": 66.8,
+          "CompositeScore": 67,
           "IsGenerationFallback": false,
           "GenerationFallbackReason": null,
           "BordaPoints": 7,
@@ -3614,7 +3614,7 @@
         {
           "ModelId": "gpt-4o-mini",
           "AnonymousLabel": "",
-          "CompositeScore": 53.9,
+          "CompositeScore": 53.6,
           "IsGenerationFallback": false,
           "GenerationFallbackReason": null,
           "BordaPoints": 4,
@@ -3792,7 +3792,7 @@
         {
           "ModelId": "gemini-3.6-flash",
           "AnonymousLabel": "",
-          "CompositeScore": 90.6,
+          "CompositeScore": 90.4,
           "IsGenerationFallback": false,
           "GenerationFallbackReason": null,
           "BordaPoints": 7,
@@ -3838,7 +3838,7 @@
         {
           "ModelId": "claude-sonnet-5",
           "AnonymousLabel": "",
-          "CompositeScore": 89.6,
+          "CompositeScore": 89.7,
           "IsGenerationFallback": false,
           "GenerationFallbackReason": null,
           "BordaPoints": 6,
@@ -3928,7 +3928,7 @@
         {
           "ModelId": "gpt-4o",
           "AnonymousLabel": "",
-          "CompositeScore": 83.7,
+          "CompositeScore": 84,
           "IsGenerationFallback": false,
           "GenerationFallbackReason": null,
           "BordaPoints": 5,
@@ -4004,7 +4004,7 @@
         {
           "ModelId": "gpt-4o-mini",
           "AnonymousLabel": "",
-          "CompositeScore": 74.7,
+          "CompositeScore": 74.8,
           "IsGenerationFallback": false,
           "GenerationFallbackReason": null,
           "BordaPoints": 2,
@@ -4049,7 +4049,7 @@
         {
           "ModelId": "grok-4",
           "AnonymousLabel": "",
-          "CompositeScore": 69,
+          "CompositeScore": 68.8,
           "IsGenerationFallback": false,
           "GenerationFallbackReason": null,
           "BordaPoints": 1,
@@ -4128,7 +4128,7 @@
         {
           "ModelId": "grok-4.5",
           "AnonymousLabel": "",
-          "CompositeScore": 92,
+          "CompositeScore": 91.8,
           "IsGenerationFallback": false,
           "GenerationFallbackReason": null,
           "BordaPoints": 16,
@@ -4177,7 +4177,7 @@
         {
           "ModelId": "gemini-2.5-flash",
           "AnonymousLabel": "",
-          "CompositeScore": 86.1,
+          "CompositeScore": 86.2,
           "IsGenerationFallback": false,
           "GenerationFallbackReason": null,
           "BordaPoints": 11,
@@ -4226,7 +4226,7 @@
         {
           "ModelId": "claude-sonnet-5",
           "AnonymousLabel": "",
-          "CompositeScore": 85.1,
+          "CompositeScore": 85,
           "IsGenerationFallback": false,
           "GenerationFallbackReason": null,
           "BordaPoints": 12,
@@ -4326,7 +4326,7 @@
         {
           "ModelId": "gemini-3.6-flash",
           "AnonymousLabel": "",
-          "CompositeScore": 81.3,
+          "CompositeScore": 81.4,
           "IsGenerationFallback": false,
           "GenerationFallbackReason": null,
           "BordaPoints": 10,
@@ -4379,7 +4379,7 @@
         {
           "ModelId": "o3-mini",
           "AnonymousLabel": "",
-          "CompositeScore": 77.8,
+          "CompositeScore": 78,
           "IsGenerationFallback": false,
           "GenerationFallbackReason": null,
           "BordaPoints": 8,
@@ -4419,7 +4419,7 @@
         {
           "ModelId": "gpt-4o-mini",
           "AnonymousLabel": "",
-          "CompositeScore": 69,
+          "CompositeScore": 68.8,
           "IsGenerationFallback": false,
           "GenerationFallbackReason": null,
           "BordaPoints": 3,
@@ -4471,7 +4471,7 @@
         {
           "ModelId": "gpt-4o",
           "AnonymousLabel": "",
-          "CompositeScore": 67.7,
+          "CompositeScore": 67.8,
           "IsGenerationFallback": false,
           "GenerationFallbackReason": null,
           "BordaPoints": 3,
@@ -4546,7 +4546,7 @@
         {
           "ModelId": "gpt-5.6-sol",
           "AnonymousLabel": "",
-          "CompositeScore": 91,
+          "CompositeScore": 90.8,
           "IsGenerationFallback": false,
           "GenerationFallbackReason": null,
           "BordaPoints": 18,
@@ -4640,7 +4640,7 @@
         {
           "ModelId": "claude-sonnet-5",
           "AnonymousLabel": "",
-          "CompositeScore": 89.2,
+          "CompositeScore": 89.3,
           "IsGenerationFallback": false,
           "GenerationFallbackReason": null,
           "BordaPoints": 15,
@@ -4691,7 +4691,7 @@
         {
           "ModelId": "grok-4.5",
           "AnonymousLabel": "",
-          "CompositeScore": 86.7,
+          "CompositeScore": 86.8,
           "IsGenerationFallback": false,
           "GenerationFallbackReason": null,
           "BordaPoints": 12,
@@ -4794,7 +4794,7 @@
         {
           "ModelId": "gemini-3.6-flash",
           "AnonymousLabel": "",
-          "CompositeScore": 77.4,
+          "CompositeScore": 77.6,
           "IsGenerationFallback": false,
           "GenerationFallbackReason": null,
           "BordaPoints": 8,
@@ -4843,7 +4843,7 @@
         {
           "ModelId": "grok-4",
           "AnonymousLabel": "",
-          "CompositeScore": 67.1,
+          "CompositeScore": 67.4,
           "IsGenerationFallback": false,
           "GenerationFallbackReason": null,
           "BordaPoints": 6,
@@ -4907,7 +4907,7 @@
         {
           "ModelId": "gpt-4o-mini",
           "AnonymousLabel": "",
-          "CompositeScore": 56.9,
+          "CompositeScore": 56.6,
           "IsGenerationFallback": false,
           "GenerationFallbackReason": null,
           "BordaPoints": 4,
@@ -4963,7 +4963,7 @@
         {
           "ModelId": "o3-mini",
           "AnonymousLabel": "",
-          "CompositeScore": 56,
+          "CompositeScore": 56.2,
           "IsGenerationFallback": false,
           "GenerationFallbackReason": null,
           "BordaPoints": 2,
@@ -5051,7 +5051,7 @@
         {
           "ModelId": "gpt-5.6-sol",
           "AnonymousLabel": "",
-          "CompositeScore": 92.4,
+          "CompositeScore": 92.6,
           "IsGenerationFallback": false,
           "GenerationFallbackReason": null,
           "BordaPoints": 18,
@@ -5096,7 +5096,7 @@
         {
           "ModelId": "gemini-3.6-flash",
           "AnonymousLabel": "",
-          "CompositeScore": 87.1,
+          "CompositeScore": 86.8,
           "IsGenerationFallback": false,
           "GenerationFallbackReason": null,
           "BordaPoints": 12,
@@ -5142,7 +5142,7 @@
         {
           "ModelId": "gpt-5.6-terra",
           "AnonymousLabel": "",
-          "CompositeScore": 87,
+          "CompositeScore": 86.8,
           "IsGenerationFallback": false,
           "GenerationFallbackReason": null,
           "BordaPoints": 13,
@@ -5185,7 +5185,7 @@
         {
           "ModelId": "claude-sonnet-5",
           "AnonymousLabel": "",
-          "CompositeScore": 86.8,
+          "CompositeScore": 86.7,
           "IsGenerationFallback": false,
           "GenerationFallbackReason": null,
           "BordaPoints": 13,
@@ -5230,7 +5230,7 @@
         {
           "ModelId": "grok-4.5",
           "AnonymousLabel": "",
-          "CompositeScore": 86.7,
+          "CompositeScore": 86.4,
           "IsGenerationFallback": false,
           "GenerationFallbackReason": null,
           "BordaPoints": 13,
@@ -5275,7 +5275,7 @@
         {
           "ModelId": "gemini-2.5-flash",
           "AnonymousLabel": "",
-          "CompositeScore": 83.9,
+          "CompositeScore": 84,
           "IsGenerationFallback": false,
           "GenerationFallbackReason": null,
           "BordaPoints": 9,
@@ -5320,7 +5320,7 @@
         {
           "ModelId": "gpt-4o-mini",
           "AnonymousLabel": "",
-          "CompositeScore": 62,
+          "CompositeScore": 62.2,
           "IsGenerationFallback": false,
           "GenerationFallbackReason": null,
           "BordaPoints": 5,
@@ -5369,7 +5369,7 @@
         {
           "ModelId": "o3-mini",
           "AnonymousLabel": "",
-          "CompositeScore": 58,
+          "CompositeScore": 58.2,
           "IsGenerationFallback": false,
           "GenerationFallbackReason": null,
           "BordaPoints": 4,
@@ -5412,7 +5412,7 @@
         {
           "ModelId": "grok-4",
           "AnonymousLabel": "",
-          "CompositeScore": 53,
+          "CompositeScore": 53.2,
           "IsGenerationFallback": false,
           "GenerationFallbackReason": null,
           "BordaPoints": 3,
@@ -5499,7 +5499,7 @@
         {
           "ModelId": "grok-4.5",
           "AnonymousLabel": "",
-          "CompositeScore": 89.8,
+          "CompositeScore": 90,
           "IsGenerationFallback": false,
           "GenerationFallbackReason": null,
           "BordaPoints": 15,
@@ -5597,7 +5597,7 @@
         {
           "ModelId": "gemini-2.5-flash",
           "AnonymousLabel": "",
-          "CompositeScore": 86.1,
+          "CompositeScore": 86.2,
           "IsGenerationFallback": false,
           "GenerationFallbackReason": null,
           "BordaPoints": 11,
@@ -5697,7 +5697,7 @@
         {
           "ModelId": "gpt-5.6-sol",
           "AnonymousLabel": "",
-          "CompositeScore": 83.7,
+          "CompositeScore": 83.5,
           "IsGenerationFallback": false,
           "GenerationFallbackReason": null,
           "BordaPoints": 12,
@@ -5750,7 +5750,7 @@
         {
           "ModelId": "gemini-3.6-flash",
           "AnonymousLabel": "",
-          "CompositeScore": 80.4,
+          "CompositeScore": 80.2,
           "IsGenerationFallback": false,
           "GenerationFallbackReason": null,
           "BordaPoints": 12,
@@ -5804,7 +5804,7 @@
         {
           "ModelId": "grok-4",
           "AnonymousLabel": "",
-          "CompositeScore": 71,
+          "CompositeScore": 70.9,
           "IsGenerationFallback": false,
           "GenerationFallbackReason": null,
           "BordaPoints": 6,
@@ -5857,7 +5857,7 @@
         {
           "ModelId": "gpt-4o-mini",
           "AnonymousLabel": "",
-          "CompositeScore": 62.7,
+          "CompositeScore": 62.8,
           "IsGenerationFallback": false,
           "GenerationFallbackReason": null,
           "BordaPoints": 4,
@@ -5908,7 +5908,7 @@
         {
           "ModelId": "o3-mini",
           "AnonymousLabel": "",
-          "CompositeScore": 60.3,
+          "CompositeScore": 60.6,
           "IsGenerationFallback": false,
           "GenerationFallbackReason": null,
           "BordaPoints": 2,
@@ -5986,7 +5986,7 @@
         {
           "ModelId": "gpt-5.6-terra",
           "AnonymousLabel": "",
-          "CompositeScore": 89.3,
+          "CompositeScore": 89,
           "IsGenerationFallback": false,
           "GenerationFallbackReason": null,
           "BordaPoints": 17,
@@ -6060,7 +6060,7 @@
         {
           "ModelId": "grok-4.5",
           "AnonymousLabel": "",
-          "CompositeScore": 88.7,
+          "CompositeScore": 88.6,
           "IsGenerationFallback": false,
           "GenerationFallbackReason": null,
           "BordaPoints": 15,
@@ -6133,7 +6133,7 @@
         {
           "ModelId": "gemini-2.5-flash",
           "AnonymousLabel": "",
-          "CompositeScore": 88.2,
+          "CompositeScore": 88,
           "IsGenerationFallback": false,
           "GenerationFallbackReason": null,
           "BordaPoints": 13,
@@ -6218,7 +6218,7 @@
         {
           "ModelId": "gemini-3.6-flash",
           "AnonymousLabel": "",
-          "CompositeScore": 87.5,
+          "CompositeScore": 87.4,
           "IsGenerationFallback": false,
           "GenerationFallbackReason": null,
           "BordaPoints": 13,
@@ -6285,7 +6285,7 @@
         {
           "ModelId": "gpt-5.6-sol",
           "AnonymousLabel": "",
-          "CompositeScore": 86.3,
+          "CompositeScore": 86.4,
           "IsGenerationFallback": false,
           "GenerationFallbackReason": null,
           "BordaPoints": 10,
@@ -6346,7 +6346,7 @@
         {
           "ModelId": "claude-sonnet-5",
           "AnonymousLabel": "",
-          "CompositeScore": 85.8,
+          "CompositeScore": 85.6,
           "IsGenerationFallback": false,
           "GenerationFallbackReason": null,
           "BordaPoints": 10,
@@ -6419,7 +6419,7 @@
         {
           "ModelId": "grok-4",
           "AnonymousLabel": "",
-          "CompositeScore": 77.1,
+          "CompositeScore": 77.2,
           "IsGenerationFallback": false,
           "GenerationFallbackReason": null,
           "BordaPoints": 6,
@@ -6481,7 +6481,7 @@
         {
           "ModelId": "gpt-4o-mini",
           "AnonymousLabel": "",
-          "CompositeScore": 59.7,
+          "CompositeScore": 60,
           "IsGenerationFallback": false,
           "GenerationFallbackReason": null,
           "BordaPoints": 4,
@@ -6543,7 +6543,7 @@
         {
           "ModelId": "o3-mini",
           "AnonymousLabel": "",
-          "CompositeScore": 54.7,
+          "CompositeScore": 55,
           "IsGenerationFallback": false,
           "GenerationFallbackReason": null,
           "BordaPoints": 2,
@@ -6637,7 +6637,7 @@
         {
           "ModelId": "gpt-5.6-terra",
           "AnonymousLabel": "",
-          "CompositeScore": 89,
+          "CompositeScore": 89.2,
           "IsGenerationFallback": false,
           "GenerationFallbackReason": null,
           "BordaPoints": 16,
@@ -6686,7 +6686,7 @@
         {
           "ModelId": "gemini-3.6-flash",
           "AnonymousLabel": "",
-          "CompositeScore": 88.3,
+          "CompositeScore": 88.1,
           "IsGenerationFallback": false,
           "GenerationFallbackReason": null,
           "BordaPoints": 14,
@@ -6738,7 +6738,7 @@
         {
           "ModelId": "claude-sonnet-5",
           "AnonymousLabel": "",
-          "CompositeScore": 87.8,
+          "CompositeScore": 87.6,
           "IsGenerationFallback": false,
           "GenerationFallbackReason": null,
           "BordaPoints": 15,
@@ -6795,7 +6795,7 @@
         {
           "ModelId": "grok-4.5",
           "AnonymousLabel": "",
-          "CompositeScore": 87,
+          "CompositeScore": 86.8,
           "IsGenerationFallback": false,
           "GenerationFallbackReason": null,
           "BordaPoints": 13,
@@ -6844,7 +6844,7 @@
         {
           "ModelId": "gemini-2.5-flash",
           "AnonymousLabel": "",
-          "CompositeScore": 83.9,
+          "CompositeScore": 83.8,
           "IsGenerationFallback": false,
           "GenerationFallbackReason": null,
           "BordaPoints": 8,
@@ -6899,7 +6899,7 @@
         {
           "ModelId": "gpt-5.6-sol",
           "AnonymousLabel": "",
-          "CompositeScore": 83.3,
+          "CompositeScore": 83.1,
           "IsGenerationFallback": false,
           "GenerationFallbackReason": null,
           "BordaPoints": 10,
@@ -6952,7 +6952,7 @@
         {
           "ModelId": "grok-4",
           "AnonymousLabel": "",
-          "CompositeScore": 82.9,
+          "CompositeScore": 83,
           "IsGenerationFallback": false,
           "GenerationFallbackReason": null,
           "BordaPoints": 8,
@@ -7007,7 +7007,7 @@
         {
           "ModelId": "gpt-4o-mini",
           "AnonymousLabel": "",
-          "CompositeScore": 64.3,
+          "CompositeScore": 64.4,
           "IsGenerationFallback": false,
           "GenerationFallbackReason": null,
           "BordaPoints": 4,
@@ -7061,7 +7061,7 @@
         {
           "ModelId": "o3-mini",
           "AnonymousLabel": "",
-          "CompositeScore": 55.8,
+          "CompositeScore": 56.1,
           "IsGenerationFallback": false,
           "GenerationFallbackReason": null,
           "BordaPoints": 2,
