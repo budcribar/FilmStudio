@@ -8,11 +8,13 @@ import {
   type CastMember,
 } from "./characters";
 import { estimateProduction } from "./estimate";
+import { getVoiceCloneProvider } from "./providers/voice-clone";
 import type { FilmProject, ProjectStage, ProjectStatus, WizardStep } from "./types";
 import { resumeStage } from "./types";
 import {
   emptyVoiceAddon,
   syncVoiceFromCast,
+  voiceAssetsForClone,
   voiceCreditsExtra,
   voiceRolesCount,
   type VoiceAddon,
@@ -20,7 +22,7 @@ import {
 import { useWallet } from "./wallet";
 
 /** Bump when FilmProject shape changes; normalize() migrates older localStorage. */
-export const PROJECT_STORE_VERSION = 2;
+export const PROJECT_STORE_VERSION = 3;
 
 function uid() {
   return `p_${Math.random().toString(36).slice(2, 10)}`;
@@ -101,16 +103,6 @@ function normalize(project: FilmProject): FilmProject {
       ? "cast"
       : "done";
 
-  // Legacy: projects that jumped cast → estimate without voice
-  if (
-    status === "setup" &&
-    wizardStep === "estimate" &&
-    project.castingConfirmed &&
-    !(project as { voice?: VoiceAddon }).voice
-  ) {
-    // leave on estimate; voice will default to stock via emptyVoiceAddon
-  }
-
   const cast =
     project.cast?.length > 0
       ? project.cast.map((c) => ({
@@ -119,10 +111,7 @@ function normalize(project: FilmProject): FilmProject {
         }))
       : suggestCastFromSource(project.sourceText || "", project.title);
 
-  const voice = syncVoiceFromCast(
-    cast,
-    project.voice ?? emptyVoiceAddon(),
-  );
+  const voice = syncVoiceFromCast(cast, project.voice ?? emptyVoiceAddon());
 
   const base: FilmProject = {
     ...project,
@@ -203,6 +192,16 @@ function voiceLine(project: FilmProject) {
   const n = voiceRolesCount(project.voice);
   if (n === 0) return "Mixing stock voices…";
   return `Cloning ${n} personal voice${n === 1 ? "" : "s"}…`;
+}
+
+/** Prep clone jobs from captured assets (demo provider until live keys). */
+async function prepareVoiceClones(project: FilmProject) {
+  const assets = voiceAssetsForClone(project.voice);
+  if (!assets.length) return;
+  const provider = getVoiceCloneProvider();
+  for (const sample of assets) {
+    await provider.createClone(sample);
+  }
 }
 
 export const useProjects = create<Store>()(
@@ -312,20 +311,15 @@ export const useProjects = create<Store>()(
       },
 
       setWizardStep: (id, step) => {
-        // Editing cast/voice from a finished project returns to setup without wiping unlocks
         const project = get().projects.find((p) => p.id === id);
         if (!project) return;
         if (step === "done") {
           get().updateProject(id, { wizardStep: "done" });
           return;
         }
-        const keepStatus =
-          project.status === "ready" || project.status === "sample"
-            ? project.status
-            : "setup";
         get().updateProject(id, {
           wizardStep: step,
-          status: keepStatus === "ready" || keepStatus === "sample" ? "setup" : "setup",
+          status: "setup",
         });
       },
 
@@ -352,6 +346,8 @@ export const useProjects = create<Store>()(
             enabled: false,
             hasSample: false,
             source: null,
+            asset: undefined,
+            consent: false,
           })),
         };
         get().updateProject(id, {
@@ -407,6 +403,8 @@ export const useProjects = create<Store>()(
         }
 
         const update = (patch: Partial<FilmProject>) => get().updateProject(id, patch);
+        // Fire demo clone prep (no-op when no assets)
+        await prepareVoiceClones(project);
         const labels = [
           project.sourceKind === "classic"
             ? "Loading cached screenplay…"
@@ -444,6 +442,7 @@ export const useProjects = create<Store>()(
           };
         }
 
+        await prepareVoiceClones(project);
         const update = (patch: Partial<FilmProject>) => get().updateProject(id, patch);
         const labels =
           project.sourceKind === "classic"
@@ -486,6 +485,7 @@ export const useProjects = create<Store>()(
         if (!useWallet.getState().spend(cost)) {
           return { ok: false, reason: "Not enough credits" };
         }
+        await prepareVoiceClones(project);
         const update = (patch: Partial<FilmProject>) => get().updateProject(id, patch);
         await simulatePipeline(update, [
           "Applying cast updates…",
@@ -520,8 +520,7 @@ export const useProjects = create<Store>()(
       migrate: (persisted, fromVersion) => {
         const p = persisted as { projects?: FilmProject[] };
         if (!p?.projects) return persisted as never;
-        // v0/v1 → v2: ensure voice + wizardStep
-        if (fromVersion < 2) {
+        if (fromVersion < 3) {
           return {
             ...p,
             projects: p.projects.map((proj) => normalize(proj as FilmProject)),

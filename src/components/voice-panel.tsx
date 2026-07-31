@@ -1,15 +1,24 @@
-import { Check, Mic, MicOff, SkipForward, Upload, Video } from "lucide-react";
-import { useRef, useState } from "react";
+import { Check, Mic, MicOff, Pause, Play, SkipForward, Square, Upload, Video } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import {
+  CAPTURE_TARGET_SEC,
+  captureErrorMessage,
+  CaptureError,
+  fileToCaptureAsset,
+  formatCaptureLabel,
+  isMicSupported,
+  startMicSession,
+  type MicRecorderSession,
+} from "@/lib/ptm/capture/audio-capture";
 import {
   VOICE_ADDON_BASE_CREDITS,
   VOICE_PER_ROLE_CREDITS,
   voiceCreditsExtra,
   voiceRolesReady,
   type VoiceAddon,
-  type VoiceSampleSource,
 } from "@/lib/ptm/voice";
 import { cn } from "@/lib/utils";
 
@@ -23,18 +32,54 @@ type Props = {
 
 export function VoicePanel({ voice, disabled, onChange, onSkip, onContinue }: Props) {
   const fileRefs = useRef<Record<string, HTMLInputElement | null>>({});
+  const sessionRef = useRef<MicRecorderSession | null>(null);
   const [recordingId, setRecordingId] = useState<string | null>(null);
+  const [elapsed, setElapsed] = useState(0);
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const [errorById, setErrorById] = useState<Record<string, string>>({});
+  const [playingId, setPlayingId] = useState<string | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const micOk = isMicSupported();
+
+  useEffect(() => {
+    return () => {
+      sessionRef.current?.cancel();
+      sessionRef.current = null;
+      audioRef.current?.pause();
+    };
+  }, []);
 
   const extra = voiceCreditsExtra(voice);
   const ready = voiceRolesReady(voice);
   const hasCandidates = voice.samples.length > 0;
+
+  function setError(castMemberId: string, msg: string) {
+    setErrorById((m) => ({ ...m, [castMemberId]: msg }));
+  }
+
+  function clearError(castMemberId: string) {
+    setErrorById((m) => {
+      const next = { ...m };
+      delete next[castMemberId];
+      return next;
+    });
+  }
 
   function setEnabledMaster(enabled: boolean) {
     onChange({
       ...voice,
       enabled,
       samples: voice.samples.map((s) =>
-        enabled ? s : { ...s, enabled: false, hasSample: false, source: null },
+        enabled
+          ? s
+          : {
+              ...s,
+              enabled: false,
+              hasSample: false,
+              source: null,
+              asset: undefined,
+              consent: false,
+            },
       ),
     });
   }
@@ -52,28 +97,91 @@ export function VoicePanel({ voice, disabled, onChange, onSkip, onContinue }: Pr
     });
   }
 
-  function simulateRecord(castMemberId: string, name: string) {
-    setRecordingId(castMemberId);
-    window.setTimeout(() => {
+  async function startMic(castMemberId: string) {
+    if (disabled || recordingId) return;
+    clearError(castMemberId);
+    try {
+      const session = await startMicSession({
+        onTick: (sec) => setElapsed(sec),
+      });
+      sessionRef.current = session;
+      setRecordingId(castMemberId);
+      setElapsed(0);
+    } catch (err) {
+      setError(castMemberId, captureErrorMessage(err));
+    }
+  }
+
+  async function stopMic(castMemberId: string, displayName: string) {
+    const session = sessionRef.current;
+    if (!session) return;
+    setBusyId(castMemberId);
+    try {
+      const asset = await session.stop();
+      sessionRef.current = null;
+      setRecordingId(null);
       patchSample(castMemberId, {
         enabled: true,
         hasSample: true,
-        source: "mic" as VoiceSampleSource,
-        sampleLabel: `Mic · ~12s · ${name}`,
+        source: "mic",
+        asset,
+        sampleLabel: `${formatCaptureLabel(asset, "mic")} · ${displayName}`,
       });
+      clearError(castMemberId);
+    } catch (err) {
+      sessionRef.current = null;
       setRecordingId(null);
-    }, 1100);
+      if (!(err instanceof CaptureError && err.code === "aborted")) {
+        setError(castMemberId, captureErrorMessage(err));
+      }
+    } finally {
+      setBusyId(null);
+      setElapsed(0);
+    }
   }
 
-  function onFile(castMemberId: string, file: File | undefined) {
+  function cancelMic() {
+    sessionRef.current?.cancel();
+    sessionRef.current = null;
+    setRecordingId(null);
+    setElapsed(0);
+  }
+
+  async function onFile(castMemberId: string, file: File | undefined) {
     if (!file) return;
-    const isVideo = file.type.startsWith("video/");
-    patchSample(castMemberId, {
-      enabled: true,
-      hasSample: true,
-      source: "upload",
-      sampleLabel: isVideo ? `Video · ${file.name}` : `Audio · ${file.name}`,
-    });
+    clearError(castMemberId);
+    setBusyId(castMemberId);
+    try {
+      const asset = await fileToCaptureAsset(file);
+      patchSample(castMemberId, {
+        enabled: true,
+        hasSample: true,
+        source: "upload",
+        asset,
+        sampleLabel: formatCaptureLabel(asset, "upload"),
+      });
+    } catch (err) {
+      setError(castMemberId, captureErrorMessage(err));
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  function togglePlay(castMemberId: string, dataUrl: string) {
+    if (playingId === castMemberId) {
+      audioRef.current?.pause();
+      setPlayingId(null);
+      return;
+    }
+    audioRef.current?.pause();
+    const audio = new Audio(dataUrl);
+    audioRef.current = audio;
+    audio.onended = () => setPlayingId(null);
+    audio.onerror = () => {
+      setPlayingId(null);
+      setError(castMemberId, "Could not play this sample.");
+    };
+    void audio.play().then(() => setPlayingId(castMemberId));
   }
 
   return (
@@ -93,11 +201,11 @@ export function VoicePanel({ voice, disabled, onChange, onSkip, onContinue }: Pr
                 How do you want to capture the voice?
               </h2>
               <p className="text-sm text-fg-muted mt-1 leading-relaxed max-w-xl">
-                Two equal ways to build a clone template — no script required.{" "}
-                <strong className="text-fg font-medium">Record on the mic</strong> or{" "}
-                <strong className="text-fg font-medium">upload audio / video</strong> of them
-                already speaking. Base {VOICE_ADDON_BASE_CREDITS} cr +{" "}
-                {VOICE_PER_ROLE_CREDITS} cr per role.
+                Real capture in this browser —{" "}
+                <strong className="text-fg font-medium">mic</strong> or{" "}
+                <strong className="text-fg font-medium">upload audio / video</strong>. No script
+                required. Clone API stays offline until a provider is configured. Base{" "}
+                {VOICE_ADDON_BASE_CREDITS} cr + {VOICE_PER_ROLE_CREDITS} cr per role.
               </p>
             </div>
           </div>
@@ -106,7 +214,6 @@ export function VoicePanel({ voice, disabled, onChange, onSkip, onContinue }: Pr
           </Badge>
         </div>
 
-        {/* Equal option explainer */}
         <div className="grid sm:grid-cols-2 gap-3">
           <div className="rounded-[var(--radius-lg)] border border-border bg-bg px-4 py-3">
             <div className="flex items-center gap-2 text-cinema mb-1.5">
@@ -114,8 +221,8 @@ export function VoicePanel({ voice, disabled, onChange, onSkip, onContinue }: Pr
               <p className="font-display font-semibold text-sm">Option A · Mic</p>
             </div>
             <p className="text-xs text-fg-muted leading-relaxed">
-              Record ~10–15 seconds live. Say anything natural — a story, a hello, a few
-              sentences.
+              Record ~{CAPTURE_TARGET_SEC}s live. Say anything natural.
+              {!micOk && " (Mic not available here — use upload.)"}
             </p>
           </div>
           <div className="rounded-[var(--radius-lg)] border border-border bg-bg px-4 py-3">
@@ -124,15 +231,14 @@ export function VoicePanel({ voice, disabled, onChange, onSkip, onContinue }: Pr
               <p className="font-display font-semibold text-sm">Option B · Upload</p>
             </div>
             <p className="text-xs text-fg-muted leading-relaxed">
-              Drop a voice memo, podcast clip, or phone video with clear speech. We use the
-              audio track as the template.
+              Voice memo or phone video with clear speech (under 3MB for demo storage).
             </p>
           </div>
         </div>
 
         <button
           type="button"
-          disabled={disabled || !hasCandidates}
+          disabled={disabled || !hasCandidates || !!recordingId}
           onClick={() => setEnabledMaster(!voice.enabled)}
           className={cn(
             "w-full flex items-start gap-3 rounded-[var(--radius-lg)] border px-4 py-3 text-left transition-colors",
@@ -154,7 +260,7 @@ export function VoicePanel({ voice, disabled, onChange, onSkip, onContinue }: Pr
             <p className="font-display font-semibold text-sm">Enable voice add-on</p>
             <p className="text-xs text-fg-muted mt-0.5">
               {hasCandidates
-                ? "Then pick mic or upload for each character you want to clone."
+                ? "Then capture a sample per character and confirm consent."
                 : "Personalize a character first (name or photo) to unlock voice slots."}
             </p>
           </div>
@@ -162,117 +268,213 @@ export function VoicePanel({ voice, disabled, onChange, onSkip, onContinue }: Pr
 
         {voice.enabled && hasCandidates && (
           <div className="space-y-3">
-            {voice.samples.map((s) => (
-              <div
-                key={s.castMemberId}
-                className={cn(
-                  "rounded-[var(--radius-lg)] border px-4 py-4 space-y-3",
-                  s.enabled ? "border-cinema/30 bg-bg" : "border-border bg-bg-subtle/50",
-                )}
-              >
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                  <div>
-                    <p className="font-display font-semibold text-sm">{s.displayName}</p>
-                    <p className="text-xs text-fg-muted">as {s.roleInStory}</p>
-                  </div>
-                  <button
-                    type="button"
-                    disabled={disabled}
-                    onClick={() =>
-                      patchSample(s.castMemberId, {
-                        enabled: !s.enabled,
-                        hasSample: s.enabled ? false : s.hasSample,
-                        source: s.enabled ? null : s.source,
-                      })
-                    }
-                    className="text-xs font-medium text-cinema hover:underline self-start"
-                  >
-                    {s.enabled ? "Don’t clone this voice" : "Clone this voice"}
-                  </button>
-                </div>
-
-                {s.enabled && (
-                  <div className="space-y-2">
-                    <p className="text-[11px] uppercase tracking-wide text-fg-subtle">
-                      Choose one
-                    </p>
-                    <div className="grid sm:grid-cols-2 gap-2">
-                      <button
-                        type="button"
-                        disabled={disabled || recordingId === s.castMemberId}
-                        onClick={() => simulateRecord(s.castMemberId, s.displayName)}
-                        className={cn(
-                          "flex flex-col items-start gap-1 rounded-[var(--radius-md)] border px-3 py-3 text-left transition-colors",
-                          s.source === "mic" && s.hasSample
-                            ? "border-cinema/50 bg-cinema/10"
-                            : "border-border bg-bg-elevated hover:border-border-strong",
-                        )}
-                      >
-                        <span className="flex items-center gap-2 font-medium text-sm">
-                          <Mic className="h-4 w-4 text-cinema" />
-                          {recordingId === s.castMemberId
-                            ? "Listening…"
-                            : s.source === "mic" && s.hasSample
-                              ? "Mic sample saved"
-                              : "Use microphone"}
-                        </span>
-                        <span className="text-xs text-fg-muted">
-                          Record ~10–15s in this browser
-                        </span>
-                      </button>
-
-                      <button
-                        type="button"
-                        disabled={disabled}
-                        onClick={() => fileRefs.current[s.castMemberId]?.click()}
-                        className={cn(
-                          "flex flex-col items-start gap-1 rounded-[var(--radius-md)] border px-3 py-3 text-left transition-colors",
-                          s.source === "upload" && s.hasSample
-                            ? "border-cinema/50 bg-cinema/10"
-                            : "border-border bg-bg-elevated hover:border-border-strong",
-                        )}
-                      >
-                        <span className="flex items-center gap-2 font-medium text-sm">
-                          {s.sampleLabel?.startsWith("Video") ? (
-                            <Video className="h-4 w-4 text-cinema" />
-                          ) : (
-                            <Upload className="h-4 w-4 text-cinema" />
-                          )}
-                          {s.source === "upload" && s.hasSample
-                            ? "File uploaded"
-                            : "Upload audio or video"}
-                        </span>
-                        <span className="text-xs text-fg-muted">
-                          Voice memo, mp3, m4a, or phone video
-                        </span>
-                      </button>
+            {voice.samples.map((s) => {
+              const isRec = recordingId === s.castMemberId;
+              const isBusy = busyId === s.castMemberId;
+              return (
+                <div
+                  key={s.castMemberId}
+                  className={cn(
+                    "rounded-[var(--radius-lg)] border px-4 py-4 space-y-3",
+                    s.enabled ? "border-cinema/30 bg-bg" : "border-border bg-bg-subtle/50",
+                  )}
+                >
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div>
+                      <p className="font-display font-semibold text-sm">{s.displayName}</p>
+                      <p className="text-xs text-fg-muted">as {s.roleInStory}</p>
                     </div>
-                    <input
-                      ref={(el) => {
-                        fileRefs.current[s.castMemberId] = el;
-                      }}
-                      type="file"
-                      accept="audio/*,video/*,.mp3,.m4a,.wav,.aac,.mp4,.mov,.webm"
-                      className="sr-only"
-                      onChange={(e) => {
-                        onFile(s.castMemberId, e.target.files?.[0]);
-                        e.target.value = "";
-                      }}
-                    />
-                    {s.hasSample && (
-                      <p className="text-xs text-success flex items-center gap-1.5">
-                        <Check className="h-3.5 w-3.5" />
-                        Template ready · {s.sampleLabel}
-                        {s.source === "mic" ? " (mic)" : s.source === "upload" ? " (upload)" : ""}
-                      </p>
-                    )}
+                    <button
+                      type="button"
+                      disabled={disabled || !!recordingId}
+                      onClick={() =>
+                        patchSample(s.castMemberId, {
+                          enabled: !s.enabled,
+                          hasSample: s.enabled ? false : s.hasSample,
+                          source: s.enabled ? null : s.source,
+                          asset: s.enabled ? undefined : s.asset,
+                          consent: s.enabled ? false : s.consent,
+                        })
+                      }
+                      className="text-xs font-medium text-cinema hover:underline self-start"
+                    >
+                      {s.enabled ? "Don’t clone this voice" : "Clone this voice"}
+                    </button>
                   </div>
-                )}
-              </div>
-            ))}
+
+                  {s.enabled && (
+                    <div className="space-y-3">
+                      <p className="text-[11px] uppercase tracking-wide text-fg-subtle">
+                        Choose one
+                      </p>
+                      <div className="grid sm:grid-cols-2 gap-2">
+                        <div
+                          className={cn(
+                            "rounded-[var(--radius-md)] border px-3 py-3 space-y-2",
+                            s.source === "mic" && s.hasSample
+                              ? "border-cinema/50 bg-cinema/10"
+                              : "border-border bg-bg-elevated",
+                          )}
+                        >
+                          <div className="flex items-center gap-2 font-medium text-sm">
+                            <Mic className="h-4 w-4 text-cinema" />
+                            Microphone
+                          </div>
+                          {isRec ? (
+                            <div className="space-y-2">
+                              <p className="text-xs text-cinema tabular-nums">
+                                Recording… {elapsed}s
+                                <span className="text-fg-subtle">
+                                  {" "}
+                                  / target {CAPTURE_TARGET_SEC}s
+                                </span>
+                              </p>
+                              <div className="flex flex-wrap gap-2">
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  disabled={disabled || isBusy}
+                                  onClick={() => void stopMic(s.castMemberId, s.displayName)}
+                                >
+                                  <Square className="h-3.5 w-3.5 fill-current" />
+                                  Stop & save
+                                </Button>
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant="ghost"
+                                  disabled={disabled}
+                                  onClick={cancelMic}
+                                >
+                                  Cancel
+                                </Button>
+                              </div>
+                            </div>
+                          ) : (
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="secondary"
+                              disabled={
+                                disabled ||
+                                !micOk ||
+                                !!recordingId ||
+                                isBusy
+                              }
+                              onClick={() => void startMic(s.castMemberId)}
+                            >
+                              <Mic className="h-3.5 w-3.5" />
+                              {s.source === "mic" && s.hasSample
+                                ? "Re-record"
+                                : `Record ~${CAPTURE_TARGET_SEC}s`}
+                            </Button>
+                          )}
+                        </div>
+
+                        <div
+                          className={cn(
+                            "rounded-[var(--radius-md)] border px-3 py-3 space-y-2",
+                            s.source === "upload" && s.hasSample
+                              ? "border-cinema/50 bg-cinema/10"
+                              : "border-border bg-bg-elevated",
+                          )}
+                        >
+                          <div className="flex items-center gap-2 font-medium text-sm">
+                            {s.asset?.kind === "video" ? (
+                              <Video className="h-4 w-4 text-cinema" />
+                            ) : (
+                              <Upload className="h-4 w-4 text-cinema" />
+                            )}
+                            Upload
+                          </div>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="secondary"
+                            disabled={disabled || !!recordingId || isBusy}
+                            onClick={() => fileRefs.current[s.castMemberId]?.click()}
+                          >
+                            <Upload className="h-3.5 w-3.5" />
+                            {s.source === "upload" && s.hasSample
+                              ? "Replace file"
+                              : "Audio or video"}
+                          </Button>
+                          <input
+                            ref={(el) => {
+                              fileRefs.current[s.castMemberId] = el;
+                            }}
+                            type="file"
+                            accept="audio/*,video/*,.mp3,.m4a,.wav,.aac,.mp4,.mov,.webm"
+                            className="sr-only"
+                            onChange={(e) => {
+                              void onFile(s.castMemberId, e.target.files?.[0]);
+                              e.target.value = "";
+                            }}
+                          />
+                        </div>
+                      </div>
+
+                      {s.hasSample && s.asset && (
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-2 rounded-[var(--radius-md)] border border-success/25 bg-success/5 px-3 py-2">
+                          <p className="text-xs text-success flex items-center gap-1.5 flex-1 min-w-0">
+                            <Check className="h-3.5 w-3.5 shrink-0" />
+                            <span className="truncate">
+                              Template ready · {s.sampleLabel}
+                              {s.asset.byteLength
+                                ? ` · ${Math.round(s.asset.byteLength / 1024)}KB`
+                                : ""}
+                            </span>
+                          </p>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="ghost"
+                            className="self-start"
+                            onClick={() => togglePlay(s.castMemberId, s.asset!.dataUrl)}
+                          >
+                            {playingId === s.castMemberId ? (
+                              <>
+                                <Pause className="h-3.5 w-3.5" /> Pause
+                              </>
+                            ) : (
+                              <>
+                                <Play className="h-3.5 w-3.5" /> Preview
+                              </>
+                            )}
+                          </Button>
+                        </div>
+                      )}
+
+                      {s.hasSample && (
+                        <label className="flex items-start gap-2.5 text-sm text-fg-muted cursor-pointer">
+                          <input
+                            type="checkbox"
+                            className="mt-1 rounded border-border"
+                            checked={s.consent}
+                            disabled={disabled}
+                            onChange={(e) =>
+                              patchSample(s.castMemberId, { consent: e.target.checked })
+                            }
+                          />
+                          <span>
+                            I have permission to use this voice (myself or with guardian
+                            consent for a child). Samples stay in this browser until a
+                            clone provider is connected.
+                          </span>
+                        </label>
+                      )}
+
+                      {errorById[s.castMemberId] && (
+                        <p className="text-xs text-danger">{errorById[s.castMemberId]}</p>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
             <p className="text-xs text-fg-subtle leading-relaxed">
-              No script required — any clear speech works. Demo: mic is simulated; uploads stay
-              in this browser only.
+              Capture only for now — provider clone is a later step. Large files may fail to
+              persist if browser storage is full; re-upload after refresh if needed.
             </p>
           </div>
         )}
@@ -288,14 +490,18 @@ export function VoicePanel({ voice, disabled, onChange, onSkip, onContinue }: Pr
           <Button
             type="button"
             variant="secondary"
-            disabled={disabled}
+            disabled={disabled || !!recordingId}
             onClick={onSkip}
             className="sm:mr-auto"
           >
             <SkipForward className="h-4 w-4" />
             Skip — stock voices
           </Button>
-          <Button type="button" disabled={disabled || !ready} onClick={onContinue}>
+          <Button
+            type="button"
+            disabled={disabled || !ready || !!recordingId}
+            onClick={onContinue}
+          >
             {extra > 0
               ? `Continue with voice · +${extra} cr`
               : "Continue to estimate"}
@@ -303,7 +509,7 @@ export function VoicePanel({ voice, disabled, onChange, onSkip, onContinue }: Pr
         </div>
         {voice.enabled && !ready && (
           <p className="text-xs text-danger">
-            For each cloned role, pick mic or upload a sample — or skip the add-on.
+            Capture a sample and check consent for each cloned role, or skip.
           </p>
         )}
       </CardContent>

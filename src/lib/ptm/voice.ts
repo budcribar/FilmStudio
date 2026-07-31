@@ -1,4 +1,5 @@
 import type { CastMember } from "./characters";
+import type { VoiceCaptureAsset } from "./capture/audio-capture";
 
 export type VoiceSampleSource = "mic" | "upload" | null;
 
@@ -9,11 +10,15 @@ export type VoiceSample = {
   displayName: string;
   /** User opted this role into the voice add-on */
   enabled: boolean;
-  /** Demo: they recorded or uploaded a short clip */
+  /** Template captured and ready for future clone API */
   hasSample: boolean;
   sampleLabel?: string;
   /** How the template was captured */
   source: VoiceSampleSource;
+  /** Real capture payload (data URL for demo persistence) */
+  asset?: VoiceCaptureAsset;
+  /** Guardian / self consent for this identity sample */
+  consent: boolean;
 };
 
 export type VoiceAddon = {
@@ -47,6 +52,8 @@ export function syncVoiceFromCast(cast: CastMember[], prev?: VoiceAddon): VoiceA
       hasSample: old?.hasSample ?? false,
       sampleLabel: old?.sampleLabel,
       source: old?.source ?? null,
+      asset: old?.asset,
+      consent: old?.consent ?? false,
     };
   });
 
@@ -56,11 +63,12 @@ export function syncVoiceFromCast(cast: CastMember[], prev?: VoiceAddon): VoiceA
   };
 }
 
+/** Ready = every enabled role has a sample + consent */
 export function voiceRolesReady(voice: VoiceAddon): boolean {
   if (!voice.enabled) return true;
   const active = voice.samples.filter((s) => s.enabled);
   if (active.length === 0) return false;
-  return active.every((s) => s.hasSample);
+  return active.every((s) => s.hasSample && s.consent);
 }
 
 export function voiceCreditsExtra(voice: VoiceAddon): number {
@@ -73,4 +81,10 @@ export function voiceCreditsExtra(voice: VoiceAddon): number {
 export function voiceRolesCount(voice: VoiceAddon): number {
   if (!voice.enabled) return 0;
   return voice.samples.filter((s) => s.enabled && s.hasSample).length;
+}
+
+/** Samples that can be sent to a clone provider later */
+export function voiceAssetsForClone(voice: VoiceAddon): VoiceSample[] {
+  if (!voice.enabled) return [];
+  return voice.samples.filter((s) => s.enabled && s.hasSample && s.consent && s.asset);
 }
