@@ -593,6 +593,278 @@
         }
       },
       "SelfBiasNotes": []
+    },
+    {
+      "RunId": "913247e9f30c4afca0baab2ba75300ab",
+      "Timestamp": "2026-07-30 23:43:50 UTC",
+      "BookSlug": "nick_and_me",
+      "BookTitle": "Nick_and_Me",
+      "BookPath": "books/Nick_and_Me.txt",
+      "IsMockRun": false,
+      "ModelScores": [
+        {
+          "ModelId": "claude-sonnet-5",
+          "AnonymousLabel": "",
+          "CompositeScore": 63.6,
+          "IsGenerationFallback": false,
+          "GenerationFallbackReason": null,
+          "BordaPoints": 1,
+          "AvgJudgeRank": 1,
+          "SyntaxAudit": {
+            "OverallSyntaxScore": 88.5,
+            "FormatComplianceScore": 80,
+            "SceneBudgetScore": 100,
+            "DialoguePacingScore": 90,
+            "CharacterDisambiguationScore": 100,
+            "MusicSpecScore": 70,
+            "TotalSceneHeadings": 8,
+            "TotalDialogueBlocks": 31,
+            "AvgWordsPerDialogue": 15.8,
+            "MaxWordsInSingleDialogue": 51,
+            "LongMonologueCount": 2,
+            "GenericNumberedSpeakerCount": 0,
+            "CharacterNamesFound": [
+              "NARRATOR",
+              "SIONNA",
+              "MA",
+              "DR. CARSON"
+            ],
+            "AgeDisambiguatedCharacters": [],
+            "DiagnosticWarnings": [
+              "Non-Fountain colon dialogue format (4 instances like \u0027Character:\u0027) detected.",
+              "Missing \u0027FADE OUT.\u0027 or \u0027THE END\u0027 closing transition.",
+              "2 monologue turn(s) exceed 35 words without action line splits.",
+              "No explicit music/sound design cues detected in screenplay."
+            ]
+          },
+          "AvgAdaptationFidelity": 5.5,
+          "AvgCharacterDisambiguation": 5,
+          "AvgAiVideoDirectibility": 6.5,
+          "AvgDramaticPacing": 3,
+          "AvgDialogueAuthenticity": 7,
+          "AvgSoundDesignMusic": 1,
+          "AvgOverallQualitative": 4.7,
+          "DisqualifyingFlags": [
+            "claude-sonnet-5: Screenplay is severely incomplete \u2014 cuts off mid-scene/mid-sentence (\u0027INT. NARRATOR\u0027S APARTMENT - LIV\u0027) covering only a small fraction of the book\u0027s total narrative (roughly Part 1, chapters 6-9)",
+            "claude-sonnet-5: No music or sound design cues present anywhere in the provided text, making that dimension unscorable/unusable as delivered",
+            "claude-sonnet-5: Massive portions of the source material are entirely missing: Nick\u0027s death-spiral into alcoholism, the car accident killing Ma, Nick\u0027s stabbing of Sionna, the trial, the prison years, and the entire Part 4 Seattle timeline/reconciliation arc",
+            "claude-sonnet-5: Central named character \u0027Narrator\u0027 is never given an actual name (Peter), which is used at the very end of the book, creating identity/casting ambiguity",
+            "claude-sonnet-5: No visual character description given for Narrator, Nick, or Ma anywhere in the excerpt \u2014 physical descriptions from the book (Nick\u0027s scars, red hair, size; Ma\u0027s aging appearance) are absent, undermining the reference-image requirement"
+          ]
+        }
+      ],
+      "JudgeMatrix": {
+        "claude-sonnet-5": {
+          "claude-sonnet-5": 4.7
+        }
+      },
+      "SelfBiasNotes": []
+    },
+    {
+      "RunId": "34f580db6ec14ea2a047666e12abbf91",
+      "Timestamp": "2026-07-30 23:55:50 UTC",
+      "BookSlug": "nick_and_me",
+      "BookTitle": "Nick_and_Me",
+      "BookPath": "books/Nick_and_Me.txt",
+      "IsMockRun": false,
+      "ModelScores": [
+        {
+          "ModelId": "claude-sonnet-5",
+          "AnonymousLabel": "",
+          "CompositeScore": 61.6,
+          "IsGenerationFallback": true,
+          "GenerationFallbackReason": "The request was canceled due to the configured HttpClient.Timeout of 100 seconds elapsing.",
+          "BordaPoints": 1,
+          "AvgJudgeRank": 1,
+          "SyntaxAudit": {
+            "OverallSyntaxScore": 83.5,
+            "FormatComplianceScore": 100,
+            "SceneBudgetScore": 60,
+            "DialoguePacingScore": 80,
+            "CharacterDisambiguationScore": 100,
+            "MusicSpecScore": 70,
+            "TotalSceneHeadings": 1,
+            "TotalDialogueBlocks": 0,
+            "AvgWordsPerDialogue": 0,
+            "MaxWordsInSingleDialogue": 0,
+            "LongMonologueCount": 0,
+            "GenericNumberedSpeakerCount": 0,
+            "CharacterNamesFound": [],
+            "AgeDisambiguatedCharacters": [],
+            "DiagnosticWarnings": [
+              "Too few scene headings (1); story lacks visual scene progression.",
+              "No explicit music/sound design cues detected in screenplay."
+            ]
+          },
+          "AvgAdaptationFidelity": 5.5,
+          "AvgCharacterDisambiguation": 5,
+          "AvgAiVideoDirectibility": 6.5,
+          "AvgDramaticPacing": 3,
+          "AvgDialogueAuthenticity": 7,
+          "AvgSoundDesignMusic": 1,
+          "AvgOverallQualitative": 4.7,
+          "DisqualifyingFlags": [
+            "claude-sonnet-5: Screenplay is severely incomplete \u2014 cuts off mid-scene/mid-sentence (\u0027INT. NARRATOR\u0027S APARTMENT - LIV\u0027) covering only a small fraction of the book\u0027s total narrative (roughly Part 1, chapters 6-9)",
+            "claude-sonnet-5: No music or sound design cues present anywhere in the provided text, making that dimension unscorable/unusable as delivered",
+            "claude-sonnet-5: Massive portions of the source material are entirely missing: Nick\u0027s death-spiral into alcoholism, the car accident killing Ma, Nick\u0027s stabbing of Sionna, the trial, the prison years, and the entire Part 4 Seattle timeline/reconciliation arc",
+            "claude-sonnet-5: Central named character \u0027Narrator\u0027 is never given an actual name (Peter), which is used at the very end of the book, creating identity/casting ambiguity",
+            "claude-sonnet-5: No visual character description given for Narrator, Nick, or Ma anywhere in the excerpt \u2014 physical descriptions from the book (Nick\u0027s scars, red hair, size; Ma\u0027s aging appearance) are absent, undermining the reference-image requirement"
+          ]
+        }
+      ],
+      "JudgeMatrix": {
+        "claude-sonnet-5": {
+          "claude-sonnet-5": 4.7
+        }
+      },
+      "SelfBiasNotes": []
+    },
+    {
+      "RunId": "43b38ca2daf54f4f8c21f1bf32e81d70",
+      "Timestamp": "2026-07-31 00:05:39 UTC",
+      "BookSlug": "nick_and_me",
+      "BookTitle": "Nick_and_Me",
+      "BookPath": "books/Nick_and_Me.txt",
+      "IsMockRun": false,
+      "ModelScores": [
+        {
+          "ModelId": "claude-sonnet-5",
+          "AnonymousLabel": "",
+          "CompositeScore": 62.9,
+          "IsGenerationFallback": false,
+          "GenerationFallbackReason": null,
+          "BordaPoints": 1,
+          "AvgJudgeRank": 1,
+          "SyntaxAudit": {
+            "OverallSyntaxScore": 86.8,
+            "FormatComplianceScore": 85,
+            "SceneBudgetScore": 100,
+            "DialoguePacingScore": 75,
+            "CharacterDisambiguationScore": 100,
+            "MusicSpecScore": 70,
+            "TotalSceneHeadings": 32,
+            "TotalDialogueBlocks": 151,
+            "AvgWordsPerDialogue": 13.1,
+            "MaxWordsInSingleDialogue": 98,
+            "LongMonologueCount": 5,
+            "GenericNumberedSpeakerCount": 0,
+            "CharacterNamesFound": [
+              "THE NARRATOR",
+              "NICK",
+              "SIONNA",
+              "LIBRARIAN",
+              "DR. CARSON",
+              "MA",
+              "RAY",
+              "ANSWERING MACHINE",
+              "OFFICER DUPUIS",
+              "NURSE",
+              "SAGE",
+              "BOB",
+              "GUARD"
+            ],
+            "AgeDisambiguatedCharacters": [],
+            "DiagnosticWarnings": [
+              "Non-Fountain colon dialogue format (6 instances like \u0027Character:\u0027) detected.",
+              "5 monologue turn(s) exceed 35 words without action line splits.",
+              "No explicit music/sound design cues detected in screenplay."
+            ]
+          },
+          "AvgAdaptationFidelity": 5.5,
+          "AvgCharacterDisambiguation": 5,
+          "AvgAiVideoDirectibility": 6.5,
+          "AvgDramaticPacing": 3,
+          "AvgDialogueAuthenticity": 7,
+          "AvgSoundDesignMusic": 1,
+          "AvgOverallQualitative": 4.7,
+          "DisqualifyingFlags": [
+            "claude-sonnet-5: Screenplay is severely incomplete \u2014 cuts off mid-scene/mid-sentence (\u0027INT. NARRATOR\u0027S APARTMENT - LIV\u0027) covering only a small fraction of the book\u0027s total narrative (roughly Part 1, chapters 6-9)",
+            "claude-sonnet-5: No music or sound design cues present anywhere in the provided text, making that dimension unscorable/unusable as delivered",
+            "claude-sonnet-5: Massive portions of the source material are entirely missing: Nick\u0027s death-spiral into alcoholism, the car accident killing Ma, Nick\u0027s stabbing of Sionna, the trial, the prison years, and the entire Part 4 Seattle timeline/reconciliation arc",
+            "claude-sonnet-5: Central named character \u0027Narrator\u0027 is never given an actual name (Peter), which is used at the very end of the book, creating identity/casting ambiguity",
+            "claude-sonnet-5: No visual character description given for Narrator, Nick, or Ma anywhere in the excerpt \u2014 physical descriptions from the book (Nick\u0027s scars, red hair, size; Ma\u0027s aging appearance) are absent, undermining the reference-image requirement"
+          ]
+        }
+      ],
+      "JudgeMatrix": {
+        "claude-sonnet-5": {
+          "claude-sonnet-5": 4.7
+        }
+      },
+      "SelfBiasNotes": []
+    },
+    {
+      "RunId": "6e208e88c7cf46b990dbf60bddda8545",
+      "Timestamp": "2026-07-31 00:09:25 UTC",
+      "BookSlug": "nick_and_me",
+      "BookTitle": "Nick_and_Me",
+      "BookPath": "books/Nick_and_Me.txt",
+      "IsMockRun": false,
+      "ModelScores": [
+        {
+          "ModelId": "claude-sonnet-5",
+          "AnonymousLabel": "",
+          "CompositeScore": 70.1,
+          "IsGenerationFallback": false,
+          "GenerationFallbackReason": null,
+          "BordaPoints": 1,
+          "AvgJudgeRank": 1,
+          "SyntaxAudit": {
+            "OverallSyntaxScore": 86.8,
+            "FormatComplianceScore": 85,
+            "SceneBudgetScore": 100,
+            "DialoguePacingScore": 75,
+            "CharacterDisambiguationScore": 100,
+            "MusicSpecScore": 70,
+            "TotalSceneHeadings": 32,
+            "TotalDialogueBlocks": 151,
+            "AvgWordsPerDialogue": 13.1,
+            "MaxWordsInSingleDialogue": 98,
+            "LongMonologueCount": 5,
+            "GenericNumberedSpeakerCount": 0,
+            "CharacterNamesFound": [
+              "THE NARRATOR",
+              "NICK",
+              "SIONNA",
+              "LIBRARIAN",
+              "DR. CARSON",
+              "MA",
+              "RAY",
+              "ANSWERING MACHINE",
+              "OFFICER DUPUIS",
+              "NURSE",
+              "SAGE",
+              "BOB",
+              "GUARD"
+            ],
+            "AgeDisambiguatedCharacters": [],
+            "DiagnosticWarnings": [
+              "Non-Fountain colon dialogue format (6 instances like \u0027Character:\u0027) detected.",
+              "5 monologue turn(s) exceed 35 words without action line splits.",
+              "No explicit music/sound design cues detected in screenplay."
+            ]
+          },
+          "AvgAdaptationFidelity": 8,
+          "AvgCharacterDisambiguation": 6,
+          "AvgAiVideoDirectibility": 5.5,
+          "AvgDramaticPacing": 6.5,
+          "AvgDialogueAuthenticity": 7.5,
+          "AvgSoundDesignMusic": 2,
+          "AvgOverallQualitative": 5.9,
+          "DisqualifyingFlags": [
+            "claude-sonnet-5: No sound design or music cues included anywhere in the script (zero score-worthy content for that dimension) \u2014 completely unaddressed for an AI video pipeline that needs audio direction.",
+            "claude-sonnet-5: Narrator is unnamed for nearly the entire script (credited as THE NARRATOR), which will cause severe reference-image/casting confusion in a system that needs a consistent character identity from the first clip; the late reveal works in prose but is a serious usability problem for per-character casting in this pipeline.",
+            "claude-sonnet-5: Several scene headings/action blocks combine multiple distinct actions or time-jumps (e.g., the bar brawl scene, the stabbing scene) that pack too much into a single filmable beat, violating the one-clip-per-beat constraint in places.",
+            "claude-sonnet-5: Nick\u0027s transformation from violent to sobbing/apologetic in the prison scene is compressed into a single short exchange with little intermediate beat coverage, undercutting the emotional arc of Part 4."
+          ]
+        }
+      ],
+      "JudgeMatrix": {
+        "claude-sonnet-5": {
+          "claude-sonnet-5": 5.9
+        }
+      },
+      "SelfBiasNotes": []
     }
   ]
 }

@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Security.Cryptography;
+using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
@@ -239,6 +241,7 @@ public static class Program
                         author: "Author",
                         chat: chat,
                         model: modelId,
+                        onProgress: msg => Console.WriteLine($"    · {msg}"),
                         onHeuristicFallback: reason => generationFallbacks[modelId] = reason,
                         budgetOverride: ResolveRateLimitSafeBudgetOverride(modelId));
 
@@ -273,6 +276,7 @@ public static class Program
         // Phase 3 & 4: Blind Cross-Evaluation
         var judgeEvaluations = new Dictionary<string, JudgeEvaluationPayload>(StringComparer.OrdinalIgnoreCase);
         var random = new Random(42);
+        var screenplaysHash = ComputeScreenplaysHash(generatedScreenplays);
 
         foreach (var judgeModelId in candidateModels)
         {
@@ -299,7 +303,8 @@ public static class Program
                     var json = await File.ReadAllTextAsync(judgeCacheFile);
                     var loaded = JsonSerializer.Deserialize<JudgeEvaluationPayload>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
                     if (loaded is not null && !loaded.IsMock && loaded.Evaluations.Count > 0 && loaded.Evaluations.All(e => e.OverallQualitativeScore >= 0.0)
-                        && loaded.RubricVersion == ScreenplayJudgmentRubric.RubricVersion)
+                        && loaded.RubricVersion == ScreenplayJudgmentRubric.RubricVersion
+                        && loaded.ScreenplaysHash == screenplaysHash)
                     {
                         cachedJudge = loaded;
                     }
@@ -337,6 +342,7 @@ public static class Program
                     evalPayload = ParseJudgePayload(raw, anonMapping.Keys);
                     evalPayload.IsMock = false;
                     evalPayload.RubricVersion = ScreenplayJudgmentRubric.RubricVersion;
+                    evalPayload.ScreenplaysHash = screenplaysHash;
                     Console.WriteLine("DONE");
 
                     // Save valid live evaluation to cache
@@ -491,9 +497,12 @@ Uncle Nick turned, offering a small, reassuring nod. ""She always holds when the
         services.AddSingleton<ProjectReadCache>();
         services.AddSingleton<ProjectStore>();
         services.AddSingleton<ProjectTelemetryService>();
-        services.AddHttpClient<GrokChatClient>();
-        services.AddHttpClient<AnthropicChatClient>();
-        services.AddHttpClient<GeminiChatClient>();
+        // Mirror PageToMovie.Api's chat-client HttpClient timeouts (20 min) — full-book single-shot
+        // adaptations can legitimately run past the bare 100s HttpClient default, which otherwise
+        // cancels a real, still-in-progress generation and wastes the API spend for nothing.
+        services.AddHttpClient<GrokChatClient>(c => c.Timeout = TimeSpan.FromMinutes(20));
+        services.AddHttpClient<AnthropicChatClient>(c => c.Timeout = TimeSpan.FromMinutes(20));
+        services.AddHttpClient<GeminiChatClient>(c => c.Timeout = TimeSpan.FromMinutes(20));
         services.AddSingleton<MultiProviderChatClient>();
 
         var provider = services.BuildServiceProvider();
@@ -543,6 +552,26 @@ Uncle Nick turned, offering a small, reassuring nod. ""She always holds when the
             throw new InvalidOperationException("Judge response ranked labels outside the anonymized candidate set.");
 
         return payload;
+    }
+
+    /// <summary>
+    /// Deterministic hash of the full candidate screenplay set, used to invalidate a cached judge
+    /// verdict the moment any candidate's screenplay text changes (regenerated after a fix, a
+    /// retry, etc.) — a cached judge JSON otherwise has no way to know it describes text that no
+    /// longer exists on disk.
+    /// </summary>
+    private static string ComputeScreenplaysHash(Dictionary<string, string> generatedScreenplays)
+    {
+        var sb = new StringBuilder();
+        foreach (var modelId in generatedScreenplays.Keys.OrderBy(k => k, StringComparer.OrdinalIgnoreCase))
+        {
+            sb.Append(modelId.ToLowerInvariant());
+            sb.Append('\n');
+            sb.Append(generatedScreenplays[modelId]);
+            sb.Append('\n');
+        }
+        var bytes = SHA256.HashData(Encoding.UTF8.GetBytes(sb.ToString()));
+        return Convert.ToHexString(bytes);
     }
 
     private static string SanitizeFileName(string name) =>

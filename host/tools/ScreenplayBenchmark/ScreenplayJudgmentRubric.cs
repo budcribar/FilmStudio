@@ -69,6 +69,16 @@ public sealed class JudgeEvaluationPayload
     /// </summary>
     [JsonPropertyName("rubricVersion")]
     public string RubricVersion { get; set; } = "";
+
+    /// <summary>
+    /// Hash of the exact candidate screenplay set this judge evaluated (see
+    /// <c>Program.ComputeScreenplaysHash</c>). A cached judge result is only reusable while every
+    /// candidate's screenplay text is unchanged — if any model's draft gets regenerated (e.g. a
+    /// timeout/truncation fix, a retried generation), old cached verdicts described text that no
+    /// longer exists and must not be silently served for the new one.
+    /// </summary>
+    [JsonPropertyName("screenplaysHash")]
+    public string ScreenplaysHash { get; set; } = "";
 }
 
 public static class ScreenplayJudgmentRubric
