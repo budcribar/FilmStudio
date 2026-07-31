@@ -44,6 +44,29 @@ No markdown fences. No commentary before or after.
 Do not emit Fountain page-break markers (a line of === or ===N===) anywhere,
 including right after the title page. Just the title page, a blank line, then scenes.
 
+BLANK-LINE SEPARATION (HARD): every element — scene heading, action line, character cue,
+dialogue, transition — is separated from the one before and after it by exactly one blank
+line. Never run a scene heading straight into the action line below it, and never run a
+character cue straight into its dialogue. This is not optional style: a screenplay without
+blank lines between elements does not parse as Fountain and its scenes will not be found.
+Do not use markdown-style line breaks (a trailing double space at end of line) in place of
+a real blank line — Fountain has no equivalent to that convention.
+
+CHARACTER CUES (HARD): the character name is always on its own line, in ALL CAPS, with no
+dialogue on that same line.
+  Good:
+    NICK
+    Get in the car.
+  Bad: NICK: Get in the car.
+  Bad: NICK - Get in the car.
+Never write "CHARACTER: dialogue" or "CHARACTER - dialogue" as one line. The name goes on
+its own line; the spoken words go on the line(s) below it.
+
+ACTION LINES (HARD): action lines are plain description text with NO label prefix.
+  Good: A modest fifth-floor apartment. NARRATOR stands in the doorway.
+  Bad: Action: A modest fifth-floor apartment. NARRATOR stands in the doorway.
+Never start an action line with "Action:" or any other label — just write the description.
+
 TITLE PAGE (Fountain keys, first lines):
 Title: …
 Credit: Written by

@@ -36,6 +36,9 @@ public static class DeterministicSyntaxScorer
         @"\b(some music|background music|music plays|play music|generic music|music sound)\b",
         RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
+    private static readonly Regex TitlePageKeyRegex = new(
+        @"^(Title|Credit|Author|Authors|Source|Contact|Notes)$", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
     public static DeterministicSyntaxResult Evaluate(string fountainText, List<string>? musicBedPrompts = null)
     {
         var result = new DeterministicSyntaxResult();
@@ -78,8 +81,14 @@ public static class DeterministicSyntaxScorer
             result.DiagnosticWarnings.Add("Bolded markdown scene headings (**INT...**) detected.");
         }
 
-        // Script Colon Character Pattern Audit (e.g. Buster: "Hello" instead of Fountain CHARACTER block)
-        var colonCharacterMatches = Regex.Matches(fountainText, @"^[A-Z][a-z0-9_]{1,15}:\s*\S+", RegexOptions.Multiline);
+        // Script Colon Character Pattern Audit (e.g. Buster: "Hello" instead of Fountain CHARACTER
+        // block, or a literal "Action: " label prefix — neither is valid Fountain). Excludes
+        // standard Fountain title-page keys (Title:, Credit:, Author:, Source:, Notes:, ...) —
+        // those are correct, required syntax, not a colon-dialogue formatting mistake. Confirmed
+        // via real benchmark runs: every model's title page was previously being miscounted here.
+        var colonCharacterMatches = Regex.Matches(fountainText, @"^([A-Z][a-z0-9_]{1,15}):\s*\S+", RegexOptions.Multiline)
+            .Where(m => !TitlePageKeyRegex.IsMatch(m.Groups[1].Value))
+            .ToList();
         if (colonCharacterMatches.Count > 2)
         {
             formatScore -= 15.0;
@@ -257,12 +266,15 @@ public static class DeterministicSyntaxScorer
 
         result.MusicSpecScore = Math.Max(0.0, musicScore);
 
-        // Composite C# Syntax Score
+        // Composite C# Syntax Score. DialoguePacingScore is deliberately low-weight: it measures
+        // raw pre-split dialogue length, but DialoguePacingSplitter already exists downstream to
+        // split long turns into properly-paced clip beats at generation time — a long monologue
+        // turn in the screenplay isn't the hard blocker this dimension used to treat it as.
         result.OverallSyntaxScore = Math.Round(
-            (result.FormatComplianceScore * 0.25) +
-            (result.SceneBudgetScore * 0.20) +
-            (result.DialoguePacingScore * 0.20) +
-            (result.CharacterDisambiguationScore * 0.20) +
+            (result.FormatComplianceScore * 0.30) +
+            (result.SceneBudgetScore * 0.25) +
+            (result.DialoguePacingScore * 0.05) +
+            (result.CharacterDisambiguationScore * 0.25) +
             (result.MusicSpecScore * 0.15), 1);
 
         return result;
