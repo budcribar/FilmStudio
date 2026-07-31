@@ -277,6 +277,28 @@ window.PageToMovieMedia = {
         }
     },
 
+    /**
+     * Save a generated asset through the browser's normal download mechanism. This remains a
+     * fallback for cases where the File System Access folder is unavailable or a live job event
+     * arrives after the page's media-folder listener was attached.
+     */
+    downloadFromUrlAsync: async function (url, fileName) {
+        const res = await fetch(url, { credentials: "same-origin" });
+        if (!res.ok) throw new Error("Download failed HTTP " + res.status);
+        const blobUrl = URL.createObjectURL(await res.blob());
+        try {
+            const a = document.createElement("a");
+            a.href = blobUrl;
+            a.download = fileName || "background-music.wav";
+            a.style.display = "none";
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+        } finally {
+            window.setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
+        }
+    },
+
     /** Revoke an arbitrary blob: URL (e.g. one handed back by PageToMovieFfmpeg.encodeSliceAsync). */
     revokeUrl: function (url) {
         try { URL.revokeObjectURL(url); } catch (_) { /* */ }

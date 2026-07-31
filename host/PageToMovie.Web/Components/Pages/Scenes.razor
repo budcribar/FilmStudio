@@ -1137,6 +1137,31 @@ else
                                 @RenderDiffHtml(ver.ExpectedDialogue, ver.TranscribedDialogue)
                             </div>
                         }
+
+                        @if (_musicTrashVersions is { Count: > 0 })
+                        {
+                            <hr class="border-secondary my-4" />
+                            <button type="button" class="btn btn-sm btn-outline-secondary text-white mb-2"
+                                    @onclick="() => _showMusicTrash = !_showMusicTrash">
+                                Deleted takes (@_musicTrashVersions.Count) @(_showMusicTrash ? "▲ Hide" : "▼ Show")
+                            </button>
+                            @if (_showMusicTrash)
+                            {
+                                @foreach (var take in _musicTrashVersions)
+                                {
+                                    <div class="card bg-dark border-secondary p-2 mb-2 opacity-75">
+                                        <div class="d-flex justify-content-between align-items-center gap-2">
+                                            <span class="small text-muted">@take.CreatedAtUtc.ToLocalTime().ToString("g")</span>
+                                            <button type="button" class="btn btn-sm btn-outline-info"
+                                                    disabled="@_promotingMusicVersion"
+                                                    @onclick="() => RestoreMusicVersionAsync(_compareMusicSceneNumber, take.TakeId)">
+                                                Restore take
+                                            </button>
+                                        </div>
+                                    </div>
+                                }
+                            }
+                        }
                     }
                     @if (_clip.OnDisk)
                     {
@@ -4014,10 +4039,12 @@ else
         try
         {
             await EnsureHubAsync();
-            await Engine.StartSceneMusicGenAsync(_projectId, sceneNum, _selectedAudioModel, isVocal);
+            var started = await Engine.StartSceneMusicGenAsync(_projectId, sceneNum, _selectedAudioModel, isVocal);
             // Live progress card only — no duplicate "started" banner (same as scene gen).
             var jobs = await Engine.GetJobAsync();
-            _job = jobs?.Job;
+            _job = jobs?.Job ?? started;
+            if (!string.IsNullOrWhiteSpace(started?.JobId))
+                _ = CompleteSceneMusicDownloadAsync(started.JobId, sceneNum);
         }
         catch (Exception ex)
         {
@@ -4031,12 +4058,55 @@ else
         }
     }
 
+    /// <summary>
+    /// SignalR normally delivers each generated asset to the media-folder service. Waiting for the
+    /// terminal job here closes the gap when that transient event is missed, and gives the operator
+    /// a normal browser download even when no folder has been connected.
+    /// </summary>
+    private async Task CompleteSceneMusicDownloadAsync(string jobId, int sceneNum)
+    {
+        try
+        {
+            var final = await Engine.WaitForJobTerminalAsync(jobId, timeout: TimeSpan.FromMinutes(20));
+            if (final is null ||
+                !string.Equals(final.Status, "done", StringComparison.OrdinalIgnoreCase) ||
+                string.IsNullOrWhiteSpace(final.ClientMediaUrl) ||
+                string.IsNullOrWhiteSpace(final.ClientRelativePath))
+                return;
+
+            var clientUrl = final.ClientMediaUrl;
+            var clientRelativePath = final.ClientRelativePath;
+
+            // Keep the project-owned copy when a local media folder is available. This is safe if
+            // the regular JobUpdated handler already saved it because the service de-duplicates paths.
+            await MediaFolder.SaveJobMediaAsync(final);
+
+            var fileName = Path.GetFileName(clientRelativePath);
+            await JS.InvokeVoidAsync("PageToMovieMedia.downloadFromUrlAsync", clientUrl, fileName);
+            await InvokeAsync(() =>
+            {
+                _message = $"Background music for Scene {sceneNum:D2} downloaded.";
+                StateHasChanged();
+            });
+        }
+        catch (Exception ex)
+        {
+            await InvokeAsync(() =>
+            {
+                _error = $"Music download failed: {ex.Message}";
+                StateHasChanged();
+            });
+        }
+    }
+
     private bool _showMusicCompare;
     private int _compareMusicSceneNumber;
     private List<MusicVersionItem>? _musicVersions;
+    private List<MusicVersionItem>? _musicTrashVersions;
     private bool _loadingMusicVersions;
     private string? _musicCompareMessage;
     private bool _promotingMusicVersion;
+    private bool _showMusicTrash;
     private Dictionary<string, List<string>> _musicCompareUrls = new(StringComparer.OrdinalIgnoreCase);
 
     private async Task OpenMusicCompareAsync(int sceneNumber)
@@ -4051,6 +4121,9 @@ else
         {
             var res = await Engine.GetMusicVersionsAsync(_projectId, sceneNumber);
             _musicVersions = res?.Versions;
+            var trash = await Engine.GetTrashMusicVersionsAsync(_projectId, sceneNumber);
+            _musicTrashVersions = trash?.Versions;
+            _showMusicTrash = false;
             await RefreshMusicCompareUrlsAsync();
         }
         catch (Exception ex)
@@ -4068,6 +4141,8 @@ else
     {
         _showMusicCompare = false;
         _musicVersions = null;
+        _musicTrashVersions = null;
+        _showMusicTrash = false;
         _musicCompareUrls.Clear();
         _musicCompareMessage = null;
     }
@@ -4161,6 +4236,8 @@ else
                 _musicCompareMessage = $"Deleted take {takeId}.";
                 var resV = await Engine.GetMusicVersionsAsync(_projectId, sceneNumber);
                 _musicVersions = resV?.Versions;
+                var resT = await Engine.GetTrashMusicVersionsAsync(_projectId, sceneNumber);
+                _musicTrashVersions = resT?.Versions;
                 await RefreshMusicCompareUrlsAsync();
             }
             else
@@ -4174,6 +4251,39 @@ else
         }
         finally
         {
+            StateHasChanged();
+        }
+    }
+
+    private async Task RestoreMusicVersionAsync(int sceneNumber, string takeId)
+    {
+        _promotingMusicVersion = true;
+        _musicCompareMessage = null;
+        StateHasChanged();
+        try
+        {
+            var res = await Engine.RestoreMusicVersionAsync(_projectId, sceneNumber, takeId);
+            if (res.Ok)
+            {
+                _musicCompareMessage = "Take restored.";
+                var versions = await Engine.GetMusicVersionsAsync(_projectId, sceneNumber);
+                _musicVersions = versions?.Versions;
+                var trash = await Engine.GetTrashMusicVersionsAsync(_projectId, sceneNumber);
+                _musicTrashVersions = trash?.Versions;
+                await RefreshMusicCompareUrlsAsync();
+            }
+            else
+            {
+                _musicCompareMessage = res.Error ?? "Failed to restore audio take.";
+            }
+        }
+        catch (Exception ex)
+        {
+            _musicCompareMessage = $"Restore failed: {ex.Message}";
+        }
+        finally
+        {
+            _promotingMusicVersion = false;
             StateHasChanged();
         }
     }
