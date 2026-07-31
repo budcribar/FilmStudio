@@ -8,7 +8,7 @@ import {
   type CastMember,
 } from "./characters";
 import { estimateProduction } from "./estimate";
-import { getVoiceCloneProvider } from "./providers/voice-clone";
+import { runMockVoicePipeline } from "./providers/voice-clone";
 import type { FilmProject, ProjectStage, ProjectStatus, WizardStep } from "./types";
 import { resumeStage } from "./types";
 import {
@@ -21,8 +21,8 @@ import {
 } from "./voice";
 import { useWallet } from "./wallet";
 
-/** Bump when FilmProject shape changes; normalize() migrates older localStorage. */
-export const PROJECT_STORE_VERSION = 3;
+/** v4: mediaIds in client IDB; no data URLs in project JSON */
+export const PROJECT_STORE_VERSION = 4;
 
 function uid() {
   return `p_${Math.random().toString(36).slice(2, 10)}`;
@@ -113,6 +113,17 @@ function normalize(project: FilmProject): FilmProject {
 
   const voice = syncVoiceFromCast(cast, project.voice ?? emptyVoiceAddon());
 
+  // Drop legacy dataUrl fields if rehydrated from older clients
+  voice.samples = voice.samples.map((s) => {
+    if (s.asset && "dataUrl" in s.asset) {
+      const { dataUrl: _d, ...rest } = s.asset as typeof s.asset & {
+        dataUrl?: string;
+      };
+      return { ...s, asset: rest.mediaId ? rest : undefined, hasSample: !!rest.mediaId };
+    }
+    return s;
+  });
+
   const base: FilmProject = {
     ...project,
     status,
@@ -191,17 +202,68 @@ function castLine(project: FilmProject) {
 function voiceLine(project: FilmProject) {
   const n = voiceRolesCount(project.voice);
   if (n === 0) return "Mixing stock voices…";
-  return `Cloning ${n} personal voice${n === 1 ? "" : "s"}…`;
+  return `Client VO · cloning ${n} voice${n === 1 ? "" : "s"} + mock MP3…`;
 }
 
-/** Prep clone jobs from captured assets (demo provider until live keys). */
+/**
+ * Capture stays on client; mock API writes MP3s into IndexedDB;
+ * stitch concatenates locally (ffmpeg-ready seam).
+ */
 async function prepareVoiceClones(project: FilmProject) {
-  const assets = voiceAssetsForClone(project.voice);
-  if (!assets.length) return;
-  const provider = getVoiceCloneProvider();
-  for (const sample of assets) {
-    await provider.createClone(sample);
+  const samples = voiceAssetsForClone(project.voice);
+  if (!samples.length) return;
+
+  const lines = project.shots
+    .filter((s) => s.dialogue)
+    .slice(0, 3)
+    .map((s, i) => ({
+      castMemberId: samples[i % samples.length]!.castMemberId,
+      text: s.dialogue!,
+    }));
+
+  // Always speak at least one line so stitch has audio
+  if (lines.length === 0) {
+    lines.push({
+      castMemberId: samples[0]!.castMemberId,
+      text: `${samples[0]!.displayName} speaks from the page.`,
+    });
   }
+
+  const result = await runMockVoicePipeline({
+    samples,
+    lines,
+    projectId: project.id,
+  });
+
+  const sampleMap = new Map(samples.map((s) => [s.castMemberId, s]));
+  for (const job of result.jobs) {
+    const s = sampleMap.get(job.castMemberId);
+    if (s && job.outputMediaId) s.cloneOutputMediaId = job.outputMediaId;
+  }
+  for (const line of result.lineMedia) {
+    const s = sampleMap.get(line.castMemberId);
+    if (s) s.lineMediaId = line.media.id;
+  }
+
+  const nextSamples = project.voice.samples.map((s) => {
+    const updated = sampleMap.get(s.castMemberId);
+    return updated
+      ? {
+          ...s,
+          cloneOutputMediaId: updated.cloneOutputMediaId,
+          lineMediaId: updated.lineMediaId,
+        }
+      : s;
+  });
+
+  useProjects.getState().updateProject(project.id, {
+    voice: {
+      ...project.voice,
+      samples: nextSamples,
+      stitchedVoMediaId: result.stitched?.mediaId,
+      modelId: project.voice.modelId ?? "mock-instant-clone",
+    },
+  });
 }
 
 export const useProjects = create<Store>()(
@@ -303,9 +365,11 @@ export const useProjects = create<Store>()(
       setVoice: (id, voice) => {
         const project = get().projects.find((p) => p.id === id);
         if (!project) return;
-        const next = { ...project, voice };
+        // Never persist embedded binaries — serializeCapture runs in syncVoice
+        const safe = syncVoiceFromCast(project.cast, voice);
+        const next = { ...project, voice: safe };
         get().updateProject(id, {
-          voice,
+          voice: safe,
           estimate: buildEstimate(next),
         });
       },
@@ -348,7 +412,11 @@ export const useProjects = create<Store>()(
             source: null,
             asset: undefined,
             consent: false,
+            cloneOutputMediaId: undefined,
+            lineMediaId: undefined,
           })),
+          stitchedVoMediaId: undefined,
+          modelId: project.voice.modelId ?? "mock-instant-clone",
         };
         get().updateProject(id, {
           voice,
@@ -403,14 +471,13 @@ export const useProjects = create<Store>()(
         }
 
         const update = (patch: Partial<FilmProject>) => get().updateProject(id, patch);
-        // Fire demo clone prep (no-op when no assets)
         await prepareVoiceClones(project);
         const labels = [
           project.sourceKind === "classic"
             ? "Loading cached screenplay…"
             : "Writing opening scene…",
           castLine(project),
-          voiceLine(project),
+          voiceLine(get().projects.find((p) => p.id === id) ?? project),
           "Rendering free sample scene…",
           "Sample ready",
         ];
@@ -450,7 +517,7 @@ export const useProjects = create<Store>()(
                 "Loading cached screenplay…",
                 "Loading cached storyboard…",
                 castLine(project),
-                voiceLine(project),
+                voiceLine(get().projects.find((p) => p.id === id) ?? project),
                 "Compositing personalized characters…",
                 "Assembling picture lock…",
                 "Movie ready",
@@ -459,7 +526,7 @@ export const useProjects = create<Store>()(
                 "Writing screenplay from scratch…",
                 "Building storyboard…",
                 castLine(project),
-                voiceLine(project),
+                voiceLine(get().projects.find((p) => p.id === id) ?? project),
                 "Compositing frames…",
                 "Mixing picture lock…",
                 "Movie ready",
@@ -490,7 +557,7 @@ export const useProjects = create<Store>()(
         await simulatePipeline(update, [
           "Applying cast updates…",
           castLine(project),
-          voiceLine(project),
+          voiceLine(get().projects.find((p) => p.id === id) ?? project),
           "Re-mixing cut…",
           "Movie ready",
         ]);
@@ -520,7 +587,7 @@ export const useProjects = create<Store>()(
       migrate: (persisted, fromVersion) => {
         const p = persisted as { projects?: FilmProject[] };
         if (!p?.projects) return persisted as never;
-        if (fromVersion < 3) {
+        if (fromVersion < 4) {
           return {
             ...p,
             projects: p.projects.map((proj) => normalize(proj as FilmProject)),

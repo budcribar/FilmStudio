@@ -1,5 +1,6 @@
 import type { CastMember } from "./characters";
 import type { VoiceCaptureAsset } from "./capture/audio-capture";
+import { serializeCaptureForPersist } from "./capture/audio-capture";
 
 export type VoiceSampleSource = "mic" | "upload" | null;
 
@@ -8,34 +9,35 @@ export type VoiceSample = {
   castMemberId: string;
   roleInStory: string;
   displayName: string;
-  /** User opted this role into the voice add-on */
   enabled: boolean;
-  /** Template captured and ready for future clone API */
   hasSample: boolean;
   sampleLabel?: string;
-  /** How the template was captured */
   source: VoiceSampleSource;
-  /** Real capture payload (data URL for demo persistence) */
+  /** Capture template — mediaId points at client IndexedDB blob */
   asset?: VoiceCaptureAsset;
-  /** Guardian / self consent for this identity sample */
   consent: boolean;
+  /** Mock/live clone job output media id (client MP3) */
+  cloneOutputMediaId?: string;
+  /** Last TTS / stitched VO media id for this role */
+  lineMediaId?: string;
 };
 
 export type VoiceAddon = {
-  /** Master: include personal voices (paid add-on) */
   enabled: boolean;
   samples: VoiceSample[];
+  /** Client media id of stitched VO track after generate */
+  stitchedVoMediaId?: string;
+  /** Model id from voice-models.json */
+  modelId?: string;
 };
 
-/** Base fee to turn on the voice add-on, plus per cloned role */
 export const VOICE_ADDON_BASE_CREDITS = 5;
 export const VOICE_PER_ROLE_CREDITS = 4;
 
 export function emptyVoiceAddon(): VoiceAddon {
-  return { enabled: false, samples: [] };
+  return { enabled: false, samples: [], modelId: "mock-instant-clone" };
 }
 
-/** Sync voice slots from current cast (selected people who can speak). */
 export function syncVoiceFromCast(cast: CastMember[], prev?: VoiceAddon): VoiceAddon {
   const prevMap = new Map((prev?.samples ?? []).map((s) => [s.castMemberId, s]));
   const candidates = cast.filter(
@@ -52,23 +54,26 @@ export function syncVoiceFromCast(cast: CastMember[], prev?: VoiceAddon): VoiceA
       hasSample: old?.hasSample ?? false,
       sampleLabel: old?.sampleLabel,
       source: old?.source ?? null,
-      asset: old?.asset,
+      asset: serializeCaptureForPersist(old?.asset),
       consent: old?.consent ?? false,
+      cloneOutputMediaId: old?.cloneOutputMediaId,
+      lineMediaId: old?.lineMediaId,
     };
   });
 
   return {
     enabled: prev?.enabled ?? false,
     samples,
+    stitchedVoMediaId: prev?.stitchedVoMediaId,
+    modelId: prev?.modelId ?? "mock-instant-clone",
   };
 }
 
-/** Ready = every enabled role has a sample + consent */
 export function voiceRolesReady(voice: VoiceAddon): boolean {
   if (!voice.enabled) return true;
   const active = voice.samples.filter((s) => s.enabled);
   if (active.length === 0) return false;
-  return active.every((s) => s.hasSample && s.consent);
+  return active.every((s) => s.hasSample && s.consent && !!s.asset?.mediaId);
 }
 
 export function voiceCreditsExtra(voice: VoiceAddon): number {
@@ -83,8 +88,9 @@ export function voiceRolesCount(voice: VoiceAddon): number {
   return voice.samples.filter((s) => s.enabled && s.hasSample).length;
 }
 
-/** Samples that can be sent to a clone provider later */
 export function voiceAssetsForClone(voice: VoiceAddon): VoiceSample[] {
   if (!voice.enabled) return [];
-  return voice.samples.filter((s) => s.enabled && s.hasSample && s.consent && s.asset);
+  return voice.samples.filter(
+    (s) => s.enabled && s.hasSample && s.consent && s.asset?.mediaId,
+  );
 }

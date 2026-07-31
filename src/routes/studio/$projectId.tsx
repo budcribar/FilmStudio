@@ -20,6 +20,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { relationLabel } from "@/lib/ptm/characters";
 import { formatRuntimeRange } from "@/lib/ptm/estimate";
+import { createObjectUrlSafe } from "@/lib/ptm/media/client-media-store";
 import { useProjects } from "@/lib/ptm/store";
 import { voiceRolesCount } from "@/lib/ptm/voice";
 import { useWallet } from "@/lib/ptm/wallet";
@@ -57,6 +58,7 @@ function ProjectStudioPage() {
   const [playing, setPlaying] = useState(false);
   const [actionError, setActionError] = useState("");
   const [busyAction, setBusyAction] = useState(false);
+  const [voUrl, setVoUrl] = useState<string | null>(null);
   const didAutoPlay = useRef(false);
 
   useEffect(() => {
@@ -94,6 +96,25 @@ function ProjectStudioPage() {
       didAutoPlay.current = false;
     }
   }, [project?.status, project?.unlockedShots]);
+
+  // Load client-stitched VO mp3 when present
+  useEffect(() => {
+    let revoked: string | null = null;
+    const id = project?.voice?.stitchedVoMediaId;
+    if (!id) {
+      setVoUrl(null);
+      return;
+    }
+    void createObjectUrlSafe(id).then((url) => {
+      if (url) {
+        revoked = url;
+        setVoUrl(url);
+      }
+    });
+    return () => {
+      if (revoked) URL.revokeObjectURL(revoked);
+    };
+  }, [project?.voice?.stitchedVoMediaId]);
 
   if (!project) {
     return (
@@ -262,6 +283,7 @@ function ProjectStudioPage() {
         <div className="space-y-3">
           <VoicePanel
             voice={project.voice}
+            projectId={projectId}
             disabled={busyAction}
             onChange={(v) => setVoice(projectId, v)}
             onSkip={() => {
@@ -327,7 +349,8 @@ function ProjectStudioPage() {
             {voiceN > 0 && (
               <div className="flex items-start gap-2 text-sm text-fg-muted">
                 <Mic className="h-4 w-4 text-cinema shrink-0 mt-0.5" />
-                {voiceN} personal voice{voiceN === 1 ? "" : "s"} included in this quote.
+                {voiceN} personal voice{voiceN === 1 ? "" : "s"} — mock MP3 via client media
+                store.
               </div>
             )}
 
@@ -486,6 +509,23 @@ function ProjectStudioPage() {
           </Card>
 
           <div className="space-y-4">
+            {voUrl && (
+              <Card>
+                <CardContent className="p-5 space-y-2">
+                  <h2 className="font-display font-semibold text-sm flex items-center gap-2">
+                    <Mic className="h-4 w-4 text-cinema" />
+                    Client VO track (mock MP3)
+                  </h2>
+                  <p className="text-xs text-fg-muted">
+                    Stored in browser media DB · id{" "}
+                    <span className="font-mono text-fg-subtle">
+                      {project.voice.stitchedVoMediaId}
+                    </span>
+                  </p>
+                  <audio controls src={voUrl} className="w-full mt-1" preload="metadata" />
+                </CardContent>
+              </Card>
+            )}
             {isSample && (
               <Card>
                 <CardContent className="p-5 space-y-3">

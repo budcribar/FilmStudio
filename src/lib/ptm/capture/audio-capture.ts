@@ -1,30 +1,29 @@
 /**
- * Phase 2 capture — browser-side voice templates only.
- * No clone provider calls here; produces a portable VoiceCaptureAsset
- * the store can hold and a future voice-clone adapter can upload.
+ * Phase 2 capture — browser-side voice templates.
+ * Binaries go to client media store (IndexedDB); only MediaRef returns here.
  */
+
+import {
+  putMediaBlobSafe,
+  type MediaRef,
+} from "../media/client-media-store";
 
 export const CAPTURE_TARGET_SEC = 12;
 export const CAPTURE_MAX_SEC = 20;
 export const CAPTURE_MIN_SEC = 2;
-/** ~3MB data URL budget per sample (localStorage-friendly for a few roles) */
-export const CAPTURE_MAX_BYTES = 3 * 1024 * 1024;
+/** Soft cap for a single capture before FFmpeg/client work */
+export const CAPTURE_MAX_BYTES = 8 * 1024 * 1024;
 
 export type CaptureKind = "audio" | "video";
 
+/** Lightweight capture result — blob is NOT embedded; use mediaId. */
 export type VoiceCaptureAsset = {
-  /** audio/* or video/* mime */
+  mediaId: string;
   mimeType: string;
   kind: CaptureKind;
-  /** Original filename when upload; synthetic for mic */
   fileName: string;
   durationSec: number;
   byteLength: number;
-  /**
-   * data: URL for demo persistence / playback.
-   * Production would swap for object storage keys after upload.
-   */
-  dataUrl: string;
 };
 
 export type CaptureErrorCode =
@@ -54,7 +53,6 @@ export function isMicSupported(): boolean {
   );
 }
 
-/** Prefer widely supported recorder mimes. */
 export function pickRecorderMime(): string {
   const candidates = [
     "audio/webm;codecs=opus",
@@ -70,26 +68,14 @@ export function pickRecorderMime(): string {
   return "";
 }
 
-function blobToDataUrl(blob: Blob): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      if (typeof reader.result === "string") resolve(reader.result);
-      else reject(new CaptureError("read_failed", "Could not read capture data"));
-    };
-    reader.onerror = () =>
-      reject(new CaptureError("read_failed", "Could not read capture data"));
-    reader.readAsDataURL(blob);
-  });
-}
-
-/** Best-effort duration from an audio/video element. */
-export function probeDuration(dataUrl: string, mimeType: string): Promise<number> {
+export function probeDurationFromBlob(blob: Blob, mimeType: string): Promise<number> {
   return new Promise((resolve) => {
     const isVideo = mimeType.startsWith("video/");
     const el = document.createElement(isVideo ? "video" : "audio");
     el.preload = "metadata";
+    const url = URL.createObjectURL(blob);
     const done = (sec: number) => {
+      URL.revokeObjectURL(url);
       el.removeAttribute("src");
       el.load();
       resolve(sec);
@@ -100,24 +86,56 @@ export function probeDuration(dataUrl: string, mimeType: string): Promise<number
       else done(0);
     };
     el.onerror = () => done(0);
-    // safety timeout
     window.setTimeout(() => done(0), 4000);
-    el.src = dataUrl;
+    el.src = url;
   });
 }
 
-export async function fileToCaptureAsset(file: File): Promise<VoiceCaptureAsset> {
+async function blobToAsset(
+  blob: Blob,
+  opts: {
+    fileName: string;
+    mimeType: string;
+    kind: CaptureKind;
+    durationSec: number;
+    role?: string;
+    projectId?: string;
+  },
+): Promise<VoiceCaptureAsset> {
+  const ref: MediaRef = await putMediaBlobSafe(blob, {
+    fileName: opts.fileName,
+    mimeType: opts.mimeType,
+    durationSec: opts.durationSec,
+    role: opts.role ?? "capture",
+    projectId: opts.projectId,
+  });
+  return {
+    mediaId: ref.id,
+    mimeType: ref.mimeType,
+    kind: opts.kind,
+    fileName: ref.fileName,
+    durationSec: opts.durationSec,
+    byteLength: ref.byteLength,
+  };
+}
+
+export async function fileToCaptureAsset(
+  file: File,
+  opts?: { projectId?: string },
+): Promise<VoiceCaptureAsset> {
   if (!file || file.size === 0) {
     throw new CaptureError("empty", "That file is empty.");
   }
   if (file.size > CAPTURE_MAX_BYTES) {
     throw new CaptureError(
       "too_large",
-      `Keep samples under ${Math.round(CAPTURE_MAX_BYTES / (1024 * 1024))}MB for now.`,
+      `Keep samples under ${Math.round(CAPTURE_MAX_BYTES / (1024 * 1024))}MB.`,
     );
   }
   const isVideo = file.type.startsWith("video/");
-  const isAudio = file.type.startsWith("audio/") || /\.(mp3|m4a|wav|aac|ogg|webm)$/i.test(file.name);
+  const isAudio =
+    file.type.startsWith("audio/") ||
+    /\.(mp3|m4a|wav|aac|ogg|webm)$/i.test(file.name);
   if (!isVideo && !isAudio) {
     throw new CaptureError(
       "unsupported",
@@ -125,47 +143,36 @@ export async function fileToCaptureAsset(file: File): Promise<VoiceCaptureAsset>
     );
   }
 
-  const dataUrl = await blobToDataUrl(file);
   const mimeType = file.type || (isVideo ? "video/mp4" : "audio/mpeg");
-  let durationSec = await probeDuration(dataUrl, mimeType);
+  let durationSec = await probeDurationFromBlob(file, mimeType);
   if (durationSec > 0 && durationSec < CAPTURE_MIN_SEC) {
     throw new CaptureError(
       "too_short",
       `Need at least ~${CAPTURE_MIN_SEC}s of speech.`,
     );
   }
-  if (durationSec > CAPTURE_MAX_SEC + 5) {
-    // Soft warn only: still accept long files but label the cap for clone later
-    durationSec = Math.round(durationSec * 10) / 10;
-  }
 
-  return {
+  return blobToAsset(file, {
+    fileName: file.name,
     mimeType,
     kind: isVideo ? "video" : "audio",
-    fileName: file.name,
     durationSec: durationSec || 0,
-    byteLength: file.size,
-    dataUrl,
-  };
+    role: "voice-capture",
+    projectId: opts?.projectId,
+  });
 }
 
 export type MicRecorderSession = {
-  /** Stop and return asset (or throw) */
   stop: () => Promise<VoiceCaptureAsset>;
-  /** Cancel without saving */
   cancel: () => void;
-  /** Elapsed seconds (approx) */
   getElapsed: () => number;
   stream: MediaStream;
 };
 
-/**
- * Start a mic session. Caller should show elapsed UI and call stop() around
- * CAPTURE_TARGET_SEC, or let max duration auto-stop.
- */
 export async function startMicSession(opts?: {
   maxSec?: number;
   onTick?: (elapsedSec: number) => void;
+  projectId?: string;
 }): Promise<MicRecorderSession> {
   if (!isMicSupported()) {
     throw new CaptureError(
@@ -231,9 +238,8 @@ export async function startMicSession(opts?: {
     if (blob.size > CAPTURE_MAX_BYTES) {
       throw new CaptureError("too_large", "Recording is too large. Try a shorter clip.");
     }
-    const dataUrl = await blobToDataUrl(blob);
     const elapsed = Math.max(0, (Date.now() - startedAt) / 1000);
-    let durationSec = await probeDuration(dataUrl, blob.type);
+    let durationSec = await probeDurationFromBlob(blob, blob.type);
     if (!durationSec) durationSec = Math.round(elapsed * 10) / 10;
     if (durationSec < CAPTURE_MIN_SEC) {
       throw new CaptureError(
@@ -242,14 +248,14 @@ export async function startMicSession(opts?: {
       );
     }
     const ext = blob.type.includes("mp4") ? "m4a" : "webm";
-    return {
-      mimeType: blob.type || "audio/webm",
-      kind: "audio" as const,
+    return blobToAsset(blob, {
       fileName: `mic-${Date.now()}.${ext}`,
+      mimeType: blob.type || "audio/webm",
+      kind: "audio",
       durationSec,
-      byteLength: blob.size,
-      dataUrl,
-    };
+      role: "voice-capture",
+      projectId: opts?.projectId,
+    });
   };
 
   recorder.onstop = () => {
@@ -332,4 +338,19 @@ export function captureErrorMessage(err: unknown): string {
   if (err instanceof CaptureError) return err.message;
   if (err instanceof Error) return err.message;
   return "Capture failed.";
+}
+
+/** Strip non-serializable / huge fields before Zustand persist. */
+export function serializeCaptureForPersist(
+  asset: VoiceCaptureAsset | undefined,
+): VoiceCaptureAsset | undefined {
+  if (!asset?.mediaId) return undefined;
+  return {
+    mediaId: asset.mediaId,
+    mimeType: asset.mimeType,
+    kind: asset.kind,
+    fileName: asset.fileName,
+    durationSec: asset.durationSec,
+    byteLength: asset.byteLength,
+  };
 }

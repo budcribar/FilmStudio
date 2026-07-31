@@ -1,0 +1,71 @@
+{
+  "version": 1,
+  "description": "Voice model catalog. Live ElevenLabs (and peers) plug in via providerId + apiModelId. Binary samples and TTS outputs live in client media storage (IndexedDB), never in this JSON.",
+  "defaults": {
+    "cloneProvider": "mock",
+    "sampleMinSec": 2,
+    "sampleTargetSec": 12,
+    "sampleMaxSec": 20,
+    "outputFormat": "audio/mpeg",
+    "outputExtension": "mp3"
+  },
+  "models": [
+    {
+      "id": "mock-instant-clone",
+      "providerId": "mock",
+      "displayName": "Mock Instant Clone",
+      "description": "Returns a tiny synthetic MP3 stored on the client. Use for pipeline testing without API keys or server cost.",
+      "kind": "instant_clone",
+      "apiModelId": null,
+      "requiresApiKey": false,
+      "clientSideOnly": true,
+      "input": {
+        "accept": ["audio/*", "video/*"],
+        "minSec": 2,
+        "maxSec": 60,
+        "maxBytes": 5242880
+      },
+      "output": {
+        "mimeType": "audio/mpeg",
+        "extension": "mp3",
+        "storage": "client_media"
+      },
+      "pricing": {
+        "creditsBase": 5,
+        "creditsPerRole": 4,
+        "notes": "Mirrors VOICE_ADDON_* demo credits until live billing."
+      },
+      "enabled": true
+    },
+    {
+      "id": "elevenlabs-instant-ivc",
+      "providerId": "elevenlabs",
+      "displayName": "ElevenLabs Instant Voice Clone",
+      "description": "Placeholder for ElevenLabs IVC. Wire apiModelId / endpoints when keys are available. Still store returned audio on the client for FFmpeg stitch.",
+      "kind": "instant_clone",
+      "apiModelId": "eleven_multilingual_v2",
+      "cloneEndpoint": "https://api.elevenlabs.io/v1/voices/add",
+      "ttsEndpoint": "https://api.elevenlabs.io/v1/text-to-speech/{voice_id}",
+      "requiresApiKey": true,
+      "apiKeyEnv": "ELEVENLABS_API_KEY",
+      "clientSideOnly": false,
+      "input": {
+        "accept": ["audio/*"],
+        "minSec": 10,
+        "maxSec": 120,
+        "maxBytes": 10485760
+      },
+      "output": {
+        "mimeType": "audio/mpeg",
+        "extension": "mp3",
+        "storage": "client_media"
+      },
+      "pricing": {
+        "creditsBase": 5,
+        "creditsPerRole": 4,
+        "notes": "Reconcile with ElevenLabs character pricing later."
+      },
+      "enabled": false
+    }
+  ]
+}

@@ -5,14 +5,15 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   CAPTURE_TARGET_SEC,
-  captureErrorMessage,
   CaptureError,
+  captureErrorMessage,
   fileToCaptureAsset,
   formatCaptureLabel,
   isMicSupported,
   startMicSession,
   type MicRecorderSession,
 } from "@/lib/ptm/capture/audio-capture";
+import { createObjectUrlSafe } from "@/lib/ptm/media/client-media-store";
 import {
   VOICE_ADDON_BASE_CREDITS,
   VOICE_PER_ROLE_CREDITS,
@@ -25,12 +26,20 @@ import { cn } from "@/lib/utils";
 type Props = {
   voice: VoiceAddon;
   disabled?: boolean;
+  projectId?: string;
   onChange: (voice: VoiceAddon) => void;
   onSkip: () => void;
   onContinue: () => void;
 };
 
-export function VoicePanel({ voice, disabled, onChange, onSkip, onContinue }: Props) {
+export function VoicePanel({
+  voice,
+  disabled,
+  projectId,
+  onChange,
+  onSkip,
+  onContinue,
+}: Props) {
   const fileRefs = useRef<Record<string, HTMLInputElement | null>>({});
   const sessionRef = useRef<MicRecorderSession | null>(null);
   const [recordingId, setRecordingId] = useState<string | null>(null);
@@ -39,6 +48,7 @@ export function VoicePanel({ voice, disabled, onChange, onSkip, onContinue }: Pr
   const [errorById, setErrorById] = useState<Record<string, string>>({});
   const [playingId, setPlayingId] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const objectUrlRef = useRef<string | null>(null);
   const micOk = isMicSupported();
 
   useEffect(() => {
@@ -46,6 +56,7 @@ export function VoicePanel({ voice, disabled, onChange, onSkip, onContinue }: Pr
       sessionRef.current?.cancel();
       sessionRef.current = null;
       audioRef.current?.pause();
+      if (objectUrlRef.current) URL.revokeObjectURL(objectUrlRef.current);
     };
   }, []);
 
@@ -103,6 +114,7 @@ export function VoicePanel({ voice, disabled, onChange, onSkip, onContinue }: Pr
     try {
       const session = await startMicSession({
         onTick: (sec) => setElapsed(sec),
+        projectId,
       });
       sessionRef.current = session;
       setRecordingId(castMemberId);
@@ -152,7 +164,7 @@ export function VoicePanel({ voice, disabled, onChange, onSkip, onContinue }: Pr
     clearError(castMemberId);
     setBusyId(castMemberId);
     try {
-      const asset = await fileToCaptureAsset(file);
+      const asset = await fileToCaptureAsset(file, { projectId });
       patchSample(castMemberId, {
         enabled: true,
         hasSample: true,
@@ -167,14 +179,24 @@ export function VoicePanel({ voice, disabled, onChange, onSkip, onContinue }: Pr
     }
   }
 
-  function togglePlay(castMemberId: string, dataUrl: string) {
+  async function togglePlay(castMemberId: string, mediaId: string) {
     if (playingId === castMemberId) {
       audioRef.current?.pause();
       setPlayingId(null);
       return;
     }
     audioRef.current?.pause();
-    const audio = new Audio(dataUrl);
+    if (objectUrlRef.current) {
+      URL.revokeObjectURL(objectUrlRef.current);
+      objectUrlRef.current = null;
+    }
+    const url = await createObjectUrlSafe(mediaId);
+    if (!url) {
+      setError(castMemberId, "Sample missing from client storage — re-capture.");
+      return;
+    }
+    objectUrlRef.current = url;
+    const audio = new Audio(url);
     audioRef.current = audio;
     audio.onended = () => setPlayingId(null);
     audio.onerror = () => {
@@ -198,13 +220,11 @@ export function VoicePanel({ voice, disabled, onChange, onSkip, onContinue }: Pr
                 <span className="text-cinema normal-case tracking-normal">optional add-on</span>
               </p>
               <h2 className="font-display font-semibold text-lg">
-                How do you want to capture the voice?
+                Capture stays on your device
               </h2>
               <p className="text-sm text-fg-muted mt-1 leading-relaxed max-w-xl">
-                Real capture in this browser —{" "}
-                <strong className="text-fg font-medium">mic</strong> or{" "}
-                <strong className="text-fg font-medium">upload audio / video</strong>. No script
-                required. Clone API stays offline until a provider is configured. Base{" "}
+                Mic or upload → client media store (like local MP3/MP4). Mock clone writes a
+                fake MP3 into the same store for client-side stitch. Base{" "}
                 {VOICE_ADDON_BASE_CREDITS} cr + {VOICE_PER_ROLE_CREDITS} cr per role.
               </p>
             </div>
@@ -221,8 +241,8 @@ export function VoicePanel({ voice, disabled, onChange, onSkip, onContinue }: Pr
               <p className="font-display font-semibold text-sm">Option A · Mic</p>
             </div>
             <p className="text-xs text-fg-muted leading-relaxed">
-              Record ~{CAPTURE_TARGET_SEC}s live. Say anything natural.
-              {!micOk && " (Mic not available here — use upload.)"}
+              Record ~{CAPTURE_TARGET_SEC}s. Blob → IndexedDB, not server.
+              {!micOk && " (Mic unavailable — use upload.)"}
             </p>
           </div>
           <div className="rounded-[var(--radius-lg)] border border-border bg-bg px-4 py-3">
@@ -231,7 +251,7 @@ export function VoicePanel({ voice, disabled, onChange, onSkip, onContinue }: Pr
               <p className="font-display font-semibold text-sm">Option B · Upload</p>
             </div>
             <p className="text-xs text-fg-muted leading-relaxed">
-              Voice memo or phone video with clear speech (under 3MB for demo storage).
+              MP3 / M4A / WAV or phone video — stored as a client media ref for later FFmpeg.
             </p>
           </div>
         </div>
@@ -260,8 +280,8 @@ export function VoicePanel({ voice, disabled, onChange, onSkip, onContinue }: Pr
             <p className="font-display font-semibold text-sm">Enable voice add-on</p>
             <p className="text-xs text-fg-muted mt-0.5">
               {hasCandidates
-                ? "Then capture a sample per character and confirm consent."
-                : "Personalize a character first (name or photo) to unlock voice slots."}
+                ? "Capture a sample, consent, then mock MP3 VO on generate."
+                : "Personalize a character first to unlock voice slots."}
             </p>
           </div>
         </button>
@@ -355,12 +375,7 @@ export function VoicePanel({ voice, disabled, onChange, onSkip, onContinue }: Pr
                               type="button"
                               size="sm"
                               variant="secondary"
-                              disabled={
-                                disabled ||
-                                !micOk ||
-                                !!recordingId ||
-                                isBusy
-                              }
+                              disabled={disabled || !micOk || !!recordingId || isBusy}
                               onClick={() => void startMic(s.castMemberId)}
                             >
                               <Mic className="h-3.5 w-3.5" />
@@ -414,15 +429,16 @@ export function VoicePanel({ voice, disabled, onChange, onSkip, onContinue }: Pr
                         </div>
                       </div>
 
-                      {s.hasSample && s.asset && (
+                      {s.hasSample && s.asset?.mediaId && (
                         <div className="flex flex-col sm:flex-row sm:items-center gap-2 rounded-[var(--radius-md)] border border-success/25 bg-success/5 px-3 py-2">
                           <p className="text-xs text-success flex items-center gap-1.5 flex-1 min-w-0">
                             <Check className="h-3.5 w-3.5 shrink-0" />
                             <span className="truncate">
-                              Template ready · {s.sampleLabel}
+                              Client media · {s.sampleLabel}
                               {s.asset.byteLength
                                 ? ` · ${Math.round(s.asset.byteLength / 1024)}KB`
                                 : ""}
+                              <span className="text-fg-subtle"> · {s.asset.mediaId}</span>
                             </span>
                           </p>
                           <Button
@@ -430,7 +446,7 @@ export function VoicePanel({ voice, disabled, onChange, onSkip, onContinue }: Pr
                             size="sm"
                             variant="ghost"
                             className="self-start"
-                            onClick={() => togglePlay(s.castMemberId, s.asset!.dataUrl)}
+                            onClick={() => void togglePlay(s.castMemberId, s.asset!.mediaId)}
                           >
                             {playingId === s.castMemberId ? (
                               <>
@@ -457,9 +473,8 @@ export function VoicePanel({ voice, disabled, onChange, onSkip, onContinue }: Pr
                             }
                           />
                           <span>
-                            I have permission to use this voice (myself or with guardian
-                            consent for a child). Samples stay in this browser until a
-                            clone provider is connected.
+                            I have permission to use this voice. Media stays in this browser
+                            for local stitch (no server media warehouse).
                           </span>
                         </label>
                       )}
@@ -473,8 +488,9 @@ export function VoicePanel({ voice, disabled, onChange, onSkip, onContinue }: Pr
               );
             })}
             <p className="text-xs text-fg-subtle leading-relaxed">
-              Capture only for now — provider clone is a later step. Large files may fail to
-              persist if browser storage is full; re-upload after refresh if needed.
+              Models: see <code className="text-fg-muted">src/data/models/voice-models.json</code>
+              . Mock clone → fake MP3 → client stitch. ElevenLabs entry is disabled until
+              keyed.
             </p>
           </div>
         )}
