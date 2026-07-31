@@ -1,0 +1,398 @@
+{
+  "BookPath": "C:\\Users\\budcr\\source\\repos\\claude\\PageToMovie\\books\\Nick_and_Me.txt",
+  "Timestamp": "2026-07-31 11:11:26 UTC",
+  "IsMockRun": false,
+  "Leaderboard": [
+    {
+      "ModelId": "gpt-5.6-sol",
+      "AnonymousLabel": "",
+      "CompositeScore": 89.2,
+      "IsGenerationFallback": false,
+      "GenerationFallbackReason": null,
+      "BordaPoints": 14,
+      "AvgJudgeRank": 1,
+      "SyntaxAudit": {
+        "OverallSyntaxScore": 93.5,
+        "FormatComplianceScore": 95,
+        "SceneBudgetScore": 100,
+        "DialoguePacingScore": 90,
+        "CharacterDisambiguationScore": 100,
+        "MusicSpecScore": 70,
+        "TotalSceneHeadings": 23,
+        "TotalDialogueBlocks": 111,
+        "AvgWordsPerDialogue": 12.6,
+        "MaxWordsInSingleDialogue": 47,
+        "LongMonologueCount": 2,
+        "GenericNumberedSpeakerCount": 0,
+        "CharacterNamesFound": [
+          "THE NARRATOR",
+          "NICK",
+          "SIONNA",
+          "MA",
+          "LIBRARIAN MORALES",
+          "LINDSEY",
+          "ADAM KLINE",
+          "OFFICER DUPUIS",
+          "NURSE PATRICIA OWENS",
+          "THE SAGE"
+        ],
+        "AgeDisambiguatedCharacters": [],
+        "DiagnosticWarnings": [
+          "Missing \u0027FADE OUT.\u0027 or \u0027THE END\u0027 closing transition.",
+          "2 monologue turn(s) exceed 35 words without action line splits.",
+          "No explicit music/sound design cues detected in screenplay."
+        ]
+      },
+      "AvgAdaptationFidelity": 9,
+      "AvgCharacterDisambiguation": 9,
+      "AvgAiVideoDirectibility": 8.5,
+      "AvgDramaticPacing": 8.2,
+      "AvgDialogueAuthenticity": 8.5,
+      "AvgSoundDesignMusic": 8.5,
+      "AvgOverallQualitative": 8.6,
+      "DisqualifyingFlags": []
+    },
+    {
+      "ModelId": "gpt-5.6-terra",
+      "AnonymousLabel": "",
+      "CompositeScore": 88.9,
+      "IsGenerationFallback": false,
+      "GenerationFallbackReason": null,
+      "BordaPoints": 11,
+      "AvgJudgeRank": 2.5,
+      "SyntaxAudit": {
+        "OverallSyntaxScore": 99.8,
+        "FormatComplianceScore": 100,
+        "SceneBudgetScore": 100,
+        "DialoguePacingScore": 95,
+        "CharacterDisambiguationScore": 100,
+        "MusicSpecScore": 100,
+        "TotalSceneHeadings": 19,
+        "TotalDialogueBlocks": 72,
+        "AvgWordsPerDialogue": 14.2,
+        "MaxWordsInSingleDialogue": 42,
+        "LongMonologueCount": 1,
+        "GenericNumberedSpeakerCount": 0,
+        "CharacterNamesFound": [
+          "NARRATOR",
+          "NICK",
+          "SIONNA",
+          "OFFICER DUPUIS",
+          "SAGE"
+        ],
+        "AgeDisambiguatedCharacters": [],
+        "DiagnosticWarnings": [
+          "1 monologue turn(s) exceed 35 words without action line splits."
+        ]
+      },
+      "AvgAdaptationFidelity": 8,
+      "AvgCharacterDisambiguation": 8.5,
+      "AvgAiVideoDirectibility": 8.2,
+      "AvgDramaticPacing": 8,
+      "AvgDialogueAuthenticity": 7.8,
+      "AvgSoundDesignMusic": 8.5,
+      "AvgOverallQualitative": 8.2,
+      "DisqualifyingFlags": []
+    },
+    {
+      "ModelId": "gpt-5.6-luna",
+      "AnonymousLabel": "",
+      "CompositeScore": 84.4,
+      "IsGenerationFallback": false,
+      "GenerationFallbackReason": null,
+      "BordaPoints": 10,
+      "AvgJudgeRank": 3,
+      "SyntaxAudit": {
+        "OverallSyntaxScore": 99,
+        "FormatComplianceScore": 100,
+        "SceneBudgetScore": 100,
+        "DialoguePacingScore": 80,
+        "CharacterDisambiguationScore": 100,
+        "MusicSpecScore": 100,
+        "TotalSceneHeadings": 29,
+        "TotalDialogueBlocks": 0,
+        "AvgWordsPerDialogue": 0,
+        "MaxWordsInSingleDialogue": 0,
+        "LongMonologueCount": 0,
+        "GenericNumberedSpeakerCount": 0,
+        "CharacterNamesFound": [],
+        "AgeDisambiguatedCharacters": [],
+        "DiagnosticWarnings": [
+          "Detected 3 descriptive instrumental music/sound cue(s)."
+        ]
+      },
+      "AvgAdaptationFidelity": 6,
+      "AvgCharacterDisambiguation": 8.2,
+      "AvgAiVideoDirectibility": 7.5,
+      "AvgDramaticPacing": 7,
+      "AvgDialogueAuthenticity": 7.8,
+      "AvgSoundDesignMusic": 8.2,
+      "AvgOverallQualitative": 7.5,
+      "DisqualifyingFlags": [
+        "grok-4: Extensive invented named supporting characters (MS. HART, DR. CARSON, OFFICER DUPUIS, BOUNCER HARRIS, GUARD MILLER) and framing device not in source"
+      ]
+    },
+    {
+      "ModelId": "gemini-3.1-pro-preview",
+      "AnonymousLabel": "",
+      "CompositeScore": 83.1,
+      "IsGenerationFallback": false,
+      "GenerationFallbackReason": null,
+      "BordaPoints": 9,
+      "AvgJudgeRank": 3.5,
+      "SyntaxAudit": {
+        "OverallSyntaxScore": 98.5,
+        "FormatComplianceScore": 100,
+        "SceneBudgetScore": 100,
+        "DialoguePacingScore": 70,
+        "CharacterDisambiguationScore": 100,
+        "MusicSpecScore": 100,
+        "TotalSceneHeadings": 18,
+        "TotalDialogueBlocks": 77,
+        "AvgWordsPerDialogue": 19.4,
+        "MaxWordsInSingleDialogue": 58,
+        "LongMonologueCount": 10,
+        "GenericNumberedSpeakerCount": 0,
+        "CharacterNamesFound": [
+          "NARRATOR",
+          "SIONNA",
+          "MA",
+          "NICK",
+          "DR. CARSON",
+          "LINDSEY",
+          "DARK HAIRED MAN",
+          "OFFICER DUPUIS",
+          "GUARD"
+        ],
+        "AgeDisambiguatedCharacters": [],
+        "DiagnosticWarnings": [
+          "10 monologue turn(s) exceed 35 words without action line splits.",
+          "Detected 1 descriptive instrumental music/sound cue(s)."
+        ]
+      },
+      "AvgAdaptationFidelity": 7.2,
+      "AvgCharacterDisambiguation": 7.5,
+      "AvgAiVideoDirectibility": 7.2,
+      "AvgDramaticPacing": 6.5,
+      "AvgDialogueAuthenticity": 7.8,
+      "AvgSoundDesignMusic": 7.5,
+      "AvgOverallQualitative": 7.3,
+      "DisqualifyingFlags": []
+    },
+    {
+      "ModelId": "gemini-3.6-flash",
+      "AnonymousLabel": "",
+      "CompositeScore": 75.7,
+      "IsGenerationFallback": false,
+      "GenerationFallbackReason": null,
+      "BordaPoints": 6,
+      "AvgJudgeRank": 5,
+      "SyntaxAudit": {
+        "OverallSyntaxScore": 100,
+        "FormatComplianceScore": 100,
+        "SceneBudgetScore": 100,
+        "DialoguePacingScore": 100,
+        "CharacterDisambiguationScore": 100,
+        "MusicSpecScore": 100,
+        "TotalSceneHeadings": 16,
+        "TotalDialogueBlocks": 80,
+        "AvgWordsPerDialogue": 12.3,
+        "MaxWordsInSingleDialogue": 29,
+        "LongMonologueCount": 0,
+        "GenericNumberedSpeakerCount": 0,
+        "CharacterNamesFound": [
+          "PETER",
+          "NICK",
+          "MA",
+          "SIONNA",
+          "DARK-HAIRED MAN",
+          "OFFICER DUPUIS",
+          "BOB",
+          "GATE AGENT"
+        ],
+        "AgeDisambiguatedCharacters": [],
+        "DiagnosticWarnings": [
+          "Detected 6 descriptive instrumental music/sound cue(s)."
+        ]
+      },
+      "AvgAdaptationFidelity": 2.8,
+      "AvgCharacterDisambiguation": 6.5,
+      "AvgAiVideoDirectibility": 7.2,
+      "AvgDramaticPacing": 6.5,
+      "AvgDialogueAuthenticity": 5.5,
+      "AvgSoundDesignMusic": 7.2,
+      "AvgOverallQualitative": 6,
+      "DisqualifyingFlags": [
+        "grok-4.5: Protagonist given the name PETER and self-identifies on camera from the opening scene, violating source withholding of the name until the final pages",
+        "grok-4.5: Invented closing line \u0027God bless us, every one\u0027 imported from an unrelated work",
+        "grok-4: Invented protagonist name PETER not present in source; multiple paraphrased and invented dialogue lines"
+      ]
+    },
+    {
+      "ModelId": "grok-4.20-reasoning",
+      "AnonymousLabel": "",
+      "CompositeScore": 70.7,
+      "IsGenerationFallback": false,
+      "GenerationFallbackReason": null,
+      "BordaPoints": 4,
+      "AvgJudgeRank": 6,
+      "SyntaxAudit": {
+        "OverallSyntaxScore": 99.2,
+        "FormatComplianceScore": 100,
+        "SceneBudgetScore": 100,
+        "DialoguePacingScore": 85,
+        "CharacterDisambiguationScore": 100,
+        "MusicSpecScore": 100,
+        "TotalSceneHeadings": 19,
+        "TotalDialogueBlocks": 63,
+        "AvgWordsPerDialogue": 12,
+        "MaxWordsInSingleDialogue": 41,
+        "LongMonologueCount": 3,
+        "GenericNumberedSpeakerCount": 0,
+        "CharacterNamesFound": [
+          "PETER",
+          "NICK",
+          "MA",
+          "SIONNA",
+          "LIBRARIAN"
+        ],
+        "AgeDisambiguatedCharacters": [],
+        "DiagnosticWarnings": [
+          "3 monologue turn(s) exceed 35 words without action line splits."
+        ]
+      },
+      "AvgAdaptationFidelity": 2,
+      "AvgCharacterDisambiguation": 5.8,
+      "AvgAiVideoDirectibility": 6,
+      "AvgDramaticPacing": 5.8,
+      "AvgDialogueAuthenticity": 5,
+      "AvgSoundDesignMusic": 6.5,
+      "AvgOverallQualitative": 5.2,
+      "DisqualifyingFlags": [
+        "grok-4.5: Protagonist named PETER and addresses camera from the first scene, violating source name-withholding",
+        "grok-4.5: Invented closing line \u0027God bless us, every one\u0027 from an unrelated work",
+        "grok-4.5: Multiple major beats dropped or replaced by camera-address framing not grounded in the book",
+        "grok-4: Invented protagonist name PETER; added non-source Dickens quote at end; extensive invented framing and plot compression"
+      ]
+    },
+    {
+      "ModelId": "claude-opus-5",
+      "AnonymousLabel": "",
+      "CompositeScore": 31.6,
+      "IsGenerationFallback": true,
+      "GenerationFallbackReason": "Anthropic messages HTTP 400: {\u0022type\u0022:\u0022error\u0022,\u0022error\u0022:{\u0022type\u0022:\u0022invalid_request_error\u0022,\u0022message\u0022:\u0022Your credit balance is too low to access the Anthropic API. Please go to Plans \u0026 Billing to upgrade or purchase credits.\u0022},\u0022request_id\u0022:\u0022req_011Cda2ZcnNFUNtsmdnSyQxe\u0022}",
+      "BordaPoints": 0,
+      "AvgJudgeRank": 3.5,
+      "SyntaxAudit": {
+        "OverallSyntaxScore": 79,
+        "FormatComplianceScore": 95,
+        "SceneBudgetScore": 50,
+        "DialoguePacingScore": 50,
+        "CharacterDisambiguationScore": 100,
+        "MusicSpecScore": 70,
+        "TotalSceneHeadings": 566,
+        "TotalDialogueBlocks": 566,
+        "AvgWordsPerDialogue": 56.9,
+        "MaxWordsInSingleDialogue": 90,
+        "LongMonologueCount": 415,
+        "GenericNumberedSpeakerCount": 0,
+        "CharacterNamesFound": [
+          "NARRATOR"
+        ],
+        "AgeDisambiguatedCharacters": [],
+        "DiagnosticWarnings": [
+          "Missing \u0027FADE OUT.\u0027 or \u0027THE END\u0027 closing transition.",
+          "Excessive scene count (566 scenes); high micro-scene density inflates video gen budget.",
+          "High average dialogue length (56.9 words/turn); speech beats risk clip overrun.",
+          "415 monologue turn(s) exceed 35 words without action line splits.",
+          "No explicit music/sound design cues detected in screenplay."
+        ]
+      },
+      "AvgAdaptationFidelity": 0,
+      "AvgCharacterDisambiguation": 0,
+      "AvgAiVideoDirectibility": 0,
+      "AvgDramaticPacing": 0,
+      "AvgDialogueAuthenticity": 0,
+      "AvgSoundDesignMusic": 0,
+      "AvgOverallQualitative": 0,
+      "DisqualifyingFlags": []
+    }
+  ],
+  "JudgeMatrix": {
+    "grok-4.5": {
+      "gpt-5.6-luna": 8.25,
+      "gpt-5.6-terra": 8.17,
+      "gemini-3.6-flash": 5.58,
+      "gemini-3.1-pro-preview": 7.58,
+      "grok-4.20-reasoning": 5,
+      "gpt-5.6-sol": 8.92
+    },
+    "grok-4": {
+      "gpt-5.6-luna": 6.67,
+      "gemini-3.6-flash": 6.33,
+      "gemini-3.1-pro-preview": 7,
+      "gpt-5.6-terra": 8.17,
+      "gpt-5.6-sol": 8.33,
+      "grok-4.20-reasoning": 5.33
+    }
+  },
+  "JudgeRankMatrix": {
+    "grok-4.5": {
+      "gpt-5.6-sol": 1,
+      "gpt-5.6-luna": 2,
+      "gpt-5.6-terra": 3,
+      "gemini-3.1-pro-preview": 4,
+      "gemini-3.6-flash": 5,
+      "grok-4.20-reasoning": 6
+    },
+    "grok-4": {
+      "gpt-5.6-sol": 1,
+      "gpt-5.6-terra": 2,
+      "gemini-3.1-pro-preview": 3,
+      "gpt-5.6-luna": 4,
+      "gemini-3.6-flash": 5,
+      "grok-4.20-reasoning": 6
+    }
+  },
+  "SelfBiasNotes": [],
+  "JudgeRationale": {
+    "grok-4.5": {
+      "gpt-5.6-luna": "Strong coverage of the full arc from Milwaukee setup through crash, stabbing, breakup and prison forgiveness with Seattle frame bookends; minor named supports (MS. HART, GUARD MILLER, BOZO) stay closed-cast. Character looks lock consistently (Nick scars/reddish hair, Sionna pale/light-blue eyes/fish necklace) with explicit older/young NARRATOR splits. Action lines are mostly single-beat and camera-visible; dialogue stays close to source diction. Sound cues appear in every scene and densify at peaks. Minor compression of secondary dreams and library beats keeps runtime viable without inventing plot.",
+      "gpt-5.6-terra": "Faithful spine with clear visual crash and stabbing peaks; supporting names stay minimal and closed. NARRATOR dark-blond and Nick scar/build descriptions hold across ages; Sionna traits recur. Action is highly clip-able (single observable beats, no multi-location cram). Dialogue is natural but occasionally paraphrases book cadence. Sound design is densest and most concrete of the set, with layered cues at every emotional turn. Structure is tight for short-form without padding.",
+      "gemini-3.6-flash": "Core events are present but fidelity collapses on the early name reveal and the foreign Christmas-Carol button. Character looks are serviceable yet age splits lack consistent re-lock language. Some action is filmable, yet several scenes pack multiple turns. Dialogue drifts into paraphrase and invention. Sound cues exist but cannot rescue the structural violations.",
+      "gemini-3.1-pro-preview": "Solid arc coverage and late name reveal; dialogue often quotes the book almost verbatim. Character descriptions appear but re-entry restatements are thinner, risking look drift. Action is mostly concrete yet a few scenes compress multiple emotional beats. Pacing is functional though some connective tissue feels rushed. Sound is consistently present and useful.",
+      "grok-4.20-reasoning": "Fidelity is broken by early naming, foreign ending, and heavy omission of source texture. Character looks are sketched but inconsistent across cuts. Many beats rely on direct-to-camera telling rather than observable action, harming clip directibility. Pacing is choppy with abrupt CUT TOs. Dialogue mixes source fragments with invention. Sound exists but cannot compensate.",
+      "gpt-5.6-sol": "Highest-fidelity adaptation: nearly every major beat, dream motif, and book-voice cadence is preserved; name stays THE NARRATOR until the final boarding-pass reveal. Character locks are exhaustive and restated on re-entry (Nick scars/build/jacket, Sionna eyes/necklace/wardrobe, Narrator lean/brown-hair/pizza shirt). Action lines are single-clip concrete and ordered. Dialogue quotes or tightly compresses source. Sound/music cues densify correctly at crash, stabbing and prison peaks. Structure supports short-clip breakdown while retaining emotional momentum."
+    },
+    "grok-4": {
+      "gpt-5.6-luna": "Severe fidelity penalty for invented characters and plot framing; covers beats but adds non-source elements that alter structure.",
+      "gemini-3.6-flash": "Severe fidelity penalty for naming unnamed narrator and altering dialogue; structure is workable but core identity invention breaks rules.",
+      "gemini-3.1-pro-preview": "Solid coverage with consistent NARRATOR use and visual descriptions; some pacing compression but no major inventions.",
+      "gpt-5.6-terra": "Strong fidelity with consistent NARRATOR, locked visual traits on re-entries, and filmable action lines; minor supporting names but no plot inventions.",
+      "gpt-5.6-sol": "Highest fidelity with THE NARRATOR cue, minimal inventions, consistent locations and looks, and strong visual grounding in every scene.",
+      "grok-4.20-reasoning": "Severe fidelity penalty for naming the narrator, adding external quotes, and major structural inventions; unusable as-is."
+    }
+  },
+  "JudgeSummaries": {
+    "grok-4.5": "Strongest: Screenplay F because it delivers the highest fidelity to source beats and diction while locking consistent, re-stated character visuals and supplying clip-ready action plus dense sound cues. Weakest: Screenplay E because it violates name-withholding from the first line, invents an unrelated closing quotation, and replaces observable action with camera-address telling.",
+    "grok-4": "Strongest: Screenplay E because it maintains THE NARRATOR cue, avoids invented names or plot, and delivers consistent visual/action grounding across the full arc. Weakest: Screenplay F because it assigns an invented name to the protagonist, inserts external quotes, and fabricates a framing device that fundamentally alters the source."
+  },
+  "JudgePromptSuggestions": {
+    "grok-4.5": {
+      "gpt-5.6-luna": "Add a hard rule that every age-spanning character re-introduction must open its first Action line with an explicit locked trait restatement plus age token (e.g. OLDER NARRATOR / YOUNG NARRATOR) so reference images never drift across time jumps.",
+      "gpt-5.6-terra": "Mandate that any paraphrased dialogue beat must be flagged internally and limited to one clause; prefer cutting the entire minor exchange over rewriting source wording.",
+      "gemini-3.6-flash": "Insert an explicit prohibition: if the source withholds the protagonist\u2019s given name until late (or forever), the cue must remain NARRATOR / THE NARRATOR until the exact moment the book first utters it; never invent closing lines from other texts.",
+      "gemini-3.1-pro-preview": "Require that every returning character\u2019s first Action line after a time jump or location change must restate at least two locked visual traits (build, hair, scar, signature wardrobe color) before any dialogue.",
+      "grok-4.20-reasoning": "Add a hard ban on direct-to-camera address or fourth-wall frame unless the source itself establishes an on-camera confessor position; default all reflective material to NARRATOR V.O. over concrete action.",
+      "gpt-5.6-sol": "Cap total scene count guidance more tightly (e.g. prefer 18\u201328 headings for a novella-length source) so even high-fidelity drafts automatically prune secondary connective tissue before peak beats."
+    },
+    "grok-4": {
+      "gpt-5.6-luna": "Add an explicit rule that supporting characters with dialogue must use only names present in the source text or generic descriptors without new proper names unless required for closed cast.",
+      "gemini-3.6-flash": "Add an explicit rule that unnamed protagonists must use THE NARRATOR cue exclusively and never receive invented proper names.",
+      "gemini-3.1-pro-preview": "Add an explicit rule requiring at least one concrete diegetic sound cue in every scene even for quiet domestic beats.",
+      "gpt-5.6-terra": "Add an explicit rule that when a character reappears after a time jump, the first Action line must restate 2-3 locked visual traits.",
+      "gpt-5.6-sol": "Add an explicit rule that any V.O. passage longer than three sentences must be broken by at least one visual or sound micro-beat.",
+      "grok-4.20-reasoning": "Add an explicit rule prohibiting any dialogue, quotes, or lines from outside the source text."
+    }
+  }
+}

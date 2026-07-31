@@ -67,7 +67,7 @@ public class JitBenchmarkServiceTests
         public bool IsConfigured => true;
         public string ResponseToReturn { get; set; } = "{}";
 
-        public Task<string> CompleteAsync(string systemPrompt, string userPrompt, string model, double temperature = 0.2, CancellationToken ct = default, string? mode = null)
+        public Task<string> CompleteAsync(string systemPrompt, string userPrompt, string model, double temperature = 0.2, CancellationToken ct = default, string? mode = null, string? reasoningEffort = null)
         {
             return Task.FromResult(ResponseToReturn);
         }

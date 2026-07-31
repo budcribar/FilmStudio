@@ -1,0 +1,108 @@
+{
+  "evaluations": [
+    {
+      "screenplayId": "Screenplay A",
+      "adaptationFidelity": 9,
+      "characterDisambiguation": 9,
+      "aiVideoDirectibility": 8,
+      "dramaticPacing": 8,
+      "dialogueAuthenticity": 8.5,
+      "soundDesignMusic": 8,
+      "overallQualitativeScore": 8.42,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Screenplay A is highly faithful and detailed in its adaptation, providing clear character and scene descriptions, though some scenes might require tighter condensation for 5\u201310 second video clips."
+    },
+    {
+      "screenplayId": "Screenplay B",
+      "adaptationFidelity": 8,
+      "characterDisambiguation": 8,
+      "aiVideoDirectibility": 9,
+      "dramaticPacing": 9,
+      "dialogueAuthenticity": 8,
+      "soundDesignMusic": 8,
+      "overallQualitativeScore": 8.33,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Screenplay B offers a more streamlined and visually clear version of the story, making it highly directable for AI shorts even if it slightly sacrifices some narrative depth."
+    },
+    {
+      "screenplayId": "Screenplay C",
+      "adaptationFidelity": 8.5,
+      "characterDisambiguation": 8.5,
+      "aiVideoDirectibility": 8.5,
+      "dramaticPacing": 8.5,
+      "dialogueAuthenticity": 8.5,
+      "soundDesignMusic": 8,
+      "overallQualitativeScore": 8.42,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Screenplay C remains faithful, balancing descriptive narration with clear visual beats, though its pacing is similar to A and might require slight trimming for clip segmentation."
+    },
+    {
+      "screenplayId": "Screenplay D",
+      "adaptationFidelity": 9,
+      "characterDisambiguation": 9,
+      "aiVideoDirectibility": 7.5,
+      "dramaticPacing": 7.5,
+      "dialogueAuthenticity": 8,
+      "soundDesignMusic": 8,
+      "overallQualitativeScore": 8.17,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Screenplay D is very rich in detail and faithful to the source, but its dense scenes and extended dialogue sequences could challenge the short duration clip format."
+    },
+    {
+      "screenplayId": "Screenplay E",
+      "adaptationFidelity": 9,
+      "characterDisambiguation": 9,
+      "aiVideoDirectibility": 9,
+      "dramaticPacing": 9,
+      "dialogueAuthenticity": 9,
+      "soundDesignMusic": 9,
+      "overallQualitativeScore": 9,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Screenplay E is exceptionally polished with precise, filmable visual action lines, clear character cues, and a well-calibrated pacing ideal for AI-generated short video clips."
+    },
+    {
+      "screenplayId": "Screenplay F",
+      "adaptationFidelity": 9,
+      "characterDisambiguation": 9,
+      "aiVideoDirectibility": 8,
+      "dramaticPacing": 8,
+      "dialogueAuthenticity": 8.5,
+      "soundDesignMusic": 8.5,
+      "overallQualitativeScore": 8.5,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Screenplay F offers a richly detailed adaptation with strong narrative continuity, although its complex layering might require careful editing to fit the clip constraints."
+    },
+    {
+      "screenplayId": "Screenplay G",
+      "adaptationFidelity": 8.5,
+      "characterDisambiguation": 8.5,
+      "aiVideoDirectibility": 8.5,
+      "dramaticPacing": 8.5,
+      "dialogueAuthenticity": 8,
+      "soundDesignMusic": 8,
+      "overallQualitativeScore": 8.33,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Screenplay G is a streamlined and faithful adaptation that cleanly maps the narrative beats, though its overall approach is less distinctive compared to the top contenders."
+    }
+  ],
+  "forcedRanking": [
+    "Screenplay E",
+    "Screenplay F",
+    "Screenplay A",
+    "Screenplay C",
+    "Screenplay B",
+    "Screenplay G",
+    "Screenplay D"
+  ],
+  "judgeSummaryNotes": "Strongest: Screenplay E because it delivers a beautifully concise, visually direct, and cinematically rich adaptation ideal for short clips; Weakest: Screenplay D because its dense narrative detail and extended beat descriptions risk overloading the limited clip format.",
+  "isMock": false,
+  "rubricVersion": "2-calibrated-selfbias-productionready",
+  "screenplaysHash": "BA4AF8E59100C49AEC27EC8D1C63E9C6EB3245CF7939A65AAB9010913A4A4F64"
+}

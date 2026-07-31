@@ -1,0 +1,117 @@
+{
+  "evaluations": [
+    {
+      "screenplayId": "Screenplay A",
+      "adaptationFidelity": 9,
+      "characterDisambiguation": 9,
+      "aiVideoDirectibility": 8.5,
+      "dramaticPacing": 8,
+      "dialogueAuthenticity": 8.5,
+      "soundDesignMusic": 8.5,
+      "overallQualitativeScore": 8.58,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Strong fidelity with visual action lines, consistent character descriptions, and sound cues in every scene; minor compression of some internal beats but no inventions.",
+      "promptImprovementSuggestion": "Add an explicit rule requiring every scene to end with a concrete visual or sound micro-beat before any transition or cut."
+    },
+    {
+      "screenplayId": "Screenplay B",
+      "adaptationFidelity": 4,
+      "characterDisambiguation": 7,
+      "aiVideoDirectibility": 6.5,
+      "dramaticPacing": 5.5,
+      "dialogueAuthenticity": 5,
+      "soundDesignMusic": 6,
+      "overallQualitativeScore": 5.67,
+      "productionReady": false,
+      "disqualifyingIssues": [
+        "Invented ending line \u0027God bless us, every one\u0027 not present in source; frame narrative adds non-book structure and invented closing beat."
+      ],
+      "rationale": "Major fidelity violation with invented content and non-source dialogue; pacing suffers from frame device and weak character consistency across time jumps.",
+      "promptImprovementSuggestion": "Add a hard rule that no dialogue, closing lines, or thematic tags may be invented or borrowed from other works; all spoken words must derive directly from the source text."
+    },
+    {
+      "screenplayId": "Screenplay C",
+      "adaptationFidelity": 8,
+      "characterDisambiguation": 8.5,
+      "aiVideoDirectibility": 7.5,
+      "dramaticPacing": 7,
+      "dialogueAuthenticity": 8,
+      "soundDesignMusic": 8,
+      "overallQualitativeScore": 7.83,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Detailed coverage with strong visual grounding and consistent looks, but some scenes cram multiple actions and the overall length exceeds the 10-minute target.",
+      "promptImprovementSuggestion": "Add a rule capping total scene headings at 25 for any adaptation targeting a 10-minute runtime, with mandatory merging of consecutive same-location beats."
+    },
+    {
+      "screenplayId": "Screenplay D",
+      "adaptationFidelity": 7.5,
+      "characterDisambiguation": 8,
+      "aiVideoDirectibility": 7,
+      "dramaticPacing": 7.5,
+      "dialogueAuthenticity": 7.5,
+      "soundDesignMusic": 7,
+      "overallQualitativeScore": 7.42,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Solid frame narrative and visual descriptions, but some dialogue paraphrasing and minor invented connective tissue reduce fidelity slightly.",
+      "promptImprovementSuggestion": "Add an explicit instruction that any summarized exchange may receive at most one brief generic period-appropriate line, and only if action alone cannot carry the beat."
+    },
+    {
+      "screenplayId": "Screenplay E",
+      "adaptationFidelity": 7,
+      "characterDisambiguation": 8.5,
+      "aiVideoDirectibility": 8,
+      "dramaticPacing": 7.5,
+      "dialogueAuthenticity": 7.5,
+      "soundDesignMusic": 7.5,
+      "overallQualitativeScore": 7.67,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Good visual action and consistent looks, but early use of the narrator\u0027s full name before the book\u0027s reveal and some compression of key emotional beats lower fidelity.",
+      "promptImprovementSuggestion": "Add a rule that a narrator\u0027s real name may not appear in character cues or action until the exact moment the source text first reveals it."
+    },
+    {
+      "screenplayId": "Screenplay F",
+      "adaptationFidelity": 9.5,
+      "characterDisambiguation": 9.5,
+      "aiVideoDirectibility": 9,
+      "dramaticPacing": 8.5,
+      "dialogueAuthenticity": 9,
+      "soundDesignMusic": 9,
+      "overallQualitativeScore": 9.08,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Highest fidelity with precise book wording, locked visual traits restated on re-entry, concrete filmable actions, and sound cues in every scene without inventions.",
+      "promptImprovementSuggestion": "Add a rule requiring 2-3 locked visual traits to be restated in the first action line whenever a character re-enters after a time jump or long absence."
+    },
+    {
+      "screenplayId": "Screenplay G",
+      "adaptationFidelity": 8.5,
+      "characterDisambiguation": 8,
+      "aiVideoDirectibility": 8,
+      "dramaticPacing": 8,
+      "dialogueAuthenticity": 8,
+      "soundDesignMusic": 8.5,
+      "overallQualitativeScore": 8.17,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Strong coverage and sound design with consistent narrator voice, but some scenes lack the required grounding action line immediately after the heading.",
+      "promptImprovementSuggestion": "Add a hard rule that every scene heading must be followed by at least one concrete camera-observable action line before any dialogue or V.O."
+    }
+  ],
+  "forcedRanking": [
+    "Screenplay F",
+    "Screenplay A",
+    "Screenplay G",
+    "Screenplay C",
+    "Screenplay D",
+    "Screenplay E",
+    "Screenplay B"
+  ],
+  "judgeSummaryNotes": "Strongest: Screenplay F because it achieves near-perfect source fidelity, consistent character visuals, and required sound cues without any inventions or structural additions. Weakest: Screenplay B because it introduces an invented closing line from another work and relies on a non-book frame narrative that violates adaptation fidelity.",
+  "isMock": false,
+  "rubricVersion": "4-prompt-improvement-with-actual-prompt-text",
+  "screenplaysHash": "27127BF4F6BE9E98DE8FC8C1B48748DF06A531EF9DB1DDA5683FF74BE94F469A"
+}

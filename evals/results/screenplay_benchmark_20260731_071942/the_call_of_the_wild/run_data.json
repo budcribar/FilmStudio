@@ -1,0 +1,439 @@
+{
+  "BookPath": "C:\\Users\\budcr\\source\\repos\\claude\\PageToMovie\\books\\The_Call_of_the_Wild.txt",
+  "Timestamp": "2026-07-31 13:54:46 UTC",
+  "IsMockRun": false,
+  "Leaderboard": [
+    {
+      "ModelId": "gpt-5.6-luna",
+      "AnonymousLabel": "",
+      "CompositeScore": 91.7,
+      "IsGenerationFallback": false,
+      "GenerationFallbackReason": null,
+      "BordaPoints": 13,
+      "AvgJudgeRank": 1.5,
+      "SyntaxAudit": {
+        "OverallSyntaxScore": 99.2,
+        "FormatComplianceScore": 100,
+        "SceneBudgetScore": 100,
+        "DialoguePacingScore": 85,
+        "CharacterDisambiguationScore": 100,
+        "MusicSpecScore": 100,
+        "TotalSceneHeadings": 31,
+        "TotalDialogueBlocks": 75,
+        "AvgWordsPerDialogue": 14.9,
+        "MaxWordsInSingleDialogue": 40,
+        "LongMonologueCount": 3,
+        "GenericNumberedSpeakerCount": 0,
+        "CharacterNamesFound": [
+          "NARRATOR",
+          "KIDNAPPER",
+          "MANUEL",
+          "SALOON KEEPER",
+          "RED SWEATER",
+          "PERRAULT",
+          "FRANCOIS",
+          "HAL",
+          "MERCEDES",
+          "THORNTON",
+          "MATTHEWSON",
+          "JIM O\u0027BRIEN",
+          "SKOOKUM KING"
+        ],
+        "AgeDisambiguatedCharacters": [],
+        "DiagnosticWarnings": [
+          "3 monologue turn(s) exceed 35 words without action line splits.",
+          "Detected 1 descriptive instrumental music/sound cue(s)."
+        ]
+      },
+      "AvgAdaptationFidelity": 9,
+      "AvgCharacterDisambiguation": 8.8,
+      "AvgAiVideoDirectibility": 8.5,
+      "AvgDramaticPacing": 8.2,
+      "AvgDialogueAuthenticity": 8.8,
+      "AvgSoundDesignMusic": 8.8,
+      "AvgOverallQualitative": 8.7,
+      "DisqualifyingFlags": []
+    },
+    {
+      "ModelId": "gpt-5.6-terra",
+      "AnonymousLabel": "",
+      "CompositeScore": 89.7,
+      "IsGenerationFallback": false,
+      "GenerationFallbackReason": null,
+      "BordaPoints": 10,
+      "AvgJudgeRank": 3,
+      "SyntaxAudit": {
+        "OverallSyntaxScore": 100,
+        "FormatComplianceScore": 100,
+        "SceneBudgetScore": 100,
+        "DialoguePacingScore": 100,
+        "CharacterDisambiguationScore": 100,
+        "MusicSpecScore": 100,
+        "TotalSceneHeadings": 20,
+        "TotalDialogueBlocks": 52,
+        "AvgWordsPerDialogue": 11.6,
+        "MaxWordsInSingleDialogue": 30,
+        "LongMonologueCount": 0,
+        "GenericNumberedSpeakerCount": 0,
+        "CharacterNamesFound": [
+          "NARRATOR",
+          "HARRIS",
+          "MANUEL",
+          "MURPHY",
+          "PERRAULT",
+          "FRANCOIS",
+          "TOM",
+          "HAL",
+          "MERCEDES",
+          "THORNTON",
+          "MATTHEWSON",
+          "O\u0027BRIEN"
+        ],
+        "AgeDisambiguatedCharacters": [],
+        "DiagnosticWarnings": [
+          "Detected 1 descriptive instrumental music/sound cue(s)."
+        ]
+      },
+      "AvgAdaptationFidelity": 8.5,
+      "AvgCharacterDisambiguation": 8.8,
+      "AvgAiVideoDirectibility": 8.2,
+      "AvgDramaticPacing": 7.8,
+      "AvgDialogueAuthenticity": 8.5,
+      "AvgSoundDesignMusic": 8,
+      "AvgOverallQualitative": 8.3,
+      "DisqualifyingFlags": []
+    },
+    {
+      "ModelId": "gpt-5.6-sol",
+      "AnonymousLabel": "",
+      "CompositeScore": 88.9,
+      "IsGenerationFallback": false,
+      "GenerationFallbackReason": null,
+      "BordaPoints": 9,
+      "AvgJudgeRank": 3.5,
+      "SyntaxAudit": {
+        "OverallSyntaxScore": 99.8,
+        "FormatComplianceScore": 100,
+        "SceneBudgetScore": 100,
+        "DialoguePacingScore": 95,
+        "CharacterDisambiguationScore": 100,
+        "MusicSpecScore": 100,
+        "TotalSceneHeadings": 18,
+        "TotalDialogueBlocks": 42,
+        "AvgWordsPerDialogue": 16.1,
+        "MaxWordsInSingleDialogue": 38,
+        "LongMonologueCount": 1,
+        "GenericNumberedSpeakerCount": 0,
+        "CharacterNamesFound": [
+          "NARRATOR",
+          "MANUEL",
+          "SMITH",
+          "PERRAULT",
+          "FRANCOIS",
+          "HAL",
+          "MERCEDES",
+          "THORNTON",
+          "MATTHEWSON"
+        ],
+        "AgeDisambiguatedCharacters": [],
+        "DiagnosticWarnings": [
+          "1 monologue turn(s) exceed 35 words without action line splits."
+        ]
+      },
+      "AvgAdaptationFidelity": 8.2,
+      "AvgCharacterDisambiguation": 8.8,
+      "AvgAiVideoDirectibility": 8.2,
+      "AvgDramaticPacing": 7.5,
+      "AvgDialogueAuthenticity": 8.2,
+      "AvgSoundDesignMusic": 8,
+      "AvgOverallQualitative": 8.2,
+      "DisqualifyingFlags": []
+    },
+    {
+      "ModelId": "claude-opus-5",
+      "AnonymousLabel": "",
+      "CompositeScore": 87.9,
+      "IsGenerationFallback": false,
+      "GenerationFallbackReason": null,
+      "BordaPoints": 11,
+      "AvgJudgeRank": 2.5,
+      "SyntaxAudit": {
+        "OverallSyntaxScore": 98.5,
+        "FormatComplianceScore": 100,
+        "SceneBudgetScore": 100,
+        "DialoguePacingScore": 70,
+        "CharacterDisambiguationScore": 100,
+        "MusicSpecScore": 100,
+        "TotalSceneHeadings": 42,
+        "TotalDialogueBlocks": 121,
+        "AvgWordsPerDialogue": 16.6,
+        "MaxWordsInSingleDialogue": 52,
+        "LongMonologueCount": 10,
+        "GenericNumberedSpeakerCount": 0,
+        "CharacterNamesFound": [
+          "NARRATOR",
+          "FRANCOIS",
+          "PERRAULT",
+          "THE SCOTCH HALF-BREED",
+          "JED",
+          "MERCEDES",
+          "OTIS",
+          "CHARLES",
+          "HAL",
+          "JOHN THORNTON",
+          "PETE",
+          "HANS",
+          "MATTHEWSON",
+          "JIM O\u0027BRIEN",
+          "SKOOKUM BENCH KING"
+        ],
+        "AgeDisambiguatedCharacters": [],
+        "DiagnosticWarnings": [
+          "10 monologue turn(s) exceed 35 words without action line splits.",
+          "Detected 3 descriptive instrumental music/sound cue(s)."
+        ]
+      },
+      "AvgAdaptationFidelity": 8,
+      "AvgCharacterDisambiguation": 8.5,
+      "AvgAiVideoDirectibility": 8,
+      "AvgDramaticPacing": 7,
+      "AvgDialogueAuthenticity": 8.5,
+      "AvgSoundDesignMusic": 8.5,
+      "AvgOverallQualitative": 8.1,
+      "DisqualifyingFlags": [
+        "grok-4.5: Draft is truncated mid-moose-hunt and never reaches Yeehat attack, Thornton\u0027s death, or Ghost Dog ending",
+        "grok-4.5: Opening estate scene is cut off mid-sentence"
+      ]
+    },
+    {
+      "ModelId": "gemini-3.6-flash",
+      "AnonymousLabel": "",
+      "CompositeScore": 84.6,
+      "IsGenerationFallback": false,
+      "GenerationFallbackReason": null,
+      "BordaPoints": 7,
+      "AvgJudgeRank": 4.5,
+      "SyntaxAudit": {
+        "OverallSyntaxScore": 97,
+        "FormatComplianceScore": 95,
+        "SceneBudgetScore": 100,
+        "DialoguePacingScore": 70,
+        "CharacterDisambiguationScore": 100,
+        "MusicSpecScore": 100,
+        "TotalSceneHeadings": 18,
+        "TotalDialogueBlocks": 37,
+        "AvgWordsPerDialogue": 18.8,
+        "MaxWordsInSingleDialogue": 58,
+        "LongMonologueCount": 9,
+        "GenericNumberedSpeakerCount": 0,
+        "CharacterNamesFound": [
+          "NARRATOR",
+          "STRANGER",
+          "MANUEL",
+          "SALOON-KEEPER",
+          "MAN IN RED SWEATER",
+          "PERRAULT",
+          "FRANCOIS",
+          "HAL",
+          "TOWNSMAN",
+          "JOHN THORNTON",
+          "MATTHEWSON",
+          "YEEHAT HUNTER"
+        ],
+        "AgeDisambiguatedCharacters": [],
+        "DiagnosticWarnings": [
+          "Missing \u0027FADE OUT.\u0027 or \u0027THE END\u0027 closing transition.",
+          "9 monologue turn(s) exceed 35 words without action line splits."
+        ]
+      },
+      "AvgAdaptationFidelity": 8,
+      "AvgCharacterDisambiguation": 7.8,
+      "AvgAiVideoDirectibility": 7.5,
+      "AvgDramaticPacing": 7.2,
+      "AvgDialogueAuthenticity": 7.8,
+      "AvgSoundDesignMusic": 7.5,
+      "AvgOverallQualitative": 7.6,
+      "DisqualifyingFlags": [
+        "grok-4.5: Skips or collapses major beats (Narwhal voyage, full mail-train arc, Forty-Mile rescue detail)",
+        "grok-4.5: Generic character tokens (STRANGER, MAN IN RED SWEATER) and inconsistent Buck coat color"
+      ]
+    },
+    {
+      "ModelId": "gemini-3.1-pro-preview",
+      "AnonymousLabel": "",
+      "CompositeScore": 78.7,
+      "IsGenerationFallback": false,
+      "GenerationFallbackReason": null,
+      "BordaPoints": 4,
+      "AvgJudgeRank": 6,
+      "SyntaxAudit": {
+        "OverallSyntaxScore": 98.8,
+        "FormatComplianceScore": 100,
+        "SceneBudgetScore": 100,
+        "DialoguePacingScore": 75,
+        "CharacterDisambiguationScore": 100,
+        "MusicSpecScore": 100,
+        "TotalSceneHeadings": 11,
+        "TotalDialogueBlocks": 21,
+        "AvgWordsPerDialogue": 27,
+        "MaxWordsInSingleDialogue": 56,
+        "LongMonologueCount": 5,
+        "GenericNumberedSpeakerCount": 0,
+        "CharacterNamesFound": [
+          "NARRATOR",
+          "MAN IN RED SWEATER",
+          "HAL",
+          "JOHN THORNTON"
+        ],
+        "AgeDisambiguatedCharacters": [],
+        "DiagnosticWarnings": [
+          "5 monologue turn(s) exceed 35 words without action line splits.",
+          "Detected 1 descriptive instrumental music/sound cue(s)."
+        ]
+      },
+      "AvgAdaptationFidelity": 6.5,
+      "AvgCharacterDisambiguation": 6,
+      "AvgAiVideoDirectibility": 7,
+      "AvgDramaticPacing": 6.2,
+      "AvgDialogueAuthenticity": 7,
+      "AvgSoundDesignMusic": 6.5,
+      "AvgOverallQualitative": 6.5,
+      "DisqualifyingFlags": [
+        "grok-4.5: Omits or collapses large stretches (full kidnapping sequence detail, Dave\u0027s death, mail-train suffering, Forty-Mile rescue, thousand-pound wager staging)",
+        "grok-4.5: Several multi-location scenes and thin cast descriptions"
+      ]
+    },
+    {
+      "ModelId": "grok-4.20-reasoning",
+      "AnonymousLabel": "",
+      "CompositeScore": 74.1,
+      "IsGenerationFallback": false,
+      "GenerationFallbackReason": null,
+      "BordaPoints": 2,
+      "AvgJudgeRank": 7,
+      "SyntaxAudit": {
+        "OverallSyntaxScore": 97.2,
+        "FormatComplianceScore": 95,
+        "SceneBudgetScore": 100,
+        "DialoguePacingScore": 75,
+        "CharacterDisambiguationScore": 100,
+        "MusicSpecScore": 100,
+        "TotalSceneHeadings": 10,
+        "TotalDialogueBlocks": 21,
+        "AvgWordsPerDialogue": 24.7,
+        "MaxWordsInSingleDialogue": 57,
+        "LongMonologueCount": 5,
+        "GenericNumberedSpeakerCount": 0,
+        "CharacterNamesFound": [
+          "NARRATOR",
+          "MANUEL",
+          "STRANGER",
+          "MAN IN THE RED SWEATER",
+          "JOHN THORNTON"
+        ],
+        "AgeDisambiguatedCharacters": [],
+        "DiagnosticWarnings": [
+          "Missing \u0027FADE OUT.\u0027 or \u0027THE END\u0027 closing transition.",
+          "5 monologue turn(s) exceed 35 words without action line splits."
+        ]
+      },
+      "AvgAdaptationFidelity": 5.5,
+      "AvgCharacterDisambiguation": 5.5,
+      "AvgAiVideoDirectibility": 6,
+      "AvgDramaticPacing": 5.5,
+      "AvgDialogueAuthenticity": 6.5,
+      "AvgSoundDesignMusic": 6.2,
+      "AvgOverallQualitative": 5.9,
+      "DisqualifyingFlags": [
+        "grok-4.5: Severe compression that drops or summarizes entire chapters into single VO blocks",
+        "grok-4.5: Multiple scenes cram several locations and time jumps into one heading",
+        "grok-4.5: Weak cast locking and thin sound beds"
+      ]
+    }
+  ],
+  "JudgeMatrix": {
+    "grok-4.5": {
+      "gpt-5.6-luna": 8.75,
+      "gpt-5.6-terra": 8.33,
+      "claude-opus-5": 7.58,
+      "gemini-3.6-flash": 7.17,
+      "grok-4.20-reasoning": 5.25,
+      "gpt-5.6-sol": 8.42,
+      "gemini-3.1-pro-preview": 6.17
+    },
+    "grok-4": {
+      "gpt-5.6-terra": 8.25,
+      "grok-4.20-reasoning": 6.5,
+      "claude-opus-5": 8.6,
+      "gemini-3.1-pro-preview": 6.9,
+      "gemini-3.6-flash": 8.1,
+      "gpt-5.6-sol": 7.9,
+      "gpt-5.6-luna": 8.6
+    }
+  },
+  "JudgeRankMatrix": {
+    "grok-4.5": {
+      "gpt-5.6-luna": 1,
+      "gpt-5.6-sol": 2,
+      "gpt-5.6-terra": 3,
+      "claude-opus-5": 4,
+      "gemini-3.6-flash": 5,
+      "gemini-3.1-pro-preview": 6,
+      "grok-4.20-reasoning": 7
+    },
+    "grok-4": {
+      "claude-opus-5": 1,
+      "gpt-5.6-luna": 2,
+      "gpt-5.6-terra": 3,
+      "gemini-3.6-flash": 4,
+      "gpt-5.6-sol": 5,
+      "gemini-3.1-pro-preview": 6,
+      "grok-4.20-reasoning": 7
+    }
+  },
+  "SelfBiasNotes": [],
+  "JudgeRationale": {
+    "grok-4.5": {
+      "gpt-5.6-luna": "Near-complete coverage of the novel\u0027s spine from Santa Clara through the Ghost Dog coda, with book-faithful dialogue and dense interleaved (SOUND)/(MUSIC) cues on every scene. Character looks (Buck\u0027s white chest, red sweater, Mercedes/Hal/Charles) stay locked. Slight compression of secondary trail incidents and a few multi-beat scenes keep it just shy of perfect for 5-10s clip slicing, but it is the most production-ready full arc.",
+      "gpt-5.6-terra": "Strong closed-cast naming (Harris, Murphy, Tom) and consistent Buck markings; hits kidnapping, club, Curly, Spitz death, Dave, Hal/Mercedes collapse, Thornton love, thousand-pound pull, Yeehats, and pack join. Slightly thinner on the mail-train middle and moose hunt than A/C, and a few scenes pack two locations, but still fully filmable and faithful.",
+      "claude-opus-5": "Best-in-class fidelity and sound design for the middle third (Le Barge invasion, Dolly madness, Spitz death, Dave\u0027s heartbreak, Hal/Mercedes cruelty, thousand-pound pull) with excellent book diction, but the screenplay literally ends mid-action on the moose hunt and omits the entire resolution. Unusable as a finished 10-minute film.",
+      "gemini-3.6-flash": "Covers the emotional spine and lands the Ghost Dog button, but compresses too aggressively, invents minor connective tissue, and lets cast looks drift (silk-black coat vs earlier dark). Sound cues exist but are thinner at peaks. Workable only after heavy revision.",
+      "grok-4.20-reasoning": "Reads like a highlight reel rather than a screenplay: Curly, Spitz fight, Hal arc, Thornton, and ending are present but so telescoped that AI clip breakdown becomes impossible. Heavy reliance on NARRATOR summarizing action violates show-don\u0027t-tell and directibility.",
+      "gpt-5.6-sol": "Excellent locked visual identity for Buck (dark sable, brown muzzle/brows, white blaze restated on re-entry) and clear supporting cast. Full arc with strong peak interleaving on Spitz fight, pull, and Yeehat attack. Slightly less dense sound design than A and minor trail compression, but highly directable and faithful.",
+      "gemini-3.1-pro-preview": "Hits iconic set-pieces (club, Spitz death, Thornton rescue, Yeehats, pack) with decent book lines, but the middle is gutted and many scenes are summary-heavy. Sound cues are sparse outside peaks. Not greenlight-ready without substantial expansion."
+    },
+    "grok-4": {
+      "gpt-5.6-terra": "High fidelity to book beats with consistent Buck visuals (brown muzzle, white blaze) and explicit sound cues in every scene; minor pacing compression for clip length.",
+      "grok-4.20-reasoning": "Excessive summarization drops key beats and reduces visual specificity; character descriptions lack consistent locking across scenes.",
+      "claude-opus-5": "Exceptional fidelity with detailed book-accurate visuals, consistent character traits, and interleaved sound cues; strong clip-friendly breakdown.",
+      "gemini-3.1-pro-preview": "Solid coverage but some paraphrased dialogue and less consistent visual locking for Buck; sound cues present but pacing occasionally rushed.",
+      "gemini-3.6-flash": "Strong fidelity and consistent Buck description with good sound integration; minor compression in later trail sections affects pacing slightly.",
+      "gpt-5.6-sol": "Good fidelity with consistent visuals and sound cues; pacing works for clips but some transitions feel abrupt in mail-hauling sections.",
+      "gpt-5.6-luna": "Excellent fidelity, locked visuals for Buck, concrete actions, and strong sound design; pacing and transitions optimized for short clips."
+    }
+  },
+  "JudgeSummaries": {
+    "grok-4.5": "Strongest: Screenplay A because it delivers the most complete, book-faithful arc with consistent cast locking, clip-friendly action, and rich per-scene sound design. Weakest: Screenplay E because extreme compression turns major chapters into unfilmable VO summaries and collapses multiple locations into single headings, making AI clip breakdown unusable.",
+    "grok-4": "Strongest: Screenplay C because of superior fidelity, consistent character visuals, and clip-optimized structure with explicit sound cues. Weakest: Screenplay B because of excessive summarization that drops beats and lacks consistent visual locking for characters."
+  },
+  "JudgePromptSuggestions": {
+    "grok-4.5": {
+      "gpt-5.6-luna": "Require that any scene intended for multi-clip coverage end each micro-beat on a single observable action or sound so editors can cut on the beat without rewriting action lines.",
+      "gpt-5.6-terra": "Add a hard rule that travel or time-compression montages must be written as 2-3 concrete micro-locations with their own headings rather than a single summary slug spanning days.",
+      "claude-opus-5": "Mandate an explicit end-to-end arc check: after the final action line the writer must confirm setup, crisis, and resolution are all present before emitting FADE OUT; reject any draft that stops mid-sequence.",
+      "gemini-3.6-flash": "Strengthen the CHARACTER RE-ENTRY rule to require the same 2-3 locked visual traits on every reappearance and forbid epithet-only cues (MAN IN RED SWEATER) once a proper name token has been established.",
+      "grok-4.20-reasoning": "Cap NARRATOR VO at two short sentences per action beat and require every major plot turn (fight, death, rescue) to be carried by concrete visible action lines, not summary narration.",
+      "gpt-5.6-sol": "Require every scene, including quiet camp or travel beats, to carry at least one concrete diegetic (SOUND:) cue; forbid generic placeholders such as \u0027music plays\u0027.",
+      "gemini-3.1-pro-preview": "Add an explicit minimum-beat checklist for novel-length sources: the adaptation must dramatize (not merely VO-summarize) the protagonist\u0027s three deepest losses or turning points before the finale."
+    },
+    "grok-4": {
+      "gpt-5.6-terra": "Add an explicit rule requiring every recurring character to have 2-3 locked visual traits restated in the first action line of any scene after a time gap or re-entry.",
+      "grok-4.20-reasoning": "Add an explicit rule that every scene must contain at least one concrete camera-observable action line before any dialogue or V.O., with no more than two distinct actions per scene heading.",
+      "claude-opus-5": "Add an explicit rule requiring at least one (SOUND:) or (MUSIC:) cue in every scene, with two distinct audio beats at major emotional peaks.",
+      "gemini-3.1-pro-preview": "Add an explicit rule to prefer exact book wording for iconic lines and limit paraphrasing to whole-beat cuts only.",
+      "gemini-3.6-flash": "Add an explicit rule that when a single V.O. passage exceeds three sentences over one static action line, it must be broken with a one-line visual or sound micro-beat.",
+      "gpt-5.6-sol": "Add an explicit rule to merge consecutive beats sharing the same location and time of day into one scene unless place, time, or dramatic purpose clearly changes.",
+      "gpt-5.6-luna": "Add an explicit rule requiring a short closing beat returning to any established on-camera frame immediately before FADE OUT, unless no such frame was ever established."
+    }
+  }
+}

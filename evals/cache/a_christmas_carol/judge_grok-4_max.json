@@ -1,0 +1,117 @@
+{
+  "evaluations": [
+    {
+      "screenplayId": "Screenplay A",
+      "adaptationFidelity": 9,
+      "characterDisambiguation": 9,
+      "aiVideoDirectibility": 8.5,
+      "dramaticPacing": 8,
+      "dialogueAuthenticity": 9,
+      "soundDesignMusic": 8.5,
+      "overallQualitativeScore": 8.67,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Highly faithful to source beats and dialogue with consistent character visuals and age disambiguation; strong audio cues and filmable actions throughout.",
+      "promptImprovementSuggestion": "Add an explicit rule requiring every scene to include at least one concrete diegetic (SOUND: ...) cue before any non-diegetic (MUSIC: ...) element."
+    },
+    {
+      "screenplayId": "Screenplay B",
+      "adaptationFidelity": 7.5,
+      "characterDisambiguation": 8,
+      "aiVideoDirectibility": 7.5,
+      "dramaticPacing": 7,
+      "dialogueAuthenticity": 8,
+      "soundDesignMusic": 8,
+      "overallQualitativeScore": 7.67,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Adds an invented narrator study frame not in the source, slightly reducing fidelity, but maintains good character consistency and audio cues.",
+      "promptImprovementSuggestion": "Add an explicit rule prohibiting the introduction of any new frame locations, narrator studies, or characters not present in the source text."
+    },
+    {
+      "screenplayId": "Screenplay C",
+      "adaptationFidelity": 4,
+      "characterDisambiguation": 7,
+      "aiVideoDirectibility": 6.5,
+      "dramaticPacing": 5,
+      "dialogueAuthenticity": 7,
+      "soundDesignMusic": 7.5,
+      "overallQualitativeScore": 6.17,
+      "productionReady": false,
+      "disqualifyingIssues": [
+        "Incomplete screenplay that cuts off mid-sentence during the churchyard reveal, breaking the required full arc coverage."
+      ],
+      "rationale": "Strong visual descriptions and audio but fatally incomplete, ending abruptly without resolution or THE END.",
+      "promptImprovementSuggestion": "Add an explicit rule requiring the final scene to include a complete resolution beat and the FADE OUT / THE END marker before any truncation."
+    },
+    {
+      "screenplayId": "Screenplay D",
+      "adaptationFidelity": 7,
+      "characterDisambiguation": 7.5,
+      "aiVideoDirectibility": 7,
+      "dramaticPacing": 6.5,
+      "dialogueAuthenticity": 7.5,
+      "soundDesignMusic": 7,
+      "overallQualitativeScore": 7.08,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Covers core beats with some paraphrased dialogue and minor invented names, but includes required audio cues and consistent visuals.",
+      "promptImprovementSuggestion": "Add an explicit rule mandating that all dialogue must preserve the source\u0027s exact wording and cadence unless runtime compression requires dropping entire minor beats."
+    },
+    {
+      "screenplayId": "Screenplay E",
+      "adaptationFidelity": 7.5,
+      "characterDisambiguation": 8,
+      "aiVideoDirectibility": 7.5,
+      "dramaticPacing": 7,
+      "dialogueAuthenticity": 8,
+      "soundDesignMusic": 8,
+      "overallQualitativeScore": 7.67,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Uses an invented narrator frame similar to B but otherwise faithful with strong audio integration and character consistency.",
+      "promptImprovementSuggestion": "Add an explicit rule prohibiting the introduction of any new frame locations, narrator studies, or characters not present in the source text."
+    },
+    {
+      "screenplayId": "Screenplay F",
+      "adaptationFidelity": 9,
+      "characterDisambiguation": 9,
+      "aiVideoDirectibility": 8.5,
+      "dramaticPacing": 8,
+      "dialogueAuthenticity": 9,
+      "soundDesignMusic": 8.5,
+      "overallQualitativeScore": 8.67,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Exceptionally close to source text with precise dialogue, consistent age-disambiguated visuals, and dense audio cues in every scene.",
+      "promptImprovementSuggestion": "Add an explicit rule requiring every scene to include at least one concrete diegetic (SOUND: ...) cue before any non-diegetic (MUSIC: ...) element."
+    },
+    {
+      "screenplayId": "Screenplay G",
+      "adaptationFidelity": 8.5,
+      "characterDisambiguation": 8.5,
+      "aiVideoDirectibility": 8,
+      "dramaticPacing": 7.5,
+      "dialogueAuthenticity": 8.5,
+      "soundDesignMusic": 8,
+      "overallQualitativeScore": 8.17,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Strong fidelity and character descriptions with good audio, but slightly less dense visual micro-beats than top entries.",
+      "promptImprovementSuggestion": "Add an explicit rule requiring at least two distinct visual or sound micro-beats at every major emotional peak rather than a single summary sentence."
+    }
+  ],
+  "forcedRanking": [
+    "Screenplay A",
+    "Screenplay F",
+    "Screenplay G",
+    "Screenplay B",
+    "Screenplay E",
+    "Screenplay D",
+    "Screenplay C"
+  ],
+  "judgeSummaryNotes": "Strongest: Screenplay A because it achieves the highest combined fidelity, character consistency, and audio integration without any invented frames. Weakest: Screenplay C because it is fatally incomplete and cuts off mid-sentence, violating the full-arc requirement.",
+  "isMock": false,
+  "rubricVersion": "4-prompt-improvement-with-actual-prompt-text",
+  "screenplaysHash": "087625FDC2693F44D985AD13FBA8786410D3C7B637B66A7C38C37C5F16602649"
+}

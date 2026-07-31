@@ -1,0 +1,94 @@
+{
+  "evaluations": [
+    {
+      "screenplayId": "Screenplay A",
+      "adaptationFidelity": 8.5,
+      "characterDisambiguation": 9,
+      "aiVideoDirectibility": 8,
+      "dramaticPacing": 7.5,
+      "dialogueAuthenticity": 8.5,
+      "soundDesignMusic": 8,
+      "overallQualitativeScore": 8.17,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Screenplay A is highly faithful to the source with detailed narrative and dialogue, though its pacing can be a bit overloaded for short video clips and some scenes merge multiple actions."
+    },
+    {
+      "screenplayId": "Screenplay B",
+      "adaptationFidelity": 8,
+      "characterDisambiguation": 8,
+      "aiVideoDirectibility": 8,
+      "dramaticPacing": 8,
+      "dialogueAuthenticity": 8,
+      "soundDesignMusic": 8,
+      "overallQualitativeScore": 8,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Screenplay B is succinct and covers the major narrative beats well, but its overall simplicity sometimes leaves out nuances needed for strong character visuals and dramatic effect."
+    },
+    {
+      "screenplayId": "Screenplay C",
+      "adaptationFidelity": 9,
+      "characterDisambiguation": 8,
+      "aiVideoDirectibility": 9,
+      "dramaticPacing": 9,
+      "dialogueAuthenticity": 9,
+      "soundDesignMusic": 9,
+      "overallQualitativeScore": 8.67,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Screenplay C offers a cinematic and modern reimagining with clear, filmable visuals and effective pacing, though it sacrifices a bit of meticulous character detail for broader cinematic appeal."
+    },
+    {
+      "screenplayId": "Screenplay D",
+      "adaptationFidelity": 9.5,
+      "characterDisambiguation": 10,
+      "aiVideoDirectibility": 9,
+      "dramaticPacing": 9,
+      "dialogueAuthenticity": 9,
+      "soundDesignMusic": 9,
+      "overallQualitativeScore": 9.08,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Screenplay D stands out with richly descriptive, consistent character visuals, structured scene transitions, and strong sound and lighting cues that make it exceptionally filmable."
+    },
+    {
+      "screenplayId": "Screenplay E",
+      "adaptationFidelity": 8,
+      "characterDisambiguation": 7,
+      "aiVideoDirectibility": 8,
+      "dramaticPacing": 8,
+      "dialogueAuthenticity": 8,
+      "soundDesignMusic": 7,
+      "overallQualitativeScore": 7.83,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Screenplay E is a more streamlined adaptation and remains fairly faithful, but its simpler character descriptions and less detailed sound cues reduce its effectiveness for a richly cinematic production."
+    },
+    {
+      "screenplayId": "Screenplay F",
+      "adaptationFidelity": 9,
+      "characterDisambiguation": 9,
+      "aiVideoDirectibility": 8,
+      "dramaticPacing": 8,
+      "dialogueAuthenticity": 8,
+      "soundDesignMusic": 8,
+      "overallQualitativeScore": 8.33,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Screenplay F provides a well-structured, faithful rendition with clear narrative transitions and detailed descriptive cues, although its narration occasionally feels dense for short clip directibility."
+    }
+  ],
+  "forcedRanking": [
+    "Screenplay D",
+    "Screenplay C",
+    "Screenplay F",
+    "Screenplay A",
+    "Screenplay B",
+    "Screenplay E"
+  ],
+  "judgeSummaryNotes": "Strongest: Screenplay D because it offers vivid visual details, consistent character disambiguation, and excellent cinematic pacing; Weakest: Screenplay E because its overly simplified character descriptions and reduced sound design cues diminish its overall cinematic impact.",
+  "isMock": false,
+  "rubricVersion": "2-calibrated-selfbias-productionready",
+  "screenplaysHash": "DD0D45DB8BC6D745A8E3940275AACA04B1B253EAF3A9AE7CEE75A03864A0208B"
+}

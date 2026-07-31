@@ -48,6 +48,13 @@ public sealed class BenchmarkRunData
 
     /// <summary>JudgeModel -> that judge's free-text overall comparison summary.</summary>
     public Dictionary<string, string> JudgeSummaries { get; set; } = new();
+
+    /// <summary>
+    /// JudgeModel -> (ScreenplayModel -> that judge's suggested shared-prompt improvement for
+    /// that candidate's biggest weakness). See ScreenplayEvaluationEntry.PromptImprovementSuggestion —
+    /// collected per book/run, meant to be distilled across several runs before acting on any one.
+    /// </summary>
+    public Dictionary<string, Dictionary<string, string>> JudgePromptSuggestions { get; set; } = new();
 }
 
 public static class BenchmarkReportGenerator
@@ -206,6 +213,20 @@ public static class BenchmarkReportGenerator
             {
                 sb.AppendLine("- **Judge Rationale:**");
                 foreach (var (judgeId, text) in rationaleForModel)
+                {
+                    var isSelf = string.Equals(judgeId, m.ModelId, StringComparison.OrdinalIgnoreCase);
+                    sb.AppendLine($"  - *{judgeId}{(isSelf ? " (self)" : "")}:* {text}");
+                }
+            }
+
+            var suggestionsForModel = data.JudgePromptSuggestions
+                .Where(kv => kv.Value.TryGetValue(m.ModelId, out var text) && !string.IsNullOrWhiteSpace(text))
+                .Select(kv => (JudgeId: kv.Key, Text: kv.Value[m.ModelId]))
+                .ToList();
+            if (suggestionsForModel.Count > 0)
+            {
+                sb.AppendLine("- **Judge Prompt-Improvement Suggestions:**");
+                foreach (var (judgeId, text) in suggestionsForModel)
                 {
                     var isSelf = string.Equals(judgeId, m.ModelId, StringComparison.OrdinalIgnoreCase);
                     sb.AppendLine($"  - *{judgeId}{(isSelf ? " (self)" : "")}:* {text}");

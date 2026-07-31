@@ -89,6 +89,20 @@
       "notes": "Replaces gpt-4o alongside gpt-5.6-sol. Confirmed live via direct OpenAI API call: reasoning-family model, rejects non-default temperature (GrokChatClient self-heals by retrying without it). maxInputTokens is officially unpublished by OpenAI (unlike Sol's 400,000 and Luna's 1,050,000) — 128,000 kept here as a deliberately conservative placeholder floor, not a real spec; raise it if a real source turns up. Pricing is also an unverified placeholder copied from gpt-4o. One of three gpt-5.6 variants (sol/terra/luna) in this account; no plain gpt-5.6 exists."
     },
     {
+      "id": "gpt-5.6-luna",
+      "displayName": "OpenAI GPT-5.6 (Luna)",
+      "capability": "Chat",
+      "provider": "OpenAI",
+      "apiBase": "https://api.openai.com/v1",
+      "endpointPath": "chat/completions",
+      "requiredEnvKeys": ["OPENAI_API_KEY"],
+      "enabled": true,
+      "maxInputTokens": 1050000,
+      "inputCostPerMillionTokens": 2.50,
+      "outputCostPerMillionTokens": 10.00,
+      "notes": "Third gpt-5.6 variant alongside sol/terra, added to try to beat sol's benchmark lead. Confirmed live via direct OpenAI API call: reasoning-family model, rejects non-default temperature (GrokChatClient self-heals by retrying without it). maxInputTokens=1,050,000 per published spec (largest of the three variants). Pricing is an unverified placeholder copied from gpt-4o — update when a real source is available."
+    },
+    {
       "id": "gpt-4o-mini",
       "displayName": "OpenAI GPT-4o Mini",
       "capability": "Chat",
@@ -297,6 +311,23 @@
       "supportsVideoReview": false
     },
     {
+      "id": "grok-4.20-reasoning",
+      "displayName": "Grok 4.20 (Reasoning)",
+      "capability": "Chat",
+      "provider": "Xai",
+      "apiBase": "https://api.x.ai/v1",
+      "endpointPath": "chat/completions",
+      "requiredEnvKeys": ["XAI_API_KEY"],
+      "enabled": true,
+      "maxInputTokens": 1000000,
+      "inputCostPerMillionTokens": 3.00,
+      "outputCostPerMillionTokens": 15.00,
+      "supportsVideoContinue": false,
+      "supportsReferenceImages": false,
+      "supportsVideoReview": false,
+      "notes": "xAI's actual latest generation, newer than grok-4.5 despite the lower-looking version number (4.20 > 4.5 as sequential minor releases, not decimals) — discovered via direct xAI model-list API call, not previously in this catalog. Its own aliases tag it beta/experimental (grok-4.20-beta, grok-4.20-experimental-beta-...), so treat results with more caution than the established grok-4/grok-4.5. Confirmed live: accepts temperature normally, but REJECTS reasoning_effort outright (\"does not support parameter reasoningEffort\", camelCase/no-underscore in the error text — GrokChatClient's self-heal matches both spellings) — it appears to always reason without an exposed effort dial. context_length confirmed 1,000,000 via API; pricing is an unverified placeholder copied from grok-4 (xAI's own price fields use an internal unit not yet decoded to $/M)."
+    },
+    {
       "id": "claude-sonnet-5",
       "displayName": "Claude Sonnet 5",
       "capability": "Chat",
@@ -312,6 +343,23 @@
       "supportsReferenceImages": false,
       "supportsVideoReview": false,
       "notes": "Wired via AnthropicChatClient."
+    },
+    {
+      "id": "claude-opus-5",
+      "displayName": "Claude Opus 5",
+      "capability": "Chat",
+      "provider": "Anthropic",
+      "apiBase": "https://api.anthropic.com/v1",
+      "endpointPath": "messages",
+      "requiredEnvKeys": ["ANTHROPIC_API_KEY"],
+      "enabled": true,
+      "maxInputTokens": 1000000,
+      "inputCostPerMillionTokens": 2.00,
+      "outputCostPerMillionTokens": 10.00,
+      "supportsVideoContinue": false,
+      "supportsReferenceImages": false,
+      "supportsVideoReview": false,
+      "notes": "Anthropic's flagship, one tier above claude-sonnet-5, added to try to beat gpt-5.6-sol's benchmark lead. Wired via AnthropicChatClient. Confirmed live via direct Anthropic API call: rejects temperature entirely like sonnet-5 (self-healed); supports adaptive thinking + output_config.effort for reasoningEffort. maxInputTokens/pricing are unverified placeholders copied from claude-sonnet-5 — update when a real source is available."
     },
     {
       "id": "gemini-2.5-flash",
@@ -346,6 +394,23 @@
       "supportsReferenceImages": false,
       "supportsVideoReview": true,
       "notes": "Wired via GeminiChatClient. Reasoning/\"thinking\" model per Google's own model metadata (thinking: true) — same class as OpenAI's o-series; watch for similar quirks (temperature/param rejection, thinking tokens counting toward output budget). Pricing copied from gemini-2.5-flash as a placeholder — not verified against a real source, update when known."
+    },
+    {
+      "id": "gemini-3.1-pro-preview",
+      "displayName": "Gemini 3.1 Pro (Preview)",
+      "capability": "Chat",
+      "provider": "Google",
+      "apiBase": "https://generativelanguage.googleapis.com/v1beta",
+      "endpointPath": "models/gemini-3.1-pro-preview:generateContent",
+      "requiredEnvKeys": ["GEMINI_API_KEY"],
+      "enabled": true,
+      "maxInputTokens": 1048576,
+      "inputCostPerMillionTokens": 2.00,
+      "outputCostPerMillionTokens": 12.00,
+      "supportsVideoContinue": false,
+      "supportsReferenceImages": false,
+      "supportsVideoReview": true,
+      "notes": "First Gemini Pro-tier model in this catalog — every other Gemini entry so far is Flash-tier. Added to try to beat gpt-5.6-sol's benchmark lead. Wired via GeminiChatClient. Confirmed live via direct Google API call: thinking:true, inputTokenLimit 1,048,576, outputTokenLimit 65,536; thinkingConfig.thinkingLevel confirmed up to \"high\" (Gemini's ceiling — no \"max\"/\"xhigh\" tier exists). \"-preview\" tag means Google could change or retire this id without notice; pricing copied from gemini-3.6-flash as a placeholder, not verified against a real source."
     },
     {
       "id": "grok-4.5",

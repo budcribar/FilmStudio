@@ -1,0 +1,409 @@
+{
+  "BookPath": "C:\\Users\\budcr\\source\\repos\\claude\\PageToMovie\\books\\The_Tell-Tale_Heart.txt",
+  "Timestamp": "2026-07-31 13:14:32 UTC",
+  "IsMockRun": false,
+  "Leaderboard": [
+    {
+      "ModelId": "claude-opus-5",
+      "AnonymousLabel": "",
+      "CompositeScore": 93.7,
+      "IsGenerationFallback": false,
+      "GenerationFallbackReason": null,
+      "BordaPoints": 14,
+      "AvgJudgeRank": 1,
+      "SyntaxAudit": {
+        "OverallSyntaxScore": 98.5,
+        "FormatComplianceScore": 100,
+        "SceneBudgetScore": 100,
+        "DialoguePacingScore": 70,
+        "CharacterDisambiguationScore": 100,
+        "MusicSpecScore": 100,
+        "TotalSceneHeadings": 13,
+        "TotalDialogueBlocks": 44,
+        "AvgWordsPerDialogue": 28.8,
+        "MaxWordsInSingleDialogue": 53,
+        "LongMonologueCount": 12,
+        "GenericNumberedSpeakerCount": 0,
+        "CharacterNamesFound": [
+          "THE NARRATOR",
+          "THE OLD MAN",
+          "OFFICER DUNNE"
+        ],
+        "AgeDisambiguatedCharacters": [
+          "THE OLD MAN"
+        ],
+        "DiagnosticWarnings": [
+          "12 monologue turn(s) exceed 35 words without action line splits.",
+          "Detected 1 age-qualified character header(s) (e.g. THE OLD MAN)."
+        ]
+      },
+      "AvgAdaptationFidelity": 9.2,
+      "AvgCharacterDisambiguation": 9.2,
+      "AvgAiVideoDirectibility": 9.2,
+      "AvgDramaticPacing": 8.5,
+      "AvgDialogueAuthenticity": 9,
+      "AvgSoundDesignMusic": 9.2,
+      "AvgOverallQualitative": 9,
+      "DisqualifyingFlags": []
+    },
+    {
+      "ModelId": "gpt-5.6-sol",
+      "AnonymousLabel": "",
+      "CompositeScore": 90.8,
+      "IsGenerationFallback": false,
+      "GenerationFallbackReason": null,
+      "BordaPoints": 12,
+      "AvgJudgeRank": 2,
+      "SyntaxAudit": {
+        "OverallSyntaxScore": 98,
+        "FormatComplianceScore": 95,
+        "SceneBudgetScore": 100,
+        "DialoguePacingScore": 90,
+        "CharacterDisambiguationScore": 100,
+        "MusicSpecScore": 100,
+        "TotalSceneHeadings": 12,
+        "TotalDialogueBlocks": 35,
+        "AvgWordsPerDialogue": 23.5,
+        "MaxWordsInSingleDialogue": 42,
+        "LongMonologueCount": 2,
+        "GenericNumberedSpeakerCount": 0,
+        "CharacterNamesFound": [
+          "NARRATOR",
+          "OLD MAN",
+          "OFFICER REYNOLDS"
+        ],
+        "AgeDisambiguatedCharacters": [
+          "OLD MAN"
+        ],
+        "DiagnosticWarnings": [
+          "Missing \u0027FADE OUT.\u0027 or \u0027THE END\u0027 closing transition.",
+          "2 monologue turn(s) exceed 35 words without action line splits.",
+          "Detected 1 age-qualified character header(s) (e.g. OLD MAN)."
+        ]
+      },
+      "AvgAdaptationFidelity": 8.5,
+      "AvgCharacterDisambiguation": 9,
+      "AvgAiVideoDirectibility": 8.5,
+      "AvgDramaticPacing": 8.2,
+      "AvgDialogueAuthenticity": 8.5,
+      "AvgSoundDesignMusic": 8.8,
+      "AvgOverallQualitative": 8.6,
+      "DisqualifyingFlags": []
+    },
+    {
+      "ModelId": "gpt-5.6-luna",
+      "AnonymousLabel": "",
+      "CompositeScore": 87.9,
+      "IsGenerationFallback": false,
+      "GenerationFallbackReason": null,
+      "BordaPoints": 7,
+      "AvgJudgeRank": 4.5,
+      "SyntaxAudit": {
+        "OverallSyntaxScore": 97.5,
+        "FormatComplianceScore": 100,
+        "SceneBudgetScore": 100,
+        "DialoguePacingScore": 50,
+        "CharacterDisambiguationScore": 100,
+        "MusicSpecScore": 100,
+        "TotalSceneHeadings": 7,
+        "TotalDialogueBlocks": 43,
+        "AvgWordsPerDialogue": 33.8,
+        "MaxWordsInSingleDialogue": 59,
+        "LongMonologueCount": 19,
+        "GenericNumberedSpeakerCount": 0,
+        "CharacterNamesFound": [
+          "NARRATOR",
+          "THE OLD MAN"
+        ],
+        "AgeDisambiguatedCharacters": [
+          "THE OLD MAN"
+        ],
+        "DiagnosticWarnings": [
+          "High average dialogue length (33.8 words/turn); speech beats risk clip overrun.",
+          "19 monologue turn(s) exceed 35 words without action line splits.",
+          "Detected 1 age-qualified character header(s) (e.g. THE OLD MAN)."
+        ]
+      },
+      "AvgAdaptationFidelity": 8.5,
+      "AvgCharacterDisambiguation": 7.8,
+      "AvgAiVideoDirectibility": 8,
+      "AvgDramaticPacing": 7.5,
+      "AvgDialogueAuthenticity": 8.8,
+      "AvgSoundDesignMusic": 8.5,
+      "AvgOverallQualitative": 8.2,
+      "DisqualifyingFlags": []
+    },
+    {
+      "ModelId": "gpt-5.6-terra",
+      "AnonymousLabel": "",
+      "CompositeScore": 87,
+      "IsGenerationFallback": false,
+      "GenerationFallbackReason": null,
+      "BordaPoints": 7,
+      "AvgJudgeRank": 4.5,
+      "SyntaxAudit": {
+        "OverallSyntaxScore": 97.5,
+        "FormatComplianceScore": 95,
+        "SceneBudgetScore": 100,
+        "DialoguePacingScore": 80,
+        "CharacterDisambiguationScore": 100,
+        "MusicSpecScore": 100,
+        "TotalSceneHeadings": 12,
+        "TotalDialogueBlocks": 39,
+        "AvgWordsPerDialogue": 25.6,
+        "MaxWordsInSingleDialogue": 43,
+        "LongMonologueCount": 4,
+        "GenericNumberedSpeakerCount": 0,
+        "CharacterNamesFound": [
+          "NARRATOR",
+          "MR. VALE"
+        ],
+        "AgeDisambiguatedCharacters": [],
+        "DiagnosticWarnings": [
+          "Missing \u0027FADE OUT.\u0027 or \u0027THE END\u0027 closing transition.",
+          "4 monologue turn(s) exceed 35 words without action line splits."
+        ]
+      },
+      "AvgAdaptationFidelity": 7.2,
+      "AvgCharacterDisambiguation": 9,
+      "AvgAiVideoDirectibility": 7.5,
+      "AvgDramaticPacing": 7.8,
+      "AvgDialogueAuthenticity": 8.5,
+      "AvgSoundDesignMusic": 8,
+      "AvgOverallQualitative": 8,
+      "DisqualifyingFlags": []
+    },
+    {
+      "ModelId": "gemini-3.6-flash",
+      "AnonymousLabel": "",
+      "CompositeScore": 82.9,
+      "IsGenerationFallback": false,
+      "GenerationFallbackReason": null,
+      "BordaPoints": 7,
+      "AvgJudgeRank": 4.5,
+      "SyntaxAudit": {
+        "OverallSyntaxScore": 97.5,
+        "FormatComplianceScore": 100,
+        "SceneBudgetScore": 100,
+        "DialoguePacingScore": 50,
+        "CharacterDisambiguationScore": 100,
+        "MusicSpecScore": 100,
+        "TotalSceneHeadings": 8,
+        "TotalDialogueBlocks": 21,
+        "AvgWordsPerDialogue": 32.6,
+        "MaxWordsInSingleDialogue": 111,
+        "LongMonologueCount": 8,
+        "GenericNumberedSpeakerCount": 0,
+        "CharacterNamesFound": [
+          "NARRATOR",
+          "OLD MAN",
+          "OFFICER REYNOLDS"
+        ],
+        "AgeDisambiguatedCharacters": [
+          "OLD MAN"
+        ],
+        "DiagnosticWarnings": [
+          "High average dialogue length (32.6 words/turn); speech beats risk clip overrun.",
+          "8 monologue turn(s) exceed 35 words without action line splits.",
+          "Detected 1 age-qualified character header(s) (e.g. OLD MAN).",
+          "Detected 2 descriptive instrumental music/sound cue(s)."
+        ]
+      },
+      "AvgAdaptationFidelity": 7,
+      "AvgCharacterDisambiguation": 7.5,
+      "AvgAiVideoDirectibility": 7.2,
+      "AvgDramaticPacing": 7,
+      "AvgDialogueAuthenticity": 7,
+      "AvgSoundDesignMusic": 8.2,
+      "AvgOverallQualitative": 7.3,
+      "DisqualifyingFlags": [
+        "grok-4.5: Multiple invented multi-line exchanges for officers and narrator that exceed the summarized-chat cap",
+        "grok-4.5: Under-specified and potentially anachronistic officer visuals (e.g. CHEN) without consistent re-locking"
+      ]
+    },
+    {
+      "ModelId": "grok-4.20-reasoning",
+      "AnonymousLabel": "",
+      "CompositeScore": 79.5,
+      "IsGenerationFallback": false,
+      "GenerationFallbackReason": null,
+      "BordaPoints": 7,
+      "AvgJudgeRank": 4.5,
+      "SyntaxAudit": {
+        "OverallSyntaxScore": 96,
+        "FormatComplianceScore": 95,
+        "SceneBudgetScore": 100,
+        "DialoguePacingScore": 50,
+        "CharacterDisambiguationScore": 100,
+        "MusicSpecScore": 100,
+        "TotalSceneHeadings": 7,
+        "TotalDialogueBlocks": 23,
+        "AvgWordsPerDialogue": 47,
+        "MaxWordsInSingleDialogue": 120,
+        "LongMonologueCount": 13,
+        "GenericNumberedSpeakerCount": 0,
+        "CharacterNamesFound": [
+          "NARRATOR",
+          "OLD MAN",
+          "OFFICER GROVES"
+        ],
+        "AgeDisambiguatedCharacters": [
+          "OLD MAN"
+        ],
+        "DiagnosticWarnings": [
+          "Missing \u0027FADE OUT.\u0027 or \u0027THE END\u0027 closing transition.",
+          "High average dialogue length (47 words/turn); speech beats risk clip overrun.",
+          "13 monologue turn(s) exceed 35 words without action line splits.",
+          "Detected 1 age-qualified character header(s) (e.g. OLD MAN).",
+          "Detected 3 descriptive instrumental music/sound cue(s)."
+        ]
+      },
+      "AvgAdaptationFidelity": 5.8,
+      "AvgCharacterDisambiguation": 7.2,
+      "AvgAiVideoDirectibility": 7,
+      "AvgDramaticPacing": 6.8,
+      "AvgDialogueAuthenticity": 6.5,
+      "AvgSoundDesignMusic": 8,
+      "AvgOverallQualitative": 6.8,
+      "DisqualifyingFlags": [
+        "grok-4.5: Major invented plot event: officers seize the narrator and tear up the planks to reveal the body\u2014absent from the source\u2019s ending",
+        "grok-4.5: Extensive invented officer and narrator dialogue"
+      ]
+    },
+    {
+      "ModelId": "gemini-3.1-pro-preview",
+      "AnonymousLabel": "",
+      "CompositeScore": 75.7,
+      "IsGenerationFallback": false,
+      "GenerationFallbackReason": null,
+      "BordaPoints": 2,
+      "AvgJudgeRank": 7,
+      "SyntaxAudit": {
+        "OverallSyntaxScore": 97,
+        "FormatComplianceScore": 95,
+        "SceneBudgetScore": 100,
+        "DialoguePacingScore": 70,
+        "CharacterDisambiguationScore": 100,
+        "MusicSpecScore": 100,
+        "TotalSceneHeadings": 12,
+        "TotalDialogueBlocks": 26,
+        "AvgWordsPerDialogue": 24.8,
+        "MaxWordsInSingleDialogue": 43,
+        "LongMonologueCount": 8,
+        "GenericNumberedSpeakerCount": 0,
+        "CharacterNamesFound": [
+          "NARRATOR",
+          "OLD MAN",
+          "REYNOLDS"
+        ],
+        "AgeDisambiguatedCharacters": [
+          "OLD MAN"
+        ],
+        "DiagnosticWarnings": [
+          "Missing \u0027FADE OUT.\u0027 or \u0027THE END\u0027 closing transition.",
+          "8 monologue turn(s) exceed 35 words without action line splits.",
+          "Detected 1 age-qualified character header(s) (e.g. OLD MAN).",
+          "Detected 3 descriptive instrumental music/sound cue(s)."
+        ]
+      },
+      "AvgAdaptationFidelity": 5.5,
+      "AvgCharacterDisambiguation": 5.5,
+      "AvgAiVideoDirectibility": 6.2,
+      "AvgDramaticPacing": 6,
+      "AvgDialogueAuthenticity": 6,
+      "AvgSoundDesignMusic": 7.5,
+      "AvgOverallQualitative": 6.2,
+      "DisqualifyingFlags": [
+        "grok-4.5: Inconsistent character-token casing (Narrator vs NARRATOR) creating unstable closed-cast identity",
+        "grok-4.5: Extensive invented multi-line dialogue for both narrator and officers far beyond source",
+        "grok-4.5: Supporting cast given only minimal non-restated visuals",
+        "grok-4: Inconsistent capitalization of character names (Narrator vs NARRATOR) violating ALL CAPS closed-cast rule"
+      ]
+    }
+  ],
+  "JudgeMatrix": {
+    "grok-4.5": {
+      "gpt-5.6-luna": 8.3,
+      "gpt-5.6-terra": 8,
+      "claude-opus-5": 9.3,
+      "gemini-3.6-flash": 6.4,
+      "grok-4.20-reasoning": 5.4,
+      "gpt-5.6-sol": 8.5,
+      "gemini-3.1-pro-preview": 5.1
+    },
+    "grok-4": {
+      "gpt-5.6-terra": 8,
+      "grok-4.20-reasoning": 8.3,
+      "claude-opus-5": 8.8,
+      "gemini-3.1-pro-preview": 7.2,
+      "gemini-3.6-flash": 8.25,
+      "gpt-5.6-sol": 8.7,
+      "gpt-5.6-luna": 8
+    }
+  },
+  "JudgeRankMatrix": {
+    "grok-4.5": {
+      "claude-opus-5": 1,
+      "gpt-5.6-sol": 2,
+      "gpt-5.6-luna": 3,
+      "gpt-5.6-terra": 4,
+      "gemini-3.6-flash": 5,
+      "grok-4.20-reasoning": 6,
+      "gemini-3.1-pro-preview": 7
+    },
+    "grok-4": {
+      "claude-opus-5": 1,
+      "gpt-5.6-sol": 2,
+      "grok-4.20-reasoning": 3,
+      "gemini-3.6-flash": 4,
+      "gpt-5.6-terra": 5,
+      "gpt-5.6-luna": 6,
+      "gemini-3.1-pro-preview": 7
+    }
+  },
+  "SelfBiasNotes": [],
+  "JudgeRationale": {
+    "grok-4.5": {
+      "gpt-5.6-luna": "Near-exact book VO and beats with no invented plot or improper character names; officers receive only generic coat descriptions without individual build/hair locks or re-entry restatements, slightly weakening casting clarity. Actions are mostly concrete and clip-scalable though some seven-night compression and long VO blocks reduce atomicity. Sound cues are dense and progressive on the heartbeat peaks. Strong overall fidelity and audio make it greenlightable with minor polish.",
+      "gpt-5.6-terra": "Solid frame structure and visual locking for NARRATOR and officers, but inventing the proper name MR. VALE for the unnamed old man is an unnecessary fidelity hit; otherwise covers all major beats with good book diction. Directibility is strong via concrete lantern/eye micro-beats and chamber cutaways. Pacing benefits from deliberate frame returns. Minor invented connective tissue keeps it from the top tier but still production-viable.",
+      "claude-opus-5": "Highest-fidelity adaptation: exact iconic lines, no invented plot events or improper names, closed cast with richly distinct and consistently restated looks for THE NARRATOR, THE OLD MAN and each officer. Every action line is a single camera-observable micro-beat ideal for 5-10s AI clips; prison-cell frame is used exactly as the shared prompt prefers for turns and button. Sound design is exemplary\u2014diegetic, multi-layered on peaks, present in every scene. Minor dramatization of the old man\u2019s self-comfort lines is the only quibble and stays within book spirit.",
+      "gemini-3.6-flash": "Covers the spine but freely invents officer banter and morning dialogue far beyond the book\u2019s summarized \u2018chatted of familiar things,\u2019 triggering a fidelity penalty. Character looks are present at intro yet inconsistently restated and thin for supporting cast. Several action blocks cram the kill and concealment into non-atomic paragraphs hard to slice into 5-10s clips. Sound/music is a relative strength with clear heartbeat escalation. Not greenlightable without dialogue purge.",
+      "grok-4.20-reasoning": "Disqualifying fidelity breach by extending past Poe\u2019s final confession into an unstated arrest-and-reveal sequence. Officers lack visual descriptions entirely, weakening cast locks. Directibility suffers from crammed peak actions and long unbroken VO. Dialogue mixes faithful opening with modernized inventions. Sound is adequate but cannot rescue the structural invention. Unusable as-is.",
+      "gpt-5.6-sol": "Strong frame (interrogation room \u002B pocket-watch motif) that visualizes the heartbeat without inventing plot. Character looks are distinct, period-accurate and restated on re-entry for NARRATOR, OLD MAN and all three officers. Actions stay concrete and clip-friendly; pacing uses frame cutaways at major turns per prompt. Minor officer intro lines are the only invented dialogue. Sound design is excellent with the watch as recurring diegetic bed. Fully production-ready.",
+      "gemini-3.1-pro-preview": "Heavy invention of police-scene banter and narrator responses destroys dialogue authenticity and fidelity. Action lines frequently use lowercase \u2018Narrator,\u2019 breaking the ALL-CAPS closed-cast rule. Officer descriptions are thin and never restated. Peak kill is somewhat visual but many beats remain summary-like and hard to clip. Sound/music provides partial salvage yet cannot overcome cast and invention defects. Unusable without rewrite."
+    },
+    "grok-4": {
+      "gpt-5.6-terra": "Strong source coverage and consistent character visuals for NARRATOR and MR. VALE, but dissolves and multiple short scenes reduce directibility for 5-10s clips.",
+      "grok-4.20-reasoning": "Excellent fidelity and sound integration with clear frame room, though some V.O. blocks are lengthy for short clips.",
+      "claude-opus-5": "Highly concrete action lines, consistent THE NARRATOR and THE OLD MAN descriptions, and precise sound cues make it exceptionally filmable in short clips.",
+      "gemini-3.1-pro-preview": "Format violations in character cues reduce clarity; some actions cram multiple beats into one heading.",
+      "gemini-3.6-flash": "Solid coverage and natural pacing with good officer naming, but occasional long action paragraphs limit short-clip suitability.",
+      "gpt-5.6-sol": "Excellent fidelity, consistent NARRATOR and OLD MAN visuals, and precise sound cues with strong subtext in dialogue.",
+      "gpt-5.6-luna": "Good source fidelity and frame usage, but some scene headings vary slightly and pacing has minor repetition in night sequences."
+    }
+  },
+  "JudgeSummaries": {
+    "grok-4.5": "Strongest: Screenplay C because it alone combines near-perfect source fidelity, zero invented plot, rigorously locked and restated character visuals, and fully atomic 5-10s-clip directibility with dense diegetic sound. Weakest: Screenplay E because it fabricates a major post-confession arrest-and-body-reveal sequence absent from Poe, a disqualifying fidelity violation that renders the draft unusable.",
+    "grok-4": "Strongest: Screenplay C because its detailed, concrete action lines and consistent use of THE NARRATOR and THE OLD MAN make it highly directible for short AI clips. Weakest: Screenplay D because inconsistent character name capitalization breaks the closed cast requirement and reduces casting clarity."
+  },
+  "JudgePromptSuggestions": {
+    "grok-4.5": {
+      "gpt-5.6-luna": "Require every supporting speaker (officers etc.) to receive 2-3 distinct, restatable visual traits (build, hair/facial hair, age markers, signature prop) at first entrance and on every re-entry after a gap.",
+      "gpt-5.6-terra": "Clarify that characters given no proper name in the source must use stable descriptive tokens (THE OLD MAN, THE OFFICER) rather than newly invented proper names unless the book itself supplies one.",
+      "claude-opus-5": "Add a rule that any internal monologue the book attributes to a non-narrating character may be externalized as at most one whispered self-address line, clearly parentheticalized, to avoid accidental dialogue invention.",
+      "gemini-3.6-flash": "Strengthen the summarized-exchange rule to an absolute default of zero invented spoken lines for searchers/police when the book only narrates that they conversed; force pure Action coverage.",
+      "grok-4.20-reasoning": "Mandate that the screenplay\u2019s closing narrative beat must be identical to the source\u2019s final event; explicitly forbid appending unstated aftermath (arrests, trials, body reveals) after the book\u2019s last line.",
+      "gpt-5.6-sol": "Cap any single officer or searcher speaking turn at one short sentence that closely paraphrases the book\u2019s report of their purpose; forbid multi-speaker invented exchanges.",
+      "gemini-3.1-pro-preview": "Make identical ALL-CAPS spelling of every character token in cues, Action lines and headings a hard validation failure; any lowercase or variant form must be rejected before output."
+    },
+    "grok-4": {
+      "gpt-5.6-terra": "Add an explicit rule forbidding dissolves or montages within a single scene heading and requiring every scene to contain at most three distinct visual beats.",
+      "grok-4.20-reasoning": "Add a rule that any V.O. passage exceeding two sentences must be interleaved with at least one concrete visual or sound micro-beat before continuing.",
+      "claude-opus-5": "Add an explicit instruction to restate two to three locked visual traits for every recurring character on their first re-entry after any time gap or location change.",
+      "gemini-3.1-pro-preview": "Add a hard rule that every character cue must appear in ALL CAPS on its own line with no exceptions or lowercase variants anywhere in the screenplay.",
+      "gemini-3.6-flash": "Add a rule capping every action line at two sentences maximum to enforce single-clip filmability.",
+      "gpt-5.6-sol": "Add an instruction requiring at least one explicit diegetic sound cue in every scene, placed on its own line immediately after the relevant action.",
+      "gpt-5.6-luna": "Add a rule that every recurring location must use the exact same scene heading wording on every return, with no additions or omissions."
+    }
+  }
+}

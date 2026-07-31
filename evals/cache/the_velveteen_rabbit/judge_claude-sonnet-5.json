@@ -1,0 +1,110 @@
+{
+  "evaluations": [
+    {
+      "screenplayId": "Screenplay A",
+      "adaptationFidelity": 7.5,
+      "characterDisambiguation": 7.5,
+      "aiVideoDirectibility": 6.5,
+      "dramaticPacing": 7,
+      "dialogueAuthenticity": 8,
+      "soundDesignMusic": 4,
+      "overallQualitativeScore": 6.75,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Hits the major plot beats (Skin Horse dialogue, becoming Real, wild-rabbit rejection, doctor\u0027s burn order, fairy transformation, final reveal) but drops the toy-cupboard hierarchy (no Timothy/model boat), the Nana tidying ritual, and the \u0027hurrah, seaside\u0027 beat, and compresses the transformation into vague \u0027something marvelous occurs\u0027 language that tells rather than shows. No music/sound cues at all, only ambient description."
+    },
+    {
+      "screenplayId": "Screenplay B",
+      "adaptationFidelity": 9.5,
+      "characterDisambiguation": 8.5,
+      "aiVideoDirectibility": 7,
+      "dramaticPacing": 8.5,
+      "dialogueAuthenticity": 9,
+      "soundDesignMusic": 4.5,
+      "overallQualitativeScore": 7.83,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Near-complete coverage of the book including Timothy, the model boat, Nana\u0027s tidying, the seaside/\u0027hurrah\u0027 beat, and the full illness arc; dialogue is largely verbatim. Weakest link is directibility \u2014 several scene blocks (e.g., \u0027WEEKS LATER\u0027) compress multiple time-jumps and actions into a single heading, and Narrator V.O. carries much of the storytelling rather than discrete filmable images. No explicit sound/music direction anywhere."
+    },
+    {
+      "screenplayId": "Screenplay C",
+      "adaptationFidelity": 9.5,
+      "characterDisambiguation": 9,
+      "aiVideoDirectibility": 7.5,
+      "dramaticPacing": 8.5,
+      "dialogueAuthenticity": 9,
+      "soundDesignMusic": 4.5,
+      "overallQualitativeScore": 8,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "The most complete and disciplined adaptation: full toy-hierarchy scene, all major dialogue beats verbatim, explicit \u0027CLOSE ON\u0027 camera directions, and a top-of-script style note ensuring visual/tonal consistency across toy and animal characters. Still no explicit sound-design or music cues, which caps the scoring dimension, but atmospheric prose (frosted silver, gaslight gold) gives a composer more to work with than most peers."
+    },
+    {
+      "screenplayId": "Screenplay D",
+      "adaptationFidelity": 6,
+      "characterDisambiguation": 5,
+      "aiVideoDirectibility": 4.5,
+      "dramaticPacing": 5,
+      "dialogueAuthenticity": 6,
+      "soundDesignMusic": 3.5,
+      "overallQualitativeScore": 5,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Touches every major plot beat but in extremely thin, summarized form, losing texture (Skin Horse is \u0027old and wise\u0027, Nana is just \u0027bustling\u0027). Several lines lean on unfilmable internal states (\u0027listens intently, longing to become Real\u0027; \u0027grateful for the love that made him Real\u0027), and paraphrased dialogue lacks the book\u0027s lyrical specificity. No invented major content, so it remains produceable, just underdeveloped."
+    },
+    {
+      "screenplayId": "Screenplay E",
+      "adaptationFidelity": 3.5,
+      "characterDisambiguation": 8.5,
+      "aiVideoDirectibility": 8,
+      "dramaticPacing": 8.5,
+      "dialogueAuthenticity": 8.5,
+      "soundDesignMusic": 5,
+      "overallQualitativeScore": 7,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Otherwise the most cinematically polished script \u2014 concrete camera language (\u0027Close on the Rabbit\u0027s button eyes\u0027), rich atmosphere, and a strong original final beat \u2014 but it invents a named character (\u0027Bramble\u0027) for the wild rabbit that does not exist in the source text, which per the fidelity rubric must be treated as a severe, standalone penalty on that dimension even though it doesn\u0027t break the overall story."
+    },
+    {
+      "screenplayId": "Screenplay F",
+      "adaptationFidelity": 8,
+      "characterDisambiguation": 7,
+      "aiVideoDirectibility": 6.5,
+      "dramaticPacing": 6.5,
+      "dialogueAuthenticity": 8,
+      "soundDesignMusic": 4,
+      "overallQualitativeScore": 6.67,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Solid, workmanlike coverage including Timothy, the model boat, the doctor scene, and the fairy transformation, with mostly verbatim dialogue. Loses points because several scene headings cram three or four discrete actions (wheelbarrow ride \u002B picnic \u002B fairy hut building) into one slugline, and the illness/rejection climax is rushed without much room to breathe. No music/sound direction provided."
+    },
+    {
+      "screenplayId": "Screenplay G",
+      "adaptationFidelity": 3,
+      "characterDisambiguation": 5,
+      "aiVideoDirectibility": 4.5,
+      "dramaticPacing": 4,
+      "dialogueAuthenticity": 6,
+      "soundDesignMusic": 3.5,
+      "overallQualitativeScore": 4.33,
+      "productionReady": false,
+      "disqualifyingIssues": [
+        "Drops the entire illness/scarlet-fever/doctor\u0027s-burn-order sequence \u2014 the story jumps straight from the wild rabbits\u0027 rejection to the Rabbit crying alone in the garden with no established cause, breaking the causal and emotional logic of the central turn."
+      ],
+      "rationale": "The condensed toy-cupboard and Skin Horse scenes retain some charm, but the complete omission of the illness/doctor/sack beat is a structural break \u2014 the audience has no idea why the Rabbit is suddenly discarded and weeping. Combined with thin, generic character description and heavy reliance on unfilmable internal-state narration, this draft needs a substantial rewrite before it could be greenlit."
+    }
+  ],
+  "forcedRanking": [
+    "Screenplay C",
+    "Screenplay B",
+    "Screenplay E",
+    "Screenplay A",
+    "Screenplay F",
+    "Screenplay D",
+    "Screenplay G"
+  ],
+  "judgeSummaryNotes": "Strongest: Screenplay C, because it combines the fullest, most faithful beat-for-beat coverage of the source with concrete camera-ready direction (CLOSE ON cues) and the most consistent character descriptions across scenes. Weakest: Screenplay G, because it entirely drops the illness/doctor/burning sequence that motivates the Rabbit\u0027s abandonment and tear-shedding, breaking the story\u0027s causal chain and leaving the emotional climax unearned.",
+  "isMock": false,
+  "rubricVersion": "2-calibrated-selfbias-productionready",
+  "screenplaysHash": "BA4AF8E59100C49AEC27EC8D1C63E9C6EB3245CF7939A65AAB9010913A4A4F64"
+}

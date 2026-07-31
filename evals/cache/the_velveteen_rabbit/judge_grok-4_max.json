@@ -1,0 +1,119 @@
+{
+  "evaluations": [
+    {
+      "screenplayId": "Screenplay A",
+      "adaptationFidelity": 8.5,
+      "characterDisambiguation": 9,
+      "aiVideoDirectibility": 8,
+      "dramaticPacing": 7.5,
+      "dialogueAuthenticity": 8.5,
+      "soundDesignMusic": 8,
+      "overallQualitativeScore": 8.25,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Strong source coverage and consistent character visuals with locked traits restated on re-entry; minor pacing drag from extended V.O. blocks in illness and garden scenes.",
+      "promptImprovementSuggestion": "Add an explicit rule that no V.O. block may exceed two sentences without an intervening one-line visual or sound micro-beat."
+    },
+    {
+      "screenplayId": "Screenplay B",
+      "adaptationFidelity": 7.5,
+      "characterDisambiguation": 7,
+      "aiVideoDirectibility": 7.5,
+      "dramaticPacing": 7,
+      "dialogueAuthenticity": 8,
+      "soundDesignMusic": 7.5,
+      "overallQualitativeScore": 7.42,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Covers core beats but compresses summer and illness sections too aggressively, with inconsistent re-description of Rabbit\u0027s appearance across time jumps.",
+      "promptImprovementSuggestion": "Add a rule requiring every character re-entry after a time jump to restate two to three locked visual traits in the first action line of that scene."
+    },
+    {
+      "screenplayId": "Screenplay C",
+      "adaptationFidelity": 2,
+      "characterDisambiguation": 6,
+      "aiVideoDirectibility": 5.5,
+      "dramaticPacing": 4,
+      "dialogueAuthenticity": 7,
+      "soundDesignMusic": 6,
+      "overallQualitativeScore": 5.08,
+      "productionReady": false,
+      "disqualifyingIssues": [
+        "Screenplay is truncated mid-sentence and does not complete the story arc"
+      ],
+      "rationale": "Incomplete draft drops the fairy transformation, final spring scene, and resolution; fidelity penalized severely for missing major beats.",
+      "promptImprovementSuggestion": "Add a rule that the final scene must always include a short closing beat returning to any established on-camera frame before FADE OUT."
+    },
+    {
+      "screenplayId": "Screenplay D",
+      "adaptationFidelity": 3,
+      "characterDisambiguation": 8,
+      "aiVideoDirectibility": 7,
+      "dramaticPacing": 6.5,
+      "dialogueAuthenticity": 7.5,
+      "soundDesignMusic": 7,
+      "overallQualitativeScore": 6.5,
+      "productionReady": false,
+      "disqualifyingIssues": [
+        "Invented on-camera NARRATOR frame and study location not present in source"
+      ],
+      "rationale": "Major invented plot element (framing narrator in study) violates fidelity; otherwise solid visuals but disqualified for added content.",
+      "promptImprovementSuggestion": "Add an explicit prohibition against inventing any on-camera frame narrator or new locations unless they appear in the source text."
+    },
+    {
+      "screenplayId": "Screenplay E",
+      "adaptationFidelity": 7,
+      "characterDisambiguation": 8.5,
+      "aiVideoDirectibility": 7.5,
+      "dramaticPacing": 7,
+      "dialogueAuthenticity": 6.5,
+      "soundDesignMusic": 7,
+      "overallQualitativeScore": 7.25,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Good visual consistency and closed cast but introduces invented spoken lines such as \u0027You\u0027re the best present of all\u0027 that paraphrase rather than preserve book wording.",
+      "promptImprovementSuggestion": "Add a rule that any summarized exchange receives at most one brief generic period-appropriate line and never invented character-specific dialogue."
+    },
+    {
+      "screenplayId": "Screenplay F",
+      "adaptationFidelity": 9,
+      "characterDisambiguation": 9.5,
+      "aiVideoDirectibility": 9,
+      "dramaticPacing": 8.5,
+      "dialogueAuthenticity": 9,
+      "soundDesignMusic": 9,
+      "overallQualitativeScore": 9,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Exceptional fidelity with precise book wording, consistent locked visuals restated on re-entry, concrete filmable actions, and balanced sound cues in every scene.",
+      "promptImprovementSuggestion": "Add a rule requiring at least one explicit (SOUND: ...) or (MUSIC: ...) cue in every scene, with two distinct cues at any emotional peak."
+    },
+    {
+      "screenplayId": "Screenplay G",
+      "adaptationFidelity": 8.5,
+      "characterDisambiguation": 9,
+      "aiVideoDirectibility": 8.5,
+      "dramaticPacing": 8,
+      "dialogueAuthenticity": 8.5,
+      "soundDesignMusic": 8,
+      "overallQualitativeScore": 8.42,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Very strong coverage and character consistency with named wild rabbits kept stable; slightly slower pacing in illness sequence due to longer action paragraphs.",
+      "promptImprovementSuggestion": "Add a rule that action lines must describe only one concrete camera-observable event per line and never cram multiple distinct actions into a single paragraph."
+    }
+  ],
+  "forcedRanking": [
+    "Screenplay F",
+    "Screenplay G",
+    "Screenplay A",
+    "Screenplay B",
+    "Screenplay E",
+    "Screenplay D",
+    "Screenplay C"
+  ],
+  "judgeSummaryNotes": "Strongest: Screenplay F because it achieves the highest scores across all dimensions with no invented content and perfectly balanced short-clip-ready structure. Weakest: Screenplay C because it is truncated mid-sentence and fails to deliver a complete arc.",
+  "isMock": false,
+  "rubricVersion": "4-prompt-improvement-with-actual-prompt-text",
+  "screenplaysHash": "DCCC80B6C2C22D8CFFAD1D36EFB34CAF99F526E3A5D98CEFFA0F321990B40E93"
+}

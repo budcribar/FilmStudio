@@ -1,0 +1,108 @@
+{
+  "evaluations": [
+    {
+      "screenplayId": "Screenplay A",
+      "adaptationFidelity": 8.5,
+      "characterDisambiguation": 9,
+      "aiVideoDirectibility": 8,
+      "dramaticPacing": 7.5,
+      "dialogueAuthenticity": 8.5,
+      "soundDesignMusic": 8,
+      "overallQualitativeScore": 8.25,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Screenplay A adheres closely to Poe\u0027s text with detailed scene settings and clear character design, though a few sequences might need tighter pacing to suit 5-10 second video clips."
+    },
+    {
+      "screenplayId": "Screenplay B",
+      "adaptationFidelity": 8,
+      "characterDisambiguation": 8,
+      "aiVideoDirectibility": 7.5,
+      "dramaticPacing": 8,
+      "dialogueAuthenticity": 8,
+      "soundDesignMusic": 7.5,
+      "overallQualitativeScore": 7.83,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Screenplay B remains faithful and maintains tension well, but its sparser visual cues and generic character descriptions may complicate segmentation into short clips."
+    },
+    {
+      "screenplayId": "Screenplay C",
+      "adaptationFidelity": 8,
+      "characterDisambiguation": 7.5,
+      "aiVideoDirectibility": 8,
+      "dramaticPacing": 7.5,
+      "dialogueAuthenticity": 7.5,
+      "soundDesignMusic": 7.5,
+      "overallQualitativeScore": 7.67,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Screenplay C is streamlined and faithful to the source, yet its minimal character visuals and somewhat bland dialogue reduce its cinematic impact for rapid video sequencing."
+    },
+    {
+      "screenplayId": "Screenplay D",
+      "adaptationFidelity": 9,
+      "characterDisambiguation": 9,
+      "aiVideoDirectibility": 8.5,
+      "dramaticPacing": 8.5,
+      "dialogueAuthenticity": 8.5,
+      "soundDesignMusic": 9,
+      "overallQualitativeScore": 8.75,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Screenplay D offers rich visual staging, detailed character cues, and excellent sound design, though its complexity may require careful division into short, discrete clips."
+    },
+    {
+      "screenplayId": "Screenplay E",
+      "adaptationFidelity": 8,
+      "characterDisambiguation": 7.5,
+      "aiVideoDirectibility": 7.5,
+      "dramaticPacing": 8,
+      "dialogueAuthenticity": 7.5,
+      "soundDesignMusic": 7.5,
+      "overallQualitativeScore": 7.67,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Screenplay E remains faithful in narrative beats and mood but suffers slightly from generic character details and a minor credit error, reducing its overall cinematic polish for short clips."
+    },
+    {
+      "screenplayId": "Screenplay F",
+      "adaptationFidelity": 9,
+      "characterDisambiguation": 9,
+      "aiVideoDirectibility": 9,
+      "dramaticPacing": 9,
+      "dialogueAuthenticity": 8.5,
+      "soundDesignMusic": 9,
+      "overallQualitativeScore": 8.92,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Screenplay F excels with precise visual directions, rich character details, and dynamic sound cues perfectly tailored for 5-10 second video segments, making it highly production-ready."
+    },
+    {
+      "screenplayId": "Screenplay G",
+      "adaptationFidelity": 8,
+      "characterDisambiguation": 7,
+      "aiVideoDirectibility": 7.5,
+      "dramaticPacing": 7,
+      "dialogueAuthenticity": 7,
+      "soundDesignMusic": 7,
+      "overallQualitativeScore": 7.25,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Screenplay G, while faithful to the source, is overly condensed with minimal character detailing and rushed pacing, limiting its cinematic expressiveness in short clip format."
+    }
+  ],
+  "forcedRanking": [
+    "Screenplay F",
+    "Screenplay D",
+    "Screenplay A",
+    "Screenplay B",
+    "Screenplay C",
+    "Screenplay E",
+    "Screenplay G"
+  ],
+  "judgeSummaryNotes": "Strongest: Screenplay F because it provides exceptional visual direction, sound design, and pacing perfectly suited for short AI-generated video clips. Weakest: Screenplay G because its minimal character details and rushed, overly condensed pacing undermine its cinematic potential.",
+  "isMock": false,
+  "rubricVersion": "2-calibrated-selfbias-productionready",
+  "screenplaysHash": "88517034D4CA38BDC2DCED0379F639E178C5775039FAE9AC6B2B7CB5B82E07F9"
+}

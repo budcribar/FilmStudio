@@ -71,13 +71,23 @@ public interface IChatClient
     /// Telemetry tag for <c>api_calls.jsonl</c> (<c>ApiCallTelemetry.Mode</c>), e.g.
     /// <c>book_to_fountain</c>, <c>cast_from_screenplay</c>, <c>cast_visual_literalize</c>.
     /// </param>
+    /// <param name="reasoningEffort">
+    /// Provider-neutral reasoning/thinking intensity hint: <c>"low"</c>, <c>"medium"</c>,
+    /// <c>"high"</c>, or <c>"max"</c>. Null (default) leaves each provider's own default
+    /// behavior untouched. Each concrete client translates this to its own API shape
+    /// (OpenAI/xAI <c>reasoning_effort</c>, Anthropic <c>thinking</c>+<c>output_config.effort</c>,
+    /// Gemini <c>thinkingConfig.thinkingLevel</c>) and self-heals by retrying without it if the
+    /// requested model doesn't support the parameter at all, rather than requiring callers to
+    /// know which models are reasoning-capable.
+    /// </param>
     Task<string> CompleteAsync(
         string systemPrompt,
         string userPrompt,
         string model = "grok-4.5",
         double temperature = 0.2,
         CancellationToken ct = default,
-        string? mode = null);
+        string? mode = null,
+        string? reasoningEffort = null);
 }
 
 /// <summary>Canonical <see cref="IChatClient.CompleteAsync"/> mode tags for telemetry.</summary>

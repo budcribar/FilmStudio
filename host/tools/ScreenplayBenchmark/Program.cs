@@ -32,6 +32,7 @@ public static class Program
         string? bookSlug = null;
         List<string>? requestedModels = null;
         List<string>? requestedJudges = null;
+        string? reasoningEffort = null;
         bool dryRun = false;
         bool showLeaderboardOnly = false;
         bool showJudgeLeaderboardOnly = false;
@@ -64,6 +65,10 @@ public static class Program
             else if (arg.Equals("--judges", StringComparison.OrdinalIgnoreCase) && i + 1 < args.Length)
             {
                 requestedJudges = args[++i].Split(',').Select(m => m.Trim()).Where(m => m.Length > 0).ToList();
+            }
+            else if (arg.Equals("--reasoning-effort", StringComparison.OrdinalIgnoreCase) && i + 1 < args.Length)
+            {
+                reasoningEffort = args[++i].Trim();
             }
             else if (arg.Equals("--dry-run", StringComparison.OrdinalIgnoreCase))
             {
@@ -137,12 +142,13 @@ public static class Program
             foreach (var file in bookSuiteFiles)
             {
                 var slug = Path.GetFileNameWithoutExtension(file).ToLowerInvariant();
-                await RunSingleBookBenchmarkAsync(file, slug, outDir, requestedModels, requestedJudges, dryRun, retryFailed, historyFilePath, chat, workspaceRoot);
+                await RunSingleBookBenchmarkAsync(file, slug, outDir, requestedModels, requestedJudges, dryRun, retryFailed, historyFilePath, chat, workspaceRoot, reasoningEffort);
             }
 
             // Generate updated HTML Dashboard after suite execution
             historyStore = BenchmarkHistoryStore.LoadHistory(historyFilePath);
-            var dashboardHtml = HtmlDashboardGenerator.GenerateHtmlDashboard(historyStore);
+            var (curWorkingTree, curGitHead) = ResolveCurrentPromptVersions(workspaceRoot);
+            var dashboardHtml = HtmlDashboardGenerator.GenerateHtmlDashboard(historyStore, curWorkingTree, curGitHead);
             var dashboardFile = Path.Combine(workspaceRoot, "evals", "benchmark_dashboard.html");
             await File.WriteAllTextAsync(dashboardFile, dashboardHtml);
 
@@ -159,11 +165,12 @@ public static class Program
         }
 
         bookSlug ??= Path.GetFileNameWithoutExtension(bookPath).ToLowerInvariant();
-        await RunSingleBookBenchmarkAsync(bookPath, bookSlug, outDir, requestedModels, requestedJudges, dryRun, retryFailed, historyFilePath, chat, workspaceRoot);
+        await RunSingleBookBenchmarkAsync(bookPath, bookSlug, outDir, requestedModels, requestedJudges, dryRun, retryFailed, historyFilePath, chat, workspaceRoot, reasoningEffort);
 
         // Generate updated HTML Dashboard
         historyStore = BenchmarkHistoryStore.LoadHistory(historyFilePath);
-        var html = HtmlDashboardGenerator.GenerateHtmlDashboard(historyStore);
+        var (curWorkingTree2, curGitHead2) = ResolveCurrentPromptVersions(workspaceRoot);
+        var html = HtmlDashboardGenerator.GenerateHtmlDashboard(historyStore, curWorkingTree2, curGitHead2);
         var dashFile = Path.Combine(workspaceRoot, "evals", "benchmark_dashboard.html");
         await File.WriteAllTextAsync(dashFile, html);
 
@@ -181,7 +188,8 @@ public static class Program
         bool retryFailed,
         string historyFilePath,
         IChatClient chat,
-        string workspaceRoot)
+        string workspaceRoot,
+        string? reasoningEffort = null)
     {
         var screenplaysDir = Path.Combine(outDir, bookSlug, "screenplays");
         Directory.CreateDirectory(screenplaysDir);
@@ -232,14 +240,19 @@ public static class Program
             Path.GetFileNameWithoutExtension(bookPath), BookToFountainConverter.NormalizeBookText(bookText), "Author");
         var generationFallbacks = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
+        // Effort suffix keeps a max-effort run from silently reusing (or clobbering) a cached
+        // screenplay/judge verdict generated at default effort, and vice versa — they're not
+        // interchangeable and must never be compared or averaged as if they were.
+        var effortSuffix = string.IsNullOrWhiteSpace(reasoningEffort) ? "" : $"_{SanitizeFileName(reasoningEffort)}";
+
         // Phase 1 & 2: Generation & C# Audits
         foreach (var modelId in candidateModels)
         {
             Console.Write($"  [Adaptation] Model '{modelId}'... ");
             string screenplayText;
 
-            var screenplayFile = Path.Combine(screenplaysDir, $"{SanitizeFileName(modelId)}.fountain");
-            var cacheFile = Path.Combine(workspaceRoot, "evals", "cache", bookSlug, $"{SanitizeFileName(modelId)}.fountain");
+            var screenplayFile = Path.Combine(screenplaysDir, $"{SanitizeFileName(modelId)}{effortSuffix}.fountain");
+            var cacheFile = Path.Combine(workspaceRoot, "evals", "cache", bookSlug, $"{SanitizeFileName(modelId)}{effortSuffix}.fountain");
 
             var diskCached = File.Exists(cacheFile) ? await File.ReadAllTextAsync(cacheFile) : null;
             var localCached = File.Exists(screenplayFile) ? await File.ReadAllTextAsync(screenplayFile) : null;
@@ -275,7 +288,8 @@ public static class Program
                         model: modelId,
                         onProgress: msg => Console.WriteLine($"    · {msg}"),
                         onHeuristicFallback: reason => generationFallbacks[modelId] = reason,
-                        budgetOverride: ResolveRateLimitSafeBudgetOverride(modelId));
+                        budgetOverride: ResolveRateLimitSafeBudgetOverride(modelId),
+                        reasoningEffort: reasoningEffort);
 
                     if (generationFallbacks.TryGetValue(modelId, out var fallbackReason))
                     {
@@ -308,6 +322,13 @@ public static class Program
         // Phase 3 & 4: Blind Cross-Evaluation
         var judgeEvaluations = new Dictionary<string, JudgeEvaluationPayload>(StringComparer.OrdinalIgnoreCase);
         var random = new Random(42);
+
+        // Same shared prompt every candidate was generated from (workspaceRoot is ignored by
+        // PromptFiles.ReadAsync — it always resolves PAGETOMOVIE_PROMPTS_DIR or the embedded
+        // prompts/book_to_fountain.txt, so this is the exact text every model above just ran
+        // under, not an approximation). Judges need to see this to suggest a REAL prompt fix
+        // instead of guessing blind at what the prompt might already say.
+        var generationSystemPrompt = await BookToFountainConverter.BuildSystemPromptAsync(outDir, totalRuntimeMinutes: 10);
 
         // Fallback-poisoned screenplays are already excluded from scoring (IsGenerationFallback) —
         // don't also make every judge read them. They're near-duplicates of the raw book text, so
@@ -344,7 +365,11 @@ public static class Program
                 anonScreenplays[label] = generatedScreenplays[keys[i]];
             }
 
-            var judgeCacheFile = Path.Combine(workspaceRoot, "evals", "cache", bookSlug, $"judge_{judgeModelId}.json");
+            // Same effort-suffix reasoning as the generation cache above: a judge verdict formed
+            // at boosted reasoning effort is not interchangeable with one at default effort, even
+            // when ScreenplaysHash matches (the candidates could be unchanged while only the
+            // judge's own effort level changed).
+            var judgeCacheFile = Path.Combine(workspaceRoot, "evals", "cache", bookSlug, $"judge_{judgeModelId}{effortSuffix}.json");
             JudgeEvaluationPayload? cachedJudge = null;
 
             if (File.Exists(judgeCacheFile))
@@ -383,13 +408,14 @@ public static class Program
             {
                 try
                 {
-                    var userPrompt = ScreenplayJudgmentRubric.BuildPrompt(bookText, anonScreenplays);
+                    var userPrompt = ScreenplayJudgmentRubric.BuildPrompt(bookText, anonScreenplays, generationSystemPrompt);
                     var raw = await chat.CompleteAsync(
                         systemPrompt: "Respond with ONLY the JSON object described in the instructions. No prose, no markdown code fences.",
                         userPrompt: userPrompt,
                         model: judgeModelId,
                         temperature: 0.2,
-                        mode: "screenplay_benchmark_judge");
+                        mode: "screenplay_benchmark_judge",
+                        reasoningEffort: reasoningEffort);
                     evalPayload = ParseJudgePayload(raw, anonMapping.Keys);
                     evalPayload.IsMock = false;
                     evalPayload.RubricVersion = ScreenplayJudgmentRubric.RubricVersion;
@@ -422,6 +448,8 @@ public static class Program
             BookTitle = Path.GetFileNameWithoutExtension(bookPath),
             BookPath = bookPath,
             IsMockRun = isMockRun,
+            ReasoningEffort = reasoningEffort ?? "",
+            PromptVersion = ComputePromptVersion(generationSystemPrompt, workspaceRoot),
             ModelScores = runData.Leaderboard,
             JudgeMatrix = runData.JudgeMatrix,
             SelfBiasNotes = runData.SelfBiasNotes,
@@ -654,6 +682,76 @@ Uncle Nick turned, offering a small, reassuring nod. ""She always holds when the
         return Convert.ToHexString(bytes);
     }
 
+    /// <summary>
+    /// Hashes the exact generation prompt text and, the first time this hash is seen, snapshots
+    /// the full text to evals/prompt_versions/&lt;hash&gt;.txt — so a later diff/comparison view can
+    /// show what actually changed between two versions without depending on git (prompt edits are
+    /// routinely tested here before being committed, so a git-commit lookup would miss them).
+    /// </summary>
+    private static string ComputePromptVersion(string generationSystemPrompt, string workspaceRoot)
+    {
+        var bytes = SHA256.HashData(Encoding.UTF8.GetBytes(generationSystemPrompt ?? ""));
+        var version = Convert.ToHexString(bytes)[..10];
+
+        var snapshotDir = Path.Combine(workspaceRoot, "evals", "prompt_versions");
+        var snapshotFile = Path.Combine(snapshotDir, $"{version}.txt");
+        if (!File.Exists(snapshotFile))
+        {
+            Directory.CreateDirectory(snapshotDir);
+            File.WriteAllText(snapshotFile, generationSystemPrompt ?? "");
+        }
+
+        return version;
+    }
+
+    /// <summary>
+    /// Resolves the PromptVersion hash for (a) the prompt file exactly as it sits on disk right
+    /// now (may include uncommitted edits — prompt tweaks routinely get benchmarked before being
+    /// committed) and (b) the prompt file as of the last git commit. The dashboard uses these to
+    /// label which tracked versions are "live on disk" vs. "actually committed" vs. neither
+    /// (an abandoned experiment) — a question git-log alone can't answer since committed history
+    /// says nothing about what's currently sitting in the working tree.
+    /// </summary>
+    private static (string? WorkingTree, string? GitHead) ResolveCurrentPromptVersions(string workspaceRoot)
+    {
+        static string Hash(string text) =>
+            Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(text.Replace("{{TOTAL_RUNTIME_MINUTES}}", "10"))))[..10];
+
+        string? workingTree = null;
+        try
+        {
+            var promptPath = Path.Combine(workspaceRoot, "prompts", "book_to_fountain.txt");
+            if (File.Exists(promptPath))
+                workingTree = Hash(File.ReadAllText(promptPath));
+        }
+        catch { /* best-effort */ }
+
+        string? gitHead = null;
+        try
+        {
+            var psi = new System.Diagnostics.ProcessStartInfo
+            {
+                FileName = "git",
+                Arguments = "show HEAD:prompts/book_to_fountain.txt",
+                WorkingDirectory = workspaceRoot,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+            };
+            using var proc = System.Diagnostics.Process.Start(psi);
+            if (proc is not null)
+            {
+                var output = proc.StandardOutput.ReadToEnd();
+                proc.WaitForExit(5000);
+                if (proc.ExitCode == 0 && !string.IsNullOrWhiteSpace(output))
+                    gitHead = Hash(output);
+            }
+        }
+        catch { /* best-effort — git may be missing from PATH, or this may not be a repo */ }
+
+        return (workingTree, gitHead);
+    }
+
     private static string SanitizeFileName(string name) =>
         string.Concat(name.Split(Path.GetInvalidFileNameChars())).Replace(' ', '_').Replace('/', '_');
 
@@ -715,6 +813,7 @@ Uncle Nick turned, offering a small, reassuring nod. ""She always holds when the
                 ProductionReady = entry.ProductionReady,
                 DisqualifyingIssues = entry.DisqualifyingIssues,
                 Rationale = entry.Rationale,
+                PromptImprovementSuggestion = entry.PromptImprovementSuggestion,
             });
         }
         return result;
@@ -743,10 +842,13 @@ Uncle Nick turned, offering a small, reassuring nod. ""She always holds when the
             runData.JudgeRankMatrix[judgeId] = new Dictionary<string, int>();
             runData.JudgeSummaries[judgeId] = payload.JudgeSummaryNotes;
             runData.JudgeRationale[judgeId] = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            runData.JudgePromptSuggestions[judgeId] = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             foreach (var eval in payload.Evaluations)
             {
                 if (!string.IsNullOrWhiteSpace(eval.Rationale))
                     runData.JudgeRationale[judgeId][eval.ScreenplayId] = eval.Rationale; // last-wins if a malformed judge response repeats a screenplayId
+                if (!string.IsNullOrWhiteSpace(eval.PromptImprovementSuggestion))
+                    runData.JudgePromptSuggestions[judgeId][eval.ScreenplayId] = eval.PromptImprovementSuggestion;
             }
 
             if (payload.IsMock)
@@ -1021,7 +1123,8 @@ FADE OUT.";
 
         BenchmarkHistoryStore.SaveHistory(historyStore, historyFilePath);
 
-        var dashboardHtml = HtmlDashboardGenerator.GenerateHtmlDashboard(historyStore);
+        var (curWorkingTree3, curGitHead3) = ResolveCurrentPromptVersions(workspaceRoot);
+        var dashboardHtml = HtmlDashboardGenerator.GenerateHtmlDashboard(historyStore, curWorkingTree3, curGitHead3);
         var dashboardFile = Path.Combine(workspaceRoot, "evals", "benchmark_dashboard.html");
         await File.WriteAllTextAsync(dashboardFile, dashboardHtml);
 

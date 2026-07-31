@@ -115,7 +115,8 @@ public static class BookToFountainConverter
         Action<string>? onProgress = null,
         CancellationToken ct = default,
         PromptBudget? budgetOverride = null,
-        Action<string>? onHeuristicFallback = null)
+        Action<string>? onHeuristicFallback = null,
+        string? reasoningEffort = null)
     {
         if (string.IsNullOrWhiteSpace(bookText))
             throw new InvalidOperationException("Book text is empty");
@@ -139,7 +140,7 @@ public static class BookToFountainConverter
                 onProgress?.Invoke("Adapting book → Fountain (single pass)…");
                 var single = await TrySingleShotWithGateAsync(
                     system, title, author, pageCount, totalRuntimeMinutes, bookText,
-                    chat, model, budget, onProgress, ct).ConfigureAwait(false);
+                    chat, model, budget, onProgress, ct, reasoningEffort).ConfigureAwait(false);
 
                 if (single is not null)
                 {
@@ -152,7 +153,8 @@ public static class BookToFountainConverter
                         system, title, author, pageCount, totalRuntimeMinutes, bookText,
                         chat, model, onProgress, ct,
                         softMaxChars: budget.ChunkSoftMaxChars,
-                        maxChunks: ResolveMaxChunks(bookText, budget)).ConfigureAwait(false);
+                        maxChunks: ResolveMaxChunks(bookText, budget),
+                        reasoningEffort: reasoningEffort).ConfigureAwait(false);
                 }
                 else
                 {
@@ -167,7 +169,8 @@ public static class BookToFountainConverter
                     system, title, author, pageCount, totalRuntimeMinutes, bookText,
                     chat, model, onProgress, ct,
                     softMaxChars: budget.ChunkSoftMaxChars,
-                    maxChunks: ResolveMaxChunks(bookText, budget)).ConfigureAwait(false);
+                    maxChunks: ResolveMaxChunks(bookText, budget),
+                    reasoningEffort: reasoningEffort).ConfigureAwait(false);
             }
 
             // Multi path: soft coverage failures still accept a structurally good draft
@@ -186,10 +189,10 @@ public static class BookToFountainConverter
 
         // Generation repairs — no operator hand-edit path
         text = await RepairVagueLocationHeadingsAsync(
-            system, text, chat, model, onProgress, ct).ConfigureAwait(false);
+            system, text, chat, model, onProgress, ct, reasoningEffort).ConfigureAwait(false);
         text = NormalizeSceneHeadingWording(text);
         text = await RepairGenericNumberedSpeakersAsync(
-            system, text, chat, model, onProgress, ct).ConfigureAwait(false);
+            system, text, chat, model, onProgress, ct, reasoningEffort).ConfigureAwait(false);
 
         text = EnsureDraftDate(text);
         // Models invent wrong years (e.g. 3/25/2025) — stamp local today before save
@@ -274,13 +277,14 @@ public static class BookToFountainConverter
         string mode,
         string retryLabel,
         Action<string>? onProgress,
-        CancellationToken ct)
+        CancellationToken ct,
+        string? reasoningEffort = null)
     {
         for (var attempt = 1; attempt <= 2; attempt++)
         {
             try
             {
-                return await chat.CompleteAsync(system, user, model, temperature, ct, mode: mode)
+                return await chat.CompleteAsync(system, user, model, temperature, ct, mode: mode, reasoningEffort: reasoningEffort)
                     .ConfigureAwait(false);
             }
             catch (OperationCanceledException) when (ct.IsCancellationRequested)
@@ -305,7 +309,8 @@ public static class BookToFountainConverter
         IChatClient chat,
         string model,
         Action<string>? onProgress,
-        CancellationToken ct)
+        CancellationToken ct,
+        string? reasoningEffort = null)
     {
         var bad = FindVagueLocationHeadings(fountain);
         if (bad.Count == 0 || !chat.IsConfigured)
@@ -344,7 +349,7 @@ public static class BookToFountainConverter
             var raw = await CompleteWithOneRetryAsync(
                     chat, system, user, model, temperature: 0.1,
                     mode: ChatCallModes.BookToFountainLocationsRetry,
-                    retryLabel: "Location repair", onProgress, ct)
+                    retryLabel: "Location repair", onProgress, ct, reasoningEffort)
                 .ConfigureAwait(false);
             if (raw is null)
             {
@@ -475,7 +480,8 @@ public static class BookToFountainConverter
         IChatClient chat,
         string model,
         Action<string>? onProgress,
-        CancellationToken ct)
+        CancellationToken ct,
+        string? reasoningEffort = null)
     {
         var bad = FindGenericNumberedSpeakers(fountain);
         if (bad.Count == 0 || !chat.IsConfigured)
@@ -516,7 +522,7 @@ public static class BookToFountainConverter
             var raw = await CompleteWithOneRetryAsync(
                     chat, system, user, model, temperature: 0.15,
                     mode: ChatCallModes.BookToFountainSpeakersRetry,
-                    retryLabel: "Speaker naming repair", onProgress, ct)
+                    retryLabel: "Speaker naming repair", onProgress, ct, reasoningEffort)
                 .ConfigureAwait(false);
             if (raw is null)
             {
@@ -1110,14 +1116,16 @@ public static class BookToFountainConverter
         string model,
         PromptBudget budget,
         Action<string>? onProgress,
-        CancellationToken ct)
+        CancellationToken ct,
+        string? reasoningEffort = null)
     {
         try
         {
             var draft = await ConvertSingleShotAsync(
                 system, title, author, pageCount, totalMinutes, bookText,
                 chat, model, ct,
-                bookMaxChars: budget.SingleShotBookMaxChars).ConfigureAwait(false);
+                bookMaxChars: budget.SingleShotBookMaxChars,
+                reasoningEffort: reasoningEffort).ConfigureAwait(false);
 
             var gate = EvaluateQuality(draft, bookText, totalMinutes, AdaptPath.Single);
             if (gate.Ok)
@@ -1128,7 +1136,8 @@ public static class BookToFountainConverter
                 system, title, author, pageCount, totalMinutes, bookText,
                 chat, model, ct,
                 bookMaxChars: budget.SingleShotBookMaxChars,
-                extraUserSuffix: CoverageRetrySuffix()).ConfigureAwait(false);
+                extraUserSuffix: CoverageRetrySuffix(),
+                reasoningEffort: reasoningEffort).ConfigureAwait(false);
 
             gate = EvaluateQuality(draft, bookText, totalMinutes, AdaptPath.Single);
             return gate.Ok ? draft : null;
@@ -1151,7 +1160,8 @@ public static class BookToFountainConverter
         string model,
         CancellationToken ct,
         int bookMaxChars = DefaultSingleShotBookMaxChars,
-        string? extraUserSuffix = null)
+        string? extraUserSuffix = null,
+        string? reasoningEffort = null)
     {
         // Happy path: full book. Trim only if somehow over the call budget (prefer multi-chunk instead).
         var bookForPrompt = bookText.Length <= bookMaxChars
@@ -1169,7 +1179,7 @@ public static class BookToFountainConverter
                 mode: firstMode,
                 retryLabel: "Book adapt",
                 onProgress: null,
-                ct)
+                ct, reasoningEffort)
             .ConfigureAwait(false);
         if (text is null)
             throw new InvalidOperationException(
@@ -1184,7 +1194,7 @@ public static class BookToFountainConverter
                     mode: ChatCallModes.BookToFountainRetry,
                     retryLabel: "Book adapt structure",
                     onProgress: null,
-                    ct)
+                    ct, reasoningEffort)
                 .ConfigureAwait(false);
             if (retryText is not null)
                 text = StripBookPageTags(StripFences(retryText));
@@ -1209,7 +1219,8 @@ public static class BookToFountainConverter
         Action<string>? onProgress,
         CancellationToken ct,
         int softMaxChars = ChunkSoftMaxChars,
-        int maxChunks = MaxAdaptChunks)
+        int maxChunks = MaxAdaptChunks,
+        string? reasoningEffort = null)
     {
         var chunks = ChunkBookForAdaptation(bookText, maxChunks, softMaxChars);
         onProgress?.Invoke($"Book split into {chunks.Count} chunk(s) for adaptation…");
@@ -1231,7 +1242,7 @@ public static class BookToFountainConverter
                     chat, system, user, model, temperature: 0.2,
                     mode: ChatCallModes.BookToFountainChunk,
                     retryLabel: $"Chunk {i + 1}/{chunks.Count}",
-                    onProgress, ct)
+                    onProgress, ct, reasoningEffort)
                 .ConfigureAwait(false);
             if (part is null)
                 throw new InvalidOperationException(
@@ -1244,7 +1255,7 @@ public static class BookToFountainConverter
                         chat, system, user + RetrySuffix(false), model, temperature: 0.15,
                         mode: ChatCallModes.BookToFountainChunkRetry,
                         retryLabel: $"Chunk {i + 1} structure",
-                        onProgress, ct)
+                        onProgress, ct, reasoningEffort)
                     .ConfigureAwait(false);
                 if (retryPart is not null)
                     part = StripBookPageTags(StripFences(retryPart));
@@ -1264,7 +1275,7 @@ public static class BookToFountainConverter
             try
             {
                 var merged = StripBookPageTags(await MergeFountainPartsAsync(
-                    system, title, author, totalMinutes, parts, chat, model, ct)
+                    system, title, author, totalMinutes, parts, chat, model, ct, reasoningEffort)
                     .ConfigureAwait(false));
                 if (LooksLikeGoodFountain(merged) &&
                     CountSceneHeadings(merged) >= Math.Max(2, CountSceneHeadings(stitched) / 3))
@@ -1295,7 +1306,8 @@ public static class BookToFountainConverter
         IReadOnlyList<string> parts,
         IChatClient chat,
         string model,
-        CancellationToken ct)
+        CancellationToken ct,
+        string? reasoningEffort = null)
     {
         var sb = new StringBuilder();
         sb.AppendLine("MULTI-CHUNK MERGE TASK");
@@ -1344,7 +1356,7 @@ public static class BookToFountainConverter
 
         var text = await chat.CompleteAsync(
                 mergeSystem, sb.ToString(), model, temperature: 0.15, ct,
-                mode: ChatCallModes.BookToFountainMerge)
+                mode: ChatCallModes.BookToFountainMerge, reasoningEffort: reasoningEffort)
             .ConfigureAwait(false);
         return StripFences(text);
     }

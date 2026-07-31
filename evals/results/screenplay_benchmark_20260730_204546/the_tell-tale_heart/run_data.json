@@ -1,0 +1,426 @@
+{
+  "BookPath": "C:\\Users\\budcr\\source\\repos\\claude\\PageToMovie\\books\\The_Tell-Tale_Heart.txt",
+  "Timestamp": "2026-07-31 02:51:46 UTC",
+  "IsMockRun": false,
+  "Leaderboard": [
+    {
+      "ModelId": "grok-4.5",
+      "AnonymousLabel": "",
+      "CompositeScore": 91.2,
+      "IsGenerationFallback": false,
+      "GenerationFallbackReason": null,
+      "BordaPoints": 8,
+      "AvgJudgeRank": 1,
+      "SyntaxAudit": {
+        "OverallSyntaxScore": 93,
+        "FormatComplianceScore": 100,
+        "SceneBudgetScore": 100,
+        "DialoguePacingScore": 50,
+        "CharacterDisambiguationScore": 100,
+        "MusicSpecScore": 70,
+        "TotalSceneHeadings": 11,
+        "TotalDialogueBlocks": 18,
+        "AvgWordsPerDialogue": 34.7,
+        "MaxWordsInSingleDialogue": 70,
+        "LongMonologueCount": 9,
+        "GenericNumberedSpeakerCount": 0,
+        "CharacterNamesFound": [
+          "NARRATOR",
+          "OLD MAN",
+          "OFFICER REYNOLDS"
+        ],
+        "AgeDisambiguatedCharacters": [
+          "OLD MAN"
+        ],
+        "DiagnosticWarnings": [
+          "High average dialogue length (34.7 words/turn); speech beats risk clip overrun.",
+          "9 monologue turn(s) exceed 35 words without action line splits.",
+          "Detected 1 age-qualified character header(s) (e.g. OLD MAN).",
+          "No explicit music/sound design cues detected in screenplay."
+        ]
+      },
+      "AvgAdaptationFidelity": 9.5,
+      "AvgCharacterDisambiguation": 9.5,
+      "AvgAiVideoDirectibility": 9,
+      "AvgDramaticPacing": 8.5,
+      "AvgDialogueAuthenticity": 9,
+      "AvgSoundDesignMusic": 8.5,
+      "AvgOverallQualitative": 9,
+      "DisqualifyingFlags": []
+    },
+    {
+      "ModelId": "gemini-3.6-flash",
+      "AnonymousLabel": "",
+      "CompositeScore": 90.6,
+      "IsGenerationFallback": false,
+      "GenerationFallbackReason": null,
+      "BordaPoints": 7,
+      "AvgJudgeRank": 2,
+      "SyntaxAudit": {
+        "OverallSyntaxScore": 94,
+        "FormatComplianceScore": 100,
+        "SceneBudgetScore": 100,
+        "DialoguePacingScore": 70,
+        "CharacterDisambiguationScore": 100,
+        "MusicSpecScore": 70,
+        "TotalSceneHeadings": 9,
+        "TotalDialogueBlocks": 38,
+        "AvgWordsPerDialogue": 19.8,
+        "MaxWordsInSingleDialogue": 44,
+        "LongMonologueCount": 6,
+        "GenericNumberedSpeakerCount": 0,
+        "CharacterNamesFound": [
+          "NARRATOR",
+          "OLD MAN",
+          "OFFICER REYNOLDS",
+          "OFFICER BAKER",
+          "OFFICER CARTER"
+        ],
+        "AgeDisambiguatedCharacters": [
+          "OLD MAN"
+        ],
+        "DiagnosticWarnings": [
+          "6 monologue turn(s) exceed 35 words without action line splits.",
+          "Detected 1 age-qualified character header(s) (e.g. OLD MAN).",
+          "No explicit music/sound design cues detected in screenplay."
+        ]
+      },
+      "AvgAdaptationFidelity": 9,
+      "AvgCharacterDisambiguation": 9,
+      "AvgAiVideoDirectibility": 9,
+      "AvgDramaticPacing": 8.5,
+      "AvgDialogueAuthenticity": 8.5,
+      "AvgSoundDesignMusic": 9,
+      "AvgOverallQualitative": 8.8,
+      "DisqualifyingFlags": []
+    },
+    {
+      "ModelId": "claude-sonnet-5",
+      "AnonymousLabel": "",
+      "CompositeScore": 89.6,
+      "IsGenerationFallback": false,
+      "GenerationFallbackReason": null,
+      "BordaPoints": 6,
+      "AvgJudgeRank": 3,
+      "SyntaxAudit": {
+        "OverallSyntaxScore": 95.2,
+        "FormatComplianceScore": 100,
+        "SceneBudgetScore": 100,
+        "DialoguePacingScore": 95,
+        "CharacterDisambiguationScore": 100,
+        "MusicSpecScore": 70,
+        "TotalSceneHeadings": 9,
+        "TotalDialogueBlocks": 36,
+        "AvgWordsPerDialogue": 20.6,
+        "MaxWordsInSingleDialogue": 39,
+        "LongMonologueCount": 1,
+        "GenericNumberedSpeakerCount": 0,
+        "CharacterNamesFound": [
+          "NARRATOR",
+          "OLD MAN",
+          "OFFICER MORAN",
+          "OFFICER DUFFY"
+        ],
+        "AgeDisambiguatedCharacters": [
+          "OLD MAN"
+        ],
+        "DiagnosticWarnings": [
+          "1 monologue turn(s) exceed 35 words without action line splits.",
+          "Detected 1 age-qualified character header(s) (e.g. OLD MAN).",
+          "No explicit music/sound design cues detected in screenplay."
+        ]
+      },
+      "AvgAdaptationFidelity": 9,
+      "AvgCharacterDisambiguation": 9,
+      "AvgAiVideoDirectibility": 8.5,
+      "AvgDramaticPacing": 8,
+      "AvgDialogueAuthenticity": 8.5,
+      "AvgSoundDesignMusic": 8.5,
+      "AvgOverallQualitative": 8.6,
+      "DisqualifyingFlags": []
+    },
+    {
+      "ModelId": "gemini-2.5-flash",
+      "AnonymousLabel": "",
+      "CompositeScore": 85.2,
+      "IsGenerationFallback": false,
+      "GenerationFallbackReason": null,
+      "BordaPoints": 4,
+      "AvgJudgeRank": 5,
+      "SyntaxAudit": {
+        "OverallSyntaxScore": 93,
+        "FormatComplianceScore": 100,
+        "SceneBudgetScore": 100,
+        "DialoguePacingScore": 50,
+        "CharacterDisambiguationScore": 100,
+        "MusicSpecScore": 70,
+        "TotalSceneHeadings": 9,
+        "TotalDialogueBlocks": 37,
+        "AvgWordsPerDialogue": 40,
+        "MaxWordsInSingleDialogue": 70,
+        "LongMonologueCount": 22,
+        "GenericNumberedSpeakerCount": 0,
+        "CharacterNamesFound": [
+          "NARRATOR",
+          "OLD MAN",
+          "OFFICER REYNOLDS"
+        ],
+        "AgeDisambiguatedCharacters": [
+          "OLD MAN"
+        ],
+        "DiagnosticWarnings": [
+          "High average dialogue length (40 words/turn); speech beats risk clip overrun.",
+          "22 monologue turn(s) exceed 35 words without action line splits.",
+          "Detected 1 age-qualified character header(s) (e.g. OLD MAN).",
+          "No explicit music/sound design cues detected in screenplay."
+        ]
+      },
+      "AvgAdaptationFidelity": 8.5,
+      "AvgCharacterDisambiguation": 8,
+      "AvgAiVideoDirectibility": 8,
+      "AvgDramaticPacing": 7.5,
+      "AvgDialogueAuthenticity": 8,
+      "AvgSoundDesignMusic": 8,
+      "AvgOverallQualitative": 8,
+      "DisqualifyingFlags": []
+    },
+    {
+      "ModelId": "gpt-4o",
+      "AnonymousLabel": "",
+      "CompositeScore": 83.7,
+      "IsGenerationFallback": false,
+      "GenerationFallbackReason": null,
+      "BordaPoints": 5,
+      "AvgJudgeRank": 4,
+      "SyntaxAudit": {
+        "OverallSyntaxScore": 93,
+        "FormatComplianceScore": 95,
+        "SceneBudgetScore": 100,
+        "DialoguePacingScore": 80,
+        "CharacterDisambiguationScore": 100,
+        "MusicSpecScore": 70,
+        "TotalSceneHeadings": 20,
+        "TotalDialogueBlocks": 0,
+        "AvgWordsPerDialogue": 0,
+        "MaxWordsInSingleDialogue": 0,
+        "LongMonologueCount": 0,
+        "GenericNumberedSpeakerCount": 0,
+        "CharacterNamesFound": [],
+        "AgeDisambiguatedCharacters": [],
+        "DiagnosticWarnings": [
+          "Missing \u0027FADE OUT.\u0027 or \u0027THE END\u0027 closing transition.",
+          "No explicit music/sound design cues detected in screenplay."
+        ]
+      },
+      "AvgAdaptationFidelity": 8,
+      "AvgCharacterDisambiguation": 8.5,
+      "AvgAiVideoDirectibility": 7.5,
+      "AvgDramaticPacing": 7,
+      "AvgDialogueAuthenticity": 8,
+      "AvgSoundDesignMusic": 7.5,
+      "AvgOverallQualitative": 7.8,
+      "DisqualifyingFlags": []
+    },
+    {
+      "ModelId": "o3-mini",
+      "AnonymousLabel": "",
+      "CompositeScore": 79.2,
+      "IsGenerationFallback": false,
+      "GenerationFallbackReason": null,
+      "BordaPoints": 3,
+      "AvgJudgeRank": 6,
+      "SyntaxAudit": {
+        "OverallSyntaxScore": 93,
+        "FormatComplianceScore": 95,
+        "SceneBudgetScore": 100,
+        "DialoguePacingScore": 80,
+        "CharacterDisambiguationScore": 100,
+        "MusicSpecScore": 70,
+        "TotalSceneHeadings": 8,
+        "TotalDialogueBlocks": 0,
+        "AvgWordsPerDialogue": 0,
+        "MaxWordsInSingleDialogue": 0,
+        "LongMonologueCount": 0,
+        "GenericNumberedSpeakerCount": 0,
+        "CharacterNamesFound": [],
+        "AgeDisambiguatedCharacters": [],
+        "DiagnosticWarnings": [
+          "Missing \u0027FADE OUT.\u0027 or \u0027THE END\u0027 closing transition.",
+          "No explicit music/sound design cues detected in screenplay."
+        ]
+      },
+      "AvgAdaptationFidelity": 6.5,
+      "AvgCharacterDisambiguation": 7,
+      "AvgAiVideoDirectibility": 7,
+      "AvgDramaticPacing": 7.5,
+      "AvgDialogueAuthenticity": 7,
+      "AvgSoundDesignMusic": 7,
+      "AvgOverallQualitative": 7,
+      "DisqualifyingFlags": [
+        "grok-4: Invented officer names and condensed beats drop source fidelity"
+      ]
+    },
+    {
+      "ModelId": "gpt-4o-mini",
+      "AnonymousLabel": "",
+      "CompositeScore": 74.7,
+      "IsGenerationFallback": false,
+      "GenerationFallbackReason": null,
+      "BordaPoints": 2,
+      "AvgJudgeRank": 7,
+      "SyntaxAudit": {
+        "OverallSyntaxScore": 95.5,
+        "FormatComplianceScore": 100,
+        "SceneBudgetScore": 100,
+        "DialoguePacingScore": 100,
+        "CharacterDisambiguationScore": 100,
+        "MusicSpecScore": 70,
+        "TotalSceneHeadings": 6,
+        "TotalDialogueBlocks": 32,
+        "AvgWordsPerDialogue": 12.8,
+        "MaxWordsInSingleDialogue": 26,
+        "LongMonologueCount": 0,
+        "GenericNumberedSpeakerCount": 0,
+        "CharacterNamesFound": [
+          "NARRATOR",
+          "OLD MAN",
+          "OFFICER REYNOLDS"
+        ],
+        "AgeDisambiguatedCharacters": [
+          "OLD MAN"
+        ],
+        "DiagnosticWarnings": [
+          "Detected 1 age-qualified character header(s) (e.g. OLD MAN).",
+          "No explicit music/sound design cues detected in screenplay."
+        ]
+      },
+      "AvgAdaptationFidelity": 5.5,
+      "AvgCharacterDisambiguation": 6.5,
+      "AvgAiVideoDirectibility": 6,
+      "AvgDramaticPacing": 6,
+      "AvgDialogueAuthenticity": 6.5,
+      "AvgSoundDesignMusic": 6,
+      "AvgOverallQualitative": 6.1,
+      "DisqualifyingFlags": [
+        "grok-4: Significant condensation drops source beats and mixes narration awkwardly"
+      ]
+    },
+    {
+      "ModelId": "grok-4",
+      "AnonymousLabel": "",
+      "CompositeScore": 69,
+      "IsGenerationFallback": false,
+      "GenerationFallbackReason": null,
+      "BordaPoints": 1,
+      "AvgJudgeRank": 8,
+      "SyntaxAudit": {
+        "OverallSyntaxScore": 85,
+        "FormatComplianceScore": 100,
+        "SceneBudgetScore": 60,
+        "DialoguePacingScore": 90,
+        "CharacterDisambiguationScore": 100,
+        "MusicSpecScore": 70,
+        "TotalSceneHeadings": 4,
+        "TotalDialogueBlocks": 11,
+        "AvgWordsPerDialogue": 22.4,
+        "MaxWordsInSingleDialogue": 57,
+        "LongMonologueCount": 2,
+        "GenericNumberedSpeakerCount": 0,
+        "CharacterNamesFound": [
+          "NARRATOR",
+          "OLD MAN"
+        ],
+        "AgeDisambiguatedCharacters": [
+          "OLD MAN"
+        ],
+        "DiagnosticWarnings": [
+          "Too few scene headings (4); story lacks visual scene progression.",
+          "2 monologue turn(s) exceed 35 words without action line splits.",
+          "Detected 1 age-qualified character header(s) (e.g. OLD MAN).",
+          "No explicit music/sound design cues detected in screenplay."
+        ]
+      },
+      "AvgAdaptationFidelity": 3,
+      "AvgCharacterDisambiguation": 6,
+      "AvgAiVideoDirectibility": 7,
+      "AvgDramaticPacing": 6.5,
+      "AvgDialogueAuthenticity": 6,
+      "AvgSoundDesignMusic": 6.5,
+      "AvgOverallQualitative": 5.8,
+      "DisqualifyingFlags": [
+        "grok-4: Major source beats dropped including week of kindness and full dismemberment sequence"
+      ]
+    }
+  ],
+  "JudgeMatrix": {
+    "grok-4.5": {
+      "o3-mini": -1,
+      "gpt-4o-mini": -1,
+      "grok-4": -1,
+      "claude-sonnet-5": -1,
+      "gemini-3.6-flash": -1,
+      "grok-4.5": -1,
+      "gpt-4o": -1,
+      "gemini-2.5-flash": -1
+    },
+    "grok-4": {
+      "gpt-4o": 7.75,
+      "o3-mini": 7,
+      "grok-4.5": 9,
+      "gemini-3.6-flash": 8.83,
+      "claude-sonnet-5": 8.58,
+      "gemini-2.5-flash": 8,
+      "grok-4": 5.83,
+      "gpt-4o-mini": 6.08
+    }
+  },
+  "JudgeRankMatrix": {
+    "grok-4.5": {
+      "o3-mini": -1,
+      "gpt-4o-mini": -1,
+      "grok-4": -1,
+      "claude-sonnet-5": -1,
+      "gemini-3.6-flash": -1,
+      "grok-4.5": -1,
+      "gpt-4o": -1,
+      "gemini-2.5-flash": -1
+    },
+    "grok-4": {
+      "grok-4.5": 1,
+      "gemini-3.6-flash": 2,
+      "claude-sonnet-5": 3,
+      "gpt-4o": 4,
+      "gemini-2.5-flash": 5,
+      "o3-mini": 6,
+      "gpt-4o-mini": 7,
+      "grok-4": 8
+    }
+  },
+  "SelfBiasNotes": [],
+  "JudgeRationale": {
+    "grok-4.5": {
+      "o3-mini": "[MOCK / FAILED JUDGE] Model \u0027grok-4.5\u0027 failed or was skipped for candidate \u0027Screenplay A\u0027.",
+      "gpt-4o-mini": "[MOCK / FAILED JUDGE] Model \u0027grok-4.5\u0027 failed or was skipped for candidate \u0027Screenplay B\u0027.",
+      "grok-4": "[MOCK / FAILED JUDGE] Model \u0027grok-4.5\u0027 failed or was skipped for candidate \u0027Screenplay C\u0027.",
+      "claude-sonnet-5": "[MOCK / FAILED JUDGE] Model \u0027grok-4.5\u0027 failed or was skipped for candidate \u0027Screenplay D\u0027.",
+      "gemini-3.6-flash": "[MOCK / FAILED JUDGE] Model \u0027grok-4.5\u0027 failed or was skipped for candidate \u0027Screenplay E\u0027.",
+      "grok-4.5": "[MOCK / FAILED JUDGE] Model \u0027grok-4.5\u0027 failed or was skipped for candidate \u0027Screenplay F\u0027.",
+      "gpt-4o": "[MOCK / FAILED JUDGE] Model \u0027grok-4.5\u0027 failed or was skipped for candidate \u0027Screenplay G\u0027.",
+      "gemini-2.5-flash": "[MOCK / FAILED JUDGE] Model \u0027grok-4.5\u0027 failed or was skipped for candidate \u0027Screenplay H\u0027."
+    },
+    "grok-4": {
+      "gpt-4o": "Faithful narration but repetitive scene headings and heavy V.O. limit clip-friendly pacing.",
+      "o3-mini": "Some invented content and less consistent visual descriptions.",
+      "grok-4.5": "Highly faithful, consistent character visuals, concrete actions suited to short clips.",
+      "gemini-3.6-flash": "Strong fidelity and visual specificity with excellent heartbeat sound integration.",
+      "claude-sonnet-5": "Very close to source with clear visuals but slightly less clip-optimized pacing than C/D.",
+      "gemini-2.5-flash": "Solid fidelity but heavier V.O. and less distinct officer descriptions.",
+      "grok-4": "Severely abbreviated, missing key narrative coverage.",
+      "gpt-4o-mini": "Too abbreviated with fidelity and structure issues."
+    }
+  },
+  "JudgeSummaries": {
+    "grok-4.5": "\u26A0\uFE0F Mock judge evaluation returned for grok-4.5.",
+    "grok-4": "Strongest: Screenplay C because it delivers the highest fidelity, consistent character visuals, and clip-ready concrete actions without invention. Weakest: Screenplay G because it drops multiple major source beats and condenses the story to the point of unusable adaptation fidelity."
+  }
+}

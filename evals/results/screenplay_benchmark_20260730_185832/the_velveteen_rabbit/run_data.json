@@ -1,0 +1,546 @@
+{
+  "BookPath": "C:\\Users\\budcr\\source\\repos\\claude\\PageToMovie\\books\\The_Velveteen_Rabbit.txt",
+  "Timestamp": "2026-07-31 01:32:31 UTC",
+  "IsMockRun": false,
+  "Leaderboard": [
+    {
+      "ModelId": "grok-4.5",
+      "AnonymousLabel": "",
+      "CompositeScore": 88.5,
+      "IsGenerationFallback": false,
+      "GenerationFallbackReason": null,
+      "BordaPoints": 43,
+      "AvgJudgeRank": 1.9,
+      "SyntaxAudit": {
+        "OverallSyntaxScore": 91.5,
+        "FormatComplianceScore": 100,
+        "SceneBudgetScore": 100,
+        "DialoguePacingScore": 80,
+        "CharacterDisambiguationScore": 100,
+        "MusicSpecScore": 70,
+        "TotalSceneHeadings": 13,
+        "TotalDialogueBlocks": 45,
+        "AvgWordsPerDialogue": 15.4,
+        "MaxWordsInSingleDialogue": 87,
+        "LongMonologueCount": 4,
+        "GenericNumberedSpeakerCount": 0,
+        "CharacterNamesFound": [
+          "NARRATOR",
+          "VELVETEEN RABBIT",
+          "SKIN HORSE",
+          "NANA",
+          "THE BOY",
+          "WILD RABBIT",
+          "DOCTOR",
+          "NURSERY FAIRY"
+        ],
+        "AgeDisambiguatedCharacters": [
+          "THE BOY"
+        ],
+        "DiagnosticWarnings": [
+          "4 monologue turn(s) exceed 35 words without action line splits.",
+          "Detected 1 age-qualified character header(s) (e.g. THE BOY).",
+          "No explicit music/sound design cues detected in screenplay."
+        ]
+      },
+      "AvgAdaptationFidelity": 9.3,
+      "AvgCharacterDisambiguation": 9.1,
+      "AvgAiVideoDirectibility": 8.4,
+      "AvgDramaticPacing": 8.6,
+      "AvgDialogueAuthenticity": 9,
+      "AvgSoundDesignMusic": 7.6,
+      "AvgOverallQualitative": 8.6,
+      "DisqualifyingFlags": []
+    },
+    {
+      "ModelId": "claude-sonnet-5",
+      "AnonymousLabel": "",
+      "CompositeScore": 85.7,
+      "IsGenerationFallback": false,
+      "GenerationFallbackReason": null,
+      "BordaPoints": 40,
+      "AvgJudgeRank": 2.3,
+      "SyntaxAudit": {
+        "OverallSyntaxScore": 89.5,
+        "FormatComplianceScore": 100,
+        "SceneBudgetScore": 100,
+        "DialoguePacingScore": 70,
+        "CharacterDisambiguationScore": 100,
+        "MusicSpecScore": 70,
+        "TotalSceneHeadings": 10,
+        "TotalDialogueBlocks": 39,
+        "AvgWordsPerDialogue": 20.9,
+        "MaxWordsInSingleDialogue": 87,
+        "LongMonologueCount": 8,
+        "GenericNumberedSpeakerCount": 0,
+        "CharacterNamesFound": [
+          "NARRATOR",
+          "THE RABBIT",
+          "THE SKIN HORSE",
+          "NANA",
+          "THE BOY",
+          "BRAMBLE",
+          "THE DOCTOR",
+          "THE FAIRY"
+        ],
+        "AgeDisambiguatedCharacters": [
+          "THE BOY"
+        ],
+        "DiagnosticWarnings": [
+          "8 monologue turn(s) exceed 35 words without action line splits.",
+          "Detected 1 age-qualified character header(s) (e.g. THE BOY).",
+          "No explicit music/sound design cues detected in screenplay."
+        ]
+      },
+      "AvgAdaptationFidelity": 8.2,
+      "AvgCharacterDisambiguation": 8.9,
+      "AvgAiVideoDirectibility": 8.2,
+      "AvgDramaticPacing": 8.3,
+      "AvgDialogueAuthenticity": 8.7,
+      "AvgSoundDesignMusic": 7.5,
+      "AvgOverallQualitative": 8.3,
+      "DisqualifyingFlags": []
+    },
+    {
+      "ModelId": "gemini-2.5-flash",
+      "AnonymousLabel": "",
+      "CompositeScore": 85.2,
+      "IsGenerationFallback": false,
+      "GenerationFallbackReason": null,
+      "BordaPoints": 29,
+      "AvgJudgeRank": 3.9,
+      "SyntaxAudit": {
+        "OverallSyntaxScore": 89.5,
+        "FormatComplianceScore": 100,
+        "SceneBudgetScore": 100,
+        "DialoguePacingScore": 70,
+        "CharacterDisambiguationScore": 100,
+        "MusicSpecScore": 70,
+        "TotalSceneHeadings": 13,
+        "TotalDialogueBlocks": 42,
+        "AvgWordsPerDialogue": 19,
+        "MaxWordsInSingleDialogue": 65,
+        "LongMonologueCount": 8,
+        "GenericNumberedSpeakerCount": 0,
+        "CharacterNamesFound": [
+          "NARRATOR",
+          "VELVETEEN RABBIT",
+          "SKIN HORSE",
+          "NANA",
+          "BOY",
+          "WILD RABBIT #1",
+          "DOCTOR",
+          "FAIRY"
+        ],
+        "AgeDisambiguatedCharacters": [
+          "BOY"
+        ],
+        "DiagnosticWarnings": [
+          "8 monologue turn(s) exceed 35 words without action line splits.",
+          "Detected 1 age-qualified character header(s) (e.g. BOY).",
+          "No explicit music/sound design cues detected in screenplay."
+        ]
+      },
+      "AvgAdaptationFidelity": 9,
+      "AvgCharacterDisambiguation": 8.7,
+      "AvgAiVideoDirectibility": 7.9,
+      "AvgDramaticPacing": 8.1,
+      "AvgDialogueAuthenticity": 8.6,
+      "AvgSoundDesignMusic": 7.2,
+      "AvgOverallQualitative": 8.2,
+      "DisqualifyingFlags": []
+    },
+    {
+      "ModelId": "grok-4",
+      "AnonymousLabel": "",
+      "CompositeScore": 83.3,
+      "IsGenerationFallback": false,
+      "GenerationFallbackReason": null,
+      "BordaPoints": 24,
+      "AvgJudgeRank": 4.6,
+      "SyntaxAudit": {
+        "OverallSyntaxScore": 91.2,
+        "FormatComplianceScore": 95,
+        "SceneBudgetScore": 100,
+        "DialoguePacingScore": 85,
+        "CharacterDisambiguationScore": 100,
+        "MusicSpecScore": 70,
+        "TotalSceneHeadings": 9,
+        "TotalDialogueBlocks": 24,
+        "AvgWordsPerDialogue": 16.1,
+        "MaxWordsInSingleDialogue": 65,
+        "LongMonologueCount": 3,
+        "GenericNumberedSpeakerCount": 0,
+        "CharacterNamesFound": [
+          "RABBIT",
+          "SKIN HORSE",
+          "NANA",
+          "BOY",
+          "WILD RABBIT",
+          "DOCTOR",
+          "FAIRY"
+        ],
+        "AgeDisambiguatedCharacters": [
+          "BOY"
+        ],
+        "DiagnosticWarnings": [
+          "Missing \u0027FADE OUT.\u0027 or \u0027THE END\u0027 closing transition.",
+          "3 monologue turn(s) exceed 35 words without action line splits.",
+          "Detected 1 age-qualified character header(s) (e.g. BOY).",
+          "No explicit music/sound design cues detected in screenplay."
+        ]
+      },
+      "AvgAdaptationFidelity": 8.3,
+      "AvgCharacterDisambiguation": 8.1,
+      "AvgAiVideoDirectibility": 7.8,
+      "AvgDramaticPacing": 7.6,
+      "AvgDialogueAuthenticity": 8.2,
+      "AvgSoundDesignMusic": 6.9,
+      "AvgOverallQualitative": 7.8,
+      "DisqualifyingFlags": []
+    },
+    {
+      "ModelId": "o3-mini",
+      "AnonymousLabel": "",
+      "CompositeScore": 79.5,
+      "IsGenerationFallback": false,
+      "GenerationFallbackReason": null,
+      "BordaPoints": 27,
+      "AvgJudgeRank": 4.1,
+      "SyntaxAudit": {
+        "OverallSyntaxScore": 91.5,
+        "FormatComplianceScore": 100,
+        "SceneBudgetScore": 100,
+        "DialoguePacingScore": 80,
+        "CharacterDisambiguationScore": 100,
+        "MusicSpecScore": 70,
+        "TotalSceneHeadings": 10,
+        "TotalDialogueBlocks": 0,
+        "AvgWordsPerDialogue": 0,
+        "MaxWordsInSingleDialogue": 0,
+        "LongMonologueCount": 0,
+        "GenericNumberedSpeakerCount": 0,
+        "CharacterNamesFound": [],
+        "AgeDisambiguatedCharacters": [],
+        "DiagnosticWarnings": [
+          "No explicit music/sound design cues detected in screenplay."
+        ]
+      },
+      "AvgAdaptationFidelity": 7.4,
+      "AvgCharacterDisambiguation": 7.6,
+      "AvgAiVideoDirectibility": 7.1,
+      "AvgDramaticPacing": 6.9,
+      "AvgDialogueAuthenticity": 7.4,
+      "AvgSoundDesignMusic": 6.6,
+      "AvgOverallQualitative": 7.1,
+      "DisqualifyingFlags": [
+        "grok-4.5: Chronological inventions and misplaced beats (wild rabbits appear in spring garden; Real declaration mistimed; altered ending recognition)",
+        "grok-4.5: Broken scene flow and location errors that destroy clip sequencing",
+        "grok-4: Invented dialogue and scene compression that alters key emotional beats; inconsistent character descriptions."
+      ]
+    },
+    {
+      "ModelId": "gpt-4o-mini",
+      "AnonymousLabel": "",
+      "CompositeScore": 77.3,
+      "IsGenerationFallback": false,
+      "GenerationFallbackReason": null,
+      "BordaPoints": 21,
+      "AvgJudgeRank": 5,
+      "SyntaxAudit": {
+        "OverallSyntaxScore": 95.5,
+        "FormatComplianceScore": 100,
+        "SceneBudgetScore": 100,
+        "DialoguePacingScore": 100,
+        "CharacterDisambiguationScore": 100,
+        "MusicSpecScore": 70,
+        "TotalSceneHeadings": 10,
+        "TotalDialogueBlocks": 25,
+        "AvgWordsPerDialogue": 10.9,
+        "MaxWordsInSingleDialogue": 27,
+        "LongMonologueCount": 0,
+        "GenericNumberedSpeakerCount": 0,
+        "CharacterNamesFound": [
+          "BOY",
+          "NARRATOR",
+          "RABBIT",
+          "SKIN HORSE",
+          "WILD RABBIT",
+          "FAIRY"
+        ],
+        "AgeDisambiguatedCharacters": [
+          "BOY"
+        ],
+        "DiagnosticWarnings": [
+          "Detected 1 age-qualified character header(s) (e.g. BOY).",
+          "No explicit music/sound design cues detected in screenplay."
+        ]
+      },
+      "AvgAdaptationFidelity": 6.2,
+      "AvgCharacterDisambiguation": 6.9,
+      "AvgAiVideoDirectibility": 6.7,
+      "AvgDramaticPacing": 6.1,
+      "AvgDialogueAuthenticity": 6.9,
+      "AvgSoundDesignMusic": 6.2,
+      "AvgOverallQualitative": 6.5,
+      "DisqualifyingFlags": [
+        "grok-4.5: Severe abridgment dropping major source beats (full Skin Horse monologue, illness sequence details, doctor burn order, transformation mechanics, shabbiness arc)",
+        "grok-4.5: Insufficient concrete action lines and character visuals for clip-by-clip AI direction",
+        "grok-4: Severe source truncation and missing major beats (full Skin Horse exchange, wild rabbit confrontation, fairy mechanics).",
+        "claude-sonnet-5: Drops the entire illness/scarlet-fever/doctor\u0027s-burn-order sequence \u2014 the story jumps straight from the wild rabbits\u0027 rejection to the Rabbit crying alone in the garden with no established cause, breaking the causal and emotional logic of the central turn."
+      ]
+    },
+    {
+      "ModelId": "gpt-4o",
+      "AnonymousLabel": "",
+      "CompositeScore": 74,
+      "IsGenerationFallback": false,
+      "GenerationFallbackReason": null,
+      "BordaPoints": 12,
+      "AvgJudgeRank": 6.3,
+      "SyntaxAudit": {
+        "OverallSyntaxScore": 90.2,
+        "FormatComplianceScore": 95,
+        "SceneBudgetScore": 100,
+        "DialoguePacingScore": 80,
+        "CharacterDisambiguationScore": 100,
+        "MusicSpecScore": 70,
+        "TotalSceneHeadings": 10,
+        "TotalDialogueBlocks": 0,
+        "AvgWordsPerDialogue": 0,
+        "MaxWordsInSingleDialogue": 0,
+        "LongMonologueCount": 0,
+        "GenericNumberedSpeakerCount": 0,
+        "CharacterNamesFound": [],
+        "AgeDisambiguatedCharacters": [],
+        "DiagnosticWarnings": [
+          "Missing \u0027FADE OUT.\u0027 or \u0027THE END\u0027 closing transition.",
+          "No explicit music/sound design cues detected in screenplay."
+        ]
+      },
+      "AvgAdaptationFidelity": 6.3,
+      "AvgCharacterDisambiguation": 6.6,
+      "AvgAiVideoDirectibility": 6.2,
+      "AvgDramaticPacing": 6.2,
+      "AvgDialogueAuthenticity": 6.8,
+      "AvgSoundDesignMusic": 5.9,
+      "AvgOverallQualitative": 6.3,
+      "DisqualifyingFlags": [
+        "grok-4.5: Major dropped beats and severe compression of Real dialogue, garden/illness/fairy sequences",
+        "grok-4.5: Sparse, non-specific action lines that fail short-clip directibility",
+        "grok-4: Major dropped beats (Skin Horse full dialogue, fairy transformation mechanics, final Boy recognition scene); overly summarized scenes unsuitable for clip breakdown."
+      ]
+    }
+  ],
+  "JudgeMatrix": {
+    "gpt-4o": {
+      "o3-mini": 8.25,
+      "gpt-4o-mini": 8.42,
+      "grok-4": 7.58,
+      "claude-sonnet-5": 8.25,
+      "grok-4.5": 7.75,
+      "gpt-4o": 7.25,
+      "gemini-2.5-flash": 7.75
+    },
+    "gpt-4o-mini": {
+      "gpt-4o-mini": 8.25,
+      "grok-4.5": 8.75,
+      "grok-4": 7.67,
+      "gemini-2.5-flash": 7.67,
+      "claude-sonnet-5": 8.42,
+      "gpt-4o": 7.58,
+      "o3-mini": 7.92
+    },
+    "o3-mini": {
+      "grok-4.5": 8.42,
+      "gpt-4o-mini": 8.33,
+      "gpt-4o": 8.42,
+      "gemini-2.5-flash": 8.17,
+      "o3-mini": 9,
+      "claude-sonnet-5": 8.5,
+      "grok-4": 8.33
+    },
+    "grok-4.5": {
+      "claude-sonnet-5": 8.08,
+      "gpt-4o-mini": 3.33,
+      "gpt-4o": 3.83,
+      "grok-4": 7.92,
+      "o3-mini": 3.92,
+      "gemini-2.5-flash": 8.75,
+      "grok-4.5": 9.13
+    },
+    "grok-4": {
+      "claude-sonnet-5": 8.67,
+      "gpt-4o": 4.33,
+      "grok-4": 7.83,
+      "gemini-2.5-flash": 8.33,
+      "grok-4.5": 9,
+      "o3-mini": 5.75,
+      "gpt-4o-mini": 4.67
+    },
+    "claude-sonnet-5": {
+      "o3-mini": 6.75,
+      "gemini-2.5-flash": 7.83,
+      "grok-4.5": 8,
+      "gpt-4o": 5,
+      "claude-sonnet-5": 7,
+      "grok-4": 6.67,
+      "gpt-4o-mini": 4.33
+    },
+    "gemini-2.5-flash": {
+      "gpt-4o-mini": 8.25,
+      "o3-mini": 8.42,
+      "claude-sonnet-5": 9.25,
+      "gpt-4o": 7.83,
+      "gemini-2.5-flash": 9.17,
+      "grok-4": 8.58,
+      "grok-4.5": 9.5
+    }
+  },
+  "JudgeRankMatrix": {
+    "gpt-4o": {
+      "gpt-4o-mini": 1,
+      "claude-sonnet-5": 2,
+      "o3-mini": 3,
+      "grok-4": 4,
+      "grok-4.5": 5,
+      "gemini-2.5-flash": 6,
+      "gpt-4o": 7
+    },
+    "gpt-4o-mini": {
+      "grok-4.5": 1,
+      "claude-sonnet-5": 2,
+      "gpt-4o-mini": 3,
+      "gemini-2.5-flash": 4,
+      "grok-4": 5,
+      "o3-mini": 6,
+      "gpt-4o": 7
+    },
+    "o3-mini": {
+      "o3-mini": 1,
+      "claude-sonnet-5": 2,
+      "grok-4.5": 3,
+      "gpt-4o": 4,
+      "gpt-4o-mini": 5,
+      "grok-4": 6,
+      "gemini-2.5-flash": 7
+    },
+    "grok-4.5": {
+      "grok-4.5": 1,
+      "gemini-2.5-flash": 2,
+      "claude-sonnet-5": 3,
+      "grok-4": 4,
+      "o3-mini": 5,
+      "gpt-4o": 6,
+      "gpt-4o-mini": 7
+    },
+    "grok-4": {
+      "grok-4.5": 1,
+      "claude-sonnet-5": 2,
+      "gemini-2.5-flash": 3,
+      "grok-4": 4,
+      "o3-mini": 5,
+      "gpt-4o-mini": 6,
+      "gpt-4o": 7
+    },
+    "claude-sonnet-5": {
+      "grok-4.5": 1,
+      "gemini-2.5-flash": 2,
+      "claude-sonnet-5": 3,
+      "o3-mini": 4,
+      "grok-4": 5,
+      "gpt-4o": 6,
+      "gpt-4o-mini": 7
+    },
+    "gemini-2.5-flash": {
+      "grok-4.5": 1,
+      "claude-sonnet-5": 2,
+      "gemini-2.5-flash": 3,
+      "grok-4": 4,
+      "o3-mini": 5,
+      "gpt-4o-mini": 6,
+      "gpt-4o": 7
+    }
+  },
+  "SelfBiasNotes": [
+    "\u26A0\uFE0F gpt-4o rated its own screenplay 7.2/10 vs. a 6.2/10 average from 6 other judge(s) (\u002B1.1) \u2014 possible self-preference bias.",
+    "\u26A0\uFE0F gpt-4o-mini rated its own screenplay 8.2/10 vs. a 6.2/10 average from 6 other judge(s) (\u002B2.0) \u2014 possible self-preference bias.",
+    "\u26A0\uFE0F o3-mini rated its own screenplay 9.0/10 vs. a 6.8/10 average from 6 other judge(s) (\u002B2.2) \u2014 possible self-preference bias.",
+    "\u2139\uFE0F claude-sonnet-5 rated its own screenplay 7.0/10 vs. a 8.5/10 average from 6 other judge(s) (-1.5) \u2014 notably harsher on itself than peers were.",
+    "\u26A0\uFE0F gemini-2.5-flash rated its own screenplay 9.2/10 vs. a 8.1/10 average from 6 other judge(s) (\u002B1.1) \u2014 possible self-preference bias."
+  ],
+  "JudgeRationale": {
+    "gpt-4o": {
+      "o3-mini": "Screenplay A maintains a strong fidelity to the source material, capturing the essence of the story and characters effectively. The character descriptions are consistent and clear, aiding in visual continuity. The screenplay is directible with clear, filmable actions, though some scenes could benefit from tighter pacing. Dialogue is authentic and captures the emotional depth of the characters. Sound design and music complement the scenes well, enhancing the emotional impact.",
+      "gpt-4o-mini": "Screenplay B excels in adaptation fidelity, closely following the book\u0027s narrative and themes without unnecessary deviations. Character descriptions are mostly consistent, though there are minor lapses in visual continuity. The screenplay is highly directible, with clear, concise action lines that fit the short-clip format. Pacing is well-managed, maintaining narrative momentum. Dialogue is natural and fitting for the characters, and the sound design effectively supports the emotional tone of each scene.",
+      "grok-4": "Screenplay C maintains good fidelity to the source material but occasionally lacks clarity in character descriptions, which could affect visual consistency. The screenplay is generally directible, though some scenes are overly descriptive, hindering the short-clip format. Pacing could be improved to enhance narrative flow. Dialogue is mostly authentic but sometimes lacks subtext. Sound design is adequate but could be more dynamic to better support the scenes.",
+      "claude-sonnet-5": "Screenplay D offers a faithful adaptation with clear character descriptions that support visual continuity. The screenplay is effectively directible, with well-defined actions suitable for short clips. Pacing is solid, maintaining engagement throughout. Dialogue is authentic and captures the characters\u0027 voices well. Sound design and music are well-integrated, enhancing the emotional resonance of the scenes.",
+      "grok-4.5": "Screenplay E maintains good adaptation fidelity but occasionally lacks clarity in character descriptions, affecting visual consistency. The screenplay is generally directible, though some scenes are overly descriptive, hindering the short-clip format. Pacing is adequate but could be more dynamic. Dialogue is mostly authentic but sometimes lacks depth. Sound design is functional but could be more engaging to better support the scenes.",
+      "gpt-4o": "Screenplay F captures the essence of the source material but occasionally deviates from key narrative beats. Character descriptions are somewhat inconsistent, affecting visual continuity. The screenplay is directible, though some scenes are overly descriptive, hindering the short-clip format. Pacing could be improved to enhance narrative flow. Dialogue is mostly authentic but sometimes lacks subtext. Sound design is adequate but could be more dynamic to better support the scenes.",
+      "gemini-2.5-flash": "Screenplay G maintains good adaptation fidelity but occasionally lacks clarity in character descriptions, affecting visual consistency. The screenplay is generally directible, though some scenes are overly descriptive, hindering the short-clip format. Pacing is adequate but could be more dynamic. Dialogue is mostly authentic but sometimes lacks depth. Sound design is functional but could be more engaging to better support the scenes."
+    },
+    "gpt-4o-mini": {
+      "gpt-4o-mini": "Screenplay A effectively captures the essence of the original story while maintaining a clear narrative structure and character clarity.",
+      "grok-4.5": "Screenplay B excels in adaptation fidelity and pacing, providing a strong visual narrative that aligns closely with the source material.",
+      "grok-4": "Screenplay C is a solid adaptation but lacks the same level of visual clarity and pacing as the top candidates.",
+      "gemini-2.5-flash": "Screenplay D maintains fidelity to the source but struggles with pacing and directibility in certain scenes.",
+      "claude-sonnet-5": "Screenplay E offers a strong adaptation with good pacing and character clarity, though it could improve in directibility.",
+      "gpt-4o": "Screenplay F is a competent adaptation but lacks the depth and engagement found in higher-rated candidates.",
+      "o3-mini": "Screenplay G presents a charming adaptation but could enhance its pacing and dialogue authenticity."
+    },
+    "o3-mini": {
+      "grok-4.5": "Screenplay A is highly faithful and detailed in its adaptation, providing clear character and scene descriptions, though some scenes might require tighter condensation for 5\u201310 second video clips.",
+      "gpt-4o-mini": "Screenplay B offers a more streamlined and visually clear version of the story, making it highly directable for AI shorts even if it slightly sacrifices some narrative depth.",
+      "gpt-4o": "Screenplay C remains faithful, balancing descriptive narration with clear visual beats, though its pacing is similar to A and might require slight trimming for clip segmentation.",
+      "gemini-2.5-flash": "Screenplay D is very rich in detail and faithful to the source, but its dense scenes and extended dialogue sequences could challenge the short duration clip format.",
+      "o3-mini": "Screenplay E is exceptionally polished with precise, filmable visual action lines, clear character cues, and a well-calibrated pacing ideal for AI-generated short video clips.",
+      "claude-sonnet-5": "Screenplay F offers a richly detailed adaptation with strong narrative continuity, although its complex layering might require careful editing to fit the clip constraints.",
+      "grok-4": "Screenplay G is a streamlined and faithful adaptation that cleanly maps the narrative beats, though its overall approach is less distinctive compared to the top contenders."
+    },
+    "grok-4.5": {
+      "claude-sonnet-5": "Strong near-complete beat coverage and book-faithful dialogue with clear visual anchors for Rabbit and Skin Horse; minor invented name (Bramble) and heavy narrator VO slightly soften pure show-don\u0027t-tell clip readiness, but structure and consistency remain production-viable for short AI segments.",
+      "gpt-4o-mini": "Extremely thin skeleton that omits core emotional and plot pillars; vague descriptions and tell-heavy narrator leave almost nothing filmable in 5-10s beats, rendering it unusable without total rewrite.",
+      "gpt-4o": "Overly summarized adaptation that loses narrative spine and character specificity; remaining scenes lack the observable detail and rhythmic escalation required for AI video segmentation.",
+      "grok-4": "Faithful core dialogue and beat progression with clean, single-action visual lines ideal for short clips; character intros solid for leads though supporting figures thinner, and atmospheric cues present but not richly scored for sound beds.",
+      "o3-mini": "Scrambled structure with invented timing and dialogue deviations fatally undermines fidelity; inconsistent visuals and multi-location crams make reliable AI clip generation impossible.",
+      "gemini-2.5-flash": "Near-exhaustive source coverage with precise, consistent character locks and highly observable actions; dense but breakable into clean 5-10s beats, strong emotional arcs that support sound design even without explicit cues.",
+      "grok-4.5": "Most complete and precise translation of every major and minor beat into richly concrete, single-clip visuals with locked character descriptions; exemplary show-don\u0027t-tell pacing and atmospheric writing that directly enables both AI direction and complementary sound beds."
+    },
+    "grok-4": {
+      "claude-sonnet-5": "Highly faithful with rich visual beats and consistent character descriptions; minor pacing compression in illness arc.",
+      "gpt-4o": "Severely truncated source coverage and generic descriptions make it unusable.",
+      "grok-4": "Solid fidelity and clean action lines; slightly less visual specificity than top entries.",
+      "gemini-2.5-flash": "Excellent coverage and directible beats; minor wardrobe consistency notes across time jumps.",
+      "grok-4.5": "Best balance of fidelity, visual specificity, and clip-friendly pacing with consistent character anchors.",
+      "o3-mini": "Noticeable invented content and weaker visual directibility.",
+      "gpt-4o-mini": "Too abbreviated for faithful adaptation or short-clip production."
+    },
+    "claude-sonnet-5": {
+      "o3-mini": "Hits the major plot beats (Skin Horse dialogue, becoming Real, wild-rabbit rejection, doctor\u0027s burn order, fairy transformation, final reveal) but drops the toy-cupboard hierarchy (no Timothy/model boat), the Nana tidying ritual, and the \u0027hurrah, seaside\u0027 beat, and compresses the transformation into vague \u0027something marvelous occurs\u0027 language that tells rather than shows. No music/sound cues at all, only ambient description.",
+      "gemini-2.5-flash": "Near-complete coverage of the book including Timothy, the model boat, Nana\u0027s tidying, the seaside/\u0027hurrah\u0027 beat, and the full illness arc; dialogue is largely verbatim. Weakest link is directibility \u2014 several scene blocks (e.g., \u0027WEEKS LATER\u0027) compress multiple time-jumps and actions into a single heading, and Narrator V.O. carries much of the storytelling rather than discrete filmable images. No explicit sound/music direction anywhere.",
+      "grok-4.5": "The most complete and disciplined adaptation: full toy-hierarchy scene, all major dialogue beats verbatim, explicit \u0027CLOSE ON\u0027 camera directions, and a top-of-script style note ensuring visual/tonal consistency across toy and animal characters. Still no explicit sound-design or music cues, which caps the scoring dimension, but atmospheric prose (frosted silver, gaslight gold) gives a composer more to work with than most peers.",
+      "gpt-4o": "Touches every major plot beat but in extremely thin, summarized form, losing texture (Skin Horse is \u0027old and wise\u0027, Nana is just \u0027bustling\u0027). Several lines lean on unfilmable internal states (\u0027listens intently, longing to become Real\u0027; \u0027grateful for the love that made him Real\u0027), and paraphrased dialogue lacks the book\u0027s lyrical specificity. No invented major content, so it remains produceable, just underdeveloped.",
+      "claude-sonnet-5": "Otherwise the most cinematically polished script \u2014 concrete camera language (\u0027Close on the Rabbit\u0027s button eyes\u0027), rich atmosphere, and a strong original final beat \u2014 but it invents a named character (\u0027Bramble\u0027) for the wild rabbit that does not exist in the source text, which per the fidelity rubric must be treated as a severe, standalone penalty on that dimension even though it doesn\u0027t break the overall story.",
+      "grok-4": "Solid, workmanlike coverage including Timothy, the model boat, the doctor scene, and the fairy transformation, with mostly verbatim dialogue. Loses points because several scene headings cram three or four discrete actions (wheelbarrow ride \u002B picnic \u002B fairy hut building) into one slugline, and the illness/rejection climax is rushed without much room to breathe. No music/sound direction provided.",
+      "gpt-4o-mini": "The condensed toy-cupboard and Skin Horse scenes retain some charm, but the complete omission of the illness/doctor/sack beat is a structural break \u2014 the audience has no idea why the Rabbit is suddenly discarded and weeping. Combined with thin, generic character description and heavy reliance on unfilmable internal-state narration, this draft needs a substantial rewrite before it could be greenlit."
+    },
+    "gemini-2.5-flash": {
+      "gpt-4o-mini": "Screenplay A provides a solid adaptation, covering key narrative beats without major deviations. Character descriptions are clear and consistent. However, its reliance on narration to summarize events, and occasional internal thoughts in action lines (\u0027feeling loved\u0027, \u0027feels ashamed\u0027), slightly reduces its AI video directibility and pacing for short, distinct clips. The lack of explicit sound/music cues is a minor missed opportunity.",
+      "o3-mini": "Screenplay B offers a faithful adaptation with good character disambiguation and consistent descriptions. The pacing is well-suited for short clips, breaking down the story into clear beats. While generally directible, some action lines lean slightly into internal states (\u0027quiet satisfaction glowing in his eyes\u0027, \u0027somber mood fills the room\u0027), which could be challenging for AI generation. Dialogue is authentic, and the overall structure is strong.",
+      "claude-sonnet-5": "Screenplay C is an exceptional adaptation, demonstrating high fidelity to the source material, including specific minor characters and details. Character disambiguation is outstanding with vivid, consistent descriptions. The directibility is very strong, with mostly concrete action lines, and the pacing is excellent, breaking the story into distinct, impactful beats. Dialogue is authentic and well-structured. The only minor area for improvement is the absence of explicit sound/music cues.",
+      "gpt-4o": "Screenplay D covers the main story beats but simplifies some details, leading to slightly lower fidelity. Character descriptions are adequate, though the \u0027WILD RABBITS\u0027 then \u0027WILD RABBIT\u0027 usage is a minor inconsistency. The primary weakness is in AI video directibility, with several action lines describing internal states (\u0027longing to become Real\u0027, \u0027feeling the warmth of love\u0027, \u0027Rabbit\u0027s heart sinks\u0027) that are difficult to visualize directly. Pacing is quick but sometimes feels summarized by narration.",
+      "gemini-2.5-flash": "Screenplay E provides an excellent, highly faithful adaptation, incorporating many specific details from the book. Character disambiguation and visual consistency are outstanding. The pacing is superb, with granular scene breakdowns ideal for short video clips, and the narrative momentum is strong. Dialogue is authentic and well-preserved. While generally directible, a few action lines still contain internal thoughts (\u0027Rabbit endures, missing...\u0027, \u0027Joy breaks through him\u0027), which are minor points for refinement.",
+      "grok-4": "Screenplay F delivers a very good adaptation with strong fidelity and clear character descriptions. The pacing is effective, breaking the story into manageable beats for short clips. Dialogue is authentic and well-integrated. However, similar to other candidates, some action lines describe internal states (\u0027knows the nursery magic has happened\u0027, \u0027He has no hind legs\u0027) rather than purely observable actions, slightly impacting its AI video directibility score.",
+      "grok-4.5": "Screenplay G is an exceptional adaptation, demonstrating perfect fidelity to the source material, highly detailed and consistent character descriptions, and perfectly paced, directible beats for short video clips. Dialogue is verbatim and authentic, and the narrative flow is seamless. The \u0027Notes\u0027 section also indicates a strong visual approach. The only minor area for improvement is the absence of explicit sound/music cues, which is a common omission across all candidates."
+    }
+  },
+  "JudgeSummaries": {
+    "gpt-4o": "Strongest: Screenplay B because it excels in adaptation fidelity and is highly directible with clear, concise action lines. Weakest: Screenplay F because it occasionally deviates from key narrative beats and has inconsistent character descriptions affecting visual continuity.",
+    "gpt-4o-mini": "Strongest: Screenplay B because it excels in adaptation fidelity and pacing, providing a strong visual narrative. Weakest: Screenplay F because it lacks the depth and engagement found in higher-rated candidates.",
+    "o3-mini": "Strongest: Screenplay E because it delivers a beautifully concise, visually direct, and cinematically rich adaptation ideal for short clips; Weakest: Screenplay D because its dense narrative detail and extended beat descriptions risk overloading the limited clip format.",
+    "grok-4.5": "Strongest: Screenplay G because it delivers near-perfect fidelity, locked visual character continuity, and densely clip-ready action lines that fully honor the 5-10s AI video constraint while preserving every emotional beat. Weakest: Screenplay B because it catastrophically abridges the source into a skeletal outline lacking essential plot pillars, character detail, and any usable directorial specificity.",
+    "grok-4": "Strongest: Screenplay E because it delivers the highest fidelity, clearest visual action lines, and consistent character anchors optimized for short AI clips. Weakest: Screenplay B because it drops essential narrative beats and provides generic descriptions that break both adaptation accuracy and directibility.",
+    "claude-sonnet-5": "Strongest: Screenplay C, because it combines the fullest, most faithful beat-for-beat coverage of the source with concrete camera-ready direction (CLOSE ON cues) and the most consistent character descriptions across scenes. Weakest: Screenplay G, because it entirely drops the illness/doctor/burning sequence that motivates the Rabbit\u0027s abandonment and tear-shedding, breaking the story\u0027s causal chain and leaving the emotional climax unearned.",
+    "gemini-2.5-flash": "Strongest: Screenplay G because it demonstrates exceptional fidelity to the source material, highly detailed and consistent character descriptions, and perfectly paced, directible beats for short video clips. Weakest: Screenplay D because it frequently relies on internal monologues or mood descriptions that are difficult to translate into concrete visual actions for AI video generation, and its fidelity is slightly less precise."
+  }
+}

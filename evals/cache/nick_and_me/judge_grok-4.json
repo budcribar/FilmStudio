@@ -1,0 +1,142 @@
+{
+  "evaluations": [
+    {
+      "screenplayId": "Screenplay A",
+      "adaptationFidelity": 8,
+      "characterDisambiguation": 8.5,
+      "aiVideoDirectibility": 7.5,
+      "dramaticPacing": 7,
+      "dialogueAuthenticity": 8,
+      "soundDesignMusic": 7.5,
+      "overallQualitativeScore": 7.75,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Solid fidelity with minor invented framing; consistent visuals but some narration-heavy beats reduce directibility."
+    },
+    {
+      "screenplayId": "Screenplay B",
+      "adaptationFidelity": 9,
+      "characterDisambiguation": 9.5,
+      "aiVideoDirectibility": 8.5,
+      "dramaticPacing": 8,
+      "dialogueAuthenticity": 8.5,
+      "soundDesignMusic": 8,
+      "overallQualitativeScore": 8.58,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "High fidelity and excellent character consistency; scenes are filmable and pacing is tight for short clips."
+    },
+    {
+      "screenplayId": "Screenplay C",
+      "adaptationFidelity": 3,
+      "characterDisambiguation": 4,
+      "aiVideoDirectibility": 2.5,
+      "dramaticPacing": 3,
+      "dialogueAuthenticity": 3.5,
+      "soundDesignMusic": 3,
+      "overallQualitativeScore": 3.17,
+      "productionReady": false,
+      "disqualifyingIssues": [
+        "Heavy narration violates directibility; invented plot events and dropped beats; no consistent visual descriptions"
+      ],
+      "rationale": "Broken on fidelity and directibility; unusable for AI video clips."
+    },
+    {
+      "screenplayId": "Screenplay D",
+      "adaptationFidelity": 9.5,
+      "characterDisambiguation": 9,
+      "aiVideoDirectibility": 9,
+      "dramaticPacing": 8.5,
+      "dialogueAuthenticity": 8.5,
+      "soundDesignMusic": 8,
+      "overallQualitativeScore": 8.75,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Exceptional source coverage and visual action lines; consistent character references throughout."
+    },
+    {
+      "screenplayId": "Screenplay E",
+      "adaptationFidelity": 9,
+      "characterDisambiguation": 8.5,
+      "aiVideoDirectibility": 8.5,
+      "dramaticPacing": 8,
+      "dialogueAuthenticity": 8,
+      "soundDesignMusic": 7.5,
+      "overallQualitativeScore": 8.25,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Tight, visual adaptation with strong pacing; minor sound-design gaps."
+    },
+    {
+      "screenplayId": "Screenplay F",
+      "adaptationFidelity": 7.5,
+      "characterDisambiguation": 7,
+      "aiVideoDirectibility": 6.5,
+      "dramaticPacing": 6,
+      "dialogueAuthenticity": 7,
+      "soundDesignMusic": 6.5,
+      "overallQualitativeScore": 6.75,
+      "productionReady": false,
+      "disqualifyingIssues": [
+        "Heavy narration and invented scenes; inconsistent character visuals"
+      ],
+      "rationale": "Workable but flawed; production issues from narration and pacing."
+    },
+    {
+      "screenplayId": "Screenplay G",
+      "adaptationFidelity": 4,
+      "characterDisambiguation": 3.5,
+      "aiVideoDirectibility": 3,
+      "dramaticPacing": 3.5,
+      "dialogueAuthenticity": 4,
+      "soundDesignMusic": 3.5,
+      "overallQualitativeScore": 3.58,
+      "productionReady": false,
+      "disqualifyingIssues": [
+        "Heavy narration; invented plot events; no consistent visual descriptions"
+      ],
+      "rationale": "Broken on fidelity and directibility; unusable."
+    },
+    {
+      "screenplayId": "Screenplay H",
+      "adaptationFidelity": 9,
+      "characterDisambiguation": 8.5,
+      "aiVideoDirectibility": 8,
+      "dramaticPacing": 7.5,
+      "dialogueAuthenticity": 8,
+      "soundDesignMusic": 7.5,
+      "overallQualitativeScore": 8.08,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Strong fidelity and visuals; minor pacing compression issues."
+    },
+    {
+      "screenplayId": "Screenplay I",
+      "adaptationFidelity": 9.5,
+      "characterDisambiguation": 9.5,
+      "aiVideoDirectibility": 9,
+      "dramaticPacing": 8.5,
+      "dialogueAuthenticity": 8.5,
+      "soundDesignMusic": 8,
+      "overallQualitativeScore": 8.83,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Highest fidelity with precise visual action lines and consistent character references."
+    }
+  ],
+  "forcedRanking": [
+    "Screenplay I",
+    "Screenplay D",
+    "Screenplay B",
+    "Screenplay E",
+    "Screenplay H",
+    "Screenplay A",
+    "Screenplay F",
+    "Screenplay C",
+    "Screenplay G"
+  ],
+  "judgeSummaryNotes": "Strongest: Screenplay I because it achieves near-perfect fidelity, consistent visual character descriptions, and highly filmable short-clip scenes. Weakest: Screenplay C because heavy narration, invented plot events, and absent character visuals make it unusable for AI video production.",
+  "isMock": false,
+  "rubricVersion": "2-calibrated-selfbias-productionready",
+  "screenplaysHash": "DCAAC19F09998F38076AB4BA803C7F5E7111230C6F9CD6AF2B7115F0654037B3"
+}

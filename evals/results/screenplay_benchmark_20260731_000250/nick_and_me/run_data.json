@@ -1,0 +1,429 @@
+{
+  "BookPath": "C:\\Users\\budcr\\source\\repos\\claude\\PageToMovie\\books\\Nick_and_Me.txt",
+  "Timestamp": "2026-07-31 06:02:50 UTC",
+  "IsMockRun": false,
+  "Leaderboard": [
+    {
+      "ModelId": "gpt-5.6-sol",
+      "AnonymousLabel": "",
+      "CompositeScore": 89,
+      "IsGenerationFallback": false,
+      "GenerationFallbackReason": null,
+      "BordaPoints": 14,
+      "AvgJudgeRank": 1,
+      "SyntaxAudit": {
+        "OverallSyntaxScore": 92.8,
+        "FormatComplianceScore": 95,
+        "SceneBudgetScore": 100,
+        "DialoguePacingScore": 75,
+        "CharacterDisambiguationScore": 100,
+        "MusicSpecScore": 70,
+        "TotalSceneHeadings": 18,
+        "TotalDialogueBlocks": 89,
+        "AvgWordsPerDialogue": 15.7,
+        "MaxWordsInSingleDialogue": 40,
+        "LongMonologueCount": 5,
+        "GenericNumberedSpeakerCount": 0,
+        "CharacterNamesFound": [
+          "NICK",
+          "LITTLE BROTHER",
+          "SIONNA",
+          "MA",
+          "OFFICER DUPUIS"
+        ],
+        "AgeDisambiguatedCharacters": [],
+        "DiagnosticWarnings": [
+          "Missing \u0027FADE OUT.\u0027 or \u0027THE END\u0027 closing transition.",
+          "5 monologue turn(s) exceed 35 words without action line splits.",
+          "No explicit music/sound design cues detected in screenplay."
+        ]
+      },
+      "AvgAdaptationFidelity": 9,
+      "AvgCharacterDisambiguation": 9.2,
+      "AvgAiVideoDirectibility": 9,
+      "AvgDramaticPacing": 8.5,
+      "AvgDialogueAuthenticity": 9,
+      "AvgSoundDesignMusic": 7.2,
+      "AvgOverallQualitative": 8.6,
+      "DisqualifyingFlags": []
+    },
+    {
+      "ModelId": "gpt-5.6-luna",
+      "AnonymousLabel": "",
+      "CompositeScore": 86.7,
+      "IsGenerationFallback": false,
+      "GenerationFallbackReason": null,
+      "BordaPoints": 12,
+      "AvgJudgeRank": 2,
+      "SyntaxAudit": {
+        "OverallSyntaxScore": 95,
+        "FormatComplianceScore": 100,
+        "SceneBudgetScore": 100,
+        "DialoguePacingScore": 90,
+        "CharacterDisambiguationScore": 100,
+        "MusicSpecScore": 70,
+        "TotalSceneHeadings": 33,
+        "TotalDialogueBlocks": 112,
+        "AvgWordsPerDialogue": 12.9,
+        "MaxWordsInSingleDialogue": 45,
+        "LongMonologueCount": 2,
+        "GenericNumberedSpeakerCount": 0,
+        "CharacterNamesFound": [
+          "NARRATOR",
+          "NICK",
+          "PETER",
+          "SIONNA",
+          "OLIVIA",
+          "DR. CARSON",
+          "OFFICER DUPUIS"
+        ],
+        "AgeDisambiguatedCharacters": [],
+        "DiagnosticWarnings": [
+          "2 monologue turn(s) exceed 35 words without action line splits.",
+          "No explicit music/sound design cues detected in screenplay."
+        ]
+      },
+      "AvgAdaptationFidelity": 8.5,
+      "AvgCharacterDisambiguation": 8.2,
+      "AvgAiVideoDirectibility": 8.5,
+      "AvgDramaticPacing": 8,
+      "AvgDialogueAuthenticity": 8.5,
+      "AvgSoundDesignMusic": 6.8,
+      "AvgOverallQualitative": 8.1,
+      "DisqualifyingFlags": []
+    },
+    {
+      "ModelId": "gpt-5.6-terra",
+      "AnonymousLabel": "",
+      "CompositeScore": 84.3,
+      "IsGenerationFallback": false,
+      "GenerationFallbackReason": null,
+      "BordaPoints": 8,
+      "AvgJudgeRank": 4,
+      "SyntaxAudit": {
+        "OverallSyntaxScore": 95.2,
+        "FormatComplianceScore": 100,
+        "SceneBudgetScore": 100,
+        "DialoguePacingScore": 95,
+        "CharacterDisambiguationScore": 100,
+        "MusicSpecScore": 70,
+        "TotalSceneHeadings": 17,
+        "TotalDialogueBlocks": 78,
+        "AvgWordsPerDialogue": 11.6,
+        "MaxWordsInSingleDialogue": 38,
+        "LongMonologueCount": 1,
+        "GenericNumberedSpeakerCount": 0,
+        "CharacterNamesFound": [
+          "THE NARRATOR",
+          "NICK",
+          "MA",
+          "SIONNA",
+          "LINDSEY",
+          "OFFICER DUPUIS"
+        ],
+        "AgeDisambiguatedCharacters": [],
+        "DiagnosticWarnings": [
+          "1 monologue turn(s) exceed 35 words without action line splits.",
+          "No explicit music/sound design cues detected in screenplay."
+        ]
+      },
+      "AvgAdaptationFidelity": 7.8,
+      "AvgCharacterDisambiguation": 8,
+      "AvgAiVideoDirectibility": 8,
+      "AvgDramaticPacing": 8,
+      "AvgDialogueAuthenticity": 8.2,
+      "AvgSoundDesignMusic": 6.2,
+      "AvgOverallQualitative": 7.7,
+      "DisqualifyingFlags": []
+    },
+    {
+      "ModelId": "gemini-3.6-flash",
+      "AnonymousLabel": "",
+      "CompositeScore": 82.4,
+      "IsGenerationFallback": false,
+      "GenerationFallbackReason": null,
+      "BordaPoints": 8,
+      "AvgJudgeRank": 4,
+      "SyntaxAudit": {
+        "OverallSyntaxScore": 94.5,
+        "FormatComplianceScore": 100,
+        "SceneBudgetScore": 100,
+        "DialoguePacingScore": 80,
+        "CharacterDisambiguationScore": 100,
+        "MusicSpecScore": 70,
+        "TotalSceneHeadings": 16,
+        "TotalDialogueBlocks": 67,
+        "AvgWordsPerDialogue": 14,
+        "MaxWordsInSingleDialogue": 54,
+        "LongMonologueCount": 4,
+        "GenericNumberedSpeakerCount": 0,
+        "CharacterNamesFound": [
+          "PETER",
+          "NICK",
+          "SIONNA",
+          "DARK-HAIRED MAN",
+          "OFFICER DUPUIS",
+          "CORRECTIONAL OFFICER"
+        ],
+        "AgeDisambiguatedCharacters": [],
+        "DiagnosticWarnings": [
+          "4 monologue turn(s) exceed 35 words without action line splits.",
+          "No explicit music/sound design cues detected in screenplay."
+        ]
+      },
+      "AvgAdaptationFidelity": 6.5,
+      "AvgCharacterDisambiguation": 8,
+      "AvgAiVideoDirectibility": 8,
+      "AvgDramaticPacing": 7.5,
+      "AvgDialogueAuthenticity": 8,
+      "AvgSoundDesignMusic": 6.5,
+      "AvgOverallQualitative": 7.4,
+      "DisqualifyingFlags": [
+        "grok-4: Early naming of narrator as PETER OLSON violates source withholding of name until final beat."
+      ]
+    },
+    {
+      "ModelId": "gemini-3.1-pro-preview",
+      "AnonymousLabel": "",
+      "CompositeScore": 79.8,
+      "IsGenerationFallback": false,
+      "GenerationFallbackReason": null,
+      "BordaPoints": 6,
+      "AvgJudgeRank": 5,
+      "SyntaxAudit": {
+        "OverallSyntaxScore": 94,
+        "FormatComplianceScore": 100,
+        "SceneBudgetScore": 100,
+        "DialoguePacingScore": 70,
+        "CharacterDisambiguationScore": 100,
+        "MusicSpecScore": 70,
+        "TotalSceneHeadings": 16,
+        "TotalDialogueBlocks": 81,
+        "AvgWordsPerDialogue": 18.7,
+        "MaxWordsInSingleDialogue": 69,
+        "LongMonologueCount": 11,
+        "GenericNumberedSpeakerCount": 0,
+        "CharacterNamesFound": [
+          "PETER",
+          "SIONNA",
+          "MA",
+          "NICK",
+          "LINDSEY",
+          "DARK-HAIRED MAN",
+          "OFFICER DUPUIS"
+        ],
+        "AgeDisambiguatedCharacters": [],
+        "DiagnosticWarnings": [
+          "11 monologue turn(s) exceed 35 words without action line splits.",
+          "No explicit music/sound design cues detected in screenplay."
+        ]
+      },
+      "AvgAdaptationFidelity": 6,
+      "AvgCharacterDisambiguation": 7.5,
+      "AvgAiVideoDirectibility": 7.8,
+      "AvgDramaticPacing": 7,
+      "AvgDialogueAuthenticity": 8,
+      "AvgSoundDesignMusic": 6,
+      "AvgOverallQualitative": 7,
+      "DisqualifyingFlags": [
+        "grok-4: Early naming of narrator as PETER and multiple invented dream/plot details violate source fidelity."
+      ]
+    },
+    {
+      "ModelId": "grok-4.20-reasoning",
+      "AnonymousLabel": "",
+      "CompositeScore": 74.2,
+      "IsGenerationFallback": false,
+      "GenerationFallbackReason": null,
+      "BordaPoints": 3,
+      "AvgJudgeRank": 6.5,
+      "SyntaxAudit": {
+        "OverallSyntaxScore": 95,
+        "FormatComplianceScore": 100,
+        "SceneBudgetScore": 100,
+        "DialoguePacingScore": 90,
+        "CharacterDisambiguationScore": 100,
+        "MusicSpecScore": 70,
+        "TotalSceneHeadings": 14,
+        "TotalDialogueBlocks": 54,
+        "AvgWordsPerDialogue": 13.4,
+        "MaxWordsInSingleDialogue": 40,
+        "LongMonologueCount": 2,
+        "GenericNumberedSpeakerCount": 0,
+        "CharacterNamesFound": [
+          "PETER",
+          "NICK",
+          "SIONA",
+          "MA",
+          "OFFICER DUPUIS"
+        ],
+        "AgeDisambiguatedCharacters": [],
+        "DiagnosticWarnings": [
+          "2 monologue turn(s) exceed 35 words without action line splits.",
+          "No explicit music/sound design cues detected in screenplay."
+        ]
+      },
+      "AvgAdaptationFidelity": 4.8,
+      "AvgCharacterDisambiguation": 5.2,
+      "AvgAiVideoDirectibility": 7,
+      "AvgDramaticPacing": 6.8,
+      "AvgDialogueAuthenticity": 7,
+      "AvgSoundDesignMusic": 5.5,
+      "AvgOverallQualitative": 6,
+      "DisqualifyingFlags": [
+        "grok-4.5: Unstable character token spelling (SIONA vs SIONNA) across cues and headings",
+        "grok-4.5: Insufficient repeated visual locks on reappearances",
+        "grok-4: Early naming of narrator as PETER violates source withholding of name until final beat; multiple invented plot details and character actions not in book."
+      ]
+    },
+    {
+      "ModelId": "claude-opus-5",
+      "AnonymousLabel": "",
+      "CompositeScore": 71.7,
+      "IsGenerationFallback": false,
+      "GenerationFallbackReason": null,
+      "BordaPoints": 5,
+      "AvgJudgeRank": 5.5,
+      "SyntaxAudit": {
+        "OverallSyntaxScore": 88.5,
+        "FormatComplianceScore": 100,
+        "SceneBudgetScore": 78,
+        "DialoguePacingScore": 70,
+        "CharacterDisambiguationScore": 100,
+        "MusicSpecScore": 70,
+        "TotalSceneHeadings": 56,
+        "TotalDialogueBlocks": 390,
+        "AvgWordsPerDialogue": 19.7,
+        "MaxWordsInSingleDialogue": 101,
+        "LongMonologueCount": 58,
+        "GenericNumberedSpeakerCount": 0,
+        "CharacterNamesFound": [
+          "THE NARRATOR",
+          "SIONNA",
+          "MA",
+          "DR. CARSON",
+          "NICK",
+          "THE DYING SOLDIER",
+          "YOUNG NARRATOR",
+          "BOBBY SWENSON",
+          "YOUNG NICK",
+          "MRS. STARK",
+          "BOB",
+          "SAMMY",
+          "LINDSEY",
+          "RAFAEL",
+          "KEVIN MCCLEARY",
+          "OFFICER DUPUIS",
+          "PATRICIA OWENS"
+        ],
+        "AgeDisambiguatedCharacters": [
+          "YOUNG NARRATOR",
+          "YOUNG NICK"
+        ],
+        "DiagnosticWarnings": [
+          "Excessive scene count (56 scenes); high micro-scene density inflates video gen budget.",
+          "58 monologue turn(s) exceed 35 words without action line splits.",
+          "Detected 2 age-qualified character header(s) (e.g. YOUNG NARRATOR, YOUNG NICK).",
+          "No explicit music/sound design cues detected in screenplay."
+        ]
+      },
+      "AvgAdaptationFidelity": 6,
+      "AvgCharacterDisambiguation": 6,
+      "AvgAiVideoDirectibility": 6,
+      "AvgDramaticPacing": 4.5,
+      "AvgDialogueAuthenticity": 7.5,
+      "AvgSoundDesignMusic": 6.2,
+      "AvgOverallQualitative": 6,
+      "DisqualifyingFlags": [
+        "grok-4.5: Structurally incomplete/truncated ending that drops the prison-forgiveness climax",
+        "grok-4.5: Inconsistent physical descriptions of THE NARRATOR (thick vs thin shoulders, shifting ages)",
+        "grok-4.5: Vastly exceeds target runtime with dozens of padded scenes and unfinished headings"
+      ]
+    }
+  ],
+  "JudgeMatrix": {
+    "grok-4.5": {
+      "gpt-5.6-luna": 7.92,
+      "gpt-5.6-terra": 7.42,
+      "claude-opus-5": 4,
+      "gemini-3.6-flash": 7.75,
+      "grok-4.20-reasoning": 6.17,
+      "gpt-5.6-sol": 8.5,
+      "gemini-3.1-pro-preview": 7.67
+    },
+    "grok-4": {
+      "gpt-5.6-terra": 8,
+      "grok-4.20-reasoning": 5.9,
+      "claude-opus-5": 8.1,
+      "gemini-3.1-pro-preview": 6.4,
+      "gemini-3.6-flash": 7.1,
+      "gpt-5.6-sol": 8.8,
+      "gpt-5.6-luna": 8.3
+    }
+  },
+  "JudgeRankMatrix": {
+    "grok-4.5": {
+      "gpt-5.6-sol": 1,
+      "gpt-5.6-luna": 2,
+      "gemini-3.6-flash": 3,
+      "gemini-3.1-pro-preview": 4,
+      "gpt-5.6-terra": 5,
+      "grok-4.20-reasoning": 6,
+      "claude-opus-5": 7
+    },
+    "grok-4": {
+      "gpt-5.6-sol": 1,
+      "gpt-5.6-luna": 2,
+      "gpt-5.6-terra": 3,
+      "claude-opus-5": 4,
+      "gemini-3.6-flash": 5,
+      "gemini-3.1-pro-preview": 6,
+      "grok-4.20-reasoning": 7
+    }
+  },
+  "SelfBiasNotes": [],
+  "JudgeRationale": {
+    "grok-4.5": {
+      "gpt-5.6-luna": "Strong full-arc coverage from childhood kickball through dreams, crash, stabbing, breakup and prison forgiveness with mostly book-faithful dialogue and short visual scenes suited to 5-10s clips. Minor deductions for occasional multi-beat compression and sparse explicit sound/music beds; character looks are locked early but young/adult re-specs are not always restated on reappearance.",
+      "gpt-5.6-terra": "Tight 10-minute spine that hits meeting, fights, crash, stabbing and prison payoff with clean short scenes and usable THE NARRATOR token. Loses points for dropping several childhood/dream beats and thinner visual re-locking of supporting cast on reappearances; almost no music or layered sound beds.",
+      "claude-opus-5": "Contains rich book-faithful dialogue and many secondary beats but collapses under its own length, ends mid-scene without resolution, and repeatedly contradicts the protagonist\u2019s locked look\u2014rendering it unusable for reference-image pipelines or a 10-minute cut.",
+      "gemini-3.6-flash": "Clean frame-story structure, consistent age-disambiguated looks for Peter/Nick/Sionna, and clip-sized visual beats that track the crash\u2013stabbing\u2013prison arc without major invention. Dialogue stays close to source; sound design is only lightly indicated.",
+      "grok-4.20-reasoning": "Hits the major plot turns in a compact package but the name-token drift breaks closed-cast parsing and visual descriptions are too thin for consistent AI reference images; several connective beats feel summarized rather than shown.",
+      "gpt-5.6-sol": "Highest fidelity to the book\u2019s essential spine and iconic lines while remaining tightly clip-directible; LITTLE BROTHER / YOUNG NICK / Adult NICK tokens plus repeated visual anchors (scars, Trans Am, fish pendant, blue eyes) stay rock-solid; short observable Action lines and natural book dialogue make it the most production-ready package. Sound beds are present but still sparse.",
+      "gemini-3.1-pro-preview": "Solid frame-to-flashback structure, book-accurate dialogue, and clear visual beats for the core confrontations and prison closer. Character looks are established early and mostly held; minor compression of middle act and almost no explicit music/sound direction keep it just below the top tier."
+    },
+    "grok-4": {
+      "gpt-5.6-terra": "Strong coverage of core beats with consistent THE NARRATOR frame and visual action lines; minor pacing issues from longer scenes and limited sound cues.",
+      "grok-4.20-reasoning": "Severe fidelity penalty for early invented name and added events; workable visuals but broken structure.",
+      "claude-opus-5": "Excellent on-camera frame with THE NARRATOR, consistent descriptions, and visual action; minor pacing compression needed for clip length.",
+      "gemini-3.1-pro-preview": "Fidelity broken by early name reveal and added events; otherwise solid visuals but unusable as-is.",
+      "gemini-3.6-flash": "Fidelity penalty for early name; otherwise strong visual action and dialogue but production-blocked.",
+      "gpt-5.6-sol": "Highest fidelity with LITTLE BROTHER disambiguation, tight visual action lines, and book-accurate dialogue; excellent short-clip structure.",
+      "gpt-5.6-luna": "Strong fidelity and visual action with late name reveal; minor compression needed on some longer scenes."
+    }
+  },
+  "JudgeSummaries": {
+    "grok-4.5": "Strongest: Screenplay F because it delivers the fullest book-faithful arc with the most consistent character visual locks and the cleanest short-clip Action lines. Weakest: Screenplay C because it is structurally truncated, contradicts its own character descriptions, and massively overruns the 10-minute target.",
+    "grok-4": "Strongest: Screenplay F because it uses LITTLE BROTHER for consistent disambiguation, maintains highest fidelity without early name invention, and delivers tight visual action lines ideal for short clips. Weakest: Screenplay B because it reveals the narrator\u0027s name as PETER early, violating source withholding, and includes multiple invented plot events that break adaptation fidelity."
+  },
+  "JudgePromptSuggestions": {
+    "grok-4.5": {
+      "gpt-5.6-luna": "Require every scene that reintroduces a character after a time jump or age change to restate 2-3 locked visual traits (build/hair/scar/wardrobe) in the first Action line so reference images cannot drift.",
+      "gpt-5.6-terra": "Mandate at least one concrete diegetic sound or background-music direction (e.g. \u2018distant siren swells\u2019, \u2018low tense drone\u2019) inside every scene\u2019s Action so the sound-design dimension is never left empty.",
+      "claude-opus-5": "Add an explicit hard cap of 25\u201335 scene headings for novel-length sources and a final validation rule that the last scene before FADE OUT must complete the emotional/plot spine with no truncated Action or headings.",
+      "gemini-3.6-flash": "Require the closing frame return (when a frame is established) to contain one fresh observable micro-action plus a short sound bed rather than pure V.O. so the button remains filmable in a single 5-10s clip.",
+      "grok-4.20-reasoning": "Enforce a single canonical ALL-CAPS token per character that must be identical in every cue, heading and Action reference; any spelling variant is a hard validation failure.",
+      "gpt-5.6-sol": "Add a rule that every major emotional peak (crash, stabbing, prison goodbye) must interleave at least two distinct diegetic sound cues with the Action so the sound-design score cannot lag behind the visual beats.",
+      "gemini-3.1-pro-preview": "Require an explicit one-line music or ambient-bed note (genre/intensity) immediately after every scene heading so scorers and downstream audio tools always have a usable cue."
+    },
+    "grok-4": {
+      "gpt-5.6-terra": "Add an explicit rule requiring every scene heading to be followed by at least one concrete, single-location visual action line before any dialogue or V.O.",
+      "grok-4.20-reasoning": "Add an explicit rule that the narrator\u0027s name must never be used until the source text first reveals it, and no new named characters may be invented.",
+      "claude-opus-5": "Add an explicit rule capping any single scene at no more than four distinct visual beats to ensure short-clip compatibility.",
+      "gemini-3.1-pro-preview": "Add an explicit rule that the narrator\u0027s name must never be used until the source text first reveals it, and no new named characters may be invented.",
+      "gemini-3.6-flash": "Add an explicit rule that the narrator\u0027s name must never be used until the source text first reveals it, and no new named characters may be invented.",
+      "gpt-5.6-sol": "Add an explicit rule requiring every scene to contain only one primary location and time to prevent multi-location headings.",
+      "gpt-5.6-luna": "Add an explicit rule requiring every scene heading to be followed by at least one concrete, single-location visual action line before any dialogue or V.O."
+    }
+  }
+}

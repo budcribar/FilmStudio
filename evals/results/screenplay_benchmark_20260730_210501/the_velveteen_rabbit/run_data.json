@@ -1,0 +1,536 @@
+{
+  "BookPath": "C:\\Users\\budcr\\source\\repos\\claude\\PageToMovie\\books\\The_Velveteen_Rabbit.txt",
+  "Timestamp": "2026-07-31 03:15:21 UTC",
+  "IsMockRun": false,
+  "Leaderboard": [
+    {
+      "ModelId": "grok-4.5",
+      "AnonymousLabel": "",
+      "CompositeScore": 89.8,
+      "IsGenerationFallback": false,
+      "GenerationFallbackReason": null,
+      "BordaPoints": 15,
+      "AvgJudgeRank": 2.5,
+      "SyntaxAudit": {
+        "OverallSyntaxScore": 94.5,
+        "FormatComplianceScore": 100,
+        "SceneBudgetScore": 100,
+        "DialoguePacingScore": 80,
+        "CharacterDisambiguationScore": 100,
+        "MusicSpecScore": 70,
+        "TotalSceneHeadings": 13,
+        "TotalDialogueBlocks": 45,
+        "AvgWordsPerDialogue": 15.4,
+        "MaxWordsInSingleDialogue": 87,
+        "LongMonologueCount": 4,
+        "GenericNumberedSpeakerCount": 0,
+        "CharacterNamesFound": [
+          "NARRATOR",
+          "VELVETEEN RABBIT",
+          "SKIN HORSE",
+          "NANA",
+          "THE BOY",
+          "WILD RABBIT",
+          "DOCTOR",
+          "NURSERY FAIRY"
+        ],
+        "AgeDisambiguatedCharacters": [
+          "THE BOY"
+        ],
+        "DiagnosticWarnings": [
+          "4 monologue turn(s) exceed 35 words without action line splits.",
+          "Detected 1 age-qualified character header(s) (e.g. THE BOY).",
+          "No explicit music/sound design cues detected in screenplay."
+        ]
+      },
+      "AvgAdaptationFidelity": 9.2,
+      "AvgCharacterDisambiguation": 9.2,
+      "AvgAiVideoDirectibility": 9.2,
+      "AvgDramaticPacing": 9,
+      "AvgDialogueAuthenticity": 9.2,
+      "AvgSoundDesignMusic": 6,
+      "AvgOverallQualitative": 8.7,
+      "DisqualifyingFlags": []
+    },
+    {
+      "ModelId": "gpt-5.6-terra",
+      "AnonymousLabel": "",
+      "CompositeScore": 87.3,
+      "IsGenerationFallback": false,
+      "GenerationFallbackReason": null,
+      "BordaPoints": 13,
+      "AvgJudgeRank": 3.5,
+      "SyntaxAudit": {
+        "OverallSyntaxScore": 95.2,
+        "FormatComplianceScore": 100,
+        "SceneBudgetScore": 100,
+        "DialoguePacingScore": 95,
+        "CharacterDisambiguationScore": 100,
+        "MusicSpecScore": 70,
+        "TotalSceneHeadings": 11,
+        "TotalDialogueBlocks": 40,
+        "AvgWordsPerDialogue": 14.2,
+        "MaxWordsInSingleDialogue": 36,
+        "LongMonologueCount": 1,
+        "GenericNumberedSpeakerCount": 0,
+        "CharacterNamesFound": [
+          "NARRATOR",
+          "RABBIT",
+          "SKIN HORSE",
+          "NANA",
+          "BOY",
+          "WILD RABBIT",
+          "DOCTOR",
+          "FAIRY"
+        ],
+        "AgeDisambiguatedCharacters": [
+          "BOY"
+        ],
+        "DiagnosticWarnings": [
+          "1 monologue turn(s) exceed 35 words without action line splits.",
+          "Detected 1 age-qualified character header(s) (e.g. BOY).",
+          "No explicit music/sound design cues detected in screenplay."
+        ]
+      },
+      "AvgAdaptationFidelity": 9,
+      "AvgCharacterDisambiguation": 8.5,
+      "AvgAiVideoDirectibility": 8.8,
+      "AvgDramaticPacing": 8.5,
+      "AvgDialogueAuthenticity": 9,
+      "AvgSoundDesignMusic": 5.5,
+      "AvgOverallQualitative": 8.2,
+      "DisqualifyingFlags": []
+    },
+    {
+      "ModelId": "gemini-2.5-flash",
+      "AnonymousLabel": "",
+      "CompositeScore": 86.1,
+      "IsGenerationFallback": false,
+      "GenerationFallbackReason": null,
+      "BordaPoints": 11,
+      "AvgJudgeRank": 4.5,
+      "SyntaxAudit": {
+        "OverallSyntaxScore": 94,
+        "FormatComplianceScore": 100,
+        "SceneBudgetScore": 100,
+        "DialoguePacingScore": 70,
+        "CharacterDisambiguationScore": 100,
+        "MusicSpecScore": 70,
+        "TotalSceneHeadings": 13,
+        "TotalDialogueBlocks": 42,
+        "AvgWordsPerDialogue": 19,
+        "MaxWordsInSingleDialogue": 65,
+        "LongMonologueCount": 8,
+        "GenericNumberedSpeakerCount": 0,
+        "CharacterNamesFound": [
+          "NARRATOR",
+          "VELVETEEN RABBIT",
+          "SKIN HORSE",
+          "NANA",
+          "BOY",
+          "WILD RABBIT #1",
+          "DOCTOR",
+          "FAIRY"
+        ],
+        "AgeDisambiguatedCharacters": [
+          "BOY"
+        ],
+        "DiagnosticWarnings": [
+          "8 monologue turn(s) exceed 35 words without action line splits.",
+          "Detected 1 age-qualified character header(s) (e.g. BOY).",
+          "No explicit music/sound design cues detected in screenplay."
+        ]
+      },
+      "AvgAdaptationFidelity": 9,
+      "AvgCharacterDisambiguation": 8.5,
+      "AvgAiVideoDirectibility": 8.5,
+      "AvgDramaticPacing": 8.2,
+      "AvgDialogueAuthenticity": 8.8,
+      "AvgSoundDesignMusic": 5.5,
+      "AvgOverallQualitative": 8.1,
+      "DisqualifyingFlags": []
+    },
+    {
+      "ModelId": "claude-sonnet-5",
+      "AnonymousLabel": "",
+      "CompositeScore": 85.6,
+      "IsGenerationFallback": false,
+      "GenerationFallbackReason": null,
+      "BordaPoints": 15,
+      "AvgJudgeRank": 2.5,
+      "SyntaxAudit": {
+        "OverallSyntaxScore": 94,
+        "FormatComplianceScore": 100,
+        "SceneBudgetScore": 100,
+        "DialoguePacingScore": 70,
+        "CharacterDisambiguationScore": 100,
+        "MusicSpecScore": 70,
+        "TotalSceneHeadings": 10,
+        "TotalDialogueBlocks": 39,
+        "AvgWordsPerDialogue": 20.9,
+        "MaxWordsInSingleDialogue": 87,
+        "LongMonologueCount": 8,
+        "GenericNumberedSpeakerCount": 0,
+        "CharacterNamesFound": [
+          "NARRATOR",
+          "THE RABBIT",
+          "THE SKIN HORSE",
+          "NANA",
+          "THE BOY",
+          "BRAMBLE",
+          "THE DOCTOR",
+          "THE FAIRY"
+        ],
+        "AgeDisambiguatedCharacters": [
+          "THE BOY"
+        ],
+        "DiagnosticWarnings": [
+          "8 monologue turn(s) exceed 35 words without action line splits.",
+          "Detected 1 age-qualified character header(s) (e.g. THE BOY).",
+          "No explicit music/sound design cues detected in screenplay."
+        ]
+      },
+      "AvgAdaptationFidelity": 6.2,
+      "AvgCharacterDisambiguation": 9,
+      "AvgAiVideoDirectibility": 9.2,
+      "AvgDramaticPacing": 8.8,
+      "AvgDialogueAuthenticity": 8.8,
+      "AvgSoundDesignMusic": 6,
+      "AvgOverallQualitative": 8,
+      "DisqualifyingFlags": [
+        "grok-4.5: Invented named character (Bramble)"
+      ]
+    },
+    {
+      "ModelId": "gpt-5.6-sol",
+      "AnonymousLabel": "",
+      "CompositeScore": 83.7,
+      "IsGenerationFallback": false,
+      "GenerationFallbackReason": null,
+      "BordaPoints": 12,
+      "AvgJudgeRank": 4,
+      "SyntaxAudit": {
+        "OverallSyntaxScore": 94.8,
+        "FormatComplianceScore": 100,
+        "SceneBudgetScore": 100,
+        "DialoguePacingScore": 85,
+        "CharacterDisambiguationScore": 100,
+        "MusicSpecScore": 70,
+        "TotalSceneHeadings": 12,
+        "TotalDialogueBlocks": 51,
+        "AvgWordsPerDialogue": 15,
+        "MaxWordsInSingleDialogue": 45,
+        "LongMonologueCount": 3,
+        "GenericNumberedSpeakerCount": 0,
+        "CharacterNamesFound": [
+          "NARRATOR",
+          "RABBIT",
+          "SKIN HORSE",
+          "BOY",
+          "NANA",
+          "BRACKEN",
+          "THISTLE",
+          "DOCTOR BELL",
+          "FAIRY"
+        ],
+        "AgeDisambiguatedCharacters": [
+          "BOY"
+        ],
+        "DiagnosticWarnings": [
+          "3 monologue turn(s) exceed 35 words without action line splits.",
+          "Detected 1 age-qualified character header(s) (e.g. BOY).",
+          "No explicit music/sound design cues detected in screenplay."
+        ]
+      },
+      "AvgAdaptationFidelity": 6,
+      "AvgCharacterDisambiguation": 8.5,
+      "AvgAiVideoDirectibility": 9,
+      "AvgDramaticPacing": 8.5,
+      "AvgDialogueAuthenticity": 8.2,
+      "AvgSoundDesignMusic": 5.5,
+      "AvgOverallQualitative": 7.6,
+      "DisqualifyingFlags": [
+        "grok-4.5: Invented named characters (Bracken, Thistle, Doctor Bell)",
+        "grok-4.5: Multiple invented dialogue expansions and plot flourishes"
+      ]
+    },
+    {
+      "ModelId": "gemini-3.6-flash",
+      "AnonymousLabel": "",
+      "CompositeScore": 80.4,
+      "IsGenerationFallback": false,
+      "GenerationFallbackReason": null,
+      "BordaPoints": 12,
+      "AvgJudgeRank": 4,
+      "SyntaxAudit": {
+        "OverallSyntaxScore": 94,
+        "FormatComplianceScore": 100,
+        "SceneBudgetScore": 100,
+        "DialoguePacingScore": 70,
+        "CharacterDisambiguationScore": 100,
+        "MusicSpecScore": 70,
+        "TotalSceneHeadings": 8,
+        "TotalDialogueBlocks": 43,
+        "AvgWordsPerDialogue": 17,
+        "MaxWordsInSingleDialogue": 56,
+        "LongMonologueCount": 6,
+        "GenericNumberedSpeakerCount": 0,
+        "CharacterNamesFound": [
+          "NARRATOR",
+          "MECHANICAL BOAT",
+          "VELVETEEN RABBIT",
+          "SKIN HORSE",
+          "NANA",
+          "BOY",
+          "WILD RABBIT",
+          "DOCTOR",
+          "NURSERY FAIRY"
+        ],
+        "AgeDisambiguatedCharacters": [
+          "BOY"
+        ],
+        "DiagnosticWarnings": [
+          "6 monologue turn(s) exceed 35 words without action line splits.",
+          "Detected 1 age-qualified character header(s) (e.g. BOY).",
+          "No explicit music/sound design cues detected in screenplay."
+        ]
+      },
+      "AvgAdaptationFidelity": 6.5,
+      "AvgCharacterDisambiguation": 8,
+      "AvgAiVideoDirectibility": 8,
+      "AvgDramaticPacing": 7.5,
+      "AvgDialogueAuthenticity": 7.5,
+      "AvgSoundDesignMusic": 5.2,
+      "AvgOverallQualitative": 7.1,
+      "DisqualifyingFlags": [
+        "grok-4.5: Invented named character (Master William)",
+        "grok-4.5: Invented toy dialogue and spoken tear monologue",
+        "grok-4.5: Re-ordered and partially dropped Christmas/Skin-Horse setup"
+      ]
+    },
+    {
+      "ModelId": "grok-4",
+      "AnonymousLabel": "",
+      "CompositeScore": 71,
+      "IsGenerationFallback": false,
+      "GenerationFallbackReason": null,
+      "BordaPoints": 6,
+      "AvgJudgeRank": 7,
+      "SyntaxAudit": {
+        "OverallSyntaxScore": 93.2,
+        "FormatComplianceScore": 95,
+        "SceneBudgetScore": 100,
+        "DialoguePacingScore": 85,
+        "CharacterDisambiguationScore": 100,
+        "MusicSpecScore": 70,
+        "TotalSceneHeadings": 9,
+        "TotalDialogueBlocks": 24,
+        "AvgWordsPerDialogue": 16.1,
+        "MaxWordsInSingleDialogue": 65,
+        "LongMonologueCount": 3,
+        "GenericNumberedSpeakerCount": 0,
+        "CharacterNamesFound": [
+          "RABBIT",
+          "SKIN HORSE",
+          "NANA",
+          "BOY",
+          "WILD RABBIT",
+          "DOCTOR",
+          "FAIRY"
+        ],
+        "AgeDisambiguatedCharacters": [
+          "BOY"
+        ],
+        "DiagnosticWarnings": [
+          "Missing \u0027FADE OUT.\u0027 or \u0027THE END\u0027 closing transition.",
+          "3 monologue turn(s) exceed 35 words without action line splits.",
+          "Detected 1 age-qualified character header(s) (e.g. BOY).",
+          "No explicit music/sound design cues detected in screenplay."
+        ]
+      },
+      "AvgAdaptationFidelity": 5.5,
+      "AvgCharacterDisambiguation": 6,
+      "AvgAiVideoDirectibility": 6.2,
+      "AvgDramaticPacing": 5.5,
+      "AvgDialogueAuthenticity": 6.8,
+      "AvgSoundDesignMusic": 4.2,
+      "AvgOverallQualitative": 5.6,
+      "DisqualifyingFlags": [
+        "grok-4.5: Major dropped beats (full Skin Horse speech, detailed illness, complete fairy sequence)",
+        "grok-4.5: Overly skeletal scenes that collapse multiple source events",
+        "grok-4: Insufficient scene detail and compressed beats reduce directibility"
+      ]
+    },
+    {
+      "ModelId": "gpt-4o-mini",
+      "AnonymousLabel": "",
+      "CompositeScore": 62.7,
+      "IsGenerationFallback": false,
+      "GenerationFallbackReason": null,
+      "BordaPoints": 4,
+      "AvgJudgeRank": 8,
+      "SyntaxAudit": {
+        "OverallSyntaxScore": 95.5,
+        "FormatComplianceScore": 100,
+        "SceneBudgetScore": 100,
+        "DialoguePacingScore": 100,
+        "CharacterDisambiguationScore": 100,
+        "MusicSpecScore": 70,
+        "TotalSceneHeadings": 10,
+        "TotalDialogueBlocks": 25,
+        "AvgWordsPerDialogue": 10.9,
+        "MaxWordsInSingleDialogue": 27,
+        "LongMonologueCount": 0,
+        "GenericNumberedSpeakerCount": 0,
+        "CharacterNamesFound": [
+          "BOY",
+          "NARRATOR",
+          "RABBIT",
+          "SKIN HORSE",
+          "WILD RABBIT",
+          "FAIRY"
+        ],
+        "AgeDisambiguatedCharacters": [
+          "BOY"
+        ],
+        "DiagnosticWarnings": [
+          "Detected 1 age-qualified character header(s) (e.g. BOY).",
+          "No explicit music/sound design cues detected in screenplay."
+        ]
+      },
+      "AvgAdaptationFidelity": 3.5,
+      "AvgCharacterDisambiguation": 4.5,
+      "AvgAiVideoDirectibility": 4.8,
+      "AvgDramaticPacing": 3.8,
+      "AvgDialogueAuthenticity": 5,
+      "AvgSoundDesignMusic": 3,
+      "AvgOverallQualitative": 4.1,
+      "DisqualifyingFlags": [
+        "grok-4.5: Major dropped narrative beats (illness details, doctor order, sack loneliness, full fairy transformation)",
+        "grok-4.5: Over-condensed structure that crams or skips source events",
+        "grok-4.5: Insufficient recurring visual character locks",
+        "grok-4: Major dropped beats and overly summarized scenes make it unusable for clip-per-beat format"
+      ]
+    },
+    {
+      "ModelId": "o3-mini",
+      "AnonymousLabel": "",
+      "CompositeScore": 60.3,
+      "IsGenerationFallback": false,
+      "GenerationFallbackReason": null,
+      "BordaPoints": 2,
+      "AvgJudgeRank": 9,
+      "SyntaxAudit": {
+        "OverallSyntaxScore": 94.5,
+        "FormatComplianceScore": 100,
+        "SceneBudgetScore": 100,
+        "DialoguePacingScore": 80,
+        "CharacterDisambiguationScore": 100,
+        "MusicSpecScore": 70,
+        "TotalSceneHeadings": 10,
+        "TotalDialogueBlocks": 0,
+        "AvgWordsPerDialogue": 0,
+        "MaxWordsInSingleDialogue": 0,
+        "LongMonologueCount": 0,
+        "GenericNumberedSpeakerCount": 0,
+        "CharacterNamesFound": [],
+        "AgeDisambiguatedCharacters": [],
+        "DiagnosticWarnings": [
+          "No explicit music/sound design cues detected in screenplay."
+        ]
+      },
+      "AvgAdaptationFidelity": 3.8,
+      "AvgCharacterDisambiguation": 4,
+      "AvgAiVideoDirectibility": 3.5,
+      "AvgDramaticPacing": 3.5,
+      "AvgDialogueAuthenticity": 4.5,
+      "AvgSoundDesignMusic": 3.2,
+      "AvgOverallQualitative": 3.8,
+      "DisqualifyingFlags": [
+        "grok-4.5: Jumbled chronology and wrong locations (wild rabbits appear in spring garden)",
+        "grok-4.5: Major invented/reordered events and incomplete transformation/ending",
+        "grok-4.5: Near-total drop of source coverage and character visual locks",
+        "grok-4: Inconsistent formatting, vague action lines, and structural issues"
+      ]
+    }
+  ],
+  "JudgeMatrix": {
+    "grok-4.5": {
+      "gpt-4o-mini": 3.83,
+      "gpt-5.6-terra": 8.08,
+      "grok-4.5": 8.58,
+      "gemini-3.6-flash": 5.42,
+      "grok-4": 4.42,
+      "gemini-2.5-flash": 7.83,
+      "o3-mini": 2.58,
+      "gpt-5.6-sol": 6.42,
+      "claude-sonnet-5": 6.83
+    },
+    "grok-4": {
+      "gemini-3.6-flash": 8.83,
+      "gpt-5.6-terra": 8.33,
+      "gpt-4o-mini": 4.33,
+      "claude-sonnet-5": 9.17,
+      "grok-4.5": 8.75,
+      "grok-4": 6.83,
+      "o3-mini": 4.92,
+      "gemini-2.5-flash": 8.33,
+      "gpt-5.6-sol": 8.83
+    }
+  },
+  "JudgeRankMatrix": {
+    "grok-4.5": {
+      "grok-4.5": 1,
+      "gpt-5.6-terra": 2,
+      "gemini-2.5-flash": 3,
+      "claude-sonnet-5": 4,
+      "gpt-5.6-sol": 5,
+      "gemini-3.6-flash": 6,
+      "grok-4": 7,
+      "gpt-4o-mini": 8,
+      "o3-mini": 9
+    },
+    "grok-4": {
+      "claude-sonnet-5": 1,
+      "gemini-3.6-flash": 2,
+      "gpt-5.6-sol": 3,
+      "grok-4.5": 4,
+      "gpt-5.6-terra": 5,
+      "gemini-2.5-flash": 6,
+      "grok-4": 7,
+      "gpt-4o-mini": 8,
+      "o3-mini": 9
+    }
+  },
+  "SelfBiasNotes": [
+    "\u26A0\uFE0F grok-4 rated its own screenplay 6.8/10 vs. a 4.4/10 average from 1 other judge(s) (\u002B2.4) \u2014 possible self-preference bias."
+  ],
+  "JudgeRationale": {
+    "grok-4.5": {
+      "gpt-4o-mini": "Severely abridged summary that omits core source sequences and reduces the story to thin narrator bridges; scenes are not broken into discrete 5-10s visual beats and character re-appearances lack locked descriptions, rendering it unusable for clip production.",
+      "gpt-5.6-terra": "Nearly complete, accurate translation of every major book beat and line of dialogue with concrete, single-location visual actions ideal for short AI clips; character looks are established early and held; only weakness is total absence of explicit music/sound-bed prompts.",
+      "grok-4.5": "Most exhaustive and precise adaptation: every source beat, sensory detail and line is preserved as discrete, camera-ready actions with consistent, lockable character descriptions (Boy fair hair/nightshirt, Nana starched apron, Rabbit progressive shabbiness); emotional arcs are crystal-clear for later music scoring even without explicit cues.",
+      "gemini-3.6-flash": "Invented proper names and dialogue plus structural reordering trigger severe fidelity penalty; remaining visuals are serviceable but the script cannot be green-lit as a faithful adaptation.",
+      "grok-4": "Bare-bones condensation that loses most of the book\u2019s emotional texture and visual specificity; too many multi-beat summaries and missing character locks make it unsuitable for per-clip AI generation.",
+      "gemini-2.5-flash": "Faithful, well-paced coverage of virtually all source incidents with clear visual staging and authentic dialogue; character descriptions are solid and recurring; only minor shortfall is lack of music/sound prompts and slightly less granular action lines than top contenders.",
+      "o3-mini": "Broken structure that misplaces key scenes, invents dialogue and truncates the climax; unusable as either faithful adaptation or clip-ready screenplay.",
+      "gpt-5.6-sol": "Visually rich and clip-friendly staging is undermined by severe fidelity violation through invented proper names and non-source dialogue; cannot be green-lit as an adaptation of the book.",
+      "claude-sonnet-5": "Otherwise strong visual storytelling and near-complete beat coverage are disqualified by the introduction of an invented proper name for a wild rabbit, triggering the mandated severe fidelity penalty."
+    },
+    "grok-4": {
+      "gemini-3.6-flash": "Highly faithful with precise visual beats and consistent character descriptions.",
+      "gpt-5.6-terra": "Strong fidelity and clean action lines but slightly less detailed than A.",
+      "gpt-4o-mini": "Too condensed, loses narrative depth and directibility.",
+      "claude-sonnet-5": "Exceptional visual specificity and pacing for short clips.",
+      "grok-4.5": "Excellent balance of fidelity and cinematic action lines.",
+      "grok-4": "Abbreviated structure weakens clip-ready pacing.",
+      "o3-mini": "Broken directibility and character clarity.",
+      "gemini-2.5-flash": "Solid fidelity with good visual beats.",
+      "gpt-5.6-sol": "Highly detailed and faithful with strong clip-friendly structure."
+    }
+  },
+  "JudgeSummaries": {
+    "grok-4.5": "Strongest: Screenplay C because it delivers the most exhaustive, visually precise and clip-ready translation of every source beat with locked character descriptions. Weakest: Screenplay G because it jumbles chronology, invents events and collapses the narrative into an unusable fragment.",
+    "grok-4": "Strongest: Screenplay D because its painterly visual specificity and precise single-clip action lines make it ideal for the short-video constraint. Weakest: Screenplay G because inconsistent formatting and vague unfilmable descriptions render it unusable."
+  }
+}

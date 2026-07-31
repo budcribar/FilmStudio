@@ -1,0 +1,407 @@
+{
+  "BookPath": "C:\\Users\\budcr\\source\\repos\\claude\\PageToMovie\\books\\The_Call_of_the_Wild.txt",
+  "Timestamp": "2026-07-31 06:58:09 UTC",
+  "IsMockRun": false,
+  "Leaderboard": [
+    {
+      "ModelId": "gpt-5.6-sol",
+      "AnonymousLabel": "",
+      "CompositeScore": 89.7,
+      "IsGenerationFallback": false,
+      "GenerationFallbackReason": null,
+      "BordaPoints": 13,
+      "AvgJudgeRank": 1.5,
+      "SyntaxAudit": {
+        "OverallSyntaxScore": 93.5,
+        "FormatComplianceScore": 95,
+        "SceneBudgetScore": 100,
+        "DialoguePacingScore": 90,
+        "CharacterDisambiguationScore": 100,
+        "MusicSpecScore": 70,
+        "TotalSceneHeadings": 18,
+        "TotalDialogueBlocks": 45,
+        "AvgWordsPerDialogue": 13.1,
+        "MaxWordsInSingleDialogue": 44,
+        "LongMonologueCount": 2,
+        "GenericNumberedSpeakerCount": 0,
+        "CharacterNamesFound": [
+          "NARRATOR",
+          "NED",
+          "MANUEL",
+          "MORGAN",
+          "PERRAULT",
+          "FRANCOIS",
+          "HAL",
+          "MERCEDES",
+          "JOHN THORNTON",
+          "MATTHEWSON",
+          "JIM O\u0027BRIEN",
+          "PETE",
+          "HANS"
+        ],
+        "AgeDisambiguatedCharacters": [],
+        "DiagnosticWarnings": [
+          "Missing \u0027FADE OUT.\u0027 or \u0027THE END\u0027 closing transition.",
+          "2 monologue turn(s) exceed 35 words without action line splits.",
+          "No explicit music/sound design cues detected in screenplay."
+        ]
+      },
+      "AvgAdaptationFidelity": 8.8,
+      "AvgCharacterDisambiguation": 9.5,
+      "AvgAiVideoDirectibility": 8.8,
+      "AvgDramaticPacing": 8.5,
+      "AvgDialogueAuthenticity": 9,
+      "AvgSoundDesignMusic": 7.8,
+      "AvgOverallQualitative": 8.7,
+      "DisqualifyingFlags": []
+    },
+    {
+      "ModelId": "gpt-5.6-terra",
+      "AnonymousLabel": "",
+      "CompositeScore": 89.5,
+      "IsGenerationFallback": false,
+      "GenerationFallbackReason": null,
+      "BordaPoints": 13,
+      "AvgJudgeRank": 1.5,
+      "SyntaxAudit": {
+        "OverallSyntaxScore": 96.8,
+        "FormatComplianceScore": 100,
+        "SceneBudgetScore": 100,
+        "DialoguePacingScore": 95,
+        "CharacterDisambiguationScore": 100,
+        "MusicSpecScore": 80,
+        "TotalSceneHeadings": 18,
+        "TotalDialogueBlocks": 38,
+        "AvgWordsPerDialogue": 12.6,
+        "MaxWordsInSingleDialogue": 42,
+        "LongMonologueCount": 1,
+        "GenericNumberedSpeakerCount": 0,
+        "CharacterNamesFound": [
+          "NARRATOR",
+          "HARRIS",
+          "MANUEL",
+          "RYDER",
+          "FRANCOIS",
+          "PERRAULT",
+          "MERCEDES",
+          "HAL",
+          "THORNTON",
+          "MATTHEWSON"
+        ],
+        "AgeDisambiguatedCharacters": [],
+        "DiagnosticWarnings": [
+          "1 monologue turn(s) exceed 35 words without action line splits."
+        ]
+      },
+      "AvgAdaptationFidelity": 9,
+      "AvgCharacterDisambiguation": 9,
+      "AvgAiVideoDirectibility": 8.5,
+      "AvgDramaticPacing": 8.2,
+      "AvgDialogueAuthenticity": 8.8,
+      "AvgSoundDesignMusic": 7.2,
+      "AvgOverallQualitative": 8.5,
+      "DisqualifyingFlags": []
+    },
+    {
+      "ModelId": "gemini-3.6-flash",
+      "AnonymousLabel": "",
+      "CompositeScore": 87.1,
+      "IsGenerationFallback": false,
+      "GenerationFallbackReason": null,
+      "BordaPoints": 10,
+      "AvgJudgeRank": 3,
+      "SyntaxAudit": {
+        "OverallSyntaxScore": 94,
+        "FormatComplianceScore": 100,
+        "SceneBudgetScore": 100,
+        "DialoguePacingScore": 70,
+        "CharacterDisambiguationScore": 100,
+        "MusicSpecScore": 70,
+        "TotalSceneHeadings": 16,
+        "TotalDialogueBlocks": 35,
+        "AvgWordsPerDialogue": 17,
+        "MaxWordsInSingleDialogue": 68,
+        "LongMonologueCount": 6,
+        "GenericNumberedSpeakerCount": 0,
+        "CharacterNamesFound": [
+          "NARRATOR",
+          "STRANGER",
+          "MANUEL",
+          "MAN IN RED SWEATER",
+          "PERRAULT",
+          "FRANCOIS",
+          "HAL",
+          "JOHN THORNTON",
+          "MATTHEWSON",
+          "JIM O\u0027BRIEN",
+          "SKOOKUM KING",
+          "YEEHAT HUNTER"
+        ],
+        "AgeDisambiguatedCharacters": [],
+        "DiagnosticWarnings": [
+          "6 monologue turn(s) exceed 35 words without action line splits.",
+          "No explicit music/sound design cues detected in screenplay."
+        ]
+      },
+      "AvgAdaptationFidelity": 8.2,
+      "AvgCharacterDisambiguation": 8.8,
+      "AvgAiVideoDirectibility": 8.2,
+      "AvgDramaticPacing": 8,
+      "AvgDialogueAuthenticity": 8.5,
+      "AvgSoundDesignMusic": 7.8,
+      "AvgOverallQualitative": 8.2,
+      "DisqualifyingFlags": []
+    },
+    {
+      "ModelId": "gemini-3.1-pro-preview",
+      "AnonymousLabel": "",
+      "CompositeScore": 77.6,
+      "IsGenerationFallback": false,
+      "GenerationFallbackReason": null,
+      "BordaPoints": 8,
+      "AvgJudgeRank": 4,
+      "SyntaxAudit": {
+        "OverallSyntaxScore": 92.8,
+        "FormatComplianceScore": 95,
+        "SceneBudgetScore": 100,
+        "DialoguePacingScore": 75,
+        "CharacterDisambiguationScore": 100,
+        "MusicSpecScore": 70,
+        "TotalSceneHeadings": 16,
+        "TotalDialogueBlocks": 33,
+        "AvgWordsPerDialogue": 20.3,
+        "MaxWordsInSingleDialogue": 56,
+        "LongMonologueCount": 5,
+        "GenericNumberedSpeakerCount": 0,
+        "CharacterNamesFound": [
+          "NARRATOR",
+          "MAN IN RED SWEATER",
+          "FRANCOIS",
+          "PERRAULT",
+          "HAL",
+          "MERCEDES",
+          "THORNTON"
+        ],
+        "AgeDisambiguatedCharacters": [],
+        "DiagnosticWarnings": [
+          "Missing \u0027FADE OUT.\u0027 or \u0027THE END\u0027 closing transition.",
+          "5 monologue turn(s) exceed 35 words without action line splits.",
+          "No explicit music/sound design cues detected in screenplay."
+        ]
+      },
+      "AvgAdaptationFidelity": 6.8,
+      "AvgCharacterDisambiguation": 7,
+      "AvgAiVideoDirectibility": 6.8,
+      "AvgDramaticPacing": 6.5,
+      "AvgDialogueAuthenticity": 7.8,
+      "AvgSoundDesignMusic": 5.8,
+      "AvgOverallQualitative": 6.8,
+      "DisqualifyingFlags": [
+        "grok-4.5: Invented recurring snowy-ridge narrator frame substitutes for source texture",
+        "grok-4.5: Omits major sequences (Dave\u0027s death, boat rescue, mail-train suffering, moose hunt)"
+      ]
+    },
+    {
+      "ModelId": "grok-4.20-reasoning",
+      "AnonymousLabel": "",
+      "CompositeScore": 72.2,
+      "IsGenerationFallback": false,
+      "GenerationFallbackReason": null,
+      "BordaPoints": 6,
+      "AvgJudgeRank": 5,
+      "SyntaxAudit": {
+        "OverallSyntaxScore": 93.5,
+        "FormatComplianceScore": 95,
+        "SceneBudgetScore": 100,
+        "DialoguePacingScore": 90,
+        "CharacterDisambiguationScore": 100,
+        "MusicSpecScore": 70,
+        "TotalSceneHeadings": 19,
+        "TotalDialogueBlocks": 26,
+        "AvgWordsPerDialogue": 17.3,
+        "MaxWordsInSingleDialogue": 52,
+        "LongMonologueCount": 2,
+        "GenericNumberedSpeakerCount": 0,
+        "CharacterNamesFound": [
+          "NARRATOR",
+          "STRANGER",
+          "MANUEL",
+          "SALOON-KEEPER",
+          "MAN IN THE RED SWEATER",
+          "THORNTON"
+        ],
+        "AgeDisambiguatedCharacters": [],
+        "DiagnosticWarnings": [
+          "Missing \u0027FADE OUT.\u0027 or \u0027THE END\u0027 closing transition.",
+          "2 monologue turn(s) exceed 35 words without action line splits.",
+          "No explicit music/sound design cues detected in screenplay."
+        ]
+      },
+      "AvgAdaptationFidelity": 5.5,
+      "AvgCharacterDisambiguation": 6,
+      "AvgAiVideoDirectibility": 5.5,
+      "AvgDramaticPacing": 5.2,
+      "AvgDialogueAuthenticity": 7.2,
+      "AvgSoundDesignMusic": 5.2,
+      "AvgOverallQualitative": 5.8,
+      "DisqualifyingFlags": [
+        "grok-4.5: Heavy invented cabin-narrator framing device that dominates runtime and is absent from the source",
+        "grok-4.5: Drops multiple major book beats (Dave\u0027s death, Forty-Mile boat rescue, detailed mail-train decline, moose)",
+        "grok-4.5: Over-reliance on summary V.O. makes scenes unusable for 5-10s clip breakdown",
+        "grok-4: Heavy reliance on static cabin narrator frame reduces directibility and visual momentum for short clips",
+        "grok-4: Some scenes compress too many beats into single headings"
+      ]
+    },
+    {
+      "ModelId": "gpt-5.6-luna",
+      "AnonymousLabel": "",
+      "CompositeScore": 32.2,
+      "IsGenerationFallback": true,
+      "GenerationFallbackReason": "Chat HTTP 429: {\n    \u0022error\u0022: {\n        \u0022message\u0022: \u0022You have no credits remaining. Add credits to continue using the API at https://platform.openai.com/settings/organization/billing/.\u0022,\n        \u0022type\u0022: \u0022insufficient_quota\u0022,\n        \u0022param\u0022: null,\n        \u0022code\u0022: \u0022credit_balance_exhausted\u0022\n    }\n}\n",
+      "BordaPoints": 0,
+      "AvgJudgeRank": 3.5,
+      "SyntaxAudit": {
+        "OverallSyntaxScore": 80.5,
+        "FormatComplianceScore": 95,
+        "SceneBudgetScore": 50,
+        "DialoguePacingScore": 50,
+        "CharacterDisambiguationScore": 100,
+        "MusicSpecScore": 80,
+        "TotalSceneHeadings": 343,
+        "TotalDialogueBlocks": 343,
+        "AvgWordsPerDialogue": 55.3,
+        "MaxWordsInSingleDialogue": 82,
+        "LongMonologueCount": 249,
+        "GenericNumberedSpeakerCount": 0,
+        "CharacterNamesFound": [
+          "NARRATOR"
+        ],
+        "AgeDisambiguatedCharacters": [],
+        "DiagnosticWarnings": [
+          "Missing \u0027FADE OUT.\u0027 or \u0027THE END\u0027 closing transition.",
+          "Excessive scene count (343 scenes); high micro-scene density inflates video gen budget.",
+          "High average dialogue length (55.3 words/turn); speech beats risk clip overrun.",
+          "249 monologue turn(s) exceed 35 words without action line splits."
+        ]
+      },
+      "AvgAdaptationFidelity": 0,
+      "AvgCharacterDisambiguation": 0,
+      "AvgAiVideoDirectibility": 0,
+      "AvgDramaticPacing": 0,
+      "AvgDialogueAuthenticity": 0,
+      "AvgSoundDesignMusic": 0,
+      "AvgOverallQualitative": 0,
+      "DisqualifyingFlags": []
+    },
+    {
+      "ModelId": "claude-opus-5",
+      "AnonymousLabel": "",
+      "CompositeScore": 32.2,
+      "IsGenerationFallback": true,
+      "GenerationFallbackReason": "Anthropic messages HTTP 400: {\u0022type\u0022:\u0022error\u0022,\u0022error\u0022:{\u0022type\u0022:\u0022invalid_request_error\u0022,\u0022message\u0022:\u0022Your credit balance is too low to access the Anthropic API. Please go to Plans \u0026 Billing to upgrade or purchase credits.\u0022},\u0022request_id\u0022:\u0022req_011CdZhFnPrPnva4vxEFxZYn\u0022}",
+      "BordaPoints": 0,
+      "AvgJudgeRank": 3.5,
+      "SyntaxAudit": {
+        "OverallSyntaxScore": 80.5,
+        "FormatComplianceScore": 95,
+        "SceneBudgetScore": 50,
+        "DialoguePacingScore": 50,
+        "CharacterDisambiguationScore": 100,
+        "MusicSpecScore": 80,
+        "TotalSceneHeadings": 343,
+        "TotalDialogueBlocks": 343,
+        "AvgWordsPerDialogue": 55.3,
+        "MaxWordsInSingleDialogue": 82,
+        "LongMonologueCount": 249,
+        "GenericNumberedSpeakerCount": 0,
+        "CharacterNamesFound": [
+          "NARRATOR"
+        ],
+        "AgeDisambiguatedCharacters": [],
+        "DiagnosticWarnings": [
+          "Missing \u0027FADE OUT.\u0027 or \u0027THE END\u0027 closing transition.",
+          "Excessive scene count (343 scenes); high micro-scene density inflates video gen budget.",
+          "High average dialogue length (55.3 words/turn); speech beats risk clip overrun.",
+          "249 monologue turn(s) exceed 35 words without action line splits."
+        ]
+      },
+      "AvgAdaptationFidelity": 0,
+      "AvgCharacterDisambiguation": 0,
+      "AvgAiVideoDirectibility": 0,
+      "AvgDramaticPacing": 0,
+      "AvgDialogueAuthenticity": 0,
+      "AvgSoundDesignMusic": 0,
+      "AvgOverallQualitative": 0,
+      "DisqualifyingFlags": []
+    }
+  ],
+  "JudgeMatrix": {
+    "grok-4.5": {
+      "grok-4.20-reasoning": 5.17,
+      "gpt-5.6-terra": 8.67,
+      "gemini-3.1-pro-preview": 6.17,
+      "gemini-3.6-flash": 8.33,
+      "gpt-5.6-sol": 8.67
+    },
+    "grok-4": {
+      "gemini-3.6-flash": 8.17,
+      "gpt-5.6-sol": 8.75,
+      "grok-4.20-reasoning": 6.42,
+      "gpt-5.6-terra": 8.25,
+      "gemini-3.1-pro-preview": 7.33
+    }
+  },
+  "JudgeRankMatrix": {
+    "grok-4.5": {
+      "gpt-5.6-terra": 1,
+      "gpt-5.6-sol": 2,
+      "gemini-3.6-flash": 3,
+      "gemini-3.1-pro-preview": 4,
+      "grok-4.20-reasoning": 5
+    },
+    "grok-4": {
+      "gpt-5.6-sol": 1,
+      "gpt-5.6-terra": 2,
+      "gemini-3.6-flash": 3,
+      "gemini-3.1-pro-preview": 4,
+      "grok-4.20-reasoning": 5
+    }
+  },
+  "SelfBiasNotes": [],
+  "JudgeRationale": {
+    "grok-4.5": {
+      "grok-4.20-reasoning": "Fidelity collapses under an invented prospector-cabin frame and wholesale omission of key sequences; character looks are introduced sparsely and rarely re-locked; action lines frequently summarize weeks or multi-location arcs instead of concrete single-clip visuals; pacing feels rushed and interrupted by frame cutaways; dialogue retains a few iconic lines but is thin; almost no usable sound-bed or music cues.",
+      "gpt-5.6-terra": "Highest fidelity: covers Curly\u0027s death, full Spitz fight, Dave\u0027s heartbreaking end, Hal/Charles/Mercedes decline, Thornton rescue plus ice collapse, Forty-Mile boat rescue, thousand-pound pull, wolf-brother run, Yeehat massacre and pack joining with almost no invented plot. Character looks (Buck\u0027s blaze, Ryder\u0027s red sweater, Thornton\u0027s wool/fur, etc.) are locked early and stay consistent. Action is concrete, single-location, camera-ready for short clips. Pacing escalates cleanly. Dialogue keeps book wording and dialect. Sound is implied well via howls, shots, water and clubs but lacks explicit BGM direction.",
+      "gemini-3.1-pro-preview": "Frame device and heavy compression drop essential middle and late beats; character descriptions exist but are thin and not consistently re-asserted; several scenes remain filmable (Spitz fight, pull) yet many collapse into V.O.; pacing is uneven; dialogue preserves key lines; sound design is nearly absent.",
+      "gemini-3.6-flash": "Solid coverage of core arc (kidnap, club, Curly, Spitz death, leadership, Hal collapse, Thornton, pull, Yeehats, pack) with only secondary omissions (Dave, boat). Character visuals are locked and stable. Action lines are highly directable with strong onomatopoeia (CRACK, SHRIEK) ideal for short clips. Pacing maintains momentum. Dialogue stays close to book. Richest embedded SFX of the set, though still light on explicit BGM mood.",
+      "gpt-5.6-sol": "Strong fidelity and the best character lock (detailed coat markings, wardrobe, medium note) that never drifts; includes the moose hunt and full Hal decline. Misses the boat rescue and Dave\u0027s death, slightly lowering coverage versus B. Action is precise and clip-ready. Pacing is excellent. Dialogue is authentic. Sound beds are well implied by howls, arrows, ice and aurora imagery."
+    },
+    "grok-4": {
+      "gemini-3.6-flash": "Strong fidelity and character consistency with vivid visuals, but some action blocks are too dense for 5-10s clips and sound design is minimal.",
+      "gpt-5.6-sol": "Excellent balance of book fidelity, consistent character visuals, and filmable micro-beats with natural pacing across the arc.",
+      "grok-4.20-reasoning": "Uses a framing device that limits visual action and pacing, with less consistent character descriptions and weaker clip-friendly structure.",
+      "gpt-5.6-terra": "Solid fidelity and visuals with good micro-beat structure, though slightly less polished transitions than the top entry.",
+      "gemini-3.1-pro-preview": "Good core story coverage but weaker on consistent character visuals and some action lines that bundle multiple events."
+    }
+  },
+  "JudgeSummaries": {
+    "grok-4.5": "Strongest: Screenplay B because it alone covers the full spine including Dave\u0027s death and the Forty-Mile boat rescue while remaining tightly directable and faithful. Weakest: Screenplay A because its invented cabin-narrator frame and wholesale summary of essential sequences make it unusable for short-clip production.",
+    "grok-4": "Strongest: Screenplay B because it best balances high fidelity, consistent character visuals, and clip-friendly micro-beats without any structural weaknesses. Weakest: Screenplay C because its static narrator frame and compressed scenes make it least suitable for short AI video clips."
+  },
+  "JudgePromptSuggestions": {
+    "grok-4.5": {
+      "grok-4.20-reasoning": "Add a hard rule that any on-camera narrator frame must be limited to at most three brief cutaways total and cannot replace dramatization of the book\u0027s primary turning-point sequence; require every major source location-turn to appear as its own visual scene rather than V.O. summary.",
+      "gpt-5.6-terra": "Require optional trailing sound-design notes after key action lines (e.g. \u0027SFX: bone crunch, pack silence\u0027 or \u0027MUSIC: low primordial drone\u0027) so every scene carries an explicit audio bed for AI clip generation.",
+      "gemini-3.1-pro-preview": "Mandate that the adaptation must dramatize, not narrate, every primary turning point of the source in its own concrete scene heading; limit any framing device to a single opening and single closing beat.",
+      "gemini-3.6-flash": "Add a requirement that every scene heading be followed by at least one concrete, single-clip visual action before any V.O., and that major emotional peaks interleave at least two distinct micro-beats of sound or image.",
+      "gpt-5.6-sol": "Explicitly require that the adaptation hit every major emotional set-piece of the source (rescue, death of a teammate, climactic wager, final call) as dramatized scenes rather than allowing any one of them to be dropped for runtime."
+    },
+    "grok-4": {
+      "gemini-3.6-flash": "Add an explicit rule that every action line must describe at most one primary visual event or micro-beat observable in a single 5-10 second clip.",
+      "gpt-5.6-sol": "Add a rule requiring at least one concrete sound or music cue per scene heading to support the sound design dimension.",
+      "grok-4.20-reasoning": "Add an explicit rule that any on-camera narrator frame must be limited to at most three cutbacks total and must include a visual action beat in each return.",
+      "gpt-5.6-terra": "Add a rule requiring every scene to end with a clear visual or sound transition cue to the next heading.",
+      "gemini-3.1-pro-preview": "Add an explicit rule that character descriptions must include at least one stable wardrobe or marking detail that is restated on every reappearance."
+    }
+  }
+}

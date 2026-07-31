@@ -2021,11 +2021,12 @@ app.MapGet("/api/projects", async (
     if (AuthGate.RequireLogin(user, opts) is { } denied)
         return denied;
     var all = await store.ListProjectsAsync(ct);
+    // Only the true owner (or an admin) sees a project in their list. Previously this also
+    // matched blank/"local" OwnerUserId for *any* signed-in user, which leaked unowned/legacy
+    // and seed-demo projects into every account's project list.
     var list = user.IsAdmin
         ? all
         : all.Where(p =>
-            string.IsNullOrWhiteSpace(p.OwnerUserId) ||
-            string.Equals(p.OwnerUserId, "local", StringComparison.OrdinalIgnoreCase) ||
             string.Equals(p.OwnerUserId, user.UserId, StringComparison.OrdinalIgnoreCase)).ToList();
 
     var activeId = store.ActiveProjectId;

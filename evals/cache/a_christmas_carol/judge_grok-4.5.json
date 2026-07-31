@@ -1,0 +1,150 @@
+{
+  "evaluations": [
+    {
+      "screenplayId": "Screenplay A",
+      "adaptationFidelity": 2,
+      "characterDisambiguation": 3.5,
+      "aiVideoDirectibility": 5,
+      "dramaticPacing": 4,
+      "dialogueAuthenticity": 4,
+      "soundDesignMusic": 2,
+      "overallQualitativeScore": 3.42,
+      "productionReady": false,
+      "disqualifyingIssues": [
+        "Severe compression and omission of major source beats (charity collectors, Fezziwig, Ignorance/Want, full Future sequences, nephew dinner)",
+        "Invented simplified ending and missing character introductions",
+        "No usable sound/music direction"
+      ],
+      "rationale": "Bare-bones outline that drops most of Dickens\u0027 structure and texture; characters lack locked visual descriptions and scenes are too thin for reliable 5-10s clip generation."
+    },
+    {
+      "screenplayId": "Screenplay B",
+      "adaptationFidelity": 9,
+      "characterDisambiguation": 8.5,
+      "aiVideoDirectibility": 8.5,
+      "dramaticPacing": 8.5,
+      "dialogueAuthenticity": 9,
+      "soundDesignMusic": 5.5,
+      "overallQualitativeScore": 8.17,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "High-fidelity coverage of all major staves with concrete, single-location action lines and consistent period wardrobe/age tags; dialogue is performable and clip-length; only minor gap is sparse explicit music beds."
+    },
+    {
+      "screenplayId": "Screenplay C",
+      "adaptationFidelity": 9.5,
+      "characterDisambiguation": 8,
+      "aiVideoDirectibility": 8,
+      "dramaticPacing": 8,
+      "dialogueAuthenticity": 9,
+      "soundDesignMusic": 6,
+      "overallQualitativeScore": 8.08,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Closest to full source text with excellent dialogue authenticity and clear visual beats; occasional multi-beat density and lighter music prompts keep it just behind B for pure AI-clip directibility."
+    },
+    {
+      "screenplayId": "Screenplay D",
+      "adaptationFidelity": 8.5,
+      "characterDisambiguation": 8,
+      "aiVideoDirectibility": 8,
+      "dramaticPacing": 8,
+      "dialogueAuthenticity": 8.5,
+      "soundDesignMusic": 5.5,
+      "overallQualitativeScore": 7.75,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Solid faithful adaptation with good age/wardrobe consistency and filmable scenes; slightly less exhaustive than B/C and thin on sound design."
+    },
+    {
+      "screenplayId": "Screenplay E",
+      "adaptationFidelity": 6,
+      "characterDisambiguation": 5.5,
+      "aiVideoDirectibility": 6,
+      "dramaticPacing": 5.5,
+      "dialogueAuthenticity": 6.5,
+      "soundDesignMusic": 3.5,
+      "overallQualitativeScore": 5.5,
+      "productionReady": false,
+      "disqualifyingIssues": [
+        "Compressed Future and Present sequences omit key emotional beats",
+        "Inconsistent or missing character visual locks",
+        "Weak sound design"
+      ],
+      "rationale": "Serviceable skeleton that retains core dialogue but loses texture, secondary characters and clip-ready specificity; not green-light ready without expansion."
+    },
+    {
+      "screenplayId": "Screenplay F",
+      "adaptationFidelity": 9.5,
+      "characterDisambiguation": 8.5,
+      "aiVideoDirectibility": 7.5,
+      "dramaticPacing": 7,
+      "dialogueAuthenticity": 9,
+      "soundDesignMusic": 5,
+      "overallQualitativeScore": 7.75,
+      "productionReady": false,
+      "disqualifyingIssues": [
+        "Over-dense scenes and heavy narration create multi-action beats unsuitable for 5-10s clips without heavy re-breaking"
+      ],
+      "rationale": "Near-novelistic fidelity and rich dialogue, but many scenes pack too many actions/locations for the short-clip constraint, harming directibility and pacing."
+    },
+    {
+      "screenplayId": "Screenplay G",
+      "adaptationFidelity": 1.5,
+      "characterDisambiguation": 2.5,
+      "aiVideoDirectibility": 3,
+      "dramaticPacing": 2.5,
+      "dialogueAuthenticity": 2,
+      "soundDesignMusic": 1.5,
+      "overallQualitativeScore": 2.17,
+      "productionReady": false,
+      "disqualifyingIssues": [
+        "Major invented/paraphrased plot and dialogue",
+        "Missing almost all canonical beats and characters",
+        "No usable visual or sound direction"
+      ],
+      "rationale": "Essentially a different, severely truncated story with modernized/invented lines; unusable as an adaptation of the source."
+    },
+    {
+      "screenplayId": "Screenplay H",
+      "adaptationFidelity": 8,
+      "characterDisambiguation": 8.5,
+      "aiVideoDirectibility": 8.5,
+      "dramaticPacing": 8,
+      "dialogueAuthenticity": 8,
+      "soundDesignMusic": 5,
+      "overallQualitativeScore": 7.67,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Clean, production-minded compression with strong visual locks and single-clip action lines; slightly less complete than B/C but highly directable."
+    },
+    {
+      "screenplayId": "Screenplay I",
+      "adaptationFidelity": 8.5,
+      "characterDisambiguation": 8,
+      "aiVideoDirectibility": 8,
+      "dramaticPacing": 8,
+      "dialogueAuthenticity": 8.5,
+      "soundDesignMusic": 5.5,
+      "overallQualitativeScore": 7.75,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Balanced, faithful mid-length adaptation with clear character intros and filmable beats; good all-rounder missing only richer music beds and a few minor source details."
+    }
+  ],
+  "forcedRanking": [
+    "Screenplay B",
+    "Screenplay C",
+    "Screenplay D",
+    "Screenplay I",
+    "Screenplay H",
+    "Screenplay F",
+    "Screenplay E",
+    "Screenplay A",
+    "Screenplay G"
+  ],
+  "judgeSummaryNotes": "Strongest: Screenplay B because it delivers the highest usable fidelity-to-directibility balance with consistent character locks, clip-length dialogue and complete stave coverage. Weakest: Screenplay G because it invents almost the entire narrative and dialogue, rendering it unusable as an adaptation of the source.",
+  "isMock": false,
+  "rubricVersion": "2-calibrated-selfbias-productionready",
+  "screenplaysHash": "397AB6C94539642F6BF01BD2C84A6B25267CF0D129917379042F8D99A224C0E3"
+}

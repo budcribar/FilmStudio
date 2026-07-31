@@ -53,14 +53,31 @@ public sealed class GeminiChatClient : IChatClient, IVisionClient, IGeminiVideoA
     /// </summary>
     public static string? LastResolvedModel => _lastResolvedModel.Value;
 
+    /// <summary>Maps the provider-neutral <c>reasoningEffort</c> scale to Gemini's
+    /// <c>thinkingConfig.thinkingLevel</c>. Confirmed live: "high" is Gemini's ceiling — "max"/
+    /// "xhigh"/"maximum" all 400. Falls through to "high" for anything at or above it.</summary>
+    private static string? MapThinkingLevel(string? effort) => effort?.Trim().ToLowerInvariant() switch
+    {
+        null or "" => null,
+        "low" => "low",
+        "medium" => "medium",
+        _ => "high",
+    };
+
     public async Task<string> CompleteAsync(
         string systemPrompt,
         string userPrompt,
         string model = "gemini-2.5-flash",
         double temperature = 0.2,
         CancellationToken ct = default,
-        string? mode = null)
+        string? mode = null,
+        string? reasoningEffort = null)
     {
+        var generationConfig = new Dictionary<string, object?> { ["temperature"] = temperature };
+        var thinkingLevel = MapThinkingLevel(reasoningEffort);
+        if (thinkingLevel is not null)
+            generationConfig["thinkingConfig"] = new Dictionary<string, object?> { ["thinkingLevel"] = thinkingLevel };
+
         var payload = new Dictionary<string, object?>
         {
             ["system_instruction"] = new Dictionary<string, object?>
@@ -75,7 +92,7 @@ public sealed class GeminiChatClient : IChatClient, IVisionClient, IGeminiVideoA
                     ["parts"] = new object[] { new Dictionary<string, object?> { ["text"] = userPrompt } },
                 },
             },
-            ["generationConfig"] = new Dictionary<string, object?> { ["temperature"] = temperature },
+            ["generationConfig"] = generationConfig,
         };
         return await SendAsync(
             payload, model, "chat", mode,
@@ -189,6 +206,22 @@ public sealed class GeminiChatClient : IChatClient, IVisionClient, IGeminiVideoA
                 {
                     _log.LogWarning("Gemini model {Model} returned 404 — retrying with gemini-2.5-flash", targetModel);
                     return await SendAsync(payload, "gemini-2.5-flash", kind, mode, promptForLog, userPromptForLog, promptChars, ct).ConfigureAwait(false);
+                }
+
+                // Not every Gemini model supports thinkingConfig (confirmed live: gemini-2.5-flash
+                // 400s with "Thinking level is not supported for this model"). Self-heal by
+                // stripping it and retrying rather than maintaining a model-capability list.
+                if (resp.StatusCode == System.Net.HttpStatusCode.BadRequest
+                    && payload.TryGetValue("generationConfig", out var gc)
+                    && gc is Dictionary<string, object?> genConfig
+                    && genConfig.ContainsKey("thinkingConfig")
+                    && body.Contains("hinking", StringComparison.OrdinalIgnoreCase))
+                {
+                    var retryPayload = new Dictionary<string, object?>(payload);
+                    var retryGenConfig = new Dictionary<string, object?>(genConfig);
+                    retryGenConfig.Remove("thinkingConfig");
+                    retryPayload["generationConfig"] = retryGenConfig;
+                    return await SendAsync(retryPayload, model, kind, mode, promptForLog, userPromptForLog, promptChars, ct).ConfigureAwait(false);
                 }
 
                 await _telemetry.LogApiCallAsync(new ApiCallTelemetry

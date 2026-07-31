@@ -1,0 +1,431 @@
+{
+  "BookPath": "C:\\Users\\budcr\\source\\repos\\claude\\PageToMovie\\books\\The_Velveteen_Rabbit.txt",
+  "Timestamp": "2026-07-31 06:06:41 UTC",
+  "IsMockRun": false,
+  "Leaderboard": [
+    {
+      "ModelId": "gpt-5.6-sol",
+      "AnonymousLabel": "",
+      "CompositeScore": 90.4,
+      "IsGenerationFallback": false,
+      "GenerationFallbackReason": null,
+      "BordaPoints": 14,
+      "AvgJudgeRank": 1,
+      "SyntaxAudit": {
+        "OverallSyntaxScore": 94.8,
+        "FormatComplianceScore": 100,
+        "SceneBudgetScore": 100,
+        "DialoguePacingScore": 85,
+        "CharacterDisambiguationScore": 100,
+        "MusicSpecScore": 70,
+        "TotalSceneHeadings": 13,
+        "TotalDialogueBlocks": 46,
+        "AvgWordsPerDialogue": 15.4,
+        "MaxWordsInSingleDialogue": 52,
+        "LongMonologueCount": 3,
+        "GenericNumberedSpeakerCount": 0,
+        "CharacterNamesFound": [
+          "NARRATOR",
+          "VELVETEEN RABBIT",
+          "SKIN HORSE",
+          "NANA",
+          "THE BOY",
+          "BRACKEN",
+          "DR. HARPER",
+          "NURSERY MAGIC FAIRY"
+        ],
+        "AgeDisambiguatedCharacters": [
+          "THE BOY"
+        ],
+        "DiagnosticWarnings": [
+          "3 monologue turn(s) exceed 35 words without action line splits.",
+          "Detected 1 age-qualified character header(s) (e.g. THE BOY).",
+          "No explicit music/sound design cues detected in screenplay."
+        ]
+      },
+      "AvgAdaptationFidelity": 9,
+      "AvgCharacterDisambiguation": 9.5,
+      "AvgAiVideoDirectibility": 9,
+      "AvgDramaticPacing": 8.5,
+      "AvgDialogueAuthenticity": 9,
+      "AvgSoundDesignMusic": 7.5,
+      "AvgOverallQualitative": 8.7,
+      "DisqualifyingFlags": []
+    },
+    {
+      "ModelId": "gpt-5.6-luna",
+      "AnonymousLabel": "",
+      "CompositeScore": 87.8,
+      "IsGenerationFallback": false,
+      "GenerationFallbackReason": null,
+      "BordaPoints": 11,
+      "AvgJudgeRank": 2.5,
+      "SyntaxAudit": {
+        "OverallSyntaxScore": 94.5,
+        "FormatComplianceScore": 100,
+        "SceneBudgetScore": 100,
+        "DialoguePacingScore": 80,
+        "CharacterDisambiguationScore": 100,
+        "MusicSpecScore": 70,
+        "TotalSceneHeadings": 16,
+        "TotalDialogueBlocks": 0,
+        "AvgWordsPerDialogue": 0,
+        "MaxWordsInSingleDialogue": 0,
+        "LongMonologueCount": 0,
+        "GenericNumberedSpeakerCount": 0,
+        "CharacterNamesFound": [],
+        "AgeDisambiguatedCharacters": [],
+        "DiagnosticWarnings": [
+          "No explicit music/sound design cues detected in screenplay."
+        ]
+      },
+      "AvgAdaptationFidelity": 9,
+      "AvgCharacterDisambiguation": 8.5,
+      "AvgAiVideoDirectibility": 8.5,
+      "AvgDramaticPacing": 8.2,
+      "AvgDialogueAuthenticity": 9,
+      "AvgSoundDesignMusic": 6.8,
+      "AvgOverallQualitative": 8.3,
+      "DisqualifyingFlags": []
+    },
+    {
+      "ModelId": "gpt-5.6-terra",
+      "AnonymousLabel": "",
+      "CompositeScore": 87.2,
+      "IsGenerationFallback": false,
+      "GenerationFallbackReason": null,
+      "BordaPoints": 11,
+      "AvgJudgeRank": 2.5,
+      "SyntaxAudit": {
+        "OverallSyntaxScore": 94.8,
+        "FormatComplianceScore": 100,
+        "SceneBudgetScore": 100,
+        "DialoguePacingScore": 85,
+        "CharacterDisambiguationScore": 100,
+        "MusicSpecScore": 70,
+        "TotalSceneHeadings": 11,
+        "TotalDialogueBlocks": 49,
+        "AvgWordsPerDialogue": 16.4,
+        "MaxWordsInSingleDialogue": 40,
+        "LongMonologueCount": 3,
+        "GenericNumberedSpeakerCount": 0,
+        "CharacterNamesFound": [
+          "NARRATOR",
+          "VELVETEEN RABBIT",
+          "SKIN HORSE",
+          "NANA",
+          "EDWARD",
+          "MOSS",
+          "DR. HARRIS",
+          "NURSERY MAGIC FAIRY"
+        ],
+        "AgeDisambiguatedCharacters": [],
+        "DiagnosticWarnings": [
+          "3 monologue turn(s) exceed 35 words without action line splits.",
+          "No explicit music/sound design cues detected in screenplay."
+        ]
+      },
+      "AvgAdaptationFidelity": 8.2,
+      "AvgCharacterDisambiguation": 9,
+      "AvgAiVideoDirectibility": 8.5,
+      "AvgDramaticPacing": 8,
+      "AvgDialogueAuthenticity": 8.8,
+      "AvgSoundDesignMusic": 6.8,
+      "AvgOverallQualitative": 8.2,
+      "DisqualifyingFlags": []
+    },
+    {
+      "ModelId": "gemini-3.1-pro-preview",
+      "AnonymousLabel": "",
+      "CompositeScore": 81.1,
+      "IsGenerationFallback": false,
+      "GenerationFallbackReason": null,
+      "BordaPoints": 8,
+      "AvgJudgeRank": 4,
+      "SyntaxAudit": {
+        "OverallSyntaxScore": 94.8,
+        "FormatComplianceScore": 100,
+        "SceneBudgetScore": 100,
+        "DialoguePacingScore": 85,
+        "CharacterDisambiguationScore": 100,
+        "MusicSpecScore": 70,
+        "TotalSceneHeadings": 13,
+        "TotalDialogueBlocks": 52,
+        "AvgWordsPerDialogue": 15.5,
+        "MaxWordsInSingleDialogue": 58,
+        "LongMonologueCount": 3,
+        "GenericNumberedSpeakerCount": 0,
+        "CharacterNamesFound": [
+          "NARRATOR",
+          "MODEL BOAT",
+          "TIMOTHY",
+          "VELVETEEN RABBIT",
+          "SKIN HORSE",
+          "NANA",
+          "THE BOY",
+          "FURRY RABBIT",
+          "WILD RABBIT",
+          "THE DOCTOR",
+          "FAIRY"
+        ],
+        "AgeDisambiguatedCharacters": [
+          "THE BOY"
+        ],
+        "DiagnosticWarnings": [
+          "3 monologue turn(s) exceed 35 words without action line splits.",
+          "Detected 1 age-qualified character header(s) (e.g. THE BOY).",
+          "No explicit music/sound design cues detected in screenplay."
+        ]
+      },
+      "AvgAdaptationFidelity": 7,
+      "AvgCharacterDisambiguation": 7.8,
+      "AvgAiVideoDirectibility": 7.8,
+      "AvgDramaticPacing": 7.8,
+      "AvgDialogueAuthenticity": 6.8,
+      "AvgSoundDesignMusic": 6.2,
+      "AvgOverallQualitative": 7.2,
+      "DisqualifyingFlags": []
+    },
+    {
+      "ModelId": "gemini-3.6-flash",
+      "AnonymousLabel": "",
+      "CompositeScore": 77.7,
+      "IsGenerationFallback": false,
+      "GenerationFallbackReason": null,
+      "BordaPoints": 4,
+      "AvgJudgeRank": 6,
+      "SyntaxAudit": {
+        "OverallSyntaxScore": 93.2,
+        "FormatComplianceScore": 95,
+        "SceneBudgetScore": 100,
+        "DialoguePacingScore": 85,
+        "CharacterDisambiguationScore": 100,
+        "MusicSpecScore": 70,
+        "TotalSceneHeadings": 9,
+        "TotalDialogueBlocks": 38,
+        "AvgWordsPerDialogue": 15.1,
+        "MaxWordsInSingleDialogue": 43,
+        "LongMonologueCount": 3,
+        "GenericNumberedSpeakerCount": 0,
+        "CharacterNamesFound": [
+          "NARRATOR",
+          "VELVETEEN RABBIT",
+          "SKIN HORSE",
+          "NANA",
+          "THE BOY",
+          "WILD RABBIT",
+          "DOCTOR",
+          "NURSERY FAIRY"
+        ],
+        "AgeDisambiguatedCharacters": [
+          "THE BOY"
+        ],
+        "DiagnosticWarnings": [
+          "Missing \u0027FADE OUT.\u0027 or \u0027THE END\u0027 closing transition.",
+          "3 monologue turn(s) exceed 35 words without action line splits.",
+          "Detected 1 age-qualified character header(s) (e.g. THE BOY).",
+          "No explicit music/sound design cues detected in screenplay."
+        ]
+      },
+      "AvgAdaptationFidelity": 6,
+      "AvgCharacterDisambiguation": 7,
+      "AvgAiVideoDirectibility": 7.2,
+      "AvgDramaticPacing": 6.5,
+      "AvgDialogueAuthenticity": 7.8,
+      "AvgSoundDesignMusic": 6,
+      "AvgOverallQualitative": 6.7,
+      "DisqualifyingFlags": [
+        "grok-4.5: Drops essential opening beats (Christmas stocking love-then-forget; mechanical-toy snubbing and Skin Horse setup as lived scenes).",
+        "grok-4.5: Misstates defining prop detail (Rabbit given glass eyes instead of boot-button eyes)."
+      ]
+    },
+    {
+      "ModelId": "claude-opus-5",
+      "AnonymousLabel": "",
+      "CompositeScore": 77.2,
+      "IsGenerationFallback": false,
+      "GenerationFallbackReason": null,
+      "BordaPoints": 4,
+      "AvgJudgeRank": 6,
+      "SyntaxAudit": {
+        "OverallSyntaxScore": 93,
+        "FormatComplianceScore": 95,
+        "SceneBudgetScore": 100,
+        "DialoguePacingScore": 80,
+        "CharacterDisambiguationScore": 100,
+        "MusicSpecScore": 70,
+        "TotalSceneHeadings": 10,
+        "TotalDialogueBlocks": 47,
+        "AvgWordsPerDialogue": 17.8,
+        "MaxWordsInSingleDialogue": 52,
+        "LongMonologueCount": 4,
+        "GenericNumberedSpeakerCount": 0,
+        "CharacterNamesFound": [
+          "NARRATOR",
+          "THE RABBIT",
+          "SKIN HORSE",
+          "NANA",
+          "THE BOY",
+          "THISTLE"
+        ],
+        "AgeDisambiguatedCharacters": [
+          "THE BOY"
+        ],
+        "DiagnosticWarnings": [
+          "Missing \u0027FADE OUT.\u0027 or \u0027THE END\u0027 closing transition.",
+          "4 monologue turn(s) exceed 35 words without action line splits.",
+          "Detected 1 age-qualified character header(s) (e.g. THE BOY).",
+          "No explicit music/sound design cues detected in screenplay."
+        ]
+      },
+      "AvgAdaptationFidelity": 3,
+      "AvgCharacterDisambiguation": 8.8,
+      "AvgAiVideoDirectibility": 8,
+      "AvgDramaticPacing": 5,
+      "AvgDialogueAuthenticity": 8.5,
+      "AvgSoundDesignMusic": 6.8,
+      "AvgOverallQualitative": 6.7,
+      "DisqualifyingFlags": [
+        "grok-4.5: Screenplay truncates mid-sentence during the recovery beat and omits the entire third act (sack/fowl-house, tear/flower, Fairy transformation, Real Rabbit dance, final spring recognition).",
+        "grok-4: Screenplay is truncated mid-sentence and does not complete the story arc."
+      ]
+    },
+    {
+      "ModelId": "grok-4.20-reasoning",
+      "AnonymousLabel": "",
+      "CompositeScore": 75.6,
+      "IsGenerationFallback": false,
+      "GenerationFallbackReason": null,
+      "BordaPoints": 4,
+      "AvgJudgeRank": 6,
+      "SyntaxAudit": {
+        "OverallSyntaxScore": 94.8,
+        "FormatComplianceScore": 100,
+        "SceneBudgetScore": 100,
+        "DialoguePacingScore": 85,
+        "CharacterDisambiguationScore": 100,
+        "MusicSpecScore": 70,
+        "TotalSceneHeadings": 9,
+        "TotalDialogueBlocks": 38,
+        "AvgWordsPerDialogue": 16.5,
+        "MaxWordsInSingleDialogue": 87,
+        "LongMonologueCount": 3,
+        "GenericNumberedSpeakerCount": 0,
+        "CharacterNamesFound": [
+          "NARRATOR",
+          "RABBIT",
+          "SKIN HORSE",
+          "NANA",
+          "BOY",
+          "WILD RABBIT",
+          "DOCTOR",
+          "FAIRY"
+        ],
+        "AgeDisambiguatedCharacters": [
+          "BOY"
+        ],
+        "DiagnosticWarnings": [
+          "3 monologue turn(s) exceed 35 words without action line splits.",
+          "Detected 1 age-qualified character header(s) (e.g. BOY).",
+          "No explicit music/sound design cues detected in screenplay."
+        ]
+      },
+      "AvgAdaptationFidelity": 5.2,
+      "AvgCharacterDisambiguation": 7.5,
+      "AvgAiVideoDirectibility": 7.5,
+      "AvgDramaticPacing": 7.2,
+      "AvgDialogueAuthenticity": 4,
+      "AvgSoundDesignMusic": 6.2,
+      "AvgOverallQualitative": 6.3,
+      "DisqualifyingFlags": [
+        "grok-4.5: Critical dialogue misattribution at the climax: RABBIT speaks the Fairy\u0027s self-introduction monologue (\u0027I am the nursery magic Fairy...\u0027).",
+        "grok-4: Dialogue lines swapped between Fairy and Rabbit in the transformation scene, violating book wording fidelity."
+      ]
+    }
+  ],
+  "JudgeMatrix": {
+    "grok-4.5": {
+      "gpt-5.6-luna": 8.17,
+      "gpt-5.6-terra": 7.92,
+      "claude-opus-5": 6.25,
+      "gemini-3.6-flash": 5.67,
+      "grok-4.20-reasoning": 6.17,
+      "gpt-5.6-sol": 8.58,
+      "gemini-3.1-pro-preview": 6.5
+    },
+    "grok-4": {
+      "gpt-5.6-terra": 8.5,
+      "grok-4.20-reasoning": 6.4,
+      "claude-opus-5": 7.1,
+      "gemini-3.1-pro-preview": 7.9,
+      "gemini-3.6-flash": 7.8,
+      "gpt-5.6-sol": 8.9,
+      "gpt-5.6-luna": 8.5
+    }
+  },
+  "JudgeRankMatrix": {
+    "grok-4.5": {
+      "gpt-5.6-sol": 1,
+      "gpt-5.6-luna": 2,
+      "gpt-5.6-terra": 3,
+      "gemini-3.1-pro-preview": 4,
+      "claude-opus-5": 5,
+      "grok-4.20-reasoning": 6,
+      "gemini-3.6-flash": 7
+    },
+    "grok-4": {
+      "gpt-5.6-sol": 1,
+      "gpt-5.6-terra": 2,
+      "gpt-5.6-luna": 3,
+      "gemini-3.1-pro-preview": 4,
+      "gemini-3.6-flash": 5,
+      "grok-4.20-reasoning": 6,
+      "claude-opus-5": 7
+    }
+  },
+  "SelfBiasNotes": [],
+  "JudgeRationale": {
+    "grok-4.5": {
+      "gpt-5.6-luna": "Near-complete beat coverage with book-faithful dialogue (Skin Horse sermon, Boy\u0027s REAL declaration, doctor burn order, Fairy lines, final recognition). Visual identity for the Rabbit and Skin Horse is locked early; Boy/Nana/Doctor/Fairy are thinner on recurring wardrobe. Scenes are clip-sized and filmable with clear single-location purpose. Ambient sound exists (tissue, dew, footsteps) but there are no explicit music beds or scored emotional cues, capping the sound dimension.",
+      "gpt-5.6-terra": "Full arc with strong closed-cast naming (Edward, Moss, Lark, Dr. Harris, Hobbs) and excellent locked looks (blue wool suit, charcoal dress/white cap, distinct wild-rabbit colors). Dialogue stays close to the book. Minor fidelity nicks: Boy given a proper name the source withholds, gardener staged as a named presence, and the final recognition is oddly split as EDWARD (V.O.) plus Narrator. Sound remains ambient-only. Fountain glitch on \u0027\u003E FADE OUT.\u0027 is cosmetic.",
+      "claude-opus-5": "What exists is richly directed\u2014medium note, practical-toy rules, precise wardrobe, Thistle/Bramble, Doctor Hallam\u2014with excellent book dialogue and observable micro-beats. Catastrophic failure is incompleteness: output dies at \u0027The Boy sits up against the bol\u0027 and never reaches the story\u0027s climax or resolution, so fidelity and pacing collapse regardless of craft quality in acts one\u2013two.",
+      "gemini-3.6-flash": "Delivers a skeletal spine (REAL talk, bedtime, garden, wild rabbits, fever/burn, Fairy, transformation, coda) but gutting the Christmas/cupboard insignificance setup removes the thematic engine. Opens already at the fender conversation. Character looks are thin and drift; eyes error breaks continuity locks. Pacing feels rushed and montage-heavy; almost no scored sound thinking.",
+      "grok-4.20-reasoning": "Otherwise a competent full-arc cut with recognizable book lines and workable clip structure. The Fairy beat is unusable as written\u2014the Rabbit answers \u0027don\u0027t you know who I am?\u0027 by claiming to be the Fairy\u2014destroying the emotional peak and any downstream shot that depends on correct speaker identity. Character tokens (RABBIT vs fuller names) and looks are only moderately locked on reentry.",
+      "gpt-5.6-sol": "Strongest package: full book arc, near-verbatim iconic dialogue, and the best locked cast bible in Action (Rabbit markings, Nana iron-gray hair/charcoal dress/white apron, Boy chestnut hair, Bracken/Fern, Dr. Harper silver whiskers/frock coat, Fairy scale). Scenes are single-purpose and break cleanly into 5\u201310s clips with concrete observable actions (tear to flower, hind-toe scratch reveal, etc.). Slight naming of wild rabbits/doctor is cast-hygiene, not plot invention. Richer ambient writing (rain, breeze, night-light) lifts sound above peers though still light on explicit score cues.",
+      "gemini-3.1-pro-preview": "Complete and schedulable, with most spine beats present and many book lines intact. Fidelity and dialogue suffer from invented on-camera speeches for MODEL BOAT and TIMOTHY (book only narrates their airs) plus Nana\u0027s extra plea \u0027But he loves it so.\u0027 Character re-description is thinner than A/B/F; wild rabbits split as FURRY RABBIT/WILD RABBIT without stable visual locks. Usable draft that needs dialogue pruning and look pass, not a rewrite of structure."
+    },
+    "grok-4": {
+      "gpt-5.6-terra": "Strong source coverage with accurate beats and book dialogue; consistent character descriptions and visual actions; minor long V.O. blocks reduce clip pacing slightly.",
+      "grok-4.20-reasoning": "Major attribution error breaks fidelity; otherwise covers arc but paraphrases some lines and lacks consistent sound prompts.",
+      "claude-opus-5": "Incomplete draft prevents full evaluation; strong visual style and fidelity in provided sections but unusable as-is.",
+      "gemini-3.1-pro-preview": "Solid coverage and visual actions; minor invented dialogue line in doctor scene slightly lowers fidelity.",
+      "gemini-3.6-flash": "Good fidelity and book dialogue; some scenes cram multiple actions, and character names vary slightly in consistency.",
+      "gpt-5.6-sol": "Exceptional fidelity, consistent visuals, filmable actions, and natural pacing across short clips with accurate book lines.",
+      "gpt-5.6-luna": "Strong source accuracy and dialogue fidelity; slightly longer V.O. blocks and fewer explicit sound cues than top performer."
+    }
+  },
+  "JudgeSummaries": {
+    "grok-4.5": "Strongest: Screenplay F because it uniquely combines full-arc fidelity, locked recurring cast looks, and the most clip-ready concrete action writing without deal-breaking errors. Weakest: Screenplay D because it gutted the Christmas/cupboard insignificance setup and misstated the Rabbit\u0027s eyes, leaving a rushed hollow spine rather than the book\u0027s earned transformation.",
+    "grok-4": "Strongest: Screenplay F because it achieves the highest fidelity, consistent character visuals, and directible short-clip actions with minimal invention. Weakest: Screenplay C because it is truncated mid-sentence and fails to complete the required story arc."
+  },
+  "JudgePromptSuggestions": {
+    "grok-4.5": {
+      "gpt-5.6-luna": "Require every scene to end with a one-line audio direction (ambient bed \u002B optional music cue tied to the scene\u0027s emotional turn) so clip-level sound design is explicit, not merely implied by action verbs.",
+      "gpt-5.6-terra": "Add a rule that internal thoughts quoted from the book must stay on NARRATOR (V.O.) or silent Action reaction\u2014never reassigned as the thinking character\u0027s own V.O.\u2014unless the book marks them as spoken aloud.",
+      "claude-opus-5": "Add a hard completion check: if the source contains a full arc, the Fountain must end with the final resolution beat plus FADE OUT/THE END; if nearing length limits, compress earlier connective scenes rather than stopping mid-scene or omitting the ending.",
+      "gemini-3.6-flash": "Mandate an explicit opening-coverage rule: the first 2\u20134 scenes must dramatize the source\u0027s establishing status quo (introduction of protagonist in their starting world and the social order that rejects or defines them) before jumping to the first major thematic dialogue.",
+      "grok-4.20-reasoning": "Add a speaker-fidelity check: after drafting, verify each dialogue block\u0027s speaker against the source speaker for that line; iconic identity-reveal or theme speeches must not be reassigned to another character under any compression.",
+      "gpt-5.6-sol": "Require a recurring optional MUSIC cue line (or parenthetical sound bed) at major emotional turns\u2014setup, crisis, transformation, coda\u2014so scoring is directed consistently across all drafts, not left to ambient verbs alone.",
+      "gemini-3.1-pro-preview": "Strengthen the summarized-exchange rule with an explicit ban: characters the book only describes as boasting/pretending/referring, without quoted speech, get zero invented dialogue lines\u2014carry that beat in Action or NARRATOR only."
+    },
+    "grok-4": {
+      "gpt-5.6-terra": "Add an explicit rule that every V.O. passage longer than two sentences must be interleaved with at least one distinct visual or sound micro-beat.",
+      "grok-4.20-reasoning": "Add a rule requiring every dialogue block to be immediately preceded by its correct ALL-CAPS character cue with no speaker misattribution allowed.",
+      "claude-opus-5": "Add a rule that the final scene must always end with a complete closing beat or FADE OUT before any output cutoff.",
+      "gemini-3.1-pro-preview": "Add an explicit instruction that no new dialogue may be invented for summarized exchanges unless Action alone cannot carry the beat.",
+      "gemini-3.6-flash": "Add a rule requiring every recurring character to use the exact same ALL-CAPS token in every appearance without variation.",
+      "gpt-5.6-sol": "Add a rule requiring at least one concrete sound or music direction in every scene heading or first action line.",
+      "gpt-5.6-luna": "Add a rule that any V.O. must be paired with a distinct camera-observable action on the same or adjacent line."
+    }
+  }
+}

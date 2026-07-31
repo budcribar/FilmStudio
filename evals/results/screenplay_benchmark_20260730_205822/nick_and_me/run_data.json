@@ -1,0 +1,534 @@
+{
+  "BookPath": "C:\\Users\\budcr\\source\\repos\\claude\\PageToMovie\\books\\Nick_and_Me.txt",
+  "Timestamp": "2026-07-31 03:01:34 UTC",
+  "IsMockRun": false,
+  "Leaderboard": [
+    {
+      "ModelId": "gpt-5.6-sol",
+      "AnonymousLabel": "",
+      "CompositeScore": 90,
+      "IsGenerationFallback": false,
+      "GenerationFallbackReason": null,
+      "BordaPoints": 18,
+      "AvgJudgeRank": 1,
+      "SyntaxAudit": {
+        "OverallSyntaxScore": 94.5,
+        "FormatComplianceScore": 100,
+        "SceneBudgetScore": 100,
+        "DialoguePacingScore": 80,
+        "CharacterDisambiguationScore": 100,
+        "MusicSpecScore": 70,
+        "TotalSceneHeadings": 21,
+        "TotalDialogueBlocks": 0,
+        "AvgWordsPerDialogue": 0,
+        "MaxWordsInSingleDialogue": 0,
+        "LongMonologueCount": 0,
+        "GenericNumberedSpeakerCount": 0,
+        "CharacterNamesFound": [],
+        "AgeDisambiguatedCharacters": [],
+        "DiagnosticWarnings": [
+          "No explicit music/sound design cues detected in screenplay."
+        ]
+      },
+      "AvgAdaptationFidelity": 9.2,
+      "AvgCharacterDisambiguation": 9.2,
+      "AvgAiVideoDirectibility": 9,
+      "AvgDramaticPacing": 8.8,
+      "AvgDialogueAuthenticity": 9,
+      "AvgSoundDesignMusic": 7,
+      "AvgOverallQualitative": 8.7,
+      "DisqualifyingFlags": []
+    },
+    {
+      "ModelId": "claude-sonnet-5",
+      "AnonymousLabel": "",
+      "CompositeScore": 88.9,
+      "IsGenerationFallback": false,
+      "GenerationFallbackReason": null,
+      "BordaPoints": 14,
+      "AvgJudgeRank": 3,
+      "SyntaxAudit": {
+        "OverallSyntaxScore": 94.2,
+        "FormatComplianceScore": 100,
+        "SceneBudgetScore": 100,
+        "DialoguePacingScore": 75,
+        "CharacterDisambiguationScore": 100,
+        "MusicSpecScore": 70,
+        "TotalSceneHeadings": 32,
+        "TotalDialogueBlocks": 151,
+        "AvgWordsPerDialogue": 13.1,
+        "MaxWordsInSingleDialogue": 98,
+        "LongMonologueCount": 5,
+        "GenericNumberedSpeakerCount": 0,
+        "CharacterNamesFound": [
+          "THE NARRATOR",
+          "NICK",
+          "SIONNA",
+          "LIBRARIAN",
+          "DR. CARSON",
+          "MA",
+          "RAY",
+          "ANSWERING MACHINE",
+          "OFFICER DUPUIS",
+          "NURSE",
+          "SAGE",
+          "BOB",
+          "GUARD"
+        ],
+        "AgeDisambiguatedCharacters": [],
+        "DiagnosticWarnings": [
+          "5 monologue turn(s) exceed 35 words without action line splits.",
+          "No explicit music/sound design cues detected in screenplay."
+        ]
+      },
+      "AvgAdaptationFidelity": 9.2,
+      "AvgCharacterDisambiguation": 9,
+      "AvgAiVideoDirectibility": 8.8,
+      "AvgDramaticPacing": 8.5,
+      "AvgDialogueAuthenticity": 9,
+      "AvgSoundDesignMusic": 6.8,
+      "AvgOverallQualitative": 8.5,
+      "DisqualifyingFlags": []
+    },
+    {
+      "ModelId": "gpt-5.6-terra",
+      "AnonymousLabel": "",
+      "CompositeScore": 87.8,
+      "IsGenerationFallback": false,
+      "GenerationFallbackReason": null,
+      "BordaPoints": 14,
+      "AvgJudgeRank": 3,
+      "SyntaxAudit": {
+        "OverallSyntaxScore": 94.5,
+        "FormatComplianceScore": 100,
+        "SceneBudgetScore": 100,
+        "DialoguePacingScore": 80,
+        "CharacterDisambiguationScore": 100,
+        "MusicSpecScore": 70,
+        "TotalSceneHeadings": 38,
+        "TotalDialogueBlocks": 0,
+        "AvgWordsPerDialogue": 0,
+        "MaxWordsInSingleDialogue": 0,
+        "LongMonologueCount": 0,
+        "GenericNumberedSpeakerCount": 0,
+        "CharacterNamesFound": [],
+        "AgeDisambiguatedCharacters": [],
+        "DiagnosticWarnings": [
+          "No explicit music/sound design cues detected in screenplay."
+        ]
+      },
+      "AvgAdaptationFidelity": 9,
+      "AvgCharacterDisambiguation": 8.8,
+      "AvgAiVideoDirectibility": 8.5,
+      "AvgDramaticPacing": 8.2,
+      "AvgDialogueAuthenticity": 8.8,
+      "AvgSoundDesignMusic": 6.8,
+      "AvgOverallQualitative": 8.3,
+      "DisqualifyingFlags": []
+    },
+    {
+      "ModelId": "grok-4.5",
+      "AnonymousLabel": "",
+      "CompositeScore": 86.7,
+      "IsGenerationFallback": false,
+      "GenerationFallbackReason": null,
+      "BordaPoints": 13,
+      "AvgJudgeRank": 3.5,
+      "SyntaxAudit": {
+        "OverallSyntaxScore": 95.5,
+        "FormatComplianceScore": 100,
+        "SceneBudgetScore": 100,
+        "DialoguePacingScore": 100,
+        "CharacterDisambiguationScore": 100,
+        "MusicSpecScore": 70,
+        "TotalSceneHeadings": 41,
+        "TotalDialogueBlocks": 90,
+        "AvgWordsPerDialogue": 11.2,
+        "MaxWordsInSingleDialogue": 30,
+        "LongMonologueCount": 0,
+        "GenericNumberedSpeakerCount": 0,
+        "CharacterNamesFound": [
+          "PETER",
+          "NICK",
+          "SIONNA",
+          "MA",
+          "DR. CARSON",
+          "DREAM NICK",
+          "OFFICER DUPUIS",
+          "NURSE",
+          "SAGE",
+          "GUARD"
+        ],
+        "AgeDisambiguatedCharacters": [],
+        "DiagnosticWarnings": [
+          "No explicit music/sound design cues detected in screenplay."
+        ]
+      },
+      "AvgAdaptationFidelity": 8.5,
+      "AvgCharacterDisambiguation": 8.5,
+      "AvgAiVideoDirectibility": 8.2,
+      "AvgDramaticPacing": 8,
+      "AvgDialogueAuthenticity": 8.5,
+      "AvgSoundDesignMusic": 6.8,
+      "AvgOverallQualitative": 8.1,
+      "DisqualifyingFlags": []
+    },
+    {
+      "ModelId": "gemini-2.5-flash",
+      "AnonymousLabel": "",
+      "CompositeScore": 84.1,
+      "IsGenerationFallback": false,
+      "GenerationFallbackReason": null,
+      "BordaPoints": 11,
+      "AvgJudgeRank": 4.5,
+      "SyntaxAudit": {
+        "OverallSyntaxScore": 94,
+        "FormatComplianceScore": 100,
+        "SceneBudgetScore": 100,
+        "DialoguePacingScore": 70,
+        "CharacterDisambiguationScore": 100,
+        "MusicSpecScore": 70,
+        "TotalSceneHeadings": 23,
+        "TotalDialogueBlocks": 124,
+        "AvgWordsPerDialogue": 21.2,
+        "MaxWordsInSingleDialogue": 77,
+        "LongMonologueCount": 18,
+        "GenericNumberedSpeakerCount": 0,
+        "CharacterNamesFound": [
+          "PETER",
+          "YOUNG MARK",
+          "YOUNG NICK",
+          "MA",
+          "NICK",
+          "LIBRARIAN",
+          "SIONNA",
+          "DR. CARSON",
+          "DYING MAN",
+          "OFFICER DUPUIS",
+          "NURSE OWENS",
+          "BOB",
+          "SAGE",
+          "GUARD"
+        ],
+        "AgeDisambiguatedCharacters": [
+          "YOUNG MARK",
+          "YOUNG NICK"
+        ],
+        "DiagnosticWarnings": [
+          "18 monologue turn(s) exceed 35 words without action line splits.",
+          "Detected 2 age-qualified character header(s) (e.g. YOUNG MARK, YOUNG NICK).",
+          "No explicit music/sound design cues detected in screenplay."
+        ]
+      },
+      "AvgAdaptationFidelity": 8.5,
+      "AvgCharacterDisambiguation": 8,
+      "AvgAiVideoDirectibility": 7.8,
+      "AvgDramaticPacing": 7.8,
+      "AvgDialogueAuthenticity": 8.2,
+      "AvgSoundDesignMusic": 6.2,
+      "AvgOverallQualitative": 7.8,
+      "DisqualifyingFlags": []
+    },
+    {
+      "ModelId": "gemini-3.6-flash",
+      "AnonymousLabel": "",
+      "CompositeScore": 76.4,
+      "IsGenerationFallback": false,
+      "GenerationFallbackReason": null,
+      "BordaPoints": 7,
+      "AvgJudgeRank": 6.5,
+      "SyntaxAudit": {
+        "OverallSyntaxScore": 93.5,
+        "FormatComplianceScore": 95,
+        "SceneBudgetScore": 100,
+        "DialoguePacingScore": 90,
+        "CharacterDisambiguationScore": 100,
+        "MusicSpecScore": 70,
+        "TotalSceneHeadings": 12,
+        "TotalDialogueBlocks": 60,
+        "AvgWordsPerDialogue": 13.7,
+        "MaxWordsInSingleDialogue": 53,
+        "LongMonologueCount": 2,
+        "GenericNumberedSpeakerCount": 0,
+        "CharacterNamesFound": [
+          "PETER",
+          "NICK",
+          "SIONNA",
+          "MA",
+          "OFFICER DUPUIS",
+          "BOB",
+          "PRISON GUARD"
+        ],
+        "AgeDisambiguatedCharacters": [],
+        "DiagnosticWarnings": [
+          "Missing \u0027FADE OUT.\u0027 or \u0027THE END\u0027 closing transition.",
+          "2 monologue turn(s) exceed 35 words without action line splits.",
+          "No explicit music/sound design cues detected in screenplay."
+        ]
+      },
+      "AvgAdaptationFidelity": 6.2,
+      "AvgCharacterDisambiguation": 7.2,
+      "AvgAiVideoDirectibility": 6.8,
+      "AvgDramaticPacing": 6.5,
+      "AvgDialogueAuthenticity": 7,
+      "AvgSoundDesignMusic": 5.2,
+      "AvgOverallQualitative": 6.5,
+      "DisqualifyingFlags": [
+        "grok-4.5: Major compression and dropped source sequences (yoga arc, library growth, full bar fight texture, many dreams)",
+        "grok-4.5: Insufficient music/SFX specification",
+        "grok-4: Heavy narrator V.O. and invented Seattle framing device violate source fidelity and short-clip directibility"
+      ]
+    },
+    {
+      "ModelId": "grok-4",
+      "AnonymousLabel": "",
+      "CompositeScore": 70.3,
+      "IsGenerationFallback": false,
+      "GenerationFallbackReason": null,
+      "BordaPoints": 7,
+      "AvgJudgeRank": 6.5,
+      "SyntaxAudit": {
+        "OverallSyntaxScore": 81.5,
+        "FormatComplianceScore": 100,
+        "SceneBudgetScore": 50,
+        "DialoguePacingScore": 70,
+        "CharacterDisambiguationScore": 100,
+        "MusicSpecScore": 70,
+        "TotalSceneHeadings": 71,
+        "TotalDialogueBlocks": 279,
+        "AvgWordsPerDialogue": 15.4,
+        "MaxWordsInSingleDialogue": 114,
+        "LongMonologueCount": 16,
+        "GenericNumberedSpeakerCount": 0,
+        "CharacterNamesFound": [
+          "NARRATOR",
+          "NICK",
+          "JAKE",
+          "SIONNA",
+          "MA",
+          "LIBRARIAN",
+          "DR. CARSON",
+          "JENNIFER BALES",
+          "BOBBY SWENSON",
+          "MRS. STARK",
+          "DARK-HAIRED MAN",
+          "TEACHER",
+          "KEVIN MCCLEARY",
+          "BOB",
+          "OFFICER MIKE DUPUIS",
+          "NURSE PATRICIA OWENS",
+          "FATHER JOSEPH",
+          "COP",
+          "SAGE",
+          "GUARD"
+        ],
+        "AgeDisambiguatedCharacters": [],
+        "DiagnosticWarnings": [
+          "Excessive scene count (71 scenes); high micro-scene density inflates video gen budget.",
+          "16 monologue turn(s) exceed 35 words without action line splits.",
+          "No explicit music/sound design cues detected in screenplay."
+        ]
+      },
+      "AvgAdaptationFidelity": 6.8,
+      "AvgCharacterDisambiguation": 5.8,
+      "AvgAiVideoDirectibility": 6.5,
+      "AvgDramaticPacing": 6.2,
+      "AvgDialogueAuthenticity": 7.2,
+      "AvgSoundDesignMusic": 5.2,
+      "AvgOverallQualitative": 6.3,
+      "DisqualifyingFlags": [
+        "grok-4.5: Protagonist renamed Jake (closed-cast / source-name violation)",
+        "grok-4.5: Inconsistent age and wardrobe locking across time jumps",
+        "grok-4: Invented schoolyard flashback and excessive internal monologue V.O. violate fidelity and directibility"
+      ]
+    },
+    {
+      "ModelId": "gpt-4o-mini",
+      "AnonymousLabel": "",
+      "CompositeScore": 56.1,
+      "IsGenerationFallback": false,
+      "GenerationFallbackReason": null,
+      "BordaPoints": 4,
+      "AvgJudgeRank": 8,
+      "SyntaxAudit": {
+        "OverallSyntaxScore": 89,
+        "FormatComplianceScore": 95,
+        "SceneBudgetScore": 80,
+        "DialoguePacingScore": 100,
+        "CharacterDisambiguationScore": 100,
+        "MusicSpecScore": 70,
+        "TotalSceneHeadings": 55,
+        "TotalDialogueBlocks": 213,
+        "AvgWordsPerDialogue": 7,
+        "MaxWordsInSingleDialogue": 20,
+        "LongMonologueCount": 0,
+        "GenericNumberedSpeakerCount": 0,
+        "CharacterNamesFound": [
+          "NARRATOR",
+          "NICK",
+          "YOUNG MAN",
+          "SIONNA",
+          "MA",
+          "DR. CARSON",
+          "OFFICER DUPUIS",
+          "JUDGE",
+          "REPORTER"
+        ],
+        "AgeDisambiguatedCharacters": [
+          "YOUNG MAN"
+        ],
+        "DiagnosticWarnings": [
+          "Missing \u0027FADE OUT.\u0027 or \u0027THE END\u0027 closing transition.",
+          "Excessive scene count (55 scenes); high micro-scene density inflates video gen budget.",
+          "Detected 1 age-qualified character header(s) (e.g. YOUNG MAN).",
+          "No explicit music/sound design cues detected in screenplay."
+        ]
+      },
+      "AvgAdaptationFidelity": 3.5,
+      "AvgCharacterDisambiguation": 3.8,
+      "AvgAiVideoDirectibility": 3.2,
+      "AvgDramaticPacing": 3.2,
+      "AvgDialogueAuthenticity": 4,
+      "AvgSoundDesignMusic": 2.8,
+      "AvgOverallQualitative": 3.4,
+      "DisqualifyingFlags": [
+        "grok-4.5: Heavy invented/reordered late-act material and missing key source beats",
+        "grok-4.5: Protagonist never properly named/disambiguated; age/wardrobe inconsistent",
+        "grok-4.5: Excessive unfilmable narrator monologue; multi-location crammed beats",
+        "grok-4.5: No usable music/SFX beds",
+        "grok-4: Fragmented structure with excessive CUT TOs, invented battlefield dream, and dropped major source beats"
+      ]
+    },
+    {
+      "ModelId": "o3-mini",
+      "AnonymousLabel": "",
+      "CompositeScore": 54.6,
+      "IsGenerationFallback": false,
+      "GenerationFallbackReason": null,
+      "BordaPoints": 2,
+      "AvgJudgeRank": 9,
+      "SyntaxAudit": {
+        "OverallSyntaxScore": 97,
+        "FormatComplianceScore": 100,
+        "SceneBudgetScore": 100,
+        "DialoguePacingScore": 100,
+        "CharacterDisambiguationScore": 100,
+        "MusicSpecScore": 80,
+        "TotalSceneHeadings": 11,
+        "TotalDialogueBlocks": 33,
+        "AvgWordsPerDialogue": 15.8,
+        "MaxWordsInSingleDialogue": 30,
+        "LongMonologueCount": 0,
+        "GenericNumberedSpeakerCount": 0,
+        "CharacterNamesFound": [
+          "NARRATOR",
+          "MA",
+          "NICK",
+          "YOUNG WOMAN",
+          "SIONNA",
+          "DOCTOR",
+          "OFFICER DUPUIS"
+        ],
+        "AgeDisambiguatedCharacters": [
+          "YOUNG WOMAN"
+        ],
+        "DiagnosticWarnings": [
+          "Detected 1 age-qualified character header(s) (e.g. YOUNG WOMAN)."
+        ]
+      },
+      "AvgAdaptationFidelity": 2.2,
+      "AvgCharacterDisambiguation": 3,
+      "AvgAiVideoDirectibility": 2.5,
+      "AvgDramaticPacing": 2.5,
+      "AvgDialogueAuthenticity": 3,
+      "AvgSoundDesignMusic": 2.5,
+      "AvgOverallQualitative": 2.6,
+      "DisqualifyingFlags": [
+        "grok-4.5: Severe invention and omission: montage-summary structure replaces source scenes",
+        "grok-4.5: Stabbing/accident chronology and motivations rewritten",
+        "grok-4.5: Characters lack distinct locked visual descriptions",
+        "grok-4.5: Unfilmable essay-like V.O. dominates",
+        "grok-4: Heavy summarization, invented montage, and dropped source beats make it unusable"
+      ]
+    }
+  ],
+  "JudgeMatrix": {
+    "grok-4.5": {
+      "gpt-4o-mini": 3.33,
+      "gpt-5.6-terra": 8.17,
+      "grok-4.5": 8.25,
+      "gemini-3.6-flash": 5.33,
+      "grok-4": 5.5,
+      "gemini-2.5-flash": 7.17,
+      "o3-mini": 2.25,
+      "gpt-5.6-sol": 8.33,
+      "claude-sonnet-5": 8.08
+    },
+    "grok-4": {
+      "gemini-3.6-flash": 7.67,
+      "gpt-5.6-terra": 8.5,
+      "gpt-4o-mini": 3.5,
+      "claude-sonnet-5": 9,
+      "grok-4.5": 7.92,
+      "grok-4": 7.08,
+      "o3-mini": 3,
+      "gemini-2.5-flash": 8.33,
+      "gpt-5.6-sol": 9.08
+    }
+  },
+  "JudgeRankMatrix": {
+    "grok-4.5": {
+      "gpt-5.6-sol": 1,
+      "grok-4.5": 2,
+      "gpt-5.6-terra": 3,
+      "claude-sonnet-5": 4,
+      "gemini-2.5-flash": 5,
+      "grok-4": 6,
+      "gemini-3.6-flash": 7,
+      "gpt-4o-mini": 8,
+      "o3-mini": 9
+    },
+    "grok-4": {
+      "gpt-5.6-sol": 1,
+      "claude-sonnet-5": 2,
+      "gpt-5.6-terra": 3,
+      "gemini-2.5-flash": 4,
+      "grok-4.5": 5,
+      "gemini-3.6-flash": 6,
+      "grok-4": 7,
+      "gpt-4o-mini": 8,
+      "o3-mini": 9
+    }
+  },
+  "SelfBiasNotes": [
+    "\u26A0\uFE0F grok-4 rated its own screenplay 7.1/10 vs. a 5.5/10 average from 1 other judge(s) (\u002B1.6) \u2014 possible self-preference bias."
+  ],
+  "JudgeRationale": {
+    "grok-4.5": {
+      "gpt-4o-mini": "Covers broad plot outline but invents and softens major confrontations, drops or muddies source specificity, and relies on continuous V.O. that cannot be filmed as short clips. Character looks are not locked; sound design is essentially absent.",
+      "gpt-5.6-terra": "High-fidelity translation of book beats, dialogue, and themes with clear visual character locks (Nick scars/hair, Sionna eyes/necklace, Ma afghan) and age tags for childhood. Scenes are mostly single-location, camera-observable short-clip units. Dialogue is natural and source-true. Music/SFX only lightly implied.",
+      "grok-4.5": "Excellent closed-cast fidelity with Seattle frame and on-camera Peter. Distinct recurring visual tags for every major character and clean young/adult splits. Beats are clip-sized and show-don\u0027t-tell. Dialogue authentic; light atmospheric sound cues present but not fully scored.",
+      "gemini-3.6-flash": "Hits the spine (meet-cute, Ma decline, crash, stabbing, prison forgiveness) but omits large middle sections and flattens character journeys. Visuals are workable but thinner; pacing feels like a highlight reel rather than full adaptation.",
+      "grok-4": "Covers many beats and keeps much authentic dialogue, but renaming the lead to Jake and weak visual continuity across eras break casting lock requirements. Sound design minimal; some scenes still over-narrated.",
+      "gemini-2.5-flash": "Solid full-arc coverage with good dialogue lift from source and mostly filmable action lines. Character intros are clear though less rigorously re-stated than B/C/H. Pacing is strong; music beds under-specified.",
+      "o3-mini": "Essentially a different, heavily summarized story with generic dialogue and almost no clip-ready visual direction. Unusable as a faithful short-clip adaptation.",
+      "gpt-5.6-sol": "Best balance of source fidelity, locked character visuals (including YOUNG NICK / YOUNG NARRATOR), and pure show-don\u0027t-tell short-clip staging. Dialogue is performable and true to voice. Accident and stabbing are concrete and filmable. Music still only lightly indicated.",
+      "claude-sonnet-5": "Extremely faithful, including late name reveal as Peter. Strong visual continuity and clip-sized scenes. Dialogue and subtext excellent. Sound design remains the weakest dimension across the top tier."
+    },
+    "grok-4": {
+      "gemini-3.6-flash": "Solid character descriptions and dialogue but relies on unfilmable V.O. and adds invented future frame that drops major book beats.",
+      "gpt-5.6-terra": "Highly faithful to source text with consistent visual descriptions and concrete actions suitable for short clips.",
+      "gpt-4o-mini": "Broken pacing and fidelity; reads as rushed summary rather than producible short-clip screenplay.",
+      "claude-sonnet-5": "Exceptional fidelity, consistent disambiguation across time periods, and highly filmable short-clip actions.",
+      "grok-4.5": "Strong overall but slightly less precise on time-period disambiguation than top entries.",
+      "grok-4": "Some invented content and heavy V.O. reduce fidelity and clip suitability.",
+      "o3-mini": "Essentially a condensed outline rather than a producible screenplay; severe fidelity failure.",
+      "gemini-2.5-flash": "Very close to source with strong descriptions but slightly more V.O. than ideal for short clips.",
+      "gpt-5.6-sol": "Highest fidelity and most consistently filmable short-clip structure with precise character visuals."
+    }
+  },
+  "JudgeSummaries": {
+    "grok-4.5": "Strongest: Screenplay H because it delivers the highest combined fidelity, locked character disambiguation across ages, and consistently filmable 5-10s beats with authentic dialogue. Weakest: Screenplay G because it replaces the source with invented montage summary, breaks character visuals, and is largely unfilmable as short AI clips.",
+    "grok-4": "Strongest: Screenplay I because it achieves near-perfect source fidelity with consistent visual descriptions and concrete short-clip actions. Weakest: Screenplay C because its fragmented structure, invented elements, and dropped beats render it unusable for production."
+  }
+}

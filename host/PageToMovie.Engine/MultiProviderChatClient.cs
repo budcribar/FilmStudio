@@ -36,8 +36,9 @@ public sealed class MultiProviderChatClient : IChatClient
         string model = "grok-4.5",
         double temperature = 0.2,
         CancellationToken ct = default,
-        string? mode = null) =>
-        Resolve(model).CompleteAsync(systemPrompt, userPrompt, model, temperature, ct, mode);
+        string? mode = null,
+        string? reasoningEffort = null) =>
+        Resolve(model).CompleteAsync(systemPrompt, userPrompt, model, temperature, ct, mode, reasoningEffort);
 
     private IChatClient Resolve(string? model)
     {

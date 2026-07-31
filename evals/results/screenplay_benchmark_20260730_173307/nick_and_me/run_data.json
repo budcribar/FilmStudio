@@ -1,0 +1,76 @@
+{
+  "BookPath": "books/Nick_and_Me.txt",
+  "Timestamp": "2026-07-30 23:43:50 UTC",
+  "IsMockRun": false,
+  "Leaderboard": [
+    {
+      "ModelId": "claude-sonnet-5",
+      "AnonymousLabel": "",
+      "CompositeScore": 63.6,
+      "IsGenerationFallback": false,
+      "GenerationFallbackReason": null,
+      "BordaPoints": 1,
+      "AvgJudgeRank": 1,
+      "SyntaxAudit": {
+        "OverallSyntaxScore": 88.5,
+        "FormatComplianceScore": 80,
+        "SceneBudgetScore": 100,
+        "DialoguePacingScore": 90,
+        "CharacterDisambiguationScore": 100,
+        "MusicSpecScore": 70,
+        "TotalSceneHeadings": 8,
+        "TotalDialogueBlocks": 31,
+        "AvgWordsPerDialogue": 15.8,
+        "MaxWordsInSingleDialogue": 51,
+        "LongMonologueCount": 2,
+        "GenericNumberedSpeakerCount": 0,
+        "CharacterNamesFound": [
+          "NARRATOR",
+          "SIONNA",
+          "MA",
+          "DR. CARSON"
+        ],
+        "AgeDisambiguatedCharacters": [],
+        "DiagnosticWarnings": [
+          "Non-Fountain colon dialogue format (4 instances like \u0027Character:\u0027) detected.",
+          "Missing \u0027FADE OUT.\u0027 or \u0027THE END\u0027 closing transition.",
+          "2 monologue turn(s) exceed 35 words without action line splits.",
+          "No explicit music/sound design cues detected in screenplay."
+        ]
+      },
+      "AvgAdaptationFidelity": 5.5,
+      "AvgCharacterDisambiguation": 5,
+      "AvgAiVideoDirectibility": 6.5,
+      "AvgDramaticPacing": 3,
+      "AvgDialogueAuthenticity": 7,
+      "AvgSoundDesignMusic": 1,
+      "AvgOverallQualitative": 4.7,
+      "DisqualifyingFlags": [
+        "claude-sonnet-5: Screenplay is severely incomplete \u2014 cuts off mid-scene/mid-sentence (\u0027INT. NARRATOR\u0027S APARTMENT - LIV\u0027) covering only a small fraction of the book\u0027s total narrative (roughly Part 1, chapters 6-9)",
+        "claude-sonnet-5: No music or sound design cues present anywhere in the provided text, making that dimension unscorable/unusable as delivered",
+        "claude-sonnet-5: Massive portions of the source material are entirely missing: Nick\u0027s death-spiral into alcoholism, the car accident killing Ma, Nick\u0027s stabbing of Sionna, the trial, the prison years, and the entire Part 4 Seattle timeline/reconciliation arc",
+        "claude-sonnet-5: Central named character \u0027Narrator\u0027 is never given an actual name (Peter), which is used at the very end of the book, creating identity/casting ambiguity",
+        "claude-sonnet-5: No visual character description given for Narrator, Nick, or Ma anywhere in the excerpt \u2014 physical descriptions from the book (Nick\u0027s scars, red hair, size; Ma\u0027s aging appearance) are absent, undermining the reference-image requirement"
+      ]
+    }
+  ],
+  "JudgeMatrix": {
+    "claude-sonnet-5": {
+      "claude-sonnet-5": 4.7
+    }
+  },
+  "JudgeRankMatrix": {
+    "claude-sonnet-5": {
+      "claude-sonnet-5": 1
+    }
+  },
+  "SelfBiasNotes": [],
+  "JudgeRationale": {
+    "claude-sonnet-5": {
+      "claude-sonnet-5": "This fragment only adapts a small slice of Part One/early Part Two material (roughly the yoga/library/Buddhism/Ma\u0027s ER visit beats) and stops abruptly mid-scene without completing even that arc, let alone the accident, the stabbing, prison, or the Seattle-set redemption arc that make up more than half the book. Voiceover captures the narrator\u0027s introspective voice reasonably well and individual scenes (yoga studio, doctor\u0027s office, Ma\u0027s confusion) are decently filmable with clear single actions, but the fragment gives no distinct visual descriptions for any character (Nick, Ma, Sionna, the Narrator) to lock a reference image, and the Narrator is never named. There are zero music/sound cues anywhere in the text, making the sound design dimension essentially a failing/empty category. As a production package this is unusable \u2014 it\u0027s roughly 10% of a screenplay with no ending, act structure, or resolution of the central dramatic engine (Nick\u0027s downward spiral, Ma\u0027s death, the stabbing, prison, redemption)."
+    }
+  },
+  "JudgeSummaries": {
+    "claude-sonnet-5": "Only one candidate was provided for review. Screenplay A is a heavily truncated fragment covering only a small early portion of the book (yoga/library/Buddhism/doctor visit beats) and cuts off mid-sentence without completing even that scene, let alone depicting the accident, the stabbing, the trial, prison, or the entire Seattle-set final act that make up the majority of the source material\u0027s dramatic content. It has no music/sound cues at all, no visual character descriptions to anchor casting/reference images, and the protagonist is never named despite the book revealing his name (Peter) in its final line. As the sole candidate it is ranked first by default, but it is not production-ready in its current form."
+  }
+}

@@ -1,0 +1,532 @@
+{
+  "BookPath": "C:\\Users\\budcr\\source\\repos\\claude\\PageToMovie\\books\\The_Tell-Tale_Heart.txt",
+  "Timestamp": "2026-07-31 01:23:55 UTC",
+  "IsMockRun": false,
+  "Leaderboard": [
+    {
+      "ModelId": "claude-sonnet-5",
+      "AnonymousLabel": "",
+      "CompositeScore": 88.9,
+      "IsGenerationFallback": false,
+      "GenerationFallbackReason": null,
+      "BordaPoints": 37,
+      "AvgJudgeRank": 2.7,
+      "SyntaxAudit": {
+        "OverallSyntaxScore": 94.5,
+        "FormatComplianceScore": 100,
+        "SceneBudgetScore": 100,
+        "DialoguePacingScore": 95,
+        "CharacterDisambiguationScore": 100,
+        "MusicSpecScore": 70,
+        "TotalSceneHeadings": 9,
+        "TotalDialogueBlocks": 36,
+        "AvgWordsPerDialogue": 20.6,
+        "MaxWordsInSingleDialogue": 39,
+        "LongMonologueCount": 1,
+        "GenericNumberedSpeakerCount": 0,
+        "CharacterNamesFound": [
+          "NARRATOR",
+          "OLD MAN",
+          "OFFICER MORAN",
+          "OFFICER DUFFY"
+        ],
+        "AgeDisambiguatedCharacters": [
+          "OLD MAN"
+        ],
+        "DiagnosticWarnings": [
+          "1 monologue turn(s) exceed 35 words without action line splits.",
+          "Detected 1 age-qualified character header(s) (e.g. OLD MAN).",
+          "No explicit music/sound design cues detected in screenplay."
+        ]
+      },
+      "AvgAdaptationFidelity": 8.7,
+      "AvgCharacterDisambiguation": 8.9,
+      "AvgAiVideoDirectibility": 8.3,
+      "AvgDramaticPacing": 8.4,
+      "AvgDialogueAuthenticity": 8.7,
+      "AvgSoundDesignMusic": 8.1,
+      "AvgOverallQualitative": 8.5,
+      "DisqualifyingFlags": []
+    },
+    {
+      "ModelId": "grok-4.5",
+      "AnonymousLabel": "",
+      "CompositeScore": 86.6,
+      "IsGenerationFallback": false,
+      "GenerationFallbackReason": null,
+      "BordaPoints": 43,
+      "AvgJudgeRank": 1.9,
+      "SyntaxAudit": {
+        "OverallSyntaxScore": 85.5,
+        "FormatComplianceScore": 100,
+        "SceneBudgetScore": 100,
+        "DialoguePacingScore": 50,
+        "CharacterDisambiguationScore": 100,
+        "MusicSpecScore": 70,
+        "TotalSceneHeadings": 11,
+        "TotalDialogueBlocks": 18,
+        "AvgWordsPerDialogue": 34.7,
+        "MaxWordsInSingleDialogue": 70,
+        "LongMonologueCount": 9,
+        "GenericNumberedSpeakerCount": 0,
+        "CharacterNamesFound": [
+          "NARRATOR",
+          "OLD MAN",
+          "OFFICER REYNOLDS"
+        ],
+        "AgeDisambiguatedCharacters": [
+          "OLD MAN"
+        ],
+        "DiagnosticWarnings": [
+          "High average dialogue length (34.7 words/turn); speech beats risk clip overrun.",
+          "9 monologue turn(s) exceed 35 words without action line splits.",
+          "Detected 1 age-qualified character header(s) (e.g. OLD MAN).",
+          "No explicit music/sound design cues detected in screenplay."
+        ]
+      },
+      "AvgAdaptationFidelity": 8.9,
+      "AvgCharacterDisambiguation": 8.6,
+      "AvgAiVideoDirectibility": 8.8,
+      "AvgDramaticPacing": 8.6,
+      "AvgDialogueAuthenticity": 8.9,
+      "AvgSoundDesignMusic": 8.4,
+      "AvgOverallQualitative": 8.7,
+      "DisqualifyingFlags": []
+    },
+    {
+      "ModelId": "gemini-2.5-flash",
+      "AnonymousLabel": "",
+      "CompositeScore": 85.8,
+      "IsGenerationFallback": false,
+      "GenerationFallbackReason": null,
+      "BordaPoints": 40,
+      "AvgJudgeRank": 2.3,
+      "SyntaxAudit": {
+        "OverallSyntaxScore": 85.5,
+        "FormatComplianceScore": 100,
+        "SceneBudgetScore": 100,
+        "DialoguePacingScore": 50,
+        "CharacterDisambiguationScore": 100,
+        "MusicSpecScore": 70,
+        "TotalSceneHeadings": 9,
+        "TotalDialogueBlocks": 37,
+        "AvgWordsPerDialogue": 40,
+        "MaxWordsInSingleDialogue": 70,
+        "LongMonologueCount": 22,
+        "GenericNumberedSpeakerCount": 0,
+        "CharacterNamesFound": [
+          "NARRATOR",
+          "OLD MAN",
+          "OFFICER REYNOLDS"
+        ],
+        "AgeDisambiguatedCharacters": [
+          "OLD MAN"
+        ],
+        "DiagnosticWarnings": [
+          "High average dialogue length (40 words/turn); speech beats risk clip overrun.",
+          "22 monologue turn(s) exceed 35 words without action line splits.",
+          "Detected 1 age-qualified character header(s) (e.g. OLD MAN).",
+          "No explicit music/sound design cues detected in screenplay."
+        ]
+      },
+      "AvgAdaptationFidelity": 8.9,
+      "AvgCharacterDisambiguation": 8.9,
+      "AvgAiVideoDirectibility": 8.4,
+      "AvgDramaticPacing": 8.3,
+      "AvgDialogueAuthenticity": 8.6,
+      "AvgSoundDesignMusic": 8.4,
+      "AvgOverallQualitative": 8.6,
+      "DisqualifyingFlags": []
+    },
+    {
+      "ModelId": "gpt-4o-mini",
+      "AnonymousLabel": "",
+      "CompositeScore": 78.4,
+      "IsGenerationFallback": false,
+      "GenerationFallbackReason": null,
+      "BordaPoints": 21,
+      "AvgJudgeRank": 5,
+      "SyntaxAudit": {
+        "OverallSyntaxScore": 95.5,
+        "FormatComplianceScore": 100,
+        "SceneBudgetScore": 100,
+        "DialoguePacingScore": 100,
+        "CharacterDisambiguationScore": 100,
+        "MusicSpecScore": 70,
+        "TotalSceneHeadings": 6,
+        "TotalDialogueBlocks": 32,
+        "AvgWordsPerDialogue": 12.8,
+        "MaxWordsInSingleDialogue": 26,
+        "LongMonologueCount": 0,
+        "GenericNumberedSpeakerCount": 0,
+        "CharacterNamesFound": [
+          "NARRATOR",
+          "OLD MAN",
+          "OFFICER REYNOLDS"
+        ],
+        "AgeDisambiguatedCharacters": [
+          "OLD MAN"
+        ],
+        "DiagnosticWarnings": [
+          "Detected 1 age-qualified character header(s) (e.g. OLD MAN).",
+          "No explicit music/sound design cues detected in screenplay."
+        ]
+      },
+      "AvgAdaptationFidelity": 7.4,
+      "AvgCharacterDisambiguation": 6.2,
+      "AvgAiVideoDirectibility": 6.6,
+      "AvgDramaticPacing": 6.6,
+      "AvgDialogueAuthenticity": 6.9,
+      "AvgSoundDesignMusic": 6.4,
+      "AvgOverallQualitative": 6.7,
+      "DisqualifyingFlags": [
+        "grok-4.5: Near-total absence of consistent visual character descriptions",
+        "grok-4.5: Heavy compression drops seven-night buildup and morning kindness beats",
+        "grok-4.5: Monologue delivered as on-camera dialogue while performing actions creates unfilmable crammed beats",
+        "grok-4: Excessive repeated identical scene headings; multiple actions crammed per scene"
+      ]
+    },
+    {
+      "ModelId": "o3-mini",
+      "AnonymousLabel": "",
+      "CompositeScore": 76.1,
+      "IsGenerationFallback": false,
+      "GenerationFallbackReason": null,
+      "BordaPoints": 18,
+      "AvgJudgeRank": 5.4,
+      "SyntaxAudit": {
+        "OverallSyntaxScore": 90.2,
+        "FormatComplianceScore": 95,
+        "SceneBudgetScore": 100,
+        "DialoguePacingScore": 80,
+        "CharacterDisambiguationScore": 100,
+        "MusicSpecScore": 70,
+        "TotalSceneHeadings": 8,
+        "TotalDialogueBlocks": 0,
+        "AvgWordsPerDialogue": 0,
+        "MaxWordsInSingleDialogue": 0,
+        "LongMonologueCount": 0,
+        "GenericNumberedSpeakerCount": 0,
+        "CharacterNamesFound": [],
+        "AgeDisambiguatedCharacters": [],
+        "DiagnosticWarnings": [
+          "Missing \u0027FADE OUT.\u0027 or \u0027THE END\u0027 closing transition.",
+          "No explicit music/sound design cues detected in screenplay."
+        ]
+      },
+      "AvgAdaptationFidelity": 7.1,
+      "AvgCharacterDisambiguation": 6.2,
+      "AvgAiVideoDirectibility": 6.6,
+      "AvgDramaticPacing": 6.6,
+      "AvgDialogueAuthenticity": 6.9,
+      "AvgSoundDesignMusic": 6.5,
+      "AvgOverallQualitative": 6.7,
+      "DisqualifyingFlags": [
+        "grok-4.5: Significant dropped beats and timeline muddle (Who\u0027s there appears without clear eighth-night setup)",
+        "grok-4.5: Heavy paraphrase plus invented dawn timing and officer business",
+        "grok-4.5: Weak inconsistent character visuals",
+        "grok-4: Sloppy metadata (Author: Author); vague action lines and internal monologue not filmable in clips"
+      ]
+    },
+    {
+      "ModelId": "gpt-4o",
+      "AnonymousLabel": "",
+      "CompositeScore": 75.5,
+      "IsGenerationFallback": false,
+      "GenerationFallbackReason": null,
+      "BordaPoints": 17,
+      "AvgJudgeRank": 5.6,
+      "SyntaxAudit": {
+        "OverallSyntaxScore": 90.2,
+        "FormatComplianceScore": 95,
+        "SceneBudgetScore": 100,
+        "DialoguePacingScore": 80,
+        "CharacterDisambiguationScore": 100,
+        "MusicSpecScore": 70,
+        "TotalSceneHeadings": 20,
+        "TotalDialogueBlocks": 0,
+        "AvgWordsPerDialogue": 0,
+        "MaxWordsInSingleDialogue": 0,
+        "LongMonologueCount": 0,
+        "GenericNumberedSpeakerCount": 0,
+        "CharacterNamesFound": [],
+        "AgeDisambiguatedCharacters": [],
+        "DiagnosticWarnings": [
+          "Missing \u0027FADE OUT.\u0027 or \u0027THE END\u0027 closing transition.",
+          "No explicit music/sound design cues detected in screenplay."
+        ]
+      },
+      "AvgAdaptationFidelity": 7.5,
+      "AvgCharacterDisambiguation": 5.9,
+      "AvgAiVideoDirectibility": 6.8,
+      "AvgDramaticPacing": 6.6,
+      "AvgDialogueAuthenticity": 6.6,
+      "AvgSoundDesignMusic": 6.1,
+      "AvgOverallQualitative": 6.6,
+      "DisqualifyingFlags": [
+        "gpt-4o: Inconsistent pacing and character descriptions",
+        "gpt-4o-mini: Pacing issues lead to a lack of tension.",
+        "grok-4.5: Narrator speaks stage-direction lines aloud (e.g. \u0027With a loud yell I threw open...\u0027) rendering dialogue unusable",
+        "grok-4.5: Virtually no consistent physical descriptions for casting lock",
+        "grok-4: Repeated identical scene headings violate single-clip constraint; minimal character visual specificity"
+      ]
+    },
+    {
+      "ModelId": "grok-4",
+      "AnonymousLabel": "",
+      "CompositeScore": 75,
+      "IsGenerationFallback": false,
+      "GenerationFallbackReason": null,
+      "BordaPoints": 20,
+      "AvgJudgeRank": 5.1,
+      "SyntaxAudit": {
+        "OverallSyntaxScore": 85.5,
+        "FormatComplianceScore": 100,
+        "SceneBudgetScore": 60,
+        "DialoguePacingScore": 90,
+        "CharacterDisambiguationScore": 100,
+        "MusicSpecScore": 70,
+        "TotalSceneHeadings": 4,
+        "TotalDialogueBlocks": 11,
+        "AvgWordsPerDialogue": 22.4,
+        "MaxWordsInSingleDialogue": 57,
+        "LongMonologueCount": 2,
+        "GenericNumberedSpeakerCount": 0,
+        "CharacterNamesFound": [
+          "NARRATOR",
+          "OLD MAN"
+        ],
+        "AgeDisambiguatedCharacters": [
+          "OLD MAN"
+        ],
+        "DiagnosticWarnings": [
+          "Too few scene headings (4); story lacks visual scene progression.",
+          "2 monologue turn(s) exceed 35 words without action line splits.",
+          "Detected 1 age-qualified character header(s) (e.g. OLD MAN).",
+          "No explicit music/sound design cues detected in screenplay."
+        ]
+      },
+      "AvgAdaptationFidelity": 7.6,
+      "AvgCharacterDisambiguation": 6.4,
+      "AvgAiVideoDirectibility": 6.6,
+      "AvgDramaticPacing": 6.8,
+      "AvgDialogueAuthenticity": 6.9,
+      "AvgSoundDesignMusic": 6.5,
+      "AvgOverallQualitative": 6.8,
+      "DisqualifyingFlags": [
+        "grok-4: Over-condensed beats cram multiple actions into single headings; insufficient character descriptions",
+        "gemini-2.5-flash: Action lines too condensed, combining multiple distinct beats into single descriptions, making it impossible to break into 5-10 second clips per beat as required by the production constraint."
+      ]
+    }
+  ],
+  "JudgeMatrix": {
+    "gpt-4o": {
+      "o3-mini": 7.67,
+      "gpt-4o-mini": 7.67,
+      "grok-4": 8.67,
+      "claude-sonnet-5": 7.83,
+      "grok-4.5": 8.83,
+      "gpt-4o": 6.5,
+      "gemini-2.5-flash": 8
+    },
+    "gpt-4o-mini": {
+      "gpt-4o-mini": 8.25,
+      "grok-4.5": 8.67,
+      "grok-4": 7.67,
+      "gemini-2.5-flash": 7.83,
+      "claude-sonnet-5": 7.67,
+      "gpt-4o": 7.17,
+      "o3-mini": 7.83
+    },
+    "o3-mini": {
+      "grok-4.5": 8.25,
+      "gpt-4o-mini": 7.83,
+      "gpt-4o": 7.67,
+      "gemini-2.5-flash": 8.75,
+      "o3-mini": 7.67,
+      "claude-sonnet-5": 8.92,
+      "grok-4": 7.25
+    },
+    "grok-4.5": {
+      "claude-sonnet-5": 8.25,
+      "gpt-4o-mini": 4.42,
+      "gpt-4o": 5.75,
+      "grok-4": 7.25,
+      "o3-mini": 4.75,
+      "gemini-2.5-flash": 9.17,
+      "grok-4.5": 8.75
+    },
+    "grok-4": {
+      "claude-sonnet-5": 8.92,
+      "gpt-4o": 6,
+      "grok-4": 5.67,
+      "gemini-2.5-flash": 8.58,
+      "grok-4.5": 8.75,
+      "o3-mini": 5.25,
+      "gpt-4o-mini": 5.92
+    },
+    "claude-sonnet-5": {
+      "o3-mini": 6,
+      "gemini-2.5-flash": 8.42,
+      "grok-4.5": 7.83,
+      "gpt-4o": 5,
+      "claude-sonnet-5": 8.67,
+      "grok-4": 5.42,
+      "gpt-4o-mini": 5.08
+    },
+    "gemini-2.5-flash": {
+      "gpt-4o-mini": 7.75,
+      "o3-mini": 7.5,
+      "claude-sonnet-5": 9.33,
+      "gpt-4o": 7.92,
+      "gemini-2.5-flash": 9.5,
+      "grok-4": 5.67,
+      "grok-4.5": 10
+    }
+  },
+  "JudgeRankMatrix": {
+    "gpt-4o": {
+      "grok-4.5": 1,
+      "grok-4": 2,
+      "gemini-2.5-flash": 3,
+      "claude-sonnet-5": 4,
+      "o3-mini": 5,
+      "gpt-4o-mini": 6,
+      "gpt-4o": 7
+    },
+    "gpt-4o-mini": {
+      "grok-4.5": 1,
+      "gpt-4o-mini": 2,
+      "gemini-2.5-flash": 3,
+      "o3-mini": 4,
+      "grok-4": 5,
+      "claude-sonnet-5": 6,
+      "gpt-4o": 7
+    },
+    "o3-mini": {
+      "claude-sonnet-5": 1,
+      "gemini-2.5-flash": 2,
+      "grok-4.5": 3,
+      "gpt-4o-mini": 4,
+      "gpt-4o": 5,
+      "o3-mini": 6,
+      "grok-4": 7
+    },
+    "grok-4.5": {
+      "gemini-2.5-flash": 1,
+      "grok-4.5": 2,
+      "claude-sonnet-5": 3,
+      "grok-4": 4,
+      "gpt-4o": 5,
+      "o3-mini": 6,
+      "gpt-4o-mini": 7
+    },
+    "grok-4": {
+      "claude-sonnet-5": 1,
+      "grok-4.5": 2,
+      "gemini-2.5-flash": 3,
+      "gpt-4o": 4,
+      "gpt-4o-mini": 5,
+      "grok-4": 6,
+      "o3-mini": 7
+    },
+    "claude-sonnet-5": {
+      "claude-sonnet-5": 1,
+      "gemini-2.5-flash": 2,
+      "grok-4.5": 3,
+      "o3-mini": 4,
+      "grok-4": 5,
+      "gpt-4o-mini": 6,
+      "gpt-4o": 7
+    },
+    "gemini-2.5-flash": {
+      "grok-4.5": 1,
+      "gemini-2.5-flash": 2,
+      "claude-sonnet-5": 3,
+      "gpt-4o": 4,
+      "gpt-4o-mini": 5,
+      "o3-mini": 6,
+      "grok-4": 7
+    }
+  },
+  "SelfBiasNotes": [
+    "\u26A0\uFE0F gpt-4o-mini rated its own screenplay 8.2/10 vs. a 6.4/10 average from 6 other judge(s) (\u002B1.8) \u2014 possible self-preference bias.",
+    "\u26A0\uFE0F o3-mini rated its own screenplay 7.7/10 vs. a 6.5/10 average from 6 other judge(s) (\u002B1.2) \u2014 possible self-preference bias.",
+    "\u2139\uFE0F grok-4 rated its own screenplay 5.7/10 vs. a 7.0/10 average from 6 other judge(s) (-1.3) \u2014 notably harsher on itself than peers were.",
+    "\u26A0\uFE0F gemini-2.5-flash rated its own screenplay 9.5/10 vs. a 8.5/10 average from 6 other judge(s) (\u002B1.0) \u2014 possible self-preference bias."
+  ],
+  "JudgeRationale": {
+    "gpt-4o": {
+      "o3-mini": "Screenplay A maintains strong fidelity to the source material, with clear character descriptions and effective dialogue. However, the pacing could be improved to better suit the short clip format.",
+      "gpt-4o-mini": "Screenplay B offers a solid adaptation with good pacing and directibility, though character descriptions could be more distinct. The sound design effectively complements the narrative.",
+      "grok-4": "Screenplay C excels in adaptation fidelity and directibility, with strong pacing and sound design that enhance the story\u0027s tension and atmosphere.",
+      "claude-sonnet-5": "Screenplay D provides clear character disambiguation and maintains a strong narrative flow, though the directibility could be improved for better visual storytelling.",
+      "grok-4.5": "Screenplay E stands out with exceptional adaptation fidelity, directibility, and sound design, creating a compelling and immersive experience.",
+      "gpt-4o": "Screenplay F struggles with pacing and character consistency, impacting its overall effectiveness and production readiness.",
+      "gemini-2.5-flash": "Screenplay G delivers a balanced adaptation with consistent character descriptions and effective pacing, making it suitable for production."
+    },
+    "gpt-4o-mini": {
+      "gpt-4o-mini": "Screenplay A effectively captures the essence of Poe\u0027s narrative while maintaining a strong visual direction and character clarity.",
+      "grok-4.5": "Screenplay B excels in adaptation fidelity and dialogue authenticity, creating a compelling and directable narrative.",
+      "grok-4": "Screenplay C presents a solid adaptation but lacks the dramatic tension and pacing of the top candidates.",
+      "gemini-2.5-flash": "Screenplay D captures the essence of the story but struggles with pacing and directibility in certain sections.",
+      "claude-sonnet-5": "Screenplay E is a competent adaptation but lacks the intensity and clarity found in stronger candidates.",
+      "gpt-4o": "Screenplay F has significant pacing issues that hinder its overall effectiveness and production readiness.",
+      "o3-mini": "Screenplay G presents a strong adaptation with good pacing and character clarity, though it could use more tension."
+    },
+    "o3-mini": {
+      "grok-4.5": "Screenplay A adheres closely to Poe\u0027s text with detailed scene settings and clear character design, though a few sequences might need tighter pacing to suit 5-10 second video clips.",
+      "gpt-4o-mini": "Screenplay B remains faithful and maintains tension well, but its sparser visual cues and generic character descriptions may complicate segmentation into short clips.",
+      "gpt-4o": "Screenplay C is streamlined and faithful to the source, yet its minimal character visuals and somewhat bland dialogue reduce its cinematic impact for rapid video sequencing.",
+      "gemini-2.5-flash": "Screenplay D offers rich visual staging, detailed character cues, and excellent sound design, though its complexity may require careful division into short, discrete clips.",
+      "o3-mini": "Screenplay E remains faithful in narrative beats and mood but suffers slightly from generic character details and a minor credit error, reducing its overall cinematic polish for short clips.",
+      "claude-sonnet-5": "Screenplay F excels with precise visual directions, rich character details, and dynamic sound cues perfectly tailored for 5-10 second video segments, making it highly production-ready.",
+      "grok-4": "Screenplay G, while faithful to the source, is overly condensed with minimal character detailing and rushed pacing, limiting its cinematic expressiveness in short clip format."
+    },
+    "grok-4.5": {
+      "claude-sonnet-5": "Strong fidelity to all major beats with only minor framing invention (confession room) and named officers; consistent visual locks for Narrator and Old Man; mostly clip-friendly actions though some denser sequences; authentic Poe dialogue; solid heartbeat/creak beds but thin explicit music direction.",
+      "gpt-4o-mini": "Major fidelity losses from rushed structure and omitted source beats; characters lack any reusable physical locks; directibility fails because internal states and multi-actions share headings; dialogue feels forced; minimal usable sound beds.",
+      "gpt-4o": "Beat coverage is high and short scenes suit clip length, but character visuals are nearly nonexistent and several lines turn action description into spoken dialogue, breaking authenticity and performability.",
+      "grok-4": "Efficient compression of seven nights works for short clips without inventing plot; basic but consistent Narrator look; clean observable actions and tight escalation; dialogue stays close to source; sound limited mainly to heartbeat.",
+      "o3-mini": "Fidelity suffers from omissions, paraphrasing and small inventions; casting locks are thin; several beats remain internal or multi-action; pacing uneven; dialogue loses Poe cadence; sound beds present but generic.",
+      "gemini-2.5-flash": "Near-complete source coverage with precise visual actions per beat; richest consistent casting descriptions (age, build, clothing, officer distinctions); excellent show-don\u0027t-tell and separable 5-10s clips; pure Poe dialogue; densest usable SFX beds (creaks, THUMP-THUMP, chimes) supporting arc.",
+      "grok-4.5": "Extremely faithful with only minor illustrative day beat; strong locked visuals for all principals; highly directible concrete actions and clear tension ladder; authentic dialogue; good period sound beds though slightly less granular than F."
+    },
+    "grok-4": {
+      "claude-sonnet-5": "Highly faithful with precise visual beats, consistent narrator and old man descriptions, excellent short-clip action lines and tension build.",
+      "gpt-4o": "Covers plot but lacks detail, inconsistent formatting, and weak visual/action specificity for AI clips.",
+      "grok-4": "Too summarized for short-clip format, drops nuance and visual clarity.",
+      "gemini-2.5-flash": "Strong fidelity and character consistency with detailed visuals, though slightly longer than ideal for 5-10s clips.",
+      "grok-4.5": "Excellent directibility and pacing with tight visual actions and consistent gothic tone.",
+      "o3-mini": "Significant structural and specificity issues make it unusable as-is.",
+      "gpt-4o-mini": "Repetitive headings and poor clip segmentation break the short-video requirement."
+    },
+    "claude-sonnet-5": {
+      "o3-mini": "Covers the core beats but compresses the seven-night ritual and the morning-visit beat into brief V.O. summary rather than dramatized action, weakening coverage. The odd choice of putting the opening narration in parentheses (as if stage direction rather than spoken dialogue) is a formatting misstep. Neither the Narrator nor the Old Man receive any physical/wardrobe description, and named officers (Reynolds, Merrick, Davis) are never visually distinguished, hurting castability. Actions are mostly filmable but some scenes stack multiple beats (pacing \u002B dialogue \u002B heartbeat) into one heading. Sound design is only lightly sketched (creaks, muffled heart) with no real escalation architecture.",
+      "gemini-2.5-flash": "Extremely thorough coverage of the text with almost every original beat dramatized (seven-night ritual, morning cheerfulness, chair-grating climax). Strong, consistent physical descriptions for Narrator, Old Man, and each named officer (stern/older, young/observant, burly/quiet) that hold up on reappearance. Scene breakdown is granular and mostly filmable in short clips, though some blocks still lean on dense V.O. paragraphs. Sound design explicitly escalates the heartbeat (THUMP-THUMP-THUMP) and chair-screech, giving strong cues for a sound designer, though no distinct musical/score direction is offered.",
+      "grok-4.5": "Strong bookend structure (candlelit confession room) and generally faithful adaptation, but adds an invented daytime tea-pouring scene and invented Old Man dialogue not present in the source \u2014 a minor but real embellishment that slightly dings fidelity. Narrator description is good (lean, pale, threadbare waistcoat) but the parenthetical note \u0027(younger coat, same man)\u0027 introduces ambiguity about visual continuity across time. Directibility is strong with clear, single-action beats. Pacing benefits from the added quiet scene as contrast before escalation. Sound cues (bell, hinges, heartbeat) are present but not tightly escalated compared to B/E.",
+      "gpt-4o": "Technically hits most plot beats but does so with almost no dramatization \u2014 nearly every scene is a repeated \u0027INT. OLD MAN\u0027S BEDROOM - NIGHT\u0027 slug with a single flat description, and the morning-visit beat is dropped. No physical descriptions are given for Narrator or Old Man, and officers are entirely generic/unnamed, making casting reference images impossible. Directibility is workable purely because beats are short, but the lack of visual specificity leaves too much to interpretation. Pacing feels flat and rushed with no escalation architecture, and sound design is essentially unaddressed beyond naming the heartbeat sound.",
+      "claude-sonnet-5": "The most cinematically confident adaptation: vivid, consistent character descriptions (gaunt Narrator in buttoned dark coat, frail white-haired Old Man, individually distinct officers Moran/Duffy/Kelly) that hold throughout. Bookend \u0027Confession Room\u0027 framing gives strong structure and closure. Action lines are consistently concrete, single-beat, and camera-observable (hand trembling on lantern, palm pressing floor seams smooth), ideal for short-clip generation. Added minor officer small talk (\u0027It has stood longer than I have\u0027) is a tasteful, low-risk embellishment that enhances subtext without inventing plot. Sound design is the most developed of all candidates, with heartbeat, chair-scrape, and candle-guttering cues building a clear emotional arc.",
+      "grok-4": "Covers the major plot points but relies on explicit montage language (\u0027Seven nights pass in quick succession\u0027) which is fundamentally at odds with the one-beat-per-clip constraint, since it describes repeated action rather than a single filmable moment. Minimal descriptions for Narrator (\u0027lean man in dark coat\u0027) and none for the Old Man beyond the eye; officers are unnamed and undifferentiated. Dialogue is sparse, mostly compressed V.O., limiting performability. Sound cues are present but underdeveloped compared to top-tier candidates.",
+      "gpt-4o-mini": "Adds an invented shriek line for the Old Man (\u0027Ahhh!\u0027) and repeatedly has the Narrator\u0027s dialogue restate the action just shown on screen (double-telling), which weakens the show-don\u0027t-tell requirement. No physical description is given for the Narrator beyond \u0027eyes wide with fear and excitement,\u0027 and the Old Man and officers (only one named, Reynolds) are essentially undifferentiated, making consistent casting difficult. Scene headers repeat generically (\u0027NIGHT - LATER\u0027, \u0027MOMENTS LATER\u0027) without strong escalation, and sound design/heartbeat cues are present but thin and unscored for musical arc."
+    },
+    "gemini-2.5-flash": {
+      "gpt-4o-mini": "Screenplay A provides a solid adaptation with good fidelity to the source text, utilizing V.O. effectively to convey the narrator\u0027s internal thoughts. Action lines are generally directable, though some scenes combine multiple distinct actions that might challenge the 5-10 second clip constraint. Character descriptions are somewhat generic, and explicit sound design cues could be more frequent to enhance the atmosphere.",
+      "o3-mini": "Screenplay B maintains good adaptation fidelity, but its directibility is hampered by some action lines that are too dense, combining several distinct visual beats into one. The formatting for V.O. is also non-standard, and character descriptions lack the specificity needed for consistent AI casting. Pacing is adequate, but could be smoother.",
+      "claude-sonnet-5": "Screenplay C offers an exceptionally faithful adaptation, using a \u0027Confession Room\u0027 framing device effectively. Character descriptions are highly detailed and consistent, aiding casting clarity. Directibility is strong with concise, visual action lines. Pacing is well-managed, and sound design cues are integrated to enhance the narrative tension and atmosphere.",
+      "gpt-4o": "Screenplay D demonstrates good adaptation fidelity and strong directibility due to its very short, single-action scenes, which align well with the clip constraint. However, character disambiguation is weak, with generic descriptions for most characters. Sound design is implied through V.O. but lacks explicit prompting in action lines.",
+      "gemini-2.5-flash": "Screenplay E is an outstanding adaptation, excelling in fidelity, character clarity, and directibility. Its action lines are meticulously detailed for short clips, and the pacing builds tension effectively. Character descriptions are precise and consistent, and sound design cues are expertly woven into the narrative, creating a rich sensory experience.",
+      "grok-4": "Screenplay F suffers from excessive condensation, sacrificing fidelity and directibility. Many action lines combine multiple events or summarize long periods, making it unusable for the short-clip production constraint. Character descriptions are minimal, and the rapid pacing undermines the story\u0027s psychological tension.",
+      "grok-4.5": "Screenplay G is an exceptional adaptation, achieving perfect scores across all dimensions. It demonstrates unparalleled fidelity to the source, provides meticulous character and sound detail, and its action lines are precisely crafted for AI video directibility, ensuring each beat can be rendered as a distinct 5-10 second clip. The pacing and structure are masterful."
+    }
+  },
+  "JudgeSummaries": {
+    "gpt-4o": "Strongest: Screenplay E because it offers exceptional fidelity, directibility, and sound design, creating a compelling and immersive experience. Weakest: Screenplay F because it struggles with pacing and character consistency, impacting its overall effectiveness and production readiness.",
+    "gpt-4o-mini": "Strongest: Screenplay B because it excels in adaptation fidelity and dialogue authenticity, creating a compelling narrative. Weakest: Screenplay F because it has significant pacing issues that hinder its overall effectiveness and production readiness.",
+    "o3-mini": "Strongest: Screenplay F because it provides exceptional visual direction, sound design, and pacing perfectly suited for short AI-generated video clips. Weakest: Screenplay G because its minimal character details and rushed, overly condensed pacing undermine its cinematic potential.",
+    "grok-4.5": "Strongest: Screenplay F because it delivers the fullest source coverage, richest consistent character locks, and most clip-ready observable actions with superior sound beds. Weakest: Screenplay B because it lacks usable character descriptions, drops key buildup beats, and forces unfilmable monologue-as-dialogue inside crammed scenes.",
+    "grok-4": "Strongest: Screenplay A because it delivers the highest fidelity, consistent character visuals, and clip-ready action lines without any disqualifiers. Weakest: Screenplay G because repetitive headings and crammed beats make it unusable for the 5-10s clip constraint.",
+    "claude-sonnet-5": "Strongest: Screenplay E, because it combines the most consistent, castable character descriptions, the most escalation-driven sound design, and the cleanest single-action-per-clip breakdown while adding only tasteful, low-risk dialogue embellishments. Weakest: Screenplay D, because it reduces nearly every beat to a flat, repeated slugline with no character description, no named/distinguished officers, and no escalation architecture, making it unusable for consistent AI casting or paced clip generation despite technically touching all plot points.",
+    "gemini-2.5-flash": "Strongest: Screenplay G because it demonstrates exceptional fidelity, meticulous directibility for short clips, and comprehensive character and sound detail. Weakest: Screenplay F because its extreme condensation of action lines makes it unusable for the required 5-10 second clip per beat constraint."
+  }
+}

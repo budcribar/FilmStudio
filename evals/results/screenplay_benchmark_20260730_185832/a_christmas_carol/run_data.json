@@ -1,0 +1,661 @@
+{
+  "BookPath": "C:\\Users\\budcr\\source\\repos\\claude\\PageToMovie\\books\\A_Christmas_Carol.txt",
+  "Timestamp": "2026-07-31 01:50:31 UTC",
+  "IsMockRun": false,
+  "Leaderboard": [
+    {
+      "ModelId": "grok-4.5",
+      "AnonymousLabel": "",
+      "CompositeScore": 88.5,
+      "IsGenerationFallback": false,
+      "GenerationFallbackReason": null,
+      "BordaPoints": 34,
+      "AvgJudgeRank": 1.2,
+      "SyntaxAudit": {
+        "OverallSyntaxScore": 91,
+        "FormatComplianceScore": 100,
+        "SceneBudgetScore": 100,
+        "DialoguePacingScore": 70,
+        "CharacterDisambiguationScore": 100,
+        "MusicSpecScore": 80,
+        "TotalSceneHeadings": 24,
+        "TotalDialogueBlocks": 204,
+        "AvgWordsPerDialogue": 18.4,
+        "MaxWordsInSingleDialogue": 121,
+        "LongMonologueCount": 35,
+        "GenericNumberedSpeakerCount": 0,
+        "CharacterNamesFound": [
+          "NARRATOR",
+          "FRED",
+          "SCROOGE",
+          "PORTLY GENTLEMAN",
+          "BOB CRATCHIT",
+          "MARLEY",
+          "GHOST OF CHRISTMAS PAST",
+          "FAN",
+          "BOY SCROOGE",
+          "FEZZIWIG",
+          "BELLE",
+          "YOUNG MAN SCROOGE",
+          "HUSBAND",
+          "GHOST OF CHRISTMAS PRESENT",
+          "MRS. CRATCHIT",
+          "TINY TIM",
+          "ALL",
+          "FAT MERCHANT",
+          "MERCHANT HALES",
+          "MERCHANT KEMP",
+          "RED-FACED GENTLEMAN",
+          "MR. CHAPMAN",
+          "MR. PELL",
+          "CHARWOMAN",
+          "OLD JOE",
+          "CAROLINE",
+          "PETER",
+          "BOY",
+          "PASSERSBY"
+        ],
+        "AgeDisambiguatedCharacters": [
+          "BOY SCROOGE",
+          "YOUNG MAN SCROOGE",
+          "TINY TIM",
+          "OLD JOE",
+          "BOY"
+        ],
+        "DiagnosticWarnings": [
+          "35 monologue turn(s) exceed 35 words without action line splits.",
+          "Detected 5 age-qualified character header(s) (e.g. BOY SCROOGE, YOUNG MAN SCROOGE, TINY TIM)."
+        ]
+      },
+      "AvgAdaptationFidelity": 9.4,
+      "AvgCharacterDisambiguation": 9.2,
+      "AvgAiVideoDirectibility": 7.7,
+      "AvgDramaticPacing": 8.1,
+      "AvgDialogueAuthenticity": 9.2,
+      "AvgSoundDesignMusic": 8.5,
+      "AvgOverallQualitative": 8.7,
+      "DisqualifyingFlags": [
+        "gemini-2.5-flash: Extensive NARRATOR V.O. and unfilmable internal monologues/emotions, violating \u0027show, don\u0027t tell\u0027 for AI video clips.",
+        "gemini-2.5-flash: Some action lines are too dense for single short clips without further breakdown."
+      ]
+    },
+    {
+      "ModelId": "claude-sonnet-5",
+      "AnonymousLabel": "",
+      "CompositeScore": 85.6,
+      "IsGenerationFallback": false,
+      "GenerationFallbackReason": null,
+      "BordaPoints": 29,
+      "AvgJudgeRank": 2.2,
+      "SyntaxAudit": {
+        "OverallSyntaxScore": 89.5,
+        "FormatComplianceScore": 100,
+        "SceneBudgetScore": 100,
+        "DialoguePacingScore": 70,
+        "CharacterDisambiguationScore": 100,
+        "MusicSpecScore": 70,
+        "TotalSceneHeadings": 25,
+        "TotalDialogueBlocks": 152,
+        "AvgWordsPerDialogue": 14.9,
+        "MaxWordsInSingleDialogue": 74,
+        "LongMonologueCount": 10,
+        "GenericNumberedSpeakerCount": 0,
+        "CharacterNamesFound": [
+          "NARRATOR",
+          "FRED",
+          "SCROOGE",
+          "MR. ASHBY",
+          "BOB CRATCHIT",
+          "MARLEY\u0027S GHOST",
+          "GHOST OF CHRISTMAS PAST",
+          "FAN",
+          "YOUNG SCROOGE",
+          "FEZZIWIG",
+          "BELLE",
+          "YOUNG MAN SCROOGE",
+          "BELLE\u0027S HUSBAND",
+          "GHOST OF CHRISTMAS PRESENT",
+          "MRS. CRATCHIT",
+          "TINY TIM",
+          "LOUISA",
+          "ALL",
+          "CHUB",
+          "SNEDLEY",
+          "MR. FARROW",
+          "MR. GRIME",
+          "CHARWOMAN",
+          "OLD JOE",
+          "CAROLINE",
+          "MR. HARDWICK",
+          "PETER CRATCHIT",
+          "BOY"
+        ],
+        "AgeDisambiguatedCharacters": [
+          "YOUNG SCROOGE",
+          "YOUNG MAN SCROOGE",
+          "TINY TIM",
+          "OLD JOE",
+          "BOY"
+        ],
+        "DiagnosticWarnings": [
+          "10 monologue turn(s) exceed 35 words without action line splits.",
+          "Detected 5 age-qualified character header(s) (e.g. YOUNG SCROOGE, YOUNG MAN SCROOGE, TINY TIM).",
+          "No explicit music/sound design cues detected in screenplay."
+        ]
+      },
+      "AvgAdaptationFidelity": 9,
+      "AvgCharacterDisambiguation": 8.9,
+      "AvgAiVideoDirectibility": 7.1,
+      "AvgDramaticPacing": 7.6,
+      "AvgDialogueAuthenticity": 8.7,
+      "AvgSoundDesignMusic": 8,
+      "AvgOverallQualitative": 8.3,
+      "DisqualifyingFlags": [
+        "gemini-2.5-flash: Extensive NARRATOR V.O. and unfilmable internal monologues/emotions, violating \u0027show, don\u0027t tell\u0027 for AI video clips.",
+        "gemini-2.5-flash: Many action lines are too dense, describing multiple visual elements or complex states that would exceed a 5-10 second clip without further breakdown."
+      ]
+    },
+    {
+      "ModelId": "gemini-2.5-flash",
+      "AnonymousLabel": "",
+      "CompositeScore": 84.8,
+      "IsGenerationFallback": false,
+      "GenerationFallbackReason": null,
+      "BordaPoints": 24,
+      "AvgJudgeRank": 3.2,
+      "SyntaxAudit": {
+        "OverallSyntaxScore": 91,
+        "FormatComplianceScore": 100,
+        "SceneBudgetScore": 100,
+        "DialoguePacingScore": 70,
+        "CharacterDisambiguationScore": 100,
+        "MusicSpecScore": 80,
+        "TotalSceneHeadings": 36,
+        "TotalDialogueBlocks": 433,
+        "AvgWordsPerDialogue": 18.4,
+        "MaxWordsInSingleDialogue": 166,
+        "LongMonologueCount": 68,
+        "GenericNumberedSpeakerCount": 0,
+        "CharacterNamesFound": [
+          "NARRATOR",
+          "FRED",
+          "SCROOGE",
+          "MR. WITHERS",
+          "MR. POOLE",
+          "YOUNG SINGER",
+          "BOB CRATCHIT",
+          "MARLEY\u0027S GHOST",
+          "GHOST OF CHRISTMAS PAST",
+          "FAN",
+          "YOUNG SCROOGE",
+          "FEZZIWIG",
+          "BELLE",
+          "MR. HAWKINS",
+          "GHOST OF CHRISTMAS PRESENT",
+          "MRS. CRATCHIT",
+          "MARTHA CRATCHIT",
+          "YOUNG CRATCHITS",
+          "TINY TIM",
+          "ALL CRATCHITS",
+          "FRED\u0027S WIFE",
+          "MISS FANSHAWE",
+          "ALL",
+          "MR. PIMPLE",
+          "MR. FENWICK",
+          "MR. GRUBB",
+          "MR. GOBBLER",
+          "MR. DILBER",
+          "MR. SNOUT",
+          "MRS. DILBER",
+          "OLD JOE",
+          "MRS. GRUBB",
+          "CAROLINE",
+          "HUSBAND",
+          "PETER CRATCHIT",
+          "BELINDA CRATCHIT",
+          "BETSY CRATCHIT",
+          "TIMOTHY",
+          "POLLY"
+        ],
+        "AgeDisambiguatedCharacters": [
+          "YOUNG SINGER",
+          "YOUNG SCROOGE",
+          "YOUNG CRATCHITS",
+          "TINY TIM",
+          "OLD JOE"
+        ],
+        "DiagnosticWarnings": [
+          "68 monologue turn(s) exceed 35 words without action line splits.",
+          "Detected 5 age-qualified character header(s) (e.g. YOUNG SINGER, YOUNG SCROOGE, YOUNG CRATCHITS)."
+        ]
+      },
+      "AvgAdaptationFidelity": 9.1,
+      "AvgCharacterDisambiguation": 8.9,
+      "AvgAiVideoDirectibility": 6.6,
+      "AvgDramaticPacing": 6.9,
+      "AvgDialogueAuthenticity": 8.9,
+      "AvgSoundDesignMusic": 8.1,
+      "AvgOverallQualitative": 8.1,
+      "DisqualifyingFlags": [
+        "gemini-2.5-flash: Extensive NARRATOR V.O. and unfilmable internal monologues/emotions, violating \u0027show, don\u0027t tell\u0027 for AI video clips.",
+        "gemini-2.5-flash: Many action lines are too dense, describing multiple visual elements or complex states that would exceed a 5-10 second clip without further breakdown."
+      ]
+    },
+    {
+      "ModelId": "grok-4",
+      "AnonymousLabel": "",
+      "CompositeScore": 79.3,
+      "IsGenerationFallback": false,
+      "GenerationFallbackReason": null,
+      "BordaPoints": 17,
+      "AvgJudgeRank": 4.6,
+      "SyntaxAudit": {
+        "OverallSyntaxScore": 89.5,
+        "FormatComplianceScore": 100,
+        "SceneBudgetScore": 100,
+        "DialoguePacingScore": 70,
+        "CharacterDisambiguationScore": 100,
+        "MusicSpecScore": 70,
+        "TotalSceneHeadings": 13,
+        "TotalDialogueBlocks": 113,
+        "AvgWordsPerDialogue": 14.4,
+        "MaxWordsInSingleDialogue": 114,
+        "LongMonologueCount": 12,
+        "GenericNumberedSpeakerCount": 0,
+        "CharacterNamesFound": [
+          "FRED",
+          "SCROOGE",
+          "PORTLY GENTLEMAN",
+          "BOB CRATCHIT",
+          "CAROLLER",
+          "MARLEY\u0027S GHOST",
+          "GHOST OF CHRISTMAS PAST",
+          "FAN",
+          "OLD FEZZIWIG",
+          "BELLE",
+          "GHOST OF CHRISTMAS PRESENT",
+          "TINY TIM",
+          "MRS. CRATCHIT",
+          "FRED\u0027S NIECE",
+          "BOY"
+        ],
+        "AgeDisambiguatedCharacters": [
+          "OLD FEZZIWIG",
+          "TINY TIM",
+          "BOY"
+        ],
+        "DiagnosticWarnings": [
+          "12 monologue turn(s) exceed 35 words without action line splits.",
+          "Detected 3 age-qualified character header(s) (e.g. OLD FEZZIWIG, TINY TIM, BOY).",
+          "No explicit music/sound design cues detected in screenplay."
+        ]
+      },
+      "AvgAdaptationFidelity": 7.8,
+      "AvgCharacterDisambiguation": 6.5,
+      "AvgAiVideoDirectibility": 7.6,
+      "AvgDramaticPacing": 7.2,
+      "AvgDialogueAuthenticity": 7.6,
+      "AvgSoundDesignMusic": 7,
+      "AvgOverallQualitative": 7.2,
+      "DisqualifyingFlags": [
+        "gpt-4o-mini: Inconsistent character descriptions",
+        "gpt-4o-mini: Pacing issues",
+        "gemini-2.5-flash: Severe lack of character disambiguation and casting clarity for almost all characters, making it impossible to consistently cast and visualize them (closed-cast violation).",
+        "gemini-2.5-flash: Heavy condensation of plot points reduces emotional impact and source coverage."
+      ]
+    },
+    {
+      "ModelId": "o3-mini",
+      "AnonymousLabel": "",
+      "CompositeScore": 71.4,
+      "IsGenerationFallback": false,
+      "GenerationFallbackReason": null,
+      "BordaPoints": 18,
+      "AvgJudgeRank": 4.4,
+      "SyntaxAudit": {
+        "OverallSyntaxScore": 95.5,
+        "FormatComplianceScore": 100,
+        "SceneBudgetScore": 100,
+        "DialoguePacingScore": 100,
+        "CharacterDisambiguationScore": 100,
+        "MusicSpecScore": 70,
+        "TotalSceneHeadings": 10,
+        "TotalDialogueBlocks": 20,
+        "AvgWordsPerDialogue": 14.4,
+        "MaxWordsInSingleDialogue": 28,
+        "LongMonologueCount": 0,
+        "GenericNumberedSpeakerCount": 0,
+        "CharacterNamesFound": [
+          "BOB CRATCHIT",
+          "SCROOGE",
+          "MARLEY\u0027S GHOST",
+          "GHOST OF CHRISTMAS PAST",
+          "YOUNG SCROOGE",
+          "GHOST OF CHRISTMAS PRESENT",
+          "TINY TIM",
+          "BOY"
+        ],
+        "AgeDisambiguatedCharacters": [
+          "YOUNG SCROOGE",
+          "TINY TIM",
+          "BOY"
+        ],
+        "DiagnosticWarnings": [
+          "Detected 3 age-qualified character header(s) (e.g. YOUNG SCROOGE, TINY TIM, BOY).",
+          "No explicit music/sound design cues detected in screenplay."
+        ]
+      },
+      "AvgAdaptationFidelity": 4.9,
+      "AvgCharacterDisambiguation": 5.5,
+      "AvgAiVideoDirectibility": 6,
+      "AvgDramaticPacing": 5.7,
+      "AvgDialogueAuthenticity": 5.4,
+      "AvgSoundDesignMusic": 6,
+      "AvgOverallQualitative": 5.5,
+      "DisqualifyingFlags": [
+        "gpt-4o-mini: Inconsistent character descriptions",
+        "gpt-4o-mini: Pacing issues",
+        "grok-4.5: Severe drops of major source beats (full Marley dialogue, Fezziwig party, Belle arc, Ignorance/Want, Old Joe thieves, debtor relief)",
+        "grok-4.5: Heavily invented simplified plot events and non-Dickensian dialogue",
+        "grok-4.5: Vague inconsistent character descriptions lacking age disambiguation",
+        "grok-4: Major invented plot events and dropped beats; invented named characters; insufficient source coverage",
+        "gemini-2.5-flash: Severe lack of source coverage, dropping major plot points and characters (e.g., Ignorance and Want, Old Joe\u0027s scene, Caroline\u0027s scene, much of Fezziwig and Fred\u0027s party).",
+        "gemini-2.5-flash: Extensive use of NARRATOR V.O. and unfilmable internal monologues.",
+        "gemini-2.5-flash: Poor character disambiguation and casting clarity for several key characters."
+      ]
+    },
+    {
+      "ModelId": "gpt-4o-mini",
+      "AnonymousLabel": "",
+      "CompositeScore": 67.1,
+      "IsGenerationFallback": false,
+      "GenerationFallbackReason": null,
+      "BordaPoints": 13,
+      "AvgJudgeRank": 5.4,
+      "SyntaxAudit": {
+        "OverallSyntaxScore": 93.5,
+        "FormatComplianceScore": 100,
+        "SceneBudgetScore": 100,
+        "DialoguePacingScore": 100,
+        "CharacterDisambiguationScore": 90,
+        "MusicSpecScore": 70,
+        "TotalSceneHeadings": 9,
+        "TotalDialogueBlocks": 30,
+        "AvgWordsPerDialogue": 7,
+        "MaxWordsInSingleDialogue": 15,
+        "LongMonologueCount": 0,
+        "GenericNumberedSpeakerCount": 1,
+        "CharacterNamesFound": [
+          "SCROOGE",
+          "FRED",
+          "MARLEY\u0027S GHOST",
+          "GHOST OF CHRISTMAS PAST",
+          "YOUNG SCROOGE",
+          "BELLE",
+          "GHOST OF CHRISTMAS PRESENT",
+          "BOB CRATCHIT",
+          "TINY TIM",
+          "GHOST OF CHRISTMAS YET TO COME",
+          "BUSINESSMAN 1",
+          "BOY"
+        ],
+        "AgeDisambiguatedCharacters": [
+          "YOUNG SCROOGE",
+          "TINY TIM",
+          "BOY"
+        ],
+        "DiagnosticWarnings": [
+          "1 generic numbered speaker(s) found (e.g. MAN 1, OFFICER 2); replace with proper names.",
+          "Detected 3 age-qualified character header(s) (e.g. YOUNG SCROOGE, TINY TIM, BOY).",
+          "No explicit music/sound design cues detected in screenplay."
+        ]
+      },
+      "AvgAdaptationFidelity": 4.3,
+      "AvgCharacterDisambiguation": 4.5,
+      "AvgAiVideoDirectibility": 6.4,
+      "AvgDramaticPacing": 4.8,
+      "AvgDialogueAuthenticity": 4.7,
+      "AvgSoundDesignMusic": 4.8,
+      "AvgOverallQualitative": 4.9,
+      "DisqualifyingFlags": [
+        "grok-4.5: Extreme omission of nearly all major source beats, arcs and themes",
+        "grok-4.5: Invented bare-bones plot with inauthentic simplified dialogue",
+        "grok-4.5: Virtually no visual character descriptions or disambiguation",
+        "grok-4: Major invented plot events and dropped beats; invented named characters; insufficient source coverage; broken structure",
+        "gemini-2.5-flash: Severe lack of source coverage, dropping most major plot points and characters, rendering it an unusable outline.",
+        "gemini-2.5-flash: Extremely poor character disambiguation, making consistent casting impossible.",
+        "gemini-2.5-flash: Dialogue is heavily truncated and often invented, losing all authenticity and subtext."
+      ]
+    },
+    {
+      "ModelId": "gpt-4o",
+      "AnonymousLabel": "",
+      "CompositeScore": 29.7,
+      "IsGenerationFallback": true,
+      "GenerationFallbackReason": "Chat HTTP 429: {\n    \u0022error\u0022: {\n        \u0022message\u0022: \u0022Rate limit reached for gpt-4o in organization org-Lrf5VruXklblpVn0yFliJuPl on tokens per min (TPM): Limit 30000, Used 21909, Requested 10629. Please try again in 5.076s. Visit https://platform.openai.com/account/rate-limits to learn more.\u0022,\n        \u0022type\u0022: \u0022tokens\u0022,\n        \u0022param\u0022: null,\n        \u0022code\u0022: \u0022rate_limit_exceeded\u0022\n    }\n}\n",
+      "BordaPoints": 0,
+      "AvgJudgeRank": 3.5,
+      "SyntaxAudit": {
+        "OverallSyntaxScore": 74.2,
+        "FormatComplianceScore": 95,
+        "SceneBudgetScore": 50,
+        "DialoguePacingScore": 50,
+        "CharacterDisambiguationScore": 100,
+        "MusicSpecScore": 70,
+        "TotalSceneHeadings": 714,
+        "TotalDialogueBlocks": 714,
+        "AvgWordsPerDialogue": 32.1,
+        "MaxWordsInSingleDialogue": 86,
+        "LongMonologueCount": 273,
+        "GenericNumberedSpeakerCount": 0,
+        "CharacterNamesFound": [
+          "NARRATOR"
+        ],
+        "AgeDisambiguatedCharacters": [],
+        "DiagnosticWarnings": [
+          "Missing \u0027FADE OUT.\u0027 or \u0027THE END\u0027 closing transition.",
+          "Excessive scene count (714 scenes); high micro-scene density inflates video gen budget.",
+          "High average dialogue length (32.1 words/turn); speech beats risk clip overrun.",
+          "273 monologue turn(s) exceed 35 words without action line splits.",
+          "No explicit music/sound design cues detected in screenplay."
+        ]
+      },
+      "AvgAdaptationFidelity": 0,
+      "AvgCharacterDisambiguation": 0,
+      "AvgAiVideoDirectibility": 0,
+      "AvgDramaticPacing": 0,
+      "AvgDialogueAuthenticity": 0,
+      "AvgSoundDesignMusic": 0,
+      "AvgOverallQualitative": 0,
+      "DisqualifyingFlags": []
+    }
+  ],
+  "JudgeMatrix": {
+    "gpt-4o": {
+      "grok-4.5": -1,
+      "o3-mini": -1,
+      "claude-sonnet-5": -1,
+      "gemini-2.5-flash": -1,
+      "grok-4": -1,
+      "gpt-4o-mini": -1
+    },
+    "gpt-4o-mini": {
+      "grok-4.5": 8.67,
+      "claude-sonnet-5": 8.33,
+      "gemini-2.5-flash": 7.67,
+      "o3-mini": 7.33,
+      "gpt-4o-mini": 8,
+      "grok-4": 7.33
+    },
+    "o3-mini": {
+      "gemini-2.5-flash": 8.17,
+      "grok-4": 8,
+      "o3-mini": 8.67,
+      "grok-4.5": 9.08,
+      "gpt-4o-mini": 7.83,
+      "claude-sonnet-5": 8.33
+    },
+    "grok-4.5": {
+      "claude-sonnet-5": 8.25,
+      "grok-4": 7.33,
+      "grok-4.5": 9.08,
+      "o3-mini": 3.08,
+      "gemini-2.5-flash": 8.25,
+      "gpt-4o-mini": 3.08
+    },
+    "grok-4": {
+      "grok-4.5": 8.67,
+      "claude-sonnet-5": 8.58,
+      "o3-mini": 4,
+      "grok-4": 8.08,
+      "gpt-4o-mini": 3.17,
+      "gemini-2.5-flash": 8.33
+    },
+    "claude-sonnet-5": {
+      "grok-4": -1,
+      "grok-4.5": -1,
+      "claude-sonnet-5": -1,
+      "o3-mini": -1,
+      "gemini-2.5-flash": -1,
+      "gpt-4o-mini": -1
+    },
+    "gemini-2.5-flash": {
+      "o3-mini": 4.58,
+      "gemini-2.5-flash": 7.91,
+      "grok-4.5": 7.91,
+      "claude-sonnet-5": 8.05,
+      "grok-4": 5.5,
+      "gpt-4o-mini": 2.66
+    }
+  },
+  "JudgeRankMatrix": {
+    "gpt-4o": {
+      "grok-4.5": -1,
+      "o3-mini": -1,
+      "claude-sonnet-5": -1,
+      "gemini-2.5-flash": -1,
+      "grok-4": -1,
+      "gpt-4o-mini": -1
+    },
+    "gpt-4o-mini": {
+      "grok-4.5": 1,
+      "claude-sonnet-5": 2,
+      "gpt-4o-mini": 3,
+      "gemini-2.5-flash": 4,
+      "o3-mini": 5,
+      "grok-4": 6
+    },
+    "o3-mini": {
+      "grok-4.5": 1,
+      "o3-mini": 2,
+      "claude-sonnet-5": 3,
+      "gemini-2.5-flash": 4,
+      "grok-4": 5,
+      "gpt-4o-mini": 6
+    },
+    "grok-4.5": {
+      "grok-4.5": 1,
+      "claude-sonnet-5": 2,
+      "gemini-2.5-flash": 3,
+      "grok-4": 4,
+      "o3-mini": 5,
+      "gpt-4o-mini": 6
+    },
+    "grok-4": {
+      "claude-sonnet-5": 1,
+      "grok-4.5": 2,
+      "gemini-2.5-flash": 3,
+      "grok-4": 4,
+      "o3-mini": 5,
+      "gpt-4o-mini": 6
+    },
+    "claude-sonnet-5": {
+      "grok-4": -1,
+      "grok-4.5": -1,
+      "claude-sonnet-5": -1,
+      "o3-mini": -1,
+      "gemini-2.5-flash": -1,
+      "gpt-4o-mini": -1
+    },
+    "gemini-2.5-flash": {
+      "grok-4.5": 1,
+      "gemini-2.5-flash": 2,
+      "claude-sonnet-5": 3,
+      "grok-4": 4,
+      "o3-mini": 5,
+      "gpt-4o-mini": 6
+    }
+  },
+  "SelfBiasNotes": [
+    "\u26A0\uFE0F gpt-4o-mini rated its own screenplay 8.0/10 vs. a 4.2/10 average from 4 other judge(s) (\u002B3.8) \u2014 possible self-preference bias.",
+    "\u26A0\uFE0F o3-mini rated its own screenplay 8.7/10 vs. a 4.7/10 average from 4 other judge(s) (\u002B3.9) \u2014 possible self-preference bias.",
+    "\u26A0\uFE0F grok-4 rated its own screenplay 8.1/10 vs. a 7.0/10 average from 4 other judge(s) (\u002B1.0) \u2014 possible self-preference bias."
+  ],
+  "JudgeRationale": {
+    "gpt-4o": {
+      "grok-4.5": "[MOCK / FAILED JUDGE] Model \u0027gpt-4o\u0027 failed or was skipped for candidate \u0027Screenplay A\u0027.",
+      "o3-mini": "[MOCK / FAILED JUDGE] Model \u0027gpt-4o\u0027 failed or was skipped for candidate \u0027Screenplay B\u0027.",
+      "claude-sonnet-5": "[MOCK / FAILED JUDGE] Model \u0027gpt-4o\u0027 failed or was skipped for candidate \u0027Screenplay C\u0027.",
+      "gemini-2.5-flash": "[MOCK / FAILED JUDGE] Model \u0027gpt-4o\u0027 failed or was skipped for candidate \u0027Screenplay D\u0027.",
+      "grok-4": "[MOCK / FAILED JUDGE] Model \u0027gpt-4o\u0027 failed or was skipped for candidate \u0027Screenplay E\u0027.",
+      "gpt-4o-mini": "[MOCK / FAILED JUDGE] Model \u0027gpt-4o\u0027 failed or was skipped for candidate \u0027Screenplay F\u0027."
+    },
+    "gpt-4o-mini": {
+      "grok-4.5": "Screenplay A maintains high fidelity to the source material, with strong character introductions and engaging dialogue, making it suitable for production.",
+      "claude-sonnet-5": "Screenplay B effectively captures the essence of the original text, though it has minor pacing issues that could be improved.",
+      "gemini-2.5-flash": "Screenplay C is a solid adaptation but lacks some clarity in character introductions and pacing, which affects its overall impact.",
+      "o3-mini": "Screenplay D has some adaptation strengths but suffers from inconsistent character descriptions and pacing issues that hinder its readiness for production.",
+      "gpt-4o-mini": "Screenplay E effectively captures the narrative and character essence, though it could benefit from tighter pacing.",
+      "grok-4": "Screenplay F presents a decent adaptation but has issues with character clarity and pacing that make it unsuitable for production."
+    },
+    "o3-mini": {
+      "gemini-2.5-flash": "Screenplay A is highly faithful to the source with detailed narrative and dialogue, though its pacing can be a bit overloaded for short video clips and some scenes merge multiple actions.",
+      "grok-4": "Screenplay B is succinct and covers the major narrative beats well, but its overall simplicity sometimes leaves out nuances needed for strong character visuals and dramatic effect.",
+      "o3-mini": "Screenplay C offers a cinematic and modern reimagining with clear, filmable visuals and effective pacing, though it sacrifices a bit of meticulous character detail for broader cinematic appeal.",
+      "grok-4.5": "Screenplay D stands out with richly descriptive, consistent character visuals, structured scene transitions, and strong sound and lighting cues that make it exceptionally filmable.",
+      "gpt-4o-mini": "Screenplay E is a more streamlined adaptation and remains fairly faithful, but its simpler character descriptions and less detailed sound cues reduce its effectiveness for a richly cinematic production.",
+      "claude-sonnet-5": "Screenplay F provides a well-structured, faithful rendition with clear narrative transitions and detailed descriptive cues, although its narration occasionally feels dense for short clip directibility."
+    },
+    "grok-4.5": {
+      "claude-sonnet-5": "High fidelity covers nearly all major beats and themes with largely authentic Dickens dialogue; solid age-disambiguated intros (YOUNG SCROOGE) and concrete visual actions support short clips, though secondary named inventions (Ashby, Hardwick) and occasional multi-beat scenes slightly dilute purity and clip isolation.",
+      "grok-4": "Condensed but recognizable coverage of core staves with decent book-derived dialogue and tighter pacing suited to clips; weaker on consistent visual re-descriptions and age locks, plus abbreviated Past/Present details lower fidelity and atmospheric sound potential.",
+      "grok-4.5": "Near-exhaustive source fidelity with precise beat coverage, richly consistent visual character locks (BOY SCROOGE / YOUNG MAN SCROOGE, frosty rime details) and single-action camera-ready staging ideal for 5-10s clips; authentic dialogue and strong implied sound beds (chains, bells, carols) elevate every dimension.",
+      "o3-mini": "Broken adaptation that invents a skeletal modernized outline while omitting most narrative, thematic and character substance; unfilmable internal V.O., rushed jumps and inauthentic lines make it unusable for clip-based production.",
+      "gemini-2.5-flash": "Most complete beat-for-beat fidelity and authentic dialogue with strong age variants, yet dense multi-action scene headings and exhaustive novelistic detail hinder clean 5-10s clip isolation and momentum despite rich implied sound opportunities.",
+      "gpt-4o-mini": "Skeletal summary that discards the book\u0027s structure, ghosts\u0027 full visitations, Cratchit depth and redemption texture; minimal visuals and generic lines fail every production criterion for short-clip adaptation."
+    },
+    "grok-4": {
+      "grok-4.5": "Near-verbatim fidelity with consistent visual descriptions and filmable beats; minor pacing compression for clip length.",
+      "claude-sonnet-5": "Slightly tighter pacing than A while retaining source accuracy and clear character visuals.",
+      "o3-mini": "Severe fidelity violations with invented content and missing major beats; descriptions too vague for consistent casting.",
+      "grok-4": "Faithful condensation of source with solid visuals, though less exhaustive than A/B.",
+      "gpt-4o-mini": "Severely condensed with invented dialogue and events; fails basic fidelity and directibility tests.",
+      "gemini-2.5-flash": "Extremely faithful but overly long for short-clip constraint; pacing suffers from verbatim density."
+    },
+    "claude-sonnet-5": {
+      "grok-4": "[MOCK / FAILED JUDGE] Model \u0027claude-sonnet-5\u0027 failed or was skipped for candidate \u0027Screenplay A\u0027.",
+      "grok-4.5": "[MOCK / FAILED JUDGE] Model \u0027claude-sonnet-5\u0027 failed or was skipped for candidate \u0027Screenplay B\u0027.",
+      "claude-sonnet-5": "[MOCK / FAILED JUDGE] Model \u0027claude-sonnet-5\u0027 failed or was skipped for candidate \u0027Screenplay C\u0027.",
+      "o3-mini": "[MOCK / FAILED JUDGE] Model \u0027claude-sonnet-5\u0027 failed or was skipped for candidate \u0027Screenplay D\u0027.",
+      "gemini-2.5-flash": "[MOCK / FAILED JUDGE] Model \u0027claude-sonnet-5\u0027 failed or was skipped for candidate \u0027Screenplay E\u0027.",
+      "gpt-4o-mini": "[MOCK / FAILED JUDGE] Model \u0027claude-sonnet-5\u0027 failed or was skipped for candidate \u0027Screenplay F\u0027."
+    },
+    "gemini-2.5-flash": {
+      "o3-mini": "This screenplay is a highly condensed summary rather than a faithful adaptation, omitting numerous critical plot points and characters, which severely impacts fidelity. Character descriptions are inconsistent and often sparse, making casting clarity difficult. While action lines are generally concise, the frequent use of V.O. and internal thoughts detracts from directibility for AI video. The extreme condensation results in rushed pacing and a loss of dramatic depth and subtext in the dialogue.",
+      "gemini-2.5-flash": "Screenplay B demonstrates exceptional fidelity to the source text, including almost verbatim dialogue and comprehensive character descriptions with excellent disambiguation across time periods. However, its heavy reliance on NARRATOR V.O. and internal monologues, coupled with very dense action lines, makes it poorly suited for direct AI video generation under the specified constraints, as these elements are not camera-observable actions.",
+      "grok-4.5": "This screenplay offers very high adaptation fidelity and strong character clarity, preserving much of the original dialogue and emotional beats. It is slightly better than B and D in AI directibility due to marginally less dense action lines and a slightly more cinematic pacing. However, the pervasive use of NARRATOR V.O. and internal monologues remains a significant barrier for direct AI video generation, preventing it from being production-ready.",
+      "claude-sonnet-5": "Screenplay D provides an exceptionally faithful adaptation, closely mirroring the source text\u0027s dialogue and narrative. Character descriptions are detailed and consistent. However, its extensive use of NARRATOR V.O. and internal character thoughts, combined with action lines that frequently cram too much visual information into a single beat, makes it highly problematic for AI video directibility and prevents it from being production-ready.",
+      "grok-4": "This screenplay suffers from a severe lack of character disambiguation, with most characters lacking distinct visual descriptions, which is a critical flaw for AI casting. While it avoids NARRATOR V.O., its heavy condensation of the plot sacrifices significant detail and emotional depth, leading to rushed pacing and truncated dialogue, making it a superficial adaptation.",
+      "gpt-4o-mini": "Screenplay F is an extremely condensed outline that fails to capture the essence or detail of the source material, resulting in very poor fidelity and dramatic pacing. Character descriptions are almost non-existent, making it impossible for consistent AI casting. Dialogue is minimal and often invented, completely stripping away authenticity and subtext, making it unusable as an adaptation."
+    }
+  },
+  "JudgeSummaries": {
+    "gpt-4o": "\u26A0\uFE0F Mock judge evaluation returned for gpt-4o.",
+    "gpt-4o-mini": "Strongest: Screenplay A because it excels in adaptation fidelity and dialogue authenticity. Weakest: Screenplay D because it has inconsistent character descriptions and pacing issues that hinder its effectiveness.",
+    "o3-mini": "Strongest: Screenplay D because it offers vivid visual details, consistent character disambiguation, and excellent cinematic pacing; Weakest: Screenplay E because its overly simplified character descriptions and reduced sound design cues diminish its overall cinematic impact.",
+    "grok-4.5": "Strongest: Screenplay C because it delivers near-perfect source fidelity, locked consistent character visuals, and single-beat camera-ready action ideally matched to 5-10s AI clips. Weakest: Screenplay F because it obliterates the narrative with extreme omissions and invented shorthand that retains almost none of the book\u0027s characters, beats or themes.",
+    "grok-4": "Strongest: Screenplay B because it balances near-perfect fidelity, clear character visuals, and clip-friendly pacing without excess length. Weakest: Screenplay E because it contains multiple invented plot events, dropped major beats, and vague descriptions that violate core adaptation and directibility criteria.",
+    "claude-sonnet-5": "\u26A0\uFE0F Mock judge evaluation returned for claude-sonnet-5.",
+    "gemini-2.5-flash": "Strongest: Screenplay C because it offers the most comprehensive adaptation with strong character clarity and dialogue, while having slightly better directibility and pacing for short clips than other faithful adaptations. Weakest: Screenplay F because it is an extremely condensed outline that sacrifices nearly all fidelity, character detail, and dramatic pacing, rendering it unusable."
+  }
+}

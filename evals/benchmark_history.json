@@ -7,6 +7,8 @@
       "BookTitle": "Nick_and_Me",
       "BookPath": "books/Nick_and_Me.txt",
       "IsMockRun": false,
+      "ReasoningEffort": "",
+      "PromptVersion": "",
       "ModelScores": [
         {
           "ModelId": "grok-4.5",
@@ -494,6 +496,8 @@
       "BookTitle": "Nick_and_Me",
       "BookPath": "books/Nick_and_Me.txt",
       "IsMockRun": false,
+      "ReasoningEffort": "",
+      "PromptVersion": "",
       "ModelScores": [
         {
           "ModelId": "o3-mini",
@@ -556,6 +560,8 @@
       "BookTitle": "Nick_and_Me",
       "BookPath": "books/Nick_and_Me.txt",
       "IsMockRun": true,
+      "ReasoningEffort": "",
+      "PromptVersion": "",
       "ModelScores": [
         {
           "ModelId": "claude-sonnet-5",
@@ -623,6 +629,8 @@
       "BookTitle": "Nick_and_Me",
       "BookPath": "books/Nick_and_Me.txt",
       "IsMockRun": false,
+      "ReasoningEffort": "",
+      "PromptVersion": "",
       "ModelScores": [
         {
           "ModelId": "claude-sonnet-5",
@@ -696,6 +704,8 @@
       "BookTitle": "Nick_and_Me",
       "BookPath": "books/Nick_and_Me.txt",
       "IsMockRun": false,
+      "ReasoningEffort": "",
+      "PromptVersion": "",
       "ModelScores": [
         {
           "ModelId": "claude-sonnet-5",
@@ -769,6 +779,8 @@
       "BookTitle": "Nick_and_Me",
       "BookPath": "books/Nick_and_Me.txt",
       "IsMockRun": false,
+      "ReasoningEffort": "",
+      "PromptVersion": "",
       "ModelScores": [
         {
           "ModelId": "claude-sonnet-5",
@@ -842,6 +854,8 @@
       "BookTitle": "Nick_and_Me",
       "BookPath": "books/Nick_and_Me.txt",
       "IsMockRun": false,
+      "ReasoningEffort": "",
+      "PromptVersion": "",
       "ModelScores": [
         {
           "ModelId": "claude-sonnet-5",
@@ -914,6 +928,8 @@
       "BookTitle": "Nick_and_Me",
       "BookPath": "books/Nick_and_Me.txt",
       "IsMockRun": false,
+      "ReasoningEffort": "",
+      "PromptVersion": "",
       "ModelScores": [
         {
           "ModelId": "o3-mini",
@@ -976,6 +992,8 @@
       "BookTitle": "Nick_and_Me",
       "BookPath": "books/Nick_and_Me.txt",
       "IsMockRun": false,
+      "ReasoningEffort": "",
+      "PromptVersion": "",
       "ModelScores": [
         {
           "ModelId": "o3-mini",
@@ -1038,6 +1056,8 @@
       "BookTitle": "Nick_and_Me",
       "BookPath": "C:\\Users\\budcr\\source\\repos\\claude\\PageToMovie\\books\\Nick_and_Me.txt",
       "IsMockRun": false,
+      "ReasoningEffort": "",
+      "PromptVersion": "",
       "ModelScores": [
         {
           "ModelId": "grok-4.5",
@@ -1498,6 +1518,8 @@
       "BookTitle": "The_Tell-Tale_Heart",
       "BookPath": "C:\\Users\\budcr\\source\\repos\\claude\\PageToMovie\\books\\The_Tell-Tale_Heart.txt",
       "IsMockRun": false,
+      "ReasoningEffort": "",
+      "PromptVersion": "",
       "ModelScores": [
         {
           "ModelId": "claude-sonnet-5",
@@ -1894,6 +1916,8 @@
       "BookTitle": "The_Velveteen_Rabbit",
       "BookPath": "C:\\Users\\budcr\\source\\repos\\claude\\PageToMovie\\books\\The_Velveteen_Rabbit.txt",
       "IsMockRun": false,
+      "ReasoningEffort": "",
+      "PromptVersion": "",
       "ModelScores": [
         {
           "ModelId": "grok-4.5",
@@ -2304,6 +2328,8 @@
       "BookTitle": "A_Christmas_Carol",
       "BookPath": "C:\\Users\\budcr\\source\\repos\\claude\\PageToMovie\\books\\A_Christmas_Carol.txt",
       "IsMockRun": false,
+      "ReasoningEffort": "",
+      "PromptVersion": "",
       "ModelScores": [
         {
           "ModelId": "grok-4.5",
@@ -2843,6 +2869,8 @@
       "BookTitle": "The_Call_of_the_Wild",
       "BookPath": "C:\\Users\\budcr\\source\\repos\\claude\\PageToMovie\\books\\The_Call_of_the_Wild.txt",
       "IsMockRun": false,
+      "ReasoningEffort": "",
+      "PromptVersion": "",
       "ModelScores": [
         {
           "ModelId": "grok-4.5",
@@ -3289,6 +3317,8 @@
       "BookTitle": "Nick_and_Me",
       "BookPath": "C:\\Users\\budcr\\source\\repos\\claude\\PageToMovie\\books\\Nick_and_Me.txt",
       "IsMockRun": false,
+      "ReasoningEffort": "",
+      "PromptVersion": "",
       "ModelScores": [
         {
           "ModelId": "claude-sonnet-5",
@@ -3743,6 +3773,8 @@
       "BookTitle": "The_Tell-Tale_Heart",
       "BookPath": "C:\\Users\\budcr\\source\\repos\\claude\\PageToMovie\\books\\The_Tell-Tale_Heart.txt",
       "IsMockRun": false,
+      "ReasoningEffort": "",
+      "PromptVersion": "",
       "ModelScores": [
         {
           "ModelId": "grok-4.5",
@@ -4124,6 +4156,8 @@
       "BookTitle": "The_Velveteen_Rabbit",
       "BookPath": "C:\\Users\\budcr\\source\\repos\\claude\\PageToMovie\\books\\The_Velveteen_Rabbit.txt",
       "IsMockRun": false,
+      "ReasoningEffort": "",
+      "PromptVersion": "",
       "ModelScores": [
         {
           "ModelId": "grok-4.5",
@@ -4542,6 +4576,8 @@
       "BookTitle": "Nick_and_Me",
       "BookPath": "C:\\Users\\budcr\\source\\repos\\claude\\PageToMovie\\books\\Nick_and_Me.txt",
       "IsMockRun": false,
+      "ReasoningEffort": "",
+      "PromptVersion": "",
       "ModelScores": [
         {
           "ModelId": "gpt-5.6-sol",
@@ -5047,6 +5083,8 @@
       "BookTitle": "The_Tell-Tale_Heart",
       "BookPath": "C:\\Users\\budcr\\source\\repos\\claude\\PageToMovie\\books\\The_Tell-Tale_Heart.txt",
       "IsMockRun": false,
+      "ReasoningEffort": "",
+      "PromptVersion": "",
       "ModelScores": [
         {
           "ModelId": "gpt-5.6-sol",
@@ -5495,6 +5533,8 @@
       "BookTitle": "The_Velveteen_Rabbit",
       "BookPath": "C:\\Users\\budcr\\source\\repos\\claude\\PageToMovie\\books\\The_Velveteen_Rabbit.txt",
       "IsMockRun": false,
+      "ReasoningEffort": "",
+      "PromptVersion": "",
       "ModelScores": [
         {
           "ModelId": "grok-4.5",
@@ -5982,6 +6022,8 @@
       "BookTitle": "A_Christmas_Carol",
       "BookPath": "C:\\Users\\budcr\\source\\repos\\claude\\PageToMovie\\books\\A_Christmas_Carol.txt",
       "IsMockRun": false,
+      "ReasoningEffort": "",
+      "PromptVersion": "",
       "ModelScores": [
         {
           "ModelId": "gpt-5.6-terra",
@@ -6633,6 +6675,8 @@
       "BookTitle": "The_Call_of_the_Wild",
       "BookPath": "C:\\Users\\budcr\\source\\repos\\claude\\PageToMovie\\books\\The_Call_of_the_Wild.txt",
       "IsMockRun": false,
+      "ReasoningEffort": "",
+      "PromptVersion": "",
       "ModelScores": [
         {
           "ModelId": "gpt-5.6-terra",
@@ -7130,6 +7174,3980 @@
           "o3-mini": 3.75,
           "gemini-2.5-flash": 7.75,
           "gpt-5.6-sol": 8.25
+        }
+      },
+      "SelfBiasNotes": []
+    },
+    {
+      "RunId": "55cac064d32944bf9adb4287712e953b",
+      "Timestamp": "2026-07-31 06:19:30 UTC",
+      "BookSlug": "nick_and_me",
+      "BookTitle": "Nick_and_Me",
+      "BookPath": "C:\\Users\\budcr\\source\\repos\\claude\\PageToMovie\\books\\Nick_and_Me.txt",
+      "IsMockRun": false,
+      "ReasoningEffort": "max",
+      "PromptVersion": "92890EA08C",
+      "ModelScores": [
+        {
+          "ModelId": "gpt-5.6-sol",
+          "AnonymousLabel": "",
+          "CompositeScore": 89.6,
+          "IsGenerationFallback": false,
+          "GenerationFallbackReason": null,
+          "BordaPoints": 14,
+          "AvgJudgeRank": 1,
+          "SyntaxAudit": {
+            "OverallSyntaxScore": 95,
+            "FormatComplianceScore": 100,
+            "SceneBudgetScore": 100,
+            "DialoguePacingScore": 90,
+            "CharacterDisambiguationScore": 100,
+            "MusicSpecScore": 70,
+            "TotalSceneHeadings": 23,
+            "TotalDialogueBlocks": 107,
+            "AvgWordsPerDialogue": 12.9,
+            "MaxWordsInSingleDialogue": 43,
+            "LongMonologueCount": 2,
+            "GenericNumberedSpeakerCount": 0,
+            "CharacterNamesFound": [
+              "THE NARRATOR",
+              "NICK",
+              "MA",
+              "SIONNA",
+              "LINDSEY",
+              "MARCO",
+              "OFFICER DUPUIS"
+            ],
+            "AgeDisambiguatedCharacters": [],
+            "DiagnosticWarnings": [
+              "2 monologue turn(s) exceed 35 words without action line splits.",
+              "No explicit music/sound design cues detected in screenplay."
+            ]
+          },
+          "AvgAdaptationFidelity": 9,
+          "AvgCharacterDisambiguation": 9.2,
+          "AvgAiVideoDirectibility": 9,
+          "AvgDramaticPacing": 8.5,
+          "AvgDialogueAuthenticity": 9,
+          "AvgSoundDesignMusic": 7.2,
+          "AvgOverallQualitative": 8.6,
+          "DisqualifyingFlags": []
+        },
+        {
+          "ModelId": "gpt-5.6-luna",
+          "AnonymousLabel": "",
+          "CompositeScore": 86.7,
+          "IsGenerationFallback": false,
+          "GenerationFallbackReason": null,
+          "BordaPoints": 12,
+          "AvgJudgeRank": 2,
+          "SyntaxAudit": {
+            "OverallSyntaxScore": 95,
+            "FormatComplianceScore": 100,
+            "SceneBudgetScore": 100,
+            "DialoguePacingScore": 90,
+            "CharacterDisambiguationScore": 100,
+            "MusicSpecScore": 70,
+            "TotalSceneHeadings": 33,
+            "TotalDialogueBlocks": 112,
+            "AvgWordsPerDialogue": 12.9,
+            "MaxWordsInSingleDialogue": 45,
+            "LongMonologueCount": 2,
+            "GenericNumberedSpeakerCount": 0,
+            "CharacterNamesFound": [
+              "NARRATOR",
+              "NICK",
+              "PETER",
+              "SIONNA",
+              "OLIVIA",
+              "DR. CARSON",
+              "OFFICER DUPUIS"
+            ],
+            "AgeDisambiguatedCharacters": [],
+            "DiagnosticWarnings": [
+              "2 monologue turn(s) exceed 35 words without action line splits.",
+              "No explicit music/sound design cues detected in screenplay."
+            ]
+          },
+          "AvgAdaptationFidelity": 8.5,
+          "AvgCharacterDisambiguation": 8.2,
+          "AvgAiVideoDirectibility": 8.5,
+          "AvgDramaticPacing": 8,
+          "AvgDialogueAuthenticity": 8.5,
+          "AvgSoundDesignMusic": 6.8,
+          "AvgOverallQualitative": 8.1,
+          "DisqualifyingFlags": []
+        },
+        {
+          "ModelId": "gpt-5.6-terra",
+          "AnonymousLabel": "",
+          "CompositeScore": 84.4,
+          "IsGenerationFallback": false,
+          "GenerationFallbackReason": null,
+          "BordaPoints": 8,
+          "AvgJudgeRank": 4,
+          "SyntaxAudit": {
+            "OverallSyntaxScore": 95.5,
+            "FormatComplianceScore": 100,
+            "SceneBudgetScore": 100,
+            "DialoguePacingScore": 100,
+            "CharacterDisambiguationScore": 100,
+            "MusicSpecScore": 70,
+            "TotalSceneHeadings": 32,
+            "TotalDialogueBlocks": 152,
+            "AvgWordsPerDialogue": 11.3,
+            "MaxWordsInSingleDialogue": 34,
+            "LongMonologueCount": 0,
+            "GenericNumberedSpeakerCount": 0,
+            "CharacterNamesFound": [
+              "PETER",
+              "NICK",
+              "SIONNA",
+              "MA",
+              "ELAINE",
+              "DR. CARSON",
+              "DYING SOLDIER",
+              "CARLOS",
+              "OFFICER DUPUIS",
+              "INSTRUCTOR MAYA",
+              "SAGE",
+              "OFFICER HARRIS"
+            ],
+            "AgeDisambiguatedCharacters": [],
+            "DiagnosticWarnings": [
+              "No explicit music/sound design cues detected in screenplay."
+            ]
+          },
+          "AvgAdaptationFidelity": 7.8,
+          "AvgCharacterDisambiguation": 8,
+          "AvgAiVideoDirectibility": 8,
+          "AvgDramaticPacing": 8,
+          "AvgDialogueAuthenticity": 8.2,
+          "AvgSoundDesignMusic": 6.2,
+          "AvgOverallQualitative": 7.7,
+          "DisqualifyingFlags": []
+        },
+        {
+          "ModelId": "gemini-3.6-flash",
+          "AnonymousLabel": "",
+          "CompositeScore": 81.8,
+          "IsGenerationFallback": false,
+          "GenerationFallbackReason": null,
+          "BordaPoints": 8,
+          "AvgJudgeRank": 4,
+          "SyntaxAudit": {
+            "OverallSyntaxScore": 93.5,
+            "FormatComplianceScore": 95,
+            "SceneBudgetScore": 100,
+            "DialoguePacingScore": 90,
+            "CharacterDisambiguationScore": 100,
+            "MusicSpecScore": 70,
+            "TotalSceneHeadings": 12,
+            "TotalDialogueBlocks": 60,
+            "AvgWordsPerDialogue": 13.7,
+            "MaxWordsInSingleDialogue": 53,
+            "LongMonologueCount": 2,
+            "GenericNumberedSpeakerCount": 0,
+            "CharacterNamesFound": [
+              "PETER",
+              "NICK",
+              "SIONNA",
+              "MA",
+              "OFFICER DUPUIS",
+              "BOB",
+              "PRISON GUARD"
+            ],
+            "AgeDisambiguatedCharacters": [],
+            "DiagnosticWarnings": [
+              "Missing \u0027FADE OUT.\u0027 or \u0027THE END\u0027 closing transition.",
+              "2 monologue turn(s) exceed 35 words without action line splits.",
+              "No explicit music/sound design cues detected in screenplay."
+            ]
+          },
+          "AvgAdaptationFidelity": 6.5,
+          "AvgCharacterDisambiguation": 8,
+          "AvgAiVideoDirectibility": 8,
+          "AvgDramaticPacing": 7.5,
+          "AvgDialogueAuthenticity": 8,
+          "AvgSoundDesignMusic": 6.5,
+          "AvgOverallQualitative": 7.4,
+          "DisqualifyingFlags": [
+            "grok-4: Early naming of narrator as PETER OLSON violates source withholding of name until final beat."
+          ]
+        },
+        {
+          "ModelId": "gemini-3.1-pro-preview",
+          "AnonymousLabel": "",
+          "CompositeScore": 79.8,
+          "IsGenerationFallback": false,
+          "GenerationFallbackReason": null,
+          "BordaPoints": 6,
+          "AvgJudgeRank": 5,
+          "SyntaxAudit": {
+            "OverallSyntaxScore": 94,
+            "FormatComplianceScore": 100,
+            "SceneBudgetScore": 100,
+            "DialoguePacingScore": 70,
+            "CharacterDisambiguationScore": 100,
+            "MusicSpecScore": 70,
+            "TotalSceneHeadings": 16,
+            "TotalDialogueBlocks": 81,
+            "AvgWordsPerDialogue": 18.7,
+            "MaxWordsInSingleDialogue": 69,
+            "LongMonologueCount": 11,
+            "GenericNumberedSpeakerCount": 0,
+            "CharacterNamesFound": [
+              "PETER",
+              "SIONNA",
+              "MA",
+              "NICK",
+              "LINDSEY",
+              "DARK-HAIRED MAN",
+              "OFFICER DUPUIS"
+            ],
+            "AgeDisambiguatedCharacters": [],
+            "DiagnosticWarnings": [
+              "11 monologue turn(s) exceed 35 words without action line splits.",
+              "No explicit music/sound design cues detected in screenplay."
+            ]
+          },
+          "AvgAdaptationFidelity": 6,
+          "AvgCharacterDisambiguation": 7.5,
+          "AvgAiVideoDirectibility": 7.8,
+          "AvgDramaticPacing": 7,
+          "AvgDialogueAuthenticity": 8,
+          "AvgSoundDesignMusic": 6,
+          "AvgOverallQualitative": 7,
+          "DisqualifyingFlags": [
+            "grok-4: Early naming of narrator as PETER and multiple invented dream/plot details violate source fidelity."
+          ]
+        },
+        {
+          "ModelId": "grok-4.20-reasoning",
+          "AnonymousLabel": "",
+          "CompositeScore": 74.2,
+          "IsGenerationFallback": false,
+          "GenerationFallbackReason": null,
+          "BordaPoints": 3,
+          "AvgJudgeRank": 6.5,
+          "SyntaxAudit": {
+            "OverallSyntaxScore": 95,
+            "FormatComplianceScore": 100,
+            "SceneBudgetScore": 100,
+            "DialoguePacingScore": 90,
+            "CharacterDisambiguationScore": 100,
+            "MusicSpecScore": 70,
+            "TotalSceneHeadings": 14,
+            "TotalDialogueBlocks": 54,
+            "AvgWordsPerDialogue": 13.4,
+            "MaxWordsInSingleDialogue": 40,
+            "LongMonologueCount": 2,
+            "GenericNumberedSpeakerCount": 0,
+            "CharacterNamesFound": [
+              "PETER",
+              "NICK",
+              "SIONA",
+              "MA",
+              "OFFICER DUPUIS"
+            ],
+            "AgeDisambiguatedCharacters": [],
+            "DiagnosticWarnings": [
+              "2 monologue turn(s) exceed 35 words without action line splits.",
+              "No explicit music/sound design cues detected in screenplay."
+            ]
+          },
+          "AvgAdaptationFidelity": 4.8,
+          "AvgCharacterDisambiguation": 5.2,
+          "AvgAiVideoDirectibility": 7,
+          "AvgDramaticPacing": 6.8,
+          "AvgDialogueAuthenticity": 7,
+          "AvgSoundDesignMusic": 5.5,
+          "AvgOverallQualitative": 6,
+          "DisqualifyingFlags": [
+            "grok-4.5: Unstable character token spelling (SIONA vs SIONNA) across cues and headings",
+            "grok-4.5: Insufficient repeated visual locks on reappearances",
+            "grok-4: Early naming of narrator as PETER violates source withholding of name until final beat; multiple invented plot details and character actions not in book."
+          ]
+        },
+        {
+          "ModelId": "claude-opus-5",
+          "AnonymousLabel": "",
+          "CompositeScore": 71.7,
+          "IsGenerationFallback": false,
+          "GenerationFallbackReason": null,
+          "BordaPoints": 5,
+          "AvgJudgeRank": 5.5,
+          "SyntaxAudit": {
+            "OverallSyntaxScore": 88.5,
+            "FormatComplianceScore": 100,
+            "SceneBudgetScore": 78,
+            "DialoguePacingScore": 70,
+            "CharacterDisambiguationScore": 100,
+            "MusicSpecScore": 70,
+            "TotalSceneHeadings": 56,
+            "TotalDialogueBlocks": 390,
+            "AvgWordsPerDialogue": 19.7,
+            "MaxWordsInSingleDialogue": 101,
+            "LongMonologueCount": 58,
+            "GenericNumberedSpeakerCount": 0,
+            "CharacterNamesFound": [
+              "THE NARRATOR",
+              "SIONNA",
+              "MA",
+              "DR. CARSON",
+              "NICK",
+              "THE DYING SOLDIER",
+              "YOUNG NARRATOR",
+              "BOBBY SWENSON",
+              "YOUNG NICK",
+              "MRS. STARK",
+              "BOB",
+              "SAMMY",
+              "LINDSEY",
+              "RAFAEL",
+              "KEVIN MCCLEARY",
+              "OFFICER DUPUIS",
+              "PATRICIA OWENS"
+            ],
+            "AgeDisambiguatedCharacters": [
+              "YOUNG NARRATOR",
+              "YOUNG NICK"
+            ],
+            "DiagnosticWarnings": [
+              "Excessive scene count (56 scenes); high micro-scene density inflates video gen budget.",
+              "58 monologue turn(s) exceed 35 words without action line splits.",
+              "Detected 2 age-qualified character header(s) (e.g. YOUNG NARRATOR, YOUNG NICK).",
+              "No explicit music/sound design cues detected in screenplay."
+            ]
+          },
+          "AvgAdaptationFidelity": 6,
+          "AvgCharacterDisambiguation": 6,
+          "AvgAiVideoDirectibility": 6,
+          "AvgDramaticPacing": 4.5,
+          "AvgDialogueAuthenticity": 7.5,
+          "AvgSoundDesignMusic": 6.2,
+          "AvgOverallQualitative": 6,
+          "DisqualifyingFlags": [
+            "grok-4.5: Structurally incomplete/truncated ending that drops the prison-forgiveness climax",
+            "grok-4.5: Inconsistent physical descriptions of THE NARRATOR (thick vs thin shoulders, shifting ages)",
+            "grok-4.5: Vastly exceeds target runtime with dozens of padded scenes and unfinished headings"
+          ]
+        }
+      ],
+      "JudgeMatrix": {
+        "grok-4.5": {
+          "gpt-5.6-luna": 7.92,
+          "gpt-5.6-terra": 7.42,
+          "claude-opus-5": 4,
+          "gemini-3.6-flash": 7.75,
+          "grok-4.20-reasoning": 6.17,
+          "gpt-5.6-sol": 8.5,
+          "gemini-3.1-pro-preview": 7.67
+        },
+        "grok-4": {
+          "gpt-5.6-terra": 8,
+          "grok-4.20-reasoning": 5.9,
+          "claude-opus-5": 8.1,
+          "gemini-3.1-pro-preview": 6.4,
+          "gemini-3.6-flash": 7.1,
+          "gpt-5.6-sol": 8.8,
+          "gpt-5.6-luna": 8.3
+        }
+      },
+      "SelfBiasNotes": []
+    },
+    {
+      "RunId": "89defa12445f42d6b8c563f093491979",
+      "Timestamp": "2026-07-31 06:19:30 UTC",
+      "BookSlug": "the_tell-tale_heart",
+      "BookTitle": "The_Tell-Tale_Heart",
+      "BookPath": "C:\\Users\\budcr\\source\\repos\\claude\\PageToMovie\\books\\The_Tell-Tale_Heart.txt",
+      "IsMockRun": false,
+      "ReasoningEffort": "max",
+      "PromptVersion": "92890EA08C",
+      "ModelScores": [
+        {
+          "ModelId": "claude-opus-5",
+          "AnonymousLabel": "",
+          "CompositeScore": 87.1,
+          "IsGenerationFallback": false,
+          "GenerationFallbackReason": null,
+          "BordaPoints": 10,
+          "AvgJudgeRank": 3,
+          "SyntaxAudit": {
+            "OverallSyntaxScore": 94,
+            "FormatComplianceScore": 100,
+            "SceneBudgetScore": 100,
+            "DialoguePacingScore": 70,
+            "CharacterDisambiguationScore": 100,
+            "MusicSpecScore": 70,
+            "TotalSceneHeadings": 13,
+            "TotalDialogueBlocks": 45,
+            "AvgWordsPerDialogue": 25.3,
+            "MaxWordsInSingleDialogue": 68,
+            "LongMonologueCount": 8,
+            "GenericNumberedSpeakerCount": 0,
+            "CharacterNamesFound": [
+              "THE NARRATOR",
+              "THE OLD MAN",
+              "OFFICER MULLEN",
+              "OFFICER DACE"
+            ],
+            "AgeDisambiguatedCharacters": [
+              "THE OLD MAN"
+            ],
+            "DiagnosticWarnings": [
+              "8 monologue turn(s) exceed 35 words without action line splits.",
+              "Detected 1 age-qualified character header(s) (e.g. THE OLD MAN).",
+              "No explicit music/sound design cues detected in screenplay."
+            ]
+          },
+          "AvgAdaptationFidelity": 6.5,
+          "AvgCharacterDisambiguation": 9.2,
+          "AvgAiVideoDirectibility": 8.5,
+          "AvgDramaticPacing": 8.2,
+          "AvgDialogueAuthenticity": 8.5,
+          "AvgSoundDesignMusic": 8.5,
+          "AvgOverallQualitative": 8.2,
+          "DisqualifyingFlags": [
+            "grok-4: Invented asylum cell frame not present in source"
+          ]
+        },
+        {
+          "ModelId": "gpt-5.6-sol",
+          "AnonymousLabel": "",
+          "CompositeScore": 86,
+          "IsGenerationFallback": false,
+          "GenerationFallbackReason": null,
+          "BordaPoints": 11,
+          "AvgJudgeRank": 2.5,
+          "SyntaxAudit": {
+            "OverallSyntaxScore": 93.5,
+            "FormatComplianceScore": 95,
+            "SceneBudgetScore": 100,
+            "DialoguePacingScore": 90,
+            "CharacterDisambiguationScore": 100,
+            "MusicSpecScore": 70,
+            "TotalSceneHeadings": 12,
+            "TotalDialogueBlocks": 41,
+            "AvgWordsPerDialogue": 19,
+            "MaxWordsInSingleDialogue": 38,
+            "LongMonologueCount": 2,
+            "GenericNumberedSpeakerCount": 0,
+            "CharacterNamesFound": [
+              "NARRATOR",
+              "OLD MAN",
+              "OFFICER REYNOLDS"
+            ],
+            "AgeDisambiguatedCharacters": [
+              "OLD MAN"
+            ],
+            "DiagnosticWarnings": [
+              "Missing \u0027FADE OUT.\u0027 or \u0027THE END\u0027 closing transition.",
+              "2 monologue turn(s) exceed 35 words without action line splits.",
+              "Detected 1 age-qualified character header(s) (e.g. OLD MAN).",
+              "No explicit music/sound design cues detected in screenplay."
+            ]
+          },
+          "AvgAdaptationFidelity": 6.2,
+          "AvgCharacterDisambiguation": 9,
+          "AvgAiVideoDirectibility": 8.2,
+          "AvgDramaticPacing": 8.2,
+          "AvgDialogueAuthenticity": 8.2,
+          "AvgSoundDesignMusic": 8.5,
+          "AvgOverallQualitative": 8.1,
+          "DisqualifyingFlags": [
+            "grok-4: Invented magistrate\u0027s chamber frame"
+          ]
+        },
+        {
+          "ModelId": "grok-4.20-reasoning",
+          "AnonymousLabel": "",
+          "CompositeScore": 82,
+          "IsGenerationFallback": false,
+          "GenerationFallbackReason": null,
+          "BordaPoints": 10,
+          "AvgJudgeRank": 3,
+          "SyntaxAudit": {
+            "OverallSyntaxScore": 93,
+            "FormatComplianceScore": 100,
+            "SceneBudgetScore": 100,
+            "DialoguePacingScore": 50,
+            "CharacterDisambiguationScore": 100,
+            "MusicSpecScore": 70,
+            "TotalSceneHeadings": 5,
+            "TotalDialogueBlocks": 18,
+            "AvgWordsPerDialogue": 57.2,
+            "MaxWordsInSingleDialogue": 117,
+            "LongMonologueCount": 12,
+            "GenericNumberedSpeakerCount": 0,
+            "CharacterNamesFound": [
+              "NARRATOR",
+              "OLD MAN",
+              "OFFICER REYNOLDS"
+            ],
+            "AgeDisambiguatedCharacters": [
+              "OLD MAN"
+            ],
+            "DiagnosticWarnings": [
+              "High average dialogue length (57.2 words/turn); speech beats risk clip overrun.",
+              "12 monologue turn(s) exceed 35 words without action line splits.",
+              "Detected 1 age-qualified character header(s) (e.g. OLD MAN).",
+              "No explicit music/sound design cues detected in screenplay."
+            ]
+          },
+          "AvgAdaptationFidelity": 8.5,
+          "AvgCharacterDisambiguation": 6.8,
+          "AvgAiVideoDirectibility": 7,
+          "AvgDramaticPacing": 7,
+          "AvgDialogueAuthenticity": 8.5,
+          "AvgSoundDesignMusic": 7,
+          "AvgOverallQualitative": 7.5,
+          "DisqualifyingFlags": [
+            "grok-4.5: Multi-night rituals and multi-step concealment crammed into single Action paragraphs unsuited to 5-10s clip breakdown",
+            "grok-4.5: Recurring characters lack consistent re-stated wardrobe/build locks on reappearance"
+          ]
+        },
+        {
+          "ModelId": "gpt-5.6-luna",
+          "AnonymousLabel": "",
+          "CompositeScore": 81.6,
+          "IsGenerationFallback": false,
+          "GenerationFallbackReason": null,
+          "BordaPoints": 10,
+          "AvgJudgeRank": 3,
+          "SyntaxAudit": {
+            "OverallSyntaxScore": 91.5,
+            "FormatComplianceScore": 95,
+            "SceneBudgetScore": 100,
+            "DialoguePacingScore": 50,
+            "CharacterDisambiguationScore": 100,
+            "MusicSpecScore": 70,
+            "TotalSceneHeadings": 7,
+            "TotalDialogueBlocks": 58,
+            "AvgWordsPerDialogue": 30.4,
+            "MaxWordsInSingleDialogue": 64,
+            "LongMonologueCount": 20,
+            "GenericNumberedSpeakerCount": 0,
+            "CharacterNamesFound": [
+              "NARRATOR",
+              "THE OLD MAN"
+            ],
+            "AgeDisambiguatedCharacters": [
+              "THE OLD MAN"
+            ],
+            "DiagnosticWarnings": [
+              "Missing \u0027FADE OUT.\u0027 or \u0027THE END\u0027 closing transition.",
+              "High average dialogue length (30.4 words/turn); speech beats risk clip overrun.",
+              "20 monologue turn(s) exceed 35 words without action line splits.",
+              "Detected 1 age-qualified character header(s) (e.g. THE OLD MAN).",
+              "No explicit music/sound design cues detected in screenplay."
+            ]
+          },
+          "AvgAdaptationFidelity": 8.8,
+          "AvgCharacterDisambiguation": 4.5,
+          "AvgAiVideoDirectibility": 7,
+          "AvgDramaticPacing": 7.8,
+          "AvgDialogueAuthenticity": 9,
+          "AvgSoundDesignMusic": 8,
+          "AvgOverallQualitative": 7.5,
+          "DisqualifyingFlags": [
+            "grok-4.5: Narrator is deliberately never fully seen (sleeve/hands only) with no lockable full-body/face wardrobe description, so AI reference images cannot be stabilized",
+            "grok-4.5: Heavy stacked V.O. over minimal observable action makes many beats unusable as 5-10s clips"
+          ]
+        },
+        {
+          "ModelId": "gpt-5.6-terra",
+          "AnonymousLabel": "",
+          "CompositeScore": 80.8,
+          "IsGenerationFallback": false,
+          "GenerationFallbackReason": null,
+          "BordaPoints": 6,
+          "AvgJudgeRank": 5,
+          "SyntaxAudit": {
+            "OverallSyntaxScore": 95.5,
+            "FormatComplianceScore": 100,
+            "SceneBudgetScore": 100,
+            "DialoguePacingScore": 100,
+            "CharacterDisambiguationScore": 100,
+            "MusicSpecScore": 70,
+            "TotalSceneHeadings": 8,
+            "TotalDialogueBlocks": 42,
+            "AvgWordsPerDialogue": 16.2,
+            "MaxWordsInSingleDialogue": 35,
+            "LongMonologueCount": 0,
+            "GenericNumberedSpeakerCount": 0,
+            "CharacterNamesFound": [
+              "NARRATOR",
+              "OLD MAN",
+              "OFFICER REYNOLDS"
+            ],
+            "AgeDisambiguatedCharacters": [
+              "OLD MAN"
+            ],
+            "DiagnosticWarnings": [
+              "Detected 1 age-qualified character header(s) (e.g. OLD MAN).",
+              "No explicit music/sound design cues detected in screenplay."
+            ]
+          },
+          "AvgAdaptationFidelity": 5.2,
+          "AvgCharacterDisambiguation": 8.5,
+          "AvgAiVideoDirectibility": 7.2,
+          "AvgDramaticPacing": 7,
+          "AvgDialogueAuthenticity": 7.5,
+          "AvgSoundDesignMusic": 7.2,
+          "AvgOverallQualitative": 7.1,
+          "DisqualifyingFlags": [
+            "grok-4: Invented character name MR. VALE for the unnamed old man"
+          ]
+        },
+        {
+          "ModelId": "gemini-3.6-flash",
+          "AnonymousLabel": "",
+          "CompositeScore": 77.2,
+          "IsGenerationFallback": false,
+          "GenerationFallbackReason": null,
+          "BordaPoints": 5,
+          "AvgJudgeRank": 5.5,
+          "SyntaxAudit": {
+            "OverallSyntaxScore": 94,
+            "FormatComplianceScore": 100,
+            "SceneBudgetScore": 100,
+            "DialoguePacingScore": 70,
+            "CharacterDisambiguationScore": 100,
+            "MusicSpecScore": 70,
+            "TotalSceneHeadings": 9,
+            "TotalDialogueBlocks": 38,
+            "AvgWordsPerDialogue": 19.8,
+            "MaxWordsInSingleDialogue": 44,
+            "LongMonologueCount": 6,
+            "GenericNumberedSpeakerCount": 0,
+            "CharacterNamesFound": [
+              "NARRATOR",
+              "OLD MAN",
+              "OFFICER REYNOLDS",
+              "OFFICER BAKER",
+              "OFFICER CARTER"
+            ],
+            "AgeDisambiguatedCharacters": [
+              "OLD MAN"
+            ],
+            "DiagnosticWarnings": [
+              "6 monologue turn(s) exceed 35 words without action line splits.",
+              "Detected 1 age-qualified character header(s) (e.g. OLD MAN).",
+              "No explicit music/sound design cues detected in screenplay."
+            ]
+          },
+          "AvgAdaptationFidelity": 4.2,
+          "AvgCharacterDisambiguation": 8,
+          "AvgAiVideoDirectibility": 7.2,
+          "AvgDramaticPacing": 6.8,
+          "AvgDialogueAuthenticity": 5.5,
+          "AvgSoundDesignMusic": 7.8,
+          "AvgOverallQualitative": 6.6,
+          "DisqualifyingFlags": [
+            "grok-4.5: Severe invented dialogue throughout (Old Man breakfast banter; multi-line officer small talk; modernized chat) violating dialogue-fidelity hard rules",
+            "grok-4.5: Source summarized \u2018they chatted\u2019 beats expanded into multiple non-book spoken lines",
+            "grok-4: Invented asylum cell frame not in source"
+          ]
+        },
+        {
+          "ModelId": "gemini-3.1-pro-preview",
+          "AnonymousLabel": "",
+          "CompositeScore": 73.8,
+          "IsGenerationFallback": false,
+          "GenerationFallbackReason": null,
+          "BordaPoints": 4,
+          "AvgJudgeRank": 6,
+          "SyntaxAudit": {
+            "OverallSyntaxScore": 94,
+            "FormatComplianceScore": 100,
+            "SceneBudgetScore": 100,
+            "DialoguePacingScore": 70,
+            "CharacterDisambiguationScore": 100,
+            "MusicSpecScore": 70,
+            "TotalSceneHeadings": 11,
+            "TotalDialogueBlocks": 32,
+            "AvgWordsPerDialogue": 23.4,
+            "MaxWordsInSingleDialogue": 59,
+            "LongMonologueCount": 7,
+            "GenericNumberedSpeakerCount": 0,
+            "CharacterNamesFound": [
+              "NARRATOR",
+              "OLD MAN",
+              "OFFICER REYNOLDS",
+              "OFFICER MILLER"
+            ],
+            "AgeDisambiguatedCharacters": [
+              "OLD MAN"
+            ],
+            "DiagnosticWarnings": [
+              "7 monologue turn(s) exceed 35 words without action line splits.",
+              "Detected 1 age-qualified character header(s) (e.g. OLD MAN).",
+              "No explicit music/sound design cues detected in screenplay."
+            ]
+          },
+          "AvgAdaptationFidelity": 4.2,
+          "AvgCharacterDisambiguation": 6.5,
+          "AvgAiVideoDirectibility": 6.5,
+          "AvgDramaticPacing": 6,
+          "AvgDialogueAuthenticity": 6,
+          "AvgSoundDesignMusic": 7,
+          "AvgOverallQualitative": 6,
+          "DisqualifyingFlags": [
+            "grok-4.5: Incomplete/malformed Fountain title page (missing proper Credit/Source pattern)",
+            "grok-4.5: Substantial invented officer and narrator chit-chat beyond the source",
+            "grok-4.5: Thin unstable visual descriptions for recurring supporting cast",
+            "grok-4: Invented asylum cell frame",
+            "grok-4: Inconsistent use of NARRATOR vs THE NARRATOR token"
+          ]
+        }
+      ],
+      "JudgeMatrix": {
+        "grok-4.5": {
+          "gpt-5.6-luna": 7.33,
+          "gpt-5.6-terra": 7.5,
+          "claude-opus-5": 9.17,
+          "gemini-3.6-flash": 6,
+          "grok-4.20-reasoning": 6.5,
+          "gpt-5.6-sol": 8.58,
+          "gemini-3.1-pro-preview": 5.83
+        },
+        "grok-4": {
+          "gpt-5.6-terra": 6.75,
+          "grok-4.20-reasoning": 8.42,
+          "claude-opus-5": 7.33,
+          "gemini-3.1-pro-preview": 6.25,
+          "gemini-3.6-flash": 7.17,
+          "gpt-5.6-sol": 7.58,
+          "gpt-5.6-luna": 7.67
+        }
+      },
+      "SelfBiasNotes": []
+    },
+    {
+      "RunId": "14c352df565c412bb58efa677561b627",
+      "Timestamp": "2026-07-31 06:19:30 UTC",
+      "BookSlug": "the_velveteen_rabbit",
+      "BookTitle": "The_Velveteen_Rabbit",
+      "BookPath": "C:\\Users\\budcr\\source\\repos\\claude\\PageToMovie\\books\\The_Velveteen_Rabbit.txt",
+      "IsMockRun": false,
+      "ReasoningEffort": "max",
+      "PromptVersion": "92890EA08C",
+      "ModelScores": [
+        {
+          "ModelId": "gpt-5.6-sol",
+          "AnonymousLabel": "",
+          "CompositeScore": 90.1,
+          "IsGenerationFallback": false,
+          "GenerationFallbackReason": null,
+          "BordaPoints": 14,
+          "AvgJudgeRank": 1,
+          "SyntaxAudit": {
+            "OverallSyntaxScore": 94.8,
+            "FormatComplianceScore": 100,
+            "SceneBudgetScore": 100,
+            "DialoguePacingScore": 85,
+            "CharacterDisambiguationScore": 100,
+            "MusicSpecScore": 70,
+            "TotalSceneHeadings": 12,
+            "TotalDialogueBlocks": 51,
+            "AvgWordsPerDialogue": 15,
+            "MaxWordsInSingleDialogue": 45,
+            "LongMonologueCount": 3,
+            "GenericNumberedSpeakerCount": 0,
+            "CharacterNamesFound": [
+              "NARRATOR",
+              "RABBIT",
+              "SKIN HORSE",
+              "BOY",
+              "NANA",
+              "BRACKEN",
+              "THISTLE",
+              "DOCTOR BELL",
+              "FAIRY"
+            ],
+            "AgeDisambiguatedCharacters": [
+              "BOY"
+            ],
+            "DiagnosticWarnings": [
+              "3 monologue turn(s) exceed 35 words without action line splits.",
+              "Detected 1 age-qualified character header(s) (e.g. BOY).",
+              "No explicit music/sound design cues detected in screenplay."
+            ]
+          },
+          "AvgAdaptationFidelity": 9,
+          "AvgCharacterDisambiguation": 9.5,
+          "AvgAiVideoDirectibility": 9,
+          "AvgDramaticPacing": 8.5,
+          "AvgDialogueAuthenticity": 9,
+          "AvgSoundDesignMusic": 7.5,
+          "AvgOverallQualitative": 8.7,
+          "DisqualifyingFlags": []
+        },
+        {
+          "ModelId": "gpt-5.6-luna",
+          "AnonymousLabel": "",
+          "CompositeScore": 87.8,
+          "IsGenerationFallback": false,
+          "GenerationFallbackReason": null,
+          "BordaPoints": 11,
+          "AvgJudgeRank": 2.5,
+          "SyntaxAudit": {
+            "OverallSyntaxScore": 94.5,
+            "FormatComplianceScore": 100,
+            "SceneBudgetScore": 100,
+            "DialoguePacingScore": 80,
+            "CharacterDisambiguationScore": 100,
+            "MusicSpecScore": 70,
+            "TotalSceneHeadings": 16,
+            "TotalDialogueBlocks": 0,
+            "AvgWordsPerDialogue": 0,
+            "MaxWordsInSingleDialogue": 0,
+            "LongMonologueCount": 0,
+            "GenericNumberedSpeakerCount": 0,
+            "CharacterNamesFound": [],
+            "AgeDisambiguatedCharacters": [],
+            "DiagnosticWarnings": [
+              "No explicit music/sound design cues detected in screenplay."
+            ]
+          },
+          "AvgAdaptationFidelity": 9,
+          "AvgCharacterDisambiguation": 8.5,
+          "AvgAiVideoDirectibility": 8.5,
+          "AvgDramaticPacing": 8.2,
+          "AvgDialogueAuthenticity": 9,
+          "AvgSoundDesignMusic": 6.8,
+          "AvgOverallQualitative": 8.3,
+          "DisqualifyingFlags": []
+        },
+        {
+          "ModelId": "gpt-5.6-terra",
+          "AnonymousLabel": "",
+          "CompositeScore": 87.3,
+          "IsGenerationFallback": false,
+          "GenerationFallbackReason": null,
+          "BordaPoints": 11,
+          "AvgJudgeRank": 2.5,
+          "SyntaxAudit": {
+            "OverallSyntaxScore": 95.2,
+            "FormatComplianceScore": 100,
+            "SceneBudgetScore": 100,
+            "DialoguePacingScore": 95,
+            "CharacterDisambiguationScore": 100,
+            "MusicSpecScore": 70,
+            "TotalSceneHeadings": 11,
+            "TotalDialogueBlocks": 40,
+            "AvgWordsPerDialogue": 14.2,
+            "MaxWordsInSingleDialogue": 36,
+            "LongMonologueCount": 1,
+            "GenericNumberedSpeakerCount": 0,
+            "CharacterNamesFound": [
+              "NARRATOR",
+              "RABBIT",
+              "SKIN HORSE",
+              "NANA",
+              "BOY",
+              "WILD RABBIT",
+              "DOCTOR",
+              "FAIRY"
+            ],
+            "AgeDisambiguatedCharacters": [
+              "BOY"
+            ],
+            "DiagnosticWarnings": [
+              "1 monologue turn(s) exceed 35 words without action line splits.",
+              "Detected 1 age-qualified character header(s) (e.g. BOY).",
+              "No explicit music/sound design cues detected in screenplay."
+            ]
+          },
+          "AvgAdaptationFidelity": 8.2,
+          "AvgCharacterDisambiguation": 9,
+          "AvgAiVideoDirectibility": 8.5,
+          "AvgDramaticPacing": 8,
+          "AvgDialogueAuthenticity": 8.8,
+          "AvgSoundDesignMusic": 6.8,
+          "AvgOverallQualitative": 8.2,
+          "DisqualifyingFlags": []
+        },
+        {
+          "ModelId": "gemini-3.1-pro-preview",
+          "AnonymousLabel": "",
+          "CompositeScore": 81.1,
+          "IsGenerationFallback": false,
+          "GenerationFallbackReason": null,
+          "BordaPoints": 8,
+          "AvgJudgeRank": 4,
+          "SyntaxAudit": {
+            "OverallSyntaxScore": 94.8,
+            "FormatComplianceScore": 100,
+            "SceneBudgetScore": 100,
+            "DialoguePacingScore": 85,
+            "CharacterDisambiguationScore": 100,
+            "MusicSpecScore": 70,
+            "TotalSceneHeadings": 13,
+            "TotalDialogueBlocks": 52,
+            "AvgWordsPerDialogue": 15.5,
+            "MaxWordsInSingleDialogue": 58,
+            "LongMonologueCount": 3,
+            "GenericNumberedSpeakerCount": 0,
+            "CharacterNamesFound": [
+              "NARRATOR",
+              "MODEL BOAT",
+              "TIMOTHY",
+              "VELVETEEN RABBIT",
+              "SKIN HORSE",
+              "NANA",
+              "THE BOY",
+              "FURRY RABBIT",
+              "WILD RABBIT",
+              "THE DOCTOR",
+              "FAIRY"
+            ],
+            "AgeDisambiguatedCharacters": [
+              "THE BOY"
+            ],
+            "DiagnosticWarnings": [
+              "3 monologue turn(s) exceed 35 words without action line splits.",
+              "Detected 1 age-qualified character header(s) (e.g. THE BOY).",
+              "No explicit music/sound design cues detected in screenplay."
+            ]
+          },
+          "AvgAdaptationFidelity": 7,
+          "AvgCharacterDisambiguation": 7.8,
+          "AvgAiVideoDirectibility": 7.8,
+          "AvgDramaticPacing": 7.8,
+          "AvgDialogueAuthenticity": 6.8,
+          "AvgSoundDesignMusic": 6.2,
+          "AvgOverallQualitative": 7.2,
+          "DisqualifyingFlags": []
+        },
+        {
+          "ModelId": "gemini-3.6-flash",
+          "AnonymousLabel": "",
+          "CompositeScore": 77.8,
+          "IsGenerationFallback": false,
+          "GenerationFallbackReason": null,
+          "BordaPoints": 4,
+          "AvgJudgeRank": 6,
+          "SyntaxAudit": {
+            "OverallSyntaxScore": 94,
+            "FormatComplianceScore": 100,
+            "SceneBudgetScore": 100,
+            "DialoguePacingScore": 70,
+            "CharacterDisambiguationScore": 100,
+            "MusicSpecScore": 70,
+            "TotalSceneHeadings": 8,
+            "TotalDialogueBlocks": 43,
+            "AvgWordsPerDialogue": 17,
+            "MaxWordsInSingleDialogue": 56,
+            "LongMonologueCount": 6,
+            "GenericNumberedSpeakerCount": 0,
+            "CharacterNamesFound": [
+              "NARRATOR",
+              "MECHANICAL BOAT",
+              "VELVETEEN RABBIT",
+              "SKIN HORSE",
+              "NANA",
+              "BOY",
+              "WILD RABBIT",
+              "DOCTOR",
+              "NURSERY FAIRY"
+            ],
+            "AgeDisambiguatedCharacters": [
+              "BOY"
+            ],
+            "DiagnosticWarnings": [
+              "6 monologue turn(s) exceed 35 words without action line splits.",
+              "Detected 1 age-qualified character header(s) (e.g. BOY).",
+              "No explicit music/sound design cues detected in screenplay."
+            ]
+          },
+          "AvgAdaptationFidelity": 6,
+          "AvgCharacterDisambiguation": 7,
+          "AvgAiVideoDirectibility": 7.2,
+          "AvgDramaticPacing": 6.5,
+          "AvgDialogueAuthenticity": 7.8,
+          "AvgSoundDesignMusic": 6,
+          "AvgOverallQualitative": 6.7,
+          "DisqualifyingFlags": [
+            "grok-4.5: Drops essential opening beats (Christmas stocking love-then-forget; mechanical-toy snubbing and Skin Horse setup as lived scenes).",
+            "grok-4.5: Misstates defining prop detail (Rabbit given glass eyes instead of boot-button eyes)."
+          ]
+        },
+        {
+          "ModelId": "claude-opus-5",
+          "AnonymousLabel": "",
+          "CompositeScore": 77.2,
+          "IsGenerationFallback": false,
+          "GenerationFallbackReason": null,
+          "BordaPoints": 4,
+          "AvgJudgeRank": 6,
+          "SyntaxAudit": {
+            "OverallSyntaxScore": 93,
+            "FormatComplianceScore": 95,
+            "SceneBudgetScore": 100,
+            "DialoguePacingScore": 80,
+            "CharacterDisambiguationScore": 100,
+            "MusicSpecScore": 70,
+            "TotalSceneHeadings": 10,
+            "TotalDialogueBlocks": 47,
+            "AvgWordsPerDialogue": 17.8,
+            "MaxWordsInSingleDialogue": 52,
+            "LongMonologueCount": 4,
+            "GenericNumberedSpeakerCount": 0,
+            "CharacterNamesFound": [
+              "NARRATOR",
+              "THE RABBIT",
+              "SKIN HORSE",
+              "NANA",
+              "THE BOY",
+              "THISTLE"
+            ],
+            "AgeDisambiguatedCharacters": [
+              "THE BOY"
+            ],
+            "DiagnosticWarnings": [
+              "Missing \u0027FADE OUT.\u0027 or \u0027THE END\u0027 closing transition.",
+              "4 monologue turn(s) exceed 35 words without action line splits.",
+              "Detected 1 age-qualified character header(s) (e.g. THE BOY).",
+              "No explicit music/sound design cues detected in screenplay."
+            ]
+          },
+          "AvgAdaptationFidelity": 3,
+          "AvgCharacterDisambiguation": 8.8,
+          "AvgAiVideoDirectibility": 8,
+          "AvgDramaticPacing": 5,
+          "AvgDialogueAuthenticity": 8.5,
+          "AvgSoundDesignMusic": 6.8,
+          "AvgOverallQualitative": 6.7,
+          "DisqualifyingFlags": [
+            "grok-4.5: Screenplay truncates mid-sentence during the recovery beat and omits the entire third act (sack/fowl-house, tear/flower, Fairy transformation, Real Rabbit dance, final spring recognition).",
+            "grok-4: Screenplay is truncated mid-sentence and does not complete the story arc."
+          ]
+        },
+        {
+          "ModelId": "grok-4.20-reasoning",
+          "AnonymousLabel": "",
+          "CompositeScore": 75.6,
+          "IsGenerationFallback": false,
+          "GenerationFallbackReason": null,
+          "BordaPoints": 4,
+          "AvgJudgeRank": 6,
+          "SyntaxAudit": {
+            "OverallSyntaxScore": 94.8,
+            "FormatComplianceScore": 100,
+            "SceneBudgetScore": 100,
+            "DialoguePacingScore": 85,
+            "CharacterDisambiguationScore": 100,
+            "MusicSpecScore": 70,
+            "TotalSceneHeadings": 9,
+            "TotalDialogueBlocks": 38,
+            "AvgWordsPerDialogue": 16.5,
+            "MaxWordsInSingleDialogue": 87,
+            "LongMonologueCount": 3,
+            "GenericNumberedSpeakerCount": 0,
+            "CharacterNamesFound": [
+              "NARRATOR",
+              "RABBIT",
+              "SKIN HORSE",
+              "NANA",
+              "BOY",
+              "WILD RABBIT",
+              "DOCTOR",
+              "FAIRY"
+            ],
+            "AgeDisambiguatedCharacters": [
+              "BOY"
+            ],
+            "DiagnosticWarnings": [
+              "3 monologue turn(s) exceed 35 words without action line splits.",
+              "Detected 1 age-qualified character header(s) (e.g. BOY).",
+              "No explicit music/sound design cues detected in screenplay."
+            ]
+          },
+          "AvgAdaptationFidelity": 5.2,
+          "AvgCharacterDisambiguation": 7.5,
+          "AvgAiVideoDirectibility": 7.5,
+          "AvgDramaticPacing": 7.2,
+          "AvgDialogueAuthenticity": 4,
+          "AvgSoundDesignMusic": 6.2,
+          "AvgOverallQualitative": 6.3,
+          "DisqualifyingFlags": [
+            "grok-4.5: Critical dialogue misattribution at the climax: RABBIT speaks the Fairy\u0027s self-introduction monologue (\u0027I am the nursery magic Fairy...\u0027).",
+            "grok-4: Dialogue lines swapped between Fairy and Rabbit in the transformation scene, violating book wording fidelity."
+          ]
+        }
+      ],
+      "JudgeMatrix": {
+        "grok-4.5": {
+          "gpt-5.6-luna": 8.17,
+          "gpt-5.6-terra": 7.92,
+          "claude-opus-5": 6.25,
+          "gemini-3.6-flash": 5.67,
+          "grok-4.20-reasoning": 6.17,
+          "gpt-5.6-sol": 8.58,
+          "gemini-3.1-pro-preview": 6.5
+        },
+        "grok-4": {
+          "gpt-5.6-terra": 8.5,
+          "grok-4.20-reasoning": 6.4,
+          "claude-opus-5": 7.1,
+          "gemini-3.1-pro-preview": 7.9,
+          "gemini-3.6-flash": 7.8,
+          "gpt-5.6-sol": 8.9,
+          "gpt-5.6-luna": 8.5
+        }
+      },
+      "SelfBiasNotes": []
+    },
+    {
+      "RunId": "fda00f3c04594d78862819bdaa5de99f",
+      "Timestamp": "2026-07-31 06:43:16 UTC",
+      "BookSlug": "a_christmas_carol",
+      "BookTitle": "A_Christmas_Carol",
+      "BookPath": "C:\\Users\\budcr\\source\\repos\\claude\\PageToMovie\\books\\A_Christmas_Carol.txt",
+      "IsMockRun": false,
+      "ReasoningEffort": "max",
+      "PromptVersion": "92890EA08C",
+      "ModelScores": [
+        {
+          "ModelId": "gpt-5.6-sol",
+          "AnonymousLabel": "",
+          "CompositeScore": 90,
+          "IsGenerationFallback": false,
+          "GenerationFallbackReason": null,
+          "BordaPoints": 14,
+          "AvgJudgeRank": 1,
+          "SyntaxAudit": {
+            "OverallSyntaxScore": 94.5,
+            "FormatComplianceScore": 100,
+            "SceneBudgetScore": 100,
+            "DialoguePacingScore": 80,
+            "CharacterDisambiguationScore": 100,
+            "MusicSpecScore": 70,
+            "TotalSceneHeadings": 19,
+            "TotalDialogueBlocks": 107,
+            "AvgWordsPerDialogue": 12.4,
+            "MaxWordsInSingleDialogue": 40,
+            "LongMonologueCount": 4,
+            "GenericNumberedSpeakerCount": 0,
+            "CharacterNamesFound": [
+              "FRED",
+              "SCROOGE",
+              "MR. HOWELL",
+              "BOB",
+              "MARLEY",
+              "CHRISTMAS PAST",
+              "FAN",
+              "YOUNG EBENEZER",
+              "FEZZIWIG",
+              "BELLE",
+              "CHRISTMAS PRESENT",
+              "MRS. CRATCHIT",
+              "TINY TIM",
+              "MR. GRAY",
+              "MR. POLLARD",
+              "OLD JOE",
+              "MRS. DILBER",
+              "SAM"
+            ],
+            "AgeDisambiguatedCharacters": [
+              "YOUNG EBENEZER",
+              "TINY TIM",
+              "OLD JOE"
+            ],
+            "DiagnosticWarnings": [
+              "4 monologue turn(s) exceed 35 words without action line splits.",
+              "Detected 3 age-qualified character header(s) (e.g. YOUNG EBENEZER, TINY TIM, OLD JOE).",
+              "No explicit music/sound design cues detected in screenplay."
+            ]
+          },
+          "AvgAdaptationFidelity": 9.2,
+          "AvgCharacterDisambiguation": 9.4,
+          "AvgAiVideoDirectibility": 8.8,
+          "AvgDramaticPacing": 8.6,
+          "AvgDialogueAuthenticity": 8.8,
+          "AvgSoundDesignMusic": 7.4,
+          "AvgOverallQualitative": 8.7,
+          "DisqualifyingFlags": []
+        },
+        {
+          "ModelId": "gpt-5.6-terra",
+          "AnonymousLabel": "",
+          "CompositeScore": 86,
+          "IsGenerationFallback": false,
+          "GenerationFallbackReason": null,
+          "BordaPoints": 10,
+          "AvgJudgeRank": 3,
+          "SyntaxAudit": {
+            "OverallSyntaxScore": 95,
+            "FormatComplianceScore": 100,
+            "SceneBudgetScore": 100,
+            "DialoguePacingScore": 90,
+            "CharacterDisambiguationScore": 100,
+            "MusicSpecScore": 70,
+            "TotalSceneHeadings": 27,
+            "TotalDialogueBlocks": 176,
+            "AvgWordsPerDialogue": 11.5,
+            "MaxWordsInSingleDialogue": 37,
+            "LongMonologueCount": 2,
+            "GenericNumberedSpeakerCount": 0,
+            "CharacterNamesFound": [
+              "FRED",
+              "SCROOGE",
+              "GENTLEMAN HARKER",
+              "GENTLEMAN VALE",
+              "BOB",
+              "MARLEY\u0027S GHOST",
+              "GHOST OF CHRISTMAS PAST",
+              "FAN",
+              "YOUNG EBENEZER",
+              "FEZZIWIG",
+              "BELLE",
+              "YOUNG SCROOGE",
+              "BELLE\u0027S HUSBAND",
+              "GHOST OF CHRISTMAS PRESENT",
+              "TINY TIM",
+              "CRATCHIT FAMILY",
+              "MRS. CRATCHIT",
+              "CLARA",
+              "TOPPER",
+              "ALL",
+              "MR. HAWKINS",
+              "MR. POOLE",
+              "MR. RIGBY",
+              "MRS. DILBER",
+              "OLD JOE",
+              "LAUNDRESS BESS",
+              "CAROLINE",
+              "THOMAS",
+              "PETER",
+              "TOM"
+            ],
+            "AgeDisambiguatedCharacters": [
+              "YOUNG EBENEZER",
+              "YOUNG SCROOGE",
+              "TINY TIM",
+              "OLD JOE"
+            ],
+            "DiagnosticWarnings": [
+              "2 monologue turn(s) exceed 35 words without action line splits.",
+              "Detected 4 age-qualified character header(s) (e.g. YOUNG EBENEZER, YOUNG SCROOGE, TINY TIM).",
+              "No explicit music/sound design cues detected in screenplay."
+            ]
+          },
+          "AvgAdaptationFidelity": 8.1,
+          "AvgCharacterDisambiguation": 8.6,
+          "AvgAiVideoDirectibility": 8.4,
+          "AvgDramaticPacing": 8,
+          "AvgDialogueAuthenticity": 8.2,
+          "AvgSoundDesignMusic": 6.8,
+          "AvgOverallQualitative": 8,
+          "DisqualifyingFlags": [
+            "grok-4.5: Dropped major source beats: Belle\u0027s later happy-family vision and the unwatched corpse reveal"
+          ]
+        },
+        {
+          "ModelId": "gpt-5.6-luna",
+          "AnonymousLabel": "",
+          "CompositeScore": 86.1,
+          "IsGenerationFallback": false,
+          "GenerationFallbackReason": null,
+          "BordaPoints": 12,
+          "AvgJudgeRank": 2,
+          "SyntaxAudit": {
+            "OverallSyntaxScore": 94,
+            "FormatComplianceScore": 100,
+            "SceneBudgetScore": 100,
+            "DialoguePacingScore": 70,
+            "CharacterDisambiguationScore": 100,
+            "MusicSpecScore": 70,
+            "TotalSceneHeadings": 21,
+            "TotalDialogueBlocks": 145,
+            "AvgWordsPerDialogue": 14.4,
+            "MaxWordsInSingleDialogue": 50,
+            "LongMonologueCount": 9,
+            "GenericNumberedSpeakerCount": 0,
+            "CharacterNamesFound": [
+              "NARRATOR",
+              "FRED",
+              "SCROOGE",
+              "MR. LAMBERT",
+              "JACOB MARLEY",
+              "GHOST OF CHRISTMAS PAST",
+              "FAN",
+              "YOUNG SCROOGE",
+              "FEZZIWIG",
+              "BELLE",
+              "HENRY BELLE",
+              "GHOST OF CHRISTMAS PRESENT",
+              "BOB CRATCHIT",
+              "TINY TIM",
+              "MRS. CRATCHIT",
+              "CLARA",
+              "MERCHANT HARRIS",
+              "MERCHANT JONES",
+              "MERCHANT BROWN",
+              "MRS. HIGGINS",
+              "MRS. DILBER",
+              "OLD JOE",
+              "PETER CRATCHIT",
+              "TOM"
+            ],
+            "AgeDisambiguatedCharacters": [
+              "YOUNG SCROOGE",
+              "TINY TIM",
+              "OLD JOE"
+            ],
+            "DiagnosticWarnings": [
+              "9 monologue turn(s) exceed 35 words without action line splits.",
+              "Detected 3 age-qualified character header(s) (e.g. YOUNG SCROOGE, TINY TIM, OLD JOE).",
+              "No explicit music/sound design cues detected in screenplay."
+            ]
+          },
+          "AvgAdaptationFidelity": 8.8,
+          "AvgCharacterDisambiguation": 8.8,
+          "AvgAiVideoDirectibility": 7.5,
+          "AvgDramaticPacing": 7.6,
+          "AvgDialogueAuthenticity": 8.8,
+          "AvgSoundDesignMusic": 7,
+          "AvgOverallQualitative": 8.1,
+          "DisqualifyingFlags": []
+        },
+        {
+          "ModelId": "gemini-3.1-pro-preview",
+          "AnonymousLabel": "",
+          "CompositeScore": 81.7,
+          "IsGenerationFallback": false,
+          "GenerationFallbackReason": null,
+          "BordaPoints": 7,
+          "AvgJudgeRank": 4.5,
+          "SyntaxAudit": {
+            "OverallSyntaxScore": 94,
+            "FormatComplianceScore": 100,
+            "SceneBudgetScore": 100,
+            "DialoguePacingScore": 70,
+            "CharacterDisambiguationScore": 100,
+            "MusicSpecScore": 70,
+            "TotalSceneHeadings": 18,
+            "TotalDialogueBlocks": 156,
+            "AvgWordsPerDialogue": 17.4,
+            "MaxWordsInSingleDialogue": 66,
+            "LongMonologueCount": 19,
+            "GenericNumberedSpeakerCount": 0,
+            "CharacterNamesFound": [
+              "NARRATOR",
+              "FRED",
+              "SCROOGE",
+              "MR. HOWELL",
+              "BOB CRATCHIT",
+              "MARLEY\u0027S GHOST",
+              "GHOST OF CHRISTMAS PAST",
+              "FEZZIWIG",
+              "BELLE",
+              "YOUNG SCROOGE",
+              "GHOST OF CHRISTMAS PRESENT",
+              "MRS. CRATCHIT",
+              "TINY TIM",
+              "CLARA",
+              "MR. GRUBB",
+              "MR. BLAKE",
+              "MRS. DILBER",
+              "OLD JOE",
+              "PETER",
+              "THOMAS"
+            ],
+            "AgeDisambiguatedCharacters": [
+              "YOUNG SCROOGE",
+              "TINY TIM",
+              "OLD JOE"
+            ],
+            "DiagnosticWarnings": [
+              "19 monologue turn(s) exceed 35 words without action line splits.",
+              "Detected 3 age-qualified character header(s) (e.g. YOUNG SCROOGE, TINY TIM, OLD JOE).",
+              "No explicit music/sound design cues detected in screenplay."
+            ]
+          },
+          "AvgAdaptationFidelity": 6.5,
+          "AvgCharacterDisambiguation": 7.8,
+          "AvgAiVideoDirectibility": 7.4,
+          "AvgDramaticPacing": 7,
+          "AvgDialogueAuthenticity": 8.8,
+          "AvgSoundDesignMusic": 6.8,
+          "AvgOverallQualitative": 7.4,
+          "DisqualifyingFlags": [
+            "grok-4.5: Dropped school/Fan Past beats and Future corpse; Belle \u0027one shadow more\u0027 promised but never shown; parlor scene mis-headed as EXT. CITY STREET"
+          ]
+        },
+        {
+          "ModelId": "grok-4.20-reasoning",
+          "AnonymousLabel": "",
+          "CompositeScore": 81,
+          "IsGenerationFallback": false,
+          "GenerationFallbackReason": null,
+          "BordaPoints": 5,
+          "AvgJudgeRank": 5.5,
+          "SyntaxAudit": {
+            "OverallSyntaxScore": 95.5,
+            "FormatComplianceScore": 100,
+            "SceneBudgetScore": 100,
+            "DialoguePacingScore": 70,
+            "CharacterDisambiguationScore": 100,
+            "MusicSpecScore": 80,
+            "TotalSceneHeadings": 11,
+            "TotalDialogueBlocks": 187,
+            "AvgWordsPerDialogue": 16.4,
+            "MaxWordsInSingleDialogue": 95,
+            "LongMonologueCount": 24,
+            "GenericNumberedSpeakerCount": 0,
+            "CharacterNamesFound": [
+              "NARRATOR",
+              "FRED",
+              "SCROOGE",
+              "MR. HOPKINS",
+              "MARLEY\u0027S GHOST",
+              "GHOST OF CHRISTMAS PAST",
+              "FAN",
+              "FEZZIWIG",
+              "BELLE",
+              "HUSBAND",
+              "GHOST OF CHRISTMAS PRESENT",
+              "BOB CRATCHIT",
+              "TINY TIM",
+              "ALL",
+              "FRED\u0027S NIECE",
+              "MISS LUCY",
+              "MR. BULKLEY",
+              "MR. PECK",
+              "MR. GRUBB",
+              "MR. SMYTHE",
+              "MR. HALE",
+              "MRS. DILBER",
+              "OLD JOE",
+              "WIFE",
+              "PETER",
+              "MRS. CRATCHIT",
+              "BOY",
+              "PASSERSBY"
+            ],
+            "AgeDisambiguatedCharacters": [
+              "TINY TIM",
+              "OLD JOE",
+              "BOY"
+            ],
+            "DiagnosticWarnings": [
+              "24 monologue turn(s) exceed 35 words without action line splits.",
+              "Detected 3 age-qualified character header(s) (e.g. TINY TIM, OLD JOE, BOY)."
+            ]
+          },
+          "AvgAdaptationFidelity": 8.4,
+          "AvgCharacterDisambiguation": 6.8,
+          "AvgAiVideoDirectibility": 6.5,
+          "AvgDramaticPacing": 5.8,
+          "AvgDialogueAuthenticity": 8.5,
+          "AvgSoundDesignMusic": 7,
+          "AvgOverallQualitative": 7.1,
+          "DisqualifyingFlags": [
+            "grok-4.5: Closed-cast violations (PASSERSBY, HUSBAND, WIFE, FRED\u0027S NIECE as cues); severe runtime bloat from retaining nearly every secondary travelogue and game beat far beyond 10-minute target"
+          ]
+        },
+        {
+          "ModelId": "gemini-3.6-flash",
+          "AnonymousLabel": "",
+          "CompositeScore": 80.8,
+          "IsGenerationFallback": false,
+          "GenerationFallbackReason": null,
+          "BordaPoints": 6,
+          "AvgJudgeRank": 5,
+          "SyntaxAudit": {
+            "OverallSyntaxScore": 95.5,
+            "FormatComplianceScore": 100,
+            "SceneBudgetScore": 100,
+            "DialoguePacingScore": 70,
+            "CharacterDisambiguationScore": 100,
+            "MusicSpecScore": 80,
+            "TotalSceneHeadings": 26,
+            "TotalDialogueBlocks": 176,
+            "AvgWordsPerDialogue": 15.7,
+            "MaxWordsInSingleDialogue": 64,
+            "LongMonologueCount": 17,
+            "GenericNumberedSpeakerCount": 0,
+            "CharacterNamesFound": [
+              "FRED",
+              "SCROOGE",
+              "PORTLY GENTLEMAN",
+              "BOB CRATCHIT",
+              "MARLEY",
+              "GHOST OF CHRISTMAS PAST",
+              "LITTLE FAN",
+              "OLD FEZZIWIG",
+              "BELLE",
+              "MIDDLE-AGED SCROOGE",
+              "BELLE\u0027S HUSBAND",
+              "GHOST OF CHRISTMAS PRESENT",
+              "MRS. CRATCHIT",
+              "MARTHA CRATCHIT",
+              "TINY TIM",
+              "FAMILY",
+              "FRED\u0027S WIFE",
+              "GUESTS",
+              "MERCHANT WILKINS",
+              "MERCHANT HALES",
+              "CHARWOMAN",
+              "OLD JOE",
+              "BOY",
+              "NARRATOR"
+            ],
+            "AgeDisambiguatedCharacters": [
+              "OLD FEZZIWIG",
+              "TINY TIM",
+              "OLD JOE",
+              "BOY"
+            ],
+            "DiagnosticWarnings": [
+              "17 monologue turn(s) exceed 35 words without action line splits.",
+              "Detected 4 age-qualified character header(s) (e.g. OLD FEZZIWIG, TINY TIM, OLD JOE)."
+            ]
+          },
+          "AvgAdaptationFidelity": 6,
+          "AvgCharacterDisambiguation": 7.2,
+          "AvgAiVideoDirectibility": 8,
+          "AvgDramaticPacing": 7,
+          "AvgDialogueAuthenticity": 8.1,
+          "AvgSoundDesignMusic": 6.5,
+          "AvgOverallQualitative": 7.1,
+          "DisqualifyingFlags": [
+            "grok-4.5: Severe omission of major beats (entire school/Fan sequence, Belle family coda, Fred\u0027s party, merchants, corpse); non-closed cast tokens (SOLICITOR, CHARWOMAN, BOY)"
+          ]
+        },
+        {
+          "ModelId": "claude-opus-5",
+          "AnonymousLabel": "",
+          "CompositeScore": 31.6,
+          "IsGenerationFallback": true,
+          "GenerationFallbackReason": "Anthropic messages HTTP 400: {\u0022type\u0022:\u0022error\u0022,\u0022error\u0022:{\u0022type\u0022:\u0022invalid_request_error\u0022,\u0022message\u0022:\u0022Your credit balance is too low to access the Anthropic API. Please go to Plans \u0026 Billing to upgrade or purchase credits.\u0022},\u0022request_id\u0022:\u0022req_011CdZfujRatpuLQob8oQmGE\u0022}",
+          "BordaPoints": 0,
+          "AvgJudgeRank": 3.5,
+          "SyntaxAudit": {
+            "OverallSyntaxScore": 79,
+            "FormatComplianceScore": 95,
+            "SceneBudgetScore": 50,
+            "DialoguePacingScore": 50,
+            "CharacterDisambiguationScore": 100,
+            "MusicSpecScore": 70,
+            "TotalSceneHeadings": 714,
+            "TotalDialogueBlocks": 714,
+            "AvgWordsPerDialogue": 32.1,
+            "MaxWordsInSingleDialogue": 86,
+            "LongMonologueCount": 273,
+            "GenericNumberedSpeakerCount": 0,
+            "CharacterNamesFound": [
+              "NARRATOR"
+            ],
+            "AgeDisambiguatedCharacters": [],
+            "DiagnosticWarnings": [
+              "Missing \u0027FADE OUT.\u0027 or \u0027THE END\u0027 closing transition.",
+              "Excessive scene count (714 scenes); high micro-scene density inflates video gen budget.",
+              "High average dialogue length (32.1 words/turn); speech beats risk clip overrun.",
+              "273 monologue turn(s) exceed 35 words without action line splits.",
+              "No explicit music/sound design cues detected in screenplay."
+            ]
+          },
+          "AvgAdaptationFidelity": 0,
+          "AvgCharacterDisambiguation": 0,
+          "AvgAiVideoDirectibility": 0,
+          "AvgDramaticPacing": 0,
+          "AvgDialogueAuthenticity": 0,
+          "AvgSoundDesignMusic": 0,
+          "AvgOverallQualitative": 0,
+          "DisqualifyingFlags": []
+        }
+      ],
+      "JudgeMatrix": {
+        "grok-4.5": {
+          "gpt-5.6-luna": 7.75,
+          "gpt-5.6-terra": 7.62,
+          "gemini-3.6-flash": 6.28,
+          "gemini-3.1-pro-preview": 6.95,
+          "grok-4.20-reasoning": 6.78,
+          "gpt-5.6-sol": 8.45
+        },
+        "grok-4": {
+          "gpt-5.6-luna": 8.42,
+          "gemini-3.6-flash": 8,
+          "gemini-3.1-pro-preview": 7.75,
+          "gpt-5.6-terra": 8.42,
+          "gpt-5.6-sol": 8.92,
+          "grok-4.20-reasoning": 7.5
+        }
+      },
+      "SelfBiasNotes": []
+    },
+    {
+      "RunId": "f036370111904bb8ac97cf29a2f0987e",
+      "Timestamp": "2026-07-31 06:58:09 UTC",
+      "BookSlug": "the_call_of_the_wild",
+      "BookTitle": "The_Call_of_the_Wild",
+      "BookPath": "C:\\Users\\budcr\\source\\repos\\claude\\PageToMovie\\books\\The_Call_of_the_Wild.txt",
+      "IsMockRun": false,
+      "ReasoningEffort": "max",
+      "PromptVersion": "92890EA08C",
+      "ModelScores": [
+        {
+          "ModelId": "gpt-5.6-sol",
+          "AnonymousLabel": "",
+          "CompositeScore": 90.3,
+          "IsGenerationFallback": false,
+          "GenerationFallbackReason": null,
+          "BordaPoints": 13,
+          "AvgJudgeRank": 1.5,
+          "SyntaxAudit": {
+            "OverallSyntaxScore": 95.2,
+            "FormatComplianceScore": 100,
+            "SceneBudgetScore": 100,
+            "DialoguePacingScore": 95,
+            "CharacterDisambiguationScore": 100,
+            "MusicSpecScore": 70,
+            "TotalSceneHeadings": 19,
+            "TotalDialogueBlocks": 57,
+            "AvgWordsPerDialogue": 10.7,
+            "MaxWordsInSingleDialogue": 37,
+            "LongMonologueCount": 1,
+            "GenericNumberedSpeakerCount": 0,
+            "CharacterNamesFound": [
+              "NARRATOR",
+              "ELIAS HOLT",
+              "MANUEL",
+              "EDWARD BLAKE",
+              "PERRAULT",
+              "FRANCOIS",
+              "MERCEDES",
+              "HAL",
+              "SAMUEL KEENE",
+              "JOHN THORNTON",
+              "MATTHEWSON",
+              "PETE",
+              "HANS"
+            ],
+            "AgeDisambiguatedCharacters": [],
+            "DiagnosticWarnings": [
+              "1 monologue turn(s) exceed 35 words without action line splits.",
+              "No explicit music/sound design cues detected in screenplay."
+            ]
+          },
+          "AvgAdaptationFidelity": 8.8,
+          "AvgCharacterDisambiguation": 9.5,
+          "AvgAiVideoDirectibility": 8.8,
+          "AvgDramaticPacing": 8.5,
+          "AvgDialogueAuthenticity": 9,
+          "AvgSoundDesignMusic": 7.8,
+          "AvgOverallQualitative": 8.7,
+          "DisqualifyingFlags": []
+        },
+        {
+          "ModelId": "gpt-5.6-terra",
+          "AnonymousLabel": "",
+          "CompositeScore": 89.2,
+          "IsGenerationFallback": false,
+          "GenerationFallbackReason": null,
+          "BordaPoints": 13,
+          "AvgJudgeRank": 1.5,
+          "SyntaxAudit": {
+            "OverallSyntaxScore": 95.5,
+            "FormatComplianceScore": 100,
+            "SceneBudgetScore": 100,
+            "DialoguePacingScore": 100,
+            "CharacterDisambiguationScore": 100,
+            "MusicSpecScore": 70,
+            "TotalSceneHeadings": 20,
+            "TotalDialogueBlocks": 33,
+            "AvgWordsPerDialogue": 10.2,
+            "MaxWordsInSingleDialogue": 23,
+            "LongMonologueCount": 0,
+            "GenericNumberedSpeakerCount": 0,
+            "CharacterNamesFound": [
+              "NARRATOR",
+              "MANUEL",
+              "KIDNAPPER",
+              "SALOON-KEEPER",
+              "DOG-BREAKER",
+              "FRANCOIS",
+              "PERRAULT",
+              "MERCEDES",
+              "HAL",
+              "PROSPECTOR",
+              "THORNTON",
+              "MATTHEWSON"
+            ],
+            "AgeDisambiguatedCharacters": [],
+            "DiagnosticWarnings": [
+              "No explicit music/sound design cues detected in screenplay."
+            ]
+          },
+          "AvgAdaptationFidelity": 9,
+          "AvgCharacterDisambiguation": 9,
+          "AvgAiVideoDirectibility": 8.5,
+          "AvgDramaticPacing": 8.2,
+          "AvgDialogueAuthenticity": 8.8,
+          "AvgSoundDesignMusic": 7.2,
+          "AvgOverallQualitative": 8.5,
+          "DisqualifyingFlags": []
+        },
+        {
+          "ModelId": "gemini-3.6-flash",
+          "AnonymousLabel": "",
+          "CompositeScore": 87.5,
+          "IsGenerationFallback": false,
+          "GenerationFallbackReason": null,
+          "BordaPoints": 10,
+          "AvgJudgeRank": 3,
+          "SyntaxAudit": {
+            "OverallSyntaxScore": 95.8,
+            "FormatComplianceScore": 100,
+            "SceneBudgetScore": 100,
+            "DialoguePacingScore": 75,
+            "CharacterDisambiguationScore": 100,
+            "MusicSpecScore": 80,
+            "TotalSceneHeadings": 19,
+            "TotalDialogueBlocks": 48,
+            "AvgWordsPerDialogue": 12.9,
+            "MaxWordsInSingleDialogue": 44,
+            "LongMonologueCount": 5,
+            "GenericNumberedSpeakerCount": 0,
+            "CharacterNamesFound": [
+              "NARRATOR",
+              "STRANGER",
+              "MANUEL",
+              "SALOON-KEEPER",
+              "DRIVER",
+              "MAN IN RED SWEATER",
+              "PERRAULT",
+              "FRANCOIS",
+              "HAL",
+              "BYSTANDER",
+              "THORNTON",
+              "MATTHEWSON",
+              "O\u0027BRIEN",
+              "SKOOKUM BENCH KING",
+              "YEEHAT HUNTER"
+            ],
+            "AgeDisambiguatedCharacters": [],
+            "DiagnosticWarnings": [
+              "5 monologue turn(s) exceed 35 words without action line splits."
+            ]
+          },
+          "AvgAdaptationFidelity": 8.2,
+          "AvgCharacterDisambiguation": 8.8,
+          "AvgAiVideoDirectibility": 8.2,
+          "AvgDramaticPacing": 8,
+          "AvgDialogueAuthenticity": 8.5,
+          "AvgSoundDesignMusic": 7.8,
+          "AvgOverallQualitative": 8.2,
+          "DisqualifyingFlags": []
+        },
+        {
+          "ModelId": "gemini-3.1-pro-preview",
+          "AnonymousLabel": "",
+          "CompositeScore": 77.6,
+          "IsGenerationFallback": false,
+          "GenerationFallbackReason": null,
+          "BordaPoints": 8,
+          "AvgJudgeRank": 4,
+          "SyntaxAudit": {
+            "OverallSyntaxScore": 92.8,
+            "FormatComplianceScore": 95,
+            "SceneBudgetScore": 100,
+            "DialoguePacingScore": 75,
+            "CharacterDisambiguationScore": 100,
+            "MusicSpecScore": 70,
+            "TotalSceneHeadings": 16,
+            "TotalDialogueBlocks": 33,
+            "AvgWordsPerDialogue": 20.3,
+            "MaxWordsInSingleDialogue": 56,
+            "LongMonologueCount": 5,
+            "GenericNumberedSpeakerCount": 0,
+            "CharacterNamesFound": [
+              "NARRATOR",
+              "MAN IN RED SWEATER",
+              "FRANCOIS",
+              "PERRAULT",
+              "HAL",
+              "MERCEDES",
+              "THORNTON"
+            ],
+            "AgeDisambiguatedCharacters": [],
+            "DiagnosticWarnings": [
+              "Missing \u0027FADE OUT.\u0027 or \u0027THE END\u0027 closing transition.",
+              "5 monologue turn(s) exceed 35 words without action line splits.",
+              "No explicit music/sound design cues detected in screenplay."
+            ]
+          },
+          "AvgAdaptationFidelity": 6.8,
+          "AvgCharacterDisambiguation": 7,
+          "AvgAiVideoDirectibility": 6.8,
+          "AvgDramaticPacing": 6.5,
+          "AvgDialogueAuthenticity": 7.8,
+          "AvgSoundDesignMusic": 5.8,
+          "AvgOverallQualitative": 6.8,
+          "DisqualifyingFlags": [
+            "grok-4.5: Invented recurring snowy-ridge narrator frame substitutes for source texture",
+            "grok-4.5: Omits major sequences (Dave\u0027s death, boat rescue, mail-train suffering, moose hunt)"
+          ]
+        },
+        {
+          "ModelId": "grok-4.20-reasoning",
+          "AnonymousLabel": "",
+          "CompositeScore": 72.2,
+          "IsGenerationFallback": false,
+          "GenerationFallbackReason": null,
+          "BordaPoints": 6,
+          "AvgJudgeRank": 5,
+          "SyntaxAudit": {
+            "OverallSyntaxScore": 93.5,
+            "FormatComplianceScore": 95,
+            "SceneBudgetScore": 100,
+            "DialoguePacingScore": 90,
+            "CharacterDisambiguationScore": 100,
+            "MusicSpecScore": 70,
+            "TotalSceneHeadings": 19,
+            "TotalDialogueBlocks": 26,
+            "AvgWordsPerDialogue": 17.3,
+            "MaxWordsInSingleDialogue": 52,
+            "LongMonologueCount": 2,
+            "GenericNumberedSpeakerCount": 0,
+            "CharacterNamesFound": [
+              "NARRATOR",
+              "STRANGER",
+              "MANUEL",
+              "SALOON-KEEPER",
+              "MAN IN THE RED SWEATER",
+              "THORNTON"
+            ],
+            "AgeDisambiguatedCharacters": [],
+            "DiagnosticWarnings": [
+              "Missing \u0027FADE OUT.\u0027 or \u0027THE END\u0027 closing transition.",
+              "2 monologue turn(s) exceed 35 words without action line splits.",
+              "No explicit music/sound design cues detected in screenplay."
+            ]
+          },
+          "AvgAdaptationFidelity": 5.5,
+          "AvgCharacterDisambiguation": 6,
+          "AvgAiVideoDirectibility": 5.5,
+          "AvgDramaticPacing": 5.2,
+          "AvgDialogueAuthenticity": 7.2,
+          "AvgSoundDesignMusic": 5.2,
+          "AvgOverallQualitative": 5.8,
+          "DisqualifyingFlags": [
+            "grok-4.5: Heavy invented cabin-narrator framing device that dominates runtime and is absent from the source",
+            "grok-4.5: Drops multiple major book beats (Dave\u0027s death, Forty-Mile boat rescue, detailed mail-train decline, moose)",
+            "grok-4.5: Over-reliance on summary V.O. makes scenes unusable for 5-10s clip breakdown",
+            "grok-4: Heavy reliance on static cabin narrator frame reduces directibility and visual momentum for short clips",
+            "grok-4: Some scenes compress too many beats into single headings"
+          ]
+        },
+        {
+          "ModelId": "gpt-5.6-luna",
+          "AnonymousLabel": "",
+          "CompositeScore": 32.2,
+          "IsGenerationFallback": true,
+          "GenerationFallbackReason": "Chat HTTP 429: {\n    \u0022error\u0022: {\n        \u0022message\u0022: \u0022You have no credits remaining. Add credits to continue using the API at https://platform.openai.com/settings/organization/billing/.\u0022,\n        \u0022type\u0022: \u0022insufficient_quota\u0022,\n        \u0022param\u0022: null,\n        \u0022code\u0022: \u0022credit_balance_exhausted\u0022\n    }\n}\n",
+          "BordaPoints": 0,
+          "AvgJudgeRank": 3.5,
+          "SyntaxAudit": {
+            "OverallSyntaxScore": 80.5,
+            "FormatComplianceScore": 95,
+            "SceneBudgetScore": 50,
+            "DialoguePacingScore": 50,
+            "CharacterDisambiguationScore": 100,
+            "MusicSpecScore": 80,
+            "TotalSceneHeadings": 343,
+            "TotalDialogueBlocks": 343,
+            "AvgWordsPerDialogue": 55.3,
+            "MaxWordsInSingleDialogue": 82,
+            "LongMonologueCount": 249,
+            "GenericNumberedSpeakerCount": 0,
+            "CharacterNamesFound": [
+              "NARRATOR"
+            ],
+            "AgeDisambiguatedCharacters": [],
+            "DiagnosticWarnings": [
+              "Missing \u0027FADE OUT.\u0027 or \u0027THE END\u0027 closing transition.",
+              "Excessive scene count (343 scenes); high micro-scene density inflates video gen budget.",
+              "High average dialogue length (55.3 words/turn); speech beats risk clip overrun.",
+              "249 monologue turn(s) exceed 35 words without action line splits."
+            ]
+          },
+          "AvgAdaptationFidelity": 0,
+          "AvgCharacterDisambiguation": 0,
+          "AvgAiVideoDirectibility": 0,
+          "AvgDramaticPacing": 0,
+          "AvgDialogueAuthenticity": 0,
+          "AvgSoundDesignMusic": 0,
+          "AvgOverallQualitative": 0,
+          "DisqualifyingFlags": []
+        },
+        {
+          "ModelId": "claude-opus-5",
+          "AnonymousLabel": "",
+          "CompositeScore": 32.2,
+          "IsGenerationFallback": true,
+          "GenerationFallbackReason": "Anthropic messages HTTP 400: {\u0022type\u0022:\u0022error\u0022,\u0022error\u0022:{\u0022type\u0022:\u0022invalid_request_error\u0022,\u0022message\u0022:\u0022Your credit balance is too low to access the Anthropic API. Please go to Plans \u0026 Billing to upgrade or purchase credits.\u0022},\u0022request_id\u0022:\u0022req_011CdZhFnPrPnva4vxEFxZYn\u0022}",
+          "BordaPoints": 0,
+          "AvgJudgeRank": 3.5,
+          "SyntaxAudit": {
+            "OverallSyntaxScore": 80.5,
+            "FormatComplianceScore": 95,
+            "SceneBudgetScore": 50,
+            "DialoguePacingScore": 50,
+            "CharacterDisambiguationScore": 100,
+            "MusicSpecScore": 80,
+            "TotalSceneHeadings": 343,
+            "TotalDialogueBlocks": 343,
+            "AvgWordsPerDialogue": 55.3,
+            "MaxWordsInSingleDialogue": 82,
+            "LongMonologueCount": 249,
+            "GenericNumberedSpeakerCount": 0,
+            "CharacterNamesFound": [
+              "NARRATOR"
+            ],
+            "AgeDisambiguatedCharacters": [],
+            "DiagnosticWarnings": [
+              "Missing \u0027FADE OUT.\u0027 or \u0027THE END\u0027 closing transition.",
+              "Excessive scene count (343 scenes); high micro-scene density inflates video gen budget.",
+              "High average dialogue length (55.3 words/turn); speech beats risk clip overrun.",
+              "249 monologue turn(s) exceed 35 words without action line splits."
+            ]
+          },
+          "AvgAdaptationFidelity": 0,
+          "AvgCharacterDisambiguation": 0,
+          "AvgAiVideoDirectibility": 0,
+          "AvgDramaticPacing": 0,
+          "AvgDialogueAuthenticity": 0,
+          "AvgSoundDesignMusic": 0,
+          "AvgOverallQualitative": 0,
+          "DisqualifyingFlags": []
+        }
+      ],
+      "JudgeMatrix": {
+        "grok-4.5": {
+          "grok-4.20-reasoning": 5.17,
+          "gpt-5.6-terra": 8.67,
+          "gemini-3.1-pro-preview": 6.17,
+          "gemini-3.6-flash": 8.33,
+          "gpt-5.6-sol": 8.67
+        },
+        "grok-4": {
+          "gemini-3.6-flash": 8.17,
+          "gpt-5.6-sol": 8.75,
+          "grok-4.20-reasoning": 6.42,
+          "gpt-5.6-terra": 8.25,
+          "gemini-3.1-pro-preview": 7.33
+        }
+      },
+      "SelfBiasNotes": []
+    },
+    {
+      "RunId": "3946dc4c20f7402cbfd854b0257aa186",
+      "Timestamp": "2026-07-31 13:19:42 UTC",
+      "BookSlug": "nick_and_me",
+      "BookTitle": "Nick_and_Me",
+      "BookPath": "C:\\Users\\budcr\\source\\repos\\claude\\PageToMovie\\books\\Nick_and_Me.txt",
+      "IsMockRun": false,
+      "ReasoningEffort": "max",
+      "PromptVersion": "15A6CCC456",
+      "ModelScores": [
+        {
+          "ModelId": "gpt-5.6-sol",
+          "AnonymousLabel": "",
+          "CompositeScore": 91.4,
+          "IsGenerationFallback": false,
+          "GenerationFallbackReason": null,
+          "BordaPoints": 14,
+          "AvgJudgeRank": 1,
+          "SyntaxAudit": {
+            "OverallSyntaxScore": 95,
+            "FormatComplianceScore": 100,
+            "SceneBudgetScore": 100,
+            "DialoguePacingScore": 90,
+            "CharacterDisambiguationScore": 100,
+            "MusicSpecScore": 70,
+            "TotalSceneHeadings": 23,
+            "TotalDialogueBlocks": 107,
+            "AvgWordsPerDialogue": 12.9,
+            "MaxWordsInSingleDialogue": 43,
+            "LongMonologueCount": 2,
+            "GenericNumberedSpeakerCount": 0,
+            "CharacterNamesFound": [
+              "THE NARRATOR",
+              "NICK",
+              "MA",
+              "SIONNA",
+              "LINDSEY",
+              "MARCO",
+              "OFFICER DUPUIS"
+            ],
+            "AgeDisambiguatedCharacters": [],
+            "DiagnosticWarnings": [
+              "2 monologue turn(s) exceed 35 words without action line splits.",
+              "No explicit music/sound design cues detected in screenplay."
+            ]
+          },
+          "AvgAdaptationFidelity": 9.2,
+          "AvgCharacterDisambiguation": 9.2,
+          "AvgAiVideoDirectibility": 9,
+          "AvgDramaticPacing": 8.5,
+          "AvgDialogueAuthenticity": 9,
+          "AvgSoundDesignMusic": 8.5,
+          "AvgOverallQualitative": 8.9,
+          "DisqualifyingFlags": []
+        },
+        {
+          "ModelId": "gpt-5.6-terra",
+          "AnonymousLabel": "",
+          "CompositeScore": 89.2,
+          "IsGenerationFallback": false,
+          "GenerationFallbackReason": null,
+          "BordaPoints": 11,
+          "AvgJudgeRank": 2.5,
+          "SyntaxAudit": {
+            "OverallSyntaxScore": 95.5,
+            "FormatComplianceScore": 100,
+            "SceneBudgetScore": 100,
+            "DialoguePacingScore": 100,
+            "CharacterDisambiguationScore": 100,
+            "MusicSpecScore": 70,
+            "TotalSceneHeadings": 32,
+            "TotalDialogueBlocks": 152,
+            "AvgWordsPerDialogue": 11.3,
+            "MaxWordsInSingleDialogue": 34,
+            "LongMonologueCount": 0,
+            "GenericNumberedSpeakerCount": 0,
+            "CharacterNamesFound": [
+              "PETER",
+              "NICK",
+              "SIONNA",
+              "MA",
+              "ELAINE",
+              "DR. CARSON",
+              "DYING SOLDIER",
+              "CARLOS",
+              "OFFICER DUPUIS",
+              "INSTRUCTOR MAYA",
+              "SAGE",
+              "OFFICER HARRIS"
+            ],
+            "AgeDisambiguatedCharacters": [],
+            "DiagnosticWarnings": [
+              "No explicit music/sound design cues detected in screenplay."
+            ]
+          },
+          "AvgAdaptationFidelity": 8.8,
+          "AvgCharacterDisambiguation": 8.8,
+          "AvgAiVideoDirectibility": 8.5,
+          "AvgDramaticPacing": 8.2,
+          "AvgDialogueAuthenticity": 8.2,
+          "AvgSoundDesignMusic": 8.5,
+          "AvgOverallQualitative": 8.5,
+          "DisqualifyingFlags": []
+        },
+        {
+          "ModelId": "gpt-5.6-luna",
+          "AnonymousLabel": "",
+          "CompositeScore": 89.4,
+          "IsGenerationFallback": false,
+          "GenerationFallbackReason": null,
+          "BordaPoints": 11,
+          "AvgJudgeRank": 2.5,
+          "SyntaxAudit": {
+            "OverallSyntaxScore": 99,
+            "FormatComplianceScore": 100,
+            "SceneBudgetScore": 100,
+            "DialoguePacingScore": 80,
+            "CharacterDisambiguationScore": 100,
+            "MusicSpecScore": 100,
+            "TotalSceneHeadings": 29,
+            "TotalDialogueBlocks": 0,
+            "AvgWordsPerDialogue": 0,
+            "MaxWordsInSingleDialogue": 0,
+            "LongMonologueCount": 0,
+            "GenericNumberedSpeakerCount": 0,
+            "CharacterNamesFound": [],
+            "AgeDisambiguatedCharacters": [],
+            "DiagnosticWarnings": [
+              "Detected 3 descriptive instrumental music/sound cue(s)."
+            ]
+          },
+          "AvgAdaptationFidelity": 8.5,
+          "AvgCharacterDisambiguation": 8,
+          "AvgAiVideoDirectibility": 8.2,
+          "AvgDramaticPacing": 8,
+          "AvgDialogueAuthenticity": 8.2,
+          "AvgSoundDesignMusic": 8.8,
+          "AvgOverallQualitative": 8.3,
+          "DisqualifyingFlags": []
+        },
+        {
+          "ModelId": "gemini-3.1-pro-preview",
+          "AnonymousLabel": "",
+          "CompositeScore": 86.9,
+          "IsGenerationFallback": false,
+          "GenerationFallbackReason": null,
+          "BordaPoints": 7,
+          "AvgJudgeRank": 4.5,
+          "SyntaxAudit": {
+            "OverallSyntaxScore": 98.5,
+            "FormatComplianceScore": 100,
+            "SceneBudgetScore": 100,
+            "DialoguePacingScore": 70,
+            "CharacterDisambiguationScore": 100,
+            "MusicSpecScore": 100,
+            "TotalSceneHeadings": 18,
+            "TotalDialogueBlocks": 77,
+            "AvgWordsPerDialogue": 19.4,
+            "MaxWordsInSingleDialogue": 58,
+            "LongMonologueCount": 10,
+            "GenericNumberedSpeakerCount": 0,
+            "CharacterNamesFound": [
+              "NARRATOR",
+              "SIONNA",
+              "MA",
+              "NICK",
+              "DR. CARSON",
+              "LINDSEY",
+              "DARK HAIRED MAN",
+              "OFFICER DUPUIS",
+              "GUARD"
+            ],
+            "AgeDisambiguatedCharacters": [],
+            "DiagnosticWarnings": [
+              "10 monologue turn(s) exceed 35 words without action line splits.",
+              "Detected 1 descriptive instrumental music/sound cue(s)."
+            ]
+          },
+          "AvgAdaptationFidelity": 7.8,
+          "AvgCharacterDisambiguation": 8,
+          "AvgAiVideoDirectibility": 7.8,
+          "AvgDramaticPacing": 8,
+          "AvgDialogueAuthenticity": 8,
+          "AvgSoundDesignMusic": 8,
+          "AvgOverallQualitative": 7.9,
+          "DisqualifyingFlags": []
+        },
+        {
+          "ModelId": "gemini-3.6-flash",
+          "AnonymousLabel": "",
+          "CompositeScore": 81.2,
+          "IsGenerationFallback": false,
+          "GenerationFallbackReason": null,
+          "BordaPoints": 5,
+          "AvgJudgeRank": 5.5,
+          "SyntaxAudit": {
+            "OverallSyntaxScore": 93.5,
+            "FormatComplianceScore": 95,
+            "SceneBudgetScore": 100,
+            "DialoguePacingScore": 90,
+            "CharacterDisambiguationScore": 100,
+            "MusicSpecScore": 70,
+            "TotalSceneHeadings": 12,
+            "TotalDialogueBlocks": 60,
+            "AvgWordsPerDialogue": 13.7,
+            "MaxWordsInSingleDialogue": 53,
+            "LongMonologueCount": 2,
+            "GenericNumberedSpeakerCount": 0,
+            "CharacterNamesFound": [
+              "PETER",
+              "NICK",
+              "SIONNA",
+              "MA",
+              "OFFICER DUPUIS",
+              "BOB",
+              "PRISON GUARD"
+            ],
+            "AgeDisambiguatedCharacters": [],
+            "DiagnosticWarnings": [
+              "Missing \u0027FADE OUT.\u0027 or \u0027THE END\u0027 closing transition.",
+              "2 monologue turn(s) exceed 35 words without action line splits.",
+              "No explicit music/sound design cues detected in screenplay."
+            ]
+          },
+          "AvgAdaptationFidelity": 5.5,
+          "AvgCharacterDisambiguation": 8,
+          "AvgAiVideoDirectibility": 8,
+          "AvgDramaticPacing": 7.5,
+          "AvgDialogueAuthenticity": 7.2,
+          "AvgSoundDesignMusic": 7.8,
+          "AvgOverallQualitative": 7.3,
+          "DisqualifyingFlags": [
+            "grok-4.5: Protagonist locked as PETER from the opening scene, violating the source\u0027s late name reveal and the NARRATOR-token rule"
+          ]
+        },
+        {
+          "ModelId": "claude-opus-5",
+          "AnonymousLabel": "",
+          "CompositeScore": 74.1,
+          "IsGenerationFallback": false,
+          "GenerationFallbackReason": null,
+          "BordaPoints": 5,
+          "AvgJudgeRank": 5.5,
+          "SyntaxAudit": {
+            "OverallSyntaxScore": 91.5,
+            "FormatComplianceScore": 100,
+            "SceneBudgetScore": 72,
+            "DialoguePacingScore": 70,
+            "CharacterDisambiguationScore": 100,
+            "MusicSpecScore": 100,
+            "TotalSceneHeadings": 59,
+            "TotalDialogueBlocks": 369,
+            "AvgWordsPerDialogue": 19.9,
+            "MaxWordsInSingleDialogue": 104,
+            "LongMonologueCount": 64,
+            "GenericNumberedSpeakerCount": 0,
+            "CharacterNamesFound": [
+              "THE NARRATOR",
+              "MRS. ENGEL",
+              "YOUNG NICK",
+              "NICK",
+              "SIONNA",
+              "DR. CARSON",
+              "FALLEN SOLDIER",
+              "JENNIFER",
+              "YOUNG NARRATOR",
+              "BOBBY",
+              "MRS. STARK",
+              "MA",
+              "KEVIN MCCLEARY",
+              "BOB",
+              "OFFICER DUPUIS",
+              "NURSE OWENS",
+              "TOMMY",
+              "TONY",
+              "TEEN NICK",
+              "STEVIE SUNDERMAN",
+              "JOHN JOHANSSON",
+              "MRS. HALSTEAD",
+              "MARK JOWLISH",
+              "DANIEL DAWSON",
+              "JUDGE MARLOWE"
+            ],
+            "AgeDisambiguatedCharacters": [
+              "YOUNG NICK",
+              "YOUNG NARRATOR",
+              "TEEN NICK"
+            ],
+            "DiagnosticWarnings": [
+              "Excessive scene count (59 scenes); high micro-scene density inflates video gen budget.",
+              "64 monologue turn(s) exceed 35 words without action line splits.",
+              "Detected 3 age-qualified character header(s) (e.g. YOUNG NICK, YOUNG NARRATOR, TEEN NICK).",
+              "Detected 2 descriptive instrumental music/sound cue(s)."
+            ]
+          },
+          "AvgAdaptationFidelity": 5.5,
+          "AvgCharacterDisambiguation": 6.2,
+          "AvgAiVideoDirectibility": 6.2,
+          "AvgDramaticPacing": 4.5,
+          "AvgDialogueAuthenticity": 7.5,
+          "AvgSoundDesignMusic": 7.5,
+          "AvgOverallQualitative": 6.2,
+          "DisqualifyingFlags": [
+            "grok-4.5: Ma repeatedly mis-cued/renamed as MRS. ENGEL, breaking closed cast and source identity",
+            "grok-4.5: Non-Fountain garbage text and model metadata embedded near the end, rendering the file unparsable",
+            "grok-4.5: Massively exceeds 10-minute target with dozens of secondary scenes"
+          ]
+        },
+        {
+          "ModelId": "grok-4.20-reasoning",
+          "AnonymousLabel": "",
+          "CompositeScore": 73.4,
+          "IsGenerationFallback": false,
+          "GenerationFallbackReason": null,
+          "BordaPoints": 3,
+          "AvgJudgeRank": 6.5,
+          "SyntaxAudit": {
+            "OverallSyntaxScore": 99.2,
+            "FormatComplianceScore": 100,
+            "SceneBudgetScore": 100,
+            "DialoguePacingScore": 85,
+            "CharacterDisambiguationScore": 100,
+            "MusicSpecScore": 100,
+            "TotalSceneHeadings": 19,
+            "TotalDialogueBlocks": 63,
+            "AvgWordsPerDialogue": 12,
+            "MaxWordsInSingleDialogue": 41,
+            "LongMonologueCount": 3,
+            "GenericNumberedSpeakerCount": 0,
+            "CharacterNamesFound": [
+              "PETER",
+              "NICK",
+              "MA",
+              "SIONNA",
+              "LIBRARIAN"
+            ],
+            "AgeDisambiguatedCharacters": [],
+            "DiagnosticWarnings": [
+              "3 monologue turn(s) exceed 35 words without action line splits."
+            ]
+          },
+          "AvgAdaptationFidelity": 3.8,
+          "AvgCharacterDisambiguation": 6.5,
+          "AvgAiVideoDirectibility": 6.5,
+          "AvgDramaticPacing": 5.2,
+          "AvgDialogueAuthenticity": 5.5,
+          "AvgSoundDesignMusic": 6.2,
+          "AvgOverallQualitative": 5.6,
+          "DisqualifyingFlags": [
+            "grok-4.5: Protagonist named PETER from the first scene onward",
+            "grok-4.5: Invented non-source closing line \u0027God bless us, every one\u0027",
+            "grok-4.5: Heavy omission of major middle beats (full library/yoga/philosophy arc) and choppy CUT-TO structure",
+            "grok-4: Invented ending line \u0027God bless us, every one\u0027 not present in source; frame narrative adds non-book structure and invented closing beat."
+          ]
+        }
+      ],
+      "JudgeMatrix": {
+        "grok-4.5": {
+          "gpt-5.6-luna": 8.42,
+          "gpt-5.6-terra": 8.42,
+          "claude-opus-5": 4.67,
+          "gemini-3.6-flash": 7,
+          "grok-4.20-reasoning": 5.58,
+          "gpt-5.6-sol": 8.75,
+          "gemini-3.1-pro-preview": 8.42
+        },
+        "grok-4": {
+          "gpt-5.6-terra": 8.58,
+          "grok-4.20-reasoning": 5.67,
+          "claude-opus-5": 7.83,
+          "gemini-3.1-pro-preview": 7.42,
+          "gemini-3.6-flash": 7.67,
+          "gpt-5.6-sol": 9.08,
+          "gpt-5.6-luna": 8.17
+        }
+      },
+      "SelfBiasNotes": []
+    },
+    {
+      "RunId": "5ca4a0c8ec734b7a8258e87d6a85b29f",
+      "Timestamp": "2026-07-31 13:19:43 UTC",
+      "BookSlug": "the_tell-tale_heart",
+      "BookTitle": "The_Tell-Tale_Heart",
+      "BookPath": "C:\\Users\\budcr\\source\\repos\\claude\\PageToMovie\\books\\The_Tell-Tale_Heart.txt",
+      "IsMockRun": false,
+      "ReasoningEffort": "max",
+      "PromptVersion": "15A6CCC456",
+      "ModelScores": [
+        {
+          "ModelId": "claude-opus-5",
+          "AnonymousLabel": "",
+          "CompositeScore": 93.7,
+          "IsGenerationFallback": false,
+          "GenerationFallbackReason": null,
+          "BordaPoints": 14,
+          "AvgJudgeRank": 1,
+          "SyntaxAudit": {
+            "OverallSyntaxScore": 98.5,
+            "FormatComplianceScore": 100,
+            "SceneBudgetScore": 100,
+            "DialoguePacingScore": 70,
+            "CharacterDisambiguationScore": 100,
+            "MusicSpecScore": 100,
+            "TotalSceneHeadings": 13,
+            "TotalDialogueBlocks": 44,
+            "AvgWordsPerDialogue": 28.8,
+            "MaxWordsInSingleDialogue": 53,
+            "LongMonologueCount": 12,
+            "GenericNumberedSpeakerCount": 0,
+            "CharacterNamesFound": [
+              "THE NARRATOR",
+              "THE OLD MAN",
+              "OFFICER DUNNE"
+            ],
+            "AgeDisambiguatedCharacters": [
+              "THE OLD MAN"
+            ],
+            "DiagnosticWarnings": [
+              "12 monologue turn(s) exceed 35 words without action line splits.",
+              "Detected 1 age-qualified character header(s) (e.g. THE OLD MAN)."
+            ]
+          },
+          "AvgAdaptationFidelity": 9.2,
+          "AvgCharacterDisambiguation": 9.2,
+          "AvgAiVideoDirectibility": 9.2,
+          "AvgDramaticPacing": 8.5,
+          "AvgDialogueAuthenticity": 9,
+          "AvgSoundDesignMusic": 9.2,
+          "AvgOverallQualitative": 9,
+          "DisqualifyingFlags": []
+        },
+        {
+          "ModelId": "gpt-5.6-sol",
+          "AnonymousLabel": "",
+          "CompositeScore": 89,
+          "IsGenerationFallback": false,
+          "GenerationFallbackReason": null,
+          "BordaPoints": 12,
+          "AvgJudgeRank": 2,
+          "SyntaxAudit": {
+            "OverallSyntaxScore": 93.5,
+            "FormatComplianceScore": 95,
+            "SceneBudgetScore": 100,
+            "DialoguePacingScore": 90,
+            "CharacterDisambiguationScore": 100,
+            "MusicSpecScore": 70,
+            "TotalSceneHeadings": 12,
+            "TotalDialogueBlocks": 41,
+            "AvgWordsPerDialogue": 19,
+            "MaxWordsInSingleDialogue": 38,
+            "LongMonologueCount": 2,
+            "GenericNumberedSpeakerCount": 0,
+            "CharacterNamesFound": [
+              "NARRATOR",
+              "OLD MAN",
+              "OFFICER REYNOLDS"
+            ],
+            "AgeDisambiguatedCharacters": [
+              "OLD MAN"
+            ],
+            "DiagnosticWarnings": [
+              "Missing \u0027FADE OUT.\u0027 or \u0027THE END\u0027 closing transition.",
+              "2 monologue turn(s) exceed 35 words without action line splits.",
+              "Detected 1 age-qualified character header(s) (e.g. OLD MAN).",
+              "No explicit music/sound design cues detected in screenplay."
+            ]
+          },
+          "AvgAdaptationFidelity": 8.5,
+          "AvgCharacterDisambiguation": 9,
+          "AvgAiVideoDirectibility": 8.5,
+          "AvgDramaticPacing": 8.2,
+          "AvgDialogueAuthenticity": 8.5,
+          "AvgSoundDesignMusic": 8.8,
+          "AvgOverallQualitative": 8.6,
+          "DisqualifyingFlags": []
+        },
+        {
+          "ModelId": "gpt-5.6-luna",
+          "AnonymousLabel": "",
+          "CompositeScore": 87.9,
+          "IsGenerationFallback": false,
+          "GenerationFallbackReason": null,
+          "BordaPoints": 7,
+          "AvgJudgeRank": 4.5,
+          "SyntaxAudit": {
+            "OverallSyntaxScore": 97.5,
+            "FormatComplianceScore": 100,
+            "SceneBudgetScore": 100,
+            "DialoguePacingScore": 50,
+            "CharacterDisambiguationScore": 100,
+            "MusicSpecScore": 100,
+            "TotalSceneHeadings": 7,
+            "TotalDialogueBlocks": 43,
+            "AvgWordsPerDialogue": 33.8,
+            "MaxWordsInSingleDialogue": 59,
+            "LongMonologueCount": 19,
+            "GenericNumberedSpeakerCount": 0,
+            "CharacterNamesFound": [
+              "NARRATOR",
+              "THE OLD MAN"
+            ],
+            "AgeDisambiguatedCharacters": [
+              "THE OLD MAN"
+            ],
+            "DiagnosticWarnings": [
+              "High average dialogue length (33.8 words/turn); speech beats risk clip overrun.",
+              "19 monologue turn(s) exceed 35 words without action line splits.",
+              "Detected 1 age-qualified character header(s) (e.g. THE OLD MAN)."
+            ]
+          },
+          "AvgAdaptationFidelity": 8.5,
+          "AvgCharacterDisambiguation": 7.8,
+          "AvgAiVideoDirectibility": 8,
+          "AvgDramaticPacing": 7.5,
+          "AvgDialogueAuthenticity": 8.8,
+          "AvgSoundDesignMusic": 8.5,
+          "AvgOverallQualitative": 8.2,
+          "DisqualifyingFlags": []
+        },
+        {
+          "ModelId": "gpt-5.6-terra",
+          "AnonymousLabel": "",
+          "CompositeScore": 86.2,
+          "IsGenerationFallback": false,
+          "GenerationFallbackReason": null,
+          "BordaPoints": 7,
+          "AvgJudgeRank": 4.5,
+          "SyntaxAudit": {
+            "OverallSyntaxScore": 95.5,
+            "FormatComplianceScore": 100,
+            "SceneBudgetScore": 100,
+            "DialoguePacingScore": 100,
+            "CharacterDisambiguationScore": 100,
+            "MusicSpecScore": 70,
+            "TotalSceneHeadings": 8,
+            "TotalDialogueBlocks": 42,
+            "AvgWordsPerDialogue": 16.2,
+            "MaxWordsInSingleDialogue": 35,
+            "LongMonologueCount": 0,
+            "GenericNumberedSpeakerCount": 0,
+            "CharacterNamesFound": [
+              "NARRATOR",
+              "OLD MAN",
+              "OFFICER REYNOLDS"
+            ],
+            "AgeDisambiguatedCharacters": [
+              "OLD MAN"
+            ],
+            "DiagnosticWarnings": [
+              "Detected 1 age-qualified character header(s) (e.g. OLD MAN).",
+              "No explicit music/sound design cues detected in screenplay."
+            ]
+          },
+          "AvgAdaptationFidelity": 7.2,
+          "AvgCharacterDisambiguation": 9,
+          "AvgAiVideoDirectibility": 7.5,
+          "AvgDramaticPacing": 7.8,
+          "AvgDialogueAuthenticity": 8.5,
+          "AvgSoundDesignMusic": 8,
+          "AvgOverallQualitative": 8,
+          "DisqualifyingFlags": []
+        },
+        {
+          "ModelId": "gemini-3.6-flash",
+          "AnonymousLabel": "",
+          "CompositeScore": 81.4,
+          "IsGenerationFallback": false,
+          "GenerationFallbackReason": null,
+          "BordaPoints": 7,
+          "AvgJudgeRank": 4.5,
+          "SyntaxAudit": {
+            "OverallSyntaxScore": 94,
+            "FormatComplianceScore": 100,
+            "SceneBudgetScore": 100,
+            "DialoguePacingScore": 70,
+            "CharacterDisambiguationScore": 100,
+            "MusicSpecScore": 70,
+            "TotalSceneHeadings": 9,
+            "TotalDialogueBlocks": 38,
+            "AvgWordsPerDialogue": 19.8,
+            "MaxWordsInSingleDialogue": 44,
+            "LongMonologueCount": 6,
+            "GenericNumberedSpeakerCount": 0,
+            "CharacterNamesFound": [
+              "NARRATOR",
+              "OLD MAN",
+              "OFFICER REYNOLDS",
+              "OFFICER BAKER",
+              "OFFICER CARTER"
+            ],
+            "AgeDisambiguatedCharacters": [
+              "OLD MAN"
+            ],
+            "DiagnosticWarnings": [
+              "6 monologue turn(s) exceed 35 words without action line splits.",
+              "Detected 1 age-qualified character header(s) (e.g. OLD MAN).",
+              "No explicit music/sound design cues detected in screenplay."
+            ]
+          },
+          "AvgAdaptationFidelity": 7,
+          "AvgCharacterDisambiguation": 7.5,
+          "AvgAiVideoDirectibility": 7.2,
+          "AvgDramaticPacing": 7,
+          "AvgDialogueAuthenticity": 7,
+          "AvgSoundDesignMusic": 8.2,
+          "AvgOverallQualitative": 7.3,
+          "DisqualifyingFlags": [
+            "grok-4.5: Multiple invented multi-line exchanges for officers and narrator that exceed the summarized-chat cap",
+            "grok-4.5: Under-specified and potentially anachronistic officer visuals (e.g. CHEN) without consistent re-locking"
+          ]
+        },
+        {
+          "ModelId": "grok-4.20-reasoning",
+          "AnonymousLabel": "",
+          "CompositeScore": 79.5,
+          "IsGenerationFallback": false,
+          "GenerationFallbackReason": null,
+          "BordaPoints": 7,
+          "AvgJudgeRank": 4.5,
+          "SyntaxAudit": {
+            "OverallSyntaxScore": 96,
+            "FormatComplianceScore": 95,
+            "SceneBudgetScore": 100,
+            "DialoguePacingScore": 50,
+            "CharacterDisambiguationScore": 100,
+            "MusicSpecScore": 100,
+            "TotalSceneHeadings": 7,
+            "TotalDialogueBlocks": 23,
+            "AvgWordsPerDialogue": 47,
+            "MaxWordsInSingleDialogue": 120,
+            "LongMonologueCount": 13,
+            "GenericNumberedSpeakerCount": 0,
+            "CharacterNamesFound": [
+              "NARRATOR",
+              "OLD MAN",
+              "OFFICER GROVES"
+            ],
+            "AgeDisambiguatedCharacters": [
+              "OLD MAN"
+            ],
+            "DiagnosticWarnings": [
+              "Missing \u0027FADE OUT.\u0027 or \u0027THE END\u0027 closing transition.",
+              "High average dialogue length (47 words/turn); speech beats risk clip overrun.",
+              "13 monologue turn(s) exceed 35 words without action line splits.",
+              "Detected 1 age-qualified character header(s) (e.g. OLD MAN).",
+              "Detected 3 descriptive instrumental music/sound cue(s)."
+            ]
+          },
+          "AvgAdaptationFidelity": 5.8,
+          "AvgCharacterDisambiguation": 7.2,
+          "AvgAiVideoDirectibility": 7,
+          "AvgDramaticPacing": 6.8,
+          "AvgDialogueAuthenticity": 6.5,
+          "AvgSoundDesignMusic": 8,
+          "AvgOverallQualitative": 6.8,
+          "DisqualifyingFlags": [
+            "grok-4.5: Major invented plot event: officers seize the narrator and tear up the planks to reveal the body\u2014absent from the source\u2019s ending",
+            "grok-4.5: Extensive invented officer and narrator dialogue"
+          ]
+        },
+        {
+          "ModelId": "gemini-3.1-pro-preview",
+          "AnonymousLabel": "",
+          "CompositeScore": 75.7,
+          "IsGenerationFallback": false,
+          "GenerationFallbackReason": null,
+          "BordaPoints": 2,
+          "AvgJudgeRank": 7,
+          "SyntaxAudit": {
+            "OverallSyntaxScore": 97,
+            "FormatComplianceScore": 95,
+            "SceneBudgetScore": 100,
+            "DialoguePacingScore": 70,
+            "CharacterDisambiguationScore": 100,
+            "MusicSpecScore": 100,
+            "TotalSceneHeadings": 12,
+            "TotalDialogueBlocks": 26,
+            "AvgWordsPerDialogue": 24.8,
+            "MaxWordsInSingleDialogue": 43,
+            "LongMonologueCount": 8,
+            "GenericNumberedSpeakerCount": 0,
+            "CharacterNamesFound": [
+              "NARRATOR",
+              "OLD MAN",
+              "REYNOLDS"
+            ],
+            "AgeDisambiguatedCharacters": [
+              "OLD MAN"
+            ],
+            "DiagnosticWarnings": [
+              "Missing \u0027FADE OUT.\u0027 or \u0027THE END\u0027 closing transition.",
+              "8 monologue turn(s) exceed 35 words without action line splits.",
+              "Detected 1 age-qualified character header(s) (e.g. OLD MAN).",
+              "Detected 3 descriptive instrumental music/sound cue(s)."
+            ]
+          },
+          "AvgAdaptationFidelity": 5.5,
+          "AvgCharacterDisambiguation": 5.5,
+          "AvgAiVideoDirectibility": 6.2,
+          "AvgDramaticPacing": 6,
+          "AvgDialogueAuthenticity": 6,
+          "AvgSoundDesignMusic": 7.5,
+          "AvgOverallQualitative": 6.2,
+          "DisqualifyingFlags": [
+            "grok-4.5: Inconsistent character-token casing (Narrator vs NARRATOR) creating unstable closed-cast identity",
+            "grok-4.5: Extensive invented multi-line dialogue for both narrator and officers far beyond source",
+            "grok-4.5: Supporting cast given only minimal non-restated visuals",
+            "grok-4: Inconsistent capitalization of character names (Narrator vs NARRATOR) violating ALL CAPS closed-cast rule"
+          ]
+        }
+      ],
+      "JudgeMatrix": {
+        "grok-4.5": {
+          "gpt-5.6-luna": 8.3,
+          "gpt-5.6-terra": 8,
+          "claude-opus-5": 9.3,
+          "gemini-3.6-flash": 6.4,
+          "grok-4.20-reasoning": 5.4,
+          "gpt-5.6-sol": 8.5,
+          "gemini-3.1-pro-preview": 5.1
+        },
+        "grok-4": {
+          "gpt-5.6-terra": 8,
+          "grok-4.20-reasoning": 8.3,
+          "claude-opus-5": 8.8,
+          "gemini-3.1-pro-preview": 7.2,
+          "gemini-3.6-flash": 8.25,
+          "gpt-5.6-sol": 8.7,
+          "gpt-5.6-luna": 8
+        }
+      },
+      "SelfBiasNotes": []
+    },
+    {
+      "RunId": "ccfc6f5452184634a7d0c2fc7da3c826",
+      "Timestamp": "2026-07-31 13:19:43 UTC",
+      "BookSlug": "the_velveteen_rabbit",
+      "BookTitle": "The_Velveteen_Rabbit",
+      "BookPath": "C:\\Users\\budcr\\source\\repos\\claude\\PageToMovie\\books\\The_Velveteen_Rabbit.txt",
+      "IsMockRun": false,
+      "ReasoningEffort": "max",
+      "PromptVersion": "15A6CCC456",
+      "ModelScores": [
+        {
+          "ModelId": "gpt-5.6-sol",
+          "AnonymousLabel": "",
+          "CompositeScore": 91.9,
+          "IsGenerationFallback": false,
+          "GenerationFallbackReason": null,
+          "BordaPoints": 14,
+          "AvgJudgeRank": 1,
+          "SyntaxAudit": {
+            "OverallSyntaxScore": 94.8,
+            "FormatComplianceScore": 100,
+            "SceneBudgetScore": 100,
+            "DialoguePacingScore": 85,
+            "CharacterDisambiguationScore": 100,
+            "MusicSpecScore": 70,
+            "TotalSceneHeadings": 12,
+            "TotalDialogueBlocks": 51,
+            "AvgWordsPerDialogue": 15,
+            "MaxWordsInSingleDialogue": 45,
+            "LongMonologueCount": 3,
+            "GenericNumberedSpeakerCount": 0,
+            "CharacterNamesFound": [
+              "NARRATOR",
+              "RABBIT",
+              "SKIN HORSE",
+              "BOY",
+              "NANA",
+              "BRACKEN",
+              "THISTLE",
+              "DOCTOR BELL",
+              "FAIRY"
+            ],
+            "AgeDisambiguatedCharacters": [
+              "BOY"
+            ],
+            "DiagnosticWarnings": [
+              "3 monologue turn(s) exceed 35 words without action line splits.",
+              "Detected 1 age-qualified character header(s) (e.g. BOY).",
+              "No explicit music/sound design cues detected in screenplay."
+            ]
+          },
+          "AvgAdaptationFidelity": 9,
+          "AvgCharacterDisambiguation": 9.5,
+          "AvgAiVideoDirectibility": 9,
+          "AvgDramaticPacing": 8.8,
+          "AvgDialogueAuthenticity": 9,
+          "AvgSoundDesignMusic": 9,
+          "AvgOverallQualitative": 9,
+          "DisqualifyingFlags": []
+        },
+        {
+          "ModelId": "gpt-5.6-luna",
+          "AnonymousLabel": "",
+          "CompositeScore": 90.2,
+          "IsGenerationFallback": false,
+          "GenerationFallbackReason": null,
+          "BordaPoints": 12,
+          "AvgJudgeRank": 2,
+          "SyntaxAudit": {
+            "OverallSyntaxScore": 97.2,
+            "FormatComplianceScore": 95,
+            "SceneBudgetScore": 100,
+            "DialoguePacingScore": 75,
+            "CharacterDisambiguationScore": 100,
+            "MusicSpecScore": 100,
+            "TotalSceneHeadings": 15,
+            "TotalDialogueBlocks": 74,
+            "AvgWordsPerDialogue": 16.3,
+            "MaxWordsInSingleDialogue": 65,
+            "LongMonologueCount": 5,
+            "GenericNumberedSpeakerCount": 0,
+            "CharacterNamesFound": [
+              "THE BOY",
+              "NARRATOR",
+              "VELVETEEN RABBIT",
+              "SKIN HORSE",
+              "NANA",
+              "BRAMBLE",
+              "DOCTOR HART",
+              "FAIRY"
+            ],
+            "AgeDisambiguatedCharacters": [
+              "THE BOY"
+            ],
+            "DiagnosticWarnings": [
+              "Missing \u0027FADE OUT.\u0027 or \u0027THE END\u0027 closing transition.",
+              "5 monologue turn(s) exceed 35 words without action line splits.",
+              "Detected 1 age-qualified character header(s) (e.g. THE BOY).",
+              "Detected 2 descriptive instrumental music/sound cue(s)."
+            ]
+          },
+          "AvgAdaptationFidelity": 8.8,
+          "AvgCharacterDisambiguation": 8.8,
+          "AvgAiVideoDirectibility": 8.5,
+          "AvgDramaticPacing": 8.2,
+          "AvgDialogueAuthenticity": 8.8,
+          "AvgSoundDesignMusic": 8.2,
+          "AvgOverallQualitative": 8.5,
+          "DisqualifyingFlags": []
+        },
+        {
+          "ModelId": "gpt-5.6-terra",
+          "AnonymousLabel": "",
+          "CompositeScore": 86.1,
+          "IsGenerationFallback": false,
+          "GenerationFallbackReason": null,
+          "BordaPoints": 10,
+          "AvgJudgeRank": 3,
+          "SyntaxAudit": {
+            "OverallSyntaxScore": 95.2,
+            "FormatComplianceScore": 100,
+            "SceneBudgetScore": 100,
+            "DialoguePacingScore": 95,
+            "CharacterDisambiguationScore": 100,
+            "MusicSpecScore": 70,
+            "TotalSceneHeadings": 11,
+            "TotalDialogueBlocks": 40,
+            "AvgWordsPerDialogue": 14.2,
+            "MaxWordsInSingleDialogue": 36,
+            "LongMonologueCount": 1,
+            "GenericNumberedSpeakerCount": 0,
+            "CharacterNamesFound": [
+              "NARRATOR",
+              "RABBIT",
+              "SKIN HORSE",
+              "NANA",
+              "BOY",
+              "WILD RABBIT",
+              "DOCTOR",
+              "FAIRY"
+            ],
+            "AgeDisambiguatedCharacters": [
+              "BOY"
+            ],
+            "DiagnosticWarnings": [
+              "1 monologue turn(s) exceed 35 words without action line splits.",
+              "Detected 1 age-qualified character header(s) (e.g. BOY).",
+              "No explicit music/sound design cues detected in screenplay."
+            ]
+          },
+          "AvgAdaptationFidelity": 8.2,
+          "AvgCharacterDisambiguation": 8,
+          "AvgAiVideoDirectibility": 7.8,
+          "AvgDramaticPacing": 7.5,
+          "AvgDialogueAuthenticity": 8.2,
+          "AvgSoundDesignMusic": 8,
+          "AvgOverallQualitative": 8,
+          "DisqualifyingFlags": []
+        },
+        {
+          "ModelId": "gemini-3.1-pro-preview",
+          "AnonymousLabel": "",
+          "CompositeScore": 78.2,
+          "IsGenerationFallback": false,
+          "GenerationFallbackReason": null,
+          "BordaPoints": 6,
+          "AvgJudgeRank": 5,
+          "SyntaxAudit": {
+            "OverallSyntaxScore": 97.5,
+            "FormatComplianceScore": 95,
+            "SceneBudgetScore": 100,
+            "DialoguePacingScore": 80,
+            "CharacterDisambiguationScore": 100,
+            "MusicSpecScore": 100,
+            "TotalSceneHeadings": 11,
+            "TotalDialogueBlocks": 42,
+            "AvgWordsPerDialogue": 16.1,
+            "MaxWordsInSingleDialogue": 65,
+            "LongMonologueCount": 4,
+            "GenericNumberedSpeakerCount": 0,
+            "CharacterNamesFound": [
+              "NARRATOR",
+              "MODEL BOAT",
+              "VELVETEEN RABBIT",
+              "SKIN HORSE",
+              "THE BOY",
+              "NANA",
+              "FURRY RABBIT",
+              "DOCTOR",
+              "FAIRY"
+            ],
+            "AgeDisambiguatedCharacters": [
+              "THE BOY"
+            ],
+            "DiagnosticWarnings": [
+              "Missing \u0027FADE OUT.\u0027 or \u0027THE END\u0027 closing transition.",
+              "4 monologue turn(s) exceed 35 words without action line splits.",
+              "Detected 1 age-qualified character header(s) (e.g. THE BOY).",
+              "Detected 2 descriptive instrumental music/sound cue(s)."
+            ]
+          },
+          "AvgAdaptationFidelity": 4.5,
+          "AvgCharacterDisambiguation": 7.2,
+          "AvgAiVideoDirectibility": 7,
+          "AvgDramaticPacing": 6.5,
+          "AvgDialogueAuthenticity": 6.8,
+          "AvgSoundDesignMusic": 7.2,
+          "AvgOverallQualitative": 6.5,
+          "DisqualifyingFlags": [
+            "grok-4: Invented on-camera NARRATOR frame and study location not present in source"
+          ]
+        },
+        {
+          "ModelId": "grok-4.20-reasoning",
+          "AnonymousLabel": "",
+          "CompositeScore": 77.4,
+          "IsGenerationFallback": false,
+          "GenerationFallbackReason": null,
+          "BordaPoints": 6,
+          "AvgJudgeRank": 5,
+          "SyntaxAudit": {
+            "OverallSyntaxScore": 98.5,
+            "FormatComplianceScore": 100,
+            "SceneBudgetScore": 100,
+            "DialoguePacingScore": 70,
+            "CharacterDisambiguationScore": 100,
+            "MusicSpecScore": 100,
+            "TotalSceneHeadings": 11,
+            "TotalDialogueBlocks": 35,
+            "AvgWordsPerDialogue": 21.4,
+            "MaxWordsInSingleDialogue": 65,
+            "LongMonologueCount": 7,
+            "GenericNumberedSpeakerCount": 0,
+            "CharacterNamesFound": [
+              "NARRATOR",
+              "RABBIT",
+              "SKIN HORSE",
+              "NANA",
+              "THE BOY",
+              "WILD RABBIT",
+              "DOCTOR",
+              "FAIRY"
+            ],
+            "AgeDisambiguatedCharacters": [
+              "THE BOY"
+            ],
+            "DiagnosticWarnings": [
+              "7 monologue turn(s) exceed 35 words without action line splits.",
+              "Detected 1 age-qualified character header(s) (e.g. THE BOY).",
+              "Detected 4 descriptive instrumental music/sound cue(s)."
+            ]
+          },
+          "AvgAdaptationFidelity": 6.2,
+          "AvgCharacterDisambiguation": 6.2,
+          "AvgAiVideoDirectibility": 6.2,
+          "AvgDramaticPacing": 6.5,
+          "AvgDialogueAuthenticity": 5.2,
+          "AvgSoundDesignMusic": 7.5,
+          "AvgOverallQualitative": 6.3,
+          "DisqualifyingFlags": [
+            "grok-4.5: Critical dialogue misattribution: after Fairy asks who she is, RABBIT delivers the Fairy\u0027s self-introduction monologue",
+            "grok-4.5: Multiple scenes cram distinct locations/times under one heading (garden find flowing into bedroom REAL declaration)"
+          ]
+        },
+        {
+          "ModelId": "gemini-3.6-flash",
+          "AnonymousLabel": "",
+          "CompositeScore": 75.4,
+          "IsGenerationFallback": false,
+          "GenerationFallbackReason": null,
+          "BordaPoints": 6,
+          "AvgJudgeRank": 5,
+          "SyntaxAudit": {
+            "OverallSyntaxScore": 94,
+            "FormatComplianceScore": 100,
+            "SceneBudgetScore": 100,
+            "DialoguePacingScore": 70,
+            "CharacterDisambiguationScore": 100,
+            "MusicSpecScore": 70,
+            "TotalSceneHeadings": 8,
+            "TotalDialogueBlocks": 43,
+            "AvgWordsPerDialogue": 17,
+            "MaxWordsInSingleDialogue": 56,
+            "LongMonologueCount": 6,
+            "GenericNumberedSpeakerCount": 0,
+            "CharacterNamesFound": [
+              "NARRATOR",
+              "MECHANICAL BOAT",
+              "VELVETEEN RABBIT",
+              "SKIN HORSE",
+              "NANA",
+              "BOY",
+              "WILD RABBIT",
+              "DOCTOR",
+              "NURSERY FAIRY"
+            ],
+            "AgeDisambiguatedCharacters": [
+              "BOY"
+            ],
+            "DiagnosticWarnings": [
+              "6 monologue turn(s) exceed 35 words without action line splits.",
+              "Detected 1 age-qualified character header(s) (e.g. BOY).",
+              "No explicit music/sound design cues detected in screenplay."
+            ]
+          },
+          "AvgAdaptationFidelity": 5.5,
+          "AvgCharacterDisambiguation": 6.2,
+          "AvgAiVideoDirectibility": 7.2,
+          "AvgDramaticPacing": 6.5,
+          "AvgDialogueAuthenticity": 5.2,
+          "AvgSoundDesignMusic": 7,
+          "AvgOverallQualitative": 6.3,
+          "DisqualifyingFlags": [
+            "grok-4.5: Numbered cast tokens WILD RABBIT ONE / WILD RABBIT TWO violate closed-cast naming",
+            "grok-4.5: Substantial invented spoken lines (Boy stocking line, burrow speech, tear monologue as dialogue, \u0027My legs... I have hind legs!\u0027) not in the source"
+          ]
+        },
+        {
+          "ModelId": "claude-opus-5",
+          "AnonymousLabel": "",
+          "CompositeScore": 73.1,
+          "IsGenerationFallback": false,
+          "GenerationFallbackReason": null,
+          "BordaPoints": 2,
+          "AvgJudgeRank": 7,
+          "SyntaxAudit": {
+            "OverallSyntaxScore": 97.8,
+            "FormatComplianceScore": 95,
+            "SceneBudgetScore": 100,
+            "DialoguePacingScore": 85,
+            "CharacterDisambiguationScore": 100,
+            "MusicSpecScore": 100,
+            "TotalSceneHeadings": 7,
+            "TotalDialogueBlocks": 34,
+            "AvgWordsPerDialogue": 15.2,
+            "MaxWordsInSingleDialogue": 52,
+            "LongMonologueCount": 3,
+            "GenericNumberedSpeakerCount": 0,
+            "CharacterNamesFound": [
+              "NARRATOR",
+              "THE RABBIT",
+              "THE SKIN HORSE",
+              "NANA",
+              "THE BOY",
+              "THE FURRY RABBIT"
+            ],
+            "AgeDisambiguatedCharacters": [
+              "THE BOY"
+            ],
+            "DiagnosticWarnings": [
+              "Missing \u0027FADE OUT.\u0027 or \u0027THE END\u0027 closing transition.",
+              "3 monologue turn(s) exceed 35 words without action line splits.",
+              "Detected 1 age-qualified character header(s) (e.g. THE BOY).",
+              "Detected 2 descriptive instrumental music/sound cue(s)."
+            ]
+          },
+          "AvgAdaptationFidelity": 2.5,
+          "AvgCharacterDisambiguation": 7,
+          "AvgAiVideoDirectibility": 6.8,
+          "AvgDramaticPacing": 3,
+          "AvgDialogueAuthenticity": 7.8,
+          "AvgSoundDesignMusic": 7,
+          "AvgOverallQualitative": 5.7,
+          "DisqualifyingFlags": [
+            "grok-4.5: Screenplay truncates mid-illness sequence; missing recovery, burn order, sack/tear/Fairy transformation, Real-rabbit reveal, and spring reunion ending",
+            "grok-4: Screenplay is truncated mid-sentence and does not complete the story arc"
+          ]
+        }
+      ],
+      "JudgeMatrix": {
+        "grok-4.5": {
+          "gpt-5.6-luna": 8.67,
+          "gpt-5.6-terra": 7.67,
+          "claude-opus-5": 6.25,
+          "gemini-3.6-flash": 5.33,
+          "grok-4.20-reasoning": 5.25,
+          "gpt-5.6-sol": 9.08,
+          "gemini-3.1-pro-preview": 6.58
+        },
+        "grok-4": {
+          "gpt-5.6-terra": 8.25,
+          "grok-4.20-reasoning": 7.42,
+          "claude-opus-5": 5.08,
+          "gemini-3.1-pro-preview": 6.5,
+          "gemini-3.6-flash": 7.25,
+          "gpt-5.6-sol": 9,
+          "gpt-5.6-luna": 8.42
+        }
+      },
+      "SelfBiasNotes": []
+    },
+    {
+      "RunId": "3f0be78c92404fd689c5eadff3802889",
+      "Timestamp": "2026-07-31 13:19:43 UTC",
+      "BookSlug": "a_christmas_carol",
+      "BookTitle": "A_Christmas_Carol",
+      "BookPath": "C:\\Users\\budcr\\source\\repos\\claude\\PageToMovie\\books\\A_Christmas_Carol.txt",
+      "IsMockRun": false,
+      "ReasoningEffort": "max",
+      "PromptVersion": "15A6CCC456",
+      "ModelScores": [
+        {
+          "ModelId": "gpt-5.6-sol",
+          "AnonymousLabel": "",
+          "CompositeScore": 90.6,
+          "IsGenerationFallback": false,
+          "GenerationFallbackReason": null,
+          "BordaPoints": 13,
+          "AvgJudgeRank": 1.5,
+          "SyntaxAudit": {
+            "OverallSyntaxScore": 94.5,
+            "FormatComplianceScore": 100,
+            "SceneBudgetScore": 100,
+            "DialoguePacingScore": 80,
+            "CharacterDisambiguationScore": 100,
+            "MusicSpecScore": 70,
+            "TotalSceneHeadings": 19,
+            "TotalDialogueBlocks": 107,
+            "AvgWordsPerDialogue": 12.4,
+            "MaxWordsInSingleDialogue": 40,
+            "LongMonologueCount": 4,
+            "GenericNumberedSpeakerCount": 0,
+            "CharacterNamesFound": [
+              "FRED",
+              "SCROOGE",
+              "MR. HOWELL",
+              "BOB",
+              "MARLEY",
+              "CHRISTMAS PAST",
+              "FAN",
+              "YOUNG EBENEZER",
+              "FEZZIWIG",
+              "BELLE",
+              "CHRISTMAS PRESENT",
+              "MRS. CRATCHIT",
+              "TINY TIM",
+              "MR. GRAY",
+              "MR. POLLARD",
+              "OLD JOE",
+              "MRS. DILBER",
+              "SAM"
+            ],
+            "AgeDisambiguatedCharacters": [
+              "YOUNG EBENEZER",
+              "TINY TIM",
+              "OLD JOE"
+            ],
+            "DiagnosticWarnings": [
+              "4 monologue turn(s) exceed 35 words without action line splits.",
+              "Detected 3 age-qualified character header(s) (e.g. YOUNG EBENEZER, TINY TIM, OLD JOE).",
+              "No explicit music/sound design cues detected in screenplay."
+            ]
+          },
+          "AvgAdaptationFidelity": 9,
+          "AvgCharacterDisambiguation": 9.2,
+          "AvgAiVideoDirectibility": 8.8,
+          "AvgDramaticPacing": 8.2,
+          "AvgDialogueAuthenticity": 9,
+          "AvgSoundDesignMusic": 8.8,
+          "AvgOverallQualitative": 8.8,
+          "DisqualifyingFlags": []
+        },
+        {
+          "ModelId": "gpt-5.6-terra",
+          "AnonymousLabel": "",
+          "CompositeScore": 89.6,
+          "IsGenerationFallback": false,
+          "GenerationFallbackReason": null,
+          "BordaPoints": 12,
+          "AvgJudgeRank": 2,
+          "SyntaxAudit": {
+            "OverallSyntaxScore": 95,
+            "FormatComplianceScore": 100,
+            "SceneBudgetScore": 100,
+            "DialoguePacingScore": 90,
+            "CharacterDisambiguationScore": 100,
+            "MusicSpecScore": 70,
+            "TotalSceneHeadings": 27,
+            "TotalDialogueBlocks": 176,
+            "AvgWordsPerDialogue": 11.5,
+            "MaxWordsInSingleDialogue": 37,
+            "LongMonologueCount": 2,
+            "GenericNumberedSpeakerCount": 0,
+            "CharacterNamesFound": [
+              "FRED",
+              "SCROOGE",
+              "GENTLEMAN HARKER",
+              "GENTLEMAN VALE",
+              "BOB",
+              "MARLEY\u0027S GHOST",
+              "GHOST OF CHRISTMAS PAST",
+              "FAN",
+              "YOUNG EBENEZER",
+              "FEZZIWIG",
+              "BELLE",
+              "YOUNG SCROOGE",
+              "BELLE\u0027S HUSBAND",
+              "GHOST OF CHRISTMAS PRESENT",
+              "TINY TIM",
+              "CRATCHIT FAMILY",
+              "MRS. CRATCHIT",
+              "CLARA",
+              "TOPPER",
+              "ALL",
+              "MR. HAWKINS",
+              "MR. POOLE",
+              "MR. RIGBY",
+              "MRS. DILBER",
+              "OLD JOE",
+              "LAUNDRESS BESS",
+              "CAROLINE",
+              "THOMAS",
+              "PETER",
+              "TOM"
+            ],
+            "AgeDisambiguatedCharacters": [
+              "YOUNG EBENEZER",
+              "YOUNG SCROOGE",
+              "TINY TIM",
+              "OLD JOE"
+            ],
+            "DiagnosticWarnings": [
+              "2 monologue turn(s) exceed 35 words without action line splits.",
+              "Detected 4 age-qualified character header(s) (e.g. YOUNG EBENEZER, YOUNG SCROOGE, TINY TIM).",
+              "No explicit music/sound design cues detected in screenplay."
+            ]
+          },
+          "AvgAdaptationFidelity": 8.8,
+          "AvgCharacterDisambiguation": 9,
+          "AvgAiVideoDirectibility": 8.5,
+          "AvgDramaticPacing": 8,
+          "AvgDialogueAuthenticity": 8.8,
+          "AvgSoundDesignMusic": 8.5,
+          "AvgOverallQualitative": 8.6,
+          "DisqualifyingFlags": []
+        },
+        {
+          "ModelId": "gpt-5.6-luna",
+          "AnonymousLabel": "",
+          "CompositeScore": 88.8,
+          "IsGenerationFallback": false,
+          "GenerationFallbackReason": null,
+          "BordaPoints": 11,
+          "AvgJudgeRank": 2.5,
+          "SyntaxAudit": {
+            "OverallSyntaxScore": 97,
+            "FormatComplianceScore": 95,
+            "SceneBudgetScore": 100,
+            "DialoguePacingScore": 70,
+            "CharacterDisambiguationScore": 100,
+            "MusicSpecScore": 100,
+            "TotalSceneHeadings": 23,
+            "TotalDialogueBlocks": 138,
+            "AvgWordsPerDialogue": 13.9,
+            "MaxWordsInSingleDialogue": 48,
+            "LongMonologueCount": 9,
+            "GenericNumberedSpeakerCount": 0,
+            "CharacterNamesFound": [
+              "NARRATOR",
+              "FRED",
+              "SCROOGE",
+              "CHARITY GENTLEMAN",
+              "MARLEY",
+              "GHOST OF CHRISTMAS PAST",
+              "FAN",
+              "FEZZIWIG",
+              "BELLE",
+              "GHOST OF CHRISTMAS PRESENT",
+              "MRS. CRATCHIT",
+              "BOB",
+              "TINY TIM",
+              "MERCHANT HARRIS",
+              "MERCHANT WILKINS",
+              "MRS. RIGGS",
+              "OLD JOE",
+              "MRS. DILBER",
+              "TOM"
+            ],
+            "AgeDisambiguatedCharacters": [
+              "TINY TIM",
+              "OLD JOE"
+            ],
+            "DiagnosticWarnings": [
+              "Missing \u0027FADE OUT.\u0027 or \u0027THE END\u0027 closing transition.",
+              "9 monologue turn(s) exceed 35 words without action line splits.",
+              "Detected 2 age-qualified character header(s) (e.g. TINY TIM, OLD JOE)."
+            ]
+          },
+          "AvgAdaptationFidelity": 8.5,
+          "AvgCharacterDisambiguation": 8.5,
+          "AvgAiVideoDirectibility": 8.2,
+          "AvgDramaticPacing": 7.8,
+          "AvgDialogueAuthenticity": 8.8,
+          "AvgSoundDesignMusic": 8.2,
+          "AvgOverallQualitative": 8.3,
+          "DisqualifyingFlags": []
+        },
+        {
+          "ModelId": "grok-4.20-reasoning",
+          "AnonymousLabel": "",
+          "CompositeScore": 84.4,
+          "IsGenerationFallback": false,
+          "GenerationFallbackReason": null,
+          "BordaPoints": 8,
+          "AvgJudgeRank": 4,
+          "SyntaxAudit": {
+            "OverallSyntaxScore": 98.5,
+            "FormatComplianceScore": 100,
+            "SceneBudgetScore": 100,
+            "DialoguePacingScore": 70,
+            "CharacterDisambiguationScore": 100,
+            "MusicSpecScore": 100,
+            "TotalSceneHeadings": 14,
+            "TotalDialogueBlocks": 62,
+            "AvgWordsPerDialogue": 17.5,
+            "MaxWordsInSingleDialogue": 118,
+            "LongMonologueCount": 7,
+            "GenericNumberedSpeakerCount": 0,
+            "CharacterNamesFound": [
+              "NARRATOR",
+              "FRED",
+              "SCROOGE",
+              "PORTLY GENTLEMAN",
+              "BOB CRATCHIT",
+              "MARLEY\u0027S GHOST",
+              "GHOST OF CHRISTMAS PAST",
+              "FAN",
+              "FEZZIWIG",
+              "BELLE",
+              "HUSBAND",
+              "GHOST OF CHRISTMAS PRESENT",
+              "ALL",
+              "TINY TIM",
+              "CHARWOMAN",
+              "MRS. CRATCHIT",
+              "BOY"
+            ],
+            "AgeDisambiguatedCharacters": [
+              "TINY TIM",
+              "BOY"
+            ],
+            "DiagnosticWarnings": [
+              "7 monologue turn(s) exceed 35 words without action line splits.",
+              "Detected 2 age-qualified character header(s) (e.g. TINY TIM, BOY)."
+            ]
+          },
+          "AvgAdaptationFidelity": 7.2,
+          "AvgCharacterDisambiguation": 7.2,
+          "AvgAiVideoDirectibility": 7.2,
+          "AvgDramaticPacing": 7.2,
+          "AvgDialogueAuthenticity": 8,
+          "AvgSoundDesignMusic": 8,
+          "AvgOverallQualitative": 7.5,
+          "DisqualifyingFlags": []
+        },
+        {
+          "ModelId": "gemini-3.6-flash",
+          "AnonymousLabel": "",
+          "CompositeScore": 81.4,
+          "IsGenerationFallback": false,
+          "GenerationFallbackReason": null,
+          "BordaPoints": 5,
+          "AvgJudgeRank": 5.5,
+          "SyntaxAudit": {
+            "OverallSyntaxScore": 95.5,
+            "FormatComplianceScore": 100,
+            "SceneBudgetScore": 100,
+            "DialoguePacingScore": 70,
+            "CharacterDisambiguationScore": 100,
+            "MusicSpecScore": 80,
+            "TotalSceneHeadings": 26,
+            "TotalDialogueBlocks": 176,
+            "AvgWordsPerDialogue": 15.7,
+            "MaxWordsInSingleDialogue": 64,
+            "LongMonologueCount": 17,
+            "GenericNumberedSpeakerCount": 0,
+            "CharacterNamesFound": [
+              "FRED",
+              "SCROOGE",
+              "PORTLY GENTLEMAN",
+              "BOB CRATCHIT",
+              "MARLEY",
+              "GHOST OF CHRISTMAS PAST",
+              "LITTLE FAN",
+              "OLD FEZZIWIG",
+              "BELLE",
+              "MIDDLE-AGED SCROOGE",
+              "BELLE\u0027S HUSBAND",
+              "GHOST OF CHRISTMAS PRESENT",
+              "MRS. CRATCHIT",
+              "MARTHA CRATCHIT",
+              "TINY TIM",
+              "FAMILY",
+              "FRED\u0027S WIFE",
+              "GUESTS",
+              "MERCHANT WILKINS",
+              "MERCHANT HALES",
+              "CHARWOMAN",
+              "OLD JOE",
+              "BOY",
+              "NARRATOR"
+            ],
+            "AgeDisambiguatedCharacters": [
+              "OLD FEZZIWIG",
+              "TINY TIM",
+              "OLD JOE",
+              "BOY"
+            ],
+            "DiagnosticWarnings": [
+              "17 monologue turn(s) exceed 35 words without action line splits.",
+              "Detected 4 age-qualified character header(s) (e.g. OLD FEZZIWIG, TINY TIM, OLD JOE)."
+            ]
+          },
+          "AvgAdaptationFidelity": 6.2,
+          "AvgCharacterDisambiguation": 8,
+          "AvgAiVideoDirectibility": 7.8,
+          "AvgDramaticPacing": 7.2,
+          "AvgDialogueAuthenticity": 6.2,
+          "AvgSoundDesignMusic": 8,
+          "AvgOverallQualitative": 7.2,
+          "DisqualifyingFlags": [
+            "grok-4.5: Major dialogue attribution inversion on the iconic Marley \u0027You don\u0027t believe in me\u0027 exchange",
+            "grok-4.5: Invented park-bench location for the Belle breakup"
+          ]
+        },
+        {
+          "ModelId": "gemini-3.1-pro-preview",
+          "AnonymousLabel": "",
+          "CompositeScore": 78.9,
+          "IsGenerationFallback": false,
+          "GenerationFallbackReason": null,
+          "BordaPoints": 3,
+          "AvgJudgeRank": 6.5,
+          "SyntaxAudit": {
+            "OverallSyntaxScore": 98.5,
+            "FormatComplianceScore": 100,
+            "SceneBudgetScore": 100,
+            "DialoguePacingScore": 70,
+            "CharacterDisambiguationScore": 100,
+            "MusicSpecScore": 100,
+            "TotalSceneHeadings": 18,
+            "TotalDialogueBlocks": 86,
+            "AvgWordsPerDialogue": 17.8,
+            "MaxWordsInSingleDialogue": 55,
+            "LongMonologueCount": 10,
+            "GenericNumberedSpeakerCount": 0,
+            "CharacterNamesFound": [
+              "FRED",
+              "SCROOGE",
+              "MR. POOLE",
+              "BOB CRATCHIT",
+              "MARLEY\u0027S GHOST",
+              "GHOST OF CHRISTMAS PAST",
+              "BELLE",
+              "YOUNG SCROOGE",
+              "GHOST OF CHRISTMAS PRESENT",
+              "MRS. CRATCHIT",
+              "TINY TIM",
+              "MR. GRIMES",
+              "MR. HAWKINS",
+              "MRS. DILBER",
+              "OLD JOE",
+              "NARRATOR"
+            ],
+            "AgeDisambiguatedCharacters": [
+              "YOUNG SCROOGE",
+              "TINY TIM",
+              "OLD JOE"
+            ],
+            "DiagnosticWarnings": [
+              "10 monologue turn(s) exceed 35 words without action line splits.",
+              "Detected 3 age-qualified character header(s) (e.g. YOUNG SCROOGE, TINY TIM, OLD JOE).",
+              "Detected 1 descriptive instrumental music/sound cue(s)."
+            ]
+          },
+          "AvgAdaptationFidelity": 6,
+          "AvgCharacterDisambiguation": 6.8,
+          "AvgAiVideoDirectibility": 7,
+          "AvgDramaticPacing": 6.5,
+          "AvgDialogueAuthenticity": 6.2,
+          "AvgSoundDesignMusic": 7,
+          "AvgOverallQualitative": 6.6,
+          "DisqualifyingFlags": [
+            "grok-4.5: Major dialogue attribution inversion on Marley belief exchange",
+            "grok-4.5: Drops core Past beats (solitary schoolboy and Fan rescue almost entirely absent)"
+          ]
+        },
+        {
+          "ModelId": "claude-opus-5",
+          "AnonymousLabel": "",
+          "CompositeScore": 77.6,
+          "IsGenerationFallback": false,
+          "GenerationFallbackReason": null,
+          "BordaPoints": 4,
+          "AvgJudgeRank": 6,
+          "SyntaxAudit": {
+            "OverallSyntaxScore": 97,
+            "FormatComplianceScore": 95,
+            "SceneBudgetScore": 100,
+            "DialoguePacingScore": 70,
+            "CharacterDisambiguationScore": 100,
+            "MusicSpecScore": 100,
+            "TotalSceneHeadings": 18,
+            "TotalDialogueBlocks": 199,
+            "AvgWordsPerDialogue": 17.3,
+            "MaxWordsInSingleDialogue": 85,
+            "LongMonologueCount": 27,
+            "GenericNumberedSpeakerCount": 0,
+            "CharacterNamesFound": [
+              "NARRATOR",
+              "FRED",
+              "SCROOGE",
+              "MR. HOPKINS",
+              "BOB CRATCHIT",
+              "MARLEY",
+              "CHRISTMAS PAST",
+              "FAN",
+              "YOUNG EBENEZER",
+              "FEZZIWIG",
+              "BELLE",
+              "EBENEZER IN HIS PRIME",
+              "BELLE\u0027S HUSBAND",
+              "CHRISTMAS PRESENT",
+              "MRS. CRATCHIT",
+              "MARTHA",
+              "TWO SMALLER CRATCHITS",
+              "TINY TIM",
+              "ALL THE CRATCHITS",
+              "SCROOGE\u0027S NIECE",
+              "THE PLUMP SISTER",
+              "ALL THE GUESTS",
+              "MR. TUPPER",
+              "MR. GRUB",
+              "THE CHARWOMAN",
+              "OLD JOE",
+              "MRS. DILBER",
+              "PETER"
+            ],
+            "AgeDisambiguatedCharacters": [
+              "YOUNG EBENEZER",
+              "TINY TIM",
+              "OLD JOE"
+            ],
+            "DiagnosticWarnings": [
+              "Missing \u0027FADE OUT.\u0027 or \u0027THE END\u0027 closing transition.",
+              "27 monologue turn(s) exceed 35 words without action line splits.",
+              "Detected 3 age-qualified character header(s) (e.g. YOUNG EBENEZER, TINY TIM, OLD JOE).",
+              "Detected 1 descriptive instrumental music/sound cue(s)."
+            ]
+          },
+          "AvgAdaptationFidelity": 3.5,
+          "AvgCharacterDisambiguation": 8.2,
+          "AvgAiVideoDirectibility": 6.8,
+          "AvgDramaticPacing": 4,
+          "AvgDialogueAuthenticity": 8,
+          "AvgSoundDesignMusic": 8.2,
+          "AvgOverallQualitative": 6.5,
+          "DisqualifyingFlags": [
+            "grok-4.5: Screenplay truncates mid-sentence and mid-climax during the grave reveal, omitting the entire redemption/Stave V resolution",
+            "grok-4: Incomplete screenplay that cuts off mid-sentence during the churchyard reveal, breaking the required full arc coverage."
+          ]
+        }
+      ],
+      "JudgeMatrix": {
+        "grok-4.5": {
+          "gpt-5.6-luna": 8.5,
+          "gpt-5.6-terra": 8.5,
+          "claude-opus-5": 6.75,
+          "gemini-3.6-flash": 6.83,
+          "grok-4.20-reasoning": 7.33,
+          "gpt-5.6-sol": 9,
+          "gemini-3.1-pro-preview": 6.08
+        },
+        "grok-4": {
+          "gpt-5.6-terra": 8.67,
+          "grok-4.20-reasoning": 7.67,
+          "claude-opus-5": 6.17,
+          "gemini-3.1-pro-preview": 7.08,
+          "gemini-3.6-flash": 7.67,
+          "gpt-5.6-sol": 8.67,
+          "gpt-5.6-luna": 8.17
+        }
+      },
+      "SelfBiasNotes": []
+    },
+    {
+      "RunId": "5d5f837e2242429b8e0bf6b5b25790a1",
+      "Timestamp": "2026-07-31 13:54:46 UTC",
+      "BookSlug": "the_call_of_the_wild",
+      "BookTitle": "The_Call_of_the_Wild",
+      "BookPath": "C:\\Users\\budcr\\source\\repos\\claude\\PageToMovie\\books\\The_Call_of_the_Wild.txt",
+      "IsMockRun": false,
+      "ReasoningEffort": "max",
+      "PromptVersion": "15A6CCC456",
+      "ModelScores": [
+        {
+          "ModelId": "gpt-5.6-luna",
+          "AnonymousLabel": "",
+          "CompositeScore": 91.7,
+          "IsGenerationFallback": false,
+          "GenerationFallbackReason": null,
+          "BordaPoints": 13,
+          "AvgJudgeRank": 1.5,
+          "SyntaxAudit": {
+            "OverallSyntaxScore": 99.2,
+            "FormatComplianceScore": 100,
+            "SceneBudgetScore": 100,
+            "DialoguePacingScore": 85,
+            "CharacterDisambiguationScore": 100,
+            "MusicSpecScore": 100,
+            "TotalSceneHeadings": 31,
+            "TotalDialogueBlocks": 75,
+            "AvgWordsPerDialogue": 14.9,
+            "MaxWordsInSingleDialogue": 40,
+            "LongMonologueCount": 3,
+            "GenericNumberedSpeakerCount": 0,
+            "CharacterNamesFound": [
+              "NARRATOR",
+              "KIDNAPPER",
+              "MANUEL",
+              "SALOON KEEPER",
+              "RED SWEATER",
+              "PERRAULT",
+              "FRANCOIS",
+              "HAL",
+              "MERCEDES",
+              "THORNTON",
+              "MATTHEWSON",
+              "JIM O\u0027BRIEN",
+              "SKOOKUM KING"
+            ],
+            "AgeDisambiguatedCharacters": [],
+            "DiagnosticWarnings": [
+              "3 monologue turn(s) exceed 35 words without action line splits.",
+              "Detected 1 descriptive instrumental music/sound cue(s)."
+            ]
+          },
+          "AvgAdaptationFidelity": 9,
+          "AvgCharacterDisambiguation": 8.8,
+          "AvgAiVideoDirectibility": 8.5,
+          "AvgDramaticPacing": 8.2,
+          "AvgDialogueAuthenticity": 8.8,
+          "AvgSoundDesignMusic": 8.8,
+          "AvgOverallQualitative": 8.7,
+          "DisqualifyingFlags": []
+        },
+        {
+          "ModelId": "gpt-5.6-terra",
+          "AnonymousLabel": "",
+          "CompositeScore": 88,
+          "IsGenerationFallback": false,
+          "GenerationFallbackReason": null,
+          "BordaPoints": 10,
+          "AvgJudgeRank": 3,
+          "SyntaxAudit": {
+            "OverallSyntaxScore": 95.5,
+            "FormatComplianceScore": 100,
+            "SceneBudgetScore": 100,
+            "DialoguePacingScore": 100,
+            "CharacterDisambiguationScore": 100,
+            "MusicSpecScore": 70,
+            "TotalSceneHeadings": 20,
+            "TotalDialogueBlocks": 33,
+            "AvgWordsPerDialogue": 10.2,
+            "MaxWordsInSingleDialogue": 23,
+            "LongMonologueCount": 0,
+            "GenericNumberedSpeakerCount": 0,
+            "CharacterNamesFound": [
+              "NARRATOR",
+              "MANUEL",
+              "KIDNAPPER",
+              "SALOON-KEEPER",
+              "DOG-BREAKER",
+              "FRANCOIS",
+              "PERRAULT",
+              "MERCEDES",
+              "HAL",
+              "PROSPECTOR",
+              "THORNTON",
+              "MATTHEWSON"
+            ],
+            "AgeDisambiguatedCharacters": [],
+            "DiagnosticWarnings": [
+              "No explicit music/sound design cues detected in screenplay."
+            ]
+          },
+          "AvgAdaptationFidelity": 8.5,
+          "AvgCharacterDisambiguation": 8.8,
+          "AvgAiVideoDirectibility": 8.2,
+          "AvgDramaticPacing": 7.8,
+          "AvgDialogueAuthenticity": 8.5,
+          "AvgSoundDesignMusic": 8,
+          "AvgOverallQualitative": 8.3,
+          "DisqualifyingFlags": []
+        },
+        {
+          "ModelId": "gpt-5.6-sol",
+          "AnonymousLabel": "",
+          "CompositeScore": 87.3,
+          "IsGenerationFallback": false,
+          "GenerationFallbackReason": null,
+          "BordaPoints": 9,
+          "AvgJudgeRank": 3.5,
+          "SyntaxAudit": {
+            "OverallSyntaxScore": 95.2,
+            "FormatComplianceScore": 100,
+            "SceneBudgetScore": 100,
+            "DialoguePacingScore": 95,
+            "CharacterDisambiguationScore": 100,
+            "MusicSpecScore": 70,
+            "TotalSceneHeadings": 19,
+            "TotalDialogueBlocks": 57,
+            "AvgWordsPerDialogue": 10.7,
+            "MaxWordsInSingleDialogue": 37,
+            "LongMonologueCount": 1,
+            "GenericNumberedSpeakerCount": 0,
+            "CharacterNamesFound": [
+              "NARRATOR",
+              "ELIAS HOLT",
+              "MANUEL",
+              "EDWARD BLAKE",
+              "PERRAULT",
+              "FRANCOIS",
+              "MERCEDES",
+              "HAL",
+              "SAMUEL KEENE",
+              "JOHN THORNTON",
+              "MATTHEWSON",
+              "PETE",
+              "HANS"
+            ],
+            "AgeDisambiguatedCharacters": [],
+            "DiagnosticWarnings": [
+              "1 monologue turn(s) exceed 35 words without action line splits.",
+              "No explicit music/sound design cues detected in screenplay."
+            ]
+          },
+          "AvgAdaptationFidelity": 8.2,
+          "AvgCharacterDisambiguation": 8.8,
+          "AvgAiVideoDirectibility": 8.2,
+          "AvgDramaticPacing": 7.5,
+          "AvgDialogueAuthenticity": 8.2,
+          "AvgSoundDesignMusic": 8,
+          "AvgOverallQualitative": 8.2,
+          "DisqualifyingFlags": []
+        },
+        {
+          "ModelId": "claude-opus-5",
+          "AnonymousLabel": "",
+          "CompositeScore": 87.9,
+          "IsGenerationFallback": false,
+          "GenerationFallbackReason": null,
+          "BordaPoints": 11,
+          "AvgJudgeRank": 2.5,
+          "SyntaxAudit": {
+            "OverallSyntaxScore": 98.5,
+            "FormatComplianceScore": 100,
+            "SceneBudgetScore": 100,
+            "DialoguePacingScore": 70,
+            "CharacterDisambiguationScore": 100,
+            "MusicSpecScore": 100,
+            "TotalSceneHeadings": 42,
+            "TotalDialogueBlocks": 121,
+            "AvgWordsPerDialogue": 16.6,
+            "MaxWordsInSingleDialogue": 52,
+            "LongMonologueCount": 10,
+            "GenericNumberedSpeakerCount": 0,
+            "CharacterNamesFound": [
+              "NARRATOR",
+              "FRANCOIS",
+              "PERRAULT",
+              "THE SCOTCH HALF-BREED",
+              "JED",
+              "MERCEDES",
+              "OTIS",
+              "CHARLES",
+              "HAL",
+              "JOHN THORNTON",
+              "PETE",
+              "HANS",
+              "MATTHEWSON",
+              "JIM O\u0027BRIEN",
+              "SKOOKUM BENCH KING"
+            ],
+            "AgeDisambiguatedCharacters": [],
+            "DiagnosticWarnings": [
+              "10 monologue turn(s) exceed 35 words without action line splits.",
+              "Detected 3 descriptive instrumental music/sound cue(s)."
+            ]
+          },
+          "AvgAdaptationFidelity": 8,
+          "AvgCharacterDisambiguation": 8.5,
+          "AvgAiVideoDirectibility": 8,
+          "AvgDramaticPacing": 7,
+          "AvgDialogueAuthenticity": 8.5,
+          "AvgSoundDesignMusic": 8.5,
+          "AvgOverallQualitative": 8.1,
+          "DisqualifyingFlags": [
+            "grok-4.5: Draft is truncated mid-moose-hunt and never reaches Yeehat attack, Thornton\u0027s death, or Ghost Dog ending",
+            "grok-4.5: Opening estate scene is cut off mid-sentence"
+          ]
+        },
+        {
+          "ModelId": "gemini-3.6-flash",
+          "AnonymousLabel": "",
+          "CompositeScore": 83.9,
+          "IsGenerationFallback": false,
+          "GenerationFallbackReason": null,
+          "BordaPoints": 7,
+          "AvgJudgeRank": 4.5,
+          "SyntaxAudit": {
+            "OverallSyntaxScore": 95.8,
+            "FormatComplianceScore": 100,
+            "SceneBudgetScore": 100,
+            "DialoguePacingScore": 75,
+            "CharacterDisambiguationScore": 100,
+            "MusicSpecScore": 80,
+            "TotalSceneHeadings": 19,
+            "TotalDialogueBlocks": 48,
+            "AvgWordsPerDialogue": 12.9,
+            "MaxWordsInSingleDialogue": 44,
+            "LongMonologueCount": 5,
+            "GenericNumberedSpeakerCount": 0,
+            "CharacterNamesFound": [
+              "NARRATOR",
+              "STRANGER",
+              "MANUEL",
+              "SALOON-KEEPER",
+              "DRIVER",
+              "MAN IN RED SWEATER",
+              "PERRAULT",
+              "FRANCOIS",
+              "HAL",
+              "BYSTANDER",
+              "THORNTON",
+              "MATTHEWSON",
+              "O\u0027BRIEN",
+              "SKOOKUM BENCH KING",
+              "YEEHAT HUNTER"
+            ],
+            "AgeDisambiguatedCharacters": [],
+            "DiagnosticWarnings": [
+              "5 monologue turn(s) exceed 35 words without action line splits."
+            ]
+          },
+          "AvgAdaptationFidelity": 8,
+          "AvgCharacterDisambiguation": 7.8,
+          "AvgAiVideoDirectibility": 7.5,
+          "AvgDramaticPacing": 7.2,
+          "AvgDialogueAuthenticity": 7.8,
+          "AvgSoundDesignMusic": 7.5,
+          "AvgOverallQualitative": 7.6,
+          "DisqualifyingFlags": [
+            "grok-4.5: Skips or collapses major beats (Narwhal voyage, full mail-train arc, Forty-Mile rescue detail)",
+            "grok-4.5: Generic character tokens (STRANGER, MAN IN RED SWEATER) and inconsistent Buck coat color"
+          ]
+        },
+        {
+          "ModelId": "gemini-3.1-pro-preview",
+          "AnonymousLabel": "",
+          "CompositeScore": 78.7,
+          "IsGenerationFallback": false,
+          "GenerationFallbackReason": null,
+          "BordaPoints": 4,
+          "AvgJudgeRank": 6,
+          "SyntaxAudit": {
+            "OverallSyntaxScore": 98.8,
+            "FormatComplianceScore": 100,
+            "SceneBudgetScore": 100,
+            "DialoguePacingScore": 75,
+            "CharacterDisambiguationScore": 100,
+            "MusicSpecScore": 100,
+            "TotalSceneHeadings": 11,
+            "TotalDialogueBlocks": 21,
+            "AvgWordsPerDialogue": 27,
+            "MaxWordsInSingleDialogue": 56,
+            "LongMonologueCount": 5,
+            "GenericNumberedSpeakerCount": 0,
+            "CharacterNamesFound": [
+              "NARRATOR",
+              "MAN IN RED SWEATER",
+              "HAL",
+              "JOHN THORNTON"
+            ],
+            "AgeDisambiguatedCharacters": [],
+            "DiagnosticWarnings": [
+              "5 monologue turn(s) exceed 35 words without action line splits.",
+              "Detected 1 descriptive instrumental music/sound cue(s)."
+            ]
+          },
+          "AvgAdaptationFidelity": 6.5,
+          "AvgCharacterDisambiguation": 6,
+          "AvgAiVideoDirectibility": 7,
+          "AvgDramaticPacing": 6.2,
+          "AvgDialogueAuthenticity": 7,
+          "AvgSoundDesignMusic": 6.5,
+          "AvgOverallQualitative": 6.5,
+          "DisqualifyingFlags": [
+            "grok-4.5: Omits or collapses large stretches (full kidnapping sequence detail, Dave\u0027s death, mail-train suffering, Forty-Mile rescue, thousand-pound wager staging)",
+            "grok-4.5: Several multi-location scenes and thin cast descriptions"
+          ]
+        },
+        {
+          "ModelId": "grok-4.20-reasoning",
+          "AnonymousLabel": "",
+          "CompositeScore": 74.1,
+          "IsGenerationFallback": false,
+          "GenerationFallbackReason": null,
+          "BordaPoints": 2,
+          "AvgJudgeRank": 7,
+          "SyntaxAudit": {
+            "OverallSyntaxScore": 97.2,
+            "FormatComplianceScore": 95,
+            "SceneBudgetScore": 100,
+            "DialoguePacingScore": 75,
+            "CharacterDisambiguationScore": 100,
+            "MusicSpecScore": 100,
+            "TotalSceneHeadings": 10,
+            "TotalDialogueBlocks": 21,
+            "AvgWordsPerDialogue": 24.7,
+            "MaxWordsInSingleDialogue": 57,
+            "LongMonologueCount": 5,
+            "GenericNumberedSpeakerCount": 0,
+            "CharacterNamesFound": [
+              "NARRATOR",
+              "MANUEL",
+              "STRANGER",
+              "MAN IN THE RED SWEATER",
+              "JOHN THORNTON"
+            ],
+            "AgeDisambiguatedCharacters": [],
+            "DiagnosticWarnings": [
+              "Missing \u0027FADE OUT.\u0027 or \u0027THE END\u0027 closing transition.",
+              "5 monologue turn(s) exceed 35 words without action line splits."
+            ]
+          },
+          "AvgAdaptationFidelity": 5.5,
+          "AvgCharacterDisambiguation": 5.5,
+          "AvgAiVideoDirectibility": 6,
+          "AvgDramaticPacing": 5.5,
+          "AvgDialogueAuthenticity": 6.5,
+          "AvgSoundDesignMusic": 6.2,
+          "AvgOverallQualitative": 5.9,
+          "DisqualifyingFlags": [
+            "grok-4.5: Severe compression that drops or summarizes entire chapters into single VO blocks",
+            "grok-4.5: Multiple scenes cram several locations and time jumps into one heading",
+            "grok-4.5: Weak cast locking and thin sound beds"
+          ]
+        }
+      ],
+      "JudgeMatrix": {
+        "grok-4.5": {
+          "gpt-5.6-luna": 8.75,
+          "gpt-5.6-terra": 8.33,
+          "claude-opus-5": 7.58,
+          "gemini-3.6-flash": 7.17,
+          "grok-4.20-reasoning": 5.25,
+          "gpt-5.6-sol": 8.42,
+          "gemini-3.1-pro-preview": 6.17
+        },
+        "grok-4": {
+          "gpt-5.6-terra": 8.25,
+          "grok-4.20-reasoning": 6.5,
+          "claude-opus-5": 8.6,
+          "gemini-3.1-pro-preview": 6.9,
+          "gemini-3.6-flash": 8.1,
+          "gpt-5.6-sol": 7.9,
+          "gpt-5.6-luna": 8.6
         }
       },
       "SelfBiasNotes": []

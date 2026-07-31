@@ -1,0 +1,101 @@
+{
+  "evaluations": [
+    {
+      "screenplayId": "Screenplay A",
+      "adaptationFidelity": 1,
+      "characterDisambiguation": 5,
+      "aiVideoDirectibility": 6,
+      "dramaticPacing": 2,
+      "dialogueAuthenticity": 3,
+      "soundDesignMusic": 6,
+      "overallQualitativeScore": 3.83,
+      "productionReady": false,
+      "disqualifyingIssues": [
+        "Invented named characters (Mr. Quincy, Mr. Kelly) not present in the source material.",
+        "Massive omission of major plot arcs and character developments, including entire chapters (e.g., Hal/Charles/Mercedes arc, Thornton\u0027s trials, Yeehat attack, Thornton\u0027s death). This is not a faithful adaptation.",
+        "The narrative is a summary, not a detailed adaptation, making it unusable for a comprehensive series."
+      ],
+      "rationale": "Screenplay A suffers from severe adaptation fidelity issues, including invented named characters and the complete omission of major plot points and character arcs from the source material. This fundamentally breaks the adaptation requirement. While some individual action lines are directible, the overall structure is disjointed and lacks dramatic pacing due to the missing content. Dialogue is minimal and often invented or generic, failing to capture the book\u0027s voice. This draft is not production-ready as it does not faithfully adapt the source."
+    },
+    {
+      "screenplayId": "Screenplay B",
+      "adaptationFidelity": 9.5,
+      "characterDisambiguation": 9,
+      "aiVideoDirectibility": 9,
+      "dramaticPacing": 9,
+      "dialogueAuthenticity": 9.5,
+      "soundDesignMusic": 9,
+      "overallQualitativeScore": 9.17,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Screenplay B is an exceptionally faithful adaptation, covering virtually all major narrative beats and preserving authentic dialogue directly from the source. Character introductions are clear, consistent, and provide good visual detail for casting. AI video directibility is very strong, with action lines describing concrete, camera-observable actions suitable for short clips. The pacing effectively mirrors the book\u0027s dramatic arc, and sound design cues are well-integrated. This screenplay is highly production-ready."
+    },
+    {
+      "screenplayId": "Screenplay C",
+      "adaptationFidelity": 9.5,
+      "characterDisambiguation": 9,
+      "aiVideoDirectibility": 8.5,
+      "dramaticPacing": 9,
+      "dialogueAuthenticity": 9.5,
+      "soundDesignMusic": 9,
+      "overallQualitativeScore": 9.08,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Screenplay C demonstrates excellent adaptation fidelity, covering all major plot points and retaining authentic dialogue. Character disambiguation is strong, with specific visual details for key figures, and the \u0027identity locked\u0027 note is a valuable production instruction. AI video directibility is very good, though a few action lines contain minor internal states or combine slightly too many actions for a single, strict 5-10 second clip, requiring minimal refinement. Pacing, dialogue authenticity, and sound design are all expertly handled. This screenplay is production-ready."
+    },
+    {
+      "screenplayId": "Screenplay D",
+      "adaptationFidelity": 9.5,
+      "characterDisambiguation": 9,
+      "aiVideoDirectibility": 8,
+      "dramaticPacing": 9,
+      "dialogueAuthenticity": 9.5,
+      "soundDesignMusic": 9,
+      "overallQualitativeScore": 9,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Screenplay D offers a highly faithful and comprehensive adaptation of the source material, including nearly all major beats and authentic dialogue. Character descriptions are specific and consistent, aiding casting clarity. AI video directibility is strong, but a noticeable number of action lines include internal states or motivations (e.g., \u0027trustingly,\u0027 \u0027nursing his wrath,\u0027 \u0027ablaze with the joy\u0027), which would require rephrasing for strict camera-observable actions. The dramatic pacing and sound design are excellent, effectively conveying the narrative\u0027s progression. This screenplay is production-ready with minor revisions needed for directibility."
+    },
+    {
+      "screenplayId": "Screenplay E",
+      "adaptationFidelity": 9.5,
+      "characterDisambiguation": 8.5,
+      "aiVideoDirectibility": 7,
+      "dramaticPacing": 9,
+      "dialogueAuthenticity": 9.5,
+      "soundDesignMusic": 9,
+      "overallQualitativeScore": 8.75,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Screenplay E provides excellent adaptation fidelity and authentic dialogue, covering the source material thoroughly. Character disambiguation is generally strong, though some minor characters lack specific visual detail. However, its AI video directibility is significantly hampered by a very high frequency of internal states, emotions, and motivations embedded within action lines (e.g., \u0027nursing his wrath,\u0027 \u0027panic rising,\u0027 \u0027sensing kindness\u0027). These would require substantial rephrasing to be strictly camera-observable actions for AI generation. Dramatic pacing and sound design are well-executed. This screenplay is production-ready but requires considerable revision on directibility."
+    },
+    {
+      "screenplayId": "Screenplay F",
+      "adaptationFidelity": 3,
+      "characterDisambiguation": 5,
+      "aiVideoDirectibility": 4,
+      "dramaticPacing": 5,
+      "dialogueAuthenticity": 5,
+      "soundDesignMusic": 6,
+      "overallQualitativeScore": 4.67,
+      "productionReady": false,
+      "disqualifyingIssues": [
+        "Significant simplification and condensation of major plot events in Chapters 6 and 7 (e.g., sled pull wager, wild brother encounter, Yeehat attack, Thornton\u0027s death) which severely reduces fidelity to the source material.",
+        "Excessive use of internal states and motivations in action lines, making many beats difficult to direct as concrete, camera-observable actions for AI video."
+      ],
+      "rationale": "Screenplay F suffers from a severe penalty in adaptation fidelity due to significant simplification and condensation of major plot points in the latter half of the book, losing critical detail and dramatic impact. Character descriptions are sparse and inconsistent. AI video directibility is poor, with an overwhelming number of action lines describing internal states rather than observable actions. While the initial pacing is acceptable, the latter half feels rushed and generic. Dialogue authenticity also declines in the condensed sections. This screenplay is not production-ready due to its unfaithful adaptation and poor directibility."
+    }
+  ],
+  "forcedRanking": [
+    "Screenplay B",
+    "Screenplay C",
+    "Screenplay D",
+    "Screenplay E",
+    "Screenplay F",
+    "Screenplay A"
+  ],
+  "judgeSummaryNotes": "Strongest: Screenplay B because it demonstrates exceptional fidelity to the source material, provides clear character disambiguation, and maintains strong AI video directibility with precise action lines and sound cues. Weakest: Screenplay A because it invents named characters and omits massive, critical plot arcs and character developments, rendering it an unfaithful and unusable adaptation of the source book.",
+  "isMock": false,
+  "rubricVersion": "2-calibrated-selfbias-productionready",
+  "screenplaysHash": "EA08087589D4771236B91D424EC1B88BD9B3F31321C5ED2E75F02F2ABF7034D4"
+}

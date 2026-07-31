@@ -14,6 +14,25 @@ public sealed class HistoricalBenchmarkRun
     public string BookTitle { get; set; } = "";
     public string BookPath { get; set; } = "";
     public bool IsMockRun { get; set; }
+
+    /// <summary>
+    /// The --reasoning-effort value this run was invoked with ("low"/"medium"/"high"/"max"),
+    /// or "" for the provider's default (no reasoningEffort passed). Applies uniformly to every
+    /// candidate and judge in the run — it's a single CLI flag, not per-model. Runs at different
+    /// effort levels are not directly comparable, so this must stay visible in history/dashboard
+    /// rather than silently blending a "default effort" score with a "max effort" one.
+    /// </summary>
+    public string ReasoningEffort { get; set; } = "";
+
+    /// <summary>
+    /// Short content hash (first 10 hex chars of SHA256) of the exact prompts/book_to_fountain.txt
+    /// text every candidate in this run was generated from — automatic, no manual version-bump
+    /// discipline required, so editing the prompt (even a small wording tweak) is always visible
+    /// in history/dashboard rather than silently blending "old prompt" and "new prompt" results
+    /// under one label. Two runs sharing this value were generated from byte-identical prompt text.
+    /// </summary>
+    public string PromptVersion { get; set; } = "";
+
     public List<ModelScoreSummary> ModelScores { get; set; } = new();
     public Dictionary<string, Dictionary<string, double>> JudgeMatrix { get; set; } = new();
     public List<string> SelfBiasNotes { get; set; } = new();

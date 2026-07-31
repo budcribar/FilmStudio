@@ -47,25 +47,47 @@ public sealed class AnthropicChatClient : IChatClient, IVisionClient
 
     public bool IsConfigured => !string.IsNullOrWhiteSpace(ResolveApiKey());
 
+    /// <summary>Maps the provider-neutral <c>reasoningEffort</c> scale to Anthropic's
+    /// <c>output_config.effort</c> values (confirmed live: low/medium/high/xhigh/max).</summary>
+    private static string? MapReasoningEffort(string? effort) => effort?.Trim().ToLowerInvariant() switch
+    {
+        null or "" => null,
+        "max" or "xhigh" => "max",
+        var other => other,
+    };
+
     public async Task<string> CompleteAsync(
         string systemPrompt,
         string userPrompt,
         string model = "claude-sonnet-5",
         double temperature = 0.2,
         CancellationToken ct = default,
-        string? mode = null)
+        string? mode = null,
+        string? reasoningEffort = null)
     {
+        var mappedEffort = MapReasoningEffort(reasoningEffort);
         var payload = new Dictionary<string, object?>
         {
             ["model"] = model,
             ["max_tokens"] = DefaultMaxTokens,
-            ["temperature"] = temperature,
             ["system"] = systemPrompt,
             ["messages"] = new object[]
             {
                 new Dictionary<string, object?> { ["role"] = "user", ["content"] = userPrompt },
             },
         };
+        if (mappedEffort is not null)
+        {
+            // Extended/adaptive thinking requires temperature to stay at its implicit default
+            // (confirmed live: "`temperature` may only be set to 1 when thinking is enabled or
+            // in adaptive mode") — omit it up front rather than round-tripping a 400 first.
+            payload["thinking"] = new Dictionary<string, object?> { ["type"] = "adaptive" };
+            payload["output_config"] = new Dictionary<string, object?> { ["effort"] = mappedEffort };
+        }
+        else
+        {
+            payload["temperature"] = temperature;
+        }
         return await SendAsync(
             payload, model, "chat", "messages", mode,
             systemPrompt, userPrompt,
@@ -178,6 +200,22 @@ public sealed class AnthropicChatClient : IChatClient, IVisionClient
                 {
                     var retryPayload = new Dictionary<string, object?>(payload);
                     retryPayload.Remove("temperature");
+                    return await SendAsync(
+                        retryPayload, model, kind, endpoint, mode,
+                        promptForLog, userPromptForLog, promptChars, ct).ConfigureAwait(false);
+                }
+
+                // Older/smaller Claude models don't support adaptive thinking or output_config.effort
+                // at all — self-heal the same way rather than maintaining a model-capability list.
+                if (resp.StatusCode == System.Net.HttpStatusCode.BadRequest
+                    && (payload.ContainsKey("thinking") || payload.ContainsKey("output_config"))
+                    && (body.Contains("thinking", StringComparison.OrdinalIgnoreCase)
+                        || body.Contains("output_config", StringComparison.OrdinalIgnoreCase)))
+                {
+                    var retryPayload = new Dictionary<string, object?>(payload);
+                    retryPayload.Remove("thinking");
+                    retryPayload.Remove("output_config");
+                    retryPayload["temperature"] = 0.2;
                     return await SendAsync(
                         retryPayload, model, kind, endpoint, mode,
                         promptForLog, userPromptForLog, promptChars, ct).ConfigureAwait(false);

@@ -1,0 +1,151 @@
+{
+  "evaluations": [
+    {
+      "screenplayId": "Screenplay A",
+      "adaptationFidelity": 4,
+      "characterDisambiguation": 2.5,
+      "aiVideoDirectibility": 3,
+      "dramaticPacing": 3.5,
+      "dialogueAuthenticity": 3,
+      "soundDesignMusic": 3.5,
+      "overallQualitativeScore": 3.25,
+      "productionReady": false,
+      "disqualifyingIssues": [
+        "Virtually no consistent visual character descriptions for reference-image lock",
+        "Internal monologue dumped as spoken dialogue unfilmable in short clips",
+        "Major source beats rushed or collapsed; invented officer name without payoff",
+        "Scene structure crams multiple actions and fails 5-10s beat constraint"
+      ],
+      "rationale": "A is a thin, dialogue-heavy condensation that turns Poe\u0027s interiority into on-camera speech, supplies almost zero casting visuals, and collapses the seven-night ritual, hour-long wait, and police slow-burn into unusable lumps. Heartbeat is mentioned but never designed as a progressive sound bed. Unusable for AI clip production."
+    },
+    {
+      "screenplayId": "Screenplay B",
+      "adaptationFidelity": 8.5,
+      "characterDisambiguation": 9,
+      "aiVideoDirectibility": 8.5,
+      "dramaticPacing": 9,
+      "dialogueAuthenticity": 8,
+      "soundDesignMusic": 7,
+      "overallQualitativeScore": 8.33,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "B delivers near-complete beat coverage with clear visual locks (lean pale Narrator in dark waistcoat; frail white-haired Old Man; three distinct officers). Actions are concrete and clip-sized; seven nights and eighth-night hour are shown, not told. Dialogue stays sparse and performable. Sound relies on heartbeat escalation but lacks explicit underscore prompts. Strong, green-lightable draft."
+    },
+    {
+      "screenplayId": "Screenplay C",
+      "adaptationFidelity": 9,
+      "characterDisambiguation": 7,
+      "aiVideoDirectibility": 8,
+      "dramaticPacing": 8.5,
+      "dialogueAuthenticity": 9,
+      "soundDesignMusic": 6.5,
+      "overallQualitativeScore": 8,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "C is nearly verbatim in spirit and structure, using a candlelit confession frame that serves the short-clip form well. Narrator and Old Man have solid visual anchors; officers remain under-described. Directibility is high via clear physical beats and VO. Pacing and dialogue are excellent; sound design is only lightly indicated. Production-ready with minor casting polish needed."
+    },
+    {
+      "screenplayId": "Screenplay D",
+      "adaptationFidelity": 6.5,
+      "characterDisambiguation": 8.5,
+      "aiVideoDirectibility": 8,
+      "dramaticPacing": 8,
+      "dialogueAuthenticity": 7,
+      "soundDesignMusic": 9,
+      "overallQualitativeScore": 7.83,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "D adds an asylum-cell frame (mild invention) yet covers the core plot with strong visual casting (Narrator 30s hollow-eyed Victorian; distinct officers). Actions and THUMP progression are highly clip-directible and the sound bed is the best of the set. Some added dialogue softens authenticity. Solid and shootable."
+    },
+    {
+      "screenplayId": "Screenplay E",
+      "adaptationFidelity": 2.5,
+      "characterDisambiguation": 2,
+      "aiVideoDirectibility": 2.5,
+      "dramaticPacing": 2,
+      "dialogueAuthenticity": 3.5,
+      "soundDesignMusic": 3,
+      "overallQualitativeScore": 2.58,
+      "productionReady": false,
+      "disqualifyingIssues": [
+        "Major source beats dropped or reduced to single-sentence summaries",
+        "No usable character visual descriptions",
+        "Multi-action scenes impossible to split into 5-10s clips",
+        "Zero tension escalation or dramatic structure"
+      ],
+      "rationale": "E is a skeletal synopsis, not a screenplay. Seven nights, the hour wait, dismemberment detail, and police agony are all collapsed; characters lack any locking description; scenes pack entire sequences into one heading. Unusable for the required short-clip pipeline."
+    },
+    {
+      "screenplayId": "Screenplay F",
+      "adaptationFidelity": 8,
+      "characterDisambiguation": 8,
+      "aiVideoDirectibility": 7.5,
+      "dramaticPacing": 8,
+      "dialogueAuthenticity": 7.5,
+      "soundDesignMusic": 8,
+      "overallQualitativeScore": 7.83,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "F covers the story thoroughly with a confession-room bookend and clear (if slightly generic) character looks. Most actions are filmable, though some continuous blocks run long for 5-10s cuts. Heartbeat and clock SFX are well integrated. Minor invented business (hands over ears) does not break fidelity. Ready with light trimming."
+    },
+    {
+      "screenplayId": "Screenplay G",
+      "adaptationFidelity": 2,
+      "characterDisambiguation": 1.5,
+      "aiVideoDirectibility": 2,
+      "dramaticPacing": 2,
+      "dialogueAuthenticity": 2,
+      "soundDesignMusic": 2.5,
+      "overallQualitativeScore": 2,
+      "productionReady": false,
+      "disqualifyingIssues": [
+        "Major beats omitted or paraphrased into incoherence",
+        "No character physical descriptions whatsoever",
+        "Vague, non-concrete action lines (\u0027chaos collides\u0027) unfilmable",
+        "Broken, incomplete structure that cannot support clip breakdown"
+      ],
+      "rationale": "G is the weakest package: it skips the seven-night campaign, mangles the police sequence, supplies zero casting information, and writes undirectable abstractions. Completely unusable for AI video production."
+    },
+    {
+      "screenplayId": "Screenplay H",
+      "adaptationFidelity": 9.5,
+      "characterDisambiguation": 9.5,
+      "aiVideoDirectibility": 9.5,
+      "dramaticPacing": 9.5,
+      "dialogueAuthenticity": 9,
+      "soundDesignMusic": 9,
+      "overallQualitativeScore": 9.33,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "H is the gold standard: exhaustive fidelity, locked visual portraits for every character (including three distinct officers), and every beat written as a single observable 5-10s action. Tension escalates with surgical precision; SFX (deathwatch, THUMP, chair grate, candle) form a complete sound design. Dialogue is performable and authentic. Immediate greenlight."
+    },
+    {
+      "screenplayId": "Screenplay I",
+      "adaptationFidelity": 8.5,
+      "characterDisambiguation": 8,
+      "aiVideoDirectibility": 8.5,
+      "dramaticPacing": 8.5,
+      "dialogueAuthenticity": 8.5,
+      "soundDesignMusic": 7.5,
+      "overallQualitativeScore": 8.25,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "I is a polished, high-fidelity adaptation with strong confession framing and clear visual anchors for Narrator and Old Man (officers slightly thinner). Beats are cleanly separable for short clips; pacing and dialogue stay true to Poe. Sound design is functional but less layered than H or D. Fully production-ready."
+    }
+  ],
+  "forcedRanking": [
+    "Screenplay H",
+    "Screenplay B",
+    "Screenplay I",
+    "Screenplay C",
+    "Screenplay F",
+    "Screenplay D",
+    "Screenplay A",
+    "Screenplay E",
+    "Screenplay G"
+  ],
+  "judgeSummaryNotes": "Strongest: Screenplay H because it alone combines near-perfect source fidelity, locked character visuals, and every action written as a discrete 5-10s filmable beat with fully designed sound escalation. Weakest: Screenplay G because it omits or mangles core beats, supplies zero casting descriptions, and writes vague undirectable abstractions that cannot be broken into AI clips.",
+  "isMock": false,
+  "rubricVersion": "2-calibrated-selfbias-productionready",
+  "screenplaysHash": "57E233057846C2D89DD5ED10E2E94759B69C19D49F5486B483449C891D76AD63"
+}

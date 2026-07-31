@@ -1,0 +1,111 @@
+{
+  "evaluations": [
+    {
+      "screenplayId": "Screenplay A",
+      "adaptationFidelity": 1,
+      "characterDisambiguation": 6,
+      "aiVideoDirectibility": 4,
+      "dramaticPacing": 3,
+      "dialogueAuthenticity": 4,
+      "soundDesignMusic": 2,
+      "overallQualitativeScore": 3.33,
+      "productionReady": false,
+      "disqualifyingIssues": [
+        "Major invented plot events (Ma\u0027s death, Narrator\u0027s confrontation with Nick after Ma\u0027s death, Sionna\u0027s continued presence in Seattle).",
+        "Dropped major beats (Nick\u0027s attack on Sionna, Sionna\u0027s departure due to PTSD, Narrator\u0027s final name reveal).",
+        "Fundamental alteration of character arcs (Sionna\u0027s relationship with Narrator, Narrator\u0027s journey of forgiveness).",
+        "Heavy reliance on unfilmable internal monologue and abstract descriptions, making many beats undirectible."
+      ],
+      "rationale": "Screenplay A fundamentally alters the core narrative, inventing major plot points and character outcomes (e.g., Ma\u0027s death, Sionna\u0027s continued relationship with the Narrator in Seattle, the nature of the final confrontation with Nick). It also drops several critical beats from the source. The heavy reliance on internal monologue and abstract descriptions makes many scenes unfilmable for AI video clips, and the dialogue often feels generic or out of character compared to the source. The pacing is rushed and disjointed due to the high-level summaries rather than distinct beats."
+    },
+    {
+      "screenplayId": "Screenplay B",
+      "adaptationFidelity": 10,
+      "characterDisambiguation": 9.5,
+      "aiVideoDirectibility": 9,
+      "dramaticPacing": 9.5,
+      "dialogueAuthenticity": 10,
+      "soundDesignMusic": 5,
+      "overallQualitativeScore": 8.83,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Screenplay B is an exceptionally faithful adaptation, retaining almost all major plot points, character arcs, and dialogue directly from the source. The character disambiguation is clear and consistent, and the action lines are generally concrete and directible for short AI video clips. The pacing effectively builds tension and emotion, and the dialogue maintains the authentic voice of the book. The only minor point is the early naming of Peter, which is a practical choice for a screenplay and doesn\u0027t detract from the overall fidelity."
+    },
+    {
+      "screenplayId": "Screenplay C",
+      "adaptationFidelity": 10,
+      "characterDisambiguation": 10,
+      "aiVideoDirectibility": 9.5,
+      "dramaticPacing": 10,
+      "dialogueAuthenticity": 10,
+      "soundDesignMusic": 5,
+      "overallQualitativeScore": 9.08,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Screenplay C is an outstanding adaptation, demonstrating exceptional fidelity to the source material, including precise dialogue and narrative beats. Character descriptions are consistently clear and well-disambiguated across different time periods. The script excels in AI video directibility, with concise, camera-observable action lines and effective use of \u0027beat\u0027 for short clips. The dramatic pacing is expertly managed, and the dialogue is authentic and cinematic. The \u0027Seattle frame\u0027 effectively structures the narrative, and the narrator\u0027s name reveal is handled perfectly."
+    },
+    {
+      "screenplayId": "Screenplay D",
+      "adaptationFidelity": 10,
+      "characterDisambiguation": 10,
+      "aiVideoDirectibility": 9.5,
+      "dramaticPacing": 10,
+      "dialogueAuthenticity": 10,
+      "soundDesignMusic": 5,
+      "overallQualitativeScore": 9.08,
+      "productionReady": true,
+      "disqualifyingIssues": [],
+      "rationale": "Screenplay D is an exceptionally strong adaptation, mirroring the source text with remarkable fidelity in plot, character, and dialogue. It correctly maintains the narrator\u0027s unnamed status until the very end, a key detail. Character descriptions are consistently clear and well-disambiguated. The action lines are highly directible, supporting the short-clip constraint, and the dramatic pacing is excellent. The dialogue is authentic and impactful, making it a top-tier candidate for adaptation."
+    },
+    {
+      "screenplayId": "Screenplay E",
+      "adaptationFidelity": 2,
+      "characterDisambiguation": 5,
+      "aiVideoDirectibility": 4,
+      "dramaticPacing": 3,
+      "dialogueAuthenticity": 5,
+      "soundDesignMusic": 2,
+      "overallQualitativeScore": 3.5,
+      "productionReady": false,
+      "disqualifyingIssues": [
+        "Major dropped beats (bar fight where Nick tries to hit Peter, angel/demon dream, Sionna meeting Nick, Nick taking Ma to Mass, Indian Sage dream, final prison visit).",
+        "Significant reordering of narrative events (schoolyard flashback, Nick/Peter reconciliation scene).",
+        "Invented name for the protagonist (\u0027Jake\u0027 instead of \u0027Peter Olson\u0027).",
+        "The ending is completely altered, missing the core resolution of Peter\u0027s journey and forgiveness, and ending abruptly with Nick\u0027s internal monologue.",
+        "Heavy reliance on unfilmable internal monologue and abstract descriptions."
+      ],
+      "rationale": "Screenplay E suffers from numerous fidelity issues, including dropping several major plot points, significantly reordering others, and inventing a name for the protagonist. The ending is completely different from the source, lacking the crucial resolution and forgiveness arc. Directibility is hampered by frequent internal monologues and abstract descriptions, and the pacing is disjointed due to the missing and reordered scenes. The dialogue, while sometimes direct from the source, is often presented out of context due to the structural changes."
+    },
+    {
+      "screenplayId": "Screenplay F",
+      "adaptationFidelity": 2.5,
+      "characterDisambiguation": 6,
+      "aiVideoDirectibility": 3.5,
+      "dramaticPacing": 3,
+      "dialogueAuthenticity": 4,
+      "soundDesignMusic": 2,
+      "overallQualitativeScore": 3.5,
+      "productionReady": false,
+      "disqualifyingIssues": [
+        "Major dropped beats (Narrator\u0027s first date with Sionna, Ma\u0027s health crisis and ER visit, Nick\u0027s confrontation with Lindsey\u0027s boyfriend, Sionna\u0027s verbal showdown with Nick, Ma\u0027s death and Nick\u0027s accident, Sionna\u0027s stabbing and departure, Narrator\u0027s move to Seattle and success, Indian Sage dream, final prison visit).",
+        "Significant reordering and invention of plot events, particularly in the latter half of the story, leading to a completely different narrative arc and ending.",
+        "The Narrator is never named, even at the end, which deviates from the source\u0027s final reveal.",
+        "Heavy reliance on V.O. and internal monologue, making many beats unfilmable for AI video clips.",
+        "The script ends abruptly without a clear resolution to the main conflicts or character arcs."
+      ],
+      "rationale": "Screenplay F is a highly incomplete adaptation, omitting numerous critical plot points and character developments from the source text, especially in the latter half of the story. The narrative arc is severely truncated, and the ending is entirely different, lacking the resolution of the original. The script relies excessively on V.O. and internal thoughts, making it difficult to direct visually for short clips. Character disambiguation is inconsistent, and the pacing is fragmented due to the missing content and abrupt transitions."
+    }
+  ],
+  "forcedRanking": [
+    "Screenplay C",
+    "Screenplay D",
+    "Screenplay B",
+    "Screenplay E",
+    "Screenplay F",
+    "Screenplay A"
+  ],
+  "judgeSummaryNotes": "Strongest: Screenplay C because it demonstrates exceptional fidelity, character clarity, and directibility, capturing the full narrative arc and emotional depth of the source with precise execution. Weakest: Screenplay A because it fundamentally invents and alters major plot points and character outcomes, resulting in a narrative that deviates significantly from the source material and is largely unfilmable.",
+  "isMock": false,
+  "rubricVersion": "2-calibrated-selfbias-productionready",
+  "screenplaysHash": "4529CB17D369EE662A1B437DC859E9EB2E60C388D0DF27C3CF0792B450362F27"
+}

@@ -1,0 +1,85 @@
+{
+  "BookPath": "books/Nick_and_Me.txt",
+  "Timestamp": "2026-07-31 00:54:13 UTC",
+  "IsMockRun": false,
+  "Leaderboard": [
+    {
+      "ModelId": "o3-mini",
+      "AnonymousLabel": "",
+      "CompositeScore": 83.8,
+      "IsGenerationFallback": false,
+      "GenerationFallbackReason": null,
+      "BordaPoints": 1,
+      "AvgJudgeRank": 1,
+      "SyntaxAudit": {
+        "OverallSyntaxScore": 85.8,
+        "FormatComplianceScore": 85,
+        "SceneBudgetScore": 100,
+        "DialoguePacingScore": 70,
+        "CharacterDisambiguationScore": 100,
+        "MusicSpecScore": 70,
+        "TotalSceneHeadings": 42,
+        "TotalDialogueBlocks": 136,
+        "AvgWordsPerDialogue": 17.1,
+        "MaxWordsInSingleDialogue": 84,
+        "LongMonologueCount": 11,
+        "GenericNumberedSpeakerCount": 0,
+        "CharacterNamesFound": [
+          "NARRATOR",
+          "MA",
+          "NICK",
+          "LIBRARIAN",
+          "SIONNA",
+          "DR. CARSON",
+          "JENNIFER BALES",
+          "BOB",
+          "SAMMY",
+          "LINDSEY",
+          "MYSTERY MAN",
+          "OFFICER DUPUIS",
+          "FUNERAL DIRECTOR",
+          "TONY",
+          "JUDGE",
+          "DANIEL DAWSON",
+          "SARONA",
+          "INSTRUCTOR",
+          "DANIEL",
+          "GUARD"
+        ],
+        "AgeDisambiguatedCharacters": [],
+        "DiagnosticWarnings": [
+          "Non-Fountain colon dialogue format (123 instances like \u0027Character:\u0027) detected.",
+          "11 monologue turn(s) exceed 35 words without action line splits.",
+          "No explicit music/sound design cues detected in screenplay."
+        ]
+      },
+      "AvgAdaptationFidelity": 8.5,
+      "AvgCharacterDisambiguation": 9,
+      "AvgAiVideoDirectibility": 8,
+      "AvgDramaticPacing": 7.5,
+      "AvgDialogueAuthenticity": 8.5,
+      "AvgSoundDesignMusic": 8,
+      "AvgOverallQualitative": 8.2,
+      "DisqualifyingFlags": []
+    }
+  ],
+  "JudgeMatrix": {
+    "o3-mini": {
+      "o3-mini": 8.25
+    }
+  },
+  "JudgeRankMatrix": {
+    "o3-mini": {
+      "o3-mini": 1
+    }
+  },
+  "SelfBiasNotes": [],
+  "JudgeRationale": {
+    "o3-mini": {
+      "o3-mini": "Screenplay A shows a detailed and faithful adaptation of the source text with strong visual character descriptions and clear narrative beats, though at times it relies on internal monologue sequences which may be challenging to split into short AI-generated video clips for directibility."
+    }
+  },
+  "JudgeSummaries": {
+    "o3-mini": "Strongest: Screenplay A because it captures the key narrative beats and distinct character visuals from the source while balancing emotional depth; Weakest: Screenplay A because some scenes incorporate internal narrative elements that could complicate the short-clip, show-don\u0027t-tell approach required for effective AI video directibility."
+  }
+}
